@@ -1,3 +1,4 @@
+<pre>
 Unpack to Mods folder
 
 Settings 
@@ -112,3 +113,4 @@ Ammo definition
         }
     ]
 }
+</pre>
