@@ -23,12 +23,12 @@ namespace CustomAmmoCategoriesLog
 {
     public static class Log
     {
-        private static string m_assemblyFile;
+        //private static string m_assemblyFile;
         private static string m_logfile;
+        public static string BaseDirectory;
         public static void InitLog()
         {
-            Log.m_assemblyFile = (new System.Uri(Assembly.GetExecutingAssembly().CodeBase)).AbsolutePath;
-            Log.m_logfile = Path.Combine(Path.GetDirectoryName(Log.m_assemblyFile),"CustomAmmoCategories.log");
+            Log.m_logfile = Path.Combine(BaseDirectory, "CustomAmmoCategories.log");
             //Log.m_logfile = Path.Combine(Log.m_logfile, "CustomAmmoCategories.log");
             File.Delete(Log.m_logfile);
         }
@@ -361,6 +361,27 @@ namespace CustomAmmoCategoriesPatches
         }
     }
     [HarmonyPatch(typeof(Weapon))]
+    [HarmonyPatch("HeatGenerated")]
+    [HarmonyPatch(MethodType.Getter)]
+    [HarmonyPatch(new Type[] { })]
+    public static class Weapon_HeatGenerated
+    {
+        public static bool Prefix(Weapon __instance, ref float __result)
+        {
+            if (__instance.AmmoCategory == AmmoCategory.NotSet) { return true; }
+            if (__instance.ammoBoxes.Count <= 0) { return true; }
+            if (CustomAmmoCategories.checkExistance(__instance.StatCollection, CustomAmmoCategories.AmmoIdStatName) == false) { return true; }
+            string CurrentAmmoId = __instance.StatCollection.GetStatistic(CustomAmmoCategories.AmmoIdStatName).Value<string>();
+            //CustomCategoriesLog.LogWrite("get modified DamagePerShot\n");
+            //CustomCategoriesLog.LogWrite(" ammo id "+ammoDefId+"\n");
+            //ExtAmmunitionDef extAmmoDef = CustomAmmoCategories.findExtAmmo(CurrentAmmoId);
+            CombatGameState combat = (CombatGameState)typeof(MechComponent).GetField("combat", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(__instance);
+            AmmunitionDef ammoDef = combat.DataManager.AmmoDefs.Get(CurrentAmmoId);
+            __result = (float)((double)(__instance.StatCollection.GetValue<float>("HeatGenerated") + ammoDef.HeatGenerated) * (double)combat.Constants.Heat.GlobalHeatIncreaseMultiplier * (__instance.parent != null ? (double)__instance.parent.StatCollection.GetValue<float>("WeaponHeatMultiplier") : 1.0));
+            return false;
+        }
+    }
+    [HarmonyPatch(typeof(Weapon))]
     [HarmonyPatch("RefireModifier")]
     [HarmonyPatch(MethodType.Getter)]
     [HarmonyPatch(new Type[] { })]
@@ -381,7 +402,7 @@ namespace CustomAmmoCategoriesPatches
     }
     [HarmonyPatch(typeof(Weapon))]
     [HarmonyPatch("Instability")]
-    [HarmonyPatch(MethodType.Getter)]
+    [HarmonyPatch(MethodType.Normal)]
     [HarmonyPatch(new Type[] { })]
     public static class Weapon_Instability
     {
@@ -398,23 +419,118 @@ namespace CustomAmmoCategoriesPatches
             return false;
         }
     }
-    [HarmonyPatch(typeof(Weapon))]
-    [HarmonyPatch("AttackRecoil")]
-    [HarmonyPatch(MethodType.Getter)]
+    [HarmonyPatch(typeof(WeaponEffect))]
+    [HarmonyPatch("PlayProjectile")]
+    [HarmonyPatch(MethodType.Normal)]
     [HarmonyPatch(new Type[] { })]
     public static class Weapon_AttackRecoil
     {
-        public static bool Prefix(Weapon __instance, ref int __result)
+        private static Mutex mutexObj = new Mutex();
+        private static Weapon CurWeapon = null;
+        private static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
         {
-            if (__instance.AmmoCategory == AmmoCategory.NotSet) { return true; }
-            if (__instance.ammoBoxes.Count <= 0) { return true; }
-            if (CustomAmmoCategories.checkExistance(__instance.StatCollection, CustomAmmoCategories.AmmoIdStatName) == false) { return true; }
-            string CurrentAmmoId = __instance.StatCollection.GetStatistic(CustomAmmoCategories.AmmoIdStatName).Value<string>();
-            //CustomCategoriesLog.LogWrite("get modified DamagePerShot\n");
-            //CustomCategoriesLog.LogWrite(" ammo id "+ammoDefId+"\n");
-            ExtAmmunitionDef extAmmoDef = CustomAmmoCategories.findExtAmmo(CurrentAmmoId);
-            __result = __instance.StatCollection.GetValue<int>("AttackRecoil") + extAmmoDef.AttackRecoil;
-            return false;
+            var targetPropertyGetterDef = AccessTools.Property(typeof(Weapon), "weaponDef").GetGetMethod();
+            var replacementMethodDef = AccessTools.Method(typeof(Weapon_AttackRecoil), nameof(WeaponDefPatching));
+            var targetPropertyGetterRecoil = AccessTools.Property(typeof(WeaponDef), "AttackRecoil").GetGetMethod();
+            var replacementMethodRecoil = AccessTools.Method(typeof(Weapon_AttackRecoil), nameof(RecoilPatching));
+            IEnumerable<CodeInstruction> result = Transpilers.MethodReplacer(instructions, targetPropertyGetterDef, replacementMethodDef);
+            return Transpilers.MethodReplacer(result, targetPropertyGetterRecoil, replacementMethodRecoil);
+        }
+
+        private static WeaponDef WeaponDefPatching(Weapon weapon)
+        {
+            Weapon_AttackRecoil.mutexObj.WaitOne();
+            Weapon_AttackRecoil.CurWeapon = weapon;
+            CustomAmmoCategoriesLog.Log.LogWrite("geted weaponDef in Weapon_AttackRecoil\n");
+            return weapon.weaponDef;
+        }
+        private static int RecoilPatching(WeaponDef weaponDef)
+        {
+            CustomAmmoCategoriesLog.Log.LogWrite("getting recoil in Weapon_AttackRecoil\n");
+            if (Weapon_AttackRecoil.CurWeapon == null)
+            {
+                CustomAmmoCategoriesLog.Log.LogWrite(" current weapon not inited!\n");
+                return weaponDef.AttackRecoil;
+            }
+            if (weaponDef.Description.Id != CurWeapon.weaponDef.Description.Id)
+            {
+                CustomAmmoCategoriesLog.Log.LogWrite(" current weapon not the same!\n");
+                Weapon_AttackRecoil.mutexObj.ReleaseMutex();
+                return weaponDef.AttackRecoil;
+            }
+            int result = 0;
+            if (CustomAmmoCategories.checkExistance(Weapon_AttackRecoil.CurWeapon.StatCollection, CustomAmmoCategories.AmmoIdStatName) == false)
+            {
+                CustomAmmoCategoriesLog.Log.LogWrite(" not registred weapon\n");
+                Weapon_AttackRecoil.mutexObj.ReleaseMutex();
+                result = weaponDef.AttackRecoil;
+            }
+            else
+            {
+                string CurrentAmmoId = Weapon_AttackRecoil.CurWeapon.StatCollection.GetStatistic(CustomAmmoCategories.AmmoIdStatName).Value<string>();
+                ExtAmmunitionDef extAmmoDef = CustomAmmoCategories.findExtAmmo(CurrentAmmoId);
+                CustomAmmoCategoriesLog.Log.LogWrite(" modify AttackRecoil\n");
+                result = weaponDef.AttackRecoil + extAmmoDef.AttackRecoil;
+                Weapon_AttackRecoil.mutexObj.ReleaseMutex();
+            }
+            return result;
+        }
+    }
+    [HarmonyPatch(typeof(ToHit))]
+    [HarmonyPatch("GetEvasivePipsModifier")]
+    [HarmonyPatch(MethodType.Normal)]
+    [HarmonyPatch(new Type[] { typeof(int), typeof(Weapon) })]
+    public static class ToHit_GetEvasivePipsModifier
+    {
+        private static Mutex mutexObj = new Mutex();
+        private static Weapon CurWeapon = null;
+        private static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
+        {
+            var targetPropertyGetterDef = AccessTools.Property(typeof(Weapon), "weaponDef").GetGetMethod();
+            var replacementMethodDef = AccessTools.Method(typeof(ToHit_GetEvasivePipsModifier), nameof(WeaponDefPatching));
+            var targetPropertyGetterPips = AccessTools.Property(typeof(WeaponDef), "EvasivePipsIgnored").GetGetMethod();
+            var replacementMethodPips = AccessTools.Method(typeof(ToHit_GetEvasivePipsModifier), nameof(RecoilPatching));
+            IEnumerable<CodeInstruction> result = Transpilers.MethodReplacer(instructions, targetPropertyGetterDef, replacementMethodDef);
+            return Transpilers.MethodReplacer(result, targetPropertyGetterPips, replacementMethodPips);
+        }
+
+        private static WeaponDef WeaponDefPatching(Weapon weapon)
+        {
+            ToHit_GetEvasivePipsModifier.mutexObj.WaitOne();
+            ToHit_GetEvasivePipsModifier.CurWeapon = weapon;
+            CustomAmmoCategoriesLog.Log.LogWrite("geted weaponDef in Weapon_AttackRecoil\n");
+            return weapon.weaponDef;
+        }
+        private static float RecoilPatching(WeaponDef weaponDef)
+        {
+            CustomAmmoCategoriesLog.Log.LogWrite("getting recoil in Weapon_AttackRecoil\n");
+            if (ToHit_GetEvasivePipsModifier.CurWeapon == null)
+            {
+                CustomAmmoCategoriesLog.Log.LogWrite(" current weapon not inited!\n");
+                return weaponDef.AttackRecoil;
+            }
+            if (weaponDef.Description.Id != CurWeapon.weaponDef.Description.Id)
+            {
+                CustomAmmoCategoriesLog.Log.LogWrite(" current weapon not the same!\n");
+                ToHit_GetEvasivePipsModifier.mutexObj.ReleaseMutex();
+                return weaponDef.EvasivePipsIgnored;
+            }
+            float result = 0;
+            if (CustomAmmoCategories.checkExistance(ToHit_GetEvasivePipsModifier.CurWeapon.StatCollection, CustomAmmoCategories.AmmoIdStatName) == false)
+            {
+                CustomAmmoCategoriesLog.Log.LogWrite(" not registred weapon\n");
+                ToHit_GetEvasivePipsModifier.mutexObj.ReleaseMutex();
+                result = weaponDef.EvasivePipsIgnored;
+            }
+            else
+            {
+                string CurrentAmmoId = ToHit_GetEvasivePipsModifier.CurWeapon.StatCollection.GetStatistic(CustomAmmoCategories.AmmoIdStatName).Value<string>();
+                ExtAmmunitionDef extAmmoDef = CustomAmmoCategories.findExtAmmo(CurrentAmmoId);
+                CustomAmmoCategoriesLog.Log.LogWrite(" modify EvasivePipsIgnored\n");
+                result = weaponDef.EvasivePipsIgnored + extAmmoDef.EvasivePipsIgnored;
+                ToHit_GetEvasivePipsModifier.mutexObj.ReleaseMutex();
+            }
+            return result;
         }
     }
     [HarmonyPatch(typeof(Weapon))]
@@ -756,6 +872,16 @@ namespace CustomAmmoCategoriesPatches
                 extAmmoDef.AttackRecoil = (int)defTemp["AttackRecoil"];
                 defTemp.Remove("AttackRecoil");
             }
+            if (defTemp["WeaponEffectID"] != null)
+            {
+                extAmmoDef.WeaponEffectID = (string)defTemp["WeaponEffectID"];
+                defTemp.Remove("WeaponEffectID");
+            }
+            if (defTemp["EvasivePipsIgnored"] != null)
+            {
+                extAmmoDef.EvasivePipsIgnored = (float)defTemp["EvasivePipsIgnored"];
+                defTemp.Remove("EvasivePipsIgnored");
+            }
             if (defTemp["statusEffects"] != null)
             {
                 extAmmoDef.statusstatusEffects = JsonConvert.DeserializeObject<EffectData[]>(defTemp["statusEffects"].ToString());
@@ -889,6 +1015,7 @@ namespace CustomAmmoCategoriesPatches
             return false;
         }
     }
+    /*
     [HarmonyPatch(typeof(WeaponDef))]
     [HarmonyPatch("AmmoCategoryToAmmoId")]
     [HarmonyPatch(MethodType.Getter)]
@@ -944,7 +1071,8 @@ namespace CustomAmmoCategoriesPatches
                 }
             }
         }
-    }
+    }*/
+
     [HarmonyPatch(typeof(MechValidationRules))]
     [HarmonyPatch("ValidateMechHasAppropriateAmmo")]
     [HarmonyPatch(MethodType.Normal)]
@@ -1021,6 +1149,90 @@ namespace CustomAmmoCategoriesPatches
             return false;
         }
     }
+    [HarmonyPatch(typeof(WeaponRepresentation))]
+    [HarmonyPatch("Init")]
+    [HarmonyPatch(MethodType.Normal)]
+    [HarmonyPatch(new Type[] { typeof(Weapon), typeof(Transform), typeof(bool), typeof(string), typeof(int) })]
+    public static class WeaponRepresentation_Init
+    {
+        public static void Postfix(WeaponRepresentation __instance, Weapon weapon, Transform parentTransform, bool isParented, string parentDisplayName, int mountedLocation)
+        {
+            string wGUID;
+            if(CustomAmmoCategories.checkExistance(weapon.StatCollection,CustomAmmoCategories.GUIDStatisticName) == false)
+            {
+                wGUID = Guid.NewGuid().ToString();
+                weapon.StatCollection.AddStatistic<string>(CustomAmmoCategories.GUIDStatisticName,wGUID);
+            }else
+            {
+                wGUID = weapon.StatCollection.GetStatistic(CustomAmmoCategories.GUIDStatisticName).Value<string>();
+            }
+            CustomAmmoCategories.ClearWeaponEffects(wGUID);
+            CustomAmmoCategories.InitWeaponEffects(__instance,weapon);
+        }
+    }
+    [HarmonyPatch(typeof(WeaponRepresentation))]
+    [HarmonyPatch("PlayWeaponEffect")]
+    [HarmonyPatch(MethodType.Normal)]
+    [HarmonyPatch(new Type[] { typeof(WeaponHitInfo) })]
+    public static class WeaponRepresentation_PlayWeaponEffect
+    {
+        public static bool Prefix(WeaponRepresentation __instance, WeaponHitInfo hitInfo)
+        {
+            CustomAmmoCategoriesLog.Log.LogWrite("WeaponRepresentation.PlayWeaponEffect\n");
+            if (__instance.weapon == null) { return true; }
+            CustomAmmoCategoriesLog.Log.LogWrite("  weapon is set\n");
+            if (CustomAmmoCategories.checkExistance(__instance.weapon.StatCollection, CustomAmmoCategories.GUIDStatisticName) == false) { return true;}
+            CustomAmmoCategoriesLog.Log.LogWrite("  weapon GUID is set\n");
+            if (CustomAmmoCategories.checkExistance(__instance.weapon.StatCollection, CustomAmmoCategories.AmmoIdStatName) == false) { return true; }
+            CustomAmmoCategoriesLog.Log.LogWrite("  weapon ammoId is set\n");
+            string wGUID = __instance.weapon.StatCollection.GetStatistic(CustomAmmoCategories.GUIDStatisticName).Value<string>();
+            string ammoId = __instance.weapon.StatCollection.GetStatistic(CustomAmmoCategories.AmmoIdStatName).Value<string>();
+            string weaponEffectId = CustomAmmoCategories.findExtAmmo(ammoId).WeaponEffectID;
+            if (string.IsNullOrEmpty(weaponEffectId)) { return true; }
+            CustomAmmoCategoriesLog.Log.LogWrite("  weapon weaponEffectId is set "+wGUID+" "+__instance.weapon.Name+" "+ammoId+" "+weaponEffectId+"\n");
+            if (weaponEffectId == __instance.weapon.weaponDef.WeaponEffectID) { return true; };
+            CustomAmmoCategoriesLog.Log.LogWrite("  weapon weaponEffectId is different\n");
+            WeaponEffect weaponEffect = CustomAmmoCategories.getWeaponEffect(wGUID, weaponEffectId);
+            if (weaponEffect == null) { return true; }
+            CustomAmmoCategoriesLog.Log.LogWrite("  weapon weaponEffect is set\n");
+            weaponEffect.Fire(hitInfo, 0, 0);
+            CustomAmmoCategoriesLog.Log.LogWrite("  fired\n");
+            return false;
+        }
+    }
+    [HarmonyPatch(typeof(WeaponRepresentation))]
+    [HarmonyPatch("ResetWeaponEffect")]
+    [HarmonyPatch(MethodType.Normal)]
+    [HarmonyPatch(new Type[] { })]
+    public static class WeaponRepresentation_ResetWeaponEffect
+    {
+        public static void Postfix(WeaponRepresentation __instance)
+        {
+            CustomAmmoCategoriesLog.Log.LogWrite("WeaponRepresentation.ResetWeaponEffect\n");
+            if (__instance.weapon == null) { return; }
+            CustomAmmoCategoriesLog.Log.LogWrite("  weapon is set\n");
+            if (CustomAmmoCategories.checkExistance(__instance.weapon.StatCollection, CustomAmmoCategories.GUIDStatisticName) == false) { return; }
+            CustomAmmoCategoriesLog.Log.LogWrite("  weapon GUID is set\n");
+            if (CustomAmmoCategories.checkExistance(__instance.weapon.StatCollection, CustomAmmoCategories.AmmoIdStatName) == false) { return; }
+            CustomAmmoCategoriesLog.Log.LogWrite("  weapon ammoId is set\n");
+            string wGUID = __instance.weapon.StatCollection.GetStatistic(CustomAmmoCategories.GUIDStatisticName).Value<string>();
+            CustomAmmoCategories.resetWeaponEffects(wGUID);
+            return;
+        }
+    }
+    [HarmonyPatch(typeof(CombatGameState))]
+    [HarmonyPatch("ShutdownCombatState")]
+    [HarmonyPatch(MethodType.Normal)]
+    [HarmonyPatch(new Type[] { })]
+    public static class CombatGameState_ShutdownCombatState
+    {
+        public static void Postfix(CombatGameState __instance)
+        {
+            CustomAmmoCategoriesLog.Log.LogWrite("CombatGameState.ShutdownCombatState\n");
+            CustomAmmoCategories.clearAllWeaponEffects();
+            return;
+        }
+    }
 }
 
 namespace CustAmmoCategories
@@ -1055,6 +1267,8 @@ namespace CustAmmoCategories
         public int RefireModifier { get; set; }
         public int AttackRecoil { get; set; }
         public float Instability { get; set; }
+        public string WeaponEffectID { get; set; }
+        public float EvasivePipsIgnored { get; set; }
         public ExtAmmunitionDef()
         {
             AccuracyModifier = 0;
@@ -1073,6 +1287,8 @@ namespace CustAmmoCategories
             RefireModifier = 0;
             Instability = 0;
             AttackRecoil = 0;
+            EvasivePipsIgnored = 0;
+            WeaponEffectID = "";
             statusstatusEffects = new EffectData[0] { };
         }
     }
@@ -1115,14 +1331,88 @@ namespace CustAmmoCategories
     public static class CustomAmmoCategories
     {
         public static string AmmoIdStatName = "CurrentAmmoId";
+        public static string GUIDStatisticName = "WeaponGUID";
         private static Dictionary<string, CustomAmmoCategory> items;
         private static Dictionary<string, CustomAmmoCategory> AmmunitionDef;
         private static Dictionary<string, ExtAmmunitionDef> ExtAmmunitionDef;
         private static Dictionary<string, CustomAmmoCategory> WeaponDef;
+        private static Dictionary<string, Dictionary<string, WeaponEffect>> WeaponEffects;
         //private static Dictionary<string, WeaponAmmoInfo> WeaponAmmo;
         private static CustomAmmoCategory NotSetCustomAmmoCategoty;
         private static ExtAmmunitionDef DefaultAmmo;
         public static Settings Settings;
+        public static void clearAllWeaponEffects()
+        {
+            CustomAmmoCategories.WeaponEffects.Clear();
+        }
+        public static void resetWeaponEffects(string wGUID)
+        {
+            if (CustomAmmoCategories.WeaponEffects.ContainsKey(wGUID) == false) { return; }
+            foreach (var weaponEffect in CustomAmmoCategories.WeaponEffects[wGUID])
+            {
+                if(weaponEffect.Value != (UnityEngine.Object)null)
+                {
+                    weaponEffect.Value.Reset();
+                }
+            }
+        }
+        public static WeaponEffect getWeaponEffect(string wGUID,string weaponEffectId)
+        {
+            if (CustomAmmoCategories.WeaponEffects.ContainsKey(wGUID) == false) { return null; }
+            if (CustomAmmoCategories.WeaponEffects[wGUID].ContainsKey(weaponEffectId) == false) { return null; }
+            return CustomAmmoCategories.WeaponEffects[wGUID][weaponEffectId];
+        }
+        public static void ClearWeaponEffects(string wGUID)
+        {
+            if (CustomAmmoCategories.WeaponEffects.ContainsKey(wGUID)) { WeaponEffects.Remove(wGUID); };
+        }
+        public static void InitWeaponEffects(WeaponRepresentation weaponRepresentation,Weapon weapon)
+        {
+            if (CustomAmmoCategories.checkExistance(weapon.StatCollection, CustomAmmoCategories.GUIDStatisticName) == false) { return; }
+            string wGUID = weapon.StatCollection.GetStatistic(CustomAmmoCategories.GUIDStatisticName).Value<string>();
+            if (CustomAmmoCategories.WeaponEffects.ContainsKey(wGUID) == true) { return; }
+            WeaponEffects[wGUID] = new Dictionary<string, WeaponEffect>();
+            List<string> avaibleAmmo = CustomAmmoCategories.getAvaibleAmmo(weapon);
+            foreach(string ammoId in avaibleAmmo)
+            {
+                ExtAmmunitionDef extAmmo = CustomAmmoCategories.findExtAmmo(ammoId);
+                if (string.IsNullOrEmpty(extAmmo.WeaponEffectID)) { continue; }
+                if (extAmmo.WeaponEffectID == weapon.weaponDef.WeaponEffectID) { continue; }
+                if (WeaponEffects[wGUID].ContainsKey(extAmmo.WeaponEffectID) == true) { continue; }
+                WeaponEffects[wGUID][extAmmo.WeaponEffectID] = CustomAmmoCategories.InitWeaponEffect(weaponRepresentation,weapon,extAmmo.WeaponEffectID);
+            }
+        }
+        public static WeaponEffect InitWeaponEffect(WeaponRepresentation weaponRepresentation, Weapon weapon, string weaponEffectId)
+        {
+            GameObject gameObject = (GameObject)null;
+            WeaponEffect result = (WeaponEffect)null;
+            if (!string.IsNullOrEmpty(weaponEffectId))
+            {
+                gameObject = weaponRepresentation.parentCombatant.Combat.DataManager.PooledInstantiate(weaponEffectId, BattleTechResourceType.Prefab, new Vector3?(), new Quaternion?(), (Transform)null);
+            }
+            if ((UnityEngine.Object)gameObject == (UnityEngine.Object)null)
+            {
+                CustomAmmoCategoriesLog.Log.LogWrite(string.Format("Error instantiating WeaponEffect [{0}], Weapon [{1}]]\n", (object)weaponEffectId, (object)weapon.Name));
+            }
+            else
+            {
+                gameObject.transform.parent = weaponRepresentation.transform;
+                gameObject.transform.localPosition = Vector3.zero;
+                gameObject.transform.rotation = Quaternion.identity;
+                result = gameObject.GetComponent<WeaponEffect>();
+                if ((UnityEngine.Object)result == (UnityEngine.Object)null)
+                {
+                    CustomAmmoCategoriesLog.Log.LogWrite(string.Format("Error finding WeaponEffect on GO [{0}], Weapon [{1}]\n", (object)weaponEffectId, (object)weapon.Name));
+                }
+                else
+                {
+                    result.Init(weapon);
+                }
+            }
+            CustomAmmoCategoriesLog.Log.LogWrite("Success init weapon effect "+ weaponEffectId+" for "+weapon.Name+"\n");
+            return result;
+        }
+
         public static AmmunitionBox getAmmunitionBox(Weapon weapon, int aGUID)
         {
             if ((aGUID >= 0) && (aGUID < weapon.ammoBoxes.Count))
@@ -1332,11 +1622,12 @@ namespace CustAmmoCategories
             CustomAmmoCategories.items = new Dictionary<string, CustomAmmoCategory>();
             CustomAmmoCategories.AmmunitionDef = new Dictionary<string, CustomAmmoCategory>();
             CustomAmmoCategories.WeaponDef = new Dictionary<string, CustomAmmoCategory>();
+            CustomAmmoCategories.WeaponEffects = new Dictionary<string, Dictionary<string, WeaponEffect>>();
             //CustomAmmoCategories.WeaponAmmo = new Dictionary<string, WeaponAmmoInfo>();
             CustomAmmoCategories.ExtAmmunitionDef = new Dictionary<string, ExtAmmunitionDef>();
             CustomAmmoCategories.DefaultAmmo = new ExtAmmunitionDef();
-            string assemblyFile = (new System.Uri(Assembly.GetExecutingAssembly().CodeBase)).AbsolutePath;
-            string filename = Path.Combine(Path.GetDirectoryName(assemblyFile), "CustomAmmoCategories.json");
+            //string assemblyFile = (new System.Uri(Assembly.GetExecutingAssembly().CodeBase)).AbsolutePath;
+            string filename = Path.Combine(CustomAmmoCategoriesLog.Log.BaseDirectory, "CustomAmmoCategories.json");
             //filename = Path.Combine(filename, "CustomAmmoCategories.json");
             string json = File.ReadAllText(filename);
             List<CustomAmmoCategory> tmp = JsonConvert.DeserializeObject<List<CustomAmmoCategory>>(json);
@@ -1979,9 +2270,9 @@ namespace CustomAmmoCategoriesInit
         public static void Init(string directory, string settingsJson)
         {
             //SavesForm savesForm = new SavesForm();
+            CustomAmmoCategoriesLog.Log.BaseDirectory = directory;
             CustomAmmoCategoriesLog.Log.InitLog();
-            string assemblyFile = (new System.Uri(Assembly.GetExecutingAssembly().CodeBase)).AbsolutePath;
-            string settings_filename = Path.Combine(Path.GetDirectoryName(assemblyFile), "CustomAmmoCategoriesSettings.json");
+            string settings_filename = Path.Combine(CustomAmmoCategoriesLog.Log.BaseDirectory, "CustomAmmoCategoriesSettings.json");
             //settings_filename = Path.Combine(settings_filename, "CustomAmmoCategoriesSettings.json");
             CustomAmmoCategories.Settings = JsonConvert.DeserializeObject<CustAmmoCategories.Settings>(File.ReadAllText(settings_filename));
             CustomAmmoCategoriesLog.Log.LogWrite("Initing...\n");
