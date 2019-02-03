@@ -28,6 +28,7 @@ namespace CustomAmmoCategoriesLog
         public static string BaseDirectory;
         public static void InitLog()
         {
+            //Log.m_assemblyFile = (new System.Uri(Assembly.GetExecutingAssembly().CodeBase)).AbsolutePath;
             Log.m_logfile = Path.Combine(BaseDirectory, "CustomAmmoCategories.log");
             //Log.m_logfile = Path.Combine(Log.m_logfile, "CustomAmmoCategories.log");
             File.Delete(Log.m_logfile);
@@ -489,7 +490,7 @@ namespace CustomAmmoCategoriesPatches
             var targetPropertyGetterDef = AccessTools.Property(typeof(Weapon), "weaponDef").GetGetMethod();
             var replacementMethodDef = AccessTools.Method(typeof(ToHit_GetEvasivePipsModifier), nameof(WeaponDefPatching));
             var targetPropertyGetterPips = AccessTools.Property(typeof(WeaponDef), "EvasivePipsIgnored").GetGetMethod();
-            var replacementMethodPips = AccessTools.Method(typeof(ToHit_GetEvasivePipsModifier), nameof(RecoilPatching));
+            var replacementMethodPips = AccessTools.Method(typeof(ToHit_GetEvasivePipsModifier), nameof(PipsPatching));
             IEnumerable<CodeInstruction> result = Transpilers.MethodReplacer(instructions, targetPropertyGetterDef, replacementMethodDef);
             return Transpilers.MethodReplacer(result, targetPropertyGetterPips, replacementMethodPips);
         }
@@ -498,12 +499,12 @@ namespace CustomAmmoCategoriesPatches
         {
             ToHit_GetEvasivePipsModifier.mutexObj.WaitOne();
             ToHit_GetEvasivePipsModifier.CurWeapon = weapon;
-            CustomAmmoCategoriesLog.Log.LogWrite("geted weaponDef in Weapon_AttackRecoil\n");
+            CustomAmmoCategoriesLog.Log.LogWrite("  geted weaponDef in ToHit_GetEvasivePipsModifier\n");
             return weapon.weaponDef;
         }
-        private static float RecoilPatching(WeaponDef weaponDef)
+        private static float PipsPatching(WeaponDef weaponDef)
         {
-            CustomAmmoCategoriesLog.Log.LogWrite("getting recoil in Weapon_AttackRecoil\n");
+            CustomAmmoCategoriesLog.Log.LogWrite("  getting PipsIgnored in ToHit_GetEvasivePipsModifier\n");
             if (ToHit_GetEvasivePipsModifier.CurWeapon == null)
             {
                 CustomAmmoCategoriesLog.Log.LogWrite(" current weapon not inited!\n");
