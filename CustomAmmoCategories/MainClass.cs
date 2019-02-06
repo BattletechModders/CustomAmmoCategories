@@ -59,27 +59,30 @@ namespace CustomAmmoCategoriesPatches
             if (eventData.button != PointerEventData.InputButton.Left) {return true;}
             if (__instance.weaponSlotType != CombatHUDWeaponSlot.WeaponSlotType.Normal) { return true; }
             if (__instance.DisplayedWeapon == null) { return true; }
-            Camera mainUiCamera = LazySingletonBehavior<UIManager>.Instance.MainUICamera;
+            Camera mainUiCamera = LazySingletonBehavior<UIManager>.Instance.UICamera;
             if (mainUiCamera == null)
             {
                 CustomAmmoCategoriesLog.Log.LogWrite("  can't get UI camera\n");
             }
-            Vector2 slotPosition = RectTransformUtility.WorldToScreenPoint(mainUiCamera, __instance.transform.position);
-            int rel_pos_x = (int)(eventData.position.x - slotPosition.x)*2;
-            int width = (int)((RectTransform)__instance.transform).rect.width;
-            CustomAmmoCategoriesLog.Log.LogWrite("  rel_pos_x = " + rel_pos_x + "\n");
-            CustomAmmoCategoriesLog.Log.LogWrite("  width = " + width + "\n");
-            CustomAmmoCategoriesLog.Log.LogWrite("  instance.x = " + __instance.transform.position.x + "\n");
-            CustomAmmoCategoriesLog.Log.LogWrite("  instance.y = " + __instance.transform.position.y + "\n");
-            CustomAmmoCategoriesLog.Log.LogWrite("  slot.x = " + slotPosition.x + "\n");
-            CustomAmmoCategoriesLog.Log.LogWrite("  slot.y = " + slotPosition.y + "\n");
-            CustomAmmoCategoriesLog.Log.LogWrite("  instance.width = " + ((RectTransform)__instance.transform).rect.width + "\n");
-            CustomAmmoCategoriesLog.Log.LogWrite("  instance.hieght = " + ((RectTransform)__instance.transform).rect.height + "\n");
+            Vector3 worldClickPos = mainUiCamera.ScreenToWorldPoint(eventData.position);
+            Vector3[] corners = new Vector3[4];
+            __instance.GetComponent<RectTransform>().GetWorldCorners(corners);
+            float width = corners[2].x - corners[0].x;
+            float height = __instance.GetComponent<RectTransform>().rect.height;
+            float clickXrel = worldClickPos.x - __instance.transform.position.x;
+            bool trigger = clickXrel > (width / 2.0f);
+            CustomAmmoCategoriesLog.Log.LogWrite("  instance.l = " + __instance.transform.position.x + "\n");
+            CustomAmmoCategoriesLog.Log.LogWrite("  instance.t = " + __instance.transform.position.y + "\n");
+            CustomAmmoCategoriesLog.Log.LogWrite("  instance.r = " + (__instance.transform.position.x + width) + "\n");
+            CustomAmmoCategoriesLog.Log.LogWrite("  instance.b = " + (__instance.transform.position.y + height) + "\n");
             CustomAmmoCategoriesLog.Log.LogWrite("  position.x = " + eventData.position.x + "\n");
             CustomAmmoCategoriesLog.Log.LogWrite("  position.y = " + eventData.position.y + "\n");
-            CustomAmmoCategoriesLog.Log.LogWrite("  pressPosition.x = " + eventData.pressPosition.x + "\n");
-            CustomAmmoCategoriesLog.Log.LogWrite("  pressPosition.y = " + eventData.pressPosition.y + "\n");
-            if (rel_pos_x > width)
+            CustomAmmoCategoriesLog.Log.LogWrite("  worldClickPos.x = " + worldClickPos.x + "\n");
+            CustomAmmoCategoriesLog.Log.LogWrite("  worldClickPos.y = " + worldClickPos.y + "\n");
+            CustomAmmoCategoriesLog.Log.LogWrite("  clickXrel = " + clickXrel + "\n");
+            CustomAmmoCategoriesLog.Log.LogWrite("  width = " + width + "\n");
+            CustomAmmoCategoriesLog.Log.LogWrite("  trigger = " + trigger + "\n");
+            if (trigger)
             {
                 CustomAmmoCategories.CycleAmmo(__instance.DisplayedWeapon);
                 __instance.RefreshDisplayedWeapon((ICombatant)null);
@@ -97,31 +100,30 @@ namespace CustomAmmoCategoriesPatches
         public static bool Prefix(CombatHUDWeaponSlot __instance, PointerEventData eventData)
         {
 
-            CustomAmmoCategoriesLog.Log.LogWrite("CombatHUDWeaponSlot.OnPointerUp\n");
-            if (eventData.button != PointerEventData.InputButton.Left) { return true; }
-            if (__instance.weaponSlotType != CombatHUDWeaponSlot.WeaponSlotType.Normal) { return true; }
-            if (__instance.DisplayedWeapon == null) { return true; }
-            Camera mainUiCamera = LazySingletonBehavior<UIManager>.Instance.MainUICamera;
+            Camera mainUiCamera = LazySingletonBehavior<UIManager>.Instance.UICamera;
             if (mainUiCamera == null)
             {
                 CustomAmmoCategoriesLog.Log.LogWrite("  can't get UI camera\n");
             }
-            Vector2 slotPosition = RectTransformUtility.WorldToScreenPoint(mainUiCamera, __instance.transform.position);
-            int rel_pos_x = (int)(eventData.position.x - slotPosition.x) * 2;
-            int width = (int)((RectTransform)__instance.transform).rect.width;
-            CustomAmmoCategoriesLog.Log.LogWrite("  rel_pos_x = " + rel_pos_x + "\n");
-            CustomAmmoCategoriesLog.Log.LogWrite("  width = " + width + "\n");
-            CustomAmmoCategoriesLog.Log.LogWrite("  instance.x = " + __instance.transform.position.x + "\n");
-            CustomAmmoCategoriesLog.Log.LogWrite("  instance.y = " + __instance.transform.position.y + "\n");
-            CustomAmmoCategoriesLog.Log.LogWrite("  slot.x = " + slotPosition.x + "\n");
-            CustomAmmoCategoriesLog.Log.LogWrite("  slot.y = " + slotPosition.y + "\n");
-            CustomAmmoCategoriesLog.Log.LogWrite("  instance.width = " + ((RectTransform)__instance.transform).rect.width + "\n");
-            CustomAmmoCategoriesLog.Log.LogWrite("  instance.hieght = " + ((RectTransform)__instance.transform).rect.height + "\n");
+            Vector3 worldClickPos = mainUiCamera.ScreenToWorldPoint(eventData.position);
+            Vector3[] corners = new Vector3[4];
+            __instance.GetComponent<RectTransform>().GetWorldCorners(corners);
+            float width = corners[2].x - corners[0].x;
+            float height = __instance.GetComponent<RectTransform>().rect.height;
+            float clickXrel = worldClickPos.x - __instance.transform.position.x;
+            bool trigger = clickXrel > (width / 2.0f);
+            CustomAmmoCategoriesLog.Log.LogWrite("  instance.l = " + __instance.transform.position.x + "\n");
+            CustomAmmoCategoriesLog.Log.LogWrite("  instance.t = " + __instance.transform.position.y + "\n");
+            CustomAmmoCategoriesLog.Log.LogWrite("  instance.r = " + (__instance.transform.position.x + width) + "\n");
+            CustomAmmoCategoriesLog.Log.LogWrite("  instance.b = " + (__instance.transform.position.y + height) + "\n");
             CustomAmmoCategoriesLog.Log.LogWrite("  position.x = " + eventData.position.x + "\n");
             CustomAmmoCategoriesLog.Log.LogWrite("  position.y = " + eventData.position.y + "\n");
-            CustomAmmoCategoriesLog.Log.LogWrite("  pressPosition.x = " + eventData.pressPosition.x + "\n");
-            CustomAmmoCategoriesLog.Log.LogWrite("  pressPosition.y = " + eventData.pressPosition.y + "\n");
-            if (rel_pos_x > width)
+            CustomAmmoCategoriesLog.Log.LogWrite("  worldClickPos.x = " + worldClickPos.x + "\n");
+            CustomAmmoCategoriesLog.Log.LogWrite("  worldClickPos.y = " + worldClickPos.y + "\n");
+            CustomAmmoCategoriesLog.Log.LogWrite("  clickXrel = " + clickXrel + "\n");
+            CustomAmmoCategoriesLog.Log.LogWrite("  width = " + width + "\n");
+            CustomAmmoCategoriesLog.Log.LogWrite("  trigger = " + trigger + "\n");
+            if (trigger)
             {
                 return false;
             }
@@ -738,6 +740,11 @@ namespace CustomAmmoCategoriesPatches
                 extAmmoDef.IndirectFireCapable = ((bool)defTemp["IndirectFireCapable"] == true)?1:0;
                 defTemp.Remove("IndirectFireCapable");
             }
+            if (defTemp["DirectFireModifier"] != null)
+            {
+                extAmmoDef.DirectFireModifier = (float)defTemp["DirectFireModifier"];
+                defTemp.Remove("DirectFireModifier");
+            }
             if (defTemp["AOECapable"] != null)
             {
                 extAmmoDef.AOECapable = ((bool)defTemp["IndirectFireCapable"] == true) ? 1 : 0;
@@ -795,6 +802,11 @@ namespace CustomAmmoCategoriesPatches
                     extDef.HitGenerator = HitGeneratorType.NotSet;
                 }
                 defTemp.Remove("HitGenerator");
+            }
+            if (defTemp["DirectFireModifier"] != null)
+            {
+                extDef.DirectFireModifier = (float)defTemp["DirectFireModifier"];
+                defTemp.Remove("DirectFireModifier");
             }
             CustomAmmoCategories.registerExtWeaponDef((string)defTemp["Description"]["Id"], extDef);
             defTemp["AmmoCategory"] = custCat.BaseCategory.ToString();
@@ -1207,6 +1219,7 @@ namespace CustAmmoCategories
     public class ExtAmmunitionDef
     {
         public float AccuracyModifier { get; set; }
+        public float DirectFireModifier { get; set; }
         public float DamagePerShot { get; set; }
         public float HeatDamagePerShot { get; set; }
         public float CriticalChanceMultiplier { get; set; }
@@ -1230,6 +1243,7 @@ namespace CustAmmoCategories
         public ExtAmmunitionDef()
         {
             AccuracyModifier = 0;
+            DirectFireModifier = 0;
             DamagePerShot = 0;
             HeatDamagePerShot = 0;
             ProjectilesPerShot = 0;
@@ -1257,10 +1271,12 @@ namespace CustAmmoCategories
     {
         public HitGeneratorType HitGenerator { get; set; }
         public bool StreakEffect { get; set; }
+        public float DirectFireModifier { get; set; }
         public ExtWeaponDef()
         {
             StreakEffect = false;
             HitGenerator = HitGeneratorType.NotSet;
+            DirectFireModifier = 0;
         }
     }
     public class WeaponAmmoInfo
@@ -1315,6 +1331,16 @@ namespace CustAmmoCategories
         private static ExtAmmunitionDef DefaultAmmo;
         private static ExtWeaponDef DefaultWeapon;
         public static Settings Settings;
+        public static float getDirectFireModifier(Weapon weapon)
+        {
+            float result = CustomAmmoCategories.getExtWeaponDef(weapon.weaponDef.Description.Id).DirectFireModifier;
+            if (CustomAmmoCategories.checkExistance(weapon.StatCollection, CustomAmmoCategories.AmmoIdStatName))
+            {
+                string ammoId = weapon.StatCollection.GetStatistic(CustomAmmoCategories.AmmoIdStatName).Value<string>();
+                result += CustomAmmoCategories.findExtAmmo(ammoId).DirectFireModifier;
+            }
+            return result;
+        }
         public static WeaponHitInfo getSuccessOnly(WeaponHitInfo hitInfo)
         {
             int successShots = 0;
