@@ -1,0 +1,64 @@
+{
+    "Category": "Ballistic",
+    "Type": "Gauss",
+    "WeaponSubType": "Gauss",
+    "MinRange": 180,
+    "MaxRange": 660,
+    "RangeSplit": [
+        240,
+        510,
+        750
+    ],
+    "AmmoCategory": "LGAUSS",
+    "StartingAmmoCapacity": 0,
+    "HeatGenerated": 2,
+    "Damage": 50,
+    "OverheatedDamageMultiplier" : 0,
+    "EvasiveDamageMultiplier" : 0,
+    "EvasivePipsIgnored" : 0,
+    "DamageVariance": 0,
+    "HeatDamage": 0,
+    "AccuracyModifier": -1,
+    "CriticalChanceMultiplier": 1,
+    "AOECapable": false,
+    "IndirectFireCapable": false,
+    "RefireModifier": 0,
+    "ShotsWhenFired": 1,
+    "ProjectilesPerShot": 1,
+    "AttackRecoil": 4,
+    "Instability": 20,
+    "WeaponEffectID": "WeaponEffect-Weapon_GaussRifle",
+    "Description": {
+        "Cost": 4440000,
+        "Rarity": 99,
+        "Purchasable": false,
+        "Manufacturer" : "SCI",
+        "Model" : "Light Gauss Rifle",
+        "UIName" : "Light Gauss",
+        "Id": "Weapon_Gauss_LGauss",
+        "Name": "Light Gauss Rifle",
+        "Details": "Light Gauss Rifle",
+        "Icon": "uixSvgIcon_weapon_Ballistic"
+    },
+    "BonusValueA" : "",
+    "BonusValueB" : "",
+    "ComponentType": "Weapon",
+    "ComponentSubType": "Weapon",
+    "PrefabIdentifier": "Gauss",
+    "BattleValue" : 0,
+    "InventorySize": 3,
+    "Tonnage": 6,
+    "AllowedLocations": "All",
+    "DisallowedLocations": "None",
+    "CriticalComponent": false,
+    "statusEffects" : [
+        
+    ],
+    "ComponentTags" : {
+        "items" : [
+            "component_type_stock",
+            "range_extreme"
+		],
+        "tagSetSourceFile" : ""
+    }
+}
