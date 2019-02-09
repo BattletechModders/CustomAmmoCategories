@@ -761,13 +761,64 @@ namespace CustomAmmoCategoriesPatches
             }
             if (defTemp["statusEffects"] != null)
             {
-                extAmmoDef.statusstatusEffects = JsonConvert.DeserializeObject<EffectData[]>(defTemp["statusEffects"].ToString());
-                CustomAmmoCategoriesLog.Log.LogWrite(JsonConvert.SerializeObject(extAmmoDef.statusstatusEffects)+"\n");
+
+                if (defTemp["statusEffects"].Type == JTokenType.Array)
+                {
+                    List<EffectData> tmpList = new List<EffectData>();
+                    JToken statusEffects = defTemp["statusEffects"];
+                    foreach (JObject statusEffect in statusEffects)
+                    {
+                        EffectData effect = new EffectData();
+                        JSONSerializationUtility.FromJSON<EffectData>(effect, statusEffect.ToString());
+                        tmpList.Add(effect);
+                    }
+                    extAmmoDef.statusEffects = tmpList.ToArray();
+                }
+                //extAmmoDef.statusEffects = JsonConvert.DeserializeObject<EffectData[]>(defTemp["statusEffects"].ToString());
+                //JSONSerializationUtility.FromJSON<EffectData[]>(extAmmoDef.statusEffects, defTemp["statusEffects"].ToString());
+                //CustomAmmoCategoriesLog.Log.LogWrite(JsonConvert.SerializeObject(extAmmoDef.statusEffects)+"\n");
                 defTemp.Remove("statusEffects");
             }
             CustomAmmoCategories.RegisterExtAmmoDef((string)defTemp["Description"]["Id"], extAmmoDef);
             json = defTemp.ToString();
             return true;
+        }
+        public static void Postfix(AmmunitionDef __instance)
+        {
+            EffectData[] effects = CustomAmmoCategories.findExtAmmo(__instance.Description.Id).statusEffects;
+            List<EffectData> tmpList = new List<EffectData>();
+            CustomAmmoCategoriesLog.Log.LogWrite("Checking on null status effects " + __instance.Description.Id + " "+effects.Length+".\n");
+            foreach (EffectData effect in effects)
+            {
+                if((effect.Description != null))
+                {
+                    if((effect.Description.Id != null)&&(effect.Description.Name != null))
+                    {
+                        tmpList.Add(effect);
+                        continue;
+                    }else
+                    {
+                        if (effect.Description.Id == null)
+                        {
+                            CustomAmmoCategoriesLog.Log.LogWrite("!Warning! effect id is null " + __instance.Description.Id + ".\n");
+                        }
+                        if (effect.Description.Name == null)
+                        {
+                            CustomAmmoCategoriesLog.Log.LogWrite("!Warning! effect name is null " + __instance.Description.Id + ".\n");
+                        }
+                    }
+                }
+                else
+                {
+                    CustomAmmoCategoriesLog.Log.LogWrite("!Warning! effect description is null " + __instance.Description.Id + ".\n");
+                }
+                CustomAmmoCategoriesLog.Log.LogWrite("!Warning! null status effect detected at ammo "+ __instance .Description.Id+ ".\n");
+            }
+            if(tmpList.Count != effects.Length)
+            {
+                CustomAmmoCategoriesLog.Log.LogWrite("!Warning! null ("+(effects.Length - tmpList.Count)+"/"+effects.Length+") status effects detected at ammo " + __instance.Description.Id + ".Removing\n");
+                CustomAmmoCategories.findExtAmmo(__instance.Description.Id).statusEffects = tmpList.ToArray();
+            }
         }
     }
     
@@ -812,6 +863,30 @@ namespace CustomAmmoCategoriesPatches
             //CustomAmmoCategoriesLog.Log.LogWrite("\n--------------MOD----------------\n" + defTemp.ToString() + "\n----------------------------------\n");
             json = defTemp.ToString();
             return true;
+        }
+        public static void Postfix(WeaponDef __instance)
+        {
+            EffectData[] effects = __instance.statusEffects;
+            List<EffectData> tmpList = new List<EffectData>();
+            foreach (EffectData effect in effects)
+            {
+                if ((effect.Description != null))
+                {
+                    if ((effect.Description.Id != null) && (effect.Description.Name != null))
+                    {
+                        tmpList.Add(effect);
+                        continue;
+                    }
+                }
+                CustomAmmoCategoriesLog.Log.LogWrite("!Warning! null status effect detected at weapon " + __instance.Description.Id + ".\n");
+            }
+            if (tmpList.Count != effects.Length)
+            {
+                CustomAmmoCategoriesLog.Log.LogWrite("!Warning! null status effects detected at weapon " + __instance.Description.Id + ".Removing\n");
+                PropertyInfo property = typeof(WeaponDef).GetProperty("statusEffects");
+                property.DeclaringType.GetProperty("statusEffects");
+                property.GetSetMethod(true).Invoke(__instance, new object[1] { (object)tmpList.ToArray() });
+            }
         }
     }
 
@@ -1226,7 +1301,7 @@ namespace CustAmmoCategories
         public int ShotsWhenFired { get; set; }
         public int AIBattleValue { get; set; }
         public int ProjectilesPerShot { get; set; }
-        public EffectData[] statusstatusEffects { get; set; }
+        public EffectData[] statusEffects { get; set; }
         public float MinRange { get; set; }
         public float MaxRange { get; set; }
         public float LongRange { get; set; }
@@ -1264,7 +1339,7 @@ namespace CustAmmoCategories
             AOECapable = -1;
             WeaponEffectID = "";
             HitGenerator = HitGeneratorType.NotSet;
-            statusstatusEffects = new EffectData[0] { };
+            statusEffects = new EffectData[0] { };
         }
     }
     public class ExtWeaponDef
@@ -1453,18 +1528,18 @@ namespace CustAmmoCategories
             }
             string ammoId = weapon.StatCollection.GetStatistic(CustomAmmoCategories.AmmoIdStatName).Value<string>();
             ExtAmmunitionDef extAmmo = CustomAmmoCategories.findExtAmmo(ammoId);
-            if (extAmmo.statusstatusEffects.Length == 0) {
+            if (extAmmo.statusEffects.Length == 0) {
                 CustomAmmoCategoriesLog.Log.LogWrite("  ammo has no additional status effects\n");
                 return weapon.weaponDef.statusEffects;
             }
             if(weapon.weaponDef.statusEffects.Length == 0)
             {
                 CustomAmmoCategoriesLog.Log.LogWrite("  weapon has no additional status effects\n");
-                return extAmmo.statusstatusEffects;
+                return extAmmo.statusEffects;
             }
-            EffectData[] result = new EffectData[weapon.weaponDef.statusEffects.Length+extAmmo.statusstatusEffects.Length];
+            EffectData[] result = new EffectData[weapon.weaponDef.statusEffects.Length+extAmmo.statusEffects.Length];
             weapon.weaponDef.statusEffects.CopyTo(result, 0);
-            extAmmo.statusstatusEffects.CopyTo(result, weapon.weaponDef.statusEffects.Length);
+            extAmmo.statusEffects.CopyTo(result, weapon.weaponDef.statusEffects.Length);
             CustomAmmoCategoriesLog.Log.LogWrite("  concatinating weapon and ammo status effects\n");
             return result;
         }
