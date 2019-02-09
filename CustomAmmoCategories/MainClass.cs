@@ -573,16 +573,16 @@ namespace CustomAmmoCategoriesPatches
         {
             CustomAmmoCategoriesLog.Log.LogWrite("CombatGameState.RebuildAllLists\n");
             //CustomAmmoCategories.ClearPlayerWeapons();
-            foreach (var unit in __instance.AllMechs)
+            foreach (var unit in __instance.AllActors)
             {
-                if (unit is Mech)
-                {
-                    CustomAmmoCategoriesLog.Log.LogWrite("  " + (unit as Mech).DisplayName + "\n");
-                    foreach (var Weapon in (unit as Mech).Weapons)
+                //if (unit is Mech)
+                //{
+                    CustomAmmoCategoriesLog.Log.LogWrite("  " + unit.DisplayName + "\n");
+                    foreach (var Weapon in unit.Weapons)
                     {
                         CustomAmmoCategories.RegisterPlayerWeapon(Weapon);
                     }
-                }
+                //}
             }
         }
     }
@@ -608,15 +608,12 @@ namespace CustomAmmoCategoriesPatches
         {
             CustomAmmoCategoriesLog.Log.LogWrite("pre CombatHUD.Init\n");
             //CustomAmmoCategories.ClearPlayerWeapons();
-            foreach (var unit in Combat.AllMechs)
+            foreach (var unit in Combat.AllActors)
             {
-                if (unit is Mech)
+                CustomAmmoCategoriesLog.Log.LogWrite("  " + unit.DisplayName + "\n");
+                foreach (var Weapon in unit.Weapons)
                 {
-                    CustomAmmoCategoriesLog.Log.LogWrite("  " + (unit as Mech).DisplayName + "\n");
-                    foreach (var Weapon in (unit as Mech).Weapons)
-                    {
-                        CustomAmmoCategories.RegisterPlayerWeapon(Weapon);
-                    }
+                    CustomAmmoCategories.RegisterPlayerWeapon(Weapon);
                 }
             }
             return true;
@@ -773,6 +770,7 @@ namespace CustomAmmoCategoriesPatches
             return true;
         }
     }
+    
     [HarmonyPatch(typeof(WeaponDef))]
     [HarmonyPatch("FromJSON")]
     [HarmonyPatch(MethodType.Normal)]
@@ -786,7 +784,7 @@ namespace CustomAmmoCategoriesPatches
             CustomAmmoCategory custCat = CustomAmmoCategories.find((string)defTemp["AmmoCategory"]);
             CustomAmmoCategories.RegisterWeapon((string)defTemp["Description"]["Id"], custCat);
             ExtWeaponDef extDef = new ExtWeaponDef();
-            if(defTemp["Streak"] != null)
+            if (defTemp["Streak"] != null)
             {
                 extDef.StreakEffect = (bool)defTemp["Streak"];
                 defTemp.Remove("Streak");
@@ -810,6 +808,8 @@ namespace CustomAmmoCategoriesPatches
             }
             CustomAmmoCategories.registerExtWeaponDef((string)defTemp["Description"]["Id"], extDef);
             defTemp["AmmoCategory"] = custCat.BaseCategory.ToString();
+            //CustomAmmoCategoriesLog.Log.LogWrite("\n--------------ORIG----------------\n" + json + "\n----------------------------------\n");
+            //CustomAmmoCategoriesLog.Log.LogWrite("\n--------------MOD----------------\n" + defTemp.ToString() + "\n----------------------------------\n");
             json = defTemp.ToString();
             return true;
         }
@@ -1865,8 +1865,10 @@ namespace CustAmmoCategories
 
         public static void DoWork()
         {
+            CustomAmmoCategoriesLog.Log.LogWrite("Initing http server "+ CustomAmmoCategories.Settings.modHTTPServer + "...\n");
             if (CustomAmmoCategories.Settings.modHTTPServer == false) { return; }
             HttpListener listener = new HttpListener();
+            CustomAmmoCategoriesLog.Log.LogWrite("Prefix " + CustomAmmoCategories.Settings.modHTTPListen + "...\n");
             listener.Prefixes.Add(CustomAmmoCategories.Settings.modHTTPListen);
             listener.Start();
             string assemblyFile = (new System.Uri(Assembly.GetExecutingAssembly().CodeBase)).AbsolutePath;
@@ -1876,10 +1878,12 @@ namespace CustAmmoCategories
                 HttpListenerRequest request = context.Request;
                 HttpListenerResponse response = context.Response;
                 string filename = request.Url.AbsolutePath;
-                if (filename == "/") { filename = "/index.html"; };
-                filename = Path.Combine(Path.Combine(Path.GetDirectoryName(assemblyFile), "CustomAmmoCategories"), filename);
+                if (filename == "/") { filename = "index.html"; };
+                filename = Path.Combine(CustomAmmoCategoriesLog.Log.BaseDirectory, Path.GetFileName(filename));
+                CustomAmmoCategoriesLog.Log.LogWrite("Base directory "+ CustomAmmoCategoriesLog.Log.BaseDirectory + " Access '" + filename +"'\n");
                 if (File.Exists(filename))
                 {
+                    CustomAmmoCategoriesLog.Log.LogWrite("File exists\n");
                     response.ContentType = GetMimeType(Path.GetExtension(filename));
                     FileStream FS;
                     try
@@ -1908,8 +1912,10 @@ namespace CustAmmoCategories
                     FS.Close();
                     output.Close();
                     response.Close();
+                    CustomAmmoCategoriesLog.Log.LogWrite("File out\n");
                     continue;
                 }
+                CustomAmmoCategoriesLog.Log.LogWrite("Get data:'"+ Path.GetFileName(filename) + "'\n");
                 if (Path.GetFileName(filename) == "getreputation")
                 {
                     CustomAmmoCategoriesLog.Log.LogWrite("Запрос на получение репутации\n");

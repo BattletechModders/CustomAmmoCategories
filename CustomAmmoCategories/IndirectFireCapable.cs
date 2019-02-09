@@ -305,7 +305,7 @@ namespace CustomAmmoCategoriesPatches
     [HarmonyPatch(new Type[] { typeof(AbstractActor), typeof(Weapon), typeof(ICombatant), typeof(Vector3), typeof(Vector3), typeof(LineOfFireLevel), typeof(bool) })]
     public static class ToHit_GetAllModifiers
     {
-        /*static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
+        static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
         {
             var targetPropertyGetter = AccessTools.Property(typeof(Weapon), "IndirectFireCapable").GetGetMethod();
             var replacementMethod = AccessTools.Method(typeof(ToHit_GetAllModifiers), nameof(IndirectFireCapable));
@@ -314,35 +314,14 @@ namespace CustomAmmoCategoriesPatches
 
         private static bool IndirectFireCapable(Weapon weapon)
         {
-            //CustomAmmoCategoriesLog.Log.LogWrite("get ToHit_GetAllModifiers IndirectFireCapable\n");
+            CustomAmmoCategoriesLog.Log.LogWrite("get ToHit_GetAllModifiers IndirectFireCapable\n");
             return CustomAmmoCategories.getIndirectFireCapable(weapon);
-        }*/
+        }
 
-        public static bool Prefix(ToHit __instance, AbstractActor attacker, Weapon weapon, ICombatant target, Vector3 attackPosition, Vector3 targetPosition, LineOfFireLevel lofLevel, bool isCalledShot,ref float __result)
+        public static void Postfix(ToHit __instance, AbstractActor attacker, Weapon weapon, ICombatant target, Vector3 attackPosition, Vector3 targetPosition, LineOfFireLevel lofLevel, bool isCalledShot,ref float __result)
         {
             bool flag = lofLevel < LineOfFireLevel.LOFObstructed && (CustomAmmoCategories.getIndirectFireCapable(weapon));
-            float num = __instance.GetRangeModifier(weapon, attackPosition, targetPosition) 
-                + __instance.GetCoverModifier(attacker, target, lofLevel) 
-                + __instance.GetSelfSpeedModifier(attacker) 
-                + __instance.GetSelfSprintedModifier(attacker) 
-                + __instance.GetSelfArmMountedModifier(weapon) 
-                + __instance.GetStoodUpModifier(attacker) 
-                + __instance.GetHeightModifier(attackPosition.y, targetPosition.y) 
-                + __instance.GetHeatModifier(attacker)
-                + __instance.GetTargetTerrainModifier(target, targetPosition, false) 
-                + __instance.GetSelfTerrainModifier(attackPosition, false) 
-                + __instance.GetTargetSpeedModifier(target, weapon)
-                + __instance.GetSelfDamageModifier(attacker, weapon)
-                + __instance.GetTargetSizeModifier(target)
-                + __instance.GetTargetShutdownModifier(target, false)
-                + __instance.GetTargetProneModifier(target, false)
-                + __instance.GetWeaponAccuracyModifier(attacker, weapon)
-                + __instance.GetAttackerAccuracyModifier(attacker)
-                + __instance.GetEnemyEffectModifier(target)
-                + __instance.GetRefireModifier(weapon)
-                + __instance.GetTargetDirectFireModifier(target, flag)
-                + __instance.GetIndirectModifier(attacker, flag) 
-                + __instance.GetMoraleAttackModifier(target, isCalledShot);
+            float num = __result;
             if (flag == false)
             {
                 float directFireModifier = CustomAmmoCategories.getDirectFireModifier(weapon);
@@ -355,7 +334,7 @@ namespace CustomAmmoCategoriesPatches
                 num = 0.0f;
             }
             __result = num;
-            return false;
+            return;
         }
     }
     [HarmonyPatch(typeof(ToHit))]
@@ -364,7 +343,7 @@ namespace CustomAmmoCategoriesPatches
     [HarmonyPatch(new Type[] { typeof(AbstractActor), typeof(Weapon), typeof(ICombatant), typeof(Vector3), typeof(Vector3), typeof(LineOfFireLevel), typeof(bool) })]
     public static class ToHit_GetAllModifiersDescription
     {
-        /*static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
+        static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
         {
             var targetPropertyGetter = AccessTools.Property(typeof(Weapon), "IndirectFireCapable").GetGetMethod();
             var replacementMethod = AccessTools.Method(typeof(ToHit_GetAllModifiersDescription), nameof(IndirectFireCapable));
@@ -373,106 +352,25 @@ namespace CustomAmmoCategoriesPatches
 
         private static bool IndirectFireCapable(Weapon weapon)
         {
-            //CustomAmmoCategoriesLog.Log.LogWrite("get ToHit_GetAllModifiersDescription IndirectFireCapable\n");
+            CustomAmmoCategoriesLog.Log.LogWrite("get ToHit_GetAllModifiersDescription IndirectFireCapable\n");
             return CustomAmmoCategories.getIndirectFireCapable(weapon);
-        }*/
+        }
 
-        public static bool Prefix(ToHit __instance, AbstractActor attacker, Weapon weapon, ICombatant target, Vector3 attackPosition, Vector3 targetPosition, LineOfFireLevel lofLevel, bool isCalledShot, ref string __result)
+        public static void Postfix(ToHit __instance, AbstractActor attacker, Weapon weapon, ICombatant target, Vector3 attackPosition, Vector3 targetPosition, LineOfFireLevel lofLevel, bool isCalledShot, ref string __result)
         {
             string str = string.Empty;
             bool flag = lofLevel < LineOfFireLevel.LOFObstructed && (CustomAmmoCategories.getIndirectFireCapable(weapon));
-            float rangeModifier = __instance.GetRangeModifier(weapon, attackPosition, targetPosition);
-            float coverModifier = __instance.GetCoverModifier(attacker, target, lofLevel);
-            float selfSpeedModifier = __instance.GetSelfSpeedModifier(attacker);
-            float sprintedModifier = __instance.GetSelfSprintedModifier(attacker);
-            float armMountedModifier = __instance.GetSelfArmMountedModifier(weapon);
-            float stoodUpModifier = __instance.GetStoodUpModifier(attacker);
-            float heightModifier = __instance.GetHeightModifier(attackPosition.y, targetPosition.y);
-            float heatModifier = __instance.GetHeatModifier(attacker);
-            float targetTerrainModifier = __instance.GetTargetTerrainModifier(target, targetPosition, false);
-            float selfTerrainModifier = __instance.GetSelfTerrainModifier(attackPosition, false);
-            float targetSpeedModifier = __instance.GetTargetSpeedModifier(target, weapon);
-            float selfDamageModifier = __instance.GetSelfDamageModifier(attacker, weapon);
-            float targetSizeModifier = __instance.GetTargetSizeModifier(target);
-            float shutdownModifier = __instance.GetTargetShutdownModifier(target, false);
-            float targetProneModifier = __instance.GetTargetProneModifier(target, false);
-            float accuracyModifier1 = __instance.GetWeaponAccuracyModifier(attacker, weapon);
-            float accuracyModifier2 = __instance.GetAttackerAccuracyModifier(attacker);
-            float enemyEffectModifier = __instance.GetEnemyEffectModifier(target);
-            float refireModifier = __instance.GetRefireModifier(weapon);
-            float directFireModifier = __instance.GetTargetDirectFireModifier(target, flag);
-            float indirectModifier = __instance.GetIndirectModifier(attacker, flag);
-            float moraleAttackModifier = __instance.GetMoraleAttackModifier(target, isCalledShot);
             float weaponDirectFireModifier = CustomAmmoCategories.getDirectFireModifier(weapon);
-            if (!NvMath.FloatIsNearZero(rangeModifier))
-                str = string.Format("{0}RANGE {1:+#;-#}; ", (object)str, (object)(int)rangeModifier);
-            if (!NvMath.FloatIsNearZero(coverModifier))
-                str = string.Format("{0}COVER {1:+#;-#}; ", (object)str, (object)(int)rangeModifier);
-            if (!NvMath.FloatIsNearZero(selfSpeedModifier))
-                str = string.Format("{0}SELF-MOVED {1:+#;-#}; ", (object)str, (object)(int)selfSpeedModifier);
-            if (!NvMath.FloatIsNearZero(sprintedModifier))
-                str = string.Format("{0}SELF-SPRINTED {1:+#;-#}; ", (object)str, (object)(int)sprintedModifier);
-            if (!NvMath.FloatIsNearZero(armMountedModifier))
-                str = string.Format("{0}SELF-ARM MOUNTED {1:+#;-#}; ", (object)str, (object)(int)armMountedModifier);
-            if (!NvMath.FloatIsNearZero(stoodUpModifier))
-                str = string.Format("{0}STOOD UP {1:+#;-#}; ", (object)str, (object)(int)stoodUpModifier);
-            if (!NvMath.FloatIsNearZero(heightModifier))
-                str = string.Format("{0}HEIGHT {1:+#;-#}; ", (object)str, (object)(int)heightModifier);
-            if (!NvMath.FloatIsNearZero(heatModifier))
-                str = string.Format("{0}HEAT {1:+#;-#}; ", (object)str, (object)(int)heatModifier);
-            if (!NvMath.FloatIsNearZero(targetTerrainModifier))
-                str = string.Format("{0}TERRAIN {1:+#;-#}; ", (object)str, (object)(int)targetTerrainModifier);
-            if (!NvMath.FloatIsNearZero(selfTerrainModifier))
-                str = string.Format("{0}TERRAIN SELF {1:+#;-#}; ", (object)str, (object)(int)selfTerrainModifier);
-            if (!NvMath.FloatIsNearZero(targetSpeedModifier))
-                str = string.Format("{0}TARGET-SPEED {1:+#;-#}; ", (object)str, (object)(int)targetSpeedModifier);
-            if (!NvMath.FloatIsNearZero(selfDamageModifier))
-                str = string.Format("{0}SELF-DAMAGE {1:+#;-#}; ", (object)str, (object)(int)selfDamageModifier);
-            if (!NvMath.FloatIsNearZero(targetSizeModifier))
-                str = string.Format("{0}TARGET-SIZE {1:+#;-#}; ", (object)str, (object)(int)targetSizeModifier);
-            if (!NvMath.FloatIsNearZero(shutdownModifier))
-                str = string.Format("{0}TARGET-SHUTDOWN {1:+#;-#}; ", (object)str, (object)(int)shutdownModifier);
-            if (!NvMath.FloatIsNearZero(targetProneModifier))
-                str = string.Format("{0}TARGET-PRONE {1:+#;-#}; ", (object)str, (object)(int)targetProneModifier);
-            if (!NvMath.FloatIsNearZero(accuracyModifier1))
-                str = string.Format("{0}ATTACKER-EFFECTS {1:+#;-#}; ", (object)str, (object)(int)accuracyModifier1);
-            if (!NvMath.FloatIsNearZero(accuracyModifier2))
-                str = string.Format("{0}ATTACKER-SELF-EFFECTS {1:+#;-#}; ", (object)str, (object)(int)accuracyModifier2);
-            if (!NvMath.FloatIsNearZero(enemyEffectModifier))
-                str = string.Format("{0}ENEMY-EFFECTS {1:+#;-#}; ", (object)str, (object)(int)enemyEffectModifier);
-            if (!NvMath.FloatIsNearZero(refireModifier))
-                str = string.Format("{0}REFIRE {1:+#;-#}; ", (object)str, (object)(int)refireModifier);
-            if (!NvMath.FloatIsNearZero(directFireModifier))
-                str = string.Format("{0}DIRECT-FIRE {1:+#;-#}; ", (object)str, (object)(int)directFireModifier);
-            if (!NvMath.FloatIsNearZero(indirectModifier))
-                str = string.Format("{0}INDIRECT-FIRE {1:+#;-#}; ", (object)str, (object)(int)indirectModifier);
-            if (!NvMath.FloatIsNearZero(moraleAttackModifier))
-                str = string.Format("{0}CALLED-SHOT {1:+#;-#}; ", (object)str, (object)(int)moraleAttackModifier);
-            float b = rangeModifier + coverModifier + selfSpeedModifier + sprintedModifier + armMountedModifier 
-                + stoodUpModifier + heightModifier + heatModifier + targetTerrainModifier + selfTerrainModifier 
-                + targetSpeedModifier + selfDamageModifier + targetSizeModifier + shutdownModifier + targetProneModifier 
-                + accuracyModifier1 + accuracyModifier2 + enemyEffectModifier + refireModifier + directFireModifier 
-                + indirectModifier + moraleAttackModifier;
             if (flag == false)
             {
                 CustomAmmoCategoriesLog.Log.LogWrite(attacker.DisplayName + " has LOS on " + target.DisplayName + ". Apply DirectFireModifier " + weaponDirectFireModifier + "\n");
                 if (!NvMath.FloatIsNearZero(weaponDirectFireModifier))
                 {
-                    str = string.Format("{0}WEAPON-DIRECT-FIRE {1:+#;-#}; ", (object)str, (object)(int)weaponDirectFireModifier);
+                    __result = string.Format("{0}WEAPON-DIRECT-FIRE {1:+#;-#}; ", (object)__result, (object)(int)weaponDirectFireModifier);
                 }
-                b += weaponDirectFireModifier;
             }
             CombatGameState combat = (CombatGameState)typeof(ToHit).GetField("combat", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(__instance);
-            if ((double)b < 0.0 && !combat.Constants.ResolutionConstants.AllowTotalNegativeModifier)
-                b = 0.0f;
-            float allModifiers = __instance.GetAllModifiers(attacker, weapon, target, attackPosition, targetPosition, lofLevel, isCalledShot);
-            if (!NvMath.FloatsAreEqual(allModifiers, b))
-            {
-                CustomAmmoCategoriesLog.Log.LogWrite("Strange behavior calced modifier "+b+" not equal geted "+allModifiers+"\n");
-                AttackDirector.attackLogger.LogError((object)("ERROR!!! breakdown of Universal Modifier didn't match actual Universal Modifier. Check TargetingRules! current modifier: " + (object)b + ", doubleCheck modifier: " + (object)allModifiers));
-            }
-            __result = str;
-            return false;
+            return;
         }
     }
     [HarmonyPatch(typeof(CombatHUDWeaponSlot))]
