@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 using Harmony;
 using BattleTech;
 using BattleTech.AttackDirectorHelpers;
@@ -56,7 +55,7 @@ namespace CustomAmmoCategoriesPatches
                     }
                     if (attackIndex > -1)
                     {
-                        //typeof(AttackDirector.AttackSequence).GetProperty("attackCompletelyMissed", BindingFlags.NonPublic).SetValue(__instance, (object)false);
+                        //typeof(AttackDirector.AttackSequence).GetProperty("attackCompletelyMissed", BindingFlags.NonPublic).SetValue(__instance, (object)false);  
                         PropertyInfo property = typeof(AttackDirector.AttackSequence).GetProperty("attackCompletelyMissed");
                         property.DeclaringType.GetProperty("attackCompletelyMissed");
                         property.GetSetMethod(true).Invoke(__instance, new object[1] { (object)false });
@@ -64,14 +63,18 @@ namespace CustomAmmoCategoriesPatches
                     }
                     if (attackIndex > -1 && !__instance.target.IsDead && target != null)
                     {
-                        foreach (EffectData statusEffect in CustomAmmoCategories.getWeaponStatusEffects(weapon))
-                        {
-                            if (statusEffect.targetingData.effectTriggerType == EffectTriggerType.OnHit)
-                            {
+                        foreach (EffectData statusEffect in CustomAmmoCategories.getWeaponStatusEffects(weapon)) {
+                            if (statusEffect.targetingData.effectTriggerType == EffectTriggerType.OnHit) {
                                 string effectID = string.Format("OnHitEffect_{0}_{1}", (object)__instance.attacker.GUID, (object)resolveDamageMessage.hitInfo.attackSequenceId);
-                                __instance.Director.Combat.EffectManager.CreateEffect(statusEffect, effectID, __instance.stackItemUID, (ICombatant)__instance.attacker, __instance.target, hitInfo, attackIndex, false);
-                                if (__instance.target != null)
-                                    __instance.Director.Combat.MessageCenter.PublishMessage((MessageCenterMessage)new FloatieMessage(__instance.target.GUID, __instance.target.GUID, statusEffect.Description.Name, FloatieMessage.MessageNature.Debuff));
+                                if (statusEffect.Description == null || statusEffect.Description.Id == null || statusEffect.Description.Name == null) {
+                                    CustomAmmoCategoriesLog.Log.LogWrite($"WARNING: EffectID:{effectID} has broken effectDescId:{statusEffect?.Description.Id} effectDescName:{statusEffect?.Description.Name}! SKIPPING");
+                                } else {
+                                    CustomAmmoCategoriesLog.Log.LogWrite($"Applying effectID:{effectID} with effectDescId:{statusEffect?.Description.Id} effectDescName:{statusEffect?.Description.Name}");
+
+                                    __instance.Director.Combat.EffectManager.CreateEffect(statusEffect, effectID, __instance.stackItemUID, (ICombatant)__instance.attacker, __instance.target, hitInfo, attackIndex, false);
+                                    if (__instance.target != null)
+                                        __instance.Director.Combat.MessageCenter.PublishMessage((MessageCenterMessage)new FloatieMessage(__instance.target.GUID, __instance.target.GUID, statusEffect.Description.Name, FloatieMessage.MessageNature.Debuff));
+                                }
                             }
                         }
                         if (target != null)
