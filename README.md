@@ -20,6 +20,19 @@ CustomAmmoCategories.json
 },
 ]
 
+Weapon definition
+new fields
+  "Streak": true/false - if true only success hits will be shown, ammo decremental and heat generation will be based on success hits. 
+							with "HitGenerator" : "Streak" - will be true streak effect all-hit-or-no-fire
+  "HitGenerator" : "Streak", Set to hit generator. Supported values ("Individual"/"Cluster"/"Streak"). 
+                                  Streak hit generator is sort of cluster, 
+								  if first projectile hit, rest hit too (location distribution as cluster hit generator),
+								  if first projectile misses, rest misses too
+								  if not set weapon hit generator will be used.
+								  if not set hit generator will be choosed by weapon type.
+								  if weapon define has tag "wr-clustered_shots", "Cluster" hit generator will be forced. 
+  "DirectFireModifier" : -10.0, Accuracy modifier if weapon can strike directly
+
 Ammo definition
 {
    "Description" : {
@@ -34,11 +47,16 @@ Ammo definition
    },
    "Type" : "Normal",
    "Category" : "LBX10", 
+      
+   "CriticalChanceMultiplier" : 1.0,
+   
+   "WeaponEffectID" : "WeaponEffect-Weapon_PPC", Played fire effect can be set in ammo definition, for example this LBX AC10 will fire as PPC if ECM ammo is choosed
+   "EvasivePipsIgnored" : 0, Effective EvasivePipsIgnored will be Weapon.EvasivePipsIgnored + Ammo.EvasivePipsIgnored (current weapon status effects will be used too)
    
    "AccuracyModifier" : -10.0, Effective AccuracyModifier will be Weapon.AccuracyModifier + Ammo.AccuracyModifier (current weapon status effects will be used too)
    "CriticalChanceMultiplier" : 0.0, Effective AccuracyModifier will be Weapon.CriticalChanceMultiplier + Ammo.CriticalChanceMultiplier (current weapon status effects will be used too)
    "DamagePerShot": -50.0, Effective DamagePerShot will be Weapon.DamagePerShot + Ammo.DamagePerShot (current weapon status effects will be used too)
-   "AIBattleValue":90, used for AI. It will use ammo with highest AIBattleValue on depletion switch to next 
+   "AIBattleValue":90, Not used any more
    "ShotsWhenFired" : 0, Effective ShotsWhenFired will be Weapon.ShotsWhenFired + Ammo.ShotsWhenFired (current weapon status effects will be used too)
    "ProjectilesPerShot" : 0, Effective ProjectilesPerShot will be Weapon.ProjectilesPerShot + Ammo.ProjectilesPerShot (current weapon status effects will be used too)
    "HeatDamagePerShot": 0.0, Effective HeatDamagePerShot will be Weapon.HeatDamagePerShot + Ammo.HeatDamagePerShot (current weapon status effects will be used too)
@@ -53,7 +71,16 @@ Ammo definition
    "HeatGenerated" : 0, Effective HeatGenerated will be Weapon.HeatGenerated + Ammo.HeatGenerated (current weapon status effects will be used too)
    "RefireModifier" : 0, Effective RefireModifier will be Weapon.RefireModifier + Ammo.RefireModifier (current weapon status effects will be used too)
    "Instability" : 0, Effective Instability will be Weapon.Instability + Ammo.Instability (current weapon status effects will be used too)
-   "AttackRecoil" : 0, Effective AttackRecoil will be Weapon.AttackRecoil + Ammo.AttackRecoil (current weapon status effects will be used too)
+   "AttackRecoil" : 0, Effective AttackRecoil will be Weapon.AttackRecoil + Ammo.AttackRecoil
+   "IndirectFireCapable" : false, Effective IndirectFireCapable will be taken from ammo. If not set in ammo define, weapon value will be used
+   "EvasivePipsIgnored" : 0, Effective Instability will be Weapon.EvasivePipsIgnored + Ammo.EvasivePipsIgnored (current weapon status effects will be used too)
+   "HitGenerator" : "Individual", Set to hit generator. Supported values ("Individual"/"Cluster"/"Streak"). 
+                                  Streak hit generator is sort of cluster, 
+								  if first projectile hit, rest hit too (location distribution as cluster hit generator),
+								  if first projectile misses, rest misses too
+								  if not set weapon hit generator will be used.
+								  if weapon define has tag "wr-clustered_shots", "Cluster" hit generator will be forced. 
+   "DirectFireModifier" : -10.0, Accuracy modifier if weapon can strike directly
    
    "HeatGeneratedModifier" : 1,
    "ArmorDamageModifier" : 1,
