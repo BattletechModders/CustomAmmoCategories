@@ -10,6 +10,25 @@ using System.Reflection;
 using CustAmmoCategories;
 using UnityEngine;
 
+namespace CustAmmoCategories {
+  public static partial class CustomAmmoCategories {
+    public static float getWeaponEvasivePipsIgnored(Weapon weapon) {
+      float result = weapon.weaponDef.EvasivePipsIgnored;
+      //CustomAmmoCategoriesLog.Log.LogWrite("getWeaponEvasivePipsIgnored " + weapon.UIName + "\n");
+      if (CustomAmmoCategories.checkExistance(weapon.StatCollection, CustomAmmoCategories.AmmoIdStatName) == true) {
+        string ammoId = weapon.StatCollection.GetStatistic(CustomAmmoCategories.AmmoIdStatName).Value<string>();
+        ExtAmmunitionDef extAmmo = CustomAmmoCategories.findExtAmmo(ammoId);
+        result += extAmmo.EvasivePipsIgnored;
+      }
+      if (CustomAmmoCategories.checkExistance(weapon.StatCollection, CustomAmmoCategories.WeaponModeStatisticName) == true) {
+        result += CustomAmmoCategories.getWeaponMode(weapon).EvasivePipsIgnored;
+      }
+        //CustomAmmoCategoriesLog.Log.LogWrite("  modified EvasivePipsIgnored\n");
+      return result;
+    }
+  }
+}
+
 namespace CustomAmmoCategoriesPatches
 {
     [HarmonyPatch(typeof(ToHit))]
@@ -38,7 +57,7 @@ namespace CustomAmmoCategoriesPatches
             }
             catch (Exception e)
             {
-                CustomAmmoCategoriesLog.Log.LogWrite("Exception " + e.ToString() + "\nFallback to default");
+                CustomAmmoCategoriesLog.Log.LogWrite("Exception " + e.ToString() + "\nFallback to default\n");
                 return true;
             }
         }

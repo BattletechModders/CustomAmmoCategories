@@ -12,6 +12,30 @@ using CustAmmoCategories;
 using UnityEngine;
 using HBS.Math;
 
+namespace CustAmmoCategories {
+  public static partial class CustomAmmoCategories {
+    public static bool getIndirectFireCapable(Weapon weapon) {
+      bool result = weapon.weaponDef.IndirectFireCapable;
+      if (CustomAmmoCategories.checkExistance(weapon.StatCollection, CustomAmmoCategories.AmmoIdStatName) == true) {
+        string CurrentAmmoId = weapon.StatCollection.GetStatistic(CustomAmmoCategories.AmmoIdStatName).Value<string>();
+        ExtAmmunitionDef extAmmoDef = CustomAmmoCategories.findExtAmmo(CurrentAmmoId);
+        if (extAmmoDef.IndirectFireCapable != TripleBoolean.NotSet) {
+          result = (extAmmoDef.IndirectFireCapable == TripleBoolean.True);
+        }
+      }
+      if (CustomAmmoCategories.checkExistance(weapon.StatCollection, CustomAmmoCategories.WeaponModeStatisticName) == true) {
+        ExtWeaponDef extWeapon = CustomAmmoCategories.getExtWeaponDef(weapon.defId);
+        string modeId = weapon.StatCollection.GetStatistic(CustomAmmoCategories.WeaponModeStatisticName).Value<string>();
+        if (extWeapon.Modes.ContainsKey(modeId)) {
+          WeaponMode mode = extWeapon.Modes[modeId];
+          result = (mode.IndirectFireCapable == TripleBoolean.True);
+        }
+      }
+      return result;
+    }
+  }
+}
+
 namespace CustomAmmoCategoriesPatches
 {
     [HarmonyPatch(typeof(AIUtil))]

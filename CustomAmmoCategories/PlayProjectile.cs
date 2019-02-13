@@ -11,6 +11,23 @@ using CustAmmoCategories;
 using UnityEngine;
 using BattleTech.Rendering;
 
+namespace CustAmmoCategories {
+  public static partial class CustomAmmoCategories {
+    public static int getWeaponAttackRecoil(Weapon weapon) {
+      CustomAmmoCategoriesLog.Log.LogWrite("getWeaponAttackRecoil " + weapon.UIName + "\n");
+      if (CustomAmmoCategories.checkExistance(weapon.StatCollection, CustomAmmoCategories.AmmoIdStatName) == false) {
+        CustomAmmoCategoriesLog.Log.LogWrite("  weapon has no ammo\n");
+        return weapon.weaponDef.AttackRecoil;
+      }
+      string ammoId = weapon.StatCollection.GetStatistic(CustomAmmoCategories.AmmoIdStatName).Value<string>();
+      ExtAmmunitionDef extAmmo = CustomAmmoCategories.findExtAmmo(ammoId);
+      CustomAmmoCategoriesLog.Log.LogWrite("  modified AttackRecoil\n");
+      return weapon.weaponDef.AttackRecoil + extAmmo.AttackRecoil;
+    }
+  }
+}
+
+
 namespace CustomAmmoCategoriesPatches
 {
     [HarmonyPatch(typeof(WeaponEffect))]
@@ -86,7 +103,7 @@ namespace CustomAmmoCategoriesPatches
             }
             catch (Exception e)
             {
-                CustomAmmoCategoriesLog.Log.LogWrite("Exception "+e.ToString()+"\nFallback to default");
+                CustomAmmoCategoriesLog.Log.LogWrite("Exception "+e.ToString()+"\nFallback to default\n");
                 return true;
             }
             return false;

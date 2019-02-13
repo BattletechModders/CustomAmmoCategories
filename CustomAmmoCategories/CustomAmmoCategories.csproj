@@ -58,9 +58,14 @@
     <Reference Include="UnityEngine.UI">
       <HintPath>..\..\..\BATTLETECH\BattleTech_Data\Managed\UnityEngine.UI.dll</HintPath>
     </Reference>
+    <Reference Include="WeaponRealizer">
+      <HintPath>..\..\Mods\WeaponRealizer\WeaponRealizer.dll</HintPath>
+    </Reference>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AIWeaponChoose.cs" />
+    <Compile Include="AttackSequenceImpact.cs" />
+    <Compile Include="CheatHttpServer.cs" />
     <Compile Include="DecrementAmmo.cs" />
     <Compile Include="GenerateHitInfo.cs" />
     <Compile Include="GetEvasivePipsModifier.cs" />
@@ -69,6 +74,9 @@
     <Compile Include="MainClass.cs" />
     <Compile Include="PlayProjectile.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="WeaponMode.cs" />
+    <Compile Include="WeaponPatches.cs" />
+    <Compile Include="Jamming.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
