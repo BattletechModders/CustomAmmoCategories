@@ -7,6 +7,7 @@ using System.Text;
 using System.Threading.Tasks;
 using CustAmmoCategories;
 using Random = UnityEngine.Random;
+using UnityEngine;
 
 //This part of code is modified code of original WeaponRealizer by Joel Meador under MIT LICENSE
 
@@ -94,16 +95,28 @@ namespace CustAmmoCategories {
     public static string TemporarilyDisabledStatisticName = "TemporarilyDisabled";
     public static float Epsilon = 0.001f;
     public static void AddJam(AbstractActor actor, Weapon weapon) {
-      if (CustomAmmoCategories.checkExistance(weapon.StatCollection, CustomAmmoCategories.JammedWeaponStatisticName) == false) {
-        weapon.StatCollection.AddStatistic<bool>(CustomAmmoCategories.JammedWeaponStatisticName, false);
+      if (CustomAmmoCategories.getWeaponDamageOnJamming(weapon) == false) {
+        if (CustomAmmoCategories.checkExistance(weapon.StatCollection, CustomAmmoCategories.JammedWeaponStatisticName) == false) {
+          weapon.StatCollection.AddStatistic<bool>(CustomAmmoCategories.JammedWeaponStatisticName, false);
+        }
+        weapon.StatCollection.Set<bool>(CustomAmmoCategories.JammedWeaponStatisticName, true);
+        weapon.StatCollection.Set<bool>(CustomAmmoCategories.TemporarilyDisabledStatisticName, true);
+        actor.Combat.MessageCenter.PublishMessage(
+            new AddSequenceToStackMessage(
+                new ShowActorInfoSequence(actor, $"{weapon.Name} Jammed!", FloatieMessage.MessageNature.Debuff,
+                    true)));
+      }else {
+        var isDestroying = weapon.DamageLevel != ComponentDamageLevel.Functional;
+        var damageLevel = isDestroying ? ComponentDamageLevel.Destroyed : ComponentDamageLevel.Penalized;
+        var fakeHit = new WeaponHitInfo(-1, -1, -1, -1, string.Empty, string.Empty, -1, null, null, null, null, null, null, null, AttackDirection.None, Vector2.zero, null);
+        weapon.DamageComponent(fakeHit, damageLevel, true);
+        var message = isDestroying
+            ? $"{weapon.Name} misfire: Destroyed!"
+            : $"{weapon.Name} misfire: Damaged!";
+        actor.Combat.MessageCenter.PublishMessage(
+            new AddSequenceToStackMessage(
+                new ShowActorInfoSequence(actor, message, FloatieMessage.MessageNature.Debuff, true)));
       }
-      weapon.StatCollection.Set<bool>(CustomAmmoCategories.JammedWeaponStatisticName, true);      
-      weapon.StatCollection.Set<bool>(CustomAmmoCategories.TemporarilyDisabledStatisticName, true);
-      actor.Combat.MessageCenter.PublishMessage(
-          new AddSequenceToStackMessage(
-              new ShowActorInfoSequence(actor, $"{weapon.Name} Jammed!", FloatieMessage.MessageNature.Debuff,
-                  true)));
-
     }
     public static void AddCooldown(AbstractActor actor, Weapon weapon) {
       if (CustomAmmoCategories.checkExistance(weapon.StatCollection, CustomAmmoCategories.CooldownWeaponStatisticName) == false) {
@@ -147,6 +160,25 @@ namespace CustAmmoCategories {
         }
       }
       return result;
+    }
+    public static bool getWeaponDamageOnJamming(Weapon weapon) {
+      TripleBoolean result = TripleBoolean.NotSet;
+      ExtWeaponDef extWeapon = CustomAmmoCategories.getExtWeaponDef(weapon.defId);
+      if (extWeapon.Modes.Count > 0) {
+        string modeId = "";
+        if (CustomAmmoCategories.checkExistance(weapon.StatCollection, CustomAmmoCategories.WeaponModeStatisticName) == true) {
+          modeId = weapon.StatCollection.GetStatistic(CustomAmmoCategories.WeaponModeStatisticName).Value<string>();
+        } else {
+          modeId = extWeapon.baseModeId;
+        }
+        if (extWeapon.Modes.ContainsKey(modeId)) {
+          result = extWeapon.Modes[modeId].DamageOnJamming;
+        }
+      }
+      if (result == TripleBoolean.NotSet) {
+        result = extWeapon.DamageOnJamming;
+      }
+      return result == TripleBoolean.True;
     }
 
     public static int getWeaponCooldown(Weapon weapon) {

@@ -28,7 +28,9 @@ namespace CustAmmoCategories {
         string modeId = weapon.StatCollection.GetStatistic(CustomAmmoCategories.WeaponModeStatisticName).Value<string>();
         if (extWeapon.Modes.ContainsKey(modeId)) {
           WeaponMode mode = extWeapon.Modes[modeId];
-          result = (mode.IndirectFireCapable == TripleBoolean.True);
+          if (mode.IndirectFireCapable != TripleBoolean.NotSet) {
+            result = (mode.IndirectFireCapable == TripleBoolean.True);
+          }
         }
       }
       return result;

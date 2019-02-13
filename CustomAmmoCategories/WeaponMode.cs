@@ -40,6 +40,7 @@ namespace CustAmmoCategories {
     public string WeaponEffectID { get; set; }
     public float EvasivePipsIgnored { get; set; }
     public TripleBoolean IndirectFireCapable { get; set; }
+    public TripleBoolean DamageOnJamming { get; set; }
     public TripleBoolean AOECapable { get; set; }
     public HitGeneratorType HitGenerator { get; set; }
     public bool isBaseMode { get; set; }
@@ -70,6 +71,7 @@ namespace CustAmmoCategories {
       DamageVariance = 0;
       Cooldown = 0;
       AIHitChanceCap = 0;
+      DamageOnJamming = TripleBoolean.NotSet;
       DistantVarianceReversed = TripleBoolean.NotSet;
       IndirectFireCapable = TripleBoolean.NotSet;
       AOECapable = TripleBoolean.NotSet;
@@ -166,6 +168,9 @@ namespace CustAmmoCategories {
       }
       if (jWeaponMode["Cooldown"] != null) {
         this.Cooldown = (int)jWeaponMode["Cooldown"];
+      }
+      if (jWeaponMode["DamageOnJamming"] != null) {
+        this.DamageOnJamming = ((bool)jWeaponMode["DamageOnJamming"] == true) ? TripleBoolean.True : TripleBoolean.False;
       }
       if (jWeaponMode["AOECapable"] != null) {
         this.AOECapable = ((bool)jWeaponMode["AOECapable"] == true) ? TripleBoolean.True : TripleBoolean.False; ;

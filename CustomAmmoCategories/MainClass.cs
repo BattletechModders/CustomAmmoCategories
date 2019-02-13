@@ -468,6 +468,10 @@ namespace CustomAmmoCategoriesPatches {
         extDef.DirectFireModifier = (float)defTemp["DirectFireModifier"];
         defTemp.Remove("DirectFireModifier");
       }
+      if (defTemp["DamageOnJamming"] != null) {
+        extDef.DamageOnJamming = ((bool)defTemp["DamageOnJamming"] == true)?TripleBoolean.True:TripleBoolean.False;
+        defTemp.Remove("DamageOnJamming");
+      }
       if (defTemp["Modes"] != null) {
         if (defTemp["Modes"].Type == JTokenType.Array) {
           extDef.Modes.Clear();
@@ -961,6 +965,7 @@ namespace CustAmmoCategories {
     public float DirectFireModifier { get; set; }
     public string baseModeId { get; set; }
     public float FlatJammingChance { get; set; }
+    public TripleBoolean DamageOnJamming { get; set; }
     public Dictionary<string, WeaponMode> Modes { get; set; }
     public CustomAmmoCategory AmmoCategory { get; set; }
     public ExtWeaponDef() {
@@ -969,6 +974,7 @@ namespace CustAmmoCategories {
       DirectFireModifier = 0;
       FlatJammingChance = 0;
       baseModeId = WeaponMode.NONE_MODE_NAME;
+      DamageOnJamming = TripleBoolean.NotSet;
       AmmoCategory = new CustomAmmoCategory();
       Modes = new Dictionary<string, WeaponMode>();
     }
