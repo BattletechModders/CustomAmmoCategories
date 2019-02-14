@@ -468,6 +468,10 @@ namespace CustomAmmoCategoriesPatches {
         extDef.DirectFireModifier = (float)defTemp["DirectFireModifier"];
         defTemp.Remove("DirectFireModifier");
       }
+      if (defTemp["DisableClustering"] != null) {
+        extDef.DisableClustering = ((bool)defTemp["DisableClustering"] == true) ? TripleBoolean.True : TripleBoolean.False;
+        defTemp.Remove("DisableClustering");
+      }
       if (defTemp["DamageOnJamming"] != null) {
         extDef.DamageOnJamming = ((bool)defTemp["DamageOnJamming"] == true)?TripleBoolean.True:TripleBoolean.False;
         defTemp.Remove("DamageOnJamming");
@@ -968,12 +972,14 @@ namespace CustAmmoCategories {
     public TripleBoolean DamageOnJamming { get; set; }
     public Dictionary<string, WeaponMode> Modes { get; set; }
     public CustomAmmoCategory AmmoCategory { get; set; }
+    public TripleBoolean DisableClustering { get; set; }
     public ExtWeaponDef() {
       StreakEffect = false;
       HitGenerator = HitGeneratorType.NotSet;
       DirectFireModifier = 0;
       FlatJammingChance = 0;
       baseModeId = WeaponMode.NONE_MODE_NAME;
+      DisableClustering = TripleBoolean.NotSet;
       DamageOnJamming = TripleBoolean.NotSet;
       AmmoCategory = new CustomAmmoCategory();
       Modes = new Dictionary<string, WeaponMode>();
