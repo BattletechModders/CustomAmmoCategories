@@ -207,7 +207,11 @@ namespace CustomAmmoCategoriesPatches {
     }
 
     private static int ShotsWhenFiredDisplayOverider(Weapon weapon) {
-      return weapon.ShotsWhenFired * weapon.ProjectilesPerShot;
+      if (CustomAmmoCategories.getWeaponDisabledClustering(weapon)) {
+        return weapon.ShotsWhenFired;
+      }else {
+        return weapon.ShotsWhenFired * weapon.ProjectilesPerShot;
+      }
     }
   }
 
