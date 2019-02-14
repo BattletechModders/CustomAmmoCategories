@@ -207,10 +207,10 @@ namespace CustomAmmoCategoriesPatches {
     }
 
     private static int ShotsWhenFiredDisplayOverider(Weapon weapon) {
-      if (CustomAmmoCategories.getWeaponDisabledClustering(weapon)) {
-        return weapon.ShotsWhenFired;
-      }else {
+      if (weapon.weaponDef.ComponentTags.Contains("wr-clustered_shots") || (CustomAmmoCategories.getWeaponDisabledClustering(weapon) == false)) {
         return weapon.ShotsWhenFired * weapon.ProjectilesPerShot;
+      }else {
+        return weapon.ShotsWhenFired;
       }
     }
   }
@@ -373,6 +373,10 @@ namespace CustomAmmoCategoriesPatches {
       if (defTemp["DistantVariance"] != null) {
         extAmmoDef.DistantVariance = (float)defTemp["DistantVariance"];
         defTemp.Remove("DistantVariance");
+      }
+      if (defTemp["DamageMultiplier"] != null) {
+        extAmmoDef.DamageMultiplier = (float)defTemp["DamageMultiplier"];
+        defTemp.Remove("DamageMultiplier");
       }
       if (defTemp["DistantVarianceReversed"] != null) {
         extAmmoDef.DistantVarianceReversed = ((bool)defTemp["IndirectFireCapable"] == true) ? TripleBoolean.True : TripleBoolean.False;
@@ -935,6 +939,7 @@ namespace CustAmmoCategories {
     public float DistantVariance { get; set; }
     public TripleBoolean DistantVarianceReversed { get; set; }
     public float DamageVariance { get; set; }
+    public float DamageMultiplier { get; set; }
     public CustomAmmoCategory AmmoCategory { get; set; }
     public ExtAmmunitionDef() {
       AccuracyModifier = 0;
@@ -944,6 +949,7 @@ namespace CustAmmoCategories {
       ProjectilesPerShot = 0;
       ShotsWhenFired = 0;
       CriticalChanceMultiplier = 0;
+      DamageMultiplier = 1.0f;
       MinRange = 0;
       MaxRange = 0;
       LongRange = 0;
@@ -983,7 +989,7 @@ namespace CustAmmoCategories {
       DirectFireModifier = 0;
       FlatJammingChance = 0;
       baseModeId = WeaponMode.NONE_MODE_NAME;
-      DisableClustering = TripleBoolean.NotSet;
+      DisableClustering = TripleBoolean.True;
       DamageOnJamming = TripleBoolean.NotSet;
       AmmoCategory = new CustomAmmoCategory();
       Modes = new Dictionary<string, WeaponMode>();

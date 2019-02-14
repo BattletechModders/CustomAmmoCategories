@@ -44,6 +44,7 @@ namespace CustAmmoCategories {
     public TripleBoolean AOECapable { get; set; }
     public HitGeneratorType HitGenerator { get; set; }
     public bool isBaseMode { get; set; }
+    public float DamageMultiplier { get; set; }
     public WeaponMode() {
       Id = WeaponMode.NONE_MODE_NAME;
       UIName = WeaponMode.BASE_MODE_NAME;
@@ -71,6 +72,7 @@ namespace CustAmmoCategories {
       DamageVariance = 0;
       Cooldown = 0;
       AIHitChanceCap = 0;
+      DamageMultiplier = 1.0f;
       DamageOnJamming = TripleBoolean.NotSet;
       DistantVarianceReversed = TripleBoolean.NotSet;
       IndirectFireCapable = TripleBoolean.NotSet;
@@ -153,6 +155,9 @@ namespace CustAmmoCategories {
       }
       if (jWeaponMode["DistantVariance"] != null) {
         this.DistantVariance = (float)jWeaponMode["DistantVariance"];
+      }
+      if (jWeaponMode["DamageMultiplier"] != null) {
+        this.DamageMultiplier = (float)jWeaponMode["DamageMultiplier"];
       }
       if (jWeaponMode["DistantVarianceReversed"] != null) {
         this.DistantVarianceReversed = ((bool)jWeaponMode["DistantVarianceReversed"] == true) ? TripleBoolean.True : TripleBoolean.False;

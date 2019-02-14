@@ -79,6 +79,20 @@ namespace CustAmmoCategories {
             __result += mode.DamagePerShot;
           }
         }
+        if (CustomAmmoCategories.checkExistance(__instance.StatCollection, CustomAmmoCategories.AmmoIdStatName) == true) {
+          string CurrentAmmoId = __instance.StatCollection.GetStatistic(CustomAmmoCategories.AmmoIdStatName).Value<string>();
+          ExtAmmunitionDef extAmmoDef = CustomAmmoCategories.findExtAmmo(CurrentAmmoId);
+          __result *= extAmmoDef.DamageMultiplier;
+        }
+        if (CustomAmmoCategories.checkExistance(__instance.StatCollection, CustomAmmoCategories.WeaponModeStatisticName) == true) {
+          ExtWeaponDef extWeapon = CustomAmmoCategories.getExtWeaponDef(__instance.defId);
+          string modeId = __instance.StatCollection.GetStatistic(CustomAmmoCategories.WeaponModeStatisticName).Value<string>();
+          if (extWeapon.Modes.ContainsKey(modeId)) {
+            WeaponMode mode = extWeapon.Modes[modeId];
+            __result *= mode.DamageMultiplier;
+          }
+        }
+        __result = (float)Math.Round((double)__result,0);
       }
     }
     [HarmonyPatch(typeof(Weapon))]

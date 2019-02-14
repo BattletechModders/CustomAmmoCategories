@@ -28,7 +28,11 @@ namespace CustAmmoCategories {
     public static int DecrementAmmo(Weapon instance, int stackItemUID, int StreakHitCount) {
       int shotsWhenFired = instance.ShotsWhenFired;
       if (StreakHitCount != 0) {
-        shotsWhenFired = StreakHitCount / instance.ProjectilesPerShot;
+        if (instance.weaponDef.ComponentTags.Contains("wr-clustered_shots") || (CustomAmmoCategories.getWeaponDisabledClustering(instance) == false)) {
+          shotsWhenFired = StreakHitCount / instance.ProjectilesPerShot;
+        }else {
+          shotsWhenFired = StreakHitCount;
+        }
       }
       bool streakEffect = CustomAmmoCategories.getExtWeaponDef(instance.weaponDef.Description.Id).StreakEffect;
       if ((streakEffect == false) && (StreakHitCount == 0)) {
@@ -81,7 +85,7 @@ namespace CustAmmoCategories {
           if (StreakHitCount != 0) ammoBox.StatCollection.ModifyStat<int>(instance.uid, stackItemUID, "CurrentAmmo", StatCollection.StatOperation.Set, 0, -1, true);
         }
       }
-      if (instance.weaponDef.ComponentTags.Contains("wr-clustered_shots")) {
+      if (instance.weaponDef.ComponentTags.Contains("wr-clustered_shots") || CustomAmmoCategories.getWeaponDisabledClustering(instance)) {
         result = (instance.ShotsWhenFired - modValue);
       } else {
         result = (instance.ShotsWhenFired - modValue) * instance.ProjectilesPerShot;
