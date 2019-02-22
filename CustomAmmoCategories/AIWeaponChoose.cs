@@ -181,7 +181,7 @@ namespace CustAmmoCategories {
         AverageArmor = CustomAmmoCategories.getTargetAvarageArmor(hitLocations, target);
       }
       float toHit = 0;
-      if (unit.HasLOFToTargetUnit(target, weapon.MaxRange, CustomAmmoCategories.getIndirectFireCapable(weapon))) {
+      if (weapon.WillFireAtTargetFromPosition(target,unit.CurrentPosition) == true) {
         toHit = weapon.GetToHitFromPosition(target, 1, unit.CurrentPosition, target.CurrentPosition, true, (targetActor != null) ? targetActor.IsEvasive : false, false);
       }
       if (toHit < Epsilon) { record.HeatDamageCoeff = 0f; record.NormDamageCoeff = 0f; record.PredictHeatDamage = 0f; };

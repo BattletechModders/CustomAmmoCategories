@@ -51,6 +51,7 @@ namespace CustAmmoCategories {
       return result;
     }
     public static float getWeaponForbiddenRange(Weapon weapon) {
+      if (CustomAmmoCategories.Settings.forbiddenRangeEnable == false) { return 0f; };
       ExtWeaponDef extWeapon = CustomAmmoCategories.getExtWeaponDef(weapon.defId);
       float result = 0f;
       if (CustomAmmoCategories.checkExistance(weapon.StatCollection, CustomAmmoCategories.AmmoIdStatName)) {

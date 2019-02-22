@@ -228,17 +228,21 @@ namespace CustomAmmoCategoriesPatches {
       CustomAmmoCategoriesLog.Log.LogWrite("  target = "+__instance.target.DisplayName+"\n");
       CustomAmmoCategoriesLog.Log.LogWrite("  weapon = " + weapon.UIName + "\n");
       CustomAmmoCategoriesLog.Log.LogWrite("  damage = " + rawDamage + "\n");
-      if (CustomAmmoCategories.getWeaponDamageVariance(weapon) > CustomAmmoCategories.Epsilon) {
-        realDamage = CustomAmmoCategories.WeaponDamageSimpleVariance(weapon, rawDamage);
-      }
-      if(CustomAmmoCategories.getWeaponDistantVariance(weapon) > CustomAmmoCategories.Epsilon) {
-        if (CustomAmmoCategories.getWeaponDistantVarianceReversed(weapon)) {
-          realDamage = CustomAmmoCategories.WeaponDamageDistance(__instance.attacker, __instance.target, weapon, realDamage, rawDamage);
-        }else {
-          realDamage = CustomAmmoCategories.WeaponDamageRevDistance(__instance.attacker, __instance.target, weapon, realDamage, rawDamage);
+      if (realDamage >= 1.0f) {
+        if (CustomAmmoCategories.getWeaponDamageVariance(weapon) > CustomAmmoCategories.Epsilon) {
+          realDamage = CustomAmmoCategories.WeaponDamageSimpleVariance(weapon, rawDamage);
         }
+        if (CustomAmmoCategories.getWeaponDistantVariance(weapon) > CustomAmmoCategories.Epsilon) {
+          if (CustomAmmoCategories.getWeaponDistantVarianceReversed(weapon)) {
+            realDamage = CustomAmmoCategories.WeaponDamageDistance(__instance.attacker, __instance.target, weapon, realDamage, rawDamage);
+          } else {
+            realDamage = CustomAmmoCategories.WeaponDamageRevDistance(__instance.attacker, __instance.target, weapon, realDamage, rawDamage);
+          }
+        }
+      } else {
+        CustomAmmoCategoriesLog.Log.LogWrite("WARNING! raw damage is less than 1.0f. Variance calculation is forbidden with this damage value\n",true);
       }
-      CustomAmmoCategoriesLog.Log.LogWrite("  real damage = " + impactMessage.hitDamage + "\n");
+      CustomAmmoCategoriesLog.Log.LogWrite("  real damage = " + realDamage + "\n");
       impactMessage.hitDamage = realDamage;
       return true;
     }
