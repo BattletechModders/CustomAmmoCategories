@@ -215,9 +215,9 @@ namespace CustomAmmoCategoriesPatches {
   [HarmonyPatch("OnAttackSequenceImpact")]
   [HarmonyPatch(new Type[] { typeof(MessageCenterMessage) })]
   public static class AttackSequence_OnAttackSequenceImpact {
-    public static void Prefix(AttackDirector.AttackSequence __instance, ref MessageCenterMessage message) {
+    public static bool Prefix(AttackDirector.AttackSequence __instance, ref MessageCenterMessage message) {
       AttackSequenceImpactMessage impactMessage = (AttackSequenceImpactMessage)message;
-      if (impactMessage.hitInfo.attackSequenceId != __instance.id) { return; }
+      if (impactMessage.hitInfo.attackSequenceId != __instance.id) { return true; }
       int attackGroupIndex = impactMessage.hitInfo.attackGroupIndex;
       int attackWeaponIndex = impactMessage.hitInfo.attackWeaponIndex;
       Weapon weapon = __instance.GetWeapon(attackGroupIndex, attackWeaponIndex);
@@ -240,6 +240,7 @@ namespace CustomAmmoCategoriesPatches {
       }
       CustomAmmoCategoriesLog.Log.LogWrite("  real damage = " + impactMessage.hitDamage + "\n");
       impactMessage.hitDamage = realDamage;
+      return true;
     }
   }
 }

@@ -40,7 +40,7 @@ namespace CustAmmoCategories {
       }
       CustomAmmoCategoriesLog.Log.LogWrite("Weapon.DecrementAmmo " + instance.UIName + " real fire count:" + StreakHitCount + "\n");
       int result = 0;
-      if (instance.AmmoCategory == AmmoCategory.NotSet || (instance.parent != null && instance.parent is Turret)) {
+      if ((CustomAmmoCategories.getWeaponCustomAmmoCategory(instance).Index == CustomAmmoCategories.NotSetCustomAmmoCategoty.Index) || (instance.parent != null && instance.parent is Turret)) {
         if (instance.weaponDef.ComponentTags.Contains("wr-clustered_shots") || CustomAmmoCategories.getWeaponDisabledClustering(instance)) {
           result = shotsWhenFired;
         } else {
@@ -60,6 +60,19 @@ namespace CustAmmoCategories {
       string CurrentAmmoId = "";
       if (CustomAmmoCategories.checkExistance(instance.StatCollection, CustomAmmoCategories.AmmoIdStatName) == true) {
         CurrentAmmoId = instance.StatCollection.GetStatistic(CustomAmmoCategories.AmmoIdStatName).Value<string>();
+      }else {
+        if(instance.ammoBoxes.Count > 0) {
+          CurrentAmmoId = instance.ammoBoxes[0].ammoDef.Description.Id;
+          CustomAmmoCategoriesLog.Log.LogWrite($"WARNING! strange behavior " + instance.UIName + " has no data in statistics. fallback to default ammo "+CurrentAmmoId+"\n");
+        } else {
+          CustomAmmoCategoriesLog.Log.LogWrite($"WARNING! strange behavior " + instance.UIName + " not energy, parent no turret but no ammo boxes\n");
+          if (instance.weaponDef.ComponentTags.Contains("wr-clustered_shots") || CustomAmmoCategories.getWeaponDisabledClustering(instance)) {
+            result = shotsWhenFired;
+          } else {
+            result = shotsWhenFired * instance.ProjectilesPerShot;
+          }
+          return result;
+        }
       }
       //ExtAmmunitionDef extAmmo = CustomAmmoCategories.findExtAmmo(CurrentAmmoId);
       //ExtWeaponDef extWeapon = CustomAmmoCategories.getExtWeaponDef(__instance.weaponDef.Description.Id);

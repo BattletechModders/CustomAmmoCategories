@@ -7,6 +7,7 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
+using CustAmmoCategories;
 
 namespace CustAmmoCategories {
   public static partial class CustomAmmoCategories {
@@ -18,7 +19,7 @@ namespace CustAmmoCategories {
 }
 
 
-namespace CustAmmoCategories {
+namespace CustAmmoCategoriesPatches {
   [HarmonyPatch(typeof(MechComponent))]
   [HarmonyPatch("UIName")]
   [HarmonyPatch(MethodType.Getter)]
@@ -38,14 +39,16 @@ namespace CustAmmoCategories {
       };
       if (CustomAmmoCategories.checkExistance(__instance.StatCollection, CustomAmmoCategories.AmmoIdStatName) == true) {
         string CurrentAmmoId = __instance.StatCollection.GetStatistic(CustomAmmoCategories.AmmoIdStatName).Value<string>();
-        if (__instance.parent.Combat.DataManager.AmmoDefs.Exists(CurrentAmmoId) == true) {
-          string ammoBoxName = "";
-          if (string.IsNullOrEmpty(__instance.parent.Combat.DataManager.AmmoDefs.Get(CurrentAmmoId).Description.UIName)) {
-            ammoBoxName = __instance.parent.Combat.DataManager.AmmoDefs.Get(CurrentAmmoId).Description.Name;
-          } else {
-            ammoBoxName = __instance.parent.Combat.DataManager.AmmoDefs.Get(CurrentAmmoId).Description.UIName;
+        if (string.IsNullOrEmpty(CurrentAmmoId) == false) {
+          if (__instance.parent.Combat.DataManager.AmmoDefs.Exists(CurrentAmmoId) == true) {
+            string ammoBoxName = "";
+            if (string.IsNullOrEmpty(__instance.parent.Combat.DataManager.AmmoDefs.Get(CurrentAmmoId).Description.UIName)) {
+              ammoBoxName = __instance.parent.Combat.DataManager.AmmoDefs.Get(CurrentAmmoId).Description.Name;
+            } else {
+              ammoBoxName = __instance.parent.Combat.DataManager.AmmoDefs.Get(CurrentAmmoId).Description.UIName;
+            }
+            __result.Append("({0})", new object[1] { (object)ammoBoxName });
           }
-          __result.Append("({0})", new object[1] { (object)ammoBoxName });
         }
       }
       if (CustomAmmoCategories.checkExistance(__instance.StatCollection, CustomAmmoCategories.WeaponModeStatisticName) == true) {
@@ -328,8 +331,10 @@ namespace CustAmmoCategories {
         CombatGameState combat = (CombatGameState)typeof(MechComponent).GetField("combat", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(__instance);
         if (CustomAmmoCategories.checkExistance(__instance.StatCollection, CustomAmmoCategories.AmmoIdStatName) == true) {
           string CurrentAmmoId = __instance.StatCollection.GetStatistic(CustomAmmoCategories.AmmoIdStatName).Value<string>();
-          AmmunitionDef ammoDef = combat.DataManager.AmmoDefs.Get(CurrentAmmoId);
-          __result += (float)((double)(ammoDef.HeatGenerated) * (double)combat.Constants.Heat.GlobalHeatIncreaseMultiplier * (__instance.parent != null ? (double)__instance.parent.StatCollection.GetValue<float>("WeaponHeatMultiplier") : 1.0));
+          if (string.IsNullOrEmpty(CurrentAmmoId) == false) {
+            AmmunitionDef ammoDef = combat.DataManager.AmmoDefs.Get(CurrentAmmoId);
+            __result += (float)((double)(ammoDef.HeatGenerated) * (double)combat.Constants.Heat.GlobalHeatIncreaseMultiplier * (__instance.parent != null ? (double)__instance.parent.StatCollection.GetValue<float>("WeaponHeatMultiplier") : 1.0));
+          }
         }
         if (CustomAmmoCategories.checkExistance(__instance.StatCollection, CustomAmmoCategories.WeaponModeStatisticName) == true) {
           ExtWeaponDef extWeapon = CustomAmmoCategories.getExtWeaponDef(__instance.defId);

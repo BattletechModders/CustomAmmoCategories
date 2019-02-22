@@ -27,6 +27,7 @@ namespace CustAmmoCategories {
     public float MaxRange { get; set; }
     public float LongRange { get; set; }
     public float ShortRange { get; set; }
+    public float ForbiddenRange { get; set; }
     public float MediumRange { get; set; }
     public int RefireModifier { get; set; }
     public int AttackRecoil { get; set; }
@@ -34,6 +35,8 @@ namespace CustAmmoCategories {
     public float AIHitChanceCap { get; set; }
     public float Instability { get; set; }
     public float FlatJammingChance { get; set; }
+    public float GunneryJammingBase { get; set; }
+    public float GunneryJammingMult { get; set; }
     public float DistantVariance { get; set; }
     public TripleBoolean DistantVarianceReversed { get; set; }
     public float DamageVariance { get; set; }
@@ -43,8 +46,10 @@ namespace CustAmmoCategories {
     public TripleBoolean DamageOnJamming { get; set; }
     public TripleBoolean AOECapable { get; set; }
     public HitGeneratorType HitGenerator { get; set; }
+    public TripleBoolean AlwaysIndirectVisuals { get; set; }
     public bool isBaseMode { get; set; }
     public float DamageMultiplier { get; set; }
+    public CustomAmmoCategory AmmoCategory { get; set; }
     public WeaponMode() {
       Id = WeaponMode.NONE_MODE_NAME;
       UIName = WeaponMode.BASE_MODE_NAME;
@@ -72,6 +77,10 @@ namespace CustAmmoCategories {
       DamageVariance = 0;
       Cooldown = 0;
       AIHitChanceCap = 0;
+      ForbiddenRange = 0;
+      GunneryJammingBase = 0;
+      GunneryJammingMult = 0;
+      AlwaysIndirectVisuals = TripleBoolean.NotSet;
       DamageMultiplier = 1.0f;
       DamageOnJamming = TripleBoolean.NotSet;
       DistantVarianceReversed = TripleBoolean.NotSet;
@@ -81,6 +90,7 @@ namespace CustAmmoCategories {
       HitGenerator = HitGeneratorType.NotSet;
       isBaseMode = false;
       statusEffects = new List<EffectData>();
+      AmmoCategory = null;
     }
     public void fromJSON(string json) {
       JObject jWeaponMode = JObject.Parse(json);
@@ -122,6 +132,9 @@ namespace CustAmmoCategories {
       }
       if (jWeaponMode["ShortRange"] != null) {
         this.ShortRange = (float)jWeaponMode["ShortRange"];
+      }
+      if (jWeaponMode["ForbiddenRange"] != null) {
+        this.ForbiddenRange = (float)jWeaponMode["ForbiddenRange"];
       }
       if (jWeaponMode["MediumRange"] != null) {
         this.MediumRange = (float)jWeaponMode["MediumRange"];
@@ -168,17 +181,29 @@ namespace CustAmmoCategories {
       if (jWeaponMode["FlatJammingChance"] != null) {
         this.FlatJammingChance = (float)jWeaponMode["FlatJammingChance"];
       }
+      if (jWeaponMode["GunneryJammingBase"] != null) {
+        this.GunneryJammingBase = (float)jWeaponMode["GunneryJammingBase"];
+      }
+      if (jWeaponMode["GunneryJammingMult"] != null) {
+        this.GunneryJammingMult = (float)jWeaponMode["GunneryJammingMult"];
+      }
       if (jWeaponMode["AIHitChanceCap"] != null) {
         this.AIHitChanceCap = (float)jWeaponMode["AIHitChanceCap"];
       }
       if (jWeaponMode["Cooldown"] != null) {
         this.Cooldown = (int)jWeaponMode["Cooldown"];
       }
+      if (jWeaponMode["AmmoCategory"] != null) {
+        this.AmmoCategory = CustomAmmoCategories.find((string)jWeaponMode["AmmoCategory"]);
+      }
       if (jWeaponMode["DamageOnJamming"] != null) {
         this.DamageOnJamming = ((bool)jWeaponMode["DamageOnJamming"] == true) ? TripleBoolean.True : TripleBoolean.False;
       }
       if (jWeaponMode["AOECapable"] != null) {
         this.AOECapable = ((bool)jWeaponMode["AOECapable"] == true) ? TripleBoolean.True : TripleBoolean.False; ;
+      }
+      if (jWeaponMode["AlwaysIndirectVisuals"] != null) {
+        this.AlwaysIndirectVisuals = ((bool)jWeaponMode["AlwaysIndirectVisuals"] == true) ? TripleBoolean.True : TripleBoolean.False;
       }
       if (jWeaponMode["HitGenerator"] != null) {
         try {

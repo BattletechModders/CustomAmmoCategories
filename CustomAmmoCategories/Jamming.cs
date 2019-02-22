@@ -141,13 +141,19 @@ namespace CustAmmoCategories {
     }
     public static float getWeaponFlatJammingChance(Weapon weapon) {
       float result = 0;
+      float mult = 0;
+      float baseval = 0f;
       if(CustomAmmoCategories.checkExistance(weapon.StatCollection,CustomAmmoCategories.AmmoIdStatName) == true) {
         string ammoId = weapon.StatCollection.GetStatistic(CustomAmmoCategories.AmmoIdStatName).Value<string>();
         ExtAmmunitionDef extAmmo = CustomAmmoCategories.findExtAmmo(ammoId);
         result += extAmmo.FlatJammingChance;
+        mult += extAmmo.GunneryJammingMult;
+        if (extAmmo.GunneryJammingBase > 0) { baseval = extAmmo.GunneryJammingBase; };
       }
       ExtWeaponDef extWeapon = CustomAmmoCategories.getExtWeaponDef(weapon.defId);
       result += extWeapon.FlatJammingChance;
+      mult += extWeapon.GunneryJammingMult;
+      if ((extWeapon.GunneryJammingBase > 0)&&(baseval == 0f)) { baseval = extWeapon.GunneryJammingBase; };
       if (extWeapon.Modes.Count > 0) {
         string modeId = "";
         if (CustomAmmoCategories.checkExistance(weapon.StatCollection, CustomAmmoCategories.WeaponModeStatisticName) == true) {
@@ -157,7 +163,13 @@ namespace CustAmmoCategories {
         }
         if (extWeapon.Modes.ContainsKey(modeId)) {
           result += extWeapon.Modes[modeId].FlatJammingChance;
+          mult += extWeapon.Modes[modeId].GunneryJammingMult;
+          if ((extWeapon.Modes[modeId].GunneryJammingBase > 0) && (baseval == 0f)) { baseval = extWeapon.Modes[modeId].GunneryJammingBase; };
         }
+      }
+      if(weapon.parent != null) {
+        if (baseval == 0f) { baseval = 5f; }
+        result += ((baseval - weapon.parent.SkillGunnery) * mult);
       }
       return result;
     }
