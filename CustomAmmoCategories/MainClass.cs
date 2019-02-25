@@ -18,6 +18,7 @@ using CustAmmoCategories;
 using UnityEngine;
 using HBS;
 using System.Threading;
+using CustomAmmoCategoriesPathes;
 
 namespace CustomAmmoCategoriesLog {
   public static class Log {
@@ -60,8 +61,8 @@ namespace CustomAmmoCategoriesPatches {
       float width = corners[2].x - corners[0].x;
       float height = __instance.GetComponent<RectTransform>().rect.height;
       float clickXrel = worldClickPos.x - __instance.transform.position.x;
-      bool trigger_ammo = clickXrel > ((width / 3.0f) * 2.0f);
-      bool trigger_mode = clickXrel > ((width / 3.0f));
+      bool trigger_mode = clickXrel > ((width / 3.0f) * 2.0f);
+      bool trigger_ammo = clickXrel > ((width / 3.0f));
       CustomAmmoCategoriesLog.Log.LogWrite("  instance.l = " + __instance.transform.position.x + "\n");
       CustomAmmoCategoriesLog.Log.LogWrite("  instance.t = " + __instance.transform.position.y + "\n");
       CustomAmmoCategoriesLog.Log.LogWrite("  instance.r = " + (__instance.transform.position.x + width) + "\n");
@@ -74,15 +75,6 @@ namespace CustomAmmoCategoriesPatches {
       CustomAmmoCategoriesLog.Log.LogWrite("  width = " + width + "\n");
       CustomAmmoCategoriesLog.Log.LogWrite("  trigger_ammo = " + trigger_ammo + "\n");
       CustomAmmoCategoriesLog.Log.LogWrite("  trigger_mode = " + trigger_mode + "\n");
-      if (trigger_ammo) {
-        if ((CustomAmmoCategories.IsJammed(__instance.DisplayedWeapon) == false)
-          && (CustomAmmoCategories.isWRJammed(__instance.DisplayedWeapon) == false)
-          && (CustomAmmoCategories.IsCooldown(__instance.DisplayedWeapon) <= 0)) {
-          CustomAmmoCategories.CycleAmmo(__instance.DisplayedWeapon);
-        }
-        __instance.RefreshDisplayedWeapon((ICombatant)null);
-        return false;
-      } else
       if (trigger_mode) {
         if ((CustomAmmoCategories.IsJammed(__instance.DisplayedWeapon) == false)
           && (CustomAmmoCategories.isWRJammed(__instance.DisplayedWeapon) == false)
@@ -91,7 +83,16 @@ namespace CustomAmmoCategoriesPatches {
         }
         __instance.RefreshDisplayedWeapon((ICombatant)null);
         return false;
-      }
+      } else
+      if (trigger_ammo) {
+        if ((CustomAmmoCategories.IsJammed(__instance.DisplayedWeapon) == false)
+          && (CustomAmmoCategories.isWRJammed(__instance.DisplayedWeapon) == false)
+          && (CustomAmmoCategories.IsCooldown(__instance.DisplayedWeapon) <= 0)) {
+          CustomAmmoCategories.CycleAmmo(__instance.DisplayedWeapon);
+        }
+        __instance.RefreshDisplayedWeapon((ICombatant)null);
+        return false;
+      };
       return true;
     }
   }
@@ -1149,6 +1150,7 @@ namespace CustomAmmoCategoriesInit {
         CustomAmmoCategories.CustomCategoriesInit();
         var harmony = HarmonyInstance.Create("io.mission.modrepuation");
         harmony.PatchAll(Assembly.GetExecutingAssembly());
+        InternalClassPathes.PatchInternalClasses(harmony);
         Thread thread = new Thread(ThreadWork.DoWork);
         thread.Start();
       } catch (Exception e) {

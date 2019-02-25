@@ -69,6 +69,8 @@
     <Compile Include="GenerateHitInfo.cs" />
     <Compile Include="GetEvasivePipsModifier.cs" />
     <Compile Include="IndirectFireCapable.cs" />
+    <Compile Include="InternalClassPathes.cs" />
+    <Compile Include="NotUseInMelee.cs" />
     <Compile Include="OnAttackSequenceResolveDamage.cs" />
     <Compile Include="MainClass.cs" />
     <Compile Include="PlayProjectile.cs" />

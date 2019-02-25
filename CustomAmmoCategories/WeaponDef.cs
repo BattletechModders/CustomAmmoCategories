@@ -19,6 +19,7 @@ namespace CustAmmoCategories {
     public float GunneryJammingBase { get; set; }
     public float GunneryJammingMult { get; set; }
     public TripleBoolean DamageOnJamming { get; set; }
+    public TripleBoolean NotUseInMelee { get; set; }
     public Dictionary<string, WeaponMode> Modes { get; set; }
     public CustomAmmoCategory AmmoCategory { get; set; }
     public TripleBoolean DisableClustering { get; set; }
@@ -31,6 +32,7 @@ namespace CustAmmoCategories {
       GunneryJammingMult = 0;
       baseModeId = WeaponMode.NONE_MODE_NAME;
       DisableClustering = TripleBoolean.True;
+      NotUseInMelee = TripleBoolean.NotSet;
       DamageOnJamming = TripleBoolean.NotSet;
       AmmoCategory = new CustomAmmoCategory();
       Modes = new Dictionary<string, WeaponMode>();
@@ -83,6 +85,10 @@ namespace CustomAmmoCategoriesPatches {
       if (defTemp["DisableClustering"] != null) {
         extDef.DisableClustering = ((bool)defTemp["DisableClustering"] == true) ? TripleBoolean.True : TripleBoolean.False;
         defTemp.Remove("DisableClustering");
+      }
+      if (defTemp["NotUseInMelee"] != null) {
+        extDef.NotUseInMelee = ((bool)defTemp["NotUseInMelee"] == true) ? TripleBoolean.True : TripleBoolean.False;
+        defTemp.Remove("NotUseInMelee");
       }
       if (defTemp["DamageOnJamming"] != null) {
         extDef.DamageOnJamming = ((bool)defTemp["DamageOnJamming"] == true) ? TripleBoolean.True : TripleBoolean.False;

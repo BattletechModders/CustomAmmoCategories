@@ -438,6 +438,31 @@ namespace CustomAmmoCategoriesPatches {
       }
     }
   }
+  public static class DoAnyMovesYieldLOFToAnyHostileNode_Tick {
+    public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) {
+      var targetPropertyGetter = AccessTools.Property(typeof(Weapon), "IndirectFireCapable").GetGetMethod();
+      var replacementMethod = AccessTools.Method(typeof(DoAnyMovesYieldLOFToAnyHostileNode_Tick), nameof(IndirectFireCapable));
+      return Transpilers.MethodReplacer(instructions, targetPropertyGetter, replacementMethod);
+    }
+    private static bool IndirectFireCapable(Weapon weapon) {
+      CustomAmmoCategoriesLog.Log.LogWrite("get DoAnyMovesYieldLOFToAnyHostileNode_Tick IndirectFireCapable\n");
+      return CustomAmmoCategories.getIndirectFireCapable(weapon);
+    }
+  }
+
+  public static class HighestPriorityMoveCandidateIsAttackNode_Tick {
+    public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) {
+      var targetPropertyGetter = AccessTools.Property(typeof(Weapon), "IndirectFireCapable").GetGetMethod();
+      var replacementMethod = AccessTools.Method(typeof(HighestPriorityMoveCandidateIsAttackNode_Tick), nameof(IndirectFireCapable));
+      return Transpilers.MethodReplacer(instructions, targetPropertyGetter, replacementMethod);
+    }
+    private static bool IndirectFireCapable(Weapon weapon) {
+      CustomAmmoCategoriesLog.Log.LogWrite("get HighestPriorityMoveCandidateIsAttackNode_Tick IndirectFireCapable\n");
+      return CustomAmmoCategories.getIndirectFireCapable(weapon);
+    }
+  }
+
+
   [HarmonyPatch(typeof(LOFCache))]
   [HarmonyPatch("UnitHasLOFToTarget")]
   [HarmonyPatch(MethodType.Normal)]

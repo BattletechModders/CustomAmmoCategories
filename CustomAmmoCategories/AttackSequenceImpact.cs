@@ -243,6 +243,10 @@ namespace CustomAmmoCategoriesPatches {
         CustomAmmoCategoriesLog.Log.LogWrite("WARNING! raw damage is less than 1.0f. Variance calculation is forbidden with this damage value\n",true);
       }
       CustomAmmoCategoriesLog.Log.LogWrite("  real damage = " + realDamage + "\n");
+      if (realDamage < CustomAmmoCategories.Epsilon) {
+        CustomAmmoCategoriesLog.Log.LogWrite("WARNING! real damage is less than epsilon. May be negative. That is sad. Rounding to zero\n", true);
+        realDamage = 0.0f;
+      }
       impactMessage.hitDamage = realDamage;
       return true;
     }
