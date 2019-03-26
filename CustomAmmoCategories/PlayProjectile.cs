@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 using Harmony;
 using BattleTech;
 using BattleTech.AttackDirectorHelpers;
@@ -29,6 +28,7 @@ namespace CustAmmoCategories {
       if (CustomAmmoCategories.checkExistance(weapon.StatCollection, CustomAmmoCategories.AmmoIdStatName) == true) {
         string CurrentAmmoId = weapon.StatCollection.GetStatistic(CustomAmmoCategories.AmmoIdStatName).Value<string>();
         ExtAmmunitionDef extAmmoDef = CustomAmmoCategories.findExtAmmo(CurrentAmmoId);
+        if (extAmmoDef.AOECapable == TripleBoolean.True) { return true; };
         if (extAmmoDef.AlwaysIndirectVisuals != TripleBoolean.NotSet) {
           result = (extAmmoDef.AlwaysIndirectVisuals == TripleBoolean.True);
         }
@@ -54,7 +54,7 @@ namespace CustomAmmoCategoriesPatches {
   [HarmonyPatch("PlayProjectile")]
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { })]
-  public static class MissileEffect_Fire {
+  public static class MissileEffect_PlayProjectile {
     public static bool Prefix(MissileEffect __instance) {
       bool isIndirect = (bool)typeof(MissileEffect).GetField("isIndirect", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(__instance);
       CustomAmmoCategoriesLog.Log.LogWrite("MissileEffect.PlayProjectile "+__instance.weapon.UIName+" real isIndirect = " + isIndirect+"\n");
@@ -65,13 +65,9 @@ namespace CustomAmmoCategoriesPatches {
       return true;
     }
   }
-  [HarmonyPatch(typeof(WeaponEffect))]
-  [HarmonyPatch("PlayProjectile")]
-  [HarmonyPatch(MethodType.Normal)]
-  [HarmonyPatch(new Type[] { })]
   public static class WeaponEffect_PlayProjectile {
     public static bool Prefix(WeaponEffect __instance) {
-      CustomAmmoCategoriesLog.Log.LogWrite("WeaponEffect.PlayProjectile");
+      CustomAmmoCategoriesLog.Log.LogWrite("WeaponEffect.PlayProjectile recoil\n");
       try {
         //__instance.t = 0.0f;
         typeof(WeaponEffect).GetField("t", BindingFlags.NonPublic | BindingFlags.Instance).SetValue(__instance, 0.0f);
@@ -121,8 +117,10 @@ namespace CustomAmmoCategoriesPatches {
           __instance.weapon.parent.GameRep.PlayFireAnim((AttackSourceLimb)num, CustomAmmoCategories.getWeaponAttackRecoil(__instance.weapon));
         }
         int hitIndex = (int)typeof(WeaponEffect).GetField("hitIndex", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(__instance);
-        if (!__instance.AllowMissSkipping || __instance.hitInfo.hitLocations[hitIndex] != 0 && __instance.hitInfo.hitLocations[hitIndex] != 65536) {
-          return false;
+        if (hitIndex >= 0) {
+          if (!__instance.AllowMissSkipping || __instance.hitInfo.hitLocations[hitIndex] != 0 && __instance.hitInfo.hitLocations[hitIndex] != 65536) {
+            return false;
+          }
         }
         __instance.PublishWeaponCompleteMessage();
       } catch (Exception e) {

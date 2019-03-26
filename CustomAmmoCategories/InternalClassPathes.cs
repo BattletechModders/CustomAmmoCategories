@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 using Harmony;
 using BattleTech;
 using System.Reflection;
@@ -23,6 +22,25 @@ namespace CustomAmmoCategoriesPathes {
       original = typeof(Weapon).Assembly.GetType("MeleeWithHighestPriorityEnemyNode").GetMethod("Tick", BindingFlags.NonPublic | BindingFlags.Instance);
       transpliter = typeof(MeleeWithHighestPriorityEnemyNode_Tick).GetMethod("Transpiler");
       harmony.Patch(original, null, null, new HarmonyMethod(transpliter));
+      var types = typeof(WeaponRealizer.Core).Assembly.GetTypes();
+      foreach (var tp in types) {
+        CustomAmmoCategoriesLog.Log.LogWrite("FoundType:"+tp.FullName+"\n");
+      }
+      var enabler = typeof(WeaponRealizer.Core).Assembly.GetType("WeaponRealizer.ClusteredShotRandomCacheEnabler");
+      if (enabler == null) {
+        CustomAmmoCategoriesLog.Log.LogWrite("Can't find WeaponRealizer.ClusteredShotRandomCacheEnabler in " + typeof(WeaponRealizer.Core).Assembly.FullName + "\n");
+      }
+      original = enabler.GetMethod("ShotsWhenFiredRandomizerOverider", BindingFlags.NonPublic | BindingFlags.Static);
+      if (original == null) {
+        CustomAmmoCategoriesLog.Log.LogWrite("Can't find ShotsWhenFiredRandomizerOverider in " + enabler.FullName+"\n");
+      }
+      //var enemyHarmony = HarmonyInstance.Create("com.joelmeador.WeaponRealizer");
+      //var enemyPatchedMethods = enemyHarmony.GetPatchedMethods();
+      //foreach(var ePatchedmethod in enemyPatchedMethods) {
+        //CustomAmmoCategoriesLog.Log.LogWrite
+      //}
+      //var postfix = typeof(WRClusteredShotRandomCacheEnabler_IsClustered).GetMethod("Prefix",BindingFlags.Static);
+      //harmony.Patch(original, new HarmonyMethod(postfix));
     }
   }
 }

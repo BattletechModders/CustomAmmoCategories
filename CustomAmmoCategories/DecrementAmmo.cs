@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 using Harmony;
 using BattleTech;
 using BattleTech.AttackDirectorHelpers;
@@ -91,11 +90,17 @@ namespace CustAmmoCategories {
         if (ammoBox.CurrentAmmo <= 0) { continue; }
         if ((string.IsNullOrEmpty(CurrentAmmoId) == false) && (ammoBox.ammoDef.Description.Id != CurrentAmmoId)) { continue; }
         if (ammoBox.CurrentAmmo >= modValue) {
-          if (StreakHitCount != 0) ammoBox.StatCollection.ModifyStat<int>(instance.uid, stackItemUID, "CurrentAmmo", StatCollection.StatOperation.Int_Subtract, modValue, -1, true);
+          if (StreakHitCount != 0) {
+            ammoBox.StatCollection.ModifyStat<int>(instance.uid, stackItemUID, "CurrentAmmo", StatCollection.StatOperation.Int_Subtract, modValue, -1, true);
+            CustomAmmoCategories.AddToExposionCheck(ammoBox);
+          }
           modValue = 0;
         } else {
           modValue -= ammoBox.CurrentAmmo;
-          if (StreakHitCount != 0) ammoBox.StatCollection.ModifyStat<int>(instance.uid, stackItemUID, "CurrentAmmo", StatCollection.StatOperation.Set, 0, -1, true);
+          if (StreakHitCount != 0) {
+            ammoBox.StatCollection.ModifyStat<int>(instance.uid, stackItemUID, "CurrentAmmo", StatCollection.StatOperation.Set, 0, -1, true);
+            CustomAmmoCategories.AddToExposionCheck(ammoBox);
+          }
         }
       }
       if (instance.weaponDef.ComponentTags.Contains("wr-clustered_shots") || CustomAmmoCategories.getWeaponDisabledClustering(instance)) {
@@ -103,7 +108,7 @@ namespace CustAmmoCategories {
       } else {
         result = (instance.ShotsWhenFired - modValue) * instance.ProjectilesPerShot;
       }
-      CustomAmmoCategoriesLog.Log.LogWrite("  fire exteranl ammo. projectiles:" + result + "\n");
+      CustomAmmoCategoriesLog.Log.LogWrite("  fire external ammo. projectiles:" + result + "\n");
       return result;
     }
   }

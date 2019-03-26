@@ -7,7 +7,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace CustAmmoCategories { 
   public class ExtAmmunitionDef {
@@ -35,6 +34,7 @@ namespace CustAmmoCategories {
     public TripleBoolean AOECapable { get; set; }
     public HitGeneratorType HitGenerator { get; set; }
     public float FlatJammingChance { get; set; }
+    public float AMSHitChance { get; set; }
     public float GunneryJammingBase { get; set; }
     public float GunneryJammingMult { get; set; }
     public float DistantVariance { get; set; }
@@ -42,7 +42,21 @@ namespace CustAmmoCategories {
     public float DamageVariance { get; set; }
     public float DamageMultiplier { get; set; }
     public CustomAmmoCategory AmmoCategory { get; set; }
+    public float SpreadRange { get; set; }
+    public float AOERange { get; set; }
+    public float AOEDamage { get; set; }
+    public float AOEHeatDamage { get; set; }
     public TripleBoolean AlwaysIndirectVisuals { get; set; }
+    public string IFFDef { get; set; }
+    public TripleBoolean HasShells { get; set; }
+    public float ShellsRadius { get; set; }
+    public float MinShellsDistance { get; set; }
+    public float MaxShellsDistance { get; set; }
+    public float UnseparatedDamageMult { get; set; }
+    public float ArmorDamageModifier { get; set; }
+    public float ISDamageModifier { get; set; }
+    public float CanBeExhaustedAt { get; set; }
+    public TripleBoolean Unguided { get; set; }
     public ExtAmmunitionDef() {
       AccuracyModifier = 0;
       DirectFireModifier = 0;
@@ -55,6 +69,7 @@ namespace CustAmmoCategories {
       MinRange = 0;
       MaxRange = 0;
       LongRange = 0;
+      AMSHitChance = 0f;
       MaxRange = 0;
       ShortRange = 0;
       MediumRange = 0;
@@ -70,13 +85,27 @@ namespace CustAmmoCategories {
       ForbiddenRange = 0;
       GunneryJammingBase = 0;
       GunneryJammingMult = 0;
+      AOERange = 0;
+      AOEDamage = 0;
+      AOEHeatDamage = 0;
+      SpreadRange = 0;
       IndirectFireCapable = TripleBoolean.NotSet;
       AlwaysIndirectVisuals = TripleBoolean.NotSet;
       AOECapable = TripleBoolean.NotSet;
       WeaponEffectID = "";
+      IFFDef = "";
       HitGenerator = HitGeneratorType.NotSet;
       statusEffects = new EffectData[0] { };
       AmmoCategory = new CustomAmmoCategory();
+      HasShells = TripleBoolean.NotSet;
+      ShellsRadius = 0f;
+      MinShellsDistance = 30f;
+      MaxShellsDistance = 30f;
+      UnseparatedDamageMult = 1f;
+      ISDamageModifier = 1f;
+      ArmorDamageModifier = 1f;
+      CanBeExhaustedAt = 0f;
+      Unguided = TripleBoolean.NotSet;
     }
   }
 }
@@ -148,6 +177,26 @@ namespace CustomAmmoCategoriesPatches {
         extAmmoDef.ForbiddenRange = (float)defTemp["ForbiddenRange"];
         defTemp.Remove("ForbiddenRange");
       }
+      if (defTemp["CanBeExhaustedAt"] != null) {
+        extAmmoDef.CanBeExhaustedAt = (float)defTemp["CanBeExhaustedAt"];
+        defTemp.Remove("CanBeExhaustedAt");
+      }
+      if (defTemp["IFFDef"] != null) {
+        extAmmoDef.IFFDef = (string)defTemp["IFFDef"];
+        defTemp.Remove("IFFDef");
+      }
+      if (defTemp["AOERange"] != null) {
+        extAmmoDef.AOERange = (float)defTemp["AOERange"];
+        defTemp.Remove("AOERange");
+      }
+      if (defTemp["SpreadRange"] != null) {
+        extAmmoDef.SpreadRange = (float)defTemp["SpreadRange"];
+        defTemp.Remove("SpreadRange");
+      }
+      if (defTemp["UnseparatedDamageMult"] != null) {
+        extAmmoDef.UnseparatedDamageMult = (float)defTemp["UnseparatedDamageMult"];
+        defTemp.Remove("UnseparatedDamageMult");
+      }
       if (defTemp["RefireModifier"] != null) {
         extAmmoDef.RefireModifier = (int)defTemp["RefireModifier"];
         defTemp.Remove("RefireModifier");
@@ -172,6 +221,28 @@ namespace CustomAmmoCategoriesPatches {
         extAmmoDef.FlatJammingChance = (float)defTemp["FlatJammingChance"];
         defTemp.Remove("FlatJammingChance");
       }
+      if (defTemp["AMSHitChance"] != null) {
+        extAmmoDef.AMSHitChance = (float)defTemp["AMSHitChance"];
+        defTemp.Remove("AMSHitChance");
+      }
+      if (defTemp["AOEDamage"] != null) {
+        extAmmoDef.AOEDamage = (float)defTemp["AOEDamage"];
+        defTemp.Remove("AOEDamage");
+      }
+      if (defTemp["AOEHeatDamage"] != null) {
+        extAmmoDef.AOEHeatDamage = (float)defTemp["AOEHeatDamage"];
+        defTemp.Remove("AOEHeatDamage");
+      }
+      if (defTemp["AMSHitChance"] != null) {
+        extAmmoDef.AMSHitChance = (float)defTemp["AMSHitChance"];
+        defTemp.Remove("AMSHitChance");
+      }
+      if (defTemp["ArmorDamageModifier"] != null) {
+        extAmmoDef.ArmorDamageModifier = (float)defTemp["ArmorDamageModifier"];
+      }
+      if (defTemp["ISDamageModifier"] != null) {
+        extAmmoDef.ISDamageModifier = (float)defTemp["ISDamageModifier"];
+      }
       if (defTemp["GunneryJammingBase"] != null) {
         extAmmoDef.GunneryJammingBase = (float)defTemp["GunneryJammingBase"];
         defTemp.Remove("GunneryJammingBase");
@@ -184,13 +255,25 @@ namespace CustomAmmoCategoriesPatches {
         extAmmoDef.IndirectFireCapable = ((bool)defTemp["IndirectFireCapable"] == true) ? TripleBoolean.True : TripleBoolean.False;
         defTemp.Remove("IndirectFireCapable");
       }
+      if (defTemp["HasShells"] != null) {
+        extAmmoDef.HasShells = ((bool)defTemp["HasShells"] == true) ? TripleBoolean.True : TripleBoolean.False;
+        defTemp.Remove("HasShells");
+      }
+      if (defTemp["ShellsRadius"] != null) {
+        extAmmoDef.ShellsRadius = (float)defTemp["ShellsRadius"];
+        defTemp.Remove("ShellsRadius");
+      }
+      if (defTemp["MinShellsDistance"] != null) {
+        extAmmoDef.MinShellsDistance = (float)defTemp["MinShellsDistance"];
+        defTemp.Remove("MinShellsDistance");
+      }
+      if (defTemp["MaxShellsDistance"] != null) {
+        extAmmoDef.MaxShellsDistance = (float)defTemp["MaxShellsDistance"];
+        defTemp.Remove("MaxShellsDistance");
+      }
       if (defTemp["DirectFireModifier"] != null) {
         extAmmoDef.DirectFireModifier = (float)defTemp["DirectFireModifier"];
         defTemp.Remove("DirectFireModifier");
-      }
-      if (defTemp["AOECapable"] != null) {
-        extAmmoDef.AOECapable = ((bool)defTemp["AOECapable"] == true) ? TripleBoolean.True : TripleBoolean.False;
-        defTemp.Remove("AOECapable");
       }
       if (defTemp["DistantVariance"] != null) {
         extAmmoDef.DistantVariance = (float)defTemp["DistantVariance"];
@@ -199,6 +282,21 @@ namespace CustomAmmoCategoriesPatches {
       if (defTemp["AlwaysIndirectVisuals"] != null) {
         extAmmoDef.AlwaysIndirectVisuals = ((bool)defTemp["AlwaysIndirectVisuals"] == true) ? TripleBoolean.True : TripleBoolean.False;
         defTemp.Remove("AlwaysIndirectVisuals");
+      }
+      if (defTemp["Unguided"] != null) {
+        extAmmoDef.Unguided = ((bool)defTemp["Unguided"] == true) ? TripleBoolean.True : TripleBoolean.False;
+        defTemp.Remove("Unguided");
+        if(extAmmoDef.Unguided == TripleBoolean.True) {
+          extAmmoDef.AlwaysIndirectVisuals = TripleBoolean.False;
+          extAmmoDef.IndirectFireCapable = TripleBoolean.False;
+        }
+      }
+      if (defTemp["AOECapable"] != null) {
+        extAmmoDef.AOECapable = ((bool)defTemp["AOECapable"] == true) ? TripleBoolean.True : TripleBoolean.False;
+        if (extAmmoDef.AOECapable == TripleBoolean.True) {
+          extAmmoDef.AlwaysIndirectVisuals = TripleBoolean.True;
+        }
+        defTemp.Remove("AOECapable");
       }
       if (defTemp["DamageMultiplier"] != null) {
         extAmmoDef.DamageMultiplier = (float)defTemp["DamageMultiplier"];
@@ -215,7 +313,7 @@ namespace CustomAmmoCategoriesPatches {
       if (defTemp["HitGenerator"] != null) {
         try {
           extAmmoDef.HitGenerator = (HitGeneratorType)Enum.Parse(typeof(HitGeneratorType), (string)defTemp["HitGenerator"], true);
-        } catch (Exception e) {
+        } catch (Exception) {
           extAmmoDef.HitGenerator = HitGeneratorType.NotSet;
         }
         defTemp.Remove("HitGenerator");

@@ -19,11 +19,14 @@ using UnityEngine;
 using HBS;
 using System.Threading;
 using CustomAmmoCategoriesPathes;
+using UIWidgets;
+using InControl;
 
 namespace CustomAmmoCategoriesLog {
   public static class Log {
     //private static string m_assemblyFile;
     private static string m_logfile;
+    private static readonly Mutex mutex = new Mutex();
     public static string BaseDirectory;
     public static void InitLog() {
       //Log.m_assemblyFile = (new System.Uri(Assembly.GetExecutingAssembly().CodeBase)).AbsolutePath;
@@ -32,14 +35,43 @@ namespace CustomAmmoCategoriesLog {
       File.Delete(Log.m_logfile);
     }
     public static void LogWrite(string line,bool isCritical = false) {
-      if ((CustomAmmoCategories.Settings.debugLog)||(isCritical)) {
-        File.AppendAllText(Log.m_logfile, line);
+      try {
+        if ((CustomAmmoCategories.Settings.debugLog) || (isCritical)) {
+          if (Log.mutex.WaitOne(1000)) {
+            File.AppendAllText(Log.m_logfile, line);
+            Log.mutex.ReleaseMutex();
+          }
+        }
+      }catch(Exception) {
+        //i'm sertanly don't know what to do
       }
     }
   }
+
 }
 
 namespace CustomAmmoCategoriesPatches {
+  [HarmonyPatch(typeof(CombatHUDActionButton))]
+  [HarmonyPatch("ExecuteClick")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { })]
+  public static class CombatHUDActionButton_ExecuteClick {
+
+    public static bool Prefix(CombatHUDActionButton __instance) {
+      /*CustomAmmoCategoriesLog.Log.LogWrite("CombatHUDActionButton.ExecuteClick '"+ __instance.GUID + "'/'"+ CombatHUD.ButtonID_Move + "' "+(__instance.GUID == CombatHUD.ButtonID_Move) +"\n");
+      CombatHUD HUD = (CombatHUD)typeof(CombatHUDActionButton).GetProperty("HUD", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(__instance, null);
+      if(__instance.GUID == CombatHUD.ButtonID_Move) {
+        CustomAmmoCategoriesLog.Log.LogWrite(" button is move\n");
+        bool modifyers = (Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.RightControl));
+        if (modifyers) {
+          CustomAmmoCategoriesLog.Log.LogWrite(" ctrl is pressed\n");
+          JokeMessageBox.ShowMessage();
+          return false;
+        }
+      }*/
+      return true;
+    }
+  }
   [HarmonyPatch(typeof(CombatHUDWeaponSlot))]
   [HarmonyPatch("OnPointerDown")]
   [HarmonyPatch(MethodType.Normal)]
@@ -63,18 +95,34 @@ namespace CustomAmmoCategoriesPatches {
       float clickXrel = worldClickPos.x - __instance.transform.position.x;
       bool trigger_mode = clickXrel > ((width / 3.0f) * 2.0f);
       bool trigger_ammo = clickXrel > ((width / 3.0f));
+      bool modifyers = (Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.RightControl));
       CustomAmmoCategoriesLog.Log.LogWrite("  instance.l = " + __instance.transform.position.x + "\n");
       CustomAmmoCategoriesLog.Log.LogWrite("  instance.t = " + __instance.transform.position.y + "\n");
       CustomAmmoCategoriesLog.Log.LogWrite("  instance.r = " + (__instance.transform.position.x + width) + "\n");
       CustomAmmoCategoriesLog.Log.LogWrite("  instance.b = " + (__instance.transform.position.y + height) + "\n");
       CustomAmmoCategoriesLog.Log.LogWrite("  position.x = " + eventData.position.x + "\n");
       CustomAmmoCategoriesLog.Log.LogWrite("  position.y = " + eventData.position.y + "\n");
+      CustomAmmoCategoriesLog.Log.LogWrite("  modifyers = " + (Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.RightControl)) + "\n");
       CustomAmmoCategoriesLog.Log.LogWrite("  worldClickPos.x = " + worldClickPos.x + "\n");
       CustomAmmoCategoriesLog.Log.LogWrite("  worldClickPos.y = " + worldClickPos.y + "\n");
       CustomAmmoCategoriesLog.Log.LogWrite("  clickXrel = " + clickXrel + "\n");
       CustomAmmoCategoriesLog.Log.LogWrite("  width = " + width + "\n");
       CustomAmmoCategoriesLog.Log.LogWrite("  trigger_ammo = " + trigger_ammo + "\n");
       CustomAmmoCategoriesLog.Log.LogWrite("  trigger_mode = " + trigger_mode + "\n");
+
+
+      if (modifyers) {
+        CustomAmmoCategories.EjectAmmo(__instance.DisplayedWeapon,__instance);
+        __instance.RefreshDisplayedWeapon((ICombatant)null);
+        return false;
+      }
+      /*if(trigger_ammo || trigger_mode) {
+        ExtWeaponDef extWeapon = CustomAmmoCategories.getExtWeaponDef(__instance.DisplayedWeapon.defId);
+        if (extWeapon.IsAMS) {
+          CustomAmmoCategories.testFireAMS(__instance.DisplayedWeapon);
+          return false;
+        }
+      }*/
       if (trigger_mode) {
         if ((CustomAmmoCategories.IsJammed(__instance.DisplayedWeapon) == false)
           && (CustomAmmoCategories.isWRJammed(__instance.DisplayedWeapon) == false)
@@ -114,6 +162,7 @@ namespace CustomAmmoCategoriesPatches {
       float height = __instance.GetComponent<RectTransform>().rect.height;
       float clickXrel = worldClickPos.x - __instance.transform.position.x;
       bool trigger = clickXrel > (width / 3.0f);
+      bool modifyers = (Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.RightControl));
       CustomAmmoCategoriesLog.Log.LogWrite("  instance.l = " + __instance.transform.position.x + "\n");
       CustomAmmoCategoriesLog.Log.LogWrite("  instance.t = " + __instance.transform.position.y + "\n");
       CustomAmmoCategoriesLog.Log.LogWrite("  instance.r = " + (__instance.transform.position.x + width) + "\n");
@@ -125,6 +174,9 @@ namespace CustomAmmoCategoriesPatches {
       CustomAmmoCategoriesLog.Log.LogWrite("  clickXrel = " + clickXrel + "\n");
       CustomAmmoCategoriesLog.Log.LogWrite("  width = " + width + "\n");
       CustomAmmoCategoriesLog.Log.LogWrite("  trigger = " + trigger + "\n");
+      if (modifyers) {
+        return false;
+      }
       if (trigger) {
         return false;
       }
@@ -252,6 +304,7 @@ namespace CustomAmmoCategoriesPatches {
   public static class CombatHUD_Init {
     public static bool Prefix(CombatHUD __instance, CombatGameState Combat) {
       CustomAmmoCategoriesLog.Log.LogWrite("pre CombatHUD.Init\n");
+      CustomAmmoCategories.ActorsEjectedAmmo.Clear();
       //CustomAmmoCategories.ClearPlayerWeapons();
       foreach (var unit in Combat.AllActors) {
         CustomAmmoCategoriesLog.Log.LogWrite("  " + unit.DisplayName + "\n");
@@ -273,8 +326,6 @@ namespace CustomAmmoCategoriesPatches {
       return false;
     }
   }
-
-
 
   [HarmonyPatch(typeof(Weapon))]
   [HarmonyPatch("SetAmmoBoxes")]
@@ -457,6 +508,17 @@ namespace CustomAmmoCategoriesPatches {
       Dictionary<string, WeaponDef> weapons = new Dictionary<string, WeaponDef>();
       Dictionary<string, AmmunitionDef> ammos = new Dictionary<string, AmmunitionDef>();
       CustomAmmoCategoriesLog.Log.LogWrite("Start Mech Validation "+mechDef.Name+"\n");
+      string testString = "";
+      if (Strings.Initialized) {
+        Strings.GetTranslationFor("CT DESTROYED", out testString);
+        CustomAmmoCategoriesLog.Log.LogWrite("Checking ... " + testString + "\n");
+        if (string.IsNullOrEmpty(testString) == false) {
+          if (testString.Contains((string)$"РЕАКТОР")) {
+            throw new Exception("Вы используете несовместимую версию локализации. Если вы хотите использовать Custom Ammo Categories, не используйте Russian translation fix. По вопросам совместимости Custom Ammo Categories вы можете обратиться к автору Russian translation fix");
+          }
+        }
+        CustomAmmoCategoriesLog.Log.LogWrite("Check passed\n");
+      }
       for (int index = 0; index < mechDef.Inventory.Length; ++index) {
         MechComponentRef mechComponentRef = mechDef.Inventory[index];
         mechComponentRef.RefreshComponentDef();
@@ -477,6 +539,7 @@ namespace CustomAmmoCategoriesPatches {
       foreach (var weaponDef in weapons) {
         bool weaponHasAmmo = false;
         if (CustomAmmoCategories.isWeaponCanShootNoAmmo(weaponDef.Value)) { continue; }
+        if (weaponDef.Value.StartingAmmoCapacity > 0) { continue; };
         foreach (var ammoDef in ammos) {
           if (CustomAmmoCategories.isWeaponCanUseAmmo(weaponDef.Value, ammoDef.Value)) {
             weaponHasAmmo = true;
@@ -531,7 +594,9 @@ namespace CustomAmmoCategoriesPatches {
         wGUID = weapon.StatCollection.GetStatistic(CustomAmmoCategories.GUIDStatisticName).Value<string>();
       }
       CustomAmmoCategories.ClearWeaponEffects(wGUID);
+      //CustomAmmoCategories.ClearWeaponShellEffects(wGUID);
       CustomAmmoCategories.InitWeaponEffects(__instance, weapon);
+      CustomAmmoCategories.registerShellsEffects(__instance,weapon);
     }
   }
   [HarmonyPatch(typeof(WeaponRepresentation))]
@@ -543,55 +608,20 @@ namespace CustomAmmoCategoriesPatches {
       CustomAmmoCategoriesLog.Log.LogWrite("WeaponRepresentation.PlayWeaponEffect\n");
       try {
         if (__instance.weapon == null) { return true; }
-        CustomAmmoCategoriesLog.Log.LogWrite("  weapon is set\n");
-        if (CustomAmmoCategories.checkExistance(__instance.weapon.StatCollection, CustomAmmoCategories.GUIDStatisticName) == false) { return true; }
-        CustomAmmoCategoriesLog.Log.LogWrite("  weapon GUID is set\n");
-        if (CustomAmmoCategories.checkExistance(__instance.weapon.StatCollection, CustomAmmoCategories.AmmoIdStatName) == false) { return true; }
-        CustomAmmoCategoriesLog.Log.LogWrite("  weapon ammoId is set\n");
-        string wGUID = __instance.weapon.StatCollection.GetStatistic(CustomAmmoCategories.GUIDStatisticName).Value<string>();
-        string ammoId = __instance.weapon.StatCollection.GetStatistic(CustomAmmoCategories.AmmoIdStatName).Value<string>();
-        WeaponMode weaponMode = CustomAmmoCategories.getWeaponMode(__instance.weapon);
-        string weaponEffectId = weaponMode.WeaponEffectID;
-        WeaponEffect currentEffect = (WeaponEffect)null;
-        if (string.IsNullOrEmpty(weaponEffectId)) {
-          currentEffect = __instance.WeaponEffect;
-          weaponEffectId = CustomAmmoCategories.findExtAmmo(ammoId).WeaponEffectID;
-          if (string.IsNullOrEmpty(weaponEffectId)) {
-            weaponEffectId = __instance.weapon.weaponDef.WeaponEffectID;
-          }
-        }
-        if (weaponEffectId == __instance.weapon.weaponDef.WeaponEffectID) {
-          currentEffect = __instance.WeaponEffect;
-          weaponEffectId = __instance.weapon.weaponDef.WeaponEffectID;
-        };
-        if (currentEffect == (WeaponEffect)null) {
-          currentEffect = CustomAmmoCategories.getWeaponEffect(wGUID, weaponEffectId);
-        }
-        CustomAmmoCategoriesLog.Log.LogWrite("  weapon weaponEffectId is set " + wGUID + " " + __instance.weapon.Name + " ammo:" + ammoId + " mode:" + weaponMode.UIName + " " + weaponEffectId + "\n");
+        WeaponEffect currentEffect = CustomAmmoCategories.getWeaponEffect(__instance.weapon);
         if (currentEffect == null) { return true; }
-        CustomAmmoCategoriesLog.Log.LogWrite("  weapon weaponEffect is set\n");
         ExtWeaponDef extWeaponDef = CustomAmmoCategories.getExtWeaponDef(__instance.weapon.Description.Id);
-        if (extWeaponDef.StreakEffect == true) {
-          CustomAmmoCategoriesLog.Log.LogWrite("  streak effect\n");
-          WeaponHitInfo streakHitInfo = CustomAmmoCategories.getSuccessOnly(hitInfo);
-          CustomAmmoCategories.ReturnNoFireHeat(__instance.weapon, hitInfo.stackItemUID, streakHitInfo.numberOfShots);
-          if (streakHitInfo.numberOfShots == 0) {
-            CustomAmmoCategoriesLog.Log.LogWrite("  no success hits\n");
-            currentEffect.currentState = WeaponEffect.WeaponEffectState.Complete;
-            currentEffect.subEffect = false;
-            currentEffect.hitInfo = hitInfo;
-            PropertyInfo property = typeof(WeaponEffect).GetProperty("FiringComplete");
-            property.DeclaringType.GetProperty("FiringComplete");
-            property.GetSetMethod(true).Invoke(currentEffect, new object[1] { (object)false });
-            typeof(WeaponEffect).GetMethod("PublishNextWeaponMessage", BindingFlags.NonPublic | BindingFlags.Instance).Invoke(currentEffect, new object[0]);
-            currentEffect.PublishWeaponCompleteMessage();
-          } else {
-            CustomAmmoCategoriesLog.Log.LogWrite("  streak fire\n");
-            currentEffect.Fire(streakHitInfo, 0, 0);
-            CustomAmmoCategories.DecrementAmmo(__instance.weapon, streakHitInfo.stackItemUID, streakHitInfo.numberOfShots);
-          }
+        if (hitInfo.numberOfShots == 0) {
+          CustomAmmoCategoriesLog.Log.LogWrite("  no success hits\n");
+          currentEffect.currentState = WeaponEffect.WeaponEffectState.Complete;
+          currentEffect.subEffect = false;
+          currentEffect.hitInfo = hitInfo;
+          PropertyInfo property = typeof(WeaponEffect).GetProperty("FiringComplete");
+          property.DeclaringType.GetProperty("FiringComplete");
+          property.GetSetMethod(true).Invoke(currentEffect, new object[1] { (object)false });
+          typeof(WeaponEffect).GetMethod("PublishNextWeaponMessage", BindingFlags.NonPublic | BindingFlags.Instance).Invoke(currentEffect, new object[0]);
+          currentEffect.PublishWeaponCompleteMessage();
         } else {
-          CustomAmmoCategoriesLog.Log.LogWrite("  normal fire\n");
           currentEffect.Fire(hitInfo, 0, 0);
         }
         CustomAmmoCategoriesLog.Log.LogWrite("  fired\n");
@@ -670,6 +700,7 @@ namespace CustAmmoCategories {
     NotSet,
     Individual,
     Cluster,
+    AOE,
     Streak
   }
 
@@ -733,12 +764,13 @@ namespace CustAmmoCategories {
       return result;
     }
     public static void registerExtWeaponDef(string defId, ExtWeaponDef def) {
-      ExtWeaponDef[defId] = def;
+      CustomAmmoCategories.ExtWeaponDef[defId] = def;
     }
     public static ExtWeaponDef getExtWeaponDef(string defId) {
       if (CustomAmmoCategories.ExtWeaponDef.ContainsKey(defId)) {
         return ExtWeaponDef[defId];
       } else {
+        CustomAmmoCategoriesLog.Log.LogWrite("WARNING!"+ defId + " is not registed\n",true);
         return CustomAmmoCategories.DefaultWeapon;
       }
     }
@@ -802,6 +834,39 @@ namespace CustAmmoCategories {
     public static void ClearWeaponEffects(string wGUID) {
       if (CustomAmmoCategories.WeaponEffects.ContainsKey(wGUID)) { WeaponEffects.Remove(wGUID); };
     }
+
+    public static void testFireAMS(Weapon weapon) {
+      CombatGameState combat = (CombatGameState)typeof(MechComponent).GetField("combat", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(weapon);
+      List<AbstractActor> enemies = combat.GetAllEnemiesOf(weapon.parent);
+      if(enemies.Count > 0) {
+        CustomAmmoCategoriesLog.Log.LogWrite("AMS test enemy "+enemies[0].DisplayName+"\n");
+        CustomAmmoCategories.FireAMS(weapon, enemies[0].CurrentPosition);
+      } else {
+        CustomAmmoCategoriesLog.Log.LogWrite("AMS test no enemies\n");
+      }
+    }
+
+    public static void FireAMS(Weapon weapon,Vector3 target) {
+      ExtWeaponDef extWeapon = CustomAmmoCategories.getExtWeaponDef(weapon.defId);
+      if (extWeapon.IsAMS) {
+        CustomAmmoCategoriesLog.Log.LogWrite("AMS found " + weapon.defId + "\n");
+        string wGUID = weapon.StatCollection.GetStatistic(CustomAmmoCategories.GUIDStatisticName).Value<string>();
+        BallisticEffect ballisticEffect = weapon.weaponRep.WeaponEffect as BallisticEffect;
+        LaserEffect LaserEffect = weapon.weaponRep.WeaponEffect as LaserEffect;
+        if (ballisticEffect != null) {
+          CustomAmmoCategoriesLog.Log.LogWrite("ballistic effect found " + weapon.defId + "\n");
+          CustomAmmoCategories.AMSFire(ballisticEffect,target);
+        } else
+        if(LaserEffect != null) {
+          CustomAmmoCategoriesLog.Log.LogWrite("laser effect found " + weapon.defId + "\n");
+          CustomAmmoCategories.AMSFire(LaserEffect, target);
+        } else { 
+          CustomAmmoCategoriesLog.Log.LogWrite("ams effect not found " + weapon.defId + " "+wGUID+"\n");
+        }
+      } else {
+        CustomAmmoCategoriesLog.Log.LogWrite("no AMS detected " + weapon.defId + "\n");
+      }
+    }
     public static void InitWeaponEffects(WeaponRepresentation weaponRepresentation, Weapon weapon) {
       if (CustomAmmoCategories.checkExistance(weapon.StatCollection, CustomAmmoCategories.GUIDStatisticName) == false) { return; }
       string wGUID = weapon.StatCollection.GetStatistic(CustomAmmoCategories.GUIDStatisticName).Value<string>();
@@ -822,6 +887,11 @@ namespace CustAmmoCategories {
         if (WeaponEffects[wGUID].ContainsKey(mode.Value.WeaponEffectID) == true) { continue; }
         WeaponEffects[wGUID][mode.Value.WeaponEffectID] = CustomAmmoCategories.InitWeaponEffect(weaponRepresentation, weapon, mode.Value.WeaponEffectID);
       }
+      /*if (string.IsNullOrEmpty(CustomAmmoCategories.ShellsWeaponEffectId) == false) {
+        if (WeaponEffects[wGUID].ContainsKey(CustomAmmoCategories.ShellsWeaponEffectId) == false) {
+          WeaponEffects[wGUID][CustomAmmoCategories.ShellsWeaponEffectId] = CustomAmmoCategories.InitWeaponEffect(weaponRepresentation, weapon, CustomAmmoCategories.ShellsWeaponEffectId);
+        }
+      }*/
     }
     public static WeaponEffect InitWeaponEffect(WeaponRepresentation weaponRepresentation, Weapon weapon, string weaponEffectId) {
       GameObject gameObject = (GameObject)null;
@@ -864,9 +934,6 @@ namespace CustAmmoCategories {
       return CustomAmmoCategories.DefaultAmmo;
     }
     public static void CycleAmmoBest(Weapon weapon) {
-      if (weapon.ammoBoxes.Count == 0) {
-        return;
-      };
       if (CustomAmmoCategories.checkExistance(weapon.StatCollection, CustomAmmoCategories.AmmoIdStatName) == false) {
         weapon.StatCollection.AddStatistic<string>(CustomAmmoCategories.AmmoIdStatName, CustomAmmoCategories.findBestAmmo(weapon));
       } else {
@@ -1059,7 +1126,7 @@ namespace CustAmmoCategories {
         CustomAmmoCategory boxAmmoCategory = extAmmo.AmmoCategory;
         if (boxAmmoCategory == CustomAmmoCategories.NotSetCustomAmmoCategoty) { boxAmmoCategory = CustomAmmoCategories.find(weapon.ammoBoxes[index].ammoDef.Category.ToString()); }
         if (boxAmmoCategory == CustomAmmoCategories.NotSetCustomAmmoCategoty) {
-          CustomAmmoCategoriesLog.Log.LogWrite("WARNING! ammunition box " + weapon.ammoBoxes[index].defId + " has no ammo category\n");
+          CustomAmmoCategoriesLog.Log.LogWrite("WARNING! ammunition box " + weapon.ammoBoxes[index].defId + " has no ammo category\n",true);
           continue;
         }
         if (weaponAmmoCategory != boxAmmoCategory) { continue; };
@@ -1069,7 +1136,14 @@ namespace CustAmmoCategories {
         }
       }
       if (string.IsNullOrEmpty(result)) {
-        result = weapon.ammoBoxes[0].ammoDef.Description.Id;
+        CustomAmmoCategoriesLog.Log.LogWrite("WARNING! no ammo box for category "+ weaponAmmoCategory.Id+". Fallback\n", true);
+        foreach (var ammo in CustomAmmoCategories.ExtAmmunitionDef) {
+          if(ammo.Value.AmmoCategory.Index == weaponAmmoCategory.Index) {
+            result = ammo.Key;
+            break;
+          }
+        }
+        CustomAmmoCategoriesLog.Log.LogWrite("Default ammo id is used "+result+"\n");
       }
       return result;
     }
@@ -1084,6 +1158,7 @@ namespace CustAmmoCategories {
       CustomAmmoCategories.DefaultAmmo = new ExtAmmunitionDef();
       CustomAmmoCategories.DefaultWeapon = new ExtWeaponDef();
       CustomAmmoCategories.DefaultWeaponMode = new WeaponMode();
+      CustomAmmoCategories.amsWeapons = new Dictionary<string, Weapon>();
       //string assemblyFile = (new System.Uri(Assembly.GetExecutingAssembly().CodeBase)).AbsolutePath;
       string filename = Path.Combine(CustomAmmoCategoriesLog.Log.BaseDirectory, "CustomAmmoCategories.json");
       //filename = Path.Combine(filename, "CustomAmmoCategories.json");
@@ -1121,23 +1196,33 @@ namespace CustAmmoCategories {
   public class Settings {
     public bool debugLog { get; set; }
     public bool forbiddenRangeEnable { get; set; }
+    public bool AmmoCanBeExhausted { get; set; }
+    public bool Joke { get; set; }
     public float ClusterAIMult { get; set; }
     public float PenetrateAIMult { get; set; }
+    public float JamAIAvoid { get; set; }
+    public float DamageJamAIAvoid { get; set; }
     public bool modHTTPServer { get; set; }
     public string modHTTPListen { get; set; }
+    public string WeaponRealizerStandalone { get; set; }
     Settings() {
       debugLog = true;
       modHTTPServer = true;
       forbiddenRangeEnable = true;
+      Joke = false;
+      AmmoCanBeExhausted = true;
       ClusterAIMult = 0.2f;
       PenetrateAIMult = 0.4f;
+      JamAIAvoid = 1.0f;
+      DamageJamAIAvoid = 2.0f;
+      WeaponRealizerStandalone = "";
       modHTTPListen = "http://localhost:65080";
     }
   }
 }
 
 namespace CustomAmmoCategoriesInit {
-  public static partial class Core {
+  public static class Core {
     public static void Init(string directory, string settingsJson) {
       //SavesForm savesForm = new SavesForm();
       CustomAmmoCategoriesLog.Log.BaseDirectory = directory;
@@ -1145,10 +1230,30 @@ namespace CustomAmmoCategoriesInit {
       string settings_filename = Path.Combine(CustomAmmoCategoriesLog.Log.BaseDirectory, "CustomAmmoCategoriesSettings.json");
       //settings_filename = Path.Combine(settings_filename, "CustomAmmoCategoriesSettings.json");
       CustomAmmoCategories.Settings = JsonConvert.DeserializeObject<CustAmmoCategories.Settings>(File.ReadAllText(settings_filename));
-      CustomAmmoCategoriesLog.Log.LogWrite("Initing...\n");
+      CustomAmmoCategoriesLog.Log.LogWrite("Initing... "+directory+"\n");
+      if (string.IsNullOrEmpty(CustomAmmoCategories.Settings.WeaponRealizerStandalone) == false) {
+        CustomAmmoCategoriesLog.Log.LogWrite("standalone WeaponRealizer detected\n");
+        string WRPath = Path.Combine(directory, CustomAmmoCategories.Settings.WeaponRealizerStandalone);
+        if (File.Exists(WRPath)) {
+          CustomAmmoCategoriesLog.Log.LogWrite(WRPath+" - exists. Loading assembly.\n");
+          Assembly.LoadFile(WRPath);
+          CustomAmmoCategoriesLog.Log.LogWrite("Initing WR\n");
+          typeof(WeaponRealizer.Core).GetMethod("Init", BindingFlags.Public | BindingFlags.Static).Invoke(null, new object[2] { (object)directory,(object)settingsJson});
+        }
+      }
+      //typeof(BattleTech.AttackDirectorHelpers.MessageCoordinator).GetField("logger", BindingFlags.Static | BindingFlags.Public).SetValue(null, (object)HBS.Logging.Logger.GetLogger("CombatLog.MechImpacts", HBS.Logging.LogLevel.Debug));
       try {
         CustomAmmoCategories.CustomCategoriesInit();
         var harmony = HarmonyInstance.Create("io.mission.modrepuation");
+        //Assembly.LoadFile(Path.Combine(directory,"CACPatches.dll"));
+        //harmony.PatchAll(Assembly.)
+        //var ancorType = AccessTools.TypeByName("MechComponent_UIName");
+        //if (ancorType == null) {
+        //  CustomAmmoCategoriesLog.Log.LogWrite("Can't find ancor type\n");
+        //} else {
+          //CustomAmmoCategoriesLog.Log.LogWrite("Ancor type found "+ancorType.Assembly.FullName+"\n");
+          //harmony.PatchAll(ancorType.Assembly);
+        //}
         harmony.PatchAll(Assembly.GetExecutingAssembly());
         InternalClassPathes.PatchInternalClasses(harmony);
         Thread thread = new Thread(ThreadWork.DoWork);

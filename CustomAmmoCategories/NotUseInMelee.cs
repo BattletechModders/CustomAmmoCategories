@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 using Harmony;
 using BattleTech;
 using System.Reflection;
@@ -54,7 +53,6 @@ namespace CustomAmmoCategoriesPathes {
   [HarmonyPatch(typeof(AttackEvaluator))]
   [HarmonyPatch("MakeAttackOrderForTarget")]
   [HarmonyPatch(MethodType.Normal)]
-  [HarmonyPatch(new Type[] { typeof(Mech), typeof(ICombatant), typeof(Vector3), typeof(Vector3), typeof(bool), typeof(AbstractActor) })]
   public static class AttackEvaluator_MakeAttackOrderForTarget_AP {
     static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) {
       var targetPropertyGetter = AccessTools.Property(typeof(Weapon), "Category").GetGetMethod();
