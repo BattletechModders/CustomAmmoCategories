@@ -47,6 +47,7 @@ new fields
 								  result = 1.0 + (6-10)*0.1 = 0.6
 								  GunneryJammingBase if ommited in weapon def., ammo def. and mode def. assumed as 5. 
   "DisableClustering": true/false - if true ProjectilesPerShot > 1 will affect only visual nor damage. If omitted consider as true.
+  "NotUseInMelee": true, - if true even AntiPersonel weapon type will not fire on melee attack, AI aware. 
 	"Modes": array of modes for weapon
 	[{
 		"Id": "x4",  - Must be unique per weapon
