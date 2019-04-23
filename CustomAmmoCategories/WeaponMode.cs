@@ -57,6 +57,18 @@ namespace CustAmmoCategories {
     public float MinShellsDistance { get; set; }
     public float MaxShellsDistance { get; set; }
     public TripleBoolean Unguided { get; set; }
+    public float ArmorDamageModifier { get; set; }
+    public float ISDamageModifier { get; set; }
+    public float FireTerrainChance { get; set; }
+    public int FireDurationWithoutForest { get; set; }
+    public int FireTerrainStrength { get; set; }
+    public TripleBoolean FireOnSuccessHit { get; set; }
+    public int FireTerrainCellRadius { get; set; }
+    public string AdditionalImpactVFX { get; set; }
+    public float AdditionalImpactVFXScaleX { get; set; }
+    public float AdditionalImpactVFXScaleY { get; set; }
+    public float AdditionalImpactVFXScaleZ { get; set; }
+    public int ClearMineFieldRadius { get; set; }
     public WeaponMode() {
       Id = WeaponMode.NONE_MODE_NAME;
       UIName = WeaponMode.BASE_MODE_NAME;
@@ -106,6 +118,17 @@ namespace CustAmmoCategories {
       Unguided = TripleBoolean.NotSet;
       MinShellsDistance = 30f;
       MaxShellsDistance = 30f;
+      ArmorDamageModifier = 1f;
+      ISDamageModifier = 1f;
+      FireTerrainChance = 0f;
+      FireDurationWithoutForest = 0;
+      FireTerrainStrength = 0;
+      FireTerrainCellRadius = 0;
+      AdditionalImpactVFXScaleX = 1f;
+      AdditionalImpactVFXScaleY = 1f;
+      AdditionalImpactVFXScaleZ = 1f;
+      FireOnSuccessHit = TripleBoolean.NotSet;
+      ClearMineFieldRadius = 0;
     }
     public void fromJSON(string json) {
       JObject jWeaponMode = JObject.Parse(json);
@@ -160,6 +183,12 @@ namespace CustAmmoCategories {
       if (jWeaponMode["SpreadRange"] != null) {
         this.SpreadRange = (float)jWeaponMode["SpreadRange"];
       }
+      if (jWeaponMode["ArmorDamageModifier"] != null) {
+        this.ArmorDamageModifier = (float)jWeaponMode["ArmorDamageModifier"];
+      }
+      if (jWeaponMode["ISDamageModifier"] != null) {
+        this.ISDamageModifier = (float)jWeaponMode["ISDamageModifier"];
+      }
       if (jWeaponMode["RefireModifier"] != null) {
         this.RefireModifier = (int)jWeaponMode["RefireModifier"];
       }
@@ -177,6 +206,15 @@ namespace CustAmmoCategories {
       }
       if (jWeaponMode["WeaponEffectID"] != null) {
         this.WeaponEffectID = (string)jWeaponMode["WeaponEffectID"];
+      }
+      if (jWeaponMode["AdditionalImpactVFXScaleX"] != null) {
+        this.AdditionalImpactVFXScaleX = (float)jWeaponMode["AdditionalImpactVFXScaleX"];
+      }
+      if (jWeaponMode["AdditionalImpactVFXScaleY"] != null) {
+        this.AdditionalImpactVFXScaleY = (float)jWeaponMode["AdditionalImpactVFXScaleY"];
+      }
+      if (jWeaponMode["AdditionalImpactVFXScaleZ"] != null) {
+        this.AdditionalImpactVFXScaleZ = (float)jWeaponMode["AdditionalImpactVFXScaleZ"];
       }
       if (jWeaponMode["EvasivePipsIgnored"] != null) {
         this.EvasivePipsIgnored = (float)jWeaponMode["EvasivePipsIgnored"];
@@ -214,6 +252,9 @@ namespace CustAmmoCategories {
       if (jWeaponMode["FlatJammingChance"] != null) {
         this.FlatJammingChance = (float)jWeaponMode["FlatJammingChance"];
       }
+      if (jWeaponMode["ClearMineFieldRadius"] != null) {
+        this.ClearMineFieldRadius = (int)jWeaponMode["ClearMineFieldRadius"];
+      }
       if (jWeaponMode["AMSHitChance"] != null) {
         this.AMSHitChance = (float)jWeaponMode["AMSHitChance"];
       }
@@ -228,6 +269,24 @@ namespace CustAmmoCategories {
       }
       if (jWeaponMode["Cooldown"] != null) {
         this.Cooldown = (int)jWeaponMode["Cooldown"];
+      }
+      if (jWeaponMode["FireTerrainChance"] != null) {
+        this.FireTerrainChance = (float)jWeaponMode["FireTerrainChance"];
+      }
+      if (jWeaponMode["FireDurationWithoutForest"] != null) {
+        this.FireDurationWithoutForest = (int)jWeaponMode["FireDurationWithoutForest"];
+      }
+      if (jWeaponMode["FireTerrainStrength"] != null) {
+        this.FireTerrainStrength = (int)jWeaponMode["FireTerrainStrength"];
+      }
+      if (jWeaponMode["FireOnSuccessHit"] != null) {
+        this.FireOnSuccessHit = ((bool)jWeaponMode["FireOnSuccessHit"] == true) ? TripleBoolean.True : TripleBoolean.False;
+      }
+      if (jWeaponMode["FireTerrainCellRadius"] != null) {
+        this.FireTerrainCellRadius = (int)jWeaponMode["FireTerrainCellRadius"];
+      }
+      if (jWeaponMode["AdditionalImpactVFX"] != null) {
+        this.AdditionalImpactVFX = (string)jWeaponMode["AdditionalImpactVFX"];
       }
       if (jWeaponMode["AmmoCategory"] != null) {
         this.AmmoCategory = CustomAmmoCategories.find((string)jWeaponMode["AmmoCategory"]);

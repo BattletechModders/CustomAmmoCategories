@@ -270,6 +270,16 @@ namespace CustomAmmoCategoriesPatches {
         CustomAmmoCategoriesLog.Log.LogWrite(" strange behavior. NumberOfShots: " + hitInfo.numberOfShots + " but HitLocations length:" + hitInfo.hitLocations.Length + ". Must be equal\n", true);
         hitInfo.numberOfShots = hitInfo.hitLocations.Length;
       }
+      if (instance.attacker.GUID == target.GUID) {
+        Vector3 terrainPos = CustomAmmoCategories.getTerrinHitPosition(instance.stackItemUID);
+        if (terrainPos != Vector3.zero) {
+          CustomAmmoCategoriesLog.Log.LogWrite(" terrain attack detected to " + terrainPos + "\n");
+          for (int hitIndex = 0; hitIndex < numberOfShots; ++hitIndex) {
+            hitInfo.hitLocations[hitIndex] = 65536;
+            hitInfo.hitPositions[hitIndex] = terrainPos + (hitInfo.hitPositions[hitIndex] - target.CurrentPosition);
+          }
+        }
+      }
       CustomAmmoCategoriesLog.Log.LogWrite(" result(" + hitInfo.numberOfShots + "):");
       for (int hitIndex = 0; hitIndex < hitInfo.numberOfShots; ++hitIndex) {
         CustomAmmoCategoriesLog.Log.LogWrite(" " + hitInfo.hitLocations[hitIndex] + "/" + hitInfo.locationRolls[hitIndex]);
@@ -335,11 +345,15 @@ namespace CustomAmmoCategoriesPatches {
         }
         ExtWeaponDef extWeapon = CustomAmmoCategories.getExtWeaponDef(weapon.defId);
         if (extWeapon.StreakEffect == true) {
-          CustomAmmoCategoriesLog.Log.LogWrite("Streak detected. Clearing missed.\n");
-          WeaponHitInfo streakHitInfo = CustomAmmoCategories.getSuccessOnly(hitInfo);
-          CustomAmmoCategories.ReturnNoFireHeat(weapon, hitInfo.stackItemUID, streakHitInfo.numberOfShots);
-          CustomAmmoCategories.DecrementAmmo(weapon, streakHitInfo.stackItemUID, streakHitInfo.numberOfShots);
-          hitInfo = streakHitInfo;
+          if (__instance.attacker.GUID != __instance.target.GUID) {
+            CustomAmmoCategoriesLog.Log.LogWrite("Streak detected. Clearing missed.\n");
+            WeaponHitInfo streakHitInfo = CustomAmmoCategories.getSuccessOnly(hitInfo);
+            CustomAmmoCategories.ReturnNoFireHeat(weapon, hitInfo.stackItemUID, streakHitInfo.numberOfShots);
+            CustomAmmoCategories.DecrementAmmo(weapon, streakHitInfo.stackItemUID, streakHitInfo.numberOfShots);
+            hitInfo = streakHitInfo;
+          } else {
+            CustomAmmoCategoriesLog.Log.LogWrite("Streak detected. But terrain attack. No misses clearence performed.\n");
+          }
         }
         //if (extWeapon.AMSImmune != TripleBoolean.True) {
         if (weapon.weaponRep != null) {

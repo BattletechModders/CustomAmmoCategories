@@ -165,7 +165,12 @@ namespace CustAmmoCategories {
       }
       //JammingEnabler.jammQueue.Enqueue(attackSequence.attacker);
       //AbstractActor actor = attackSequence.target as AbstractActor;
-      CustomAmmoCategoriesLog.Log.LogWrite($"Jamming AMS sequence " + attackSequence.attacker.DisplayName + "\n");
+      JammingEnabler.jammAMS();
+      JammingEnabler.jamm(attackSequence.attacker);
+      return true;
+    }
+    public static void jammAMS() {
+      CustomAmmoCategoriesLog.Log.LogWrite($"Jamming AMS sequence\n");
       while (CustomAmmoCategories.jammAMSQueue.Count > 0) {
         Weapon weapon = CustomAmmoCategories.jammAMSQueue.Dequeue();
         ExtWeaponDef extWeapon = CustomAmmoCategories.getExtWeaponDef(weapon.defId);
@@ -193,8 +198,6 @@ namespace CustAmmoCategories {
           CustomAmmoCategories.AddCooldown(weapon.parent, weapon);
         }
       }
-      JammingEnabler.jamm(attackSequence.attacker);
-      return true;
     }
     public static void jamm(AbstractActor actor) {
       CustomAmmoCategoriesLog.Log.LogWrite($"Try jamm weapon\n");
@@ -243,8 +246,9 @@ namespace CustAmmoCategories {
         }
         weapon.StatCollection.Set<bool>(CustomAmmoCategories.JammedWeaponStatisticName, true);
         weapon.StatCollection.Set<bool>(CustomAmmoCategories.TemporarilyDisabledStatisticName, true);
-        CustomAmmoCategories.addJamMessage(actor, $"{weapon.Name} Jammed!");
-
+        if (CustomAmmoCategories.Settings.DontShowNotDangerouceJammMessages == false) {
+          CustomAmmoCategories.addJamMessage(actor, $"{weapon.Name} Jammed!");
+        }
         //actor.Combat.MessageCenter.PublishMessage(
         //    new AddSequenceToStackMessage(
         //        new ShowActorInfoSequence(actor, $"{weapon.Name} Jammed!", FloatieMessage.MessageNature.Debuff,
@@ -270,7 +274,9 @@ namespace CustAmmoCategories {
       if (CustomAmmoCategories.getWeaponCooldown(weapon) > 0) {
         weapon.StatCollection.Set<int>(CustomAmmoCategories.CooldownWeaponStatisticName, CustomAmmoCategories.getWeaponCooldown(weapon));
         weapon.StatCollection.Set<bool>(CustomAmmoCategories.TemporarilyDisabledStatisticName, true);
-        CustomAmmoCategories.addJamMessage(actor, $"{weapon.Name} Cooldown!");
+        if (CustomAmmoCategories.Settings.DontShowNotDangerouceJammMessages == false) {
+          CustomAmmoCategories.addJamMessage(actor, $"{weapon.Name} Cooldown!");
+        }
 
         //actor.Combat.MessageCenter.PublishMessage(
         //    new AddSequenceToStackMessage(

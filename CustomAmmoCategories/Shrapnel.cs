@@ -5,6 +5,7 @@ using FluffyUnderware.Curvy;
 using Harmony;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
@@ -118,7 +119,7 @@ namespace CustAmmoCategories {
           }
         }
       }
-      shellsEffect.Reset();
+      if (shellsEffect != null) { shellsEffect.Reset(); }
       //CustomAmmoCategories.ShrapnelHitsRecord.Remove(attackSequenceId);
     }
     public static bool getWeaponHasShells(Weapon weapon) {
@@ -418,7 +419,13 @@ namespace CustAmmoCategories {
         }
       } else {
         Vector3 startPos = startingTransform.position;
-        Vector3 endPos = target.CurrentPosition;
+        Vector3 endPos = Vector3.zero;
+        if (target.GUID != hitInfo.attackerId) {
+          endPos = target.CurrentPosition;
+        } else {
+          endPos = CustomAmmoCategories.getTerrinHitPosition(hitInfo.stackItemUID);
+          CustomAmmoCategoriesLog.Log.LogWrite(" Ground attack detected:"+endPos+"\n");
+        }
         float distance = Vector3.Distance(startPos, endPos);
         CustomAmmoCategoriesLog.Log.LogWrite(" trajectory length:" + distance + ". Min separation distance:" + sMin + "\n");
         if (distance > sMin) {
@@ -1060,7 +1067,7 @@ namespace CustomAmmoCategoriesPatches {
           return false;
         }
       }
-      return true;
+      return WeaponEffect_FireTerrain.Prefix(__instance,hitInfo,hitIndex,emitterIndex);
     }
   }
   [HarmonyPatch(typeof(BallisticEffect))]
@@ -1069,6 +1076,7 @@ namespace CustomAmmoCategoriesPatches {
   [HarmonyPatch(new Type[] { })]
   [HarmonyPriority(Priority.Normal)]
   public static class BallisticEffect_FireNextBulletShell {
+    private static Stopwatch watchdog = new Stopwatch();
     public static bool Prefix(BallisticEffect __instance) {
       if (__instance.subEffect) {
         int hitIndex = (int)typeof(WeaponEffect).GetField("hitIndex", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(__instance);
@@ -1082,9 +1090,23 @@ namespace CustomAmmoCategoriesPatches {
         int currentBullet = (int)typeof(BallisticEffect).GetField("currentBullet", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(__instance);
         int currentBulletBorder = shrapnelHitRecord.shellsHitIndex + shrapnelHitRecord.count - __instance.hitInfo.numberOfShots;
         CustomAmmoCategoriesLog.Log.LogWrite("BulletBorder " + currentBulletBorder + "=" + shrapnelHitRecord.shellsHitIndex + "+" + shrapnelHitRecord.count + "-" + __instance.hitInfo.numberOfShots + "\n");
-        CustomAmmoCategoriesLog.Log.LogWrite("FireNextBullet shells effect " + currentBullet + "/" + currentBulletBorder + "/" + bullets.Count + "\n");
-        if ((currentBullet < 0) || (currentBullet >= currentBulletBorder) || (currentBullet >= bullets.Count)) { return false; }
+        CustomAmmoCategoriesLog.Log.LogWrite("FireNextBullet shells effect " + currentBullet + "/" + currentBulletBorder + "/" + bullets.Count + " "+ BallisticEffect_FireNextBulletShell.watchdog.ElapsedMilliseconds + "\n");
+        if ((currentBullet < 0) || (currentBullet >= currentBulletBorder) || (currentBullet >= bullets.Count)) {
+          BallisticEffect_FireNextBulletShell.watchdog.Stop();
+          if(BallisticEffect_FireNextBulletShell.watchdog.ElapsedMilliseconds > 3000) {
+            CustomAmmoCategoriesLog.Log.LogWrite("It takes too long, need fallback and clean\n",true);
+            foreach(var bullet in bullets) {
+              bullet.currentState = WeaponEffect.WeaponEffectState.Complete;
+            }
+            BallisticEffect_FireNextBulletShell.watchdog.Reset();
+          }
+          BallisticEffect_FireNextBulletShell.watchdog.Start();
+          return false;
+        }
         try {
+          BallisticEffect_FireNextBulletShell.watchdog.Stop();
+          BallisticEffect_FireNextBulletShell.watchdog.Reset();
+          BallisticEffect_FireNextBulletShell.watchdog.Start();
           BulletEffect bullet = bullets[currentBullet];
           bullet.bulletIdx = currentBullet;
           int bulletHitIndex = currentBullet + __instance.hitInfo.numberOfShots;
@@ -1557,6 +1579,19 @@ namespace CustomAmmoCategoriesPatches {
   [HarmonyPatch(new Type[] { })]
   [HarmonyPriority(Priority.First)]
   public static class BallisticEffect_SetupBulletsShell {
+    static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) {
+      var targetPropertyGetter = AccessTools.Property(typeof(Weapon), "ProjectilesPerShot").GetGetMethod();
+      var replacementMethod = AccessTools.Method(typeof(BallisticEffect_SetupBulletsShell), nameof(ProjectilesPerShot));
+      return Transpilers.MethodReplacer(instructions, targetPropertyGetter, replacementMethod);
+    }
+
+    private static int ProjectilesPerShot(Weapon weapon) {
+      if (CustomAmmoCategories.getWeaponHasShells(weapon)) {
+        return weapon.ShotsWhenFired;
+      }
+      return weapon.ProjectilesPerShot;
+      //CustomAmmoCategoriesLog.Log.LogWrite("get AIUtil_UnitHasLOFToTargetFromPosition IndirectFireCapable\n");
+    }
     public static bool Prefix(BallisticEffect __instance) {
       if (CustomAmmoCategories.getWeaponHasShells(__instance.weapon) == false) {return true;}
       CustomAmmoCategoriesLog.Log.LogWrite("SetupBullets as for bullets with shell effects\n");
@@ -1596,6 +1631,36 @@ namespace CustomAmmoCategoriesPatches {
         component.Init(__instance.weapon, __instance);
       }
       return false;
+    }
+  }
+  [HarmonyPatch(typeof(WeaponEffect))]
+  [HarmonyPatch("InitProjectile")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { })]
+  public static class WeaponEffect_InitProjectileShells {
+    public static bool Prefix(WeaponEffect __instance) {
+      if ((UnityEngine.Object)__instance.projectilePrefab != (UnityEngine.Object)null && (UnityEngine.Object)__instance.projectile != (UnityEngine.Object)null) {
+        string activeProjectileName = (string)typeof(WeaponEffect).GetField("activeProjectileName", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(__instance);
+        if (string.IsNullOrEmpty(activeProjectileName)) {
+          if (string.IsNullOrEmpty(__instance.projectilePrefab.name) == false) {
+            typeof(WeaponEffect).GetField("activeProjectileName", BindingFlags.NonPublic | BindingFlags.Instance).SetValue(__instance, __instance.projectilePrefab.name);
+          } else {
+            CustomAmmoCategoriesLog.Log.LogWrite("This should not happend. Projectile prefab is null! Projectile should not be inited\n",true);
+            return false;
+          }
+        }
+      }
+      return true;
+    }
+  }
+  [HarmonyPatch(typeof(CombatGameState))]
+  [HarmonyPatch("OnCombatGameDestroyed")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { })]
+  public static class CombatGameState_OnCombatGameDestroyedShrapnell {
+    public static bool Prefix(CombatGameState __instance) {
+      CustomAmmoCategories.ShrapnelHitsRecord.Clear();
+      return true;
     }
   }
 }

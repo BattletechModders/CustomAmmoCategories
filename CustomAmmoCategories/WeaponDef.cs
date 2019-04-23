@@ -42,7 +42,19 @@ namespace CustAmmoCategories {
     public float MinShellsDistance { get; set; }
     public float MaxShellsDistance { get; set; }
     public TripleBoolean Unguided { get; set; }
+    public float ArmorDamageModifier { get; set; }
+    public float ISDamageModifier { get; set; }
     //public TripleBoolean AOECapable { get; set; }
+    public float FireTerrainChance { get; set; }
+    public int FireDurationWithoutForest { get; set; }
+    public int FireTerrainStrength { get; set; }
+    public int FireTerrainCellRadius { get; set; }
+    public string AdditionalImpactVFX { get; set; }
+    public TripleBoolean FireOnSuccessHit { get; set; }
+    public float AdditionalImpactVFXScaleX { get; set; }
+    public float AdditionalImpactVFXScaleY { get; set; }
+    public float AdditionalImpactVFXScaleZ { get; set; }
+    public int ClearMineFieldRadius { get; set; }
     public ExtWeaponDef() {
       StreakEffect = false;
       HitGenerator = HitGeneratorType.NotSet;
@@ -75,6 +87,18 @@ namespace CustAmmoCategories {
       MaxShellsDistance = 30f;
       Unguided = TripleBoolean.NotSet;
       Modes = new Dictionary<string, WeaponMode>();
+      ArmorDamageModifier = 1f;
+      ISDamageModifier = 1f;
+      FireTerrainChance = 0f;
+      FireDurationWithoutForest = 0;
+      FireTerrainStrength = 0;
+      FireOnSuccessHit = TripleBoolean.NotSet;
+      FireTerrainCellRadius = 0;
+      AdditionalImpactVFXScaleX = 1f;
+      AdditionalImpactVFXScaleY = 1f;
+      AdditionalImpactVFXScaleZ = 1f;
+      AdditionalImpactVFX = string.Empty;
+      ClearMineFieldRadius = 0;
     }
   }
 }
@@ -111,6 +135,22 @@ namespace CustomAmmoCategoriesPatches {
         extDef.FlatJammingChance = (float)defTemp["FlatJammingChance"];
         defTemp.Remove("FlatJammingChance");
       }
+      if (defTemp["FireTerrainChance"] != null) {
+        extDef.FireTerrainChance = (float)defTemp["FireTerrainChance"];
+        defTemp.Remove("FireTerrainChance");
+      }
+      if (defTemp["FireDurationWithoutForest"] != null) {
+        extDef.FireDurationWithoutForest = (int)defTemp["FireDurationWithoutForest"];
+        defTemp.Remove("FireDurationWithoutForest");
+      }
+      if (defTemp["FireTerrainStrength"] != null) {
+        extDef.FireTerrainStrength = (int)defTemp["FireTerrainStrength"];
+        defTemp.Remove("FireTerrainStrength");
+      }
+      if (defTemp["FireOnSuccessHit"] != null) {
+        extDef.FireOnSuccessHit = ((bool)defTemp["FireOnSuccessHit"] == true) ? TripleBoolean.True : TripleBoolean.False;
+        defTemp.Remove("FireOnSuccessHit");
+      }
       if (defTemp["GunneryJammingBase"] != null) {
         extDef.GunneryJammingBase = (float)defTemp["GunneryJammingBase"];
         defTemp.Remove("GunneryJammingBase");
@@ -127,6 +167,14 @@ namespace CustomAmmoCategoriesPatches {
         extDef.SpreadRange = (float)defTemp["SpreadRange"];
         defTemp.Remove("SpreadRange");
       }
+      if (defTemp["ArmorDamageModifier"] != null) {
+        extDef.ArmorDamageModifier = (float)defTemp["ArmorDamageModifier"];
+        defTemp.Remove("ArmorDamageModifier");
+      }
+      if (defTemp["ISDamageModifier"] != null) {
+        extDef.ISDamageModifier = (float)defTemp["ISDamageModifier"];
+        defTemp.Remove("ISDamageModifier");
+      }
       if (defTemp["AlternateDamageCalc"] != null) {
         extDef.AlternateDamageCalc = (bool)defTemp["AlternateDamageCalc"];
         defTemp.Remove("AlternateDamageCalc");
@@ -135,9 +183,33 @@ namespace CustomAmmoCategoriesPatches {
         extDef.AMSShootsEveryAttack = (bool)defTemp["AMSShootsEveryAttack"];
         defTemp.Remove("AMSShootsEveryAttack");
       }
+      if (defTemp["AdditionalImpactVFXScaleX"] != null) {
+        extDef.AdditionalImpactVFXScaleX = (float)defTemp["AdditionalImpactVFXScaleX"];
+        defTemp.Remove("AdditionalImpactVFXScaleX");
+      }
+      if (defTemp["AdditionalImpactVFXScaleY"] != null) {
+        extDef.AdditionalImpactVFXScaleY = (float)defTemp["AdditionalImpactVFXScaleY"];
+        defTemp.Remove("AdditionalImpactVFXScaleY");
+      }
+      if (defTemp["AdditionalImpactVFXScaleZ"] != null) {
+        extDef.AdditionalImpactVFXScaleZ = (float)defTemp["AdditionalImpactVFXScaleZ"];
+        defTemp.Remove("AdditionalImpactVFXScaleZ");
+      }
       if (defTemp["AlternateHeatDamageCalc"] != null) {
         extDef.AlternateHeatDamageCalc = (bool)defTemp["AlternateHeatDamageCalc"];
         defTemp.Remove("AlternateHeatDamageCalc");
+      }
+      if (defTemp["FireTerrainCellRadius"] != null) {
+        extDef.FireTerrainCellRadius = (int)defTemp["FireTerrainCellRadius"];
+        defTemp.Remove("FireTerrainCellRadius");
+      }
+      if (defTemp["ClearMineFieldRadius"] != null) {
+        extDef.ClearMineFieldRadius = (int)defTemp["ClearMineFieldRadius"];
+        defTemp.Remove("ClearMineFieldRadius");
+      }
+      if (defTemp["AdditionalImpactVFX"] != null) {
+        extDef.AdditionalImpactVFX = (string)defTemp["AdditionalImpactVFX"];
+        defTemp.Remove("AdditionalImpactVFX");
       }
       if (defTemp["IsAMS"] != null) {
         extDef.IsAMS = (bool)defTemp["IsAMS"];

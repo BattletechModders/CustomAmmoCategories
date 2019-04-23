@@ -21,7 +21,13 @@ namespace CustAmmoCategories {
           {
               (object) tempHeat
           }), FloatieMessage.MessageNature.Debuff));
-          target.GenerateAndPublishHeatSequence(sequenceId, false, false, attacker.GUID);
+          if (attacker.GUID != combatant.GUID) {
+            CustomAmmoCategoriesLog.Log.LogWrite("  damaging other target\n");
+            target.GenerateAndPublishHeatSequence(sequenceId, false, false, attacker.GUID);
+          } else {
+            CustomAmmoCategoriesLog.Log.LogWrite("  damaging self. so we need apply heatsinks.\n");
+            target.GenerateAndPublishHeatSequence(sequenceId, true, false, attacker.GUID);
+          }
         }
       }
     }
@@ -247,7 +253,7 @@ namespace CustomAmmoCategoriesPatches {
             CustomAmmoCategoriesLog.Log.LogWrite("  Resolve Damage AOE Hit info not found. So AoE resolve damage not needed.\n");
           }
           __instance.attacker.HandleDeath(__instance.attacker.GUID);
-          __instance.attacker.HandleDeath(__instance.attacker.GUID);
+          //__instance.attacker.HandleDeath(__instance.attacker.GUID);
           messageCoordinator.MessageComplete((MessageCenterMessage)resolveDamageMessage);
         }
       } catch (Exception e) {

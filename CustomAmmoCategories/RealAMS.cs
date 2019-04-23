@@ -369,18 +369,23 @@ namespace CustAmmoCategories {
       SpreadHitRecord spreadCacheRecord = CustomAmmoCategories.getSpreadCache(hitInfo, hitIndex);
       string targetGUID = hitInfo.targetId;
       if (spreadCacheRecord != null) { targetGUID = spreadCacheRecord.targetGUID; };
-      ICombatant combatantByGuid = Combat.FindCombatantByGUID(targetGUID);
+      ICombatant combatantByGuid = null;
+      if (targetGUID == hitInfo.attackerId) {
+        CustomAmmoCategoriesLog.Log.LogWrite("generateMissileCacheCurve terrain hit detected. No need to recalculate hit position");
+      } else {
+        combatantByGuid = Combat.FindCombatantByGUID(targetGUID);
+      }
       cachedCurve.target = combatantByGuid;
       int hitLocation = hitInfo.hitLocations[hitIndex];
       if (combatantByGuid != null) {
         cachedCurve.endPos = combatantByGuid.GetImpactPosition(weapon.weaponRep.parentCombatant as AbstractActor, cachedCurve.startPos, weapon, ref hitLocation);
         hitInfo.hitPositions[hitIndex] = cachedCurve.endPos;
-        if (spreadCacheRecord != null) {
-          spreadCacheRecord.hitInfo.hitPositions[spreadCacheRecord.internalIndex] = cachedCurve.endPos;
-          CustomAmmoCategoriesLog.Log.LogWrite("Altering spread position. target " + combatantByGuid.DisplayName + " " + combatantByGuid.GUID + " " + spreadCacheRecord.hitInfo.hitPositions[spreadCacheRecord.internalIndex] + "\n");
-        }
       } else {
         cachedCurve.endPos = hitInfo.hitPositions[hitIndex];
+      }
+      if (spreadCacheRecord != null) {
+        spreadCacheRecord.hitInfo.hitPositions[spreadCacheRecord.internalIndex] = cachedCurve.endPos;
+        CustomAmmoCategoriesLog.Log.LogWrite("Altering spread position. target " + combatantByGuid.DisplayName + " " + combatantByGuid.GUID + " " + spreadCacheRecord.hitInfo.hitPositions[spreadCacheRecord.internalIndex] + "\n");
       }
       cachedCurve.missileProjectileSpeed = currentEffect.projectileSpeed;
       float distance = Vector3.Distance(cachedCurve.startPos, cachedCurve.endPos);
@@ -437,6 +442,7 @@ namespace CustAmmoCategories {
     }
 
     public static void genreateAMSInterceptionInfo(AttackDirector.AttackSequence instance) {
+      CustomAmmoCategoriesLog.Log.LogWrite("genreateAMSInterceptionInfo\n");
       if (CustomAmmoCategories.MissileCurveCache == null) {
         CustomAmmoCategoriesLog.Log.LogWrite("Curve cache is not inited. No missiles since battle start.\n");
         return;
@@ -471,6 +477,10 @@ namespace CustAmmoCategories {
       foreach (ICombatant target in targetsList) {
         AbstractActor targetActor = target as AbstractActor;
         if (targetActor == null) { continue; };
+        if (targetActor.GUID == instance.attacker.GUID) {
+          CustomAmmoCategoriesLog.Log.LogWrite("i will not fire my own missiles.\n");
+          continue;
+        }
         if (targetActor.IsShutDown) { continue; };
         if (targetActor.IsDead) { continue; };
         foreach (Weapon weapon in targetActor.Weapons) {
@@ -797,7 +807,30 @@ namespace CustomAmmoCategoriesPatches {
   public static class WeaponEffect_PlayImpact {
     public static bool Prefix(WeaponEffect __instance) {
       int hitIndex = (int)typeof(WeaponEffect).GetField("hitIndex", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(__instance);
-      if (hitIndex >= 0) { return true; };
+      if (hitIndex >= 0) {
+        if ((__instance.hitInfo.hitLocations[hitIndex] == 0) || (__instance.hitInfo.hitLocations[hitIndex] == 65536)) { return true; };
+        AbstractActor actor = __instance.weapon.parent.Combat.AttackDirector.GetHitInfoTarget(__instance.hitInfo) as AbstractActor;
+        if (actor != null) {
+          Mech mech = __instance.weapon.parent.Combat.AttackDirector.GetHitInfoTarget(__instance.hitInfo) as Mech;
+          if (mech != null) {
+            string strLocation = mech.GetStringForArmorLocation((ArmorLocation)__instance.hitInfo.hitLocations[hitIndex]);
+            if (string.IsNullOrEmpty(strLocation)) {
+              CustomAmmoCategoriesLog.Log.LogWrite("WARNING! bad location for mech:" + __instance.hitInfo.hitLocations[hitIndex] + ".Correcting\n", true);
+              __instance.hitInfo.hitLocations[hitIndex] = 0;
+            }
+          } else {
+            Vehicle vehicle = __instance.weapon.parent.Combat.AttackDirector.GetHitInfoTarget(__instance.hitInfo) as Vehicle;
+            if (vehicle != null) {
+              string strLocation = vehicle.GetStringForArmorLocation((VehicleChassisLocations)__instance.hitInfo.hitLocations[hitIndex]);
+              if (string.IsNullOrEmpty(strLocation)) {
+                CustomAmmoCategoriesLog.Log.LogWrite("WARNING! bad location for vehicle:" + __instance.hitInfo.hitLocations[hitIndex] + ".Correcting\n", true);
+                __instance.hitInfo.hitLocations[hitIndex] = 0;
+              }
+            }
+          }
+        }
+        return true;
+      };
       if (!string.IsNullOrEmpty(__instance.impactVFXBase)) {
         string str1 = string.Empty;
         if (__instance.impactVFXVariations != null && __instance.impactVFXVariations.Length > 0) {
@@ -848,7 +881,9 @@ namespace CustomAmmoCategoriesPatches {
   public static class LaserEffect_PlayImpact {
     public static bool Prefix(LaserEffect __instance) {
       int hitIndex = (int)typeof(WeaponEffect).GetField("hitIndex", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(__instance);
-      if (hitIndex >= 0) { return true; };
+      if (hitIndex >= 0) {
+        return true;
+      };
       typeof(LaserEffect).GetMethod("PlayImpactAudio", BindingFlags.Instance | BindingFlags.NonPublic).Invoke(__instance, new object[0] { });
       if (!string.IsNullOrEmpty(__instance.impactVFXBase)) {
         ParticleSystem impactParticles = (ParticleSystem)typeof(LaserEffect).GetField("impactParticles", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(__instance);
@@ -915,6 +950,27 @@ namespace CustomAmmoCategoriesPatches {
     public static bool Prefix(WeaponEffect __instance) {
       int hitIndex = (int)typeof(WeaponEffect).GetField("hitIndex", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(__instance);
       if (hitIndex < 0) { return false; };
+      if ((__instance.hitInfo.hitLocations[hitIndex] == 0) || (__instance.hitInfo.hitLocations[hitIndex] == 65536)) { return true; };
+      AbstractActor actor = __instance.weapon.parent.Combat.AttackDirector.GetHitInfoTarget(__instance.hitInfo) as AbstractActor;
+      if (actor != null) {
+        Mech mech = __instance.weapon.parent.Combat.AttackDirector.GetHitInfoTarget(__instance.hitInfo) as Mech;
+        if (mech != null) {
+          string strLocation = mech.GetStringForArmorLocation((ArmorLocation)__instance.hitInfo.hitLocations[hitIndex]);
+          if (string.IsNullOrEmpty(strLocation)) {
+            CustomAmmoCategoriesLog.Log.LogWrite("WARNING! bad location for mech:"+ __instance.hitInfo.hitLocations[hitIndex]+".Correcting\n",true);
+            __instance.hitInfo.hitLocations[hitIndex] = 0;
+          }
+        } else {
+          Vehicle vehicle = __instance.weapon.parent.Combat.AttackDirector.GetHitInfoTarget(__instance.hitInfo) as Vehicle;
+          if(vehicle != null) {
+            string strLocation = vehicle.GetStringForArmorLocation((VehicleChassisLocations)__instance.hitInfo.hitLocations[hitIndex]);
+            if (string.IsNullOrEmpty(strLocation)) {
+              CustomAmmoCategoriesLog.Log.LogWrite("WARNING! bad location for vehicle:" + __instance.hitInfo.hitLocations[hitIndex] + ".Correcting\n", true);
+              __instance.hitInfo.hitLocations[hitIndex] = 0;
+            }
+          }
+        }
+      }
       return true;
     }
   }

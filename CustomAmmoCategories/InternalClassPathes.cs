@@ -6,6 +6,7 @@ using Harmony;
 using BattleTech;
 using System.Reflection;
 using CustomAmmoCategoriesPatches;
+using CustAmmoCategories;
 
 namespace CustomAmmoCategoriesPathes {
   public static class InternalClassPathes {
@@ -34,10 +35,25 @@ namespace CustomAmmoCategoriesPathes {
       if (original == null) {
         CustomAmmoCategoriesLog.Log.LogWrite("Can't find ShotsWhenFiredRandomizerOverider in " + enabler.FullName+"\n");
       }
+      original = typeof(Weapon).Assembly.GetType("BattleTech.Rendering.Trees.QuadTreeData").GetMethod("Insert", BindingFlags.NonPublic | BindingFlags.Instance);
+      var postfix = typeof(DynamicTreesHelper).GetMethod("OnInsert");
+      harmony.Patch(original, null, new HarmonyMethod(postfix));
+      original = typeof(Weapon).Assembly.GetType("BattleTech.Rendering.Trees.QuadTreeData").GetMethod("SetupFullArray", BindingFlags.NonPublic | BindingFlags.Instance);
+      var prefix = typeof(DynamicTreesHelper).GetMethod("SetupFullArray");
+      harmony.Patch(original, new HarmonyMethod(prefix));
+      original = typeof(Weapon).Assembly.GetType("BattleTech.Rendering.Trees.QuadTreeData").GetMethod("SetupComputeBuffer", BindingFlags.NonPublic | BindingFlags.Instance);
+      prefix = typeof(DynamicTreesHelper).GetMethod("SetupComputeBuffer");
+      harmony.Patch(original, new HarmonyMethod(prefix));
+      original = typeof(Weapon).Assembly.GetType("BattleTech.Rendering.Trees.QuadTreeData").GetMethod("GenerateCombinedMesh", BindingFlags.NonPublic | BindingFlags.Instance);
+      prefix = typeof(DynamicTreesHelper).GetMethod("GenerateCombinedMesh");
+      harmony.Patch(original, new HarmonyMethod(prefix));
+      original = typeof(Weapon).Assembly.GetType("BattleTech.Rendering.Trees.QuadTreeData").GetMethod("GenerateMesh", BindingFlags.NonPublic | BindingFlags.Instance);
+      prefix = typeof(DynamicTreesHelper).GetMethod("GenerateMesh");
+      harmony.Patch(original, new HarmonyMethod(prefix));
       //var enemyHarmony = HarmonyInstance.Create("com.joelmeador.WeaponRealizer");
       //var enemyPatchedMethods = enemyHarmony.GetPatchedMethods();
       //foreach(var ePatchedmethod in enemyPatchedMethods) {
-        //CustomAmmoCategoriesLog.Log.LogWrite
+      //CustomAmmoCategoriesLog.Log.LogWrite
       //}
       //var postfix = typeof(WRClusteredShotRandomCacheEnabler_IsClustered).GetMethod("Prefix",BindingFlags.Static);
       //harmony.Patch(original, new HarmonyMethod(postfix));

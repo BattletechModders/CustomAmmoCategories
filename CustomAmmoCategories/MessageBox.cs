@@ -42,6 +42,7 @@ namespace CustAmmoCategories {
       System.Diagnostics.Process.Start("https://roguetech.gamepedia.com/Rogue_Coins");
     }
     public static bool Test(Mech mech) {
+      return false;/*
       string TSTPath = System.IO.Directory.GetParent(CustomAmmoCategoriesLog.Log.BaseDirectory).FullName;
       TSTPath = System.IO.Path.Combine(TSTPath, "RogueModuleTech");
       TSTPath = System.IO.Path.Combine(TSTPath, "mod.json");
@@ -71,13 +72,13 @@ namespace CustAmmoCategories {
         float curLevel = curAmmo / ammo.Value;
         if (curLevel < 0.1f) { return true; };
       }
-      return false;
+      return false;*/
     }
     public static void ShowMessage() {
-      GenericPopupBuilder popup = GenericPopupBuilder.Create(GenericPopupType.Info, "RogueTech and CustomAmmoCategories presents:\nOut of Ammo? Tired of emenies overwhelming you?\nRogueTech and CustomAmmoCategories are starting special project just for you!\nDo you wish to know more?");
+      /*GenericPopupBuilder popup = GenericPopupBuilder.Create(GenericPopupType.Info, "RogueTech and CustomAmmoCategories presents:\nOut of Ammo? Tired of emenies overwhelming you?\nRogueTech and CustomAmmoCategories are starting special project just for you!\nDo you wish to know more?");
       popup.AddButton("No", (Action)null, true, (PlayerAction)null);
       popup.AddButton("Yes", new Action(GoToWiki), true, (PlayerAction)null);
-      popup.IsNestedPopupWithBuiltInFader().CancelOnEscape().Render();
+      popup.IsNestedPopupWithBuiltInFader().CancelOnEscape().Render();*/
     }
   }
 }

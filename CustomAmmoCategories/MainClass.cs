@@ -21,30 +21,56 @@ using System.Threading;
 using CustomAmmoCategoriesPathes;
 using UIWidgets;
 using InControl;
+using BattleTech.Rendering;
+using CustomAmmoCategoriesPatches;
 
 namespace CustomAmmoCategoriesLog {
-  public static class Log {
+  public static class Log  {
     //private static string m_assemblyFile;
     private static string m_logfile;
     private static readonly Mutex mutex = new Mutex();
     public static string BaseDirectory;
-    public static void InitLog() {
-      //Log.m_assemblyFile = (new System.Uri(Assembly.GetExecutingAssembly().CodeBase)).AbsolutePath;
-      Log.m_logfile = Path.Combine(BaseDirectory, "CustomAmmoCategories.log");
-      //Log.m_logfile = Path.Combine(Log.m_logfile, "CustomAmmoCategories.log");
-      File.Delete(Log.m_logfile);
+    private static StringBuilder m_cache = new StringBuilder();
+    private static StreamWriter m_fs = null;
+    private static readonly int flushBufferLength = 16 * 1024;
+    public static bool flushThreadActive = true;
+    public static Thread flushThread = new Thread(flushThreadProc);
+    public static void flushThreadProc() {
+      while(Log.flushThreadActive == true) {
+        Thread.Sleep(30 * 1000);
+        Log.LogWrite("Log flushing\n");
+        Log.flush();
+      }
     }
-    public static void LogWrite(string line,bool isCritical = false) {
-      try {
+    public static void InitLog() {
+      Log.m_logfile = Path.Combine(BaseDirectory, "CustomAmmoCategories.log");
+      File.Delete(Log.m_logfile);
+      Log.m_fs = new StreamWriter(Log.m_logfile);
+      Log.m_fs.AutoFlush = true;
+      Log.flushThread.Start();
+    }
+    public static void flush() {
+      if (Log.mutex.WaitOne(1000)) {
+        Log.m_fs.Write(Log.m_cache.ToString());
+        Log.m_fs.Flush();
+        Log.m_cache.Length = 0;
+        Log.mutex.ReleaseMutex();
+      }
+    }
+    public static void LogWrite(string line, bool isCritical = false) {
+      //try {
         if ((CustomAmmoCategories.Settings.debugLog) || (isCritical)) {
           if (Log.mutex.WaitOne(1000)) {
-            File.AppendAllText(Log.m_logfile, line);
+            m_cache.Append(line);
+            //File.AppendAllText(Log.m_logfile, line);
             Log.mutex.ReleaseMutex();
           }
+          if (isCritical) { Log.flush(); };
+          if (m_logfile.Length > Log.flushBufferLength) { Log.flush(); };
         }
-      }catch(Exception) {
+      //} catch (Exception) {
         //i'm sertanly don't know what to do
-      }
+      //}
     }
   }
 
@@ -58,17 +84,20 @@ namespace CustomAmmoCategoriesPatches {
   public static class CombatHUDActionButton_ExecuteClick {
 
     public static bool Prefix(CombatHUDActionButton __instance) {
-      /*CustomAmmoCategoriesLog.Log.LogWrite("CombatHUDActionButton.ExecuteClick '"+ __instance.GUID + "'/'"+ CombatHUD.ButtonID_Move + "' "+(__instance.GUID == CombatHUD.ButtonID_Move) +"\n");
+      CustomAmmoCategoriesLog.Log.LogWrite("CombatHUDActionButton.ExecuteClick '" + __instance.GUID + "'/'" + CombatHUD.ButtonID_Move + "' " + (__instance.GUID == CombatHUD.ButtonID_Move) + "\n");
       CombatHUD HUD = (CombatHUD)typeof(CombatHUDActionButton).GetProperty("HUD", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(__instance, null);
-      if(__instance.GUID == CombatHUD.ButtonID_Move) {
-        CustomAmmoCategoriesLog.Log.LogWrite(" button is move\n");
-        bool modifyers = (Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.RightControl));
-        if (modifyers) {
-          CustomAmmoCategoriesLog.Log.LogWrite(" ctrl is pressed\n");
-          JokeMessageBox.ShowMessage();
-          return false;
+      bool modifyers = (Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.RightControl));
+      if (modifyers) {
+        CustomAmmoCategoriesLog.Log.LogWrite(" button GUID:" + __instance.GUID + "\n");
+        if (__instance.Ability != null) {
+          CustomAmmoCategoriesLog.Log.LogWrite(" button ability:" + __instance.Ability.Def.Description.Id + "\n");
+        } else {
+          CustomAmmoCategoriesLog.Log.LogWrite(" button ability:null\n");
         }
-      }*/
+        SelectionType selectionType = (SelectionType)typeof(CombatHUDActionButton).GetProperty("SelectionType", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(__instance, null);
+        CustomAmmoCategoriesLog.Log.LogWrite(" selection type:" + selectionType + "\n");
+        return true;
+      }
       return true;
     }
   }
@@ -112,7 +141,7 @@ namespace CustomAmmoCategoriesPatches {
 
 
       if (modifyers) {
-        CustomAmmoCategories.EjectAmmo(__instance.DisplayedWeapon,__instance);
+        CustomAmmoCategories.EjectAmmo(__instance.DisplayedWeapon, __instance);
         __instance.RefreshDisplayedWeapon((ICombatant)null);
         return false;
       }
@@ -304,6 +333,7 @@ namespace CustomAmmoCategoriesPatches {
   public static class CombatHUD_Init {
     public static bool Prefix(CombatHUD __instance, CombatGameState Combat) {
       CustomAmmoCategoriesLog.Log.LogWrite("pre CombatHUD.Init\n");
+      //AttackSequenceWatchDogHelper.StartWatchDogThread();
       CustomAmmoCategories.ActorsEjectedAmmo.Clear();
       //CustomAmmoCategories.ClearPlayerWeapons();
       foreach (var unit in Combat.AllActors) {
@@ -507,7 +537,7 @@ namespace CustomAmmoCategoriesPatches {
     public static bool Prefix(DataManager dataManager, MechDef mechDef, MechValidationLevel validationLevel, WorkOrderEntry_MechLab baseWorkOrder, ref Dictionary<MechValidationType, List<Text>> errorMessages) {
       Dictionary<string, WeaponDef> weapons = new Dictionary<string, WeaponDef>();
       Dictionary<string, AmmunitionDef> ammos = new Dictionary<string, AmmunitionDef>();
-      CustomAmmoCategoriesLog.Log.LogWrite("Start Mech Validation "+mechDef.Name+"\n");
+      CustomAmmoCategoriesLog.Log.LogWrite("Start Mech Validation " + mechDef.Name + "\n");
       string testString = "";
       if (Strings.Initialized) {
         Strings.GetTranslationFor("CT DESTROYED", out testString);
@@ -596,7 +626,7 @@ namespace CustomAmmoCategoriesPatches {
       CustomAmmoCategories.ClearWeaponEffects(wGUID);
       //CustomAmmoCategories.ClearWeaponShellEffects(wGUID);
       CustomAmmoCategories.InitWeaponEffects(__instance, weapon);
-      CustomAmmoCategories.registerShellsEffects(__instance,weapon);
+      CustomAmmoCategories.registerShellsEffects(__instance, weapon);
     }
   }
   [HarmonyPatch(typeof(WeaponRepresentation))]
@@ -608,6 +638,7 @@ namespace CustomAmmoCategoriesPatches {
       CustomAmmoCategoriesLog.Log.LogWrite("WeaponRepresentation.PlayWeaponEffect\n");
       try {
         if (__instance.weapon == null) { return true; }
+        __instance.weapon.clearImpactVFX();
         WeaponEffect currentEffect = CustomAmmoCategories.getWeaponEffect(__instance.weapon);
         if (currentEffect == null) { return true; }
         ExtWeaponDef extWeaponDef = CustomAmmoCategories.getExtWeaponDef(__instance.weapon.Description.Id);
@@ -770,7 +801,7 @@ namespace CustAmmoCategories {
       if (CustomAmmoCategories.ExtWeaponDef.ContainsKey(defId)) {
         return ExtWeaponDef[defId];
       } else {
-        CustomAmmoCategoriesLog.Log.LogWrite("WARNING!"+ defId + " is not registed\n",true);
+        CustomAmmoCategoriesLog.Log.LogWrite("WARNING!" + defId + " is not registed\n", true);
         return CustomAmmoCategories.DefaultWeapon;
       }
     }
@@ -838,15 +869,15 @@ namespace CustAmmoCategories {
     public static void testFireAMS(Weapon weapon) {
       CombatGameState combat = (CombatGameState)typeof(MechComponent).GetField("combat", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(weapon);
       List<AbstractActor> enemies = combat.GetAllEnemiesOf(weapon.parent);
-      if(enemies.Count > 0) {
-        CustomAmmoCategoriesLog.Log.LogWrite("AMS test enemy "+enemies[0].DisplayName+"\n");
+      if (enemies.Count > 0) {
+        CustomAmmoCategoriesLog.Log.LogWrite("AMS test enemy " + enemies[0].DisplayName + "\n");
         CustomAmmoCategories.FireAMS(weapon, enemies[0].CurrentPosition);
       } else {
         CustomAmmoCategoriesLog.Log.LogWrite("AMS test no enemies\n");
       }
     }
 
-    public static void FireAMS(Weapon weapon,Vector3 target) {
+    public static void FireAMS(Weapon weapon, Vector3 target) {
       ExtWeaponDef extWeapon = CustomAmmoCategories.getExtWeaponDef(weapon.defId);
       if (extWeapon.IsAMS) {
         CustomAmmoCategoriesLog.Log.LogWrite("AMS found " + weapon.defId + "\n");
@@ -855,13 +886,13 @@ namespace CustAmmoCategories {
         LaserEffect LaserEffect = weapon.weaponRep.WeaponEffect as LaserEffect;
         if (ballisticEffect != null) {
           CustomAmmoCategoriesLog.Log.LogWrite("ballistic effect found " + weapon.defId + "\n");
-          CustomAmmoCategories.AMSFire(ballisticEffect,target);
+          CustomAmmoCategories.AMSFire(ballisticEffect, target);
         } else
-        if(LaserEffect != null) {
+        if (LaserEffect != null) {
           CustomAmmoCategoriesLog.Log.LogWrite("laser effect found " + weapon.defId + "\n");
           CustomAmmoCategories.AMSFire(LaserEffect, target);
-        } else { 
-          CustomAmmoCategoriesLog.Log.LogWrite("ams effect not found " + weapon.defId + " "+wGUID+"\n");
+        } else {
+          CustomAmmoCategoriesLog.Log.LogWrite("ams effect not found " + weapon.defId + " " + wGUID + "\n");
         }
       } else {
         CustomAmmoCategoriesLog.Log.LogWrite("no AMS detected " + weapon.defId + "\n");
@@ -1126,7 +1157,7 @@ namespace CustAmmoCategories {
         CustomAmmoCategory boxAmmoCategory = extAmmo.AmmoCategory;
         if (boxAmmoCategory == CustomAmmoCategories.NotSetCustomAmmoCategoty) { boxAmmoCategory = CustomAmmoCategories.find(weapon.ammoBoxes[index].ammoDef.Category.ToString()); }
         if (boxAmmoCategory == CustomAmmoCategories.NotSetCustomAmmoCategoty) {
-          CustomAmmoCategoriesLog.Log.LogWrite("WARNING! ammunition box " + weapon.ammoBoxes[index].defId + " has no ammo category\n",true);
+          CustomAmmoCategoriesLog.Log.LogWrite("WARNING! ammunition box " + weapon.ammoBoxes[index].defId + " has no ammo category\n", true);
           continue;
         }
         if (weaponAmmoCategory != boxAmmoCategory) { continue; };
@@ -1136,14 +1167,14 @@ namespace CustAmmoCategories {
         }
       }
       if (string.IsNullOrEmpty(result)) {
-        CustomAmmoCategoriesLog.Log.LogWrite("WARNING! no ammo box for category "+ weaponAmmoCategory.Id+". Fallback\n", true);
+        CustomAmmoCategoriesLog.Log.LogWrite("WARNING! no ammo box for category " + weaponAmmoCategory.Id + ". Fallback\n", true);
         foreach (var ammo in CustomAmmoCategories.ExtAmmunitionDef) {
-          if(ammo.Value.AmmoCategory.Index == weaponAmmoCategory.Index) {
+          if (ammo.Value.AmmoCategory.Index == weaponAmmoCategory.Index) {
             result = ammo.Key;
             break;
           }
         }
-        CustomAmmoCategoriesLog.Log.LogWrite("Default ammo id is used "+result+"\n");
+        CustomAmmoCategoriesLog.Log.LogWrite("Default ammo id is used " + result + "\n");
       }
       return result;
     }
@@ -1159,12 +1190,6 @@ namespace CustAmmoCategories {
       CustomAmmoCategories.DefaultWeapon = new ExtWeaponDef();
       CustomAmmoCategories.DefaultWeaponMode = new WeaponMode();
       CustomAmmoCategories.amsWeapons = new Dictionary<string, Weapon>();
-      //string assemblyFile = (new System.Uri(Assembly.GetExecutingAssembly().CodeBase)).AbsolutePath;
-      string filename = Path.Combine(CustomAmmoCategoriesLog.Log.BaseDirectory, "CustomAmmoCategories.json");
-      //filename = Path.Combine(filename, "CustomAmmoCategories.json");
-      string json = File.ReadAllText(filename);
-      List<CustomAmmoCategory> tmp = JsonConvert.DeserializeObject<List<CustomAmmoCategory>>(json);
-      CustomAmmoCategoriesLog.Log.LogWrite("Custom ammo categories:\n");
       foreach (AmmoCategory base_cat in Enum.GetValues(typeof(AmmoCategory))) {
         CustomAmmoCategory itm = new CustomAmmoCategory();
         itm.BaseCategory = base_cat;
@@ -1173,11 +1198,31 @@ namespace CustAmmoCategories {
         items[itm.Id] = itm;
         if (itm.Index == 0) { NotSetCustomAmmoCategoty = itm; };
       }
-      foreach (var itm in tmp) {
-        itm.Index = items.Count;
-        items[itm.Id] = itm;
+
+      DirectoryInfo di = new DirectoryInfo(CustomAmmoCategoriesLog.Log.BaseDirectory);
+      CustomAmmoCategoriesLog.Log.LogWrite("Parent:" + di.Parent.FullName + "\n");
+      string[] subdirectoryEntries = Directory.GetDirectories(di.Parent.FullName);
+      foreach (string modDir in subdirectoryEntries) {
+        string filename = Path.Combine(modDir, "CustomAmmoCategories.json");
+        if (File.Exists(filename) == false) { continue; }
+        CustomAmmoCategoriesLog.Log.LogWrite(filename + "\n");
+        try {
+          string json = File.ReadAllText(filename);
+          List<CustomAmmoCategory> tmp = JsonConvert.DeserializeObject<List<CustomAmmoCategory>>(json);
+          CustomAmmoCategoriesLog.Log.LogWrite(" custom ammo categories:\n");
+          foreach (var itm in tmp) {
+            itm.Index = items.Count;
+            items[itm.Id] = itm;
+            CustomAmmoCategoriesLog.Log.LogWrite("  '" + itm.Id + "'= (" + itm.Index + "/" + itm.Id + "/" + itm.BaseCategory.ToString() + ")\n");
+          }
+        } catch (Exception e) {
+          CustomAmmoCategoriesLog.Log.LogWrite(e.ToString() + "\n");
+        }
       }
-      CustomAmmoCategoriesLog.Log.LogWrite("Custom ammo categories:\n");
+      //string assemblyFile = (new System.Uri(Assembly.GetExecutingAssembly().CodeBase)).AbsolutePath;
+      //string filename = Path.Combine(CustomAmmoCategoriesLog.Log.BaseDirectory, "CustomAmmoCategories.json");
+      //filename = Path.Combine(filename, "CustomAmmoCategories.json");
+      CustomAmmoCategoriesLog.Log.LogWrite("consolidated:\n");
       foreach (var itm in items) {
         CustomAmmoCategoriesLog.Log.LogWrite("  '" + itm.Key + "'= (" + itm.Value.Index + "/" + itm.Value.Id + "/" + itm.Value.BaseCategory.ToString() + ")\n");
       }
@@ -1193,6 +1238,28 @@ namespace CustAmmoCategories {
 }
 
 namespace CustAmmoCategories {
+  public class BurnedTreesSettings {
+    public string Mesh { get; set; }
+    public string BumpMap { get; set; }
+    public string MainTex { get; set; }
+    public string OcculusionMap { get; set; }
+    public string Transmission { get; set; }
+    public string MetallicGlossMap { get; set; }
+    public float BurnedTreeScale { get; set; }
+    public float DecalScale { get; set; }
+    public string DecalTexture { get; set; }
+    public BurnedTreesSettings() {
+      Mesh = "envMdlTree_deadWood_polar_frozen_shapeA_LOD0";
+      BumpMap = "envTxrTree_treesVaried_polar_frozen_nrm";
+      MainTex = "envTxrTree_treesVaried_polar_frozen_alb";
+      OcculusionMap = "envTxrTree_treesVaried_polar_frozen_amb";
+      Transmission = "envTxrTree_treesVaried_polar_frozen_trs";
+      MetallicGlossMap = "envTxrTree_treesVaried_polar_frozen_mtl";
+      BurnedTreeScale = 2f;
+      DecalScale = 40f;
+      DecalTexture = "envTxrDecl_terrainDmgSmallBlack_alb";
+    }
+  }
   public class Settings {
     public bool debugLog { get; set; }
     public bool forbiddenRangeEnable { get; set; }
@@ -1205,6 +1272,38 @@ namespace CustAmmoCategories {
     public bool modHTTPServer { get; set; }
     public string modHTTPListen { get; set; }
     public string WeaponRealizerStandalone { get; set; }
+    public List<string> DynamicDesignMasksDefs { get; set; }
+    public string BurningTerrainDesignMask { get; set; }
+    public string BurningForestDesignMask { get; set; }
+    public string BurningFX { get; set; }
+    public string BurnedFX { get; set; }
+    public float BurningScaleX { get; set; }
+    public float BurningScaleY { get; set; }
+    public float BurningScaleZ { get; set; }
+    public float BurnedScaleX { get; set; }
+    public float BurnedScaleY { get; set; }
+    public float BurnedScaleZ { get; set; }
+    public float BurnedOffsetX { get; set; }
+    public float BurnedOffsetY { get; set; }
+    public float BurnedOffsetZ { get; set; }
+    public float BurningOffsetX { get; set; }
+    public float BurningOffsetY { get; set; }
+    public float BurningOffsetZ { get; set; }
+    public string BurnedForestDesignMask { get; set; }
+    public int BurningForestCellRadius { get; set; }
+    public int BurningForestTurns { get; set; }
+    public int BurningForestStrength { get; set; }
+    public float BurningForestBaseExpandChance { get; set; }
+    public List<string> AdditinalAssets { get; set; }
+    public bool DontShowNotDangerouceJammMessages { get; set; }
+    public List<string> NoForestBiomes { get; set; }
+    public Dictionary<string, int> BurningDurationBiomeMuilt { get; set; }
+    public Dictionary<string, float> MineFieldPathingMods { get; set; }
+    public int JumpLandingMineAttractRadius { get; set; }
+    public int AttackSequenceMaxLength { get; set; }
+    public BurnedTreesSettings BurnedTrees { get; set; }
+    public bool DontShowBurnedTrees { get; set; }
+    public bool DontShowScorchTerrain { get; set; }
     Settings() {
       debugLog = true;
       modHTTPServer = true;
@@ -1217,12 +1316,61 @@ namespace CustAmmoCategories {
       DamageJamAIAvoid = 2.0f;
       WeaponRealizerStandalone = "";
       modHTTPListen = "http://localhost:65080";
+      DynamicDesignMasksDefs = new List<string>();
+      BurningForestDesignMask = "DesignMaskBurningForest";
+      BurnedForestDesignMask = "DesignMaskBurnedForest";
+      BurningTerrainDesignMask = "DesignMaskBurningTerrain";
+      BurningForestCellRadius = 3;
+      BurningForestTurns = 3;
+      BurningForestStrength = 5;
+      BurningForestBaseExpandChance = 0.5f;
+      BurningFX = "vfxPrfPrtl_fireTerrain_lrgLoop";
+      BurnedFX = "vfxPrfPrtl_miningSmokePlume_lrg_loop";
+      BurningScaleX = 1f;
+      BurningScaleY = 1f;
+      BurningScaleZ = 1f;
+      BurnedScaleX = 1f;
+      BurnedScaleY = 1f;
+      BurnedScaleZ = 1f;
+      BurnedOffsetX = 0f;
+      BurnedOffsetY = 0f;
+      BurnedOffsetZ = 0f;
+      BurningOffsetX = 0f;
+      BurningOffsetY = 0f;
+      BurningOffsetZ = 0f;
+      AttackSequenceMaxLength = 15000;
+      AdditinalAssets = new List<string>();
+      DontShowNotDangerouceJammMessages = false;
+      NoForestBiomes = new List<string>();
+      BurningDurationBiomeMuilt = new Dictionary<string, int>();
+      MineFieldPathingMods = new Dictionary<string, float>();
+      JumpLandingMineAttractRadius = 2;
+      BurnedTrees = new BurnedTreesSettings();
+      DontShowBurnedTrees = false;
+      DontShowScorchTerrain = false;
     }
   }
 }
 
-namespace CustomAmmoCategoriesInit {
+namespace CACMain {
   public static class Core {
+    public static Dictionary<string, GameObject> AdditinalFXObjects = new Dictionary<string, GameObject>();
+    public static Dictionary<string, Mesh> AdditinalMeshes = new Dictionary<string, Mesh>();
+    public static Dictionary<string, Texture2D> AdditinalTextures = new Dictionary<string, Texture2D>();
+    public static Dictionary<string, Material> AdditinalMaterials = new Dictionary<string, Material>();
+    public static Dictionary<string, Shader> AdditinalShaders = new Dictionary<string, Shader>();
+    public static Mesh findMech(string name) {
+      if (Core.AdditinalMeshes.ContainsKey(name)) { return Core.AdditinalMeshes[name]; };
+      return null;
+    }
+    public static Texture2D findTexture(string name) {
+      if (Core.AdditinalTextures.ContainsKey(name)) { return Core.AdditinalTextures[name]; };
+      return null;
+    }
+    public static GameObject findPrefab(string name) {
+      if (Core.AdditinalFXObjects.ContainsKey(name)) { return Core.AdditinalFXObjects[name]; };
+      return null;
+    }
     public static void Init(string directory, string settingsJson) {
       //SavesForm savesForm = new SavesForm();
       CustomAmmoCategoriesLog.Log.BaseDirectory = directory;
@@ -1230,19 +1378,72 @@ namespace CustomAmmoCategoriesInit {
       string settings_filename = Path.Combine(CustomAmmoCategoriesLog.Log.BaseDirectory, "CustomAmmoCategoriesSettings.json");
       //settings_filename = Path.Combine(settings_filename, "CustomAmmoCategoriesSettings.json");
       CustomAmmoCategories.Settings = JsonConvert.DeserializeObject<CustAmmoCategories.Settings>(File.ReadAllText(settings_filename));
-      CustomAmmoCategoriesLog.Log.LogWrite("Initing... "+directory+"\n");
+      CustomAmmoCategoriesLog.Log.LogWrite("Initing... " + directory + " version: " + Assembly.GetExecutingAssembly().GetName().Version + "\n", true);
       if (string.IsNullOrEmpty(CustomAmmoCategories.Settings.WeaponRealizerStandalone) == false) {
         CustomAmmoCategoriesLog.Log.LogWrite("standalone WeaponRealizer detected\n");
         string WRPath = Path.Combine(directory, CustomAmmoCategories.Settings.WeaponRealizerStandalone);
         if (File.Exists(WRPath)) {
-          CustomAmmoCategoriesLog.Log.LogWrite(WRPath+" - exists. Loading assembly.\n");
+          CustomAmmoCategoriesLog.Log.LogWrite(WRPath + " - exists. Loading assembly.\n");
           Assembly.LoadFile(WRPath);
           CustomAmmoCategoriesLog.Log.LogWrite("Initing WR\n");
-          typeof(WeaponRealizer.Core).GetMethod("Init", BindingFlags.Public | BindingFlags.Static).Invoke(null, new object[2] { (object)directory,(object)settingsJson});
+          typeof(WeaponRealizer.Core).GetMethod("Init", BindingFlags.Public | BindingFlags.Static).Invoke(null, new object[2] { (object)directory, (object)settingsJson });
         }
       }
       //typeof(BattleTech.AttackDirectorHelpers.MessageCoordinator).GetField("logger", BindingFlags.Static | BindingFlags.Public).SetValue(null, (object)HBS.Logging.Logger.GetLogger("CombatLog.MechImpacts", HBS.Logging.LogLevel.Debug));
       try {
+        string apath = Path.Combine(directory, "assets");
+        CustomAmmoCategoriesLog.Log.LogWrite("additional assets:" + CustomAmmoCategories.Settings.AdditinalAssets.Count + "\n");
+        foreach (string assetName in CustomAmmoCategories.Settings.AdditinalAssets) {
+          string path = Path.Combine(apath, assetName);
+          if (File.Exists(path)) {
+            var assetBundle = AssetBundle.LoadFromFile(path);
+            if (assetBundle != null) {
+              CustomAmmoCategoriesLog.Log.LogWrite("asset " + path + ":" + assetBundle.name + " loaded\n");
+              UnityEngine.GameObject[] objects = assetBundle.LoadAllAssets<GameObject>();
+              CustomAmmoCategoriesLog.Log.LogWrite("FX objects:\n");
+              foreach (var obj in objects) {
+                CustomAmmoCategoriesLog.Log.LogWrite(" " + obj.name + "\n");
+                AdditinalFXObjects.Add(obj.name, obj);
+              }
+              UnityEngine.Texture2D[] textures = assetBundle.LoadAllAssets<Texture2D>();
+              CustomAmmoCategoriesLog.Log.LogWrite("Textures:\n");
+              foreach (var tex in textures) {
+                CustomAmmoCategoriesLog.Log.LogWrite(" " + tex.name + "\n");
+                AdditinalTextures.Add(tex.name, tex);
+              }
+              UnityEngine.Mesh[] meshes = assetBundle.LoadAllAssets<Mesh>();
+              CustomAmmoCategoriesLog.Log.LogWrite("Meshes:\n");
+              foreach (var msh in meshes) {
+                CustomAmmoCategoriesLog.Log.LogWrite(" " + msh.name + "\n");
+                AdditinalMeshes.Add(msh.name, msh);
+              }
+              UnityEngine.Material[] materials = assetBundle.LoadAllAssets<Material>();
+              CustomAmmoCategoriesLog.Log.LogWrite("Materials:\n");
+              foreach (var mat in materials) {
+                CustomAmmoCategoriesLog.Log.LogWrite(" " + mat.name + "\n");
+                if (AdditinalMaterials.ContainsKey(mat.name) == false) {
+                  AdditinalMaterials.Add(mat.name, mat);
+                }
+              }
+              UnityEngine.Shader[] shaders = assetBundle.LoadAllAssets<Shader>();
+              CustomAmmoCategoriesLog.Log.LogWrite("Shaders:\n");
+              foreach (var shdr in shaders) {
+                CustomAmmoCategoriesLog.Log.LogWrite(" " + shdr.name + "\n");
+                if (AdditinalShaders.ContainsKey(shdr.name) == false) {
+                  AdditinalShaders.Add(shdr.name, shdr);
+                }
+              }
+            } else {
+              CustomAmmoCategoriesLog.Log.LogWrite("fail to load:" + path + "\n");
+            }
+          } else {
+            CustomAmmoCategoriesLog.Log.LogWrite("not exists:" + path + "\n");
+          }
+        }
+        //(typeof(FootstepManager)).GetField("_scorchMaterial", BindingFlags.NonPublic | BindingFlags.Instance).SetValue(
+        //FootstepManager.Instance, AdditinalMaterials["SolidColor"]
+        //);
+        //FootstepManager_scorchMaterial.ScorchMaterial = AdditinalMaterials["bullethole-decal"];
         CustomAmmoCategories.CustomCategoriesInit();
         var harmony = HarmonyInstance.Create("io.mission.modrepuation");
         //Assembly.LoadFile(Path.Combine(directory,"CACPatches.dll"));
@@ -1251,8 +1452,8 @@ namespace CustomAmmoCategoriesInit {
         //if (ancorType == null) {
         //  CustomAmmoCategoriesLog.Log.LogWrite("Can't find ancor type\n");
         //} else {
-          //CustomAmmoCategoriesLog.Log.LogWrite("Ancor type found "+ancorType.Assembly.FullName+"\n");
-          //harmony.PatchAll(ancorType.Assembly);
+        //CustomAmmoCategoriesLog.Log.LogWrite("Ancor type found "+ancorType.Assembly.FullName+"\n");
+        //harmony.PatchAll(ancorType.Assembly);
         //}
         harmony.PatchAll(Assembly.GetExecutingAssembly());
         InternalClassPathes.PatchInternalClasses(harmony);

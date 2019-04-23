@@ -20,7 +20,7 @@
     <DebugType>embedded</DebugType>
     <Optimize>false</Optimize>
     <OutputPath>bin\Debug\</OutputPath>
-    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <DefineConstants>TRACE;DEBUG;UNITY_5_6_OR_NEWER;UNITY_5_5_OR_NEWER</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <Prefer32Bit>false</Prefer32Bit>
@@ -56,6 +56,9 @@
     <Reference Include="System.Data" />
     <Reference Include="System.Net" />
     <Reference Include="System.Xml" />
+    <Reference Include="UnityEditor">
+      <HintPath>C:\Program Files\Unity\Editor\Data\Managed\UnityEditor.dll</HintPath>
+    </Reference>
     <Reference Include="UnityEngine">
       <HintPath>..\..\BattleTech_Data\Managed\UnityEngine.dll</HintPath>
     </Reference>
@@ -67,13 +70,19 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="AdditionalImpactVFX.cs" />
     <Compile Include="AIWeaponChoose.cs" />
     <Compile Include="AmmoEject.cs" />
     <Compile Include="AmmunitionDef.cs" />
+    <Compile Include="ApplyHeatSinks.cs" />
     <Compile Include="AttackSequenceImpact.cs" />
+    <Compile Include="AttackSequenceWatchdog.cs" />
     <Compile Include="BulletBallistic.cs" />
     <Compile Include="CheatHttpServer.cs" />
+    <Compile Include="CustomDesignMask.cs" />
     <Compile Include="DecrementAmmo.cs" />
+    <Compile Include="DynamicMap.cs" />
+    <Compile Include="DynamicTrees.cs" />
     <Compile Include="ForbiddenRange.cs" />
     <Compile Include="GenerateHitInfo.cs" />
     <Compile Include="GetEvasivePipsModifier.cs" />
@@ -88,11 +97,13 @@
     <Compile Include="RealAMS.cs" />
     <Compile Include="RealAOE.cs" />
     <Compile Include="Shrapnel.cs" />
+    <Compile Include="TerrainAttack.cs" />
     <Compile Include="WeaponAmmoCategory.cs" />
     <Compile Include="WeaponDef.cs" />
     <Compile Include="WeaponMode.cs" />
     <Compile Include="Jamming.cs" />
     <Compile Include="WeaponPatches.cs" />
+    <Compile Include="ZombieMech.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>

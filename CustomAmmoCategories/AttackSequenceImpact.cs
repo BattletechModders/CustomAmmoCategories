@@ -50,20 +50,44 @@ namespace CustAmmoCategories {
       return (WeaponRealizer.Settings)typeof(WeaponRealizer.Core).GetField("ModSettings", BindingFlags.NonPublic | BindingFlags.Static).GetValue(null);
     }
     public static float getWeaponArmorDmgMult(Weapon weapon) {
-      float result = 1f;
+      ExtWeaponDef extWeapon = CustomAmmoCategories.getExtWeaponDef(weapon.defId);
+      float result = extWeapon.ArmorDamageModifier;
       if (CustomAmmoCategories.checkExistance(weapon.StatCollection, CustomAmmoCategories.AmmoIdStatName) == true) {
         string ammoId = weapon.StatCollection.GetStatistic(CustomAmmoCategories.AmmoIdStatName).Value<string>();
         ExtAmmunitionDef extAmmo = CustomAmmoCategories.findExtAmmo(ammoId);
-        result = extAmmo.ArmorDamageModifier;
+        result *= extAmmo.ArmorDamageModifier;
+      }
+      if (extWeapon.Modes.Count > 0) {
+        string modeId = "";
+        if (CustomAmmoCategories.checkExistance(weapon.StatCollection, CustomAmmoCategories.WeaponModeStatisticName) == true) {
+          modeId = weapon.StatCollection.GetStatistic(CustomAmmoCategories.WeaponModeStatisticName).Value<string>();
+        } else {
+          modeId = extWeapon.baseModeId;
+        }
+        if (extWeapon.Modes.ContainsKey(modeId)) {
+          result *= extWeapon.Modes[modeId].ArmorDamageModifier;
+        }
       }
       return result;
     }
     public static float getWeaponISDmgMult(Weapon weapon) {
-      float result = 1f;
+      ExtWeaponDef extWeapon = CustomAmmoCategories.getExtWeaponDef(weapon.defId);
+      float result = extWeapon.ISDamageModifier;
       if (CustomAmmoCategories.checkExistance(weapon.StatCollection, CustomAmmoCategories.AmmoIdStatName) == true) {
         string ammoId = weapon.StatCollection.GetStatistic(CustomAmmoCategories.AmmoIdStatName).Value<string>();
         ExtAmmunitionDef extAmmo = CustomAmmoCategories.findExtAmmo(ammoId);
-        result = extAmmo.ISDamageModifier;
+        result *= extAmmo.ISDamageModifier;
+      }
+      if (extWeapon.Modes.Count > 0) {
+        string modeId = "";
+        if (CustomAmmoCategories.checkExistance(weapon.StatCollection, CustomAmmoCategories.WeaponModeStatisticName) == true) {
+          modeId = weapon.StatCollection.GetStatistic(CustomAmmoCategories.WeaponModeStatisticName).Value<string>();
+        } else {
+          modeId = extWeapon.baseModeId;
+        }
+        if (extWeapon.Modes.ContainsKey(modeId)) {
+          result *= extWeapon.Modes[modeId].ISDamageModifier;
+        }
       }
       return result;
     }
@@ -290,8 +314,13 @@ namespace CustomAmmoCategoriesPatches {
       Weapon weapon = __instance.GetWeapon(attackGroupIndex, attackWeaponIndex);
       float rawDamage = impactMessage.hitDamage;
       float realDamage = rawDamage;
+      int hitLocation = impactMessage.hitInfo.hitLocations[impactMessage.hitIndex];
+
+      //if (hitLocation != 0) {
+        //DynamicMapHelper.applyImpactMapChange(weapon, __instance.target.CurrentPosition);
+      //}
       //CustomAmmoCategories.unregisterAMSCounterMeasure(impactMessage.hitInfo);
-      CustomAmmoCategoriesLog.Log.LogWrite("OnAttackSequenceImpact group:" + attackGroupIndex + " weapon:" + attackWeaponIndex + " shot:" + impactMessage.hitIndex + "/"+impactMessage.hitInfo.numberOfShots+" location:" + impactMessage.hitInfo.hitLocations[impactMessage.hitIndex] + "\n");
+      CustomAmmoCategoriesLog.Log.LogWrite("OnAttackSequenceImpact group:" + attackGroupIndex + " weapon:" + attackWeaponIndex + " shot:" + impactMessage.hitIndex + "/" + impactMessage.hitInfo.numberOfShots + " location:" + impactMessage.hitInfo.hitLocations[impactMessage.hitIndex] + "\n");
       CustomAmmoCategoriesLog.Log.LogWrite("  ");
       for (int t = 0; t < impactMessage.hitInfo.hitLocations.Length; ++t) {
         CustomAmmoCategoriesLog.Log.LogWrite("H:" + t + " L:" + impactMessage.hitInfo.hitLocations[t] + " ");
@@ -305,6 +334,26 @@ namespace CustomAmmoCategoriesPatches {
       if ((impactMessage.hitInfo.dodgeRolls[impactMessage.hitIndex] == -10f)) {
         CustomAmmoCategoriesLog.Log.LogWrite("this is AOE damage - no variance for them\n");
       } else {
+        CachedMissileCurve missile = CustomAmmoCategories.getCachedMissileCurve(impactMessage.hitInfo, impactMessage.hitIndex);
+        bool intercepted = false;
+        if (missile != null) { if (missile.Intercepted) { intercepted = true; }; };
+        if (intercepted == false) {
+          weapon.SpawnAdditionalImpactEffect(impactMessage.hitInfo.hitPositions[impactMessage.hitIndex]);
+          if (hitLocation == 65536) {
+            DynamicMapHelper.applyMineField(weapon, impactMessage.hitInfo.hitPositions[impactMessage.hitIndex]);
+            DynamicMapHelper.applyImpactBurn(weapon, impactMessage.hitInfo.hitPositions[impactMessage.hitIndex]);
+            DynamicMapHelper.applyImpactTempMask(weapon, impactMessage.hitInfo.hitPositions[impactMessage.hitIndex]);
+            DynamicMapHelper.applyCleanMinefield(weapon, impactMessage.hitInfo.hitPositions[impactMessage.hitIndex]);
+          } else
+          if (weapon.FireOnSuccessHit()&&(hitLocation != 0)) {
+            DynamicMapHelper.applyImpactBurn(weapon, __instance.target.CurrentPosition);
+            DynamicMapHelper.applyImpactTempMask(weapon, __instance.target.CurrentPosition);
+            DynamicMapHelper.applyCleanMinefield(weapon, __instance.target.CurrentPosition);
+          }
+          //DynamicTreesHelper.clearTrees();
+        } else {
+          CustomAmmoCategoriesLog.Log.LogWrite("Missile intercepted. No additional impact. No minefield.\n");
+        }
         if (realDamage >= 1.0f) {
           if (CustomAmmoCategories.getWeaponDamageVariance(weapon) > CustomAmmoCategories.Epsilon) {
             realDamage = CustomAmmoCategories.WeaponDamageSimpleVariance(weapon, rawDamage);
@@ -316,7 +365,6 @@ namespace CustomAmmoCategoriesPatches {
               realDamage = CustomAmmoCategories.WeaponDamageRevDistance(__instance.attacker, __instance.target, weapon, realDamage, rawDamage);
             }
           }
-          int hitLocation = impactMessage.hitInfo.hitLocations[impactMessage.hitIndex];
           if ((hitLocation != 0) && (hitLocation != 65536)) {
             float CurArmor = __instance.target.ArmorForLocation(hitLocation);
             CustomAmmoCategoriesLog.Log.LogWrite("  location armor = " + CurArmor + "\n");

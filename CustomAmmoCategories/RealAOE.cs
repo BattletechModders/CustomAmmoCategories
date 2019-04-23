@@ -553,7 +553,7 @@ namespace CustAmmoCategories {
       int[] oldhitVariance = hitInfo.hitVariance;
       AttackImpactQuality[] oldhitQualities = hitInfo.hitQualities;
 
-      hitInfo.toHitRolls = new float[AOEHitsCount];
+      hitInfo.toHitRolls = new float[oldtoHitRolls.Length];
       hitInfo.locationRolls = new float[AOEHitsCount];
       hitInfo.dodgeRolls = new float[AOEHitsCount];
       hitInfo.dodgeSuccesses = new bool[AOEHitsCount];
@@ -572,7 +572,7 @@ namespace CustAmmoCategories {
       oldhitQualities.CopyTo(hitInfo.hitQualities, 0);
       AOEHitsCount = hitInfo.numberOfShots;
       foreach (AOEHitInfo AOEInfo in targetAOEHitInfo) {
-        AOEInfo.hitInfo.toHitRolls.CopyTo(hitInfo.toHitRolls, AOEHitsCount);
+        //AOEInfo.hitInfo.toHitRolls.CopyTo(hitInfo.toHitRolls, AOEHitsCount);
         AOEInfo.hitInfo.locationRolls.CopyTo(hitInfo.locationRolls, AOEHitsCount);
         AOEInfo.hitInfo.dodgeRolls.CopyTo(hitInfo.dodgeRolls, AOEHitsCount);
         AOEInfo.hitInfo.dodgeSuccesses.CopyTo(hitInfo.dodgeSuccesses, AOEHitsCount);
@@ -764,6 +764,18 @@ namespace CustomAmmoCategoriesPatches {
       float num3 = AOERange;
       FootstepManager.Instance.AddScorch(endPos, new Vector3(Random.Range(0.0f, 1f), 0.0f, Random.Range(0.0f, 1f)).normalized, new Vector3(num3, num3, num3), false);
       return;
+    }
+  }
+  [HarmonyPatch(typeof(CombatGameState))]
+  [HarmonyPatch("OnCombatGameDestroyed")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { })]
+  public static class CombatGameState_OnCombatGameDestroyedAoE {
+    public static bool Prefix(CombatGameState __instance) {
+      if(CustomAmmoCategories.SpreadCache != null) CustomAmmoCategories.SpreadCache.Clear();
+      if (CustomAmmoCategories.AOEDamageCache != null) CustomAmmoCategories.AOEDamageCache.Clear();
+      if (CustomAmmoCategories.MissileCurveCache != null) CustomAmmoCategories.MissileCurveCache.Clear();
+      return true;
     }
   }
 }
