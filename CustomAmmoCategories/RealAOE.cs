@@ -626,7 +626,7 @@ namespace CustomAmmoCategoriesPatches {
           } else {
             int[] hitLocations = nullable.Value.hitLocations;
             for (int shot = 0; shot < hitLocations.Length; ++shot) {
-              CustomAmmoCategoriesLog.Log.LogWrite("  hitIndex = " + shot + " hitLocation = " + hitLocations[shot] + " AOE:" + (shot >= nullable.Value.numberOfShots) + "\n");
+              CustomAmmoCategoriesLog.Log.LogWrite("  hitIndex = " + shot + " hitLocation = " + hitLocations[shot] + " pos:"+nullable.Value.hitPositions[shot]+" AOE/FRAG:" + (shot >= nullable.Value.numberOfShots) + "\n");
               /*if (shot == (hitLocations.Length - 1)) {
                 List<AOEHitInfo> AOEHitsInfo = CustomAmmoCategories.getAOEHitInfo(nullable.Value, shot);
                 if (AOEHitsInfo != null) {

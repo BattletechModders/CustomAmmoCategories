@@ -8,6 +8,7 @@ using BattleTech.AttackDirectorHelpers;
 using System.Reflection;
 using CustAmmoCategories;
 using UnityEngine;
+using CustomAmmoCategoriesLog;
 
 namespace CustAmmoCategories {
   public static partial class CustomAmmoCategories {
@@ -226,7 +227,7 @@ namespace CustomAmmoCategoriesPatches {
       }
     }
 
-    public static void generateWeaponHitInfo(AttackDirector.AttackSequence instance, ICombatant target, Weapon weapon, int groupIdx, int weaponIdx, int numberOfShots, bool indirectFire, float dodgedDamage, ref WeaponHitInfo hitInfo) {
+    public static void generateWeaponHitInfo(AttackDirector.AttackSequence instance, ICombatant target, Weapon weapon, int groupIdx, int weaponIdx, int numberOfShots, bool indirectFire, float dodgedDamage, ref WeaponHitInfo hitInfo, bool missInCircle) {
       ICombatant originaltarget = instance.target;
       instance.target = target;
       CustomAmmoCategoriesLog.Log.LogWrite("generateWeaponHitInfo\n");
@@ -267,13 +268,31 @@ namespace CustomAmmoCategoriesPatches {
           break;
       }
       if (hitInfo.numberOfShots != hitInfo.hitLocations.Length) {
-        CustomAmmoCategoriesLog.Log.LogWrite(" strange behavior. NumberOfShots: " + hitInfo.numberOfShots + " but HitLocations length:" + hitInfo.hitLocations.Length + ". Must be equal\n", true);
+        Log.LogWrite(" strange behavior. NumberOfShots: " + hitInfo.numberOfShots + " but HitLocations length:" + hitInfo.hitLocations.Length + ". Must be equal\n", true);
         hitInfo.numberOfShots = hitInfo.hitLocations.Length;
+      }
+      if (missInCircle || weapon.HasShells()) {
+        Log.LogWrite(" miss in circle\n");
+        for (int hitIndex = 0; hitIndex < numberOfShots; ++hitIndex) {
+          if((hitInfo.hitLocations[hitIndex] == 0)||(hitInfo.hitLocations[hitIndex] == 65536)) {
+            Log.LogWrite("  hi:"+hitIndex+" was "+ hitInfo.hitPositions[hitIndex]);
+            hitInfo.hitPositions[hitIndex] = FragWeaponEffect.getMissPosition(target.GameRep);
+            Log.LogWrite("  become: "+ hitInfo.hitPositions[hitIndex] + "\n");
+          }
+        }
       }
       if (instance.attacker.GUID == target.GUID) {
         Vector3 terrainPos = CustomAmmoCategories.getTerrinHitPosition(instance.stackItemUID);
         if (terrainPos != Vector3.zero) {
           CustomAmmoCategoriesLog.Log.LogWrite(" terrain attack detected to " + terrainPos + "\n");
+          CustomAmmoCategoriesLog.Log.LogWrite(" recalculating hit positions\n");
+          for (int hitIndex = 0; hitIndex < numberOfShots; ++hitIndex) {
+            if ((hitInfo.hitLocations[hitIndex] == 0) || (hitInfo.hitLocations[hitIndex] == 65536)) {
+              Log.LogWrite("  hi:" + hitIndex + " was " + hitInfo.hitPositions[hitIndex]);
+              hitInfo.hitPositions[hitIndex] = FragWeaponEffect.getMissPosition(target.GameRep);
+              Log.LogWrite("  become: " + hitInfo.hitPositions[hitIndex] + "\n");
+            }
+          }
           for (int hitIndex = 0; hitIndex < numberOfShots; ++hitIndex) {
             hitInfo.hitLocations[hitIndex] = 65536;
             hitInfo.hitPositions[hitIndex] = terrainPos + (hitInfo.hitPositions[hitIndex] - target.CurrentPosition);
@@ -330,18 +349,18 @@ namespace CustomAmmoCategoriesPatches {
             foreach (SpreadHitInfo spHitInfo in spreadList) {
               ICombatant spreadTarget = __instance.Director.Combat.FindCombatantByGUID(spHitInfo.targetGUID);
               if (spreadTarget == null) { continue; };
-              generateWeaponHitInfo(__instance, spreadTarget, weapon, groupIdx, weaponIdx, spHitInfo.hitInfo.numberOfShots, indirectFire, dodgedDamage, ref spHitInfo.hitInfo);
+              generateWeaponHitInfo(__instance, spreadTarget, weapon, groupIdx, weaponIdx, spHitInfo.hitInfo.numberOfShots, indirectFire, dodgedDamage, ref spHitInfo.hitInfo,false);
             }
             bool consResult = CustomAmmoCategories.ConsolidateSpreadHitInfo(spreadList, ref hitInfo);
             if (consResult == false) {
               CustomAmmoCategoriesLog.Log.LogWrite("fallback to default\n", true);
-              generateWeaponHitInfo(__instance, __instance.target, weapon, groupIdx, weaponIdx, numberOfShots, indirectFire, dodgedDamage, ref hitInfo);
+              generateWeaponHitInfo(__instance, __instance.target, weapon, groupIdx, weaponIdx, numberOfShots, indirectFire, dodgedDamage, ref hitInfo, false);
             }
           } else {
-            generateWeaponHitInfo(__instance, __instance.target, weapon, groupIdx, weaponIdx, numberOfShots, indirectFire, dodgedDamage, ref hitInfo);
+            generateWeaponHitInfo(__instance, __instance.target, weapon, groupIdx, weaponIdx, numberOfShots, indirectFire, dodgedDamage, ref hitInfo, false);
           }
         } else {
-          generateWeaponHitInfo(__instance, __instance.target, weapon, groupIdx, weaponIdx, numberOfShots, indirectFire, dodgedDamage, ref hitInfo);
+          generateWeaponHitInfo(__instance, __instance.target, weapon, groupIdx, weaponIdx, numberOfShots, indirectFire, dodgedDamage, ref hitInfo ,false);
         }
         ExtWeaponDef extWeapon = CustomAmmoCategories.getExtWeaponDef(weapon.defId);
         if (extWeapon.StreakEffect == true) {
@@ -377,7 +396,7 @@ namespace CustomAmmoCategoriesPatches {
         //} else {
         //CustomAmmoCategoriesLog.Log.LogWrite("  "+weapon.defId + " is immune to AMS\n");
         //}
-        if (CustomAmmoCategories.getWeaponHasShells(weapon)) {
+        if (weapon.HasShells()) {
           CustomAmmoCategoriesLog.Log.LogWrite("Shrapnel detected. Forsed early explode\n");
           bool IsUnguided = CustomAmmoCategories.getWeaponUnguided(weapon);
           for (int hitIndex = 0; hitIndex < hitInfo.numberOfShots; ++hitIndex) {

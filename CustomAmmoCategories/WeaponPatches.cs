@@ -7,6 +7,8 @@ using System.Text;
 using CustAmmoCategories;
 using Harmony;
 using Localize;
+using CustomAmmoCategoriesLog;
+using BattleTech.UI;
 
 namespace CustAmmoCategories {
   public static partial class CustomAmmoCategories {
@@ -138,13 +140,39 @@ namespace CustAmmoCategories {
 }
 
 namespace CustAmmoCategoriesPatches {
+  [HarmonyPatch(typeof(CombatHUDWeaponSlot))]
+  [HarmonyPatch("RefreshDisplayedWeapon")]
+  [HarmonyPriority(Priority.Last)]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { typeof(ICombatant) })]
+  public static class CombatHUDWeaponSlot_RefreshDisplayedWeapon {
+    public static void Postfix(CombatHUDWeaponSlot __instance) {
+      if (__instance.DisplayedWeapon == null) { return; }
+      UILookAndColorConstants LookAndColorConstants = (UILookAndColorConstants)typeof(CombatHUDWeaponSlot).GetProperty("LookAndColorConstants", BindingFlags.Instance | BindingFlags.NonPublic).GetGetMethod(true).Invoke(__instance,new object[0] { });
+      if (__instance.DisplayedWeapon.isAMS() == true) {
+        __instance.HitChanceText.SetText("AMS");
+      };
+      if (CustomAmmoCategories.isWRJammed(__instance.DisplayedWeapon) == true) {
+        __instance.HitChanceText.SetText("JAM");
+        return;
+      };
+      if (CustomAmmoCategories.IsJammed(__instance.DisplayedWeapon) == true) {
+        __instance.HitChanceText.SetText("JAM");
+        return;
+      };
+      if (CustomAmmoCategories.IsCooldown((Weapon)__instance.DisplayedWeapon) > 0) {
+        __instance.HitChanceText.SetText(string.Format("CLD -{0}T", CustomAmmoCategories.IsCooldown((Weapon)__instance.DisplayedWeapon)));
+        return;
+      };
+    }
+  }
   [HarmonyPatch(typeof(MechComponent))]
   [HarmonyPatch("UIName")]
   [HarmonyPatch(MethodType.Getter)]
   [HarmonyPatch(new Type[] { })]
   public static class MechComponent_UIName {
     public static void Postfix(MechComponent __instance, ref Text __result) {
-      if (__instance is Weapon) { if (CustomAmmoCategories.isWRJammed((Weapon)__instance) == true) { return; }; };
+      /*if (__instance is Weapon) { if (CustomAmmoCategories.isWRJammed((Weapon)__instance) == true) { return; }; };
       if (__instance is Weapon) {
         if (CustomAmmoCategories.IsJammed((Weapon)__instance) == true) {
           __result.Append("({0})", new object[1] { (object)"JAM" });
@@ -156,7 +184,7 @@ namespace CustAmmoCategoriesPatches {
           __result.Append("(CLDWN {0})", new object[1] { (object)(CustomAmmoCategories.IsCooldown((Weapon)__instance)) });
           return;
         };
-      };
+      };*/
       if (CustomAmmoCategories.checkExistance(__instance.StatCollection, CustomAmmoCategories.AmmoIdStatName) == true) {
         string CurrentAmmoId = __instance.StatCollection.GetStatistic(CustomAmmoCategories.AmmoIdStatName).Value<string>();
         if (string.IsNullOrEmpty(CurrentAmmoId) == false) {
@@ -196,6 +224,16 @@ namespace CustAmmoCategoriesPatches {
         } else {
           __result = CustomAmmoCategories.DamageFormulaTwo(__instance, extWeapon, __result);
         }
+      }
+    }
+    [HarmonyPatch(typeof(Weapon))]
+    [HarmonyPatch("Type")]
+    [HarmonyPatch(MethodType.Getter)]
+    [HarmonyPatch(new Type[] { })]
+    [HarmonyPriority(Priority.Last)]
+    public static class Weapon_Type {
+      public static void Postfix(Weapon __instance, ref WeaponType __result) {
+        Log.LogWrite("Weapon type getted\n");
       }
     }
     [HarmonyPatch(typeof(Weapon))]
@@ -281,8 +319,7 @@ namespace CustAmmoCategoriesPatches {
     [HarmonyPatch(new Type[] { })]
     public static class Weapon_WillFire {
       public static void Postfix(Weapon __instance, ref bool __result) {
-        ExtWeaponDef extWeapon = CustomAmmoCategories.getExtWeaponDef(__instance.defId);
-        if (extWeapon.IsAMS) { __result = false; };
+        if (__instance.isAMS()) { __result = false; };
       }
     }
     [HarmonyPatch(typeof(Weapon))]

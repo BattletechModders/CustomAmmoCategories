@@ -10,6 +10,7 @@ using CustAmmoCategories;
 using UnityEngine;
 using System.Diagnostics;
 using System.Collections;
+using CustomAmmoCategoriesLog;
 
 namespace CustAmmoCategories {
   public class AmmoModePair {
@@ -219,6 +220,44 @@ namespace CustAmmoCategories {
       return false;
     }
 
+    public static float CalcAMSAIDamageCoeff(this Weapon weapon) {
+      if (weapon.parent == null) { return 0f; }
+      CustomAmmoCategoriesLog.Log.LogWrite("CalcAMSAIDamageCoeff " +weapon.UIName+" " + weapon.parent.DisplayName + ":"+weapon.parent.GUID+"\n");
+      float result = 0f;
+      int missilesCount = 0;
+      CustomAmmoCategoriesLog.Log.LogWrite(" i've detected so far:\n");
+      foreach (AbstractActor enemy in weapon.parent.GetDetectedEnemyUnits()) {
+        CustomAmmoCategoriesLog.Log.LogWrite(" "+enemy.DisplayName+":"+enemy.GUID+"\n");
+        foreach(Weapon eweapon in enemy.Weapons) {
+          Log.LogWrite("  " + eweapon.UIName);
+          if (eweapon.CanFire == false) { Log.LogWrite(" - can't fire\n"); continue; }
+          if (CustomAmmoCategories.IsWeaponAMSImmune(eweapon)) { Log.LogWrite(" - AMS imune\n"); continue; }
+          MissileLauncherEffect eweffect = eweapon.getWeaponEffect() as MissileLauncherEffect;
+          if (eweffect == null) { Log.LogWrite(" - not missile launcher\n"); continue; }
+          float distance = Vector3.Distance(enemy.CurrentPosition, weapon.parent.CurrentPosition);
+          if(distance > eweapon.MaxRange) { Log.LogWrite(" - out of range\n"); continue; }
+          float toHit = eweapon.GetToHitFromPosition(weapon.parent, 1, enemy.CurrentPosition, weapon.parent.CurrentPosition, true, weapon.parent.IsEvasive, false);
+          float predictDamage = eweapon.ShotsWhenFired * toHit * (eweapon.DamagePerShot + eweapon.HeatDamagePerShot) * (weapon.AMSHitChance() + eweapon.AMSHitChance());
+          missilesCount += eweapon.ShotsWhenFired;
+          result += predictDamage;
+          Log.LogWrite(" - "+predictDamage+"/"+result+"/"+missilesCount+"\n");
+        }
+      }
+      if (missilesCount == 0) { return 0f; };
+      if (weapon.isAAMS()) {
+        foreach (AbstractActor friend in weapon.parent.Combat.GetAllAlliesOf(weapon.parent)) {
+          float distance = Vector3.Distance(friend.CurrentPosition, weapon.parent.CurrentPosition);
+          if (distance < weapon.MaxRange) {
+            CustomAmmoCategoriesLog.Log.LogWrite(" ally in AAMS range:"+friend.DisplayName+":"+friend.GUID+"\n");
+            result *= (1f + CustomAmmoCategories.Settings.AAMSAICoeff);
+          };
+        }
+      }
+      int AMSCount = (weapon.ShotsWhenFired > missilesCount) ? missilesCount : weapon.ShotsWhenFired;
+      result *= (float)weapon.ShotsWhenFired / (float)AMSCount;
+      return result;
+    }
+
     public static void fillWeaponPredictRecord(ref DamagePredictRecord record, AbstractActor unit, ICombatant target, Weapon weapon, ref List<int> hitLocations, ref float AverageArmor) {
       CustomAmmoCategoriesLog.Log.LogWrite("fillWeaponPredictRecord " + unit.DisplayName + " target " + target.DisplayName + " weapon " + weapon.defId + "\n");
       CustomAmmoCategories.applyWeaponAmmoMode(weapon, record.Id.modeId, record.Id.ammoId);
@@ -232,12 +271,12 @@ namespace CustAmmoCategories {
       if (float.IsNaN(AverageArmor)) {
         AverageArmor = CustomAmmoCategories.getTargetAvarageArmor(hitLocations, target);
       }
-      float toHit = 0;
+      float toHit = 0f;
       if (weapon.WillFireAtTargetFromPosition(target, unit.CurrentPosition) == true) {
         toHit = weapon.GetToHitFromPosition(target, 1, unit.CurrentPosition, target.CurrentPosition, true, (targetActor != null) ? targetActor.IsEvasive : false, false);
       }
       if (toHit < Epsilon) { record.HeatDamageCoeff = 0f; record.NormDamageCoeff = 0f; record.PredictHeatDamage = 0f; };
-      float coolDownCoeff = 1.0f / (1.0f + CustomAmmoCategories.getWeaponCooldown(weapon));
+      float coolDownCoeff = 1.0f / (1.0f + weapon.Cooldown());
       float jammCoeff = (1.0f - CustomAmmoCategories.getWeaponFlatJammingChance(weapon))/CustomAmmoCategories.Settings.JamAIAvoid;
       float damageJammCoeff = CustomAmmoCategories.getWeaponDamageOnJamming(weapon) ? (1.0f / CustomAmmoCategories.Settings.DamageJamAIAvoid) : 1.0f;
       jammCoeff *= damageJammCoeff;
@@ -246,49 +285,58 @@ namespace CustAmmoCategories {
         damageJammCoeff = 1.0f;
         jammCoeff = 1.0f;
       }
-      float damageShotsCount = (float)weapon.ShotsWhenFired;
-      float damagePerShot = weapon.DamagePerShot;
-      float heatPerShot = weapon.HeatDamagePerShot;
-      if (weapon.componentDef.ComponentTags.Contains("wr-clustered_shots") || (CustomAmmoCategories.getWeaponDisabledClustering(weapon) == false)) {
-        damageShotsCount *= (float)weapon.ProjectilesPerShot;
-      }
-      if (CustomAmmoCategories.isWeaponAOECapable(weapon)) {
-        CustomAmmoCategoriesLog.Log.LogWrite(" AOE weapon detected. Altering calculations\n");
-        toHit = 1.0f;
-        if (target is Mech) {
-          int HeadIndex = hitLocations.IndexOf((int)ArmorLocation.Head);
-          CustomAmmoCategoriesLog.Log.LogWrite("  AOE can't hit Mech head:"+HeadIndex+"\n");
-          if ((HeadIndex >= 0) && (HeadIndex < hitLocations.Count)) { hitLocations.RemoveAt(HeadIndex); };
+      if (weapon.isAMS()) {
+        CustomAmmoCategoriesLog.Log.LogWrite(" AMS detected. Altering calculations\n");
+        record.HeatDamageCoeff = 0f;
+        record.NormDamageCoeff = weapon.CalcAMSAIDamageCoeff() * jammCoeff * coolDownCoeff;
+      } else {
+        float damageShotsCount = (float)weapon.ShotsWhenFired;
+        float damagePerShot = weapon.DamagePerShot;
+        float heatPerShot = weapon.HeatDamagePerShot;
+        if (weapon.componentDef.ComponentTags.Contains("wr-clustered_shots") || (CustomAmmoCategories.getWeaponDisabledClustering(weapon) == false) || weapon.HasShells()) {
+          damageShotsCount *= (float)weapon.ProjectilesPerShot;
         }
-        damagePerShot *= damageShotsCount;
-        CustomAmmoCategoriesLog.Log.LogWrite("  Full damage " + damagePerShot + "\n");
-        damagePerShot /= (float)hitLocations.Count;
-        CustomAmmoCategoriesLog.Log.LogWrite("  but spreaded by locations" + damagePerShot + "\n");
-        damageShotsCount = hitLocations.Count;
-        CustomAmmoCategoriesLog.Log.LogWrite("  hits count " + damageShotsCount + "\n");
+        if (weapon.HasShells()) {
+          damagePerShot /= (float)weapon.ProjectilesPerShot;
+        }
+        if (CustomAmmoCategories.isWeaponAOECapable(weapon)) {
+          CustomAmmoCategoriesLog.Log.LogWrite(" AOE weapon detected. Altering calculations\n");
+          toHit = 1.0f;
+          if (target is Mech) {
+            int HeadIndex = hitLocations.IndexOf((int)ArmorLocation.Head);
+            CustomAmmoCategoriesLog.Log.LogWrite("  AOE can't hit Mech head:" + HeadIndex + "\n");
+            if ((HeadIndex >= 0) && (HeadIndex < hitLocations.Count)) { hitLocations.RemoveAt(HeadIndex); };
+          }
+          damagePerShot *= damageShotsCount;
+          CustomAmmoCategoriesLog.Log.LogWrite("  Full damage " + damagePerShot + "\n");
+          damagePerShot /= (float)hitLocations.Count;
+          CustomAmmoCategoriesLog.Log.LogWrite("  but spreaded by locations" + damagePerShot + "\n");
+          damageShotsCount = hitLocations.Count;
+          CustomAmmoCategoriesLog.Log.LogWrite("  hits count " + damageShotsCount + "\n");
+        }
+        float piercedLocationsCount = (float)CustomAmmoCategories.getWeaponPierceLocations(hitLocations, target, damagePerShot);
+        float hitLocationsCount = (hitLocations.Count > 0) ? (float)hitLocations.Count : 1.0f;
+        float clusterCoeff = 1.0f + ((piercedLocationsCount / hitLocationsCount) * damageShotsCount) * CustomAmmoCategories.Settings.ClusterAIMult;
+        float pierceCoeff = 1.0f;
+        if (AverageArmor > damagePerShot) {
+          pierceCoeff += (damagePerShot / AverageArmor) * CustomAmmoCategories.Settings.PenetrateAIMult;
+        }
+        record.NormDamageCoeff = damagePerShot * damageShotsCount * toHit * coolDownCoeff * jammCoeff * clusterCoeff * pierceCoeff;
+        record.HeatDamageCoeff = heatPerShot * damageShotsCount * toHit * jammCoeff;
+        record.PredictHeatDamage = heatPerShot * damageShotsCount * toHit;
+        CustomAmmoCategoriesLog.Log.LogWrite(" toHit = " + toHit + "\n");
+        CustomAmmoCategoriesLog.Log.LogWrite(" coolDownCoeff = " + coolDownCoeff + "\n");
+        CustomAmmoCategoriesLog.Log.LogWrite(" jammCoeff = " + jammCoeff + "\n");
+        //CustomAmmoCategoriesLog.Log.LogWrite(" damageJammCoeff = " + damageJammCoeff + "\n");
+        CustomAmmoCategoriesLog.Log.LogWrite(" damageShotsCount = " + damageShotsCount + "\n");
+        CustomAmmoCategoriesLog.Log.LogWrite(" damagePerShot = " + damagePerShot + "\n");
+        CustomAmmoCategoriesLog.Log.LogWrite(" heatPerShot = " + heatPerShot + "\n");
+        CustomAmmoCategoriesLog.Log.LogWrite(" piercedLocationsCount = " + piercedLocationsCount + "\n");
+        CustomAmmoCategoriesLog.Log.LogWrite(" hitLocationsCount = " + hitLocationsCount + "\n");
+        CustomAmmoCategoriesLog.Log.LogWrite(" AverageArmor = " + AverageArmor + "\n");
+        CustomAmmoCategoriesLog.Log.LogWrite(" clusterCoeff = " + clusterCoeff + "\n");
+        CustomAmmoCategoriesLog.Log.LogWrite(" pierceCoeff = " + pierceCoeff + "\n");
       }
-      float piercedLocationsCount = (float)CustomAmmoCategories.getWeaponPierceLocations(hitLocations, target, damagePerShot);
-      float hitLocationsCount = (hitLocations.Count > 0) ? (float)hitLocations.Count : 1.0f;
-      float clusterCoeff = 1.0f + ((piercedLocationsCount / hitLocationsCount) * damageShotsCount) * CustomAmmoCategories.Settings.ClusterAIMult;
-      float pierceCoeff = 1.0f;
-      if (AverageArmor > damagePerShot) {
-        pierceCoeff += (damagePerShot / AverageArmor) * CustomAmmoCategories.Settings.PenetrateAIMult;
-      }
-      record.NormDamageCoeff = damagePerShot * damageShotsCount * toHit * coolDownCoeff * jammCoeff * clusterCoeff * pierceCoeff;
-      record.HeatDamageCoeff = heatPerShot * damageShotsCount * toHit * jammCoeff;
-      record.PredictHeatDamage = heatPerShot * damageShotsCount * toHit;
-      CustomAmmoCategoriesLog.Log.LogWrite(" toHit = " + toHit + "\n");
-      CustomAmmoCategoriesLog.Log.LogWrite(" coolDownCoeff = " + coolDownCoeff + "\n");
-      CustomAmmoCategoriesLog.Log.LogWrite(" jammCoeff = " + jammCoeff + "\n");
-      //CustomAmmoCategoriesLog.Log.LogWrite(" damageJammCoeff = " + damageJammCoeff + "\n");
-      CustomAmmoCategoriesLog.Log.LogWrite(" damageShotsCount = " + damageShotsCount + "\n");
-      CustomAmmoCategoriesLog.Log.LogWrite(" damagePerShot = " + damagePerShot + "\n");
-      CustomAmmoCategoriesLog.Log.LogWrite(" heatPerShot = " + heatPerShot + "\n");
-      CustomAmmoCategoriesLog.Log.LogWrite(" piercedLocationsCount = " + piercedLocationsCount + "\n");
-      CustomAmmoCategoriesLog.Log.LogWrite(" hitLocationsCount = " + hitLocationsCount + "\n");
-      CustomAmmoCategoriesLog.Log.LogWrite(" AverageArmor = " + AverageArmor + "\n");
-      CustomAmmoCategoriesLog.Log.LogWrite(" clusterCoeff = " + clusterCoeff + "\n");
-      CustomAmmoCategoriesLog.Log.LogWrite(" pierceCoeff = " + pierceCoeff + "\n");
       CustomAmmoCategoriesLog.Log.LogWrite(" NormDamageCoeff = " + record.NormDamageCoeff + "\n");
       CustomAmmoCategoriesLog.Log.LogWrite(" HeatDamageCoeff = " + record.HeatDamageCoeff + "\n");
     }
@@ -298,10 +346,10 @@ namespace CustAmmoCategories {
       Dictionary<string, List<DamagePredictRecord>> damagePredict = new Dictionary<string, List<DamagePredictRecord>>();
       foreach (Weapon weapon in unit.Weapons) {
         ExtWeaponDef extWeapon = CustomAmmoCategories.getExtWeaponDef(weapon.defId);
-        if (extWeapon.IsAMS) {
-          CustomAmmoCategoriesLog.Log.LogWrite(" " + weapon.defId + " is AMS exclude from ammo/mode choose\n");
-          continue;
-        }
+        //if (extWeapon.IsAMS) {
+        //  CustomAmmoCategoriesLog.Log.LogWrite(" " + weapon.defId + " is AMS exclude from ammo/mode choose\n");
+        //  continue;
+        //}
         weapons.Add(weapon.uid, weapon);
         damagePredict.Add(weapon.uid, CustomAmmoCategories.getWeaponDamagePredict(unit, target, weapon));
       }

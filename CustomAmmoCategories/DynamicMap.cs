@@ -98,6 +98,27 @@ namespace CustAmmoCategories {
     public static ExtWeaponDef exDef(this Weapon weapon) {
       return CustomAmmoCategories.getExtWeaponDef(weapon.defId);
     }
+    public static WeaponMode mode(this Weapon weapon) {
+      ExtWeaponDef extWeapon = weapon.exDef();
+      string modeId = extWeapon.baseModeId;
+      if (CustomAmmoCategories.checkExistance(weapon.StatCollection, CustomAmmoCategories.WeaponModeStatisticName) == true) {
+        modeId = weapon.StatCollection.GetStatistic(CustomAmmoCategories.WeaponModeStatisticName).Value<string>();
+      }
+      if (extWeapon.Modes.ContainsKey(modeId)) {
+        WeaponMode mode = extWeapon.Modes[modeId];
+        return mode;
+      }
+      return CustomAmmoCategories.DefaultWeaponMode;
+    }
+    public static ExtAmmunitionDef ammo(this Weapon weapon) {
+      if (CustomAmmoCategories.checkExistance(weapon.StatCollection, CustomAmmoCategories.AmmoIdStatName) == true) {
+        string CurrentAmmoId = weapon.StatCollection.GetStatistic(CustomAmmoCategories.AmmoIdStatName).Value<string>();
+        ExtAmmunitionDef extAmmoDef = CustomAmmoCategories.findExtAmmo(CurrentAmmoId);
+        return extAmmoDef;
+      }
+      return CustomAmmoCategories.DefaultAmmo;
+    }
+
     public static float FireTerrainChance(this Weapon weapon) {
       ExtWeaponDef extWeapon = CustomAmmoCategories.getExtWeaponDef(weapon.defId);
       float result = extWeapon.FireTerrainChance;

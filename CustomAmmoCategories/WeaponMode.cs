@@ -52,6 +52,8 @@ namespace CustAmmoCategories {
     public float AMSHitChance { get; set; }
     public CustomAmmoCategory AmmoCategory { get; set; }
     public string IFFDef { get; set; }
+    public TripleBoolean IsAMS { get; set; }
+    public TripleBoolean IsAAMS { get; set; }
     public TripleBoolean HasShells { get; set; }
     public float ShellsRadius { get; set; }
     public float MinShellsDistance { get; set; }
@@ -129,6 +131,8 @@ namespace CustAmmoCategories {
       AdditionalImpactVFXScaleZ = 1f;
       FireOnSuccessHit = TripleBoolean.NotSet;
       ClearMineFieldRadius = 0;
+      IsAMS = TripleBoolean.NotSet;
+      IsAAMS = TripleBoolean.NotSet;
     }
     public void fromJSON(string json) {
       JObject jWeaponMode = JObject.Parse(json);
@@ -164,6 +168,15 @@ namespace CustAmmoCategories {
       }
       if (jWeaponMode["MinRange"] != null) {
         this.MinRange = (float)jWeaponMode["MinRange"];
+      }
+      if (jWeaponMode["IsAMS"] != null) {
+        this.IsAMS = ((bool)jWeaponMode["IsAMS"] == true) ? TripleBoolean.True : TripleBoolean.False;
+      }
+      if (jWeaponMode["IsAAMS"] != null) {
+        this.IsAAMS = ((bool)jWeaponMode["IsAAMS"] == true) ? TripleBoolean.True : TripleBoolean.False;
+        if (this.IsAAMS == TripleBoolean.True) {
+          this.IsAMS = TripleBoolean.True;
+        }
       }
       if (jWeaponMode["MaxRange"] != null) {
         this.MaxRange = (float)jWeaponMode["MaxRange"];

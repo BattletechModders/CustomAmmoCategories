@@ -1,6 +1,7 @@
 ﻿using BattleTech;
 using BattleTech.Rendering;
 using CustAmmoCategories;
+using CustomAmmoCategoriesLog;
 using FluffyUnderware.Curvy;
 using Harmony;
 using System;
@@ -122,8 +123,9 @@ namespace CustAmmoCategories {
       if (shellsEffect != null) { shellsEffect.Reset(); }
       //CustomAmmoCategories.ShrapnelHitsRecord.Remove(attackSequenceId);
     }
-    public static bool getWeaponHasShells(Weapon weapon) {
+    public static bool HasShells(this Weapon weapon) {
       ExtWeaponDef extWeapon = CustomAmmoCategories.getExtWeaponDef(weapon.defId);
+      if (extWeapon.ImprovedBallistic == false) { return false; };
       TripleBoolean result = extWeapon.HasShells;
       if (result == TripleBoolean.NotSet) {
         if (CustomAmmoCategories.checkExistance(weapon.StatCollection, CustomAmmoCategories.WeaponModeStatisticName) == true) {
@@ -282,7 +284,7 @@ namespace CustAmmoCategories {
         HashSet<string> ammos = CustomAmmoCategories.getWeaponAvaibleAmmoForMode(weapon, mode.Value.Id);
         foreach (string ammo in ammos) {
           CustomAmmoCategories.applyWeaponAmmoMode(weapon, mode.Key, ammo);
-          if (CustomAmmoCategories.getWeaponHasShells(weapon) == false) { continue; };
+          if (weapon.HasShells() == false) { continue; };
           int curShots = weapon.ProjectilesPerShot*weapon.ShotsWhenFired;
           if (maxShots < curShots) { maxShots = curShots; };
         }
@@ -312,6 +314,109 @@ namespace CustAmmoCategories {
       //CustomAmmoCategoriesLog.Log.LogWrite(" shells effects registred:" + shellsEffects.Count + "\n");
     }
     //public static Dictionary<int, Dictionary<int, Dictionary<int, Dictionary<int, ShellHitRecord>>>> ShellHitsRecord = new Dictionary<int, Dictionary<int, Dictionary<int, Dictionary<int, ShellHitRecord>>>>();
+    public static CurvySpline generateSpline(bool isDirect, bool isIndirect,Vector3 startPos,Vector3 endPos,MissileLauncherEffect missileLauncherEffect,int hitLocation) {
+      Vector3[] spline;
+      if (isDirect) {
+        spline = CustomAmmoCategories.GenerateDirectMissilePath(
+          missileLauncherEffect.missileCurveStrength,
+          missileLauncherEffect.missileCurveFrequency,
+          missileLauncherEffect.isSRM,
+          hitLocation, startPos, endPos, missileLauncherEffect.weapon.parent.Combat);
+      } else {
+        if (isIndirect) {
+          spline = CustomAmmoCategories.GenerateIndirectMissilePath(
+            missileLauncherEffect.missileCurveStrength,
+            missileLauncherEffect.missileCurveFrequency,
+            missileLauncherEffect.isSRM,
+            hitLocation, startPos, endPos, missileLauncherEffect.weapon.parent.Combat);
+        } else {
+          spline = CustomAmmoCategories.GenerateMissilePath(
+            missileLauncherEffect.missileCurveStrength,
+            missileLauncherEffect.missileCurveFrequency,
+            missileLauncherEffect.isSRM,
+            hitLocation, startPos, endPos, missileLauncherEffect.weapon.parent.Combat);
+        }
+      }
+      GameObject splineObject = new GameObject();
+      CurvySpline UnitySpline = splineObject.AddComponent<CurvySpline>();
+      UnitySpline.Interpolation = CurvyInterpolation.Bezier;
+      UnitySpline.Clear();
+      UnitySpline.Closed = false;
+      UnitySpline.Add(spline);
+      UnitySpline.Refresh();
+      return UnitySpline;
+    }
+
+    public static Vector3 interpolateSeparationPosition(CurvySpline UnitySpline,Vector3 startPos,Vector3 targetPos,float sMin,float sMax) {
+      float t = 0f;
+      bool rudeAproachFound = false;
+      for (t = 0.1f; Mathf.Abs(t - 1.1f) > 0.001f; t += 0.1f) {
+        Vector3 missilePos = UnitySpline.InterpolateByDistance(UnitySpline.Length * t);
+        float distanceFromStart = Vector3.Distance(startPos,missilePos);
+        float distanceToTarget = Vector3.Distance(targetPos, missilePos);
+        Log.LogWrite(" interpolating pos: "+t+"("+ Mathf.Abs(t - 1f) + ") dfs:"+distanceFromStart+"/"+sMin+" dtt:"+distanceToTarget+"/"+sMax+"\n");
+        if(distanceFromStart >= sMin) {
+          if (distanceToTarget <= sMax) { rudeAproachFound = true; break; };
+        }
+      }
+      Log.LogWrite(" result: " + t + "(" + Mathf.Abs(t - 1.1f) + "):"+rudeAproachFound+"\n");
+      if (rudeAproachFound) {
+        Log.LogWrite(" rude approach found:"+t+"\n");
+        for (float tt = t-0.1f; tt <= t; tt += 0.01f) {
+          Vector3 missilePos = UnitySpline.InterpolateByDistance(UnitySpline.Length * tt);
+          float distanceFromStart = Vector3.Distance(startPos, missilePos);
+          float distanceToTarget = Vector3.Distance(targetPos, missilePos);
+          Log.LogWrite(" interpolating precisely pos: " + tt + " dfs:" + distanceFromStart + "/" + sMin + " dtt:" + distanceToTarget + "/" + sMax + "\n");
+          if (distanceFromStart >= sMin) {
+            if (distanceToTarget <= sMax) {
+              Log.LogWrite(" position found:"+missilePos+"\n");
+              return missilePos;
+            };
+          }
+        }
+      }
+      return Vector3.zero;
+    }
+    public static Vector3 interpolateSeparationPosition(Vector3 endPos, Vector3 startPos, Vector3 targetPos, float sMin, float sMax) {
+      float t = 0f;
+      bool rudeAproachFound = false;
+      Log.LogWrite(" interpolating from "+startPos+" to "+endPos+" target: "+targetPos+"\n");
+      for (t = 0.1f; Mathf.Abs(t - 1.1f) > 0.001f; t += 0.1f) {
+        Vector3 missilePos = Vector3.Lerp(startPos, endPos, t);
+        float distanceFromStart = Vector3.Distance(startPos, missilePos);
+        float distanceToTarget = Vector3.Distance(targetPos, missilePos);
+        Log.LogWrite(" interpolating pos: " + t + " dfs:" + distanceFromStart + "/" + sMin + " dtt:" + distanceToTarget + "/" + sMax + "\n");
+        if (distanceFromStart >= sMin) {
+          if (distanceToTarget <= sMax) { rudeAproachFound = true; break; };
+        }
+      }
+      Log.LogWrite(" result: " + t + "(" + Mathf.Abs(t - 1.1f) + "):" + rudeAproachFound + "\n");
+      if (rudeAproachFound) {
+        Log.LogWrite(" rude approach found:" + t + "\n");
+        for (float tt = t - 0.1f; tt <= t; tt += 0.01f) {
+          Vector3 missilePos = Vector3.Lerp(startPos, endPos, tt);
+          float distanceFromStart = Vector3.Distance(startPos, missilePos);
+          float distanceToTarget = Vector3.Distance(targetPos, missilePos);
+          Log.LogWrite(" interpolating precisely pos: " + tt + " dfs:" + distanceFromStart + "/" + sMin + " dtt:" + distanceToTarget + "/" + sMax + "\n");
+          if (distanceFromStart >= sMin) {
+            if (distanceToTarget <= sMax) {
+              Log.LogWrite(" position found:" + missilePos + "\n");
+              return missilePos;
+            };
+          }
+        }
+      }
+      Log.LogWrite(" no separation\n");
+      return Vector3.zero;
+    }
+
+    public static void printHitPositions(this WeaponHitInfo hitInfo) {
+      Log.LogWrite("WeaponPositions:"+hitInfo.attackWeaponIndex+"\n");
+      for(int t = 0; t < hitInfo.numberOfShots; ++t) {
+        Log.LogWrite(" "+hitInfo.hitPositions[t]+"\n");
+      }
+    }
+
     public static void shrapnellEarlyExplode(CombatGameState combat, Weapon weapon, ref WeaponHitInfo hitInfo, int hitIndex, bool isIndirect, bool isDirect, ICombatant target) {
       WeaponEffect weaponEffect = CustomAmmoCategories.getWeaponEffect(weapon);
       CustomAmmoCategoriesLog.Log.LogWrite("Shrapnel early explode. HitIndex:" + hitIndex + "\n");
@@ -331,110 +436,59 @@ namespace CustAmmoCategories {
       float sMin = CustomAmmoCategories.getWeaponMinShellsDistance(weapon);
       float sMax = CustomAmmoCategories.getWeaponMaxShellsDistance(weapon);
       Vector3 oldHitPos = hitInfo.hitPositions[hitIndex];
+      Vector3 startPos = startingTransform.position;
+      Vector3 targetPos = Vector3.zero;
+      if (target.GUID != hitInfo.attackerId) {
+        targetPos = target.CurrentPosition;
+      } else {
+        targetPos = CustomAmmoCategories.getTerrinHitPosition(hitInfo.stackItemUID);
+        CustomAmmoCategoriesLog.Log.LogWrite(" Ground attack detected:" + targetPos + "\n");
+      }
+
       if (CustomAmmoCategories.getWeaponAlwaysIndirectVisuals(weapon) == true) { isIndirect = true; };
-      if (weaponEffect is MissileLauncherEffect) {
+      MissileLauncherEffect missileLauncherEffect = weaponEffect as MissileLauncherEffect;
+      MultiShotBallisticEffect msBallistic = weaponEffect as MultiShotBallisticEffect;
+      if ((missileLauncherEffect != null)||(msBallistic != null)) {
         CachedMissileCurve missile = CustomAmmoCategories.getCachedMissileCurve(hitInfo, hitIndex);
-        MissileLauncherEffect missileLauncherEffect = weaponEffect as MissileLauncherEffect;
         if (missile != null) {
+          Log.LogWrite(" interpolating separate pos by spline\n");
           CustomAmmoCategoriesLog.Log.LogWrite(" spline length:" + missile.UnitySpline.Length + ". Min separation distance:" + sMin + "\n");
-          if (missile.UnitySpline.Length > sMin) {
+          Vector3 separationPos = interpolateSeparationPosition(missile.UnitySpline, startPos, targetPos, sMin, sMax);
+          if (separationPos != Vector3.zero) {
             separated = true;
-            float tMax = (missile.UnitySpline.Length - sMax) / missile.UnitySpline.Length;
-            float tMin = sMin / missile.UnitySpline.Length;
-            float tEff = Math.Max(tMin, tMax);
-            CustomAmmoCategoriesLog.Log.LogWrite(" separating at " + tEff + "\n");
-            missile.endPos = missile.UnitySpline.InterpolateByDistance(missile.UnitySpline.Length * tEff);
-            hitInfo.hitPositions[hitIndex] = missile.endPos;
+            missile.endPos = separationPos;
+            hitInfo.hitPositions[hitIndex] = separationPos;
             missile.hitLocation = 0;
-            if (isDirect) {
-              missile.spline = CustomAmmoCategories.GenerateDirectMissilePath(
-                missileLauncherEffect.missileCurveStrength,
-                missileLauncherEffect.missileCurveFrequency,
-                missileLauncherEffect.isSRM,
-                missile.hitLocation, missile.startPos, missile.endPos, combat);
-            } else {
-              if (isIndirect) {
-                missile.spline = CustomAmmoCategories.GenerateIndirectMissilePath(
-                  missileLauncherEffect.missileCurveStrength,
-                  missileLauncherEffect.missileCurveFrequency,
-                  missileLauncherEffect.isSRM,
-                  missile.hitLocation, missile.startPos, missile.endPos, combat);
-              } else {
-                missile.spline = CustomAmmoCategories.GenerateMissilePath(
-                  missileLauncherEffect.missileCurveStrength,
-                  missileLauncherEffect.missileCurveFrequency,
-                  missileLauncherEffect.isSRM,
-                  missile.hitLocation, missile.startPos, missile.endPos, combat);
-              }
-            }
-            missile.UnitySpline.Interpolation = CurvyInterpolation.Bezier;
-            missile.UnitySpline.Clear();
-            missile.UnitySpline.Closed = false;
-            missile.UnitySpline.Add(missile.spline);
-            missile.UnitySpline.Refresh();
+            missile.regenerateMissilepath(isDirect,isIndirect);
           }
         } else {
-          Vector3 startPos = startingTransform.position;
-          Vector3 endPos = hitInfo.hitPositions[hitIndex];
-          Vector3[] spline;
-          if (isDirect) {
-            spline = CustomAmmoCategories.GenerateDirectMissilePath(
-              missileLauncherEffect.missileCurveStrength,
-              missileLauncherEffect.missileCurveFrequency,
-              missileLauncherEffect.isSRM,
-              hitInfo.hitLocations[hitIndex], startPos, endPos, combat);
-          } else {
-            if (isIndirect) {
-              spline = CustomAmmoCategories.GenerateIndirectMissilePath(
-                missileLauncherEffect.missileCurveStrength,
-                missileLauncherEffect.missileCurveFrequency,
-                missileLauncherEffect.isSRM,
-                hitInfo.hitLocations[hitIndex], startPos, endPos, combat);
-            } else {
-              spline = CustomAmmoCategories.GenerateMissilePath(
-                missileLauncherEffect.missileCurveStrength,
-                missileLauncherEffect.missileCurveFrequency,
-                missileLauncherEffect.isSRM,
-                hitInfo.hitLocations[hitIndex], startPos, endPos, combat);
-            }
+          Log.LogWrite(" interpolating separate pos by spline. no pre-generated\n");
+          CurvySpline UnitySpline = null;
+          if (missileLauncherEffect != null) {
+            UnitySpline = CustomAmmoCategories.generateSpline(isDirect, isIndirect,
+              startPos, hitInfo.hitPositions[hitIndex], missileLauncherEffect, hitInfo.hitLocations[hitIndex]);
+          } else 
+          if(msBallistic != null) {
+            UnitySpline = msBallistic.generateSimpleIndirectSpline(startPos, hitInfo.hitPositions[hitIndex], hitInfo.hitLocations[hitIndex]);
           }
-          GameObject splineObject = new GameObject();
-          CurvySpline UnitySpline = splineObject.AddComponent<CurvySpline>();
-          missile.UnitySpline.Interpolation = CurvyInterpolation.Bezier;
-          missile.UnitySpline.Clear();
-          missile.UnitySpline.Closed = false;
-          missile.UnitySpline.Add(spline);
-          missile.UnitySpline.Refresh();
           CustomAmmoCategoriesLog.Log.LogWrite(" spline length:" + UnitySpline.Length + ". Min separation distance:" + sMin + "\n");
-          if (UnitySpline.Length > sMin) {
-            separated = true;
-            float tMax = (UnitySpline.Length - sMax) / UnitySpline.Length;
-            float tMin = sMin / UnitySpline.Length;
-            float tEff = Math.Max(tMin, tMax);
-            CustomAmmoCategoriesLog.Log.LogWrite(" separating at " + tEff + "\n");
-            hitInfo.hitPositions[hitIndex] = UnitySpline.InterpolateByDistance(UnitySpline.Length * tEff);
+          Vector3 separationPos = Vector3.zero;
+          if (UnitySpline != null) {
+            separationPos = interpolateSeparationPosition(UnitySpline, startPos, targetPos, sMin, sMax);
+            GameObject.Destroy(UnitySpline.gameObject);
+          } else {
+            separationPos = interpolateSeparationPosition(hitInfo.hitPositions[hitIndex], startPos, targetPos, sMin, sMax);
           }
-          GameObject.Destroy(UnitySpline);
-          GameObject.Destroy(splineObject);
+          if (separationPos != Vector3.zero) {
+            separated = true;
+            hitInfo.hitPositions[hitIndex] = separationPos;
+          }
         }
       } else {
-        Vector3 startPos = startingTransform.position;
-        Vector3 endPos = Vector3.zero;
-        if (target.GUID != hitInfo.attackerId) {
-          endPos = target.CurrentPosition;
-        } else {
-          endPos = CustomAmmoCategories.getTerrinHitPosition(hitInfo.stackItemUID);
-          CustomAmmoCategoriesLog.Log.LogWrite(" Ground attack detected:"+endPos+"\n");
-        }
-        float distance = Vector3.Distance(startPos, endPos);
-        CustomAmmoCategoriesLog.Log.LogWrite(" trajectory length:" + distance + ". Min separation distance:" + sMin + "\n");
-        if (distance > sMin) {
+        Vector3 separationPos = interpolateSeparationPosition(hitInfo.hitPositions[hitIndex], startPos, targetPos, sMin, sMax);
+        if (separationPos != Vector3.zero) {
           separated = true;
-          float tMax = (distance - sMax) / distance;
-          float tMin = sMin / distance;
-          float tEff = Math.Max(tMin, tMax);
-          CustomAmmoCategoriesLog.Log.LogWrite(" separating at " + tEff + "\n");
-          hitInfo.hitPositions[hitIndex] = hitInfo.hitPositions[hitIndex] = Vector3.Lerp(startPos, endPos, tEff);
+          hitInfo.hitPositions[hitIndex] = separationPos;
         }
       }
       if (separated == true) {
@@ -449,6 +503,7 @@ namespace CustAmmoCategories {
         CustomAmmoCategoriesLog.Log.LogWrite(" Shrapnel early explode: " + hitIndex + " separated:" + separated + ". Old HitPosition: "+oldHitPos+" New hitPosition: "+hitInfo.hitPositions[hitIndex]+"\n");
         CustomAmmoCategories.ShrapnelHitsRecord[hitInfo.attackSequenceId][hitInfo.attackGroupIndex][hitInfo.attackWeaponIndex].Add(hitIndex, new ShrapnelHitRecord(hitIndex, separated));
       }
+      hitInfo.printHitPositions();
     }
     public static ShrapnelHitRecord getShrapnelCache(WeaponHitInfo hitInfo, int hitIndex) {
       if (CustomAmmoCategories.ShrapnelHitsRecord.ContainsKey(hitInfo.attackSequenceId) == false) {
@@ -848,7 +903,7 @@ namespace CustomAmmoCategoriesPatches {
       foreach (var weaponsGroup in sortedWeapons) {
         foreach (var weapon in weaponsGroup) {
           //ExtWeaponDef extWeapon = CustomAmmoCategories.getExtWeaponDef(weapon.defId);
-          if (CustomAmmoCategories.getWeaponHasShells(weapon)) {
+          if (weapon.HasShells()) {
             CustomAmmoCategoriesLog.Log.LogWrite("GenerateRandomCache " + weapon.defId + " tie to ClusterRandomCache true\n");
             _isClustered[weapon.defId] = true;
           }
@@ -857,7 +912,7 @@ namespace CustomAmmoCategoriesPatches {
       return true;
     }
   }
-  [HarmonyPatch(typeof(BallisticEffect), "OnImpact", MethodType.Normal)]
+  /*[HarmonyPatch(typeof(BallisticEffect), "OnImpact", MethodType.Normal)]
   [HarmonyPatch(new Type[] { typeof(float) })]
   public static class BallisticEffect_OnImpact {
     public static bool Prefix(BallisticEffect __instance, ref float hitDamage) {
@@ -867,8 +922,8 @@ namespace CustomAmmoCategoriesPatches {
       };
       return true;
     }
-  }
-  [HarmonyPatch(typeof(MissileLauncherEffect), "AllMissilesComplete", MethodType.Normal)]
+  }*/
+  /*[HarmonyPatch(typeof(MissileLauncherEffect), "AllMissilesComplete", MethodType.Normal)]
   [HarmonyPatch(new Type[] { })]
   public static class MissileLauncherEffect_AllMissilesComplete {
     public static void Postfix(MissileLauncherEffect __instance, ref bool __result) {
@@ -909,7 +964,8 @@ namespace CustomAmmoCategoriesPatches {
         }
       }
     }
-  }
+  }*/
+  /*
   [HarmonyPatch(typeof(BulletEffect))]
   [HarmonyPatch("Fire")]
   [HarmonyPatch(MethodType.Normal)]
@@ -965,8 +1021,8 @@ namespace CustomAmmoCategoriesPatches {
       __instance.currentState = WeaponEffect.WeaponEffectState.PreFiring;
       CustomAmmoCategoriesLog.Log.LogWrite(" start pos is altered. Was:" + startingTransform.position + " become:" + startPos + "\n");
 
-    }
-
+    }*/
+    /*
     public static bool Prefix(BulletEffect __instance, WeaponHitInfo hitInfo, int hitIndex, int emitterIndex) {
       __instance.hitInfo = hitInfo;
       CustomAmmoCategoriesLog.Log.LogWrite("Bullet Effect Fire " + __instance.weapon.defId + "/"+__instance.GetInstanceID() + " seq:" + __instance.hitInfo.attackSequenceId + " grp:" + __instance.hitInfo.attackGroupIndex + " " + __instance.hitInfo.attackWeaponIndex + " " + hitIndex + "\n");
@@ -1023,7 +1079,8 @@ namespace CustomAmmoCategoriesPatches {
       }
       return true;
     }
-  }
+  }*/
+  /*
   [HarmonyPatch(typeof(WeaponEffect))]
   [HarmonyPatch("Fire")]
   [HarmonyPatch(MethodType.Normal)]
@@ -1069,7 +1126,8 @@ namespace CustomAmmoCategoriesPatches {
       }
       return WeaponEffect_FireTerrain.Prefix(__instance,hitInfo,hitIndex,emitterIndex);
     }
-  }
+  }*/
+  /*
   [HarmonyPatch(typeof(BallisticEffect))]
   [HarmonyPatch("FireNextBullet")]
   [HarmonyPatch(MethodType.Normal)]
@@ -1152,7 +1210,8 @@ namespace CustomAmmoCategoriesPatches {
       }
       return true;
     }
-  }
+  }*/
+  /*
   [HarmonyPatch(typeof(BallisticEffect))]
   [HarmonyPatch("OnBulletImpact")]
   [HarmonyPatch(MethodType.Normal)]
@@ -1242,7 +1301,8 @@ namespace CustomAmmoCategoriesPatches {
       }
       return true;
     }
-  }
+  }*/
+  /*
   [HarmonyPatch(typeof(WeaponEffect))]
   [HarmonyPatch("PlayMuzzleFlash")]
   [HarmonyPatch(MethodType.Normal)]
@@ -1652,7 +1712,7 @@ namespace CustomAmmoCategoriesPatches {
       }
       return true;
     }
-  }
+  }*/
   [HarmonyPatch(typeof(CombatGameState))]
   [HarmonyPatch("OnCombatGameDestroyed")]
   [HarmonyPatch(MethodType.Normal)]

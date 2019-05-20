@@ -1,5 +1,6 @@
 ﻿using BattleTech;
 using CustAmmoCategories;
+using CustomAmmoCategoriesLog;
 using Harmony;
 using Newtonsoft.Json.Linq;
 using System;
@@ -9,7 +10,34 @@ using System.Reflection;
 using System.Text;
 
 namespace CustAmmoCategories {
+  public static partial class CustomAmmoCategories {
+    public static bool isImprovedBallistic(this Weapon weapon) { return weapon.exDef().ImprovedBallistic; }
+  } 
   public class ExtWeaponDef {
+    public static void RemoveTag(ref JObject json,string tag) {
+      Log.LogWrite("ExtWeaponDef.RemoveTag("+tag+")\n");
+      if (json["ComponentTags"] == null) {
+        Log.LogWrite(" no ComponentTags section\n");
+        return;
+      }
+      if (json["ComponentTags"]["items"] == null) {
+        Log.LogWrite(" no items section\n");
+        return;
+      }
+      if (json["ComponentTags"]["items"].Type != JTokenType.Array) {
+        Log.LogWrite(" no items not array\n");
+        return;
+      }
+      JArray items = json["ComponentTags"]["items"] as JArray;
+      if (items == null) {
+        Log.LogWrite(" no items not converted array\n");
+        return;
+      }
+      for(int t = 0; t < items.Count;) {
+        Log.LogWrite(" tag:"+ items[t] + "\n");
+        if (((string)items[t]) != tag) { ++t; } else {items.RemoveAt(t); Log.LogWrite("  removed\n");};
+      }
+    }
     public HitGeneratorType HitGenerator { get; set; }
     public bool StreakEffect { get; set; }
     public float DirectFireModifier { get; set; }
@@ -22,15 +50,14 @@ namespace CustAmmoCategories {
     public TripleBoolean AMSImmune { get; set; }
     public bool AlternateDamageCalc { get; set; }
     public bool AlternateHeatDamageCalc { get; set; }
-    public bool IsAMS { get; set; }
-    public bool IsAAMS { get; set; }
+    public TripleBoolean IsAMS { get; set; }
+    public TripleBoolean IsAAMS { get; set; }
     public bool AMSShootsEveryAttack { get; set; }
     public float SpreadRange { get; set; }
     public TripleBoolean NotUseInMelee { get; set; }
     public Dictionary<string, WeaponMode> Modes { get; set; }
     public CustomAmmoCategory AmmoCategory { get; set; }
     public TripleBoolean DisableClustering { get; set; }
-    public bool AMSShootedThisAttackSequence { get; set; }
     public TripleBoolean AOECapable { get; set; }
     public float AOERange { get; set; }
     public float AOEDamage { get; set; }
@@ -55,6 +82,8 @@ namespace CustAmmoCategories {
     public float AdditionalImpactVFXScaleY { get; set; }
     public float AdditionalImpactVFXScaleZ { get; set; }
     public int ClearMineFieldRadius { get; set; }
+    public int Cooldown { get; set; }
+    public bool ImprovedBallistic { get; set; }
     public ExtWeaponDef() {
       StreakEffect = false;
       HitGenerator = HitGeneratorType.NotSet;
@@ -67,9 +96,8 @@ namespace CustAmmoCategories {
       AlternateDamageCalc = false;
       AMSImmune = TripleBoolean.NotSet;
       //AOECapable = TripleBoolean.NotSet;
-      IsAMS = false;
-      IsAAMS = false;
-      AMSShootedThisAttackSequence = false;
+      IsAMS = TripleBoolean.NotSet;
+      IsAAMS = TripleBoolean.NotSet;
       AlternateHeatDamageCalc = false;
       AMSShootsEveryAttack = false;
       baseModeId = WeaponMode.NONE_MODE_NAME;
@@ -99,6 +127,8 @@ namespace CustAmmoCategories {
       AdditionalImpactVFXScaleZ = 1f;
       AdditionalImpactVFX = string.Empty;
       ClearMineFieldRadius = 0;
+      Cooldown = 0;
+      ImprovedBallistic = false;
     }
   }
 }
@@ -207,22 +237,22 @@ namespace CustomAmmoCategoriesPatches {
         extDef.ClearMineFieldRadius = (int)defTemp["ClearMineFieldRadius"];
         defTemp.Remove("ClearMineFieldRadius");
       }
+      if (defTemp["Cooldown"] != null) {
+        extDef.Cooldown = (int)defTemp["Cooldown"];
+        defTemp.Remove("Cooldown");
+      }
       if (defTemp["AdditionalImpactVFX"] != null) {
         extDef.AdditionalImpactVFX = (string)defTemp["AdditionalImpactVFX"];
         defTemp.Remove("AdditionalImpactVFX");
       }
       if (defTemp["IsAMS"] != null) {
-        extDef.IsAMS = (bool)defTemp["IsAMS"];
-        if (extDef.IsAMS) {
-          extDef.StreakEffect = true;
-        }
+        extDef.IsAMS = ((bool)defTemp["IsAMS"] == true) ? TripleBoolean.True : TripleBoolean.False;
         defTemp.Remove("IsAMS");
       }
       if (defTemp["IsAAMS"] != null) {
-        extDef.IsAAMS = (bool)defTemp["IsAAMS"];
-        if (extDef.IsAAMS) {
-          extDef.IsAMS = true;
-          extDef.StreakEffect = true;
+        extDef.IsAAMS = ((bool)defTemp["IsAAMS"] == true) ? TripleBoolean.True : TripleBoolean.False;
+        if (extDef.IsAAMS == TripleBoolean.True) {
+          extDef.IsAMS = TripleBoolean.True;
         }
         defTemp.Remove("IsAAMS");
       }
@@ -240,6 +270,14 @@ namespace CustomAmmoCategoriesPatches {
       if (defTemp["HasShells"] != null) {
         extDef.HasShells = ((bool)defTemp["HasShells"] == true) ? TripleBoolean.True : TripleBoolean.False;
         defTemp.Remove("HasShells");
+      }
+      if (defTemp["ImprovedBallistic"] != null) {
+        extDef.ImprovedBallistic = (bool)defTemp["ImprovedBallistic"];
+        if (extDef.ImprovedBallistic) {
+          ExtWeaponDef.RemoveTag(ref defTemp, "wr-clustered_shots");
+          extDef.DisableClustering = TripleBoolean.True;
+        }
+        defTemp.Remove("ImprovedBallistic");
       }
       if (defTemp["MinShellsDistance"] != null) {
         extDef.MinShellsDistance = (float)defTemp["MinShellsDistance"];
@@ -320,8 +358,8 @@ namespace CustomAmmoCategoriesPatches {
       }
       CustomAmmoCategories.registerExtWeaponDef((string)defTemp["Description"]["Id"], extDef);
       defTemp["AmmoCategory"] = custCat.BaseCategory.ToString();
-      //CustomAmmoCategoriesLog.Log.LogWrite("\n--------------ORIG----------------\n" + json + "\n----------------------------------\n");
-      //CustomAmmoCategoriesLog.Log.LogWrite("\n--------------MOD----------------\n" + defTemp.ToString() + "\n----------------------------------\n");
+      CustomAmmoCategoriesLog.Log.LogWrite("\n--------------ORIG----------------\n" + json + "\n----------------------------------\n");
+      CustomAmmoCategoriesLog.Log.LogWrite("\n--------------MOD----------------\n" + defTemp.ToString() + "\n----------------------------------\n");
       json = defTemp.ToString();
       return true;
     }

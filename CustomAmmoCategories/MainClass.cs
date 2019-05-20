@@ -23,6 +23,7 @@ using UIWidgets;
 using InControl;
 using BattleTech.Rendering;
 using CustomAmmoCategoriesPatches;
+using CustomAmmoCategoriesLog;
 
 namespace CustomAmmoCategoriesLog {
   public static class Log  {
@@ -106,8 +107,8 @@ namespace CustomAmmoCategoriesPatches {
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { typeof(PointerEventData) })]
   public static class CombatHUDWeaponSlot_OnPointerDown {
+    private static int test_int = 0;
     public static bool Prefix(CombatHUDWeaponSlot __instance, PointerEventData eventData) {
-
       CustomAmmoCategoriesLog.Log.LogWrite("CombatHUDWeaponSlot.OnPointerDown\n");
       if (eventData.button != PointerEventData.InputButton.Left) { return true; }
       if (__instance.weaponSlotType != CombatHUDWeaponSlot.WeaponSlotType.Normal) { return true; }
@@ -141,7 +142,25 @@ namespace CustomAmmoCategoriesPatches {
 
 
       if (modifyers) {
-        CustomAmmoCategories.EjectAmmo(__instance.DisplayedWeapon, __instance);
+        if (__instance.DisplayedWeapon.canBeAMS()) {
+          Log.LogWrite("Can be AMS\n");
+          Vector3 pos = __instance.DisplayedWeapon.parent.Combat.AllEnemies[0].CurrentPosition;
+          Log.LogWrite("Can be AMS firing at " + pos + "\n");
+          if (test_int == 0) {
+            for (int tt = 0; tt < 10; ++tt) {
+              int amsfi = __instance.DisplayedWeapon.AMS().AddHitPosition(pos);
+              Log.LogWrite(" index:" + amsfi + "\n");
+            }
+          }
+          Log.LogWrite(" fire: "+test_int+"\n");
+          if (test_int < 10) {
+            __instance.DisplayedWeapon.AMS().Fire(test_int);
+            Log.LogWrite(" fired\n");
+            ++test_int;
+          }
+        } else {
+          CustomAmmoCategories.EjectAmmo(__instance.DisplayedWeapon, __instance);
+        }
         __instance.RefreshDisplayedWeapon((ICombatant)null);
         return false;
       }
@@ -153,20 +172,20 @@ namespace CustomAmmoCategoriesPatches {
         }
       }*/
       if (trigger_mode) {
-        if ((CustomAmmoCategories.IsJammed(__instance.DisplayedWeapon) == false)
-          && (CustomAmmoCategories.isWRJammed(__instance.DisplayedWeapon) == false)
-          && (CustomAmmoCategories.IsCooldown(__instance.DisplayedWeapon) <= 0)) {
+        //if ((CustomAmmoCategories.IsJammed(__instance.DisplayedWeapon) == false)
+        //  && (CustomAmmoCategories.isWRJammed(__instance.DisplayedWeapon) == false)
+        //  && (CustomAmmoCategories.IsCooldown(__instance.DisplayedWeapon) <= 0)) {
           CustomAmmoCategories.CycleMode(__instance.DisplayedWeapon);
-        }
+        //}
         __instance.RefreshDisplayedWeapon((ICombatant)null);
         return false;
       } else
       if (trigger_ammo) {
-        if ((CustomAmmoCategories.IsJammed(__instance.DisplayedWeapon) == false)
-          && (CustomAmmoCategories.isWRJammed(__instance.DisplayedWeapon) == false)
-          && (CustomAmmoCategories.IsCooldown(__instance.DisplayedWeapon) <= 0)) {
+        //if ((CustomAmmoCategories.IsJammed(__instance.DisplayedWeapon) == false)
+        //  && (CustomAmmoCategories.isWRJammed(__instance.DisplayedWeapon) == false)
+        //  && (CustomAmmoCategories.IsCooldown(__instance.DisplayedWeapon) <= 0)) {
           CustomAmmoCategories.CycleAmmo(__instance.DisplayedWeapon);
-        }
+        //}
         __instance.RefreshDisplayedWeapon((ICombatant)null);
         return false;
       };
@@ -624,9 +643,23 @@ namespace CustomAmmoCategoriesPatches {
         wGUID = weapon.StatCollection.GetStatistic(CustomAmmoCategories.GUIDStatisticName).Value<string>();
       }
       CustomAmmoCategories.ClearWeaponEffects(wGUID);
+      if(__instance.WeaponEffect != null) {
+        BallisticEffect bWE = __instance.WeaponEffect as BallisticEffect;
+        if(bWE != null) {
+          if (weapon.isImprovedBallistic()) {
+            CustomAmmoCategoriesLog.Log.LogWrite("alternate ballistic needed\n");
+            MultiShotBallisticEffect msbWE = bWE.gameObject.AddComponent<MultiShotBallisticEffect>();
+            msbWE.Init(bWE);
+            GameObject.Destroy(bWE);
+            typeof(WeaponRepresentation).GetField("weaponEffect", BindingFlags.Instance | BindingFlags.NonPublic).SetValue(__instance, msbWE);
+            msbWE.Init(__instance.weapon);
+            CustomAmmoCategoriesLog.Log.LogWrite("Alternate ballistic effect inited\n");
+          }
+        }
+      }
       //CustomAmmoCategories.ClearWeaponShellEffects(wGUID);
       CustomAmmoCategories.InitWeaponEffects(__instance, weapon);
-      CustomAmmoCategories.registerShellsEffects(__instance, weapon);
+      //CustomAmmoCategories.registerShellsEffects(__instance, weapon);
     }
   }
   [HarmonyPatch(typeof(WeaponRepresentation))]
@@ -866,7 +899,7 @@ namespace CustAmmoCategories {
       if (CustomAmmoCategories.WeaponEffects.ContainsKey(wGUID)) { WeaponEffects.Remove(wGUID); };
     }
 
-    public static void testFireAMS(Weapon weapon) {
+    /*public static void testFireAMS(Weapon weapon) {
       CombatGameState combat = (CombatGameState)typeof(MechComponent).GetField("combat", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(weapon);
       List<AbstractActor> enemies = combat.GetAllEnemiesOf(weapon.parent);
       if (enemies.Count > 0) {
@@ -875,9 +908,9 @@ namespace CustAmmoCategories {
       } else {
         CustomAmmoCategoriesLog.Log.LogWrite("AMS test no enemies\n");
       }
-    }
+    }*/
 
-    public static void FireAMS(Weapon weapon, Vector3 target) {
+    /*public static void FireAMS(Weapon weapon, Vector3 target) {
       ExtWeaponDef extWeapon = CustomAmmoCategories.getExtWeaponDef(weapon.defId);
       if (extWeapon.IsAMS) {
         CustomAmmoCategoriesLog.Log.LogWrite("AMS found " + weapon.defId + "\n");
@@ -897,7 +930,7 @@ namespace CustAmmoCategories {
       } else {
         CustomAmmoCategoriesLog.Log.LogWrite("no AMS detected " + weapon.defId + "\n");
       }
-    }
+    }*/
     public static void InitWeaponEffects(WeaponRepresentation weaponRepresentation, Weapon weapon) {
       if (CustomAmmoCategories.checkExistance(weapon.StatCollection, CustomAmmoCategories.GUIDStatisticName) == false) { return; }
       string wGUID = weapon.StatCollection.GetStatistic(CustomAmmoCategories.GUIDStatisticName).Value<string>();
@@ -940,7 +973,18 @@ namespace CustAmmoCategories {
         if ((UnityEngine.Object)result == (UnityEngine.Object)null) {
           CustomAmmoCategoriesLog.Log.LogWrite(string.Format("Error finding WeaponEffect on GO [{0}], Weapon [{1}]\n", (object)weaponEffectId, (object)weapon.Name));
         } else {
-          result.Init(weapon);
+          BallisticEffect bWE = result as BallisticEffect;
+          if (bWE != null) {
+            if (weapon.isImprovedBallistic()) {
+              CustomAmmoCategoriesLog.Log.LogWrite("alternate ballistic needed\n");
+              MultiShotBallisticEffect msbWE = bWE.gameObject.AddComponent<MultiShotBallisticEffect>();
+              msbWE.Init(bWE);
+              GameObject.Destroy(bWE);
+              msbWE.Init(result);
+              CustomAmmoCategoriesLog.Log.LogWrite("Alternate ballistic effect inited\n");
+              result = msbWE;
+            }
+          }
         }
       }
       CustomAmmoCategoriesLog.Log.LogWrite("Success init weapon effect " + weaponEffectId + " for " + weapon.Name + "\n");
@@ -1304,6 +1348,9 @@ namespace CustAmmoCategories {
     public BurnedTreesSettings BurnedTrees { get; set; }
     public bool DontShowBurnedTrees { get; set; }
     public bool DontShowScorchTerrain { get; set; }
+    public float AAMSAICoeff { get; set; }
+    public bool AIPeerToPeerNodeEnabled { get; set; }
+    public bool AIPeerToPeerFirewallPierceThrough { get; set; }
     Settings() {
       debugLog = true;
       modHTTPServer = true;
@@ -1348,6 +1395,9 @@ namespace CustAmmoCategories {
       BurnedTrees = new BurnedTreesSettings();
       DontShowBurnedTrees = false;
       DontShowScorchTerrain = false;
+      AIPeerToPeerNodeEnabled = false;
+      AIPeerToPeerFirewallPierceThrough = false;
+      AAMSAICoeff = 0.2f;
     }
   }
 }

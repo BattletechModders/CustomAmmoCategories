@@ -1,0 +1,202 @@
+﻿using BattleTech;
+using CustomAmmoCategoriesLog;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Reflection;
+using System.Text;
+using UnityEngine;
+
+namespace CustAmmoCategories {
+
+  public class FragBallisticEffect : FragWeaponEffect {
+    private List<FragBulletEffect> bullets = new List<FragBulletEffect>();
+    public float shotDelay;
+    public float spreadAngle;
+    public GameObject bulletPrefab;
+    public string firstShotSFX;
+    public string middleShotSFX;
+    public string lastShotSFX;
+
+    protected override int ImpactPrecacheCount {
+      get {
+        return 5;
+      }
+    }
+
+    protected override void Awake() {
+      base.Awake();
+      this.AllowMissSkipping = false;
+    }
+
+    protected override void Start() {
+      base.Start();
+    }
+    public void Init(BallisticEffect original) {
+      base.Init(original);
+      CustomAmmoCategoriesLog.Log.LogWrite("FragBallisticEffect.Init\n");
+      this.shotDelay = original.shotDelay;
+      this.spreadAngle = original.spreadAngle;
+      this.bulletPrefab = original.bulletPrefab;
+      this.firstShotSFX = original.firstShotSFX;
+      this.middleShotSFX = original.middleShotSFX;
+      this.lastShotSFX = original.lastShotSFX;
+      this.subEffect = true;
+    }
+
+    public override void Init(Weapon weapon) {
+      base.Init(weapon);
+      if (!((UnityEngine.Object)this.bulletPrefab != (UnityEngine.Object)null))
+        return;
+      this.Combat.DataManager.PrecachePrefabAsync(this.bulletPrefab.name, BattleTechResourceType.Prefab, weapon.ProjectilesPerShot);
+    }
+
+    protected void SetupBullets() {
+      if ((double)this.shotDelay <= 0.0)
+        this.shotDelay = 0.5f;
+      this.rate = 1f / this.shotDelay;
+      this.ClearBullets();
+      for (int index = 0; index < this.weapon.ProjectilesPerShot; ++index) {
+        GameObject gameObject = this.Combat.DataManager.PooledInstantiate(this.bulletPrefab.name, BattleTechResourceType.Prefab, new Vector3?(), new Quaternion?(), (Transform)null);
+        if ((UnityEngine.Object)gameObject == (UnityEngine.Object)null) {
+          WeaponEffect.logger.LogError((object)("Error instantiating BulletObject " + this.bulletPrefab.name), (UnityEngine.Object)this);
+          break;
+        }
+        GameObject FraggameObject = GameObject.Instantiate(gameObject);
+        AutoPoolObject autoPoolObject = gameObject.GetComponent<AutoPoolObject>();
+        if ((UnityEngine.Object)autoPoolObject == (UnityEngine.Object)null) {
+          autoPoolObject = gameObject.AddComponent<AutoPoolObject>();
+        } else {
+          AutoPoolObject FragautoPoolObject = FraggameObject.GetComponent<AutoPoolObject>();
+          if (FragautoPoolObject != null) { GameObject.Destroy(FragautoPoolObject); };
+        }
+        autoPoolObject.Init(this.weapon.parent.Combat.DataManager, this.bulletPrefab.name, 4f);
+        gameObject = null;
+        FraggameObject.transform.parent = (Transform)null;
+        BulletEffect component = FraggameObject.GetComponent<BulletEffect>();
+        if ((UnityEngine.Object)component == (UnityEngine.Object)null) {
+          WeaponEffect.logger.LogError((object)("Error finding BulletEffect on GO " + this.bulletPrefab.name), (UnityEngine.Object)this);
+          return;
+        }
+        FragBulletEffect fragComponent = FraggameObject.AddComponent<FragBulletEffect>();
+        fragComponent.Init(component);
+        fragComponent.Init(this.weapon, this);
+        this.bullets.Add(fragComponent);
+      }
+    }
+
+    protected void ClearBullets() {
+      for (int index = 0; index < this.bullets.Count; ++index) {
+        if (this.bullets[index] == null) { continue; }
+        GameObject gameObject = this.bullets[index].gameObject;
+        if (gameObject == null) { continue; };
+        GameObject.Destroy(gameObject);
+        this.bullets[index] = null;
+      }
+      this.bullets.Clear();
+    }
+
+    protected bool AllBulletsComplete() {
+      if (this.currentState != WeaponEffect.WeaponEffectState.Firing && this.currentState != WeaponEffect.WeaponEffectState.WaitingForImpact)
+        return false;
+      for (int index = 0; index < this.bullets.Count; ++index) {
+        if (!this.bullets[index].FiringComplete)
+          return false;
+      }
+      return true;
+    }
+
+    public override void Fire(Vector3 sPos,WeaponHitInfo hitInfo, int hitIndex = 0, int emitterIndex = 0) {
+      Log.LogWrite("FragBallisticEffect.Fire "+sPos+" wi:"+hitInfo.attackWeaponIndex+" hi:"+hitIndex+"\n");
+      base.Fire(sPos,hitInfo, hitIndex, emitterIndex);
+      this.SetupBullets();
+      this.PlayPreFire();
+    }
+
+    protected override void PlayPreFire() {
+      base.PlayPreFire();
+    }
+
+    protected override void PlayMuzzleFlash() {
+      base.PlayMuzzleFlash();
+    }
+
+    protected override void PlayProjectile() {
+      base.PlayProjectile();
+      this.FireBullets();
+    }
+
+    protected void FireBullets() {
+      Log.LogWrite("FragBallisticEffect.FireBullets " + this.startPos + " wi:" + hitInfo.attackWeaponIndex + " hi:" + hitIndex + "\n");
+      if (this.hitIndex < 0 || this.hitIndex >= this.hitInfo.hitLocations.Length) { return; }
+      int limit = this.bullets.Count;
+      if ((this.bullets.Count + this.hitIndex) > this.hitInfo.hitLocations.Length) {
+        int delLimit = this.hitInfo.hitLocations.Length - this.hitIndex;
+        while (this.bullets.Count > delLimit) {
+          FragBulletEffect delBullet = this.bullets[this.bullets.Count - 1];
+          GameObject.Destroy(delBullet.gameObject);
+          this.bullets.RemoveAt(this.bullets.Count - 1);
+        }
+      }
+      this.PlayMuzzleFlash();
+      string eventName = this.firstShotSFX;
+      if (!string.IsNullOrEmpty(eventName)) {
+        int num = (int)WwiseManager.PostEvent(eventName, this.parentAudioObject, (AkCallbackManager.EventCallback)null, (object)null);
+      }
+      for (int index = 0; index < this.bullets.Count; ++index) { 
+        FragBulletEffect bullet = this.bullets[index];
+        bullet.bulletIdx = index;
+        bullet.Fire(this.startPos,this.hitInfo, this.hitIndex+index, 0);
+      }
+      this.t = 0.0f;
+      this.currentState = WeaponEffect.WeaponEffectState.WaitingForImpact;
+    }
+
+    protected override void PlayImpact() {
+      base.PlayImpact();
+    }
+
+    protected override void Update() {
+      base.Update();
+      if (this.currentState != WeaponEffect.WeaponEffectState.WaitingForImpact || !this.AllBulletsComplete()) { return; }
+      this.OnComplete();
+    }
+
+    protected override void OnPreFireComplete() {
+      Log.LogWrite("FragBallisticEffect.OnPreFireComplete " + this.startPos + " wi:" + hitInfo.attackWeaponIndex + " hi:" + hitIndex + "\n");
+      base.OnPreFireComplete();
+      this.PlayProjectile();
+    }
+
+    protected override void OnImpact(float hitDamage = 0.0f) {
+      //if ((double)hitDamage <= 1.0 / 1000.0)
+      //  return;
+      base.OnImpact(0.0f);
+    }
+
+    public void OnBulletImpact(FragBulletEffect bullet) {
+      //this.OnImpact(this.weapon.DamagePerShotAdjusted(this.weapon.parent.occupiedDesignMask));
+      /*if (this.hitInfo.hitLocations[this.hitIndex] == 0 || this.hitInfo.hitLocations[this.hitIndex] == 65536 || bullet.bulletIdx >= this.weapon.ProjectilesPerShot - 1)
+        return;
+      AbstractActor combatantByGuid = this.Combat.FindCombatantByGUID(this.hitInfo.targetId) as AbstractActor;
+      if (combatantByGuid == null || !((UnityEngine.Object)combatantByGuid.GameRep != (UnityEngine.Object)null))
+        return;
+      combatantByGuid.GameRep.PlayImpactAnim(this.hitInfo, this.hitIndex, this.weapon, MeleeAttackType.NotSet, 0.0f);*/
+    }
+
+    protected override void OnComplete() {
+      //this.OnImpact(this.weapon.DamagePerShotAdjusted(this.weapon.parent.occupiedDesignMask) * (float)this.weapon.ShotsWhenFired);
+      base.OnComplete();
+      Log.LogWrite("FragBallisticEffect.Complete\n");
+      if (this.parentWeaponEffect != null) {
+        int hitIndex = (int)typeof(WeaponEffect).GetField("hitIndex", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(this.parentWeaponEffect);
+        Log.LogWrite(" parent weapon found "+this.parentWeaponEffect.hitInfo.attackWeaponIndex+":"+ hitIndex + "\n");
+        this.parentWeaponEffect.PublishWeaponCompleteMessage();
+      }
+    }
+
+    public override void Reset() {
+      base.Reset();
+    }
+  }
+}

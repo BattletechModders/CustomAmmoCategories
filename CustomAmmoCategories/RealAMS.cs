@@ -13,6 +13,7 @@ using CustAmmoCategories;
 using FluffyUnderware.Curvy;
 using Localize;
 using BattleTech.AttackDirectorHelpers;
+using CustomAmmoCategoriesLog;
 
 namespace CustAmmoCategories {
   public class AMSRecord {
@@ -32,9 +33,9 @@ namespace CustAmmoCategories {
       ShootsRemains = 0;
       ShootsCount = 0;
       if (weapon.CanFire) {
-        ShootsRemains = CustomAmmoCategories.DecrementAmmo(weapon, 0, 0);
+        ShootsRemains = CustomAmmoCategories.DecrementAmmo(weapon, 0, 0, true);
       }
-      int alreadyShooted = CustomAmmoCategories.getWeaponAMSShootsCount(weapon);
+      int alreadyShooted = weapon.AMSShootsCount();
       if (extWeapon.AMSShootsEveryAttack == false) {
         ShootsRemains -= alreadyShooted;
       }
@@ -49,15 +50,13 @@ namespace CustAmmoCategories {
     }
   }
   public class AMSShoot {
-    public Vector3 target;
+    public int shootIdx;
     public float t;
     public Weapon AMS;
-    public LaserEffect LAMSEffect;
-    public AMSShoot(Vector3 trg, float relPos, Weapon ams) {
-      this.target = trg;
+    public AMSShoot(int shootIdx, float relPos, Weapon ams) {
+      this.shootIdx = shootIdx;
       this.t = relPos;
       AMS = ams;
-      LAMSEffect = null;
     }
   }
   public class CachedMissileCurve {
@@ -83,6 +82,34 @@ namespace CustAmmoCategories {
     public int groupIndex;
     public int AMSShootIndex;
     public bool AMSImunne;
+    public void regenerateMissilepath(bool isDirect,bool isIndirect) {
+      if (isDirect) {
+        this.spline = CustomAmmoCategories.GenerateDirectMissilePath(
+          this.launcherEffect.missileCurveStrength,
+          this.launcherEffect.missileCurveFrequency,
+          this.launcherEffect.isSRM,
+          this.hitLocation, this.startPos, this.endPos, this.Combat);
+      } else {
+        if (isIndirect) {
+          this.spline = CustomAmmoCategories.GenerateIndirectMissilePath(
+            this.launcherEffect.missileCurveStrength,
+            this.launcherEffect.missileCurveFrequency,
+            this.launcherEffect.isSRM,
+            this.hitLocation, this.startPos, this.endPos, this.Combat);
+        } else {
+          this.spline = CustomAmmoCategories.GenerateMissilePath(
+            this.launcherEffect.missileCurveStrength,
+            this.launcherEffect.missileCurveFrequency,
+            this.launcherEffect.isSRM,
+            this.hitLocation, this.startPos, this.endPos, this.Combat);
+        }
+      }
+      this.UnitySpline.Interpolation = CurvyInterpolation.Bezier;
+      this.UnitySpline.Clear();
+      this.UnitySpline.Closed = false;
+      this.UnitySpline.Add(this.spline);
+      this.UnitySpline.Refresh();
+    }
     public CachedMissileCurve() {
       startPos = new Vector3();
       endPos = new Vector3();
@@ -121,12 +148,6 @@ namespace CustAmmoCategories {
     }
     public void nextAMSShoot() {
       ++AMSShootIndex;
-    }
-    public void clearLAMS() {
-      foreach (AMSShoot shoot in AMSShoots) {
-        if (shoot.LAMSEffect != null) { GameObject.Destroy(shoot.LAMSEffect); shoot.LAMSEffect = null; };
-      }
-      AMSShoots.Clear();
     }
     public void clearSpline() {
       GameObject.Destroy(UnitySpline);
@@ -174,7 +195,10 @@ namespace CustAmmoCategories {
       }
       return result;
     }
-    public static int getWeaponAMSShootsCount(Weapon weapon) {
+    public static float AMSHitChance(this Weapon weapon) {
+      return getWeaponAMSHitChance(weapon);
+    }
+    public static int AMSShootsCount(this Weapon weapon) {
       if (CustomAmmoCategories.checkExistance(weapon.StatCollection, CustomAmmoCategories.AMSShootsCountStatName) == false) { return 0; }
       return weapon.StatCollection.GetStatistic(CustomAmmoCategories.AMSShootsCountStatName).Value<int>();
     }
@@ -182,7 +206,7 @@ namespace CustAmmoCategories {
       if (CustomAmmoCategories.checkExistance(weapon.StatCollection, CustomAmmoCategories.AMSJammingAttemptStatName) == false) { return false; }
       return weapon.StatCollection.GetStatistic(CustomAmmoCategories.AMSJammingAttemptStatName).Value<bool>();
     }
-    public static void setWeaponAMSShootsCount(Weapon weapon, int shoots) {
+    public static void AMSShootsCount(this Weapon weapon, int shoots) {
       if (CustomAmmoCategories.checkExistance(weapon.StatCollection, CustomAmmoCategories.AMSShootsCountStatName) == false) {
         weapon.StatCollection.AddStatistic<int>(CustomAmmoCategories.AMSShootsCountStatName, shoots);
       } else {
@@ -196,7 +220,7 @@ namespace CustAmmoCategories {
         weapon.StatCollection.Set<bool>(CustomAmmoCategories.AMSShootsCountStatName, isShooted);
       }
     }
-    public static bool IsWeaponAMSImmune(Weapon weapon) {
+    public static bool IsWeaponAMSImmune(this Weapon weapon) {
       ExtWeaponDef extWeapon = CustomAmmoCategories.getExtWeaponDef(weapon.defId);
       return extWeapon.AMSImmune == TripleBoolean.True;
     }
@@ -230,7 +254,7 @@ namespace CustAmmoCategories {
       }
       return result;
     }
-    public static WeaponEffect getWeaponEffect(Weapon weapon) {
+    public static WeaponEffect getWeaponEffect(this Weapon weapon) {
       if ((UnityEngine.Object)weapon.weaponRep == (UnityEngine.Object)null) { return null; };
       if (CustomAmmoCategories.checkExistance(weapon.StatCollection, CustomAmmoCategories.GUIDStatisticName) == false) { return weapon.weaponRep.WeaponEffect; }
       CustomAmmoCategoriesLog.Log.LogWrite("  weapon GUID is set\n");
@@ -485,7 +509,7 @@ namespace CustAmmoCategories {
         if (targetActor.IsDead) { continue; };
         foreach (Weapon weapon in targetActor.Weapons) {
           ExtWeaponDef extWeapon = CustomAmmoCategories.getExtWeaponDef(weapon.defId);
-          if ((extWeapon.IsAMS) && (extWeapon.IsAAMS == false)) {
+          if ((weapon.isAMS()) && (weapon.isAAMS() == false)) {
             ams.Add(new AMSRecord(weapon, extWeapon, false));
           }
         }
@@ -498,7 +522,7 @@ namespace CustAmmoCategories {
         if (enemy.IsDead) { continue; };
         foreach (Weapon weapon in enemy.Weapons) {
           ExtWeaponDef extWeapon = CustomAmmoCategories.getExtWeaponDef(weapon.defId);
-          if (extWeapon.IsAAMS) {
+          if (weapon.isAAMS()) {
             ams.Add(new AMSRecord(weapon, extWeapon, true));
           }
         }
@@ -568,6 +592,7 @@ namespace CustAmmoCategories {
             float effectiveHitChance = amsrec.AMSHitChance + missile.AMSHitChance;
             CustomAmmoCategoriesLog.Log.LogWrite("   roll:" + interceptRoll + " chance:" + effectiveHitChance + "\n");
             AMSShoot amsShoot = null;
+            int AMSShootIdx = amsrec.weapon.AMS().AddHitPosition(pos);
             if (interceptRoll < amsrec.AMSHitChance) {
               missile.Intercepted = true;
               missile.endPos = pos;
@@ -591,26 +616,18 @@ namespace CustAmmoCategories {
               missile.UnitySpline.Closed = false;
               missile.UnitySpline.Add(missile.spline);
               missile.UnitySpline.Refresh();
-              missile.InterceptedT = CustomAmmoCategories.calculateInterceptCorrection(CustomAmmoCategories.getWeaponEffect(amsrec.weapon), path, missile.UnitySpline.Length, distance, missile.missileProjectileSpeed);
+              missile.InterceptedT = amsrec.weapon.AMS().calculateInterceptCorrection(AMSShootIdx,path, missile.UnitySpline.Length, distance, missile.missileProjectileSpeed);
+              //  CustomAmmoCategories.calculateInterceptCorrection(CustomAmmoCategories.getWeaponEffect(amsrec.weapon), path, missile.UnitySpline.Length, distance, missile.missileProjectileSpeed);
               missile.InterceptedAMS = amsrec.weapon;
               float t = missile.InterceptedT;
               if (t > 0.9f) { t = Random.Range(0.85f, 0.95f); };
               missile.InterceptedT = t;
               CustomAmmoCategoriesLog.Log.LogWrite("   hit " + t + "\n");
-              amsShoot = new AMSShoot(pos, t, missile.InterceptedAMS);
+              amsShoot = new AMSShoot(AMSShootIdx, t, missile.InterceptedAMS);
             } else {
               float t = path / missile.UnitySpline.Length;
               CustomAmmoCategoriesLog.Log.LogWrite("   miss " + t + "\n");
-              amsShoot = new AMSShoot(pos, t, amsrec.weapon);
-            }
-            if (amsrec.isLaser) {
-              WeaponEffect LAMSEffect = CustomAmmoCategories.InitWeaponEffect(amsrec.weapon.weaponRep, amsrec.weapon, amsrec.weaponEffectId);
-              amsShoot.LAMSEffect = LAMSEffect as LaserEffect;
-              if (amsShoot.LAMSEffect == null) {
-                GameObject.Destroy(LAMSEffect.gameObject);
-              } else {
-                amsShoot.LAMSEffect.Init(amsrec.weapon);
-              }
+              amsShoot = new AMSShoot(AMSShootIdx, t, amsrec.weapon);
             }
             if (amsShoot != null) {
               CustomAmmoCategoriesLog.Log.LogWrite("Add AMShoot " + missile.weaponIndex + " " + missile.hitIndex + " t:" + amsShoot.t + "\n");
@@ -631,7 +648,7 @@ namespace CustAmmoCategories {
       foreach (AMSRecord amsrec in ams) {
         CustomAmmoCategoriesLog.Log.LogWrite("AMS " + amsrec.weapon.defId + " shoots:" + amsrec.ShootsCount + "\n");
         if (amsrec.ShootsCount > 0) {
-          CustomAmmoCategories.DecrementAmmo(amsrec.weapon, 0, amsrec.ShootsCount);
+          CustomAmmoCategories.DecrementAmmo(amsrec.weapon, 0, amsrec.ShootsCount, true);
           float HeatGenerated = amsrec.weapon.HeatGenerated * (float)amsrec.ShootsCount / (float)amsrec.weapon.ShotsWhenFired;
           if (amsrec.weapon.parent != null) {
             amsrec.weapon.parent.AddWeaponHeat(amsrec.weapon, (int)HeatGenerated);
@@ -639,7 +656,7 @@ namespace CustAmmoCategories {
             CustomAmmoCategoriesLog.Log.LogWrite("WARNING! missile launcher has no parent. That is very odd\n", true);
           }
           CustomAmmoCategories.jammAMSQueue.Enqueue(amsrec.weapon);
-          CustomAmmoCategories.setWeaponAMSShootsCount(amsrec.weapon, CustomAmmoCategories.getWeaponAMSShootsCount(amsrec.weapon) + amsrec.ShootsCount);
+          amsrec.weapon.AMSShootsCount(amsrec.weapon.AMSShootsCount() + amsrec.ShootsCount);
         }
       }
       WeaponHitInfo?[][] weaponHitInfo = (WeaponHitInfo?[][])typeof(AttackDirector.AttackSequence).GetField("weaponHitInfo", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(instance);
@@ -755,28 +772,18 @@ namespace CustomAmmoCategoriesPatches {
   [HarmonyPatch(new Type[] { typeof(WeaponHitInfo), typeof(int), typeof(int) })]
   [HarmonyPriority(Priority.HigherThanNormal)]
   public static class WeaponEffect_Fire {
-    public static bool Prefix(WeaponEffect __instance, WeaponHitInfo hitInfo, int hitIndex, int emitterIndex) {
-      CustomAmmoCategoriesLog.Log.LogWrite("Weapon Effect Fire Group " + hitInfo.attackGroupIndex + " " + hitInfo.attackWeaponIndex + " " + hitIndex + "\n");
-      if (hitIndex >= 0) {return true;};
-      CustomAmmoCategoriesLog.Log.LogWrite("WeaponEffect_Fire AMS style\n");
-      typeof(WeaponEffect).GetField("t", BindingFlags.Instance | BindingFlags.NonPublic).SetValue(__instance, (object)0.0f);
-      typeof(WeaponEffect).GetField("hitIndex", BindingFlags.Instance | BindingFlags.NonPublic).SetValue(__instance, (object)hitIndex);
-      typeof(WeaponEffect).GetField("emitterIndex", BindingFlags.Instance | BindingFlags.NonPublic).SetValue(__instance, (object)emitterIndex);
-      __instance.hitInfo = hitInfo;
-      typeof(WeaponEffect).GetField("startingTransform", BindingFlags.Instance | BindingFlags.NonPublic).SetValue(__instance, (object)__instance.weaponRep.vfxTransforms[emitterIndex]);
-      Transform startingTransform = (Transform)typeof(WeaponEffect).GetField("startingTransform", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(__instance);
-      typeof(WeaponEffect).GetField("startPos", BindingFlags.Instance | BindingFlags.NonPublic).SetValue(__instance, (object)startingTransform.position);
-      typeof(WeaponEffect).GetField("endPos", BindingFlags.Instance | BindingFlags.NonPublic).SetValue(__instance, (object)hitInfo.hitPositions[0]);
-      Vector3 startPos = (Vector3)typeof(WeaponEffect).GetField("startPos", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(__instance);
-      typeof(WeaponEffect).GetField("currentPos", BindingFlags.Instance | BindingFlags.NonPublic).SetValue(__instance, (object)startPos);
-      PropertyInfo property = typeof(WeaponEffect).GetProperty("FiringComplete");
-      property.DeclaringType.GetProperty("FiringComplete");
-      property.GetSetMethod(true).Invoke(__instance, new object[1] { (object)false });
-      __instance.InitProjectile();
-      __instance.currentState = WeaponEffect.WeaponEffectState.PreFiring;
-      return false;
+    public static bool Prefix(WeaponEffect __instance, WeaponHitInfo hitInfo, int hitIndex, int emitterIndex, ref Vector3 __state) {
+      __state = hitInfo.hitPositions[hitIndex];
+      Log.LogWrite("WeaponEffect.Fire "+__instance.weapon.UIName+" " + hitInfo.attackWeaponIndex + ":" + hitIndex + " save HitPosition "+__state+"\n");
+      return true;
     }
-    public static void Postfix(WeaponEffect __instance, WeaponHitInfo hitInfo, int hitIndex, int emitterIndex) {
+    public static void Postfix(WeaponEffect __instance, WeaponHitInfo hitInfo, int hitIndex, int emitterIndex, ref Vector3 __state) {
+      Log.LogWrite("WeaponEffect.Fire " + __instance.weapon.UIName + " " + hitInfo.attackWeaponIndex + ":" + hitIndex + " restore HitPosition " + __state + "\n");
+      hitInfo.hitPositions[hitIndex] = __state;
+      BurstBallisticEffect bbEffect = __instance as BurstBallisticEffect;
+      if(bbEffect != null) {
+        typeof(WeaponEffect).GetField("endPos", BindingFlags.NonPublic | BindingFlags.Instance).SetValue(__instance, hitInfo.hitPositions[hitIndex]);
+      }
       SpreadHitRecord spreadHit = CustomAmmoCategories.getSpreadCache(hitInfo, hitIndex);
       if (spreadHit != null) {
         CustomAmmoCategoriesLog.Log.LogWrite("spreadHit found " + hitInfo.attackGroupIndex + " " + hitInfo.attackWeaponIndex + " " + hitIndex + "\n");
@@ -785,19 +792,6 @@ namespace CustomAmmoCategoriesPatches {
         CustomAmmoCategoriesLog.Log.LogWrite("  become:" + __instance.hitInfo.hitPositions[hitIndex] + "\n");
         __instance.hitInfo.hitPositions[hitIndex] = spreadHit.hitInfo.hitPositions[spreadHit.internalIndex];
       }
-    }
-  }
-  [HarmonyPatch(typeof(LaserEffect))]
-  [HarmonyPatch("Fire")]
-  [HarmonyPatch(MethodType.Normal)]
-  [HarmonyPatch(new Type[] { typeof(WeaponHitInfo), typeof(int), typeof(int) })]
-  public static class LaserEffect_Fire {
-    public static bool Prefix(WeaponEffect __instance, WeaponHitInfo hitInfo, int hitIndex, int emitterIndex) {
-      if (hitIndex >= 0) { return true; };
-      CustomAmmoCategoriesLog.Log.LogWrite("LaserEffect_Fire AMS style " + __instance.projectileSpeed + " preFireDuration:" + __instance.preFireDuration + "\n");
-      __instance.preFireDuration = 0.001f;
-      __instance.projectileSpeed = 0.2f;
-      return true;
     }
   }
   [HarmonyPatch(typeof(WeaponEffect))]
@@ -829,117 +823,8 @@ namespace CustomAmmoCategoriesPatches {
             }
           }
         }
-        return true;
       };
-      if (!string.IsNullOrEmpty(__instance.impactVFXBase)) {
-        string str1 = string.Empty;
-        if (__instance.impactVFXVariations != null && __instance.impactVFXVariations.Length > 0) {
-          str1 = "_" + __instance.impactVFXVariations[UnityEngine.Random.Range(0, __instance.impactVFXVariations.Length)];
-        }
-        string str2 = string.Format("{0}{1}", (object)__instance.impactVFXBase, (object)str1);
-        GameObject gameObject = __instance.weapon.parent.Combat.DataManager.PooledInstantiate(str2, BattleTechResourceType.Prefab, new Vector3?(), new Quaternion?(), (Transform)null);
-        if ((UnityEngine.Object)gameObject == (UnityEngine.Object)null) {
-          CustomAmmoCategoriesLog.Log.LogWrite(__instance.weapon.Name + " WeaponEffect.PlayImpact had an invalid VFX name: " + str2 + "\n");
-        } else {
-          ParticleSystem component = gameObject.GetComponent<ParticleSystem>();
-          component.Stop(true);
-          component.Clear(true);
-          Vector3 endPos = (Vector3)typeof(WeaponEffect).GetField("endPos", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(__instance);
-          Transform startingTransform = (Transform)typeof(WeaponEffect).GetField("startingTransform", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(__instance);
-          component.transform.position = endPos;
-          component.transform.LookAt(startingTransform.position);
-          BTCustomRenderer.SetVFXMultiplier(component);
-          component.Play(true);
-          BTLightAnimator componentInChildren = gameObject.GetComponentInChildren<BTLightAnimator>(true);
-          if ((UnityEngine.Object)componentInChildren != (UnityEngine.Object)null) {
-            componentInChildren.StopAnimation();
-            componentInChildren.PlayAnimation();
-          }
-          AutoPoolObject autoPoolObject = gameObject.GetComponent<AutoPoolObject>();
-          if ((UnityEngine.Object)autoPoolObject == (UnityEngine.Object)null)
-            autoPoolObject = gameObject.AddComponent<AutoPoolObject>();
-          autoPoolObject.Init(__instance.weapon.parent.Combat.DataManager, str2, component);
-        }
-      }
-      typeof(WeaponEffect).GetMethod("PlayImpactDamageOverlay", BindingFlags.NonPublic | BindingFlags.Instance).Invoke(__instance, new object[0] { });
-      GameObject projectileMeshObject = (GameObject)typeof(WeaponEffect).GetField("projectileMeshObject", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(__instance);
-      if ((UnityEngine.Object)projectileMeshObject != (UnityEngine.Object)null) {
-        projectileMeshObject.SetActive(true);
-      }
-      GameObject projectileLightObject = (GameObject)typeof(WeaponEffect).GetField("projectileLightObject", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(__instance);
-      if ((UnityEngine.Object)projectileLightObject != (UnityEngine.Object)null) {
-        projectileLightObject.SetActive(true);
-      }
-      typeof(WeaponEffect).GetMethod("OnImpact", BindingFlags.NonPublic | BindingFlags.Instance).Invoke(__instance, new object[1] { (object)0.0f });
-      return false;
-    }
-  }
-  [HarmonyPatch(typeof(LaserEffect))]
-  [HarmonyPatch("PlayImpact")]
-  [HarmonyPatch(MethodType.Normal)]
-  [HarmonyPatch(new Type[] { })]
-  public static class LaserEffect_PlayImpact {
-    public static bool Prefix(LaserEffect __instance) {
-      int hitIndex = (int)typeof(WeaponEffect).GetField("hitIndex", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(__instance);
-      if (hitIndex >= 0) {
-        return true;
-      };
-      typeof(LaserEffect).GetMethod("PlayImpactAudio", BindingFlags.Instance | BindingFlags.NonPublic).Invoke(__instance, new object[0] { });
-      if (!string.IsNullOrEmpty(__instance.impactVFXBase)) {
-        ParticleSystem impactParticles = (ParticleSystem)typeof(LaserEffect).GetField("impactParticles", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(__instance);
-        if ((Object)impactParticles != (Object)null) {
-          impactParticles.Stop(true);
-        }
-        string str1 = string.Empty;
-        if (__instance.impactVFXVariations != null && __instance.impactVFXVariations.Length > 0)
-          str1 = "_" + __instance.impactVFXVariations[Random.Range(0, __instance.impactVFXVariations.Length)];
-        string str2 = string.Format("{0}{1}", (object)__instance.impactVFXBase, (object)str1);
-        GameObject gameObject = __instance.weapon.parent.Combat.DataManager.PooledInstantiate(str2, BattleTechResourceType.Prefab, new Vector3?(), new Quaternion?(), (Transform)null);
-        if ((Object)gameObject == (Object)null) {
-          CustomAmmoCategoriesLog.Log.LogWrite("WeaponEffect.PlayImpact had an invalid VFX name: " + str2 + "\n");
-        } else {
-          impactParticles = gameObject.GetComponent<ParticleSystem>();
-          typeof(LaserEffect).GetField("impactParticles", BindingFlags.Instance | BindingFlags.NonPublic).SetValue(__instance, impactParticles);
-          impactParticles.Stop(true);
-          impactParticles.Clear(true);
-          Vector3 endPos = (Vector3)typeof(WeaponEffect).GetField("endPos", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(__instance);
-          Transform startingTransform = (Transform)typeof(WeaponEffect).GetField("startingTransform", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(__instance);
-          impactParticles.transform.position = endPos;
-          impactParticles.transform.LookAt(startingTransform.position);
-          BTCustomRenderer.SetVFXMultiplier(impactParticles);
-          impactParticles.Play(true);
-          AutoPoolObject autoPoolObject = gameObject.GetComponent<AutoPoolObject>();
-          if ((Object)autoPoolObject == (Object)null)
-            autoPoolObject = gameObject.AddComponent<AutoPoolObject>();
-          autoPoolObject.Init(__instance.weapon.parent.Combat.DataManager, str2, impactParticles);
-        }
-      }
-      //typeof(WeaponEffect).GetMethod("PlayImpactDamageOverlay", BindingFlags.Instance | BindingFlags.NonPublic).Invoke(__instance, new object[0] { });
-      //typeof(LaserEffect).GetMethod("DestroyFlimsyObjects", BindingFlags.Instance | BindingFlags.NonPublic).Invoke(__instance, new object[0] { });
-      typeof(LaserEffect).GetMethod("OnImpact", BindingFlags.NonPublic | BindingFlags.Instance).Invoke(__instance, new object[1] { (object)0.0f });
-      return false;
-    }
-  }
-  [HarmonyPatch(typeof(WeaponEffect))]
-  [HarmonyPatch("PlayTerrainImpactVFX")]
-  [HarmonyPatch(MethodType.Normal)]
-  [HarmonyPatch(new Type[] { })]
-  public static class WeaponEffect_PlayTerrainImpactVFX {
-    public static bool Prefix(WeaponEffect __instance) {
-      int hitIndex = (int)typeof(WeaponEffect).GetField("hitIndex", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(__instance);
-      if (hitIndex >= 0) { return true; };
-      return false;
-    }
-  }
-  [HarmonyPatch(typeof(WeaponEffect))]
-  [HarmonyPatch("PlayImpactDamageOverlay")]
-  [HarmonyPatch(MethodType.Normal)]
-  [HarmonyPatch(new Type[] { })]
-  public static class WeaponEffect_PlayImpactDamageOverlay {
-    public static bool Prefix(WeaponEffect __instance) {
-      int hitIndex = (int)typeof(WeaponEffect).GetField("hitIndex", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(__instance);
-      if (hitIndex >= 0) { return true; };
-      return false;
+      return true;
     }
   }
   [HarmonyPatch(typeof(WeaponEffect))]
@@ -981,93 +866,55 @@ namespace CustomAmmoCategoriesPatches {
   public static class WeaponEffect_OnImpact {
     public static bool Prefix(WeaponEffect __instance, ref float hitDamage) {
       int hitIndex = (int)typeof(WeaponEffect).GetField("hitIndex", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(__instance);
-      CustomAmmoCategoriesLog.Log.LogWrite("OnImpact hitIndex:" + hitIndex + "\n");
-      if (hitIndex < 0) { return false; };
-      if (__instance.subEffect == true) {
-        if (__instance is MissileEffect) {
-          MissileLauncherEffect parentLauncher = (MissileLauncherEffect)typeof(MissileEffect).GetField("parentLauncher", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(__instance);
-          if (parentLauncher.subEffect == true) {
-            CustomAmmoCategoriesLog.Log.LogWrite("OnImpact subeffect no processing:" + hitIndex + "\n");
-            return true;
-          }
-        } else
-        if (__instance is BulletEffect) {
-          BallisticEffect parentLauncher = (BallisticEffect)typeof(BulletEffect).GetField("parentLauncher", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(__instance);
-          if (parentLauncher.subEffect == true) {
-            CustomAmmoCategoriesLog.Log.LogWrite("OnImpact subeffect no processing:" + hitIndex + "\n");
-            return true;
-          }
-        } else
-        if (__instance is BallisticEffect) {
-          if (__instance.subEffect) {
-            CustomAmmoCategoriesLog.Log.LogWrite("OnImpact subeffect no processing:" + hitIndex + "\n");
-            return true;
-          }
-        } else
-        if (__instance is MissileLauncherEffect) {
-          if (__instance.subEffect) {
-            CustomAmmoCategoriesLog.Log.LogWrite("OnImpact subeffect no processing:" + hitIndex + "\n");
-            return true;
-          }
-        }
-        ShrapnelHitRecord shrapnelHitRecord = CustomAmmoCategories.getShrapnelCache(__instance.hitInfo, hitIndex);
-        if (shrapnelHitRecord != null) {
-          CustomAmmoCategoriesLog.Log.LogWrite("OnImpact shrapnel Hit info found:" + hitIndex + "\n");
-          if (shrapnelHitRecord.isSeparated == false) {
-            float unsepDmgM = CustomAmmoCategories.getWeaponUnseparatedDamageMult(__instance.weapon);
-            CustomAmmoCategoriesLog.Log.LogWrite(" not separated. Lower damage. Was:"+hitDamage);
-            hitDamage *= unsepDmgM;
-            CustomAmmoCategoriesLog.Log.LogWrite(" become:" + hitDamage+"\n");
-          }
-        }
+      CustomAmmoCategoriesLog.Log.LogWrite("OnImpact hitIndex:" + hitIndex + "/"+__instance.hitInfo.numberOfShots+"\n");
+      if (hitIndex >= __instance.hitInfo.numberOfShots) {
+        CustomAmmoCategoriesLog.Log.LogWrite("AoE of Frag hit no special procesing needed.\n");
         return true;
+      }
+      ShrapnelHitRecord shrapnelHitRecord = CustomAmmoCategories.getShrapnelCache(__instance.hitInfo, hitIndex);
+      if (shrapnelHitRecord != null) {
+        CustomAmmoCategoriesLog.Log.LogWrite("OnImpact shrapnel Hit info found:" + hitIndex + "\n");
+        __instance.hitInfo.printHitPositions();
+        if (shrapnelHitRecord.isSeparated == false) {
+          float unsepDmgM = CustomAmmoCategories.getWeaponUnseparatedDamageMult(__instance.weapon);
+          CustomAmmoCategoriesLog.Log.LogWrite(" not separated. Lower damage. Was:"+hitDamage);
+          hitDamage *= unsepDmgM;
+          CustomAmmoCategoriesLog.Log.LogWrite(" become:" + hitDamage+"\n");
+        } else {
+          __instance.hitInfo.hitLocations[hitIndex] = 0;
+        }
       }
       return true;
     }
     public static void Postfix(WeaponEffect __instance, ref float hitDamage) {
       int hitIndex = (int)typeof(WeaponEffect).GetField("hitIndex", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(__instance);
-      if (hitIndex < 0) { return; };
-      if (__instance.subEffect == true) {
-        if (__instance is MissileEffect) {
-          MissileLauncherEffect parentLauncher = (MissileLauncherEffect)typeof(MissileEffect).GetField("parentLauncher", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(__instance);
-          if (parentLauncher.subEffect == true) {
-            CustomAmmoCategoriesLog.Log.LogWrite("OnImpact subeffect no processing:" + hitIndex + "\n");
-            return;
-          }
-        } else
-        if(__instance is BulletEffect) {
-          BallisticEffect parentLauncher = (BallisticEffect)typeof(BulletEffect).GetField("parentLauncher", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(__instance);
-          if (parentLauncher.subEffect == true) {
-            CustomAmmoCategoriesLog.Log.LogWrite("OnImpact subeffect no processing:" + hitIndex + "\n");
-            return;
-          }
-        }else
-        if(__instance is BallisticEffect) {
-          if (__instance.subEffect) {
-            CustomAmmoCategoriesLog.Log.LogWrite("OnImpact subeffect no processing:" + hitIndex + "\n");
-            return;
-          }
-        } else
-        if (__instance is MissileLauncherEffect) {
-          if (__instance.subEffect) {
-            CustomAmmoCategoriesLog.Log.LogWrite("OnImpact subeffect no processing:" + hitIndex + "\n");
-            return;
-          }
-        }
+      if (hitIndex >= __instance.hitInfo.numberOfShots) {
+        CustomAmmoCategoriesLog.Log.LogWrite("AoE of Frag hit no special procesing needed.\n");
+        return;
       }
       CombatGameState Combat = (CombatGameState)typeof(WeaponEffect).GetField("Combat", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(__instance);
       ShrapnelHitRecord shrapnelHitRecord = CustomAmmoCategories.getShrapnelCache(__instance.hitInfo, hitIndex);
       if (shrapnelHitRecord != null) {
         CustomAmmoCategoriesLog.Log.LogWrite("OnImpact shrapnel Hit info found:" + hitIndex + "\n");
         if (shrapnelHitRecord.isSeparated == true) {
-          CustomAmmoCategories.shrapnelFireShells(__instance.hitInfo, hitIndex, shrapnelHitRecord, __instance.weapon);
+          //CustomAmmoCategories.shrapnelFireShells(__instance.hitInfo, hitIndex, shrapnelHitRecord, __instance.weapon);
           //CustomAmmoCategories.shrapnelFireShells(__instance.hitInfo, hitIndex, shrapnelHitRecord);
           CustomAmmoCategoriesLog.Log.LogWrite(" applying shells damage:" + hitIndex + " dmg:"+hitDamage+"\n");
           float effectiveSeparatedDamage = hitDamage / (float)shrapnelHitRecord.count;
-          for (int shHitIndex = 0; shHitIndex < shrapnelHitRecord.count; ++shHitIndex) {
-            int shrapnelHitIndex = (shHitIndex + shrapnelHitRecord.shellsHitIndex);
-            CustomAmmoCategoriesLog.Log.LogWrite("  shellsHitIndex = " + shrapnelHitIndex + " dmg:"+ effectiveSeparatedDamage + "\n");
-            Combat.MessageCenter.PublishMessage((MessageCenterMessage)new AttackSequenceImpactMessage(__instance.hitInfo, shrapnelHitIndex, effectiveSeparatedDamage));
+          FragWeaponEffect fWe = __instance.fragEffect();
+          if (fWe != null) {
+            CustomAmmoCategoriesLog.Log.LogWrite(" frag weapon effect found "+ shrapnelHitRecord.shellsHitIndex + "\n");
+            __instance.hitInfo.printHitPositions();
+            Vector3 endPos = (Vector3)typeof(WeaponEffect).GetField("endPos", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(__instance);
+            fWe.Fire(endPos,__instance.hitInfo, shrapnelHitRecord.shellsHitIndex);
+            //__instance.unregisterFragEffect();
+          } else {
+            CustomAmmoCategoriesLog.Log.LogWrite(" frag weapon effect not found\n");
+            for (int shHitIndex = 0; shHitIndex < shrapnelHitRecord.count; ++shHitIndex) {
+              int shrapnelHitIndex = (shHitIndex + shrapnelHitRecord.shellsHitIndex);
+              CustomAmmoCategoriesLog.Log.LogWrite("  shellsHitIndex = " + shrapnelHitIndex + " dmg:" + effectiveSeparatedDamage + "\n");
+              Combat.MessageCenter.PublishMessage((MessageCenterMessage)new AttackSequenceImpactMessage(__instance.hitInfo, shrapnelHitIndex, effectiveSeparatedDamage));
+            }
           }
         } else {
           CustomAmmoCategoriesLog.Log.LogWrite(" not separated\n");
@@ -1311,7 +1158,9 @@ namespace CustomAmmoCategoriesPatches {
               //__instance.hitInfo.hitLocations[hitIndex] = cachedCurve.Intercepted ? 65536 : __instance.hitInfo.hitLocations[hitIndex];
               return;
             };
-            BallisticEffect amsBEffect = CustomAmmoCategories.getWeaponEffect(amsShoot.AMS) as BallisticEffect;
+            CustomAmmoCategoriesLog.Log.LogWrite(" firing AMS "+ amsShoot.AMS.UIName+ " sootIdx:"+ amsShoot.shootIdx + "\n");
+            amsShoot.AMS.AMS().Fire(amsShoot.shootIdx);
+            /*BallisticEffect amsBEffect = CustomAmmoCategories.getWeaponEffect(amsShoot.AMS) as BallisticEffect;
             LaserEffect amsLEffect = amsShoot.LAMSEffect;
             if (amsBEffect != null) {
               CustomAmmoCategories.AMSFire(amsBEffect, amsShoot.target);
@@ -1321,7 +1170,7 @@ namespace CustomAmmoCategoriesPatches {
             } else {
               __instance.hitInfo.dodgeRolls[hitIndex] = cachedCurve.Intercepted ? -1.0f : 0f;
               return;
-            }
+            }*/
             cachedCurve.nextAMSShoot();
             amsShoot = cachedCurve.getAMSShoot();
             if (amsShoot == null) {
@@ -1352,14 +1201,14 @@ namespace CustomAmmoCategoriesPatches {
           for (int weaponIndex = 0; weaponIndex < weaponHitInfo[groupIndex].Length; ++weaponIndex) {
             Weapon weapon = __instance.GetWeapon(groupIndex, weaponIndex);
             //ExtWeaponDef extWeapon = CustomAmmoCategories.getExtWeaponDef(weapon.defId);
-            if (CustomAmmoCategories.getWeaponHasShells(weapon)) {
+            if (weapon.HasShells()) {
               WeaponHitInfo hitInfo = weaponHitInfo[groupIndex][weaponIndex].Value;
               Dictionary<string, SpreadHitInfo> shrapnelInfo = CustomAmmoCategories.prepareShrapnelHitInfo(__instance, ref hitInfo, weapon, groupIndex, weaponIndex, hitInfo.numberOfShots, 1f);
               foreach (var shrapnelInf in shrapnelInfo) {
                 ICombatant combatant = __instance.Director.Combat.FindCombatantByGUID(shrapnelInf.Key);
                 WeaponHitInfo shrapnellHitInfo = shrapnelInf.Value.hitInfo;
                 if (combatant != null) {
-                  AttackSequence_GenerateHitInfo.generateWeaponHitInfo(__instance, combatant, weapon, groupIndex, weaponIndex, shrapnelInf.Value.hitInfo.numberOfShots, __instance.indirectFire, 1f, ref shrapnellHitInfo);
+                  AttackSequence_GenerateHitInfo.generateWeaponHitInfo(__instance, combatant, weapon, groupIndex, weaponIndex, shrapnelInf.Value.hitInfo.numberOfShots, __instance.indirectFire, 1f, ref shrapnellHitInfo, true);
                 }
                 shrapnelInf.Value.hitInfo = shrapnellHitInfo;
               }
@@ -1404,6 +1253,7 @@ namespace CustomAmmoCategoriesPatches {
           return true;
         }
         ICombatant actor = attackSequence.target;
+        HashSet<Weapon> AMSs = new HashSet<Weapon>();
         if (CustomAmmoCategories.MissileCurveCache != null) {
           if (CustomAmmoCategories.MissileCurveCache.ContainsKey(sequenceId)) {
             List<CachedMissileCurve> missiles = new List<CachedMissileCurve>();
@@ -1415,10 +1265,13 @@ namespace CustomAmmoCategoriesPatches {
                 foreach (var launche in launcher.Value) {
                   ++allMissiles;
                   if (launche.Value.Intercepted) { ++interceptedMissiles; };
-                  if (launche.Value.AMSShoots.Count > 0) { launche.Value.clearLAMS(); };
+                  foreach(var amshoot in launche.Value.AMSShoots){
+                    AMSs.Add(amshoot.AMS);
+                  }
                 }
               }
             }
+            foreach(var ams in AMSs) {ams.AMS().Clear();}
             CustomAmmoCategories.MissileCurveCache.Remove(sequenceId);
             if ((allMissiles > 0) && (interceptedMissiles > 0)) {
               string message_string = interceptedMissiles + " FROM " + allMissiles + " HIT BY AMS";

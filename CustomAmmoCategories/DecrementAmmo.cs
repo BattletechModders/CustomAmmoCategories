@@ -24,7 +24,7 @@ namespace CustAmmoCategories {
       CustomAmmoCategoriesLog.Log.LogWrite(" Heat to return " + (int)returnHeat + "\n");
       weapon.parent.AddWeaponHeat(weapon, (int)returnHeat);
     }
-    public static int DecrementAmmo(Weapon instance, int stackItemUID, int StreakHitCount) {
+    public static int DecrementAmmo(Weapon instance, int stackItemUID, int StreakHitCount, bool forceStreak = false) {
       int shotsWhenFired = instance.ShotsWhenFired;
       if (StreakHitCount != 0) {
         if (instance.weaponDef.ComponentTags.Contains("wr-clustered_shots") || (CustomAmmoCategories.getWeaponDisabledClustering(instance) == false)) {
@@ -34,6 +34,7 @@ namespace CustAmmoCategories {
         }
       }
       bool streakEffect = CustomAmmoCategories.getExtWeaponDef(instance.weaponDef.Description.Id).StreakEffect;
+      if (forceStreak) { streakEffect = true; };
       if ((streakEffect == false) && (StreakHitCount == 0)) {
         StreakHitCount = shotsWhenFired;
       }

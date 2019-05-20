@@ -84,6 +84,8 @@ namespace CustAmmoCategories {
     public float AdditionalImpactVFXScaleY { get; set; }
     public float AdditionalImpactVFXScaleZ { get; set; }
     public TripleBoolean FireOnSuccessHit { get; set; }
+    public TripleBoolean IsAMS { get; set; }
+    public TripleBoolean IsAAMS { get; set; }
     public ExtAmmunitionDef() {
       AccuracyModifier = 0;
       DirectFireModifier = 0;
@@ -157,6 +159,8 @@ namespace CustAmmoCategories {
       tempDesignMaskCellRadius = 0;
       MineFieldInstability = 0f;
       ClearMineFieldRadius = 0;
+      IsAMS = TripleBoolean.NotSet;
+      IsAAMS = TripleBoolean.NotSet;
     }
   }
 }
@@ -374,6 +378,17 @@ namespace CustomAmmoCategoriesPatches {
       if (defTemp["AMSHitChance"] != null) {
         extAmmoDef.AMSHitChance = (float)defTemp["AMSHitChance"];
         defTemp.Remove("AMSHitChance");
+      }
+      if (defTemp["IsAMS"] != null) {
+        extAmmoDef.IsAMS = ((bool)defTemp["IsAMS"] == true) ? TripleBoolean.True : TripleBoolean.False;
+        defTemp.Remove("IsAMS");
+      }
+      if (defTemp["IsAAMS"] != null) {
+        extAmmoDef.IsAAMS = ((bool)defTemp["IsAAMS"] == true) ? TripleBoolean.True : TripleBoolean.False;
+        if (extAmmoDef.IsAAMS == TripleBoolean.True) {
+          extAmmoDef.IsAMS = TripleBoolean.True;
+        }
+        defTemp.Remove("IsAAMS");
       }
       if (defTemp["AOEDamage"] != null) {
         extAmmoDef.AOEDamage = (float)defTemp["AOEDamage"];

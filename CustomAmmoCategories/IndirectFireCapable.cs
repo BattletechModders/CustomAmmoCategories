@@ -34,6 +34,7 @@ namespace CustAmmoCategories {
       }
       return result;
     }
+    public static bool isIndirectFireCapable(this Weapon weapon) {return getIndirectFireCapable(weapon);}
     public static float getDirectFireModifier(Weapon weapon) {
       ExtWeaponDef extWeapon = CustomAmmoCategories.getExtWeaponDef(weapon.weaponDef.Description.Id);
       float result = extWeapon.DirectFireModifier;

@@ -283,7 +283,7 @@ namespace CustomAmmoCategoriesPatches {
             cantFire = true;
           } else
           if (LOFLevel < LineOfFireLevel.LOFObstructed) {
-            if (weapon.IndirectFireCapable == false) {
+            if (weapon.isIndirectFireCapable() == false) {
               text.Append(" NO LINE OF FIRE");
               cantFire = true;
             }
@@ -310,6 +310,7 @@ namespace CustomAmmoCategoriesPatches {
         CustomAmmoCategoriesLog.Log.LogWrite("Registering terrain attack to " + seqId + "\n");
         CustomAmmoCategories.addTerrainHitPosition(seqId, targetPosition);
         AttackDirector.AttackSequence attackSequence = actor.Combat.AttackDirector.CreateAttackSequence(seqId, actor, actor, actor.CurrentPosition, actor.CurrentRotation, 0, weaponsList, MeleeAttackType.NotSet, 0, false);
+        attackSequence.indirectFire = LOFLevel < LineOfFireLevel.LOFObstructed;
         actor.Combat.AttackDirector.PerformAttack(attackSequence);
         //MessageCenterMessage message1 = (MessageCenterMessage)new AttackInvocation(actor, null, weaponsList, MeleeAttackType.NotSet, 0);
         //HUD.MechWarriorTray.ConfirmAbilities(AbilityDef.ActivationTiming.ConsumedByMovement);
@@ -419,20 +420,31 @@ namespace CustomAmmoCategoriesPatches {
         } else {
           gaAbility = CombatHUDMechwarriorTray_InitAbilityButtons.attackGroundAbilities[actor.GUID];
         }
+        bool forceInactive = actor.HasActivatedThisRound || actor.MovingToPosition != null || actor.Combat.StackManager.IsAnyOrderActive && actor.Combat.TurnDirector.IsInterleaved;
+        CustomAmmoCategoriesLog.Log.LogWrite(" actor.HasActivatedThisRound:" + actor.HasActivatedThisRound + "\n");
+        CustomAmmoCategoriesLog.Log.LogWrite(" actor.MovingToPosition:" + (actor.MovingToPosition!=null) + "\n");
+        CustomAmmoCategoriesLog.Log.LogWrite(" actor.Combat.StackManager.IsAnyOrderActive:" + actor.Combat.StackManager.IsAnyOrderActive + "\n");
+        CustomAmmoCategoriesLog.Log.LogWrite(" actor.Combat.TurnDirector.IsInterleaved:" + actor.Combat.TurnDirector.IsInterleaved + "\n");
+        CustomAmmoCategoriesLog.Log.LogWrite(" forceInactive:"+forceInactive+"\n");
         CombatHUDActionButton[] AbilityButtons = (CombatHUDActionButton[])typeof(CombatHUDMechwarriorTray).GetProperty("AbilityButtons", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(__instance, null);
         typeof(CombatHUDMechwarriorTray).GetMethod("ResetAbilityButton", BindingFlags.NonPublic | BindingFlags.Instance, null,
           new Type[] { typeof(AbstractActor), typeof(CombatHUDActionButton), typeof(Ability), typeof(bool) }, null
-        ).Invoke(__instance, new object[4] { (object)actor, AbilityButtons[AbilityButtons.Length - 1], gaAbility, false });
-        if (actor.HasFiredThisRound == false) {
-          if (gaAbility.IsActive == false) {
-            if (gaAbility.IsAvailable == true) {
-              if (actor.IsShutDown == false) {
-                AbilityButtons[AbilityButtons.Length - 1].ResetButtonIfNotActive(actor);
+        ).Invoke(__instance, new object[4] { (object)actor, AbilityButtons[AbilityButtons.Length - 1], gaAbility, forceInactive });
+        if (forceInactive) { AbilityButtons[AbilityButtons.Length - 1].DisableButton(); };
+        if (actor.Combat.TurnDirector.IsInterleaved == false) {
+          if (actor.HasFiredThisRound == false) {
+            if (gaAbility.IsActive == false) {
+              if (gaAbility.IsAvailable == true) {
+                if (actor.IsShutDown == false) {
+                  CustomAmmoCategoriesLog.Log.LogWrite(" ResetButtonIfNotActive:\n");
+                  CustomAmmoCategoriesLog.Log.LogWrite(" IsAbilityActivated:" + AbilityButtons[AbilityButtons.Length - 1].IsAbilityActivated + "\n");
+                  if (actor.MovingToPosition == null) { AbilityButtons[AbilityButtons.Length - 1].ResetButtonIfNotActive(actor); };
+                }
               }
             }
+          } else {
+            AbilityButtons[AbilityButtons.Length - 1].DisableButton();
           }
-        } else {
-          AbilityButtons[AbilityButtons.Length - 1].DisableButton();
         }
         //__instance.ResetAbilityButton(actor, this.AbilityButtons[index], abilityList[index], forceInactive);
 
