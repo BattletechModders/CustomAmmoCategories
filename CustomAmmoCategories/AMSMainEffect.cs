@@ -151,6 +151,7 @@ namespace CustAmmoCategories {
       if (shotIdx < 0) { return curPath / pathLenth; }
       if (this.multyShotEffect == null) {
         if (shotIdx >= this.singleShotsEffects.Count) { return curPath / pathLenth; }
+        if (this.singleShotsEffects[shotIdx] == null) { return curPath / pathLenth; }
         return this.singleShotsEffects[shotIdx].calculateInterceptCorrection(curPath,pathLenth,distance,missileProjectileSpeed);
       } else {
         return this.multyShotEffect.calculateInterceptCorrection(shotIdx, curPath, pathLenth, distance, missileProjectileSpeed);

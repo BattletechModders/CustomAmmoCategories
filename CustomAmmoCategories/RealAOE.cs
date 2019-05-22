@@ -8,6 +8,7 @@ using BattleTech;
 using BattleTech.AttackDirectorHelpers;
 using BattleTech.Rendering;
 using CustAmmoCategories;
+using CustomAmmoCategoriesLog;
 using Harmony;
 using UnityEngine;
 using Random = UnityEngine.Random;
@@ -50,8 +51,10 @@ namespace CustAmmoCategories {
     public string targetGUID;
     public float heatDamage;
     public List<AOEDamageRecord> damageList;
+    public int RealHitIndex;
     public WeaponHitInfo hitInfo;
     public AOEHitInfo(AttackDirector.AttackSequence instance, ICombatant combatant, AbstractActor attacker, Vector3 attackPos, Weapon weapon, Dictionary<int, float> dmg, float heat, int groupIdx, int weaponIdx) {
+      RealHitIndex = -1;
       damageList = new List<AOEDamageRecord>();
       hitInfo = new WeaponHitInfo();
       //CustomAmmoCategories.
@@ -94,26 +97,6 @@ namespace CustAmmoCategories {
   public static partial class CustomAmmoCategories {
     //                   sequenceId       groupId      weaponIndex     hitIndex  Damage
     public static Dictionary<int, Dictionary<int, Dictionary<int, Dictionary<int, SpreadHitRecord>>>> SpreadCache = new Dictionary<int, Dictionary<int, Dictionary<int, Dictionary<int, SpreadHitRecord>>>>();
-    /*public static void registerSpreadCache(AttackDirector.AttackSequence instance, int groupIdx, int weaponIdx, List<SpreadHitInfo> spreadList) {
-      if (CustomAmmoCategories.SpreadCache.ContainsKey(instance.id) == false) {
-        CustomAmmoCategories.SpreadCache.Add(instance.id, new Dictionary<int, Dictionary<int, Dictionary<int, SpreadHitInfo>>>());
-      };
-      if (CustomAmmoCategories.SpreadCache[instance.id].ContainsKey(groupIdx) == false) {
-        CustomAmmoCategories.SpreadCache[instance.id].Add(groupIdx, new Dictionary<int, Dictionary<int, SpreadHitInfo>>());
-      };
-      if (CustomAmmoCategories.SpreadCache[instance.id][groupIdx].ContainsKey(weaponIdx) == false) {
-        CustomAmmoCategories.SpreadCache[instance.id][groupIdx].Add(weaponIdx, new Dictionary<int, SpreadHitInfo>());
-      };
-      int hitIndex = 0;
-      for(int ListIndex=0;ListIndex < spreadList.Count; ++ListIndex) {
-        for (int spHitIndex = 0; spHitIndex < spreadList[ListIndex].hitInfo.numberOfShots; ++spHitIndex) {
-          if (CustomAmmoCategories.SpreadCache[instance.id][groupIdx][weaponIdx].ContainsKey(hitIndex) == false) {
-            CustomAmmoCategories.SpreadCache[instance.id][groupIdx][weaponIdx].Add(hitIndex, spreadList[ListIndex]);
-          }
-          ++hitIndex;
-        }
-      }
-    }*/
     public static SpreadHitRecord getSpreadCache(WeaponHitInfo hitInfo, int hitIndex) {
       if (CustomAmmoCategories.SpreadCache.ContainsKey(hitInfo.attackSequenceId) == false) {
         return null;
@@ -129,7 +112,6 @@ namespace CustAmmoCategories {
       };
       return CustomAmmoCategories.SpreadCache[hitInfo.attackSequenceId][hitInfo.attackGroupIndex][hitInfo.attackWeaponIndex][hitIndex];
     }
-
     public static List<SpreadHitInfo> getSpreadCache(WeaponHitInfo hitInfo) {
       List<SpreadHitInfo> result = new List<SpreadHitInfo>();
       if (CustomAmmoCategories.SpreadCache.ContainsKey(hitInfo.attackSequenceId) == false) {
@@ -298,61 +280,69 @@ namespace CustAmmoCategories {
       return result;
     }
     public static bool isWeaponAOECapable(Weapon weapon) {
+      Log.LogWrite("isWeaponAOECapable("+weapon.UIName+"/"+ weapon.defId + ")\n");
       bool result = false;
-      ExtWeaponDef extWeapon = CustomAmmoCategories.getExtWeaponDef(weapon.defId);
-      if(extWeapon.AOECapable != TripleBoolean.NotSet) {
-        return extWeapon.AOECapable == TripleBoolean.True;
-      }
       if (CustomAmmoCategories.checkExistance(weapon.StatCollection, CustomAmmoCategories.AmmoIdStatName) == true) {
         string CurrentAmmoId = weapon.StatCollection.GetStatistic(CustomAmmoCategories.AmmoIdStatName).Value<string>();
+        Log.LogWrite(" ammo id " + CurrentAmmoId + "\n");
         ExtAmmunitionDef extAmmoDef = CustomAmmoCategories.findExtAmmo(CurrentAmmoId);
+        Log.LogWrite(" extAmmoDef.AOECapable " + extAmmoDef.AOECapable + "\n");
         if (extAmmoDef.AOECapable != TripleBoolean.NotSet) {
           result = (extAmmoDef.AOECapable == TripleBoolean.True);
         }
+      }
+      ExtWeaponDef extWeapon = CustomAmmoCategories.getExtWeaponDef(weapon.defId);
+      Log.LogWrite(" extWeapon.AOECapable "+ weapon.defId + " " + extWeapon.AOECapable + "\n");
+      if (extWeapon.AOECapable != TripleBoolean.NotSet) {
+        return extWeapon.AOECapable == TripleBoolean.True;
       }
       return result;
     }
     public static float getWeaponAOERange(Weapon weapon) {
       float result = 0f;
-      ExtWeaponDef extWeapon = CustomAmmoCategories.getExtWeaponDef(weapon.defId);
-      if (extWeapon.AOECapable != TripleBoolean.NotSet) {
-        return extWeapon.AOERange;
-      }
       if (CustomAmmoCategories.checkExistance(weapon.StatCollection, CustomAmmoCategories.AmmoIdStatName) == true) {
         string CurrentAmmoId = weapon.StatCollection.GetStatistic(CustomAmmoCategories.AmmoIdStatName).Value<string>();
         ExtAmmunitionDef extAmmoDef = CustomAmmoCategories.findExtAmmo(CurrentAmmoId);
-        result = extAmmoDef.AOERange;
+        if (extAmmoDef.AOECapable == TripleBoolean.True) {
+          result = extAmmoDef.AOERange;
+        }
+      }
+      ExtWeaponDef extWeapon = CustomAmmoCategories.getExtWeaponDef(weapon.defId);
+      if (extWeapon.AOECapable == TripleBoolean.True) {
+        result = extWeapon.AOERange;
       }
       return result;
     }
     public static float getWeaponAOEDamage(Weapon weapon) {
       float result = 0f;
-      ExtWeaponDef extWeapon = CustomAmmoCategories.getExtWeaponDef(weapon.defId);
-      if (extWeapon.AOECapable != TripleBoolean.NotSet) {
-        return extWeapon.AOEDamage;
-      }
       if (CustomAmmoCategories.checkExistance(weapon.StatCollection, CustomAmmoCategories.AmmoIdStatName) == true) {
         string CurrentAmmoId = weapon.StatCollection.GetStatistic(CustomAmmoCategories.AmmoIdStatName).Value<string>();
         ExtAmmunitionDef extAmmoDef = CustomAmmoCategories.findExtAmmo(CurrentAmmoId);
-        result = extAmmoDef.AOEDamage;
+        if (extAmmoDef.AOECapable == TripleBoolean.True) {
+          result = extAmmoDef.AOEDamage;
+        }
+      }
+      ExtWeaponDef extWeapon = CustomAmmoCategories.getExtWeaponDef(weapon.defId);
+      if (extWeapon.AOECapable == TripleBoolean.True) {
+        result = extWeapon.AOEDamage;
       }
       return result;
     }
-
     public static float getWeaponAOEHeatDamage(Weapon weapon) {
       float result = 0f;
-      ExtWeaponDef extWeapon = CustomAmmoCategories.getExtWeaponDef(weapon.defId);
-      if (extWeapon.AOECapable != TripleBoolean.NotSet) {
-        return extWeapon.AOEHeatDamage;
-      }
       if (CustomAmmoCategories.checkExistance(weapon.StatCollection, CustomAmmoCategories.AmmoIdStatName) == true) {
         string CurrentAmmoId = weapon.StatCollection.GetStatistic(CustomAmmoCategories.AmmoIdStatName).Value<string>();
         ExtAmmunitionDef extAmmoDef = CustomAmmoCategories.findExtAmmo(CurrentAmmoId);
-        result = extAmmoDef.AOEHeatDamage;
+        if (extAmmoDef.AOECapable == TripleBoolean.True) {
+          result = extAmmoDef.AOEHeatDamage;
+        }
+      }
+      ExtWeaponDef extWeapon = CustomAmmoCategories.getExtWeaponDef(weapon.defId);
+      if (extWeapon.AOECapable == TripleBoolean.True) {
+        result = extWeapon.AOEHeatDamage;
       }
       return result;
     }
-
     public static string SpesialOfflineIFF = "_IFFOfflne";
     public static string getWeaponIFFTransponderDef(Weapon weapon) {
       string result = "";
@@ -377,7 +367,6 @@ namespace CustAmmoCategories {
       if (result == CustomAmmoCategories.SpesialOfflineIFF) { result = ""; };
       return result;
     }
-
     public static bool isCombatantHaveIFFTransponder(ICombatant combatant, string IFFDefId) {
       AbstractActor actor = combatant as AbstractActor;
       if (actor == null) { return false; };
@@ -387,7 +376,6 @@ namespace CustAmmoCategories {
       }
       return false;
     }
-
     public static Dictionary<int, float> MechHitLocations = null;
     public static Dictionary<int, float> VehicleLocations = null;
     public static Dictionary<int, float> OtherLocations = null;
@@ -413,12 +401,11 @@ namespace CustAmmoCategories {
       CustomAmmoCategories.OtherLocations = new Dictionary<int, float>();
       CustomAmmoCategories.OtherLocations[1] = 100f;
     }
-
     //                   sequenceId       groupId      weaponIndex     hitIndex  Damage
     public static Dictionary<int, Dictionary<int, Dictionary<int, Dictionary<int, List<AOEHitInfo>>>>> AOEDamageCache = new Dictionary<int, Dictionary<int, Dictionary<int, Dictionary<int, List<AOEHitInfo>>>>>();
     public static void generateAOECache(AttackDirector.AttackSequence instance, ref WeaponHitInfo hitInfo, AbstractActor attacker, Weapon weapon, int groupIdx, int weaponIdx) {
-      Dictionary<string, Dictionary<int, float>> targetsHitCache = new Dictionary<string, Dictionary<int, float>>();
-      Dictionary<string, float> targetsHeatCache = new Dictionary<string, float>();
+      Dictionary<ICombatant, Dictionary<int, float>> targetsHitCache = new Dictionary<ICombatant, Dictionary<int, float>>();
+      Dictionary<ICombatant, float> targetsHeatCache = new Dictionary<ICombatant, float>();
       float AOERange = CustomAmmoCategories.getWeaponAOERange(weapon);
       CustomAmmoCategoriesLog.Log.LogWrite("AOE generation started " + attacker.DisplayName + " " + weapon.defId + " grp:" + hitInfo.attackGroupIndex + " index:" + hitInfo.attackWeaponIndex + " shots:" + hitInfo.numberOfShots + "\n");
       if (hitInfo.numberOfShots == 0) { return; };
@@ -459,16 +446,16 @@ namespace CustAmmoCategories {
           float distance = Vector3.Distance(target.CurrentPosition, hitPosition);
           CustomAmmoCategoriesLog.Log.LogWrite(" testing combatant " + target.DisplayName + " " + target.GUID + " " + distance + " " + AOERange + "\n");
           if (distance > AOERange) { continue; }
-          if (targetsHitCache.ContainsKey(target.GUID) == false) { targetsHitCache.Add(target.GUID, new Dictionary<int, float>()); }
-          if (targetsHeatCache.ContainsKey(target.GUID) == false) { targetsHeatCache.Add(target.GUID, 0f); }
-          Dictionary<int, float> targetHitCache = targetsHitCache[target.GUID];
+          if (targetsHitCache.ContainsKey(target) == false) { targetsHitCache.Add(target, new Dictionary<int, float>()); }
+          if (targetsHeatCache.ContainsKey(target) == false) { targetsHeatCache.Add(target, 0f); }
+          //Dictionary<int, float> targetHitCache = targetsHitCache[target];
           float DamagePerShot = CustomAmmoCategories.getWeaponAOEDamage(weapon);
           if (DamagePerShot < CustomAmmoCategories.Epsilon) { DamagePerShot = weapon.DamagePerShot; };
           float HeatDamagePerShot = CustomAmmoCategories.getWeaponAOEHeatDamage(weapon);
           if (HeatDamagePerShot < CustomAmmoCategories.Epsilon) { HeatDamagePerShot = weapon.HeatDamagePerShot; };
           float fullDamage = DamagePerShot * (AOERange - distance) / AOERange;
           float heatDamage = HeatDamagePerShot * (AOERange - distance) / AOERange;
-          targetsHeatCache[target.GUID] += heatDamage;
+          targetsHeatCache[target] += heatDamage;
           CustomAmmoCategoriesLog.Log.LogWrite(" full damage " + fullDamage + "\n");
           List<int> hitLocations = null;
           Dictionary<int, float> AOELocationDict = null;
@@ -496,7 +483,12 @@ namespace CustAmmoCategories {
               fullLocationDamage += 100f;
             }
           }
-          CustomAmmoCategoriesLog.Log.LogWrite(" full location damage coeff " + fullLocationDamage + "\n");
+          Log.LogWrite(" hitLocations: ");
+          foreach (int hitLocation in hitLocations) {
+            Log.LogWrite(" "+hitLocation);
+          }
+          Log.LogWrite("\n");
+          Log.LogWrite(" full location damage coeff " + fullLocationDamage + "\n");
           foreach (int hitLocation in hitLocations) {
             float currentDamageCoeff = 100f;
             if (AOELocationDict.ContainsKey(hitLocation)) {
@@ -504,12 +496,12 @@ namespace CustAmmoCategories {
             }
             currentDamageCoeff /= fullLocationDamage;
             float CurrentLocationDamage = fullDamage * currentDamageCoeff;
-            if (targetHitCache.ContainsKey(hitLocation)) {
-              targetHitCache[hitLocation] += CurrentLocationDamage;
+            if (targetsHitCache[target].ContainsKey(hitLocation)) {
+              targetsHitCache[target][hitLocation] += CurrentLocationDamage;
             } else {
-              targetHitCache[hitLocation] = CurrentLocationDamage;
+              targetsHitCache[target][hitLocation] = CurrentLocationDamage;
             }
-            CustomAmmoCategoriesLog.Log.LogWrite("  location " + hitLocation + " damage " + targetHitCache[hitLocation] + "\n");
+            CustomAmmoCategoriesLog.Log.LogWrite("  location " + hitLocation + " damage " + targetsHitCache[target][hitLocation] + "\n");
           }
         }
       }
@@ -529,18 +521,18 @@ namespace CustAmmoCategories {
       CustomAmmoCategoriesLog.Log.LogWrite("AOE generation result\n");
       int AOEHitsCount = hitInfo.numberOfShots;
       foreach (var targetHitCache in targetsHitCache) {
-        CustomAmmoCategoriesLog.Log.LogWrite(" target:" + targetHitCache.Key + "\n");
-        ICombatant combatant = attacker.Combat.FindCombatantByGUID(targetHitCache.Key);
-        if (combatant == null) { continue; }
+        CustomAmmoCategoriesLog.Log.LogWrite(" target:" + targetHitCache.Key.DisplayName + ":"+targetHitCache.Key.GUID+"\n");
+        //ICombatant combatant = attacker.Combat.FindCombatantByGUID(targetHitCache.Key);
+        //if (combatant == null) { continue; }
         if (AOEHitPosition.HasValue) {
           float heatDamage = 0f;
-          if (targetsHeatCache.ContainsKey(combatant.GUID)) { heatDamage = targetsHeatCache[combatant.GUID]; };
-          targetAOEHitInfo.Add(new AOEHitInfo(instance, combatant, attacker, AOEHitPosition.Value, weapon, targetHitCache.Value, heatDamage, groupIdx, weaponIdx));
+          if (targetsHeatCache.ContainsKey(targetHitCache.Key)) { heatDamage = targetsHeatCache[targetHitCache.Key]; };
+          targetAOEHitInfo.Add(new AOEHitInfo(instance, targetHitCache.Key, attacker, AOEHitPosition.Value, weapon, targetHitCache.Value, heatDamage, groupIdx, weaponIdx));
         } else {
           CustomAmmoCategoriesLog.Log.LogWrite("No one projectile reaches target. So no AOE.\n");
         }
         foreach (var HitCache in targetHitCache.Value) {
-          CustomAmmoCategoriesLog.Log.LogWrite(" Location:" + HitCache.Key + ":" + HitCache.Value + "\n");
+          CustomAmmoCategoriesLog.Log.LogWrite("  Location:" + HitCache.Key + ":" + HitCache.Value + "\n");
         }
         AOEHitsCount += targetAOEHitInfo[targetAOEHitInfo.Count - 1].hitInfo.hitLocations.Length;
       }
@@ -571,16 +563,18 @@ namespace CustAmmoCategories {
       oldhitVariance.CopyTo(hitInfo.hitVariance, 0);
       oldhitQualities.CopyTo(hitInfo.hitQualities, 0);
       AOEHitsCount = hitInfo.numberOfShots;
-      foreach (AOEHitInfo AOEInfo in targetAOEHitInfo) {
+      for (int index = 0; index < targetAOEHitInfo.Count; ++index) {
+        //foreach (AOEHitInfo AOEInfo in targetAOEHitInfo) {
+        targetAOEHitInfo[index].RealHitIndex = AOEHitsCount;
         //AOEInfo.hitInfo.toHitRolls.CopyTo(hitInfo.toHitRolls, AOEHitsCount);
-        AOEInfo.hitInfo.locationRolls.CopyTo(hitInfo.locationRolls, AOEHitsCount);
-        AOEInfo.hitInfo.dodgeRolls.CopyTo(hitInfo.dodgeRolls, AOEHitsCount);
-        AOEInfo.hitInfo.dodgeSuccesses.CopyTo(hitInfo.dodgeSuccesses, AOEHitsCount);
-        AOEInfo.hitInfo.hitLocations.CopyTo(hitInfo.hitLocations, AOEHitsCount);
-        AOEInfo.hitInfo.hitPositions.CopyTo(hitInfo.hitPositions, AOEHitsCount);
-        AOEInfo.hitInfo.hitVariance.CopyTo(hitInfo.hitVariance, AOEHitsCount);
-        AOEInfo.hitInfo.hitQualities.CopyTo(hitInfo.hitQualities, AOEHitsCount);
-        AOEHitsCount += AOEInfo.hitInfo.toHitRolls.Length;
+        targetAOEHitInfo[index].hitInfo.locationRolls.CopyTo(hitInfo.locationRolls, AOEHitsCount);
+        targetAOEHitInfo[index].hitInfo.dodgeRolls.CopyTo(hitInfo.dodgeRolls, AOEHitsCount);
+        targetAOEHitInfo[index].hitInfo.dodgeSuccesses.CopyTo(hitInfo.dodgeSuccesses, AOEHitsCount);
+        targetAOEHitInfo[index].hitInfo.hitLocations.CopyTo(hitInfo.hitLocations, AOEHitsCount);
+        targetAOEHitInfo[index].hitInfo.hitPositions.CopyTo(hitInfo.hitPositions, AOEHitsCount);
+        targetAOEHitInfo[index].hitInfo.hitVariance.CopyTo(hitInfo.hitVariance, AOEHitsCount);
+        targetAOEHitInfo[index].hitInfo.hitQualities.CopyTo(hitInfo.hitQualities, AOEHitsCount);
+        AOEHitsCount += targetAOEHitInfo[index].hitInfo.toHitRolls.Length;
       }
     }
     public static List<AOEHitInfo> getAOEHitInfo(WeaponHitInfo hitInfo, int hitIndex) {
@@ -674,7 +668,7 @@ namespace CustomAmmoCategoriesPatches {
         if (SpreadTarget != null) {
           __instance.target = SpreadTarget;
         }
-        CustomAmmoCategoriesLog.Log.LogWrite(" Altering internal target "+ spreadCache.targetGUID + " found:" + (SpreadTarget != null)+"\n");
+        CustomAmmoCategoriesLog.Log.LogWrite(" Altering internal target spread "+ spreadCache.targetGUID + " found:" + ((SpreadTarget != null)?SpreadTarget.DisplayName:"false")+"\n");
         CustomAmmoCategoriesLog.Log.LogWrite("  and position was:"+ impactMessage.hitInfo.hitPositions[impactMessage.hitIndex] + "\n");
         impactMessage.hitInfo.hitPositions[impactMessage.hitIndex] = spreadCache.hitInfo.hitPositions[spreadCache.internalIndex];
         CustomAmmoCategoriesLog.Log.LogWrite("  become:" + impactMessage.hitInfo.hitPositions[impactMessage.hitIndex] + "\n");
@@ -683,20 +677,28 @@ namespace CustomAmmoCategoriesPatches {
         CustomAmmoCategoriesLog.Log.LogWrite("OnAttackSequenceImpact AOE damage detected");
         List<AOEHitInfo> AOEHitsInfo = CustomAmmoCategories.getAOEHitInfo(impactMessage.hitInfo, impactMessage.hitInfo.numberOfShots - 1);
         if (AOEHitsInfo != null) {
-          CustomAmmoCategoriesLog.Log.LogWrite(" AOE Hit info found\n");
-          int AOEHitIndex = impactMessage.hitIndex - impactMessage.hitInfo.numberOfShots;
-          int AOEGroupIndex = 0;
-          while (AOEHitIndex >= AOEHitsInfo[AOEGroupIndex].damageList.Count) {
-            ++AOEGroupIndex;
-            AOEHitIndex -= AOEHitsInfo[AOEGroupIndex].damageList.Count;
+          CustomAmmoCategoriesLog.Log.LogWrite(" AOE Hit info found. Searching record...\n");
+          AOEHitInfo curAoEHitInfo = null;
+          for(int aoeGroup = 0;aoeGroup < AOEHitsInfo.Count; ++aoeGroup) {
+            int startHitIndex = AOEHitsInfo[aoeGroup].RealHitIndex;
+            int endHitIndex = startHitIndex + AOEHitsInfo[aoeGroup].hitInfo.hitLocations.Length;
+            Log.LogWrite("  Group:" + aoeGroup + ":"+ AOEHitsInfo[aoeGroup].targetGUID+ ":"+startHitIndex+"-"+(endHitIndex-1) +"\n");
+            if ((impactMessage.hitIndex >= startHitIndex) && (impactMessage.hitIndex < endHitIndex)) {
+              int localHitIndex = impactMessage.hitIndex - AOEHitsInfo[aoeGroup].RealHitIndex;
+              curAoEHitInfo = AOEHitsInfo[aoeGroup];
+              Log.LogWrite("   found. AoE location:("+localHitIndex+")"+ curAoEHitInfo.hitInfo.hitLocations[localHitIndex] + " Cons location:"+ impactMessage.hitInfo.hitLocations[impactMessage.hitIndex] + "\n");
+              break;
+            }
           }
-          ICombatant AOETarget = __instance.Director.Combat.FindCombatantByGUID(AOEHitsInfo[AOEGroupIndex].targetGUID);
-          if (AOETarget != null) {
-            __instance.target = AOETarget;
+          if (curAoEHitInfo == null) {
+            Log.LogWrite("WARNING!AoE record for hitIndex:" + impactMessage.hitIndex + " not found\n", true);
+          } else {
+            ICombatant AOETarget = __instance.Director.Combat.FindCombatantByGUID(curAoEHitInfo.targetGUID);
+            if (AOETarget != null) {
+              __instance.target = AOETarget;
+            }
+            CustomAmmoCategoriesLog.Log.LogWrite(" Altering internal target " + curAoEHitInfo.targetGUID + " found:" + ((AOETarget != null) ? AOETarget.DisplayName : "false") + "\n");
           }
-          CustomAmmoCategoriesLog.Log.LogWrite(" Altering internal target " + AOEHitsInfo[AOEGroupIndex].targetGUID + " found:" + (AOETarget != null) + "\n");
-          //impactMessage.hitIndex = AOEHitIndex;
-          //impactMessage.hitInfo = AOEHitsInfo[AOEGroupIndex].hitInfo;
         } else {
           CustomAmmoCategoriesLog.Log.LogWrite("WARNING!Can't found AOE record\n", true);
         }
@@ -709,7 +711,7 @@ namespace CustomAmmoCategoriesPatches {
       AttackSequenceImpactMessage impactMessage = (AttackSequenceImpactMessage)message;
       if (impactMessage.hitInfo.attackSequenceId != __instance.id) { return; }
       if (__state != null) {
-        CustomAmmoCategoriesLog.Log.LogWrite("OnAttackSequenceImpact restoring original target and hit info\n");
+        CustomAmmoCategoriesLog.Log.LogWrite("OnAttackSequenceImpact restoring original target and hit info "+__state.target.DisplayName+":"+__state.target.GUID+"\n");
         __instance.target = __state.target;
         //impactMessage.hitInfo = __state.hitInfo;
       }

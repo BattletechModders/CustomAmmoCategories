@@ -255,7 +255,10 @@ namespace CustAmmoCategories {
       return result;
     }
     public static WeaponEffect getWeaponEffect(this Weapon weapon) {
-      if ((UnityEngine.Object)weapon.weaponRep == (UnityEngine.Object)null) { return null; };
+      if ((UnityEngine.Object)weapon.weaponRep == (UnityEngine.Object)null) {
+        CustomAmmoCategoriesLog.Log.LogWrite("WARNING! Weapon "+weapon.defId+" "+weapon.UIName+" on "+weapon.parent.DisplayName+":"+weapon.parent.GUID+" has no representation! It no visuals will be played\n",true);
+        return null;
+      };
       if (CustomAmmoCategories.checkExistance(weapon.StatCollection, CustomAmmoCategories.GUIDStatisticName) == false) { return weapon.weaponRep.WeaponEffect; }
       CustomAmmoCategoriesLog.Log.LogWrite("  weapon GUID is set\n");
       string ammoId = "";
@@ -498,18 +501,27 @@ namespace CustAmmoCategories {
         targetsList.Add(instance.target);
         targetsGUIDs.Add(instance.target.GUID);
       }
+      Log.LogWrite("AMS list:\n");
       foreach (ICombatant target in targetsList) {
+        Log.LogWrite(" actor:"+target.DisplayName+":"+target.GUID+"\n");
         AbstractActor targetActor = target as AbstractActor;
         if (targetActor == null) { continue; };
         if (targetActor.GUID == instance.attacker.GUID) {
           CustomAmmoCategoriesLog.Log.LogWrite("i will not fire my own missiles.\n");
           continue;
         }
-        if (targetActor.IsShutDown) { continue; };
-        if (targetActor.IsDead) { continue; };
+        if (targetActor.IsShutDown) {
+          Log.LogWrite("  shutdown\n");
+          continue;
+        };
+        if (targetActor.IsDead) {
+          Log.LogWrite("  dead\n");
+          continue;
+        };
         foreach (Weapon weapon in targetActor.Weapons) {
           ExtWeaponDef extWeapon = CustomAmmoCategories.getExtWeaponDef(weapon.defId);
           if ((weapon.isAMS()) && (weapon.isAAMS() == false)) {
+            Log.LogWrite("  AMS "+weapon.UIName+"\n");
             ams.Add(new AMSRecord(weapon, extWeapon, false));
           }
         }
@@ -517,12 +529,21 @@ namespace CustAmmoCategories {
       CustomAmmoCategoriesLog.Log.LogWrite("Searching advanced AMS in battle.\n");
       CombatGameState combat = instance.attacker.Combat;
       List<AbstractActor> atackerEnemies = combat.GetAllEnemiesOf(instance.attacker);
+      Log.LogWrite("AAMS list:\n");
       foreach (AbstractActor enemy in atackerEnemies) {
-        if (enemy.IsShutDown) { continue; };
-        if (enemy.IsDead) { continue; };
+        Log.LogWrite(" actor:" + enemy.DisplayName + ":" + enemy.GUID + "\n");
+        if (enemy.IsShutDown) {
+          Log.LogWrite("  shutdown\n");
+          continue;
+        };
+        if (enemy.IsDead) {
+          Log.LogWrite("  dead\n");
+          continue;
+        };
         foreach (Weapon weapon in enemy.Weapons) {
           ExtWeaponDef extWeapon = CustomAmmoCategories.getExtWeaponDef(weapon.defId);
           if (weapon.isAAMS()) {
+            Log.LogWrite("  AAMS " + weapon.UIName + "\n");
             ams.Add(new AMSRecord(weapon, extWeapon, true));
           }
         }
@@ -772,18 +793,19 @@ namespace CustomAmmoCategoriesPatches {
   [HarmonyPatch(new Type[] { typeof(WeaponHitInfo), typeof(int), typeof(int) })]
   [HarmonyPriority(Priority.HigherThanNormal)]
   public static class WeaponEffect_Fire {
-    public static bool Prefix(WeaponEffect __instance, WeaponHitInfo hitInfo, int hitIndex, int emitterIndex, ref Vector3 __state) {
+    public static bool Prefix(WeaponEffect __instance,ref WeaponHitInfo hitInfo, int hitIndex, int emitterIndex, ref Vector3 __state) {
       __state = hitInfo.hitPositions[hitIndex];
       Log.LogWrite("WeaponEffect.Fire "+__instance.weapon.UIName+" " + hitInfo.attackWeaponIndex + ":" + hitIndex + " save HitPosition "+__state+"\n");
       return true;
     }
-    public static void Postfix(WeaponEffect __instance, WeaponHitInfo hitInfo, int hitIndex, int emitterIndex, ref Vector3 __state) {
+    public static void Postfix(WeaponEffect __instance,ref WeaponHitInfo hitInfo, int hitIndex, int emitterIndex, ref Vector3 __state) {
       Log.LogWrite("WeaponEffect.Fire " + __instance.weapon.UIName + " " + hitInfo.attackWeaponIndex + ":" + hitIndex + " restore HitPosition " + __state + "\n");
       hitInfo.hitPositions[hitIndex] = __state;
-      BurstBallisticEffect bbEffect = __instance as BurstBallisticEffect;
-      if(bbEffect != null) {
-        typeof(WeaponEffect).GetField("endPos", BindingFlags.NonPublic | BindingFlags.Instance).SetValue(__instance, hitInfo.hitPositions[hitIndex]);
-      }
+      __instance.hitInfo.hitPositions[hitIndex] = __state;
+      //BurstBallisticEffect bbEffect = __instance as BurstBallisticEffect;
+      //if(bbEffect != null) {
+      typeof(WeaponEffect).GetField("endPos", BindingFlags.NonPublic | BindingFlags.Instance).SetValue(__instance, hitInfo.hitPositions[hitIndex]);
+      //}
       SpreadHitRecord spreadHit = CustomAmmoCategories.getSpreadCache(hitInfo, hitIndex);
       if (spreadHit != null) {
         CustomAmmoCategoriesLog.Log.LogWrite("spreadHit found " + hitInfo.attackGroupIndex + " " + hitInfo.attackWeaponIndex + " " + hitIndex + "\n");
@@ -791,6 +813,9 @@ namespace CustomAmmoCategoriesPatches {
         __instance.hitInfo.hitPositions[hitIndex] = spreadHit.hitInfo.hitPositions[spreadHit.internalIndex];
         CustomAmmoCategoriesLog.Log.LogWrite("  become:" + __instance.hitInfo.hitPositions[hitIndex] + "\n");
         __instance.hitInfo.hitPositions[hitIndex] = spreadHit.hitInfo.hitPositions[spreadHit.internalIndex];
+        hitInfo.hitPositions[hitIndex] = spreadHit.hitInfo.hitPositions[spreadHit.internalIndex];
+        __instance.hitInfo.hitPositions[hitIndex] = spreadHit.hitInfo.hitPositions[spreadHit.internalIndex];
+        typeof(WeaponEffect).GetField("endPos", BindingFlags.NonPublic | BindingFlags.Instance).SetValue(__instance, spreadHit.hitInfo.hitPositions[spreadHit.internalIndex]);
       }
     }
   }
@@ -926,7 +951,7 @@ namespace CustomAmmoCategoriesPatches {
         int AOEHitIndex = __instance.hitInfo.numberOfShots;
         for (int aHitGroupIndex = 0; aHitGroupIndex < AOEHitsInfo.Count; ++aHitGroupIndex) {
           for (int aHitIndex = 0; aHitIndex < AOEHitsInfo[aHitGroupIndex].damageList.Count; ++aHitIndex) {
-            CustomAmmoCategoriesLog.Log.LogWrite(" hitIndex = " + AOEHitIndex + " " + AOEHitsInfo[aHitGroupIndex].targetGUID + " " + AOEHitsInfo[aHitGroupIndex].damageList[aHitIndex] + "\n");
+            CustomAmmoCategoriesLog.Log.LogWrite(" hitIndex = " + AOEHitIndex + " " + AOEHitsInfo[aHitGroupIndex].targetGUID + " " + AOEHitsInfo[aHitGroupIndex].damageList[aHitIndex].damage + "\n");
             Combat.MessageCenter.PublishMessage((MessageCenterMessage)new AttackSequenceImpactMessage(__instance.hitInfo, AOEHitIndex, AOEHitsInfo[aHitGroupIndex].damageList[aHitIndex].damage));
             ++AOEHitIndex;
           }
@@ -1223,13 +1248,17 @@ namespace CustomAmmoCategoriesPatches {
       }
       try {
         WeaponHitInfo?[][] weaponHitInfo = (WeaponHitInfo?[][])typeof(AttackDirector.AttackSequence).GetField("weaponHitInfo", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(__instance);
+        Log.LogWrite("AOE Hit generation\n", true);
         for (int groupIndex = 0; groupIndex < weaponHitInfo.Length; ++groupIndex) {
           for (int weaponIndex = 0; weaponIndex < weaponHitInfo[groupIndex].Length; ++weaponIndex) {
             Weapon weapon = __instance.GetWeapon(groupIndex, weaponIndex);
+            Log.LogWrite(" weapon "+weapon.UIName+"\n", true);
             if (CustomAmmoCategories.isWeaponAOECapable(weapon)) {
               WeaponHitInfo hitInfo = weaponHitInfo[groupIndex][weaponIndex].Value;
               CustomAmmoCategories.generateAOECache(__instance, ref hitInfo, __instance.attacker, weapon, groupIndex, weaponIndex);
               weaponHitInfo[groupIndex][weaponIndex] = hitInfo;
+            } else {
+              Log.LogWrite(" not AoE capable\n", true);
             }
           }
         }
