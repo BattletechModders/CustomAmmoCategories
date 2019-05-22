@@ -561,7 +561,7 @@ namespace CustAmmoCategories {
         return false;
       };
       float roll = Random.Range(0f, 1f);
-      if (roll > CustomAmmoCategories.Settings.BurningForestStrength) {
+      if (roll > CustomAmmoCategories.Settings.BurningForestBaseExpandChance) {
         CustomAmmoCategoriesLog.Log.LogWrite("  roll fail\n");
         return false;
       };
