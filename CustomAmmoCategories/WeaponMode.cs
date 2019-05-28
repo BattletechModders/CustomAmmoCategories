@@ -71,6 +71,7 @@ namespace CustAmmoCategories {
     public float AdditionalImpactVFXScaleY { get; set; }
     public float AdditionalImpactVFXScaleZ { get; set; }
     public int ClearMineFieldRadius { get; set; }
+    public TripleBoolean BallisticDamagePerPallet { get; set; }
     public WeaponMode() {
       Id = WeaponMode.NONE_MODE_NAME;
       UIName = WeaponMode.BASE_MODE_NAME;
@@ -133,6 +134,7 @@ namespace CustAmmoCategories {
       ClearMineFieldRadius = 0;
       IsAMS = TripleBoolean.NotSet;
       IsAAMS = TripleBoolean.NotSet;
+      BallisticDamagePerPallet = TripleBoolean.NotSet;
     }
     public void fromJSON(string json) {
       JObject jWeaponMode = JObject.Parse(json);
@@ -222,6 +224,9 @@ namespace CustAmmoCategories {
       }
       if (jWeaponMode["AdditionalImpactVFXScaleX"] != null) {
         this.AdditionalImpactVFXScaleX = (float)jWeaponMode["AdditionalImpactVFXScaleX"];
+      }
+      if (jWeaponMode["BallisticDamagePerPallet"] != null) {
+        this.BallisticDamagePerPallet = ((bool)jWeaponMode["BallisticDamagePerPallet"] == true) ? TripleBoolean.True : TripleBoolean.False;
       }
       if (jWeaponMode["AdditionalImpactVFXScaleY"] != null) {
         this.AdditionalImpactVFXScaleY = (float)jWeaponMode["AdditionalImpactVFXScaleY"];

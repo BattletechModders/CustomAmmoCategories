@@ -62,6 +62,7 @@ namespace CustAmmoCategories {
     public float AOERange { get; set; }
     public float AOEDamage { get; set; }
     public float AOEHeatDamage { get; set; }
+    public float AOEInstability { get; set; }
     public string IFFDef { get; set; }
     //public string ShrapnelWeaponEffectID { get; set; }
     public TripleBoolean HasShells { get; set; }
@@ -84,6 +85,7 @@ namespace CustAmmoCategories {
     public int ClearMineFieldRadius { get; set; }
     public int Cooldown { get; set; }
     public bool ImprovedBallistic { get; set; }
+    public TripleBoolean BallisticDamagePerPallet { get; set; }
     public ExtWeaponDef() {
       StreakEffect = false;
       HitGenerator = HitGeneratorType.NotSet;
@@ -107,6 +109,8 @@ namespace CustAmmoCategories {
       AmmoCategory = new CustomAmmoCategory();
       AOECapable = TripleBoolean.NotSet;
       AOERange = 0f;
+      AOEInstability = 0f;
+      AOEHeatDamage = 0f;
       IFFDef = "";
       //ShrapnelWeaponEffectID = "";
       HasShells = TripleBoolean.NotSet;
@@ -129,6 +133,7 @@ namespace CustAmmoCategories {
       ClearMineFieldRadius = 0;
       Cooldown = 0;
       ImprovedBallistic = false;
+      BallisticDamagePerPallet = TripleBoolean.NotSet;
     }
   }
 }
@@ -279,6 +284,10 @@ namespace CustomAmmoCategoriesPatches {
         }
         defTemp.Remove("ImprovedBallistic");
       }
+      if (defTemp["BallisticDamagePerPallet"] != null) {
+        extDef.BallisticDamagePerPallet = ((bool)defTemp["BallisticDamagePerPallet"] == true) ? TripleBoolean.True : TripleBoolean.False;
+        defTemp.Remove("BallisticDamagePerPallet");
+      }
       if (defTemp["MinShellsDistance"] != null) {
         extDef.MinShellsDistance = (float)defTemp["MinShellsDistance"];
         defTemp.Remove("MinShellsDistance");
@@ -306,6 +315,10 @@ namespace CustomAmmoCategoriesPatches {
       if (defTemp["AOEHeatDamage"] != null) {
         extDef.AOEHeatDamage = (float)defTemp["AOEHeatDamage"];
         defTemp.Remove("AOEHeatDamage");
+      }
+      if (defTemp["AOEInstability"] != null) {
+        extDef.AOEInstability = (float)defTemp["AOEInstability"];
+        defTemp.Remove("AOEInstability");
       }
       if (defTemp["Unguided"] != null) {
         extDef.Unguided = ((bool)defTemp["Unguided"] == true) ? TripleBoolean.True : TripleBoolean.False;

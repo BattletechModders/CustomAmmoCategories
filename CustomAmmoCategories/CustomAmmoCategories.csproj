@@ -71,6 +71,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AdditionalImpactVFX.cs" />
+    <Compile Include="AdvWeaponHitInfo.cs" />
     <Compile Include="AIWeaponChoose.cs" />
     <Compile Include="AmmoEject.cs" />
     <Compile Include="AmmunitionDef.cs" />

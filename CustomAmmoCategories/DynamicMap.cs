@@ -11,6 +11,7 @@ using BattleTech.Rendering.Mood;
 using BattleTech.Rendering.Trees;
 using BattleTech.UI;
 using CustAmmoCategories;
+using CustomAmmoCategoriesLog;
 using CustomAmmoCategoriesPatches;
 using Harmony;
 using HBS.Util;
@@ -134,6 +135,9 @@ namespace CustAmmoCategories {
           result += mode.FireTerrainChance;
         }
       }
+      Log.LogWrite("FireTerrainChance:"+weapon.UIName+"\n");
+      result *= DynamicMapHelper.BiomeLitFireChance();
+      Log.LogWrite(" result:" + result + "\n");
       return result;
     }
     public static int FireDurationWithoutForest(this Weapon weapon) {
@@ -151,6 +155,11 @@ namespace CustAmmoCategories {
           result += mode.FireDurationWithoutForest;
         }
       }
+      Log.LogWrite("FireDurationWithoutForest:" + weapon.UIName + "\n");
+      float res = result;
+      res *= DynamicMapHelper.BiomeWeaponFireDuration();
+      result = Mathf.RoundToInt(res);
+      Log.LogWrite(" result:" + result + "\n");
       return result;
     }
     public static int FireTerrainStrength(this Weapon weapon) {
@@ -168,6 +177,11 @@ namespace CustAmmoCategories {
           result += mode.FireTerrainStrength;
         }
       }
+      Log.LogWrite("FireTerrainStrength:" + weapon.UIName + "\n");
+      float res = result;
+      res *= DynamicMapHelper.BiomeWeaponFireStrength();
+      result = Mathf.RoundToInt(res);
+      Log.LogWrite(" result:" + result + "\n");
       return result;
     }
     public static int ClearMineFieldRadius(this Weapon weapon) {
@@ -537,10 +551,10 @@ namespace CustAmmoCategories {
         return false;
       }
       burnEffectCounter = weapon.FireDurationWithoutForest();
-      if (isHasForest && (burnEffectCounter < CustomAmmoCategories.Settings.BurningForestTurns)) { burnEffectCounter = CustomAmmoCategories.Settings.BurningForestTurns; };
+      if (isHasForest && (burnEffectCounter < DynamicMapHelper.BurnForestDuration())) { burnEffectCounter = DynamicMapHelper.BurnForestDuration(); };
       if (burnEffectCounter <= 0) { return false; };
       int burnStrength = weapon.FireTerrainStrength();
-      if (isHasForest && (burnStrength < CustomAmmoCategories.Settings.BurningForestStrength)) { burnStrength = CustomAmmoCategories.Settings.BurningForestStrength; };
+      if (isHasForest && (burnStrength < DynamicMapHelper.BurnForestStrength())) { burnStrength = DynamicMapHelper.BurnForestStrength(); };
       if (burnStrength <= 0) { return false; };
       burningWeapon = weapon;
       Combat = weapon.parent.Combat;
@@ -561,15 +575,15 @@ namespace CustAmmoCategories {
         return false;
       };
       float roll = Random.Range(0f, 1f);
-      if (roll > CustomAmmoCategories.Settings.BurningForestBaseExpandChance) {
+      if (roll > DynamicMapHelper.FireExpandChance()) {
         CustomAmmoCategoriesLog.Log.LogWrite("  roll fail\n");
         return false;
       };
       burningWeapon = weapon;
       Combat = weapon.parent.Combat;
       applyBurnVisuals();
-      burnEffectCounter = CustomAmmoCategories.Settings.BurningForestTurns;
-      SetCellsBurn(weapon, burnEffectCounter, 0, CustomAmmoCategories.Settings.BurningForestStrength, 0);
+      burnEffectCounter = DynamicMapHelper.BurnForestDuration();
+      SetCellsBurn(weapon, burnEffectCounter, 0, DynamicMapHelper.BurnForestStrength(), 0);
       isHasForest = false;
       expandingThisTurn = false;
       return true;
@@ -834,8 +848,8 @@ namespace CustAmmoCategories {
             this.CustomDesignMask = DynamicMapHelper.loadedMasksDef[CustomAmmoCategories.Settings.BurningForestDesignMask];
             this.ReconstructTempDesignMask();
           }
-          this.BurningCounter = (counter > CustomAmmoCategories.Settings.BurningForestTurns) ? counter : CustomAmmoCategories.Settings.BurningForestTurns;
-          this.BurningStrength = (strength > CustomAmmoCategories.Settings.BurningForestStrength) ? strength : CustomAmmoCategories.Settings.BurningForestStrength;
+          this.BurningCounter = (counter > DynamicMapHelper.BurnForestDuration()) ? counter : DynamicMapHelper.BurnForestDuration();
+          this.BurningStrength = (strength > DynamicMapHelper.BurnForestStrength()) ? strength : DynamicMapHelper.BurnForestStrength();
         }
       } else
       if ((counter > 0) && (strength > 0)) {
@@ -978,6 +992,62 @@ namespace CustAmmoCategories {
     public static HashSet<MapPoint> tempEffectHexes = new HashSet<MapPoint>();
     public static HashSet<MapPoint> tempMaskCells = new HashSet<MapPoint>();
     public static MapMetaData mapMetaData = null;
+    public static string CurrentBiome = "";
+    public static float BiomeWeaponFireDuration() {
+      float result = 1f;
+      if (CustomAmmoCategories.Settings.WeaponBurningDurationBiomeMult.ContainsKey(DynamicMapHelper.CurrentBiome)) {
+        Log.LogWrite(" biome mult:" + CustomAmmoCategories.Settings.WeaponBurningDurationBiomeMult[DynamicMapHelper.CurrentBiome] + "\n");
+        result = CustomAmmoCategories.Settings.WeaponBurningDurationBiomeMult[DynamicMapHelper.CurrentBiome];
+      }
+      return result;
+    }
+    public static float BiomeWeaponFireStrength() {
+      float result = 1f;
+      if (CustomAmmoCategories.Settings.WeaponBurningStrengthBiomeMult.ContainsKey(DynamicMapHelper.CurrentBiome)) {
+        Log.LogWrite(" biome mult:" + CustomAmmoCategories.Settings.WeaponBurningStrengthBiomeMult[DynamicMapHelper.CurrentBiome] + "\n");
+        result = CustomAmmoCategories.Settings.WeaponBurningStrengthBiomeMult[DynamicMapHelper.CurrentBiome];
+      }
+      return result;
+    }
+    public static float BiomeLitFireChance() {
+      float result = 1f;
+      if (CustomAmmoCategories.Settings.LitFireChanceBiomeMult.ContainsKey(DynamicMapHelper.CurrentBiome)) {
+        Log.LogWrite(" biome mult:" + CustomAmmoCategories.Settings.LitFireChanceBiomeMult[DynamicMapHelper.CurrentBiome] + "\n");
+        result = CustomAmmoCategories.Settings.LitFireChanceBiomeMult[DynamicMapHelper.CurrentBiome];
+      }
+      return result;
+    }
+    public static int BurnForestDuration() {
+      float result = CustomAmmoCategories.Settings.BurningForestTurns;
+      Log.LogWrite("BurnForestDuration.Base:" + result + "\n");
+      if (CustomAmmoCategories.Settings.ForestBurningDurationBiomeMult.ContainsKey(DynamicMapHelper.CurrentBiome)) {
+        Log.LogWrite(" biome mult:" + CustomAmmoCategories.Settings.ForestBurningDurationBiomeMult[DynamicMapHelper.CurrentBiome] + "\n");
+        result *= CustomAmmoCategories.Settings.ForestBurningDurationBiomeMult[DynamicMapHelper.CurrentBiome];
+      }
+      Log.LogWrite(" effective duration:" + Mathf.RoundToInt(result) + "\n");
+      return Mathf.RoundToInt(result);
+    }
+    public static int BurnForestStrength() {
+      float result = CustomAmmoCategories.Settings.BurningForestStrength;
+      Log.LogWrite("BurnForestStrength.Base:" + result + "\n");
+      if (CustomAmmoCategories.Settings.ForestBurningStrengthBiomeMult.ContainsKey(DynamicMapHelper.CurrentBiome)) {
+        Log.LogWrite(" biome mult:" + CustomAmmoCategories.Settings.ForestBurningStrengthBiomeMult[DynamicMapHelper.CurrentBiome] + "\n");
+
+        result *= CustomAmmoCategories.Settings.ForestBurningStrengthBiomeMult[DynamicMapHelper.CurrentBiome];
+      }
+      Log.LogWrite(" effective strength:" + Mathf.RoundToInt(result) + "\n");
+      return Mathf.RoundToInt(result);
+    }
+    public static float FireExpandChance() {
+      float result = CustomAmmoCategories.Settings.BurningForestBaseExpandChance;
+      Log.LogWrite("FireExpandChance.Base:"+result+"\n");
+      if (CustomAmmoCategories.Settings.LitFireChanceBiomeMult.ContainsKey(DynamicMapHelper.CurrentBiome)) {
+        Log.LogWrite(" biome mult:"+ CustomAmmoCategories.Settings.LitFireChanceBiomeMult[DynamicMapHelper.CurrentBiome] + "\n");
+        result *= CustomAmmoCategories.Settings.LitFireChanceBiomeMult[DynamicMapHelper.CurrentBiome];
+      }
+      Log.LogWrite(" effective chance:" + result + "\n");
+      return result;
+    }
     public static void ClearTerrain() {
       CustomAmmoCategoriesLog.Log.LogWrite("ClearTerrain\n");
       DynamicMapHelper.burningHexes.Clear();
@@ -1087,14 +1157,14 @@ namespace CustAmmoCategories {
       int hexStepX = (CustomAmmoCategories.Settings.BurningForestCellRadius * 3) / 2 + 1;
       int hexStepY = Mathf.RoundToInt((float)CustomAmmoCategories.Settings.BurningForestCellRadius * 0.866025f);
       List<MapPoint> hexPattern = MapPoint.createHexagon(0, 0, CustomAmmoCategories.Settings.BurningForestCellRadius);
-      string biome = "";
+      DynamicMapHelper.CurrentBiome = "";
       try {
-        biome = mapMetaData.biomeDesignMask.Description.Id;
+        DynamicMapHelper.CurrentBiome = mapMetaData.biomeDesignMask.Description.Id;
       } catch (Exception) {
-        biome = "NotSet";
+        DynamicMapHelper.CurrentBiome = "NotSet";
       }
-      bool noForest = CustomAmmoCategories.Settings.NoForestBiomes.Contains(biome);
-      CustomAmmoCategoriesLog.Log.LogWrite("Map biome:" + biome + " noForest:" + noForest + "\n");
+      bool noForest = CustomAmmoCategories.Settings.NoForestBiomes.Contains(DynamicMapHelper.CurrentBiome);
+      CustomAmmoCategoriesLog.Log.LogWrite("Map biome:" + DynamicMapHelper.CurrentBiome + " noForest:" + noForest + "\n");
       int hex_x = mapMetaData.mapTerrainDataCells.GetLength(0) / hexStepX;
       if ((mapMetaData.mapTerrainDataCells.GetLength(0) % hexStepX) != 0) { ++hex_x; }
       int hex_y = mapMetaData.mapTerrainDataCells.GetLength(1) / ((hexStepY * 2) - 1);

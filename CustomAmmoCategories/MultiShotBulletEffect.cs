@@ -245,7 +245,9 @@ namespace CustAmmoCategories {
       Log.LogWrite("MultiShotBulletEffect.OnImpact wi:"+this.hitInfo.attackWeaponIndex+" hi:"+this.hitInfo+" bi:"+this.bulletIdx+" prime:"+this.primeBullet+"\n");
       if (this.primeBullet) {
         Log.LogWrite(" prime. Damage message fired\n");
-        base.OnImpact(this.weapon.DamagePerShotAdjusted(this.weapon.parent.occupiedDesignMask));
+        float damage = this.weapon.DamagePerShotAdjusted(this.weapon.parent.occupiedDesignMask);
+        if (this.weapon.DamagePerPallet()) { damage /= this.weapon.ProjectilesPerShot; };
+        base.OnImpact(damage);
       } else {
         Log.LogWrite(" no prime. No damage message fired\n");
       }

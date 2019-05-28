@@ -469,14 +469,17 @@ namespace CustAmmoCategories {
               startPos, hitInfo.hitPositions[hitIndex], missileLauncherEffect, hitInfo.hitLocations[hitIndex]);
           } else 
           if(msBallistic != null) {
-            UnitySpline = msBallistic.generateSimpleIndirectSpline(startPos, hitInfo.hitPositions[hitIndex], hitInfo.hitLocations[hitIndex]);
+            if (isIndirect == true) {
+              UnitySpline = msBallistic.generateSimpleIndirectSpline(startPos, hitInfo.hitPositions[hitIndex], hitInfo.hitLocations[hitIndex]);
+            }
           }
-          CustomAmmoCategoriesLog.Log.LogWrite(" spline length:" + UnitySpline.Length + ". Min separation distance:" + sMin + "\n");
           Vector3 separationPos = Vector3.zero;
           if (UnitySpline != null) {
+            CustomAmmoCategoriesLog.Log.LogWrite(" spline length:" + UnitySpline.Length + ". Min separation distance:" + sMin + "\n");
             separationPos = interpolateSeparationPosition(UnitySpline, startPos, targetPos, sMin, sMax);
             GameObject.Destroy(UnitySpline.gameObject);
           } else {
+            CustomAmmoCategoriesLog.Log.LogWrite(" distance length:" + Vector3.Distance(startPos, targetPos) + ". Min separation distance:" + sMin + "\n");
             separationPos = interpolateSeparationPosition(hitInfo.hitPositions[hitIndex], startPos, targetPos, sMin, sMax);
           }
           if (separationPos != Vector3.zero) {
@@ -520,7 +523,7 @@ namespace CustAmmoCategories {
       };
       return CustomAmmoCategories.ShrapnelHitsRecord[hitInfo.attackSequenceId][hitInfo.attackGroupIndex][hitInfo.attackWeaponIndex][hitIndex];
     }
-
+    public static readonly float FragHitInfoIndicator = -9.0f;
     public static void consolidateShrapnelHitInfo(Weapon weapon, ref WeaponHitInfo hitInfo, Dictionary<string, SpreadHitInfo> shrapnellHitInfo, int projectilesPerShot, float dodgedDamage) {
       CustomAmmoCategoriesLog.Log.LogWrite("Consolidating ShrapnelHitInfo\n");
       if (CustomAmmoCategories.SpreadCache.ContainsKey(hitInfo.attackSequenceId) == false) {
@@ -544,6 +547,9 @@ namespace CustAmmoCategories {
         shrapnelCounters[sharapnelHit.Key] = 0f;
         shrapnelAdds[sharapnelHit.Key] = (float)sharapnelHit.Value.hitInfo.numberOfShots;
         shrapnelIndexes[sharapnelHit.Key] = 0;
+        for(int hi=0;hi< sharapnelHit.Value.hitInfo.dodgeRolls.Length; ++hi) {
+          shrapnellHitInfo[sharapnelHit.Key].hitInfo.dodgeRolls[hi] = CustomAmmoCategories.FragHitInfoIndicator;
+        }
       }
       foreach (var sharapnelHit in shrapnellHitInfo) {
         shrapnelAdds[sharapnelHit.Key] /= (float)longestArrayCount;
@@ -903,7 +909,7 @@ namespace CustomAmmoCategoriesPatches {
       foreach (var weaponsGroup in sortedWeapons) {
         foreach (var weapon in weaponsGroup) {
           //ExtWeaponDef extWeapon = CustomAmmoCategories.getExtWeaponDef(weapon.defId);
-          if (weapon.HasShells()) {
+          if (weapon.HasShells()||weapon.DamagePerPallet()) {
             CustomAmmoCategoriesLog.Log.LogWrite("GenerateRandomCache " + weapon.defId + " tie to ClusterRandomCache true\n");
             _isClustered[weapon.defId] = true;
           }

@@ -47,6 +47,7 @@ namespace CustAmmoCategories {
     public float AOERange { get; set; }
     public float AOEDamage { get; set; }
     public float AOEHeatDamage { get; set; }
+    public float AOEInstability { get; set; }
     public TripleBoolean AlwaysIndirectVisuals { get; set; }
     public string IFFDef { get; set; }
     public string LongVFXOnImpact { get; set; }
@@ -86,6 +87,7 @@ namespace CustAmmoCategories {
     public TripleBoolean FireOnSuccessHit { get; set; }
     public TripleBoolean IsAMS { get; set; }
     public TripleBoolean IsAAMS { get; set; }
+    public TripleBoolean BallisticDamagePerPallet { get; set; }
     public ExtAmmunitionDef() {
       AccuracyModifier = 0;
       DirectFireModifier = 0;
@@ -117,6 +119,7 @@ namespace CustAmmoCategories {
       AOERange = 0;
       AOEDamage = 0;
       AOEHeatDamage = 0;
+      AOEInstability = 0f;
       SpreadRange = 0;
       IndirectFireCapable = TripleBoolean.NotSet;
       AlwaysIndirectVisuals = TripleBoolean.NotSet;
@@ -161,6 +164,7 @@ namespace CustAmmoCategories {
       ClearMineFieldRadius = 0;
       IsAMS = TripleBoolean.NotSet;
       IsAAMS = TripleBoolean.NotSet;
+      BallisticDamagePerPallet = TripleBoolean.NotSet;
     }
   }
 }
@@ -251,6 +255,10 @@ namespace CustomAmmoCategoriesPatches {
       if (defTemp["MineFieldDamage"] != null) {
         extAmmoDef.MineFieldDamage = (float)defTemp["MineFieldDamage"];
         defTemp.Remove("MineFieldDamage");
+      }
+      if (defTemp["BallisticDamagePerPallet"] != null) {
+        extAmmoDef.BallisticDamagePerPallet = ((bool)defTemp["BallisticDamagePerPallet"] == true) ? TripleBoolean.True : TripleBoolean.False;
+        defTemp.Remove("BallisticDamagePerPallet");
       }
       if (defTemp["AdditionalImpactVFXScaleX"] != null) {
         extAmmoDef.AdditionalImpactVFXScaleX = (float)defTemp["AdditionalImpactVFXScaleX"];
@@ -397,6 +405,10 @@ namespace CustomAmmoCategoriesPatches {
       if (defTemp["AOEHeatDamage"] != null) {
         extAmmoDef.AOEHeatDamage = (float)defTemp["AOEHeatDamage"];
         defTemp.Remove("AOEHeatDamage");
+      }
+      if (defTemp["AOEInstability"] != null) {
+        extAmmoDef.AOEInstability = (float)defTemp["AOEInstability"];
+        defTemp.Remove("AOEInstability");
       }
       if (defTemp["AMSHitChance"] != null) {
         extAmmoDef.AMSHitChance = (float)defTemp["AMSHitChance"];

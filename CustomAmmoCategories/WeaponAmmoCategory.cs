@@ -7,6 +7,7 @@ using BattleTech;
 using Harmony;
 using BattleTech.UI;
 using UnityEngine;
+using CustomAmmoCategoriesLog;
 
 namespace CustAmmoCategories {
   public static partial class CustomAmmoCategories {
@@ -209,11 +210,17 @@ namespace CustomAmmoCategoriesPatches {
     }
 
     private static int ShotsWhenFiredDisplayOverider(Weapon weapon) {
-      if (weapon.weaponDef.ComponentTags.Contains("wr-clustered_shots") || (CustomAmmoCategories.getWeaponDisabledClustering(weapon) == false)) {
-        return weapon.ShotsWhenFired * weapon.ProjectilesPerShot;
-      } else {
-        return weapon.ShotsWhenFired;
+      Log.LogWrite("ShotsWhenFiredDisplayOverider "+weapon.UIName+"\n");
+      int result = weapon.ShotsWhenFired;
+      if (weapon.isImprovedBallistic() == false) {
+        if (weapon.weaponDef.ComponentTags.Contains("wr-clustered_shots")) {
+          result *= weapon.ProjectilesPerShot;
+        } else
+        if (CustomAmmoCategories.getWeaponDisabledClustering(weapon) == false) {
+          result *= weapon.ProjectilesPerShot;
+        }
       }
+      return result;
     }
   }
   [HarmonyPatch(typeof(CombatHUDWeaponSlot))]

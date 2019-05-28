@@ -22,6 +22,16 @@ namespace CustAmmoCategories {
       }
       return false;
     }
+    public static bool DamagePerPallet(this Weapon weapon) {
+      if (weapon.HasShells() == true) { return false; };
+      ExtWeaponDef extWeapon = weapon.exDef();
+      WeaponMode mode = weapon.mode();
+      ExtAmmunitionDef ammo = weapon.ammo();
+      if (mode.BallisticDamagePerPallet != TripleBoolean.NotSet) { return mode.BallisticDamagePerPallet == TripleBoolean.True; }
+      if (ammo.BallisticDamagePerPallet != TripleBoolean.NotSet) { return ammo.BallisticDamagePerPallet == TripleBoolean.True; }
+      if (extWeapon.BallisticDamagePerPallet != TripleBoolean.NotSet) { return extWeapon.BallisticDamagePerPallet == TripleBoolean.True; }
+      return false;
+    }
   }
   public class MultiShotBallisticEffect : CopyAbleWeaponEffect {
     private List<MultiShotBulletEffect> bullets = new List<MultiShotBulletEffect>();
@@ -90,7 +100,11 @@ namespace CustAmmoCategories {
       this.rate = 1f / this.shotDelay;
       this.ClearBullets();
       int bulletsCount = this.hitInfo.numberOfShots;
-      if (this.weapon.HasShells() == false) { bulletsCount *= weapon.ProjectilesPerShot; };
+      if (this.weapon.HasShells() == false) {
+        if (this.weapon.DamagePerPallet() == false) {
+          bulletsCount *= weapon.ProjectilesPerShot;
+        }
+      };
       for (int index = 0; index < bulletsCount; ++index) {
         GameObject gameObject = this.Combat.DataManager.PooledInstantiate(this.bulletPrefab.name, BattleTechResourceType.Prefab, new Vector3?(), new Quaternion?(), (Transform)null);
         if ((UnityEngine.Object)gameObject == (UnityEngine.Object)null) {
@@ -172,15 +186,19 @@ namespace CustAmmoCategories {
       if (this.currentBullet < 0 || this.currentBullet >= this.bullets.Count) { return; };
       this.PlayMuzzleFlash();
       bool shells = this.weapon.HasShells();
+      bool dmgPerBullet = this.weapon.DamagePerPallet();
       int bulletsPerShot = shells ? 1 : weapon.ProjectilesPerShot;
-
       for (int index = 0; index < bulletsPerShot; ++index) {
+        if (this.currentBullet >= this.bullets.Count) { break; };
         MultiShotBulletEffect bullet = this.bullets[this.currentBullet];
         bullet.bulletIdx = this.currentBullet;
-        bullet.Fire(this.hitInfo, this.bulletHitIndex, 0, index >= (bulletsPerShot - 1));
+        bool prime = index >= (bulletsPerShot - 1);
+        if (dmgPerBullet == true) { prime = true; };
+        bullet.Fire(this.hitInfo, this.bulletHitIndex, 0, prime);
         ++this.currentBullet;
+        if (dmgPerBullet == true) { ++this.bulletHitIndex; };
       }
-      ++this.bulletHitIndex;
+      if (dmgPerBullet == false) { ++this.bulletHitIndex; };
       string empty = string.Empty;
       string eventName = this.currentBullet != 0 ? (this.currentBullet >= this.bullets.Count ? this.middleShotSFX : this.lastShotSFX) : this.firstShotSFX;
       if (!string.IsNullOrEmpty(eventName)) {

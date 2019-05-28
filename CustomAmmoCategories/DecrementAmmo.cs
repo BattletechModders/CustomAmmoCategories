@@ -8,11 +8,14 @@ using BattleTech.AttackDirectorHelpers;
 using System.Reflection;
 using CustAmmoCategories;
 using UnityEngine;
+using CustomAmmoCategoriesLog;
 
 namespace CustAmmoCategories {
   public static partial class CustomAmmoCategories {
     public static bool getWeaponDisabledClustering(Weapon weapon) {
       ExtWeaponDef extWeapon = CustomAmmoCategories.getExtWeaponDef(weapon.defId);
+      if (weapon.HasShells() == true) { return true; };
+      if (weapon.DamagePerPallet() == true) { return false; }
       return extWeapon.DisableClustering == TripleBoolean.True;
     }
     public static void ReturnNoFireHeat(Weapon weapon, int stackItemUID, int numSuccesHits) {
@@ -40,13 +43,24 @@ namespace CustAmmoCategories {
       }
       CustomAmmoCategoriesLog.Log.LogWrite("Weapon.DecrementAmmo " + instance.UIName + " real fire count:" + StreakHitCount + "\n");
       int result = 0;
-      if ((CustomAmmoCategories.getWeaponCustomAmmoCategory(instance).Index == CustomAmmoCategories.NotSetCustomAmmoCategoty.Index) || (instance.parent != null && instance.parent is Turret)) {
+      bool noAmmoUsing = false;
+      if (CustomAmmoCategories.getWeaponCustomAmmoCategory(instance).Index == CustomAmmoCategories.NotSetCustomAmmoCategoty.Index) { noAmmoUsing = true; };
+      if(instance.parent != null){
+        if(instance.parent is Turret) {
+          if (instance.parent.DisplayName.Contains("Hardened")) { //TODO: Check localization
+            Log.LogWrite(" Hardened turret detected\n");
+          } else {
+            noAmmoUsing = true;
+          }
+        }
+      }
+      if (noAmmoUsing) {
         if (instance.weaponDef.ComponentTags.Contains("wr-clustered_shots") || CustomAmmoCategories.getWeaponDisabledClustering(instance)) {
           result = shotsWhenFired;
         } else {
           result = shotsWhenFired * instance.ProjectilesPerShot;
         }
-        CustomAmmoCategoriesLog.Log.LogWrite("  weapon has no ammo (energy or turret) " + instance.UIName + "\n");
+        Log.LogWrite("  weapon has no ammo (energy or turret) " + instance.UIName + "\n");
         return result;
       }
       int modValue;

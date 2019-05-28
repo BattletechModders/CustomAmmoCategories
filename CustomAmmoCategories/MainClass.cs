@@ -295,7 +295,7 @@ namespace CustomAmmoCategoriesPatches {
       CustomAmmoCategories.CycleAmmo(weapon,true);*/
     }
   }
-  [HarmonyPatch(typeof(CombatHUDWeaponSlot))]
+  /*[HarmonyPatch(typeof(CombatHUDWeaponSlot))]
   [HarmonyPatch("RefreshDisplayedWeapon")]
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { typeof(ICombatant) })]
@@ -314,7 +314,7 @@ namespace CustomAmmoCategoriesPatches {
         return weapon.ShotsWhenFired;
       }
     }
-  }
+  }*/
 
   [HarmonyPatch(typeof(CombatGameState))]
   [HarmonyPatch("RebuildAllLists")]
@@ -1341,7 +1341,11 @@ namespace CustAmmoCategories {
     public List<string> AdditinalAssets { get; set; }
     public bool DontShowNotDangerouceJammMessages { get; set; }
     public List<string> NoForestBiomes { get; set; }
-    public Dictionary<string, int> BurningDurationBiomeMuilt { get; set; }
+    public Dictionary<string, float> ForestBurningDurationBiomeMult { get; set; }
+    public Dictionary<string, float> WeaponBurningDurationBiomeMult { get; set; }
+    public Dictionary<string, float> ForestBurningStrengthBiomeMult { get; set; }
+    public Dictionary<string, float> WeaponBurningStrengthBiomeMult { get; set; }
+    public Dictionary<string, float> LitFireChanceBiomeMult { get; set; }
     public Dictionary<string, float> MineFieldPathingMods { get; set; }
     public int JumpLandingMineAttractRadius { get; set; }
     public int AttackSequenceMaxLength { get; set; }
@@ -1389,7 +1393,11 @@ namespace CustAmmoCategories {
       AdditinalAssets = new List<string>();
       DontShowNotDangerouceJammMessages = false;
       NoForestBiomes = new List<string>();
-      BurningDurationBiomeMuilt = new Dictionary<string, int>();
+      ForestBurningDurationBiomeMult = new Dictionary<string, float>();
+      WeaponBurningDurationBiomeMult = new Dictionary<string, float>();
+      ForestBurningStrengthBiomeMult = new Dictionary<string, float>();
+      WeaponBurningStrengthBiomeMult = new Dictionary<string, float>();
+      LitFireChanceBiomeMult = new Dictionary<string, float>();
       MineFieldPathingMods = new Dictionary<string, float>();
       JumpLandingMineAttractRadius = 2;
       BurnedTrees = new BurnedTreesSettings();
