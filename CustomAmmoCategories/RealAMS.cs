@@ -405,7 +405,9 @@ namespace CustAmmoCategories {
       cachedCurve.target = combatantByGuid;
       int hitLocation = hitInfo.hitLocations[hitIndex];
       if (combatantByGuid != null) {
-        cachedCurve.endPos = combatantByGuid.GetImpactPosition(weapon.weaponRep.parentCombatant as AbstractActor, cachedCurve.startPos, weapon, ref hitLocation);
+        string secondaryTargetId = (string)null;
+        int secondaryHitLocation = 0;
+        cachedCurve.endPos = combatantByGuid.GetImpactPosition(weapon.weaponRep.parentCombatant as AbstractActor, cachedCurve.startPos, weapon, ref hitLocation, ref hitInfo.attackDirections[hitIndex], ref secondaryTargetId, ref secondaryHitLocation);
         hitInfo.hitPositions[hitIndex] = cachedCurve.endPos;
       } else {
         cachedCurve.endPos = hitInfo.hitPositions[hitIndex];
@@ -497,9 +499,9 @@ namespace CustAmmoCategories {
           targetsGUIDs.Add(missile.target.GUID);
         }
       }
-      if (targetsGUIDs.Contains(instance.target.GUID) == false) {
-        targetsList.Add(instance.target);
-        targetsGUIDs.Add(instance.target.GUID);
+      if (targetsGUIDs.Contains(instance.chosenTarget.GUID) == false) {
+        targetsList.Add(instance.chosenTarget);
+        targetsGUIDs.Add(instance.chosenTarget.GUID);
       }
       Log.LogWrite("AMS list:\n");
       foreach (ICombatant target in targetsList) {
@@ -723,7 +725,7 @@ namespace CustAmmoCategories {
       if (CustomAmmoCategories.amsWeapons.ContainsKey(key) == true) { return CustomAmmoCategories.amsWeapons[key]; };
       return null;
     }
-    public static void AMSFire(WeaponEffect weaponEffect, Vector3 target) {
+    /*public static void AMSFire(WeaponEffect weaponEffect, Vector3 target) {
       WeaponHitInfo amsHit = new WeaponHitInfo(-1, -1, -1, -1, string.Empty, string.Empty, -1, new float[0] { }, null, null, null, null, null, null, AttackDirection.None, Vector2.zero
           , new Vector3[1] { target });
       BallisticEffect AMSBallistic = weaponEffect as BallisticEffect;
@@ -742,7 +744,7 @@ namespace CustAmmoCategories {
         CustomAmmoCategoriesLog.Log.LogWrite("AMS laser fire x:" + target.x + " y:" + target.y + " x:" + target.z + "\n");
         AMSLaserEffect.Fire(amsHit, -1, 0);
       }
-    }
+    }*/
     public static void FireNextAMSBullet(BallisticEffect instance, WeaponHitInfo amsHit) {
       List<BulletEffect> bullets = (List<BulletEffect>)typeof(BallisticEffect).GetField("bullets", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(instance);
       int currentBullet = (int)typeof(BallisticEffect).GetField("currentBullet", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(instance);
@@ -1281,7 +1283,7 @@ namespace CustomAmmoCategoriesPatches {
         if (attackSequence == null) {
           return true;
         }
-        ICombatant actor = attackSequence.target;
+        ICombatant actor = attackSequence.chosenTarget;
         HashSet<Weapon> AMSs = new HashSet<Weapon>();
         if (CustomAmmoCategories.MissileCurveCache != null) {
           if (CustomAmmoCategories.MissileCurveCache.ContainsKey(sequenceId)) {

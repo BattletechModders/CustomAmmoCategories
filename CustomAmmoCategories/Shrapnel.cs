@@ -45,8 +45,9 @@ namespace CustAmmoCategories {
       this.hitInfo.attackSequenceId = hInfo.attackSequenceId;
       this.hitInfo.attackGroupIndex = hInfo.attackGroupIndex;
       this.hitInfo.attackWeaponIndex = hInfo.attackWeaponIndex;
-      this.hitInfo.attackDirection = hInfo.attackDirection;
-      this.hitInfo.attackDirectionVector = hInfo.attackDirectionVector;
+      this.hitInfo.attackDirections = hInfo.attackDirections;
+      this.hitInfo.secondaryTargetIds = hInfo.secondaryTargetIds;
+      this.hitInfo.secondaryHitLocations = hInfo.secondaryHitLocations;
       this.hitInfo.toHitRolls = new float[hitsCount];
       this.hitInfo.locationRolls = new float[hitsCount];
       this.hitInfo.dodgeRolls = new float[hitsCount];
@@ -55,6 +56,9 @@ namespace CustAmmoCategories {
       this.hitInfo.hitPositions = new Vector3[hitsCount];
       this.hitInfo.hitVariance = new int[hitsCount];
       this.hitInfo.hitQualities = new AttackImpactQuality[hitsCount];
+      this.hitInfo.secondaryHitLocations = new int[hitsCount];
+      this.hitInfo.secondaryTargetIds = new string[hitsCount];
+      this.hitInfo.attackDirections = new AttackDirection[hitsCount];
       for (int t = 0; t < hitsCount; ++t) {
         this.hitInfo.toHitRolls[t] = hInfo.toHitRolls[hHitIndex + t];
         this.hitInfo.locationRolls[t] = hInfo.locationRolls[hHitIndex + t];
@@ -64,6 +68,9 @@ namespace CustAmmoCategories {
         this.hitInfo.hitPositions[t] = hInfo.hitPositions[hHitIndex + t];
         this.hitInfo.hitVariance[t] = hInfo.hitVariance[hHitIndex + t];
         this.hitInfo.hitQualities[t] = hInfo.hitQualities[hHitIndex + t];
+        this.hitInfo.secondaryHitLocations[t] = 0;
+        this.hitInfo.secondaryTargetIds[t] = null;
+        this.hitInfo.attackDirections[t] = hInfo.attackDirections[hHitIndex + t];
       }
       shellsSubEffect = null;// CustomAmmoCategories.popWeaponShellsEffect(weapon);
                              //if (shellsSubEffect != null) {
@@ -562,6 +569,9 @@ namespace CustAmmoCategories {
       Vector3[] oldhitPositions = hitInfo.hitPositions;
       int[] oldhitVariance = hitInfo.hitVariance;
       AttackImpactQuality[] oldhitQualities = hitInfo.hitQualities;
+      string[] oldsecondaryTargetIds = hitInfo.secondaryTargetIds;
+      int[] oldsecondaryHitLocations = hitInfo.secondaryHitLocations;
+      AttackDirection[] oldattackDirections = hitInfo.attackDirections;
 
       hitInfo.toHitRolls = new float[consolidateHitsCount];
       hitInfo.locationRolls = new float[consolidateHitsCount];
@@ -571,6 +581,9 @@ namespace CustAmmoCategories {
       hitInfo.hitPositions = new Vector3[consolidateHitsCount];
       hitInfo.hitVariance = new int[consolidateHitsCount];
       hitInfo.hitQualities = new AttackImpactQuality[consolidateHitsCount];
+      hitInfo.secondaryTargetIds = new string[consolidateHitsCount];
+      hitInfo.secondaryHitLocations = new int[consolidateHitsCount];
+      hitInfo.attackDirections = new AttackDirection[consolidateHitsCount];
       CustomAmmoCategoriesLog.Log.LogWrite(" new hits count:" + consolidateHitsCount + "\n");
       oldtoHitRolls.CopyTo(hitInfo.toHitRolls, 0);
       oldlocationRolls.CopyTo(hitInfo.locationRolls, 0);
@@ -580,6 +593,9 @@ namespace CustAmmoCategories {
       oldhitPositions.CopyTo(hitInfo.hitPositions, 0);
       oldhitVariance.CopyTo(hitInfo.hitVariance, 0);
       oldhitQualities.CopyTo(hitInfo.hitQualities, 0);
+      oldsecondaryTargetIds.CopyTo(hitInfo.secondaryTargetIds, 0);
+      oldsecondaryHitLocations.CopyTo(hitInfo.secondaryHitLocations, 0);
+      oldattackDirections.CopyTo(hitInfo.attackDirections, 0);
       int shrpnelHitIndex = hitInfo.numberOfShots;
       int hitIndex = hitInfo.numberOfShots;
       int realHits = hitInfo.numberOfShots;
@@ -605,6 +621,10 @@ namespace CustAmmoCategories {
               hitInfo.hitPositions[hitIndex] = shrapnellHitInfo[shrapnelAdd.Key].hitInfo.hitPositions[internalIndex];
               hitInfo.hitVariance[hitIndex] = shrapnellHitInfo[shrapnelAdd.Key].hitInfo.hitVariance[internalIndex];
               hitInfo.hitQualities[hitIndex] = shrapnellHitInfo[shrapnelAdd.Key].hitInfo.hitQualities[internalIndex];
+              hitInfo.secondaryHitLocations[hitIndex] = 0;
+              hitInfo.secondaryTargetIds[hitIndex] = null;
+              hitInfo.attackDirections[hitIndex] = shrapnellHitInfo[shrapnelAdd.Key].hitInfo.attackDirections[internalIndex]; ;
+
               if (CustomAmmoCategories.SpreadCache[hitInfo.attackSequenceId][hitInfo.attackGroupIndex][hitInfo.attackWeaponIndex].ContainsKey(hitIndex) == false) {
                 CustomAmmoCategories.SpreadCache[hitInfo.attackSequenceId][hitInfo.attackGroupIndex][hitInfo.attackWeaponIndex].Add(hitIndex, new SpreadHitRecord(shrapnellHitInfo[shrapnelAdd.Key].targetGUID, shrapnellHitInfo[shrapnelAdd.Key].hitInfo, internalIndex, dodgedDamage));
               }
@@ -690,11 +710,11 @@ namespace CustAmmoCategories {
         float spreadRNDMax = spreadDistance;
         List<float> spreadBorders = new List<float>();
         spreadBorders.Add(spreadRNDMax);
-        ICombatant currentTarget = instance.target;
+        ICombatant currentTarget = instance.chosenTarget;
         SpreadHitRecord spreadHitRecord = CustomAmmoCategories.getSpreadCache(hitInfo, hitIndex);
         if (spreadHitRecord != null) {
           currentTarget = instance.Director.Combat.FindCombatantByGUID(spreadHitRecord.targetGUID);
-          if (currentTarget == null) { currentTarget = instance.target; };
+          if (currentTarget == null) { currentTarget = instance.chosenTarget; };
         }
         spreadCombatants.Add(currentTarget);
         if (spreadCounts.ContainsKey(currentTarget.GUID) == false) { spreadCounts[currentTarget.GUID] = 0; };
@@ -746,6 +766,9 @@ namespace CustAmmoCategories {
         ShrapnellHitInfo.hitPositions = new Vector3[ShrapnellHitInfo.numberOfShots];
         ShrapnellHitInfo.hitVariance = new int[ShrapnellHitInfo.numberOfShots];
         ShrapnellHitInfo.hitQualities = new AttackImpactQuality[ShrapnellHitInfo.numberOfShots];
+        ShrapnellHitInfo.secondaryTargetIds = new string[ShrapnellHitInfo.numberOfShots];
+        ShrapnellHitInfo.secondaryHitLocations = new int[ShrapnellHitInfo.numberOfShots];
+        ShrapnellHitInfo.attackDirections = new AttackDirection[ShrapnellHitInfo.numberOfShots];
         result.Add(combatant.GUID, new SpreadHitInfo(combatant.GUID, ShrapnellHitInfo, dogleDamage));
       }
       return result;

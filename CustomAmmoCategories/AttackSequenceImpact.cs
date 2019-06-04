@@ -7,6 +7,7 @@ using BattleTech;
 using Harmony;
 using UnityEngine;
 using System.Reflection;
+using CustomAmmoCategoriesLog;
 
 //This part of code is modified code from original WeaponRealizer by Joel Meador under MIT LICENSE
 
@@ -289,12 +290,14 @@ namespace CustomAmmoCategoriesPatches {
   public static class AbstractActor_GetAdjustedDamage {
     [HarmonyPriority(Priority.Last)]
     public static void Postfix(AbstractActor __instance, float incomingDamage, WeaponCategory category, DesignMaskDef designMask, LineOfFireLevel lofLevel, bool doLogging, ref float __result) {
-      CustomAmmoCategoriesLog.Log.LogWrite("Checking GetAdjustedDamage incDmg:" + incomingDamage + "\n");
+      //CustomAmmoCategoriesLog.Log.LogWrite("Checking GetAdjustedDamage incDmg:" + incomingDamage + "\n");
       if (float.IsNaN(__result)) {
+        CustomAmmoCategoriesLog.Log.LogWrite("Checking GetAdjustedDamage incDmg:" + incomingDamage + "\n");
         CustomAmmoCategoriesLog.Log.LogWrite(" but outdoing result NaN - reparing\n");
         __result = 0.1f;
       }
       if (float.IsInfinity(__result)) {
+        CustomAmmoCategoriesLog.Log.LogWrite("Checking GetAdjustedDamage incDmg:" + incomingDamage + "\n");
         CustomAmmoCategoriesLog.Log.LogWrite(" but outdoing result Infinity - reparing\n");
         __result = 0.1f;
       }
@@ -327,7 +330,7 @@ namespace CustomAmmoCategoriesPatches {
       }
       CustomAmmoCategoriesLog.Log.LogWrite("\n");
       CustomAmmoCategoriesLog.Log.LogWrite("  attacker = " + __instance.attacker.DisplayName + "\n");
-      CustomAmmoCategoriesLog.Log.LogWrite("  target = " + __instance.target.DisplayName + "\n");
+      CustomAmmoCategoriesLog.Log.LogWrite("  chosenTarget = " + __instance.chosenTarget.DisplayName + "\n");
       CustomAmmoCategoriesLog.Log.LogWrite("  weapon = " + weapon.UIName + "\n");
       CustomAmmoCategoriesLog.Log.LogWrite("  damage = " + rawDamage + "\n");
       CustomAmmoCategoriesLog.Log.LogWrite("  isAOE = " + (impactMessage.hitInfo.dodgeRolls[impactMessage.hitIndex] == -10f) + "\n");
@@ -346,27 +349,27 @@ namespace CustomAmmoCategoriesPatches {
             DynamicMapHelper.applyCleanMinefield(weapon, impactMessage.hitInfo.hitPositions[impactMessage.hitIndex]);
           } else
           if (weapon.FireOnSuccessHit()&&(hitLocation != 0)) {
-            DynamicMapHelper.applyImpactBurn(weapon, __instance.target.CurrentPosition);
-            DynamicMapHelper.applyImpactTempMask(weapon, __instance.target.CurrentPosition);
-            DynamicMapHelper.applyCleanMinefield(weapon, __instance.target.CurrentPosition);
+            DynamicMapHelper.applyImpactBurn(weapon, __instance.chosenTarget.CurrentPosition);
+            DynamicMapHelper.applyImpactTempMask(weapon, __instance.chosenTarget.CurrentPosition);
+            DynamicMapHelper.applyCleanMinefield(weapon, __instance.chosenTarget.CurrentPosition);
           }
           //DynamicTreesHelper.clearTrees();
         } else {
-          CustomAmmoCategoriesLog.Log.LogWrite("Missile intercepted. No additional impact. No minefield.\n");
+          Log.LogWrite("Missile intercepted. No additional impact. No minefield.\n");
         }
-        if (realDamage >= 1.0f) {
+        if (realDamage >= 1.0f) {          
           if (CustomAmmoCategories.getWeaponDamageVariance(weapon) > CustomAmmoCategories.Epsilon) {
             realDamage = CustomAmmoCategories.WeaponDamageSimpleVariance(weapon, rawDamage);
           }
           if (CustomAmmoCategories.getWeaponDistantVariance(weapon) > CustomAmmoCategories.Epsilon) {
             if (CustomAmmoCategories.getWeaponDistantVarianceReversed(weapon)) {
-              realDamage = CustomAmmoCategories.WeaponDamageDistance(__instance.attacker, __instance.target, weapon, realDamage, rawDamage);
+              realDamage = CustomAmmoCategories.WeaponDamageDistance(__instance.attacker, __instance.chosenTarget, weapon, realDamage, rawDamage);
             } else {
-              realDamage = CustomAmmoCategories.WeaponDamageRevDistance(__instance.attacker, __instance.target, weapon, realDamage, rawDamage);
+              realDamage = CustomAmmoCategories.WeaponDamageRevDistance(__instance.attacker, __instance.chosenTarget, weapon, realDamage, rawDamage);
             }
           }
           if ((hitLocation != 0) && (hitLocation != 65536)) {
-            float CurArmor = __instance.target.ArmorForLocation(hitLocation);
+            float CurArmor = __instance.chosenTarget.ArmorForLocation(hitLocation);
             CustomAmmoCategoriesLog.Log.LogWrite("  location armor = " + CurArmor + "\n");
             float ArmorDmgMuil = CustomAmmoCategories.getWeaponArmorDmgMult(weapon);
             if (CurArmor / ArmorDmgMuil > realDamage) {
@@ -379,9 +382,22 @@ namespace CustomAmmoCategoriesPatches {
               realDamage = CurArmor + ISDdamagePart;
             }
           }
+          if (realDamage >= 1.0f) {
+            Log.LogWrite("Applying WeaponRealizer variance. Current damage: " + realDamage + "\n");
+            realDamage = WeaponRealizer.Calculator.ApplyDamageModifiers(__instance.attacker, __instance.chosenTarget, weapon, realDamage);
+            Log.LogWrite(" damage after WeaponRealizer variance: " + realDamage + "\n");
+          }
         } else {
           CustomAmmoCategoriesLog.Log.LogWrite("WARNING! raw damage is less than 1.0f. Variance calculation is forbidden with this damage value\n", true);
         }
+      }
+      if (float.IsNaN(realDamage)) {
+        CustomAmmoCategoriesLog.Log.LogWrite("WARNING! real damage is NaN. That is sad. Rounding to 0.1\n", true);
+        realDamage = 0.1f;
+      }
+      if (float.IsInfinity(realDamage)) {
+        CustomAmmoCategoriesLog.Log.LogWrite("WARNING! real damage is positive infinity. That is sad. Rounding to 0.1\n", true);
+        realDamage = 0.1f;
       }
       if (realDamage < CustomAmmoCategories.Epsilon) {
         CustomAmmoCategoriesLog.Log.LogWrite("WARNING! real damage is less than epsilon. May be negative. That is sad. Rounding to 0.1\n", true);

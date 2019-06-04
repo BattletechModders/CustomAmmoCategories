@@ -76,8 +76,9 @@ namespace CustAmmoCategories {
       hitInfo.hitPositions = new Vector3[dmg.Count];
       hitInfo.hitVariance = new int[dmg.Count];
       hitInfo.hitQualities = new AttackImpactQuality[dmg.Count];
-      hitInfo.attackDirection = instance.Director.Combat.HitLocation.GetAttackDirection(attackPos, combatant);
-      hitInfo.attackDirectionVector = instance.Director.Combat.HitLocation.GetAttackDirectionVector(attackPos, combatant);
+      hitInfo.secondaryTargetIds = new string[dmg.Count];
+      hitInfo.secondaryHitLocations = new int[dmg.Count];
+      hitInfo.attackDirections = new AttackDirection[dmg.Count];
       heatDamage = heat;
       this.stableDamage = stbl;
       int hitIndex = 0;
@@ -85,13 +86,17 @@ namespace CustAmmoCategories {
       foreach (var dmgrec in dmg) {
         CustomAmmoCategoriesLog.Log.LogWrite("  creating hit record " + hitIndex + "\n");
         int Location = dmgrec.Key;
-        Vector3 hitPosition = combatant.GetImpactPosition(attacker, attackPos, weapon, ref Location);
+        string secTarget = string.Empty;
+        int secLocation = 0;
+        Vector3 hitPosition = combatant.GetImpactPosition(attacker, attackPos, weapon, ref Location, ref hitInfo.attackDirections[hitIndex], ref secTarget, ref secLocation);
         CustomAmmoCategoriesLog.Log.LogWrite("  impact position generated\n");
         damageList.Add(new AOEDamageRecord(Location, dmgrec.Value, hitPosition));
         hitInfo.hitLocations[hitIndex] = Location;
         hitInfo.hitPositions[hitIndex] = hitPosition;
         hitInfo.dodgeRolls[hitIndex] = CustomAmmoCategories.AOEHitIndicator;
         hitInfo.hitQualities[hitIndex] = instance.Director.Combat.ToHit.GetBlowQuality(attacker, attackPos, weapon, combatant, MeleeAttackType.NotSet, false);
+        hitInfo.secondaryTargetIds[hitIndex] = null;
+        hitInfo.secondaryHitLocations[hitIndex] = 0;
         ++hitIndex;
       }
     }
@@ -172,13 +177,13 @@ namespace CustAmmoCategories {
       List<float> spreadBorders = new List<float>();
       List<ICombatant> spreadCombatants = new List<ICombatant>();
       spreadBorders.Add(spreadRNDMax);
-      spreadCombatants.Add(instance.target);
+      spreadCombatants.Add(instance.chosenTarget);
       Dictionary<string, int> spreadCounts = new Dictionary<string, int>();
-      spreadCounts[instance.target.GUID] = 0;
+      spreadCounts[instance.chosenTarget.GUID] = 0;
       foreach (ICombatant combatant in combatants) {
         if (combatant.IsDead) { continue; };
-        if (combatant.GUID == instance.target.GUID) { continue; }
-        float distance = Vector3.Distance(combatant.CurrentPosition,instance.target.CurrentPosition);
+        if (combatant.GUID == instance.chosenTarget.GUID) { continue; }
+        float distance = Vector3.Distance(combatant.CurrentPosition,instance.chosenTarget.CurrentPosition);
         if (distance < spreadDistance) {
           spreadRNDMax += (spreadDistance - distance);
           spreadBorders.Add(spreadRNDMax);
@@ -221,6 +226,9 @@ namespace CustAmmoCategories {
         hitInfo.hitPositions = new Vector3[hitInfo.numberOfShots];
         hitInfo.hitVariance = new int[hitInfo.numberOfShots];
         hitInfo.hitQualities = new AttackImpactQuality[hitInfo.numberOfShots];
+        hitInfo.secondaryTargetIds = new string[hitInfo.numberOfShots];
+        hitInfo.secondaryHitLocations = new int[hitInfo.numberOfShots];
+        hitInfo.attackDirections = new AttackDirection[hitInfo.numberOfShots];
         result.Add(new SpreadHitInfo(combatant.GUID,hitInfo, dodgedDamage));
       }
       if(spreadSumm != numberOfShots) {
@@ -257,6 +265,9 @@ namespace CustAmmoCategories {
             hitInfo.hitPositions[hitIndex] = spreadHitInfo.hitInfo.hitPositions[internalPos];
             hitInfo.hitVariance[hitIndex] = spreadHitInfo.hitInfo.hitVariance[internalPos];
             hitInfo.hitQualities[hitIndex] = spreadHitInfo.hitInfo.hitQualities[internalPos];
+            hitInfo.secondaryTargetIds[hitIndex] = null;
+            hitInfo.secondaryHitLocations[hitIndex] = 0;
+            hitInfo.attackDirections[hitIndex] = spreadHitInfo.hitInfo.attackDirections[internalPos];
             if (CustomAmmoCategories.SpreadCache[hitInfo.attackSequenceId][hitInfo.attackGroupIndex][hitInfo.attackWeaponIndex].ContainsKey(hitIndex) == false) {
               CustomAmmoCategories.SpreadCache[hitInfo.attackSequenceId][hitInfo.attackGroupIndex][hitInfo.attackWeaponIndex].Add(hitIndex, new SpreadHitRecord(spreadHitInfo.targetGUID, spreadHitInfo.hitInfo,internalPos, spreadHitInfo.dogleDamage));
             }
@@ -298,7 +309,7 @@ namespace CustAmmoCategories {
         ExtAmmunitionDef extAmmoDef = CustomAmmoCategories.findExtAmmo(CurrentAmmoId);
         Log.LogWrite(" extAmmoDef.AOECapable " + extAmmoDef.AOECapable + "\n");
         if (extAmmoDef.AOECapable != TripleBoolean.NotSet) {
-          result = (extAmmoDef.AOECapable == TripleBoolean.True);
+          return extAmmoDef.AOECapable == TripleBoolean.True;
         }
       }
       ExtWeaponDef extWeapon = CustomAmmoCategories.getExtWeaponDef(weapon.defId);
@@ -576,6 +587,9 @@ namespace CustAmmoCategories {
       int[] oldhitLocations = hitInfo.hitLocations;
       Vector3[] oldhitPositions = hitInfo.hitPositions;
       int[] oldhitVariance = hitInfo.hitVariance;
+      string[] oldsecondaryTargetIds = new string[AOEHitsCount];
+      int[] oldsecondaryHitLocations = new int[AOEHitsCount];
+      AttackDirection[] oldattackDirections = new AttackDirection[AOEHitsCount];
       AttackImpactQuality[] oldhitQualities = hitInfo.hitQualities;
 
       hitInfo.toHitRolls = new float[oldtoHitRolls.Length];
@@ -586,6 +600,9 @@ namespace CustAmmoCategories {
       hitInfo.hitPositions = new Vector3[AOEHitsCount];
       hitInfo.hitVariance = new int[AOEHitsCount];
       hitInfo.hitQualities = new AttackImpactQuality[AOEHitsCount];
+      hitInfo.secondaryTargetIds = new string[AOEHitsCount];
+      hitInfo.secondaryHitLocations = new int[AOEHitsCount];
+      hitInfo.attackDirections = new AttackDirection[AOEHitsCount];
       CustomAmmoCategoriesLog.Log.LogWrite(" new hits count:" + AOEHitsCount + "\n");
       oldtoHitRolls.CopyTo(hitInfo.toHitRolls, 0);
       oldlocationRolls.CopyTo(hitInfo.locationRolls, 0);
@@ -595,6 +612,9 @@ namespace CustAmmoCategories {
       oldhitPositions.CopyTo(hitInfo.hitPositions, 0);
       oldhitVariance.CopyTo(hitInfo.hitVariance, 0);
       oldhitQualities.CopyTo(hitInfo.hitQualities, 0);
+      oldsecondaryTargetIds.CopyTo(hitInfo.secondaryTargetIds, 0);
+      oldsecondaryHitLocations.CopyTo(hitInfo.secondaryHitLocations, 0);
+      oldattackDirections.CopyTo(hitInfo.attackDirections, 0);
       AOEHitsCount = hitInfo.numberOfShots;
       for (int index = 0; index < targetAOEHitInfo.Count; ++index) {
         //foreach (AOEHitInfo AOEInfo in targetAOEHitInfo) {
@@ -607,6 +627,9 @@ namespace CustAmmoCategories {
         targetAOEHitInfo[index].hitInfo.hitPositions.CopyTo(hitInfo.hitPositions, AOEHitsCount);
         targetAOEHitInfo[index].hitInfo.hitVariance.CopyTo(hitInfo.hitVariance, AOEHitsCount);
         targetAOEHitInfo[index].hitInfo.hitQualities.CopyTo(hitInfo.hitQualities, AOEHitsCount);
+        targetAOEHitInfo[index].hitInfo.secondaryTargetIds.CopyTo(hitInfo.secondaryTargetIds, AOEHitsCount);
+        targetAOEHitInfo[index].hitInfo.secondaryHitLocations.CopyTo(hitInfo.secondaryHitLocations, AOEHitsCount);
+        targetAOEHitInfo[index].hitInfo.attackDirections.CopyTo(hitInfo.attackDirections, AOEHitsCount);
         AOEHitsCount += targetAOEHitInfo[index].hitInfo.toHitRolls.Length;
       }
     }
@@ -693,13 +716,13 @@ namespace CustomAmmoCategoriesPatches {
     public static bool Prefix(AttackDirector.AttackSequence __instance, ref ImpactAOEState __state, ref MessageCenterMessage message) {
       AttackSequenceImpactMessage impactMessage = (AttackSequenceImpactMessage)message;
       if (impactMessage.hitInfo.attackSequenceId != __instance.id) { return true; }
-      __state = new ImpactAOEState(__instance.target, impactMessage.hitInfo);
+      __state = new ImpactAOEState(__instance.chosenTarget, impactMessage.hitInfo);
       SpreadHitRecord spreadCache = CustomAmmoCategories.getSpreadCache(impactMessage.hitInfo, impactMessage.hitIndex);
       if(spreadCache != null) {
         CustomAmmoCategoriesLog.Log.LogWrite("Spread cache found\n");
         ICombatant SpreadTarget = __instance.Director.Combat.FindCombatantByGUID(spreadCache.targetGUID);
         if (SpreadTarget != null) {
-          __instance.target = SpreadTarget;
+          __instance.chosenTarget = SpreadTarget;
         }
         CustomAmmoCategoriesLog.Log.LogWrite(" Altering internal target spread "+ spreadCache.targetGUID + " found:" + ((SpreadTarget != null)?SpreadTarget.DisplayName:"false")+"\n");
         CustomAmmoCategoriesLog.Log.LogWrite("  and position was:"+ impactMessage.hitInfo.hitPositions[impactMessage.hitIndex] + "\n");
@@ -728,7 +751,7 @@ namespace CustomAmmoCategoriesPatches {
           } else {
             ICombatant AOETarget = __instance.Director.Combat.FindCombatantByGUID(curAoEHitInfo.targetGUID);
             if (AOETarget != null) {
-              __instance.target = AOETarget;
+              __instance.chosenTarget = AOETarget;
             }
             CustomAmmoCategoriesLog.Log.LogWrite(" Altering internal target " + curAoEHitInfo.targetGUID + " found:" + ((AOETarget != null) ? AOETarget.DisplayName : "false") + "\n");
           }
@@ -745,7 +768,7 @@ namespace CustomAmmoCategoriesPatches {
       if (impactMessage.hitInfo.attackSequenceId != __instance.id) { return; }
       if (__state != null) {
         CustomAmmoCategoriesLog.Log.LogWrite("OnAttackSequenceImpact restoring original target and hit info "+__state.target.DisplayName+":"+__state.target.GUID+"\n");
-        __instance.target = __state.target;
+        __instance.chosenTarget = __state.target;
         //impactMessage.hitInfo = __state.hitInfo;
       }
     }

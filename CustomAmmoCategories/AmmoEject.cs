@@ -11,11 +11,23 @@ using UnityEngine;
 using System.Diagnostics;
 using System.Collections;
 using BattleTech.UI;
+using InControl;
 
 namespace CustAmmoCategories {
   public static partial class CustomAmmoCategories {
-    public static string EfectedThisRoundStatName = "CAC-AmmoEjected";
+    public static string EjectedThisRoundStatName = "CAC-AmmoEjected";
+    public static string EjectingNowStatName = "CAC-AmmoEjecting";
     public static Dictionary<string, bool> ActorsEjectedAmmo = new Dictionary<string, bool>();
+    public static bool isAmmoEjecting(this AbstractActor actor) {
+      if(CustomAmmoCategories.checkExistance(actor.StatCollection, CustomAmmoCategories.EjectingNowStatName) == false) { return false; }
+      return actor.StatCollection.GetStatistic(CustomAmmoCategories.EjectingNowStatName).Value<bool>();
+    }
+    public static void isAmmoEjecting(this AbstractActor actor,bool value) {
+      if (CustomAmmoCategories.checkExistance(actor.StatCollection, CustomAmmoCategories.EjectingNowStatName) == false) {
+        actor.StatCollection.AddStatistic<bool>(CustomAmmoCategories.EjectingNowStatName, false);
+      }
+      actor.StatCollection.Set<bool>(CustomAmmoCategories.EjectingNowStatName, value);
+    }
     public static void EjectAmmo(Weapon weapon, CombatHUDWeaponSlot hudSlot) {
       CustomAmmoCategoriesLog.Log.LogWrite("EjectAmmo "+weapon.defId+"\n");
       string ammoId = "";
@@ -27,14 +39,23 @@ namespace CustAmmoCategories {
       ExtAmmunitionDef extAmmo = CustomAmmoCategories.findExtAmmo(ammoId);
       if (extAmmo.AmmoCategory.Index == CustomAmmoCategories.NotSetCustomAmmoCategoty.Index) {
         CustomAmmoCategoriesLog.Log.LogWrite(" has no ammo in stat collection\n");
+        GenericPopupBuilder popup = GenericPopupBuilder.Create("AMMO EJECTION ERROR", "This weapon are not using ammo in this mode (or at all)");
+        popup.AddButton("OK", (Action)null, true, (PlayerAction)null);
+        popup.IsNestedPopupWithBuiltInFader().CancelOnEscape().Render();
         return;
       }
       if (weapon.parent == null) {
         CustomAmmoCategoriesLog.Log.LogWrite(" no parent\n");
         return;
       }
-      if (weapon.parent.DistMovedThisRound > 0.0f) {
-        CustomAmmoCategoriesLog.Log.LogWrite(" moved this round "+ weapon.parent.DistMovedThisRound + "\n");
+      CustomAmmoCategoriesLog.Log.LogWrite(" HasActivatedThisRound " + weapon.parent.HasActivatedThisRound + "\n");
+      CustomAmmoCategoriesLog.Log.LogWrite(" HasFiredThisRound " + weapon.parent.HasFiredThisRound + "\n");
+      CustomAmmoCategoriesLog.Log.LogWrite(" HasMovedThisRound " + weapon.parent.HasMovedThisRound + "\n");
+      if (weapon.parent.HasFiredThisRound || weapon.parent.HasMovedThisRound) {
+        CustomAmmoCategoriesLog.Log.LogWrite(" moved or fired this round "+ weapon.parent.DistMovedThisRound + "\n");
+        GenericPopupBuilder popup = GenericPopupBuilder.Create("AMMO EJECTION ERROR", "You can't eject ammo after moving or firing this round");
+        popup.AddButton("OK", (Action)null, true, (PlayerAction)null);
+        popup.IsNestedPopupWithBuiltInFader().CancelOnEscape().Render();
         return;
       }
       int ejectedCount = 0;
@@ -54,14 +75,17 @@ namespace CustAmmoCategories {
         weapon.parent.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(new ShowActorInfoSequence(weapon.parent, AmmoUIName + " AMMO JETTISONED", FloatieMessage.MessageNature.Buff, false)));
         CombatHUD HUD = (CombatHUD)typeof(CombatHUDWeaponSlot).GetField("HUD", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(hudSlot);
         if ((HUD.MechWarriorTray.SprintButton.IsActive) || (HUD.MechWarriorTray.JumpButton.IsActive)) {
-          HUD.MechWarriorTray.MoveButton.OnClick();
+          //weapon.parent.isAmmoEjecting(true);
+          typeof(CombatHUDActionButton).GetMethod("ExecuteClick", BindingFlags.Instance | BindingFlags.NonPublic).Invoke(HUD.MechWarriorTray.MoveButton, new object[0] { });
+          //HUD.MechWarriorTray.MoveButton.ExecuteClick();
+          //weapon.parent.isAmmoEjecting(false);
         }
         HUD.MechWarriorTray.SprintButton.DisableButton();
         HUD.MechWarriorTray.JumpButton.DisableButton();
-        if(CustomAmmoCategories.checkExistance(weapon.parent.StatCollection,CustomAmmoCategories.EfectedThisRoundStatName) == false) {
-          weapon.parent.StatCollection.AddStatistic<bool>(CustomAmmoCategories.EfectedThisRoundStatName, true);
+        if(CustomAmmoCategories.checkExistance(weapon.parent.StatCollection,CustomAmmoCategories.EjectedThisRoundStatName) == false) {
+          weapon.parent.StatCollection.AddStatistic<bool>(CustomAmmoCategories.EjectedThisRoundStatName, true);
         } else {
-          weapon.parent.StatCollection.Set<bool>(CustomAmmoCategories.EfectedThisRoundStatName, true);
+          weapon.parent.StatCollection.Set<bool>(CustomAmmoCategories.EjectedThisRoundStatName, true);
         }
       }
       CustomAmmoCategories.prosessExposion();
@@ -70,20 +94,20 @@ namespace CustAmmoCategories {
       if (CustomAmmoCategories.ActorsEjectedAmmo.ContainsKey(target.GUID)) {
         CustomAmmoCategories.ActorsEjectedAmmo[target.GUID] = false;
       }
-      if (CustomAmmoCategories.checkExistance(target.StatCollection, CustomAmmoCategories.EfectedThisRoundStatName) == false) {
-        target.StatCollection.AddStatistic<bool>(CustomAmmoCategories.EfectedThisRoundStatName, false);
+      if (CustomAmmoCategories.checkExistance(target.StatCollection, CustomAmmoCategories.EjectedThisRoundStatName) == false) {
+        target.StatCollection.AddStatistic<bool>(CustomAmmoCategories.EjectedThisRoundStatName, false);
       } else {
-        target.StatCollection.Set<bool>(CustomAmmoCategories.EfectedThisRoundStatName, false);
+        target.StatCollection.Set<bool>(CustomAmmoCategories.EjectedThisRoundStatName, false);
       }
     }
     public static bool isEjection(ICombatant target) {
       if (CustomAmmoCategories.ActorsEjectedAmmo.ContainsKey(target.GUID)) {
         return CustomAmmoCategories.ActorsEjectedAmmo[target.GUID];
       } else {
-        if (CustomAmmoCategories.checkExistance(target.StatCollection, CustomAmmoCategories.EfectedThisRoundStatName) == false) {
+        if (CustomAmmoCategories.checkExistance(target.StatCollection, CustomAmmoCategories.EjectedThisRoundStatName) == false) {
           return false;
         } else {
-          CustomAmmoCategories.ActorsEjectedAmmo[target.GUID] = target.StatCollection.GetStatistic(CustomAmmoCategories.EfectedThisRoundStatName).Value<bool>();
+          CustomAmmoCategories.ActorsEjectedAmmo[target.GUID] = target.StatCollection.GetStatistic(CustomAmmoCategories.EjectedThisRoundStatName).Value<bool>();
           return CustomAmmoCategories.ActorsEjectedAmmo[target.GUID];
         }
       }

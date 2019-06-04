@@ -297,7 +297,7 @@ namespace CustAmmoCategories {
       } else {
         var isDestroying = weapon.DamageLevel != ComponentDamageLevel.Functional;
         var damageLevel = isDestroying ? ComponentDamageLevel.Destroyed : ComponentDamageLevel.Penalized;
-        var fakeHit = new WeaponHitInfo(-1, -1, -1, -1, string.Empty, string.Empty, -1, null, null, null, null, null, null, null, AttackDirection.None, Vector2.zero, null);
+        var fakeHit = new WeaponHitInfo(-1, -1, -1, -1, string.Empty, string.Empty, -1, null, null, null, null, null, null, null, null, null, null, null);
         weapon.DamageComponent(fakeHit, damageLevel, true);
         var message = isDestroying
             ? $"{weapon.Name} misfire: Destroyed!"

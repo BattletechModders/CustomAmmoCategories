@@ -1540,7 +1540,7 @@ namespace CustAmmoCategories {
       movingDamage mDmg = MineFieldHelper.registredMovingDamage[__instance.GUID];
       MineFieldHelper.registredMovingDamage.Remove(__instance.GUID);
       if (mDmg.mineFieldDamage > CustomAmmoCategories.Epsilon) {
-        var fakeHit = new WeaponHitInfo(-1, -1, -1, -1, mDmg.weapon.parent.GUID, __instance.GUID, -1, null, null, null, null, null, null, new AttackImpactQuality[1] { AttackImpactQuality.Solid }, AttackDirection.FromArtillery, Vector2.zero, null);
+        var fakeHit = new WeaponHitInfo(-1, -1, -1, -1, mDmg.weapon.parent.GUID, __instance.GUID, -1, null, null, null, null, null, null, new AttackImpactQuality[1] { AttackImpactQuality.Solid }, new AttackDirection[1] { AttackDirection.FromArtillery }, null, null, null);
         __instance.TakeWeaponDamage(fakeHit, (int)ArmorLocation.LeftLeg, mDmg.weapon, mDmg.mineFieldDamage / 2f, 0, DamageType.DFASelf);
         __instance.TakeWeaponDamage(fakeHit, (int)ArmorLocation.RightLeg, mDmg.weapon, mDmg.mineFieldDamage / 2f, 0, DamageType.DFASelf);
         __instance.Combat.MessageCenter.PublishMessage((MessageCenterMessage)new FloatieMessage(__instance.GUID, __instance.GUID, "MINEFIELD DAMAGE " + mDmg.mineFieldDamage, FloatieMessage.MessageNature.CriticalHit));
@@ -1584,7 +1584,7 @@ namespace CustAmmoCategories {
       MineFieldHelper.registredMovingDamage.Remove(__instance.GUID);
       float damage = mDmg.mineFieldDamage + (float)mDmg.mineFieldHeat + (float)mDmg.burnHeat;
       if (damage > CustomAmmoCategories.Epsilon) {
-        var fakeHit = new WeaponHitInfo(-1, -1, -1, -1, mDmg.weapon.parent.GUID, __instance.GUID, -1, null, null, null, null, null, null, new AttackImpactQuality[1] { AttackImpactQuality.Solid }, AttackDirection.FromArtillery, Vector2.zero, null);
+        var fakeHit = new WeaponHitInfo(-1, -1, -1, -1, mDmg.weapon.parent.GUID, __instance.GUID, -1, null, null, null, null, null, null, new AttackImpactQuality[1] { AttackImpactQuality.Solid }, new AttackDirection[1] { AttackDirection.FromArtillery }, null, null, null);
         __instance.TakeWeaponDamage(fakeHit, (int)VehicleChassisLocations.Front, mDmg.weapon, damage / 4f, 0, DamageType.Combat);
         __instance.TakeWeaponDamage(fakeHit, (int)VehicleChassisLocations.Rear, mDmg.weapon, damage / 4f, 0, DamageType.Combat);
         __instance.TakeWeaponDamage(fakeHit, (int)VehicleChassisLocations.Right, mDmg.weapon, damage / 4f, 0, DamageType.Combat);
@@ -1835,7 +1835,7 @@ namespace CustAmmoCategories {
       if (damage > CustomAmmoCategories.Epsilon) {
         CustomAmmoCategoriesLog.Log.LogWrite(" taking damage:" + damage + "\n");
         damage = Mathf.Round(damage);
-        var fakeHit = new WeaponHitInfo(-1, -1, -1, -1, actor.GUID, __instance.GUID, -1, null, null, null, null, null, null, new AttackImpactQuality[1] { AttackImpactQuality.Solid }, AttackDirection.FromArtillery, Vector2.zero, null);
+        var fakeHit = new WeaponHitInfo(-1, -1, -1, -1, actor.GUID, __instance.GUID, -1, null, null, null, null, null, null, new AttackImpactQuality[1] { AttackImpactQuality.Solid }, new AttackDirection[1] { AttackDirection.FromArtillery }, null, null, null);
         __instance.TakeWeaponDamage(fakeHit, (int)VehicleChassisLocations.Front, weapon, damage / 4f, 0, DamageType.Combat);
         __instance.TakeWeaponDamage(fakeHit, (int)VehicleChassisLocations.Rear, weapon, damage / 4f, 0, DamageType.Combat);
         __instance.TakeWeaponDamage(fakeHit, (int)VehicleChassisLocations.Right, weapon, damage / 4f, 0, DamageType.Combat);
@@ -1999,7 +1999,7 @@ namespace CustomAmmoCategoriesPatches {
           if (vehicle != null) {
             float damage = (float)cell.BurningStrength;
             Weapon weapon = cell.BurningWeapon;
-            var fakeHit = new WeaponHitInfo(-1, -1, -1, -1, actor.GUID, __instance.GUID, -1, null, null, null, null, null, null, new AttackImpactQuality[1] { AttackImpactQuality.Solid }, AttackDirection.FromArtillery, Vector2.zero, null);
+            var fakeHit = new WeaponHitInfo(-1, -1, -1, -1, actor.GUID, __instance.GUID, -1, null, null, null, null, null, null, new AttackImpactQuality[1] { AttackImpactQuality.Solid }, new AttackDirection[1] { AttackDirection.FromArtillery }, null, null, null);
             __instance.TakeWeaponDamage(fakeHit, (int)VehicleChassisLocations.Front, weapon, damage / 4f, 0, DamageType.Combat);
             __instance.TakeWeaponDamage(fakeHit, (int)VehicleChassisLocations.Rear, weapon, damage / 4f, 0, DamageType.Combat);
             __instance.TakeWeaponDamage(fakeHit, (int)VehicleChassisLocations.Right, weapon, damage / 4f, 0, DamageType.Combat);

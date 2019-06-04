@@ -28,7 +28,7 @@ namespace CustomAmmoCategoriesPatches {
         AttackDirector.AttackSequence attackSequence = __instance.Combat.AttackDirector.GetAttackSequence(hitInfo.attackSequenceId);
         __instance.FlagForKnockdown();
         if (attackSequence != null) {
-          attackSequence.FlagAttackCausedKnockdown();
+          attackSequence.FlagAttackCausedKnockdown(__instance.GUID);
         }
         if (__instance.pilot.Injuries < __instance.pilot.Health) {
           __instance.Combat.MessageCenter.PublishMessage((MessageCenterMessage)new AddSequenceToStackMessage((IStackSequence)new ShowActorInfoSequence((ICombatant)__instance, new Text("EMERGENCY REPAIRS COMMENCING"), FloatieMessage.MessageNature.LocationDestroyed, true)));

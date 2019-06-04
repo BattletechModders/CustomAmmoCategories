@@ -56,17 +56,11 @@
     <Reference Include="System.Data" />
     <Reference Include="System.Net" />
     <Reference Include="System.Xml" />
-    <Reference Include="UnityEditor">
-      <HintPath>C:\Program Files\Unity\Editor\Data\Managed\UnityEditor.dll</HintPath>
-    </Reference>
     <Reference Include="UnityEngine">
       <HintPath>..\..\BattleTech_Data\Managed\UnityEngine.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.UI">
       <HintPath>..\..\BattleTech_Data\Managed\UnityEngine.UI.dll</HintPath>
-    </Reference>
-    <Reference Include="WeaponRealizer">
-      <HintPath>..\..\Mods\WeaponRealizer\WeaponRealizer.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup>
@@ -120,6 +114,16 @@
     <Compile Include="Jamming.cs" />
     <Compile Include="WeaponPatches.cs" />
     <Compile Include="ZombieMech.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\AttackImprovementMod\AttackImprovementMod.csproj">
+      <Project>{02c8ab19-160a-474f-9135-5c72b38ce1b8}</Project>
+      <Name>AttackImprovementMod</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\WeaponRealizer\WeaponRealizer.csproj">
+      <Project>{012129b3-201c-49be-a8e8-286dffbcf8c1}</Project>
+      <Name>WeaponRealizer</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>

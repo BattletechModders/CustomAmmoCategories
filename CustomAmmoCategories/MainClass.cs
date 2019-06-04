@@ -26,7 +26,7 @@ using CustomAmmoCategoriesPatches;
 using CustomAmmoCategoriesLog;
 
 namespace CustomAmmoCategoriesLog {
-  public static class Log  {
+  public static class Log {
     //private static string m_assemblyFile;
     private static string m_logfile;
     private static readonly Mutex mutex = new Mutex();
@@ -37,7 +37,7 @@ namespace CustomAmmoCategoriesLog {
     public static bool flushThreadActive = true;
     public static Thread flushThread = new Thread(flushThreadProc);
     public static void flushThreadProc() {
-      while(Log.flushThreadActive == true) {
+      while (Log.flushThreadActive == true) {
         Thread.Sleep(30 * 1000);
         Log.LogWrite("Log flushing\n");
         Log.flush();
@@ -60,17 +60,17 @@ namespace CustomAmmoCategoriesLog {
     }
     public static void LogWrite(string line, bool isCritical = false) {
       //try {
-        if ((CustomAmmoCategories.Settings.debugLog) || (isCritical)) {
-          if (Log.mutex.WaitOne(1000)) {
-            m_cache.Append(line);
-            //File.AppendAllText(Log.m_logfile, line);
-            Log.mutex.ReleaseMutex();
-          }
-          if (isCritical) { Log.flush(); };
-          if (m_logfile.Length > Log.flushBufferLength) { Log.flush(); };
+      if ((CustomAmmoCategories.Settings.debugLog) || (isCritical)) {
+        if (Log.mutex.WaitOne(1000)) {
+          m_cache.Append(line);
+          //File.AppendAllText(Log.m_logfile, line);
+          Log.mutex.ReleaseMutex();
         }
+        if (isCritical) { Log.flush(); };
+        if (m_logfile.Length > Log.flushBufferLength) { Log.flush(); };
+      }
       //} catch (Exception) {
-        //i'm sertanly don't know what to do
+      //i'm sertanly don't know what to do
       //}
     }
   }
@@ -152,7 +152,7 @@ namespace CustomAmmoCategoriesPatches {
               Log.LogWrite(" index:" + amsfi + "\n");
             }
           }
-          Log.LogWrite(" fire: "+test_int+"\n");
+          Log.LogWrite(" fire: " + test_int + "\n");
           if (test_int < 10) {
             __instance.DisplayedWeapon.AMS().Fire(test_int);
             Log.LogWrite(" fired\n");
@@ -175,7 +175,7 @@ namespace CustomAmmoCategoriesPatches {
         //if ((CustomAmmoCategories.IsJammed(__instance.DisplayedWeapon) == false)
         //  && (CustomAmmoCategories.isWRJammed(__instance.DisplayedWeapon) == false)
         //  && (CustomAmmoCategories.IsCooldown(__instance.DisplayedWeapon) <= 0)) {
-          CustomAmmoCategories.CycleMode(__instance.DisplayedWeapon);
+        CustomAmmoCategories.CycleMode(__instance.DisplayedWeapon);
         //}
         __instance.RefreshDisplayedWeapon((ICombatant)null);
         return false;
@@ -184,7 +184,7 @@ namespace CustomAmmoCategoriesPatches {
         //if ((CustomAmmoCategories.IsJammed(__instance.DisplayedWeapon) == false)
         //  && (CustomAmmoCategories.isWRJammed(__instance.DisplayedWeapon) == false)
         //  && (CustomAmmoCategories.IsCooldown(__instance.DisplayedWeapon) <= 0)) {
-          CustomAmmoCategories.CycleAmmo(__instance.DisplayedWeapon);
+        CustomAmmoCategories.CycleAmmo(__instance.DisplayedWeapon);
         //}
         __instance.RefreshDisplayedWeapon((ICombatant)null);
         return false;
@@ -643,9 +643,9 @@ namespace CustomAmmoCategoriesPatches {
         wGUID = weapon.StatCollection.GetStatistic(CustomAmmoCategories.GUIDStatisticName).Value<string>();
       }
       CustomAmmoCategories.ClearWeaponEffects(wGUID);
-      if(__instance.WeaponEffect != null) {
+      if (__instance.WeaponEffect != null) {
         BallisticEffect bWE = __instance.WeaponEffect as BallisticEffect;
-        if(bWE != null) {
+        if (bWE != null) {
           if (weapon.isImprovedBallistic()) {
             CustomAmmoCategoriesLog.Log.LogWrite("alternate ballistic needed\n");
             MultiShotBallisticEffect msbWE = bWE.gameObject.AddComponent<MultiShotBallisticEffect>();
@@ -1316,6 +1316,7 @@ namespace CustAmmoCategories {
     public bool modHTTPServer { get; set; }
     public string modHTTPListen { get; set; }
     public string WeaponRealizerStandalone { get; set; }
+    public string AIMStandalone { get; set; }
     public List<string> DynamicDesignMasksDefs { get; set; }
     public string BurningTerrainDesignMask { get; set; }
     public string BurningForestDesignMask { get; set; }
@@ -1355,6 +1356,7 @@ namespace CustAmmoCategories {
     public float AAMSAICoeff { get; set; }
     public bool AIPeerToPeerNodeEnabled { get; set; }
     public bool AIPeerToPeerFirewallPierceThrough { get; set; }
+    public string WeaponRealizerSettings { get; set; }
     Settings() {
       debugLog = true;
       modHTTPServer = true;
@@ -1406,6 +1408,9 @@ namespace CustAmmoCategories {
       AIPeerToPeerNodeEnabled = false;
       AIPeerToPeerFirewallPierceThrough = false;
       AAMSAICoeff = 0.2f;
+      WeaponRealizerSettings = "WeaponRealizerSettings.json";
+      WeaponRealizerStandalone = "WeaponRealizer.dll";
+      AIMStandalone = "AttackImprovementMod.dll";
     }
   }
 }
@@ -1440,11 +1445,46 @@ namespace CACMain {
       if (string.IsNullOrEmpty(CustomAmmoCategories.Settings.WeaponRealizerStandalone) == false) {
         CustomAmmoCategoriesLog.Log.LogWrite("standalone WeaponRealizer detected\n");
         string WRPath = Path.Combine(directory, CustomAmmoCategories.Settings.WeaponRealizerStandalone);
-        if (File.Exists(WRPath)) {
+        string WRSettingsFile = Path.Combine(directory, CustomAmmoCategories.Settings.WeaponRealizerSettings);
+        WeaponRealizer.Settings WRSettings = null;
+        if (File.Exists(WRSettingsFile) == false) {
+          Log.LogWrite("WeaponRealizer settings not exists\n");
+          Log.flush();
+          WRSettings = new WeaponRealizer.Settings();
+        }
+        if (File.Exists(WRPath) == false) {
+          Log.LogWrite("WeaponRealizer.dll not exists. I will not load\n");
+          Log.flush();
+          throw new Exception("WeaponRealizer.dll not exists. I will not load");
+        } else {
           CustomAmmoCategoriesLog.Log.LogWrite(WRPath + " - exists. Loading assembly.\n");
           Assembly.LoadFile(WRPath);
           CustomAmmoCategoriesLog.Log.LogWrite("Initing WR\n");
-          typeof(WeaponRealizer.Core).GetMethod("Init", BindingFlags.Public | BindingFlags.Static).Invoke(null, new object[2] { (object)directory, (object)settingsJson });
+          string WRSettingsContent = File.ReadAllText(WRSettingsFile);
+          WRSettings = new WeaponRealizer.Settings();
+          try {
+            WRSettings = JsonConvert.DeserializeObject<WeaponRealizer.Settings>(WRSettingsContent);
+          } catch (Exception ex) {
+            Log.LogWrite(ex + "\n");
+            WRSettings = new WeaponRealizer.Settings();
+          }
+          CustomAmmoCategoriesLog.Log.LogWrite("Initing WR:\n" + WRSettingsContent + "\n");
+          WeaponRealizer.Core.Init(directory, WRSettings);
+          //typeof(WeaponRealizer.Core).GetMethod("Init", BindingFlags.Public | BindingFlags.Static).Invoke(null, new object[2] { (object)directory, (object)settingsJson });
+        }
+      }
+      if (string.IsNullOrEmpty(CustomAmmoCategories.Settings.AIMStandalone) == false) {
+        string AIMPath = Path.Combine(directory, CustomAmmoCategories.Settings.AIMStandalone);
+        if (File.Exists(AIMPath) == false) {
+          Log.LogWrite("AttackImprovementMod.dll not exists. I will not load\n");
+          Log.flush();
+          throw new Exception("AttackImprovementMod.dll not exists. I will not load");
+        } else {
+          CustomAmmoCategoriesLog.Log.LogWrite(AIMPath + " - exists. Loading assembly.\n");
+          Assembly.LoadFile(AIMPath);
+          CustomAmmoCategoriesLog.Log.LogWrite("Initing AIM\n");
+          Sheepy.BattleTechMod.AttackImprovementMod.Mod.failToLoad = false;
+          Sheepy.BattleTechMod.AttackImprovementMod.Mod.Init(directory, string.Empty);
         }
       }
       //typeof(BattleTech.AttackDirectorHelpers.MessageCoordinator).GetField("logger", BindingFlags.Static | BindingFlags.Public).SetValue(null, (object)HBS.Logging.Logger.GetLogger("CombatLog.MechImpacts", HBS.Logging.LogLevel.Debug));

@@ -367,8 +367,11 @@ namespace CustAmmoCategories {
       this.startingTransform = this.weaponRep.vfxTransforms[emitterIndex];
       this.startPos = this.startingTransform.position;
       ICombatant combatantByGuid = this.Combat.FindCombatantByGUID(hitInfo.targetId);
-      if (combatantByGuid != null)
-        hitInfo.hitPositions[hitIndex] = combatantByGuid.GetImpactPosition(this.weaponRep.parentCombatant as AbstractActor, this.startPos, this.weapon, ref hitInfo.hitLocations[hitIndex]);
+      if (combatantByGuid != null) {
+        string secondaryTargetId = (string)null;
+        int secondaryHitLocation = 0;
+        hitInfo.hitPositions[hitIndex] = combatantByGuid.GetImpactPosition(this.weaponRep.parentCombatant as AbstractActor, this.startPos, this.weapon, ref hitInfo.hitLocations[hitIndex], ref hitInfo.attackDirections[hitIndex], ref secondaryTargetId, ref secondaryHitLocation);
+      }
       this.endPos = hitInfo.hitPositions[hitIndex];
       this.currentPos = this.startPos;
       this.FiringComplete = false;

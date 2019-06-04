@@ -1,6 +1,7 @@
 ﻿using BattleTech;
 using BattleTech.UI;
 using CustAmmoCategories;
+using CustomAmmoCategoriesLog;
 using Harmony;
 using InControl;
 using System;
@@ -130,7 +131,7 @@ namespace CustomAmmoCategoriesPatches {
     public static bool Prefix(AbstractActor __instance, string sourceID, int sequenceID, int stackItemID, AttackDirection attackDirection) {
       AttackDirector.AttackSequence attackSequence = __instance.Combat.AttackDirector.GetAttackSequence(sequenceID);
       if (attackSequence == null) { return true; }
-      if (attackSequence.attacker.GUID == attackSequence.target.GUID) {
+      if (attackSequence.attacker.GUID == attackSequence.chosenTarget.GUID) {
         CustomAmmoCategoriesLog.Log.LogWrite("this is terrain attack, no evasive damage or effects");
         return false;
       };
@@ -261,7 +262,7 @@ namespace CustomAmmoCategoriesPatches {
         CombatHUD HUD = (CombatHUD)typeof(CombatHUDActionButton).GetProperty("HUD", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(__instance, null);
         AbstractActor actor = HUD.SelectedActor;
         if (actor == null) { return; };
-        if (actor.IsTargetPositionInFiringArc(null, actor.CurrentPosition, actor.CurrentRotation, targetPosition) == false) {
+        if (actor.IsTargetPositionInFiringArc(actor, actor.CurrentPosition, actor.CurrentRotation, targetPosition) == false) {
           popup = GenericPopupBuilder.Create(GenericPopupType.Info, "Selected position is not in firing arc");
           popup.AddButton("Ok", (Action)null, true, (PlayerAction)null);
           popup.IsNestedPopupWithBuiltInFader().CancelOnEscape().Render();
@@ -375,31 +376,42 @@ namespace CustomAmmoCategoriesPatches {
   public static class CombatHUDMechwarriorTray_InitAbilityButtons {
     public static Dictionary<string,Ability> attackGroundAbilities = new Dictionary<string, Ability>();
     public static void Postfix(CombatHUDMechwarriorTray __instance, AbstractActor actor) {
-      CustomAmmoCategoriesLog.Log.LogWrite("CombatHUDMechwarriorTray.InitAbilityButtons\n");
+      Log.LogWrite("CombatHUDMechwarriorTray.InitAbilityButtons\n");
       AbilityDef aDef = null;
       if (actor.Combat.DataManager.AbilityDefs.TryGet("AbilityDefCAC_AttackGround", out aDef)) {
+        Log.LogWrite(" AbilityDef geted\n");
         Ability gaAbility = null;
         if (CombatHUDMechwarriorTray_InitAbilityButtons.attackGroundAbilities.ContainsKey(actor.GUID) == false) {
+          Log.LogWrite(" need create new ability\n");
           gaAbility = new Ability(aDef);
           gaAbility.Init(actor.Combat);
           CombatHUDMechwarriorTray_InitAbilityButtons.attackGroundAbilities.Add(actor.GUID,gaAbility);
         } else {
+          Log.LogWrite(" ability exists\n");
           gaAbility = CombatHUDMechwarriorTray_InitAbilityButtons.attackGroundAbilities[actor.GUID];
         }
+        Log.LogWrite(" geting buttons\n");
         CombatHUDActionButton[] AbilityButtons = (CombatHUDActionButton[])typeof(CombatHUDMechwarriorTray).GetProperty("AbilityButtons", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(__instance, null);
+        Log.LogWrite(" AbilityButtons.Length = "+ AbilityButtons.Length + "\n");
+        Log.LogWrite(" aDef.Targeting = " + aDef.Targeting + "\n");
+        Log.LogWrite(" aDef.AbilityIcon = " + aDef.AbilityIcon + "\n");
+        Log.LogWrite(" aDef.Description.Name = " + aDef.Description.Name + "\n");
+        Log.LogWrite(" AbilityButtons[AbilityButtons.Length - 1].GUID = " + AbilityButtons[AbilityButtons.Length - 1].GUID + "\n");
         AbilityButtons[AbilityButtons.Length - 1].InitButton(
-          (SelectionType)typeof(CombatHUDMechwarriorTray).GetMethod("GetSelectionTypeFromTargeting", BindingFlags.Instance | BindingFlags.NonPublic).Invoke(
-            __instance, new object[2] { (object)aDef.Targeting, (object)false }
+          (SelectionType)typeof(CombatHUDMechwarriorTray).GetMethod("GetSelectionTypeFromTargeting", BindingFlags.Static | BindingFlags.Public).Invoke(
+            null, new object[2] { (object)aDef.Targeting, (object)false }
           ),
           gaAbility, aDef.AbilityIcon,
           "ID_ATTACKGROUND",
           aDef.Description.Name,
           actor
         );
+        Log.LogWrite(" init button success\n");
         AbilityButtons[AbilityButtons.Length - 1].isClickable = true;
         AbilityButtons[AbilityButtons.Length - 1].RefreshUIColors();
+        Log.LogWrite("finished\n");
       } else {
-        CustomAmmoCategoriesLog.Log.LogWrite("Can't find AbilityDefCAC_AttackGround\n");
+        Log.LogWrite("Can't find AbilityDefCAC_AttackGround\n");
       }
     }
   }

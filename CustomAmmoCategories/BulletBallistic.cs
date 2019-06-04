@@ -54,7 +54,9 @@ namespace CustAmmoCategories {
       cachedCurve.target = combatantByGuid;
       int hitLocation = hitInfo.hitLocations[hitIndex];
       if (combatantByGuid != null) {
-        cachedCurve.endPos = combatantByGuid.GetImpactPosition(weapon.weaponRep.parentCombatant as AbstractActor, cachedCurve.startPos, weapon, ref hitLocation);
+        string secondaryTargetId = (string)null;
+        int secondaryHitLocation = 0;
+        cachedCurve.endPos = combatantByGuid.GetImpactPosition(weapon.weaponRep.parentCombatant as AbstractActor, cachedCurve.startPos, weapon, ref hitLocation, ref hitInfo.attackDirections[hitIndex], ref secondaryTargetId, ref secondaryHitLocation);
         hitInfo.hitPositions[hitIndex] = cachedCurve.endPos;
         if (spreadCacheRecord != null) {
           spreadCacheRecord.hitInfo.hitPositions[spreadCacheRecord.internalIndex] = cachedCurve.endPos;
