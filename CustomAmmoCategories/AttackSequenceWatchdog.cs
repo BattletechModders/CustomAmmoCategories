@@ -61,7 +61,7 @@ namespace CustAmmoCategories {
       CustomAmmoCategoriesLog.Log.LogWrite("Watchdog thread started\n");
       while (ASWatchdog.watchdogTerminating == false) {
         Thread.Sleep(1000);
-        if(counter > 10) {
+        if(counter > 30) {
           counter = 0;
           ASWatchdog.testWatchdogs();
         }
@@ -89,29 +89,29 @@ namespace CustAmmoCategories {
     }
     public static void testWatchdogs() {
       if (mutex.WaitOne(1000)) {
-        CustomAmmoCategoriesLog.Log.LogWrite("attack sequence watchdog:\n");
+        CustomAmmoCategoriesLog.Log.LogWrite("attack sequence watchdog:\n",true);
         HashSet<int> delSequence = new HashSet<int>();
         foreach (var wd in ASWatchdog.WatchDogInfo) {
           wd.Value.timer.Stop();
           CustomAmmoCategoriesLog.Log.LogWrite(" "+wd.Value.attackSequenceId+":"+wd.Value.timer.ElapsedMilliseconds+"ms");
           if(wd.Value.timer.ElapsedMilliseconds > CustomAmmoCategories.Settings.AttackSequenceMaxLength) {
-            CustomAmmoCategoriesLog.Log.LogWrite(" elapced\n");
+            CustomAmmoCategoriesLog.Log.LogWrite(" elapced\n",true);
             delSequence.Add(wd.Key);
           } else {
-            CustomAmmoCategoriesLog.Log.LogWrite(" normal\n");
+            CustomAmmoCategoriesLog.Log.LogWrite(" normal\n",true);
           }
           wd.Value.timer.Start();
         }
         foreach(int sequenceId in delSequence) {
-          CustomAmmoCategoriesLog.Log.LogWrite("force finish sequence:"+sequenceId+"\n");
+          CustomAmmoCategoriesLog.Log.LogWrite("force finish sequence:"+sequenceId+"\n",true);
           if (ASWatchdog.AttackDirector == null) { continue; };
           AttackSequence attackSequence = ASWatchdog.AttackDirector.GetAttackSequence(sequenceId);
           if (attackSequence == null) {
-            CustomAmmoCategoriesLog.Log.LogWrite(" can't find sequence\n");
+            CustomAmmoCategoriesLog.Log.LogWrite(" can't find sequence\n",true);
             ASWatchdog.WatchDogInfo.Remove(sequenceId);
             continue;
           }
-          CustomAmmoCategoriesLog.Log.LogWrite(" force sequence to end\n");
+          CustomAmmoCategoriesLog.Log.LogWrite(" force sequence to end\n",true);
           MessageCoordinator messageCoordinator = (MessageCoordinator)typeof(AttackSequence).GetField("messageCoordinator", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(attackSequence);
           typeof(AttackSequence).GetProperty("CoordinatedMesssagesSuccessful", BindingFlags.Instance | BindingFlags.Public).GetSetMethod(true).Invoke(attackSequence, new object[1] { (object)messageCoordinator.VerifyAllMessagesComplete() });
           AttackSequenceEndMessage sequenceEndMessage = new AttackSequenceEndMessage(attackSequence.stackItemUID, attackSequence.id);

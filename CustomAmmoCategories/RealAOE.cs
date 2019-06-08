@@ -236,6 +236,134 @@ namespace CustAmmoCategories {
       }
       return result;
     }
+
+    public static bool isHasStray(this ref WeaponHitInfo hitInfo) {
+      for(int hitIndex = 0; hitIndex < hitInfo.secondaryTargetIds.Length; ++hitIndex) {
+        if (string.IsNullOrEmpty(hitInfo.secondaryTargetIds[hitIndex])) { continue; }
+        if (hitInfo.secondaryTargetIds[hitIndex] != hitInfo.targetId) { return true; }
+      }
+      return false;
+    }
+    public static HashSet<string> targetsIds(this ref WeaponHitInfo hitInfo) {
+      HashSet<string> result = new HashSet<string>();
+      result.Add(hitInfo.targetId);
+      for (int hitIndex = 0; hitIndex < hitInfo.secondaryTargetIds.Length; ++hitIndex) {
+        if (string.IsNullOrEmpty(hitInfo.secondaryTargetIds[hitIndex])) { continue; }
+        if (result.Contains(hitInfo.secondaryTargetIds[hitIndex]) == false) {
+          result.Add(hitInfo.secondaryTargetIds[hitIndex]);
+        }
+      }
+      return result;
+    }
+    public static bool prepareStrayHitInfo(ref WeaponHitInfo hitInfo, float dodgedDamage) {
+      Log.LogWrite("prepareStrayHitInfo\n");
+      try {
+        Dictionary<string, int> strayHitCounts = new Dictionary<string, int>();
+        Dictionary<string, int> strayHitIndexes = new Dictionary<string, int>();
+        Dictionary<string, int> strayHitIndexesAdd = new Dictionary<string, int>();
+        for (int hitIndex = 0; hitIndex < hitInfo.secondaryTargetIds.Length; ++hitIndex) {
+          string targetId = hitInfo.targetId;
+          if (string.IsNullOrEmpty(hitInfo.secondaryTargetIds[hitIndex]) == false) { targetId = hitInfo.secondaryTargetIds[hitIndex]; };
+          Log.LogWrite(" hi:"+hitIndex+" loc:"+hitInfo.hitLocations[hitIndex]+" st:"+ (string.IsNullOrEmpty(hitInfo.secondaryTargetIds[hitIndex])?"null": hitInfo.secondaryTargetIds[hitIndex]) + " secLoc:"+hitInfo.secondaryHitLocations[hitIndex]+"\n");
+          if (strayHitCounts.ContainsKey(targetId) == false) { strayHitCounts[targetId] = 1; strayHitIndexes[targetId] = 0; strayHitIndexesAdd[targetId] = 0; } else { ++strayHitCounts[targetId]; };
+        }
+        Dictionary<string, SpreadHitInfo> strayHitInfos = new Dictionary<string, SpreadHitInfo>();
+        foreach (var strayHitCount in strayHitCounts) {
+          WeaponHitInfo stayHitInfo = new WeaponHitInfo();
+          stayHitInfo.numberOfShots = strayHitCount.Value;
+          stayHitInfo.attackerId = hitInfo.attackerId;
+          stayHitInfo.targetId = strayHitCount.Key;
+          stayHitInfo.stackItemUID = hitInfo.stackItemUID;
+          stayHitInfo.attackSequenceId = hitInfo.attackSequenceId;
+          stayHitInfo.attackGroupIndex = hitInfo.attackGroupIndex;
+          stayHitInfo.attackWeaponIndex = hitInfo.attackWeaponIndex;
+          stayHitInfo.toHitRolls = new float[stayHitInfo.numberOfShots];
+          stayHitInfo.locationRolls = new float[stayHitInfo.numberOfShots];
+          stayHitInfo.dodgeRolls = new float[stayHitInfo.numberOfShots];
+          stayHitInfo.dodgeSuccesses = new bool[stayHitInfo.numberOfShots];
+          stayHitInfo.hitLocations = new int[stayHitInfo.numberOfShots];
+          stayHitInfo.hitPositions = new Vector3[stayHitInfo.numberOfShots];
+          stayHitInfo.hitVariance = new int[stayHitInfo.numberOfShots];
+          stayHitInfo.hitQualities = new AttackImpactQuality[stayHitInfo.numberOfShots];
+          stayHitInfo.secondaryTargetIds = new string[stayHitInfo.numberOfShots];
+          stayHitInfo.secondaryHitLocations = new int[stayHitInfo.numberOfShots];
+          stayHitInfo.attackDirections = new AttackDirection[stayHitInfo.numberOfShots];
+          strayHitInfos.Add(strayHitCount.Key, new SpreadHitInfo(stayHitInfo.targetId, stayHitInfo, dodgedDamage));
+        }
+        if (CustomAmmoCategories.SpreadCache.ContainsKey(hitInfo.attackSequenceId) == false) {
+          CustomAmmoCategories.SpreadCache.Add(hitInfo.attackSequenceId, new Dictionary<int, Dictionary<int, Dictionary<int, SpreadHitRecord>>>());
+        };
+        if (CustomAmmoCategories.SpreadCache[hitInfo.attackSequenceId].ContainsKey(hitInfo.attackGroupIndex) == false) {
+          CustomAmmoCategories.SpreadCache[hitInfo.attackSequenceId].Add(hitInfo.attackGroupIndex, new Dictionary<int, Dictionary<int, SpreadHitRecord>>());
+        };
+        if (CustomAmmoCategories.SpreadCache[hitInfo.attackSequenceId][hitInfo.attackGroupIndex].ContainsKey(hitInfo.attackWeaponIndex) == false) {
+          CustomAmmoCategories.SpreadCache[hitInfo.attackSequenceId][hitInfo.attackGroupIndex].Add(hitInfo.attackWeaponIndex, new Dictionary<int, SpreadHitRecord>());
+        };
+        for (int hitIndex = 0; hitIndex < hitInfo.secondaryTargetIds.Length; ++hitIndex) {
+          string targetId = hitInfo.targetId;
+          if (string.IsNullOrEmpty(hitInfo.secondaryTargetIds[hitIndex]) == false) { targetId = hitInfo.secondaryTargetIds[hitIndex]; };
+          if (strayHitInfos.ContainsKey(targetId) == false) { continue; }
+          if (strayHitIndexes.ContainsKey(targetId) == false) { continue; }
+          SpreadHitInfo spreadHitInfo = strayHitInfos[targetId];
+          int strayHitIndex = strayHitIndexes[targetId];
+          spreadHitInfo.hitInfo.toHitRolls[strayHitIndex] = hitInfo.toHitRolls[hitIndex];
+          spreadHitInfo.hitInfo.locationRolls[strayHitIndex] = hitInfo.locationRolls[hitIndex];
+          spreadHitInfo.hitInfo.dodgeRolls[strayHitIndex] = hitInfo.dodgeRolls[hitIndex];
+          spreadHitInfo.hitInfo.dodgeSuccesses[strayHitIndex] = hitInfo.dodgeSuccesses[hitIndex];
+          if (hitInfo.targetId != targetId) {
+            spreadHitInfo.hitInfo.hitLocations[strayHitIndex] = hitInfo.secondaryHitLocations[hitIndex];
+          } else {
+            spreadHitInfo.hitInfo.hitLocations[strayHitIndex] = hitInfo.hitLocations[hitIndex];
+          }
+          spreadHitInfo.hitInfo.hitPositions[strayHitIndex] = hitInfo.hitPositions[hitIndex];
+          spreadHitInfo.hitInfo.hitVariance[strayHitIndex] = hitInfo.hitVariance[hitIndex];
+          spreadHitInfo.hitInfo.hitQualities[strayHitIndex] = hitInfo.hitQualities[hitIndex];
+          spreadHitInfo.hitInfo.secondaryTargetIds[strayHitIndex] = null;
+          spreadHitInfo.hitInfo.secondaryHitLocations[strayHitIndex] = 0;
+          spreadHitInfo.hitInfo.attackDirections[strayHitIndex] = hitInfo.attackDirections[hitIndex];
+          ++strayHitIndexes[targetId];
+        }
+        for (int hitIndex = 0; hitIndex < hitInfo.secondaryTargetIds.Length; ++hitIndex) {
+          string targetId = hitInfo.targetId;
+          if (string.IsNullOrEmpty(hitInfo.secondaryTargetIds[hitIndex]) == false) { targetId = hitInfo.secondaryTargetIds[hitIndex]; };
+          if (strayHitInfos.ContainsKey(targetId) == false) { continue; }
+          if (strayHitIndexesAdd.ContainsKey(targetId) == false) { continue; }
+          SpreadHitInfo spreadHitInfo = strayHitInfos[targetId];
+          int strayHitIndex = strayHitIndexesAdd[targetId];
+          hitInfo.secondaryTargetIds[hitIndex] = null;
+          hitInfo.secondaryHitLocations[hitIndex] = 0;
+          hitInfo.hitLocations[hitIndex] = spreadHitInfo.hitInfo.hitLocations[strayHitIndex];
+          if (CustomAmmoCategories.SpreadCache[hitInfo.attackSequenceId][hitInfo.attackGroupIndex][hitInfo.attackWeaponIndex].ContainsKey(hitIndex) == false) {
+            CustomAmmoCategories.SpreadCache[hitInfo.attackSequenceId][hitInfo.attackGroupIndex][hitInfo.attackWeaponIndex].Add(hitIndex, new SpreadHitRecord(spreadHitInfo.targetGUID, spreadHitInfo.hitInfo, strayHitIndex, spreadHitInfo.dogleDamage));
+          }
+          ++strayHitIndexesAdd[targetId];
+        }
+        Log.LogWrite("Counts:\n");
+        foreach(var i in strayHitCounts) {
+          Log.LogWrite(" "+i.Key+":"+i.Value+"\n");
+        }
+        Log.LogWrite("Indexes:\n");
+        foreach (var i in strayHitIndexes) {
+          Log.LogWrite(" " + i.Key + ":" + i.Value + "\n");
+        }
+        Log.LogWrite("Indexes add:\n");
+        foreach (var i in strayHitIndexesAdd) {
+          Log.LogWrite(" " + i.Key + ":" + i.Value + "\n");
+        }
+        Log.LogWrite("Indexes add:\n");
+        foreach (var i in strayHitInfos) {
+          Log.LogWrite(" " + i.Key + ":"+ i.Value.hitInfo.numberOfShots + "\n");
+          for(int hitIndex = 0; hitIndex < i.Value.hitInfo.numberOfShots; ++hitIndex) {
+            Log.LogWrite("  loc:" + i.Value.hitInfo.hitLocations[hitIndex] + "\n");
+          }
+        }
+        return true;
+      }catch(Exception e) {
+        Log.LogWrite(e.ToString()+"\n",true);
+        return false;
+      }
+    }
+
     public static bool ConsolidateSpreadHitInfo(List<SpreadHitInfo> spreadHitInfos,ref WeaponHitInfo hitInfo) {
       CustomAmmoCategoriesLog.Log.LogWrite("Consolidating spread hit info:"+ spreadHitInfos.Count+ " "+hitInfo.numberOfShots+"\n");
       int hitIndex = 0;
@@ -299,6 +427,9 @@ namespace CustAmmoCategories {
         }
       }
       return result;
+    }
+    public static float SpreadRange(this Weapon weapon) {
+      return CustomAmmoCategories.getWeaponSpreadRange(weapon);
     }
     public static bool isWeaponAOECapable(Weapon weapon) {
       Log.LogWrite("isWeaponAOECapable("+weapon.UIName+"/"+ weapon.defId + ")\n");

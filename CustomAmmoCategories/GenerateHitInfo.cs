@@ -266,9 +266,20 @@ namespace CustomAmmoCategoriesPatches {
           break;
       }
       //disabling buildin spread
-      for(int hitIndex = 0; hitIndex < hitInfo.numberOfShots; ++hitIndex) {
-        hitInfo.secondaryTargetIds[hitIndex] = null;
-        hitInfo.secondaryHitLocations[hitIndex] = 0;
+      if (weapon.SpreadRange() > CustomAmmoCategories.Epsilon) {
+        Log.LogWrite(" spread range non zero "+ weapon.SpreadRange() + ". disabling buildin stray\n");
+        for (int hitIndex = 0; hitIndex < hitInfo.numberOfShots; ++hitIndex) {
+          hitInfo.secondaryTargetIds[hitIndex] = null;
+          hitInfo.secondaryHitLocations[hitIndex] = 0;
+        }
+      } else {
+        Log.LogWrite(" spread range zero. testing buildin stray\n");
+        if (hitInfo.isHasStray()) {
+          Log.LogWrite(" weapon has stray.\n");
+          CustomAmmoCategories.prepareStrayHitInfo(ref hitInfo, dodgedDamage);
+        } else {
+          Log.LogWrite(" weapon has no stray.\n");
+        }
       }
       if (hitInfo.numberOfShots != hitInfo.hitLocations.Length) {
         Log.LogWrite(" strange behavior. NumberOfShots: " + hitInfo.numberOfShots + " but HitLocations length:" + hitInfo.hitLocations.Length + ". Must be equal\n", true);
