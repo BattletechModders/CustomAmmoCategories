@@ -86,6 +86,8 @@ namespace CustAmmoCategories {
     public int Cooldown { get; set; }
     public bool ImprovedBallistic { get; set; }
     public TripleBoolean BallisticDamagePerPallet { get; set; }
+    public TripleBoolean StatusEffectsPerHit { get; set; }
+    public CustomAudioSource AdditionalAudioEffect { get; set; }
     public ExtWeaponDef() {
       StreakEffect = false;
       HitGenerator = HitGeneratorType.NotSet;
@@ -134,6 +136,8 @@ namespace CustAmmoCategories {
       Cooldown = 0;
       ImprovedBallistic = false;
       BallisticDamagePerPallet = TripleBoolean.NotSet;
+      StatusEffectsPerHit = TripleBoolean.NotSet;
+      AdditionalAudioEffect = null;
     }
   }
 }
@@ -288,6 +292,10 @@ namespace CustomAmmoCategoriesPatches {
         extDef.BallisticDamagePerPallet = ((bool)defTemp["BallisticDamagePerPallet"] == true) ? TripleBoolean.True : TripleBoolean.False;
         defTemp.Remove("BallisticDamagePerPallet");
       }
+      if (defTemp["StatusEffectsPerHit"] != null) {
+        extDef.StatusEffectsPerHit = ((bool)defTemp["StatusEffectsPerHit"] == true) ? TripleBoolean.True : TripleBoolean.False;
+        defTemp.Remove("StatusEffectsPerHit");
+      }
       if (defTemp["MinShellsDistance"] != null) {
         extDef.MinShellsDistance = (float)defTemp["MinShellsDistance"];
         defTemp.Remove("MinShellsDistance");
@@ -327,6 +335,10 @@ namespace CustomAmmoCategoriesPatches {
       if (defTemp["NotUseInMelee"] != null) {
         extDef.NotUseInMelee = ((bool)defTemp["NotUseInMelee"] == true) ? TripleBoolean.True : TripleBoolean.False;
         defTemp.Remove("NotUseInMelee");
+      }
+      if (defTemp["AdditionalAudioEffect"] != null) {
+        extDef.AdditionalAudioEffect = new CustomAudioSource((string)defTemp["AdditionalAudioEffect"]);
+        defTemp.Remove("AdditionalAudioEffect");
       }
       if (defTemp["DamageOnJamming"] != null) {
         extDef.DamageOnJamming = ((bool)defTemp["DamageOnJamming"] == true) ? TripleBoolean.True : TripleBoolean.False;

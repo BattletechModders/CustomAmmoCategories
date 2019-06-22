@@ -811,6 +811,9 @@ namespace CustAmmoCategories {
       result.hitPositions = new Vector3[successShots];
       result.hitVariance = new int[successShots];
       result.hitQualities = new AttackImpactQuality[successShots];
+      result.attackDirections = new AttackDirection[successShots];
+      result.secondaryHitLocations = new int[successShots];
+      result.secondaryTargetIds = new string[successShots];
       successShots = 0;
       for (int index = 0; index < hitInfo.numberOfShots; ++index) {
         if ((hitInfo.hitLocations[index] != 0) && (hitInfo.hitLocations[index] != 65536)) {
@@ -822,6 +825,9 @@ namespace CustAmmoCategories {
           result.hitPositions[successShots] = hitInfo.hitPositions[index];
           result.hitVariance[successShots] = hitInfo.hitVariance[index];
           result.hitQualities[successShots] = hitInfo.hitQualities[index];
+          result.attackDirections[successShots] = hitInfo.attackDirections[index];
+          result.secondaryHitLocations[successShots] = 0;
+          result.secondaryTargetIds[successShots] = null;
           ++successShots;
         }
       }
@@ -932,23 +938,50 @@ namespace CustAmmoCategories {
       }
     }*/
     public static void InitWeaponEffects(WeaponRepresentation weaponRepresentation, Weapon weapon) {
-      if (CustomAmmoCategories.checkExistance(weapon.StatCollection, CustomAmmoCategories.GUIDStatisticName) == false) { return; }
+      Log.LogWrite("InitWeaponEffects "+weapon.defId+":"+weapon.parent.DisplayName+"\n");
+      if (CustomAmmoCategories.checkExistance(weapon.StatCollection, CustomAmmoCategories.GUIDStatisticName) == false) {
+        Log.LogWrite(" no GUID\n");
+        return;
+      }
       string wGUID = weapon.StatCollection.GetStatistic(CustomAmmoCategories.GUIDStatisticName).Value<string>();
-      if (CustomAmmoCategories.WeaponEffects.ContainsKey(wGUID) == true) { return; }
+      if (CustomAmmoCategories.WeaponEffects.ContainsKey(wGUID) == true) {
+        Log.LogWrite(" already contains GUID:"+wGUID+"\n");
+        return;
+      }
       WeaponEffects[wGUID] = new Dictionary<string, WeaponEffect>();
       List<string> avaibleAmmo = CustomAmmoCategories.getAvaibleAmmo(weapon);
       foreach (string ammoId in avaibleAmmo) {
         ExtAmmunitionDef extAmmo = CustomAmmoCategories.findExtAmmo(ammoId);
-        if (string.IsNullOrEmpty(extAmmo.WeaponEffectID)) { continue; }
-        if (extAmmo.WeaponEffectID == weapon.weaponDef.WeaponEffectID) { continue; }
-        if (WeaponEffects[wGUID].ContainsKey(extAmmo.WeaponEffectID) == true) { continue; }
+        if (string.IsNullOrEmpty(extAmmo.WeaponEffectID)) {
+          Log.LogWrite("  "+ammoId+".WeaponEffectID is empty\n");
+          continue;
+        }
+        if (extAmmo.WeaponEffectID == weapon.weaponDef.WeaponEffectID) {
+          Log.LogWrite("  " + ammoId + ".WeaponEffectID "+ extAmmo.WeaponEffectID + " same as per weapon def "+ weapon.weaponDef.WeaponEffectID + "\n");
+          continue;
+        }
+        if (WeaponEffects[wGUID].ContainsKey(extAmmo.WeaponEffectID) == true) {
+          Log.LogWrite("  " + ammoId + ".WeaponEffectID " + extAmmo.WeaponEffectID + " already inited\n");
+          continue;
+        }
+        Log.LogWrite("  adding predefined weapon effect "+ wGUID + "."+ extAmmo.WeaponEffectID + "\n");
         WeaponEffects[wGUID][extAmmo.WeaponEffectID] = CustomAmmoCategories.InitWeaponEffect(weaponRepresentation, weapon, extAmmo.WeaponEffectID);
       }
       ExtWeaponDef extWeapon = CustomAmmoCategories.getExtWeaponDef(weapon.defId);
       foreach (var mode in extWeapon.Modes) {
-        if (string.IsNullOrEmpty(mode.Value.WeaponEffectID)) { continue; }
-        if (mode.Value.WeaponEffectID == weapon.weaponDef.WeaponEffectID) { continue; }
-        if (WeaponEffects[wGUID].ContainsKey(mode.Value.WeaponEffectID) == true) { continue; }
+        if (string.IsNullOrEmpty(mode.Value.WeaponEffectID)) {
+          Log.LogWrite("  mode:" + mode.Key + ".WeaponEffectID is empty\n");
+          continue;
+        }
+        if (mode.Value.WeaponEffectID == weapon.weaponDef.WeaponEffectID) {
+          Log.LogWrite("  mode:" + mode.Key + ".WeaponEffectID " + mode.Value.WeaponEffectID + " same as per weapon def " + weapon.weaponDef.WeaponEffectID + "\n");
+          continue;
+        }
+        if (WeaponEffects[wGUID].ContainsKey(mode.Value.WeaponEffectID) == true) {
+          Log.LogWrite("  mode:" + mode.Key + ".WeaponEffectID " + mode.Value.WeaponEffectID + " already inited\n");
+          continue;
+        }
+        Log.LogWrite("  adding predefined weapon effect " + wGUID + "." + mode.Value.WeaponEffectID + "\n");
         WeaponEffects[wGUID][mode.Value.WeaponEffectID] = CustomAmmoCategories.InitWeaponEffect(weaponRepresentation, weapon, mode.Value.WeaponEffectID);
       }
       /*if (string.IsNullOrEmpty(CustomAmmoCategories.ShellsWeaponEffectId) == false) {
@@ -983,11 +1016,15 @@ namespace CustAmmoCategories {
               msbWE.Init(result);
               CustomAmmoCategoriesLog.Log.LogWrite("Alternate ballistic effect inited\n");
               result = msbWE;
+            } else {
+              result.Init(weapon);
             }
+          } else {
+            result.Init(weapon);
           }
         }
       }
-      CustomAmmoCategoriesLog.Log.LogWrite("Success init weapon effect " + weaponEffectId + " for " + weapon.Name + "\n");
+      CustomAmmoCategoriesLog.Log.LogWrite("Success init weapon effect " + weaponEffectId + " for " + weapon.defId + "\n");
       return result;
     }
 
@@ -1304,6 +1341,19 @@ namespace CustAmmoCategories {
       DecalTexture = "envTxrDecl_terrainDmgSmallBlack_alb";
     }
   }
+  public class AmmoCookoffSettings {
+    public bool Enabled { get; set; }
+    public float OverheatChance { get; set; }
+    public float ShutdownHeatChance { get; set; }
+    public bool UseHBSMercySetting { get; set; }
+    public AmmoCookoffSettings() {
+      Enabled = false;
+      OverheatChance = 10;
+      ShutdownHeatChance = 25;
+      UseHBSMercySetting = true;
+    }
+  }
+
   public class Settings {
     public bool debugLog { get; set; }
     public bool forbiddenRangeEnable { get; set; }
@@ -1357,6 +1407,7 @@ namespace CustAmmoCategories {
     public bool AIPeerToPeerNodeEnabled { get; set; }
     public bool AIPeerToPeerFirewallPierceThrough { get; set; }
     public string WeaponRealizerSettings { get; set; }
+    public AmmoCookoffSettings AmmoCookoff { get; set; }
     Settings() {
       debugLog = true;
       modHTTPServer = true;
@@ -1411,6 +1462,7 @@ namespace CustAmmoCategories {
       WeaponRealizerSettings = "WeaponRealizerSettings.json";
       WeaponRealizerStandalone = "WeaponRealizer.dll";
       AIMStandalone = "AttackImprovementMod.dll";
+      AmmoCookoff = new AmmoCookoffSettings();
     }
   }
 }
@@ -1442,6 +1494,42 @@ namespace CACMain {
       //settings_filename = Path.Combine(settings_filename, "CustomAmmoCategoriesSettings.json");
       CustomAmmoCategories.Settings = JsonConvert.DeserializeObject<CustAmmoCategories.Settings>(File.ReadAllText(settings_filename));
       CustomAmmoCategoriesLog.Log.LogWrite("Initing... " + directory + " version: " + Assembly.GetExecutingAssembly().GetName().Version + "\n", true);
+      uint testEventId0 = 0;
+      try {
+        Type type = typeof(Weapon).Assembly.GetType("AudioEventList_ecm");
+        if (type.IsEnum) {
+          Log.LogWrite("AudioEventList_ecm is enum\n");
+          object val = null;
+          foreach(var tv in Enum.GetValues(type)) {
+            Log.LogWrite(" "+tv.ToString()+"\n");
+            if (tv.ToString() == "ecm_enter") { val = tv; };
+          }
+          if (val != null) {
+            var EnumValueToEventId = typeof(WwiseManager).GetMethod("EnumValueToEventId").MakeGenericMethod(type);
+            testEventId0 = (uint)EnumValueToEventId.Invoke(SceneSingletonBehavior<WwiseManager>.Instance, new object[1] { val });
+          } else {
+            Log.LogWrite(" can't find ecm_enter\n");
+          }
+          /*Type[] argTypes = { typeof(string), type.MakeByRefType() };
+          var tryParseMethodInfo = typeof(Enum).GetMethod("TryParse",BindingFlags.Static,null,argTypes,null);
+          if (tryParseMethodInfo == null) {
+            Log.LogWrite("no TryParce at AudioEventList_ecm\n");
+          } else {
+            object[] args = { "ecm_enter", null };
+            var successfulParse = (bool)tryParseMethodInfo.Invoke(null, args);
+            if (!successfulParse) {
+              Log.LogWrite("no TryParce ecm_enter fail\n");
+            } else {
+              var EnumValueToEventId = typeof(WwiseManager).GetMethod("EnumValueToEventId").MakeGenericMethod(type);
+              testEventId0 = (uint)EnumValueToEventId.Invoke(SceneSingletonBehavior<WwiseManager>.Instance, new object[1] { args[1] });
+            }*/
+          // }
+        }
+      } catch(Exception e) {
+        Log.LogWrite("Can't get AudioEventList_ecm "+e.ToString()+"\n",true);
+      }
+      uint testEventId1 = SceneSingletonBehavior<WwiseManager>.Instance.EnumValueToEventId<AudioEventList_ecm>(AudioEventList_ecm.ecm_enter);
+      Log.LogWrite("testEventId1:" + testEventId1 + " testEventId0:" + testEventId0 + "\n",true);
       if (string.IsNullOrEmpty(CustomAmmoCategories.Settings.WeaponRealizerStandalone) == false) {
         CustomAmmoCategoriesLog.Log.LogWrite("standalone WeaponRealizer detected\n");
         string WRPath = Path.Combine(directory, CustomAmmoCategories.Settings.WeaponRealizerStandalone);

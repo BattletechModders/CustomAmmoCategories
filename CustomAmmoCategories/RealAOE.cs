@@ -856,9 +856,15 @@ namespace CustomAmmoCategoriesPatches {
           __instance.chosenTarget = SpreadTarget;
         }
         CustomAmmoCategoriesLog.Log.LogWrite(" Altering internal target spread "+ spreadCache.targetGUID + " found:" + ((SpreadTarget != null)?SpreadTarget.DisplayName:"false")+"\n");
-        CustomAmmoCategoriesLog.Log.LogWrite("  and position was:"+ impactMessage.hitInfo.hitPositions[impactMessage.hitIndex] + "\n");
-        impactMessage.hitInfo.hitPositions[impactMessage.hitIndex] = spreadCache.hitInfo.hitPositions[spreadCache.internalIndex];
-        CustomAmmoCategoriesLog.Log.LogWrite("  become:" + impactMessage.hitInfo.hitPositions[impactMessage.hitIndex] + "\n");
+        if (impactMessage.hitInfo.secondaryTargetIds[impactMessage.hitIndex] == spreadCache.targetGUID) {
+          Log.LogWrite(" assume buildin stray. keep hit position. alter hit location:"+ impactMessage.hitInfo.hitLocations[impactMessage.hitIndex] + " -> "+ spreadCache.hitInfo.hitLocations[spreadCache.internalIndex] + "\n");
+          impactMessage.hitInfo.hitLocations[impactMessage.hitIndex] = spreadCache.hitInfo.hitLocations[spreadCache.internalIndex];
+        } else {
+          Log.LogWrite(" no buildin stray\n");
+          Log.LogWrite("  and position was:" + impactMessage.hitInfo.hitPositions[impactMessage.hitIndex] + "\n");
+          impactMessage.hitInfo.hitPositions[impactMessage.hitIndex] = spreadCache.hitInfo.hitPositions[spreadCache.internalIndex];
+          CustomAmmoCategoriesLog.Log.LogWrite("  become:" + impactMessage.hitInfo.hitPositions[impactMessage.hitIndex] + "\n");
+        }
       } else
       if (impactMessage.hitIndex >= impactMessage.hitInfo.numberOfShots) {
         CustomAmmoCategoriesLog.Log.LogWrite("OnAttackSequenceImpact AOE damage detected");

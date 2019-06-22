@@ -524,14 +524,17 @@ namespace CustAmmoCategories {
       }
     }
     public bool TryBurnCell(Weapon weapon) {
-      CustomAmmoCategoriesLog.Log.LogWrite("Try burn cell " + weapon.UIName + " Chance:" + weapon.FireTerrainChance() + " hasForest:" + isHasForest + "\n");
-      if (weapon.FireTerrainChance() > CustomAmmoCategories.Epsilon) {
-        if ((weapon.FireDurationWithoutForest() <= 0) && (this.isHasForest == false)) {
+      return TryBurnCell(weapon, weapon.FireTerrainChance(), weapon.FireTerrainStrength(), weapon.FireDurationWithoutForest());
+    }
+    public bool TryBurnCell(Weapon weapon,float FireTerrainChance,int FireTerrainStrength, int FireDurationWithoutForest) {
+      CustomAmmoCategoriesLog.Log.LogWrite("Try burn cell " + weapon.Name + " Chance:" + FireTerrainChance + " hasForest:" + isHasForest + "\n");
+      if (FireTerrainChance > CustomAmmoCategories.Epsilon) {
+        if ((FireDurationWithoutForest <= 0) && (this.isHasForest == false)) {
           CustomAmmoCategoriesLog.Log.LogWrite(" no forest and no self burn\n");
           return false;
         }
         float roll = Random.Range(0f, 1f);
-        if (roll > weapon.FireTerrainChance()) {
+        if (roll > FireTerrainChance) {
           CustomAmmoCategoriesLog.Log.LogWrite(" roll fail:" + roll + "\n");
           return false;
         } else {
@@ -542,25 +545,25 @@ namespace CustAmmoCategories {
       }
       if (burnEffectCounter > 0) {
         CustomAmmoCategoriesLog.Log.LogWrite(" already burning\n");
-        if (burnEffectCounter < weapon.FireDurationWithoutForest()) {
-          burnEffectCounter = weapon.FireDurationWithoutForest();
-          this.UpdateCellsBurn(weapon, burnEffectCounter, weapon.FireTerrainStrength());
+        if (burnEffectCounter < FireDurationWithoutForest) {
+          burnEffectCounter = FireDurationWithoutForest;
+          this.UpdateCellsBurn(weapon, burnEffectCounter, FireTerrainStrength);
           this.expandingThisTurn = true;
           burningWeapon = weapon;
         }
         return false;
       }
-      burnEffectCounter = weapon.FireDurationWithoutForest();
+      burnEffectCounter = FireDurationWithoutForest;
       if (isHasForest && (burnEffectCounter < DynamicMapHelper.BurnForestDuration())) { burnEffectCounter = DynamicMapHelper.BurnForestDuration(); };
       if (burnEffectCounter <= 0) { return false; };
-      int burnStrength = weapon.FireTerrainStrength();
+      int burnStrength = FireTerrainStrength;
       if (isHasForest && (burnStrength < DynamicMapHelper.BurnForestStrength())) { burnStrength = DynamicMapHelper.BurnForestStrength(); };
       if (burnStrength <= 0) { return false; };
       burningWeapon = weapon;
       Combat = weapon.parent.Combat;
       expandingThisTurn = true;
       applyBurnVisuals();
-      SetCellsBurn(weapon, burnEffectCounter, weapon.FireDurationWithoutForest(), burnStrength, weapon.FireTerrainStrength());
+      SetCellsBurn(weapon, burnEffectCounter, FireDurationWithoutForest, burnStrength, FireTerrainStrength);
       isHasForest = false;
       return true;
     }
@@ -2098,7 +2101,7 @@ namespace CustomAmmoCategoriesPatches {
       CombatHUD HUD = (CombatHUD)typeof(MoveStatusPreview).GetProperty("HUD", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(__instance, null);
       CombatHUDInfoSidePanel sidePanel = (CombatHUDInfoSidePanel)typeof(MoveStatusPreview).GetProperty("sidePanel", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(__instance, null);
       cells.Add(HUD.Combat.EncounterLayerData.GetCellAt(worldPos));
-      __instance.PreviewStatusPanel.ShowPreviewStatuses(actor, cells, moveType);
+      __instance.PreviewStatusPanel.ShowPreviewStatuses(actor, cells, moveType, worldPos);
       DesignMaskDef priorityDesignMask = actor.Combat.MapMetaData.GetPriorityDesignMask(cells[0].relatedTerrainCell);
       MapTerrainDataCellEx cell = cells[0].relatedTerrainCell as MapTerrainDataCellEx;
       bool flag1 = SplatMapInfo.IsDropshipLandingZone(cells[0].relatedTerrainCell.terrainMask);

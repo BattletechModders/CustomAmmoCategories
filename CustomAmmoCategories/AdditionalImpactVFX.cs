@@ -1,7 +1,10 @@
 ﻿using BattleTech;
+using CustomAmmoCategoriesLog;
 using Harmony;
+using HBS;
 using System;
 using System.Collections.Generic;
+using System.Reflection;
 using UnityEngine;
 
 namespace CustAmmoCategories {
@@ -50,6 +53,26 @@ namespace CustAmmoCategories {
       scale = new Vector3(extWeapon.AdditionalImpactVFXScaleX, extWeapon.AdditionalImpactVFXScaleY, extWeapon.AdditionalImpactVFXScaleZ);
       return extWeapon.AdditionalImpactVFX;
     }
+    public static CustomAudioSource AdditionalImpactSound(this Weapon weapon) {
+      ExtWeaponDef extWeapon = weapon.exDef();
+      if (CustomAmmoCategories.checkExistance(weapon.StatCollection, CustomAmmoCategories.WeaponModeStatisticName) == true) {
+        string modeId = weapon.StatCollection.GetStatistic(CustomAmmoCategories.WeaponModeStatisticName).Value<string>();
+        if (extWeapon.Modes.ContainsKey(modeId)) {
+          WeaponMode mode = extWeapon.Modes[modeId];
+          if (mode.AdditionalAudioEffect != null) {
+            return mode.AdditionalAudioEffect;
+          }
+        }
+      }
+      if (CustomAmmoCategories.checkExistance(weapon.StatCollection, CustomAmmoCategories.AmmoIdStatName) == true) {
+        string CurrentAmmoId = weapon.StatCollection.GetStatistic(CustomAmmoCategories.AmmoIdStatName).Value<string>();
+        ExtAmmunitionDef extAmmoDef = CustomAmmoCategories.findExtAmmo(CurrentAmmoId);
+        if (extAmmoDef.AdditionalAudioEffect != null) {
+          return extAmmoDef.AdditionalAudioEffect;
+        }
+      }
+      return extWeapon.AdditionalAudioEffect;
+    }
     public static void SpawnAdditionalImpactEffect(this Weapon weapon,Vector3 pos) {
       Vector3 scale;
       string VFXprefab = weapon.AdditionalImpactEffect(out scale);
@@ -66,6 +89,26 @@ namespace CustAmmoCategories {
       ObjectSpawnDataSelf vfx = new ObjectSpawnDataSelf(VFXprefab, pos, Quaternion.identity, scale, true, false);
       vfx.SpawnSelf(weapon.parent.Combat);
       effects.Add(vfx);
+    }
+  }
+  [HarmonyPatch(typeof(WeaponEffect))]
+  [HarmonyPatch("PlayImpactAudio")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { })]
+  public static class WeaponEffect_PlayImpactAudio{
+    public static bool Prefix(WeaponEffect __instance) {
+      Log.LogWrite("WeaponEffect_PlayImpactAudio.Postfix\n");
+      if (__instance.weapon == null) { return true; }
+      CustomAudioSource snd = __instance.weapon.AdditionalImpactSound();
+      if(snd != null) {
+        Log.LogWrite(" additional sound found. Playing ... "+snd.id+"\n");
+        uint testid = SceneSingletonBehavior<WwiseManager>.Instance.EnumValueToEventId<AudioEventList_explosion>(AudioEventList_explosion.explosion_large);
+        Log.LogWrite(" additional sound found. Playing ... " + snd.id + " test id: "+testid+"\n");
+        AkGameObj projectileAudioObject = (AkGameObj)typeof(WeaponEffect).GetField("projectileAudioObject", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(__instance);
+        snd.play(projectileAudioObject);
+        Log.LogWrite(" played\n");
+      }
+      return true;
     }
   }
   [HarmonyPatch(typeof(CombatGameState))]

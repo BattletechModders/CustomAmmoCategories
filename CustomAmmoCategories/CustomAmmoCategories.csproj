@@ -68,6 +68,7 @@
     <Compile Include="AdditionalImpactVFX.cs" />
     <Compile Include="AdvWeaponHitInfo.cs" />
     <Compile Include="AIWeaponChoose.cs" />
+    <Compile Include="AmmoCookoff.cs" />
     <Compile Include="AmmoEject.cs" />
     <Compile Include="AmmunitionDef.cs" />
     <Compile Include="AMSBallisticEffect.cs" />
@@ -81,6 +82,7 @@
     <Compile Include="ApplyHeatSinks.cs" />
     <Compile Include="AttackSequenceImpact.cs" />
     <Compile Include="AttackSequenceWatchdog.cs" />
+    <Compile Include="AudioPlayer.cs" />
     <Compile Include="BulletBallistic.cs" />
     <Compile Include="CACWeaponEffect.cs" />
     <Compile Include="CheatHttpServer.cs" />

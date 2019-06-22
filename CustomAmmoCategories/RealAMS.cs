@@ -255,6 +255,7 @@ namespace CustAmmoCategories {
       return result;
     }
     public static WeaponEffect getWeaponEffect(this Weapon weapon) {
+      Log.LogWrite(weapon.defId+".getWeaponEffect\n");
       if ((UnityEngine.Object)weapon.weaponRep == (UnityEngine.Object)null) {
         CustomAmmoCategoriesLog.Log.LogWrite("WARNING! Weapon "+weapon.defId+" "+weapon.UIName+" on "+weapon.parent.DisplayName+":"+weapon.parent.GUID+" has no representation! It no visuals will be played\n",true);
         return null;
@@ -269,19 +270,24 @@ namespace CustAmmoCategories {
       string wGUID = weapon.StatCollection.GetStatistic(CustomAmmoCategories.GUIDStatisticName).Value<string>();
       WeaponMode weaponMode = CustomAmmoCategories.getWeaponMode(weapon);
       string weaponEffectId = weaponMode.WeaponEffectID;
+      Log.LogWrite(" weaponMode.WeaponEffectID = "+ weaponMode.WeaponEffectID + "\n");
       WeaponEffect currentEffect = (WeaponEffect)null;
       if (string.IsNullOrEmpty(weaponEffectId)) {
+        Log.LogWrite(" null or empty\n");
         currentEffect = weapon.weaponRep.WeaponEffect;
         weaponEffectId = CustomAmmoCategories.findExtAmmo(ammoId).WeaponEffectID;
+        Log.LogWrite(" ammo.WeaponEffectID = "+ weaponEffectId + "\n");
         if (string.IsNullOrEmpty(weaponEffectId)) {
           weaponEffectId = weapon.weaponDef.WeaponEffectID;
         }
       }
       if (weaponEffectId == weapon.weaponDef.WeaponEffectID) {
+        Log.LogWrite(" same as per weapon\n");
         currentEffect = weapon.weaponRep.WeaponEffect;
         weaponEffectId = weapon.weaponDef.WeaponEffectID;
       };
       if (currentEffect == (WeaponEffect)null) {
+        Log.LogWrite(" getting weapon effect "+wGUID+"."+weaponEffectId+"\n");
         currentEffect = CustomAmmoCategories.getWeaponEffect(wGUID, weaponEffectId);
       }
       if (currentEffect == (WeaponEffect)null) {
@@ -386,11 +392,14 @@ namespace CustAmmoCategories {
       }
       MissileLauncherEffect currentEffect = CustomAmmoCategories.getWeaponEffect(weapon) as MissileLauncherEffect;
       if (currentEffect == null) { return; }
+      Log.LogWrite("effect is not null\n");
       int numberOfEmitters = (int)typeof(WeaponEffect).GetField("numberOfEmitters", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(currentEffect);
       int emitterIndex = hitIndex % numberOfEmitters;
+      Log.LogWrite("number of emmiters getted\n");
       Transform startingTransform = weapon.weaponRep.vfxTransforms[emitterIndex];
       CachedMissileCurve cachedCurve = new CachedMissileCurve();
       cachedCurve.weapon = weapon;
+      Log.LogWrite("transform getted.\n");
       CombatGameState Combat = (CombatGameState)typeof(WeaponEffect).GetField("Combat", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(currentEffect);
       cachedCurve.startPos = startingTransform.position;
       SpreadHitRecord spreadCacheRecord = CustomAmmoCategories.getSpreadCache(hitInfo, hitIndex);
@@ -402,6 +411,7 @@ namespace CustAmmoCategories {
       } else {
         combatantByGuid = Combat.FindCombatantByGUID(targetGUID);
       }
+      Log.LogWrite("408\n");
       cachedCurve.target = combatantByGuid;
       int hitLocation = hitInfo.hitLocations[hitIndex];
       if (combatantByGuid != null) {
@@ -416,6 +426,7 @@ namespace CustAmmoCategories {
         spreadCacheRecord.hitInfo.hitPositions[spreadCacheRecord.internalIndex] = cachedCurve.endPos;
         CustomAmmoCategoriesLog.Log.LogWrite("Altering spread position. target " + combatantByGuid.DisplayName + " " + combatantByGuid.GUID + " " + spreadCacheRecord.hitInfo.hitPositions[spreadCacheRecord.internalIndex] + "\n");
       }
+      Log.LogWrite("423\n");
       cachedCurve.missileProjectileSpeed = currentEffect.projectileSpeed;
       float distance = Vector3.Distance(cachedCurve.startPos, cachedCurve.endPos);
       if (cachedCurve.missileProjectileSpeed < CustomAmmoCategories.Epsilon) {
@@ -427,6 +438,7 @@ namespace CustAmmoCategories {
       float max = cachedCurve.missileProjectileSpeed * 0.1f;
       cachedCurve.missileProjectileSpeed += Random.Range(-max, max);
       //if (DirectStrike) { cachedCurve.missileProjectileSpeed *= 2.0f; }
+      Log.LogWrite("435\n");
       if (CustomAmmoCategories.getWeaponAlwaysIndirectVisuals(weapon)) { indirectFire = true; };
       cachedCurve.isIndirect = indirectFire;
       cachedCurve.launcherEffect = currentEffect;
@@ -437,6 +449,7 @@ namespace CustAmmoCategories {
       cachedCurve.groupIndex = hitInfo.attackGroupIndex;
       cachedCurve.AMSHitChance = CustomAmmoCategories.getWeaponAMSHitChance(weapon);
       cachedCurve.AMSImunne = AMSImmune;
+      Log.LogWrite("446\n");
       if (DirectStrike) {
         cachedCurve.spline = CustomAmmoCategories.GenerateDirectMissilePath(
           currentEffect.missileCurveStrength, currentEffect.missileCurveFrequency, currentEffect.isSRM, hitLocation, cachedCurve.startPos, cachedCurve.endPos, Combat);
@@ -449,6 +462,7 @@ namespace CustAmmoCategories {
             currentEffect.missileCurveStrength, currentEffect.missileCurveFrequency, currentEffect.isSRM, hitLocation, cachedCurve.startPos, cachedCurve.endPos, Combat);
         }
       }
+      Log.LogWrite("459\n");
       cachedCurve.splineObject = new GameObject();
       cachedCurve.UnitySpline = cachedCurve.splineObject.AddComponent<CurvySpline>();
       cachedCurve.UnitySpline.Interpolation = CurvyInterpolation.Bezier;
@@ -456,8 +470,6 @@ namespace CustAmmoCategories {
       cachedCurve.UnitySpline.Closed = false;
       cachedCurve.UnitySpline.Add(cachedCurve.spline);
       cachedCurve.UnitySpline.Refresh();
-
-
       if (CustomAmmoCategories.MissileCurveCache.ContainsKey(hitInfo.attackSequenceId) == false) {
         CustomAmmoCategories.MissileCurveCache.Add(hitInfo.attackSequenceId, new Dictionary<int, Dictionary<int, Dictionary<int, CachedMissileCurve>>>());
       }
@@ -468,6 +480,7 @@ namespace CustAmmoCategories {
         CustomAmmoCategories.MissileCurveCache[hitInfo.attackSequenceId][hitInfo.attackGroupIndex].Add(hitInfo.attackWeaponIndex, new Dictionary<int, CachedMissileCurve>());
       };
       CustomAmmoCategories.MissileCurveCache[hitInfo.attackSequenceId][hitInfo.attackGroupIndex][hitInfo.attackWeaponIndex].Add(hitIndex, cachedCurve);
+      Log.LogWrite("477\n");
     }
 
     public static void genreateAMSInterceptionInfo(AttackDirector.AttackSequence instance) {
@@ -795,9 +808,15 @@ namespace CustomAmmoCategoriesPatches {
   [HarmonyPatch(new Type[] { typeof(WeaponHitInfo), typeof(int), typeof(int) })]
   [HarmonyPriority(Priority.HigherThanNormal)]
   public static class WeaponEffect_Fire {
-    public static bool Prefix(WeaponEffect __instance,ref WeaponHitInfo hitInfo, int hitIndex, int emitterIndex, ref Vector3 __state) {
-      __state = hitInfo.hitPositions[hitIndex];
-      Log.LogWrite("WeaponEffect.Fire "+__instance.weapon.UIName+" " + hitInfo.attackWeaponIndex + ":" + hitIndex + " save HitPosition "+__state+"\n");
+    public static bool Prefix(WeaponEffect __instance, ref WeaponHitInfo hitInfo, int hitIndex, int emitterIndex, ref Vector3 __state) {
+      try {
+        Log.LogWrite("WeaponEffect.Fire ");
+        __state = hitInfo.hitPositions[hitIndex];
+        Log.LogWrite(" save HitPosition " + __state+" ");
+        Log.LogWrite(__instance.weapon.defId + " " + hitInfo.attackWeaponIndex + ":" + hitIndex + "\n");
+      } catch (Exception e) {
+        Log.LogWrite(e.ToString()+"\n");
+      }
       return true;
     }
     public static void Postfix(WeaponEffect __instance,ref WeaponHitInfo hitInfo, int hitIndex, int emitterIndex, ref Vector3 __state) {
@@ -1235,7 +1254,7 @@ namespace CustomAmmoCategoriesPatches {
                 ICombatant combatant = __instance.Director.Combat.FindCombatantByGUID(shrapnelInf.Key);
                 WeaponHitInfo shrapnellHitInfo = shrapnelInf.Value.hitInfo;
                 if (combatant != null) {
-                  AttackSequence_GenerateHitInfo.generateWeaponHitInfo(__instance, combatant, weapon, groupIndex, weaponIndex, shrapnelInf.Value.hitInfo.numberOfShots, __instance.indirectFire, 1f, ref shrapnellHitInfo, true);
+                  AttackSequence_GenerateHitInfo.generateWeaponHitInfo(__instance, combatant, weapon, groupIndex, weaponIndex, shrapnelInf.Value.hitInfo.numberOfShots, __instance.indirectFire, 1f, ref shrapnellHitInfo, true,true);
                 }
                 shrapnelInf.Value.hitInfo = shrapnellHitInfo;
               }

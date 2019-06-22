@@ -206,7 +206,7 @@ namespace CustAmmoCategories
                 }
                 if (Path.GetFileName(filename) == "listitems")
                 {
-                    CustomAmmoCategoriesLog.Log.LogWrite("Запрос на перечисление пилотов предмета\n");
+                    CustomAmmoCategoriesLog.Log.LogWrite("Запрос на перечисление типов предмета\n");
                     System.Collections.Generic.Dictionary<string, string> jresp = new Dictionary<string, string>();
                     BattleTech.GameInstance gameInstance = BattleTech.UnityGameInstance.BattleTechGame;
                     CustomAmmoCategoriesLog.Log.LogWrite("Получен gameInstance\n");

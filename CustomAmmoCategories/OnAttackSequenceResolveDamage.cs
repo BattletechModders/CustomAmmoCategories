@@ -33,6 +33,9 @@ namespace CustAmmoCategories {
         }
       }
     }
+    public static bool StatusEffectsPerHit(this Weapon weapon) {
+      return weapon.exDef().StatusEffectsPerHit == TripleBoolean.True;
+    }
   }
 }
 
@@ -215,6 +218,7 @@ namespace CustomAmmoCategoriesPatches {
   [HarmonyPatch(new Type[] { typeof(MessageCenterMessage) })]
   public static class AttackSequence_OnAttackSequenceResolveDamage {
     public static void ResolveDamageWithSecondary(ICombatant targetCombatant, WeaponHitInfo hitInfo, AttackDirector.AttackSequence instance, AttackSequenceResolveDamageMessage resolveDamageMessage, Weapon weapon) {
+      Log.LogWrite(" resolving damage secondary for target " + targetCombatant.DisplayName + " " + targetCombatant.GUID + " ns:" + hitInfo.numberOfShots + " hl length:" + hitInfo.hitLocations.Length + "\n");
       targetCombatant.ResolveWeaponDamage(resolveDamageMessage.hitInfo);
       if (hitInfo.GetFirstHitLocationForTarget(targetCombatant.GUID) >= 0) {
         typeof(AttackDirector.AttackSequence).GetProperty("attackCompletelyMissed", BindingFlags.Instance | BindingFlags.Public).GetSetMethod(true).Invoke(instance, new object[1] { false });
@@ -227,56 +231,117 @@ namespace CustomAmmoCategoriesPatches {
           combatantByGuid.ResolveWeaponDamage(resolveDamageMessage.hitInfo);
         }
       }
-      for (int index1 = 0; index1 < instance.allAffectedTargetIds.Count; ++index1) {
-        AbstractActor actorByGuid = targetCombatant.Combat.FindActorByGUID(instance.allAffectedTargetIds[index1]);
+      Dictionary<string, List<int>> hitsCount = new Dictionary<string, List<int>>();
+      for (int hitIndex = 0; hitIndex < hitInfo.numberOfShots; ++hitIndex) {
+        int hitLocation = hitInfo.hitLocations[hitIndex];
+        string hitTarget = targetCombatant.GUID;
+        if ((hitLocation == 0) || (hitLocation == 65536)) {
+          int sHitLocation = hitInfo.secondaryHitLocations[hitIndex];
+          if ((sHitLocation != 0) && (sHitLocation != 65536)) {
+            hitLocation = sHitLocation;
+            if (string.IsNullOrEmpty(hitInfo.secondaryTargetIds[hitIndex]) == false) {
+              hitTarget = hitInfo.secondaryTargetIds[hitIndex];
+            }
+          }
+        }
+        if ((hitLocation != 0) && (hitLocation != 65536)) {
+          if (hitsCount.ContainsKey(hitTarget) == false) {
+            hitsCount.Add(hitTarget, new List<int>());
+          }
+          hitsCount[hitTarget].Add(hitLocation);
+        }
+      }
+      Log.LogWrite(" hits counts:\n");
+      foreach (var hitCount in hitsCount) {
+        Log.LogWrite("  " + hitCount.Key + ":" + hitCount.Value.Count + "\n");
+        foreach (int hitLocation in hitCount.Value) {
+          Log.LogWrite("   " + hitLocation + "\n");
+        }
+      }
+      bool effectPerHit = weapon.StatusEffectsPerHit();
+      //for (int index1 = 0; index1 < instance.allAffectedTargetIds.Count; ++index1) {
+      foreach (var hitCount in hitsCount) {
+        if (hitCount.Value.Count == 0) { continue; };
+        //AbstractActor actorByGuid = targetCombatant.Combat.FindActorByGUID(instance.allAffectedTargetIds[index1]);
+        AbstractActor actorByGuid = targetCombatant.Combat.FindActorByGUID(hitCount.Key);
         if (actorByGuid != null) {
-          int locationForTarget = hitInfo.GetFirstHitLocationForTarget(actorByGuid.GUID);
-          if (locationForTarget >= 0 && !actorByGuid.IsDead) {
-            foreach (EffectData statusEffect in weapon.weaponDef.statusEffects) {
-              if (statusEffect.targetingData.effectTriggerType == EffectTriggerType.OnHit) {
-                string effectID = string.Format("OnHitEffect_{0}_{1}", (object)instance.attacker.GUID, (object)resolveDamageMessage.hitInfo.attackSequenceId);
-                instance.Director.Combat.EffectManager.CreateEffect(statusEffect, effectID, instance.stackItemUID, (ICombatant)instance.attacker, (ICombatant)actorByGuid, hitInfo, locationForTarget, false);
-                instance.Director.Combat.MessageCenter.PublishMessage((MessageCenterMessage)new FloatieMessage(actorByGuid.GUID, actorByGuid.GUID, statusEffect.Description.Name, FloatieMessage.MessageNature.Debuff));
+          Log.LogWrite("  testing actor " + actorByGuid.DisplayName + ":" + actorByGuid.GUID + "\n");
+          if (actorByGuid.IsDead) { continue; }
+          //int statCount = hitCount.Value;
+          //if (effectPerProjectile == false) { statCount = 1; };
+          //int locationForTarget = hitInfo.GetFirstHitLocationForTarget(actorByGuid.GUID);
+          //if (locationForTarget >= 0 && !actorByGuid.IsDead) {
+          foreach (EffectData statusEffect in CustomAmmoCategories.getWeaponStatusEffects(weapon)) {
+            if (statusEffect.targetingData.effectTriggerType == EffectTriggerType.OnHit) {
+              string effectID = string.Format("OnHitEffect_{0}_{1}", (object)instance.attacker.GUID, (object)hitInfo.attackSequenceId);
+              if (statusEffect.Description == null || statusEffect.Description.Id == null || statusEffect.Description.Name == null) {
+                CustomAmmoCategoriesLog.Log.LogWrite($"WARNING: EffectID:{effectID} has broken effectDescId:{statusEffect?.Description.Id} effectDescName:{statusEffect?.Description.Name}! SKIPPING\n", true);
+              } else {
+                foreach (int hitLocation in hitCount.Value) {
+                  CustomAmmoCategoriesLog.Log.LogWrite($"Applying effectID:{effectID} with effectDescId:{statusEffect?.Description.Id} effectDescName:{statusEffect?.Description.Name}\n");
+                  instance.Director.Combat.EffectManager.CreateEffect(statusEffect, effectID, instance.stackItemUID, (ICombatant)instance.attacker, (ICombatant)actorByGuid, hitInfo, hitLocation, false);
+                  if (effectPerHit == false) { break; };
+                }
+                if (effectPerHit == false) {
+                  instance.Director.Combat.MessageCenter.PublishMessage((MessageCenterMessage)new FloatieMessage(actorByGuid.GUID, actorByGuid.GUID, statusEffect.Description.Name, FloatieMessage.MessageNature.Debuff));
+                } else {
+                  instance.Director.Combat.MessageCenter.PublishMessage((MessageCenterMessage)new FloatieMessage(actorByGuid.GUID, actorByGuid.GUID, statusEffect.Description.Name + " x " + hitCount.Value.Count.ToString(), FloatieMessage.MessageNature.Debuff));
+                }
               }
             }
-            List<EffectData> effectsForTriggerType = actorByGuid.GetComponentStatusEffectsForTriggerType(EffectTriggerType.OnDamaged);
-            for (int index2 = 0; index2 < effectsForTriggerType.Count; ++index2)
-              instance.Director.Combat.EffectManager.CreateEffect(effectsForTriggerType[index2], string.Format("OnDamagedEffect_{0}_{1}", (object)actorByGuid.GUID, (object)resolveDamageMessage.hitInfo.attackSequenceId), instance.stackItemUID, (ICombatant)actorByGuid, (ICombatant)instance.attacker, hitInfo, locationForTarget, false);
+          }
+          List<EffectData> effectsForTriggerType = actorByGuid.GetComponentStatusEffectsForTriggerType(EffectTriggerType.OnDamaged);
+          for (int index2 = 0; index2 < effectsForTriggerType.Count; ++index2) {
+            instance.Director.Combat.EffectManager.CreateEffect(effectsForTriggerType[index2], string.Format("OnDamagedEffect_{0}_{1}", (object)actorByGuid.GUID, (object)resolveDamageMessage.hitInfo.attackSequenceId), instance.stackItemUID, (ICombatant)actorByGuid, (ICombatant)instance.attacker, hitInfo, hitCount.Value[0], false);
           }
         }
       }
     }
     public static void ResolveDamagePrimary(ICombatant targetCombatant, WeaponHitInfo hitInfo, AttackDirector.AttackSequence instance, AttackSequenceResolveDamageMessage resolveDamageMessage, Weapon weapon) {
-      CustomAmmoCategoriesLog.Log.LogWrite(" resolving damage for target " + targetCombatant.DisplayName + " " + targetCombatant.GUID + " ns:" + hitInfo.numberOfShots + " hl length:" + hitInfo.hitLocations.Length + "\n");
+      CustomAmmoCategoriesLog.Log.LogWrite(" resolving damage primary for target " + targetCombatant.DisplayName + " " + targetCombatant.GUID + " ns:" + hitInfo.numberOfShots + " hl length:" + hitInfo.hitLocations.Length + "\n");
       targetCombatant.ResolveWeaponDamage(hitInfo);
       AbstractActor target = targetCombatant as AbstractActor;
-      int attackIndex = -1;
+      //int attackIndex = -1;
       int num1 = 0;
       int num2 = 65536;
+      List<int> hitsCount = new List<int>();
       for (int index = 0; index < hitInfo.numberOfShots; ++index) {
         int hitLocation = hitInfo.hitLocations[index];
-        if (hitLocation != num1 && hitLocation != num2 && attackIndex == -1) {
-          attackIndex = hitInfo.hitLocations[index];
+        if (hitLocation != num1 && hitLocation != num2) {
+          //if (attackIndex == -1) { attackIndex = hitLocation; };
+          hitsCount.Add(hitLocation);
         }
       }
-      if (attackIndex > -1) {
+      if (hitsCount.Count <= 0) {
         //typeof(AttackDirector.AttackSequence).GetProperty("attackCompletelyMissed", BindingFlags.NonPublic).SetValue(__instance, (object)false);  
         PropertyInfo property = typeof(AttackDirector.AttackSequence).GetProperty("attackCompletelyMissed");
         property.DeclaringType.GetProperty("attackCompletelyMissed");
         property.GetSetMethod(true).Invoke(instance, new object[1] { (object)false });
+        Log.LogWrite(" attack completely missed\n");
         //__instance.attackCompletelyMissed = false;
       }
-      if (attackIndex > -1 && !targetCombatant.IsDead && target != null) {
+      Log.LogWrite(" hits counts:"+hitsCount.Count+"\n");
+      //if (hitInfo.isAOEHitInfo()) { hitCount = 1; };
+      bool effectPerHit = weapon.StatusEffectsPerHit();
+      if (hitInfo.isAOEHitInfo()) { effectPerHit = false; };
+      if ((hitsCount.Count > 0) && (!targetCombatant.IsDead) && (target != null)) {
         foreach (EffectData statusEffect in CustomAmmoCategories.getWeaponStatusEffects(weapon)) {
           if (statusEffect.targetingData.effectTriggerType == EffectTriggerType.OnHit) {
             string effectID = string.Format("OnHitEffect_{0}_{1}", (object)instance.attacker.GUID, (object)hitInfo.attackSequenceId);
             if (statusEffect.Description == null || statusEffect.Description.Id == null || statusEffect.Description.Name == null) {
               CustomAmmoCategoriesLog.Log.LogWrite($"WARNING: EffectID:{effectID} has broken effectDescId:{statusEffect?.Description.Id} effectDescName:{statusEffect?.Description.Name}! SKIPPING\n", true);
             } else {
-              CustomAmmoCategoriesLog.Log.LogWrite($"Applying effectID:{effectID} with effectDescId:{statusEffect?.Description.Id} effectDescName:{statusEffect?.Description.Name}\n");
-              instance.Director.Combat.EffectManager.CreateEffect(statusEffect, effectID, instance.stackItemUID, (ICombatant)instance.attacker, targetCombatant, hitInfo, attackIndex, false);
+              foreach (int HitLocation in hitsCount) {
+                CustomAmmoCategoriesLog.Log.LogWrite($"Applying effectID:{effectID} with effectDescId:{statusEffect?.Description.Id} effectDescName:{statusEffect?.Description.Name}\n");
+                instance.Director.Combat.EffectManager.CreateEffect(statusEffect, effectID, instance.stackItemUID, (ICombatant)instance.attacker, targetCombatant, hitInfo, HitLocation, false);
+                if (effectPerHit == false) { break; }
+              }
               if (targetCombatant != null) {
-                instance.Director.Combat.MessageCenter.PublishMessage((MessageCenterMessage)new FloatieMessage(targetCombatant.GUID, targetCombatant.GUID, statusEffect.Description.Name, FloatieMessage.MessageNature.Debuff));
+                if (effectPerHit == false) {
+                  instance.Director.Combat.MessageCenter.PublishMessage((MessageCenterMessage)new FloatieMessage(targetCombatant.GUID, targetCombatant.GUID, statusEffect.Description.Name, FloatieMessage.MessageNature.Debuff));
+                } else {
+                  instance.Director.Combat.MessageCenter.PublishMessage((MessageCenterMessage)new FloatieMessage(targetCombatant.GUID, targetCombatant.GUID, statusEffect.Description.Name + " x "+ hitsCount.Count.ToString(), FloatieMessage.MessageNature.Debuff));
+                }
               }
             }
           }
@@ -284,7 +349,7 @@ namespace CustomAmmoCategoriesPatches {
         if (target != null) {
           List<EffectData> effectsForTriggerType = target.GetComponentStatusEffectsForTriggerType(EffectTriggerType.OnDamaged);
           for (int index = 0; index < effectsForTriggerType.Count; ++index) {
-            instance.Director.Combat.EffectManager.CreateEffect(effectsForTriggerType[index], string.Format("OnDamagedEffect_{0}_{1}", (object)target.GUID, (object)hitInfo.attackSequenceId), instance.stackItemUID, targetCombatant, (ICombatant)instance.attacker, hitInfo, attackIndex, false);
+            instance.Director.Combat.EffectManager.CreateEffect(effectsForTriggerType[index], string.Format("OnDamagedEffect_{0}_{1}", (object)target.GUID, (object)hitInfo.attackSequenceId), instance.stackItemUID, targetCombatant, (ICombatant)instance.attacker, hitInfo, hitsCount[0], false);
           }
         }
       }

@@ -72,6 +72,7 @@ namespace CustAmmoCategories {
     public float AdditionalImpactVFXScaleZ { get; set; }
     public int ClearMineFieldRadius { get; set; }
     public TripleBoolean BallisticDamagePerPallet { get; set; }
+    public CustomAudioSource AdditionalAudioEffect { get; set; }
     public WeaponMode() {
       Id = WeaponMode.NONE_MODE_NAME;
       UIName = WeaponMode.BASE_MODE_NAME;
@@ -135,6 +136,7 @@ namespace CustAmmoCategories {
       IsAMS = TripleBoolean.NotSet;
       IsAAMS = TripleBoolean.NotSet;
       BallisticDamagePerPallet = TripleBoolean.NotSet;
+      AdditionalAudioEffect = null;
     }
     public void fromJSON(string json) {
       JObject jWeaponMode = JObject.Parse(json);
@@ -218,6 +220,9 @@ namespace CustAmmoCategories {
       }
       if (jWeaponMode["AttackRecoil"] != null) {
         this.AttackRecoil = (int)jWeaponMode["AttackRecoil"];
+      }
+      if (jWeaponMode["AdditionalAudioEffect"] != null) {
+        this.AdditionalAudioEffect = new CustomAudioSource((string)jWeaponMode["AdditionalAudioEffect"]);
       }
       if (jWeaponMode["WeaponEffectID"] != null) {
         this.WeaponEffectID = (string)jWeaponMode["WeaponEffectID"];

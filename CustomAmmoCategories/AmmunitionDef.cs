@@ -88,6 +88,7 @@ namespace CustAmmoCategories {
     public TripleBoolean IsAMS { get; set; }
     public TripleBoolean IsAAMS { get; set; }
     public TripleBoolean BallisticDamagePerPallet { get; set; }
+    public CustomAudioSource AdditionalAudioEffect { get; set; }
     public ExtAmmunitionDef() {
       AccuracyModifier = 0;
       DirectFireModifier = 0;
@@ -165,6 +166,7 @@ namespace CustAmmoCategories {
       IsAMS = TripleBoolean.NotSet;
       IsAAMS = TripleBoolean.NotSet;
       BallisticDamagePerPallet = TripleBoolean.NotSet;
+      AdditionalAudioEffect = null;
     }
   }
 }
@@ -327,6 +329,10 @@ namespace CustomAmmoCategoriesPatches {
       if (defTemp["IFFDef"] != null) {
         extAmmoDef.IFFDef = (string)defTemp["IFFDef"];
         defTemp.Remove("IFFDef");
+      }
+      if (defTemp["AdditionalAudioEffect"] != null) {
+        extAmmoDef.AdditionalAudioEffect = new CustomAudioSource((string)defTemp["AdditionalAudioEffect"]);
+        defTemp.Remove("AdditionalAudioEffect");
       }
       /*if (defTemp["SurfaceImpactDesignMaskId"] != null) {
         extAmmoDef.SurfaceImpactDesignMaskId = JsonConvert.DeserializeObject<Dictionary<TerrainMaskFlags, string>>(defTemp["SurfaceImpactDesignMaskId"].ToString());

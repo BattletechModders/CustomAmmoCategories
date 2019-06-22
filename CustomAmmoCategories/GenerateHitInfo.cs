@@ -93,64 +93,97 @@ namespace CustomAmmoCategoriesPatches {
         AttackDirector.hitLogger.Log((object)string.Format("???????? DODGE ROLLS (GetStreakHits): Weapon Group: {0} // Weapon: {1}", (object)groupIdx, (object)weaponIdx));
       hitInfo.dodgeRolls = instance.GetRandomNumbers(groupIdx, weaponIdx, hitInfo.numberOfShots);
       hitInfo.hitVariance = instance.GetVarianceSums(groupIdx, weaponIdx, hitInfo.numberOfShots, weapon);
-      int previousHitLocation = 0;
+      int primeHitLocation = 0;
       float originalMultiplier = 1f;
       float adjacentMultiplier = 1f;
       AbstractActor target = instance.chosenTarget as AbstractActor;
       Team team = weapon == null || weapon.parent == null || weapon.parent.team == null ? (Team)null : weapon.parent.team;
-      bool primeSucceeded = false;
-      bool primeFlag = false;
-      for (int hitIndex = 0; hitIndex < hitInfo.numberOfShots; ++hitIndex) {
-        float corrRolls = (float)typeof(AttackDirector.AttackSequence).GetMethod("GetCorrectedRoll", BindingFlags.NonPublic | BindingFlags.Instance).Invoke(instance, new object[2] { (object)hitInfo.toHitRolls[hitIndex], (object)team });
-        //bool succeeded = (double)instance.GetCorrectedRoll(hitInfo.toHitRolls[hitIndex], team) <= (double)toHitChance;
+      ICombatant primeTarget = instance.chosenTarget;
+      Log.LogWrite("Prime hit Generation\n");
+      bool primeSuccess = false;
+      {
+        float corrRolls = (float)typeof(AttackDirector.AttackSequence).GetMethod("GetCorrectedRoll", BindingFlags.NonPublic | BindingFlags.Instance).Invoke(instance, new object[2] { (object)hitInfo.toHitRolls[0], (object)team });
         bool succeeded = (double)corrRolls <= (double)toHitChance;
-        if (team != null) {
-          team.ProcessRandomRoll(toHitChance, succeeded);
-        }
-        bool flag = false;
+        bool targetDoggle = false;
         if (target != null) {
-          flag = target.CheckDodge(instance.attacker, weapon, hitInfo, hitIndex, instance.IsBreachingShot);
+          targetDoggle = target.CheckDodge(instance.attacker, weapon, hitInfo, 0, instance.IsBreachingShot);
         }
-        if (hitIndex == 0) {
-          primeSucceeded = succeeded;
-          primeFlag = flag;
-          CustomAmmoCategoriesLog.Log.LogWrite("  prime success:" + primeSucceeded + " dodge:" + primeFlag + "\n");
-        }
-        if (primeSucceeded && primeFlag) {
-          hitInfo.dodgeSuccesses[hitIndex] = true;
+        if (succeeded && targetDoggle) {
+          hitInfo.dodgeSuccesses[0] = true;
           instance.FlagAttackContainsDodge(target.GUID);
         } else {
-          hitInfo.dodgeSuccesses[hitIndex] = false;
+          hitInfo.dodgeSuccesses[0] = false;
         }
-        if (primeSucceeded && !primeFlag) {
-          if (previousHitLocation == 0) {
-            previousHitLocation = instance.chosenTarget.GetHitLocation(instance.attacker, instance.attackPosition, hitInfo.locationRolls[hitIndex], instance.calledShotLocation, instance.attacker.CalledShotBonusMultiplier);
-            hitInfo.hitLocations[hitIndex] = previousHitLocation;
-            CustomAmmoCategoriesLog.Log.LogWrite("  hitLocation:" + hitInfo.hitLocations[hitIndex] + "\n");
-            if (AttackDirector.attackLogger.IsLogEnabled)
-              AttackDirector.attackLogger.Log((object)string.Format("SEQ:{0}: WEAP:{1} SHOT:{2} Initial streak hit! Location: {3}", (object)instance.id, (object)weaponIdx, (object)hitIndex, (object)hitInfo.hitLocations[hitIndex]));
-            if (AttackDirector.hitminLogger.IsLogEnabled)
-              AttackDirector.hitminLogger.Log((object)string.Format("WEAPON: {0} - SHOT: {1} Hits! ////// INITIAL HIT - HEX VAL {2}", (object)weapon.Name, (object)hitIndex, (object)hitInfo.hitLocations[hitIndex]));
-          } else {
-            hitInfo.hitLocations[hitIndex] = instance.chosenTarget.GetAdjacentHitLocation(instance.attackPosition, hitInfo.locationRolls[hitIndex], previousHitLocation, originalMultiplier, adjacentMultiplier);
-            CustomAmmoCategoriesLog.Log.LogWrite("  hitLocation:" + hitInfo.hitLocations[hitIndex] + "\n");
-            if (AttackDirector.attackLogger.IsLogEnabled)
-              AttackDirector.attackLogger.Log((object)string.Format("SEQ:{0}: WEAP:{1} SHOT:{2} streak hit! Location: {3}", (object)instance.id, (object)weaponIdx, (object)hitIndex, (object)hitInfo.hitLocations[hitIndex]));
-            if (AttackDirector.hitminLogger.IsLogEnabled)
-              AttackDirector.hitminLogger.Log((object)string.Format("WEAPON: {0} - SHOT: {1} Hits! ////// STREAK HIT - HEX VAL {2}", (object)weapon.Name, (object)hitIndex, (object)hitInfo.hitLocations[hitIndex]));
-          }
-          hitInfo.hitQualities[hitIndex] = instance.Director.Combat.ToHit.GetBlowQuality(instance.attacker, instance.attackPosition, weapon, instance.chosenTarget, instance.meleeAttackType, instance.IsBreachingShot);
+        if (succeeded && !targetDoggle) {
+          hitInfo.hitLocations[0] = instance.chosenTarget.GetHitLocation(instance.attacker, instance.attackPosition, hitInfo.locationRolls[0], instance.calledShotLocation, instance.attacker.CalledShotBonusMultiplier);
+          primeSuccess = true;
+          primeHitLocation = hitInfo.hitLocations[0];
           instance.FlagShotHit();
         } else {
-          hitInfo.hitLocations[hitIndex] = 0;
-          CustomAmmoCategoriesLog.Log.LogWrite("  hitLocation:" + hitInfo.hitLocations[hitIndex] + "\n");
-          if (AttackDirector.attackLogger.IsLogEnabled)
-            AttackDirector.attackLogger.Log((object)string.Format("SEQ:{0}: WEAP:{1} SHOT:{2} Miss!", (object)instance.id, (object)weaponIdx, (object)hitIndex, (object)hitInfo.hitLocations[hitIndex]));
-          if (AttackDirector.hitminLogger.IsLogEnabled)
-            AttackDirector.hitminLogger.Log((object)string.Format("WEAPON: {0} - SHOT: {1} Misses!", (object)weapon.Name, (object)hitIndex));
+          hitInfo.hitLocations[0] = 0;
           instance.FlagShotMissed();
         }
-        hitInfo.hitPositions[hitIndex] = instance.chosenTarget.GetImpactPosition(instance.attacker, instance.attackPosition, weapon, ref hitInfo.hitLocations[hitIndex], ref hitInfo.attackDirections[hitIndex], ref hitInfo.secondaryTargetIds[hitIndex], ref hitInfo.secondaryHitLocations[hitIndex]);
+        hitInfo.hitQualities[0] = instance.Director.Combat.ToHit.GetBlowQuality(instance.attacker, instance.attackPosition, weapon, instance.chosenTarget, instance.meleeAttackType, instance.IsBreachingShot);
+        hitInfo.hitPositions[0] = instance.chosenTarget.GetImpactPosition(instance.attacker, instance.attackPosition, weapon, ref hitInfo.hitLocations[0], ref hitInfo.attackDirections[0], ref hitInfo.secondaryTargetIds[0], ref hitInfo.secondaryHitLocations[0]);
+      }
+      ICombatant chosenTarget = instance.chosenTarget;
+      bool primeHitsSecondary = false;
+      if (primeSuccess == false) {
+        Log.LogWrite("prime miss\n");
+        if(string.IsNullOrEmpty(hitInfo.secondaryTargetIds[0]) == false) {
+          Log.LogWrite("but hit something stray\n");
+          chosenTarget = instance.Director.Combat.FindCombatantByGUID(hitInfo.secondaryTargetIds[0]);
+          if (chosenTarget == null) {
+            Log.LogWrite("can't find combatant " + hitInfo.secondaryTargetIds[0] + "\n");
+            chosenTarget = instance.chosenTarget;
+          } else {
+            Log.LogWrite("secondary combatant found " + chosenTarget.DisplayName + "\n");
+            primeHitsSecondary = true;
+            if ((hitInfo.secondaryHitLocations[0] != 0) && (hitInfo.secondaryHitLocations[0] != 65536)) {
+              primeSuccess = true;
+              primeHitLocation = hitInfo.secondaryHitLocations[0];
+            }
+          }
+        }
+      }
+      Log.LogWrite("followers hit generator. primeSuccess:" + primeSuccess + " primeHitLocation:"+ primeHitLocation + " primeHitsSecondary:"+ primeHitsSecondary + "\n");
+      for (int hitIndex = 1; hitIndex < hitInfo.numberOfShots; ++hitIndex) {
+        Log.LogWrite(" hitIndex:"+hitIndex+"\n");
+        hitInfo.dodgeSuccesses[hitIndex] = hitInfo.dodgeSuccesses[0];
+        if (primeSuccess) {
+          Log.LogWrite("  prime success\n");
+          int HitLocation = chosenTarget.GetAdjacentHitLocation(instance.attackPosition, hitInfo.locationRolls[hitIndex], primeHitLocation, originalMultiplier, adjacentMultiplier);
+          Log.LogWrite("  hitLocation:"+HitLocation+"\n");
+          if (primeHitsSecondary) {
+            Log.LogWrite("  hit to secondary target\n");
+            string secondaryTargetId = (string)null;
+            int secondaryHitLocation = 0;
+            hitInfo.hitPositions[hitIndex] = instance.chosenTarget.GetImpactPosition(instance.attacker, instance.attackPosition, weapon, ref HitLocation, ref hitInfo.attackDirections[hitIndex], ref secondaryTargetId, ref secondaryHitLocation);
+            hitInfo.hitLocations[hitIndex] = 0;
+            hitInfo.secondaryHitLocations[hitIndex] = HitLocation;
+            hitInfo.secondaryTargetIds[hitIndex] = chosenTarget.GUID;
+          } else {
+            Log.LogWrite("  hit to primary target\n");
+            string secondaryTargetId = (string)null;
+            int secondaryHitLocation = 0;
+            hitInfo.hitPositions[hitIndex] = instance.chosenTarget.GetImpactPosition(instance.attacker, instance.attackPosition, weapon, ref HitLocation, ref hitInfo.attackDirections[hitIndex], ref secondaryTargetId, ref secondaryHitLocation);
+            hitInfo.hitLocations[hitIndex] = HitLocation;
+            hitInfo.secondaryHitLocations[hitIndex] = 0;
+            hitInfo.secondaryTargetIds[hitIndex] = null;
+          }
+          hitInfo.hitQualities[hitIndex] = instance.Director.Combat.ToHit.GetBlowQuality(instance.attacker, instance.attackPosition, weapon, chosenTarget, instance.meleeAttackType, instance.IsBreachingShot);
+          instance.FlagShotHit();
+        } else {
+          Log.LogWrite("  prime fail\n");
+          hitInfo.hitLocations[hitIndex] = 0;
+          string secondaryTargetId = (string)null;
+          int secondaryHitLocation = 0;
+          hitInfo.hitPositions[hitIndex] = instance.chosenTarget.GetImpactPosition(instance.attacker, instance.attackPosition, weapon, ref hitInfo.hitLocations[hitIndex], ref hitInfo.attackDirections[hitIndex], ref secondaryTargetId, ref secondaryHitLocation);
+          CustomAmmoCategoriesLog.Log.LogWrite("  hitLocation:" + hitInfo.hitLocations[hitIndex] + "\n");
+          hitInfo.secondaryHitLocations[hitIndex] = 0;
+          hitInfo.secondaryTargetIds[hitIndex] = null;
+          instance.FlagShotMissed();
+        }
       }
     }
     private static void GetAOEHits(AttackDirector.AttackSequence instance, ref WeaponHitInfo hitInfo, int groupIdx, int weaponIdx, Weapon weapon, float toHitChance, float prevDodgedDamage) {
@@ -226,8 +259,7 @@ namespace CustomAmmoCategoriesPatches {
         hitInfo.hitPositions[hitIndex] = instance.chosenTarget.GetImpactPosition(instance.attacker, instance.attackPosition, weapon, ref hitInfo.hitLocations[hitIndex], ref hitInfo.attackDirections[hitIndex], ref hitInfo.secondaryTargetIds[hitIndex], ref hitInfo.secondaryHitLocations[hitIndex]);
       }
     }
-
-    public static void generateWeaponHitInfo(AttackDirector.AttackSequence instance, ICombatant target, Weapon weapon, int groupIdx, int weaponIdx, int numberOfShots, bool indirectFire, float dodgedDamage, ref WeaponHitInfo hitInfo, bool missInCircle) {
+    public static void generateWeaponHitInfo(AttackDirector.AttackSequence instance, ICombatant target, Weapon weapon, int groupIdx, int weaponIdx, int numberOfShots, bool indirectFire, float dodgedDamage, ref WeaponHitInfo hitInfo, bool missInCircle, bool fragHits) {
       ICombatant originaltarget = instance.chosenTarget;
       instance.chosenTarget = target;
       CustomAmmoCategoriesLog.Log.LogWrite("generateWeaponHitInfo\n");
@@ -239,7 +271,8 @@ namespace CustomAmmoCategoriesPatches {
       if (AttackDirector.hitLogger.IsLogEnabled)
         AttackDirector.hitLogger.Log((object)string.Format("======================================== HIT CHANCE: [[ {0:P2} ]]", (object)toHitChance));
       object[] args = new object[6];
-      HitGeneratorType hitGenType = CustomAmmoCategories.getHitGenerator(weapon);
+      HitGeneratorType hitGenType = (fragHits? HitGeneratorType.Cluster : CustomAmmoCategories.getHitGenerator(weapon));
+      if (fragHits) {Log.LogWrite(" shells - tie to cluster\n");}
       CustomAmmoCategoriesLog.Log.LogWrite(" Hit generator:" + hitGenType + "\n");
       switch (hitGenType) {
         case HitGeneratorType.Individual:
@@ -266,8 +299,8 @@ namespace CustomAmmoCategoriesPatches {
           break;
       }
       //disabling buildin spread
-      if (weapon.SpreadRange() > CustomAmmoCategories.Epsilon) {
-        Log.LogWrite(" spread range non zero "+ weapon.SpreadRange() + ". disabling buildin stray\n");
+      if ((weapon.SpreadRange() > CustomAmmoCategories.Epsilon)||(fragHits)) {
+        Log.LogWrite(" spread range non zero "+ weapon.SpreadRange() + " or frag hit generation "+fragHits+". disabling buildin stray\n");
         for (int hitIndex = 0; hitIndex < hitInfo.numberOfShots; ++hitIndex) {
           hitInfo.secondaryTargetIds[hitIndex] = null;
           hitInfo.secondaryHitLocations[hitIndex] = 0;
@@ -367,18 +400,18 @@ namespace CustomAmmoCategoriesPatches {
             foreach (SpreadHitInfo spHitInfo in spreadList) {
               ICombatant spreadTarget = __instance.Director.Combat.FindCombatantByGUID(spHitInfo.targetGUID);
               if (spreadTarget == null) { continue; };
-              generateWeaponHitInfo(__instance, spreadTarget, weapon, groupIdx, weaponIdx, spHitInfo.hitInfo.numberOfShots, indirectFire, dodgedDamage, ref spHitInfo.hitInfo,false);
+              generateWeaponHitInfo(__instance, spreadTarget, weapon, groupIdx, weaponIdx, spHitInfo.hitInfo.numberOfShots, indirectFire, dodgedDamage, ref spHitInfo.hitInfo,false,false);
             }
             bool consResult = CustomAmmoCategories.ConsolidateSpreadHitInfo(spreadList, ref hitInfo);
             if (consResult == false) {
               CustomAmmoCategoriesLog.Log.LogWrite("fallback to default\n", true);
-              generateWeaponHitInfo(__instance, __instance.chosenTarget, weapon, groupIdx, weaponIdx, numberOfShots, indirectFire, dodgedDamage, ref hitInfo, false);
+              generateWeaponHitInfo(__instance, __instance.chosenTarget, weapon, groupIdx, weaponIdx, numberOfShots, indirectFire, dodgedDamage, ref hitInfo, false,false);
             }
           } else {
-            generateWeaponHitInfo(__instance, __instance.chosenTarget, weapon, groupIdx, weaponIdx, numberOfShots, indirectFire, dodgedDamage, ref hitInfo, false);
+            generateWeaponHitInfo(__instance, __instance.chosenTarget, weapon, groupIdx, weaponIdx, numberOfShots, indirectFire, dodgedDamage, ref hitInfo, false,false);
           }
         } else {
-          generateWeaponHitInfo(__instance, __instance.chosenTarget, weapon, groupIdx, weaponIdx, numberOfShots, indirectFire, dodgedDamage, ref hitInfo ,false);
+          generateWeaponHitInfo(__instance, __instance.chosenTarget, weapon, groupIdx, weaponIdx, numberOfShots, indirectFire, dodgedDamage, ref hitInfo ,false,false);
         }
         ExtWeaponDef extWeapon = CustomAmmoCategories.getExtWeaponDef(weapon.defId);
         if (extWeapon.StreakEffect == true) {
