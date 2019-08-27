@@ -11,6 +11,24 @@ namespace CustAmmoCategories {
   public class AMSBulletEffect : AMSWeaponEffect {
     public int bulletIdx;
     private AMSBallisticEffect parentLauncher;
+    public Color originalColor;
+    public TrailRenderer trailRendered;
+    public override void StoreOriginalColor() {
+      this.trailRendered = this.projectile.GetComponentInChildren<TrailRenderer>();
+      if (trailRendered != null) { this.originalColor = this.trailRendered.material.GetColor("_ColorBB"); };
+    }
+    public override void SetColor(Color color) {
+      float coeff = color.maxColorComponent;
+      Color tempColor = Color.white;
+      tempColor.a = 1f;
+      tempColor.r = (color.r / coeff) * 8.0f + 1f;
+      tempColor.g = (color.g / coeff) * 8.0f + 1f;
+      tempColor.b = (color.b / coeff) * 8.0f + 1f;
+      if (trailRendered != null) { this.trailRendered.material.SetColor("_ColorBB", tempColor); };
+    }
+    public override void RestoreOriginalColor() {
+      if (trailRendered != null) { this.trailRendered.material.SetColor("_ColorBB", this.originalColor); };
+    }
     public void Init(BulletEffect original) {
       base.Init(original);
       CustomAmmoCategoriesLog.Log.LogWrite("AMSBulletEffect.Init\n");
@@ -87,6 +105,7 @@ namespace CustAmmoCategories {
       if ((double)this.t < 1.0) {
         this.currentPos = Vector3.Lerp(this.startPos, this.endPos, this.t);
         this.projectileTransform.position = this.currentPos;
+        this.UpdateColor();
       }
       if ((double)this.t < 1.0)
         return;
@@ -106,6 +125,7 @@ namespace CustAmmoCategories {
     }
 
     protected override void OnComplete() {
+      this.RestoreOriginalColor();
       base.OnComplete();
     }
 

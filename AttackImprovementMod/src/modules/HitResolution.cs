@@ -26,7 +26,7 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
             Patch( typeof( FloatieMessage ).GetConstructors().FirstOrDefault( e => e.GetParameters().Length == 8 && e.GetParameters()[2].ParameterType == typeof( Localize.Text ) ), null, "ShowMissChance" );
          }
 
-         if ( Settings.BalanceAmmoConsumption || Settings.BalanceEnemyAmmoConsumption ) {
+         /*if ( Settings.BalanceAmmoConsumption || Settings.BalanceEnemyAmmoConsumption ) {
             nonCenter = new List<ChassisLocations> { ChassisLocations.LeftTorso, ChassisLocations.RightTorso,
                ChassisLocations.LeftArm, ChassisLocations.RightArm, ChassisLocations.LeftLeg, ChassisLocations.RightLeg };
             Patch( typeof( Weapon ), "DecrementAmmo", "OverrideDecrementAmmo", null );
@@ -34,7 +34,7 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
          }
 
          if ( Settings.AutoJettisonAmmo || Settings.AutoJettisonEnemyAmmo )
-            Patch( typeof( MechHeatSequence ), "setState", null, "AutoJettisonAmmo" );
+            Patch( typeof( MechHeatSequence ), "setState", null, "AutoJettisonAmmo" );*/
       }
 
       private static bool ClusterChanceNeverMultiplyHead = true;

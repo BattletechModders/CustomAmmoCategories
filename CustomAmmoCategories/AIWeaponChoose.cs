@@ -115,8 +115,13 @@ namespace CustAmmoCategories {
     public static List<DamagePredictRecord> getWeaponDamagePredict(AbstractActor unit, ICombatant target, Weapon weapon) {
       List<DamagePredictRecord> result = new List<DamagePredictRecord>();
       ExtWeaponDef extWeapon = CustomAmmoCategories.getExtWeaponDef(weapon.defId);
+      List<WeaponMode> modes = weapon.AvaibleModes();
       if (extWeapon.Modes.Count < 1) {
-        CustomAmmoCategoriesLog.Log.LogWrite("WARNING! " + weapon.defId + " has no modes. Even base mode. This means something is very very wrong\n", true);
+        Log.LogWrite("WARNING! " + weapon.defId + " has no modes. Even base mode. This means something is very very wrong\n", true);
+        return result;
+      }
+      if(modes.Count < 1) {
+        Log.LogWrite("Weapon has no mode to fire\n");
         return result;
       }
       string currentMode = extWeapon.baseModeId;
@@ -127,12 +132,12 @@ namespace CustAmmoCategories {
       if (CustomAmmoCategories.checkExistance(weapon.StatCollection, CustomAmmoCategories.AmmoIdStatName) == true) {
         currentAmmo = weapon.StatCollection.GetStatistic(CustomAmmoCategories.AmmoIdStatName).Value<string>();
       }
-      foreach (var mode in extWeapon.Modes) {
-        HashSet<string> ammos = CustomAmmoCategories.getWeaponAvaibleAmmoForMode(weapon, mode.Value.Id);
+      foreach (var mode in modes) {
+        HashSet<string> ammos = CustomAmmoCategories.getWeaponAvaibleAmmoForMode(weapon, mode.Id);
         List<int> hitLocations = null;
         float AverageArmor = float.NaN;
         foreach (var ammo in ammos) {
-          DamagePredictRecord record = new DamagePredictRecord(ammo, mode.Value.Id);
+          DamagePredictRecord record = new DamagePredictRecord(ammo, mode.Id);
           CustomAmmoCategories.fillWeaponPredictRecord(ref record, unit, target, weapon, ref hitLocations, ref AverageArmor);
           result.Add(record);
         }

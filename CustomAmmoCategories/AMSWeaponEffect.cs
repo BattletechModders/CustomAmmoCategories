@@ -1,16 +1,36 @@
 ﻿using BattleTech;
 using BattleTech.Rendering;
+using CustomAmmoCategoriesLog;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Text;
 using UnityEngine;
+using Random = UnityEngine.Random;
 
 namespace CustAmmoCategories {
   public class AMSWeaponEffect : WeaponEffect {
     private static FieldInfo fi_hasSentNextWeaponMessage = null;
     public Vector3[] hitPositions;
+    protected bool NeedColorCalc;
+    public Color CurrentColor;
+    public Color NextColor;
+    public float colorT;
+    public float ColorChangeSpeed;
+    public int ColorIndex;
+    public ColorChangeRule colorChangeRule;
+    public Color effectiveColor;
+    public List<ColorTableJsonEntry> colorsTable;
+    public Color getNextColor() {
+      Color result = Color.white;
+      switch (colorChangeRule) {
+        case ColorChangeRule.Linear: result = colorsTable[ColorIndex % colorsTable.Count].Color; ColorIndex = (ColorIndex + 1) % colorsTable.Count; break;
+        case ColorChangeRule.Random: result = colorsTable[Random.Range(0, colorsTable.Count)].Color; break;
+        case ColorChangeRule.RandomOnce: result = colorsTable[Random.Range(0, colorsTable.Count)].Color; break;
+      }
+      return result;
+    }
     public virtual float calculateInterceptCorrection(float curPath, float pathLenth, float distance, float missileProjectileSpeed) {
       float amsProjectileSpeed = this.projectileSpeed;
       float timeToIntercept = distance / amsProjectileSpeed;
@@ -132,6 +152,36 @@ namespace CustAmmoCategories {
         this.Combat.DataManager.PrecachePrefabAsync(this.structureDamageVFXName + "_lrg", BattleTechResourceType.Prefab, 1);
       }
       this.PreCacheImpacts();
+      this.NeedColorCalc = false;
+      this.CurrentColor = Color.white;
+      this.NextColor = Color.white;
+      this.colorT = 0f;
+      this.ColorChangeSpeed = 0f;
+      this.ColorIndex = 0;
+      this.colorChangeRule = ColorChangeRule.None;
+      this.colorsTable = new List<ColorTableJsonEntry>();
+    }
+    public virtual void StoreOriginalColor() {
+
+    }
+    public virtual void SetColor(Color color) {
+
+    }
+    public virtual void RestoreOriginalColor() {
+
+    }
+    public virtual void UpdateColor() {
+      if (this.NeedColorCalc) {
+        if (this.colorT > 1f) {
+          this.CurrentColor = this.NextColor;
+          this.colorT = 0f;
+          this.NextColor = this.getNextColor();
+        }
+        Color effectiveColor = Color.Lerp(this.CurrentColor, this.NextColor, this.colorT);
+        //Log.LogWrite("MultiShotBeamEffect.Update effectiveColor:" + effectiveColor + "\n");
+        this.SetColor(effectiveColor);
+        this.colorT += this.rate * this.Combat.StackManager.GetProgressiveAttackDeltaTime(this.colorT) * this.ColorChangeSpeed;
+      }
     }
 
     private void PreCacheImpacts() {
@@ -145,53 +195,68 @@ namespace CustAmmoCategories {
     }
 
     public override void InitProjectile() {
-      if ((UnityEngine.Object)this.projectilePrefab != (UnityEngine.Object)null && (UnityEngine.Object)this.projectile != (UnityEngine.Object)null)
-        this.weapon.parent.Combat.DataManager.PoolGameObject(this.activeProjectileName, this.projectile);
-      if ((UnityEngine.Object)this.projectilePrefab != (UnityEngine.Object)null) {
-        this.activeProjectileName = this.projectilePrefab.name;
-        this.projectile = this.Combat.DataManager.PooledInstantiate(this.activeProjectileName, BattleTechResourceType.Prefab, new Vector3?(), new Quaternion?(), (Transform)null);
+      Log.LogWrite("AMSWeaponEffect.InitProjectile: "+this.GetType().ToString()+"\n");
+      Log.LogWrite(" projectilePrefab '"+(projectilePrefab==null?"null": (projectilePrefab.name+":"+projectilePrefab.GetInstanceID())) +"'\n");
+      Log.LogWrite(" projectile '" + (projectile == null ? "null" : (projectile.name + ":" + projectile.GetInstanceID())) + "'\n");
+      try {
+        if ((UnityEngine.Object)this.projectilePrefab != (UnityEngine.Object)null && (UnityEngine.Object)this.projectile != (UnityEngine.Object)null) {
+          this.weapon.parent.Combat.DataManager.PoolGameObject(this.activeProjectileName, this.projectile);
+        }
+        if ((UnityEngine.Object)this.projectilePrefab != (UnityEngine.Object)null) {
+          this.activeProjectileName = this.projectilePrefab.name;
+          this.projectile = this.Combat.DataManager.PooledInstantiate(this.activeProjectileName, BattleTechResourceType.Prefab, new Vector3?(), new Quaternion?(), (Transform)null);
+        };
+        if(this.projectile == null) {
+          Log.LogWrite(" fail to get from pool '" + this.activeProjectileName + "'\n");
+          return;
+        } else {
+          Log.LogWrite(" success instantine '" + this.activeProjectileName + "'\n");
+        }
+        this.projectileParticles = this.projectile.GetComponent<ParticleSystem>();
+        this.projectileTransform = this.projectile.transform;
+        MeshRenderer componentInChildren1 = this.projectile.GetComponentInChildren<MeshRenderer>(true);
+        if ((UnityEngine.Object)componentInChildren1 != (UnityEngine.Object)null) {
+          this.projectileMeshObject = componentInChildren1.gameObject;
+          this.projectileMeshObject.SetActive(false);
+        }
+        BTLight componentInChildren2 = this.projectile.GetComponentInChildren<BTLight>(true);
+        if ((UnityEngine.Object)componentInChildren2 != (UnityEngine.Object)null) {
+          this.projectileLightObject = componentInChildren2.gameObject;
+          this.projectileLightObject.SetActive(false);
+        }
+        this.ScaleWeaponEffect(this.projectile);
+        //this.UpdateScale();
+        this.projectileAudioObject = this.projectile.GetComponent<AkGameObj>();
+        if ((UnityEngine.Object)this.projectileAudioObject == (UnityEngine.Object)null)
+          this.projectileAudioObject = this.projectile.AddComponent<AkGameObj>();
+        this.projectileAudioObject.listenerMask = 0;
+        this.projectileAudioObject.isEnvironmentAware = false;
+        WwiseManager.SetSwitch<AudioSwitch_weapon_type>(this.weaponImpactType, this.projectileAudioObject);
+        this.parentAudioObject = !((UnityEngine.Object)this.weapon.parent.GameRep != (UnityEngine.Object)null) || !((UnityEngine.Object)this.weapon.parent.GameRep.audioObject != (UnityEngine.Object)null) ? this.projectileAudioObject : this.weapon.parent.GameRep.audioObject;
+        WwiseManager.SetSwitch<AudioSwitch_weapon_type>(this.weaponImpactType, this.parentAudioObject);
+        Mech parent = this.weapon.parent as Mech;
+        if (parent == null)
+          return;
+        AudioSwitch_mech_weight_type switchEnumValue = AudioSwitch_mech_weight_type.b_medium;
+        switch (parent.MechDef.Chassis.weightClass) {
+          case WeightClass.LIGHT:
+            switchEnumValue = AudioSwitch_mech_weight_type.a_light;
+            break;
+          case WeightClass.MEDIUM:
+            switchEnumValue = AudioSwitch_mech_weight_type.b_medium;
+            break;
+          case WeightClass.HEAVY:
+            switchEnumValue = AudioSwitch_mech_weight_type.c_heavy;
+            break;
+          case WeightClass.ASSAULT:
+            switchEnumValue = AudioSwitch_mech_weight_type.d_assault;
+            break;
+        }
+        WwiseManager.SetSwitch<AudioSwitch_mech_weight_type>(switchEnumValue, this.projectileAudioObject);
+      }catch(Exception e) {
+        Log.LogWrite(e.ToString()+"\n");
       }
-      this.projectileParticles = this.projectile.GetComponent<ParticleSystem>();
-      this.projectileTransform = this.projectile.transform;
-      MeshRenderer componentInChildren1 = this.projectile.GetComponentInChildren<MeshRenderer>(true);
-      if ((UnityEngine.Object)componentInChildren1 != (UnityEngine.Object)null) {
-        this.projectileMeshObject = componentInChildren1.gameObject;
-        this.projectileMeshObject.SetActive(false);
-      }
-      BTLight componentInChildren2 = this.projectile.GetComponentInChildren<BTLight>(true);
-      if ((UnityEngine.Object)componentInChildren2 != (UnityEngine.Object)null) {
-        this.projectileLightObject = componentInChildren2.gameObject;
-        this.projectileLightObject.SetActive(false);
-      }
-      this.projectileAudioObject = this.projectile.GetComponent<AkGameObj>();
-      if ((UnityEngine.Object)this.projectileAudioObject == (UnityEngine.Object)null)
-        this.projectileAudioObject = this.projectile.AddComponent<AkGameObj>();
-      this.projectileAudioObject.listenerMask = 0;
-      this.projectileAudioObject.isEnvironmentAware = false;
-      WwiseManager.SetSwitch<AudioSwitch_weapon_type>(this.weaponImpactType, this.projectileAudioObject);
-      this.parentAudioObject = !((UnityEngine.Object)this.weapon.parent.GameRep != (UnityEngine.Object)null) || !((UnityEngine.Object)this.weapon.parent.GameRep.audioObject != (UnityEngine.Object)null) ? this.projectileAudioObject : this.weapon.parent.GameRep.audioObject;
-      WwiseManager.SetSwitch<AudioSwitch_weapon_type>(this.weaponImpactType, this.parentAudioObject);
-      Mech parent = this.weapon.parent as Mech;
-      if (parent == null)
-        return;
-      AudioSwitch_mech_weight_type switchEnumValue = AudioSwitch_mech_weight_type.b_medium;
-      switch (parent.MechDef.Chassis.weightClass) {
-        case WeightClass.LIGHT:
-          switchEnumValue = AudioSwitch_mech_weight_type.a_light;
-          break;
-        case WeightClass.MEDIUM:
-          switchEnumValue = AudioSwitch_mech_weight_type.b_medium;
-          break;
-        case WeightClass.HEAVY:
-          switchEnumValue = AudioSwitch_mech_weight_type.c_heavy;
-          break;
-        case WeightClass.ASSAULT:
-          switchEnumValue = AudioSwitch_mech_weight_type.d_assault;
-          break;
-      }
-      WwiseManager.SetSwitch<AudioSwitch_mech_weight_type>(switchEnumValue, this.projectileAudioObject);
     }
-
     public virtual void Fire(Vector3[] hitPositions, int hitIndex = 0, int emitterIndex = 0) {
       CustomAmmoCategoriesLog.Log.LogWrite("AMSWeaponEffect.Fire\n");
       this.t = 0.0f;
@@ -206,7 +271,6 @@ namespace CustAmmoCategories {
       this.InitProjectile();
       this.currentState = WeaponEffect.WeaponEffectState.PreFiring;
     }
-
     public override void Fire(WeaponHitInfo hitInfo, int hitIndex = 0, int emitterIndex = 0) {
       CustomAmmoCategoriesLog.Log.LogWrite("AMS effect can't fire normaly. Something is wrong.\n");
       this.hitInfo = hitInfo;
@@ -214,7 +278,6 @@ namespace CustAmmoCategories {
       this.currentState = WeaponEffect.WeaponEffectState.Complete;
       base.OnComplete();
     }
-
     protected override void PlayPreFire() {
       if ((UnityEngine.Object)this.preFireVFXPrefab != (UnityEngine.Object)null) {
         GameObject gameObject = this.weapon.parent.Combat.DataManager.PooledInstantiate(this.preFireVFXPrefab.name, BattleTechResourceType.Prefab, new Vector3?(), new Quaternion?(), (Transform)null);
@@ -272,6 +335,41 @@ namespace CustAmmoCategories {
     }
 
     protected override void PlayProjectile() {
+      this.ColorChangeSpeed = this.weapon.ColorSpeedChange();
+      this.colorsTable = this.weapon.ColorsTable();
+      this.colorChangeRule = this.weapon.colorChangeRule();
+      this.colorT = 0f;
+      this.ColorIndex = 0;
+      this.StoreOriginalColor();
+      //this.originalColor = this.beamRenderer.material.GetColor("_ColorBB");
+      Log.LogWrite(" ColorChangeSpeed " + this.ColorChangeSpeed + "\n");
+      Log.LogWrite(" colorsTable.Count " + this.colorsTable.Count + "\n");
+      Log.LogWrite(" colorChangeRule " + this.colorChangeRule + "\n");
+      this.NeedColorCalc = (this.ColorChangeSpeed > CustomAmmoCategories.Epsilon);
+      if (this.colorsTable.Count <= 1) { this.NeedColorCalc = false; };
+      if ((this.colorChangeRule != ColorChangeRule.None)&&(this.colorsTable.Count > 0)) {
+        if (this.colorsTable.Count == 1) {
+          this.CurrentColor = this.colorsTable[0].Color;
+          this.SetColor(this.CurrentColor);
+          this.NeedColorCalc = false;
+        } else if (this.colorChangeRule == ColorChangeRule.RandomOnce) {
+          this.NeedColorCalc = false;
+          this.CurrentColor = this.getNextColor();
+          this.SetColor(this.CurrentColor);
+        } else if (this.colorChangeRule >= ColorChangeRule.t0) {
+          this.NeedColorCalc = false;
+          this.ColorIndex = ((int)this.colorChangeRule - (int)ColorChangeRule.t0) % this.colorsTable.Count;
+          this.CurrentColor = this.colorsTable[this.ColorIndex].Color;
+          this.SetColor(this.CurrentColor);
+        } else {
+          this.CurrentColor = this.getNextColor();
+          this.NextColor = this.getNextColor();
+          this.SetColor(this.CurrentColor);
+        }
+      } else {
+        this.NeedColorCalc = false;
+      }
+      Log.LogWrite(" NeedColorCalc " + this.NeedColorCalc + "\n");
       this.t = 0.0f;
       this.currentState = WeaponEffect.WeaponEffectState.Firing;
       if ((UnityEngine.Object)this.projectileMeshObject != (UnityEngine.Object)null)
@@ -358,7 +456,7 @@ namespace CustAmmoCategories {
     }
 
     protected override void DestroyFlimsyObjects() {
-      if (!this.shotsDestroyFlimsyObjects)
+      /*if (!this.shotsDestroyFlimsyObjects)
         return;
       foreach (Collider collider in Physics.OverlapSphere(this.endPos, 15f, -5, QueryTriggerInteraction.Ignore)) {
         DestructibleObject component = collider.gameObject.GetComponent<DestructibleObject>();
@@ -368,7 +466,7 @@ namespace CustAmmoCategories {
           component.TakeDamage(this.endPos, normalized, forceMagnitude);
           component.Collapse(normalized, forceMagnitude);
         }
-      }
+      }*/
     }
 
     protected override void Update() {

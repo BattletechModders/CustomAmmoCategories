@@ -8,11 +8,16 @@ using BattleTech.AttackDirectorHelpers;
 using System.Reflection;
 using CustAmmoCategories;
 using UnityEngine;
+using CustomAmmoCategoriesLog;
+using CustomAmmoCategoriesPatches;
 
 namespace CustAmmoCategories {
   public static partial class CustomAmmoCategories {
     public static float getWeaponEvasivePipsIgnored(Weapon weapon) {
       float result = weapon.weaponDef.EvasivePipsIgnored;
+      if (CustomAmmoCategories.checkExistance(weapon.StatCollection, Weapon_InitStats.EvasivePipsIgnoredStatName)) {
+        result = weapon.StatCollection.GetStatistic(Weapon_InitStats.EvasivePipsIgnoredStatName).Value<float>();
+      }
       //CustomAmmoCategoriesLog.Log.LogWrite("getWeaponEvasivePipsIgnored " + weapon.UIName + "\n");
       if (CustomAmmoCategories.checkExistance(weapon.StatCollection, CustomAmmoCategories.AmmoIdStatName) == true) {
         string ammoId = weapon.StatCollection.GetStatistic(CustomAmmoCategories.AmmoIdStatName).Value<string>();
@@ -51,6 +56,20 @@ namespace CustomAmmoCategoriesPatches {
       } catch (Exception e) {
         CustomAmmoCategoriesLog.Log.LogWrite("Exception " + e.ToString() + "\nFallback to default\n");
         return true;
+      }
+    }
+  }
+  [HarmonyPatch(typeof(Weapon))]
+  [HarmonyPatch("InitStats")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { })]
+  public static class Weapon_InitStats {
+    public static readonly string EvasivePipsIgnoredStatName = "EvasivePipsIgnored";
+    public static void Postfix(Weapon __instance) {
+      try {
+        __instance.StatCollection.AddStatistic<float>(EvasivePipsIgnoredStatName, __instance.weaponDef.EvasivePipsIgnored);
+      } catch (Exception e) {
+        Log.LogWrite(e.ToString()+"\n",true);
       }
     }
   }

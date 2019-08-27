@@ -14,6 +14,10 @@ namespace CustAmmoCategories {
   public class FragWeaponEffect : WeaponEffect {
     private static FieldInfo fi_hasSentNextWeaponMessage = null;
     public WeaponEffect parentWeaponEffect;
+    public GameObject startingTransformObject;
+    public FragWeaponEffect() {
+      startingTransformObject = null;
+    }
     public static Vector3 getMissPosition(GameRepresentation targetRep) {
       TurretRepresentation tRep = targetRep as TurretRepresentation;
       MechRepresentation mRep = targetRep as MechRepresentation;
@@ -114,7 +118,12 @@ namespace CustAmmoCategories {
       this.hitIndex = hitIndex;
       this.emitterIndex = emitterIndex;
       this.hitInfo = hitInfo;
-      this.startingTransform = this.weaponRep.vfxTransforms[emitterIndex];
+      if(this.startingTransformObject == null) {
+        this.startingTransformObject = new GameObject("FragEffectStartingTransformObject");
+      }
+      this.startingTransformObject.transform.position = sPos;
+      this.startingTransformObject.transform.LookAt(sPos - this.weapon.weaponRep.vfxTransforms[emitterIndex].position);
+      this.startingTransform = this.startingTransformObject.transform;
       this.startPos = sPos;
       this.endPos = hitInfo.hitPositions[hitIndex];
       this.currentPos = this.startPos;
@@ -167,7 +176,7 @@ namespace CustAmmoCategories {
       component.Stop(true);
       component.Clear(true);
       component.transform.parent = this.startingTransform;
-      component.transform.localPosition = this.startPos - this.startingTransform.position;
+      component.transform.localPosition = Vector3.zero;
       component.transform.LookAt(this.endPos);
       BTCustomRenderer.SetVFXMultiplier(component);
       component.Play(true);

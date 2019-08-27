@@ -1,4 +1,7 @@
 ﻿using BattleTech;
+using CustAmmoCategories;
+using CustomAmmoCategoriesLog;
+using Harmony;
 using HBS.Util;
 using Newtonsoft.Json.Linq;
 using System;
@@ -6,7 +9,95 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
+namespace CustAmmoCategoriesPatches {
+  [HarmonyPatch(typeof(Mech))]
+  [HarmonyPatch("ApplyHeatSinks")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { typeof(int) })]
+  public static class Mech_ApplyHeatSinksModesLock {
+    public static void Postfix(Mech __instance, int stackID) {
+      Log.M.TWL(0,"Mech.ApplyHeatSinks:" + __instance.DisplayName + ":" + __instance.GUID);
+      foreach(Weapon weapon in __instance.Weapons) {
+        List<WeaponMode> modes = weapon.AvaibleModes();
+        Log.M.WL(1,"avaible modes count:"+modes.Count);
+        if (modes.Count == 0) {
+          Log.M.WL(1, "no modes avaible. disable weapon");
+          weapon.NoModeToFire(true);
+          continue;
+        };
+        Log.M.WL(1, "at least one mode avaible. enable weapon");
+        weapon.NoModeToFire(false);
+        WeaponMode mode = weapon.mode();
+        if (mode.Lock.isAvaible(weapon) == false) {
+          Log.M.WL(1, "current mode:"+mode.Id+" not avaible. Cycling.");
+          CustomAmmoCategories.CycleMode(weapon);
+        }
+      }
+    }
+  }
+};
+
 namespace CustAmmoCategories {
+  public static partial class CustomAmmoCategories {
+    public static readonly string NoModeToFireStatisticName = "CACNoModeToFire";
+    public static List<WeaponMode> AvaibleModes(this Weapon weapon) {
+      List<WeaponMode> result = new List<WeaponMode>();
+      ExtWeaponDef extWeapon = weapon.exDef();
+      foreach(var mode in extWeapon.Modes) {
+        if (mode.Value.Lock.isAvaible(weapon)) { result.Add(mode.Value); };
+      }
+      return result;
+    }
+    public static bool NoModeToFire(this Weapon weapon) {
+      if (CustomAmmoCategories.checkExistance(weapon.StatCollection, NoModeToFireStatisticName) == false) {
+        return false;
+      }
+      return weapon.StatCollection.GetStatistic(NoModeToFireStatisticName).Value<bool>();
+    }
+    public static void NoModeToFire(this Weapon weapon,bool value) {
+      if (CustomAmmoCategories.checkExistance(weapon.StatCollection, NoModeToFireStatisticName) == false) {
+        weapon.StatCollection.AddStatistic<bool>(NoModeToFireStatisticName, false);
+      }
+      weapon.StatCollection.Set<bool>(NoModeToFireStatisticName, value);
+    }
+  }
+  public class ModeLockSetting {
+    public float Low { get; set; }
+    public float High { get; set; }
+    public ModeLockSetting() {
+      Low = float.NaN;
+      High = float.NaN;
+    }
+    public bool isSet() {
+      return (float.IsNaN(Low) == false) && (float.IsNaN(High) == false);
+    }
+  }
+  public class ModeLockSettings {
+    public ModeLockSetting HeatLevel { get; set; }
+    public ModeLockSetting OverheatLevel { get; set; }
+    public ModeLockSetting MaxheatLevel { get; set; }
+    public ModeLockSettings() {
+      HeatLevel = new ModeLockSetting();
+      OverheatLevel = new ModeLockSetting();
+      MaxheatLevel = new ModeLockSetting();
+    }
+    public bool isAvaible(Weapon weapon) {
+      Mech mech = weapon.parent as Mech;
+      if (mech == null) { return true; }
+      if (HeatLevel.isSet()) {
+        if((mech.CurrentHeat < HeatLevel.Low) || (mech.CurrentHeat > HeatLevel.High)){ return false; };
+      }
+      if (OverheatLevel.isSet()) {
+        float level = mech.CurrentHeat / mech.OverheatLevel;
+        if ((level < OverheatLevel.Low) || (level > OverheatLevel.High)){ return false; };
+      }
+      if (MaxheatLevel.isSet()) {
+        float level = mech.CurrentHeat / mech.MaxHeat;
+        if ((level < MaxheatLevel.Low) || (level > MaxheatLevel.High)) { return false; };
+      }
+      return true;
+    } 
+  }
   public class WeaponMode {
     public static string BASE_MODE_NAME = "B";
     public static string NONE_MODE_NAME = "!NONE!";
@@ -44,6 +135,7 @@ namespace CustAmmoCategories {
     public float EvasivePipsIgnored { get; set; }
     public TripleBoolean IndirectFireCapable { get; set; }
     public TripleBoolean DamageOnJamming { get; set; }
+    public TripleBoolean DestroyOnJamming { get; set; }
     public TripleBoolean AOECapable { get; set; }
     public HitGeneratorType HitGenerator { get; set; }
     public TripleBoolean AlwaysIndirectVisuals { get; set; }
@@ -73,6 +165,26 @@ namespace CustAmmoCategories {
     public int ClearMineFieldRadius { get; set; }
     public TripleBoolean BallisticDamagePerPallet { get; set; }
     public CustomAudioSource AdditionalAudioEffect { get; set; }
+    public TripleBoolean Streak { get; set; }
+    public float FireDelayMultiplier { get; set; }
+    public float MissileFiringIntervalMultiplier { get; set; }
+    public float MissileVolleyIntervalMultiplier { get; set; }
+    public float ProjectileSpeedMultiplier { get; set; }
+    public TripleBoolean CantHitUnaffecedByPathing { get; set; }
+    public int MissileVolleySize { get; set; }
+    public CustomVector ProjectileScale { get; set; }
+    public CustomVector MissileExplosionScale { get; set; }
+    public float ColorSpeedChange { get; set; }
+    public ColorChangeRule ColorChangeRule { get; set; }
+    public float APDamage { get; set; }
+    public float APCriticalChanceMultiplier { get; set; }
+    public float APArmorShardsMod { get; set; }
+    public float APMaxArmorThickness { get; set; }
+    public TripleBoolean DamageNotDivided { get; set; }
+    public TripleBoolean isHeatVariation { get; set; }
+    public TripleBoolean isStabilityVariation { get; set; }
+    public TripleBoolean isDamageVariation { get; set; }
+    public ModeLockSettings Lock { get; set; }
     public WeaponMode() {
       Id = WeaponMode.NONE_MODE_NAME;
       UIName = WeaponMode.BASE_MODE_NAME;
@@ -110,6 +222,7 @@ namespace CustAmmoCategories {
       AlwaysIndirectVisuals = TripleBoolean.NotSet;
       DamageMultiplier = 1.0f;
       DamageOnJamming = TripleBoolean.NotSet;
+      DestroyOnJamming = TripleBoolean.NotSet;
       DistantVarianceReversed = TripleBoolean.NotSet;
       IndirectFireCapable = TripleBoolean.NotSet;
       AOECapable = TripleBoolean.NotSet;
@@ -137,6 +250,26 @@ namespace CustAmmoCategories {
       IsAAMS = TripleBoolean.NotSet;
       BallisticDamagePerPallet = TripleBoolean.NotSet;
       AdditionalAudioEffect = null;
+      Streak = TripleBoolean.NotSet;
+      MissileFiringIntervalMultiplier = 1f;
+      MissileVolleyIntervalMultiplier = 1f;
+      ProjectileSpeedMultiplier = 1f;
+      FireDelayMultiplier = 1f;
+      CantHitUnaffecedByPathing = TripleBoolean.NotSet;
+      MissileVolleySize = 0;
+      ProjectileScale = new CustomVector(true);
+      MissileExplosionScale = new CustomVector(true);
+      ColorSpeedChange = 0f;
+      ColorChangeRule = ColorChangeRule.None;
+      APDamage = 0f;
+      APCriticalChanceMultiplier = float.NaN;
+      APArmorShardsMod = 0f;
+      APMaxArmorThickness = 0f;
+      DamageNotDivided = TripleBoolean.NotSet;
+      isHeatVariation = TripleBoolean.NotSet;
+      isDamageVariation = TripleBoolean.NotSet;
+      isStabilityVariation = TripleBoolean.NotSet;
+      Lock = new ModeLockSettings();
     }
     public void fromJSON(string json) {
       JObject jWeaponMode = JObject.Parse(json);
@@ -167,11 +300,20 @@ namespace CustAmmoCategories {
       if (jWeaponMode["CriticalChanceMultiplier"] != null) {
         this.CriticalChanceMultiplier = (float)jWeaponMode["CriticalChanceMultiplier"];
       }
+      if (jWeaponMode["FireDelayMultiplier"] != null) {
+        this.FireDelayMultiplier = (float)jWeaponMode["FireDelayMultiplier"];
+      }
+      if (jWeaponMode["ProjectileSpeedMultiplier"] != null) {
+        this.ProjectileSpeedMultiplier = (float)jWeaponMode["ProjectileSpeedMultiplier"];
+      }
       if (jWeaponMode["AIBattleValue"] != null) {
         this.AIBattleValue = (int)jWeaponMode["AIBattleValue"];
       }
       if (jWeaponMode["MinRange"] != null) {
         this.MinRange = (float)jWeaponMode["MinRange"];
+      }
+      if (jWeaponMode["Streak"] != null) {
+        this.Streak = ((bool)jWeaponMode["Streak"] == true) ? TripleBoolean.True : TripleBoolean.False;
       }
       if (jWeaponMode["IsAMS"] != null) {
         this.IsAMS = ((bool)jWeaponMode["IsAMS"] == true) ? TripleBoolean.True : TripleBoolean.False;
@@ -182,6 +324,27 @@ namespace CustAmmoCategories {
           this.IsAMS = TripleBoolean.True;
         }
       }
+      if (jWeaponMode["isDamageVariation"] != null) {
+        this.isDamageVariation = ((bool)jWeaponMode["isDamageVariation"] == true) ? TripleBoolean.True : TripleBoolean.False;
+      }
+      if (jWeaponMode["isHeatVariation"] != null) {
+        this.isHeatVariation = ((bool)jWeaponMode["isHeatVariation"] == true) ? TripleBoolean.True : TripleBoolean.False;
+      }
+      if (jWeaponMode["isStabilityVariation"] != null) {
+        this.isStabilityVariation = ((bool)jWeaponMode["isStabilityVariation"] == true) ? TripleBoolean.True : TripleBoolean.False;
+      }
+      if (jWeaponMode["APDamage"] != null) {
+        this.APDamage = (float)jWeaponMode["APDamage"];
+      }
+      if (jWeaponMode["APCriticalChanceMultiplier"] != null) {
+        this.APCriticalChanceMultiplier = (float)jWeaponMode["APCriticalChanceMultiplier"];
+      }
+      if (jWeaponMode["APArmorShardsMod"] != null) {
+        this.APArmorShardsMod = (float)jWeaponMode["APArmorShardsMod"];
+      }
+      if (jWeaponMode["APMaxArmorThickness"] != null) {
+        this.APMaxArmorThickness = (float)jWeaponMode["APMaxArmorThickness"];
+      }
       if (jWeaponMode["MaxRange"] != null) {
         this.MaxRange = (float)jWeaponMode["MaxRange"];
       }
@@ -190,6 +353,15 @@ namespace CustAmmoCategories {
       }
       if (jWeaponMode["ForbiddenRange"] != null) {
         this.ForbiddenRange = (float)jWeaponMode["ForbiddenRange"];
+      }
+      if (jWeaponMode["ProjectileScale"] != null) {
+        this.ProjectileScale = jWeaponMode["ProjectileScale"].ToObject<CustomVector>();
+      }
+      if (jWeaponMode["Lock"] != null) {
+        this.Lock = jWeaponMode["Lock"].ToObject<ModeLockSettings>();
+      }
+      if (jWeaponMode["MissileExplosionScale"] != null) {
+        this.MissileExplosionScale = jWeaponMode["MissileExplosionScale"].ToObject<CustomVector>();
       }
       if (jWeaponMode["MediumRange"] != null) {
         this.MediumRange = (float)jWeaponMode["MediumRange"];
@@ -202,6 +374,12 @@ namespace CustAmmoCategories {
       }
       if (jWeaponMode["ArmorDamageModifier"] != null) {
         this.ArmorDamageModifier = (float)jWeaponMode["ArmorDamageModifier"];
+      }
+      if (jWeaponMode["MissileFiringIntervalMultiplier"] != null) {
+        this.MissileFiringIntervalMultiplier = (float)jWeaponMode["MissileFiringIntervalMultiplier"];
+      }
+      if (jWeaponMode["MissileVolleyIntervalMultiplier"] != null) {
+        this.MissileVolleyIntervalMultiplier = (float)jWeaponMode["MissileVolleyIntervalMultiplier"];
       }
       if (jWeaponMode["ISDamageModifier"] != null) {
         this.ISDamageModifier = (float)jWeaponMode["ISDamageModifier"];
@@ -227,6 +405,9 @@ namespace CustAmmoCategories {
       if (jWeaponMode["WeaponEffectID"] != null) {
         this.WeaponEffectID = (string)jWeaponMode["WeaponEffectID"];
       }
+      if (jWeaponMode["MissileVolleySize"] != null) {
+        this.MissileVolleySize = (int)jWeaponMode["MissileVolleySize"];
+      }
       if (jWeaponMode["AdditionalImpactVFXScaleX"] != null) {
         this.AdditionalImpactVFXScaleX = (float)jWeaponMode["AdditionalImpactVFXScaleX"];
       }
@@ -245,8 +426,20 @@ namespace CustAmmoCategories {
       if (jWeaponMode["IndirectFireCapable"] != null) {
         this.IndirectFireCapable = ((bool)jWeaponMode["IndirectFireCapable"] == true) ? TripleBoolean.True : TripleBoolean.False;
       }
+      if (jWeaponMode["ColorSpeedChange"] != null) {
+        this.ColorSpeedChange = (float)jWeaponMode["ColorSpeedChange"];
+      }
+      if (jWeaponMode["ColorChangeRule"] != null) {
+        this.ColorChangeRule = (ColorChangeRule)Enum.Parse(typeof(ColorChangeRule), (string)jWeaponMode["ColorChangeRule"]);
+      }
       if (jWeaponMode["HasShells"] != null) {
         this.HasShells = ((bool)jWeaponMode["HasShells"] == true) ? TripleBoolean.True : TripleBoolean.False;
+      }
+      if (jWeaponMode["DamageNotDivided"] != null) {
+        this.DamageNotDivided = ((bool)jWeaponMode["DamageNotDivided"] == true) ? TripleBoolean.True : TripleBoolean.False;
+      }
+      if (jWeaponMode["CantHitUnaffecedByPathing"] != null) {
+        this.CantHitUnaffecedByPathing = ((bool)jWeaponMode["CantHitUnaffecedByPathing"] == true) ? TripleBoolean.True : TripleBoolean.False;
       }
       if (jWeaponMode["ShellsRadius"] != null) {
         this.ShellsRadius = (float)jWeaponMode["ShellsRadius"];
@@ -316,6 +509,9 @@ namespace CustAmmoCategories {
       }
       if (jWeaponMode["DamageOnJamming"] != null) {
         this.DamageOnJamming = ((bool)jWeaponMode["DamageOnJamming"] == true) ? TripleBoolean.True : TripleBoolean.False;
+      }
+      if (jWeaponMode["DestroyOnJamming"] != null) {
+        this.DestroyOnJamming = ((bool)jWeaponMode["DestroyOnJamming"] == true) ? TripleBoolean.True : TripleBoolean.False;
       }
       if (jWeaponMode["AOECapable"] != null) {
         this.AOECapable = ((bool)jWeaponMode["AOECapable"] == true) ? TripleBoolean.True : TripleBoolean.False; ;

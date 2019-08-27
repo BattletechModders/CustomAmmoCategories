@@ -1,0 +1,1071 @@
+﻿using BattleTech;
+using BattleTech.Data;
+using BattleTech.Rendering;
+using FogOfWar;
+using Harmony;
+using HBS;
+using Newtonsoft.Json;
+using System;
+using System.Collections.Generic;
+using UnityEngine;
+using CustAmmoCategories;
+
+namespace CustomUnits {
+  [HarmonyPatch(typeof(AttackDirector))]
+  [HarmonyPatch("PerformAttack")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { typeof(AttackDirector.AttackSequence) })]
+  public static class AttackDirector_PerformAttack {
+    public static bool Prefix(AttackDirector __instance, AttackDirector.AttackSequence sequence) {
+      try {
+        Log.LogWrite("AttackDirector.PerformAttack from " + sequence.attacker.DisplayName + " to " + sequence.chosenTarget.DisplayName + "\n");
+        TurretAnimator turret = sequence.attacker.GetCustomTurret();
+        if (turret == null) {
+          Log.LogWrite(" no turret at attaker\n");
+          return true;
+        }
+        if (sequence.chosenTarget == null) {
+          Log.LogWrite(" choosen target is null\n");
+          return true;
+        };
+        if (sequence.chosenTarget.GameRep == null) {
+          Log.LogWrite(" choosen target has no game rep\n");
+          return true;
+        }
+        turret.target = sequence.chosenTarget;
+        Log.LogWrite(" turret target set\n");
+      } catch (Exception e) {
+        Log.LogWrite(e.ToString() + "\n", true);
+      }
+      return true;
+    }
+  }
+  [HarmonyPatch(typeof(VehicleRepresentation))]
+  [HarmonyPatch("OnAudioEvent")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { typeof(string) })]
+  public static class VehicleRepresentation_OnAudioEvent {
+    public static bool Prefix(VehicleRepresentation __instance, string audioEvent) {
+      Log.LogWrite("VehicleRepresentation.OnAudioEvent " + __instance.name + " audioEvent:" + audioEvent + "\n");
+      return true;
+    }
+  }
+  [HarmonyPatch(typeof(ActorMovementSequence))]
+  [HarmonyPatch("Init")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { typeof(AbstractActor), typeof(Transform) })]
+  public static class ActorMovementSequence_Init {
+    public static void Postfix(ActorMovementSequence __instance, AbstractActor actor, Transform xform) {
+      Log.LogWrite("ActorMovementSequence.Init\n");
+      CustomQuadLegController[] customMoveAnimators = xform.gameObject.GetComponentsInChildren<CustomQuadLegController>();
+      foreach(CustomQuadLegController customMoveAnimatior in customMoveAnimators) {
+        Log.LogWrite(" CustomMoveAnimator:" + customMoveAnimatior.name+"\n");
+        customMoveAnimatior.StartAnimation();
+      }
+      return;
+    }
+  }
+  [HarmonyPatch(typeof(ActorMovementSequence))]
+  [HarmonyPatch("CompleteMove")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { })]
+  public static class ActorMovementSequence_CompleteMoveAnimations {
+    public static void Postfix(ActorMovementSequence __instance) {
+      Log.LogWrite("ActorMovementSequence.CompleteMove\n");
+      CustomQuadLegController[] customMoveAnimators = __instance.owningActor.GameRep.gameObject.GetComponentsInChildren<CustomQuadLegController>();
+      foreach (CustomQuadLegController customMoveAnimatior in customMoveAnimators) {
+        Log.LogWrite(" CustomMoveAnimator:" + customMoveAnimatior.name + "\n");
+        customMoveAnimatior.StopAnimation();
+      }
+      return;
+    }
+  }
+  [HarmonyPatch(typeof(MechRepresentation))]
+  [HarmonyPatch("SetIdleAnimState")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { })]
+  public static class MechRepresentation_SetIdleAnimState {
+    public static bool Prefix(MechRepresentation __instance, ref bool ___allowRandomIdles) {
+      //Log.LogWrite("VehicleRepresentation.OnAudioEvent " + __instance.name + " audioEvent:" + audioEvent + "\n");
+      if(___allowRandomIdles == true) {
+        VehicleCustomInfo info = __instance.parentMech.GetCustomInfo();
+        if (info == null) { return true; };
+        if (info.NoIdleAnimations) { ___allowRandomIdles = false; }
+      }
+      return true;
+    }
+  }
+  [HarmonyPatch(typeof(VehicleRepresentation))]
+  [HarmonyPatch("PlayEngineStartAudio")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { })]
+  public static class VehicleRepresentation_PlayEngineStartAudio {
+    public static bool Prefix(VehicleRepresentation __instance) {
+      Log.LogWrite("VehicleRepresentation.PlayEngineStartAudio " + __instance.name + "\n");
+      return true;
+    }
+  }
+  [HarmonyPatch(typeof(VehicleRepresentation))]
+  [HarmonyPatch("PlayEngineStopAudio")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { })]
+  public static class VehicleRepresentation_PlayEngineStopAudio {
+    public static bool Prefix(VehicleRepresentation __instance) {
+      Log.LogWrite("VehicleRepresentation.PlayEngineStopAudio " + __instance.name + "\n");
+      return true;
+    }
+  }
+  [HarmonyPatch(typeof(PilotableActorRepresentation))]
+  [HarmonyPatch("OnPlayerVisibilityChanged")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { typeof(VisibilityLevel) })]
+  public static class PilotableActorRepresentation_OnPlayerVisibilityChanged {
+    public static void Postfix(PilotableActorRepresentation __instance, VisibilityLevel newLevel) {
+      Log.LogWrite("PilotableActorRepresentation.OnPlayerVisibilityChanged " + __instance.parentCombatant.DisplayName + "\n");
+      if (UnitsAnimatedPartsHelper.animatedParts.ContainsKey(__instance.parentCombatant) == false) {
+        Log.LogWrite(" no animated parts\n");
+        return;
+      };
+      foreach(GameObject apGameObject in UnitsAnimatedPartsHelper.animatedParts[__instance.parentCombatant]) {
+        GenericAnimatedComponent[] aps = apGameObject.GetComponents<GenericAnimatedComponent>();
+        foreach(GenericAnimatedComponent ap in aps) {
+          Log.LogWrite(" AnimatedPart:"+ap.GetType()+":"+newLevel+"\n");
+          ap.OnPlayerVisibilityChanged(newLevel);
+        }
+      }
+    }
+  }
+  [HarmonyPatch(typeof(Vehicle))]
+  [HarmonyPatch("GetAttachTransform")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { typeof(VehicleChassisLocations) })]
+  public static class Vehicle_GetAttachTransform {
+    public static bool Prefix(Vehicle __instance, VehicleChassisLocations location, ref Transform __result) {
+      Log.LogWrite("Vehicle.GetAttachTransform " + __instance.DisplayName + "\n");
+      if (UnitsAnimatedPartsHelper.animatedParts.ContainsKey(__instance) == false) {
+        Log.LogWrite(" no animated parts\n");
+        return true;
+      };
+      TurretAnimator turret = __instance.GetCustomTurret(location);
+      if (turret != null) {
+        if (turret.barrels.Count > 0) {
+          __result = turret.barrels[0].transform;
+          Log.LogWrite(" found barrel:" + __result.name + " parent:" + __result.parent.name + " offset:" + __result.localPosition + " rotation:" + __result.localRotation.eulerAngles + " scale:" + __result.localScale + "\n");
+          return false;
+        } else {
+          Log.LogWrite(" no barrels\n");
+        }
+      } else {
+        Log.LogWrite(" no turrets in location:" + location + "\n");
+      }
+      WeaponMountPoint mp = __instance.GetCustomMountPoint(location);
+      if (mp != null) {
+        if (mp.barrels.Count > 0) {
+          __result = mp.barrels[0].transform;
+          Log.LogWrite(" found mount point:" + __result.name + " parent:" + __result.parent.name + " offset:" + __result.localPosition + " rotation:" + __result.localRotation.eulerAngles + " scale:" + __result.localScale + "\n");
+          return false;
+        } else {
+          Log.LogWrite(" no barrels\n");
+        }
+      } else {
+        Log.LogWrite(" no mount points in location:" + location + "\n");
+      }
+      return true;
+    }
+  }
+  [HarmonyPatch(typeof(Vehicle))]
+  [HarmonyPatch("IsTargetPositionInFiringArc")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { typeof(ICombatant), typeof(Vector3), typeof(Quaternion), typeof(Vector3) })]
+  public static class Vehicle_IsTargetPositionInFiringArc {
+    public static bool Prefix(Vehicle __instance, ICombatant targetUnit, Vector3 attackPosition, Quaternion attackRotation, Vector3 targetPosition, ref bool __result) {
+      //Log.LogWrite("Vehicle.IsTargetPositionInFiringArc " + __instance.DisplayName+" -> "+targetUnit.DisplayName+"\n");
+      VehicleCustomInfo info = __instance.GetCustomInfo();
+      if (info == null) {
+        //Log.LogWrite(" no custom info\n");
+        return true;
+      }
+      if (info.FiringArc <= 10f) { return true; }
+      Vector3 forward = targetPosition - attackPosition;
+      forward.y = 0.0f;
+      Quaternion b = Quaternion.LookRotation(forward);
+      __result = (double)Quaternion.Angle(attackRotation, b) < (double)info.FiringArc;
+      //Log.LogWrite(" rotation to target: " + Quaternion.Angle(attackRotation, b) + " firingArc:" + info.FiringArc + " result: " + __result + "\n");
+      return false;
+    }
+  }
+  /*[HarmonyPatch(typeof(LanceSpawnerGameLogic))]
+  [HarmonyPatch("TeleportUnitsToSpwanPoints")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { })]
+  public static class LanceSpawnerGameLogic_TeleportUnitsToSpwanPoints {
+    public static bool Prefix(LanceSpawnerGameLogic __instance) {
+      Log.LogWrite("LanceSpawnerGameLogic.LanceSpawnerGameLogic " + __instance.DisplayNameWithGuid + "\n");
+      try {
+        foreach (UnitSpawnPointGameLogic spawnPointGameLogic in __instance.unitSpawnPointGameLogicList) {
+          Log.LogWrite(" spawnPoint:" + spawnPointGameLogic.DisplayNameWithGuid + "\n");
+          spawnPointGameLogic.TeleportUnitToSpawnPoint();
+        }
+        if (FogOfWarSystem.Instance == null) {
+          FogOfWarSystem.Instance.UpdateAllViewers();
+        } else {
+          Log.LogWrite(" fog of war not inited?!\n");
+        }
+      }catch(Exception e) {
+        Log.LogWrite(e.ToString()+"\n");
+      }
+      return false;
+    }
+  }*/
+  public class SimpleRotatorData {
+    public float speed { get; set; }
+    public string axis { get; set; }
+    public string sound { get; set; }
+    public string rotateBone { get; set; }
+    public SimpleRotatorData() {
+      speed = 0f;
+      axis = "y";
+      sound = string.Empty;
+      rotateBone = string.Empty;
+    }
+  }
+  public class TurretData {
+    public float speed { get; set; }
+    public VehicleChassisLocations VehicleLocation;
+    public ChassisLocations MechLocation;
+    public List<CustomTransform> barrels { get; set; }
+    public TurretData() {
+      speed = 0f;
+      barrels = new List<CustomTransform>();
+    }
+  }
+  public class GenericAnimatedComponent : MonoBehaviour {
+    public ICombatant parent { get; set; }
+    protected List<Renderer> renderers;
+    public int Location { get; set; }
+    public GenericAnimatedComponent() {
+      parent = null;
+      Location = 0;
+      renderers = new List<Renderer>();
+    }
+    public virtual void Init(ICombatant a, int loc, string data) {
+      parent = a;
+      Location = loc;
+      if (this.renderers != null) {
+        Renderer[] renderers = this.gameObject.GetComponentsInChildren<Renderer>();
+        foreach (Renderer renderer in renderers) {
+          this.renderers.Add(renderer);
+        }
+      }
+    }
+    public virtual void OnPlayerVisibilityChanged(VisibilityLevel newLevel) {
+      if (this.renderers == null)
+        return;
+      if (newLevel == VisibilityLevel.LOSFull) {
+        for (int index = 0; index < this.renderers.Count; ++index)
+          this.renderers[index].enabled = true;
+      } else {
+        for (int index = 0; index < this.renderers.Count; ++index)
+          this.renderers[index].enabled = false;
+      }
+    }
+    public virtual void Clear() { }
+  }
+  public class SimpleRotator : GenericAnimatedComponent {
+    //private float rotateAngle;
+    private float speed;
+    private bool soundPlaying;
+    private string AudioEventName;
+    private int axis;
+    private Transform rotateBone;
+    public SimpleRotator() {
+      rotateBone = null;
+    }
+    public void Awake() {
+      Log.LogWrite("Awake " + this.gameObject.name + "\n");
+      soundPlaying = false;
+      //this.rotateAngle = 0.0f;
+    }
+    private void SoundCallBack(object in_cookie, AkCallbackType in_type, object in_info) {
+      //Log.LogWrite("SimpleRotator.SoundCallBack:" + in_type + "\n");
+      if (in_type == AkCallbackType.AK_EndOfEvent) {
+        soundPlaying = false;
+      }
+    }
+    protected virtual void Update() {
+      if (rotateBone != null) {
+        switch (axis) {
+          case 1: this.rotateBone.Rotate(0f, speed, 0f, Space.Self); break;
+          case 2: this.rotateBone.Rotate(0f, 0f, speed, Space.Self); break;
+          default: this.rotateBone.Rotate(speed, 0f, 0f, Space.Self); break;
+        }
+      }
+      if (string.IsNullOrEmpty(AudioEventName) == false) {
+        if (soundPlaying == false) {
+          //Log.LogWrite("SimpleRotator.Update sound not playing\n");
+          uint result = WwiseManager.PostEvent(AudioEventName, parent.GameRep.audioObject, new AkCallbackManager.EventCallback(this.SoundCallBack), (object)null);
+          //Log.LogWrite(" playing:" + result + "\n");
+          soundPlaying = true;
+        }
+      }
+    }
+    public override void Init(ICombatant a, int loc, string data) {
+      base.Init(a, loc, data);
+      SimpleRotatorData srdata = JsonConvert.DeserializeObject<SimpleRotatorData>(data);
+      this.speed = srdata.speed;
+      this.axis = 0;
+      if (srdata.axis == "y") {
+        this.axis = 1;
+      } else if (srdata.axis == "z") {
+        this.axis = 2;
+      }
+      Log.LogWrite("SimpleRotator.Init " + this.gameObject.name + " '" + srdata.sound + "' axis: " + this.axis + "\n");
+      if (string.IsNullOrEmpty(srdata.rotateBone)) { this.rotateBone = this.gameObject.transform; } else {
+        Transform[] bones = this.gameObject.GetComponentsInChildren<Transform>();
+        foreach(Transform bone in bones) {
+          Log.LogWrite(1,"Bone:"+bone.name+"/"+ srdata.rotateBone, true);
+          if (bone.name == srdata.rotateBone) {
+            Log.LogWrite(2, "found!",true);
+            this.rotateBone = bone;  break;
+          }
+        }
+      }
+      if (this.rotateBone == null) { this.rotateBone = this.gameObject.transform; }
+      Log.LogWrite(1,"found rotation bone:"+this.rotateBone.name,true);
+      /*if (string.IsNullOrEmpty(srdata.sound) == false) {
+        if (CACMain.Core.AdditinalAudio.ContainsKey("helicopter-hovering-01")) {
+          AudioClip clip = CACMain.Core.AdditinalAudio["helicopter-hovering-01"];
+          Log.LogWrite("helicopter-hovering-01 found. name:" + clip.name + " loadstate:" + clip.loadState + "\n");
+          if (clip.loadState != AudioDataLoadState.Loaded) {
+            Log.LogWrite(" LoadAudioData:" + clip.LoadAudioData() + "\n");
+            Log.LogWrite(" loadstate:" + clip.loadState + "\n");
+          }
+          AudioSource source = this.gameObject.GetComponentInChildren<AudioSource>();
+          if (source != null) {
+            Log.LogWrite(" AudioSource found\n");
+            source.Stop();
+            source.clip = clip;
+            source.Play();
+            Log.LogWrite(" AudioSource.isPlaying " + source.isPlaying + "\n");
+          }
+        } else {
+          Log.LogWrite("helicopter-hovering-01 not found\n");
+        }
+      }*/
+      this.AudioEventName = srdata.sound;
+    }
+  }
+  public class CustomMoveAnimator : GenericAnimatedComponent {
+    public Animator animator = null;
+    public CustomMoveAnimator() {
+    }
+    public void Awake() {
+      Log.LogWrite("Awake " + this.gameObject.name + "\n");
+    }
+    public override void Init(ICombatant a, int loc, string data) {
+      base.Init(a, loc, data);
+      Component[] components = this.gameObject.GetComponentsInChildren<Component>();
+      this.animator = this.gameObject.GetComponentInChildren<Animator>();
+      //if (this.animator != null) { this.animator.speed = 0; }
+      Log.LogWrite("CustomMoveAnimator.Init\n");
+      foreach(Component component in components) {
+        if (component == null) { continue; }
+        Log.LogWrite(" "+component.name+":"+component.GetType().ToString()+"\n");
+      }
+    }
+  }
+  public enum LegAnimationState {
+    lasNone,
+    lasMove,
+    lasForward,
+    lasBackward0,
+    lasBackward1,
+    lasBackward2,
+    lasBackward3
+  }
+  public class CustomQuadLegController: GenericAnimatedComponent {
+    public Animator LFAnimator = null;
+    public Animator LBAnimator = null;
+    public Animator RFAnimator = null;
+    public Animator RBAnimator = null;
+    public float t = 0f;
+    public bool prevFState = false;
+    public bool prevBState = false;
+    public bool prevTState = false;
+    public LegAnimationState legAnimState;
+    void Awake() {
+    }
+    void Start() {
+    }
+    public float Velocity() {
+      if (legAnimState == LegAnimationState.lasForward) { return 1f; }
+      return 0f;
+    }
+    public void StopAnimation() {
+      t = 0f;
+      legAnimState = LegAnimationState.lasNone;
+      //if (this.LFAnimator != null) { this.LFAnimator.enabled = true; this.LFAnimator.SetBool("move", false); };
+      //if (this.LBAnimator != null) { this.LFAnimator.enabled = true; this.LBAnimator.SetBool("move", false); };
+      //if (this.RFAnimator != null) { this.LFAnimator.enabled = true; this.RFAnimator.SetBool("move", false); };
+      //if (this.RBAnimator != null) { this.LFAnimator.enabled = true; this.RBAnimator.SetBool("move", false); };
+    }
+    public void StartAnimation() {
+      t = 0f;
+      Log.LogWrite("CustomQuadLegController.StartAnimation\n");
+      this.ForwardAnimation();
+      /*if (this.LFAnimator != null) {
+        this.LBAnimator.speed = 1f;
+        this.LFAnimator.enabled = true; this.LFAnimator.SetBool("move", true);
+        Log.LogWrite(" left front move\n");
+      };*/
+    }
+    public void ForwardAnimation() {
+      //t = 0f;
+      legAnimState = LegAnimationState.lasForward;
+      if (this.LFAnimator != null) { this.LFAnimator.enabled = true; this.LFAnimator.SetBool("forward", true); };
+      if (this.LBAnimator != null) { this.LFAnimator.enabled = true; this.LBAnimator.SetBool("forward", true); };
+      if (this.RFAnimator != null) { this.LFAnimator.enabled = true; this.RFAnimator.SetBool("forward", true); };
+      if (this.RBAnimator != null) { this.LFAnimator.enabled = true; this.RBAnimator.SetBool("forward", true); };
+    }
+
+    public void BackwardAnimation(int index) {
+      Animator animator = null;
+      switch (index) {
+        case 0: animator = this.LFAnimator; legAnimState = LegAnimationState.lasBackward0; break;
+        case 1: animator = this.LBAnimator; legAnimState = LegAnimationState.lasBackward1; break;
+        case 2: animator = this.RFAnimator; legAnimState = LegAnimationState.lasBackward2; break;
+        case 3: animator = this.RBAnimator; legAnimState = LegAnimationState.lasBackward3; break;
+      }
+      if (animator != null) { animator.enabled = true; animator.SetBool("forward", false); }
+    }
+    public override void Init(ICombatant a, int loc, string data) {
+      base.Init(a, loc, data);
+      Animator[] animators = this.parent.GameRep.gameObject.GetComponentsInChildren<Animator>();
+      Log.LogWrite("CustomQuadLegController.Init\n");
+      foreach (Animator animator in animators) {
+        if (animator.gameObject.name.StartsWith("lf_limb")) {
+          Log.LogWrite(" left front animatior found\n");
+          LFAnimator = animator;
+        } else if (animator.gameObject.name.StartsWith("lr_limb")) {
+          Log.LogWrite(" left rear animatior found\n");
+          LBAnimator = animator;
+        } else if (animator.gameObject.name.StartsWith("rf_limb")) {
+          Log.LogWrite(" right front animatior found\n");
+          RFAnimator = animator;
+        } else if (animator.gameObject.name.StartsWith("rr_limb")) {
+          Log.LogWrite(" right rear animatior found\n");
+          RBAnimator = animator;
+        }
+      }
+      legAnimState = LegAnimationState.lasNone;
+      t = 0f;
+      this.RegisterMoveController();
+    }
+    void Update() {
+      if (legAnimState == LegAnimationState.lasNone) { return; }
+      this.t += Time.deltaTime;
+      switch (legAnimState) {
+        case LegAnimationState.lasForward: if (t >= 0.75f) { this.BackwardAnimation(0); t -= 0.75f; }; break;
+        case LegAnimationState.lasBackward0: if (t >= 0.25f) { this.BackwardAnimation(1); t -= 0.25f; }; break;
+        case LegAnimationState.lasBackward1: if (t >= 0.25f) { this.BackwardAnimation(2); t -= 0.25f; }; break;
+        case LegAnimationState.lasBackward2: if (t >= 0.25f) { this.BackwardAnimation(3); t -= 0.25f; }; break;
+        case LegAnimationState.lasBackward3: if (t >= 0.25f) { this.ForwardAnimation(); t = 0f; }; break;
+      }
+      /*if (legAnimState == LegAnimationState.lasMove) {
+        if (this.t > 0f) {
+          this.LBAnimator.speed = 1f;
+          this.LBAnimator.enabled = true; this.LBAnimator.SetBool("move", true);
+          Log.LogWrite(" left rear move\n");
+        }
+        if (this.t > 0.5f) {
+          this.RFAnimator.speed = 1f;
+          this.RFAnimator.enabled = true; this.RFAnimator.SetBool("move", true);
+          Log.LogWrite(" left rear move\n");
+        }
+        if (this.t > 0.25f) {
+          this.RBAnimator.speed = 1f;
+          this.RBAnimator.enabled = true; this.RBAnimator.SetBool("move", true);
+          Log.LogWrite(" left rear move\n");
+          this.legAnimState = LegAnimationState.lasNone;
+        }
+      }*/
+    }
+  }
+  public class TurretAnimator : GenericAnimatedComponent {
+    //private float rotateAngle;
+    public ICombatant target;
+    public float idleSpeed;
+    public float rotationDir;
+    public float curAngle;
+    public VehicleChassisLocations VehicleChassisLocation;
+    public ChassisLocations MechChassisLocation;
+    public List<GameObject> barrels;
+    public TurretAnimator() {
+      target = null;
+      idleSpeed = 1f;
+      rotationDir = 0f;
+      curAngle = 0f;
+      VehicleChassisLocation = VehicleChassisLocations.Turret;
+      MechChassisLocation = ChassisLocations.CenterTorso;
+      barrels = new List<GameObject>();
+    }
+    protected virtual void Update() {
+      if (this.target != null) {
+        //Log.LogWrite("Turret.Update traget " + target.DisplayName + "\n");
+        if (target.GameRep != null) {
+          var lookPos = target.GameRep.transform.position - transform.position;
+          lookPos.y = 0;
+          var rotation = Quaternion.LookRotation(lookPos);
+          transform.rotation = rotation;
+        }
+      } else {
+        //Log.LogWrite("Turret.Update "+curAngle+" dir:"+rotationDir+"\n");
+        if (Math.Abs(curAngle) > 60f) { rotationDir *= -1f; };
+        this.transform.Rotate(0f, idleSpeed * rotationDir, 0f, Space.Self);
+        curAngle += (idleSpeed * rotationDir);
+      }
+    }
+    public override void Init(ICombatant a, int loc, string data) {
+      base.Init(a, loc, data);
+      TurretData tdata = JsonConvert.DeserializeObject<TurretData>(data);
+      this.idleSpeed = Math.Abs(tdata.speed);
+      this.VehicleChassisLocation = tdata.VehicleLocation;
+      this.MechChassisLocation = tdata.MechLocation;
+      for (int t = 0; t < tdata.barrels.Count; ++t) {
+        GameObject goBarrel = new GameObject("barrel_" + t);
+        goBarrel.transform.SetParent(this.transform);
+        goBarrel.transform.localPosition = tdata.barrels[t].offset.vector;
+        goBarrel.transform.localEulerAngles = tdata.barrels[t].rotate.vector;
+        goBarrel.transform.localScale = tdata.barrels[t].scale.vector;
+        barrels.Add(goBarrel);
+      }
+      rotationDir = 1f;
+    }
+    public override void Clear() {
+      base.Clear();
+      foreach (GameObject barrel in barrels) {
+        GameObject.Destroy(barrel);
+      }
+      barrels.Clear();
+    }
+  }
+  public class WeaponMountPoint : GenericAnimatedComponent {
+    //private float rotateAngle;
+    public VehicleChassisLocations VehicleChassisLocation;
+    public ChassisLocations MechChassisLocation;
+    public List<GameObject> barrels;
+    public WeaponMountPoint() {
+      VehicleChassisLocation = VehicleChassisLocations.Turret;
+      MechChassisLocation = ChassisLocations.CenterTorso;
+      barrels = new List<GameObject>();
+    }
+    protected virtual void Update() {
+    }
+    public override void Init(ICombatant a, int loc, string data) {
+      base.Init(a, loc, data);
+      TurretData tdata = JsonConvert.DeserializeObject<TurretData>(data);
+      this.VehicleChassisLocation = tdata.VehicleLocation;
+      this.MechChassisLocation = tdata.MechLocation;
+      for (int t = 0; t < tdata.barrels.Count; ++t) {
+        GameObject goBarrel = new GameObject("barrel_" + t);
+        goBarrel.transform.SetParent(this.transform);
+        goBarrel.transform.localPosition = tdata.barrels[t].offset.vector;
+        goBarrel.transform.localEulerAngles = tdata.barrels[t].rotate.vector;
+        goBarrel.transform.localScale = tdata.barrels[t].scale.vector;
+        barrels.Add(goBarrel);
+      }
+    }
+    public override void Clear() {
+      base.Clear();
+      foreach (GameObject barrel in barrels) {
+        GameObject.Destroy(barrel);
+      }
+      barrels.Clear();
+    }
+  }
+  public static class UnitsAnimatedPartsHelper {
+    public static Dictionary<ICombatant, List<GameObject>> animatedParts = new Dictionary<ICombatant, List<GameObject>>();
+    public static TurretAnimator GetCustomTurret(this ICombatant unit) {
+      if (animatedParts.ContainsKey(unit) == false) { return null; }
+      foreach (GameObject obj in animatedParts[unit]) {
+        TurretAnimator turret = obj.GetComponent<TurretAnimator>();
+        if (turret != null) { return turret; };
+      }
+      return null;
+    }
+    public static TurretAnimator GetCustomTurret(this ICombatant unit, VehicleChassisLocations location) {
+      if (animatedParts.ContainsKey(unit) == false) { return null; }
+      foreach (GameObject obj in animatedParts[unit]) {
+        TurretAnimator turret = obj.GetComponent<TurretAnimator>();
+        if (turret == null) { continue; };
+        if (turret.barrels.Count == 0) { continue; }
+        if (turret.VehicleChassisLocation != location) { continue; }
+        return turret;
+      }
+      return null;
+    }
+    public static WeaponMountPoint GetCustomMountPoint(this ICombatant unit, VehicleChassisLocations location) {
+      if (animatedParts.ContainsKey(unit) == false) { return null; }
+      foreach (GameObject obj in animatedParts[unit]) {
+        WeaponMountPoint mp = obj.GetComponent<WeaponMountPoint>();
+        if (mp == null) { continue; };
+        if (mp.barrels.Count == 0) { continue; }
+        if (mp.VehicleChassisLocation != location) { continue; }
+        return mp;
+      }
+      return null;
+    }
+    public static void Clear(ICombatant unit) {
+      if (animatedParts.ContainsKey(unit) == false) { return; };
+      for (int t = 0; t < animatedParts[unit].Count; ++t) {
+        if (animatedParts[unit][t] != null) {
+          GenericAnimatedComponent[] components = animatedParts[unit][t].GetComponents<GenericAnimatedComponent>();
+          if (components != null) {
+            foreach (GenericAnimatedComponent component in components) {
+              if (component != null) { component.Clear(); }
+              GameObject.Destroy(component);
+            }
+          }
+          GameObject.Destroy(animatedParts[unit][t]); animatedParts[unit][t] = null;
+        };
+      }
+      animatedParts[unit].Clear();
+    }
+    public static void DestroyAnimation(this ICombatant unit,int location) {
+      if (animatedParts.ContainsKey(unit) == false) { return; };
+      HashSet<GameObject> toDestroy = new HashSet<GameObject>();
+      for (int t = 0; t < animatedParts[unit].Count; ++t) {
+        if (animatedParts[unit][t] != null) {
+          GenericAnimatedComponent[] components = animatedParts[unit][t].GetComponents<GenericAnimatedComponent>();
+          if (components != null) {
+            foreach (GenericAnimatedComponent component in components) {
+              if (component == null) { continue; };
+              if (component.Location != location) { continue; };
+              toDestroy.Add(animatedParts[unit][t]);
+            }
+          }
+        };
+      }
+      Log.LogWrite(0,"DestroyAnimation count:"+toDestroy.Count,true);
+      foreach(GameObject go in toDestroy) {
+        GenericAnimatedComponent[] components = go.GetComponents<GenericAnimatedComponent>();
+        if (components != null) {
+          foreach (GenericAnimatedComponent component in components) {
+            if (component != null) { component.Clear(); }
+            GameObject.Destroy(component);
+          }
+        }
+        animatedParts[unit].Remove(go);
+        GameObject.Destroy(go);
+      }
+    }
+    public static void Clear() {
+      foreach (var ap in animatedParts) {
+        UnitsAnimatedPartsHelper.Clear(ap.Key);
+      }
+      animatedParts.Clear();
+    }
+    public static void SpawnAnimatedPart(ICombatant unit, CustomPart spawnPart, int Location) {
+      if (unit.GameRep == null) {
+        return;
+      }
+      if (unit.GameRep.gameObject == null) {
+        return;
+      }
+      Log.LogWrite("SpawnAnimatedPart " + unit.DisplayName + " " + spawnPart.prefab + " " + spawnPart.AnimationType + " " + spawnPart.Data + " " + Location + " " + spawnPart.prefabTransform.offset + " " + spawnPart.prefabTransform.scale + " " + spawnPart.prefabTransform.rotate + "\n");
+      Renderer actorRenderer = unit.GameRep.gameObject.GetComponentInChildren<Renderer>();
+      GameObject gameObject = null;
+      if (string.IsNullOrEmpty(spawnPart.prefab) == false) {
+        gameObject = unit.Combat.DataManager.PooledInstantiate(spawnPart.prefab, BattleTechResourceType.Prefab, new Vector3?(), new Quaternion?(), (Transform)null);
+        if ((UnityEngine.Object)gameObject == (UnityEngine.Object)null) {
+          Log.LogWrite("Can't find " + spawnPart.prefab + " in in-game prefabs\n");
+          if (CACMain.Core.AdditinalFXObjects.ContainsKey(spawnPart.prefab)) {
+            Log.LogWrite("Found in additional prefabs\n");
+            gameObject = GameObject.Instantiate(CACMain.Core.AdditinalFXObjects[spawnPart.prefab]);
+          } else {
+            Log.LogWrite(" can't spawn prefab " + spawnPart.prefab + " it is absent in pool,in-game assets and external assets\n", true);
+            return;
+          }
+        }
+      } else {
+        Log.LogWrite(" creating empty object\n");
+        gameObject = new GameObject();
+      }
+      Transform parentTransform = null;
+      if (string.IsNullOrEmpty(spawnPart.boneName) == false) {
+        Transform[] transforms = unit.GameRep.gameObject.GetComponentsInChildren<Transform>();
+        foreach(Transform bone in transforms) {
+          if(bone.name == spawnPart.boneName) {
+            Log.LogWrite(" parent bone found\n");
+            parentTransform = bone;
+            break;
+          }
+        }
+      }
+      if (parentTransform == null) { parentTransform = unit.GameRep.GetVFXTransform(Location); };
+      gameObject.transform.parent = parentTransform;
+      gameObject.transform.localPosition = spawnPart.prefabTransform.offset.vector;
+      Quaternion rotation = Quaternion.Euler(spawnPart.prefabTransform.rotate.vector);
+      gameObject.transform.localRotation = rotation;
+      gameObject.transform.localScale = spawnPart.prefabTransform.scale.vector;
+      /*Transform[] transforms = gameObject.GetComponentsInChildren<Transform>();
+      foreach (Transform transform in transforms) {
+        Log.LogWrite("Transform:"+transform.name+" scale:"+ transform.gameObject.transform.localScale + "->");
+        Log.LogWrite(" " + transform.gameObject.transform.localScale+"\n");
+      }*/
+      Component[] components = gameObject.GetComponents<Component>();
+      foreach (Component cmp in components) {
+        if (cmp == null) { continue; }
+        Log.LogWrite(0, "Component:" + cmp.GetType() + " " + cmp.name + " id:" + cmp.GetInstanceID() + " owner:" + cmp.gameObject.GetInstanceID(), true);
+      }
+      components = gameObject.GetComponentsInChildren<Component>();
+      foreach (Component cmp in components) {
+        if (cmp == null) { continue; }
+        Log.LogWrite(0, "Child component:" + cmp.GetType() + " " + cmp.name + " id:" + cmp.GetInstanceID() + " owner:" + cmp.gameObject.GetInstanceID(), true);
+      }
+      components = unit.GameRep.gameObject.GetComponentsInChildren<Component>();
+      foreach (Component cmp in components) {
+        if (cmp == null) { continue; }
+        Log.LogWrite(0, "Actor component:" + cmp.GetType() + " " + cmp.name + " id:" + cmp.GetInstanceID() + " owner:" + cmp.gameObject.GetInstanceID(), true);
+      }
+      Renderer[] spawnRenderers = gameObject.GetComponentsInChildren<Renderer>();
+      foreach(Renderer renderer in spawnRenderers) {
+        foreach(Material material in renderer.materials) {
+          Log.LogWrite(0,"Renderer:"+renderer.GetType()+":"+renderer.name+" material:"+material.name,true);
+          CustomMaterialInfo mInfo = spawnPart.findMaterialInfo(material.name);
+          if (mInfo != null) {
+            Log.LogWrite(1, "need custom processing", true);
+            if(string.IsNullOrEmpty(mInfo.shader) == false) {
+              GameObject shaderGo = unit.Combat.DataManager.PooledInstantiate(mInfo.shader, BattleTechResourceType.Prefab, new Vector3?(), new Quaternion?(), (Transform)null);
+              if(shaderGo != null) {
+                Renderer shaderRenderer = shaderGo.GetComponentInChildren<Renderer>();
+                if(shaderRenderer != null) {
+                  Shader shader = shaderRenderer.material.shader;
+                  Log.LogWrite(2, "shader real name:" + shader.name);
+                  material.shader = shader;
+                } else {
+                  Log.LogWrite(2, "can't found renderer in shader carrier " + mInfo.shader, true);
+                }
+                unit.Combat.DataManager.PoolGameObject(mInfo.shader, shaderGo);
+              } else {
+                Log.LogWrite(2,"can't found shader carrier "+ mInfo.shader, true);
+              }
+            }
+            if(mInfo.shaderKeyWords.Count > 0) {
+              material.shaderKeywords = mInfo.shaderKeyWords.ToArray();
+              Log.LogWrite(2, "shaders keywords updated "+ material.shaderKeywords, true);
+            }
+          } else {
+            Log.LogWrite(1, "no additional custom processing", true);
+          }
+        }
+      }
+      /*if (_BumpMap != null) newPrototype.materials[lod].SetTexture("_BumpMap", _BumpMap);
+      if (_MainTex != null) newPrototype.materials[lod].SetTexture("_MainTex", _MainTex);
+      if (_OcculusionMap != null) newPrototype.materials[lod].SetTexture("_OcculusionMap", _OcculusionMap);
+      if (_Transmission != null) newPrototype.materials[lod].SetTexture("_Transmission", _Transmission);
+      if (_MetallicGlossMap != null) newPrototype.materials[lod].SetTexture("_MetallicGlossMap", _MetallicGlossMap);*/
+      //Texture albedo = spawnRenderer.material.GetTexture("_MainTex");
+      //Texture metallic = spawnRenderer.material.GetTexture("_MetallicGlossMap");
+      //Texture normalMap = spawnRenderer.material.GetTexture("_BumpMap");
+      //Texture occulsionMap = spawnRenderer.material.GetTexture("_OcculusionMap");
+      /*Log.LogWrite("Textures get\n");
+      //spawnRenderer.material = GameObject.Instantiate(actorRenderer.material);
+      //spawnRenderer.material.SetTexture("_BumpMap", null);
+      spawnRenderer.material.SetTexture("_DamageAlbedoMap", null);
+      spawnRenderer.material.SetTexture("_DamageNormalMap", null);
+      spawnRenderer.material.SetTexture("_DetailAlbedoMap", null);
+      spawnRenderer.material.SetTexture("_DetailMask", null);
+      spawnRenderer.material.SetTexture("_DetailNormalMap", null);
+      spawnRenderer.material.SetTexture("_EmblemMap", null);
+      spawnRenderer.material.SetTexture("_EmissionMap", null);
+      //spawnRenderer.material.SetTexture("_MainTex", null);
+      //spawnRenderer.material.SetTexture("_MetallicGlossMap", null);
+      //spawnRenderer.material.SetTexture("_OcclusionMap", null);
+      spawnRenderer.material.SetTexture("_PaintScheme", null);
+      spawnRenderer.material.SetTexture("_PaintSchemeOverride", null);
+      spawnRenderer.material.SetTexture("_ParallaxMap", null);
+      Log.LogWrite("Textures set\n");*/
+      /*AudioSource audioSource = gameObject.GetComponentInChildren<AudioSource>();
+      if (audioSource != null) {
+        Log.LogWrite(" audioSource exists in childs\n");
+        AudioClip clip = audioSource.clip;
+        if (clip != null) {
+          Log.LogWrite(" clip exists. loadState:" + clip.loadState + " length:" + clip.length + " name:" + clip.name + " loadType:" + clip.loadType + "\n");
+          if (clip.loadState == AudioDataLoadState.Unloaded) {
+            Log.LogWrite(" load audio data:" + clip.LoadAudioData());
+            Log.LogWrite(" loadState:" + clip.loadState + " length:" + clip.length + "\n");
+          }
+        }
+        audioSource.loop = true;
+        Log.LogWrite(" playing\n");
+        audioSource.minDistance = 0f;
+        audioSource.Play();
+      }*/
+      /*AudioClip rotorClip = Resources.Load<AudioClip>("Sounds/helicopter-hovering-01");
+      if (rotorClip != null) {
+        Log.LogWrite(" rotorClip exists. loadState:" + rotorClip.loadState + " length:" + rotorClip.length + " name:" + rotorClip.name + " loadType:" + rotorClip.loadType + "\n");
+      } else {
+        Log.LogWrite(" rotor clip not loaded\n");
+      }*/
+      ParticleSystem component = gameObject.GetComponent<ParticleSystem>();
+      if (component != null) {
+        Log.LogWrite("ParticleSystem for " + spawnPart.prefab + " found\n");
+        //component.transform.localScale.Set(scale.x, scale.y, scale.z);
+        component.transform.parent = unit.GameRep.GetVFXTransform(Location);
+        component.transform.localPosition = spawnPart.prefabTransform.offset.vector;
+        component.transform.localRotation = rotation;
+        gameObject.SetActive(true);
+        component.Stop(true);
+        component.Clear(true);
+        BTCustomRenderer.SetVFXMultiplier(component);
+        component.Play(true);
+      } else {
+        Log.LogWrite("no particle system for " + spawnPart.prefab + "\n");
+      }
+      GenericAnimatedComponent acomponent = null;
+      try {
+        if (spawnPart.AnimationType == "SimpleRotator") {
+          acomponent = gameObject.AddComponent<SimpleRotator>();
+        }else
+        if (spawnPart.AnimationType == "Turret") {
+          acomponent = gameObject.AddComponent<TurretAnimator>();
+        }else
+        if (spawnPart.AnimationType == "WeaponMountPoint") {
+          acomponent = gameObject.AddComponent<WeaponMountPoint>();
+        } else
+        if (spawnPart.AnimationType == "Animation") {
+          acomponent = gameObject.AddComponent<CustomMoveAnimator>();
+        } else 
+        if (spawnPart.AnimationType == "CustomQuadLegController") {
+          acomponent = gameObject.AddComponent<CustomQuadLegController>();
+        } else {
+          acomponent = gameObject.AddComponent<GenericAnimatedComponent>();
+        }
+        if (acomponent != null) {
+          acomponent.Init(unit, Location, spawnPart.Data);
+        }
+      } catch (Exception e) {
+        Log.LogWrite(e.ToString() + "\n", true);
+      }
+      gameObject.SetActive(true);
+      if (animatedParts.ContainsKey(unit) == false) {
+        Log.LogWrite("new list\n");
+        animatedParts.Add(unit, new List<GameObject>());
+      };
+      animatedParts[unit].Add(gameObject);
+      Log.LogWrite("animatedParts.Count = "+ animatedParts[unit].Count + "\n");
+    }
+  }
+  [HarmonyPatch(typeof(VehicleChassisDef))]
+  [HarmonyPatch("GatherDependencies")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { typeof(DataManager), typeof(DataManager.DependencyLoadRequest), typeof(uint) })]
+  public static class VehicleChassisDef_GatherDependencies {
+    public static void AddCustomDeps(this VehicleCustomInfo info, DataManager.DependencyLoadRequest dependencyLoad) {
+      foreach (CustomPart part in info.CustomParts) {
+        if (string.IsNullOrEmpty(part.prefab)) { continue; }
+        Log.LogWrite(1, "additional prefab:" + part.prefab, true);
+        dependencyLoad.RequestResource(BattleTechResourceType.Prefab, part.prefab);
+        foreach (var mi in part.MaterialInfo) {
+          if (string.IsNullOrEmpty(mi.Value.shader) == false) {
+            Log.LogWrite(1, "additional shader:" + mi.Value.shader, true);
+            dependencyLoad.RequestResource(BattleTechResourceType.Prefab, mi.Value.shader);
+          }
+          foreach(var ti in mi.Value.materialTextures) {
+            if (string.IsNullOrEmpty(ti.Value) == false) {
+              Log.LogWrite(1, "additional textures:" + ti.Value, true);
+              dependencyLoad.RequestResource(BattleTechResourceType.Texture2D, ti.Value);
+            }
+          }
+        }
+      }
+    }
+    public static void Postfix(VehicleChassisDef __instance, DataManager dataManager, DataManager.DependencyLoadRequest dependencyLoad, uint activeRequestWeight) {
+      Log.LogWrite(0, "VehicleChassisDef.GatherDependencies postfix " + __instance.Description.Id, true);
+      try {
+        VehicleCustomInfo info = __instance.GetCustomInfo();
+        if (info == null) {
+          Log.LogWrite(1, "no custom", true);
+          return;
+        }
+        info.AddCustomDeps(dependencyLoad);
+      } catch (Exception e) {
+        Log.LogWrite(e.ToString() + "\n", true);
+      }
+      return;
+    }
+  }
+  [HarmonyPatch(typeof(VehicleChassisDef))]
+  [HarmonyPatch("DependenciesLoaded")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { typeof(uint) })]
+  public static class VehicleChassisDef_DependenciesLoaded {
+    public static bool CheckCustomDeps(this VehicleCustomInfo info, DataManager dataManager) {
+      foreach (CustomPart part in info.CustomParts) {
+        if (string.IsNullOrEmpty(part.prefab)) { continue; }
+        Log.LogWrite(1, "additional prefab:" + part.prefab, false);
+        if (dataManager.Exists(BattleTechResourceType.Prefab, part.prefab) == false) {
+          Log.LogWrite(1," not exists", true);
+          return false;
+        }
+        foreach (var mi in part.MaterialInfo) {
+          if (string.IsNullOrEmpty(mi.Value.shader)) { continue; };
+          Log.LogWrite(1, "additional shader:" + mi.Value.shader, false);
+          if (dataManager.Exists(BattleTechResourceType.Prefab, mi.Value.shader) == false) {
+            Log.LogWrite(2,"not exists", true);
+            return false;
+          }
+          Log.LogWrite(2,"exists", true);
+          foreach (var ti in mi.Value.materialTextures) {
+            if (string.IsNullOrEmpty(ti.Value) == false) {
+              Log.LogWrite(1, "additional texture:" + ti.Value, true);
+              if (dataManager.Exists(BattleTechResourceType.Texture2D, ti.Value) == false) {
+                Log.LogWrite(2, "not exists", true);
+                return false;
+              }
+            }
+          }
+          Log.LogWrite(2, "exists", true);
+        }
+      }
+      return true;
+    }
+    public static void Postfix(VehicleChassisDef __instance, uint loadWeight, ref bool __result) {
+      Log.LogWrite(0, "VehicleChassisDef.DependenciesLoaded postfix " + __instance.Description.Id, true);
+      if (__instance.DataManager == null) { return; }
+      if (__result == false) { return; }
+      try {
+        VehicleCustomInfo info = __instance.GetCustomInfo();
+        if (info == null) {
+          Log.LogWrite(1, "no custom", true);
+          return;
+        }
+        if(info.CheckCustomDeps(__instance.DataManager) == false) {
+          __result = false;
+        }
+      } catch (Exception e) {
+        Log.LogWrite(e.ToString() + "\n", true);
+      }
+      return;
+    }
+  }
+  [HarmonyPatch(typeof(ChassisDef))]
+  [HarmonyPatch("GatherDependencies")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { typeof(DataManager), typeof(DataManager.DependencyLoadRequest), typeof(uint) })]
+  public static class ChassisDef_GatherDependencies {
+    public static void Postfix(VehicleChassisDef __instance, DataManager dataManager, DataManager.DependencyLoadRequest dependencyLoad, uint activeRequestWeight) {
+      Log.LogWrite(0, "ChassisDef.GatherDependencies postfix " + __instance.Description.Id, true);
+      try {
+        VehicleCustomInfo info = __instance.GetCustomInfo();
+        if (info == null) {
+          Log.LogWrite(1, "no custom", true);
+          return;
+        }
+        info.AddCustomDeps(dependencyLoad);
+      } catch (Exception e) {
+        Log.LogWrite(e.ToString() + "\n", true);
+      }
+      return;
+    }
+  }
+  [HarmonyPatch(typeof(ChassisDef))]
+  [HarmonyPatch("DependenciesLoaded")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { typeof(uint) })]
+  public static class ChassisDef_DependenciesLoaded {
+    public static void Postfix(ChassisDef __instance, uint loadWeight, ref bool __result) {
+      Log.LogWrite(0, "ChassisDef.DependenciesLoaded postfix " + __instance.Description.Id, true);
+      if (__instance.DataManager == null) { return; }
+      if (__result == false) { return; }
+      try {
+        VehicleCustomInfo info = __instance.GetCustomInfo();
+        if (info == null) {
+          Log.LogWrite(1, "no custom", true);
+          return;
+        }
+        if (info.CheckCustomDeps(__instance.DataManager) == false) {
+          __result = false;
+        }
+      } catch (Exception e) {
+        Log.LogWrite(e.ToString() + "\n", true);
+      }
+      return;
+    }
+  }
+  [HarmonyPatch(typeof(AbstractActor))]
+  [HarmonyPatch("HandleDeath")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { typeof(string) })]
+  public static class AbstractActor_HandleDeath {
+    public static void TieToGround(Transform transform, string tname, MapMetaData meta) {
+      Log.LogWrite(" " + tname + ":" + transform.position + " rot:" + transform.rotation.eulerAngles);
+      float y = meta.GetLerpedHeightAt(transform.position) + Core.Settings.DeathHeight - transform.position.y;
+      Log.LogWrite(" ->  down " + y);
+      transform.Translate(Vector3.up * y, Space.World);
+      //transform.position.Set(transform.position.x, y, transform.position.z);
+      Log.LogWrite(" -> " + transform.position + " rot: " + transform.rotation.eulerAngles + "\n");
+    }
+    public static void Postfix(AbstractActor __instance) {
+      try {
+        if (__instance.IsDead) {
+          Log.LogWrite("AbstractActor.HandleDeath " + __instance.DisplayName + ":" + __instance.GUID + "\n");
+          UnitsAnimatedPartsHelper.Clear(__instance);
+          Vehicle vehicle = __instance as Vehicle;
+          if (vehicle == null) {
+            Log.LogWrite(" not a vehicle\n");
+            return;
+          }
+          VehicleRepresentation vRep = vehicle.GameRep;
+          VehicleCustomInfo info = vehicle.GetCustomInfo();
+          if (info == null) {
+            Log.LogWrite(" no custom info\n");
+            return;
+          }
+          if (info.TieToGroundOnDeath) {
+            TieToGround(vRep.TurretAttach.transform, "TurretAttach", __instance.Combat.MapMetaData);
+            TieToGround(vRep.BodyAttach.transform, "BodyAttach", __instance.Combat.MapMetaData);
+            TieToGround(vRep.TurretLOS.transform, "TurretLOS", __instance.Combat.MapMetaData);
+            TieToGround(vRep.LeftSideLOS.transform, "LeftSideLOS", __instance.Combat.MapMetaData);
+            TieToGround(vRep.RightSideLOS.transform, "RightSideLOS", __instance.Combat.MapMetaData);
+            TieToGround(vRep.leftVFXTransform.transform, "leftVFXTransform", __instance.Combat.MapMetaData);
+            TieToGround(vRep.rightVFXTransform.transform, "rightVFXTransform", __instance.Combat.MapMetaData);
+            TieToGround(vRep.rearVFXTransform.transform, "rearVFXTransform", __instance.Combat.MapMetaData);
+            TieToGround(vRep.thisTransform.transform, "thisTransform", __instance.Combat.MapMetaData);
+          }
+        }
+      } catch (Exception e) {
+        Log.LogWrite(e.ToString() + "\n");
+      }
+    }
+  }
+  [HarmonyPatch(typeof(Mech))]
+  [HarmonyPatch("OnLocationDestroyed")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { typeof(ChassisLocations), typeof(Vector3), typeof(WeaponHitInfo), typeof(DamageType) })]
+  public static class Mech_OnLocationDestroyed {
+    public static void Postfix(Mech __instance, ChassisLocations location, Vector3 attackDirection, WeaponHitInfo hitInfo, DamageType damageType) {
+      try {
+        Log.LogWrite("Mech.OnLocationDestroyed " + __instance.DisplayName + ":" + __instance.GUID + "\n");
+        __instance.DestroyAnimation((int)location);
+      } catch (Exception e) {
+        Log.LogWrite(e.ToString() + "\n");
+      }
+    }
+  }
+  [HarmonyPatch(typeof(CombatGameState))]
+  [HarmonyPatch("OnCombatGameDestroyed")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { })]
+  public static class CombatGameState_OnCombatGameDestroyedMap {
+    public static bool Prefix(CombatGameState __instance) {
+      try {
+        UnitsAnimatedPartsHelper.Clear();
+      } catch (Exception e) {
+        Log.LogWrite(e.ToString() + "\n");
+      }
+      return true;
+    }
+  }
+}

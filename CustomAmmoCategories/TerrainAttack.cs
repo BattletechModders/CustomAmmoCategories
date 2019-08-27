@@ -1,7 +1,9 @@
 ﻿using BattleTech;
+using BattleTech.Data;
 using BattleTech.UI;
 using CustAmmoCategories;
 using CustomAmmoCategoriesLog;
+using CustomAmmoCategoriesPatches;
 using Harmony;
 using InControl;
 using System;
@@ -12,6 +14,7 @@ using UnityEngine;
 
 namespace CustAmmoCategories {
   public class SelectionStateCommandAttackGround : SelectionStateCommandTargetSinglePoint {
+    public float CircleRange = 10f;
     public SelectionStateCommandAttackGround(CombatGameState Combat, CombatHUD HUD, CombatHUDActionButton FromButton, AbstractActor actor) : base(Combat, HUD, FromButton) {
       this.SelectedActor = actor;
     }
@@ -23,6 +26,7 @@ namespace CustAmmoCategories {
       MechRepresentation gameRep = this.SelectedActor.GameRep as MechRepresentation;
       if (!((UnityEngine.Object)gameRep != (UnityEngine.Object)null))
         return;
+      Log.LogWrite("ToggleRandomIdles false\n");
       gameRep.ToggleRandomIdles(false);
     }
 
@@ -34,7 +38,23 @@ namespace CustAmmoCategories {
       MechRepresentation gameRep = this.SelectedActor.GameRep as MechRepresentation;
       if (!((UnityEngine.Object)gameRep != (UnityEngine.Object)null))
         return;
-      gameRep.ToggleRandomIdles(true);
+      if (CombatSelectionHandler_TrySelectActor.SelectionForbidden == false) {
+        Log.LogWrite("ToggleRandomIdles true\n");
+        gameRep.ToggleRandomIdles(true);
+      }
+    }
+    public override void ProcessMousePos(Vector3 worldPos) {
+      float range = this.UpdateWeapons(worldPos);
+      if (float.IsNaN(range) == false) { this.CircleRange = range; };
+      switch (this.NumPositionsLocked) {
+        case 0:
+          CombatTargetingReticle.Instance.UpdateReticle(worldPos, CircleRange);
+          break;
+        case 1:
+          CombatTargetingReticle.Instance.UpdateReticle(this.targetPosition, CircleRange);
+          break;
+      }
+      
     }
     public override int ProjectedHeatForState {
       get {
@@ -50,17 +70,26 @@ namespace CustAmmoCategories {
         return 0;
       }
     }
+  };
+  public class TerrainHitInfo {
+    public Vector3 pos;
+    public bool indirect;
+    public TerrainHitInfo(Vector3 pos, bool indirect) {
+      this.pos = pos;
+      this.indirect = indirect;
+    }
   }
   public static partial class CustomAmmoCategories {
-    public static Dictionary<int, Vector3> terrainHitPositions = new Dictionary<int, Vector3>();
-    public static void addTerrainHitPosition(int seqId, Vector3 pos) {
+    public static Dictionary<int, TerrainHitInfo> terrainHitPositions = new Dictionary<int, TerrainHitInfo>();
+    public static void addTerrainHitPosition(int seqId, Vector3 pos, bool indirect) {
+      SpawnVehicleDialogHelper.lastTerrainHitPosition = pos;
       if (CustomAmmoCategories.terrainHitPositions.ContainsKey(seqId) == false) {
-        CustomAmmoCategories.terrainHitPositions.Add(seqId, pos);
+        CustomAmmoCategories.terrainHitPositions.Add(seqId, new TerrainHitInfo(pos, indirect));
       }
     }
-    public static Vector3 getTerrinHitPosition(int seqId) {
+    public static TerrainHitInfo getTerrinHitPosition(int seqId) {
       if (CustomAmmoCategories.terrainHitPositions.ContainsKey(seqId) == false) {
-        return Vector3.zero;
+        return null;
       }
       return CustomAmmoCategories.terrainHitPositions[seqId];
     }
@@ -73,10 +102,10 @@ namespace CustomAmmoCategoriesPatches {
   [HarmonyPatch(MethodType.Getter)]
   [HarmonyPatch(new Type[] { })]
   public static class SelectionState_CanDeselect {
-    public static bool Prefix(SelectionState __instance,ref bool __result) {
-      CombatGameState Combat = (CombatGameState)typeof(SelectionState).GetProperty("Combat", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(__instance,null);
+    public static bool Prefix(SelectionState __instance, ref bool __result) {
+      CombatGameState Combat = (CombatGameState)typeof(SelectionState).GetProperty("Combat", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(__instance, null);
       CustomAmmoCategoriesLog.Log.LogWrite("SelectionState.CanDeselect\n");
-      CustomAmmoCategoriesLog.Log.LogWrite(" Combat.TurnDirector.IsInterleaved = "+ Combat.TurnDirector.IsInterleaved + "\n");
+      CustomAmmoCategoriesLog.Log.LogWrite(" Combat.TurnDirector.IsInterleaved = " + Combat.TurnDirector.IsInterleaved + "\n");
       CustomAmmoCategoriesLog.Log.LogWrite(" SelectedActor.HasBegunActivation = " + __instance.SelectedActor.HasBegunActivation + "\n");
       CustomAmmoCategoriesLog.Log.LogWrite(" SelectedActor.StoodUpThisRound = " + __instance.SelectedActor.StoodUpThisRound + "\n");
       //if (!Combat.TurnDirector.IsInterleaved) {
@@ -132,7 +161,7 @@ namespace CustomAmmoCategoriesPatches {
       AttackDirector.AttackSequence attackSequence = __instance.Combat.AttackDirector.GetAttackSequence(sequenceID);
       if (attackSequence == null) { return true; }
       if (attackSequence.attacker.GUID == attackSequence.chosenTarget.GUID) {
-        CustomAmmoCategoriesLog.Log.LogWrite("this is terrain attack, no evasive damage or effects");
+        Log.LogWrite("this is terrain attack, no evasive damage or effects\n");
         return false;
       };
       return true;
@@ -145,8 +174,8 @@ namespace CustomAmmoCategoriesPatches {
   public static class SelectionState_GetNewSelectionStateByType {
     public static bool SelectionForbidden = false;
     public static bool Prefix(SelectionType type, CombatGameState Combat, CombatHUD HUD, CombatHUDActionButton FromButton, AbstractActor actor, ref SelectionState __result) {
-      CustomAmmoCategoriesLog.Log.LogWrite("SelectionState.GetNewSelectionStateByType "+type+":"+FromButton.GUID+"\n");
-      if((type == SelectionType.CommandTargetSinglePoint)&&(FromButton.GUID == "ID_ATTACKGROUND")) {
+      CustomAmmoCategoriesLog.Log.LogWrite("SelectionState.GetNewSelectionStateByType " + type + ":" + FromButton.GUID + "\n");
+      if ((type == SelectionType.CommandTargetSinglePoint) && (FromButton.GUID == "ID_ATTACKGROUND")) {
         CustomAmmoCategoriesLog.Log.LogWrite(" creating own selection state\n");
         __result = new SelectionStateCommandAttackGround(Combat, HUD, FromButton, actor);
         return false;
@@ -170,31 +199,40 @@ namespace CustomAmmoCategoriesPatches {
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { typeof(MessageCenterMessage) })]
   public static class CombatHUD_OnAttackEnd {
-    public static int doneAfterAttack = -1;
+    public static AbstractActor needSelect = null;
     public static void Postfix(CombatHUD __instance, MessageCenterMessage message) {
+      Log.LogWrite("CombatHUD.OnAttackEnd. SelectionForbidden: "+ CombatSelectionHandler_TrySelectActor.SelectionForbidden + "\n");
       if (CombatSelectionHandler_TrySelectActor.SelectionForbidden == true) {
         AttackDirector.AttackSequence attackSequence = __instance.Combat.AttackDirector.GetAttackSequence((message as AttackSequenceEndMessage).sequenceId);
-        if (attackSequence != null) {
-          CustomAmmoCategoriesLog.Log.LogWrite("Terrain attack end.\n");
-          CombatSelectionHandler_TrySelectActor.SelectionForbidden = false;
-          attackSequence.attacker.HasFiredThisRound = true;
-          if (attackSequence.attacker.HasMovedThisRound || ((attackSequence.attacker.Combat.TurnDirector.IsInterleaved == true)&&(attackSequence.attacker.CanMoveAfterShooting == false))) {
-            //__instance.Combat.MessageCenter.PublishMessage((MessageCenterMessage)new AddSequenceToStackMessage(attackSequence.attacker.DoneWithActor()));
-            CombatHUD_OnAttackEnd.doneAfterAttack = attackSequence.id;
-            CustomAmmoCategoriesLog.Log.LogWrite("Store done with actor:"+ CombatHUD_OnAttackEnd.doneAfterAttack + "\n");
-          } else {
-            Mech mech = attackSequence.attacker as Mech;
-            if (mech != null) {
-              mech.GenerateAndPublishHeatSequence(attackSequence.id, true, false, mech.GUID);
-            };
-            typeof(CombatHUD).GetMethod("OnActorSelected", BindingFlags.NonPublic | BindingFlags.Instance).Invoke(__instance, new object[1] { (object)attackSequence.attacker });
-            __instance.SelectionHandler.TrySelectActor(attackSequence.attacker, false);
-            __instance.MechWarriorTray.ConfirmAbilities(AbilityDef.ActivationTiming.ConsumedByFiring);
-          }
-          JammingEnabler.jammAMS();
-          JammingEnabler.jamm(attackSequence.attacker);
-          //__instance.Combat.AttackDirector.RemoveAttackSequence(attackSequence.id);
+        AbstractActor attacker = null;
+        if (attackSequence == null) {
+          Log.LogWrite("Can't find sequence with id "+ (message as AttackSequenceEndMessage).sequenceId + "\n");
+          attacker = CombatHUD_OnAttackEnd.needSelect;
+        } else {
+          attacker = attackSequence.attacker;
         }
+        //Log.LogWrite("Terrain attack end.\n");
+        CombatSelectionHandler_TrySelectActor.SelectionForbidden = false;
+        if (attacker != null) {
+          Log.LogWrite(" attacker " + attacker.DisplayName + ":" + attacker.GUID + ".\n");
+          if (attacker.HasMovedThisRound || ((attacker.Combat.TurnDirector.IsInterleaved == true) && (attacker.CanMoveAfterShooting == false))) {
+            Log.LogWrite(" no need to select. already done with it\n");
+          } else {
+            Log.LogWrite(" try to select\n");
+            bool HasBegunActivation = attacker.HasBegunActivation;
+            bool HasActivatedThisRound = attacker.HasActivatedThisRound;
+            attacker.HasBegunActivation = false;
+            attacker.HasActivatedThisRound = false;
+            typeof(CombatHUD).GetMethod("OnActorSelected", BindingFlags.NonPublic | BindingFlags.Instance).Invoke(__instance, new object[1] { (object)attacker });
+            __instance.SelectionHandler.TrySelectActor(attacker, false);
+            attacker.HasBegunActivation = HasBegunActivation;
+            attacker.HasActivatedThisRound = HasActivatedThisRound;
+            __instance.MechWarriorTray.ConfirmAbilities(AbilityDef.ActivationTiming.ConsumedByFiring);
+            attacker = null;
+          }
+        }
+        //__instance.Combat.AttackDirector.RemoveAttackSequence(attackSequence.id);
+
       }
     }
   }
@@ -207,26 +245,45 @@ namespace CustomAmmoCategoriesPatches {
     public static bool Prefix(AttackDirector __instance, MessageCenterMessage message, ref AbstractActor __state) {
       __state = null;
       AttackCompleteMessage attackCompleteMessage = (AttackCompleteMessage)message;
-      CustomAmmoCategoriesLog.Log.LogWrite("AttackDirector.OnAttackCompleteTA:" + CombatHUD_OnAttackEnd.doneAfterAttack + "/" + attackCompleteMessage.sequenceId + "\n");
+      Log.LogWrite("AttackDirector.OnAttackCompleteTA:" + attackCompleteMessage.sequenceId + "\n");
       int sequenceId = attackCompleteMessage.sequenceId;
       AttackDirector.AttackSequence attackSequence = __instance.GetAttackSequence(sequenceId);
       if (attackSequence == null) {
         return true;
       }
-      if (attackSequence.id == CombatHUD_OnAttackEnd.doneAfterAttack) {
-        __state = attackSequence.attacker; CombatHUD_OnAttackEnd.doneAfterAttack = -1;
-        CustomAmmoCategoriesLog.Log.LogWrite(" need to done with:"+__state.DisplayName+":"+__state.GUID+"\n");
+      if (attackSequence.chosenTarget.GUID == attackSequence.attacker.GUID) {
+        Log.LogWrite(" terrain attack detected\n");
+        __state = attackSequence.attacker;
+        Mech mech = __state as Mech;
+        if (mech != null) {
+          mech.GenerateAndPublishHeatSequence(attackSequence.id, true, false, mech.GUID);
+        };
       };
       return true;
     }
     public static void Postfix(AttackDirector __instance, MessageCenterMessage message, ref AbstractActor __state) {
-      if(__state != null) {
-        CustomAmmoCategoriesLog.Log.LogWrite(" done with:" + __state.DisplayName + ":" + __state.GUID + "\n");
-        __instance.Combat.MessageCenter.PublishMessage((MessageCenterMessage)new AddSequenceToStackMessage(__state.DoneWithActor()));
+      if (__state != null) {
+        MechRepresentation gameRep = __state.GameRep as MechRepresentation;
+        if (!((UnityEngine.Object)gameRep != (UnityEngine.Object)null)) {
+          Log.LogWrite("ToggleRandomIdles true\n");
+          gameRep.ToggleRandomIdles(true);
+        }
+        __state.HasFiredThisRound = true;
+        if (__state.HasMovedThisRound || ((__state.Combat.TurnDirector.IsInterleaved == true) && (__state.CanMoveAfterShooting == false))) {
+          //__instance.Combat.MessageCenter.PublishMessage((MessageCenterMessage)new AddSequenceToStackMessage(attackSequence.attacker.DoneWithActor()));
+          Log.LogWrite(" done with:" + __state.DisplayName + ":" + __state.GUID + "\n");
+          __instance.Combat.MessageCenter.PublishMessage((MessageCenterMessage)new AddSequenceToStackMessage(__state.DoneWithActor()));
+          CombatHUD_OnAttackEnd.needSelect = null;
+        } else {
+          CombatHUD_OnAttackEnd.needSelect = __state;
+        }
+        JammingEnabler.jammAMS();
+        JammingEnabler.jamm(__state);
+        SpawnVehicleDialogHelper.SpawnSelected(-1);
       }
     }
   }
-    public static class WeaponEffect_FireTerrain {
+  public static class WeaponEffect_FireTerrain {
     public static bool Prefix(WeaponEffect __instance, WeaponHitInfo hitInfo, int hitIndex, int emitterIndex) {
       if (hitInfo.attackerId == hitInfo.targetId) {
         CustomAmmoCategoriesLog.Log.LogWrite("On Fire detected terrain attack\n");
@@ -250,57 +307,257 @@ namespace CustomAmmoCategoriesPatches {
       return true;
     }
   }
+  [HarmonyPatch(typeof(SelectionStateCommandTargetSinglePoint))]
+  [HarmonyPatch("ProcessMousePos")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { typeof(Vector3) })]
+  public static class SelectionStateCommandTargetSinglePoint_ProcessMousePos {
+    private static PropertyInfo pHUD = null;
+    private static Vector3 prevPosition = Vector3.zero;
+    private static PropertyInfo pLookAndColorConstants = null;
+    private static PropertyInfo pNumPositionsLocked = null;
+    private static PropertyInfo pTargetPosition = null;
+    private static MethodInfo mShowTextColor = null;
+    private static MethodInfo mShowTextColorEx = null;
+    private static MethodInfo mGetShotQualityTextColor = null;
+    private static FieldInfo fCombat = null;
+    private static float timeCounter = 0f;
+    public static bool Prepare() {
+      try {
+        pHUD = typeof(SelectionState).GetProperty("HUD", BindingFlags.Instance | BindingFlags.NonPublic);
+        if(pHUD == null) {
+          Log.LogWrite("Can't find SelectionState.HUD\n");
+          return false;
+        }
+        pNumPositionsLocked = typeof(SelectionStateCommandTargetSinglePoint).GetProperty("NumPositionsLocked", BindingFlags.Instance | BindingFlags.NonPublic);
+        if (pNumPositionsLocked == null) {
+          Log.LogWrite("Can't find SelectionState.NumPositionsLocked\n");
+          return false;
+        }
+        pLookAndColorConstants = typeof(CombatHUDWeaponSlot).GetProperty("LookAndColorConstants", BindingFlags.Instance | BindingFlags.NonPublic);
+        if (pLookAndColorConstants == null) {
+          Log.LogWrite("Can't find CombatHUDWeaponSlot.LookAndColorConstants\n");
+          return false;
+        }
+        pTargetPosition = typeof(SelectionStateCommandTargetSinglePoint).GetProperty("targetPosition", BindingFlags.Instance | BindingFlags.NonPublic);
+        if (pTargetPosition == null) {
+          Log.LogWrite("Can't find CombatHUDWeaponSlot.targetPosition\n");
+          return false;
+        }
+        mShowTextColor = typeof(CombatHUDWeaponSlot).GetMethod("ShowTextColor", BindingFlags.Instance | BindingFlags.NonPublic, null, new Type[2] { typeof(Color), typeof(bool)}, null);
+        if (mShowTextColor == null) {
+          Log.LogWrite("Can't find CombatHUDWeaponSlot.LookAndColorConstants\n");
+          return false;
+        }
+        mShowTextColorEx = typeof(CombatHUDWeaponSlot).GetMethod("ShowTextColor", BindingFlags.Instance | BindingFlags.NonPublic, null, new Type[3] { typeof(Color), typeof(Color), typeof(bool)}, null);
+        if (mShowTextColorEx == null) {
+          Log.LogWrite("Can't find CombatHUDWeaponSlot.ShowTextColor\n");
+          return false;
+        }
+        mGetShotQualityTextColor = typeof(CombatHUDWeaponSlot).GetMethod("GetShotQualityTextColor", BindingFlags.Instance | BindingFlags.NonPublic);
+        if (mGetShotQualityTextColor == null) {
+          Log.LogWrite("Can't find CombatHUDWeaponSlot.GetShotQualityTextColor\n");
+          return false;
+        }
+        fCombat = typeof(Weapon).GetField("combat", BindingFlags.Instance | BindingFlags.NonPublic);
+        if (fCombat == null) {
+          Log.LogWrite("Can't find Weapon.combat\n");
+          return false;
+        }
+      } catch (Exception e) {
+        Log.LogWrite(e.ToString() + "\n");
+        return false;
+      }
+      return true;
+    }
+    public static CombatGameState Combat(this Weapon weapon) {
+      return (CombatGameState)fCombat.GetValue(weapon);
+    }
+    public static bool WillFireToPosition(this Weapon weapon, Vector3 position) {
+      if (weapon.IsDisabled || !weapon.HasAmmo)
+        return false;
+      return weapon.Combat().LOFCache.UnitHasLOFToTargetAtTargetPosition(weapon.parent, weapon.parent, weapon.MaxRange,
+        weapon.parent.CurrentPosition, weapon.parent.CurrentRotation, position, weapon.parent.CurrentRotation, weapon.IndirectFireCapable());
+    }
+    public static ICombatant findFriendlyNearPos(AbstractActor actor,Vector3 worldPos) {
+      ICombatant result = null;
+      float resultDist = 0f;
+      Log.LogWrite(" findFriendlyNearPos " + worldPos + "\n");
+      foreach (AbstractActor friend in actor.Combat.GetAllAlliesOf(actor)) {
+        if (friend.IsDead) { continue; }
+        float distance = Vector3.Distance(friend.CurrentPosition, worldPos);
+        Log.LogWrite("  friend:"+friend.DisplayName+" "+distance+"\n");
+        if (distance > CustomAmmoCategories.Settings.TerrainFiendlyFireRadius) { continue; }
+        if ((distance < resultDist) || (result == null)) { result = friend; resultDist = distance; }
+      }
+      Log.LogWrite("  result: " + (result==null?"null":result.DisplayName) + "\n");
+      return result;
+    }
+    public static float UpdateWeapons(this SelectionStateCommandTargetSinglePoint __instance, Vector3 worldPos) {
+      if (__instance.FromButton.Ability.Def.Description.Id != CombatHUDMechwarriorTray_InitAbilityButtons.AbilityName) { return float.NaN; };
+      int NumPositionsLocked = (int)pNumPositionsLocked.GetValue(__instance, null);
+      Vector3 targetPos = worldPos;
+      if (NumPositionsLocked > 0) {
+        targetPos = (Vector3)pTargetPosition.GetValue(__instance, null);
+      }
+      float distance = Vector3.Distance(prevPosition, targetPos);
+      timeCounter += Time.deltaTime;
+      if ((distance < 10f) && (timeCounter < 0.5f)) { return float.NaN; }
+      float result = __instance.FromButton.Ability.Def.FloatParam1;
+      timeCounter = 0f;
+      prevPosition = targetPos;
+      Log.LogWrite("SelectionStateCommandTargetSinglePoint.ProcessMousePos " + __instance.FromButton.Ability.Def.Description.Id + "\n");
+      CombatHUD HUD = (CombatHUD)pHUD.GetValue(__instance, null);
+      List<CombatHUDWeaponSlot> wSlots = HUD.WeaponPanel.DisplayedWeaponSlots;
+      AbstractActor actor = __instance.SelectedActor;
+      Vector3 groundPos = targetPos;
+      groundPos.y = actor.Combat.MapMetaData.GetCellAt(targetPos).cachedHeight;
+      distance = Vector3.Distance(actor.CurrentPosition, groundPos);
+      Vector3 collisionWorldPos = Vector3.zero;
+      LineOfFireLevel LOFLevel = LineOfFireLevel.LOFBlocked;
+      bool isInFiringArc = actor.IsTargetPositionInFiringArc(actor, actor.CurrentPosition, actor.CurrentRotation, groundPos);
+      ICombatant target = null;
+      if (isInFiringArc) {
+        target = findFriendlyNearPos(actor, groundPos);
+        if (target == null) {
+          LOFLevel = actor.Combat.LOFCache.GetLineOfFire(actor, actor.CurrentPosition, actor, groundPos, actor.CurrentRotation, out collisionWorldPos);
+        } else {
+          LOFLevel = actor.Combat.LOFCache.GetLineOfFire(actor, actor.CurrentPosition, target, target.CurrentPosition, target.CurrentRotation, out collisionWorldPos);
+        }
+      }
+      foreach (CombatHUDWeaponSlot slot in wSlots) {
+        if (slot.DisplayedWeapon == null) { continue; }
+        if ((slot.weaponSlotType == CombatHUDWeaponSlot.WeaponSlotType.Melee) || (slot.weaponSlotType == CombatHUDWeaponSlot.WeaponSlotType.DFA)) { continue; }
+        if (slot.DisplayedWeapon.IsEnabled == false) { continue; }
+        if (slot.DisplayedWeapon.HasAmmo == false) { continue; }
+        UILookAndColorConstants LookAndColorConstants = (UILookAndColorConstants)pLookAndColorConstants.GetValue(slot, null);
+        float AOERange = slot.DisplayedWeapon.getWeaponAOERange();
+        if (target == null) {
+          slot.ClearHitChance();
+          if ((slot.DisplayedWeapon.isAMS()) || (isInFiringArc == false) || (distance > slot.DisplayedWeapon.MaxRange) || ((LOFLevel < LineOfFireLevel.LOFObstructed) && (slot.DisplayedWeapon.isIndirectFireCapable() == false))) {
+            Log.LogWrite(" " + slot.DisplayedWeapon.UIName + ":disabled\n");
+            slot.MainImage.color = LookAndColorConstants.WeaponSlotColors.UnavailableBGColor;
+            mShowTextColor.Invoke(slot, new object[2] { LookAndColorConstants.WeaponSlotColors.UnavailableTextColor, true });
+            slot.ToggleButton.childImage.color = LookAndColorConstants.WeaponSlotColors.UnavailableToggleColor;
+          } else {
+            Log.LogWrite(" " + slot.DisplayedWeapon.UIName + ":enabled\n");
+            slot.MainImage.color = LookAndColorConstants.WeaponSlotColors.AvailableBGColor;
+            mShowTextColor.Invoke(slot, new object[2] { LookAndColorConstants.WeaponSlotColors.AvailableTextColor, true });
+            slot.ToggleButton.childImage.color = LookAndColorConstants.WeaponSlotColors.AvailableToggleColor;
+            if (AOERange > result) { result = AOERange; };
+          }
+        } else {
+          if ((slot.DisplayedWeapon.isAMS()) || (slot.DisplayedWeapon.WillFireAtTarget(target))) {
+            Log.LogWrite(" " + slot.DisplayedWeapon.UIName + ":disabled\n");
+            slot.MainImage.color = LookAndColorConstants.WeaponSlotColors.UnavailableBGColor;
+            mShowTextColor.Invoke(slot, new object[2] { LookAndColorConstants.WeaponSlotColors.UnavailableTextColor, true });
+            slot.ToggleButton.childImage.color = LookAndColorConstants.WeaponSlotColors.UnavailableToggleColor;
+            slot.ClearHitChance();
+          } else {
+            float hitChance = slot.DisplayedWeapon.GetToHitFromPosition(target, 1, actor.CurrentPosition, target.CurrentPosition, false, false, false);
+            slot.SetHitChance(hitChance);
+            Log.LogWrite(" " + slot.DisplayedWeapon.UIName + ":enabled\n");
+            slot.MainImage.color = LookAndColorConstants.WeaponSlotColors.AvailableBGColor;
+            Color hitChanceColor = (Color)mGetShotQualityTextColor.Invoke(slot, new object[1] { hitChance });
+            mShowTextColorEx.Invoke(slot, new object[3] { LookAndColorConstants.WeaponSlotColors.SelectedTextColor, hitChanceColor, true });
+            //this.ShowTextColor(this.LookAndColorConstants.WeaponSlotColors.SelectedTextColor, this.GetShotQualityTextColor(this.HitChance), true);
+            //mShowTextColor.Invoke(slot, new object[2] { LookAndColorConstants.WeaponSlotColors.AvailableTextColor, true });
+            slot.ToggleButton.childImage.color = LookAndColorConstants.WeaponSlotColors.AvailableToggleColor;
+            if (AOERange > result) { result = AOERange; };
+          }
+        }
+      }
+      return result;
+    }
+    public static void Postfix(SelectionStateCommandTargetSinglePoint __instance, Vector3 worldPos) {
+      __instance.UpdateWeapons(worldPos);
+    }
+  }
+  public class TerrainAttackDeligate {
+    public AbstractActor actor;
+    public CombatHUD HUD;
+    public LineOfFireLevel LOFLevel;
+    public ICombatant target;
+    public Vector3 targetPosition;
+    public List<Weapon> weaponsList;
+    public TerrainAttackDeligate(AbstractActor actor, CombatHUD HUD, LineOfFireLevel LOF, ICombatant target, Vector3 targetPosition, List<Weapon> weaponsList) {
+      this.actor = actor;
+      this.HUD = HUD;
+      this.LOFLevel = LOF;
+      this.target = target;
+      this.targetPosition = targetPosition;
+      this.weaponsList = weaponsList;
+    }
+    public void PerformAttack() {
+      MechRepresentation gameRep = actor.GameRep as MechRepresentation;
+      if ((UnityEngine.Object)gameRep != (UnityEngine.Object)null) {
+        Log.LogWrite("ToggleRandomIdles false\n");
+        gameRep.ToggleRandomIdles(false);
+      }
+      string actorGUID = HUD.SelectedActor.GUID;
+      HUD.SelectionHandler.DeselectActor(HUD.SelectionHandler.SelectedActor);
+      HUD.MechWarriorTray.HideAllChevrons();
+      CombatSelectionHandler_TrySelectActor.SelectionForbidden = true;
+      int seqId = actor.Combat.StackManager.NextStackUID;
+      if (actor.GUID == target.GUID) {
+        Log.LogWrite("Registering terrain attack to " + seqId + "\n");
+        CustomAmmoCategories.addTerrainHitPosition(seqId, targetPosition, LOFLevel < LineOfFireLevel.LOFObstructed);
+      } else {
+        Log.LogWrite("Registering friendly attack to " + seqId + "\n");
+      }
+      AttackDirector.AttackSequence attackSequence = actor.Combat.AttackDirector.CreateAttackSequence(seqId, actor, target, actor.CurrentPosition, actor.CurrentRotation, 0, weaponsList, MeleeAttackType.NotSet, 0, false);
+      attackSequence.indirectFire = LOFLevel < LineOfFireLevel.LOFObstructed;
+      actor.Combat.AttackDirector.PerformAttack(attackSequence);
+    }
+  }
   [HarmonyPatch(typeof(CombatHUDActionButton))]
   [HarmonyPatch("ActivateCommandAbility")]
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { typeof(string), typeof(Vector3) })]
   public static class CombatHUDActionButton_ActivateCommandAbility {
     public static void Postfix(CombatHUDActionButton __instance, string teamGUID, Vector3 targetPosition) {
-      CustomAmmoCategoriesLog.Log.LogWrite("CombatHUDActionButton.ActivateCommandAbility " + __instance.GUID + "\n");
+      Log.LogWrite("CombatHUDActionButton.ActivateCommandAbility " + __instance.GUID + "\n");
       if (__instance.GUID == "ID_ATTACKGROUND") {
         GenericPopupBuilder popup = null;
         CombatHUD HUD = (CombatHUD)typeof(CombatHUDActionButton).GetProperty("HUD", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(__instance, null);
         AbstractActor actor = HUD.SelectedActor;
         if (actor == null) { return; };
-        if (actor.IsTargetPositionInFiringArc(actor, actor.CurrentPosition, actor.CurrentRotation, targetPosition) == false) {
-          popup = GenericPopupBuilder.Create(GenericPopupType.Info, "Selected position is not in firing arc");
-          popup.AddButton("Ok", (Action)null, true, (PlayerAction)null);
-          popup.IsNestedPopupWithBuiltInFader().CancelOnEscape().Render();
-          return;
-        }
         StringBuilder text = new StringBuilder();
-        text.Append("Some of selected weapons can't fire:\n");
-        float distance = Mathf.Round(Vector3.Distance(actor.CurrentPosition, targetPosition));
-        bool cantFire = false;
+        Vector3 groundPos = targetPosition;
+        groundPos.y = actor.Combat.MapMetaData.GetCellAt(targetPosition).cachedHeight;
+        float distance = Mathf.Round(Vector3.Distance(actor.CurrentPosition, groundPos));
+        //bool cantFire = false;
         Vector3 collisionWorldPos;
-        LineOfFireLevel LOFLevel = actor.Combat.LOFCache.GetLineOfFire(actor, actor.CurrentPosition, actor, targetPosition, actor.CurrentRotation, out collisionWorldPos);
         List<Weapon> weaponsList = new List<Weapon>();
+        ICombatant target = SelectionStateCommandTargetSinglePoint_ProcessMousePos.findFriendlyNearPos(actor, groundPos);
         foreach (Weapon weapon in actor.Weapons) {
           if (weapon.IsFunctional == false) { continue; }
           if (weapon.IsEnabled == false) { continue; };
-          text.Append(weapon.UIName + " " + distance + "/" + weapon.MaxRange);
-          if (distance > weapon.MaxRange) {
-            text.Append(" OUT OF RANGE!");
-            cantFire = true;
-          } else
-          if (LOFLevel < LineOfFireLevel.LOFObstructed) {
-            if (weapon.isIndirectFireCapable() == false) {
-              text.Append(" NO LINE OF FIRE");
-              cantFire = true;
-            }
+          if (weapon.isAMS()) { continue; }
+          if(target == null) {
+            if (weapon.WillFireToPosition(groundPos) == false) { continue; }
+          } else {
+            bool ret = weapon.WillFireAtTargetFromPosition(target,actor.CurrentPosition);
+            Log.LogWrite(" weapon " + weapon.UIName + " will fire at target "+target.DisplayName+" "+ret+"\n");
+            if (ret == false) { continue; }
           }
           weaponsList.Add(weapon);
-          text.Append("\n");
         }
-        if (cantFire) {
-          popup = GenericPopupBuilder.Create(GenericPopupType.Info, text.ToString());
+        if(weaponsList.Count == 0) {
+          popup = GenericPopupBuilder.Create(GenericPopupType.Info, "No weapon can fire:\n" + text.ToString());
           popup.AddButton("Ok", (Action)null, true, (PlayerAction)null);
           popup.IsNestedPopupWithBuiltInFader().CancelOnEscape().Render();
           return;
         }
-        //CustomAmmoCategoriesLog.Log.LogWrite("Orders is null:"+(HUD.SelectionHandler.ActiveState.Orders==null));
+        LineOfFireLevel LOFLevel = LineOfFireLevel.LOFBlocked;
+        if (target != null) {
+          LOFLevel = actor.Combat.LOFCache.GetLineOfFire(actor, actor.CurrentPosition, target, target.CurrentPosition, target.CurrentRotation, out collisionWorldPos);
+        } else {
+          LOFLevel = actor.Combat.LOFCache.GetLineOfFire(actor, actor.CurrentPosition, actor, groundPos, actor.CurrentRotation, out collisionWorldPos);
+        }
         MechRepresentation gameRep = actor.GameRep as MechRepresentation;
         if ((UnityEngine.Object)gameRep != (UnityEngine.Object)null) {
+          Log.LogWrite("ToggleRandomIdles false\n");
           gameRep.ToggleRandomIdles(false);
         }
         string actorGUID = HUD.SelectedActor.GUID;
@@ -308,11 +565,19 @@ namespace CustomAmmoCategoriesPatches {
         HUD.MechWarriorTray.HideAllChevrons();
         CombatSelectionHandler_TrySelectActor.SelectionForbidden = true;
         int seqId = actor.Combat.StackManager.NextStackUID;
-        CustomAmmoCategoriesLog.Log.LogWrite("Registering terrain attack to " + seqId + "\n");
-        CustomAmmoCategories.addTerrainHitPosition(seqId, targetPosition);
-        AttackDirector.AttackSequence attackSequence = actor.Combat.AttackDirector.CreateAttackSequence(seqId, actor, actor, actor.CurrentPosition, actor.CurrentRotation, 0, weaponsList, MeleeAttackType.NotSet, 0, false);
+        if (target == null) { target = actor; };
+        if (actor.GUID == target.GUID) {
+          Log.LogWrite("Registering terrain attack to " + seqId + "\n");
+          CustomAmmoCategories.addTerrainHitPosition(seqId, groundPos, LOFLevel < LineOfFireLevel.LOFObstructed);
+        } else {
+          Log.LogWrite("Registering friendly attack to " + seqId + "\n");
+        }
+        AttackDirector.AttackSequence attackSequence = actor.Combat.AttackDirector.CreateAttackSequence(seqId, actor, target, actor.CurrentPosition, actor.CurrentRotation, 0, weaponsList, MeleeAttackType.NotSet, 0, false);
         attackSequence.indirectFire = LOFLevel < LineOfFireLevel.LOFObstructed;
+        Log.LogWrite(" attackSequence.indirectFire " + attackSequence.indirectFire + " LOS "+ LOFLevel + "\n");
         actor.Combat.AttackDirector.PerformAttack(attackSequence);
+
+        //CustomAmmoCategoriesLog.Log.LogWrite("Orders is null:"+(HUD.SelectionHandler.ActiveState.Orders==null));
         //MessageCenterMessage message1 = (MessageCenterMessage)new AttackInvocation(actor, null, weaponsList, MeleeAttackType.NotSet, 0);
         //HUD.MechWarriorTray.ConfirmAbilities(AbilityDef.ActivationTiming.ConsumedByMovement);
         //HUD.MechWarriorTray.ConfirmAbilities(AbilityDef.ActivationTiming.ConsumedByFiring);
@@ -369,49 +634,84 @@ namespace CustomAmmoCategoriesPatches {
       typeof(CombatHUDMechwarriorTray).GetProperty("AbilityButtons", BindingFlags.NonPublic | BindingFlags.Instance).SetValue(__instance, AbilityButtons, null);
     }
   }
+  public class InitAbilityButtonsDelegate {
+    public CombatHUDMechwarriorTray __instance;
+    public AbstractActor actor;
+    public AbilityDef abilityDef;
+    public InitAbilityButtonsDelegate(CombatHUDMechwarriorTray hud,AbstractActor unit) {
+      __instance = hud;
+      actor = unit;
+      abilityDef = null;
+    }
+    public void OnAbilityLoad() {
+      abilityDef = actor.Combat.DataManager.AbilityDefs.Get(CombatHUDMechwarriorTray_InitAbilityButtons.AbilityName);
+      Log.LogWrite("InitAbilityButtonsDelegate.OnAbilityLoad "+abilityDef.Description.Id+"\n");
+      if (abilityDef.DependenciesLoaded(1000u)) {
+        Log.LogWrite(" dependencies fully loaded\n");
+        OnAbilityFullLoad();
+      } else {
+        Log.LogWrite(" request dependencies\n");
+        DataManager.InjectedDependencyLoadRequest dependencyLoad = new DataManager.InjectedDependencyLoadRequest(actor.Combat.DataManager);
+        abilityDef.GatherDependencies(actor.Combat.DataManager, dependencyLoad, 1000U);
+        dependencyLoad.RegisterLoadCompleteCallback(new Action(OnAbilityFullLoad));
+        actor.Combat.DataManager.InjectDependencyLoader(dependencyLoad, 1000U);
+      }
+    }
+    public void OnAbilityFullLoad() {
+      Ability gaAbility = null;
+      Log.LogWrite("InitAbilityButtonsDelegate.OnAbilityFullLoad " + abilityDef.Description.Id + "\n");
+      if (CombatHUDMechwarriorTray_InitAbilityButtons.attackGroundAbilities.ContainsKey(actor.GUID) == false) {
+        Log.LogWrite(" need create new ability\n");
+        gaAbility = new Ability(abilityDef);
+        gaAbility.Init(actor.Combat);
+        CombatHUDMechwarriorTray_InitAbilityButtons.attackGroundAbilities.Add(actor.GUID, gaAbility);
+      } else {
+        Log.LogWrite(" ability exists\n");
+        gaAbility = CombatHUDMechwarriorTray_InitAbilityButtons.attackGroundAbilities[actor.GUID];
+      }
+      Log.LogWrite(" geting buttons\n");
+      CombatHUDActionButton[] AbilityButtons = (CombatHUDActionButton[])typeof(CombatHUDMechwarriorTray).GetProperty("AbilityButtons", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(__instance, null);
+      Log.LogWrite(" AbilityButtons.Length = " + AbilityButtons.Length + "\n");
+      Log.LogWrite(" aDef.Targeting = " + abilityDef.Targeting + "\n");
+      Log.LogWrite(" aDef.AbilityIcon = " + abilityDef.AbilityIcon + "\n");
+      Log.LogWrite(" aDef.Description.Name = " + abilityDef.Description.Name + "\n");
+      Log.LogWrite(" AbilityButtons[AbilityButtons.Length - 1].GUID = " + AbilityButtons[AbilityButtons.Length - 1].GUID + "\n");
+      AbilityButtons[AbilityButtons.Length - 1].InitButton(
+        (SelectionType)typeof(CombatHUDMechwarriorTray).GetMethod("GetSelectionTypeFromTargeting", BindingFlags.Static | BindingFlags.Public).Invoke(
+          null, new object[2] { (object)abilityDef.Targeting, (object)false }
+        ),
+        gaAbility, abilityDef.AbilityIcon,
+        "ID_ATTACKGROUND",
+        abilityDef.Description.Name,
+        actor
+      );
+      Log.LogWrite(" init button success\n");
+      AbilityButtons[AbilityButtons.Length - 1].isClickable = true;
+      AbilityButtons[AbilityButtons.Length - 1].RefreshUIColors();
+      Log.LogWrite("finished\n");
+    }
+  }
   [HarmonyPatch(typeof(CombatHUDMechwarriorTray))]
   [HarmonyPatch("InitAbilityButtons")]
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { typeof(AbstractActor) })]
   public static class CombatHUDMechwarriorTray_InitAbilityButtons {
-    public static Dictionary<string,Ability> attackGroundAbilities = new Dictionary<string, Ability>();
+    public static readonly string AbilityName = "AbilityDefCAC_AttackGround";
+    public static Dictionary<string, Ability> attackGroundAbilities = new Dictionary<string, Ability>();
+
     public static void Postfix(CombatHUDMechwarriorTray __instance, AbstractActor actor) {
       Log.LogWrite("CombatHUDMechwarriorTray.InitAbilityButtons\n");
       AbilityDef aDef = null;
-      if (actor.Combat.DataManager.AbilityDefs.TryGet("AbilityDefCAC_AttackGround", out aDef)) {
-        Log.LogWrite(" AbilityDef geted\n");
-        Ability gaAbility = null;
-        if (CombatHUDMechwarriorTray_InitAbilityButtons.attackGroundAbilities.ContainsKey(actor.GUID) == false) {
-          Log.LogWrite(" need create new ability\n");
-          gaAbility = new Ability(aDef);
-          gaAbility.Init(actor.Combat);
-          CombatHUDMechwarriorTray_InitAbilityButtons.attackGroundAbilities.Add(actor.GUID,gaAbility);
-        } else {
-          Log.LogWrite(" ability exists\n");
-          gaAbility = CombatHUDMechwarriorTray_InitAbilityButtons.attackGroundAbilities[actor.GUID];
-        }
-        Log.LogWrite(" geting buttons\n");
-        CombatHUDActionButton[] AbilityButtons = (CombatHUDActionButton[])typeof(CombatHUDMechwarriorTray).GetProperty("AbilityButtons", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(__instance, null);
-        Log.LogWrite(" AbilityButtons.Length = "+ AbilityButtons.Length + "\n");
-        Log.LogWrite(" aDef.Targeting = " + aDef.Targeting + "\n");
-        Log.LogWrite(" aDef.AbilityIcon = " + aDef.AbilityIcon + "\n");
-        Log.LogWrite(" aDef.Description.Name = " + aDef.Description.Name + "\n");
-        Log.LogWrite(" AbilityButtons[AbilityButtons.Length - 1].GUID = " + AbilityButtons[AbilityButtons.Length - 1].GUID + "\n");
-        AbilityButtons[AbilityButtons.Length - 1].InitButton(
-          (SelectionType)typeof(CombatHUDMechwarriorTray).GetMethod("GetSelectionTypeFromTargeting", BindingFlags.Static | BindingFlags.Public).Invoke(
-            null, new object[2] { (object)aDef.Targeting, (object)false }
-          ),
-          gaAbility, aDef.AbilityIcon,
-          "ID_ATTACKGROUND",
-          aDef.Description.Name,
-          actor
-        );
-        Log.LogWrite(" init button success\n");
-        AbilityButtons[AbilityButtons.Length - 1].isClickable = true;
-        AbilityButtons[AbilityButtons.Length - 1].RefreshUIColors();
-        Log.LogWrite("finished\n");
+      InitAbilityButtonsDelegate id = new InitAbilityButtonsDelegate(__instance, actor);
+      if (actor.Combat.DataManager.AbilityDefs.TryGet("AbilityDefCAC_AttackGround", out aDef) == false) {
+        Log.LogWrite(" requesting ability def loading\n");
+        DataManager.InjectedDependencyLoadRequest dependencyLoad = new DataManager.InjectedDependencyLoadRequest(actor.Combat.DataManager);
+        dependencyLoad.RequestResource(BattleTechResourceType.AbilityDef, AbilityName);
+        dependencyLoad.RegisterLoadCompleteCallback(new Action(id.OnAbilityLoad));
+        actor.Combat.DataManager.InjectDependencyLoader(dependencyLoad, 1000U);
       } else {
-        Log.LogWrite("Can't find AbilityDefCAC_AttackGround\n");
+        Log.LogWrite(" ability def already loaded\n");
+        id.OnAbilityLoad();
       }
     }
   }
@@ -434,10 +734,10 @@ namespace CustomAmmoCategoriesPatches {
         }
         bool forceInactive = actor.HasActivatedThisRound || actor.MovingToPosition != null || actor.Combat.StackManager.IsAnyOrderActive && actor.Combat.TurnDirector.IsInterleaved;
         CustomAmmoCategoriesLog.Log.LogWrite(" actor.HasActivatedThisRound:" + actor.HasActivatedThisRound + "\n");
-        CustomAmmoCategoriesLog.Log.LogWrite(" actor.MovingToPosition:" + (actor.MovingToPosition!=null) + "\n");
+        CustomAmmoCategoriesLog.Log.LogWrite(" actor.MovingToPosition:" + (actor.MovingToPosition != null) + "\n");
         CustomAmmoCategoriesLog.Log.LogWrite(" actor.Combat.StackManager.IsAnyOrderActive:" + actor.Combat.StackManager.IsAnyOrderActive + "\n");
         CustomAmmoCategoriesLog.Log.LogWrite(" actor.Combat.TurnDirector.IsInterleaved:" + actor.Combat.TurnDirector.IsInterleaved + "\n");
-        CustomAmmoCategoriesLog.Log.LogWrite(" forceInactive:"+forceInactive+"\n");
+        CustomAmmoCategoriesLog.Log.LogWrite(" forceInactive:" + forceInactive + "\n");
         CombatHUDActionButton[] AbilityButtons = (CombatHUDActionButton[])typeof(CombatHUDMechwarriorTray).GetProperty("AbilityButtons", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(__instance, null);
         typeof(CombatHUDMechwarriorTray).GetMethod("ResetAbilityButton", BindingFlags.NonPublic | BindingFlags.Instance, null,
           new Type[] { typeof(AbstractActor), typeof(CombatHUDActionButton), typeof(Ability), typeof(bool) }, null
@@ -461,7 +761,7 @@ namespace CustomAmmoCategoriesPatches {
         //__instance.ResetAbilityButton(actor, this.AbilityButtons[index], abilityList[index], forceInactive);
 
       } else {
-        CustomAmmoCategoriesLog.Log.LogWrite("Can't find AbilityDefCAC_AttackGround\n");
+        CustomAmmoCategoriesLog.Log.LogWrite("Can't find AbilityDef CAC_AttackGround\n");
       }
     }
   }

@@ -166,6 +166,7 @@ namespace CustAmmoCategories {
       if (__instance.IsCooldown() > 0) { __result = false; }
       if (__instance.isAMS() && __instance.isCantAMSFire()) { __result = false; };
       if ((__instance.isAMS() == false) && __instance.isCantNormalFire()) { __result = false; };
+      if (__instance.NoModeToFire()) { __result = false; };
     }
   }
   [HarmonyPatch(typeof(AttackDirector))]
@@ -249,15 +250,58 @@ namespace CustAmmoCategories {
       }, null, 1500, System.Threading.Timeout.Infinite);
     }
   }
+  [HarmonyPatch(typeof(AbstractActor))]
+  [HarmonyPatch("InitEffectStats")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { })]
+  public static class AbstractActor_InitStats {
+    public static void Postfix(AbstractActor __instance) {
+      Log.LogWrite("AbstractActor.InitEffectStats " + __instance.DisplayName + ":" + __instance.GUID + "\n");
+      __instance.FlatJammChance(0f);
+    }
+  }
 
+  [HarmonyPatch(typeof(Weapon))]
+  [HarmonyPatch("InitStats")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { })]
+  public static class Weapon_InitStatsJamm {
+    public static void Postfix(Weapon __instance) {
+      Log.LogWrite("Weapon.InitStats " + __instance.defId + ":" + __instance.parent.GUID + "\n");
+      __instance.FlatJammChanceStat(0f);
+    }
+  }
 
   public static partial class CustomAmmoCategories {
     public static string JammedWeaponStatisticName = "CAC-JammedWeapon";
     public static string CooldownWeaponStatisticName = "CAC-CooldownWeapon";
     public static string NoNormalFireStatisticName = "CAC-NoNormalFire";
     public static string NoAMSFireStatisticName = "CAC-AMSFire";
+    public static string FlatJammingChanceStatisticName = "CACFlatJammingChance";
     //public static string TemporarilyDisabledStatisticName = "TemporarilyDisabled";
     public static float Epsilon = 0.001f;
+    public static float FlatJammChance(this ICombatant unit) {
+      if (CustomAmmoCategories.checkExistance(unit.StatCollection, FlatJammingChanceStatisticName) == false) { return 0f; }
+      return unit.StatCollection.GetStatistic(FlatJammingChanceStatisticName).Value<float>();
+    }
+    public static void FlatJammChance(this ICombatant unit, float val) {
+      if (CustomAmmoCategories.checkExistance(unit.StatCollection, FlatJammingChanceStatisticName) == false) {
+        unit.StatCollection.AddStatistic<float>(FlatJammingChanceStatisticName, val);
+      } else {
+        unit.StatCollection.Set<float>(FlatJammingChanceStatisticName, val);
+      }
+    }
+    public static float FlatJammChanceStat(this Weapon weapon) {
+      if (CustomAmmoCategories.checkExistance(weapon.StatCollection, FlatJammingChanceStatisticName) == false) { return 0f; }
+      return weapon.StatCollection.GetStatistic(FlatJammingChanceStatisticName).Value<float>();
+    }
+    public static void FlatJammChanceStat(this Weapon weapon, float val) {
+      if (CustomAmmoCategories.checkExistance(weapon.StatCollection, FlatJammingChanceStatisticName) == false) {
+        weapon.StatCollection.AddStatistic<float>(FlatJammingChanceStatisticName, val);
+      } else {
+        weapon.StatCollection.Set<float>(FlatJammingChanceStatisticName, val);
+      }
+    }
     public static bool isCantNormalFire(this Weapon weapon) {
       var statistic = StatisticHelper.GetOrCreateStatisic<bool>(weapon.StatCollection, NoNormalFireStatisticName, false);
       return statistic.Value<bool>();
@@ -281,7 +325,9 @@ namespace CustAmmoCategories {
       }
     }
     public static void AddJam(AbstractActor actor, Weapon weapon) {
-      if (CustomAmmoCategories.getWeaponDamageOnJamming(weapon) == false) {
+      bool damage = CustomAmmoCategories.getWeaponDamageOnJamming(weapon);
+      bool destroy = weapon.DestroyOnJamming();
+      if ((damage == false)&&(destroy == false)) {
         if (CustomAmmoCategories.checkExistance(weapon.StatCollection, CustomAmmoCategories.JammedWeaponStatisticName) == false) {
           weapon.StatCollection.AddStatistic<bool>(CustomAmmoCategories.JammedWeaponStatisticName, false);
         }
@@ -296,6 +342,7 @@ namespace CustAmmoCategories {
         //            true)));
       } else {
         var isDestroying = weapon.DamageLevel != ComponentDamageLevel.Functional;
+        if (destroy == true) { isDestroying = true; };
         var damageLevel = isDestroying ? ComponentDamageLevel.Destroyed : ComponentDamageLevel.Penalized;
         var fakeHit = new WeaponHitInfo(-1, -1, -1, -1, string.Empty, string.Empty, -1, null, null, null, null, null, null, null, null, null, null, null);
         weapon.DamageComponent(fakeHit, damageLevel, true);
@@ -331,7 +378,7 @@ namespace CustAmmoCategories {
       return statistic.Value<int>();
     }
     public static float getWeaponFlatJammingChance(Weapon weapon) {
-      float result = 0;
+      float result = weapon.FlatJammChanceStat()+weapon.parent.FlatJammChance();
       float mult = 0;
       float baseval = 0f;
       if (CustomAmmoCategories.checkExistance(weapon.StatCollection, CustomAmmoCategories.AmmoIdStatName) == true) {
@@ -380,6 +427,25 @@ namespace CustAmmoCategories {
       }
       if (result == TripleBoolean.NotSet) {
         result = extWeapon.DamageOnJamming;
+      }
+      return result == TripleBoolean.True;
+    }
+    public static bool DestroyOnJamming(this Weapon weapon) {
+      TripleBoolean result = TripleBoolean.NotSet;
+      ExtWeaponDef extWeapon = CustomAmmoCategories.getExtWeaponDef(weapon.defId);
+      if (extWeapon.Modes.Count > 0) {
+        string modeId = "";
+        if (CustomAmmoCategories.checkExistance(weapon.StatCollection, CustomAmmoCategories.WeaponModeStatisticName) == true) {
+          modeId = weapon.StatCollection.GetStatistic(CustomAmmoCategories.WeaponModeStatisticName).Value<string>();
+        } else {
+          modeId = extWeapon.baseModeId;
+        }
+        if (extWeapon.Modes.ContainsKey(modeId)) {
+          result = extWeapon.Modes[modeId].DestroyOnJamming;
+        }
+      }
+      if (result == TripleBoolean.NotSet) {
+        result = extWeapon.DestroyOnJamming;
       }
       return result == TripleBoolean.True;
     }

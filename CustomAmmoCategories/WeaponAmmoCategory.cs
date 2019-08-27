@@ -57,6 +57,7 @@ namespace CustAmmoCategories {
       return result;
     }
     public static bool isWeaponCanUseAmmo(WeaponDef weaponDef,AmmunitionDef ammoDef) {
+      Log.M.WL("Cheching if weapon "+weaponDef.Description.Id + " can use ammo "+ammoDef.Description.Id+"\n");
       ExtAmmunitionDef extAmmo = CustomAmmoCategories.findExtAmmo(ammoDef.Description.Id);
       CustomAmmoCategory ammoCategory = extAmmo.AmmoCategory;
       if (ammoCategory.BaseCategory == AmmoCategory.NotSet) { ammoCategory = CustomAmmoCategories.find(ammoDef.Category.ToString()); };

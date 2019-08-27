@@ -56,36 +56,54 @@ namespace CustAmmoCategories {
     }
     public override int BulletsCount() { return this.missiles.Count; }
     public override void AddBullet() {
-      GameObject gameObject = this.Combat.DataManager.PooledInstantiate(this.MissilePrefab.name, BattleTechResourceType.Prefab, new Vector3?(), new Quaternion?(), (Transform)null);
-      if ((UnityEngine.Object)gameObject == (UnityEngine.Object)null) {
-        WeaponEffect.logger.LogError((object)("Error instantiating BulletObject " + this.MissilePrefab.name), (UnityEngine.Object)this);
-        return;
+      string prefabName = AMSMultiShotWeaponEffect.AMSPrefabPrefix + this.MissilePrefab.name;
+      Log.LogWrite("AMSMissileLauncherEffect.AddBullet getting from pool:" + prefabName + "\n");
+      GameObject AMSgameObject = this.Combat.DataManager.PooledInstantiate(prefabName, BattleTechResourceType.Prefab, new Vector3?(), new Quaternion?(), (Transform)null);
+      AMSMissileEffect amsComponent = null;
+      if (AMSgameObject != null) {
+        Log.LogWrite(" getted from pool: " + AMSgameObject.GetInstanceID() + "\n");
+        amsComponent = AMSgameObject.GetComponent<AMSMissileEffect>();
+        if (amsComponent != null) {
+          amsComponent.Init(this.weapon, this);
+          this.missiles.Add(amsComponent);
+        }
       }
-      GameObject AMSgameObject = GameObject.Instantiate(gameObject);
-      AutoPoolObject autoPoolObject = gameObject.GetComponent<AutoPoolObject>();
-      if ((UnityEngine.Object)autoPoolObject == (UnityEngine.Object)null) {
-        autoPoolObject = gameObject.AddComponent<AutoPoolObject>();
-      } else {
-        AutoPoolObject AMSautoPoolObject = AMSgameObject.GetComponent<AutoPoolObject>();
-        if (AMSautoPoolObject != null) { GameObject.Destroy(AMSautoPoolObject); };
+      if (amsComponent == null) {
+        Log.LogWrite(" not in pool. instansing.\n");
+        GameObject gameObject = this.Combat.DataManager.PooledInstantiate(this.MissilePrefab.name, BattleTechResourceType.Prefab, new Vector3?(), new Quaternion?(), (Transform)null);
+        if ((UnityEngine.Object)gameObject == (UnityEngine.Object)null) {
+          WeaponEffect.logger.LogError((object)("Error instantiating MissileObject " + this.MissilePrefab.name), (UnityEngine.Object)this);
+          return;
+        }
+        AMSgameObject = GameObject.Instantiate(gameObject);
+        AutoPoolObject autoPoolObject = gameObject.GetComponent<AutoPoolObject>();
+        if ((UnityEngine.Object)autoPoolObject == (UnityEngine.Object)null) {
+          autoPoolObject = gameObject.AddComponent<AutoPoolObject>();
+        } else {
+          AutoPoolObject AMSautoPoolObject = AMSgameObject.GetComponent<AutoPoolObject>();
+          if (AMSautoPoolObject != null) { GameObject.Destroy(AMSautoPoolObject); };
+        }
+        autoPoolObject.Init(this.weapon.parent.Combat.DataManager, this.MissilePrefab.name, 4f);
+        gameObject = null;
+        AMSgameObject.transform.parent = (Transform)null;
+        MissileEffect component = AMSgameObject.GetComponent<MissileEffect>();
+        if ((UnityEngine.Object)component == (UnityEngine.Object)null) {
+          WeaponEffect.logger.LogError((object)("Error finding BulletEffect on GO " + this.MissilePrefab.name), (UnityEngine.Object)this);
+          return;
+        }
+        amsComponent = AMSgameObject.AddComponent<AMSMissileEffect>();
+        amsComponent.Init(component);
+        amsComponent.Init(this.weapon, this);
+        this.missiles.Add(amsComponent);
       }
-      autoPoolObject.Init(this.weapon.parent.Combat.DataManager, this.MissilePrefab.name, 4f);
-      gameObject = null;
-      AMSgameObject.transform.parent = (Transform)null;
-      MissileEffect component = AMSgameObject.GetComponent<MissileEffect>();
-      if ((UnityEngine.Object)component == (UnityEngine.Object)null) {
-        WeaponEffect.logger.LogError((object)("Error finding BulletEffect on GO " + this.MissilePrefab.name), (UnityEngine.Object)this);
-        return;
-      }
-      AMSMissileEffect amsComponent = AMSgameObject.AddComponent<AMSMissileEffect>();
-      amsComponent.Init(component);
-      amsComponent.Init(this.weapon, this);
-      this.missiles.Add(amsComponent);
     }
     public override void ClearBullets() {
+      Log.LogWrite("AMSMissileLauncherEffect.ClearBullets\n");
+      string prefabName = AMSMultiShotWeaponEffect.AMSPrefabPrefix + this.MissilePrefab.name;
       for (int index = 0; index < this.missiles.Count; ++index) {
         GameObject gameObject = this.missiles[index].gameObject;
-        GameObject.DestroyObject(gameObject);
+        Log.LogWrite(" returning to pool " + prefabName + " " + gameObject.GetInstanceID() + "\n");
+        this.Combat.DataManager.PoolGameObject(prefabName, gameObject);
       }
       this.missiles.Clear();
     }

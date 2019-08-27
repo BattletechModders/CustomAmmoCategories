@@ -40,7 +40,8 @@
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="0Harmony">
+    <Reference Include="0Harmony, Version=1.2.0.1, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\Mods\ModTek\0Harmony.dll</HintPath>
     </Reference>
     <Reference Include="Assembly-CSharp">
@@ -66,7 +67,9 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AdditionalImpactVFX.cs" />
+    <Compile Include="AdvCritProc.cs" />
     <Compile Include="AdvWeaponHitInfo.cs" />
+    <Compile Include="AIMFriendlyFire.cs" />
     <Compile Include="AIWeaponChoose.cs" />
     <Compile Include="AmmoCookoff.cs" />
     <Compile Include="AmmoEject.cs" />
@@ -80,6 +83,8 @@
     <Compile Include="AMSMissileLauncherEffect.cs" />
     <Compile Include="AMSWeaponEffect.cs" />
     <Compile Include="ApplyHeatSinks.cs" />
+    <Compile Include="AreaOfEffect.cs" />
+    <Compile Include="AttackDirectionIndicator.cs" />
     <Compile Include="AttackSequenceImpact.cs" />
     <Compile Include="AttackSequenceWatchdog.cs" />
     <Compile Include="AudioPlayer.cs" />
@@ -87,46 +92,70 @@
     <Compile Include="CACWeaponEffect.cs" />
     <Compile Include="CheatHttpServer.cs" />
     <Compile Include="CustomDesignMask.cs" />
+    <Compile Include="DebugSpawnHelper.cs" />
     <Compile Include="DecrementAmmo.cs" />
     <Compile Include="DynamicMap.cs" />
     <Compile Include="DynamicTrees.cs" />
     <Compile Include="ForbiddenRange.cs" />
+    <Compile Include="Frag.cs" />
     <Compile Include="FragBallisticEffect.cs" />
     <Compile Include="FragBulletEffect.cs" />
     <Compile Include="FragMainEffect.cs" />
     <Compile Include="FragWeaponEffect.cs" />
     <Compile Include="GenerateHitInfo.cs" />
     <Compile Include="GetEvasivePipsModifier.cs" />
+    <Compile Include="ImprovedMissiles.cs" />
     <Compile Include="IndirectFireCapable.cs" />
     <Compile Include="InternalClassPathes.cs" />
+    <Compile Include="Log.cs" />
     <Compile Include="MessageBox.cs" />
+    <Compile Include="MineFieldsMoveSequence.cs" />
     <Compile Include="MultiShotBallistic.cs" />
+    <Compile Include="MultiShotBeamEffect.cs" />
     <Compile Include="MultiShotBulletEffect.cs" />
+    <Compile Include="MultiShotLaserEffect.cs" />
+    <Compile Include="MultiShotMissileEffect.cs" />
+    <Compile Include="MultiShotMissileLauncherEffect.cs" />
+    <Compile Include="MultiShotPPCEffect.cs" />
+    <Compile Include="MultiShotPulseEffect.cs" />
     <Compile Include="NotUseInMelee.cs" />
+    <Compile Include="OnAttackSequenceImpactAdv.cs" />
     <Compile Include="OnAttackSequenceResolveDamage.cs" />
     <Compile Include="MainClass.cs" />
     <Compile Include="PlayProjectile.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="RangeAccuracyHelper.cs" />
     <Compile Include="RealAMS.cs" />
     <Compile Include="RealAOE.cs" />
+    <Compile Include="ResolveDamage.cs" />
     <Compile Include="Shrapnel.cs" />
+    <Compile Include="Stray.cs" />
+    <Compile Include="StructureDamage.cs" />
     <Compile Include="TerrainAttack.cs" />
+    <Compile Include="VehicleHeightFixer.cs" />
     <Compile Include="WeaponAmmoCategory.cs" />
     <Compile Include="WeaponDef.cs" />
     <Compile Include="WeaponMode.cs" />
     <Compile Include="Jamming.cs" />
     <Compile Include="WeaponPatches.cs" />
+    <Compile Include="WeaponRealizer\AttackSequencePatcher.cs" />
+    <Compile Include="WeaponRealizer\Calculator.cs" />
+    <Compile Include="WeaponRealizer\Calculator.DistanceBasedVariance.cs" />
+    <Compile Include="WeaponRealizer\Calculator.HeatAsNormalDamage.cs" />
+    <Compile Include="WeaponRealizer\Calculator.HeatDamageModifier.cs" />
+    <Compile Include="WeaponRealizer\Calculator.NormalDistribution.cs" />
+    <Compile Include="WeaponRealizer\Calculator.OverheatMultiplier.cs" />
+    <Compile Include="WeaponRealizer\Calculator.SimpleVariance.cs" />
+    <Compile Include="WeaponRealizer\ClusteredShotEnabler.cs" />
+    <Compile Include="WeaponRealizer\Core.cs" />
+    <Compile Include="WeaponRealizer\Core.Patches.cs" />
+    <Compile Include="WeaponRealizer\DamageAltersWeaponRefireModifier.cs" />
+    <Compile Include="WeaponRealizer\JammingEnabler.cs" />
+    <Compile Include="WeaponRealizer\Logger.cs" />
+    <Compile Include="WeaponRealizer\NumberOfShotsEnabler.cs" />
+    <Compile Include="WeaponRealizer\Settings.cs" />
+    <Compile Include="WeaponRealizer\VarianceBounds.cs" />
     <Compile Include="ZombieMech.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\AttackImprovementMod\AttackImprovementMod.csproj">
-      <Project>{02c8ab19-160a-474f-9135-5c72b38ce1b8}</Project>
-      <Name>AttackImprovementMod</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\WeaponRealizer\WeaponRealizer.csproj">
-      <Project>{012129b3-201c-49be-a8e8-286dffbcf8c1}</Project>
-      <Name>WeaponRealizer</Name>
-    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>

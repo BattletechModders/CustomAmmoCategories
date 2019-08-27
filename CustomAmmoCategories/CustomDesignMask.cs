@@ -1,14 +1,75 @@
 ﻿using BattleTech;
 using CustAmmoCategories;
+using CustomAmmoCategoriesLog;
 using Harmony;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.Reflection;
 
 namespace CustAmmoCategories {
+  public class DesignMaskMoveCostInfo {
+    public float moveCost { get; set; }
+    public float SprintMultiplier { get; set; }
+    public DesignMaskMoveCostInfo() {
+      moveCost = 1f;
+      SprintMultiplier = 1f;
+    }
+    public DesignMaskMoveCostInfo(float mc,float sm) {
+      moveCost = mc;
+      SprintMultiplier = sm;
+    }
+    public DesignMaskMoveCostInfo(DesignMaskMoveCostInfo b) {
+      this.moveCost = b.moveCost;
+      this.SprintMultiplier = b.SprintMultiplier;
+    }
+    public void debugLog(int i) {
+      string init = new string(' ', i);
+      Log.LogWrite(init + "moveCost:"+moveCost+"\n");
+      Log.LogWrite(init + "SprintMultiplier:" + SprintMultiplier + "\n");
+    }
+  }
+  public class CustomDesignMaskInfo {
+    public Dictionary<string, DesignMaskMoveCostInfo> CustomMoveCost { get; set; }
+    public CustomDesignMaskInfo() {
+      CustomMoveCost = new Dictionary<string, DesignMaskMoveCostInfo>();
+    }
+    public CustomDesignMaskInfo(CustomDesignMaskInfo b) {
+      CustomMoveCost = new Dictionary<string, DesignMaskMoveCostInfo>();
+      if (b != null) {
+        foreach (var ci in b.CustomMoveCost) {
+          CustomMoveCost.Add(ci.Key, new DesignMaskMoveCostInfo(ci.Value));
+        }
+      }
+    }
+    public void Merge(CustomDesignMaskInfo b) {
+      if (b == null) { return; }
+      foreach(var ci in b.CustomMoveCost) {
+        if (this.CustomMoveCost.ContainsKey(ci.Key)) {
+          this.CustomMoveCost[ci.Key].moveCost += (ci.Value.moveCost - 1f);
+          this.CustomMoveCost[ci.Key].SprintMultiplier += (ci.Value.SprintMultiplier - 1f);
+        } else {
+          this.CustomMoveCost.Add(ci.Key, new DesignMaskMoveCostInfo(ci.Value));
+        }
+      }
+    }
+    public void debugLog(int i) {
+      string init = new string(' ', i);
+      Log.LogWrite(init + "CustomMoveCost:\n");
+      foreach(var ci in CustomMoveCost) {
+        Log.LogWrite(init + " "+ci.Key+":\n");
+        ci.Value.debugLog(i + 2);
+      }
+    }
+  }
   public static partial class CustomAmmoCategories {
     public static Dictionary<string, DesignMaskDef> tempDesignMasksDefs = new Dictionary<string, DesignMaskDef>();
+    public static Dictionary<string, CustomDesignMaskInfo> customDesignMaskInfo = new Dictionary<string, CustomDesignMaskInfo>();
     public static Dictionary<string, List<EffectData>> tempDesignMasksStickyEffects = new Dictionary<string, List<EffectData>>();
+    public static CustomDesignMaskInfo GetCustomDesignMaskInfo(this DesignMaskDef mask) {
+      if (customDesignMaskInfo.ContainsKey(mask.Description.Id) == false) { return null; }
+      return customDesignMaskInfo[mask.Description.Id];
+    }
     public static string DesignMaskId(this List<string> id) {
       string result = "";
       foreach(string str in id) {
@@ -93,7 +154,15 @@ namespace CustAmmoCategories {
           CustomAmmoCategories.tempDesignMasksStickyEffects[newDesignMaskId].Add(newMask.stickyEffect);
         }
       }
+      CustomDesignMaskInfo parent_customDesignMaskInfo = parentMask.GetCustomDesignMaskInfo();
+      CustomDesignMaskInfo new_customDesignMaskInfo = new CustomDesignMaskInfo(parent_customDesignMaskInfo);
+      new_customDesignMaskInfo.Merge(newMask.GetCustomDesignMaskInfo());
       CustomAmmoCategories.tempDesignMasksDefs.Add(newDesignMaskId, result);
+      if (customDesignMaskInfo.ContainsKey(result.Description.Id)) {
+        customDesignMaskInfo[result.Description.Id] = new_customDesignMaskInfo;
+      } else {
+        customDesignMaskInfo.Add(result.Description.Id, new_customDesignMaskInfo);
+      }
       return result;
     }
   }
@@ -122,4 +191,33 @@ namespace CustAmmoCategoriesPatches {
       }
     }
   }
+  [HarmonyPatch(typeof(DesignMaskDef))]
+  [HarmonyPatch("FromJSON")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { typeof(string) })]
+  public static class BattleTech_VehicleChassisDef_fromJSON_Patch {
+    public static bool Prefix(VehicleChassisDef __instance, ref string json) {
+      Log.LogWrite("DesignMaskDef.FromJSON\n");
+      try {
+        JObject definition = JObject.Parse(json);
+        string id = (string)definition["Description"]["Id"];
+        Log.LogWrite(id + "\n");
+        if (definition["Custom"] != null) {
+          CustomDesignMaskInfo info = definition["Custom"].ToObject<CustomDesignMaskInfo>();
+          if (CustomAmmoCategories.customDesignMaskInfo.ContainsKey(id) == false) {
+            CustomAmmoCategories.customDesignMaskInfo.Add(id, info);
+          } else {
+            CustomAmmoCategories.customDesignMaskInfo[id] = info;
+          }
+          info.debugLog(1);
+          definition.Remove("Custom");
+        }
+        json = definition.ToString();
+      } catch (Exception e) {
+        Log.LogWrite(e.ToString() + "\n", true);
+      }
+      return true;
+    }
+  }
+
 }

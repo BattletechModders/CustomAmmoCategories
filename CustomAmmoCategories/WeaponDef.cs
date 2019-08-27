@@ -12,7 +12,155 @@ using System.Text;
 namespace CustAmmoCategories {
   public static partial class CustomAmmoCategories {
     public static bool isImprovedBallistic(this Weapon weapon) { return weapon.exDef().ImprovedBallistic; }
-  } 
+    public static bool CantHitUnaffectedByPathing(this Weapon weapon) {
+      ExtAmmunitionDef ammo = weapon.ammo();
+      WeaponMode mode = weapon.mode();
+      ExtWeaponDef wp = weapon.exDef();
+      if(mode.CantHitUnaffecedByPathing != TripleBoolean.NotSet) {
+        return mode.CantHitUnaffecedByPathing == TripleBoolean.True;
+      }
+      if (ammo.CantHitUnaffecedByPathing != TripleBoolean.NotSet) {
+        return ammo.CantHitUnaffecedByPathing == TripleBoolean.True;
+      }
+      return wp.CantHitUnaffecedByPathing == TripleBoolean.True;
+    }
+    public static int MissileVolleySize(this Weapon weapon) {
+      ExtAmmunitionDef ammo = weapon.ammo();
+      WeaponMode mode = weapon.mode();
+      ExtWeaponDef wp = weapon.exDef();
+      if (mode.MissileVolleySize > 0) {
+        return mode.MissileVolleySize;
+      }
+      if (ammo.MissileVolleySize > 0) {
+        return ammo.MissileVolleySize;
+      }
+      return wp.MissileVolleySize;
+    }
+    public static CustomVector ProjectileScale(this Weapon weapon) {
+      ExtAmmunitionDef ammo = weapon.ammo();
+      WeaponMode mode = weapon.mode();
+      ExtWeaponDef wp = weapon.exDef();
+      if (mode.ProjectileScale.set) {
+        return mode.ProjectileScale;
+      }
+      if (ammo.ProjectileScale.set) {
+        return ammo.ProjectileScale;
+      }
+      return wp.ProjectileScale;
+    }
+    public static float APDamage(this Weapon weapon) {
+      ExtAmmunitionDef ammo = weapon.ammo();
+      WeaponMode mode = weapon.mode();
+      ExtWeaponDef wp = weapon.exDef();
+      return mode.APDamage + ammo.APDamage + wp.APDamage;
+    }
+    public static float APArmorShardsMod(this Weapon weapon) {
+      ExtAmmunitionDef ammo = weapon.ammo();
+      WeaponMode mode = weapon.mode();
+      ExtWeaponDef wp = weapon.exDef();
+      return mode.APArmorShardsMod + ammo.APArmorShardsMod + wp.APArmorShardsMod;
+    }
+    public static float APMaxArmorThickness(this Weapon weapon) {
+      ExtAmmunitionDef ammo = weapon.ammo();
+      WeaponMode mode = weapon.mode();
+      ExtWeaponDef wp = weapon.exDef();
+      return mode.APMaxArmorThickness + ammo.APMaxArmorThickness + wp.APMaxArmorThickness;
+    }
+    public static bool isAPCrit(this Weapon weapon) {
+      ExtAmmunitionDef ammo = weapon.ammo();
+      WeaponMode mode = weapon.mode();
+      ExtWeaponDef wp = weapon.exDef();
+      return (float.IsNaN(mode.APCriticalChanceMultiplier) == false)
+        || (float.IsNaN(ammo.APCriticalChanceMultiplier) == false)
+        || (float.IsNaN(wp.APCriticalChanceMultiplier) == false);
+    }
+    public static float APCriticalChanceMultiplier(this Weapon weapon) {
+      ExtAmmunitionDef ammo = weapon.ammo();
+      WeaponMode mode = weapon.mode();
+      ExtWeaponDef wp = weapon.exDef();
+      return (float.IsNaN(mode.APCriticalChanceMultiplier)?0f: mode.APCriticalChanceMultiplier) 
+        + (float.IsNaN(ammo.APCriticalChanceMultiplier)?0f: ammo.APCriticalChanceMultiplier)
+        + (float.IsNaN(wp.APCriticalChanceMultiplier)?0f: wp.APCriticalChanceMultiplier);
+    }
+    public static bool DamageNotDivided(this Weapon weapon) {
+      ExtAmmunitionDef ammo = weapon.ammo();
+      WeaponMode mode = weapon.mode();
+      ExtWeaponDef wp = weapon.exDef();
+      if (mode.DamageNotDivided != TripleBoolean.NotSet) { return mode.DamageNotDivided == TripleBoolean.True; }
+      if (ammo.DamageNotDivided != TripleBoolean.NotSet) { return ammo.DamageNotDivided == TripleBoolean.True; }
+      return wp.DamageNotDivided == TripleBoolean.True;
+    }
+    public static bool isDamageVariation(this Weapon weapon) {
+      ExtAmmunitionDef ammo = weapon.ammo();
+      WeaponMode mode = weapon.mode();
+      ExtWeaponDef wp = weapon.exDef();
+      if (mode.isDamageVariation != TripleBoolean.NotSet) { return mode.isDamageVariation == TripleBoolean.True; }
+      if (ammo.isDamageVariation != TripleBoolean.NotSet) { return ammo.isDamageVariation == TripleBoolean.True; }
+      return wp.isDamageVariation == TripleBoolean.True;
+    }
+    public static bool isHeatVariation(this Weapon weapon) {
+      ExtAmmunitionDef ammo = weapon.ammo();
+      WeaponMode mode = weapon.mode();
+      ExtWeaponDef wp = weapon.exDef();
+      if (mode.isHeatVariation != TripleBoolean.NotSet) { return mode.isHeatVariation == TripleBoolean.True; }
+      if (ammo.isHeatVariation != TripleBoolean.NotSet) { return ammo.isHeatVariation == TripleBoolean.True; }
+      return wp.isHeatVariation == TripleBoolean.True;
+    }
+    public static bool isStabilityVariation(this Weapon weapon) {
+      ExtAmmunitionDef ammo = weapon.ammo();
+      WeaponMode mode = weapon.mode();
+      ExtWeaponDef wp = weapon.exDef();
+      if (mode.isStabilityVariation != TripleBoolean.NotSet) { return mode.isStabilityVariation == TripleBoolean.True; }
+      if (ammo.isStabilityVariation != TripleBoolean.NotSet) { return ammo.isStabilityVariation == TripleBoolean.True; }
+      return wp.isStabilityVariation == TripleBoolean.True;
+    }
+    /*public static CustomVector MissileExplosionScale(this Weapon weapon) {
+      ExtAmmunitionDef ammo = weapon.ammo();
+      WeaponMode mode = weapon.mode();
+      ExtWeaponDef wp = weapon.exDef();
+      if (mode.MissileExplosionScale.set) {
+        return mode.MissileExplosionScale;
+      }
+      if (ammo.MissileExplosionScale.set) {
+        return ammo.MissileExplosionScale;
+      }
+      return wp.MissileExplosionScale;
+    }*/
+    public static float ColorSpeedChange(this Weapon weapon) {
+      ExtAmmunitionDef ammo = weapon.ammo();
+      WeaponMode mode = weapon.mode();
+      ExtWeaponDef wp = weapon.exDef();
+      if (ammo.ColorsTable.Count > 0) { return ammo.ColorSpeedChange; };
+      if (mode.ColorSpeedChange > CustomAmmoCategories.Epsilon) {
+        return mode.ColorSpeedChange;
+      }
+      if (ammo.ColorSpeedChange > CustomAmmoCategories.Epsilon) {
+        return ammo.ColorSpeedChange;
+      }
+      return wp.ColorSpeedChange;
+    }
+    public static List<ColorTableJsonEntry> ColorsTable(this Weapon weapon) {
+      ExtAmmunitionDef ammo = weapon.ammo();
+      ExtWeaponDef wp = weapon.exDef();
+      if (ammo.ColorsTable.Count > 0) {
+        return ammo.ColorsTable;
+      }
+      return wp.ColorsTable;
+    }
+    public static ColorChangeRule colorChangeRule(this Weapon weapon) {
+      ExtAmmunitionDef ammo = weapon.ammo();
+      WeaponMode mode = weapon.mode();
+      ExtWeaponDef wp = weapon.exDef();
+      if(ammo.ColorsTable.Count > 0) { return ammo.ColorChangeRule; };
+      if (mode.ColorChangeRule != ColorChangeRule.None) {
+        return mode.ColorChangeRule;
+      }
+      if (ammo.ColorChangeRule != ColorChangeRule.None) {
+        return ammo.ColorChangeRule;
+      }
+      return wp.ColorChangeRule;
+    }
+  }
   public class ExtWeaponDef {
     public static void RemoveTag(ref JObject json,string tag) {
       Log.LogWrite("ExtWeaponDef.RemoveTag("+tag+")\n");
@@ -38,6 +186,7 @@ namespace CustAmmoCategories {
         if (((string)items[t]) != tag) { ++t; } else {items.RemoveAt(t); Log.LogWrite("  removed\n");};
       }
     }
+    public string Id { get; set; }
     public HitGeneratorType HitGenerator { get; set; }
     public bool StreakEffect { get; set; }
     public float DirectFireModifier { get; set; }
@@ -47,6 +196,7 @@ namespace CustAmmoCategories {
     public float GunneryJammingBase { get; set; }
     public float GunneryJammingMult { get; set; }
     public TripleBoolean DamageOnJamming { get; set; }
+    public TripleBoolean DestroyOnJamming { get; set; }
     public TripleBoolean AMSImmune { get; set; }
     public bool AlternateDamageCalc { get; set; }
     public bool AlternateHeatDamageCalc { get; set; }
@@ -88,7 +238,29 @@ namespace CustAmmoCategories {
     public TripleBoolean BallisticDamagePerPallet { get; set; }
     public TripleBoolean StatusEffectsPerHit { get; set; }
     public CustomAudioSource AdditionalAudioEffect { get; set; }
+    public float FireDelayMultiplier { get; set; }
+    public float MissileFiringIntervalMultiplier { get; set; }
+    public float MissileVolleyIntervalMultiplier { get; set; }
+    public float ProjectileSpeedMultiplier { get; set; }
+    public TripleBoolean CantHitUnaffecedByPathing { get; set; }
+    public int MissileVolleySize { get; set; }
+    public CustomVector ProjectileScale { get; set; }
+    //public CustomVector MissileExplosionScale { get; set; }
+    public List<ColorTableJsonEntry> ColorsTable { get; set; }
+    public float ColorSpeedChange { get; set; }
+    public ColorChangeRule ColorChangeRule { get; set; }
+    public float APDamage { get; set; }
+    public float APCriticalChanceMultiplier { get; set; }
+    public float APArmorShardsMod { get; set; }
+    public float APMaxArmorThickness { get; set; }
+    public TripleBoolean DamageNotDivided { get; set; }
+    public TripleBoolean isHeatVariation { get; set; }
+    public TripleBoolean isStabilityVariation { get; set; }
+    public TripleBoolean isDamageVariation { get; set; }
+    public float DistantVariance { get; set; }
+    public TripleBoolean DistantVarianceReversed { get; set; }
     public ExtWeaponDef() {
+      Id = string.Empty;
       StreakEffect = false;
       HitGenerator = HitGeneratorType.NotSet;
       DirectFireModifier = 0;
@@ -108,6 +280,7 @@ namespace CustAmmoCategories {
       DisableClustering = TripleBoolean.True;
       NotUseInMelee = TripleBoolean.NotSet;
       DamageOnJamming = TripleBoolean.NotSet;
+      DestroyOnJamming = TripleBoolean.NotSet;
       AmmoCategory = new CustomAmmoCategory();
       AOECapable = TripleBoolean.NotSet;
       AOERange = 0f;
@@ -138,6 +311,27 @@ namespace CustAmmoCategories {
       BallisticDamagePerPallet = TripleBoolean.NotSet;
       StatusEffectsPerHit = TripleBoolean.NotSet;
       AdditionalAudioEffect = null;
+      MissileFiringIntervalMultiplier = 1f;
+      MissileVolleyIntervalMultiplier = 1f;
+      ProjectileSpeedMultiplier = 1f;
+      FireDelayMultiplier = 10f;
+      CantHitUnaffecedByPathing = TripleBoolean.NotSet;
+      MissileVolleySize = 0;
+      ProjectileScale = new CustomVector(true);
+      //MissileExplosionScale = new CustomVector(true);
+      ColorsTable = new List<ColorTableJsonEntry>();
+      ColorSpeedChange = 0f;
+      ColorChangeRule = ColorChangeRule.None;
+      APDamage = 0f;
+      APCriticalChanceMultiplier = float.NaN;
+      APArmorShardsMod = 0f;
+      APMaxArmorThickness = 0f;
+      DamageNotDivided = TripleBoolean.NotSet;
+      isHeatVariation = TripleBoolean.NotSet;
+      isDamageVariation = TripleBoolean.True;
+      isStabilityVariation = TripleBoolean.NotSet;
+      DistantVariance = 0f;
+      DistantVarianceReversed = TripleBoolean.NotSet;
     }
   }
 }
@@ -151,11 +345,19 @@ namespace CustomAmmoCategoriesPatches {
     public static bool Prefix(WeaponDef __instance, ref string json) {
       CustomAmmoCategoriesLog.Log.LogWrite("WeaponDef fromJSON ");
       JObject defTemp = JObject.Parse(json);
-      CustomAmmoCategoriesLog.Log.LogWrite(defTemp["Description"]["Id"]+"\n");
+      string Id = (string)defTemp["Description"]["Id"];
+      Log.LogWrite(Id+"\n");
+      ExtWeaponDef extDef = null;
+      if (CustomAmmoCategories.isRegistredWeapon(Id)) {
+        extDef = CustomAmmoCategories.getExtWeaponDef(Id);
+      }
       CustomAmmoCategory custCat = CustomAmmoCategories.find((string)defTemp["AmmoCategory"]);
       //CustomAmmoCategories.RegisterWeapon((string)defTemp["Description"]["Id"], custCat);
-      ExtWeaponDef extDef = new ExtWeaponDef();
-      extDef.AmmoCategory = custCat;
+      if (extDef == null) {
+        extDef = new ExtWeaponDef();
+        extDef.Id = Id;
+        extDef.AmmoCategory = custCat;
+      };
       if (defTemp["Streak"] != null) {
         extDef.StreakEffect = (bool)defTemp["Streak"];
         defTemp.Remove("Streak");
@@ -190,9 +392,29 @@ namespace CustomAmmoCategoriesPatches {
         extDef.FireOnSuccessHit = ((bool)defTemp["FireOnSuccessHit"] == true) ? TripleBoolean.True : TripleBoolean.False;
         defTemp.Remove("FireOnSuccessHit");
       }
+      if (defTemp["DistantVarianceReversed"] != null) {
+        extDef.DistantVarianceReversed = ((bool)defTemp["DistantVarianceReversed"] == true) ? TripleBoolean.True : TripleBoolean.False;
+        defTemp.Remove("DistantVarianceReversed");
+      }
       if (defTemp["GunneryJammingBase"] != null) {
         extDef.GunneryJammingBase = (float)defTemp["GunneryJammingBase"];
         defTemp.Remove("GunneryJammingBase");
+      }
+      if (defTemp["FireDelayMultiplier"] != null) {
+        extDef.FireDelayMultiplier = (float)defTemp["FireDelayMultiplier"];
+        defTemp.Remove("FireDelayMultiplier");
+      }
+      if (defTemp["MissileFiringIntervalMultiplier"] != null) {
+        extDef.MissileFiringIntervalMultiplier = (float)defTemp["MissileFiringIntervalMultiplier"];
+        defTemp.Remove("MissileFiringIntervalMultiplier");
+      }
+      if (defTemp["MissileVolleyIntervalMultiplier"] != null) {
+        extDef.MissileVolleyIntervalMultiplier = (float)defTemp["MissileVolleyIntervalMultiplier"];
+        defTemp.Remove("MissileVolleyIntervalMultiplier");
+      }
+      if (defTemp["ProjectileSpeedMultiplier"] != null) {
+        extDef.ProjectileSpeedMultiplier = (float)defTemp["ProjectileSpeedMultiplier"];
+        defTemp.Remove("ProjectileSpeedMultiplier");
       }
       if (defTemp["GunneryJammingMult"] != null) {
         extDef.GunneryJammingMult = (float)defTemp["GunneryJammingMult"];
@@ -218,9 +440,29 @@ namespace CustomAmmoCategoriesPatches {
         extDef.AlternateDamageCalc = (bool)defTemp["AlternateDamageCalc"];
         defTemp.Remove("AlternateDamageCalc");
       }
+      if (defTemp["MissileVolleySize"] != null) {
+        extDef.MissileVolleySize = (int)defTemp["MissileVolleySize"];
+        defTemp.Remove("MissileVolleySize");
+      }
       if (defTemp["AMSShootsEveryAttack"] != null) {
         extDef.AMSShootsEveryAttack = (bool)defTemp["AMSShootsEveryAttack"];
         defTemp.Remove("AMSShootsEveryAttack");
+      }
+      if (defTemp["APDamage"] != null) {
+        extDef.APDamage = (float)defTemp["APDamage"];
+        defTemp.Remove("APDamage");
+      }
+      if (defTemp["APCriticalChanceMultiplier"] != null) {
+        extDef.APCriticalChanceMultiplier = (float)defTemp["APCriticalChanceMultiplier"];
+        defTemp.Remove("APCriticalChanceMultiplier");
+      }
+      if (defTemp["APArmorShardsMod"] != null) {
+        extDef.APArmorShardsMod = (float)defTemp["APArmorShardsMod"];
+        defTemp.Remove("APArmorShardsMod");
+      }
+      if (defTemp["APMaxArmorThickness"] != null) {
+        extDef.APMaxArmorThickness = (float)defTemp["APMaxArmorThickness"];
+        defTemp.Remove("APMaxArmorThickness");
       }
       if (defTemp["AdditionalImpactVFXScaleX"] != null) {
         extDef.AdditionalImpactVFXScaleX = (float)defTemp["AdditionalImpactVFXScaleX"];
@@ -229,6 +471,47 @@ namespace CustomAmmoCategoriesPatches {
       if (defTemp["AdditionalImpactVFXScaleY"] != null) {
         extDef.AdditionalImpactVFXScaleY = (float)defTemp["AdditionalImpactVFXScaleY"];
         defTemp.Remove("AdditionalImpactVFXScaleY");
+      }
+      if (defTemp["ProjectileScale"] != null) {
+        extDef.ProjectileScale = defTemp["ProjectileScale"].ToObject<CustomVector>();
+        defTemp.Remove("ProjectileScale");
+      }
+      if (defTemp["DamageNotDivided"] != null) {
+        extDef.DamageNotDivided = ((bool)defTemp["DamageNotDivided"] == true) ? TripleBoolean.True : TripleBoolean.False;
+        defTemp.Remove("DamageNotDivided");
+      }
+      if (defTemp["isDamageVariation"] != null) {
+        extDef.isDamageVariation = ((bool)defTemp["isDamageVariation"] == true) ? TripleBoolean.True : TripleBoolean.False;
+        defTemp.Remove("isDamageVariation");
+      }
+      if (defTemp["isHeatVariation"] != null) {
+        extDef.isHeatVariation = ((bool)defTemp["isHeatVariation"] == true) ? TripleBoolean.True : TripleBoolean.False;
+        defTemp.Remove("isHeatVariation");
+      }
+      if (defTemp["isStabilityVariation"] != null) {
+        extDef.isStabilityVariation = ((bool)defTemp["isStabilityVariation"] == true) ? TripleBoolean.True : TripleBoolean.False;
+        defTemp.Remove("isStabilityVariation");
+      }
+      //if (defTemp["MissileExplosionScale"] != null) {
+      //extDef.MissileExplosionScale = defTemp["MissileExplosionScale"].ToObject<CustomVector>();
+      //defTemp.Remove("MissileExplosionScale");
+      //}
+      if (defTemp["DistantVariance"] != null) {
+        extDef.DistantVariance = (float)defTemp["DistantVariance"];
+        defTemp.Remove("DistantVariance");
+      }
+      Log.M.WL(1, "extDef.DistantVariance:" + extDef.DistantVariance);
+      if (defTemp["ColorsTable"] != null) {
+        extDef.ColorsTable = defTemp["ColorsTable"].ToObject<List<ColorTableJsonEntry>>();
+        defTemp.Remove("ColorsTable");
+      }
+      if (defTemp["ColorSpeedChange"] != null) {
+        extDef.ColorSpeedChange = (float)defTemp["ColorSpeedChange"];
+        defTemp.Remove("ColorSpeedChange");
+      }
+      if (defTemp["ColorChangeRule"] != null) {
+        extDef.ColorChangeRule = (ColorChangeRule)Enum.Parse(typeof(ColorChangeRule),(string)defTemp["ColorChangeRule"]);
+        defTemp.Remove("ColorChangeRule");
       }
       if (defTemp["AdditionalImpactVFXScaleZ"] != null) {
         extDef.AdditionalImpactVFXScaleZ = (float)defTemp["AdditionalImpactVFXScaleZ"];
@@ -279,6 +562,10 @@ namespace CustomAmmoCategoriesPatches {
       if (defTemp["HasShells"] != null) {
         extDef.HasShells = ((bool)defTemp["HasShells"] == true) ? TripleBoolean.True : TripleBoolean.False;
         defTemp.Remove("HasShells");
+      }
+      if (defTemp["CantHitUnaffecedByPathing"] != null) {
+        extDef.CantHitUnaffecedByPathing = ((bool)defTemp["CantHitUnaffecedByPathing"] == true) ? TripleBoolean.True : TripleBoolean.False;
+        defTemp.Remove("CantHitUnaffecedByPathing");
       }
       if (defTemp["ImprovedBallistic"] != null) {
         extDef.ImprovedBallistic = (bool)defTemp["ImprovedBallistic"];
@@ -344,6 +631,10 @@ namespace CustomAmmoCategoriesPatches {
         extDef.DamageOnJamming = ((bool)defTemp["DamageOnJamming"] == true) ? TripleBoolean.True : TripleBoolean.False;
         defTemp.Remove("DamageOnJamming");
       }
+      if (defTemp["DestroyOnJamming"] != null) {
+        extDef.DestroyOnJamming = ((bool)defTemp["DestroyOnJamming"] == true) ? TripleBoolean.True : TripleBoolean.False;
+        defTemp.Remove("DestroyOnJamming");
+      }
       if (defTemp["AMSImmune"] != null) {
         extDef.AMSImmune = ((bool)defTemp["AMSImmune"] == true) ? TripleBoolean.True : TripleBoolean.False;
         defTemp.Remove("AMSImmune");
@@ -380,11 +671,12 @@ namespace CustomAmmoCategoriesPatches {
         mode.AmmoCategory = extDef.AmmoCategory;
         extDef.baseModeId = mode.Id;
         extDef.Modes.Add(mode.Id, mode);
+        CustomAmmoCategoriesLog.Log.LogWrite(" adding base only mode '" + mode.Id + "'\n");
       }
       CustomAmmoCategories.registerExtWeaponDef((string)defTemp["Description"]["Id"], extDef);
       defTemp["AmmoCategory"] = custCat.BaseCategory.ToString();
       CustomAmmoCategoriesLog.Log.LogWrite("\n--------------ORIG----------------\n" + json + "\n----------------------------------\n");
-      CustomAmmoCategoriesLog.Log.LogWrite("\n--------------MOD----------------\n" + defTemp.ToString() + "\n----------------------------------\n");
+      //CustomAmmoCategoriesLog.Log.LogWrite("\n--------------MOD----------------\n" + defTemp.ToString() + "\n----------------------------------\n");
       json = defTemp.ToString();
       return true;
     }

@@ -10,6 +10,7 @@ using System.Reflection;
 using CustAmmoCategories;
 using UnityEngine;
 using HBS.Math;
+using CustomAmmoCategoriesLog;
 
 namespace CustAmmoCategories {
   public static partial class CustomAmmoCategories {
@@ -315,7 +316,7 @@ namespace CustomAmmoCategoriesPatches {
       return Transpilers.MethodReplacer(instructions, targetPropertyGetter, replacementMethod);
     }
 
-    private static bool IndirectFireCapable(Weapon weapon) {
+    public static bool IndirectFireCapable(this Weapon weapon) {
       //CustomAmmoCategoriesLog.Log.LogWrite("get PreferNotLethalPositionFactor_expectedDamageForShooting IndirectFireCapable\n");
       return CustomAmmoCategories.getIndirectFireCapable(weapon);
     }
@@ -332,10 +333,30 @@ namespace CustomAmmoCategoriesPatches {
     }
 
     private static bool IndirectFireCapable(Weapon weapon) {
-      //CustomAmmoCategoriesLog.Log.LogWrite("get ToHit_GetAllModifiers IndirectFireCapable\n");
+      CustomAmmoCategoriesLog.Log.LogWrite("get ToHit_GetAllModifiers IndirectFireCapable\n");
       return CustomAmmoCategories.getIndirectFireCapable(weapon);
     }
 
+    public static HBS.Collections.TagSet Tags(this ICombatant target) {
+      Mech mech = target as Mech;
+      if (mech != null) { return mech.MechDef.MechTags; }
+      Vehicle vehicle = target as Vehicle;
+      if (vehicle != null) { return vehicle.VehicleDef.VehicleTags; }
+      Turret turret = target as Turret;
+      if (turret != null) { return turret.TurretDef.TurretTags; }
+      return null;
+    }
+    public static float GetChassisTagsModifyer(this Weapon weapon, ICombatant target) {
+      float result = 0f;
+      ExtAmmunitionDef ammo = weapon.ammo();
+      if (ammo.TagsAccuracyModifiers.Count == 0) { return 0f; }
+      HBS.Collections.TagSet tags = target.Tags();
+      if (tags == null) { return 0f; };
+      foreach(string tag in tags) {
+        if (ammo.TagsAccuracyModifiers.ContainsKey(tag)) { result += ammo.TagsAccuracyModifiers[tag]; };
+      }
+      return result;
+    }
     public static void Postfix(ToHit __instance, AbstractActor attacker, Weapon weapon, ICombatant target, Vector3 attackPosition, Vector3 targetPosition, LineOfFireLevel lofLevel, bool isCalledShot, ref float __result) {
       bool flag = lofLevel < LineOfFireLevel.LOFObstructed && (CustomAmmoCategories.getIndirectFireCapable(weapon));
       float num = __result;
@@ -344,6 +365,33 @@ namespace CustomAmmoCategoriesPatches {
         //CustomAmmoCategoriesLog.Log.LogWrite(attacker.DisplayName+" has LOS on "+target.DisplayName+ ". Apply DirectFireModifier "+directFireModifier+"\n");
         num += CustomAmmoCategories.getDirectFireModifier(weapon);
       }
+      float distance = Vector3.Distance(attackPosition, targetPosition);
+      float distMod = 0f;
+      float minRange = weapon.MinRange;
+      float shortRange = weapon.ShortRange;
+      float medRange = weapon.MediumRange;
+      float longRange = weapon.LongRange;
+      float maxRange = weapon.MaxRange;
+      //Log.LogWrite("ToHit " + weapon.defId + " distance: " + distance + " ranges:" + minRange + "/" + shortRange + "/" + medRange + "/" + longRange + "/" + maxRange + " mods:"
+      //  + weapon.parent.MinRangeAccMod() + "/" + weapon.parent.ShortRangeAccMod() + "/" + weapon.parent.MediumRangeAccMod() + "/" + weapon.parent.LongRangeRangeAccMod() + "/" + weapon.parent.ExtraLongRangeAccMod());
+      if (distance < minRange) { distMod = weapon.parent.MinRangeAccMod();
+        //Log.LogWrite(" minRange "); 
+      } else
+      if (distance < shortRange) { distMod = weapon.parent.ShortRangeAccMod();
+        //Log.LogWrite(" shortRange ");
+      } else
+      if (distance < medRange) { distMod = weapon.parent.MediumRangeAccMod();
+        //Log.LogWrite(" medRange ");
+      } else
+      if (distance < longRange) { distMod = weapon.parent.LongRangeRangeAccMod();
+        //Log.LogWrite(" longRange ");
+      } else
+      if (distance < maxRange) { distMod = weapon.parent.ExtraLongRangeAccMod();
+        //Log.LogWrite(" extraRange ");
+      };
+      //Log.LogWrite(" effMod: " +distMod+"\n");
+      num += distMod;
+      num += weapon.GetChassisTagsModifyer(target);
       CombatGameState combat = (CombatGameState)typeof(ToHit).GetField("combat", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(__instance);
       if ((double)num < 0.0 && !combat.Constants.ResolutionConstants.AllowTotalNegativeModifier) {
         num = 0.0f;
@@ -376,6 +424,25 @@ namespace CustomAmmoCategoriesPatches {
         if (!NvMath.FloatIsNearZero(weaponDirectFireModifier)) {
           __result = string.Format("{0}WEAPON-DIRECT-FIRE {1:+#;-#}; ", (object)__result, (object)(int)weaponDirectFireModifier);
         }
+      }
+      float distance = Vector3.Distance(attackPosition, targetPosition);
+      float distMod = 0f;
+      float minRange = weapon.MinRange;
+      float shortRange = weapon.ShortRange;
+      float medRange = weapon.MediumRange;
+      float longRange = weapon.LongRange;
+      float maxRange = weapon.MaxRange;
+      if (distance < minRange) { distMod = weapon.parent.MinRangeAccMod(); } else
+      if (distance < shortRange) { distMod = weapon.parent.ShortRangeAccMod(); } else
+      if (distance < medRange) { distMod = weapon.parent.MediumRangeAccMod(); } else
+      if (distance < longRange) { distMod = weapon.parent.LongRangeRangeAccMod(); } else
+      if (distance < maxRange) { distMod = weapon.parent.ExtraLongRangeAccMod(); };
+      if (!NvMath.FloatIsNearZero(distMod)) {
+        __result = string.Format("{0}DISTANCE-MODIFIER {1:+#;-#}; ", (object)__result, (object)(int)distMod);
+      }
+      float tagsMod = weapon.GetChassisTagsModifyer(target);
+      if (!NvMath.FloatIsNearZero(tagsMod)) {
+        __result = string.Format("{0}TARGET-TYPE-MODIFIER {1:+#;-#}; ", (object)__result, (object)(int)tagsMod);
       }
       CombatGameState combat = (CombatGameState)typeof(ToHit).GetField("combat", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(__instance);
       return;

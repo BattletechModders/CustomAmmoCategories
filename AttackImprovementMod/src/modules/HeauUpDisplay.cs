@@ -38,11 +38,11 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
          }
 
          if ( Settings.ShowDangerousTerrain ) {
-            SidePanelProp = typeof( MoveStatusPreview ).GetProperty( "sidePanel", NonPublic | Instance );
+            /*SidePanelProp = typeof( MoveStatusPreview ).GetProperty( "sidePanel", NonPublic | Instance );
             if ( SidePanelProp == null )
                Warn( "MoveStatusPreview.sidePanel not found, ShowDangerousTerrain not patched." );
             else
-               Patch( typeof( MoveStatusPreview ), "DisplayPreviewStatus", null, "AppendDangerousTerrainText" );
+               Patch( typeof( MoveStatusPreview ), "DisplayPreviewStatus", null, "AppendDangerousTerrainText" );*/
          }
          if ( Settings.ShowMeleeTerrain ) { // Considered transpiler but we'll only save one method call. Not worth trouble?
             UpdateStatusMethod = typeof( CombatMovementReticle ).GetMethod( "UpdateStatusPreview", NonPublic | Instance );

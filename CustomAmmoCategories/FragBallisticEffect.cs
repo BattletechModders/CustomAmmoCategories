@@ -10,6 +10,7 @@ using UnityEngine;
 namespace CustAmmoCategories {
 
   public class FragBallisticEffect : FragWeaponEffect {
+    public static readonly string FragPrefabPrefix = "_FRAG_";
     private List<FragBulletEffect> bullets = new List<FragBulletEffect>();
     public float shotDelay;
     public float spreadAngle;
@@ -56,41 +57,60 @@ namespace CustAmmoCategories {
         this.shotDelay = 0.5f;
       this.rate = 1f / this.shotDelay;
       this.ClearBullets();
+      string prefabName = FragBallisticEffect.FragPrefabPrefix + this.bulletPrefab.name;
+      Log.LogWrite("FragBallisticEffect.SetupBullets getting from pool:" + prefabName + "\n");
       for (int index = 0; index < this.weapon.ProjectilesPerShot; ++index) {
-        GameObject gameObject = this.Combat.DataManager.PooledInstantiate(this.bulletPrefab.name, BattleTechResourceType.Prefab, new Vector3?(), new Quaternion?(), (Transform)null);
-        if ((UnityEngine.Object)gameObject == (UnityEngine.Object)null) {
-          WeaponEffect.logger.LogError((object)("Error instantiating BulletObject " + this.bulletPrefab.name), (UnityEngine.Object)this);
-          break;
+        GameObject FraggameObject = this.Combat.DataManager.PooledInstantiate(prefabName, BattleTechResourceType.Prefab, new Vector3?(), new Quaternion?(), (Transform)null);
+        FragBulletEffect fragComponent = null;
+        if (FraggameObject != null) {
+          Log.LogWrite(" getted from pool: " + FraggameObject.GetInstanceID() + "\n");
+          fragComponent = FraggameObject.GetComponent<FragBulletEffect>();
+          if (fragComponent != null) {
+            fragComponent.Init(this.weapon, this);
+            this.bullets.Add(fragComponent);
+          }
         }
-        GameObject FraggameObject = GameObject.Instantiate(gameObject);
-        AutoPoolObject autoPoolObject = gameObject.GetComponent<AutoPoolObject>();
-        if ((UnityEngine.Object)autoPoolObject == (UnityEngine.Object)null) {
-          autoPoolObject = gameObject.AddComponent<AutoPoolObject>();
-        } else {
-          AutoPoolObject FragautoPoolObject = FraggameObject.GetComponent<AutoPoolObject>();
-          if (FragautoPoolObject != null) { GameObject.Destroy(FragautoPoolObject); };
+        if (fragComponent == null) {
+          Log.LogWrite(" not in pool. instansing.\n");
+          GameObject gameObject = this.Combat.DataManager.PooledInstantiate(this.bulletPrefab.name, BattleTechResourceType.Prefab, new Vector3?(), new Quaternion?(), (Transform)null);
+          if ((UnityEngine.Object)gameObject == (UnityEngine.Object)null) {
+            WeaponEffect.logger.LogError((object)("Error instantiating BulletObject " + this.bulletPrefab.name), (UnityEngine.Object)this);
+            break;
+          }
+          FraggameObject = GameObject.Instantiate(gameObject);
+          AutoPoolObject autoPoolObject = gameObject.GetComponent<AutoPoolObject>();
+          if ((UnityEngine.Object)autoPoolObject == (UnityEngine.Object)null) {
+            autoPoolObject = gameObject.AddComponent<AutoPoolObject>();
+          } else {
+            AutoPoolObject FragautoPoolObject = FraggameObject.GetComponent<AutoPoolObject>();
+            if (FragautoPoolObject != null) { GameObject.Destroy(FragautoPoolObject); };
+          }
+          autoPoolObject.Init(this.weapon.parent.Combat.DataManager, this.bulletPrefab.name, 4f);
+          gameObject = null;
+          FraggameObject.transform.parent = (Transform)null;
+          BulletEffect component = FraggameObject.GetComponent<BulletEffect>();
+          if ((UnityEngine.Object)component == (UnityEngine.Object)null) {
+            WeaponEffect.logger.LogError((object)("Error finding BulletEffect on GO " + this.bulletPrefab.name), (UnityEngine.Object)this);
+            return;
+          }
+
+          fragComponent = FraggameObject.AddComponent<FragBulletEffect>();
+          fragComponent.Init(component);
+          fragComponent.Init(this.weapon, this);
+          this.bullets.Add(fragComponent);
         }
-        autoPoolObject.Init(this.weapon.parent.Combat.DataManager, this.bulletPrefab.name, 4f);
-        gameObject = null;
-        FraggameObject.transform.parent = (Transform)null;
-        BulletEffect component = FraggameObject.GetComponent<BulletEffect>();
-        if ((UnityEngine.Object)component == (UnityEngine.Object)null) {
-          WeaponEffect.logger.LogError((object)("Error finding BulletEffect on GO " + this.bulletPrefab.name), (UnityEngine.Object)this);
-          return;
-        }
-        FragBulletEffect fragComponent = FraggameObject.AddComponent<FragBulletEffect>();
-        fragComponent.Init(component);
-        fragComponent.Init(this.weapon, this);
-        this.bullets.Add(fragComponent);
       }
     }
 
     protected void ClearBullets() {
+      string prefabName = FragBallisticEffect.FragPrefabPrefix + this.bulletPrefab.name;
+      Log.LogWrite("FragBallisticEffect.ClearBullets\n");
       for (int index = 0; index < this.bullets.Count; ++index) {
         if (this.bullets[index] == null) { continue; }
         GameObject gameObject = this.bullets[index].gameObject;
         if (gameObject == null) { continue; };
-        GameObject.Destroy(gameObject);
+        Log.LogWrite(" returning to pool " + prefabName + " " + gameObject.GetInstanceID() + "\n");
+        this.Combat.DataManager.PoolGameObject(prefabName, gameObject);
         this.bullets[index] = null;
       }
       this.bullets.Clear();

@@ -46,7 +46,7 @@ namespace Sheepy.Logging {
       public static string Stacktrace { get { return new StackTrace( true ).ToString(); } }
       public string LogFile { get; private set; }
 
-      public volatile SourceLevels LogLevel = SourceLevels.Information;
+      public volatile SourceLevels LogLevel = SourceLevels.Verbose;
       // Time format, placed at the beginning of every line.
       public string TimeFormat {
          get { lock( exceptions ) { return _TimeFormat; } }

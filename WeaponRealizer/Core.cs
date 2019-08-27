@@ -8,7 +8,7 @@ namespace WeaponRealizer {
     public const string ModName = "WeaponRealizer";
     public const string ModId = "com.joelmeador.WeaponRealizer";
 
-    internal static Settings ModSettings = null;
+    public static Settings ModSettings = null;
     internal static string ModDirectory;
 
     public static void Init(string directory, Settings settings) {

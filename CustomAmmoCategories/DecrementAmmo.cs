@@ -18,6 +18,13 @@ namespace CustAmmoCategories {
       if (weapon.DamagePerPallet() == true) { return false; }
       return extWeapon.DisableClustering == TripleBoolean.True;
     }
+    public static bool isStreak(this Weapon weapon) {
+      WeaponMode mode = weapon.mode();
+      if (mode.Streak != TripleBoolean.NotSet) { return mode.Streak == TripleBoolean.True; };
+      ExtAmmunitionDef ammo = weapon.ammo();
+      if(ammo.Streak != TripleBoolean.NotSet) { return mode.Streak == TripleBoolean.True; };
+      return weapon.exDef().StreakEffect;
+    }
     public static void ReturnNoFireHeat(Weapon weapon, int stackItemUID, int numSuccesHits) {
       CustomAmmoCategoriesLog.Log.LogWrite("Returining heat\n");
       int numNeedShots = weapon.ShotsWhenFired * weapon.ProjectilesPerShot;
@@ -36,7 +43,7 @@ namespace CustAmmoCategories {
           shotsWhenFired = StreakHitCount;
         }
       }
-      bool streakEffect = CustomAmmoCategories.getExtWeaponDef(instance.weaponDef.Description.Id).StreakEffect;
+      bool streakEffect = instance.isStreak();
       if (forceStreak) { streakEffect = true; };
       if ((streakEffect == false) && (StreakHitCount == 0)) {
         StreakHitCount = shotsWhenFired;

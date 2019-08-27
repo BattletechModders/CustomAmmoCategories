@@ -25,6 +25,16 @@ namespace CustAmmoCategories {
     protected BTLight laserLight;
     protected ParticleSystem impactParticles;
     protected float laserAlpha;
+    public Color originalColor;
+    public override void StoreOriginalColor() {
+      this.originalColor = this.beamRenderer.material.GetColor("_ColorBB");
+    }
+    public override void SetColor(Color color) {
+      this.beamRenderer.material.SetColor("_ColorBB", color);
+    }
+    public override void RestoreOriginalColor() {
+      this.beamRenderer.material.SetColor("_ColorBB", this.originalColor);
+    }
     public override float calculateInterceptCorrection(float curPath, float pathLenth, float distance, float missileProjectileSpeed) {
       return curPath / pathLenth;
     }
@@ -128,6 +138,7 @@ namespace CustAmmoCategories {
       if (this.currentState == WeaponEffect.WeaponEffectState.Firing) {
         if ((double)this.t >= 1.0)
           this.OnComplete();
+        this.UpdateColor();
         if (this.laserAnim != null) {
           this.laserAlpha = this.laserAnim.Evaluate(this.t);
           this.laserColor[0].a = this.laserAlpha;
@@ -176,6 +187,7 @@ namespace CustAmmoCategories {
         this.impactParticles.Stop(true);
       this.beamRenderer.SetPosition(0, this.startPos);
       this.beamRenderer.SetPosition(1, this.startPos);
+      this.RestoreOriginalColor();
       if (VFXRenderer.HasInstance && VFXRenderer.Instance.laserRenderers.Contains((Renderer)this.beamRenderer)) {
         VFXRenderer.Instance.laserRenderers.Remove((Renderer)this.beamRenderer);
         this.beamRenderer.gameObject.layer = LayerMask.NameToLayer("VFXOnly");

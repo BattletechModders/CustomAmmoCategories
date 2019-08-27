@@ -40,14 +40,14 @@ namespace CustAmmoCategories {
       return CustomAmmoCategories.BulletCurveCache[hitInfo.attackSequenceId][hitInfo.attackGroupIndex][hitInfo.attackWeaponIndex][hitIndex];
     }
 
-    public static void generateBulletCurveCache(Weapon weapon, WeaponHitInfo hitInfo, int hitIndex) {
+    /*public static void generateBulletCurveCache(Weapon weapon, WeaponHitInfo hitInfo, int hitIndex) {
       WeaponEffect currentEffect = CustomAmmoCategories.getWeaponEffect(weapon);
       if (currentEffect == null) { return; }
       Transform startingTransform = weapon.weaponRep.vfxTransforms[0];
       CombatGameState Combat = (CombatGameState)typeof(WeaponEffect).GetField("Combat", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(currentEffect);
       BulletCurvyInfo cachedCurve = new BulletCurvyInfo();
       cachedCurve.startPos = startingTransform.position;
-      SpreadHitRecord spreadCacheRecord = CustomAmmoCategories.getSpreadCache(hitInfo, hitIndex);
+      //SpreadHitRecord spreadCacheRecord = CustomAmmoCategories.getSpreadCache(hitInfo, hitIndex);
       string targetGUID = hitInfo.targetId;
       if (spreadCacheRecord != null) { targetGUID = spreadCacheRecord.targetGUID; };
       ICombatant combatantByGuid = Combat.FindCombatantByGUID(targetGUID);
@@ -82,6 +82,6 @@ namespace CustAmmoCategories {
         CustomAmmoCategories.BulletCurveCache[hitInfo.attackSequenceId][hitInfo.attackGroupIndex].Add(hitInfo.attackWeaponIndex, new Dictionary<int, BulletCurvyInfo>());
       };
       CustomAmmoCategories.BulletCurveCache[hitInfo.attackSequenceId][hitInfo.attackGroupIndex][hitInfo.attackWeaponIndex].Add(hitIndex, cachedCurve);
-    }
+    }*/
   }
 }

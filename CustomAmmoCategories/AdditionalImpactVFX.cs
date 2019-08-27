@@ -85,7 +85,7 @@ namespace CustAmmoCategories {
         effects = new List<ObjectSpawnDataSelf>();
         CustomAmmoCategories.additinalImpactEffects.Add(wGUID, effects);
       }
-      CustomAmmoCategoriesLog.Log.LogWrite("SpawnAdditionalImpactEffect:"+VFXprefab+" "+scale+"\n");
+      Log.LogWrite("SpawnAdditionalImpactEffect:"+VFXprefab+" "+scale+"\n");
       ObjectSpawnDataSelf vfx = new ObjectSpawnDataSelf(VFXprefab, pos, Quaternion.identity, scale, true, false);
       vfx.SpawnSelf(weapon.parent.Combat);
       effects.Add(vfx);

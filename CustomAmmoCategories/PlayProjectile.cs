@@ -23,14 +23,19 @@ namespace CustAmmoCategories {
       CustomAmmoCategoriesLog.Log.LogWrite("  modified AttackRecoil\n");
       return weapon.weaponDef.AttackRecoil + extAmmo.AttackRecoil;
     }
+    public static bool AlwaysIndirectVisuals(this Weapon weapon) {
+      return getWeaponAlwaysIndirectVisuals(weapon);
+    }
     public static bool getWeaponAlwaysIndirectVisuals(Weapon weapon) {
       bool result = false;
+      CustomAmmoCategoriesLog.Log.LogWrite("getWeaponAlwaysIndirectVisuals " + weapon.UIName + "\n");
       if (CustomAmmoCategories.checkExistance(weapon.StatCollection, CustomAmmoCategories.AmmoIdStatName) == true) {
         string CurrentAmmoId = weapon.StatCollection.GetStatistic(CustomAmmoCategories.AmmoIdStatName).Value<string>();
         ExtAmmunitionDef extAmmoDef = CustomAmmoCategories.findExtAmmo(CurrentAmmoId);
-        if (extAmmoDef.AOECapable == TripleBoolean.True) { return true; };
+        //if (extAmmoDef.AOECapable == TripleBoolean.True) { return true; };
         if (extAmmoDef.AlwaysIndirectVisuals != TripleBoolean.NotSet) {
           result = (extAmmoDef.AlwaysIndirectVisuals == TripleBoolean.True);
+          CustomAmmoCategoriesLog.Log.LogWrite(" ammo result:"+result+"\n");
         }
       }
       if (CustomAmmoCategories.checkExistance(weapon.StatCollection, CustomAmmoCategories.WeaponModeStatisticName) == true) {
@@ -40,9 +45,11 @@ namespace CustAmmoCategories {
           WeaponMode mode = extWeapon.Modes[modeId];
           if (mode.AlwaysIndirectVisuals != TripleBoolean.NotSet) {
             result = (mode.AlwaysIndirectVisuals == TripleBoolean.True);
+            CustomAmmoCategoriesLog.Log.LogWrite(" mode result:" + result + "\n");
           }
         }
       }
+      CustomAmmoCategoriesLog.Log.LogWrite(" result:"+result+"\n");
       return result;
     }
   }

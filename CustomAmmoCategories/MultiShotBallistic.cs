@@ -10,6 +10,30 @@ using static BattleTech.AttackDirector;
 
 namespace CustAmmoCategories {
   public static partial class CustomAmmoCategories {
+    public static float ProjectileSpeedMultiplier(this Weapon weapon) {
+      ExtWeaponDef extWeapon = weapon.exDef();
+      WeaponMode mode = weapon.mode();
+      ExtAmmunitionDef ammo = weapon.ammo();
+      return Mathf.Abs(extWeapon.ProjectileSpeedMultiplier * mode.ProjectileSpeedMultiplier * ammo.ProjectileSpeedMultiplier);
+    }
+    public static float FireDelayMultiplier(this Weapon weapon) {
+      ExtWeaponDef extWeapon = weapon.exDef();
+      WeaponMode mode = weapon.mode();
+      ExtAmmunitionDef ammo = weapon.ammo();
+      return Mathf.Abs(extWeapon.FireDelayMultiplier * mode.FireDelayMultiplier * ammo.FireDelayMultiplier);
+    }
+    public static float MissileFiringIntervalMultiplier(this Weapon weapon) {
+      ExtWeaponDef extWeapon = weapon.exDef();
+      WeaponMode mode = weapon.mode();
+      ExtAmmunitionDef ammo = weapon.ammo();
+      return Mathf.Abs(extWeapon.MissileFiringIntervalMultiplier * mode.MissileFiringIntervalMultiplier * ammo.MissileFiringIntervalMultiplier);
+    }
+    public static float MissileVolleyIntervalMultiplier(this Weapon weapon) {
+      ExtWeaponDef extWeapon = weapon.exDef();
+      WeaponMode mode = weapon.mode();
+      ExtAmmunitionDef ammo = weapon.ammo();
+      return Mathf.Abs(extWeapon.MissileVolleyIntervalMultiplier * mode.MissileVolleyIntervalMultiplier * ammo.MissileVolleyIntervalMultiplier);
+    }
     public static bool AlternateBallistic(this Weapon weapon) {
       ExtWeaponDef extWeapon = weapon.exDef();
       if (extWeapon.HasShells == TripleBoolean.True) { return true; };
@@ -35,6 +59,7 @@ namespace CustAmmoCategories {
   }
   public class MultiShotBallisticEffect : CopyAbleWeaponEffect {
     private List<MultiShotBulletEffect> bullets = new List<MultiShotBulletEffect>();
+    public static readonly string ImprovedBulletPrefabPrefix = "_IMPROVED_";
     public float shotDelay;
     public float spreadAngle;
     public GameObject bulletPrefab;
@@ -95,49 +120,69 @@ namespace CustAmmoCategories {
     protected void SetupBullets() {
       this.currentBullet = 0;
       this.bulletHitIndex = 0;
-      if ((double)this.shotDelay <= 0.0)
-        this.shotDelay = 0.5f;
-      this.rate = 1f / this.shotDelay;
+      if ((double)this.shotDelay <= CustomAmmoCategories.Epsilon) {this.shotDelay = 0.5f;}
+      float shotDelay = this.shotDelay * this.weapon.FireDelayMultiplier();
+      if ((double)shotDelay <= 0.5f) { shotDelay = 0.5f; }
+      this.rate = 1f / shotDelay;
       this.ClearBullets();
       int bulletsCount = this.hitInfo.numberOfShots;
       if (this.weapon.HasShells() == false) {
         if (this.weapon.DamagePerPallet() == false) {
-          bulletsCount *= weapon.ProjectilesPerShot;
+          bulletsCount *= this.weapon.ProjectilesPerShot;
         }
       };
+      string prefabName = MultiShotBallisticEffect.ImprovedBulletPrefabPrefix + this.bulletPrefab.name;
+      Log.LogWrite("MultiShotBallisticEffect.SetupBullets "+this.weapon.UIName+" getting from pool:" + prefabName + " x"+bulletsCount+" = "+this.hitInfo.numberOfShots+" x "+this.weapon.ProjectilesPerShot+"\n");
       for (int index = 0; index < bulletsCount; ++index) {
-        GameObject gameObject = this.Combat.DataManager.PooledInstantiate(this.bulletPrefab.name, BattleTechResourceType.Prefab, new Vector3?(), new Quaternion?(), (Transform)null);
-        if ((UnityEngine.Object)gameObject == (UnityEngine.Object)null) {
-          WeaponEffect.logger.LogError((object)("Error instantiating BulletObject " + this.bulletPrefab.name), (UnityEngine.Object)this);
-          break;
+        GameObject MultiShotGameObject = this.Combat.DataManager.PooledInstantiate(prefabName, BattleTechResourceType.Prefab, new Vector3?(), new Quaternion?(), (Transform)null);
+        MultiShotBulletEffect msComponent = null;
+        if (MultiShotGameObject != null) {
+          Log.LogWrite(" getted from pool: " + MultiShotGameObject.GetInstanceID() + "\n");
+          msComponent = MultiShotGameObject.GetComponent<MultiShotBulletEffect>();
+          if (msComponent != null) {
+            msComponent.Init(this.weapon, this);
+            this.bullets.Add(msComponent);
+          }
         }
-        GameObject MultiShotGameObject = GameObject.Instantiate(gameObject);
-        AutoPoolObject autoPoolObject = gameObject.GetComponent<AutoPoolObject>();
-        if ((UnityEngine.Object)autoPoolObject == (UnityEngine.Object)null) {
-          autoPoolObject = gameObject.AddComponent<AutoPoolObject>();
-        } else {
-          AutoPoolObject MultiShotAutoPoolObject = MultiShotGameObject.GetComponent<AutoPoolObject>();
-          if (MultiShotAutoPoolObject != null) { GameObject.Destroy(MultiShotAutoPoolObject); };
+        if (msComponent == null) {
+          Log.LogWrite(" not in pool. instansing.\n");
+          GameObject gameObject = this.Combat.DataManager.PooledInstantiate(this.bulletPrefab.name, BattleTechResourceType.Prefab, new Vector3?(), new Quaternion?(), (Transform)null);
+          if ((UnityEngine.Object)gameObject == (UnityEngine.Object)null) {
+            WeaponEffect.logger.LogError((object)("Error instantiating BulletObject " + this.bulletPrefab.name), (UnityEngine.Object)this);
+            break;
+          }
+          MultiShotGameObject = GameObject.Instantiate(gameObject);
+          AutoPoolObject autoPoolObject = gameObject.GetComponent<AutoPoolObject>();
+          if ((UnityEngine.Object)autoPoolObject == (UnityEngine.Object)null) {
+            autoPoolObject = gameObject.AddComponent<AutoPoolObject>();
+          } else {
+            AutoPoolObject MultiShotAutoPoolObject = MultiShotGameObject.GetComponent<AutoPoolObject>();
+            if (MultiShotAutoPoolObject != null) { GameObject.Destroy(MultiShotAutoPoolObject); };
+          }
+          autoPoolObject.Init(this.weapon.parent.Combat.DataManager, this.bulletPrefab.name, 4f);
+          gameObject = null;
+          MultiShotGameObject.transform.parent = (Transform)null;
+          BulletEffect component = MultiShotGameObject.GetComponent<BulletEffect>();
+          if ((UnityEngine.Object)component == (UnityEngine.Object)null) {
+            WeaponEffect.logger.LogError((object)("Error finding BulletEffect on GO " + this.bulletPrefab.name), (UnityEngine.Object)this);
+            return;
+          }
+          msComponent = MultiShotGameObject.AddComponent<MultiShotBulletEffect>();
+          msComponent.Init(component);
+          msComponent.Init(this.weapon, this);
+          this.bullets.Add(msComponent);
         }
-        autoPoolObject.Init(this.weapon.parent.Combat.DataManager, this.bulletPrefab.name, 4f);
-        gameObject = null;
-        MultiShotGameObject.transform.parent = (Transform)null;
-        BulletEffect component = MultiShotGameObject.GetComponent<BulletEffect>();
-        if ((UnityEngine.Object)component == (UnityEngine.Object)null) {
-          WeaponEffect.logger.LogError((object)("Error finding BulletEffect on GO " + this.bulletPrefab.name), (UnityEngine.Object)this);
-          return;
-        }
-        MultiShotBulletEffect msComponent = MultiShotGameObject.AddComponent<MultiShotBulletEffect>();
-        msComponent.Init(component);
-        msComponent.Init(this.weapon, this);
-        this.bullets.Add(msComponent);
       }
     }
 
     protected void ClearBullets() {
+      string prefabName = MultiShotBallisticEffect.ImprovedBulletPrefabPrefix + this.bulletPrefab.name;
+      Log.LogWrite("MultiShotBallisticEffect.ClearBullets\n");
       for (int index = 0; index < this.bullets.Count; ++index) {
+        this.bullets[index].Reset();
         GameObject gameObject = this.bullets[index].gameObject;
-        GameObject.Destroy(gameObject);
+        Log.LogWrite(" returning to pool " + prefabName + " " + gameObject.GetInstanceID() + "\n");
+        this.Combat.DataManager.PoolGameObject(prefabName, gameObject);
       }
       this.bullets.Clear();
     }
@@ -231,6 +276,7 @@ namespace CustAmmoCategories {
       base.OnImpact(0.0f);
     }
     protected override void OnComplete() {
+      this.RestoreOriginalColor();
       base.OnComplete();
       this.ClearBullets();
     }

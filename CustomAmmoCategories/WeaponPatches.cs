@@ -205,6 +205,7 @@ namespace CustAmmoCategoriesPatches {
         if (extWeapon.Modes.Count > 1) {
           if (extWeapon.Modes.ContainsKey(modeId)) {
             WeaponMode mode = extWeapon.Modes[modeId];
+            Log.M.WL("mode name: "+mode.UIName);
             __result.Append("({0})", new object[1] { (object)mode.UIName });
           }
         }
@@ -277,10 +278,12 @@ namespace CustAmmoCategoriesPatches {
     [HarmonyPatch(new Type[] { })]
     public static class Weapon_ProjectilesPerShot {
       public static void Postfix(Weapon __instance, ref int __result) {
+        Log.LogWrite(__instance.UIName+ ".ProjectilesPerShot base:"+__result+"\n");
         if (CustomAmmoCategories.checkExistance(__instance.StatCollection, CustomAmmoCategories.AmmoIdStatName) == true) {
           string CurrentAmmoId = __instance.StatCollection.GetStatistic(CustomAmmoCategories.AmmoIdStatName).Value<string>();
           ExtAmmunitionDef extAmmoDef = CustomAmmoCategories.findExtAmmo(CurrentAmmoId);
           __result += extAmmoDef.ProjectilesPerShot;
+          Log.LogWrite(" ammo "+CurrentAmmoId+" real id:"+extAmmoDef.Id+":" + __result + "\n");
         }
         if (CustomAmmoCategories.checkExistance(__instance.StatCollection, CustomAmmoCategories.WeaponModeStatisticName) == true) {
           ExtWeaponDef extWeapon = CustomAmmoCategories.getExtWeaponDef(__instance.defId);
@@ -288,6 +291,7 @@ namespace CustAmmoCategoriesPatches {
           if (extWeapon.Modes.ContainsKey(modeId)) {
             WeaponMode mode = extWeapon.Modes[modeId];
             __result += mode.ProjectilesPerShot;
+            Log.LogWrite(" mode:" + __result + "\n");
           }
         }
       }

@@ -14,11 +14,11 @@ using UnityEngine;
 using Random = UnityEngine.Random;
 
 namespace CustAmmoCategories {
-  public class SpreadHitInfo {
+  /*public class SpreadHitInfo {
     public string targetGUID;
     public float dogleDamage;
     public WeaponHitInfo hitInfo;
-    public SpreadHitInfo(string GUID,WeaponHitInfo hInfo, float dd) {
+    public SpreadHitInfo(string GUID, WeaponHitInfo hInfo, float dd) {
       targetGUID = GUID;
       hitInfo = hInfo;
       dogleDamage = dd;
@@ -82,7 +82,7 @@ namespace CustAmmoCategories {
       heatDamage = heat;
       this.stableDamage = stbl;
       int hitIndex = 0;
-      CustomAmmoCategoriesLog.Log.LogWrite(" hitInfo created heatDamage:"+heatDamage+"\n");
+      CustomAmmoCategoriesLog.Log.LogWrite(" hitInfo created heatDamage:" + heatDamage + "\n");
       foreach (var dmgrec in dmg) {
         CustomAmmoCategoriesLog.Log.LogWrite("  creating hit record " + hitIndex + "\n");
         int Location = dmgrec.Key;
@@ -100,10 +100,10 @@ namespace CustAmmoCategories {
         ++hitIndex;
       }
     }
-  }
+  }*/
   public static partial class CustomAmmoCategories {
     //                   sequenceId       groupId      weaponIndex     hitIndex  Damage
-    public static Dictionary<int, Dictionary<int, Dictionary<int, Dictionary<int, SpreadHitRecord>>>> SpreadCache = new Dictionary<int, Dictionary<int, Dictionary<int, Dictionary<int, SpreadHitRecord>>>>();
+    /*public static Dictionary<int, Dictionary<int, Dictionary<int, Dictionary<int, SpreadHitRecord>>>> SpreadCache = new Dictionary<int, Dictionary<int, Dictionary<int, Dictionary<int, SpreadHitRecord>>>>();
     public static SpreadHitRecord getSpreadCache(WeaponHitInfo hitInfo, int hitIndex) {
       if (CustomAmmoCategories.SpreadCache.ContainsKey(hitInfo.attackSequenceId) == false) {
         return null;
@@ -147,8 +147,8 @@ namespace CustAmmoCategories {
         }
       }
       return result;
-    }
-    public static List<SpreadHitInfo> prepareSpreadHitInfo(AttackDirector.AttackSequence instance, Weapon weapon, int groupIdx, int weaponIdx, int numberOfShots, bool indirectFire, float dodgedDamage) {
+    }*/
+    /*public static List<SpreadHitInfo> prepareSpreadHitInfo(AttackDirector.AttackSequence instance, Weapon weapon, int groupIdx, int weaponIdx, int numberOfShots, bool indirectFire, float dodgedDamage) {
       CustomAmmoCategoriesLog.Log.LogWrite("prepareSpreadHitInfo\n");
       List<SpreadHitInfo> result = new List<SpreadHitInfo>();
       List<ICombatant> combatants = new List<ICombatant>();
@@ -183,7 +183,8 @@ namespace CustAmmoCategories {
       foreach (ICombatant combatant in combatants) {
         if (combatant.IsDead) { continue; };
         if (combatant.GUID == instance.chosenTarget.GUID) { continue; }
-        float distance = Vector3.Distance(combatant.CurrentPosition,instance.chosenTarget.CurrentPosition);
+        Vector3 CurrentPosition = combatant.CurrentPosition + Vector3.up * combatant.AoEHeightFix();
+        float distance = Vector3.Distance(combatant.CurrentPosition, instance.chosenTarget.CurrentPosition);
         if (distance < spreadDistance) {
           spreadRNDMax += (spreadDistance - distance);
           spreadBorders.Add(spreadRNDMax);
@@ -191,11 +192,11 @@ namespace CustAmmoCategories {
           spreadCounts[combatant.GUID] = 0;
         };
       }
-      for(int hitIndex = 0; hitIndex < numberOfShots; ++hitIndex) {
+      for (int hitIndex = 0; hitIndex < numberOfShots; ++hitIndex) {
         float roll = Random.Range(0f, spreadRNDMax);
         int combatantIndex = 0;
-        for(int targetIndex=0;targetIndex < spreadBorders.Count; ++targetIndex) {
-          if(roll <= spreadBorders[targetIndex]) {
+        for (int targetIndex = 0; targetIndex < spreadBorders.Count; ++targetIndex) {
+          if (roll <= spreadBorders[targetIndex]) {
             combatantIndex = targetIndex;
             break;
           }
@@ -208,7 +209,7 @@ namespace CustAmmoCategories {
         ICombatant combatant = instance.Director.Combat.FindCombatantByGUID(spreadCount.Key);
         if (combatant == null) { continue; }
         if (spreadCount.Value == 0) { continue; };
-        CustomAmmoCategoriesLog.Log.LogWrite(" "+combatant.DisplayName+" "+combatant.GUID+" "+ spreadCount.Value + "\n");
+        CustomAmmoCategoriesLog.Log.LogWrite(" " + combatant.DisplayName + " " + combatant.GUID + " " + spreadCount.Value + "\n");
         spreadSumm += spreadCount.Value;
         WeaponHitInfo hitInfo = new WeaponHitInfo();
         hitInfo.numberOfShots = spreadCount.Value;
@@ -229,16 +230,16 @@ namespace CustAmmoCategories {
         hitInfo.secondaryTargetIds = new string[hitInfo.numberOfShots];
         hitInfo.secondaryHitLocations = new int[hitInfo.numberOfShots];
         hitInfo.attackDirections = new AttackDirection[hitInfo.numberOfShots];
-        result.Add(new SpreadHitInfo(combatant.GUID,hitInfo, dodgedDamage));
+        result.Add(new SpreadHitInfo(combatant.GUID, hitInfo, dodgedDamage));
       }
-      if(spreadSumm != numberOfShots) {
-        CustomAmmoCategoriesLog.Log.LogWrite("WARNING! Spreaded count:"+spreadSumm+" not equal numbaer of shots:"+numberOfShots+"\n",true);
+      if (spreadSumm != numberOfShots) {
+        CustomAmmoCategoriesLog.Log.LogWrite("WARNING! Spreaded count:" + spreadSumm + " not equal numbaer of shots:" + numberOfShots + "\n", true);
       }
       return result;
-    }
+    }*/
 
-    public static bool isHasStray(this ref WeaponHitInfo hitInfo) {
-      for(int hitIndex = 0; hitIndex < hitInfo.secondaryTargetIds.Length; ++hitIndex) {
+    /*public static bool isHasStray(this ref WeaponHitInfo hitInfo) {
+      for (int hitIndex = 0; hitIndex < hitInfo.secondaryTargetIds.Length; ++hitIndex) {
         if (string.IsNullOrEmpty(hitInfo.secondaryTargetIds[hitIndex])) { continue; }
         if (hitInfo.secondaryTargetIds[hitIndex] != hitInfo.targetId) { return true; }
       }
@@ -264,7 +265,7 @@ namespace CustAmmoCategories {
         for (int hitIndex = 0; hitIndex < hitInfo.secondaryTargetIds.Length; ++hitIndex) {
           string targetId = hitInfo.targetId;
           if (string.IsNullOrEmpty(hitInfo.secondaryTargetIds[hitIndex]) == false) { targetId = hitInfo.secondaryTargetIds[hitIndex]; };
-          Log.LogWrite(" hi:"+hitIndex+" loc:"+hitInfo.hitLocations[hitIndex]+" st:"+ (string.IsNullOrEmpty(hitInfo.secondaryTargetIds[hitIndex])?"null": hitInfo.secondaryTargetIds[hitIndex]) + " secLoc:"+hitInfo.secondaryHitLocations[hitIndex]+"\n");
+          Log.LogWrite(" hi:" + hitIndex + " loc:" + hitInfo.hitLocations[hitIndex] + " st:" + (string.IsNullOrEmpty(hitInfo.secondaryTargetIds[hitIndex]) ? "null" : hitInfo.secondaryTargetIds[hitIndex]) + " secLoc:" + hitInfo.secondaryHitLocations[hitIndex] + "\n");
           if (strayHitCounts.ContainsKey(targetId) == false) { strayHitCounts[targetId] = 1; strayHitIndexes[targetId] = 0; strayHitIndexesAdd[targetId] = 0; } else { ++strayHitCounts[targetId]; };
         }
         Dictionary<string, SpreadHitInfo> strayHitInfos = new Dictionary<string, SpreadHitInfo>();
@@ -339,8 +340,8 @@ namespace CustAmmoCategories {
           ++strayHitIndexesAdd[targetId];
         }
         Log.LogWrite("Counts:\n");
-        foreach(var i in strayHitCounts) {
-          Log.LogWrite(" "+i.Key+":"+i.Value+"\n");
+        foreach (var i in strayHitCounts) {
+          Log.LogWrite(" " + i.Key + ":" + i.Value + "\n");
         }
         Log.LogWrite("Indexes:\n");
         foreach (var i in strayHitIndexes) {
@@ -352,20 +353,20 @@ namespace CustAmmoCategories {
         }
         Log.LogWrite("Indexes add:\n");
         foreach (var i in strayHitInfos) {
-          Log.LogWrite(" " + i.Key + ":"+ i.Value.hitInfo.numberOfShots + "\n");
-          for(int hitIndex = 0; hitIndex < i.Value.hitInfo.numberOfShots; ++hitIndex) {
+          Log.LogWrite(" " + i.Key + ":" + i.Value.hitInfo.numberOfShots + "\n");
+          for (int hitIndex = 0; hitIndex < i.Value.hitInfo.numberOfShots; ++hitIndex) {
             Log.LogWrite("  loc:" + i.Value.hitInfo.hitLocations[hitIndex] + "\n");
           }
         }
         return true;
-      }catch(Exception e) {
-        Log.LogWrite(e.ToString()+"\n",true);
+      } catch (Exception e) {
+        Log.LogWrite(e.ToString() + "\n", true);
         return false;
       }
-    }
+    }*/
 
-    public static bool ConsolidateSpreadHitInfo(List<SpreadHitInfo> spreadHitInfos,ref WeaponHitInfo hitInfo) {
-      CustomAmmoCategoriesLog.Log.LogWrite("Consolidating spread hit info:"+ spreadHitInfos.Count+ " "+hitInfo.numberOfShots+"\n");
+    /*public static bool ConsolidateSpreadHitInfo(List<SpreadHitInfo> spreadHitInfos, ref WeaponHitInfo hitInfo) {
+      CustomAmmoCategoriesLog.Log.LogWrite("Consolidating spread hit info:" + spreadHitInfos.Count + " " + hitInfo.numberOfShots + "\n");
       int hitIndex = 0;
       try {
         if (CustomAmmoCategories.SpreadCache.ContainsKey(hitInfo.attackSequenceId) == false) {
@@ -382,9 +383,9 @@ namespace CustAmmoCategories {
         do {
           copySuccess = false;
           foreach (SpreadHitInfo spreadHitInfo in spreadHitInfos) {
-            CustomAmmoCategoriesLog.Log.LogWrite(" local spread:" + spreadHitInfo.targetGUID +  " "+ spreadHitInfo.hitInfo.numberOfShots + " internal pos:"+internalPos+"\n");
+            CustomAmmoCategoriesLog.Log.LogWrite(" local spread:" + spreadHitInfo.targetGUID + " " + spreadHitInfo.hitInfo.numberOfShots + " internal pos:" + internalPos + "\n");
             if (internalPos >= spreadHitInfo.hitInfo.numberOfShots) { continue; }
-            CustomAmmoCategoriesLog.Log.LogWrite(" hitIndex = "+hitIndex+" "+ spreadHitInfo.targetGUID + " "+internalPos+" location:"+ spreadHitInfo.hitInfo.hitLocations[internalPos] + "\n");
+            CustomAmmoCategoriesLog.Log.LogWrite(" hitIndex = " + hitIndex + " " + spreadHitInfo.targetGUID + " " + internalPos + " location:" + spreadHitInfo.hitInfo.hitLocations[internalPos] + "\n");
             hitInfo.toHitRolls[hitIndex] = spreadHitInfo.hitInfo.toHitRolls[internalPos];
             hitInfo.locationRolls[hitIndex] = spreadHitInfo.hitInfo.locationRolls[internalPos];
             hitInfo.dodgeRolls[hitIndex] = spreadHitInfo.hitInfo.dodgeRolls[internalPos];
@@ -397,18 +398,21 @@ namespace CustAmmoCategories {
             hitInfo.secondaryHitLocations[hitIndex] = 0;
             hitInfo.attackDirections[hitIndex] = spreadHitInfo.hitInfo.attackDirections[internalPos];
             if (CustomAmmoCategories.SpreadCache[hitInfo.attackSequenceId][hitInfo.attackGroupIndex][hitInfo.attackWeaponIndex].ContainsKey(hitIndex) == false) {
-              CustomAmmoCategories.SpreadCache[hitInfo.attackSequenceId][hitInfo.attackGroupIndex][hitInfo.attackWeaponIndex].Add(hitIndex, new SpreadHitRecord(spreadHitInfo.targetGUID, spreadHitInfo.hitInfo,internalPos, spreadHitInfo.dogleDamage));
+              CustomAmmoCategories.SpreadCache[hitInfo.attackSequenceId][hitInfo.attackGroupIndex][hitInfo.attackWeaponIndex].Add(hitIndex, new SpreadHitRecord(spreadHitInfo.targetGUID, spreadHitInfo.hitInfo, internalPos, spreadHitInfo.dogleDamage));
             }
             ++hitIndex;
             copySuccess = true;
           }
           ++internalPos;
-        } while ((copySuccess == true)&&(hitIndex < hitInfo.numberOfShots));
+        } while ((copySuccess == true) && (hitIndex < hitInfo.numberOfShots));
         return true;
       } catch (Exception e) {
-        CustomAmmoCategoriesLog.Log.LogWrite("ConsolidateSpreadHitInfo error copyPosition:"+ hitIndex + " "+e.ToString()+"\n",true);
+        CustomAmmoCategoriesLog.Log.LogWrite("ConsolidateSpreadHitInfo error copyPosition:" + hitIndex + " " + e.ToString() + "\n", true);
         return false;
       }
+    }*/
+    public static float StrayRange(this Weapon weapon) {
+      return getWeaponSpreadRange(weapon);
     }
     public static float getWeaponSpreadRange(Weapon weapon) {
       float result = 0f;
@@ -432,7 +436,7 @@ namespace CustAmmoCategories {
       return CustomAmmoCategories.getWeaponSpreadRange(weapon);
     }
     public static bool isWeaponAOECapable(Weapon weapon) {
-      Log.LogWrite("isWeaponAOECapable("+weapon.UIName+"/"+ weapon.defId + ")\n");
+      Log.LogWrite("isWeaponAOECapable(" + weapon.UIName + "/" + weapon.defId + ")\n");
       bool result = false;
       if (CustomAmmoCategories.checkExistance(weapon.StatCollection, CustomAmmoCategories.AmmoIdStatName) == true) {
         string CurrentAmmoId = weapon.StatCollection.GetStatistic(CustomAmmoCategories.AmmoIdStatName).Value<string>();
@@ -444,13 +448,13 @@ namespace CustAmmoCategories {
         }
       }
       ExtWeaponDef extWeapon = CustomAmmoCategories.getExtWeaponDef(weapon.defId);
-      Log.LogWrite(" extWeapon.AOECapable "+ weapon.defId + " " + extWeapon.AOECapable + "\n");
+      Log.LogWrite(" extWeapon.AOECapable " + weapon.defId + " " + extWeapon.AOECapable + "\n");
       if (extWeapon.AOECapable != TripleBoolean.NotSet) {
         return extWeapon.AOECapable == TripleBoolean.True;
       }
       return result;
     }
-    public static float getWeaponAOERange(Weapon weapon) {
+    public static float getWeaponAOERange(this Weapon weapon) {
       float result = 0f;
       if (CustomAmmoCategories.checkExistance(weapon.StatCollection, CustomAmmoCategories.AmmoIdStatName) == true) {
         string CurrentAmmoId = weapon.StatCollection.GetStatistic(CustomAmmoCategories.AmmoIdStatName).Value<string>();
@@ -538,7 +542,7 @@ namespace CustAmmoCategories {
     public static bool isCombatantHaveIFFTransponder(ICombatant combatant, string IFFDefId) {
       AbstractActor actor = combatant as AbstractActor;
       if (actor == null) { return false; };
-      foreach(MechComponent component in actor.allComponents) {
+      foreach (MechComponent component in actor.allComponents) {
         if (component.IsFunctional == false) { continue; }
         if (component.defId == IFFDefId) { return true; }
       }
@@ -571,8 +575,8 @@ namespace CustAmmoCategories {
       CustomAmmoCategories.OtherLocations[1] = 100f;
     }
     //                   sequenceId       groupId      weaponIndex     hitIndex  Damage
-    public static Dictionary<int, Dictionary<int, Dictionary<int, Dictionary<int, List<AOEHitInfo>>>>> AOEDamageCache = new Dictionary<int, Dictionary<int, Dictionary<int, Dictionary<int, List<AOEHitInfo>>>>>();
-    public static void generateAOECache(AttackDirector.AttackSequence instance, ref WeaponHitInfo hitInfo, AbstractActor attacker, Weapon weapon, int groupIdx, int weaponIdx) {
+    //public static Dictionary<int, Dictionary<int, Dictionary<int, Dictionary<int, List<AOEHitInfo>>>>> AOEDamageCache = new Dictionary<int, Dictionary<int, Dictionary<int, Dictionary<int, List<AOEHitInfo>>>>>();
+    /*public static void generateAOECache(AttackDirector.AttackSequence instance, ref WeaponHitInfo hitInfo, AbstractActor attacker, Weapon weapon, int groupIdx, int weaponIdx) {
       Dictionary<ICombatant, Dictionary<int, float>> targetsHitCache = new Dictionary<ICombatant, Dictionary<int, float>>();
       Dictionary<ICombatant, float> targetsHeatCache = new Dictionary<ICombatant, float>();
       Dictionary<ICombatant, float> targetsStabCache = new Dictionary<ICombatant, float>();
@@ -613,7 +617,8 @@ namespace CustAmmoCategories {
         }
         foreach (ICombatant target in combatants) {
           if (target.IsDead) { continue; };
-          float distance = Vector3.Distance(target.CurrentPosition, hitPosition);
+          Vector3 CurrentPosition = target.CurrentPosition + Vector3.up * target.AoEHeightFix();
+          float distance = Vector3.Distance(CurrentPosition, hitPosition);
           CustomAmmoCategoriesLog.Log.LogWrite(" testing combatant " + target.DisplayName + " " + target.GUID + " " + distance + " " + AOERange + "\n");
           if (distance > AOERange) { continue; }
           if (targetsHitCache.ContainsKey(target) == false) { targetsHitCache.Add(target, new Dictionary<int, float>()); }
@@ -784,193 +789,200 @@ namespace CustAmmoCategories {
       }
       return result;
     }
+  }*/
   }
-}
 
 
-namespace CustomAmmoCategoriesPatches {
-  [HarmonyPatch(typeof(MessageCoordinator))]
-  [HarmonyPatch("Initialize")]
-  [HarmonyPatch(MethodType.Normal)]
-  public static class MessageCoordinator_Debug {
-    public static void Postfix(MessageCoordinator __instance, WeaponHitInfo?[][] allHitInfo) {
-      CustomAmmoCategoriesLog.Log.LogWrite("----------------------EXPECTED MESSAGES---------------------\n");
-      List<ExpectedMessage> expectedMessages = (List<ExpectedMessage>)typeof(MessageCoordinator).GetField("expectedMessages", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(__instance);
-      AttackDirector.AttackSequence attackSequence = (AttackDirector.AttackSequence)typeof(MessageCoordinator).GetField("attackSequence", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(__instance); ;
-      for (int index1 = 0; index1 < allHitInfo.Length; ++index1) {
-        WeaponHitInfo?[] nullableArray = allHitInfo[index1];
-        for (int index2 = 0; index2 < nullableArray.Length; ++index2) {
-          WeaponHitInfo? nullable = nullableArray[index2];
-          CustomAmmoCategoriesLog.Log.LogWrite(string.Format("Initializing Group {0} Weapon {1}\n", (object)index1, (object)index2));
-          if (!nullable.HasValue) {
-            CustomAmmoCategoriesLog.Log.LogWrite(string.Format("Group {0} Weapon {1} has no value\n", (object)index1, (object)index2));
-          } else {
-            int[] hitLocations = nullable.Value.hitLocations;
-            for (int shot = 0; shot < hitLocations.Length; ++shot) {
-              CustomAmmoCategoriesLog.Log.LogWrite("  hitIndex = " + shot + " hitLocation = " + hitLocations[shot] + " pos:"+nullable.Value.hitPositions[shot]+" AOE/FRAG:" + (shot >= nullable.Value.numberOfShots) + " dr:"+nullable.Value.dodgeRolls[shot]+"\n");
-              /*if (shot == (hitLocations.Length - 1)) {
-                List<AOEHitInfo> AOEHitsInfo = CustomAmmoCategories.getAOEHitInfo(nullable.Value, shot);
-                if (AOEHitsInfo != null) {
-                  CustomAmmoCategoriesLog.Log.LogWrite("  AOE Hit info found \n");
-                  int AOEHitIndex = hitLocations.Length;
-                  for (int aHitGroupIndex = 0; aHitGroupIndex < AOEHitsInfo.Count;++aHitGroupIndex) {
-                    for (int aHitIndex = 0; aHitIndex < AOEHitsInfo[aHitGroupIndex].damageList.Count; ++aHitIndex) {
-                      CustomAmmoCategoriesLog.Log.LogWrite("   aHitIndex = " + AOEHitIndex + " "+ AOEHitsInfo[aHitGroupIndex].targetGUID + " "+ AOEHitsInfo[aHitGroupIndex].damageList[aHitIndex] + "\n");
-                      expectedMessages.Add((ExpectedMessage)new ExpectedImpact(attackSequence, AOEHitsInfo[aHitGroupIndex].hitInfo, aHitIndex));
-                      ++AOEHitIndex;
+  namespace CustomAmmoCategoriesPatches {
+    [HarmonyPatch(typeof(MessageCoordinator))]
+    [HarmonyPatch("Initialize")]
+    [HarmonyPatch(MethodType.Normal)]
+    public static class MessageCoordinator_Debug {
+      public static void Postfix(MessageCoordinator __instance, WeaponHitInfo?[][] allHitInfo) {
+        Log.LogWrite("----------------------EXPECTED MESSAGES---------------------\n");
+        List<ExpectedMessage> expectedMessages = (List<ExpectedMessage>)typeof(MessageCoordinator).GetField("expectedMessages", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(__instance);
+        AttackDirector.AttackSequence attackSequence = (AttackDirector.AttackSequence)typeof(MessageCoordinator).GetField("attackSequence", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(__instance); ;
+        for (int index1 = 0; index1 < allHitInfo.Length; ++index1) {
+          WeaponHitInfo?[] nullableArray = allHitInfo[index1];
+          for (int index2 = 0; index2 < nullableArray.Length; ++index2) {
+            WeaponHitInfo? nullable = nullableArray[index2];
+            Log.LogWrite(string.Format("Initializing Group {0} Weapon {1}\n", (object)index1, (object)index2));
+            if (!nullable.HasValue) {
+              Log.LogWrite(string.Format("Group {0} Weapon {1} has no value\n", (object)index1, (object)index2));
+            } else {
+              int[] hitLocations = nullable.Value.hitLocations;
+              Log.LogWrite("weapon:"+index1+"-"+index2+" number of shots:"+nullable.Value.numberOfShots+"\n");
+              for (int shot = 0; shot < hitLocations.Length; ++shot) {
+                AdvWeaponHitInfoRec adv = nullable.Value.advRec(shot);
+                Log.LogWrite(" hitIndex = " + shot + " hitLocation = " + hitLocations[shot] + " pos:" + nullable.Value.hitPositions[shot] + " " + (shot >= nullable.Value.numberOfShots) + " dr:" + nullable.Value.dodgeRolls[shot] + " adv:"+(adv==null?"false":"true")+"\n");
+                if (adv == null) { continue; };
+                Log.LogWrite("  aoe:" +adv.isAOE+ " aoeproc: "+adv.isAOEproc+" loc:"+adv.hitLocation+" trg:"+adv.target.DisplayName+"("+adv.target.GUID+") D/H/S:"+adv.Damage+"/"+adv.Heat+"/"+adv.Stability+"\n");
+                Log.LogWrite("  frag: sep:"+adv.fragInfo.separated+" isPallet:"+adv.fragInfo.isFragPallet+" mainIdx:"+adv.fragInfo.fragMainHitIndex+" fragStartIdx:"+adv.fragInfo.fragStartHitIndex+" count:"+adv.fragInfo.fragsCount+"\n");
+                /*if (shot == (hitLocations.Length - 1)) {
+                  List<AOEHitInfo> AOEHitsInfo = CustomAmmoCategories.getAOEHitInfo(nullable.Value, shot);
+                  if (AOEHitsInfo != null) {
+                    CustomAmmoCategoriesLog.Log.LogWrite("  AOE Hit info found \n");
+                    int AOEHitIndex = hitLocations.Length;
+                    for (int aHitGroupIndex = 0; aHitGroupIndex < AOEHitsInfo.Count;++aHitGroupIndex) {
+                      for (int aHitIndex = 0; aHitIndex < AOEHitsInfo[aHitGroupIndex].damageList.Count; ++aHitIndex) {
+                        CustomAmmoCategoriesLog.Log.LogWrite("   aHitIndex = " + AOEHitIndex + " "+ AOEHitsInfo[aHitGroupIndex].targetGUID + " "+ AOEHitsInfo[aHitGroupIndex].damageList[aHitIndex] + "\n");
+                        expectedMessages.Add((ExpectedMessage)new ExpectedImpact(attackSequence, AOEHitsInfo[aHitGroupIndex].hitInfo, aHitIndex));
+                        ++AOEHitIndex;
+                      }
                     }
                   }
-                }
-              }*/
+                }*/
+              }
             }
           }
         }
-      }
-      for (int index = 0; index < expectedMessages.Count; ++index) {
-        CustomAmmoCategoriesLog.Log.LogWrite(expectedMessages[index].GetDebugString() + "\n");
+        for (int index = 0; index < expectedMessages.Count; ++index) {
+          CustomAmmoCategoriesLog.Log.LogWrite(expectedMessages[index].GetDebugString() + "\n");
+        }
       }
     }
-  }
-  public class ImpactAOEState {
-    public ICombatant target;
-    public WeaponHitInfo hitInfo;
-    public ImpactAOEState(ICombatant trg, WeaponHitInfo hInfo) {
-      target = trg;
-      hitInfo = hInfo;
+    public class ImpactAOEState {
+      public ICombatant target;
+      public WeaponHitInfo hitInfo;
+      public ImpactAOEState(ICombatant trg, WeaponHitInfo hInfo) {
+        target = trg;
+        hitInfo = hInfo;
+      }
     }
-  }
-  [HarmonyPatch(typeof(AttackDirector.AttackSequence))]
-  [HarmonyPatch("OnAttackSequenceImpact")]
-  [HarmonyPatch(new Type[] { typeof(MessageCenterMessage) })]
-  public static class AttackSequence_OnAttackSequenceImpactAOE {
-    [HarmonyPriority(Priority.First)]
-    public static bool Prefix(AttackDirector.AttackSequence __instance, ref ImpactAOEState __state, ref MessageCenterMessage message) {
-      AttackSequenceImpactMessage impactMessage = (AttackSequenceImpactMessage)message;
-      if (impactMessage.hitInfo.attackSequenceId != __instance.id) { return true; }
-      __state = new ImpactAOEState(__instance.chosenTarget, impactMessage.hitInfo);
-      SpreadHitRecord spreadCache = CustomAmmoCategories.getSpreadCache(impactMessage.hitInfo, impactMessage.hitIndex);
-      if(spreadCache != null) {
-        CustomAmmoCategoriesLog.Log.LogWrite("Spread cache found\n");
-        ICombatant SpreadTarget = __instance.Director.Combat.FindCombatantByGUID(spreadCache.targetGUID);
-        if (SpreadTarget != null) {
-          __instance.chosenTarget = SpreadTarget;
-        }
-        CustomAmmoCategoriesLog.Log.LogWrite(" Altering internal target spread "+ spreadCache.targetGUID + " found:" + ((SpreadTarget != null)?SpreadTarget.DisplayName:"false")+"\n");
-        if (impactMessage.hitInfo.secondaryTargetIds[impactMessage.hitIndex] == spreadCache.targetGUID) {
-          Log.LogWrite(" assume buildin stray. keep hit position. alter hit location:"+ impactMessage.hitInfo.hitLocations[impactMessage.hitIndex] + " -> "+ spreadCache.hitInfo.hitLocations[spreadCache.internalIndex] + "\n");
-          impactMessage.hitInfo.hitLocations[impactMessage.hitIndex] = spreadCache.hitInfo.hitLocations[spreadCache.internalIndex];
-        } else {
-          Log.LogWrite(" no buildin stray\n");
-          Log.LogWrite("  and position was:" + impactMessage.hitInfo.hitPositions[impactMessage.hitIndex] + "\n");
-          impactMessage.hitInfo.hitPositions[impactMessage.hitIndex] = spreadCache.hitInfo.hitPositions[spreadCache.internalIndex];
-          CustomAmmoCategoriesLog.Log.LogWrite("  become:" + impactMessage.hitInfo.hitPositions[impactMessage.hitIndex] + "\n");
-        }
-      } else
-      if (impactMessage.hitIndex >= impactMessage.hitInfo.numberOfShots) {
-        CustomAmmoCategoriesLog.Log.LogWrite("OnAttackSequenceImpact AOE damage detected");
-        List<AOEHitInfo> AOEHitsInfo = CustomAmmoCategories.getAOEHitInfo(impactMessage.hitInfo, impactMessage.hitInfo.numberOfShots - 1);
-        if (AOEHitsInfo != null) {
-          CustomAmmoCategoriesLog.Log.LogWrite(" AOE Hit info found. Searching record...\n");
-          AOEHitInfo curAoEHitInfo = null;
-          for(int aoeGroup = 0;aoeGroup < AOEHitsInfo.Count; ++aoeGroup) {
-            int startHitIndex = AOEHitsInfo[aoeGroup].RealHitIndex;
-            int endHitIndex = startHitIndex + AOEHitsInfo[aoeGroup].hitInfo.hitLocations.Length;
-            Log.LogWrite("  Group:" + aoeGroup + ":"+ AOEHitsInfo[aoeGroup].targetGUID+ ":"+startHitIndex+"-"+(endHitIndex-1) +"\n");
-            if ((impactMessage.hitIndex >= startHitIndex) && (impactMessage.hitIndex < endHitIndex)) {
-              int localHitIndex = impactMessage.hitIndex - AOEHitsInfo[aoeGroup].RealHitIndex;
-              curAoEHitInfo = AOEHitsInfo[aoeGroup];
-              Log.LogWrite("   found. AoE location:("+localHitIndex+")"+ curAoEHitInfo.hitInfo.hitLocations[localHitIndex] + " Cons location:"+ impactMessage.hitInfo.hitLocations[impactMessage.hitIndex] + "\n");
-              break;
-            }
+    [HarmonyPatch(typeof(AttackDirector.AttackSequence))]
+    [HarmonyPatch("OnAttackSequenceImpact")]
+    [HarmonyPatch(new Type[] { typeof(MessageCenterMessage) })]
+    public static class AttackSequence_OnAttackSequenceImpactAOE {
+      [HarmonyPriority(Priority.First)]
+      public static bool Prefix(AttackDirector.AttackSequence __instance, ref ImpactAOEState __state, ref MessageCenterMessage message) {
+        /*AttackSequenceImpactMessage impactMessage = (AttackSequenceImpactMessage)message;
+        if (impactMessage.hitInfo.attackSequenceId != __instance.id) { return true; }
+        __state = new ImpactAOEState(__instance.chosenTarget, impactMessage.hitInfo);
+        SpreadHitRecord spreadCache = CustomAmmoCategories.getSpreadCache(impactMessage.hitInfo, impactMessage.hitIndex);
+        if (spreadCache != null) {
+          CustomAmmoCategoriesLog.Log.LogWrite("Spread cache found\n");
+          ICombatant SpreadTarget = __instance.Director.Combat.FindCombatantByGUID(spreadCache.targetGUID);
+          if (SpreadTarget != null) {
+            __instance.chosenTarget = SpreadTarget;
           }
-          if (curAoEHitInfo == null) {
-            Log.LogWrite("WARNING!AoE record for hitIndex:" + impactMessage.hitIndex + " not found\n", true);
+          CustomAmmoCategoriesLog.Log.LogWrite(" Altering internal target spread " + spreadCache.targetGUID + " found:" + ((SpreadTarget != null) ? SpreadTarget.DisplayName : "false") + "\n");
+          if (impactMessage.hitInfo.secondaryTargetIds[impactMessage.hitIndex] == spreadCache.targetGUID) {
+            Log.LogWrite(" assume buildin stray. keep hit position. alter hit location:" + impactMessage.hitInfo.hitLocations[impactMessage.hitIndex] + " -> " + spreadCache.hitInfo.hitLocations[spreadCache.internalIndex] + "\n");
+            impactMessage.hitInfo.hitLocations[impactMessage.hitIndex] = spreadCache.hitInfo.hitLocations[spreadCache.internalIndex];
           } else {
-            ICombatant AOETarget = __instance.Director.Combat.FindCombatantByGUID(curAoEHitInfo.targetGUID);
-            if (AOETarget != null) {
-              __instance.chosenTarget = AOETarget;
-            }
-            CustomAmmoCategoriesLog.Log.LogWrite(" Altering internal target " + curAoEHitInfo.targetGUID + " found:" + ((AOETarget != null) ? AOETarget.DisplayName : "false") + "\n");
+            Log.LogWrite(" no buildin stray\n");
+            Log.LogWrite("  and position was:" + impactMessage.hitInfo.hitPositions[impactMessage.hitIndex] + "\n");
+            impactMessage.hitInfo.hitPositions[impactMessage.hitIndex] = spreadCache.hitInfo.hitPositions[spreadCache.internalIndex];
+            CustomAmmoCategoriesLog.Log.LogWrite("  become:" + impactMessage.hitInfo.hitPositions[impactMessage.hitIndex] + "\n");
           }
-        } else {
-          CustomAmmoCategoriesLog.Log.LogWrite("WARNING!Can't found AOE record\n", true);
-        }
-      }
-      return true;
-    }
-
-    [HarmonyPriority(Priority.Last)]
-    public static void Postfix(AttackDirector.AttackSequence __instance, ref ImpactAOEState __state, ref MessageCenterMessage message) {
-      AttackSequenceImpactMessage impactMessage = (AttackSequenceImpactMessage)message;
-      if (impactMessage.hitInfo.attackSequenceId != __instance.id) { return; }
-      if (__state != null) {
-        CustomAmmoCategoriesLog.Log.LogWrite("OnAttackSequenceImpact restoring original target and hit info "+__state.target.DisplayName+":"+__state.target.GUID+"\n");
-        __instance.chosenTarget = __state.target;
-        //impactMessage.hitInfo = __state.hitInfo;
-      }
-    }
-  }
-  [HarmonyPatch(typeof(Mech))]
-  [HarmonyPatch("DamageLocation")]
-  [HarmonyPatch(new Type[] { typeof(int), typeof(WeaponHitInfo), typeof(ArmorLocation), typeof(Weapon), typeof(float), typeof(int), typeof(AttackImpactQuality), typeof(DamageType) })]
-  public static class Mech_DamageLocation {
-    [HarmonyPriority(Priority.First)]
-    public static bool Prefix(Mech __instance, int originalHitLoc, WeaponHitInfo hitInfo, ArmorLocation aLoc, Weapon weapon, float totalDamage, int hitIndex, AttackImpactQuality impactQuality, DamageType damageType) {
-      CustomAmmoCategoriesLog.Log.LogWrite("DamageLocation " + __instance.DisplayName + " " + __instance.GUID + " loc:" + aLoc.ToString() + " dmg:" + totalDamage + " shot:" + hitIndex + "\n");
-      return true;
-    }
-  }
-  [HarmonyPatch(typeof(WeaponEffect))]
-  [HarmonyPatch("DestroyFlimsyObjects")]
-  [HarmonyPatch(new Type[] { })]
-  public static class WeaponEffect_DestroyFlimsyObjects {
-    [HarmonyPriority(Priority.First)]
-    public static bool Prefix(WeaponEffect __instance) {
-      if (!__instance.shotsDestroyFlimsyObjects) {
+        } else
+        if (impactMessage.hitIndex >= impactMessage.hitInfo.numberOfShots) {
+          Log.LogWrite("OnAttackSequenceImpact AOE damage detected");
+          /*List<AOEHitInfo> AOEHitsInfo = CustomAmmoCategories.getAOEHitInfo(impactMessage.hitInfo, impactMessage.hitInfo.numberOfShots - 1);
+          if (AOEHitsInfo != null) {
+            Log.LogWrite(" AOE Hit info found. Searching record...\n");
+            AOEHitInfo curAoEHitInfo = null;
+            for (int aoeGroup = 0; aoeGroup < AOEHitsInfo.Count; ++aoeGroup) {
+              int startHitIndex = AOEHitsInfo[aoeGroup].RealHitIndex;
+              int endHitIndex = startHitIndex + AOEHitsInfo[aoeGroup].hitInfo.hitLocations.Length;
+              Log.LogWrite("  Group:" + aoeGroup + ":" + AOEHitsInfo[aoeGroup].targetGUID + ":" + startHitIndex + "-" + (endHitIndex - 1) + "\n");
+              if ((impactMessage.hitIndex >= startHitIndex) && (impactMessage.hitIndex < endHitIndex)) {
+                int localHitIndex = impactMessage.hitIndex - AOEHitsInfo[aoeGroup].RealHitIndex;
+                curAoEHitInfo = AOEHitsInfo[aoeGroup];
+                Log.LogWrite("   found. AoE location:(" + localHitIndex + ")" + curAoEHitInfo.hitInfo.hitLocations[localHitIndex] + " Cons location:" + impactMessage.hitInfo.hitLocations[impactMessage.hitIndex] + "\n");
+                break;
+              }
+            }
+            if (curAoEHitInfo == null) {
+              Log.LogWrite("WARNING!AoE record for hitIndex:" + impactMessage.hitIndex + " not found\n", true);
+            } else {
+              ICombatant AOETarget = __instance.Director.Combat.FindCombatantByGUID(curAoEHitInfo.targetGUID);
+              if (AOETarget != null) {
+                __instance.chosenTarget = AOETarget;
+              }
+              Log.LogWrite(" Altering internal target " + curAoEHitInfo.targetGUID + " found:" + ((AOETarget != null) ? AOETarget.DisplayName : "false") + "\n");
+            }
+          } else {
+            Log.LogWrite("WARNING!Can't found AOE record\n", true);
+          }
+        }*/
         return true;
       }
-      if (CustomAmmoCategories.isWeaponAOECapable(__instance.weapon) == false) { return true; };
-      float AOERange = CustomAmmoCategories.getWeaponAOERange(__instance.weapon);
-      Vector3 endPos = (Vector3)typeof(WeaponEffect).GetField("endPos", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(__instance);
-      CombatGameState Combat = (CombatGameState)typeof(WeaponEffect).GetField("Combat", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(__instance);
-      foreach (Collider collider in Physics.OverlapSphere(endPos, AOERange, -5, QueryTriggerInteraction.Ignore)) {
-        DestructibleObject component = collider.gameObject.GetComponent<DestructibleObject>();
-        if ((UnityEngine.Object)component != (UnityEngine.Object)null && component.isFlimsy) {
-          Vector3 normalized = (collider.transform.position - endPos).normalized;
-          float forceMagnitude = __instance.weapon.DamagePerShot + Combat.Constants.ResolutionConstants.FlimsyDestructionForceMultiplier;
-          component.TakeDamage(endPos, normalized, forceMagnitude);
-          component.Collapse(normalized, forceMagnitude);
-        }
+
+      [HarmonyPriority(Priority.Last)]
+      public static void Postfix(AttackDirector.AttackSequence __instance, ref ImpactAOEState __state, ref MessageCenterMessage message) {
+        /*AttackSequenceImpactMessage impactMessage = (AttackSequenceImpactMessage)message;
+        if (impactMessage.hitInfo.attackSequenceId != __instance.id) { return; }
+        if (__state != null) {
+          CustomAmmoCategoriesLog.Log.LogWrite("OnAttackSequenceImpact restoring original target and hit info " + __state.target.DisplayName + ":" + __state.target.GUID + "\n");
+          __instance.chosenTarget = __state.target;
+          //impactMessage.hitInfo = __state.hitInfo;
+        }*/
       }
-      return true;
     }
-  }
-  [HarmonyPatch(typeof(MissileEffect))]
-  [HarmonyPatch("PlayImpact")]
-  [HarmonyPatch(new Type[] { })]
-  public static class MissileEffect_PlayImpactScorch {
-    [HarmonyPriority(Priority.First)]
-    public static void Postfix(WeaponEffect __instance) {
-      if (CustomAmmoCategories.isWeaponAOECapable(__instance.weapon) == false) { return; };
-      int hitIndex = (int)typeof(WeaponEffect).GetField("hitIndex", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(__instance);
-      float AOERange = CustomAmmoCategories.getWeaponAOERange(__instance.weapon);
-      Vector3 endPos = (Vector3)typeof(WeaponEffect).GetField("endPos", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(__instance);
-      CombatGameState Combat = (CombatGameState)typeof(WeaponEffect).GetField("Combat", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(__instance);
-      float num3 = AOERange;
-      FootstepManager.Instance.AddScorch(endPos, new Vector3(Random.Range(0.0f, 1f), 0.0f, Random.Range(0.0f, 1f)).normalized, new Vector3(num3, num3, num3), false);
-      return;
+    [HarmonyPatch(typeof(Mech))]
+    [HarmonyPatch("DamageLocation")]
+    [HarmonyPatch(new Type[] { typeof(int), typeof(WeaponHitInfo), typeof(ArmorLocation), typeof(Weapon), typeof(float), typeof(int), typeof(AttackImpactQuality), typeof(DamageType) })]
+    public static class Mech_DamageLocation {
+      [HarmonyPriority(Priority.First)]
+      public static bool Prefix(Mech __instance, int originalHitLoc, WeaponHitInfo hitInfo, ArmorLocation aLoc, Weapon weapon, float totalDamage, int hitIndex, AttackImpactQuality impactQuality, DamageType damageType) {
+        CustomAmmoCategoriesLog.Log.LogWrite("DamageLocation " + __instance.DisplayName + " " + __instance.GUID + " loc:" + aLoc.ToString() + " dmg:" + totalDamage + " shot:" + hitIndex + "\n");
+        return true;
+      }
     }
-  }
-  [HarmonyPatch(typeof(CombatGameState))]
-  [HarmonyPatch("OnCombatGameDestroyed")]
-  [HarmonyPatch(MethodType.Normal)]
-  [HarmonyPatch(new Type[] { })]
-  public static class CombatGameState_OnCombatGameDestroyedAoE {
-    public static bool Prefix(CombatGameState __instance) {
-      if(CustomAmmoCategories.SpreadCache != null) CustomAmmoCategories.SpreadCache.Clear();
-      if (CustomAmmoCategories.AOEDamageCache != null) CustomAmmoCategories.AOEDamageCache.Clear();
-      if (CustomAmmoCategories.MissileCurveCache != null) CustomAmmoCategories.MissileCurveCache.Clear();
-      return true;
+    [HarmonyPatch(typeof(WeaponEffect))]
+    [HarmonyPatch("DestroyFlimsyObjects")]
+    [HarmonyPatch(new Type[] { })]
+    public static class WeaponEffect_DestroyFlimsyObjects {
+      [HarmonyPriority(Priority.First)]
+      public static bool Prefix(WeaponEffect __instance) {
+        if (!__instance.shotsDestroyFlimsyObjects) {
+          return true;
+        }
+        if (CustomAmmoCategories.isWeaponAOECapable(__instance.weapon) == false) { return true; };
+        float AOERange = CustomAmmoCategories.getWeaponAOERange(__instance.weapon);
+        Vector3 endPos = (Vector3)typeof(WeaponEffect).GetField("endPos", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(__instance);
+        CombatGameState Combat = (CombatGameState)typeof(WeaponEffect).GetField("Combat", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(__instance);
+        foreach (Collider collider in Physics.OverlapSphere(endPos, AOERange, -5, QueryTriggerInteraction.Ignore)) {
+          DestructibleObject component = collider.gameObject.GetComponent<DestructibleObject>();
+          if ((UnityEngine.Object)component != (UnityEngine.Object)null && component.isFlimsy) {
+            Vector3 normalized = (collider.transform.position - endPos).normalized;
+            float forceMagnitude = __instance.weapon.DamagePerShot + Combat.Constants.ResolutionConstants.FlimsyDestructionForceMultiplier;
+            component.TakeDamage(endPos, normalized, forceMagnitude);
+            component.Collapse(normalized, forceMagnitude);
+          }
+        }
+        return true;
+      }
+    }
+    [HarmonyPatch(typeof(MissileEffect))]
+    [HarmonyPatch("PlayImpact")]
+    [HarmonyPatch(new Type[] { })]
+    public static class MissileEffect_PlayImpactScorch {
+      [HarmonyPriority(Priority.First)]
+      public static void Postfix(WeaponEffect __instance) {
+        if (CustomAmmoCategories.isWeaponAOECapable(__instance.weapon) == false) { return; };
+        int hitIndex = (int)typeof(WeaponEffect).GetField("hitIndex", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(__instance);
+        float AOERange = CustomAmmoCategories.getWeaponAOERange(__instance.weapon);
+        Vector3 endPos = (Vector3)typeof(WeaponEffect).GetField("endPos", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(__instance);
+        CombatGameState Combat = (CombatGameState)typeof(WeaponEffect).GetField("Combat", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(__instance);
+        float num3 = AOERange;
+        FootstepManager.Instance.AddScorch(endPos, new Vector3(Random.Range(0.0f, 1f), 0.0f, Random.Range(0.0f, 1f)).normalized, new Vector3(num3, num3, num3), false);
+        return;
+      }
+    }
+    [HarmonyPatch(typeof(CombatGameState))]
+    [HarmonyPatch("OnCombatGameDestroyed")]
+    [HarmonyPatch(MethodType.Normal)]
+    [HarmonyPatch(new Type[] { })]
+    public static class CombatGameState_OnCombatGameDestroyedAoE {
+      public static bool Prefix(CombatGameState __instance) {
+        //if (CustomAmmoCategories.SpreadCache != null) CustomAmmoCategories.SpreadCache.Clear();
+        //if (CustomAmmoCategories.AOEDamageCache != null) CustomAmmoCategories.AOEDamageCache.Clear();
+        //if (CustomAmmoCategories.MissileCurveCache != null) CustomAmmoCategories.MissileCurveCache.Clear();
+        //WeaponEffect_Init.Clear();
+        return true;
+      }
     }
   }
 }

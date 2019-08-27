@@ -127,7 +127,7 @@ namespace CustAmmoCategories {
       if (this.hideOriginal()) {
         result.Add(this.quadTreeData);
       }
-      if (this.isTree && (CustomAmmoCategories.Settings.DontShowBurnedTrees == false)) {
+      if (this.isTree && (CustomAmmoCategories.Settings.DontShowBurnedTrees == false)&&(CustomAmmoCategories.Settings.DontShowBurnedTreesTemporary == false)) {
         CustomAmmoCategoriesLog.Log.LogWrite(" add tree same position as burned\n");
         if (this.showBurned()) {
           result.Add(this.burnedTreeData);
@@ -401,7 +401,11 @@ namespace CustAmmoCategoriesPatches {
               DynamicTreesHelper.burnedTreePrototype = newPrototype;
               CustomAmmoCategoriesLog.Log.LogWrite(" initing burned success\n");
               foreach (QuadTreePrototype prototype in quadTreePrototypes) {
-                DynamicTreesHelper.burnedTreePrototypes.Add(prototype, newPrototype);
+                if (DynamicTreesHelper.burnedTreePrototypes.ContainsKey(prototype) == false) { 
+                  DynamicTreesHelper.burnedTreePrototypes.Add(prototype, newPrototype);
+                } else {
+                  DynamicTreesHelper.burnedTreePrototypes[prototype] = newPrototype;
+                }
               }
               QuadTreePrototype[] newTreePrototypes = new QuadTreePrototype[quadTreePrototypes.Length + 1];
               quadTreePrototypes.CopyTo(newTreePrototypes, 0);
@@ -420,7 +424,7 @@ namespace CustAmmoCategoriesPatches {
           foreach (QuadTreePrototype prototype in quadTreePrototypes) {
             CustomAmmoCategoriesLog.Log.LogWrite(" " + prototype.name + "\n");
           }
-          if ((DynamicTreesHelper.burnedTreePrototype != null) && (CustomAmmoCategories.Settings.DontShowBurnedTrees == false)) {
+          if ((DynamicTreesHelper.burnedTreePrototype != null) && (CustomAmmoCategories.Settings.DontShowBurnedTrees == false) && (CustomAmmoCategories.Settings.DontShowBurnedTreesTemporary == false)) {
             CustomAmmoCategoriesLog.Log.LogWrite("Installing burned trees. All trees-like objects count: (" + CACDynamicTree.allCACTrees.Count + "):\n");
             int counter = 0;
             foreach (CACDynamicTree cacTree in CACDynamicTree.allCACTrees) {
@@ -451,6 +455,8 @@ namespace CustAmmoCategoriesPatches {
             IDictionary dataDictionary = (IDictionary)dataDictionaryField.GetValue(quadTreeNodes[t]);
             CustomAmmoCategoriesLog.Log.LogWrite("   children = " + ((children == null) ? "null" : children.Count.ToString()) + "\n");
             CustomAmmoCategoriesLog.Log.LogWrite("   dataDictionary = " + ((dataDictionary == null) ? "null" : dataDictionary.Count.ToString()) + "\n");
+            if (dataDictionary == null) { continue; }
+            if (children == null) { continue; }
             if (dataDictionary.Count > 0) {
               IDictionaryEnumerator idataDictionary = dataDictionary.GetEnumerator();
               while (idataDictionary.MoveNext()) {
@@ -472,7 +478,7 @@ namespace CustAmmoCategoriesPatches {
         }
       } catch (Exception e) {
         Log.LogWrite("Fail to setup burned trees. Burned trees will not be shown: "+e.ToString()+"\n",true);
-        CustomAmmoCategories.Settings.DontShowBurnedTrees = true;
+        CustomAmmoCategories.Settings.DontShowBurnedTreesTemporary = true;
       }
     }
   }

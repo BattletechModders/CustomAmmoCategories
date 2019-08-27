@@ -11,7 +11,7 @@ using BattleTech.UI;
 
 namespace CustAmmoCategories {
   public static partial class CustomAmmoCategories {
-    public static WeaponCategory isWeaponUseInMelee(Weapon weapon) {
+    public static WeaponCategory isWeaponUseInMelee(this Weapon weapon) {
       if (weapon.Category != WeaponCategory.AntiPersonnel) { return weapon.Category; };
       ExtWeaponDef extWeapon = CustomAmmoCategories.getExtWeaponDef(weapon.defId);
       if (extWeapon.NotUseInMelee != TripleBoolean.True) { return weapon.Category; };

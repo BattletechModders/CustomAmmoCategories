@@ -82,6 +82,19 @@ namespace CustAmmoCategories {
       return AMSWeaponEffectStaticHelper.amsEffects[weapon];
     }
     public static AMSWeaponEffect InitAMSWeaponEffect(this Weapon weapon) {
+      string prefabName = AMSMultiShotWeaponEffect.AMSPrefabPrefix + weapon.getWeaponEffectID();
+      Log.LogWrite("AMSWeaponEffect.InitAMSWeaponEffect getting from pool:" + prefabName + "\n");
+      GameObject AMSgameObject = weapon.parent.Combat.DataManager.PooledInstantiate(prefabName, BattleTechResourceType.Prefab, new Vector3?(), new Quaternion?(), (Transform)null);
+      AMSWeaponEffect amsComponent = null;
+      if (AMSgameObject != null) {
+        Log.LogWrite(" getted from pool: " + AMSgameObject.GetInstanceID() + "\n");
+        amsComponent = AMSgameObject.GetComponent<AMSWeaponEffect>();
+        if (amsComponent != null) {
+          amsComponent.Init(weapon);
+          return amsComponent;
+        }
+      }
+      Log.LogWrite(" not in pool. instansing.\n");
       WeaponEffect we = weapon.getWeaponEffect();
       if (we == null) {
         Log.LogWrite("WARNING! Has no weapon effect. No main weapon effect no AMS fire effect!\n");
@@ -134,11 +147,11 @@ namespace CustAmmoCategories {
         return null;
       }
     }
-    public static void Clear() {
+    public static void Clear(bool full = true) {
       foreach(var ams in AMSWeaponEffectStaticHelper.amsEffects) {
         ams.Value.Clear();
       }
-      AMSWeaponEffectStaticHelper.amsEffects.Clear();
+      if(full)AMSWeaponEffectStaticHelper.amsEffects.Clear();
     }
   }
   public class AMSMainEffect {
@@ -211,16 +224,22 @@ namespace CustAmmoCategories {
       }
     }
     public void Clear() {
+      Log.LogWrite("AMSMMainEffect.Clear\n");
+      string prefabName = AMSMultiShotWeaponEffect.AMSPrefabPrefix + weapon.getWeaponEffectID();
       foreach (var effect in this.singleShotsEffects) {
         if (effect == null) { continue;  }
         effect.Reset();
-        GameObject.Destroy(effect.gameObject);
+        Log.LogWrite(" returning to pool " + prefabName + " " + effect.gameObject.GetInstanceID() + "\n");
+        this.weapon.parent.Combat.DataManager.PoolGameObject(prefabName,effect.gameObject);
+        //GameObject.Destroy(effect.gameObject);
       }
       singleShotsEffects.Clear();
       hitPositions.Clear();
       if (this.multyShotEffect != null) {
+        this.multyShotEffect.Reset();
         this.multyShotEffect.ClearBullets();
-        GameObject.Destroy(this.multyShotEffect);
+        Log.LogWrite(" returning to pool " + prefabName + " " + multyShotEffect.gameObject.GetInstanceID() + "\n");
+        this.weapon.parent.Combat.DataManager.PoolGameObject(prefabName, multyShotEffect.gameObject);
         this.multyShotEffect = null;
       };
     }

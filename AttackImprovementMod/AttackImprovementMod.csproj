@@ -44,6 +44,9 @@
     <Reference Include="Assembly-CSharp-firstpass">
       <HintPath>..\..\BattleTech_Data\Managed\Assembly-CSharp-firstpass.dll</HintPath>
     </Reference>
+    <Reference Include="CustomUnits">
+      <HintPath>..\..\Mods\CustomUnits\CustomUnits.dll</HintPath>
+    </Reference>
     <Reference Include="Newtonsoft.Json, Version=6.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\BattleTech_Data\Managed\Newtonsoft.Json.dll</HintPath>
@@ -90,6 +93,12 @@
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Properties\" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\CustomAmmoCategories\CustomAmmoCategories.csproj">
+      <Project>{88bb9ff5-da8f-4e02-9554-58595e34378c}</Project>
+      <Name>CustomAmmoCategories</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>

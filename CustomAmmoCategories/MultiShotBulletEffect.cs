@@ -1,6 +1,9 @@
 ﻿using BattleTech;
+using BattleTech.Data;
+using BattleTech.Rendering;
 using CustomAmmoCategoriesLog;
 using FluffyUnderware.Curvy;
+using Harmony;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -10,8 +13,135 @@ using UnityEngine;
 using Random = UnityEngine.Random;
 
 namespace CustAmmoCategories {
-  public class CopyAbleWeaponEffect: WeaponEffect {
+  public static class DataManagerRestoreScaleHelper {
+    public static Dictionary<int, Vector3> restoreScale = new Dictionary<int, Vector3>();
+    public static Dictionary<int, ParticleSystemScalingMode> restoreParticleScale = new Dictionary<int, ParticleSystemScalingMode>();
+    public static Dictionary<int, Vector3> restoreTrailScale = new Dictionary<int, Vector3>();
+    public static Dictionary<int, Color> restoreMaterialColor = new Dictionary<int, Color>();
+    public static void ScaleWeaponEffect(this WeaponEffect effect, GameObject go) {
+      CustomVector scale = effect.weapon.ProjectileScale();
+      if (scale.set && (go != null)) {
+        Log.LogWrite("ImprovedWeaponEffect.ScaleWeaponEffect " + go.name + " -> " + scale + "\n");
+        ParticleSystem[] psyss = go.GetComponentsInChildren<ParticleSystem>();
+        foreach (ParticleSystem psys in psyss) {
+          psys.RegisterRestoreScale();
+          var main = psys.main;
+          main.scalingMode = ParticleSystemScalingMode.Hierarchy;
+          Log.LogWrite(" " + psys.name + ":" + psys.main.scalingMode + "\n");
+        }
+        ParticleSystemRenderer[] renderers = go.GetComponentsInChildren<ParticleSystemRenderer>();
+        foreach (ParticleSystemRenderer renderer in renderers) {
+          Log.LogWrite(" " + renderer.name + ": materials\n");
+          foreach (Material material in renderer.materials) {
+            Log.LogWrite("  " + material.name + ": " + material.shader + "\n");
+          }
+        }
+        go.RegisterRestoreScale();
+        go.transform.localScale = scale.vector;
+        Component[] components = go.GetComponentsInChildren<Component>();
+        foreach (Component component in components) {
+          Log.LogWrite(" " + component.name + ":" + component.GetType().ToString() + "\n");
+        }
+        TrailRenderer[] trails = go.GetComponentsInChildren<TrailRenderer>();
+        foreach (TrailRenderer trail in trails) {
+          trail.RegisterRestoreScale();
+          trail.widthMultiplier = scale.x;
+          trail.time *= scale.y;
+          Log.LogWrite(" " + trail.name + ": materials\n");
+          foreach (Material material in trail.materials) {
+            Log.LogWrite("  " + material.name + ": " + material.shader + "\n");
+          }
+        }
+      }
+    }
+    public static void RegisterRestoreColor(this Material mat) {
+      int id = mat.GetInstanceID();
+      if(restoreMaterialColor.ContainsKey(id) == false) {
+        restoreMaterialColor.Add(id,mat.GetColor("_ColorBB"));
+      }
+    }
+    public static void RegisterRestoreScale(this GameObject go) {
+      int id = go.GetInstanceID();
+      if (restoreScale.ContainsKey(id) == false) { restoreScale.Add(id,go.transform.localScale); };
+    }
+    public static void RegisterRestoreScale(this ParticleSystem ps) {
+      int id = ps.GetInstanceID();
+      if (restoreScale.ContainsKey(id) == false) { restoreParticleScale.Add(id, ps.main.scalingMode); };
+    }
+    public static void RegisterRestoreScale(this TrailRenderer trail) {
+      int id = trail.GetInstanceID();
+      if (restoreTrailScale.ContainsKey(id) == false) {
+        Vector3 scale = Vector3.zero;
+        scale.x = trail.widthMultiplier;
+        scale.z = trail.time;
+        restoreTrailScale.Add(id, scale);
+      };
+    }
+    public static void RestoreScaleColor(this GameObject go) {
+      Log.LogWrite("RestoreScaleColor "+go.name+"\n");
+      try {
+        int id = go.GetInstanceID();
+        if (restoreScale.ContainsKey(id)) {
+          go.transform.localScale = restoreScale[id];
+          Log.LogWrite(" "+go.name + " restoring scale "+go.transform.localScale+"\n");
+          restoreScale.Remove(id);
+        }
+        ParticleSystem[] pss = go.GetComponentsInChildren<ParticleSystem>();
+        foreach(ParticleSystem ps in pss) {
+          id = ps.GetInstanceID();
+          if (restoreParticleScale.ContainsKey(id)) {
+            var main = ps.main;
+            main.scalingMode = restoreParticleScale[id];
+            Log.LogWrite(" " + ps.name + " restoring scale mode "+ main.scalingMode + "\n");
+            restoreParticleScale.Remove(id);
+          }
+        }
+        TrailRenderer[] trails = go.GetComponentsInChildren<TrailRenderer>();
+        foreach(TrailRenderer trail in trails) {
+          id = trail.GetInstanceID();
+          if (restoreTrailScale.ContainsKey(id)) {
+            Vector3 scale = restoreTrailScale[id];
+            trail.widthMultiplier = scale.x;
+            trail.time = scale.z;
+            Log.LogWrite(" " + trail.name + " restoring scale " + scale + "\n");
+            restoreTrailScale.Remove(id);
+          }
+        }
+        Renderer[] renderers = go.GetComponentsInChildren<Renderer>();
+        foreach(Renderer renderer in renderers) {
+          foreach(Material material in renderer.materials) {
+            id = material.GetInstanceID();
+            if (restoreMaterialColor.ContainsKey(id)) {
+              Color color = restoreMaterialColor[id];
+              material.SetColor("_ColorBB", restoreMaterialColor[id]);
+              Log.LogWrite(" " + material.name + " restoring color " + color + "\n");
+              restoreMaterialColor.Remove(id);
+            }
+          }
+        }
+      } catch (Exception e) { Log.LogWrite(e.ToString() + "\n", true); }
+    }
+  }
+  public abstract class CopyAbleWeaponEffect: WeaponEffect {
     private static FieldInfo fi_hasSentNextWeaponMessage = null;
+    protected bool NeedColorCalc;
+    public Color CurrentColor;
+    public Color NextColor;
+    public float colorT;
+    public float ColorChangeSpeed;
+    public int ColorIndex;
+    public ColorChangeRule colorChangeRule;
+    public Color effectiveColor;
+    public List<ColorTableJsonEntry> colorsTable;
+    public Color getNextColor() {
+      Color result = Color.white;
+      switch (colorChangeRule) {
+        case ColorChangeRule.Linear: result = colorsTable[ColorIndex % colorsTable.Count].Color; ColorIndex = (ColorIndex + 1) % colorsTable.Count; break;
+        case ColorChangeRule.Random: result = colorsTable[Random.Range(0, colorsTable.Count)].Color; break;
+        case ColorChangeRule.RandomOnce: result = colorsTable[Random.Range(0, colorsTable.Count)].Color; break;
+      }
+      return result;
+    }
     public void Init(WeaponEffect original) {
       this.impactVFXBase = original.impactVFXBase;
       this.preFireSFX = original.preFireSFX;
@@ -61,6 +191,207 @@ namespace CustAmmoCategories {
       this.shotsDestroyFlimsyObjects = original.shotsDestroyFlimsyObjects;
       this.FiringComplete = original.FiringComplete;
       this.AllowMissSkipping = original.AllowMissSkipping;
+      this.NeedColorCalc = false;
+      this.CurrentColor = Color.white;
+      this.NextColor = Color.white;
+      this.colorT = 0f;
+      this.ColorChangeSpeed = 0f;
+      this.ColorIndex = 0;
+      this.colorChangeRule = ColorChangeRule.None;
+      this.colorsTable = new List<ColorTableJsonEntry>();
+    }
+    public virtual void StoreOriginalColor() {
+
+    }
+    public virtual void SetColor(Color color) {
+
+    }
+    public virtual void RestoreOriginalColor() {
+
+    }
+    public virtual void UpdateColor() {
+      if (this.NeedColorCalc) {
+        if (this.colorT > 1f) {
+          this.CurrentColor = this.NextColor;
+          this.colorT = 0f;
+          this.NextColor = this.getNextColor();
+        }
+        Color effectiveColor = Color.Lerp(this.CurrentColor, this.NextColor, this.colorT);
+        //Log.LogWrite("MultiShotBeamEffect.Update effectiveColor:" + effectiveColor + "\n");
+        this.SetColor(effectiveColor);
+        this.colorT += this.rate * this.Combat.StackManager.GetProgressiveAttackDeltaTime(this.colorT) * this.ColorChangeSpeed;
+      }
+    }
+    protected override void PlayProjectile() {
+      this.ColorChangeSpeed = this.weapon.ColorSpeedChange();
+      this.colorsTable = this.weapon.ColorsTable();
+      this.colorChangeRule = this.weapon.colorChangeRule();
+      this.colorT = 0f;
+      this.ColorIndex = 0;
+      this.StoreOriginalColor();
+      //this.originalColor = this.beamRenderer.material.GetColor("_ColorBB");
+      Log.LogWrite(" ColorChangeSpeed " + this.ColorChangeSpeed + "\n");
+      Log.LogWrite(" colorsTable.Count " + this.colorsTable.Count + "\n");
+      Log.LogWrite(" colorChangeRule " + this.colorChangeRule + "\n");
+      this.NeedColorCalc = (this.ColorChangeSpeed > CustomAmmoCategories.Epsilon);
+      if (this.colorsTable.Count <= 1) { this.NeedColorCalc = false; };
+      if ((this.colorChangeRule != ColorChangeRule.None)&&(this.colorsTable.Count > 0)) {
+        if (this.colorsTable.Count == 1) {
+          this.CurrentColor = this.colorsTable[0].Color;
+          this.SetColor(this.CurrentColor);
+          this.NeedColorCalc = false;
+        } else if (this.colorChangeRule == ColorChangeRule.RandomOnce) {
+          this.NeedColorCalc = false;
+          this.CurrentColor = this.getNextColor();
+          this.SetColor(this.CurrentColor);
+        } else if (this.colorChangeRule >= ColorChangeRule.t0) {
+          this.NeedColorCalc = false;
+          this.ColorIndex = ((int)this.colorChangeRule - (int)ColorChangeRule.t0) % this.colorsTable.Count;
+          this.CurrentColor = this.colorsTable[this.ColorIndex].Color;
+          this.SetColor(this.CurrentColor);
+        } else {
+          this.CurrentColor = this.getNextColor();
+          this.NextColor = this.getNextColor();
+          this.SetColor(this.CurrentColor);
+        }
+      } else {
+        this.NeedColorCalc = false;
+      }
+      Log.LogWrite(" NeedColorCalc " + this.NeedColorCalc + "\n");
+      base.PlayProjectile();
+    }
+    public override void InitProjectile() {
+      base.InitProjectile();
+      this.ScaleWeaponEffect(this.projectile);
+    }
+    protected override void PlayTerrainImpactVFX() {
+      MapTerrainDataCell cellAt = this.weapon.parent.Combat.MapMetaData.GetCellAt(this.hitInfo.hitPositions[this.hitIndex]);
+      if (cellAt == null)
+        return;
+      string vfxNameModifier = cellAt.GetVFXNameModifier();
+      string str1;
+      switch (cellAt.GetAudioSurfaceType()) {
+        case AudioSwitch_surface_type.dirt:
+          str1 = "dirt" + vfxNameModifier;
+          break;
+        case AudioSwitch_surface_type.metal:
+          str1 = "metal";
+          break;
+        case AudioSwitch_surface_type.snow:
+          str1 = "snow";
+          break;
+        case AudioSwitch_surface_type.wood:
+          str1 = "wood";
+          break;
+        case AudioSwitch_surface_type.brush:
+          str1 = "brush";
+          break;
+        case AudioSwitch_surface_type.concrete:
+          str1 = "concrete" + vfxNameModifier;
+          break;
+        case AudioSwitch_surface_type.debris_glass:
+          str1 = "debris_glass" + vfxNameModifier;
+          break;
+        case AudioSwitch_surface_type.gravel:
+          str1 = "gravel";
+          break;
+        case AudioSwitch_surface_type.ice:
+          str1 = "ice";
+          break;
+        case AudioSwitch_surface_type.lava:
+          str1 = "lava";
+          break;
+        case AudioSwitch_surface_type.mud:
+          str1 = "mud";
+          break;
+        case AudioSwitch_surface_type.sand:
+          str1 = "sand";
+          break;
+        case AudioSwitch_surface_type.water_deep:
+        case AudioSwitch_surface_type.water_shallow:
+          str1 = "water";
+          break;
+        default:
+          str1 = "dirt";
+          break;
+      }
+      string str2 = string.Format("{0}_{1}", (object)this.terrainHitVFXBase, (object)str1);
+      GameObject gameObject = this.weapon.parent.Combat.DataManager.PooledInstantiate(str2, BattleTechResourceType.Prefab, new Vector3?(), new Quaternion?(), (Transform)null);
+      if ((UnityEngine.Object)gameObject == (UnityEngine.Object)null) {
+        WeaponEffect.logger.LogError((object)(this.weapon.Name + " WeaponEffect.PlayTerrainImpactVFX had an invalid VFX name: " + str2));
+      } else {
+        this.ScaleWeaponEffect(gameObject);
+        ParticleSystem component = gameObject.GetComponent<ParticleSystem>();
+        component.Stop(true);
+        component.Clear(true);
+        component.transform.position = this.endPos;
+        component.transform.LookAt(this.startingTransform.position);
+        BTCustomRenderer.SetVFXMultiplier(component);
+        component.Play(true);
+        AutoPoolObject autoPoolObject = gameObject.GetComponent<AutoPoolObject>();
+        if ((UnityEngine.Object)autoPoolObject == (UnityEngine.Object)null)
+          autoPoolObject = gameObject.AddComponent<AutoPoolObject>();
+        autoPoolObject.Init(this.weapon.parent.Combat.DataManager, str2, component);
+      }
+    }
+    protected override void PlayImpact() {
+      if (this.hitInfo.DidShotHitAnything(this.hitIndex) && !string.IsNullOrEmpty(this.impactVFXBase)) {
+        string str1 = string.Empty;
+        AbstractActor actorByGuid = this.Combat.FindActorByGUID(this.hitInfo.ShotTargetId(this.hitIndex));
+        if (actorByGuid != null && this.hitInfo.ShotHitLocation(this.hitIndex) != 65536 && (double)this.weapon.DamagePerShotAdjusted(this.weapon.parent.occupiedDesignMask) > (double)actorByGuid.ArmorForLocation(this.hitInfo.ShotHitLocation(this.hitIndex)))
+          str1 = "_crit";
+        else if (this.impactVFXVariations != null && this.impactVFXVariations.Length > 0)
+          str1 = "_" + this.impactVFXVariations[UnityEngine.Random.Range(0, this.impactVFXVariations.Length)];
+        string str2 = string.Format("{0}{1}", (object)this.impactVFXBase, (object)str1);
+        GameObject gameObject = this.weapon.parent.Combat.DataManager.PooledInstantiate(str2, BattleTechResourceType.Prefab, new Vector3?(), new Quaternion?(), (Transform)null);
+        if ((UnityEngine.Object)gameObject == (UnityEngine.Object)null) {
+          Log.LogWrite(this.weapon.Name + " WeaponEffect.PlayImpact had an invalid VFX name: " + str2+"\n");
+        } else {
+          this.ScaleWeaponEffect(gameObject);
+          ParticleSystem component = gameObject.GetComponent<ParticleSystem>();
+          component.Stop(true);
+          component.Clear(true);
+          component.transform.position = this.endPos;
+          component.transform.LookAt(this.startingTransform.position);
+          BTCustomRenderer.SetVFXMultiplier(component);
+          component.Play(true);
+          BTLightAnimator componentInChildren = gameObject.GetComponentInChildren<BTLightAnimator>(true);
+          if ((UnityEngine.Object)componentInChildren != (UnityEngine.Object)null) {
+            componentInChildren.StopAnimation();
+            componentInChildren.PlayAnimation();
+          }
+          AutoPoolObject autoPoolObject = gameObject.GetComponent<AutoPoolObject>();
+          if ((UnityEngine.Object)autoPoolObject == (UnityEngine.Object)null)
+            autoPoolObject = gameObject.AddComponent<AutoPoolObject>();
+          autoPoolObject.Init(this.weapon.parent.Combat.DataManager, str2, component);
+        }
+      }
+      this.PlayImpactDamageOverlay();
+      if ((UnityEngine.Object)this.projectileMeshObject != (UnityEngine.Object)null)
+        this.projectileMeshObject.SetActive(false);
+      if ((UnityEngine.Object)this.projectileLightObject != (UnityEngine.Object)null)
+        this.projectileLightObject.SetActive(false);
+      this.OnImpact(0.0f);
+    }
+
+    //public virtual void RestoreScale() {
+    //  if (scaled == false) { return; }
+    //  if (this.projectileTransform != null) { this.projectileTransform.localScale = this.originalProjectileScale; };
+    //  if (this.projectileLightObject != null) { this.projectileLightObject.transform.localScale = this.originalLightScale; }
+    //  foreach(var ps in originalParticleScaling) {
+    //    var main = ps.Key.main;
+    //    main.scalingMode = ps.Value;
+    //  }
+    //  originalParticleScaling.Clear();
+    //  scaled = false;
+    //}
+    protected override void OnComplete() {
+      //this.RestoreScale();
+      base.OnComplete();
+    }
+    public override void Reset() {
+      //this.RestoreScale();
+      base.Reset();
     }
     protected bool hasSentNextWeaponMessage {
       get {
@@ -154,7 +485,7 @@ namespace CustAmmoCategories {
       this.parentLauncher = parentLauncher;
       this.weapon = weapon;
       this.weaponRep = weapon.weaponRep;
-      this.projectileSpeed = parentLauncher.projectileSpeed;
+      this.projectileSpeed = parentLauncher.projectileSpeed * weapon.ProjectileSpeedMultiplier();
       if(this.spline == null) {
         this.spline = this.gameObject.AddComponent<CurvySpline>();
       }
@@ -168,10 +499,13 @@ namespace CustAmmoCategories {
       this.endPos = endPos;
       hitInfo.hitPositions[hitIndex] = endPos;
       Log.LogWrite(" endPos restored:" + this.endPos + "\n");
-      endPos.x += Random.Range(-this.parentLauncher.spreadAngle, this.parentLauncher.spreadAngle);
-      endPos.y += Random.Range(-this.parentLauncher.spreadAngle, this.parentLauncher.spreadAngle);
-      endPos.z += Random.Range(-this.parentLauncher.spreadAngle, this.parentLauncher.spreadAngle);
-      this.endPos = endPos;
+      AdvWeaponHitInfoRec advRec = this.hitInfo.advRec(hitIndex);
+      //if (pb == false) {
+        endPos.x += Random.Range(-this.parentLauncher.spreadAngle, this.parentLauncher.spreadAngle);
+        endPos.y += Random.Range(-this.parentLauncher.spreadAngle, this.parentLauncher.spreadAngle);
+        endPos.z += Random.Range(-this.parentLauncher.spreadAngle, this.parentLauncher.spreadAngle);
+        this.endPos = endPos;
+      //}
       float num = Vector3.Distance(this.startingTransform.position, this.endPos);
       if (this.parentLauncher.isIndirect) {
         this.GenerateIndirectMissilePath();
@@ -187,7 +521,15 @@ namespace CustAmmoCategories {
         this.duration = 4f;
       this.rate = 1f / this.duration;
       this.PlayPreFire();
-      ShrapnelHitRecord shrapnelHitRecord = CustomAmmoCategories.getShrapnelCache(this.hitInfo, this.hitIndex);
+      if (advRec == null) {
+        Log.LogWrite(" no advanced record.");
+        return;
+      }
+      if (advRec.fragInfo.separated && (advRec.fragInfo.fragStartHitIndex >= 0) && (advRec.fragInfo.fragsCount > 0)) {
+        Log.LogWrite(" frag projectile separated.");
+        this.RegisterFragWeaponEffect();
+      }
+      /*ShrapnelHitRecord shrapnelHitRecord = CustomAmmoCategories.getShrapnelCache(this.hitInfo, this.hitIndex);
       if (shrapnelHitRecord != null) {
         CustomAmmoCategoriesLog.Log.LogWrite(" shrapnel Hit info found:" + shrapnelHitRecord.shellsHitIndex + "\n");
         if (shrapnelHitRecord.isSeparated == true) {
@@ -195,6 +537,34 @@ namespace CustAmmoCategories {
         } else {
           CustomAmmoCategoriesLog.Log.LogWrite(" not separated\n");
         }
+      }*/
+    }
+    //public Color originalColor;
+    public TrailRenderer trailRendered;
+    public override void StoreOriginalColor() {
+      this.trailRendered = this.projectile.GetComponentInChildren<TrailRenderer>();
+      if (trailRendered != null) {
+        this.trailRendered.material.RegisterRestoreColor();
+      };
+    }
+    public override void SetColor(Color color) {
+      float coeff = color.maxColorComponent;
+      Color tempColor = Color.white;
+      tempColor.a = 1f;
+      tempColor.r = (color.r / coeff) * 8.0f + 1f;
+      tempColor.g = (color.g / coeff) * 8.0f + 1f;
+      tempColor.b = (color.b / coeff) * 8.0f + 1f;
+      if (trailRendered != null) {  this.trailRendered.material.SetColor("_ColorBB", tempColor); };
+    }
+    public override void RestoreOriginalColor() {
+      //if (trailRendered != null) { this.trailRendered.material.SetColor("_ColorBB", this.originalColor); };
+    }
+    public override void InitProjectile() {
+      base.InitProjectile();
+      Log.LogWrite("MultiShotBulletEffect.InitProjectile\n");
+      Component[] components = this.projectile.GetComponentsInChildren<Component>();
+      foreach (Component component in components) {
+        Log.LogWrite(" " + component.name + ":" + component.GetType().ToString() + "\n");
       }
     }
 
@@ -217,6 +587,7 @@ namespace CustAmmoCategories {
       if (this.currentState != WeaponEffect.WeaponEffectState.Firing)
         return;
       if ((double)this.t < 1.0) {
+        this.UpdateColor();
         if (this.spline.Count > 0) {
           this.currentPos = this.spline.InterpolateByDistance(this.spline.Length * this.t);
           this.projectileTransform.position = this.currentPos;
@@ -246,7 +617,7 @@ namespace CustAmmoCategories {
       if (this.primeBullet) {
         Log.LogWrite(" prime. Damage message fired\n");
         float damage = this.weapon.DamagePerShotAdjusted(this.weapon.parent.occupiedDesignMask);
-        if (this.weapon.DamagePerPallet()) { damage /= this.weapon.ProjectilesPerShot; };
+        if (this.weapon.DamagePerPallet()&&(this.weapon.DamageNotDivided() == false)) { damage /= this.weapon.ProjectilesPerShot; };
         base.OnImpact(damage);
       } else {
         Log.LogWrite(" no prime. No damage message fired\n");

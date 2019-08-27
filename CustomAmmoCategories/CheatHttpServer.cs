@@ -408,7 +408,7 @@ namespace CustAmmoCategories
                             if (itm.type == BattleTech.ShopItemType.Mech)
                             {
                                 gameState.CurSystem.SystemShop.ActiveInventory.Add(new BattleTech.ShopDefItem(itm.name, BattleTech.ShopItemType.Mech, 0.0f, itm.count, false, false, itm.price));
-                                gameState.AddFunds(itm.price);
+                                //gameState.AddFunds(itm.price);
                             }
                             else
                             {
