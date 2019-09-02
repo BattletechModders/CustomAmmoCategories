@@ -357,14 +357,7 @@ namespace CustomAmmoCategoriesPatches {
       }
       return result;
     }
-    public static void Postfix(ToHit __instance, AbstractActor attacker, Weapon weapon, ICombatant target, Vector3 attackPosition, Vector3 targetPosition, LineOfFireLevel lofLevel, bool isCalledShot, ref float __result) {
-      bool flag = lofLevel < LineOfFireLevel.LOFObstructed && (CustomAmmoCategories.getIndirectFireCapable(weapon));
-      float num = __result;
-      if (flag == false) {
-        //float directFireModifier = CustomAmmoCategories.getDirectFireModifier(weapon);
-        //CustomAmmoCategoriesLog.Log.LogWrite(attacker.DisplayName+" has LOS on "+target.DisplayName+ ". Apply DirectFireModifier "+directFireModifier+"\n");
-        num += CustomAmmoCategories.getDirectFireModifier(weapon);
-      }
+    public static float GetDistanceModifier(this Weapon weapon, Vector3 attackPosition, Vector3 targetPosition) {
       float distance = Vector3.Distance(attackPosition, targetPosition);
       float distMod = 0f;
       float minRange = weapon.MinRange;
@@ -372,25 +365,41 @@ namespace CustomAmmoCategoriesPatches {
       float medRange = weapon.MediumRange;
       float longRange = weapon.LongRange;
       float maxRange = weapon.MaxRange;
-      //Log.LogWrite("ToHit " + weapon.defId + " distance: " + distance + " ranges:" + minRange + "/" + shortRange + "/" + medRange + "/" + longRange + "/" + maxRange + " mods:"
-      //  + weapon.parent.MinRangeAccMod() + "/" + weapon.parent.ShortRangeAccMod() + "/" + weapon.parent.MediumRangeAccMod() + "/" + weapon.parent.LongRangeRangeAccMod() + "/" + weapon.parent.ExtraLongRangeAccMod());
-      if (distance < minRange) { distMod = weapon.parent.MinRangeAccMod();
+      if (distance < minRange) {
+        distMod = weapon.parent.MinRangeAccMod();
         //Log.LogWrite(" minRange "); 
       } else
-      if (distance < shortRange) { distMod = weapon.parent.ShortRangeAccMod();
+      if (distance < shortRange) {
+        distMod = weapon.parent.ShortRangeAccMod();
         //Log.LogWrite(" shortRange ");
       } else
-      if (distance < medRange) { distMod = weapon.parent.MediumRangeAccMod();
+      if (distance < medRange) {
+        distMod = weapon.parent.MediumRangeAccMod();
         //Log.LogWrite(" medRange ");
       } else
-      if (distance < longRange) { distMod = weapon.parent.LongRangeRangeAccMod();
+      if (distance < longRange) {
+        distMod = weapon.parent.LongRangeRangeAccMod();
         //Log.LogWrite(" longRange ");
       } else
-      if (distance < maxRange) { distMod = weapon.parent.ExtraLongRangeAccMod();
+      if (distance < maxRange) {
+        distMod = weapon.parent.ExtraLongRangeAccMod();
         //Log.LogWrite(" extraRange ");
       };
-      //Log.LogWrite(" effMod: " +distMod+"\n");
-      num += distMod;
+      return distMod;
+    }
+    public static float GetDirectFireModifier(this Weapon weapon, LineOfFireLevel lofLevel) {
+      bool flag = lofLevel < LineOfFireLevel.LOFObstructed && (CustomAmmoCategories.getIndirectFireCapable(weapon));
+      if (flag == false) {
+        //float directFireModifier = CustomAmmoCategories.getDirectFireModifier(weapon);
+        //CustomAmmoCategoriesLog.Log.LogWrite(attacker.DisplayName+" has LOS on "+target.DisplayName+ ". Apply DirectFireModifier "+directFireModifier+"\n");
+        return CustomAmmoCategories.getDirectFireModifier(weapon);
+      }
+      return 0f;
+    }
+    public static void Postfix(ToHit __instance, AbstractActor attacker, Weapon weapon, ICombatant target, Vector3 attackPosition, Vector3 targetPosition, LineOfFireLevel lofLevel, bool isCalledShot, ref float __result) {
+      float num = __result;
+      num += weapon.GetDirectFireModifier(lofLevel);
+      num += weapon.GetDistanceModifier(attackPosition, targetPosition);
       num += weapon.GetChassisTagsModifyer(target);
       CombatGameState combat = (CombatGameState)typeof(ToHit).GetField("combat", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(__instance);
       if ((double)num < 0.0 && !combat.Constants.ResolutionConstants.AllowTotalNegativeModifier) {

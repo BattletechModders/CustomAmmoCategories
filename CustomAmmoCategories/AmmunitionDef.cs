@@ -158,6 +158,8 @@ namespace CustAmmoCategories {
     public TripleBoolean DistantVarianceReversed { get; set; }
     public float DamageVariance { get; set; }
     public float DamageMultiplier { get; set; }
+    public float HeatMultiplier { get; set; }
+    public float InstabilityMultiplier { get; set; }
     public CustomAmmoCategory AmmoCategory { get; set; }
     public float SpreadRange { get; set; }
     public float AOERange { get; set; }
@@ -233,6 +235,8 @@ namespace CustAmmoCategories {
       ShotsWhenFired = 0;
       CriticalChanceMultiplier = 0;
       DamageMultiplier = 1.0f;
+      HeatMultiplier = 1.0f;
+      InstabilityMultiplier = 1.0f;
       MinRange = 0;
       MaxRange = 0;
       LongRange = 0;
@@ -730,6 +734,14 @@ namespace CustomAmmoCategoriesPatches {
       if (defTemp["DamageMultiplier"] != null) {
         extAmmoDef.DamageMultiplier = (float)defTemp["DamageMultiplier"];
         defTemp.Remove("DamageMultiplier");
+      }
+      if (defTemp["HeatMultiplier"] != null) {
+        extAmmoDef.HeatMultiplier = (float)defTemp["HeatMultiplier"];
+        defTemp.Remove("HeatMultiplier");
+      }
+      if (defTemp["InstabilityMultiplier"] != null) {
+        extAmmoDef.InstabilityMultiplier = (float)defTemp["InstabilityMultiplier"];
+        defTemp.Remove("InstabilityMultiplier");
       }
       if (defTemp["DistantVarianceReversed"] != null) {
         extAmmoDef.DistantVarianceReversed = ((bool)defTemp["DistantVarianceReversed"] == true) ? TripleBoolean.True : TripleBoolean.False;

@@ -183,7 +183,7 @@ namespace CustAmmoCategories {
                 if (flag) {
                   damageLevel = ComponentDamageLevel.Penalized;
                   if (CustomAmmoCategories.Settings.NoCritFloatie() == false) {
-                    unit.Combat.MessageCenter.PublishMessage((MessageCenterMessage)new AddSequenceToStackMessage((IStackSequence)new ShowActorInfoSequence((ICombatant)unit, new Text("{0} CRIT", new object[1]
+                    unit.Combat.MessageCenter.PublishMessage((MessageCenterMessage)new AddSequenceToStackMessage((IStackSequence)new ShowActorInfoSequence((ICombatant)unit, new Text("__/CAC.CRIT/__", new object[1]
                     {
                     (object) componentInSlot.UIName
                     }), FloatieMessage.MessageNature.CriticalHit, true)));
@@ -192,7 +192,7 @@ namespace CustAmmoCategories {
                 } else {
                   damageLevel = ComponentDamageLevel.Destroyed;
                   if (CustomAmmoCategories.Settings.NoCritFloatie() == false) {
-                    unit.Combat.MessageCenter.PublishMessage((MessageCenterMessage)new AddSequenceToStackMessage((IStackSequence)new ShowActorInfoSequence((ICombatant)unit, new Text("{0} DESTROYED", new object[1]
+                    unit.Combat.MessageCenter.PublishMessage((MessageCenterMessage)new AddSequenceToStackMessage((IStackSequence)new ShowActorInfoSequence((ICombatant)unit, new Text("__/CAC.DESTROYED/__", new object[1]
                     {
                     (object) componentInSlot.UIName
                     }), FloatieMessage.MessageNature.ComponentDestroyed, true)));
@@ -207,7 +207,7 @@ namespace CustAmmoCategories {
               default:
                 damageLevel = ComponentDamageLevel.Destroyed;
                 if (CustomAmmoCategories.Settings.NoCritFloatie() == false) {
-                  unit.Combat.MessageCenter.PublishMessage((MessageCenterMessage)new AddSequenceToStackMessage((IStackSequence)new ShowActorInfoSequence((ICombatant)unit, new Text("{0} DESTROYED", new object[1]
+                  unit.Combat.MessageCenter.PublishMessage((MessageCenterMessage)new AddSequenceToStackMessage((IStackSequence)new ShowActorInfoSequence((ICombatant)unit, new Text("__/CAC.DESTROYED/__", new object[1]
                   {
                     (object) componentInSlot.UIName
                   }), FloatieMessage.MessageNature.ComponentDestroyed, true)));

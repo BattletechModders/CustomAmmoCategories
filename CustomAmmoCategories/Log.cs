@@ -8,7 +8,8 @@ using System.Threading;
 namespace CustomAmmoCategoriesLog {
   public enum LogFileType {
     Main,
-    Criticals
+    Criticals,
+    Minefields
   }
   public class LogFile {
     private string m_logfile;
@@ -92,10 +93,12 @@ namespace CustomAmmoCategoriesLog {
     }
     public static LogFile M { get { return Log.logs[LogFileType.Main]; } }
     public static LogFile C { get { return Log.logs[LogFileType.Criticals]; } }
+    public static LogFile F { get { return Log.logs[LogFileType.Minefields]; } }
     public static void InitLog() {
       //LogFile file = new LogFile("CAC_main_log.txt", CustomAmmoCategories.Settings.debugLog);
       Log.logs.Add(LogFileType.Main,new LogFile("CAC_main_log.txt", CustomAmmoCategories.Settings.debugLog));
       Log.logs.Add(LogFileType.Criticals,new LogFile("CAC_criticals_log.txt", CustomAmmoCategories.Settings.debugLog));
+      Log.logs.Add(LogFileType.Minefields, new LogFile("CAC_minefields_log.txt", CustomAmmoCategories.Settings.debugLog));
       //Log.logs.Add(LogFileType.Main, null);
       Log.flushThread.Start();
     }

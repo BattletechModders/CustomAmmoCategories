@@ -141,6 +141,8 @@ namespace CustAmmoCategories {
     public TripleBoolean AlwaysIndirectVisuals { get; set; }
     public bool isBaseMode { get; set; }
     public float DamageMultiplier { get; set; }
+    public float HeatMultiplier { get; set; }
+    public float InstabilityMultiplier { get; set; }
     public float AMSHitChance { get; set; }
     public CustomAmmoCategory AmmoCategory { get; set; }
     public string IFFDef { get; set; }
@@ -221,6 +223,8 @@ namespace CustAmmoCategories {
       HasShells = TripleBoolean.NotSet;
       AlwaysIndirectVisuals = TripleBoolean.NotSet;
       DamageMultiplier = 1.0f;
+      HeatMultiplier = 1.0f;
+      InstabilityMultiplier = 1.0f;
       DamageOnJamming = TripleBoolean.NotSet;
       DestroyOnJamming = TripleBoolean.NotSet;
       DistantVarianceReversed = TripleBoolean.NotSet;
@@ -458,6 +462,12 @@ namespace CustAmmoCategories {
       }
       if (jWeaponMode["DamageMultiplier"] != null) {
         this.DamageMultiplier = (float)jWeaponMode["DamageMultiplier"];
+      }
+      if (jWeaponMode["HeatMultiplier"] != null) {
+        this.HeatMultiplier = (float)jWeaponMode["HeatMultiplier"];
+      }
+      if (jWeaponMode["InstabilityMultiplier"] != null) {
+        this.InstabilityMultiplier = (float)jWeaponMode["InstabilityMultiplier"];
       }
       if (jWeaponMode["DistantVarianceReversed"] != null) {
         this.DistantVarianceReversed = ((bool)jWeaponMode["DistantVarianceReversed"] == true) ? TripleBoolean.True : TripleBoolean.False;

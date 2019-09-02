@@ -44,7 +44,7 @@ namespace AmmoCookOff {
                     pilot.SetNeedsInjury(InjuryReason.AmmoExplosion);
                   }
                 }
-                string text = string.Format("{0} EXPLOSION", ammoBox.Name);
+                string text = string.Format("__/CAC.EXPLOSION/__", ammoBox.Name);
                 ammoBox.parent.Combat.MessageCenter.PublishMessage(new FloatieMessage(ammoBox.parent.GUID, ammoBox.parent.GUID, text, FloatieMessage.MessageNature.CriticalHit));
                 //we make a fake hit info to apply the nuking
                 WeaponHitInfo hitInfo = new WeaponHitInfo(stackID, -1, -1, -1, string.Empty, string.Empty, -1, null, null, null, null, null, null, null, new AttackDirection[1] { AttackDirection.None }, null, null, null);

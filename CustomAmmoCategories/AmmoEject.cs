@@ -12,6 +12,7 @@ using System.Diagnostics;
 using System.Collections;
 using BattleTech.UI;
 using InControl;
+using Localize;
 
 namespace CustAmmoCategories {
   public static partial class CustomAmmoCategories {
@@ -72,7 +73,7 @@ namespace CustAmmoCategories {
       }
       if (ejectedCount > 0) {
         CustomAmmoCategories.ActorsEjectedAmmo[weapon.parent.GUID] = true;
-        weapon.parent.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(new ShowActorInfoSequence(weapon.parent, AmmoUIName + " AMMO JETTISONED", FloatieMessage.MessageNature.Buff, false)));
+        weapon.parent.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(new ShowActorInfoSequence(weapon.parent,new Text("{0} AMMO JETTISONED", AmmoUIName), FloatieMessage.MessageNature.Buff, false)));
         CombatHUD HUD = (CombatHUD)typeof(CombatHUDWeaponSlot).GetField("HUD", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(hudSlot);
         if ((HUD.MechWarriorTray.SprintButton.IsActive) || (HUD.MechWarriorTray.JumpButton.IsActive)) {
           //weapon.parent.isAmmoEjecting(true);

@@ -130,59 +130,59 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
             AttackDirection dir = Combat.HitLocation.GetAttackDirection(AttackPos, Target);
             if (Target is Mech mech) {
               if (mech.IsProne) return new AttackModifier(); // Prone is another modifier
-              if (dir == AttackDirection.FromFront) return new AttackModifier("FRONT ATTACK", Settings.ToHitMechFromFront);
-              if (dir == AttackDirection.FromLeft || dir == AttackDirection.FromRight) return new AttackModifier("SIDE ATTACK", Settings.ToHitMechFromSide);
-              if (dir == AttackDirection.FromBack) return new AttackModifier("REAR ATTACK", Settings.ToHitMechFromRear);
+              if (dir == AttackDirection.FromFront) return new AttackModifier("__/AIM.FRONT_ATTACK/__", Settings.ToHitMechFromFront);
+              if (dir == AttackDirection.FromLeft || dir == AttackDirection.FromRight) return new AttackModifier("__/AIM.SIDE ATTACK/__", Settings.ToHitMechFromSide);
+              if (dir == AttackDirection.FromBack) return new AttackModifier("__/AIM.REAR_ATTACK/__", Settings.ToHitMechFromRear);
             } else if (Target is Vehicle vehicle) {
-              if (dir == AttackDirection.FromFront) return new AttackModifier("FRONT ATTACK", Settings.ToHitVehicleFromFront);
-              if (dir == AttackDirection.FromLeft || dir == AttackDirection.FromRight) return new AttackModifier("SIDE ATTACK", Settings.ToHitVehicleFromSide);
-              if (dir == AttackDirection.FromBack) return new AttackModifier("REAR ATTACK", Settings.ToHitVehicleFromRear);
+              if (dir == AttackDirection.FromFront) return new AttackModifier("__/AIM.FRONT_ATTACK/__", Settings.ToHitVehicleFromFront);
+              if (dir == AttackDirection.FromLeft || dir == AttackDirection.FromRight) return new AttackModifier("__/AIM.SIDE_ATTACK/__", Settings.ToHitVehicleFromSide);
+              if (dir == AttackDirection.FromBack) return new AttackModifier("__/AIM.REAR_ATTACK/__", Settings.ToHitVehicleFromRear);
             }
             return new AttackModifier();
           };
         //float num = this.GetTargetShutdownModifier(target, true) + this.GetTargetProneModifier(target, true) + this.GetTargetTerrainModifier(target, targetPosition, true) + this.GetEnemyEffectModifier(target, weapon) + this.GetMeleeChassisToHitModifier((AbstractActor)attacker, meleeAttackType) + this.GetWeaponAccuracyModifier((AbstractActor)attacker, weapon) + this.GetDFAModifier(meleeAttackType);
 
         case "inspired":
-          return () => new AttackModifier("INSPIRED", Math.Min(0f, Hit.GetAttackerAccuracyModifier(Attacker)));
+          return () => new AttackModifier("__/AIM.INSPIRED/__", Math.Min(0f, Hit.GetAttackerAccuracyModifier(Attacker)));
 
         case "jumped":
-          return () => new AttackModifier("JUMPED", RollModifier.GetJumpedModifier(Attacker));
+          return () => new AttackModifier("__/AIM.JUMPED/__", RollModifier.GetJumpedModifier(Attacker));
 
         case "selfheat":
-          return () => new AttackModifier("OVERHEAT", Hit.GetHeatModifier(Attacker));
+          return () => new AttackModifier("__/AIM.OVERHEAT/__", Hit.GetHeatModifier(Attacker));
 
         case "selfstoodup":
-          return () => new AttackModifier("STOOD UP", Hit.GetStoodUpModifier(Attacker));
+          return () => new AttackModifier("__/AIM.STOOD_UP/__", Hit.GetStoodUpModifier(Attacker));
 
         case "selfterrain":
-          return () => new AttackModifier("TERRAIN", Attacker.GetSelfTerrainModifier(AttackPos, false));
+          return () => new AttackModifier("__/AIM.TERRAIN/__", Attacker.GetSelfTerrainModifier(AttackPos, false));
 
         case "selfterrainmelee":
-          return () => new AttackModifier("TERRAIN", Attacker.GetSelfTerrainModifier(AttackPos, true));
+          return () => new AttackModifier("__/AIM.TERRAIN/__", Attacker.GetSelfTerrainModifier(AttackPos, true));
 
         case "sensorimpaired":
-          return () => new AttackModifier("SENSOR IMPAIRED", Math.Max(0f, Hit.GetAttackerAccuracyModifier(Attacker)));
+          return () => new AttackModifier("__/AIM.SENSOR_IMPAIRED/__", Math.Max(0f, Hit.GetAttackerAccuracyModifier(Attacker)));
 
         case "sprint":
-          return () => new AttackModifier("SPRINTED", Hit.GetSelfSprintedModifier(Attacker));
+          return () => new AttackModifier("__/AIM.SPRINTED/__", Hit.GetSelfSprintedModifier(Attacker));
 
         case "targeteffect":
-          return () => new AttackModifier("TARGET EFFECTS", Hit.GetEnemyEffectModifier(Target, AttackWeapon));
+          return () => new AttackModifier("__/AIM.TARGET_EFFECTS/__", Hit.GetEnemyEffectModifier(Target, AttackWeapon));
 
         case "targetsize":
-          return () => new AttackModifier("TARGET SIZE", Hit.GetTargetSizeModifier(Target));
+          return () => new AttackModifier("__/AIM.TARGET_SIZE/__", Hit.GetTargetSizeModifier(Target));
 
         case "targetterrain":
-          return () => new AttackModifier("TARGET TERRAIN", Hit.GetTargetTerrainModifier(Target, TargetPos, false));
+          return () => new AttackModifier("__/AIM.TARGET_TERRAIN/__", Hit.GetTargetTerrainModifier(Target, TargetPos, false));
 
         case "targetterrainmelee":
-          return () => new AttackModifier("TARGET TERRAIN", Hit.GetTargetTerrainModifier(Target, TargetPos, true));
+          return () => new AttackModifier("__/AIM.TARGET_TERRAIN/__", Hit.GetTargetTerrainModifier(Target, TargetPos, true));
 
         case "walked":
-          return () => new AttackModifier("MOVED", Hit.GetSelfSpeedModifier(Attacker));
+          return () => new AttackModifier("__/AIM.MOVED/__", Hit.GetSelfSpeedModifier(Attacker));
 
         case "weaponaccuracy":
-          return () => new AttackModifier("WEAPON ACCURACY", Hit.GetWeaponAccuracyModifier(Attacker, AttackWeapon));
+          return () => new AttackModifier("__/AIM.WEAPON_ACCURACY/__", Hit.GetWeaponAccuracyModifier(Attacker, AttackWeapon));
       }
       return null;
     }
@@ -251,66 +251,71 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
     public static Func<AttackModifier> GetRangedModifierFactor(string factorId) {
       switch (factorId) {
         case "armmounted":
-          return () => new AttackModifier("ARM MOUNTED", Hit.GetSelfArmMountedModifier(AttackWeapon));
+          return () => new AttackModifier("__/AIM.ARM_MOUNTED/__", Hit.GetSelfArmMountedModifier(AttackWeapon));
 
         case "range": // Depended by ShowNeutralRangeInBreakdown
           return () => {
             Weapon w = AttackWeapon;
             float range = Vector3.Distance(AttackPos, TargetPos), modifier = Hit.GetRangeModifierForDist(w, range);
             AttackModifier result = new AttackModifier(modifier);
-            if (range < w.MinRange) return result.SetName($"MIN RANGE (<{(int)w.MinRange}m)");
-            if (range < w.ShortRange) return result.SetName("SHORT RANGE" + SmartRange(w.MinRange, range, w.ShortRange));
-            if (range < w.MediumRange) return result.SetName("MED RANGE" + SmartRange(w.ShortRange, range, w.MediumRange));
-            if (range < w.LongRange) return result.SetName("LONG RANGE" + SmartRange(w.MediumRange, range, w.LongRange));
-            if (range < w.MaxRange) return result.SetName("MAX RANGE" + SmartRange(w.LongRange, range, w.MaxRange));
-            return result.SetName($"OUT OF RANGE (>{(int)w.MaxRange}m)");
+            if (range < w.MinRange) return result.SetName($"__/AIM.MIN_RANGE/__ (<{(int)w.MinRange}m)");
+            if (range < w.ShortRange) return result.SetName("__/AIM.SHORT RANGE/__" + SmartRange(w.MinRange, range, w.ShortRange));
+            if (range < w.MediumRange) return result.SetName("__/AIM.MED RANGE/__" + SmartRange(w.ShortRange, range, w.MediumRange));
+            if (range < w.LongRange) return result.SetName("__/AIM.LONG RANGE/__" + SmartRange(w.MediumRange, range, w.LongRange));
+            if (range < w.MaxRange) return result.SetName("__/AIM.MAX RANGE/__" + SmartRange(w.LongRange, range, w.MaxRange));
+            return result.SetName($"__/AIM.OUT_OF_RANGE/__ (>{(int)w.MaxRange}m)");
           };
         //GetTargetDirectFireModifier
         case "height":
-          return () => new AttackModifier("HEIGHT", Hit.GetHeightModifier(AttackPos.y, TargetPos.y));
+          return () => new AttackModifier("__/AIM.HEIGHT/__", Hit.GetHeightModifier(AttackPos.y, TargetPos.y));
 
         case "indirect":
-          return () => new AttackModifier("INDIRECT FIRE", Hit.GetIndirectModifier(Attacker, LineOfFire < LineOfFireLevel.LOFObstructed && AttackWeapon.IndirectFireCapable()));
+          return () => new AttackModifier("__/AIM.INDIRECT_FIRE/__", Hit.GetIndirectModifier(Attacker, LineOfFire < LineOfFireLevel.LOFObstructed && AttackWeapon.IndirectFireCapable()));
 
         case "locationdamage":
           return () => {
             if (Attacker is Mech mech) {
               Text location = Mech.GetAbbreviatedChassisLocation((ChassisLocations)AttackWeapon.Location);
-              return new AttackModifier($"{location} DAMAGED", MechStructureRules.GetToHitModifierLocationDamage(mech, AttackWeapon));
+              return new AttackModifier($"{location} __/AIM.DAMAGED/__", MechStructureRules.GetToHitModifierLocationDamage(mech, AttackWeapon));
             } else
-              return new AttackModifier("CHASSIS DAMAGED", Hit.GetSelfDamageModifier(Attacker, AttackWeapon));
+              return new AttackModifier("__/AIM.CHASSIS_DAMAGED/__", Hit.GetSelfDamageModifier(Attacker, AttackWeapon));
           };
 
         case "obstruction":
-          return () => new AttackModifier("OBSTRUCTED", Hit.GetCoverModifier(Attacker, Target, LineOfFire));
+          return () => new AttackModifier("__/AIM.OBSTRUCTED/__", Hit.GetCoverModifier(Attacker, Target, LineOfFire));
 
         case "precision":
           return () => new AttackModifier(CombatConstants.CombatUIConstants.MoraleAttackDescription.Name, Hit.GetMoraleAttackModifier(Target, IsMoraleAttack));
 
         case "refire":
-          return () => new AttackModifier("RECOIL", Hit.GetRefireModifier(AttackWeapon));
+          return () => new AttackModifier("__/AIM.RECOIL/__", Hit.GetRefireModifier(AttackWeapon));
 
         case "targettags":
-          return () => new AttackModifier("TARGET TYPE", AttackWeapon.GetChassisTagsModifyer(Target));
+          return () => new AttackModifier("__/AIM.TARGET_TYPE/__", AttackWeapon.GetChassisTagsModifyer(Target));
 
         case "targetevasion":
-          return () => new AttackModifier("TARGET MOVED", Hit.GetTargetSpeedModifier(Target, AttackWeapon));
+          return () => new AttackModifier("__/AIM.TARGET_MOVED/__", Hit.GetTargetSpeedModifier(Target, AttackWeapon));
 
         case "targetprone":
-          return () => new AttackModifier("TARGET PRONE", Hit.GetTargetProneModifier(Target, false));
+          return () => new AttackModifier("__/AIM.TARGET_PRONE/__", Hit.GetTargetProneModifier(Target, false));
 
         case "targetshutdown":
-          return () => new AttackModifier("TARGET SHUTDOWN", Hit.GetTargetShutdownModifier(Target, false));
+          return () => new AttackModifier("__/AIM.TARGET_SHUTDOWN/__", Hit.GetTargetShutdownModifier(Target, false));
 
         case "sensorlock":
-          return () => new AttackModifier("SENSOR LOCK", Hit.GetTargetDirectFireModifier(Target, LineOfFire < LineOfFireLevel.LOFObstructed && AttackWeapon.IndirectFireCapable()));
+          return () => new AttackModifier("__/AIM.SENSOR_LOCK/__", Hit.GetTargetDirectFireModifier(Target, LineOfFire < LineOfFireLevel.LOFObstructed && AttackWeapon.IndirectFireCapable()));
 
         case "weapondamage":
           return () => {
-            AttackModifier result = new AttackModifier("WEAPON DAMAGED");
+            AttackModifier result = new AttackModifier("__/AIM.WEAPON_DAMAGED/__");
             if (!(Attacker is Mech mech)) return result;
             return result.SetValue(MechStructureRules.GetToHitModifierWeaponDamage(mech, AttackWeapon));
           };
+        case "direct":
+          return () => new AttackModifier("__/AIM.DIRECT/__", AttackWeapon.GetDirectFireModifier(LineOfFire));
+
+        case "distance":
+          return () => new AttackModifier("__/AIM.DISTANCE/__", AttackWeapon.GetDistanceModifier(AttackPos,TargetPos));
       }
       return null;
     }
@@ -368,7 +373,7 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
       switch (factorId) {
         case "armmounted":
           return () => {
-            AttackModifier result = new AttackModifier("PUNCHING ARM");
+            AttackModifier result = new AttackModifier("__/AIM.PUNCHING_ARM/__");
             if (AttackType == MeleeAttackType.DFA || Target is Vehicle || Target.IsProne || !(Attacker is Mech mech)) return result;
             if (mech.MechDef.Chassis.PunchesWithLeftArm) {
               if (mech.IsLocationDestroyed(ChassisLocations.LeftArm)) return result;
@@ -377,11 +382,11 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
           };
 
         case "dfa":
-          return () => new AttackModifier("DEATH FROM ABOVE", Hit.GetDFAModifier(AttackType));
+          return () => new AttackModifier("__/AIM.DEATH_FROM_ABOVE/__", Hit.GetDFAModifier(AttackType));
 
         case "height":
           return () => {
-            AttackModifier result = new AttackModifier("HEIGHT DIFF");
+            AttackModifier result = new AttackModifier("__/AIM.HEIGHT_DIFF/__");
             if (AttackType == MeleeAttackType.DFA)
               return result.SetValue(Hit.GetHeightModifier(Attacker.CurrentPosition.y, Target.CurrentPosition.y));
             float diff = AttackPos.y - Target.CurrentPosition.y;
@@ -391,26 +396,26 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
           };
 
         case "obstruction":
-          return () => new AttackModifier("OBSTRUCTED", Hit.GetCoverModifier(Attacker, Target, Combat.LOS.GetLineOfFire(Attacker, AttackPos, Target, TargetPos, Target.CurrentRotation, out Vector3 collision)));
+          return () => new AttackModifier("__/AIM.OBSTRUCTED/__", Hit.GetCoverModifier(Attacker, Target, Combat.LOS.GetLineOfFire(Attacker, AttackPos, Target, TargetPos, Target.CurrentRotation, out Vector3 collision)));
 
         case "refire":
-          return () => new AttackModifier("RE-ATTACK", Hit.GetRefireModifier(AttackWeapon));
+          return () => new AttackModifier("__/AIM.RE_ATTACK/__", Hit.GetRefireModifier(AttackWeapon));
 
         case "selfchassis":
-          return () => new AttackModifier(Hit.GetMeleeChassisToHitModifier(Attacker, AttackType)).SetName("CHASSIS PENALTY", "CHASSIS BONUS");
+          return () => new AttackModifier(Hit.GetMeleeChassisToHitModifier(Attacker, AttackType)).SetName("__/AIM.CHASSIS_PENALTY/__", "__/AIM.CHASSIS_BONUS/__");
 
         case "targetevasion":
           return () => {
-            AttackModifier result = new AttackModifier("TARGET MOVED");
+            AttackModifier result = new AttackModifier("__/AIM.TARGET_MOVED/__");
             if (!(Target is AbstractActor actor)) return result;
             return result.SetValue(Hit.GetEvasivePipsModifier(actor.EvasivePipsCurrent, AttackWeapon));
           };
 
         case "targetprone":
-          return () => new AttackModifier("TARGET PRONE", Hit.GetTargetProneModifier(Target, true));
+          return () => new AttackModifier("__/AIM.TARGET_PRONE/__", Hit.GetTargetProneModifier(Target, true));
 
         case "targetshutdown":
-          return () => new AttackModifier("TARGET SHUTDOWN", Hit.GetTargetShutdownModifier(Target, true));
+          return () => new AttackModifier("__/AIM.TARGET_SHUTDOWN/__", Hit.GetTargetShutdownModifier(Target, true));
       }
       return null;
     }

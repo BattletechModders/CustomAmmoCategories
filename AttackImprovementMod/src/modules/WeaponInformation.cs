@@ -108,10 +108,10 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
             int start = weapons.Count, dmg = (int) (mech.MeleeWeapon?.DamagePerShot * mech.MeleeWeapon?.ShotsWhenFired);
             string format = Settings.ShowDamageInLoadout ? "{0} {1}({2})" : "{0} {1}{2}";
             if ( start < ___weaponNames.Count && dmg > 0 )
-               SetWeapon( ___weaponNames[ start ], colours.white, format, Translate( "Melee" ), MetaColour, dmg );
+               SetWeapon( ___weaponNames[ start ], colours.white, format, Translate("__/AIM.MELEE/__"), MetaColour, dmg );
             dmg = (int) (mech.DFAWeapon?.DamagePerShot * mech.DFAWeapon?.ShotsWhenFired);
             if ( actor.WorkingJumpjets > 0 && start + 1 < ___weaponNames.Count && dmg > 0 )
-               SetWeapon( ___weaponNames[ start + 1 ], colours.white, format, Translate( "DFA" ), MetaColour, dmg );
+               SetWeapon( ___weaponNames[ start + 1 ], colours.white, format, Translate("__/AIM.DFA/__"), MetaColour, dmg );
          }
       }                 catch ( Exception ex ) { Error( ex ); } }
 
@@ -307,12 +307,12 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
       }
 
       private static string GetTotalLabel () {
-         string label = ShowingStabilityDamage ? "Total{0} Stability" : "Total{0}", target = null;
+         string label = ShowingStabilityDamage ? "__/AIM.GetTotalLabel1/__{0} __/AIM.GetTotalLabel2/__" : "__/AIM.GetTotalLabel1/__{0}", target = null;
          if ( ActiveState is SelectionStateFireMulti multi ) {
             switch ( multi.GetTargetIndex( HUD.SelectedTarget ) ) {
-               case 0 : target = " A"; break;
-               case 1 : target = " B"; break;
-               case 2 : target = " C"; break;
+               case 0 : target = "__/AIM.TARGET1/__"; break;
+               case 1 : target = "__/AIM.TARGET2/__"; break;
+               case 2 : target = "__/AIM.TARGET3/__"; break;
             }
          }
          return string.Format( label, target );

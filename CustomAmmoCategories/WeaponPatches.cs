@@ -93,13 +93,13 @@ namespace CustAmmoCategories {
       if (CustomAmmoCategories.checkExistance(weapon.StatCollection, CustomAmmoCategories.AmmoIdStatName) == true) {
         string CurrentAmmoId = weapon.StatCollection.GetStatistic(CustomAmmoCategories.AmmoIdStatName).Value<string>();
         ExtAmmunitionDef extAmmoDef = CustomAmmoCategories.findExtAmmo(CurrentAmmoId);
-        result *= extAmmoDef.DamageMultiplier;
+        result *= extAmmoDef.HeatMultiplier;
       }
       if (CustomAmmoCategories.checkExistance(weapon.StatCollection, CustomAmmoCategories.WeaponModeStatisticName) == true) {
         string modeId = weapon.StatCollection.GetStatistic(CustomAmmoCategories.WeaponModeStatisticName).Value<string>();
         if (extWeapon.Modes.ContainsKey(modeId)) {
           WeaponMode mode = extWeapon.Modes[modeId];
-          result *= mode.DamageMultiplier;
+          result *= mode.HeatMultiplier;
         }
       }
       result = (float)Math.Round((double)result, 0);
@@ -123,16 +123,76 @@ namespace CustAmmoCategories {
       if (CustomAmmoCategories.checkExistance(weapon.StatCollection, CustomAmmoCategories.AmmoIdStatName) == true) {
         string CurrentAmmoId = weapon.StatCollection.GetStatistic(CustomAmmoCategories.AmmoIdStatName).Value<string>();
         ExtAmmunitionDef extAmmoDef = CustomAmmoCategories.findExtAmmo(CurrentAmmoId);
-        result *= extAmmoDef.DamageMultiplier;
+        result *= extAmmoDef.HeatMultiplier;
       }
       if (CustomAmmoCategories.checkExistance(weapon.StatCollection, CustomAmmoCategories.WeaponModeStatisticName) == true) {
         string modeId = weapon.StatCollection.GetStatistic(CustomAmmoCategories.WeaponModeStatisticName).Value<string>();
         if (extWeapon.Modes.ContainsKey(modeId)) {
           WeaponMode mode = extWeapon.Modes[modeId];
-          result *= mode.DamageMultiplier;
+          result *= mode.HeatMultiplier;
         }
       }
       result = result * baseDamage / weapon.weaponDef.HeatDamage;
+      result = (float)Math.Round((double)result, 0);
+      return result;
+    }
+    public static float InstabilityFormulaOne(Weapon weapon, ExtWeaponDef extWeapon, float baseDamage) {
+      float result = baseDamage;
+      if (CustomAmmoCategories.checkExistance(weapon.StatCollection, CustomAmmoCategories.AmmoIdStatName) == true) {
+        string CurrentAmmoId = weapon.StatCollection.GetStatistic(CustomAmmoCategories.AmmoIdStatName).Value<string>();
+        ExtAmmunitionDef extAmmoDef = CustomAmmoCategories.findExtAmmo(CurrentAmmoId);
+        result += extAmmoDef.Instability;
+      }
+      if (CustomAmmoCategories.checkExistance(weapon.StatCollection, CustomAmmoCategories.WeaponModeStatisticName) == true) {
+        string modeId = weapon.StatCollection.GetStatistic(CustomAmmoCategories.WeaponModeStatisticName).Value<string>();
+        if (extWeapon.Modes.ContainsKey(modeId)) {
+          WeaponMode mode = extWeapon.Modes[modeId];
+          result += mode.Instability;
+        }
+      }
+      if (CustomAmmoCategories.checkExistance(weapon.StatCollection, CustomAmmoCategories.AmmoIdStatName) == true) {
+        string CurrentAmmoId = weapon.StatCollection.GetStatistic(CustomAmmoCategories.AmmoIdStatName).Value<string>();
+        ExtAmmunitionDef extAmmoDef = CustomAmmoCategories.findExtAmmo(CurrentAmmoId);
+        result *= extAmmoDef.InstabilityMultiplier;
+      }
+      if (CustomAmmoCategories.checkExistance(weapon.StatCollection, CustomAmmoCategories.WeaponModeStatisticName) == true) {
+        string modeId = weapon.StatCollection.GetStatistic(CustomAmmoCategories.WeaponModeStatisticName).Value<string>();
+        if (extWeapon.Modes.ContainsKey(modeId)) {
+          WeaponMode mode = extWeapon.Modes[modeId];
+          result *= mode.InstabilityMultiplier;
+        }
+      }
+      result = (float)Math.Round((double)result, 0);
+      return result;
+    }
+    public static float InstabilityFormulaTwo(Weapon weapon, ExtWeaponDef extWeapon, float baseDamage) {
+      if (baseDamage < CustomAmmoCategories.Epsilon) { return 0f; }
+      float result = weapon.weaponDef.Instability;
+      if (CustomAmmoCategories.checkExistance(weapon.StatCollection, CustomAmmoCategories.AmmoIdStatName) == true) {
+        string CurrentAmmoId = weapon.StatCollection.GetStatistic(CustomAmmoCategories.AmmoIdStatName).Value<string>();
+        ExtAmmunitionDef extAmmoDef = CustomAmmoCategories.findExtAmmo(CurrentAmmoId);
+        result += extAmmoDef.Instability;
+      }
+      if (CustomAmmoCategories.checkExistance(weapon.StatCollection, CustomAmmoCategories.WeaponModeStatisticName) == true) {
+        string modeId = weapon.StatCollection.GetStatistic(CustomAmmoCategories.WeaponModeStatisticName).Value<string>();
+        if (extWeapon.Modes.ContainsKey(modeId)) {
+          WeaponMode mode = extWeapon.Modes[modeId];
+          result += mode.Instability;
+        }
+      }
+      if (CustomAmmoCategories.checkExistance(weapon.StatCollection, CustomAmmoCategories.AmmoIdStatName) == true) {
+        string CurrentAmmoId = weapon.StatCollection.GetStatistic(CustomAmmoCategories.AmmoIdStatName).Value<string>();
+        ExtAmmunitionDef extAmmoDef = CustomAmmoCategories.findExtAmmo(CurrentAmmoId);
+        result *= extAmmoDef.InstabilityMultiplier;
+      }
+      if (CustomAmmoCategories.checkExistance(weapon.StatCollection, CustomAmmoCategories.WeaponModeStatisticName) == true) {
+        string modeId = weapon.StatCollection.GetStatistic(CustomAmmoCategories.WeaponModeStatisticName).Value<string>();
+        if (extWeapon.Modes.ContainsKey(modeId)) {
+          WeaponMode mode = extWeapon.Modes[modeId];
+          result *= mode.InstabilityMultiplier;
+        }
+      }
+      result = result * baseDamage / weapon.weaponDef.Instability;
       result = (float)Math.Round((double)result, 0);
       return result;
     }
@@ -549,18 +609,11 @@ namespace CustAmmoCategoriesPatches {
     [HarmonyPatch(new Type[] { })]
     public static class Weapon_Instability {
       public static void Postfix(Weapon __instance, ref float __result) {
-        if (CustomAmmoCategories.checkExistance(__instance.StatCollection, CustomAmmoCategories.AmmoIdStatName) == true) {
-          string CurrentAmmoId = __instance.StatCollection.GetStatistic(CustomAmmoCategories.AmmoIdStatName).Value<string>();
-          ExtAmmunitionDef extAmmoDef = CustomAmmoCategories.findExtAmmo(CurrentAmmoId);
-          __result += extAmmoDef.Instability;
-        }
-        if (CustomAmmoCategories.checkExistance(__instance.StatCollection, CustomAmmoCategories.WeaponModeStatisticName) == true) {
-          ExtWeaponDef extWeapon = CustomAmmoCategories.getExtWeaponDef(__instance.defId);
-          string modeId = __instance.StatCollection.GetStatistic(CustomAmmoCategories.WeaponModeStatisticName).Value<string>();
-          if (extWeapon.Modes.ContainsKey(modeId)) {
-            WeaponMode mode = extWeapon.Modes[modeId];
-            __result += mode.Instability;
-          }
+        ExtWeaponDef extWeapon = CustomAmmoCategories.getExtWeaponDef(__instance.defId);
+        if (extWeapon.AlternateInstabilityCalc == false) {
+          __result = CustomAmmoCategories.InstabilityFormulaOne(__instance, extWeapon, __result);
+        } else {
+          __result = CustomAmmoCategories.InstabilityFormulaTwo(__instance, extWeapon, __result);
         }
       }
     }

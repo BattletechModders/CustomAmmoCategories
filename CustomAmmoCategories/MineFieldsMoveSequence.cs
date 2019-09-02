@@ -80,7 +80,7 @@ namespace CustAmmoCategories {
     public MapTerrainDataCellEx cell;
     public LandMineTerrainRecord(MineFieldDef d, MapTerrainDataCellEx c) { def = d; cell = c; }
     public void applyImpactTempMask(CombatGameState combat) {
-      Log.LogWrite("Applying minefield long effect:" + def.LongVFXOnImpact + "/" + def.tempDesignMaskOnImpact + "/" + this.cell.x + "," + this.cell.y + "\n");
+      Log.F.TWL(0,"Applying minefield long effect:" + def.LongVFXOnImpact + "/" + def.tempDesignMaskOnImpact + "/" + this.cell.x + "," + this.cell.y);
       int turns = def.tempDesignMaskOnImpactTurns;
       string vfx = def.LongVFXOnImpact;
       Vector3 scale = Vector3.one; scale.x = def.LongVFXOnImpactScaleX; scale.y = def.LongVFXOnImpactScaleY; scale.z = def.LongVFXOnImpactScaleZ;
@@ -105,7 +105,7 @@ namespace CustAmmoCategories {
       }
     }
     public void applyExplodeBurn(Weapon weapon) {
-      Log.LogWrite("Applying minefield burn effect:" + this.cell.x + "," + this.cell.y + "\n");
+      Log.F.TWL(0, "Applying minefield burn effect:" + this.cell.x + "," + this.cell.y );
       if (def.FireTerrainCellRadius == 0) {
         if (cell.hexCell.TryBurnCell(weapon, def.FireTerrainChance, def.FireTerrainStrength, def.FireDurationWithoutForest)) {
           DynamicMapHelper.burningHexes.Add(cell.hexCell);
@@ -132,19 +132,19 @@ namespace CustAmmoCategories {
     public Dictionary<ICombatant, Dictionary<EffectData, List<ICombatant>>> Effects;
     public Dictionary<ICombatant, AoEExplosionRecord> AoEDamage;
     public void debugPrint() {
-      Log.LogWrite("MineFieldDamage\n");
-      Log.LogWrite(" landminesCount:" + landminesTerrain.Count + "\n");
-      Log.LogWrite(" BurnHeat:" + BurnHeat + "\n");
+      Log.F.WL(0, "MineFieldDamage");
+      Log.F.WL(1, "landminesCount:" + landminesTerrain.Count);
+      Log.F.WL(1, "BurnHeat:" + BurnHeat);
       foreach (var dmg in burnDamage) {
-        Log.LogWrite("  " + dmg.Key + ":" + dmg.Value.Damage + ":" + dmg.Value.hitPosition + "\n");
+        Log.F.WL(3, dmg.Key + ":" + dmg.Value.Damage + ":" + dmg.Value.hitPosition);
       }
-      Log.LogWrite(" sequenceAborted:" + sequenceAborted + "\n");
+      Log.F.WL(1, "sequenceAborted:" + sequenceAborted);
       foreach (var dmg in AoEDamage) {
-        Log.LogWrite(" " + dmg.Key.DisplayName + ":" + dmg.Key.GUID + "\n");
-        Log.LogWrite("  HeatDamage:" + dmg.Value.HeatDamage + "\n");
-        Log.LogWrite("  StabDamage:" + dmg.Value.StabDamage + "\n");
+        Log.F.WL(2, dmg.Key.DisplayName + ":" + dmg.Key.GUID);
+        Log.F.WL(2, "HeatDamage:" + dmg.Value.HeatDamage);
+        Log.F.WL(2, "StabDamage:" + dmg.Value.StabDamage);
         foreach (var loc in dmg.Value.hitRecords) {
-          Log.LogWrite("   " + loc.Key + ":" + loc.Value.Damage + ":" + loc.Value.hitPosition + "\n");
+          Log.F.WL(3, loc.Key + ":" + loc.Value.Damage + ":" + loc.Value.hitPosition);
         }
       }
     }
@@ -217,7 +217,7 @@ namespace CustAmmoCategories {
       return result;
     }
     public void AddLandMineExplosion(AbstractActor unit, MineFieldDef def, Vector3 pos) {
-      Log.LogWrite("AddLandMineExplosion " + def.AoERange + "/" + def.AoEDamage + "/" + def.AoEHeat + "\n");
+      Log.F.TWL(0, "AddLandMineExplosion " + def.AoERange + "/" + def.AoEDamage + "/" + def.AoEHeat);
       if (def.AoERange < CustomAmmoCategories.Epsilon) { return; };
       foreach (ICombatant target in unit.Combat.GetAllLivingCombatants()) {
         if (target.GUID == unit.GUID) { continue; };
@@ -283,16 +283,16 @@ namespace CustAmmoCategories {
       }
     }
     public void resolveMineFiledDamage(AbstractActor unit, int SequenceID) {
-      Log.LogWrite("resolveMineFiledDamage "+unit.DisplayName+":"+unit.GUID+" "+SequenceID+"\n");
+      Log.F.TWL(0, "resolveMineFiledDamage " + unit.DisplayName+":"+unit.GUID+" "+SequenceID);
       if (this.weapon == null) {
-        Log.LogWrite(" weapon seted. no minefield/burn damage?\n");
+        Log.F.WL(1, "weapon seted. no minefield/burn damage?");
         return;
       }
       var fakeHit = new WeaponHitInfo(-1, -1, -1, -1, this.weapon.parent.GUID, unit.GUID, -1, null, null, null, null, null, null, new AttackImpactQuality[1] { AttackImpactQuality.Solid }, new AttackDirection[1] { AttackDirection.FromArtillery }, null, null, null);
       HashSet<Mech> heatSequence = new HashSet<Mech>();
       HashSet<Mech> instabilitySequence = new HashSet<Mech>();
       HashSet<ICombatant> deathSequence = new HashSet<ICombatant>();
-      Log.LogWrite("Applying burn vehicle damage\n");
+      Log.F.WL(1, "Applying burn vehicle damage");
       foreach (var bdmg in this.burnDamage) {
         float LocArmor = unit.ArmorForLocation(bdmg.Key);
         if ((double)LocArmor < (double)bdmg.Value.Damage) {
@@ -308,7 +308,7 @@ namespace CustAmmoCategories {
         }
         unit.TakeWeaponDamage(fakeHit, bdmg.Key, this.weapon, bdmg.Value.Damage, 0, DamageType.AmmoExplosion);
       }
-      Log.LogWrite("Applying burn floatie message\n");
+      Log.F.WL(1, "Applying burn floatie message");
       if (this.burnDamage.Count > 0) {
         unit.Combat.MessageCenter.PublishMessage((MessageCenterMessage)new FloatieMessage(this.weapon.parent.GUID, unit.GUID, "BURN DAMAGE", FloatieMessage.MessageNature.CriticalHit));
       }
@@ -319,26 +319,30 @@ namespace CustAmmoCategories {
         unit.Combat.MessageCenter.PublishMessage((MessageCenterMessage)new FloatieMessage(this.weapon.parent.GUID, unit.GUID, "+ " + Mathf.RoundToInt(this.BurnHeat) + " HEAT FROM FIRE", FloatieMessage.MessageNature.Debuff));
         heatSequence.Add(mech);
       }
-      Log.LogWrite("Applying minefield damage\n");
+      Log.F.WL(1, "Applying minefield damage");
       foreach (var mfdmgs in this.AoEDamage) {
         fakeHit.targetId = mfdmgs.Value.target.GUID;
         ICombatant target = mfdmgs.Key;
         foreach (var mfdmg in mfdmgs.Value.hitRecords) {
           float LocArmor = target.ArmorForLocation(mfdmg.Key);
           if ((double)LocArmor < (double)mfdmg.Value.Damage) {
+            Log.F.WL(2, "floatie message structure");
             unit.Combat.MessageCenter.PublishMessage((MessageCenterMessage)new FloatieMessage(this.weapon.parent.GUID, target.GUID, new Text("{0}", new object[1]
             {
                       (object) (int) Mathf.Max(1f, mfdmg.Value.Damage)
             }), unit.Combat.Constants.CombatUIConstants.floatieSizeMedium, FloatieMessage.MessageNature.StructureDamage, mfdmg.Value.hitPosition.x, mfdmg.Value.hitPosition.y, mfdmg.Value.hitPosition.z));
           } else {
+            Log.F.WL(2, "floatie message armor");
             unit.Combat.MessageCenter.PublishMessage((MessageCenterMessage)new FloatieMessage(this.weapon.parent.GUID, target.GUID, new Text("{0}", new object[1]
             {
                       (object) (int) Mathf.Max(1f, mfdmg.Value.Damage)
             }), unit.Combat.Constants.CombatUIConstants.floatieSizeMedium, FloatieMessage.MessageNature.ArmorDamage, mfdmg.Value.hitPosition.x, mfdmg.Value.hitPosition.y, mfdmg.Value.hitPosition.z));
           }
+          Log.F.WL(2, "take weapon damage");
           target.TakeWeaponDamage(fakeHit, mfdmg.Key, this.weapon, mfdmg.Value.Damage, 0, DamageType.AmmoExplosion);
         }
         if (mfdmgs.Value.hitRecords.Count > 0) {
+          Log.F.WL(2, "floatie message explosion");
           unit.Combat.MessageCenter.PublishMessage((MessageCenterMessage)new FloatieMessage(this.weapon.parent.GUID, unit.GUID, "LANDMINES EXPLODES:" + this.landminesTerrain.Count, FloatieMessage.MessageNature.CriticalHit));
           deathSequence.Add(mfdmgs.Value.target);
         }
@@ -356,39 +360,43 @@ namespace CustAmmoCategories {
           }
         }
       }
-      Log.LogWrite("Applying minefield effects\n");
+      Log.F.WL(1, "Applying minefield effects");
       foreach (var trgseffs in this.Effects) {
         ICombatant target = trgseffs.Key;
         foreach (var trgeffs in trgseffs.Value) {
           EffectData effect = trgeffs.Key;
           foreach (ICombatant creator in trgeffs.Value) {
             string effectID = string.Format("OnLandMineHitEffect_{0}_{1}", (object)creator.GUID, (object)SequenceID);
-            Log.LogWrite($"Applying effectID:{effect.Description.Id} with effectDescId:{effect?.Description.Id} effectDescName:{effect?.Description.Name}\n");
+            Log.F.WL(1, $"Applying effectID:{effect.Description.Id} with effectDescId:{effect?.Description.Id} effectDescName:{effect?.Description.Name}");
             unit.Combat.EffectManager.CreateEffect(effect, effectID, -1, creator, target, new WeaponHitInfo(), 0, false);
           }
           if (trgeffs.Value.Count > 1) {
+            Log.F.WL(2, "floatie message effect");
             unit.Combat.MessageCenter.PublishMessage((MessageCenterMessage)new FloatieMessage(this.weapon.parent.GUID, target.GUID, effect.Description.Name + " x " + trgeffs.Value.Count.ToString(), FloatieMessage.MessageNature.Debuff));
           } else {
             unit.Combat.MessageCenter.PublishMessage((MessageCenterMessage)new FloatieMessage(this.weapon.parent.GUID, target.GUID, effect.Description.Name, FloatieMessage.MessageNature.Debuff));
           }
         }
       }
-      Log.LogWrite("Applying handling procedures\n");
+      Log.F.WL(1, "Applying handling procedures\n");
       foreach (Mech trgmech in heatSequence) {
+        Log.F.WL(2, "GenerateAndPublishHeatSequence\n");
         trgmech.GenerateAndPublishHeatSequence(SequenceID, true, false, this.weapon.parent.GUID);
       }
       foreach (Mech trgmech in instabilitySequence) {
+        Log.F.WL(2, "HandleKnockdown\n");
         trgmech.HandleKnockdown(-1, "LANDMINES", this.weapon.parent.CurrentPosition, null);
       }
       foreach (ICombatant trg in deathSequence) {
+        Log.F.WL(2, "HandleDeath\n");
         trg.HandleDeath(this.weapon.parent.GUID);
       }
-      Log.LogWrite("Applying vfx effects\n");
+      Log.F.WL(1, "Applying vfx effects\n");
       foreach (var lmVFX in this.fxRecords) {
         if (lmVFX.hasPlayed == false) { lmVFX.Play(unit.Combat, unit); };
         if (lmVFX.goVFX != null) { DynamicMapHelper.delayedPoolList.Add(new DelayedGameObjectPoolRecord(lmVFX.def.VFXprefab,lmVFX.goVFX)); }
       }
-      Log.LogWrite("Applying terrain effects\n");
+      Log.F.WL(1, "Applying terrain effects\n");
       foreach (LandMineTerrainRecord lmtr in this.landminesTerrain) {
         lmtr.applyExplodeBurn(this.weapon);
         lmtr.applyImpactTempMask(unit.Combat);
@@ -449,29 +457,29 @@ namespace CustAmmoCategories {
     }
     public static void asyncTerrainDesignMaskProc() {
       try {
-        Log.LogWrite("asyncTerrainDesignMaskProc started\n");
+        Log.F.TWL(0, "asyncTerrainDesignMaskProc started\n");
         while (true) {
           if (asyncTerrainDesignMaskQueue.Count > 0) {
             AsyncDesignMaskApplyRecord arec = DynamicMapHelper.asyncTerrainDesignMaskQueue.Dequeue();
-            Log.LogWrite("async add design mask:"+ arec.designMask.Id+ " to "+arec.hexCell.x+","+arec.hexCell.y+"\n");
+            Log.F.TWL(0, "async add design mask:" + arec.designMask.Id+ " to "+arec.hexCell.x+","+arec.hexCell.y);
             arec.hexCell.addTempTerrainMask(arec.designMask, arec.counter);
           } else {
             Thread.Sleep(100);
           }
         }
       } catch (ThreadAbortException) {
-        Log.LogWrite("asyncTerrainDesignMaskProc aborted\n");
+        Log.F.TWL(0, "asyncTerrainDesignMaskProc aborted");
         asyncTerrainDesignMaskQueue.Clear();
       }
     }
     public static void PoolDelayedGameObject() {
       if (DynamicMapHelper.Combat == null) { return; }
-      Log.LogWrite("DynamicMapHelper.PoolDelayedGameObject:"+ delayedPoolList.Count+ "\n");
+      Log.F.TWL(0, "DynamicMapHelper.PoolDelayedGameObject:" + delayedPoolList.Count);
       List<DelayedGameObjectPoolRecord> tmp = new List<DelayedGameObjectPoolRecord>();
       tmp.AddRange(delayedPoolList);
       delayedPoolList.Clear();
       foreach (var dgo in tmp) {
-        Log.LogWrite(" " + dgo.name + ":" + dgo.obj.GetInstanceID() + "\n");
+        Log.F.WL(1, dgo.name + ":" + dgo.obj.GetInstanceID());
         Combat.DataManager.PoolGameObject(dgo.name, dgo.obj);
       }
     }
@@ -501,6 +509,7 @@ namespace CustAmmoCategories {
       return false;
     }
     public static bool calculateAbortPos(AbstractActor unit, List<WayPoint> waypoints, Vector3 finalHeading, out List<WayPoint> result, out Vector3 heading) {
+      Log.F.TWL(0, "calculateAbortPos:" + unit.DisplayName+" waypoints:"+waypoints.Count);
       DynamicMapHelper.PoolDelayedGameObject();
       List<MapTerrainCellWaypoint> terrainWaypoints = DynamicMapHelper.getVisitedWaypoints(unit.Combat, waypoints);
       result = new List<WayPoint>();
@@ -517,57 +526,59 @@ namespace CustAmmoCategories {
       Weapon minefieldWeapon = null;
       Weapon burnWeapon = null;
       heading = finalHeading;
-      if (waypoints == null) { return false; }
-      if (waypoints.Count == 0) { return false; }
-      if (unit.UnaffectedFire() && unit.UnaffectedLandmines()) { return false; };
+      if (waypoints == null) { Log.F.WL(1, "waypoints is null"); return false; }
+      if (waypoints.Count == 0) { Log.F.WL(1, "waypoints is empty");return false; }
+      if (unit.UnaffectedFire() && unit.UnaffectedLandmines()) { Log.F.WL(1, "unaffected fire and landmines");  return false; };
       bool UnaffectedFire = unit.UnaffectedFire();
       bool UnaffectedLandmines = unit.UnaffectedLandmines();
       PathingCapabilitiesDef PathingCaps = (PathingCapabilitiesDef)typeof(Pathing).GetProperty("PathingCaps", BindingFlags.Instance | BindingFlags.NonPublic).GetGetMethod(true).Invoke(unit.Pathing, null);
-      CustomAmmoCategoriesLog.Log.LogWrite(" current pathing:" + PathingCaps.Description.Id + "\n");
       if (CustomAmmoCategories.Settings.MineFieldPathingMods.ContainsKey(PathingCaps.Description.Id)) {
         rollMod = CustomAmmoCategories.Settings.MineFieldPathingMods[PathingCaps.Description.Id];
       }
+      Log.F.WL(1, "current pathing:" + PathingCaps.Description.Id +" roll mod:"+rollMod);
       MineFieldDamage mfDamage = new MineFieldDamage();
       bool abortSequce = false;
       for (int index = terrainWaypoints.Count - 1; index >= 0; --index) {
         MapTerrainCellWaypoint cell = terrainWaypoints[index];
         if (lastWaypoint == null) { result.Add(cell.startPoint); lastWaypoint = cell.startPoint; };
         if (lastWaypoint.Position != cell.startPoint.Position) { result.Add(cell.startPoint); lastWaypoint = cell.startPoint; };
-        Log.LogWrite(" cell:" + cell.cell.x + "," + cell.cell.y + " startPos:" + cell.startPoint.Position + "\n");
+        Log.F.WL(2, "cell:" + cell.cell.x + "," + cell.cell.y + " startPos:" + cell.startPoint.Position);
         if ((cell.cell.BurningStrength > 0)&&(UnaffectedFire == false)) {
           BurnAllHeat += (float)cell.cell.BurningStrength;
           BurnAllCount += 1f;
           BurnHeat = BurnAllHeat / BurnAllCount;
           burnWeapon = cell.cell.BurningWeapon;
         }
-        Log.LogWrite("  burning damage added\n");
+        Log.F.WL(2, "burning damage added");
         if (unit.Combat == null) {
-          Log.LogWrite("  actor without combat???!!!!\n", true);
+          Log.F.WL(2, "actor without combat???!!!!", true);
         }
         Vector3 cellPosition = unit.Combat.MapMetaData.getWorldPos(new Point(cell.cell.y, cell.cell.x));
         MineField strongestMine = null;
         if (cell.cell.hexCell == null) {
-          Log.LogWrite("  cell without HEX????!!\n", true);
+          Log.F.WL(2, "cell without HEX????!!", true);
           continue;
         }
         if (cell.cell.hexCell.MineField == null) {
-          Log.LogWrite("  HEX withlout landmines list????!!\n", true);
+          Log.F.WL(2, "HEX withlout landmines list????!!", true);
           continue;
         }
-        Log.LogWrite("  " + cell.cell.hexCell.x + ":" + cell.cell.hexCell.y + ":" + cell.cell.hexCell.MineField.Count + "\n");
+        Log.F.WL(2, "Hex cell " + cell.cell.hexCell.x + ":" + cell.cell.hexCell.y + " minefields in hex:" + cell.cell.hexCell.MineField.Count);
         if (UnaffectedLandmines) {
-          Log.LogWrite("  Unaffected by landmines\n");
+          Log.F.WL(2, "Unaffected by landmines\n");
           continue;
         };
         //if (cell.cell.hexCell.MineField.Count == 0) { continue; }
         foreach (MineField mineField in cell.cell.hexCell.MineField) {
-          if (mineField == null) { Log.LogWrite("  null minefield???!!!\n", true); continue; }
-          if (mineField.Def == null) { Log.LogWrite("  mine field without def???!!!\n", true); continue; };
-          Log.LogWrite("  minefield:" + mineField.count + "/" + mineField.Def.Chance + "/" + mineField.Def.Damage + "\n");
+          if (mineField == null) { Log.F.WL(3, "null minefield???!!!", true); continue; }
+          if (mineField.Def == null) { Log.F.WL(3, "mine field without def???!!!\n", true); continue; };
+          Log.F.WL(3, "mines in minefield:" + mineField.count + " chance:" + mineField.Def.Chance + " damage:" + mineField.Def.Damage);
           if (mineField.count == 0) { continue; };
           float roll = Random.Range(0f, 1f);
           float chance = mineField.Def.Chance * rollMod;
+          Log.F.WL(3, "roll:" + roll + " effective chance:" + chance);
           if (roll < chance) {
+            Log.F.WL(3, "damage");
             mineField.count -= 1;
             minefieldWeapon = mineField.weapon;
             mfDamage.landminesTerrain.Add(new LandMineTerrainRecord(mineField.Def, cell.cell));
@@ -614,7 +625,7 @@ namespace CustAmmoCategories {
       return abortSequce;
     }
     public static void calculateJumpDamage(AbstractActor unit, Vector3 position) {
-      Log.LogWrite("calculateJumpDamage " + unit.DisplayName + ":"+unit.GUID+" "+position+"\n");
+      Log.F.TWL(0, "calculateJumpDamage " + unit.DisplayName + ":"+unit.GUID+" "+position+"\n");
       DynamicMapHelper.PoolDelayedGameObject();
       Mech mech = unit as Mech;
       Vehicle vehicle = unit as Vehicle;
@@ -626,39 +637,40 @@ namespace CustAmmoCategories {
       Weapon minefieldWeapon = null;
       Weapon burnWeapon = null;
       PathingCapabilitiesDef PathingCaps = (PathingCapabilitiesDef)typeof(Pathing).GetProperty("PathingCaps", BindingFlags.Instance | BindingFlags.NonPublic).GetGetMethod(true).Invoke(unit.Pathing, null);
-      Log.LogWrite(" current pathing:" + PathingCaps.Description.Id + "\n");
+      Log.F.WL(1, "current pathing:" + PathingCaps.Description.Id);
       if (CustomAmmoCategories.Settings.MineFieldPathingMods.ContainsKey(PathingCaps.Description.Id)) {
         rollMod = CustomAmmoCategories.Settings.MineFieldPathingMods[PathingCaps.Description.Id];
       }
       MineFieldDamage mfDamage = new MineFieldDamage();
       MapTerrainDataCellEx cell = unit.Combat.MapMetaData.GetCellAt(position) as MapTerrainDataCellEx;
       if (cell == null) { return; }
-      Log.LogWrite(" cell:" + cell.x + "," + cell.y + "\n");
+      Log.F.WL(1, "cell:" + cell.x + "," + cell.y + "\n");
       if (cell.BurningStrength > 0) {
         BurnAllHeat += (float)cell.BurningStrength;
         BurnAllCount += 1f;
         BurnHeat = BurnAllHeat / BurnAllCount;
         burnWeapon = cell.BurningWeapon;
       }
-      Log.LogWrite("  burning damage added\n");
+      Log.F.WL(1, "burning damage added\n");
       MineField strongestMine = null;
       if (cell.hexCell == null) {
-        Log.LogWrite("  cell without HEX????!!\n", true);
+        Log.F.WL(2, "cell without HEX????!!\n", true);
         return;
       }
       if (cell.hexCell.MineField == null) {
-        Log.LogWrite("  HEX withlout landmines list????!!\n", true);
+        Log.F.WL(2, "HEX withlout landmines list????!!\n", true);
         return;
       }
-      Log.LogWrite("  " + cell.hexCell.x + ":" + cell.hexCell.y + ":" + cell.hexCell.MineField.Count + "\n");
+      Log.F.WL(2, "Hex cell " + cell.hexCell.x + ":" + cell.hexCell.y + " minefields in hex:" + cell.hexCell.MineField.Count);
       //if (cell.cell.hexCell.MineField.Count == 0) { continue; }
       foreach (MineField mineField in cell.hexCell.MineField) {
-        if (mineField == null) { Log.LogWrite("  null minefield???!!!\n", true); continue; }
-        if (mineField.Def == null) { Log.LogWrite("  mine field without def???!!!\n", true); continue; };
-        Log.LogWrite("  minefield:" + mineField.count + "/" + mineField.Def.Chance + "/" + mineField.Def.Damage + "\n");
+        if (mineField == null) { Log.F.WL(3, "null minefield???!!!", true); continue; }
+        if (mineField.Def == null) { Log.F.WL(3, "mine field without def???!!!", true); continue; };
+        Log.F.WL(3, "mines in minefield:" + mineField.count + " chance:" + mineField.Def.Chance + " damage:" + mineField.Def.Damage);
         if (mineField.count == 0) { continue; };
         float roll = Random.Range(0f, 1f);
         float chance = mineField.Def.Chance * rollMod;
+        Log.F.WL(3, "roll:" + roll + " effective chance:" + chance);
         if (roll < chance) {
           mineField.count -= 1;
           minefieldWeapon = mineField.weapon;
@@ -706,26 +718,26 @@ namespace CustAmmoCategoriesPatches {
   [HarmonyPatch(new Type[] { typeof(List<WayPoint>), typeof(Vector3), typeof(bool), typeof(ICombatant) })]
   public static class ActorMovementSequence_CompleteOrders {
     private static bool Prefix(ActorMovementSequence __instance, ref List<WayPoint> waypoints, ref Vector3 finalHeading, bool sprinting, ref ICombatant meleeTarget) {
-      Log.LogWrite("ActorMovementSequence.SetWaypoints " + __instance.owningActor.DisplayName + ":" + __instance.owningActor.GUID + "\n");
+      Log.F.TWL(0, "ActorMovementSequence.SetWaypoints " + __instance.owningActor.DisplayName + ":" + __instance.owningActor.GUID);
       try {
         List<WayPoint> newWaypoints;
         Vector3 newHeading;
         if (DynamicMapHelper.calculateAbortPos(__instance.owningActor, waypoints, finalHeading, out newWaypoints, out newHeading)) {
           if (meleeTarget != null) {
-            Log.LogWrite(" melee sequence interrupted\n");
+            Log.F.WL(1, "melee sequence interrupted. Floatie");
             __instance.owningActor.Combat.MessageCenter.PublishMessage((MessageCenterMessage)new FloatieMessage(__instance.owningActor.GUID, __instance.owningActor.GUID, "MELEE ATTACK INTERUPTED", FloatieMessage.MessageNature.CriticalHit));
             meleeTarget = null;
           }
-          Log.LogWrite(" old:"); foreach (var waypoint in waypoints) { Log.LogWrite(waypoint.Position.ToString() + "->"); }; Log.LogWrite("\n");
+          Log.F.W(1, "old:"); foreach (var waypoint in waypoints) { Log.F.W(waypoint.Position.ToString() + "->"); }; Log.F.W("\n");
           waypoints.Clear();
           waypoints.AddRange(newWaypoints);
           //waypoints = newWaypoints;
-          Log.LogWrite(" new:"); foreach (var waypoint in waypoints) { Log.LogWrite(waypoint.Position.ToString() + "->"); }; Log.LogWrite("\n");
+          Log.F.W(1, "new:"); foreach (var waypoint in waypoints) { Log.F.W(waypoint.Position.ToString() + "->"); }; Log.F.W("\n");
           //finalHeading = newHeading;
-          Log.LogWrite(" waypoints updated\n");
+          Log.F.WL(1,"waypoints updated\n");
         }
       } catch (Exception e) {
-        Log.LogWrite(e.ToString() + "\n", true);
+        Log.F.TWL(1, e.ToString(), true);
       }
       return true;
     }
@@ -760,7 +772,7 @@ namespace CustAmmoCategoriesPatches {
           }
         }
       } catch (Exception e) {
-        Log.LogWrite(e.ToString() + "\n", true);
+        Log.F.TWL(1, e.ToString(), true);
       }
     }
   }
@@ -770,16 +782,20 @@ namespace CustAmmoCategoriesPatches {
   [HarmonyPatch(new Type[] { })]
   public static class ActorMovementSequence_CompleteMove {
     private static void Postfix(ActorMovementSequence __instance) {
-      Log.LogWrite("ActorMovementSequence.CompleteOrders " + __instance.owningActor.DisplayName + ":" + __instance.owningActor.GUID + "\n");
+      Log.F.TWL(0, "ActorMovementSequence.CompleteOrders " + __instance.owningActor.DisplayName + ":" + __instance.owningActor.GUID);
       try {
         if (DynamicMapHelper.registredMineFieldDamage.ContainsKey(__instance.owningActor) == false) { return; };
         MineFieldDamage mfDamage = DynamicMapHelper.registredMineFieldDamage[__instance.owningActor];
         if (__instance.meleeType == MeleeAttackType.NotSet) {
-          mfDamage.resolveMineFiledDamage(__instance.owningActor, __instance.SequenceGUID);
+          try {
+            mfDamage.resolveMineFiledDamage(__instance.owningActor, __instance.SequenceGUID);
+          }catch(Exception e) {
+            Log.F.TWL(0, "resolving minefield damage exception:"+e.ToString());
+          }
           DynamicMapHelper.registredMineFieldDamage.Remove(__instance.owningActor);
         }
       } catch (Exception e) {
-        Log.LogWrite(e.ToString() + "\n", true);
+        Log.F.TWL(0, e.ToString(), true);
       }
     }
   }
@@ -801,12 +817,12 @@ namespace CustAmmoCategoriesPatches {
   [HarmonyPatch(MethodType.Normal)]
   public static class MechMeleeSequence_ExecuteMelee {
     private static void Postfix(MechMeleeSequence __instance) {
-      Log.LogWrite("MechMeleeSequence.ExecuteMelee " + __instance.owningActor.DisplayName + ":" + __instance.owningActor.GUID + "\n");
+      Log.F.TWL(0, "MechMeleeSequence.ExecuteMelee " + __instance.owningActor.DisplayName + ":" + __instance.owningActor.GUID);
       try {
         if (DynamicMapHelper.registredMineFieldDamage.ContainsKey(__instance.owningActor) == false) { return; };
         MineFieldDamage mfDamage = DynamicMapHelper.registredMineFieldDamage[__instance.owningActor];
         if (mfDamage.sequenceAborted) {
-          Log.LogWrite(" sequence aborted. executing OnMeleeReady().\n");
+          Log.F.WL(1, "sequence aborted. executing OnMeleeReady()");
           __instance.OnMeleeReady(null);
         };
       } catch (Exception e) {
@@ -821,13 +837,13 @@ namespace CustAmmoCategoriesPatches {
   [HarmonyPatch(MethodType.Normal)]
   public static class MechMeleeSequence_BuildMeleeDirectorSequence {
     private static bool Prefix(MechMeleeSequence __instance) {
-      Log.LogWrite("MechMeleeSequence.BuildMeleeDirectorSequence " + __instance.owningActor.DisplayName + ":" + __instance.owningActor.GUID + "\n");
+      Log.F.TWL(0, "MechMeleeSequence.BuildMeleeDirectorSequence " + __instance.owningActor.DisplayName + ":" + __instance.owningActor.GUID);
       if (DynamicMapHelper.registredMineFieldDamage.ContainsKey(__instance.owningActor) == false) {
         return true;
       };
       MineFieldDamage mfDamage = DynamicMapHelper.registredMineFieldDamage[__instance.owningActor];
-      if (mfDamage.sequenceAborted) { 
-        Log.LogWrite(" damaged on path. Executing empty melee sequnce\n");
+      if (mfDamage.sequenceAborted) {
+        Log.F.WL(1, "damaged on path. Executing empty melee sequnce");
         List<Weapon> requestedWeapons = (List<Weapon>)typeof(MechMeleeSequence).GetField("requestedWeapons", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(__instance);
         requestedWeapons.Clear();
         ActorMovementSequence moveSequence = (ActorMovementSequence)typeof(MechMeleeSequence).GetField("moveSequence", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(__instance);
@@ -850,14 +866,14 @@ namespace CustAmmoCategoriesPatches {
   [HarmonyPatch(MethodType.Normal)]
   public static class MechMeleeSequence_CompleteOrders {
     private static void Postfix(MechMeleeSequence __instance) {
-      Log.LogWrite("MechMeleeSequence.CompleteOrders " + __instance.owningActor.DisplayName + ":" + __instance.owningActor.GUID + "\n");
+      Log.F.TWL(0, "MechMeleeSequence.CompleteOrders " + __instance.owningActor.DisplayName + ":" + __instance.owningActor.GUID);
       try {
         if (DynamicMapHelper.registredMineFieldDamage.ContainsKey(__instance.owningActor) == false) { return; };
         MineFieldDamage mfDamage = DynamicMapHelper.registredMineFieldDamage[__instance.owningActor];
         mfDamage.resolveMineFiledDamage(__instance.owningActor, __instance.SequenceGUID);
         DynamicMapHelper.registredMineFieldDamage.Remove(__instance.owningActor);
       } catch (Exception e) {
-        Log.LogWrite(e.ToString() + "\n", true);
+        Log.F.TWL(0, e.ToString(), true);
       }
     }
   }
@@ -867,21 +883,21 @@ namespace CustAmmoCategoriesPatches {
   [HarmonyPatch(new Type[] { })]
   public static class MechJumpSequence_CompleteOrders {
     private static void Postfix(MechJumpSequence __instance) {
-      Log.LogWrite("MechJumpSequence.CompleteOrders " + __instance.owningActor.DisplayName + ":" + __instance.owningActor.GUID + "\n");
+      Log.F.TWL(0, "MechJumpSequence.CompleteOrders " + __instance.owningActor.DisplayName + ":" + __instance.owningActor.GUID);
       try {
         ICombatant DFATarget = (ICombatant)typeof(MechJumpSequence).GetField("DFATarget", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(__instance);
         DynamicMapHelper.calculateJumpDamage(__instance.owningActor, __instance.FinalPos);
         if (DFATarget == null) {
-          Log.LogWrite(" not DFA\n");
+          Log.F.WL(1, "not DFA");
           if (DynamicMapHelper.registredMineFieldDamage.ContainsKey(__instance.owningActor) == false) { return; };
           MineFieldDamage mfDamage = DynamicMapHelper.registredMineFieldDamage[__instance.owningActor];
           mfDamage.resolveMineFiledDamage(__instance.owningActor, __instance.SequenceGUID);
           DynamicMapHelper.registredMineFieldDamage.Remove(__instance.owningActor);
         } else {
-          Log.LogWrite(" DFA\n");
+          Log.F.WL(1, "DFA");
         }
       } catch (Exception e) {
-        Log.LogWrite(e.ToString() + "\n", true);
+        Log.F.TWL(0, e.ToString(), true);
       }
     }
   }
@@ -891,14 +907,14 @@ namespace CustAmmoCategoriesPatches {
   [HarmonyPatch(new Type[] { })]
   public static class MechDFASequence_CompleteOrders {
     private static void Postfix(MechDFASequence __instance) {
-      CustomAmmoCategoriesLog.Log.LogWrite("MechDFASequence.CompleteOrders" + __instance.owningActor.DisplayName + ":" + __instance.owningActor.GUID + "\n");
+      Log.F.TWL(0, "MechDFASequence.CompleteOrders" + __instance.owningActor.DisplayName + ":" + __instance.owningActor.GUID);
       try {
         if (DynamicMapHelper.registredMineFieldDamage.ContainsKey(__instance.owningActor) == false) { return; };
         MineFieldDamage mfDamage = DynamicMapHelper.registredMineFieldDamage[__instance.owningActor];
         mfDamage.resolveMineFiledDamage(__instance.owningActor, __instance.SequenceGUID);
         DynamicMapHelper.registredMineFieldDamage.Remove(__instance.owningActor);
       } catch (Exception e) {
-        Log.LogWrite(e.ToString() + "\n", true);
+        Log.F.TWL(0, e.ToString(), true);
       }
     }
   }

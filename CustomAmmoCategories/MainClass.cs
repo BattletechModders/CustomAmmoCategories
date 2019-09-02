@@ -553,7 +553,7 @@ namespace CustomAmmoCategoriesPatches {
           args[0] = errorMessages;
           args[1] = MechValidationType.AmmoMissing;
           string name = string.IsNullOrEmpty(weaponDef.Value.Description.UIName) ? weaponDef.Value.Description.Name : weaponDef.Value.Description.UIName;
-          args[2] = new Text("MISSING AMMO: This 'Mech does not have an undamaged Ammo Bin for {0}", new object[1] { (object)name });
+          args[2] = new Text("__/CAC.MissingAmmo/__", new object[1] { (object)name });
           method.Invoke(obj: null, parameters: args);
           errorMessages = (Dictionary<MechValidationType, List<Text>>)args[0];
         }
@@ -572,7 +572,7 @@ namespace CustomAmmoCategoriesPatches {
           args[0] = errorMessages;
           args[1] = MechValidationType.AmmoUnneeded;
           string name = string.IsNullOrEmpty(ammoDef.Value.Description.UIName) ? ammoDef.Value.Description.Name : ammoDef.Value.Description.UIName;
-          args[2] = new Text("EXTRA AMMO: This 'Mech carries unusable {0} Ammo", new object[1] { (object)name });
+          args[2] = new Text("__/CAC.ExtraAmmo/__", new object[1] { (object)name });
           method.Invoke(obj: null, parameters: args);
           errorMessages = (Dictionary<MechValidationType, List<Text>>)args[0];
         }
@@ -1527,6 +1527,7 @@ namespace CustAmmoCategories {
     public bool CritLocationTransfer { get; set; }
     public float APMinCritChance { get; set; }
     public string RemoveFromCritRollStatName { get; set; }
+    public bool SpawnMenuEnabled { get; set; }
     public bool NoCritFloatieMessage { set { FNoCritFloatieMessage = value ? TripleBoolean.True : TripleBoolean.False; } }
     [JsonIgnore]
     public TripleBoolean FNoCritFloatieMessage { get; private set; }
@@ -1611,6 +1612,7 @@ namespace CustAmmoCategories {
       RemoveFromCritRollStatName = "IgnoreDamage";
       FNoCritFloatieMessage = TripleBoolean.NotSet;
       MechEngineerDetected = TripleBoolean.NotSet;
+      SpawnMenuEnabled = false;
     }
   }
 }

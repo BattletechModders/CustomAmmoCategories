@@ -200,6 +200,7 @@ namespace CustAmmoCategories {
     public TripleBoolean AMSImmune { get; set; }
     public bool AlternateDamageCalc { get; set; }
     public bool AlternateHeatDamageCalc { get; set; }
+    public bool AlternateInstabilityCalc { get; set; }
     public TripleBoolean IsAMS { get; set; }
     public TripleBoolean IsAAMS { get; set; }
     public bool AMSShootsEveryAttack { get; set; }
@@ -275,6 +276,7 @@ namespace CustAmmoCategories {
       IsAMS = TripleBoolean.NotSet;
       IsAAMS = TripleBoolean.NotSet;
       AlternateHeatDamageCalc = false;
+      AlternateInstabilityCalc = false;
       AMSShootsEveryAttack = false;
       baseModeId = WeaponMode.NONE_MODE_NAME;
       DisableClustering = TripleBoolean.True;
@@ -520,6 +522,10 @@ namespace CustomAmmoCategoriesPatches {
       if (defTemp["AlternateHeatDamageCalc"] != null) {
         extDef.AlternateHeatDamageCalc = (bool)defTemp["AlternateHeatDamageCalc"];
         defTemp.Remove("AlternateHeatDamageCalc");
+      }
+      if (defTemp["AlternateInstabilityCalc"] != null) {
+        extDef.AlternateInstabilityCalc = (bool)defTemp["AlternateInstabilityCalc"];
+        defTemp.Remove("AlternateInstabilityCalc");
       }
       if (defTemp["FireTerrainCellRadius"] != null) {
         extDef.FireTerrainCellRadius = (int)defTemp["FireTerrainCellRadius"];

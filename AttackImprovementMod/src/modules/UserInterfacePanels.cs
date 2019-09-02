@@ -275,9 +275,9 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
             if (ability?.Def == null || !ability.Def.IsPrimaryAbility) continue;
             text.Append(ability.Def.Description?.Name).Append("\n");
           }
-          if (text.Length <= 0) text.Append("(No skills)");
+          if (text.Length <= 0) text.Append("__/AIM.NO_SKILL/__");
           if (target is Mech mech)
-            text.Append(FormatMeter("Stab", mech.CurrentStability, mech.MaxStability));
+            text.Append(FormatMeter("__/AIM.STABILITY/__", mech.CurrentStability, mech.MaxStability));
 
         } else {
           if (target is Mech mech) {
@@ -285,11 +285,11 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
             if (__instance != TargetDisplay && HUD?.SelectionHandler?.SelectedActor == mech) {
               GetPreviewNumbers(mech, ref heat, ref stab, ref postfix);
               prefix = "";
-              numbers = FormatPrediction("Heat", mech.CurrentHeat, heat) + "\n"
-                      + FormatPrediction("Stab", mech.CurrentStability, stab) + "\n";
+              numbers = FormatPrediction("__/AIM.HEAT/__", mech.CurrentHeat, heat) + "\n"
+                      + FormatPrediction("__/AIM.STABILITY/__", mech.CurrentStability, stab) + "\n";
             } else
-              numbers = FormatMeter("Heat", heat, mech.MaxHeat) + "\n"
-                      + FormatMeter("Stab", stab, mech.MaxStability) + "\n";
+              numbers = FormatMeter("__/AIM.HEAT/__", heat, mech.MaxHeat) + "\n"
+                      + FormatMeter("__/AIM.STABILITY/__", stab, mech.MaxStability) + "\n";
           }
           if (prefix == null && HUD?.SelectedActor != target)
             prefix = GetTargetNumbers(target) + "\n";
@@ -310,13 +310,13 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
         string weight = mech.weightClass.ToString();
         if (jets > 0)
           switch (mech.weightClass) {
-            case WeightClass.LIGHT: weight = "LT"; break;
-            case WeightClass.MEDIUM: weight = "MED"; break;
-            case WeightClass.HEAVY: weight = "HVY"; break;
-            case WeightClass.ASSAULT: weight = "ASLT"; break;
+            case WeightClass.LIGHT: weight = "__/AIM.LIGHTMECH/__"; break;
+            case WeightClass.MEDIUM: weight = "__/AIM.MEDIUMMECH/__"; break;
+            case WeightClass.HEAVY: weight = "__/AIM.HEAVYMECH/__"; break;
+            case WeightClass.ASSAULT: weight = "__/AIM.ASSAULTMECH/__"; break;
           }
         string ton = ((int)mech.tonnage) + "T " + weight;
-        return jets > 0 ? string.Format("{0}, {1} JETS", ton, jets) : ton;
+        return jets > 0 ? string.Format("{0}, {1} __/AIM.JETS/__", ton, jets) : ton;
 
       } else if (target is Vehicle vehicle)
         return ((int)vehicle.tonnage) + "T " + vehicle.weightClass;
