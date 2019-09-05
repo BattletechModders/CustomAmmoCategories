@@ -11,7 +11,10 @@ using UnityEngine;
 namespace CustomUnits {
   public static class TerraiWaterHelper {
     public static bool HasWater(this MapTerrainDataCell cell) {
-      if (cell.MapEncounterLayerDataCell.HasBuilding) { return false; }
+      if (cell == null) { return false; };
+      if (cell.MapEncounterLayerDataCell != null) {
+        if (cell.MapEncounterLayerDataCell.HasBuilding) { return false; }
+      }
       TerrainMaskFlags terrainMaskFlags = MapMetaData.GetPriorityTerrainMaskFlags(cell.terrainMask);
       return SplatMapInfo.IsDeepWater(terrainMaskFlags) || SplatMapInfo.IsWater(terrainMaskFlags);
     }

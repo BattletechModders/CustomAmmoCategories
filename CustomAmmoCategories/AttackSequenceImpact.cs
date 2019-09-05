@@ -336,6 +336,19 @@ namespace CustomAmmoCategoriesPatches {
       if (mAttackCompletelyMissed == null) { return; }
       mAttackCompletelyMissed.Invoke(sequence, new object[1] { value });
     }
+    public static bool isHasHeat(this ICombatant combatant) {
+      Mech mech = combatant as Mech;
+      return mech != null;
+    }
+    public static float HeatDamage(this ICombatant combatant, float heat) {
+      switch (combatant.UnitType) {
+        case UnitType.Vehicle: return WeaponRealizer.Core.ModSettings.HeatDamageAppliesToVehicleAsNormalDamage ? heat * WeaponRealizer.Core.ModSettings.HeatDamageApplicationToVehicleMultiplier : 0f;
+        case UnitType.Turret: return WeaponRealizer.Core.ModSettings.HeatDamageAppliesToTurretAsNormalDamage ? heat * WeaponRealizer.Core.ModSettings.HeatDamageApplicationToTurretMultiplier : 0f;
+        case UnitType.Building: return WeaponRealizer.Core.ModSettings.HeatDamageAppliesToBuildingAsNormalDamage ? heat * WeaponRealizer.Core.ModSettings.HeatDamageApplicationToBuildingMultiplier : 0f;
+        default: return 0f;
+      }
+    }
+
     public static bool Prefix(AttackDirector.AttackSequence __instance, ref MessageCenterMessage message) {
       AttackSequenceImpactMessage impactMessage = (AttackSequenceImpactMessage)message;
       if (impactMessage.hitInfo.attackSequenceId != __instance.id) { return true; }
@@ -345,6 +358,7 @@ namespace CustomAmmoCategoriesPatches {
 
       float rawDamage = impactMessage.hitDamage;
       float realDamage = rawDamage;
+      float rawHeat = weapon.HeatDamagePerShot;
       int hitLocation = impactMessage.hitInfo.hitLocations[impactMessage.hitIndex];
       ICombatant target = __instance.chosenTarget;
       AdvWeaponHitInfoRec advRec = impactMessage.hitInfo.advRec(impactMessage.hitIndex);
@@ -354,6 +368,7 @@ namespace CustomAmmoCategoriesPatches {
       if (advRec != null) {
         rawDamage = advRec.Damage;
         realDamage = advRec.Damage;
+        rawHeat = advRec.Heat;
         hitLocation = advRec.hitLocation;
         target = advRec.target;
         isAOE = advRec.isAOE;
@@ -382,8 +397,8 @@ namespace CustomAmmoCategoriesPatches {
       CustomAmmoCategoriesLog.Log.LogWrite("  location = " + hitLocation + "\n");
       CustomAmmoCategoriesLog.Log.LogWrite("  weapon = " + weapon.UIName + "\n");
       CustomAmmoCategoriesLog.Log.LogWrite("  damage = " + rawDamage + "/"+realDamage+"\n");
-      if(advRec != null) {
-        CustomAmmoCategoriesLog.Log.LogWrite("  heat = " + advRec.Heat + "\n");
+      CustomAmmoCategoriesLog.Log.LogWrite("  heat = " + rawHeat + "\n");
+      if (advRec != null) {
         CustomAmmoCategoriesLog.Log.LogWrite("  stability = " + advRec.Stability + "\n");
       }
       CustomAmmoCategoriesLog.Log.LogWrite("  isAOE = " + (isAOE) + "\n");
@@ -411,7 +426,19 @@ namespace CustomAmmoCategoriesPatches {
         } else {
           Log.LogWrite("Missile intercepted. No additional impact. No minefield.\n");
         }
-        if (realDamage >= 1.0f) {          
+        Log.M.WL("  heat damage exists, but target can't be heated");
+        if ((target.isHasHeat() == false) && (rawHeat >= 0.5f)) {
+          Log.M.WL("  heat damage exists, but target can't be heated");
+          float heatAsNormal = target.HeatDamage(rawHeat);
+          Log.M.WL("  heat transfered to normal damage:" + heatAsNormal);
+          rawDamage += heatAsNormal;
+          realDamage += heatAsNormal;
+          CustomAmmoCategoriesLog.Log.LogWrite("  damage = " + rawDamage + "/" + realDamage + "\n");
+          if (advRec != null) {
+            advRec.Heat = 0f;
+          }
+        }
+        if (realDamage >= 1.0f) { 
           if (CustomAmmoCategories.getWeaponDamageVariance(weapon) > CustomAmmoCategories.Epsilon) {
             realDamage = CustomAmmoCategories.WeaponDamageSimpleVariance(weapon, rawDamage);
           } else {
@@ -441,10 +468,9 @@ namespace CustomAmmoCategoriesPatches {
             }
           }
           if (realDamage >= 1.0f) {
-            float HeatDamage = advRec != null ? advRec.Heat : weapon.HeatDamagePerShot;
-            Log.LogWrite("Applying WeaponRealizer variance. Current damage: " + realDamage + " HeatDamage: " + HeatDamage + "\n");
-            realDamage = WeaponRealizer.Calculator.ApplyDamageModifiers(__instance.attacker, target, weapon, realDamage, HeatDamage);
-            Log.LogWrite(" damage after WeaponRealizer variance: " + realDamage + "\n");
+            Log.LogWrite("Applying WeaponRealizer variance. Current damage: " + realDamage + "\n");
+            realDamage = WeaponRealizer.Calculator.ApplyDamageModifiers(__instance.attacker, target, weapon, realDamage);
+            Log.LogWrite("damage after WeaponRealizer variance: " + realDamage + "\n");
           }
         } else {
           CustomAmmoCategoriesLog.Log.LogWrite("WARNING! raw damage is less than 1.0f. Variance calculation is forbidden with this damage value\n", true);

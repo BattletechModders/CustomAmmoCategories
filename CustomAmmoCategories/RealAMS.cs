@@ -1262,7 +1262,12 @@ namespace CustAmmoCategories {
           WeaponHitInfo?[][] weaponHitInfo = (WeaponHitInfo?[][])typeof(AttackDirector.AttackSequence).GetField("weaponHitInfo", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(__instance);
           Log.LogWrite("Main stray generator\n", true);
           for (int groupIndex = 0; groupIndex < weaponHitInfo.Length; ++groupIndex) {
+
             for (int weaponIndex = 0; weaponIndex < weaponHitInfo[groupIndex].Length; ++weaponIndex) {
+              if (weaponHitInfo[groupIndex][weaponIndex].HasValue == false) {
+                Log.M.TWL(0,"WeaponHitInfo at grp:"+groupIndex+" index:"+weaponHitInfo+" is null. How?! Again weapon without representation?! You realy should stop it!",true);
+                continue;
+              }
               WeaponHitInfo hitInfo = weaponHitInfo[groupIndex][weaponIndex].Value;
               WeaponStrayHelper.MainStray(ref hitInfo);
               weaponHitInfo[groupIndex][weaponIndex] = hitInfo;
@@ -1282,6 +1287,10 @@ namespace CustAmmoCategories {
           Log.LogWrite("Frag generator\n", true);
           for (int groupIndex = 0; groupIndex < weaponHitInfo.Length; ++groupIndex) {
             for (int weaponIndex = 0; weaponIndex < weaponHitInfo[groupIndex].Length; ++weaponIndex) {
+              if (weaponHitInfo[groupIndex][weaponIndex].HasValue == false) {
+                Log.M.TWL(0, "WeaponHitInfo at grp:" + groupIndex + " index:" + weaponHitInfo + " is null. How?! Again weapon without representation?! You realy should stop it!", true);
+                continue;
+              }
               WeaponHitInfo hitInfo = weaponHitInfo[groupIndex][weaponIndex].Value;
               FragWeaponHelper.FragSeparation(ref hitInfo);
               weaponHitInfo[groupIndex][weaponIndex] = hitInfo;
@@ -1296,6 +1305,10 @@ namespace CustAmmoCategories {
           Log.LogWrite("AoE generator\n", true);
           for (int groupIndex = 0; groupIndex < weaponHitInfo.Length; ++groupIndex) {
             for (int weaponIndex = 0; weaponIndex < weaponHitInfo[groupIndex].Length; ++weaponIndex) {
+              if (weaponHitInfo[groupIndex][weaponIndex].HasValue == false) {
+                Log.M.TWL(0, "WeaponHitInfo at grp:" + groupIndex + " index:" + weaponHitInfo + " is null. How?! Again weapon without representation?! You realy should stop it!", true);
+                continue;
+              }
               WeaponHitInfo hitInfo = weaponHitInfo[groupIndex][weaponIndex].Value;
               AreaOfEffectHelper.AoEProcessing(ref hitInfo);
               weaponHitInfo[groupIndex][weaponIndex] = hitInfo;

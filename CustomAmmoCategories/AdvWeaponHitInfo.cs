@@ -299,10 +299,10 @@ namespace CustAmmoCategories {
       WeaponEffect effect = weapon.getWeaponEffect();
       if (effect == null) {
         Log.LogWrite(" effect is null\n");
-        return null;
+        //return null;
       }
       result.weapon = weapon;
-      result.weaponEffect = effect;
+      //result.weaponEffect = effect;
       result.Sequence = sequence;
       MissileLauncherEffect launcher = effect as MissileLauncherEffect;
       MultiShotMissileLauncherEffect msLauncher = effect as MultiShotMissileLauncherEffect;
@@ -381,6 +381,9 @@ namespace CustAmmoCategories {
           Log.LogWrite(" not missile launcher\n");
         }
         hit.GenerateTrajectory();
+        if (effect == null) {
+          hit.projectileSpeed = 100f;
+        } else
         if ((laser == null) && (msLaser == null) && (flamer == null)) {
           float distance = hit.trajectorySpline.Length;
           float duration = 1f;
@@ -399,7 +402,7 @@ namespace CustAmmoCategories {
       if (AdvWeaponHitInfo.advancedWeaponHitInfo.ContainsKey(hitInfo.attackSequenceId) == false) { AdvWeaponHitInfo.advancedWeaponHitInfo.Add(hitInfo.attackSequenceId, new Dictionary<int, Dictionary<int, AdvWeaponHitInfo>>()); }
       if (AdvWeaponHitInfo.advancedWeaponHitInfo[hitInfo.attackSequenceId].ContainsKey(hitInfo.attackGroupIndex) == false) { AdvWeaponHitInfo.advancedWeaponHitInfo[hitInfo.attackSequenceId].Add(hitInfo.attackGroupIndex, new Dictionary<int, AdvWeaponHitInfo>()); }
       AdvWeaponHitInfo.advancedWeaponHitInfo[hitInfo.attackSequenceId][hitInfo.attackGroupIndex].Add(hitInfo.attackWeaponIndex, result);
-      Log.LogWrite("initGenericAdvInfo:" + hitInfo.attackSequenceId + "\n");
+      Log.LogWrite("initGenericAdvInfo: " + hitInfo.attackSequenceId + "\n");
       return result;
     }
   }
@@ -415,7 +418,7 @@ namespace CustAmmoCategories {
     public int groupIdx;
     public int weaponIdx;
     public Weapon weapon;
-    public WeaponEffect weaponEffect;
+    //public WeaponEffect weaponEffect { get; set; };
     public float hitChance;
     public AdvWeaponResolveInfo resolve(ICombatant target) {
       if (resolveInfo.ContainsKey(target) == false) { resolveInfo.Add(target, new AdvWeaponResolveInfo(this)); }
