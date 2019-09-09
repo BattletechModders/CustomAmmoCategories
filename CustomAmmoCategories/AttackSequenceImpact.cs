@@ -174,7 +174,7 @@ namespace CustAmmoCategories {
     private const double Pi2 = Math.PI / 2.0;
     public static float WeaponDamageDistance(ICombatant attacker, ICombatant target, Weapon weapon, float damage, float rawDamage) {
       var damagePerShot = weapon.DamagePerShot;
-      var adjustment = rawDamage / damagePerShot;
+      //var adjustment = rawDamage / damagePerShot;
       float varianceMultiplier;
       var distance = Vector3.Distance(attacker.TargetPosition, target.TargetPosition);
       var distanceDifference = weapon.MaxRange - distance;
@@ -191,11 +191,11 @@ namespace CustAmmoCategories {
       } else { //out of range
         return damage;
       }
-      var computedDamage = damage * varianceMultiplier * adjustment;
+      var computedDamage = damage * varianceMultiplier; //* adjustment;
       CustomAmmoCategoriesLog.Log.LogWrite($"distanceBasedFunctionMultiplier: {distanceBasedFunctionMultiplier}\n" +
                    $"defId: {weapon.defId}\n" +
                    $"varianceMultiplier: {varianceMultiplier}\n" +
-                   $"adjustment: {adjustment}\n" +
+                   //$"adjustment: {adjustment}\n" +
                    $"damage: {damage}\n" +
                    $"distance: {distance}\n" +
                    $"max: {weapon.MaxRange}\n" +
@@ -207,7 +207,7 @@ namespace CustAmmoCategories {
     }
     public static float WeaponDamageRevDistance(ICombatant attacker, ICombatant target, Weapon weapon, float damage, float rawDamage) {
       var damagePerShot = weapon.DamagePerShot;
-      var adjustment = rawDamage / damagePerShot;
+      //var adjustment = rawDamage / damagePerShot;
       float varianceMultiplier;
       var distance = Vector3.Distance(attacker.TargetPosition, target.TargetPosition);
       var distanceDifference = weapon.MaxRange - distance;
@@ -227,11 +227,11 @@ namespace CustAmmoCategories {
         {
         return damage;
       }
-      var computedDamage = damage * varianceMultiplier * adjustment;
+      var computedDamage = damage * varianceMultiplier; //* adjustment;
       CustomAmmoCategoriesLog.Log.LogWrite($"reverseDistanceBasedFunctionMultiplier: {distanceBasedFunctionMultiplier}\n" +
                    $"defId: {weapon.defId}\n" +
                    $"varianceMultiplier: {varianceMultiplier}\n" +
-                   $"adjustment: {adjustment}\n" +
+                   //$"adjustment: {adjustment}\n" +
                    $"damage: {damage}\n" +
                    $"distance: {distance}\n" +
                    $"max: {weapon.MaxRange}\n" +
@@ -244,7 +244,7 @@ namespace CustAmmoCategories {
     public static float WeaponDamageSimpleVariance(Weapon weapon, float rawDamage) {
       CustomAmmoCategoriesLog.Log.LogWrite("Simple damage variance for weapon " + weapon.UIName + "\n");
       var damagePerShot = weapon.DamagePerShot;
-      var adjustment = rawDamage / damagePerShot;
+      //var adjustment = rawDamage / damagePerShot;
       var variance = CustomAmmoCategories.getWeaponDamageVariance(weapon);
       var roll = NormalDistribution.Random(
           new VarianceBounds(
@@ -252,13 +252,13 @@ namespace CustAmmoCategories {
               damagePerShot + variance,
               CustomAmmoCategories.getWRSettings().StandardDeviationSimpleVarianceMultiplier * variance
           ));
-      var variantDamage = roll * adjustment;
+      var variantDamage = roll; //* adjustment;
 
       var sb = new StringBuilder();
       sb.AppendLine($"roll: {roll}");
       sb.AppendLine($"damagePerShot: {damagePerShot}");
       sb.AppendLine($"variance: {variance}");
-      sb.AppendLine($"adjustment: {adjustment}");
+      //sb.AppendLine($"adjustment: {adjustment}");
       sb.AppendLine($"variantDamage: {variantDamage}");
       CustomAmmoCategoriesLog.Log.LogWrite(sb.ToString() + "\n");
       return variantDamage;
@@ -355,10 +355,10 @@ namespace CustomAmmoCategoriesPatches {
       int attackGroupIndex = impactMessage.hitInfo.attackGroupIndex;
       int attackWeaponIndex = impactMessage.hitInfo.attackWeaponIndex;
       Weapon weapon = __instance.GetWeapon(attackGroupIndex, attackWeaponIndex);
-
       float rawDamage = impactMessage.hitDamage;
       float realDamage = rawDamage;
       float rawHeat = weapon.HeatDamagePerShot;
+      //float heatToNormalPercantage = 1f;
       int hitLocation = impactMessage.hitInfo.hitLocations[impactMessage.hitIndex];
       ICombatant target = __instance.chosenTarget;
       AdvWeaponHitInfoRec advRec = impactMessage.hitInfo.advRec(impactMessage.hitIndex);
@@ -426,18 +426,6 @@ namespace CustomAmmoCategoriesPatches {
         } else {
           Log.LogWrite("Missile intercepted. No additional impact. No minefield.\n");
         }
-        Log.M.WL("  heat damage exists, but target can't be heated");
-        if ((target.isHasHeat() == false) && (rawHeat >= 0.5f)) {
-          Log.M.WL("  heat damage exists, but target can't be heated");
-          float heatAsNormal = target.HeatDamage(rawHeat);
-          Log.M.WL("  heat transfered to normal damage:" + heatAsNormal);
-          rawDamage += heatAsNormal;
-          realDamage += heatAsNormal;
-          CustomAmmoCategoriesLog.Log.LogWrite("  damage = " + rawDamage + "/" + realDamage + "\n");
-          if (advRec != null) {
-            advRec.Heat = 0f;
-          }
-        }
         if (realDamage >= 1.0f) { 
           if (CustomAmmoCategories.getWeaponDamageVariance(weapon) > CustomAmmoCategories.Epsilon) {
             realDamage = CustomAmmoCategories.WeaponDamageSimpleVariance(weapon, rawDamage);
@@ -499,6 +487,7 @@ namespace CustomAmmoCategoriesPatches {
       if (advRec != null) {
         if (weapon.isHeatVariation()) {
           advRec.Heat *= advRec.Damage > CustomAmmoCategories.Epsilon? (realDamage / advRec.Damage) : 0f;
+          rawHeat = advRec.Heat;
         } else {
           Log.LogWrite(" heat variation forbidden by weapon's settings\n");
         }
@@ -508,13 +497,33 @@ namespace CustomAmmoCategoriesPatches {
           Log.LogWrite(" stability variation forbidden by weapon's settings\n");
         }
         if (weapon.isDamageVariation()) { advRec.Damage = realDamage; } else {
-          Log.LogWrite(" damge variation forbidden by weapon's settings\n");
+          Log.LogWrite(" damage variation forbidden by weapon's settings\n");
         }
         Log.LogWrite("  real damage = " + advRec.Damage + "\n");
         Log.LogWrite("  real heat = " + advRec.Heat + "\n");
         Log.LogWrite("  real stability = " + advRec.Stability + "\n");
       } else {
         Log.LogWrite("  real damage = " + impactMessage.hitDamage + "\n");
+        if (weapon.isHeatVariation()) {
+          rawHeat *= rawDamage > CustomAmmoCategories.Epsilon ? (realDamage / rawDamage) : 0f;
+        } else {
+          Log.LogWrite("  heat variation forbidden by weapon's settings\n");
+        }
+        Log.LogWrite("  real heat = " + rawHeat + "\n");
+      }
+      if ((target.isHasHeat() == false) && (rawHeat >= 0.5f)) {
+        Log.M.WL("  heat damage exists, but target can't be heated");
+        float heatAsNormal = target.HeatDamage(rawHeat);
+        Log.M.WL("  heat transfered to normal damage:" + heatAsNormal);
+        if (advRec != null) {
+          advRec.Damage += heatAsNormal;
+          advRec.Heat = 0f;
+          Log.LogWrite("  real damage = " + advRec.Damage + "\n");
+          Log.LogWrite("  real heat = " + advRec.Heat + "\n");
+        } else {
+          impactMessage.hitDamage += heatAsNormal;
+          Log.LogWrite("  real damage = " + impactMessage.hitDamage + "\n");
+        }
       }
       if (advRec == null) { return true; }
       __instance.OnAttackSequenceImpactAdv(message);
