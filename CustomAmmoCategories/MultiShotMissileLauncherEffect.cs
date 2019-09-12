@@ -50,7 +50,7 @@ public class MultiShotMissileLauncherEffect : CopyAbleWeaponEffect {
     this.firingIntervalRate = 0f;
     this.volleyInterval = original.volleyInterval;
     this.volleyIntervalRate = 0f;
-    this.missileSpreadAngle = original.missileSpreadAngle;
+    //this.missileSpreadAngle = original.missileSpreadAngle;
     this.missileCurveStrength = original.missileCurveStrength;
     this.missileCurveFrequency = original.missileCurveFrequency;
     this.isSRM = original.isSRM;

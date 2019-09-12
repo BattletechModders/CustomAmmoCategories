@@ -15,7 +15,7 @@ namespace CustAmmoCategories {
     private float firingIntervalRate;
     public float volleyInterval;
     private float volleyIntervalRate;
-    public float missileSpreadAngle;
+    //public float missileSpreadAngle;
     public float missileCurveStrength;
     public int missileCurveFrequency;
     public bool isSRM;
@@ -43,7 +43,7 @@ namespace CustAmmoCategories {
       this.firingIntervalRate = (float)typeof(MissileLauncherEffect).GetField("firingIntervalRate", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(original);
       this.volleyInterval = original.volleyInterval;
       this.volleyIntervalRate = (float)typeof(MissileLauncherEffect).GetField("volleyIntervalRate", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(original);
-      this.missileSpreadAngle = original.missileSpreadAngle;
+      //this.missileSpreadAngle = original.missileSpreadAngle;
       this.missileCurveStrength = original.missileCurveStrength;
       this.missileCurveFrequency = original.missileCurveFrequency;
       this.isSRM = true;

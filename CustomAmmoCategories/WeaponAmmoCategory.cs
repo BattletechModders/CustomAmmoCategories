@@ -15,8 +15,8 @@ namespace CustAmmoCategories {
       WeaponMode mode = CustomAmmoCategories.getWeaponMode(weapon);
       if(mode.AmmoCategory == null) {
         ExtWeaponDef extWeapon = CustomAmmoCategories.getExtWeaponDef(weapon.defId);
-        if (extWeapon.AmmoCategory.BaseCategory != weapon.AmmoCategory) {
-          return CustomAmmoCategories.find(weapon.AmmoCategory.ToString());
+        if (extWeapon.AmmoCategory.BaseCategory.ID != weapon.AmmoCategoryValue.ID) {
+          return CustomAmmoCategories.find(weapon.AmmoCategoryValue.Name);
         }
         return extWeapon.AmmoCategory;
       }
@@ -32,27 +32,27 @@ namespace CustAmmoCategories {
     }
     public static bool isWeaponCanShootNoAmmo(WeaponDef weaponDef) {
       ExtWeaponDef extWeapon = CustomAmmoCategories.getExtWeaponDef(weaponDef.Description.Id);
-      if (weaponDef.AmmoCategory == AmmoCategory.NotSet) { return true; };
+      if (weaponDef.AmmoCategoryValue.Is_NotSet) { return true; };
       if (extWeapon.Modes.Count <= 0) { return false; };
       foreach(var mode in extWeapon.Modes) {
         if (mode.Value.AmmoCategory == null) { continue; };
-        if (mode.Value.AmmoCategory.BaseCategory == AmmoCategory.NotSet) { return true; };
+        if (mode.Value.AmmoCategory.BaseCategory.Is_NotSet) { return true; };
       }
       return false;
     }
     public static List<CustomAmmoCategory> getWeaponAmmoCategories(Weapon weapon) {
       List<CustomAmmoCategory> result = new List<CustomAmmoCategory>();
       ExtWeaponDef extWeapon = CustomAmmoCategories.getExtWeaponDef(weapon.defId);
-      if (weapon.AmmoCategory != AmmoCategory.NotSet) {
-        if (extWeapon.AmmoCategory.BaseCategory == weapon.AmmoCategory) {
+      if (weapon.AmmoCategoryValue.Is_NotSet == false) {
+        if (extWeapon.AmmoCategory.BaseCategory.ID == weapon.AmmoCategoryValue.ID) {
           result.Add(extWeapon.AmmoCategory);
         } else {
-          result.Add(CustomAmmoCategories.find(weapon.AmmoCategory.ToString()));
+          result.Add(CustomAmmoCategories.find(weapon.AmmoCategoryValue.Name));
         }
       }
       foreach (var mode in extWeapon.Modes) {
         if (mode.Value.AmmoCategory == null) { continue; };
-        if (mode.Value.AmmoCategory.BaseCategory != AmmoCategory.NotSet) { result.Add(mode.Value.AmmoCategory); };
+        if (mode.Value.AmmoCategory.BaseCategory.Is_NotSet == false) { result.Add(mode.Value.AmmoCategory); };
       }
       return result;
     }
@@ -60,19 +60,19 @@ namespace CustAmmoCategories {
       Log.M.WL("Cheching if weapon "+weaponDef.Description.Id + " can use ammo "+ammoDef.Description.Id+"\n");
       ExtAmmunitionDef extAmmo = CustomAmmoCategories.findExtAmmo(ammoDef.Description.Id);
       CustomAmmoCategory ammoCategory = extAmmo.AmmoCategory;
-      if (ammoCategory.BaseCategory == AmmoCategory.NotSet) { ammoCategory = CustomAmmoCategories.find(ammoDef.Category.ToString()); };
-      if (ammoCategory.BaseCategory == AmmoCategory.NotSet) { return false; };
+      if (ammoCategory.BaseCategory.Is_NotSet) { ammoCategory = CustomAmmoCategories.find(ammoDef.AmmoCategoryValue.Name); };
+      if (ammoCategory.BaseCategory.Is_NotSet) { return false; };
       ExtWeaponDef extWeapon = CustomAmmoCategories.getExtWeaponDef(weaponDef.Description.Id);
-      if(extWeapon.AmmoCategory.BaseCategory != AmmoCategory.NotSet) {
+      if(extWeapon.AmmoCategory.BaseCategory.Is_NotSet == false) {
         if (extWeapon.AmmoCategory.Index == ammoCategory.Index) { return true; };
       }else
-      if(weaponDef.AmmoCategory != AmmoCategory.NotSet) {
-        CustomAmmoCategory weaponAmmoCategory = CustomAmmoCategories.find(weaponDef.AmmoCategory.ToString());
-        if ((weaponAmmoCategory.BaseCategory != AmmoCategory.NotSet) && (weaponAmmoCategory.Index == ammoCategory.Index)) { return true; }
+      if(weaponDef.AmmoCategoryValue.Is_NotSet == false) {
+        CustomAmmoCategory weaponAmmoCategory = CustomAmmoCategories.find(weaponDef.AmmoCategoryValue.Name);
+        if ((weaponAmmoCategory.BaseCategory.Is_NotSet == false) && (weaponAmmoCategory.Index == ammoCategory.Index)) { return true; }
       }
       foreach (var mode in extWeapon.Modes) {
         if (mode.Value.AmmoCategory == null) { continue; };
-        if ((mode.Value.AmmoCategory.BaseCategory != AmmoCategory.NotSet)&&(mode.Value.AmmoCategory.Index == ammoCategory.Index)) { return true; };
+        if ((mode.Value.AmmoCategory.BaseCategory.Is_NotSet == false) &&(mode.Value.AmmoCategory.Index == ammoCategory.Index)) { return true; };
       }
       return false;
     }
@@ -84,12 +84,12 @@ namespace CustomAmmoCategoriesPatches {
   [HarmonyPatch("MakeWeaponSetsForEvasive")]
   public static class AttackEvaluator_MakeWeaponSetsForEvasive {
     static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) {
-      var targetPropertyGetter = AccessTools.Property(typeof(Weapon), "AmmoCategory").GetGetMethod();
+      var targetPropertyGetter = AccessTools.Property(typeof(Weapon), "AmmoCategoryValue").GetGetMethod();
       var replacementMethod = AccessTools.Method(typeof(AttackEvaluator_MakeWeaponSetsForEvasive), nameof(AmmoCategory));
       return Transpilers.MethodReplacer(instructions, targetPropertyGetter, replacementMethod);
     }
 
-    private static AmmoCategory AmmoCategory(Weapon weapon) {
+    private static AmmoCategoryValue AmmoCategory(Weapon weapon) {
       //CustomAmmoCategoriesLog.Log.LogWrite("get AIUtil_UnitHasLOFToTargetFromPosition IndirectFireCapable\n");
       return CustomAmmoCategories.getWeaponCustomAmmoCategory(weapon).BaseCategory;
     }
@@ -150,11 +150,11 @@ namespace CustomAmmoCategoriesPatches {
   [HarmonyPatch("ResolveSequenceAmmoDepletion")]
   public static class AttackDirector_ResolveSequenceAmmoDepletion {
     static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) {
-      var targetPropertyGetter = AccessTools.Property(typeof(Weapon), "AmmoCategory").GetGetMethod();
+      var targetPropertyGetter = AccessTools.Property(typeof(Weapon), "AmmoCategoryValue").GetGetMethod();
       var replacementMethod = AccessTools.Method(typeof(AttackDirector_ResolveSequenceAmmoDepletion), nameof(AmmoCategory));
       return Transpilers.MethodReplacer(instructions, targetPropertyGetter, replacementMethod);
     }
-    private static AmmoCategory AmmoCategory(Weapon weapon) {
+    private static AmmoCategoryValue AmmoCategory(Weapon weapon) {
       //CustomAmmoCategoriesLog.Log.LogWrite("get AIUtil_UnitHasLOFToTargetFromPosition IndirectFireCapable\n");
       return CustomAmmoCategories.getWeaponCustomAmmoCategory(weapon).BaseCategory;
     }
@@ -163,11 +163,11 @@ namespace CustomAmmoCategoriesPatches {
   [HarmonyPatch("ApplyEffectsToMech")]
   public static class PoorlyMaintainedEffect_ApplyEffectsToMech {
     static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) {
-      var targetPropertyGetter = AccessTools.Property(typeof(Weapon), "AmmoCategory").GetGetMethod();
+      var targetPropertyGetter = AccessTools.Property(typeof(Weapon), "AmmoCategoryValue").GetGetMethod();
       var replacementMethod = AccessTools.Method(typeof(PoorlyMaintainedEffect_ApplyEffectsToMech), nameof(AmmoCategory));
       return Transpilers.MethodReplacer(instructions, targetPropertyGetter, replacementMethod);
     }
-    private static AmmoCategory AmmoCategory(Weapon weapon) {
+    private static AmmoCategoryValue AmmoCategory(Weapon weapon) {
       //CustomAmmoCategoriesLog.Log.LogWrite("get AIUtil_UnitHasLOFToTargetFromPosition IndirectFireCapable\n");
       return CustomAmmoCategories.getWeaponCustomAmmoCategory(weapon).BaseCategory;
     }
@@ -176,11 +176,11 @@ namespace CustomAmmoCategoriesPatches {
   [HarmonyPatch("ApplyEffectsToTurret")]
   public static class PoorlyMaintainedEffect_ApplyEffectsToTurret {
     static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) {
-      var targetPropertyGetter = AccessTools.Property(typeof(Weapon), "AmmoCategory").GetGetMethod();
+      var targetPropertyGetter = AccessTools.Property(typeof(Weapon), "AmmoCategoryValue").GetGetMethod();
       var replacementMethod = AccessTools.Method(typeof(PoorlyMaintainedEffect_ApplyEffectsToTurret), nameof(AmmoCategory));
       return Transpilers.MethodReplacer(instructions, targetPropertyGetter, replacementMethod);
     }
-    private static AmmoCategory AmmoCategory(Weapon weapon) {
+    private static AmmoCategoryValue AmmoCategory(Weapon weapon) {
       //CustomAmmoCategoriesLog.Log.LogWrite("get AIUtil_UnitHasLOFToTargetFromPosition IndirectFireCapable\n");
       return CustomAmmoCategories.getWeaponCustomAmmoCategory(weapon).BaseCategory;
     }
@@ -189,11 +189,11 @@ namespace CustomAmmoCategoriesPatches {
   [HarmonyPatch("ApplyEffectsToVehicle")]
   public static class PoorlyMaintainedEffect_ApplyEffectsToVehicle {
     static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) {
-      var targetPropertyGetter = AccessTools.Property(typeof(Weapon), "AmmoCategory").GetGetMethod();
+      var targetPropertyGetter = AccessTools.Property(typeof(Weapon), "AmmoCategoryValue").GetGetMethod();
       var replacementMethod = AccessTools.Method(typeof(PoorlyMaintainedEffect_ApplyEffectsToVehicle), nameof(AmmoCategory));
       return Transpilers.MethodReplacer(instructions, targetPropertyGetter, replacementMethod);
     }
-    private static AmmoCategory AmmoCategory(Weapon weapon) {
+    private static AmmoCategoryValue AmmoCategory(Weapon weapon) {
       //CustomAmmoCategoriesLog.Log.LogWrite("get AIUtil_UnitHasLOFToTargetFromPosition IndirectFireCapable\n");
       return CustomAmmoCategories.getWeaponCustomAmmoCategory(weapon).BaseCategory;
     }
@@ -230,11 +230,11 @@ namespace CustomAmmoCategoriesPatches {
   [HarmonyPatch(new Type[] { typeof(ICombatant) })]
   public static class CombatHUDWeaponSlot_RefreshDisplayedWeapon2 {
     static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) {
-      var targetPropertyGetter = AccessTools.Property(typeof(Weapon), "AmmoCategory").GetGetMethod();
+      var targetPropertyGetter = AccessTools.Property(typeof(Weapon), "AmmoCategoryValue").GetGetMethod();
       var replacementMethod = AccessTools.Method(typeof(CombatHUDWeaponSlot_RefreshDisplayedWeapon2), nameof(AmmoCategory));
       return Transpilers.MethodReplacer(instructions, targetPropertyGetter, replacementMethod);
     }
-    private static AmmoCategory AmmoCategory(Weapon weapon) {
+    private static AmmoCategoryValue AmmoCategory(Weapon weapon) {
       //CustomAmmoCategoriesLog.Log.LogWrite("get AIUtil_UnitHasLOFToTargetFromPosition IndirectFireCapable\n");
       return CustomAmmoCategories.getWeaponCustomAmmoCategory(weapon).BaseCategory;
     }
@@ -244,11 +244,11 @@ namespace CustomAmmoCategoriesPatches {
   [HarmonyPatch(new Type[] { typeof(Color), typeof(Color), typeof(bool) })]
   public static class CombatHUDWeaponSlot_ShowTextColor {
     static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) {
-      var targetPropertyGetter = AccessTools.Property(typeof(Weapon), "AmmoCategory").GetGetMethod();
+      var targetPropertyGetter = AccessTools.Property(typeof(Weapon), "AmmoCategoryValue").GetGetMethod();
       var replacementMethod = AccessTools.Method(typeof(CombatHUDWeaponSlot_ShowTextColor), nameof(AmmoCategory));
       return Transpilers.MethodReplacer(instructions, targetPropertyGetter, replacementMethod);
     }
-    private static AmmoCategory AmmoCategory(Weapon weapon) {
+    private static AmmoCategoryValue AmmoCategory(Weapon weapon) {
       //CustomAmmoCategoriesLog.Log.LogWrite("get AIUtil_UnitHasLOFToTargetFromPosition IndirectFireCapable\n");
       return CustomAmmoCategories.getWeaponCustomAmmoCategory(weapon).BaseCategory;
     }
@@ -257,11 +257,11 @@ namespace CustomAmmoCategoriesPatches {
   [HarmonyPatch("EnableWeapon")]
   public static class Weapon_EnableWeapon {
     static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) {
-      var targetPropertyGetter = AccessTools.Property(typeof(Weapon), "AmmoCategory").GetGetMethod();
+      var targetPropertyGetter = AccessTools.Property(typeof(Weapon), "AmmoCategoryValue").GetGetMethod();
       var replacementMethod = AccessTools.Method(typeof(Weapon_EnableWeapon), nameof(AmmoCategory));
       return Transpilers.MethodReplacer(instructions, targetPropertyGetter, replacementMethod);
     }
-    private static AmmoCategory AmmoCategory(Weapon weapon) {
+    private static AmmoCategoryValue AmmoCategory(Weapon weapon) {
       //CustomAmmoCategoriesLog.Log.LogWrite("get AIUtil_UnitHasLOFToTargetFromPosition IndirectFireCapable\n");
       return CustomAmmoCategories.getWeaponCustomAmmoCategory(weapon).BaseCategory;
     }
@@ -271,11 +271,11 @@ namespace CustomAmmoCategoriesPatches {
   [HarmonyPatch(MethodType.Getter)]
   public static class Weapon_HasAmmo {
     static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) {
-      var targetPropertyGetter = AccessTools.Property(typeof(Weapon), "AmmoCategory").GetGetMethod();
+      var targetPropertyGetter = AccessTools.Property(typeof(Weapon), "AmmoCategoryValue").GetGetMethod();
       var replacementMethod = AccessTools.Method(typeof(Weapon_HasAmmo), nameof(AmmoCategory));
       return Transpilers.MethodReplacer(instructions, targetPropertyGetter, replacementMethod);
     }
-    private static AmmoCategory AmmoCategory(Weapon weapon) {
+    private static AmmoCategoryValue AmmoCategory(Weapon weapon) {
       //CustomAmmoCategoriesLog.Log.LogWrite("get AIUtil_UnitHasLOFToTargetFromPosition IndirectFireCapable\n");
       return CustomAmmoCategories.getWeaponCustomAmmoCategory(weapon).BaseCategory;
     }

@@ -17,6 +17,8 @@ using static System.Reflection.BindingFlags;
 
 namespace Sheepy.BattleTechMod {
   using Sheepy.Logging;
+  using UnityEngine;
+  using Logger = Logging.Logger;
 
   public abstract class BattleMod : BattleModModule {
 
@@ -332,8 +334,8 @@ namespace Sheepy.BattleTechMod {
       set { _Logger = value; }
     }
 
-    public void LogGuiTree(UnityEngine.Component root) { LogGuiTree(Log, root); }
-    public static void LogGuiTree(Logger Log, UnityEngine.Component root) {
+    public void LogGuiTree(Component root) { LogGuiTree(Log, root); }
+    public static void LogGuiTree(Logger Log, Component root) {
       StringBuilder buf = new StringBuilder("GUI Tree:\n");
       buf.EnsureCapacity(1024 * 16);
       LogGuiTree(root as UnityEngine.Transform ?? root?.transform, buf, "");

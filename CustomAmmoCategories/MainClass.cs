@@ -200,7 +200,7 @@ namespace CustomAmmoCategoriesPatches {
   [HarmonyPatch(new Type[] { typeof(AmmunitionBoxDef) })]
   public static class MechLabPanel_MechCanUseAmmo {
     public static void Postfix(MechLabPanel __instance, AmmunitionBoxDef ammoBoxDef, ref bool __result) {
-      if (ammoBoxDef.Ammo.Category == AmmoCategory.Flamer) { //patch for energy weapon ammo
+      if (ammoBoxDef.Ammo.AmmoCategoryValue.IsFlamer) { //patch for energy weapon ammo
         if (CustomAmmoCategories.findExtAmmo(ammoBoxDef.Ammo.Description.Id).AmmoCategory.Id != "Flamer") {
           MechLabMechInfoWidget mechInfoWidget = (MechLabMechInfoWidget)(typeof(MechLabPanel)).GetField("mechInfoWidget", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(__instance);
           __result = mechInfoWidget.totalEnergyHardpoints > 0;
@@ -228,7 +228,7 @@ namespace CustomAmmoCategoriesPatches {
       foreach (List<Weapon> weapons in sortedWeapons) {
         foreach (Weapon weapon in weapons) {
           CustomAmmoCategoriesLog.Log.LogWrite("  weapon " + weapon.Name + "\n");
-          if (weapon.AmmoCategory == AmmoCategory.NotSet) { continue; }
+          if (weapon.AmmoCategoryValue.Is_NotSet) { continue; }
           if (weapon.ammoBoxes.Count <= 0) { continue; }
           if (weapon.CurrentAmmo > 0) { continue; }
           CustomAmmoCategories.CycleAmmoBest(weapon);
@@ -754,10 +754,26 @@ namespace CustAmmoCategories {
     }
     public Vector3 vector { get { return new Vector3(this.x, this.y, this.z); } }
   }
+  public class CustomAmmoCategoryRecord {
+    public string Id { get; set; }
+    public string BaseCategory { get; set; }
+  }
   public class CustomAmmoCategory {
     public string Id { get; set; }
     public int Index { get; set; }
-    public BattleTech.AmmoCategory BaseCategory { get; set; }
+    private int BaseCategoryID;
+    private static AmmoCategoryValue fallbackCategory = new AmmoCategoryValue();
+    public AmmoCategoryValue BaseCategory {
+      get {
+        AmmoCategoryValue result = AmmoCategoryEnumeration.GetAmmoCategoryByID(BaseCategoryID);
+        if (result == null) { return CustomAmmoCategory.fallbackCategory; };
+        return result;
+      }
+      set {
+        if (value == null) { BaseCategoryID = 0; return; };
+        BaseCategoryID = value.ID;
+      }
+    }
     public override bool Equals(object o) {
       if (o == null) { return false; };
       if (o is CustomAmmoCategory) {
@@ -782,8 +798,18 @@ namespace CustAmmoCategories {
     }
     public CustomAmmoCategory() {
       Index = 0;
-      BaseCategory = AmmoCategory.NotSet;
+      BaseCategoryID = 0;
       Id = "NotSet";
+    }
+    public CustomAmmoCategory(CustomAmmoCategoryRecord record) {
+      AmmoCategoryValue val = AmmoCategoryEnumeration.GetAmmoCategoryByName(record.BaseCategory);
+      if (val == null) {
+        BaseCategoryID = 0;
+        Id = "NotSet";
+      } else { 
+        this.BaseCategoryID = val.ID;
+        Id = record.Id;
+      }
     }
   }
   public enum HitGeneratorType {
@@ -1133,7 +1159,7 @@ namespace CustAmmoCategories {
     public static CustomAmmoCategory getAmmoAmmoCategory(AmmunitionDef ammoDef) {
       ExtAmmunitionDef extAmmo = CustomAmmoCategories.findExtAmmo(ammoDef.Description.Id);
       CustomAmmoCategory boxAmmoCategory = extAmmo.AmmoCategory;
-      if (boxAmmoCategory.Index == CustomAmmoCategories.NotSetCustomAmmoCategoty.Index) { boxAmmoCategory = CustomAmmoCategories.find(ammoDef.Category.ToString()); }
+      if (boxAmmoCategory.Index == CustomAmmoCategories.NotSetCustomAmmoCategoty.Index) { boxAmmoCategory = CustomAmmoCategories.find(ammoDef.AmmoCategoryValue.Name); }
       return boxAmmoCategory;
     }
     public static void CycleAmmo(Weapon weapon) {
@@ -1295,7 +1321,7 @@ namespace CustAmmoCategories {
       if (weapon.ammoBoxes.Count <= 0) { return ""; };
       string result = "";
       int AIBattleValue = 0;
-      CustomAmmoCategory weaponAmmoCategory = CustomAmmoCategories.find(weapon.AmmoCategory.ToString());
+      CustomAmmoCategory weaponAmmoCategory = CustomAmmoCategories.find(weapon.AmmoCategoryValue.Name);
       WeaponMode mode = CustomAmmoCategories.getWeaponMode(weapon);
       ExtWeaponDef extWeapon = CustomAmmoCategories.getExtWeaponDef(weapon.defId);
       if (mode.AmmoCategory != null) { weaponAmmoCategory = mode.AmmoCategory; } else
@@ -1307,7 +1333,7 @@ namespace CustAmmoCategories {
         if (weapon.ammoBoxes[index].IsFunctional == false) { continue; }
         ExtAmmunitionDef extAmmo = CustomAmmoCategories.findExtAmmo(weapon.ammoBoxes[index].ammoDef.Description.Id);
         CustomAmmoCategory boxAmmoCategory = extAmmo.AmmoCategory;
-        if (boxAmmoCategory == CustomAmmoCategories.NotSetCustomAmmoCategoty) { boxAmmoCategory = CustomAmmoCategories.find(weapon.ammoBoxes[index].ammoDef.Category.ToString()); }
+        if (boxAmmoCategory == CustomAmmoCategories.NotSetCustomAmmoCategoty) { boxAmmoCategory = CustomAmmoCategories.find(weapon.ammoBoxes[index].ammoDef.AmmoCategoryValue.Name); }
         if (boxAmmoCategory == CustomAmmoCategories.NotSetCustomAmmoCategoty) {
           CustomAmmoCategoriesLog.Log.LogWrite("WARNING! ammunition box " + weapon.ammoBoxes[index].defId + " has no ammo category\n", true);
           continue;
@@ -1342,11 +1368,12 @@ namespace CustAmmoCategories {
       CustomAmmoCategories.DefaultWeapon = new ExtWeaponDef();
       CustomAmmoCategories.DefaultWeaponMode = new WeaponMode();
       CustomAmmoCategories.amsWeapons = new Dictionary<string, Weapon>();
-      foreach (AmmoCategory base_cat in Enum.GetValues(typeof(AmmoCategory))) {
+      //AmmoCategoryEnumeration.Instance.RefreshStaticData();
+      foreach (var baseAmmoCat in AmmoCategoryEnumeration.AmmoCategoryList) {
         CustomAmmoCategory itm = new CustomAmmoCategory();
-        itm.BaseCategory = base_cat;
-        itm.Id = base_cat.ToString();
-        itm.Index = (int)base_cat;
+        itm.BaseCategory = baseAmmoCat;
+        itm.Id = baseAmmoCat.Name;
+        itm.Index = baseAmmoCat.ID;
         items[itm.Id] = itm;
         if (itm.Index == 0) { NotSetCustomAmmoCategoty = itm; };
       }
@@ -1360,15 +1387,16 @@ namespace CustAmmoCategories {
         CustomAmmoCategoriesLog.Log.LogWrite(filename + "\n");
         try {
           string json = File.ReadAllText(filename);
-          List<CustomAmmoCategory> tmp = JsonConvert.DeserializeObject<List<CustomAmmoCategory>>(json);
+          List<CustomAmmoCategoryRecord> tmp = JsonConvert.DeserializeObject<List<CustomAmmoCategoryRecord>>(json);
           CustomAmmoCategoriesLog.Log.LogWrite(" custom ammo categories:\n");
           foreach (var itm in tmp) {
-            itm.Index = items.Count;
-            items[itm.Id] = itm;
-            CustomAmmoCategoriesLog.Log.LogWrite("  '" + itm.Id + "'= (" + itm.Index + "/" + itm.Id + "/" + itm.BaseCategory.ToString() + ")\n");
+            CustomAmmoCategory cat = new CustomAmmoCategory(itm);
+            cat.Index = items.Count;
+            items[itm.Id] = cat;
+            Log.LogWrite("  '" + cat.Id + "'= (" + cat.Index + "/" + cat.Id + "/" + cat.BaseCategory.Name + ")\n");
           }
         } catch (Exception e) {
-          CustomAmmoCategoriesLog.Log.LogWrite(e.ToString() + "\n");
+          Log.LogWrite(e.ToString() + "\n");
         }
       }
       //string assemblyFile = (new System.Uri(Assembly.GetExecutingAssembly().CodeBase)).AbsolutePath;

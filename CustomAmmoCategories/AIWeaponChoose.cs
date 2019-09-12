@@ -86,9 +86,9 @@ namespace CustAmmoCategories {
     }
     public static HashSet<string> getWeaponAvaibleAmmoForMode(Weapon weapon, string modeId) {
       HashSet<string> result = new HashSet<string>();
-      CustomAmmoCategory ammoCategory = CustomAmmoCategories.find(weapon.AmmoCategory.ToString());
+      CustomAmmoCategory ammoCategory = CustomAmmoCategories.find(weapon.AmmoCategoryValue.Name);
       ExtWeaponDef extWeapon = CustomAmmoCategories.getExtWeaponDef(weapon.defId);
-      if (extWeapon.AmmoCategory.BaseCategory == weapon.AmmoCategory) { ammoCategory = extWeapon.AmmoCategory; }
+      if (extWeapon.AmmoCategory.BaseCategory.ID == weapon.AmmoCategoryValue.ID) { ammoCategory = extWeapon.AmmoCategory; }
       if (extWeapon.Modes.Count < 1) {
         CustomAmmoCategoriesLog.Log.LogWrite("WARNING! " + weapon.defId + " has no modes. Even base mode. This means something is very very wrong\n", true);
         return result;
@@ -117,11 +117,11 @@ namespace CustAmmoCategories {
       ExtWeaponDef extWeapon = CustomAmmoCategories.getExtWeaponDef(weapon.defId);
       List<WeaponMode> modes = weapon.AvaibleModes();
       if (extWeapon.Modes.Count < 1) {
-        Log.LogWrite("WARNING! " + weapon.defId + " has no modes. Even base mode. This means something is very very wrong\n", true);
+        //Log.LogWrite("WARNING! " + weapon.defId + " has no modes. Even base mode. This means something is very very wrong\n", true);
         return result;
       }
       if(modes.Count < 1) {
-        Log.LogWrite("Weapon has no mode to fire\n");
+        //Log.LogWrite("Weapon has no mode to fire\n");
         return result;
       }
       string currentMode = extWeapon.baseModeId;

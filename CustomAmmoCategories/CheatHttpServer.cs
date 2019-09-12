@@ -478,15 +478,7 @@ namespace CustAmmoCategories {
           jresp[gameState.Commander.Callsign]["name"] = gameState.Commander.FirstName;
           CustomAmmoCategoriesLog.Log.LogWrite("...получена\n");
 
-          foreach (var ability in gameState.Commander.Abilities) {
-            jresp[gameState.Commander.Callsign][ability.Def.Id] = "1";
-          }
           foreach (var pilot in gameState.PilotRoster) {
-            jresp[pilot.Callsign] = new Dictionary<string, string>();
-            jresp[pilot.Callsign]["name"] = pilot.FirstName;
-            foreach (var ability in pilot.Abilities) {
-              jresp[pilot.Callsign][ability.Def.Id] = "1";
-            }
           }
           CustomAmmoCategoriesLog.Log.LogWrite("формирование ответа\n");
           SendResponce(ref response, jresp);

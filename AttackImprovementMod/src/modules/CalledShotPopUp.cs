@@ -8,8 +8,9 @@ using static System.Reflection.BindingFlags;
 namespace Sheepy.BattleTechMod.AttackImprovementMod {
    using static Mod;
    using static HitLocation;
+  using Localize;
 
-   public class CalledShotPopUp : BattleModModule {
+  public class CalledShotPopUp : BattleModModule {
 
       private static string CalledShotHitChanceFormat = "{0:0}%";
 
@@ -58,11 +59,11 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
          CombatHUDCalledShotPopUp me = __instance;
          ArmorLocation hoveredArmor = me.MechArmorDisplay.HoveredArmor;
          if ( me.locationNameText.text.StartsWith( "-" ) ) {
-            title.SetText("__/AIM.Called_Shot/__", ZeroObjects );
+            title.SetText("__/AIM.Called_Shot/__");
          } else if ( me.DisplayedActor is Mech mech ) {
             float hp = mech.GetCurrentStructure( MechStructureRules.GetChassisLocationFromArmorLocation( hoveredArmor ) );
             if ( hp <= 0 ) {
-               title.SetText("__/AIM.Called_Shot/__", ZeroObjects );
+               title.SetText("__/AIM.Called_Shot/__");
                me.locationNameText.SetText( "-choose target-", ZeroObjects );
             } else {
                float mhp = mech.GetMaxStructure( MechStructureRules.GetChassisLocationFromArmorLocation( hoveredArmor ) ),

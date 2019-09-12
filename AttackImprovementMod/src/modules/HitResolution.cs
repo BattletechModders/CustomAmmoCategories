@@ -130,7 +130,7 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
       [ Harmony.HarmonyPriority( Harmony.Priority.Low ) ]
       public static bool OverrideDecrementAmmo ( Weapon __instance, ref int __result, int stackItemUID ) { try {
          Weapon me = __instance;
-         if ( me.AmmoCategory == AmmoCategory.NotSet || ! ( me.parent is Mech mech ) ) return true;
+         if ( me.AmmoCategoryValue.Is_NotSet || ! ( me.parent is Mech mech ) ) return true;
          if ( ! FriendOrFoe( mech, Settings.BalanceAmmoConsumption, Settings.BalanceEnemyAmmoConsumption ) ) return true;
 
          int needAmmo = __result = me.ShotsWhenFired;
@@ -338,7 +338,7 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
       // ============ Jettison Ammo ============
 
       public static void AutoJettisonAmmo ( MechHeatSequence __instance ) { try {
-         if ( ! __instance.IsComplete ) return;
+         /*if ( ! __instance.IsComplete ) return;
          Mech mech = __instance.OwningMech;
          if ( mech == null || mech.IsDead || mech.HasMovedThisRound || mech.IsProne || mech.IsShutDown ) return;
          if ( ! FriendOrFoe( mech, Settings.AutoJettisonAmmo, Settings.AutoJettisonEnemyAmmo ) ) return;
@@ -361,7 +361,7 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
          foreach ( AmmunitionBox box in jettison ) ZeroAmmo( box, mech.uid, __instance.SequenceGUID );
          foreach ( AmmoCategory type in checkedType.Where( e => e.Value ).Select( e => e.Key ) )
             Combat.MessageCenter.PublishMessage( new AddSequenceToStackMessage( new ShowActorInfoSequence( mech,
-               type + " AMMO JETTISONED", FloatieMessage.MessageNature.Buff, false ) ) );
+               type + " AMMO JETTISONED", FloatieMessage.MessageNature.Buff, false ) ) );*/
       }                 catch ( Exception ex ) { Error( ex ); } }
 
    }

@@ -3,6 +3,7 @@ using BattleTech.AttackDirectorHelpers;
 using BattleTech.UI;
 using CustAmmoCategories;
 using Harmony;
+using HBS;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -10,6 +11,7 @@ using System.Reflection;
 using System.Threading;
 using UnityEngine;
 using static BattleTech.AttackDirector;
+using Stopwatch = System.Diagnostics.Stopwatch;
 
 namespace CustAmmoCategories {
   public class AttackSequenceWatchdog {

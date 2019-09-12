@@ -353,7 +353,16 @@ namespace CustomAmmoCategoriesPatches {
       if (CustomAmmoCategories.isRegistredWeapon(Id)) {
         extDef = CustomAmmoCategories.getExtWeaponDef(Id);
       }
-      CustomAmmoCategory custCat = CustomAmmoCategories.find((string)defTemp["AmmoCategory"]);
+
+      string AmmoCategory = "NotSet";
+      if (defTemp["AmmoCategory"] != null) {
+        AmmoCategory = (string)defTemp["AmmoCategory"];
+        defTemp.Remove("AmmoCategory");
+        //defTemp["ammoCategoryID"] = AmmoCategory;
+      } else {
+        AmmoCategory = (string)defTemp["ammoCategoryID"];
+      }
+      CustomAmmoCategory custCat = CustomAmmoCategories.find(AmmoCategory);
       //CustomAmmoCategories.RegisterWeapon((string)defTemp["Description"]["Id"], custCat);
       if (extDef == null) {
         extDef = new ExtWeaponDef();
@@ -680,7 +689,8 @@ namespace CustomAmmoCategoriesPatches {
         CustomAmmoCategoriesLog.Log.LogWrite(" adding base only mode '" + mode.Id + "'\n");
       }
       CustomAmmoCategories.registerExtWeaponDef((string)defTemp["Description"]["Id"], extDef);
-      defTemp["AmmoCategory"] = custCat.BaseCategory.ToString();
+      //defTemp["AmmoCategory"] = custCat.BaseCategory.Name;
+      defTemp["ammoCategoryID"] = custCat.BaseCategory.Name;
       CustomAmmoCategoriesLog.Log.LogWrite("\n--------------ORIG----------------\n" + json + "\n----------------------------------\n");
       //CustomAmmoCategoriesLog.Log.LogWrite("\n--------------MOD----------------\n" + defTemp.ToString() + "\n----------------------------------\n");
       json = defTemp.ToString();

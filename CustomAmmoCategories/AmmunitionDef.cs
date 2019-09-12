@@ -337,9 +337,17 @@ namespace CustomAmmoCategoriesPatches {
       JObject defTemp = JObject.Parse(json);
 
       CustomAmmoCategoriesLog.Log.LogWrite(defTemp["Description"]["Id"] + "\n");
-      CustomAmmoCategory custCat = CustomAmmoCategories.find((string)defTemp["Category"]);
+      string AmmoCategory = "NotSet";
+      if (defTemp["Category"] != null) {
+        AmmoCategory = (string)defTemp["Category"];
+        defTemp.Remove("Category");
+        //defTemp["ammoCategoryID"] = AmmoCategory;
+      } else {
+        AmmoCategory = (string)defTemp["ammoCategoryID"];
+      }
+      CustomAmmoCategory custCat = CustomAmmoCategories.find(AmmoCategory);
       //CustomAmmoCategories.RegisterAmmunition((string)defTemp["Description"]["Id"], custCat);
-      defTemp["Category"] = custCat.BaseCategory.ToString();
+      defTemp["ammoCategoryID"] = custCat.BaseCategory.Name;
       ExtAmmunitionDef extAmmoDef = new ExtAmmunitionDef();
       extAmmoDef.Id = (string)defTemp["Description"]["Id"];
       extAmmoDef.AmmoCategory = custCat;
@@ -788,7 +796,8 @@ namespace CustomAmmoCategoriesPatches {
         defTemp.Remove("statusEffects");
       }
       CustomAmmoCategories.RegisterExtAmmoDef((string)defTemp["Description"]["Id"], extAmmoDef);
-      json = defTemp.ToString();
+      json = defTemp.ToString(Formatting.Indented);
+      Log.LogWrite(json + "\n");
       return true;
     }
     public static void Postfix(AmmunitionDef __instance) {
