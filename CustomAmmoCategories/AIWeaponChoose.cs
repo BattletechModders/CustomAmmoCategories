@@ -69,6 +69,7 @@ namespace CustAmmoCategories {
     }
   }
   public static partial class CustomAmmoCategories {
+    public static bool DisableInternalWeaponChoose = false;
     public static void applyWeaponAmmoMode(Weapon weapon, string modeId, string ammoId) {
       ExtWeaponDef extWeapon = CustomAmmoCategories.getExtWeaponDef(weapon.defId);
       CustomAmmoCategoriesLog.Log.LogWrite("applyWeaponAmmoMode(" + weapon.defId + "," + modeId + "," + ammoId + ")\n");
@@ -733,6 +734,7 @@ namespace CustomAmmoCategoriesPatches {
   [HarmonyPatch(MethodType.Normal)]
   public static class AttackEvaluator_MakeAttackOrderForTarget {
     public static bool Prefix(AbstractActor unit, ICombatant target, int enemyUnitIndex, bool isStationary) {
+      if (CustomAmmoCategories.DisableInternalWeaponChoose) { return true; }
       CustomAmmoCategoriesLog.Log.LogWrite(unit.DisplayName + " choosing best weapon for target " + target.DisplayName + "\n");
       try {
         CustomAmmoCategories.ChooseBestWeaponForTarget(unit, target, isStationary);
@@ -748,6 +750,7 @@ namespace CustomAmmoCategoriesPatches {
   [HarmonyPatch(MethodType.Normal)]
   public static class AttackEvaluator_MakeAttackOrder {
     public static void Postfix(AbstractActor unit, bool isStationary, BehaviorTreeResults __result) {
+      if (CustomAmmoCategories.DisableInternalWeaponChoose) { return; }
       CustomAmmoCategoriesLog.Log.LogWrite("Choose result for " + unit.DisplayName + "\n");
       try {
         if (__result.nodeState == BehaviorNodeState.Failure) {
