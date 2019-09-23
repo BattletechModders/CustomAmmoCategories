@@ -209,6 +209,8 @@ namespace CustAmmoCategoriesPatches {
     public static void Postfix(CombatHUDWeaponSlot __instance) {
       if (__instance.DisplayedWeapon == null) { return; }
       UILookAndColorConstants LookAndColorConstants = (UILookAndColorConstants)typeof(CombatHUDWeaponSlot).GetProperty("LookAndColorConstants", BindingFlags.Instance | BindingFlags.NonPublic).GetGetMethod(true).Invoke(__instance,new object[0] { });
+      __instance.WeaponText.overflowMode = TMPro.TextOverflowModes.Overflow;
+      Log.M.TWL(0,"CombatHUDWeaponSlot.RefreshDisplayedWeapon '"+__instance.WeaponText.text+"' overflow:"+__instance.WeaponText.overflowMode+" worldwrap:"+__instance.WeaponText.enableWordWrapping+" autosize:"+__instance.WeaponText.enableAutoSizing);
       if (__instance.DisplayedWeapon.isAMS() == true) {
         __instance.HitChanceText.SetText("AMS");
       };

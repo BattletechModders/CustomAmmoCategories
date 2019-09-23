@@ -1770,7 +1770,7 @@ namespace CustAmmoCategories {
       if (vehicle != null) { return (mDmg.mineFieldDamage > CustomAmmoCategories.Epsilon) || (mDmg.mineFieldHeat > 0) || (mDmg.burnHeat > 0); };
       return false;
     }
-    public static void inflictRegistredMovingDamageMech(Mech __instance) {
+    /*public static void inflictRegistredMovingDamageMech(Mech __instance) {
       CustomAmmoCategoriesLog.Log.LogWrite("inflictRegistredMovingDamageMech to " + __instance.DisplayName + ":" + __instance.GUID + "\n");
       if (MineFieldHelper.registredMovingDamage.ContainsKey(__instance.GUID) == false) {
         CustomAmmoCategoriesLog.Log.LogWrite("not exists moving damage " + __instance.DisplayName + ":" + __instance.GUID + "\n", true);
@@ -1846,7 +1846,7 @@ namespace CustAmmoCategories {
           __instance.Combat.MessageCenter.PublishMessage((MessageCenterMessage)new AddSequenceToStackMessage(__instance.DoneWithActor()));
         }
       }
-    }
+    }*/
     public static void registerMovingDamageFromPath(AbstractActor __instance, List<WayPoint> waypoints) {
       Log.LogWrite("registerMovingDamageFromPath to " + __instance.DisplayName + ":" + __instance.GUID + "\n");
       /*try {
@@ -2113,7 +2113,7 @@ namespace CustomAmmoCategoriesPatches {
           CustomAmmoCategoriesLog.Log.LogWrite(" heat from standing in fire:" + cell.BurningStrength + "\n");
           if (mech != null) {
             __instance.AddExternalHeat("BurningCell", cell.BurningStrength);
-            __instance.Combat.MessageCenter.PublishMessage((MessageCenterMessage)new FloatieMessage(__instance.GUID, __instance.GUID, "+ " + cell.BurningStrength + " HEAT FROM STANDING IN FIRE", FloatieMessage.MessageNature.Debuff));
+            __instance.Combat.MessageCenter.PublishMessage((MessageCenterMessage)new FloatieMessage(__instance.GUID, __instance.GUID, "+ " + cell.BurningStrength + " __/CAC.HEATFROMSTANDINGINFIRE/__", FloatieMessage.MessageNature.Debuff));
             __instance.CheckForInstability();
             __instance.HandleKnockdown(-1, actor.GUID, Vector2.one, (SequenceFinished)null);
             __instance.HandleDeath(actor.GUID);
@@ -2126,7 +2126,7 @@ namespace CustomAmmoCategoriesPatches {
             __instance.TakeWeaponDamage(fakeHit, (int)VehicleChassisLocations.Rear, weapon, damage / 4f, 0, DamageType.Combat);
             __instance.TakeWeaponDamage(fakeHit, (int)VehicleChassisLocations.Right, weapon, damage / 4f, 0, DamageType.Combat);
             __instance.TakeWeaponDamage(fakeHit, (int)VehicleChassisLocations.Left, weapon, damage / 4f, 0, DamageType.Combat);
-            __instance.Combat.MessageCenter.PublishMessage((MessageCenterMessage)new FloatieMessage(__instance.GUID, __instance.GUID, "DAMAGE FROM STANDING IN FIRE", FloatieMessage.MessageNature.CriticalHit));
+            __instance.Combat.MessageCenter.PublishMessage((MessageCenterMessage)new FloatieMessage(__instance.GUID, __instance.GUID, "__/CAC.DAMAGEFROMSTANDINGINFIRE/__", FloatieMessage.MessageNature.CriticalHit));
             __instance.HandleDeath(actor.GUID);
           }
         }
@@ -2172,12 +2172,12 @@ namespace CustomAmmoCategoriesPatches {
         if (cell.BurningStrength > 0) { burnCells += 1; };
       }
       if (minefields > 0) {
-        minefield = "MINEFIELD ON THE WAY";
+        minefield = "__/CAC.MINEFIELDONTHEWAY/__";
       } else {
         minefield = string.Empty;
       }
       if (burnCells > 0) {
-        burnterrain = "FLAMES ON THE WAY";
+        burnterrain = "__/CAC.FLAMESONTHEWAY/__";
       } else {
         burnterrain = string.Empty;
       }
@@ -2204,12 +2204,12 @@ namespace CustomAmmoCategoriesPatches {
         }
       }
       if (minefields > 0) {
-        minefield = "JUMP TO MINEFIELD";
+        minefield = "__/CAC.JUMPTOMINEFIELD/__";
       } else {
         minefield = string.Empty;
       }
       if (ccell.BurningStrength > 0) {
-        burnterrain = "JUMP TO FLAMES";
+        burnterrain = "__/CAC.JUMPTOFLAMES/__";
       } else {
         burnterrain = string.Empty;
       }

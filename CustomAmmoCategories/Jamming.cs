@@ -8,6 +8,7 @@ using CustAmmoCategories;
 using Random = UnityEngine.Random;
 using UnityEngine;
 using CustomAmmoCategoriesLog;
+using Localize;
 
 
 //This part of code is modified code of original WeaponRealizer by Joel Meador under MIT LICENSE
@@ -101,7 +102,7 @@ namespace CustAmmoCategories {
               ammoBox.StatCollection.Set<ComponentDamageLevel>("DamageLevel", ComponentDamageLevel.Destroyed);
               ammoBox.parent.Combat.MessageCenter.PublishMessage(
                   new AddSequenceToStackMessage(
-                      new ShowActorInfoSequence(ammoBox.parent, "AMMO BOX " + ammoBox.UIName + " EXHAUSTED", FloatieMessage.MessageNature.Debuff, true)));
+                      new ShowActorInfoSequence(ammoBox.parent, new Text("__/CAC.AMMOBOXEXHAUSTED/__", ammoBox.UIName), FloatieMessage.MessageNature.Debuff, true)));
             }
           } else {
             CustomAmmoCategoriesLog.Log.LogWrite("prosessExposion curAmmo " + curAmmo + " is not less than border " + extAmmo.CanBeExhaustedAt + "\n");
@@ -334,7 +335,7 @@ namespace CustAmmoCategories {
         weapon.StatCollection.Set<bool>(CustomAmmoCategories.JammedWeaponStatisticName, true);
         //weapon.StatCollection.Set<bool>(CustomAmmoCategories.TemporarilyDisabledStatisticName, true);
         if (CustomAmmoCategories.Settings.DontShowNotDangerouceJammMessages == false) {
-          CustomAmmoCategories.addJamMessage(actor, $"{weapon.Name} Jammed!");
+          CustomAmmoCategories.addJamMessage(actor, $"{weapon.UIName} __/CAC.Jammed/__!");
         }
         //actor.Combat.MessageCenter.PublishMessage(
         //    new AddSequenceToStackMessage(
@@ -347,8 +348,8 @@ namespace CustAmmoCategories {
         var fakeHit = new WeaponHitInfo(-1, -1, -1, -1, string.Empty, string.Empty, -1, null, null, null, null, null, null, null, null, null, null, null);
         weapon.DamageComponent(fakeHit, damageLevel, true);
         var message = isDestroying
-            ? $"{weapon.Name} misfire: Destroyed!"
-            : $"{weapon.Name} misfire: Damaged!";
+            ? $"{weapon.UIName} __/CAC.misfire/__: __/CAC.Destroyed/__!"
+            : $"{weapon.UIName} __/CAC.misfire/__: __/CAC.Damaged/__!";
         CustomAmmoCategories.addJamMessage(actor, message);
         //actor.Combat.MessageCenter.PublishMessage(
         //    new AddSequenceToStackMessage(
@@ -364,7 +365,7 @@ namespace CustAmmoCategories {
         //weapon.StatCollection.Set<bool>(CustomAmmoCategories.TemporarilyDisabledStatisticName, true);
         if (message) {
           if (CustomAmmoCategories.Settings.DontShowNotDangerouceJammMessages == false) {
-            CustomAmmoCategories.addJamMessage(weapon.parent, $"{weapon.Name} Cooldown!");
+            CustomAmmoCategories.addJamMessage(weapon.parent, $"{weapon.UIName} __/CAC.Cooldown/__!");
           }
         }
       }
@@ -491,7 +492,7 @@ namespace CustAmmoCategories {
       //if (weapon.IsCooldown() <= 0) { weapon.StatCollection.Set<bool>(TemporarilyDisabledStatisticName, false); };
       actor.Combat.MessageCenter.PublishMessage(
           new AddSequenceToStackMessage(
-              new ShowActorInfoSequence(actor, $"{weapon.Name} Unjammed!", FloatieMessage.MessageNature.Buff,
+              new ShowActorInfoSequence(actor, $"{weapon.UIName} __/CAC.Unjammed/__!", FloatieMessage.MessageNature.Buff,
                   true)));
     }
   }

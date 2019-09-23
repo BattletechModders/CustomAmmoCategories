@@ -18,12 +18,12 @@ namespace WeaponRealizer
 
             private const double Pi2 = Math.PI / 2.0;
             private static readonly Dictionary<string, float> VarianceMultipliers = new Dictionary<string, float>();
-            public static float Calculate(ICombatant attacker, ICombatant target, Weapon weapon, float damage, float rawDamage)
+            public static float Calculate(Vector3 attackPos, ICombatant target, Weapon weapon, float damage, float rawDamage)
             {
                 var damagePerShot = weapon.DamagePerShot;
                 var adjustment = rawDamage / damagePerShot;
                 float varianceMultiplier;
-                var distance = Vector3.Distance(attacker.TargetPosition, target.TargetPosition);
+                var distance = Vector3.Distance(attackPos, target.TargetPosition);
                 var distanceDifference = weapon.MaxRange - distance;
                 var distanceRatio = distanceDifference / weapon.MaxRange;
                 var baseMultiplier = VarianceMultipliers[weapon.defId];
@@ -89,12 +89,12 @@ namespace WeaponRealizer
 
             private const double Pi2 = Math.PI / 2.0;
             private static readonly Dictionary<string, float> VarianceMultipliers = new Dictionary<string, float>();
-            public static float Calculate(ICombatant attacker, ICombatant target, Weapon weapon, float damage, float rawDamage)
+            public static float Calculate(Vector3 attackPos, ICombatant target, Weapon weapon, float damage, float rawDamage)
             {
                 var damagePerShot = weapon.DamagePerShot;
                 var adjustment = rawDamage / damagePerShot;
                 float varianceMultiplier;
-                var distance = Vector3.Distance(attacker.TargetPosition, target.TargetPosition);
+                var distance = Vector3.Distance(attackPos, target.TargetPosition);
                 var distanceDifference = weapon.MaxRange - distance;
                 var distanceRatio = distanceDifference / weapon.MinRange;
                 var baseMultiplier = VarianceMultipliers[weapon.defId];

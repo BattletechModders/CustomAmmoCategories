@@ -40,7 +40,7 @@ namespace CustAmmoCategories {
       ExtAmmunitionDef extAmmo = CustomAmmoCategories.findExtAmmo(ammoId);
       if (extAmmo.AmmoCategory.Index == CustomAmmoCategories.NotSetCustomAmmoCategoty.Index) {
         CustomAmmoCategoriesLog.Log.LogWrite(" has no ammo in stat collection\n");
-        GenericPopupBuilder popup = GenericPopupBuilder.Create("AMMO EJECTION ERROR", "This weapon are not using ammo in this mode (or at all)");
+        GenericPopupBuilder popup = GenericPopupBuilder.Create("__/CAC.AMMOEJECTIONERROR/__", "__/CAC.AMMOEJECTIONERRORNOAMMO/__");
         popup.AddButton("OK", (Action)null, true, (PlayerAction)null);
         popup.IsNestedPopupWithBuiltInFader().CancelOnEscape().Render();
         return;
@@ -54,7 +54,7 @@ namespace CustAmmoCategories {
       CustomAmmoCategoriesLog.Log.LogWrite(" HasMovedThisRound " + weapon.parent.HasMovedThisRound + "\n");
       if (weapon.parent.HasFiredThisRound || weapon.parent.HasMovedThisRound) {
         CustomAmmoCategoriesLog.Log.LogWrite(" moved or fired this round "+ weapon.parent.DistMovedThisRound + "\n");
-        GenericPopupBuilder popup = GenericPopupBuilder.Create("AMMO EJECTION ERROR", "You can't eject ammo after moving or firing this round");
+        GenericPopupBuilder popup = GenericPopupBuilder.Create("__/CAC.AMMOEJECTIONERROR/__", "You can't eject ammo after moving or firing this round");
         popup.AddButton("OK", (Action)null, true, (PlayerAction)null);
         popup.IsNestedPopupWithBuiltInFader().CancelOnEscape().Render();
         return;
@@ -73,7 +73,7 @@ namespace CustAmmoCategories {
       }
       if (ejectedCount > 0) {
         CustomAmmoCategories.ActorsEjectedAmmo[weapon.parent.GUID] = true;
-        weapon.parent.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(new ShowActorInfoSequence(weapon.parent,new Text("{0} AMMO JETTISONED", AmmoUIName), FloatieMessage.MessageNature.Buff, false)));
+        weapon.parent.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(new ShowActorInfoSequence(weapon.parent,new Text("__/CAC.AMMOJETTISONED/__", AmmoUIName), FloatieMessage.MessageNature.Buff, false)));
         CombatHUD HUD = (CombatHUD)typeof(CombatHUDWeaponSlot).GetField("HUD", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(hudSlot);
         if ((HUD.MechWarriorTray.SprintButton.IsActive) || (HUD.MechWarriorTray.JumpButton.IsActive)) {
           //weapon.parent.isAmmoEjecting(true);

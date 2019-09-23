@@ -333,8 +333,13 @@ namespace CustomAmmoCategoriesPatches {
   [HarmonyPatch(new Type[] { typeof(string) })]
   public static class BattleTech_AmmunitionDef_fromJSON_Patch {
     public static bool Prefix(AmmunitionDef __instance, ref string json) {
-      CustomAmmoCategoriesLog.Log.LogWrite("AmmunitionDef fromJSON ");
-      JObject defTemp = JObject.Parse(json);
+      Log.LogWrite("AmmunitionDef fromJSON ");
+      JObject defTemp = null;
+      try {
+        defTemp = JObject.Parse(json);
+      }catch(Exception e) {
+        Log.LogWrite("Exception:" + e.ToString() + "\nWhile reading json:"+json+"\n", true);
+      }
 
       CustomAmmoCategoriesLog.Log.LogWrite(defTemp["Description"]["Id"] + "\n");
       string AmmoCategory = "NotSet";

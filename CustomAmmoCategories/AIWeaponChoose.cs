@@ -16,6 +16,9 @@ namespace CustAmmoCategories {
   public class AmmoModePair {
     public string ammoId { get; set; }
     public string modeId { get; set; }
+    public override string ToString() {
+      return modeId + ":" + ammoId;
+    }
     public AmmoModePair() {
       ammoId = "";
       modeId = "";

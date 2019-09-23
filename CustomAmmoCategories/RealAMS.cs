@@ -1385,7 +1385,7 @@ namespace CustAmmoCategories {
               string message_string = amsHI.Value.intercepted + " FROM " + amsHI.Value.all + " HIT BY AMS";
               amsHI.Key.Combat.MessageCenter.PublishMessage(
                                   new AddSequenceToStackMessage(
-                                      new ShowActorInfoSequence(amsHI.Key, message_string, FloatieMessage.MessageNature.Buff, true)));
+                                      new ShowActorInfoSequence(amsHI.Key, new Text("__/CAC.FROMHITBYAMS/__", amsHI.Value.intercepted, amsHI.Value.all), FloatieMessage.MessageNature.Buff, true)));
 
             }
           }

@@ -19,7 +19,7 @@ namespace CustAmmoCategories {
         int tempHeat = target.TempHeat;
         CustomAmmoCategoriesLog.Log.LogWrite("  publish:" + target.DisplayName + " heat:" + tempHeat + "\n");
         if (tempHeat > 0) {
-          attacker.Combat.MessageCenter.PublishMessage((MessageCenterMessage)new FloatieMessage(attacker.GUID, target.GUID, new Text("+{0} HEAT", new object[1]
+          attacker.Combat.MessageCenter.PublishMessage((MessageCenterMessage)new FloatieMessage(attacker.GUID, target.GUID, new Text("__/CAC.HEAT/__", new object[1]
           {
               (object) tempHeat
           }), FloatieMessage.MessageNature.Debuff));

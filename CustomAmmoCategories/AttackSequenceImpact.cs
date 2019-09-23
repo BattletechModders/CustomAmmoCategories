@@ -172,11 +172,11 @@ namespace CustAmmoCategories {
       return ret;
     }
     private const double Pi2 = Math.PI / 2.0;
-    public static float WeaponDamageDistance(ICombatant attacker, ICombatant target, Weapon weapon, float damage, float rawDamage) {
-      var damagePerShot = weapon.DamagePerShot;
+    public static float WeaponDamageDistance(Vector3 attackPos, ICombatant target, Weapon weapon, float damage, float rawDamage) {
+      //var damagePerShot = weapon.DamagePerShot;
       //var adjustment = rawDamage / damagePerShot;
       float varianceMultiplier;
-      var distance = Vector3.Distance(attacker.TargetPosition, target.TargetPosition);
+      var distance = Vector3.Distance(attackPos, target.TargetPosition);
       var distanceDifference = weapon.MaxRange - distance;
       var distanceRatio = distanceDifference / weapon.MaxRange;
       var baseMultiplier = CustomAmmoCategories.getWeaponDistantVariance(weapon);
@@ -205,11 +205,11 @@ namespace CustAmmoCategories {
                    $"computedDamage: {computedDamage}\n");
       return computedDamage;
     }
-    public static float WeaponDamageRevDistance(ICombatant attacker, ICombatant target, Weapon weapon, float damage, float rawDamage) {
-      var damagePerShot = weapon.DamagePerShot;
+    public static float WeaponDamageRevDistance(Vector3 attackPos, ICombatant target, Weapon weapon, float damage, float rawDamage) {
+      //var damagePerShot = weapon.DamagePerShot;
       //var adjustment = rawDamage / damagePerShot;
       float varianceMultiplier;
-      var distance = Vector3.Distance(attacker.TargetPosition, target.TargetPosition);
+      var distance = Vector3.Distance(attackPos, target.TargetPosition);
       var distanceDifference = weapon.MaxRange - distance;
       var distanceRatio = distanceDifference / weapon.MinRange;
       var baseMultiplier = CustomAmmoCategories.getWeaponDistantVariance(weapon);
@@ -242,9 +242,9 @@ namespace CustAmmoCategories {
       return computedDamage;
     }
     public static float WeaponDamageSimpleVariance(Weapon weapon, float rawDamage) {
-      CustomAmmoCategoriesLog.Log.LogWrite("Simple damage variance for weapon " + weapon.UIName + "\n");
+      Log.LogWrite("Simple damage variance for weapon " + weapon.UIName + "\n");
       var damagePerShot = weapon.DamagePerShot;
-      //var adjustment = rawDamage / damagePerShot;
+      var adjustment = rawDamage / damagePerShot;
       var variance = CustomAmmoCategories.getWeaponDamageVariance(weapon);
       var roll = NormalDistribution.Random(
           new VarianceBounds(
@@ -255,12 +255,12 @@ namespace CustAmmoCategories {
       var variantDamage = roll; //* adjustment;
 
       var sb = new StringBuilder();
-      sb.AppendLine($"roll: {roll}");
-      sb.AppendLine($"damagePerShot: {damagePerShot}");
-      sb.AppendLine($"variance: {variance}");
-      //sb.AppendLine($"adjustment: {adjustment}");
-      sb.AppendLine($"variantDamage: {variantDamage}");
-      CustomAmmoCategoriesLog.Log.LogWrite(sb.ToString() + "\n");
+      sb.AppendLine($" roll: {roll}");
+      sb.AppendLine($" damagePerShot: {damagePerShot}");
+      sb.AppendLine($" variance: {variance}");
+      sb.AppendLine($" adjustment: {adjustment}");
+      sb.AppendLine($" result: {variantDamage}");
+      Log.LogWrite(sb.ToString() + "\n");
       return variantDamage;
     }
   }
@@ -434,9 +434,9 @@ namespace CustomAmmoCategoriesPatches {
           }
           if (CustomAmmoCategories.getWeaponDistantVariance(weapon) > CustomAmmoCategories.Epsilon) {
             if (CustomAmmoCategories.getWeaponDistantVarianceReversed(weapon) == false) {
-              realDamage = CustomAmmoCategories.WeaponDamageDistance(__instance.attacker, target, weapon, realDamage, rawDamage);
+              realDamage = CustomAmmoCategories.WeaponDamageDistance(__instance.attacker.TargetPosition, target, weapon, realDamage, rawDamage);
             } else {
-              realDamage = CustomAmmoCategories.WeaponDamageRevDistance(__instance.attacker, target, weapon, realDamage, rawDamage);
+              realDamage = CustomAmmoCategories.WeaponDamageRevDistance(__instance.attacker.TargetPosition, target, weapon, realDamage, rawDamage);
             }
           } else {
             Log.M.WL("no distance variance defined");
@@ -457,7 +457,7 @@ namespace CustomAmmoCategoriesPatches {
           }
           if (realDamage >= 1.0f) {
             Log.LogWrite("Applying WeaponRealizer variance. Current damage: " + realDamage + "\n");
-            realDamage = WeaponRealizer.Calculator.ApplyDamageModifiers(__instance.attacker, target, weapon, realDamage);
+            realDamage = WeaponRealizer.Calculator.ApplyDamageModifiers(__instance.attacker.TargetPosition, target, weapon, realDamage);
             Log.LogWrite("damage after WeaponRealizer variance: " + realDamage + "\n");
           }
         } else {

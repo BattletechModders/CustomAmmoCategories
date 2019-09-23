@@ -102,7 +102,7 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
          }
 
          if ( Settings.ShowAlphaDamageInLoadout != null && HasDamageLabel( colours.white ) )
-            loadout.text = string.Format( Settings.ShowAlphaDamageInLoadout, close + medium + far, close, medium, far, medium + far );
+            loadout.text = new Text( Settings.ShowAlphaDamageInLoadout, close + medium + far, close, medium, far, medium + far ).ToString();
 
          if ( Settings.ShowMeleeDamageInLoadout && actor is Mech mech ) {
             int start = weapons.Count, dmg = (int) (mech.MeleeWeapon?.DamagePerShot * mech.MeleeWeapon?.ShotsWhenFired);

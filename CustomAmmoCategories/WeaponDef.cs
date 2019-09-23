@@ -345,8 +345,13 @@ namespace CustomAmmoCategoriesPatches {
   [HarmonyPatch(new Type[] { typeof(string) })]
   public static class BattleTech_WeaponDef_fromJSON_Patch {
     public static bool Prefix(WeaponDef __instance, ref string json) {
-      CustomAmmoCategoriesLog.Log.LogWrite("WeaponDef fromJSON ");
-      JObject defTemp = JObject.Parse(json);
+      Log.LogWrite("WeaponDef fromJSON ");
+      JObject defTemp = null;
+      try {
+        defTemp = JObject.Parse(json);
+      } catch (Exception e) {
+        Log.LogWrite("Exception:" + e.ToString() + "\nWhile reading json:" + json + "\n", true);
+      }
       string Id = (string)defTemp["Description"]["Id"];
       Log.LogWrite(Id+"\n");
       ExtWeaponDef extDef = null;

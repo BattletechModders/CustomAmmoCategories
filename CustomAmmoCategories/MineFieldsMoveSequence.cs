@@ -310,13 +310,13 @@ namespace CustAmmoCategories {
       }
       Log.F.WL(1, "Applying burn floatie message");
       if (this.burnDamage.Count > 0) {
-        unit.Combat.MessageCenter.PublishMessage((MessageCenterMessage)new FloatieMessage(this.weapon.parent.GUID, unit.GUID, "BURN DAMAGE", FloatieMessage.MessageNature.CriticalHit));
+        unit.Combat.MessageCenter.PublishMessage((MessageCenterMessage)new FloatieMessage(this.weapon.parent.GUID, unit.GUID, "__/CAC.BURNDAMAGE/__", FloatieMessage.MessageNature.CriticalHit));
       }
       deathSequence.Add(unit);
       Mech mech = unit as Mech;
       if ((mech != null) && (this.BurnHeat > CustomAmmoCategories.Epsilon)) {
         unit.AddExternalHeat("BurningCell", Mathf.RoundToInt(this.BurnHeat));
-        unit.Combat.MessageCenter.PublishMessage((MessageCenterMessage)new FloatieMessage(this.weapon.parent.GUID, unit.GUID, "+ " + Mathf.RoundToInt(this.BurnHeat) + " HEAT FROM FIRE", FloatieMessage.MessageNature.Debuff));
+        unit.Combat.MessageCenter.PublishMessage((MessageCenterMessage)new FloatieMessage(this.weapon.parent.GUID, unit.GUID, new Text("__/CAC.HEATFROMFIRE/__", Mathf.RoundToInt(this.BurnHeat)), FloatieMessage.MessageNature.Debuff));
         heatSequence.Add(mech);
       }
       Log.F.WL(1, "Applying minefield damage");
@@ -343,19 +343,19 @@ namespace CustAmmoCategories {
         }
         if (mfdmgs.Value.hitRecords.Count > 0) {
           Log.F.WL(2, "floatie message explosion");
-          unit.Combat.MessageCenter.PublishMessage((MessageCenterMessage)new FloatieMessage(this.weapon.parent.GUID, unit.GUID, "LANDMINES EXPLODES:" + this.landminesTerrain.Count, FloatieMessage.MessageNature.CriticalHit));
+          unit.Combat.MessageCenter.PublishMessage((MessageCenterMessage)new FloatieMessage(this.weapon.parent.GUID, unit.GUID, new Text("__/CAC.LANDMINESEXPLODES/__", this.landminesTerrain.Count), FloatieMessage.MessageNature.CriticalHit));
           deathSequence.Add(mfdmgs.Value.target);
         }
         Mech trgmech = mfdmgs.Value.target as Mech;
         if (trgmech != null) {
           if (mfdmgs.Value.HeatDamage > CustomAmmoCategories.Epsilon) {
             trgmech.AddExternalHeat("LandMinesHeat", Mathf.RoundToInt(mfdmgs.Value.HeatDamage));
-            trgmech.Combat.MessageCenter.PublishMessage((MessageCenterMessage)new FloatieMessage(this.weapon.parent.GUID, unit.GUID, "+ " + Mathf.RoundToInt(mfdmgs.Value.HeatDamage) + " HEAT FROM LANDMINES", FloatieMessage.MessageNature.Debuff));
+            trgmech.Combat.MessageCenter.PublishMessage((MessageCenterMessage)new FloatieMessage(this.weapon.parent.GUID, unit.GUID, new Text("__/CAC.HEATFROMLANDMINES/__", Mathf.RoundToInt(mfdmgs.Value.HeatDamage)), FloatieMessage.MessageNature.Debuff));
             heatSequence.Add(trgmech);
           }
           if (mfdmgs.Value.StabDamage > CustomAmmoCategories.Epsilon) {
             trgmech.AddAbsoluteInstability(mfdmgs.Value.StabDamage, StabilityChangeSource.Moving, this.weapon.parent.GUID);
-            trgmech.Combat.MessageCenter.PublishMessage((MessageCenterMessage)new FloatieMessage(this.weapon.parent.GUID, unit.GUID, "+ " + mfdmgs.Value.StabDamage + " INSTABILITY FROM LANDMINES", FloatieMessage.MessageNature.Debuff));
+            trgmech.Combat.MessageCenter.PublishMessage((MessageCenterMessage)new FloatieMessage(this.weapon.parent.GUID, unit.GUID, new Text("__/CAC.INSTABILITYFROMLANDMINES/__", mfdmgs.Value.StabDamage), FloatieMessage.MessageNature.Debuff));
             instabilitySequence.Add(trgmech);
           }
         }
@@ -725,7 +725,7 @@ namespace CustAmmoCategoriesPatches {
         if (DynamicMapHelper.calculateAbortPos(__instance.owningActor, waypoints, finalHeading, out newWaypoints, out newHeading)) {
           if (meleeTarget != null) {
             Log.F.WL(1, "melee sequence interrupted. Floatie");
-            __instance.owningActor.Combat.MessageCenter.PublishMessage((MessageCenterMessage)new FloatieMessage(__instance.owningActor.GUID, __instance.owningActor.GUID, "MELEE ATTACK INTERUPTED", FloatieMessage.MessageNature.CriticalHit));
+            __instance.owningActor.Combat.MessageCenter.PublishMessage((MessageCenterMessage)new FloatieMessage(__instance.owningActor.GUID, __instance.owningActor.GUID, "__/CAC.MELEEATTACKINTERUPTED/__", FloatieMessage.MessageNature.CriticalHit));
             meleeTarget = null;
           }
           Log.F.W(1, "old:"); foreach (var waypoint in waypoints) { Log.F.W(waypoint.Position.ToString() + "->"); }; Log.F.W("\n");

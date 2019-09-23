@@ -1,15 +1,16 @@
 ﻿using BattleTech;
 using CustomAmmoCategoriesLog;
+using UnityEngine;
 
 namespace WeaponRealizer {
   public static partial class Calculator {
     internal const float Epsilon = 0.0001f;
 
-    public static float ApplyDamageModifiers(AbstractActor attacker, ICombatant target, Weapon weapon, float rawDamage) {
-      return ApplyAllDamageModifiers(attacker, target, weapon, rawDamage, true);
+    public static float ApplyDamageModifiers(Vector3 attackPos, ICombatant target, Weapon weapon, float rawDamage) {
+      return ApplyAllDamageModifiers(attackPos, target, weapon, rawDamage, true);
     }
 
-    internal static float ApplyAllDamageModifiers(AbstractActor attacker, ICombatant target, Weapon weapon, float rawDamage, bool calculateRandomComponent) {
+    internal static float ApplyAllDamageModifiers(Vector3 attackPos, ICombatant target, Weapon weapon, float rawDamage, bool calculateRandomComponent) {
       var damage = rawDamage;
 
       if (calculateRandomComponent && SimpleVariance.IsApplicable(weapon)) {
@@ -19,17 +20,17 @@ namespace WeaponRealizer {
 
       if (DistanceBasedVariance.IsApplicable(weapon)) {
         Log.M.WL("WR distance variance:" + weapon.defId +" target:" +target.DisplayName+ " damage:" +damage+ " rawDamage:" + rawDamage );
-        damage = DistanceBasedVariance.Calculate(attacker, target, weapon, damage, rawDamage);
+        damage = DistanceBasedVariance.Calculate(attackPos, target, weapon, damage, rawDamage);
       }
 
       if (ReverseDistanceBasedVariance.IsApplicable(weapon)) {
         Log.M.WL("WR reverse distance variance:" + weapon.defId + " target:" + target.DisplayName + " damage:" + damage + " rawDamage:" + rawDamage);
-        damage = ReverseDistanceBasedVariance.Calculate(attacker, target, weapon, damage, rawDamage);
+        damage = ReverseDistanceBasedVariance.Calculate(attackPos, target, weapon, damage, rawDamage);
       }
 
       if (OverheatMultiplier.IsApplicable(weapon)) {
         Log.M.WL("WR overheat muilt:" + weapon.defId + " target:" + target.DisplayName + " damage:" + damage + " rawDamage:" + rawDamage);
-        damage = OverheatMultiplier.Calculate(attacker, target, weapon, damage);
+        damage = OverheatMultiplier.Calculate(weapon.parent, target, weapon, damage);
       }
 
       //if (HeatDamageModifier.IsApplicable(weapon))

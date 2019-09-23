@@ -304,7 +304,7 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
       } catch (Exception ex) { Error(ex); }
     }
 
-    private static object GetBasicInfo(ICombatant target) {
+    private static Text GetBasicInfo(ICombatant target) {
       if (target is Mech mech) {
         int jets = mech.WorkingJumpjets;
         string weight = mech.weightClass.ToString();
@@ -316,23 +316,36 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
             case WeightClass.ASSAULT: weight = "__/AIM.ASSAULTMECH/__"; break;
           }
         string ton = ((int)mech.tonnage) + "T " + weight;
-        return jets > 0 ? string.Format("{0}, {1} __/AIM.JETS/__", ton, jets) : ton;
+        return jets > 0 ? new Text("{0}, {1} __/AIM.JETS/__", ton, jets) : new Text(ton);
 
-      } else if (target is Vehicle vehicle)
-        return ((int)vehicle.tonnage) + "T " + vehicle.weightClass;
-
-      else if (target is Turret turret)
-        return turret.TurretDef.Chassis.weightClass;
-
-      return "";
+      } else if (target is Vehicle vehicle) {
+        string weight = vehicle.weightClass.ToString();
+        switch (vehicle.weightClass) {
+          case WeightClass.LIGHT: weight = "__/AIM.LIGHTMECH/__"; break;
+          case WeightClass.MEDIUM: weight = "__/AIM.MEDIUMMECH/__"; break;
+          case WeightClass.HEAVY: weight = "__/AIM.HEAVYMECH/__"; break;
+          case WeightClass.ASSAULT: weight = "__/AIM.ASSAULTMECH/__"; break;
+        }
+        return new Text("{0}T {1}", (int)vehicle.tonnage, weight);// ((int)vehicle.tonnage) + "T " + vehicle.weightClass;
+      } else if (target is Turret turret) {
+        string weight = turret.TurretDef.Chassis.weightClass.ToString();
+        switch (turret.TurretDef.Chassis.weightClass) {
+          case WeightClass.LIGHT: weight = "__/AIM.LIGHTMECH/__"; break;
+          case WeightClass.MEDIUM: weight = "__/AIM.MEDIUMMECH/__"; break;
+          case WeightClass.HEAVY: weight = "__/AIM.HEAVYMECH/__"; break;
+          case WeightClass.ASSAULT: weight = "__/AIM.ASSAULTMECH/__"; break;
+        }
+        return new Text(weight);
+      }
+      return new Text("");
     }
 
-    private static string FormatPrediction(string label, float from, float to) {
-      return string.Format("{0} {1:0} >> {2:0;(0)}", label, from, to);
+    private static Text FormatPrediction(string label, float from, float to) {
+      return new Text("{0} {1:0} >> {2:0;(0)}", label, from, to);
     }
 
-    private static string FormatMeter(string label, float from, float max) {
-      return string.Format("{0} {1:0}/{2:0}", label, from, max);
+    private static Text FormatMeter(string label, float from, float max) {
+      return new Text("{0} {1:0}/{2:0}", label, from, max);
     }
 
     private static void GetPreviewNumbers(Mech mech, ref float heat, ref float stab, ref string movement) {
@@ -381,7 +394,7 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
       return spareMove - angle * pathing.MaxCost / (180 - free) / 2; // Reversed from Pathint.GetAngleAvailable
     }
 
-    private static string GetTargetNumbers(ICombatant target) {
+    private static Text GetTargetNumbers(ICombatant target) {
       try {
         if (HUD == null) return null;
         if (HUD.SelectedActor != null) {
@@ -390,9 +403,9 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
           if (ActiveState is SelectionStateSprint sprint) position = sprint.PreviewPos;
           else if (ActiveState is SelectionStateMove move) position = move.PreviewPos;
           else if (ActiveState is SelectionStateJump jump) position = jump.PreviewPos;
-          else return string.Format("Dist {0:0}", oldDist);
+          else return new Text("__/AIM.Dist/__ {0:0}", oldDist);
           float newDist = (int)Vector3.Distance(position, target.CurrentPosition);
-          return FormatPrediction("Dist", oldDist, newDist);
+          return FormatPrediction("__/AIM.Dist/__", oldDist, newDist);
         }
         float min = float.MaxValue;
         foreach (AbstractActor pc in Combat.LocalPlayerTeam.units) {
@@ -400,7 +413,7 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
           float dist = Vector3.Distance(pc.CurrentPosition, target.CurrentPosition);
           if (dist < min) min = dist;
         }
-        return string.Format("Dist {0:0}", min);
+        return new Text("__/AIM.Dist/__ {0:0}", min);
       } catch (Exception ex) { Error(ex); return null; }
     }
 
