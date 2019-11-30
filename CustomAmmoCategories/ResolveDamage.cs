@@ -2,6 +2,7 @@
 using CustomAmmoCategoriesLog;
 using System.Collections.Generic;
 using System.Reflection;
+using UnityEngine;
 
 namespace CustAmmoCategories {
   public static class ResolveDamageHelper {
@@ -10,8 +11,13 @@ namespace CustAmmoCategories {
       if (advInfo == null) { return; }
       if (advInfo.Sequence.meleeAttackType == MeleeAttackType.DFA) {
         float damageAmount = advInfo.Sequence.attacker.StatCollection.GetValue<float>("DFASelfDamage");
+#if BT1_8
+        advInfo.Sequence.attacker.TakeWeaponDamage(hitInfo, 64, advInfo.weapon, damageAmount,0f, 0, DamageType.DFASelf);
+        advInfo.Sequence.attacker.TakeWeaponDamage(hitInfo, 128, advInfo.weapon, damageAmount,0f, 0, DamageType.DFASelf);
+#else
         advInfo.Sequence.attacker.TakeWeaponDamage(hitInfo, 64, advInfo.weapon, damageAmount, 0, DamageType.DFASelf);
         advInfo.Sequence.attacker.TakeWeaponDamage(hitInfo, 128, advInfo.weapon, damageAmount, 0, DamageType.DFASelf);
+#endif
         if (AttackDirector.damageLogger.IsLogEnabled)
           AttackDirector.damageLogger.Log((object)string.Format("@@@@@@@@ {0} takes {1} damage to its legs from the DFA attack!", (object)advInfo.Sequence.attacker.DisplayName, (object)damageAmount));
       }
@@ -45,16 +51,25 @@ namespace CustAmmoCategories {
             if (statusEffect.Description == null || statusEffect.Description.Id == null || statusEffect.Description.Name == null) {
               CustomAmmoCategoriesLog.Log.LogWrite($"WARNING: EffectID:{effectID} has broken effectDescId:{statusEffect?.Description.Id} effectDescName:{statusEffect?.Description.Name}! SKIPPING\n", true);
             } else {
-              foreach (int HitLocation in advRes.hitLocations) {
-                CustomAmmoCategoriesLog.Log.LogWrite($"Applying effectID:{effectID} with effectDescId:{statusEffect?.Description.Id} effectDescName:{statusEffect?.Description.Name}\n");
-                advInfo.Sequence.Director.Combat.EffectManager.CreateEffect(statusEffect, effectID, advInfo.Sequence.stackItemUID, (ICombatant)advInfo.Sequence.attacker, target, hitInfo, HitLocation, false);
+              int effectsApply = 0;
+              foreach (EffectsLocaltion HitLocation in advRes.hitLocations) {
+                float roll = Random.Range(0f, 1f);
+                if(roll > HitLocation.effectsMod) {
+                  Log.LogWrite($"Roll fail\n");
+                  continue;
+                }
+                ++effectsApply;
+                Log.LogWrite($"Applying effectID:{effectID} with effectDescId:{statusEffect?.Description.Id} effectDescName:{statusEffect?.Description.Name}\n");
+                advInfo.Sequence.Director.Combat.EffectManager.CreateEffect(statusEffect, effectID, advInfo.Sequence.stackItemUID, (ICombatant)advInfo.Sequence.attacker, target, hitInfo, HitLocation.location, false);
                 if (effectPerHit == false) { break; }
               }
               if (target != null) {
-                if (effectPerHit == false) {
-                  advInfo.Sequence.Director.Combat.MessageCenter.PublishMessage((MessageCenterMessage)new FloatieMessage(advInfo.Sequence.attacker.GUID, target.GUID, statusEffect.Description.Name, FloatieMessage.MessageNature.Debuff));
-                } else {
-                  advInfo.Sequence.Director.Combat.MessageCenter.PublishMessage((MessageCenterMessage)new FloatieMessage(advInfo.Sequence.attacker.GUID, target.GUID, statusEffect.Description.Name + " x " + advRes.hitLocations.Count.ToString(), FloatieMessage.MessageNature.Debuff));
+                if (effectsApply > 0) {
+                  if (effectPerHit == false) {
+                    advInfo.Sequence.Director.Combat.MessageCenter.PublishMessage((MessageCenterMessage)new FloatieMessage(advInfo.Sequence.attacker.GUID, target.GUID, statusEffect.Description.Name, FloatieMessage.MessageNature.Debuff));
+                  } else {
+                    advInfo.Sequence.Director.Combat.MessageCenter.PublishMessage((MessageCenterMessage)new FloatieMessage(advInfo.Sequence.attacker.GUID, target.GUID, statusEffect.Description.Name + " x " + effectsApply.ToString(), FloatieMessage.MessageNature.Debuff));
+                  }
                 }
               }
             }
@@ -64,7 +79,7 @@ namespace CustAmmoCategories {
         if (targetActor != null) {
           List<EffectData> effectsForTriggerType = targetActor.GetComponentStatusEffectsForTriggerType(EffectTriggerType.OnDamaged);
           for (int index = 0; index < effectsForTriggerType.Count; ++index) {
-            targetActor.Combat.EffectManager.CreateEffect(effectsForTriggerType[index], string.Format("OnDamagedEffect_{0}_{1}", (object)target.GUID, (object)hitInfo.attackSequenceId), advInfo.Sequence.stackItemUID, target, (ICombatant)advInfo.Sequence.attacker, hitInfo, advRes.hitLocations[0], false);
+            targetActor.Combat.EffectManager.CreateEffect(effectsForTriggerType[index], string.Format("OnDamagedEffect_{0}_{1}", (object)target.GUID, (object)hitInfo.attackSequenceId), advInfo.Sequence.stackItemUID, target, (ICombatant)advInfo.Sequence.attacker, hitInfo, advRes.hitLocations[0].location, false);
           }
         }
       }

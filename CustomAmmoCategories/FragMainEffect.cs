@@ -16,7 +16,7 @@ namespace CustAmmoCategoriesPatches {
   [HarmonyPatch(new Type[] { typeof(WeaponHitInfo), typeof(int), typeof(int), typeof(bool) })]
   public static class MissileEffect_FireShells {
     public static void Postfix(MissileEffect __instance, ref WeaponHitInfo hitInfo, int hitIndex, int emitterIndex, bool isIndirect) {
-      int thishitIndex = (int)typeof(WeaponEffect).GetField("hitIndex", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(__instance);
+      int thishitIndex = __instance.HitIndex();
       Log.LogWrite("MissileEffect.Fire "+ hitInfo.attackWeaponIndex + "-"+ thishitIndex + "\n");
       AdvWeaponHitInfoRec advRec = __instance.hitInfo.advRec(hitIndex);
       if (advRec == null) {
@@ -36,7 +36,7 @@ namespace CustAmmoCategoriesPatches {
   [HarmonyPatch(new Type[] { })]
   public static class WeaponEffect_PublishWeaponCompleteMessage {
     public static bool Prefix(WeaponEffect __instance) {
-      int hitIndex = (int)typeof(WeaponEffect).GetField("hitIndex", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(__instance);
+      int hitIndex = __instance.HitIndex();
       FragWeaponEffect fWe = __instance.fragEffect();
       if (fWe != null) {
         Log.LogWrite("WeaponEffect.PublishWeaponCompleteMessage " + __instance.hitInfo.attackWeaponIndex + ":" + hitIndex + " has frag sub effect. Complete:" + fWe.FiringComplete+"\n");
@@ -45,7 +45,7 @@ namespace CustAmmoCategoriesPatches {
       return true;
     }
     public static void Postfix(WeaponEffect __instance) {
-      int hitIndex = (int)typeof(WeaponEffect).GetField("hitIndex", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(__instance);
+      int hitIndex = __instance.HitIndex();
       FragWeaponEffect fWe = __instance.fragEffect();
       if (fWe != null) {
         Log.LogWrite("WeaponEffect.PublishWeaponCompleteMessage " + __instance.hitInfo.attackWeaponIndex + ":" + hitIndex + " has frag sub effect. Complete:" + fWe.FiringComplete + "\n");

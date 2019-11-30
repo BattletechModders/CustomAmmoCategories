@@ -1,17 +1,16 @@
-﻿using System.Resources;
-using System.Reflection;
+﻿using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 // General Information about an assembly is controlled through the following
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[assembly: AssemblyTitle( "Attack Improvement Mod" )]
-[assembly: AssemblyDescription( "BattleTech mod: Attack Improvement Mod" )]
+[assembly: AssemblyTitle("CustomProfiler")]
+[assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("")]
-[assembly: AssemblyProduct( "AttackImprovementMod" )]
-[assembly: AssemblyCopyright( "Copyright © Ho Yiu Yeung 2018" )]
+[assembly: AssemblyProduct("CustomProfiler")]
+[assembly: AssemblyCopyright("Copyright ©  2019")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 
@@ -21,7 +20,7 @@ using System.Runtime.InteropServices;
 [assembly: ComVisible(false)]
 
 // The following GUID is for the ID of the typelib if this project is exposed to COM
-[assembly: Guid("02c8ab19-160a-474f-9135-5c72b38ce1b8")]
+[assembly: Guid("b431b037-2ebd-41fb-b0d7-bbdf5ced9199")]
 
 // Version information for an assembly consists of the following four values:
 //
@@ -33,7 +32,5 @@ using System.Runtime.InteropServices;
 // You can specify all the values or you can default the Build and Revision Numbers
 // by using the '*' as shown below:
 // [assembly: AssemblyVersion("1.0.*")]
-[assembly: AssemblyVersion( "3.1.0.38" )]
-[assembly: AssemblyFileVersion( "3.1.0.38" )]
-[assembly: NeutralResourcesLanguage( "en-US" )]
-
+[assembly: AssemblyVersion("1.0.0.0")]
+[assembly: AssemblyFileVersion("1.0.0.0")]

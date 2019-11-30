@@ -29,8 +29,13 @@ namespace CustAmmoCategories {
       AbstractActor actorTarget = advRec.target as AbstractActor;
       if (actorTarget != null) {
         LineOfFireLevel lineOfFireLevel = sequence.attacker.VisibilityCache.VisibilityToTarget((ICombatant)actorTarget).LineOfFireLevel;
+#if BT1_8
+        float adjustedDamage = actorTarget.GetAdjustedDamage(damage, weapon.WeaponCategoryValue, actorTarget.occupiedDesignMask, lineOfFireLevel, true);
+        damage = actorTarget.GetAdjustedDamageForMelee(adjustedDamage, weapon.WeaponCategoryValue);
+#else
         float adjustedDamage = actorTarget.GetAdjustedDamage(damage, weapon.Category, actorTarget.occupiedDesignMask, lineOfFireLevel, true);
         damage = actorTarget.GetAdjustedDamageForMelee(adjustedDamage, weapon.Category);
+#endif
       }
       if ((double)damage <= 0.0) {
         AttackDirector.attackLogger.LogWarning((object)string.Format("OnAttackSequenceImpact is dealing <= 0 damage: base dmg: {0}, total: {1}", (object)impactMessage.hitDamage, (object)damage));
@@ -136,9 +141,12 @@ namespace CustAmmoCategories {
           }
 
           Log.LogWrite(" resolve damage. arm: " + locArmor + " dmg:" + damage + " ap:" + apdmg + "\n");
+#if BT1_8
+          advRec.target.TakeWeaponDamage(impactMessage.hitInfo, advRec.hitLocation, weapon, damage, apdmg, hitIndex, DamageType.Weapon);
+#else
           if (locArmor <= damage) {
             Log.LogWrite(" " + (damage + apdmg) + " all damage processed normally\n");
-            advRec.target.TakeWeaponDamage(impactMessage.hitInfo, advRec.hitLocation, weapon, (damage + apdmg), hitIndex, DamageType.Weapon);
+            advRec.target.TakeWeaponDamage(impactMessage.hitInfo, advRec.hitLocation, weapon, damage+apdmg, hitIndex, DamageType.Weapon);
           } else {
             Log.LogWrite(" " + damage + " damage to armor\n");
             advRec.target.TakeWeaponDamage(impactMessage.hitInfo, advRec.hitLocation, weapon, damage, hitIndex, DamageType.Weapon);
@@ -147,7 +155,8 @@ namespace CustAmmoCategories {
               advRec.target.TakeWeaponDamageStructure(impactMessage.hitInfo, advRec.hitLocation, weapon, apdmg, hitIndex, DamageType.Weapon);
             }
           }
-          advRec.parent.resolve(advRec.target).AddHit(advRec.hitLocation);
+#endif
+          advRec.parent.resolve(advRec.target).AddHit(advRec.hitLocation,advRec.EffectsMod,advRec.isAOE);
           advRec.parent.resolve(advRec.target).AddHeat(advRec.Heat);
           Log.LogWrite(" Added heat:"+advRec.Heat+" overall: "+ advRec.parent.resolve(advRec.target).Heat+ "\n");
           advRec.parent.resolve(advRec.target).AddInstability(advRec.Stability);

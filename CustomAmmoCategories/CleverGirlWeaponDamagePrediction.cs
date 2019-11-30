@@ -117,7 +117,11 @@ namespace CleverGirlAIDamagePrediction {
       inital.Normal = this.weapon.DamagePerShotAdjusted(weapon.parent.occupiedDesignMask);
       inital.Heat = this.weapon.HeatDamagePerShotAdjusted(AttackImpactQuality.Solid);
       inital.Instability = this.weapon.Instability();
-      inital.AP = weapon.APDamage() * (inital.Normal / weapon.DamagePerShot);
+#if BT1_8
+      inital.AP = this.weapon.StructureDamagePerShotAdjusted(weapon.parent.occupiedDesignMask);
+#else
+      inital.AP = this.weapon.APDamage();
+#endif
       if ((damagePerPallet == true) && (damagePerNotDiv == false)) {
         inital.Normal /= (float)weapon.ProjectilesPerShot;
         inital.Heat /= (float)weapon.ProjectilesPerShot;
@@ -351,8 +355,13 @@ namespace CleverGirlAIDamagePrediction {
       AbstractActor actorTarget = inital.Target as AbstractActor;
       if (actorTarget != null) {
         LineOfFireLevel lineOfFireLevel = weapon.parent.VisibilityCache.VisibilityToTarget((ICombatant)actorTarget).LineOfFireLevel;
+#if BT1_8
+        float adjustedDamage = actorTarget.GetAdjustedDamage(inital.Normal, weapon.WeaponCategoryValue, actorTarget.occupiedDesignMask, lineOfFireLevel, true);
+        realDamage = actorTarget.GetAdjustedDamageForMelee(adjustedDamage, weapon.WeaponCategoryValue);
+#else
         float adjustedDamage = actorTarget.GetAdjustedDamage(inital.Normal, weapon.Category, actorTarget.occupiedDesignMask, lineOfFireLevel, true);
         realDamage = actorTarget.GetAdjustedDamageForMelee(adjustedDamage, weapon.Category);
+#endif
         inital.AP = inital.AP * (realDamage / inital.Normal);
         inital.Normal = realDamage;
       }

@@ -160,10 +160,18 @@ namespace CustAmmoCategories {
       this.PlayProjectile();
     }
 
+#if BT1_8
+    protected override void OnImpact(float hitDamage = 0.0f, float structureDamage = 0f) {
+#else
     protected override void OnImpact(float hitDamage = 0.0f) {
+#endif
       if ((double)hitDamage <= 1.0 / 1000.0)
         return;
+#if BT1_8
+      base.OnImpact(hitDamage, structureDamage);
+#else
       base.OnImpact(hitDamage);
+#endif
     }
 
     protected override void OnComplete() {
@@ -189,7 +197,7 @@ namespace CustAmmoCategories {
       this.preFireSFX = original.preFireSFX;
       this.Combat = (CombatGameState)typeof(WeaponEffect).GetField("Combat", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(original);
       this.hitInfo = original.hitInfo;
-      this.hitIndex = (int)typeof(WeaponEffect).GetField("hitIndex", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(original);
+      this.hitIndex = original.HitIndex();
       this.emitterIndex = (int)typeof(WeaponEffect).GetField("emitterIndex", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(original);
       this.numberOfEmitters = (int)typeof(WeaponEffect).GetField("numberOfEmitters", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(original);
       this.subEffect = original.subEffect;
@@ -654,7 +662,11 @@ namespace CustAmmoCategories {
       }
       if (this.currentState == WeaponEffect.WeaponEffectState.Firing && (double)this.t <= 1.0)
         this.t += this.rate * this.Combat.StackManager.GetProgressiveAttackDeltaTime(this.t);
+#if BT1_8
+      if (!this.Active || this.subEffect || (this.weapon.WeaponCategoryValue.IsMelee || (double)this.attackSequenceNextDelayTimer <= 0.0))
+#else
       if (!this.Active || this.subEffect || (this.weapon.Category == WeaponCategory.Melee || (double)this.attackSequenceNextDelayTimer <= 0.0))
+#endif
         return;
       this.attackSequenceNextDelayTimer -= this.Combat.StackManager.GetProgressiveAttackDeltaTime(0.01f);
       if ((double)this.attackSequenceNextDelayTimer > 0.0)
@@ -668,10 +680,15 @@ namespace CustAmmoCategories {
     protected override void OnPreFireComplete() {
     }
 
+#if BT1_8
+    protected override void OnImpact(float hitDamage = 0.0f, float structureDamage = 0f) {
+      this.Combat.MessageCenter.PublishMessage((MessageCenterMessage)new AttackSequenceImpactMessage(this.hitInfo, this.hitIndex, hitDamage, structureDamage));
+    }
+#else
     protected override void OnImpact(float hitDamage = 0.0f) {
       this.Combat.MessageCenter.PublishMessage((MessageCenterMessage)new AttackSequenceImpactMessage(this.hitInfo, this.hitIndex, hitDamage));
     }
-
+#endif
     protected override void OnComplete() {
       if (this.currentState == WeaponEffect.WeaponEffectState.Complete)
         return;

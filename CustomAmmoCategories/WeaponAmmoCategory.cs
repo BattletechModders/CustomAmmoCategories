@@ -201,7 +201,11 @@ namespace CustomAmmoCategoriesPatches {
   [HarmonyPatch(typeof(CombatHUDWeaponSlot))]
   [HarmonyPatch("RefreshDisplayedWeapon")]
   [HarmonyPatch(MethodType.Normal)]
+#if BT1_8
+  [HarmonyPatch(new Type[] { typeof(ICombatant), typeof(int?), typeof(bool), typeof(bool) })]
+#else
   [HarmonyPatch(new Type[] { typeof(ICombatant) })]
+#endif
   public static class CombatHUDWeaponSlot_RefreshDisplayedWeapon1 {
     static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) {
       var targetPropertyGetter = AccessTools.Property(typeof(Weapon), "ShotsWhenFired").GetGetMethod();
@@ -227,7 +231,11 @@ namespace CustomAmmoCategoriesPatches {
   [HarmonyPatch(typeof(CombatHUDWeaponSlot))]
   [HarmonyPatch("RefreshDisplayedWeapon")]
   [HarmonyPatch(MethodType.Normal)]
+#if BT1_8
+  [HarmonyPatch(new Type[] { typeof(ICombatant), typeof(int?), typeof(bool), typeof(bool) })]
+#else
   [HarmonyPatch(new Type[] { typeof(ICombatant) })]
+#endif
   public static class CombatHUDWeaponSlot_RefreshDisplayedWeapon2 {
     static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) {
       var targetPropertyGetter = AccessTools.Property(typeof(Weapon), "AmmoCategoryValue").GetGetMethod();
@@ -241,7 +249,11 @@ namespace CustomAmmoCategoriesPatches {
   }
   [HarmonyPatch(typeof(CombatHUDWeaponSlot))]
   [HarmonyPatch("ShowTextColor")]
+#if BT1_8
+  [HarmonyPatch(new Type[] { typeof(Color), typeof(Color), typeof(Color), typeof(bool) })]
+#else
   [HarmonyPatch(new Type[] { typeof(Color), typeof(Color), typeof(bool) })]
+#endif
   public static class CombatHUDWeaponSlot_ShowTextColor {
     static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) {
       var targetPropertyGetter = AccessTools.Property(typeof(Weapon), "AmmoCategoryValue").GetGetMethod();

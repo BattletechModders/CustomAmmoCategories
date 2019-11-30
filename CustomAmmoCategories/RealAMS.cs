@@ -885,7 +885,7 @@ namespace CustAmmoCategories {
     [HarmonyPatch(new Type[] { })]
     public static class WeaponEffect_PlayImpact {
       public static bool Prefix(WeaponEffect __instance) {
-        int hitIndex = (int)typeof(WeaponEffect).GetField("hitIndex", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(__instance);
+        int hitIndex = __instance.HitIndex();
         if (hitIndex >= 0) {
           if ((__instance.hitInfo.hitLocations[hitIndex] == 0) || (__instance.hitInfo.hitLocations[hitIndex] == 65536)) { return true; };
           AbstractActor actor = __instance.weapon.parent.Combat.AttackDirector.GetHitInfoTarget(__instance.hitInfo) as AbstractActor;
@@ -918,7 +918,7 @@ namespace CustAmmoCategories {
     [HarmonyPatch(new Type[] { })]
     public static class WeaponEffect_PlayImpactAudio {
       public static bool Prefix(WeaponEffect __instance) {
-        int hitIndex = (int)typeof(WeaponEffect).GetField("hitIndex", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(__instance);
+        int hitIndex = __instance.HitIndex();
         if (hitIndex < 0) { return false; };
         if ((__instance.hitInfo.hitLocations[hitIndex] == 0) || (__instance.hitInfo.hitLocations[hitIndex] == 65536)) { return true; };
         AbstractActor actor = __instance.weapon.parent.Combat.AttackDirector.GetHitInfoTarget(__instance.hitInfo) as AbstractActor;
@@ -947,13 +947,25 @@ namespace CustAmmoCategories {
     [HarmonyPatch(typeof(WeaponEffect))]
     [HarmonyPatch("OnImpact")]
     [HarmonyPatch(MethodType.Normal)]
+#if BT1_8
+    [HarmonyPatch(new Type[] { typeof(float), typeof(float) })]
+#else
     [HarmonyPatch(new Type[] { typeof(float) })]
+#endif
     public static class WeaponEffect_OnImpact {
+#if BT1_8
+      public static bool Prefix(WeaponEffect __instance, ref float hitDamage,ref float structureDamage, int ___hitIndex) {
+#else
       public static bool Prefix(WeaponEffect __instance, ref float hitDamage, int ___hitIndex) {
+#endif
         //Log.LogWrite("OnImpact hitIndex:" + ___hitIndex + "/"+__instance.hitInfo.numberOfShots+"\n");
         return true;
       }
+#if BT1_8
+      public static void Postfix(WeaponEffect __instance, ref float hitDamage, ref float structureDamage, int ___hitIndex) {
+#else
       public static void Postfix(WeaponEffect __instance, ref float hitDamage, int ___hitIndex) {
+#endif
         Log.LogWrite("OnImpact hitIndex:" + ___hitIndex + "/" + __instance.hitInfo.numberOfShots + "\n");
         AdvWeaponHitInfoRec advRec = __instance.hitInfo.advRec(___hitIndex);
         if (advRec == null) {
@@ -974,7 +986,11 @@ namespace CustAmmoCategories {
             for (int shHitIndex = 0; shHitIndex < advRec.fragInfo.fragsCount; ++shHitIndex) {
               int shrapnelHitIndex = (shHitIndex + advRec.fragInfo.fragStartHitIndex);
               Log.LogWrite("  shellsHitIndex = " + shrapnelHitIndex + " dmg:" + advRec.Damage + "\n");
+#if BT1_8
+              advRec.parent.weapon.parent.Combat.MessageCenter.PublishMessage((MessageCenterMessage)new AttackSequenceImpactMessage(__instance.hitInfo, shrapnelHitIndex, advRec.Damage, advRec.APDamage));
+#else
               advRec.parent.weapon.parent.Combat.MessageCenter.PublishMessage((MessageCenterMessage)new AttackSequenceImpactMessage(__instance.hitInfo, shrapnelHitIndex, advRec.Damage));
+#endif
             }
           }
         }
@@ -984,7 +1000,11 @@ namespace CustAmmoCategories {
             AdvWeaponHitInfoRec aoeRec = advRec.parent.hits[aoeHitIndex];
             if (aoeRec.isAOE == false) { continue; }
             Log.LogWrite(" hitIndex = " + aoeHitIndex + " " + aoeRec.target.GUID + " " + aoeRec.Damage + "/" + aoeRec.Heat + "/" + aoeRec.Stability + "\n");
+#if BT1_8
+            __instance.weapon.parent.Combat.MessageCenter.PublishMessage((MessageCenterMessage)new AttackSequenceImpactMessage(__instance.hitInfo, aoeHitIndex, aoeRec.Damage, 0f));
+#else
             __instance.weapon.parent.Combat.MessageCenter.PublishMessage((MessageCenterMessage)new AttackSequenceImpactMessage(__instance.hitInfo, aoeHitIndex, aoeRec.Damage));
+#endif
           }
         }
       }
@@ -995,7 +1015,7 @@ namespace CustAmmoCategories {
     [HarmonyPatch(new Type[] { })]
     public static class WeaponEffect_OnComplete {
       public static bool Prefix(WeaponEffect __instance) {
-        int hitIndex = (int)typeof(WeaponEffect).GetField("hitIndex", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(__instance);
+        int hitIndex = __instance.hitIndex;
         if (hitIndex >= 0) { return true; };
         if (__instance.currentState == WeaponEffect.WeaponEffectState.Complete) {
           return false;
@@ -1022,7 +1042,7 @@ namespace CustAmmoCategories {
     [HarmonyPatch(new Type[] { })]
     public static class WeaponEffect_PublishNextWeaponMessage {
       public static bool Prefix(WeaponEffect __instance) {
-        int hitIndex = (int)typeof(WeaponEffect).GetField("hitIndex", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(__instance);
+        int hitIndex = __instance.hitIndex;
         if (hitIndex >= 0) { return true; };
         typeof(WeaponEffect).GetField("attackSequenceNextDelayTimer", BindingFlags.Instance | BindingFlags.NonPublic).SetValue(__instance, (object)-1f);
         typeof(WeaponEffect).GetField("hasSentNextWeaponMessage", BindingFlags.Instance | BindingFlags.NonPublic).SetValue(__instance, (object)true);
@@ -1035,7 +1055,7 @@ namespace CustAmmoCategories {
     [HarmonyPatch(new Type[] { })]
     public static class WeaponEffect_PublishWeaponCompleteMessage {
       public static bool Prefix(WeaponEffect __instance) {
-        int hitIndex = (int)typeof(WeaponEffect).GetField("hitIndex", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(__instance);
+        int hitIndex = __instance.hitIndex;
         if (hitIndex >= 0) { return true; };
         PropertyInfo property = typeof(WeaponEffect).GetProperty("FiringComplete");
         property.DeclaringType.GetProperty("FiringComplete");
@@ -1050,7 +1070,7 @@ namespace CustAmmoCategories {
     [HarmonyPriority(Priority.HigherThanNormal)]
     public static class BallisticEffect_OnBulletImpact {
       public static bool Prefix(BallisticEffect __instance, BulletEffect bullet) {
-        int hitIndex = (int)typeof(WeaponEffect).GetField("hitIndex", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(__instance);
+        int hitIndex = __instance.hitIndex;
         if (hitIndex < 0) { return false; };
         //typeof(WeaponEffect).GetMethod("OnImpact", BindingFlags.NonPublic | BindingFlags.Instance).Invoke(__instance, new object[1] { (object)0.0f });
         return true;
@@ -1062,7 +1082,7 @@ namespace CustAmmoCategories {
     [HarmonyPatch(new Type[] { })]
     public static class BallisticEffect_SetupBullets {
       public static bool Prefix(BallisticEffect __instance) {
-        int hitIndex = (int)typeof(WeaponEffect).GetField("hitIndex", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(__instance);
+        int hitIndex = __instance.hitIndex;
         if (hitIndex >= 0) { return true; };
         CustomAmmoCategoriesLog.Log.LogWrite("SetupBullets AMS\n");
         typeof(BallisticEffect).GetField("currentBullet", BindingFlags.Instance | BindingFlags.NonPublic).SetValue(__instance, (object)0);
@@ -1082,7 +1102,7 @@ namespace CustAmmoCategories {
     [HarmonyPriority(Priority.HigherThanNormal)]
     public static class BallisticEffect_FireNextBullet {
       public static bool Prefix(BallisticEffect __instance) {
-        int hitIndex = (int)typeof(WeaponEffect).GetField("hitIndex", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(__instance);
+        int hitIndex = __instance.hitIndex;
         if (hitIndex >= 0) { return true; };
         CustomAmmoCategoriesLog.Log.LogWrite("FireNextBullet AMS\n");
         CustomAmmoCategories.FireNextAMSBullet(__instance, __instance.hitInfo);
@@ -1095,7 +1115,7 @@ namespace CustAmmoCategories {
     [HarmonyPatch(new Type[] { })]
     public static class BallisticEffect_OnComplete {
       public static void Postfix(WeaponEffect __instance) {
-        int hitIndex = (int)typeof(WeaponEffect).GetField("hitIndex", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(__instance);
+        int hitIndex = __instance.hitIndex;
         if (hitIndex >= 0) { return; };
         CustomAmmoCategoriesLog.Log.LogWrite("AMS ballistic complete\n");
         __instance.Reset();
@@ -1109,7 +1129,7 @@ namespace CustAmmoCategories {
     [HarmonyPriority(Priority.HigherThanNormal)]
     public static class BulletEffect_OnComplete {
       public static void Postfix(WeaponEffect __instance) {
-        int hitIndex = (int)typeof(WeaponEffect).GetField("hitIndex", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(__instance);
+        int hitIndex = __instance.hitIndex;
         if (hitIndex >= 0) { return; };
         __instance.Reset();
         CustomAmmoCategoriesLog.Log.LogWrite("AMS bullet complete\n");
@@ -1122,7 +1142,7 @@ namespace CustAmmoCategories {
     [HarmonyPatch(new Type[] { })]
     public static class MissileEffect_PlayProjectileAMS {
       public static bool Prefix(MissileEffect __instance) {
-        int hitIndex = (int)typeof(WeaponEffect).GetField("hitIndex", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(__instance);
+        int hitIndex = __instance.HitIndex();
         AdvWeaponHitInfoRec cachedCurve = __instance.hitInfo.advRec(hitIndex);
         if (cachedCurve == null) { return true; };
         CustomAmmoCategoriesLog.Log.LogWrite("Cached missile path found " + __instance.weapon.defId + " " + __instance.hitInfo.attackSequenceId + " " + __instance.hitInfo.attackWeaponIndex + " " + hitIndex + "\n");
@@ -1167,7 +1187,7 @@ namespace CustAmmoCategories {
     [HarmonyPatch(new Type[] { })]
     public static class MissileEffect_GenerateMissilePath {
       public static bool Prefix(MissileEffect __instance) {
-        int hitIndex = (int)typeof(WeaponEffect).GetField("hitIndex", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(__instance);
+        int hitIndex = __instance.HitIndex();
         AdvWeaponHitInfoRec cachedCurve = __instance.hitInfo.advRec(hitIndex);
         if (cachedCurve == null) { return true; };
         CustomAmmoCategoriesLog.Log.LogWrite("Cached missile path found " + __instance.weapon.defId + " " + __instance.hitInfo.attackSequenceId + " " + __instance.hitInfo.attackWeaponIndex + " " + hitIndex + "\n");
@@ -1186,7 +1206,7 @@ namespace CustAmmoCategories {
     [HarmonyPatch(new Type[] { })]
     public static class MissileEffect_GenerateIndirectMissilePath {
       public static bool Prefix(MissileEffect __instance) {
-        int hitIndex = (int)typeof(WeaponEffect).GetField("hitIndex", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(__instance);
+        int hitIndex = __instance.HitIndex();
         AdvWeaponHitInfoRec cachedCurve = __instance.hitInfo.advRec(hitIndex);
         if (cachedCurve == null) { return true; };
         CustomAmmoCategoriesLog.Log.LogWrite("Cached missile path found " + __instance.weapon.defId + " " + __instance.hitInfo.attackSequenceId + " " + __instance.hitInfo.attackWeaponIndex + " " + hitIndex + "\n");
@@ -1207,7 +1227,7 @@ namespace CustAmmoCategories {
       public static void Postfix(MissileEffect __instance) {
         float t = (float)typeof(WeaponEffect).GetField("t", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(__instance);
         if (__instance.currentState == WeaponEffect.WeaponEffectState.Firing) {
-          int hitIndex = (int)typeof(WeaponEffect).GetField("hitIndex", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(__instance);
+          int hitIndex = __instance.HitIndex();
           if (__instance.hitInfo.dodgeRolls[hitIndex] <= -2.0f) {
             float AMSShootT = (0.0f - __instance.hitInfo.dodgeRolls[hitIndex]) - 2.0f;
             if (t >= AMSShootT) {

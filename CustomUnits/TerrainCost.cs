@@ -361,7 +361,7 @@ namespace CustomUnits {
       try {
         FowningActor = typeof(PathNodeGrid).GetField("owningActor", BindingFlags.Instance | BindingFlags.NonPublic);
         if (FowningActor == null) {
-          Log.LogWrite(0, "Can't find owningActor", true);
+          Log.LogWrite(0, "PathNodeGrid.GetPathTo Can't find owningActor", true);
           return false;
         }
       } catch (Exception e) {
@@ -505,9 +505,9 @@ namespace CustomUnits {
     private static FieldInfo FowningActor = null;
     public static bool Prepare() {
       try {
-        FowningActor = typeof(ActorMovementSequence).GetField("owningActor", BindingFlags.Instance | BindingFlags.NonPublic);
+        FowningActor = typeof(OrderSequence).GetField("owningActor", BindingFlags.Instance | BindingFlags.NonPublic);
         if (FowningActor == null) {
-          Log.LogWrite(0, "Can't find owningActor", true);
+          Log.LogWrite(0, "ActorMovementSequence.UpdateSpline Can't find owningActor", true);
           return false;
         }
       } catch (Exception e) {

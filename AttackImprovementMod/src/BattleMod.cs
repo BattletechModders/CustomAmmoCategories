@@ -22,7 +22,7 @@ namespace Sheepy.BattleTechMod {
 
   public abstract class BattleMod : BattleModModule {
 
-    public static readonly Logger BTML_LOG = new Logger("Mods/BTModLoader.log", "BTML log should not be deleted.");
+    public static readonly Logger BTML_LOG = new Logger("Mods/.modtek/AIMFallback.log", "BTML log should not be deleted.");
     public static readonly Logger BT_LOG = new Logger("BattleTech_Data/output_log.txt", "BattleTech game log should not be deleted.");
 
     // Basic mod info for public access, will auto load from assembly then mod.json (if exists)
@@ -134,7 +134,7 @@ namespace Sheepy.BattleTechMod {
     }
 
     private void SaveSettings(string settings) {
-      TryRun(Log, () => File.WriteAllText(BaseDir + "settings.json", settings));
+      TryRun(Log, () => File.WriteAllText(BaseDir + "AIM_settings.json", settings));
     }
 
     // ============ Logging ============
@@ -270,7 +270,7 @@ namespace Sheepy.BattleTechMod {
             if (match.Success) modList.Add(match.Groups[1].Value);
           }
         } catch (Exception ex) {
-          BattleMod.BTML_LOG.Error(ex);
+          CustomAmmoCategoriesLog.Log.M.TWL(0, ex.ToString());
         }
       }
       return modList.ToArray();
@@ -330,7 +330,7 @@ namespace Sheepy.BattleTechMod {
 
     private Logger _Logger;
     protected Logger Log {
-      get { return _Logger ?? BattleMod.BTML_LOG; }
+      get { return _Logger; }
       set { _Logger = value; }
     }
 
@@ -443,7 +443,7 @@ namespace Sheepy.BattleTechMod {
           result.Add(code);
       }
       if (found == 0)
-        (logger ?? BattleMod.BTML_LOG).Warn("Cannot found IL code to replace for {0}.", action);
+        (logger).Warn("Cannot found IL code to replace for {0}.", action);
       return result;
     }
 
@@ -476,16 +476,16 @@ namespace Sheepy.BattleTechMod {
       return value;
     }
 
-    public static void TryRun(Action action) { TryRun(BattleMod.BTML_LOG, action); }
+    public static void TryRun(Action action) { TryRun(null, action); }
     public static void TryRun(Logger log, Action action) {
       try {
         action.Invoke();
-      } catch (Exception ex) { log.Error(ex); }
+      } catch (Exception ex) { CustomAmmoCategoriesLog.Log.M.TWL(0, ex.ToString()); }
     }
 
     public static T TryGet<T>(T[] array, int index, T fallback = default, string errorArrayName = null) {
       if (array == null || array.Length <= index) {
-        if (errorArrayName != null) BattleMod.BTML_LOG.Warn($"{errorArrayName}[{index}] not found, using default {fallback}.");
+        if (errorArrayName != null) CustomAmmoCategoriesLog.Log.M.TWL(0, $"{errorArrayName}[{index}] not found, using default {fallback}.");
         return fallback;
       }
       return array[index];
@@ -493,7 +493,7 @@ namespace Sheepy.BattleTechMod {
 
     public static T TryGet<T>(List<T> list, int index, T fallback = default, string errorArrayName = null) {
       if (list == null || list.Count <= index) {
-        if (errorArrayName != null) BattleMod.BTML_LOG.Warn($"{errorArrayName}[{index}] not found, using default {fallback}.");
+        if (errorArrayName != null) CustomAmmoCategoriesLog.Log.M.TWL(0, $"{errorArrayName}[{index}] not found, using default {fallback}.");
         return fallback;
       }
       return list[index];
@@ -501,7 +501,7 @@ namespace Sheepy.BattleTechMod {
 
     public static V TryGet<T, V>(Dictionary<T, V> map, T key, V fallback = default, string errorDictName = null) {
       if (map == null || !map.ContainsKey(key)) {
-        if (errorDictName != null) BattleMod.BTML_LOG.Warn($"{errorDictName}[{key}] not found, using default {fallback}.");
+        if (errorDictName != null) CustomAmmoCategoriesLog.Log.M.TWL(0, $"{errorDictName}[{key}] not found, using default {fallback}.");
         return fallback;
       }
       return map[key];
@@ -537,7 +537,7 @@ namespace Sheepy.BattleTechMod {
 
     public static decimal RangeCheck(string name, ref decimal val, decimal shownMin, decimal realMin, decimal realMax, decimal shownMax) {
       if (realMin > realMax || shownMin > shownMax)
-        BattleMod.BTML_LOG.Error("Incorrect range check params on " + name);
+        CustomAmmoCategoriesLog.Log.M.TWL(0, "Incorrect range check params on " + name);
       decimal orig = val;
       if (val < realMin)
         val = realMin;
@@ -552,7 +552,7 @@ namespace Sheepy.BattleTechMod {
             message += " >= " + shownMin;
         else
           message += " <= " + shownMin;
-        BattleMod.BTML_LOG.Info(message + ". Setting to " + val);
+        CustomAmmoCategoriesLog.Log.M.TWL(0, message + ". Setting to " + val);
       }
       return val;
     }

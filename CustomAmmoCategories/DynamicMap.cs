@@ -2122,10 +2122,17 @@ namespace CustomAmmoCategoriesPatches {
             float damage = (float)cell.BurningStrength;
             Weapon weapon = cell.BurningWeapon;
             var fakeHit = new WeaponHitInfo(-1, -1, -1, -1, actor.GUID, __instance.GUID, -1, null, null, null, null, null, null, new AttackImpactQuality[1] { AttackImpactQuality.Solid }, new AttackDirection[1] { AttackDirection.FromArtillery }, null, null, null);
+#if BT1_8
+            __instance.TakeWeaponDamage(fakeHit, (int)VehicleChassisLocations.Front, weapon, damage / 4f, 0f, 0, DamageType.Combat);
+            __instance.TakeWeaponDamage(fakeHit, (int)VehicleChassisLocations.Rear, weapon, damage / 4f, 0f, 0, DamageType.Combat);
+            __instance.TakeWeaponDamage(fakeHit, (int)VehicleChassisLocations.Right, weapon, damage / 4f, 0f, 0, DamageType.Combat);
+            __instance.TakeWeaponDamage(fakeHit, (int)VehicleChassisLocations.Left, weapon, damage / 4f, 0f, 0, DamageType.Combat);
+#else
             __instance.TakeWeaponDamage(fakeHit, (int)VehicleChassisLocations.Front, weapon, damage / 4f, 0, DamageType.Combat);
             __instance.TakeWeaponDamage(fakeHit, (int)VehicleChassisLocations.Rear, weapon, damage / 4f, 0, DamageType.Combat);
             __instance.TakeWeaponDamage(fakeHit, (int)VehicleChassisLocations.Right, weapon, damage / 4f, 0, DamageType.Combat);
             __instance.TakeWeaponDamage(fakeHit, (int)VehicleChassisLocations.Left, weapon, damage / 4f, 0, DamageType.Combat);
+#endif
             __instance.Combat.MessageCenter.PublishMessage((MessageCenterMessage)new FloatieMessage(__instance.GUID, __instance.GUID, "__/CAC.DAMAGEFROMSTANDINGINFIRE/__", FloatieMessage.MessageNature.CriticalHit));
             __instance.HandleDeath(actor.GUID);
           }
@@ -2214,17 +2221,81 @@ namespace CustomAmmoCategoriesPatches {
         burnterrain = string.Empty;
       }
     }
+    private static PropertyInfo pHUD;
+    private static PropertyInfo pSidePanel;
+    private static PropertyInfo pTargetWorldPos;
+    private static FieldInfo fShownForSingleFrame;
+    public static bool Prepare() {
+      pHUD = typeof(MoveStatusPreview).GetProperty("HUD", BindingFlags.Instance | BindingFlags.NonPublic);
+      if (pHUD == null) {
+        Log.M.TWL(0, "Can't find MoveStatusPreview.HUD");
+        return false;
+      }
+      pSidePanel = typeof(MoveStatusPreview).GetProperty("sidePanel", BindingFlags.Instance | BindingFlags.NonPublic);
+      if (pSidePanel == null) {
+        Log.M.TWL(0, "Can't find MoveStatusPreview.sidePanel");
+        return false;
+      }
+      fShownForSingleFrame = typeof(CombatHUDInfoSidePanel).GetField("shownForSingleFrame", BindingFlags.Instance | BindingFlags.NonPublic);
+      if (fShownForSingleFrame == null) {
+        Log.M.TWL(0, "Can't find CombatHUDInfoSidePanel.shownForSingleFrame");
+        return false;
+      }
+      pTargetWorldPos = typeof(MoveStatusPreview).GetProperty("TargetWorldPos", BindingFlags.Instance | BindingFlags.NonPublic);
+      if (pTargetWorldPos == null) {
+        Log.M.TWL(0, "Can't find MoveStatusPreview.TargetWorldPos");
+        return false;
+      }
+      return true;
+    }
+    public static Vector3 TargetWorldPos(this MoveStatusPreview pr) {
+      return (Vector3)pTargetWorldPos.GetValue(pr);
+    }
+    public static void TargetWorldPos(this MoveStatusPreview pr, Vector3 val) {
+      pTargetWorldPos.SetValue(pr,val);
+    }
+    public static CombatHUD HUD(this MoveStatusPreview pr) {
+      return (CombatHUD)pHUD.GetValue(pr, null);
+    }
+    public static CombatHUDInfoSidePanel sidePanel(this MoveStatusPreview pr) {
+      return (CombatHUDInfoSidePanel)pSidePanel.GetValue(pr, null);
+    }
+    public static void shownForSingleFrame(this CombatHUDInfoSidePanel pr, bool val) {
+      fShownForSingleFrame.SetValue(pr, val);
+    }
+    //private class TerrainSidePanelData {
+    //public Text title;
+    //public Text description;
+    //public TerrainSidePanelData() { }
+    //}
+    //private static Dictionary<MapTerrainDataCell, TerrainSidePanelData> cacheSidePanelInfoData = new Dictionary<MapTerrainDataCell, TerrainSidePanelData>();
+    //private static MapTerrainDataCell lastDisplayedCell = null;
+    //private static int firstCounter = 100;
     private static bool Prefix(MoveStatusPreview __instance, AbstractActor actor, Vector3 worldPos, MoveType moveType) {
+      /*if (firstCounter > 0) {
+        __instance.sidePanel().ForceShowSingleFrame(new Text("TITLE"), new Text("DESCRIPTION"), null, false);
+        firstCounter -= 1;
+      } else {
+        __instance.sidePanel().shownForSingleFrame(true);
+      }*/
+      //__instance.sidePanel().ForceShowSingleFrame(new Text("TITLE"), new Text ("DESCRIPTION"), null, false);
+      //return true;
+      __instance.TargetWorldPos(worldPos);
       List<MapEncounterLayerDataCell> cells = new List<MapEncounterLayerDataCell>();
-      CombatHUD HUD = (CombatHUD)typeof(MoveStatusPreview).GetProperty("HUD", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(__instance, null);
-      CombatHUDInfoSidePanel sidePanel = (CombatHUDInfoSidePanel)typeof(MoveStatusPreview).GetProperty("sidePanel", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(__instance, null);
+      CombatHUD HUD = __instance.HUD();
+      CombatHUDInfoSidePanel sidePanel = __instance.sidePanel();
       cells.Add(HUD.Combat.EncounterLayerData.GetCellAt(worldPos));
+      MapTerrainDataCell relatedTerrainCell = cells[0].relatedTerrainCell;
+#if BT1_8
+      __instance.PreviewStatusPanel.ShowPreviewStatuses(actor, relatedTerrainCell, moveType, worldPos);
+#else
       __instance.PreviewStatusPanel.ShowPreviewStatuses(actor, cells, moveType, worldPos);
-      DesignMaskDef priorityDesignMask = actor.Combat.MapMetaData.GetPriorityDesignMask(cells[0].relatedTerrainCell);
-      MapTerrainDataCellEx cell = cells[0].relatedTerrainCell as MapTerrainDataCellEx;
-      bool isDropshipZone = SplatMapInfo.IsDropshipLandingZone(cells[0].relatedTerrainCell.terrainMask);
-      bool isDangerZone = SplatMapInfo.IsDangerousLocation(cells[0].relatedTerrainCell.terrainMask);
-      bool isDropPodZone = SplatMapInfo.IsDropPodLandingZone(cells[0].relatedTerrainCell.terrainMask);
+#endif
+      DesignMaskDef priorityDesignMask = actor.Combat.MapMetaData.GetPriorityDesignMask(relatedTerrainCell);
+      MapTerrainDataCellEx cell = relatedTerrainCell as MapTerrainDataCellEx;
+      bool isDropshipZone = SplatMapInfo.IsDropshipLandingZone(relatedTerrainCell.terrainMask);
+      bool isDangerZone = SplatMapInfo.IsDangerousLocation(relatedTerrainCell.terrainMask);
+      bool isDropPodZone = SplatMapInfo.IsDropPodLandingZone(relatedTerrainCell.terrainMask);
       Text description = new Text();
       Text title = new Text();
       bool empty = true;
@@ -2280,7 +2351,7 @@ namespace CustomAmmoCategoriesPatches {
         description.Append("</color>");
         if (empty == false) { title.Append(" "); };
         title.Append("<color=#ff0000ff>");
-        title.Append("MINEFIELD");
+        title.Append("__/CAC.MINEFIELD/__");
         title.Append("</color>");
         empty = false;
       }
@@ -2291,7 +2362,7 @@ namespace CustomAmmoCategoriesPatches {
         description.Append("</color>");
         if (empty == false) { title.Append(" "); };
         title.Append("<color=#ff0000ff>");
-        title.Append("FLAMES");
+        title.Append("__/CAC.FLAMES/__");
         title.Append("</color>");
         empty = false;
       }
@@ -2308,7 +2379,15 @@ namespace CustomAmmoCategoriesPatches {
       }
       if (empty == false) {
         Text warningText = null;
+#if BT1_8
+        sidePanel.ForceShowPersistant(title, description, warningText, false);
+#else
         sidePanel.ForceShowSingleFrame(title, description, warningText, false);
+#endif
+      } else {
+#if BT1_8
+        sidePanel.ForceHide();
+#endif
       }
       switch (moveType) {
         case MoveType.Walking:
@@ -2723,6 +2802,52 @@ namespace CustomAmmoCategoriesPatches {
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { typeof(string), typeof(BattleTechResourceType), typeof(Vector3?), typeof(Quaternion?), typeof(Transform) })]
   public static class DataManager_PooledInstantiate {
+    private static PropertyInfo pGameObjectPool = null;
+    private static PropertyInfo pAssetBundleManager = null;
+    public static bool Prepare() {
+      pGameObjectPool = typeof(DataManager).GetProperty("GameObjectPool", BindingFlags.Instance | BindingFlags.NonPublic);
+      if (pGameObjectPool == null) {
+        Log.M.TWL(0, "DataManager.PooledInstantiate prepare can't find GameObjectPool", true);
+        return false;
+      }
+      pAssetBundleManager = typeof(DataManager).GetProperty("AssetBundleManager", BindingFlags.Instance | BindingFlags.NonPublic);
+      if (pAssetBundleManager == null) {
+        Log.M.TWL(0, "DataManager.PooledInstantiate prepare can't find AssetBundleManager", true);
+        return false;
+      }
+      return true;
+    }
+    public static PrefabCache GameObjectPool(this DataManager dataManager) {
+      return (PrefabCache)pGameObjectPool.GetValue(dataManager,null);
+    }
+    public static AssetBundleManager AssetBundleManager(this DataManager dataManager) {
+      return (AssetBundleManager)pAssetBundleManager.GetValue(dataManager, null);
+    }
+    public static bool Prefix(DataManager __instance, string id, BattleTechResourceType resourceType, Vector3? position, Quaternion? rotation, Transform parent, ref GameObject __result) {
+      Log.LogWrite("DataManager.PooledInstantiate prefix " + id + "\n");
+      try {
+        if ((UnityEngine.Object)__instance.GameObjectPool() == (UnityEngine.Object)null) { __result = null; return false; }
+        if (!__instance.GameObjectPool().IsPrefabInPool(id)) {
+          VersionManifestEntry versionManifestEntry = __instance.ResourceLocator.EntryByID(id, resourceType, false);
+          if (versionManifestEntry != null) {
+            if (versionManifestEntry.IsResourcesAsset)
+              __instance.GameObjectPool().AddPrefabToPool(id, Resources.Load(versionManifestEntry.ResourcesLoadPath));
+            else if (versionManifestEntry.IsAssetBundled) {
+              GameObject gameObject = (UnityEngine.Object)__instance.AssetBundleManager() != (UnityEngine.Object)null ? __instance.AssetBundleManager().GetAssetFromBundle<GameObject>(id, versionManifestEntry.AssetBundleName) : (GameObject)null;
+              if ((UnityEngine.Object)gameObject != (UnityEngine.Object)null)
+                __instance.GameObjectPool().AddPrefabToPool(id, (UnityEngine.Object)gameObject);
+            }
+          }
+        }
+        if (!__instance.GameObjectPool().IsPrefabInPool(id)) { __result = null; return false; }
+        __result = __instance.GameObjectPool().PooledInstantiate(id, position, rotation, parent, false);
+        return false;
+      }catch(Exception e) {
+        Log.M.TWL(0,e.ToString());
+        return true;
+      }
+    }
+
     public static void Postfix(DataManager __instance, string id, BattleTechResourceType resourceType, ref GameObject __result) {
       try {
         if (resourceType != BattleTechResourceType.Prefab) { return; }

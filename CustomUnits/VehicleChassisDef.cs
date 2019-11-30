@@ -444,7 +444,7 @@ namespace CustomUnits {
       try {
         FowningActor = typeof(PathNodeGrid).GetField("owningActor", BindingFlags.Instance | BindingFlags.NonPublic);
         if (FowningActor == null) {
-          Log.LogWrite(0, "Can't find owningActor", true);
+          Log.LogWrite(0, "PathNodeGrid.FindBlockerBetween Can't find owningActor", true);
           return false;
         }
       } catch (Exception e) {
@@ -523,6 +523,7 @@ namespace CustomUnits {
     }
     public static bool Prefix(PilotableActorRepresentation __instance, AbstractActor unit, Transform parentTransform, bool isParented) {
       Log.LogWrite("PilotableActorRepresentation.Init prefix " + unit.DisplayName + ":" + unit.GUID + "\n");
+      __instance.gameObject.printComponents(1);
       try {
         VehicleRepresentation vRep = __instance as VehicleRepresentation;
         Vehicle vehicle = unit as Vehicle;
@@ -946,7 +947,11 @@ namespace CustomUnits {
           foreach (Weapon weapon in HUD.SelectedActor.Weapons) {
             Log.LogWrite(" weapon:" + weapon.defId + " enabled:" + weapon.IsEnabled + "\n");
             if (weapon.IsEnabled == false) { continue; }
+#if BT1_8
+            if (weapon.isWeaponUseInMelee().CanUseInMelee == false) { continue; }
+#else
             if (weapon.isWeaponUseInMelee() != WeaponCategory.AntiPersonnel) { continue; }
+#endif
             if (weapon.CantHitUnaffectedByPathing() == false) { continue; };
             forbiddenWeapon.Add(weapon);
           }

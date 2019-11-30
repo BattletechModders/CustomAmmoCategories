@@ -57,7 +57,7 @@ namespace CustAmmoCategories {
       return false;
     }
   }
-  public class MultiShotBallisticEffect : CopyAbleWeaponEffect {
+  public class MultiShotBallisticEffect : MuiltShotAnimatedEffect {
     private List<MultiShotBulletEffect> bullets = new List<MultiShotBulletEffect>();
     public static readonly string ImprovedBulletPrefabPrefix = "_IMPROVED_";
     public float shotDelay;
@@ -224,12 +224,17 @@ namespace CustAmmoCategories {
       base.PlayMuzzleFlash();
     }
     protected override void PlayProjectile() {
-      base.PlayProjectile();
-      this.FireNextShot();
+      this.currentState = WeaponEffect.WeaponEffectState.Firing;
+      base.PlayProjectile(false);
+      this.t = 1f;
     }
-    protected void FireNextShot() {
+    protected override void FireNextShot() {
       if (this.currentBullet < 0 || this.currentBullet >= this.bullets.Count) { return; };
+      base.PlayProjectile();
+      base.FireNextShot();
       this.PlayMuzzleFlash();
+      this.startingTransform = this.weaponRep.vfxTransforms[this.emitterIndex];
+      this.startPos = this.startingTransform.position;
       bool shells = this.weapon.HasShells();
       bool dmgPerBullet = this.weapon.DamagePerPallet();
       int bulletsPerShot = shells ? 1 : weapon.ProjectilesPerShot;
@@ -239,10 +244,11 @@ namespace CustAmmoCategories {
         bullet.bulletIdx = this.currentBullet;
         bool prime = index >= (bulletsPerShot - 1);
         if (dmgPerBullet == true) { prime = true; };
-        bullet.Fire(this.hitInfo, this.bulletHitIndex, 0, prime);
+        bullet.Fire(this.hitInfo, this.bulletHitIndex, (this.emitterIndex), prime);
         ++this.currentBullet;
         if (dmgPerBullet == true) { ++this.bulletHitIndex; };
       }
+      this.emitterIndex = (this.emitterIndex + 1) % this.numberOfEmitters;
       if (dmgPerBullet == false) { ++this.bulletHitIndex; };
       string empty = string.Empty;
       string eventName = this.currentBullet != 0 ? (this.currentBullet >= this.bullets.Count ? this.middleShotSFX : this.lastShotSFX) : this.firstShotSFX;
@@ -261,8 +267,6 @@ namespace CustAmmoCategories {
 
     protected override void Update() {
       base.Update();
-      if (this.currentState == WeaponEffect.WeaponEffectState.Firing && (double)this.t >= 1.0)
-        this.FireNextShot();
       if (this.currentState != WeaponEffect.WeaponEffectState.WaitingForImpact || !this.AllBulletsComplete())
         return;
       this.OnComplete();
@@ -272,11 +276,17 @@ namespace CustAmmoCategories {
       base.OnPreFireComplete();
       this.PlayProjectile();
     }
+
+#if BT1_8
+    protected override void OnImpact(float hitDamage = 0.0f,float structureDamage = 0f) {
+      base.OnImpact(0.0f,0f);
+    }
+#else
     protected override void OnImpact(float hitDamage = 0.0f) {
       base.OnImpact(0.0f);
     }
+#endif
     protected override void OnComplete() {
-      this.RestoreOriginalColor();
       base.OnComplete();
       this.ClearBullets();
     }

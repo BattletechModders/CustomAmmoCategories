@@ -179,10 +179,18 @@ namespace CustAmmoCategories {
       base.OnPreFireComplete();
       this.PlayProjectile();
     }
+#if BT1_8
+    protected override void OnImpact(float hitDamage = 0.0f, float structureDamage = 0f) {
+#else
     protected override void OnImpact(float hitDamage = 0.0f) {
+#endif
       if ((double)hitDamage <= 1.0 / 1000.0)
         return;
+#if BT1_8
+      base.OnImpact(hitDamage, structureDamage);
+#else
       base.OnImpact(hitDamage);
+#endif
     }
     public void OnBulletImpact(BulletEffect bullet) {
       this.OnImpact(0.0f);

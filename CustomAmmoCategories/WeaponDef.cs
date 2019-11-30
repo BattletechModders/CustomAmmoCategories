@@ -54,6 +54,18 @@ namespace CustAmmoCategories {
       ExtWeaponDef wp = weapon.exDef();
       return mode.APDamage + ammo.APDamage + wp.APDamage;
     }
+    public static float FireAnimationSpeedMod(this Weapon weapon) {
+      ExtAmmunitionDef ammo = weapon.ammo();
+      WeaponMode mode = weapon.mode();
+      ExtWeaponDef wp = weapon.exDef();
+      return mode.FireAnimationSpeedMod * ammo.FireAnimationSpeedMod * wp.FireAnimationSpeedMod;
+    }
+    public static float PrefireAnimationSpeedMod(this Weapon weapon) {
+      ExtAmmunitionDef ammo = weapon.ammo();
+      WeaponMode mode = weapon.mode();
+      ExtWeaponDef wp = weapon.exDef();
+      return mode.PrefireAnimationSpeedMod * ammo.PrefireAnimationSpeedMod * wp.PrefireAnimationSpeedMod;
+    }
     public static float APArmorShardsMod(this Weapon weapon) {
       ExtAmmunitionDef ammo = weapon.ammo();
       WeaponMode mode = weapon.mode();
@@ -89,6 +101,14 @@ namespace CustAmmoCategories {
       if (mode.DamageNotDivided != TripleBoolean.NotSet) { return mode.DamageNotDivided == TripleBoolean.True; }
       if (ammo.DamageNotDivided != TripleBoolean.NotSet) { return ammo.DamageNotDivided == TripleBoolean.True; }
       return wp.DamageNotDivided == TripleBoolean.True;
+    }
+    public static bool AOEEffectsFalloff(this Weapon weapon) {
+      ExtAmmunitionDef ammo = weapon.ammo();
+      WeaponMode mode = weapon.mode();
+      ExtWeaponDef wp = weapon.exDef();
+      if (mode.AOEEffectsFalloff != TripleBoolean.NotSet) { return mode.AOEEffectsFalloff == TripleBoolean.True; }
+      if (ammo.AOEEffectsFalloff != TripleBoolean.NotSet) { return ammo.AOEEffectsFalloff == TripleBoolean.True; }
+      return wp.AOEEffectsFalloff == TripleBoolean.True;
     }
     public static bool isDamageVariation(this Weapon weapon) {
       ExtAmmunitionDef ammo = weapon.ammo();
@@ -201,6 +221,7 @@ namespace CustAmmoCategories {
     public bool AlternateDamageCalc { get; set; }
     public bool AlternateHeatDamageCalc { get; set; }
     public bool AlternateInstabilityCalc { get; set; }
+    public bool AlternateAPDamageCalc { get; set; }
     public TripleBoolean IsAMS { get; set; }
     public TripleBoolean IsAAMS { get; set; }
     public bool AMSShootsEveryAttack { get; set; }
@@ -221,6 +242,7 @@ namespace CustAmmoCategories {
     public float MinShellsDistance { get; set; }
     public float MaxShellsDistance { get; set; }
     public TripleBoolean Unguided { get; set; }
+    public TripleBoolean AOEEffectsFalloff { get; set; }
     public float ArmorDamageModifier { get; set; }
     public float ISDamageModifier { get; set; }
     //public TripleBoolean AOECapable { get; set; }
@@ -260,6 +282,8 @@ namespace CustAmmoCategories {
     public TripleBoolean isDamageVariation { get; set; }
     public float DistantVariance { get; set; }
     public TripleBoolean DistantVarianceReversed { get; set; }
+    public float PrefireAnimationSpeedMod { get; set; }
+    public float FireAnimationSpeedMod { get; set; }
     public ExtWeaponDef() {
       Id = string.Empty;
       StreakEffect = false;
@@ -277,6 +301,7 @@ namespace CustAmmoCategories {
       IsAAMS = TripleBoolean.NotSet;
       AlternateHeatDamageCalc = false;
       AlternateInstabilityCalc = false;
+      AlternateAPDamageCalc = false;
       AMSShootsEveryAttack = false;
       baseModeId = WeaponMode.NONE_MODE_NAME;
       DisableClustering = TripleBoolean.True;
@@ -334,6 +359,9 @@ namespace CustAmmoCategories {
       isStabilityVariation = TripleBoolean.NotSet;
       DistantVariance = 0f;
       DistantVarianceReversed = TripleBoolean.NotSet;
+      AOEEffectsFalloff = TripleBoolean.NotSet;
+      PrefireAnimationSpeedMod = 1f;
+      FireAnimationSpeedMod = 1f;
     }
   }
 }
@@ -464,6 +492,9 @@ namespace CustomAmmoCategoriesPatches {
         extDef.AMSShootsEveryAttack = (bool)defTemp["AMSShootsEveryAttack"];
         defTemp.Remove("AMSShootsEveryAttack");
       }
+      if (defTemp["StructureDamage"] != null) {
+        extDef.APDamage = (float)defTemp["StructureDamage"];
+      }
       if (defTemp["APDamage"] != null) {
         extDef.APDamage = (float)defTemp["APDamage"];
         defTemp.Remove("APDamage");
@@ -496,6 +527,10 @@ namespace CustomAmmoCategoriesPatches {
         extDef.DamageNotDivided = ((bool)defTemp["DamageNotDivided"] == true) ? TripleBoolean.True : TripleBoolean.False;
         defTemp.Remove("DamageNotDivided");
       }
+      if (defTemp["AOEEffectsFalloff"] != null) {
+        extDef.AOEEffectsFalloff = ((bool)defTemp["AOEEffectsFalloff"] == true) ? TripleBoolean.True : TripleBoolean.False;
+        defTemp.Remove("AOEEffectsFalloff");
+      }
       if (defTemp["isDamageVariation"] != null) {
         extDef.isDamageVariation = ((bool)defTemp["isDamageVariation"] == true) ? TripleBoolean.True : TripleBoolean.False;
         defTemp.Remove("isDamageVariation");
@@ -507,6 +542,14 @@ namespace CustomAmmoCategoriesPatches {
       if (defTemp["isStabilityVariation"] != null) {
         extDef.isStabilityVariation = ((bool)defTemp["isStabilityVariation"] == true) ? TripleBoolean.True : TripleBoolean.False;
         defTemp.Remove("isStabilityVariation");
+      }
+      if (defTemp["FireAnimationSpeedMod"] != null) {
+        extDef.FireAnimationSpeedMod = (float)defTemp["FireAnimationSpeedMod"];
+        defTemp.Remove("FireAnimationSpeedMod");
+      }
+      if (defTemp["PrefireAnimationSpeedMod"] != null) {
+        extDef.PrefireAnimationSpeedMod = (float)defTemp["PrefireAnimationSpeedMod"];
+        defTemp.Remove("PrefireAnimationSpeedMod");
       }
       //if (defTemp["MissileExplosionScale"] != null) {
       //extDef.MissileExplosionScale = defTemp["MissileExplosionScale"].ToObject<CustomVector>();
@@ -540,6 +583,10 @@ namespace CustomAmmoCategoriesPatches {
       if (defTemp["AlternateInstabilityCalc"] != null) {
         extDef.AlternateInstabilityCalc = (bool)defTemp["AlternateInstabilityCalc"];
         defTemp.Remove("AlternateInstabilityCalc");
+      }
+      if (defTemp["AlternateAPDamageCalc"] != null) {
+        extDef.AlternateAPDamageCalc = (bool)defTemp["AlternateAPDamageCalc"];
+        defTemp.Remove("AlternateAPDamageCalc");
       }
       if (defTemp["FireTerrainCellRadius"] != null) {
         extDef.FireTerrainCellRadius = (int)defTemp["FireTerrainCellRadius"];

@@ -15,7 +15,7 @@ using Localize;
 
 namespace CustAmmoCategories {
   public static class StatisticHelper {
-    public static Statistic GetOrCreateStatisic<StatisticType>(StatCollection collection, string statName, StatisticType defaultValue) {
+    public static Statistic GetOrCreateStatisic<StatisticType>(this StatCollection collection, string statName, StatisticType defaultValue) {
       Statistic statistic = collection.GetStatistic(statName);
       if (statistic == null) {
         statistic = collection.AddStatistic<StatisticType>(statName, defaultValue);
@@ -255,7 +255,7 @@ namespace CustAmmoCategories {
   [HarmonyPatch("InitEffectStats")]
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { })]
-  public static class AbstractActor_InitStats {
+  public static class AbstractActor_InitEffectStats {
     public static void Postfix(AbstractActor __instance) {
       Log.LogWrite("AbstractActor.InitEffectStats " + __instance.DisplayName + ":" + __instance.GUID + "\n");
       __instance.FlatJammChance(0f);

@@ -69,10 +69,10 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
       public float Value;
       public AttackModifier(string name) : this(name, 0f) { }
       public AttackModifier(float modifier = 0f) : this(null, modifier) { }
-      public AttackModifier(string name, float modifier) { DisplayName = name ?? "???"; Value = modifier; }
+      public AttackModifier(string name, float modifier) { if(string.IsNullOrEmpty(name)){ DisplayName = "???"; } else { DisplayName = new Text(name).ToString(); }; Value = modifier; }
       public AttackModifier SetValue(float modifier) { Value = modifier; return this; }
-      public AttackModifier SetName(string name) { DisplayName = name ?? "???"; return this; }
-      public AttackModifier SetName(string penalty, string bonus) { DisplayName = Value >= 0 ? penalty : bonus; return this; }
+      public AttackModifier SetName(string name) { if (string.IsNullOrEmpty(name)) { DisplayName = "???"; } else { DisplayName = new Text(name).ToString(); }; return this; }
+      public AttackModifier SetName(string penalty, string bonus) { DisplayName = Value >= 0 ?(new Text(penalty).ToString()) : (new Text(bonus).ToString()); return this; }
     }
 
     private static Dictionary<string, Func<AttackModifier>> RangedModifiers, MeleeModifiers;
@@ -131,7 +131,7 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
             if (Target is Mech mech) {
               if (mech.IsProne) return new AttackModifier(); // Prone is another modifier
               if (dir == AttackDirection.FromFront) return new AttackModifier("__/AIM.FRONT_ATTACK/__", Settings.ToHitMechFromFront);
-              if (dir == AttackDirection.FromLeft || dir == AttackDirection.FromRight) return new AttackModifier("__/AIM.SIDE ATTACK/__", Settings.ToHitMechFromSide);
+              if (dir == AttackDirection.FromLeft || dir == AttackDirection.FromRight) return new AttackModifier("__/AIM.SIDE_ATTACK/__", Settings.ToHitMechFromSide);
               if (dir == AttackDirection.FromBack) return new AttackModifier("__/AIM.REAR_ATTACK/__", Settings.ToHitMechFromRear);
             } else if (Target is Vehicle vehicle) {
               if (dir == AttackDirection.FromFront) return new AttackModifier("__/AIM.FRONT_ATTACK/__", Settings.ToHitVehicleFromFront);
@@ -258,12 +258,12 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
             Weapon w = AttackWeapon;
             float range = Vector3.Distance(AttackPos, TargetPos), modifier = Hit.GetRangeModifierForDist(w, range);
             AttackModifier result = new AttackModifier(modifier);
-            if (range < w.MinRange) return result.SetName($"__/AIM.MIN_RANGE/__ (<{(int)w.MinRange}m)");
-            if (range < w.ShortRange) return result.SetName("__/AIM.SHORT RANGE/__" + SmartRange(w.MinRange, range, w.ShortRange));
-            if (range < w.MediumRange) return result.SetName("__/AIM.MED RANGE/__" + SmartRange(w.ShortRange, range, w.MediumRange));
-            if (range < w.LongRange) return result.SetName("__/AIM.LONG RANGE/__" + SmartRange(w.MediumRange, range, w.LongRange));
-            if (range < w.MaxRange) return result.SetName("__/AIM.MAX RANGE/__" + SmartRange(w.LongRange, range, w.MaxRange));
-            return result.SetName($"__/AIM.OUT_OF_RANGE/__ (>{(int)w.MaxRange}m)");
+            if (range < w.MinRange) return result.SetName("__/AIM.MIN_RANGE/__ (<"+w.MinRange+"m)");
+            if (range < w.ShortRange) return result.SetName("__/AIM.SHORT_RANGE/__" + SmartRange(w.MinRange, range, w.ShortRange));
+            if (range < w.MediumRange) return result.SetName("__/AIM.MED_RANGE/__" + SmartRange(w.ShortRange, range, w.MediumRange));
+            if (range < w.LongRange) return result.SetName("__/AIM.LONG_RANGE/__" + SmartRange(w.MediumRange, range, w.LongRange));
+            if (range < w.MaxRange) return result.SetName("__/AIM.MAX_RANGE/__" + SmartRange(w.LongRange, range, w.MaxRange));
+            return result.SetName("__/AIM.OUT_OF_RANGE/__ (>"+w.MaxRange+"m)");
           };
         //GetTargetDirectFireModifier
         case "height":

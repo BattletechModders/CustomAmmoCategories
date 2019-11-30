@@ -67,6 +67,30 @@ namespace CustomUnits{
       //i'm sertanly don't know what to do
       //}
     }
+    public static void W(string line, bool isCritical = false) {
+      LogWrite(line, isCritical);
+    }
+    public static void WL(string line, bool isCritical = false) {
+      line += "\n"; W(line, isCritical);
+    }
+    public static void W(int initiation, string line, bool isCritical = false) {
+      string init = new string(' ', initiation);
+      line = init + line; W(line, isCritical);
+    }
+    public static void WL(int initiation, string line, bool isCritical = false) {
+      string init = new string(' ', initiation);
+      line = init + line; WL(line, isCritical);
+    }
+    public static void TW(int initiation, string line, bool isCritical = false) {
+      string init = new string(' ', initiation);
+      line = "[" + DateTime.Now.ToString("HH:mm:ss.fff") + "]" + init + line;
+      W(line, isCritical);
+    }
+    public static void TWL(int initiation, string line, bool isCritical = false) {
+      string init = new string(' ', initiation);
+      line = "[" + DateTime.Now.ToString("HH:mm:ss.fff") + "]" + init + line;
+      WL(line, isCritical);
+    }
   }
   public class CUSettings {
     public bool debugLog { get; set; }

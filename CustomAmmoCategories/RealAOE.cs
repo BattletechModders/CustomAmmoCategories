@@ -922,11 +922,23 @@ namespace CustAmmoCategories {
     }
     [HarmonyPatch(typeof(Mech))]
     [HarmonyPatch("DamageLocation")]
+#if BT1_8
+    [HarmonyPatch(new Type[] { typeof(int), typeof(WeaponHitInfo), typeof(ArmorLocation), typeof(Weapon), typeof(float), typeof(float), typeof(int), typeof(AttackImpactQuality), typeof(DamageType) })]
+#else
     [HarmonyPatch(new Type[] { typeof(int), typeof(WeaponHitInfo), typeof(ArmorLocation), typeof(Weapon), typeof(float), typeof(int), typeof(AttackImpactQuality), typeof(DamageType) })]
+#endif
     public static class Mech_DamageLocation {
       [HarmonyPriority(Priority.First)]
+#if BT1_8
+      public static bool Prefix(Mech __instance, int originalHitLoc, WeaponHitInfo hitInfo, ArmorLocation aLoc, Weapon weapon, float totalArmorDamage, float directStructureDamage, int hitIndex, AttackImpactQuality impactQuality, DamageType damageType) {
+#else
       public static bool Prefix(Mech __instance, int originalHitLoc, WeaponHitInfo hitInfo, ArmorLocation aLoc, Weapon weapon, float totalDamage, int hitIndex, AttackImpactQuality impactQuality, DamageType damageType) {
+#endif
+#if BT1_8
+        CustomAmmoCategoriesLog.Log.LogWrite("DamageLocation " + __instance.DisplayName + " " + __instance.GUID + " loc:" + aLoc.ToString() + " dmg:" + totalArmorDamage + " strDmg:"+ directStructureDamage + " shot:" + hitIndex + "\n");
+#else
         CustomAmmoCategoriesLog.Log.LogWrite("DamageLocation " + __instance.DisplayName + " " + __instance.GUID + " loc:" + aLoc.ToString() + " dmg:" + totalDamage + " shot:" + hitIndex + "\n");
+#endif
         return true;
       }
     }
@@ -962,7 +974,7 @@ namespace CustAmmoCategories {
       [HarmonyPriority(Priority.First)]
       public static void Postfix(WeaponEffect __instance) {
         if (CustomAmmoCategories.isWeaponAOECapable(__instance.weapon) == false) { return; };
-        int hitIndex = (int)typeof(WeaponEffect).GetField("hitIndex", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(__instance);
+        int hitIndex = __instance.HitIndex();
         float AOERange = CustomAmmoCategories.getWeaponAOERange(__instance.weapon);
         Vector3 endPos = (Vector3)typeof(WeaponEffect).GetField("endPos", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(__instance);
         CombatGameState Combat = (CombatGameState)typeof(WeaponEffect).GetField("Combat", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(__instance);

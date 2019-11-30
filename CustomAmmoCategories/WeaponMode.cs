@@ -137,6 +137,8 @@ namespace CustAmmoCategories {
     public TripleBoolean DamageOnJamming { get; set; }
     public TripleBoolean DestroyOnJamming { get; set; }
     public TripleBoolean AOECapable { get; set; }
+    public TripleBoolean AOEEffectsFalloff { get; set; }
+
     public HitGeneratorType HitGenerator { get; set; }
     public TripleBoolean AlwaysIndirectVisuals { get; set; }
     public bool isBaseMode { get; set; }
@@ -179,6 +181,7 @@ namespace CustAmmoCategories {
     public float ColorSpeedChange { get; set; }
     public ColorChangeRule ColorChangeRule { get; set; }
     public float APDamage { get; set; }
+    public float APDamageMultiplier { get; set; }
     public float APCriticalChanceMultiplier { get; set; }
     public float APArmorShardsMod { get; set; }
     public float APMaxArmorThickness { get; set; }
@@ -187,6 +190,9 @@ namespace CustAmmoCategories {
     public TripleBoolean isStabilityVariation { get; set; }
     public TripleBoolean isDamageVariation { get; set; }
     public ModeLockSettings Lock { get; set; }
+    public float ClusteringModifier { get; set; }
+    public float PrefireAnimationSpeedMod { get; set; }
+    public float FireAnimationSpeedMod { get; set; }
     public WeaponMode() {
       Id = WeaponMode.NONE_MODE_NAME;
       UIName = WeaponMode.BASE_MODE_NAME;
@@ -274,6 +280,11 @@ namespace CustAmmoCategories {
       isDamageVariation = TripleBoolean.NotSet;
       isStabilityVariation = TripleBoolean.NotSet;
       Lock = new ModeLockSettings();
+      APDamageMultiplier = 1f;
+      ClusteringModifier = 0f;
+      AOEEffectsFalloff = TripleBoolean.NotSet;
+      PrefireAnimationSpeedMod = 1f;
+      FireAnimationSpeedMod = 1f;
     }
     public void fromJSON(string json) {
       JObject jWeaponMode = JObject.Parse(json);
@@ -288,6 +299,9 @@ namespace CustAmmoCategories {
       }
       if (jWeaponMode["DamagePerShot"] != null) {
         this.DamagePerShot = (float)jWeaponMode["DamagePerShot"];
+      }
+      if (jWeaponMode["ClusteringModifier"] != null) {
+        this.ClusteringModifier = (float)jWeaponMode["ClusteringModifier"];
       }
       if (jWeaponMode["HeatDamagePerShot"] != null) {
         this.HeatDamagePerShot = (float)jWeaponMode["HeatDamagePerShot"];
@@ -313,6 +327,12 @@ namespace CustAmmoCategories {
       if (jWeaponMode["AIBattleValue"] != null) {
         this.AIBattleValue = (int)jWeaponMode["AIBattleValue"];
       }
+      if (jWeaponMode["FireAnimationSpeedMod"] != null) {
+        this.FireAnimationSpeedMod = (float)jWeaponMode["FireAnimationSpeedMod"];
+      }
+      if (jWeaponMode["PrefireAnimationSpeedMod"] != null) {
+        this.PrefireAnimationSpeedMod = (float)jWeaponMode["PrefireAnimationSpeedMod"];
+      }
       if (jWeaponMode["MinRange"] != null) {
         this.MinRange = (float)jWeaponMode["MinRange"];
       }
@@ -337,8 +357,14 @@ namespace CustAmmoCategories {
       if (jWeaponMode["isStabilityVariation"] != null) {
         this.isStabilityVariation = ((bool)jWeaponMode["isStabilityVariation"] == true) ? TripleBoolean.True : TripleBoolean.False;
       }
+      if (jWeaponMode["AOEEffectsFalloff"] != null) {
+        this.AOEEffectsFalloff = ((bool)jWeaponMode["AOEEffectsFalloff"] == true) ? TripleBoolean.True : TripleBoolean.False;
+      }
       if (jWeaponMode["APDamage"] != null) {
         this.APDamage = (float)jWeaponMode["APDamage"];
+      }
+      if (jWeaponMode["APDamageMultiplier"] != null) {
+        this.APDamageMultiplier = (float)jWeaponMode["APDamageMultiplier"];
       }
       if (jWeaponMode["APCriticalChanceMultiplier"] != null) {
         this.APCriticalChanceMultiplier = (float)jWeaponMode["APCriticalChanceMultiplier"];
@@ -532,8 +558,8 @@ namespace CustAmmoCategories {
       if (jWeaponMode["Unguided"] != null) {
         this.Unguided = ((bool)jWeaponMode["Unguided"] == true) ? TripleBoolean.True : TripleBoolean.False;
         if (this.Unguided == TripleBoolean.True) {
-          this.AlwaysIndirectVisuals = TripleBoolean.False;
-          this.IndirectFireCapable = TripleBoolean.False;
+          //this.AlwaysIndirectVisuals = TripleBoolean.False;
+          //this.IndirectFireCapable = TripleBoolean.False;
         }
       }
       if (jWeaponMode["HitGenerator"] != null) {

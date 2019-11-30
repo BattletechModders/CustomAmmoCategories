@@ -89,10 +89,18 @@ namespace CustAmmoCategories {
       base.OnPreFireComplete();
       this.PlayProjectile();
     }
-
+#if BT1_8
+    protected override void OnImpact(float hitDamage = 0.0f, float structureDamage = 0f) {
+#else
     protected override void OnImpact(float hitDamage = 0.0f) {
+#endif
       CustomAmmoCategoriesLog.Log.LogWrite("FragBulletEffect.OnImpact wi:" + hitInfo.attackWeaponIndex + " hi:" + hitIndex + "\n");
-      base.OnImpact(this.weapon.DamagePerShotAdjusted(this.weapon.parent.occupiedDesignMask)/this.weapon.ProjectilesPerShot);
+      base.OnImpact(
+        this.weapon.DamagePerShotAdjusted(this.weapon.parent.occupiedDesignMask)/this.weapon.ProjectilesPerShot
+#if BT1_8
+        ,this.weapon.StructureDamagePerShotAdjusted(this.weapon.parent.occupiedDesignMask) / this.weapon.ProjectilesPerShot
+#endif
+      );
       if (!((UnityEngine.Object)this.projectileParticles != (UnityEngine.Object)null))
         return;
       this.projectileParticles.Stop(true);

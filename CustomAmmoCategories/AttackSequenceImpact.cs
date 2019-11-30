@@ -252,7 +252,7 @@ namespace CustAmmoCategories {
               damagePerShot + variance,
               CustomAmmoCategories.getWRSettings().StandardDeviationSimpleVarianceMultiplier * variance
           ));
-      var variantDamage = roll; //* adjustment;
+      var variantDamage = roll * adjustment;
 
       var sb = new StringBuilder();
       sb.AppendLine($" roll: {roll}");
@@ -300,10 +300,18 @@ namespace CustomAmmoCategoriesPatches {
 
   [HarmonyPatch(typeof(AbstractActor))]
   [HarmonyPatch("GetAdjustedDamage")]
+#if BT1_8
+  [HarmonyPatch(new Type[] { typeof(float), typeof(WeaponCategoryValue), typeof(DesignMaskDef), typeof(LineOfFireLevel), typeof(bool) })]
+#else
   [HarmonyPatch(new Type[] { typeof(float), typeof(WeaponCategory), typeof(DesignMaskDef), typeof(LineOfFireLevel), typeof(bool) })]
+#endif
   public static class AbstractActor_GetAdjustedDamage {
     [HarmonyPriority(Priority.Last)]
+#if BT1_8
+    public static void Postfix(AbstractActor __instance, float incomingDamage, WeaponCategoryValue weaponCategoryValue, DesignMaskDef designMask, LineOfFireLevel lofLevel, bool doLogging, ref float __result) {
+#else
     public static void Postfix(AbstractActor __instance, float incomingDamage, WeaponCategory category, DesignMaskDef designMask, LineOfFireLevel lofLevel, bool doLogging, ref float __result) {
+#endif
       //CustomAmmoCategoriesLog.Log.LogWrite("Checking GetAdjustedDamage incDmg:" + incomingDamage + "\n");
       if (float.IsNaN(__result)) {
         CustomAmmoCategoriesLog.Log.LogWrite("Checking GetAdjustedDamage incDmg:" + incomingDamage + "\n");

@@ -8,7 +8,10 @@ using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Networking;
 using CustAmmoCategories;
+using System.Threading;
+using System.Collections;
 
 namespace CustomUnits {
   [HarmonyPatch(typeof(AttackDirector))]
@@ -58,8 +61,8 @@ namespace CustomUnits {
     public static void Postfix(ActorMovementSequence __instance, AbstractActor actor, Transform xform) {
       Log.LogWrite("ActorMovementSequence.Init\n");
       CustomQuadLegController[] customMoveAnimators = xform.gameObject.GetComponentsInChildren<CustomQuadLegController>();
-      foreach(CustomQuadLegController customMoveAnimatior in customMoveAnimators) {
-        Log.LogWrite(" CustomMoveAnimator:" + customMoveAnimatior.name+"\n");
+      foreach (CustomQuadLegController customMoveAnimatior in customMoveAnimators) {
+        Log.LogWrite(" CustomMoveAnimator:" + customMoveAnimatior.name + "\n");
         customMoveAnimatior.StartAnimation();
       }
       return;
@@ -87,7 +90,7 @@ namespace CustomUnits {
   public static class MechRepresentation_SetIdleAnimState {
     public static bool Prefix(MechRepresentation __instance, ref bool ___allowRandomIdles) {
       //Log.LogWrite("VehicleRepresentation.OnAudioEvent " + __instance.name + " audioEvent:" + audioEvent + "\n");
-      if(___allowRandomIdles == true) {
+      if (___allowRandomIdles == true) {
         VehicleCustomInfo info = __instance.parentMech.GetCustomInfo();
         if (info == null) { return true; };
         if (info.NoIdleAnimations) { ___allowRandomIdles = false; }
@@ -126,10 +129,10 @@ namespace CustomUnits {
         Log.LogWrite(" no animated parts\n");
         return;
       };
-      foreach(GameObject apGameObject in UnitsAnimatedPartsHelper.animatedParts[__instance.parentCombatant]) {
+      foreach (GameObject apGameObject in UnitsAnimatedPartsHelper.animatedParts[__instance.parentCombatant]) {
         GenericAnimatedComponent[] aps = apGameObject.GetComponents<GenericAnimatedComponent>();
-        foreach(GenericAnimatedComponent ap in aps) {
-          Log.LogWrite(" AnimatedPart:"+ap.GetType()+":"+newLevel+"\n");
+        foreach (GenericAnimatedComponent ap in aps) {
+          Log.LogWrite(" AnimatedPart:" + ap.GetType() + ":" + newLevel + "\n");
           ap.OnPlayerVisibilityChanged(newLevel);
         }
       }
@@ -278,6 +281,8 @@ namespace CustomUnits {
     private string AudioEventName;
     private int axis;
     private Transform rotateBone;
+    private AudioSource audioSrc;
+    private AudioClip audioClip;
     public SimpleRotator() {
       rotateBone = null;
     }
@@ -309,6 +314,32 @@ namespace CustomUnits {
         }
       }
     }
+    IEnumerator GetAudioClip() {
+      string url = "file:///c:/Games/steamapps/common/BATTLETECH/rotor/helicopter-hovering-01.wav";
+      using (UnityWebRequest www = UnityWebRequestMultimedia.GetAudioClip(url, AudioType.WAV)) {
+        yield return www.SendWebRequest();
+        if (www.isHttpError) {
+          Debug.Log(www.error);
+        } else {
+          AudioClip audioClip = DownloadHandlerAudioClip.GetContent(www);
+          Log.LogWrite("helicopter-hovering-01 downloaded. name:" + audioClip.name + " loadstate:" + audioClip.loadState + "\n");
+          if (audioClip.loadState != AudioDataLoadState.Loaded) {
+            Log.LogWrite(" LoadAudioData:" + audioClip.LoadAudioData() + "\n");
+            Log.LogWrite(" loadstate:" + audioClip.loadState + "\n");
+            Log.LogWrite(" isReadyToPlay:" + audioClip.isReadyToPlay + "\n");
+          }
+          AudioSource source = this.gameObject.GetComponentInChildren<AudioSource>();
+          if (source != null) {
+            Log.LogWrite(" AudioSource found\n");
+            source.Stop();
+            source.clip = audioClip;
+            source.Play();
+            source.volume = 1f;
+            Log.LogWrite(" AudioSource.isPlaying " + source.isPlaying + "\n");
+          }
+        }
+      }
+    }
     public override void Init(ICombatant a, int loc, string data) {
       base.Init(a, loc, data);
       SimpleRotatorData srdata = JsonConvert.DeserializeObject<SimpleRotatorData>(data);
@@ -320,38 +351,53 @@ namespace CustomUnits {
         this.axis = 2;
       }
       Log.LogWrite("SimpleRotator.Init " + this.gameObject.name + " '" + srdata.sound + "' axis: " + this.axis + "\n");
+      StartCoroutine(GetAudioClip());
+      //this.audioSrc = this.gameObject.AddComponent<AudioSource>();
+      //this.audioClip = new AudioClip();
       if (string.IsNullOrEmpty(srdata.rotateBone)) { this.rotateBone = this.gameObject.transform; } else {
         Transform[] bones = this.gameObject.GetComponentsInChildren<Transform>();
-        foreach(Transform bone in bones) {
-          Log.LogWrite(1,"Bone:"+bone.name+"/"+ srdata.rotateBone, true);
+        foreach (Transform bone in bones) {
+          Log.LogWrite(1, "Bone:" + bone.name + "/" + srdata.rotateBone, true);
           if (bone.name == srdata.rotateBone) {
-            Log.LogWrite(2, "found!",true);
-            this.rotateBone = bone;  break;
+            Log.LogWrite(2, "found!", true);
+            this.rotateBone = bone; break;
           }
         }
       }
       if (this.rotateBone == null) { this.rotateBone = this.gameObject.transform; }
-      Log.LogWrite(1,"found rotation bone:"+this.rotateBone.name,true);
-      /*if (string.IsNullOrEmpty(srdata.sound) == false) {
-        if (CACMain.Core.AdditinalAudio.ContainsKey("helicopter-hovering-01")) {
-          AudioClip clip = CACMain.Core.AdditinalAudio["helicopter-hovering-01"];
-          Log.LogWrite("helicopter-hovering-01 found. name:" + clip.name + " loadstate:" + clip.loadState + "\n");
-          if (clip.loadState != AudioDataLoadState.Loaded) {
-            Log.LogWrite(" LoadAudioData:" + clip.LoadAudioData() + "\n");
-            Log.LogWrite(" loadstate:" + clip.loadState + "\n");
-          }
-          AudioSource source = this.gameObject.GetComponentInChildren<AudioSource>();
-          if (source != null) {
-            Log.LogWrite(" AudioSource found\n");
-            source.Stop();
-            source.clip = clip;
-            source.Play();
-            Log.LogWrite(" AudioSource.isPlaying " + source.isPlaying + "\n");
-          }
-        } else {
-          Log.LogWrite("helicopter-hovering-01 not found\n");
+      Log.LogWrite(1, "found rotation bone:" + this.rotateBone.name, true);
+      //if (string.IsNullOrEmpty(srdata.sound) == false) {
+      /*if (CACMain.Core.AdditinalAudio.ContainsKey("helicopter-hovering-01")) {
+        AudioClip clip = CACMain.Core.AdditinalAudio["helicopter-hovering-01"];
+        string url = "file:///c:/Games/steamapps/common/BATTLETECH/rotor/helicopter-hovering-01.wav";
+        UnityWebRequest audioLoader = UnityWebRequestMultimedia.GetAudioClip(url, AudioType.WAV);
+        while (!audioLoader.isDone) {
+          Log.LogWrite("Downloading:"+url+"\n");
+          Thread.Sleep(10);
         }
+
+        Log.LogWrite("Done:" + url + "\n");
+
+        clip = DownloadHandlerAudioClip.GetContent(audioLoader);
+        Log.LogWrite("helicopter-hovering-01 found. name:" + clip.name + " loadstate:" + clip.loadState + "\n");
+        if (clip.loadState != AudioDataLoadState.Loaded) {
+          Log.LogWrite(" LoadAudioData:" + clip.LoadAudioData() + "\n");
+          Log.LogWrite(" loadstate:" + clip.loadState + "\n");
+          Log.LogWrite(" isReadyToPlay:" + clip.isReadyToPlay + "\n");
+        }
+        AudioSource source = this.gameObject.GetComponentInChildren<AudioSource>();
+        if (source != null) {
+          Log.LogWrite(" AudioSource found\n");
+          source.Stop();
+          source.clip = clip;
+          source.Play();
+          source.volume = 1f;
+          Log.LogWrite(" AudioSource.isPlaying " + source.isPlaying + "\n");
+        }
+      } else {
+        Log.LogWrite("helicopter-hovering-01 not found\n");
       }*/
+      //}
       this.AudioEventName = srdata.sound;
     }
   }
@@ -368,9 +414,9 @@ namespace CustomUnits {
       this.animator = this.gameObject.GetComponentInChildren<Animator>();
       //if (this.animator != null) { this.animator.speed = 0; }
       Log.LogWrite("CustomMoveAnimator.Init\n");
-      foreach(Component component in components) {
+      foreach (Component component in components) {
         if (component == null) { continue; }
-        Log.LogWrite(" "+component.name+":"+component.GetType().ToString()+"\n");
+        Log.LogWrite(" " + component.name + ":" + component.GetType().ToString() + "\n");
       }
     }
   }
@@ -383,7 +429,7 @@ namespace CustomUnits {
     lasBackward2,
     lasBackward3
   }
-  public class CustomQuadLegController: GenericAnimatedComponent {
+  public class CustomQuadLegController : GenericAnimatedComponent {
     public Animator LFAnimator = null;
     public Animator LBAnimator = null;
     public Animator RFAnimator = null;
@@ -631,7 +677,7 @@ namespace CustomUnits {
       }
       animatedParts[unit].Clear();
     }
-    public static void DestroyAnimation(this ICombatant unit,int location) {
+    public static void DestroyAnimation(this ICombatant unit, int location) {
       if (animatedParts.ContainsKey(unit) == false) { return; };
       HashSet<GameObject> toDestroy = new HashSet<GameObject>();
       for (int t = 0; t < animatedParts[unit].Count; ++t) {
@@ -646,8 +692,8 @@ namespace CustomUnits {
           }
         };
       }
-      Log.LogWrite(0,"DestroyAnimation count:"+toDestroy.Count,true);
-      foreach(GameObject go in toDestroy) {
+      Log.LogWrite(0, "DestroyAnimation count:" + toDestroy.Count, true);
+      foreach (GameObject go in toDestroy) {
         GenericAnimatedComponent[] components = go.GetComponents<GenericAnimatedComponent>();
         if (components != null) {
           foreach (GenericAnimatedComponent component in components) {
@@ -694,8 +740,8 @@ namespace CustomUnits {
       Transform parentTransform = null;
       if (string.IsNullOrEmpty(spawnPart.boneName) == false) {
         Transform[] transforms = unit.GameRep.gameObject.GetComponentsInChildren<Transform>();
-        foreach(Transform bone in transforms) {
-          if(bone.name == spawnPart.boneName) {
+        foreach (Transform bone in transforms) {
+          if (bone.name == spawnPart.boneName) {
             Log.LogWrite(" parent bone found\n");
             parentTransform = bone;
             break;
@@ -723,23 +769,27 @@ namespace CustomUnits {
         if (cmp == null) { continue; }
         Log.LogWrite(0, "Child component:" + cmp.GetType() + " " + cmp.name + " id:" + cmp.GetInstanceID() + " owner:" + cmp.gameObject.GetInstanceID(), true);
       }
-      components = unit.GameRep.gameObject.GetComponentsInChildren<Component>();
+      /*components = unit.GameRep.gameObject.GetComponentsInChildren<Component>();
       foreach (Component cmp in components) {
         if (cmp == null) { continue; }
         Log.LogWrite(0, "Actor component:" + cmp.GetType() + " " + cmp.name + " id:" + cmp.GetInstanceID() + " owner:" + cmp.gameObject.GetInstanceID(), true);
+      }*/
+      ParticleSystem[] particleSystems = gameObject.GetComponentsInChildren<ParticleSystem>();
+      foreach (ParticleSystem ps in particleSystems) {
+        ps.Play(true);
       }
       Renderer[] spawnRenderers = gameObject.GetComponentsInChildren<Renderer>();
-      foreach(Renderer renderer in spawnRenderers) {
-        foreach(Material material in renderer.materials) {
-          Log.LogWrite(0,"Renderer:"+renderer.GetType()+":"+renderer.name+" material:"+material.name,true);
+      foreach (Renderer renderer in spawnRenderers) {
+        foreach (Material material in renderer.materials) {
+          Log.LogWrite(0, "Renderer:" + renderer.GetType() + ":" + renderer.name + " material:" + material.name, true);
           CustomMaterialInfo mInfo = spawnPart.findMaterialInfo(material.name);
           if (mInfo != null) {
             Log.LogWrite(1, "need custom processing", true);
-            if(string.IsNullOrEmpty(mInfo.shader) == false) {
+            if (string.IsNullOrEmpty(mInfo.shader) == false) {
               GameObject shaderGo = unit.Combat.DataManager.PooledInstantiate(mInfo.shader, BattleTechResourceType.Prefab, new Vector3?(), new Quaternion?(), (Transform)null);
-              if(shaderGo != null) {
+              if (shaderGo != null) {
                 Renderer shaderRenderer = shaderGo.GetComponentInChildren<Renderer>();
-                if(shaderRenderer != null) {
+                if (shaderRenderer != null) {
                   Shader shader = shaderRenderer.material.shader;
                   Log.LogWrite(2, "shader real name:" + shader.name);
                   material.shader = shader;
@@ -748,12 +798,12 @@ namespace CustomUnits {
                 }
                 unit.Combat.DataManager.PoolGameObject(mInfo.shader, shaderGo);
               } else {
-                Log.LogWrite(2,"can't found shader carrier "+ mInfo.shader, true);
+                Log.LogWrite(2, "can't found shader carrier " + mInfo.shader, true);
               }
             }
-            if(mInfo.shaderKeyWords.Count > 0) {
+            if (mInfo.shaderKeyWords.Count > 0) {
               material.shaderKeywords = mInfo.shaderKeyWords.ToArray();
-              Log.LogWrite(2, "shaders keywords updated "+ material.shaderKeywords, true);
+              Log.LogWrite(2, "shaders keywords updated " + material.shaderKeywords, true);
             }
           } else {
             Log.LogWrite(1, "no additional custom processing", true);
@@ -827,16 +877,16 @@ namespace CustomUnits {
       try {
         if (spawnPart.AnimationType == "SimpleRotator") {
           acomponent = gameObject.AddComponent<SimpleRotator>();
-        }else
+        } else
         if (spawnPart.AnimationType == "Turret") {
           acomponent = gameObject.AddComponent<TurretAnimator>();
-        }else
+        } else
         if (spawnPart.AnimationType == "WeaponMountPoint") {
           acomponent = gameObject.AddComponent<WeaponMountPoint>();
         } else
         if (spawnPart.AnimationType == "Animation") {
           acomponent = gameObject.AddComponent<CustomMoveAnimator>();
-        } else 
+        } else
         if (spawnPart.AnimationType == "CustomQuadLegController") {
           acomponent = gameObject.AddComponent<CustomQuadLegController>();
         } else {
@@ -854,7 +904,7 @@ namespace CustomUnits {
         animatedParts.Add(unit, new List<GameObject>());
       };
       animatedParts[unit].Add(gameObject);
-      Log.LogWrite("animatedParts.Count = "+ animatedParts[unit].Count + "\n");
+      Log.LogWrite("animatedParts.Count = " + animatedParts[unit].Count + "\n");
     }
   }
   [HarmonyPatch(typeof(VehicleChassisDef))]
@@ -872,7 +922,7 @@ namespace CustomUnits {
             Log.LogWrite(1, "additional shader:" + mi.Value.shader, true);
             dependencyLoad.RequestResource(BattleTechResourceType.Prefab, mi.Value.shader);
           }
-          foreach(var ti in mi.Value.materialTextures) {
+          foreach (var ti in mi.Value.materialTextures) {
             if (string.IsNullOrEmpty(ti.Value) == false) {
               Log.LogWrite(1, "additional textures:" + ti.Value, true);
               dependencyLoad.RequestResource(BattleTechResourceType.Texture2D, ti.Value);
@@ -906,17 +956,17 @@ namespace CustomUnits {
         if (string.IsNullOrEmpty(part.prefab)) { continue; }
         Log.LogWrite(1, "additional prefab:" + part.prefab, false);
         if (dataManager.Exists(BattleTechResourceType.Prefab, part.prefab) == false) {
-          Log.LogWrite(1," not exists", true);
+          Log.LogWrite(1, " not exists", true);
           return false;
         }
         foreach (var mi in part.MaterialInfo) {
           if (string.IsNullOrEmpty(mi.Value.shader)) { continue; };
           Log.LogWrite(1, "additional shader:" + mi.Value.shader, false);
           if (dataManager.Exists(BattleTechResourceType.Prefab, mi.Value.shader) == false) {
-            Log.LogWrite(2,"not exists", true);
+            Log.LogWrite(2, "not exists", true);
             return false;
           }
-          Log.LogWrite(2,"exists", true);
+          Log.LogWrite(2, "exists", true);
           foreach (var ti in mi.Value.materialTextures) {
             if (string.IsNullOrEmpty(ti.Value) == false) {
               Log.LogWrite(1, "additional texture:" + ti.Value, true);
@@ -941,7 +991,7 @@ namespace CustomUnits {
           Log.LogWrite(1, "no custom", true);
           return;
         }
-        if(info.CheckCustomDeps(__instance.DataManager) == false) {
+        if (info.CheckCustomDeps(__instance.DataManager) == false) {
           __result = false;
         }
       } catch (Exception e) {
@@ -1061,6 +1111,7 @@ namespace CustomUnits {
   public static class CombatGameState_OnCombatGameDestroyedMap {
     public static bool Prefix(CombatGameState __instance) {
       try {
+        HardpointAnimatorHelper.Clear();
         UnitsAnimatedPartsHelper.Clear();
       } catch (Exception e) {
         Log.LogWrite(e.ToString() + "\n");

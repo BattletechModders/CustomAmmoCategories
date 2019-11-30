@@ -546,7 +546,39 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
     private static float beforeArmour;
     private static float beforeStruct;
     private static bool damageResolved;
+#if BT1_8
+    [HarmonyPriority(Priority.VeryHigh)]
+    public static void RecordMechDamage(Mech __instance, ArmorLocation aLoc, float totalArmorDamage) {
+      try {
+        if (aLoc == ArmorLocation.None || aLoc == ArmorLocation.Invalid) return;
+        RecordUnitDamage(aLoc.ToString(), totalArmorDamage,
+           __instance.GetCurrentArmor(aLoc), __instance.GetCurrentStructure(MechStructureRules.GetChassisLocationFromArmorLocation(aLoc)));
+      } catch (Exception e) { CustomAmmoCategoriesLog.Log.LogWrite("AIM exception:" + e.ToString() + "\n", true); }
+    }
 
+    [HarmonyPriority(Priority.VeryHigh)]
+    public static void RecordVehicleDamage(Vehicle __instance, VehicleChassisLocations vLoc, float totalArmorDamage) {
+      try {
+        if (vLoc == VehicleChassisLocations.None || vLoc == VehicleChassisLocations.Invalid) return;
+      RecordUnitDamage(vLoc.ToString(), totalArmorDamage, __instance.GetCurrentArmor(vLoc), __instance.GetCurrentStructure(vLoc));
+      } catch (Exception e) { CustomAmmoCategoriesLog.Log.LogWrite("AIM exception:" + e.ToString() + "\n", true); }
+    }
+
+    [HarmonyPriority(Priority.VeryHigh)]
+    public static void RecordTurretDamage(Turret __instance, BuildingLocation bLoc, float totalArmorDamage) {
+      try {
+        if (bLoc == BuildingLocation.None || bLoc == BuildingLocation.Invalid) return;
+      RecordUnitDamage(bLoc.ToString(), totalArmorDamage, __instance.GetCurrentArmor(bLoc), __instance.GetCurrentStructure(bLoc));
+      } catch (Exception e) { CustomAmmoCategoriesLog.Log.LogWrite("AIM exception:" + e.ToString() + "\n", true); }
+    }
+
+    [HarmonyPriority(Priority.VeryHigh)]
+    public static void RecordBuildingDamage(BattleTech.Building __instance, float totalArmorDamage) {
+      try {
+        RecordUnitDamage(BuildingLocation.Structure.ToString(), totalArmorDamage, 0, __instance.CurrentStructure);
+      } catch (Exception e) { CustomAmmoCategoriesLog.Log.LogWrite("AIM exception:" + e.ToString() + "\n", true); }
+    }
+#else
     [HarmonyPriority(Priority.VeryHigh)]
     public static void RecordMechDamage(Mech __instance, ArmorLocation aLoc, float totalDamage) {
       try {
@@ -578,7 +610,7 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
         RecordUnitDamage(BuildingLocation.Structure.ToString(), totalDamage, 0, __instance.CurrentStructure);
       } catch (Exception e) { CustomAmmoCategoriesLog.Log.LogWrite("AIM exception:" + e.ToString() + "\n", true); }
     }
-
+#endif
     private static void RecordUnitDamage(string loc, float totalDamage, float armour, float structure) {
       if (DebugLog) Verbo("{0} Damage @ {1}", loc, totalDamage);
       lastLocation = loc;

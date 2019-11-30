@@ -153,8 +153,16 @@ namespace CustAmmoCategories {
       this.PlayProjectile();
     }
 
+#if BT1_8
+    protected override void OnImpact(float hitDamage = 0.0f, float structureDamage = 0f) {
+#else
     protected override void OnImpact(float hitDamage = 0.0f) {
-      base.OnImpact(this.weapon.DamagePerShotAdjusted(this.weapon.parent.occupiedDesignMask));
+#endif
+      base.OnImpact(this.weapon.DamagePerShotAdjusted(this.weapon.parent.occupiedDesignMask)
+#if BT1_8
+        ,this.weapon.StructureDamagePerShotAdjusted(this.weapon.parent.occupiedDesignMask)
+#endif
+      );
       if ((UnityEngine.Object)this.projectileParticles != (UnityEngine.Object)null)
         this.projectileParticles.Stop(true);
       if (!((UnityEngine.Object)this.doppler != (UnityEngine.Object)null))

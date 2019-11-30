@@ -89,13 +89,14 @@ namespace CustAmmoCategories {
     public float APDamage;
     public float Heat;
     public float Stability;
+    public float EffectsMod;
     public GameObject trajectoryObject;
     public CurvySpline trajectorySpline;
     public Vector3[] trajectory;
     public int hitIndex;
     public ICombatant target;
     public float projectileSpeed;
-    public bool isAOE;
+    public bool isAOE { get; set; }
     public bool isAOEproc;
     public int AOEKey;
     public SplineGenerationInfo trajectoryInfo;
@@ -112,6 +113,7 @@ namespace CustAmmoCategories {
     }
     public AdvWeaponHitInfoRec(AdvWeaponHitInfo parent) {
       this.parent = parent;
+      EffectsMod = 1f;
       hitLocation = 0;
       hitPosition = Vector3.zero;
       startPosition = Vector3.zero;
@@ -135,7 +137,11 @@ namespace CustAmmoCategories {
       trajectoryInfo = new SplineGenerationInfo();
     }
     public void GenerateTrajectory() {
-      this.GenerateTrajectory(this.parent.weapon.weaponRep.vfxTransforms[hitIndex % this.parent.weapon.weaponRep.vfxTransforms.Length].position);
+      if (this.parent.weapon.weaponRep != null) {
+        this.GenerateTrajectory(this.parent.weapon.weaponRep.vfxTransforms[hitIndex % this.parent.weapon.weaponRep.vfxTransforms.Length].position);
+      } else {
+        this.GenerateTrajectory(this.parent.weapon.parent.CurrentPosition);
+      }
     }
     public void GenerateTrajectory(Vector3 startPos) {
       this.startPosition = startPos;
@@ -157,12 +163,22 @@ namespace CustAmmoCategories {
       this.structureOnHit = unit.StructureForLocation(aLoc);
     }
   }
+  public class EffectsLocaltion {
+    public int location { get; set; }
+    public float effectsMod { get; set; }
+    public bool isAOE { get; set; }
+    public EffectsLocaltion(int l,float chance, bool aoe) {
+      location = l;
+      effectsMod = chance;
+      isAOE = aoe;
+    }
+  }
   public class AdvWeaponResolveInfo {
     public float Heat;
     public float Stability;
     public int hitsCount;
     public List<AdvCritLocationInfo> Crits;
-    public List<int> hitLocations;
+    public List<EffectsLocaltion> hitLocations;
     public float cumulativeDamage;
     public AdvWeaponHitInfo parent;
     public void AddCrit(int aLoc, ICombatant unit) {
@@ -170,7 +186,7 @@ namespace CustAmmoCategories {
       if (actor == null) { return; }
       Crits.Add(new AdvCritLocationInfo(aLoc, actor));
     }
-    public void AddHit(int location) { ++hitsCount; hitLocations.Add(location); }
+    public void AddHit(int location, float chance, bool aoe) { ++hitsCount; hitLocations.Add(new EffectsLocaltion(location,chance,aoe)); }
     public void AddHeat(float val) {
       this.Heat += val;
     }
@@ -183,7 +199,7 @@ namespace CustAmmoCategories {
       Stability = 0f;
       hitsCount = 0;
       Crits = new List<AdvCritLocationInfo>();
-      hitLocations = new List<int>();
+      hitLocations = new List<EffectsLocaltion>();
     }
   }
   public static partial class AdvWeaponHitInfoHelper {
@@ -319,7 +335,11 @@ namespace CustAmmoCategories {
         hit.hitIndex = hitIndex;
         hit.hitPosition = hitInfo.hitPositions[hitIndex];
         hit.Damage = weapon.DamagePerShotAdjusted(weapon.parent.occupiedDesignMask);
+#if BT1_8
+        hit.APDamage = weapon.StructureDamagePerShotAdjusted(weapon.parent.occupiedDesignMask);
+#else
         hit.APDamage = weapon.APDamage() * (hit.Damage / weapon.DamagePerShot);
+#endif
         hit.Heat = weapon.HeatDamagePerShotAdjusted(hitInfo.hitQualities[hitIndex]);
         hit.Stability = weapon.Instability();
         if ((damagePerPallet == true)&&(damagePerNotDiv == false)) {
@@ -446,7 +466,7 @@ namespace CustAmmoCategories {
       this.weaponIdx = hitInfo.attackWeaponIndex;
       this.resolveInfo = new Dictionary<ICombatant, AdvWeaponResolveInfo>();
     }
-    public void AppendAoEHit(int primeIndex, float Damage, float Heat, float Stability, ICombatant target, Vector3 position, int location) {
+    public void AppendAoEHit(int primeIndex,float fulldamage, float Damage, float Heat, float Stability, ICombatant target, Vector3 position, int location) {
       Log.LogWrite("AdvInfo.AppendFrags:" + primeIndex + "\n");
       AdvWeaponHitInfoRec hit = new AdvWeaponHitInfoRec(this);
       int hitIndex = this.hits.Count;
@@ -462,6 +482,11 @@ namespace CustAmmoCategories {
       hit.projectileSpeed = 0f;
       hit.isAOE = true;
       hit.AOEKey = primeIndex;
+      if (this.weapon.AOEEffectsFalloff()) {
+        hit.EffectsMod = Damage / fulldamage;
+      } else {
+        hit.EffectsMod = 1f;
+      }
       this.hits[primeIndex].isAOEproc = true;
       this.hits.Add(hit);
     }
@@ -478,7 +503,11 @@ namespace CustAmmoCategories {
         hit.fragInfo.isFragPallet = true;
         hit.fragInfo.fragMainHitIndex = advRec.hitIndex;
         hit.Damage = weapon.DamagePerShotAdjusted(weapon.parent.occupiedDesignMask);
-        hit.APDamage = weapon.APDamage() * (hit.Damage / weapon.DamagePerShot);
+#if BT1_8
+        hit.APDamage = weapon.StructureDamagePerShotAdjusted(weapon.parent.occupiedDesignMask);
+#else
+        hit.APDamage = weapon.APDamage();
+#endif
         hit.Damage /= (float)weapon.ProjectilesPerShot;
         hit.APDamage /= (float)weapon.ProjectilesPerShot;
         hit.Heat = weapon.HeatDamagePerShotAdjusted(hitInfo.hitQualities[hitIndex]) / (float)hitInfo.numberOfShots;

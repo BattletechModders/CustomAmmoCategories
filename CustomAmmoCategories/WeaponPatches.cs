@@ -13,6 +13,20 @@ using BattleTech.UI;
 namespace CustAmmoCategories {
   public static partial class CustomAmmoCategories {
     //public Morozov ;)
+    public static int HitIndex(this WeaponEffect we) {
+#if BT1_8
+      return we.hitIndex;
+#else
+      return (int)typeof(WeaponEffect).GetField("hitIndex", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(we);
+#endif
+    }
+    public static void HitIndex(this WeaponEffect we,int hi) {
+#if BT1_8
+      we.hitIndex = hi;
+#else
+      typeof(WeaponEffect).GetField("hitIndex", BindingFlags.NonPublic | BindingFlags.Instance).SetValue(we,hi);
+#endif
+    }
     public static bool isWRJammed(Weapon weapon) {
       return (bool)typeof(WeaponRealizer.Core).Assembly.GetType("WeaponRealizer.JammingEnabler").GetMethod("IsJammed", BindingFlags.Static | BindingFlags.NonPublic).Invoke(null, new object[1] { (object)weapon });
     }
@@ -196,6 +210,66 @@ namespace CustAmmoCategories {
       result = (float)Math.Round((double)result, 0);
       return result;
     }
+    public static float APDamageFormulaOne(Weapon weapon, ExtWeaponDef extWeapon, float baseDamage) {
+      float result = baseDamage;
+      if (CustomAmmoCategories.checkExistance(weapon.StatCollection, CustomAmmoCategories.AmmoIdStatName) == true) {
+        string CurrentAmmoId = weapon.StatCollection.GetStatistic(CustomAmmoCategories.AmmoIdStatName).Value<string>();
+        ExtAmmunitionDef extAmmoDef = CustomAmmoCategories.findExtAmmo(CurrentAmmoId);
+        result += extAmmoDef.APDamage;
+      }
+      if (CustomAmmoCategories.checkExistance(weapon.StatCollection, CustomAmmoCategories.WeaponModeStatisticName) == true) {
+        string modeId = weapon.StatCollection.GetStatistic(CustomAmmoCategories.WeaponModeStatisticName).Value<string>();
+        if (extWeapon.Modes.ContainsKey(modeId)) {
+          WeaponMode mode = extWeapon.Modes[modeId];
+          result += mode.APDamage;
+        }
+      }
+      if (CustomAmmoCategories.checkExistance(weapon.StatCollection, CustomAmmoCategories.AmmoIdStatName) == true) {
+        string CurrentAmmoId = weapon.StatCollection.GetStatistic(CustomAmmoCategories.AmmoIdStatName).Value<string>();
+        ExtAmmunitionDef extAmmoDef = CustomAmmoCategories.findExtAmmo(CurrentAmmoId);
+        result *= extAmmoDef.DamageMultiplier;
+      }
+      if (CustomAmmoCategories.checkExistance(weapon.StatCollection, CustomAmmoCategories.WeaponModeStatisticName) == true) {
+        string modeId = weapon.StatCollection.GetStatistic(CustomAmmoCategories.WeaponModeStatisticName).Value<string>();
+        if (extWeapon.Modes.ContainsKey(modeId)) {
+          WeaponMode mode = extWeapon.Modes[modeId];
+          result *= mode.DamageMultiplier;
+        }
+      }
+      result = (float)Math.Round((double)result, 0);
+      return result;
+    }
+    public static float APDamageFormulaTwo(Weapon weapon, ExtWeaponDef extWeapon, float baseDamage) {
+      if (baseDamage < CustomAmmoCategories.Epsilon) { return 0f; }
+      float result = extWeapon.APDamage;
+      if (CustomAmmoCategories.checkExistance(weapon.StatCollection, CustomAmmoCategories.AmmoIdStatName) == true) {
+        string CurrentAmmoId = weapon.StatCollection.GetStatistic(CustomAmmoCategories.AmmoIdStatName).Value<string>();
+        ExtAmmunitionDef extAmmoDef = CustomAmmoCategories.findExtAmmo(CurrentAmmoId);
+        result += extAmmoDef.APDamage;
+      }
+      if (CustomAmmoCategories.checkExistance(weapon.StatCollection, CustomAmmoCategories.WeaponModeStatisticName) == true) {
+        string modeId = weapon.StatCollection.GetStatistic(CustomAmmoCategories.WeaponModeStatisticName).Value<string>();
+        if (extWeapon.Modes.ContainsKey(modeId)) {
+          WeaponMode mode = extWeapon.Modes[modeId];
+          result += mode.APDamage;
+        }
+      }
+      if (CustomAmmoCategories.checkExistance(weapon.StatCollection, CustomAmmoCategories.AmmoIdStatName) == true) {
+        string CurrentAmmoId = weapon.StatCollection.GetStatistic(CustomAmmoCategories.AmmoIdStatName).Value<string>();
+        ExtAmmunitionDef extAmmoDef = CustomAmmoCategories.findExtAmmo(CurrentAmmoId);
+        result *= extAmmoDef.APDamageMultiplier;
+      }
+      if (CustomAmmoCategories.checkExistance(weapon.StatCollection, CustomAmmoCategories.WeaponModeStatisticName) == true) {
+        string modeId = weapon.StatCollection.GetStatistic(CustomAmmoCategories.WeaponModeStatisticName).Value<string>();
+        if (extWeapon.Modes.ContainsKey(modeId)) {
+          WeaponMode mode = extWeapon.Modes[modeId];
+          result *= mode.DamageMultiplier;
+        }
+      }
+      result = result * baseDamage / extWeapon.APDamage;
+      result = (float)Math.Round((double)result, 0);
+      return result;
+    }
   }
 }
 
@@ -204,28 +278,45 @@ namespace CustAmmoCategoriesPatches {
   [HarmonyPatch("RefreshDisplayedWeapon")]
   [HarmonyPriority(Priority.Last)]
   [HarmonyPatch(MethodType.Normal)]
+#if BT1_8
+  [HarmonyPatch(new Type[] { typeof(ICombatant), typeof(int?), typeof(bool), typeof(bool) })]
+#else
   [HarmonyPatch(new Type[] { typeof(ICombatant) })]
+#endif
   public static class CombatHUDWeaponSlot_RefreshDisplayedWeapon {
     public static void Postfix(CombatHUDWeaponSlot __instance) {
       if (__instance.DisplayedWeapon == null) { return; }
       UILookAndColorConstants LookAndColorConstants = (UILookAndColorConstants)typeof(CombatHUDWeaponSlot).GetProperty("LookAndColorConstants", BindingFlags.Instance | BindingFlags.NonPublic).GetGetMethod(true).Invoke(__instance,new object[0] { });
-      __instance.WeaponText.overflowMode = TMPro.TextOverflowModes.Overflow;
-      Log.M.TWL(0,"CombatHUDWeaponSlot.RefreshDisplayedWeapon '"+__instance.WeaponText.text+"' overflow:"+__instance.WeaponText.overflowMode+" worldwrap:"+__instance.WeaponText.enableWordWrapping+" autosize:"+__instance.WeaponText.enableAutoSizing);
+      if (CustomAmmoCategories.Settings.patchWeaponSlotsOverflowCultures.Contains(Strings.CurrentCulture)) {
+        if (__instance.WeaponText.overflowMode != TMPro.TextOverflowModes.Overflow) {
+          __instance.WeaponText.overflowMode = TMPro.TextOverflowModes.Overflow;
+        }
+      } else {
+        if (__instance.WeaponText.overflowMode != TMPro.TextOverflowModes.Ellipsis) {
+          __instance.WeaponText.overflowMode = TMPro.TextOverflowModes.Ellipsis;
+        }
+      }
       if (__instance.DisplayedWeapon.isAMS() == true) {
         __instance.HitChanceText.SetText("AMS");
-      };
+      }else
       if (CustomAmmoCategories.isWRJammed(__instance.DisplayedWeapon) == true) {
         __instance.HitChanceText.SetText("JAM");
         return;
-      };
+      }else
       if (CustomAmmoCategories.IsJammed(__instance.DisplayedWeapon) == true) {
         __instance.HitChanceText.SetText("JAM");
         return;
-      };
+      }else
       if (CustomAmmoCategories.IsCooldown((Weapon)__instance.DisplayedWeapon) > 0) {
         __instance.HitChanceText.SetText(string.Format("CLD -{0}T", CustomAmmoCategories.IsCooldown((Weapon)__instance.DisplayedWeapon)));
-        return;
-      };
+      }
+      if (Strings.CurrentCulture == Strings.Culture.CULTURE_RU_RU) {
+        if ((__instance.weaponSlotType == CombatHUDWeaponSlot.WeaponSlotType.Melee) || (__instance.weaponSlotType == CombatHUDWeaponSlot.WeaponSlotType.DFA)) {
+          __instance.AmmoText.SetText(__instance.HitChanceText.text);
+          __instance.AmmoText.color = __instance.HitChanceText.color;
+        }
+      }
+      Log.M.TWL(0, "CombatHUDWeaponSlot.RefreshDisplayedWeapon '" + __instance.WeaponText.text + "' overflow:" + __instance.WeaponText.overflowMode + " worldwrap:" + __instance.WeaponText.enableWordWrapping + " autosize:" + __instance.WeaponText.enableAutoSizing+" hitChance:"+ __instance.HitChanceText.text);
     }
   }
   [HarmonyPatch(typeof(MechComponent))]
@@ -289,6 +380,23 @@ namespace CustAmmoCategoriesPatches {
         }
       }
     }
+#if BT1_8
+    [HarmonyPatch(typeof(Weapon))]
+    [HarmonyPatch("StructureDamagePerShot")]
+    [HarmonyPatch(MethodType.Getter)]
+    [HarmonyPatch(new Type[] { })]
+    [HarmonyPriority(Priority.Last)]
+    public static class Weapon_StructureDamagePerShot {
+      public static void Postfix(Weapon __instance, ref float __result) {
+        ExtWeaponDef extWeapon = CustomAmmoCategories.getExtWeaponDef(__instance.defId);
+        if (extWeapon.AlternateDamageCalc == false) {
+          __result = CustomAmmoCategories.APDamageFormulaOne(__instance, extWeapon, __result);
+        } else {
+          __result = CustomAmmoCategories.APDamageFormulaTwo(__instance, extWeapon, __result);
+        }
+      }
+    }
+#endif
     [HarmonyPatch(typeof(Weapon))]
     [HarmonyPatch("Type")]
     [HarmonyPatch(MethodType.Getter)]
@@ -358,6 +466,32 @@ namespace CustAmmoCategoriesPatches {
         }
       }
     }
+#if BT1_8
+    [HarmonyPatch(typeof(Weapon))]
+    [HarmonyPatch("ClusteringModifier")]
+    [HarmonyPatch(MethodType.Getter)]
+    [HarmonyPatch(new Type[] { })]
+    public static class Weapon_ClusteringModifier {
+      public static void Postfix(Weapon __instance, ref float __result) {
+        Log.LogWrite(__instance.UIName + ".ClusteringModifier base:" + __result + "\n");
+        if (CustomAmmoCategories.checkExistance(__instance.StatCollection, CustomAmmoCategories.AmmoIdStatName) == true) {
+          string CurrentAmmoId = __instance.StatCollection.GetStatistic(CustomAmmoCategories.AmmoIdStatName).Value<string>();
+          ExtAmmunitionDef extAmmoDef = CustomAmmoCategories.findExtAmmo(CurrentAmmoId);
+          __result += extAmmoDef.ClusteringModifier;
+          Log.LogWrite(" ammo " + CurrentAmmoId + " real id:" + extAmmoDef.Id + ":" + __result + "\n");
+        }
+        if (CustomAmmoCategories.checkExistance(__instance.StatCollection, CustomAmmoCategories.WeaponModeStatisticName) == true) {
+          ExtWeaponDef extWeapon = CustomAmmoCategories.getExtWeaponDef(__instance.defId);
+          string modeId = __instance.StatCollection.GetStatistic(CustomAmmoCategories.WeaponModeStatisticName).Value<string>();
+          if (extWeapon.Modes.ContainsKey(modeId)) {
+            WeaponMode mode = extWeapon.Modes[modeId];
+            __result += mode.ClusteringModifier;
+            Log.LogWrite(" mode:" + __result + "\n");
+          }
+        }
+      }
+    }
+#endif
     [HarmonyPatch(typeof(Weapon))]
     [HarmonyPatch("CriticalChanceMultiplier")]
     [HarmonyPatch(MethodType.Getter)]

@@ -123,7 +123,7 @@ namespace CustomAmmoCategoriesPatches {
           }
           __instance.weapon.parent.GameRep.PlayFireAnim((AttackSourceLimb)num, CustomAmmoCategories.getWeaponAttackRecoil(__instance.weapon));
         }
-        int hitIndex = (int)typeof(WeaponEffect).GetField("hitIndex", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(__instance);
+        int hitIndex = __instance.HitIndex();
         if (hitIndex >= 0) {
           if (!__instance.AllowMissSkipping || __instance.hitInfo.hitLocations[hitIndex] != 0 && __instance.hitInfo.hitLocations[hitIndex] != 65536) {
             return false;

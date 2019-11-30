@@ -20,7 +20,7 @@
     <DebugType>embedded</DebugType>
     <Optimize>false</Optimize>
     <OutputPath>bin\Debug\</OutputPath>
-    <DefineConstants>TRACE;DEBUG;UNITY_5_6_OR_NEWER;UNITY_5_5_OR_NEWER</DefineConstants>
+    <DefineConstants>TRACE;DEBUG;UNITY_5_6_OR_NEWER;UNITY_5_5_OR_NEWER;BT1_8</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <Prefer32Bit>false</Prefer32Bit>
@@ -50,6 +50,10 @@
     <Reference Include="Assembly-CSharp-firstpass">
       <HintPath>..\..\BattleTech_Data\Managed\Assembly-CSharp-firstpass.dll</HintPath>
     </Reference>
+    <Reference Include="InControl, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\BattleTech_Data\Managed\InControl.dll</HintPath>
+    </Reference>
     <Reference Include="Newtonsoft.Json, Version=10.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\BattleTech_Data\Managed\Newtonsoft.Json.dll</HintPath>
@@ -78,6 +82,10 @@
     <Reference Include="UnityEngine, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\BattleTech_Data\Managed\UnityEngine.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine.AnimationModule, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\BattleTech_Data\Managed\UnityEngine.AnimationModule.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.AssetBundleModule, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
@@ -155,19 +163,25 @@
     <Compile Include="Log.cs" />
     <Compile Include="MessageBox.cs" />
     <Compile Include="MineFieldsMoveSequence.cs" />
-    <Compile Include="MultiShotBallistic.cs" />
-    <Compile Include="MultiShotBeamEffect.cs" />
-    <Compile Include="MultiShotBulletEffect.cs" />
-    <Compile Include="MultiShotLaserEffect.cs" />
-    <Compile Include="MultiShotMissileEffect.cs" />
-    <Compile Include="MultiShotMissileLauncherEffect.cs" />
-    <Compile Include="MultiShotPPCEffect.cs" />
-    <Compile Include="MultiShotPulseEffect.cs" />
+    <Compile Include="MuiltyShotEffects\ImproveWeaponEffect.cs" />
+    <Compile Include="MuiltyShotEffects\MultiShotBallistic.cs" />
+    <Compile Include="MuiltyShotEffects\MultiShotBeamEffect.cs" />
+    <Compile Include="MuiltyShotEffects\MultiShotBulletEffect.cs" />
+    <Compile Include="MuiltyShotEffects\MultiShotBurstBallisticEffect.cs" />
+    <Compile Include="MuiltyShotEffects\MultiShotCore.cs" />
+    <Compile Include="MuiltyShotEffects\MultiShotLaserEffect.cs" />
+    <Compile Include="MuiltyShotEffects\MultiShotLBXBallisticEffect.cs" />
+    <Compile Include="MuiltyShotEffects\MultiShotLBXBulletEffect.cs" />
+    <Compile Include="MuiltyShotEffects\MultiShotMissileEffect.cs" />
+    <Compile Include="MuiltyShotEffects\MultiShotMissileLauncherEffect.cs" />
+    <Compile Include="MuiltyShotEffects\MultiShotPPCEffect.cs" />
+    <Compile Include="MuiltyShotEffects\MultiShotPulseEffect.cs" />
     <Compile Include="NotUseInMelee.cs" />
     <Compile Include="OnAttackSequenceImpactAdv.cs" />
     <Compile Include="OnAttackSequenceResolveDamage.cs" />
     <Compile Include="MainClass.cs" />
     <Compile Include="PlayProjectile.cs" />
+    <Compile Include="ProcessMousePos.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="RangeAccuracyHelper.cs" />
     <Compile Include="RealAMS.cs" />

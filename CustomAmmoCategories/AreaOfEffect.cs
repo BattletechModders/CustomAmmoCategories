@@ -60,8 +60,11 @@ namespace CustAmmoCategories {
       bool HasShells = weapon.HasShells();
       //bool DamagePerPallet = weapon.DamagePerPallet();
       float AoEDamage = CustomAmmoCategories.getWeaponAOEDamage(weapon);
+      if (AoEDamage < CustomAmmoCategories.Epsilon) { AoEDamage = weapon.DamagePerShot; };
+      if (AoEDamage < CustomAmmoCategories.Epsilon) { AoEDamage = 1f; };
       float AoEHeat = CustomAmmoCategories.getWeaponAOEHeatDamage(weapon);
       float AoEStability = weapon.AOEInstability();
+      float FullAoEDamage = AoEDamage * advInfo.hits.Count;
       Dictionary<ICombatant, Dictionary<int, float>> targetsHitCache = new Dictionary<ICombatant, Dictionary<int, float>>();
       Dictionary<ICombatant, float> targetsHeatCache = new Dictionary<ICombatant, float>();
       Dictionary<ICombatant, float> targetsStabCache = new Dictionary<ICombatant, float>();
@@ -108,13 +111,12 @@ namespace CustAmmoCategories {
           if (targetsHeatCache.ContainsKey(target) == false) { targetsHeatCache.Add(target, 0f); }
           if (targetsStabCache.ContainsKey(target) == false) { targetsStabCache.Add(target, 0f); }
           //Dictionary<int, float> targetHitCache = targetsHitCache[target];
-          float DamagePerShot = CustomAmmoCategories.getWeaponAOEDamage(weapon);
-          if (DamagePerShot < CustomAmmoCategories.Epsilon) { DamagePerShot = weapon.DamagePerShot; };
-          float HeatDamagePerShot = CustomAmmoCategories.getWeaponAOEHeatDamage(weapon);
+          float DamagePerShot = AoEDamage;
+          float HeatDamagePerShot = AoEHeat;
           if (HeatDamagePerShot < CustomAmmoCategories.Epsilon) { HeatDamagePerShot = weapon.HeatDamagePerShot; };
           float fullDamage = DamagePerShot * (AOERange - distance) / AOERange;
           float heatDamage = HeatDamagePerShot * (AOERange - distance) / AOERange;
-          float stabDamage = weapon.AOEInstability() * (AOERange - distance) / AOERange;
+          float stabDamage = AoEStability * (AOERange - distance) / AOERange;
           targetsHeatCache[target] += heatDamage;
           targetsStabCache[target] += stabDamage;
           Log.LogWrite(" full damage " + fullDamage + "\n");
@@ -222,7 +224,7 @@ namespace CustAmmoCategories {
               Stability = targetsStabCache[aoeHitInfo.Key];
             }
           }
-          advInfo.AppendAoEHit(aoeStartIndex, Damage, Heat, Stability, aoeHitInfo.Key, aoeHitInfo.Value.hitPositions[hi], hitLocation);
+          advInfo.AppendAoEHit(aoeStartIndex, FullAoEDamage, Damage, Heat, Stability, aoeHitInfo.Key, aoeHitInfo.Value.hitPositions[hi], hitLocation);
           ++hIndex;
         }
       }

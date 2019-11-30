@@ -373,7 +373,7 @@ namespace CustomAmmoCategoriesPatches {
         TerrainHitInfo terrainPos = CustomAmmoCategories.getTerrinHitPosition(instance.stackItemUID);
         if (terrainPos != null) {
           instance.attackCompletelyMissed(false);
-          CustomAmmoCategoriesLog.Log.LogWrite(" terrain attack detected to " + terrainPos.pos + "\n");
+          CustomAmmoCategoriesLog.Log.LogWrite(" terrain attack detected to " + terrainPos.pos + ". target position: "+target.CurrentPosition+" distance:"+Vector3.Distance(terrainPos.pos, target.CurrentPosition) +"\n");
           CustomAmmoCategoriesLog.Log.LogWrite(" recalculating hit positions and removing buildin stray\n");
           for (int hitIndex = 0; hitIndex < numberOfShots; ++hitIndex) {
             if ((hitInfo.hitLocations[hitIndex] == 0) || (hitInfo.hitLocations[hitIndex] == 65536)) {
@@ -384,7 +384,9 @@ namespace CustomAmmoCategoriesPatches {
           }
           for (int hitIndex = 0; hitIndex < numberOfShots; ++hitIndex) {
             hitInfo.hitLocations[hitIndex] = 65536;
+            Log.LogWrite("  hi:" + hitIndex + " was " + hitInfo.hitPositions[hitIndex]);
             hitInfo.hitPositions[hitIndex] = terrainPos.pos + (hitInfo.hitPositions[hitIndex] - target.CurrentPosition);
+            Log.LogWrite("  become: " + hitInfo.hitPositions[hitIndex] + "\n");
             hitInfo.secondaryHitLocations[hitIndex] = 0;
             hitInfo.secondaryTargetIds[hitIndex] = null;
           }

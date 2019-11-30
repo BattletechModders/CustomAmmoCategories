@@ -11,12 +11,12 @@ using UnityEngine;
 using static BattleTech.AttackDirector;
 
 namespace CustAmmoCategories {
-  public class MultiShotPPCEffect : CopyAbleWeaponEffect {
-    private List<MultiShotPulseEffect> pulses = new List<MultiShotPulseEffect>();
-    public static readonly string ImprovedPulsePrefabPrefix = "_IMPROVED_";
-    public int currentPulse;
-    public int pulseHitIndex;
-    public string PulseEffectPrefab;
+  public class MultiShotLaserEffect : MuiltShotAnimatedEffect {
+    private List<MultiShotBeamEffect> beams = new List<MultiShotBeamEffect>();
+    public static readonly string ImprovedLaserPrefabPrefix = "_IMPROVED_";
+    public int currentBeam;
+    public int beamHitIndex;
+    public string LaserEffectPrefab;
     public float spreadAngle = 0.5f;
     protected override int ImpactPrecacheCount {
       get {
@@ -32,43 +32,50 @@ namespace CustAmmoCategories {
     protected override void Start() {
       base.Start();
     }
-    public void Init(PPCEffect original, string prefab) {
+    public void Init(LaserEffect original, string prefab) {
       base.Init(original);
-      CustomAmmoCategoriesLog.Log.LogWrite("MultiShotPPCEffect.Init\n");
-      this.PulseEffectPrefab = prefab;
+      Log.LogWrite("MultiShotLaserEffect.Init\n");
+      this.LaserEffectPrefab = prefab;
     }
 
     public override void Init(Weapon weapon) {
+      Log.LogWrite("MultiShotLaserEffect.BaseInit\n");
       base.Init(weapon);
     }
 
     protected void SetupBeams() {
-      Log.LogWrite("MultiShotPPCEffect.SetupBeams\n");
-      this.currentPulse = 0;
-      this.pulseHitIndex = 0;
+      Log.LogWrite("MultiShotLaserEffect.SetupBeams\n");
+      this.currentBeam = 0;
+      this.beamHitIndex = 0;
+      this.duration = this.projectileSpeed;
+      if ((double)this.duration <= CustomAmmoCategories.Epsilon) { this.duration = 0.5f; }
+      float shotDelay = this.duration * (1f + this.weapon.FireDelayMultiplier());
+      if ((double)shotDelay <= 0.5f) { shotDelay = 0.5f; }
+      this.rate = 1f / shotDelay;
+      Log.LogWrite(" projectileSpeed:" + projectileSpeed + " duration: " + this.duration + " FireDelayMultiplier: " + this.weapon.FireDelayMultiplier() + " shotDelay:" + shotDelay + " rate:" + this.rate + "\n");
       this.ClearBeams();
       int beamsCount = this.hitInfo.numberOfShots;
       if (this.weapon.DamagePerPallet() == false) {
         beamsCount *= weapon.ProjectilesPerShot;
       }
-      string prefabName = MultiShotPPCEffect.ImprovedPulsePrefabPrefix + this.PulseEffectPrefab;
-      Log.LogWrite("MultiShotPPCEffect.SetupBullets getting from pool:" + prefabName + "\n");
+      string prefabName = MultiShotLaserEffect.ImprovedLaserPrefabPrefix + this.LaserEffectPrefab;
+      Log.LogWrite("MultiShotLaserEffect.SetupBullets getting from pool:" + prefabName + "\n");
       for (int index = 0; index < beamsCount; ++index) {
         GameObject MultiShotGameObject = this.Combat.DataManager.PooledInstantiate(prefabName, BattleTechResourceType.Prefab, new Vector3?(), new Quaternion?(), (Transform)null);
-        MultiShotPulseEffect msComponent = null;
+        MultiShotBeamEffect msComponent = null;
         if (MultiShotGameObject != null) {
           Log.LogWrite(" getted from pool: " + MultiShotGameObject.GetInstanceID() + "\n");
-          msComponent = MultiShotGameObject.GetComponent<MultiShotPulseEffect>();
+          msComponent = MultiShotGameObject.GetComponent<MultiShotBeamEffect>();
           if (msComponent != null) {
             msComponent.Init(this.weapon, this);
-            this.pulses.Add(msComponent);
+            this.beams.Add(msComponent);
           }
         }
         if (msComponent == null) {
           Log.LogWrite(" not in pool. instansing.\n");
-          GameObject gameObject = this.Combat.DataManager.PooledInstantiate(this.PulseEffectPrefab, BattleTechResourceType.Prefab, new Vector3?(), new Quaternion?(), (Transform)null);
+          GameObject gameObject = this.Combat.DataManager.PooledInstantiate(this.LaserEffectPrefab, BattleTechResourceType.Prefab, new Vector3?(), new Quaternion?(), (Transform)null);
           if ((UnityEngine.Object)gameObject == (UnityEngine.Object)null) {
-            WeaponEffect.logger.LogError((object)("Error instantiating BulletObject " + this.PulseEffectPrefab), (UnityEngine.Object)this);
+            WeaponEffect.logger.LogError((object)("Error instantiating BulletObject " + this.LaserEffectPrefab), (UnityEngine.Object)this);
             break;
           }
           MultiShotGameObject = GameObject.Instantiate(gameObject);
@@ -79,38 +86,38 @@ namespace CustAmmoCategories {
             AutoPoolObject MultiShotAutoPoolObject = MultiShotGameObject.GetComponent<AutoPoolObject>();
             if (MultiShotAutoPoolObject != null) { GameObject.Destroy(MultiShotAutoPoolObject); };
           }
-          autoPoolObject.Init(this.weapon.parent.Combat.DataManager, this.PulseEffectPrefab, 4f);
+          autoPoolObject.Init(this.weapon.parent.Combat.DataManager, this.LaserEffectPrefab, 4f);
           gameObject = null;
           MultiShotGameObject.transform.parent = (Transform)null;
-          PPCEffect component = MultiShotGameObject.GetComponent<PPCEffect>();
+          LaserEffect component = MultiShotGameObject.GetComponent<LaserEffect>();
           if ((UnityEngine.Object)component == (UnityEngine.Object)null) {
-            WeaponEffect.logger.LogError((object)("Error finding BulletEffect on GO " + this.PulseEffectPrefab), (UnityEngine.Object)this);
+            WeaponEffect.logger.LogError((object)("Error finding BulletEffect on GO " + this.LaserEffectPrefab), (UnityEngine.Object)this);
             return;
           }
-          msComponent = MultiShotGameObject.AddComponent<MultiShotPulseEffect>();
+          msComponent = MultiShotGameObject.AddComponent<MultiShotBeamEffect>();
           msComponent.Init(component);
           msComponent.Init(this.weapon, this);
-          this.pulses.Add(msComponent);
+          this.beams.Add(msComponent);
         }
       }
     }
 
     protected void ClearBeams() {
-      string prefabName = MultiShotPPCEffect.ImprovedPulsePrefabPrefix + this.PulseEffectPrefab;
+      string prefabName = MultiShotLaserEffect.ImprovedLaserPrefabPrefix + this.LaserEffectPrefab;
       Log.LogWrite("MultiShotLaserEffect.ClearBullets\n");
-      for (int index = 0; index < this.pulses.Count; ++index) {
-        this.pulses[index].Reset();
-        GameObject gameObject = this.pulses[index].gameObject;
+      for (int index = 0; index < this.beams.Count; ++index) {
+        this.beams[index].Reset();
+        GameObject gameObject = this.beams[index].gameObject;
         Log.LogWrite(" returning to pool " + prefabName + " " + gameObject.GetInstanceID() + "\n");
         this.Combat.DataManager.PoolGameObject(prefabName, gameObject);
       }
-      this.pulses.Clear();
+      this.beams.Clear();
     }
     public bool AllBeamsComplete() {
       if (this.currentState != WeaponEffect.WeaponEffectState.Firing && this.currentState != WeaponEffect.WeaponEffectState.WaitingForImpact)
         return false;
-      for (int index = 0; index < this.pulses.Count; ++index) {
-        if (!this.pulses[index].FiringComplete)
+      for (int index = 0; index < this.beams.Count; ++index) {
+        if (!this.beams[index].FiringComplete)
           return false;
       }
       return true;
@@ -145,50 +152,34 @@ namespace CustAmmoCategories {
       base.OnPreFireComplete();
       this.PlayProjectile();
     }
+
     protected override void PlayProjectile() {
-      //this.currentState = WeaponEffect.WeaponEffectState.Firing;
-      //base.PlayProjectile();
-      this.FireNextShot();
+      this.currentState = WeaponEffect.WeaponEffectState.Firing;
+      base.PlayProjectile(false);
+      this.t = 1f;
+      //this.FireNextShot();
     }
-    protected void FireNextShot() {
-      Log.LogWrite("MultiShotPPCEffect.FireNextShot\n");
-      if (this.currentPulse < 0 || this.currentPulse >= this.pulses.Count) { return; };
+    protected override void FireNextShot() {
+      if (this.currentBeam < 0 || this.currentBeam >= this.beams.Count) { return; };
+      base.FireNextShot();
       //this.PlayMuzzleFlash();
       bool dmgPerBullet = this.weapon.DamagePerPallet();
       int beamsPerShot = weapon.ProjectilesPerShot;
-      float longestDistance = 0f;
-
       for (int index = 0; index < beamsPerShot; ++index) {
-        if (this.currentPulse >= this.pulses.Count) { break; };
-        MultiShotPulseEffect bullet = this.pulses[this.currentPulse];
-        bullet.pulseIdx = this.currentPulse;
+        if (this.currentBeam >= this.beams.Count) { break; };
+        MultiShotBeamEffect bullet = this.beams[this.currentBeam];
+        bullet.beamIdx = this.currentBeam;
         bool prime = index >= (beamsPerShot - 1);
         if (dmgPerBullet == true) { prime = true; };
-        bullet.Fire(this.hitInfo, this.pulseHitIndex, 0, prime);
-        ++this.currentPulse;
-        float distance = Vector3.Distance(this.startPos, this.hitInfo.hitPositions[this.pulseHitIndex]);
-        if (distance > longestDistance) { longestDistance = distance; };
-        if (dmgPerBullet == true) { ++this.pulseHitIndex; };
+        bullet.Fire(this.hitInfo, this.beamHitIndex, (bullet.beamIdx % this.numberOfEmitters), prime);
+        ++this.currentBeam;
+        if (dmgPerBullet == true) { ++this.beamHitIndex; };
       }
-      if (dmgPerBullet == false) { ++this.pulseHitIndex; };
-      if ((double)this.projectileSpeed > 0.0) {
-        this.duration = longestDistance / this.projectileSpeed;
-      } else {
-        this.duration = 1f;
-      }
-      if ((double)this.duration > 4.0) {
-        this.duration = 4f;
-      }
-      float shotDelay = this.duration * (1f + this.weapon.FireDelayMultiplier());
-      if ((double)shotDelay <= 0.1f) { shotDelay = 0.1f; }
-      this.rate = 1f / shotDelay;
-      Log.LogWrite(" projectileSpeed:" + projectileSpeed + " distance:" + longestDistance + " shotDelay:" + shotDelay + " rate:" + this.rate + "\n");
+      if (dmgPerBullet == false) { ++this.beamHitIndex; };
       this.t = 0.0f;
-      if (this.currentPulse < this.pulses.Count) {
-        this.currentState = WeaponEffect.WeaponEffectState.Firing;
-      } else {
-        this.currentState = WeaponEffect.WeaponEffectState.WaitingForImpact;
-      }
+      if (this.currentBeam < this.beams.Count)
+        return;
+      this.currentState = WeaponEffect.WeaponEffectState.WaitingForImpact;
     }
 
     protected override void PlayImpact() {
@@ -197,23 +188,27 @@ namespace CustAmmoCategories {
 
     protected override void Update() {
       base.Update();
-      if (this.currentState == WeaponEffect.WeaponEffectState.Firing && (double)this.t >= 1.0)
-        this.FireNextShot();
       if (this.currentState != WeaponEffect.WeaponEffectState.WaitingForImpact || !this.AllBeamsComplete())
         return;
       this.OnComplete();
     }
+
+#if BT1_8
+    protected override void OnImpact(float hitDamage = 0.0f,float structureDamage = 0f) {
+      base.OnImpact(0.0f,0f);
+    }
+#else
     protected override void OnImpact(float hitDamage = 0.0f) {
       base.OnImpact(0.0f);
     }
+#endif
     protected override void OnComplete() {
-      this.RestoreOriginalColor();
       base.OnComplete();
       this.ClearBeams();
     }
     public override void Reset() {
-      for (int index = 0; index < this.pulses.Count; ++index) {
-        this.pulses[index].Reset();
+      for (int index = 0; index < this.beams.Count; ++index) {
+        this.beams[index].Reset();
       }
       base.Reset();
     }

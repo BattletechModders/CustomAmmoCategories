@@ -89,9 +89,15 @@ namespace CustAmmoCategories {
       base.OnPreFireComplete();
       this.PlayProjectile();
     }
+#if BT1_8
+    protected override void OnImpact(float hitDamage = 0.0f, float structureDamage = 0f) {
+      base.OnImpact(hitDamage, structureDamage);
+    }
+#else
     protected override void OnImpact(float hitDamage = 0.0f) {
       base.OnImpact(hitDamage);
     }
+#endif
     protected override void OnComplete() {
       base.OnComplete();
       if ((UnityEngine.Object)this.projectileParticles != (UnityEngine.Object)null)

@@ -59,12 +59,12 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
          CombatHUDCalledShotPopUp me = __instance;
          ArmorLocation hoveredArmor = me.MechArmorDisplay.HoveredArmor;
          if ( me.locationNameText.text.StartsWith( "-" ) ) {
-            title.SetText("__/AIM.Called_Shot/__");
+            title.SetText(new Text("__/AIM.Called_Shot/__").ToString());
          } else if ( me.DisplayedActor is Mech mech ) {
             float hp = mech.GetCurrentStructure( MechStructureRules.GetChassisLocationFromArmorLocation( hoveredArmor ) );
             if ( hp <= 0 ) {
-               title.SetText("__/AIM.Called_Shot/__");
-               me.locationNameText.SetText( "-choose target-", ZeroObjects );
+               title.SetText(new Text("__/AIM.Called_Shot/__").ToString());
+               me.locationNameText.SetText(new Text("__/AIM.choose_target/__").ToString(), ZeroObjects );
             } else {
                float mhp = mech.GetMaxStructure( MechStructureRules.GetChassisLocationFromArmorLocation( hoveredArmor ) ),
                      armour = mech.GetCurrentArmor( hoveredArmor ), marmour = mech.GetMaxArmor( hoveredArmor );

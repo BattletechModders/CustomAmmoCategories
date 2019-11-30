@@ -118,7 +118,11 @@ namespace CustAmmoCategories {
       this.PlayProjectile();
     }
 
+#if BT1_8
+    protected override void OnImpact(float hitDamage = 0.0f, float structureDamage = 0f) {
+#else
     protected override void OnImpact(float hitDamage = 0.0f) {
+#endif
       //this.parentLauncher.OnBulletImpact(this);
       if (!((UnityEngine.Object)this.projectileParticles != (UnityEngine.Object)null)) { return; }
       this.projectileParticles.Stop(true);

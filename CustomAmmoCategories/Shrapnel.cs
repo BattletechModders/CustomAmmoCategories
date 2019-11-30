@@ -879,7 +879,7 @@ namespace CustAmmoCategories {
       /*if(fullBulletsCount > 0) {
         CustomAmmoCategoriesLog.Log.LogWrite("Initing bullets:"+fullBulletsCount+"\n");
         CustomAmmoCategoriesPatches.BallisticEffect_SetupBulletsShell.SetupMissilesCount = fullBulletsCount;
-        typeof(WeaponEffect).GetField("hitIndex", BindingFlags.Instance | BindingFlags.NonPublic).SetValue(shellsEffect, (object)0);
+        shellsEffect.hitIndex = 0;
         typeof(BallisticEffect).GetMethod("SetupBullets", BindingFlags.Instance | BindingFlags.NonPublic).Invoke(shellsEffect, new object[0] { });
       }
       foreach (var bullet in bullets) {
@@ -909,7 +909,7 @@ namespace CustAmmoCategories {
 
       shellsEffect.subEffect = true;
       typeof(WeaponEffect).GetField("t", BindingFlags.Instance | BindingFlags.NonPublic).SetValue(shellsEffect, (object)0.0f);
-      typeof(WeaponEffect).GetField("hitIndex", BindingFlags.Instance | BindingFlags.NonPublic).SetValue(shellsEffect, (object)hitIndex);
+      shellsEffect.hitIndex = hitIndex;
       typeof(WeaponEffect).GetField("emitterIndex", BindingFlags.Instance | BindingFlags.NonPublic).SetValue(shellsEffect, (object)0);
       typeof(WeaponEffect).GetField("startingTransform", BindingFlags.Instance | BindingFlags.NonPublic).SetValue(shellsEffect, (object)shellsEffect.weaponRep.vfxTransforms[0]);
       Transform startingTransform = (Transform)typeof(WeaponEffect).GetField("startingTransform", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(shellsEffect);
@@ -1031,13 +1031,13 @@ namespace CustAmmoCategories {
 
       public static void WeaponEffectFire(BulletEffect __instance, WeaponHitInfo hitInfo, int hitIndex, int emitterIndex) {
         CustomAmmoCategoriesLog.Log.LogWrite("Weapon Effect Fire as shell effect\n");
-        //int pHitIndex = (int)typeof(WeaponEffect).GetField("hitIndex", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(__instance);
-        //int hitIndex = (int)typeof(WeaponEffect).GetField("hitIndex", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(__instance);
+        //int pHitIndex = __instance.hitIndex;
+        //int hitIndex = __instance.hitIndex;
         //CustomAmmoCategoriesLog.Log.LogWrite(" parent HitIndex:" + pHitIndex + "\n");
         ShrapnelHitRecord shrapnelHitRecord = CustomAmmoCategories.getShrapnelCache(hitInfo, hitIndex);
         BulletEffect bullet = __instance as BulletEffect;
         typeof(WeaponEffect).GetField("t", BindingFlags.Instance | BindingFlags.NonPublic).SetValue(__instance, (object)0.0f);
-        typeof(WeaponEffect).GetField("hitIndex", BindingFlags.Instance | BindingFlags.NonPublic).SetValue(__instance, (object)hitIndex);
+        __instance.hitIndex = hitIndex;
         typeof(WeaponEffect).GetField("emitterIndex", BindingFlags.Instance | BindingFlags.NonPublic).SetValue(__instance, (object)emitterIndex);
         __instance.hitInfo = hitInfo;
         Transform startingTransform = __instance.weaponRep.vfxTransforms[emitterIndex];
@@ -1137,12 +1137,12 @@ namespace CustAmmoCategories {
         if((__instance is BulletEffect)||(__instance is BallisticEffect)) {
           if (CustomAmmoCategories.getWeaponHasShells(__instance.weapon)) {
             CustomAmmoCategoriesLog.Log.LogWrite("Weapon Effect Fire for bullet with shells effect. HitIndex:" + hitIndex + "\n");
-            //int pHitIndex = (int)typeof(WeaponEffect).GetField("hitIndex", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(__instance);
-            //int hitIndex = (int)typeof(WeaponEffect).GetField("hitIndex", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(__instance);
+            //int pHitIndex = __instance.hitIndex;
+            //int hitIndex = __instance.hitIndex;
             //CustomAmmoCategoriesLog.Log.LogWrite(" parent HitIndex:" + pHitIndex + "\n");
             BulletEffect bullet = __instance as BulletEffect;
             typeof(WeaponEffect).GetField("t", BindingFlags.Instance | BindingFlags.NonPublic).SetValue(__instance, (object)0.0f);
-            typeof(WeaponEffect).GetField("hitIndex", BindingFlags.Instance | BindingFlags.NonPublic).SetValue(__instance, (object)hitIndex);
+            __instance.hitIndex = hitIndex
             typeof(WeaponEffect).GetField("emitterIndex", BindingFlags.Instance | BindingFlags.NonPublic).SetValue(__instance, (object)emitterIndex);
             __instance.hitInfo = hitInfo;
             Transform startingTransform = __instance.weaponRep.vfxTransforms[emitterIndex];
@@ -1174,7 +1174,7 @@ namespace CustAmmoCategories {
       private static Stopwatch watchdog = new Stopwatch();
       public static bool Prefix(BallisticEffect __instance) {
         if (__instance.subEffect) {
-          int hitIndex = (int)typeof(WeaponEffect).GetField("hitIndex", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(__instance);
+          int hitIndex = __instance.hitIndex;
           CustomAmmoCategoriesLog.Log.LogWrite("Ballistic Effect FireNextBullet as shell effect. hitIndex:" + hitIndex + "/" + __instance.hitInfo.numberOfShots + "\n");
           ShrapnelHitRecord shrapnelHitRecord = CustomAmmoCategories.getShrapnelCache(__instance.hitInfo, hitIndex);
           if (shrapnelHitRecord == null) {
@@ -1206,11 +1206,11 @@ namespace CustAmmoCategories {
             bullet.bulletIdx = currentBullet;
             int bulletHitIndex = currentBullet + __instance.hitInfo.numberOfShots;
             bullet.Fire(__instance.hitInfo, bulletHitIndex, 0);
-            typeof(WeaponEffect).GetField("hitIndex", BindingFlags.Instance | BindingFlags.NonPublic).SetValue(bullet, (object)bulletHitIndex);
+            bullet.hitIndex = bulletHitIndex;
             CustomAmmoCategoriesLog.Log.LogWrite(" other bullets state (" + bullets.Count + "):\n");
             for (int bulletIdx = 0; bulletIdx < bullets.Count; ++bulletIdx) {
               float t = (float)typeof(WeaponEffect).GetField("t", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(bullets[bulletIdx]);
-              int bulletIndex = (int)typeof(WeaponEffect).GetField("hitIndex", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(bullets[bulletIdx]);
+              int bulletIndex = bullets[bulletIdx].hitIndex;
               CustomAmmoCategoriesLog.Log.LogWrite("  uid:" + bullets[bulletIdx].GetInstanceID() + " idx:" + bullets[bulletIdx].bulletIdx + " hitIndex:" + bulletIndex + " t:" + t + " state:" + bullets[bulletIdx].currentState + "\n");
             }
             typeof(BallisticEffect).GetMethod("PlayMuzzleFlash", BindingFlags.Instance | BindingFlags.NonPublic).Invoke(__instance, new object[0] { });
@@ -1227,7 +1227,7 @@ namespace CustAmmoCategories {
           return false;
         }else
         if (CustomAmmoCategories.getWeaponHasShells(__instance.weapon)) {
-          int hitIndex = (int)typeof(WeaponEffect).GetField("hitIndex", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(__instance);
+          int hitIndex = __instance.hitIndex
           CustomAmmoCategoriesLog.Log.LogWrite("Ballistic Effect FireNextBullet with shell effect. hitIndex:" + hitIndex + "/" + __instance.hitInfo.numberOfShots + "\n");
           List<BulletEffect> bullets = (List<BulletEffect>)typeof(BallisticEffect).GetField("bullets", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(__instance);
           int currentBullet = (int)typeof(BallisticEffect).GetField("currentBullet", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(__instance);
@@ -1236,7 +1236,7 @@ namespace CustAmmoCategories {
           bullet.bulletIdx = currentBullet;
           int bulletHitIndex = currentBullet;
           bullet.Fire(__instance.hitInfo, bulletHitIndex, 0);
-          typeof(WeaponEffect).GetField("hitIndex", BindingFlags.Instance | BindingFlags.NonPublic).SetValue(bullet, (object)bulletHitIndex);
+          bullet.hitIndex = bulletHitIndex;
           typeof(BallisticEffect).GetMethod("PlayMuzzleFlash", BindingFlags.Instance | BindingFlags.NonPublic).Invoke(__instance, new object[0] { });
           ++currentBullet;
           typeof(WeaponEffect).GetField("t", BindingFlags.Instance | BindingFlags.NonPublic).SetValue(__instance, (object)1.0f);
@@ -1257,14 +1257,14 @@ namespace CustAmmoCategories {
     public static class BallisticEffect_OnBulletImpactShell {
       public static bool Prefix(BallisticEffect __instance, BulletEffect bullet) {
         if (__instance.subEffect) {
-          int hitIndex = (int)typeof(WeaponEffect).GetField("hitIndex", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(bullet);
+          int hitIndex = bullet.hitIndex;
           CustomAmmoCategoriesLog.Log.LogWrite("Ballistic Effect OnBulletImpact as shell effect. bullet hitIndex:" + hitIndex + "\n");
           ShrapnelHitRecord shrapnelHitRecord = CustomAmmoCategories.getShrapnelCache(__instance.hitInfo, hitIndex);
           if (shrapnelHitRecord == null) {
             CustomAmmoCategoriesLog.Log.LogWrite(" can't find shrapnel hit record. fallback\n");
             return true;
           }
-          //int bulletHitIndex = (int)typeof(WeaponEffect).GetField("hitIndex", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(bullet);
+          //int bulletHitIndex = bullet.hitIndex;
           //CustomAmmoCategoriesLog.Log.LogWrite("Shell bullet hit detected hitIndex:" + bulletHitIndex + "/" + shrapnelHitRecord.hitInfo.numberOfShots);
           CustomAmmoCategoriesLog.Log.LogWrite(" location:" + __instance.hitInfo.hitLocations[hitIndex] + "\n");
           if (__instance.hitInfo.hitLocations[hitIndex] == 0 || __instance.hitInfo.hitLocations[hitIndex] == 65536) { return false; };
@@ -1282,7 +1282,7 @@ namespace CustAmmoCategories {
         } else {
           if (CustomAmmoCategories.getWeaponHasShells(__instance.weapon)) {
             CustomAmmoCategoriesLog.Log.LogWrite(" main effect with shell\n");
-            int hitIndex = (int)typeof(WeaponEffect).GetField("hitIndex", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(bullet);
+            int hitIndex = bullet.hitIndex;
             WeaponHitInfo hitInfo = __instance.hitInfo;
             if (hitInfo.attackSequenceId == 0) {
               CustomAmmoCategoriesLog.Log.LogWrite(" strange behavior. Ballistic effect without hitInfo\n");
@@ -1360,7 +1360,7 @@ namespace CustAmmoCategories {
         } else {
           return true;
         }
-        int hitIndex = (int)typeof(WeaponEffect).GetField("hitIndex", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(__instance);
+        int hitIndex = __instance.hitIndex;
         ShrapnelHitRecord shrapnelHitRecord = CustomAmmoCategories.getShrapnelCache(__instance.hitInfo, hitIndex);
         CustomAmmoCategoriesLog.Log.LogWrite("WeaponEffect.PlayMuzzleFlash as shell effect\n");
         if (shrapnelHitRecord == null) {
@@ -1418,7 +1418,7 @@ namespace CustAmmoCategories {
           CustomAmmoCategoriesLog.Log.LogWrite("Nor ballistic nor bullet effect can't be shell\n");
           return true;
         }
-        int hitIndex = (int)typeof(WeaponEffect).GetField("hitIndex", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(__instance);
+        int hitIndex = __instance.hitIndex;
         ShrapnelHitRecord shrapnelHitRecord = CustomAmmoCategories.getShrapnelCache(__instance.hitInfo, hitIndex);
         CustomAmmoCategoriesLog.Log.LogWrite("WeaponEffect.PlayPreFire as shell effect\n");
         if (shrapnelHitRecord == null) {
@@ -1492,7 +1492,7 @@ namespace CustAmmoCategories {
           return WeaponEffect_PlayProjectile.Prefix(__instance);
         }
         CustomAmmoCategoriesLog.Log.LogWrite("WeaponEffect.PlayProjectile as shell effect\n");
-        int hitIndex = (int)typeof(WeaponEffect).GetField("hitIndex", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(__instance);
+        int hitIndex = __instance.hitIndex;
         ShrapnelHitRecord shrapnelHitRecord = CustomAmmoCategories.getShrapnelCache(__instance.hitInfo, hitIndex);
         if (shrapnelHitRecord == null) {
           CustomAmmoCategoriesLog.Log.LogWrite(" can't find shrapnel hit record. fallback\n");
@@ -1506,7 +1506,7 @@ namespace CustAmmoCategories {
           CustomAmmoCategoriesLog.Log.LogWrite(" other bullets state (" + bullets.Count + "):\n");
           for (int bulletIdx = 0; bulletIdx < bullets.Count; ++bulletIdx) {
             float t = (float)typeof(WeaponEffect).GetField("t", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(bullets[bulletIdx]);
-            int bulletIndex = (int)typeof(WeaponEffect).GetField("hitIndex", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(bullets[bulletIdx]);
+            int bulletIndex = bullets[bulletIdx].hitIndex;
             CustomAmmoCategoriesLog.Log.LogWrite(" idx:" + bullets[bulletIdx].bulletIdx + " hitIndex:" + bulletIndex + " t:" + t + " state:" + bullets[bulletIdx].currentState + "\n");
           }
         }
@@ -1554,13 +1554,13 @@ namespace CustAmmoCategories {
     public static class BulletEffect_OnCompleteShell {
       public static void Postfix(WeaponEffect __instance) {
         CustomAmmoCategoriesLog.Log.LogWrite("BulletEffect.OnComplete shell\n");
-        int hitIndex = (int)typeof(WeaponEffect).GetField("hitIndex", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(__instance);
+        int hitIndex = __instance.hitIndex;
         BallisticEffect parentLauncher = (BallisticEffect)typeof(BulletEffect).GetField("parentLauncher", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(__instance);
         if (parentLauncher.subEffect == false) {
           CustomAmmoCategoriesLog.Log.LogWrite("Bullet effect but parent launcher not subeffect\n");
           return;
         }
-        int pHitIndex = (int)typeof(WeaponEffect).GetField("hitIndex", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(parentLauncher);
+        int pHitIndex = parentLauncher.hitIndex;
         ShrapnelHitRecord shrapnelHitRecord = CustomAmmoCategories.getShrapnelCache(__instance.hitInfo, pHitIndex);
         if (shrapnelHitRecord == null) {
           CustomAmmoCategoriesLog.Log.LogWrite(" can't find shrapnel hit record. fallback\n");
@@ -1571,7 +1571,7 @@ namespace CustAmmoCategories {
         CustomAmmoCategoriesLog.Log.LogWrite(" other bullets state (" + bullets.Count + "):\n");
         for (int bulletIdx = 0; bulletIdx < bullets.Count; ++bulletIdx) {
           float t = (float)typeof(WeaponEffect).GetField("t", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(bullets[bulletIdx]);
-          int bulletIndex = (int)typeof(WeaponEffect).GetField("hitIndex", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(bullets[bulletIdx]);
+          int bulletIndex = bullets[bulletIdx].hitIndex;
           CustomAmmoCategoriesLog.Log.LogWrite(" idx:" + bullets[bulletIdx].bulletIdx + " hitIndex:" + bulletIndex + " t:" + t + " state:" + bullets[bulletIdx].currentState + "\n");
         }
         shrapnelHitRecord.bulletsInFly.Remove(hitIndex);
@@ -1656,7 +1656,7 @@ namespace CustAmmoCategories {
         WeaponEffect_OnComplete = (Action<BallisticEffect>)dm.CreateDelegate(typeof(Action<BallisticEffect>));
       }
       public static bool Prefix(BallisticEffect __instance) {
-        //int hitIndex = (int)typeof(WeaponEffect).GetField("hitIndex", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(__instance);
+        //int hitIndex = __instance.hitIndex;
         if (__instance.subEffect) {
           CustomAmmoCategoriesLog.Log.LogWrite("BallisticEffect OnComplete shell effect - no further complete\n");
           WeaponEffect_OnComplete(__instance);

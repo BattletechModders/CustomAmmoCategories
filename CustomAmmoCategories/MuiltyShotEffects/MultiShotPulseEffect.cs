@@ -17,10 +17,11 @@ namespace CustAmmoCategories {
     public MultiShotPPCEffect parentProjector;
     public bool primePulse;
     public int pulseIdx;
-    public Material ppcTrail;
+    public Material ppcBeamFake;
     public Material ppcBeamCoil;
     public Material zapArcFlip1;
     public Material PPCspark;
+    public Material ppcTrail;
     public Material glowBlue;
     /*public Color ppcTrail_color;
     public Color ppcBeamCoil_color;
@@ -28,6 +29,7 @@ namespace CustAmmoCategories {
     public Color PPCspark_color;
     public Color glowBlue_color;*/
     public override void StoreOriginalColor() {
+      Log.M.TWL(0, "MultiShotPulseEffect.StoreOriginalColor");
       ParticleSystemRenderer[] renderers = this.projectile.GetComponentsInChildren<ParticleSystemRenderer>();
       ppcTrail = null;
       ppcBeamCoil = null;
@@ -37,9 +39,9 @@ namespace CustAmmoCategories {
       foreach (ParticleSystemRenderer renderer in renderers) {
         Log.LogWrite(" " + renderer.name + ": materials\n");
         foreach (Material material in renderer.materials) {
-          Log.LogWrite("  " + material.name + ": " + material.color + "\n");
-          if (material.name.StartsWith("vfxMatPrtl_ppcTrail_alpha")) {
-            this.ppcTrail = material; material.RegisterRestoreColor();
+          Log.LogWrite("  " + material.name + ": " + material.color + " : "+material.ColorBB()+"\n");
+          if (material.name.StartsWith("vfxMatPrtl_ppcBeamFake_alpha")) {
+            this.ppcBeamFake = material; material.RegisterRestoreColor();
           } else
           if (material.name.StartsWith("vfxMatPrtl_ppcBeamCoil_alpha")) {
             this.ppcBeamCoil = material; material.RegisterRestoreColor();
@@ -49,6 +51,9 @@ namespace CustAmmoCategories {
           } else
           if (material.name.StartsWith("vfxMatPrtl_PPCspark_alpha")) {
             this.PPCspark = material; material.RegisterRestoreColor();
+          } else
+          if (material.name.StartsWith("vfxMatPrtl_electricTrail_alpha")) {
+            this.ppcTrail = material; material.RegisterRestoreColor();
           } else
           if (material.name.StartsWith("vfxMatPrtl_glowBlue_alpha")) {
             this.glowBlue = material; material.RegisterRestoreColor();
@@ -64,6 +69,7 @@ namespace CustAmmoCategories {
       if (glowBlue != null) glowBlue.SetColor("_ColorBB", glowBlue_color);*/
     }
     public override void SetColor(Color color) {
+      //Log.M.TWL(0, "MultiShotPulseEffect.SetColor: "+color);
       color.a = 1f;
       float coeff = color.maxColorComponent;
       Color tempColor = Color.white;
@@ -71,23 +77,30 @@ namespace CustAmmoCategories {
       tempColor.r = (color.r / coeff) * 5.0f + 1f;
       tempColor.g = (color.g / coeff) * 5.0f + 1f;
       tempColor.b = (color.b / coeff) * 5.0f + 1f;
-      if(ppcBeamCoil != null) ppcBeamCoil.SetColor("_ColorBB", tempColor);
-      tempColor.r += 0.2f; if (tempColor.r > 6.0f) { tempColor.r = 6.0f; }
-      tempColor.g += 0.2f; if (tempColor.g > 6.0f) { tempColor.g = 6.0f; }
-      tempColor.b += 0.2f; if (tempColor.b > 6.0f) { tempColor.b = 6.0f; }
-      if (ppcTrail != null) ppcTrail.SetColor("_ColorBB", tempColor);
-      tempColor.r = (color.r / coeff) * 5.5f + 1.5f;
-      tempColor.g = (color.g / coeff) * 5.5f + 1.5f;
-      tempColor.b = (color.b / coeff) * 5.5f + 1.5f;
-      if (PPCspark != null) PPCspark.SetColor("_ColorBB", tempColor);
-      tempColor.r += 0.2f; if (tempColor.r > 7.0f) { tempColor.r = 7.0f; }
-      tempColor.g += 0.2f; if (tempColor.g > 7.0f) { tempColor.g = 7.0f; }
-      tempColor.b += 0.2f; if (tempColor.b > 7.0f) { tempColor.b = 7.0f; }
+      if (ppcBeamFake != null) ppcBeamFake.SetColor("_ColorBB", tempColor);
+      tempColor.r = (color.r / coeff) * 6.0f + 1f;
+      tempColor.g = (color.g / coeff) * 6.0f + 1f;
+      tempColor.b = (color.b / coeff) * 6.0f + 1f;
+      if (ppcBeamCoil != null) ppcBeamCoil.SetColor("_ColorBB", tempColor);
       if (zapArcFlip1 != null) zapArcFlip1.SetColor("_ColorBB", tempColor);
-      tempColor.r += 0.3f; if (tempColor.r > 7.0f) { tempColor.r = 7.0f; }
-      tempColor.g += 0.3f; if (tempColor.g > 7.0f) { tempColor.g = 7.0f; }
-      tempColor.b += 0.3f; if (tempColor.b > 7.0f) { tempColor.b = 7.0f; }
+      tempColor.r = (color.r / coeff) * 5.0f + 2f;
+      tempColor.g = (color.g / coeff) * 5.0f + 2f;
+      tempColor.b = (color.b / coeff) * 5.0f + 2f;
       if (glowBlue != null) glowBlue.SetColor("_ColorBB", tempColor);
+      tempColor.r = (color.r / coeff) * 6.5f + 1.5f;
+      tempColor.g = (color.g / coeff) * 6.5f + 1.5f;
+      tempColor.b = (color.b / coeff) * 6.5f + 1.5f;
+      if (PPCspark != null) PPCspark.SetColor("_ColorBB", tempColor);
+      tempColor.r = (color.r / coeff) * 7.0f + 1.3f;
+      tempColor.g = (color.g / coeff) * 7.0f + 1.3f;
+      tempColor.b = (color.b / coeff) * 7.0f + 1.3f;
+      if (ppcTrail != null) ppcTrail.SetColor("_ColorBB", tempColor);
+      //Log.M.WL(1, ppcBeamFake.name+":"+ ppcBeamFake.ColorBB());
+      //Log.M.WL(1, ppcBeamCoil.name + ":" + ppcBeamCoil.ColorBB());
+      //Log.M.WL(1, zapArcFlip1.name + ":" + zapArcFlip1.ColorBB());
+      //Log.M.WL(1, glowBlue.name + ":" + glowBlue.ColorBB());
+      //Log.M.WL(1, PPCspark.name + ":" + PPCspark.ColorBB());
+      //Log.M.WL(1, ppcTrail.name + ":" + ppcTrail.ColorBB());
     }
     protected override int ImpactPrecacheCount {
       get {
@@ -186,13 +199,29 @@ namespace CustAmmoCategories {
       this.PlayProjectile();
     }
 
+#if BT1_8
+    protected override void OnImpact(float hitDamage = 0.0f, float structureDamage = 0f) {
+#else
     protected override void OnImpact(float hitDamage = 0.0f) {
+#endif
       Log.LogWrite("MultiShotPulseEffect.OnImpact wi:" + this.hitInfo.attackWeaponIndex + " hi:" + this.hitInfo + " bi:" + this.pulseIdx + " prime:" + this.primePulse + "\n");
       if (this.primePulse) {
         Log.LogWrite(" prime. Damage message fired\n");
         float damage = this.weapon.DamagePerShotAdjusted(this.weapon.parent.occupiedDesignMask);
-        if (this.weapon.DamagePerPallet()&&(this.weapon.DamageNotDivided() == false)) { damage /= this.weapon.ProjectilesPerShot; };
+#if BT1_8
+        float apDamage = this.weapon.StructureDamagePerShotAdjusted(this.weapon.parent.occupiedDesignMask);
+#endif
+        if (this.weapon.DamagePerPallet()&&(this.weapon.DamageNotDivided() == false)) {
+          damage /= this.weapon.ProjectilesPerShot;
+#if BT1_8
+          apDamage /= this.weapon.ProjectilesPerShot;
+#endif
+        };
+#if BT1_8
+        base.OnImpact(damage, apDamage);
+#else
         base.OnImpact(damage);
+#endif
       } else {
         Log.LogWrite(" no prime. No damage message fired\n");
       }

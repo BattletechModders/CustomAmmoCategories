@@ -43,18 +43,43 @@ namespace CustAmmoCategories {
         gameRep.ToggleRandomIdles(true);
       }
     }
+    public override bool ProcessLeftClick(Vector3 worldPos) {
+      if (this.NumPositionsLocked != 0)
+        return false;
+      this.targetPosition = worldPos;// this.GetValidTargetPosition(worldPos);
+      //this.GetTargetedActors(this.targetPosition, this.FromButton.Ability.Def.FloatParam1);
+      //this.SetTargetHighlights(true);
+      ++this.NumPositionsLocked;
+      this.ShowFireButton(CombatHUDFireButton.FireMode.Confirm, Ability.ProcessDetailString(this.FromButton.Ability).ToString(true));
+      if ((UnityEngine.Object)this.SelectedActor.GameRep != (UnityEngine.Object)null) {
+        MechRepresentation gameRep = this.SelectedActor.GameRep as MechRepresentation;
+        if ((UnityEngine.Object)gameRep != (UnityEngine.Object)null) {
+          gameRep.ToggleRandomIdles(false);
+          this.SelectedActor.GameRep.FacePoint(true, this.targetPosition, false, 0.5f, -1, -1, false, (GameRepresentation.RotationCompleteDelegate)null);
+        }
+      }
+      return true;
+    }
+
     public override void ProcessMousePos(Vector3 worldPos) {
       float range = this.UpdateWeapons(worldPos);
       if (float.IsNaN(range) == false) { this.CircleRange = range; };
       switch (this.NumPositionsLocked) {
         case 0:
+#if BT1_8
+          CombatTargetingReticle.Instance.UpdateReticle(worldPos, CircleRange, false);
+#else
           CombatTargetingReticle.Instance.UpdateReticle(worldPos, CircleRange);
+#endif
           break;
         case 1:
+#if BT1_8
+          CombatTargetingReticle.Instance.UpdateReticle(this.targetPosition, CircleRange, false);
+#else
           CombatTargetingReticle.Instance.UpdateReticle(this.targetPosition, CircleRange);
+#endif
           break;
-      }
-      
+      }      
     }
     public override int ProjectedHeatForState {
       get {
@@ -97,6 +122,20 @@ namespace CustAmmoCategories {
 }
 
 namespace CustomAmmoCategoriesPatches {
+  /*[HarmonyPatch(typeof(SelectionStateCommandTargetSinglePoint))]
+  [HarmonyPatch("GetValidTargetPosition")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { typeof(Vector3) })]
+  public static class SelectionStateCommandTargetSinglePoint_GetValidTargetPosition {
+    public static bool SelectionForbidden = false;
+    public static bool Prefix(SelectionStateCommandTargetSinglePoint __instance, Vector3 worldPos, Vector3 __result) {
+      Log.LogWrite("SelectionStateCommandTargetSinglePoint.GetValidTargetPosition: "+ worldPos + "\n");
+      SelectionStateCommandAttackGround sscAG = __instance as SelectionStateCommandAttackGround;
+      if (sscAG == null) { return true; }
+      __result = worldPos;
+      return false;
+    }
+  }*/
   [HarmonyPatch(typeof(SelectionState))]
   [HarmonyPatch("CanDeselect")]
   [HarmonyPatch(MethodType.Getter)]
@@ -245,7 +284,7 @@ namespace CustomAmmoCategoriesPatches {
     public static bool Prefix(AttackDirector __instance, MessageCenterMessage message, ref AbstractActor __state) {
       __state = null;
       AttackCompleteMessage attackCompleteMessage = (AttackCompleteMessage)message;
-      Log.LogWrite("AttackDirector.OnAttackCompleteTA:" + attackCompleteMessage.sequenceId + "\n");
+      Log.M.TWL(0,"AttackDirector.OnAttackCompleteTA:" + attackCompleteMessage.sequenceId + "\n");
       int sequenceId = attackCompleteMessage.sequenceId;
       AttackDirector.AttackSequence attackSequence = __instance.GetAttackSequence(sequenceId);
       if (attackSequence == null) {
@@ -288,7 +327,7 @@ namespace CustomAmmoCategoriesPatches {
       if (hitInfo.attackerId == hitInfo.targetId) {
         CustomAmmoCategoriesLog.Log.LogWrite("On Fire detected terrain attack\n");
         typeof(WeaponEffect).GetField("t", BindingFlags.Instance | BindingFlags.NonPublic).SetValue(__instance, (object)0.0f);
-        typeof(WeaponEffect).GetField("hitIndex", BindingFlags.Instance | BindingFlags.NonPublic).SetValue(__instance, (object)hitIndex);
+        __instance.HitIndex(hitIndex);
         typeof(WeaponEffect).GetField("emitterIndex", BindingFlags.Instance | BindingFlags.NonPublic).SetValue(__instance, (object)emitterIndex);
         __instance.hitInfo = hitInfo;
         typeof(WeaponEffect).GetField("startingTransform", BindingFlags.Instance | BindingFlags.NonPublic).SetValue(__instance, (object)__instance.weaponRep.vfxTransforms[emitterIndex]);
@@ -318,7 +357,9 @@ namespace CustomAmmoCategoriesPatches {
     private static PropertyInfo pNumPositionsLocked = null;
     private static PropertyInfo pTargetPosition = null;
     private static MethodInfo mShowTextColor = null;
-    private static MethodInfo mShowTextColorEx = null;
+#if BT1_8
+    private static MethodInfo mGetWeaponCOILStateColor = null;
+#endif
     private static MethodInfo mGetShotQualityTextColor = null;
     private static FieldInfo fCombat = null;
     private static float timeCounter = 0f;
@@ -344,16 +385,22 @@ namespace CustomAmmoCategoriesPatches {
           Log.LogWrite("Can't find CombatHUDWeaponSlot.targetPosition\n");
           return false;
         }
-        mShowTextColor = typeof(CombatHUDWeaponSlot).GetMethod("ShowTextColor", BindingFlags.Instance | BindingFlags.NonPublic, null, new Type[2] { typeof(Color), typeof(bool)}, null);
+#if BT1_8
+        mShowTextColor = typeof(CombatHUDWeaponSlot).GetMethod("ShowTextColor", BindingFlags.Instance | BindingFlags.NonPublic);
+#else
+        mShowTextColor = typeof(CombatHUDWeaponSlot).GetMethod("ShowTextColor", BindingFlags.Instance | BindingFlags.NonPublic, null, new Type[3] { typeof(Color), typeof(Color), typeof(bool) }, null);
+#endif
         if (mShowTextColor == null) {
-          Log.LogWrite("Can't find CombatHUDWeaponSlot.LookAndColorConstants\n");
-          return false;
-        }
-        mShowTextColorEx = typeof(CombatHUDWeaponSlot).GetMethod("ShowTextColor", BindingFlags.Instance | BindingFlags.NonPublic, null, new Type[3] { typeof(Color), typeof(Color), typeof(bool)}, null);
-        if (mShowTextColorEx == null) {
           Log.LogWrite("Can't find CombatHUDWeaponSlot.ShowTextColor\n");
           return false;
         }
+#if BT1_8
+        mGetWeaponCOILStateColor = typeof(CombatHUDWeaponSlot).GetMethod("GetWeaponCOILStateColor", BindingFlags.Instance | BindingFlags.NonPublic);
+        if (mGetWeaponCOILStateColor == null) {
+          Log.LogWrite("Can't find CombatHUDWeaponSlot.GetWeaponCOILStateColor\n");
+          return false;
+        }
+#endif
         mGetShotQualityTextColor = typeof(CombatHUDWeaponSlot).GetMethod("GetShotQualityTextColor", BindingFlags.Instance | BindingFlags.NonPublic);
         if (mGetShotQualityTextColor == null) {
           Log.LogWrite("Can't find CombatHUDWeaponSlot.GetShotQualityTextColor\n");
@@ -393,6 +440,23 @@ namespace CustomAmmoCategoriesPatches {
       Log.LogWrite("  result: " + (result==null?"null":result.DisplayName) + "\n");
       return result;
     }
+#if BT1_8
+    public static void ShowTextColor(this CombatHUDWeaponSlot slot, Color color) {
+      Color damageColor = (Color)mGetWeaponCOILStateColor.Invoke(slot, new object[1] { color });
+      mShowTextColor.Invoke(slot, new object[4] { color, damageColor, color, true });
+    }
+    public static void ShowTextColor(this CombatHUDWeaponSlot slot, Color color, Color hitChanceColor) {
+      Color damageColor = (Color)mGetWeaponCOILStateColor.Invoke(slot, new object[1] { color });
+      mShowTextColor.Invoke(slot, new object[4] { color, damageColor, hitChanceColor, true });
+    }
+#else
+    public static void ShowTextColor(this CombatHUDWeaponSlot slot, Color color) {
+      mShowTextColor.Invoke(slot, new object[3] { color, color, true });
+    }
+    public static void ShowTextColor(this CombatHUDWeaponSlot slot, Color color, Color hitChanceColor) {
+      mShowTextColor.Invoke(slot, new object[3] { color, hitChanceColor, true });
+    }
+#endif
     public static float UpdateWeapons(this SelectionStateCommandTargetSinglePoint __instance, Vector3 worldPos) {
       if (__instance.FromButton.Ability.Def.Description.Id != CombatHUDMechwarriorTray_InitAbilityButtons.AbilityName) { return float.NaN; };
       int NumPositionsLocked = (int)pNumPositionsLocked.GetValue(__instance, null);
@@ -437,12 +501,14 @@ namespace CustomAmmoCategoriesPatches {
           if ((slot.DisplayedWeapon.isAMS()) || (isInFiringArc == false) || (distance > slot.DisplayedWeapon.MaxRange) || ((LOFLevel < LineOfFireLevel.LOFObstructed) && (slot.DisplayedWeapon.isIndirectFireCapable() == false))) {
             Log.LogWrite(" " + slot.DisplayedWeapon.UIName + ":disabled\n");
             slot.MainImage.color = LookAndColorConstants.WeaponSlotColors.UnavailableBGColor;
-            mShowTextColor.Invoke(slot, new object[2] { LookAndColorConstants.WeaponSlotColors.UnavailableTextColor, true });
+            //mShowTextColor.Invoke(slot, new object[2] { LookAndColorConstants.WeaponSlotColors.UnavailableTextColor, true });
+            slot.ShowTextColor(LookAndColorConstants.WeaponSlotColors.UnavailableTextColor);
             slot.ToggleButton.childImage.color = LookAndColorConstants.WeaponSlotColors.UnavailableToggleColor;
           } else {
             Log.LogWrite(" " + slot.DisplayedWeapon.UIName + ":enabled\n");
             slot.MainImage.color = LookAndColorConstants.WeaponSlotColors.AvailableBGColor;
-            mShowTextColor.Invoke(slot, new object[2] { LookAndColorConstants.WeaponSlotColors.AvailableTextColor, true });
+            //mShowTextColor.Invoke(slot, new object[2] { LookAndColorConstants.WeaponSlotColors.AvailableTextColor, true });
+            slot.ShowTextColor(LookAndColorConstants.WeaponSlotColors.AvailableTextColor);
             slot.ToggleButton.childImage.color = LookAndColorConstants.WeaponSlotColors.AvailableToggleColor;
             if (AOERange > result) { result = AOERange; };
           }
@@ -450,7 +516,8 @@ namespace CustomAmmoCategoriesPatches {
           if ((slot.DisplayedWeapon.isAMS()) || (slot.DisplayedWeapon.WillFireAtTarget(target))) {
             Log.LogWrite(" " + slot.DisplayedWeapon.UIName + ":disabled\n");
             slot.MainImage.color = LookAndColorConstants.WeaponSlotColors.UnavailableBGColor;
-            mShowTextColor.Invoke(slot, new object[2] { LookAndColorConstants.WeaponSlotColors.UnavailableTextColor, true });
+            //mShowTextColor.Invoke(slot, new object[2] { LookAndColorConstants.WeaponSlotColors.UnavailableTextColor, true });
+            slot.ShowTextColor(LookAndColorConstants.WeaponSlotColors.UnavailableTextColor);
             slot.ToggleButton.childImage.color = LookAndColorConstants.WeaponSlotColors.UnavailableToggleColor;
             slot.ClearHitChance();
           } else {
@@ -459,7 +526,8 @@ namespace CustomAmmoCategoriesPatches {
             Log.LogWrite(" " + slot.DisplayedWeapon.UIName + ":enabled\n");
             slot.MainImage.color = LookAndColorConstants.WeaponSlotColors.AvailableBGColor;
             Color hitChanceColor = (Color)mGetShotQualityTextColor.Invoke(slot, new object[1] { hitChance });
-            mShowTextColorEx.Invoke(slot, new object[3] { LookAndColorConstants.WeaponSlotColors.SelectedTextColor, hitChanceColor, true });
+            //mShowTextColor.Invoke(slot, new object[3] { LookAndColorConstants.WeaponSlotColors.SelectedTextColor, hitChanceColor, true });
+            slot.ShowTextColor(LookAndColorConstants.WeaponSlotColors.SelectedTextColor,hitChanceColor);
             //this.ShowTextColor(this.LookAndColorConstants.WeaponSlotColors.SelectedTextColor, this.GetShotQualityTextColor(this.HitChance), true);
             //mShowTextColor.Invoke(slot, new object[2] { LookAndColorConstants.WeaponSlotColors.AvailableTextColor, true });
             slot.ToggleButton.childImage.color = LookAndColorConstants.WeaponSlotColors.AvailableToggleColor;
@@ -470,7 +538,7 @@ namespace CustomAmmoCategoriesPatches {
       return result;
     }
     public static void Postfix(SelectionStateCommandTargetSinglePoint __instance, Vector3 worldPos) {
-      __instance.UpdateWeapons(worldPos);
+      //__instance.UpdateWeapons(worldPos);
     }
   }
   public class TerrainAttackDeligate {

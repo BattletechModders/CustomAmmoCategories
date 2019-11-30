@@ -7,6 +7,7 @@ using System.Net;
 using System.IO;
 using Newtonsoft.Json;
 using System.Reflection;
+using BattleTech;
 
 namespace CustAmmoCategories {
   public class ThreadWork {
@@ -134,11 +135,33 @@ namespace CustAmmoCategories {
           if ((gameState.SimGameMode != BattleTech.SimGameState.SimGameType.CAREER) && (gameState.SimGameMode != BattleTech.SimGameState.SimGameType.KAMEA_CAMPAIGN)) {
             jresp["error"] = "Неправильный режим компании:" + gameState.SimGameMode.ToString();
           }
-          var factions = gameState.FactionsDict;
-          CustomAmmoCategoriesLog.Log.LogWrite("Получен список фракций\n");
+#if BT1_8
+          var factions = FactionEnumeration.FactionList;
+          CustomAmmoCategoriesLog.Log.LogWrite("FactionEnumeration\n");
           foreach (var pFaction in factions) {
-            jresp[pFaction.Key.ToString()] = gameState.GetRawReputation(pFaction.Key).ToString();
+            jresp[pFaction.Name] = gameState.GetRawReputation(pFaction).ToString();
+            CustomAmmoCategoriesLog.Log.M.WL(1, pFaction.Name + ":" + pFaction.ID);
           }
+          foreach (var faction in gameState.DataManager.Factions) {
+            CustomAmmoCategoriesLog.Log.M.WL(1,faction.Key+":"+faction.Value.ID+":"+faction.Value.FactionValue.Name);
+          }
+          CustomAmmoCategoriesLog.Log.M.WL(0, "WeaponCategoryEnumeration");
+          foreach (EnumValue ev in WeaponCategoryEnumeration.WeaponCategoryList) {
+            CustomAmmoCategoriesLog.Log.M.WL(1, ev.Name+":"+ev.ID);
+          }
+          CustomAmmoCategoriesLog.Log.M.WL(0, "AmmoCategoryEnumeration");
+          foreach (EnumValue ev in AmmoCategoryEnumeration.AmmoCategoryList) {
+            CustomAmmoCategoriesLog.Log.M.WL(1, ev.Name + ":" + ev.ID);
+          }
+          CustomAmmoCategoriesLog.Log.M.WL(0, "AmmunitionTypeEnumeration");
+          foreach (EnumValue ev in AmmunitionTypeEnumeration.AmmunitionTypeList) {
+            CustomAmmoCategoriesLog.Log.M.WL(1, ev.Name + ":" + ev.ID);
+          }
+          CustomAmmoCategoriesLog.Log.M.WL(0, "ContractTypeEnumeration");
+          foreach (EnumValue ev in ContractTypeEnumeration.ContractTypeValueList) {
+            CustomAmmoCategoriesLog.Log.M.WL(1, ev.Name + ":" + ev.ID);
+          }
+#endif
           SendResponce(ref response, jresp);
           continue;
         }
@@ -165,14 +188,16 @@ namespace CustAmmoCategories {
             if ((gameState.SimGameMode != BattleTech.SimGameState.SimGameType.CAREER) && (gameState.SimGameMode != BattleTech.SimGameState.SimGameType.KAMEA_CAMPAIGN)) {
               jresp["error"] = "Неправильный режим компании:" + gameState.SimGameMode.ToString();
             }
-            var factions = gameState.FactionsDict;
+#if BT1_8
+            var factions = FactionEnumeration.FactionList;
             CustomAmmoCategoriesLog.Log.LogWrite("Получен список фракций\n");
             foreach (var pFaction in factions) {
-              if (setrep.faction.Equals(pFaction.Key.ToString())) {
-                gameState.SetReputation(pFaction.Key, setrep.reputation, BattleTech.StatCollection.StatOperation.Set);
+              if (setrep.faction.Equals(pFaction.Name)) {
+                gameState.SetReputation(pFaction, setrep.reputation, BattleTech.StatCollection.StatOperation.Set);
               }
-              jresp[pFaction.Key.ToString()] = gameState.GetRawReputation(pFaction.Key).ToString();
+              jresp[pFaction.Name] = gameState.GetRawReputation(pFaction).ToString();
             }
+#endif
             SendResponce(ref response, jresp);
             continue;
           }
@@ -356,7 +381,7 @@ namespace CustAmmoCategories {
             try {
               if (itm.type == BattleTech.ShopItemType.Mech) {
                 gameState.CurSystem.SystemShop.ActiveInventory.Add(new BattleTech.ShopDefItem(itm.name, BattleTech.ShopItemType.Mech, 0.0f, itm.count, false, false, itm.price));
-                //gameState.AddFunds(itm.price);
+                gameState.AddFunds(itm.price);
               } else {
                 gameState.AddFromShopDefItem(new BattleTech.ShopDefItem(itm.name, itm.type, 0.0f, itm.count, false, false, itm.price));
               }

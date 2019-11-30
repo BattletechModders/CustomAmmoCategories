@@ -283,7 +283,7 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
     // ============ Logging ============
 
     internal static string ModLogDir = ""; // A static variable for roll log
-    internal static Logger ModLog = BattleMod.BTML_LOG;
+    internal static Logger ModLog = null;
 
     public static void Stacktrace() { Info(Logger.Stacktrace); }
     public static void Trace(object message = null, params object[] args) { ModLog.Trace(message, args); }

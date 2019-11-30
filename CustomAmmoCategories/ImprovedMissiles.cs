@@ -86,6 +86,8 @@ namespace CustAmmoCategoriesPatches {
     public static void Postfix(MissileLauncherEffect __instance) {
       Log.LogWrite("MissileLauncherEffect.SetupMissiles " + __instance.weapon.defId + "\n");
       if (__instance.weapon.isImprovedBallistic() == false) { return; };
+      BaseHardPointAnimationController animation = __instance.weapon.HardpointAnimator();
+      if (animation != null) { animation.PrefireAnimation(); };
       float firingIntervalM = __instance.weapon.MissileFiringIntervalMultiplier();
       float volleyIntervalM = __instance.weapon.MissileVolleyIntervalMultiplier();
       if (firingIntervalM > CustomAmmoCategories.Epsilon) {
@@ -107,6 +109,23 @@ namespace CustAmmoCategoriesPatches {
   public class MissileScaleInfo {
     public Vector3 projectile;
     public MissileScaleInfo(Vector3 pr) {this.projectile = pr;}
+  }
+  [HarmonyPatch(typeof(MissileLauncherEffect))]
+  [HarmonyPatch("Update")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { })]
+  public static class MissileLauncherEffect_Update {
+    //public static Dictionary<MissileEffect, MissileScaleInfo> originalScale = new Dictionary<MissileEffect, MissileScaleInfo>();
+    public static bool Prefix(MissileLauncherEffect __instance) {
+      if ((__instance.currentState == WeaponEffect.WeaponEffectState.PreFiring)&&(__instance.t() >= 1f)) {
+        if (__instance.weapon.isImprovedBallistic() == false) { return true; }
+        BaseHardPointAnimationController animation = __instance.weapon.HardpointAnimator();
+        if (animation == null) { return true; }
+        if (animation.isPrefireAnimCompleete()) { return true; }
+        return false;
+      }
+      return true;
+    }
   }
   [HarmonyPatch(typeof(WeaponEffect))]
   [HarmonyPatch("InitProjectile")]
@@ -199,8 +218,10 @@ namespace CustAmmoCategoriesPatches {
       Log.LogWrite("MissileEffect.ClearMissiles " + __instance.weapon.defId + "\n");
       if (__instance.weapon.isImprovedBallistic() == false) { return true; };
       //foreach(MissileEffect missile in __instance.missiles) {
-        //missile.restoreScale();
+      //missile.restoreScale();
       //}
+      BaseHardPointAnimationController animation = __instance.weapon.HardpointAnimator();
+      if (animation != null) { animation.PostfireAnimation(); };
       Log.LogWrite(" clearing volley info\n");
       __instance.ClearVolleyInfo();
       return true;
@@ -378,6 +399,10 @@ namespace CustAmmoCategoriesPatches {
     public static void t(this MissileLauncherEffect launcher, float value) {
       if (ft == null) { return; }
       ft.SetValue(launcher,value);
+    }
+    public static float t(this MissileLauncherEffect launcher) {
+      if (ft == null) { return 0f; }
+      return (float)ft.GetValue(launcher);
     }
     public static void rate(this WeaponEffect launcher, float value) {
       if (frate == null) { return; }

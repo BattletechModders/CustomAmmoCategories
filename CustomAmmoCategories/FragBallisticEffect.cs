@@ -187,13 +187,15 @@ namespace CustAmmoCategories {
       base.OnPreFireComplete();
       this.PlayProjectile();
     }
-
+#if BT1_8
+    protected override void OnImpact(float hitDamage = 0.0f, float structureDamage = 0f) {
+      base.OnImpact(0.0f, 0f);
+    }
+#else
     protected override void OnImpact(float hitDamage = 0.0f) {
-      //if ((double)hitDamage <= 1.0 / 1000.0)
-      //  return;
       base.OnImpact(0.0f);
     }
-
+#endif
     public void OnBulletImpact(FragBulletEffect bullet) {
       //this.OnImpact(this.weapon.DamagePerShotAdjusted(this.weapon.parent.occupiedDesignMask));
       /*if (this.hitInfo.hitLocations[this.hitIndex] == 0 || this.hitInfo.hitLocations[this.hitIndex] == 65536 || bullet.bulletIdx >= this.weapon.ProjectilesPerShot - 1)
@@ -209,7 +211,7 @@ namespace CustAmmoCategories {
       base.OnComplete();
       Log.LogWrite("FragBallisticEffect.Complete\n");
       if (this.parentWeaponEffect != null) {
-        int hitIndex = (int)typeof(WeaponEffect).GetField("hitIndex", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(this.parentWeaponEffect);
+        int hitIndex = this.parentWeaponEffect.HitIndex();
         Log.LogWrite(" parent weapon found "+this.parentWeaponEffect.hitInfo.attackWeaponIndex+":"+ hitIndex + "\n");
         this.parentWeaponEffect.PublishWeaponCompleteMessage();
       }

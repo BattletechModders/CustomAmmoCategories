@@ -20,6 +20,20 @@ namespace CustAmmoCategories {
       return true;
     }
   }
+  [HarmonyPatch(typeof(MechComponent))]
+  [HarmonyPatch("InitStats")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { })]
+  public static class MechComponent_InitStats {
+    public static bool checkExistance(this StatCollection collection, string name) {
+      return CustomAmmoCategories.checkExistance(collection, name);
+    }
+    public static void Postfix(MechComponent __instance) {
+      if(__instance.StatCollection.checkExistance(CustomAmmoCategories.Settings.RemoveFromCritRollStatName) == false) {
+        __instance.StatCollection.AddStatistic<bool>(CustomAmmoCategories.Settings.RemoveFromCritRollStatName, false);
+      }       
+    }
+  }
   public static class AdvancedCriticalProcessor {
     public static string GetArmorLocationName(this ICombatant combatant, int aLoc) {
       Mech mech = combatant as Mech;
@@ -201,7 +215,11 @@ namespace CustAmmoCategories {
                 }
               case ComponentDamageLevel.Destroyed:
                 Log.C.WL(1, string.Format("SEQ:{0}: WEAP:{1} Loc:{2} Critical: {3} prev damage state: {4}", (object)hitInfo.attackSequenceId, (object)hitInfo.attackWeaponIndex, (object)location.ToString(), (object)componentInSlot.Name, (object)damageLevel));
-                componentInSlot.DamageComponent(hitInfo, damageLevel, true);
+                try {
+                  componentInSlot.DamageComponent(hitInfo, damageLevel, true);
+                } catch (Exception e) {
+                  Log.C.TWL(0,e.ToString(),true);
+                }
                 Log.C.WL(1, string.Format("SEQ:{0}: WEAP:{1} Loc:{2} Critical: {3} new damage state: {4}", (object)hitInfo.attackSequenceId, (object)hitInfo.attackWeaponIndex, (object)location.ToString(), (object)componentInSlot.Name, (object)damageLevel));
                 break;
               default:

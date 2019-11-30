@@ -47,7 +47,7 @@ namespace CustAmmoCategories {
       this.preFireSFX = original.preFireSFX;
       this.Combat = (CombatGameState)typeof(WeaponEffect).GetField("Combat", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(original);
       this.hitInfo = original.hitInfo;
-      this.hitIndex = (int)typeof(WeaponEffect).GetField("hitIndex", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(original);
+      this.hitIndex = original.HitIndex();
       this.emitterIndex = (int)typeof(WeaponEffect).GetField("emitterIndex", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(original);
       this.numberOfEmitters = (int)typeof(WeaponEffect).GetField("numberOfEmitters", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(original);
       this.subEffect = original.subEffect;

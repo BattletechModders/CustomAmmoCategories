@@ -300,15 +300,30 @@ namespace CustAmmoCategories {
       base.OnPreFireComplete();
       this.PlayProjectile();
     }
-
+#if BT1_8
+    protected override void OnImpact(float hitDamage = 0.0f, float structureDamage = 0f) {
+#else
     protected override void OnImpact(float hitDamage = 0.0f) {
+#endif
       //base.OnImpact(this.weapon.DamagePerShotAdjusted(this.weapon.parent.occupiedDesignMask));
       Log.LogWrite("MultiShotBeamEffect.OnImpact wi:" + this.hitInfo.attackWeaponIndex + " hi:" + this.hitInfo + " bi:" + this.beamIdx + " prime:" + this.primeBeam + "\n");
       if (this.primeBeam) {
         Log.LogWrite(" prime. Damage message fired\n");
         float damage = this.weapon.DamagePerShotAdjusted(this.weapon.parent.occupiedDesignMask);
-        if (this.weapon.DamagePerPallet()&&(this.weapon.DamageNotDivided() == false)) { damage /= this.weapon.ProjectilesPerShot; };
+#if BT1_8
+        float apDamage = this.weapon.StructureDamagePerShotAdjusted(this.weapon.parent.occupiedDesignMask);
+#endif
+        if (this.weapon.DamagePerPallet()&&(this.weapon.DamageNotDivided() == false)) {
+          damage /= this.weapon.ProjectilesPerShot;
+#if BT1_8
+          apDamage /= this.weapon.ProjectilesPerShot;
+#endif
+        };
+#if BT1_8
+        base.OnImpact(damage, apDamage);
+#else
         base.OnImpact(damage);
+#endif
       } else {
         Log.LogWrite(" no prime. No damage message fired\n");
       }

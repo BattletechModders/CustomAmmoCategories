@@ -59,10 +59,27 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
          hitChance?.Clear();
       }
 
-      // ============ Zombie ============
+    // ============ Zombie ============
+#if BT1_8
+    public static void FixZombieMech ( Mech __instance, ref float totalArmorDamage, ref float directStructureDamage, ArmorLocation aLoc ) { try {
+        if ( aLoc == ArmorLocation.None || aLoc == ArmorLocation.Invalid ) return;
+         float armour = __instance.GetCurrentArmor( aLoc );
+         if ( armour >= totalArmorDamage) return;
+         KillZombie( "mech", __instance.DisplayName, armour + __instance.GetCurrentStructure( MechStructureRules.GetChassisLocationFromArmorLocation( aLoc ) ), ref totalArmorDamage);
+      }                 catch ( Exception ex ) { Error( ex ); } }
 
-      public static void FixZombieMech ( Mech __instance, ref float totalDamage, ArmorLocation aLoc ) { try {
-         if ( aLoc == ArmorLocation.None || aLoc == ArmorLocation.Invalid ) return;
+      public static void FixZombieVehicle ( Vehicle __instance, ref float totalArmorDamage, ref float directStructureDamage, VehicleChassisLocations vLoc ) { try {
+         if ( vLoc == VehicleChassisLocations.None || vLoc == VehicleChassisLocations.Invalid ) return;
+         KillZombie( "vehicle", __instance.DisplayName, __instance.GetCurrentArmor( vLoc ) + __instance.GetCurrentStructure( vLoc ), ref totalArmorDamage);
+      }                 catch ( Exception ex ) { Error( ex ); } }
+
+      public static void FixZombieTurret ( Turret __instance, ref float totalArmorDamage, ref float directStructureDamage, BuildingLocation bLoc ) { try {
+         if ( bLoc == BuildingLocation.None || bLoc == BuildingLocation.Invalid ) return;
+         KillZombie( "turret", __instance.DisplayName, __instance.GetCurrentArmor( bLoc ) + __instance.GetCurrentStructure( bLoc ), ref totalArmorDamage);
+      }                 catch ( Exception ex ) { Error( ex ); } }
+#else
+    public static void FixZombieMech ( Mech __instance, ref float totalDamage, ArmorLocation aLoc ) { try {
+        if ( aLoc == ArmorLocation.None || aLoc == ArmorLocation.Invalid ) return;
          float armour = __instance.GetCurrentArmor( aLoc );
          if ( armour >= totalDamage ) return;
          KillZombie( "mech", __instance.DisplayName, armour + __instance.GetCurrentStructure( MechStructureRules.GetChassisLocationFromArmorLocation( aLoc ) ), ref totalDamage );
@@ -78,11 +95,13 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
          KillZombie( "turret", __instance.DisplayName, __instance.GetCurrentArmor( bLoc ) + __instance.GetCurrentStructure( bLoc ), ref totalDamage );
       }                 catch ( Exception ex ) { Error( ex ); } }
 
-      public static void FixZombieBuilding ( BattleTech.Building __instance, ref float totalDamage ) { try {
-         KillZombie( "building", __instance.DisplayName, __instance.CurrentStructure, ref totalDamage );
-      }                 catch ( Exception ex ) { Error( ex ); } }
-
-      private static void KillZombie ( string type, string name, float HP, ref float totalDamage ) {
+#endif
+    public static void FixZombieBuilding(BattleTech.Building __instance, ref float totalDamage) {
+      try {
+        KillZombie("building", __instance.DisplayName, __instance.CurrentStructure, ref totalDamage);
+      } catch (Exception ex) { Error(ex); }
+    }
+    private static void KillZombie ( string type, string name, float HP, ref float totalDamage ) {
          float newHP = HP - totalDamage;
          if ( newHP >= 1 || newHP <= 0 ) return;
          Verbo( "Upgrading damage dealt to {1} by {2} to kill zombie {0}", type, name, newHP );

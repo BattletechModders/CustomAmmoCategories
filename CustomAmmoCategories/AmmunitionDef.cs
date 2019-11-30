@@ -166,6 +166,7 @@ namespace CustAmmoCategories {
     public float AOEDamage { get; set; }
     public float AOEHeatDamage { get; set; }
     public float AOEInstability { get; set; }
+    public TripleBoolean AOEEffectsFalloff { get; set; }
     public TripleBoolean AlwaysIndirectVisuals { get; set; }
     public string IFFDef { get; set; }
     public string LongVFXOnImpact { get; set; }
@@ -217,6 +218,7 @@ namespace CustAmmoCategories {
     public float ColorSpeedChange { get; set; }
     public ColorChangeRule ColorChangeRule { get; set; }
     public float APDamage { get; set; }
+    public float APDamageMultiplier { get; set; }
     public float APCriticalChanceMultiplier { get; set; }
     public float APArmorShardsMod { get; set; }
     public float APMaxArmorThickness { get; set; }
@@ -225,6 +227,9 @@ namespace CustAmmoCategories {
     public TripleBoolean isHeatVariation { get; set; }
     public TripleBoolean isStabilityVariation { get; set; }
     public TripleBoolean isDamageVariation { get; set; }
+    public float ClusteringModifier { get; set;}
+    public float PrefireAnimationSpeedMod { get; set; }
+    public float FireAnimationSpeedMod { get; set; }
     public ExtAmmunitionDef() {
       Id = "NotSet";
       AccuracyModifier = 0;
@@ -322,6 +327,11 @@ namespace CustAmmoCategories {
       isHeatVariation = TripleBoolean.NotSet;
       isDamageVariation = TripleBoolean.NotSet;
       isStabilityVariation = TripleBoolean.NotSet;
+      APDamageMultiplier = 1f;
+      ClusteringModifier = 0f;
+      AOEEffectsFalloff = TripleBoolean.NotSet;
+      PrefireAnimationSpeedMod = 1f;
+      FireAnimationSpeedMod = 1f;
     }
   }
 }
@@ -364,6 +374,10 @@ namespace CustomAmmoCategoriesPatches {
         extAmmoDef.DamagePerShot = (float)defTemp["DamagePerShot"];
         defTemp.Remove("DamagePerShot");
       }
+      if (defTemp["ClusteringModifier"] != null) {
+        extAmmoDef.ClusteringModifier = (float)defTemp["ClusteringModifier"];
+        defTemp.Remove("ClusteringModifier");
+      }
       if (defTemp["HeatDamagePerShot"] != null) {
         extAmmoDef.HeatDamagePerShot = (float)defTemp["HeatDamagePerShot"];
         defTemp.Remove("HeatDamagePerShot");
@@ -395,6 +409,14 @@ namespace CustomAmmoCategoriesPatches {
       if (defTemp["ProjectileSpeedMultiplier"] != null) {
         extAmmoDef.ProjectileSpeedMultiplier = (float)defTemp["ProjectileSpeedMultiplier"];
         defTemp.Remove("ProjectileSpeedMultiplier");
+      }
+      if (defTemp["FireAnimationSpeedMod"] != null) {
+        extAmmoDef.FireAnimationSpeedMod = (float)defTemp["FireAnimationSpeedMod"];
+        defTemp.Remove("FireAnimationSpeedMod");
+      }
+      if (defTemp["PrefireAnimationSpeedMod"] != null) {
+        extAmmoDef.PrefireAnimationSpeedMod = (float)defTemp["PrefireAnimationSpeedMod"];
+        defTemp.Remove("PrefireAnimationSpeedMod");
       }
       if (defTemp["AIBattleValue"] != null) {
         extAmmoDef.AIBattleValue = (int)defTemp["AIBattleValue"];
@@ -492,6 +514,10 @@ namespace CustomAmmoCategoriesPatches {
       if (defTemp["BallisticDamagePerPallet"] != null) {
         extAmmoDef.BallisticDamagePerPallet = ((bool)defTemp["BallisticDamagePerPallet"] == true) ? TripleBoolean.True : TripleBoolean.False;
         defTemp.Remove("BallisticDamagePerPallet");
+      }
+      if (defTemp["AOEEffectsFalloff"] != null) {
+        extAmmoDef.AOEEffectsFalloff = ((bool)defTemp["AOEEffectsFalloff"] == true) ? TripleBoolean.True : TripleBoolean.False;
+        defTemp.Remove("AOEEffectsFalloff");
       }
       if (defTemp["CantHitUnaffecedByPathing"] != null) {
         extAmmoDef.CantHitUnaffecedByPathing = ((bool)defTemp["CantHitUnaffecedByPathing"] == true) ? TripleBoolean.True : TripleBoolean.False;
@@ -733,8 +759,8 @@ namespace CustomAmmoCategoriesPatches {
         extAmmoDef.Unguided = ((bool)defTemp["Unguided"] == true) ? TripleBoolean.True : TripleBoolean.False;
         defTemp.Remove("Unguided");
         if (extAmmoDef.Unguided == TripleBoolean.True) {
-          extAmmoDef.AlwaysIndirectVisuals = TripleBoolean.False;
-          extAmmoDef.IndirectFireCapable = TripleBoolean.False;
+          //extAmmoDef.AlwaysIndirectVisuals = TripleBoolean.False;
+          //extAmmoDef.IndirectFireCapable = TripleBoolean.False;
         }
       }
       if (defTemp["AOECapable"] != null) {
@@ -747,6 +773,10 @@ namespace CustomAmmoCategoriesPatches {
       if (defTemp["DamageMultiplier"] != null) {
         extAmmoDef.DamageMultiplier = (float)defTemp["DamageMultiplier"];
         defTemp.Remove("DamageMultiplier");
+      }
+      if (defTemp["APDamageMultiplier"] != null) {
+        extAmmoDef.APDamageMultiplier = (float)defTemp["APDamageMultiplier"];
+        defTemp.Remove("APDamageMultiplier");
       }
       if (defTemp["HeatMultiplier"] != null) {
         extAmmoDef.HeatMultiplier = (float)defTemp["HeatMultiplier"];
