@@ -412,131 +412,25 @@ namespace CustAmmoCategories {
       }
     }*/
     public static float StrayRange(this Weapon weapon) {
-      return getWeaponSpreadRange(weapon);
+      return weapon.exDef().SpreadRange + weapon.ammo().SpreadRange + weapon.mode().SpreadRange;
     }
-    public static float getWeaponSpreadRange(Weapon weapon) {
-      float result = 0f;
-      if (CustomAmmoCategories.checkExistance(weapon.StatCollection, CustomAmmoCategories.AmmoIdStatName) == true) {
-        string CurrentAmmoId = weapon.StatCollection.GetStatistic(CustomAmmoCategories.AmmoIdStatName).Value<string>();
-        ExtAmmunitionDef extAmmoDef = CustomAmmoCategories.findExtAmmo(CurrentAmmoId);
-        result += extAmmoDef.SpreadRange;
-      }
-      if (CustomAmmoCategories.checkExistance(weapon.StatCollection, CustomAmmoCategories.WeaponModeStatisticName) == true) {
-        ExtWeaponDef extWeapon = CustomAmmoCategories.getExtWeaponDef(weapon.defId);
-        result += extWeapon.SpreadRange;
-        string modeId = weapon.StatCollection.GetStatistic(CustomAmmoCategories.WeaponModeStatisticName).Value<string>();
-        if (extWeapon.Modes.ContainsKey(modeId)) {
-          WeaponMode mode = extWeapon.Modes[modeId];
-          result += mode.SpreadRange;
-        }
-      }
-      return result;
-    }
-    public static float SpreadRange(this Weapon weapon) {
-      return CustomAmmoCategories.getWeaponSpreadRange(weapon);
-    }
-    public static bool isWeaponAOECapable(Weapon weapon) {
-      Log.LogWrite("isWeaponAOECapable(" + weapon.UIName + "/" + weapon.defId + ")\n");
-      bool result = false;
-      if (CustomAmmoCategories.checkExistance(weapon.StatCollection, CustomAmmoCategories.AmmoIdStatName) == true) {
-        string CurrentAmmoId = weapon.StatCollection.GetStatistic(CustomAmmoCategories.AmmoIdStatName).Value<string>();
-        Log.LogWrite(" ammo id " + CurrentAmmoId + "\n");
-        ExtAmmunitionDef extAmmoDef = CustomAmmoCategories.findExtAmmo(CurrentAmmoId);
-        Log.LogWrite(" extAmmoDef.AOECapable " + extAmmoDef.AOECapable + "\n");
-        if (extAmmoDef.AOECapable != TripleBoolean.NotSet) {
-          return extAmmoDef.AOECapable == TripleBoolean.True;
-        }
-      }
-      ExtWeaponDef extWeapon = CustomAmmoCategories.getExtWeaponDef(weapon.defId);
-      Log.LogWrite(" extWeapon.AOECapable " + weapon.defId + " " + extWeapon.AOECapable + "\n");
-      if (extWeapon.AOECapable != TripleBoolean.NotSet) {
-        return extWeapon.AOECapable == TripleBoolean.True;
-      }
-      return result;
-    }
-    public static float getWeaponAOERange(this Weapon weapon) {
-      float result = 0f;
-      if (CustomAmmoCategories.checkExistance(weapon.StatCollection, CustomAmmoCategories.AmmoIdStatName) == true) {
-        string CurrentAmmoId = weapon.StatCollection.GetStatistic(CustomAmmoCategories.AmmoIdStatName).Value<string>();
-        ExtAmmunitionDef extAmmoDef = CustomAmmoCategories.findExtAmmo(CurrentAmmoId);
-        if (extAmmoDef.AOECapable == TripleBoolean.True) {
-          result = extAmmoDef.AOERange;
-        }
-      }
-      ExtWeaponDef extWeapon = CustomAmmoCategories.getExtWeaponDef(weapon.defId);
-      if (extWeapon.AOECapable == TripleBoolean.True) {
-        result = extWeapon.AOERange;
-      }
-      return result;
-    }
-    public static float getWeaponAOEDamage(Weapon weapon) {
-      float result = 0f;
-      if (CustomAmmoCategories.checkExistance(weapon.StatCollection, CustomAmmoCategories.AmmoIdStatName) == true) {
-        string CurrentAmmoId = weapon.StatCollection.GetStatistic(CustomAmmoCategories.AmmoIdStatName).Value<string>();
-        ExtAmmunitionDef extAmmoDef = CustomAmmoCategories.findExtAmmo(CurrentAmmoId);
-        if (extAmmoDef.AOECapable == TripleBoolean.True) {
-          result = extAmmoDef.AOEDamage;
-        }
-      }
-      ExtWeaponDef extWeapon = CustomAmmoCategories.getExtWeaponDef(weapon.defId);
-      if (extWeapon.AOECapable == TripleBoolean.True) {
-        result = extWeapon.AOEDamage;
-      }
-      return result;
-    }
-    public static float getWeaponAOEHeatDamage(Weapon weapon) {
-      float result = 0f;
-      if (CustomAmmoCategories.checkExistance(weapon.StatCollection, CustomAmmoCategories.AmmoIdStatName) == true) {
-        string CurrentAmmoId = weapon.StatCollection.GetStatistic(CustomAmmoCategories.AmmoIdStatName).Value<string>();
-        ExtAmmunitionDef extAmmoDef = CustomAmmoCategories.findExtAmmo(CurrentAmmoId);
-        if (extAmmoDef.AOECapable == TripleBoolean.True) {
-          result = extAmmoDef.AOEHeatDamage;
-        }
-      }
-      ExtWeaponDef extWeapon = CustomAmmoCategories.getExtWeaponDef(weapon.defId);
-      if (extWeapon.AOECapable == TripleBoolean.True) {
-        result = extWeapon.AOEHeatDamage;
-      }
-      return result;
-    }
-    public static float AOEInstability(this Weapon weapon) {
-      float result = 0f;
-      if (CustomAmmoCategories.checkExistance(weapon.StatCollection, CustomAmmoCategories.AmmoIdStatName) == true) {
-        string CurrentAmmoId = weapon.StatCollection.GetStatistic(CustomAmmoCategories.AmmoIdStatName).Value<string>();
-        ExtAmmunitionDef extAmmoDef = CustomAmmoCategories.findExtAmmo(CurrentAmmoId);
-        if (extAmmoDef.AOECapable == TripleBoolean.True) {
-          result = extAmmoDef.AOEInstability;
-        }
-      }
-      ExtWeaponDef extWeapon = CustomAmmoCategories.getExtWeaponDef(weapon.defId);
-      if (extWeapon.AOECapable == TripleBoolean.True) {
-        result = extWeapon.AOEInstability;
-      }
-      if (result < CustomAmmoCategories.Epsilon) { result = weapon.Instability(); };
-      return result;
+    public static bool AOECapable(this Weapon weapon) {
+      ExtAmmunitionDef ammo = weapon.ammo();
+      if (ammo.AOECapable != TripleBoolean.NotSet) { return ammo.AOECapable == TripleBoolean.True; }
+      return weapon.exDef().AOECapable == TripleBoolean.True;
     }
     public static string SpesialOfflineIFF = "_IFFOfflne";
-    public static string getWeaponIFFTransponderDef(Weapon weapon) {
-      string result = "";
-      ExtWeaponDef extWeapon = CustomAmmoCategories.getExtWeaponDef(weapon.defId);
-      if (CustomAmmoCategories.checkExistance(weapon.StatCollection, CustomAmmoCategories.AmmoIdStatName) == true) {
-        string CurrentAmmoId = weapon.StatCollection.GetStatistic(CustomAmmoCategories.AmmoIdStatName).Value<string>();
-        ExtAmmunitionDef extAmmoDef = CustomAmmoCategories.findExtAmmo(CurrentAmmoId);
-        result = extWeapon.IFFDef;
-      }
-      if (string.IsNullOrEmpty(result)) {
-        if (CustomAmmoCategories.checkExistance(weapon.StatCollection, CustomAmmoCategories.WeaponModeStatisticName) == true) {
-          string modeId = weapon.StatCollection.GetStatistic(CustomAmmoCategories.WeaponModeStatisticName).Value<string>();
-          if (extWeapon.Modes.ContainsKey(modeId)) {
-            WeaponMode mode = extWeapon.Modes[modeId];
-            result = mode.IFFDef;
-          }
+    public static string IFFTransponderDef(this Weapon weapon) {
+      string result = string.Empty;
+      WeaponMode mode = weapon.mode();
+      if (string.IsNullOrEmpty(mode.IFFDef) == false) { result = mode.IFFDef; } else {
+        ExtAmmunitionDef ammo = weapon.ammo();
+        if (string.IsNullOrEmpty(ammo.IFFDef) == false) { result = ammo.IFFDef; } else {
+          ExtWeaponDef def = weapon.exDef();
+          if (string.IsNullOrEmpty(def.IFFDef) == false) { result = def.IFFDef; };
         }
       }
-      if (string.IsNullOrEmpty(result)) {
-        result = extWeapon.IFFDef;
-      }
-      if (result == CustomAmmoCategories.SpesialOfflineIFF) { result = ""; };
+      if (result == CustomAmmoCategories.SpesialOfflineIFF) { result = string.Empty; };
       return result;
     }
     public static bool isCombatantHaveIFFTransponder(ICombatant combatant, string IFFDefId) {
@@ -951,8 +845,8 @@ namespace CustAmmoCategories {
         if (!__instance.shotsDestroyFlimsyObjects) {
           return true;
         }
-        if (CustomAmmoCategories.isWeaponAOECapable(__instance.weapon) == false) { return true; };
-        float AOERange = CustomAmmoCategories.getWeaponAOERange(__instance.weapon);
+        if (__instance.weapon.AOECapable() == false) { return true; };
+        float AOERange = __instance.weapon.AOERange();
         Vector3 endPos = (Vector3)typeof(WeaponEffect).GetField("endPos", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(__instance);
         CombatGameState Combat = (CombatGameState)typeof(WeaponEffect).GetField("Combat", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(__instance);
         foreach (Collider collider in Physics.OverlapSphere(endPos, AOERange, -5, QueryTriggerInteraction.Ignore)) {
@@ -973,9 +867,9 @@ namespace CustAmmoCategories {
     public static class MissileEffect_PlayImpactScorch {
       [HarmonyPriority(Priority.First)]
       public static void Postfix(WeaponEffect __instance) {
-        if (CustomAmmoCategories.isWeaponAOECapable(__instance.weapon) == false) { return; };
+        if (__instance.weapon.AOECapable() == false) { return; };
         int hitIndex = __instance.HitIndex();
-        float AOERange = CustomAmmoCategories.getWeaponAOERange(__instance.weapon);
+        float AOERange = __instance.weapon.AOERange();
         Vector3 endPos = (Vector3)typeof(WeaponEffect).GetField("endPos", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(__instance);
         CombatGameState Combat = (CombatGameState)typeof(WeaponEffect).GetField("Combat", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(__instance);
         float num3 = AOERange;

@@ -22,7 +22,7 @@ namespace CustAmmoCategories {
     public string projectileSoundEvent;
     public string fireCompleteStopEvent;
     private float floatieInterval;
-    private float nextFloatie;
+    //private float nextFloatie;
     protected override int ImpactPrecacheCount {
       get {
         return 5;
@@ -59,7 +59,7 @@ namespace CustAmmoCategories {
       this.preFireSoundEvent = original.preFireSoundEvent;
       this.projectileSoundEvent = original.projectileSoundEvent;
       this.fireCompleteStopEvent = original.fireCompleteStopEvent;
-      this.nextFloatie = 0.0f;
+      //this.nextFloatie = 0.0f;
     }
     public override void Fire(WeaponHitInfo hitInfo, int hitIndex = 0, int emitterIndex = 0) {
       Log.LogWrite("MultiShotBurstBallisticEffect.Fire " + hitInfo.attackWeaponIndex + " " + hitIndex + " emitter:" + emitterIndex + " ep:" + hitInfo.hitPositions[hitIndex] + "\n");
@@ -73,7 +73,7 @@ namespace CustAmmoCategories {
       this.endPos = endPos;
       hitInfo.hitPositions[hitIndex] = endPos;
       Log.LogWrite(" endPos restored:" + this.endPos + "\n");
-      this.nextFloatie = 0.0f;
+      //this.nextFloatie = 0.0f;
       this.impactTime = Mathf.Clamp01(this.impactTime);
       this.duration = this.projectileSpeed;
       if ((double)this.duration > 4.0)

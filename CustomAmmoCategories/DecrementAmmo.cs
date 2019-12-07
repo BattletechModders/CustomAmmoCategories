@@ -51,7 +51,7 @@ namespace CustAmmoCategories {
       CustomAmmoCategoriesLog.Log.LogWrite("Weapon.DecrementAmmo " + instance.UIName + " real fire count:" + StreakHitCount + "\n");
       int result = 0;
       bool noAmmoUsing = false;
-      if (CustomAmmoCategories.getWeaponCustomAmmoCategory(instance).Index == CustomAmmoCategories.NotSetCustomAmmoCategoty.Index) { noAmmoUsing = true; };
+      if (instance.CustomAmmoCategory().Index == CustomAmmoCategories.NotSetCustomAmmoCategoty.Index) { noAmmoUsing = true; };
       if(instance.parent != null){
         if(instance.parent is Turret) {
           if (instance.parent.DisplayName.Contains("Hardened")) { //TODO: Check localization
@@ -79,7 +79,7 @@ namespace CustAmmoCategories {
         if (StreakHitCount != 0) instance.StatCollection.ModifyStat<int>(instance.uid, stackItemUID, "InternalAmmo", StatCollection.StatOperation.Set, 0, -1, true);
       }
       string CurrentAmmoId = "";
-      if (CustomAmmoCategories.checkExistance(instance.StatCollection, CustomAmmoCategories.AmmoIdStatName) == true) {
+      if (instance.StatCollection.ContainsStatistic(CustomAmmoCategories.AmmoIdStatName) == true) {
         CurrentAmmoId = instance.StatCollection.GetStatistic(CustomAmmoCategories.AmmoIdStatName).Value<string>();
       }else {
         if(instance.ammoBoxes.Count > 0) {

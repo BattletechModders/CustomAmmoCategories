@@ -45,7 +45,8 @@ namespace CustAmmoCategories {
       Weapon weapon = advInfo.weapon;
       bool effectPerHit = weapon.StatusEffectsPerHit();
       if ((advRes.hitLocations.Count > 0) && (!target.IsDead) && (target != null)) {
-        foreach (EffectData statusEffect in CustomAmmoCategories.getWeaponStatusEffects(weapon)) {
+        EffectData[] effects = weapon.StatusEffects();
+        foreach (EffectData statusEffect in effects) {
           if (statusEffect.targetingData.effectTriggerType == EffectTriggerType.OnHit) {
             string effectID = string.Format("OnHitEffect_{0}_{1}", (object)advInfo.Sequence.attacker.GUID, (object)hitInfo.attackSequenceId);
             if (statusEffect.Description == null || statusEffect.Description.Id == null || statusEffect.Description.Name == null) {

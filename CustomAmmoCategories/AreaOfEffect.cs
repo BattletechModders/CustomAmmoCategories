@@ -50,7 +50,7 @@ namespace CustAmmoCategories {
       }
       AdvWeaponHitInfo advInfo = hitInfo.advInfo();
       Weapon weapon = advInfo.weapon;
-      float AOERange = CustomAmmoCategories.getWeaponAOERange(weapon);
+      float AOERange = weapon.AOERange();
       Log.LogWrite("AOE generation started " + advInfo.Sequence.attacker.DisplayName + " " + weapon.defId + " grp:" + hitInfo.attackGroupIndex + " index:" + hitInfo.attackWeaponIndex + " shots:" + advInfo.hits.Count + "\n");
       if (advInfo.hits.Count == 0) { return; };
       if (advInfo.hits.Count != hitInfo.hitLocations.Length) {
@@ -59,10 +59,10 @@ namespace CustAmmoCategories {
       }
       bool HasShells = weapon.HasShells();
       //bool DamagePerPallet = weapon.DamagePerPallet();
-      float AoEDamage = CustomAmmoCategories.getWeaponAOEDamage(weapon);
+      float AoEDamage = weapon.AOEDamage();
       if (AoEDamage < CustomAmmoCategories.Epsilon) { AoEDamage = weapon.DamagePerShot; };
       if (AoEDamage < CustomAmmoCategories.Epsilon) { AoEDamage = 1f; };
-      float AoEHeat = CustomAmmoCategories.getWeaponAOEHeatDamage(weapon);
+      float AoEHeat = weapon.AOEHeatDamage();
       float AoEStability = weapon.AOEInstability();
       float FullAoEDamage = AoEDamage * advInfo.hits.Count;
       Dictionary<ICombatant, Dictionary<int, float>> targetsHitCache = new Dictionary<ICombatant, Dictionary<int, float>>();
@@ -82,7 +82,7 @@ namespace CustAmmoCategories {
         Vector3 hitPosition = advRec.hitPosition;
         List<ICombatant> combatants = new List<ICombatant>();
         List<ICombatant> allCombatants = advInfo.Sequence.attacker.Combat.GetAllCombatants();
-        string IFFDef = CustomAmmoCategories.getWeaponIFFTransponderDef(weapon);
+        string IFFDef = weapon.IFFTransponderDef();
         if (string.IsNullOrEmpty(IFFDef)) { combatants.AddRange(allCombatants); } else {
           HashSet<string> combatantsGuids = new HashSet<string>();
           List<AbstractActor> enemies = advInfo.Sequence.attacker.Combat.GetAllEnemiesOf(advInfo.Sequence.attacker);

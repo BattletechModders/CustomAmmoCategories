@@ -284,6 +284,9 @@ namespace CustAmmoCategories {
     public TripleBoolean DistantVarianceReversed { get; set; }
     public float PrefireAnimationSpeedMod { get; set; }
     public float FireAnimationSpeedMod { get; set; }
+    public TripleBoolean AlwaysIndirectVisuals { get; set; }
+    public float ForbiddenRange { get; set; }
+    public EvasivePipsMods evasivePipsMods { get; set; }
     public ExtWeaponDef() {
       Id = string.Empty;
       StreakEffect = false;
@@ -362,6 +365,9 @@ namespace CustAmmoCategories {
       AOEEffectsFalloff = TripleBoolean.NotSet;
       PrefireAnimationSpeedMod = 1f;
       FireAnimationSpeedMod = 1f;
+      AlwaysIndirectVisuals = TripleBoolean.NotSet;
+      ForbiddenRange = 0f;
+      evasivePipsMods = new EvasivePipsMods();
     }
   }
 }
@@ -440,9 +446,17 @@ namespace CustomAmmoCategoriesPatches {
         extDef.DistantVarianceReversed = ((bool)defTemp["DistantVarianceReversed"] == true) ? TripleBoolean.True : TripleBoolean.False;
         defTemp.Remove("DistantVarianceReversed");
       }
+      if (defTemp["AlwaysIndirectVisuals"] != null) {
+        extDef.AlwaysIndirectVisuals = ((bool)defTemp["AlwaysIndirectVisuals"] == true) ? TripleBoolean.True : TripleBoolean.False;
+        defTemp.Remove("AlwaysIndirectVisuals");
+      }
       if (defTemp["GunneryJammingBase"] != null) {
         extDef.GunneryJammingBase = (float)defTemp["GunneryJammingBase"];
         defTemp.Remove("GunneryJammingBase");
+      }
+      if (defTemp["ForbiddenRange"] != null) {
+        extDef.ForbiddenRange = (float)defTemp["ForbiddenRange"];
+        defTemp.Remove("ForbiddenRange");
       }
       if (defTemp["FireDelayMultiplier"] != null) {
         extDef.FireDelayMultiplier = (float)defTemp["FireDelayMultiplier"];
@@ -495,8 +509,13 @@ namespace CustomAmmoCategoriesPatches {
       if (defTemp["StructureDamage"] != null) {
         extDef.APDamage = (float)defTemp["StructureDamage"];
       }
+      if (defTemp["evasivePipsMods"] != null) {
+        extDef.evasivePipsMods = defTemp["evasivePipsMods"].ToObject<EvasivePipsMods>();
+        defTemp.Remove("evasivePipsMods");
+      }
       if (defTemp["APDamage"] != null) {
         extDef.APDamage = (float)defTemp["APDamage"];
+        defTemp["StructureDamage"] = (float)defTemp["APDamage"];
         defTemp.Remove("APDamage");
       }
       if (defTemp["APCriticalChanceMultiplier"] != null) {

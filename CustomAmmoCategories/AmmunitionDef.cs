@@ -11,6 +11,40 @@ using System.Linq;
 using System.Text;
 
 namespace CustAmmoCategories {
+  public class EvasivePipsMods {
+    public float Damage { get; set; }
+    public float APDamage { get; set; }
+    public float Heat { get; set; }
+    public float Instablility { get; set; }
+    public float GeneratedHeat { get; set; }
+    public float FlatJammingChance { get; set; }
+    public float MinRange { get; set; }
+    public float ShortRange { get; set; }
+    public float MediumRange { get; set; }
+    public float LongRange { get; set; }
+    public float MaxRange { get; set; }
+    public float AOERange { get; set; }
+    public float AOEDamage { get; set; }
+    public float AOEHeatDamage { get; set; }
+    public float AOEInstability { get; set; }
+    public EvasivePipsMods() {
+      this.Damage = 0f;
+      this.APDamage = 0f;
+      this.Heat = 0f;
+      this.Instablility = 0f;
+      this.GeneratedHeat = 0f;
+      this.FlatJammingChance = 0f;
+      this.MinRange = 0f;
+      this.ShortRange = 0f;
+      this.MediumRange = 0f;
+      this.LongRange = 0f;
+      this.MaxRange = 0f;
+      this.AOERange = 0f;
+      this.AOEDamage = 0f;
+      this.AOEHeatDamage = 0f;
+      this.AOEInstability = 0f;
+    }
+  }
   public class MineFieldDef {
     public float Damage { get; set; }
     public float Heat { get; set; }
@@ -127,6 +161,8 @@ namespace CustAmmoCategories {
   public class ExtAmmunitionDef {
     [JsonIgnore]
     public string Id { get; set; }
+    public string Name { get; set; }
+    public string UIName { get; set; }
     public float AccuracyModifier { get; set; }
     public float DirectFireModifier { get; set; }
     public float DamagePerShot { get; set; }
@@ -230,8 +266,12 @@ namespace CustAmmoCategories {
     public float ClusteringModifier { get; set;}
     public float PrefireAnimationSpeedMod { get; set; }
     public float FireAnimationSpeedMod { get; set; }
+    public float HeatGenerated { get; set; }
+    public EvasivePipsMods evasivePipsMods { get; set; }
     public ExtAmmunitionDef() {
       Id = "NotSet";
+      Name = string.Empty;
+      UIName = string.Empty;
       AccuracyModifier = 0;
       DirectFireModifier = 0;
       DamagePerShot = 0;
@@ -332,6 +372,8 @@ namespace CustAmmoCategories {
       AOEEffectsFalloff = TripleBoolean.NotSet;
       PrefireAnimationSpeedMod = 1f;
       FireAnimationSpeedMod = 1f;
+      HeatGenerated = 0f;
+      evasivePipsMods = new EvasivePipsMods();
     }
   }
 }
@@ -363,12 +405,18 @@ namespace CustomAmmoCategoriesPatches {
       CustomAmmoCategory custCat = CustomAmmoCategories.find(AmmoCategory);
       //CustomAmmoCategories.RegisterAmmunition((string)defTemp["Description"]["Id"], custCat);
       defTemp["ammoCategoryID"] = custCat.BaseCategory.Name;
+      Log.M.WL(1, "ammoCategoryID:"+ (string)defTemp["ammoCategoryID"]);
       ExtAmmunitionDef extAmmoDef = new ExtAmmunitionDef();
       extAmmoDef.Id = (string)defTemp["Description"]["Id"];
+      extAmmoDef.Name = (string)defTemp["Description"]["Name"];
+      extAmmoDef.UIName = (string)defTemp["Description"]["UIName"];
       extAmmoDef.AmmoCategory = custCat;
       if (defTemp["AccuracyModifier"] != null) {
         extAmmoDef.AccuracyModifier = (float)defTemp["AccuracyModifier"];
         defTemp.Remove("AccuracyModifier");
+      }
+      if (defTemp["HeatGenerated"] != null) {
+        extAmmoDef.HeatGenerated = (float)defTemp["HeatGenerated"];
       }
       if (defTemp["DamagePerShot"] != null) {
         extAmmoDef.DamagePerShot = (float)defTemp["DamagePerShot"];
@@ -433,6 +481,10 @@ namespace CustomAmmoCategoriesPatches {
       if (defTemp["APDamage"] != null) {
         extAmmoDef.APDamage = (float)defTemp["APDamage"];
         defTemp.Remove("APDamage");
+      }
+      if (defTemp["evasivePipsMods"] != null) {
+        extAmmoDef.evasivePipsMods = defTemp["evasivePipsMods"].ToObject<EvasivePipsMods>();
+        defTemp.Remove("evasivePipsMods");
       }
       if (defTemp["APCriticalChanceMultiplier"] != null) {
         extAmmoDef.APCriticalChanceMultiplier = (float)defTemp["APCriticalChanceMultiplier"];

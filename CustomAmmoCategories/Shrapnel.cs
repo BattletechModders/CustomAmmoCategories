@@ -133,115 +133,42 @@ namespace CustAmmoCategories {
     public static bool HasShells(this Weapon weapon) {
       ExtWeaponDef extWeapon = CustomAmmoCategories.getExtWeaponDef(weapon.defId);
       if (extWeapon.ImprovedBallistic == false) { return false; };
-      TripleBoolean result = extWeapon.HasShells;
-      if (result == TripleBoolean.NotSet) {
-        if (CustomAmmoCategories.checkExistance(weapon.StatCollection, CustomAmmoCategories.WeaponModeStatisticName) == true) {
-          string modeId = weapon.StatCollection.GetStatistic(CustomAmmoCategories.WeaponModeStatisticName).Value<string>();
-          if (extWeapon.Modes.ContainsKey(modeId)) {
-            WeaponMode mode = extWeapon.Modes[modeId];
-            if (mode.HasShells != TripleBoolean.NotSet) {
-              result = mode.HasShells;
-            }
-          }
-        }
-      }
-      if (result == TripleBoolean.NotSet) {
-        if (CustomAmmoCategories.checkExistance(weapon.StatCollection, CustomAmmoCategories.AmmoIdStatName) == true) {
-          string CurrentAmmoId = weapon.StatCollection.GetStatistic(CustomAmmoCategories.AmmoIdStatName).Value<string>();
-          ExtAmmunitionDef extAmmoDef = CustomAmmoCategories.findExtAmmo(CurrentAmmoId);
-          if (extAmmoDef.HasShells != TripleBoolean.NotSet) {
-            result = extAmmoDef.HasShells;
-          }
-        }
-      }
-      //if (result == TripleBoolean.NotSet) { result = extWeapon.HasShells; };
-      return result == TripleBoolean.True;
+      WeaponMode mode = weapon.mode();
+      if (mode.HasShells != TripleBoolean.NotSet) { return mode.HasShells == TripleBoolean.True; }
+      ExtAmmunitionDef ammo = weapon.ammo();
+      if (ammo.HasShells != TripleBoolean.NotSet) { return ammo.HasShells == TripleBoolean.True; }
+      return extWeapon.FireOnSuccessHit == TripleBoolean.True;
     }
     public static float ShellsRadius(this Weapon weapon) {
-      return getWeaponShellsRadius(weapon);
-    }
-    public static float getWeaponShellsRadius(Weapon weapon) {
       ExtWeaponDef extWeapon = CustomAmmoCategories.getExtWeaponDef(weapon.defId);
-      float result = 0f;
-      if (extWeapon.HasShells == TripleBoolean.True) {
-        return extWeapon.ShellsRadius;
-      }
-      if (CustomAmmoCategories.checkExistance(weapon.StatCollection, CustomAmmoCategories.WeaponModeStatisticName) == true) {
-        string modeId = weapon.StatCollection.GetStatistic(CustomAmmoCategories.WeaponModeStatisticName).Value<string>();
-        if (extWeapon.Modes.ContainsKey(modeId)) {
-          WeaponMode mode = extWeapon.Modes[modeId];
-          if (mode.HasShells == TripleBoolean.True) {
-            return mode.ShellsRadius;
-          }
-        }
-      }
-      if (CustomAmmoCategories.checkExistance(weapon.StatCollection, CustomAmmoCategories.AmmoIdStatName) == true) {
-        string CurrentAmmoId = weapon.StatCollection.GetStatistic(CustomAmmoCategories.AmmoIdStatName).Value<string>();
-        ExtAmmunitionDef extAmmoDef = CustomAmmoCategories.findExtAmmo(CurrentAmmoId);
-        if (extAmmoDef.HasShells == TripleBoolean.True) {
-          return extAmmoDef.ShellsRadius;
-        }
-      }
-      return result;
+      if (extWeapon.ImprovedBallistic == false) { return 0f; };
+      WeaponMode mode = weapon.mode();
+      if (mode.HasShells != TripleBoolean.NotSet) { return mode.ShellsRadius; }
+      ExtAmmunitionDef ammo = weapon.ammo();
+      if (ammo.HasShells != TripleBoolean.NotSet) { return ammo.ShellsRadius; }
+      if (extWeapon.HasShells != TripleBoolean.NotSet) { return extWeapon.ShellsRadius; }
+      return 0f;
     }
-    public static float getWeaponUnseparatedDamageMult(Weapon weapon) {
-      float result = 1f;
-      if (CustomAmmoCategories.checkExistance(weapon.StatCollection, CustomAmmoCategories.AmmoIdStatName) == true) {
-        string CurrentAmmoId = weapon.StatCollection.GetStatistic(CustomAmmoCategories.AmmoIdStatName).Value<string>();
-        ExtAmmunitionDef extAmmoDef = CustomAmmoCategories.findExtAmmo(CurrentAmmoId);
-        return extAmmoDef.UnseparatedDamageMult;
-      }
-      return result;
+    public static float UnseparatedDamageMult(this Weapon weapon) {
+      return weapon.ammo().UnseparatedDamageMult;
     }
-    public static float getWeaponMinShellsDistance(Weapon weapon) {
+    public static float MinShellsDistance(this Weapon weapon) {
+      WeaponMode mode = weapon.mode();
+      if (mode.HasShells != TripleBoolean.NotSet) { return Mathf.Max(30f,mode.MinShellsDistance); }
+      ExtAmmunitionDef ammo = weapon.ammo();
+      if (ammo.HasShells != TripleBoolean.NotSet) { return Mathf.Max(30f, ammo.MinShellsDistance); }
       ExtWeaponDef extWeapon = CustomAmmoCategories.getExtWeaponDef(weapon.defId);
-      float result = 0f;
-      if (extWeapon.HasShells == TripleBoolean.True) {
-        return extWeapon.MinShellsDistance;
-      }
-      if (CustomAmmoCategories.checkExistance(weapon.StatCollection, CustomAmmoCategories.WeaponModeStatisticName) == true) {
-        string modeId = weapon.StatCollection.GetStatistic(CustomAmmoCategories.WeaponModeStatisticName).Value<string>();
-        if (extWeapon.Modes.ContainsKey(modeId)) {
-          WeaponMode mode = extWeapon.Modes[modeId];
-          if (mode.HasShells == TripleBoolean.True) {
-            return mode.MinShellsDistance;
-          }
-        }
-      }
-      if (CustomAmmoCategories.checkExistance(weapon.StatCollection, CustomAmmoCategories.AmmoIdStatName) == true) {
-        string CurrentAmmoId = weapon.StatCollection.GetStatistic(CustomAmmoCategories.AmmoIdStatName).Value<string>();
-        ExtAmmunitionDef extAmmoDef = CustomAmmoCategories.findExtAmmo(CurrentAmmoId);
-        if (extAmmoDef.HasShells == TripleBoolean.True) {
-          return extAmmoDef.MinShellsDistance;
-        }
-      }
-      if (result < 30f) { result = 30f; }
-      return result;
+      if (extWeapon.HasShells != TripleBoolean.NotSet) { return Mathf.Max(30f, extWeapon.MinShellsDistance); }
+      return 30f;
     }
-    public static float getWeaponMaxShellsDistance(Weapon weapon) {
+    public static float MaxShellsDistance(this Weapon weapon) {
+      WeaponMode mode = weapon.mode();
+      if (mode.HasShells != TripleBoolean.NotSet) { return Mathf.Max(30f, mode.MaxShellsDistance); }
+      ExtAmmunitionDef ammo = weapon.ammo();
+      if (ammo.HasShells != TripleBoolean.NotSet) { return Mathf.Max(30f, ammo.MaxShellsDistance); }
       ExtWeaponDef extWeapon = CustomAmmoCategories.getExtWeaponDef(weapon.defId);
-      float result = 0f;
-      if (extWeapon.HasShells == TripleBoolean.True) {
-        return extWeapon.MaxShellsDistance;
-      }
-      if (CustomAmmoCategories.checkExistance(weapon.StatCollection, CustomAmmoCategories.AmmoIdStatName) == true) {
-        string CurrentAmmoId = weapon.StatCollection.GetStatistic(CustomAmmoCategories.AmmoIdStatName).Value<string>();
-        ExtAmmunitionDef extAmmoDef = CustomAmmoCategories.findExtAmmo(CurrentAmmoId);
-        if (extAmmoDef.HasShells == TripleBoolean.True) {
-          return extAmmoDef.MaxShellsDistance;
-        }
-      }
-      if (CustomAmmoCategories.checkExistance(weapon.StatCollection, CustomAmmoCategories.WeaponModeStatisticName) == true) {
-        string modeId = weapon.StatCollection.GetStatistic(CustomAmmoCategories.WeaponModeStatisticName).Value<string>();
-        if (extWeapon.Modes.ContainsKey(modeId)) {
-          WeaponMode mode = extWeapon.Modes[modeId];
-          if (mode.HasShells != TripleBoolean.NotSet) {
-            return mode.MaxShellsDistance;
-          }
-        }
-      }
-      if (result < 30f) { result = 30f; }
-      return result;
+      if (extWeapon.HasShells != TripleBoolean.NotSet) { return Mathf.Max(30f, extWeapon.MaxShellsDistance); }
+      return 30f;
     }
     /*public static BallisticEffect popWeaponShellsEffect(Weapon weapon) {
       CustomAmmoCategoriesLog.Log.LogWrite("popWeaponShellsEffect " + weapon.defId + "\n");
@@ -270,13 +197,13 @@ namespace CustAmmoCategories {
       CustomAmmoCategoriesLog.Log.LogWrite(" Enqueue weapon effects. Now in queue:" + CustomAmmoCategories._shellsEffectsQueue[wGUID].Count + "\n");
     }*/
 
-   /*public static BallisticEffect getWeaponShellsEffect(Weapon weapon) {
-      if (CustomAmmoCategories.checkExistance(weapon.StatCollection, CustomAmmoCategories.GUIDStatisticName) == false) { return null; }
-      string wGUID = weapon.StatCollection.GetStatistic(CustomAmmoCategories.GUIDStatisticName).Value<string>();
-      CustomAmmoCategoriesLog.Log.LogWrite(" weapon GUID:" + wGUID + "\n");
-      if (CustomAmmoCategories._shellsEffect.ContainsKey(wGUID) == false) { return null; }
-      return CustomAmmoCategories._shellsEffect[wGUID] as BallisticEffect;
-    }*/
+    /*public static BallisticEffect getWeaponShellsEffect(Weapon weapon) {
+       if (CustomAmmoCategories.checkExistance(weapon.StatCollection, CustomAmmoCategories.GUIDStatisticName) == false) { return null; }
+       string wGUID = weapon.StatCollection.GetStatistic(CustomAmmoCategories.GUIDStatisticName).Value<string>();
+       CustomAmmoCategoriesLog.Log.LogWrite(" weapon GUID:" + wGUID + "\n");
+       if (CustomAmmoCategories._shellsEffect.ContainsKey(wGUID) == false) { return null; }
+       return CustomAmmoCategories._shellsEffect[wGUID] as BallisticEffect;
+     }*/
     /*public static void registerShellsEffects(WeaponRepresentation weaponRep, Weapon weapon) {
       CustomAmmoCategoriesLog.Log.LogWrite("Registering shellsEffects for " + weapon.defId + "\n");
       if (CustomAmmoCategories.checkExistance(weapon.StatCollection, CustomAmmoCategories.GUIDStatisticName) == false) { return; }
@@ -320,9 +247,9 @@ namespace CustAmmoCategories {
         shellsEffects.Add(shellsEffect);
         shellsQueue.Enqueue(shellsEffect);
       }*/
-      //_shellsEffectsStorage.Add(wGUID, shellsEffects);
-      //_shellsEffectsQueue.Add(wGUID, shellsQueue);
-      //CustomAmmoCategoriesLog.Log.LogWrite(" shells effects registred:" + shellsEffects.Count + "\n");
+    //_shellsEffectsStorage.Add(wGUID, shellsEffects);
+    //_shellsEffectsQueue.Add(wGUID, shellsQueue);
+    //CustomAmmoCategoriesLog.Log.LogWrite(" shells effects registred:" + shellsEffects.Count + "\n");
     /*}*/
     //public static Dictionary<int, Dictionary<int, Dictionary<int, Dictionary<int, ShellHitRecord>>>> ShellHitsRecord = new Dictionary<int, Dictionary<int, Dictionary<int, Dictionary<int, ShellHitRecord>>>>();
     public static CurvySpline generateSpline(bool isDirect, bool isIndirect, Vector3 startPos, Vector3 endPos, MissileLauncherEffect missileLauncherEffect, int hitLocation) {

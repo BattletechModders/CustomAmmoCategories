@@ -10,6 +10,7 @@ namespace CustomAmmoCategoriesLog {
     Main,
     Criticals,
     Minefields,
+    CharlesB,
     Profile
   }
   public class LogFile {
@@ -43,9 +44,10 @@ namespace CustomAmmoCategoriesLog {
       if ((this.enabled) || (isCritical)) {
         if (this.mutex.WaitOne(1000)) {
           m_cache.Append(line);
+          //this.m_fs.Write(line);
           this.mutex.ReleaseMutex();
         }
-        if (isCritical) { this.flush(); };
+        //if (isCritical) { this.flush(); };
         if (m_logfile.Length > Log.flushBufferLength) { this.flush(); };
       }
     }
@@ -81,7 +83,7 @@ namespace CustomAmmoCategoriesLog {
     public static void flushThreadProc() {
       while (Log.flushThreadActive == true) {
         Thread.Sleep(30 * 1000);
-        Log.LogWrite("Log flushing\n");
+        //Log.LogWrite("Log flushing\n");
         Log.flush();
       }
     }
@@ -96,11 +98,13 @@ namespace CustomAmmoCategoriesLog {
     public static LogFile C { get { return Log.logs[LogFileType.Criticals]; } }
     public static LogFile F { get { return Log.logs[LogFileType.Minefields]; } }
     public static LogFile P { get { return Log.logs[LogFileType.Profile]; } }
+    public static LogFile CB { get { return Log.logs[LogFileType.CharlesB]; } }
     public static void InitLog() {
       //LogFile file = new LogFile("CAC_main_log.txt", CustomAmmoCategories.Settings.debugLog);
       Log.logs.Add(LogFileType.Main,new LogFile("CAC_main_log.txt", CustomAmmoCategories.Settings.debugLog));
       Log.logs.Add(LogFileType.Criticals,new LogFile("CAC_criticals_log.txt", CustomAmmoCategories.Settings.debugLog));
       Log.logs.Add(LogFileType.Minefields, new LogFile("CAC_minefields_log.txt", CustomAmmoCategories.Settings.debugLog));
+      Log.logs.Add(LogFileType.CharlesB, new LogFile("CAC_CharlesB_log.txt", CustomAmmoCategories.Settings.debugLog));
       Log.logs.Add(LogFileType.Profile, new LogFile("CAC_profiling_log.txt", CustomAmmoCategories.Settings.debugLog));
       //Log.logs.Add(LogFileType.Main, null);
       Log.flushThread.Start();

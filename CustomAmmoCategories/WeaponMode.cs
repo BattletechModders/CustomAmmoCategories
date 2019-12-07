@@ -49,13 +49,12 @@ namespace CustAmmoCategories {
       return result;
     }
     public static bool NoModeToFire(this Weapon weapon) {
-      if (CustomAmmoCategories.checkExistance(weapon.StatCollection, NoModeToFireStatisticName) == false) {
-        return false;
-      }
-      return weapon.StatCollection.GetStatistic(NoModeToFireStatisticName).Value<bool>();
+      Statistic stat = weapon.StatCollection.GetStatistic(NoModeToFireStatisticName);
+      if (stat == null) { return false; }
+      return stat.Value<bool>();
     }
     public static void NoModeToFire(this Weapon weapon,bool value) {
-      if (CustomAmmoCategories.checkExistance(weapon.StatCollection, NoModeToFireStatisticName) == false) {
+      if (weapon.StatCollection.ContainsStatistic(NoModeToFireStatisticName) == false) {
         weapon.StatCollection.AddStatistic<bool>(NoModeToFireStatisticName, false);
       }
       weapon.StatCollection.Set<bool>(NoModeToFireStatisticName, value);
@@ -193,6 +192,7 @@ namespace CustAmmoCategories {
     public float ClusteringModifier { get; set; }
     public float PrefireAnimationSpeedMod { get; set; }
     public float FireAnimationSpeedMod { get; set; }
+    public EvasivePipsMods evasivePipsMods { get; set; }
     public WeaponMode() {
       Id = WeaponMode.NONE_MODE_NAME;
       UIName = WeaponMode.BASE_MODE_NAME;
@@ -285,6 +285,7 @@ namespace CustAmmoCategories {
       AOEEffectsFalloff = TripleBoolean.NotSet;
       PrefireAnimationSpeedMod = 1f;
       FireAnimationSpeedMod = 1f;
+      evasivePipsMods = new EvasivePipsMods();
     }
     public void fromJSON(string json) {
       JObject jWeaponMode = JObject.Parse(json);
@@ -482,6 +483,9 @@ namespace CustAmmoCategories {
       }
       if (jWeaponMode["DirectFireModifier"] != null) {
         this.DirectFireModifier = (float)jWeaponMode["DirectFireModifier"];
+      }
+      if (jWeaponMode["evasivePipsMods"] != null) {
+        this.evasivePipsMods = jWeaponMode["evasivePipsMods"].ToObject<EvasivePipsMods>();
       }
       if (jWeaponMode["DistantVariance"] != null) {
         this.DistantVariance = (float)jWeaponMode["DistantVariance"];

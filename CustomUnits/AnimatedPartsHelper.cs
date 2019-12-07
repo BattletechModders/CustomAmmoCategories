@@ -12,6 +12,7 @@ using UnityEngine.Networking;
 using CustAmmoCategories;
 using System.Threading;
 using System.Collections;
+using Localize;
 
 namespace CustomUnits {
   [HarmonyPatch(typeof(AttackDirector))]
@@ -197,6 +198,59 @@ namespace CustomUnits {
       return false;
     }
   }
+  [HarmonyPatch(typeof(Mech))]
+  [HarmonyPatch("IsTargetPositionInFiringArc")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { typeof(ICombatant), typeof(Vector3), typeof(Quaternion), typeof(Vector3) })]
+  public static class Mech_IsTargetPositionInFiringArc {
+    public static bool Prefix(Mech __instance, ICombatant targetUnit, Vector3 attackPosition, Quaternion attackRotation, Vector3 targetPosition, ref bool __result) {
+      VehicleCustomInfo info = __instance.GetCustomInfo();
+      //Log.TWL(0, "Mech.IsTargetPositionInFiringArc " + __instance.MechDef.Description.Id);
+      if (info == null) {
+        //Log.WL(1, "no custom info");
+        return true;
+      }
+      if (info.FiringArc <= 10f) {
+        //Log.WL(1, "too low arc value");
+        return true;
+      }
+      Vector3 forward = targetPosition - attackPosition;
+      forward.y = 0.0f;
+      if (targetUnit.Type == TaggedObjectType.Building) {
+        BattleTech.Building building = targetUnit as BattleTech.Building;
+        if (building != null && !string.IsNullOrEmpty(__instance.standingOnBuildingGuid)) {
+          string str = __instance.standingOnBuildingGuid + ".Building";
+          if (__instance.standingOnBuildingGuid == building.GUID || str == building.GUID) { __result = true; return false; }
+        }
+      }
+      Quaternion b = Quaternion.LookRotation(forward);
+      __result = (double)Quaternion.Angle(attackRotation, b) < (double)info.FiringArc;
+      //Log.WL(1, Quaternion.Angle(attackRotation, b) + " and " + info.FiringArc + " : " + __result);
+      return false;
+    }
+  }
+  /*[HarmonyPatch(typeof(FiringPreviewManager))]
+  [HarmonyPatch("CanRotateToFace")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { typeof(AbstractActor), typeof(ICombatant), typeof(Vector3), typeof(Quaternion), typeof(bool) })]
+  public static class FiringPreviewManager_CanRotateToFace {
+    public static bool Prefix(AbstractActor attacker, ICombatant target, Vector3 position, Quaternion rotation, bool isJump, ref bool __result) {
+      if (isJump) { __result = true; return false; };
+      Log.TWL(0, "FiringPreviewManager.CanRotateToFace " + new Text(attacker.DisplayName).ToString());
+      VehicleCustomInfo info = attacker.GetCustomInfo();
+      if (info == null) {
+        Log.WL(1, "no custom info");
+        return true;
+      };
+      if (info.FiringArc <= 10f) {
+        Log.WL(1, "too low arc value");
+        return true;
+      }
+      __result = (double)Mathf.Abs(Mathf.DeltaAngle(attacker.Pathing.lockedAngle, PathingUtil.GetAngle(target.CurrentPosition - position))) < (double)info.FiringArc + (double)attacker.Pathing.AngleAvailable;
+      Log.WL(1, "result:"+__result);
+      return false;
+    }
+  }*/
   /*[HarmonyPatch(typeof(LanceSpawnerGameLogic))]
   [HarmonyPatch("TeleportUnitsToSpwanPoints")]
   [HarmonyPatch(MethodType.Normal)]
@@ -281,8 +335,8 @@ namespace CustomUnits {
     private string AudioEventName;
     private int axis;
     private Transform rotateBone;
-    private AudioSource audioSrc;
-    private AudioClip audioClip;
+    //private AudioSource audioSrc;
+    //private AudioClip audioClip;
     public SimpleRotator() {
       rotateBone = null;
     }
@@ -326,7 +380,7 @@ namespace CustomUnits {
           if (audioClip.loadState != AudioDataLoadState.Loaded) {
             Log.LogWrite(" LoadAudioData:" + audioClip.LoadAudioData() + "\n");
             Log.LogWrite(" loadstate:" + audioClip.loadState + "\n");
-            Log.LogWrite(" isReadyToPlay:" + audioClip.isReadyToPlay + "\n");
+            //Log.LogWrite(" isReadyToPlay:" + audioClip.isReadyToPlay + "\n");
           }
           AudioSource source = this.gameObject.GetComponentInChildren<AudioSource>();
           if (source != null) {

@@ -249,9 +249,9 @@ namespace CustAmmoCategories {
         Log.LogWrite(" weapon "+advInfo.weapon.defId+" have no shells\n");
         return;
       }
-      float sMin = CustomAmmoCategories.getWeaponMinShellsDistance(advInfo.weapon);
-      float sMax = CustomAmmoCategories.getWeaponMaxShellsDistance(advInfo.weapon);
-      float unsepDmbMod = CustomAmmoCategories.getWeaponUnseparatedDamageMult(advInfo.weapon);
+      float sMin = advInfo.weapon.MinShellsDistance();
+      float sMax = advInfo.weapon.MaxShellsDistance();
+      float unsepDmbMod = advInfo.weapon.UnseparatedDamageMult();
       Dictionary<int, WeaponHitInfo> separatedFrags = new Dictionary<int, WeaponHitInfo>();
       for (int hitIndex = 0;hitIndex < hitInfo.numberOfShots; ++hitIndex) {
         AdvWeaponHitInfoRec advRec = advInfo.hits[hitIndex];

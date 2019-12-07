@@ -9,14 +9,14 @@ namespace CustAmmoCategories {
   public static partial class CustomAmmoCategories {
     public static readonly string UsesHeatSinkCap = "CACUsedHEatSinks";
     public static void clearUsedHeatSinksCap(this Mech mech) {
-      if (CustomAmmoCategories.checkExistance(mech.StatCollection, CustomAmmoCategories.UsesHeatSinkCap) == false) {
+      if (mech.StatCollection.ContainsStatistic(CustomAmmoCategories.UsesHeatSinkCap) == false) {
         mech.StatCollection.AddStatistic<int>(CustomAmmoCategories.UsesHeatSinkCap, 0);
       } else {
         mech.StatCollection.Set<int>(CustomAmmoCategories.UsesHeatSinkCap, 0);
       }
     }
     public static int UsedHeatSinksCap(this Mech mech) {
-      if (CustomAmmoCategories.checkExistance(mech.StatCollection, CustomAmmoCategories.UsesHeatSinkCap) == false) {
+      if (mech.StatCollection.ContainsStatistic(CustomAmmoCategories.UsesHeatSinkCap) == false) {
         mech.StatCollection.AddStatistic<int>(CustomAmmoCategories.UsesHeatSinkCap, 0);
         return 0;
       } else {
@@ -24,21 +24,21 @@ namespace CustAmmoCategories {
       }
     }
     public static void CurrentHeat(this Mech mech,int heat) {
-      if (CustomAmmoCategories.checkExistance(mech.StatCollection, "CurrentHeat") == false) {
+      if (mech.StatCollection.ContainsStatistic("CurrentHeat") == false) {
         mech.StatCollection.AddStatistic<int>("CurrentHeat", heat);
       } else {
         mech.StatCollection.Set<int>("CurrentHeat",heat);
       }
     }
     public static void UsedHeatSinksCap(this Mech mech, int heatSinks) {
-      if (CustomAmmoCategories.checkExistance(mech.StatCollection, CustomAmmoCategories.UsesHeatSinkCap) == false) {
+      if (mech.StatCollection.ContainsStatistic(CustomAmmoCategories.UsesHeatSinkCap) == false) {
         mech.StatCollection.AddStatistic<int>(CustomAmmoCategories.UsesHeatSinkCap, heatSinks);
       } else {
         mech.StatCollection.Set<int>(CustomAmmoCategories.UsesHeatSinkCap, heatSinks);
       }
     }
     public static void addUsedHeatSinksCap(this Mech mech, int heatSinks) {
-      if (CustomAmmoCategories.checkExistance(mech.StatCollection, CustomAmmoCategories.UsesHeatSinkCap) == false) {
+      if (mech.StatCollection.ContainsStatistic(CustomAmmoCategories.UsesHeatSinkCap) == false) {
         mech.StatCollection.AddStatistic<int>(CustomAmmoCategories.UsesHeatSinkCap, heatSinks);
       } else {
         int curValue = mech.UsedHeatSinksCap();

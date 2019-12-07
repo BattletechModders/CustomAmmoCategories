@@ -142,6 +142,12 @@
     <Compile Include="AudioPlayer.cs" />
     <Compile Include="BulletBallistic.cs" />
     <Compile Include="CACWeaponEffect.cs" />
+    <Compile Include="CharlesB\Calculator.cs" />
+    <Compile Include="CharlesB\CharlesB.cs" />
+    <Compile Include="CharlesB\Core.cs" />
+    <Compile Include="CharlesB\HandleFall.cs" />
+    <Compile Include="CharlesB\MechFallSequenceDamageAdder.cs" />
+    <Compile Include="CharlesB\Settings.cs" />
     <Compile Include="CheatHttpServer.cs" />
     <Compile Include="CleverGirlWeaponDamagePrediction.cs" />
     <Compile Include="CustomDesignMask.cs" />
@@ -214,8 +220,10 @@
     <Compile Include="WeaponRealizer\NumberOfShotsEnabler.cs" />
     <Compile Include="WeaponRealizer\Settings.cs" />
     <Compile Include="WeaponRealizer\VarianceBounds.cs" />
+    <Compile Include="WeaponStatCacheHelper.cs" />
     <Compile Include="ZombieMech.cs" />
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
     <PostBuildEvent>copy /Y "$(TargetPath)" "$(ProjectDir)\..\..\Mods\CustomAmmoCategories"</PostBuildEvent>

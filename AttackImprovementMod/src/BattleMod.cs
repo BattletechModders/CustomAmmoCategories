@@ -254,9 +254,9 @@ namespace Sheepy.BattleTechMod {
       }
     }
 
-    private static HashSet<string> modList;
+    private static HashSet<string> modList = null;
     public static string[] GetModList() {
-      if (modList == null) {
+      /*if (modList == null) {
         if (BattleTechGame == null)
           throw new InvalidOperationException("Mod List is not known until GameStartsOnce.");
         modList = new HashSet<string>();
@@ -272,8 +272,9 @@ namespace Sheepy.BattleTechMod {
         } catch (Exception ex) {
           CustomAmmoCategoriesLog.Log.M.TWL(0, ex.ToString());
         }
-      }
-      return modList.ToArray();
+      }*/
+      //return modList.ToArray();
+      return (new HashSet<string>()).ToArray();
     }
 
     public static bool FoundMod(params string[] mods) {

@@ -12,45 +12,15 @@ using BattleTech.Rendering;
 
 namespace CustAmmoCategories {
   public static partial class CustomAmmoCategories {
-    public static int getWeaponAttackRecoil(Weapon weapon) {
-      CustomAmmoCategoriesLog.Log.LogWrite("getWeaponAttackRecoil " + weapon.UIName + "\n");
-      if (CustomAmmoCategories.checkExistance(weapon.StatCollection, CustomAmmoCategories.AmmoIdStatName) == false) {
-        CustomAmmoCategoriesLog.Log.LogWrite("  weapon has no ammo\n");
-        return weapon.weaponDef.AttackRecoil;
-      }
-      string ammoId = weapon.StatCollection.GetStatistic(CustomAmmoCategories.AmmoIdStatName).Value<string>();
-      ExtAmmunitionDef extAmmo = CustomAmmoCategories.findExtAmmo(ammoId);
-      CustomAmmoCategoriesLog.Log.LogWrite("  modified AttackRecoil\n");
-      return weapon.weaponDef.AttackRecoil + extAmmo.AttackRecoil;
+    public static int AttackRecoil(this Weapon weapon) {
+      return weapon.weaponDef.AttackRecoil + weapon.ammo().AttackRecoil;
     }
     public static bool AlwaysIndirectVisuals(this Weapon weapon) {
-      return getWeaponAlwaysIndirectVisuals(weapon);
-    }
-    public static bool getWeaponAlwaysIndirectVisuals(Weapon weapon) {
-      bool result = false;
-      CustomAmmoCategoriesLog.Log.LogWrite("getWeaponAlwaysIndirectVisuals " + weapon.UIName + "\n");
-      if (CustomAmmoCategories.checkExistance(weapon.StatCollection, CustomAmmoCategories.AmmoIdStatName) == true) {
-        string CurrentAmmoId = weapon.StatCollection.GetStatistic(CustomAmmoCategories.AmmoIdStatName).Value<string>();
-        ExtAmmunitionDef extAmmoDef = CustomAmmoCategories.findExtAmmo(CurrentAmmoId);
-        //if (extAmmoDef.AOECapable == TripleBoolean.True) { return true; };
-        if (extAmmoDef.AlwaysIndirectVisuals != TripleBoolean.NotSet) {
-          result = (extAmmoDef.AlwaysIndirectVisuals == TripleBoolean.True);
-          CustomAmmoCategoriesLog.Log.LogWrite(" ammo result:"+result+"\n");
-        }
-      }
-      if (CustomAmmoCategories.checkExistance(weapon.StatCollection, CustomAmmoCategories.WeaponModeStatisticName) == true) {
-        ExtWeaponDef extWeapon = CustomAmmoCategories.getExtWeaponDef(weapon.defId);
-        string modeId = weapon.StatCollection.GetStatistic(CustomAmmoCategories.WeaponModeStatisticName).Value<string>();
-        if (extWeapon.Modes.ContainsKey(modeId)) {
-          WeaponMode mode = extWeapon.Modes[modeId];
-          if (mode.AlwaysIndirectVisuals != TripleBoolean.NotSet) {
-            result = (mode.AlwaysIndirectVisuals == TripleBoolean.True);
-            CustomAmmoCategoriesLog.Log.LogWrite(" mode result:" + result + "\n");
-          }
-        }
-      }
-      CustomAmmoCategoriesLog.Log.LogWrite(" result:"+result+"\n");
-      return result;
+      ExtAmmunitionDef ammo = weapon.ammo();
+      if(ammo.AlwaysIndirectVisuals != TripleBoolean.NotSet) { return ammo.AlwaysIndirectVisuals == TripleBoolean.True; }
+      WeaponMode mode = weapon.mode();
+      if (mode.AlwaysIndirectVisuals != TripleBoolean.NotSet) { return mode.AlwaysIndirectVisuals == TripleBoolean.True; }
+      return weapon.exDef().AlwaysIndirectVisuals == TripleBoolean.True;
     }
   }
 }
@@ -65,7 +35,7 @@ namespace CustomAmmoCategoriesPatches {
     public static bool Prefix(MissileEffect __instance) {
       bool isIndirect = (bool)typeof(MissileEffect).GetField("isIndirect", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(__instance);
       CustomAmmoCategoriesLog.Log.LogWrite("MissileEffect.PlayProjectile "+__instance.weapon.UIName+" real isIndirect = " + isIndirect+"\n");
-      if (CustomAmmoCategories.getWeaponAlwaysIndirectVisuals(__instance.weapon) == true) {
+      if (__instance.weapon.AlwaysIndirectVisuals() == true) {
         CustomAmmoCategoriesLog.Log.LogWrite(" always indirect\n");
         typeof(MissileEffect).GetField("isIndirect", BindingFlags.Instance | BindingFlags.NonPublic).SetValue(__instance, (object)true);
       }
@@ -121,7 +91,7 @@ namespace CustomAmmoCategoriesPatches {
             num = 0;
             break;
           }
-          __instance.weapon.parent.GameRep.PlayFireAnim((AttackSourceLimb)num, CustomAmmoCategories.getWeaponAttackRecoil(__instance.weapon));
+          __instance.weapon.parent.GameRep.PlayFireAnim((AttackSourceLimb)num, __instance.weapon.AttackRecoil());
         }
         int hitIndex = __instance.HitIndex();
         if (hitIndex >= 0) {

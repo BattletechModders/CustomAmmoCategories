@@ -233,17 +233,6 @@ namespace CustomAmmoCategoriesPatches {
           CustomAmmoCategories.CycleAmmoBest(weapon);
         }
       }
-      //string wGUID = weapon.parent.GUID + "." + weapon.uid;
-      //CustomAmmoCategoriesLog.Log.LogWrite("  wGUID " + wGUID + "\n");
-      /*string aGUID = "";
-      if (CustomAmmoCategories.findPlayerWeaponAmmoGUID(wGUID, ref aGUID) == false) { return; }
-      if ((aGUID < 0) || (aGUID >= weapon.ammoBoxes.Count)) { return; }
-      CustomAmmoCategoriesLog.Log.LogWrite("  player weapon found. Ammo " + weapon.ammoBoxes[aGUID].CurrentAmmo + "\n");
-      if ((weapon.ammoBoxes[aGUID].CurrentAmmo > 0) && (weapon.ammoBoxes[aGUID].IsFunctional == true)) {
-          CustomAmmoCategoriesLog.Log.LogWrite("  Cycling not needed\n");
-          return;
-      }
-      CustomAmmoCategories.CycleAmmo(weapon,true);*/
     }
   }
   /*[HarmonyPatch(typeof(CombatHUDWeaponSlot))]
@@ -347,159 +336,6 @@ namespace CustomAmmoCategoriesPatches {
       return false;
     }
   }
-  [HarmonyPatch(typeof(Weapon))]
-  [HarmonyPatch("CurrentAmmo")]
-  [HarmonyPatch(MethodType.Getter)]
-  [HarmonyPatch(new Type[] { })]
-  public static class Weapon_CurrentAmmo {
-    public static bool Prefix(Weapon __instance, ref int __result) {
-      //CustomCategoriesLog.LogWrite("Weapon CurrentAmmo " + __instance.Description.Id + "\n");
-      if (CustomAmmoCategories.checkExistance(__instance.StatCollection, CustomAmmoCategories.AmmoIdStatName) == false) { return true; }
-      string CurrentAmmoId = __instance.StatCollection.GetStatistic(CustomAmmoCategories.AmmoIdStatName).Value<string>();
-      __result = __instance.InternalAmmo;
-      //CustomCategoriesLog.LogWrite("  internal ammo "+ __result.ToString());
-      for (int index = 0; index < __instance.ammoBoxes.Count; ++index) {
-        //CustomCategoriesLog.LogWrite("  AmmoBox " + __instance.ammoBoxes[index].Description.Id+" "+ __instance.ammoBoxes[index].CurrentAmmo+"\n");
-        if (__instance.ammoBoxes[index].CurrentAmmo <= 0) { continue; }
-        if (__instance.ammoBoxes[index].IsFunctional == false) { continue; }
-        if (__instance.ammoBoxes[index].ammoDef.Description.Id != CurrentAmmoId) { continue; };
-        __result += __instance.ammoBoxes[index].CurrentAmmo;
-      }
-      //CustomCategoriesLog.LogWrite("  Result " + __result.ToString()+"\n");
-      return false;
-    }
-  }
-  /*
-  [HarmonyPatch(typeof(WeaponDef))]
-  [HarmonyPatch("AmmoCategoryToAmmoId")]
-  [HarmonyPatch(MethodType.Getter)]
-  public static class WeaponDef_AmmoCategoryToAmmoId_get
-  {
-      public static bool Prefix(WeaponDef __instance, ref string __result)
-      {
-          if (__instance.AmmoCategory == AmmoCategory.NotSet)
-          {
-              __result = string.Empty;
-              return false;
-          }
-          else
-          {
-              CustomAmmoCategory cuCat = CustomAmmoCategories.findWeaponRealCategory(__instance.Description.Id, __instance.AmmoCategory.ToString());
-              if (cuCat.BaseCategory == AmmoCategory.NotSet)
-              {
-                  __result = string.Empty;
-                  return false;
-              }
-              else
-              {
-                  __result = "Ammunition_" + cuCat.Id;
-                  return false;
-              }
-          }
-      }
-  }
-  [HarmonyPatch(typeof(WeaponDef))]
-  [HarmonyPatch("AmmoCategoryToAmmoBoxId")]
-  [HarmonyPatch(MethodType.Getter)]
-  public static class WeaponDef_AmmoCategoryToAmmoBoxId_get
-  {
-      public static bool Prefix(WeaponDef __instance, ref string __result)
-      {
-          if (__instance.AmmoCategory == AmmoCategory.NotSet)
-          {
-              __result = string.Empty;
-              return false;
-          }
-          else
-          {
-              CustomAmmoCategory cuCat = CustomAmmoCategories.findWeaponRealCategory(__instance.Description.Id, __instance.AmmoCategory.ToString());
-              if (cuCat.BaseCategory == AmmoCategory.NotSet)
-              {
-                  __result = string.Empty;
-                  return false;
-              }
-              else
-              {
-                  __result = "Ammo_AmmunitionBox_Generic_" + cuCat.Id;
-                  return false;
-              }
-          }
-      }
-  }*/
-
-  /*[HarmonyPatch(typeof(MechValidationRules))]
-  [HarmonyPatch("ValidateMechHasAppropriateAmmo")]
-  [HarmonyPatch(MethodType.Normal)]
-  public static class MechValidationRules_ValidateMechHasAppropriateAmmo {
-    public static bool Prefix(DataManager dataManager, MechDef mechDef, MechValidationLevel validationLevel, WorkOrderEntry_MechLab baseWorkOrder, ref Dictionary<MechValidationType, List<Text>> errorMessages) {
-      List<int> ammoCategoryList1 = new List<int>();
-      List<int> ammoCategoryList2 = new List<int>();
-      CustomAmmoCategoriesLog.Log.LogWrite("Start Mech Validation\n");
-      for (int index = 0; index < mechDef.Inventory.Length; ++index) {
-        MechComponentRef mechComponentRef = mechDef.Inventory[index];
-        mechComponentRef.RefreshComponentDef();
-        if (mechComponentRef.ComponentDefType == ComponentType.Weapon) {
-          if (mechComponentRef.DamageLevel == ComponentDamageLevel.Functional || mechComponentRef.DamageLevel == ComponentDamageLevel.NonFunctional || MechValidationRules.MechComponentUnderMaintenance(mechComponentRef, validationLevel, baseWorkOrder)) {
-            WeaponDef def = mechComponentRef.Def as WeaponDef;
-            CustomAmmoCategory cuCat = CustomAmmoCategories.getExtWeaponDef(def.Description.Id).AmmoCategory;
-            int weaponAmmoType = cuCat.Index;
-            CustomAmmoCategoriesLog.Log.LogWrite(" You have weapon " + def.Description.Id + " with ammo category:" + cuCat.Id + " index:" + weaponAmmoType.ToString() + "\n");
-
-            if (def.AmmoCategory != AmmoCategory.NotSet && (cuCat.Id != AmmoCategory.Flamer.ToString()) && !ammoCategoryList1.Contains(weaponAmmoType)) {
-              ammoCategoryList1.Add(weaponAmmoType);
-              CustomAmmoCategoriesLog.Log.LogWrite("  Add index to requred ammo category: " + weaponAmmoType.ToString() + "\n");
-            }
-          }
-        } else if (mechComponentRef.ComponentDefType == ComponentType.AmmunitionBox && (mechComponentRef.DamageLevel == ComponentDamageLevel.Functional || MechValidationRules.MechComponentUnderMaintenance(mechComponentRef, validationLevel, baseWorkOrder))) {
-          AmmunitionBoxDef def = mechComponentRef.Def as AmmunitionBoxDef;
-          def.refreshAmmo(dataManager);
-          CustomAmmoCategory cuCat = CustomAmmoCategories.getExtWeaponDef(def.Description.Id).AmmoCategory;
-          //CustomAmmoCategories.findWeaponRealCategory(def.Ammo.Description.Id, def.Ammo.Category.ToString());
-          int amunitionAmmoType = CustomAmmoCategories.findExtAmmo(def.Ammo.Description.Id).AmmoCategory.Index;
-          CustomAmmoCategoriesLog.Log.LogWrite("  You have ammunition " + def.Ammo.Description.Id + " with ammo category " + cuCat.Id + " index:" + amunitionAmmoType.ToString() + "\n");
-          if (!ammoCategoryList2.Contains(amunitionAmmoType)) {
-            ammoCategoryList2.Add(amunitionAmmoType);
-            CustomAmmoCategoriesLog.Log.LogWrite("  Add index to requred ammo category: " + amunitionAmmoType.ToString() + "\n");
-          }
-        }
-      }
-      CustomAmmoCategoriesLog.Log.LogWrite("Ammunition Box categories indexes:");
-      foreach (int ammoCategory in ammoCategoryList1) {
-        CustomAmmoCategoriesLog.Log.LogWrite(" " + ammoCategory.ToString());
-      }
-      CustomAmmoCategoriesLog.Log.LogWrite("\nWeapon categories indexes:");
-      foreach (int ammoCategory in ammoCategoryList2) {
-        CustomAmmoCategoriesLog.Log.LogWrite(" " + ammoCategory.ToString());
-      }
-      CustomAmmoCategoriesLog.Log.LogWrite("\n");
-      foreach (int ammoCategory in ammoCategoryList1) {
-        if (!ammoCategoryList2.Contains(ammoCategory)) {
-          var method = typeof(MechValidationRules).GetMethod("AddErrorMessage", BindingFlags.Static | BindingFlags.NonPublic);
-          object[] args = new object[3];
-          args[0] = errorMessages;
-          args[1] = MechValidationType.AmmoMissing;
-          CustomAmmoCategory cuCat = CustomAmmoCategories.findByIndex(ammoCategory);
-          args[2] = new Text("MISSING AMMO: This 'Mech does not have an undamaged {0} Ammo Bin ", new object[1] { (object)cuCat.Id });
-          method.Invoke(obj: null, parameters: args);
-          errorMessages = (Dictionary<MechValidationType, List<Text>>)args[0];
-        }
-      }
-      foreach (int ammoCategory in ammoCategoryList2) {
-        if (!ammoCategoryList1.Contains(ammoCategory)) {
-
-          var method = typeof(MechValidationRules).GetMethod("AddErrorMessage", BindingFlags.Static | BindingFlags.NonPublic);
-          object[] args = new object[3];
-          args[0] = errorMessages;
-          args[1] = MechValidationType.AmmoUnneeded;
-          CustomAmmoCategory cuCat = CustomAmmoCategories.findByIndex(ammoCategory);
-          args[2] = new Text("EXTRA AMMO: This 'Mech carries unusable {0} Ammo", new object[1] { (object)cuCat.Id });
-          method.Invoke(obj: null, parameters: args);
-          errorMessages = (Dictionary<MechValidationType, List<Text>>)args[0];
-        }
-      }
-      return false;
-    }
-  }*/
   [HarmonyPatch(typeof(MechValidationRules))]
   [HarmonyPatch("ValidateMechHasAppropriateAmmo")]
   [HarmonyPatch(MethodType.Normal)]
@@ -623,11 +459,12 @@ namespace CustomAmmoCategoriesPatches {
       CustomAmmoCategoriesLog.Log.LogWrite("WeaponRepresentation.ResetWeaponEffect\n");
       if (__instance.weapon == null) { return; }
       CustomAmmoCategoriesLog.Log.LogWrite("  weapon is set\n");
-      if (CustomAmmoCategories.checkExistance(__instance.weapon.StatCollection, CustomAmmoCategories.GUIDStatisticName) == false) { return; }
+      Statistic stat = __instance.weapon.StatCollection.GetStatistic(CustomAmmoCategories.GUIDStatisticName);
+      if (stat == null) { return; }
       CustomAmmoCategoriesLog.Log.LogWrite("  weapon GUID is set\n");
-      if (CustomAmmoCategories.checkExistance(__instance.weapon.StatCollection, CustomAmmoCategories.AmmoIdStatName) == false) { return; }
-      CustomAmmoCategoriesLog.Log.LogWrite("  weapon ammoId is set\n");
-      string wGUID = __instance.weapon.StatCollection.GetStatistic(CustomAmmoCategories.GUIDStatisticName).Value<string>();
+      //if (CustomAmmoCategories.checkExistance(__instance.weapon.StatCollection, CustomAmmoCategories.AmmoIdStatName) == false) { return; }
+      //CustomAmmoCategoriesLog.Log.LogWrite("  weapon ammoId is set\n");
+      string wGUID = stat.Value<string>();
       CustomAmmoCategories.resetWeaponEffects(wGUID);
       return;
     }
@@ -760,10 +597,10 @@ namespace CustAmmoCategories {
     private static Dictionary<string, ExtAmmunitionDef> ExtAmmunitionDef;
     private static Dictionary<string, ExtWeaponDef> ExtWeaponDef;
     private static Dictionary<string, Dictionary<string, WeaponEffect>> WeaponEffects;
-    private static CustomAmmoCategory NotSetCustomAmmoCategoty;
-    private static ExtAmmunitionDef DefaultAmmo;
-    private static ExtWeaponDef DefaultWeapon;
-    private static WeaponMode DefaultWeaponMode;
+    public static CustomAmmoCategory NotSetCustomAmmoCategoty;
+    public static ExtAmmunitionDef DefaultAmmo;
+    public static ExtWeaponDef DefaultWeapon;
+    public static WeaponMode DefaultWeaponMode;
     public static Settings Settings;
     public static WeaponHitInfo getSuccessOnly(WeaponHitInfo hitInfo) {
       int successShots = 0;
@@ -829,7 +666,7 @@ namespace CustAmmoCategories {
       }
     }
 
-    public static WeaponMode getWeaponMode(Weapon weapon) {
+    /*public static WeaponMode getWeaponMode(Weapon weapon) {
       if (CustomAmmoCategories.checkExistance(weapon.StatCollection, CustomAmmoCategories.WeaponModeStatisticName) == false) {
         return CustomAmmoCategories.DefaultWeaponMode;
       }
@@ -838,35 +675,14 @@ namespace CustAmmoCategories {
       string ModeId = weapon.StatCollection.GetStatistic(CustomAmmoCategories.WeaponModeStatisticName).Value<string>();
       if (extWeapon.Modes.ContainsKey(ModeId) == false) { return CustomAmmoCategories.DefaultWeaponMode; };
       return extWeapon.Modes[ModeId];
-    }
+    }*/
 
-    public static EffectData[] getWeaponStatusEffects(Weapon weapon) {
-      CustomAmmoCategoriesLog.Log.LogWrite("getWeaponStatusEffects " + weapon.UIName + "\n");
+    public static EffectData[] StatusEffects(this Weapon weapon) {
+      //CustomAmmoCategoriesLog.Log.LogWrite("getWeaponStatusEffects " + weapon.UIName + "\n");
       List<EffectData> result = new List<EffectData>();
-      if (weapon.weaponDef.statusEffects.Length > 0) { result.AddRange(weapon.weaponDef.statusEffects); };
-      if (CustomAmmoCategories.checkExistance(weapon.StatCollection, CustomAmmoCategories.AmmoIdStatName) == false) {
-        CustomAmmoCategoriesLog.Log.LogWrite("  weapon has no ammo\n");
-      } else {
-        string ammoId = weapon.StatCollection.GetStatistic(CustomAmmoCategories.AmmoIdStatName).Value<string>();
-        ExtAmmunitionDef extAmmo = CustomAmmoCategories.findExtAmmo(ammoId);
-        if (extAmmo.statusEffects.Length == 0) {
-          CustomAmmoCategoriesLog.Log.LogWrite("  ammo has no additional status effects\n");
-        } else {
-          CustomAmmoCategoriesLog.Log.LogWrite("  add " + extAmmo.statusEffects.Length + " status effects\n");
-          result.AddRange(extAmmo.statusEffects);
-        }
-      }
-      if (CustomAmmoCategories.checkExistance(weapon.StatCollection, CustomAmmoCategories.WeaponModeStatisticName) == false) {
-        CustomAmmoCategoriesLog.Log.LogWrite("  weapon has no mode\n");
-      } else {
-        WeaponMode mode = CustomAmmoCategories.getWeaponMode(weapon);
-        if (mode.statusEffects.Count == 0) {
-          CustomAmmoCategoriesLog.Log.LogWrite("  mode has no additional status effects\n");
-        } else {
-          CustomAmmoCategoriesLog.Log.LogWrite("  add " + mode.statusEffects.Count + " status effects\n");
-          result.AddRange(mode.statusEffects);
-        }
-      }
+      result.AddRange(weapon.weaponDef.statusEffects);
+      result.AddRange(weapon.ammo().statusEffects);
+      result.AddRange(weapon.mode().statusEffects);
       return result.ToArray();
     }
     public static void clearAllWeaponEffects() {
@@ -923,7 +739,7 @@ namespace CustAmmoCategories {
     }*/
     public static void InitWeaponEffects(WeaponRepresentation weaponRepresentation, Weapon weapon) {
       Log.LogWrite("InitWeaponEffects "+weapon.defId+":"+weapon.parent.DisplayName+"\n");
-      if (CustomAmmoCategories.checkExistance(weapon.StatCollection, CustomAmmoCategories.GUIDStatisticName) == false) {
+      if (weapon.StatCollection.ContainsStatistic(CustomAmmoCategories.GUIDStatisticName) == false) {
         Log.LogWrite(" no GUID\n");
         return;
       }
@@ -997,11 +813,12 @@ namespace CustAmmoCategories {
       return CustomAmmoCategories.DefaultAmmo;
     }
     public static void CycleAmmoBest(Weapon weapon) {
-      if (CustomAmmoCategories.checkExistance(weapon.StatCollection, CustomAmmoCategories.AmmoIdStatName) == false) {
+      if (weapon.StatCollection.ContainsStatistic(CustomAmmoCategories.AmmoIdStatName) == false) {
         weapon.StatCollection.AddStatistic<string>(CustomAmmoCategories.AmmoIdStatName, CustomAmmoCategories.findBestAmmo(weapon));
       } else {
         weapon.StatCollection.Set<string>(CustomAmmoCategories.AmmoIdStatName, CustomAmmoCategories.findBestAmmo(weapon));
       }
+      weapon.ClearAmmoModeCache();
     }
     public static List<string> getAvaibleAmmo(Weapon weapon) {
       List<string> result = new List<string>();
@@ -1024,9 +841,10 @@ namespace CustAmmoCategories {
         CustomAmmoCategoriesLog.Log.LogWrite(" no ammo boxes\n");
         return;
       };
-      if (CustomAmmoCategories.checkExistance(weapon.StatCollection, CustomAmmoCategories.AmmoIdStatName) == false) {
+      if (weapon.StatCollection.ContainsStatistic(CustomAmmoCategories.AmmoIdStatName) == false) {
         CustomAmmoCategoriesLog.Log.LogWrite(" Current weapon is not set\n");
         weapon.StatCollection.AddStatistic<string>(CustomAmmoCategories.AmmoIdStatName, CustomAmmoCategories.findBestAmmo(weapon));
+        weapon.ClearAmmoModeCache();
         return;
       }
       string CurrentAmmo = weapon.StatCollection.GetStatistic(CustomAmmoCategories.AmmoIdStatName).Value<string>();
@@ -1034,9 +852,10 @@ namespace CustAmmoCategories {
       int CurrentAmmoIndex = AvaibleAmmo.IndexOf(CurrentAmmo);
       if (CurrentAmmoIndex < 0) {
         weapon.StatCollection.Set<string>(CustomAmmoCategories.AmmoIdStatName, CustomAmmoCategories.findBestAmmo(weapon));
+        weapon.ClearAmmoModeCache();
         return;
       }
-      CustomAmmoCategory weaponAmmoCategory = CustomAmmoCategories.getWeaponCustomAmmoCategory(weapon);
+      CustomAmmoCategory weaponAmmoCategory = weapon.CustomAmmoCategory();
       for (int ti = 1; ti <= AvaibleAmmo.Count; ++ti) {
         string tempAmmo = AvaibleAmmo[(ti + CurrentAmmoIndex) % AvaibleAmmo.Count];
         for (int t = 0; t < weapon.ammoBoxes.Count; ++t) {
@@ -1060,6 +879,7 @@ namespace CustAmmoCategories {
           }
           CustomAmmoCategoriesLog.Log.LogWrite("   cycled to " + tempAmmo + "\n");
           weapon.StatCollection.Set<string>(CustomAmmoCategories.AmmoIdStatName, tempAmmo);
+          weapon.ClearAmmoModeCache();
           return;
         }
       }
@@ -1081,13 +901,13 @@ namespace CustAmmoCategories {
         CustomAmmoCategoriesLog.Log.LogWrite(" no weapon modes\n");
         return;
       }
-      if (CustomAmmoCategories.checkExistance(weapon.StatCollection, CustomAmmoCategories.WeaponModeStatisticName) == false) {
+      if (weapon.StatCollection.ContainsStatistic(CustomAmmoCategories.WeaponModeStatisticName) == false) {
         weapon.StatCollection.AddStatistic<string>(CustomAmmoCategories.WeaponModeStatisticName, extWeapon.baseModeId);
         CustomAmmoCategories.CycleAmmoBest(weapon);
         return;
       }
       string modeId = weapon.StatCollection.GetStatistic(CustomAmmoCategories.WeaponModeStatisticName).Value<string>();
-      CustomAmmoCategory oldWeaponAmmoCategory = CustomAmmoCategories.getWeaponCustomAmmoCategory(weapon);
+      CustomAmmoCategory oldWeaponAmmoCategory = weapon.CustomAmmoCategory();
       List<WeaponMode> avaibleModes = weapon.AvaibleModes();
       if (avaibleModes.Count == 0) { return; };
       int nextIndex = 0;
@@ -1099,9 +919,11 @@ namespace CustAmmoCategories {
       }
       modeId = avaibleModes[nextIndex].Id;
       weapon.StatCollection.Set<string>(CustomAmmoCategories.WeaponModeStatisticName, modeId);
-      CustomAmmoCategory newWeaponAmmoCategory = CustomAmmoCategories.getWeaponCustomAmmoCategory(weapon);
+      CustomAmmoCategory newWeaponAmmoCategory = weapon.CustomAmmoCategory();
       if (oldWeaponAmmoCategory.Index != newWeaponAmmoCategory.Index) {
         CustomAmmoCategories.CycleAmmoBest(weapon);
+      } else {
+        weapon.ClearAmmoModeCache();
       }
     }
 
@@ -1122,20 +944,19 @@ namespace CustAmmoCategories {
       ExtWeaponDef extWeapon = CustomAmmoCategories.getExtWeaponDef(weapon.defId);
       if (extWeapon.Modes.Count > 0) {
         CustomAmmoCategoriesLog.Log.LogWrite(" Weapon modes count " + extWeapon.Modes.Count + "\n");
-        if (CustomAmmoCategories.checkExistance(weapon.StatCollection, CustomAmmoCategories.WeaponModeStatisticName) == false) {
+        if (weapon.StatCollection.ContainsStatistic(CustomAmmoCategories.WeaponModeStatisticName) == false) {
           weapon.StatCollection.AddStatistic<string>(CustomAmmoCategories.WeaponModeStatisticName, extWeapon.baseModeId);
           CustomAmmoCategoriesLog.Log.LogWrite(" Add to weapon stat collection " + extWeapon.baseModeId + "\n");
+          weapon.ClearAmmoModeCache();
         }
       }
       if (weapon.ammoBoxes.Count > 0) {
-        if (CustomAmmoCategories.checkExistance(weapon.StatCollection, CustomAmmoCategories.AmmoIdStatName) == false) {
+        if (weapon.StatCollection.ContainsStatistic(CustomAmmoCategories.AmmoIdStatName) == false) {
           weapon.StatCollection.AddStatistic<string>(CustomAmmoCategories.AmmoIdStatName, CustomAmmoCategories.findBestAmmo(weapon));
           CustomAmmoCategoriesLog.Log.LogWrite(" Add to weapon stat collection " + weapon.StatCollection.GetStatistic(CustomAmmoCategories.AmmoIdStatName).Value<string>() + "\n");
+          weapon.ClearAmmoModeCache();
         }
       }
-    }
-    public static bool checkExistance(StatCollection statCollection, string statName) {
-      return ((Dictionary<string, Statistic>)typeof(StatCollection).GetField("stats", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(statCollection)).ContainsKey(statName);
     }
     public static CustomAmmoCategory findByIndex(int index) {
       foreach (var item in CustomAmmoCategories.items) {
@@ -1178,7 +999,7 @@ namespace CustAmmoCategories {
       string result = "";
       int AIBattleValue = 0;
       CustomAmmoCategory weaponAmmoCategory = CustomAmmoCategories.find(weapon.AmmoCategoryValue.Name);
-      WeaponMode mode = CustomAmmoCategories.getWeaponMode(weapon);
+      WeaponMode mode = weapon.mode();
       ExtWeaponDef extWeapon = CustomAmmoCategories.getExtWeaponDef(weapon.defId);
       if (mode.AmmoCategory != null) { weaponAmmoCategory = mode.AmmoCategory; } else
       if (extWeapon.AmmoCategory != CustomAmmoCategories.NotSetCustomAmmoCategoty) { weaponAmmoCategory = extWeapon.AmmoCategory; };
@@ -1317,35 +1138,35 @@ namespace CustAmmoCategories {
     public static readonly string LandminesActorStat = "CULandminesUnaffected";
     public static readonly string AOEHeightActorStat = "CUAOEHeight";
     public static bool UnaffectedDesignMasks(this ICombatant unit) {
-      if (CustomAmmoCategories.checkExistance(unit.StatCollection, DesignMasksActorStat) == false) { return false; };
+      if (unit.StatCollection.ContainsStatistic(DesignMasksActorStat) == false) { return false; };
       return unit.StatCollection.GetStatistic(DesignMasksActorStat).Value<bool>();
     }
     public static bool UnaffectedPathing(this ICombatant unit) {
       try {
-        if (CustomAmmoCategories.checkExistance(unit.StatCollection, PathingActorStat) == false) { return false; };
+        if (unit.StatCollection.ContainsStatistic(PathingActorStat) == false) { return false; };
         return unit.StatCollection.GetStatistic(PathingActorStat).Value<bool>();
       } catch (Exception) {
         return false;
       }
     }
     public static bool UnaffectedFire(this ICombatant unit) {
-      if (CustomAmmoCategories.checkExistance(unit.StatCollection, FireActorStat) == false) { return false; };
+      if (unit.StatCollection.ContainsStatistic(FireActorStat) == false) { return false; };
       return unit.StatCollection.GetStatistic(FireActorStat).Value<bool>();
     }
     public static bool UnaffectedLandmines(this ICombatant unit) {
-      if (CustomAmmoCategories.checkExistance(unit.StatCollection, LandminesActorStat) == false) { return false; };
+      if (unit.StatCollection.ContainsStatistic(LandminesActorStat) == false) { return false; };
       return unit.StatCollection.GetStatistic(LandminesActorStat).Value<bool>();
     }
     public static float AoEHeightFix(this ICombatant unit) {
-      if (CustomAmmoCategories.checkExistance(unit.StatCollection, AOEHeightActorStat) == false) { return 0f; };
+      if (unit.StatCollection.ContainsStatistic(AOEHeightActorStat) == false) { return 0f; };
       return unit.StatCollection.GetStatistic(AOEHeightActorStat).Value<float>();
     }
     public static string CustomMoveCostKey(this ICombatant unit) {
-      if (CustomAmmoCategories.checkExistance(unit.StatCollection, MoveCostActorStat) == false) { return string.Empty; };
+      if (unit.StatCollection.ContainsStatistic(MoveCostActorStat) == false) { return string.Empty; };
       return unit.StatCollection.GetStatistic(MoveCostActorStat).Value<string>();
     }
     public static bool UnaffectedMoveCostBiome(this ICombatant unit) {
-      if (CustomAmmoCategories.checkExistance(unit.StatCollection, MoveCostBiomeActorStat) == false) { return false; };
+      if (unit.StatCollection.ContainsStatistic(MoveCostBiomeActorStat) == false) { return false; };
       return unit.StatCollection.GetStatistic(MoveCostBiomeActorStat).Value<bool>();
     }
   }
@@ -1536,6 +1357,14 @@ namespace CACMain {
       if (Core.AdditinalFXObjects.ContainsKey(name)) { return Core.AdditinalFXObjects[name]; };
       return null;
     }
+    public static void FinishedLoading(List<string> loadOrder) {
+      Log.M.TWL(0, "FinishedLoading", true);
+      try {
+        CustomAmmoCategories.CustomCategoriesInit();
+      }catch(Exception e) {
+        Log.M.TWL(0, e.ToString(), true);
+      }
+    }
     public static void Init(string directory, string settingsJson) {
       //SavesForm savesForm = new SavesForm();
       CustomAmmoCategoriesLog.Log.BaseDirectory = directory;
@@ -1545,6 +1374,10 @@ namespace CACMain {
       //CustomAmmoCategories.Settings.debugLog = true;
       CustomAmmoCategoriesLog.Log.InitLog();
       CustomAmmoCategoriesLog.Log.LogWrite("Initing... " + directory + " version: " + Assembly.GetExecutingAssembly().GetName().Version + "\n", true);
+      string CharlesBSettings = Path.Combine(directory, "CharlesB_settings.json");
+      if (File.Exists(CharlesBSettings)) {
+        CharlesB.Core.Init(directory, File.ReadAllText(CharlesBSettings));
+      }
       //uint testEventId0 = 0;
       try {
         Dictionary<string, uint> audioEvents = (Dictionary<string, uint>)typeof(WwiseManager).GetField("guidIdMap",BindingFlags.Instance|BindingFlags.NonPublic).GetValue(SceneSingletonBehavior<WwiseManager>.Instance);
@@ -1685,7 +1518,6 @@ namespace CACMain {
         //FootstepManager.Instance, AdditinalMaterials["SolidColor"]
         //);
         //FootstepManager_scorchMaterial.ScorchMaterial = AdditinalMaterials["bullethole-decal"];
-        CustomAmmoCategories.CustomCategoriesInit();
         var harmony = HarmonyInstance.Create("io.mission.modrepuation");
         //Assembly.LoadFile(Path.Combine(directory,"CACPatches.dll"));
         //harmony.PatchAll(Assembly.)

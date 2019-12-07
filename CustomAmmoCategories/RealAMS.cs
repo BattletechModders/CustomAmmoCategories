@@ -30,7 +30,7 @@ namespace CustAmmoCategories {
     //public bool amsShooted;
     public AMSRecord(Weapon weapon, ExtWeaponDef extWeapon, bool AAMS) {
       this.weapon = weapon;
-      AMSHitChance = CustomAmmoCategories.getWeaponAMSHitChance(weapon);
+      AMSHitChance = weapon.AMSHitChance();
       ShootsRemains = 0;
       ShootsCount = 0;
       if (weapon.CanFire) {
@@ -163,62 +163,33 @@ namespace CustAmmoCategories {
     public static string AMSShootsCountStatName = "CAC-AMShootsCount";
     public static string AMSJammingAttemptStatName = "CAC-AMSJammingAttempt";
     public static bool Unguided(this Weapon weapon) {
-      return getWeaponUnguided(weapon);
-    }
-    public static bool getWeaponUnguided(Weapon weapon) {
-      if (CustomAmmoCategories.checkExistance(weapon.StatCollection, CustomAmmoCategories.AmmoIdStatName) == true) {
-        string CurrentAmmoId = weapon.StatCollection.GetStatistic(CustomAmmoCategories.AmmoIdStatName).Value<string>();
-        ExtAmmunitionDef extAmmoDef = CustomAmmoCategories.findExtAmmo(CurrentAmmoId);
-        if (extAmmoDef.Unguided == TripleBoolean.True) {return true;}
-      }
-      ExtWeaponDef extWeapon = CustomAmmoCategories.getExtWeaponDef(weapon.defId);
-      if (CustomAmmoCategories.checkExistance(weapon.StatCollection, CustomAmmoCategories.WeaponModeStatisticName) == true) {
-        string modeId = weapon.StatCollection.GetStatistic(CustomAmmoCategories.WeaponModeStatisticName).Value<string>();
-        if (extWeapon.Modes.ContainsKey(modeId)) {
-          WeaponMode mode = extWeapon.Modes[modeId];
-          if (mode.Unguided == TripleBoolean.True) {return true;}
-        }
-      }
-      if (extWeapon.Unguided == TripleBoolean.True) { return true; }
+      if (weapon.ammo().Unguided == TripleBoolean.True) { return true; }
+      if (weapon.mode().Unguided == TripleBoolean.True) { return true; }
+      if (weapon.exDef().Unguided == TripleBoolean.True) { return true; }
       return false;
     }
-    public static float getWeaponAMSHitChance(Weapon weapon) {
-      ExtWeaponDef extWeapon = CustomAmmoCategories.getExtWeaponDef(weapon.defId);
-      float result = extWeapon.AMSHitChance;
-      if (CustomAmmoCategories.checkExistance(weapon.StatCollection, CustomAmmoCategories.AmmoIdStatName) == true) {
-        string CurrentAmmoId = weapon.StatCollection.GetStatistic(CustomAmmoCategories.AmmoIdStatName).Value<string>();
-        ExtAmmunitionDef extAmmoDef = CustomAmmoCategories.findExtAmmo(CurrentAmmoId);
-        result += extAmmoDef.AMSHitChance;
-      }
-      if (CustomAmmoCategories.checkExistance(weapon.StatCollection, CustomAmmoCategories.WeaponModeStatisticName) == true) {
-        string modeId = weapon.StatCollection.GetStatistic(CustomAmmoCategories.WeaponModeStatisticName).Value<string>();
-        if (extWeapon.Modes.ContainsKey(modeId)) {
-          WeaponMode mode = extWeapon.Modes[modeId];
-          result += mode.AMSHitChance;
-        }
-      }
-      return result;
-    }
     public static float AMSHitChance(this Weapon weapon) {
-      return getWeaponAMSHitChance(weapon);
+      return weapon.exDef().AMSHitChance + weapon.ammo().AMSHitChance + weapon.mode().AMSHitChance;
     }
     public static int AMSShootsCount(this Weapon weapon) {
-      if (CustomAmmoCategories.checkExistance(weapon.StatCollection, CustomAmmoCategories.AMSShootsCountStatName) == false) { return 0; }
-      return weapon.StatCollection.GetStatistic(CustomAmmoCategories.AMSShootsCountStatName).Value<int>();
+      Statistic stat = weapon.StatCollection.GetStatistic(CustomAmmoCategories.AMSShootsCountStatName);
+      if (stat == null) { return 0; }
+      return stat.Value<int>();
     }
-    public static bool getWeaponAMSJammingAttempt(Weapon weapon) {
-      if (CustomAmmoCategories.checkExistance(weapon.StatCollection, CustomAmmoCategories.AMSJammingAttemptStatName) == false) { return false; }
-      return weapon.StatCollection.GetStatistic(CustomAmmoCategories.AMSJammingAttemptStatName).Value<bool>();
+    public static bool AMSJammingAttempt(Weapon weapon) {
+      Statistic stat = weapon.StatCollection.GetStatistic(CustomAmmoCategories.AMSJammingAttemptStatName);
+      if (stat == null) { return false; }
+      return stat.Value<bool>();
     }
     public static void AMSShootsCount(this Weapon weapon, int shoots) {
-      if (CustomAmmoCategories.checkExistance(weapon.StatCollection, CustomAmmoCategories.AMSShootsCountStatName) == false) {
+      if (weapon.StatCollection.ContainsStatistic(CustomAmmoCategories.AMSShootsCountStatName) == false) {
         weapon.StatCollection.AddStatistic<int>(CustomAmmoCategories.AMSShootsCountStatName, shoots);
       } else {
         weapon.StatCollection.Set<int>(CustomAmmoCategories.AMSShootsCountStatName, shoots);
       }
     }
-    public static void setWeaponAMSJammingAttempt(Weapon weapon, bool isShooted) {
-      if (CustomAmmoCategories.checkExistance(weapon.StatCollection, CustomAmmoCategories.AMSJammingAttemptStatName) == false) {
+    public static void AMSJammingAttempt(this Weapon weapon, bool isShooted) {
+      if (weapon.StatCollection.ContainsStatistic(CustomAmmoCategories.AMSJammingAttemptStatName) == false) {
         weapon.StatCollection.AddStatistic<bool>(CustomAmmoCategories.AMSShootsCountStatName, isShooted);
       } else {
         weapon.StatCollection.Set<bool>(CustomAmmoCategories.AMSShootsCountStatName, isShooted);
@@ -242,16 +213,11 @@ namespace CustAmmoCategories {
     }
     public static string getWeaponEffectId(Weapon weapon) {
       string result = "";
-      string ammoId = "";
-      if (CustomAmmoCategories.checkExistance(weapon.StatCollection, CustomAmmoCategories.AmmoIdStatName) == true) {
-        ammoId = weapon.StatCollection.GetStatistic(CustomAmmoCategories.AmmoIdStatName).Value<string>();
-      }
-      WeaponMode weaponMode = CustomAmmoCategories.getWeaponMode(weapon);
       if (string.IsNullOrEmpty(result)) {
-        result = weaponMode.WeaponEffectID;
+        result = weapon.mode().WeaponEffectID;
       }
       if (string.IsNullOrEmpty(result)) {
-        result = CustomAmmoCategories.findExtAmmo(ammoId).WeaponEffectID;
+        result = weapon.ammo().WeaponEffectID;
       }
       if (string.IsNullOrEmpty(result)) {
         result = weapon.weaponDef.WeaponEffectID;
@@ -264,22 +230,19 @@ namespace CustAmmoCategories {
         CustomAmmoCategoriesLog.Log.LogWrite("WARNING! Weapon "+weapon.defId+" "+weapon.UIName+" on "+weapon.parent.DisplayName+":"+weapon.parent.GUID+" has no representation! It no visuals will be played\n",true);
         return null;
       };
-      if (CustomAmmoCategories.checkExistance(weapon.StatCollection, CustomAmmoCategories.GUIDStatisticName) == false) { return weapon.weaponRep.WeaponEffect; }
+      Statistic wGUIDstat = weapon.StatCollection.GetStatistic(CustomAmmoCategories.GUIDStatisticName);
+      if (wGUIDstat == null) { return weapon.weaponRep.WeaponEffect; }
       CustomAmmoCategoriesLog.Log.LogWrite("  weapon GUID is set\n");
-      string ammoId = "";
-      if (CustomAmmoCategories.checkExistance(weapon.StatCollection, CustomAmmoCategories.AmmoIdStatName) == true) {
-        ammoId = weapon.StatCollection.GetStatistic(CustomAmmoCategories.AmmoIdStatName).Value<string>();
-      }
       CustomAmmoCategoriesLog.Log.LogWrite("  weapon ammoId is set\n");
-      string wGUID = weapon.StatCollection.GetStatistic(CustomAmmoCategories.GUIDStatisticName).Value<string>();
-      WeaponMode weaponMode = CustomAmmoCategories.getWeaponMode(weapon);
+      string wGUID = wGUIDstat.Value<string>();
+      WeaponMode weaponMode = weapon.mode();
       string weaponEffectId = weaponMode.WeaponEffectID;
       Log.LogWrite(" weaponMode.WeaponEffectID = "+ weaponMode.WeaponEffectID + "\n");
       WeaponEffect currentEffect = (WeaponEffect)null;
       if (string.IsNullOrEmpty(weaponEffectId)) {
         Log.LogWrite(" null or empty\n");
         currentEffect = weapon.weaponRep.WeaponEffect;
-        weaponEffectId = CustomAmmoCategories.findExtAmmo(ammoId).WeaponEffectID;
+        weaponEffectId = weapon.ammo().WeaponEffectID;
         Log.LogWrite(" ammo.WeaponEffectID = "+ weaponEffectId + "\n");
         if (string.IsNullOrEmpty(weaponEffectId)) {
           weaponEffectId = weapon.weaponDef.WeaponEffectID;
@@ -305,22 +268,18 @@ namespace CustAmmoCategories {
         CustomAmmoCategoriesLog.Log.LogWrite("WARNING! Weapon " + weapon.defId + " " + weapon.UIName + " on " + weapon.parent.DisplayName + ":" + weapon.parent.GUID + " has no representation! It no visuals will be played\n", true);
         return string.Empty;
       };
-      if (CustomAmmoCategories.checkExistance(weapon.StatCollection, CustomAmmoCategories.GUIDStatisticName) == false) { return weapon.weaponDef.WeaponEffectID; }
+      Statistic wGUIDstat = weapon.StatCollection.GetStatistic(CustomAmmoCategories.GUIDStatisticName);
+      if (wGUIDstat == null) { return weapon.weaponDef.WeaponEffectID; }
       CustomAmmoCategoriesLog.Log.LogWrite("  weapon GUID is set\n");
-      string ammoId = "";
-      if (CustomAmmoCategories.checkExistance(weapon.StatCollection, CustomAmmoCategories.AmmoIdStatName) == true) {
-        ammoId = weapon.StatCollection.GetStatistic(CustomAmmoCategories.AmmoIdStatName).Value<string>();
-      }
-      CustomAmmoCategoriesLog.Log.LogWrite("  weapon ammoId is set\n");
       string wGUID = weapon.StatCollection.GetStatistic(CustomAmmoCategories.GUIDStatisticName).Value<string>();
-      WeaponMode weaponMode = CustomAmmoCategories.getWeaponMode(weapon);
+      WeaponMode weaponMode = weapon.mode();
       string weaponEffectId = weaponMode.WeaponEffectID;
       Log.LogWrite(" weaponMode.WeaponEffectID = " + weaponMode.WeaponEffectID + "\n");
       WeaponEffect currentEffect = (WeaponEffect)null;
       if (string.IsNullOrEmpty(weaponEffectId)) {
         Log.LogWrite(" null or empty\n");
         currentEffect = weapon.weaponRep.WeaponEffect;
-        weaponEffectId = CustomAmmoCategories.findExtAmmo(ammoId).WeaponEffectID;
+        weaponEffectId = weapon.mode().WeaponEffectID;
         Log.LogWrite(" ammo.WeaponEffectID = " + weaponEffectId + "\n");
         if (string.IsNullOrEmpty(weaponEffectId)) {
           weaponEffectId = weapon.weaponDef.WeaponEffectID;

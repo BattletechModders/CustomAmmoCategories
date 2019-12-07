@@ -50,126 +50,24 @@ namespace CustAmmoCategories {
     public static WeaponRealizer.Settings getWRSettings() {
       return WeaponRealizer.Core.ModSettings;
     }
-    public static float getWeaponArmorDmgMult(Weapon weapon) {
-      ExtWeaponDef extWeapon = CustomAmmoCategories.getExtWeaponDef(weapon.defId);
-      float result = extWeapon.ArmorDamageModifier;
-      if (CustomAmmoCategories.checkExistance(weapon.StatCollection, CustomAmmoCategories.AmmoIdStatName) == true) {
-        string ammoId = weapon.StatCollection.GetStatistic(CustomAmmoCategories.AmmoIdStatName).Value<string>();
-        ExtAmmunitionDef extAmmo = CustomAmmoCategories.findExtAmmo(ammoId);
-        result *= extAmmo.ArmorDamageModifier;
-      }
-      if (extWeapon.Modes.Count > 0) {
-        string modeId = "";
-        if (CustomAmmoCategories.checkExistance(weapon.StatCollection, CustomAmmoCategories.WeaponModeStatisticName) == true) {
-          modeId = weapon.StatCollection.GetStatistic(CustomAmmoCategories.WeaponModeStatisticName).Value<string>();
-        } else {
-          modeId = extWeapon.baseModeId;
-        }
-        if (extWeapon.Modes.ContainsKey(modeId)) {
-          result *= extWeapon.Modes[modeId].ArmorDamageModifier;
-        }
-      }
-      return result;
+    public static float ArmorDmgMult(this Weapon weapon) {
+      return weapon.exDef().ArmorDamageModifier * weapon.ammo().ArmorDamageModifier * weapon.mode().ArmorDamageModifier;
     }
-    public static float getWeaponISDmgMult(Weapon weapon) {
-      ExtWeaponDef extWeapon = CustomAmmoCategories.getExtWeaponDef(weapon.defId);
-      float result = extWeapon.ISDamageModifier;
-      if (CustomAmmoCategories.checkExistance(weapon.StatCollection, CustomAmmoCategories.AmmoIdStatName) == true) {
-        string ammoId = weapon.StatCollection.GetStatistic(CustomAmmoCategories.AmmoIdStatName).Value<string>();
-        ExtAmmunitionDef extAmmo = CustomAmmoCategories.findExtAmmo(ammoId);
-        result *= extAmmo.ISDamageModifier;
-      }
-      if (extWeapon.Modes.Count > 0) {
-        string modeId = "";
-        if (CustomAmmoCategories.checkExistance(weapon.StatCollection, CustomAmmoCategories.WeaponModeStatisticName) == true) {
-          modeId = weapon.StatCollection.GetStatistic(CustomAmmoCategories.WeaponModeStatisticName).Value<string>();
-        } else {
-          modeId = extWeapon.baseModeId;
-        }
-        if (extWeapon.Modes.ContainsKey(modeId)) {
-          result *= extWeapon.Modes[modeId].ISDamageModifier;
-        }
-      }
-      return result;
+    public static float ISDmgMult(this Weapon weapon) {
+      return weapon.exDef().ISDamageModifier * weapon.ammo().ISDamageModifier * weapon.mode().ISDamageModifier;
     }
-    public static float getWeaponDamageVariance(Weapon weapon) {
-      float result = weapon.weaponDef.DamageVariance;
-      if (CustomAmmoCategories.checkExistance(weapon.StatCollection, CustomAmmoCategories.AmmoIdStatName) == true) {
-        string ammoId = weapon.StatCollection.GetStatistic(CustomAmmoCategories.AmmoIdStatName).Value<string>();
-        ExtAmmunitionDef extAmmo = CustomAmmoCategories.findExtAmmo(ammoId);
-        result += extAmmo.DamageVariance;
-      }
-      ExtWeaponDef extWeapon = CustomAmmoCategories.getExtWeaponDef(weapon.defId);
-      if (extWeapon.Modes.Count > 0) {
-        string modeId = "";
-        if (CustomAmmoCategories.checkExistance(weapon.StatCollection, CustomAmmoCategories.WeaponModeStatisticName) == true) {
-          modeId = weapon.StatCollection.GetStatistic(CustomAmmoCategories.WeaponModeStatisticName).Value<string>();
-        } else {
-          modeId = extWeapon.baseModeId;
-        }
-        if (extWeapon.Modes.ContainsKey(modeId)) {
-          result += extWeapon.Modes[modeId].DamageVariance;
-        }
-      }
-      return result;
+    public static float DamageVariance(this Weapon weapon) {
+      return weapon.weaponDef.DamageVariance + weapon.ammo().DamageVariance + weapon.mode().DamageVariance;
     }
-    public static float getWeaponDistantVariance(Weapon weapon) {
-      Log.M.WL("getWeaponDistantVariance " + weapon.UIName);
-      ExtWeaponDef extWeapon = CustomAmmoCategories.getExtWeaponDef(weapon.defId);
-      float result = extWeapon.DistantVariance;
-      Log.M.WL(" definition("+extWeapon.Id+"):" + result);
-      if (CustomAmmoCategories.checkExistance(weapon.StatCollection, CustomAmmoCategories.AmmoIdStatName) == true) {
-        string ammoId = weapon.StatCollection.GetStatistic(CustomAmmoCategories.AmmoIdStatName).Value<string>();
-        ExtAmmunitionDef extAmmo = CustomAmmoCategories.findExtAmmo(ammoId);
-        result += extAmmo.DistantVariance;
-        Log.M.WL(" ammo:" + result);
-      }
-      if (extWeapon.Modes.Count > 0) {
-        string modeId = "";
-        if (CustomAmmoCategories.checkExistance(weapon.StatCollection, CustomAmmoCategories.WeaponModeStatisticName) == true) {
-          modeId = weapon.StatCollection.GetStatistic(CustomAmmoCategories.WeaponModeStatisticName).Value<string>();
-        } else {
-          modeId = extWeapon.baseModeId;
-        }
-        if (extWeapon.Modes.ContainsKey(modeId)) {
-          result += extWeapon.Modes[modeId].DistantVariance;
-          Log.M.WL(" mode:" + result);
-        }
-      }
-      Log.M.WL(" result:" + result);
-      return result;
+    public static float DistantVariance(this Weapon weapon) {
+      return weapon.exDef().DistantVariance + weapon.ammo().DistantVariance + weapon.mode().DistantVariance;
     }
-    public static bool getWeaponDistantVarianceReversed(Weapon weapon) {
-      Log.M.WL("getWeaponDistantVarianceReversed " + weapon.UIName);
-      TripleBoolean result = TripleBoolean.NotSet;
-      ExtWeaponDef extWeapon = CustomAmmoCategories.getExtWeaponDef(weapon.defId);
-      if (extWeapon.Modes.Count > 0) {
-        string modeId = "";
-        if (CustomAmmoCategories.checkExistance(weapon.StatCollection, CustomAmmoCategories.WeaponModeStatisticName) == true) {
-          modeId = weapon.StatCollection.GetStatistic(CustomAmmoCategories.WeaponModeStatisticName).Value<string>();
-        } else {
-          modeId = extWeapon.baseModeId;
-        }
-        if (extWeapon.Modes.ContainsKey(modeId)) {
-          result = extWeapon.Modes[modeId].DistantVarianceReversed;
-          Log.M.WL(" mode:" + result);
-        }
-      }
-      if (result == TripleBoolean.NotSet) {
-        if (CustomAmmoCategories.checkExistance(weapon.StatCollection, CustomAmmoCategories.AmmoIdStatName) == true) {
-          string ammoId = weapon.StatCollection.GetStatistic(CustomAmmoCategories.AmmoIdStatName).Value<string>();
-          ExtAmmunitionDef extAmmo = CustomAmmoCategories.findExtAmmo(ammoId);
-          result = extAmmo.DistantVarianceReversed;
-          Log.M.WL(" ammo:" + result);
-        }
-      }
-      if (result == TripleBoolean.NotSet) {
-        result = extWeapon.DistantVarianceReversed;
-        Log.M.WL(" def:" + result);
-      }
-      bool ret = result == TripleBoolean.True;
-      Log.M.WL(" result:" + result+"/"+ret);
-      return ret;
+    public static bool DistantVarianceReversed(this Weapon weapon) {
+      WeaponMode mode = weapon.mode();
+      if (mode.DistantVarianceReversed != TripleBoolean.NotSet) { return mode.DistantVarianceReversed == TripleBoolean.True; }
+      ExtAmmunitionDef ammo = weapon.ammo();
+      if (ammo.DistantVarianceReversed != TripleBoolean.NotSet) { return ammo.DistantVarianceReversed == TripleBoolean.True; }
+      return weapon.exDef().DistantVarianceReversed == TripleBoolean.True;
     }
     private const double Pi2 = Math.PI / 2.0;
     public static float WeaponDamageDistance(Vector3 attackPos, ICombatant target, Weapon weapon, float damage, float rawDamage) {
@@ -179,7 +77,7 @@ namespace CustAmmoCategories {
       var distance = Vector3.Distance(attackPos, target.TargetPosition);
       var distanceDifference = weapon.MaxRange - distance;
       var distanceRatio = distanceDifference / weapon.MaxRange;
-      var baseMultiplier = CustomAmmoCategories.getWeaponDistantVariance(weapon);
+      var baseMultiplier = weapon.DistantVariance();
       var distanceBasedFunctionMultiplier = (float)Math.Atan(Pi2 * distanceRatio + baseMultiplier);
       if (distance < weapon.MaxRange) {
         varianceMultiplier = Mathf.Max(
@@ -212,7 +110,7 @@ namespace CustAmmoCategories {
       var distance = Vector3.Distance(attackPos, target.TargetPosition);
       var distanceDifference = weapon.MaxRange - distance;
       var distanceRatio = distanceDifference / weapon.MinRange;
-      var baseMultiplier = CustomAmmoCategories.getWeaponDistantVariance(weapon);
+      var baseMultiplier = weapon.DistantVariance();
       var distanceBasedFunctionMultiplier = (float)Math.Atan(1f / (Pi2 * distanceRatio + baseMultiplier));
       if (distance < weapon.MinRange) {
         varianceMultiplier = 0;
@@ -245,7 +143,7 @@ namespace CustAmmoCategories {
       Log.LogWrite("Simple damage variance for weapon " + weapon.UIName + "\n");
       var damagePerShot = weapon.DamagePerShot;
       var adjustment = rawDamage / damagePerShot;
-      var variance = CustomAmmoCategories.getWeaponDamageVariance(weapon);
+      var variance = weapon.DamageVariance();
       var roll = NormalDistribution.Random(
           new VarianceBounds(
               damagePerShot - variance,
@@ -435,13 +333,13 @@ namespace CustomAmmoCategoriesPatches {
           Log.LogWrite("Missile intercepted. No additional impact. No minefield.\n");
         }
         if (realDamage >= 1.0f) { 
-          if (CustomAmmoCategories.getWeaponDamageVariance(weapon) > CustomAmmoCategories.Epsilon) {
+          if (weapon.DamageVariance() > CustomAmmoCategories.Epsilon) {
             realDamage = CustomAmmoCategories.WeaponDamageSimpleVariance(weapon, rawDamage);
           } else {
             Log.M.WL("no simple variance defined");
           }
-          if (CustomAmmoCategories.getWeaponDistantVariance(weapon) > CustomAmmoCategories.Epsilon) {
-            if (CustomAmmoCategories.getWeaponDistantVarianceReversed(weapon) == false) {
+          if (weapon.DistantVariance() > CustomAmmoCategories.Epsilon) {
+            if (weapon.DistantVarianceReversed() == false) {
               realDamage = CustomAmmoCategories.WeaponDamageDistance(__instance.attacker.TargetPosition, target, weapon, realDamage, rawDamage);
             } else {
               realDamage = CustomAmmoCategories.WeaponDamageRevDistance(__instance.attacker.TargetPosition, target, weapon, realDamage, rawDamage);
@@ -452,12 +350,12 @@ namespace CustomAmmoCategoriesPatches {
           if ((hitLocation != 0) && (hitLocation != 65536)) {
             float CurArmor = target.ArmorForLocation(hitLocation);
             CustomAmmoCategoriesLog.Log.LogWrite("  location armor = " + CurArmor + "\n");
-            float ArmorDmgMuil = CustomAmmoCategories.getWeaponArmorDmgMult(weapon);
+            float ArmorDmgMuil = weapon.ArmorDmgMult();
             if (CurArmor / ArmorDmgMuil > realDamage) {
               realDamage *= ArmorDmgMuil;
               CustomAmmoCategoriesLog.Log.LogWrite("  all damage to armor = " + realDamage + "\n");
             } else {
-              float ISDdamagePart = (realDamage - CurArmor / ArmorDmgMuil) * CustomAmmoCategories.getWeaponISDmgMult(weapon);
+              float ISDdamagePart = (realDamage - CurArmor / ArmorDmgMuil) * weapon.ISDmgMult();
               CustomAmmoCategoriesLog.Log.LogWrite("  damage to armor = " + CurArmor + "\n");
               CustomAmmoCategoriesLog.Log.LogWrite("  part of damage to IS = " + ISDdamagePart + "\n");
               realDamage = CurArmor + ISDdamagePart;

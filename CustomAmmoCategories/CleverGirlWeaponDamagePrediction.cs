@@ -130,7 +130,8 @@ namespace CleverGirlAIDamagePrediction {
       }
       inital.HitsCount = weapon.DecrementAmmo(-1, 0, true);
       inital.ToHit = weapon.GetToHitFromPosition(target, 1, attackPos, target.CurrentPosition, false, false, false);
-      foreach (EffectData statusEffect in CustomAmmoCategories.getWeaponStatusEffects(weapon)) {
+      EffectData[] effects = weapon.StatusEffects();
+      foreach (EffectData statusEffect in effects) {
         if (statusEffect.targetingData.effectTriggerType == EffectTriggerType.OnHit) {
           inital.ApplyEffects.Add(statusEffect);
         }
@@ -158,7 +159,7 @@ namespace CleverGirlAIDamagePrediction {
     }
     public void StrayProc(DamagePredictionRecord inital, Vector3 attackPos) {
       Log.M.TWL(0, "WeaponFirePredictedEffect.NormalDamageProc " + this.weapon.defId + " trg:" + inital.Target.DisplayName);
-      float SpreadRange = this.weapon.SpreadRange();
+      float SpreadRange = this.weapon.StrayRange();
       if (SpreadRange <= CustomAmmoCategories.Epsilon) { Log.M.WL("No stray"); return; }
       float divider = SpreadRange;
       Dictionary<ICombatant, float> possibleTargets = new Dictionary<ICombatant, float>();
@@ -205,8 +206,8 @@ namespace CleverGirlAIDamagePrediction {
     }
     public void AoEProc(Vector3 attackPos) {
       Log.M.TWL(0, "WeaponFirePredictedEffect.AoEProc " + this.weapon.defId + "/" + this.weapon.UIName);
-      if (CustomAmmoCategories.isWeaponAOECapable(this.weapon) == false) { return; }
-      if (weapon.getWeaponAOERange() <= CustomAmmoCategories.Epsilon) { return; }
+      if (this.weapon.AOECapable() == false) { return; }
+      if (this.weapon.AOERange() <= CustomAmmoCategories.Epsilon) { return; }
       List<DamagePredictionRecord> rec = new List<DamagePredictionRecord>();
       rec.AddRange(this.predictDamage);
       foreach (DamagePredictionRecord dmg in rec) {
@@ -214,7 +215,7 @@ namespace CleverGirlAIDamagePrediction {
       }
     }
     public void AoEProc(DamagePredictionRecord inital, Vector3 attackPos) {
-      float AoERange = weapon.getWeaponAOERange();
+      float AoERange = weapon.AOERange();
       Dictionary<ICombatant, float> possibleTargets = new Dictionary<ICombatant, float>();
       foreach (ICombatant target in this.weapon.parent.Combat.GetAllCombatants()) {
         if (target.IsDead) { continue; }
@@ -222,8 +223,8 @@ namespace CleverGirlAIDamagePrediction {
         if (distance <= 0f) { continue; }
         possibleTargets.Add(target, distance);
       }
-      float AoEDmg = CustomAmmoCategories.getWeaponAOEDamage(weapon) * inital.HitsCount;
-      float AoEHeat = CustomAmmoCategories.getWeaponAOEHeatDamage(weapon) * inital.HitsCount;
+      float AoEDmg = CustomAmmoCategories.AOEDamage(weapon) * inital.HitsCount;
+      float AoEHeat = CustomAmmoCategories.AOEHeatDamage(weapon) * inital.HitsCount;
       float AoEStab = weapon.AOEInstability() * inital.HitsCount;
       foreach (var trg in possibleTargets) {
         DamagePredictionRecord aoe = new DamagePredictionRecord();
@@ -243,7 +244,7 @@ namespace CleverGirlAIDamagePrediction {
     }
     public void ShellsProc(DamagePredictionRecord inital,Vector3 attackPos) {
       Log.M.TWL(0, "WeaponFirePredictedEffect.ShellsProc " + this.weapon.defId + " trg:" + inital.Target.DisplayName);
-      float sMin = CustomAmmoCategories.getWeaponMinShellsDistance(this.weapon);
+      float sMin = this.weapon.MinShellsDistance();
       float sep_distance = Vector3.Distance(attackPos, inital.Target.CurrentPosition);
       bool FragSeparated = sep_distance >= sMin;
       if (FragSeparated) {
@@ -253,7 +254,7 @@ namespace CleverGirlAIDamagePrediction {
         inital.AP /= (float)weapon.ProjectilesPerShot;
         inital.HitsCount *= weapon.ProjectilesPerShot;
       } else {
-        float unsepDmbMod = CustomAmmoCategories.getWeaponUnseparatedDamageMult(this.weapon);
+        float unsepDmbMod = this.weapon.UnseparatedDamageMult();
         inital.Normal *= unsepDmbMod;
         inital.Heat *= unsepDmbMod;
         inital.Instability *= unsepDmbMod;
@@ -294,8 +295,8 @@ namespace CleverGirlAIDamagePrediction {
       float realDamage = rawDamage;
       float rawHeat = inital.Heat;
       if (realDamage >= 1.0f) {
-        if (CustomAmmoCategories.getWeaponDistantVariance(weapon) > CustomAmmoCategories.Epsilon) {
-          if (CustomAmmoCategories.getWeaponDistantVarianceReversed(weapon) == false) {
+        if (weapon.DistantVariance() > CustomAmmoCategories.Epsilon) {
+          if (weapon.DistantVarianceReversed() == false) {
             realDamage = CustomAmmoCategories.WeaponDamageDistance(attackPos, inital.Target, weapon, realDamage, rawDamage);
           } else {
             realDamage = CustomAmmoCategories.WeaponDamageRevDistance(attackPos, inital.Target, weapon, realDamage, rawDamage);
@@ -385,13 +386,11 @@ namespace CleverGirlAIDamagePrediction {
     public static AmmoModePair getCurrentAmmoMode(this Weapon weapon) {
       ExtWeaponDef extWeapon = CustomAmmoCategories.getExtWeaponDef(weapon.defId);
       string currentMode = extWeapon.baseModeId;
-      if (CustomAmmoCategories.checkExistance(weapon.StatCollection, CustomAmmoCategories.WeaponModeStatisticName) == true) {
-        currentMode = weapon.StatCollection.GetStatistic(CustomAmmoCategories.WeaponModeStatisticName).Value<string>();
-      }
-      string currentAmmo = "";
-      if (CustomAmmoCategories.checkExistance(weapon.StatCollection, CustomAmmoCategories.AmmoIdStatName) == true) {
-        currentAmmo = weapon.StatCollection.GetStatistic(CustomAmmoCategories.AmmoIdStatName).Value<string>();
-      }
+      Statistic stat = weapon.StatCollection.GetStatistic(CustomAmmoCategories.WeaponModeStatisticName);
+      if (stat != null) { currentMode = stat.Value<string>(); }
+      stat = weapon.StatCollection.GetStatistic(CustomAmmoCategories.AmmoIdStatName);
+      string currentAmmo = string.Empty;
+      if (stat != null) { currentAmmo = stat.Value<string>(); }
       return new AmmoModePair(currentAmmo, currentMode);
     }
     public static void ApplyAmmoMode(this Weapon weapon, AmmoModePair ammoMode) {
@@ -465,8 +464,8 @@ namespace CleverGirlAIDamagePrediction {
         result.isAAMS = weapon.isAAMS();
         result.ammoUsage = weapon.ShotsWhenFired;
         result.avaibleAmmo = weapon.AvaibleAmmo();
-        result.JammChance = CustomAmmoCategories.getWeaponFlatJammingChance(weapon);
-        result.DamageOnJamm = CustomAmmoCategories.getWeaponDamageOnJamming(weapon);
+        result.JammChance = weapon.FlatJammingChance();
+        result.DamageOnJamm = weapon.DamageOnJamming();
         result.DestroyOnJamm = weapon.DestroyOnJamming();
         result.Cooldown = weapon.Cooldown();
         result.NormalDamageProc(attackPos, target);

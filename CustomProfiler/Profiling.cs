@@ -120,7 +120,7 @@ namespace CustomProfiler {
     public static bool ProfilingEnabled = false;
     public static GameObject UI = null;
     public static ProfilerUI pUI = null;
-    private static bool keyState = false;
+    //private static bool keyState = false;
     public static float framesDrawn = 0f;
     public static void flushThreadProc() {
       Log.M.TWL(0, "profiler flush thread started");

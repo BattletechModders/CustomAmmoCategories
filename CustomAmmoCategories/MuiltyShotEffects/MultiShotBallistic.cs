@@ -210,7 +210,7 @@ namespace CustAmmoCategories {
       } else {
         Log.LogWrite(" sequence is null\n");
       }
-      if (CustomAmmoCategories.getWeaponAlwaysIndirectVisuals(this.weapon)) {
+      if (this.weapon.AlwaysIndirectVisuals()) {
         this.isIndirect = true;
       }
       Log.LogWrite(" isIndirect:"+this.isIndirect+"\n");

@@ -116,29 +116,14 @@ namespace CustAmmoCategories {
       }
       return impactPoint;
     }
-    public static bool getWeaponBecomesDangerousOnImpact(Weapon weapon) {
-      if (CustomAmmoCategories.checkExistance(weapon.StatCollection, CustomAmmoCategories.AmmoIdStatName) == true) {
-        string CurrentAmmoId = weapon.StatCollection.GetStatistic(CustomAmmoCategories.AmmoIdStatName).Value<string>();
-        ExtAmmunitionDef extAmmoDef = CustomAmmoCategories.findExtAmmo(CurrentAmmoId);
-        return extAmmoDef.SurfaceBecomeDangerousOnImpact == TripleBoolean.True;
-      }
-      return false;
+    public static bool BecomesDangerousOnImpact(this Weapon weapon) {
+      return weapon.ammo().SurfaceBecomeDangerousOnImpact == TripleBoolean.True;
     }
     public static bool InstallMineField(this Weapon weapon) {
-      if (CustomAmmoCategories.checkExistance(weapon.StatCollection, CustomAmmoCategories.AmmoIdStatName) == true) {
-        string CurrentAmmoId = weapon.StatCollection.GetStatistic(CustomAmmoCategories.AmmoIdStatName).Value<string>();
-        ExtAmmunitionDef extAmmoDef = CustomAmmoCategories.findExtAmmo(CurrentAmmoId);
-        return extAmmoDef.MineField.Count > 0;
-      }
-      return false;
+      return weapon.ammo().MineField.Count > 0;
     }
     public static MineFieldDef MineFieldDef(this Weapon weapon) {
-      if (CustomAmmoCategories.checkExistance(weapon.StatCollection, CustomAmmoCategories.AmmoIdStatName) == true) {
-        string CurrentAmmoId = weapon.StatCollection.GetStatistic(CustomAmmoCategories.AmmoIdStatName).Value<string>();
-        ExtAmmunitionDef extAmmoDef = CustomAmmoCategories.findExtAmmo(CurrentAmmoId);
-        return extAmmoDef.MineField;
-      }
-      return new MineFieldDef();
+      return weapon.ammo().MineField;
     }
     /*public static int MineFieldRadius(this Weapon weapon) {
       if (CustomAmmoCategories.checkExistance(weapon.StatCollection, CustomAmmoCategories.AmmoIdStatName) == true) {
@@ -212,166 +197,42 @@ namespace CustAmmoCategories {
       }
       return 0f;
     }*/
-    public static ExtWeaponDef exDef(this Weapon weapon) {
-      return CustomAmmoCategories.getExtWeaponDef(weapon.defId);
-    }
-    public static WeaponMode mode(this Weapon weapon) {
-      ExtWeaponDef extWeapon = weapon.exDef();
-      string modeId = extWeapon.baseModeId;
-      if (CustomAmmoCategories.checkExistance(weapon.StatCollection, CustomAmmoCategories.WeaponModeStatisticName) == true) {
-        modeId = weapon.StatCollection.GetStatistic(CustomAmmoCategories.WeaponModeStatisticName).Value<string>();
-      }
-      if (extWeapon.Modes.ContainsKey(modeId)) {
-        WeaponMode mode = extWeapon.Modes[modeId];
-        return mode;
-      }
-      return CustomAmmoCategories.DefaultWeaponMode;
-    }
-    public static ExtAmmunitionDef ammo(this Weapon weapon) {
-      if (CustomAmmoCategories.checkExistance(weapon.StatCollection, CustomAmmoCategories.AmmoIdStatName) == true) {
-        string CurrentAmmoId = weapon.StatCollection.GetStatistic(CustomAmmoCategories.AmmoIdStatName).Value<string>();
-        ExtAmmunitionDef extAmmoDef = CustomAmmoCategories.findExtAmmo(CurrentAmmoId);
-        return extAmmoDef;
-      }
-      return CustomAmmoCategories.DefaultAmmo;
-    }
 
     public static float FireTerrainChance(this Weapon weapon) {
-      ExtWeaponDef extWeapon = CustomAmmoCategories.getExtWeaponDef(weapon.defId);
-      float result = extWeapon.FireTerrainChance;
-      if (CustomAmmoCategories.checkExistance(weapon.StatCollection, CustomAmmoCategories.AmmoIdStatName) == true) {
-        string CurrentAmmoId = weapon.StatCollection.GetStatistic(CustomAmmoCategories.AmmoIdStatName).Value<string>();
-        ExtAmmunitionDef extAmmoDef = CustomAmmoCategories.findExtAmmo(CurrentAmmoId);
-        result += extAmmoDef.FireTerrainChance;
-      }
-      if (CustomAmmoCategories.checkExistance(weapon.StatCollection, CustomAmmoCategories.WeaponModeStatisticName) == true) {
-        string modeId = weapon.StatCollection.GetStatistic(CustomAmmoCategories.WeaponModeStatisticName).Value<string>();
-        if (extWeapon.Modes.ContainsKey(modeId)) {
-          WeaponMode mode = extWeapon.Modes[modeId];
-          result += mode.FireTerrainChance;
-        }
-      }
-      Log.LogWrite("FireTerrainChance:" + weapon.UIName + "\n");
-      result *= DynamicMapHelper.BiomeLitFireChance();
-      Log.LogWrite(" result:" + result + "\n");
-      return result;
+      return (weapon.exDef().FireTerrainChance + weapon.ammo().FireTerrainChance + weapon.mode().FireTerrainChance) * DynamicMapHelper.BiomeLitFireChance();
     }
     public static int FireDurationWithoutForest(this Weapon weapon) {
-      ExtWeaponDef extWeapon = CustomAmmoCategories.getExtWeaponDef(weapon.defId);
-      int result = extWeapon.FireDurationWithoutForest;
-      if (CustomAmmoCategories.checkExistance(weapon.StatCollection, CustomAmmoCategories.AmmoIdStatName) == true) {
-        string CurrentAmmoId = weapon.StatCollection.GetStatistic(CustomAmmoCategories.AmmoIdStatName).Value<string>();
-        ExtAmmunitionDef extAmmoDef = CustomAmmoCategories.findExtAmmo(CurrentAmmoId);
-        result += extAmmoDef.FireDurationWithoutForest;
-      }
-      if (CustomAmmoCategories.checkExistance(weapon.StatCollection, CustomAmmoCategories.WeaponModeStatisticName) == true) {
-        string modeId = weapon.StatCollection.GetStatistic(CustomAmmoCategories.WeaponModeStatisticName).Value<string>();
-        if (extWeapon.Modes.ContainsKey(modeId)) {
-          WeaponMode mode = extWeapon.Modes[modeId];
-          result += mode.FireDurationWithoutForest;
-        }
-      }
-      Log.LogWrite("FireDurationWithoutForest:" + weapon.UIName + "\n");
-      float res = result;
-      res *= DynamicMapHelper.BiomeWeaponFireDuration();
-      result = Mathf.RoundToInt(res);
-      Log.LogWrite(" result:" + result + "\n");
-      return result;
+      return Mathf.RoundToInt((weapon.exDef().FireDurationWithoutForest + weapon.ammo().FireDurationWithoutForest + weapon.mode().FireDurationWithoutForest) * DynamicMapHelper.BiomeWeaponFireDuration());
     }
     public static int FireTerrainStrength(this Weapon weapon) {
-      ExtWeaponDef extWeapon = CustomAmmoCategories.getExtWeaponDef(weapon.defId);
-      int result = extWeapon.FireTerrainStrength;
-      if (CustomAmmoCategories.checkExistance(weapon.StatCollection, CustomAmmoCategories.AmmoIdStatName) == true) {
-        string CurrentAmmoId = weapon.StatCollection.GetStatistic(CustomAmmoCategories.AmmoIdStatName).Value<string>();
-        ExtAmmunitionDef extAmmoDef = CustomAmmoCategories.findExtAmmo(CurrentAmmoId);
-        result += extAmmoDef.FireTerrainStrength;
-      }
-      if (CustomAmmoCategories.checkExistance(weapon.StatCollection, CustomAmmoCategories.WeaponModeStatisticName) == true) {
-        string modeId = weapon.StatCollection.GetStatistic(CustomAmmoCategories.WeaponModeStatisticName).Value<string>();
-        if (extWeapon.Modes.ContainsKey(modeId)) {
-          WeaponMode mode = extWeapon.Modes[modeId];
-          result += mode.FireTerrainStrength;
-        }
-      }
-      Log.LogWrite("FireTerrainStrength:" + weapon.UIName + "\n");
-      float res = result;
-      res *= DynamicMapHelper.BiomeWeaponFireStrength();
-      result = Mathf.RoundToInt(res);
-      Log.LogWrite(" result:" + result + "\n");
-      return result;
+      return Mathf.RoundToInt((weapon.exDef().FireTerrainStrength + weapon.ammo().FireTerrainStrength + weapon.mode().FireTerrainStrength) * DynamicMapHelper.BiomeWeaponFireStrength());
     }
     public static int ClearMineFieldRadius(this Weapon weapon) {
-      ExtWeaponDef extWeapon = CustomAmmoCategories.getExtWeaponDef(weapon.defId);
-      int result = extWeapon.ClearMineFieldRadius;
-      if (CustomAmmoCategories.checkExistance(weapon.StatCollection, CustomAmmoCategories.AmmoIdStatName) == true) {
-        string CurrentAmmoId = weapon.StatCollection.GetStatistic(CustomAmmoCategories.AmmoIdStatName).Value<string>();
-        ExtAmmunitionDef extAmmoDef = CustomAmmoCategories.findExtAmmo(CurrentAmmoId);
-        result += extAmmoDef.ClearMineFieldRadius;
-      }
-      if (CustomAmmoCategories.checkExistance(weapon.StatCollection, CustomAmmoCategories.WeaponModeStatisticName) == true) {
-        string modeId = weapon.StatCollection.GetStatistic(CustomAmmoCategories.WeaponModeStatisticName).Value<string>();
-        if (extWeapon.Modes.ContainsKey(modeId)) {
-          WeaponMode mode = extWeapon.Modes[modeId];
-          result += mode.ClearMineFieldRadius;
-        }
-      }
-      return result;
+      return weapon.exDef().ClearMineFieldRadius + weapon.ammo().ClearMineFieldRadius + weapon.mode().ClearMineFieldRadius;
     }
     public static bool FireOnSuccessHit(this Weapon weapon) {
-      ExtWeaponDef extWeapon = CustomAmmoCategories.getExtWeaponDef(weapon.defId);
-      TripleBoolean result = extWeapon.FireOnSuccessHit;
-      if (result == TripleBoolean.NotSet) {
-        if (CustomAmmoCategories.checkExistance(weapon.StatCollection, CustomAmmoCategories.WeaponModeStatisticName) == true) {
-          string modeId = weapon.StatCollection.GetStatistic(CustomAmmoCategories.WeaponModeStatisticName).Value<string>();
-          if (extWeapon.Modes.ContainsKey(modeId)) {
-            WeaponMode mode = extWeapon.Modes[modeId];
-            result = mode.FireOnSuccessHit;
-          }
-        }
-      }
-      if (result == TripleBoolean.NotSet) {
-        if (CustomAmmoCategories.checkExistance(weapon.StatCollection, CustomAmmoCategories.AmmoIdStatName) == true) {
-          string CurrentAmmoId = weapon.StatCollection.GetStatistic(CustomAmmoCategories.AmmoIdStatName).Value<string>();
-          ExtAmmunitionDef extAmmoDef = CustomAmmoCategories.findExtAmmo(CurrentAmmoId);
-          result = extAmmoDef.FireOnSuccessHit;
-        }
-      }
-      return result == TripleBoolean.True;
+      WeaponMode mode = weapon.mode();
+      if (mode.FireOnSuccessHit != TripleBoolean.NotSet) { return mode.FireOnSuccessHit == TripleBoolean.True; }
+      ExtAmmunitionDef ammo = weapon.ammo();
+      if (ammo.FireOnSuccessHit != TripleBoolean.NotSet) { return ammo.FireOnSuccessHit == TripleBoolean.True; }
+      return weapon.exDef().FireOnSuccessHit == TripleBoolean.True;
     }
     public static int FireTerrainCellRadius(this Weapon weapon) {
-      ExtWeaponDef extWeapon = CustomAmmoCategories.getExtWeaponDef(weapon.defId);
-      int result = extWeapon.FireTerrainCellRadius;
-      if (CustomAmmoCategories.checkExistance(weapon.StatCollection, CustomAmmoCategories.AmmoIdStatName) == true) {
-        string CurrentAmmoId = weapon.StatCollection.GetStatistic(CustomAmmoCategories.AmmoIdStatName).Value<string>();
-        ExtAmmunitionDef extAmmoDef = CustomAmmoCategories.findExtAmmo(CurrentAmmoId);
-        result += extAmmoDef.FireTerrainCellRadius;
-      }
-      if (CustomAmmoCategories.checkExistance(weapon.StatCollection, CustomAmmoCategories.WeaponModeStatisticName) == true) {
-        string modeId = weapon.StatCollection.GetStatistic(CustomAmmoCategories.WeaponModeStatisticName).Value<string>();
-        if (extWeapon.Modes.ContainsKey(modeId)) {
-          WeaponMode mode = extWeapon.Modes[modeId];
-          result += extWeapon.FireTerrainCellRadius;
-        }
-      }
-      return result;
+      return weapon.exDef().FireTerrainCellRadius + weapon.ammo().FireTerrainCellRadius + weapon.mode().FireTerrainCellRadius;
     }
     public static DesignMaskDef tempDesignMask(this Weapon weapon, out int turns, out string vfx, out Vector3 scale, out int radius) {
       turns = 0;
       vfx = string.Empty;
       scale = new Vector3();
       radius = 0;
-      ExtWeaponDef extWeapon = CustomAmmoCategories.getExtWeaponDef(weapon.defId);
-      if (CustomAmmoCategories.checkExistance(weapon.StatCollection, CustomAmmoCategories.AmmoIdStatName) == true) {
-        string CurrentAmmoId = weapon.StatCollection.GetStatistic(CustomAmmoCategories.AmmoIdStatName).Value<string>();
-        ExtAmmunitionDef extAmmoDef = CustomAmmoCategories.findExtAmmo(CurrentAmmoId);
-        if (string.IsNullOrEmpty(extAmmoDef.tempDesignMaskOnImpact) == false) {
-          if (DynamicMapHelper.loadedMasksDef.ContainsKey(extAmmoDef.tempDesignMaskOnImpact)) {
-            turns = extAmmoDef.tempDesignMaskOnImpactTurns;
-            vfx = extAmmoDef.LongVFXOnImpact;
-            scale = new Vector3(extAmmoDef.LongVFXOnImpactScaleX, extAmmoDef.LongVFXOnImpactScaleY, extAmmoDef.LongVFXOnImpactScaleZ);
-            radius = extAmmoDef.tempDesignMaskCellRadius;
-            return DynamicMapHelper.loadedMasksDef[extAmmoDef.tempDesignMaskOnImpact];
-          }
+      ExtAmmunitionDef ammo = weapon.ammo();
+      if (string.IsNullOrEmpty(ammo.tempDesignMaskOnImpact) == false) {
+        if (DynamicMapHelper.loadedMasksDef.ContainsKey(ammo.tempDesignMaskOnImpact)) {
+          turns = ammo.tempDesignMaskOnImpactTurns;
+          vfx = ammo.LongVFXOnImpact;
+          scale = new Vector3(ammo.LongVFXOnImpactScaleX, ammo.LongVFXOnImpactScaleY, ammo.LongVFXOnImpactScaleZ);
+          radius = ammo.tempDesignMaskCellRadius;
+          return DynamicMapHelper.loadedMasksDef[ammo.tempDesignMaskOnImpact];
         }
       }
       return null;

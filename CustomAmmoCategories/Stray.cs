@@ -17,7 +17,7 @@ namespace CustAmmoCategories {
       Log.LogWrite(" stray range:"+ advInfo.weapon.StrayRange() + "\n");
       List<ICombatant> combatants = new List<ICombatant>();
       List<ICombatant> allCombatants = advInfo.Combat.GetAllCombatants();
-      string IFFDef = CustomAmmoCategories.getWeaponIFFTransponderDef(advInfo.weapon);
+      string IFFDef = advInfo.weapon.IFFTransponderDef();
       if (string.IsNullOrEmpty(IFFDef)) { combatants.AddRange(allCombatants); } else {
         HashSet<string> combatantsGuids = new HashSet<string>();
         List<AbstractActor> enemies = advInfo.Combat.GetAllEnemiesOf(advInfo.weapon.parent);
@@ -36,7 +36,7 @@ namespace CustAmmoCategories {
           }
         }
       }
-      float spreadDistance = CustomAmmoCategories.getWeaponSpreadRange(advInfo.weapon);
+      float spreadDistance = advInfo.weapon.StrayRange();
       float spreadRNDMax = 0f;
       List<float> spreadBorders = new List<float>();
       List<ICombatant> spreadCombatants = new List<ICombatant>();

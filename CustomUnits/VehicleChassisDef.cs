@@ -685,25 +685,25 @@ namespace CustomUnits {
         Log.LogWrite(" no custom info\n");
         return;
       }
-      if (CustomAmmoCategories.checkExistance(__instance.StatCollection, UnitUnaffectionsActorStats.DesignMasksActorStat) == false) {
+      if (__instance.StatCollection.ContainsStatistic(UnitUnaffectionsActorStats.DesignMasksActorStat) == false) {
         __instance.StatCollection.AddStatistic<bool>(UnitUnaffectionsActorStats.DesignMasksActorStat, info.Unaffected.DesignMasks);
       }
-      if (CustomAmmoCategories.checkExistance(__instance.StatCollection, UnitUnaffectionsActorStats.PathingActorStat) == false) {
+      if (__instance.StatCollection.ContainsStatistic(UnitUnaffectionsActorStats.PathingActorStat) == false) {
         __instance.StatCollection.AddStatistic<bool>(UnitUnaffectionsActorStats.PathingActorStat, info.Unaffected.Pathing);
       }
-      if (CustomAmmoCategories.checkExistance(__instance.StatCollection, UnitUnaffectionsActorStats.FireActorStat) == false) {
+      if (__instance.StatCollection.ContainsStatistic(UnitUnaffectionsActorStats.FireActorStat) == false) {
         __instance.StatCollection.AddStatistic<bool>(UnitUnaffectionsActorStats.FireActorStat, info.Unaffected.Fire);
       }
-      if (CustomAmmoCategories.checkExistance(__instance.StatCollection, UnitUnaffectionsActorStats.LandminesActorStat) == false) {
+      if (__instance.StatCollection.ContainsStatistic(UnitUnaffectionsActorStats.LandminesActorStat) == false) {
         __instance.StatCollection.AddStatistic<bool>(UnitUnaffectionsActorStats.LandminesActorStat, info.Unaffected.Landmines);
       }
-      if (CustomAmmoCategories.checkExistance(__instance.StatCollection, UnitUnaffectionsActorStats.AOEHeightActorStat) == false) {
+      if (__instance.StatCollection.ContainsStatistic(UnitUnaffectionsActorStats.AOEHeightActorStat) == false) {
         __instance.StatCollection.AddStatistic<float>(UnitUnaffectionsActorStats.AOEHeightActorStat, info.AOEHeight);
       }
-      if (CustomAmmoCategories.checkExistance(__instance.StatCollection, UnitUnaffectionsActorStats.MoveCostActorStat) == false) {
+      if (__instance.StatCollection.ContainsStatistic(UnitUnaffectionsActorStats.MoveCostActorStat) == false) {
         __instance.StatCollection.AddStatistic<string>(UnitUnaffectionsActorStats.MoveCostActorStat, info.MoveCost);
       }
-      if (CustomAmmoCategories.checkExistance(__instance.StatCollection, UnitUnaffectionsActorStats.MoveCostBiomeActorStat) == false) {
+      if (__instance.StatCollection.ContainsStatistic(UnitUnaffectionsActorStats.MoveCostBiomeActorStat) == false) {
         __instance.StatCollection.AddStatistic<bool>(UnitUnaffectionsActorStats.MoveCostBiomeActorStat, info.Unaffected.MoveCostBiome);
       }
       Log.LogWrite(1, "UnaffectedDesignMasks " + __instance.UnaffectedDesignMasks(), true);

@@ -12,7 +12,7 @@ namespace CustAmmoCategories {
     public static Dictionary<string, List<ObjectSpawnDataSelf>> additinalImpactEffects = new Dictionary<string, List<ObjectSpawnDataSelf>>();
     public static string getCACGUID(this Weapon weapon) {
       string wGUID;
-      if (CustomAmmoCategories.checkExistance(weapon.StatCollection, CustomAmmoCategories.GUIDStatisticName) == false) {
+      if (weapon.StatCollection.ContainsStatistic(CustomAmmoCategories.GUIDStatisticName) == false) {
         wGUID = Guid.NewGuid().ToString();
         weapon.StatCollection.AddStatistic<string>(CustomAmmoCategories.GUIDStatisticName, wGUID);
       } else {
@@ -31,46 +31,30 @@ namespace CustAmmoCategories {
       }
     }
     public static string AdditionalImpactEffect(this Weapon weapon, out Vector3 scale) {
+      WeaponMode mode = weapon.mode();
+      if (string.IsNullOrEmpty(mode.AdditionalImpactVFX) == false) {
+        scale = new Vector3(mode.AdditionalImpactVFXScaleX, mode.AdditionalImpactVFXScaleY, mode.AdditionalImpactVFXScaleZ);
+        return mode.AdditionalImpactVFX;
+      }
+      ExtAmmunitionDef ammo = weapon.ammo();
+      if (string.IsNullOrEmpty(ammo.AdditionalImpactVFX) == false) {
+        scale = new Vector3(ammo.AdditionalImpactVFXScaleX, ammo.AdditionalImpactVFXScaleY, ammo.AdditionalImpactVFXScaleZ);
+        return ammo.AdditionalImpactVFX;
+      }
       ExtWeaponDef extWeapon = weapon.exDef();
-      if (CustomAmmoCategories.checkExistance(weapon.StatCollection, CustomAmmoCategories.WeaponModeStatisticName) == true) {
-        string modeId = weapon.StatCollection.GetStatistic(CustomAmmoCategories.WeaponModeStatisticName).Value<string>();
-        if (extWeapon.Modes.ContainsKey(modeId)) {
-          WeaponMode mode = extWeapon.Modes[modeId];
-          if (string.IsNullOrEmpty(mode.AdditionalImpactVFX) == false) {
-            scale = new Vector3(mode.AdditionalImpactVFXScaleX, mode.AdditionalImpactVFXScaleY, mode.AdditionalImpactVFXScaleZ);
-            return mode.AdditionalImpactVFX;
-          }
-        }
-      }
-      if (CustomAmmoCategories.checkExistance(weapon.StatCollection, CustomAmmoCategories.AmmoIdStatName) == true) {
-        string CurrentAmmoId = weapon.StatCollection.GetStatistic(CustomAmmoCategories.AmmoIdStatName).Value<string>();
-        ExtAmmunitionDef extAmmoDef = CustomAmmoCategories.findExtAmmo(CurrentAmmoId);
-        if (string.IsNullOrEmpty(extAmmoDef.AdditionalImpactVFX) == false) {
-          scale = new Vector3(extAmmoDef.AdditionalImpactVFXScaleX, extAmmoDef.AdditionalImpactVFXScaleY, extAmmoDef.AdditionalImpactVFXScaleZ);
-          return extAmmoDef.AdditionalImpactVFX;
-        }
-      }
       scale = new Vector3(extWeapon.AdditionalImpactVFXScaleX, extWeapon.AdditionalImpactVFXScaleY, extWeapon.AdditionalImpactVFXScaleZ);
       return extWeapon.AdditionalImpactVFX;
     }
     public static CustomAudioSource AdditionalImpactSound(this Weapon weapon) {
+      WeaponMode mode = weapon.mode();
+      if (mode.AdditionalAudioEffect != null) {
+        return mode.AdditionalAudioEffect;
+      }
+      ExtAmmunitionDef ammo = weapon.ammo();
+      if (ammo.AdditionalAudioEffect != null) {
+        return ammo.AdditionalAudioEffect;
+      }
       ExtWeaponDef extWeapon = weapon.exDef();
-      if (CustomAmmoCategories.checkExistance(weapon.StatCollection, CustomAmmoCategories.WeaponModeStatisticName) == true) {
-        string modeId = weapon.StatCollection.GetStatistic(CustomAmmoCategories.WeaponModeStatisticName).Value<string>();
-        if (extWeapon.Modes.ContainsKey(modeId)) {
-          WeaponMode mode = extWeapon.Modes[modeId];
-          if (mode.AdditionalAudioEffect != null) {
-            return mode.AdditionalAudioEffect;
-          }
-        }
-      }
-      if (CustomAmmoCategories.checkExistance(weapon.StatCollection, CustomAmmoCategories.AmmoIdStatName) == true) {
-        string CurrentAmmoId = weapon.StatCollection.GetStatistic(CustomAmmoCategories.AmmoIdStatName).Value<string>();
-        ExtAmmunitionDef extAmmoDef = CustomAmmoCategories.findExtAmmo(CurrentAmmoId);
-        if (extAmmoDef.AdditionalAudioEffect != null) {
-          return extAmmoDef.AdditionalAudioEffect;
-        }
-      }
       return extWeapon.AdditionalAudioEffect;
     }
     public static void SpawnAdditionalImpactEffect(this Weapon weapon,Vector3 pos) {

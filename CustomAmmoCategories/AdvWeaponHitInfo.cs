@@ -348,6 +348,7 @@ namespace CustAmmoCategories {
           hit.Stability /= (float)weapon.ProjectilesPerShot;
           hit.APDamage /= (float)weapon.ProjectilesPerShot;
         }
+        Log.M.WL(2,"dmg:"+hit.Damage+" heat:"+hit.Heat+" stab:"+hit.Stability+" ap:"+hit.APDamage);
         hit.hitLocation = hitInfo.hitLocations[hitIndex];
         hit.target = sequence.chosenTarget;
         if (string.IsNullOrEmpty(hitInfo.secondaryTargetIds[hitIndex]) == false) {

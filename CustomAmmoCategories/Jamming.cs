@@ -57,13 +57,13 @@ namespace CustAmmoCategories {
       ammoExposionQueue.Enqueue(box);
     }
     public static void createAmmoBoxGUID(AmmunitionBox box, string GUID = "") {
-      if (CustomAmmoCategories.checkExistance(box.StatCollection, CustomAmmoCategories.AmmoBoxGUID) == false) {
+      if (box.StatCollection.ContainsStatistic(CustomAmmoCategories.AmmoBoxGUID) == false) {
         if (string.IsNullOrEmpty(GUID)) { GUID = Guid.NewGuid().ToString(); }
         box.StatCollection.AddStatistic<string>(CustomAmmoCategories.AmmoBoxGUID, GUID);
       }
     }
     public static string getAmmoBoxGUID(AmmunitionBox box) {
-      if (CustomAmmoCategories.checkExistance(box.StatCollection, CustomAmmoCategories.AmmoBoxGUID) == false) {
+      if (box.StatCollection.ContainsStatistic(CustomAmmoCategories.AmmoBoxGUID) == false) {
         string GUID = Guid.NewGuid().ToString();
         CustomAmmoCategories.createAmmoBoxGUID(box, GUID);
         return GUID;
@@ -200,7 +200,7 @@ namespace CustAmmoCategories {
         }
         weapon.AMSShootsCount(0);
         weapon.setCantNormalFire(true);
-        float flatJammingChance = CustomAmmoCategories.getWeaponFlatJammingChance(weapon);
+        float flatJammingChance = weapon.FlatJammingChance();
         CustomAmmoCategoriesLog.Log.LogWrite($"  flatJammingChance " + flatJammingChance + "\n");
         if (flatJammingChance > CustomAmmoCategories.Epsilon) {
           CustomAmmoCategoriesLog.Log.LogWrite($"  Try jamm weapon " + weapon.UIName + "\n");
@@ -226,7 +226,7 @@ namespace CustAmmoCategories {
         if (weapon.roundsSinceLastFire > 0) {
           continue;
         }
-        float flatJammingChance = CustomAmmoCategories.getWeaponFlatJammingChance(weapon);
+        float flatJammingChance = weapon.FlatJammingChance();
         CustomAmmoCategoriesLog.Log.LogWrite($"  flatJammingChance " + flatJammingChance + "\n");
         if (flatJammingChance > CustomAmmoCategories.Epsilon) {
           CustomAmmoCategoriesLog.Log.LogWrite($"  Try jamm weapon " + weapon.UIName + "\n");
@@ -282,22 +282,24 @@ namespace CustAmmoCategories {
     //public static string TemporarilyDisabledStatisticName = "TemporarilyDisabled";
     public static float Epsilon = 0.001f;
     public static float FlatJammChance(this ICombatant unit) {
-      if (CustomAmmoCategories.checkExistance(unit.StatCollection, FlatJammingChanceStatisticName) == false) { return 0f; }
-      return unit.StatCollection.GetStatistic(FlatJammingChanceStatisticName).Value<float>();
+      Statistic stat = unit.StatCollection.GetStatistic(FlatJammingChanceStatisticName);
+      if (stat == null) { return 0f; }
+      return stat.Value<float>();
     }
     public static void FlatJammChance(this ICombatant unit, float val) {
-      if (CustomAmmoCategories.checkExistance(unit.StatCollection, FlatJammingChanceStatisticName) == false) {
+      if (unit.StatCollection.ContainsStatistic(FlatJammingChanceStatisticName) == false) {
         unit.StatCollection.AddStatistic<float>(FlatJammingChanceStatisticName, val);
       } else {
         unit.StatCollection.Set<float>(FlatJammingChanceStatisticName, val);
       }
     }
     public static float FlatJammChanceStat(this Weapon weapon) {
-      if (CustomAmmoCategories.checkExistance(weapon.StatCollection, FlatJammingChanceStatisticName) == false) { return 0f; }
-      return weapon.StatCollection.GetStatistic(FlatJammingChanceStatisticName).Value<float>();
+      Statistic stat = weapon.StatCollection.GetStatistic(FlatJammingChanceStatisticName);
+      if (stat == null) { return 0f; }
+      return stat.Value<float>();
     }
     public static void FlatJammChanceStat(this Weapon weapon, float val) {
-      if (CustomAmmoCategories.checkExistance(weapon.StatCollection, FlatJammingChanceStatisticName) == false) {
+      if (weapon.StatCollection.ContainsStatistic(FlatJammingChanceStatisticName) == false) {
         weapon.StatCollection.AddStatistic<float>(FlatJammingChanceStatisticName, val);
       } else {
         weapon.StatCollection.Set<float>(FlatJammingChanceStatisticName, val);
@@ -312,24 +314,24 @@ namespace CustAmmoCategories {
       return statistic.Value<bool>();
     }
     public static void setCantNormalFire(this Weapon weapon, bool value) {
-      if (CustomAmmoCategories.checkExistance(weapon.StatCollection, CustomAmmoCategories.NoNormalFireStatisticName) == false) {
+      if (weapon.StatCollection.ContainsStatistic(CustomAmmoCategories.NoNormalFireStatisticName) == false) {
         weapon.StatCollection.AddStatistic<bool>(CustomAmmoCategories.NoNormalFireStatisticName, value);
       } else {
         weapon.StatCollection.Set<bool>(CustomAmmoCategories.NoNormalFireStatisticName, value);
       }
     }
     public static void setCantAMSFire(this Weapon weapon, bool value) {
-      if (CustomAmmoCategories.checkExistance(weapon.StatCollection, CustomAmmoCategories.NoAMSFireStatisticName) == false) {
+      if (weapon.StatCollection.ContainsStatistic(CustomAmmoCategories.NoAMSFireStatisticName) == false) {
         weapon.StatCollection.AddStatistic<bool>(CustomAmmoCategories.NoAMSFireStatisticName, value);
       } else {
         weapon.StatCollection.Set<bool>(CustomAmmoCategories.NoAMSFireStatisticName, value);
       }
     }
     public static void AddJam(AbstractActor actor, Weapon weapon) {
-      bool damage = CustomAmmoCategories.getWeaponDamageOnJamming(weapon);
+      bool damage = weapon.DamageOnJamming();
       bool destroy = weapon.DestroyOnJamming();
       if ((damage == false)&&(destroy == false)) {
-        if (CustomAmmoCategories.checkExistance(weapon.StatCollection, CustomAmmoCategories.JammedWeaponStatisticName) == false) {
+        if (weapon.StatCollection.ContainsStatistic(CustomAmmoCategories.JammedWeaponStatisticName) == false) {
           weapon.StatCollection.AddStatistic<bool>(CustomAmmoCategories.JammedWeaponStatisticName, false);
         }
         weapon.StatCollection.Set<bool>(CustomAmmoCategories.JammedWeaponStatisticName, true);
@@ -357,7 +359,7 @@ namespace CustAmmoCategories {
       }
     }
     public static void Cooldown(this Weapon weapon, int rounds, bool message) {
-      if (CustomAmmoCategories.checkExistance(weapon.StatCollection, CustomAmmoCategories.CooldownWeaponStatisticName) == false) {
+      if (weapon.StatCollection.ContainsStatistic(CustomAmmoCategories.CooldownWeaponStatisticName) == false) {
         weapon.StatCollection.AddStatistic<int>(CustomAmmoCategories.CooldownWeaponStatisticName, 0);
       }
       if (rounds > 0) {
@@ -378,81 +380,48 @@ namespace CustAmmoCategories {
       var statistic = StatisticHelper.GetOrCreateStatisic<int>(weapon.StatCollection, CooldownWeaponStatisticName, 0);
       return statistic.Value<int>();
     }
-    public static float getWeaponFlatJammingChance(Weapon weapon) {
-      float result = weapon.FlatJammChanceStat()+weapon.parent.FlatJammChance();
+    public static float FlatJammingChance(this Weapon weapon) {
+      ExtWeaponDef def = weapon.exDef();
+      ExtAmmunitionDef ammo = weapon.ammo();
+      WeaponMode mode = weapon.mode();
+      float result = weapon.FlatJammChanceStat();
+      if (weapon.parent != null) {
+        if (weapon.parent.EvasivePipsCurrent > 0) {
+          float evasiveMod = def.evasivePipsMods.FlatJammingChance + ammo.evasivePipsMods.FlatJammingChance + mode.evasivePipsMods.FlatJammingChance;
+          if (Mathf.Abs(evasiveMod) > CustomAmmoCategories.Epsilon) result = result * Mathf.Pow((float)weapon.parent.EvasivePipsCurrent, evasiveMod);
+        }
+      }
+      result += weapon.parent.FlatJammChance();
       float mult = 0;
       float baseval = 0f;
-      if (CustomAmmoCategories.checkExistance(weapon.StatCollection, CustomAmmoCategories.AmmoIdStatName) == true) {
-        string ammoId = weapon.StatCollection.GetStatistic(CustomAmmoCategories.AmmoIdStatName).Value<string>();
-        ExtAmmunitionDef extAmmo = CustomAmmoCategories.findExtAmmo(ammoId);
-        result += extAmmo.FlatJammingChance;
-        mult += extAmmo.GunneryJammingMult;
-        if (extAmmo.GunneryJammingBase > 0) { baseval = extAmmo.GunneryJammingBase; };
-      }
-      ExtWeaponDef extWeapon = CustomAmmoCategories.getExtWeaponDef(weapon.defId);
-      result += extWeapon.FlatJammingChance;
-      mult += extWeapon.GunneryJammingMult;
-      if ((extWeapon.GunneryJammingBase > 0) && (baseval == 0f)) { baseval = extWeapon.GunneryJammingBase; };
-      if (extWeapon.Modes.Count > 0) {
-        string modeId = "";
-        if (CustomAmmoCategories.checkExistance(weapon.StatCollection, CustomAmmoCategories.WeaponModeStatisticName) == true) {
-          modeId = weapon.StatCollection.GetStatistic(CustomAmmoCategories.WeaponModeStatisticName).Value<string>();
-        } else {
-          modeId = extWeapon.baseModeId;
-        }
-        if (extWeapon.Modes.ContainsKey(modeId)) {
-          result += extWeapon.Modes[modeId].FlatJammingChance;
-          mult += extWeapon.Modes[modeId].GunneryJammingMult;
-          if ((extWeapon.Modes[modeId].GunneryJammingBase > 0) && (baseval == 0f)) { baseval = extWeapon.Modes[modeId].GunneryJammingBase; };
-        }
-      }
+      result += ammo.FlatJammingChance;
+      mult += ammo.GunneryJammingMult;
+      if (ammo.GunneryJammingBase > 0f) { baseval = ammo.GunneryJammingBase; };
+      result += def.FlatJammingChance;
+      mult += def.GunneryJammingMult;
+      if ((def.GunneryJammingBase > 0f) && (baseval == 0f)) { baseval = def.GunneryJammingBase; };
+      result += mode.FlatJammingChance;
+      mult += mode.GunneryJammingMult;
+      if ((mode.GunneryJammingBase > 0f) && (baseval == 0f)) { baseval = mode.GunneryJammingBase; };
       if (weapon.parent != null) {
         if (baseval == 0f) { baseval = 5f; }
         result += ((baseval - weapon.parent.SkillGunnery) * mult);
       }
       return result;
     }
-    public static bool getWeaponDamageOnJamming(Weapon weapon) {
-      TripleBoolean result = TripleBoolean.NotSet;
-      ExtWeaponDef extWeapon = CustomAmmoCategories.getExtWeaponDef(weapon.defId);
-      if (extWeapon.Modes.Count > 0) {
-        string modeId = "";
-        if (CustomAmmoCategories.checkExistance(weapon.StatCollection, CustomAmmoCategories.WeaponModeStatisticName) == true) {
-          modeId = weapon.StatCollection.GetStatistic(CustomAmmoCategories.WeaponModeStatisticName).Value<string>();
-        } else {
-          modeId = extWeapon.baseModeId;
-        }
-        if (extWeapon.Modes.ContainsKey(modeId)) {
-          result = extWeapon.Modes[modeId].DamageOnJamming;
-        }
-      }
-      if (result == TripleBoolean.NotSet) {
-        result = extWeapon.DamageOnJamming;
-      }
-      return result == TripleBoolean.True;
+    public static bool DamageOnJamming(this Weapon weapon) {
+      WeaponMode mode = weapon.mode();
+      if (mode.DamageOnJamming != TripleBoolean.NotSet) { return mode.DamageOnJamming == TripleBoolean.True; }
+      return weapon.exDef().DamageOnJamming == TripleBoolean.True;
     }
     public static bool DestroyOnJamming(this Weapon weapon) {
-      TripleBoolean result = TripleBoolean.NotSet;
-      ExtWeaponDef extWeapon = CustomAmmoCategories.getExtWeaponDef(weapon.defId);
-      if (extWeapon.Modes.Count > 0) {
-        string modeId = "";
-        if (CustomAmmoCategories.checkExistance(weapon.StatCollection, CustomAmmoCategories.WeaponModeStatisticName) == true) {
-          modeId = weapon.StatCollection.GetStatistic(CustomAmmoCategories.WeaponModeStatisticName).Value<string>();
-        } else {
-          modeId = extWeapon.baseModeId;
-        }
-        if (extWeapon.Modes.ContainsKey(modeId)) {
-          result = extWeapon.Modes[modeId].DestroyOnJamming;
-        }
-      }
-      if (result == TripleBoolean.NotSet) {
-        result = extWeapon.DestroyOnJamming;
-      }
-      return result == TripleBoolean.True;
+      WeaponMode mode = weapon.mode();
+      if (mode.DestroyOnJamming != TripleBoolean.NotSet) { return mode.DestroyOnJamming == TripleBoolean.True; }
+      return weapon.exDef().DestroyOnJamming == TripleBoolean.True;
     }
 
     public static int Cooldown(this Weapon weapon) {
-      return weapon.exDef().Cooldown + CustomAmmoCategories.getWeaponMode(weapon).Cooldown;
+      return weapon.exDef().Cooldown + weapon.mode().Cooldown;
     }
     public static bool AttemptToRemoveJam(AbstractActor actor, Weapon weapon) {
       var skill = actor.SkillGunnery;

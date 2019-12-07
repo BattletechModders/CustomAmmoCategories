@@ -19,11 +19,11 @@ namespace CustAmmoCategories {
   public static class StructureDamageHelper {
     public static readonly string APProtectionStatisticName = "CACAPProtection";
     public static bool isAPProtected(this ICombatant unit) {
-      if (CustomAmmoCategories.checkExistance(unit.StatCollection, APProtectionStatisticName) == false) { return false; }
+      if (unit.StatCollection.ContainsStatistic(APProtectionStatisticName) == false) { return false; }
       return unit.StatCollection.GetStatistic(APProtectionStatisticName).Value<bool>();
     }
     public static void isAPProtected(this ICombatant unit,bool val) {
-      if (CustomAmmoCategories.checkExistance(unit.StatCollection, APProtectionStatisticName) == false) {
+      if (unit.StatCollection.ContainsStatistic(APProtectionStatisticName) == false) {
         unit.StatCollection.AddStatistic<bool>(APProtectionStatisticName, val);
       } else {
         unit.StatCollection.Set<bool>(APProtectionStatisticName, val);

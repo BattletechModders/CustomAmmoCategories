@@ -70,11 +70,11 @@ namespace CustAmmoCategories {
   }
   public static partial class CustomAmmoCategories {
     public static bool DisableInternalWeaponChoose = false;
-    public static void applyWeaponAmmoMode(Weapon weapon, string modeId, string ammoId) {
+    public static void applyWeaponAmmoMode(this Weapon weapon, string modeId, string ammoId) {
       ExtWeaponDef extWeapon = CustomAmmoCategories.getExtWeaponDef(weapon.defId);
       CustomAmmoCategoriesLog.Log.LogWrite("applyWeaponAmmoMode(" + weapon.defId + "," + modeId + "," + ammoId + ")\n");
       if (extWeapon.Modes.ContainsKey(modeId)) {
-        if (CustomAmmoCategories.checkExistance(weapon.StatCollection, CustomAmmoCategories.WeaponModeStatisticName) == false) {
+        if (weapon.StatCollection.ContainsStatistic(CustomAmmoCategories.WeaponModeStatisticName) == false) {
           weapon.StatCollection.AddStatistic<string>(CustomAmmoCategories.WeaponModeStatisticName, modeId);
         } else {
           weapon.StatCollection.Set<string>(CustomAmmoCategories.WeaponModeStatisticName, modeId);
@@ -82,11 +82,12 @@ namespace CustAmmoCategories {
       } else {
         CustomAmmoCategoriesLog.Log.LogWrite("WARNING! " + weapon.defId + " has no mode " + modeId + "\n", true);
       }
-      if (CustomAmmoCategories.checkExistance(weapon.StatCollection, CustomAmmoCategories.AmmoIdStatName) == false) {
+      if (weapon.StatCollection.ContainsStatistic(CustomAmmoCategories.AmmoIdStatName) == false) {
         weapon.StatCollection.AddStatistic<string>(CustomAmmoCategories.AmmoIdStatName, ammoId);
       } else {
         weapon.StatCollection.Set<string>(CustomAmmoCategories.AmmoIdStatName, ammoId);
       }
+      weapon.ClearAmmoModeCache();
     }
     public static HashSet<string> getWeaponAvaibleAmmoForMode(Weapon weapon, string modeId) {
       HashSet<string> result = new HashSet<string>();
@@ -129,11 +130,11 @@ namespace CustAmmoCategories {
         return result;
       }
       string currentMode = extWeapon.baseModeId;
-      if (CustomAmmoCategories.checkExistance(weapon.StatCollection, CustomAmmoCategories.WeaponModeStatisticName) == true) {
+      if (weapon.StatCollection.ContainsStatistic(CustomAmmoCategories.WeaponModeStatisticName) == true) {
         currentMode = weapon.StatCollection.GetStatistic(CustomAmmoCategories.WeaponModeStatisticName).Value<string>();
       }
       string currentAmmo = "";
-      if (CustomAmmoCategories.checkExistance(weapon.StatCollection, CustomAmmoCategories.AmmoIdStatName) == true) {
+      if (weapon.StatCollection.ContainsStatistic(CustomAmmoCategories.AmmoIdStatName) == true) {
         currentAmmo = weapon.StatCollection.GetStatistic(CustomAmmoCategories.AmmoIdStatName).Value<string>();
       }
       foreach (var mode in modes) {
@@ -286,8 +287,8 @@ namespace CustAmmoCategories {
       }
       if (toHit < Epsilon) { record.HeatDamageCoeff = 0f; record.NormDamageCoeff = 0f; record.PredictHeatDamage = 0f; };
       float coolDownCoeff = 1.0f / (1.0f + weapon.Cooldown());
-      float jammCoeff = (1.0f - CustomAmmoCategories.getWeaponFlatJammingChance(weapon))/CustomAmmoCategories.Settings.JamAIAvoid;
-      float damageJammCoeff = CustomAmmoCategories.getWeaponDamageOnJamming(weapon) ? (1.0f / CustomAmmoCategories.Settings.DamageJamAIAvoid) : 1.0f;
+      float jammCoeff = (1.0f - weapon.FlatJammingChance())/CustomAmmoCategories.Settings.JamAIAvoid;
+      float damageJammCoeff = weapon.DamageOnJamming() ? (1.0f / CustomAmmoCategories.Settings.DamageJamAIAvoid) : 1.0f;
       jammCoeff *= damageJammCoeff;
       if (CustomAmmoCategories.IsIHaveExposedLocations(unit)) {
         CustomAmmoCategoriesLog.Log.LogWrite(" i have exposed locations. I will die soon. No fear of jamming or weapon explosion.\n");
@@ -308,7 +309,7 @@ namespace CustAmmoCategories {
         if (weapon.HasShells()) {
           damagePerShot /= (float)weapon.ProjectilesPerShot;
         }
-        if (CustomAmmoCategories.isWeaponAOECapable(weapon)) {
+        if (weapon.AOECapable()) {
           CustomAmmoCategoriesLog.Log.LogWrite(" AOE weapon detected. Altering calculations\n");
           toHit = 1.0f;
           if (target is Mech) {

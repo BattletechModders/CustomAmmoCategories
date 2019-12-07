@@ -121,7 +121,7 @@ namespace CustAmmoCategories {
           sequence.cumulativeDamage += (damage + apdmg);
           advRec.parent.resolve(advRec.target).cumulativeDamage += (damage + apdmg);
           float critAPchance = weapon.isAPCrit() ? advRec.parent.weapon.APCriticalChanceMultiplier() : float.NaN;
-          Log.LogWrite(" crit testing - damage/armor" + damage + "/" + locArmor + " ap dmg:" + apdmg + " ap crit chance:" + critAPchance + "\n");
+          Log.LogWrite(" crit testing - damage/armor " + damage + "/" + locArmor + " ap dmg:" + apdmg + " ap crit chance:" + critAPchance + "\n");
           if (damage > locArmor) {
             Log.LogWrite("  crit to location armor breach:" + advRec.hitLocation + "\n");
             advRec.parent.resolve(advRec.target).AddCrit(advRec.hitLocation,advRec.target);

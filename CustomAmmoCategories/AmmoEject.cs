@@ -20,11 +20,11 @@ namespace CustAmmoCategories {
     public static string EjectingNowStatName = "CAC-AmmoEjecting";
     public static Dictionary<string, bool> ActorsEjectedAmmo = new Dictionary<string, bool>();
     public static bool isAmmoEjecting(this AbstractActor actor) {
-      if(CustomAmmoCategories.checkExistance(actor.StatCollection, CustomAmmoCategories.EjectingNowStatName) == false) { return false; }
+      if(actor.StatCollection.ContainsStatistic(CustomAmmoCategories.EjectingNowStatName) == false) { return false; }
       return actor.StatCollection.GetStatistic(CustomAmmoCategories.EjectingNowStatName).Value<bool>();
     }
     public static void isAmmoEjecting(this AbstractActor actor,bool value) {
-      if (CustomAmmoCategories.checkExistance(actor.StatCollection, CustomAmmoCategories.EjectingNowStatName) == false) {
+      if (actor.StatCollection.ContainsStatistic(CustomAmmoCategories.EjectingNowStatName) == false) {
         actor.StatCollection.AddStatistic<bool>(CustomAmmoCategories.EjectingNowStatName, false);
       }
       actor.StatCollection.Set<bool>(CustomAmmoCategories.EjectingNowStatName, value);
@@ -32,7 +32,7 @@ namespace CustAmmoCategories {
     public static void EjectAmmo(Weapon weapon, CombatHUDWeaponSlot hudSlot) {
       CustomAmmoCategoriesLog.Log.LogWrite("EjectAmmo "+weapon.defId+"\n");
       string ammoId = "";
-      if (CustomAmmoCategories.checkExistance(weapon.StatCollection, CustomAmmoCategories.AmmoIdStatName) == false) {
+      if (weapon.StatCollection.ContainsStatistic(CustomAmmoCategories.AmmoIdStatName) == false) {
         CustomAmmoCategoriesLog.Log.LogWrite(" no "+ CustomAmmoCategories.AmmoIdStatName + " in stat collection\n");
         return;
       }
@@ -83,7 +83,7 @@ namespace CustAmmoCategories {
         }
         HUD.MechWarriorTray.SprintButton.DisableButton();
         HUD.MechWarriorTray.JumpButton.DisableButton();
-        if(CustomAmmoCategories.checkExistance(weapon.parent.StatCollection,CustomAmmoCategories.EjectedThisRoundStatName) == false) {
+        if(weapon.parent.StatCollection.ContainsStatistic(CustomAmmoCategories.EjectedThisRoundStatName) == false) {
           weapon.parent.StatCollection.AddStatistic<bool>(CustomAmmoCategories.EjectedThisRoundStatName, true);
         } else {
           weapon.parent.StatCollection.Set<bool>(CustomAmmoCategories.EjectedThisRoundStatName, true);
@@ -95,7 +95,7 @@ namespace CustAmmoCategories {
       if (CustomAmmoCategories.ActorsEjectedAmmo.ContainsKey(target.GUID)) {
         CustomAmmoCategories.ActorsEjectedAmmo[target.GUID] = false;
       }
-      if (CustomAmmoCategories.checkExistance(target.StatCollection, CustomAmmoCategories.EjectedThisRoundStatName) == false) {
+      if (target.StatCollection.ContainsStatistic(CustomAmmoCategories.EjectedThisRoundStatName) == false) {
         target.StatCollection.AddStatistic<bool>(CustomAmmoCategories.EjectedThisRoundStatName, false);
       } else {
         target.StatCollection.Set<bool>(CustomAmmoCategories.EjectedThisRoundStatName, false);
@@ -105,7 +105,7 @@ namespace CustAmmoCategories {
       if (CustomAmmoCategories.ActorsEjectedAmmo.ContainsKey(target.GUID)) {
         return CustomAmmoCategories.ActorsEjectedAmmo[target.GUID];
       } else {
-        if (CustomAmmoCategories.checkExistance(target.StatCollection, CustomAmmoCategories.EjectedThisRoundStatName) == false) {
+        if (target.StatCollection.ContainsStatistic(CustomAmmoCategories.EjectedThisRoundStatName) == false) {
           return false;
         } else {
           CustomAmmoCategories.ActorsEjectedAmmo[target.GUID] = target.StatCollection.GetStatistic(CustomAmmoCategories.EjectedThisRoundStatName).Value<bool>();

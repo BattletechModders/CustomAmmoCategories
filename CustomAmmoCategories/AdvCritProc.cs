@@ -25,11 +25,8 @@ namespace CustAmmoCategories {
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { })]
   public static class MechComponent_InitStats {
-    public static bool checkExistance(this StatCollection collection, string name) {
-      return CustomAmmoCategories.checkExistance(collection, name);
-    }
     public static void Postfix(MechComponent __instance) {
-      if(__instance.StatCollection.checkExistance(CustomAmmoCategories.Settings.RemoveFromCritRollStatName) == false) {
+      if(__instance.StatCollection.ContainsStatistic(CustomAmmoCategories.Settings.RemoveFromCritRollStatName) == false) {
         __instance.StatCollection.AddStatistic<bool>(CustomAmmoCategories.Settings.RemoveFromCritRollStatName, false);
       }       
     }
@@ -62,7 +59,7 @@ namespace CustAmmoCategories {
     }
     public static bool ExcludedFromCritRoll(this MechComponent component) {
       if (string.IsNullOrEmpty(CustomAmmoCategories.Settings.RemoveFromCritRollStatName)) { return false; };
-      if (CustomAmmoCategories.checkExistance(component.StatCollection, CustomAmmoCategories.Settings.RemoveFromCritRollStatName) == false) { return false; }
+      if (component.StatCollection.ContainsStatistic(CustomAmmoCategories.Settings.RemoveFromCritRollStatName) == false) { return false; }
       return component.StatCollection.GetStatistic(CustomAmmoCategories.Settings.RemoveFromCritRollStatName).Value<bool>();
     }
     public static List<MechComponent> GetCritsComponentsForLocation(this AbstractActor unit, int location) {

@@ -40,8 +40,10 @@ namespace CustAmmoCategories {
       animationIndex = 0;
       if (weapon != null) {
         baseHardpointAnimator = weapon.HardpointAnimator();
-        baseHardpointAnimator.PrefireAnimationSpeed(weapon.PrefireAnimationSpeedMod());
-        baseHardpointAnimator.FireAnimationSpeed(weapon.FireAnimationSpeedMod());
+        if (baseHardpointAnimator != null) {
+          baseHardpointAnimator.PrefireAnimationSpeed(weapon.PrefireAnimationSpeedMod());
+          baseHardpointAnimator.FireAnimationSpeed(weapon.FireAnimationSpeedMod());
+        }
         Log.LogWrite("baseHardpointAnimator: " + ((baseHardpointAnimator == null) ? "null" : "not null") + "\n");
       }
       if (this.baseHardpointAnimator != null) { this.baseHardpointAnimator.PrefireAnimation(); }

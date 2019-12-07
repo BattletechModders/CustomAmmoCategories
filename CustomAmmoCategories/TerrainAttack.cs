@@ -495,10 +495,10 @@ namespace CustomAmmoCategoriesPatches {
         if (slot.DisplayedWeapon.IsEnabled == false) { continue; }
         if (slot.DisplayedWeapon.HasAmmo == false) { continue; }
         UILookAndColorConstants LookAndColorConstants = (UILookAndColorConstants)pLookAndColorConstants.GetValue(slot, null);
-        float AOERange = slot.DisplayedWeapon.getWeaponAOERange();
+        float AOERange = slot.DisplayedWeapon.AOERange();
         if (target == null) {
           slot.ClearHitChance();
-          if ((slot.DisplayedWeapon.isAMS()) || (isInFiringArc == false) || (distance > slot.DisplayedWeapon.MaxRange) || ((LOFLevel < LineOfFireLevel.LOFObstructed) && (slot.DisplayedWeapon.isIndirectFireCapable() == false))) {
+          if ((slot.DisplayedWeapon.isAMS()) || (isInFiringArc == false) || (distance > slot.DisplayedWeapon.MaxRange) || ((LOFLevel < LineOfFireLevel.LOFObstructed) && (slot.DisplayedWeapon.IndirectFireCapable() == false))) {
             Log.LogWrite(" " + slot.DisplayedWeapon.UIName + ":disabled\n");
             slot.MainImage.color = LookAndColorConstants.WeaponSlotColors.UnavailableBGColor;
             //mShowTextColor.Invoke(slot, new object[2] { LookAndColorConstants.WeaponSlotColors.UnavailableTextColor, true });

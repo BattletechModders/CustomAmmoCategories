@@ -12,36 +12,36 @@ using CustomAmmoCategoriesLog;
 
 namespace CustAmmoCategories {
   public static partial class CustomAmmoCategories {
-    public static HitGeneratorType getHitGenerator(Weapon weapon) {
+    public static HitGeneratorType HitGenerator(this Weapon weapon) {
       HitGeneratorType result = HitGeneratorType.NotSet;
-      ExtWeaponDef extWeapon = CustomAmmoCategories.getExtWeaponDef(weapon.defId);
       CustomAmmoCategoriesLog.Log.LogWrite("getHitGenerator " + weapon.defId + "\n");
-      if (CustomAmmoCategories.isWeaponAOECapable(weapon)
-        && (CustomAmmoCategories.getWeaponAOEDamage(weapon) < CustomAmmoCategories.Epsilon)
-        && (CustomAmmoCategories.getWeaponAOEHeatDamage(weapon) < CustomAmmoCategories.Epsilon)
+      if (weapon.AOECapable()
+        && (weapon.AOEDamage() < CustomAmmoCategories.Epsilon)
+        && (weapon.AOEHeatDamage() < CustomAmmoCategories.Epsilon)
       ) {
         return HitGeneratorType.AOE;
       };
       if (weapon.weaponDef.ComponentTags.Contains("wr-clustered_shots")) {
         result = HitGeneratorType.Individual;
         CustomAmmoCategoriesLog.Log.LogWrite(" contains wr-cluster\n");
+        return result;
       }
-      result = extWeapon.HitGenerator;
-      CustomAmmoCategoriesLog.Log.LogWrite(" per weapon def hit generator " + extWeapon.HitGenerator.ToString() + "\n");
-      if (result == HitGeneratorType.NotSet) {
-        if (CustomAmmoCategories.checkExistance(weapon.StatCollection, CustomAmmoCategories.WeaponModeStatisticName) == true) {
-          string modeId = weapon.StatCollection.GetStatistic(CustomAmmoCategories.WeaponModeStatisticName).Value<string>();
-          if (extWeapon.Modes.ContainsKey(modeId)) {
-            result = extWeapon.Modes[modeId].HitGenerator;
-            CustomAmmoCategoriesLog.Log.LogWrite(" per mode hit generator " + extWeapon.Modes[modeId].HitGenerator.ToString() + "\n");
-          }
-        }
-      }
-      if (result == HitGeneratorType.NotSet) {
-        if (CustomAmmoCategories.checkExistance(weapon.StatCollection, CustomAmmoCategories.AmmoIdStatName) == true) {
-          string ammoId = weapon.StatCollection.GetStatistic(CustomAmmoCategories.AmmoIdStatName).Value<string>();
-          result = CustomAmmoCategories.findExtAmmo(ammoId).HitGenerator;
+      result = HitGeneratorType.NotSet;
+      WeaponMode mode = weapon.mode();
+      if (mode.HitGenerator != HitGeneratorType.NotSet) {
+        CustomAmmoCategoriesLog.Log.LogWrite(" per mode hit generator " + mode.HitGenerator.ToString() + "\n");
+        result = mode.HitGenerator;
+      } else {
+        ExtAmmunitionDef ammo = weapon.ammo();
+        if (ammo.HitGenerator != HitGeneratorType.NotSet) {
+          result = ammo.HitGenerator;
           CustomAmmoCategoriesLog.Log.LogWrite(" per ammo hit generator " + result.ToString() + "\n");
+        } else {
+          ExtWeaponDef def = weapon.exDef();
+          if(def.HitGenerator != HitGeneratorType.NotSet) {
+            result = def.HitGenerator;
+            CustomAmmoCategoriesLog.Log.LogWrite(" per weapon def hit generator " + result.ToString() + "\n");
+          }
         }
       }
       if (result == HitGeneratorType.NotSet) {
@@ -302,7 +302,7 @@ namespace CustomAmmoCategoriesPatches {
       if (AttackDirector.hitLogger.IsLogEnabled)
         AttackDirector.hitLogger.Log((object)string.Format("======================================== HIT CHANCE: [[ {0:P2} ]]", (object)toHitChance));
       object[] args = new object[6];
-      HitGeneratorType hitGenType = (fragHits ? HitGeneratorType.Cluster : CustomAmmoCategories.getHitGenerator(weapon));
+      HitGeneratorType hitGenType = (fragHits ? HitGeneratorType.Cluster : weapon.HitGenerator());
       if (fragHits) { Log.LogWrite(" shells - tie to cluster\n"); }
       CustomAmmoCategoriesLog.Log.LogWrite(" Hit generator:" + hitGenType + "\n");
       switch (hitGenType) {

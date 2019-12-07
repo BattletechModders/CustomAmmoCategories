@@ -11,10 +11,10 @@ using CustomAmmoCategoriesLog;
 
 namespace CustAmmoCategories {
   public static partial class CustomAmmoCategories {
-    public static CustomAmmoCategory getWeaponCustomAmmoCategory(Weapon weapon) {
-      WeaponMode mode = CustomAmmoCategories.getWeaponMode(weapon);
+    public static CustomAmmoCategory CustomAmmoCategory(this Weapon weapon) {
+      WeaponMode mode = weapon.mode();
       if(mode.AmmoCategory == null) {
-        ExtWeaponDef extWeapon = CustomAmmoCategories.getExtWeaponDef(weapon.defId);
+        ExtWeaponDef extWeapon = weapon.exDef();
         if (extWeapon.AmmoCategory.BaseCategory.ID != weapon.AmmoCategoryValue.ID) {
           return CustomAmmoCategories.find(weapon.AmmoCategoryValue.Name);
         }
@@ -23,10 +23,9 @@ namespace CustAmmoCategories {
       return mode.AmmoCategory;
     }
     public static string getWeaponAmmoId(Weapon weapon) {
-      if (CustomAmmoCategories.getWeaponCustomAmmoCategory(weapon) == CustomAmmoCategories.NotSetCustomAmmoCategoty) { return ""; }
-      if(CustomAmmoCategories.checkExistance(weapon.StatCollection,CustomAmmoCategories.AmmoIdStatName) == true) {
-        return weapon.StatCollection.GetStatistic(CustomAmmoCategories.AmmoIdStatName).Value<string>();
-      }
+      if (weapon.CustomAmmoCategory() == CustomAmmoCategories.NotSetCustomAmmoCategoty) { return ""; }
+      Statistic stat = weapon.StatCollection.GetStatistic(CustomAmmoCategories.AmmoIdStatName);
+      if (stat != null) { return stat.Value<string>(); }
       if (weapon.ammoBoxes.Count == 0) { return ""; };
       return weapon.ammoBoxes[0].ammoDef.Description.Id;
     }
@@ -89,9 +88,9 @@ namespace CustomAmmoCategoriesPatches {
       return Transpilers.MethodReplacer(instructions, targetPropertyGetter, replacementMethod);
     }
 
-    private static AmmoCategoryValue AmmoCategory(Weapon weapon) {
+    private static AmmoCategoryValue AmmoCategory(this Weapon weapon) {
       //CustomAmmoCategoriesLog.Log.LogWrite("get AIUtil_UnitHasLOFToTargetFromPosition IndirectFireCapable\n");
-      return CustomAmmoCategories.getWeaponCustomAmmoCategory(weapon).BaseCategory;
+      return weapon.CustomAmmoCategory().BaseCategory;
     }
   }
   [HarmonyPatch(typeof(AbstractActor))]
@@ -156,7 +155,7 @@ namespace CustomAmmoCategoriesPatches {
     }
     private static AmmoCategoryValue AmmoCategory(Weapon weapon) {
       //CustomAmmoCategoriesLog.Log.LogWrite("get AIUtil_UnitHasLOFToTargetFromPosition IndirectFireCapable\n");
-      return CustomAmmoCategories.getWeaponCustomAmmoCategory(weapon).BaseCategory;
+      return weapon.CustomAmmoCategory().BaseCategory;
     }
   }
   [HarmonyPatch(typeof(PoorlyMaintainedEffect))]
@@ -169,7 +168,7 @@ namespace CustomAmmoCategoriesPatches {
     }
     private static AmmoCategoryValue AmmoCategory(Weapon weapon) {
       //CustomAmmoCategoriesLog.Log.LogWrite("get AIUtil_UnitHasLOFToTargetFromPosition IndirectFireCapable\n");
-      return CustomAmmoCategories.getWeaponCustomAmmoCategory(weapon).BaseCategory;
+      return weapon.CustomAmmoCategory().BaseCategory;
     }
   }
   [HarmonyPatch(typeof(PoorlyMaintainedEffect))]
@@ -182,7 +181,7 @@ namespace CustomAmmoCategoriesPatches {
     }
     private static AmmoCategoryValue AmmoCategory(Weapon weapon) {
       //CustomAmmoCategoriesLog.Log.LogWrite("get AIUtil_UnitHasLOFToTargetFromPosition IndirectFireCapable\n");
-      return CustomAmmoCategories.getWeaponCustomAmmoCategory(weapon).BaseCategory;
+      return weapon.CustomAmmoCategory().BaseCategory;
     }
   }
   [HarmonyPatch(typeof(PoorlyMaintainedEffect))]
@@ -195,7 +194,7 @@ namespace CustomAmmoCategoriesPatches {
     }
     private static AmmoCategoryValue AmmoCategory(Weapon weapon) {
       //CustomAmmoCategoriesLog.Log.LogWrite("get AIUtil_UnitHasLOFToTargetFromPosition IndirectFireCapable\n");
-      return CustomAmmoCategories.getWeaponCustomAmmoCategory(weapon).BaseCategory;
+      return weapon.CustomAmmoCategory().BaseCategory;
     }
   }
   [HarmonyPatch(typeof(CombatHUDWeaponSlot))]
@@ -244,7 +243,7 @@ namespace CustomAmmoCategoriesPatches {
     }
     private static AmmoCategoryValue AmmoCategory(Weapon weapon) {
       //CustomAmmoCategoriesLog.Log.LogWrite("get AIUtil_UnitHasLOFToTargetFromPosition IndirectFireCapable\n");
-      return CustomAmmoCategories.getWeaponCustomAmmoCategory(weapon).BaseCategory;
+      return weapon.CustomAmmoCategory().BaseCategory;
     }
   }
   [HarmonyPatch(typeof(CombatHUDWeaponSlot))]
@@ -262,7 +261,7 @@ namespace CustomAmmoCategoriesPatches {
     }
     private static AmmoCategoryValue AmmoCategory(Weapon weapon) {
       //CustomAmmoCategoriesLog.Log.LogWrite("get AIUtil_UnitHasLOFToTargetFromPosition IndirectFireCapable\n");
-      return CustomAmmoCategories.getWeaponCustomAmmoCategory(weapon).BaseCategory;
+      return weapon.CustomAmmoCategory().BaseCategory;
     }
   }
   [HarmonyPatch(typeof(Weapon))]
@@ -275,7 +274,7 @@ namespace CustomAmmoCategoriesPatches {
     }
     private static AmmoCategoryValue AmmoCategory(Weapon weapon) {
       //CustomAmmoCategoriesLog.Log.LogWrite("get AIUtil_UnitHasLOFToTargetFromPosition IndirectFireCapable\n");
-      return CustomAmmoCategories.getWeaponCustomAmmoCategory(weapon).BaseCategory;
+      return weapon.CustomAmmoCategory().BaseCategory;
     }
   }
   [HarmonyPatch(typeof(Weapon))]
@@ -289,7 +288,7 @@ namespace CustomAmmoCategoriesPatches {
     }
     private static AmmoCategoryValue AmmoCategory(Weapon weapon) {
       //CustomAmmoCategoriesLog.Log.LogWrite("get AIUtil_UnitHasLOFToTargetFromPosition IndirectFireCapable\n");
-      return CustomAmmoCategories.getWeaponCustomAmmoCategory(weapon).BaseCategory;
+      return weapon.CustomAmmoCategory().BaseCategory;
     }
   }
 }

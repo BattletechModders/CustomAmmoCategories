@@ -170,5 +170,4 @@ namespace CustAmmoCategoriesPatches {
       ASWatchdog.StartWatchDogThread();
     }
   }
-
 }

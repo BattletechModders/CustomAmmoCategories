@@ -13,22 +13,13 @@ using CustomAmmoCategoriesPatches;
 
 namespace CustAmmoCategories {
   public static partial class CustomAmmoCategories {
-    public static float getWeaponEvasivePipsIgnored(Weapon weapon) {
-      float result = weapon.weaponDef.EvasivePipsIgnored;
-      if (CustomAmmoCategories.checkExistance(weapon.StatCollection, Weapon_InitStats.EvasivePipsIgnoredStatName)) {
-        result = weapon.StatCollection.GetStatistic(Weapon_InitStats.EvasivePipsIgnoredStatName).Value<float>();
+    public static float EvasivePipsIgnored(this Weapon weapon) {
+      Statistic stat = weapon.StatCollection.GetStatistic(Weapon_InitStats.EvasivePipsIgnoredStatName);
+      if(stat != null) {
+        return stat.Value<float>() + weapon.ammo().EvasivePipsIgnored + weapon.mode().EvasivePipsIgnored;
+      } else {
+        return weapon.weaponDef.EvasivePipsIgnored + weapon.ammo().EvasivePipsIgnored + weapon.mode().EvasivePipsIgnored;
       }
-      //CustomAmmoCategoriesLog.Log.LogWrite("getWeaponEvasivePipsIgnored " + weapon.UIName + "\n");
-      if (CustomAmmoCategories.checkExistance(weapon.StatCollection, CustomAmmoCategories.AmmoIdStatName) == true) {
-        string ammoId = weapon.StatCollection.GetStatistic(CustomAmmoCategories.AmmoIdStatName).Value<string>();
-        ExtAmmunitionDef extAmmo = CustomAmmoCategories.findExtAmmo(ammoId);
-        result += extAmmo.EvasivePipsIgnored;
-      }
-      if (CustomAmmoCategories.checkExistance(weapon.StatCollection, CustomAmmoCategories.WeaponModeStatisticName) == true) {
-        result += CustomAmmoCategories.getWeaponMode(weapon).EvasivePipsIgnored;
-      }
-      //CustomAmmoCategoriesLog.Log.LogWrite("  modified EvasivePipsIgnored\n");
-      return result;
     }
   }
 }
@@ -45,7 +36,7 @@ namespace CustomAmmoCategoriesPatches {
         float num = 0.0f;
         CombatGameState combat = (CombatGameState)typeof(ToHit).GetField("combat", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(__instance);
         if (evasivePips > 0) {
-          int index = Mathf.RoundToInt((float)((double)evasivePips - 1.0 - (weapon == null ? 0.0 : (double)(CustomAmmoCategories.getWeaponEvasivePipsIgnored(weapon)))));
+          int index = Mathf.RoundToInt((float)((double)evasivePips - 1.0 - (weapon == null ? 0.0 : (double)(weapon.EvasivePipsIgnored()))));
           if (index >= combat.Constants.ToHit.ToHitMovingPipUMs.Length) { index = combat.Constants.ToHit.ToHitMovingPipUMs.Length - 1; };
           if (index >= 0) {
             num += combat.Constants.ToHit.ToHitMovingPipUMs[index];

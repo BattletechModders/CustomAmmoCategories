@@ -11,24 +11,31 @@ namespace CustAmmoCategories {
     public static readonly string LongRangeAccModActorStat = "CACLongRangeAccuracyMod"; // MediumRange < X < LongRange
     public static readonly string ExtraLongRangeAccModActorStat = "CACExtraLongRangeAccuracyMod"; // LongRange < X < MaxRange
     public static float MinRangeAccMod(this AbstractActor unit) {
-      if (checkExistance(unit.StatCollection, MinRangeAccModActorStat) == false) { return 0f; }
-      return unit.StatCollection.GetStatistic(MinRangeAccModActorStat).Value<float>();
+      Statistic value = unit.StatCollection.GetStatistic(MinRangeAccModActorStat);
+      if (value == null) { return 0f; }
+      return value.Value<float>();
+      //if (unit.StatCollection.ContainsStatistic(MinRangeAccModActorStat) == false) { return 0f; }
+      //return unit.StatCollection.GetStatistic(MinRangeAccModActorStat).Value<float>();
     }
     public static float ShortRangeAccMod(this AbstractActor unit) {
-      if (checkExistance(unit.StatCollection, ShortRangeAccModActorStat) == false) { return 0f; }
-      return unit.StatCollection.GetStatistic(ShortRangeAccModActorStat).Value<float>();
+      Statistic value = unit.StatCollection.GetStatistic(ShortRangeAccModActorStat);
+      if (value == null) { return 0f; }
+      return value.Value<float>();
     }
     public static float MediumRangeAccMod(this AbstractActor unit) {
-      if (checkExistance(unit.StatCollection, MediumRangeAccModActorStat) == false) { return 0f; }
-      return unit.StatCollection.GetStatistic(MediumRangeAccModActorStat).Value<float>();
+      Statistic value = unit.StatCollection.GetStatistic(MediumRangeAccModActorStat);
+      if (value == null) { return 0f; }
+      return value.Value<float>();
     }
     public static float LongRangeRangeAccMod(this AbstractActor unit) {
-      if (checkExistance(unit.StatCollection, LongRangeAccModActorStat) == false) { return 0f; }
-      return unit.StatCollection.GetStatistic(LongRangeAccModActorStat).Value<float>();
+      Statistic value = unit.StatCollection.GetStatistic(LongRangeAccModActorStat);
+      if (value == null) { return 0f; }
+      return value.Value<float>();
     }
     public static float ExtraLongRangeAccMod(this AbstractActor unit) {
-      if (checkExistance(unit.StatCollection, ExtraLongRangeAccModActorStat) == false) { return 0f; }
-      return unit.StatCollection.GetStatistic(ExtraLongRangeAccModActorStat).Value<float>();
+      Statistic value = unit.StatCollection.GetStatistic(ExtraLongRangeAccModActorStat);
+      if (value == null) { return 0f; }
+      return value.Value<float>();
     }
   }
 }
