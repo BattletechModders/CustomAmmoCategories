@@ -177,6 +177,13 @@ namespace CustAmmoCategories {
       }
       return result;
     }
+    public static float ShotsPerAmmo(this Weapon weapon) {
+      ExtAmmunitionDef ammo = weapon.ammo();
+      ExtWeaponDef extWeapon = weapon.exDef();
+      WeaponMode mode = weapon.mode();
+      float result = ammo.ShotsPerAmmo * extWeapon.ShotsPerAmmo * mode.ShotsPerAmmo;
+      return result;
+    }
     public static float AOEHeatDamage(this Weapon weapon) {
       float result = 0f;
       ExtAmmunitionDef ammo = weapon.ammo();
@@ -241,7 +248,6 @@ namespace CustAmmoCategoriesPatches {
       return false;
     }
   }
-
   [HarmonyPatch(typeof(CombatHUDWeaponSlot))]
   [HarmonyPatch("RefreshDisplayedWeapon")]
   [HarmonyPriority(Priority.Last)]
@@ -284,7 +290,7 @@ namespace CustAmmoCategoriesPatches {
       if (CustomAmmoCategories.IsCooldown((Weapon)__instance.DisplayedWeapon) > 0) {
         __instance.HitChanceText.SetText(string.Format("CLD -{0}T", CustomAmmoCategories.IsCooldown((Weapon)__instance.DisplayedWeapon)));
       }
-      Log.M.TWL(0, "CombatHUDWeaponSlot.RefreshDisplayedWeapon '" + __instance.WeaponText.text + "' overflow:" + __instance.WeaponText.overflowMode + " worldwrap:" + __instance.WeaponText.enableWordWrapping + " autosize:" + __instance.WeaponText.enableAutoSizing+" hitChance:"+ __instance.HitChanceText.text+ " overflow:" + __instance.HitChanceText.overflowMode);
+      //Log.M.TWL(0, "CombatHUDWeaponSlot.RefreshDisplayedWeapon '" + __instance.WeaponText.text + "' overflow:" + __instance.WeaponText.overflowMode + " worldwrap:" + __instance.WeaponText.enableWordWrapping + " autosize:" + __instance.WeaponText.enableAutoSizing+" hitChance:"+ __instance.HitChanceText.text+ " overflow:" + __instance.HitChanceText.overflowMode);
     }
   }
   [HarmonyPatch(typeof(MechComponent))]
@@ -339,7 +345,7 @@ namespace CustAmmoCategoriesPatches {
     }
   }
 #endif
-  [HarmonyPatch(typeof(Weapon))]
+  /*[HarmonyPatch(typeof(Weapon))]
   [HarmonyPatch("Type")]
   [HarmonyPatch(MethodType.Getter)]
   [HarmonyPatch(new Type[] { })]
@@ -348,7 +354,7 @@ namespace CustAmmoCategoriesPatches {
     public static void Postfix(Weapon __instance, ref WeaponType __result) {
       Log.LogWrite("Weapon type getted\n");
     }
-  }
+  }*/
   [HarmonyPatch(typeof(Weapon))]
   [HarmonyPatch("HeatDamagePerShot")]
   [HarmonyPatch(MethodType.Getter)]
@@ -401,8 +407,16 @@ namespace CustAmmoCategoriesPatches {
   [HarmonyPatch(new Type[] { })]
   public static class Weapon_CriticalChanceMultiplier {
     public static void Postfix(Weapon __instance, ref float __result) {
-      __result += __instance.ammo().CriticalChanceMultiplier;
-      __result += __instance.mode().CriticalChanceMultiplier;
+      ExtAmmunitionDef ammo = __instance.ammo();
+      WeaponMode mode = __instance.mode();
+      __result += ammo.CriticalChanceMultiplier;
+      __result += mode.CriticalChanceMultiplier;
+      if (__instance.parent != null) {
+        if (__instance.parent.EvasivePipsCurrent > 0) {
+          float evasiveMod = __instance.exDef().evasivePipsMods.CriticalChanceMultiplier + ammo.evasivePipsMods.CriticalChanceMultiplier + mode.evasivePipsMods.CriticalChanceMultiplier;
+          if (Mathf.Abs(evasiveMod) > CustomAmmoCategories.Epsilon) __result = __result * Mathf.Pow((float)__instance.parent.EvasivePipsCurrent, evasiveMod);
+        }
+      }
     }
   }
   [HarmonyPatch(typeof(Weapon))]
@@ -420,8 +434,16 @@ namespace CustAmmoCategoriesPatches {
   [HarmonyPatch(new Type[] { })]
   public static class Weapon_AccuracyModifier {
     public static void Postfix(Weapon __instance, ref float __result) {
-      __result += __instance.ammo().AccuracyModifier;
-      __result += __instance.mode().AccuracyModifier;
+      ExtAmmunitionDef ammo = __instance.ammo();
+      WeaponMode mode = __instance.mode();
+      __result += ammo.AccuracyModifier;
+      __result += mode.AccuracyModifier;
+      if (__instance.parent != null) {
+        if (__instance.parent.EvasivePipsCurrent > 0) {
+          float evasiveMod = __instance.exDef().evasivePipsMods.AccuracyModifier + ammo.evasivePipsMods.AccuracyModifier + mode.evasivePipsMods.AccuracyModifier;
+          if (Mathf.Abs(evasiveMod) > CustomAmmoCategories.Epsilon) __result = __result * Mathf.Pow((float)__instance.parent.EvasivePipsCurrent, evasiveMod);
+        }
+      }
     }
   }
   [HarmonyPatch(typeof(Weapon))]
@@ -538,8 +560,14 @@ namespace CustAmmoCategoriesPatches {
   [HarmonyPatch(new Type[] { })]
   public static class Weapon_RefireModifier {
     public static void Postfix(Weapon __instance, ref int __result) {
-      __result += __instance.ammo().RefireModifier;
-      __result += __instance.mode().RefireModifier;
+      ExtAmmunitionDef ammo = __instance.ammo();
+      WeaponMode mode = __instance.mode();
+      __result += ammo.RefireModifier;
+      __result += mode.RefireModifier;
+      if (__instance.parent.EvasivePipsCurrent > 0) {
+        float evasiveMod = __instance.exDef().evasivePipsMods.RefireModifier + ammo.evasivePipsMods.RefireModifier + mode.evasivePipsMods.RefireModifier;
+        if (Mathf.Abs(evasiveMod) > CustomAmmoCategories.Epsilon) __result = Mathf.RoundToInt((float)__result * Mathf.Pow((float)__instance.parent.EvasivePipsCurrent, evasiveMod));
+      }
     }
   }
   [HarmonyPatch(typeof(Weapon))]

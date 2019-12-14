@@ -193,6 +193,7 @@ namespace CustAmmoCategories {
     public float PrefireAnimationSpeedMod { get; set; }
     public float FireAnimationSpeedMod { get; set; }
     public EvasivePipsMods evasivePipsMods { get; set; }
+    public float ShotsPerAmmo { get; set; }
     public WeaponMode() {
       Id = WeaponMode.NONE_MODE_NAME;
       UIName = WeaponMode.BASE_MODE_NAME;
@@ -286,6 +287,7 @@ namespace CustAmmoCategories {
       PrefireAnimationSpeedMod = 1f;
       FireAnimationSpeedMod = 1f;
       evasivePipsMods = new EvasivePipsMods();
+      ShotsPerAmmo = 1f;
     }
     public void fromJSON(string json) {
       JObject jWeaponMode = JObject.Parse(json);
@@ -336,6 +338,9 @@ namespace CustAmmoCategories {
       }
       if (jWeaponMode["MinRange"] != null) {
         this.MinRange = (float)jWeaponMode["MinRange"];
+      }
+      if (jWeaponMode["ShotsPerAmmo"] != null) {
+        this.ShotsPerAmmo = (float)jWeaponMode["ShotsPerAmmo"];
       }
       if (jWeaponMode["Streak"] != null) {
         this.Streak = ((bool)jWeaponMode["Streak"] == true) ? TripleBoolean.True : TripleBoolean.False;

@@ -300,12 +300,9 @@ namespace CustAmmoCategories {
         record.HeatDamageCoeff = 0f;
         record.NormDamageCoeff = weapon.CalcAMSAIDamageCoeff() * jammCoeff * coolDownCoeff;
       } else {
-        float damageShotsCount = (float)weapon.ShotsWhenFired;
         float damagePerShot = weapon.DamagePerShot;
         float heatPerShot = weapon.HeatDamagePerShot;
-        if (weapon.componentDef.ComponentTags.Contains("wr-clustered_shots") || (CustomAmmoCategories.getWeaponDisabledClustering(weapon) == false) || weapon.HasShells()) {
-          damageShotsCount *= (float)weapon.ProjectilesPerShot;
-        }
+        float damageShotsCount = weapon.ShotsToHits(weapon.ShotsWhenFired);
         if (weapon.HasShells()) {
           damagePerShot /= (float)weapon.ProjectilesPerShot;
         }

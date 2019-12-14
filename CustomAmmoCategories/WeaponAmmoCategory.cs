@@ -217,12 +217,7 @@ namespace CustomAmmoCategoriesPatches {
       Log.LogWrite("ShotsWhenFiredDisplayOverider "+weapon.UIName+"\n");
       int result = weapon.ShotsWhenFired;
       if (weapon.isImprovedBallistic() == false) {
-        if (weapon.weaponDef.ComponentTags.Contains("wr-clustered_shots")) {
-          result *= weapon.ProjectilesPerShot;
-        } else
-        if (CustomAmmoCategories.getWeaponDisabledClustering(weapon) == false) {
-          result *= weapon.ProjectilesPerShot;
-        }
+        result = weapon.ShotsToHits(result);
       }
       return result;
     }

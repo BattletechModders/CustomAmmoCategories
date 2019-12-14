@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using System.Threading;
+using UnityEngine;
 
 namespace CustomAmmoCategoriesLog {
   public enum LogFileType {
@@ -11,6 +12,8 @@ namespace CustomAmmoCategoriesLog {
     Criticals,
     Minefields,
     CharlesB,
+    Objects,
+    Sounds,
     Profile
   }
   public class LogFile {
@@ -19,6 +22,18 @@ namespace CustomAmmoCategoriesLog {
     private StringBuilder m_cache = null;
     private StreamWriter m_fs = null;
     private bool enabled;
+    public void printComponents(GameObject obj, int level) {
+      Component[] components = obj.GetComponents<Component>();
+      this.WL(level, "object:" + obj.name);
+      this.WL(level, "components(" + components.Length + ")");
+      foreach (Component component in components) {
+        this.WL(level + 1, component.name + ":" + component.GetType().ToString());
+      }
+      this.WL(level, "childs(" + obj.transform.childCount + ")");
+      for (int t = 0; t < obj.transform.childCount; ++t) {
+         printComponents(obj.transform.GetChild(t).gameObject, level + 1);
+      }
+    }
     public LogFile(string name, bool enabled) {
       try {
         this.mutex = new Mutex();
@@ -99,6 +114,8 @@ namespace CustomAmmoCategoriesLog {
     public static LogFile F { get { return Log.logs[LogFileType.Minefields]; } }
     public static LogFile P { get { return Log.logs[LogFileType.Profile]; } }
     public static LogFile CB { get { return Log.logs[LogFileType.CharlesB]; } }
+    public static LogFile O { get { return Log.logs[LogFileType.Objects]; } }
+    public static LogFile S { get { return Log.logs[LogFileType.Sounds]; } }
     public static void InitLog() {
       //LogFile file = new LogFile("CAC_main_log.txt", CustomAmmoCategories.Settings.debugLog);
       Log.logs.Add(LogFileType.Main,new LogFile("CAC_main_log.txt", CustomAmmoCategories.Settings.debugLog));
@@ -106,6 +123,8 @@ namespace CustomAmmoCategoriesLog {
       Log.logs.Add(LogFileType.Minefields, new LogFile("CAC_minefields_log.txt", CustomAmmoCategories.Settings.debugLog));
       Log.logs.Add(LogFileType.CharlesB, new LogFile("CAC_CharlesB_log.txt", CustomAmmoCategories.Settings.debugLog));
       Log.logs.Add(LogFileType.Profile, new LogFile("CAC_profiling_log.txt", CustomAmmoCategories.Settings.debugLog));
+      Log.logs.Add(LogFileType.Objects, new LogFile("CAC_objects_log.txt", CustomAmmoCategories.Settings.debugLog));
+      Log.logs.Add(LogFileType.Sounds, new LogFile("CAC_sounds_log.txt", CustomAmmoCategories.Settings.debugLog));
       //Log.logs.Add(LogFileType.Main, null);
       Log.flushThread.Start();
     }

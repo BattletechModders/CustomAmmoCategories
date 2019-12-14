@@ -1677,15 +1677,5 @@ namespace CustAmmoCategories {
         return true;
       }
     }*/
-    [HarmonyPatch(typeof(CombatGameState))]
-    [HarmonyPatch("OnCombatGameDestroyed")]
-    [HarmonyPatch(MethodType.Normal)]
-    [HarmonyPatch(new Type[] { })]
-    public static class CombatGameState_OnCombatGameDestroyedShrapnell {
-      public static bool Prefix(CombatGameState __instance) {
-        //CustomAmmoCategories.ShrapnelHitsRecord.Clear();
-        return true;
-      }
-    }
   }
 }

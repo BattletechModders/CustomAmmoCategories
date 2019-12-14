@@ -156,6 +156,11 @@ namespace CustAmmoCategoriesPatches {
       MissileEffect_InitProjectile.originalScale.Remove(missile);
     }*/
     public static void Postfix(WeaponEffect __instance) {
+      Log.O.TWL(0, "Init projectile:" + __instance.GetType().ToString());
+      Log.O.WL(1, "object:" + __instance.GetType().ToString());
+      Log.O.printComponents(__instance.gameObject,1);
+      Log.O.WL(1, "projectile:");
+      Log.O.printComponents(__instance.projectile, 0);
       MissileEffect missile = __instance as MissileEffect;
       if (missile == null) { return; };
       Log.LogWrite("MissileEffect.InitProjectile " + __instance.weapon.defId + "\n");

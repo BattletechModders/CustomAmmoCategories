@@ -115,6 +115,10 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\BattleTech_Data\Managed\UnityEngine.UI.dll</HintPath>
     </Reference>
+    <Reference Include="UnityEngine.UnityWebRequestWWWModule, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\BattleTech_Data\Managed\UnityEngine.UnityWebRequestWWWModule.dll</HintPath>
+    </Reference>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AdditionalImpactVFX.cs" />
@@ -150,6 +154,7 @@
     <Compile Include="CharlesB\Settings.cs" />
     <Compile Include="CheatHttpServer.cs" />
     <Compile Include="CleverGirlWeaponDamagePrediction.cs" />
+    <Compile Include="CombatGameDestroy.cs" />
     <Compile Include="CustomDesignMask.cs" />
     <Compile Include="DebugSpawnHelper.cs" />
     <Compile Include="DecrementAmmo.cs" />
@@ -187,6 +192,7 @@
     <Compile Include="OnAttackSequenceResolveDamage.cs" />
     <Compile Include="MainClass.cs" />
     <Compile Include="PlayProjectile.cs" />
+    <Compile Include="WeaponAmmoLoadFixer.cs" />
     <Compile Include="ProcessMousePos.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="RangeAccuracyHelper.cs" />
@@ -194,6 +200,7 @@
     <Compile Include="RealAOE.cs" />
     <Compile Include="ResolveDamage.cs" />
     <Compile Include="Shrapnel.cs" />
+    <Compile Include="SoundBanksHelper.cs" />
     <Compile Include="Stray.cs" />
     <Compile Include="StructureDamage.cs" />
     <Compile Include="TerrainAttack.cs" />

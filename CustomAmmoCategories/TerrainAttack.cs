@@ -835,16 +835,4 @@ namespace CustomAmmoCategoriesPatches {
       }
     }
   }
-  [HarmonyPatch(typeof(CombatGameState))]
-  [HarmonyPatch("OnCombatGameDestroyed")]
-  [HarmonyPatch(MethodType.Normal)]
-  [HarmonyPatch(new Type[] { })]
-  public static class CombatGameState_OnCombatGameDestroyedTAttack {
-    public static bool Prefix(CombatGameState __instance) {
-      CombatHUDMechwarriorTray_InitAbilityButtons.attackGroundAbilities.Clear();
-      CustomAmmoCategories.terrainHitPositions.Clear();
-      ASWatchdog.EndWatchDogThread();
-      return true;
-    }
-  }
 }

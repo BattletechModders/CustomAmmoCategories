@@ -10,6 +10,7 @@ using BattleTech.Data;
 using BattleTech.Rendering;
 using BattleTech.Rendering.Mood;
 using BattleTech.Rendering.Trees;
+using BattleTech.Rendering.UrbanWarfare;
 using BattleTech.UI;
 using CustAmmoCategories;
 using CustomAmmoCategoriesLog;
@@ -2113,7 +2114,7 @@ namespace CustomAmmoCategoriesPatches {
       return (Vector3)pTargetWorldPos.GetValue(pr);
     }
     public static void TargetWorldPos(this MoveStatusPreview pr, Vector3 val) {
-      pTargetWorldPos.SetValue(pr,val);
+      pTargetWorldPos.SetValue(pr, val);
     }
     public static CombatHUD HUD(this MoveStatusPreview pr) {
       return (CombatHUD)pHUD.GetValue(pr, null);
@@ -2486,14 +2487,17 @@ namespace CustomAmmoCategoriesPatches {
   [HarmonyPatch(new Type[] { typeof(Camera) })]
   public static class BTCustomRenderer_DrawDecals {
     public static Material ScorchMaterial = null;
+    public static Material BloodMaterial = null;
     public static FieldInfo deferredDecalsBufferField = null;
     public static FieldInfo skipDecalsField = null;
     public static FieldInfo effectsQualityField = null;
     public static MethodInfo UseCameraMethod = null;
     public static readonly int maxArraySize = 1000;
     public static List<List<Matrix4x4>> Scorches = new List<List<Matrix4x4>>();
+    public static List<List<Matrix4x4>> Bloods = new List<List<Matrix4x4>>();
     public static void Clear() {
       BTCustomRenderer_DrawDecals.Scorches.Clear();
+      BTCustomRenderer_DrawDecals.Bloods.Clear();
     }
     public static void AddScorch(Vector3 position, Vector3 forward, Vector3 scale) {
       if (CustomAmmoCategories.Settings.DontShowScorchTerrain == true) { return; }
@@ -2507,6 +2511,19 @@ namespace CustomAmmoCategoriesPatches {
       rotation = Quaternion.Euler(0.0f, rotation.eulerAngles.y, 0.0f);
       Matrix4x4 trs = Matrix4x4.TRS(position, rotation, scale);
       BTCustomRenderer_DrawDecals.Scorches[BTCustomRenderer_DrawDecals.Scorches.Count - 1].Add(trs);
+    }
+    public static void AddBlood(Vector3 position, Vector3 forward, Vector3 scale) {
+      if (CustomAmmoCategories.Settings.DontShowScorchTerrain == true) { return; }
+      if (BTCustomRenderer_DrawDecals.Bloods.Count == 0) {
+        BTCustomRenderer_DrawDecals.Bloods.Add(new List<Matrix4x4>());
+      } else
+      if (BTCustomRenderer_DrawDecals.Bloods[BTCustomRenderer_DrawDecals.Bloods.Count - 1].Count > BTCustomRenderer_DrawDecals.maxArraySize) {
+        BTCustomRenderer_DrawDecals.Bloods.Add(new List<Matrix4x4>());
+      }
+      Quaternion rotation = Quaternion.LookRotation(forward);
+      rotation = Quaternion.Euler(0.0f, rotation.eulerAngles.y, 0.0f);
+      Matrix4x4 trs = Matrix4x4.TRS(position, rotation, scale);
+      BTCustomRenderer_DrawDecals.Bloods[BTCustomRenderer_DrawDecals.Bloods.Count - 1].Add(trs);
     }
     public static bool Prepare() {
       CustomAmmoCategoriesLog.Log.LogWrite("BTCustomRenderer_DrawDecals prepare\n"); ;
@@ -2534,6 +2551,32 @@ namespace CustomAmmoCategoriesPatches {
       BTCustomRenderer_DrawDecals.ScorchMaterial.SetFloat("_AffectTree", 0f);
       BTCustomRenderer_DrawDecals.ScorchMaterial.SetTexture("_MainTex", terrainTexture);
       BTCustomRenderer_DrawDecals.ScorchMaterial.enableInstancing = true;
+      BTCustomRenderer_DrawDecals.UseCameraMethod = typeof(BTCustomRenderer).GetMethod("UseCamera", BindingFlags.Instance | BindingFlags.NonPublic);
+      if (BTCustomRenderer_DrawDecals.UseCameraMethod == null) {
+        CustomAmmoCategoriesLog.Log.LogWrite("Fail to get UseCamera method\n"); ;
+        return false;
+      }
+
+      BTCustomRenderer_DrawDecals.BloodMaterial = UnityEngine.Object.Instantiate(FootstepManager.Instance.scorchMaterial);
+      if (BTCustomRenderer_DrawDecals.BloodMaterial == null) {
+        CustomAmmoCategoriesLog.Log.LogWrite("Fail to copy blood material\n");
+        return false;
+      }
+      CustomAmmoCategoriesLog.Log.LogWrite("Blood material success copied\n"); ;
+      BTCustomRenderer_DrawDecals.BloodMaterial.DisableKeyword("_ALPHABLEND_ON");
+      CustomAmmoCategoriesLog.Log.LogWrite("Alphablend disabled.\n"); ;
+      Texture2D bloodTexture = CACMain.Core.findTexture(CustomAmmoCategories.Settings.bloodSettings.DecalTexture);
+      CustomAmmoCategoriesLog.Log.LogWrite("Testing texture. " + CustomAmmoCategories.Settings.bloodSettings.DecalTexture + "\n"); ;
+      if (bloodTexture == null) {
+        CustomAmmoCategoriesLog.Log.LogWrite("Fail to load texture\n");
+        return false;
+      }
+      CustomAmmoCategoriesLog.Log.LogWrite("Success loaded texture\n"); ;
+      BTCustomRenderer_DrawDecals.BloodMaterial.SetFloat("_AffectTree", 0f);
+      BTCustomRenderer_DrawDecals.BloodMaterial.SetTexture("_MainTex", bloodTexture);
+      //BTCustomRenderer_DrawDecals.BloodMaterial.color = Color.red;
+      BTCustomRenderer_DrawDecals.BloodMaterial.enableInstancing = true;
+
       BTCustomRenderer_DrawDecals.UseCameraMethod = typeof(BTCustomRenderer).GetMethod("UseCamera", BindingFlags.Instance | BindingFlags.NonPublic);
       if (BTCustomRenderer_DrawDecals.UseCameraMethod == null) {
         CustomAmmoCategoriesLog.Log.LogWrite("Fail to get UseCamera method\n"); ;
@@ -2578,6 +2621,70 @@ namespace CustomAmmoCategoriesPatches {
           deferredDecalsBuffer.DrawMeshInstanced(BTDecal.DecalMesh.DecalMeshFull, 0, BTCustomRenderer_DrawDecals.ScorchMaterial, 0, matrices2, scorches, (MaterialPropertyBlock)null);
         }
       }
+      if (BTCustomRenderer_DrawDecals.Bloods.Count > 0) {
+        //CustomAmmoCategoriesLog.Log.LogWrite("draw scorches:"+ BTCustomRenderer_DrawDecals.Scorches.Count+ "\n"); ;
+        for (int index1 = 0; index1 < BTCustomRenderer_DrawDecals.Bloods.Count; ++index1) {
+          Matrix4x4[] matrices2 = BTCustomRenderer_DrawDecals.Bloods[index1].ToArray();
+          int scorches = matrices2.Length;
+          deferredDecalsBuffer.DrawMeshInstanced(BTDecal.DecalMesh.DecalMeshFull, 0, BTCustomRenderer_DrawDecals.BloodMaterial, 0, matrices2, scorches, (MaterialPropertyBlock)null);
+        }
+      }
+    }
+  }
+  [HarmonyPatch(typeof(DestructibleUrbanFlimsy))]
+  [HarmonyPatch("PlayDestructionVFX")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { })]
+  public static class DestructibleUrbanFlimsy_PlayDestructionVFX {
+    private static HashSet<DestructibleUrbanFlimsy> isPlaySound = new HashSet<DestructibleUrbanFlimsy>();
+    public static bool isPlayBloodSound(this DestructibleUrbanFlimsy obj) {
+      return isPlaySound.Contains(obj);
+    }
+    public static void markPlayBloodSound(this DestructibleUrbanFlimsy obj) {
+      isPlaySound.Add(obj);
+    }
+    public static void unmarkPlayBloodSound(this DestructibleUrbanFlimsy obj) {
+      isPlaySound.Remove(obj);
+    }
+    public static void Postfix(DestructibleUrbanFlimsy __instance) {
+      //float scale = CustomAmmoCategories.Settings.bloodSettings.DecalScale[];
+      Log.M.TWL(0, "DestructibleUrbanFlimsy.PlayDestructionVFX");
+      if (CustomAmmoCategories.Settings.bloodSettings.DecalScales.TryGetValue(__instance.flimsyType, out float scale) == false) {
+        Log.M.WL(1,"Can't find scale for "+ __instance.flimsyType);
+        return;
+      }
+      float roll = Random.Range(0f, 1f);
+      if (roll > CustomAmmoCategories.Settings.bloodSettings.DrawBloodChance) {
+        Log.M.WL(1, "roll fail "+roll +" > "+ CustomAmmoCategories.Settings.bloodSettings.DrawBloodChance);
+        return;
+      }
+      switch (__instance.flimsyType) {
+        case FlimsyDestructType.vehicleFiery:
+        case FlimsyDestructType.smallVehicle:
+        case FlimsyDestructType.mediumVehicle:
+        case FlimsyDestructType.largeVehicle: {
+            Log.M.TWL(0, "Add blood decal " + __instance.transform.position + " scale:" + scale + " name:" + __instance.transform.name);
+            BTCustomRenderer_DrawDecals.AddBlood(__instance.transform.position, new Vector3(1f, 0f, 0f).normalized, new Vector3(scale, scale, scale));
+            if (DestructibleUrbanFlimsy.Combat != null) { __instance.markPlayBloodSound(); }
+          }; break;
+      }
+    }
+  }
+  [HarmonyPatch(typeof(DestructibleUrbanFlimsy))]
+  [HarmonyPatch("PlayDestructionAudio")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { })]
+  public static class DestructibleUrbanFlimsy_PlayDestructionAudio {
+    public static bool Prefix(DestructibleUrbanFlimsy __instance) {
+      //float scale = CustomAmmoCategories.Settings.bloodSettings.DecalScale[];
+      Log.S.TWL(0, "DestructibleUrbanFlimsy.PlayDestructionAudio");
+      if (__instance.isPlayBloodSound()) {
+        Log.S.WL(1, "playing blood sound");
+        __instance.unmarkPlayBloodSound();
+        CustomSoundHelper.SpawnAudioEmitter("testScreamPlay", __instance.thisTransform.position, false);
+        return false;
+      }
+      return true;
     }
   }
   [HarmonyPatch(typeof(FootstepManager))]
@@ -2587,27 +2694,6 @@ namespace CustomAmmoCategoriesPatches {
   public static class FootstepManager_Instance {
     public static bool Prefix(ref FootstepManager __result) {
       typeof(FootstepManager).GetField("maxDecals", BindingFlags.Static | BindingFlags.Public).SetValue(null, 1023);
-      return true;
-    }
-  }
-  [HarmonyPatch(typeof(CombatGameState))]
-  [HarmonyPatch("OnCombatGameDestroyed")]
-  [HarmonyPatch(MethodType.Normal)]
-  [HarmonyPatch(new Type[] { })]
-  public static class CombatGameState_OnCombatGameDestroyedMap {
-    public static bool Prefix(CombatGameState __instance) {
-      if ((DynamicMapHelper.asyncTerrainDesignMask.ThreadState != ThreadState.Aborted)
-        && (DynamicMapHelper.asyncTerrainDesignMask.ThreadState == ThreadState.AbortRequested)) {
-        DynamicMapHelper.asyncTerrainDesignMask.Abort();
-      }
-      DynamicMapHelper.ClearTerrain();
-      MineFieldHelper.registredMovingDamage.Clear();
-      BTCustomRenderer_DrawDecals.Clear();
-      DynamicTreesHelper.Clean();
-      CACDynamicTree.allCACTrees.Clear();
-      CustomAmmoCategories.Settings.DontShowBurnedTreesTemporary = false;
-      DynamicMapHelper.Combat = __instance;
-      DynamicMapHelper.PoolDelayedGameObject();
       return true;
     }
   }
@@ -2679,7 +2765,7 @@ namespace CustomAmmoCategoriesPatches {
       return true;
     }
     public static PrefabCache GameObjectPool(this DataManager dataManager) {
-      return (PrefabCache)pGameObjectPool.GetValue(dataManager,null);
+      return (PrefabCache)pGameObjectPool.GetValue(dataManager, null);
     }
     public static AssetBundleManager AssetBundleManager(this DataManager dataManager) {
       return (AssetBundleManager)pAssetBundleManager.GetValue(dataManager, null);
@@ -2703,8 +2789,8 @@ namespace CustomAmmoCategoriesPatches {
         if (!__instance.GameObjectPool().IsPrefabInPool(id)) { __result = null; return false; }
         __result = __instance.GameObjectPool().PooledInstantiate(id, position, rotation, parent, false);
         return false;
-      }catch(Exception e) {
-        Log.M.TWL(0,e.ToString());
+      } catch (Exception e) {
+        Log.M.TWL(0, e.ToString());
         return true;
       }
     }

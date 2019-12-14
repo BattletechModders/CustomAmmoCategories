@@ -448,69 +448,20 @@ namespace CustomAmmoCategoriesPatches {
           else
             AttackDirector.hitLogger.Log((object)string.Format("======================================== Gunnery Check: NO PILOT"));
         }
-        /*if (CustomAmmoCategories.getWeaponSpreadRange(weapon) > CustomAmmoCategories.Epsilon) {
-          CustomAmmoCategoriesLog.Log.LogWrite(" Weapon has spread\n");
-          List<SpreadHitInfo> spreadList = CustomAmmoCategories.prepareSpreadHitInfo(__instance, weapon, groupIdx, weaponIdx, numberOfShots, indirectFire, dodgedDamage);
-          if (spreadList.Count > 1) {
-            foreach (SpreadHitInfo spHitInfo in spreadList) {
-              ICombatant spreadTarget = __instance.Director.Combat.FindCombatantByGUID(spHitInfo.targetGUID);
-              if (spreadTarget == null) { continue; };
-              generateWeaponHitInfo(__instance, spreadTarget, weapon, groupIdx, weaponIdx, spHitInfo.hitInfo.numberOfShots, indirectFire, dodgedDamage, ref spHitInfo.hitInfo, false, false);
-            }
-            bool consResult = CustomAmmoCategories.ConsolidateSpreadHitInfo(spreadList, ref hitInfo);
-            if (consResult == false) {
-              CustomAmmoCategoriesLog.Log.LogWrite("fallback to default\n", true);
-              generateWeaponHitInfo(__instance, __instance.chosenTarget, weapon, groupIdx, weaponIdx, numberOfShots, indirectFire, dodgedDamage, ref hitInfo, false, false);
-            }
-          } else {
-            generateWeaponHitInfo(__instance, __instance.chosenTarget, weapon, groupIdx, weaponIdx, numberOfShots, indirectFire, dodgedDamage, ref hitInfo, false, false);
-          }
-        } else {
-          generateWeaponHitInfo(__instance, __instance.chosenTarget, weapon, groupIdx, weaponIdx, numberOfShots, indirectFire, dodgedDamage, ref hitInfo, false, false);
-        }*/
         float toHitChance = generateWeaponHitInfo(__instance, __instance.chosenTarget, weapon, groupIdx, weaponIdx, numberOfShots, indirectFire, dodgedDamage, ref hitInfo, false, false);
-        //ExtWeaponDef extWeapon = CustomAmmoCategories.getExtWeaponDef(weapon.defId);
+        int realAmmoUsedCount = hitInfo.numberOfShots;
         if (weapon.isStreak()) {
           if (__instance.attacker.GUID != __instance.chosenTarget.GUID) {
             CustomAmmoCategoriesLog.Log.LogWrite("Streak detected. Clearing missed.\n");
             WeaponHitInfo streakHitInfo = CustomAmmoCategories.getSuccessOnly(hitInfo);
-            CustomAmmoCategories.ReturnNoFireHeat(weapon, hitInfo.stackItemUID, streakHitInfo.numberOfShots);
-            CustomAmmoCategories.DecrementAmmo(weapon, streakHitInfo.stackItemUID, streakHitInfo.numberOfShots);
+            CustomAmmoCategories.ReturnNoFireHeat(weapon, hitInfo.stackItemUID, hitInfo.numberOfShots, streakHitInfo.numberOfShots);
             hitInfo = streakHitInfo;
+            realAmmoUsedCount = streakHitInfo.numberOfShots;
           } else {
             CustomAmmoCategoriesLog.Log.LogWrite("Streak detected. But terrain attack. No misses clearence performed.\n");
           }
         }
-        //if (extWeapon.AMSImmune != TripleBoolean.True) {
-        /*if (weapon.weaponRep != null) {
-          MissileLauncherEffect missileLauncherEffect = weapon.weaponRep.WeaponEffect as MissileLauncherEffect;
-          if (missileLauncherEffect != null) {
-            CustomAmmoCategoriesLog.Log.LogWrite("Missile launcher detected. Pre generating trajectories\n");
-            if (__instance.isMelee == false) {
-              bool AMSImune = CustomAmmoCategories.getWeaponAMSImmune(weapon);
-              bool IsUnguided = CustomAmmoCategories.getWeaponUnguided(weapon);
-              for (int hitIndex = 0; hitIndex < hitInfo.numberOfShots; ++hitIndex) {
-                CustomAmmoCategoriesLog.Log.LogWrite(" " + weapon.defId + " " + hitInfo.attackGroupIndex + " " + hitInfo.attackWeaponIndex + " " + hitIndex + " location:" + hitInfo.hitLocations[hitIndex] + "\n");
-                CustomAmmoCategories.generateMissileCacheCurve(weapon, hitInfo, hitIndex, indirectFire, AMSImune, IsUnguided);
-              }
-            } else {
-              CustomAmmoCategoriesLog.Log.LogWrite("WARNING! " + weapon.defId + " is in melee attack. AMS can't intercept missiles in melee attack\n", true);
-            }
-          }
-        } else {
-          CustomAmmoCategoriesLog.Log.LogWrite("WARNING! " + weapon.defId + " has no weapon representation it is so sad ...\n", true);
-        }*/
-        //} else {
-        //CustomAmmoCategoriesLog.Log.LogWrite("  "+weapon.defId + " is immune to AMS\n");
-        //}
-        /*if (weapon.HasShells()) {
-          CustomAmmoCategoriesLog.Log.LogWrite("Shrapnel detected. Forsed early explode\n");
-          bool IsUnguided = CustomAmmoCategories.getWeaponUnguided(weapon);
-          for (int hitIndex = 0; hitIndex < hitInfo.numberOfShots; ++hitIndex) {
-            CustomAmmoCategoriesLog.Log.LogWrite(" " + weapon.defId + " " + hitInfo.attackGroupIndex + " " + hitInfo.attackWeaponIndex + " " + hitIndex + " location:" + hitInfo.hitLocations[hitIndex] + "\n");
-            CustomAmmoCategories.shrapnellEarlyExplode(__instance.Director.Combat, weapon, ref hitInfo, hitIndex, indirectFire, IsUnguided, __instance.chosenTarget);
-          }
-        }*/
+        weapon.RealDecrementAmmo(hitInfo.stackItemUID, weapon.HitsToShots(realAmmoUsedCount));
         hitInfo.initGenericAdvInfo(toHitChance, __instance, __instance.Director.Combat);
         __result = hitInfo;
         return false;

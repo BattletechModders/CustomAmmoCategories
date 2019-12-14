@@ -95,20 +95,5 @@ namespace CustAmmoCategories {
       return true;
     }
   }
-  [HarmonyPatch(typeof(CombatGameState))]
-  [HarmonyPatch("OnCombatGameDestroyed")]
-  [HarmonyPatch(MethodType.Normal)]
-  [HarmonyPatch(new Type[] { })]
-  public static class CombatGameState_OnCombatGameDestroyedAoE {
-    public static bool Prefix(CombatGameState __instance) {
-      foreach(var ae in CustomAmmoCategories.additinalImpactEffects) {
-        foreach(var sp in ae.Value) {
-          try { sp.CleanupSelf(); } finally { };
-        }
-      }
-      CustomAmmoCategories.additinalImpactEffects.Clear();
-      return true;
-    }
-  }
 }
 

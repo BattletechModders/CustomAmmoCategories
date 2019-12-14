@@ -877,18 +877,5 @@ namespace CustAmmoCategories {
         return;
       }
     }
-    [HarmonyPatch(typeof(CombatGameState))]
-    [HarmonyPatch("OnCombatGameDestroyed")]
-    [HarmonyPatch(MethodType.Normal)]
-    [HarmonyPatch(new Type[] { })]
-    public static class CombatGameState_OnCombatGameDestroyedAoE {
-      public static bool Prefix(CombatGameState __instance) {
-        //if (CustomAmmoCategories.SpreadCache != null) CustomAmmoCategories.SpreadCache.Clear();
-        //if (CustomAmmoCategories.AOEDamageCache != null) CustomAmmoCategories.AOEDamageCache.Clear();
-        //if (CustomAmmoCategories.MissileCurveCache != null) CustomAmmoCategories.MissileCurveCache.Clear();
-        //WeaponEffect_Init.Clear();
-        return true;
-      }
-    }
   }
 }

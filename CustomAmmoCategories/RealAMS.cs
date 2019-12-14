@@ -34,7 +34,7 @@ namespace CustAmmoCategories {
       ShootsRemains = 0;
       ShootsCount = 0;
       if (weapon.CanFire) {
-        ShootsRemains = CustomAmmoCategories.DecrementAmmo(weapon, 0, 0, true);
+        ShootsRemains = weapon.DecrementAmmo(-1);
       }
       int alreadyShooted = weapon.AMSShootsCount();
       if (extWeapon.AMSShootsEveryAttack == false) {
@@ -158,7 +158,7 @@ namespace CustAmmoCategories {
     }
   }*/
   public static partial class CustomAmmoCategories {
-    public static Dictionary<string, Weapon> amsWeapons;
+    public static Dictionary<string, Weapon> amsWeapons = new Dictionary<string, Weapon>();
     //public static Dictionary<int, Dictionary<int, Dictionary<int, Dictionary<int, CachedMissileCurve>>>> MissileCurveCache = null;
     public static string AMSShootsCountStatName = "CAC-AMShootsCount";
     public static string AMSJammingAttemptStatName = "CAC-AMSJammingAttempt";
@@ -697,7 +697,7 @@ namespace CustAmmoCategories {
       foreach (AMSRecord amsrec in ams) {
         CustomAmmoCategoriesLog.Log.LogWrite("AMS " + amsrec.weapon.defId + " shoots:" + amsrec.ShootsCount + "\n");
         if (amsrec.ShootsCount > 0) {
-          CustomAmmoCategories.DecrementAmmo(amsrec.weapon, 0, amsrec.ShootsCount, true);
+          amsrec.weapon.RealDecrementAmmo(-1, amsrec.ShootsCount);
           float HeatGenerated = amsrec.weapon.HeatGenerated * (float)amsrec.ShootsCount / (float)amsrec.weapon.ShotsWhenFired;
           if (amsrec.weapon.parent != null) {
             amsrec.weapon.parent.AddWeaponHeat(amsrec.weapon, (int)HeatGenerated);

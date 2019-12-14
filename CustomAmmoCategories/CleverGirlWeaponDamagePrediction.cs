@@ -128,7 +128,7 @@ namespace CleverGirlAIDamagePrediction {
         inital.Instability /= (float)weapon.ProjectilesPerShot;
         inital.AP /= (float)weapon.ProjectilesPerShot;
       }
-      inital.HitsCount = weapon.DecrementAmmo(-1, 0, true);
+      inital.HitsCount = weapon.DecrementAmmo(-1);
       inital.ToHit = weapon.GetToHitFromPosition(target, 1, attackPos, target.CurrentPosition, false, false, false);
       EffectData[] effects = weapon.StatusEffects();
       foreach (EffectData statusEffect in effects) {
@@ -424,6 +424,7 @@ namespace CleverGirlAIDamagePrediction {
         Log.M.WL(0, r.Key.ToString());
         Log.M.WL(0, r.Value.ToString(1));
       }
+      weapon.ResetTempAmmo();
       return result;
     }
     //private static Dictionary<AbstractActor, Dictionary<string, List<AmmunitionBox>>> ammoBoxesCache = new Dictionary<AbstractActor, Dictionary<string, List<AmmunitionBox>>>();

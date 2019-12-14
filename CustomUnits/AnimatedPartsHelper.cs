@@ -277,12 +277,14 @@ namespace CustomUnits {
   public class SimpleRotatorData {
     public float speed { get; set; }
     public string axis { get; set; }
-    public string sound { get; set; }
+    public string sound_start_event { get; set; }
+    public string sound_stop_event { get; set; }
     public string rotateBone { get; set; }
     public SimpleRotatorData() {
       speed = 0f;
       axis = "y";
-      sound = string.Empty;
+      sound_start_event = string.Empty;
+      sound_stop_event = string.Empty;
       rotateBone = string.Empty;
     }
   }
@@ -332,7 +334,8 @@ namespace CustomUnits {
     //private float rotateAngle;
     private float speed;
     private bool soundPlaying;
-    private string AudioEventName;
+    private string AudioEventNameStart;
+    private string AudioEventNameStop;
     private int axis;
     private Transform rotateBone;
     //private AudioSource audioSrc;
@@ -359,40 +362,6 @@ namespace CustomUnits {
           default: this.rotateBone.Rotate(speed, 0f, 0f, Space.Self); break;
         }
       }
-      if (string.IsNullOrEmpty(AudioEventName) == false) {
-        if (soundPlaying == false) {
-          //Log.LogWrite("SimpleRotator.Update sound not playing\n");
-          uint result = WwiseManager.PostEvent(AudioEventName, parent.GameRep.audioObject, new AkCallbackManager.EventCallback(this.SoundCallBack), (object)null);
-          //Log.LogWrite(" playing:" + result + "\n");
-          soundPlaying = true;
-        }
-      }
-    }
-    IEnumerator GetAudioClip() {
-      string url = "file:///c:/Games/steamapps/common/BATTLETECH/rotor/helicopter-hovering-01.wav";
-      using (UnityWebRequest www = UnityWebRequestMultimedia.GetAudioClip(url, AudioType.WAV)) {
-        yield return www.SendWebRequest();
-        if (www.isHttpError) {
-          Debug.Log(www.error);
-        } else {
-          AudioClip audioClip = DownloadHandlerAudioClip.GetContent(www);
-          Log.LogWrite("helicopter-hovering-01 downloaded. name:" + audioClip.name + " loadstate:" + audioClip.loadState + "\n");
-          if (audioClip.loadState != AudioDataLoadState.Loaded) {
-            Log.LogWrite(" LoadAudioData:" + audioClip.LoadAudioData() + "\n");
-            Log.LogWrite(" loadstate:" + audioClip.loadState + "\n");
-            //Log.LogWrite(" isReadyToPlay:" + audioClip.isReadyToPlay + "\n");
-          }
-          AudioSource source = this.gameObject.GetComponentInChildren<AudioSource>();
-          if (source != null) {
-            Log.LogWrite(" AudioSource found\n");
-            source.Stop();
-            source.clip = audioClip;
-            source.Play();
-            source.volume = 1f;
-            Log.LogWrite(" AudioSource.isPlaying " + source.isPlaying + "\n");
-          }
-        }
-      }
     }
     public override void Init(ICombatant a, int loc, string data) {
       base.Init(a, loc, data);
@@ -404,10 +373,7 @@ namespace CustomUnits {
       } else if (srdata.axis == "z") {
         this.axis = 2;
       }
-      Log.LogWrite("SimpleRotator.Init " + this.gameObject.name + " '" + srdata.sound + "' axis: " + this.axis + "\n");
-      StartCoroutine(GetAudioClip());
-      //this.audioSrc = this.gameObject.AddComponent<AudioSource>();
-      //this.audioClip = new AudioClip();
+      Log.LogWrite("SimpleRotator.Init " + this.gameObject.name + " '" + srdata.sound_start_event + "' axis: " + this.axis + "\n");
       if (string.IsNullOrEmpty(srdata.rotateBone)) { this.rotateBone = this.gameObject.transform; } else {
         Transform[] bones = this.gameObject.GetComponentsInChildren<Transform>();
         foreach (Transform bone in bones) {
@@ -420,39 +386,14 @@ namespace CustomUnits {
       }
       if (this.rotateBone == null) { this.rotateBone = this.gameObject.transform; }
       Log.LogWrite(1, "found rotation bone:" + this.rotateBone.name, true);
-      //if (string.IsNullOrEmpty(srdata.sound) == false) {
-      /*if (CACMain.Core.AdditinalAudio.ContainsKey("helicopter-hovering-01")) {
-        AudioClip clip = CACMain.Core.AdditinalAudio["helicopter-hovering-01"];
-        string url = "file:///c:/Games/steamapps/common/BATTLETECH/rotor/helicopter-hovering-01.wav";
-        UnityWebRequest audioLoader = UnityWebRequestMultimedia.GetAudioClip(url, AudioType.WAV);
-        while (!audioLoader.isDone) {
-          Log.LogWrite("Downloading:"+url+"\n");
-          Thread.Sleep(10);
-        }
-
-        Log.LogWrite("Done:" + url + "\n");
-
-        clip = DownloadHandlerAudioClip.GetContent(audioLoader);
-        Log.LogWrite("helicopter-hovering-01 found. name:" + clip.name + " loadstate:" + clip.loadState + "\n");
-        if (clip.loadState != AudioDataLoadState.Loaded) {
-          Log.LogWrite(" LoadAudioData:" + clip.LoadAudioData() + "\n");
-          Log.LogWrite(" loadstate:" + clip.loadState + "\n");
-          Log.LogWrite(" isReadyToPlay:" + clip.isReadyToPlay + "\n");
-        }
-        AudioSource source = this.gameObject.GetComponentInChildren<AudioSource>();
-        if (source != null) {
-          Log.LogWrite(" AudioSource found\n");
-          source.Stop();
-          source.clip = clip;
-          source.Play();
-          source.volume = 1f;
-          Log.LogWrite(" AudioSource.isPlaying " + source.isPlaying + "\n");
-        }
+      this.AudioEventNameStart = srdata.sound_start_event;
+      this.AudioEventNameStop = srdata.sound_stop_event;
+      if (SceneSingletonBehavior<WwiseManager>.HasInstance) {
+        uint soundid = SceneSingletonBehavior<WwiseManager>.Instance.PostEventByName(AudioEventNameStart, this.parent.GameRep.audioObject, (AkCallbackManager.EventCallback)null, (object)null);
+        Log.TWL(0, "Playing sound by id ("+ AudioEventNameStart + "):" + soundid);
       } else {
-        Log.LogWrite("helicopter-hovering-01 not found\n");
-      }*/
-      //}
-      this.AudioEventName = srdata.sound;
+        Log.TWL(0, "Can't play");
+      }
     }
   }
   public class CustomMoveAnimator : GenericAnimatedComponent {

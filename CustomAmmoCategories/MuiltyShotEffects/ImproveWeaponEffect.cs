@@ -17,6 +17,7 @@ namespace CustAmmoCategories {
         if ((UnityEngine.Object)gameObject == (UnityEngine.Object)null) {
           CustomAmmoCategoriesLog.Log.LogWrite(string.Format("Error instantiating WeaponEffect [{0}], Weapon [{1}]]\n", (object)weaponEffectId, (object)weapon.Name));
         } else {
+          Log.O.printComponents(gameObject, 0);
           gameObject.transform.parent = weaponRepresentation.transform;
           gameObject.transform.localPosition = Vector3.zero;
           gameObject.transform.rotation = Quaternion.identity;
@@ -105,6 +106,7 @@ namespace CustAmmoCategories {
         }
         CustomAmmoCategories.ClearWeaponEffects(wGUID);
         if (__instance.WeaponEffect != null) {
+          Log.O.printComponents(__instance.WeaponEffect.gameObject,0);
           BallisticEffect bWE = __instance.WeaponEffect as BallisticEffect;
           LaserEffect lWE = __instance.WeaponEffect as LaserEffect;
           PPCEffect pWE = __instance.WeaponEffect as PPCEffect;

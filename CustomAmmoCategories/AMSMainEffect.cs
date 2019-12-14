@@ -247,16 +247,6 @@ namespace CustAmmoCategories {
 }
 
 namespace CustAmmoCategoriesPatches {
-  [HarmonyPatch(typeof(CombatGameState))]
-  [HarmonyPatch("OnCombatGameDestroyed")]
-  [HarmonyPatch(MethodType.Normal)]
-  [HarmonyPatch(new Type[] { })]
-  public static class CombatGameState_OnCombatGameDestroyedAMSHelper {
-    public static bool Prefix(CombatGameState __instance) {
-      AMSWeaponEffectStaticHelper.Clear();
-      return true;
-    }
-  }
   [HarmonyPatch(typeof(TurnDirector))]
   [HarmonyPatch("BeginNewRound")]
   [HarmonyPatch(MethodType.Normal)]
