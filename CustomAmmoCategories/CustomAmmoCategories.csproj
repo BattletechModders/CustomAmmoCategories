@@ -115,6 +115,10 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\BattleTech_Data\Managed\UnityEngine.UI.dll</HintPath>
     </Reference>
+    <Reference Include="UnityEngine.UIModule, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\BattleTech_Data\Managed\UnityEngine.UIModule.dll</HintPath>
+    </Reference>
     <Reference Include="UnityEngine.UnityWebRequestWWWModule, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\BattleTech_Data\Managed\UnityEngine.UnityWebRequestWWWModule.dll</HintPath>
@@ -124,7 +128,6 @@
     <Compile Include="AdditionalImpactVFX.cs" />
     <Compile Include="AdvCritProc.cs" />
     <Compile Include="AdvWeaponHitInfo.cs" />
-    <Compile Include="AIMFriendlyFire.cs" />
     <Compile Include="AIWeaponChoose.cs" />
     <Compile Include="AmmoCategoryValue.cs" />
     <Compile Include="AmmoCookoff.cs" />
@@ -156,11 +159,11 @@
     <Compile Include="CleverGirlWeaponDamagePrediction.cs" />
     <Compile Include="CombatGameDestroy.cs" />
     <Compile Include="CustomDesignMask.cs" />
+    <Compile Include="CustomSVGAsset.cs" />
     <Compile Include="DebugSpawnHelper.cs" />
     <Compile Include="DecrementAmmo.cs" />
     <Compile Include="DynamicMap.cs" />
     <Compile Include="DynamicTrees.cs" />
-    <Compile Include="ForbiddenRange.cs" />
     <Compile Include="Frag.cs" />
     <Compile Include="FragBallisticEffect.cs" />
     <Compile Include="FragBulletEffect.cs" />
@@ -191,9 +194,9 @@
     <Compile Include="OnAttackSequenceImpactAdv.cs" />
     <Compile Include="OnAttackSequenceResolveDamage.cs" />
     <Compile Include="MainClass.cs" />
+    <Compile Include="PersistentFloatieMessage.cs" />
     <Compile Include="PlayProjectile.cs" />
     <Compile Include="WeaponAmmoLoadFixer.cs" />
-    <Compile Include="ProcessMousePos.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="RangeAccuracyHelper.cs" />
     <Compile Include="RealAMS.cs" />
@@ -204,7 +207,6 @@
     <Compile Include="Stray.cs" />
     <Compile Include="StructureDamage.cs" />
     <Compile Include="TerrainAttack.cs" />
-    <Compile Include="VehicleHeightFixer.cs" />
     <Compile Include="WeaponAmmoCategory.cs" />
     <Compile Include="WeaponDef.cs" />
     <Compile Include="WeaponMode.cs" />

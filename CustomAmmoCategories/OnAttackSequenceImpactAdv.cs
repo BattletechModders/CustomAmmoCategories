@@ -88,19 +88,29 @@ namespace CustAmmoCategories {
               , sequence.Director.Combat.Constants.CombatUIConstants.floatieSizeMedium, FloatieMessage.MessageNature.StructureDamage, fPrimPos.x, fPrimPos.y, fPrimPos.z));
             }
           } else {
-            Log.LogWrite(" miss\n");
             Vector3 missMsgPos = advRec.target.CurrentPosition + UnityEngine.Random.insideUnitSphere * 5f;
             TerrainHitInfo terrainPos = CustomAmmoCategories.getTerrinHitPosition(impactMessage.hitInfo.stackItemUID);
             if (terrainPos != null) { missMsgPos = terrainPos.pos + UnityEngine.Random.insideUnitSphere * 5f; };
             if (impactMessage.hitInfo.dodgeSuccesses[hitIndex]) {
+              Log.LogWrite(" dodgeSuccesses\n");
               advRec.target.GameRep.PlayImpactAnim(impactMessage.hitInfo, hitIndex, weapon, sequence.meleeAttackType, advRec.parent.resolve(advRec.target).cumulativeDamage);
-              sequence.Director.Combat.MessageCenter.PublishMessage((MessageCenterMessage)new FloatieMessage(impactMessage.hitInfo.attackerId, advRec.target.GUID, new Text("__/CAC.EVADE/__", new object[0]), sequence.Director.Combat.Constants.CombatUIConstants.floatieSizeMedium, FloatieMessage.MessageNature.Dodge, missMsgPos.x, missMsgPos.y, missMsgPos.z));
+              sequence.Director.Combat.MessageCenter.PublishMessage((MessageCenterMessage)new FloatieMessage(impactMessage.hitInfo.attackerId, advRec.target.GUID, new Text("__/CAC.EVADE/__", new object[0]), sequence.Director.Combat.Constants.CombatUIConstants.floatieSizeMedium, FloatieMessage.MessageNature.ArmorDamage, missMsgPos.x, missMsgPos.y, missMsgPos.z));
             } else if (sequence.meleeAttackType != MeleeAttackType.NotSet) {
+              Log.LogWrite(" melee\n");
               advRec.target.GameRep.PlayImpactAnim(impactMessage.hitInfo, hitIndex, weapon, sequence.meleeAttackType, advRec.parent.resolve(advRec.target).cumulativeDamage);
-              sequence.Director.Combat.MessageCenter.PublishMessage((MessageCenterMessage)new FloatieMessage(impactMessage.hitInfo.attackerId, advRec.target.GUID, new Text("__/CAC.MISS/__", new object[1] { (hitRoll - advRec.parent.hitChance) * 100f }), sequence.Director.Combat.Constants.CombatUIConstants.floatieSizeMedium, FloatieMessage.MessageNature.MeleeMiss, missMsgPos.x, missMsgPos.y, missMsgPos.z));
+              sequence.Director.Combat.MessageCenter.PublishMessage((MessageCenterMessage)new FloatieMessage(impactMessage.hitInfo.attackerId, advRec.target.GUID, new Text("__/CAC.MISS/__", new object[1] { (hitRoll - advRec.parent.hitChance) * 100f }), sequence.Director.Combat.Constants.CombatUIConstants.floatieSizeMedium, FloatieMessage.MessageNature.ArmorDamage, missMsgPos.x, missMsgPos.y, missMsgPos.z));
             } else {
-              FloatieMessage.MessageNature nature = weapon.ShotsWhenFired <= 1 ? FloatieMessage.MessageNature.MeleeMiss : FloatieMessage.MessageNature.Miss;
-              sequence.Director.Combat.MessageCenter.PublishMessage((MessageCenterMessage)new FloatieMessage(impactMessage.hitInfo.attackerId, advRec.target.GUID, new Text("__/CAC.MISS/__", new object[1] { (hitRoll - advRec.parent.hitChance) * 100f }), sequence.Director.Combat.Constants.CombatUIConstants.floatieSizeMedium, nature, missMsgPos.x, missMsgPos.y, missMsgPos.z));
+              if (advRec.interceptInfo.Intercepted) {
+                missMsgPos = advRec.hitPosition;
+                Text text = new Text("__/CAC.INTERCEPTED/__");
+                Log.LogWrite(" normal '" + text.ToString() + "': " + impactMessage.hitInfo.attackerId + " " + new Text(advRec.target.DisplayName).ToString() + ":" + advRec.target.GUID + " pos:" + missMsgPos + " " + advRec.target.CurrentPosition + "\n");
+                sequence.Director.Combat.MessageCenter.PublishMessage((MessageCenterMessage)new FloatieMessage(impactMessage.hitInfo.attackerId, advRec.target.GUID, text, sequence.Director.Combat.Constants.CombatUIConstants.floatieSizeLarge, FloatieMessage.MessageNature.ArmorDamage, missMsgPos.x, missMsgPos.y, missMsgPos.z));
+              } else {
+                //FloatieMessage.MessageNature nature = weapon.ShotsWhenFired <= 1 ? FloatieMessage.MessageNature.MeleeMiss : FloatieMessage.MessageNature.Miss;
+                Text text = new Text("__/CAC.MISS/__", new object[1] { (hitRoll - advRec.parent.hitChance) * 100f });
+                Log.LogWrite(" normal '" + text.ToString() + "': " + impactMessage.hitInfo.attackerId + " " + new Text(advRec.target.DisplayName).ToString() + ":" + advRec.target.GUID + " pos:" + missMsgPos + " " + advRec.target.CurrentPosition + "\n");
+                sequence.Director.Combat.MessageCenter.PublishMessage((MessageCenterMessage)new FloatieMessage(impactMessage.hitInfo.attackerId, advRec.target.GUID, text, sequence.Director.Combat.Constants.CombatUIConstants.floatieSizeLarge, FloatieMessage.MessageNature.ArmorDamage, missMsgPos.x, missMsgPos.y, missMsgPos.z));
+              }
             }
           }
         }

@@ -2681,7 +2681,7 @@ namespace CustomAmmoCategoriesPatches {
       if (__instance.isPlayBloodSound()) {
         Log.S.WL(1, "playing blood sound");
         __instance.unmarkPlayBloodSound();
-        CustomSoundHelper.SpawnAudioEmitter("testScreamPlay", __instance.thisTransform.position, false);
+        CustomSoundHelper.SpawnAudioEmitter("scream01", __instance.thisTransform.position, false);
         return false;
       }
       return true;

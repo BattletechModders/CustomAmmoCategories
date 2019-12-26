@@ -90,6 +90,14 @@
     <Compile Include="Core.cs" />
     <Compile Include="CustomMovement.cs" />
     <Compile Include="Hardpoints.cs" />
+    <Compile Include="MechResizer\MechRepresentationPatch.cs" />
+    <Compile Include="MechResizer\MechResizer.cs" />
+    <Compile Include="MechResizer\Settings.cs" />
+    <Compile Include="MechResizer\SizeMultiplier.cs" />
+    <Compile Include="MechResizer\TagUnderstander.cs" />
+    <Compile Include="MechResizer\TurretRepresentationPatch.cs" />
+    <Compile Include="MechResizer\VehicleRepresentationPatch.cs" />
+    <Compile Include="MechResizer\WeaponEffectPatch.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="TerrainCost.cs" />
     <Compile Include="TerrainMaskPatch.cs" />

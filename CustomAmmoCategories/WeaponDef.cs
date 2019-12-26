@@ -2,6 +2,8 @@
 using CustAmmoCategories;
 using CustomAmmoCategoriesLog;
 using Harmony;
+using HBS.Util;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
@@ -11,6 +13,46 @@ using System.Text;
 using UnityEngine;
 
 namespace CustAmmoCategories {
+  public class DeferredEffectDef {
+    public int rounds { get; set; }
+    public string VFX { get; set; }
+    public string SFX { get; set; }
+    public float VFXlength { get; set; }
+    public List<EffectData> statusEffects { get; set; }
+    public float Damage { get; set; }
+    public int Heat { get; set; }
+    public int Instability { get; set; }
+    public float AOERange { get; set; }
+    public float AOEDamage { get; set; }
+    public float AOEHeatDamage { get; set; }
+    public float AOEInstability { get; set; }
+    public DeferredEffectDef() {
+      rounds = 0;
+      VFX = string.Empty;
+      SFX = string.Empty;
+      VFXlength = 0f;
+      statusEffects = new List<EffectData>();
+      Damage = 0f;
+      Heat = 0;
+      Instability = 0;
+      AOERange = 0f;
+      AOEDamage = 0f;
+      AOEHeatDamage = 0f;
+      AOEInstability = 0f;
+    }
+    public void ParceEffects(string json) {
+      try {
+        JArray statusEffects = JArray.Parse(json);
+        foreach (JObject statusEffect in statusEffects) {
+          EffectData effect = new EffectData();
+          JSONSerializationUtility.FromJSON<EffectData>(effect, statusEffect.ToString());
+          statusEffects.Add(effect);
+        }
+      } catch (Exception e) {
+        Log.M.TWL(0, e.ToString(), true);
+      }
+    }
+  }
   public class ExtDefinitionParceInfo {
     public object extDef { get; set; }
     public string baseJson { get; set; }
@@ -311,6 +353,7 @@ namespace CustAmmoCategories {
     public float ForbiddenRange { get; set; }
     public EvasivePipsMods evasivePipsMods { get; set; }
     public float ShotsPerAmmo { get; set; }
+    public DeferredEffectDef deferredEffect { get; set; }
     public ExtWeaponDef() {
       Id = string.Empty;
       StreakEffect = false;
@@ -393,6 +436,7 @@ namespace CustAmmoCategories {
       ForbiddenRange = 0f;
       evasivePipsMods = new EvasivePipsMods();
       ShotsPerAmmo = 1f;
+      deferredEffect = new DeferredEffectDef();
     }
   }
 }
@@ -775,6 +819,13 @@ namespace CustomAmmoCategoriesPatches {
         if (defTemp["IFFDef"] != null) {
           extDef.IFFDef = (string)defTemp["IFFDef"];
           defTemp.Remove("IFFDef");
+        }
+        if(defTemp["deferredEffect"] != null) {
+          extDef.deferredEffect = JsonConvert.DeserializeObject<DeferredEffectDef>(defTemp["deferredEffect"].ToString());
+          if(defTemp["deferredEffect"]["statusEffects"] != null) {
+            extDef.deferredEffect.ParceEffects(defTemp["deferredEffect"]["statusEffects"].ToString());
+          }
+          defTemp.Remove("deferredEffect");
         }
         //if (defTemp["ShrapnelWeaponEffectID"] != null) {
         //  extDef.ShrapnelWeaponEffectID = (string)defTemp["ShrapnelWeaponEffectID"];

@@ -117,6 +117,7 @@ namespace CustomUnits{
       Log.InitLog();
       Core.Settings = JsonConvert.DeserializeObject<CustomUnits.CUSettings>(settingsJson);
       Log.LogWrite("Initing... " + directory + " version: " + Assembly.GetExecutingAssembly().GetName().Version + "\n", true);
+      MechResizer.MechResizer.Init(directory, settingsJson);
       try {
         var harmony = HarmonyInstance.Create("io.mission.customunits");
         harmony.PatchAll(Assembly.GetExecutingAssembly());

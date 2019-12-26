@@ -24,6 +24,7 @@ using InControl;
 using BattleTech.Rendering;
 using CustomAmmoCategoriesPatches;
 using CustomAmmoCategoriesLog;
+using CustAmmoCategoriesPatches;
 
 namespace CustomAmmoCategoriesPatches {
   [HarmonyPatch(typeof(CombatHUDActionButton))]
@@ -116,13 +117,14 @@ namespace CustomAmmoCategoriesPatches {
         return false;
       }
       if (trigger_mode) {
-        CustomAmmoCategories.CycleMode(__instance.DisplayedWeapon);
-        if (SceneSingletonBehavior<WwiseManager>.HasInstance) {
-          uint num2 = SceneSingletonBehavior<WwiseManager>.Instance.PostEventById(390458608, __instance.DisplayedWeapon.parent.GameRep.audioObject, (AkCallbackManager.EventCallback)null, (object)null);
-          //uint num2 = SceneSingletonBehavior<WwiseManager>.Instance.PostEventById(942708355, __instance.DisplayedWeapon.parent.GameRep.audioObject, (AkCallbackManager.EventCallback)null, (object)null);
-          Log.S.TWL(0, "Playing sound by id:" + num2);
-        } else {
-          Log.S.TWL(0, "Can't play");
+        if (CustomAmmoCategories.CycleMode(__instance.DisplayedWeapon)) {
+          if (SceneSingletonBehavior<WwiseManager>.HasInstance) {
+            uint num2 = SceneSingletonBehavior<WwiseManager>.Instance.PostEventById(390458608, __instance.DisplayedWeapon.parent.GameRep.audioObject, (AkCallbackManager.EventCallback)null, (object)null);
+            //uint num2 = SceneSingletonBehavior<WwiseManager>.Instance.PostEventById(942708355, __instance.DisplayedWeapon.parent.GameRep.audioObject, (AkCallbackManager.EventCallback)null, (object)null);
+            Log.S.TWL(0, "Playing sound by id:" + num2);
+          } else {
+            Log.S.TWL(0, "Can't play");
+          }
         }
         __instance.RefreshDisplayedWeapon((ICombatant)null);
         return false;
@@ -131,7 +133,15 @@ namespace CustomAmmoCategoriesPatches {
         //if ((CustomAmmoCategories.IsJammed(__instance.DisplayedWeapon) == false)
         //  && (CustomAmmoCategories.isWRJammed(__instance.DisplayedWeapon) == false)
         //  && (CustomAmmoCategories.IsCooldown(__instance.DisplayedWeapon) <= 0)) {
-        CustomAmmoCategories.CycleAmmo(__instance.DisplayedWeapon);
+        if (CustomAmmoCategories.CycleAmmo(__instance.DisplayedWeapon)) {
+          if (SceneSingletonBehavior<WwiseManager>.HasInstance) {
+            uint num2 = SceneSingletonBehavior<WwiseManager>.Instance.PostEventById(390458608, __instance.DisplayedWeapon.parent.GameRep.audioObject, (AkCallbackManager.EventCallback)null, (object)null);
+            //uint num2 = SceneSingletonBehavior<WwiseManager>.Instance.PostEventById(942708355, __instance.DisplayedWeapon.parent.GameRep.audioObject, (AkCallbackManager.EventCallback)null, (object)null);
+            Log.S.TWL(0, "Playing sound by id:" + num2);
+          } else {
+            Log.S.TWL(0, "Can't play");
+          }
+        }
         //}
         __instance.RefreshDisplayedWeapon((ICombatant)null);
         return false;
@@ -809,17 +819,17 @@ namespace CustAmmoCategories {
       if (boxAmmoCategory.Index == CustomAmmoCategories.NotSetCustomAmmoCategoty.Index) { boxAmmoCategory = CustomAmmoCategories.find(ammoDef.AmmoCategoryValue.Name); }
       return boxAmmoCategory;
     }
-    public static void CycleAmmo(Weapon weapon) {
+    public static bool CycleAmmo(Weapon weapon) {
       CustomAmmoCategoriesLog.Log.LogWrite("Cycle Ammo\n");
       if (weapon.ammoBoxes.Count == 0) {
         CustomAmmoCategoriesLog.Log.LogWrite(" no ammo boxes\n");
-        return;
+        return false;
       };
       if (weapon.StatCollection.ContainsStatistic(CustomAmmoCategories.AmmoIdStatName) == false) {
         CustomAmmoCategoriesLog.Log.LogWrite(" Current weapon is not set\n");
         weapon.StatCollection.AddStatistic<string>(CustomAmmoCategories.AmmoIdStatName, CustomAmmoCategories.findBestAmmo(weapon));
         weapon.ClearAmmoModeCache();
-        return;
+        return true;
       }
       string CurrentAmmo = weapon.StatCollection.GetStatistic(CustomAmmoCategories.AmmoIdStatName).Value<string>();
       List<string> AvaibleAmmo = CustomAmmoCategories.getAvaibleAmmo(weapon);
@@ -827,7 +837,7 @@ namespace CustAmmoCategories {
       if (CurrentAmmoIndex < 0) {
         weapon.StatCollection.Set<string>(CustomAmmoCategories.AmmoIdStatName, CustomAmmoCategories.findBestAmmo(weapon));
         weapon.ClearAmmoModeCache();
-        return;
+        return true;
       }
       CustomAmmoCategory weaponAmmoCategory = weapon.CustomAmmoCategory();
       for (int ti = 1; ti <= AvaibleAmmo.Count; ++ti) {
@@ -854,9 +864,10 @@ namespace CustAmmoCategories {
           CustomAmmoCategoriesLog.Log.LogWrite("   cycled to " + tempAmmo + "\n");
           weapon.StatCollection.Set<string>(CustomAmmoCategories.AmmoIdStatName, tempAmmo);
           weapon.ClearAmmoModeCache();
-          return;
+          return true;
         }
       }
+      return false;
     }
     /*public static CustomAmmoCategory getWeaponAmmoCategory(Weapon weapon) {
       CustomAmmoCategoriesLog.Log.LogWrite("getWeaponAmmoCategory("+weapon.defId+")\n");
@@ -869,21 +880,22 @@ namespace CustAmmoCategories {
       CustomAmmoCategoriesLog.Log.LogWrite(" "+weaponAmmoCategory.Id+"\n");
       return weaponAmmoCategory;
     }*/
-    public static void CycleMode(Weapon weapon) {
+    public static bool CycleMode(Weapon weapon) {
       ExtWeaponDef extWeapon = CustomAmmoCategories.getExtWeaponDef(weapon.defId);
+      Log.M.TWL(0,"Cycling mode "+weapon.defId);
       if (extWeapon.Modes.Count <= 1) {
-        CustomAmmoCategoriesLog.Log.LogWrite(" no weapon modes\n");
-        return;
+        Log.M.WL(1,"no weapon modes");
+        return false;
       }
       if (weapon.StatCollection.ContainsStatistic(CustomAmmoCategories.WeaponModeStatisticName) == false) {
         weapon.StatCollection.AddStatistic<string>(CustomAmmoCategories.WeaponModeStatisticName, extWeapon.baseModeId);
         CustomAmmoCategories.CycleAmmoBest(weapon);
-        return;
+        return true;
       }
       string modeId = weapon.StatCollection.GetStatistic(CustomAmmoCategories.WeaponModeStatisticName).Value<string>();
       CustomAmmoCategory oldWeaponAmmoCategory = weapon.CustomAmmoCategory();
       List<WeaponMode> avaibleModes = weapon.AvaibleModes();
-      if (avaibleModes.Count == 0) { return; };
+      if (avaibleModes.Count == 0) { return false; };
       int nextIndex = 0;
       for (int t = 0; t < avaibleModes.Count; ++t) {
         if (avaibleModes[t].Id == modeId) {
@@ -891,14 +903,17 @@ namespace CustAmmoCategories {
           break;
         }
       }
+      string oldModeId = modeId;
       modeId = avaibleModes[nextIndex].Id;
       weapon.StatCollection.Set<string>(CustomAmmoCategories.WeaponModeStatisticName, modeId);
+      weapon.ClearAmmoModeCache();
       CustomAmmoCategory newWeaponAmmoCategory = weapon.CustomAmmoCategory();
       if (oldWeaponAmmoCategory.Index != newWeaponAmmoCategory.Index) {
         CustomAmmoCategories.CycleAmmoBest(weapon);
       } else {
         weapon.ClearAmmoModeCache();
       }
+      return oldModeId != modeId;
     }
 
     public static void RegisterPlayerWeapon(Weapon weapon) {
@@ -1273,7 +1288,6 @@ namespace CustAmmoCategories {
     public int UpdateReticleTrottle { get; set; }
     public BloodSettings bloodSettings { get; set; }
     public bool fixPrewarmRequests { get; set; }
-    public string customSoundBanks { get; set; }
     public string directory { get; set; }
     Settings() {
       directory = string.Empty;
@@ -1348,7 +1362,6 @@ namespace CustAmmoCategories {
       UpdateReticleTrottle = 8;
       bloodSettings = new BloodSettings();
       fixPrewarmRequests = true;
-      customSoundBanks = "soundBanks";
     }
   }
 }
@@ -1377,7 +1390,6 @@ namespace CACMain {
       Log.M.TWL(0, "FinishedLoading", true);
       try {
         CustomAmmoCategories.CustomCategoriesInit();
-        CustomSoundHelper.InitCustomSoundBanks(CustomAmmoCategories.Settings.directory);
       }catch(Exception e) {
         Log.M.TWL(0, e.ToString(), true);
       }
@@ -1487,26 +1499,26 @@ namespace CACMain {
               CustomAmmoCategoriesLog.Log.LogWrite("FX objects:\n");
               foreach (var obj in objects) {
                 CustomAmmoCategoriesLog.Log.LogWrite(" " + obj.name + "\n");
-                AdditinalFXObjects.Add(obj.name, obj);
+                if(AdditinalFXObjects.ContainsKey(obj.name) == false) AdditinalFXObjects.Add(obj.name, obj);
               }
               UnityEngine.Texture2D[] textures = assetBundle.LoadAllAssets<Texture2D>();
               CustomAmmoCategoriesLog.Log.LogWrite("Textures:\n");
               foreach (var tex in textures) {
                 CustomAmmoCategoriesLog.Log.LogWrite(" " + tex.name + "\n");
-                AdditinalTextures.Add(tex.name, tex);
+                if (AdditinalTextures.ContainsKey(tex.name) == false) AdditinalTextures.Add(tex.name, tex);
               }
               UnityEngine.Mesh[] meshes = assetBundle.LoadAllAssets<Mesh>();
               CustomAmmoCategoriesLog.Log.LogWrite("Meshes:\n");
               foreach (var msh in meshes) {
                 CustomAmmoCategoriesLog.Log.LogWrite(" " + msh.name + "\n");
-                AdditinalMeshes.Add(msh.name, msh);
+                if (AdditinalMeshes.ContainsKey(msh.name) == false) AdditinalMeshes.Add(msh.name, msh);
               }
               UnityEngine.Material[] materials = assetBundle.LoadAllAssets<Material>();
               CustomAmmoCategoriesLog.Log.LogWrite("Materials:\n");
               foreach (var mat in materials) {
                 CustomAmmoCategoriesLog.Log.LogWrite(" " + mat.name + "\n");
                 if (AdditinalMaterials.ContainsKey(mat.name) == false) {
-                  AdditinalMaterials.Add(mat.name, mat);
+                  if (AdditinalMaterials.ContainsKey(mat.name) == false) AdditinalMaterials.Add(mat.name, mat);
                 }
               }
               UnityEngine.Shader[] shaders = assetBundle.LoadAllAssets<Shader>();
@@ -1514,7 +1526,7 @@ namespace CACMain {
               foreach (var shdr in shaders) {
                 CustomAmmoCategoriesLog.Log.LogWrite(" " + shdr.name + "\n");
                 if (AdditinalShaders.ContainsKey(shdr.name) == false) {
-                  AdditinalShaders.Add(shdr.name, shdr);
+                  if (AdditinalShaders.ContainsKey(shdr.name) == false) AdditinalShaders.Add(shdr.name, shdr);
                 }
               }
               UnityEngine.AudioClip[] audio = assetBundle.LoadAllAssets<AudioClip>();
@@ -1522,7 +1534,7 @@ namespace CACMain {
               foreach (var au in audio) {
                 CustomAmmoCategoriesLog.Log.LogWrite(" " + au.name + "\n");
                 if (AdditinalAudio.ContainsKey(au.name) == false) {
-                  AdditinalAudio.Add(au.name, au);
+                  if (AdditinalAudio.ContainsKey(au.name) == false) AdditinalAudio.Add(au.name, au);
                 }
               }
             } else {

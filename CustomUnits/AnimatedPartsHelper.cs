@@ -274,17 +274,21 @@ namespace CustomUnits {
       return false;
     }
   }*/
+  public class GenericAnimatedData {
+    public string sound_start_event { get; set; }
+    public string sound_stop_event { get; set; }
+    public GenericAnimatedData() {
+      sound_start_event = string.Empty;
+      sound_stop_event = string.Empty;
+    }
+  }
   public class SimpleRotatorData {
     public float speed { get; set; }
     public string axis { get; set; }
-    public string sound_start_event { get; set; }
-    public string sound_stop_event { get; set; }
     public string rotateBone { get; set; }
     public SimpleRotatorData() {
       speed = 0f;
       axis = "y";
-      sound_start_event = string.Empty;
-      sound_stop_event = string.Empty;
       rotateBone = string.Empty;
     }
   }
@@ -302,12 +306,18 @@ namespace CustomUnits {
     public ICombatant parent { get; set; }
     protected List<Renderer> renderers;
     public int Location { get; set; }
+    protected string AudioEventNameStart;
+    protected string AudioEventNameStop;
     public GenericAnimatedComponent() {
       parent = null;
       Location = 0;
       renderers = new List<Renderer>();
     }
     public virtual void Init(ICombatant a, int loc, string data) {
+      GenericAnimatedData jdata = JsonConvert.DeserializeObject<GenericAnimatedData>(data);
+      AudioEventNameStart = jdata.sound_start_event;
+      AudioEventNameStop = jdata.sound_stop_event;
+      Log.LogWrite("GenericAnimatedComponent.Init " + this.gameObject.name + " AudioEventNameStart: " + this.AudioEventNameStart + " AudioEventNameStop:"+ AudioEventNameStop + "\n");
       parent = a;
       Location = loc;
       if (this.renderers != null) {
@@ -321,21 +331,45 @@ namespace CustomUnits {
       if (this.renderers == null)
         return;
       if (newLevel == VisibilityLevel.LOSFull) {
-        for (int index = 0; index < this.renderers.Count; ++index)
+        for (int index = 0; index < this.renderers.Count; ++index) {
           this.renderers[index].enabled = true;
+        }
+        if(string.IsNullOrEmpty(AudioEventNameStart) == false) {
+          if (SceneSingletonBehavior<WwiseManager>.HasInstance) {
+            uint soundid = SceneSingletonBehavior<WwiseManager>.Instance.PostEventByName(AudioEventNameStart, this.parent.GameRep.audioObject, (AkCallbackManager.EventCallback)null, (object)null);
+            Log.TWL(0, "Playing sound by id (" + AudioEventNameStart + "):" + soundid);
+          } else {
+            Log.TWL(0, "Can't play");
+          }
+        }
       } else {
-        for (int index = 0; index < this.renderers.Count; ++index)
+        for (int index = 0; index < this.renderers.Count; ++index) {
           this.renderers[index].enabled = false;
+        }
+        if (string.IsNullOrEmpty(AudioEventNameStop) == false) {
+          if (SceneSingletonBehavior<WwiseManager>.HasInstance) {
+            uint soundid = SceneSingletonBehavior<WwiseManager>.Instance.PostEventByName(AudioEventNameStop, this.parent.GameRep.audioObject, (AkCallbackManager.EventCallback)null, (object)null);
+            Log.TWL(0, "Stop playing sound by id (" + AudioEventNameStop + "):" + soundid);
+          } else {
+            Log.TWL(0, "Can't play");
+          }
+        }
       }
     }
-    public virtual void Clear() { }
+    public virtual void Clear() {
+      if (string.IsNullOrEmpty(AudioEventNameStop) == false) {
+        if (SceneSingletonBehavior<WwiseManager>.HasInstance) {
+          uint soundid = SceneSingletonBehavior<WwiseManager>.Instance.PostEventByName(AudioEventNameStop, this.parent.GameRep.audioObject, (AkCallbackManager.EventCallback)null, (object)null);
+          Log.TWL(0, "Stop playing sound by id (" + AudioEventNameStop + "):" + soundid);
+        } else {
+          Log.TWL(0, "Can't play");
+        }
+      }
+    }
   }
   public class SimpleRotator : GenericAnimatedComponent {
     //private float rotateAngle;
     private float speed;
-    private bool soundPlaying;
-    private string AudioEventNameStart;
-    private string AudioEventNameStop;
     private int axis;
     private Transform rotateBone;
     //private AudioSource audioSrc;
@@ -345,14 +379,7 @@ namespace CustomUnits {
     }
     public void Awake() {
       Log.LogWrite("Awake " + this.gameObject.name + "\n");
-      soundPlaying = false;
       //this.rotateAngle = 0.0f;
-    }
-    private void SoundCallBack(object in_cookie, AkCallbackType in_type, object in_info) {
-      //Log.LogWrite("SimpleRotator.SoundCallBack:" + in_type + "\n");
-      if (in_type == AkCallbackType.AK_EndOfEvent) {
-        soundPlaying = false;
-      }
     }
     protected virtual void Update() {
       if (rotateBone != null) {
@@ -373,7 +400,7 @@ namespace CustomUnits {
       } else if (srdata.axis == "z") {
         this.axis = 2;
       }
-      Log.LogWrite("SimpleRotator.Init " + this.gameObject.name + " '" + srdata.sound_start_event + "' axis: " + this.axis + "\n");
+      Log.LogWrite("SimpleRotator.Init " + this.gameObject.name + " axis: " + this.axis + "\n");
       if (string.IsNullOrEmpty(srdata.rotateBone)) { this.rotateBone = this.gameObject.transform; } else {
         Transform[] bones = this.gameObject.GetComponentsInChildren<Transform>();
         foreach (Transform bone in bones) {
@@ -386,14 +413,6 @@ namespace CustomUnits {
       }
       if (this.rotateBone == null) { this.rotateBone = this.gameObject.transform; }
       Log.LogWrite(1, "found rotation bone:" + this.rotateBone.name, true);
-      this.AudioEventNameStart = srdata.sound_start_event;
-      this.AudioEventNameStop = srdata.sound_stop_event;
-      if (SceneSingletonBehavior<WwiseManager>.HasInstance) {
-        uint soundid = SceneSingletonBehavior<WwiseManager>.Instance.PostEventByName(AudioEventNameStart, this.parent.GameRep.audioObject, (AkCallbackManager.EventCallback)null, (object)null);
-        Log.TWL(0, "Playing sound by id ("+ AudioEventNameStart + "):" + soundid);
-      } else {
-        Log.TWL(0, "Can't play");
-      }
     }
   }
   public class CustomMoveAnimator : GenericAnimatedComponent {

@@ -85,7 +85,7 @@ namespace CustAmmoCategories {
     public static class Weapon_DecrementAmmo {
       public static bool Prefix(Weapon __instance, int stackItemUID, ref int __result) {
         Log.M.TW(0, "Weapon.DecrementAmmo:" + __instance.defId);
-        __result = CustomAmmoCategories.CountAmmoForShot(__instance, stackItemUID);
+        __result = __instance.CountAmmoForShot(stackItemUID);
         Log.M.W(1, "shots:" + __result);
         __result = __instance.ShotsToHits(__result);
         Log.M.WL(1, "hits:" + __result);
@@ -93,14 +93,16 @@ namespace CustAmmoCategories {
       }
     }
     public static int CountAmmoForShot(this Weapon weapon, int stackItemUID) {
+      Log.M.TWL(0, "Weapon.CountAmmoForShot:" + weapon.defId);
       int ammoWhenFired =  weapon.ShootsToAmmo(weapon.ShotsWhenFired);
+      Log.M.WL(1, "ammoWhenFired:"+ammoWhenFired);
       ExtAmmunitionDef ammo = weapon.ammo();
       if (ammo.AmmoCategory.BaseCategory.Is_NotSet) { return weapon.AmmoToShoots(ammoWhenFired); };
       if (weapon.parent != null) {
         Turret turret = weapon.parent as Turret;
         if (turret != null) {
           if (turret.TurretDef.Description.Id.Contains("Assault")) {
-            Log.LogWrite("Hardened turret detected\n");
+            Log.M.WL(1, "hardened turret detected");
             return weapon.AmmoToShoots(ammoWhenFired); ;
           }
         }
@@ -122,8 +124,8 @@ namespace CustAmmoCategories {
         if (ammoBox.tCurrentAmmo() >= modValue) {
           ammoBox.tCurrentAmmo(ammoBox.tCurrentAmmo() - modValue); modValue = 0; break;
         } else {
-          ammoBox.tCurrentAmmo(0);
           modValue -= ammoBox.tCurrentAmmo();
+          ammoBox.tCurrentAmmo(0);
         }
       }
       return weapon.AmmoToShoots(ammoWhenFired - modValue);

@@ -16,9 +16,6 @@ namespace CharlesB {
       var hitInfo = attackSequenceResolveDamageMessage.hitInfo;
       if (hitInfo.attackSequenceId != __instance.id) return true;
 
-      var messageCoordinator = Traverse.Create(__instance).Field("messageCoordinator").GetValue<MessageCoordinator>();
-      if (!messageCoordinator.CanProcessMessage(attackSequenceResolveDamageMessage)) return true;
-
       var attackGroupIndex = attackSequenceResolveDamageMessage.hitInfo.attackGroupIndex;
       var attackWeaponIndex = attackSequenceResolveDamageMessage.hitInfo.attackWeaponIndex;
       var weapon = __instance.GetWeapon(attackGroupIndex, attackWeaponIndex);

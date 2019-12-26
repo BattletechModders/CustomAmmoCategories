@@ -136,12 +136,6 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
          currentImpact = 0;
       }
 
-      public static void ShowMissChance ( FloatieMessage __instance, FloatieMessage.MessageNature nature ) { try {
-         if ( currentImpact == 0 || ( nature != FloatieMessage.MessageNature.Miss && nature != FloatieMessage.MessageNature.MeleeMiss ) ) return;
-         if ( ! hitChance.TryGetValue( currentImpact, out float chance ) ) return;
-         __instance.SetText( new Localize.Text( "Miss {0:0}%", new object[]{ ( currentRoll - chance ) * 100 } ) );
-      }                 catch ( Exception ex ) { Error( ex ); } }
-
       // ============ Balanced Ammo Load ============
 
       private static Dictionary<ChassisLocations, int> ByExplosion, ByRisk;

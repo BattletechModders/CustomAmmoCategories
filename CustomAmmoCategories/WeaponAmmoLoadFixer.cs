@@ -191,7 +191,12 @@ namespace CustAmmoCategoriesPatches {
             if (dataManager.Exists(BattleTechResourceType.AmmunitionDef, ammoId) == false) { dependencyLoad.RequestResource(BattleTechResourceType.AmmunitionDef, ammoId); }
             AmmoGatherDependencies(ammoId, dataManager, dependencyLoad, activeRequestWeight);
             HashSet<string> ammoBoxIds = AmmunitionBoxDef_FromJSON.ammoBoxesForAmmoId(ammoId);
-            if (ammoBoxIds.Count == 0) { ammoBoxIds.Add("Ammo_AmmunitionBox_Generic_"+ammoType); }
+            if (ammoBoxIds.Count == 0) {
+              AmmoCategoryValue ammoVal = AmmoCategoryEnumeration.GetAmmoCategoryByName(ammoId);
+              if(ammoVal != null) {
+                if (ammoVal.UsesInternalAmmo == false) { ammoBoxIds.Add("Ammo_AmmunitionBox_Generic_"+ammoId); }
+              }
+            }
             foreach (string ammoBoxId in ammoBoxIds) {
               if (string.IsNullOrEmpty(ammoBoxId)) { continue; }
               Log.M.WL(3, "ammoBox:" + ammoBoxId);

@@ -214,7 +214,7 @@ namespace CustomAmmoCategoriesPatches {
     }
 
     private static int ShotsWhenFiredDisplayOverider(Weapon weapon) {
-      Log.LogWrite("ShotsWhenFiredDisplayOverider "+weapon.UIName+"\n");
+      //Log.LogWrite("ShotsWhenFiredDisplayOverider "+weapon.UIName+"\n");
       int result = weapon.ShotsWhenFired;
       if (weapon.isImprovedBallistic() == false) {
         result = weapon.ShotsToHits(result);
