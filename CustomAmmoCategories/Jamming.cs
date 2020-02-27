@@ -163,11 +163,13 @@ namespace CustAmmoCategories {
   [HarmonyPatch(new Type[] { })]
   public static class JammingRealizer {
     public static void Postfix(Weapon __instance, ref bool __result) {
+      if (__result == false) { return; }
       if (__instance.IsJammed()) { __result = false; }
       if (__instance.IsCooldown() > 0) { __result = false; }
       if (__instance.isAMS() && __instance.isCantAMSFire()) { __result = false; };
       if ((__instance.isAMS() == false) && __instance.isCantNormalFire()) { __result = false; };
       if (__instance.NoModeToFire()) { __result = false; };
+      if (__instance.isBlocked()) { __result = false; };
     }
   }
   [HarmonyPatch(typeof(AttackDirector))]

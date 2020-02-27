@@ -128,6 +128,7 @@
     <Compile Include="AdditionalImpactVFX.cs" />
     <Compile Include="AdvCritProc.cs" />
     <Compile Include="AdvWeaponHitInfo.cs" />
+    <Compile Include="AIHelper.cs" />
     <Compile Include="AIWeaponChoose.cs" />
     <Compile Include="AmmoCategoryValue.cs" />
     <Compile Include="AmmoCookoff.cs" />
@@ -147,6 +148,7 @@
     <Compile Include="AttackSequenceImpact.cs" />
     <Compile Include="AttackSequenceWatchdog.cs" />
     <Compile Include="AudioPlayer.cs" />
+    <Compile Include="BlockWeapons.cs" />
     <Compile Include="BulletBallistic.cs" />
     <Compile Include="CACWeaponEffect.cs" />
     <Compile Include="CharlesB\Calculator.cs" />
@@ -159,9 +161,11 @@
     <Compile Include="CleverGirlWeaponDamagePrediction.cs" />
     <Compile Include="CombatGameDestroy.cs" />
     <Compile Include="CustomDesignMask.cs" />
+    <Compile Include="CustomReticle.cs" />
     <Compile Include="CustomSVGAsset.cs" />
     <Compile Include="DebugSpawnHelper.cs" />
     <Compile Include="DecrementAmmo.cs" />
+    <Compile Include="DeferredEffect.cs" />
     <Compile Include="DynamicMap.cs" />
     <Compile Include="DynamicTrees.cs" />
     <Compile Include="Frag.cs" />
@@ -191,6 +195,7 @@
     <Compile Include="MuiltyShotEffects\MultiShotPPCEffect.cs" />
     <Compile Include="MuiltyShotEffects\MultiShotPulseEffect.cs" />
     <Compile Include="NotUseInMelee.cs" />
+    <Compile Include="OnAttackSequenceFire.cs" />
     <Compile Include="OnAttackSequenceImpactAdv.cs" />
     <Compile Include="OnAttackSequenceResolveDamage.cs" />
     <Compile Include="MainClass.cs" />
@@ -230,6 +235,7 @@
     <Compile Include="WeaponRealizer\Settings.cs" />
     <Compile Include="WeaponRealizer\VarianceBounds.cs" />
     <Compile Include="WeaponStatCacheHelper.cs" />
+    <Compile Include="WeaponSwitchUI.cs" />
     <Compile Include="ZombieMech.cs" />
   </ItemGroup>
   <ItemGroup />

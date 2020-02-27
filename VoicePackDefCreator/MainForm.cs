@@ -33,9 +33,16 @@ namespace VoicePackDefCreator {
         string stopall_event_name = string.Empty;
         Dictionary<AudioSwitch_dialog_lines_pilots, List<string>> voicdef_light = new Dictionary<AudioSwitch_dialog_lines_pilots, List<string>>();
         Dictionary<AudioSwitch_dialog_lines_pilots, List<string>> voicdef_dark = new Dictionary<AudioSwitch_dialog_lines_pilots, List<string>>();
-        for (int t = 1; t < lines.Length; ++t) {
-          string line = lines[t];
-          if (line.Contains("Audio source file")) { break; }
+        foreach (var en in enums) {
+          voicdef_light.Add(en.Value, new List<string>());
+          voicdef_dark.Add(en.Value, new List<string>());
+        }
+        int lineindex = 1;
+        for (lineindex = 1; lineindex < lines.Length; ++lineindex) {
+          string line = lines[lineindex];
+          if (line.Contains("Game Parameter")) { break; }
+          if (line.Contains("Audio Bus")) { break; }
+          if (line.Contains("In Memory Audio")) { break; }
           Match match = regex.Match(line);
           if(match.Groups.Count >= 3) {
             string eventname = match.Groups[2].Value;
@@ -43,16 +50,28 @@ namespace VoicePackDefCreator {
             if (events.ContainsKey(eventname) == false) { events.Add(eventname,eventid); };
             if (eventname.Contains("stop_all")) { stopall_event_name = eventname; }
             foreach(var en in enums) {
-              if (eventname.Contains(en.Key)) {
+              if (eventname.Contains("__"+en.Key+"__")) {
                 Dictionary<AudioSwitch_dialog_lines_pilots, List<string>> voicdef = voicdef_light;
-                if (eventname.Contains("_sad") || eventname.Contains("_dark")) { voicdef = voicdef_dark; };
+                if (eventname.Contains("_sad") || eventname.Contains("_dark") || eventname.Contains("_bad")) { voicdef = voicdef_dark; };
                 if (voicdef.ContainsKey(en.Value) == false) { voicdef.Add(en.Value,new List<string>()); }
                 voicdef[en.Value].Add(eventname);
               }
             }
           }
         }
+        bool params_found = false;
         SoundBankDef sbdef = new SoundBankDef();
+        for (; lineindex < lines.Length; ++lineindex) {
+          string line = lines[lineindex];
+          if (line.Contains("Game Parameter")) { params_found = true; continue; }
+          if (params_found == false) { continue; };
+          Match match = regex.Match(line);
+          if (match.Groups.Count >= 3) {
+            string paramname = match.Groups[2].Value;
+            uint paramid = uint.Parse(match.Groups[1].Value);
+            if (paramname.Contains("_volume")) { sbdef.volumeRTPCIds.Add(paramid); };
+          }
+        }
         sbdef.filename = Path.GetFileNameWithoutExtension(Path.GetFileName(openFileDialog.FileName))+".bnk";
         sbdef.name = Path.GetFileNameWithoutExtension(openFileDialog.FileName)+"_soundbank";
         sbdef.events = events;
@@ -63,7 +82,7 @@ namespace VoicePackDefCreator {
         vpdef.dark_phrases = voicdef_dark;
         vpdef.stop_event = stopall_event_name;
         File.WriteAllText(Path.Combine(Path.GetDirectoryName(openFileDialog.FileName),sbdef.name+".json"),JsonConvert.SerializeObject(sbdef,Formatting.Indented));
-        File.WriteAllText(Path.Combine(Path.GetDirectoryName(openFileDialog.FileName), vpdef.name + ".json"), JsonConvert.SerializeObject(vpdef, Formatting.Indented));
+        if(checkBox.Checked)File.WriteAllText(Path.Combine(Path.GetDirectoryName(openFileDialog.FileName), vpdef.name + ".json"), JsonConvert.SerializeObject(vpdef, Formatting.Indented));
         MessageBox.Show("Done");
       }
     }
@@ -88,8 +107,15 @@ namespace VoicePackDefCreator {
     public string name { get; set; }
     public string filename { get; set; }
     public string type { get; set; }
+    public List<uint> volumeRTPCIds { get; set; }
+    public float volumeShift { get; set; }
     public Dictionary<string, uint> events { get; set; }
-    public SoundBankDef() { events = new Dictionary<string, uint>(); type = "Voice"; }
+    public SoundBankDef() {
+      events = new Dictionary<string, uint>();
+      type = "Voice";
+      volumeRTPCIds = new List<uint>();
+      volumeShift = 0f;
+    }
   }
   public enum AudioSwitch_dialog_lines_pilots {
     target_alpha = 30, // 0x0000001E

@@ -192,9 +192,9 @@ namespace CustAmmoCategoriesPatches {
             AmmoGatherDependencies(ammoId, dataManager, dependencyLoad, activeRequestWeight);
             HashSet<string> ammoBoxIds = AmmunitionBoxDef_FromJSON.ammoBoxesForAmmoId(ammoId);
             if (ammoBoxIds.Count == 0) {
-              AmmoCategoryValue ammoVal = AmmoCategoryEnumeration.GetAmmoCategoryByName(ammoId);
-              if(ammoVal != null) {
-                if (ammoVal.UsesInternalAmmo == false) { ammoBoxIds.Add("Ammo_AmmunitionBox_Generic_"+ammoId); }
+              AmmoCategoryValue ammoVal = CustomAmmoCategories.findExtAmmo(ammoId).AmmoCategory.BaseCategory;
+              if (ammoVal.Is_NotSet == false) {
+                if (ammoVal.UsesInternalAmmo == false) { ammoBoxIds.Add("Ammo_AmmunitionBox_Generic_"+ ammoVal.Name); }
               }
             }
             foreach (string ammoBoxId in ammoBoxIds) {

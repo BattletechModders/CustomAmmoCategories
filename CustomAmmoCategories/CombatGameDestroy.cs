@@ -1,5 +1,6 @@
 ﻿using BattleTech;
 using CustAmmoCategories;
+using CustAmmoCategoriesPatches;
 using CustomAmmoCategoriesLog;
 using Harmony;
 using System;
@@ -37,8 +38,13 @@ namespace CustomAmmoCategoriesPatches {
         DynamicMapHelper.PoolDelayedGameObject();
         CombatHUDMechwarriorTray_InitAbilityButtons.attackGroundAbilities.Clear();
         CustomAmmoCategories.terrainHitPositions.Clear();
+        DeferredEffectHelper.Clear();
+        PersistentFloatieHelper.Clear();
         ASWatchdog.EndWatchDogThread();
-      }catch(Exception e) {
+        Weapon_InternalAmmo.Clear();
+        BraceNode_Tick.Clear();
+        AreaOfEffectHelper.Clear();
+      } catch(Exception e) {
         Log.M.TWL(0, e.ToString());
       }
       return true;

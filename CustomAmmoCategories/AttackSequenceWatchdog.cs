@@ -2,6 +2,7 @@
 using BattleTech.AttackDirectorHelpers;
 using BattleTech.UI;
 using CustAmmoCategories;
+using CustomAmmoCategoriesLog;
 using Harmony;
 using HBS;
 using System;
@@ -113,13 +114,22 @@ namespace CustAmmoCategories {
             ASWatchdog.WatchDogInfo.Remove(sequenceId);
             continue;
           }
+          if(attackSequence.Director == null) {
+            CustomAmmoCategoriesLog.Log.LogWrite(" attack sequence without director\n", true);
+            ASWatchdog.WatchDogInfo.Remove(sequenceId);
+            continue;
+          }
           CustomAmmoCategoriesLog.Log.LogWrite(" force sequence to end\n",true);
-          MessageCoordinator messageCoordinator = (MessageCoordinator)typeof(AttackSequence).GetField("messageCoordinator", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(attackSequence);
-          typeof(AttackSequence).GetProperty("CoordinatedMesssagesSuccessful", BindingFlags.Instance | BindingFlags.Public).GetSetMethod(true).Invoke(attackSequence, new object[1] { (object)messageCoordinator.VerifyAllMessagesComplete() });
-          AttackSequenceEndMessage sequenceEndMessage = new AttackSequenceEndMessage(attackSequence.stackItemUID, attackSequence.id);
-          attackSequence.chosenTarget.ResolveAttackSequence(attackSequence.attacker.GUID, attackSequence.id, attackSequence.stackItemUID, attackSequence.Director.Combat.HitLocation.GetAttackDirection(attackSequence.attackPosition, attackSequence.chosenTarget));
-          attackSequence.Director.Combat.MessageCenter.PublishMessage((MessageCenterMessage)sequenceEndMessage);
-          messageCoordinator.VerifyAllMessagesComplete();
+          try {
+            MessageCoordinator messageCoordinator = (MessageCoordinator)typeof(AttackSequence).GetField("messageCoordinator", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(attackSequence);
+            typeof(AttackSequence).GetProperty("CoordinatedMesssagesSuccessful", BindingFlags.Instance | BindingFlags.Public).GetSetMethod(true).Invoke(attackSequence, new object[1] { (object)messageCoordinator.VerifyAllMessagesComplete() });
+            AttackSequenceEndMessage sequenceEndMessage = new AttackSequenceEndMessage(attackSequence.stackItemUID, attackSequence.id);
+            attackSequence.chosenTarget.ResolveAttackSequence(attackSequence.attacker.GUID, attackSequence.id, attackSequence.stackItemUID, attackSequence.Director.Combat.HitLocation.GetAttackDirection(attackSequence.attackPosition, attackSequence.chosenTarget));
+            attackSequence.Director.Combat.MessageCenter.PublishMessage((MessageCenterMessage)sequenceEndMessage);
+            messageCoordinator.VerifyAllMessagesComplete();
+          }catch(Exception e) {
+            Log.M.TWL(0,e.ToString(),true);
+          }
           ASWatchdog.WatchDogInfo.Remove(sequenceId);
         }
         mutex.ReleaseMutex();

@@ -15,6 +15,23 @@ using System.Collections;
 using Localize;
 
 namespace CustomUnits {
+  [HarmonyPatch(typeof(LoadRequest))]
+  [HarmonyPatch("AddBlindLoadRequestInternal")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { typeof(BattleTechResourceType), typeof(string), typeof(bool), typeof(bool?) })]
+  public static class LoadRequest_AddBlindLoadRequestInternal {
+    public static void Postfix(LoadRequest __instance, BattleTechResourceType resourceType, string resourceId, bool allowDuplicateInstantiation, bool? filterByOwnerShip) {
+      Log.LogWrite("LoadRequest.AddBlindLoadRequestInternal type: " + resourceType + " id " + resourceId + "\n");
+    }
+  }
+  [HarmonyPatch(typeof(LoadRequest))]
+  [HarmonyPatch("CompleteLoadTracker")]
+  [HarmonyPatch(MethodType.Normal)]
+  public static class LoadRequest_CompleteLoadTracker {
+    public static void Postfix(LoadRequest __instance, object tracker, bool loadSuccess) {
+      Log.LogWrite("LoadRequest.CompleteLoadTracker tracker: " + tracker + " loadSuccess " + loadSuccess + "\n");
+    }
+  }
   [HarmonyPatch(typeof(AttackDirector))]
   [HarmonyPatch("PerformAttack")]
   [HarmonyPatch(MethodType.Normal)]
@@ -1127,6 +1144,7 @@ namespace CustomUnits {
       try {
         HardpointAnimatorHelper.Clear();
         UnitsAnimatedPartsHelper.Clear();
+        ActorMovementSequence_InitDistanceClamp.Clear();
       } catch (Exception e) {
         Log.LogWrite(e.ToString() + "\n");
       }

@@ -53,8 +53,8 @@ namespace CustAmmoCategories {
       this.AccuracyModifier = 0f;
       this.DamageVariance = 0f;
       this.CriticalChanceMultiplier = 0f;
-    }
   }
+}
   public class MineFieldDef {
     public float Damage { get; set; }
     public float Heat { get; set; }
@@ -74,7 +74,7 @@ namespace CustAmmoCategories {
     public float VFXOffsetZ { get; set; }
     public float VFXMinDistance { get; set; }
     public int InstallCellRange { get; set; }
-    public CustomAudioSource SFX { get; set; }
+    public string SFX { get; set; }
     public List<EffectData> statusEffects { get; set; }
     public float FireTerrainChance { get; set; }
     public int FireDurationWithoutForest { get; set; }
@@ -105,7 +105,7 @@ namespace CustAmmoCategories {
       VFXOffsetZ = 0f;
       VFXMinDistance = 20f;
       InstallCellRange = 0;
-      SFX = null;
+      SFX = string.Empty;
       Count = 0;
       FireTerrainChance = 0f;
       FireDurationWithoutForest = 0;
@@ -139,7 +139,7 @@ namespace CustAmmoCategories {
       if (json["VFXOffsetZ"] != null) { VFXOffsetZ = (float)json["VFXOffsetZ"]; };
       if (json["InstallCellRange"] != null) { InstallCellRange = (int)json["InstallCellRange"]; };
       if (json["Count"] != null) { Count = (int)json["Count"]; };
-      if (json["SFX"] != null) { SFX = new CustomAudioSource((string)json["SFX"]); };
+      if (json["SFX"] != null) { SFX = (string)json["SFX"]; };
       if (json["FireTerrainChance"] != null) { FireTerrainChance = (float)json["FireTerrainChance"]; };
       if (json["FireDurationWithoutForest"] != null) { FireDurationWithoutForest = (int)json["FireDurationWithoutForest"]; };
       if (json["FireTerrainStrength"] != null) { FireTerrainStrength = (int)json["FireTerrainStrength"]; };
@@ -246,7 +246,7 @@ namespace CustAmmoCategories {
     public TripleBoolean IsAMS { get; set; }
     public TripleBoolean IsAAMS { get; set; }
     public TripleBoolean BallisticDamagePerPallet { get; set; }
-    public CustomAudioSource AdditionalAudioEffect { get; set; }
+    public string AdditionalAudioEffect { get; set; }
     public MineFieldDef MineField { get; set; }
     public Dictionary<string, float> TagsAccuracyModifiers { get; set; }
     public TripleBoolean Streak { get; set; }
@@ -279,6 +279,9 @@ namespace CustAmmoCategories {
     public float HeatGenerated { get; set; }
     public EvasivePipsMods evasivePipsMods { get; set; }
     public float ShotsPerAmmo { get; set; }
+    public DeferredEffectDef deferredEffect { get; set; }
+    public string preFireSFX { get; set; }
+    public bool HideIfOnlyVariant { get; set; }
     public ExtAmmunitionDef() {
       Id = "NotSet";
       Name = string.Empty;
@@ -355,7 +358,7 @@ namespace CustAmmoCategories {
       IsAMS = TripleBoolean.NotSet;
       IsAAMS = TripleBoolean.NotSet;
       BallisticDamagePerPallet = TripleBoolean.NotSet;
-      AdditionalAudioEffect = null;
+      AdditionalAudioEffect = string.Empty;
       TagsAccuracyModifiers = new Dictionary<string, float>();
       Streak = TripleBoolean.NotSet;
       FireDelayMultiplier = 1f;
@@ -386,6 +389,9 @@ namespace CustAmmoCategories {
       HeatGenerated = 0f;
       evasivePipsMods = new EvasivePipsMods();
       ShotsPerAmmo = 1f;
+      this.deferredEffect = new DeferredEffectDef();
+      preFireSFX = string.Empty;
+      HideIfOnlyVariant = false;
     }
   }
 }
@@ -397,6 +403,7 @@ namespace CustomAmmoCategoriesPatches {
   [HarmonyPatch(new Type[] { typeof(string) })]
   public static class BattleTech_AmmunitionDef_fromJSON_Patch {
     private static Dictionary<string, HashSet<string>> ammunitionsDefs = new Dictionary<string, HashSet<string>>();
+    private static Dictionary<string, ExtAmmunitionDef> defaultAmmunitions = new Dictionary<string, ExtAmmunitionDef>();
     public static bool Prefix(AmmunitionDef __instance, ref string json, ref ExtDefinitionParceInfo __state) {
       CustomAmmoCategories.CustomCategoriesInit();
       Log.LogWrite("AmmunitionDef fromJSON ");
@@ -554,6 +561,10 @@ namespace CustomAmmoCategoriesPatches {
           extAmmoDef.ForbiddenRange = (float)defTemp["ForbiddenRange"];
           defTemp.Remove("ForbiddenRange");
         }
+        if (defTemp["HideIfOnlyVariant"] != null) {
+          extAmmoDef.HideIfOnlyVariant = (bool)defTemp["HideIfOnlyVariant"];
+          defTemp.Remove("HideIfOnlyVariant");
+        }
         if (defTemp["ProjectileScale"] != null) {
           extAmmoDef.ProjectileScale = defTemp["ProjectileScale"].ToObject<CustomVector>();
           defTemp.Remove("ProjectileScale");
@@ -587,7 +598,7 @@ namespace CustomAmmoCategoriesPatches {
           defTemp.Remove("MineFieldVFX");
         }
         if (defTemp["MineFieldSFX"] != null) {
-          extAmmoDef.MineField.SFX = new CustomAudioSource((string)defTemp["MineFieldSFX"]);
+          extAmmoDef.MineField.SFX = (string)defTemp["MineFieldSFX"];
           defTemp.Remove("MineFieldSFX");
         }
         if (defTemp["MineFieldFXMinRange"] != null) {
@@ -700,7 +711,7 @@ namespace CustomAmmoCategoriesPatches {
           defTemp.Remove("IFFDef");
         }
         if (defTemp["AdditionalAudioEffect"] != null) {
-          extAmmoDef.AdditionalAudioEffect = new CustomAudioSource((string)defTemp["AdditionalAudioEffect"]);
+          extAmmoDef.AdditionalAudioEffect = (string)defTemp["AdditionalAudioEffect"];
           defTemp.Remove("AdditionalAudioEffect");
         }
         /*if (defTemp["SurfaceImpactDesignMaskId"] != null) {
@@ -854,6 +865,10 @@ namespace CustomAmmoCategoriesPatches {
           //}
           defTemp.Remove("AOECapable");
         }
+        if (defTemp["preFireSFX"] != null) {
+          extAmmoDef.preFireSFX = (string)defTemp["preFireSFX"];
+          defTemp.Remove("preFireSFX");
+        }
         if (defTemp["DamageMultiplier"] != null) {
           extAmmoDef.DamageMultiplier = (float)defTemp["DamageMultiplier"];
           defTemp.Remove("DamageMultiplier");
@@ -898,6 +913,13 @@ namespace CustomAmmoCategoriesPatches {
           extAmmoDef.MineField.fromJSON(defTemp["MineField"]);
           defTemp.Remove("MineField");
         }
+        if (defTemp["deferredEffect"] != null) {
+          extAmmoDef.deferredEffect = JsonConvert.DeserializeObject<DeferredEffectDef>(defTemp["deferredEffect"].ToString());
+          if (defTemp["deferredEffect"]["statusEffects"] != null) {
+            extAmmoDef.deferredEffect.ParceEffects(defTemp["deferredEffect"]["statusEffects"].ToString());
+          }
+          defTemp.Remove("deferredEffect");
+        }
         if (defTemp["statusEffects"] != null) {
           if (defTemp["statusEffects"].Type == JTokenType.Array) {
             List<EffectData> tmpList = new List<EffectData>();
@@ -926,6 +948,10 @@ namespace CustomAmmoCategoriesPatches {
     public static HashSet<string> ammunitions(string AmmoCategoryName) {
       if (ammunitionsDefs.ContainsKey(AmmoCategoryName)) { return ammunitionsDefs[AmmoCategoryName]; }
       return new HashSet<string>();
+    }
+    public static ExtAmmunitionDef defaultAmmo(this CustomAmmoCategory cat) {
+      if (defaultAmmunitions.ContainsKey(cat.Id)) { return defaultAmmunitions[cat.Id]; };
+      return CustomAmmoCategories.DefaultAmmo;
     }
     public static void Postfix(AmmunitionDef __instance, ref ExtDefinitionParceInfo __state) {
       if (__instance == null) { Log.M.TWL(0, "!WARNINIG! weaponDef is null. Very very wrong!", true); return; }
@@ -969,6 +995,7 @@ namespace CustomAmmoCategoriesPatches {
           CustomAmmoCategoriesLog.Log.LogWrite("!Warning! null (" + (effects.Length - tmpList.Count) + "/" + effects.Length + ") status effects detected at ammo " + __instance.Description.Id + ".Removing\n");
           extAmmoDef.statusEffects = tmpList.ToArray();
         }
+        if (defaultAmmunitions.ContainsKey(extAmmoDef.AmmoCategory.Id) == false) { defaultAmmunitions.Add(extAmmoDef.AmmoCategory.Id, extAmmoDef); };
         CustomAmmoCategories.RegisterExtAmmoDef(extAmmoDef.Id, extAmmoDef);
         if (__instance.AmmoCategoryValue != null) {
           if (ammunitionsDefs.ContainsKey(__instance.AmmoCategoryValue.Name) == false) { ammunitionsDefs.Add(__instance.AmmoCategoryValue.Name, new HashSet<string>()); }

@@ -28,9 +28,10 @@ namespace CustomUnits {
     }
     public static void Velocity(this ActorMovementSequence sequence, Vector3 value) {
       if (pVelocity == null) { return; };
-      pVelocity.Invoke(sequence,new object[1] { (object)value });
+      //pVelocity.Invoke(sequence,new object[1] { (object)value });
     }
     public static void Postfix(ActorMovementSequence __instance, Vector3 delta) {
+      return;
       if (customQuadAnimation.ContainsKey(__instance.owningActor)) {
         Vector3 velocity = __instance.Velocity;
         velocity *= customQuadAnimation[__instance.owningActor].Velocity();

@@ -17,7 +17,7 @@ namespace MechResizer {
 
         // for tags of style 'MR-Resize-N`
         if (parts.Length == 3) {
-          var resizeNumber = float.Parse(parts[2]);
+          var resizeNumber = float.Parse(parts[2], CultureInfo.InvariantCulture);
           size = new Vector3(resizeNumber, resizeNumber, resizeNumber);
           Log.TWL(0, $"size from singular tag: [{size.Value.x},{size.Value.y},{size.Value.z}]");
           return true;

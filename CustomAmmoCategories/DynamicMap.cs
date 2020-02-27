@@ -303,7 +303,7 @@ namespace CustAmmoCategories {
       this.spawnedObject = null;
       CustomAmmoCategoriesLog.Log.LogWrite("Finish cleaning " + this.prefabName + "\n");
     }
-    public void SpawnSelf(CombatGameState Combat) {
+    public void SpawnSelf(CombatGameState Combat, Transform parentTransform = null) {
       this.Combat = Combat;
       GameObject gameObject = Combat.DataManager.PooledInstantiate(this.prefabName, BattleTechResourceType.Prefab, new Vector3?(), new Quaternion?(), (Transform)null);
       if ((UnityEngine.Object)gameObject == (UnityEngine.Object)null) {
@@ -316,14 +316,28 @@ namespace CustAmmoCategories {
           return;
         }
       }
+      Log.LogWrite("SpawnSelf: " + this.prefabName + "\n");
+      Component[] components = gameObject.GetComponentsInChildren<Component>();
+      foreach (Component cmp in components) {
+        if (cmp == null) { continue; };
+        Log.LogWrite(" " + cmp.name + ":" + cmp.GetType().ToString() + "\n");
+        ParticleSystem ps = cmp as ParticleSystem;
+        if (ps != null) {
+          var main = ps.main;
+          main.scalingMode = ParticleSystemScalingMode.Hierarchy;
+          Log.LogWrite("  " + ps.main.scalingMode.ToString() + "\n");
+        }
+      }
+      if (parentTransform != null) { gameObject.transform.SetParent(parentTransform,true); }
       gameObject.transform.position = this.worldPosition;
-      gameObject.transform.localScale.Set(scale.x, scale.y, scale.z);
+      gameObject.transform.localScale = new Vector3(this.scale.x, this.scale.y, this.scale.z);
+      Log.LogWrite("scale:"+ gameObject.transform.localScale+"\n");
       if (!this.keepPrefabRotation)
         gameObject.transform.rotation = this.worldRotation;
       if (this.playFX) {
         ParticleSystem component = gameObject.GetComponent<ParticleSystem>();
         if (component != null) {
-          component.transform.localScale.Set(scale.x, scale.y, scale.z);
+          //component.transform.localScale.Set(scale.x, scale.y, scale.z);
           gameObject.SetActive(true);
           component.Stop(true);
           component.Clear(true);
@@ -348,15 +362,27 @@ namespace CustAmmoCategories {
           return null;
         }
       }
+      Log.LogWrite("playVFXAt: " + prefab + "\n");
+      Component[] components = gameObject.GetComponentsInChildren<Component>();
+      foreach (Component cmp in components) {
+        if (cmp == null) { continue; };
+        Log.LogWrite(" " + cmp.name + ":" + cmp.GetType().ToString() + "\n");
+        ParticleSystem ps = cmp as ParticleSystem;
+        if (ps != null) {
+          var main = ps.main;
+          main.scalingMode = ParticleSystemScalingMode.Hierarchy;
+          Log.LogWrite("  " + ps.main.scalingMode.ToString() + "\n");
+        }
+      }
       gameObject.transform.position = pos;
-      gameObject.transform.localScale.Set(scale.x, scale.y, scale.z);
+      gameObject.transform.localScale = new Vector3(scale.x, scale.y, scale.z);
       if (lookAtPos != Vector3.zero)
         gameObject.transform.LookAt(lookAtPos);
       else
         gameObject.transform.localRotation = Quaternion.identity;
       ParticleSystem component = gameObject.GetComponent<ParticleSystem>();
       if (component != null) {
-        component.transform.localScale.Set(scale.x, scale.y, scale.z);
+        //component.transform.localScale.Set(scale.x, scale.y, scale.z);
         gameObject.SetActive(true);
         component.Stop(true);
         component.Clear(true);
@@ -2681,7 +2707,11 @@ namespace CustomAmmoCategoriesPatches {
       if (__instance.isPlayBloodSound()) {
         Log.S.WL(1, "playing blood sound");
         __instance.unmarkPlayBloodSound();
-        CustomSoundHelper.SpawnAudioEmitter("scream01", __instance.thisTransform.position, false);
+        if (CustomAmmoCategories.Settings.screamsIds.Count > 0) {
+          string screamId = CustomAmmoCategories.Settings.screamsIds[Random.Range(0, CustomAmmoCategories.Settings.screamsIds.Count)];
+          Log.S.WL(1, "scream id:"+screamId);
+          CustomSoundHelper.SpawnAudioEmitter(screamId, __instance.thisTransform.position, false);
+        }
         return false;
       }
       return true;

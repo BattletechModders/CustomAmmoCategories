@@ -52,7 +52,11 @@ namespace CustAmmoCategories {
       offset.z = this.def.VFXOffsetZ;
       ParticleSystem component = ObjectSpawnDataSelf.playVFXAt(combat, this.def.VFXprefab, this.position + offset, scale, Vector3.zero);
       this.goVFX = component.gameObject;
-      if (this.def.SFX != null) { this.def.SFX.play(unit.GameRep.audioObject); };
+      if (string.IsNullOrEmpty(this.def.SFX) == false) {
+        Log.M.TWL(0, "Playing SFX:" + this.def.SFX);
+        uint num = WwiseManager.PostEvent(this.def.SFX, unit.GameRep.audioObject, null, null);
+        Log.M.WL(1, "result:" + num);
+      };
     }
   }
   public class AoEExplosionHitRecord {
@@ -222,14 +226,21 @@ namespace CustAmmoCategories {
       foreach (ICombatant target in unit.Combat.GetAllLivingCombatants()) {
         if (target.GUID == unit.GUID) { continue; };
         if (target.IsDead) { continue; };
+        if (target.isDropshipNotLanded()) { continue; };
         Vector3 CurrentPosition = target.CurrentPosition + Vector3.up * target.AoEHeightFix();
         float distance = Vector3.Distance(CurrentPosition, pos);
-        Log.LogWrite(" " + target.DisplayName + ":" + target.GUID + " " + distance + "\n");
+        Log.LogWrite(" " + target.DisplayName + ":" + target.GUID + " " + distance + "("+ CustomAmmoCategories.Settings.DefaultAoEDamageMult[target.UnitType].Range + ")\n");
+        if (CustomAmmoCategories.Settings.DefaultAoEDamageMult[target.UnitType].Range < CustomAmmoCategories.Epsilon) { CustomAmmoCategories.Settings.DefaultAoEDamageMult[target.UnitType].Range = 1f; }
+        distance /= CustomAmmoCategories.Settings.DefaultAoEDamageMult[target.UnitType].Range;
+        target.TagAoEModifiers(out float tagAoEModRange, out float tagAoEDamage);
+        if (tagAoEModRange < CustomAmmoCategories.Epsilon) { tagAoEModRange = 1f; }
+        if (tagAoEDamage < CustomAmmoCategories.Epsilon) { tagAoEDamage = 1f; }
+        distance /= tagAoEDamage;
         if (distance > def.AoERange) { continue; };
         foreach (var effect in def.statusEffects) { AddEffect(unit, target, effect); };
-        float HeatDamage = def.AoEHeat * (def.AoERange - distance) / def.AoERange;
-        float Damage = def.AoEDamage * (def.AoERange - distance) / def.AoERange;
-        float StabDamage = def.AoEInstability * (def.AoERange - distance) / def.AoERange;
+        float HeatDamage = def.AoEHeat * CustomAmmoCategories.Settings.DefaultAoEDamageMult[target.UnitType].Damage * tagAoEDamage * (def.AoERange - distance) / def.AoERange;
+        float Damage = def.AoEDamage * CustomAmmoCategories.Settings.DefaultAoEDamageMult[target.UnitType].Damage * tagAoEDamage * (def.AoERange - distance) / def.AoERange;
+        float StabDamage = def.AoEInstability * CustomAmmoCategories.Settings.DefaultAoEDamageMult[target.UnitType].Damage * tagAoEDamage * (def.AoERange - distance) / def.AoERange;
         Mech mech = target as Mech;
         Vehicle vehicle = target as Vehicle;
         if (mech == null) {
@@ -288,7 +299,10 @@ namespace CustAmmoCategories {
         Log.F.WL(1, "weapon seted. no minefield/burn damage?");
         return;
       }
-      var fakeHit = new WeaponHitInfo(-1, -1, -1, -1, this.weapon.parent.GUID, unit.GUID, -1, null, null, null, null, null, null, new AttackImpactQuality[1] { AttackImpactQuality.Solid }, new AttackDirection[1] { AttackDirection.FromArtillery }, null, null, null);
+      var fakeHit = new WeaponHitInfo(-1, -1, -1, -1, this.weapon.parent.GUID, unit.GUID, -1, null, null, null, null, null, null
+        , new AttackImpactQuality[1] { AttackImpactQuality.Solid }
+        , new AttackDirection[1] { AttackDirection.FromArtillery }
+        , new Vector3[1] { unit.CurrentPosition }, null, null);
       HashSet<Mech> heatSequence = new HashSet<Mech>();
       HashSet<Mech> instabilitySequence = new HashSet<Mech>();
       HashSet<ICombatant> deathSequence = new HashSet<ICombatant>();
@@ -343,6 +357,7 @@ namespace CustAmmoCategories {
             }), unit.Combat.Constants.CombatUIConstants.floatieSizeMedium, FloatieMessage.MessageNature.ArmorDamage, mfdmg.Value.hitPosition.x, mfdmg.Value.hitPosition.y, mfdmg.Value.hitPosition.z));
           }
           Log.F.WL(2, "take weapon damage");
+          fakeHit.hitPositions[0] = mfdmg.Value.hitPosition;
 #if BT1_8
           target.TakeWeaponDamage(fakeHit, mfdmg.Key, this.weapon, mfdmg.Value.Damage,0f, 0, DamageType.AmmoExplosion);
 #else

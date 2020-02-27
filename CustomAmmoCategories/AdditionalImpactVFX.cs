@@ -45,17 +45,29 @@ namespace CustAmmoCategories {
       scale = new Vector3(extWeapon.AdditionalImpactVFXScaleX, extWeapon.AdditionalImpactVFXScaleY, extWeapon.AdditionalImpactVFXScaleZ);
       return extWeapon.AdditionalImpactVFX;
     }
-    public static CustomAudioSource AdditionalImpactSound(this Weapon weapon) {
+    public static string AdditionalImpactSound(this Weapon weapon) {
       WeaponMode mode = weapon.mode();
-      if (mode.AdditionalAudioEffect != null) {
+      if (string.IsNullOrEmpty(mode.AdditionalAudioEffect) == false) {
         return mode.AdditionalAudioEffect;
       }
       ExtAmmunitionDef ammo = weapon.ammo();
-      if (ammo.AdditionalAudioEffect != null) {
+      if (string.IsNullOrEmpty(ammo.AdditionalAudioEffect) == false) {
         return ammo.AdditionalAudioEffect;
       }
       ExtWeaponDef extWeapon = weapon.exDef();
       return extWeapon.AdditionalAudioEffect;
+    }
+    public static string preFireSFX(this Weapon weapon) {
+      WeaponMode mode = weapon.mode();
+      if (string.IsNullOrEmpty(mode.preFireSFX) == false) {
+        return mode.preFireSFX;
+      }
+      ExtAmmunitionDef ammo = weapon.ammo();
+      if (string.IsNullOrEmpty(ammo.preFireSFX) == false) {
+        return ammo.preFireSFX;
+      }
+      ExtWeaponDef extWeapon = weapon.exDef();
+      return extWeapon.preFireSFX;
     }
     public static void SpawnAdditionalImpactEffect(this Weapon weapon,Vector3 pos) {
       Vector3 scale;
@@ -83,16 +95,43 @@ namespace CustAmmoCategories {
     public static bool Prefix(WeaponEffect __instance) {
       Log.LogWrite("WeaponEffect_PlayImpactAudio.Postfix\n");
       if (__instance.weapon == null) { return true; }
-      CustomAudioSource snd = __instance.weapon.AdditionalImpactSound();
-      if(snd != null) {
-        Log.LogWrite(" additional sound found. Playing ... "+snd.id+"\n");
-        uint testid = SceneSingletonBehavior<WwiseManager>.Instance.EnumValueToEventId<AudioEventList_explosion>(AudioEventList_explosion.explosion_large);
-        Log.LogWrite(" additional sound found. Playing ... " + snd.id + " test id: "+testid+"\n");
+      string snd = __instance.weapon.AdditionalImpactSound();
+      if(string.IsNullOrEmpty(snd) == false) {
         AkGameObj projectileAudioObject = (AkGameObj)typeof(WeaponEffect).GetField("projectileAudioObject", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(__instance);
-        snd.play(projectileAudioObject);
-        Log.LogWrite(" played\n");
+        Vector3 hitPos = __instance.hitInfo.hitPositions[__instance.hitIndex];
+        float distanceToCamera = Vector3.Distance(Camera.main.transform.position, hitPos);
+        CustomSoundHelper.SpawnAudioEmitter(snd, hitPos, false);
+        Log.LogWrite(" additional sound found. Playing ... " + snd + ":"+distanceToCamera+"\n");
+
+        //uint num = WwiseManager.PostEvent(snd, projectileAudioObject, null, null);
+        //Log.LogWrite(" played "+num+"\n");
+      } else {
+        Log.LogWrite(" no additional impact sound\n");
       }
       return true;
+    }
+  }
+  [HarmonyPatch(typeof(WeaponEffect))]
+  [HarmonyPatch("PlayPreFire")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { })]
+  public static class WeaponEffect_PlayPrefireSound {
+    public static bool Prefix(WeaponEffect __instance, ref string __state) {
+      Log.M.TWL(0,"WeaponEffect_PlayPrefireSound.Prefix");
+      if (__instance.weapon == null) { return true; }
+      string snd = __instance.weapon.preFireSFX();
+      __state = __instance.preFireSFX;
+      Log.M.WL(1, "current sound:"+ __state);
+      if (string.IsNullOrEmpty(snd) == false) {
+        Log.M.WL(1, "replacing:" + snd);
+        __instance.preFireSFX = snd;
+      }
+      return true;
+    }
+    public static void Postfix(WeaponEffect __instance, ref string __state) {
+      Log.M.TWL(0, "WeaponEffect_PlayPrefireSound.Postfix");
+      Log.M.WL(1, "current sound:" + __instance.preFireSFX + "->"+__state);
+      __instance.preFireSFX = __state;
     }
   }
 }

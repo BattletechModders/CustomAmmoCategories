@@ -41,7 +41,7 @@ namespace CustAmmoCategories {
       Dictionary<string, int> spreadCounts = new Dictionary<string, int>();
       Vector3 shootPosition = target.CurrentPosition;
       if (weapon.parent.GUID == target.GUID) {
-        TerrainHitInfo terrainPos = CustomAmmoCategories.getTerrinHitPosition(sequence.stackItemUID);
+        TerrainHitInfo terrainPos = CustomAmmoCategories.getTerrinHitPosition(weapon.parent.GUID);
         if (terrainPos != null) { shootPosition = terrainPos.pos; };
       }
       foreach (ICombatant combatant in combatants) {
@@ -258,7 +258,7 @@ namespace CustAmmoCategories {
         if (advRec.interceptInfo.Intercepted) { continue; }
         Vector3 targetPos = advRec.target.CurrentPosition;
         if(hitInfo.attackerId == advRec.target.GUID) {
-          TerrainHitInfo terrainPos = CustomAmmoCategories.getTerrinHitPosition(advInfo.Sequence.stackItemUID);
+          TerrainHitInfo terrainPos = CustomAmmoCategories.getTerrinHitPosition(hitInfo.attackerId);
           if (terrainPos != null) { targetPos = terrainPos.pos; };
         }
         Vector3 ePos = CustomAmmoCategories.interpolateSeparationPosition(advRec.trajectorySpline,advRec.startPosition,targetPos,sMin,sMax);

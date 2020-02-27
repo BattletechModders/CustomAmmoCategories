@@ -258,17 +258,27 @@ namespace CustomUnits {
   [HarmonyPatch(new Type[] { typeof(int), typeof(int), typeof(int), typeof(PathNode), typeof(List<AbstractActor>) })]
   public static class PathNodeGrid_GetPathNode {
     public static MethodInfo mIsOutOfGrid = null;
+    private delegate bool IsOutOfGridDelegate(PathNodeGrid node, int x, int z);
+    private static IsOutOfGridDelegate IsOutOfGridInkover = null;
     public static bool Prepare() {
       mIsOutOfGrid = typeof(PathNodeGrid).GetMethod("IsOutOfGrid", BindingFlags.NonPublic | BindingFlags.Instance, null, new Type[2] { typeof(int), typeof(int) }, null);
       if (mIsOutOfGrid == null) {
         Log.LogWrite("Can't find PathNodeGrid.IsOutOfGrid\n");
         return false;
       }
+      var dm = new DynamicMethod("CUIsOutOfGrid", typeof(bool), new Type[] { typeof(PathNodeGrid),typeof(int),typeof(int) }, typeof(PathNodeGrid));
+      var gen = dm.GetILGenerator();
+      gen.Emit(OpCodes.Ldarg_0);
+      gen.Emit(OpCodes.Ldarg_1);
+      gen.Emit(OpCodes.Ldarg_2);
+      gen.Emit(OpCodes.Call, mIsOutOfGrid);
+      gen.Emit(OpCodes.Ret);
+      IsOutOfGridInkover = (IsOutOfGridDelegate)dm.CreateDelegate(typeof(IsOutOfGridDelegate));
       return true;
     }
     public static bool IsOutOfGrid(this PathNodeGrid node, int x, int z) {
-      if (mIsOutOfGrid == null) { return false; }
-      return (bool)mIsOutOfGrid.Invoke(node, new object[2] { x, z });
+      if (IsOutOfGridInkover == null) { return false; }
+      return IsOutOfGridInkover(node,x,z);
     }
     public static bool Prefix(PathNodeGrid __instance, int x, int z, int angle, PathNode from, List<AbstractActor> collisionTestActors, ref PathNode __result, ref PathNode[,] ___pathNodes, ref MapTerrainDataCell ___gpnCell, ref CombatGameState ___combat, ref AbstractActor ___owningActor) {
       try {
@@ -300,17 +310,26 @@ namespace CustomUnits {
   [HarmonyPatch(new Type[] { typeof(PathNode), typeof(int), typeof(int), typeof(Vector3), typeof(int), typeof(MapTerrainDataCell), typeof(List<AbstractActor>), typeof(AbstractActor) })]
   public static class PathNode_Constructor {
     private static MethodInfo FPosition = null;
+    private delegate void PositionSetDelegate(PathNode node, Vector3 pos);
+    private static PositionSetDelegate PositionSetInkover = null;
     public static bool Prepare() {
       FPosition = typeof(PathNode).GetProperty("Position", BindingFlags.Instance | BindingFlags.Public).GetSetMethod(true);
       if (FPosition == null) {
         Log.LogWrite("Can't find PathNode.Position");
         return false;
       }
+      var dm = new DynamicMethod("CUPositionSet", null, new Type[] { typeof(PathNode), typeof(Vector3) }, typeof(PathNode));
+      var gen = dm.GetILGenerator();
+      gen.Emit(OpCodes.Ldarg_0);
+      gen.Emit(OpCodes.Ldarg_1);
+      gen.Emit(OpCodes.Call, FPosition);
+      gen.Emit(OpCodes.Ret);
+      PositionSetInkover = (PositionSetDelegate)dm.CreateDelegate(typeof(PositionSetDelegate));
       return true;
     }
     public static void Position(this PathNode node, Vector3 pos) {
-      if (FPosition == null) { return; }
-      FPosition.Invoke(node, new object[1] { pos });
+      if (PositionSetInkover == null) { return; }
+      PositionSetInkover(node, pos);
     }
     /*public static void UpdateWaterHeight(this MapTerrainDataCellEx ecell) {
       if (float.IsNaN(ecell.WaterHeight)) {

@@ -331,7 +331,7 @@ namespace CustomAmmoCategoriesPatches {
       }
       //disabling buildin spread
       if (instance.attacker.GUID == target.GUID) {
-        TerrainHitInfo terrainPos = CustomAmmoCategories.getTerrinHitPosition(instance.stackItemUID);
+        TerrainHitInfo terrainPos = CustomAmmoCategories.getTerrinHitPosition(weapon.parent.GUID);
         if (terrainPos != null) {
           CustomAmmoCategoriesLog.Log.LogWrite(" terrain attack detected to " + terrainPos.pos + ". removing buildin stray\n");
           for (int hitIndex = 0; hitIndex < numberOfShots; ++hitIndex) {
@@ -370,7 +370,7 @@ namespace CustomAmmoCategoriesPatches {
         }
       }
       if (instance.attacker.GUID == target.GUID) {
-        TerrainHitInfo terrainPos = CustomAmmoCategories.getTerrinHitPosition(instance.stackItemUID);
+        TerrainHitInfo terrainPos = CustomAmmoCategories.getTerrinHitPosition(instance.attacker.GUID);
         if (terrainPos != null) {
           instance.attackCompletelyMissed(false);
           CustomAmmoCategoriesLog.Log.LogWrite(" terrain attack detected to " + terrainPos.pos + ". target position: "+target.CurrentPosition+" distance:"+Vector3.Distance(terrainPos.pos, target.CurrentPosition) +"\n");
@@ -404,7 +404,7 @@ namespace CustomAmmoCategoriesPatches {
     public static bool Prefix(AttackDirector.AttackSequence __instance, Weapon weapon, int groupIdx, int weaponIdx, int numberOfShots, ref bool indirectFire, float dodgedDamage, ref WeaponHitInfo __result) {
       Log.LogWrite("Generating HitInfo " + weapon.defId + " grp:" + groupIdx + " id:" + weaponIdx + " shots:" + numberOfShots + " indirect:" + indirectFire + " " + dodgedDamage + "\n");
       if (__instance.attacker.GUID == __instance.chosenTarget.GUID) {
-        TerrainHitInfo terrainPos = CustomAmmoCategories.getTerrinHitPosition(__instance.stackItemUID);
+        TerrainHitInfo terrainPos = CustomAmmoCategories.getTerrinHitPosition(__instance.attacker.GUID);
         if (terrainPos != null) {
           Log.LogWrite(" Terrain attack info found. Overriding indirectFire "+indirectFire + "->");
           indirectFire = terrainPos.indirect;

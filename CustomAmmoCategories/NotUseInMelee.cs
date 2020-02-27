@@ -8,7 +8,7 @@ using System.Reflection;
 using CustAmmoCategories;
 using UnityEngine;
 using BattleTech.UI;
-
+/*
 namespace CustAmmoCategories {
   public static partial class CustomAmmoCategories {
 #if BT1_8
@@ -397,3 +397,4 @@ namespace CustomAmmoCategoriesPathes {
   }
 #endif
 }
+*/

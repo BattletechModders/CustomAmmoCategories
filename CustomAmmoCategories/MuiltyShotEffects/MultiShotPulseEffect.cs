@@ -154,7 +154,14 @@ namespace CustAmmoCategories {
 
     protected override void PlayPreFire() {
       base.PlayPreFire();
-      int num = (int)WwiseManager.PostEvent<AudioEventList_ppc>(AudioEventList_ppc.ppc_shoot, this.parentAudioObject, (AkCallbackManager.EventCallback)null, (object)null);
+      string snd = this.weapon.preFireSFX();
+      if (string.IsNullOrEmpty(snd)) {
+        if (this.weaponImpactType == AudioSwitch_weapon_type.ppc_snub) {
+          int num1 = (int)WwiseManager.PostEvent<AudioEventList_ppc>(AudioEventList_ppc.ppc_snub_shoot, this.parentAudioObject, (AkCallbackManager.EventCallback)null, (object)null);
+        } else {
+          int num2 = (int)WwiseManager.PostEvent<AudioEventList_ppc>(AudioEventList_ppc.ppc_shoot, this.parentAudioObject, (AkCallbackManager.EventCallback)null, (object)null);
+        }
+      }
     }
 
     public override void InitProjectile() {

@@ -7,9 +7,11 @@ using CustomAmmoCategoriesLog;
 using Harmony;
 using UnityEngine;
 
+/*
 namespace CharlesB {
   [HarmonyPatch(typeof(MechFallSequence), "setState")]
   public static class MechFallSequenceDamageAdder {
+    public static bool Prepare() { return false; }
     static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) {
       if (!Core.ModSettings.FallingDamage) return instructions;
 
@@ -80,4 +82,4 @@ namespace CharlesB {
       }
     }
   }
-}
+}*/

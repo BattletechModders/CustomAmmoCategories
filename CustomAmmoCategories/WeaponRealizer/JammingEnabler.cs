@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Text;
 using BattleTech;
@@ -171,7 +172,7 @@ namespace WeaponRealizer {
       var multiplier =
           rawTag == JamMultiplierTagPrefix
               ? Core.ModSettings.JamChanceMultiplier
-              : float.Parse(rawTag.Split(TagDelimiter, 3).Last());
+              : float.Parse(rawTag.Split(TagDelimiter, 3).Last(), CultureInfo.InvariantCulture);
       return multiplier;
     }
   }

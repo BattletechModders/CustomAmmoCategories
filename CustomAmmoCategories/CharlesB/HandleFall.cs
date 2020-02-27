@@ -4,7 +4,7 @@ using System.IO;
 using BattleTech;
 using CustomAmmoCategoriesLog;
 using Localize;
-
+/*
 namespace CharlesB {
   public class HandleFall {
     private static List<string> phrases = new List<string>();
@@ -41,4 +41,4 @@ namespace CharlesB {
           new ShowActorInfoSequence(mech, new Text(knockdownMessage), FloatieMessage.MessageNature.Debuff, false))); // false leaves camera unlocked from floatie
     }
   }
-}
+}*/

@@ -111,6 +111,7 @@ namespace CustomUnits{
     }
   }
   public static partial class Core{
+    public static readonly float Epsilon = 0.001f;
     public static CUSettings Settings;
     public static void Init(string directory, string settingsJson) {
       Log.BaseDirectory = directory;

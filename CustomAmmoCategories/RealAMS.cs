@@ -839,6 +839,21 @@ namespace CustAmmoCategories {
       }
     }
     [HarmonyPatch(typeof(WeaponEffect))]
+    [HarmonyPatch("PlayPreFire")]
+    [HarmonyPatch(MethodType.Normal)]
+    [HarmonyPatch(new Type[] { })]
+    [HarmonyPriority(Priority.HigherThanNormal)]
+    public static class WeaponEffect_PlayPreFire {
+      public static bool Prefix(WeaponEffect __instance) {
+        try {
+          Log.M.TWL(0,__instance.GetType().ToString()+ ".PlayPreFire sfx:"+ __instance.preFireSFX);
+        } catch (Exception e) {
+          Log.LogWrite(e.ToString() + "\n");
+        }
+        return true;
+      }
+    }
+    [HarmonyPatch(typeof(WeaponEffect))]
     [HarmonyPatch("PlayImpact")]
     [HarmonyPatch(MethodType.Normal)]
     [HarmonyPatch(new Type[] { })]

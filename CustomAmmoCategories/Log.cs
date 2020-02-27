@@ -11,7 +11,7 @@ namespace CustomAmmoCategoriesLog {
     Main,
     Criticals,
     Minefields,
-    CharlesB,
+    //CharlesB,
     Objects,
     Sounds,
     Profile
@@ -117,7 +117,7 @@ namespace CustomAmmoCategoriesLog {
     public static LogFile C { get { return Log.logs[LogFileType.Criticals]; } }
     public static LogFile F { get { return Log.logs[LogFileType.Minefields]; } }
     public static LogFile P { get { return Log.logs[LogFileType.Profile]; } }
-    public static LogFile CB { get { return Log.logs[LogFileType.CharlesB]; } }
+    //public static LogFile CB { get { return Log.logs[LogFileType.CharlesB]; } }
     public static LogFile O { get { return Log.logs[LogFileType.Objects]; } }
     public static LogFile S { get { return Log.logs[LogFileType.Sounds]; } }
     public static void InitLog() {
@@ -125,7 +125,7 @@ namespace CustomAmmoCategoriesLog {
       Log.logs.Add(LogFileType.Main,new LogFile("CAC_main_log.txt", CustomAmmoCategories.Settings.debugLog));
       Log.logs.Add(LogFileType.Criticals,new LogFile("CAC_criticals_log.txt", CustomAmmoCategories.Settings.debugLog));
       Log.logs.Add(LogFileType.Minefields, new LogFile("CAC_minefields_log.txt", CustomAmmoCategories.Settings.debugLog));
-      Log.logs.Add(LogFileType.CharlesB, new LogFile("CAC_CharlesB_log.txt", CustomAmmoCategories.Settings.debugLog));
+      //Log.logs.Add(LogFileType.CharlesB, new LogFile("CAC_CharlesB_log.txt", CustomAmmoCategories.Settings.debugLog));
       Log.logs.Add(LogFileType.Profile, new LogFile("CAC_profiling_log.txt", CustomAmmoCategories.Settings.debugLog));
       Log.logs.Add(LogFileType.Objects, new LogFile("CAC_objects_log.txt", CustomAmmoCategories.Settings.debugLog));
       Log.logs.Add(LogFileType.Sounds, new LogFile("CAC_sounds_log.txt", CustomAmmoCategories.Settings.debugLog));

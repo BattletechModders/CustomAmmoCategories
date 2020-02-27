@@ -97,7 +97,7 @@ namespace CustAmmoCategories {
     public ICombatant target;
     public float projectileSpeed;
     public bool isAOE { get; set; }
-    public bool isAOEproc;
+    public bool isAOEproc { get; set; }
     public int AOEKey;
     public SplineGenerationInfo trajectoryInfo;
     public InterceptableInfo interceptInfo;
@@ -138,7 +138,22 @@ namespace CustAmmoCategories {
     }
     public void GenerateTrajectory() {
       if (this.parent.weapon.weaponRep != null) {
-        this.GenerateTrajectory(this.parent.weapon.weaponRep.vfxTransforms[hitIndex % this.parent.weapon.weaponRep.vfxTransforms.Length].position);
+        try {
+          if (this.parent.weapon.weaponRep.vfxTransforms != null) {
+            if (this.parent.weapon.weaponRep.vfxTransforms.Length != 0) {
+              this.GenerateTrajectory(this.parent.weapon.weaponRep.vfxTransforms[hitIndex % this.parent.weapon.weaponRep.vfxTransforms.Length].position);
+            } else {
+              Log.M.TWL(0, "WARNING! vfxTransforms has 0 elements. Fixing", true);
+              this.parent.weapon.weaponRep.vfxTransforms = new Transform[1] { this.parent.weapon.weaponRep.gameObject.transform };
+            }
+          } else {
+            Log.M.TWL(0, "WARNING! vfxTransforms is null. Fixing", true);
+            this.parent.weapon.weaponRep.vfxTransforms = new Transform[1] { this.parent.weapon.weaponRep.gameObject.transform };
+          }
+        } catch (Exception e) {
+          this.parent.weapon.weaponRep.vfxTransforms = new Transform[1] { this.parent.weapon.weaponRep.gameObject.transform };
+          Log.M.TWL(0, e.ToString(), true);
+        }
       } else {
         this.GenerateTrajectory(this.parent.weapon.parent.CurrentPosition);
       }
@@ -167,7 +182,7 @@ namespace CustAmmoCategories {
     public int location { get; set; }
     public float effectsMod { get; set; }
     public bool isAOE { get; set; }
-    public EffectsLocaltion(int l,float chance, bool aoe) {
+    public EffectsLocaltion(int l, float chance, bool aoe) {
       location = l;
       effectsMod = chance;
       isAOE = aoe;
@@ -186,7 +201,7 @@ namespace CustAmmoCategories {
       if (actor == null) { return; }
       Crits.Add(new AdvCritLocationInfo(aLoc, actor));
     }
-    public void AddHit(int location, float chance, bool aoe) { ++hitsCount; hitLocations.Add(new EffectsLocaltion(location,chance,aoe)); }
+    public void AddHit(int location, float chance, bool aoe) { ++hitsCount; hitLocations.Add(new EffectsLocaltion(location, chance, aoe)); }
     public void AddHeat(float val) {
       this.Heat += val;
     }
@@ -294,7 +309,7 @@ namespace CustAmmoCategories {
       hitInfo.attackDirections = new AttackDirection[numberOfShots];
       return hitInfo;
     }
-    public static AdvWeaponHitInfo initGenericAdvInfo(this WeaponHitInfo hitInfo, float hitChance,AttackDirector.AttackSequence sequence, CombatGameState combat) {
+    public static AdvWeaponHitInfo initGenericAdvInfo(this WeaponHitInfo hitInfo, float hitChance, AttackDirector.AttackSequence sequence, CombatGameState combat) {
       Log.LogWrite("initGenericAdvInfo: " + hitInfo.numberOfShots + "\n");
       if (hitInfo.isAdvanced() == true) {
         Log.LogWrite(" already exists\n");
@@ -342,13 +357,13 @@ namespace CustAmmoCategories {
 #endif
         hit.Heat = weapon.HeatDamagePerShotAdjusted(hitInfo.hitQualities[hitIndex]);
         hit.Stability = weapon.Instability();
-        if ((damagePerPallet == true)&&(damagePerNotDiv == false)) {
+        if ((damagePerPallet == true) && (damagePerNotDiv == false)) {
           hit.Damage /= (float)weapon.ProjectilesPerShot;
           hit.Heat /= (float)weapon.ProjectilesPerShot;
           hit.Stability /= (float)weapon.ProjectilesPerShot;
           hit.APDamage /= (float)weapon.ProjectilesPerShot;
         }
-        Log.M.WL(2,"dmg:"+hit.Damage+" heat:"+hit.Heat+" stab:"+hit.Stability+" ap:"+hit.APDamage);
+        Log.M.WL(2, "dmg:" + hit.Damage + " heat:" + hit.Heat + " stab:" + hit.Stability + " ap:" + hit.APDamage);
         hit.hitLocation = hitInfo.hitLocations[hitIndex];
         hit.target = sequence.chosenTarget;
         if (string.IsNullOrEmpty(hitInfo.secondaryTargetIds[hitIndex]) == false) {
@@ -467,7 +482,7 @@ namespace CustAmmoCategories {
       this.weaponIdx = hitInfo.attackWeaponIndex;
       this.resolveInfo = new Dictionary<ICombatant, AdvWeaponResolveInfo>();
     }
-    public void AppendAoEHit(int primeIndex,float fulldamage, float Damage, float Heat, float Stability, ICombatant target, Vector3 position, int location) {
+    public void AppendAoEHit(int primeIndex, float fulldamage, float Damage, float Heat, float Stability, ICombatant target, Vector3 position, int location) {
       Log.LogWrite("AdvInfo.AppendFrags:" + primeIndex + "\n");
       AdvWeaponHitInfoRec hit = new AdvWeaponHitInfoRec(this);
       int hitIndex = this.hits.Count;

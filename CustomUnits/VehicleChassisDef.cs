@@ -17,6 +17,7 @@ using System.Reflection.Emit;
 using System.Text;
 using System.Threading;
 using UnityEngine;
+using CustomComponents;
 
 namespace CustomUnits {
   public class CustomTransform {
@@ -54,6 +55,42 @@ namespace CustomUnits {
       };
     }
   }
+
+  public class RequiredComponent {
+    public string CategoryId { get; set; }
+    public string DefId { get; set; }
+    [JsonIgnore]
+    public HashSet<int> SearchLocations { get; set; }
+    public List<ChassisLocations> MechSearchLocations { set {
+        foreach(ChassisLocations loc in value){ SearchLocations.Add((int)loc); }
+      } }
+    public List<VehicleChassisLocations> VehicleSearchLocations {
+      set {
+        foreach (VehicleChassisLocations loc in value) { SearchLocations.Add((int)loc); }
+      }
+    }
+    public RequiredComponent() { CategoryId = string.Empty; DefId = string.Empty; SearchLocations = new HashSet<int>(); }
+    public bool Test(MechComponent component) {
+      if(string.IsNullOrEmpty(DefId) == false) {
+        if (component.defId != DefId) {
+          Log.WL(5,"bad defId " + component.defId + " != " + DefId);
+          return false;
+        }
+      }
+      if(SearchLocations.Count != 0) {
+        if (SearchLocations.Contains(component.Location) == false) {
+          Log.WL(5,"bad location");
+          return false;
+        }
+      }
+      if(string.IsNullOrEmpty(CategoryId) == false) {
+        Category category = component.componentDef.GetComponent<Category>();
+        if (category == null) { return false; }
+        if (category.CategoryID != CategoryId) { return false; }
+      }
+      return true;
+    }
+  }
   public class CustomPart {
     public string prefab { get; set; }
     public string boneName { get; set; }
@@ -61,6 +98,7 @@ namespace CustomUnits {
     public CustomTransform prefabTransform { get; set; }
     public VehicleChassisLocations VehicleChassisLocation { get; set; }
     public ChassisLocations MechChassisLocation { get; set; }
+    public List<RequiredComponent> RequiredComponents { get; set; }
     public List<string> RequiredUpgrades { set {
         foreach(string def in value) { this.RequiredUpgradesSet.Add(def);}
       }
@@ -83,6 +121,7 @@ namespace CustomUnits {
       prefabTransform = new CustomTransform();
       MaterialInfo = new Dictionary<string, CustomMaterialInfo>();
       RequiredUpgradesSet = new HashSet<string>();
+      RequiredComponents = new List<RequiredComponent>();
     }
     public void debugLog(int initiation) {
       string init = new String(' ', initiation);
@@ -109,17 +148,32 @@ namespace CustomUnits {
     }
   }
   public class UnitUnaffection {
+    private static readonly float MinMoveClamp = 0.2f;
+    private static readonly float MaxMoveClamp = 0.5f;
+    [JsonIgnore]
+    private float FMoveClamp;
     public bool DesignMasks { get; set; }
     public bool Pathing { get; set; }
     public bool MoveCostBiome { get; set; }
     public bool Fire { get; set; }
     public bool Landmines { get; set; }
+    public float MoveClamp {
+      get {
+        if (Pathing && (FMoveClamp < MinMoveClamp)) { return MinMoveClamp; }
+        if (Pathing && (FMoveClamp > MaxMoveClamp)) { return MaxMoveClamp; }
+        return FMoveClamp;
+      }
+      set {
+        FMoveClamp = value;
+      }
+    }
     public UnitUnaffection() {
       DesignMasks = false;
       Pathing = false;
       Fire = false;
       Landmines = false;
       MoveCostBiome = false;
+      FMoveClamp = 0f;
     }
     public void debugLog(int initiation) {
       Log.LogWrite(initiation, "DesignMasks:" + DesignMasks, true);
@@ -385,6 +439,8 @@ namespace CustomUnits {
   public static class AbstractActor_SetOccupiedDesignMask {
     private static MethodInfo occupiedDesignMaskSet = null;
     private static FieldInfo opuDesignMask = null;
+    private delegate void occupiedDesignMaskSetDelegate(AbstractActor actor, DesignMaskDef mask);
+    private static occupiedDesignMaskSetDelegate occupiedDesignMaskSetInkover = null;
     public static bool Prepare() {
       try {
         occupiedDesignMaskSet = typeof(AbstractActor).GetProperty("occupiedDesignMask", BindingFlags.Instance | BindingFlags.Public).GetSetMethod(true);
@@ -401,6 +457,13 @@ namespace CustomUnits {
         Log.LogWrite(0, e.ToString(), true);
         return false;
       }
+      var dm = new DynamicMethod("CUoccupiedDesignMaskSet", null, new Type[] { typeof(AbstractActor), typeof(DesignMaskDef) }, typeof(AbstractActor));
+      var gen = dm.GetILGenerator();
+      gen.Emit(OpCodes.Ldarg_0);
+      gen.Emit(OpCodes.Ldarg_1);
+      gen.Emit(OpCodes.Call, occupiedDesignMaskSet);
+      gen.Emit(OpCodes.Ret);
+      occupiedDesignMaskSetInkover = (occupiedDesignMaskSetDelegate)dm.CreateDelegate(typeof(occupiedDesignMaskSetDelegate));
       return true;
     }
     public static bool Prefix(AbstractActor __instance, DesignMaskDef mask, int stackItemUID, ref List<DesignMaskDef> approvedMasks) {
@@ -409,7 +472,7 @@ namespace CustomUnits {
         if (__instance.UnaffectedDesignMasks()) {
           Log.LogWrite(1, "unaffected", true);
           //__instance.occupiedDesignMask = null;
-          occupiedDesignMaskSet.Invoke(__instance, new object[1] { null });
+          occupiedDesignMaskSetInkover(__instance, mask);
           opuDesignMask.SetValue(__instance, null);
           if (approvedMasks != null) { approvedMasks.Clear(); };
           return false;
@@ -564,7 +627,7 @@ namespace CustomUnits {
       return true;
     }
     public static void Postfix(PilotableActorRepresentation __instance, AbstractActor unit, Transform parentTransform, bool isParented) {
-      Log.LogWrite("GameRepresentation.Init postfix " + unit.DisplayName + ":" + unit.GUID + "\n");
+      Log.TWL(0,"GameRepresentation.Init postfix " + new Text(unit.DisplayName).ToString() + ":" + unit.GUID);
       try {
         int instanceId = unit.GameRep.gameObject.GetInstanceID();
         if (VehicleCustomInfoHelper.unityInstanceIdActor.ContainsKey(instanceId) == false) {
@@ -574,13 +637,32 @@ namespace CustomUnits {
         }
         VehicleCustomInfo info = unit.GetCustomInfo();
         if (info == null) {
-          Log.LogWrite(" no custom info\n");
+          Log.WL(1,"no custom info");
           return;
         }
         Vehicle vehicle = unit as Vehicle;
         Mech mech = unit as Mech;
         foreach (var AnimPart in info.CustomParts) {
           int location = 1;
+          Log.WL(1,AnimPart.prefab+" req components: "+ AnimPart.RequiredComponents.Count);
+          if (AnimPart.RequiredComponents.Count > 0) {
+            bool suitable_component_found = false;
+            foreach (RequiredComponent rcomp in AnimPart.RequiredComponents) {
+              suitable_component_found = false;
+              Log.WL(2,"condition def:" + rcomp.DefId + " cat:" + rcomp.CategoryId);
+              foreach (MechComponent component in unit.allComponents) {
+                Log.WL(3,"component "+component.defId+" loc:"+component.Location);
+                if (rcomp.Test(component)) {
+                  Log.WL(4,"success");
+                  suitable_component_found = true; break;
+                } else {
+                  Log.WL(4,"fail");
+                }
+              }
+              if (suitable_component_found) { break; }
+            }
+            if (suitable_component_found == false) { continue; }
+          };
           if (mech != null) {
             if(AnimPart.RequiredUpgradesSet.Count > 0) {
               List<MechComponent> components = mech.GetComponentsForLocation(AnimPart.MechChassisLocation, ComponentType.Upgrade);
@@ -614,30 +696,42 @@ namespace CustomUnits {
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { })]
   public static class ActorMovementSequence_UpdateRotation {
-    public static MethodInfo OwningVehicleSet;
+    private static MethodInfo mOwningVehicleSet;
+    private delegate void OwningVehicleSetDelegate(ActorMovementSequence seq, Vehicle v);
+    private static OwningVehicleSetDelegate OwningVehicleSetInvoker = null;
     public static bool Prepare() {
-      OwningVehicleSet = null;
+      mOwningVehicleSet = null;
       try {
-        OwningVehicleSet = typeof(ActorMovementSequence).GetProperty("OwningVehicle", BindingFlags.Instance | BindingFlags.Public).GetSetMethod(true);
-        if (OwningVehicleSet == null) { return false; }
+        mOwningVehicleSet = typeof(ActorMovementSequence).GetProperty("OwningVehicle", BindingFlags.Instance | BindingFlags.Public).GetSetMethod(true);
+        if (mOwningVehicleSet == null) { return false; }
       } catch (Exception e) {
         Log.LogWrite(e.ToString() + "\n");
         return false;
       }
+      var dm = new DynamicMethod("CUOwningVehicleSet", null, new Type[] { typeof(ActorMovementSequence), typeof(Vehicle) }, typeof(ActorMovementSequence));
+      var gen = dm.GetILGenerator();
+      gen.Emit(OpCodes.Ldarg_0);
+      gen.Emit(OpCodes.Ldarg_1);
+      gen.Emit(OpCodes.Call, mOwningVehicleSet);
+      gen.Emit(OpCodes.Ret);
+      OwningVehicleSetInvoker = (OwningVehicleSetDelegate)dm.CreateDelegate(typeof(OwningVehicleSetDelegate));
       return true;
+    }
+    public static void OwningVehicle(this ActorMovementSequence seq, Vehicle v) {
+      OwningVehicleSetInvoker(seq, v);
     }
     public static bool Prefix(ActorMovementSequence __instance, ref Vehicle __state) {
       __state = null;
       if (__instance.OwningVehicle != null) {
         if (__instance.OwningVehicle.UnaffectedPathing() == false) { return true; };
         __state = __instance.OwningVehicle;
-        OwningVehicleSet.Invoke(__instance, new object[1] { null });
+        __instance.OwningVehicle(null);
       }
       return true;
     }
     public static void Postfix(ActorMovementSequence __instance, ref Vehicle __state) {
       if (__state != null) {
-        OwningVehicleSet.Invoke(__instance, new object[1] { (object)__state });
+        __instance.OwningVehicle(__state);
       }
     }
   }
@@ -646,16 +740,7 @@ namespace CustomUnits {
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { })]
   public static class ActorMovementSequence_CompleteMove {
-    public static MethodInfo OwningVehicleSet;
     public static bool Prepare() {
-      OwningVehicleSet = null;
-      try {
-        OwningVehicleSet = typeof(ActorMovementSequence).GetProperty("OwningVehicle", BindingFlags.Instance | BindingFlags.Public).GetSetMethod(true);
-        if (OwningVehicleSet == null) { return false; }
-      } catch (Exception e) {
-        Log.LogWrite(e.ToString() + "\n");
-        return false;
-      }
       return true;
     }
     public static bool Prefix(ActorMovementSequence __instance, ref Vehicle __state) {
@@ -663,13 +748,13 @@ namespace CustomUnits {
       if (__instance.OwningVehicle != null) {
         if (__instance.OwningVehicle.UnaffectedPathing() == false) { return true; };
         __state = __instance.OwningVehicle;
-        OwningVehicleSet.Invoke(__instance, new object[1] { null });
+        __instance.OwningVehicle(null);
       }
       return true;
     }
     public static void Postfix(ActorMovementSequence __instance, ref Vehicle __state) {
       if (__state != null) {
-        OwningVehicleSet.Invoke(__instance, new object[1] { (object)__state });
+        __instance.OwningVehicle(__state);
       }
     }
   }
@@ -839,10 +924,11 @@ namespace CustomUnits {
   [HarmonyPatch(typeof(PathNode))]
   [HarmonyPatch("HasCollisionAt")]
   [HarmonyPatch(MethodType.Normal)]
-  [HarmonyPatch(new Type[] { typeof(Vector3), typeof(AbstractActor), typeof(List<AbstractActor>) })]
+  //[HarmonyPatch(new Type[] { typeof(Vector3), typeof(AbstractActor), typeof(List<AbstractActor>),  })]
   public static class PathNodeGrid_GetTerrainModifiedCost {
     public static bool Prefix(AbstractActor unit, ref List<AbstractActor> allActors) {
       int index = 0;
+      //occupyingActor = (AbstractActor)null;
       if (allActors == null) { return true; }
       if (unit == null) { return true; }
       bool mePathingUnaffected = unit.UnaffectedPathing();
@@ -948,7 +1034,8 @@ namespace CustomUnits {
             Log.LogWrite(" weapon:" + weapon.defId + " enabled:" + weapon.IsEnabled + "\n");
             if (weapon.IsEnabled == false) { continue; }
 #if BT1_8
-            if (weapon.isWeaponUseInMelee().CanUseInMelee == false) { continue; }
+            //if (weapon.isWeaponUseInMelee().CanUseInMelee == false) { continue; }
+            if (weapon.WeaponCategoryValue.CanUseInMelee == false) { continue; }
 #else
             if (weapon.isWeaponUseInMelee() != WeaponCategory.AntiPersonnel) { continue; }
 #endif

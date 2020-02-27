@@ -15,8 +15,8 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
   public class ModifierList : BattleModModule {
 
     public override void CombatStartsOnce() {
-      if (HasMod("io.github.guetler.CBTMovement")) // Don't log to BTML unless we're sure CBTMovement is nonzero
-        Warn("CBTMovement detected.  Both jump modifier will apply; please make sure either is zero. (AIM modfiier is factored in preview; CBT Movement does not.)");
+      //if (HasMod("io.github.guetler.CBTMovement")) // Don't log to BTML unless we're sure CBTMovement is nonzero
+        //Warn("CBTMovement detected.  Both jump modifier will apply; please make sure either is zero. (AIM modfiier is factored in preview; CBT Movement does not.)");
 
       if (Settings.RangedAccuracyFactors != null || Settings.MeleeAccuracyFactors != null || Settings.SmartIndirectFire)
         Patch(typeof(ToHit), "GetToHitChance", "RecordAttackPosition", null);
@@ -65,14 +65,15 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
     // ============ Common ============
 
     public struct AttackModifier {
-      public string DisplayName;
+      private string FDisplayName;
+      public string DisplayName { get { return new Text(FDisplayName).ToString(); } }
       public float Value;
       public AttackModifier(string name) : this(name, 0f) { }
       public AttackModifier(float modifier = 0f) : this(null, modifier) { }
-      public AttackModifier(string name, float modifier) { if(string.IsNullOrEmpty(name)){ DisplayName = "???"; } else { DisplayName = new Text(name).ToString(); }; Value = modifier; }
+      public AttackModifier(string name, float modifier) { if(string.IsNullOrEmpty(name)){ FDisplayName = "???"; } else { FDisplayName = name; }; Value = modifier; }
       public AttackModifier SetValue(float modifier) { Value = modifier; return this; }
-      public AttackModifier SetName(string name) { if (string.IsNullOrEmpty(name)) { DisplayName = "???"; } else { DisplayName = new Text(name).ToString(); }; return this; }
-      public AttackModifier SetName(string penalty, string bonus) { DisplayName = Value >= 0 ?(new Text(penalty).ToString()) : (new Text(bonus).ToString()); return this; }
+      public AttackModifier SetName(string name) { if (string.IsNullOrEmpty(name)) { FDisplayName = "???"; } else { FDisplayName = name; }; return this; }
+      public AttackModifier SetName(string penalty, string bonus) { FDisplayName = Value >= 0 ?(penalty) : (bonus); return this; }
     }
 
     private static Dictionary<string, Func<AttackModifier>> RangedModifiers, MeleeModifiers;

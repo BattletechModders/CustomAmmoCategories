@@ -3,6 +3,7 @@ using CustAmmoCategories;
 using CustomAmmoCategoriesLog;
 using Harmony;
 using HBS.Util;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
@@ -167,7 +168,7 @@ namespace CustAmmoCategories {
     public float AdditionalImpactVFXScaleZ { get; set; }
     public int ClearMineFieldRadius { get; set; }
     public TripleBoolean BallisticDamagePerPallet { get; set; }
-    public CustomAudioSource AdditionalAudioEffect { get; set; }
+    public string AdditionalAudioEffect { get; set; }
     public TripleBoolean Streak { get; set; }
     public float FireDelayMultiplier { get; set; }
     public float MissileFiringIntervalMultiplier { get; set; }
@@ -194,6 +195,8 @@ namespace CustAmmoCategories {
     public float FireAnimationSpeedMod { get; set; }
     public EvasivePipsMods evasivePipsMods { get; set; }
     public float ShotsPerAmmo { get; set; }
+    public DeferredEffectDef deferredEffect { get; set; }
+    public string preFireSFX { get; set; }
     public WeaponMode() {
       Id = WeaponMode.NONE_MODE_NAME;
       UIName = WeaponMode.BASE_MODE_NAME;
@@ -260,7 +263,7 @@ namespace CustAmmoCategories {
       IsAMS = TripleBoolean.NotSet;
       IsAAMS = TripleBoolean.NotSet;
       BallisticDamagePerPallet = TripleBoolean.NotSet;
-      AdditionalAudioEffect = null;
+      AdditionalAudioEffect = string.Empty;
       Streak = TripleBoolean.NotSet;
       MissileFiringIntervalMultiplier = 1f;
       MissileVolleyIntervalMultiplier = 1f;
@@ -288,6 +291,8 @@ namespace CustAmmoCategories {
       FireAnimationSpeedMod = 1f;
       evasivePipsMods = new EvasivePipsMods();
       ShotsPerAmmo = 1f;
+      deferredEffect = new DeferredEffectDef();
+      preFireSFX = string.Empty;
     }
     public void fromJSON(string json) {
       JObject jWeaponMode = JObject.Parse(json);
@@ -436,7 +441,10 @@ namespace CustAmmoCategories {
         this.AttackRecoil = (int)jWeaponMode["AttackRecoil"];
       }
       if (jWeaponMode["AdditionalAudioEffect"] != null) {
-        this.AdditionalAudioEffect = new CustomAudioSource((string)jWeaponMode["AdditionalAudioEffect"]);
+        this.AdditionalAudioEffect = (string)jWeaponMode["AdditionalAudioEffect"];
+      }
+      if (jWeaponMode["preFireSFX"] != null) {
+        this.preFireSFX = (string)jWeaponMode["preFireSFX"];
       }
       if (jWeaponMode["WeaponEffectID"] != null) {
         this.WeaponEffectID = (string)jWeaponMode["WeaponEffectID"];
@@ -569,6 +577,12 @@ namespace CustAmmoCategories {
         if (this.Unguided == TripleBoolean.True) {
           //this.AlwaysIndirectVisuals = TripleBoolean.False;
           //this.IndirectFireCapable = TripleBoolean.False;
+        }
+      }
+      if (jWeaponMode["deferredEffect"] != null) {
+        this.deferredEffect = JsonConvert.DeserializeObject<DeferredEffectDef>(jWeaponMode["deferredEffect"].ToString());
+        if (jWeaponMode["deferredEffect"]["statusEffects"] != null) {
+          this.deferredEffect.ParceEffects(jWeaponMode["deferredEffect"]["statusEffects"].ToString());
         }
       }
       if (jWeaponMode["HitGenerator"] != null) {

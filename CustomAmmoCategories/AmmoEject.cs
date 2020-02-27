@@ -29,6 +29,38 @@ namespace CustAmmoCategories {
       }
       actor.StatCollection.Set<bool>(CustomAmmoCategories.EjectingNowStatName, value);
     }
+    public static void EjectWeapon(Weapon weapon, CombatHUDWeaponSlot hudSlot) {
+      CustomAmmoCategoriesLog.Log.LogWrite("EjectWeapon " + weapon.defId + "\n");
+      if (weapon.IsFunctional == false) { return; }
+      CustomAmmoCategoriesLog.Log.LogWrite(" HasActivatedThisRound " + weapon.parent.HasActivatedThisRound + "\n");
+      CustomAmmoCategoriesLog.Log.LogWrite(" HasFiredThisRound " + weapon.parent.HasFiredThisRound + "\n");
+      CustomAmmoCategoriesLog.Log.LogWrite(" HasMovedThisRound " + weapon.parent.HasMovedThisRound + "\n");
+      if (weapon.parent.HasFiredThisRound || weapon.parent.HasMovedThisRound) {
+        CustomAmmoCategoriesLog.Log.LogWrite(" moved or fired this round " + weapon.parent.DistMovedThisRound + "\n");
+        GenericPopupBuilder popup = GenericPopupBuilder.Create("__/CAC.AMMOEJECTIONERROR/__", "You can't drop weapon after moving or firing this round");
+        popup.AddButton("OK", (Action)null, true, (PlayerAction)null);
+        popup.IsNestedPopupWithBuiltInFader().CancelOnEscape().Render();
+        return;
+      }
+      weapon.StatCollection.Set<ComponentDamageLevel>("DamageLevel", ComponentDamageLevel.Destroyed);
+      CustomAmmoCategories.ActorsEjectedAmmo[weapon.parent.GUID] = true;
+      weapon.parent.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(new ShowActorInfoSequence(weapon.parent, new Text("WEAPON DROPPED"), FloatieMessage.MessageNature.Buff, false)));
+      CombatHUD HUD = (CombatHUD)typeof(CombatHUDWeaponSlot).GetField("HUD", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(hudSlot);
+      if ((HUD.MechWarriorTray.SprintButton.IsActive) || (HUD.MechWarriorTray.JumpButton.IsActive)) {
+        //weapon.parent.isAmmoEjecting(true);
+        typeof(CombatHUDActionButton).GetMethod("ExecuteClick", BindingFlags.Instance | BindingFlags.NonPublic).Invoke(HUD.MechWarriorTray.MoveButton, new object[0] { });
+        //HUD.MechWarriorTray.MoveButton.ExecuteClick();
+        //weapon.parent.isAmmoEjecting(false);
+      }
+      HUD.MechWarriorTray.SprintButton.DisableButton();
+      HUD.MechWarriorTray.JumpButton.DisableButton();
+      if (weapon.parent.StatCollection.ContainsStatistic(CustomAmmoCategories.EjectedThisRoundStatName) == false) {
+        weapon.parent.StatCollection.AddStatistic<bool>(CustomAmmoCategories.EjectedThisRoundStatName, true);
+      } else {
+        weapon.parent.StatCollection.Set<bool>(CustomAmmoCategories.EjectedThisRoundStatName, true);
+      }
+      BlockWeaponsHelpers.RecalculateBlocked(weapon.parent);
+    }
     public static void EjectAmmo(Weapon weapon, CombatHUDWeaponSlot hudSlot) {
       CustomAmmoCategoriesLog.Log.LogWrite("EjectAmmo "+weapon.defId+"\n");
       string ammoId = "";

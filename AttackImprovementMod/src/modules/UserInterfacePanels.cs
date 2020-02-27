@@ -13,6 +13,7 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
   using static Mod;
   using static ChassisLocations;
   using static System.Reflection.BindingFlags;
+  using System.Globalization;
 
   public class UserInterfacePanels : BattleModModule {
 
@@ -90,8 +91,8 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
         // Enlarge target text background
         TargetDisplay.transform.transform.Translate(34, Settings.ShowNumericInfoOffsetY, 0);
         RectTransform TargetRect = TargetDisplay.transform.GetComponent<RectTransform>();
-        TargetRect?.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, 250);
-        TargetRect?.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, 90);
+        //TargetRect?.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, 250);
+        //TargetRect?.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, 90);
         TargetDisplay.ActorWeightText.enableWordWrapping = false; // Prevent skill names from wrapping
                                                                   //LogGuiTree( HUD?.TargetingComputer.ActorInfo );
                                                                   // Shift selected actor info
@@ -480,7 +481,7 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
             if (ownEffects.Any(e => e.EffectData?.Description.Name == mask.stickyEffect.Description.Name)) continue; // Skip if sticky effect is already sticking
             switch (effect.operation) {
               case StatCollection.StatOperation.Int_Add:
-                extra += (int)float.Parse(effect.modValue);
+                extra += (int)float.Parse(effect.modValue, CultureInfo.InvariantCulture);
                 break;
               default:
                 Warn("Unexpected EndMoveHeat operation {0} on stick design mask {1}", effect.operation, mask.Description.Name);

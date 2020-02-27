@@ -14,42 +14,85 @@ using UnityEngine;
 
 namespace CustAmmoCategories {
   public class DeferredEffectDef {
+    public string id { get; set; }
     public int rounds { get; set; }
+    public string text { get; set; }
     public string VFX { get; set; }
+    public string waitVFX { get; set; }
+    public CustomVector VFXscale { get; set; }
+    public CustomVector waitVFXscale { get; set; }
     public string SFX { get; set; }
-    public float VFXlength { get; set; }
+    public float VFXtime { get; set; }
+    public float damageApplyTime { get; set; }
     public List<EffectData> statusEffects { get; set; }
-    public float Damage { get; set; }
-    public int Heat { get; set; }
-    public int Instability { get; set; }
     public float AOERange { get; set; }
     public float AOEDamage { get; set; }
     public float AOEHeatDamage { get; set; }
     public float AOEInstability { get; set; }
+    public ColorTableJsonEntry RangeColor { get; set; }
+    public float FireTerrainChance { get; set; }
+    public int FireDurationWithoutForest { get; set; }
+    public int FireTerrainStrength { get; set; }
+    public int FireTerrainCellRadius { get; set; }
+    public string TerrainVFX { get; set; }
+    public string tempDesignMask { get; set; }
+    public int tempDesignMaskTurns { get; set; }
+    public int tempDesignMaskCellRadius { get; set; }
+    public CustomVector TerrainVFXScale { get; set; }
+    public bool statusEffectsRangeFalloff { get; set; }
+    public bool sticky { get; set; }
     public DeferredEffectDef() {
+      id = "id";
       rounds = 0;
+      text = string.Empty;
       VFX = string.Empty;
       SFX = string.Empty;
-      VFXlength = 0f;
+      VFXtime = 10f;
+      damageApplyTime = 5f;
       statusEffects = new List<EffectData>();
-      Damage = 0f;
-      Heat = 0;
-      Instability = 0;
       AOERange = 0f;
       AOEDamage = 0f;
       AOEHeatDamage = 0f;
       AOEInstability = 0f;
+      waitVFXscale = new CustomVector(true);
+      VFXscale = new CustomVector(true);
+      RangeColor = new ColorTableJsonEntry();
+      FireTerrainChance = 0f;
+      FireDurationWithoutForest = 0;
+      FireTerrainStrength = 0;
+      FireTerrainCellRadius = 0;
+      tempDesignMaskTurns = 0;
+      TerrainVFXScale = new CustomVector(true);
+      statusEffectsRangeFalloff = true;
+      sticky = true;
     }
     public void ParceEffects(string json) {
       try {
-        JArray statusEffects = JArray.Parse(json);
-        foreach (JObject statusEffect in statusEffects) {
+        JArray effects = JArray.Parse(json);
+        foreach (JObject statusEffect in effects) {
           EffectData effect = new EffectData();
           JSONSerializationUtility.FromJSON<EffectData>(effect, statusEffect.ToString());
           statusEffects.Add(effect);
         }
       } catch (Exception e) {
         Log.M.TWL(0, e.ToString(), true);
+      }
+    }
+    public void debugPrint(LogFile log,int initiation) {
+      log.WL(initiation, "rounds:"+rounds);
+      log.WL(initiation, "VFX:" + VFX);
+      log.WL(initiation, "VFXscale:" + VFXscale);
+      log.WL(initiation, "SFX:" + SFX);
+      log.WL(initiation, "VFXtime:" + VFXtime);
+      log.WL(initiation, "AOERange:" + AOERange);
+      log.WL(initiation, "AOEDamage:" + AOEDamage);
+      log.WL(initiation, "AOEHeatDamage:" + AOEHeatDamage);
+      log.WL(initiation, "AOEInstability:" + AOEInstability);
+      log.WL(initiation, "statusEffects:" + statusEffects.Count);
+      foreach (EffectData effect in statusEffects) {
+        log.WL(initiation + 1, effect.Description.Id);
+        log.WL(initiation + 1, effect.effectType.ToString());
+        log.WL(initiation + 1, effect.statisticData.statName);
       }
     }
   }
@@ -325,7 +368,7 @@ namespace CustAmmoCategories {
     public bool ImprovedBallistic { get; set; }
     public TripleBoolean BallisticDamagePerPallet { get; set; }
     public TripleBoolean StatusEffectsPerHit { get; set; }
-    public CustomAudioSource AdditionalAudioEffect { get; set; }
+    public string AdditionalAudioEffect { get; set; }
     public float FireDelayMultiplier { get; set; }
     public float MissileFiringIntervalMultiplier { get; set; }
     public float MissileVolleyIntervalMultiplier { get; set; }
@@ -354,6 +397,16 @@ namespace CustAmmoCategories {
     public EvasivePipsMods evasivePipsMods { get; set; }
     public float ShotsPerAmmo { get; set; }
     public DeferredEffectDef deferredEffect { get; set; }
+    public Dictionary<string, int> InternalAmmo { get; set; }
+    public List<ChassisLocations> blockWeaponsInMechLocations { get; set; }
+    public bool blockWeaponsInInstalledLocation { get; set; }
+    public bool CanBeBlocked { get; set; }
+    public bool EjectWeapon { get; set; }
+    public bool isHaveInternalAmmo { get {
+        foreach (var ia in InternalAmmo) { if (ia.Value > 0) { return true; }; }
+        return false;
+    } }
+    public string preFireSFX { get; set; }
     public ExtWeaponDef() {
       Id = string.Empty;
       StreakEffect = false;
@@ -407,7 +460,7 @@ namespace CustAmmoCategories {
       ImprovedBallistic = false;
       BallisticDamagePerPallet = TripleBoolean.NotSet;
       StatusEffectsPerHit = TripleBoolean.NotSet;
-      AdditionalAudioEffect = null;
+      AdditionalAudioEffect = string.Empty;
       MissileFiringIntervalMultiplier = 1f;
       MissileVolleyIntervalMultiplier = 1f;
       ProjectileSpeedMultiplier = 1f;
@@ -437,6 +490,12 @@ namespace CustAmmoCategories {
       evasivePipsMods = new EvasivePipsMods();
       ShotsPerAmmo = 1f;
       deferredEffect = new DeferredEffectDef();
+      InternalAmmo = new Dictionary<string, int>();
+      preFireSFX = null;
+      CanBeBlocked = true;
+      EjectWeapon = false;
+      blockWeaponsInMechLocations = new List<ChassisLocations>();
+      blockWeaponsInInstalledLocation = false;
     }
   }
 }
@@ -801,8 +860,12 @@ namespace CustomAmmoCategoriesPatches {
           defTemp.Remove("NotUseInMelee");
         }
         if (defTemp["AdditionalAudioEffect"] != null) {
-          extDef.AdditionalAudioEffect = new CustomAudioSource((string)defTemp["AdditionalAudioEffect"]);
+          extDef.AdditionalAudioEffect = (string)defTemp["AdditionalAudioEffect"];
           defTemp.Remove("AdditionalAudioEffect");
+        }
+        if (defTemp["preFireSFX"] != null) {
+          extDef.preFireSFX = (string)defTemp["preFireSFX"];
+          defTemp.Remove("preFireSFX");
         }
         if (defTemp["DamageOnJamming"] != null) {
           extDef.DamageOnJamming = ((bool)defTemp["DamageOnJamming"] == true) ? TripleBoolean.True : TripleBoolean.False;
@@ -815,6 +878,26 @@ namespace CustomAmmoCategoriesPatches {
         if (defTemp["AMSImmune"] != null) {
           extDef.AMSImmune = ((bool)defTemp["AMSImmune"] == true) ? TripleBoolean.True : TripleBoolean.False;
           defTemp.Remove("AMSImmune");
+        }
+        if (defTemp["InternalAmmo"] != null) {
+          extDef.InternalAmmo = JsonConvert.DeserializeObject<Dictionary<string, int>>(defTemp["InternalAmmo"].ToString());
+          defTemp.Remove("InternalAmmo");
+        }
+        if (defTemp["blockWeaponsInMechLocations"] != null) {
+          extDef.blockWeaponsInMechLocations = JsonConvert.DeserializeObject<List<ChassisLocations>>(defTemp["blockWeaponsInMechLocations"].ToString());
+          defTemp.Remove("blockWeaponsInMechLocations");
+        }
+        if (defTemp["CanBeBlocked"] != null) {
+          extDef.CanBeBlocked = (bool)defTemp["CanBeBlocked"];
+          defTemp.Remove("CanBeBlocked");
+        }
+        if (defTemp["blockWeaponsInInstalledLocation"] != null) {
+          extDef.blockWeaponsInInstalledLocation = (bool)defTemp["blockWeaponsInInstalledLocation"];
+          defTemp.Remove("blockWeaponsInInstalledLocation");
+        }
+        if (defTemp["EjectWeapon"] != null) {
+          extDef.EjectWeapon = (bool)defTemp["EjectWeapon"];
+          defTemp.Remove("EjectWeapon");
         }
         if (defTemp["IFFDef"] != null) {
           extDef.IFFDef = (string)defTemp["IFFDef"];

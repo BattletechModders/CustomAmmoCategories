@@ -5,13 +5,14 @@ using System;
 
 namespace CustAmmoCategoriesPatches {
   [HarmonyPatch(typeof(AmmoCategoryEnumeration))]
-  [HarmonyPatch("RefreshStaticData")]
+  [HarmonyPatch("GetAmmoCategoryByName")]
   [HarmonyPatch(MethodType.Normal)]
-  [HarmonyPatch(new Type[] { })]
-  public static class WeaponRepresentation_ResetWeaponEffect {
-    public static void Postfix(WeaponRepresentation __instance) {
-      Log.M.TWL(0,"AmmoCategoryEnumeration.RefreshStaticData");
-
+  [HarmonyPatch(new Type[] { typeof(string) })]
+  public static class AmmoCategoryEnumeration_GetAmmoCategoryByName {
+    public static void Postfix(string name, ref AmmoCategoryValue __result) {
+      if(__result == null) {
+        Log.M.TWL(0, "AmmoCategoryEnumeration.GetAmmoCategoryByName can't find " + name + "\n" + Environment.StackTrace,true);
+      }
     }
   }
 }

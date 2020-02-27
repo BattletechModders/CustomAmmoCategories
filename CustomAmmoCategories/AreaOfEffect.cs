@@ -1,10 +1,78 @@
 ﻿using BattleTech;
 using CustomAmmoCategoriesLog;
+using Localize;
+using System;
 using System.Collections.Generic;
 using UnityEngine;
+using Building = BattleTech.Building;
 
 namespace CustAmmoCategories {
   public static class AreaOfEffectHelper {
+    private static Dictionary<ICombatant, bool> isDropshipCache = new Dictionary<ICombatant, bool>();
+    public static void Clear() { isDropshipCache.Clear(); }
+    public static HashSet<string> tags(this ICombatant target) {
+      HashSet<string> result = new HashSet<string>();
+      Mech mech = target as Mech;
+      if (mech != null) {
+        foreach (var tag in mech.MechDef.MechTags) {
+          result.Add(tag);
+        }
+        foreach (var tag in mech.MechDef.Chassis.ChassisTags) {
+          result.Add(tag);
+        }
+      } else {
+        Vehicle vehicle = target as Vehicle;
+        if(vehicle != null) {
+          foreach (var tag in vehicle.VehicleDef.VehicleTags) {
+            result.Add(tag);
+          }
+        } else {
+          Turret turret = target as Turret;
+          if(turret != null) {
+            foreach (var tag in turret.TurretDef.TurretTags) {
+              result.Add(tag);
+            }
+          }
+        }
+      }
+      return result;
+    }
+    public static void TagAoEModifiers(this ICombatant target, out float range, out float damage) {
+      range = 1f;
+      damage = 1f;
+      HashSet<string> tags = target.tags();
+      foreach (var tag in tags) {
+        if(CustomAmmoCategories.Settings.TagAoEDamageMult.TryGetValue(tag,out AoEModifiers mods)) {
+          range *= mods.Range; damage *= mods.Damage;
+        }
+      }
+    }
+    public static bool isDropshipNotLanded(this ICombatant target) {
+      try {
+        if (isDropshipCache.TryGetValue(target, out bool result)) { return result; }
+        Log.M.TWL(0, "AreaOfEffectHelper.isDropshipNotLanded "+new Text(target.DisplayName));
+        BattleTech.Building building = target as BattleTech.Building;
+        if (building == null) {
+          Log.M.WL(1, "not building");
+          isDropshipCache.Add(target, false); return false;
+        }
+        ObstructionGameLogic logic = ObstructionGameLogic.GetObstructionFromBuilding(building, target.Combat.ItemRegistry);
+        if (logic.IsDropship() == false) {
+          Log.M.WL(1, "not dropship");
+          isDropshipCache.Add(target, false); return false;
+        }
+        DropshipGameLogic dropLogic = logic as DropshipGameLogic;
+        if (dropLogic == null) {
+          Log.M.WL(1, "no dropship logic");
+          isDropshipCache.Add(target, logic.IsDropship()); return logic.IsDropship();
+        }
+        Log.M.WL(1, "drop ship current animation state:"+ dropLogic.currentAnimationState);
+        return dropLogic.currentAnimationState != DropshipAnimationState.Landed;
+      } catch (Exception e) {
+        Log.M.TWL(0, e.ToString(), true);
+        return false;
+      }
+    }
     public static WeaponHitInfo generateAoEWeaponHitInfo(ICombatant combatant,AbstractActor attacker, Weapon weapon,Dictionary<int, float> dmgInfo) {
       WeaponHitInfo hitInfo = new WeaponHitInfo();
       hitInfo.attackerId = attacker.GUID;
@@ -103,20 +171,28 @@ namespace CustAmmoCategories {
         }
         foreach (ICombatant target in combatants) {
           if (target.IsDead) { continue; };
+          if (target.isDropshipNotLanded()) { continue; };
           Vector3 CurrentPosition = target.CurrentPosition + Vector3.up * target.AoEHeightFix();
           float distance = Vector3.Distance(CurrentPosition, hitPosition);
-          Log.LogWrite(" testing combatant " + target.DisplayName + " " + target.GUID + " " + distance + " " + AOERange + "\n");
+          Log.LogWrite(" testing combatant " + target.DisplayName + " " + target.GUID + " " + distance + "("+CustomAmmoCategories.Settings.DefaultAoEDamageMult[target.UnitType].Range+")/" + AOERange + "\n");
+          if (CustomAmmoCategories.Settings.DefaultAoEDamageMult[target.UnitType].Range < CustomAmmoCategories.Epsilon) { CustomAmmoCategories.Settings.DefaultAoEDamageMult[target.UnitType].Range = 1f; }
+          distance /= CustomAmmoCategories.Settings.DefaultAoEDamageMult[target.UnitType].Range;
+          target.TagAoEModifiers(out float tagAoEModRange, out float tagAoEDamage);
+          if (tagAoEModRange < CustomAmmoCategories.Epsilon) { tagAoEModRange = 1f; }
+          if (tagAoEDamage < CustomAmmoCategories.Epsilon) { tagAoEDamage = 1f; }
+          distance /= tagAoEDamage;
           if (distance > AOERange) { continue; }
           if (targetsHitCache.ContainsKey(target) == false) { targetsHitCache.Add(target, new Dictionary<int, float>()); }
           if (targetsHeatCache.ContainsKey(target) == false) { targetsHeatCache.Add(target, 0f); }
           if (targetsStabCache.ContainsKey(target) == false) { targetsStabCache.Add(target, 0f); }
           //Dictionary<int, float> targetHitCache = targetsHitCache[target];
-          float DamagePerShot = AoEDamage;
-          float HeatDamagePerShot = AoEHeat;
+          float DamagePerShot = AoEDamage * CustomAmmoCategories.Settings.DefaultAoEDamageMult[target.UnitType].Damage * tagAoEDamage;
+          float HeatDamagePerShot = AoEHeat * CustomAmmoCategories.Settings.DefaultAoEDamageMult[target.UnitType].Damage * tagAoEDamage;
+          float StabilityPerShot = AoEStability * CustomAmmoCategories.Settings.DefaultAoEDamageMult[target.UnitType].Damage * tagAoEDamage;
           if (HeatDamagePerShot < CustomAmmoCategories.Epsilon) { HeatDamagePerShot = weapon.HeatDamagePerShot; };
           float fullDamage = DamagePerShot * (AOERange - distance) / AOERange;
           float heatDamage = HeatDamagePerShot * (AOERange - distance) / AOERange;
-          float stabDamage = AoEStability * (AOERange - distance) / AOERange;
+          float stabDamage = StabilityPerShot * (AOERange - distance) / AOERange;
           targetsHeatCache[target] += heatDamage;
           targetsStabCache[target] += stabDamage;
           Log.LogWrite(" full damage " + fullDamage + "\n");

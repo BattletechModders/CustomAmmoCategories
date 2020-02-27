@@ -6,9 +6,12 @@ using BattleTech.AttackDirectorHelpers;
 using CustomAmmoCategoriesLog;
 using Harmony;
 using UnityEngine;
-
+/*
 namespace CharlesB {
   public static class AttackDirector__AttackSequence_OnAttackSequenceResolveDamage_Patch {
+    public static bool Prepare() {
+      return false;
+    }
     public static bool Prefix(ref MessageCenterMessage message, AttackDirector.AttackSequence __instance) {
       Log.CB.TWL(0, "hit prefix");
       var attackSequenceResolveDamageMessage = (AttackSequenceResolveDamageMessage)message;
@@ -237,3 +240,4 @@ namespace CharlesB {
   }
 
 }
+*/

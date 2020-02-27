@@ -206,11 +206,12 @@ namespace CustAmmoCategories {
       AttackSequence sequence = Combat.AttackDirector.GetAttackSequence(hitInfo.attackSequenceId);
       if(sequence != null) {
         this.isIndirect = sequence.indirectFire;
-        //Log.LogWrite(" sequence is null\n");
+        Log.M.WL(1, "sequence.indirectFire: "+ sequence.indirectFire);
       } else {
-        Log.LogWrite(" sequence is null\n");
+        Log.LogWrite("sequence is null\n");
       }
       if (this.weapon.AlwaysIndirectVisuals()) {
+        Log.M.WL(1, "AlwaysIndirectVisuals");
         this.isIndirect = true;
       }
       Log.LogWrite(" isIndirect:"+this.isIndirect+"\n");
@@ -251,7 +252,8 @@ namespace CustAmmoCategories {
       this.emitterIndex = (this.emitterIndex + 1) % this.numberOfEmitters;
       if (dmgPerBullet == false) { ++this.bulletHitIndex; };
       string empty = string.Empty;
-      string eventName = this.currentBullet != 0 ? (this.currentBullet >= this.bullets.Count ? this.middleShotSFX : this.lastShotSFX) : this.firstShotSFX;
+      string eventName = this.bulletHitIndex != 0 ? (this.bulletHitIndex >= this.hitInfo.numberOfShots ? this.middleShotSFX : this.lastShotSFX) : this.firstShotSFX;
+      Log.M.TWL(0, "MultiShotBallisticEffect.FireNextShot sfx:"+eventName+" fsfx:"+ this.firstShotSFX+" msfx:"+ this.middleShotSFX+" lsfx:"+ this.lastShotSFX);
       if (!string.IsNullOrEmpty(eventName)) {
         int num = (int)WwiseManager.PostEvent(eventName, this.parentAudioObject, (AkCallbackManager.EventCallback)null, (object)null);
       }

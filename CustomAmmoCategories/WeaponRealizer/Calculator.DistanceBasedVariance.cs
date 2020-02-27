@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using BattleTech;
 using UnityEngine;
@@ -20,8 +21,8 @@ namespace WeaponRealizer
             private static readonly Dictionary<string, float> VarianceMultipliers = new Dictionary<string, float>();
             public static float Calculate(Vector3 attackPos, ICombatant target, Weapon weapon, float damage, float rawDamage)
             {
-                var damagePerShot = weapon.DamagePerShot;
-                var adjustment = rawDamage / damagePerShot;
+                //var damagePerShot = weapon.DamagePerShot;
+                //var adjustment = damage / rawDamage;
                 float varianceMultiplier;
                 var distance = Vector3.Distance(attackPos, target.TargetPosition);
                 var distanceDifference = weapon.MaxRange - distance;
@@ -41,11 +42,11 @@ namespace WeaponRealizer
                 {
                     return damage;
                 }
-                var computedDamage = damage * varianceMultiplier * adjustment;
+        var computedDamage = damage * varianceMultiplier;// * adjustment;
                 Logger.Debug($"distanceBasedFunctionMultiplier: {distanceBasedFunctionMultiplier}\n" +
                              $"defId: {weapon.defId}\n" +
                              $"varianceMultiplier: {varianceMultiplier}\n" +
-                             $"adjustment: {adjustment}\n" +
+                             //$"adjustment: {adjustment}\n" +
                              $"damage: {damage}\n" +
                              $"distance: {distance}\n" +
                              $"max: {weapon.MaxRange}\n" +
@@ -73,7 +74,7 @@ namespace WeaponRealizer
                 var multiplier =
                     rawTag == DistanceVarianceTagPrefix
                         ? Core.ModSettings.DistanceBasedVarianceMaxRangeDamageMultiplier
-                        : float.Parse(rawTag.Split(TagDelimiter, 3).Last()) / 100.0f;
+                        : float.Parse(rawTag.Split(TagDelimiter, 3).Last(), CultureInfo.InvariantCulture) / 100.0f;
                 return multiplier;
             }
         }
@@ -91,8 +92,8 @@ namespace WeaponRealizer
             private static readonly Dictionary<string, float> VarianceMultipliers = new Dictionary<string, float>();
             public static float Calculate(Vector3 attackPos, ICombatant target, Weapon weapon, float damage, float rawDamage)
             {
-                var damagePerShot = weapon.DamagePerShot;
-                var adjustment = rawDamage / damagePerShot;
+                //var damagePerShot = weapon.DamagePerShot;
+                //var adjustment = damage / rawDamage;
                 float varianceMultiplier;
                 var distance = Vector3.Distance(attackPos, target.TargetPosition);
                 var distanceDifference = weapon.MaxRange - distance;
@@ -116,11 +117,11 @@ namespace WeaponRealizer
                 {
                     return damage;
                 }
-                var computedDamage = damage * varianceMultiplier * adjustment;
+                var computedDamage = damage * varianceMultiplier;// * adjustment;
                 Logger.Debug($"reverseDistanceBasedFunctionMultiplier: {distanceBasedFunctionMultiplier}\n" +
                              $"defId: {weapon.defId}\n" +
                              $"varianceMultiplier: {varianceMultiplier}\n" +
-                             $"adjustment: {adjustment}\n" +
+                             //$"adjustment: {adjustment}\n" +
                              $"damage: {damage}\n" +
                              $"distance: {distance}\n" +
                              $"max: {weapon.MaxRange}\n" +

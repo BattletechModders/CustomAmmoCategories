@@ -17,12 +17,12 @@ namespace CustomAmmoCategoriesPathes {
       original = typeof(Weapon).Assembly.GetType("HighestPriorityMoveCandidateIsAttackNode").GetMethod("Tick", BindingFlags.NonPublic | BindingFlags.Instance);
       transpliter = typeof(HighestPriorityMoveCandidateIsAttackNode_Tick).GetMethod("Transpiler");
       harmony.Patch(original, null, null, new HarmonyMethod(transpliter));
-      original = typeof(Weapon).Assembly.GetType("MoveTowardsHighestPriorityMoveCandidateNode").GetMethod("Tick", BindingFlags.NonPublic | BindingFlags.Instance);
-      transpliter = typeof(MoveTowardsHighestPriorityMoveCandidateNode_Tick).GetMethod("Transpiler");
-      harmony.Patch(original, null, null, new HarmonyMethod(transpliter));
-      original = typeof(Weapon).Assembly.GetType("MeleeWithHighestPriorityEnemyNode").GetMethod("Tick", BindingFlags.NonPublic | BindingFlags.Instance);
-      transpliter = typeof(MeleeWithHighestPriorityEnemyNode_Tick).GetMethod("Transpiler");
-      harmony.Patch(original, null, null, new HarmonyMethod(transpliter));
+      //original = typeof(Weapon).Assembly.GetType("MoveTowardsHighestPriorityMoveCandidateNode").GetMethod("Tick", BindingFlags.NonPublic | BindingFlags.Instance);
+      //transpliter = typeof(MoveTowardsHighestPriorityMoveCandidateNode_Tick).GetMethod("Transpiler");
+      //harmony.Patch(original, null, null, new HarmonyMethod(transpliter));
+      //original = typeof(Weapon).Assembly.GetType("MeleeWithHighestPriorityEnemyNode").GetMethod("Tick", BindingFlags.NonPublic | BindingFlags.Instance);
+      //transpliter = typeof(MeleeWithHighestPriorityEnemyNode_Tick).GetMethod("Transpiler");
+      //harmony.Patch(original, null, null, new HarmonyMethod(transpliter));
       var types = typeof(WeaponRealizer.Core).Assembly.GetTypes();
       foreach (var tp in types) {
         CustomAmmoCategoriesLog.Log.LogWrite("FoundType:"+tp.FullName+"\n");
@@ -49,6 +49,10 @@ namespace CustomAmmoCategoriesPathes {
       harmony.Patch(original, new HarmonyMethod(prefix));
       original = typeof(Weapon).Assembly.GetType("BattleTech.Rendering.Trees.QuadTreeData").GetMethod("GenerateMesh", BindingFlags.NonPublic | BindingFlags.Instance);
       prefix = typeof(DynamicTreesHelper).GetMethod("GenerateMesh");
+      harmony.Patch(original, new HarmonyMethod(prefix));
+
+      original = typeof(Weapon).Assembly.GetType("BraceNode").GetMethod("Tick", BindingFlags.NonPublic | BindingFlags.Instance);
+      prefix = typeof(BraceNode_Tick).GetMethod("Prefix");
       harmony.Patch(original, new HarmonyMethod(prefix));
       //var enemyHarmony = HarmonyInstance.Create("com.joelmeador.WeaponRealizer");
       //var enemyPatchedMethods = enemyHarmony.GetPatchedMethods();

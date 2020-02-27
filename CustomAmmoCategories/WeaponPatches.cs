@@ -10,6 +10,7 @@ using Localize;
 using CustomAmmoCategoriesLog;
 using BattleTech.UI;
 using UnityEngine;
+using CustomAmmoCategoriesPatches;
 
 namespace CustAmmoCategories {
   public static partial class CustomAmmoCategories {
@@ -276,6 +277,10 @@ namespace CustAmmoCategoriesPatches {
           __instance.HitChanceText.overflowMode = TMPro.TextOverflowModes.Ellipsis;
         }
       }
+      if (__instance.DisplayedWeapon.isBlocked()) {
+        __instance.HitChanceText.SetText("BLK");
+        return;
+      } else
       if (__instance.DisplayedWeapon.isAMS() == true) {
         __instance.HitChanceText.SetText("AMS");
       } else
@@ -293,17 +298,46 @@ namespace CustAmmoCategoriesPatches {
       //Log.M.TWL(0, "CombatHUDWeaponSlot.RefreshDisplayedWeapon '" + __instance.WeaponText.text + "' overflow:" + __instance.WeaponText.overflowMode + " worldwrap:" + __instance.WeaponText.enableWordWrapping + " autosize:" + __instance.WeaponText.enableAutoSizing+" hitChance:"+ __instance.HitChanceText.text+ " overflow:" + __instance.HitChanceText.overflowMode);
     }
   }
+  [HarmonyPatch(typeof(AbstractActor))]
+  [HarmonyPatch("IsTargetMarked")]
+  [HarmonyPatch(MethodType.Getter)]
+  [HarmonyPatch(new Type[] { })]
+  public static class AbstractActor_IsTargetMarked {
+    public static bool Prefix(AbstractActor __instance, ref bool __result) {
+      try {
+        __result = false;
+        List <Effect> effects = __instance.Combat.EffectManager.GetAllEffectsTargeting(__instance);
+        foreach(Effect effect in effects) {
+          if (effect == null) { continue; }
+          if (effect.EffectData == null) { continue; };
+          if (effect.EffectData.Description == null) { continue; }
+          if (string.IsNullOrEmpty(effect.EffectData.Description.Id)) { continue; }
+          if (effect.EffectData.Description.Id.Contains("StatusEffect-TAG")) { __result = true; break; }
+          if (effect.EffectData.Description.Id.Contains("StatusEffect-NARC")) { __result = true; break; }
+        }
+      } catch(Exception e) {
+        return true;
+      }
+      return false;
+    }
+  }
   [HarmonyPatch(typeof(MechComponent))]
   [HarmonyPatch("UIName")]
   [HarmonyPatch(MethodType.Getter)]
   [HarmonyPatch(new Type[] { })]
   public static class MechComponent_UIName {
     public static void Postfix(MechComponent __instance, ref Text __result) {
+      Log.M.WL(0, "MechComponent.UIName "+__instance.defId);
       Weapon weapon = __instance as Weapon;
       if (weapon == null) { return; }
       ExtAmmunitionDef ammo = weapon.ammo();
       string ammoBoxName = string.Empty;
-      if (string.IsNullOrEmpty(ammo.UIName) == false) { ammoBoxName = ammo.UIName; } else { ammoBoxName = ammo.Name; };
+      if (ammo.AmmoCategory.BaseCategory.Is_NotSet == false) {
+        Log.M.WL(1, "has ammo: "+ammo.Id+" isWeaponHasAmmoVariants:"+ weapon.isWeaponHasAmmoVariants()+ " ammo.HideIfOnlyVariant:"+ ammo.HideIfOnlyVariant);
+        if (weapon.isWeaponHasAmmoVariants()||(ammo.HideIfOnlyVariant == false)) {
+          if (string.IsNullOrEmpty(ammo.UIName) == false) { ammoBoxName = ammo.UIName; } else { ammoBoxName = ammo.Name; };
+        }
+      }
       if (string.IsNullOrEmpty(ammoBoxName) == false) __result.Append("({0})", new object[1] { (object)ammoBoxName });
       ExtWeaponDef extWeapon = CustomAmmoCategories.getExtWeaponDef(__instance.defId);
       if (extWeapon.Modes.Count > 1) {
@@ -324,6 +358,72 @@ namespace CustAmmoCategoriesPatches {
         __result = CustomAmmoCategories.DamageFormulaOne(__instance, extWeapon, __result);
       } else {
         __result = CustomAmmoCategories.DamageFormulaTwo(__instance, extWeapon, __result);
+      }
+    }
+  }
+  [HarmonyPatch(typeof(MechComponent))]
+  [HarmonyPatch("InitStats")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { })]
+  public static class MechComponent_InitStatsWeapon {
+    public static void Postfix(MechComponent __instance) {
+      Weapon weapon = __instance as Weapon;
+      if (weapon == null) { return; }
+      Log.M.TWL(0, "Weapon.InitStats");
+      ExtWeaponDef def = weapon.exDef();
+      if ((weapon.weaponDef.StartingAmmoCapacity > 0)&&(def.AmmoCategory.BaseCategory.Is_NotSet == false)) {
+        ExtAmmunitionDef defaultAmmo = def.AmmoCategory.defaultAmmo();
+        if (defaultAmmo.AmmoCategory.BaseCategory.Is_NotSet == false) {
+          if (def.InternalAmmo.ContainsKey(defaultAmmo.Id) == false) {
+            def.InternalAmmo.Add(defaultAmmo.Id, weapon.weaponDef.StartingAmmoCapacity);
+          }
+        }
+      }
+      foreach(var ia in def.InternalAmmo) {
+        string statName = Weapon_InternalAmmo.InternalAmmoName + ia.Key;
+        __instance.StatCollection.AddStatistic<int>(statName, ia.Value);
+        Log.M.WL(1,statName+":"+ia.Key);
+      }
+    }
+  }
+  [HarmonyPatch(typeof(Weapon))]
+  [HarmonyPatch("InternalAmmo")]
+  [HarmonyPatch(MethodType.Getter)]
+  [HarmonyPatch(new Type[] { })]
+  [HarmonyPriority(Priority.First)]
+  public static class Weapon_InternalAmmo {
+    public static readonly string InternalAmmoName = "InternalAmmo_";
+    private static Dictionary<Weapon, int> InternalAmmoCache = new Dictionary<Weapon, int>();
+    public static void ClearInternalAmmoCache(this Weapon weapon) { InternalAmmoCache.Remove(weapon); }
+    public static void Clear(){ InternalAmmoCache.Clear(); }
+    public static void DecInternalAmmo(this Weapon weapon, int stackItemUID, int ammoCount) {
+      CustomAmmoCategory cat = weapon.CustomAmmoCategory();
+      if (cat.BaseCategory.Is_NotSet) {  return; }
+      string statName = InternalAmmoName + weapon.ammo().Id;
+      weapon.StatCollection.ModifyStat<int>(weapon.uid, stackItemUID, statName, StatCollection.StatOperation.Int_Subtract, ammoCount, -1, true);
+      weapon.ClearInternalAmmoCache();
+    }
+    public static void ZeroInternalAmmo(this Weapon weapon, int stackItemUID) {
+      CustomAmmoCategory cat = weapon.CustomAmmoCategory();
+      if (cat.BaseCategory.Is_NotSet) { return; }
+      string statName = InternalAmmoName + weapon.ammo().Id;
+      weapon.StatCollection.ModifyStat<int>(weapon.uid, stackItemUID, statName, StatCollection.StatOperation.Set, 0, -1, true);
+      weapon.ClearInternalAmmoCache();
+    }
+    public static bool Prefix(Weapon __instance, ref int __result) {
+      if (InternalAmmoCache.TryGetValue(__instance, out var intAmmo)) { __result = intAmmo; return false; };
+      CustomAmmoCategory cat = __instance.CustomAmmoCategory();
+      if (cat.BaseCategory.Is_NotSet) { __result = 0; return false; }
+      string statName = InternalAmmoName + __instance.ammo().Id;
+      Statistic stat = __instance.StatCollection.GetStatistic(statName);
+      if(stat == null) {
+        __result = 0;
+        InternalAmmoCache.Add(__instance,__result);
+        return false;
+      } else {
+        __result = stat.Value<int>();
+        InternalAmmoCache.Add(__instance, __result);
+        return false;
       }
     }
   }

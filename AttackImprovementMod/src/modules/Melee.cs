@@ -5,7 +5,8 @@ using System.Collections.Generic;
 using System.Reflection;
 
 namespace Sheepy.BattleTechMod.AttackImprovementMod {
-   using static Mod;
+  using System.Globalization;
+  using static Mod;
    using static System.Reflection.BindingFlags;
 
    public class Melee : BattleModModule {
@@ -62,7 +63,7 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
          List<float> list = new List<float>();
          foreach ( string e in Settings.MaxMeleeVerticalOffsetByClass.Split( ',' ) ) try {
             if ( list.Count >= 4 ) break;
-            float offset = float.Parse( e.Trim() );
+            float offset = float.Parse( e.Trim(), CultureInfo.InvariantCulture);
             if ( offset < 0 || float.IsNaN( offset ) || float.IsInfinity( offset ) ) throw new ArgumentOutOfRangeException();
             list.Add( offset );
          } catch ( Exception ex ) {

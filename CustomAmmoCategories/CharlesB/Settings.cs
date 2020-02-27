@@ -1,4 +1,4 @@
-﻿namespace CharlesB
+﻿/*namespace CharlesB
 {
     public class Settings
     {
@@ -45,4 +45,4 @@
         public bool debug = false;
         public bool Debug => debug;
     }
-}
+}*/

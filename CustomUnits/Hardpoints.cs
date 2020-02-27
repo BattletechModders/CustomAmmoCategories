@@ -1,4 +1,5 @@
 ﻿using BattleTech;
+using BattleTech.Data;
 using CustAmmoCategories;
 using Harmony;
 using Localize;
@@ -382,6 +383,55 @@ namespace CustomUnits {
       if (string.IsNullOrEmpty(__result)) { return; }
       __result = CustomHardPointsHelper.Alias(__result);
       Log.WL(1, " custom hardpoint found: prefab replacing:"+__result);
+    }
+  }
+
+  [HarmonyPatch(typeof(MechDef))]
+  [HarmonyPatch("RequestInventoryPrefabs")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { typeof(DataManager.DependencyLoadRequest), typeof(uint) })]
+  public static class MechDef_RequestInventoryPrefabs {
+    public static void Postfix(MechDef __instance, DataManager.DependencyLoadRequest dependencyLoad, uint loadWeight, MechComponentRef[] ___inventory) {
+      if (loadWeight <= 10U)
+        return;
+      Log.LogWrite("MechDef.RequestInventoryPrefabs defId:" + __instance.Description.Id + " "+loadWeight+"\n");
+      for (int index = 0; index < ___inventory.Length; ++index) {
+        if (___inventory[index].Def != null) {
+          Log.LogWrite(" prefab:" + ___inventory[index].ComponentDefID + ":" + ___inventory[index].prefabName + "\n");
+          if (___inventory[index].hasPrefabName == false) { continue; }
+          if (string.IsNullOrEmpty(___inventory[index].prefabName)) { continue; }
+          CustomHardpointDef customHardpoint = CustomHardPointsHelper.Find(___inventory[index].prefabName);
+          Log.LogWrite(" prefab:" + ___inventory[index].prefabName + "\n");
+          if (customHardpoint == null) { Log.LogWrite("  no custom hardpoint\n"); continue; };
+          if (string.IsNullOrEmpty(customHardpoint.shaderSrc)) { Log.LogWrite("  no shader source\n"); continue; };
+          Log.LogWrite("  shader source " + customHardpoint.shaderSrc + " requested\n");
+          dependencyLoad.RequestResource(BattleTechResourceType.Prefab, customHardpoint.shaderSrc);
+        }
+      }
+    }
+  }
+  [HarmonyPatch(typeof(MechDef))]
+  [HarmonyPatch("InventoryPrefabsLoaded")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] {  typeof(uint) })]
+  public static class MechDef_InventoryPrefabsLoaded {
+    public static void Postfix(MechDef __instance, uint loadWeight, MechComponentRef[] ___inventory, ref bool __result) {
+      if (__result == false) { return; }
+      if (loadWeight <= 10U) { return; }        
+      Log.LogWrite("MechDef.InventoryPrefabsLoaded defId:" + __instance.Description.Id + " " + loadWeight + "\n");
+      for (int index = 0; index < ___inventory.Length; ++index) {
+        if (___inventory[index].Def == null) { continue; }
+        if (___inventory[index].hasPrefabName == false) { continue; }
+        if (string.IsNullOrEmpty(___inventory[index].prefabName)) { continue; }
+        CustomHardpointDef customHardpoint = CustomHardPointsHelper.Find(___inventory[index].prefabName);
+        Log.LogWrite(" prefab:"+ ___inventory[index].prefabName+"\n");
+        if (customHardpoint == null) { Log.LogWrite("  no custom hardpoint\n"); continue; };
+        if (string.IsNullOrEmpty(customHardpoint.shaderSrc)) { Log.LogWrite("  no shader source\n"); continue; };
+        if(__instance.DataManager.Exists(BattleTechResourceType.Prefab, customHardpoint.shaderSrc)) {
+          Log.LogWrite("  shader source "+ customHardpoint.shaderSrc + " not loaded\n");
+          __result = false; return;
+        }
+      }
     }
   }
 

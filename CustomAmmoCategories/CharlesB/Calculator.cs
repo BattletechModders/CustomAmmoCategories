@@ -1,6 +1,6 @@
 ﻿using BattleTech;
 using UnityEngine;
-
+/*
 namespace CharlesB
 {
     public static class Calculator
@@ -13,4 +13,4 @@ namespace CharlesB
             return Random.Range(0, mitigationMax);
         }
     }
-}
+}*/

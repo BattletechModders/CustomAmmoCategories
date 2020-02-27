@@ -9,6 +9,9 @@ using System.Reflection;
 using CustAmmoCategories;
 using UnityEngine;
 using CustomAmmoCategoriesLog;
+using CustAmmoCategoriesPatches;
+using CustomAmmoCategoriesPatches;
+
 namespace CustAmmoCategories {
   public static class TempAmmoCountHelper {
     private static Dictionary<Weapon, int> tempWeaponAmmoCount = new Dictionary<Weapon, int>();
@@ -112,8 +115,8 @@ namespace CustAmmoCategories {
         weapon.tInternalAmmo(weapon.tInternalAmmo() - ammoWhenFired);
         return weapon.AmmoToShoots(ammoWhenFired);
       } else {
+        modValue = ammoWhenFired - weapon.tInternalAmmo();
         weapon.tInternalAmmo(0);
-        modValue = ammoWhenFired - weapon.InternalAmmo;
       }
       for (int index = 0; index < weapon.ammoBoxes.Count; ++index) {
         if (modValue == 0) { break; }
@@ -133,8 +136,13 @@ namespace CustAmmoCategories {
     public static void RealDecrementAmmo(this Weapon weapon, int stackItemUID, int realShootsUsed) {
       Log.M.TWL(0,"RealDecrementAmmo:" + weapon.defId);
       int ammoWhenFired = weapon.ShootsToAmmo(realShootsUsed);
+      CustomAmmoCategory ammoCategory = weapon.CustomAmmoCategory();
+      if (ammoCategory.BaseCategory.Is_NotSet) { Log.M.WL(1, "not using ammo"); return; };
       ExtAmmunitionDef ammo = weapon.ammo();
-      if (ammo.AmmoCategory.BaseCategory.Is_NotSet) { Log.M.WL(1, "not using ammo"); return; };
+      if (ammo.AmmoCategory.Id != ammoCategory.Id) {
+        ammo = ammoCategory.defaultAmmo();
+      };
+      if(ammo.AmmoCategory.BaseCategory.Is_NotSet) { Log.M.WL(1, "very strange behavior this ammo category have no ammo definitions"); return; };
       if (weapon.parent != null) {
         Turret turret = weapon.parent as Turret;
         if (turret != null) {
@@ -145,12 +153,14 @@ namespace CustAmmoCategories {
       }
       int modValue = 0;
       if (weapon.InternalAmmo >= ammoWhenFired) {
-        weapon.StatCollection.ModifyStat<int>(weapon.uid, stackItemUID, "InternalAmmo", StatCollection.StatOperation.Int_Subtract, ammoWhenFired, -1, true);
+        weapon.DecInternalAmmo(stackItemUID, ammoWhenFired);
+        //weapon.StatCollection.ModifyStat<int>(weapon.uid, stackItemUID, "InternalAmmo", StatCollection.StatOperation.Int_Subtract, ammoWhenFired, -1, true);
         weapon.tInternalAmmo(weapon.InternalAmmo);
         Log.M.WL(1, "new internal ammo:"+ weapon.InternalAmmo);
         return;
       } else {
-        weapon.StatCollection.ModifyStat<int>(weapon.uid, stackItemUID, "InternalAmmo", StatCollection.StatOperation.Set, 0, -1, true);
+        weapon.ZeroInternalAmmo(stackItemUID);
+        //weapon.StatCollection.ModifyStat<int>(weapon.uid, stackItemUID, "InternalAmmo", StatCollection.StatOperation.Set, 0, -1, true);
         weapon.tInternalAmmo(0);
         modValue = ammoWhenFired - weapon.InternalAmmo;
       }

@@ -43,7 +43,7 @@ namespace CustAmmoCategories {
       Dictionary<string, int> spreadCounts = new Dictionary<string, int>();
       Vector3 shootPosition = advInfo.Sequence.chosenTarget.CurrentPosition;
       if (advInfo.Sequence.chosenTarget.GUID == advInfo.weapon.parent.GUID) {
-        TerrainHitInfo terrainPos = CustomAmmoCategories.getTerrinHitPosition(advInfo.Sequence.stackItemUID);
+        TerrainHitInfo terrainPos = CustomAmmoCategories.getTerrinHitPosition(advInfo.Sequence.chosenTarget.GUID);
         if (terrainPos != null) { shootPosition = terrainPos.pos; };
       }
       foreach (ICombatant combatant in combatants) {

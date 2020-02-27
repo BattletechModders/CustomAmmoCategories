@@ -40,8 +40,8 @@
     <Reference Include="Assembly-CSharp">
       <HintPath>..\..\BattleTech_Data\Managed\Assembly-CSharp.dll</HintPath>
     </Reference>
-    <Reference Include="NAudio">
-      <HintPath>..\..\Mods\CustomUnits\NAudio.dll</HintPath>
+    <Reference Include="CustomComponents">
+      <HintPath>..\..\Mods\CustomComponents\CustomComponents.dll</HintPath>
     </Reference>
     <Reference Include="Newtonsoft.Json, Version=6.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
@@ -98,6 +98,7 @@
     <Compile Include="MechResizer\TurretRepresentationPatch.cs" />
     <Compile Include="MechResizer\VehicleRepresentationPatch.cs" />
     <Compile Include="MechResizer\WeaponEffectPatch.cs" />
+    <Compile Include="MoveDistanceClamp.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="TerrainCost.cs" />
     <Compile Include="TerrainMaskPatch.cs" />

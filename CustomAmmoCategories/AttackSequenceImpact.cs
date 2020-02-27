@@ -322,11 +322,15 @@ namespace CustomAmmoCategoriesPatches {
             DynamicMapHelper.applyImpactBurn(weapon, impactMessage.hitInfo.hitPositions[impactMessage.hitIndex]);
             DynamicMapHelper.applyImpactTempMask(weapon, impactMessage.hitInfo.hitPositions[impactMessage.hitIndex]);
             DynamicMapHelper.applyCleanMinefield(weapon, impactMessage.hitInfo.hitPositions[impactMessage.hitIndex]);
+            weapon.CreateDifferedEffect(impactMessage.hitInfo.hitPositions[impactMessage.hitIndex]);
           } else
-          if (weapon.FireOnSuccessHit()&&(hitLocation != 0)) {
-            DynamicMapHelper.applyImpactBurn(weapon, target.CurrentPosition);
-            DynamicMapHelper.applyImpactTempMask(weapon, target.CurrentPosition);
-            DynamicMapHelper.applyCleanMinefield(weapon, target.CurrentPosition);
+          if (hitLocation != 0) {
+            if (weapon.FireOnSuccessHit()) { 
+              DynamicMapHelper.applyImpactBurn(weapon, target.CurrentPosition);
+              DynamicMapHelper.applyImpactTempMask(weapon, target.CurrentPosition);
+              DynamicMapHelper.applyCleanMinefield(weapon, target.CurrentPosition);
+            }
+            weapon.CreateDifferedEffect(target);
           }
           //DynamicTreesHelper.clearTrees();
         } else {

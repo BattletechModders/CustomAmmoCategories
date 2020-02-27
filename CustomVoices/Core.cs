@@ -1,18 +1,22 @@
 ﻿using BattleTech;
 using BattleTech.Data;
+using BattleTech.Portraits;
 using BattleTech.UI;
 using Harmony;
 using HBS;
 using HBS.Data;
+using Localize;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Reflection.Emit;
 using System.Text;
 using System.Threading.Tasks;
 using UnityEngine;
+using UnityEngine.Events;
 using Random = UnityEngine.Random;
 
 namespace CustomVoices {
@@ -23,13 +27,13 @@ namespace CustomVoices {
   public static class CombatHUDActionButton_ExecuteClick {
     private static GenericPopup popup = null;
     public static bool Prefix(CombatHUDActionButton __instance) {
-      Log.M.TWL(0,"CombatHUDActionButton.ExecuteClick '" + __instance.GUID + "'/'" + CombatHUD.ButtonID_Sprint + "' " + (__instance.GUID == CombatHUD.ButtonID_Sprint) + "\n");
+      Log.M.TWL(0, "CombatHUDActionButton.ExecuteClick '" + __instance.GUID + "'/'" + CombatHUD.ButtonID_Sprint + "' " + (__instance.GUID == CombatHUD.ButtonID_Sprint) + "\n");
       CombatHUD HUD = (CombatHUD)typeof(CombatHUDActionButton).GetProperty("HUD", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(__instance, null);
       if (__instance.GUID == CombatHUD.ButtonID_Sprint) {
-        Log.M.WL(1,"button is sprint");
+        Log.M.WL(1, "button is sprint");
         bool modifyers = (Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.RightControl));
         if (modifyers) {
-          Log.M.WL(1,"ctrl is pressed");
+          Log.M.WL(1, "ctrl is pressed");
           if (HUD.SelectedActor != null) {
             Log.M.WL(1, "actor is selected");
             if (HUD.SelectedActor is Mech) {
@@ -46,16 +50,16 @@ namespace CustomVoices {
               StringBuilder text = new StringBuilder();
               int curIndex = 0;
               int pageSize = 10;
-              for(int index = curIndex - curIndex % pageSize ; index < curIndex - curIndex % pageSize + pageSize; ++index) {
+              for (int index = curIndex - curIndex % pageSize; index < curIndex - curIndex % pageSize + pageSize; ++index) {
                 if (index >= dlgs.Count) { break; }
                 if (index == curIndex) { text.Append("->"); };
                 text.Append(dlgs[index].ToString());
-                if (voEvents.ContainsKey(dlgs[index])) { text.Append(" - "+ voEvents[dlgs[index]].ToString()); };
+                if (voEvents.ContainsKey(dlgs[index])) { text.Append(" - " + voEvents[dlgs[index]].ToString()); };
                 text.AppendLine();
               }
-              
+
               popup = GenericPopupBuilder.Create("audio pack", text.ToString())
-                .AddButton("X", (Action)(() => {  }), true)
+                .AddButton("X", (Action)(() => { }), true)
                 .AddButton("->", (Action)(() => {
                   if (curIndex < (dlgs.Count - 1)) {
                     ++curIndex;
@@ -69,7 +73,7 @@ namespace CustomVoices {
                     }
                     if (popup != null) popup.TextContent = text.ToString();
                   }
-                }),false)
+                }), false)
                 .AddButton("<-", (Action)(() => {
                   if (curIndex > 0) {
                     --curIndex;
@@ -83,11 +87,11 @@ namespace CustomVoices {
                     }
                     if (popup != null) popup.TextContent = text.ToString();
                   }
-                }), false).AddButton("P",(Action)(()=> {
+                }), false).AddButton("P", (Action)(() => {
                   if (voEvents.ContainsKey(dlgs[curIndex])) {
                     AudioEventManager.PlayPilotVO(voEvents[dlgs[curIndex]], HUD.SelectedActor, (AkCallbackManager.EventCallback)null, (object)null, true);
                   }
-                } ),false).IsNestedPopupWithBuiltInFader().SetAlwaysOnTop().Render();
+                }), false).IsNestedPopupWithBuiltInFader().SetAlwaysOnTop().Render();
             }
           }
           return false;
@@ -96,30 +100,160 @@ namespace CustomVoices {
       return true;
     }
   }
-  [HarmonyPatch(typeof(DataManager))]
-  [HarmonyPatch("GenderedOptionsListDefs")]
-  [HarmonyPatch(MethodType.Getter)]
+  [HarmonyPatch(typeof(SGBarracksMWCustomizationPopup))]
+  [HarmonyPatch("LoadTextSelectorOptions")]
+  [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { })]
-  public static class DataManager_GenderedOptionsListDefs {
-    private static bool voicesAdded = false;
-    public static bool Prefix(DataManager __instance, ref DictionaryStore<GenderedOptionsListDef> ___genderedOptionsListDefs) {
-      if (voicesAdded == false) {
-        Log.M.TWL(0, "DataManager.GenderedOptionsListDefs");
-        voicesAdded = true;
-        SimGameState simulation = LazySingletonBehavior<UnityGameInstance>.Instance.Game.Simulation;
-        GenderedOptionsListDef genderedOptionsListDef = ___genderedOptionsListDefs.Get(simulation.Constants.Pilot.PilotVoices);
-        foreach (var def in Core.extVoicePacks) {
-          genderedOptionsListDef.optionsList[def.Value.gender].Add(def.Value.name);
-        }
-        Log.M.WL(1, "gender voices:");
-        foreach (var glist in genderedOptionsListDef.optionsList) {
-          Log.M.WL(2, glist.Key + ":");
-          foreach (var gitm in glist.Value) {
-            Log.M.WL(3, gitm);
-          }
+  public static class SGBarracksMWCustomizationPopup_LoadTextSelectorOptions {
+    private static Action<SGBarracksMWCustomizationPopup> SGBarracksMWCustomizationPopup_LoadTextSelectorOptionsBase = null;
+    public static bool Prepare() {
+      var method = typeof(SGCharacterCreationPortraitCustomization).GetMethod("LoadTextSelectorOptions", BindingFlags.Instance | BindingFlags.NonPublic);
+      var dm = new DynamicMethod("CACLoadTextSelectorOptionsBase", null, new Type[] { typeof(SGBarracksMWCustomizationPopup) }, typeof(SGBarracksMWCustomizationPopup));
+      var gen = dm.GetILGenerator();
+      gen.Emit(OpCodes.Ldarg_0);
+      gen.Emit(OpCodes.Call, method);
+      gen.Emit(OpCodes.Ret);
+      SGBarracksMWCustomizationPopup_LoadTextSelectorOptionsBase = (Action<SGBarracksMWCustomizationPopup>)dm.CreateDelegate(typeof(Action<SGBarracksMWCustomizationPopup>));
+      return true;
+    }
+    public static bool Prefix(SGBarracksMWCustomizationPopup __instance, ref HorizontalScrollSelectorText ___voiceSelector, ref Dictionary<string, int> ___voiceIdMap) {
+      Log.M.TWL(0, "SGBarracksMWCustomizationPopup.LoadTextSelectorOptions");
+      SGBarracksMWCustomizationPopup_LoadTextSelectorOptionsBase.Invoke(__instance);
+      if (___voiceSelector.options.Count != 0) { return false; }
+      List<string> voicesNames = new List<string>();
+      List<string> voicesUINames = new List<string>();
+      foreach (var defVoice in Core.settings.defaultVoices) {
+        voicesNames.Add(defVoice.Key);
+        voicesUINames.Add(new Text(defVoice.Value).ToString());
+      }
+      foreach (var custVoice in Core.extVoicePacks) {
+        voicesNames.Add(custVoice.Key);
+        if (string.IsNullOrEmpty(custVoice.Value.uiname)) {
+          voicesUINames.Add(custVoice.Key);
+        } else {
+          voicesUINames.Add(new Text(custVoice.Value.uiname).ToString());
         }
       }
-      return true;
+      for (int index = 0; index < voicesNames.Count; ++index) {
+        ___voiceIdMap.Add(voicesNames[index], index);
+        Log.M.WL(1, voicesNames[index] + ":" + voicesUINames[index]);
+      }
+
+      ___voiceSelector.SetOptions(voicesUINames.ToArray());
+      return false;
+    }
+  }
+  [HarmonyPatch(typeof(SGCharacterCreationWidget))]
+  [HarmonyPatch("CreatePilot")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { })]
+  public static class SGCharacterCreationWidget_CreatePilot {
+    public static void Postfix(SGCharacterCreationWidget __instance, ref Pilot __result) {
+      if (__result == null) { return; }
+      string voice = SGCharacterCreationNamePanel_Awake.GetSelectedVoice();
+      if (string.IsNullOrEmpty(voice) == false) {
+        __result.pilotDef.SetVoice(SGCharacterCreationNamePanel_Awake.GetSelectedVoice());
+        Log.M.TWL(0, "SGCharacterCreationWidget.CreatePilot voice:"+voice);
+      }
+    }
+  }
+  [HarmonyPatch(typeof(SGBarracksMWDetailPanel))]
+  [HarmonyPatch("CustomizePilot")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { })]
+  public static class SGBarracksMWDetailPanel_CustomizePilot {
+    private class RenderedPortraitResultDelegate {
+      private SGBarracksDossierPanel dossier;
+      public RenderedPortraitResultDelegate(SGBarracksDossierPanel dossier) { this.dossier = dossier; }
+      public void UpdatePortrait(RenderedPortraitResult renderResult) {
+        Log.M.TWL(0, "SGBarracksDossierPanel.UpdatePortrait");
+        typeof(SGBarracksDossierPanel).GetMethod("UpdatePortrait", BindingFlags.Instance | BindingFlags.NonPublic).Invoke(this.dossier, new object[] { renderResult });
+      }
+    }
+    public static bool Prefix(SGBarracksMWDetailPanel __instance, Pilot ___curPilot, SGBarracksWidget ___barracks, SGBarracksDossierPanel ___dossier) {
+      SGBarracksMWCustomizationPopup popupModule = LazySingletonBehavior<UIManager>.Instance.GetOrCreatePopupModule<SGBarracksMWCustomizationPopup>("", true);
+      popupModule.LoadPilot(___curPilot, true);
+      popupModule.SetRenderedPortraitCallback(new Action<RenderedPortraitResult>(new RenderedPortraitResultDelegate(___dossier).UpdatePortrait));
+      popupModule.AddOnPooledAction((Action)(() => {
+        __instance.DisplayPilot(___curPilot);
+        ___barracks.Reset(___curPilot);
+      }));
+      return false;
+    }
+  }
+  [HarmonyPatch(typeof(SGCharacterCreationNamePanel))]
+  [HarmonyPatch("Awake")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { })]
+  public static class SGCharacterCreationNamePanel_Awake {
+    private static GameObject voiceSelectorObj = null;
+    public static Dictionary<int, string> voiceIdMap = new Dictionary<int, string>();
+    public static string GetSelectedVoice() {
+      if (voiceSelectorObj == null) { return string.Empty; }
+      HorizontalScrollSelectorText voiceSelector = voiceSelectorObj.GetComponent<HorizontalScrollSelectorText>();
+      if (voiceIdMap.TryGetValue(voiceSelector.selectionIdx, out string voice)) { return voice; };
+      return string.Empty;
+    }
+    public static void Postfix(SGCharacterCreationNamePanel __instance) {
+      Log.M.TWL(0, "SGCharacterCreationNamePanel.Awake");
+      if (__instance.pronounSelector != null) {
+        Log.M.WL(1, "pronounSelector is not null");
+        if (voiceSelectorObj != null) { GameObject.Destroy(voiceSelectorObj); voiceSelectorObj = null; };
+        voiceSelectorObj = GameObject.Instantiate(__instance.pronounSelector.gameObject, __instance.pronounSelector.gameObject.transform.parent);
+        voiceSelectorObj.transform.SetParent(__instance.pronounSelector.gameObject.transform.parent, false);
+        //voiceSelectorObj.transform.localPosition = __instance.pronounSelector.transform.localPosition;
+        voiceSelectorObj.transform.localRotation = __instance.pronounSelector.transform.localRotation;
+        voiceSelectorObj.layer = __instance.pronounSelector.gameObject.layer;
+        RectTransform rectTr = voiceSelectorObj.GetComponent<RectTransform>();
+        Transform bracket_btm_tr = __instance.pronounSelector.gameObject.transform.parent.transform.parent.transform.parent.Find("bracket-btm");
+        if(rectTr != null) {
+          Log.M.WL(1, "rect:" + rectTr.rect);
+          if (bracket_btm_tr != null) {
+            Log.M.WL(1, "bracket_btm_tr:" + bracket_btm_tr.localPosition);
+            bracket_btm_tr.localPosition += Vector3.down * rectTr.rect.height * 1.5f;
+          }
+        }
+        //Log.M.printComponents(__instance.pronounSelector.gameObject.transform.parent.transform.parent.gameObject, 2);
+        //voiceSelectorObj.transform.position += Vector3.down * Core.settings.voiceSelectorDownOffset;
+        //Vector3 curScale = __instance.pronounSelector.transform.parent.localScale;
+        //curScale.y *= 1.25f;
+        //curScale = __instance.firstName.transform.localScale; curScale.y *= 0.8f; __instance.firstName.transform.localScale = curScale;
+        //curScale = __instance.lastName.transform.localScale; curScale.y *= 0.8f; __instance.lastName.transform.localScale = curScale;
+        //curScale = __instance.callsign.transform.localScale; curScale.y *= 0.8f; __instance.callsign.transform.localScale = curScale;
+        //curScale = __instance.pronounSelector.transform.localScale; curScale.y *= 0.8f; __instance.pronounSelector.transform.localScale = curScale;
+        //curScale = voiceSelectorObj.transform.localScale; curScale.y *= 0.8f; voiceSelectorObj.transform.localScale = curScale;
+        voiceSelectorObj.SetActive(true);
+        List<string> voicesNames = new List<string>();
+        List<string> voicesUINames = new List<string>();
+        foreach (var defVoice in Core.settings.defaultVoices) {
+          voicesNames.Add(defVoice.Key);
+          voicesUINames.Add(new Text(defVoice.Value).ToString());
+        }
+        foreach (var custVoice in Core.extVoicePacks) {
+          voicesNames.Add(custVoice.Key);
+          if (string.IsNullOrEmpty(custVoice.Value.uiname)) {
+            voicesUINames.Add(custVoice.Key);
+          } else {
+            voicesUINames.Add(new Text(custVoice.Value.uiname).ToString());
+          }
+        }
+        voiceIdMap.Clear();
+        for (int index = 0; index < voicesNames.Count; ++index) {
+          Log.M.WL(1, voicesNames[index] + ":" + voicesUINames[index]);
+          voiceIdMap.Add(index, voicesNames[index]);
+        }
+        HorizontalScrollSelectorText voiceSelector = voiceSelectorObj.GetComponent<HorizontalScrollSelectorText>();
+        voiceSelector.headerTextUI.SetText(new Text(Core.settings.voiceSelectorName).ToString());
+        voiceSelector.AddOptions(voicesUINames.ToArray());
+        voiceSelector.onValueChanged += (UnityAction)(() => {
+          string voice = SGCharacterCreationNamePanel_Awake.GetSelectedVoice();
+          if (string.IsNullOrEmpty(voice) == false) {
+            SGBarracksDossierPanel.PlayVO(voice);
+          }
+        });
+      } else {
+        Log.M.WL(1, "pronounSelector is null");
+      }
     }
   }
   [HarmonyPatch(typeof(WwiseManager))]
@@ -194,6 +328,23 @@ namespace CustomVoices {
       SceneSingletonBehavior<WwiseManager>.Instance.voBanks.Add(def.name);
     }
   }
+  [HarmonyPatch(typeof(SGBarracksDossierPanel), "PlayPilotSelectionVO", new Type[] { typeof(Pilot) })]
+  public static class SGBarracksDossierPanel_PlayPilotSelectionVO_Patch {
+    static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) {
+      int startIndex = -1;
+      var codes = new List<CodeInstruction>(instructions);
+      for (int i = 0; i < codes.Count; i++) {
+        if (codes[i].opcode == OpCodes.Callvirt && (codes[i].operand as MethodInfo)?.Name == "get_IsPlayerCharacter") {
+          startIndex = i;
+          break;
+        }
+      }
+      if (startIndex > -1) {
+        codes.RemoveRange(startIndex - 1, 3);
+      }
+      return codes.AsEnumerable();
+    }
+  }
   [HarmonyPatch(typeof(SGBarracksDossierPanel))]
   [HarmonyPatch("PlayVO")]
   [HarmonyPatch(MethodType.Normal)]
@@ -243,7 +394,9 @@ namespace CustomVoices {
         }
         SGBarracksDossierPanel_PlayVO.lastVOWasLight(!SGBarracksDossierPanel_PlayVO.lastVOWasLight());
         string eventId = voicePack.getPhrase(WwiseManager.GlobalAudioObject.isDarkTheme(), AudioSwitch_dialog_lines_pilots.chosen);
-        if(string.IsNullOrEmpty(eventId) == false) { 
+        if (string.IsNullOrEmpty(eventId) == false) {
+          //AKRESULT res = AkSoundEngine.SetRTPCValue(254523064,100f);
+          //Log.M.WL(1, "SetRTPCValue result:" + res);
           ret = WwiseManager.PostEvent(eventId, WwiseManager.GlobalAudioObject, (AkCallbackManager.EventCallback)null, (object)null);
           Log.M.WL(1, "playing event:" + eventId + ":" + ret);
         } else {
@@ -309,9 +462,11 @@ namespace CustomVoices {
           WwiseManager.SetSwitch<AudioSwitch_dialog_dark_light>(AudioSwitch_dialog_dark_light.light, WwiseManager.GlobalAudioObject);
         }
         __instance.lastVOWasLight(!__instance.lastVOWasLight());
-        Log.M.WL(1, "lastVOWasLight:"+ __instance.lastVOWasLight());
+        Log.M.WL(1, "lastVOWasLight:" + __instance.lastVOWasLight());
         string eventId = voicePack.getPhrase(WwiseManager.GlobalAudioObject.isDarkTheme(), AudioSwitch_dialog_lines_pilots.chosen);
         if (string.IsNullOrEmpty(eventId) == false) {
+          //AKRESULT res = AkSoundEngine.SetRTPCValue(254523064, 100f);
+          //Log.M.WL(1, "SetRTPCValue result:" + res);
           ret = WwiseManager.PostEvent(eventId, WwiseManager.GlobalAudioObject, (AkCallbackManager.EventCallback)null, (object)null);
           Log.M.WL(1, "playing event:" + eventId + ":" + ret);
         } else {
@@ -346,7 +501,7 @@ namespace CustomVoices {
             Log.M.WL(1, "bank is loaded");
           }
         }
-        if(string.IsNullOrEmpty(voicePack.stop_event) == false) {
+        if (string.IsNullOrEmpty(voicePack.stop_event) == false) {
           uint ret = WwiseManager.PostEvent(voicePack.stop_event, audioObject, (AkCallbackManager.EventCallback)null, (object)null);
           Log.M.WL(1, "playing stop event:" + voicePack.stop_event + ":" + ret);
         }
@@ -359,7 +514,7 @@ namespace CustomVoices {
       for (int index = 0; index < team.unitCount; ++index) {
         AbstractActor unit = team.units[index];
         if (unit != actorToIgnore && (UnityEngine.Object)unit.GameRep != (UnityEngine.Object)null && (UnityEngine.Object)unit.GameRep.audioObject != (UnityEngine.Object)null) {
-          AudioEventManager_InterruptPilotVOForTeam.InterruptPilotVO(unit.GetPilot().pilotDef.Voice,unit.GameRep.audioObject);
+          AudioEventManager_InterruptPilotVOForTeam.InterruptPilotVO(unit.GetPilot().pilotDef.Voice, unit.GameRep.audioObject);
         }
       }
     }
@@ -401,6 +556,8 @@ namespace CustomVoices {
               int num = (int)WwiseManager.PostEvent<AudioEventList_vo>(AudioEventList_vo.vo_static_start_pilot, __instance.audioObject, (AkCallbackManager.EventCallback)null, (object)null);
             }
             AudioEventManager.InterruptPilotVOForTeam(__instance.pilot.ParentActor.team, (AbstractActor)null);
+            //AKRESULT res = AkSoundEngine.SetRTPCValue(254523064, 100f);
+            //Log.M.WL(1, "SetRTPCValue result:" + res);
             ret = WwiseManager.PostEvent(eventId, __instance.audioObject, callback != null ? callback : new AkCallbackManager.EventCallback(__instance.AudioCallback), in_cookie);
             Log.M.WL(1, "playing event:" + eventId + ":" + ret);
           } else {
@@ -440,7 +597,7 @@ namespace CustomVoices {
     public Dictionary<AudioSwitch_dialog_lines_pilots, List<string>> light_phrases { get; set; }
     public override string ToString() { return uiname; }
     public string getPhrase(bool darkMood, AudioSwitch_dialog_lines_pilots val) {
-      Log.M.TWL(0, "VoicePackDef.getPhrase mood:"+darkMood+" phrase:"+val);
+      Log.M.TWL(0, "VoicePackDef.getPhrase mood:" + darkMood + " phrase:" + val);
       Dictionary<AudioSwitch_dialog_lines_pilots, List<string>> phrases = darkMood ? dark_phrases : light_phrases;
       bool swithcMood = true;
       if (phrases.ContainsKey(val)) {
@@ -451,10 +608,10 @@ namespace CustomVoices {
       if (swithcMood) { darkMood = !darkMood; phrases = darkMood ? dark_phrases : light_phrases; };
       Log.M.WL(1, "resulting mood:" + darkMood);
       int watchdog = 0;
-      if (phrases.ContainsKey(val) == false) { Log.M.WL(1,"can't find"); return string.Empty; }
+      if (phrases.ContainsKey(val) == false) { Log.M.WL(1, "can't find"); return string.Empty; }
       do {
-        int roll = Random.Range(0,phrases[val].Count);
-        Log.M.WL(1, "roll:" + roll+"/"+ phrases[val].Count);
+        int roll = Random.Range(0, phrases[val].Count);
+        Log.M.WL(1, "roll:" + roll + "/" + phrases[val].Count);
         if (roll < phrases[val].Count) {
           if (string.IsNullOrEmpty(phrases[val][roll]) == false) { return phrases[val][roll]; };
         }
@@ -472,7 +629,10 @@ namespace CustomVoices {
   }
   public class Settings {
     public bool debugLog { get; set; }
-    public Settings() { debugLog = false; }
+    public string voiceSelectorName { get; set; }
+    public float voiceSelectorDownOffset { get; set; }
+    public Dictionary<string, string> defaultVoices { get; set; }
+    public Settings() { debugLog = false; defaultVoices = new Dictionary<string, string>(); voiceSelectorName = "voice"; voiceSelectorDownOffset = 60f; }
   }
   public static class Core {
     public static Dictionary<string, VoicePackDef> extVoicePacks = new Dictionary<string, VoicePackDef>();
@@ -516,8 +676,17 @@ namespace CustomVoices {
         MethodInfo miPlayPilotVO = bPlayPilotVO.MakeGenericMethod(new Type[] { typeof(AudioSwitch_dialog_lines_pilots) });
         MethodInfo pPlayPilotVO = typeof(PlayPilotVOPatch).GetMethod("Prefix");
         harmony.Patch(miPlayPilotVO, new HarmonyMethod(pPlayPilotVO));
+        HBS.SceneSingletonBehavior<WwiseManager>.Instance.LoadBank((AudioBankList)Enum.Parse(typeof(AudioBankList), "vo_f_kamea", true));
+        HBS.SceneSingletonBehavior<WwiseManager>.Instance.LoadBank((AudioBankList)Enum.Parse(typeof(AudioBankList), "vo_m_raju", true));
+        HBS.SceneSingletonBehavior<WwiseManager>.Instance.voBanks.Add("vo_f_kamea");
+        HBS.SceneSingletonBehavior<WwiseManager>.Instance.voBanks.Add("vo_m_raju");
+        List<string> PERSISTENT_BANK_IDS = new List<string>();
+        PERSISTENT_BANK_IDS.AddRange(WwiseDefinitions.PERSISTENT_BANK_IDS);
+        PERSISTENT_BANK_IDS.Add("vo_f_kamea");
+        PERSISTENT_BANK_IDS.Add("vo_m_raju");
+        typeof(WwiseDefinitions).GetField("PERSISTENT_BANK_IDS", BindingFlags.Static | BindingFlags.Public).SetValue(null,PERSISTENT_BANK_IDS.ToArray());
       } catch (Exception e) {
-        Log.LogWrite(e.ToString() + "\n");
+        Log.LogWrite(e.ToString(),true);
       }
     }
   }

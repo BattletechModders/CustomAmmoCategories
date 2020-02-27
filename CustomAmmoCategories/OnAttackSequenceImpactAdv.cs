@@ -2,11 +2,66 @@
 using BattleTech.AttackDirectorHelpers;
 using CustomAmmoCategoriesLog;
 using CustomAmmoCategoriesPatches;
+using Harmony;
 using Localize;
+using System;
+using System.Collections.Generic;
 using System.Reflection;
+using System.Reflection.Emit;
 using UnityEngine;
 
+namespace CustomAmmoCategoriesPatches {
+  /*[HarmonyPatch(typeof(MessageCoordinator))]
+  [HarmonyPatch("CanProcessMessage")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { typeof(AttackSequenceImpactMessage) })]
+  public static class MessageCoordinator_CanProcessMessage {
+    private delegate bool IsImpactMessageAHitDelegate(MessageCoordinator coordinator, AttackSequenceImpactMessage message);
+    private static IsImpactMessageAHitDelegate IsImpactMessageAHitIvoker = null;
+    private delegate bool MessageMatchesNextExpectedMesssageDelegate(MessageCoordinator coordinator, AttackSequenceImpactMessage message);
+    private static IsImpactMessageAHitDelegate MessageMatchesNextExpectedMesssageIvoker = null;
+    private static FieldInfo expectedMessages
+    public static bool Prepare() {
+      {
+        MethodInfo IsImpactMessageAHit = typeof(MessageCoordinator).GetMethod("IsImpactMessageAHit", BindingFlags.Instance | BindingFlags.NonPublic);
+        var dm = new DynamicMethod("CACIsImpactMessageAHit", typeof(bool), new Type[] { typeof(MessageCoordinator), typeof(AttackSequenceImpactMessage) }, typeof(MessageCoordinator));
+        var gen = dm.GetILGenerator();
+        gen.Emit(OpCodes.Ldarg_0);
+        gen.Emit(OpCodes.Ldarg_1);
+        gen.Emit(OpCodes.Call, IsImpactMessageAHit);
+        gen.Emit(OpCodes.Ret);
+        IsImpactMessageAHitIvoker = (IsImpactMessageAHitDelegate)dm.CreateDelegate(typeof(IsImpactMessageAHitDelegate));
+      }
+      return true;
+    }
+    public static bool IsImpactMessageAHit(this MessageCoordinator coordinator, AttackSequenceImpactMessage message) {
+      return IsImpactMessageAHitIvoker(coordinator, message);
+    }
+    public static bool 
+    public static bool Prefix(MessageCoordinator __instance, AttackSequenceImpactMessage impactMessage, List<ExpectedMessage> ___expectedMessages, int ___expectedMessageIndex, ref bool __result) {
+      if (!__instance.IsImpactMessageAHit(impactMessage)) {
+        if (MessageCoordinator.logger.IsDebugEnabled)
+          MessageCoordinator.logger.LogDebug((object)string.Format("{0} is a miss. trigger it now", (object)__instance.MessageToString((MessageCenterMessage)impactMessage)));
+        return true;
+      }
+      bool flag = __instance.MessageMatchesNextExpectedMesssage((MessageCenterMessage)impactMessage);
+      if (MessageCoordinator.logger.IsDebugEnabled) {
+        if (flag)
+          MessageCoordinator.logger.LogDebug((object)string.Format("Message {0} matches next message. trigger it now.", (object)__instance.MessageToString((MessageCenterMessage)impactMessage)));
+        else
+          MessageCoordinator.logger.LogDebug((object)string.Format("Message {0} must be stored.", (object)__instance.MessageToString((MessageCenterMessage)impactMessage)));
+      }
+      if (flag)
+        __instance.GetNextExpectedMessage().ClearForProcessing();
+      return flag;
+
+    }
+  }*/
+
+}
+
 namespace CustAmmoCategories {
+  public enum ShowMissBehavior { None,Vanilla,Default,All }
   public static class OnAttackSeuenceImpactHelper {
     public static MessageCoordinator messageCoordinator(this AttackDirector.AttackSequence sequence) {
       return (MessageCoordinator)typeof(AttackDirector.AttackSequence).GetField("messageCoordinator", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(sequence);
@@ -20,7 +75,7 @@ namespace CustAmmoCategories {
       //int attackWeaponIndex = impactMessage.hitInfo.attackWeaponIndex;
       int hitIndex = impactMessage.hitIndex;
       Weapon weapon = advRec.parent.weapon;
-      Log.LogWrite("OnAttackSequenceImpactAdv:" + weapon.defId + " " + hitIndex + " trg:" + advRec.target.DisplayName + ":" + advRec.target.GUID + ":" + advRec.hitLocation + "\n");
+      Log.LogWrite("OnAttackSequenceImpactAdv:" + weapon.defId + " "+impactMessage.hitInfo.attackSequenceId+" hi/wi/gi:" + hitIndex + "/"+impactMessage.hitInfo.attackWeaponIndex+"/"+impactMessage.hitInfo.attackGroupIndex+" trg:" + new Text(advRec.target.DisplayName).ToString() + ":" + advRec.hitLocation + " impact:"+impactMessage.hasPlayedImpact+"\n");
       //int num1 = impactMessage.hitInfo.ShotHitLocation(hitIndex);
       Vector3 hitPosition = impactMessage.hitInfo.hitPositions[hitIndex];
       //float hitDamage = impactMessage.hitDamage;
@@ -50,7 +105,7 @@ namespace CustAmmoCategories {
         damage = 0.0f;
       }
       float apdmg = advRec.APDamage * (damage / advRec.Damage);
-      bool canPorcessMessage = sequence.messageCoordinator().CanProcessMessage(impactMessage);
+      bool canProcessMessage = sequence.messageCoordinator().CanProcessMessage(impactMessage);
       //bool flag3 = impactMessage.hitInfo.DidShotHitChosenTarget(hitIndex);
       float locArmor = 0f;
       float doggleRoll = impactMessage.hitInfo.dodgeRolls[impactMessage.hitIndex];
@@ -89,27 +144,32 @@ namespace CustAmmoCategories {
             }
           } else {
             Vector3 missMsgPos = advRec.target.CurrentPosition + UnityEngine.Random.insideUnitSphere * 5f;
-            TerrainHitInfo terrainPos = CustomAmmoCategories.getTerrinHitPosition(impactMessage.hitInfo.stackItemUID);
+            TerrainHitInfo terrainPos = null;
+            if (impactMessage.hitInfo.targetId == impactMessage.hitInfo.attackerId) {
+              terrainPos = CustomAmmoCategories.getTerrinHitPosition(impactMessage.hitInfo.attackerId);
+            }
             if (terrainPos != null) { missMsgPos = terrainPos.pos + UnityEngine.Random.insideUnitSphere * 5f; };
             if (impactMessage.hitInfo.dodgeSuccesses[hitIndex]) {
               Log.LogWrite(" dodgeSuccesses\n");
               advRec.target.GameRep.PlayImpactAnim(impactMessage.hitInfo, hitIndex, weapon, sequence.meleeAttackType, advRec.parent.resolve(advRec.target).cumulativeDamage);
-              sequence.Director.Combat.MessageCenter.PublishMessage((MessageCenterMessage)new FloatieMessage(impactMessage.hitInfo.attackerId, advRec.target.GUID, new Text("__/CAC.EVADE/__", new object[0]), sequence.Director.Combat.Constants.CombatUIConstants.floatieSizeMedium, FloatieMessage.MessageNature.ArmorDamage, missMsgPos.x, missMsgPos.y, missMsgPos.z));
+              sequence.Director.Combat.MessageCenter.PublishMessage((MessageCenterMessage)new FloatieMessage(impactMessage.hitInfo.attackerId, advRec.target.GUID, new Text("__/CAC.EVADE/__", new object[0]), sequence.Director.Combat.Constants.CombatUIConstants.floatieSizeMedium, FloatieMessage.MessageNature.MeleeMiss, missMsgPos.x, missMsgPos.y, missMsgPos.z));
             } else if (sequence.meleeAttackType != MeleeAttackType.NotSet) {
               Log.LogWrite(" melee\n");
               advRec.target.GameRep.PlayImpactAnim(impactMessage.hitInfo, hitIndex, weapon, sequence.meleeAttackType, advRec.parent.resolve(advRec.target).cumulativeDamage);
-              sequence.Director.Combat.MessageCenter.PublishMessage((MessageCenterMessage)new FloatieMessage(impactMessage.hitInfo.attackerId, advRec.target.GUID, new Text("__/CAC.MISS/__", new object[1] { (hitRoll - advRec.parent.hitChance) * 100f }), sequence.Director.Combat.Constants.CombatUIConstants.floatieSizeMedium, FloatieMessage.MessageNature.ArmorDamage, missMsgPos.x, missMsgPos.y, missMsgPos.z));
+              sequence.Director.Combat.MessageCenter.PublishMessage((MessageCenterMessage)new FloatieMessage(impactMessage.hitInfo.attackerId, advRec.target.GUID, new Text("__/CAC.MISS/__", new object[1] { (hitRoll - advRec.parent.hitChance) * 100f }), sequence.Director.Combat.Constants.CombatUIConstants.floatieSizeMedium, FloatieMessage.MessageNature.MeleeMiss, missMsgPos.x, missMsgPos.y, missMsgPos.z));
             } else {
+              FloatieMessage.MessageNature nature = weapon.ShotsWhenFired <= 1 ? FloatieMessage.MessageNature.MeleeMiss : FloatieMessage.MessageNature.Miss;
+              Text text = null;
               if (advRec.interceptInfo.Intercepted) {
                 missMsgPos = advRec.hitPosition;
-                Text text = new Text("__/CAC.INTERCEPTED/__");
-                Log.LogWrite(" normal '" + text.ToString() + "': " + impactMessage.hitInfo.attackerId + " " + new Text(advRec.target.DisplayName).ToString() + ":" + advRec.target.GUID + " pos:" + missMsgPos + " " + advRec.target.CurrentPosition + "\n");
-                sequence.Director.Combat.MessageCenter.PublishMessage((MessageCenterMessage)new FloatieMessage(impactMessage.hitInfo.attackerId, advRec.target.GUID, text, sequence.Director.Combat.Constants.CombatUIConstants.floatieSizeLarge, FloatieMessage.MessageNature.ArmorDamage, missMsgPos.x, missMsgPos.y, missMsgPos.z));
+                text = new Text("__/CAC.INTERCEPTED/__");
               } else {
-                //FloatieMessage.MessageNature nature = weapon.ShotsWhenFired <= 1 ? FloatieMessage.MessageNature.MeleeMiss : FloatieMessage.MessageNature.Miss;
-                Text text = new Text("__/CAC.MISS/__", new object[1] { (hitRoll - advRec.parent.hitChance) * 100f });
+                text = new Text("__/CAC.MISS/__", new object[1] { (hitRoll - advRec.parent.hitChance) * 100f });
+              }
+              if (CustomAmmoCategories.Settings.showMissBehavior == ShowMissBehavior.All) { nature = FloatieMessage.MessageNature.ArmorDamage; };
+              if (CustomAmmoCategories.Settings.showMissBehavior != ShowMissBehavior.None) {
                 Log.LogWrite(" normal '" + text.ToString() + "': " + impactMessage.hitInfo.attackerId + " " + new Text(advRec.target.DisplayName).ToString() + ":" + advRec.target.GUID + " pos:" + missMsgPos + " " + advRec.target.CurrentPosition + "\n");
-                sequence.Director.Combat.MessageCenter.PublishMessage((MessageCenterMessage)new FloatieMessage(impactMessage.hitInfo.attackerId, advRec.target.GUID, text, sequence.Director.Combat.Constants.CombatUIConstants.floatieSizeLarge, FloatieMessage.MessageNature.ArmorDamage, missMsgPos.x, missMsgPos.y, missMsgPos.z));
+                sequence.Director.Combat.MessageCenter.PublishMessage((MessageCenterMessage)new FloatieMessage(impactMessage.hitInfo.attackerId, advRec.target.GUID, text, sequence.Director.Combat.Constants.CombatUIConstants.floatieSizeLarge, nature, missMsgPos.x, missMsgPos.y, missMsgPos.z));
               }
             }
           }
@@ -117,7 +177,8 @@ namespace CustAmmoCategories {
         if (weapon.Type != WeaponType.Laser && weapon.Type != WeaponType.Flamer)
           CameraControl.Instance.AddCameraShake(damage * sequence.Director.Combat.Constants.CombatUIConstants.ScreenShakeRangedDamageRelativeMod + sequence.Director.Combat.Constants.CombatUIConstants.ScreenShakeRangedDamageAbsoluteMod, 1f, hitPosition);
       }
-      if (!canPorcessMessage) {
+      if (!canProcessMessage) {
+        Log.M.WL(1, "Can not process message!");
         sequence.messageCoordinator().StoreMessage((MessageCenterMessage)impactMessage);
       } else {
         if (advRec.isHit) {
