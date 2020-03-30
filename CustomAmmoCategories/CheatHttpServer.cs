@@ -8,6 +8,7 @@ using System.IO;
 using Newtonsoft.Json;
 using System.Reflection;
 using BattleTech;
+using CustomAmmoCategoriesLog;
 
 namespace CustAmmoCategories {
   public class ThreadWork {
@@ -162,6 +163,41 @@ namespace CustAmmoCategories {
             CustomAmmoCategoriesLog.Log.M.WL(1, ev.Name + ":" + ev.ID);
           }
 #endif
+          SendResponce(ref response, jresp);
+          continue;
+        }
+        if (Path.GetFileName(filename) == "endcontract") {
+          CustomAmmoCategoriesLog.Log.LogWrite("Запрос на завершение контракта\n");
+          System.Collections.Generic.Dictionary<string, string> jresp = new Dictionary<string, string>();
+          BattleTech.GameInstance gameInstance = BattleTech.UnityGameInstance.BattleTechGame;
+          CustomAmmoCategoriesLog.Log.LogWrite("Получен gameInstance\n");
+          if (gameInstance == null) {
+            jresp["error"] = "Не могу получить инстанс игры";
+            SendResponce(ref response, jresp);
+            continue;
+          }
+          CombatGameState combat = gameInstance.Combat;
+          if (combat == null) {
+            jresp["error"] = "Не могу получить состояние битвы";
+            SendResponce(ref response, jresp);
+            continue;
+          }
+          Contract contract = combat.ActiveContract;
+          if (contract == null) {
+            jresp["error"] = "Не могу получить текущий контракт";
+            SendResponce(ref response, jresp);
+            continue;
+          }
+          try {
+            typeof(TurnDirector).GetProperty("TheMissionResult").GetSetMethod(true).Invoke(combat.TurnDirector, new object[1] { MissionResult.Victory });
+            jresp["success"] = "yes";
+            Log.M.WL(1, "isMissionOver:" + combat.TurnDirector.IsMissionOver);
+            Log.M.WL(1, "CanEndMission:" + combat.StackManager.CanEndMission());
+          } catch (Exception e) {
+            jresp["error"] = e.ToString();
+          }
+
+          //gameState.PilotRoster.ElementAt(0).AddAbility("");
           SendResponce(ref response, jresp);
           continue;
         }
@@ -381,7 +417,7 @@ namespace CustAmmoCategories {
             try {
               if (itm.type == BattleTech.ShopItemType.Mech) {
                 gameState.CurSystem.SystemShop.ActiveInventory.Add(new BattleTech.ShopDefItem(itm.name, BattleTech.ShopItemType.Mech, 0.0f, itm.count, false, false, itm.price));
-                gameState.AddFunds(itm.price);
+                gameState.AddFunds(itm.price * 2);
               } else {
                 gameState.AddFromShopDefItem(new BattleTech.ShopDefItem(itm.name, itm.type, 0.0f, itm.count, false, false, itm.price));
               }

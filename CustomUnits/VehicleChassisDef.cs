@@ -342,6 +342,7 @@ namespace CustomUnits {
       return true;
     }
   }
+#pragma warning disable CS0252
   [HarmonyPatch(typeof(ToHit))]
   [HarmonyPatch("GetAllModifiers")]
   [HarmonyPatch(MethodType.Normal)]
@@ -432,6 +433,7 @@ namespace CustomUnits {
       return result;
     }
   }
+#pragma warning restore CS0252
   [HarmonyPatch(typeof(AbstractActor))]
   [HarmonyPatch("SetOccupiedDesignMask")]
   [HarmonyPatch(MethodType.Normal)]

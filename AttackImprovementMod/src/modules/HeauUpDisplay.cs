@@ -201,12 +201,13 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
             shownColor = colour.Value;
       }
 
-      // ============ Terrain ============
+    // ============ Terrain ============
 
-      private static PropertyInfo SidePanelProp, StatusPreviewProp;
+    //private static PropertyInfo SidePanelProp = null;
+    private static PropertyInfo StatusPreviewProp = null;
       private static MethodInfo UpdateStatusMethod;
 
-      public static void AppendDangerousTerrainText ( MoveStatusPreview __instance, AbstractActor actor, Vector3 worldPos ) { try {
+      /*public static void AppendDangerousTerrainText ( MoveStatusPreview __instance, AbstractActor actor, Vector3 worldPos ) { try {
          MapTerrainDataCell cell = Combat.EncounterLayerData.GetCellAt( worldPos ).relatedTerrainCell;
          bool isLandingZone = SplatMapInfo.IsDropshipLandingZone( cell.terrainMask ),
               isDangerous = SplatMapInfo.IsDangerousLocation( cell.terrainMask );
@@ -225,7 +226,7 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
          }
          CombatHUDInfoSidePanel sidePanel = (CombatHUDInfoSidePanel) SidePanelProp?.GetValue( __instance, null );
          sidePanel?.ForceShowSingleFrame( new Text( title ), new Text( text ), null, false );
-      }                 catch ( Exception ex ) { Error( ex ); } }
+      }                 catch ( Exception ex ) { Error( ex ); } }*/
 
       public static void ShowMeleeTerrainText ( CombatMovementReticle __instance, AbstractActor actor, bool isMelee ) {
          if ( isMelee ) ShowTerrainText( __instance, actor, "Melee" );

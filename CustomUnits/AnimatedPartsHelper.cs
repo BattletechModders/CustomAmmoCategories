@@ -30,6 +30,8 @@ namespace CustomUnits {
   public static class LoadRequest_CompleteLoadTracker {
     public static void Postfix(LoadRequest __instance, object tracker, bool loadSuccess) {
       Log.LogWrite("LoadRequest.CompleteLoadTracker tracker: " + tracker + " loadSuccess " + loadSuccess + "\n");
+      VersionManifestEntry manifest = (VersionManifestEntry)tracker.GetType().GetField("resourceManifestEntry").GetValue(tracker);
+      Log.WL(1, manifest.Type+":"+manifest.FilePath);
     }
   }
   [HarmonyPatch(typeof(AttackDirector))]

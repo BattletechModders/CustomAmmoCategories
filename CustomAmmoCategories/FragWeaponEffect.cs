@@ -11,36 +11,13 @@ using UnityEngine;
 using Random = UnityEngine.Random;
 
 namespace CustAmmoCategories {
+
   public class FragWeaponEffect : WeaponEffect {
     private static FieldInfo fi_hasSentNextWeaponMessage = null;
     public WeaponEffect parentWeaponEffect;
     public GameObject startingTransformObject;
     public FragWeaponEffect() {
       startingTransformObject = null;
-    }
-    public static Vector3 getMissPosition(GameRepresentation targetRep) {
-      TurretRepresentation tRep = targetRep as TurretRepresentation;
-      MechRepresentation mRep = targetRep as MechRepresentation;
-      VehicleRepresentation vRep = targetRep as VehicleRepresentation;
-      Vector3 position = targetRep.thisTransform.position;
-      float radius = 1f;
-      if (mRep != null) {
-        position = mRep.vfxCenterTorsoTransform.position;
-        position.y = mRep.vfxCenterTorsoTransform.position.y;
-        radius = mRep.parentMech.MechDef.Chassis.Radius * UnityEngine.Random.Range(mRep.Constants.ResolutionConstants.MissOffsetHorizontalMin, mRep.Constants.ResolutionConstants.MissOffsetHorizontalMax);
-      } else
-      if (tRep != null) {
-        position = tRep.TurretLOS.position;
-        radius = Random.Range(5f, 15f);
-      } else
-      if (vRep != null) {
-        position = vRep.TurretLOS.position;
-        radius = Random.Range(5f, 15f);
-      }
-      Vector2 vector2 = Random.insideUnitCircle.normalized * radius;
-      position.x += vector2.x;
-      position.z += vector2.y;
-      return position;
     }
     public void Init(WeaponEffect original) {
       this.impactVFXBase = original.impactVFXBase;

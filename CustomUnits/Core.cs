@@ -100,6 +100,7 @@ namespace CustomUnits{
     public float deepWaterSteepness { get; set; }
     public float deepWaterDepth { get; set; }
     public float waterFlatDepth { get; set; }
+    public List<string> LancesIcons { get; set; }
     public CUSettings() {
       debugLog = false;
       DeathHeight = 1f;
@@ -108,6 +109,7 @@ namespace CustomUnits{
       deepWaterSteepness = 41f;
       deepWaterDepth = 10f;
       waterFlatDepth = 2f;
+      LancesIcons = new List<string>();
     }
   }
   public static partial class Core{

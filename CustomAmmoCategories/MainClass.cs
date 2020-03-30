@@ -1390,7 +1390,7 @@ namespace CustAmmoCategories {
       AmmoCookoff = new AmmoCookoffSettings();
       DontShowBurnedTreesTemporary = false;
       //WaterHeightFix = true;
-      //TerrainFiendlyFireRadius = 10f;
+      TerrainFiendlyFireRadius = 10f;
       AdvancedCirtProcessing = true;
       DestroyedComponentsCritTrap = true;
       CritLocationTransfer = true;

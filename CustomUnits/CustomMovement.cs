@@ -32,11 +32,11 @@ namespace CustomUnits {
     }
     public static void Postfix(ActorMovementSequence __instance, Vector3 delta) {
       return;
-      if (customQuadAnimation.ContainsKey(__instance.owningActor)) {
+      /*if (customQuadAnimation.ContainsKey(__instance.owningActor)) {
         Vector3 velocity = __instance.Velocity;
         velocity *= customQuadAnimation[__instance.owningActor].Velocity();
         __instance.Velocity(velocity);
-      }
+      }*/
     }
   }
 

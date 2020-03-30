@@ -52,16 +52,16 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
 
     public override void CombatStartsOnce() {
       if (Settings.ShowNumericInfo) {
-        Patch(typeof(CombatHUDActorDetailsDisplay), "RefreshInfo", null, "ShowNumericInfo");
-        Patch(typeof(CombatHUDActorInfo), "RefreshAllInfo", "RecordTarget", "ShowBuildingInfo");
-        Patch(typeof(CombatHUDActorInfo), "RefreshPredictedHeatInfo", null, "RecordRefresh");
-        Patch(typeof(CombatHUDActorInfo), "RefreshPredictedStabilityInfo", null, "RecordRefresh");
+        //Patch(typeof(CombatHUDActorDetailsDisplay), "RefreshInfo", null, "ShowNumericInfo");
+        //Patch(typeof(CombatHUDActorInfo), "RefreshAllInfo", "RecordTarget", "ShowBuildingInfo");
+        //Patch(typeof(CombatHUDActorInfo), "RefreshPredictedHeatInfo", null, "RecordRefresh");
+        //Patch(typeof(CombatHUDActorInfo), "RefreshPredictedStabilityInfo", null, "RecordRefresh");
         // Force heat/stab number refresh
-        Patch(typeof(CombatHUDMechTray), "Update", null, "RefreshActorInfo");
+        //Patch(typeof(CombatHUDMechTray), "Update", null, "RefreshActorInfo");
         // Force move/distance number refresh
-        Patch(typeof(SelectionStateMove), "ProcessMousePos", null, "RefreshMoveAndDist");
-        Patch(typeof(SelectionStateJump), "ProcessMousePos", null, "RefreshMoveAndDist");
-        HeauUpDisplay.HookCalloutToggle(RefreshTargetInfo);
+        //Patch(typeof(SelectionStateMove), "ProcessMousePos", null, "RefreshMoveAndDist");
+        //Patch(typeof(SelectionStateJump), "ProcessMousePos", null, "RefreshMoveAndDist");
+        //HeauUpDisplay.HookCalloutToggle(RefreshTargetInfo);
       }
       if (Settings.FixHeatPreview)
         Patch(typeof(Mech), "get_AdjustedHeatsinkCapacity", null, "CorrectProjectedHeat");
@@ -86,7 +86,7 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
     }
 
     public override void CombatStarts() {
-      if (Settings.ShowNumericInfo) {
+      /*if (Settings.ShowNumericInfo) {
         TargetDisplay = HUD?.TargetingComputer.ActorInfo.DetailsDisplay;
         // Enlarge target text background
         TargetDisplay.transform.transform.Translate(34, Settings.ShowNumericInfoOffsetY, 0);
@@ -97,7 +97,7 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
                                                                   //LogGuiTree( HUD?.TargetingComputer.ActorInfo );
                                                                   // Shift selected actor info
         HUD?.MechTray.ActorInfo.DetailsDisplay.transform.transform.Translate(0, -15, 0);
-      }
+      }*/
     }
 
     public override void CombatEnds() {
@@ -252,7 +252,7 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
 
     // ============ Numeric Info ============
 
-    private static CombatHUDActorDetailsDisplay TargetDisplay;
+    private static CombatHUDActorDetailsDisplay TargetDisplay = null;
     private static ICombatant ActorInfoTarget;
 
     public static void RecordTarget(CombatHUDActorInfo __instance, ICombatant ___displayedCombatant) { ActorInfoTarget = ___displayedCombatant; }
@@ -265,7 +265,7 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
 
     public static void ShowNumericInfo(CombatHUDActorDetailsDisplay __instance) {
       try {
-        ICombatant target = __instance.DisplayedActor ?? ActorInfoTarget;
+        /*ICombatant target = __instance.DisplayedActor ?? ActorInfoTarget;
         if (target == null) return;
         string prefix = null, numbers = null, postfix = null;
 
@@ -299,9 +299,9 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
         }
         text.Append("</b></size>");
 
-        __instance.ActorWeightText.text = text.ToString();
+        //__instance.ActorWeightText.text = text.ToString();
 
-        __instance.JumpJetsHolder.SetActive(false);
+        __instance.JumpJetsHolder.SetActive(false);*/
       } catch (Exception ex) { Error(ex); }
     }
 

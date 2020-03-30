@@ -9,6 +9,7 @@ using CustAmmoCategories;
 using System.Reflection.Emit;
 
 namespace CustomUnits {
+#pragma warning disable CS0252
   public static class WeightedFactorHelper {
     public static List<Type> FindAllDerivedTypes<T>() {
       return FindAllDerivedTypes<T>(Assembly.GetAssembly(typeof(T)));
@@ -90,4 +91,5 @@ namespace CustomUnits {
       //harmony.Patch()
     }
   }
+#pragma warning restore CS0252
 }

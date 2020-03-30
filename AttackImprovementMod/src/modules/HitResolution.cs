@@ -225,7 +225,7 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
          return locationOrder;
       }
 
-      private static List<ChassisLocations> nonCenter;
+      private static List<ChassisLocations> nonCenter = null;
 
       private static Dictionary<ChassisLocations, int> SortAmmoBoxByRisk ( Mech mech, List<AmmunitionBox> boxes, Dictionary<ChassisLocations, int> locationOrder ) {
          if ( boxes.Count <= 1 ) return locationOrder;

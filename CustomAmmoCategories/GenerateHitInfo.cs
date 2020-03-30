@@ -9,6 +9,8 @@ using System.Reflection;
 using CustAmmoCategories;
 using UnityEngine;
 using CustomAmmoCategoriesLog;
+using Localize;
+using System.Reflection.Emit;
 
 namespace CustAmmoCategories {
   public static partial class CustomAmmoCategories {
@@ -111,6 +113,59 @@ namespace CustomAmmoCategoriesPatches {
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { typeof(Weapon), typeof(int), typeof(int), typeof(int), typeof(bool), typeof(float) })]
   public static class AttackSequence_GenerateHitInfo {
+    private delegate float GetCorrectedRollDelegate(AttackDirector.AttackSequence seq, float roll, Team team);
+    private static GetCorrectedRollDelegate GetCorrectedRollInvoke = null;
+    public static bool Prepare() {
+      MethodInfo GetCorrectedRoll = typeof(AttackDirector.AttackSequence).GetMethod("GetCorrectedRoll", BindingFlags.NonPublic | BindingFlags.Instance);
+      if (GetCorrectedRoll == null) {
+        Log.LogWrite("Can't find AttackDirector.AttackSequence.GetCorrectedRoll\n");
+        return false;
+      }
+      var dm = new DynamicMethod("CACGetCorrectedRoll", typeof(float), new Type[] { typeof(AttackDirector.AttackSequence), typeof(float), typeof(Team) }, typeof(AttackDirector.AttackSequence));
+      var gen = dm.GetILGenerator();
+      gen.Emit(OpCodes.Ldarg_0);
+      gen.Emit(OpCodes.Ldarg_1);
+      gen.Emit(OpCodes.Ldarg_2);
+      gen.Emit(OpCodes.Call, GetCorrectedRoll);
+      gen.Emit(OpCodes.Ret);
+      GetCorrectedRollInvoke = (GetCorrectedRollDelegate)dm.CreateDelegate(typeof(GetCorrectedRollDelegate));
+      return true;
+    }
+    public static float GetCorrectedRoll(this AttackDirector.AttackSequence seq, float roll, Team team) {
+      return GetCorrectedRollInvoke(seq, roll, team);
+    }
+    public static Vector3 getMissPositionRadius(this GameRepresentation targetRep, AttackDirector.AttackSequence seq, Weapon weapon, float toHitChance, float toHitRoll) {
+      TurretRepresentation tRep = targetRep as TurretRepresentation;
+      MechRepresentation mRep = targetRep as MechRepresentation;
+      VehicleRepresentation vRep = targetRep as VehicleRepresentation;
+      Vector3 position = targetRep.thisTransform.position;
+      Team team = weapon == null || weapon.parent == null || weapon.parent.team == null ? (Team)null : weapon.parent.team;
+      float minradius = 5f;
+      if (mRep != null) {
+        position = mRep.vfxCenterTorsoTransform.position;
+        position.y = mRep.vfxCenterTorsoTransform.position.y;
+        minradius = mRep.parentMech.MechDef.Chassis.Radius;
+        //radius = mRep.parentMech.MechDef.Chassis.Radius * UnityEngine.Random.Range(mRep.Constants.ResolutionConstants.MissOffsetHorizontalMin, mRep.Constants.ResolutionConstants.MissOffsetHorizontalMax);
+      } else
+      if (tRep != null) {
+        position = tRep.TurretLOS.position;
+      } else
+      if (vRep != null) {
+        position = vRep.TurretLOS.position;
+      }
+      float correctedRolls = seq.GetCorrectedRoll(toHitRoll, team);
+      float hitMargin = (correctedRolls - toHitChance) / (1 - toHitChance);
+      if (hitMargin < 0f) { hitMargin = 0f; };
+      minradius = Mathf.Max(minradius, weapon.MinMissRadius());
+      float maxradius = weapon.MaxMissRadius();
+      if ((maxradius - minradius) < CustomAmmoCategories.Epsilon) { maxradius = minradius * 3f; }
+      float radius = Mathf.Lerp(minradius, maxradius, hitMargin);
+      radius *= UnityEngine.Random.Range(targetRep.parentCombatant.Combat.Constants.ResolutionConstants.MissOffsetHorizontalMin, targetRep.parentCombatant.Combat.Constants.ResolutionConstants.MissOffsetHorizontalMax);
+      Vector2 vector2 = UnityEngine.Random.insideUnitCircle.normalized * radius;
+      position.x += vector2.x;
+      position.z += vector2.y;
+      return position;
+    }
     private static void GetStreakHits(AttackDirector.AttackSequence instance, ref WeaponHitInfo hitInfo, int groupIdx, int weaponIdx, Weapon weapon, float toHitChance, float prevDodgedDamage) {
       CustomAmmoCategoriesLog.Log.LogWrite("GetStreakHits\n");
       if (hitInfo.numberOfShots == 0) { return; };
@@ -163,6 +218,7 @@ namespace CustomAmmoCategoriesPatches {
         Log.LogWrite("prime miss\n");
         if (string.IsNullOrEmpty(hitInfo.secondaryTargetIds[0]) == false) {
           Log.LogWrite("but hit something stray\n");
+          
           chosenTarget = instance.Director.Combat.FindCombatantByGUID(hitInfo.secondaryTargetIds[0]);
           if (chosenTarget == null) {
             Log.LogWrite("can't find combatant " + hitInfo.secondaryTargetIds[0] + "\n");
@@ -359,12 +415,17 @@ namespace CustomAmmoCategoriesPatches {
         Log.LogWrite(" strange behavior. NumberOfShots: " + hitInfo.numberOfShots + " but HitLocations length:" + hitInfo.hitLocations.Length + ". Must be equal\n", true);
         hitInfo.numberOfShots = hitInfo.hitLocations.Length;
       }
+      if (indirectFire && (missInCircle == false)) { missInCircle = true;  };
       if (missInCircle) {
         Log.LogWrite(" miss in circle\n");
         for (int hitIndex = 0; hitIndex < numberOfShots; ++hitIndex) {
-          if ((hitInfo.hitLocations[hitIndex] == 0) || (hitInfo.hitLocations[hitIndex] == 65536)) {
+          int hitLocation = hitInfo.hitLocations[hitIndex];
+
+          if ((hitLocation == 0) || (hitLocation == 65536)) {
             Log.LogWrite("  hi:" + hitIndex + " was " + hitInfo.hitPositions[hitIndex]);
-            hitInfo.hitPositions[hitIndex] = FragWeaponEffect.getMissPosition(target.GameRep);
+            hitInfo.secondaryHitLocations[hitIndex] = 0;
+            hitInfo.secondaryTargetIds[hitIndex] = null;
+            hitInfo.hitPositions[hitIndex] = target.GameRep.getMissPositionRadius(instance,weapon,toHitChance,hitInfo.toHitRolls[hitIndex]);
             Log.LogWrite("  become: " + hitInfo.hitPositions[hitIndex] + "\n");
           }
         }
@@ -378,7 +439,7 @@ namespace CustomAmmoCategoriesPatches {
           for (int hitIndex = 0; hitIndex < numberOfShots; ++hitIndex) {
             if ((hitInfo.hitLocations[hitIndex] == 0) || (hitInfo.hitLocations[hitIndex] == 65536)) {
               Log.LogWrite("  hi:" + hitIndex + " was " + hitInfo.hitPositions[hitIndex]);
-              hitInfo.hitPositions[hitIndex] = FragWeaponEffect.getMissPosition(target.GameRep);
+              hitInfo.hitPositions[hitIndex] = target.GameRep.getMissPositionRadius(instance, weapon, toHitChance, hitInfo.toHitRolls[hitIndex]);
               Log.LogWrite("  become: " + hitInfo.hitPositions[hitIndex] + "\n");
             }
           }

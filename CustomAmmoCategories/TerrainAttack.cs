@@ -10,6 +10,7 @@ using Localize;
 using System;
 using System.Collections.Generic;
 using System.Reflection;
+using System.Reflection.Emit;
 using System.Text;
 using UnityEngine;
 
@@ -20,6 +21,69 @@ namespace CustAmmoCategories {
     public SelectionStateCommandAttackGround(CombatGameState Combat, CombatHUD HUD, CombatHUDActionButton FromButton, AbstractActor actor) : base(Combat, HUD, FromButton) {
       this.SelectedActor = actor;
       HasActivated = false;
+    }
+    protected override bool ShouldShowWeaponsUI {
+      get {
+        return true;
+      }
+    }
+    protected override bool ShouldShowTargetingLines {
+      get {
+        return true;
+      }
+    }
+    protected override bool ShouldShowFiringArcs {
+      get {
+        return false;
+      }
+    }
+    public override bool ConsumesMovement {
+      get {
+        return false;
+      }
+    }
+
+    public override bool ConsumesFiring {
+      get {
+        return true;
+      }
+    }
+
+    public override bool CanBackOut {
+      get {
+        if (this.Orders == null) {
+          return true;
+        }
+        return false;
+      }
+    }
+
+    protected override bool showHeatWarnings {
+      get {
+        return true;
+      }
+    }
+    public virtual bool HasCalledShot {
+      get {
+        return false;
+      }
+    }
+    public virtual bool NeedsCalledShot {
+      get {
+        return false;
+      }
+    }
+    public override bool CanActorUseThisState(AbstractActor actor) {
+      return true;
+    }
+    public override bool CanDeselect {
+      get {
+        if (!base.CanDeselect)
+          return false;
+        if (!this.SelectedActor.HasMovedThisRound)
+          return !this.SelectedActor.CanMoveAfterShooting;
+        return true;
+      }
     }
     public override void OnAddToStack() {
       base.OnAddToStack();
@@ -55,9 +119,82 @@ namespace CustAmmoCategories {
         gameRep.ToggleRandomIdles(true);
       }
     }
+    public void AttackOrdersSet(MessageCenterMessage message) {
+      this.Orders = (message as AddSequenceToStackMessage).sequence;
+      Log.M.TWL(0,"Attack orders set:"+Orders.GetType().ToString()+" GUID:"+Orders.SequenceGUID);
+    }
     public override bool ProcessPressedButton(string button) {
       this.HasActivated = button == "BTN_FireConfirm";
-      return base.ProcessPressedButton(button);
+      if (button != "BTN_FireConfirm") {
+        return base.ProcessPressedButton(button);
+      }
+      if (this.Orders != null)
+        return false;
+      this.HideFireButton(false);
+      GenericPopupBuilder popup = null;
+      StringBuilder text = new StringBuilder();
+      List<Weapon> weaponsList = new List<Weapon>();
+      ICombatant target = this.TargetedCombatant;
+      Vector3 groundPos = this.targetPosition;
+      AbstractActor actor = this.SelectedActor;
+      foreach (Weapon weapon in actor.Weapons) {
+        if (weapon.IsFunctional == false) { continue; }
+        if (weapon.IsEnabled == false) { continue; };
+        if (weapon.isAMS()) { continue; }
+        if (target == null) {
+          if (weapon.WillFireToPosition(groundPos) == false) {
+            Log.LogWrite(" weapon " + weapon.UIName + " will NOT fire at " + groundPos + " IndirectFireCapable:" + weapon.IndirectFireCapable() + "\n");
+            continue;
+          } else {
+            Log.LogWrite(" weapon " + weapon.UIName + " will fire at " + groundPos + " IndirectFireCapable:" + weapon.IndirectFireCapable() + "\n");
+          }
+        } else {
+          bool ret = weapon.WillFireAtTargetFromPosition(target, actor.CurrentPosition);
+          Log.LogWrite(" weapon " + weapon.UIName + " will fire at target " + target.DisplayName + " " + ret + "\n");
+          if (ret == false) { continue; }
+        }
+        weaponsList.Add(weapon);
+      }
+      if (weaponsList.Count == 0) {
+        popup = GenericPopupBuilder.Create(GenericPopupType.Info, "No weapon can fire:\n" + text.ToString());
+        popup.AddButton("Ok", (Action)null, true, (PlayerAction)null);
+        popup.IsNestedPopupWithBuiltInFader().CancelOnEscape().Render();
+        return false;
+      }
+      Vector3 collisionWorldPos;
+      LineOfFireLevel LOFLevel = LineOfFireLevel.LOFBlocked;
+      if (target != null) {
+        LOFLevel = actor.Combat.LOFCache.GetLineOfFire(actor, actor.CurrentPosition, target, target.CurrentPosition, target.CurrentRotation, out collisionWorldPos);
+      } else {
+        LOFLevel = actor.Combat.LOFCache.GetLineOfFire(actor, actor.CurrentPosition, actor, groundPos, actor.CurrentRotation, out collisionWorldPos);
+      }
+      MechRepresentation gameRep = actor.GameRep as MechRepresentation;
+      if ((UnityEngine.Object)gameRep != (UnityEngine.Object)null) {
+        Log.LogWrite("ToggleRandomIdles false\n");
+        gameRep.ToggleRandomIdles(false);
+      }
+      if (target == null) { target = actor; };
+      if (actor.GUID == target.GUID) {
+        Log.LogWrite("Registering terrain attack to " + actor.GUID + "\n");
+        CustomAmmoCategories.addTerrainHitPosition(actor, groundPos, LOFLevel < LineOfFireLevel.LOFObstructed);
+      } else {
+        Log.LogWrite("Registering friendly attack to " + new Text(target.DisplayName) + "\n");
+      }
+      AttackInvocation invocation = new AttackInvocation(this.SelectedActor, target, weaponsList, MeleeAttackType.NotSet, -1);
+      if (invocation == null) {
+        Debug.Log((object)"No invocation created");
+        return false;
+      }
+      this.HUD.MechWarriorTray.ConfirmAbilities(AbilityDef.ActivationTiming.ConsumedByMovement);
+      this.HUD.MechWarriorTray.ConfirmAbilities(AbilityDef.ActivationTiming.ConsumedByFiring);
+      ReceiveMessageCenterMessage subscriber = (ReceiveMessageCenterMessage)(message => this.Orders = (message as AddSequenceToStackMessage).sequence);
+      this.Combat.MessageCenter.AddSubscriber(MessageCenterMessageType.AddSequenceToStackMessage, subscriber);
+      CombatSelectionHandler_TrySelectActor.SelectionForbidden = true;
+      this.Combat.AttackDirector.isSequenceIsTerrainAttack(true);
+      this.Combat.MessageCenter.PublishMessage(invocation);
+      this.Combat.MessageCenter.RemoveSubscriber(MessageCenterMessageType.AddSequenceToStackMessage, subscriber);
+      WeaponRangeIndicators.Instance.HideTargetingLines(this.Combat);
+      return true;
     }
     public override bool ProcessLeftClick(Vector3 worldPos) {
       if (this.NumPositionsLocked != 0)
@@ -66,6 +203,7 @@ namespace CustAmmoCategories {
       //this.GetTargetedActors(this.targetPosition, this.FromButton.Ability.Def.FloatParam1);
       //this.SetTargetHighlights(true);
       ++this.NumPositionsLocked;
+      this.HUD.RegisterAttackGroundTarget(this.TargetedCombatant);
       this.ShowFireButton(CombatHUDFireButton.FireMode.Confirm, Ability.ProcessDetailString(this.FromButton.Ability).ToString(true));
       if ((UnityEngine.Object)this.SelectedActor.GameRep != (UnityEngine.Object)null) {
         MechRepresentation gameRep = this.SelectedActor.GameRep as MechRepresentation;
@@ -76,13 +214,105 @@ namespace CustAmmoCategories {
       }
       return true;
     }
-
+    private Vector3 prevPosition = Vector3.zero;
+    private float timeCounter = 0f;
+    public bool UpdateWeapons(Vector3 worldPos, out float range) {
+      if (this.FromButton.Ability.Def.Description.Id != CombatHUDMechwarriorTray_InitAbilityButtons.AbilityName) { range = float.NaN; return false; };
+      int NumPositionsLocked = this.NumPositionsLocked;
+      Vector3 targetPos = worldPos;
+      if (NumPositionsLocked > 0) {
+        targetPos = this.targetPosition;
+      }
+      float distance = Vector3.Distance(prevPosition, targetPos);
+      timeCounter += Time.deltaTime;
+      if ((distance < 10f) && (timeCounter < 0.5f)) { range = float.NaN; return false; }
+      float result = this.FromButton.Ability.Def.FloatParam1;
+      timeCounter = 0f;
+      prevPosition = targetPos;
+      Log.M.TWL(0,"SelectionStateCommandTargetSinglePoint.ProcessMousePos " + this.FromButton.Ability.Def.Description.Id);
+      CombatHUD HUD = this.HUD;
+      List<CombatHUDWeaponSlot> wSlots = HUD.WeaponPanel.DisplayedWeaponSlots;
+      AbstractActor actor = this.SelectedActor;
+      Vector3 groundPos = targetPos;
+      groundPos.y = actor.Combat.MapMetaData.GetCellAt(targetPos).cachedHeight;
+      distance = Vector3.Distance(actor.CurrentPosition, groundPos);
+      Vector3 collisionWorldPos = Vector3.zero;
+      LineOfFireLevel LOFLevel = LineOfFireLevel.LOFBlocked;
+      bool isInFiringArc = actor.IsTargetPositionInFiringArc(actor, actor.CurrentPosition, actor.CurrentRotation, groundPos);
+      if (isInFiringArc) {
+        if (NumPositionsLocked == 0) {
+          TargetedCombatant = actor.findFriendlyNearPos(groundPos);
+        }
+      }
+      if (TargetedCombatant == null) {
+        LOFLevel = actor.Combat.LOFCache.GetLineOfFire(actor, actor.CurrentPosition, actor, groundPos, actor.CurrentRotation, out collisionWorldPos);
+      } else {
+        LOFLevel = actor.Combat.LOFCache.GetLineOfFire(actor, actor.CurrentPosition, TargetedCombatant, TargetedCombatant.CurrentPosition, TargetedCombatant.CurrentRotation, out collisionWorldPos);
+      }
+      foreach (CombatHUDWeaponSlot slot in wSlots) {
+        if (slot.DisplayedWeapon == null) { continue; }
+        if ((slot.weaponSlotType == CombatHUDWeaponSlot.WeaponSlotType.Melee) || (slot.weaponSlotType == CombatHUDWeaponSlot.WeaponSlotType.DFA)) { continue; }
+        if (slot.DisplayedWeapon.IsEnabled == false) { continue; }
+        if (slot.DisplayedWeapon.HasAmmo == false) { continue; }
+        UILookAndColorConstants LookAndColorConstants = slot.LookAndColorConstants();
+        float AOERange = slot.DisplayedWeapon.AOERange();
+        if (TargetedCombatant == null) {
+          slot.ClearHitChance();
+          if ((slot.DisplayedWeapon.isAMS()) || (isInFiringArc == false) || (distance > slot.DisplayedWeapon.MaxRange) || ((LOFLevel < LineOfFireLevel.LOFObstructed) && (slot.DisplayedWeapon.IndirectFireCapable() == false))) {
+            Log.LogWrite(" " + slot.DisplayedWeapon.UIName + ":disabled\n");
+            slot.MainImage.color = LookAndColorConstants.WeaponSlotColors.UnavailableBGColor;
+            //mShowTextColor.Invoke(slot, new object[2] { LookAndColorConstants.WeaponSlotColors.UnavailableTextColor, true });
+            slot.ShowTextColor(LookAndColorConstants.WeaponSlotColors.UnavailableTextColor);
+            slot.ToggleButton.childImage.color = LookAndColorConstants.WeaponSlotColors.UnavailableToggleColor;
+          } else {
+            Log.LogWrite(" " + slot.DisplayedWeapon.UIName + ":enabled\n");
+            slot.MainImage.color = LookAndColorConstants.WeaponSlotColors.AvailableBGColor;
+            //mShowTextColor.Invoke(slot, new object[2] { LookAndColorConstants.WeaponSlotColors.AvailableTextColor, true });
+            slot.ShowTextColor(LookAndColorConstants.WeaponSlotColors.AvailableTextColor);
+            slot.ToggleButton.childImage.color = LookAndColorConstants.WeaponSlotColors.AvailableToggleColor;
+            if (AOERange > result) { result = AOERange; };
+          }
+        } else {
+          if ((slot.DisplayedWeapon.isAMS()) || (slot.DisplayedWeapon.WillFireAtTarget(TargetedCombatant) == false)) {
+            Log.LogWrite(" " + slot.DisplayedWeapon.UIName + ":disabled\n");
+            slot.MainImage.color = LookAndColorConstants.WeaponSlotColors.UnavailableBGColor;
+            //mShowTextColor.Invoke(slot, new object[2] { LookAndColorConstants.WeaponSlotColors.UnavailableTextColor, true });
+            slot.ShowTextColor(LookAndColorConstants.WeaponSlotColors.UnavailableTextColor);
+            slot.ToggleButton.childImage.color = LookAndColorConstants.WeaponSlotColors.UnavailableToggleColor;
+            slot.ClearHitChance();
+          } else {
+            float hitChance = slot.DisplayedWeapon.GetToHitFromPosition(TargetedCombatant, 1, actor.CurrentPosition, TargetedCombatant.CurrentPosition, false, false, false);
+            slot.SetHitChance(hitChance);
+            Log.LogWrite(" " + slot.DisplayedWeapon.UIName + ":enabled\n");
+            slot.MainImage.color = LookAndColorConstants.WeaponSlotColors.AvailableBGColor;
+            Color hitChanceColor = slot.GetShotQualityTextColor(hitChance);//(Color)mGetShotQualityTextColor.Invoke(slot, new object[1] { hitChance });
+            //mShowTextColor.Invoke(slot, new object[3] { LookAndColorConstants.WeaponSlotColors.SelectedTextColor, hitChanceColor, true });
+            slot.ShowTextColor(LookAndColorConstants.WeaponSlotColors.SelectedTextColor, hitChanceColor);
+            //this.ShowTextColor(this.LookAndColorConstants.WeaponSlotColors.SelectedTextColor, this.GetShotQualityTextColor(this.HitChance), true);
+            //mShowTextColor.Invoke(slot, new object[2] { LookAndColorConstants.WeaponSlotColors.AvailableTextColor, true });
+            slot.ToggleButton.childImage.color = LookAndColorConstants.WeaponSlotColors.AvailableToggleColor;
+            if (AOERange > result) { result = AOERange; };
+          }
+        }
+      }
+      range = result;
+      return true;
+    }
+    public override Vector3 PreviewPos {
+      get {
+        return this.SelectedActor.CurrentPosition;
+      }
+    }
     public override void ProcessMousePos(Vector3 worldPos) {
-      float range = this.UpdateWeapons(worldPos);
-      if (float.IsNaN(range) == false) { this.CircleRange = range; };
+      float range = float.NaN;
+      ICombatant target = null;
       switch (this.NumPositionsLocked) {
         case 0:
 #if BT1_8
+          if(this.UpdateWeapons(worldPos,out range)) {
+            this.CircleRange = range;
+            Log.M.TWL(0, "SelectionStateCommandAttackGround.UpdateWeapons "+ NumPositionsLocked + " true range:"+range+" trg:"+(target==null?"null":(new Text(target.DisplayName).ToString())));
+          }
           CombatTargetingReticle.Instance.UpdateReticle(worldPos, CircleRange, false);
 #else
           CombatTargetingReticle.Instance.UpdateReticle(worldPos, CircleRange);
@@ -90,12 +320,45 @@ namespace CustAmmoCategories {
           break;
         case 1:
 #if BT1_8
+          if (this.UpdateWeapons(targetPosition, out range)) {
+            this.CircleRange = range;
+            Log.M.TWL(0, "SelectionStateCommandAttackGround.UpdateWeapons " + NumPositionsLocked + " true range:" + range + " trg:" + (target == null ? "null" : (new Text(target.DisplayName).ToString())));
+          }
           CombatTargetingReticle.Instance.UpdateReticle(this.targetPosition, CircleRange, false);
 #else
           CombatTargetingReticle.Instance.UpdateReticle(this.targetPosition, CircleRange);
 #endif
           break;
-      }      
+      }
+      Log.M.TWL(0, "SelectionState_ProcessMousePos");
+      if (this.TargetedCombatant == null) {
+        this.HUD.SelectionHandler.ActiveState.FiringPreview.ClearAllInfo();
+      } else {
+        this.HUD.SelectionHandler.ActiveState.FiringPreview.ClearAllInfo();
+        List<AbstractActor> allAlliesOf = this.Combat.GetAllAlliesOf(SelectedActor);
+        Weapon longestRangeWeapon1 = this.SelectedActor.GetLongestRangeWeapon(false, false);
+        float maxRange = longestRangeWeapon1 == null ? 0.0f : longestRangeWeapon1.MaxRange;
+        Weapon longestRangeWeapon2 = this.SelectedActor.GetLongestRangeWeapon(false, true);
+        float maxIndirectRange = longestRangeWeapon2 == null ? 0.0f : longestRangeWeapon2.MaxRange;
+        this.HUD.SelectionHandler.ActiveState.FiringPreview.Recalc(SelectedActor, TargetedCombatant, allAlliesOf, SelectedActor.CurrentPosition, SelectedActor.CurrentRotation, false, false, maxRange, maxIndirectRange);
+        FiringPreviewManager.PreviewInfo previewInfo = this.HUD.SelectionHandler.ActiveState.FiringPreview.GetPreviewInfo(TargetedCombatant);
+        Log.M.WL(1, "TargetedCombatant.IsDead " + TargetedCombatant.IsDead);
+        Log.M.WL(1, "SelectedActor.CurrentPosition " + SelectedActor.CurrentPosition);
+        Log.M.WL(1, "TargetedCombatant.CurrentPosition " + TargetedCombatant.CurrentPosition);
+        Log.M.WL(1, "previewInfo.collisionPoint " + previewInfo.collisionPoint);
+        Log.M.WL(1, "SelectedActor.VisibilityToTargetUnit " + SelectedActor.VisibilityToTargetUnit(TargetedCombatant));
+        Log.M.WL(1, "previewInfo.availability "+ previewInfo.availability);
+        Log.M.WL(1, "previewInfo.LOFLevel " + previewInfo.LOFLevel);
+      }
+      this.SelectionState_ProcessMousePos(SelectedActor.CurrentPosition);
+      for(int index=0;index < WeaponRangeIndicators.Instance.lines().Count; ++index) {
+        LineRenderer line = WeaponRangeIndicators.Instance.lines()[index];
+        Vector3[] positions = new Vector3[line.positionCount];
+        line.GetPositions(positions);
+        Log.M.W(2, "["+index+"] active:" + line.gameObject.activeInHierarchy);
+        foreach (Vector3 pos in positions) { Log.M.W(0," "+pos); }
+        Log.M.WL(0,"");
+      }
     }
     public override int ProjectedHeatForState {
       get {
@@ -154,6 +417,27 @@ namespace CustomAmmoCategoriesPatches {
       return false;
     }
   }*/
+  [HarmonyPatch(typeof(AttackDirector))]
+  [HarmonyPatch("CreateAttackSequence")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { typeof(int), typeof(AbstractActor), typeof(ICombatant), typeof(Vector3), typeof(Quaternion), typeof(int), typeof(List<Weapon>), typeof(MeleeAttackType), typeof(int), typeof(bool) })]
+  public static class AttackDirector_CreateAttackSequence {
+    private static bool f_next_attack_sequence_terrain = false;
+    public static bool isSequenceIsTerrainAttack(this AttackDirector attackDirector) { return f_next_attack_sequence_terrain; }
+    public static void isSequenceIsTerrainAttack(this AttackDirector attackDirector,bool value) { f_next_attack_sequence_terrain = value; }
+    public static void Postfix(AttackDirector __instance,int stackItemUID, AbstractActor attacker, ICombatant target, Vector3 attackPosition, Quaternion attackRotation, int attackSequenceIdx, List<Weapon> selectedWeapons, MeleeAttackType meleeAttackType, int calledShotLocation, bool isMoraleAttack,ref AttackDirector.AttackSequence __result) {
+      try {
+        Log.M.TWL(0, "AttackDirector.CreateAttackSequence:" + __result.id);
+        if (__instance.isSequenceIsTerrainAttack()) {
+          Log.M.WL(0, "registering as terrain");
+          __result.registerAsTerrainAttack();
+          __instance.isSequenceIsTerrainAttack(false);
+        }
+      } catch (Exception e) {
+        Log.M.TWL(0, e.ToString(), true);
+      }
+    }
+  }
   [HarmonyPatch(typeof(PilotableActorRepresentation))]
   [HarmonyPatch("FaceTarget")]
   [HarmonyPatch(MethodType.Normal)]
@@ -194,12 +478,13 @@ namespace CustomAmmoCategoriesPatches {
       //  __result = !__instance.SelectedActor.StoodUpThisRound;
       //  return false;
       //}
-      if (!__instance.SelectedActor.HasBegunActivation) {
-        __result = !__instance.SelectedActor.StoodUpThisRound;
-        return false;
-      }
-      __result = false;
-      return false;
+      //if (!__instance.SelectedActor.HasBegunActivation) {
+      //__result = !__instance.SelectedActor.StoodUpThisRound;
+      //return false;
+      //}
+      //__result = false;
+      //return false;
+      return true;
     }
   }
   [HarmonyPatch(typeof(SelectionStateMoveBase))]
@@ -259,6 +544,7 @@ namespace CustomAmmoCategoriesPatches {
       CustomAmmoCategoriesLog.Log.LogWrite("SelectionState.GetNewSelectionStateByType " + type + ":" + FromButton.GUID + "\n");
       if ((type == SelectionType.CommandTargetSinglePoint) && (FromButton.GUID == "ID_ATTACKGROUND")) {
         CustomAmmoCategoriesLog.Log.LogWrite(" creating own selection state\n");
+        HUD.RegisterAttackGroundTarget(null);
         __result = new SelectionStateCommandAttackGround(Combat, HUD, FromButton, actor);
         return false;
       }
@@ -301,7 +587,7 @@ namespace CustomAmmoCategoriesPatches {
   [HarmonyPatch(new Type[] { typeof(MessageCenterMessage) })]
   public static class CombatHUD_OnAttackEnd {
     public static AbstractActor needSelect = null;
-    public static void Postfix(CombatHUD __instance, MessageCenterMessage message) {
+    public static void Postfix(CombatHUD __instance, MessageCenterMessage message) {      
       Log.LogWrite("CombatHUD.OnAttackEnd. SelectionForbidden: "+ CombatSelectionHandler_TrySelectActor.SelectionForbidden + "\n");
       if (CombatSelectionHandler_TrySelectActor.SelectionForbidden == true) {
         AttackDirector.AttackSequence attackSequence = __instance.Combat.AttackDirector.GetAttackSequence((message as AttackSequenceEndMessage).sequenceId);
@@ -330,12 +616,13 @@ namespace CustomAmmoCategoriesPatches {
             bool HasActivatedThisRound = attacker.HasActivatedThisRound;
             attacker.HasBegunActivation = false;
             attacker.HasActivatedThisRound = false;
-            MethodInfo OnActorSelected = typeof(CombatHUD).GetMethod("OnActorSelected", BindingFlags.NonPublic | BindingFlags.Instance);
-            if(OnActorSelected != null) {
-              Log.M.TWL(0, "CombatHUD.OnActorSelected is null");
-            } else {
-              OnActorSelected.Invoke(__instance, new object[] { attacker });
-            }
+            attacker.HasFiredThisRound = true;
+
+            __instance.SelectionHandler.DeselectActor(__instance.SelectedActor);
+            //MethodInfo OnActorSelected = typeof(CombatHUD).GetMethod("OnActorSelected", BindingFlags.NonPublic | BindingFlags.Instance);
+            //MethodInfo OnActorDeselected = typeof(CombatHUD).GetMethod("OnActorDeselected", BindingFlags.NonPublic | BindingFlags.Instance);
+            //OnActorDeselected.Invoke(__instance, new object[] { __instance.SelectedActor });
+            //OnActorSelected.Invoke(__instance, new object[] { attacker });
             __instance.SelectionHandler.TrySelectActor(attacker, false);
             attacker.HasBegunActivation = HasBegunActivation;
             attacker.HasActivatedThisRound = HasActivatedThisRound;
@@ -369,6 +656,54 @@ namespace CustomAmmoCategoriesPatches {
       return false;
     }
   }
+  [HarmonyPatch(typeof(WeaponRangeIndicators))]
+  [HarmonyPatch("UpdateTargetingLines")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { typeof(AbstractActor), typeof(Vector3), typeof(Quaternion), typeof(bool), typeof(ICombatant), typeof(bool), typeof(List<ICombatant>), typeof(bool) })]
+  public static class WeaponRangeIndicators_UpdateTargetingLines {
+    private static bool Prefix(WeaponRangeIndicators __instance, AbstractActor selectedActor, Vector3 position, Quaternion rotation, bool isPositionLocked, ICombatant targetedActor, bool useMultiFire, List<ICombatant> lockedTargets, bool isMelee) {
+      Log.M.TWL(0, "WeaponRangeIndicators.UpdateTargetingLines position:" + position + " actor:" + new Text(selectedActor.DisplayName).ToString() + " trg:" + (targetedActor==null?"null":(new Text(targetedActor.DisplayName).ToString())));
+      return true;
+    }
+  }
+  [HarmonyPatch(typeof(WeaponRangeIndicators))]
+  [HarmonyPatch("ShowLineToTarget")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { typeof(AbstractActor), typeof(Vector3), typeof(Quaternion), typeof(AbstractActor), typeof(bool) })]
+  public static class WeaponRangeIndicators_ShowLineToTarget {
+    private static bool Prefix(WeaponRangeIndicators __instance, AbstractActor selectedActor, Vector3 position, Quaternion rotation, AbstractActor targetedActor, bool isMelee) {
+      Log.M.TWL(0, "WeaponRangeIndicators.ShowLineToTarget position:"+position+" actor:" + new Text(selectedActor.DisplayName).ToString() + " trg:" + (targetedActor == null ? "null" : (new Text(targetedActor.DisplayName).ToString())));
+      return true;
+    }
+  }
+  [HarmonyPatch(typeof(FiringPreviewManager))]
+  [HarmonyPatch("HasLOS")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { typeof(AbstractActor), typeof(ICombatant), typeof(Vector3), typeof(List<AbstractActor>) })]
+  public static class FiringPreviewManager_HasLOS {
+    private static void Postfix(FiringPreviewManager __instance, AbstractActor attacker, ICombatant target, Vector3 position, List<AbstractActor> allies, ref bool __result) {
+      if (__result == true) { return; }
+      if (target == null) { return; }
+      if (target.team == null) { return; }
+      if (attacker == null) { return; }
+      if (attacker.team == null) { return; }
+      if (attacker.team.IsFriendly(target.team)) { __result = true; return; }
+    }
+  }
+  [HarmonyPatch(typeof(AbstractActor))]
+  [HarmonyPatch("VisibilityToTargetUnit")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { typeof(ICombatant) })]
+  public static class AbstractActor_VisibilityToTargetUnit {
+    private static void Postfix(AbstractActor __instance, ICombatant targetUnit, ref VisibilityLevel __result) {
+      if (__result > VisibilityLevel.None) { return; }
+      if (targetUnit == null) { return; }
+      if (targetUnit.team == null) { return; }
+      if (__instance == null) { return; }
+      if (__instance.team == null) { return; }
+      if (__instance.team.IsFriendly(targetUnit.team)) { __result = VisibilityLevel.LOSFull; return; }
+    }
+  }
   [HarmonyPatch(typeof(AttackDirector))]
   [HarmonyPatch("OnAttackComplete")]
   [HarmonyPatch(MethodType.Normal)]
@@ -377,6 +712,7 @@ namespace CustomAmmoCategoriesPatches {
   public static class AttackDirector_OnAttackCompleteTA {
     public static bool Prefix(AttackDirector __instance, MessageCenterMessage message, ref AbstractActor __state) {
       __state = null;
+      //return true;
       AttackCompleteMessage attackCompleteMessage = (AttackCompleteMessage)message;
       Log.M.TWL(0,"AttackDirector.OnAttackCompleteTA:" + attackCompleteMessage.sequenceId + "\n");
       int sequenceId = attackCompleteMessage.sequenceId;
@@ -384,8 +720,8 @@ namespace CustomAmmoCategoriesPatches {
       if (attackSequence == null) {
         return true;
       }
-      if (attackSequence.chosenTarget.GUID == attackSequence.attacker.GUID) {
-        Log.LogWrite(" terrain attack detected\n");
+      if ((attackSequence.chosenTarget.GUID == attackSequence.attacker.GUID)||(attackSequence.isTerrainAttackSequence())) {
+        Log.LogWrite(" terrain attack detected id:"+ attackSequence.id+ "\n");
         __state = attackSequence.attacker;
         Mech mech = __state as Mech;
         if (mech != null) {
@@ -446,7 +782,6 @@ namespace CustomAmmoCategoriesPatches {
   [HarmonyPatch(new Type[] { typeof(Vector3) })]
   public static class SelectionStateCommandTargetSinglePoint_ProcessMousePos {
     private static PropertyInfo pHUD = null;
-    private static Vector3 prevPosition = Vector3.zero;
     private static PropertyInfo pLookAndColorConstants = null;
     private static PropertyInfo pNumPositionsLocked = null;
     private static PropertyInfo pTargetPosition = null;
@@ -456,9 +791,22 @@ namespace CustomAmmoCategoriesPatches {
 #endif
     private static MethodInfo mGetShotQualityTextColor = null;
     private static FieldInfo fCombat = null;
-    private static float timeCounter = 0f;
+    private delegate void ShowLineToTargetDelegate(WeaponRangeIndicators indicators, AbstractActor selectedActor, Vector3 position, Quaternion rotation, AbstractActor targetedActor, bool isMelee);
+    private static ShowLineToTargetDelegate ShowLineToTargetInvoker = null;
+    private delegate void HideAllLinesDelegate(WeaponRangeIndicators indicators, CombatGameState Combat);
+    private static HideAllLinesDelegate HideAllLinesInvoker = null;
+    private delegate void HideUnusedElementsDelegate(WeaponRangeIndicators indicators);
+    private static HideUnusedElementsDelegate HideUnusedElementsInvoker = null;
+    private delegate Color GetShotQualityTextColorDelegate(CombatHUDWeaponSlot slot, float toHitChance);
+    private static GetShotQualityTextColorDelegate GetShotQualityTextColorInvoker = null;
+    private delegate void ProcessMousePosDelegate(SelectionState state,Vector3 worldPos);
+    private static ProcessMousePosDelegate ProcessMousePosInvoker = null;
+    private delegate void RecalcDelegate(FiringPreviewManager instance, AbstractActor attacker, ICombatant target, List<AbstractActor> allies, Vector3 position, Quaternion rotation, bool canRotate, bool isJump, float maxRange, float maxIndirectRange);
+    private static RecalcDelegate RecalcInvoker = null;
+    private static FieldInfo f_lines = null;
     public static bool Prepare() {
       try {
+        f_lines = typeof(WeaponRangeIndicators).GetField("lines",BindingFlags.Instance|BindingFlags.NonPublic);
         pHUD = typeof(SelectionState).GetProperty("HUD", BindingFlags.Instance | BindingFlags.NonPublic);
         if(pHUD == null) {
           Log.LogWrite("Can't find SelectionState.HUD\n");
@@ -505,15 +853,123 @@ namespace CustomAmmoCategoriesPatches {
           Log.LogWrite("Can't find Weapon.combat\n");
           return false;
         }
+        {
+          MethodInfo method = typeof(WeaponRangeIndicators).GetMethod("ShowLineToTarget",BindingFlags.NonPublic|BindingFlags.Instance);
+          var dm = new DynamicMethod("CACShowLineToTarget", null, new Type[] { typeof(WeaponRangeIndicators), typeof(AbstractActor), typeof(Vector3), typeof(Quaternion), typeof(AbstractActor), typeof(bool) }, typeof(WeaponRangeIndicators));
+          var gen = dm.GetILGenerator();
+          gen.Emit(OpCodes.Ldarg_0);
+          gen.Emit(OpCodes.Ldarg_1);
+          gen.Emit(OpCodes.Ldarg_2);
+          gen.Emit(OpCodes.Ldarg_3);
+          gen.Emit(OpCodes.Ldarg_S, 4);
+          gen.Emit(OpCodes.Ldarg_S, 5);
+          gen.Emit(OpCodes.Call, method);
+          gen.Emit(OpCodes.Ret);
+          ShowLineToTargetInvoker = (ShowLineToTargetDelegate)dm.CreateDelegate(typeof(ShowLineToTargetDelegate));
+        }
+        {
+          MethodInfo method = typeof(WeaponRangeIndicators).GetMethod("HideAllLines", BindingFlags.NonPublic | BindingFlags.Instance);
+          var dm = new DynamicMethod("CACHideAllLines", null, new Type[] { typeof(WeaponRangeIndicators), typeof(CombatGameState) }, typeof(WeaponRangeIndicators));
+          var gen = dm.GetILGenerator();
+          gen.Emit(OpCodes.Ldarg_0);
+          gen.Emit(OpCodes.Ldarg_1);
+          gen.Emit(OpCodes.Call, method);
+          gen.Emit(OpCodes.Ret);
+          HideAllLinesInvoker = (HideAllLinesDelegate)dm.CreateDelegate(typeof(HideAllLinesDelegate));
+        }
+        {
+          MethodInfo method = typeof(WeaponRangeIndicators).GetMethod("HideUnusedElements", BindingFlags.NonPublic | BindingFlags.Instance);
+          var dm = new DynamicMethod("CACHideUnusedElements", null, new Type[] { typeof(WeaponRangeIndicators) }, typeof(WeaponRangeIndicators));
+          var gen = dm.GetILGenerator();
+          gen.Emit(OpCodes.Ldarg_0);
+          gen.Emit(OpCodes.Call, method);
+          gen.Emit(OpCodes.Ret);
+          HideUnusedElementsInvoker = (HideUnusedElementsDelegate)dm.CreateDelegate(typeof(HideUnusedElementsDelegate));
+        }
+        {
+          MethodInfo method = typeof(CombatHUDWeaponSlot).GetMethod("GetShotQualityTextColor", BindingFlags.NonPublic | BindingFlags.Instance);
+          var dm = new DynamicMethod("CACGetShotQualityTextColor", typeof(Color), new Type[] { typeof(CombatHUDWeaponSlot),typeof(float) }, typeof(CombatHUDWeaponSlot));
+          var gen = dm.GetILGenerator();
+          gen.Emit(OpCodes.Ldarg_0);
+          gen.Emit(OpCodes.Ldarg_1);
+          gen.Emit(OpCodes.Call, method);
+          gen.Emit(OpCodes.Ret);
+          GetShotQualityTextColorInvoker = (GetShotQualityTextColorDelegate)dm.CreateDelegate(typeof(GetShotQualityTextColorDelegate));
+        }
+        {
+          MethodInfo method = typeof(SelectionState).GetMethod("ProcessMousePos", BindingFlags.Public | BindingFlags.Instance);
+          var dm = new DynamicMethod("CACProcessMousePos", null, new Type[] { typeof(SelectionState), typeof(Vector3) }, typeof(SelectionState));
+          var gen = dm.GetILGenerator();
+          gen.Emit(OpCodes.Ldarg_0);
+          gen.Emit(OpCodes.Ldarg_1);
+          gen.Emit(OpCodes.Call, method);
+          gen.Emit(OpCodes.Ret);
+          ProcessMousePosInvoker = (ProcessMousePosDelegate)dm.CreateDelegate(typeof(ProcessMousePosDelegate));
+        }
+        {
+          MethodInfo method = typeof(FiringPreviewManager).GetMethod("Recalc", BindingFlags.NonPublic | BindingFlags.Instance);
+          var dm = new DynamicMethod("CACRecalc", null, new Type[] { typeof(FiringPreviewManager), typeof(AbstractActor), typeof(ICombatant), typeof(List<AbstractActor>), typeof(Vector3), typeof(Quaternion), typeof(bool), typeof(bool), typeof(float), typeof(float) }, typeof(FiringPreviewManager));
+          var gen = dm.GetILGenerator();
+          gen.Emit(OpCodes.Ldarg_0);
+          gen.Emit(OpCodes.Ldarg_1);
+          gen.Emit(OpCodes.Ldarg_2);
+          gen.Emit(OpCodes.Ldarg_3);
+          gen.Emit(OpCodes.Ldarg_S, 4);
+          gen.Emit(OpCodes.Ldarg_S, 5);
+          gen.Emit(OpCodes.Ldarg_S, 6);
+          gen.Emit(OpCodes.Ldarg_S, 7);
+          gen.Emit(OpCodes.Ldarg_S, 8);
+          gen.Emit(OpCodes.Ldarg_S, 9);
+          gen.Emit(OpCodes.Call, method);
+          gen.Emit(OpCodes.Ret);
+          RecalcInvoker = (RecalcDelegate)dm.CreateDelegate(typeof(RecalcDelegate));
+        }
       } catch (Exception e) {
         Log.LogWrite(e.ToString() + "\n");
         return false;
       }
       return true;
     }
+    public static List<LineRenderer> lines(this WeaponRangeIndicators wri) {
+      return (List<LineRenderer>)f_lines.GetValue(wri);
+    }
+    public static void Recalc(this FiringPreviewManager instance, AbstractActor attacker, ICombatant target, List<AbstractActor> allies, Vector3 position, Quaternion rotation, bool canRotate, bool isJump, float maxRange, float maxIndirectRange) {
+      RecalcInvoker(instance, attacker, target, allies, position, rotation, canRotate, isJump, maxRange, maxIndirectRange);
+    }
     public static CombatGameState Combat(this Weapon weapon) {
       return (CombatGameState)fCombat.GetValue(weapon);
     }
+    public static Color GetShotQualityTextColor(this CombatHUDWeaponSlot slot, float toHitChance) {
+      return GetShotQualityTextColorInvoker(slot, toHitChance);
+    }
+    public static void SelectionState_ProcessMousePos(this SelectionState state, Vector3 worldPos) {
+      ProcessMousePosInvoker(state, worldPos);
+    }
+    public static ICombatant findFriendlyNearPos(this AbstractActor actor, Vector3 worldPos, bool ignoreAlt = false) {
+      ICombatant result = null;
+      float resultDist = 0f;
+      if (ignoreAlt == false) { if (Input.GetKey(KeyCode.LeftAlt) == false) { return null; }; };
+      Log.LogWrite(" findFriendlyNearPos " + worldPos + "\n");
+      foreach (ICombatant friend in actor.Combat.GetAllCombatants()) {
+        if (friend.IsDead) { continue; }
+        if ((friend.team != null) && (actor.team != null)) {
+          if (friend.team.IsEnemy(actor.team)) { continue; }
+        }
+        float distance = Vector3.Distance(friend.CurrentPosition, worldPos);
+        Log.LogWrite("  friend:" + friend.DisplayName + " " + distance + "\n");
+        if (distance > CustomAmmoCategories.Settings.TerrainFiendlyFireRadius) { continue; }
+        if ((distance < resultDist) || (result == null)) { result = friend; resultDist = distance; }
+      }
+      Log.LogWrite("  result: " + (result == null ? "null" : result.DisplayName) + "\n");
+      return result;
+    }
+    public static UILookAndColorConstants LookAndColorConstants(this CombatHUDWeaponSlot slot) {
+      return (UILookAndColorConstants)pLookAndColorConstants.GetValue(slot, null);
+    }
+    //Color hitChanceColor = (Color)mGetShotQualityTextColor.Invoke(slot, new object[1] { hitChance });
+    //public static UILookAndColorConstants LookAndColorConstants(this CombatHUDWeaponSlot slot) {
+    //return (UILookAndColorConstants)pLookAndColorConstants.GetValue(slot, null);
+    //}
     public static bool WillFireToPosition(this Weapon weapon, Vector3 position) {
       if (weapon.IsDisabled || !weapon.HasAmmo) {
         Log.M.WL(1, "weapon disabled or have no ammo");
@@ -521,21 +977,7 @@ namespace CustomAmmoCategoriesPatches {
       }
       bool result = weapon.Combat().LOFCache.UnitHasLOFToTargetAtTargetPosition(weapon.parent, weapon.parent, weapon.MaxRange,
         weapon.parent.CurrentPosition, weapon.parent.CurrentRotation, position, weapon.parent.CurrentRotation, weapon.IndirectFireCapable());
-      Log.M.WL(1, "UnitHasLOFToTargetAtTargetPosition "+result+" max range:"+ weapon.MaxRange);
-      return result;
-    }
-    public static ICombatant findFriendlyNearPos(AbstractActor actor,Vector3 worldPos) {
-      ICombatant result = null;
-      float resultDist = 0f;
-      Log.LogWrite(" findFriendlyNearPos " + worldPos + "\n");
-      foreach (AbstractActor friend in actor.Combat.GetAllAlliesOf(actor)) {
-        if (friend.IsDead) { continue; }
-        float distance = Vector3.Distance(friend.CurrentPosition, worldPos);
-        Log.LogWrite("  friend:"+friend.DisplayName+" "+distance+"\n");
-        if (distance > CustomAmmoCategories.Settings.TerrainFiendlyFireRadius) { continue; }
-        if ((distance < resultDist) || (result == null)) { result = friend; resultDist = distance; }
-      }
-      Log.LogWrite("  result: " + (result==null?"null":result.DisplayName) + "\n");
+      Log.M.WL(1, "UnitHasLOFToTargetAtTargetPosition " + result + " max range:" + weapon.MaxRange);
       return result;
     }
 #if BT1_8
@@ -555,86 +997,6 @@ namespace CustomAmmoCategoriesPatches {
       mShowTextColor.Invoke(slot, new object[3] { color, hitChanceColor, true });
     }
 #endif
-    public static float UpdateWeapons(this SelectionStateCommandTargetSinglePoint __instance, Vector3 worldPos) {
-      if (__instance.FromButton.Ability.Def.Description.Id != CombatHUDMechwarriorTray_InitAbilityButtons.AbilityName) { return float.NaN; };
-      int NumPositionsLocked = (int)pNumPositionsLocked.GetValue(__instance, null);
-      Vector3 targetPos = worldPos;
-      if (NumPositionsLocked > 0) {
-        targetPos = (Vector3)pTargetPosition.GetValue(__instance, null);
-      }
-      float distance = Vector3.Distance(prevPosition, targetPos);
-      timeCounter += Time.deltaTime;
-      if ((distance < 10f) && (timeCounter < 0.5f)) { return float.NaN; }
-      float result = __instance.FromButton.Ability.Def.FloatParam1;
-      timeCounter = 0f;
-      prevPosition = targetPos;
-      Log.LogWrite("SelectionStateCommandTargetSinglePoint.ProcessMousePos " + __instance.FromButton.Ability.Def.Description.Id + "\n");
-      CombatHUD HUD = (CombatHUD)pHUD.GetValue(__instance, null);
-      List<CombatHUDWeaponSlot> wSlots = HUD.WeaponPanel.DisplayedWeaponSlots;
-      AbstractActor actor = __instance.SelectedActor;
-      Vector3 groundPos = targetPos;
-      groundPos.y = actor.Combat.MapMetaData.GetCellAt(targetPos).cachedHeight;
-      distance = Vector3.Distance(actor.CurrentPosition, groundPos);
-      Vector3 collisionWorldPos = Vector3.zero;
-      LineOfFireLevel LOFLevel = LineOfFireLevel.LOFBlocked;
-      bool isInFiringArc = actor.IsTargetPositionInFiringArc(actor, actor.CurrentPosition, actor.CurrentRotation, groundPos);
-      ICombatant target = null;
-      if (isInFiringArc) {
-        target = findFriendlyNearPos(actor, groundPos);
-        if (target == null) {
-          LOFLevel = actor.Combat.LOFCache.GetLineOfFire(actor, actor.CurrentPosition, actor, groundPos, actor.CurrentRotation, out collisionWorldPos);
-        } else {
-          LOFLevel = actor.Combat.LOFCache.GetLineOfFire(actor, actor.CurrentPosition, target, target.CurrentPosition, target.CurrentRotation, out collisionWorldPos);
-        }
-      }
-      foreach (CombatHUDWeaponSlot slot in wSlots) {
-        if (slot.DisplayedWeapon == null) { continue; }
-        if ((slot.weaponSlotType == CombatHUDWeaponSlot.WeaponSlotType.Melee) || (slot.weaponSlotType == CombatHUDWeaponSlot.WeaponSlotType.DFA)) { continue; }
-        if (slot.DisplayedWeapon.IsEnabled == false) { continue; }
-        if (slot.DisplayedWeapon.HasAmmo == false) { continue; }
-        UILookAndColorConstants LookAndColorConstants = (UILookAndColorConstants)pLookAndColorConstants.GetValue(slot, null);
-        float AOERange = slot.DisplayedWeapon.AOERange();
-        if (target == null) {
-          slot.ClearHitChance();
-          if ((slot.DisplayedWeapon.isAMS()) || (isInFiringArc == false) || (distance > slot.DisplayedWeapon.MaxRange) || ((LOFLevel < LineOfFireLevel.LOFObstructed) && (slot.DisplayedWeapon.IndirectFireCapable() == false))) {
-            Log.LogWrite(" " + slot.DisplayedWeapon.UIName + ":disabled\n");
-            slot.MainImage.color = LookAndColorConstants.WeaponSlotColors.UnavailableBGColor;
-            //mShowTextColor.Invoke(slot, new object[2] { LookAndColorConstants.WeaponSlotColors.UnavailableTextColor, true });
-            slot.ShowTextColor(LookAndColorConstants.WeaponSlotColors.UnavailableTextColor);
-            slot.ToggleButton.childImage.color = LookAndColorConstants.WeaponSlotColors.UnavailableToggleColor;
-          } else {
-            Log.LogWrite(" " + slot.DisplayedWeapon.UIName + ":enabled\n");
-            slot.MainImage.color = LookAndColorConstants.WeaponSlotColors.AvailableBGColor;
-            //mShowTextColor.Invoke(slot, new object[2] { LookAndColorConstants.WeaponSlotColors.AvailableTextColor, true });
-            slot.ShowTextColor(LookAndColorConstants.WeaponSlotColors.AvailableTextColor);
-            slot.ToggleButton.childImage.color = LookAndColorConstants.WeaponSlotColors.AvailableToggleColor;
-            if (AOERange > result) { result = AOERange; };
-          }
-        } else {
-          if ((slot.DisplayedWeapon.isAMS()) || (slot.DisplayedWeapon.WillFireAtTarget(target))) {
-            Log.LogWrite(" " + slot.DisplayedWeapon.UIName + ":disabled\n");
-            slot.MainImage.color = LookAndColorConstants.WeaponSlotColors.UnavailableBGColor;
-            //mShowTextColor.Invoke(slot, new object[2] { LookAndColorConstants.WeaponSlotColors.UnavailableTextColor, true });
-            slot.ShowTextColor(LookAndColorConstants.WeaponSlotColors.UnavailableTextColor);
-            slot.ToggleButton.childImage.color = LookAndColorConstants.WeaponSlotColors.UnavailableToggleColor;
-            slot.ClearHitChance();
-          } else {
-            float hitChance = slot.DisplayedWeapon.GetToHitFromPosition(target, 1, actor.CurrentPosition, target.CurrentPosition, false, false, false);
-            slot.SetHitChance(hitChance);
-            Log.LogWrite(" " + slot.DisplayedWeapon.UIName + ":enabled\n");
-            slot.MainImage.color = LookAndColorConstants.WeaponSlotColors.AvailableBGColor;
-            Color hitChanceColor = (Color)mGetShotQualityTextColor.Invoke(slot, new object[1] { hitChance });
-            //mShowTextColor.Invoke(slot, new object[3] { LookAndColorConstants.WeaponSlotColors.SelectedTextColor, hitChanceColor, true });
-            slot.ShowTextColor(LookAndColorConstants.WeaponSlotColors.SelectedTextColor,hitChanceColor);
-            //this.ShowTextColor(this.LookAndColorConstants.WeaponSlotColors.SelectedTextColor, this.GetShotQualityTextColor(this.HitChance), true);
-            //mShowTextColor.Invoke(slot, new object[2] { LookAndColorConstants.WeaponSlotColors.AvailableTextColor, true });
-            slot.ToggleButton.childImage.color = LookAndColorConstants.WeaponSlotColors.AvailableToggleColor;
-            if (AOERange > result) { result = AOERange; };
-          }
-        }
-      }
-      return result;
-    }
     public static void Postfix(SelectionStateCommandTargetSinglePoint __instance, Vector3 worldPos) {
       //__instance.UpdateWeapons(worldPos);
     }
@@ -681,8 +1043,14 @@ namespace CustomAmmoCategoriesPatches {
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { typeof(string), typeof(Vector3) })]
   public static class CombatHUDActionButton_ActivateCommandAbility {
+    private static ICombatant attackGroundTarget = null;
+    private static HashSet<int> terrainAttacksSequenceIds = new HashSet<int>();
+    public static bool isTerrainAttackSequence(this AttackDirector.AttackSequence seq) { return terrainAttacksSequenceIds.Contains(seq.id); }
+    public static void registerAsTerrainAttack(this AttackDirector.AttackSequence seq) { terrainAttacksSequenceIds.Add(seq.id); }
+    public static void RegisterAttackGroundTarget(this CombatHUD HUD, ICombatant target) { attackGroundTarget = target; }
     public static void Postfix(CombatHUDActionButton __instance, string teamGUID, Vector3 targetPosition) {
       Log.LogWrite("CombatHUDActionButton.ActivateCommandAbility " + __instance.GUID + "\n");
+      return;
       if (__instance.GUID == "ID_ATTACKGROUND") {
         GenericPopupBuilder popup = null;
         CombatHUD HUD = (CombatHUD)typeof(CombatHUDActionButton).GetProperty("HUD", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(__instance, null);
@@ -695,7 +1063,7 @@ namespace CustomAmmoCategoriesPatches {
         //bool cantFire = false;
         Vector3 collisionWorldPos;
         List<Weapon> weaponsList = new List<Weapon>();
-        ICombatant target = SelectionStateCommandTargetSinglePoint_ProcessMousePos.findFriendlyNearPos(actor, groundPos);
+        ICombatant target = attackGroundTarget;
         foreach (Weapon weapon in actor.Weapons) {
           if (weapon.IsFunctional == false) { continue; }
           if (weapon.IsEnabled == false) { continue; };
@@ -746,8 +1114,9 @@ namespace CustomAmmoCategoriesPatches {
         AttackDirector.AttackSequence attackSequence = actor.Combat.AttackDirector.CreateAttackSequence(seqId, actor, target, actor.CurrentPosition, actor.CurrentRotation, 0, weaponsList, MeleeAttackType.NotSet, 0, false);
         attackSequence.indirectFire = LOFLevel < LineOfFireLevel.LOFObstructed;
         Log.LogWrite(" attackSequence.indirectFire " + attackSequence.indirectFire + " LOS "+ LOFLevel + "\n");
+        Log.LogWrite(" terrain attack Sequence register:" + attackSequence.id + "\n");
+        terrainAttacksSequenceIds.Add(attackSequence.id);
         actor.Combat.AttackDirector.PerformAttack(attackSequence);
-
         //CustomAmmoCategoriesLog.Log.LogWrite("Orders is null:"+(HUD.SelectionHandler.ActiveState.Orders==null));
         //MessageCenterMessage message1 = (MessageCenterMessage)new AttackInvocation(actor, null, weaponsList, MeleeAttackType.NotSet, 0);
         //HUD.MechWarriorTray.ConfirmAbilities(AbilityDef.ActivationTiming.ConsumedByMovement);

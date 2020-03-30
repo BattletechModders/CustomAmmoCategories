@@ -197,6 +197,8 @@ namespace CustAmmoCategories {
     public float ShotsPerAmmo { get; set; }
     public DeferredEffectDef deferredEffect { get; set; }
     public string preFireSFX { get; set; }
+    public float MinMissRadius { get; set; }
+    public float MaxMissRadius { get; set; }
     public WeaponMode() {
       Id = WeaponMode.NONE_MODE_NAME;
       UIName = WeaponMode.BASE_MODE_NAME;
@@ -293,6 +295,8 @@ namespace CustAmmoCategories {
       ShotsPerAmmo = 1f;
       deferredEffect = new DeferredEffectDef();
       preFireSFX = string.Empty;
+      MinMissRadius = 0f;
+      MaxMissRadius = 0f;
     }
     public void fromJSON(string json) {
       JObject jWeaponMode = JObject.Parse(json);
@@ -385,6 +389,12 @@ namespace CustAmmoCategories {
       }
       if (jWeaponMode["APMaxArmorThickness"] != null) {
         this.APMaxArmorThickness = (float)jWeaponMode["APMaxArmorThickness"];
+      }
+      if (jWeaponMode["MinMissRadius"] != null) {
+        this.MinMissRadius = (float)jWeaponMode["MinMissRadius"];
+      }
+      if (jWeaponMode["MaxMissRadius"] != null) {
+        this.MaxMissRadius = (float)jWeaponMode["MaxMissRadius"];
       }
       if (jWeaponMode["MaxRange"] != null) {
         this.MaxRange = (float)jWeaponMode["MaxRange"];

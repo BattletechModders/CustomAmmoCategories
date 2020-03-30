@@ -41,6 +41,8 @@ namespace CustAmmoCategories {
     public CustomVector TerrainVFXScale { get; set; }
     public bool statusEffectsRangeFalloff { get; set; }
     public bool sticky { get; set; }
+    public float MinMissRadius { get; set; }
+    public float MaxMissRadius { get; set; }
     public DeferredEffectDef() {
       id = "id";
       rounds = 0;
@@ -65,6 +67,8 @@ namespace CustAmmoCategories {
       TerrainVFXScale = new CustomVector(true);
       statusEffectsRangeFalloff = true;
       sticky = true;
+      MinMissRadius = 5f;
+      MaxMissRadius = 15f;
     }
     public void ParceEffects(string json) {
       try {
@@ -407,6 +411,8 @@ namespace CustAmmoCategories {
         return false;
     } }
     public string preFireSFX { get; set; }
+    public float MinMissRadius { get; set; }
+    public float MaxMissRadius { get; set; }
     public ExtWeaponDef() {
       Id = string.Empty;
       StreakEffect = false;
@@ -496,6 +502,8 @@ namespace CustAmmoCategories {
       EjectWeapon = false;
       blockWeaponsInMechLocations = new List<ChassisLocations>();
       blockWeaponsInInstalledLocation = false;
+      MinMissRadius = 0f;
+      MaxMissRadius = 0f;
     }
   }
 }
@@ -619,6 +627,14 @@ namespace CustomAmmoCategoriesPatches {
         if (defTemp["ProjectileSpeedMultiplier"] != null) {
           extDef.ProjectileSpeedMultiplier = (float)defTemp["ProjectileSpeedMultiplier"];
           defTemp.Remove("ProjectileSpeedMultiplier");
+        }
+        if (defTemp["MaxMissRadius"] != null) {
+          extDef.MaxMissRadius = (float)defTemp["MaxMissRadius"];
+          defTemp.Remove("MaxMissRadius");
+        }
+        if (defTemp["MinMissRadius"] != null) {
+          extDef.MinMissRadius = (float)defTemp["MinMissRadius"];
+          defTemp.Remove("MinMissRadius");
         }
         if (defTemp["GunneryJammingMult"] != null) {
           extDef.GunneryJammingMult = (float)defTemp["GunneryJammingMult"];

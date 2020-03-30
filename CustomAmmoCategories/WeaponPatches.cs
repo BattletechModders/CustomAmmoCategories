@@ -185,6 +185,20 @@ namespace CustAmmoCategories {
       float result = ammo.ShotsPerAmmo * extWeapon.ShotsPerAmmo * mode.ShotsPerAmmo;
       return result;
     }
+    public static float MinMissRadius(this Weapon weapon) {
+      ExtAmmunitionDef ammo = weapon.ammo();
+      ExtWeaponDef extWeapon = weapon.exDef();
+      WeaponMode mode = weapon.mode();
+      float result = ammo.MinMissRadius + extWeapon.MinMissRadius + mode.MinMissRadius;
+      return result;
+    }
+    public static float MaxMissRadius(this Weapon weapon) {
+      ExtAmmunitionDef ammo = weapon.ammo();
+      ExtWeaponDef extWeapon = weapon.exDef();
+      WeaponMode mode = weapon.mode();
+      float result = ammo.MaxMissRadius + extWeapon.MaxMissRadius + mode.MaxMissRadius;
+      return result;
+    }
     public static float AOEHeatDamage(this Weapon weapon) {
       float result = 0f;
       ExtAmmunitionDef ammo = weapon.ammo();
@@ -315,7 +329,7 @@ namespace CustAmmoCategoriesPatches {
           if (effect.EffectData.Description.Id.Contains("StatusEffect-TAG")) { __result = true; break; }
           if (effect.EffectData.Description.Id.Contains("StatusEffect-NARC")) { __result = true; break; }
         }
-      } catch(Exception e) {
+      } catch(Exception) {
         return true;
       }
       return false;

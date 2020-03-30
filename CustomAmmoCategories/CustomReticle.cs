@@ -32,8 +32,8 @@ namespace CustAmmoCategories {
     private bool currentAuraIsBright;
     private float currentAuraRange;
     public float AuraRange { get; set; }
-    private bool currentAPIsBright;
-    private float currentAPRange;
+    //private bool currentAPIsBright;
+    //private float currentAPRange;
     private CombatHUD HUD;
     private Transform thisTransform;
     private Transform parentTransform;
@@ -90,9 +90,9 @@ namespace CustAmmoCategories {
       this.visRangeInt = Shader.PropertyToID(this.VisRange);
       this.sensorRangeInt = Shader.PropertyToID(this.SensorRange);
       this.currentAuraRange = -1f;
-      this.currentAPRange = -1f;
+      //this.currentAPRange = -1f;
       this.currentAuraIsBright = false;
-      this.currentAPIsBright = false;
+      //this.currentAPIsBright = false;
       this.offset = offset;
       this.parentTransform = parentTransform;
       AuraRange = Range;

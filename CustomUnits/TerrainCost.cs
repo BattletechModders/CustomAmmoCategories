@@ -535,6 +535,7 @@ namespace CustomUnits {
       }
       return true;
     }
+#pragma warning disable CS0252
     static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) {
       Log.LogWrite("ToHit.GetAllModifiers transpliter\n", true);
       List<CodeInstruction> result = instructions.ToList();
@@ -557,4 +558,5 @@ namespace CustomUnits {
       return owningActor.Combat.MapMetaData.GetLerpedHeightAt(worldPos, false);
     }
   }
+#pragma warning restore CS0252
 }

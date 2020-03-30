@@ -72,7 +72,7 @@ namespace CustomAmmoCategoriesPatches {
           try {
             //Log.M.WL(1, "charlesB");
             //CharlesB.AttackDirector__AttackSequence_OnAttackSequenceResolveDamage_Patch.Prefix(ref message, __instance);
-          } catch (Exception e) {
+          } catch (Exception) {
             //Log.CB.TWL(0, e.ToString(), true);
           }
           Log.M.WL(1, "resolve weapon damage");

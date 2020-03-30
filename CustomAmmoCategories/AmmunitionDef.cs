@@ -282,6 +282,8 @@ namespace CustAmmoCategories {
     public DeferredEffectDef deferredEffect { get; set; }
     public string preFireSFX { get; set; }
     public bool HideIfOnlyVariant { get; set; }
+    public float MinMissRadius { get; set; }
+    public float MaxMissRadius { get; set; }
     public ExtAmmunitionDef() {
       Id = "NotSet";
       Name = string.Empty;
@@ -392,6 +394,8 @@ namespace CustAmmoCategories {
       this.deferredEffect = new DeferredEffectDef();
       preFireSFX = string.Empty;
       HideIfOnlyVariant = false;
+      MinMissRadius = 0f;
+      MaxMissRadius = 0f;
     }
   }
 }
@@ -872,6 +876,14 @@ namespace CustomAmmoCategoriesPatches {
         if (defTemp["DamageMultiplier"] != null) {
           extAmmoDef.DamageMultiplier = (float)defTemp["DamageMultiplier"];
           defTemp.Remove("DamageMultiplier");
+        }
+        if (defTemp["MinMissRadius"] != null) {
+          extAmmoDef.MinMissRadius = (float)defTemp["MinMissRadius"];
+          defTemp.Remove("MinMissRadius");
+        }
+        if (defTemp["MaxMissRadius"] != null) {
+          extAmmoDef.MaxMissRadius = (float)defTemp["MaxMissRadius"];
+          defTemp.Remove("MaxMissRadius");
         }
         if (defTemp["APDamageMultiplier"] != null) {
           extAmmoDef.APDamageMultiplier = (float)defTemp["APDamageMultiplier"];
