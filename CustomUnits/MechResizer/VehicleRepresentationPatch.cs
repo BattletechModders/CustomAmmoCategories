@@ -13,6 +13,7 @@ namespace MechResizer {
         bool isParented,
         VehicleRepresentation __instance) {
       Log.TWL(0, "vehicle size initialization ");
+      if (vehicle == null) { return; }
       var identifier = vehicle.VehicleDef.ChassisID;
       var sizeMultiplier = SizeMultiplier.Get(vehicle.VehicleDef);
       Log.TWL(0, $"{identifier}: {sizeMultiplier}");

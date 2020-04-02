@@ -199,6 +199,7 @@ namespace CustAmmoCategories {
     public string preFireSFX { get; set; }
     public float MinMissRadius { get; set; }
     public float MaxMissRadius { get; set; }
+    public Dictionary<string, float> TagsAccuracyModifiers { get; set; }
     public WeaponMode() {
       Id = WeaponMode.NONE_MODE_NAME;
       UIName = WeaponMode.BASE_MODE_NAME;
@@ -297,6 +298,7 @@ namespace CustAmmoCategories {
       preFireSFX = string.Empty;
       MinMissRadius = 0f;
       MaxMissRadius = 0f;
+      TagsAccuracyModifiers = new Dictionary<string, float>();
     }
     public void fromJSON(string json) {
       JObject jWeaponMode = JObject.Parse(json);
@@ -482,6 +484,13 @@ namespace CustAmmoCategories {
       }
       if (jWeaponMode["ColorSpeedChange"] != null) {
         this.ColorSpeedChange = (float)jWeaponMode["ColorSpeedChange"];
+      }
+      if (jWeaponMode["ChassisTagsAccuracyModifiers"] != null) {
+        this.TagsAccuracyModifiers = JsonConvert.DeserializeObject<Dictionary<string, float>>(jWeaponMode["ChassisTagsAccuracyModifiers"].ToString());
+        Log.LogWrite((string)jWeaponMode["Id"] + " ChassisTagsAccuracyModifiers:\n");
+        foreach (var tam in this.TagsAccuracyModifiers) {
+          Log.LogWrite(" " + tam.Key + ":" + tam.Key);
+        }
       }
       if (jWeaponMode["ColorChangeRule"] != null) {
         this.ColorChangeRule = (ColorChangeRule)Enum.Parse(typeof(ColorChangeRule), (string)jWeaponMode["ColorChangeRule"]);

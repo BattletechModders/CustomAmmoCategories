@@ -30,6 +30,13 @@ namespace MechResizer {
           type: typeof(Turret),
           prefab: def.Chassis.PrefabBase);
     }
+    public static Vector3 Get(MechDef def) {
+      return Get(
+          identifier: def.Description.Id,
+          tags: def.MechTags,
+          type: typeof(Vehicle),
+          prefab: def.Chassis.PrefabBase);
+    }
 
     public static Vector3 Get(WeaponDef def) {
       return Get(

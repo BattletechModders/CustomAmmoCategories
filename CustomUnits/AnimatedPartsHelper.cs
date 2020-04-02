@@ -744,6 +744,222 @@ namespace CustomUnits {
       }
       animatedParts.Clear();
     }
+    public static Transform getAttachMech(this MechRepresentationSimGame rep, int location) {
+      ChassisLocations loc = (ChassisLocations)location;
+      switch (loc) {
+        case ChassisLocations.Head: return rep.vfxHeadTransform;
+        case ChassisLocations.CenterTorso: return rep.vfxCenterTorsoTransform;
+        case ChassisLocations.RightTorso: return rep.vfxRightTorsoTransform;
+        case ChassisLocations.LeftTorso: return rep.vfxLeftTorsoTransform;
+        case ChassisLocations.RightArm: return rep.RightArmAttach;
+        case ChassisLocations.LeftArm: return rep.LeftArmAttach;
+        case ChassisLocations.RightLeg: return rep.RightLegAttach;
+        case ChassisLocations.LeftLeg: return rep.LeftLegAttach;
+        default: return rep.vfxCenterTorsoTransform;
+      }
+    }
+    public static Transform getAttachVehicle(this MechRepresentationSimGame rep, int location) {
+      VehicleChassisLocations loc = (VehicleChassisLocations)location;
+      switch (loc) {
+        case VehicleChassisLocations.Turret: return rep.vfxHeadTransform;
+        case VehicleChassisLocations.Front: return rep.LeftArmAttach;
+        case VehicleChassisLocations.Rear: return rep.RightArmAttach;
+        case VehicleChassisLocations.Left: return rep.LeftLegAttach;
+        case VehicleChassisLocations.Right: return rep.RightLegAttach;
+        default: return rep.vfxHeadTransform;
+      }
+    }
+    public static void SpawnAnimatedPart(MechDef def,MechRepresentationSimGame rep, CustomPart spawnPart, int Location) {
+      if (def == null) { return; }
+      if (rep == null) { return; }
+      Log.LogWrite("SpawnAnimatedPart " + def.Description.Id + " " + spawnPart.prefab + " " + spawnPart.AnimationType + " " + spawnPart.Data + " " + Location + " " + spawnPart.prefabTransform.offset + " " + spawnPart.prefabTransform.scale + " " + spawnPart.prefabTransform.rotate + "\n");
+      Renderer actorRenderer = rep.gameObject.GetComponentInChildren<Renderer>();
+      GameObject gameObject = null;
+      if (string.IsNullOrEmpty(spawnPart.prefab) == false) {
+        gameObject = def.DataManager.PooledInstantiate(spawnPart.prefab, BattleTechResourceType.Prefab, new Vector3?(), new Quaternion?(), (Transform)null);
+        if ((UnityEngine.Object)gameObject == (UnityEngine.Object)null) {
+          Log.LogWrite("Can't find " + spawnPart.prefab + " in in-game prefabs\n");
+          if (CACMain.Core.AdditinalFXObjects.ContainsKey(spawnPart.prefab)) {
+            Log.LogWrite("Found in additional prefabs\n");
+            gameObject = GameObject.Instantiate(CACMain.Core.AdditinalFXObjects[spawnPart.prefab]);
+          } else {
+            Log.LogWrite(" can't spawn prefab " + spawnPart.prefab + " it is absent in pool,in-game assets and external assets\n", true);
+            return;
+          }
+        }
+      } else {
+        Log.LogWrite(" creating empty object\n");
+        gameObject = new GameObject();
+      }
+      Transform parentTransform = null;
+      if (string.IsNullOrEmpty(spawnPart.boneName) == false) {
+        Transform[] transforms = rep.gameObject.GetComponentsInChildren<Transform>();
+        foreach (Transform bone in transforms) {
+          if (bone.name == spawnPart.boneName) {
+            Log.LogWrite(" parent bone found\n");
+            parentTransform = bone;
+            break;
+          }
+        }
+      }
+      if (parentTransform == null) { parentTransform = def.IsChassisFake()?rep.getAttachVehicle(Location) :rep.getAttachMech(Location); };
+      gameObject.transform.parent = parentTransform;
+      gameObject.transform.localPosition = spawnPart.prefabTransform.offset.vector;
+      Quaternion rotation = Quaternion.Euler(spawnPart.prefabTransform.rotate.vector);
+      gameObject.transform.localRotation = rotation;
+      gameObject.transform.localScale = spawnPart.prefabTransform.scale.vector;
+      /*Transform[] transforms = gameObject.GetComponentsInChildren<Transform>();
+      foreach (Transform transform in transforms) {
+        Log.LogWrite("Transform:"+transform.name+" scale:"+ transform.gameObject.transform.localScale + "->");
+        Log.LogWrite(" " + transform.gameObject.transform.localScale+"\n");
+      }*/
+      Component[] components = gameObject.GetComponents<Component>();
+      foreach (Component cmp in components) {
+        if (cmp == null) { continue; }
+        Log.LogWrite(0, "Component:" + cmp.GetType() + " " + cmp.name + " id:" + cmp.GetInstanceID() + " owner:" + cmp.gameObject.GetInstanceID(), true);
+      }
+      components = gameObject.GetComponentsInChildren<Component>();
+      foreach (Component cmp in components) {
+        if (cmp == null) { continue; }
+        Log.LogWrite(0, "Child component:" + cmp.GetType() + " " + cmp.name + " id:" + cmp.GetInstanceID() + " owner:" + cmp.gameObject.GetInstanceID(), true);
+      }
+      /*components = unit.GameRep.gameObject.GetComponentsInChildren<Component>();
+      foreach (Component cmp in components) {
+        if (cmp == null) { continue; }
+        Log.LogWrite(0, "Actor component:" + cmp.GetType() + " " + cmp.name + " id:" + cmp.GetInstanceID() + " owner:" + cmp.gameObject.GetInstanceID(), true);
+      }*/
+      ParticleSystem[] particleSystems = gameObject.GetComponentsInChildren<ParticleSystem>();
+      foreach (ParticleSystem ps in particleSystems) {
+        ps.Play(true);
+      }
+      Renderer[] spawnRenderers = gameObject.GetComponentsInChildren<Renderer>();
+      foreach (Renderer renderer in spawnRenderers) {
+        foreach (Material material in renderer.materials) {
+          Log.LogWrite(0, "Renderer:" + renderer.GetType() + ":" + renderer.name + " material:" + material.name, true);
+          CustomMaterialInfo mInfo = spawnPart.findMaterialInfo(material.name);
+          if (mInfo != null) {
+            Log.LogWrite(1, "need custom processing", true);
+            if (string.IsNullOrEmpty(mInfo.shader) == false) {
+              GameObject shaderGo = def.DataManager.PooledInstantiate(mInfo.shader, BattleTechResourceType.Prefab, new Vector3?(), new Quaternion?(), (Transform)null);
+              if (shaderGo != null) {
+                Renderer shaderRenderer = shaderGo.GetComponentInChildren<Renderer>();
+                if (shaderRenderer != null) {
+                  Shader shader = shaderRenderer.material.shader;
+                  Log.LogWrite(2, "shader real name:" + shader.name);
+                  material.shader = shader;
+                } else {
+                  Log.LogWrite(2, "can't found renderer in shader carrier " + mInfo.shader, true);
+                }
+                def.DataManager.PoolGameObject(mInfo.shader, shaderGo);
+              } else {
+                Log.LogWrite(2, "can't found shader carrier " + mInfo.shader, true);
+              }
+            }
+            if (mInfo.shaderKeyWords.Count > 0) {
+              material.shaderKeywords = mInfo.shaderKeyWords.ToArray();
+              Log.LogWrite(2, "shaders keywords updated " + material.shaderKeywords, true);
+            }
+          } else {
+            Log.LogWrite(1, "no additional custom processing", true);
+          }
+        }
+      }
+      /*if (_BumpMap != null) newPrototype.materials[lod].SetTexture("_BumpMap", _BumpMap);
+      if (_MainTex != null) newPrototype.materials[lod].SetTexture("_MainTex", _MainTex);
+      if (_OcculusionMap != null) newPrototype.materials[lod].SetTexture("_OcculusionMap", _OcculusionMap);
+      if (_Transmission != null) newPrototype.materials[lod].SetTexture("_Transmission", _Transmission);
+      if (_MetallicGlossMap != null) newPrototype.materials[lod].SetTexture("_MetallicGlossMap", _MetallicGlossMap);*/
+      //Texture albedo = spawnRenderer.material.GetTexture("_MainTex");
+      //Texture metallic = spawnRenderer.material.GetTexture("_MetallicGlossMap");
+      //Texture normalMap = spawnRenderer.material.GetTexture("_BumpMap");
+      //Texture occulsionMap = spawnRenderer.material.GetTexture("_OcculusionMap");
+      /*Log.LogWrite("Textures get\n");
+      //spawnRenderer.material = GameObject.Instantiate(actorRenderer.material);
+      //spawnRenderer.material.SetTexture("_BumpMap", null);
+      spawnRenderer.material.SetTexture("_DamageAlbedoMap", null);
+      spawnRenderer.material.SetTexture("_DamageNormalMap", null);
+      spawnRenderer.material.SetTexture("_DetailAlbedoMap", null);
+      spawnRenderer.material.SetTexture("_DetailMask", null);
+      spawnRenderer.material.SetTexture("_DetailNormalMap", null);
+      spawnRenderer.material.SetTexture("_EmblemMap", null);
+      spawnRenderer.material.SetTexture("_EmissionMap", null);
+      //spawnRenderer.material.SetTexture("_MainTex", null);
+      //spawnRenderer.material.SetTexture("_MetallicGlossMap", null);
+      //spawnRenderer.material.SetTexture("_OcclusionMap", null);
+      spawnRenderer.material.SetTexture("_PaintScheme", null);
+      spawnRenderer.material.SetTexture("_PaintSchemeOverride", null);
+      spawnRenderer.material.SetTexture("_ParallaxMap", null);
+      Log.LogWrite("Textures set\n");*/
+      /*AudioSource audioSource = gameObject.GetComponentInChildren<AudioSource>();
+      if (audioSource != null) {
+        Log.LogWrite(" audioSource exists in childs\n");
+        AudioClip clip = audioSource.clip;
+        if (clip != null) {
+          Log.LogWrite(" clip exists. loadState:" + clip.loadState + " length:" + clip.length + " name:" + clip.name + " loadType:" + clip.loadType + "\n");
+          if (clip.loadState == AudioDataLoadState.Unloaded) {
+            Log.LogWrite(" load audio data:" + clip.LoadAudioData());
+            Log.LogWrite(" loadState:" + clip.loadState + " length:" + clip.length + "\n");
+          }
+        }
+        audioSource.loop = true;
+        Log.LogWrite(" playing\n");
+        audioSource.minDistance = 0f;
+        audioSource.Play();
+      }*/
+      /*AudioClip rotorClip = Resources.Load<AudioClip>("Sounds/helicopter-hovering-01");
+      if (rotorClip != null) {
+        Log.LogWrite(" rotorClip exists. loadState:" + rotorClip.loadState + " length:" + rotorClip.length + " name:" + rotorClip.name + " loadType:" + rotorClip.loadType + "\n");
+      } else {
+        Log.LogWrite(" rotor clip not loaded\n");
+      }*/
+      ParticleSystem component = gameObject.GetComponent<ParticleSystem>();
+      if (component != null) {
+        Log.LogWrite("ParticleSystem for " + spawnPart.prefab + " found\n");
+        //component.transform.localScale.Set(scale.x, scale.y, scale.z);
+        component.transform.parent = def.IsChassisFake() ? rep.getAttachVehicle(Location) : rep.getAttachMech(Location);
+        component.transform.localPosition = spawnPart.prefabTransform.offset.vector;
+        component.transform.localRotation = rotation;
+        gameObject.SetActive(true);
+        component.Stop(true);
+        component.Clear(true);
+        BTCustomRenderer.SetVFXMultiplier(component);
+        component.Play(true);
+      } else {
+        Log.LogWrite("no particle system for " + spawnPart.prefab + "\n");
+      }
+      GenericAnimatedComponent acomponent = null;
+      try {
+        if (spawnPart.AnimationType == "SimpleRotator") {
+          acomponent = gameObject.AddComponent<SimpleRotator>();
+        } else
+        if (spawnPart.AnimationType == "Turret") {
+          acomponent = gameObject.AddComponent<TurretAnimator>();
+        } else
+        if (spawnPart.AnimationType == "WeaponMountPoint") {
+          acomponent = gameObject.AddComponent<WeaponMountPoint>();
+        } else
+        if (spawnPart.AnimationType == "Animation") {
+          acomponent = gameObject.AddComponent<CustomMoveAnimator>();
+        } else
+        if (spawnPart.AnimationType == "CustomQuadLegController") {
+          acomponent = gameObject.AddComponent<CustomQuadLegController>();
+        } else {
+          acomponent = gameObject.AddComponent<GenericAnimatedComponent>();
+        }
+        if (acomponent != null) {
+          //acomponent.Init(unit, Location, spawnPart.Data);
+        }
+      } catch (Exception e) {
+        Log.LogWrite(e.ToString() + "\n", true);
+      }
+      gameObject.SetActive(true);
+      //if (animatedParts.ContainsKey(unit) == false) {
+      //  Log.LogWrite("new list\n");
+      //  animatedParts.Add(unit, new List<GameObject>());
+      //};
+      //animatedParts[unit].Add(gameObject);
+      //Log.LogWrite("animatedParts.Count = " + animatedParts[unit].Count + "\n");
+    }
     public static void SpawnAnimatedPart(ICombatant unit, CustomPart spawnPart, int Location) {
       if (unit.GameRep == null) {
         return;
@@ -959,6 +1175,50 @@ namespace CustomUnits {
             if (string.IsNullOrEmpty(ti.Value) == false) {
               Log.LogWrite(1, "additional textures:" + ti.Value, true);
               dependencyLoad.RequestResource(BattleTechResourceType.Texture2D, ti.Value);
+            }
+          }
+        }
+      }
+    }
+    public static void AddCustomDeps(this ChassisDef chassis, LoadRequest loadRequest) {
+      VehicleCustomInfo info = chassis.GetCustomInfo();
+      if (info != null) {
+        foreach (CustomPart part in info.CustomParts) {
+          if (string.IsNullOrEmpty(part.prefab)) { continue; }
+          Log.LogWrite(1, "additional prefab:" + part.prefab, true);
+          loadRequest.AddBlindLoadRequest(BattleTechResourceType.Prefab, part.prefab, new bool?(false));
+          foreach (var mi in part.MaterialInfo) {
+            if (string.IsNullOrEmpty(mi.Value.shader) == false) {
+              Log.LogWrite(1, "additional shader:" + mi.Value.shader, true);
+              loadRequest.AddBlindLoadRequest(BattleTechResourceType.Prefab, mi.Value.shader, new bool?(false));
+            }
+            foreach (var ti in mi.Value.materialTextures) {
+              if (string.IsNullOrEmpty(ti.Value) == false) {
+                Log.LogWrite(1, "additional textures:" + ti.Value, true);
+                loadRequest.AddBlindLoadRequest(BattleTechResourceType.Texture2D, ti.Value, new bool?(false));
+              }
+            }
+          }
+        }
+      }
+    }
+    public static void AddCustomDeps(this VehicleChassisDef chassis, LoadRequest loadRequest) {
+      VehicleCustomInfo info = chassis.GetCustomInfo();
+      if (info != null) {
+        foreach (CustomPart part in info.CustomParts) {
+          if (string.IsNullOrEmpty(part.prefab)) { continue; }
+          Log.LogWrite(1, "additional prefab:" + part.prefab, true);
+          loadRequest.AddBlindLoadRequest(BattleTechResourceType.Prefab, part.prefab, new bool?(false));
+          foreach (var mi in part.MaterialInfo) {
+            if (string.IsNullOrEmpty(mi.Value.shader) == false) {
+              Log.LogWrite(1, "additional shader:" + mi.Value.shader, true);
+              loadRequest.AddBlindLoadRequest(BattleTechResourceType.Prefab, mi.Value.shader, new bool?(false));
+            }
+            foreach (var ti in mi.Value.materialTextures) {
+              if (string.IsNullOrEmpty(ti.Value) == false) {
+                Log.LogWrite(1, "additional textures:" + ti.Value, true);
+                loadRequest.AddBlindLoadRequest(BattleTechResourceType.Texture2D, ti.Value, new bool?(false));
+              }
             }
           }
         }

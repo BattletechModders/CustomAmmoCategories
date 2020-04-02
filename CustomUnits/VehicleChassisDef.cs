@@ -90,6 +90,46 @@ namespace CustomUnits {
       }
       return true;
     }
+    public bool Test(MechComponentRef component) {
+      if (string.IsNullOrEmpty(DefId) == false) {
+        if (component.ComponentDefID != DefId) {
+          Log.WL(5, "bad defId " + component.ComponentDefID + " != " + DefId);
+          return false;
+        }
+      }
+      if (SearchLocations.Count != 0) {
+        if (SearchLocations.Contains((int)component.MountedLocation) == false) {
+          Log.WL(5, "bad location");
+          return false;
+        }
+      }
+      if (string.IsNullOrEmpty(CategoryId) == false) {
+        Category category = component.Def.GetComponent<Category>();
+        if (category == null) { return false; }
+        if (category.CategoryID != CategoryId) { return false; }
+      }
+      return true;
+    }
+    public bool Test(VehicleComponentRef component) {
+      if (string.IsNullOrEmpty(DefId) == false) {
+        if (component.ComponentDefID != DefId) {
+          Log.WL(5, "bad defId " + component.ComponentDefID + " != " + DefId);
+          return false;
+        }
+      }
+      if (SearchLocations.Count != 0) {
+        if (SearchLocations.Contains((int)component.MountedLocation) == false) {
+          Log.WL(5, "bad location");
+          return false;
+        }
+      }
+      if (string.IsNullOrEmpty(CategoryId) == false) {
+        Category category = component.Def.GetComponent<Category>();
+        if (category == null) { return false; }
+        if (category.CategoryID != CategoryId) { return false; }
+      }
+      return true;
+    }
   }
   public class CustomPart {
     public string prefab { get; set; }
@@ -587,12 +627,12 @@ namespace CustomUnits {
       Log.LogWrite(" -> " + transform.position + " rot: " + transform.rotation.eulerAngles + "\n");
     }
     public static bool Prefix(PilotableActorRepresentation __instance, AbstractActor unit, Transform parentTransform, bool isParented) {
-      Log.LogWrite("PilotableActorRepresentation.Init prefix " + unit.DisplayName + ":" + unit.GUID + "\n");
+      Log.LogWrite("PilotableActorRepresentation.Init prefix " + (unit == null?"null":(unit.DisplayName + ":" + unit.GUID)) + "\n");
       __instance.gameObject.printComponents(1);
       try {
         VehicleRepresentation vRep = __instance as VehicleRepresentation;
         Vehicle vehicle = unit as Vehicle;
-        if ((vRep == null) || (vehicle == null)) {
+        if (vRep == null) {
           Log.LogWrite(" not a vehicle\n");
           return true;
         }
@@ -628,7 +668,70 @@ namespace CustomUnits {
       }
       return true;
     }
+    public static VehicleChassisLocations toVehicleLocation(this ChassisLocations loc) {
+      switch (loc) {
+        case ChassisLocations.CenterTorso: return VehicleChassisLocations.Turret;
+        case ChassisLocations.RightTorso: return VehicleChassisLocations.Turret;
+        case ChassisLocations.LeftTorso: return VehicleChassisLocations.Turret;
+        case ChassisLocations.LeftArm: return VehicleChassisLocations.Front;
+        case ChassisLocations.RightArm: return VehicleChassisLocations.Rear;
+        case ChassisLocations.LeftLeg: return VehicleChassisLocations.Left;
+        case ChassisLocations.RightLeg: return VehicleChassisLocations.Right;
+        default: return VehicleChassisLocations.Turret;
+      }
+    }
+    public static void SpawnCustomParts(this MechDef mechDef, MechRepresentationSimGame rep) {
+      Log.TWL(0, "mechDef.SpawnCustomParts " + mechDef.ChassisID);
+      VehicleCustomInfo info = mechDef.Chassis.GetCustomInfo();
+      if (info == null) {
+        Log.WL(1, "no custom info");
+        return;
+      }
+      try {
+        foreach (var AnimPart in info.CustomParts) {
+          int location = 1;
+          Log.WL(1, AnimPart.prefab + " req components: " + AnimPart.RequiredComponents.Count);
+          if (AnimPart.RequiredComponents.Count > 0) {
+            bool suitable_component_found = false;
+            foreach (RequiredComponent rcomp in AnimPart.RequiredComponents) {
+              suitable_component_found = false;
+              Log.WL(2, "condition def:" + rcomp.DefId + " cat:" + rcomp.CategoryId);
+              foreach (MechComponentRef component in mechDef.Inventory) {
+                Log.WL(3, "component " + component.ComponentDefID + " loc:" + component.MountedLocation);
+                if (rcomp.Test(component)) {
+                  Log.WL(4, "success");
+                  suitable_component_found = true; break;
+                } else {
+                  Log.WL(4, "fail");
+                }
+              }
+              if (suitable_component_found) { break; }
+            }
+            if (suitable_component_found == false) { continue; }
+          };
+          if (rep != null) {
+            if (AnimPart.RequiredUpgradesSet.Count > 0) {
+              bool found = false;
+              foreach (MechComponentRef component in mechDef.Inventory) {
+                if (mechDef.IsChassisFake()) {
+                  if (AnimPart.VehicleChassisLocation != component.MountedLocation.toVehicleLocation()) { continue; }
+                } else {
+                  if (AnimPart.MechChassisLocation != component.MountedLocation) { continue; }
+                }
+                if (AnimPart.RequiredUpgradesSet.Contains(component.ComponentDefID)) { found = true; break; }
+              }
+              if (found == false) { continue; }
+            }
+            location = mechDef.IsChassisFake()?(int)AnimPart.VehicleChassisLocation:(int)AnimPart.MechChassisLocation;
+          }
+          UnitsAnimatedPartsHelper.SpawnAnimatedPart(mechDef,rep,AnimPart,location);
+        }
+      } catch (Exception e) {
+        Log.LogWrite(e.ToString() + "\n");
+      }
+    }
     public static void Postfix(PilotableActorRepresentation __instance, AbstractActor unit, Transform parentTransform, bool isParented) {
+      if (unit == null) { return; };
       Log.TWL(0,"GameRepresentation.Init postfix " + new Text(unit.DisplayName).ToString() + ":" + unit.GUID);
       try {
         int instanceId = unit.GameRep.gameObject.GetInstanceID();
@@ -820,6 +923,7 @@ namespace CustomUnits {
   public static class PilotableActorRepresentation_RefreshSurfaceType {
     public static bool Prefix(PilotableActorRepresentation __instance, bool forceUpdate, ref bool __result) {
       Log.LogWrite("PilotableActorRepresentation.RefreshSurfaceType Prefix\n");
+      if (__instance.parentCombatant == null) { return false; }
       if (__instance.parentCombatant.UnaffectedDesignMasks()) {
         Log.LogWrite(" unaffected\n");
         __result = true;

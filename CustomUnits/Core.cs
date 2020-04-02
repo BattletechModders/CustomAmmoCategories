@@ -101,6 +101,9 @@ namespace CustomUnits{
     public float deepWaterDepth { get; set; }
     public float waterFlatDepth { get; set; }
     public List<string> LancesIcons { get; set; }
+    public List<CustomLanceDef> Lances { get; set; }
+    public int overallDeploySize { get; set; }
+    public string EMPLOYER_LANCE_GUID { get; set; }
     public CUSettings() {
       debugLog = false;
       DeathHeight = 1f;
@@ -110,16 +113,41 @@ namespace CustomUnits{
       deepWaterDepth = 10f;
       waterFlatDepth = 2f;
       LancesIcons = new List<string>();
+      Lances = new List<CustomLanceDef>();
+      overallDeploySize = 4;
+      EMPLOYER_LANCE_GUID = "ecc8d4f2-74b4-465d-adf6-84445e5dfc230";
     }
   }
   public static partial class Core{
     public static readonly float Epsilon = 0.001f;
     public static CUSettings Settings;
+    public static void FinishedLoading(List<string> loadOrder) {
+      Log.TWL(0, "FinishedLoading", true);
+      try {
+        foreach(string name in loadOrder) { if (name == "Mission Control") { CustomLanceHelper.MissionControlDetected(); break; }; }
+      } catch (Exception e) {
+        Log.TWL(0, e.ToString(), true);
+      }
+    }
+    public static void InitLancesLoadoutDefault() {
+      if (Core.Settings.Lances.Count > 0) {
+        CustomLanceHelper.setLancesCount(Core.Settings.Lances.Count);
+        for (int lanceid = 0; lanceid < Core.Settings.Lances.Count; ++lanceid) {
+          CustomLanceHelper.setLanceData(lanceid, Core.Settings.Lances[lanceid].size, Core.Settings.Lances[lanceid].allow, Core.Settings.Lances[lanceid].is_vehicle);
+        }
+        CustomLanceHelper.setOverallDeployCount(Core.Settings.overallDeploySize);
+      } else {
+        CustomLanceHelper.setLancesCount(1);
+        CustomLanceHelper.setLanceData(0, 4, 4, false);
+        CustomLanceHelper.setOverallDeployCount(4);
+      }
+    }
     public static void Init(string directory, string settingsJson) {
       Log.BaseDirectory = directory;
       Log.InitLog();
       Core.Settings = JsonConvert.DeserializeObject<CustomUnits.CUSettings>(settingsJson);
       Log.LogWrite("Initing... " + directory + " version: " + Assembly.GetExecutingAssembly().GetName().Version + "\n", true);
+      InitLancesLoadoutDefault();
       MechResizer.MechResizer.Init(directory, settingsJson);
       try {
         var harmony = HarmonyInstance.Create("io.mission.customunits");

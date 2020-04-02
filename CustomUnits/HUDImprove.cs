@@ -1,5 +1,8 @@
 ﻿using BattleTech;
 using BattleTech.Data;
+using BattleTech.Save;
+using BattleTech.Save.Test;
+using BattleTech.Serialization;
 using BattleTech.UI;
 using BattleTech.UI.TMProWrapper;
 using BattleTech.UI.Tooltips;
@@ -9,6 +12,7 @@ using Harmony;
 using HBS;
 using HBS.Collections;
 using Localize;
+using Newtonsoft.Json;
 using SVGImporter;
 using System;
 using System.Collections.Generic;
@@ -241,22 +245,153 @@ namespace CustomUnits {
   }
   public class CustomLanceDef {
     public int size { get; set; }
+    public int allow { get; set; }
     public bool is_vehicle { get; set; }
-    public CustomLanceDef(int s, bool v) { size = s; is_vehicle = v; }
+    public CustomLanceDef() { size = 0; allow = 0; is_vehicle = false; }
+    public CustomLanceDef(int s, int a, bool v) { size = s; allow = a; is_vehicle = v; }
+  }
+  public class PlayerLancesLoadout {
+    public Dictionary<string,int> loadout;
+    public PlayerLancesLoadout() { loadout = new Dictionary<string,int>(); }
+  }
+  [HarmonyPatch(typeof(SimGameState), "Dehydrate")]
+  public static class SimGameState_Dehydrate {
+    static void Prefix(SimGameState __instance, SerializableReferenceContainer references) {
+      Log.TWL(0, "SimGameState.Dehydrate");
+      try {
+        Log.WL(1, "playerLanceLoadout(" + CustomLanceHelper.playerLanceLoadout.loadout.Count + "):");
+        foreach (var guid in CustomLanceHelper.playerLanceLoadout.loadout) {
+          Log.WL(2, "GUID:" + guid.Key+"->"+guid.Value);
+        }
+        Statistic playerMechContent = __instance.CompanyStats.GetStatistic(CustomLanceHelper.SaveReferenceName);
+        if(playerMechContent == null) {
+          __instance.CompanyStats.AddStatistic<string>(CustomLanceHelper.SaveReferenceName,JsonConvert.SerializeObject(CustomLanceHelper.playerLanceLoadout));
+        } else {
+          playerMechContent.SetValue<string>(JsonConvert.SerializeObject(CustomLanceHelper.playerLanceLoadout));
+        }
+        //references.AddItem<PlayerAllyLanceContent>(CustomLanceHelper.SaveReferenceName, CustomLanceHelper.playerAllyContent);
+      }catch(Exception e) {
+        Log.TWL(0, e.ToString(), true);
+      }
+    }
+  }
+  [HarmonyPatch(typeof(SimGameState), "Rehydrate")]
+  public static class SimGameState_Rehydrate {
+    static void Postfix(SimGameState __instance, GameInstanceSave gameInstanceSave) {
+      Log.TWL(0, "SimGameState.Rehydrate");
+      try {
+        Statistic playerMechContent = __instance.CompanyStats.GetStatistic(CustomLanceHelper.SaveReferenceName);
+        if (playerMechContent == null) {
+          CustomLanceHelper.playerLanceLoadout.loadout.Clear();
+        } else {
+          CustomLanceHelper.playerLanceLoadout = JsonConvert.DeserializeObject<PlayerLancesLoadout>(playerMechContent.Value<string>());
+        }
+        //CustomLanceHelper.playerAllyContent = references.GetItem<PlayerAllyLanceContent>(CustomLanceHelper.SaveReferenceName);
+        Log.WL(1, "playerLanceLoadout(" + CustomLanceHelper.playerLanceLoadout.loadout.Count+ "):");
+        foreach (var guid in CustomLanceHelper.playerLanceLoadout.loadout) {
+          Log.WL(2, "GUID:" + guid.Key + "->" + guid.Value);
+        }
+      } catch (Exception e) {
+        Log.TWL(0, e.ToString(), true);
+      }
+    }
+  }
+  [HarmonyPatch(typeof(SimGameState))]
+  [HarmonyPatch("SaveLastLance")]
+  [HarmonyPatch(MethodType.Normal)]
+  public static class SimGameState_SaveLastLance{
+    public static bool Prefix(SimGameState __instance, LanceConfiguration config,ref List<string> ___LastUsedMechs,ref List<string> ___LastUsedPilots) {
+      ___LastUsedMechs = new List<string>();
+      ___LastUsedPilots = new List<string>();
+      foreach (SpawnableUnit lanceUnit in config.GetLanceUnits("bf40fd39-ccf9-47c4-94a6-061809681140")) {
+        string str1 = "";
+        string str2 = "";
+        SpawnableUnit spawnableUnit = lanceUnit;
+        if (spawnableUnit != null) {
+          if (spawnableUnit.Unit != null && spawnableUnit.Pilot != null) {
+            str1 = spawnableUnit.Unit.GUID;
+            str2 = spawnableUnit.Pilot.Description.Id;
+          }
+          if (!string.IsNullOrEmpty(str1) && !string.IsNullOrEmpty(str2)) {
+            ___LastUsedMechs.Add(str1);
+            ___LastUsedPilots.Add(str2);
+          }
+        } else {
+          ___LastUsedMechs.Add(string.Empty);
+          ___LastUsedPilots.Add(string.Empty);
+        }
+      }
+      return false;
+    }
+  }
+  [HarmonyPatch(typeof(SimGameState))]
+  [HarmonyPatch("GetLastLance")]
+  [HarmonyPatch(MethodType.Normal)]
+  public static class SimGameState_GetLastLance {
+    public static bool Prefix(SimGameState __instance, ref LanceConfiguration __result, ref List<string> ___LastUsedMechs, ref List<string> ___LastUsedPilots) {
+      LanceConfiguration lanceConfiguration = new LanceConfiguration();
+      if (___LastUsedMechs != null && ___LastUsedPilots != null) {
+        for (int index = 0; index < 4; ++index) {
+          string id = string.Empty;
+          if (___LastUsedMechs.Count > index)
+            id = ___LastUsedMechs[index];
+          string pilotID = string.Empty;
+          if (___LastUsedPilots.Count > index)
+            pilotID = ___LastUsedPilots[index];
+          MechDef mechById = __instance.GetMechByID(id);
+          PilotDef pilotDef = __instance.GetPilot(pilotID)?.pilotDef;
+          if (mechById != null || pilotDef != null) {
+            lanceConfiguration.AddUnit("bf40fd39-ccf9-47c4-94a6-061809681140", (PilotableActorDef)mechById, pilotDef);
+          } else {
+            lanceConfiguration.AddUnit("bf40fd39-ccf9-47c4-94a6-061809681140", string.Empty, string.Empty, UnitType.UNDEFINED);
+          }
+        }
+      }
+      __result = lanceConfiguration;
+      return false;
+    }
   }
   public static class CustomLanceHelper {
-    private static List<CustomLanceDef> lancesData = new List<CustomLanceDef>(new CustomLanceDef[] { new CustomLanceDef(6, false), new CustomLanceDef(4, true) });
-    private static List<int> allowLanceSizes = new List<int>(new int[] { 5, 3 });
+    public static readonly string SaveReferenceName = "PlayedAllyLanceContent";
+    public static PlayerLancesLoadout playerLanceLoadout = new PlayerLancesLoadout();
+    private static List<CustomLanceDef> lancesData = new List<CustomLanceDef>(new CustomLanceDef[] { new CustomLanceDef(4, 4, false) });
+    //private static List<int> allowLanceSizes = new List<int>(new int[] { 5, 3 });
     private static int fallbackAllow = -1;
     private static int f_overallDeployCount = 4;
-    public static void overallDeployCount(int value) { f_overallDeployCount = Mathf.Min(value,fullSlotsCount()); }
-    public static int overallDeployCount() { return f_overallDeployCount; }
+    private static int f_playerControlMechs = -1;
+    private static int f_playerControlVehicles = -1;
+    private static bool missionControlDetected = false;
+    public static void MissionControlDetected() { missionControlDetected = true; }
+    public static void setLancesCount(int size) {
+      if (size <= 0) { size = 1; };
+      if(lancesData.Count > size) {
+        lancesData.RemoveRange(size, lancesData.Count - size);
+      }else if(lancesData.Count < size) {
+        for(int index=lancesData.Count;index < size; ++index) {
+          lancesData.Add(new CustomLanceDef());
+        }
+      }
+    }
+    public static void setLanceData(int lanceid, int size, int allow, bool is_vehicle) {
+      if (lanceid >= lancesData.Count) { return; }
+      if (size < 4) { size = 4; }
+      if (allow < 0) { allow = 0; }
+      lancesData[lanceid].size = size;
+      lancesData[lanceid].allow = allow;
+      lancesData[lanceid].is_vehicle = is_vehicle;
+    }
+    public static void setOverallDeployCount(int value) { f_overallDeployCount = Mathf.Min(value,fullSlotsCount()); }
+    public static void playerControl(int mechs, int vehicles) { f_playerControlMechs = mechs; f_playerControlVehicles = vehicles; }
+    public static int overallDeployCount() { return missionControlDetected?f_overallDeployCount:4; }
+    public static int playerControlVehicles() { return missionControlDetected?f_playerControlVehicles:-1; }
+    public static int playerControlMechs() { return missionControlDetected?f_playerControlMechs:-1; }
+
     public static int allowLanceSize(int lanceid) {
       if (fallbackAllow > 0) { return lanceid == 0 ? fallbackAllow : 0; }
-      return allowLanceSizes[lanceid];
+      return lancesData[lanceid].allow;
     }
     public static void setFallbackAllow(int value) { fallbackAllow = value; }
-    public static void allowLanceSize(int lanceid, int size) { allowLanceSizes[lanceid] = size; }
+    public static void allowLanceSize(int lanceid, int size) { lancesData[lanceid].allow = size; }
     public static int lancesCount() { return lancesData.Count; }
     public static bool lanceVehicle(int lanceid) { return lancesData[lanceid].is_vehicle; }
     public static int lanceSize(int lanceid) { return lancesData[lanceid].size; }
@@ -1008,10 +1143,18 @@ namespace CustomUnits {
       prevState = state;
       if (state) {
         HUD.MechWarriorTray.HideLance(curLanceId);
-        curLanceId = (curLanceId + 1) % HUD.MechWarriorTray.lancesCount();
-        HUD.MechWarriorTray.ShowLance(curLanceId);
-        if (lanceIcons.Count > 0) {
-          image.vectorGraphics = lanceIcons[curLanceId % lanceIcons.Count];
+        int prevLanceId = curLanceId;
+        while (true) {
+          curLanceId = (curLanceId + 1) % HUD.MechWarriorTray.exPortraitHolders().Count;
+          if (curLanceId != prevLanceId) {
+            bool lanceEmpty = true;
+            foreach (CustomLanceInstance slot in HUD.MechWarriorTray.exPortraitHolders()[curLanceId]) {
+              if (slot.portrait.DisplayedActor != null) { lanceEmpty = false; break; }
+            }
+            if (lanceEmpty) { continue; }
+          }
+          HUD.MechWarriorTray.ShowLance(curLanceId);
+          break;
         }
       }
     }
@@ -1033,7 +1176,9 @@ namespace CustomUnits {
           Log.WL(1, "icon " + iconid + " not found");
         }
       }
-      if (lanceIcons.Count > 0) { image.vectorGraphics = lanceIcons[0]; }
+      HUD.MechWarriorTray.SetLanceSwitcher(this);
+      curLanceId = HUD.MechWarriorTray.CurrentLance();
+      if (lanceIcons.Count > 0) { image.vectorGraphics = lanceIcons[curLanceId % lanceIcons.Count]; }
     }
   }
   public class HUDPosUpdater : MonoBehaviour {
@@ -1117,7 +1262,7 @@ namespace CustomUnits {
   [HarmonyPatch(new Type[] { typeof(string) })]
   public static class CombatHUDMechwarriorTray_OnActorDeselected {
     public static void Postfix(CombatHUDMechwarriorTray __instance, CombatHUD ___HUD) {
-      __instance.mwCommandButton(___HUD).SetActive(false);
+      //__instance.mwCommandButton(___HUD).SetActive(false);
     }
   }
   [HarmonyPatch(typeof(CombatHUDMechwarriorTray))]
@@ -1133,7 +1278,7 @@ namespace CustomUnits {
   [HarmonyPatch(MethodType.Normal)]
   public static class CombatHUDMechwarriorTray_OnCommandTrayDismissed {
     public static void Postfix(CombatHUDMechwarriorTray __instance, CombatHUD ___HUD) {
-      __instance.mwCommandButton(___HUD).SetActive(false);
+      //__instance.mwCommandButton(___HUD).SetActive(false);
     }
   }
   [HarmonyPatch(typeof(CombatHUDMechwarriorTray))]
@@ -1223,33 +1368,86 @@ namespace CustomUnits {
   public static class CombatHUDMechwarriorTray_RefreshTeam {
     public static bool Prefix(CombatHUDMechwarriorTray __instance, Team team, Team ___displayedTeam) {
       ___displayedTeam = team;
+      Log.TWL(0, "CombatHUDMechwarriorTray.RefreshTeam");
+      Dictionary<int, CustomLanceInstance> avaibleSlots = new Dictionary<int, CustomLanceInstance>();
+      foreach(var lance in __instance.exPortraitHolders()) {
+        foreach(var slot in lance) {
+          avaibleSlots.Add(slot.index,slot);
+          slot.holder.SetActive(false);
+        }
+      }
+      Dictionary<int, AbstractActor> predefinedActors = new Dictionary<int, AbstractActor>();
       List<AbstractActor> mechs = new List<AbstractActor>();
       List<AbstractActor> vehicles = new List<AbstractActor>();
       foreach (AbstractActor unit in ___displayedTeam.units) {
-        if (unit.UnitType == UnitType.Vehicle) { vehicles.Add(unit); } else
-        if (unit.UnitType == UnitType.Mech) { mechs.Add(unit); };
-      }
-      int mech_index = 0;
-      int vehicle_index = 0;
-      for (int lance_id = 0; lance_id < __instance.lancesCount(); ++lance_id) {
-        for (int lance_index = 0; lance_index < __instance.exPortraitHolders()[lance_id].Count; ++lance_index) {
-          if (CustomLanceHelper.lanceVehicle(lance_id)) {
-            __instance.exPortraitHolders()[lance_id][lance_index].portrait.DisplayedActor = (vehicle_index < vehicles.Count) ? vehicles[vehicle_index] : null;
-            ++vehicle_index;
-          } else {
-            __instance.exPortraitHolders()[lance_id][lance_index].portrait.DisplayedActor = (mech_index < mechs.Count) ? mechs[mech_index] : null;
-            ++mech_index;
+        string defGUID = string.Empty;
+        bool isVehicle = false;
+        if(unit.UnitType == UnitType.Mech) {
+          defGUID = (unit as Mech).MechDef.GUID;
+        }else if(unit.UnitType == UnitType.Vehicle) {
+          defGUID = (unit as Vehicle).VehicleDef.GUID;
+          isVehicle = false;
+        } else {
+          continue;
+        }
+        if(CustomLanceHelper.playerLanceLoadout.loadout.TryGetValue(defGUID, out int slotIndex)) {
+          if(avaibleSlots.TryGetValue(slotIndex, out CustomLanceInstance slot)) {
+            slot.portrait.DisplayedActor = unit;
+            slot.holder.SetActive(false);
+            Log.WL(1, new Localize.Text(unit.DisplayName).ToString() + " lance:"+slot.lance_id+" pos:"+slot.lance_index);
+            avaibleSlots.Remove(slotIndex);
+            continue;
           }
         }
+        if (isVehicle) { vehicles.Add(unit); } else { mechs.Add(unit); }
       }
-      __instance.ShowLance(0);
+      HashSet<int> restSlots = avaibleSlots.Keys.ToHashSet();
+      foreach(int slotIndex in restSlots) {
+        if (avaibleSlots[slotIndex].isVehicle&&(vehicles.Count > 0)) {
+          avaibleSlots[slotIndex].portrait.DisplayedActor = vehicles[0];
+          avaibleSlots[slotIndex].holder.SetActive(false);
+          vehicles.RemoveAt(0);
+          avaibleSlots.Remove(slotIndex);
+          continue;
+        }
+        if((avaibleSlots[slotIndex].isVehicle == false) && (mechs.Count > 0)) {
+          avaibleSlots[slotIndex].portrait.DisplayedActor = mechs[0];
+          avaibleSlots[slotIndex].holder.SetActive(false);
+          mechs.RemoveAt(0);
+          avaibleSlots.Remove(slotIndex);
+          continue;
+        }
+      }
+      foreach(var slot in avaibleSlots) {
+        slot.Value.portrait.DisplayedActor = null;
+      }
+      int nonemptyLance = -1;
+      for (int lance_id = 0; lance_id < __instance.exPortraitHolders().Count; ++lance_id) {
+        for (int lance_index = 0; lance_index < __instance.exPortraitHolders()[lance_id].Count; ++lance_index) {
+          if (__instance.exPortraitHolders()[lance_id][lance_index].portrait.DisplayedActor != null) { nonemptyLance = lance_id; break; }
+        }
+        if (nonemptyLance != -1) { break; }
+      }
+      if (nonemptyLance < 0) { nonemptyLance = 0; }
+      //if (nonemptyLance != 0) { __instance.HideLance(0); };
+      __instance.ShowLance(nonemptyLance);
       return false;
     }
   }
   public class CustomLanceInstance {
+    public bool isHead { get; set; }
+    public int index { get; set; }
+    public int lance_id { get; set; }
+    public int lance_index { get; set; }
+    public bool isVehicle { get; set; }
     public GameObject holder { get; set; }
     public CombatHUDPortrait portrait { get; set; }
-    public CustomLanceInstance(GameObject h, CombatHUDPortrait p) { holder = h; portrait = p; }
+    public CustomLanceInstance(GameObject h, CombatHUDPortrait p, int index, bool head, int lanceid, int lance_pos, bool isVehicle) {
+      holder = h; portrait = p; this.index = index; isHead = head;
+      this.lance_id = lanceid;
+      this.lance_index = lance_pos;
+      this.isVehicle = isVehicle;
+    }
   }
   [HarmonyPatch(typeof(CombatHUDMechwarriorTray))]
   [HarmonyPatch("Init")]
@@ -1258,12 +1456,22 @@ namespace CustomUnits {
     private static List<List<CustomLanceInstance>> lancesPortraitHolders = new List<List<CustomLanceInstance>>();
     public static List<List<CustomLanceInstance>> exPortraitHolders(this CombatHUDMechwarriorTray tray) { return lancesPortraitHolders; }
     public static int lancesCount(this CombatHUDMechwarriorTray tray) { return lancesPortraitHolders.Count; }
+    private static LanceSwitcher LanceSwitcher = null;
+    private static int currentLance = 0;
+    public static int CurrentLance(this CombatHUDMechwarriorTray tray) { return currentLance; }
+    public static void SetLanceSwitcher(this CombatHUDMechwarriorTray tray, LanceSwitcher lanceSwitcher) { LanceSwitcher = lanceSwitcher; }
     //public static int lancesCount(this CombatHUD HUD) { return lancesPortraitHolders.Count; }
     public static void ShowLance(this CombatHUDMechwarriorTray tray, int lanceid) {
       if (lancesPortraitHolders.Count == 0) { return; }
       lanceid = lanceid % tray.lancesCount();
+      currentLance = lanceid;
       foreach (CustomLanceInstance li in lancesPortraitHolders[lanceid]) {
         li.holder.SetActive(true);
+      }
+      if (LanceSwitcher != null) {
+        if (LanceSwitcher.lanceIcons.Count > 0) {
+          LanceSwitcher.image.vectorGraphics = LanceSwitcher.lanceIcons[lanceid % LanceSwitcher.lanceIcons.Count];
+        }
       }
     }
     public static void HideLance(this CombatHUDMechwarriorTray tray, int lanceid) {
@@ -1361,7 +1569,7 @@ namespace CustomUnits {
           lancesPortraitHolders.Add(lance);
           lance_index = 0;
         }
-        lance.Add(new CustomLanceInstance(holder, portrait));
+        lance.Add(new CustomLanceInstance(holder, portrait, index, lance_index == 0, lance_id, lance_index, CustomLanceHelper.lanceVehicle(lance_id)));
         ++lance_index;
         if (lance_index >= CustomLanceHelper.lanceSize(lance_id)) { ++lance_id; };
       }

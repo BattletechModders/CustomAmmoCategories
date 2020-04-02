@@ -134,6 +134,23 @@ namespace CustomAmmoCategoriesPatches {
     public static float GetCorrectedRoll(this AttackDirector.AttackSequence seq, float roll, Team team) {
       return GetCorrectedRollInvoke(seq, roll, team);
     }
+    public static Vector3 getMissInCircleToPosition(this CombatGameState combat, AttackDirector.AttackSequence seq, Vector3 centerPos, Weapon weapon, float toHitChance, float toHitRoll) {
+      Vector3 position = centerPos;
+      Team team = weapon == null || weapon.parent == null || weapon.parent.team == null ? (Team)null : weapon.parent.team;
+      float correctedRolls = seq.GetCorrectedRoll(toHitRoll, team);
+      float hitMargin = (correctedRolls - toHitChance) / (1 - toHitChance);
+      if (hitMargin < 0f) { hitMargin = 0f; };
+      float minradius = weapon.MinMissRadius();
+      float maxradius = weapon.MaxMissRadius();
+      if ((maxradius - minradius) < CustomAmmoCategories.Epsilon) { maxradius = minradius * 3f; }
+      float radius = Mathf.Lerp(minradius, maxradius, hitMargin);
+      //radius *= UnityEngine.Random.Range(combat.Constants.ResolutionConstants.MissOffsetHorizontalMin, combat.Constants.ResolutionConstants.MissOffsetHorizontalMax);
+      Vector2 vector2 = UnityEngine.Random.insideUnitCircle.normalized * radius;
+      position.x += vector2.x;
+      position.z += vector2.y;
+      position.y = combat.MapMetaData.GetLerpedHeightAt(position);
+      return position;
+    }
     public static Vector3 getMissPositionRadius(this GameRepresentation targetRep, AttackDirector.AttackSequence seq, Weapon weapon, float toHitChance, float toHitRoll) {
       TurretRepresentation tRep = targetRep as TurretRepresentation;
       MechRepresentation mRep = targetRep as MechRepresentation;
@@ -160,7 +177,7 @@ namespace CustomAmmoCategoriesPatches {
       float maxradius = weapon.MaxMissRadius();
       if ((maxradius - minradius) < CustomAmmoCategories.Epsilon) { maxradius = minradius * 3f; }
       float radius = Mathf.Lerp(minradius, maxradius, hitMargin);
-      radius *= UnityEngine.Random.Range(targetRep.parentCombatant.Combat.Constants.ResolutionConstants.MissOffsetHorizontalMin, targetRep.parentCombatant.Combat.Constants.ResolutionConstants.MissOffsetHorizontalMax);
+      //radius *= UnityEngine.Random.Range(targetRep.parentCombatant.Combat.Constants.ResolutionConstants.MissOffsetHorizontalMin, targetRep.parentCombatant.Combat.Constants.ResolutionConstants.MissOffsetHorizontalMax);
       Vector2 vector2 = UnityEngine.Random.insideUnitCircle.normalized * radius;
       position.x += vector2.x;
       position.z += vector2.y;
@@ -416,11 +433,10 @@ namespace CustomAmmoCategoriesPatches {
         hitInfo.numberOfShots = hitInfo.hitLocations.Length;
       }
       if (indirectFire && (missInCircle == false)) { missInCircle = true;  };
-      if (missInCircle) {
+      if ((missInCircle)&&(instance.attacker.GUID != target.GUID)) {
         Log.LogWrite(" miss in circle\n");
         for (int hitIndex = 0; hitIndex < numberOfShots; ++hitIndex) {
           int hitLocation = hitInfo.hitLocations[hitIndex];
-
           if ((hitLocation == 0) || (hitLocation == 65536)) {
             Log.LogWrite("  hi:" + hitIndex + " was " + hitInfo.hitPositions[hitIndex]);
             hitInfo.secondaryHitLocations[hitIndex] = 0;
@@ -429,7 +445,7 @@ namespace CustomAmmoCategoriesPatches {
             Log.LogWrite("  become: " + hitInfo.hitPositions[hitIndex] + "\n");
           }
         }
-      }
+      }else
       if (instance.attacker.GUID == target.GUID) {
         TerrainHitInfo terrainPos = CustomAmmoCategories.getTerrinHitPosition(instance.attacker.GUID);
         if (terrainPos != null) {
@@ -437,11 +453,12 @@ namespace CustomAmmoCategoriesPatches {
           CustomAmmoCategoriesLog.Log.LogWrite(" terrain attack detected to " + terrainPos.pos + ". target position: "+target.CurrentPosition+" distance:"+Vector3.Distance(terrainPos.pos, target.CurrentPosition) +"\n");
           CustomAmmoCategoriesLog.Log.LogWrite(" recalculating hit positions and removing buildin stray\n");
           for (int hitIndex = 0; hitIndex < numberOfShots; ++hitIndex) {
-            if ((hitInfo.hitLocations[hitIndex] == 0) || (hitInfo.hitLocations[hitIndex] == 65536)) {
-              Log.LogWrite("  hi:" + hitIndex + " was " + hitInfo.hitPositions[hitIndex]);
-              hitInfo.hitPositions[hitIndex] = target.GameRep.getMissPositionRadius(instance, weapon, toHitChance, hitInfo.toHitRolls[hitIndex]);
-              Log.LogWrite("  become: " + hitInfo.hitPositions[hitIndex] + "\n");
-            }
+            hitInfo.hitLocations[hitIndex] = 65536;
+            hitInfo.secondaryHitLocations[hitIndex] = 0;
+            hitInfo.secondaryTargetIds[hitIndex] = null;
+            Vector3 oldPos = hitInfo.hitPositions[hitIndex];
+            hitInfo.hitPositions[hitIndex] = target.Combat.getMissInCircleToPosition(instance, terrainPos.pos, weapon, toHitChance, hitInfo.toHitRolls[hitIndex]);
+            Log.LogWrite("  hi:" + hitIndex + " was " + oldPos + " become: " + hitInfo.hitPositions[hitIndex] + " distance"+Vector3.Distance(oldPos, hitInfo.hitPositions[hitIndex]) +"\n");
           }
           for (int hitIndex = 0; hitIndex < numberOfShots; ++hitIndex) {
             hitInfo.hitLocations[hitIndex] = 65536;

@@ -311,11 +311,20 @@ namespace CustomAmmoCategoriesPatches {
     public static float GetChassisTagsModifyer(this Weapon weapon, ICombatant target) {
       float result = 0f;
       ExtAmmunitionDef ammo = weapon.ammo();
-      if (ammo.TagsAccuracyModifiers.Count == 0) { return 0f; }
+      ExtWeaponDef exDef = weapon.exDef();
+      WeaponMode mode = weapon.mode();
       HBS.Collections.TagSet tags = target.Tags();
       if (tags == null) { return 0f; };
       foreach(string tag in tags) {
-        if (ammo.TagsAccuracyModifiers.ContainsKey(tag)) { result += ammo.TagsAccuracyModifiers[tag]; };
+        if(ammo.TagsAccuracyModifiers.TryGetValue(tag, out float mod)) {
+          result += mod;
+        }
+        if (exDef.TagsAccuracyModifiers.TryGetValue(tag, out mod)) {
+          result += mod;
+        }
+        if (mode.TagsAccuracyModifiers.TryGetValue(tag, out  mod)) {
+          result += mod;
+        }
       }
       return result;
     }

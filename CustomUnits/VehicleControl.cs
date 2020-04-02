@@ -392,6 +392,31 @@ namespace CustomUnits {
       return false;
     }
   }
+  [HarmonyPatch(typeof(AbstractActor))]
+  [HarmonyPatch("IsFriendly")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { typeof(ICombatant) })]
+  public static class AbstractActor_IsFriendly {
+    public static bool Prefix(AbstractActor __instance, ICombatant target, ref bool __result) {
+      if(__instance.team == null) {
+        //Log.TWL(0, "AbstractActor.IsFriendly "+new Localize.Text(__instance.DisplayName).ToString() +" without team:"+__instance.TeamId);
+        if (target.team == null) {
+          //Log.WL(1, "target have no team too " + new Localize.Text(target.DisplayName).ToString());
+          __result = false;
+          return false;
+        } else {
+          __result = __instance.TeamId == target.team.GUID;
+          return false;
+        }
+      }
+      if(target.team == null) {
+        //Log.TWL(0, "AbstractActor.IsFriendly target:" + new Localize.Text(target.DisplayName).ToString());
+        __result = false;
+        return false;
+      }
+      return true;
+    }
+  }
   [HarmonyPatch(typeof(MechBayMechInfoWidget))]
   [HarmonyPatch("OnRepairClicked")]
   [HarmonyPatch(MethodType.Normal)]
@@ -406,6 +431,72 @@ namespace CustomUnits {
         return false;
       }
       return true;
+    }
+  }
+  [HarmonyPatch(typeof(LanceConfiguratorPanel), "CreateLanceConfiguration")]
+  public static class LanceConfiguratorPanel_CreateLanceConfiguration {
+    static bool Prefix(LanceConfiguratorPanel __instance, ref LanceConfiguration __result) {
+      try {
+        return false;
+      } catch (Exception) {
+        return false;
+      }
+    }
+
+    static void Postfix(LanceConfiguratorPanel __instance, ref LanceConfiguration __result, ref LanceLoadoutSlot[] ___loadoutSlots) {
+      try {
+        Log.TWL(0, "LanceConfiguratorPanel.CreateLanceConfiguration");
+        LanceConfiguration lanceConfiguration = new LanceConfiguration();
+        //List<KeyValuePair<LanceLoadoutSlot,int>> mechSlots = new List<KeyValuePair<LanceLoadoutSlot, int>>();
+        //List<KeyValuePair<LanceLoadoutSlot, int>> vehicleSlots = new List<KeyValuePair<LanceLoadoutSlot, int>>();
+        int vehcilesCount = 0;
+        int mechesCount = 0;
+        CustomLanceHelper.playerLanceLoadout.loadout.Clear();
+        for (int i = 0; i < ___loadoutSlots.Length; i++) {
+          LanceLoadoutSlot lanceLoadoutSlot = ___loadoutSlots[i];
+          bool isVehicle = false;
+          if (lanceLoadoutSlot.SelectedMech == null) { continue; }
+          if (lanceLoadoutSlot.SelectedPilot == null) { continue; }
+          if (lanceLoadoutSlot.SelectedMech.MechDef.IsChassisFake() && (lanceLoadoutSlot.SelectedPilot.Pilot.pilotDef.isVehicleCrew())) {
+            isVehicle = true;
+          } else if (lanceLoadoutSlot.SelectedMech.MechDef.IsChassisFake()&&(!lanceLoadoutSlot.SelectedPilot.Pilot.pilotDef.isVehicleCrew())) {
+            continue;
+          } else if ((!lanceLoadoutSlot.SelectedMech.MechDef.IsChassisFake())&&(lanceLoadoutSlot.SelectedPilot.Pilot.pilotDef.isVehicleCrew())) {
+            continue;
+          } else {
+            isVehicle = false;
+          }
+          bool isPlayer = true;
+          if (isVehicle) {
+            if(CustomLanceHelper.playerControlVehicles() == -1) {
+              isPlayer = true;
+            } else if(vehcilesCount >= CustomLanceHelper.playerControlVehicles()) {
+              isPlayer = false;
+            } else {
+              isPlayer = true;
+            }
+            ++vehcilesCount;
+          } else {
+            if (CustomLanceHelper.playerControlMechs() == -1) {
+              isPlayer = true;
+            } else if (mechesCount >= CustomLanceHelper.playerControlMechs()) {
+              isPlayer = false;
+            } else {
+              isPlayer = true;
+            }
+            ++mechesCount;
+          }
+          if (isPlayer) {
+            lanceConfiguration.AddUnit(__instance.playerGUID, lanceLoadoutSlot.SelectedMech.MechDef, lanceLoadoutSlot.SelectedPilot.Pilot.pilotDef);
+          } else {
+            lanceConfiguration.AddUnit(Core.Settings.EMPLOYER_LANCE_GUID, lanceLoadoutSlot.SelectedMech.MechDef, lanceLoadoutSlot.SelectedPilot.Pilot.pilotDef);
+          }
+          CustomLanceHelper.playerLanceLoadout.loadout.Add(lanceLoadoutSlot.SelectedMech.MechDef.GUID, i);
+        }
+        __result = lanceConfiguration;
+      } catch (Exception e) {
+        Log.TWL(0,e.ToString(),true);
+      }
     }
   }
   [HarmonyPatch(typeof(MechBayMechInfoWidget))]
@@ -499,7 +590,7 @@ namespace CustomUnits {
         inventory[index].DamageLevel = (src.allComponents[index].DamageLevel == ComponentDamageLevel.Destroyed?ComponentDamageLevel.Penalized:src.allComponents[index].DamageLevel);
         inventory[index].prefabName = src.allComponents[index].vehicleComponentRef.prefabName;
         inventory[index].hasPrefabName = src.allComponents[index].vehicleComponentRef.hasPrefabName;
-        inventory[index].IsFixed(src.allComponents[index].vehicleComponentRef.IsFixed);
+        inventory[index].IsFixed(true);
         inventory[index].ComponentDefID = src.allComponents[index].vehicleComponentRef.ComponentDefID;
         inventory[index].SimGameUID = src.allComponents[index].vehicleComponentRef.SimGameUID;
         ChassisLocations loc = ChassisLocations.Head;
@@ -614,8 +705,32 @@ namespace CustomUnits {
       List<Mech> allMechs = combat.AllMechs;
       List<Vehicle> playerVehicle = new List<Vehicle>();
       List<AbstractActor> allActors = combat.AllActors;
+      HashSet<string> playerDefGuids = new HashSet<string>();
+      foreach (var guid in CustomLanceHelper.playerLanceLoadout.loadout) { playerDefGuids.Add(guid.Key); }
       foreach (AbstractActor actor in allActors) {
         try {
+          if(actor.UnitType == UnitType.Mech) {
+            Mech mech = actor as Mech;
+            Log.WL(1, "MechDef GUID:"+ mech.MechDef.GUID);
+            if (playerDefGuids.Contains(mech.MechDef.GUID)) {
+              Log.WL(2,"team:" + mech.TeamId+"->"+ combat.LocalPlayerTeamGuid);
+              if (mech.TeamId != combat.LocalPlayerTeamGuid) {
+                mech._teamId(combat.LocalPlayerTeamGuid);
+                mech._team(combat.LocalPlayerTeam);
+              }
+            }
+          }
+          if (actor.UnitType == UnitType.Vehicle) {
+            Vehicle vehicle = actor as Vehicle;
+            Log.WL(1, "VehicleDef GUID:" + vehicle.VehicleDef.GUID);
+            if (playerDefGuids.Contains(vehicle.VehicleDef.GUID)) {
+              Log.WL(2, "team:" + vehicle.TeamId + "->" + combat.LocalPlayerTeamGuid);
+              if (vehicle.TeamId != combat.LocalPlayerTeamGuid) {
+                vehicle._teamId(combat.LocalPlayerTeamGuid);
+                vehicle._team(combat.LocalPlayerTeam);
+              }
+            }
+          }
           if (actor.UnitType != UnitType.Vehicle) { continue; }
           if (actor.TeamId == combat.LocalPlayerTeamGuid) {
             Vehicle vehicle = actor as Vehicle;
@@ -648,6 +763,17 @@ namespace CustomUnits {
     public static void Postfix(MechDef mechDef, ref float currentValue, ref float maxValue) {
       if (mechDef.Chassis.IsFake(mechDef.ChassisID)) {
         currentValue = mechDef.Chassis.Tonnage;
+      }
+    }
+  }
+  [HarmonyPatch(typeof(MechStatisticsRules))]
+  [HarmonyPatch("CalculateCBillValue")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPriority(Priority.Last)]
+  public static class MechStatisticsRules_CalculateCBillValue {
+    public static void Postfix(MechDef mechDef, ref float currentValue, ref float maxValue) {
+      if (mechDef.Chassis.IsFake(mechDef.ChassisID)) {
+        currentValue = mechDef.Description.Cost;
       }
     }
   }
@@ -1049,7 +1175,7 @@ namespace CustomUnits {
     public static VehicleDef toVehicleDef(this MechDef mDef, DataManager dataManager) {
       List<VehicleComponentRef> inventory = new List<VehicleComponentRef>();
       foreach (MechComponentRef mRef in mDef.Inventory) {
-        if (mRef.IsFixed) { continue; }
+        //if (mRef.IsFixed) { continue; }
         VehicleChassisLocations location = VehicleChassisLocations.Turret;
         switch (mRef.MountedLocation) {
           case ChassisLocations.Head: location = VehicleChassisLocations.Turret; break;
@@ -1068,7 +1194,7 @@ namespace CustomUnits {
         vRef.DamageLevel = mRef.DamageLevel;
         vRef.prefabName = mRef.prefabName;
         vRef.hasPrefabName = mRef.hasPrefabName;
-        vRef.IsFixed_set(mRef.IsFixed);
+        vRef.IsFixed_set(true);
         vRef.ComponentDefID = mRef.ComponentDefID;
         vRef.SimGameUID = mRef.SimGameUID;
         vRef.MountedLocation_set(location);
@@ -1427,6 +1553,7 @@ namespace CustomUnits {
         newdef["ChassisID"] = olddef["ChassisID"];
         newdef["simGameMechPartCost"] = 0;
         newdef["MechTags"] = olddef["VehicleTags"];
+
         JArray vInventory = olddef["inventory"] as JArray;
         JArray mInventory = new JArray();
         Log.WL(1, "inventory");
@@ -1449,6 +1576,7 @@ namespace CustomUnits {
           mcRef["HardpointSlot"] = vcRef["HardpointSlot"];
           mcRef["GUID"] = null;
           mcRef["DamageLevel"] = vcRef["DamageLevel"];
+          mcRef["IsFixed"] = true;
           mcRef["prefabName"] = vcRef["prefabName"];
           mcRef["hasPrefabName"] = vcRef["hasPrefabName"];
           //MechComponentRef mcRef = new MechComponentRef(vcRef.ComponentDefID, vcRef.SimGameUID, vcRef.ComponentDefType, location, vcRef.HardpointSlot, vcRef.DamageLevel, vcRef.IsFixed);
@@ -1548,7 +1676,7 @@ namespace CustomUnits {
         newdef["PrefabIdentifier"] = olddef["PrefabIdentifier"];
         newdef["PrefabBase"] = olddef["PrefabBase"];
         newdef["VariantName"] = olddef["Description"]["Name"];
-        newdef["StockRole"] = "FAKE";
+        newdef["StockRole"] = "VEHICLE";
         newdef["YangsThoughts"] = olddef["Description"]["Details"];
         newdef["Tonnage"] = olddef["Tonnage"];
         newdef["InitialTonnage"] = 0;
@@ -2033,6 +2161,17 @@ namespace CustomUnits {
         }
       }*/
       //return true;
+    }
+  }
+  [HarmonyPatch(typeof(SkirmishSettings_Beta))]
+  [HarmonyPatch("OnAddedToHierarchy")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { })]
+  public static class SkirmishSettings_Beta_OnAddedToHierarchy {
+    //public static readonly string playerGUID = "bf40fd39-ccf9-47c4-94a6-061809681140";
+    public static void Prefix(SkirmishSettings_Beta __instance) {
+      Log.TWL(0, "SkirmishSettings_Beta.OnAddedToHierarchy");
+      Core.InitLancesLoadoutDefault();
     }
   }
   [HarmonyPatch(typeof(CombatHUDHeatMeter))]

@@ -3,6 +3,7 @@ using BattleTech.Data;
 using BattleTech.Rendering;
 using BattleTech.UI;
 using Harmony;
+using MechResizer;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -82,6 +83,7 @@ namespace CustomUnits {
       bayRep.rightArmDestructible = battleRep.vehicleDestructible;
       bayRep.leftLegDestructible = battleRep.vehicleDestructible;
       bayRep.rightLegDestructible = battleRep.vehicleDestructible;
+      bayRep.mechCustomization = battleRep.GetComponentInChildren<BattleTech.Rendering.MechCustomization.MechCustomization>(true);
     }
   private static IEnumerator TransitionMech(this SGRoomController_MechBay mechbay, MechDef mechDef, float fadeDuration, Camera camera, bool useCameraFit) {
       float fadeRate = 0.01f;
@@ -140,8 +142,25 @@ namespace CustomUnits {
         if (mechDef.Chassis.IsFake(mechDef.ChassisID)) {
           Log.TWL(0, "TransitionMech requesting battle game representation "+mechDef.ChassisID+" "+mechDef.Chassis.PrefabIdentifier);
           loadRequest.AddBlindLoadRequest(BattleTechResourceType.Prefab, mechDef.Chassis.PrefabIdentifier, new bool?(false));
+          VehicleChassisDef vchassis = mechbay.simState.DataManager.VehicleChassisDefs.Get(mechDef.ChassisID);
+          if (vchassis != null) {
+            vchassis.AddCustomDeps(loadRequest);
+          }
         } else {
+          Log.TWL(0, "TransitionMech requesting bay game representation " + mechDef.ChassisID + " " + mechPrefabName);
           loadRequest.AddBlindLoadRequest(BattleTechResourceType.Prefab, mechPrefabName, new bool?(false));
+          mechDef.Chassis.AddCustomDeps(loadRequest);
+          mechDef.Refresh();
+          for (int index = 0; index < mechDef.Inventory.Length; ++index) {
+            if (mechDef.Inventory[index].Def != null) {
+              if(string.IsNullOrEmpty(mechDef.Inventory[index].prefabName) == false)loadRequest.AddBlindLoadRequest(BattleTechResourceType.Prefab, mechDef.Inventory[index].prefabName, new bool?(false));
+            }
+          }
+          if (mechDef.meleeWeaponRef.Def != null)
+            if (string.IsNullOrEmpty(mechDef.meleeWeaponRef.prefabName) == false) loadRequest.AddBlindLoadRequest(BattleTechResourceType.Prefab, mechDef.meleeWeaponRef.prefabName);
+          if (mechDef.dfaWeaponRef.Def != null) {
+            if (string.IsNullOrEmpty(mechDef.dfaWeaponRef.prefabName) == false) loadRequest.AddBlindLoadRequest(BattleTechResourceType.Prefab, mechDef.dfaWeaponRef.prefabName);
+          }
         }
         loadRequest.ProcessRequests(1000u);
         while (!mechbay.prefabsLoaded) {
@@ -153,18 +172,25 @@ namespace CustomUnits {
           if (mechDef.Chassis.IsFake(mechDef.ChassisID)) {
             Log.TWL(0, "TransitionMech spawning battle game representation " + mechDef.ChassisID + " " + mechDef.Chassis.PrefabIdentifier);
             GameObject battleGameObject = mechbay.simState.DataManager.PooledInstantiate(mechDef.Chassis.PrefabIdentifier, BattleTechResourceType.Prefab, null, null, null);
+            //Vehicle vehicle = ActorFactory.CreateVehicle(vDef, pilot, team.EncounterTags, null, Guid.NewGuid().ToString(), spawnerGUID, team.HeraldryDef);
             GameObject bayGameObject = GameObject.Instantiate(battleGameObject);
+            //GameObject bayGameObject = battleGameObject;
             mechbay.simState.DataManager.PoolGameObject(mechDef.Chassis.PrefabIdentifier, battleGameObject);
             VehicleRepresentation battleRep = bayGameObject.GetComponent<VehicleRepresentation>();
             if (battleRep != null) {
+              //AkGameObj audio = battleRep.audioObject;
+              //battleRep.audioObject = null;
+              //battleRep.Init(null, mechbay.simState.CameraController.MechAnchor, true);
+              //battleRep.audioObject = audio;
               bayRepresentation = bayGameObject.AddComponent<MechRepresentationSimGame>();
               bayRepresentation.InitFromBattleRepresentation(battleRep);
+              bayRepresentation.thisAnimator = null;
               battleRep.BlipObjectIdentified.SetActive(false);
               battleRep.BlipObjectUnknown.SetActive(false);
               //mechbay.simState.DataManager.PoolGameObject(mechPrefabName, bayGameObject);
               gameObject = bayGameObject;
               Log.WL(1, "pooling MechRepresentationSimGame as "+ mechPrefabName);
-              GameObject.Destroy(battleRep);
+              //GameObject.Destroy(battleRep);
             } else {
               Log.WL(1, "no VehicleRepresentation");
               GameObject.Destroy(bayGameObject);
@@ -183,6 +209,23 @@ namespace CustomUnits {
               componentsInChildren[j].gameObject.layer = LayerMask.NameToLayer("Characters");
             }
             BTLightController.ResetAllShadowIndicies();
+            mechDef.SpawnCustomParts(bayRepresentation);
+            if (mechDef.IsChassisFake()) {
+              var sizeMultiplier = SizeMultiplier.Get(mechDef);
+              bayRepresentation.rootTransform.localScale = sizeMultiplier;
+
+              Log.WL(1, "scale as fake:"+sizeMultiplier);
+              foreach(string tag in mechDef.MechTags) {
+                Log.WL(2, tag);
+              }
+            } else {
+              var sizeMultiplier = SizeMultiplier.Get(mechDef.Chassis);
+              bayRepresentation.rootTransform.localScale = sizeMultiplier;
+              Log.WL(1, "scale normal:" + sizeMultiplier);
+              foreach (string tag in mechDef.Chassis.ChassisTags) {
+                Log.WL(2, tag);
+              }
+            }
           }
         }
         mechbay.mechBay().RefreshPaintSelector();
@@ -413,6 +456,117 @@ namespace CustomUnits {
         Log.TWL(0, e.ToString(), true);
         return true;
       }
+    }
+  }
+  [HarmonyPatch(typeof(MechRepresentationSimGame))]
+  [HarmonyPatch("LoadWeapons")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { })]
+  public static class MechRepresentationSimGame_LoadWeapons {
+    private static MethodInfo m_GetAttachTransform = typeof(MechRepresentationSimGame).GetMethod("GetAttachTransform", BindingFlags.Instance | BindingFlags.NonPublic);
+    public static Transform GetAttachTransform(this MechRepresentationSimGame rep,ChassisLocations location) {
+      return (Transform)m_GetAttachTransform.Invoke(rep, new object[] { location });
+    }
+    private static MethodInfo m_CreateBlankPrefabs = typeof(MechRepresentationSimGame).GetMethod("CreateBlankPrefabs", BindingFlags.Instance | BindingFlags.NonPublic);
+    public static void CreateBlankPrefabs(this MechRepresentationSimGame rep, List<string> usedPrefabNames, ChassisLocations location) {
+      m_CreateBlankPrefabs.Invoke(rep, new object[] { usedPrefabNames, location });
+    }
+    public static bool Prefix(MechRepresentationSimGame __instance,DataManager ___dataManager) {
+      List<string> usedPrefabNames = new List<string>();
+      Log.TWL(0, "MechRepresentationSimGame.LoadWeapons");
+      for (int index = 0; index < __instance.mechDef.Inventory.Length; ++index) {
+        MechComponentRef componentRef = __instance.mechDef.Inventory[index];
+        componentRef.prefabName = MechHardpointRules.GetComponentPrefabName(__instance.mechDef.Chassis.HardpointDataDef, (BaseComponentRef)componentRef, __instance.mechDef.Chassis.PrefabBase, componentRef.MountedLocation.ToString().ToLower(), ref usedPrefabNames);
+        componentRef.hasPrefabName = true;
+        if (!string.IsNullOrEmpty(componentRef.prefabName)) {
+          Log.WL(1, "component:"+componentRef.ComponentDefID+":"+componentRef.MountedLocation);
+          Transform attachTransform = __instance.GetAttachTransform(componentRef.MountedLocation);
+          CustomHardpointDef customHardpoint = CustomHardPointsHelper.Find(componentRef.prefabName);
+          GameObject prefab = null;
+          string prefabName = componentRef.prefabName;
+          if (customHardpoint != null) {
+            prefab = ___dataManager.PooledInstantiate(customHardpoint.prefab, BattleTechResourceType.Prefab, new Vector3?(), new Quaternion?(), (Transform)null);
+            if (prefab == null) {
+              prefab = ___dataManager.PooledInstantiate(componentRef.prefabName, BattleTechResourceType.Prefab, new Vector3?(), new Quaternion?(), (Transform)null);
+            } else {
+              prefabName = customHardpoint.prefab;
+            }
+          } else {
+            Log.WL(1, componentRef.prefabName + " have no custom hardpoint");
+            prefab = ___dataManager.PooledInstantiate(componentRef.prefabName, BattleTechResourceType.Prefab, new Vector3?(), new Quaternion?(), (Transform)null);
+          }
+          if (prefab != null) {
+            ComponentRepresentation component1 = prefab.GetComponent<ComponentRepresentation>();
+            if (component1 == null) {
+              Log.WL(1, prefabName + " have no ComponentRepresentation");
+              if(customHardpoint != null) {
+                component1 = prefab.AddComponent<WeaponRepresentation>();
+                Log.LogWrite(1, "reiniting vfxTransforms\n");
+                List<Transform> transfroms = new List<Transform>();
+                for (int i = 0; i < customHardpoint.emitters.Count; ++i) {
+                  Transform[] trs = component1.GetComponentsInChildren<Transform>();
+                  foreach (Transform tr in trs) { if (tr.name == customHardpoint.emitters[index]) { transfroms.Add(tr); break; } }
+                }
+                Log.LogWrite(1, "result(" + transfroms.Count + "):\n");
+                for (int i = 0; i < transfroms.Count; ++i) {
+                  Log.LogWrite(2, transfroms[index].name + ":" + transfroms[index].localPosition + "\n");
+                }
+                if (transfroms.Count == 0) { transfroms.Add(prefab.transform); };
+                component1.vfxTransforms = transfroms.ToArray();
+                if (string.IsNullOrEmpty(customHardpoint.shaderSrc) == false) {
+                  Log.LogWrite(1, "updating shader:" + customHardpoint.shaderSrc + "\n");
+                  GameObject shaderPrefab = ___dataManager.PooledInstantiate(customHardpoint.shaderSrc, BattleTechResourceType.Prefab, new Vector3?(), new Quaternion?(), (Transform)null);
+                  if (shaderPrefab != null) {
+                    Log.LogWrite(1, "shader prefab found\n");
+                    Renderer shaderComponent = shaderPrefab.GetComponentInChildren<Renderer>();
+                    if (shaderComponent != null) {
+                      Log.LogWrite(1, "shader renderer found:" + shaderComponent.name + " material: " + shaderComponent.material.name + " shader:" + shaderComponent.material.shader.name + "\n");
+                      MeshRenderer[] renderers = prefab.GetComponentsInChildren<MeshRenderer>();
+                      foreach (MeshRenderer renderer in renderers) {
+                        for (int mindex = 0; mindex < renderer.materials.Length; ++mindex) {
+                          if (customHardpoint.keepShaderIn.Contains(renderer.gameObject.transform.name)) {
+                            Log.LogWrite(2, "keep original shader: " + renderer.gameObject.transform.name + "\n");
+                            continue;
+                          }
+                          Log.LogWrite(2, "seting shader :" + renderer.name + " material: " + renderer.materials[mindex] + " -> " + shaderComponent.material.shader.name + "\n");
+                          renderer.materials[mindex].shader = shaderComponent.material.shader;
+                          renderer.materials[mindex].shaderKeywords = shaderComponent.material.shaderKeywords;
+                        }
+                      }
+                    }
+                    GameObject.Destroy(shaderPrefab);
+                  }
+                }
+              } else {
+                component1 = prefab.AddComponent<ComponentRepresentation>();
+              }
+            }
+            if (component1 != null) {
+              component1.Init((ICombatant)null, attachTransform, true, false, "MechRepSimGame");
+              component1.gameObject.SetActive(true);
+              component1.OnPlayerVisibilityChanged(VisibilityLevel.LOSFull);
+              component1.gameObject.name = componentRef.prefabName;
+              __instance.componentReps.Add(component1);
+            }
+          }
+          string mountingPointPrefabName = MechHardpointRules.GetComponentMountingPointPrefabName(__instance.mechDef, componentRef);
+          if (!string.IsNullOrEmpty(mountingPointPrefabName)) {
+            ComponentRepresentation component2 = ___dataManager.PooledInstantiate(mountingPointPrefabName, BattleTechResourceType.Prefab, new Vector3?(), new Quaternion?(), (Transform)null).GetComponent<ComponentRepresentation>();
+            component2.Init((ICombatant)null, attachTransform, true, false, "MechRepSimGame");
+            component2.gameObject.SetActive(true);
+            component2.OnPlayerVisibilityChanged(VisibilityLevel.LOSFull);
+            component2.gameObject.name = mountingPointPrefabName;
+            __instance.componentReps.Add(component2);
+          }
+        }
+      }
+      __instance.CreateBlankPrefabs(usedPrefabNames, ChassisLocations.CenterTorso);
+      __instance.CreateBlankPrefabs(usedPrefabNames, ChassisLocations.LeftTorso);
+      __instance.CreateBlankPrefabs(usedPrefabNames, ChassisLocations.RightTorso);
+      __instance.CreateBlankPrefabs(usedPrefabNames, ChassisLocations.LeftArm);
+      __instance.CreateBlankPrefabs(usedPrefabNames, ChassisLocations.RightArm);
+      __instance.CreateBlankPrefabs(usedPrefabNames, ChassisLocations.Head);
+      return false;
     }
   }
 }

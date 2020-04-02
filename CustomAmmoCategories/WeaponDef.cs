@@ -413,6 +413,7 @@ namespace CustAmmoCategories {
     public string preFireSFX { get; set; }
     public float MinMissRadius { get; set; }
     public float MaxMissRadius { get; set; }
+    public Dictionary<string, float> TagsAccuracyModifiers { get; set; }
     public ExtWeaponDef() {
       Id = string.Empty;
       StreakEffect = false;
@@ -504,6 +505,7 @@ namespace CustAmmoCategories {
       blockWeaponsInInstalledLocation = false;
       MinMissRadius = 0f;
       MaxMissRadius = 0f;
+      TagsAccuracyModifiers = new Dictionary<string, float>();
     }
   }
 }
@@ -760,6 +762,14 @@ namespace CustomAmmoCategoriesPatches {
         if (defTemp["AdditionalImpactVFXScaleZ"] != null) {
           extDef.AdditionalImpactVFXScaleZ = (float)defTemp["AdditionalImpactVFXScaleZ"];
           defTemp.Remove("AdditionalImpactVFXScaleZ");
+        }
+        if (defTemp["ChassisTagsAccuracyModifiers"] != null) {
+          extDef.TagsAccuracyModifiers = JsonConvert.DeserializeObject<Dictionary<string, float>>(defTemp["ChassisTagsAccuracyModifiers"].ToString());
+          Log.LogWrite((string)defTemp["Description"]["Id"] + " ChassisTagsAccuracyModifiers:\n");
+          foreach (var tam in extDef.TagsAccuracyModifiers) {
+            Log.LogWrite(" " + tam.Key + ":" + tam.Key);
+          }
+          defTemp.Remove("ChassisTagsAccuracyModifiers");
         }
         if (defTemp["AlternateHeatDamageCalc"] != null) {
           extDef.AlternateHeatDamageCalc = (bool)defTemp["AlternateHeatDamageCalc"];
