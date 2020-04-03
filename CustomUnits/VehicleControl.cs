@@ -2199,6 +2199,7 @@ namespace CustomUnits {
   public static class CombatHUDWeaponSlot_UpdateToolTipsFiring {
     //public static readonly string playerGUID = "bf40fd39-ccf9-47c4-94a6-061809681140";
     public static bool Prefix(CombatHUDWeaponSlot __instance, ICombatant target, CombatHUD ___HUD, Weapon ___displayedWeapon, ref int ___modifier, CombatGameState ___Combat) {
+      return true;
       AbstractActor abstractActor = target as AbstractActor;
       LineOfFireLevel lofLevel = ___HUD.SelectionHandler.ActiveState.FiringPreview.GetPreviewInfo((ICombatant)abstractActor).LOFLevel;
       bool flag = ___HUD.SelectionHandler.ActiveState.SelectionType == SelectionType.FireMorale;

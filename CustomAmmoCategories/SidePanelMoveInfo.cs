@@ -298,6 +298,7 @@ namespace CustAmmoCategoriesPatches {
           AbstractActor actor = target as AbstractActor;
           if(actor != null) {
             postfix = "__/SPEED/__:"+actor.MaxWalkDistance+"/"+actor.MaxSprintDistance;
+            postfix = "__/DISTANCE/__:" + Mathf.Round(Vector3.Distance(HUD.SelectedActor.CurrentPosition,actor.CurrentPosition));
             Pilot pilot = actor.GetPilot();
             if (pilot != null) {
               foreach (Ability ability in pilot.Abilities) {

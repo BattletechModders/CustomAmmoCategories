@@ -39,7 +39,11 @@ namespace CustAmmoCategories {
     public void Init(CombatHUD HUD, Transform parent, Vector3 offset) {
       this.HUD = HUD;
       //this.combatHUDInWorldElementMgr = combatHUDInWorldElementMgr;
-      Text = gameObject.GetComponent<TextMeshProUGUI>();
+      this.Text = gameObject.GetComponent<TextMeshProUGUI>();
+      if (this.Text == null) {
+        TextMeshProUGUI[] texts = gameObject.GetComponentsInChildren<TextMeshProUGUI>();
+        if (texts.Length > 0) { this.Text = texts[0]; }
+      }
       object node = typeof(UIManager).GetField("inWorldNode", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(LazySingletonBehavior<UIManager>.Instance);
       this.transform.SetParent((Transform)node.GetType().GetField("nodeTransform").GetValue(node), false);
       parentTransform = parent;
@@ -48,16 +52,18 @@ namespace CustAmmoCategories {
         this.transform.position = HUD.GetInWorldScreenPos(offset);
       }
       //this.transform.position = combatHUDInWorldElementMgr.GetInWorldScreenPos(parentTransform.position + offset);
-      if (Text == null) {
+      if (this.Text == null) {
         CanvasRenderer canvas = gameObject.GetComponentInChildren<CanvasRenderer>();
         if (canvas != null) {
-          Text = canvas.gameObject.AddComponent<TextMeshProUGUI>();
-          //FontInited = false;
-          Text.font = HUD.SidePanel.WarningText.font;
-          Text.overflowMode = TextOverflowModes.Overflow;
-          Text.enableWordWrapping = false;
-          Text.alignment = TextAlignmentOptions.Center;
+          this.Text = canvas.gameObject.AddComponent<TextMeshProUGUI>();
+        } else {
+          this.Text = gameObject.AddComponent<TextMeshProUGUI>();
         }
+        //FontInited = false;
+        this.Text.font = HUD.SidePanel.WarningText.font;
+        this.Text.overflowMode = TextOverflowModes.Overflow;
+        this.Text.enableWordWrapping = false;
+        this.Text.alignment = TextAlignmentOptions.Center;
       }
       TextRotateToCamera rt = gameObject.GetComponent<TextRotateToCamera>();
       if (rt == null) {
@@ -107,7 +113,11 @@ namespace CustAmmoCategories {
       if (msg.gameObject == null) { return; }
       allFloaties.Remove(msg);
       msg.gameObject.SetActive(false);
-      Log.M.WL(1, "message:" + msg.Text.text);
+      try {
+        Log.M.WL(1, "message:" + msg.Text.text);
+      }catch(Exception) {
+        Log.M.WL(1, "message without text? who am i to jugge");
+      }
       PersistentFloatieHelper.HUD.Combat.DataManager.PoolGameObject("PersistentMessage", msg.gameObject);
     }
     public static void Init(CombatHUD HUD) {

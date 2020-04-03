@@ -1369,68 +1369,75 @@ namespace CustomUnits {
     public static bool Prefix(CombatHUDMechwarriorTray __instance, Team team, Team ___displayedTeam) {
       ___displayedTeam = team;
       Log.TWL(0, "CombatHUDMechwarriorTray.RefreshTeam");
-      Dictionary<int, CustomLanceInstance> avaibleSlots = new Dictionary<int, CustomLanceInstance>();
-      foreach(var lance in __instance.exPortraitHolders()) {
-        foreach(var slot in lance) {
-          avaibleSlots.Add(slot.index,slot);
-          slot.holder.SetActive(false);
-        }
-      }
-      Dictionary<int, AbstractActor> predefinedActors = new Dictionary<int, AbstractActor>();
-      List<AbstractActor> mechs = new List<AbstractActor>();
-      List<AbstractActor> vehicles = new List<AbstractActor>();
-      foreach (AbstractActor unit in ___displayedTeam.units) {
-        string defGUID = string.Empty;
-        bool isVehicle = false;
-        if(unit.UnitType == UnitType.Mech) {
-          defGUID = (unit as Mech).MechDef.GUID;
-        }else if(unit.UnitType == UnitType.Vehicle) {
-          defGUID = (unit as Vehicle).VehicleDef.GUID;
-          isVehicle = false;
-        } else {
-          continue;
-        }
-        if(CustomLanceHelper.playerLanceLoadout.loadout.TryGetValue(defGUID, out int slotIndex)) {
-          if(avaibleSlots.TryGetValue(slotIndex, out CustomLanceInstance slot)) {
-            slot.portrait.DisplayedActor = unit;
+      try {
+        Dictionary<int, CustomLanceInstance> avaibleSlots = new Dictionary<int, CustomLanceInstance>();
+        foreach (var lance in __instance.exPortraitHolders()) {
+          foreach (var slot in lance) {
+            avaibleSlots.Add(slot.index, slot);
             slot.holder.SetActive(false);
-            Log.WL(1, new Localize.Text(unit.DisplayName).ToString() + " lance:"+slot.lance_id+" pos:"+slot.lance_index);
+          }
+        }
+        Dictionary<int, AbstractActor> predefinedActors = new Dictionary<int, AbstractActor>();
+        List<AbstractActor> mechs = new List<AbstractActor>();
+        List<AbstractActor> vehicles = new List<AbstractActor>();
+        foreach (AbstractActor unit in ___displayedTeam.units) {
+          string defGUID = string.Empty;
+          bool isVehicle = false;
+          if (unit.UnitType == UnitType.Mech) {
+            defGUID = (unit as Mech).MechDef.GUID;
+          } else if (unit.UnitType == UnitType.Vehicle) {
+            defGUID = (unit as Vehicle).VehicleDef.GUID;
+            isVehicle = false;
+          } else {
+            continue;
+          }
+          if (string.IsNullOrEmpty(defGUID) == false) {
+            if (CustomLanceHelper.playerLanceLoadout.loadout.TryGetValue(defGUID, out int slotIndex)) {
+              if (avaibleSlots.TryGetValue(slotIndex, out CustomLanceInstance slot)) {
+                slot.portrait.DisplayedActor = unit;
+                slot.holder.SetActive(false);
+                Log.WL(1, new Localize.Text(unit.DisplayName).ToString() + " lance:" + slot.lance_id + " pos:" + slot.lance_index);
+                avaibleSlots.Remove(slotIndex);
+                continue;
+              }
+            }
+          };            
+          if (isVehicle) { vehicles.Add(unit); } else { mechs.Add(unit); }
+        }
+        HashSet<int> restSlots = avaibleSlots.Keys.ToHashSet();
+        foreach (int slotIndex in restSlots) {
+          if (avaibleSlots[slotIndex].isVehicle && (vehicles.Count > 0)) {
+            avaibleSlots[slotIndex].portrait.DisplayedActor = vehicles[0];
+            avaibleSlots[slotIndex].holder.SetActive(false);
+            vehicles.RemoveAt(0);
+            avaibleSlots.Remove(slotIndex);
+            continue;
+          }
+          if ((avaibleSlots[slotIndex].isVehicle == false) && (mechs.Count > 0)) {
+            avaibleSlots[slotIndex].portrait.DisplayedActor = mechs[0];
+            avaibleSlots[slotIndex].holder.SetActive(false);
+            mechs.RemoveAt(0);
             avaibleSlots.Remove(slotIndex);
             continue;
           }
         }
-        if (isVehicle) { vehicles.Add(unit); } else { mechs.Add(unit); }
-      }
-      HashSet<int> restSlots = avaibleSlots.Keys.ToHashSet();
-      foreach(int slotIndex in restSlots) {
-        if (avaibleSlots[slotIndex].isVehicle&&(vehicles.Count > 0)) {
-          avaibleSlots[slotIndex].portrait.DisplayedActor = vehicles[0];
-          avaibleSlots[slotIndex].holder.SetActive(false);
-          vehicles.RemoveAt(0);
-          avaibleSlots.Remove(slotIndex);
-          continue;
+        foreach (var slot in avaibleSlots) {
+          slot.Value.portrait.DisplayedActor = null;
         }
-        if((avaibleSlots[slotIndex].isVehicle == false) && (mechs.Count > 0)) {
-          avaibleSlots[slotIndex].portrait.DisplayedActor = mechs[0];
-          avaibleSlots[slotIndex].holder.SetActive(false);
-          mechs.RemoveAt(0);
-          avaibleSlots.Remove(slotIndex);
-          continue;
+        int nonemptyLance = -1;
+        for (int lance_id = 0; lance_id < __instance.exPortraitHolders().Count; ++lance_id) {
+          for (int lance_index = 0; lance_index < __instance.exPortraitHolders()[lance_id].Count; ++lance_index) {
+            if (__instance.exPortraitHolders()[lance_id][lance_index].portrait.DisplayedActor != null) { nonemptyLance = lance_id; break; }
+          }
+          if (nonemptyLance != -1) { break; }
         }
+        if (nonemptyLance < 0) { nonemptyLance = 0; }
+        //if (nonemptyLance != 0) { __instance.HideLance(0); };
+        __instance.ShowLance(nonemptyLance);
+        Log.WL(1, "success");
+      }catch(Exception e) {
+        Log.TWL(0, e.ToString(), true);
       }
-      foreach(var slot in avaibleSlots) {
-        slot.Value.portrait.DisplayedActor = null;
-      }
-      int nonemptyLance = -1;
-      for (int lance_id = 0; lance_id < __instance.exPortraitHolders().Count; ++lance_id) {
-        for (int lance_index = 0; lance_index < __instance.exPortraitHolders()[lance_id].Count; ++lance_index) {
-          if (__instance.exPortraitHolders()[lance_id][lance_index].portrait.DisplayedActor != null) { nonemptyLance = lance_id; break; }
-        }
-        if (nonemptyLance != -1) { break; }
-      }
-      if (nonemptyLance < 0) { nonemptyLance = 0; }
-      //if (nonemptyLance != 0) { __instance.HideLance(0); };
-      __instance.ShowLance(nonemptyLance);
       return false;
     }
   }
