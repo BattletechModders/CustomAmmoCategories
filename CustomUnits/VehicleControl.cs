@@ -457,11 +457,11 @@ namespace CustomUnits {
           bool isVehicle = false;
           if (lanceLoadoutSlot.SelectedMech == null) { continue; }
           if (lanceLoadoutSlot.SelectedPilot == null) { continue; }
-          if (lanceLoadoutSlot.SelectedMech.MechDef.IsChassisFake() && (lanceLoadoutSlot.SelectedPilot.Pilot.pilotDef.isVehicleCrew())) {
+          if (lanceLoadoutSlot.SelectedMech.MechDef.IsChassisFake() && (lanceLoadoutSlot.SelectedPilot.Pilot.pilotDef.canPilotVehicle())) {
             isVehicle = true;
-          } else if (lanceLoadoutSlot.SelectedMech.MechDef.IsChassisFake()&&(!lanceLoadoutSlot.SelectedPilot.Pilot.pilotDef.isVehicleCrew())) {
+          } else if (lanceLoadoutSlot.SelectedMech.MechDef.IsChassisFake()&&(!lanceLoadoutSlot.SelectedPilot.Pilot.pilotDef.canPilotVehicle())) {
             continue;
-          } else if ((!lanceLoadoutSlot.SelectedMech.MechDef.IsChassisFake())&&(lanceLoadoutSlot.SelectedPilot.Pilot.pilotDef.isVehicleCrew())) {
+          } else if ((!lanceLoadoutSlot.SelectedMech.MechDef.IsChassisFake())&&(!lanceLoadoutSlot.SelectedPilot.Pilot.pilotDef.canPilotMech())) {
             continue;
           } else {
             isVehicle = false;
@@ -1526,11 +1526,15 @@ namespace CustomUnits {
     //  }
     //}
     public static bool Prefix(MechDef __instance, ref string json) {
-      Log.TWL(0, "MechDef.FromJSON constants " + (BattleTech.UnityGameInstance.BattleTechGame.constantsManifest() == null ? "null" : BattleTech.UnityGameInstance.BattleTechGame.constantsManifest().FilePath));
+      Log.TW(0, "MechDef.FromJSON fake");
       try {
         JObject olddef = JObject.Parse(json);
         string id = (string)olddef["Description"]["Id"];
-        if (__instance.IsFake(id) == false) { return true; }
+        string chassisId = (string)olddef["ChassisID"];
+        bool isFake = BattleTechResourceLocator_RefreshTypedEntries_Patch.IsChassisFake(chassisId);
+        Log.WL(1,id+" chassis:"+chassisId+" isFake:"+isFake);
+        if (isFake == false) { return true; }
+        Log.WL(1, "constants " + (BattleTech.UnityGameInstance.BattleTechGame.constantsManifest() == null ? "null" : BattleTech.UnityGameInstance.BattleTechGame.constantsManifest().FilePath));
         JObject newdef = new JObject();
         if (olddef["Chassis"] != null) { return true; };
         float ArmorMultiplierVehicle = 1f;
@@ -1565,7 +1569,7 @@ namespace CustomUnits {
             case VehicleChassisLocations.Front: location = ChassisLocations.LeftArm; break;
             case VehicleChassisLocations.Rear: location = ChassisLocations.RightArm; break;
             case VehicleChassisLocations.Left: location = ChassisLocations.LeftLeg; break;
-            case VehicleChassisLocations.Right: location = ChassisLocations.RightArm; break;
+            case VehicleChassisLocations.Right: location = ChassisLocations.RightLeg; break;
             case VehicleChassisLocations.Turret: location = ChassisLocations.Head; break;
           }
           JObject mcRef = new JObject();
@@ -1594,9 +1598,22 @@ namespace CustomUnits {
         existingLocation.Add(ChassisLocations.CenterTorso);
         existingLocation.Add(ChassisLocations.RightTorso);
         existingLocation.Add(ChassisLocations.LeftTorso);
-        foreach (JObject vcLoc in vLocations) {
+        for(int loc_index=0;loc_index < vLocations.Count; ++loc_index) {
+          //foreach (JObject vcLoc in vLocations) {
+          JToken vcLoc = vLocations[loc_index];
           Log.WL(2, vcLoc["Location"] + ":" + vcLoc["AssignedArmor"]);
-          VehicleChassisLocations vLocation = (VehicleChassisLocations)Enum.Parse(typeof(VehicleChassisLocations), (string)vcLoc["Location"]);
+          VehicleChassisLocations vLocation = VehicleChassisLocations.None;
+          if (vcLoc["Location"] == null) {
+            switch (loc_index) {
+              case 0: vLocation = VehicleChassisLocations.Front; break;
+              case 1: vLocation = VehicleChassisLocations.Left; break;
+              case 2: vLocation = VehicleChassisLocations.Right; break;
+              case 3: vLocation = VehicleChassisLocations.Rear; break;
+              case 4: vLocation = VehicleChassisLocations.Turret; break;
+            }
+          } else {
+            vLocation = (VehicleChassisLocations)Enum.Parse(typeof(VehicleChassisLocations), (string)vcLoc["Location"]);
+          }
           ChassisLocations location = ChassisLocations.Head;
           switch (vLocation) {
             case VehicleChassisLocations.Front: location = ChassisLocations.LeftArm; existingLocation.Remove(ChassisLocations.LeftArm); break;
@@ -1646,11 +1663,14 @@ namespace CustomUnits {
     private static HashSet<string> fakeHardpoints = new HashSet<string>();
     public static bool isFakeHardpoint(this HardpointDataDef hardpoint) { return fakeHardpoints.Contains(hardpoint.ID); }
     public static bool Prefix(ChassisDef __instance, ref string json) {
-      Log.TWL(0, "ChassisDef.FromJSON fake constants " + (BattleTech.UnityGameInstance.BattleTechGame.constantsManifest() == null ? "null" : BattleTech.UnityGameInstance.BattleTechGame.constantsManifest().FilePath));
+      Log.TW(0, "ChassisDef.FromJSON fake");
       try {
         JObject olddef = JObject.Parse(json);
         string id = (string)olddef["Description"]["Id"];
-        if (__instance.IsFake(id) == false) { return true; }
+        bool isFake = BattleTechResourceLocator_RefreshTypedEntries_Patch.IsChassisFake(id);
+        Log.WL(1, id + " isFake:" + isFake);
+        if (isFake == false) { return true; }
+        Log.WL(1, "constants " + (BattleTech.UnityGameInstance.BattleTechGame.constantsManifest() == null ? "null" : BattleTech.UnityGameInstance.BattleTechGame.constantsManifest().FilePath));
         float ArmorMultiplierVehicle = 1f;
         float StructureMultiplierVehicle = 1f;
         if (MechDef_FromJSON_fake.CombatValueMultipliers.HasValue == false) {
@@ -1714,10 +1734,23 @@ namespace CustomUnits {
         existingLocation.Add(ChassisLocations.CenterTorso);
         existingLocation.Add(ChassisLocations.RightTorso);
         existingLocation.Add(ChassisLocations.LeftTorso);
-        foreach (JObject vcLoc in vLocations) {
-          Log.WL(2, vcLoc["Location"] + ":" + vcLoc["MaxArmor"]);
-          VehicleChassisLocations vLocation = (VehicleChassisLocations)Enum.Parse(typeof(VehicleChassisLocations), (string)vcLoc["Location"]);
-          ChassisLocations location = ChassisLocations.Head;
+        for (int loc_index = 0; loc_index < vLocations.Count; ++loc_index) {
+          //foreach (JObject vcLoc in vLocations) {
+          ChassisLocations location = ChassisLocations.None;
+          JToken vcLoc = vLocations[loc_index];
+          Log.WL(2, vcLoc["Location"] + ":" + vcLoc["InternalStructure"]);
+          VehicleChassisLocations vLocation = VehicleChassisLocations.None;
+          if (vcLoc["Location"] == null) {
+            switch (loc_index) {
+              case 0: vLocation = VehicleChassisLocations.Front; break;
+              case 1: vLocation = VehicleChassisLocations.Left; break;
+              case 2: vLocation = VehicleChassisLocations.Right; break;
+              case 3: vLocation = VehicleChassisLocations.Rear; break;
+              case 4: vLocation = VehicleChassisLocations.Turret; break;
+            }
+          } else {
+            vLocation = (VehicleChassisLocations)Enum.Parse(typeof(VehicleChassisLocations), (string)vcLoc["Location"]);
+          }
           switch (vLocation) {
             case VehicleChassisLocations.Front: location = ChassisLocations.LeftArm; existingLocation.Remove(ChassisLocations.LeftArm); break;
             case VehicleChassisLocations.Rear: location = ChassisLocations.RightArm; existingLocation.Remove(ChassisLocations.RightArm); break;
@@ -1949,6 +1982,56 @@ namespace CustomUnits {
   public static class HUDMechArmorReadout_UpdateMechStructureAndArmor {
     public static bool Prefix(HUDMechArmorReadout __instance) {
       if (__instance.DisplayedMech == null) { return false; }
+      return true;
+    }
+  }
+  [HarmonyPatch(typeof(VehicleDef))]
+  [HarmonyPatch("Refresh")]
+  [HarmonyPatch(MethodType.Normal)]
+  public static class VehicleDef_Refresh {
+    public static bool Prefix(VehicleDef __instance, ref VehicleLocationLoadoutDef[] ___Locations) {
+      /*List<VehicleLocationLoadoutDef> locations = new List<VehicleLocationLoadoutDef>();
+      List<VehicleLocationLoadoutDef> orderedLocations = new List<VehicleLocationLoadoutDef>();
+      locations.AddRange(___Locations);
+      VehicleLocationLoadoutDef? addloc = null;
+      int index = locations.FindIndex(loc => loc.Location == VehicleChassisLocations.Front);
+      if (index == -1) { addloc = new VehicleLocationLoadoutDef(VehicleChassisLocations.Front); } else { addloc = locations[index]; }; orderedLocations.Add(addloc.Value);
+      index = locations.FindIndex(loc => loc.Location == VehicleChassisLocations.Left);
+      if (index == -1) { addloc = new VehicleLocationLoadoutDef(VehicleChassisLocations.Left); } else { addloc = locations[index]; }; orderedLocations.Add(addloc.Value);
+      index = locations.FindIndex(loc => loc.Location == VehicleChassisLocations.Right);
+      if (index == -1) { addloc = new VehicleLocationLoadoutDef(VehicleChassisLocations.Right); } else { addloc = locations[index]; }; orderedLocations.Add(addloc.Value);
+      index = locations.FindIndex(loc => loc.Location == VehicleChassisLocations.Rear);
+      if (index == -1) { addloc = new VehicleLocationLoadoutDef(VehicleChassisLocations.Rear); } else { addloc = locations[index]; }; orderedLocations.Add(addloc.Value);
+      index = locations.FindIndex(loc => loc.Location == VehicleChassisLocations.Turret);
+      if (index == -1) { addloc = new VehicleLocationLoadoutDef(VehicleChassisLocations.Turret); } else { addloc = locations[index]; }; orderedLocations.Add(addloc.Value);
+      ___Locations = orderedLocations.ToArray();*/
+      return true;
+    }
+  }
+  [HarmonyPatch(typeof(VehicleChassisDef))]
+  [HarmonyPatch("Refresh")]
+  [HarmonyPatch(MethodType.Normal)]
+  public static class VehicleChassisDef_Refresh {
+    public static bool Prefix(VehicleChassisDef __instance, ref VehicleLocationLoadoutDef[] ___Locations) {
+      /*List<VehicleLocationLoadoutDef> locations = new List<VehicleLocationLoadoutDef>();
+      List<VehicleLocationLoadoutDef> orderedLocations = new List<VehicleLocationLoadoutDef>();
+      locations.AddRange(___Locations);
+      VehicleLocationLoadoutDef? addloc = null;
+      int index = locations.FindIndex(loc => loc.Location == VehicleChassisLocations.Front);
+      if (index == -1) { addloc = new VehicleLocationLoadoutDef(VehicleChassisLocations.Front); } else { addloc = locations[index]; }; orderedLocations.Add(addloc.Value);
+      index = locations.FindIndex(loc => loc.Location == VehicleChassisLocations.Left);
+      if (index == -1) { addloc = new VehicleLocationLoadoutDef(VehicleChassisLocations.Left); } else { addloc = locations[index]; }; orderedLocations.Add(addloc.Value);
+      index = locations.FindIndex(loc => loc.Location == VehicleChassisLocations.Right);
+      if (index == -1) { addloc = new VehicleLocationLoadoutDef(VehicleChassisLocations.Right); } else { addloc = locations[index]; }; orderedLocations.Add(addloc.Value);
+      index = locations.FindIndex(loc => loc.Location == VehicleChassisLocations.Rear);
+      if (index == -1) { addloc = new VehicleLocationLoadoutDef(VehicleChassisLocations.Rear); } else { addloc = locations[index]; }; orderedLocations.Add(addloc.Value);
+      index = locations.FindIndex(loc => loc.Location == VehicleChassisLocations.Turret);
+      if (index == -1) {
+      } else {
+        addloc = locations[index];
+        orderedLocations.Add(addloc.Value);
+      }; 
+      ___Locations = orderedLocations.ToArray();*/
       return true;
     }
   }

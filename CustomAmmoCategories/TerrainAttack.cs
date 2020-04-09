@@ -180,7 +180,7 @@ namespace CustAmmoCategories {
       } else {
         Log.LogWrite("Registering friendly attack to " + new Text(target.DisplayName) + "\n");
       }
-      AttackInvocation invocation = new AttackInvocation(this.SelectedActor, target, weaponsList, MeleeAttackType.NotSet, -1);
+      AttackInvocation invocation = new AttackInvocation(this.SelectedActor, target, weaponsList);
       if (invocation == null) {
         Debug.Log((object)"No invocation created");
         return false;
@@ -433,6 +433,26 @@ namespace CustomAmmoCategoriesPatches {
           __result.registerAsTerrainAttack();
           __instance.isSequenceIsTerrainAttack(false);
         }
+      } catch (Exception e) {
+        Log.M.TWL(0, e.ToString(), true);
+      }
+    }
+  }
+  [HarmonyPatch(typeof(AttackStackSequence))]
+  [HarmonyPatch("OnAttackBegin")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { typeof(MessageCenterMessage) })]
+  public static class AttackStackSequence_OnAttackBegin {
+    public static void Postfix(AttackStackSequence __instance, MessageCenterMessage message) {
+      try {
+        Log.M.TWL(0, "AttackStackSequence.OnAttackBegin");
+        CombatGameState Combat = (CombatGameState)typeof(SequenceBase).GetProperty("Combat", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(__instance);
+        AttackDirector.AttackSequence attackSequence = Combat.AttackDirector.GetAttackSequence((message as AttackSequenceBeginMessage).sequenceId);
+        if (attackSequence == null) {
+          Log.M.WL(1, "Null sequence on attack begin!!!");
+          return;
+        }
+        Log.M.WL(1, "attackSequence.calledShotLocation:"+ attackSequence.calledShotLocation);
       } catch (Exception e) {
         Log.M.TWL(0, e.ToString(), true);
       }

@@ -69,6 +69,7 @@ namespace CustomUnits {
         caption.SetText("<<");
         base.InitVisuals();
       }
+      
     }
     public override void OnClick() {
       state.lanceStartPos -= 4;
@@ -565,7 +566,8 @@ namespace CustomUnits {
         ___UnitWidgets[index].SetMechIconValueTextActive(false);
         if (___UnitResults[index] != null) {
           ___UnitWidgets[index].SetNoUnitDeployedOverlayActive(false);
-          if (___UnitResults[index].pilot.pilotDef.isVehicleCrew() == false) {
+          //if (___UnitResults[index].pilot.pilotDef.isVehicleCrew() == false) {
+          if (___UnitResults[index].mech.IsChassisFake() == false) {
             ___UnitWidgets[index].FillInData(experienceEarned);
           } else {
             ___UnitWidgets[index].FillInData(0);
@@ -597,29 +599,46 @@ namespace CustomUnits {
   [HarmonyPatch(typeof(PilotDef), "SetUnspentExperience")]
   public static class PilotDef_SetUnspentExperience {
     static bool Prefix(PilotDef __instance, ref int value) {
-      if (__instance.isVehicleCrew()) { value = 0; };
-      Log.TWL(0, "PilotDef.SetUnspentExperience isVehicleCrew:"+ __instance.isVehicleCrew()+" value:"+value);
+      if (__instance.canPilotMech() == false) { value = 0; };
+      Log.TWL(0, "PilotDef.SetUnspentExperience canPilotMech:" + __instance.canPilotMech()+" value:"+value);
       return true;
     }
   }
   [HarmonyPatch(typeof(Pilot), "AddExperience")]
   public static class Pilot_AddExperience {
     static bool Prefix(Pilot __instance, ref int value) {
-      if (__instance.pilotDef.isVehicleCrew()) {
+      if (__instance.pilotDef.canPilotMech() == false) {
         value = 0;
         __instance.StatCollection.Set("ExperienceUnspent",0);
       };
-      Log.TWL(0, "Pilot.AddExperience isVehicleCrew:" + __instance.pilotDef.isVehicleCrew() + " value:" + value+" unspent:"+__instance.UnspentXP);
+      Log.TWL(0, "Pilot.AddExperience canPilotMech:" + __instance.pilotDef.canPilotMech() + " value:" + value+" unspent:"+__instance.UnspentXP);
       return true;
     }
   }
   [HarmonyPatch(typeof(LanceConfiguratorPanel), "OnConfirmClicked")]
   public static class LanceConfiguratorPanel_OnConfirmClicked {
+    private static FieldInfo f_interruptQueue = typeof(SimGameState).GetField("interruptQueue", BindingFlags.Instance | BindingFlags.NonPublic);
+    public static SimGameInterruptManager interruptQueue(this SimGameState sim) { return (SimGameInterruptManager)f_interruptQueue.GetValue(sim); }
     static bool Prefix(LanceConfiguratorPanel __instance, ref LanceLoadoutSlot[] ___loadoutSlots) {
-      int overallSlotsCount = 0;
-      foreach(LanceLoadoutSlot slot in ___loadoutSlots){
-        if (slot.SelectedMech != null) { ++overallSlotsCount; };
+      Log.TWL(0, "LanceConfiguratorPanel.OnConfirmClicked");
+      if((__instance.sim != null)&&(__instance.activeContract != null)) {
+        bool badBiome = false;
+        string forbidTag = "NoBiome_" + __instance.activeContract.ContractBiome;
+        Log.WL(1, "SimGameState exists and activeContract too. Biome tag:"+ forbidTag);
+        foreach (LanceLoadoutSlot slot in ___loadoutSlots) {
+          if (slot.SelectedMech != null) {
+            if (slot.SelectedMech.MechDef.MechTags.Contains(forbidTag)) { badBiome = true; break; }
+          };
+        }
+        if (badBiome) {
+          Localize.Text text = new Localize.Text("HEY VONKER!!");
+          Localize.Text message = new Localize.Text("I.C.E. engines not working in vacuum. VTOLs and hovers also can't operate in thin atmosphere or without it");
+          __instance.sim.interruptQueue().QueuePauseNotification(text.ToString(true), message.ToString(true), __instance.sim.GetCrewPortrait(SimGameCrew.Crew_Yang), "notification_mechreadycomplete", (Action)(() => {
+          }), "Continue", (Action)null, (string)null);
+          return false;
+        }
       }
+      int overallSlotsCount = 0;
       if (overallSlotsCount > CustomLanceHelper.overallDeployCount()) {
         GenericPopupBuilder.Create("Lance Cannot Be Deployed", Strings.T("Deploying units count {0} exceed limit {1}",overallSlotsCount,CustomLanceHelper.overallDeployCount())).AddFader(new UIColorRef?(LazySingletonBehavior<UIManager>.Instance.UILookAndColorConstants.PopupBackfill), 0.0f, true).Render();
         return false;
@@ -632,6 +651,11 @@ namespace CustomUnits {
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { })]
   public static class SimGameState_ResolveCompleteContract {
+    private static List<UnitResult> PlayerUnitResults = null;
+    public static bool Prefix(SimGameState __instance) {
+      PlayerUnitResults = __instance.CompletedContract.PlayerUnitResults;
+      return true;
+    }
     static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) {
       var targetPropertyGetter = AccessTools.Method(typeof(PilotDef), "SetUnspentExperience");
       var replacementMethod = AccessTools.Method(typeof(SimGameState_ResolveCompleteContract), nameof(SetUnspentExperience));
@@ -639,11 +663,35 @@ namespace CustomUnits {
     }
 
     public static void SetUnspentExperience(this PilotDef pilotDef, int value) {
-      Log.TWL(0, "SimGameState.ResolveCompleteContract.PilotDef.SetUnspentExperience "+ pilotDef.Description.Id +" crew:"+pilotDef.isVehicleCrew()+" value:"+value);
-      if (pilotDef.isVehicleCrew()) {
-        pilotDef.SetUnspentExperience(0);
+      Log.TWL(0, "SimGameState.ResolveCompleteContract.PilotDef.SetUnspentExperience "+ pilotDef.Description.Id + " PlayerUnitResults:" + (PlayerUnitResults==null?"null": PlayerUnitResults.Count.ToString()) +" crew:"+pilotDef.canPilotMech()+" value:"+value);
+      if (PlayerUnitResults == null) {
+        if (pilotDef.canPilotMech() == false) {
+          pilotDef.SetUnspentExperience(0);
+        } else {
+          pilotDef.SetUnspentExperience(value);
+        }
       } else {
-        pilotDef.SetUnspentExperience(value);
+        UnitResult pilotResult = null;
+        foreach(UnitResult result in PlayerUnitResults) {
+          if(result.pilot.Description.Id == pilotDef.Description.Id) {
+            pilotResult = result; break;
+          }
+        }
+        if(pilotResult == null) {
+          Log.WL(1,"cant find pilot result for:"+ pilotDef.Description.Id);
+          if (pilotDef.canPilotMech() == false) {
+            pilotDef.SetUnspentExperience(0);
+          } else {
+            pilotDef.SetUnspentExperience(value);
+          }
+        } else {
+          Log.WL(1, "success find result for:" + pilotDef.Description.Id+" unit:"+ pilotResult.mech.ChassisID+ " idFake:"+ pilotResult.mech.IsChassisFake());
+          if (pilotResult.mech.IsChassisFake()) {
+            pilotDef.SetUnspentExperience(0);
+          } else {
+            pilotDef.SetUnspentExperience(value);
+          }
+        }
       }
     }
   }
@@ -697,7 +745,7 @@ namespace CustomUnits {
         }
         bool isVehicle = false;
         if (forcedMech != null) { isVehicle = forcedMech.MechDef.Chassis.IsFake(forcedMech.MechDef.ChassisID); } else
-        if (forcedPilot != null) { isVehicle = forcedPilot.Pilot.pilotDef.isVehicleCrew(); }
+        if (forcedPilot != null) { isVehicle = !forcedPilot.Pilot.pilotDef.canPilotMech(); }
         if (isVehicle) {
           spawnVehicleList.Add(new LoadoutContent(forcedMech, forcedPilot));
         } else {
@@ -835,7 +883,8 @@ namespace CustomUnits {
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { typeof(IMechLabDraggableItem), typeof(bool) })]
   public static class LanceLoadoutSlot_OnAddItem {
-    public static bool isVehicleCrew(this PilotDef pilotDef) { return pilotDef.PilotTags.Contains("pilot_vehicle_crew"); }
+    public static bool canPilotVehicle(this PilotDef pilotDef) { return pilotDef.PilotTags.Contains(Core.Settings.CanPilotVehicleTag); }
+    public static bool canPilotMech(this PilotDef pilotDef) { return !pilotDef.PilotTags.Contains(Core.Settings.CannotPilotMechTag); }
     public static bool Prefix(LanceLoadoutSlot __instance, IMechLabDraggableItem item, bool validate, bool __result, LanceConfiguratorPanel ___LC) {
       Log.TWL(0, "LanceLoadoutSlot.OnAddItem " + __instance.GetInstanceID());
       try {
@@ -860,19 +909,20 @@ namespace CustomUnits {
           }
         } else if (item.ItemType == MechLabDraggableItemType.Pilot) {
           SGBarracksRosterSlot barracksRosterSlot = item as SGBarracksRosterSlot;
-          bool isVehicleCrew = barracksRosterSlot.Pilot.pilotDef.isVehicleCrew();
-          if (isVehicleCrew) {
-            if (isVehicle == false) {
+          bool canPilotVehicle = barracksRosterSlot.Pilot.pilotDef.canPilotVehicle();
+          bool canPilotMech = barracksRosterSlot.Pilot.pilotDef.canPilotMech();
+          if (isVehicle) {
+            if (canPilotVehicle == false) {
               if (___LC != null) { ___LC.ReturnItem(item); }
               __result = false;
-              GenericPopupBuilder.Create("Cannot place pilot", Strings.T("Vehicle pilot cannot be placed to mechwarrior slot")).AddFader(new UIColorRef?(LazySingletonBehavior<UIManager>.Instance.UILookAndColorConstants.PopupBackfill), 0.0f, true).Render();
+              GenericPopupBuilder.Create("Cannot place pilot", Strings.T("This pilot can't pilot vehicles")).AddFader(new UIColorRef?(LazySingletonBehavior<UIManager>.Instance.UILookAndColorConstants.PopupBackfill), 0.0f, true).Render();
               return false;
             }
           } else {
-            if (isVehicle == true) {
+            if (canPilotMech == false) {
               if (___LC != null) { ___LC.ReturnItem(item); }
               __result = false;
-              GenericPopupBuilder.Create("Cannot place pilot", Strings.T("Mechwarrior cannot be placed to vehicle pilot slot")).AddFader(new UIColorRef?(LazySingletonBehavior<UIManager>.Instance.UILookAndColorConstants.PopupBackfill), 0.0f, true).Render();
+              GenericPopupBuilder.Create("Cannot place pilot", Strings.T("This pilot can't pilot mech")).AddFader(new UIColorRef?(LazySingletonBehavior<UIManager>.Instance.UILookAndColorConstants.PopupBackfill), 0.0f, true).Render();
               return false;
             }
           }

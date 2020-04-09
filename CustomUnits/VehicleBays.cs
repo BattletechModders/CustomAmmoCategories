@@ -1,4 +1,5 @@
 ﻿using BattleTech;
+using BattleTech.Assetbundles;
 using BattleTech.Data;
 using BattleTech.Rendering;
 using BattleTech.UI;
@@ -12,6 +13,83 @@ using System.Reflection.Emit;
 using UnityEngine;
 
 namespace CustomUnits {
+  /*[HarmonyPatch]
+  public static class AssetBundleManager_RequestAsset {
+    static MethodBase TargetMethod() {
+      return typeof(AssetBundleManager).GetMethod("RequestAsset").MakeGenericMethod(typeof(GameObject));
+    }
+    public static void Postfix(string id) {
+      Log.TWL(0, "AssetBundleManager.RequestAsset id:" + id);
+    }
+  }
+  [HarmonyPatch]
+  public static class AssetBundleTracker_LoadAsset {
+    static MethodBase TargetMethod() {
+      // refer to C# reflection documentation:
+      return typeof(WeaponEffect).Assembly.GetType("BattleTech.Assetbundles.AssetBundleTracker").GetMethod("LoadAsset").MakeGenericMethod(typeof(GameObject));
+    }
+    private static PropertyInfo CurrentState = typeof(WeaponEffect).Assembly.GetType("BattleTech.Assetbundles.AssetBundleTracker").GetProperty("CurrentState", BindingFlags.Instance | BindingFlags.NonPublic);
+    private static FieldInfo AssetBundle = typeof(WeaponEffect).Assembly.GetType("BattleTech.Assetbundles.AssetBundleTracker").GetField("assetBundle", BindingFlags.Instance | BindingFlags.NonPublic);
+    public static void Postfix(IDisposable __instance,string name,ref GameObject __result) {
+      Log.TWL(0, "AssetBundleManager.LoadAsset name:" + name);
+      Log.WL(1, "CurrentState:" + CurrentState.GetValue(__instance).ToString());
+      AssetBundle bundle = AssetBundle.GetValue(__instance) as AssetBundle;
+      Log.WL(1, "AssetBundle:" + (bundle != null?bundle.name:"null"));
+      Log.WL(1, "result:" + (__result != null ? __result.name : "null"));
+    }
+  }
+  public static class PrefabLoadRequest_Load {
+    public static void Postfix(VersionManifestEntry ___manifestEntry, string ___resourceId) {
+      Log.TWL(0, "PrefabLoadRequest.Load id:" + ___resourceId + " IsAssetBundled: " + ___manifestEntry.IsAssetBundled + ":" + ___manifestEntry.FilePath);
+    }
+  }
+  public static class AssetBundleTracker_BuildObjectMap {
+    //public static readonly string playerGUID = "bf40fd39-ccf9-47c4-94a6-061809681140";
+    public static void Postfix(Dictionary<System.Type, Dictionary<string, UnityEngine.Object>> ___loadedObjects, AssetBundle ___assetBundle) {
+      try {
+        Log.TWL(0, "AssetBundleTracker.BuildObjectMap bundle:" + ___assetBundle.name);
+        foreach (var types in ___loadedObjects) {
+          Log.WL(1, types.Key.ToString());
+          foreach (var objects in types.Value) {
+            Log.WL(2, objects.Key + "=" + objects.Value.name);
+          }
+        }
+      }catch(Exception e) {
+        Log.TWL(0, e.ToString(), true);
+      }
+    }
+  }*/
+  [HarmonyPatch(typeof(SGRoomController_MechBay))]
+  [HarmonyPatch("NullWidgets")]
+  [HarmonyPatch(MethodType.Normal)]
+  public static class SGRoomController_MechBay_NullWidgets {
+    public static void PoolLoadedMechParts(this SGRoomController_MechBay instance, MechRepresentationSimGame loadedMech) {
+      if ((UnityEngine.Object)loadedMech != (UnityEngine.Object)null) {
+        GenericAnimatedComponent[] animatedComponents = loadedMech.GetComponentsInChildren<GenericAnimatedComponent>();
+        Dictionary<GameObject, string> objects = new Dictionary<GameObject, string>();
+        foreach (GenericAnimatedComponent component in animatedComponents) {
+          if (objects.ContainsKey(component.gameObject) == false) {
+            objects.Add(component.gameObject, component.PrefabName);
+          }
+        }
+        foreach (var obj in objects) {
+          obj.Key.transform.SetParent(null);
+          instance.simState.DataManager.PoolGameObject(obj.Value, obj.Key);
+        }
+      }
+    }
+    public static void Prefix(SGRoomController_MechBay __instance, MechRepresentationSimGame ___loadedMech) {
+      __instance.PoolLoadedMechParts(___loadedMech);
+    }
+  }
+  [HarmonyPatch(typeof(SGRoomController_MechBay))]
+  [HarmonyPatch("RemoveMech")]
+  [HarmonyPatch(MethodType.Normal)]
+  public static class SGRoomController_MechBay_RemoveMech {
+    public static void Prefix(SGRoomController_MechBay __instance, MechRepresentationSimGame ___loadedMech) {
+      __instance.PoolLoadedMechParts(___loadedMech);
+    }
+  }
   [HarmonyPatch(typeof(SGRoomController_MechBay))]
   [HarmonyPatch("LoadMech")]
   [HarmonyPatch(MethodType.Normal)]
@@ -118,6 +196,7 @@ namespace CustomUnits {
         mechbay.simState.CameraController.postProcess.fade = 0f;
       }
       if (mechbay.loadedMech() != null) {
+        mechbay.PoolLoadedMechParts(mechbay.loadedMech());
         mechbay.simState.DataManager.PoolGameObject(mechbay.loadedMech().prefabName, mechbay.loadedMech().gameObject);
         mechbay.loadedMech(null);
       }
@@ -178,10 +257,11 @@ namespace CustomUnits {
             mechbay.simState.DataManager.PoolGameObject(mechDef.Chassis.PrefabIdentifier, battleGameObject);
             VehicleRepresentation battleRep = bayGameObject.GetComponent<VehicleRepresentation>();
             if (battleRep != null) {
-              //AkGameObj audio = battleRep.audioObject;
-              //battleRep.audioObject = null;
-              //battleRep.Init(null, mechbay.simState.CameraController.MechAnchor, true);
-              //battleRep.audioObject = audio;
+              AkGameObj audio = battleRep.audioObject;
+              battleRep.audioObject = null;
+              battleRep.RegisterChassis(mechbay.simState.DataManager.VehicleChassisDefs.Get(mechDef.ChassisID));
+              battleRep.Init(null, mechbay.simState.CameraController.MechAnchor, true);
+              battleRep.audioObject = audio;
               bayRepresentation = bayGameObject.AddComponent<MechRepresentationSimGame>();
               bayRepresentation.InitFromBattleRepresentation(battleRep);
               bayRepresentation.thisAnimator = null;
@@ -286,6 +366,24 @@ namespace CustomUnits {
       ___bayGroupWidget.ShowVehicleBays(toggleState);
     }
   }
+  [HarmonyPatch(typeof(SimGameState))]
+  [HarmonyPatch("GetPilotFullExpertise")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { typeof(Pilot) })]
+  public static class SimGameState_GetPilotFullExpertise {
+    private static bool toggleState = false;
+    public static void Postfix(SimGameState __instance, Pilot p, ref string __result) {
+      Log.TWL(0, "SimGameState.GetPilotFullExpertise " + p.Description.Id);
+      string add_str = "";
+      if (p.pilotDef.canPilotMech()) {
+        add_str = "M";
+      }
+      if (p.pilotDef.canPilotVehicle()) {
+        add_str += "V";
+      }
+      __result += " (" + add_str + ")";
+    }
+  }
   [HarmonyPatch(typeof(PilotGenerator))]
   [HarmonyPatch("GeneratePilots")]
   [HarmonyPatch(MethodType.Normal)]
@@ -293,13 +391,32 @@ namespace CustomUnits {
     public static void Callsign(this HumanDescriptionDef descr, string value) {
       typeof(HumanDescriptionDef).GetProperty("Callsign", BindingFlags.Instance | BindingFlags.Public).GetSetMethod(true).Invoke(descr, new object[1] { value });
     }
+    public static void Details(this BaseDescriptionDef descr, string value) {
+      typeof(BaseDescriptionDef).GetProperty("Details", BindingFlags.Instance | BindingFlags.Public).GetSetMethod(true).Invoke(descr, new object[1] { value });
+    }
     public static void Postfix(PilotGenerator __instance, ref List<PilotDef> __result) {
       Log.TWL(0, "PilotGenerator.GeneratePilots");
       if (__result == null) { return; }
       if (__result.Count == 0) { return; }
-      __result[__result.Count - 1].Description.Callsign("V.CREW");
-      __result[__result.Count - 1].PilotTags.Add("pilot_vehicle_crew");
-      __result[__result.Count - 1].SetUnspentExperience(0);
+      int vehiclePilotsCount = 0;
+      foreach (PilotDef pilot in __result) {
+        if (vehiclePilotsCount > Core.Settings.MaxVehicleRandomPilots) { break; }
+        float roll = UnityEngine.Random.Range(0f, 1f);
+        Log.WL(1, "First roll:"+roll);
+        if (roll < Core.Settings.CanPilotVehicleProbability) {
+          ++vehiclePilotsCount;
+          roll = UnityEngine.Random.Range(0f, 1f);
+          pilot.PilotTags.Add(Core.Settings.CanPilotVehicleTag);
+          Log.WL(1, "Second roll:" + roll);
+          if (roll < Core.Settings.CanPilotAlsoMechProbability) {
+            pilot.Description.Details(Core.Settings.CanPilotBothDescription + pilot.Description.Details);
+          } else {
+            pilot.Description.Details(Core.Settings.CanPilotVehicleDescription + pilot.Description.Details);
+            pilot.PilotTags.Add(Core.Settings.CannotPilotMechTag);
+            pilot.SetUnspentExperience(0);
+          }
+        }
+      }
     }
   }
   [HarmonyPatch(typeof(MechBayRowGroupWidget))]
@@ -408,7 +525,7 @@ namespace CustomUnits {
       List<MechDef> vehicles = new List<MechDef>();
       for (int idx = 0; idx < startingMechs.Count; ++idx) {
         MechDef mech = new MechDef(__instance.DataManager.MechDefs.Get(startingMechs[idx]), __instance.GenerateSimGameUID(), true);
-        if (mech.IsChassisFake()) {
+        if (mech.IsChassisFake() == false) {
           mechs.Add(mech);
         } else {
           vehicles.Add(mech);
@@ -434,7 +551,7 @@ namespace CustomUnits {
       List<MechDef> vehicles = new List<MechDef>();
       for (int idx = 0; idx < startingMechs.Count; ++idx) {
         MechDef mech = startingMechs[idx];
-        if (mech.IsChassisFake()) {
+        if (mech.IsChassisFake() == false) {
           mechs.Add(mech);
         } else {
           vehicles.Add(mech);
@@ -528,8 +645,31 @@ namespace CustomUnits {
       Log.TWL(0, "MechRepresentationSimGame.LoadWeapons");
       for (int index = 0; index < __instance.mechDef.Inventory.Length; ++index) {
         MechComponentRef componentRef = __instance.mechDef.Inventory[index];
-        componentRef.prefabName = MechHardpointRules.GetComponentPrefabName(__instance.mechDef.Chassis.HardpointDataDef, (BaseComponentRef)componentRef, __instance.mechDef.Chassis.PrefabBase, componentRef.MountedLocation.ToString().ToLower(), ref usedPrefabNames);
-        componentRef.hasPrefabName = true;
+        string MountedLocation = componentRef.MountedLocation.ToString().ToLower();
+        bool correctLocation = false;
+        if (__instance.mechDef.IsChassisFake()) {
+          switch (componentRef.MountedLocation) {
+            case ChassisLocations.LeftArm: MountedLocation = VehicleChassisLocations.Front.ToString().ToLower(); correctLocation = true; break;
+            case ChassisLocations.RightArm: MountedLocation = VehicleChassisLocations.Rear.ToString().ToLower(); correctLocation = true; break;
+            case ChassisLocations.LeftLeg: MountedLocation = VehicleChassisLocations.Left.ToString().ToLower(); correctLocation = true; break;
+            case ChassisLocations.RightLeg: MountedLocation = VehicleChassisLocations.Right.ToString().ToLower(); correctLocation = true; break;
+            case ChassisLocations.Head: MountedLocation = VehicleChassisLocations.Turret.ToString().ToLower(); correctLocation = true; break;
+          }
+        } else {
+          correctLocation = true;
+        }
+        if (correctLocation) {
+          WeaponDef def = componentRef.Def as WeaponDef;
+          Log.W(0, "GetComponentPrefabName "+ __instance.mechDef.Chassis.HardpointDataDef.ID + " base:"+ __instance.mechDef.Chassis.PrefabBase+" loc:"+ MountedLocation);
+          if(def != null) {
+            string desiredPrefabName = string.Format("chrPrfWeap_{0}_{1}_{2}{3}", __instance.mechDef.Chassis.PrefabBase, MountedLocation, componentRef.Def.PrefabIdentifier.ToLower(), def.WeaponCategoryValue.HardpointPrefabText);
+            Log.WL(1, "desiredPrefabName:"+ desiredPrefabName);
+          } else {
+            Log.WL(0, "");
+          }
+          componentRef.prefabName = MechHardpointRules.GetComponentPrefabName(__instance.mechDef.Chassis.HardpointDataDef, (BaseComponentRef)componentRef, __instance.mechDef.Chassis.PrefabBase, MountedLocation, ref usedPrefabNames);
+          componentRef.hasPrefabName = true;
+        }
         if (!string.IsNullOrEmpty(componentRef.prefabName)) {
           Log.WL(1, "component:"+componentRef.ComponentDefID+":"+componentRef.MountedLocation);
           Transform attachTransform = __instance.GetAttachTransform(componentRef.MountedLocation);
@@ -557,11 +697,11 @@ namespace CustomUnits {
                 List<Transform> transfroms = new List<Transform>();
                 for (int i = 0; i < customHardpoint.emitters.Count; ++i) {
                   Transform[] trs = component1.GetComponentsInChildren<Transform>();
-                  foreach (Transform tr in trs) { if (tr.name == customHardpoint.emitters[index]) { transfroms.Add(tr); break; } }
+                  foreach (Transform tr in trs) { if (tr.name == customHardpoint.emitters[i]) { transfroms.Add(tr); break; } }
                 }
                 Log.LogWrite(1, "result(" + transfroms.Count + "):\n");
                 for (int i = 0; i < transfroms.Count; ++i) {
-                  Log.LogWrite(2, transfroms[index].name + ":" + transfroms[index].localPosition + "\n");
+                  Log.LogWrite(2, transfroms[i].name + ":" + transfroms[i].localPosition + "\n");
                 }
                 if (transfroms.Count == 0) { transfroms.Add(prefab.transform); };
                 component1.vfxTransforms = transfroms.ToArray();

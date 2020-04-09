@@ -34,8 +34,10 @@ namespace CustomUnits {
       Log.LogWrite(1, "hits count:" + hits.Length + "\n");
       float waterLevel = float.NaN;
       foreach (RaycastHit hit in hits) {
-        Log.LogWrite(2, "hit pos:" + hit.point + " " + hit.collider.gameObject.name + " layer:" + LayerMask.LayerToName(hit.collider.gameObject.layer) + "\n");
-        waterLevel = hit.point.y;
+        if (float.IsNaN(waterLevel) || (hit.point.y > waterLevel)) {
+          Log.LogWrite(2, "hit pos:" + hit.point + " " + hit.collider.gameObject.name + " layer:" + LayerMask.LayerToName(hit.collider.gameObject.layer) + "\n");
+          waterLevel = hit.point.y;
+        }
       }
       if (float.IsNaN(waterLevel) == false) {
         waterLevel -= Core.Settings.waterFlatDepth;

@@ -1,4 +1,7 @@
-﻿using Harmony;
+﻿using BattleTech;
+using BattleTech.Data;
+using Harmony;
+using Localize;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
@@ -93,6 +96,8 @@ namespace CustomUnits{
     }
   }
   public class CUSettings {
+    public string CanPilotVehicleTag { get; set; }
+    public string CannotPilotMechTag { get; set; }
     public bool debugLog { get; set; }
     public float DeathHeight { get; set; }
     public bool fixWaterHeight { get; set; }
@@ -104,6 +109,11 @@ namespace CustomUnits{
     public List<CustomLanceDef> Lances { get; set; }
     public int overallDeploySize { get; set; }
     public string EMPLOYER_LANCE_GUID { get; set; }
+    public float CanPilotVehicleProbability { get; set; }
+    public float CanPilotAlsoMechProbability { get; set; }
+    public int MaxVehicleRandomPilots { get; set; }
+    public string CanPilotVehicleDescription { get; set; }
+    public string CanPilotBothDescription { get; set; }
     public CUSettings() {
       debugLog = false;
       DeathHeight = 1f;
@@ -115,6 +125,13 @@ namespace CustomUnits{
       LancesIcons = new List<string>();
       Lances = new List<CustomLanceDef>();
       overallDeploySize = 4;
+      CanPilotVehicleTag = "pilot_vehicle_crew";
+      CannotPilotMechTag = "pilot_nomech_crew";
+      MaxVehicleRandomPilots = 2;
+      CanPilotVehicleProbability = 0.5f;
+      CanPilotAlsoMechProbability = 0.5f;
+      CanPilotVehicleDescription = String.Format(HumanDescriptionDef.PilotGenDetailFormatting, "Piloting", "Can pilot only vehicles");
+      CanPilotBothDescription = String.Format(HumanDescriptionDef.PilotGenDetailFormatting, "Piloting", "Can pilot both mechs and vehicles"); ;
       EMPLOYER_LANCE_GUID = "ecc8d4f2-74b4-465d-adf6-84445e5dfc230";
     }
   }
@@ -151,6 +168,32 @@ namespace CustomUnits{
       MechResizer.MechResizer.Init(directory, settingsJson);
       try {
         var harmony = HarmonyInstance.Create("io.mission.customunits");
+        /*Type AssetBundleTracker = typeof(WeaponEffect).Assembly.GetType("BattleTech.Assetbundles.AssetBundleTracker");
+        if (AssetBundleTracker != null) {
+          MethodInfo BuildObjectMap = AssetBundleTracker.GetMethod("BuildObjectMap", BindingFlags.Instance | BindingFlags.NonPublic);
+          if (BuildObjectMap != null) {
+            MethodInfo patched = typeof(AssetBundleTracker_BuildObjectMap).GetMethod("Postfix", BindingFlags.Static | BindingFlags.Public);
+            if(patched != null) { 
+              harmony.Patch(BuildObjectMap,null,new HarmonyMethod(patched));
+              Log.TWL(0, "BattleTech.Assetbundles.AssetBundleTracker.BuildObjectMap patched");
+            }
+          } else {
+            Log.TWL(0, "can't find BattleTech.Assetbundles.AssetBundleTracker.BuildObjectMap");
+          }
+        } else {
+          Log.TWL(0, "can't find BattleTech.Assetbundles.AssetBundleTracker");
+        }
+        Type PrefabLoadRequest = typeof(DataManager).GetNestedType("PrefabLoadRequest", BindingFlags.NonPublic);
+        if (AssetBundleTracker != null) {
+          MethodInfo Load = PrefabLoadRequest.GetMethod("Load");
+          MethodInfo patched = typeof(PrefabLoadRequest_Load).GetMethod("Postfix", BindingFlags.Static | BindingFlags.Public);
+          if ((patched != null)&&(Load != null)) {
+            harmony.Patch(Load, null, new HarmonyMethod(patched));
+            Log.TWL(0, "PrefabLoadRequest.Load patched");
+          }
+        } else {
+          Log.TWL(0, "can't find DataManager.PrefabLoadRequest");
+        }*/
         harmony.PatchAll(Assembly.GetExecutingAssembly());
         WeightedFactorHelper.PatchInfluenceMapPositionFactor(harmony);
       } catch (Exception e) {

@@ -223,7 +223,32 @@ namespace CustomUnits {
       Log.LogWrite(initiation, "MoveCostBiome:" + MoveCostBiome, true);
     }
   }
+  public class HangarLocationTransforms {
+    public CustomTransform TurretAttach { get; set; }
+    public CustomTransform BodyAttach { get; set; }
+    public CustomTransform TurretLOS { get; set; }
+    public CustomTransform LeftSideLOS { get; set; }
+    public CustomTransform RightSideLOS { get; set; }
+    public CustomTransform leftVFXTransform { get; set; }
+    public CustomTransform rightVFXTransform { get; set; }
+    public CustomTransform rearVFXTransform { get; set; }
+    public List<CustomTransform> lightsTransforms { get; set; }
+    public CustomTransform thisTransform { get; set; }
+    public HangarLocationTransforms() {
+      TurretAttach = new CustomTransform();
+      BodyAttach = new CustomTransform();
+      TurretLOS = new CustomTransform();
+      LeftSideLOS = new CustomTransform();
+      RightSideLOS = new CustomTransform();
+      leftVFXTransform = new CustomTransform();
+      rightVFXTransform = new CustomTransform();
+      rearVFXTransform = new CustomTransform();
+      thisTransform = new CustomTransform();
+      lightsTransforms = new List<CustomTransform>();
+    }
+  }
   public class VehicleCustomInfo {
+    public bool NullifyBodyMesh { get; set; }
     public float AOEHeight { get; set; }
     public bool TieToGroundOnDeath { get; set; }
     public float FiringArc { get; set; }
@@ -241,6 +266,7 @@ namespace CustomUnits {
     public List<CustomTransform> lightsTransforms { get; set; }
     public CustomTransform thisTransform { get; set; }
     public List<CustomPart> CustomParts { get; set; }
+    public HangarLocationTransforms HangarTransforms { get; set; }
     public string MoveCost { get; set; }
     public Dictionary<string, float> MoveCostModPerBiome { get; set; }
     public VehicleCustomInfo() {
@@ -263,6 +289,8 @@ namespace CustomUnits {
       FiringArc = 0f;
       TieToGroundOnDeath = false;
       NoIdleAnimations = false;
+      NullifyBodyMesh = false;
+      HangarTransforms = new HangarLocationTransforms();
     }
     public void debugLog(int initiation) {
       string init = new String(' ', initiation);
@@ -615,11 +643,40 @@ namespace CustomUnits {
       }
     }
   }*/
+  [HarmonyPatch(typeof(VehicleRepresentation))]
+  [HarmonyPatch("GetDestructibleObject")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { typeof(int) })]
+  public static class VehicleRepresentation_GetDestructibleObject {
+    public static void Postfix(VehicleRepresentation __instance, ref MechDestructibleObject __result) {
+      try {
+        VehicleCustomInfo info = __instance.parentActor.GetCustomInfo();
+        if (info == null) { return; }
+        if (info.NullifyBodyMesh) { __result = null; }
+      } catch (Exception e) {
+        Log.TWL(0, e.ToString(), true);
+      }
+    }
+  }
   [HarmonyPatch(typeof(PilotableActorRepresentation))]
   [HarmonyPatch("Init")]
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { typeof(AbstractActor), typeof(Transform), typeof(bool) })]
   public static class PilotableActorRepresentation_Init {
+    private static Dictionary<int, VehicleChassisDef> registredVehiclesChassis = new Dictionary<int, VehicleChassisDef>();
+    public static void RegisterChassis(this PilotableActorRepresentation rep, VehicleChassisDef def) {
+      if (registredVehiclesChassis.ContainsKey(rep.GetInstanceID())) {
+        registredVehiclesChassis[rep.GetInstanceID()] = def;
+      } else {
+        registredVehiclesChassis.Add(rep.GetInstanceID(), def);
+      }
+    }
+    public static VehicleChassisDef RegistredChassis(this PilotableActorRepresentation rep) {
+      if(registredVehiclesChassis.TryGetValue(rep.GetInstanceID(),out VehicleChassisDef chassis)) {
+        return chassis;
+      }
+      return null;
+    }
     public static void MovePosition(Transform transform, string name, CustomVector pos, CustomVector rotation) {
       Log.LogWrite(" " + name + " pos:" + transform.position + " rot:" + transform.rotation.eulerAngles);
       if (rotation.set) transform.rotation = Quaternion.Euler(rotation.vector);
@@ -627,8 +684,16 @@ namespace CustomUnits {
       Log.LogWrite(" -> " + transform.position + " rot: " + transform.rotation.eulerAngles + "\n");
     }
     public static bool Prefix(PilotableActorRepresentation __instance, AbstractActor unit, Transform parentTransform, bool isParented) {
-      Log.LogWrite("PilotableActorRepresentation.Init prefix " + (unit == null?"null":(unit.DisplayName + ":" + unit.GUID)) + "\n");
-      __instance.gameObject.printComponents(1);
+      Log.LogWrite("PilotableActorRepresentation.Init prefix "+__instance.gameObject.name);
+      if (unit != null) {
+        Log.WL(1,new Text(unit.DisplayName).ToString());
+      } else if(__instance.RegistredChassis() != null) {
+        Log.WL(1, __instance.RegistredChassis().Description.Id);
+      } else {
+        Log.WL("representation have no unit and chassiss");
+        return true;
+      }
+      //__instance.gameObject.printComponents(1);
       try {
         VehicleRepresentation vRep = __instance as VehicleRepresentation;
         Vehicle vehicle = unit as Vehicle;
@@ -636,25 +701,53 @@ namespace CustomUnits {
           Log.LogWrite(" not a vehicle\n");
           return true;
         }
-        VehicleCustomInfo info = vehicle.GetCustomInfo();
+        VehicleCustomInfo info = null;
+        if (vehicle != null) { info = vehicle.GetCustomInfo(); } else if(__instance.RegistredChassis() != null) {
+          info = __instance.RegistredChassis().GetCustomInfo();
+        }
         if (info == null) {
           Log.LogWrite(" no custom info\n");
           return true;
         }
-        MovePosition(vRep.TurretAttach, "vRep.TurretAttach", info.TurretAttach.offset, info.TurretAttach.rotate);
-        MovePosition(vRep.BodyAttach, "vRep.BodyAttach", info.BodyAttach.offset, info.BodyAttach.rotate);
-        MovePosition(vRep.TurretLOS, "vRep.TurretLOS", info.TurretLOS.offset, info.TurretLOS.rotate);
-        MovePosition(vRep.LeftSideLOS, "vRep.LeftSideLOS", info.LeftSideLOS.offset, info.LeftSideLOS.rotate);
-        MovePosition(vRep.RightSideLOS, "vRep.RightSideLOS", info.RightSideLOS.offset, info.RightSideLOS.rotate);
-        MovePosition(vRep.leftVFXTransform, "vRep.leftVFXTransform", info.leftVFXTransform.offset, info.leftVFXTransform.rotate);
-        MovePosition(vRep.rightVFXTransform, "vRep.rightVFXTransform", info.rightVFXTransform.offset, info.rightVFXTransform.rotate);
-        MovePosition(vRep.rearVFXTransform, "vRep.rearVFXTransform", info.rearVFXTransform.offset, info.rearVFXTransform.rotate);
-        MovePosition(vRep.thisTransform, "vRep.thisTransform", info.thisTransform.offset, info.thisTransform.rotate);
+        if (info.NullifyBodyMesh) {
+          SkinnedMeshRenderer[] meshes = vRep.GetComponentsInChildren<SkinnedMeshRenderer>();
+          GameObject go = new GameObject("Empty");
+          Mesh emptyMesh = go.AddComponent<MeshFilter>().mesh;
+          go.AddComponent<MeshRenderer>();
+          if (meshes != null) {
+            foreach (SkinnedMeshRenderer mesh in meshes) {
+              mesh.sharedMesh = emptyMesh;
+            }
+          }
+          GameObject.Destroy(go);
+        }
+        if (unit != null) {
+          MovePosition(vRep.TurretAttach, "vRep.TurretAttach", info.TurretAttach.offset, info.TurretAttach.rotate);
+          MovePosition(vRep.BodyAttach, "vRep.BodyAttach", info.BodyAttach.offset, info.BodyAttach.rotate);
+          MovePosition(vRep.TurretLOS, "vRep.TurretLOS", info.TurretLOS.offset, info.TurretLOS.rotate);
+          MovePosition(vRep.LeftSideLOS, "vRep.LeftSideLOS", info.LeftSideLOS.offset, info.LeftSideLOS.rotate);
+          MovePosition(vRep.RightSideLOS, "vRep.RightSideLOS", info.RightSideLOS.offset, info.RightSideLOS.rotate);
+          MovePosition(vRep.leftVFXTransform, "vRep.leftVFXTransform", info.leftVFXTransform.offset, info.leftVFXTransform.rotate);
+          MovePosition(vRep.rightVFXTransform, "vRep.rightVFXTransform", info.rightVFXTransform.offset, info.rightVFXTransform.rotate);
+          MovePosition(vRep.rearVFXTransform, "vRep.rearVFXTransform", info.rearVFXTransform.offset, info.rearVFXTransform.rotate);
+          MovePosition(vRep.thisTransform, "vRep.thisTransform", info.thisTransform.offset, info.thisTransform.rotate);
+        } else {
+          MovePosition(vRep.TurretAttach, "vRep.TurretAttach", info.HangarTransforms.TurretAttach.offset, info.HangarTransforms.TurretAttach.rotate);
+          MovePosition(vRep.BodyAttach, "vRep.BodyAttach", info.HangarTransforms.BodyAttach.offset, info.HangarTransforms.BodyAttach.rotate);
+          MovePosition(vRep.TurretLOS, "vRep.TurretLOS", info.HangarTransforms.TurretLOS.offset, info.HangarTransforms.TurretLOS.rotate);
+          MovePosition(vRep.LeftSideLOS, "vRep.LeftSideLOS", info.HangarTransforms.LeftSideLOS.offset, info.HangarTransforms.LeftSideLOS.rotate);
+          MovePosition(vRep.RightSideLOS, "vRep.RightSideLOS", info.HangarTransforms.RightSideLOS.offset, info.HangarTransforms.RightSideLOS.rotate);
+          MovePosition(vRep.leftVFXTransform, "vRep.leftVFXTransform", info.HangarTransforms.leftVFXTransform.offset, info.HangarTransforms.leftVFXTransform.rotate);
+          MovePosition(vRep.rightVFXTransform, "vRep.rightVFXTransform", info.HangarTransforms.rightVFXTransform.offset, info.HangarTransforms.rightVFXTransform.rotate);
+          MovePosition(vRep.rearVFXTransform, "vRep.rearVFXTransform", info.HangarTransforms.rearVFXTransform.offset, info.HangarTransforms.rearVFXTransform.rotate);
+          MovePosition(vRep.thisTransform, "vRep.thisTransform", info.HangarTransforms.thisTransform.offset, info.HangarTransforms.thisTransform.rotate);
+        }
         BTLight[] lights = __instance.GetComponentsInChildren<BTLight>(true);
+        List<CustomTransform> lightsTransforms = unit != null ? info.lightsTransforms : info.HangarTransforms.lightsTransforms;
         if (lights != null) {
           for (int t = 0; t < lights.Length; ++t) {
-            if (t >= info.lightsTransforms.Count) { break; }
-            MovePosition(lights[t].lightTransform, "lights[" + t + "].lightTransform", info.lightsTransforms[t].offset, info.lightsTransforms[t].rotate);
+            if (t >= lightsTransforms.Count) { break; }
+            MovePosition(lights[t].lightTransform, "lights[" + t + "].lightTransform", lightsTransforms[t].offset, lightsTransforms[t].rotate);
             lights[t].lastPosition = lights[t].lightTransform.position;
             lights[t].lastRotation = lights[t].lightTransform.rotation;
             lights[t].RefreshLightSettings(true);
@@ -732,7 +825,7 @@ namespace CustomUnits {
     }
     public static void Postfix(PilotableActorRepresentation __instance, AbstractActor unit, Transform parentTransform, bool isParented) {
       if (unit == null) { return; };
-      Log.TWL(0,"GameRepresentation.Init postfix " + new Text(unit.DisplayName).ToString() + ":" + unit.GUID);
+      Log.TWL(0, "PilotableActorRepresentation.Init postfix " + new Text(unit.DisplayName).ToString() + ":" + unit.GUID);
       try {
         int instanceId = unit.GameRep.gameObject.GetInstanceID();
         if (VehicleCustomInfoHelper.unityInstanceIdActor.ContainsKey(instanceId) == false) {
@@ -969,7 +1062,7 @@ namespace CustomUnits {
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { typeof(GameObject) })]
   public static class DestructibleUrbanFlimsy_OnParticleCollision {
-    public static bool Prefix(PilotableActorRepresentation __instance, GameObject other) {
+    public static bool Prefix(DestructibleUrbanFlimsy __instance, GameObject other) {
       //Log.LogWrite("DestructibleUrbanFlimsy.OnParticleCollision Prefix  " + other.name + ":" + other.GetInstanceID() + "\n");
       return true;
     }

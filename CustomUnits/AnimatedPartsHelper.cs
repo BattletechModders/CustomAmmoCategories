@@ -153,7 +153,7 @@ namespace CustomUnits {
         GenericAnimatedComponent[] aps = apGameObject.GetComponents<GenericAnimatedComponent>();
         foreach (GenericAnimatedComponent ap in aps) {
           Log.LogWrite(" AnimatedPart:" + ap.GetType() + ":" + newLevel + "\n");
-          ap.OnPlayerVisibilityChanged(newLevel);
+          ap.OnPlayerVisibilityChanged(__instance.parentCombatant, newLevel);
         }
       }
     }
@@ -327,16 +327,30 @@ namespace CustomUnits {
     public int Location { get; set; }
     protected string AudioEventNameStart;
     protected string AudioEventNameStop;
+    public string PrefabName { get; private set; }
+    public virtual bool StayOnDeath() { return false; }
+    public virtual void OnDeath() {
+      if (string.IsNullOrEmpty(AudioEventNameStop) == false) {
+        if (SceneSingletonBehavior<WwiseManager>.HasInstance) {
+          uint soundid = SceneSingletonBehavior<WwiseManager>.Instance.PostEventByName(AudioEventNameStop, this.parent.GameRep.audioObject, (AkCallbackManager.EventCallback)null, (object)null);
+          Log.TWL(0, "Stop playing sound by id (" + AudioEventNameStop + "):" + soundid);
+        } else {
+          Log.TWL(0, "Can't play");
+        }
+      }
+    }
+    public virtual bool KeepPosOnDeath() { return false; }
     public GenericAnimatedComponent() {
       parent = null;
       Location = 0;
       renderers = new List<Renderer>();
     }
-    public virtual void Init(ICombatant a, int loc, string data) {
+    public virtual void Init(ICombatant a, int loc, string data, string prefabName) {
+      this.PrefabName = prefabName;
       GenericAnimatedData jdata = JsonConvert.DeserializeObject<GenericAnimatedData>(data);
       AudioEventNameStart = jdata.sound_start_event;
       AudioEventNameStop = jdata.sound_stop_event;
-      Log.LogWrite("GenericAnimatedComponent.Init " + this.gameObject.name + " AudioEventNameStart: " + this.AudioEventNameStart + " AudioEventNameStop:"+ AudioEventNameStop + "\n");
+      Log.LogWrite("GenericAnimatedComponent.Init parent:" + (a == null?"null":new Text(a.DisplayName).ToString()) + this.gameObject.name + " AudioEventNameStart: " + this.AudioEventNameStart + " AudioEventNameStop:"+ AudioEventNameStop + "\n");
       parent = a;
       Location = loc;
       if (this.renderers != null) {
@@ -346,36 +360,42 @@ namespace CustomUnits {
         }
       }
     }
-    public virtual void OnPlayerVisibilityChanged(VisibilityLevel newLevel) {
+    public virtual void OnPlayerVisibilityChanged(ICombatant combatant, VisibilityLevel newLevel) {
+      if (this.parent == null) { this.parent = combatant; }
       if (this.renderers == null)
         return;
-      if (newLevel == VisibilityLevel.LOSFull) {
-        for (int index = 0; index < this.renderers.Count; ++index) {
-          this.renderers[index].enabled = true;
-        }
-        if(string.IsNullOrEmpty(AudioEventNameStart) == false) {
-          if (SceneSingletonBehavior<WwiseManager>.HasInstance) {
-            uint soundid = SceneSingletonBehavior<WwiseManager>.Instance.PostEventByName(AudioEventNameStart, this.parent.GameRep.audioObject, (AkCallbackManager.EventCallback)null, (object)null);
-            Log.TWL(0, "Playing sound by id (" + AudioEventNameStart + "):" + soundid);
-          } else {
-            Log.TWL(0, "Can't play");
+      try { 
+        if (newLevel == VisibilityLevel.LOSFull) {
+          for (int index = 0; index < this.renderers.Count; ++index) {
+            this.renderers[index].enabled = true;
+          }
+          if (string.IsNullOrEmpty(AudioEventNameStart) == false) {
+            if (SceneSingletonBehavior<WwiseManager>.HasInstance) {
+              uint soundid = SceneSingletonBehavior<WwiseManager>.Instance.PostEventByName(AudioEventNameStart, this.parent.GameRep.audioObject, (AkCallbackManager.EventCallback)null, (object)null);
+              Log.TWL(0, "Playing sound by id (" + AudioEventNameStart + "):" + soundid);
+            } else {
+              Log.TWL(0, "Can't play");
+            }
+          }
+        } else {
+          for (int index = 0; index < this.renderers.Count; ++index) {
+            this.renderers[index].enabled = false;
+          }
+          if (string.IsNullOrEmpty(AudioEventNameStop) == false) {
+            if (SceneSingletonBehavior<WwiseManager>.HasInstance) {
+              uint soundid = SceneSingletonBehavior<WwiseManager>.Instance.PostEventByName(AudioEventNameStop, this.parent.GameRep.audioObject, (AkCallbackManager.EventCallback)null, (object)null);
+              Log.TWL(0, "Stop playing sound by id (" + AudioEventNameStop + "):" + soundid);
+            } else {
+              Log.TWL(0, "Can't play");
+            }
           }
         }
-      } else {
-        for (int index = 0; index < this.renderers.Count; ++index) {
-          this.renderers[index].enabled = false;
-        }
-        if (string.IsNullOrEmpty(AudioEventNameStop) == false) {
-          if (SceneSingletonBehavior<WwiseManager>.HasInstance) {
-            uint soundid = SceneSingletonBehavior<WwiseManager>.Instance.PostEventByName(AudioEventNameStop, this.parent.GameRep.audioObject, (AkCallbackManager.EventCallback)null, (object)null);
-            Log.TWL(0, "Stop playing sound by id (" + AudioEventNameStop + "):" + soundid);
-          } else {
-            Log.TWL(0, "Can't play");
-          }
-        }
+      } catch (Exception e) {
+        Log.TWL(0,e.ToString(),true);
       }
     }
     public virtual void Clear() {
+      if (this.parent == null) { return; }
       if (string.IsNullOrEmpty(AudioEventNameStop) == false) {
         if (SceneSingletonBehavior<WwiseManager>.HasInstance) {
           uint soundid = SceneSingletonBehavior<WwiseManager>.Instance.PostEventByName(AudioEventNameStop, this.parent.GameRep.audioObject, (AkCallbackManager.EventCallback)null, (object)null);
@@ -409,8 +429,8 @@ namespace CustomUnits {
         }
       }
     }
-    public override void Init(ICombatant a, int loc, string data) {
-      base.Init(a, loc, data);
+    public override void Init(ICombatant a, int loc, string data, string prefabName) {
+      base.Init(a, loc, data, prefabName);
       SimpleRotatorData srdata = JsonConvert.DeserializeObject<SimpleRotatorData>(data);
       this.speed = srdata.speed;
       this.axis = 0;
@@ -441,8 +461,8 @@ namespace CustomUnits {
     public void Awake() {
       Log.LogWrite("Awake " + this.gameObject.name + "\n");
     }
-    public override void Init(ICombatant a, int loc, string data) {
-      base.Init(a, loc, data);
+    public override void Init(ICombatant a, int loc, string data, string prefabName) {
+      base.Init(a, loc, data, prefabName);
       Component[] components = this.gameObject.GetComponentsInChildren<Component>();
       this.animator = this.gameObject.GetComponentInChildren<Animator>();
       //if (this.animator != null) { this.animator.speed = 0; }
@@ -517,8 +537,8 @@ namespace CustomUnits {
       }
       if (animator != null) { animator.enabled = true; animator.SetBool("forward", false); }
     }
-    public override void Init(ICombatant a, int loc, string data) {
-      base.Init(a, loc, data);
+    public override void Init(ICombatant a, int loc, string data, string prefabName) {
+      base.Init(a, loc, data, prefabName);
       Animator[] animators = this.parent.GameRep.gameObject.GetComponentsInChildren<Animator>();
       Log.LogWrite("CustomQuadLegController.Init\n");
       foreach (Animator animator in animators) {
@@ -604,8 +624,8 @@ namespace CustomUnits {
         curAngle += (idleSpeed * rotationDir);
       }
     }
-    public override void Init(ICombatant a, int loc, string data) {
-      base.Init(a, loc, data);
+    public override void Init(ICombatant a, int loc, string data, string prefabName) {
+      base.Init(a, loc, data, prefabName);
       TurretData tdata = JsonConvert.DeserializeObject<TurretData>(data);
       this.idleSpeed = Math.Abs(tdata.speed);
       this.VehicleChassisLocation = tdata.VehicleLocation;
@@ -640,8 +660,8 @@ namespace CustomUnits {
     }
     protected virtual void Update() {
     }
-    public override void Init(ICombatant a, int loc, string data) {
-      base.Init(a, loc, data);
+    public override void Init(ICombatant a, int loc, string data, string prefabName) {
+      base.Init(a, loc, data, prefabName);
       TurretData tdata = JsonConvert.DeserializeObject<TurretData>(data);
       this.VehicleChassisLocation = tdata.VehicleLocation;
       this.MechChassisLocation = tdata.MechLocation;
@@ -664,6 +684,36 @@ namespace CustomUnits {
   }
   public static class UnitsAnimatedPartsHelper {
     public static Dictionary<ICombatant, List<GameObject>> animatedParts = new Dictionary<ICombatant, List<GameObject>>();
+    public static void OnDeathAnimation(this ICombatant unit) {
+      if (animatedParts.ContainsKey(unit) == false) { return; };
+      for (int t = 0; t < animatedParts[unit].Count; ++t) {
+        GenericAnimatedComponent[] components = animatedParts[unit][t].GetComponents<GenericAnimatedComponent>();
+        if (components == null) { continue; }
+        foreach (GenericAnimatedComponent component in components) {
+          if (component == null) { continue; }
+          component.OnDeath();
+        }
+      }
+    }
+    public static Dictionary<GenericAnimatedComponent,Vector3> storePositions(ICombatant unit) {
+      Dictionary<GenericAnimatedComponent, Vector3> result = new Dictionary<GenericAnimatedComponent, Vector3>();
+      if (animatedParts.ContainsKey(unit) == false) { return result; };
+      for (int t = 0; t < animatedParts[unit].Count; ++t) {
+        if (animatedParts[unit][t] != null) {
+          GenericAnimatedComponent[] components = animatedParts[unit][t].GetComponents<GenericAnimatedComponent>();
+          if (components == null) { continue; }
+          foreach (GenericAnimatedComponent component in components) {
+            if (component == null) { continue; }
+            if (component.KeepPosOnDeath() == false) { continue; }
+            result.Add(component, component.transform.position);
+          }
+        }
+      }
+      return result;
+    }
+    public static void RestorePositions(Dictionary<GenericAnimatedComponent, Vector3> result) {
+      foreach(var cmp in result) { cmp.Key.transform.position = cmp.Value; }
+    }
     public static TurretAnimator GetCustomTurret(this ICombatant unit) {
       if (animatedParts.ContainsKey(unit) == false) { return null; }
       foreach (GameObject obj in animatedParts[unit]) {
@@ -694,21 +744,29 @@ namespace CustomUnits {
       }
       return null;
     }
-    public static void Clear(ICombatant unit) {
+    public static void Clear(ICombatant unit, bool combatEnd) {
       if (animatedParts.ContainsKey(unit) == false) { return; };
       for (int t = 0; t < animatedParts[unit].Count; ++t) {
         if (animatedParts[unit][t] != null) {
           GenericAnimatedComponent[] components = animatedParts[unit][t].GetComponents<GenericAnimatedComponent>();
           if (components != null) {
+            bool keepObject = false;
             foreach (GenericAnimatedComponent component in components) {
-              if (component != null) { component.Clear(); }
+              if (component == null) { continue; }
+              if (component.StayOnDeath() && (combatEnd == false)) { keepObject = true; continue; }
+              component.Clear();
               GameObject.Destroy(component);
             }
+            if(keepObject == false) {
+              GameObject.Destroy(animatedParts[unit][t]);
+              animatedParts[unit][t] = null;
+            }
+          } else {
+            GameObject.Destroy(animatedParts[unit][t]);
+            animatedParts[unit][t] = null;
           }
-          GameObject.Destroy(animatedParts[unit][t]); animatedParts[unit][t] = null;
         };
       }
-      animatedParts[unit].Clear();
     }
     public static void DestroyAnimation(this ICombatant unit, int location) {
       if (animatedParts.ContainsKey(unit) == false) { return; };
@@ -740,7 +798,7 @@ namespace CustomUnits {
     }
     public static void Clear() {
       foreach (var ap in animatedParts) {
-        UnitsAnimatedPartsHelper.Clear(ap.Key);
+        UnitsAnimatedPartsHelper.Clear(ap.Key,true);
       }
       animatedParts.Clear();
     }
@@ -832,7 +890,7 @@ namespace CustomUnits {
       foreach (ParticleSystem ps in particleSystems) {
         ps.Play(true);
       }
-      Renderer[] spawnRenderers = gameObject.GetComponentsInChildren<Renderer>();
+      Renderer[] spawnRenderers = gameObject.GetComponentsInChildren<Renderer>(true);
       foreach (Renderer renderer in spawnRenderers) {
         foreach (Material material in renderer.materials) {
           Log.LogWrite(0, "Renderer:" + renderer.GetType() + ":" + renderer.name + " material:" + material.name, true);
@@ -840,7 +898,12 @@ namespace CustomUnits {
           if (mInfo != null) {
             Log.LogWrite(1, "need custom processing", true);
             if (string.IsNullOrEmpty(mInfo.shader) == false) {
-              GameObject shaderGo = def.DataManager.PooledInstantiate(mInfo.shader, BattleTechResourceType.Prefab, new Vector3?(), new Quaternion?(), (Transform)null);
+              GameObject shaderGo = null;
+              if (mInfo.shader != def.Chassis.PrefabIdentifier) {
+                shaderGo =  def.DataManager.PooledInstantiate(mInfo.shader, BattleTechResourceType.Prefab, new Vector3?(), new Quaternion?(), (Transform)null);
+              } else {
+                shaderGo = rep.gameObject;
+              }
               if (shaderGo != null) {
                 Renderer shaderRenderer = shaderGo.GetComponentInChildren<Renderer>();
                 if (shaderRenderer != null) {
@@ -850,7 +913,9 @@ namespace CustomUnits {
                 } else {
                   Log.LogWrite(2, "can't found renderer in shader carrier " + mInfo.shader, true);
                 }
-                def.DataManager.PoolGameObject(mInfo.shader, shaderGo);
+                if (mInfo.shader != def.Chassis.PrefabIdentifier) {
+                  def.DataManager.PoolGameObject(mInfo.shader, shaderGo);
+                }
               } else {
                 Log.LogWrite(2, "can't found shader carrier " + mInfo.shader, true);
               }
@@ -929,6 +994,9 @@ namespace CustomUnits {
       }
       GenericAnimatedComponent acomponent = null;
       try {
+        if (spawnPart.AnimationType == "VTOLBody") {
+          acomponent = gameObject.AddComponent<VTOLBodyAnimation>();
+        } else
         if (spawnPart.AnimationType == "SimpleRotator") {
           acomponent = gameObject.AddComponent<SimpleRotator>();
         } else
@@ -947,7 +1015,7 @@ namespace CustomUnits {
           acomponent = gameObject.AddComponent<GenericAnimatedComponent>();
         }
         if (acomponent != null) {
-          //acomponent.Init(unit, Location, spawnPart.Data);
+          acomponent.Init(null, Location, spawnPart.Data, spawnPart.prefab);
         }
       } catch (Exception e) {
         Log.LogWrite(e.ToString() + "\n", true);
@@ -1027,7 +1095,7 @@ namespace CustomUnits {
       foreach (ParticleSystem ps in particleSystems) {
         ps.Play(true);
       }
-      Renderer[] spawnRenderers = gameObject.GetComponentsInChildren<Renderer>();
+      Renderer[] spawnRenderers = gameObject.GetComponentsInChildren<Renderer>(true);
       foreach (Renderer renderer in spawnRenderers) {
         foreach (Material material in renderer.materials) {
           Log.LogWrite(0, "Renderer:" + renderer.GetType() + ":" + renderer.name + " material:" + material.name, true);
@@ -1035,7 +1103,24 @@ namespace CustomUnits {
           if (mInfo != null) {
             Log.LogWrite(1, "need custom processing", true);
             if (string.IsNullOrEmpty(mInfo.shader) == false) {
-              GameObject shaderGo = unit.Combat.DataManager.PooledInstantiate(mInfo.shader, BattleTechResourceType.Prefab, new Vector3?(), new Quaternion?(), (Transform)null);
+              GameObject shaderGo = null;
+              bool noPoolShader = false;
+              Mech mech = unit as Mech;
+              Vehicle vehicle = unit as Vehicle;
+              if (mech != null) {
+                if(mInfo.shader == mech.MechDef.Chassis.PrefabIdentifier) {
+                  shaderGo = unit.GameRep.gameObject;
+                  noPoolShader = true;
+                }
+              } else if(vehicle != null) {
+                if(mInfo.shader == vehicle.VehicleDef.Chassis.PrefabIdentifier) {
+                  shaderGo = unit.GameRep.gameObject;
+                  noPoolShader = true;
+                }
+              }
+              if (shaderGo == null) {
+                shaderGo = unit.Combat.DataManager.PooledInstantiate(mInfo.shader, BattleTechResourceType.Prefab, new Vector3?(), new Quaternion?(), (Transform)null);
+              }
               if (shaderGo != null) {
                 Renderer shaderRenderer = shaderGo.GetComponentInChildren<Renderer>();
                 if (shaderRenderer != null) {
@@ -1045,7 +1130,7 @@ namespace CustomUnits {
                 } else {
                   Log.LogWrite(2, "can't found renderer in shader carrier " + mInfo.shader, true);
                 }
-                unit.Combat.DataManager.PoolGameObject(mInfo.shader, shaderGo);
+                if(noPoolShader == false) unit.Combat.DataManager.PoolGameObject(mInfo.shader, shaderGo);
               } else {
                 Log.LogWrite(2, "can't found shader carrier " + mInfo.shader, true);
               }
@@ -1124,6 +1209,9 @@ namespace CustomUnits {
       }
       GenericAnimatedComponent acomponent = null;
       try {
+        if (spawnPart.AnimationType == "VTOLBody") {
+          acomponent = gameObject.AddComponent<VTOLBodyAnimation>();
+        } else
         if (spawnPart.AnimationType == "SimpleRotator") {
           acomponent = gameObject.AddComponent<SimpleRotator>();
         } else
@@ -1142,7 +1230,7 @@ namespace CustomUnits {
           acomponent = gameObject.AddComponent<GenericAnimatedComponent>();
         }
         if (acomponent != null) {
-          acomponent.Init(unit, Location, spawnPart.Data);
+          acomponent.Init(unit, Location, spawnPart.Data, spawnPart.prefab);
         }
       } catch (Exception e) {
         Log.LogWrite(e.ToString() + "\n", true);
@@ -1354,7 +1442,7 @@ namespace CustomUnits {
       try {
         if (__instance.IsDead) {
           Log.LogWrite("AbstractActor.HandleDeath " + __instance.DisplayName + ":" + __instance.GUID + "\n");
-          UnitsAnimatedPartsHelper.Clear(__instance);
+          UnitsAnimatedPartsHelper.Clear(__instance,false);
           Vehicle vehicle = __instance as Vehicle;
           if (vehicle == null) {
             Log.LogWrite(" not a vehicle\n");
@@ -1367,6 +1455,7 @@ namespace CustomUnits {
             return;
           }
           if (info.TieToGroundOnDeath) {
+            Dictionary<GenericAnimatedComponent, Vector3> keepPos =  UnitsAnimatedPartsHelper.storePositions(__instance);
             TieToGround(vRep.TurretAttach.transform, "TurretAttach", __instance.Combat.MapMetaData);
             TieToGround(vRep.BodyAttach.transform, "BodyAttach", __instance.Combat.MapMetaData);
             TieToGround(vRep.TurretLOS.transform, "TurretLOS", __instance.Combat.MapMetaData);
@@ -1376,7 +1465,9 @@ namespace CustomUnits {
             TieToGround(vRep.rightVFXTransform.transform, "rightVFXTransform", __instance.Combat.MapMetaData);
             TieToGround(vRep.rearVFXTransform.transform, "rearVFXTransform", __instance.Combat.MapMetaData);
             TieToGround(vRep.thisTransform.transform, "thisTransform", __instance.Combat.MapMetaData);
+            UnitsAnimatedPartsHelper.RestorePositions(keepPos);
           }
+          __instance.OnDeathAnimation();
         }
       } catch (Exception e) {
         Log.LogWrite(e.ToString() + "\n");

@@ -510,7 +510,7 @@ namespace CustomUnits {
                     }
                   }
                 }
-                GameObject.Destroy(shaderPrefab);
+                ___combat.DataManager.PoolGameObject(customHardpoint.shaderSrc, shaderPrefab);
               }
             }
           }
