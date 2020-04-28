@@ -136,7 +136,12 @@ namespace CustAmmoCategories {
       this.weapon = weapon;
       this.weaponRep = weapon.weaponRep;
       this.Combat = weapon.parent.Combat;
-      this.numberOfEmitters = this.weaponRep.vfxTransforms.Length;
+      if (this.weaponRep == null) {
+        Log.M.TWL(0, "!!!I will not fire weapon without representation!!!Under no circumstances", true);
+        this.numberOfEmitters = 1;
+      } else {
+        this.numberOfEmitters = this.weaponRep.vfxTransforms.Length;
+      }
       if ((UnityEngine.Object)this.projectilePrefab != (UnityEngine.Object)null)
         this.Combat.DataManager.PrecachePrefabAsync(this.projectilePrefab.name, BattleTechResourceType.Prefab, 1);
       if ((UnityEngine.Object)this.preFireVFXPrefab != (UnityEngine.Object)null)
@@ -263,7 +268,11 @@ namespace CustAmmoCategories {
       this.hitPositions = hitPositions;
       this.hitIndex = hitIndex;
       this.emitterIndex = emitterIndex;
-      this.startingTransform = this.weaponRep.vfxTransforms[emitterIndex];
+      if (this.weaponRep == null) {
+        this.startingTransform = this.weapon.parent.GameRep.transform;
+      } else { 
+        this.startingTransform = this.weaponRep.vfxTransforms[emitterIndex];
+      }
       this.startPos = this.startingTransform.position;
       this.endPos = hitPositions[hitIndex];
       this.currentPos = this.startPos;

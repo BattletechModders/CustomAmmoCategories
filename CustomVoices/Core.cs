@@ -188,6 +188,12 @@ namespace CustomVoices {
   public static class SGCharacterCreationNamePanel_Awake {
     private static GameObject voiceSelectorObj = null;
     public static Dictionary<int, string> voiceIdMap = new Dictionary<int, string>();
+    public static Component FindComponentParentRecurcive<T>(this Transform tr) where T : Component {
+      if (tr.parent == null) { return null; }
+      T result = tr.parent.gameObject.GetComponent<T>();
+      if (result != null) { return result; }
+      return FindComponentParentRecurcive<T>(tr.parent);
+    }
     public static string GetSelectedVoice() {
       if (voiceSelectorObj == null) { return string.Empty; }
       HorizontalScrollSelectorText voiceSelector = voiceSelectorObj.GetComponent<HorizontalScrollSelectorText>();
@@ -199,7 +205,9 @@ namespace CustomVoices {
       if (__instance.pronounSelector != null) {
         Log.M.WL(1, "pronounSelector is not null");
         if (voiceSelectorObj != null) { GameObject.Destroy(voiceSelectorObj); voiceSelectorObj = null; };
+        if (__instance.transform.FindComponentParentRecurcive<SGBarracksMWCustomizationPopup>() != null) { return; }
         voiceSelectorObj = GameObject.Instantiate(__instance.pronounSelector.gameObject, __instance.pronounSelector.gameObject.transform.parent);
+        voiceSelectorObj.name = "voiceSelector";
         voiceSelectorObj.transform.SetParent(__instance.pronounSelector.gameObject.transform.parent, false);
         //voiceSelectorObj.transform.localPosition = __instance.pronounSelector.transform.localPosition;
         voiceSelectorObj.transform.localRotation = __instance.pronounSelector.transform.localRotation;

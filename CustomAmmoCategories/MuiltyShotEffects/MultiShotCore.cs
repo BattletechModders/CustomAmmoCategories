@@ -9,7 +9,7 @@ using Random = UnityEngine.Random;
 
 namespace CustAmmoCategories {
   public abstract class BaseHardPointAnimationController : MonoBehaviour {
-    public abstract void PrefireAnimation();
+    public abstract void PrefireAnimation(Vector3 target,bool indirect);
     public abstract void PostfireAnimation();
     public abstract void PrefireAnimationSpeed(float speed);
     public abstract void FireAnimationSpeed(float speed);
@@ -46,7 +46,7 @@ namespace CustAmmoCategories {
         }
         Log.LogWrite("baseHardpointAnimator: " + ((baseHardpointAnimator == null) ? "null" : "not null") + "\n");
       }
-      if (this.baseHardpointAnimator != null) { this.baseHardpointAnimator.PrefireAnimation(); }
+      if (this.baseHardpointAnimator != null) { this.baseHardpointAnimator.PrefireAnimation(hitInfo.hitPositions[hitIndex], false); }
       base.Fire(hitInfo, hitIndex, emitterIndex);
     }
     protected virtual void FireNextShot() {
@@ -92,6 +92,10 @@ namespace CustAmmoCategories {
     public static Dictionary<int, Color> restoreMaterialColor = new Dictionary<int, Color>();
     public static void ScaleWeaponEffect(this WeaponEffect effect, GameObject go) {
       CustomVector scale = effect.weapon.ProjectileScale();
+      go.ScaleEffect(scale);
+    }
+    public static void ScaleEffect(this GameObject go, CustomVector scale) {
+      //CustomVector scale = effect.weapon.ProjectileScale();
       if (scale.set && (go != null)) {
         Log.LogWrite("ImprovedWeaponEffect.ScaleWeaponEffect " + go.name + " -> " + scale + "\n");
         ParticleSystem[] psyss = go.GetComponentsInChildren<ParticleSystem>();

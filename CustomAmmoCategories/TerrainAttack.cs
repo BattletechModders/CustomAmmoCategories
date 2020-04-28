@@ -209,8 +209,8 @@ namespace CustAmmoCategories {
         MechRepresentation gameRep = this.SelectedActor.GameRep as MechRepresentation;
         if ((UnityEngine.Object)gameRep != (UnityEngine.Object)null) {
           gameRep.ToggleRandomIdles(false);
-          this.SelectedActor.GameRep.FacePoint(true, this.targetPosition, false, 0.5f, -1, -1, false, (GameRepresentation.RotationCompleteDelegate)null);
         }
+        this.SelectedActor.GameRep.FacePoint(true, this.targetPosition, false, 0.5f, -1, -1, false, (GameRepresentation.RotationCompleteDelegate)null);
       }
       return true;
     }
@@ -753,7 +753,7 @@ namespace CustomAmmoCategoriesPatches {
     public static void Postfix(AttackDirector __instance, MessageCenterMessage message, ref AbstractActor __state) {
       if (__state != null) {
         MechRepresentation gameRep = __state.GameRep as MechRepresentation;
-        if (!((UnityEngine.Object)gameRep != (UnityEngine.Object)null)) {
+        if (gameRep != null) {
           Log.LogWrite("ToggleRandomIdles true\n");
           gameRep.ToggleRandomIdles(true);
         }

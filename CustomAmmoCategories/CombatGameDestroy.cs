@@ -40,7 +40,7 @@ namespace CustomAmmoCategoriesPatches {
         CustomAmmoCategories.terrainHitPositions.Clear();
         DeferredEffectHelper.Clear();
         PersistentFloatieHelper.Clear();
-        ASWatchdog.EndWatchDogThread();
+        //ASWatchdog.EndWatchDogThread();
         Weapon_InternalAmmo.Clear();
         BraceNode_Tick.Clear();
         AreaOfEffectHelper.Clear();

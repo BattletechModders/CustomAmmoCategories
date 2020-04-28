@@ -412,6 +412,8 @@ namespace CustomAmmoCategoriesPatches {
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { typeof(WeaponHitInfo) })]
   public static class WeaponRepresentation_PlayWeaponEffect {
+    public delegate void d_extendedFire(WeaponEffect weaponEffect, WeaponHitInfo hitInfo, int hitIndex, int emiter);
+    public static d_extendedFire i_extendedFire = null;
     public static bool Prefix(WeaponRepresentation __instance, WeaponHitInfo hitInfo) {
       CustomAmmoCategoriesLog.Log.LogWrite("WeaponRepresentation.PlayWeaponEffect\n");
       try {
@@ -432,13 +434,21 @@ namespace CustomAmmoCategoriesPatches {
           currentEffect.PublishWeaponCompleteMessage();
         } else {
           if (currentEffect.weapon != null) {
-            currentEffect.Fire(hitInfo, 0, 0);
+            if (i_extendedFire == null) {
+              currentEffect.Fire(hitInfo, 0, 0);
+            } else {
+              i_extendedFire(currentEffect, hitInfo, 0, 0);
+            }
           } else {
             Log.M.TWL(0,"Very strange "+ currentEffect.GetType().ToString()+" have null weapon:"+ __instance.weapon.defId+" initiing.");
             try {
               currentEffect.Init(__instance.weapon);
-              currentEffect.Fire(hitInfo, 0, 0);
-            }catch(Exception e) {
+              if (i_extendedFire == null) {
+                currentEffect.Fire(hitInfo, 0, 0);
+              } else {
+                i_extendedFire(currentEffect, hitInfo, 0, 0);
+              }
+            } catch (Exception e) {
               CustomAmmoCategoriesLog.Log.LogWrite("Exception:" + e.ToString() + "\nfallbak to no fire\n");
               currentEffect.currentState = WeaponEffect.WeaponEffectState.Complete;
               currentEffect.subEffect = false;
@@ -515,7 +525,7 @@ namespace CustAmmoCategories {
       }
     }
     public CustomVector(float x, float y, float z) {
-      this.x = fx; this.y = y; this.z = z; set = true;
+      this.fx = x; this.fy = y; this.fz = z; set = true;
     }
     public CustomVector(CustomVector b) {
       this.fx = b.fx; this.fy = b.fy; this.fz = b.fz; this.set = b.set;

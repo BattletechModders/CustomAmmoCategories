@@ -149,12 +149,26 @@ namespace CustomUnits {
         Log.LogWrite(" no animated parts\n");
         return;
       };
-      foreach (GameObject apGameObject in UnitsAnimatedPartsHelper.animatedParts[__instance.parentCombatant]) {
-        GenericAnimatedComponent[] aps = apGameObject.GetComponents<GenericAnimatedComponent>();
-        foreach (GenericAnimatedComponent ap in aps) {
-          Log.LogWrite(" AnimatedPart:" + ap.GetType() + ":" + newLevel + "\n");
-          ap.OnPlayerVisibilityChanged(__instance.parentCombatant, newLevel);
+      try {
+        List<GameObject> objectsList = UnitsAnimatedPartsHelper.animatedParts[__instance.parentCombatant];
+        foreach (GameObject apGameObject in objectsList) {
+          if (apGameObject == null) { continue; };
+          try {
+            GenericAnimatedComponent[] aps = apGameObject.GetComponents<GenericAnimatedComponent>();
+            foreach (GenericAnimatedComponent ap in aps) {
+              try {
+                Log.LogWrite(" AnimatedPart:" + ap.GetType() + ":" + newLevel + "\n");
+                ap.OnPlayerVisibilityChanged(__instance.parentCombatant, newLevel);
+              }catch(Exception e) {
+                Log.TWL(0, e.ToString(), true);
+              }
+            }
+          }catch(Exception e) {
+            Log.TWL(0, e.ToString(), true);
+          }
         }
+      }catch(Exception e) {
+        Log.TWL(0, e.ToString(), true);
       }
     }
   }
@@ -192,6 +206,17 @@ namespace CustomUnits {
         }
       } else {
         Log.LogWrite(" no mount points in location:" + location + "\n");
+      }
+      if (location != VehicleChassisLocations.Turret) {
+        VTOLBodyAnimation bodyAnimation = __instance.VTOLAnimation();
+        if (bodyAnimation != null) {
+          Log.WL(1, "found VTOL body animation");
+          /*if (bodyAnimation.bodyAttach != null) {
+            Log.TWL(2, " found body attach transform");
+            __result = bodyAnimation.bodyAttach;
+            return false;
+          }*/
+        }
       }
       return true;
     }
@@ -350,7 +375,7 @@ namespace CustomUnits {
       GenericAnimatedData jdata = JsonConvert.DeserializeObject<GenericAnimatedData>(data);
       AudioEventNameStart = jdata.sound_start_event;
       AudioEventNameStop = jdata.sound_stop_event;
-      Log.LogWrite("GenericAnimatedComponent.Init parent:" + (a == null?"null":new Text(a.DisplayName).ToString()) + this.gameObject.name + " AudioEventNameStart: " + this.AudioEventNameStart + " AudioEventNameStop:"+ AudioEventNameStop + "\n");
+      Log.LogWrite("GenericAnimatedComponent.Init parent:" + (a == null?"null":new Text(a.DisplayName).ToString()) +" " + this.gameObject.name + " AudioEventNameStart: " + this.AudioEventNameStart + " AudioEventNameStop:"+ AudioEventNameStop + "\n");
       parent = a;
       Location = loc;
       if (this.renderers != null) {
@@ -395,13 +420,14 @@ namespace CustomUnits {
       }
     }
     public virtual void Clear() {
+      Log.TWL(0, "GenericAnimatedComponent.Clear: stop:"+ AudioEventNameStop+" parent:"+(this.parent==null?"null":"not null"));
       if (this.parent == null) { return; }
       if (string.IsNullOrEmpty(AudioEventNameStop) == false) {
         if (SceneSingletonBehavior<WwiseManager>.HasInstance) {
           uint soundid = SceneSingletonBehavior<WwiseManager>.Instance.PostEventByName(AudioEventNameStop, this.parent.GameRep.audioObject, (AkCallbackManager.EventCallback)null, (object)null);
           Log.TWL(0, "Stop playing sound by id (" + AudioEventNameStop + "):" + soundid);
         } else {
-          Log.TWL(0, "Can't play");
+          Log.TWL(0, "Can't play (" + AudioEventNameStop + ")");
         }
       }
     }
@@ -1498,6 +1524,8 @@ namespace CustomUnits {
         HardpointAnimatorHelper.Clear();
         UnitsAnimatedPartsHelper.Clear();
         ActorMovementSequence_InitDistanceClamp.Clear();
+        VTOLBodyAnimationHelper.Clear();
+        CombatHUDMechwarriorTray_RefreshTeam.Clear();
       } catch (Exception e) {
         Log.LogWrite(e.ToString() + "\n");
       }

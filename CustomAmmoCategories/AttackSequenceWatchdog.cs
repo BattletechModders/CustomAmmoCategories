@@ -15,124 +15,61 @@ using static BattleTech.AttackDirector;
 using Stopwatch = System.Diagnostics.Stopwatch;
 
 namespace CustAmmoCategories {
-  public class AttackSequenceWatchdog {
-    public Stopwatch timer;
-    public int attackSequenceId;
-    public AttackSequenceWatchdog(int id) {
-      this.attackSequenceId = id;
-      timer = new Stopwatch();
-      timer.Start();
+  public class ASWatchdog: MonoBehaviour {
+    public static ASWatchdog instance = null;
+    public Dictionary<int, float> WatchDogInfo = new Dictionary<int, float>();
+    public AttackDirector AttackDirector = null;
+    private float t;
+    public void Init(CombatHUD HUD) {
+      t = 0f;
+      AttackDirector = HUD.Combat.AttackDirector;
+      WatchDogInfo = new Dictionary<int, float>();
+      ASWatchdog.instance = this;
     }
-  }
-  public static class ASWatchdog {
-    public static Dictionary<int, AttackSequenceWatchdog> WatchDogInfo = new Dictionary<int, AttackSequenceWatchdog>();
-    public static Mutex mutex = new Mutex();
-    public static AttackDirector AttackDirector = null;
-    public static Thread watchdogThread = new Thread(watchdogProc);
-    public static bool watchdogTerminating = false;
-    public static void Woof(int sequenceId) {
-      if (mutex.WaitOne(1000)) {
-        if (ASWatchdog.WatchDogInfo.ContainsKey(sequenceId) == true) {
-          AttackSequenceWatchdog wd = ASWatchdog.WatchDogInfo[sequenceId];
-          wd.timer.Stop();
-          CustomAmmoCategoriesLog.Log.LogWrite("Watchdog " + sequenceId + ": "+wd.timer.ElapsedMilliseconds+"ms Woof! Woof!\n");
-          wd.timer.Reset();
-          wd.timer.Start();
-        }
-        mutex.ReleaseMutex();
+    public void Woof(int sequenceId) {
+      if (WatchDogInfo.ContainsKey(sequenceId) == true) {
+        WatchDogInfo[sequenceId] = 0f;
       }
     }
-    public static void StartWatchDogThread() {
-      CustomAmmoCategoriesLog.Log.LogWrite("StartWatchDogThread. Watchdog thread state:" + ASWatchdog.watchdogThread.ThreadState + "\n");
-      if ((ASWatchdog.watchdogThread.ThreadState == System.Threading.ThreadState.Stopped)
-        || (ASWatchdog.watchdogThread.ThreadState == System.Threading.ThreadState.Unstarted)) 
-      {
-        ASWatchdog.watchdogTerminating = false;
-        CustomAmmoCategoriesLog.Log.LogWrite(" starting\n");
-        ASWatchdog.watchdogThread.Start();
+    public void add(int attackSequnceId) {
+      if (WatchDogInfo.ContainsKey(attackSequnceId) == false) {
+        WatchDogInfo.Add(attackSequnceId, 0f);
+      } else {
+        WatchDogInfo[attackSequnceId] = 0f;
       }
     }
-    public static void EndWatchDogThread() {
-      CustomAmmoCategoriesLog.Log.LogWrite("StartWatchDogThread. Watchdog thread state:" + ASWatchdog.watchdogThread.ThreadState + "\n");
-      if (ASWatchdog.watchdogThread.ThreadState == System.Threading.ThreadState.Running) {
-        ASWatchdog.watchdogTerminating = true;
-        ASWatchdog.watchdogThread.Join();
-      }
+    public void del(int attackSequnceId) {
+      WatchDogInfo.Remove(attackSequnceId);
     }
-    public static void watchdogProc() {
-      int counter = 0;
-      CustomAmmoCategoriesLog.Log.LogWrite("Watchdog thread started\n");
-      while (ASWatchdog.watchdogTerminating == false) {
-        Thread.Sleep(1000);
-        if(counter > 30) {
-          counter = 0;
-          ASWatchdog.testWatchdogs();
-        }
-        ++counter;
+    public void Update() {
+      if (AttackDirector == null) { return; }
+      t += Time.deltaTime;
+      if (t < 5f) { return; }
+      HashSet<int> seq = WatchDogInfo.Keys.ToHashSet();
+      foreach (int seqId in seq) {
+        WatchDogInfo[seqId] += t;
       }
-      CustomAmmoCategoriesLog.Log.LogWrite("Watchdog thread ended\n");
-    }
-    public static void addAttackSequenceToWatch(int attackSequnceId) {
-      if (mutex.WaitOne()) {
-        if (ASWatchdog.WatchDogInfo.ContainsKey(attackSequnceId) == false) {
-          ASWatchdog.WatchDogInfo.Add(attackSequnceId,new AttackSequenceWatchdog(attackSequnceId));
-          CustomAmmoCategoriesLog.Log.LogWrite("added watchdog sequence:"+attackSequnceId+"\n");
-        }
-        mutex.ReleaseMutex();
-      }
-    }
-    public static void delAttackSequenceToWatch(int attackSequnceId) {
-      if (mutex.WaitOne()) {
-        if (ASWatchdog.WatchDogInfo.ContainsKey(attackSequnceId) == true) {
-          ASWatchdog.WatchDogInfo.Remove(attackSequnceId);
-          CustomAmmoCategoriesLog.Log.LogWrite("deleted watchdog sequence:" + attackSequnceId + "\n");
-        }
-        mutex.ReleaseMutex();
-      }
-    }
-    public static void testWatchdogs() {
-      if (mutex.WaitOne(1000)) {
-        CustomAmmoCategoriesLog.Log.LogWrite("attack sequence watchdog:\n",true);
-        HashSet<int> delSequence = new HashSet<int>();
-        foreach (var wd in ASWatchdog.WatchDogInfo) {
-          wd.Value.timer.Stop();
-          CustomAmmoCategoriesLog.Log.LogWrite(" "+wd.Value.attackSequenceId+":"+wd.Value.timer.ElapsedMilliseconds+"ms");
-          if(wd.Value.timer.ElapsedMilliseconds > CustomAmmoCategories.Settings.AttackSequenceMaxLength) {
-            CustomAmmoCategoriesLog.Log.LogWrite(" elapced\n",true);
-            delSequence.Add(wd.Key);
-          } else {
-            CustomAmmoCategoriesLog.Log.LogWrite(" normal\n",true);
-          }
-          wd.Value.timer.Start();
-        }
-        foreach(int sequenceId in delSequence) {
-          CustomAmmoCategoriesLog.Log.LogWrite("force finish sequence:"+sequenceId+"\n",true);
-          if (ASWatchdog.AttackDirector == null) { continue; };
-          AttackSequence attackSequence = ASWatchdog.AttackDirector.GetAttackSequence(sequenceId);
+      t = 0f;
+      Log.M.TWL(0, "ASWatchdog.Update", true);
+      foreach (int seqId in seq) {
+        Log.M.WL(1, seqId.ToString() + " = "+ WatchDogInfo[seqId]);
+        if (WatchDogInfo[seqId] > 20f) {
+          Log.M.WL(2, "timeout");
+          AttackSequence attackSequence = AttackDirector.GetAttackSequence(seqId);
           if (attackSequence == null) {
-            CustomAmmoCategoriesLog.Log.LogWrite(" can't find sequence\n",true);
-            ASWatchdog.WatchDogInfo.Remove(sequenceId);
-            continue;
-          }
-          if(attackSequence.Director == null) {
-            CustomAmmoCategoriesLog.Log.LogWrite(" attack sequence without director\n", true);
-            ASWatchdog.WatchDogInfo.Remove(sequenceId);
-            continue;
-          }
-          CustomAmmoCategoriesLog.Log.LogWrite(" force sequence to end\n",true);
-          try {
+            Log.M.WL(2, "can't find sequence");
+          } else {
+            Log.M.WL(2, "end sequence by timeout");
+            WatchDogInfo.Remove(seqId);
             MessageCoordinator messageCoordinator = (MessageCoordinator)typeof(AttackSequence).GetField("messageCoordinator", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(attackSequence);
             typeof(AttackSequence).GetProperty("CoordinatedMesssagesSuccessful", BindingFlags.Instance | BindingFlags.Public).GetSetMethod(true).Invoke(attackSequence, new object[1] { (object)messageCoordinator.VerifyAllMessagesComplete() });
             AttackSequenceEndMessage sequenceEndMessage = new AttackSequenceEndMessage(attackSequence.stackItemUID, attackSequence.id);
             attackSequence.chosenTarget.ResolveAttackSequence(attackSequence.attacker.GUID, attackSequence.id, attackSequence.stackItemUID, attackSequence.Director.Combat.HitLocation.GetAttackDirection(attackSequence.attackPosition, attackSequence.chosenTarget));
             attackSequence.Director.Combat.MessageCenter.PublishMessage((MessageCenterMessage)sequenceEndMessage);
             messageCoordinator.VerifyAllMessagesComplete();
-          }catch(Exception e) {
-            Log.M.TWL(0,e.ToString(),true);
+            continue;
           }
-          ASWatchdog.WatchDogInfo.Remove(sequenceId);
         }
-        mutex.ReleaseMutex();
       }
     }
   }
@@ -145,8 +82,9 @@ namespace CustAmmoCategoriesPatches {
   public static class AttackSequence_Constructor {
     private static void Postfix(AttackSequence __instance, AttackDirector director, AbstractActor attacker, ICombatant target, Vector3 attackPosition, Quaternion attackRotation, int attackSequenceIdx, List<Weapon> selectedWeapons, MeleeAttackType meleeAttackType, int calledShotLocation, bool isMoraleAttack, int id, int stackItemUID) {
       CustomAmmoCategoriesLog.Log.LogWrite("AttackSequence.Constructor add watchdog\n");
-      ASWatchdog.AttackDirector = director;
-      ASWatchdog.addAttackSequenceToWatch(__instance.id);
+      if (ASWatchdog.instance != null) {
+        ASWatchdog.instance.add(__instance.id);
+      }
     }
   }
   [HarmonyPatch(typeof(AttackDirector))]
@@ -158,7 +96,9 @@ namespace CustAmmoCategoriesPatches {
       CustomAmmoCategoriesLog.Log.LogWrite("AttackDirector.OnAttackComplete del watchdog\n");
       AttackCompleteMessage attackCompleteMessage = (AttackCompleteMessage)message;
       int sequenceId = attackCompleteMessage.sequenceId;
-      ASWatchdog.delAttackSequenceToWatch(sequenceId);
+      if (ASWatchdog.instance != null) {
+        ASWatchdog.instance.del(sequenceId);
+      }
     }
   }
   [HarmonyPatch(typeof(AttackSequence))]
@@ -167,7 +107,9 @@ namespace CustAmmoCategoriesPatches {
   [HarmonyPatch(new Type[] { typeof(MessageCenterMessage) })]
   public static class AttackSequence_OnAttackSequenceImpactWD {
     private static bool Prefix(AttackSequence __instance, MessageCenterMessage message) {
-      ASWatchdog.Woof(__instance.id);
+      if (ASWatchdog.instance != null) {
+        ASWatchdog.instance.Woof(__instance.id);
+      }
       return true;
     }
   }
@@ -177,7 +119,13 @@ namespace CustAmmoCategoriesPatches {
   [HarmonyPatch(new Type[] { typeof(CombatGameState) })]
   public static class CombatHUD_Init {
     public static void Postfix(CombatHUD __instance, CombatGameState Combat) {
-      ASWatchdog.StartWatchDogThread();
+      ASWatchdog wd = __instance.gameObject.GetComponent<ASWatchdog>();
+      if(wd == null) {
+        wd = __instance.gameObject.AddComponent<ASWatchdog>();
+      }
+      if(wd != null) {
+        wd.Init(__instance);
+      }
     }
   }
 }

@@ -225,20 +225,59 @@ namespace CustomUnits {
           if (vchassis != null) {
             vchassis.AddCustomDeps(loadRequest);
           }
+          vchassis.Refresh();
+          mechDef.Refresh();
         } else {
           Log.TWL(0, "TransitionMech requesting bay game representation " + mechDef.ChassisID + " " + mechPrefabName);
           loadRequest.AddBlindLoadRequest(BattleTechResourceType.Prefab, mechPrefabName, new bool?(false));
           mechDef.Chassis.AddCustomDeps(loadRequest);
           mechDef.Refresh();
-          for (int index = 0; index < mechDef.Inventory.Length; ++index) {
-            if (mechDef.Inventory[index].Def != null) {
-              if (string.IsNullOrEmpty(mechDef.Inventory[index].prefabName) == false) loadRequest.AddBlindLoadRequest(BattleTechResourceType.Prefab, mechDef.Inventory[index].prefabName, new bool?(false));
-            }
-          }
           if (mechDef.meleeWeaponRef.Def != null)
             if (string.IsNullOrEmpty(mechDef.meleeWeaponRef.prefabName) == false) loadRequest.AddBlindLoadRequest(BattleTechResourceType.Prefab, mechDef.meleeWeaponRef.prefabName);
           if (mechDef.dfaWeaponRef.Def != null) {
             if (string.IsNullOrEmpty(mechDef.dfaWeaponRef.prefabName) == false) loadRequest.AddBlindLoadRequest(BattleTechResourceType.Prefab, mechDef.dfaWeaponRef.prefabName);
+          }
+        }
+        List<string> usedPrefabNames = new List<string>();
+        for (int index = 0; index < mechDef.Inventory.Length; ++index) {
+          if (mechDef.Inventory[index].Def != null) {
+            MechComponentRef componentRef = mechDef.Inventory[index];
+            string MountedLocation = componentRef.MountedLocation.ToString();
+            bool correctLocation = false;
+            if (mechDef.IsChassisFake()) {
+              switch (componentRef.MountedLocation) {
+                case ChassisLocations.LeftArm: MountedLocation = VehicleChassisLocations.Front.ToString(); correctLocation = true; break;
+                case ChassisLocations.RightArm: MountedLocation = VehicleChassisLocations.Rear.ToString(); correctLocation = true; break;
+                case ChassisLocations.LeftLeg: MountedLocation = VehicleChassisLocations.Left.ToString(); correctLocation = true; break;
+                case ChassisLocations.RightLeg: MountedLocation = VehicleChassisLocations.Right.ToString(); correctLocation = true; break;
+                case ChassisLocations.Head: MountedLocation = VehicleChassisLocations.Turret.ToString(); correctLocation = true; break;
+              }
+            } else {
+              correctLocation = true;
+            }
+            if (correctLocation) {
+              WeaponDef def = componentRef.Def as WeaponDef;
+              Log.W(1, "GetComponentPrefabName " + mechDef.Chassis.HardpointDataDef.ID + " base:" + mechDef.Chassis.PrefabBase + " loc:" + MountedLocation + " currPrefabName:" + componentRef.prefabName + " hasPrefab:" + componentRef.hasPrefabName);
+              if (def != null) {
+                string desiredPrefabName = string.Format("chrPrfWeap_{0}_{1}_{2}{3}", mechDef.Chassis.PrefabBase, MountedLocation.ToLower(), componentRef.Def.PrefabIdentifier.ToLower(), def.WeaponCategoryValue.HardpointPrefabText);
+                Log.WL(2, "desiredPrefabName:" + desiredPrefabName);
+              } else {
+                Log.WL(2, "");
+              }
+              if (componentRef.hasPrefabName == false) {
+                componentRef.prefabName = MechHardpointRules.GetComponentPrefabName(mechDef.Chassis.HardpointDataDef, (BaseComponentRef)componentRef, mechDef.Chassis.PrefabBase, MountedLocation.ToLower(), ref usedPrefabNames);
+                componentRef.hasPrefabName = true;
+              }
+            }
+            if (string.IsNullOrEmpty(componentRef.prefabName) == false) {
+              loadRequest.AddBlindLoadRequest(BattleTechResourceType.Prefab, componentRef.prefabName);
+              CustomHardpointDef customHardpoint = CustomHardPointsHelper.Find(componentRef.prefabName);
+              if (customHardpoint != null) {
+                if (string.IsNullOrEmpty(customHardpoint.shaderSrc) == false) {
+                  loadRequest.AddBlindLoadRequest(BattleTechResourceType.Prefab, customHardpoint.shaderSrc);
+                }
+              }
+            }
           }
         }
         loadRequest.ProcessRequests(1000u);
@@ -283,13 +322,13 @@ namespace CustomUnits {
           bayRepresentation = gameObject.GetComponent<MechRepresentationSimGame>();
           if (bayRepresentation != null) {
             mechbay.loadedMech(bayRepresentation);
+            mechDef.SpawnCustomParts(bayRepresentation);
             mechbay.loadedMech().Init(mechbay.simState.DataManager, mechDef, mechbay.simState.CameraController.MechAnchor, mechbay.simState.Player1sMercUnitHeraldryDef);
             Renderer[] componentsInChildren = gameObject.GetComponentsInChildren<Renderer>();
             for (int j = 0; j < componentsInChildren.Length; j++) {
               componentsInChildren[j].gameObject.layer = LayerMask.NameToLayer("Characters");
             }
             BTLightController.ResetAllShadowIndicies();
-            mechDef.SpawnCustomParts(bayRepresentation);
             if (mechDef.IsChassisFake()) {
               var sizeMultiplier = SizeMultiplier.Get(mechDef);
               bayRepresentation.rootTransform.localScale = sizeMultiplier;
@@ -362,6 +401,7 @@ namespace CustomUnits {
     public static void Prefix(MechBayPanel __instance, MechBayRowGroupWidget ___bayGroupWidget) {
       Log.TWL(0, "MechBayPanel.ViewBays " + ___bayGroupWidget.gameObject.activeSelf + "/" + toggleState);
       if (___bayGroupWidget.gameObject.activeSelf == false) { toggleState = false; } else { toggleState = !toggleState; };
+      if (Core.Settings.ShowVehicleBays == false) { toggleState = false; };
       ___bayGroupWidget.ShowMechBays(!toggleState);
       ___bayGroupWidget.ShowVehicleBays(toggleState);
     }
@@ -636,6 +676,9 @@ namespace CustomUnits {
     public static Transform GetAttachTransform(this MechRepresentationSimGame rep,ChassisLocations location) {
       return (Transform)m_GetAttachTransform.Invoke(rep, new object[] { location });
     }
+    public static VTOLBodyAnimation VTOLBodyAnim(this MechRepresentationSimGame simRep) {
+      return simRep.gameObject.GetComponentInChildren<VTOLBodyAnimation>();
+    }
     private static MethodInfo m_CreateBlankPrefabs = typeof(MechRepresentationSimGame).GetMethod("CreateBlankPrefabs", BindingFlags.Instance | BindingFlags.NonPublic);
     public static void CreateBlankPrefabs(this MechRepresentationSimGame rep, List<string> usedPrefabNames, ChassisLocations location) {
       m_CreateBlankPrefabs.Invoke(rep, new object[] { usedPrefabNames, location });
@@ -643,40 +686,46 @@ namespace CustomUnits {
     public static bool Prefix(MechRepresentationSimGame __instance,DataManager ___dataManager) {
       List<string> usedPrefabNames = new List<string>();
       Log.TWL(0, "MechRepresentationSimGame.LoadWeapons");
+      VTOLBodyAnimation bodyAnimation = __instance.VTOLBodyAnim();
+      Log.WL(1, "bodyAnimation:"+(bodyAnimation==null?"null":"not null"));
       for (int index = 0; index < __instance.mechDef.Inventory.Length; ++index) {
         MechComponentRef componentRef = __instance.mechDef.Inventory[index];
-        string MountedLocation = componentRef.MountedLocation.ToString().ToLower();
+        string MountedLocation = componentRef.MountedLocation.ToString();
         bool correctLocation = false;
         if (__instance.mechDef.IsChassisFake()) {
           switch (componentRef.MountedLocation) {
-            case ChassisLocations.LeftArm: MountedLocation = VehicleChassisLocations.Front.ToString().ToLower(); correctLocation = true; break;
-            case ChassisLocations.RightArm: MountedLocation = VehicleChassisLocations.Rear.ToString().ToLower(); correctLocation = true; break;
-            case ChassisLocations.LeftLeg: MountedLocation = VehicleChassisLocations.Left.ToString().ToLower(); correctLocation = true; break;
-            case ChassisLocations.RightLeg: MountedLocation = VehicleChassisLocations.Right.ToString().ToLower(); correctLocation = true; break;
-            case ChassisLocations.Head: MountedLocation = VehicleChassisLocations.Turret.ToString().ToLower(); correctLocation = true; break;
+            case ChassisLocations.LeftArm: MountedLocation = VehicleChassisLocations.Front.ToString(); correctLocation = true; break;
+            case ChassisLocations.RightArm: MountedLocation = VehicleChassisLocations.Rear.ToString(); correctLocation = true; break;
+            case ChassisLocations.LeftLeg: MountedLocation = VehicleChassisLocations.Left.ToString(); correctLocation = true; break;
+            case ChassisLocations.RightLeg: MountedLocation = VehicleChassisLocations.Right.ToString(); correctLocation = true; break;
+            case ChassisLocations.Head: MountedLocation = VehicleChassisLocations.Turret.ToString(); correctLocation = true; break;
           }
         } else {
           correctLocation = true;
         }
         if (correctLocation) {
           WeaponDef def = componentRef.Def as WeaponDef;
-          Log.W(0, "GetComponentPrefabName "+ __instance.mechDef.Chassis.HardpointDataDef.ID + " base:"+ __instance.mechDef.Chassis.PrefabBase+" loc:"+ MountedLocation);
+          Log.W(0, "GetComponentPrefabName "+ __instance.mechDef.Chassis.HardpointDataDef.ID + " base:"+ __instance.mechDef.Chassis.PrefabBase+" loc:"+ MountedLocation+" currPrefabName:"+componentRef.prefabName+" hasPrefab:"+componentRef.hasPrefabName);
           if(def != null) {
-            string desiredPrefabName = string.Format("chrPrfWeap_{0}_{1}_{2}{3}", __instance.mechDef.Chassis.PrefabBase, MountedLocation, componentRef.Def.PrefabIdentifier.ToLower(), def.WeaponCategoryValue.HardpointPrefabText);
+            string desiredPrefabName = string.Format("chrPrfWeap_{0}_{1}_{2}{3}", __instance.mechDef.Chassis.PrefabBase, MountedLocation.ToLower(), componentRef.Def.PrefabIdentifier.ToLower(), def.WeaponCategoryValue.HardpointPrefabText);
             Log.WL(1, "desiredPrefabName:"+ desiredPrefabName);
           } else {
             Log.WL(0, "");
           }
-          componentRef.prefabName = MechHardpointRules.GetComponentPrefabName(__instance.mechDef.Chassis.HardpointDataDef, (BaseComponentRef)componentRef, __instance.mechDef.Chassis.PrefabBase, MountedLocation, ref usedPrefabNames);
-          componentRef.hasPrefabName = true;
+          if (componentRef.hasPrefabName == false) {
+            componentRef.prefabName = MechHardpointRules.GetComponentPrefabName(__instance.mechDef.Chassis.HardpointDataDef, (BaseComponentRef)componentRef, __instance.mechDef.Chassis.PrefabBase, MountedLocation.ToLower(), ref usedPrefabNames);
+            componentRef.hasPrefabName = true;
+          }
         }
         if (!string.IsNullOrEmpty(componentRef.prefabName)) {
+          HardpointAttachType attachType = HardpointAttachType.None;
           Log.WL(1, "component:"+componentRef.ComponentDefID+":"+componentRef.MountedLocation);
           Transform attachTransform = __instance.GetAttachTransform(componentRef.MountedLocation);
           CustomHardpointDef customHardpoint = CustomHardPointsHelper.Find(componentRef.prefabName);
           GameObject prefab = null;
           string prefabName = componentRef.prefabName;
           if (customHardpoint != null) {
+            attachType = customHardpoint.attachType;
             prefab = ___dataManager.PooledInstantiate(customHardpoint.prefab, BattleTechResourceType.Prefab, new Vector3?(), new Quaternion?(), (Transform)null);
             if (prefab == null) {
               prefab = ___dataManager.PooledInstantiate(componentRef.prefabName, BattleTechResourceType.Prefab, new Vector3?(), new Quaternion?(), (Transform)null);
@@ -733,6 +782,21 @@ namespace CustomUnits {
                 component1 = prefab.AddComponent<ComponentRepresentation>();
               }
             }
+            if (bodyAnimation != null) {
+              Log.WL(1, "found VTOL body animation and vehicle component ref. Location:" + MountedLocation + " type:" + attachType);
+              if (attachType == HardpointAttachType.None) {
+                if ((bodyAnimation.bodyAttach != null) && (MountedLocation != VehicleChassisLocations.Turret.ToString())) { attachTransform = bodyAnimation.bodyAttach; }
+              } else {
+                AttachInfo attachInfo = bodyAnimation.GetAttachInfo(MountedLocation, attachType);
+                Log.WL(2, "attachInfo:" + (attachInfo == null ? "null" : "not null"));
+                if ((attachInfo != null) && (attachInfo.attach != null) && (attachInfo.main != null)) {
+                  Log.WL(2, "attachTransform:" + (attachInfo.attach == null ? "null" : attachInfo.attach.name));
+                  Log.WL(2, "mainTransform:" + (attachInfo.main == null ? "null" : attachInfo.main.name));
+                  attachTransform = attachInfo.attach;
+                  attachInfo.bayComponents.Add(component1);
+                }
+              }
+            }
             if (component1 != null) {
               component1.Init((ICombatant)null, attachTransform, true, false, "MechRepSimGame");
               component1.gameObject.SetActive(true);
@@ -752,6 +816,7 @@ namespace CustomUnits {
           }
         }
       }
+      if (bodyAnimation != null) { bodyAnimation.ResolveAttachPoints(); };
       __instance.CreateBlankPrefabs(usedPrefabNames, ChassisLocations.CenterTorso);
       __instance.CreateBlankPrefabs(usedPrefabNames, ChassisLocations.LeftTorso);
       __instance.CreateBlankPrefabs(usedPrefabNames, ChassisLocations.RightTorso);

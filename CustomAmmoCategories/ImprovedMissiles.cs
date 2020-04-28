@@ -83,11 +83,11 @@ namespace CustAmmoCategoriesPatches {
     }
     //public static HashSet<WeaponEffect> weaponEffects = new HashSet<WeaponEffect>();
     //public static void Clear() { weaponEffects.Clear(); }
-    public static void Postfix(MissileLauncherEffect __instance) {
+    public static void Postfix(MissileLauncherEffect __instance, bool ___isIndirect) {
       Log.LogWrite("MissileLauncherEffect.SetupMissiles " + __instance.weapon.defId + "\n");
       if (__instance.weapon.isImprovedBallistic() == false) { return; };
       BaseHardPointAnimationController animation = __instance.weapon.HardpointAnimator();
-      if (animation != null) { animation.PrefireAnimation(); };
+      if (animation != null) { animation.PrefireAnimation(__instance.hitInfo.hitPositions[0], ___isIndirect); };
       float firingIntervalM = __instance.weapon.MissileFiringIntervalMultiplier();
       float volleyIntervalM = __instance.weapon.MissileVolleyIntervalMultiplier();
       if (firingIntervalM > CustomAmmoCategories.Epsilon) {

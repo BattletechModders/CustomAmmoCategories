@@ -9,6 +9,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Reflection.Emit;
 using System.Text;
 using System.Threading.Tasks;
 using UnityEngine;
@@ -26,6 +27,7 @@ namespace CustomUnits {
     public string positionSrc { get; set; }
     public List<string> emitters { get; set; }
     public string preFireAnimation { get; set; }
+    public HardpointAttachType attachType { get; set; }
     public List<string> fireEmitterAnimation { get; set; }
     public CustomHardpointDef() {
       emitters = new List<string>();
@@ -38,6 +40,7 @@ namespace CustomUnits {
       positionSrc = string.Empty;
       prefireAnimationLength = 1f;
       fireAnimationLength = 1.5f;
+      attachType = HardpointAttachType.None;
     }
   };
   public class HadrpointAlias {
@@ -109,11 +112,14 @@ namespace CustomUnits {
     private bool PrefireCompleete { get; set; }
     public Animator animator { get; set; }
     public Weapon weapon { get; set; }
+    private float recoil_step;
+    private float recoil_value;
     private float PrefireCompleeteCounter { get; set; }
     private List<float> fireCompleeteCounters;
     private List<bool> fireCompleete;
     private float PrefireSpeed { get; set; }
     private float FireSpeed { get; set; }
+    private bool isIndirect { get; set; }
     public override void PrefireAnimationSpeed(float speed) {
       if (animator == null) { return; }
       PrefireSpeed = speed;
@@ -129,6 +135,8 @@ namespace CustomUnits {
       fireCompleete = new List<bool>();
       FireSpeed = 1f;
       PrefireSpeed = 1f;
+      recoil_step = 0f;
+      recoil_value = 0f;
     }
     public override bool isPrefireAnimCompleete() { return PrefireCompleete; }
     private void fireCompleeteAll(bool state) {
@@ -169,21 +177,41 @@ namespace CustomUnits {
       if (fireCompleete.Count == 0) { return true; }
       return fireCompleete[index % fireCompleete.Count];
     }
-    public override void PrefireAnimation() {
+    public override void PrefireAnimation(Vector3 target, bool indirect) {
+      this.isIndirect = indirect;
       if (animator == null) { PrefireCompleete = true; return; }
       if (customHardpoint == null) { PrefireCompleete = true; return; }
       if (string.IsNullOrEmpty(customHardpoint.preFireAnimation)) { PrefireCompleete = true; return; }
       PrefireCompleeteCounter = (PrefireSpeed > 0.01f) ? customHardpoint.prefireAnimationLength / PrefireSpeed : 0f;
       PrefireCompleete = false;
       Log.LogWrite("HardPointAnimationController.PrefireAnimation " + weapon.defId + "\n");
-      if (animator != null) { animator.SetBool(customHardpoint.preFireAnimation, true); }
+      if (customHardpoint.preFireAnimation == "_new_style") {
+        if (this.isIndirect) {
+          animator.SetFloat("indirect", 1f);
+          animator.SetFloat("to_fire_normal", 0.98f);
+          //animator.SetBool(customHardpoint.preFireAnimation, true);
+        } else {
+          animator.SetFloat("indirect", 0.98f);
+          animator.SetFloat("vertical", 0.5f);
+          animator.SetFloat("to_fire_normal", 1f);
+        }
+      } else {
+        animator.SetBool(customHardpoint.preFireAnimation, true);
+      }
     }
     public override void PostfireAnimation() {
       if (animator == null) { PrefireCompleete = true; return; }
       if (customHardpoint == null) { PrefireCompleete = true; return; }
       if (string.IsNullOrEmpty(customHardpoint.preFireAnimation)) { PrefireCompleete = true; return; }
       PrefireCompleete = true;
-      animator.SetBool(customHardpoint.preFireAnimation, false);
+      if (customHardpoint.preFireAnimation != "_new_style") {
+        animator.SetBool(customHardpoint.preFireAnimation, false);
+      } else {
+        if (this.isIndirect) {
+          animator.SetFloat("indirect", 0.98f);
+          animator.SetFloat("to_fire_normal", 0.98f);
+        }
+      }
       for (int t = 0; t < customHardpoint.fireEmitterAnimation.Count; ++t) {
         string animName = customHardpoint.fireEmitterAnimation[t];
         if (string.IsNullOrEmpty(animName) == false) {
@@ -434,7 +462,175 @@ namespace CustomUnits {
       }
     }
   }
+  [HarmonyPatch(typeof(AttackDirector))]
+  [HarmonyPatch("OnAttackComplete")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { typeof(MessageCenterMessage) })]
+  public static class AttackDirector_OnAttackComplete {
+    public static void Prefix(AttackDirector __instance, MessageCenterMessage message) {
+      AttackCompleteMessage attackCompleteMessage = (AttackCompleteMessage)message;
+      int sequenceId = attackCompleteMessage.sequenceId;
+      AttackDirector.AttackSequence attackSequence = __instance.GetAttackSequence(sequenceId);
+      if (attackSequence == null) { return; }
+      foreach(Weapon weapon in attackSequence.attacker.Weapons) {
+        AttachInfo info = weapon.attachInfo();
+        if (info == null) { continue; };
+        info.Postfire();
+      }
+    }
+  }
+  [HarmonyPatch(typeof(Vehicle))]
+  [HarmonyPatch("InitGameRep")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { typeof(Transform) })]
+  public static class Vehicle_InitGameRep {
+    public static void Postfix(Vehicle __instance) {
+      Log.TWL(0, "Vehicle.InitGameRep "+__instance.VehicleDef.ChassisID);
+      VTOLBodyAnimation bodyAnimation = __instance.VTOLAnimation();
+      if (bodyAnimation == null) { return; }
+      bodyAnimation.ResolveAttachPoints();
+    }
+  }
+  public class ExtPrefire {
+    public float t;
+    public float rate;
+    public int hitIndex;
+    public int emitter;
+    public WeaponHitInfo hitInfo;
+    public ExtPrefire(float rate, WeaponHitInfo hitInfo, int hitIndex, int emitter) {
+      t = 0f; this.rate = rate;
+      this.hitInfo = hitInfo;
+      this.hitIndex = hitIndex;
+      this.emitter = emitter;
+    }
+  }
+  public static class extendedFireHelper {
+    public static void extendedFire(WeaponEffect weaponEffect, WeaponHitInfo hitInfo, int hitIndex, int emiter) {
+      Log.TWL(0, "extendedFireHelper.extendedFire "+ weaponEffect.GetType().ToString());
+      ExtPrefire extPrefire = weaponEffect.extPrefire();
+      if (extPrefire != null) {
+        weaponEffect.extPrefire(null);
+        weaponEffect.Fire(hitInfo, hitIndex, emiter);
+      } else {
+        AttachInfo info = weaponEffect.weapon.attachInfo();
+        if (info == null) {
+          weaponEffect.Fire(hitInfo, hitIndex, emiter);
+        } else {
+          try {
+            bool indirect = weaponEffect.weapon.parent.Combat.AttackDirector.GetAttackSequence(hitInfo.attackSequenceId).indirectFire;
+            if (weaponEffect.weapon.AlwaysIndirectVisuals()) { indirect = true; }
+            info.Prefire(hitInfo.hitPositions[hitIndex], indirect);
+            weaponEffect.extPrefire(new ExtPrefire(1f, hitInfo, hitIndex, emiter));
+            Traverse.Create(weaponEffect).Field("t").SetValue(0f);
+            weaponEffect.currentState = WeaponEffect.WeaponEffectState.PreFiring;
+          } catch (Exception e) {
+            Log.TWL(0,e.ToString(),true);
+            weaponEffect.extPrefire(null);
+            weaponEffect.Fire(hitInfo, hitIndex, emiter);
+          }
+        }
+      }
+    }
+  }
+  [HarmonyPatch(typeof(WeaponEffect))]
+  [HarmonyPatch("Update")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { })]
+  public static class WeaponEffect_UpdatePrefire {
+    public static MethodInfo getPlayPreFire(Type type) {
+      MethodInfo result = type.GetMethod("PlayPreFire", BindingFlags.NonPublic | BindingFlags.Instance);
+      if (result != null) { return result; };
+      if (result == typeof(WeaponEffect)) { return null; }
+      return getPlayPreFire(type.BaseType);
+    }
+    public static bool Prefix(WeaponEffect __instance, ref float ___preFireRate, CombatGameState ___Combat, ref float ___t) {
+      if (__instance.currentState != WeaponEffect.WeaponEffectState.PreFiring) { return true; }
+      ExtPrefire extPrefire = __instance.extPrefire();
+      if (extPrefire == null) { return true; }
+      if (extPrefire.t <= 1.0f) {
+        extPrefire.t += extPrefire.rate * ___Combat.StackManager.GetProgressiveAttackDeltaTime(___t);
+      }
+      if (extPrefire.t >= 1.0f) {
+        Log.TWL(0, "WeaponEffect.Update real prefire");
+        try {
+          __instance.currentState = WeaponEffect.WeaponEffectState.NotStarted;
+          __instance.Fire(extPrefire.hitInfo,extPrefire.hitIndex,extPrefire.emitter);
+          __instance.extPrefire(null);
+        } catch (Exception e) {
+          Log.TWL(0, e.ToString(), true);
+        }
+        //MethodInfo mPlayPrefire = __instance.GetType().GetMethod("PlayPreFire", BindingFlags.Instance | BindingFlags.NonPublic);
+      }
+      return false;
+    }
+  }
 
+  [HarmonyPatch(typeof(WeaponEffect))]
+  [HarmonyPatch("PlayPreFire")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { })]
+  public static class WeaponEffect_PlayPreFire {
+    private static Dictionary<WeaponEffect, ExtPrefire> extPrefireRates = new Dictionary<WeaponEffect, ExtPrefire>();
+    public static ExtPrefire extPrefire(this WeaponEffect effect) {
+      if(extPrefireRates.TryGetValue(effect, out ExtPrefire res)) {
+        return res;
+      }
+      return null;
+    }
+    public static void extPrefire(this WeaponEffect effect, ExtPrefire extPrefire) {
+      if (extPrefire == null) { extPrefireRates.Remove(effect); } else {
+        if (extPrefireRates.ContainsKey(effect)) {
+          extPrefireRates[effect] = extPrefire;
+        } else {
+          extPrefireRates.Add(effect,extPrefire);
+        }
+      }
+    }
+
+    public static bool Prefix(WeaponEffect __instance,ref float ___preFireRate,CombatGameState ___Combat, ref float ___t) {
+      return true;
+      /*if (__instance.subEffect) { return true; };
+      AttachInfo info = __instance.weapon.attachInfo();
+      if (info == null) { return true; };
+      //if (___preFireRate > 1f) { ___preFireRate = 1f; }
+      bool indirect = ___Combat.AttackDirector.GetAttackSequence(__instance.hitInfo.attackSequenceId).indirectFire;
+      if (__instance.weapon.AlwaysIndirectVisuals()) { indirect = true; }
+      if (extPrefireRates.ContainsKey(__instance)) {
+        Log.TWL(0, "WeaponEffect.PlayPreFire rate:" + ___preFireRate + " indirect:" + indirect + " position:" + __instance.hitInfo.hitPositions[__instance.hitIndex]);
+        extPrefireRates.Remove(__instance);
+        return true;
+      }
+      Log.TWL(0, "WeaponEffect.exPlayPreFire indirect:" + indirect + " position:" + __instance.hitInfo.hitPositions[__instance.hitIndex]);
+      info.Prefire(__instance.hitInfo.hitPositions[__instance.hitIndex], indirect);
+      ___t = 0f;
+      __instance.currentState = WeaponEffect.WeaponEffectState.PreFiring;
+      extPrefireRates.Add(__instance,new ExtPrefire(2f));
+      return false;*/
+    }
+  }
+  [HarmonyPatch(typeof(WeaponEffect))]
+  [HarmonyPatch("PlayMuzzleFlash")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { })]
+  public static class WeaponEffect_PlayMuzzleFlash {
+    public static void Postfix(WeaponEffect __instance) {
+      Type type = __instance.GetType();
+      if (
+        (type != typeof(BulletEffect)) 
+        && (type != typeof(MultiShotBulletEffect)) 
+        && (type != typeof(PPCEffect))
+        && (type != typeof(GaussEffect) )
+        && (type != typeof(LBXEffect))
+        && (type != typeof(MultiShotLBXBulletEffect))
+        && (type != typeof(MultiShotPulseEffect))
+      ) {
+        return;
+      }
+      AttachInfo info = __instance.weapon.attachInfo();
+      if (info == null) { return; }
+      info.Recoil();
+    }
+  }
   [HarmonyPatch(typeof(Weapon))]
   [HarmonyPatch("InitGameRep")]
   [HarmonyPatch(MethodType.Normal)]
@@ -459,7 +655,9 @@ namespace CustomUnits {
         WeaponRepresentation component = null;
         CustomHardpointDef customHardpoint = CustomHardPointsHelper.Find(prefabName);
         GameObject prefab = null;
+        HardpointAttachType attachType = HardpointAttachType.None;
         if (customHardpoint != null) {
+          attachType = customHardpoint.attachType;
           prefab = ___combat.DataManager.PooledInstantiate(customHardpoint.prefab, BattleTechResourceType.Prefab, new Vector3?(), new Quaternion?(), (Transform)null);
           if (prefab == null) {
             prefab = ___combat.DataManager.PooledInstantiate(prefabName, BattleTechResourceType.Prefab, new Vector3?(), new Quaternion?(), (Transform)null);
@@ -522,6 +720,25 @@ namespace CustomUnits {
         typeof(MechComponent).GetProperty("componentRep", BindingFlags.Instance | BindingFlags.Public).GetSetMethod(true).Invoke(__instance, new object[] { component });
         //__instance.componentRep = (ComponentRepresentation)component;
         if (!((UnityEngine.Object)__instance.weaponRep != (UnityEngine.Object)null)) { return false; }
+        if(__instance.parent != null) {
+          VTOLBodyAnimation bodyAnimation = __instance.parent.VTOLAnimation();
+          if((bodyAnimation != null)&&(__instance.vehicleComponentRef != null)) {
+            Log.WL(1, "found VTOL body animation and vehicle component ref. Location:"+ __instance.vehicleComponentRef.MountedLocation.ToString()+" type:"+attachType);
+            if (attachType == HardpointAttachType.None) {
+              if ((bodyAnimation.bodyAttach != null)&&(__instance.vehicleComponentRef.MountedLocation != VehicleChassisLocations.Turret)) { parentBone = bodyAnimation.bodyAttach; }
+            } else { 
+              AttachInfo attachInfo = bodyAnimation.GetAttachInfo(__instance.vehicleComponentRef.MountedLocation.ToString(), attachType);
+              Log.WL(2, "attachInfo:" + (attachInfo == null ? "null" : "not null"));
+              if ((attachInfo != null) && (attachInfo.attach != null) && (attachInfo.main != null)) {
+                Log.WL(2, "attachTransform:" + (attachInfo.attach == null ? "null" : attachInfo.attach.name));
+                Log.WL(2, "mainTransform:" + (attachInfo.main == null ? "null" : attachInfo.main.name));
+                parentBone = attachInfo.attach;
+                __instance.attachInfo(attachInfo);
+                attachInfo.weapons.Add(__instance);
+              }
+            }
+          }
+        }
         __instance.weaponRep.Init(__instance, parentBone, true, parentDisplayName, __instance.Location);
         if (customHardpoint != null) {
           if (customHardpoint.offset.set) {
@@ -562,7 +779,7 @@ namespace CustomUnits {
         if (__instance == null) { return; }
         if (__instance.weaponRep == null) {
           Log.LogWrite(1, "null. creating empty fallback\n");
-          GameObject prefab = new GameObject();
+          GameObject prefab = new GameObject("fake_hardpoint");
           WeaponRepresentation component = prefab.AddComponent<WeaponRepresentation>();
           typeof(MechComponent).GetProperty("componentRep", BindingFlags.Instance | BindingFlags.Public).GetSetMethod(true).Invoke(__instance, new object[] { component });
           __instance.weaponRep.Init(__instance, parentBone, true, parentDisplayName, __instance.Location);

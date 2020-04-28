@@ -675,53 +675,61 @@ namespace CustAmmoCategories {
         burnWeapon = cell.BurningWeapon;
       }
       Log.F.WL(1, "burning damage added\n");
-      MineField strongestMine = null;
-      if (cell.hexCell == null) {
-        Log.F.WL(2, "cell without HEX????!!\n", true);
-        return;
+      List<MapPoint> mapPoints = MapPoint.calcMapCircle(cell.mapPoint(), CustomAmmoCategories.Settings.JumpLandingMineAttractRadius);
+      HashSet<MapTerrainHexCell> hexes = new HashSet<MapTerrainHexCell>();
+      foreach (MapPoint mapPoint in mapPoints) {
+        MapTerrainDataCellEx ccell = unit.Combat.MapMetaData.mapTerrainDataCells[mapPoint.x, mapPoint.y] as MapTerrainDataCellEx;
+        if (cell == null) { continue; };
+        hexes.Add(cell.hexCell);
       }
-      if (cell.hexCell.MineField == null) {
-        Log.F.WL(2, "HEX withlout landmines list????!!\n", true);
-        return;
-      }
-      Log.F.WL(2, "Hex cell " + cell.hexCell.x + ":" + cell.hexCell.y + " minefields in hex:" + cell.hexCell.MineField.Count);
-      //if (cell.cell.hexCell.MineField.Count == 0) { continue; }
-      foreach (MineField mineField in cell.hexCell.MineField) {
-        if (mineField == null) { Log.F.WL(3, "null minefield???!!!", true); continue; }
-        if (mineField.Def == null) { Log.F.WL(3, "mine field without def???!!!", true); continue; };
-        Log.F.WL(3, "mines in minefield:" + mineField.count + " chance:" + mineField.Def.Chance + " damage:" + mineField.Def.Damage);
-        if (mineField.count == 0) { continue; };
-        float roll = Random.Range(0f, 1f);
-        float chance = mineField.Def.Chance * rollMod;
-        Log.F.WL(3, "roll:" + roll + " effective chance:" + chance);
-        if (roll < chance) {
-          mineField.count -= 1;
-          minefieldWeapon = mineField.weapon;
-          mfDamage.landminesTerrain.Add(new LandMineTerrainRecord(mineField.Def, cell));
-          mfDamage.AddLandMineDamage(unit, mineField.Def, position);
-          mfDamage.AddLandMineExplosion(unit, mineField.Def, position);
-          if (string.IsNullOrEmpty(mineField.Def.VFXprefab) == false)
-            if ((strongestMine == null)) { strongestMine = mineField; } else
-              if (strongestMine.Def.Damage < mineField.Def.Damage) { strongestMine = mineField; }
+      foreach (MapTerrainHexCell hexCell in hexes) {
+        MineField strongestMine = null;
+        if (hexCell == null) {
+          Log.F.WL(2, "cell without HEX????!!\n", true);
+          return;
         }
-      }
-      if (strongestMine != null) {
-        if ((mfDamage.lastVFXPos == Vector3.zero) || (Vector3.Distance(mfDamage.lastVFXPos, position) >= strongestMine.Def.VFXMinDistance)) {
-          LandMineFXRecord fxRec = new LandMineFXRecord(unit.Combat, cell, strongestMine.Def, true, position);
-          mfDamage.fxRecords.Add(fxRec);
-          mfDamage.fxDictionary.Add(cell, mfDamage.fxRecords.Count - 1);
-          mfDamage.lastVFXPos = position;
+        if (hexCell.MineField == null) {
+          Log.F.WL(2, "HEX withlout landmines list????!!\n", true);
+          return;
+        }
+        Log.F.WL(2, "Hex cell " + hexCell.x + ":" + hexCell.y + " minefields in hex:" + hexCell.MineField.Count);
+        //if (cell.cell.hexCell.MineField.Count == 0) { continue; }
+        foreach (MineField mineField in hexCell.MineField) {
+          if (mineField == null) { Log.F.WL(3, "null minefield???!!!", true); continue; }
+          if (mineField.Def == null) { Log.F.WL(3, "mine field without def???!!!", true); continue; };
+          Log.F.WL(3, "mines in minefield:" + mineField.count + " chance:" + mineField.Def.Chance + " damage:" + mineField.Def.Damage);
+          if (mineField.count == 0) { continue; };
+          float roll = Random.Range(0f, 1f);
+          float chance = mineField.Def.Chance * rollMod;
+          Log.F.WL(3, "roll:" + roll + " effective chance:" + chance);
+          if (roll < chance) {
+            mineField.count -= 1;
+            minefieldWeapon = mineField.weapon;
+            mfDamage.landminesTerrain.Add(new LandMineTerrainRecord(mineField.Def, cell));
+            mfDamage.AddLandMineDamage(unit, mineField.Def, position);
+            mfDamage.AddLandMineExplosion(unit, mineField.Def, position);
+            if (string.IsNullOrEmpty(mineField.Def.VFXprefab) == false)
+              if ((strongestMine == null)) { strongestMine = mineField; } else
+                if (strongestMine.Def.Damage < mineField.Def.Damage) { strongestMine = mineField; }
+          }
+        }
+        if (strongestMine != null) {
+          if ((mfDamage.lastVFXPos == Vector3.zero) || (Vector3.Distance(mfDamage.lastVFXPos, position) >= strongestMine.Def.VFXMinDistance)) {
+            LandMineFXRecord fxRec = new LandMineFXRecord(unit.Combat, cell, strongestMine.Def, true, position);
+            mfDamage.fxRecords.Add(fxRec);
+            mfDamage.fxDictionary.Add(cell, mfDamage.fxRecords.Count - 1);
+            mfDamage.lastVFXPos = position;
+          } else {
+            LandMineFXRecord fxRec = new LandMineFXRecord(unit.Combat, cell, null, false, position);
+            mfDamage.fxRecords.Add(fxRec);
+            mfDamage.fxDictionary.Add(cell, mfDamage.fxRecords.Count - 1);
+          }
         } else {
           LandMineFXRecord fxRec = new LandMineFXRecord(unit.Combat, cell, null, false, position);
           mfDamage.fxRecords.Add(fxRec);
           mfDamage.fxDictionary.Add(cell, mfDamage.fxRecords.Count - 1);
         }
-      } else {
-        LandMineFXRecord fxRec = new LandMineFXRecord(unit.Combat, cell, null, false, position);
-        mfDamage.fxRecords.Add(fxRec);
-        mfDamage.fxDictionary.Add(cell, mfDamage.fxRecords.Count - 1);
       }
-      
       //mfDamage.BurnHeat = BurnHeat;
       mfDamage.AddBurnHeat(unit, BurnHeat, position);
       mfDamage.weapon = (minefieldWeapon != null) ? minefieldWeapon : burnWeapon;

@@ -455,8 +455,12 @@ namespace CustomUnits {
         for (int i = 0; i < ___loadoutSlots.Length; i++) {
           LanceLoadoutSlot lanceLoadoutSlot = ___loadoutSlots[i];
           bool isVehicle = false;
-          if (lanceLoadoutSlot.SelectedMech == null) { continue; }
-          if (lanceLoadoutSlot.SelectedPilot == null) { continue; }
+          if ((lanceLoadoutSlot.SelectedMech == null) && (lanceLoadoutSlot.SelectedPilot != null)) { continue; }
+          if ((lanceLoadoutSlot.SelectedMech != null) && (lanceLoadoutSlot.SelectedPilot == null)) { continue; }
+          if ((lanceLoadoutSlot.SelectedMech == null) && (lanceLoadoutSlot.SelectedPilot == null)) {
+            lanceConfiguration.AddUnit(__instance.playerGUID, string.Empty, string.Empty, UnitType.UNDEFINED);
+            continue;
+          }
           if (lanceLoadoutSlot.SelectedMech.MechDef.IsChassisFake() && (lanceLoadoutSlot.SelectedPilot.Pilot.pilotDef.canPilotVehicle())) {
             isVehicle = true;
           } else if (lanceLoadoutSlot.SelectedMech.MechDef.IsChassisFake()&&(!lanceLoadoutSlot.SelectedPilot.Pilot.pilotDef.canPilotVehicle())) {

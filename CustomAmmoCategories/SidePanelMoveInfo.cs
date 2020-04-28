@@ -23,9 +23,24 @@ namespace CustAmmoCategoriesPatches {
     public static bool SidePanelTargetShown(this CombatHUD HUD) { return fSidePanelTargetShown; }
     public static void SidePanelTargetShown(this CombatHUD HUD, bool value) { fSidePanelTargetShown = value; if (value == false) { fSidePanelNeedToBeRefreshed = false; }; }
     public static void ShowSidePanelTargetInfo(this CombatHUD __instance) {
+      if (__instance.SelectedActor == null) {
+        fSidePanelNeedToBeRefreshed = false;
+        return;
+      }
       Text description = new Text();
       Text title = new Text();
-      title.Append("__/INFO/__");
+      bool empty = true;
+      if (__instance.SelectionHandler != null) {
+        SelectionStateMove moveState = __instance.SelectionHandler.ActiveState as SelectionStateMove;
+        SelectionStateJump jumpState = __instance.SelectionHandler.ActiveState as SelectionStateJump;
+        if (moveState != null) {
+          empty = __instance.appendTerrainText(__instance.SelectedActor, moveState.PreviewPos, MoveType.Walking, ref title, ref description);
+          //moveState.PreviewPos
+        } else if (jumpState != null) {
+          empty = __instance.appendTerrainText(__instance.SelectedActor, jumpState.PreviewPos, MoveType.Jumping, ref title, ref description);
+        }
+      }
+      if (empty) { title.Append("INFO"); } else { description.Append("\n"); };
       description.Append(__instance.ShowNumericInfo().ToString());
       description.Append("__/TARGET/__:\n");
       description.Append(__instance.ShowTargetNumericInfo().ToString());
@@ -145,17 +160,18 @@ namespace CustAmmoCategoriesPatches {
       };
       StringBuilder result = new StringBuilder();
       List<MapPoint> mapPoints = MapPoint.calcMapCircle(ccell.mapPoint(), CustomAmmoCategories.Settings.JumpLandingMineAttractRadius);
-      int minefieldCells = 0;
-      int minefields = 0;
-      //CustomAmmoCategoriesLog.Log.LogWrite(" rol mod:" + rollMod + "\n");
+      HashSet<MapTerrainHexCell> hexes = new HashSet<MapTerrainHexCell>();
       foreach (MapPoint mapPoint in mapPoints) {
         MapTerrainDataCellEx cell = actor.Combat.MapMetaData.mapTerrainDataCells[mapPoint.x, mapPoint.y] as MapTerrainDataCellEx;
         if (cell == null) { continue; };
-        bool isMinefieldCell = false;
-        foreach (MineField mineField in cell.hexCell.MineField) {
+        hexes.Add(cell.hexCell);
+      }
+      int minefields = 0;
+      //CustomAmmoCategoriesLog.Log.LogWrite(" rol mod:" + rollMod + "\n");
+      foreach (MapTerrainHexCell hex in hexes) {
+        foreach (MineField mineField in hex.MineField) {
           if (mineField.count <= 0) { continue; };
           minefields += 1;
-          if (isMinefieldCell == false) { isMinefieldCell = true; minefieldCells += 1; };
         }
       }
       if (minefields > 0) {
@@ -391,33 +407,15 @@ namespace CustAmmoCategoriesPatches {
     //private static Dictionary<MapTerrainDataCell, TerrainSidePanelData> cacheSidePanelInfoData = new Dictionary<MapTerrainDataCell, TerrainSidePanelData>();
     //private static MapTerrainDataCell lastDisplayedCell = null;
     //private static int firstCounter = 100;
-    private static bool Prefix(MoveStatusPreview __instance, AbstractActor actor, Vector3 worldPos, MoveType moveType) {
-      /*if (firstCounter > 0) {
-        __instance.sidePanel().ForceShowSingleFrame(new Text("TITLE"), new Text("DESCRIPTION"), null, false);
-        firstCounter -= 1;
-      } else {
-        __instance.sidePanel().shownForSingleFrame(true);
-      }*/
-      //__instance.sidePanel().ForceShowSingleFrame(new Text("TITLE"), new Text ("DESCRIPTION"), null, false);
-      //return true;
-      __instance.TargetWorldPos(worldPos);
+    public static bool appendTerrainText(this CombatHUD HUD,AbstractActor actor, Vector3 worldPos, MoveType moveType, ref Text title, ref Text description) {
       List<MapEncounterLayerDataCell> cells = new List<MapEncounterLayerDataCell>();
-      CombatHUD HUD = __instance.HUD();
-      CombatHUDInfoSidePanel sidePanel = __instance.sidePanel();
       cells.Add(HUD.Combat.EncounterLayerData.GetCellAt(worldPos));
       MapTerrainDataCell relatedTerrainCell = cells[0].relatedTerrainCell;
-#if BT1_8
-      __instance.PreviewStatusPanel.ShowPreviewStatuses(actor, relatedTerrainCell, moveType, worldPos);
-#else
-      __instance.PreviewStatusPanel.ShowPreviewStatuses(actor, cells, moveType, worldPos);
-#endif
       DesignMaskDef priorityDesignMask = actor.Combat.MapMetaData.GetPriorityDesignMask(relatedTerrainCell);
       MapTerrainDataCellEx cell = relatedTerrainCell as MapTerrainDataCellEx;
       bool isDropshipZone = SplatMapInfo.IsDropshipLandingZone(relatedTerrainCell.terrainMask);
       bool isDangerZone = SplatMapInfo.IsDangerousLocation(relatedTerrainCell.terrainMask);
       bool isDropPodZone = SplatMapInfo.IsDropPodLandingZone(relatedTerrainCell.terrainMask);
-      Text description = new Text();
-      Text title = new Text();
       bool empty = true;
       if (priorityDesignMask != null) {
         description.Append(priorityDesignMask.Description.Details);
@@ -486,6 +484,33 @@ namespace CustAmmoCategoriesPatches {
         title.Append("</color>");
         empty = false;
       }
+      return empty;
+    }
+    private static bool Prefix(MoveStatusPreview __instance, AbstractActor actor, Vector3 worldPos, MoveType moveType) {
+      /*if (firstCounter > 0) {
+        __instance.sidePanel().ForceShowSingleFrame(new Text("TITLE"), new Text("DESCRIPTION"), null, false);
+        firstCounter -= 1;
+      } else {
+        __instance.sidePanel().shownForSingleFrame(true);
+      }*/
+      //__instance.sidePanel().ForceShowSingleFrame(new Text("TITLE"), new Text ("DESCRIPTION"), null, false);
+      //return true;
+      __instance.TargetWorldPos(worldPos);
+      List<MapEncounterLayerDataCell> cells = new List<MapEncounterLayerDataCell>();
+      CombatHUD HUD = __instance.HUD();
+      CombatHUDInfoSidePanel sidePanel = __instance.sidePanel();
+      cells.Add(HUD.Combat.EncounterLayerData.GetCellAt(worldPos));
+      MapTerrainDataCell relatedTerrainCell = cells[0].relatedTerrainCell;
+#if BT1_8
+      __instance.PreviewStatusPanel.ShowPreviewStatuses(actor, relatedTerrainCell, moveType, worldPos);
+#else
+      __instance.PreviewStatusPanel.ShowPreviewStatuses(actor, cells, moveType, worldPos);
+#endif
+      DesignMaskDef priorityDesignMask = actor.Combat.MapMetaData.GetPriorityDesignMask(relatedTerrainCell);
+      MapTerrainDataCellEx cell = relatedTerrainCell as MapTerrainDataCellEx;
+      Text description = new Text();
+      Text title = new Text();
+      bool empty = HUD.appendTerrainText(actor,worldPos,moveType,ref title,ref description);
       /*string addDescr = string.Empty;
       string addTitle = string.Empty;
       if (moveType != MoveType.Jumping) {

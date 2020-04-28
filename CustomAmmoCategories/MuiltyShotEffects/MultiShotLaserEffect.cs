@@ -146,7 +146,7 @@ namespace CustAmmoCategories {
       this.currentState = WeaponEffect.WeaponEffectState.PreFiring;
     }
     protected override void PlayMuzzleFlash() {
-      //base.PlayMuzzleFlash();
+      base.PlayMuzzleFlash();
     }
     protected override void OnPreFireComplete() {
       base.OnPreFireComplete();

@@ -23,6 +23,7 @@ namespace CustomUnits {
     public static void Postfix(ActorMovementSequence __instance, AbstractActor actor, Transform xform) {
       Log.LogWrite("ActorMovementSequence.Init "+new Text(actor.DisplayName).ToString()+"\n");
       try {
+        if (actor.Pathing == null) { return; }
         float costUsed = actor.Pathing.MaxCost - actor.Pathing.CostLeft;
         Log.LogWrite(" path:" + actor.Pathing.CurrentPath.Count + " max:"+ actor.Pathing.MaxCost + " left:"+actor.Pathing.CostLeft+" used:"+costUsed+"\n");
         foreach (PathNode pn in actor.Pathing.CurrentPath) {

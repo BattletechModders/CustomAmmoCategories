@@ -1,5 +1,6 @@
 ﻿using BattleTech;
 using BattleTech.Data;
+using CustomAmmoCategoriesPatches;
 using Harmony;
 using Localize;
 using Newtonsoft.Json;
@@ -114,6 +115,7 @@ namespace CustomUnits{
     public int MaxVehicleRandomPilots { get; set; }
     public string CanPilotVehicleDescription { get; set; }
     public string CanPilotBothDescription { get; set; }
+    public bool ShowVehicleBays { get; set; }
     public CUSettings() {
       debugLog = false;
       DeathHeight = 1f;
@@ -125,11 +127,12 @@ namespace CustomUnits{
       LancesIcons = new List<string>();
       Lances = new List<CustomLanceDef>();
       overallDeploySize = 4;
+      ShowVehicleBays = false;
       CanPilotVehicleTag = "pilot_vehicle_crew";
       CannotPilotMechTag = "pilot_nomech_crew";
-      MaxVehicleRandomPilots = 2;
-      CanPilotVehicleProbability = 0.5f;
-      CanPilotAlsoMechProbability = 0.5f;
+      MaxVehicleRandomPilots = 0;
+      CanPilotVehicleProbability = 0.0f;
+      CanPilotAlsoMechProbability = 0.0f;
       CanPilotVehicleDescription = String.Format(HumanDescriptionDef.PilotGenDetailFormatting, "Piloting", "Can pilot only vehicles");
       CanPilotBothDescription = String.Format(HumanDescriptionDef.PilotGenDetailFormatting, "Piloting", "Can pilot both mechs and vehicles"); ;
       EMPLOYER_LANCE_GUID = "ecc8d4f2-74b4-465d-adf6-84445e5dfc230";
@@ -196,6 +199,7 @@ namespace CustomUnits{
         }*/
         harmony.PatchAll(Assembly.GetExecutingAssembly());
         WeightedFactorHelper.PatchInfluenceMapPositionFactor(harmony);
+        WeaponRepresentation_PlayWeaponEffect.i_extendedFire = extendedFireHelper.extendedFire;
       } catch (Exception e) {
         Log.LogWrite(e.ToString()+"\n");
       }

@@ -202,6 +202,7 @@
     <Compile Include="PersistentFloatieMessage.cs" />
     <Compile Include="PlayProjectile.cs" />
     <Compile Include="SidePanelMoveInfo.cs" />
+    <Compile Include="Streak.cs" />
     <Compile Include="WeaponAmmoLoadFixer.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="RangeAccuracyHelper.cs" />
