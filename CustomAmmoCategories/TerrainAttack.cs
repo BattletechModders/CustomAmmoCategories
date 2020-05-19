@@ -743,10 +743,10 @@ namespace CustomAmmoCategoriesPatches {
       if ((attackSequence.chosenTarget.GUID == attackSequence.attacker.GUID)||(attackSequence.isTerrainAttackSequence())) {
         Log.LogWrite(" terrain attack detected id:"+ attackSequence.id+ "\n");
         __state = attackSequence.attacker;
-        Mech mech = __state as Mech;
-        if (mech != null) {
-          mech.GenerateAndPublishHeatSequence(attackSequence.id, true, false, mech.GUID);
-        };
+        //Mech mech = __state as Mech;
+        //if (mech != null) {
+          //mech.GenerateAndPublishHeatSequence(attackSequence.id, true, false, mech.GUID);
+        //};
       };
       return true;
     }

@@ -22,15 +22,20 @@ namespace CustAmmoCategoriesPatches {
         List<PrewarmRequest> prewarmRequests = new List<PrewarmRequest>();
         prewarmRequests.AddRange(__instance.PrewarmRequests);
         HashSet<PrewarmRequest> toDel = new HashSet<PrewarmRequest>();
+        HashSet<string> uiIcons = CustomAmmoCategories.Settings.uiIcons.ToHashSet<string>();
         foreach (var preq in prewarmRequests) {
           if (preq.ResourceType == BattleTechResourceType.AmmunitionDef) { toDel.Add(preq); } else
           if (preq.ResourceType == BattleTechResourceType.AmmunitionBoxDef) { toDel.Add(preq); } else
-          if (preq.ResourceType == BattleTechResourceType.WeaponDef) { toDel.Add(preq); };
+          if (preq.ResourceType == BattleTechResourceType.WeaponDef) { toDel.Add(preq); }else
+          if ((preq.ResourceType == BattleTechResourceType.SVGAsset)&&(uiIcons.Contains(preq.ResourceID))) { toDel.Add(preq); } 
         }
         foreach (var preq in toDel) { prewarmRequests.Remove(preq); };
         prewarmRequests.Add(new PrewarmRequest(BattleTechResourceType.AmmunitionDef, PrewarmRequest.PREWARM_ALL_OF_TYPE));
         prewarmRequests.Add(new PrewarmRequest(BattleTechResourceType.AmmunitionBoxDef, PrewarmRequest.PREWARM_ALL_OF_TYPE));
         prewarmRequests.Add(new PrewarmRequest(BattleTechResourceType.WeaponDef, PrewarmRequest.PREWARM_ALL_OF_TYPE));
+        foreach(string iconid in uiIcons) {
+          prewarmRequests.Add(new PrewarmRequest(BattleTechResourceType.SVGAsset, iconid));
+        }
         typeof(ApplicationConstants).GetProperty("PrewarmRequests", BindingFlags.Instance | BindingFlags.Public).GetSetMethod(true).Invoke(__instance, new object[] { prewarmRequests.ToArray() });
         foreach (PrewarmRequest preq in __instance.PrewarmRequests) {
           Log.M.WL(1, preq.ResourceType + ":" + preq.ResourceID);
@@ -193,6 +198,9 @@ namespace CustAmmoCategoriesPatches {
             HashSet<string> ammoBoxIds = AmmunitionBoxDef_FromJSON.ammoBoxesForAmmoId(ammoId);
             if (ammoBoxIds.Count == 0) {
               AmmoCategoryValue ammoVal = CustomAmmoCategories.findExtAmmo(ammoId).AmmoCategory.BaseCategory;
+              if (ammoVal.Is_NotSet) {
+                ammoVal = AmmoCategoryEnumeration.GetAmmoCategoryByName(ammoType);
+              }
               if (ammoVal.Is_NotSet == false) {
                 if (ammoVal.UsesInternalAmmo == false) { ammoBoxIds.Add("Ammo_AmmunitionBox_Generic_"+ ammoVal.Name); }
               }

@@ -16,6 +16,32 @@ namespace CustAmmoCategories {
       __instance.isAPProtected(false);
     }
   }
+  [HarmonyPatch(typeof(Mech))]
+  [HarmonyPatch("DamageLocation")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { typeof(int), typeof(WeaponHitInfo), typeof(ArmorLocation), typeof(Weapon), typeof(float), typeof(float), typeof(int), typeof(AttackImpactQuality), typeof(DamageType) })]
+  public static class Mech_DamageLocation {
+    public static bool Prefix(Mech __instance, int originalHitLoc, WeaponHitInfo hitInfo, ArmorLocation aLoc, Weapon weapon, ref float totalArmorDamage, ref float directStructureDamage, int hitIndex, AttackImpactQuality impactQuality, DamageType damageType) {
+      ArmorLocation oaLoc = (ArmorLocation)originalHitLoc;
+      Log.M.TWL(0,"Mech.DamageLocation " + __instance.MechDef.ChassisID + " origHitLoc:" + oaLoc + " dmgLoc:"+aLoc+"\n");
+      if(oaLoc != aLoc) {
+        Log.M.WL(1,"pass through location detected");
+        if (CustomAmmoCategories.Settings.NullifyDestoryedLocationDamage) {
+          Log.M.WL(2, "nullify damage");
+          totalArmorDamage = 0f;
+          directStructureDamage = 0f;
+          return false;
+        }
+        if (CustomAmmoCategories.Settings.DestoryedLocationDamageTransferStructure) {
+          Log.M.W(2, "transfer all damage direct to structure a:"+totalArmorDamage+" s:"+directStructureDamage);
+          directStructureDamage += totalArmorDamage;
+          totalArmorDamage = 0f;
+          Log.M.WL(0, "->a:"+totalArmorDamage+" s:"+directStructureDamage);
+        }
+      }
+      return true;
+    }
+  }
   public static class StructureDamageHelper {
     public static readonly string APProtectionStatisticName = "CACAPProtection";
     public static bool isAPProtected(this ICombatant unit) {
@@ -39,6 +65,22 @@ namespace CustAmmoCategories {
     }
     public static void ApplyStructureStatDamage(this Turret turret, BuildingLocation location, float damage, WeaponHitInfo hitInfo) {
       typeof(Turret).GetMethod("ApplyStructureStatDamage", BindingFlags.NonPublic | BindingFlags.Instance).Invoke(turret, new object[3] { location, damage, hitInfo });
+    }
+    public static void CACTakeWeaponDamage(this ICombatant combatant, WeaponHitInfo hitInfo, int hitLocation, Weapon weapon, float totalDamage, float structureDamage, int hitIndex, DamageType damageType) {
+      AttackImpactQuality hitQuality = hitInfo.hitQualities[hitIndex];
+      Mech mech = combatant as Mech;
+      if(mech != null) {
+        ChassisLocations mechLocation = MechStructureRules.GetChassisLocationFromArmorLocation((ArmorLocation)hitLocation);
+        if (mech.IsLocationDestroyed(mechLocation)) {
+          if (CustomAmmoCategories.Settings.NullifyDestoryedLocationDamage) {
+            mech.TakeWeaponDamage(hitInfo, hitLocation, weapon, 0, 0, hitIndex, damageType);
+          } else {
+
+          }
+        }
+      } else {
+        combatant.TakeWeaponDamage(hitInfo, hitLocation, weapon, totalDamage, structureDamage, hitIndex, damageType);
+      }
     }
     public static void TakeWeaponDamageStructure(this ICombatant combatant,WeaponHitInfo hitInfo, int hitLocation, Weapon weapon, float damageAmount, int hitIndex, DamageType damageType) {
       AttackImpactQuality hitQuality = hitInfo.hitQualities[hitIndex];
@@ -101,7 +143,7 @@ namespace CustAmmoCategories {
         attackSequence.FlagAttackDidDamage(mech.GUID);
         mech.Combat.MultiplayerGameVerification.RecordMechDamage(mech.GUID, originalHitLoc, hitInfo, aLoc, weapon, totalDamage, hitIndex, impactQuality);
       }
-      float num1 = totalDamage;
+      float restDamage = totalDamage;
       ChassisLocations fromArmorLocation = MechStructureRules.GetChassisLocationFromArmorLocation(aLoc);
       Vector3 attackDirection = Vector3.one;
       if ((UnityEngine.Object)mech.GameRep != (UnityEngine.Object)null && (UnityEngine.Object)weapon.weaponRep != (UnityEngine.Object)null) {
@@ -113,18 +155,19 @@ namespace CustAmmoCategories {
       }
       float currentStructure = mech.GetCurrentStructure(fromArmorLocation);
       if ((double)currentStructure > 0.0) {
-        float damage = Mathf.Min(num1, currentStructure);
+        float damage = Mathf.Min(restDamage, currentStructure);
         mech.ApplyStructureStatDamage(fromArmorLocation, damage, hitInfo);
-        num1 -= damage;
-        if (mech.IsLocationDestroyed(fromArmorLocation) && (double)damage > 0.00999999977648258)
+        restDamage -= damage;
+        if (mech.IsLocationDestroyed(fromArmorLocation) && (double)damage > 0.00999999977648258) {
           mech.NukeStructureLocation(hitInfo, originalHitLoc, fromArmorLocation, attackDirection, damageType);
-      } else if (mech.IsDead && (double)num1 > 0.0) {
-        mech.ShowFloatie(hitInfo.attackerId, MechStructureRules.GetArmorFromChassisLocation(fromArmorLocation), FloatieMessage.MessageNature.StructureDamage, string.Format("{0}", (object)(int)Mathf.Max(1f, num1)), mech.Combat.Constants.CombatUIConstants.floatieSizeMedium);
+        }
+      } else if (mech.IsDead && (double)restDamage > 0.0) {
+        mech.ShowFloatie(hitInfo.attackerId, MechStructureRules.GetArmorFromChassisLocation(fromArmorLocation), FloatieMessage.MessageNature.StructureDamage, string.Format("{0}", (object)(int)Mathf.Max(1f, restDamage)), mech.Combat.Constants.CombatUIConstants.floatieSizeMedium);
       }
       mech.Combat.MessageCenter.PublishMessage((MessageCenterMessage)new TakeDamageMessage(hitInfo.attackerId, mech.GUID, totalDamage, aLoc));
-      if ((double)num1 <= 0.0) { return true; }
+      if ((double)restDamage <= 0.0) { return true; }
       ArmorLocation passthroughLocation = MechStructureRules.GetPassthroughLocation(aLoc, hitInfo.attackDirections[hitIndex]);
-      return mech.DamageLocationStructure(originalHitLoc, hitInfo, passthroughLocation, weapon, num1, hitIndex, impactQuality, damageType);
+      return mech.DamageLocationStructure(originalHitLoc, hitInfo, passthroughLocation, weapon, restDamage, hitIndex, impactQuality, damageType);
     }
   }
 }

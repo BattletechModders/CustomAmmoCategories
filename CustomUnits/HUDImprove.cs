@@ -1,5 +1,6 @@
 ﻿using BattleTech;
 using BattleTech.Data;
+using BattleTech.Framework;
 using BattleTech.Save;
 using BattleTech.Save.Test;
 using BattleTech.Serialization;
@@ -257,7 +258,7 @@ namespace CustomUnits {
   }
   [HarmonyPatch(typeof(SimGameState), "Dehydrate")]
   public static class SimGameState_Dehydrate {
-    static void Prefix(SimGameState __instance, SerializableReferenceContainer references) {
+    static void Prefix(SimGameState __instance, SerializableReferenceContainer references, ref List<string> ___LastUsedMechs, ref List<string> ___LastUsedPilots) {
       Log.TWL(0, "SimGameState.Dehydrate");
       try {
         Log.WL(1, "playerLanceLoadout(" + CustomLanceHelper.playerLanceLoadout.loadout.Count + "):");
@@ -270,8 +271,20 @@ namespace CustomUnits {
         } else {
           playerMechContent.SetValue<string>(JsonConvert.SerializeObject(CustomLanceHelper.playerLanceLoadout));
         }
+        if (___LastUsedMechs == null) { ___LastUsedMechs = new List<string>(); }
+        if (___LastUsedPilots == null) { ___LastUsedPilots = new List<string>(); }
+        for(int i = 0; i < ___LastUsedPilots.Count; ++i) {
+          if (___LastUsedPilots[i] == null) {
+            ___LastUsedPilots[i] = string.Empty;
+          }
+        }
+        for (int i = 0; i < ___LastUsedMechs.Count; ++i) {
+          if (___LastUsedMechs[i] == null) {
+            ___LastUsedMechs[i] = string.Empty;
+          }
+        }
         //references.AddItem<PlayerAllyLanceContent>(CustomLanceHelper.SaveReferenceName, CustomLanceHelper.playerAllyContent);
-      }catch(Exception e) {
+      } catch (Exception e) {
         Log.TWL(0, e.ToString(), true);
       }
     }
@@ -305,6 +318,10 @@ namespace CustomUnits {
       ___LastUsedMechs = new List<string>();
       ___LastUsedPilots = new List<string>();
       Log.TWL(0, "SimGameState.SaveLastLance");
+      if (config == null) {
+        Log.WL(0, "no config - no to save");
+        return false;
+      }
       foreach (SpawnableUnit lanceUnit in config.GetLanceUnits("bf40fd39-ccf9-47c4-94a6-061809681140")) {
         string str1 = "";
         string str2 = "";
@@ -405,6 +422,11 @@ namespace CustomUnits {
     public static bool Prefix(SimGameState __instance, ref LanceConfiguration __result, ref List<string> ___LastUsedMechs, ref List<string> ___LastUsedPilots) {
       LanceConfiguration lanceConfiguration = new LanceConfiguration();
       Log.TWL(0, "SimGameState.GetLastLance");
+      if ((___LastUsedMechs == null) || (___LastUsedPilots == null)) {
+        Log.WL(1, "LastUsed arrays is null");
+        __result = lanceConfiguration;
+        return false;
+      }
       Log.WL(1, "pilots:");
       for (int i = 0; i < ___LastUsedPilots.Count; ++i) {
         Log.WL(2, "["+i+"] "+ ___LastUsedPilots[i]);
@@ -443,6 +465,16 @@ namespace CustomUnits {
     private static int f_playerControlMechs = -1;
     private static int f_playerControlVehicles = -1;
     private static bool missionControlDetected = false;
+    private static int mechBaysCount = 3;
+    private static int vehicleBaysCount = 0;
+    private static int rowsPerList = 3;
+    public static int RowsPerList(this MechBayPanel panel) { return rowsPerList; }
+    public static int MechBaysCount(this MechBayPanel panel) { return mechBaysCount; }
+    public static int VehicleBaysCount(this MechBayPanel panel) { return Core.Settings.ShowVehicleBays?vehicleBaysCount:0; }
+    public static int RowsPerList(this MechBayRowGroupWidget panel) { return rowsPerList; }
+    public static int MechBaysCount(this MechBayRowGroupWidget panel) { return mechBaysCount; }
+    public static int VehicleBaysCount(this MechBayRowGroupWidget panel) { return Core.Settings.ShowVehicleBays ? vehicleBaysCount : 0; }
+    public static void BaysCount(int count) { mechBaysCount = count; vehicleBaysCount = count; }
     public static void MissionControlDetected() { missionControlDetected = true; }
     public static void setLancesCount(int size) {
       if (size <= 0) { size = 1; };
@@ -912,19 +944,29 @@ namespace CustomUnits {
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { typeof(LanceConfiguratorPanel), typeof(SimGameState), typeof(DataManager), typeof(bool), typeof(bool), typeof(float), typeof(float) })]
   public static class LanceLoadoutSlot_SetData {
-    public static void Prefix(LanceLoadoutSlot __instance, LanceConfiguratorPanel LC, SimGameState sim, DataManager dataManager, bool useDragAndDrop, ref bool locked, float minTonnage, float maxTonnage) {
+    public static void Prefix(LanceLoadoutSlot __instance, LanceConfiguratorPanel LC, SimGameState sim, DataManager dataManager, bool useDragAndDrop, ref bool locked, ref float minTonnage,ref float maxTonnage) {
       Log.TWL(0, "LanceLoadoutSlot.SetData " + __instance.GetInstanceID());
       try {
         bool overrideLocked = __instance.isOverrideLockedState();
         if (overrideLocked == false) { return; }
         int lanceid = __instance.LanceId();
         int lancepos = __instance.LancePos();
-        Log.WL(1, "lanceid:" + lanceid + " lancepos:" + lancepos + " maxTonnage:" + maxTonnage + " locked:" + locked + " allow:" + (lanceid == -1 ? "unlim" : CustomLanceHelper.allowLanceSize(lanceid).ToString()));
+        int index = __instance.slotIndex();
+        Log.WL(1, "index:" +index+ " lanceid:" + lanceid + " lancepos:" + lancepos + " maxTonnage:" + maxTonnage + " locked:" + locked + " allow:" + (lanceid == -1 ? "unlim" : CustomLanceHelper.allowLanceSize(lanceid).ToString()));
         if ((lanceid == -1) || (lancepos == -1)) { return; }
         if (maxTonnage == 0f) { return; }
         if (locked == true) { return; }
         locked = CustomLanceHelper.allowLanceSize(lanceid) <= lancepos;
         Log.WL(1, "locked:" + locked + " allow:" + CustomLanceHelper.allowLanceSize(lanceid));
+        if(index >= 4) {
+          Log.WL(1, "extended slot detected");
+          if (locked == false) {
+            locked = LC.slotMaxTonnages[0] == 0f;
+          }
+          minTonnage = LC.slotMinTonnages[0];
+          maxTonnage = LC.slotMaxTonnages[0];
+          Log.WL(1, "min max tonnage override. Min:"+minTonnage+" Max:"+maxTonnage+" lock state:"+locked);
+        }
       } catch (Exception e) {
         Log.TWL(0, e.ToString(), true);
       }
@@ -949,6 +991,7 @@ namespace CustomUnits {
           slots[index].isForVehicle(CustomLanceHelper.lanceVehicle(lance_id));
           slots[index].LanceId(lance_id);
           slots[index].LancePos(lance_index);
+          slots[index].slotIndex(index);
           slots[index].isOverrideLockedState(false);
           ++lance_index;
           if (lance_index >= CustomLanceHelper.lanceSize(lance_id)) { ++lance_id; lance_index = 0; };
@@ -1042,6 +1085,7 @@ namespace CustomUnits {
     public static Dictionary<LanceLoadoutSlot, bool> isVehicleSlot = new Dictionary<LanceLoadoutSlot, bool>();
     public static Dictionary<LanceLoadoutSlot, bool> isOverLockedState = new Dictionary<LanceLoadoutSlot, bool>();
     public static Dictionary<LanceLoadoutSlot, int> slotsLanceIds = new Dictionary<LanceLoadoutSlot, int>();
+    public static Dictionary<LanceLoadoutSlot, int> slotsIndexes = new Dictionary<LanceLoadoutSlot, int>();
     public static Dictionary<LanceLoadoutSlot, int> slotsLancePos = new Dictionary<LanceLoadoutSlot, int>();
     public static Dictionary<LanceLoadoutSlot, bool> isFillerSlot = new Dictionary<LanceLoadoutSlot, bool>();
     public static bool isForVehicle(this LanceLoadoutSlot slot) { if (isVehicleSlot.TryGetValue(slot, out bool result)) { return result; } else { return false; }; }
@@ -1051,6 +1095,8 @@ namespace CustomUnits {
     public static bool isFiller(this LanceLoadoutSlot slot) { if (isFillerSlot.TryGetValue(slot, out bool result)) { return result; } else { return true; }; }
     public static int LanceId(this LanceLoadoutSlot slot) { if (slotsLanceIds.TryGetValue(slot, out int result)) { return result; } else { return -1; }; }
     public static void LanceId(this LanceLoadoutSlot slot, int val) { if (slotsLanceIds.ContainsKey(slot) == false) { slotsLanceIds.Add(slot, val); } else { slotsLanceIds[slot] = val; }; }
+    public static int slotIndex(this LanceLoadoutSlot slot) { if (slotsIndexes.TryGetValue(slot, out int result)) { return result; } else { return -1; }; }
+    public static void slotIndex(this LanceLoadoutSlot slot, int val) { if (slotsIndexes.ContainsKey(slot) == false) { slotsIndexes.Add(slot, val); } else { slotsIndexes[slot] = val; }; }
     public static int LancePos(this LanceLoadoutSlot slot) { if (slotsLancePos.TryGetValue(slot, out int result)) { return result; } else { return -1; }; }
     public static void LancePos(this LanceLoadoutSlot slot, int val) { if (slotsLancePos.ContainsKey(slot) == false) { slotsLancePos.Add(slot, val); } else { slotsLancePos[slot] = val; }; }
     public static void loadoutSlots(this LanceConfiguratorPanel panel, LanceLoadoutSlot[] value) { f_loadoutSlots.SetValue(panel, value); }
@@ -1164,8 +1210,12 @@ namespace CustomUnits {
         if (contract == null) { CustomLanceHelper.setFallbackAllow(-1); } else {
           if (contract.IsFlashpointContract | contract.IsFlashpointCampaignContract) {
             CustomLanceHelper.setFallbackAllow(contract.Override.maxNumberOfPlayerUnits);
-          } else if (contract.Override.maxNumberOfPlayerUnits < 4) {
-            CustomLanceHelper.setFallbackAllow(contract.Override.maxNumberOfPlayerUnits);
+          } else if (contract.Override.maxNumberOfPlayerUnits > 0) {
+            if (Core.Settings.CountContractMaxUnits4AsUnlimited && (contract.Override.maxNumberOfPlayerUnits == 4)) {
+              CustomLanceHelper.setFallbackAllow(-1);
+            } else {
+              CustomLanceHelper.setFallbackAllow(contract.Override.maxNumberOfPlayerUnits);
+            }
           } else {
             CustomLanceHelper.setFallbackAllow(-1);
           }
@@ -1250,11 +1300,12 @@ namespace CustomUnits {
     }
     public override void OnPointerClick(PointerEventData data) {
       Log.LogWrite("CombatHUDActorInfoHover.OnPointerClick called." + data.position + "\n");
-      HUD.ShowSidePanelActorInfo(!HUD.ShowSidePanelActorInfo());
+      //HUD.ShowSidePanelActorInfo();
+      HUD.InfoPanelShowState(!HUD.InfoPanelShowState());
     }
     public void LateUpdate() {
       if (image != null) {
-        image.color = HUD.ShowSidePanelActorInfo() ? Color.white : Color.grey;
+        image.color = HUD.InfoPanelShowState() ? Color.white : Color.grey;
       }
     }
     public void Init(CombatHUD HUD) {
@@ -1362,6 +1413,7 @@ namespace CustomUnits {
   [HarmonyPatch(MethodType.Normal)]
   public static class CombatHUD_updateHUDElements {
     public static void Postfix(CombatHUD __instance, AbstractActor actor) {
+      if (actor == null) { return; }
       int lanceId = actor.LanceId();
       Log.TWL(0, "CombatHUD.updateHUDElements " + actor.DisplayName + " lanceId:" +lanceId);
       if (lanceId >= 0) {

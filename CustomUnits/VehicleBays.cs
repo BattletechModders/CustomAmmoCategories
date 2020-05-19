@@ -3,7 +3,9 @@ using BattleTech.Assetbundles;
 using BattleTech.Data;
 using BattleTech.Rendering;
 using BattleTech.UI;
+using BattleTech.UI.TMProWrapper;
 using Harmony;
+using Localize;
 using MechResizer;
 using System;
 using System.Collections;
@@ -239,6 +241,7 @@ namespace CustomUnits {
           }
         }
         List<string> usedPrefabNames = new List<string>();
+        Log.WL(1, "Requesting inventory: "+mechDef.Inventory.Length);
         for (int index = 0; index < mechDef.Inventory.Length; ++index) {
           if (mechDef.Inventory[index].Def != null) {
             MechComponentRef componentRef = mechDef.Inventory[index];
@@ -255,19 +258,24 @@ namespace CustomUnits {
             } else {
               correctLocation = true;
             }
+            Log.WL(1, "Component "+ componentRef.Def.GetType().ToString()+":"+ componentRef.GetType().ToString()+" id:"+ componentRef.Def.Description.Id+ " loc:" + MountedLocation);
             if (correctLocation) {
               WeaponDef def = componentRef.Def as WeaponDef;
-              Log.W(1, "GetComponentPrefabName " + mechDef.Chassis.HardpointDataDef.ID + " base:" + mechDef.Chassis.PrefabBase + " loc:" + MountedLocation + " currPrefabName:" + componentRef.prefabName + " hasPrefab:" + componentRef.hasPrefabName);
+              Log.WL(2, "GetComponentPrefabName " + mechDef.Chassis.HardpointDataDef.ID + " base:" + mechDef.Chassis.PrefabBase + " loc:" + MountedLocation + " currPrefabName:" + componentRef.prefabName + " hasPrefab:" + componentRef.hasPrefabName+" hardpointSlot:"+ componentRef.HardpointSlot);
               if (def != null) {
                 string desiredPrefabName = string.Format("chrPrfWeap_{0}_{1}_{2}{3}", mechDef.Chassis.PrefabBase, MountedLocation.ToLower(), componentRef.Def.PrefabIdentifier.ToLower(), def.WeaponCategoryValue.HardpointPrefabText);
-                Log.WL(2, "desiredPrefabName:" + desiredPrefabName);
+                Log.WL(3, "desiredPrefabName:" + desiredPrefabName);
               } else {
-                Log.WL(2, "");
+                Log.WL(3, "");
               }
-              if (componentRef.hasPrefabName == false) {
-                componentRef.prefabName = MechHardpointRules.GetComponentPrefabName(mechDef.Chassis.HardpointDataDef, (BaseComponentRef)componentRef, mechDef.Chassis.PrefabBase, MountedLocation.ToLower(), ref usedPrefabNames);
-                componentRef.hasPrefabName = true;
-              }
+              //if (componentRef.hasPrefabName == false) {
+              
+              componentRef.prefabName = MechHardpointRules.GetComponentPrefabName(mechDef.Chassis.HardpointDataDef, (BaseComponentRef)componentRef, mechDef.Chassis.PrefabBase, MountedLocation.ToLower(), ref usedPrefabNames);
+              componentRef.hasPrefabName = true;
+              Log.WL(3, "effective prefab name:" + componentRef.prefabName);
+              //} else {
+                //usedPrefabNames.Add(componentRef.prefabName);
+              //}
             }
             if (string.IsNullOrEmpty(componentRef.prefabName) == false) {
               loadRequest.AddBlindLoadRequest(BattleTechResourceType.Prefab, componentRef.prefabName);
@@ -397,13 +405,43 @@ namespace CustomUnits {
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { })]
   public static class MechBayPanel_ViewBays {
-    private static bool toggleState = false;
+    private static int toggleState = 0;
+    //private static int bayListCount = 4;
+    public static void set_toggleState(this MechBayPanel panel, int state) {
+      toggleState = state;
+      Transform uixPrfBttn_BASE_TabMedium_bays = panel.transform.FindRecursive("uixPrfBttn_BASE_TabMedium-bays");
+      if (uixPrfBttn_BASE_TabMedium_bays != null) {
+        Transform tab_text = uixPrfBttn_BASE_TabMedium_bays.FindRecursive("tab_text");
+        if (tab_text != null) {
+          LocalizableText text = tab_text.gameObject.GetComponent<LocalizableText>();
+          if (toggleState >= panel.MechBaysCount()) {
+            if (text != null) { text.SetText(new Text("__/V.BAYS/__ {0}-{1}", (toggleState - panel.MechBaysCount() + 1), (toggleState - panel.MechBaysCount() + panel.RowsPerList()))); }
+          } else {
+            if (text != null) { text.SetText(new Text("__/BAYS/__ {0}-{1}", (toggleState + 1), (toggleState + panel.RowsPerList()))); }
+          }
+        }
+      }
+    }
     public static void Prefix(MechBayPanel __instance, MechBayRowGroupWidget ___bayGroupWidget) {
-      Log.TWL(0, "MechBayPanel.ViewBays " + ___bayGroupWidget.gameObject.activeSelf + "/" + toggleState);
-      if (___bayGroupWidget.gameObject.activeSelf == false) { toggleState = false; } else { toggleState = !toggleState; };
-      if (Core.Settings.ShowVehicleBays == false) { toggleState = false; };
-      ___bayGroupWidget.ShowMechBays(!toggleState);
-      ___bayGroupWidget.ShowVehicleBays(toggleState);
+      Log.TW(0, "MechBayPanel.ViewBays " + ___bayGroupWidget.gameObject.activeSelf + " " + toggleState);
+      if (___bayGroupWidget.gameObject.activeSelf == false) { } else { toggleState = (toggleState+1); };
+      if ((toggleState + __instance.RowsPerList() > __instance.MechBaysCount())&&(toggleState < __instance.MechBaysCount())) { toggleState = __instance.MechBaysCount(); };
+      if (toggleState + __instance.RowsPerList() > (__instance.MechBaysCount() + __instance.VehicleBaysCount())) { toggleState = 0; }
+      Log.WL(0, "->" + toggleState+ " MechBaysCount:" + __instance.MechBaysCount()+ " VehicleBaysCount:" + __instance.VehicleBaysCount());
+      //if (Core.Settings.ShowVehicleBays == false) { toggleState = false; };
+      __instance.set_toggleState(toggleState);
+      ___bayGroupWidget.ShowMechBays(toggleState);
+      //___bayGroupWidget.ShowVehicleBays(toggleState);
+    }
+  }
+  [HarmonyPatch(typeof(MechBayPanel))]
+  [HarmonyPatch("SetData")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { typeof(List<MechComponentRef>) })]
+  public static class MechBayPanel_SetData {
+    public static void Prefix(MechBayPanel __instance, List<MechComponentRef> inventory) {
+      Log.TWL(0, "MechBayPanel.SetData ");
+      __instance.set_toggleState(0);
     }
   }
   [HarmonyPatch(typeof(SimGameState))]
@@ -411,7 +449,7 @@ namespace CustomUnits {
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { typeof(Pilot) })]
   public static class SimGameState_GetPilotFullExpertise {
-    private static bool toggleState = false;
+    //private static bool toggleState = false;
     public static void Postfix(SimGameState __instance, Pilot p, ref string __result) {
       Log.TWL(0, "SimGameState.GetPilotFullExpertise " + p.Description.Id);
       string add_str = "";
@@ -459,18 +497,35 @@ namespace CustomUnits {
       }
     }
   }
+  [HarmonyPatch(typeof(SimGameState))]
+  [HarmonyPatch("GetMaxActiveMechs")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { })]
+  public static class SimGameState_GetMaxActiveMechs {
+    //private static bool toggleState = false;
+    public static void Postfix(SimGameState __instance, ref int __result) {
+      Log.TWL(0, "SimGameState.GetMaxActiveMechs "+__instance.CurDropship);
+      if(__instance.CurDropship != DropshipType.Leopard) {
+        if (Core.Settings.BaysCountExternalControl == false) {
+          __result += Core.Settings.ArgoBaysFix * __instance.Constants.Story.MaxMechsPerPod;
+        }
+      }
+    }
+  }
   [HarmonyPatch(typeof(MechBayRowGroupWidget))]
   [HarmonyPatch("SetData")]
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { typeof(IMechLabDropTarget), typeof(SimGameState) })]
   public static class MechBayRowGroupWidget_SetData {
-    private static readonly int mechBaysCount = 3;
-    private static readonly int vehicleBaysCount = 3;
     private static Dictionary<MechBayRowGroupWidget, List<MechBayRowWidget>> mechsBays = new Dictionary<MechBayRowGroupWidget, List<MechBayRowWidget>>();
     private static Dictionary<MechBayRowGroupWidget, List<MechBayRowWidget>> vehiclesBays = new Dictionary<MechBayRowGroupWidget, List<MechBayRowWidget>>();
-    public static void ShowMechBays(this MechBayRowGroupWidget bays, bool show) {
-      if (mechsBays.TryGetValue(bays, out List<MechBayRowWidget> mechBays)) {
-        foreach (MechBayRowWidget bay in mechBays) { bay.gameObject.SetActive(show); }
+    public static void ShowMechBays(this MechBayRowGroupWidget bays, int start_index) {
+      int startindex = start_index;
+      int endindex = start_index + bays.RowsPerList();
+      for(int index = 0; index < bays.Bays.Length; ++index) {
+        if ((index >= startindex) && (index < endindex)) { bays.Bays[index].gameObject.SetActive(true); } else {
+          bays.Bays[index].gameObject.SetActive(false);
+        }
       }
     }
     public static void ShowVehicleBays(this MechBayRowGroupWidget bays, bool show) {
@@ -478,11 +533,11 @@ namespace CustomUnits {
         foreach (MechBayRowWidget bay in vehcileBays) { bay.gameObject.SetActive(show); }
       }
     }
-    public static void Prefix(MechBayRowGroupWidget __instance, IMechLabDropTarget dropParent, SimGameState sim, ref MechBayRowWidget[] ___bays, ref List<MechBayRowWidget> __state) {
+    public static bool Prefix(MechBayRowGroupWidget __instance, IMechLabDropTarget dropParent, SimGameState sim, ref MechBayRowWidget[] ___bays, ref List<MechBayRowWidget> __state) {
       Log.TWL(0, "MechBayRowGroupWidget.SetData prefix " + ___bays.Length);
       __state = new List<MechBayRowWidget>();
       __state.AddRange(___bays);
-      int fullBaysCount = mechBaysCount + vehicleBaysCount;
+      int fullBaysCount = __instance.MechBaysCount() + __instance.VehicleBaysCount();
       MechBayRowWidget srcBay = ___bays[0];
       for (int index = ___bays.Length; index < fullBaysCount; ++index) {
         MechBayRowWidget newBay = GameObject.Instantiate(srcBay).GetComponent<MechBayRowWidget>();
@@ -500,58 +555,89 @@ namespace CustomUnits {
         vehicleBays = new List<MechBayRowWidget>(); vehiclesBays.Add(__instance, vehicleBays);
       }
       for (int index = 0; index < __state.Count; ++index) {
-        if (index < mechBaysCount) { mechBays.Add(__state[index]); } else {
+        if (index < __instance.MechBaysCount()) { mechBays.Add(__state[index]); } else {
           vehicleBays.Add(__state[index]);
         }
       }
       ___bays = __state.ToArray();
       //typeof(MechBayRowGroupWidget).GetField("bays", BindingFlags.NonPublic | BindingFlags.Instance).SetValue(__instance, __state.ToArray());
       Log.WL(1, "->" + ___bays.Length);
+      return false;
     }
     public static void Postfix(MechBayRowGroupWidget __instance, IMechLabDropTarget dropParent, SimGameState sim, ref MechBayRowWidget[] ___bays, ref List<MechBayRowWidget> __state) {
       Log.TWL(0, "MechBayRowGroupWidget.SetData postfix " + ___bays.Length + "/" + __state.Count);
       if (___bays.Length < __state.Count) { ___bays = __state.ToArray(); };
       int maxMechsPerPod = sim.Constants.Story.MaxMechsPerPod;
       int maxActiveMechs = sim.GetMaxActiveMechs();
-      int baySlotStart1 = sim.VehicleShift();
-      int baySlotEnd1 = sim.VehicleShift() + maxMechsPerPod;
-      ___bays[0 + mechBaysCount].SetData(dropParent, sim, "V.Bay 1", true, baySlotStart1, baySlotEnd1);
-      int slot1 = 0;
-      for (int key = baySlotStart1; key < baySlotEnd1; ++key) {
-        MechDef mechDef = (MechDef)null;
-        sim.ActiveMechs.TryGetValue(key, out mechDef);
-        bool inMaintenance = sim.GetWorkOrderEntryForMech(mechDef) != null;
-        bool isFieldable = MechValidationRules.ValidateMechCanBeFielded(sim, mechDef);
-        bool hasFieldableWarnings = MechValidationRules.GetMechFieldableWarnings(sim.DataManager, mechDef).Count > 0;
-        ___bays[0 + mechBaysCount].SetMech(slot1, mechDef, inMaintenance, isFieldable, hasFieldableWarnings);
-        ++slot1;
+      //int fullMechBaysCount = (mechBaysCount / rowsPerList + (mechBaysCount % rowsPerList != 0 ? 1 : 0)) * rowsPerList;
+      //int fullVehicleBaysCount = (vehicleBaysCount / rowsPerList + (vehicleBaysCount % rowsPerList != 0 ? 1 : 0)) * rowsPerList;
+      int fullBaysCount = __instance.MechBaysCount() + __instance.VehicleBaysCount();
+      int baySlotStart = 0;
+      int baySlotEnd = maxMechsPerPod;
+      for (int mechBayIndex = 0; mechBayIndex < __instance.MechBaysCount(); ++mechBayIndex) {
+        ___bays[mechBayIndex].SetData(dropParent, sim, string.Format("Bay {0}",(mechBayIndex+1)), maxActiveMechs > baySlotStart, baySlotStart, baySlotEnd);
+        //Transform UNAVAILABLE = ___bays[mechBayIndex].transform.FindRecursive("txt_UNAVAILABLE");
+        //if (UNAVAILABLE != null) {
+          //LocalizableText text = UNAVAILABLE.GetComponent<LocalizableText>();
+          //if (text != null) { text.SetText(new Text("__/Requires Upgrade/__").ToString()); }
+        //}
+        int slot = 0;
+        for (int key = baySlotStart; key < baySlotEnd; ++key) {
+          MechDef mechDef = (MechDef)null;
+          if (!sim.ActiveMechs.TryGetValue(key, out mechDef))
+            sim.ReadyingMechs.TryGetValue(key, out mechDef);
+          bool inMaintenance = sim.GetWorkOrderEntryForMech(mechDef) != null;
+          bool isFieldable = MechValidationRules.ValidateMechCanBeFielded(sim, mechDef);
+          bool hasFieldableWarnings = MechValidationRules.GetMechFieldableWarnings(sim.DataManager, mechDef).Count > 0;
+          ___bays[mechBayIndex].SetMech(slot, mechDef, inMaintenance, isFieldable, hasFieldableWarnings);
+          ++slot;
+        }
+        baySlotStart += maxMechsPerPod;
+        baySlotEnd += maxMechsPerPod;
       }
-      int baySlotStart2 = baySlotEnd1;
-      int baySlotEnd2 = baySlotEnd1 + maxMechsPerPod;
-      ___bays[1 + mechBaysCount].SetData(dropParent, sim, "V.Bay 2", maxActiveMechs > maxMechsPerPod, baySlotStart2, baySlotEnd2);
-      int slot2 = 0;
-      for (int key = baySlotStart2; key < baySlotEnd2; ++key) {
-        MechDef mechDef = (MechDef)null;
-        sim.ActiveMechs.TryGetValue(key, out mechDef);
-        bool inMaintenance = sim.GetWorkOrderEntryForMech(mechDef) != null;
-        bool isFieldable = MechValidationRules.ValidateMechCanBeFielded(sim, mechDef);
-        bool hasFieldableWarnings = MechValidationRules.GetMechFieldableWarnings(sim.DataManager, mechDef).Count > 0;
-        ___bays[1 + mechBaysCount].SetMech(slot2, mechDef, inMaintenance, isFieldable, hasFieldableWarnings);
-        ++slot2;
+      /*for (int mechBayIndex = mechBaysCount; mechBayIndex < fullMechBaysCount; ++mechBayIndex) {
+        ___bays[mechBayIndex].SetData(dropParent, sim, string.Format("", (mechBayIndex + 1)), false, baySlotStart, baySlotEnd);
+        baySlotStart += maxMechsPerPod;
+        baySlotEnd += maxMechsPerPod;
+        Transform UNAVAILABLE = ___bays[mechBayIndex].transform.FindRecursive("txt_UNAVAILABLE");
+        if(UNAVAILABLE != null) {
+          LocalizableText text = UNAVAILABLE.GetComponent<LocalizableText>();
+          if (text != null) { text.SetText(""); }
+        }
+      }*/
+      baySlotStart = sim.VehicleShift();
+      baySlotEnd = sim.VehicleShift() + maxMechsPerPod;
+      for (int vehicleBayIndex = __instance.MechBaysCount(); vehicleBayIndex < fullBaysCount; ++vehicleBayIndex) {
+        ___bays[vehicleBayIndex].SetData(dropParent, sim, string.Format("V.Bay {0}", (vehicleBayIndex - __instance.MechBaysCount() + 1)), maxActiveMechs > (baySlotStart - sim.VehicleShift()), baySlotStart, baySlotEnd);
+        //Transform UNAVAILABLE = ___bays[vehicleBayIndex].transform.FindRecursive("txt_UNAVAILABLE");
+        //if (UNAVAILABLE != null) {
+          //LocalizableText text = UNAVAILABLE.GetComponent<LocalizableText>();
+          //if (text != null) { text.SetText(new Text("__/Requires Upgrade/__").ToString()); }
+        //}
+        int slot = 0;
+        for (int key = baySlotStart; key < baySlotEnd; ++key) {
+          MechDef mechDef = (MechDef)null;
+          if (!sim.ActiveMechs.TryGetValue(key, out mechDef))
+            sim.ReadyingMechs.TryGetValue(key, out mechDef);
+          bool inMaintenance = sim.GetWorkOrderEntryForMech(mechDef) != null;
+          bool isFieldable = MechValidationRules.ValidateMechCanBeFielded(sim, mechDef);
+          bool hasFieldableWarnings = MechValidationRules.GetMechFieldableWarnings(sim.DataManager, mechDef).Count > 0;
+          ___bays[vehicleBayIndex].SetMech(slot, mechDef, inMaintenance, isFieldable, hasFieldableWarnings);
+          ++slot;
+        }
+        baySlotStart += maxMechsPerPod;
+        baySlotEnd += maxMechsPerPod;
       }
-      int baySlotStart3 = baySlotEnd2;
-      int baySlotEnd3 = baySlotEnd2 + maxMechsPerPod;
-      ___bays[2 + mechBaysCount].SetData(dropParent, sim, "V.Bay 3", maxActiveMechs > maxMechsPerPod * 2, baySlotStart3, baySlotEnd3);
-      int slot3 = 0;
-      for (int key = baySlotStart3; key < baySlotEnd3; ++key) {
-        MechDef mechDef = (MechDef)null;
-        sim.ActiveMechs.TryGetValue(key, out mechDef);
-        bool inMaintenance = sim.GetWorkOrderEntryForMech(mechDef) != null;
-        bool isFieldable = MechValidationRules.ValidateMechCanBeFielded(sim, mechDef);
-        bool hasFieldableWarnings = MechValidationRules.GetMechFieldableWarnings(sim.DataManager, mechDef).Count > 0;
-        ___bays[2 + mechBaysCount].SetMech(slot3, mechDef, inMaintenance, isFieldable, hasFieldableWarnings);
-        ++slot3;
-      }
+      /*for (int vehicleBayIndex = fullMechBaysCount + vehicleBaysCount; vehicleBayIndex < fullMechBaysCount + fullVehicleBaysCount; ++vehicleBayIndex) {
+        ___bays[vehicleBayIndex].SetData(dropParent, sim, string.Format(""), false, baySlotStart, baySlotEnd);
+        baySlotStart += maxMechsPerPod;
+        baySlotEnd += maxMechsPerPod;
+        Transform UNAVAILABLE = ___bays[vehicleBayIndex].transform.FindRecursive("txt_UNAVAILABLE");
+        if (UNAVAILABLE != null) {
+          LocalizableText text = UNAVAILABLE.GetComponent<LocalizableText>();
+          if (text != null) { text.SetText(""); }
+        }
+      }*/
     }
   }
   [HarmonyPatch(typeof(SimGameState))]
@@ -703,19 +789,22 @@ namespace CustomUnits {
         } else {
           correctLocation = true;
         }
+        Log.WL(1, "Component " + componentRef.Def.GetType().ToString() + ":" + componentRef.GetType().ToString() + " id:" + componentRef.Def.Description.Id + " loc:" + MountedLocation);
         if (correctLocation) {
           WeaponDef def = componentRef.Def as WeaponDef;
-          Log.W(0, "GetComponentPrefabName "+ __instance.mechDef.Chassis.HardpointDataDef.ID + " base:"+ __instance.mechDef.Chassis.PrefabBase+" loc:"+ MountedLocation+" currPrefabName:"+componentRef.prefabName+" hasPrefab:"+componentRef.hasPrefabName);
-          if(def != null) {
+          Log.WL(2, "GetComponentPrefabName " + __instance.mechDef.Chassis.HardpointDataDef.ID + " base:" + __instance.mechDef.Chassis.PrefabBase + " loc:" + MountedLocation + " currPrefabName:" + componentRef.prefabName + " hasPrefab:" + componentRef.hasPrefabName + " hardpointSlot:" + componentRef.HardpointSlot);
+          if (def != null) {
             string desiredPrefabName = string.Format("chrPrfWeap_{0}_{1}_{2}{3}", __instance.mechDef.Chassis.PrefabBase, MountedLocation.ToLower(), componentRef.Def.PrefabIdentifier.ToLower(), def.WeaponCategoryValue.HardpointPrefabText);
-            Log.WL(1, "desiredPrefabName:"+ desiredPrefabName);
+            Log.WL(3, "desiredPrefabName:"+ desiredPrefabName);
           } else {
-            Log.WL(0, "");
+            Log.WL(3, "");
           }
-          if (componentRef.hasPrefabName == false) {
-            componentRef.prefabName = MechHardpointRules.GetComponentPrefabName(__instance.mechDef.Chassis.HardpointDataDef, (BaseComponentRef)componentRef, __instance.mechDef.Chassis.PrefabBase, MountedLocation.ToLower(), ref usedPrefabNames);
-            componentRef.hasPrefabName = true;
-          }
+          //if (componentRef.hasPrefabName == false) {
+          componentRef.prefabName = MechHardpointRules.GetComponentPrefabName(__instance.mechDef.Chassis.HardpointDataDef, (BaseComponentRef)componentRef, __instance.mechDef.Chassis.PrefabBase, MountedLocation.ToLower(), ref usedPrefabNames);
+          componentRef.hasPrefabName = true;
+          Log.WL(3, "effective prefab name:" + componentRef.prefabName);
+
+          //}
         }
         if (!string.IsNullOrEmpty(componentRef.prefabName)) {
           HardpointAttachType attachType = HardpointAttachType.None;
@@ -803,6 +892,7 @@ namespace CustomUnits {
               component1.OnPlayerVisibilityChanged(VisibilityLevel.LOSFull);
               component1.gameObject.name = componentRef.prefabName;
               __instance.componentReps.Add(component1);
+              Log.WL(3,"Component representation spawned and inited. GameObject name:"+ component1.gameObject.name+" Active:"+component1.gameObject.activeInHierarchy+" parent transform:"+component1.transform.parent.name);
             }
           }
           string mountingPointPrefabName = MechHardpointRules.GetComponentMountingPointPrefabName(__instance.mechDef, componentRef);

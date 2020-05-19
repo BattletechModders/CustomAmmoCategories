@@ -374,7 +374,8 @@ namespace CustomAmmoCategoriesPatches {
     public static float generateWeaponHitInfo(AttackDirector.AttackSequence instance, ICombatant target, Weapon weapon, int groupIdx, int weaponIdx, int numberOfShots, bool indirectFire, float dodgedDamage, ref WeaponHitInfo hitInfo, bool missInCircle, bool fragHits) {
       ICombatant originaltarget = instance.chosenTarget;
       instance.chosenTarget = target;
-      CustomAmmoCategoriesLog.Log.LogWrite("generateWeaponHitInfo\n");
+      if (weapon.AlwaysIndirectVisuals()) { indirectFire = true; };
+      CustomAmmoCategoriesLog.Log.M.TWL(0,"generateWeaponHitInfo indirect:"+indirectFire+" missInSircle:"+missInCircle);
       CustomAmmoCategoriesLog.Log.LogWrite(" altering target:" + originaltarget.GUID + "->" + target.GUID + "\n");
       float toHitChance = instance.Director.Combat.ToHit.GetToHitChance(instance.attacker, weapon, target, instance.attackPosition, target.CurrentPosition, instance.numTargets, instance.meleeAttackType, instance.isMoraleAttack);
       CustomAmmoCategoriesLog.Log.LogWrite(" filling to hit records " + target.DisplayName + " " + target.GUID + " weapon:" + weapon.defId + " shots:" + hitInfo.numberOfShots + " toHit:" + toHitChance + "\n");
@@ -535,8 +536,13 @@ namespace CustomAmmoCategoriesPatches {
             AttackDirector.hitLogger.Log((object)string.Format("======================================== Gunnery Check: NO PILOT"));
         }
         float toHitChance = generateWeaponHitInfo(__instance, __instance.chosenTarget, weapon, groupIdx, weaponIdx, numberOfShots, indirectFire, dodgedDamage, ref hitInfo, false, false);
-        int realAmmoUsedCount = hitInfo.numberOfShots;
-        if (weapon.isStreak()) {
+        weapon.DecrementAmmo(ref hitInfo, __instance.attacker.GUID == __instance.chosenTarget.GUID);
+        weapon.FlushAmmoCount(hitInfo.stackItemUID);
+        if(numberOfShots > hitInfo.numberOfShots) {
+          CustomAmmoCategories.ReturnNoFireHeat(weapon, hitInfo.stackItemUID, numberOfShots, hitInfo.numberOfShots);
+        }
+        //int realAmmoUsedCount = hitInfo.numberOfShots;
+        /*if (weapon.isStreak()) {
           if (__instance.attacker.GUID != __instance.chosenTarget.GUID) {
             CustomAmmoCategoriesLog.Log.LogWrite("Streak detected. Clearing missed.\n");
             WeaponHitInfo streakHitInfo = CustomAmmoCategories.getSuccessOnly(hitInfo);
@@ -546,8 +552,8 @@ namespace CustomAmmoCategoriesPatches {
           } else {
             CustomAmmoCategoriesLog.Log.LogWrite("Streak detected. But terrain attack. No misses clearence performed.\n");
           }
-        }
-        weapon.RealDecrementAmmo(hitInfo.stackItemUID, weapon.HitsToShots(realAmmoUsedCount));
+        }*/
+        //weapon.RealDecrementAmmo(hitInfo.stackItemUID, weapon.HitsToShots(realAmmoUsedCount));
         hitInfo.initGenericAdvInfo(toHitChance, __instance, __instance.Director.Combat);
         __result = hitInfo;
         return false;

@@ -1342,6 +1342,18 @@ namespace CustAmmoCategories {
         }
       } }
     public List<string> screamsIds { get; set; }
+    public List<string> uiIcons { get; set; }
+    public bool NullifyDestoryedLocationDamage { get; set; }
+    public bool DestoryedLocationDamageTransferStructure { get; set; }
+    public bool DestoryedLocationCriticalAllow { get; set; }
+    public List<string> TransferHeatDamageToNormalTag { get; set; }
+    public float WeaponPanelWidthScale { get; set; }
+    public float OrderButtonWidthScale { get; set; }
+    public float OrderButtonPaddingScale { get; set; }
+    public float AttackSequenceTimeout { get; set; }
+    public bool SidePanelInfoSelfExternal { get; set; }
+    public bool SidePanelInfoTargetExternal { get; set; }
+    public List<string> MechHasNoStabilityTag { get; set; }
     public Settings() {
       directory = string.Empty;
       debugLog = true;
@@ -1425,6 +1437,17 @@ namespace CustAmmoCategories {
       FDefaultAoEDamageMult[UnitType.Building].Damage = 5f;
       screamsIds = new List<string>();
       TagAoEDamageMult = new Dictionary<string, AoEModifiers>();
+      uiIcons = new List<string>();
+      NullifyDestoryedLocationDamage = true;
+      DestoryedLocationDamageTransferStructure = true;
+      DestoryedLocationCriticalAllow = true;
+      TransferHeatDamageToNormalTag = new List<string>();
+      WeaponPanelWidthScale = 1.1f;
+      OrderButtonWidthScale = 0.5f;
+      OrderButtonPaddingScale = 0.3f;
+      AttackSequenceTimeout = 60f;
+      SidePanelInfoSelfExternal = false;
+      MechHasNoStabilityTag = new List<string>();
     }
   }
 }

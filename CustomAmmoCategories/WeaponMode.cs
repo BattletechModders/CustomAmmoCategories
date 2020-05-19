@@ -200,6 +200,9 @@ namespace CustAmmoCategories {
     public float MinMissRadius { get; set; }
     public float MaxMissRadius { get; set; }
     public Dictionary<string, float> TagsAccuracyModifiers { get; set; }
+    public TripleBoolean AMSImmune { get; set; }
+    public float AMSDamage { get; set; }
+    public float MissileHealth { get; set; }
     public WeaponMode() {
       Id = WeaponMode.NONE_MODE_NAME;
       UIName = WeaponMode.BASE_MODE_NAME;
@@ -299,6 +302,9 @@ namespace CustAmmoCategories {
       MinMissRadius = 0f;
       MaxMissRadius = 0f;
       TagsAccuracyModifiers = new Dictionary<string, float>();
+      AMSImmune = TripleBoolean.NotSet;
+      AMSDamage = 0f;
+      MissileHealth = 0f;
     }
     public void fromJSON(string json) {
       JObject jWeaponMode = JObject.Parse(json);
@@ -358,6 +364,15 @@ namespace CustAmmoCategories {
       }
       if (jWeaponMode["IsAMS"] != null) {
         this.IsAMS = ((bool)jWeaponMode["IsAMS"] == true) ? TripleBoolean.True : TripleBoolean.False;
+      }
+      if (jWeaponMode["AMSImmune"] != null) {
+        this.AMSImmune = ((bool)jWeaponMode["AMSImmune"] == true) ? TripleBoolean.True : TripleBoolean.False;
+      }
+      if (jWeaponMode["AMSDamage"] != null) {
+        this.AMSDamage = (float)jWeaponMode["AMSDamage"];
+      }
+      if (jWeaponMode["MissileHealth"] != null) {
+        this.MissileHealth = (float)jWeaponMode["MissileHealth"];
       }
       if (jWeaponMode["IsAAMS"] != null) {
         this.IsAAMS = ((bool)jWeaponMode["IsAAMS"] == true) ? TripleBoolean.True : TripleBoolean.False;

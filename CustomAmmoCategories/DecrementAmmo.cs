@@ -13,20 +13,261 @@ using CustAmmoCategoriesPatches;
 using CustomAmmoCategoriesPatches;
 
 namespace CustAmmoCategories {
+  public class DynamicWeaponHitInfo {
+    public int numberOfShots;
+    public List<string> secondaryTargetIds;
+    public List<int> secondaryHitLocations;
+    public List<float> toHitRolls;
+    public List<float> locationRolls;
+    public List<float> dodgeRolls;
+    public List<bool> dodgeSuccesses;
+    public List<int> hitLocations;
+    public List<int> hitVariance;
+    public List<AttackImpactQuality> hitQualities;
+    public List<AttackDirection> attackDirections;
+    public List<Vector3> hitPositions;
+    public DynamicWeaponHitInfo() {
+      numberOfShots = 0;
+      secondaryTargetIds = new List<string>();
+      secondaryHitLocations = new List<int>();
+      toHitRolls = new List<float>();
+      locationRolls = new List<float>();
+      dodgeRolls = new List<float>();
+      dodgeSuccesses = new List<bool>();
+      hitLocations = new List<int>();
+      hitVariance = new List<int>();
+      hitQualities = new List<AttackImpactQuality>();
+      attackDirections = new List<AttackDirection>();
+      hitPositions = new List<Vector3>();
+    }
+    public void Add(ref WeaponHitInfo hitInfo, int hitIndex) {
+      if (hitIndex < 0) { return; }
+      if (hitIndex >= hitInfo.numberOfShots) { return; }
+      if (hitIndex >= hitInfo.secondaryTargetIds.Length) { return; }
+      if (hitIndex >= hitInfo.secondaryHitLocations.Length) { return; }
+      if (hitIndex >= hitInfo.toHitRolls.Length) { return; }
+      if (hitIndex >= hitInfo.locationRolls.Length) { return; }
+      if (hitIndex >= hitInfo.dodgeRolls.Length) { return; }
+      if (hitIndex >= hitInfo.dodgeSuccesses.Length) { return; }
+      if (hitIndex >= hitInfo.hitLocations.Length) { return; }
+      if (hitIndex >= hitInfo.hitVariance.Length) { return; }
+      if (hitIndex >= hitInfo.hitQualities.Length) { return; }
+      if (hitIndex >= hitInfo.attackDirections.Length) { return; }
+      if (hitIndex >= hitInfo.hitPositions.Length) { return; }
+      secondaryTargetIds.Add(hitInfo.secondaryTargetIds[hitIndex]);
+      secondaryHitLocations.Add(hitInfo.secondaryHitLocations[hitIndex]);
+      toHitRolls.Add(hitInfo.toHitRolls[hitIndex]);
+      locationRolls.Add(hitInfo.locationRolls[hitIndex]);
+      dodgeRolls.Add(hitInfo.dodgeRolls[hitIndex]);
+      dodgeSuccesses.Add(hitInfo.dodgeSuccesses[hitIndex]);
+      hitLocations.Add(hitInfo.hitLocations[hitIndex]);
+      hitVariance.Add(hitInfo.hitVariance[hitIndex]);
+      hitQualities.Add(hitInfo.hitQualities[hitIndex]);
+      attackDirections.Add(hitInfo.attackDirections[hitIndex]);
+      hitPositions.Add(hitInfo.hitPositions[hitIndex]);
+      numberOfShots += 1;
+    }
+    public void ToHitInfo(ref WeaponHitInfo hitInfo) {
+      hitInfo.numberOfShots = this.numberOfShots;
+      hitInfo.secondaryTargetIds = secondaryTargetIds.ToArray();
+      hitInfo.secondaryHitLocations = secondaryHitLocations.ToArray();
+      hitInfo.toHitRolls = toHitRolls.ToArray();
+      hitInfo.locationRolls = locationRolls.ToArray();
+      hitInfo.dodgeRolls = dodgeRolls.ToArray();
+      hitInfo.dodgeSuccesses = dodgeSuccesses.ToArray();
+      hitInfo.hitLocations = hitLocations.ToArray();
+      hitInfo.hitVariance = hitVariance.ToArray();
+      hitInfo.hitQualities = hitQualities.ToArray();
+      hitInfo.attackDirections = attackDirections.ToArray();
+      hitInfo.hitPositions = hitPositions.ToArray();
+    }
+  }
   public static class TempAmmoCountHelper {
-    private static Dictionary<Weapon, int> tempWeaponAmmoCount = new Dictionary<Weapon, int>();
+    private static Dictionary<Weapon, Dictionary<string, int>> tempWeaponAmmoCount = new Dictionary<Weapon, Dictionary<string, int>>();
     private static Dictionary<AmmunitionBox, int> tempAmmoBoxAmmoCount = new Dictionary<AmmunitionBox, int>();
+    private static HashSet<Weapon> assaultTurretsWeapon = new HashSet<Weapon>();
+    private static Dictionary<Weapon, AmmunitionBox> cachedAmmoBoxes = new Dictionary<Weapon, AmmunitionBox>();
+    private static Dictionary<Weapon, List<AmmunitionBox>> sortedAmmoBoxes = new Dictionary<Weapon, List<AmmunitionBox>>();
+    public static void Clear() {
+      tempWeaponAmmoCount.Clear();
+      tempAmmoBoxAmmoCount.Clear();
+      assaultTurretsWeapon.Clear();
+      cachedAmmoBoxes.Clear();
+      sortedAmmoBoxes.Clear();
+    }
+    public static void FillAmmoBoxesCache(this Weapon weapon) {
+      sortedAmmoBoxes.Remove(weapon);
+      List<AmmunitionBox> boxes = new List<AmmunitionBox>();
+      boxes.AddRange(weapon.ammoBoxes);
+      Dictionary<AmmunitionBox, float> boxesArmor = new Dictionary<AmmunitionBox, float>();
+      Mech mech = weapon.parent as Mech;
+      Vehicle vehicle = weapon.parent as Vehicle;
+      Turret turret = weapon.parent as Turret;
+      foreach(AmmunitionBox box in boxes) {
+        if (mech != null) {
+          MechComponentRef mechRef = box.mechComponentRef;
+          float armor = 0f;
+          switch (mechRef.MountedLocation) {
+            case ChassisLocations.CenterTorso: armor = Mathf.Min(mech.GetCurrentArmor(ArmorLocation.CenterTorso),mech.GetCurrentArmor(ArmorLocation.CenterTorsoRear)); break;
+            case ChassisLocations.LeftTorso: armor = Mathf.Min(mech.GetCurrentArmor(ArmorLocation.LeftTorso), mech.GetCurrentArmor(ArmorLocation.LeftTorsoRear)); break;
+            case ChassisLocations.RightTorso: armor = Mathf.Min(mech.GetCurrentArmor(ArmorLocation.RightTorso), mech.GetCurrentArmor(ArmorLocation.RightTorsoRear)); break;
+            case ChassisLocations.LeftArm: armor = mech.GetCurrentArmor(ArmorLocation.LeftArm); break;
+            case ChassisLocations.RightArm: armor = mech.GetCurrentArmor(ArmorLocation.RightArm); break;
+            case ChassisLocations.LeftLeg: armor = mech.GetCurrentArmor(ArmorLocation.LeftLeg); break;
+            case ChassisLocations.RightLeg: armor = mech.GetCurrentArmor(ArmorLocation.RightLeg); break;
+          }
+          boxesArmor.Add(box,armor);
+        } else if(vehicle != null) {
+          VehicleComponentRef vehicleRef = box.vehicleComponentRef;
+          boxesArmor.Add(box, vehicle.GetCurrentArmor(vehicleRef.MountedLocation));
+        } else if(turret != null) {
+          TurretComponentRef turretRef = box.turretComponentRef;
+          boxesArmor.Add(box, turret.GetCurrentArmor(BuildingLocation.Structure));
+        } else {
+          boxesArmor.Add(box, 0f);
+        }
+      }
+      boxes.Sort((Comparison<AmmunitionBox>)((x, y) => (boxesArmor[x].CompareTo(boxesArmor[y]))));
+      sortedAmmoBoxes.Add(weapon,boxes);
+    }
+    public static void DecrementAmmo(this Weapon weapon, ref WeaponHitInfo hitInfo, bool terrainAttack) {
+      DynamicWeaponHitInfo dHitInfo = new DynamicWeaponHitInfo();
+      double effectiveAmmo = 0.0;
+      double ammoPerHit = 1.0 / (double)weapon.ShotsPerAmmo() / (double)weapon.ShotsToHits(1);
+      //double epsilon = 0.001;
+      bool ammoDepleded = false;
+      bool streak = weapon.isStreak();
+      for(int hitIndex = 0; hitIndex < hitInfo.numberOfShots; ++hitIndex) {
+        if ((streak)&&(terrainAttack == false)&&((hitInfo.hitLocations[hitIndex] == 0)||(hitInfo.hitLocations[hitIndex] == 65536))) { continue; }
+        effectiveAmmo += ammoPerHit;
+        while(effectiveAmmo >= 1.0) {
+          if (weapon.DecrementOneAmmo()) {
+            effectiveAmmo -= 1.0;
+          } else {
+            ammoDepleded = true;
+            break;
+          }
+        }
+        if (ammoDepleded) { break; }
+        dHitInfo.Add(ref hitInfo,hitIndex);
+      }
+      if((ammoDepleded == false)&&(effectiveAmmo > 0.1)) {
+        weapon.DecrementOneAmmo();
+      }
+      dHitInfo.ToHitInfo(ref hitInfo);
+    }
+    public static void FlushAmmoCount(this Weapon weapon, int stackItemUID) {
+      weapon.SetInternalAmmo(stackItemUID,weapon.tInternalAmmo());
+      foreach(AmmunitionBox box in weapon.ammoBoxes) {
+        if(box.CurrentAmmo != box.tCurrentAmmo()) {
+          box.StatCollection.ModifyStat<int>(weapon.uid, stackItemUID, "CurrentAmmo", StatCollection.StatOperation.Set, box.tCurrentAmmo(), -1, true);
+          CustomAmmoCategories.AddToExposionCheck(box);
+        }
+      }
+      sortedAmmoBoxes.Remove(weapon);
+    }
+    public static bool DecrementOneAmmo(this Weapon weapon) {
+      ExtAmmunitionDef ammo = weapon.ammo();
+      if (ammo.AmmoCategory.BaseCategory.Is_NotSet) { return true; }
+      if (assaultTurretsWeapon.Contains(weapon)) { return true; }
+      if (weapon.parent != null) {
+        Turret turret = weapon.parent as Turret;
+        if (turret != null) {
+          if (turret.TurretDef.Description.Id.Contains("Assault")) {
+            assaultTurretsWeapon.Add(weapon);
+            return true;
+          }
+        }
+      }
+      if (weapon.tInternalAmmo() > 0) { weapon.tInternalAmmo(weapon.tInternalAmmo() - 1); return true; }
+      if(cachedAmmoBoxes.TryGetValue(weapon,out AmmunitionBox cBox)) {
+        if ((cBox.IsFunctional)&&(cBox.tCurrentAmmo() > 0)&&(cBox.ammoDef.Description.Id == ammo.Id)) {
+          cBox.tCurrentAmmo(cBox.tCurrentAmmo() - 1);
+          if (cBox.tCurrentAmmo() == 0) { cachedAmmoBoxes.Remove(weapon); }
+          return true;
+        } else {
+          cachedAmmoBoxes.Remove(weapon);
+        }
+      }
+      if (sortedAmmoBoxes.TryGetValue(weapon, out List<AmmunitionBox> boxes) == false) {
+        weapon.FillAmmoBoxesCache();
+        if (sortedAmmoBoxes.TryGetValue(weapon, out boxes) == false) {
+          boxes = weapon.ammoBoxes;
+        }
+      }
+      for (int i = 0; i < boxes.Count; ++i) {
+        AmmunitionBox box = boxes[i];
+        if (box.IsFunctional == false) { continue; }
+        if (box.tCurrentAmmo() < 1) { continue; }
+        if (box.ammoDef.Description.Id != ammo.Id) { continue; }
+        if (box.tCurrentAmmo() > 1) {
+          if (cachedAmmoBoxes.ContainsKey(weapon) == false) {
+            cachedAmmoBoxes.Add(weapon, box);
+          } else {
+            cachedAmmoBoxes[weapon] = box;
+          }
+        }
+        box.tCurrentAmmo(box.tCurrentAmmo() - 1);
+        return true;
+      }
+      return false;
+    }
     public static int tInternalAmmo(this Weapon weapon) {
-      if (tempWeaponAmmoCount.ContainsKey(weapon) == false) { tempWeaponAmmoCount.Add(weapon, weapon.InternalAmmo); }
-      return tempWeaponAmmoCount[weapon];
+      if (tempWeaponAmmoCount.TryGetValue(weapon, out Dictionary<string,int> iammos) == false) {
+        iammos = new Dictionary<string, int>();
+        tempWeaponAmmoCount.Add(weapon,iammos);
+      }
+      ExtAmmunitionDef ammo = weapon.ammo();
+      if (ammo.AmmoCategory.BaseCategory.Is_NotSet) { return 0; }
+      if (iammos.TryGetValue(ammo.Id, out int count) == false) {
+        string statName = Weapon_InternalAmmo.InternalAmmoName + ammo.Id;
+        Statistic intAmmo = weapon.StatCollection.GetStatistic(statName);
+        if (intAmmo == null) {
+          count = 0;
+        } else {
+          count = intAmmo.Value<int>();
+        }
+        iammos.Add(ammo.Id, count);
+      }
+      return count;
     }
     public static int tCurrentAmmo(this AmmunitionBox box) {
       if (tempAmmoBoxAmmoCount.ContainsKey(box) == false) { tempAmmoBoxAmmoCount.Add(box, box.CurrentAmmo); }
       return tempAmmoBoxAmmoCount[box];
     }
+    public static int tCurrentAmmo(this Weapon weapon) {
+      ExtAmmunitionDef ammo = weapon.ammo();
+      if (ammo.AmmoCategory.BaseCategory.Is_NotSet) { return -1; }
+      int result = weapon.tInternalAmmo();
+      foreach (AmmunitionBox box in weapon.ammoBoxes) {
+        if (box.IsFunctional == false) { continue; }
+        if (box.ammoDef.Description.Id != ammo.Id) { continue; }
+        result += box.tCurrentAmmo();
+      }
+      return result;
+    }
     public static void tInternalAmmo(this Weapon weapon, int count) {
-      if (tempWeaponAmmoCount.ContainsKey(weapon) == false) { tempWeaponAmmoCount.Add(weapon, count); }
-      tempWeaponAmmoCount[weapon] = count;
+      ExtAmmunitionDef ammo = weapon.ammo();
+      if (ammo.AmmoCategory.BaseCategory.Is_NotSet) { return; }
+      if (tempWeaponAmmoCount.TryGetValue(weapon, out Dictionary<string, int> iammos) == false) {
+        iammos = new Dictionary<string, int>();
+        tempWeaponAmmoCount.Add(weapon, iammos);
+      }
+      if (iammos.ContainsKey(ammo.Id) == false) {
+        tempWeaponAmmoCount[weapon].Add(ammo.Id, count);
+      } else {
+        tempWeaponAmmoCount[weapon][ammo.Id] = count;
+      }
+    }
+    public static void initInternalAmmo(this Weapon weapon,string ammoName, int count) {
+      if (tempWeaponAmmoCount.ContainsKey(weapon) == false) {
+        tempWeaponAmmoCount.Add(weapon, new Dictionary<string, int>());
+      }
+      if (tempWeaponAmmoCount[weapon].ContainsKey(ammoName) == false) {
+        tempWeaponAmmoCount[weapon].Add(ammoName, count);
+      } else {
+        tempWeaponAmmoCount[weapon][ammoName] = count;
+      }
     }
     public static void tCurrentAmmo(this AmmunitionBox box, int count) {
       if (tempAmmoBoxAmmoCount.ContainsKey(box) == false) { tempAmmoBoxAmmoCount.Add(box, box.CurrentAmmo); }
@@ -35,10 +276,6 @@ namespace CustAmmoCategories {
     public static void ResetTempAmmo(this Weapon weapon) {
       weapon.tInternalAmmo(weapon.InternalAmmo);
       foreach(AmmunitionBox box in weapon.ammoBoxes) { box.tCurrentAmmo(box.CurrentAmmo); };
-    }
-    public static void Clear() {
-      tempWeaponAmmoCount.Clear();
-      tempAmmoBoxAmmoCount.Clear();
     }
     public static int ShotsToHits(this Weapon weapon, int shoots) {
       if (weapon.weaponDef.ComponentTags.Contains("wr-clustered_shots") || (weapon.DisabledClustering() == false)) {
@@ -56,7 +293,7 @@ namespace CustAmmoCategories {
       return Mathf.RoundToInt((float)shoots / weapon.ShotsPerAmmo());
     }
     public static int AmmoToShoots(this Weapon weapon, int ammo) {
-      return Mathf.RoundToInt((float)ammo * weapon.ShotsPerAmmo()); ;
+      return Mathf.RoundToInt((float)ammo * weapon.ShotsPerAmmo());
     }
   }
   public static partial class CustomAmmoCategories {
@@ -87,11 +324,13 @@ namespace CustAmmoCategories {
     [HarmonyPatch(new Type[] { typeof(int) })]
     public static class Weapon_DecrementAmmo {
       public static bool Prefix(Weapon __instance, int stackItemUID, ref int __result) {
-        Log.M.TW(0, "Weapon.DecrementAmmo:" + __instance.defId);
-        __result = __instance.CountAmmoForShot(stackItemUID);
-        Log.M.W(1, "shots:" + __result);
-        __result = __instance.ShotsToHits(__result);
-        Log.M.WL(1, "hits:" + __result);
+        Log.M.TWL(0, "Weapon.DecrementAmmo:" + __instance.defId);
+        //__result = __instance.CountAmmoForShot(stackItemUID);
+        //Log.M.W(1, "shots:" + __result);
+        //__result = __instance.ShotsToHits(__result);
+        //Log.M.WL(1, "hits:" + __result);
+        if (__instance.CanFire == false) { __result = 0; return false; }
+        __result = __instance.ShotsToHits(__instance.ShotsWhenFired);
         return false;
       }
     }
@@ -174,13 +413,13 @@ namespace CustAmmoCategories {
           ammoBox.StatCollection.ModifyStat<int>(weapon.uid, stackItemUID, "CurrentAmmo", StatCollection.StatOperation.Int_Subtract, modValue, -1, true);
           ammoBox.tCurrentAmmo(ammoBox.CurrentAmmo);
           modValue = 0;
-          Log.M.WL(1, "new current ammo in "+ammoBox.defId+":" + weapon.InternalAmmo);
+          Log.M.WL(1, "new current ammo in "+ammoBox.defId+":" + ammoBox.CurrentAmmo);
           CustomAmmoCategories.AddToExposionCheck(ammoBox);
           break;
         } else {
           modValue -= ammoBox.CurrentAmmo;
           ammoBox.StatCollection.ModifyStat<int>(weapon.uid, stackItemUID, "CurrentAmmo", StatCollection.StatOperation.Set, 0, -1, true);
-          Log.M.WL(1, "new current ammo in " + ammoBox.defId + ":" + weapon.InternalAmmo);
+          Log.M.WL(1, "new current ammo in " + ammoBox.defId + ":" + ammoBox.CurrentAmmo);
           ammoBox.tCurrentAmmo(0);
           CustomAmmoCategories.AddToExposionCheck(ammoBox);
         }

@@ -116,6 +116,9 @@ namespace CustomUnits{
     public string CanPilotVehicleDescription { get; set; }
     public string CanPilotBothDescription { get; set; }
     public bool ShowVehicleBays { get; set; }
+    public int ArgoBaysFix { get; set; }
+    public bool BaysCountExternalControl { get; set; }
+    public bool CountContractMaxUnits4AsUnlimited { get; set; }
     public CUSettings() {
       debugLog = false;
       DeathHeight = 1f;
@@ -127,7 +130,9 @@ namespace CustomUnits{
       LancesIcons = new List<string>();
       Lances = new List<CustomLanceDef>();
       overallDeploySize = 4;
+      BaysCountExternalControl = false;
       ShowVehicleBays = false;
+      ArgoBaysFix = 0;
       CanPilotVehicleTag = "pilot_vehicle_crew";
       CannotPilotMechTag = "pilot_nomech_crew";
       MaxVehicleRandomPilots = 0;
@@ -136,6 +141,7 @@ namespace CustomUnits{
       CanPilotVehicleDescription = String.Format(HumanDescriptionDef.PilotGenDetailFormatting, "Piloting", "Can pilot only vehicles");
       CanPilotBothDescription = String.Format(HumanDescriptionDef.PilotGenDetailFormatting, "Piloting", "Can pilot both mechs and vehicles"); ;
       EMPLOYER_LANCE_GUID = "ecc8d4f2-74b4-465d-adf6-84445e5dfc230";
+      CountContractMaxUnits4AsUnlimited = true;
     }
   }
   public static partial class Core{
@@ -168,6 +174,7 @@ namespace CustomUnits{
       Core.Settings = JsonConvert.DeserializeObject<CustomUnits.CUSettings>(settingsJson);
       Log.LogWrite("Initing... " + directory + " version: " + Assembly.GetExecutingAssembly().GetName().Version + "\n", true);
       InitLancesLoadoutDefault();
+      CustomLanceHelper.BaysCount(3+(Core.Settings.BaysCountExternalControl?0:Core.Settings.ArgoBaysFix));
       MechResizer.MechResizer.Init(directory, settingsJson);
       try {
         var harmony = HarmonyInstance.Create("io.mission.customunits");

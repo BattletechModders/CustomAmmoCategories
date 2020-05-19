@@ -2,6 +2,7 @@
 using BattleTech.UI;
 using CustAmmoCategories;
 using CustomAmmoCategoriesLog;
+using CustomAmmoCategoriesPatches;
 using Harmony;
 using Localize;
 using System;
@@ -173,11 +174,19 @@ namespace CustAmmoCategories {
     public void AddBurnHeat(AbstractActor target, float burnHeat, Vector3 pos) {
       Mech mech = target as Mech;
       Vehicle vehicle = target as Vehicle;
-      if (mech != null) { this.BurnHeat = burnHeat; return; };
+      if (target.isHasHeat()) { this.BurnHeat = burnHeat; return; };
       this.BurnHeat = 0f;
       List<int> hitLocations = new List<int> { 1 };
-      if (vehicle != null) {
-        hitLocations = new List<int> { (int)VehicleChassisLocations.Front, (int)VehicleChassisLocations.Left, (int)VehicleChassisLocations.Right, (int)VehicleChassisLocations.Left };
+      if (mech != null) {
+        hitLocations = new List<int> { (int)ArmorLocation.LeftLeg, (int)ArmorLocation.RightLeg
+          , (int)ArmorLocation.RightArm, (int)ArmorLocation.LeftArm
+          , (int)ArmorLocation.RightTorso, (int)ArmorLocation.LeftTorso, (int)ArmorLocation.CenterTorso
+          , (int)ArmorLocation.RightTorsoRear, (int)ArmorLocation.LeftTorsoRear, (int)ArmorLocation.CenterTorsoRear
+        };
+      } else {
+        if (vehicle != null) {
+          hitLocations = new List<int> { (int)VehicleChassisLocations.Front, (int)VehicleChassisLocations.Left, (int)VehicleChassisLocations.Right, (int)VehicleChassisLocations.Left };
+        }
       }
       foreach (int hitLocation in hitLocations) {
         float CurrentLocationDamage = burnHeat / (float)hitLocations.Count;
@@ -189,7 +198,24 @@ namespace CustAmmoCategories {
         }
       }
     }
-    public bool AddLandMineDamage(AbstractActor target, MineFieldDef def, Vector3 pos) {
+    public static bool CheckLandMineStructureExposed(AbstractActor target) {
+      Mech mech = target as Mech;
+      Vehicle vehicle = target as Vehicle;
+      List<int> hitLocations = new List<int> { 1 };
+      if (mech != null) {
+        hitLocations = new List<int> { (int)ArmorLocation.LeftLeg, (int)ArmorLocation.RightLeg };
+      } else {
+        if (vehicle != null) {
+          hitLocations = new List<int> { (int)VehicleChassisLocations.Front, (int)VehicleChassisLocations.Left, (int)VehicleChassisLocations.Right, (int)VehicleChassisLocations.Left };
+        }
+      }
+      bool result = false;
+      foreach (int hitLocation in hitLocations) {
+        if (target.ArmorForLocation(hitLocation) < CustomAmmoCategories.Epsilon) { result = true; };
+      }
+      return result;
+    }
+    public bool AddLandMineDamage(AbstractActor target, MineFieldDef def, Vector3 pos, bool stopOnStructure) {
       Mech mech = target as Mech;
       Vehicle vehicle = target as Vehicle;
       foreach (var effect in def.statusEffects) { AddEffect(target, target, effect); };
@@ -202,10 +228,13 @@ namespace CustAmmoCategories {
       if (mech != null) {
         hitLocations = new List<int> { (int)ArmorLocation.LeftLeg, (int)ArmorLocation.RightLeg };
       } else {
-        Damage += def.Heat;
         if (vehicle != null) {
           hitLocations = new List<int> { (int)VehicleChassisLocations.Front, (int)VehicleChassisLocations.Left, (int)VehicleChassisLocations.Right, (int)VehicleChassisLocations.Left };
         }
+      }
+      if(target.isHasHeat() == false) {
+        Damage += AoERecord.HeatDamage;
+        AoERecord.HeatDamage = 0f;
       }
       bool result = false;
       foreach (int hitLocation in hitLocations) {
@@ -216,7 +245,11 @@ namespace CustAmmoCategories {
           Vector3 hitPos = target.getImpactPositionSimple(target, pos, hitLocation);
           AoERecord.hitRecords[hitLocation] = new AoEExplosionHitRecord(hitPos, CurrentLocationDamage);
         }
-        if (target.ArmorForLocation(hitLocation) < AoERecord.hitRecords[hitLocation].Damage) { result = true; };
+        if (stopOnStructure) {
+          if (target.ArmorForLocation(hitLocation) < AoERecord.hitRecords[hitLocation].Damage) { result = true; };
+        } else {
+          if ((target.ArmorForLocation(hitLocation)+target.StructureForLocation(hitLocation)) < AoERecord.hitRecords[hitLocation].Damage) { result = true; };
+        }
       }
       return result;
     }
@@ -243,9 +276,13 @@ namespace CustAmmoCategories {
         float StabDamage = def.AoEInstability * CustomAmmoCategories.Settings.DefaultAoEDamageMult[target.UnitType].Damage * tagAoEDamage * (def.AoERange - distance) / def.AoERange;
         Mech mech = target as Mech;
         Vehicle vehicle = target as Vehicle;
-        if (mech == null) {
+        if(target.isHasHeat() == false) {
           Damage += HeatDamage;
-        };
+          HeatDamage = 0f;
+        }
+        if(target.isHasStability() == false) {
+          StabDamage = 0f;
+        }
         List<int> hitLocations = null;
         Dictionary<int, float> AOELocationDict = null;
         if (mech != null) {
@@ -306,7 +343,7 @@ namespace CustAmmoCategories {
       HashSet<Mech> heatSequence = new HashSet<Mech>();
       HashSet<Mech> instabilitySequence = new HashSet<Mech>();
       HashSet<ICombatant> deathSequence = new HashSet<ICombatant>();
-      Log.F.WL(1, "Applying burn vehicle damage");
+      Log.F.WL(1, "Applying burn damage:"+this.burnDamage.Count);
       foreach (var bdmg in this.burnDamage) {
         float LocArmor = unit.ArmorForLocation(bdmg.Key);
         if ((double)LocArmor < (double)bdmg.Value.Damage) {
@@ -549,6 +586,7 @@ namespace CustAmmoCategories {
       Weapon minefieldWeapon = null;
       Weapon burnWeapon = null;
       heading = finalHeading;
+      bool isArmorExposed = MineFieldDamage.CheckLandMineStructureExposed(unit);
       if (waypoints == null) { Log.F.WL(1, "waypoints is null"); return false; }
       if (waypoints.Count == 0) { Log.F.WL(1, "waypoints is empty");return false; }
       if (unit.UnaffectedFire() && unit.UnaffectedLandmines()) { Log.F.WL(1, "unaffected fire and landmines");  return false; };
@@ -605,7 +643,7 @@ namespace CustAmmoCategories {
             mineField.count -= 1;
             minefieldWeapon = mineField.weapon;
             mfDamage.landminesTerrain.Add(new LandMineTerrainRecord(mineField.Def, cell.cell));
-            if (mfDamage.AddLandMineDamage(unit, mineField.Def, cellPosition)) { abortSequce = true; };
+            if (mfDamage.AddLandMineDamage(unit, mineField.Def, cellPosition, isArmorExposed == false)) { abortSequce = true; };
             mfDamage.AddLandMineExplosion(unit, mineField.Def, cellPosition);
             //mfDamage.debugPrint();
             if (string.IsNullOrEmpty(mineField.Def.VFXprefab) == false)
@@ -706,7 +744,7 @@ namespace CustAmmoCategories {
             mineField.count -= 1;
             minefieldWeapon = mineField.weapon;
             mfDamage.landminesTerrain.Add(new LandMineTerrainRecord(mineField.Def, cell));
-            mfDamage.AddLandMineDamage(unit, mineField.Def, position);
+            mfDamage.AddLandMineDamage(unit, mineField.Def, position, false);
             mfDamage.AddLandMineExplosion(unit, mineField.Def, position);
             if (string.IsNullOrEmpty(mineField.Def.VFXprefab) == false)
               if ((strongestMine == null)) { strongestMine = mineField; } else

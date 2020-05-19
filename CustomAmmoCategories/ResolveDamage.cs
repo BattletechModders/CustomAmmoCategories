@@ -1,5 +1,6 @@
 ﻿using BattleTech;
 using CustomAmmoCategoriesLog;
+using CustomAmmoCategoriesPatches;
 using System.Collections.Generic;
 using System.Reflection;
 using UnityEngine;
@@ -113,7 +114,7 @@ namespace CustAmmoCategories {
       Vehicle vehicle = target as Vehicle;
       Turret turret = target as Turret;
       if (advRes.Heat > CustomAmmoCategories.Epsilon) {
-        if (mech != null) {
+        if ((mech != null)&&(mech.isHasHeat())) {
           mech.AddExternalHeat(string.Format("Heat Damage from {0}", (object)advInfo.weapon.Description.Name), (int)advRes.Heat);
           advInfo.Sequence.FlagAttackDidHeatDamage(target.GUID);
         }
@@ -127,7 +128,7 @@ namespace CustAmmoCategories {
       Vehicle vehicle = target as Vehicle;
       Turret turret = target as Turret;
       if (advRes.Stability > CustomAmmoCategories.Epsilon) {
-        if (mech != null) {
+        if ((mech != null)&&(mech.isHasStability())) {
           mech.AddAbsoluteInstability(advRes.Stability * target.StatCollection.GetValue<float>("ReceivedInstabilityMultiplier") * mech.EntrenchedMultiplier, StabilityChangeSource.Attack, hitInfo.attackerId);
         }
       }

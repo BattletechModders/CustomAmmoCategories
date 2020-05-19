@@ -13,6 +13,7 @@ using CustAmmoCategories;
 using System.Threading;
 using System.Collections;
 using Localize;
+using System.Reflection;
 
 namespace CustomUnits {
   [HarmonyPatch(typeof(LoadRequest))]
@@ -28,10 +29,18 @@ namespace CustomUnits {
   [HarmonyPatch("CompleteLoadTracker")]
   [HarmonyPatch(MethodType.Normal)]
   public static class LoadRequest_CompleteLoadTracker {
+    private static FieldInfo f_path = typeof(VersionManifestEntry).GetField("path",BindingFlags.Instance|BindingFlags.NonPublic);
+    public static string path(this VersionManifestEntry entry) {
+      return (string)f_path.GetValue(entry);
+    }
     public static void Postfix(LoadRequest __instance, object tracker, bool loadSuccess) {
-      Log.LogWrite("LoadRequest.CompleteLoadTracker tracker: " + tracker + " loadSuccess " + loadSuccess + "\n");
-      VersionManifestEntry manifest = (VersionManifestEntry)tracker.GetType().GetField("resourceManifestEntry").GetValue(tracker);
-      Log.WL(1, manifest.Type+":"+manifest.FilePath);
+      try {
+        Log.LogWrite("LoadRequest.CompleteLoadTracker tracker: " + tracker + " loadSuccess " + loadSuccess + "\n");
+        VersionManifestEntry manifest = (VersionManifestEntry)tracker.GetType().GetField("resourceManifestEntry").GetValue(tracker);
+        Log.WL(1, manifest.Type + " streamingAssetsPath:" + Application.streamingAssetsPath + " path:" + manifest.path());
+      }catch(Exception e) {
+        Log.TWL(0, e.ToString(), true);
+      }
     }
   }
   [HarmonyPatch(typeof(AttackDirector))]

@@ -53,7 +53,7 @@ namespace CustAmmoCategories {
       Log.M.TWL(0, "ASWatchdog.Update", true);
       foreach (int seqId in seq) {
         Log.M.WL(1, seqId.ToString() + " = "+ WatchDogInfo[seqId]);
-        if (WatchDogInfo[seqId] > 20f) {
+        if (WatchDogInfo[seqId] > CustomAmmoCategories.Settings.AttackSequenceTimeout) {
           Log.M.WL(2, "timeout");
           AttackSequence attackSequence = AttackDirector.GetAttackSequence(seqId);
           if (attackSequence == null) {
@@ -76,14 +76,16 @@ namespace CustAmmoCategories {
 }
 
 namespace CustAmmoCategoriesPatches {
-  [HarmonyPatch(typeof(AttackSequence))]
-  [HarmonyPatch(MethodType.Constructor)]
-  [HarmonyPatch(new Type[] { typeof(AttackDirector), typeof(AbstractActor), typeof(ICombatant), typeof(Vector3), typeof(Quaternion), typeof(int), typeof(List<Weapon>), typeof(MeleeAttackType), typeof(int), typeof(bool), typeof(int), typeof(int)})]
-  public static class AttackSequence_Constructor {
-    private static void Postfix(AttackSequence __instance, AttackDirector director, AbstractActor attacker, ICombatant target, Vector3 attackPosition, Quaternion attackRotation, int attackSequenceIdx, List<Weapon> selectedWeapons, MeleeAttackType meleeAttackType, int calledShotLocation, bool isMoraleAttack, int id, int stackItemUID) {
-      CustomAmmoCategoriesLog.Log.LogWrite("AttackSequence.Constructor add watchdog\n");
+  [HarmonyPatch(typeof(AttackDirector))]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch("OnAttackSequenceBegin")]
+  [HarmonyPatch(new Type[] { typeof(MessageCenterMessage) })]
+  public static class AttackDirector_OnAttackSequenceBeginWD {
+    private static void Postfix(AttackDirector __instance, MessageCenterMessage message) {
+      CustomAmmoCategoriesLog.Log.LogWrite("AttackDirector.OnAttackSequenceBegin add watchdog\n");
+      int sequenceId = ((AttackSequenceBeginMessage)message).sequenceId;
       if (ASWatchdog.instance != null) {
-        ASWatchdog.instance.add(__instance.id);
+        ASWatchdog.instance.add(sequenceId);
       }
     }
   }

@@ -195,10 +195,6 @@ namespace CustAmmoCategories {
         weapon.StatCollection.Set<bool>(CustomAmmoCategories.AMSShootsCountStatName, isShooted);
       }
     }
-    public static bool IsWeaponAMSImmune(this Weapon weapon) {
-      ExtWeaponDef extWeapon = CustomAmmoCategories.getExtWeaponDef(weapon.defId);
-      return extWeapon.AMSImmune == TripleBoolean.True;
-    }
     /*public static float calculateInterceptCorrection(WeaponEffect amsEffect, float curPath, float pathLenth, float distance, float missileProjectileSpeed) {
       BallisticEffect ballisticEffect = amsEffect as BallisticEffect;
       if (ballisticEffect == null) { return curPath / pathLenth; }
@@ -381,7 +377,23 @@ namespace CustAmmoCategories {
     public static bool AMSImmune(this Weapon weapon) {
       return getWeaponAMSImmune(weapon);
     }
+    public static float AMSDamage(this Weapon weapon) {
+      WeaponMode mode = weapon.mode();
+      ExtAmmunitionDef extAmmo = weapon.ammo();
+      ExtWeaponDef extWeapon = CustomAmmoCategories.getExtWeaponDef(weapon.defId);
+      return mode.AMSDamage + extAmmo.AMSDamage + extWeapon.AMSDamage;
+    }
+    public static float MissileHealth(this Weapon weapon) {
+      WeaponMode mode = weapon.mode();
+      ExtAmmunitionDef extAmmo = weapon.ammo();
+      ExtWeaponDef extWeapon = CustomAmmoCategories.getExtWeaponDef(weapon.defId);
+      return mode.MissileHealth + extAmmo.MissileHealth + extWeapon.MissileHealth;
+    }
     public static bool getWeaponAMSImmune(Weapon weapon) {
+      WeaponMode mode = weapon.mode();
+      if (mode.AMSImmune != TripleBoolean.NotSet) { return mode.AMSImmune == TripleBoolean.True; }
+      ExtAmmunitionDef extAmmo = weapon.ammo();
+      if (extAmmo.AMSImmune != TripleBoolean.NotSet) { return extAmmo.AMSImmune == TripleBoolean.True; }
       ExtWeaponDef extWeapon = CustomAmmoCategories.getExtWeaponDef(weapon.defId);
       return extWeapon.AMSImmune == TripleBoolean.True;
     }
@@ -507,7 +519,7 @@ namespace CustAmmoCategories {
     }*/
 
     public static void genreateAMSInterceptionInfo(AttackDirector.AttackSequence instance) {
-      Log.LogWrite("genreateAMSInterceptionInfo\n");
+      Log.M.TWL(0,"genreateAMSInterceptionInfo");
       /*if (CustomAmmoCategories.MissileCurveCache == null) {
         CustomAmmoCategoriesLog.Log.LogWrite("Curve cache is not inited. No missiles since battle start.\n");
         return;
@@ -551,7 +563,8 @@ namespace CustAmmoCategories {
         };
         foreach (Weapon weapon in targetActor.Weapons) {
           ExtWeaponDef extWeapon = CustomAmmoCategories.getExtWeaponDef(weapon.defId);
-          if ((weapon.isAMS()) && (weapon.isAAMS() == false)) {
+          Log.LogWrite("  " + weapon.defId + " GUID:"+weapon.GUID+" AMS:"+ weapon.isAMS()  + " AAMS:" + weapon.isAAMS()+ " have weaponRep:"+(weapon.weaponRep == null?"false":"true")+"\n");
+          if ((weapon.isAMS()) && (weapon.isAAMS() == false) && (weapon.weaponRep != null)) {
             Log.LogWrite("  AMS "+weapon.UIName+"\n");
             ams.Add(new AMSRecord(weapon, extWeapon, false));
           }
@@ -573,7 +586,8 @@ namespace CustAmmoCategories {
         };
         foreach (Weapon weapon in enemy.Weapons) {
           ExtWeaponDef extWeapon = CustomAmmoCategories.getExtWeaponDef(weapon.defId);
-          if (weapon.isAAMS()) {
+          Log.LogWrite("  " + weapon.defId + " GUID:" + weapon.GUID + " AAMS:" + weapon.isAAMS() + " have weaponRep:" + (weapon.weaponRep == null ? "false" : "true") + "\n");
+          if (weapon.isAAMS() && (weapon.weaponRep != null)) {
             Log.LogWrite("  AAMS " + weapon.UIName + "\n");
             ams.Add(new AMSRecord(weapon, extWeapon, true));
           }
@@ -593,31 +607,36 @@ namespace CustAmmoCategories {
       };
       //foreach (AbstractActor trgAlly in combat.GetAllAlliesOf)
       float longestPath = 0.0f;
+      HashSet<AdvWeaponHitInfoRec> trackMissiles = new HashSet<AdvWeaponHitInfoRec>();
       foreach (AdvWeaponHitInfoRec missile in missiles) {
+        if (missile.interceptInfo.AMSImunne) {
+          CustomAmmoCategoriesLog.Log.LogWrite("  missile immune to AMS " + missile.parent.weapon.defId + " " + missile.hitIndex + "\n");
+          continue;
+        }
         if (missile.trajectorySpline.Length > longestPath) { longestPath = missile.trajectorySpline.Length; }
+        trackMissiles.Add(missile);
       }
       CustomAmmoCategoriesLog.Log.LogWrite("Longest path:" + longestPath + "\n");
       for (float path = 0.0f; path < longestPath; path += 10.0f) {
-        CustomAmmoCategoriesLog.Log.LogWrite(" path:" + path + "\n");
+        //CustomAmmoCategoriesLog.Log.LogWrite(" path:" + path + "\n");
         bool missilesInCharge = false;
-        //foreach (AMSRecord amsrec in ams) {amsrec.weaponCountred.Clear();};
         foreach (AdvWeaponHitInfoRec missile in missiles) {
-          if (missile.interceptInfo.AMSImunne == true) {
-            CustomAmmoCategoriesLog.Log.LogWrite("  missile immune to AMS " + missile.parent.weapon.defId + " " + missile.hitIndex + "\n");
-            continue;
-          }; //снаряд достиг цели
+          if (trackMissiles.Contains(missile) == false) { continue; }
           if (missile.trajectorySpline.Length <= path) {
             CustomAmmoCategoriesLog.Log.LogWrite("  missile done " + missile.parent.weapon.defId + " " + missile.hitIndex + "\n");
-            continue;
-          }; //снаряд достиг цели
+            trackMissiles.Remove(missile);
+          }
           if (missile.interceptInfo.Intercepted == true) {
             CustomAmmoCategoriesLog.Log.LogWrite("  missile intercepted " + missile.parent.weapon.defId + " " + missile.hitIndex + "\n");
-            continue;
-          };
+            trackMissiles.Remove(missile);
+          }
+
+        }
+        foreach (AdvWeaponHitInfoRec missile in trackMissiles) {
           missilesInCharge = true;
           Vector3 pos = missile.trajectorySpline.InterpolateByDistance(path);
           bool AMSInCharge = false;
-          CustomAmmoCategoriesLog.Log.LogWrite("  missile interception " + missile.parent.weapon.defId + " " + missile.hitIndex + " " + missile.parent.weaponIdx + " ");
+          CustomAmmoCategoriesLog.Log.M.WL(2,"missile interception " + missile.parent.weapon.defId + " hitIndex:" + missile.hitIndex + " weaponId:" + missile.parent.weaponIdx + " hp:"+ missile.interceptInfo.missileHealth);
           foreach (AMSRecord amsrec in ams) {
             if (amsrec.ShootsRemains <= 0) { continue; };
             if ((amsrec.isAAMS == false)) {
@@ -631,39 +650,28 @@ namespace CustAmmoCategories {
             float distance = Vector3.Distance(pos, amsrec.weapon.parent.CurrentPosition);
             CustomAmmoCategoriesLog.Log.LogWrite(distance + "\n");
             if (distance > amsrec.Range) { continue; };
-            //if (amsrec.weaponCountred.Contains(missile.weaponIndex)) {
-            //CustomAmmoCategoriesLog.Log.LogWrite("  AMS counterd already this weapon " + amsrec.weapon.defId + " " + missile.hitIndex + " " + missile.weaponIndex + "\n");
-            //continue;
-            //};
-            CustomAmmoCategoriesLog.Log.LogWrite("   AMS ready to fire " + amsrec.weapon.defId + "\n");
+            CustomAmmoCategoriesLog.Log.LogWrite("   AMS ready to fire " + amsrec.weapon.defId + " dmg:"+ amsrec.weapon.AMSDamage() + " shoot remains:"+ amsrec.ShootsRemains + "\n");
+            if (amsrec.weapon.DecrementOneAmmo() == false) {
+              CustomAmmoCategoriesLog.Log.LogWrite("   AMS ammo depleted "+amsrec.weapon.tCurrentAmmo()+"\n");
+              amsrec.ShootsRemains = 0;
+              continue;
+            }
             --amsrec.ShootsRemains;
             ++amsrec.ShootsCount;
-            //amsrec.weaponCountred.Add(missile.weaponIndex);
-            //amsrec.amsShooted = true;
             float interceptRoll = Random.Range(0f, 1f);
             float effectiveHitChance = amsrec.AMSHitChance + missile.interceptInfo.AMSHitChance;
             CustomAmmoCategoriesLog.Log.LogWrite("   roll:" + interceptRoll + " chance:" + effectiveHitChance + "\n");
             AMSShoot amsShoot = null;
             int AMSShootIdx = amsrec.weapon.AMS().AddHitPosition(pos);
             if (interceptRoll < amsrec.AMSHitChance) {
+              missile.interceptInfo.missileHealth -= amsrec.weapon.AMSDamage();
+              CustomAmmoCategoriesLog.Log.M.WL(3,"hit. New missile health:"+ missile.interceptInfo.missileHealth);
+            }
+            if (missile.interceptInfo.missileHealth < CustomAmmoCategories.Epsilon) {
+              CustomAmmoCategoriesLog.Log.M.WL(3, "missile down");
               missile.interceptInfo.Intercepted = true;
               missile.hitPosition = pos;
               missile.hitLocation = 0;
-              /*if (CustomAmmoCategories.getWeaponUnguided(missile.weapon)) {
-                missile.spline = CustomAmmoCategories.GenerateDirectMissilePath(
-                  missile.launcherEffect.missileCurveStrength, missile.launcherEffect.missileCurveFrequency,
-                  missile.launcherEffect.isSRM, missile.hitLocation, missile.startPos, missile.endPos, missile.Combat);
-              } else {
-                if (missile.isIndirect) {
-                  missile.spline = CustomAmmoCategories.GenerateIndirectMissilePath(
-                    missile.launcherEffect.missileCurveStrength, missile.launcherEffect.missileCurveFrequency,
-                    missile.launcherEffect.isSRM, missile.hitLocation, missile.startPos, missile.endPos, missile.Combat);
-                } else {
-                  missile.spline = CustomAmmoCategories.GenerateMissilePath(
-                    missile.launcherEffect.missileCurveStrength, missile.launcherEffect.missileCurveFrequency,
-                    missile.launcherEffect.isSRM, missile.hitLocation, missile.startPos, missile.endPos, missile.Combat);
-                }
-              }*/
               missile.GenerateTrajectory();
               missile.interceptInfo.InterceptedT = amsrec.weapon.AMS().calculateInterceptCorrection(AMSShootIdx,path, missile.trajectorySpline.Length, distance, missile.projectileSpeed);
               //  CustomAmmoCategories.calculateInterceptCorrection(CustomAmmoCategories.getWeaponEffect(amsrec.weapon), path, missile.UnitySpline.Length, distance, missile.missileProjectileSpeed);
@@ -671,11 +679,11 @@ namespace CustAmmoCategories {
               float t = missile.interceptInfo.InterceptedT;
               if (t > 0.9f) { t = Random.Range(0.85f, 0.95f); };
               missile.interceptInfo.InterceptedT = t;
-              CustomAmmoCategoriesLog.Log.LogWrite("   hit " + t + "\n");
+              CustomAmmoCategoriesLog.Log.M.WL(3, "hit " + t + "\n");
               amsShoot = new AMSShoot(AMSShootIdx, t, missile.interceptInfo.InterceptedAMS);
             } else {
               float t = path / missile.trajectorySpline.Length;
-              CustomAmmoCategoriesLog.Log.LogWrite("   miss " + t + "\n");
+              CustomAmmoCategoriesLog.Log.M.WL(3,"still flying " + t + "\n");
               amsShoot = new AMSShoot(AMSShootIdx, t, amsrec.weapon);
             }
             if (amsShoot != null) {
@@ -697,7 +705,7 @@ namespace CustAmmoCategories {
       foreach (AMSRecord amsrec in ams) {
         CustomAmmoCategoriesLog.Log.LogWrite("AMS " + amsrec.weapon.defId + " shoots:" + amsrec.ShootsCount + "\n");
         if (amsrec.ShootsCount > 0) {
-          amsrec.weapon.RealDecrementAmmo(-1, amsrec.ShootsCount);
+          amsrec.weapon.FlushAmmoCount(-1);
           float HeatGenerated = amsrec.weapon.HeatGenerated * (float)amsrec.ShootsCount / (float)amsrec.weapon.ShotsWhenFired;
           if (amsrec.weapon.parent != null) {
             amsrec.weapon.parent.AddWeaponHeat(amsrec.weapon, (int)HeatGenerated);

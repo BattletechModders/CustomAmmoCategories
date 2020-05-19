@@ -103,6 +103,10 @@ namespace CustAmmoCategories {
         return 0.0f;
       }
       float armor = critInfo.armorOnHit;
+      if((critInfo.structureOnHit < CustomAmmoCategories.Epsilon)&&(CustomAmmoCategories.Settings.DestoryedLocationCriticalAllow == false)) {
+        Log.C.WL(1, "structureOnHit: "+critInfo.structureOnHit+" and crits to destroyed location forbidden\n");
+        return 0.0f;
+      }
       if (armor > CustomAmmoCategories.Epsilon) {
         float baseCritChance = AdvancedCriticalProcessor.GetBaseAPCritChance(unit, critInfo);
         float shardsCritChance = 1f; float shardsMod = weapon.APArmorShardsMod();

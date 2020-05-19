@@ -495,6 +495,12 @@ namespace CustomUnits {
           } else {
             lanceConfiguration.AddUnit(Core.Settings.EMPLOYER_LANCE_GUID, lanceLoadoutSlot.SelectedMech.MechDef, lanceLoadoutSlot.SelectedPilot.Pilot.pilotDef);
           }
+          string GUID = lanceLoadoutSlot.SelectedMech.MechDef.GUID;
+          int index = 0;
+          while (CustomLanceHelper.playerLanceLoadout.loadout.ContainsKey(lanceLoadoutSlot.SelectedMech.MechDef.GUID)) {
+            ++index;
+            lanceLoadoutSlot.SelectedMech.MechDef.SetGuid(GUID+"_"+index.ToString());
+          }
           CustomLanceHelper.playerLanceLoadout.loadout.Add(lanceLoadoutSlot.SelectedMech.MechDef.GUID, i);
         }
         __result = lanceConfiguration;
@@ -2287,7 +2293,7 @@ namespace CustomUnits {
     //public static readonly string playerGUID = "bf40fd39-ccf9-47c4-94a6-061809681140";
     public static bool Prefix(CombatHUDWeaponSlot __instance, ICombatant target, CombatHUD ___HUD, Weapon ___displayedWeapon, ref int ___modifier, CombatGameState ___Combat) {
       return true;
-      AbstractActor abstractActor = target as AbstractActor;
+      /*AbstractActor abstractActor = target as AbstractActor;
       LineOfFireLevel lofLevel = ___HUD.SelectionHandler.ActiveState.FiringPreview.GetPreviewInfo((ICombatant)abstractActor).LOFLevel;
       bool flag = ___HUD.SelectionHandler.ActiveState.SelectionType == SelectionType.FireMorale;
       __instance.ToolTipHoverElement.BasicModifierInt = (int)___Combat.ToHit.GetAllModifiers(___HUD.SelectedActor, ___displayedWeapon, target, ___HUD.SelectionHandler.ActiveState.PreviewPos, target.TargetPosition, lofLevel, flag);
@@ -2360,7 +2366,7 @@ namespace CustomUnits {
       __instance.AddToolTipDetail("INDIRECT FIRE", ___modifier);
       ___modifier = (int)___Combat.ToHit.GetMoraleAttackModifier(target, flag);
       __instance.AddToolTipDetail(___Combat.Constants.CombatUIConstants.MoraleAttackDescription.Name, ___modifier);
-      return false;
+      return false;*/
     }
   }
   [HarmonyPatch(typeof(SelectionStateMoveBase))]

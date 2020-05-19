@@ -41,6 +41,7 @@ namespace CustAmmoCategories {
     public int AMSShootIndex;
     public Weapon InterceptedAMS;
     public bool AMSImunne;
+    public float missileHealth;
     public InterceptableInfo() {
       Intercepted = false;
       InterceptedT = 2.0f;
@@ -48,6 +49,7 @@ namespace CustAmmoCategories {
       AMSHitChance = 0f;
       AMSShoots = new List<AMSShoot>();
       AMSImunne = true;
+      missileHealth = 0f;
       InterceptedAMS = null;
     }
     public float getAMSShootT() {
@@ -411,8 +413,9 @@ namespace CustAmmoCategories {
         }
         if ((launcher != null) || (msLauncher != null)) {
           hit.interceptInfo.AMSImunne = weapon.AMSImmune();
+          hit.interceptInfo.missileHealth = weapon.MissileHealth();
           hit.interceptInfo.AMSHitChance = weapon.AMSHitChance();
-          Log.LogWrite(" missile launcher. AMS imunne:" + hit.interceptInfo.AMSImunne + "\n");
+          Log.LogWrite(" missile launcher. AMS imunne:" + hit.interceptInfo.AMSImunne + " health:"+ hit.interceptInfo.missileHealth + "\n");
         } else {
           Log.LogWrite(" not missile launcher\n");
         }

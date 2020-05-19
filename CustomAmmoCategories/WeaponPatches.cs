@@ -417,6 +417,13 @@ namespace CustAmmoCategoriesPatches {
       weapon.StatCollection.ModifyStat<int>(weapon.uid, stackItemUID, statName, StatCollection.StatOperation.Int_Subtract, ammoCount, -1, true);
       weapon.ClearInternalAmmoCache();
     }
+    public static void SetInternalAmmo(this Weapon weapon, int stackItemUID, int ammoCount) {
+      CustomAmmoCategory cat = weapon.CustomAmmoCategory();
+      if (cat.BaseCategory.Is_NotSet) { return; }
+      string statName = InternalAmmoName + weapon.ammo().Id;
+      weapon.StatCollection.ModifyStat<int>(weapon.uid, stackItemUID, statName, StatCollection.StatOperation.Set, ammoCount, -1, true);
+      weapon.ClearInternalAmmoCache();
+    }
     public static void ZeroInternalAmmo(this Weapon weapon, int stackItemUID) {
       CustomAmmoCategory cat = weapon.CustomAmmoCategory();
       if (cat.BaseCategory.Is_NotSet) { return; }

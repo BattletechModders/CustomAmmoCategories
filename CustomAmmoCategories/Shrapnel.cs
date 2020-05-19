@@ -137,7 +137,7 @@ namespace CustAmmoCategories {
       if (mode.HasShells != TripleBoolean.NotSet) { return mode.HasShells == TripleBoolean.True; }
       ExtAmmunitionDef ammo = weapon.ammo();
       if (ammo.HasShells != TripleBoolean.NotSet) { return ammo.HasShells == TripleBoolean.True; }
-      return extWeapon.FireOnSuccessHit == TripleBoolean.True;
+      return extWeapon.HasShells == TripleBoolean.True;
     }
     public static float ShellsRadius(this Weapon weapon) {
       ExtWeaponDef extWeapon = CustomAmmoCategories.getExtWeaponDef(weapon.defId);

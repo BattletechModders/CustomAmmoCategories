@@ -523,14 +523,14 @@ namespace CustomUnits {
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { })]
   public static class ActorMovementSequence_UpdateSpline {
-    private static FieldInfo FowningActor = null;
+    //private static FieldInfo FowningActor = null;
     public static bool Prepare() {
       try {
-        FowningActor = typeof(OrderSequence).GetField("owningActor", BindingFlags.Instance | BindingFlags.NonPublic);
-        if (FowningActor == null) {
-          Log.LogWrite(0, "ActorMovementSequence.UpdateSpline Can't find owningActor", true);
-          return false;
-        }
+        //FowningActor = typeof(OrderSequence).GetField("owningActor", BindingFlags.Instance | BindingFlags.NonPublic);
+        //if (FowningActor == null) {
+          //Log.LogWrite(0, "ActorMovementSequence.UpdateSpline Can't find owningActor", true);
+          //return false;
+        //}
       } catch (Exception e) {
         Log.LogWrite(0, e.ToString(), true);
         return false;

@@ -408,7 +408,12 @@ namespace CustomUnits {
     }*/
     public static void Postfix(HardpointDataDef hardpointDataDef, BaseComponentRef componentRef, string prefabBase, string location, ref List<string> usedPrefabNames, ref string __result) {
       Log.WL(0, "MechHardpointRules.GetComponentPrefabName "+componentRef.ComponentDefID+" "+__result);
-      if (string.IsNullOrEmpty(__result)) { return; }
+      if (string.IsNullOrEmpty(__result)) {
+        if(componentRef.Def.ComponentType == ComponentType.Weapon) {
+          __result = "fake_weapon_prefab";
+        }
+        return;
+      }
       __result = CustomHardPointsHelper.Alias(__result);
       Log.WL(1, " custom hardpoint found: prefab replacing:"+__result);
     }
@@ -489,6 +494,34 @@ namespace CustomUnits {
       VTOLBodyAnimation bodyAnimation = __instance.VTOLAnimation();
       if (bodyAnimation == null) { return; }
       bodyAnimation.ResolveAttachPoints();
+      Log.TWL(0, "Vehicle.InitGameRep:" + new Text(__instance.DisplayName).ToString());
+      foreach (Weapon weapon in __instance.Weapons) {
+        Log.WL(1, weapon.defId + " representation:" + (weapon.weaponRep == null ? "null" : weapon.weaponRep.GetInstanceID().ToString()));
+      }
+    }
+  }
+  [HarmonyPatch(typeof(Mech))]
+  [HarmonyPatch("InitGameRep")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { typeof(Transform) })]
+  public static class Mech_InitGameRep {
+    public static void Postfix(Mech __instance) {
+      Log.TWL(0, "Mech.InitGameRep:"+new Text(__instance.DisplayName).ToString());
+      foreach (Weapon weapon in __instance.Weapons) {
+        Log.WL(1,weapon.defId+" representation:"+(weapon.weaponRep==null?"null":weapon.weaponRep.GetInstanceID().ToString()));
+      }
+    }
+  }
+  [HarmonyPatch(typeof(Turret))]
+  [HarmonyPatch("InitGameRep")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { typeof(Transform) })]
+  public static class Turret_InitGameRep {
+    public static void Postfix(Turret __instance) {
+      Log.TWL(0, "Turret.InitGameRep:" + new Text(__instance.DisplayName).ToString());
+      foreach (Weapon weapon in __instance.Weapons) {
+        Log.WL(1, weapon.defId + " representation:" + (weapon.weaponRep == null ? "null" : weapon.weaponRep.GetInstanceID().ToString()));
+      }
     }
   }
   public class ExtPrefire {
@@ -651,7 +684,7 @@ namespace CustomUnits {
     public static bool Prefix(Weapon __instance, string prefabName, Transform parentBone, string parentDisplayName, CombatGameState ___combat) {
       Log.LogWrite(0, "Weapon.InitGameRep: " + __instance.defId + ":" + prefabName + "\n");
       try {
-        if (string.IsNullOrEmpty(prefabName)) { return true; }
+        if (string.IsNullOrEmpty(prefabName)) { prefabName = "fake_weapon_prefab"; }
         WeaponRepresentation component = null;
         CustomHardpointDef customHardpoint = CustomHardPointsHelper.Find(prefabName);
         GameObject prefab = null;
@@ -668,7 +701,7 @@ namespace CustomUnits {
         }
         if (prefab == null) {
           Log.LogWrite(1, prefabName + " absent prefab. fallback\n", true);
-          prefab = new GameObject("fake_hardpoint");
+          prefab = new GameObject(prefabName);
         }
         component = prefab.GetComponent<WeaponRepresentation>();
         if (component == null) {
@@ -711,15 +744,22 @@ namespace CustomUnits {
                 ___combat.DataManager.PoolGameObject(customHardpoint.shaderSrc, shaderPrefab);
               }
             }
+          } else {
+            component.vfxTransforms = new Transform[] { component.transform };
           }
         }
-        if ((UnityEngine.Object)component == (UnityEngine.Object)null) {
+        if (component == null) {
           string str = string.Format("Null WeaponRepresentation for prefabName[{0}] parentBoneName[{1}] parentDisplayName[{2}]", (object)prefabName, (object)parentBone.name, (object)parentDisplayName);
           Log.LogWrite(1, str + "\n");
+        } else {
+          Log.LogWrite(1, "component representation is not null\n");
         }
         typeof(MechComponent).GetProperty("componentRep", BindingFlags.Instance | BindingFlags.Public).GetSetMethod(true).Invoke(__instance, new object[] { component });
         //__instance.componentRep = (ComponentRepresentation)component;
-        if (!((UnityEngine.Object)__instance.weaponRep != (UnityEngine.Object)null)) { return false; }
+        if (__instance.weaponRep == null) {
+          Log.LogWrite(1, "weapon representation still null\n", true);
+          return false;
+        }
         if(__instance.parent != null) {
           VTOLBodyAnimation bodyAnimation = __instance.parent.VTOLAnimation();
           if((bodyAnimation != null)&&(__instance.vehicleComponentRef != null)) {

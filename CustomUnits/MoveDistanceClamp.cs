@@ -21,9 +21,11 @@ namespace CustomUnits {
       return 0f;
     }
     public static void Postfix(ActorMovementSequence __instance, AbstractActor actor, Transform xform) {
-      Log.LogWrite("ActorMovementSequence.Init "+new Text(actor.DisplayName).ToString()+"\n");
+      Log.TWL(0,"ActorMovementSequence.Init "+new Text(actor.DisplayName).ToString());
       try {
+        Log.WL(1, "Pathing.HasPath:"+(actor.Pathing==null?"null":actor.Pathing.HasPath.ToString()));
         if (actor.Pathing == null) { return; }
+        if (actor.Pathing.HasPath == false) { return; }
         float costUsed = actor.Pathing.MaxCost - actor.Pathing.CostLeft;
         Log.LogWrite(" path:" + actor.Pathing.CurrentPath.Count + " max:"+ actor.Pathing.MaxCost + " left:"+actor.Pathing.CostLeft+" used:"+costUsed+"\n");
         foreach (PathNode pn in actor.Pathing.CurrentPath) {

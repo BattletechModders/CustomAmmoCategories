@@ -604,6 +604,7 @@ namespace CustomVoices {
     public Dictionary<AudioSwitch_dialog_lines_pilots, List<string>> dark_phrases { get; set; }
     public Dictionary<AudioSwitch_dialog_lines_pilots, List<string>> light_phrases { get; set; }
     public override string ToString() { return uiname; }
+    //public static int[] randomSeed = { 114, 17, 24,  };
     public string getPhrase(bool darkMood, AudioSwitch_dialog_lines_pilots val) {
       Log.M.TWL(0, "VoicePackDef.getPhrase mood:" + darkMood + " phrase:" + val);
       Dictionary<AudioSwitch_dialog_lines_pilots, List<string>> phrases = darkMood ? dark_phrases : light_phrases;

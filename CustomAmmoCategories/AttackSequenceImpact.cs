@@ -244,14 +244,34 @@ namespace CustomAmmoCategoriesPatches {
     }
     public static bool isHasHeat(this ICombatant combatant) {
       Mech mech = combatant as Mech;
-      return mech != null;
+      if (mech == null) { return false; }
+      try {
+        foreach (string tag in CustomAmmoCategories.Settings.TransferHeatDamageToNormalTag) {
+          if (mech.MechDef.Chassis.ChassisTags.Contains(tag)) { return false; }
+        }
+      }catch(Exception e) {
+        Log.M.TWL(0, e.ToString(), true);
+      }
+      return true;
+    }
+    public static bool isHasStability(this ICombatant combatant) {
+      Mech mech = combatant as Mech;
+      if (mech == null) { return false; }
+      try {
+        foreach(string tag in CustomAmmoCategories.Settings.MechHasNoStabilityTag) {
+          if (mech.MechDef.Chassis.ChassisTags.Contains(tag)) { return false; }
+        }
+      } catch (Exception e) {
+        Log.M.TWL(0, e.ToString(), true);
+      }
+      return true;
     }
     public static float HeatDamage(this ICombatant combatant, float heat) {
       switch (combatant.UnitType) {
         case UnitType.Vehicle: return WeaponRealizer.Core.ModSettings.HeatDamageAppliesToVehicleAsNormalDamage ? heat * WeaponRealizer.Core.ModSettings.HeatDamageApplicationToVehicleMultiplier : 0f;
         case UnitType.Turret: return WeaponRealizer.Core.ModSettings.HeatDamageAppliesToTurretAsNormalDamage ? heat * WeaponRealizer.Core.ModSettings.HeatDamageApplicationToTurretMultiplier : 0f;
         case UnitType.Building: return WeaponRealizer.Core.ModSettings.HeatDamageAppliesToBuildingAsNormalDamage ? heat * WeaponRealizer.Core.ModSettings.HeatDamageApplicationToBuildingMultiplier : 0f;
-        default: return 0f;
+        default: return heat;
       }
     }
 
@@ -305,6 +325,10 @@ namespace CustomAmmoCategoriesPatches {
       CustomAmmoCategoriesLog.Log.LogWrite("  damage = " + rawDamage + "/"+realDamage+"\n");
       CustomAmmoCategoriesLog.Log.LogWrite("  heat = " + rawHeat + "\n");
       if (advRec != null) {
+        if(advRec.target.isHasStability() == false) {
+          advRec.Stability = 0f;
+          CustomAmmoCategoriesLog.Log.LogWrite("  target has no stability\n");
+        }
         CustomAmmoCategoriesLog.Log.LogWrite("  stability = " + advRec.Stability + "\n");
       }
       CustomAmmoCategoriesLog.Log.LogWrite("  isAOE = " + (isAOE) + "\n");

@@ -414,6 +414,8 @@ namespace CustAmmoCategories {
     public float MinMissRadius { get; set; }
     public float MaxMissRadius { get; set; }
     public Dictionary<string, float> TagsAccuracyModifiers { get; set; }
+    public float AMSDamage { get; set; }
+    public float MissileHealth { get; set; }
     public ExtWeaponDef() {
       Id = string.Empty;
       StreakEffect = false;
@@ -506,6 +508,9 @@ namespace CustAmmoCategories {
       MinMissRadius = 0f;
       MaxMissRadius = 0f;
       TagsAccuracyModifiers = new Dictionary<string, float>();
+      AMSImmune = TripleBoolean.NotSet;
+      AMSDamage = 1f;
+      MissileHealth = 1f;
     }
   }
 }
@@ -537,12 +542,14 @@ namespace CustomAmmoCategoriesPatches {
         }
 
         string AmmoCategory = "NotSet";
-        if (defTemp["AmmoCategory"] != null) {
+        if ((defTemp["AmmoCategory"] != null)&&(defTemp["ammoCategoryID"] == null)) {
           AmmoCategory = (string)defTemp["AmmoCategory"];
-          defTemp.Remove("AmmoCategory");
           //defTemp["ammoCategoryID"] = AmmoCategory;
         } else {
           AmmoCategory = (string)defTemp["ammoCategoryID"];
+        }
+        if (defTemp["AmmoCategory"] != null) {
+          defTemp.Remove("AmmoCategory");
         }
         if (CustomAmmoCategories.contains(AmmoCategory) == false) {
           Log.M.TWL(0, "Custom Ammo Categories list not contains "+AmmoCategory);
@@ -558,6 +565,8 @@ namespace CustomAmmoCategoriesPatches {
           }
         }
         CustomAmmoCategory custCat = CustomAmmoCategories.find(AmmoCategory);
+        defTemp["ammoCategoryID"] = custCat.BaseCategory.Name;
+        Log.M.WL(1, "ammoCategoryID:" + (string)defTemp["ammoCategoryID"]);
         //CustomAmmoCategories.RegisterWeapon((string)defTemp["Description"]["Id"], custCat);
         if (extDef == null) {
           extDef = new ExtWeaponDef();
@@ -904,6 +913,14 @@ namespace CustomAmmoCategoriesPatches {
         if (defTemp["AMSImmune"] != null) {
           extDef.AMSImmune = ((bool)defTemp["AMSImmune"] == true) ? TripleBoolean.True : TripleBoolean.False;
           defTemp.Remove("AMSImmune");
+        }
+        if (defTemp["AMSDamage"] != null) {
+          extDef.AMSDamage = (float)defTemp["AMSDamage"];
+          defTemp.Remove("AMSDamage");
+        }
+        if (defTemp["MissileHealth"] != null) {
+          extDef.MissileHealth = (float)defTemp["MissileHealth"];
+          defTemp.Remove("MissileHealth");
         }
         if (defTemp["InternalAmmo"] != null) {
           extDef.InternalAmmo = JsonConvert.DeserializeObject<Dictionary<string, int>>(defTemp["InternalAmmo"].ToString());

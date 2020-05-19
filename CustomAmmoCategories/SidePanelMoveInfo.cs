@@ -1,6 +1,7 @@
 ﻿using BattleTech;
 using BattleTech.UI;
 using CustAmmoCategories;
+using CustAmmoCategoriesPatches;
 using CustomAmmoCategoriesLog;
 using Harmony;
 using Localize;
@@ -11,24 +12,90 @@ using System.Reflection.Emit;
 using System.Text;
 using UnityEngine;
 
+namespace CustAmmoCategories {
+  public static class CombatHUDInfoSidePanelHelper {
+    private static Dictionary<AbstractActor, Text> externalSelfInfo = new Dictionary<AbstractActor, Text>();
+    private static Dictionary<AbstractActor, Dictionary<ICombatant, Text>> externalTargetsInfo = new Dictionary<AbstractActor, Dictionary<ICombatant, Text>>();
+    public static void SetSelfInfo(AbstractActor actor, Text text) {
+      if (externalSelfInfo.ContainsKey(actor) == false) {
+        externalSelfInfo.Add(actor, text);
+      } else {
+        externalSelfInfo[actor] = text;
+      }
+      CombatHUD_InitSidePanel.HUD().RefreshSidePanelInfo();
+    }
+    public static void SetTargetInfo(AbstractActor actor,ICombatant target, Text text) {
+      if (externalTargetsInfo.TryGetValue(actor, out Dictionary<ICombatant, Text> targetsInfo) == false) {
+        targetsInfo = new Dictionary<ICombatant, Text>();
+        externalTargetsInfo.Add(actor, targetsInfo);
+      }
+      if (targetsInfo.ContainsKey(target) == false) {
+        targetsInfo.Add(target, text);
+      } else {
+        targetsInfo[target] = text;
+      }
+      CombatHUD_InitSidePanel.HUD().RefreshSidePanelInfo();
+    }
+    public static Text getSelfInfo(this AbstractActor unit) {
+      if(externalSelfInfo.TryGetValue(unit, out Text info) == false) {
+        info = new Text("?????????");
+        externalSelfInfo.Add(unit, info);
+        return info;
+      }
+      return info;
+    }
+    public static Text getTargetInfo(this AbstractActor unit, ICombatant target) {
+      if (externalTargetsInfo.TryGetValue(unit, out Dictionary<ICombatant, Text> targetsInfo) == false) {
+        targetsInfo = new Dictionary<ICombatant, Text>();
+        externalTargetsInfo.Add(unit, targetsInfo);
+      }
+      if (targetsInfo.TryGetValue(target, out Text info) == false) {
+        info = new Text("?????????");
+        targetsInfo.Add(target, info);
+        return info;
+      }
+      return info;
+    }
+    public static void Clear() {
+      externalSelfInfo.Clear();
+      externalTargetsInfo.Clear();
+    }
+  }
+}
+
 namespace CustAmmoCategoriesPatches {
-  [HarmonyPatch(typeof(CombatHUD))]
-  [HarmonyPatch("ShowTarget")]
+  [HarmonyPatch(typeof(CombatHUDTargetingComputer))]
+  [HarmonyPatch("RefreshActorInfo")]
   [HarmonyPatch(MethodType.Normal)]
-  public static class CombatHUD_ShowTarget {
-    private static bool fSidePanelTargetShown = false;
+  public static class CombatHUDTargetingComputer_RefreshActorInfo {
+    public static void Postfix(CombatHUDTargetingComputer __instance, CombatHUD ___HUD) {
+      Log.M.TWL(0, "CombatHUDTargetingComputer.RefreshActorInfo " + (__instance.ActivelyShownCombatant == null ? "null" : (new Text(__instance.ActivelyShownCombatant.DisplayName).ToString())));
+      ___HUD.RefreshSidePanelInfo();
+    }
+  }
+  [HarmonyPatch(typeof(CombatHUDInfoSidePanel))]
+  [HarmonyPatch("Update")]
+  [HarmonyPatch(MethodType.Normal)]
+  public static class CombatHUDInfoSidePanel_Update {
     private static bool fSidePanelNeedToBeRefreshed = true;
-    public static void SidePanelTargetRefresh(this CombatHUD HUD) { fSidePanelNeedToBeRefreshed = true; }
-    public static bool isSidePanelTargetRefresh(this CombatHUD HUD) { return fSidePanelNeedToBeRefreshed; }
-    public static bool SidePanelTargetShown(this CombatHUD HUD) { return fSidePanelTargetShown; }
-    public static void SidePanelTargetShown(this CombatHUD HUD, bool value) { fSidePanelTargetShown = value; if (value == false) { fSidePanelNeedToBeRefreshed = false; }; }
-    public static void ShowSidePanelTargetInfo(this CombatHUD __instance) {
+    private static bool fTextNeedToBeRefreshed = true;
+    private static PropertyInfo p_forceShown = typeof(CombatHUDInfoSidePanel).GetProperty("forceShown",BindingFlags.NonPublic|BindingFlags.Instance);
+    private static PropertyInfo p_stayShown = typeof(CombatHUDInfoSidePanel).GetProperty("stayShown", BindingFlags.NonPublic | BindingFlags.Instance);
+    private static Text description = new Text();
+    private static Text title = new Text();
+    public static bool forceShown(this CombatHUDInfoSidePanel panel) { return (bool)p_forceShown.GetValue(panel); }
+    public static bool stayShown(this CombatHUDInfoSidePanel panel) { return (bool)p_stayShown.GetValue(panel); }
+    private static bool m_infoPanelShowState = true;
+    public static void InfoPanelShowState(this CombatHUD HUD, bool state) { m_infoPanelShowState = state; fSidePanelNeedToBeRefreshed = true; }
+    public static void RefreshSidePanelInfo(this CombatHUD HUD) { fSidePanelNeedToBeRefreshed = true; }
+    public static bool InfoPanelShowState(this CombatHUD HUD) { return m_infoPanelShowState; }
+    public static void UpdateInfoText(this CombatHUD __instance) {
       if (__instance.SelectedActor == null) {
         fSidePanelNeedToBeRefreshed = false;
         return;
       }
-      Text description = new Text();
-      Text title = new Text();
+      description = new Text();
+      title = new Text();
       bool empty = true;
       if (__instance.SelectionHandler != null) {
         SelectionStateMove moveState = __instance.SelectionHandler.ActiveState as SelectionStateMove;
@@ -41,27 +108,52 @@ namespace CustAmmoCategoriesPatches {
         }
       }
       if (empty) { title.Append("INFO"); } else { description.Append("\n"); };
-      description.Append(__instance.ShowNumericInfo().ToString());
-      description.Append("__/TARGET/__:\n");
-      description.Append(__instance.ShowTargetNumericInfo().ToString());
-      __instance.SidePanel.ForceShowSingleFrame(title, description, new Text(), false);
+      if (CustomAmmoCategories.Settings.SidePanelInfoSelfExternal) {
+        description.Append(__instance.SelectedActor.getSelfInfo().ToString());
+      } else {
+        description.Append(__instance.ShowNumericInfo().ToString());
+      }
+      if (__instance.TargetingComputer.ActivelyShownCombatant != null) {
+        description.Append("\n__/TARGET/__:\n");
+        description.Append(__instance.ShowTargetNumericInfo().ToString());
+      }
       fSidePanelNeedToBeRefreshed = false;
     }
-    public static void Postfix(CombatHUD __instance, ICombatant target) {
-      if (__instance.ShowSidePanelActorInfo()) {
-        __instance.ShowSidePanelTargetInfo();
+    public static void Prefix(CombatHUDInfoSidePanel __instance,ref bool ___shownForSingleFrame) {
+      if (BTInput.Instance.DynamicActions.Enabled == false) { return; }
+      if (__instance.HUD() == null) { return; }
+      if (m_infoPanelShowState == false) { return; }
+      if (__instance.HUD().SelectedActor == null) { return; }
+      if (__instance.IsHovered) { fTextNeedToBeRefreshed = true; return; }
+      if (__instance.forceShown() || ___shownForSingleFrame || __instance.stayShown()) { fTextNeedToBeRefreshed = true; return; }
+      if (fSidePanelNeedToBeRefreshed) { fTextNeedToBeRefreshed = true; __instance.HUD().UpdateInfoText(); }
+      if (fTextNeedToBeRefreshed) { __instance.ForceShowSingleFrame(title, description, null, false); fTextNeedToBeRefreshed = false; } else {
+        ___shownForSingleFrame = true;
       }
-      fSidePanelTargetShown = true;
     }
   }
   [HarmonyPatch(typeof(CombatHUD))]
-  [HarmonyPatch("StopShowingTarget")]
+  [HarmonyPatch("Init")]
   [HarmonyPatch(MethodType.Normal)]
-  public static class CombatHUD_StopShowingTarget {
-    public static void Postfix(CombatHUD __instance, ICombatant target) {
-      if (__instance.SidePanelTargetShown()) {
-        __instance.SidePanelTargetShown(false);
-        __instance.SidePanel.ForceHide();
+  [HarmonyPatch(new Type[] { typeof(CombatGameState) })]
+  public static class CombatHUD_InitSidePanel {
+    private static CombatHUD m_HUD = null;
+    private static CombatGameState m_Combat = null;
+    public static CombatHUD HUD() { return m_HUD; }
+    public static CombatHUD HUD(this CombatHUDInfoSidePanel panel) { return m_HUD; }
+    public static CombatGameState Combat(this CombatHUDInfoSidePanel panel) { return m_Combat; }
+    public static void Postfix(CombatHUD __instance, CombatGameState Combat) {
+      m_HUD = __instance;
+      m_Combat = Combat;
+    }
+  }
+  [HarmonyPatch(typeof(CombatHUD))]
+  [HarmonyPatch("OnActorHovered")]
+  [HarmonyPatch(MethodType.Normal)]
+  public static class CombatHUD_OnActorHovered {
+    public static void Postfix(CombatHUD __instance) {
+      if (CustomAmmoCategories.Settings.SidePanelInfoTargetExternal == false) {
+        __instance.RefreshSidePanelInfo();
       }
     }
   }
@@ -70,8 +162,8 @@ namespace CustAmmoCategoriesPatches {
   [HarmonyPatch(MethodType.Normal)]
   public static class CombatHUD_RefreshPredictedHeatInfo {
     public static void Postfix(CombatHUDActorInfo __instance) {
-      if (__instance.HUD.SidePanelTargetShown()) {
-        __instance.HUD.SidePanelTargetRefresh();
+      if (CustomAmmoCategories.Settings.SidePanelInfoSelfExternal == false) {
+        __instance.HUD.RefreshSidePanelInfo();
       }
     }
   }
@@ -80,8 +172,8 @@ namespace CustAmmoCategoriesPatches {
   [HarmonyPatch(MethodType.Normal)]
   public static class CombatHUD_RefreshPredictedStabilityInfo {
     public static void Postfix(CombatHUDActorInfo __instance) {
-      if (__instance.HUD.SidePanelTargetShown()) {
-        __instance.HUD.SidePanelTargetRefresh();
+      if (CustomAmmoCategories.Settings.SidePanelInfoSelfExternal == false) {
+        __instance.HUD.RefreshSidePanelInfo();
       }
     }
   }
@@ -90,11 +182,6 @@ namespace CustAmmoCategoriesPatches {
   [HarmonyPatch(MethodType.Normal)]
   public static class CombatHUDMechTray_Update {
     public static void Postfix(CombatHUDMechTray __instance, CombatHUD ___HUD) {
-      if (___HUD.SidePanelTargetShown()&&(___HUD.isSidePanelTargetRefresh())) {
-        if (___HUD.ShowSidePanelActorInfo()&&(___HUD.SidePanel.IsHovered == false)) {
-          ___HUD.ShowSidePanelTargetInfo();
-        }
-      }
     }
   }
   [HarmonyPatch(typeof(MoveStatusPreview))]
@@ -104,13 +191,6 @@ namespace CustAmmoCategoriesPatches {
   public static class MoveStatusPreview_DisplayPreviewStatus {
     public static Dictionary<AbstractActor, string> AdditionalTitles = new Dictionary<AbstractActor, string>();
     public static Dictionary<AbstractActor, string> AdditionalDescritions = new Dictionary<AbstractActor, string>();
-    private static bool ShowActorInfo = true;
-    public static void ShowSidePanelActorInfo(this CombatHUD HUD, bool value) {
-      ShowActorInfo = value;
-    }
-    public static bool ShowSidePanelActorInfo(this CombatHUD HUD) {
-      return ShowActorInfo;
-    }
     public static void getAdditionalStringMoving(AbstractActor actor, out string title, out string description) {
       if (AdditionalTitles.ContainsKey(actor) == false) { title = string.Empty; } else { title = AdditionalTitles[actor]; }
       if (AdditionalDescritions.ContainsKey(actor) == false) { description = string.Empty; } else { description = AdditionalDescritions[actor]; }
@@ -273,7 +353,7 @@ namespace CustAmmoCategoriesPatches {
       } catch (Exception ex) { Log.M.TWL(0, ex.ToString(), true); }
 
       if (moveType != null) {
-        movement = FormatMeter(moveType, spareMove, maxMove) + "\n";
+        movement = "\n" + FormatMeter(moveType, spareMove, maxMove);
       }
     }
     public static Text ShowNumericInfo(this CombatHUD HUD) {
@@ -281,21 +361,22 @@ namespace CustAmmoCategoriesPatches {
       AbstractActor actor = HUD.SelectedActor;
       try {
         if (actor == null) return new Text(text.ToString());
-        string prefix = null, numbers = null, postfix = null;
+        string numbers = null, postfix = null;
         text.Append("<size=100%><b>");
         {
-          if (actor is Mech mech) {
+          Mech mech = actor as Mech;
+          if (mech != null) {
             //string heatStr = "CH:" + mech.CurrentHeat;
             float heat = mech.CurrentHeat, stab = mech.CurrentStability;
             GetPreviewNumbers(HUD, actor, ref heat, ref stab, ref postfix);
-            numbers = FormatPrediction("__/AIM.HEAT/__", mech.CurrentHeat, heat) + "\n"
-                    + FormatPrediction("__/AIM.STABILITY/__", mech.CurrentStability, stab) + "\n";
+            numbers = FormatPrediction("\n__/AIM.HEAT/__", mech.CurrentHeat, heat) + "\n"
+                    + FormatPrediction("__/AIM.STABILITY/__", mech.CurrentStability, stab);
           } else {
             float heat = 0f, stab = 0f;
             GetPreviewNumbers(HUD, actor, ref heat, ref stab, ref postfix);
           }
-          text.Append(GetBasicInfo(actor)).Append('\n');
-          text.Append(prefix).Append(numbers).Append(postfix);
+          text.Append(GetBasicInfo(actor));
+          text.Append(numbers).Append(postfix);
         }
         text.Append("</b></size>");
 
@@ -304,33 +385,50 @@ namespace CustAmmoCategoriesPatches {
     }
     public static Text ShowTargetNumericInfo(this CombatHUD HUD) {
       StringBuilder text = new StringBuilder(100);
-      ICombatant target = HUD.SelectedTarget;
+      ICombatant target = HUD.TargetingComputer.ActivelyShownCombatant;
+      if (target == null) { target = HUD.HoveredCombatant; }
       try {
         if (target == null) { return new Text(text.ToString()); }
-        if (HUD.TargetingComputer.ActorInfo.DetailsDisplay.gameObject.activeSelf == false) { return new Text("?????"); }
-        string prefix = null, numbers = null, postfix = null;
+        if (CustomAmmoCategories.Settings.SidePanelInfoTargetExternal) {
+          return HUD.SelectedActor.getTargetInfo(target);
+        }
+        //if (HUD.TargetingComputer.ActorInfo.DetailsDisplay.gameObject.activeSelf == false) { return new Text("?????"); }
+        string numbers = null, postfix = null;
         text.Append("<size=100%><b>");
         {
           AbstractActor actor = target as AbstractActor;
           if(actor != null) {
-            postfix = "__/SPEED/__:"+actor.MaxWalkDistance+"/"+actor.MaxSprintDistance;
-            postfix = "__/DISTANCE/__:" + Mathf.Round(Vector3.Distance(HUD.SelectedActor.CurrentPosition,actor.CurrentPosition));
+            postfix = "\n__/SPEED/__:"+actor.MaxWalkDistance+"/"+actor.MaxSprintDistance;
+            Vector3 pos = HUD.SelectedActor.CurrentPosition;
+            if (HUD.SelectionHandler != null) {
+              SelectionStateMove moveState = HUD.SelectionHandler.ActiveState as SelectionStateMove;
+              SelectionStateJump jumpState = HUD.SelectionHandler.ActiveState as SelectionStateJump;
+              if (moveState != null) {
+                pos = moveState.PreviewPos;
+                //moveState.PreviewPos
+              } else if (jumpState != null) {
+                pos = jumpState.PreviewPos;
+              }
+            }
+            postfix = "\n__/DISTANCE/__:" + Mathf.Round(Vector3.Distance(pos, actor.CurrentPosition));
             Pilot pilot = actor.GetPilot();
             if (pilot != null) {
+              bool first = true;
               foreach (Ability ability in pilot.Abilities) {
                 if (ability?.Def == null || !ability.Def.IsPrimaryAbility) continue;
-                text.Append(ability.Def.Description?.Name).Append("\n");
+                if (first) { first = false; } else { text.Append("\n"); }
+                text.Append(ability.Def.Description?.Name);
               }
-              if (text.Length <= 0) text.Append("__/AIM.NO_SKILL/__");
+              if (text.Length <= 0) text.Append("\n__/AIM.NO_SKILL/__");
             }
           }
           if (target is Mech mech) {
             //string heatStr = "CH:" + mech.CurrentHeat;
-            numbers = FormatMeter("__/AIM.HEAT/__", mech.CurrentHeat, mech.MaxHeat) + "\n"
-                    + FormatMeter("__/AIM.STABILITY/__", mech.CurrentStability, mech.MaxStability) + "\n";
+            numbers = FormatMeter("\n__/AIM.HEAT/__", mech.CurrentHeat, mech.MaxHeat) + "\n"
+                    + FormatMeter("__/AIM.STABILITY/__", mech.CurrentStability, mech.MaxStability);
           }
-          text.Append(GetBasicInfo(target)).Append('\n');
-          text.Append(prefix).Append(numbers).Append(postfix);
+          text.Append(GetBasicInfo(target));
+          text.Append(numbers).Append(postfix);
         }
         text.Append("</b></size>");
 
@@ -522,9 +620,17 @@ namespace CustAmmoCategoriesPatches {
           empty = false;
         }
       }*/
-      if (HUD.ShowSidePanelActorInfo()) {
+      if (HUD.InfoPanelShowState()) {
         if (empty) { title.Append("INFO"); } else { description.Append("\n"); };
-        description.Append(HUD.ShowNumericInfo().ToString());
+        if (CustomAmmoCategories.Settings.SidePanelInfoSelfExternal) {
+          description.Append(actor.getSelfInfo().ToString());
+        } else {
+          description.Append(HUD.ShowNumericInfo().ToString());
+        }
+        if (HUD.TargetingComputer.ActivelyShownCombatant != null) {
+          description.Append("\n__/TARGET/__:\n");
+          description.Append(HUD.ShowTargetNumericInfo().ToString());
+        }
         empty = false;
       }
       if (empty == false) {

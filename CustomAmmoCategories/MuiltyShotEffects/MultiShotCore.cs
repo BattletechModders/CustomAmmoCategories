@@ -361,72 +361,75 @@ namespace CustAmmoCategories {
     }
     protected override void PlayTerrainImpactVFX() {
       MapTerrainDataCell cellAt = this.weapon.parent.Combat.MapMetaData.GetCellAt(this.hitInfo.hitPositions[this.hitIndex]);
-      if (cellAt == null)
-        return;
-      string vfxNameModifier = cellAt.GetVFXNameModifier();
-      string str1;
-      switch (cellAt.GetAudioSurfaceType()) {
-        case AudioSwitch_surface_type.dirt:
-          str1 = "dirt" + vfxNameModifier;
-          break;
-        case AudioSwitch_surface_type.metal:
-          str1 = "metal";
-          break;
-        case AudioSwitch_surface_type.snow:
-          str1 = "snow";
-          break;
-        case AudioSwitch_surface_type.wood:
-          str1 = "wood";
-          break;
-        case AudioSwitch_surface_type.brush:
-          str1 = "brush";
-          break;
-        case AudioSwitch_surface_type.concrete:
-          str1 = "concrete" + vfxNameModifier;
-          break;
-        case AudioSwitch_surface_type.debris_glass:
-          str1 = "debris_glass" + vfxNameModifier;
-          break;
-        case AudioSwitch_surface_type.gravel:
-          str1 = "gravel";
-          break;
-        case AudioSwitch_surface_type.ice:
-          str1 = "ice";
-          break;
-        case AudioSwitch_surface_type.lava:
-          str1 = "lava";
-          break;
-        case AudioSwitch_surface_type.mud:
-          str1 = "mud";
-          break;
-        case AudioSwitch_surface_type.sand:
-          str1 = "sand";
-          break;
-        case AudioSwitch_surface_type.water_deep:
-        case AudioSwitch_surface_type.water_shallow:
-          str1 = "water";
-          break;
-        default:
-          str1 = "dirt";
-          break;
-      }
-      string str2 = string.Format("{0}_{1}", (object)this.terrainHitVFXBase, (object)str1);
-      GameObject gameObject = this.weapon.parent.Combat.DataManager.PooledInstantiate(str2, BattleTechResourceType.Prefab, new Vector3?(), new Quaternion?(), (Transform)null);
-      if ((UnityEngine.Object)gameObject == (UnityEngine.Object)null) {
-        WeaponEffect.logger.LogError((object)(this.weapon.Name + " WeaponEffect.PlayTerrainImpactVFX had an invalid VFX name: " + str2));
-      } else {
-        this.ScaleWeaponEffect(gameObject);
-        ParticleSystem component = gameObject.GetComponent<ParticleSystem>();
-        component.Stop(true);
-        component.Clear(true);
-        component.transform.position = this.endPos;
-        component.transform.LookAt(this.startingTransform.position);
-        BTCustomRenderer.SetVFXMultiplier(component);
-        component.Play(true);
-        AutoPoolObject autoPoolObject = gameObject.GetComponent<AutoPoolObject>();
-        if ((UnityEngine.Object)autoPoolObject == (UnityEngine.Object)null)
-          autoPoolObject = gameObject.AddComponent<AutoPoolObject>();
-        autoPoolObject.Init(this.weapon.parent.Combat.DataManager, str2, component);
+      if (cellAt == null) { return; };
+      try {
+        string vfxNameModifier = cellAt.GetVFXNameModifier();
+        string str1;
+        switch (cellAt.GetAudioSurfaceType()) {
+          case AudioSwitch_surface_type.dirt:
+            str1 = "dirt" + vfxNameModifier;
+            break;
+          case AudioSwitch_surface_type.metal:
+            str1 = "metal";
+            break;
+          case AudioSwitch_surface_type.snow:
+            str1 = "snow";
+            break;
+          case AudioSwitch_surface_type.wood:
+            str1 = "wood";
+            break;
+          case AudioSwitch_surface_type.brush:
+            str1 = "brush";
+            break;
+          case AudioSwitch_surface_type.concrete:
+            str1 = "concrete" + vfxNameModifier;
+            break;
+          case AudioSwitch_surface_type.debris_glass:
+            str1 = "debris_glass" + vfxNameModifier;
+            break;
+          case AudioSwitch_surface_type.gravel:
+            str1 = "gravel";
+            break;
+          case AudioSwitch_surface_type.ice:
+            str1 = "ice";
+            break;
+          case AudioSwitch_surface_type.lava:
+            str1 = "lava";
+            break;
+          case AudioSwitch_surface_type.mud:
+            str1 = "mud";
+            break;
+          case AudioSwitch_surface_type.sand:
+            str1 = "sand";
+            break;
+          case AudioSwitch_surface_type.water_deep:
+          case AudioSwitch_surface_type.water_shallow:
+            str1 = "water";
+            break;
+          default:
+            str1 = "dirt";
+            break;
+        }
+        string str2 = string.Format("{0}_{1}", (object)this.terrainHitVFXBase, (object)str1);
+        GameObject gameObject = this.weapon.parent.Combat.DataManager.PooledInstantiate(str2, BattleTechResourceType.Prefab, new Vector3?(), new Quaternion?(), (Transform)null);
+        if ((UnityEngine.Object)gameObject == (UnityEngine.Object)null) {
+          WeaponEffect.logger.LogError((object)(this.weapon.Name + " WeaponEffect.PlayTerrainImpactVFX had an invalid VFX name: " + str2));
+        } else {
+          this.ScaleWeaponEffect(gameObject);
+          ParticleSystem component = gameObject.GetComponent<ParticleSystem>();
+          component.Stop(true);
+          component.Clear(true);
+          component.transform.position = this.endPos;
+          component.transform.LookAt(this.startingTransform.position);
+          BTCustomRenderer.SetVFXMultiplier(component);
+          component.Play(true);
+          AutoPoolObject autoPoolObject = gameObject.GetComponent<AutoPoolObject>();
+          if ((UnityEngine.Object)autoPoolObject == (UnityEngine.Object)null)
+            autoPoolObject = gameObject.AddComponent<AutoPoolObject>();
+          autoPoolObject.Init(this.weapon.parent.Combat.DataManager, str2, component);
+        }
+      }catch(Exception e) {
+        Log.M.TWL(0, ToString(), true);
       }
     }
     protected override void PlayImpact() {

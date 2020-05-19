@@ -241,7 +241,7 @@ namespace CustAmmoCategories {
         foreach(Weapon eweapon in enemy.Weapons) {
           Log.LogWrite("  " + eweapon.UIName);
           if (eweapon.CanFire == false) { Log.LogWrite(" - can't fire\n"); continue; }
-          if (CustomAmmoCategories.IsWeaponAMSImmune(eweapon)) { Log.LogWrite(" - AMS imune\n"); continue; }
+          if (eweapon.AMSImmune()) { Log.LogWrite(" - AMS imune\n"); continue; }
           MissileLauncherEffect eweffect = eweapon.getWeaponEffect() as MissileLauncherEffect;
           if (eweffect == null) { Log.LogWrite(" - not missile launcher\n"); continue; }
           float distance = Vector3.Distance(enemy.CurrentPosition, weapon.parent.CurrentPosition);

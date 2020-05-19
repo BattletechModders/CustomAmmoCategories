@@ -2,6 +2,7 @@
 using CustAmmoCategories;
 using CustAmmoCategoriesPatches;
 using CustomAmmoCategoriesLog;
+using CustomAmmoCategoriesPathes;
 using Harmony;
 using System;
 using System.Threading;
@@ -44,6 +45,8 @@ namespace CustomAmmoCategoriesPatches {
         Weapon_InternalAmmo.Clear();
         BraceNode_Tick.Clear();
         AreaOfEffectHelper.Clear();
+        CombatHUDWeaponPanel_CombatHUDWeaponPanel.Clear();
+        CombatHUDInfoSidePanelHelper.Clear();
       } catch(Exception e) {
         Log.M.TWL(0, e.ToString());
       }

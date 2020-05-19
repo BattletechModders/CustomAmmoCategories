@@ -284,6 +284,9 @@ namespace CustAmmoCategories {
     public bool HideIfOnlyVariant { get; set; }
     public float MinMissRadius { get; set; }
     public float MaxMissRadius { get; set; }
+    public TripleBoolean AMSImmune { get; set; }
+    public float AMSDamage { get; set; }
+    public float MissileHealth { get; set; }
     public ExtAmmunitionDef() {
       Id = "NotSet";
       Name = string.Empty;
@@ -396,6 +399,9 @@ namespace CustAmmoCategories {
       HideIfOnlyVariant = false;
       MinMissRadius = 0f;
       MaxMissRadius = 0f;
+      AMSImmune = TripleBoolean.NotSet;
+      AMSDamage = 0f;
+      MissileHealth = 0f;
     }
   }
 }
@@ -423,12 +429,14 @@ namespace CustomAmmoCategoriesPatches {
       try {
         CustomAmmoCategoriesLog.Log.LogWrite(defTemp["Description"]["Id"] + "\n");
         string AmmoCategory = "NotSet";
-        if (defTemp["Category"] != null) {
+        if ((defTemp["Category"] != null)&&(defTemp["ammoCategoryID"] == null)) {
           AmmoCategory = (string)defTemp["Category"];
-          defTemp.Remove("Category");
           //defTemp["ammoCategoryID"] = AmmoCategory;
         } else {
           AmmoCategory = (string)defTemp["ammoCategoryID"];
+        }
+        if (defTemp["Category"] != null) {
+          defTemp.Remove("Category");
         }
         if (CustomAmmoCategories.contains(AmmoCategory) == false) {
           Log.M.TWL(0, "Custom Ammo Categories list not contains " + AmmoCategory);
@@ -904,6 +912,18 @@ namespace CustomAmmoCategoriesPatches {
         if (defTemp["DamageVariance"] != null) {
           extAmmoDef.DamageVariance = (float)defTemp["DamageVariance"];
           defTemp.Remove("DamageVariance");
+        }
+        if (defTemp["AMSImmune"] != null) {
+          extAmmoDef.AMSImmune = ((bool)defTemp["AMSImmune"] == true) ? TripleBoolean.True : TripleBoolean.False;
+          defTemp.Remove("AMSImmune");
+        }
+        if (defTemp["AMSDamage"] != null) {
+          extAmmoDef.AMSDamage = (float)defTemp["AMSDamage"];
+          defTemp.Remove("AMSDamage");
+        }
+        if (defTemp["MissileHealth"] != null) {
+          extAmmoDef.MissileHealth = (float)defTemp["MissileHealth"];
+          defTemp.Remove("MissileHealth");
         }
         if (defTemp["ChassisTagsAccuracyModifiers"] != null) {
           extAmmoDef.TagsAccuracyModifiers = JsonConvert.DeserializeObject<Dictionary<string, float>>(defTemp["ChassisTagsAccuracyModifiers"].ToString());
