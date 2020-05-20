@@ -131,6 +131,8 @@ namespace CustAmmoCategories {
       if (this.Orders != null)
         return false;
       this.HideFireButton(false);
+      //ExplosionAPIHelper.AoEExplode("WFX_Nuke", Vector3.one * 50f, 20f, "big_explosion", this.targetPosition, 100f, 2000f, 100f, 100f, new List<EffectData>(), false, 3, 40, 1f, 5, string.Empty, Vector3.zero, string.Empty, 0, 0);
+      //return true;
       GenericPopupBuilder popup = null;
       StringBuilder text = new StringBuilder();
       List<Weapon> weaponsList = new List<Weapon>();

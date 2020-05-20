@@ -102,8 +102,12 @@ namespace CustAmmoCategories {
     public static void Clear() {
       Log.M.TWL(0, "PersistentFloatieHelper.Clear:"+ allFloaties.Count);
       foreach(PersistentFloatieMessage msg in allFloaties) {
-        Log.M.WL(1, "message:" + msg.Text.text);
-        GameObject.Destroy(msg.gameObject);
+        try {
+          Log.M.WL(1, "message:" + msg.Text.text);
+          GameObject.Destroy(msg.gameObject);
+        }catch(Exception e) {
+          Log.M.TWL(0, e.ToString(),true);
+        }
       }
       allFloaties.Clear();
     }

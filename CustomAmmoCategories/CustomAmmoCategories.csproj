@@ -168,6 +168,7 @@
     <Compile Include="DeferredEffect.cs" />
     <Compile Include="DynamicMap.cs" />
     <Compile Include="DynamicTrees.cs" />
+    <Compile Include="ExplosionAPI.cs" />
     <Compile Include="Frag.cs" />
     <Compile Include="FragBallisticEffect.cs" />
     <Compile Include="FragBulletEffect.cs" />

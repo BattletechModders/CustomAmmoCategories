@@ -1,0 +1,293 @@
+﻿using BattleTech;
+using BattleTech.UI;
+using CustomAmmoCategoriesLog;
+using CustomAmmoCategoriesPatches;
+using Harmony;
+using Localize;
+using System;
+using System.Collections.Generic;
+using System.Reflection;
+using UnityEngine;
+
+namespace CustAmmoCategories {
+  [HarmonyPatch(typeof(CombatHUD))]
+  [HarmonyPatch("Update")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { })]
+  public static class CombatHUD_Init {
+    private static float t = 0f;
+    public static void Postfix(CombatHUD __instance) {
+      if (t > 5f) {
+        ExplosionAPIHelper.Update(t);
+        t = 0f;
+      } else {
+        t += Time.deltaTime;
+      }
+    }
+  }
+  public static class ExplosionAPIHelper{
+    private static CombatGameState combat;
+    private static AbstractActor fakeActor;
+    private static Weapon fakeWeapon;
+    private static string GUID;
+    private static bool Inited = false;
+    private static Dictionary<ObjectSpawnDataSelf, float> explodeVFXdurations = new Dictionary<ObjectSpawnDataSelf, float>();
+    public static void Update(float delta) {
+      HashSet<ObjectSpawnDataSelf> toClear = new HashSet<ObjectSpawnDataSelf>();
+      HashSet<ObjectSpawnDataSelf> toWatch = explodeVFXdurations.Keys.ToHashSet();
+      foreach(ObjectSpawnDataSelf ex in toWatch) {
+        explodeVFXdurations[ex] -= delta;
+        if (explodeVFXdurations[ex] <= 0f) { toClear.Add(ex); }
+      }
+      foreach(ObjectSpawnDataSelf ex in toClear) {
+        explodeVFXdurations.Remove(ex);
+        ex.CleanupSelf();
+      }
+    }
+    public static void Clear() {
+      foreach (var ex in explodeVFXdurations) {
+        ex.Key.CleanupSelf();
+      }
+      explodeVFXdurations.Clear();
+      fakeActor = null;
+      combat = null;
+      fakeWeapon = null;
+      Inited = false;
+    }
+    public static void Init(CombatGameState combat) {
+      GUID = "FAKE_"+Guid.NewGuid().ToString();
+      ExplosionAPIHelper.combat = combat;
+      AbstractActor srcActor = null;
+      foreach(AbstractActor actor in combat.AllActors) {
+        if((actor.TeamId == combat.LocalPlayerTeamGuid)&&(actor.Weapons.Count > 0)
+          &&((actor.UnitType == UnitType.Vehicle)||(actor.UnitType == UnitType.Mech))) { srcActor = actor; break; }
+      };
+      if (srcActor == null) { return; }
+      Mech srcMech = srcActor as Mech;
+      Vehicle srcVehicle = srcActor as Vehicle;
+      if ((srcMech == null) && (srcVehicle == null)) { return; }
+      if(srcMech != null) {
+        fakeActor = new Mech(srcMech.MechDef,srcMech.pilot.pilotDef,new HBS.Collections.TagSet(), GUID, combat, srcMech.spawnerGUID, srcMech.CustomHeraldryDef);
+        fakeActor.SetGuid(GUID);
+        MechComponentRef cmpRef = new MechComponentRef("FakeWeapon", "", ComponentType.Weapon, ChassisLocations.CenterTorso);
+        cmpRef.ComponentDefID = srcMech.Weapons[0].defId;
+        fakeWeapon = new Weapon(fakeActor as Mech,combat, cmpRef, GUID+".0");
+        typeof(MechComponent).GetProperty("componentDef", BindingFlags.Instance | BindingFlags.Public).GetSetMethod(true).Invoke(fakeWeapon, new object[1] { (object)srcMech.Weapons[0].componentDef });
+      }
+      if (srcVehicle != null) {
+        fakeActor = new Vehicle(srcVehicle.VehicleDef, srcVehicle.pilot.pilotDef, new HBS.Collections.TagSet(), GUID, combat, srcVehicle.spawnerGUID, srcVehicle.CustomHeraldryDef);
+        fakeActor.SetGuid(GUID);
+        VehicleComponentRef cmpRef = new VehicleComponentRef("FakeWeapon", "", ComponentType.Weapon, VehicleChassisLocations.Front);
+        cmpRef.ComponentDefID = srcVehicle.Weapons[0].defId;
+        fakeWeapon = new Weapon(fakeActor as Vehicle, combat, new VehicleComponentRef("FakeWeapon", "", ComponentType.Weapon, VehicleChassisLocations.Front), GUID + ".0");
+        typeof(MechComponent).GetProperty("componentDef", BindingFlags.Instance | BindingFlags.Public).GetSetMethod(true).Invoke(fakeWeapon, new object[1] { (object)srcVehicle.Weapons[0].componentDef });
+      }
+      if ((fakeActor == null)||(fakeWeapon == null)) { return; }
+      typeof(AbstractActor).GetField("_team", BindingFlags.NonPublic | BindingFlags.Instance).SetValue(fakeActor, combat.LocalPlayerTeam);
+      typeof(AbstractActor).GetField("_teamId", BindingFlags.NonPublic | BindingFlags.Instance).SetValue(fakeActor, combat.LocalPlayerTeamGuid);
+      Inited = true;
+    }
+    public static DesignMaskDef TempDesignMask(string name) {
+      if (string.IsNullOrEmpty(name)) { return null; };
+      if (DynamicMapHelper.loadedMasksDef.ContainsKey(name) == false) { return null; }
+      return DynamicMapHelper.loadedMasksDef[name];
+    }
+    public static void applyExplodeBurn(Weapon fakeWeapon,Vector3 pos, int fireRadius, int fireStrength, float fireChance, int fireDurationNoForest) {
+      Log.LogWrite("Applying burn effect:"+pos + "\n");
+      MapTerrainDataCellEx cell = combat.MapMetaData.GetCellAt(pos) as MapTerrainDataCellEx;
+      if (cell == null) {
+        CustomAmmoCategoriesLog.Log.LogWrite(" cell is not extended\n");
+        return;
+      }
+      Log.LogWrite(" fire at " + pos + "\n");
+      fireDurationNoForest = Mathf.RoundToInt((float)fireDurationNoForest * DynamicMapHelper.BiomeWeaponFireDuration());
+      fireStrength = Mathf.RoundToInt((float)fireStrength * DynamicMapHelper.BiomeWeaponFireStrength());
+      fireChance *= DynamicMapHelper.BiomeLitFireChance();
+
+      if (fireRadius == 0) {
+        if (cell.hexCell.TryBurnCell(fakeWeapon, fireChance, fireStrength, fireDurationNoForest)) {
+          DynamicMapHelper.burningHexes.Add(cell.hexCell);
+        };
+      } else {
+        List<MapTerrainHexCell> affectedHexCells = MapTerrainHexCell.listHexCellsByCellRadius(cell, fireRadius);
+        foreach (MapTerrainHexCell hexCell in affectedHexCells) {
+          if (hexCell.TryBurnCell(fakeWeapon, fireChance, fireStrength, fireDurationNoForest)) {
+            DynamicMapHelper.burningHexes.Add(hexCell);
+          };
+        }
+      }
+    }
+    public static void applyImpactTempMask(Vector3 pos, string LongVFX, Vector3 scale, string designMask, int radius, int turns) {
+      Log.M.TWL(0, "Applying explode long effect:" + LongVFX + "/" + designMask + "/" + pos);
+      DesignMaskDef mask = TempDesignMask(designMask);
+      MapTerrainDataCellEx cell = combat.MapMetaData.GetCellAt(pos) as MapTerrainDataCellEx;
+      if (cell == null) {
+        CustomAmmoCategoriesLog.Log.LogWrite(" cell is not extended\n");
+        return;
+      }
+      //if (mask == null) { return; };
+      if (radius == 0) {
+        cell.hexCell.addTempTerrainVFX(combat, LongVFX, turns, scale);
+        DynamicMapHelper.addDesignMaskAsync(cell.hexCell, mask, turns);
+        //AsyncDesignMaskUpdater admu = new AsyncDesignMaskUpdater(cell.hexCell, mask, turns);
+        //Thread designMaskApplyer = new Thread(new ThreadStart(admu.asyncAddMask));
+        //designMaskApplyer.Start();
+      } else {
+        List<MapTerrainHexCell> affectedHexCells = MapTerrainHexCell.listHexCellsByCellRadius(cell, radius);
+        foreach (MapTerrainHexCell hexCell in affectedHexCells) {
+          hexCell.addTempTerrainVFX(combat, LongVFX, turns, scale);
+          DynamicMapHelper.addDesignMaskAsync(hexCell, mask, turns);
+        }
+        //AsyncDesignMaskUpdater admu = new AsyncDesignMaskUpdater(affectedHexCells, mask, turns);
+        //Thread designMaskApplyer = new Thread(new ThreadStart(admu.asyncAddMask));
+        //designMaskApplyer.Start();
+      }
+    }
+    public static void AoEPlayExplodeVFX(string VFX, Vector3 vfxScale, string SFX, Vector3 pos, float duration) {
+      if (string.IsNullOrEmpty(SFX) == false) CustomSoundHelper.SpawnAudioEmitter(SFX, pos, false);
+      if (string.IsNullOrEmpty(VFX)||(duration < CustomAmmoCategories.Epsilon)) { return; };
+      ObjectSpawnDataSelf explodeObject = new ObjectSpawnDataSelf(VFX, pos, Quaternion.identity, vfxScale, true, false);
+      explodeObject.SpawnSelf(combat);
+      explodeVFXdurations.Add(explodeObject, duration);
+    }
+    public static void AoEExplode(string VFX,Vector3 vfxScale, float vfxDuration, string SFX, Vector3 pos, 
+      float radius, float damage, float heat, float stability, List<EffectData> effects, bool effectsFalloff, int fireRadius, int fireStrength, float fireChance, int fireDurationNoForest, 
+      string LongVFX, Vector3 longVFXScale, string designMask, int dmRadius, int turns
+    ) {
+      if (Inited == false) { return; };
+      float Range = radius;
+      float AoEDmg = damage;
+      if (AoEDmg <= CustomAmmoCategories.Epsilon) { return; }
+      if (Range <= CustomAmmoCategories.Epsilon) { return; }
+      Log.M.TWL(0,"Spawning explode VFX");
+      Log.LogWrite(" Range:" + Range + " Damage:" + AoEDmg + "\n");
+      List<AoEExplosionRecord> AoEDamage = new List<AoEExplosionRecord>();
+      //List<EffectData> effects = component.AoEExplosionEffects();
+      int SequenceID = combat.StackManager.NextStackUID;
+      foreach (ICombatant target in combat.GetAllLivingCombatants()) {
+        if (target.IsDead) { continue; };
+        if (target.isDropshipNotLanded()) { continue; };
+        Vector3 CurrentPosition = target.CurrentPosition + Vector3.up * target.AoEHeightFix();
+        float distance = Vector3.Distance(CurrentPosition, pos);
+        if (CustomAmmoCategories.Settings.DefaultAoEDamageMult[target.UnitType].Range < CustomAmmoCategories.Epsilon) { CustomAmmoCategories.Settings.DefaultAoEDamageMult[target.UnitType].Range = 1f; }
+        distance /= CustomAmmoCategories.Settings.DefaultAoEDamageMult[target.UnitType].Range;
+        if (distance > Range) { continue; };
+        float HeatDamage = heat * (Range - distance) / Range;
+        float Damage = AoEDmg * CustomAmmoCategories.Settings.DefaultAoEDamageMult[target.UnitType].Damage * (Range - distance) / Range;
+        float StabDamage = stability * (Range - distance) / Range;
+        foreach (EffectData effect in effects) {
+          string effectID = string.Format("OnComponentAoEExplosionEffect_{0}_{1}", (object)fakeActor.GUID, (object)SequenceID);
+          Log.LogWrite($"  Applying effectID:{effect.Description.Id} with effectDescId:{effect?.Description.Id} effectDescName:{effect?.Description.Name}\n");
+          combat.EffectManager.CreateEffect(effect, effectID, -1, fakeActor, target, new WeaponHitInfo(), 0, false);
+        }
+        Mech mech = target as Mech;
+        Vehicle vehicle = target as Vehicle;
+        if (target.isHasHeat()) {
+          Damage += HeatDamage;
+          HeatDamage = 0f;
+        };
+        if (target.isHasStability()) {
+          StabDamage = 0f;
+        }
+        List<int> hitLocations = null;
+        Dictionary<int, float> AOELocationDict = null;
+        if (mech != null) {
+          hitLocations = combat.HitLocation.GetPossibleHitLocations(pos, mech);
+          if (CustomAmmoCategories.MechHitLocations == null) { CustomAmmoCategories.InitHitLocationsAOE(); };
+          AOELocationDict = CustomAmmoCategories.MechHitLocations;
+          int HeadIndex = hitLocations.IndexOf((int)ArmorLocation.Head);
+          if ((HeadIndex >= 0) && (HeadIndex < hitLocations.Count)) { hitLocations.RemoveAt(HeadIndex); };
+        } else
+        if (target is Vehicle) {
+          hitLocations = combat.HitLocation.GetPossibleHitLocations(pos, vehicle);
+          if (CustomAmmoCategories.VehicleLocations == null) { CustomAmmoCategories.InitHitLocationsAOE(); };
+          AOELocationDict = CustomAmmoCategories.VehicleLocations;
+        } else {
+          hitLocations = new List<int>() { 1 };
+          if (CustomAmmoCategories.OtherLocations == null) { CustomAmmoCategories.InitHitLocationsAOE(); };
+          AOELocationDict = CustomAmmoCategories.OtherLocations;
+        }
+        float fullLocationDamage = 0.0f;
+        foreach (int hitLocation in hitLocations) {
+          if (AOELocationDict.ContainsKey(hitLocation)) {
+            fullLocationDamage += AOELocationDict[hitLocation];
+          } else {
+            fullLocationDamage += 100f;
+          }
+        }
+        Log.LogWrite(" hitLocations: ");
+        foreach (int hitLocation in hitLocations) {
+          Log.LogWrite(" " + hitLocation);
+        }
+        Log.LogWrite("\n");
+        Log.LogWrite(" full location damage coeff " + fullLocationDamage + "\n");
+        AoEExplosionRecord AoERecord = new AoEExplosionRecord(target);
+        AoERecord.HeatDamage = HeatDamage;
+        AoERecord.StabDamage = StabDamage;
+        foreach (int hitLocation in hitLocations) {
+          float currentDamageCoeff = 100f;
+          if (AOELocationDict.ContainsKey(hitLocation)) {
+            currentDamageCoeff = AOELocationDict[hitLocation];
+          }
+          currentDamageCoeff /= fullLocationDamage;
+          float CurrentLocationDamage = Damage * currentDamageCoeff;
+          if (AoERecord.hitRecords.ContainsKey(hitLocation)) {
+            AoERecord.hitRecords[hitLocation].Damage += CurrentLocationDamage;
+          } else {
+            Vector3 hitpos = target.getImpactPositionSimple(pos, hitLocation);
+            AoERecord.hitRecords[hitLocation] = new AoEExplosionHitRecord(hitpos, CurrentLocationDamage);
+          }
+          Log.LogWrite("  location " + hitLocation + " damage " + AoERecord.hitRecords[hitLocation].Damage + "\n");
+        }
+        AoEDamage.Add(AoERecord);
+      }
+      Log.LogWrite("AoE Damage result:\n");
+      applyExplodeBurn(fakeWeapon, pos, fireRadius,fireStrength, fireChance, fireDurationNoForest);
+      applyImpactTempMask(pos, LongVFX, longVFXScale, designMask, dmRadius, turns);
+      AoEPlayExplodeVFX(VFX, vfxScale, SFX, pos, vfxDuration);
+      var fakeHit = new WeaponHitInfo(-1, -1, -1, -1, fakeActor.GUID, fakeActor.GUID, -1, null, null, null, null, null, null
+        , new AttackImpactQuality[1] { AttackImpactQuality.Solid }
+        , new AttackDirection[1] { AttackDirection.FromArtillery }
+        , new Vector3[1] { Vector3.zero }, null, null);
+      for (int index = 0; index < AoEDamage.Count; ++index) {
+        Log.LogWrite(" " + AoEDamage[index].target.DisplayName + ":" + AoEDamage[index].target.GUID + "\n");
+        Log.LogWrite(" Heat:" + AoEDamage[index].HeatDamage + "\n");
+        Log.LogWrite(" Instability:" + AoEDamage[index].StabDamage + "\n");
+        fakeHit.targetId = AoEDamage[index].target.GUID;
+        foreach (var AOEHitRecord in AoEDamage[index].hitRecords) {
+          Log.LogWrite("  location:" + AOEHitRecord.Key + " pos:" + AOEHitRecord.Value.hitPosition + " dmg:" + AOEHitRecord.Value.Damage + "\n");
+          float LocArmor = AoEDamage[index].target.ArmorForLocation(AOEHitRecord.Key);
+          if ((double)LocArmor < (double)AOEHitRecord.Value.Damage) {
+            combat.MessageCenter.PublishMessage((MessageCenterMessage)new FloatieMessage(fakeActor.GUID, AoEDamage[index].target.GUID, new Text("{0}", new object[1]
+            {
+                      (object) (int) Mathf.Max(1f, AOEHitRecord.Value.Damage)
+            }), combat.Constants.CombatUIConstants.floatieSizeMedium, FloatieMessage.MessageNature.StructureDamage, AOEHitRecord.Value.hitPosition.x, AOEHitRecord.Value.hitPosition.y, AOEHitRecord.Value.hitPosition.z));
+          } else {
+            combat.MessageCenter.PublishMessage((MessageCenterMessage)new FloatieMessage(fakeActor.GUID, AoEDamage[index].target.GUID, new Text("{0}", new object[1]
+            {
+                      (object) (int) Mathf.Max(1f, AOEHitRecord.Value.Damage)
+            }), combat.Constants.CombatUIConstants.floatieSizeMedium, FloatieMessage.MessageNature.ArmorDamage, AOEHitRecord.Value.hitPosition.x, AOEHitRecord.Value.hitPosition.y, AOEHitRecord.Value.hitPosition.z));
+          }
+          fakeHit.hitPositions[0] = AOEHitRecord.Value.hitPosition;
+#if BT1_8
+          AoEDamage[index].target.TakeWeaponDamage(fakeHit, AOEHitRecord.Key, fakeWeapon, AOEHitRecord.Value.Damage, 0f, 0, DamageType.AmmoExplosion);
+#else
+          AoEDamage[index].target.TakeWeaponDamage(fakeHit, AOEHitRecord.Key, fakeWeapon, AOEHitRecord.Value.Damage, 0, DamageType.AmmoExplosion);
+#endif
+        }
+        AoEDamage[index].target.HandleDeath(fakeActor.GUID);
+        Mech mech = AoEDamage[index].target as Mech;
+        if (mech != null) {
+          if (AoEDamage[index].HeatDamage > CustomAmmoCategories.Epsilon) {
+            mech.AddExternalHeat("AoE Component explosion", Mathf.RoundToInt(AoEDamage[index].HeatDamage));
+            mech.GenerateAndPublishHeatSequence(-1, true, false, fakeActor.GUID);
+          }
+          if (AoEDamage[index].StabDamage > CustomAmmoCategories.Epsilon) {
+            mech.AddAbsoluteInstability(AoEDamage[index].StabDamage, StabilityChangeSource.Effect, fakeActor.GUID);
+          }
+          mech.HandleKnockdown(-1, fakeActor.GUID, Vector2.one, (SequenceFinished)null);
+        }
+      }
+    }
+  }
+}

@@ -118,6 +118,25 @@ namespace CustAmmoCategories {
       }
       return impactPoint;
     }
+    public static Vector3 getImpactPositionSimple(this ICombatant initialTarget, Vector3 attackPosition, int hitLocation) {
+      Vector3 impactPoint = initialTarget.CurrentPosition;
+      AttackDirection attackDirection = AttackDirection.FromFront;
+      if ((UnityEngine.Object)initialTarget.GameRep != (UnityEngine.Object)null) {
+        impactPoint = initialTarget.GameRep.GetHitPosition(hitLocation);
+        attackDirection = initialTarget.Combat.HitLocation.GetAttackDirection(attackPosition, initialTarget);
+        Vector3 origin = attackPosition;
+        Vector3 vector3_2 = impactPoint - origin;
+        Ray ray2 = new Ray(origin, vector3_2.normalized);
+        foreach (Collider allRaycastCollider in initialTarget.GameRep.AllRaycastColliders) {
+          RaycastHit hitInfo;
+          if (allRaycastCollider.Raycast(ray2, out hitInfo, vector3_2.magnitude)) {
+            impactPoint = hitInfo.point;
+            break;
+          }
+        }
+      }
+      return impactPoint;
+    }
     public static bool BecomesDangerousOnImpact(this Weapon weapon) {
       return weapon.ammo().SurfaceBecomeDangerousOnImpact == TripleBoolean.True;
     }

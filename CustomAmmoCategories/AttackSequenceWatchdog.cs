@@ -128,6 +128,7 @@ namespace CustAmmoCategoriesPatches {
       if(wd != null) {
         wd.Init(__instance);
       }
+      ExplosionAPIHelper.Init(Combat);
     }
   }
 }
