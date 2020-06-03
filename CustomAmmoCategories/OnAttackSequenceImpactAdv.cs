@@ -233,6 +233,7 @@ namespace CustAmmoCategories {
           advRec.parent.resolve(advRec.target).AddInstability(advRec.Stability);
           Log.LogWrite(" Added instability:" + advRec.Stability + " overall: " + advRec.parent.resolve(advRec.target).Stability + "\n");
           advRec.target.HandleDeath(sequence.attacker.GUID);
+          advRec.isImplemented = true;
         }
         sequence.messageCoordinator().MessageComplete((MessageCenterMessage)impactMessage);
       }

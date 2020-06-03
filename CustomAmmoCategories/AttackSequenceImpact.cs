@@ -73,69 +73,66 @@ namespace CustAmmoCategories {
     public static float WeaponDamageDistance(Vector3 attackPos, ICombatant target, Weapon weapon, float damage, float rawDamage) {
       //var damagePerShot = weapon.DamagePerShot;
       //var adjustment = rawDamage / damagePerShot;
-      float varianceMultiplier;
-      var distance = Vector3.Distance(attackPos, target.TargetPosition);
-      var distanceDifference = weapon.MaxRange - distance;
-      var distanceRatio = distanceDifference / weapon.MaxRange;
-      var baseMultiplier = weapon.DistantVariance();
-      var distanceBasedFunctionMultiplier = (float)Math.Atan(Pi2 * distanceRatio + baseMultiplier);
-      if (distance < weapon.MaxRange) {
-        varianceMultiplier = Mathf.Max(
-            baseMultiplier,
-            Mathf.Min(
-                1.0f,
-                distanceBasedFunctionMultiplier
-            ));
-      } else { //out of range
-        return damage;
+      float baseMultiplier = weapon.DistantVariance();
+      float varianceMultiplier = 1f;
+      float distance = Vector3.Distance(attackPos, target.TargetPosition);
+      float middleRange = weapon.MediumRange;
+      float maxRange = weapon.MaxRange;
+      float ratio = 1f;
+      if ((maxRange - middleRange) > CustomAmmoCategories.Epsilon) { ratio = (distance - middleRange) / (maxRange - middleRange); };
+      if (baseMultiplier > 1f) {
+        if (distance <= middleRange) { varianceMultiplier = baseMultiplier; } else {
+          varianceMultiplier = baseMultiplier - weapon.RangedDmgFalloffType(ratio) * (baseMultiplier - 1f);
+        }
+      } else if(baseMultiplier < 1f) {
+        if (distance <= middleRange) { varianceMultiplier = 1f; } else {
+          varianceMultiplier = 1f - weapon.RangedDmgFalloffType(ratio) * (1f - baseMultiplier);
+        }
       }
       var computedDamage = damage * varianceMultiplier; //* adjustment;
-      CustomAmmoCategoriesLog.Log.LogWrite($"distanceBasedFunctionMultiplier: {distanceBasedFunctionMultiplier}\n" +
+      CustomAmmoCategoriesLog.Log.LogWrite($"varianceMultiplier: {varianceMultiplier}\n" +
                    $"defId: {weapon.defId}\n" +
-                   $"varianceMultiplier: {varianceMultiplier}\n" +
+                   $"baseMultiplier: {baseMultiplier}\n" +
                    //$"adjustment: {adjustment}\n" +
                    $"damage: {damage}\n" +
                    $"distance: {distance}\n" +
                    $"max: {weapon.MaxRange}\n" +
-                   $"distanceDifference {distanceDifference}\n" +
-                   $"baseMultplier: {baseMultiplier}\n" +
-                   $"distanceRatio: {distanceRatio}\n" +
+                   $"middle {middleRange}\n" +
+                   $"distanceRatio: {ratio}\n" +
                    $"computedDamage: {computedDamage}\n");
       return computedDamage;
     }
     public static float WeaponDamageRevDistance(Vector3 attackPos, ICombatant target, Weapon weapon, float damage, float rawDamage) {
       //var damagePerShot = weapon.DamagePerShot;
       //var adjustment = rawDamage / damagePerShot;
-      float varianceMultiplier;
-      var distance = Vector3.Distance(attackPos, target.TargetPosition);
-      var distanceDifference = weapon.MaxRange - distance;
-      var distanceRatio = distanceDifference / weapon.MinRange;
-      var baseMultiplier = weapon.DistantVariance();
-      var distanceBasedFunctionMultiplier = (float)Math.Atan(1f / (Pi2 * distanceRatio + baseMultiplier));
-      if (distance < weapon.MinRange) {
-        varianceMultiplier = 0;
-      } else if (distance <= weapon.MaxRange) {
-        varianceMultiplier = Mathf.Max(
-            baseMultiplier,
-            Mathf.Min(
-                1.0f,
-                distanceBasedFunctionMultiplier
-            ));
-      } else // out of range ¯\_(ツ)_/¯
-        {
-        return damage;
+      float baseMultiplier = weapon.DistantVariance();
+      float varianceMultiplier = 1f;
+      float distance = Vector3.Distance(attackPos, target.TargetPosition);
+      float middleRange = weapon.MediumRange;
+      float minRange = weapon.MinRange;
+      float ratio = 1f;
+      if (distance < middleRange) {
+        if ((minRange - middleRange) > CustomAmmoCategories.Epsilon) { ratio = (distance - minRange) / (middleRange - minRange); };
+      }
+      if (baseMultiplier > 1f) {
+        if (distance <= minRange) { varianceMultiplier = 1f; } else {
+          varianceMultiplier = 1f + weapon.RangedDmgFalloffType(ratio) * (baseMultiplier - 1f);
+        }
+      } else if (baseMultiplier < 1f) {
+        if (distance <= minRange) { varianceMultiplier = baseMultiplier; } else {
+          varianceMultiplier = baseMultiplier + weapon.RangedDmgFalloffType(ratio) * (1f - baseMultiplier);
+        }
       }
       var computedDamage = damage * varianceMultiplier; //* adjustment;
-      CustomAmmoCategoriesLog.Log.LogWrite($"reverseDistanceBasedFunctionMultiplier: {distanceBasedFunctionMultiplier}\n" +
+      CustomAmmoCategoriesLog.Log.LogWrite($"varianceMultiplier: {varianceMultiplier}\n" +
                    $"defId: {weapon.defId}\n" +
-                   $"varianceMultiplier: {varianceMultiplier}\n" +
+                   $"baseMultiplier: {baseMultiplier}\n" +
                    //$"adjustment: {adjustment}\n" +
                    $"damage: {damage}\n" +
                    $"distance: {distance}\n" +
-                   $"max: {weapon.MaxRange}\n" +
-                   $"distanceDifference {distanceDifference}\n" +
-                   $"baseMultplier: {baseMultiplier}\n" +
-                   $"distanceRatio: {distanceRatio}\n" +
+                   $"min: {weapon.MinRange}\n" +
+                   $"middle {middleRange}\n" +
+                   $"distanceRatio: {ratio}\n" +
                    $"computedDamage: {computedDamage}\n");
       return computedDamage;
     }

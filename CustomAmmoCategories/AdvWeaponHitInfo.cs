@@ -1,9 +1,13 @@
 ﻿using BattleTech;
 using CustomAmmoCategoriesLog;
+using CustomAmmoCategoriesPatches;
 using FluffyUnderware.Curvy;
+using Localize;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Reflection;
+using System.Text;
 using UnityEngine;
 using Random = UnityEngine.Random;
 
@@ -84,7 +88,23 @@ namespace CustAmmoCategories {
   }
   public class AdvWeaponHitInfoRec {
     public AdvWeaponHitInfo parent;
-    public int hitLocation;
+    private int f_hitLocation;
+    public int hitLocation { get { return f_hitLocation; }
+      set {
+        f_hitLocation = value;
+        if (f_hitLocation == 0) { hitLocationStr = "Air"; return; }
+        if (f_hitLocation == 65536) { hitLocationStr = "Ground"; return; }
+        Mech mech = target as Mech;
+        Vehicle vehicle = target as Vehicle;
+        Turret turret = target as Turret;
+        if (mech != null) { ArmorLocation loc = (ArmorLocation)f_hitLocation; hitLocationStr = loc.ToString(); }else
+        if (vehicle != null) { VehicleChassisLocations loc = (VehicleChassisLocations)f_hitLocation; hitLocationStr = loc.ToString(); }else
+        if (turret != null) { BuildingLocation loc = (BuildingLocation)f_hitLocation; hitLocationStr = loc.ToString(); } else {
+          hitLocationStr = "Structure";
+        }
+      }
+    }
+    public string hitLocationStr { get; private set; }
     public Vector3 hitPosition;
     public Vector3 startPosition;
     public float Damage;
@@ -92,6 +112,9 @@ namespace CustAmmoCategories {
     public float Heat;
     public float Stability;
     public float EffectsMod;
+    public bool isImplemented { get; set; }
+    public float hitRoll { get; set; }
+    public float correctedRoll { get; set; }
     public GameObject trajectoryObject;
     public CurvySpline trajectorySpline;
     public Vector3[] trajectory;
@@ -137,6 +160,7 @@ namespace CustAmmoCategories {
       isAOEproc = false;
       //weaponEffect = null;
       trajectoryInfo = new SplineGenerationInfo();
+      isImplemented = false;
     }
     public void GenerateTrajectory() {
       if (this.parent.weapon.weaponRep != null) {
@@ -171,11 +195,53 @@ namespace CustAmmoCategories {
     }
   }
   public class AdvCritLocationInfo {
-    public int armorLocation;
+    private int f_armorLocation;
+    private int f_structurerLocation;
+    public int armorLocation {
+      get { return f_armorLocation; }
+      set {
+        f_armorLocation = value;
+        if (f_armorLocation == 0) { armorLocationStr = "none"; return; }
+        if (f_armorLocation == 65536) { armorLocationStr = "none"; return; }
+        Mech mech = unit as Mech;
+        Vehicle vehicle = unit as Vehicle;
+        Turret turret = unit as Turret;
+        if (mech != null) { ArmorLocation loc = (ArmorLocation)f_armorLocation; armorLocationStr = loc.ToString(); } else
+        if (vehicle != null) { VehicleChassisLocations loc = (VehicleChassisLocations)f_armorLocation; armorLocationStr = loc.ToString(); } else
+        if (turret != null) { BuildingLocation loc = (BuildingLocation)f_armorLocation; armorLocationStr = loc.ToString(); } else {
+          armorLocationStr = "Structure";
+        }
+      }
+    }
+    public int structureLocation {
+      get { return f_structurerLocation; }
+      set {
+        f_structurerLocation = value;
+        if (f_structurerLocation == 0) { structureLocationStr = "none"; return; }
+        if (f_structurerLocation == 65536) { structureLocationStr = "none"; return; }
+        Mech mech = unit as Mech;
+        Vehicle vehicle = unit as Vehicle;
+        Turret turret = unit as Turret;
+        if (mech != null) { ChassisLocations loc = (ChassisLocations)f_structurerLocation; structureLocationStr = loc.ToString(); } else
+        if (vehicle != null) { VehicleChassisLocations loc = (VehicleChassisLocations)f_structurerLocation; structureLocationStr = loc.ToString(); } else
+        if (turret != null) { BuildingLocation loc = (BuildingLocation)f_structurerLocation; structureLocationStr = loc.ToString(); } else {
+          structureLocationStr = "Structure";
+        }
+      }
+    }
+    public string armorLocationStr { get; private set; }
+    public string structureLocationStr { get; private set; }
     public float armorOnHit;
     public float structureOnHit;
+    public bool isApplied;
+    public float critChance;
+    public AbstractActor unit;
+    public MechComponent component;
     public AdvCritLocationInfo(int aLoc, AbstractActor unit) {
+      this.unit = unit;
       this.armorLocation = aLoc;
+      this.structureLocation = 0;
+      this.component = null;
       this.armorOnHit = unit.ArmorForLocation(aLoc);
       this.structureOnHit = unit.StructureForLocation(aLoc);
     }
@@ -351,6 +417,8 @@ namespace CustAmmoCategories {
         Log.LogWrite(" hit: " + hitIndex + "\n");
         hit.hitIndex = hitIndex;
         hit.hitPosition = hitInfo.hitPositions[hitIndex];
+        hit.hitRoll = hitInfo.toHitRolls[hitIndex];
+        hit.correctedRoll = sequence.GetCorrectedRoll(hit.hitRoll, sequence.attacker.team);
         hit.Damage = weapon.DamagePerShotAdjusted(weapon.parent.occupiedDesignMask);
 #if BT1_8
         hit.APDamage = weapon.StructureDamagePerShotAdjusted(weapon.parent.occupiedDesignMask);
@@ -366,13 +434,13 @@ namespace CustAmmoCategories {
           hit.APDamage /= (float)weapon.ProjectilesPerShot;
         }
         Log.M.WL(2, "dmg:" + hit.Damage + " heat:" + hit.Heat + " stab:" + hit.Stability + " ap:" + hit.APDamage);
-        hit.hitLocation = hitInfo.hitLocations[hitIndex];
         hit.target = sequence.chosenTarget;
+        hit.hitLocation = hitInfo.hitLocations[hitIndex];
         if (string.IsNullOrEmpty(hitInfo.secondaryTargetIds[hitIndex]) == false) {
           ICombatant target = combat.FindCombatantByGUID(hitInfo.secondaryTargetIds[hitIndex]);
           if (target != null) {
-            hit.hitLocation = hitInfo.secondaryHitLocations[hitIndex];
             hit.target = target;
+            hit.hitLocation = hitInfo.secondaryHitLocations[hitIndex];
             hit.isStray = true;
           }
         }
@@ -463,6 +531,100 @@ namespace CustAmmoCategories {
       if (resolveInfo.ContainsKey(target) == false) { resolveInfo.Add(target, new AdvWeaponResolveInfo(this)); }
       return resolveInfo[target];
     }
+    public static void FlushInfo(int sequenceId) {
+      try {
+        if (CustomAmmoCategories.Settings.AttackLogWrite == false) { return; }
+        if (AdvWeaponHitInfo.advancedWeaponHitInfo.ContainsKey(sequenceId) == false) { return; };
+        Dictionary<int, Dictionary<int, AdvWeaponHitInfo>> seqAdvInfo = AdvWeaponHitInfo.advancedWeaponHitInfo[sequenceId];
+        string alogFileName = Path.Combine(CustomAmmoCategories.Settings.directory, "AttacksLogs");
+        if (Directory.Exists(alogFileName) == false) { Directory.CreateDirectory(alogFileName); }
+        if (Directory.Exists(alogFileName) == false) { return; }
+        alogFileName = Path.Combine(alogFileName, "log_" + DateTime.Now.ToString("yyyy-MM-dd_HH-mm-ss") + ".csv");
+        if (File.Exists(alogFileName)) { return; }
+        StreamWriter csv = new StreamWriter(alogFileName);
+        csv.AutoFlush = true;
+        StringBuilder header = new StringBuilder();
+        header.Append("attacker;").Append("weapon;").Append("ammo;").Append("mode;").Append("target;").Append("hit index;").Append("is applied;");
+        header.Append("location;").Append("called shot location;").Append("hit roll;").Append("corrected roll;").Append("hit chance;").Append("damage;").Append("ap damage;");
+        header.Append("heat;").Append("stability;").Append("is intecepted;").Append("intecepted by;").Append("is AoE;").Append("is frag separated;");
+        header.Append("is frag pallet;").Append("frags pallets count;");
+        csv.WriteLine(header.ToString());
+        foreach (var fgroup in seqAdvInfo) {
+          foreach (var fweapon in fgroup.Value) {
+            foreach (AdvWeaponHitInfoRec advRec in fweapon.Value.hits) {
+              StringBuilder line = new StringBuilder();
+              Mech mech = advRec.target as Mech;
+              Vehicle vehicle = advRec.target as Vehicle;
+              Turret turret = advRec.target as Turret;
+              string calledShotLocation = "None";
+              if((fweapon.Value.Sequence.calledShotLocation != 0)&&(fweapon.Value.Sequence.calledShotLocation != 65536)) {
+                if (mech != null) { calledShotLocation = ((ArmorLocation)fweapon.Value.Sequence.calledShotLocation).ToString(); }else
+                if (vehicle != null) { calledShotLocation = ((VehicleChassisLocations)fweapon.Value.Sequence.calledShotLocation).ToString(); } else
+                if (turret != null) { calledShotLocation = ((BuildingLocation)fweapon.Value.Sequence.calledShotLocation).ToString(); } else {
+                  calledShotLocation = "Structure";
+                }
+              }
+              line.Append(new Text(fweapon.Value.Sequence.attacker.DisplayName).ToString() + ";");
+              line.Append(fweapon.Value.weapon.UIName + ";");
+              line.Append(new Text(fweapon.Value.weapon.ammo().UIName).ToString() + ";");
+              line.Append(new Text(fweapon.Value.weapon.mode().UIName).ToString() + ";");
+              line.Append(new Text(advRec.target.DisplayName).ToString() + ";");
+              line.Append(advRec.hitIndex.ToString() + ";");
+              line.Append(advRec.isImplemented.ToString() + ";");
+              line.Append("(" + advRec.hitLocation.ToString() +")"+ advRec.hitLocationStr.ToString() + ";");
+              line.Append("("+fweapon.Value.Sequence.calledShotLocation + ")"+ calledShotLocation + ";");
+              line.Append(advRec.hitRoll + ";");
+              line.Append(advRec.correctedRoll + ";");
+              line.Append(fweapon.Value.hitChance + ";");
+              line.Append(advRec.Damage.ToString() + ";");
+              line.Append(advRec.APDamage.ToString() + ";");
+              line.Append(advRec.Heat.ToString() + ";");
+              line.Append(advRec.Stability.ToString() + ";");
+              line.Append(advRec.interceptInfo.Intercepted.ToString() + ";");
+              line.Append((advRec.interceptInfo.InterceptedAMS == null ? "none" : advRec.interceptInfo.InterceptedAMS.UIName.ToString()) + ";");
+              line.Append(advRec.isAOE + ";");
+              line.Append(advRec.fragInfo.separated + ";");
+              line.Append(advRec.fragInfo.isFragPallet + ";");
+              line.Append(advRec.fragInfo.fragsCount + ";");
+              csv.WriteLine(line.ToString());
+            }
+          }
+        }
+        csv.WriteLine("CRITICALS");
+        header = new StringBuilder();
+        header.Append("attacker;").Append("weapon;").Append("ammo;").Append("mode;").Append("target;").Append("location id;").Append("location;");
+        header.Append("struct id;").Append("struct;").Append("armor on hit").Append("structure in hit");
+        header.Append("crit chance;").Append("component;");
+        csv.WriteLine(header.ToString());
+        foreach (var fgroup in seqAdvInfo) {
+          foreach (var fweapon in fgroup.Value) {
+            foreach (var aCrits in fweapon.Value.resolveInfo) {
+              foreach (var advCrit in aCrits.Value.Crits) {
+                StringBuilder line = new StringBuilder();
+                line.Append(new Text(fweapon.Value.Sequence.attacker.DisplayName).ToString() + ";");
+                line.Append(fweapon.Value.weapon.UIName + ";");
+                line.Append(new Text(fweapon.Value.weapon.ammo().UIName).ToString() + ";");
+                line.Append(new Text(fweapon.Value.weapon.mode().UIName).ToString() + ";");
+                line.Append(new Text(advCrit.unit.DisplayName).ToString() + ";");
+                line.Append(advCrit.armorLocation + ";");
+                line.Append(advCrit.armorLocationStr + ";");
+                line.Append(advCrit.structureLocation + ";");
+                line.Append(advCrit.structureLocationStr + ";");
+                line.Append(advCrit.armorOnHit + ";");
+                line.Append(advCrit.structureOnHit + ";");
+                line.Append(advCrit.critChance + ";");
+                line.Append((advCrit.component == null ? "none" : new Text(advCrit.component.UIName).ToString()) + ";");
+                csv.WriteLine(line.ToString());
+              }
+            }
+          }
+        }
+        csv.Flush();
+        csv.Close();
+      }catch(Exception e) {
+        Log.M.TWL(0,e.ToString(),true);
+      }
+    }
     public static void Clear(int sequenceId) {
       if (AdvWeaponHitInfo.advancedWeaponHitInfo.ContainsKey(sequenceId) == false) { return; };
       Dictionary<int, Dictionary<int, AdvWeaponHitInfo>> seqAdvInfo = AdvWeaponHitInfo.advancedWeaponHitInfo[sequenceId];
@@ -486,18 +648,18 @@ namespace CustAmmoCategories {
       this.resolveInfo = new Dictionary<ICombatant, AdvWeaponResolveInfo>();
     }
     public void AppendAoEHit(int primeIndex, float fulldamage, float Damage, float Heat, float Stability, ICombatant target, Vector3 position, int location) {
-      Log.LogWrite("AdvInfo.AppendFrags:" + primeIndex + "\n");
+      Log.LogWrite("AdvInfo.AppendAoEHit:" + primeIndex + "\n");
       AdvWeaponHitInfoRec hit = new AdvWeaponHitInfoRec(this);
       int hitIndex = this.hits.Count;
       Log.LogWrite(" hit: " + hitIndex + "\n");
       hit.hitIndex = hitIndex;
       hit.hitPosition = position;
-      hit.hitLocation = location;
       hit.Damage = Damage;
       hit.APDamage = 0f;
       hit.Heat = Heat;
       hit.Stability = Stability;
       hit.target = target;
+      hit.hitLocation = location;
       hit.projectileSpeed = 0f;
       hit.isAOE = true;
       hit.AOEKey = primeIndex;
@@ -530,24 +692,27 @@ namespace CustAmmoCategories {
         hit.Damage /= (float)weapon.ProjectilesPerShot;
         hit.APDamage /= (float)weapon.ProjectilesPerShot;
         hit.Heat = weapon.HeatDamagePerShotAdjusted(hitInfo.hitQualities[hitIndex]) / (float)hitInfo.numberOfShots;
-        hit.Stability = weapon.Instability() / (float)hitInfo.numberOfShots; ;
-        hit.hitLocation = hitInfo.hitLocations[hitIndex];
+        hit.Stability = weapon.Instability() / (float)hitInfo.numberOfShots;
+        hit.hitRoll = hitInfo.toHitRolls[hitIndex];
+        hit.correctedRoll = this.Sequence.GetCorrectedRoll(hit.hitRoll, this.Sequence.attacker.team);
         hit.target = null;
         if (string.IsNullOrEmpty(hitInfo.secondaryTargetIds[hitIndex]) == false) {
           ICombatant target = Combat.FindCombatantByGUID(hitInfo.secondaryTargetIds[hitIndex]);
           if (target != null) {
-            hit.hitLocation = hitInfo.secondaryHitLocations[hitIndex];
             hit.target = target;
+            hit.hitLocation = hitInfo.secondaryHitLocations[hitIndex];
           }
         }
         if (hit.target == null) {
           ICombatant target = Combat.FindCombatantByGUID(hitInfo.targetId);
           if (target != null) {
             hit.target = target;
+            hit.hitLocation = hitInfo.hitLocations[hitIndex];
           }
         }
         if (hit.target == null) {
           hit.target = this.Sequence.chosenTarget;
+          hit.hitLocation = hitInfo.hitLocations[hitIndex];
         }
         hit.trajectoryInfo.type = TrajectoryType.Unguided;
         hit.GenerateTrajectory(advRec.hitPosition);

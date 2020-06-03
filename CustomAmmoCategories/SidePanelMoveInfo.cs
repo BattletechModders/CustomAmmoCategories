@@ -86,6 +86,7 @@ namespace CustAmmoCategoriesPatches {
     public static bool forceShown(this CombatHUDInfoSidePanel panel) { return (bool)p_forceShown.GetValue(panel); }
     public static bool stayShown(this CombatHUDInfoSidePanel panel) { return (bool)p_stayShown.GetValue(panel); }
     private static bool m_infoPanelShowState = true;
+    public static void SidePanelInit(this CombatHUD HUD) { m_infoPanelShowState = CustomAmmoCategories.Settings.InfoPanelDefaultState; }
     public static void InfoPanelShowState(this CombatHUD HUD, bool state) { m_infoPanelShowState = state; fSidePanelNeedToBeRefreshed = true; }
     public static void RefreshSidePanelInfo(this CombatHUD HUD) { fSidePanelNeedToBeRefreshed = true; }
     public static bool InfoPanelShowState(this CombatHUD HUD) { return m_infoPanelShowState; }
@@ -145,6 +146,7 @@ namespace CustAmmoCategoriesPatches {
     public static void Postfix(CombatHUD __instance, CombatGameState Combat) {
       m_HUD = __instance;
       m_Combat = Combat;
+      __instance.SidePanelInit();
     }
   }
   [HarmonyPatch(typeof(CombatHUD))]

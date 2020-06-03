@@ -367,7 +367,7 @@ namespace CustomAmmoCategoriesPatches {
       }
       return 0f;
     }
-    public static void Postfix(ToHit __instance, AbstractActor attacker, Weapon weapon, ICombatant target, Vector3 attackPosition, Vector3 targetPosition, LineOfFireLevel lofLevel, bool isCalledShot, ref float __result) {
+    /*public static void Postfix(ToHit __instance, AbstractActor attacker, Weapon weapon, ICombatant target, Vector3 attackPosition, Vector3 targetPosition, LineOfFireLevel lofLevel, bool isCalledShot, ref float __result) {
       float num = __result;
       num += weapon.GetDirectFireModifier(lofLevel);
       num += weapon.GetDistanceModifier(attackPosition, targetPosition);
@@ -378,7 +378,7 @@ namespace CustomAmmoCategoriesPatches {
       }
       __result = num;
       return;
-    }
+    }*/
   }
   [HarmonyPatch(typeof(ToHit))]
   [HarmonyPatch("GetAllModifiersDescription")]

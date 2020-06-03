@@ -1354,6 +1354,10 @@ namespace CustAmmoCategories {
     public bool SidePanelInfoSelfExternal { get; set; }
     public bool SidePanelInfoTargetExternal { get; set; }
     public List<string> MechHasNoStabilityTag { get; set; }
+    public bool InfoPanelDefaultState { get; set; }
+    public bool AttackLogWrite { get; set; }
+    public bool ShowAttackGroundButton { get; set; }
+    public bool ShowWeaponOrderButtons { get; set; }
     public Settings() {
       directory = string.Empty;
       debugLog = true;
@@ -1448,6 +1452,10 @@ namespace CustAmmoCategories {
       AttackSequenceTimeout = 60f;
       SidePanelInfoSelfExternal = false;
       MechHasNoStabilityTag = new List<string>();
+      InfoPanelDefaultState = false;
+      AttackLogWrite = false;
+      ShowAttackGroundButton = false;
+      ShowWeaponOrderButtons = false;
     }
   }
 }

@@ -664,7 +664,11 @@ namespace CustAmmoCategoriesPatches {
   public static class Weapon_HeatGenerated {
     public static void Postfix(Weapon __instance, ref float __result) {
       if (__instance.parent == null) { return; }
-      float heatMod = __instance.parent.StatCollection.GetValue<float>("WeaponHeatMultiplier") * __instance.parent.Combat.Constants.Heat.GlobalHeatIncreaseMultiplier;
+      if (__instance.weaponDef.HeatGenerated < CustomAmmoCategories.Epsilon) { __result = 0f; return; }
+      float heatBaseMod = __instance.StatCollection.GetValue<float>("HeatGenerated") / __instance.weaponDef.HeatGenerated;
+      float heatMod = __instance.parent.StatCollection.GetValue<float>("WeaponHeatMultiplier") 
+        * __instance.parent.Combat.Constants.Heat.GlobalHeatIncreaseMultiplier
+        * heatBaseMod;
       ExtAmmunitionDef ammoDef = __instance.ammo();
       __result += (ammoDef.HeatGenerated * heatMod);
       WeaponMode mode = __instance.mode();

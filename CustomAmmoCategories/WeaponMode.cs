@@ -203,6 +203,8 @@ namespace CustAmmoCategories {
     public TripleBoolean AMSImmune { get; set; }
     public float AMSDamage { get; set; }
     public float MissileHealth { get; set; }
+    public DamageFalloffType RangedDmgFalloffType { get; set; }
+    public DamageFalloffType AoEDmgFalloffType { get; set; }
     public WeaponMode() {
       Id = WeaponMode.NONE_MODE_NAME;
       UIName = WeaponMode.BASE_MODE_NAME;
@@ -305,6 +307,8 @@ namespace CustAmmoCategories {
       AMSImmune = TripleBoolean.NotSet;
       AMSDamage = 0f;
       MissileHealth = 0f;
+      RangedDmgFalloffType = DamageFalloffType.NotSet;
+      AoEDmgFalloffType = DamageFalloffType.NotSet;
     }
     public void fromJSON(string json) {
       JObject jWeaponMode = JObject.Parse(json);
@@ -599,6 +603,12 @@ namespace CustAmmoCategories {
       }
       if (jWeaponMode["DestroyOnJamming"] != null) {
         this.DestroyOnJamming = ((bool)jWeaponMode["DestroyOnJamming"] == true) ? TripleBoolean.True : TripleBoolean.False;
+      }
+      if (jWeaponMode["RangedDmgFalloffType"] != null) {
+        this.RangedDmgFalloffType = (DamageFalloffType)Enum.Parse(typeof(DamageFalloffType), (string)jWeaponMode["RangedDmgFalloffType"]);
+      }
+      if (jWeaponMode["AoEDmgFalloffType"] != null) {
+        this.AoEDmgFalloffType = (DamageFalloffType)Enum.Parse(typeof(DamageFalloffType), (string)jWeaponMode["AoEDmgFalloffType"]);
       }
       if (jWeaponMode["AOECapable"] != null) {
         this.AOECapable = ((bool)jWeaponMode["AOECapable"] == true) ? TripleBoolean.True : TripleBoolean.False; ;

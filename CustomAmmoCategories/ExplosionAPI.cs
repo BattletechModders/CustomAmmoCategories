@@ -182,11 +182,11 @@ namespace CustAmmoCategories {
         }
         Mech mech = target as Mech;
         Vehicle vehicle = target as Vehicle;
-        if (target.isHasHeat()) {
+        if (target.isHasHeat() == false) {
           Damage += HeatDamage;
           HeatDamage = 0f;
         };
-        if (target.isHasStability()) {
+        if (target.isHasStability() == false) {
           StabDamage = 0f;
         }
         List<int> hitLocations = null;
@@ -288,6 +288,28 @@ namespace CustAmmoCategories {
           mech.HandleKnockdown(-1, fakeActor.GUID, Vector2.one, (SequenceFinished)null);
         }
       }
+    }
+    public static void LayMineField(MineFieldDef def, Vector3 pos) {
+      CustomAmmoCategoriesLog.Log.LogWrite("Applying minefield:" + pos + "\n");
+      if ((fakeWeapon == null) || (fakeActor == null)) { return; }
+      MapTerrainDataCellEx cell = combat.MapMetaData.GetCellAt(pos) as MapTerrainDataCellEx;
+      if (cell == null) {
+        CustomAmmoCategoriesLog.Log.LogWrite(" cell is not extended\n");
+        return;
+      }
+      CustomAmmoCategoriesLog.Log.LogWrite(" impact at " + pos + "\n");
+      MineFieldDef mfd = def;
+      if (mfd.InstallCellRange == 0) {
+        Log.LogWrite(" affected cell " + cell.hexCell.x + "," + cell.hexCell.y + ":" + mfd.Count + "\n");
+        cell.hexCell.MineField.Add(new MineField(mfd, fakeActor, fakeWeapon));
+      } else {
+        List<MapTerrainHexCell> affectedHexCells = MapTerrainHexCell.listHexCellsByCellRadius(cell, mfd.InstallCellRange);
+        foreach (MapTerrainHexCell hexCell in affectedHexCells) {
+          Log.LogWrite(" affected cell " + hexCell.x + "," + hexCell.y + ":" + mfd.Count + "\n");
+          hexCell.MineField.Add(new MineField(mfd, fakeActor, fakeWeapon));
+        }
+      }
+
     }
   }
 }

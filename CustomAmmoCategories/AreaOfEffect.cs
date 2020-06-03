@@ -190,9 +190,10 @@ namespace CustAmmoCategories {
           float HeatDamagePerShot = AoEHeat * CustomAmmoCategories.Settings.DefaultAoEDamageMult[target.UnitType].Damage * tagAoEDamage;
           float StabilityPerShot = AoEStability * CustomAmmoCategories.Settings.DefaultAoEDamageMult[target.UnitType].Damage * tagAoEDamage;
           if (HeatDamagePerShot < CustomAmmoCategories.Epsilon) { HeatDamagePerShot = weapon.HeatDamagePerShot; };
-          float fullDamage = DamagePerShot * (AOERange - distance) / AOERange;
-          float heatDamage = HeatDamagePerShot * (AOERange - distance) / AOERange;
-          float stabDamage = StabilityPerShot * (AOERange - distance) / AOERange;
+          float distanceRatio = weapon.AoEDmgFalloffType((AOERange - distance) / AOERange);
+          float fullDamage = DamagePerShot * distanceRatio;
+          float heatDamage = HeatDamagePerShot * distanceRatio;
+          float stabDamage = StabilityPerShot * distanceRatio;
           targetsHeatCache[target] += heatDamage;
           targetsStabCache[target] += stabDamage;
           Log.LogWrite(" full damage " + fullDamage + "\n");

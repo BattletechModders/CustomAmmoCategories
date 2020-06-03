@@ -108,6 +108,7 @@ namespace CustAmmoCategories {
       extDef = null;
     }
   }
+  public enum DamageFalloffType { NotSet, Quadratic, Cubic, SquareRoot, Log10, LogE, Exp, Linear }
   public static partial class CustomAmmoCategories {
     public static bool isImprovedBallistic(this Weapon weapon) { return weapon.exDef().ImprovedBallistic; }
     public static bool CantHitUnaffectedByPathing(this Weapon weapon) {
@@ -271,6 +272,46 @@ namespace CustAmmoCategories {
       }
       return wp.ColorSpeedChange;
     }
+    public static DamageFalloffType RangedDmgFalloffType(this Weapon weapon) {
+      ExtAmmunitionDef ammo = weapon.ammo();
+      WeaponMode mode = weapon.mode();
+      ExtWeaponDef wp = weapon.exDef();
+      if (mode.RangedDmgFalloffType != DamageFalloffType.NotSet) { return mode.RangedDmgFalloffType; };
+      if (ammo.RangedDmgFalloffType != DamageFalloffType.NotSet) { return ammo.RangedDmgFalloffType; };
+      return wp.RangedDmgFalloffType;
+    }
+    public static DamageFalloffType AoEDmgFalloffType(this Weapon weapon) {
+      ExtAmmunitionDef ammo = weapon.ammo();
+      WeaponMode mode = weapon.mode();
+      ExtWeaponDef wp = weapon.exDef();
+      if (mode.AoEDmgFalloffType != DamageFalloffType.NotSet) { return mode.AoEDmgFalloffType; };
+      if (ammo.AoEDmgFalloffType != DamageFalloffType.NotSet) { return ammo.AoEDmgFalloffType; };
+      return wp.AoEDmgFalloffType;
+    }
+    public static float RangedDmgFalloffType(this Weapon weapon, float value) {
+      switch (weapon.RangedDmgFalloffType()) {
+        case DamageFalloffType.Quadratic: return value * value;
+        case DamageFalloffType.Cubic: return value * value * value;
+        case DamageFalloffType.SquareRoot: return Mathf.Sqrt(value);
+        case DamageFalloffType.Linear: return value;
+        case DamageFalloffType.Log10: return Mathf.Log10(value);
+        case DamageFalloffType.LogE: return Mathf.Log(value);
+        case DamageFalloffType.Exp: return Mathf.Exp(value);
+        default: return value * value;
+      }
+    }
+    public static float AoEDmgFalloffType(this Weapon weapon, float value) {
+      switch (weapon.AoEDmgFalloffType()) {
+        case DamageFalloffType.Quadratic: return value * value;
+        case DamageFalloffType.Cubic: return value * value * value;
+        case DamageFalloffType.SquareRoot: return Mathf.Sqrt(value);
+        case DamageFalloffType.Linear: return value;
+        case DamageFalloffType.Log10: return Mathf.Log10(value);
+        case DamageFalloffType.LogE: return Mathf.Log(value);
+        case DamageFalloffType.Exp: return Mathf.Exp(value);
+        default: return value;
+      }
+    }
     public static List<ColorTableJsonEntry> ColorsTable(this Weapon weapon) {
       ExtAmmunitionDef ammo = weapon.ammo();
       ExtWeaponDef wp = weapon.exDef();
@@ -416,6 +457,8 @@ namespace CustAmmoCategories {
     public Dictionary<string, float> TagsAccuracyModifiers { get; set; }
     public float AMSDamage { get; set; }
     public float MissileHealth { get; set; }
+    public DamageFalloffType RangedDmgFalloffType { get; set; }
+    public DamageFalloffType AoEDmgFalloffType { get; set; }
     public ExtWeaponDef() {
       Id = string.Empty;
       StreakEffect = false;
@@ -511,6 +554,8 @@ namespace CustAmmoCategories {
       AMSImmune = TripleBoolean.NotSet;
       AMSDamage = 1f;
       MissileHealth = 1f;
+      RangedDmgFalloffType = DamageFalloffType.NotSet;
+      AoEDmgFalloffType = DamageFalloffType.NotSet;
     }
   }
 }
@@ -767,6 +812,14 @@ namespace CustomAmmoCategoriesPatches {
         if (defTemp["ColorChangeRule"] != null) {
           extDef.ColorChangeRule = (ColorChangeRule)Enum.Parse(typeof(ColorChangeRule), (string)defTemp["ColorChangeRule"]);
           defTemp.Remove("ColorChangeRule");
+        }
+        if (defTemp["RangedDmgFalloffType"] != null) {
+          extDef.RangedDmgFalloffType = (DamageFalloffType)Enum.Parse(typeof(DamageFalloffType), (string)defTemp["RangedDmgFalloffType"]);
+          defTemp.Remove("RangedDmgFalloffType");
+        }
+        if (defTemp["AoEDmgFalloffType"] != null) {
+          extDef.AoEDmgFalloffType = (DamageFalloffType)Enum.Parse(typeof(DamageFalloffType), (string)defTemp["AoEDmgFalloffType"]);
+          defTemp.Remove("AoEDmgFalloffType");
         }
         if (defTemp["AdditionalImpactVFXScaleZ"] != null) {
           extDef.AdditionalImpactVFXScaleZ = (float)defTemp["AdditionalImpactVFXScaleZ"];

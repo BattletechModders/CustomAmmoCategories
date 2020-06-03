@@ -1158,6 +1158,7 @@ namespace CustomAmmoCategoriesPatches {
 
     public static void Postfix(CombatHUDMechwarriorTray __instance, CombatGameState Combat, CombatHUD HUD) {
       try {
+        if (CustomAmmoCategories.Settings.ShowAttackGroundButton == false) { return; }
         CustomAmmoCategoriesLog.Log.LogWrite("adding button\n");
         GameObject[] ActionButtonHolders = new GameObject[__instance.ActionButtonHolders.Length + 1];
         __instance.ActionButtonHolders.CopyTo(ActionButtonHolders, 0);
@@ -1265,6 +1266,7 @@ namespace CustomAmmoCategoriesPatches {
 
     public static void Postfix(CombatHUDMechwarriorTray __instance, AbstractActor actor) {
       Log.LogWrite("CombatHUDMechwarriorTray.InitAbilityButtons\n");
+      if (CustomAmmoCategories.Settings.ShowAttackGroundButton == false) { return; }
       AbilityDef aDef = null;
       InitAbilityButtonsDelegate id = new InitAbilityButtonsDelegate(__instance, actor);
       if (actor.Combat.DataManager.AbilityDefs.TryGet("AbilityDefCAC_AttackGround", out aDef) == false) {

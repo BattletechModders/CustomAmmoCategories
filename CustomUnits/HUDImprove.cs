@@ -750,6 +750,9 @@ namespace CustomUnits {
         foreach (LanceLoadoutSlot slot in ___loadoutSlots) {
           if (slot.SelectedMech != null) {
             if (slot.SelectedMech.MechDef.MechTags.Contains(forbidTag)) { badBiome = true; break; }
+            foreach (MechComponentRef component in slot.SelectedMech.MechDef.Inventory) {
+              if (component.Def.ComponentTags.Contains(forbidTag)) { badBiome = true; break; }
+            }
           };
         }
         if (badBiome) {

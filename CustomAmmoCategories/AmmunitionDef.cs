@@ -9,6 +9,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using UnityEngine;
 
 namespace CustAmmoCategories {
   public class EvasivePipsMods {
@@ -87,6 +88,19 @@ namespace CustAmmoCategories {
     public float LongVFXOnImpactScaleY { get; set; }
     public float LongVFXOnImpactScaleZ { get; set; }
     public int tempDesignMaskCellRadius { get; set; }
+    public DamageFalloffType AoEDmgFalloffType { get; set; }
+    public float mAoEDmgFalloffType(float value) {
+      switch (this.AoEDmgFalloffType) {
+        case DamageFalloffType.Quadratic: return value * value;
+        case DamageFalloffType.Cubic: return value * value * value;
+        case DamageFalloffType.SquareRoot: return Mathf.Sqrt(value);
+        case DamageFalloffType.Linear: return value;
+        case DamageFalloffType.Log10: return Mathf.Log10(value);
+        case DamageFalloffType.LogE: return Mathf.Log(value);
+        case DamageFalloffType.Exp: return Mathf.Exp(value);
+        default: return value;
+      }
+    }
     public MineFieldDef() {
       Damage = 0f;
       Heat = 0f;
@@ -118,6 +132,7 @@ namespace CustAmmoCategories {
       LongVFXOnImpactScaleY = 0f;
       LongVFXOnImpactScaleZ = 0f;
       tempDesignMaskCellRadius = 0;
+      AoEDmgFalloffType = DamageFalloffType.Linear;
       statusEffects = new List<EffectData>();
     }
     public void fromJSON(JToken json) {
@@ -287,6 +302,8 @@ namespace CustAmmoCategories {
     public TripleBoolean AMSImmune { get; set; }
     public float AMSDamage { get; set; }
     public float MissileHealth { get; set; }
+    public DamageFalloffType RangedDmgFalloffType { get; set; }
+    public DamageFalloffType AoEDmgFalloffType { get; set; }
     public ExtAmmunitionDef() {
       Id = "NotSet";
       Name = string.Empty;
@@ -402,6 +419,8 @@ namespace CustAmmoCategories {
       AMSImmune = TripleBoolean.NotSet;
       AMSDamage = 0f;
       MissileHealth = 0f;
+      RangedDmgFalloffType = DamageFalloffType.NotSet;
+      AoEDmgFalloffType = DamageFalloffType.NotSet;
     }
   }
 }
@@ -924,6 +943,14 @@ namespace CustomAmmoCategoriesPatches {
         if (defTemp["MissileHealth"] != null) {
           extAmmoDef.MissileHealth = (float)defTemp["MissileHealth"];
           defTemp.Remove("MissileHealth");
+        }
+        if (defTemp["RangedDmgFalloffType"] != null) {
+          extAmmoDef.RangedDmgFalloffType = (DamageFalloffType)Enum.Parse(typeof(DamageFalloffType), (string)defTemp["RangedDmgFalloffType"]);
+          defTemp.Remove("RangedDmgFalloffType");
+        }
+        if (defTemp["AoEDmgFalloffType"] != null) {
+          extAmmoDef.AoEDmgFalloffType = (DamageFalloffType)Enum.Parse(typeof(DamageFalloffType), (string)defTemp["AoEDmgFalloffType"]);
+          defTemp.Remove("AoEDmgFalloffType");
         }
         if (defTemp["ChassisTagsAccuracyModifiers"] != null) {
           extAmmoDef.TagsAccuracyModifiers = JsonConvert.DeserializeObject<Dictionary<string, float>>(defTemp["ChassisTagsAccuracyModifiers"].ToString());

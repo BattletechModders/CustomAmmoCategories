@@ -128,7 +128,7 @@ namespace CustAmmoCategories {
   public class MineFieldDamage {
     public Vector3 lastVFXPos;
     public List<LandMineTerrainRecord> landminesTerrain;
-    public Weapon weapon;
+    public Weapon weapon { get; set; }
     public float BurnHeat;
     public Dictionary<int, AoEExplosionHitRecord> burnDamage;
     public bool sequenceAborted;
@@ -271,9 +271,10 @@ namespace CustAmmoCategories {
         distance /= tagAoEDamage;
         if (distance > def.AoERange) { continue; };
         foreach (var effect in def.statusEffects) { AddEffect(unit, target, effect); };
-        float HeatDamage = def.AoEHeat * CustomAmmoCategories.Settings.DefaultAoEDamageMult[target.UnitType].Damage * tagAoEDamage * (def.AoERange - distance) / def.AoERange;
-        float Damage = def.AoEDamage * CustomAmmoCategories.Settings.DefaultAoEDamageMult[target.UnitType].Damage * tagAoEDamage * (def.AoERange - distance) / def.AoERange;
-        float StabDamage = def.AoEInstability * CustomAmmoCategories.Settings.DefaultAoEDamageMult[target.UnitType].Damage * tagAoEDamage * (def.AoERange - distance) / def.AoERange;
+        float distanceRatio = def.mAoEDmgFalloffType((def.AoERange - distance) / def.AoERange);
+        float HeatDamage = def.AoEHeat * CustomAmmoCategories.Settings.DefaultAoEDamageMult[target.UnitType].Damage * tagAoEDamage * distanceRatio;
+        float Damage = def.AoEDamage * CustomAmmoCategories.Settings.DefaultAoEDamageMult[target.UnitType].Damage * tagAoEDamage * distanceRatio;
+        float StabDamage = def.AoEInstability * CustomAmmoCategories.Settings.DefaultAoEDamageMult[target.UnitType].Damage * tagAoEDamage * distanceRatio;
         Mech mech = target as Mech;
         Vehicle vehicle = target as Vehicle;
         if(target.isHasHeat() == false) {

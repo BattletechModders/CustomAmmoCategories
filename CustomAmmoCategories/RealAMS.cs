@@ -1410,6 +1410,7 @@ namespace CustAmmoCategories {
             return true;
           }
           AdvWeaponHitInfoHelper.ResolveAMSprocessing(sequenceId);
+          AdvWeaponHitInfo.FlushInfo(sequenceId);
           AdvWeaponHitInfo.Clear(sequenceId);
           //ICombatant actor = attackSequence.chosenTarget;
           //HashSet<Weapon> AMSs = new HashSet<Weapon>();

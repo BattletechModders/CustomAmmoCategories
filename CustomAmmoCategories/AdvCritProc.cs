@@ -100,11 +100,13 @@ namespace CustAmmoCategories {
     public static float GetCritChance(AbstractActor unit, AdvCritLocationInfo critInfo, Weapon weapon) {
       if (unit.StatCollection.GetValue<bool>("CriticalHitImmunity")) {
         Log.C.WL(1, "[GetCritChance] CriticalHitImmunity!\n");
+        critInfo.critChance = 0f;
         return 0.0f;
       }
       float armor = critInfo.armorOnHit;
       if((critInfo.structureOnHit < CustomAmmoCategories.Epsilon)&&(CustomAmmoCategories.Settings.DestoryedLocationCriticalAllow == false)) {
         Log.C.WL(1, "structureOnHit: "+critInfo.structureOnHit+" and crits to destroyed location forbidden\n");
+        critInfo.critChance = 0f;
         return 0.0f;
       }
       if (armor > CustomAmmoCategories.Epsilon) {
@@ -125,12 +127,14 @@ namespace CustAmmoCategories {
         }
         float result = baseCritChance * shardsCritChance * TAcritMultiplier * thicknessCritChance;
         Log.C.WL(1, string.Format("[GetCritChance] base = {0}, shards mod = {1}, thickness mod = {2}, ap mod = {3}, result = {4}!", baseCritChance, shardsCritChance, thicknessCritChance, TAcritMultiplier, result));
+        critInfo.critChance = result;
         return result;
       } else {
         float a = AdvancedCriticalProcessor.GetBaseCritChance(unit, critInfo);
         float num = Mathf.Max(a, unit.Combat.Constants.ResolutionConstants.MinCritChance);
         float critMultiplier = unit.Combat.CritChance.GetCritMultiplier(unit, weapon, true);
         Log.C.WL(1, string.Format("[GetCritChance] base = {0}, multiplier = {1}!", (object)num, (object)critMultiplier));
+        critInfo.critChance = num * critMultiplier;
         return num * critMultiplier;
       }
     }
@@ -170,6 +174,8 @@ namespace CustAmmoCategories {
             Jumpjet jumpjet = componentInSlot as Jumpjet;
             HeatSinkDef componentDef = componentInSlot.componentDef as HeatSinkDef;
             bool flag = weapon1 != null;
+            critInfo.component = componentInSlot;
+            critInfo.structureLocation = componentInSlot.Location;
             if ((UnityEngine.Object)unit.GameRep != (UnityEngine.Object)null) {
               if ((UnityEngine.Object)weapon.weaponRep != (UnityEngine.Object)null && weapon.weaponRep.HasWeaponEffect)
                 WwiseManager.SetSwitch<AudioSwitch_weapon_type>(weapon.weaponRep.WeaponEffect.weaponImpactType, unit.GameRep.audioObject);

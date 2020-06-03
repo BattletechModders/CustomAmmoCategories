@@ -206,6 +206,7 @@ namespace CustomAmmoCategoriesPathes {
     private static FieldInfo f_WeaponSlots = typeof(CombatHUDWeaponPanel).GetField("WeaponSlots", BindingFlags.Instance | BindingFlags.NonPublic);
     public static List<CombatHUDWeaponSlot> WeaponSlots(this CombatHUDWeaponPanel panel) { return (List<CombatHUDWeaponSlot>)f_WeaponSlots.GetValue(panel); }
     public static void Postfix(CombatHUDWeaponPanel __instance, List<CombatHUDWeaponSlot> ___WeaponSlots, bool consideringJump, bool useCOILPathingPreview) {
+      if (CustomAmmoCategories.Settings.ShowWeaponOrderButtons == false) { return; }
       last_consideringJump = consideringJump;
       last_useCOILPathingPreview = useCOILPathingPreview;
       if (__instance.gameObject.GetInstanceID() == panelInstance) { return; }
