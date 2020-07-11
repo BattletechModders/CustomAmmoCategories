@@ -18,7 +18,7 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
       //if (HasMod("io.github.guetler.CBTMovement")) // Don't log to BTML unless we're sure CBTMovement is nonzero
         //Warn("CBTMovement detected.  Both jump modifier will apply; please make sure either is zero. (AIM modfiier is factored in preview; CBT Movement does not.)");
 
-      if (Settings.RangedAccuracyFactors != null || Settings.MeleeAccuracyFactors != null || Settings.SmartIndirectFire)
+      /*if (Settings.RangedAccuracyFactors != null || Settings.MeleeAccuracyFactors != null || Settings.SmartIndirectFire)
         Patch(typeof(ToHit), "GetToHitChance", "RecordAttackPosition", null);
 
       if (Settings.RangedAccuracyFactors != null) {
@@ -49,7 +49,7 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
         if (!HasMeleeModifier())
           Patch(typeof(CombatHUDWeaponSlot), "UpdateToolTipsMelee", null, "ReverseModifiersSign");
         Patch(typeof(CombatHUDToolTipGeneric), "SetNewToolTipHovering", null, "ReverseNetModifierColour");
-      }
+      }*/
     }
 
     private static float HalfMaxMeleeVerticalOffset = 4f;

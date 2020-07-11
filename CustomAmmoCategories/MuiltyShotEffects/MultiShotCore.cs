@@ -350,6 +350,9 @@ namespace CustAmmoCategories {
     }
     public override void InitProjectile() {
       //if(this.projectile != null)
+      if ((UnityEngine.Object)this.projectilePrefab != (UnityEngine.Object)null && (UnityEngine.Object)this.projectile != (UnityEngine.Object)null) {
+        if (this.activeProjectileName == null) { this.activeProjectileName = this.projectilePrefab.name; }
+      }
       base.InitProjectile();
       this.ScaleWeaponEffect(this.projectile);
     }

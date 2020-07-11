@@ -10,6 +10,7 @@ namespace CustAmmoCategories {
     public static void ResolveWeaponDamageAdv(ref WeaponHitInfo hitInfo) {
       AdvWeaponHitInfo advInfo = hitInfo.advInfo();
       if (advInfo == null) { return; }
+      advInfo.isResolved = true;
       if (advInfo.Sequence.meleeAttackType == MeleeAttackType.DFA) {
         float damageAmount = advInfo.Sequence.attacker.StatCollection.GetValue<float>("DFASelfDamage");
 #if BT1_8
@@ -45,6 +46,7 @@ namespace CustAmmoCategories {
       AdvWeaponResolveInfo advRes = advInfo.resolve(target);
       Weapon weapon = advInfo.weapon;
       bool effectPerHit = weapon.StatusEffectsPerHit();
+      Log.M.TWL(0, "ResolveTargetWeaponDamageEffects:" + advInfo.weapon.defId+" "+target.DisplayName);
       if ((advRes.hitLocations.Count > 0) && (!target.IsDead) && (target != null)) {
         EffectData[] effects = weapon.StatusEffects();
         foreach (EffectData statusEffect in effects) {

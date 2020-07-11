@@ -27,7 +27,7 @@ namespace CustAmmoCategories {
     public bool hasPlayed;
     public bool shouldPlay;
     public MineFieldDef def;
-    public GameObject goVFX;
+    public GameObject goVFX { get; set; }
     public CombatGameState Combat;
     public LandMineFXRecord(CombatGameState combat, MapTerrainDataCellEx c, MineFieldDef d, bool sp, Vector3 pos) {
       Combat = combat;
@@ -52,7 +52,7 @@ namespace CustAmmoCategories {
       offset.y = this.def.VFXOffsetY;
       offset.z = this.def.VFXOffsetZ;
       ParticleSystem component = ObjectSpawnDataSelf.playVFXAt(combat, this.def.VFXprefab, this.position + offset, scale, Vector3.zero);
-      this.goVFX = component.gameObject;
+      if(component != null) this.goVFX = component.gameObject;
       if (string.IsNullOrEmpty(this.def.SFX) == false) {
         Log.M.TWL(0, "Playing SFX:" + this.def.SFX);
         uint num = WwiseManager.PostEvent(this.def.SFX, unit.GameRep.audioObject, null, null);
@@ -174,6 +174,7 @@ namespace CustAmmoCategories {
     public void AddBurnHeat(AbstractActor target, float burnHeat, Vector3 pos) {
       Mech mech = target as Mech;
       Vehicle vehicle = target as Vehicle;
+      burnHeat *= target.IncomingHeatMult();
       if (target.isHasHeat()) { this.BurnHeat = burnHeat; return; };
       this.BurnHeat = 0f;
       List<int> hitLocations = new List<int> { 1 };
@@ -221,8 +222,8 @@ namespace CustAmmoCategories {
       foreach (var effect in def.statusEffects) { AddEffect(target, target, effect); };
       if (AoEDamage.ContainsKey(target) == false) { AoEDamage.Add(target, new AoEExplosionRecord(target)); };
       AoEExplosionRecord AoERecord = AoEDamage[target];
-      AoERecord.HeatDamage += def.Heat;
-      AoERecord.StabDamage += def.Instability;
+      AoERecord.HeatDamage += def.Heat * target.IncomingHeatMult();
+      AoERecord.StabDamage += def.Instability * target.IncomingStabilityMult();
       float Damage = def.Damage;
       List<int> hitLocations = new List<int> { 1 };
       if (mech != null) {
@@ -268,13 +269,17 @@ namespace CustAmmoCategories {
         target.TagAoEModifiers(out float tagAoEModRange, out float tagAoEDamage);
         if (tagAoEModRange < CustomAmmoCategories.Epsilon) { tagAoEModRange = 1f; }
         if (tagAoEDamage < CustomAmmoCategories.Epsilon) { tagAoEDamage = 1f; }
-        distance /= tagAoEDamage;
+        distance /= tagAoEModRange;
         if (distance > def.AoERange) { continue; };
         foreach (var effect in def.statusEffects) { AddEffect(unit, target, effect); };
         float distanceRatio = def.mAoEDmgFalloffType((def.AoERange - distance) / def.AoERange);
-        float HeatDamage = def.AoEHeat * CustomAmmoCategories.Settings.DefaultAoEDamageMult[target.UnitType].Damage * tagAoEDamage * distanceRatio;
-        float Damage = def.AoEDamage * CustomAmmoCategories.Settings.DefaultAoEDamageMult[target.UnitType].Damage * tagAoEDamage * distanceRatio;
-        float StabDamage = def.AoEInstability * CustomAmmoCategories.Settings.DefaultAoEDamageMult[target.UnitType].Damage * tagAoEDamage * distanceRatio;
+        float targetAoEMult = target.AoEDamageMult();
+        float unitTypeAoEMult = CustomAmmoCategories.Settings.DefaultAoEDamageMult[target.UnitType].Damage;
+        float targetHeatMult = target.IncomingHeatMult();
+        float targetStabMult = target.IncomingStabilityMult();
+        float HeatDamage = def.AoEHeat * unitTypeAoEMult * tagAoEDamage * distanceRatio * targetAoEMult * targetHeatMult;
+        float Damage = def.AoEDamage * unitTypeAoEMult * tagAoEDamage * distanceRatio * targetAoEMult;
+        float StabDamage = def.AoEInstability * unitTypeAoEMult * tagAoEDamage * distanceRatio * targetAoEMult * targetStabMult;
         Mech mech = target as Mech;
         Vehicle vehicle = target as Vehicle;
         if(target.isHasHeat() == false) {

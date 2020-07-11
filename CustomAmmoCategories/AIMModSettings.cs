@@ -1,6 +1,28 @@
-﻿using System;
+﻿using BattleTech;
+using BattleTech.UI;
+using System;
+
+namespace Sheepy.BattleTechMod {
+  [AttributeUsage(AttributeTargets.Field | AttributeTargets.Property, Inherited = true, AllowMultiple = false)]
+  public class JsonSection : Attribute {
+    public string Section;
+    public JsonSection(string section) { Section = section ?? ""; }
+  }
+
+  [AttributeUsage(AttributeTargets.Field | AttributeTargets.Property, Inherited = true, AllowMultiple = false)]
+  public class JsonComment : Attribute {
+    public string[] Comments;
+    public JsonComment(string comment) { Comments = comment?.Split('\n') ?? new string[] { "" }; }
+    public JsonComment(string[] comments) { Comments = comments ?? new string[] { }; }
+  }
+}
 
 namespace Sheepy.BattleTechMod.AttackImprovementMod {
+  public static class APIReference {
+    public static Action<CombatHUDWeaponSlot, ICombatant> m_AIMShowBaseHitChance { get; set; }
+    public static Action<CombatHUDWeaponSlot, ICombatant> m_AIMShowBaseMeleeChance { get; set; }
+    public static Action<CombatHUDWeaponSlot, ICombatant> m_AIMShowNeutralRange { get; set; }
+  }
 
   public class ModSettings {
 

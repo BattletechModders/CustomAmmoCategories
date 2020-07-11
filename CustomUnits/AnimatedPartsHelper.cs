@@ -1422,7 +1422,7 @@ namespace CustomUnits {
   [HarmonyPatch(new Type[] { typeof(DataManager), typeof(DataManager.DependencyLoadRequest), typeof(uint) })]
   public static class ChassisDef_GatherDependencies {
     public static void Postfix(VehicleChassisDef __instance, DataManager dataManager, DataManager.DependencyLoadRequest dependencyLoad, uint activeRequestWeight) {
-      Log.LogWrite(0, "ChassisDef.GatherDependencies postfix " + __instance.Description.Id, true);
+      Log.LogWrite(0, "ChassisDef.GatherDependencies postfix " + activeRequestWeight + " " + __instance.Description.Id, true);
       try {
         VehicleCustomInfo info = __instance.GetCustomInfo();
         if (info == null) {
@@ -1436,13 +1436,37 @@ namespace CustomUnits {
       return;
     }
   }
+  [HarmonyPatch(typeof(MechDef))]
+  [HarmonyPatch("GatherDependencies")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { typeof(DataManager), typeof(DataManager.DependencyLoadRequest), typeof(uint) })]
+  public static class MechDef_GatherDependencies {
+    public static void Postfix(MechDef __instance, DataManager dataManager, DataManager.DependencyLoadRequest dependencyLoad, uint activeRequestWeight) {
+      Log.LogWrite(0, "MechDef.GatherDependencies postfix " + __instance.Description.Id + " " + activeRequestWeight, true);
+    }
+  }
+  [HarmonyPatch(typeof(Contract))]
+  [HarmonyPatch("BeginRequestResources")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { typeof(bool) })]
+  public static class Contract_BeginRequestResources {
+    public static void Prefix(Contract __instance) {
+      Log.TWL(0, "Contract.BeginRequestResources");
+      foreach (var lance in __instance.Lances.Lances) {
+        Log.WL(1, "lance:"+lance.Key);
+        foreach (var lanceUnit in lance.Value) {
+          Log.WL(2, "unit:" + lanceUnit.PilotId + " " + lanceUnit.UnitId + " " +lanceUnit.unitType);
+        }
+      }
+    }
+  }
   [HarmonyPatch(typeof(ChassisDef))]
   [HarmonyPatch("DependenciesLoaded")]
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { typeof(uint) })]
   public static class ChassisDef_DependenciesLoaded {
     public static void Postfix(ChassisDef __instance, uint loadWeight, ref bool __result) {
-      Log.LogWrite(0, "ChassisDef.DependenciesLoaded postfix " + __instance.Description.Id, true);
+      Log.LogWrite(0, "ChassisDef.DependenciesLoaded postfix " + loadWeight + " "+ __instance.Description.Id, true);
       if (__instance.DataManager == null) { return; }
       if (__result == false) { return; }
       try {

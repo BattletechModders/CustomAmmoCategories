@@ -48,6 +48,7 @@ namespace CustomAmmoCategoriesPatches {
         CombatHUDWeaponPanel_CombatHUDWeaponPanel.Clear();
         CombatHUDInfoSidePanelHelper.Clear();
         ExplosionAPIHelper.Clear();
+        ToHitModifiersHelper.Clear();
       } catch(Exception e) {
         Log.M.TWL(0, e.ToString());
       }

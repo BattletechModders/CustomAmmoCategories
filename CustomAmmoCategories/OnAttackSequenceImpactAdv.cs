@@ -63,35 +63,23 @@ namespace CustomAmmoCategoriesPatches {
 namespace CustAmmoCategories {
   public enum ShowMissBehavior { None,Vanilla,Default,All }
   public static class OnAttackSeuenceImpactHelper {
+    private static FieldInfo f_messageCoordinator = typeof(AttackDirector.AttackSequence).GetField("messageCoordinator", BindingFlags.NonPublic | BindingFlags.Instance);
     public static MessageCoordinator messageCoordinator(this AttackDirector.AttackSequence sequence) {
-      return (MessageCoordinator)typeof(AttackDirector.AttackSequence).GetField("messageCoordinator", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(sequence);
+      return (MessageCoordinator)f_messageCoordinator.GetValue(sequence);
     }
     public static void OnAttackSequenceImpactAdv(this AttackDirector.AttackSequence sequence, MessageCenterMessage message) {
       AttackSequenceImpactMessage impactMessage = (AttackSequenceImpactMessage)message;
       if (impactMessage.hitInfo.attackSequenceId != sequence.id)
         return;
       AdvWeaponHitInfoRec advRec = impactMessage.hitInfo.advRec(impactMessage.hitIndex);
-      //int attackGroupIndex = impactMessage.hitInfo.attackGroupIndex;
-      //int attackWeaponIndex = impactMessage.hitInfo.attackWeaponIndex;
+      if (advRec == null) { return; }
+      advRec.impactMessage = impactMessage;
+      advRec.setVisualsState();
       int hitIndex = impactMessage.hitIndex;
       Weapon weapon = advRec.parent.weapon;
       Log.LogWrite("OnAttackSequenceImpactAdv:" + weapon.defId + " "+impactMessage.hitInfo.attackSequenceId+" hi/wi/gi:" + hitIndex + "/"+impactMessage.hitInfo.attackWeaponIndex+"/"+impactMessage.hitInfo.attackGroupIndex+" trg:" + new Text(advRec.target.DisplayName).ToString() + ":" + advRec.hitLocation + " impact:"+impactMessage.hasPlayedImpact+"\n");
-      //int num1 = impactMessage.hitInfo.ShotHitLocation(hitIndex);
       Vector3 hitPosition = impactMessage.hitInfo.hitPositions[hitIndex];
-      //float hitDamage = impactMessage.hitDamage;
-      float qualityMultiplier = sequence.Director.Combat.ToHit.GetBlowQualityMultiplier(impactMessage.hitInfo.hitQualities[hitIndex]);
-      float damage = advRec.Damage * qualityMultiplier;
-      AbstractActor actorTarget = advRec.target as AbstractActor;
-      if (actorTarget != null) {
-        LineOfFireLevel lineOfFireLevel = sequence.attacker.VisibilityCache.VisibilityToTarget((ICombatant)actorTarget).LineOfFireLevel;
-#if BT1_8
-        float adjustedDamage = actorTarget.GetAdjustedDamage(damage, weapon.WeaponCategoryValue, actorTarget.occupiedDesignMask, lineOfFireLevel, true);
-        damage = actorTarget.GetAdjustedDamageForMelee(adjustedDamage, weapon.WeaponCategoryValue);
-#else
-        float adjustedDamage = actorTarget.GetAdjustedDamage(damage, weapon.Category, actorTarget.occupiedDesignMask, lineOfFireLevel, true);
-        damage = actorTarget.GetAdjustedDamageForMelee(adjustedDamage, weapon.Category);
-#endif
-      }
+      float damage = advRec.Damage;
       if ((double)damage <= 0.0) {
         AttackDirector.attackLogger.LogWarning((object)string.Format("OnAttackSequenceImpact is dealing <= 0 damage: base dmg: {0}, total: {1}", (object)impactMessage.hitDamage, (object)damage));
         damage = 0.0f;
@@ -104,18 +92,25 @@ namespace CustAmmoCategories {
         AttackDirector.attackLogger.LogWarning((object)string.Format("OnAttackSequenceImpact is dealing NaN damage: base dmg: {0}, total: {1}", (object)impactMessage.hitDamage, (object)damage));
         damage = 0.0f;
       }
-      float apdmg = advRec.APDamage * (damage / advRec.Damage);
-      bool canProcessMessage = sequence.messageCoordinator().CanProcessMessage(impactMessage);
-      //bool flag3 = impactMessage.hitInfo.DidShotHitChosenTarget(hitIndex);
+      float apdmg = advRec.APDamage;// * (damage / advRec.Damage);
+      if ((double)apdmg <= 0.0) {
+        AttackDirector.attackLogger.LogWarning((object)string.Format("OnAttackSequenceImpact is dealing <= 0 damage: base dmg: {0}, total: {1}", (object)impactMessage.hitDamage, (object)apdmg));
+        apdmg = 0.0f;
+      }
+      if (float.IsInfinity(apdmg)) {
+        AttackDirector.attackLogger.LogWarning((object)string.Format("OnAttackSequenceImpact is dealing inf damage: base dmg: {0}, total: {1}", (object)impactMessage.hitDamage, (object)apdmg));
+        apdmg = 0.0f;
+      }
+      if (float.IsNaN(apdmg)) {
+        AttackDirector.attackLogger.LogWarning((object)string.Format("OnAttackSequenceImpact is dealing NaN damage: base dmg: {0}, total: {1}", (object)impactMessage.hitDamage, (object)apdmg));
+        apdmg = 0.0f;
+      }
       float locArmor = 0f;
       float doggleRoll = impactMessage.hitInfo.dodgeRolls[impactMessage.hitIndex];
       float hitRoll = impactMessage.hitInfo.toHitRolls[impactMessage.hitIndex];
-      if (advRec.target.isAPProtected()) { apdmg = 0f; };
       if (advRec.isHit) { locArmor = advRec.target.ArmorForLocation(advRec.hitLocation); };
       if (!impactMessage.hasPlayedImpact) {
         Log.LogWrite(" impact not played\n");
-        //if (AttackDirector.AttackSequence.logger.IsDebugEnabled)
-        //AttackDirector.AttackSequence.logger.LogDebug((object)string.Format("[OnAttackSequenceImpact] playing impact \"visuals\" for ID {0}, Group {1}, Weapon {2}, Hit {3}. Will process during this call? {4}", (object)sequence.id, (object)attackGroupIndex, (object)attackWeaponIndex, (object)hitIndex, (object)flag2));
         impactMessage.hasPlayedImpact = true;
         if ((UnityEngine.Object)advRec.target.GameRep != (UnityEngine.Object)null) {
           Log.LogWrite(" gameRep exists\n");
@@ -177,66 +172,14 @@ namespace CustAmmoCategories {
         if (weapon.Type != WeaponType.Laser && weapon.Type != WeaponType.Flamer)
           CameraControl.Instance.AddCameraShake(damage * sequence.Director.Combat.Constants.CombatUIConstants.ScreenShakeRangedDamageRelativeMod + sequence.Director.Combat.Constants.CombatUIConstants.ScreenShakeRangedDamageAbsoluteMod, 1f, hitPosition);
       }
+      bool canProcessMessage = advRec.advHitMessage == null ? false : advRec.advHitMessage.CanBeApplied();
       if (!canProcessMessage) {
         Log.M.WL(1, "Can not process message!");
-        sequence.messageCoordinator().StoreMessage((MessageCenterMessage)impactMessage);
+        if (advRec.advHitMessage != null) { advRec.advHitMessage.TryApplyPending(); };
       } else {
-        if (advRec.isHit) {
-          sequence.FlagAttackDidDamage(advRec.target.GUID);
-          sequence.attackCompletelyMissed(false);
-          //if (AttackDirector.AttackSequence.logger.IsLogEnabled) {
-          //  AttackDirector.AttackSequence.logger.Log((object)string.Format("[OnAttackSequenceImpact]  ID {0}, Group {1}, Weapon {2}, Hit {3}.", (object)sequence.id, (object)attackGroupIndex, (object)attackWeaponIndex, (object)hitIndex));
-          //  if (AttackDirector.AttackSequence.logger.IsDebugEnabled)
-          //    AttackDirector.AttackSequence.logger.LogDebug((object)string.Format("\t WeaponName {0}, MeleeType {1}, HitLocation {2}", (object)weapon.Name, (object)sequence.meleeAttackType.ToString(), (object)num1.ToString()));
-          //}
-          sequence.cumulativeDamage += (damage + apdmg);
-          advRec.parent.resolve(advRec.target).cumulativeDamage += (damage + apdmg);
-          float critAPchance = weapon.isAPCrit() ? advRec.parent.weapon.APCriticalChanceMultiplier() : float.NaN;
-          Log.LogWrite(" crit testing - damage/armor " + damage + "/" + locArmor + " ap dmg:" + apdmg + " ap crit chance:" + critAPchance + "\n");
-          if (damage > locArmor) {
-            Log.LogWrite("  crit to location armor breach:" + advRec.hitLocation + "\n");
-            advRec.parent.resolve(advRec.target).AddCrit(advRec.hitLocation,advRec.target);
-          } else if (advRec.isAOE == false) {
-            if (advRec.target.isAPProtected() == false) {
-              if ((apdmg > CustomAmmoCategories.Epsilon) || weapon.isAPCrit()) {
-                Log.LogWrite("  crit to location armor pierce:" + advRec.hitLocation + "\n");
-                advRec.parent.resolve(advRec.target).AddCrit(advRec.hitLocation, advRec.target);
-              } else {
-                Log.LogWrite("  ap damage is zero and weapon not cause AP crits:" + advRec.hitLocation + "\n");
-              }
-            } else {
-              Log.LogWrite("  target is AP crit protected:" + advRec.hitLocation + "\n");
-            }
-          } else {
-            Log.LogWrite("  AoE can't inflict armor pierce crits:" + advRec.hitLocation + "\n");
-          }
-
-          Log.LogWrite(" resolve damage. arm: " + locArmor + " dmg:" + damage + " ap:" + apdmg + "\n");
-#if BT1_8
-          advRec.target.TakeWeaponDamage(impactMessage.hitInfo, advRec.hitLocation, weapon, damage, apdmg, hitIndex, DamageType.Weapon);
-#else
-          if (locArmor <= damage) {
-            Log.LogWrite(" " + (damage + apdmg) + " all damage processed normally\n");
-            advRec.target.TakeWeaponDamage(impactMessage.hitInfo, advRec.hitLocation, weapon, damage+apdmg, hitIndex, DamageType.Weapon);
-          } else {
-            Log.LogWrite(" " + damage + " damage to armor\n");
-            advRec.target.TakeWeaponDamage(impactMessage.hitInfo, advRec.hitLocation, weapon, damage, hitIndex, DamageType.Weapon);
-            Log.LogWrite(" " + apdmg + " damage to structure\n");
-            if (apdmg > CustomAmmoCategories.Epsilon) {
-              advRec.target.TakeWeaponDamageStructure(impactMessage.hitInfo, advRec.hitLocation, weapon, apdmg, hitIndex, DamageType.Weapon);
-            }
-          }
-#endif
-          advRec.parent.resolve(advRec.target).AddHit(advRec.hitLocation,advRec.EffectsMod,advRec.isAOE);
-          advRec.parent.resolve(advRec.target).AddHeat(advRec.Heat);
-          Log.LogWrite(" Added heat:"+advRec.Heat+" overall: "+ advRec.parent.resolve(advRec.target).Heat+ "\n");
-          advRec.parent.resolve(advRec.target).AddInstability(advRec.Stability);
-          Log.LogWrite(" Added instability:" + advRec.Stability + " overall: " + advRec.parent.resolve(advRec.target).Stability + "\n");
-          advRec.target.HandleDeath(sequence.attacker.GUID);
-          advRec.isImplemented = true;
-        }
-        sequence.messageCoordinator().MessageComplete((MessageCenterMessage)impactMessage);
+         advRec.advHitMessage.Apply(true);
       }
+      AdvWeaponHitInfo.printApplyState(sequence.id);
     }
   }
 }

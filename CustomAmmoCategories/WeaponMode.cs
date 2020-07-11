@@ -8,6 +8,7 @@ using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 
 namespace CustAmmoCategoriesPatches {
@@ -205,6 +206,8 @@ namespace CustAmmoCategories {
     public float MissileHealth { get; set; }
     public DamageFalloffType RangedDmgFalloffType { get; set; }
     public DamageFalloffType AoEDmgFalloffType { get; set; }
+    public float DamageFalloffStartDistance { get; set; }
+    public float DamageFalloffEndDistance { get; set; }
     public WeaponMode() {
       Id = WeaponMode.NONE_MODE_NAME;
       UIName = WeaponMode.BASE_MODE_NAME;
@@ -309,6 +312,8 @@ namespace CustAmmoCategories {
       MissileHealth = 0f;
       RangedDmgFalloffType = DamageFalloffType.NotSet;
       AoEDmgFalloffType = DamageFalloffType.NotSet;
+      DamageFalloffStartDistance = 0f;
+      DamageFalloffEndDistance = 0f;
     }
     public void fromJSON(string json) {
       JObject jWeaponMode = JObject.Parse(json);
@@ -636,6 +641,26 @@ namespace CustAmmoCategories {
           this.HitGenerator = HitGeneratorType.NotSet;
         }
         jWeaponMode.Remove("HitGenerator");
+      }
+      foreach (PropertyInfo prop in typeof(WeaponMode).GetProperties()) {
+        if (jWeaponMode[prop.Name] == null) { continue; }
+        if (prop.DeclaringType == typeof(float)) {
+          prop.SetValue(this, (float)jWeaponMode[prop.Name]);
+        } else if (prop.DeclaringType == typeof(int)) {
+          prop.SetValue(this, (int)jWeaponMode[prop.Name]);
+        } else if (prop.DeclaringType == typeof(string)) {
+          prop.SetValue(this, (string)jWeaponMode[prop.Name]);
+        } else if (prop.DeclaringType == typeof(TripleBoolean)) {
+          prop.SetValue(this, ((bool)jWeaponMode[prop.Name] == true) ? TripleBoolean.True : TripleBoolean.False);
+        } else if (prop.DeclaringType == typeof(bool)) {
+          prop.SetValue(this, (bool)jWeaponMode[prop.Name]);
+        } else if (prop.DeclaringType == typeof(EvasivePipsMods)) {
+          prop.SetValue(this, jWeaponMode[prop.Name].ToObject<EvasivePipsMods>());
+        } else if (prop.DeclaringType == typeof(CustomVector)) {
+          prop.SetValue(this, jWeaponMode[prop.Name].ToObject<CustomVector>());
+        } else if (prop.DeclaringType.IsEnum) {
+          prop.SetValue(this, Enum.Parse(prop.DeclaringType, (string)jWeaponMode[prop.Name]));
+        } else { continue; }
       }
       if (jWeaponMode["statusEffects"] != null) {
 

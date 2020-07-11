@@ -38,6 +38,9 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
       Add(new Criticals() { Name = "Criticals" });
       Add(new HitResolution() { Name = "Hit Resolution" });
       Add(new AttackLog() { Name = "Logger" });
+      APIReference.m_AIMShowBaseHitChance = WeaponInfo.ShowBaseHitChance;
+      APIReference.m_AIMShowBaseMeleeChance = WeaponInfo.ShowBaseMeleeChance;
+      APIReference.m_AIMShowNeutralRange = WeaponInfo.ShowNeutralRange;
     }
 
     public override void GameStartsOnce() {

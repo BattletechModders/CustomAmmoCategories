@@ -689,11 +689,11 @@ namespace CustomUnits {
         if (___UnitResults[index] != null) {
           ___UnitWidgets[index].SetNoUnitDeployedOverlayActive(false);
           //if (___UnitResults[index].pilot.pilotDef.isVehicleCrew() == false) {
-          if (___UnitResults[index].mech.IsChassisFake() == false) {
+          //if (___UnitResults[index].mech.IsChassisFake() == false) {
             ___UnitWidgets[index].FillInData(experienceEarned);
-          } else {
-            ___UnitWidgets[index].FillInData(0);
-          }
+          //} else {
+            //___UnitWidgets[index].FillInData(0);
+          //}
         } else {
           ___UnitWidgets[index].SetNoUnitDeployedOverlayActive(true);
         }
@@ -721,7 +721,7 @@ namespace CustomUnits {
   [HarmonyPatch(typeof(PilotDef), "SetUnspentExperience")]
   public static class PilotDef_SetUnspentExperience {
     static bool Prefix(PilotDef __instance, ref int value) {
-      if (__instance.canPilotMech() == false) { value = 0; };
+      //if (__instance.canPilotMech() == false) { value = 0; };
       Log.TWL(0, "PilotDef.SetUnspentExperience canPilotMech:" + __instance.canPilotMech()+" value:"+value);
       return true;
     }
@@ -729,10 +729,10 @@ namespace CustomUnits {
   [HarmonyPatch(typeof(Pilot), "AddExperience")]
   public static class Pilot_AddExperience {
     static bool Prefix(Pilot __instance, ref int value) {
-      if (__instance.pilotDef.canPilotMech() == false) {
-        value = 0;
-        __instance.StatCollection.Set("ExperienceUnspent",0);
-      };
+      //if (__instance.pilotDef.canPilotMech() == false) {
+        //value = 0;
+        //__instance.StatCollection.Set("ExperienceUnspent",0);
+      //};
       Log.TWL(0, "Pilot.AddExperience canPilotMech:" + __instance.pilotDef.canPilotMech() + " value:" + value+" unspent:"+__instance.UnspentXP);
       return true;
     }
@@ -790,11 +790,11 @@ namespace CustomUnits {
     public static void SetUnspentExperience(this PilotDef pilotDef, int value) {
       Log.TWL(0, "SimGameState.ResolveCompleteContract.PilotDef.SetUnspentExperience "+ pilotDef.Description.Id + " PlayerUnitResults:" + (PlayerUnitResults==null?"null": PlayerUnitResults.Count.ToString()) +" crew:"+pilotDef.canPilotMech()+" value:"+value);
       if (PlayerUnitResults == null) {
-        if (pilotDef.canPilotMech() == false) {
-          pilotDef.SetUnspentExperience(0);
-        } else {
+        //if (pilotDef.canPilotMech() == false) {
+          //pilotDef.SetUnspentExperience(0);
+        //} else {
           pilotDef.SetUnspentExperience(value);
-        }
+        //}
       } else {
         UnitResult pilotResult = null;
         foreach(UnitResult result in PlayerUnitResults) {
@@ -804,18 +804,18 @@ namespace CustomUnits {
         }
         if(pilotResult == null) {
           Log.WL(1,"cant find pilot result for:"+ pilotDef.Description.Id);
-          if (pilotDef.canPilotMech() == false) {
-            pilotDef.SetUnspentExperience(0);
-          } else {
+          //if (pilotDef.canPilotMech() == false) {
+            //pilotDef.SetUnspentExperience(0);
+          //} else {
             pilotDef.SetUnspentExperience(value);
-          }
+          //}
         } else {
           Log.WL(1, "success find result for:" + pilotDef.Description.Id+" unit:"+ pilotResult.mech.ChassisID+ " idFake:"+ pilotResult.mech.IsChassisFake());
-          if (pilotResult.mech.IsChassisFake()) {
-            pilotDef.SetUnspentExperience(0);
-          } else {
+          //if (pilotResult.mech.IsChassisFake()) {
+            //pilotDef.SetUnspentExperience(0);
+          //} else {
             pilotDef.SetUnspentExperience(value);
-          }
+          //}
         }
       }
     }

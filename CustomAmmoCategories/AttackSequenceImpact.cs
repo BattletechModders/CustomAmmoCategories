@@ -70,14 +70,14 @@ namespace CustAmmoCategories {
       return weapon.exDef().DistantVarianceReversed == TripleBoolean.True;
     }
     private const double Pi2 = Math.PI / 2.0;
-    public static float WeaponDamageDistance(Vector3 attackPos, ICombatant target, Weapon weapon, float damage, float rawDamage) {
+    public static float WeaponDamageDistance(Vector3 attackPos, ICombatant target, Weapon weapon, float damage, float rawDamage, bool log = true) {
       //var damagePerShot = weapon.DamagePerShot;
       //var adjustment = rawDamage / damagePerShot;
       float baseMultiplier = weapon.DistantVariance();
       float varianceMultiplier = 1f;
       float distance = Vector3.Distance(attackPos, target.TargetPosition);
-      float middleRange = weapon.MediumRange;
-      float maxRange = weapon.MaxRange;
+      float middleRange = weapon.DamageFalloffStartDistance(); if (middleRange < CustomAmmoCategories.Epsilon) { middleRange = weapon.MediumRange; }
+      float maxRange = weapon.DamageFalloffEndDistance(); if (maxRange < middleRange) { maxRange = weapon.MaxRange; };
       float ratio = 1f;
       if ((maxRange - middleRange) > CustomAmmoCategories.Epsilon) { ratio = (distance - middleRange) / (maxRange - middleRange); };
       if (baseMultiplier > 1f) {
@@ -89,27 +89,32 @@ namespace CustAmmoCategories {
           varianceMultiplier = 1f - weapon.RangedDmgFalloffType(ratio) * (1f - baseMultiplier);
         }
       }
+
       var computedDamage = damage * varianceMultiplier; //* adjustment;
-      CustomAmmoCategoriesLog.Log.LogWrite($"varianceMultiplier: {varianceMultiplier}\n" +
-                   $"defId: {weapon.defId}\n" +
-                   $"baseMultiplier: {baseMultiplier}\n" +
-                   //$"adjustment: {adjustment}\n" +
-                   $"damage: {damage}\n" +
-                   $"distance: {distance}\n" +
-                   $"max: {weapon.MaxRange}\n" +
-                   $"middle {middleRange}\n" +
-                   $"distanceRatio: {ratio}\n" +
-                   $"computedDamage: {computedDamage}\n");
+      if (log) {
+        CustomAmmoCategoriesLog.Log.LogWrite($"varianceMultiplier: {varianceMultiplier}\n" +
+                     $"defId: {weapon.defId}\n" +
+                     $"baseMultiplier: {baseMultiplier}\n" +
+                     //$"adjustment: {adjustment}\n" +
+                     $"damage: {damage}\n" +
+                     $"distance: {distance}\n" +
+                     $"start distance: {middleRange}\n" +
+                     $"end distance {maxRange}\n" +
+                     $"distanceRatio: {ratio}\n" +
+                     $"computedDamage: {computedDamage}\n");
+      }
       return computedDamage;
     }
-    public static float WeaponDamageRevDistance(Vector3 attackPos, ICombatant target, Weapon weapon, float damage, float rawDamage) {
+    public static float WeaponDamageRevDistance(Vector3 attackPos, ICombatant target, Weapon weapon, float damage, float rawDamage, bool log = true) {
       //var damagePerShot = weapon.DamagePerShot;
       //var adjustment = rawDamage / damagePerShot;
       float baseMultiplier = weapon.DistantVariance();
       float varianceMultiplier = 1f;
       float distance = Vector3.Distance(attackPos, target.TargetPosition);
-      float middleRange = weapon.MediumRange;
-      float minRange = weapon.MinRange;
+      //float minRange = weapon.MinRange;
+      //float middleRange = weapon.MediumRange;
+      float minRange = weapon.DamageFalloffStartDistance(); if (minRange < CustomAmmoCategories.Epsilon) { minRange = weapon.MinRange; }
+      float middleRange = weapon.DamageFalloffEndDistance(); if (middleRange < minRange) { middleRange = weapon.MediumRange; };
       float ratio = 1f;
       if (distance < middleRange) {
         if ((minRange - middleRange) > CustomAmmoCategories.Epsilon) { ratio = (distance - minRange) / (middleRange - minRange); };
@@ -124,16 +129,18 @@ namespace CustAmmoCategories {
         }
       }
       var computedDamage = damage * varianceMultiplier; //* adjustment;
-      CustomAmmoCategoriesLog.Log.LogWrite($"varianceMultiplier: {varianceMultiplier}\n" +
+      if (log) {
+        CustomAmmoCategoriesLog.Log.LogWrite($"varianceMultiplier: {varianceMultiplier}\n" +
                    $"defId: {weapon.defId}\n" +
                    $"baseMultiplier: {baseMultiplier}\n" +
                    //$"adjustment: {adjustment}\n" +
                    $"damage: {damage}\n" +
                    $"distance: {distance}\n" +
-                   $"min: {weapon.MinRange}\n" +
-                   $"middle {middleRange}\n" +
+                   $"start distance: {minRange}\n" +
+                   $"end distance: {middleRange}\n" +
                    $"distanceRatio: {ratio}\n" +
                    $"computedDamage: {computedDamage}\n");
+      }
       return computedDamage;
     }
     public static float WeaponDamageSimpleVariance(Weapon weapon, float rawDamage) {
@@ -289,13 +296,9 @@ namespace CustomAmmoCategoriesPatches {
       bool isFragMain = false;
       Log.LogWrite("OnAttackSequenceImpact group:" + attackGroupIndex + " weapon:" + attackWeaponIndex + " shot:" + impactMessage.hitIndex + "/" + impactMessage.hitInfo.numberOfShots + "\n");
       if (advRec != null) {
-        rawDamage = advRec.Damage;
-        realDamage = advRec.Damage;
-        rawHeat = advRec.Heat;
-        hitLocation = advRec.hitLocation;
-        target = advRec.target;
-        isAOE = advRec.isAOE;
-        isFragMain = advRec.fragInfo.separated && (advRec.fragInfo.isFragPallet == false);
+        advRec.PlayImpact();
+        __instance.OnAttackSequenceImpactAdv(message);
+        return false;
       } else {
         Log.LogWrite("No advanced info info.\n");
         if((impactMessage.hitInfo.DidShotHitChosenTarget(impactMessage.hitIndex) == false) && (impactMessage.hitInfo.DidShotHitAnything(impactMessage.hitIndex))) {
@@ -305,10 +308,6 @@ namespace CustomAmmoCategoriesPatches {
           }
         }
       }
-      //if (hitLocation != 0) {
-      //DynamicMapHelper.applyImpactMapChange(weapon, __instance.target.CurrentPosition);
-      //}
-      //CustomAmmoCategories.unregisterAMSCounterMeasure(impactMessage.hitInfo);
       CustomAmmoCategoriesLog.Log.LogWrite("  ");
       for (int t = 0; t < impactMessage.hitInfo.hitLocations.Length; ++t) {
         CustomAmmoCategoriesLog.Log.LogWrite("H:" + t + " L:" + impactMessage.hitInfo.hitLocations[t] + "/"+impactMessage.hitInfo.secondaryHitLocations[t]+" ");
@@ -321,13 +320,13 @@ namespace CustomAmmoCategoriesPatches {
       CustomAmmoCategoriesLog.Log.LogWrite("  weapon = " + weapon.UIName + "\n");
       CustomAmmoCategoriesLog.Log.LogWrite("  damage = " + rawDamage + "/"+realDamage+"\n");
       CustomAmmoCategoriesLog.Log.LogWrite("  heat = " + rawHeat + "\n");
-      if (advRec != null) {
-        if(advRec.target.isHasStability() == false) {
-          advRec.Stability = 0f;
-          CustomAmmoCategoriesLog.Log.LogWrite("  target has no stability\n");
-        }
-        CustomAmmoCategoriesLog.Log.LogWrite("  stability = " + advRec.Stability + "\n");
-      }
+      //if (advRec != null) {
+      //  if(advRec.target.isHasStability() == false) {
+      //    advRec.Stability = 0f;
+      //    CustomAmmoCategoriesLog.Log.LogWrite("  target has no stability\n");
+      //  }
+      //  CustomAmmoCategoriesLog.Log.LogWrite("  stability = " + advRec.Stability + "\n");
+      //}
       CustomAmmoCategoriesLog.Log.LogWrite("  isAOE = " + (isAOE) + "\n");
       CustomAmmoCategoriesLog.Log.LogWrite("  isFragMain = " + (isAOE) + "\n");
       if ((isAOE == true)||(isFragMain == true)) {
@@ -335,7 +334,7 @@ namespace CustomAmmoCategoriesPatches {
       } else {
         //AdvWeaponHitInfoRec missile = impactMessage.hitInfo.advRec(impactMessage.hitIndex);
         bool intercepted = false;
-        if (advRec != null) { if (advRec.interceptInfo.Intercepted) { intercepted = true; }; };
+        //if (advRec != null) { if (advRec.interceptInfo.Intercepted) { intercepted = true; }; };
         if (intercepted == false) {
           weapon.SpawnAdditionalImpactEffect(impactMessage.hitInfo.hitPositions[impactMessage.hitIndex]);
           if (hitLocation == 65536) {
@@ -388,7 +387,7 @@ namespace CustomAmmoCategoriesPatches {
           }
           if (realDamage >= 1.0f) {
             Log.LogWrite("Applying WeaponRealizer variance. Current damage: " + realDamage + "\n");
-            realDamage = WeaponRealizer.Calculator.ApplyDamageModifiers(__instance.attacker.TargetPosition, target, weapon, realDamage);
+            realDamage = WeaponRealizer.Calculator.ApplyDamageModifiers(__instance.attacker.TargetPosition, target, weapon, realDamage, true);
             Log.LogWrite("damage after WeaponRealizer variance: " + realDamage + "\n");
           }
         } else {
@@ -415,25 +414,26 @@ namespace CustomAmmoCategoriesPatches {
       if (weapon.isDamageVariation()) { impactMessage.hitDamage = realDamage; } else {
         Log.LogWrite(" damge variation forbidden by weapon's settings\n");
       }
-      if (advRec != null) {
-        if (weapon.isHeatVariation()) {
-          advRec.Heat *= advRec.Damage > CustomAmmoCategories.Epsilon? (realDamage / advRec.Damage) : 0f;
-          rawHeat = advRec.Heat;
-        } else {
-          Log.LogWrite(" heat variation forbidden by weapon's settings\n");
-        }
-        if (weapon.isStabilityVariation()) {
-          advRec.Stability *= advRec.Damage > CustomAmmoCategories.Epsilon ? realDamage / advRec.Damage : 0f;
-        } else {
-          Log.LogWrite(" stability variation forbidden by weapon's settings\n");
-        }
-        if (weapon.isDamageVariation()) { advRec.Damage = realDamage; } else {
-          Log.LogWrite(" damage variation forbidden by weapon's settings\n");
-        }
-        Log.LogWrite("  real damage = " + advRec.Damage + "\n");
-        Log.LogWrite("  real heat = " + advRec.Heat + "\n");
-        Log.LogWrite("  real stability = " + advRec.Stability + "\n");
-      } else {
+      //if (advRec != null) {
+      //  if (weapon.isHeatVariation()) {
+      //    advRec.Heat *= advRec.Damage > CustomAmmoCategories.Epsilon? (realDamage / advRec.Damage) : 0f;
+      //    rawHeat = advRec.Heat;
+      //  } else {
+      //    Log.LogWrite(" heat variation forbidden by weapon's settings\n");
+      //  }
+      //  if (weapon.isStabilityVariation()) {
+      //    advRec.Stability *= advRec.Damage > CustomAmmoCategories.Epsilon ? realDamage / advRec.Damage : 0f;
+      //  } else {
+      //    Log.LogWrite(" stability variation forbidden by weapon's settings\n");
+      //  }
+      //  if (weapon.isDamageVariation()) { advRec.Damage = realDamage; } else {
+      //    Log.LogWrite(" damage variation forbidden by weapon's settings\n");
+      //  }
+      //  Log.LogWrite("  real damage = " + advRec.Damage + "\n");
+      //  Log.LogWrite("  real heat = " + advRec.Heat + "\n");
+      //  Log.LogWrite("  real stability = " + advRec.Stability + "\n");
+      //} else {
+      { 
         Log.LogWrite("  real damage = " + impactMessage.hitDamage + "\n");
         if (weapon.isHeatVariation()) {
           rawHeat *= rawDamage > CustomAmmoCategories.Epsilon ? (realDamage / rawDamage) : 0f;
@@ -446,19 +446,19 @@ namespace CustomAmmoCategoriesPatches {
         Log.M.WL("  heat damage exists, but target can't be heated");
         float heatAsNormal = target.HeatDamage(rawHeat);
         Log.M.WL("  heat transfered to normal damage:" + heatAsNormal);
-        if (advRec != null) {
-          advRec.Damage += heatAsNormal;
-          advRec.Heat = 0f;
-          Log.LogWrite("  real damage = " + advRec.Damage + "\n");
-          Log.LogWrite("  real heat = " + advRec.Heat + "\n");
-        } else {
+        //if (advRec != null) {
+          //advRec.Damage += heatAsNormal;
+          //advRec.Heat = 0f;
+          //Log.LogWrite("  real damage = " + advRec.Damage + "\n");
+          //Log.LogWrite("  real heat = " + advRec.Heat + "\n");
+        //} else {
           impactMessage.hitDamage += heatAsNormal;
           Log.LogWrite("  real damage = " + impactMessage.hitDamage + "\n");
-        }
+        //}
       }
-      if (advRec == null) { return true; }
-      __instance.OnAttackSequenceImpactAdv(message);
-      return false;
+      //if (advRec == null) { return true; }
+      //__instance.OnAttackSequenceImpactAdv(message);
+      return true;
     }
   }
 }

@@ -212,6 +212,7 @@ namespace CustomAmmoCategoriesPathes {
       if (__instance.gameObject.GetInstanceID() == panelInstance) { return; }
       Log.M.TWL(0, "CombatHUDWeaponPanel.RefreshDisplayedWeapons " + __instance.gameObject.GetInstanceID());
       panelInstance = __instance.gameObject.GetInstanceID();
+      __instance.gameObject.transform.localScale = new Vector3(CustomAmmoCategories.Settings.WeaponPanelWidthScale, CustomAmmoCategories.Settings.WeaponPanelHeightScale, 1f);
       RectTransform panel_background = __instance.transform.FindRecursive("panel_background") as RectTransform;
       if (panel_background == null) { return; }
       Vector3[] corners = new Vector3[4];
@@ -219,8 +220,7 @@ namespace CustomAmmoCategoriesPathes {
       float width = corners[3].x - corners[0].x;
       Log.M.WL(1, "width:" + width);
       if (width == 0f) { panelInstance = -1; return; }
-
-      panel_background.localScale = new Vector3(CustomAmmoCategories.Settings.WeaponPanelWidthScale, 1f, 1f);
+      panel_background.localScale = new Vector3(CustomAmmoCategories.Settings.WeaponPanelBackWidthScale, 1f, 1f);
       panel_background.GetWorldCorners(corners);
       float newWidth = corners[3].x - corners[0].x;
       Log.M.WL(1, "newWidth:" + newWidth);

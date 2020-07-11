@@ -12,7 +12,7 @@ namespace MechResizer {
         Transform parentTransform,
         bool isParented,
         MechRepresentation __instance) {
-      Log.TWL(0, "mech size initialization");
+      Log.TWL(0, "mech size initialization " + __instance.gameObject.name);
       var identifier = mech.MechDef.ChassisID;
       var sizeMultiplier = SizeMultiplier.Get(mech.MechDef.Chassis);
       Log.TWL(0, $"{identifier}: {sizeMultiplier}");
@@ -22,7 +22,13 @@ namespace MechResizer {
       var newTargetPositions = ModSettings.LOSTargetPositions(identifier, originalLOSTargetPositions, sizeMultiplier);
       Traverse.Create(mech).Field("originalLOSSourcePositions").SetValue(newSourcePositions);
       Traverse.Create(mech).Field("originalLOSTargetPositions").SetValue(newTargetPositions);
-      Traverse.Create(__instance.thisTransform).Property("localScale").SetValue(sizeMultiplier);
+      Transform transformToScale = __instance.thisTransform;
+      if (MechResizer.ModSettings.MechScaleJRoot) {
+        Transform j_Root = __instance.gameObject.transform.FindRecursive("j_Root");
+        if (j_Root != null) { transformToScale = j_Root; }
+      }
+      transformToScale.localScale = sizeMultiplier;
+      //
     }
   }
 }

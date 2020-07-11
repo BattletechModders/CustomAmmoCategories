@@ -306,7 +306,7 @@ namespace CleverGirlAIDamagePrediction {
         }
         if (realDamage >= 1.0f) {
           //Log.LogWrite("Applying WeaponRealizer variance. Current damage: " + realDamage + "\n");
-          realDamage = WeaponRealizer.Calculator.ApplyDamageModifiers(attackPos, inital.Target, weapon, realDamage);
+          realDamage = WeaponRealizer.Calculator.ApplyDamageModifiers(attackPos, inital.Target, weapon, realDamage, true);
           //Log.LogWrite("damage after WeaponRealizer variance: " + realDamage + "\n");
         }
       } else {

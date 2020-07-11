@@ -308,7 +308,7 @@ namespace CustAmmoCategories {
       if (mode.Streak != TripleBoolean.NotSet) { return mode.Streak == TripleBoolean.True; };
       ExtAmmunitionDef ammo = weapon.ammo();
       if (ammo.Streak != TripleBoolean.NotSet) { return mode.Streak == TripleBoolean.True; };
-      return weapon.exDef().StreakEffect;
+      return weapon.exDef().Streak;
     }
     public static void ReturnNoFireHeat(Weapon weapon, int stackItemUID, int numNeedShots, int numSuccesHits) {
       CustomAmmoCategoriesLog.Log.LogWrite("Returining heat\n");

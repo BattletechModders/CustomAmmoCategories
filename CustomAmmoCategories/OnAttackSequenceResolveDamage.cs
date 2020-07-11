@@ -63,10 +63,14 @@ namespace CustomAmmoCategoriesPatches {
       if (hitInfo.attackSequenceId != __instance.id) { Log.M.WL(1, "sequence not mach:"+ hitInfo.attackSequenceId+" != "+__instance.id+" fallback"); return true; };
       AdvWeaponHitInfo advInfo = hitInfo.advInfo();
       if (advInfo == null) { Log.M.WL(1, "no advanced info. fallback"); return true; }
+      advInfo.resolveDamageMessage = resolveDamageMessage;
+      advInfo.setVisualState();
       try {
-        if (!__instance.messageCoordinator().CanProcessMessage(resolveDamageMessage)) {
+        bool canProcessMessage = advInfo.advHitMessage == null ? false : advInfo.advHitMessage.CanBeApplied();
+        if (!canProcessMessage) {
           Log.M.WL(1, "store message");
-          __instance.messageCoordinator().StoreMessage((MessageCenterMessage)resolveDamageMessage);
+          //__instance.messageCoordinator().StoreMessage((MessageCenterMessage)resolveDamageMessage);
+          if (advInfo.advHitMessage != null) { advInfo.advHitMessage.TryApplyPending(); };
         } else {
           Log.M.WL(1, "processing message");
           try {
@@ -75,10 +79,12 @@ namespace CustomAmmoCategoriesPatches {
           } catch (Exception) {
             //Log.CB.TWL(0, e.ToString(), true);
           }
-          Log.M.WL(1, "resolve weapon damage");
-          ResolveDamageHelper.ResolveWeaponDamageAdv(ref hitInfo);
-          advInfo.Sequence.messageCoordinator().MessageComplete((MessageCenterMessage)resolveDamageMessage);
+          //ResolveDamageHelper.ResolveWeaponDamageAdv(ref hitInfo);
+          //advInfo.Sequence.messageCoordinator().MessageComplete((MessageCenterMessage)resolveDamageMessage);
+          //advInfo.setApplyState();
+          advInfo.advHitMessage.Apply(true);
         }
+        AdvWeaponHitInfo.printApplyState(__instance.id);
       } catch (Exception e) {
         Log.M.TWL(0,"Resolve weapon damage fail." + e.ToString() + "\nFallback\n",true);
         return true;

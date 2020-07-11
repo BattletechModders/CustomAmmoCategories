@@ -13,7 +13,7 @@ namespace CustAmmoCategories {
   public static class AbstractActor_InitStatsAP {
     public static void Postfix(AbstractActor __instance) {
       Log.LogWrite("AbstractActor.InitEffectStats " + __instance.DisplayName + ":" + __instance.GUID + "\n");
-      __instance.isAPProtected(false);
+      __instance.InitExDamageStats();
     }
   }
   [HarmonyPatch(typeof(Mech))]
@@ -42,17 +42,47 @@ namespace CustAmmoCategories {
       return true;
     }
   }
-  public static class StructureDamageHelper {
+  public static class ExDamageHelper {
     public static readonly string APProtectionStatisticName = "CACAPProtection";
+    public static readonly string AoEDamageMultStatisticName = "CACAoEDamageMult";
+    public static readonly string APDamageMultStatisticName = "CACAPDamageMult";
+    public static readonly string IncomingHeatMultStatisticName = "CACIncomingHeatMult";
+    public static readonly string IncomingStabilityMultStatisticName = "CACIncomingStabilityMult";
     public static bool isAPProtected(this ICombatant unit) {
       if (unit.StatCollection.ContainsStatistic(APProtectionStatisticName) == false) { return false; }
       return unit.StatCollection.GetStatistic(APProtectionStatisticName).Value<bool>();
     }
-    public static void isAPProtected(this ICombatant unit,bool val) {
+    public static float AoEDamageMult(this ICombatant unit) {
+      if (unit.StatCollection.ContainsStatistic(AoEDamageMultStatisticName) == false) { return 1f; }
+      return unit.StatCollection.GetStatistic(AoEDamageMultStatisticName).Value<float>();
+    }
+    public static float APDamageMult(this ICombatant unit) {
+      if (unit.StatCollection.ContainsStatistic(APDamageMultStatisticName) == false) { return 1f; }
+      return unit.StatCollection.GetStatistic(APDamageMultStatisticName).Value<float>();
+    }
+    public static float IncomingHeatMult(this ICombatant unit) {
+      if (unit.StatCollection.ContainsStatistic(IncomingHeatMultStatisticName) == false) { return 1f; }
+      return unit.StatCollection.GetStatistic(IncomingHeatMultStatisticName).Value<float>();
+    }
+    public static float IncomingStabilityMult(this ICombatant unit) {
+      if (unit.StatCollection.ContainsStatistic(IncomingStabilityMultStatisticName) == false) { return 1f; }
+      return unit.StatCollection.GetStatistic(IncomingStabilityMultStatisticName).Value<float>();
+    }
+    public static void InitExDamageStats(this ICombatant unit) {
       if (unit.StatCollection.ContainsStatistic(APProtectionStatisticName) == false) {
-        unit.StatCollection.AddStatistic<bool>(APProtectionStatisticName, val);
-      } else {
-        unit.StatCollection.Set<bool>(APProtectionStatisticName, val);
+        unit.StatCollection.AddStatistic<bool>(APProtectionStatisticName, false);
+      }
+      if (unit.StatCollection.ContainsStatistic(AoEDamageMultStatisticName) == false) {
+        unit.StatCollection.AddStatistic<float>(AoEDamageMultStatisticName, 1f);
+      }
+      if (unit.StatCollection.ContainsStatistic(APDamageMultStatisticName) == false) {
+        unit.StatCollection.AddStatistic<float>(APDamageMultStatisticName, 1f);
+      }
+      if (unit.StatCollection.ContainsStatistic(IncomingHeatMultStatisticName) == false) {
+        unit.StatCollection.AddStatistic<float>(IncomingHeatMultStatisticName, 1f);
+      }
+      if (unit.StatCollection.ContainsStatistic(IncomingStabilityMultStatisticName) == false) {
+        unit.StatCollection.AddStatistic<float>(IncomingStabilityMultStatisticName, 1f);
       }
     }
     public static void ShowFloatie(this Mech mech,string sourceGuid, ArmorLocation location, FloatieMessage.MessageNature nature, string dmgText, float fontSize) {

@@ -9,6 +9,7 @@ using HBS.Logging;
 using System.Reflection;
 using UnityEngine;
 using Random = UnityEngine.Random;
+using CustomAmmoCategoriesLog;
 
 namespace CustAmmoCategories {
 
@@ -62,6 +63,14 @@ namespace CustAmmoCategories {
       this.projectileAudioObject = (AkGameObj)typeof(WeaponEffect).GetField("projectileAudioObject", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(original);
       this.projectileMeshObject = (GameObject)typeof(WeaponEffect).GetField("projectileMeshObject", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(original);
       this.projectileLightObject = (GameObject)typeof(WeaponEffect).GetField("projectileLightObject", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(original);
+      Log.M.WL(1, "projectile:" + (projectile == null ? "null" : projectile.name));
+      Log.M.WL(1, "projectilePrefab:" + (projectilePrefab == null ? "null" : projectilePrefab.name));
+      Log.M.WL(1, "activeProjectileName:" + activeProjectileName);
+      if (projectilePrefab != null) {
+        if (string.IsNullOrEmpty(this.activeProjectileName)) {
+          this.activeProjectileName = projectilePrefab.name;
+        }
+      }
       this.impactVFXVariations = original.impactVFXVariations;
       this.armorDamageVFXName = original.armorDamageVFXName;
       this.structureDamageVFXName = original.structureDamageVFXName;

@@ -180,7 +180,7 @@ namespace CustAmmoCategories {
           target.TagAoEModifiers(out float tagAoEModRange, out float tagAoEDamage);
           if (tagAoEModRange < CustomAmmoCategories.Epsilon) { tagAoEModRange = 1f; }
           if (tagAoEDamage < CustomAmmoCategories.Epsilon) { tagAoEDamage = 1f; }
-          distance /= tagAoEDamage;
+          distance /= tagAoEModRange;
           if (distance > AOERange) { continue; }
           if (targetsHitCache.ContainsKey(target) == false) { targetsHitCache.Add(target, new Dictionary<int, float>()); }
           if (targetsHeatCache.ContainsKey(target) == false) { targetsHeatCache.Add(target, 0f); }
@@ -191,9 +191,12 @@ namespace CustAmmoCategories {
           float StabilityPerShot = AoEStability * CustomAmmoCategories.Settings.DefaultAoEDamageMult[target.UnitType].Damage * tagAoEDamage;
           if (HeatDamagePerShot < CustomAmmoCategories.Epsilon) { HeatDamagePerShot = weapon.HeatDamagePerShot; };
           float distanceRatio = weapon.AoEDmgFalloffType((AOERange - distance) / AOERange);
-          float fullDamage = DamagePerShot * distanceRatio;
-          float heatDamage = HeatDamagePerShot * distanceRatio;
-          float stabDamage = StabilityPerShot * distanceRatio;
+          float targetAoEMult = target.AoEDamageMult();
+          float targetHeatMult = target.IncomingHeatMult();
+          float targetStabMult = target.IncomingStabilityMult();
+          float fullDamage = DamagePerShot * distanceRatio * targetAoEMult;
+          float heatDamage = HeatDamagePerShot * distanceRatio * targetAoEMult * targetHeatMult;
+          float stabDamage = StabilityPerShot * distanceRatio * targetAoEMult * targetStabMult;
           targetsHeatCache[target] += heatDamage;
           targetsStabCache[target] += stabDamage;
           Log.LogWrite(" full damage " + fullDamage + "\n");

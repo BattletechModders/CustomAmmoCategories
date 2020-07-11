@@ -14,7 +14,7 @@ namespace CustAmmoCategories {
   [HarmonyPatch("Update")]
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { })]
-  public static class CombatHUD_Init {
+  public static class CombatHUD_Update {
     private static float t = 0f;
     public static void Postfix(CombatHUD __instance) {
       if (t > 5f) {

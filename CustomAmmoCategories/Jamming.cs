@@ -332,6 +332,7 @@ namespace CustAmmoCategories {
     public static void AddJam(AbstractActor actor, Weapon weapon) {
       bool damage = weapon.DamageOnJamming();
       bool destroy = weapon.DestroyOnJamming();
+      Log.M.TWL(0, "AddJamm " + new Text(actor.DisplayName).ToString() + " weapon:" + weapon.defId + " damage:" + damage + " destroy:" + destroy);
       if ((damage == false)&&(destroy == false)) {
         if (weapon.StatCollection.ContainsStatistic(CustomAmmoCategories.JammedWeaponStatisticName) == false) {
           weapon.StatCollection.AddStatistic<bool>(CustomAmmoCategories.JammedWeaponStatisticName, false);
@@ -350,6 +351,7 @@ namespace CustAmmoCategories {
         if (destroy == true) { isDestroying = true; };
         var damageLevel = isDestroying ? ComponentDamageLevel.Destroyed : ComponentDamageLevel.Penalized;
         var fakeHit = new WeaponHitInfo(-1, -1, -1, -1, string.Empty, string.Empty, -1, null, null, null, null, null, null, null, null, null, null, null);
+        Log.M.WL(1, "DamageComponent:"+ damageLevel);
         weapon.DamageComponent(fakeHit, damageLevel, true);
         var message = isDestroying
             ? $"{weapon.UIName} __/CAC.misfire/__: __/CAC.Destroyed/__!"

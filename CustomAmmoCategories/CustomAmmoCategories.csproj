@@ -129,6 +129,7 @@
     <Compile Include="AdvCritProc.cs" />
     <Compile Include="AdvWeaponHitInfo.cs" />
     <Compile Include="AIHelper.cs" />
+    <Compile Include="AIMModSettings.cs" />
     <Compile Include="AIWeaponChoose.cs" />
     <Compile Include="AmmoCategoryValue.cs" />
     <Compile Include="AmmoCookoff.cs" />
@@ -205,6 +206,7 @@
     <Compile Include="PlayProjectile.cs" />
     <Compile Include="SidePanelMoveInfo.cs" />
     <Compile Include="Streak.cs" />
+    <Compile Include="ToHitModifiers.cs" />
     <Compile Include="TurretlessVehicle.cs" />
     <Compile Include="WeaponAmmoLoadFixer.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
@@ -246,7 +248,12 @@
   <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
-    <PostBuildEvent>copy /Y "$(TargetPath)" "$(ProjectDir)\..\..\Mods\CustomAmmoCategories"</PostBuildEvent>
+    <PostBuildEvent>copy /Y "$(TargetPath)" "$(ProjectDir)\..\..\Mods\CustomAmmoCategories"
+xcopy /Y /S /E "$(ProjectDir)..\AdditionalFiles" "$(ProjectDir)\..\..\Mods\CustomAmmoCategories"
+copy /Y "$(TargetPath)" "$(ProjectDir)\..\..\RogueTechWorking\CustomAmmoCategories"
+xcopy /Y /S /E "$(ProjectDir)..\AdditionalFiles" "$(ProjectDir)\..\..\RogueTechWorking\CustomAmmoCategories"
+copy /Y "$(TargetPath)" "$(ProjectDir)\..\..\Release_CAC\Release\CustomBundle\CustomAmmoCategories"
+xcopy /Y /S /E "$(ProjectDir)..\AdditionalFiles" "$(ProjectDir)\..\..\Release_CAC\Release\CustomBundle\CustomAmmoCategories"</PostBuildEvent>
   </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

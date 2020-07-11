@@ -533,6 +533,7 @@ namespace CustAmmoCategories {
     public override string ToString() {
       return ("set " + this.set + " (" + x.ToString() + "," + y.ToString() + "," + z.ToString() + ")");
     }
+    [JsonIgnore]
     public Vector3 vector { get { return new Vector3(this.x, this.y, this.z); } }
   }
   public class CustomAmmoCategoryRecord {
@@ -1347,6 +1348,8 @@ namespace CustAmmoCategories {
     public bool DestoryedLocationDamageTransferStructure { get; set; }
     public bool DestoryedLocationCriticalAllow { get; set; }
     public List<string> TransferHeatDamageToNormalTag { get; set; }
+    public float WeaponPanelBackWidthScale { get; set; }
+    public float WeaponPanelHeightScale { get; set; }
     public float WeaponPanelWidthScale { get; set; }
     public float OrderButtonWidthScale { get; set; }
     public float OrderButtonPaddingScale { get; set; }
@@ -1358,6 +1361,13 @@ namespace CustAmmoCategories {
     public bool AttackLogWrite { get; set; }
     public bool ShowAttackGroundButton { get; set; }
     public bool ShowWeaponOrderButtons { get; set; }
+    public float ToHitSelfJumped { get; set; }
+    public float ToHitMechFromFront { get; set; }
+    public float ToHitMechFromSide { get; set; }
+    public float ToHitMechFromRear { get; set; }
+    public float ToHitVehicleFromFront { get; set; }
+    public float ToHitVehicleFromSide { get; set; }
+    public float ToHitVehicleFromRear { get; set; }
     public Settings() {
       directory = string.Empty;
       debugLog = true;
@@ -1446,7 +1456,7 @@ namespace CustAmmoCategories {
       DestoryedLocationDamageTransferStructure = true;
       DestoryedLocationCriticalAllow = true;
       TransferHeatDamageToNormalTag = new List<string>();
-      WeaponPanelWidthScale = 1.1f;
+      WeaponPanelBackWidthScale = 1.1f;
       OrderButtonWidthScale = 0.5f;
       OrderButtonPaddingScale = 0.3f;
       AttackSequenceTimeout = 60f;
@@ -1456,8 +1466,16 @@ namespace CustAmmoCategories {
       AttackLogWrite = false;
       ShowAttackGroundButton = false;
       ShowWeaponOrderButtons = false;
-    }
+      ToHitSelfJumped = 2f;
+      ToHitMechFromFront = 0f;
+      ToHitMechFromSide = -1f;
+      ToHitMechFromRear = -2f;
+      ToHitVehicleFromFront = 0f;
+      ToHitVehicleFromSide = -1f;
+      ToHitVehicleFromRear = -2f;
+      WeaponPanelHeightScale = 1f;
   }
+}
 }
 
 namespace CACMain {
@@ -1468,6 +1486,25 @@ namespace CACMain {
     public static Dictionary<string, Material> AdditinalMaterials = new Dictionary<string, Material>();
     public static Dictionary<string, Shader> AdditinalShaders = new Dictionary<string, Shader>();
     public static Dictionary<string, AudioClip> AdditinalAudio = new Dictionary<string, AudioClip>();
+    public static Sheepy.BattleTechMod.AttackImprovementMod.ModSettings AIMModSettings = null;
+    public static void AIMShowBaseHitChance(CombatHUDWeaponSlot instance, ICombatant target) {
+      if (Sheepy.BattleTechMod.AttackImprovementMod.APIReference.m_AIMShowBaseHitChance == null) { return; }
+      if (AIMModSettings == null) { return; }
+      if (AIMModSettings.ShowBaseHitchance == false) { return; }
+      Sheepy.BattleTechMod.AttackImprovementMod.APIReference.m_AIMShowBaseHitChance(instance, target);
+    }
+    public static void AIMShowBaseMeleeChance(CombatHUDWeaponSlot instance, ICombatant target) {
+      if (Sheepy.BattleTechMod.AttackImprovementMod.APIReference.m_AIMShowBaseMeleeChance == null) { return; }
+      if (AIMModSettings == null) { return; }
+      if (AIMModSettings.ShowBaseHitchance == false) { return; }
+      Sheepy.BattleTechMod.AttackImprovementMod.APIReference.m_AIMShowBaseMeleeChance(instance, target);
+    }
+    public static void AIMShowNeutralRange(CombatHUDWeaponSlot instance, ICombatant target) {
+      if (Sheepy.BattleTechMod.AttackImprovementMod.APIReference.m_AIMShowNeutralRange == null) { return; }
+      if (AIMModSettings == null) { return; }
+      if (AIMModSettings.ShowNeutralRangeInBreakdown == false) { return; }
+      Sheepy.BattleTechMod.AttackImprovementMod.APIReference.m_AIMShowNeutralRange(instance, target);
+    }
     public static Mesh findMech(string name) {
       if (Core.AdditinalMeshes.ContainsKey(name)) { return Core.AdditinalMeshes[name]; };
       return null;
@@ -1506,6 +1543,7 @@ namespace CACMain {
       foreach(var dd in CustomAmmoCategories.Settings.DefaultAoEDamageMult) {
         Log.M.WL(1, dd.Key.ToString() + "={range:"+dd.Value.Range+" damage:"+dd.Value.Damage+"}");
       }
+      ToHitModifiersHelper.Init();
       //string CharlesBSettings = Path.Combine(directory, "CharlesB_settings.json");
       //if (File.Exists(CharlesBSettings)) {
       //CharlesB.Core.Init(directory, File.ReadAllText(CharlesBSettings));
@@ -1583,6 +1621,7 @@ namespace CACMain {
           Type AIMMod = AIM.GetType("Sheepy.BattleTechMod.AttackImprovementMod.Mod");
           AIMMod.GetField("failToLoad",BindingFlags.Static|BindingFlags.Public).SetValue(null, false);
           AIMMod.GetMethod("Init", BindingFlags.Static | BindingFlags.Public).Invoke(null, new object[2] { directory, string.Empty});
+          AIMModSettings = (Sheepy.BattleTechMod.AttackImprovementMod.ModSettings)AIMMod.GetField("Settings").GetValue(null);
           //Sheepy.BattleTechMod.AttackImprovementMod.Mod.failToLoad = false;
           //Sheepy.BattleTechMod.AttackImprovementMod.Mod.Init(directory, string.Empty);
         }

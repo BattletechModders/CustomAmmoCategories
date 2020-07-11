@@ -2291,6 +2291,7 @@ namespace CustomUnits {
   [HarmonyPatch(new Type[] { typeof(ICombatant) })]
   public static class CombatHUDWeaponSlot_UpdateToolTipsFiring {
     //public static readonly string playerGUID = "bf40fd39-ccf9-47c4-94a6-061809681140";
+    public static bool Prepare() { return false; }
     public static bool Prefix(CombatHUDWeaponSlot __instance, ICombatant target, CombatHUD ___HUD, Weapon ___displayedWeapon, ref int ___modifier, CombatGameState ___Combat) {
       return true;
       /*AbstractActor abstractActor = target as AbstractActor;
@@ -2462,7 +2463,7 @@ namespace CustomUnits {
         gen.Emit(OpCodes.Ret);
         i_AddToolTipDetail = (d_AddToolTipDetail)dm.CreateDelegate(typeof(d_AddToolTipDetail));
       }
-      return true;
+      return false;
     }
     public static void AddToolTipDetail(this CombatHUDWeaponSlot slot, string description, int modifier) {
       i_AddToolTipDetail(slot, description, modifier);
@@ -2593,6 +2594,7 @@ namespace CustomUnits {
       if (pilot != null) {
         List<Ability> abilityList = new List<Ability>((IEnumerable<Ability>)pilot.ActiveAbilities);
         for (int index = 0; index < abilityList.Count; ++index) {
+          if (index >= AbilityButtons.Length) { break; }
           AbilityButtons[index].InitButton(CombatHUDMechwarriorTray.GetSelectionTypeFromTargeting(abilityList[index].Def.Targeting, false), abilityList[index], abilityList[index].Def.AbilityIcon, abilityList[index].Def.Description.Id, abilityList[index].Def.Description.Name, actor);
           AbilityButtons[index].isClickable = true;
         }

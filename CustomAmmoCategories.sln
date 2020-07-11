@@ -17,6 +17,25 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CustomVoices", "CustomVoice
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VoicePackDefCreator", "VoicePackDefCreator\VoicePackDefCreator.csproj", "{ABC7834A-B17E-4FC6-9DF4-12882E781241}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{6BAC2C62-C716-4939-8C11-17CF9BA18D81}"
+	ProjectSection(SolutionItems) = preProject
+		AdditionalFiles\AIM-changelog.txt = AdditionalFiles\AIM-changelog.txt
+		AdditionalFiles\AIM-LICENSE.html = AdditionalFiles\AIM-LICENSE.html
+		AdditionalFiles\AIM-README.html = AdditionalFiles\AIM-README.html
+		AdditionalFiles\AIM-README.md = AdditionalFiles\AIM-README.md
+		AdditionalFiles\AIM_settings.json = AdditionalFiles\AIM_settings.json
+		AdditionalFiles\CustomAmmoCategoriesSettings.json = AdditionalFiles\CustomAmmoCategoriesSettings.json
+		AdditionalFiles\favicon.ico = AdditionalFiles\favicon.ico
+		AdditionalFiles\index.html = AdditionalFiles\index.html
+		AdditionalFiles\index.js = AdditionalFiles\index.js
+		AdditionalFiles\jquery.js = AdditionalFiles\jquery.js
+		AdditionalFiles\mod.json = AdditionalFiles\mod.json
+		AdditionalFiles\README.txt = AdditionalFiles\README.txt
+		AdditionalFiles\WeaponRealizerSettings.json = AdditionalFiles\WeaponRealizerSettings.json
+		AdditionalFiles\WR-LICENSE = AdditionalFiles\WR-LICENSE
+		AdditionalFiles\WR-README.md = AdditionalFiles\WR-README.md
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU

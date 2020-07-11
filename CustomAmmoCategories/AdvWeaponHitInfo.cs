@@ -97,8 +97,8 @@ namespace CustAmmoCategories {
         Mech mech = target as Mech;
         Vehicle vehicle = target as Vehicle;
         Turret turret = target as Turret;
-        if (mech != null) { ArmorLocation loc = (ArmorLocation)f_hitLocation; hitLocationStr = loc.ToString(); }else
-        if (vehicle != null) { VehicleChassisLocations loc = (VehicleChassisLocations)f_hitLocation; hitLocationStr = loc.ToString(); }else
+        if (mech != null) { ArmorLocation loc = (ArmorLocation)f_hitLocation; hitLocationStr = loc.ToString(); } else
+        if (vehicle != null) { VehicleChassisLocations loc = (VehicleChassisLocations)f_hitLocation; hitLocationStr = loc.ToString(); } else
         if (turret != null) { BuildingLocation loc = (BuildingLocation)f_hitLocation; hitLocationStr = loc.ToString(); } else {
           hitLocationStr = "Structure";
         }
@@ -107,13 +107,45 @@ namespace CustAmmoCategories {
     public string hitLocationStr { get; private set; }
     public Vector3 hitPosition;
     public Vector3 startPosition;
+    public AttackImpactQuality impactQuality { get; set; }
+    public AttackDirection attackDirection { get; set; }
     public float Damage;
     public float APDamage;
     public float Heat;
     public float Stability;
     public float EffectsMod;
+    private WeaponHitInfo? f_fakeHitInfo;
+    public WeaponHitInfo? fakeHitInfo {
+      get {
+        if (f_fakeHitInfo.HasValue) { return f_fakeHitInfo; }
+        WeaponHitInfo value = new WeaponHitInfo();
+        value.attackDirections = new AttackDirection[1] { AttackDirection.None };
+        value.stackItemUID = parent.Sequence.stackItemUID;
+        value.attackSequenceId = parent.Sequence.id;
+        value.attackGroupIndex = parent.groupIdx;
+        value.attackWeaponIndex = parent.weaponIdx;
+        value.attackerId = parent.Sequence.attacker.GUID; ;
+        value.targetId = target.GUID;
+        value.numberOfShots = 1;
+        value.secondaryTargetIds = new string[] { null };
+        value.secondaryHitLocations = new int[] { 0 };
+        value.toHitRolls = new float[] { this.hitRoll };
+        value.locationRolls = new float[] { locationRoll };
+        value.dodgeRolls = new float[] { dodgeRoll };
+        value.dodgeSuccesses = new bool[] { false };
+        value.hitLocations = new int[] { this.hitLocation };
+        value.hitVariance = new int[] { 0 };
+        value.hitQualities = new AttackImpactQuality[] { this.impactQuality };
+        value.attackDirections = new AttackDirection[] { attackDirection };
+        value.hitPositions = new Vector3[] { this.hitPosition };
+        f_fakeHitInfo = value;
+        return f_fakeHitInfo;
+      }
+    }
     public bool isImplemented { get; set; }
     public float hitRoll { get; set; }
+    public float locationRoll { get; set; }
+    public float dodgeRoll { get; set; }
     public float correctedRoll { get; set; }
     public GameObject trajectoryObject;
     public CurvySpline trajectorySpline;
@@ -122,6 +154,7 @@ namespace CustAmmoCategories {
     public ICombatant target;
     public float projectileSpeed;
     public bool isAOE { get; set; }
+    public bool isFragMain { get { return fragInfo.separated && (fragInfo.isFragPallet == false); } }
     public bool isAOEproc { get; set; }
     public int AOEKey;
     public SplineGenerationInfo trajectoryInfo;
@@ -129,6 +162,10 @@ namespace CustAmmoCategories {
     public FragInfo fragInfo;
     public bool isStray;
     public static CombatGameState Combat = null;
+    public AttackSequenceImpactMessage impactMessage { get; set; }
+    public AdvHitMessage advHitMessage { get; set; }
+    public void setVisualsState() { if (advHitMessage != null) { advHitMessage.isVisuals = true; } }
+    public void setApplyState() { if (advHitMessage != null) { advHitMessage.isApplied = true; } }
     //public CombatGameState Combat { get { return AdvWeaponHitInfoRec.FCombat; } set { AdvWeaponHitInfoRec.FCombat = value; } }
     public bool isMiss { get { return (this.hitLocation == 0) || (this.hitLocation == 65536); } }
     public bool isHit { get { return (this.hitLocation != 0) && (this.hitLocation != 65536); } }
@@ -136,6 +173,291 @@ namespace CustAmmoCategories {
       if (trajectorySpline != null) { GameObject.Destroy(trajectorySpline); trajectorySpline = null; }
       if (trajectoryObject != null) { GameObject.Destroy(trajectoryObject); trajectoryObject = null; }
     }
+    public bool CanBeImpemented() {
+      return true;
+    }
+    public bool VarianceApplyied { get; private set; }
+    public static void PredictDamage(Weapon weapon, ICombatant target, Vector3 attackPos, out float dmg, out float ap, out float heat, out float stability, out int shots) {
+      dmg = weapon.DamagePerShotFromPosition(MeleeAttackType.NotSet,attackPos,target);
+      ap = weapon.StructureDamagePerShot * (dmg / weapon.DamagePerShot);
+      heat = weapon.HeatDamagePerShot;
+      stability = weapon.Instability();
+      shots = weapon.ShotsWhenFired;
+      if (target == null) { return; }
+      float realDamage = dmg;
+      float rawDamage = dmg;
+      float rawAPDamage = ap;
+      float rawHeat = heat;
+      float rawStability = stability;
+      if (realDamage >= 1.0f) {
+        if (weapon.DistantVariance() > CustomAmmoCategories.Epsilon) {
+          if (weapon.DistantVarianceReversed() == false) {
+            realDamage = CustomAmmoCategories.WeaponDamageDistance(attackPos, target, weapon, realDamage, rawDamage, false);
+          } else {
+            realDamage = CustomAmmoCategories.WeaponDamageRevDistance(attackPos, target, weapon, realDamage, rawDamage, false);
+          }
+        }
+        if (realDamage >= 1.0f) {
+          realDamage = WeaponRealizer.Calculator.ApplyAllDamageModifiers(attackPos, target, weapon, realDamage, false, false);
+        }
+      }
+      if (float.IsNaN(realDamage)) { realDamage = 0.1f; }
+      if (float.IsInfinity(realDamage)) { realDamage = 0.1f; }
+      if (realDamage < CustomAmmoCategories.Epsilon) { realDamage = 0.1f; }
+      if (weapon.isDamageVariation()) {
+        dmg = realDamage;
+        rawAPDamage *= rawDamage > CustomAmmoCategories.Epsilon ? (realDamage / rawDamage) : 0f;
+        ap = rawAPDamage;
+      }
+      if (weapon.isHeatVariation()) {
+        rawHeat *= rawDamage > CustomAmmoCategories.Epsilon ? (realDamage / rawDamage) : 0f;
+      }
+      if (weapon.isStabilityVariation()) {
+        rawStability *= rawDamage > CustomAmmoCategories.Epsilon ? (realDamage / rawDamage) : 0f;
+      }
+      heat = rawHeat;
+      stability = rawStability;
+      if (target.isHasStability() == false) { stability = 0f; }
+      if ((target.isHasHeat() == false) && (rawHeat >= 0.5f)) {
+        float heatAsNormal = target.HeatDamage(rawHeat);
+        dmg += heatAsNormal;
+        heat = 0f;
+      }
+      heat *= target.IncomingHeatMult();
+      stability *= target.IncomingStabilityMult();
+      ap *= target.APDamageMult();
+      if (target is AbstractActor actor) {
+        stability *= actor.StatCollection.GetValue<float>("ReceivedInstabilityMultiplier") * actor.EntrenchedMultiplier;
+        LineOfFireLevel lineOfFireLevel = weapon.parent.VisibilityCache.VisibilityToTarget((ICombatant)actor).LineOfFireLevel;
+        float aDamage = actor.GetAdjustedDamage(dmg, weapon.WeaponCategoryValue, actor.occupiedDesignMask, lineOfFireLevel, true);
+        dmg = actor.GetAdjustedDamageForMelee(aDamage, weapon.WeaponCategoryValue);
+        float aAPDamage = actor.GetAdjustedDamage(ap, weapon.WeaponCategoryValue, actor.occupiedDesignMask, lineOfFireLevel, true);
+        ap = actor.GetAdjustedDamageForMelee(aAPDamage, weapon.WeaponCategoryValue);
+      }
+      if (target.isAPProtected()) { ap = 0f; }
+    }
+    public void ApplyVariance(AttackSequenceImpactMessage iMessage) {
+      if (iMessage != null) this.impactMessage = iMessage;
+      if (VarianceApplyied) { return; }
+      VarianceApplyied = true;
+      try {
+        Log.M.TWL(0, "Damage variance: " + hitIndex + "/" + parent.hits.Count);
+        Log.M.WL(1, "attacker = " + parent.Sequence.attacker.DisplayName);
+        Log.M.WL(1, "target = " + new Text(target.DisplayName).ToString());
+        Log.M.WL(1, "location = (" + hitLocation + ")" + hitLocationStr);
+        Log.M.WL(1, "weapon = " + new Text(parent.weapon.UIName).ToString());
+        Log.M.WL(1, "damage = " + this.Damage + "/" + this.APDamage);
+        Log.M.WL(1, "heat = " + this.Heat);
+        Log.M.WL(1, "stability = " + this.Stability);
+        Log.M.WL(1, "isAOE = " + (isAOE));
+        Log.M.WL(1, "isFragMain = " + (isFragMain));
+        if ((isAOE == true) || (isFragMain == true)) {
+          Log.M.WL(1, "this is AOE/Frag greanade - no variance for them");
+          return;
+        }
+        if (this.interceptInfo.Intercepted) {
+          Log.M.WL(1, "intercepted");
+          return;
+        }
+        float realDamage = this.Damage;
+        float rawDamage = this.Damage;
+        float rawAPDamage = this.APDamage;
+        float rawHeat = this.Heat;
+        float rawStability = this.Stability;
+        if (realDamage >= 1.0f) {
+          if (parent.weapon.DamageVariance() > CustomAmmoCategories.Epsilon) {
+            realDamage = CustomAmmoCategories.WeaponDamageSimpleVariance(parent.weapon, rawDamage);
+          } else {
+            Log.M.WL("no simple variance defined");
+          }
+          if (parent.weapon.DistantVariance() > CustomAmmoCategories.Epsilon) {
+            if (parent.weapon.DistantVarianceReversed() == false) {
+              realDamage = CustomAmmoCategories.WeaponDamageDistance(parent.Sequence.attacker.TargetPosition, target, parent.weapon, realDamage, rawDamage);
+            } else {
+              realDamage = CustomAmmoCategories.WeaponDamageRevDistance(parent.Sequence.attacker.TargetPosition, target, parent.weapon, realDamage, rawDamage);
+            }
+          } else {
+            Log.M.WL("no distance variance defined");
+          }
+          if ((hitLocation != 0) && (hitLocation != 65536)) {
+            float CurArmor = target.ArmorForLocation(hitLocation);
+            CustomAmmoCategoriesLog.Log.LogWrite("  location armor = " + CurArmor + "\n");
+            float ArmorDmgMuil = parent.weapon.ArmorDmgMult();
+            if (CurArmor / ArmorDmgMuil > realDamage) {
+              realDamage *= ArmorDmgMuil;
+              CustomAmmoCategoriesLog.Log.LogWrite("  all damage to armor = " + realDamage + "\n");
+            } else {
+              float ISDdamagePart = (realDamage - CurArmor / ArmorDmgMuil) * parent.weapon.ISDmgMult();
+              CustomAmmoCategoriesLog.Log.LogWrite("  damage to armor = " + CurArmor + "\n");
+              CustomAmmoCategoriesLog.Log.LogWrite("  part of damage to IS = " + ISDdamagePart + "\n");
+              realDamage = CurArmor + ISDdamagePart;
+            }
+          }
+          if (realDamage >= 1.0f) {
+            Log.LogWrite("Applying WeaponRealizer variance. Current damage: " + realDamage + "\n");
+            realDamage = WeaponRealizer.Calculator.ApplyDamageModifiers(parent.Sequence.attacker.TargetPosition, target, parent.weapon, realDamage,true);
+            Log.LogWrite("damage after WeaponRealizer variance: " + realDamage + "\n");
+          }
+        } else {
+          CustomAmmoCategoriesLog.Log.LogWrite("WARNING! raw damage is less than 1.0f. Variance calculation is forbidden with this damage value\n", true);
+        }
+        if (float.IsNaN(realDamage)) {
+          CustomAmmoCategoriesLog.Log.LogWrite("WARNING! real damage is NaN. That is sad. Rounding to 0.1\n", true);
+          realDamage = 0.1f;
+        }
+        if (float.IsInfinity(realDamage)) {
+          CustomAmmoCategoriesLog.Log.LogWrite("WARNING! real damage is positive infinity. That is sad. Rounding to 0.1\n", true);
+          realDamage = 0.1f;
+        }
+        if (realDamage < CustomAmmoCategories.Epsilon) {
+          CustomAmmoCategoriesLog.Log.LogWrite("WARNING! real damage is less than epsilon. May be negative. That is sad. Rounding to 0.1\n", true);
+          realDamage = 0.1f;
+        }
+        if (parent.weapon.isDamageVariation()) {
+          this.Damage = realDamage;
+          rawAPDamage *= rawDamage > CustomAmmoCategories.Epsilon ? (realDamage / rawDamage) : 0f;
+          this.APDamage = rawAPDamage;
+        } else {
+          Log.LogWrite(" damge variation forbidden by weapon's settings\n");
+        }
+        if (parent.weapon.isHeatVariation()) {
+          rawHeat *= rawDamage > CustomAmmoCategories.Epsilon ? (realDamage / rawDamage) : 0f;
+        } else {
+          Log.LogWrite("  heat variation forbidden by weapon's settings\n");
+        }
+        if (parent.weapon.isStabilityVariation()) {
+          rawStability *= rawDamage > CustomAmmoCategories.Epsilon ? (realDamage / rawDamage) : 0f;
+        } else {
+          Log.LogWrite("  stability variation forbidden by weapon's settings\n");
+        }
+        this.Heat = rawHeat;
+        this.Stability = rawStability;
+        if (target.isHasStability() == false) { this.Stability = 0f; }
+        Log.LogWrite("  real heat = " + this.Heat + "\n");
+        if ((target.isHasHeat() == false) && (rawHeat >= 0.5f)) {
+          Log.M.WL("  heat damage exists, but target can't be heated");
+          float heatAsNormal = target.HeatDamage(rawHeat);
+          Log.M.WL("  heat transfered to normal damage:" + heatAsNormal);
+          this.Damage += heatAsNormal;
+          this.Heat = 0f;
+        }
+        float qualityMultiplier = this.parent.Sequence.Director.Combat.ToHit.GetBlowQualityMultiplier(this.impactQuality);
+        this.Heat *= target.IncomingHeatMult();
+        this.Stability *= target.IncomingStabilityMult();
+        this.Damage *= qualityMultiplier;
+        this.APDamage *= (qualityMultiplier * target.APDamageMult());
+        /*
+        AbstractActor actorTarget = this.target as AbstractActor;
+        if (actorTarget != null) {
+          LineOfFireLevel lineOfFireLevel = parent.Sequence.attacker.VisibilityCache.VisibilityToTarget((ICombatant)actorTarget).LineOfFireLevel;
+          float aDamage = actorTarget.GetAdjustedDamage(this.Damage, parent.weapon.WeaponCategoryValue, actorTarget.occupiedDesignMask, lineOfFireLevel, true);
+          this.Damage = actorTarget.GetAdjustedDamageForMelee(aDamage, parent.weapon.WeaponCategoryValue);
+          float aAPDamage = actorTarget.GetAdjustedDamage(this.APDamage, parent.weapon.WeaponCategoryValue, actorTarget.occupiedDesignMask, lineOfFireLevel, true);
+          this.APDamage = actorTarget.GetAdjustedDamageForMelee(aAPDamage, parent.weapon.WeaponCategoryValue);
+        }*/
+        if (target.isAPProtected()) { this.APDamage = 0f; }
+        Log.LogWrite("  qualityMultiplier = " + qualityMultiplier + "\n");
+        Log.LogWrite("  real damage = " + this.Damage + "\n");
+        Log.LogWrite("  real APdamage = " + this.APDamage + "\n");
+        Log.LogWrite("  real heat = " + this.Heat + "\n");
+        Log.LogWrite("  real stability = " + this.Stability + "\n");
+      } catch (Exception e) {
+        Log.M.TWL(0, e.ToString(), true);
+      }
+    }
+    public bool ImpactPlayed { get; private set; }
+    public void PlayImpact() {
+      if (ImpactPlayed) { return; }
+      ImpactPlayed = true;
+      try {
+        Log.M.TWL(0, "Play impact: " + parent.weapon.defId + " " + this.hitIndex + "/"+this.parent.hits.Count);
+        if ((isAOE == true) || (isFragMain == true)) {
+          Log.M.WL(1, "this is AOE/Frag impact processing for them");
+          return;
+        }
+        if (interceptInfo.Intercepted) {
+          Log.M.WL(1, "Projectile intercepted. No additional impact. No minefield");
+          return;
+        };
+        parent.weapon.SpawnAdditionalImpactEffect(hitPosition);
+        if (hitLocation == 65536) {
+          DynamicMapHelper.applyMineField(parent.weapon, hitPosition);
+          DynamicMapHelper.applyImpactBurn(parent.weapon, hitPosition);
+          DynamicMapHelper.applyImpactTempMask(parent.weapon, hitPosition);
+          DynamicMapHelper.applyCleanMinefield(parent.weapon, hitPosition);
+          parent.weapon.CreateDifferedEffect(hitPosition);
+        } else
+        if (hitLocation != 0) {
+          if (parent.weapon.FireOnSuccessHit()) {
+            DynamicMapHelper.applyImpactBurn(parent.weapon, target.CurrentPosition);
+            DynamicMapHelper.applyImpactTempMask(parent.weapon, target.CurrentPosition);
+            DynamicMapHelper.applyCleanMinefield(parent.weapon, target.CurrentPosition);
+          }
+          parent.weapon.CreateDifferedEffect(target);
+        }
+      } catch (Exception e) {
+        Log.M.TWL(0, e.ToString(), true);
+      }
+    }
+    public void ApplyTargetResistance() {
+      AbstractActor actorTarget = this.target as AbstractActor;
+      if (actorTarget != null) {
+        LineOfFireLevel lineOfFireLevel = parent.Sequence.attacker.VisibilityCache.VisibilityToTarget((ICombatant)actorTarget).LineOfFireLevel;
+        float aDamage = actorTarget.GetAdjustedDamage(this.Damage, parent.weapon.WeaponCategoryValue, actorTarget.occupiedDesignMask, lineOfFireLevel, true);
+        this.Damage = actorTarget.GetAdjustedDamageForMelee(aDamage, parent.weapon.WeaponCategoryValue);
+        float aAPDamage = actorTarget.GetAdjustedDamage(this.APDamage, parent.weapon.WeaponCategoryValue, actorTarget.occupiedDesignMask, lineOfFireLevel, true);
+        this.APDamage = actorTarget.GetAdjustedDamageForMelee(aAPDamage, parent.weapon.WeaponCategoryValue);
+      }
+    }
+    public void Apply() {
+      if (this.isHit) {
+        if (this.isImplemented == true) { return; }
+        if (this.impactMessage == null) { return; }
+        Log.M.TWL(0, "Applying damage " +this.parent.weapon.defId+" to "+this.target.DisplayName);
+        Log.M.W(1, "applying target resistance "+this.Damage+":"+this.APDamage+"->");
+        this.isImplemented = true;
+        this.setApplyState();
+        this.ApplyTargetResistance();
+        Log.M.WL(0,this.Damage + ":" + this.APDamage);
+        float damage = this.Damage;
+        float apdmg = this.APDamage;
+        float locArmor = this.target.ArmorForLocation(this.hitLocation);
+        this.parent.Sequence.FlagAttackDidDamage(this.target.GUID);
+        this.parent.Sequence.attackCompletelyMissed(false);
+        this.parent.Sequence.cumulativeDamage += (damage + apdmg);
+        this.parent.resolve(this.target).cumulativeDamage += (damage + apdmg);
+        float critAPchance = this.parent.weapon.isAPCrit() ? this.parent.weapon.APCriticalChanceMultiplier() : float.NaN;
+        Log.LogWrite(" crit testing - damage/armor " + damage + "/" + locArmor + " ap dmg:" + apdmg + " ap crit chance:" + critAPchance + "\n");
+        if (damage > locArmor) {
+          Log.LogWrite("  crit to location armor breach:" + this.hitLocation + "\n");
+          this.parent.resolve(this.target).AddCrit(this.hitLocation, this.target);
+        } else if (this.isAOE == false) {
+          if (this.target.isAPProtected() == false) {
+            if ((apdmg > CustomAmmoCategories.Epsilon) || this.parent.weapon.isAPCrit()) {
+              Log.LogWrite("  crit to location armor pierce:" + this.hitLocation + "\n");
+              this.parent.resolve(this.target).AddCrit(this.hitLocation, this.target);
+            } else {
+              Log.LogWrite("  ap damage is zero and weapon not cause AP crits:" + this.hitLocation + "\n");
+            }
+          } else {
+            Log.LogWrite("  target is AP crit protected:" + this.hitLocation + "\n");
+          }
+        } else {
+          Log.LogWrite("  AoE can't inflict armor pierce crits:" + this.hitLocation + "\n");
+        }
+
+        Log.LogWrite(" resolve damage. arm: "+ locArmor + " dmg:" + damage + " ap:" + apdmg + "\n");
+        this.target.TakeWeaponDamage(impactMessage.hitInfo, this.hitLocation, this.parent.weapon, damage, apdmg, hitIndex, DamageType.Weapon);
+        this.parent.resolve(this.target).AddHit(this.hitLocation, this.EffectsMod, this.isAOE);
+        this.parent.resolve(this.target).AddHeat(this.Heat);
+        Log.LogWrite(" Added heat:" + this.Heat + " overall: " + this.parent.resolve(this.target).Heat + "\n");
+        this.parent.resolve(this.target).AddInstability(this.Stability);
+        Log.LogWrite(" Added instability:" + this.Stability + " overall: " + this.parent.resolve(this.target).Stability + "\n");
+        this.target.HandleDeath(this.parent.Sequence.attacker.GUID);
+      }
+      this.parent.Sequence.messageCoordinator().MessageComplete((MessageCenterMessage)impactMessage);
+    }
+
     public AdvWeaponHitInfoRec(AdvWeaponHitInfo parent) {
       this.parent = parent;
       EffectsMod = 1f;
@@ -161,6 +483,9 @@ namespace CustAmmoCategories {
       //weaponEffect = null;
       trajectoryInfo = new SplineGenerationInfo();
       isImplemented = false;
+      impactMessage = null;
+      impactQuality = AttackImpactQuality.Solid;
+      attackDirection = AttackDirection.None;
     }
     public void GenerateTrajectory() {
       if (this.parent.weapon.weaponRep != null) {
@@ -427,6 +752,10 @@ namespace CustAmmoCategories {
 #endif
         hit.Heat = weapon.HeatDamagePerShotAdjusted(hitInfo.hitQualities[hitIndex]);
         hit.Stability = weapon.Instability();
+        hit.impactQuality = hitInfo.hitQualities[hitIndex];
+        hit.attackDirection = hitInfo.attackDirections[hitIndex];
+        hit.dodgeRoll = hitInfo.dodgeRolls[hitIndex];
+        hit.locationRoll = hitInfo.locationRolls[hitIndex];
         if ((damagePerPallet == true) && (damagePerNotDiv == false)) {
           hit.Damage /= (float)weapon.ProjectilesPerShot;
           hit.Heat /= (float)weapon.ProjectilesPerShot;
@@ -483,7 +812,7 @@ namespace CustAmmoCategories {
           hit.interceptInfo.AMSImunne = weapon.AMSImmune();
           hit.interceptInfo.missileHealth = weapon.MissileHealth();
           hit.interceptInfo.AMSHitChance = weapon.AMSHitChance();
-          Log.LogWrite(" missile launcher. AMS imunne:" + hit.interceptInfo.AMSImunne + " health:"+ hit.interceptInfo.missileHealth + "\n");
+          Log.LogWrite(" missile launcher. AMS imunne:" + hit.interceptInfo.AMSImunne + " health:" + hit.interceptInfo.missileHealth + "\n");
         } else {
           Log.LogWrite(" not missile launcher\n");
         }
@@ -513,8 +842,66 @@ namespace CustAmmoCategories {
       return result;
     }
   }
+  public class AdvHitMessage{
+    public AdvWeaponHitInfoRec advRec { get; private set; }
+    public AdvWeaponHitInfo advInfo { get; private set; }
+    public bool isResolve { get; private set; }
+    public bool isApplied { get; set; }
+    public bool isVisuals { get; set; }
+    public AdvHitMessage(AdvWeaponHitInfoRec r, AdvWeaponHitInfo i, bool ir) {
+      this.advRec = r;
+      this.advInfo = i;
+      this.isResolve = ir;
+      if (isResolve) {
+        advInfo.advHitMessage = this;
+      } else {
+        advRec.advHitMessage = this;
+      }
+    }
+    public int Index() {
+      if (this.advInfo == null) { return -1; }
+      if (AdvWeaponHitInfo.advHitMessagesMap.TryGetValue(this.advInfo.attackSequenceId, out var indexes)) {
+        if (indexes.TryGetValue(this, out int result)) { return result; }
+      }
+      return -1;
+    }
+    public void Apply(bool pending) {
+      if (isApplied == false) {
+        isApplied = true;
+        if (isResolve == false) {
+          this.advRec.Apply();
+        } else {
+          this.advInfo.Apply();
+        }
+      }
+      if(pending) this.TryApplyPending();
+    }
+    public bool CanBeApplied() {
+      if (isApplied) { return false; }
+      if (isVisuals == false) { return false; }
+      int index = this.Index();
+      if (index < 0) { return false; }
+      if (AdvWeaponHitInfo.advHitMessages.TryGetValue(this.advInfo.attackSequenceId, out List<AdvHitMessage> list) == false) {
+        return false;
+      }
+      if (index == 0) { return true; }
+      return list[index-1].isApplied;
+    }
+    public void TryApplyPending() {
+      if (AdvWeaponHitInfo.advHitMessages.TryGetValue(this.advInfo.attackSequenceId, out List<AdvHitMessage> list) == false) {
+        return;
+      }
+      for(int index = 1; index < list.Count;++index) {
+        if (list[index].isApplied) { continue; }
+        if (list[index].isVisuals == false) { continue; }
+        if (list[index].CanBeApplied()) { list[index].Apply(false); }
+      }
+    }
+  }
   public class AdvWeaponHitInfo {
     public static Dictionary<int, Dictionary<int, Dictionary<int, AdvWeaponHitInfo>>> advancedWeaponHitInfo = new Dictionary<int, Dictionary<int, Dictionary<int, AdvWeaponHitInfo>>>();
+    public static Dictionary<int, Dictionary<AdvHitMessage, int>> advHitMessagesMap = new Dictionary<int, Dictionary<AdvHitMessage, int>>();
+    public static Dictionary<int, List<AdvHitMessage>> advHitMessages = new Dictionary<int, List<AdvHitMessage>>();
     private static CombatGameState FCombat = null;
     public CombatGameState Combat { get { return AdvWeaponHitInfo.FCombat; } }
     public AttackDirector Director { get { return AdvWeaponHitInfo.FCombat.AttackDirector; } }
@@ -522,14 +909,109 @@ namespace CustAmmoCategories {
     public Dictionary<ICombatant, AdvWeaponResolveInfo> resolveInfo;
     public List<AdvWeaponHitInfoRec> hits;
     public int attackSequenceId;
-    public int groupIdx;
-    public int weaponIdx;
+    public int groupIdx { get; set; }
+    public int weaponIdx { get; set; }
     public Weapon weapon;
+    public AttackSequenceResolveDamageMessage resolveDamageMessage { get; set; }
+    public AdvHitMessage advHitMessage { get; set; }
+    public void setApplyState() { if (advHitMessage != null) { advHitMessage.isApplied = true; } }
+    public void setVisualState() { if (advHitMessage != null) { advHitMessage.isVisuals = true; } }
+    public bool isResolved { get; set; }
     //public WeaponEffect weaponEffect { get; set; };
     public float hitChance;
+    private WeaponHitInfo? f_fakeHitInfo;
+    public WeaponHitInfo? fakeHitInfo {
+      get {
+        if (f_fakeHitInfo.HasValue) { return f_fakeHitInfo; }
+        WeaponHitInfo value = new WeaponHitInfo();
+        value.attackDirections = new AttackDirection[1] { AttackDirection.None };
+        value.stackItemUID = Sequence.stackItemUID;
+        value.attackSequenceId = Sequence.id;
+        value.attackGroupIndex = groupIdx;
+        value.attackWeaponIndex = weaponIdx;
+        value.attackerId = Sequence.attacker.GUID; ;
+        value.targetId = Sequence.chosenTarget.GUID;
+        value.numberOfShots = hits.Count;
+        value.secondaryTargetIds = new string[value.numberOfShots]; for (int i = 0; i < hits.Count; ++i) { if (hits[i].target.GUID == value.targetId) { value.secondaryTargetIds[i] = null; } else { value.secondaryTargetIds[i] = hits[i].target.GUID; } };
+        value.secondaryHitLocations = new int[value.numberOfShots]; for (int i = 0; i < hits.Count; ++i) { if (hits[i].target.GUID == value.targetId) { value.secondaryHitLocations[i] = 0; } else { value.secondaryHitLocations[i] = hits[i].hitLocation; } };
+        value.toHitRolls = new float[value.numberOfShots]; for (int i = 0; i < hits.Count; ++i) { value.toHitRolls[i] = hits[i].hitRoll; };
+        value.locationRolls = new float[value.numberOfShots]; for (int i = 0; i < hits.Count; ++i) { value.locationRolls[i] = hits[i].locationRoll; };
+        value.dodgeRolls = new float[value.numberOfShots]; for (int i = 0; i < hits.Count; ++i) { value.dodgeRolls[i] = hits[i].dodgeRoll; };
+        value.dodgeSuccesses = new bool[value.numberOfShots]; for (int i = 0; i < hits.Count; ++i) { value.dodgeSuccesses[i] = false; };
+        value.hitLocations = new int[value.numberOfShots]; for (int i = 0; i < hits.Count; ++i) { if (hits[i].target.GUID == value.targetId) { value.hitLocations[i] = hits[i].hitLocation; } else { value.hitLocations[i] = 0; } };
+        value.hitVariance = new int[value.numberOfShots]; for (int i = 0; i < hits.Count; ++i) { value.hitVariance[i] = 0; };
+        value.hitQualities = new AttackImpactQuality[value.numberOfShots]; for (int i = 0; i < hits.Count; ++i) { value.hitQualities[i] = hits[i].impactQuality; };
+        value.attackDirections = new AttackDirection[value.numberOfShots]; for (int i = 0; i < hits.Count; ++i) { value.attackDirections[i] = hits[i].attackDirection; };
+        value.hitPositions = new Vector3[value.numberOfShots]; for (int i = 0; i < hits.Count; ++i) { value.hitPositions[i] = hits[i].hitPosition; };
+        f_fakeHitInfo = value;
+        return f_fakeHitInfo;
+      }
+    }
     public AdvWeaponResolveInfo resolve(ICombatant target) {
       if (resolveInfo.ContainsKey(target) == false) { resolveInfo.Add(target, new AdvWeaponResolveInfo(this)); }
       return resolveInfo[target];
+    }
+    public void Apply() {
+      if (resolveDamageMessage == null) { return; }
+      WeaponHitInfo weaponHitInfo = this.fakeHitInfo.Value;
+      Log.M.TWL(0, "Resolve weapon damage "+this.weapon.defId);
+      ResolveDamageHelper.ResolveWeaponDamageAdv(ref weaponHitInfo);
+      this.Sequence.messageCoordinator().MessageComplete((MessageCenterMessage)resolveDamageMessage);
+      this.setApplyState();
+    }
+    public static void printExpectedMessages(int sequenceId) {
+      Log.M.TWL(0, "printExpectedMessages "+sequenceId);
+      if (AdvWeaponHitInfo.advHitMessages.TryGetValue(sequenceId, out List<AdvHitMessage> expList)) {
+        for (int index = 0; index < expList.Count; ++index) {
+          AdvHitMessage aMessage = expList[index];
+          Log.M.W(1, "["+ aMessage.Index()+ "] R:"+aMessage.isResolve);
+          if (aMessage.advInfo != null) {
+            Log.M.W(" advInfo " + aMessage.advInfo.weapon.defId+"/"+aMessage.advInfo.weapon.ammo().Id+"/"+aMessage.advInfo.weapon.mode().Id);
+          } else {
+            Log.M.W(" advInfo:null ");
+          }
+          if (aMessage.advRec != null) {
+            Log.M.W(" advRec loc:"+aMessage.advRec.hitLocationStr+" aoe:"+aMessage.advRec.isAOE+" fragMain:"+aMessage.advRec.isFragMain+" fragPallet:"+aMessage.advRec.fragInfo.isFragPallet);
+          } else {
+            Log.M.W(" advRec:null");
+          }
+          Log.M.WL("");
+        }
+      }
+    }
+    public static void printApplyState(int sequenceId) {
+      string result = string.Empty;
+      if (AdvWeaponHitInfo.advHitMessages.TryGetValue(sequenceId, out List<AdvHitMessage> expList)) {
+        for (int index = 0; index < expList.Count; ++index) {
+          AdvHitMessage aMessage = expList[index];
+          result += (aMessage.isVisuals ? "V" : "_");
+          result += (aMessage.isApplied ? "A" : "_");
+        }
+      }
+      Log.M.TWL(0, "printApplyState "+sequenceId+" "+result);
+    }
+    public static void AddToExpected(AdvWeaponHitInfo advInfo) {
+      if(AdvWeaponHitInfo.advHitMessages.TryGetValue(advInfo.attackSequenceId, out var expList) == false) {
+        expList = new List<AdvHitMessage>();
+        AdvWeaponHitInfo.advHitMessages.Add(advInfo.attackSequenceId, expList);
+      }
+      if (AdvWeaponHitInfo.advHitMessagesMap.TryGetValue(advInfo.attackSequenceId, out var expMap) == false) {
+        expMap = new Dictionary<AdvHitMessage, int>();
+        AdvWeaponHitInfo.advHitMessagesMap.Add(advInfo.attackSequenceId, expMap);
+      }
+      bool atLeastOneHit = false;
+      for(int hitIndex = 0; hitIndex < advInfo.hits.Count; ++hitIndex) {
+        AdvWeaponHitInfoRec advRec = advInfo.hits[hitIndex];
+        if (advRec.isHit == false) { continue; }
+        AdvHitMessage aMsg = new AdvHitMessage(advRec, advInfo, false);
+        expList.Add(aMsg);
+        expMap.Add(aMsg, expList.Count - 1);
+        atLeastOneHit = true;
+      }
+      if (advInfo.weapon.isStreak() && (atLeastOneHit == false)) { return; }
+      AdvHitMessage arMsg = new AdvHitMessage(null, advInfo, true);
+      expList.Add(arMsg);
+      expMap.Add(arMsg, expList.Count - 1);
     }
     public static void FlushInfo(int sequenceId) {
       try {
@@ -625,17 +1107,36 @@ namespace CustAmmoCategories {
         Log.M.TWL(0,e.ToString(),true);
       }
     }
+    public static void Sanitize(int sequenceId) {
+      if (AdvWeaponHitInfo.advHitMessages.TryGetValue(sequenceId, out List<AdvHitMessage> list) == false) {
+        return;
+      }
+      for (int index = 1; index < list.Count; ++index) {
+        if (list[index].isApplied) { continue; }
+        if (list[index].CanBeApplied()) { list[index].Apply(false); }
+      }
+    }
     public static void Clear(int sequenceId) {
-      if (AdvWeaponHitInfo.advancedWeaponHitInfo.ContainsKey(sequenceId) == false) { return; };
-      Dictionary<int, Dictionary<int, AdvWeaponHitInfo>> seqAdvInfo = AdvWeaponHitInfo.advancedWeaponHitInfo[sequenceId];
-      AdvWeaponHitInfo.advancedWeaponHitInfo.Remove(sequenceId);
-      List<AdvWeaponHitInfo> advInfos = new List<AdvWeaponHitInfo>();
-      foreach (var group in seqAdvInfo) { foreach (var wpn in group.Value) { advInfos.Add(wpn.Value); } };
-      foreach (AdvWeaponHitInfo advInfo in advInfos) {
-        foreach (AdvWeaponHitInfoRec advRec in advInfo.hits) {
-          advRec.ClearTrajectory();
+      if (AdvWeaponHitInfo.advancedWeaponHitInfo.ContainsKey(sequenceId)) {
+        Dictionary<int, Dictionary<int, AdvWeaponHitInfo>> seqAdvInfo = AdvWeaponHitInfo.advancedWeaponHitInfo[sequenceId];
+        AdvWeaponHitInfo.advancedWeaponHitInfo.Remove(sequenceId);
+        List<AdvWeaponHitInfo> advInfos = new List<AdvWeaponHitInfo>();
+        foreach (var group in seqAdvInfo) { foreach (var wpn in group.Value) { advInfos.Add(wpn.Value); } };
+        foreach (AdvWeaponHitInfo advInfo in advInfos) {
+          foreach (AdvWeaponHitInfoRec advRec in advInfo.hits) {
+            advRec.ClearTrajectory();
+          }
         }
       }
+      if (AdvWeaponHitInfo.advHitMessagesMap.ContainsKey(sequenceId)) {
+        AdvWeaponHitInfo.advHitMessagesMap.Remove(sequenceId);
+      }
+      if (AdvWeaponHitInfo.advHitMessages.ContainsKey(sequenceId)) {
+        AdvWeaponHitInfo.advHitMessages.Remove(sequenceId);
+      }
+    }
+    public static bool CanProcessMessage() {
+      return false;
     }
     public AdvWeaponHitInfo(CombatGameState combat, WeaponHitInfo hitInfo, float hitChance) {
       this.hitChance = hitChance;
@@ -646,6 +1147,8 @@ namespace CustAmmoCategories {
       this.groupIdx = hitInfo.attackGroupIndex;
       this.weaponIdx = hitInfo.attackWeaponIndex;
       this.resolveInfo = new Dictionary<ICombatant, AdvWeaponResolveInfo>();
+      resolveDamageMessage = null;
+      isResolved = false;
     }
     public void AppendAoEHit(int primeIndex, float fulldamage, float Damage, float Heat, float Stability, ICombatant target, Vector3 position, int location) {
       Log.LogWrite("AdvInfo.AppendAoEHit:" + primeIndex + "\n");
@@ -663,6 +1166,10 @@ namespace CustAmmoCategories {
       hit.projectileSpeed = 0f;
       hit.isAOE = true;
       hit.AOEKey = primeIndex;
+      hit.dodgeRoll = 0f;
+      hit.locationRoll = 0f;
+      hit.impactQuality = AttackImpactQuality.Solid;
+      hit.attackDirection = AttackDirection.FromArtillery;
       if (this.weapon.AOEEffectsFalloff()) {
         hit.EffectsMod = Damage / fulldamage;
       } else {
@@ -689,11 +1196,15 @@ namespace CustAmmoCategories {
 #else
         hit.APDamage = weapon.APDamage();
 #endif
+        hit.impactQuality = hitInfo.hitQualities[hitIndex];
+        hit.attackDirection = hitInfo.attackDirections[hitIndex];
         hit.Damage /= (float)weapon.ProjectilesPerShot;
         hit.APDamage /= (float)weapon.ProjectilesPerShot;
         hit.Heat = weapon.HeatDamagePerShotAdjusted(hitInfo.hitQualities[hitIndex]) / (float)hitInfo.numberOfShots;
         hit.Stability = weapon.Instability() / (float)hitInfo.numberOfShots;
         hit.hitRoll = hitInfo.toHitRolls[hitIndex];
+        hit.dodgeRoll = hitInfo.dodgeRolls[hitIndex];
+        hit.locationRoll = hitInfo.locationRolls[hitIndex];
         hit.correctedRoll = this.Sequence.GetCorrectedRoll(hit.hitRoll, this.Sequence.attacker.team);
         hit.target = null;
         if (string.IsNullOrEmpty(hitInfo.secondaryTargetIds[hitIndex]) == false) {

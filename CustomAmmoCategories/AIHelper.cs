@@ -28,7 +28,7 @@ namespace CustAmmoCategories {
     public static void Clear() { bracedWithFireRound.Clear(); }
     public static bool Prefix(LeafBehaviorNode __instance,ref string ___name,ref BehaviorTree ___tree, AbstractActor ___unit,ref BehaviorNodeState ___currentState, ref BehaviorTreeResults __result) {
       try {
-        if (CustomAmmoCategories.Settings.extendedBraceBehavior == false) { return false; }
+        if (CustomAmmoCategories.Settings.extendedBraceBehavior == false) { return true; }
         Log.M.TWL(0, "BraceNode.Tick()");
         Log.M.WL(1, "name:" + ___name);
         Log.M.WL(1, "unit:" + new Text(___unit.DisplayName));

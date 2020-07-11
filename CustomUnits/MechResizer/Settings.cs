@@ -13,8 +13,9 @@ namespace MechResizer {
     public Settings() {
       losSourcePositions = new Dictionary<string, Vector3[]>();
       losTargetPositions = new Dictionary<string, Vector3[]>();
+      MechScaleJRoot = false;
     }
-
+    public bool MechScaleJRoot { get; set; }
     #region LOS settings
     public Dictionary<string, Vector3[]> losSourcePositions { private get; set; }
 
