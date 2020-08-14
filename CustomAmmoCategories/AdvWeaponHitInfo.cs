@@ -143,6 +143,7 @@ namespace CustAmmoCategories {
       }
     }
     public bool isImplemented { get; set; }
+    public bool isTargetResitanceApplied { get; set; }
     public float hitRoll { get; set; }
     public float locationRoll { get; set; }
     public float dodgeRoll { get; set; }
@@ -401,12 +402,19 @@ namespace CustAmmoCategories {
     }
     public void ApplyTargetResistance() {
       AbstractActor actorTarget = this.target as AbstractActor;
-      if (actorTarget != null) {
-        LineOfFireLevel lineOfFireLevel = parent.Sequence.attacker.VisibilityCache.VisibilityToTarget((ICombatant)actorTarget).LineOfFireLevel;
-        float aDamage = actorTarget.GetAdjustedDamage(this.Damage, parent.weapon.WeaponCategoryValue, actorTarget.occupiedDesignMask, lineOfFireLevel, true);
-        this.Damage = actorTarget.GetAdjustedDamageForMelee(aDamage, parent.weapon.WeaponCategoryValue);
-        float aAPDamage = actorTarget.GetAdjustedDamage(this.APDamage, parent.weapon.WeaponCategoryValue, actorTarget.occupiedDesignMask, lineOfFireLevel, true);
-        this.APDamage = actorTarget.GetAdjustedDamageForMelee(aAPDamage, parent.weapon.WeaponCategoryValue);
+      Log.M.W(1, "applying target resistance " + this.Damage + ":" + this.APDamage + "->");
+      if (this.isTargetResitanceApplied == false) {
+        this.isTargetResitanceApplied = true;
+        if (actorTarget != null) {
+          LineOfFireLevel lineOfFireLevel = parent.Sequence.attacker.VisibilityCache.VisibilityToTarget((ICombatant)actorTarget).LineOfFireLevel;
+          float aDamage = actorTarget.GetAdjustedDamage(this.Damage, parent.weapon.WeaponCategoryValue, actorTarget.occupiedDesignMask, lineOfFireLevel, true);
+          this.Damage = actorTarget.GetAdjustedDamageForMelee(aDamage, parent.weapon.WeaponCategoryValue);
+          float aAPDamage = actorTarget.GetAdjustedDamage(this.APDamage, parent.weapon.WeaponCategoryValue, actorTarget.occupiedDesignMask, lineOfFireLevel, true);
+          this.APDamage = actorTarget.GetAdjustedDamageForMelee(aAPDamage, parent.weapon.WeaponCategoryValue);
+        }
+        Log.M.WL(0, this.Damage + ":" + this.APDamage);
+      } else {
+        Log.M.WL(0, "already applied");
       }
     }
     public void Apply() {
@@ -414,11 +422,9 @@ namespace CustAmmoCategories {
         if (this.isImplemented == true) { return; }
         if (this.impactMessage == null) { return; }
         Log.M.TWL(0, "Applying damage " +this.parent.weapon.defId+" to "+this.target.DisplayName);
-        Log.M.W(1, "applying target resistance "+this.Damage+":"+this.APDamage+"->");
         this.isImplemented = true;
         this.setApplyState();
         this.ApplyTargetResistance();
-        Log.M.WL(0,this.Damage + ":" + this.APDamage);
         float damage = this.Damage;
         float apdmg = this.APDamage;
         float locArmor = this.target.ArmorForLocation(this.hitLocation);
@@ -1185,7 +1191,6 @@ namespace CustAmmoCategories {
       advRec.fragInfo.fragsCount = hitInfo.numberOfShots;
       for (int hitIndex = 0; hitIndex < hitInfo.numberOfShots; ++hitIndex) {
         AdvWeaponHitInfoRec hit = new AdvWeaponHitInfoRec(this);
-        Log.LogWrite(" hit: " + hitIndex + "\n");
         hit.hitIndex = hitIndex;
         hit.hitPosition = hitInfo.hitPositions[hitIndex];
         hit.fragInfo.isFragPallet = true;
@@ -1208,16 +1213,16 @@ namespace CustAmmoCategories {
         hit.correctedRoll = this.Sequence.GetCorrectedRoll(hit.hitRoll, this.Sequence.attacker.team);
         hit.target = null;
         if (string.IsNullOrEmpty(hitInfo.secondaryTargetIds[hitIndex]) == false) {
-          ICombatant target = Combat.FindCombatantByGUID(hitInfo.secondaryTargetIds[hitIndex]);
-          if (target != null) {
-            hit.target = target;
+          ICombatant trg = Combat.FindCombatantByGUID(hitInfo.secondaryTargetIds[hitIndex]);
+          if (trg != null) {
+            hit.target = trg;
             hit.hitLocation = hitInfo.secondaryHitLocations[hitIndex];
           }
         }
         if (hit.target == null) {
-          ICombatant target = Combat.FindCombatantByGUID(hitInfo.targetId);
-          if (target != null) {
-            hit.target = target;
+          ICombatant trg = Combat.FindCombatantByGUID(hitInfo.targetId);
+          if (trg != null) {
+            hit.target = trg;
             hit.hitLocation = hitInfo.hitLocations[hitIndex];
           }
         }
@@ -1225,6 +1230,7 @@ namespace CustAmmoCategories {
           hit.target = this.Sequence.chosenTarget;
           hit.hitLocation = hitInfo.hitLocations[hitIndex];
         }
+        Log.M.WL(1, "h:"+hitIndex+" loc:("+hit.hitLocation+")"+hit.hitLocationStr+" trg:"+hit.target);
         hit.trajectoryInfo.type = TrajectoryType.Unguided;
         hit.GenerateTrajectory(advRec.hitPosition);
         hit.projectileSpeed = 0f;

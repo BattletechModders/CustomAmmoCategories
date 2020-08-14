@@ -204,7 +204,7 @@ namespace CustAmmoCategories {
       Log.LogWrite("prepareFragHitInfo "+weapon.defId+" "+target.DisplayName+":" +target.GUID+" "+numberOfShots+"\n");
       WeaponHitInfo hitInfo = new WeaponHitInfo();
       hitInfo.attackerId = advRec.parent.Sequence.attacker.GUID;
-      hitInfo.targetId = advRec.parent.Sequence.chosenTarget.GUID;
+      hitInfo.targetId = target.GUID;
       hitInfo.numberOfShots = numberOfShots;
       hitInfo.stackItemUID = advRec.parent.Sequence.stackItemUID;
       hitInfo.attackSequenceId = advRec.parent.Sequence.id;

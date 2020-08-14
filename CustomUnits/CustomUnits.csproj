@@ -110,6 +110,7 @@
   <ItemGroup>
     <Compile Include="AnimatedPartsHelper.cs" />
     <Compile Include="BiomeTagsFix.cs" />
+    <Compile Include="ControlEscort.cs" />
     <Compile Include="Core.cs" />
     <Compile Include="CustomMovement.cs" />
     <Compile Include="Hardpoints.cs" />
@@ -140,6 +141,11 @@
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
-    <PostBuildEvent>copy /Y "$(TargetPath)" "$(ProjectDir)\..\..\Mods\CustomUnits"</PostBuildEvent>
+    <PostBuildEvent>copy /Y "$(TargetPath)" "$(ProjectDir)\..\..\Mods\CustomUnits"
+copy /Y "$(TargetPath)" "$(ProjectDir)\..\..\RogueTechWorking\CustomUnits"
+copy /Y "$(TargetPath)" "$(ProjectDir)\..\..\Release_CAC\Release\CustomBundle\CustomUnits"
+xcopy /Y /S /E "$(ProjectDir)..\AdditionalFiles\CU" "$(ProjectDir)\..\..\Mods\CustomUnits"
+xcopy /Y /S /E "$(ProjectDir)..\AdditionalFiles\CU" "$(ProjectDir)\..\..\RogueTechWorking\CustomUnits"
+xcopy /Y /S /E "$(ProjectDir)..\AdditionalFiles\CU" "$(ProjectDir)\..\..\Release_CAC\Release\CustomBundle\CustomUnits"</PostBuildEvent>
   </PropertyGroup>
 </Project>

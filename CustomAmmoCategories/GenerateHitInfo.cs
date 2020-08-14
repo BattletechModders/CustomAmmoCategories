@@ -481,9 +481,17 @@ namespace CustomAmmoCategoriesPatches {
       }
       CustomAmmoCategoriesLog.Log.LogWrite(" result(" + hitInfo.numberOfShots + "):");
       for (int hitIndex = 0; hitIndex < hitInfo.numberOfShots; ++hitIndex) {
-        CustomAmmoCategoriesLog.Log.LogWrite(" " + hitInfo.hitLocations[hitIndex] + "/" + hitInfo.locationRolls[hitIndex]);
+        Log.M.WL(2, "hit:" + hitIndex);
+        Log.M.WL(2, "loc:" + hitInfo.hitLocations[hitIndex]);
+        Log.M.WL(2, "roll:" + hitInfo.locationRolls[hitIndex]);
+        if (string.IsNullOrEmpty(hitInfo.secondaryTargetIds[hitIndex]) == false) {
+          ICombatant strg = target.Combat.FindCombatantByGUID(hitInfo.secondaryTargetIds[hitIndex]);
+          if (strg != null) {
+            Log.M.WL(2, "sloc:" + hitInfo.secondaryHitLocations[hitIndex]);
+            Log.M.WL(2, "starget:" + strg.DisplayName);
+          }
+        }
       }
-      CustomAmmoCategoriesLog.Log.LogWrite("\n");
       instance.chosenTarget = originaltarget;
       return toHitChance;
     }

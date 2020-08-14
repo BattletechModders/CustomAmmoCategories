@@ -119,6 +119,15 @@ namespace CustomUnits{
     public int ArgoBaysFix { get; set; }
     public bool BaysCountExternalControl { get; set; }
     public bool CountContractMaxUnits4AsUnlimited { get; set; }
+    public string PlayerControlConvoyTag { get; set; }
+    public string ConvoyRouteTag { get; set; }
+    public int ConvoyUnitsCount { get; set; }
+    public string TransferTeamOnDeathPrefixTag { get; set; }
+    public string ConvoyDenyMoveTag { get; set; }
+    public float ConvoyMaxDistFromOther { get; set; }
+    public float ConvoyMaxDistFromPlayer { get; set; }
+    public float ConvoyMaxDistFromRoute { get; set; }
+    public bool AllowVehiclesEdit { get; set; }
     public CUSettings() {
       debugLog = false;
       DeathHeight = 1f;
@@ -142,6 +151,15 @@ namespace CustomUnits{
       CanPilotBothDescription = String.Format(HumanDescriptionDef.PilotGenDetailFormatting, "Piloting", "Can pilot both mechs and vehicles"); ;
       EMPLOYER_LANCE_GUID = "ecc8d4f2-74b4-465d-adf6-84445e5dfc230";
       CountContractMaxUnits4AsUnlimited = true;
+      PlayerControlConvoyTag = "convoy_player_control";
+      TransferTeamOnDeathPrefixTag = "transfer-on-death:";
+      ConvoyDenyMoveTag = "convoy_palyer_control_deny_move";
+      ConvoyUnitsCount = 4;
+      ConvoyMaxDistFromOther = 200f;
+      ConvoyMaxDistFromPlayer = 300f;
+      ConvoyMaxDistFromRoute = 30f;
+      ConvoyRouteTag = "escort_convoy";
+      AllowVehiclesEdit = false;
     }
   }
   public static partial class Core{

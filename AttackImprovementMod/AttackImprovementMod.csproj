@@ -113,6 +113,8 @@
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
-    <PostBuildEvent>copy /Y "$(TargetPath)" "$(ProjectDir)\..\..\Mods\CustomAmmoCategories"</PostBuildEvent>
+    <PostBuildEvent>copy /Y "$(TargetPath)" "$(ProjectDir)\..\..\Mods\CustomAmmoCategories"
+copy /Y "$(TargetPath)" "$(ProjectDir)\..\..\RogueTechWorking\CustomAmmoCategories"
+copy /Y "$(TargetPath)" "$(ProjectDir)\..\..\Release_CAC\Release\CustomBundle\CustomAmmoCategories"</PostBuildEvent>
   </PropertyGroup>
 </Project>

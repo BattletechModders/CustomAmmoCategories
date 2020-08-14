@@ -1513,6 +1513,7 @@ namespace CustomUnits {
   [HarmonyPatch("Init")]
   [HarmonyPatch(MethodType.Normal)]
   public static class CombatHUDMechTray_Init {
+
     public static void Postfix(CombatHUDMechTray __instance, MessageCenter messageCenter, CombatHUD HUD) {
       Transform MechTrayBGImage = __instance.gameObject.transform.Find("MechTrayBGImage");
       if (MechTrayBGImage == null) { Log.TWL(0, "Exception: can't find MechTrayBGImage", true); return; }
@@ -1586,6 +1587,7 @@ namespace CustomUnits {
   public static class CombatHUDMechwarriorTray_RefreshTeam {
     private static Dictionary<AbstractActor, int> actorLanceIds = new Dictionary<AbstractActor, int>();
     public static void Clear() {
+      fHUD = null;
       actorLanceIds.Clear();
     }
     public static int LanceId(this AbstractActor actor) {
@@ -1594,10 +1596,14 @@ namespace CustomUnits {
       }
       return -1;
     }
-    public static bool Prefix(CombatHUDMechwarriorTray __instance, Team team, Team ___displayedTeam) {
+    private static CombatHUD fHUD = null;
+    public static CombatHUD HUD(this LanceSpawnerGameLogic spawner) { return fHUD; }
+    public static CombatHUD HUD(this AbstractActor spawner) { return fHUD; }
+    public static bool Prefix(CombatHUDMechwarriorTray __instance, Team team, Team ___displayedTeam, CombatHUD ___HUD) {
       ___displayedTeam = team;
       Log.TWL(0, "CombatHUDMechwarriorTray.RefreshTeam");
       actorLanceIds.Clear();
+      fHUD = ___HUD;
       try {
         Dictionary<int, CustomLanceInstance> avaibleSlots = new Dictionary<int, CustomLanceInstance>();
         foreach (var lance in __instance.exPortraitHolders()) {
@@ -1612,6 +1618,7 @@ namespace CustomUnits {
         foreach (AbstractActor unit in ___displayedTeam.units) {
           string defGUID = string.Empty;
           bool isVehicle = false;
+          Log.WL(1, unit.DisplayName+" "+unit.EncounterTags.ContentToString());
           if (unit.UnitType == UnitType.Mech) {
             defGUID = (unit as Mech).MechDef.GUID;
           } else if (unit.UnitType == UnitType.Vehicle) {
@@ -1630,7 +1637,16 @@ namespace CustomUnits {
                 continue;
               }
             }
-          };            
+          };
+          if (unit.EncounterTags.Contains(Core.Settings.PlayerControlConvoyTag)) {
+            int slotIndex = avaibleSlots.Last().Key;
+            CustomLanceInstance slot = avaibleSlots.Last().Value;
+            slot.portrait.DisplayedActor = unit;
+            slot.holder.SetActive(false);
+            Log.WL(1, new Localize.Text(unit.DisplayName).ToString() + " escort unit detected. lance:" + slot.lance_id + " pos:" + slot.lance_index);
+            avaibleSlots.Remove(slotIndex);
+            continue;
+          }
           if (isVehicle) { vehicles.Add(unit); } else { mechs.Add(unit); }
         }
         HashSet<int> restSlots = avaibleSlots.Keys.ToHashSet();
@@ -1758,7 +1774,7 @@ namespace CustomUnits {
       GameObject srcTween = tweensHolders[0].gameObject;
       HorizontalLayoutGroup layout = srcHolder.transform.parent.gameObject.GetComponent<HorizontalLayoutGroup>();
       layout.childAlignment = TextAnchor.MiddleLeft;
-      int all_lances_size = CustomLanceHelper.fullSlotsCount();
+      int all_lances_size = CustomLanceHelper.fullSlotsCount()+Core.Settings.ConvoyUnitsCount;
       for (int t = __instance.PortraitHolders.Length; t < all_lances_size; ++t) {
         GameObject newHolder = GameObject.Instantiate(srcHolder);
         newHolder.name = "mwPortraitHolder" + (t + 1).ToString();
@@ -1809,9 +1825,11 @@ namespace CustomUnits {
           lancesPortraitHolders.Add(lance);
           lance_index = 0;
         }
-        lance.Add(new CustomLanceInstance(holder, portrait, index, lance_index == 0, lance_id, lance_index, CustomLanceHelper.lanceVehicle(lance_id)));
+        bool lanceVehicle = lance_id < CustomLanceHelper.lancesCount() ? CustomLanceHelper.lanceVehicle(lance_id) : true;
+        int lanceSize = lance_id < CustomLanceHelper.lancesCount() ? CustomLanceHelper.lanceSize(lance_id) : Core.Settings.ConvoyUnitsCount;
+        lance.Add(new CustomLanceInstance(holder, portrait, index, lance_index == 0, lance_id, lance_index, lanceVehicle));
         ++lance_index;
-        if (lance_index >= CustomLanceHelper.lanceSize(lance_id)) { ++lance_id; };
+        if (lance_index >= lanceSize) { ++lance_id; };
       }
     }
   }

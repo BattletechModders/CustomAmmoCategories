@@ -21,6 +21,7 @@ using HBS.Util;
 using Localize;
 using UnityEngine;
 using UnityEngine.Rendering;
+using UnityEngine.SceneManagement;
 using Random = UnityEngine.Random;
 
 namespace CustAmmoCategories {
@@ -2550,6 +2551,84 @@ namespace CustomAmmoCategoriesPatches {
     public static AssetBundleManager AssetBundleManager(this DataManager dataManager) {
       return (AssetBundleManager)pAssetBundleManager.GetValue(dataManager, null);
     }
+    public static Dictionary<string, LinkedList<GameObject>> gameObjectPool(this PrefabCache cache) {
+      return Traverse.Create(cache).Field<Dictionary<string, LinkedList<GameObject>>>("gameObjectPool").Value;
+    }
+    public static Dictionary<string, PrefabCache.RST> gameObjectRST(this PrefabCache cache) {
+      return Traverse.Create(cache).Field<Dictionary<string, PrefabCache.RST>>("gameObjectRST").Value;
+    }
+    public static Dictionary<string, UnityEngine.Object> prefabPool(this PrefabCache cache) {
+      return Traverse.Create(cache).Field<Dictionary<string, UnityEngine.Object>>("prefabPool").Value;
+    }
+    public static void CreateObjectRST(this PrefabCache cache,string id, GameObject obj) {
+      if (cache.gameObjectRST().ContainsKey(id)) { return; }
+      PrefabCache.RST rst = new PrefabCache.RST(obj);
+      cache.gameObjectRST().Add(id, rst);
+    }
+
+    public static GameObject PooledInstantiateEx(this PrefabCache cache,string id, Vector3? position = null, Quaternion? rotation = null, Transform parent = null, bool forceInstantiate = false) {
+      if (forceInstantiate == false) {
+        GameObject go = null;
+        if(cache.gameObjectPool().TryGetValue(id, out LinkedList<GameObject> linkedList)) {
+          do {
+            if (linkedList.Count == 0) { break; }
+            go = linkedList.First.Value;
+            linkedList.RemoveFirst();
+            if(go == null) {
+              Log.M.TWL(0,"Some moron pooled null as "+id+" rot in hell!!!",true);
+              continue;
+            }
+            try {
+              go.transform.SetParent((Transform)null);
+            } catch(Exception e) {
+              go = null;
+              Log.M.TWL(0, "Some moron pooled disposed object as " + id + " rot in hell!!!", true);
+              Log.M.TWL(0, e.ToString(), true);
+            }
+          } while ((go == null)&&(linkedList.Count > 0));
+        }
+        if (go != null) {
+          go.transform.SetParent((Transform)null);
+          cache.gameObjectRST()[id].Apply(go);
+          go.SetActive(true);
+          if ((UnityEngine.Object)parent != (UnityEngine.Object)null) {
+            Scene scene1 = go.scene;
+            Scene scene2 = parent.gameObject.scene;
+            if (scene1.name != scene2.name && scene2.name != "DontDestroyOnLoad")
+              SceneManager.MoveGameObjectToScene(go, parent.gameObject.scene);
+            go.transform.SetParent(parent);
+          } else {
+            go.transform.SetParent((Transform)null);
+            if (position.HasValue)
+              go.transform.position = position.Value;
+            if (rotation.HasValue)
+              go.transform.rotation = rotation.Value;
+            SceneManager.MoveGameObjectToScene(go, SceneManager.GetActiveScene());
+          }
+          return go;
+        }
+      }
+      UnityEngine.Object original;
+      if (!cache.prefabPool().TryGetValue(id, out original)) { return (GameObject)null; };
+      GameObject go1;
+      if (position.HasValue || rotation.HasValue) {
+        Transform transform = (original as GameObject).transform;
+        go1 = (GameObject)UnityEngine.Object.Instantiate(original, position.HasValue ? position.Value : transform.position, rotation.HasValue ? rotation.Value : transform.rotation);
+      } else
+        go1 = (GameObject)UnityEngine.Object.Instantiate(original);
+      cache.CreateObjectRST(id, go1);
+      if ((UnityEngine.Object)parent != (UnityEngine.Object)null) {
+        Scene scene1 = go1.scene;
+        Scene scene2 = parent.gameObject.scene;
+        if (scene1.name != scene2.name && scene2.name != "DontDestroyOnLoad")
+          SceneManager.MoveGameObjectToScene(go1, parent.gameObject.scene);
+        go1.transform.SetParent(parent);
+      } else {
+        go1.transform.SetParent((Transform)null);
+        SceneManager.MoveGameObjectToScene(go1, SceneManager.GetActiveScene());
+      }
+      return go1;
+    }
     public static bool Prefix(DataManager __instance, string id, BattleTechResourceType resourceType, Vector3? position, Quaternion? rotation, Transform parent, ref GameObject __result) {
       Log.LogWrite("DataManager.PooledInstantiate prefix " + id + "\n");
       try {
@@ -2567,7 +2646,7 @@ namespace CustomAmmoCategoriesPatches {
           }
         }
         if (!__instance.GameObjectPool().IsPrefabInPool(id)) { __result = null; return false; }
-        __result = __instance.GameObjectPool().PooledInstantiate(id, position, rotation, parent, false);
+        __result = __instance.GameObjectPool().PooledInstantiateEx(id, position, rotation, parent, false);
         return false;
       } catch (Exception e) {
         Log.M.TWL(0, e.ToString());

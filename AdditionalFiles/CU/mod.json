@@ -1,0 +1,47 @@
+{
+	"Name": "CustomUnits",
+	"Enabled": true,
+	"Version": "0.0.20",
+	"PackagedOn": "2019-01-31T00:00:00Z",
+	"DLL": "CustomUnits.dll",
+	"DLLEntryPoint": "CustomUnits.Core.Init",
+	"DependsOn": [ "Custom Ammo Categories" ],
+	"ConflictsWith": [ "MechResizer" ],
+
+	"Description": "CustomUnits",
+	"Author": "KMiSSioN",
+    "Website": "https://github.com/BattletechModders/CustomBundle",
+	"Settings": {
+		"debugLog": true,
+    "fixWaterHeight":true,
+    "maxWaterSteppiness":29,
+    "deepWaterSteepness":41,
+    "deepWaterDepth":10,
+    "waterFlatDepth":2,
+    "MechScaleJRoot": true,
+    "defaultMechSizeMultiplier": 1.0,
+    "defaultVehicleSizeMultiplier": 1,
+    "defaultTurretSizeMultiplier": 1,
+    "defaultProjectileSizeMultiplier": 1,
+    "mechSizePrefabMultipliers": {},
+    "vehicleSizePrefabMultipliers": {},
+    "turretSizePrefabMultipliers": {},
+    "projectileSizePrefabMultipliers": {},
+    "MaxVehicleRandomPilots": 2,
+    "CanPilotVehicleProbability": 0.5,
+    "CanPilotAlsoMechProbability": 0.5,
+    "LancesIcons": [ "one", "two", "three" ],
+    "overallDeploySize": 6,
+    "Lances": [ {"size":6,"allow":5,"is_vehicle":false},{"size":4,"allow":3,"is_vehicle":true} ],
+    "ArgoBaysFix":1,
+    "ShowVehicleBays":true,
+    "BaysCountExternalControl":false
+	},
+	"Manifest": [
+    { "Type": "AssetBundle", "Path": "assetbundles" },	
+    { "Type": "SVGAsset", "Path": "icons" },
+		{ "Type": "HardpointDataDef", "Path": "hardpoints" },
+    { "Id": "fake_weapon_prefab", "Type": "Prefab", "Path": "assets/character/vehicle/prefabs/fake_weapon_prefab.prefab", "AssetBundleName": "fake_weapon_prefab" },
+    { "Id": "battletechstandartshader", "Type": "Prefab", "Path": "assets/shaderscarriers/battletechstandartshader.prefab", "AssetBundleName": "standart_shader" }
+	]
+}

@@ -375,6 +375,7 @@ namespace CustomUnits {
       if (___selectedMech == null) { return true; }
       if (___selectedMech.Chassis == null) { return true; }
       if (___selectedMech.Chassis.IsFake(___selectedMech.ChassisID) == false) { return true; }
+      if (Core.Settings.AllowVehiclesEdit == true) { return true; }
       GenericPopupBuilder.Create("Cannot Refit vehicle", Strings.T("Vehicles can't be refited")).AddFader(new UIColorRef?(LazySingletonBehavior<UIManager>.Instance.UILookAndColorConstants.PopupBackfill), 0.0f, true).Render();
       return false;
     }
@@ -388,6 +389,7 @@ namespace CustomUnits {
       if (___selectedMech == null) { return true; }
       if (___selectedMech.Chassis == null) { return true; }
       if (___selectedMech.Chassis.IsFake(___selectedMech.ChassisID) == false) { return true; }
+      if (Core.Settings.AllowVehiclesEdit == true) { return true; }
       GenericPopupBuilder.Create("Cannot store vehicle", Strings.T("Vehicles can't be stored")).AddFader(new UIColorRef?(LazySingletonBehavior<UIManager>.Instance.UILookAndColorConstants.PopupBackfill), 0.0f, true).Render();
       return false;
     }

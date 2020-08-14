@@ -75,6 +75,8 @@
       <HintPath>..\..\BattleTech_Data\Managed\System.EnterpriseServices.dll</HintPath>
     </Reference>
     <Reference Include="System.Net.Http" />
+    <Reference Include="System.Windows.Forms" />
+    <Reference Include="System.Xml, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089, processorArchitecture=MSIL" />
     <Reference Include="Unity.TextMeshPro, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\BattleTech_Data\Managed\Unity.TextMeshPro.dll</HintPath>
@@ -134,6 +136,7 @@
     <Compile Include="AmmoCategoryValue.cs" />
     <Compile Include="AmmoCookoff.cs" />
     <Compile Include="AmmoEject.cs" />
+    <Compile Include="AmmoModeSwitcher.cs" />
     <Compile Include="AmmunitionDef.cs" />
     <Compile Include="AMSBallisticEffect.cs" />
     <Compile Include="AMSBulletEffect.cs" />
@@ -248,12 +251,12 @@
   <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
-    <PostBuildEvent>copy /Y "$(TargetPath)" "$(ProjectDir)\..\..\Mods\CustomAmmoCategories"
-xcopy /Y /S /E "$(ProjectDir)..\AdditionalFiles" "$(ProjectDir)\..\..\Mods\CustomAmmoCategories"
+    <PostBuildEvent>copy /Y "$(TargetPath)" "$(ProjectDir)..\..\Mods\CustomAmmoCategories"
+xcopy /Y /S /E "$(ProjectDir)..\AdditionalFiles\CAC" "$(ProjectDir)..\..\Mods\CustomAmmoCategories"
 copy /Y "$(TargetPath)" "$(ProjectDir)\..\..\RogueTechWorking\CustomAmmoCategories"
-xcopy /Y /S /E "$(ProjectDir)..\AdditionalFiles" "$(ProjectDir)\..\..\RogueTechWorking\CustomAmmoCategories"
+xcopy /Y /S /E "$(ProjectDir)..\AdditionalFiles\CAC" "$(ProjectDir)..\..\RogueTechWorking\CustomAmmoCategories"
 copy /Y "$(TargetPath)" "$(ProjectDir)\..\..\Release_CAC\Release\CustomBundle\CustomAmmoCategories"
-xcopy /Y /S /E "$(ProjectDir)..\AdditionalFiles" "$(ProjectDir)\..\..\Release_CAC\Release\CustomBundle\CustomAmmoCategories"</PostBuildEvent>
+xcopy /Y /S /E "$(ProjectDir)..\AdditionalFiles\CAC" "$(ProjectDir)..\..\Release_CAC\Release\CustomBundle\CustomAmmoCategories"</PostBuildEvent>
   </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

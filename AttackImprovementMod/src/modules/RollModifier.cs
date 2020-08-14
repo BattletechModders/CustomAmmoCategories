@@ -7,8 +7,9 @@ using UnityEngine;
 namespace Sheepy.BattleTechMod.AttackImprovementMod {
    using static Mod;
    using static FiringPreviewManager.TargetAvailability;
+  using CustomAmmoCategoriesPatches;
 
-   public class RollModifier : BattleModModule {
+  public class RollModifier : BattleModModule {
 
       private static float BaseHitChanceModifier, MeleeHitChanceModifier, HitChanceStep, MaxFinalHitChance, MinFinalHitChance;
 
@@ -188,20 +189,20 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
       }                 catch ( Exception ex ) { Error( ex ); } }
 
       public static void SmartIndirectReplaceCover ( ToHit __instance, ref float __result, AbstractActor attacker, ICombatant target ) { try {
-         if ( __result == 0 || ! ModifierList.AttackWeapon.IndirectFireCapable ) return;
+         if ( __result == 0 || ! ModifierList.AttackWeapon.IndirectFireCapable() ) return;
          if ( ! ShouldSmartIndirect( attacker, target ) ) return;
          if ( attacker.team.IsLocalPlayer ) __result = 0;
          else __result = __instance.GetIndirectModifier( attacker );
       }                 catch ( Exception ex ) { Error( ex ); } }
 
       public static void SmartIndirectReplaceIndirect ( ToHit __instance, ref float __result, AbstractActor attacker, bool isIndirect ) { try {
-         if ( isIndirect || ! ModifierList.AttackWeapon.IndirectFireCapable || ! attacker.team.IsLocalPlayer ) return;
+         if ( isIndirect || ! ModifierList.AttackWeapon.IndirectFireCapable() || ! attacker.team.IsLocalPlayer ) return;
          if ( ! ShouldSmartIndirect( attacker, ModifierList.Target ) ) return;
          __result = __instance.GetIndirectModifier( attacker );
       }                 catch ( Exception ex ) { Error( ex ); } }
 
       public static void SmartIndirectFireArc ( MissileLauncherEffect __instance, ref bool ___isIndirect ) { try {
-         if ( ___isIndirect || ! __instance.weapon.IndirectFireCapable ) return;
+         if ( ___isIndirect || ! __instance.weapon.IndirectFireCapable() ) return;
          if ( ! ShouldSmartIndirect( __instance.weapon.parent, Combat.FindCombatantByGUID( __instance.hitInfo.targetId ) ) ) return;
          ___isIndirect = true;
       }                 catch ( Exception ex ) { Error( ex ); } }

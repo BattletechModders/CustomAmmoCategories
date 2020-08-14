@@ -1,6 +1,7 @@
 ﻿using BattleTech;
 using BattleTech.UI;
 using CACMain;
+using CustomAmmoCategoriesLog;
 using CustomAmmoCategoriesPatches;
 using Harmony;
 using Localize;
@@ -42,6 +43,7 @@ namespace CustAmmoCategories {
       Func<ToHit, AbstractActor, Weapon, ICombatant, Vector3, Vector3, LineOfFireLevel, MeleeAttackType, bool, float> modifier,
       Func<ToHit, AbstractActor, Weapon, ICombatant, Vector3, Vector3, LineOfFireLevel, MeleeAttackType, bool, string> dname
       ) {
+      Log.M.TWL(0, "registerModifier:" + id + "/" + name + " r:" + ranged + " m:" + melee, true);
       if (modifiers.TryGetValue(id, out ToHitModifier mod)) {
         mod.name = name;
         mod.ranged = ranged;
@@ -149,7 +151,13 @@ namespace CustAmmoCategories {
       int location = weapon.Location;
       if ((meleeAttackType != MeleeAttackType.NotSet)&&(weapon.Type == WeaponType.Melee)) {
         location = GetMeleeWeaponLocation(attacker, meleeAttackType);
-      };
+      } else {
+        switch (attacker.UnitType) {
+          case UnitType.Mech: location = weapon.mechComponentRef != null ? (int)weapon.mechComponentRef.MountedLocation : weapon.Location; break;
+          case UnitType.Vehicle: location = weapon.vehicleComponentRef!=null?(int)weapon.vehicleComponentRef.MountedLocation:(int)VehicleChassisLocations.Front; break;
+          case UnitType.Turret: location = (int)BuildingLocation.Structure; break;
+        }
+      }
       return location == 0 ? GetToHitModifier(attacker, weapon.Location): GetToHitModifier(attacker, location);
     }
     public static int GetMeleeWeaponLocation(AbstractActor unit, MeleeAttackType meleeAttackType) {
@@ -179,13 +187,21 @@ namespace CustAmmoCategories {
       if (unit == null) { return 0f; }
       float num = 0.0f;
       VehicleChassisLocations loc = (VehicleChassisLocations)location;
-      switch (unit.GetLocationDamageLevel(loc)) {
-        case LocationDamageLevel.Penalized:
-          num = unit.Combat.Constants.ToHit.ToHitSelfWeaponLocationDamagedMinor;
-          break;
-        case LocationDamageLevel.NonFunctional:
-          num = unit.Combat.Constants.ToHit.ToHitSelfWeaponLocationDamagedMajor;
-          break;
+      try {
+        string locName = unit.GetStringForStructureDamageLevel(loc);
+        if (string.IsNullOrEmpty(locName)) { loc = VehicleChassisLocations.Front; }
+        switch (unit.GetLocationDamageLevel(loc)) {
+          case LocationDamageLevel.Penalized:
+            num = unit.Combat.Constants.ToHit.ToHitSelfWeaponLocationDamagedMinor;
+            break;
+          case LocationDamageLevel.NonFunctional:
+            num = unit.Combat.Constants.ToHit.ToHitSelfWeaponLocationDamagedMajor;
+            break;
+        }
+      }catch(Exception e) {
+        Log.M.TWL(0, "unit:" + unit.DisplayName + " location:" + loc.ToString()+":"+location);
+        Log.M.TWL(0,e.ToString(),true);
+        return 0f;
       }
       return num;
     }
@@ -193,6 +209,8 @@ namespace CustAmmoCategories {
       if (unit == null) { return 0f; }
       float num = 0.0f;
       ChassisLocations loc = (ChassisLocations)location;
+      string locName = unit.GetStringForStructureDamageLevel(loc);
+      if (string.IsNullOrEmpty(locName)) { loc = ChassisLocations.CenterTorso; }
       switch (unit.GetLocationDamageLevel(loc)) {
         case LocationDamageLevel.Penalized:
           num = unit.Combat.Constants.ToHit.ToHitSelfWeaponLocationDamagedMinor;
@@ -221,6 +239,8 @@ namespace CustAmmoCategories {
       if (unit == null) { return string.Empty; }
       string num = string.Empty;
       VehicleChassisLocations loc = (VehicleChassisLocations)location;
+      string locName = unit.GetStringForStructureDamageLevel(loc);
+      if (string.IsNullOrEmpty(locName)) { loc = VehicleChassisLocations.Front; }
       switch (unit.GetLocationDamageLevel(loc)) {
         case LocationDamageLevel.Penalized:
           num = new Text("{0} DAMAGED", (object)GetAbbreviatedChassisLocation(loc)).ToString();
@@ -235,6 +255,8 @@ namespace CustAmmoCategories {
       if (unit == null) { return string.Empty; }
       string num = string.Empty;
       ChassisLocations loc = (ChassisLocations)location;
+      string locName = unit.GetStringForStructureDamageLevel(loc);
+      if (string.IsNullOrEmpty(locName)) { loc = ChassisLocations.CenterTorso; }
       switch (unit.GetLocationDamageLevel(loc)) {
         case LocationDamageLevel.Penalized:
           num = new Text("{0} DAMAGED", (object)Mech.GetAbbreviatedChassisLocation(loc)).ToString();
@@ -295,7 +317,13 @@ namespace CustAmmoCategories {
       int location = weapon.Location;
       if ((meleeAttackType != MeleeAttackType.NotSet) && (weapon.Type == WeaponType.Melee)) {
         location = GetMeleeWeaponLocation(attacker, meleeAttackType);
-      };
+      } else {
+        switch (attacker.UnitType) {
+          case UnitType.Mech: location = weapon.mechComponentRef != null?(int)weapon.mechComponentRef.MountedLocation:weapon.Location; break;
+          case UnitType.Vehicle: location = weapon.vehicleComponentRef != null ? (int)weapon.vehicleComponentRef.MountedLocation : (int)VehicleChassisLocations.Front; break;
+          case UnitType.Turret: location = (int)BuildingLocation.Structure; break;
+        }
+      }
       return location == 0 ? GetToHitModifierName(attacker, weapon.Location) : GetToHitModifierName(attacker, location);
     }
     public static float GetTargetSizeModifier(ToHit instance, AbstractActor attacker, Weapon weapon, ICombatant target, Vector3 attackPosition, Vector3 targetPosition, LineOfFireLevel lofLevel, MeleeAttackType meleeAttackType, bool isCalledShot) {
@@ -382,7 +410,7 @@ namespace CustAmmoCategories {
       if (target is Mech mech) {
         if (mech.IsProne) return string.Empty;
         if (dir == AttackDirection.FromFront) return new Text("__/AIM.FRONT_ATTACK/__").ToString();
-        if (dir == AttackDirection.FromLeft || dir == AttackDirection.FromRight) return new Text("__ /AIM.SIDE_ATTACK/__").ToString();
+        if (dir == AttackDirection.FromLeft || dir == AttackDirection.FromRight) return new Text("__/AIM.SIDE_ATTACK/__").ToString();
         if (dir == AttackDirection.FromBack) return new Text("__/AIM.REAR_ATTACK/__").ToString();
       } else if (target is Vehicle vehicle) {
         if (dir == AttackDirection.FromFront) return new Text("__/AIM.FRONT_ATTACK/__").ToString();
@@ -423,6 +451,9 @@ namespace CustAmmoCategories {
       if (!(target is AbstractActor actor)) return 0f;
       return instance.GetEvasivePipsModifier(actor.EvasivePipsCurrent, weapon);
     }
+    public static float GetChassisTagsModifyer(ToHit instance, AbstractActor attacker, Weapon weapon, ICombatant target, Vector3 attackPosition, Vector3 targetPosition, LineOfFireLevel lofLevel, MeleeAttackType meleeAttackType, bool isCalledShot) {
+      return weapon.GetChassisTagsModifyer(target);
+    }
     public static void Init() {
       //build in modifiers
       registerModifier("RANGE", "RANGE", true, false, GetRangeModifier, GetRangeModifierName);
@@ -440,6 +471,7 @@ namespace CustAmmoCategories {
       registerModifier("MORALE", "MORALE", true, false, GetMoraleAttackModifier, GetMoraleAttackModifierName);
       registerModifier("INDIRECT FIRE", "INDIRECT FIRE", true, false, GetIndirectModifier, null);
       registerModifier("DIRECT", "__/AIM.DIRECT/__", true, false, GetDirectAttackModifier, null);
+      registerModifier("TARGET TYPE", "__/AIM.TARGET_TYPE/__", true, false, GetChassisTagsModifyer, null);
 
       registerModifier("JUMPED", "__/AIM.JUMPED/__", false, false, GetJumpedModifier, null);
       registerModifier("MOVED SELF", "MOVED SELF", false, false, GetSelfSpeedModifier, null);
@@ -555,6 +587,7 @@ namespace CustAmmoCategories {
       CombatGameState Combat = Traverse.Create(slot).Field<CombatGameState>("Combat").Value;
       CombatHUD HUD = Traverse.Create(slot).Field<CombatHUD>("HUD").Value;
       MeleeAttackType meleeAttackType = MeleeAttackType.NotSet;
+      LineOfFireLevel lofLevel = HUD.SelectionHandler.ActiveState.FiringPreview.GetPreviewInfo(target).LOFLevel;
       bool calledShot = HUD.SelectionHandler.ActiveState.SelectionType == SelectionType.FireMorale;
       int all_modifiers = 0;
       Core.AIMShowBaseHitChance(slot,target);
@@ -566,13 +599,13 @@ namespace CustAmmoCategories {
         int modifier = (int)mod.Value.modifier(Combat.ToHit,
           HUD.SelectedActor, slot.DisplayedWeapon,
           target,
-          HUD.SelectionHandler.ActiveState.PreviewPos, target.TargetPosition, LineOfFireLevel.LOFClear, meleeAttackType, calledShot);
+          HUD.SelectionHandler.ActiveState.PreviewPos, target.TargetPosition, lofLevel, meleeAttackType, calledShot);
         string name = mod.Value.name;
         if (mod.Value.dname != null) {
           name = mod.Value.dname(Combat.ToHit,
           HUD.SelectedActor, slot.DisplayedWeapon,
           target,
-          HUD.SelectionHandler.ActiveState.PreviewPos, target.TargetPosition, LineOfFireLevel.LOFClear, meleeAttackType, calledShot);
+          HUD.SelectionHandler.ActiveState.PreviewPos, target.TargetPosition, lofLevel, meleeAttackType, calledShot);
         }
         if ((modifier != 0) && (string.IsNullOrEmpty(name) == false)) {
           slot.AddToolTipDetail(name, modifier);
@@ -590,15 +623,17 @@ namespace CustAmmoCategories {
       bool calledShot = false;
       foreach (var mod in ToHitModifiersHelper.modifiers) {
         if ((mod.Value.ranged != false) || (mod.Value.melee != false)) { continue; }
+        if (slot.DisplayedWeapon == null) { continue; }
+        if (HUD.SelectedActor == null) { continue; }
         int modifier = (int)mod.Value.modifier(Combat.ToHit,
-          HUD.SelectedActor, slot.DisplayedWeapon,
-          HUD.SelectedActor,
+          slot.DisplayedWeapon.parent, slot.DisplayedWeapon,
+          HUD.SelectedTarget,
           HUD.SelectionHandler.ActiveState.PreviewPos, HUD.SelectedActor.TargetPosition, LineOfFireLevel.LOFClear, meleeAttackType, calledShot);
         string name = mod.Value.name;
         if (mod.Value.dname != null) {
           name = mod.Value.dname(Combat.ToHit,
-          HUD.SelectedActor, slot.DisplayedWeapon,
-          HUD.SelectedActor,
+          slot.DisplayedWeapon.parent, slot.DisplayedWeapon,
+          HUD.SelectedTarget,
           HUD.SelectionHandler.ActiveState.PreviewPos, HUD.SelectedActor.TargetPosition, LineOfFireLevel.LOFClear, meleeAttackType, calledShot);
         }
         if ((modifier != 0) && (string.IsNullOrEmpty(name) == false)) {

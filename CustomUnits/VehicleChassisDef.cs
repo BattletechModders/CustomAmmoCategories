@@ -1124,7 +1124,7 @@ namespace CustomUnits {
   [HarmonyPatch("HasCollisionAt")]
   [HarmonyPatch(MethodType.Normal)]
   //[HarmonyPatch(new Type[] { typeof(Vector3), typeof(AbstractActor), typeof(List<AbstractActor>),  })]
-  public static class PathNodeGrid_GetTerrainModifiedCost {
+  public static class PathNode_HasCollisionAt {
     public static bool Prefix(AbstractActor unit, ref List<AbstractActor> allActors) {
       int index = 0;
       //occupyingActor = (AbstractActor)null;
