@@ -40,10 +40,10 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
          }
 
          if ( Settings.SmartIndirectFire ) {
-            Patch( typeof( FiringPreviewManager ), "GetPreviewInfo", null, "SmartIndirectFireLoF" );
-            Patch( typeof( ToHit ), "GetCoverModifier", null, "SmartIndirectReplaceCover" );
-            Patch( typeof( ToHit ), "GetIndirectModifier", new Type[]{ typeof( AbstractActor ), typeof( bool ) }, null, "SmartIndirectReplaceIndirect" );
-            Patch( typeof( MissileLauncherEffect ), "SetupMissiles", null, "SmartIndirectFireArc" );
+            //Patch( typeof( FiringPreviewManager ), "GetPreviewInfo", null, "SmartIndirectFireLoF" );
+            //Patch( typeof( ToHit ), "GetCoverModifier", null, "SmartIndirectReplaceCover" );
+            //Patch( typeof( ToHit ), "GetIndirectModifier", new Type[]{ typeof( AbstractActor ), typeof( bool ) }, null, "SmartIndirectReplaceIndirect" );
+            //Patch( typeof( MissileLauncherEffect ), "SetupMissiles", null, "SmartIndirectFireArc" );
          }
 
          if ( Settings.FixSelfSpeedModifierPreview ) {

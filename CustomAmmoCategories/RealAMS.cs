@@ -37,7 +37,7 @@ namespace CustAmmoCategories {
         ShootsRemains = weapon.DecrementAmmo(-1);
       }
       int alreadyShooted = weapon.AMSShootsCount();
-      if (extWeapon.AMSShootsEveryAttack == false) {
+      if (weapon.AMSShootsEveryAttack() == false) {
         ShootsRemains -= alreadyShooted;
       }
       if (ShootsRemains < 0) { ShootsRemains = 0; };

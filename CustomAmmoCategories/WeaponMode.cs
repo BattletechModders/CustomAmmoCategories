@@ -208,6 +208,7 @@ namespace CustAmmoCategories {
     public DamageFalloffType AoEDmgFalloffType { get; set; }
     public float DamageFalloffStartDistance { get; set; }
     public float DamageFalloffEndDistance { get; set; }
+    public TripleBoolean AMSShootsEveryAttack { get; set; }
     public WeaponMode() {
       Id = WeaponMode.NONE_MODE_NAME;
       UIName = WeaponMode.BASE_MODE_NAME;
@@ -314,7 +315,8 @@ namespace CustAmmoCategories {
       AoEDmgFalloffType = DamageFalloffType.NotSet;
       DamageFalloffStartDistance = 0f;
       DamageFalloffEndDistance = 0f;
-    }
+      AMSShootsEveryAttack = TripleBoolean.NotSet;
+  }
     public void fromJSON(string json) {
       JObject jWeaponMode = JObject.Parse(json);
       if (jWeaponMode["Id"] != null) {

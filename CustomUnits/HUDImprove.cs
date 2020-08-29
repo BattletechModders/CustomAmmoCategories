@@ -1280,6 +1280,10 @@ namespace CustomUnits {
         foreach (string icon in Core.Settings.LancesIcons) {
           prewarmRequests.Add(new PrewarmRequest(BattleTechResourceType.SVGAsset, icon));
         }
+        prewarmRequests.Add(new PrewarmRequest(BattleTechResourceType.SVGAsset, Core.Settings.MechBaySwitchIconMech));
+        prewarmRequests.Add(new PrewarmRequest(BattleTechResourceType.SVGAsset, Core.Settings.MechBaySwitchIconVehicle));
+        prewarmRequests.Add(new PrewarmRequest(BattleTechResourceType.SVGAsset, Core.Settings.MechBaySwitchIconUp));
+        prewarmRequests.Add(new PrewarmRequest(BattleTechResourceType.SVGAsset, Core.Settings.MechBaySwitchIconDown));
         typeof(ApplicationConstants).GetProperty("PrewarmRequests", BindingFlags.Instance | BindingFlags.Public).GetSetMethod(true).Invoke(__instance, new object[] { prewarmRequests.ToArray() });
         foreach (PrewarmRequest preq in __instance.PrewarmRequests) {
           Log.WL(1, preq.ResourceType + ":" + preq.ResourceID);

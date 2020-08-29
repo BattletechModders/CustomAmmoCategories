@@ -227,6 +227,12 @@ namespace CustAmmoCategories {
       if (ammo.DamageNotDivided != TripleBoolean.NotSet) { return ammo.DamageNotDivided == TripleBoolean.True; }
       return wp.DamageNotDivided == TripleBoolean.True;
     }
+    public static bool AMSShootsEveryAttack(this Weapon weapon) {
+      WeaponMode mode = weapon.mode();
+      ExtWeaponDef wp = weapon.exDef();
+      if (mode.AMSShootsEveryAttack != TripleBoolean.NotSet) { return mode.AMSShootsEveryAttack == TripleBoolean.True; }
+      return wp.AMSShootsEveryAttack == TripleBoolean.True;
+    }
     public static bool AOEEffectsFalloff(this Weapon weapon) {
       ExtAmmunitionDef ammo = weapon.ammo();
       WeaponMode mode = weapon.mode();
@@ -389,7 +395,7 @@ namespace CustAmmoCategories {
     public bool AlternateAPDamageCalc { get; set; }
     public TripleBoolean IsAMS { get; set; }
     public TripleBoolean IsAAMS { get; set; }
-    public bool AMSShootsEveryAttack { get; set; }
+    public TripleBoolean AMSShootsEveryAttack { get; set; }
     public float SpreadRange { get; set; }
     public TripleBoolean NotUseInMelee { get; set; }
     public Dictionary<string, WeaponMode> Modes { get; set; }
@@ -491,7 +497,7 @@ namespace CustAmmoCategories {
       AlternateHeatDamageCalc = false;
       AlternateInstabilityCalc = false;
       AlternateAPDamageCalc = false;
-      AMSShootsEveryAttack = false;
+      AMSShootsEveryAttack = TripleBoolean.NotSet;
       baseModeId = WeaponMode.NONE_MODE_NAME;
       DisableClustering = TripleBoolean.True;
       NotUseInMelee = TripleBoolean.NotSet;

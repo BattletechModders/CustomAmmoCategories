@@ -128,6 +128,10 @@ namespace CustomUnits{
     public float ConvoyMaxDistFromPlayer { get; set; }
     public float ConvoyMaxDistFromRoute { get; set; }
     public bool AllowVehiclesEdit { get; set; }
+    public string MechBaySwitchIconMech { get; set; }
+    public string MechBaySwitchIconVehicle { get; set; }
+    public string MechBaySwitchIconUp { get; set; }
+    public string MechBaySwitchIconDown { get; set; }
     public CUSettings() {
       debugLog = false;
       DeathHeight = 1f;
@@ -160,6 +164,10 @@ namespace CustomUnits{
       ConvoyMaxDistFromRoute = 30f;
       ConvoyRouteTag = "escort_convoy";
       AllowVehiclesEdit = false;
+      MechBaySwitchIconMech = "mech";
+      MechBaySwitchIconVehicle = "vehicle";
+      MechBaySwitchIconUp = "weapon_up";
+      MechBaySwitchIconDown = "weapon_down";
     }
   }
   public static partial class Core{

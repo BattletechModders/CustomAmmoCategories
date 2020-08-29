@@ -4,15 +4,19 @@ using BattleTech.Data;
 using BattleTech.Rendering;
 using BattleTech.UI;
 using BattleTech.UI.TMProWrapper;
+using BattleTech.UI.Tooltips;
+using DG.Tweening;
 using Harmony;
 using Localize;
 using MechResizer;
+using SVGImporter;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Reflection.Emit;
 using UnityEngine;
+using UnityEngine.EventSystems;
 
 namespace CustomUnits {
   /*[HarmonyPatch]
@@ -400,6 +404,124 @@ namespace CustomUnits {
       yield break;
     }
   }
+  public class MechBayPanelEx: MonoBehaviour{
+    public GameObject baySwitch;
+    public GameObject up;
+    public GameObject down;
+    public bool MechVehicleState;
+    public int startRow;
+  };
+  public class MechBayUIUpButton : MechBayUIButton {
+    public override void Init(MechBayPanel panel, MechBayRowGroupWidget bays, MechBayPanelEx parent) {
+      base.Init(panel, bays, parent);
+      this.icon.vectorGraphics = panel.DataManager.GetObjectOfType<SVGAsset>(Core.Settings.MechBaySwitchIconUp, BattleTechResourceType.SVGAsset);
+    }
+    protected override void initUI() {
+      if (parent == null) { return; }
+      base.initUI();
+      Vector3 desPos = this.transform.localPosition;
+      desPos.y = 0f-this.gameObject.GetComponent<RectTransform>().sizeDelta.y;
+      this.transform.localPosition = desPos;
+    }
+    public override void OnClick() {
+      base.OnClick();
+      if (parent.startRow > 0) { parent.startRow -= 1; }
+      if (parent.MechVehicleState) {
+        mechBays.ShowVehicleBays(parent.startRow);
+      } else {
+        mechBays.ShowMechBays(parent.startRow);
+      }
+    }
+  }
+  public class MechBayUIDownButton : MechBayUIButton {
+    public override void Init(MechBayPanel panel, MechBayRowGroupWidget bays, MechBayPanelEx parent) {
+      base.Init(panel, bays, parent);
+      this.icon.vectorGraphics = panel.DataManager.GetObjectOfType<SVGAsset>(Core.Settings.MechBaySwitchIconDown, BattleTechResourceType.SVGAsset);
+    }
+    protected override void initUI() {
+      if (parent == null) { return; }
+      base.initUI();
+      Vector3 desPos = this.transform.localPosition;
+      desPos.y = 0f - mechBays.GetComponent<RectTransform>().sizeDelta.y;
+      this.transform.localPosition = desPos;
+    }
+    public override void OnClick() {
+      base.OnClick();
+      if (parent.MechVehicleState) {
+        if ((parent.startRow + mechBays.RowsPerList()) < (mechBays.VehicleBaysCount())) { parent.startRow += 1; }
+        mechBays.ShowVehicleBays(parent.startRow);
+      } else {
+        if ((parent.startRow + mechBays.RowsPerList()) < (mechBays.MechBaysCount())) { parent.startRow += 1; }
+        mechBays.ShowMechBays(parent.startRow);
+      }
+    }
+  }
+  public class MechBayUISwitch : MechBayUIButton {
+    public override void Init(MechBayPanel panel, MechBayRowGroupWidget bays, MechBayPanelEx parent) {
+      base.Init(panel, bays, parent);
+      this.icon.vectorGraphics = panel.DataManager.GetObjectOfType<SVGAsset>(Core.Settings.MechBaySwitchIconMech, BattleTechResourceType.SVGAsset);
+      parent.MechVehicleState = false;
+    }
+    public override void OnClick() {
+      base.OnClick();
+      parent.MechVehicleState = !parent.MechVehicleState;
+      parent.startRow = 0;
+      if (parent.MechVehicleState) {
+        this.icon.vectorGraphics = mechBayPanel.DataManager.GetObjectOfType<SVGAsset>(Core.Settings.MechBaySwitchIconVehicle, BattleTechResourceType.SVGAsset);
+        mechBays.ShowVehicleBays(parent.startRow);
+      } else {
+        this.icon.vectorGraphics = mechBayPanel.DataManager.GetObjectOfType<SVGAsset>(Core.Settings.MechBaySwitchIconMech, BattleTechResourceType.SVGAsset);
+        mechBays.ShowMechBays(parent.startRow);
+      }
+    }
+  }
+  public class MechBayUIButton : MonoBehaviour, IPointerClickHandler, IEventSystemHandler, IPointerEnterHandler, IPointerExitHandler {
+    public SVGImage icon;
+    public MechBayPanel mechBayPanel;
+    public MechBayRowGroupWidget mechBays;
+    public MechBayPanelEx parent;
+    private bool ui_inited;
+    public MechBayUIButton() {
+      ui_inited = false;
+    }
+    public virtual void Init(MechBayPanel panel, MechBayRowGroupWidget bays, MechBayPanelEx parent) {
+      this.mechBayPanel = panel;
+      this.mechBays = bays;
+      this.parent = parent;
+      this.icon = gameObject.GetComponent<SVGImage>();
+    }
+    protected virtual void initUI() {
+      if (mechBayPanel == null) { return; }
+      RectTransform uixPrfBttn_BASE_TabMedium_bays = mechBayPanel.gameObject.transform.FindRecursive("uixPrfBttn_BASE_TabMedium-bays") as RectTransform;
+      RectTransform rectTr = this.gameObject.GetComponent<RectTransform>();
+      Vector2 size = uixPrfBttn_BASE_TabMedium_bays.sizeDelta;
+      size.x = size.y;
+      rectTr.sizeDelta = size;
+      icon.color = Color.white;
+      ui_inited = true;
+    }
+    public void Update() {
+      if (ui_inited == false) {
+        initUI();
+      }
+    }
+    public virtual void OnClick() {
+
+    }
+    public void OnPointerClick(PointerEventData eventData) {
+      //throw new NotImplementedException();
+      OnClick();
+    }
+
+    public void OnPointerEnter(PointerEventData eventData) {
+      icon.color = UIManager.Instance.UIColorRefs.orange;
+    }
+
+    public void OnPointerExit(PointerEventData eventData) {
+      icon.color = UIManager.Instance.UIColorRefs.white;
+    }
+  }
+  //public class MechBayIconButton: Event
   [HarmonyPatch(typeof(MechBayPanel))]
   [HarmonyPatch("ViewBays")]
   [HarmonyPatch(MethodType.Normal)]
@@ -422,16 +544,61 @@ namespace CustomUnits {
         }
       }
     }
-    public static void Prefix(MechBayPanel __instance, MechBayRowGroupWidget ___bayGroupWidget) {
-      Log.TW(0, "MechBayPanel.ViewBays " + ___bayGroupWidget.gameObject.activeSelf + " " + toggleState);
-      if (___bayGroupWidget.gameObject.activeSelf == false) { } else { toggleState = (toggleState+1); };
-      if ((toggleState + __instance.RowsPerList() > __instance.MechBaysCount())&&(toggleState < __instance.MechBaysCount())) { toggleState = __instance.MechBaysCount(); };
-      if (toggleState + __instance.RowsPerList() > (__instance.MechBaysCount() + __instance.VehicleBaysCount())) { toggleState = 0; }
-      Log.WL(0, "->" + toggleState+ " MechBaysCount:" + __instance.MechBaysCount()+ " VehicleBaysCount:" + __instance.VehicleBaysCount());
-      //if (Core.Settings.ShowVehicleBays == false) { toggleState = false; };
-      __instance.set_toggleState(toggleState);
-      ___bayGroupWidget.ShowMechBays(toggleState);
-      //___bayGroupWidget.ShowVehicleBays(toggleState);
+    private static GameObject InstantineButton(GameObject src,Transform parent) {
+      GameObject baySwitch = GameObject.Instantiate(src);
+      baySwitch.transform.SetParent(parent);
+      GameObject.Destroy(baySwitch.GetComponent<HBSDOTweenToggle>());
+      GameObject.Destroy(baySwitch.GetComponent<HBSTooltip>());
+      DOTweenAnimation[] animations = baySwitch.GetComponents<DOTweenAnimation>();
+      foreach (DOTweenAnimation animation in animations) {
+        GameObject.Destroy(animation);
+      }
+      Transform tab_bg = baySwitch.transform.FindRecursive("tab_bg");
+      GameObject.Destroy(tab_bg.gameObject);
+      Transform tab_text = baySwitch.transform.FindRecursive("tab_text");
+      GameObject.Destroy(tab_text.gameObject);
+      Transform tab_border = baySwitch.transform.FindRecursive("tab_border");
+      GameObject.Destroy(tab_border.gameObject);
+      baySwitch.transform.localPosition = Vector3.zero;
+      return baySwitch;
+    }
+    public static void Postfix(MechBayPanel __instance, MechBayRowGroupWidget ___bayGroupWidget) {
+      if (Core.Settings.ShowVehicleBays == false) { return; }
+      MechBayPanelEx panelEx = __instance.gameObject.GetComponent<MechBayPanelEx>();
+      RectTransform uixPrfBttn_BASE_TabMedium_bays = __instance.gameObject.transform.FindRecursive("uixPrfBttn_BASE_TabMedium-bays") as RectTransform;
+      if (panelEx == null) {
+        GameObject baySwitch = InstantineButton(uixPrfBttn_BASE_TabMedium_bays.gameObject, ___bayGroupWidget.transform);
+        baySwitch.name = "MechBaySwitchButton";
+        baySwitch.transform.localPosition = Vector3.zero;
+
+        GameObject upBtn = InstantineButton(uixPrfBttn_BASE_TabMedium_bays.gameObject, ___bayGroupWidget.transform);
+        upBtn.name = "MechBayUpButton";
+        upBtn.transform.localPosition = Vector3.zero;
+
+        GameObject downBtn = InstantineButton(uixPrfBttn_BASE_TabMedium_bays.gameObject, ___bayGroupWidget.transform);
+        downBtn.name = "MechBayDownButton";
+        downBtn.transform.localPosition = Vector3.zero;
+
+        panelEx = __instance.gameObject.AddComponent<MechBayPanelEx>();
+        panelEx.baySwitch = baySwitch;
+        panelEx.up = upBtn;
+        panelEx.down = downBtn;
+
+        panelEx.MechVehicleState = false;
+        panelEx.startRow = 0;
+
+        baySwitch.AddComponent<MechBayUISwitch>().Init(__instance, ___bayGroupWidget, panelEx);
+        upBtn.AddComponent<MechBayUIUpButton>().Init(__instance, ___bayGroupWidget, panelEx);
+        downBtn.AddComponent<MechBayUIDownButton>().Init(__instance, ___bayGroupWidget, panelEx);
+      } else {
+        GameObject baySwitch = panelEx.baySwitch;
+        panelEx.MechVehicleState = false;
+        panelEx.startRow = 0;
+        panelEx.baySwitch.GetComponent<MechBayUISwitch>().Init(__instance, ___bayGroupWidget, panelEx);
+        panelEx.up.GetComponent<MechBayUIUpButton>().Init(__instance, ___bayGroupWidget, panelEx);
+        panelEx.down.GetComponent<MechBayUIDownButton>().Init(__instance, ___bayGroupWidget, panelEx);
+      }
+      ___bayGroupWidget.ShowMechBays(0);
     }
   }
   [HarmonyPatch(typeof(MechBayPanel))]
@@ -441,7 +608,6 @@ namespace CustomUnits {
   public static class MechBayPanel_SetData {
     public static void Prefix(MechBayPanel __instance, List<MechComponentRef> inventory) {
       Log.TWL(0, "MechBayPanel.SetData ");
-      __instance.set_toggleState(0);
     }
   }
   [HarmonyPatch(typeof(SimGameState))]
@@ -520,18 +686,20 @@ namespace CustomUnits {
     private static Dictionary<MechBayRowGroupWidget, List<MechBayRowWidget>> mechsBays = new Dictionary<MechBayRowGroupWidget, List<MechBayRowWidget>>();
     private static Dictionary<MechBayRowGroupWidget, List<MechBayRowWidget>> vehiclesBays = new Dictionary<MechBayRowGroupWidget, List<MechBayRowWidget>>();
     public static void ShowMechBays(this MechBayRowGroupWidget bays, int start_index) {
+      bays.ShowBays(start_index);
+    }
+    public static void ShowBays(this MechBayRowGroupWidget bays, int start_index) {
       int startindex = start_index;
       int endindex = start_index + bays.RowsPerList();
-      for(int index = 0; index < bays.Bays.Length; ++index) {
+      Log.TWL(0,"ShowBays:"+startindex+"->"+endindex+" all:"+ bays.Bays.Length);
+      for (int index = 0; index < bays.Bays.Length; ++index) {
         if ((index >= startindex) && (index < endindex)) { bays.Bays[index].gameObject.SetActive(true); } else {
           bays.Bays[index].gameObject.SetActive(false);
         }
       }
     }
-    public static void ShowVehicleBays(this MechBayRowGroupWidget bays, bool show) {
-      if (vehiclesBays.TryGetValue(bays, out List<MechBayRowWidget> vehcileBays)) {
-        foreach (MechBayRowWidget bay in vehcileBays) { bay.gameObject.SetActive(show); }
-      }
+    public static void ShowVehicleBays(this MechBayRowGroupWidget bays, int start_index) {
+      bays.ShowBays(start_index+bays.MechBaysCount());
     }
     public static bool Prefix(MechBayRowGroupWidget __instance, IMechLabDropTarget dropParent, SimGameState sim, ref MechBayRowWidget[] ___bays, ref List<MechBayRowWidget> __state) {
       Log.TWL(0, "MechBayRowGroupWidget.SetData prefix " + ___bays.Length);
