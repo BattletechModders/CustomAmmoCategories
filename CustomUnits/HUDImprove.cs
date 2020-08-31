@@ -7,6 +7,7 @@ using BattleTech.Serialization;
 using BattleTech.UI;
 using BattleTech.UI.TMProWrapper;
 using BattleTech.UI.Tooltips;
+using CustAmmoCategories;
 using CustAmmoCategoriesPatches;
 using DG.Tweening;
 using Harmony;
@@ -1374,7 +1375,7 @@ namespace CustomUnits {
       Log.TWL(0, "LanceSwitcher.Init");
       for(int index = lanceIcons.Count; index < Core.Settings.LancesIcons.Count; ++index) {
         string iconid = Core.Settings.LancesIcons[index];
-        SVGAsset icon = HUD.Combat.DataManager.GetObjectOfType<SVGAsset>(iconid, BattleTechResourceType.SVGAsset);
+        SVGAsset icon = CustomSvgCache.get(iconid, HUD.Combat.DataManager); //HUD.Combat.DataManager.GetObjectOfType<SVGAsset>(iconid, BattleTechResourceType.SVGAsset);
         if (icon != null) {
           Log.WL(1, "icon " + iconid + " found");
           lanceIcons.Add(icon);

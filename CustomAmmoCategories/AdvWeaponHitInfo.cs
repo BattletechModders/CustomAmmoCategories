@@ -356,6 +356,7 @@ namespace CustAmmoCategories {
           float aAPDamage = actorTarget.GetAdjustedDamage(this.APDamage, parent.weapon.WeaponCategoryValue, actorTarget.occupiedDesignMask, lineOfFireLevel, true);
           this.APDamage = actorTarget.GetAdjustedDamageForMelee(aAPDamage, parent.weapon.WeaponCategoryValue);
         }*/
+        this.ApplyTargetResistance();
         if (target.isAPProtected()) { this.APDamage = 0f; }
         Log.LogWrite("  qualityMultiplier = " + qualityMultiplier + "\n");
         Log.LogWrite("  real damage = " + this.Damage + "\n");
@@ -454,7 +455,7 @@ namespace CustAmmoCategories {
 
         Log.LogWrite(" resolve damage. arm: "+ locArmor + " dmg:" + damage + " ap:" + apdmg + "\n");
         this.target.TakeWeaponDamage(impactMessage.hitInfo, this.hitLocation, this.parent.weapon, damage, apdmg, hitIndex, DamageType.Weapon);
-        this.parent.resolve(this.target).AddHit(this.hitLocation, this.EffectsMod, this.isAOE);
+        //this.parent.resolve(this.target).AddHit(this.hitLocation, this.EffectsMod, this.isAOE);
         this.parent.resolve(this.target).AddHeat(this.Heat);
         Log.LogWrite(" Added heat:" + this.Heat + " overall: " + this.parent.resolve(this.target).Heat + "\n");
         this.parent.resolve(this.target).AddInstability(this.Stability);
@@ -593,6 +594,7 @@ namespace CustAmmoCategories {
     public int hitsCount;
     public List<AdvCritLocationInfo> Crits;
     public List<EffectsLocaltion> hitLocations;
+    public List<string> floatieMessages;
     public float cumulativeDamage;
     public AdvWeaponHitInfo parent;
     public void AddCrit(int aLoc, ICombatant unit) {
@@ -614,6 +616,7 @@ namespace CustAmmoCategories {
       hitsCount = 0;
       Crits = new List<AdvCritLocationInfo>();
       hitLocations = new List<EffectsLocaltion>();
+      floatieMessages = new List<string>();
     }
   }
   public static partial class AdvWeaponHitInfoHelper {
@@ -956,6 +959,65 @@ namespace CustAmmoCategories {
     public AdvWeaponResolveInfo resolve(ICombatant target) {
       if (resolveInfo.ContainsKey(target) == false) { resolveInfo.Add(target, new AdvWeaponResolveInfo(this)); }
       return resolveInfo[target];
+    }
+    public void FillResolveHitInfo() {
+      foreach(AdvWeaponHitInfoRec hit in hits) {
+        if (hit.isHit) {
+          this.resolve(hit.target).AddHit(hit.hitLocation, hit.EffectsMod, hit.isAOE);
+        }
+      }
+    }
+    public void ApplyHitEffects() {
+      foreach (var trg in this.resolveInfo) {
+        AdvWeaponResolveInfo advRes = trg.Value;
+        ICombatant target = trg.Key;
+        Weapon weapon = this.weapon;
+        WeaponHitInfo hitInfo = this.fakeHitInfo.Value;
+        bool effectPerHit = weapon.StatusEffectsPerHit();
+        Log.M.TWL(0, "ApplyHitEffects:" + this.weapon.defId + " " + target.DisplayName);
+        if ((advRes.hitLocations.Count > 0) && (!target.IsDead) && (target != null)) {
+          EffectData[] effects = weapon.StatusEffects();
+          foreach (EffectData statusEffect in effects) {
+            if (statusEffect.targetingData.effectTriggerType == EffectTriggerType.OnHit) {
+              string effectID = string.Format("OnHitEffect_{0}_{1}", (object)this.Sequence.attacker.GUID, (object)this.attackSequenceId);
+              if (statusEffect.Description == null || statusEffect.Description.Id == null || statusEffect.Description.Name == null) {
+                CustomAmmoCategoriesLog.Log.LogWrite($"WARNING: EffectID:{effectID} has broken effectDescId:{statusEffect?.Description.Id} effectDescName:{statusEffect?.Description.Name}! SKIPPING\n", true);
+              } else {
+                int effectsApply = 0;
+                foreach (EffectsLocaltion HitLocation in advRes.hitLocations) {
+                  float roll = Random.Range(0f, 1f);
+                  if (roll > HitLocation.effectsMod) {
+                    Log.LogWrite($"Roll fail\n");
+                    continue;
+                  }
+                  ++effectsApply;
+                  Log.LogWrite($"Applying effectID:{effectID} with effectDescId:{statusEffect?.Description.Id} effectDescName:{statusEffect?.Description.Name}\n");
+                  this.Sequence.Director.Combat.EffectManager.CreateEffect(statusEffect, effectID, this.Sequence.stackItemUID, (ICombatant)this.Sequence.attacker, target, hitInfo, HitLocation.location, false);
+                  if (effectPerHit == false) { break; }
+                }
+                if (target != null) {
+                  if (effectsApply > 0) {
+                    if (effectPerHit == false) {
+                      //this.Sequence.Director.Combat.MessageCenter.PublishMessage((MessageCenterMessage)new FloatieMessage(this.Sequence.attacker.GUID, target.GUID, statusEffect.Description.Name, FloatieMessage.MessageNature.Debuff));
+                      advRes.floatieMessages.Add(statusEffect.Description.Name);
+                    } else {
+                      //this.Sequence.Director.Combat.MessageCenter.PublishMessage((MessageCenterMessage)new FloatieMessage(this.Sequence.attacker.GUID, target.GUID, statusEffect.Description.Name + " x " + effectsApply.ToString(), FloatieMessage.MessageNature.Debuff));
+                      advRes.floatieMessages.Add(statusEffect.Description.Name + " x " + effectsApply.ToString());
+                    }
+                  }
+                }
+              }
+            }
+          }
+          AbstractActor targetActor = target as AbstractActor;
+          if (targetActor != null) {
+            List<EffectData> effectsForTriggerType = targetActor.GetComponentStatusEffectsForTriggerType(EffectTriggerType.OnDamaged);
+            for (int index = 0; index < effectsForTriggerType.Count; ++index) {
+              targetActor.Combat.EffectManager.CreateEffect(effectsForTriggerType[index], string.Format("OnDamagedEffect_{0}_{1}", (object)target.GUID, (object)hitInfo.attackSequenceId), this.Sequence.stackItemUID, target, (ICombatant)this.Sequence.attacker, hitInfo, advRes.hitLocations[0].location, false);
+            }
+          }
+        }
+      }
     }
     public void Apply() {
       if (resolveDamageMessage == null) { return; }

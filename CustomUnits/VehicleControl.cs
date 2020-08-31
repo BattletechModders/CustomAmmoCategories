@@ -2584,43 +2584,5 @@ namespace CustomUnits {
       return false;
     }
   }
-  [HarmonyPatch(typeof(CombatHUDMechwarriorTray))]
-  [HarmonyPatch("InitAbilityButtons")]
-  [HarmonyPatch(MethodType.Normal)]
-  [HarmonyPatch(new Type[] { typeof(AbstractActor) })]
-  public static class CombatHUDMechwarriorTray_InitAbilityButtons {
-    //public static readonly string playerGUID = "bf40fd39-ccf9-47c4-94a6-061809681140";
-    public static bool Prefix(CombatHUDMechwarriorTray __instance, AbstractActor actor) {
-      Pilot pilot = actor.GetPilot();
-      CombatHUDActionButton[] AbilityButtons = (CombatHUDActionButton[])typeof(CombatHUDMechwarriorTray).GetProperty("AbilityButtons", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(__instance, new object[] { });
-      if (pilot != null) {
-        List<Ability> abilityList = new List<Ability>((IEnumerable<Ability>)pilot.ActiveAbilities);
-        for (int index = 0; index < abilityList.Count; ++index) {
-          if (index >= AbilityButtons.Length) { break; }
-          AbilityButtons[index].InitButton(CombatHUDMechwarriorTray.GetSelectionTypeFromTargeting(abilityList[index].Def.Targeting, false), abilityList[index], abilityList[index].Def.AbilityIcon, abilityList[index].Def.Description.Id, abilityList[index].Def.Description.Name, actor);
-          AbilityButtons[index].isClickable = true;
-        }
-        List<Ability> all = pilot.PassiveAbilities.FindAll((Predicate<Ability>)(x => x.Def.DisplayParams == AbilityDef.DisplayParameters.ShowInMWTRay));
-        for (int count = abilityList.Count; count < AbilityButtons.Length; ++count) {
-          if (count < abilityList.Count + all.Count) {
-            int index = count - abilityList.Count;
-            AbilityButtons[count].InitButton(SelectionType.None, all[index], all[index].Def.AbilityIcon, all[index].Def.Description.Id, all[index].Def.Description.Name, actor);
-            AbilityButtons[count].isClickable = false;
-            AbilityButtons[count].RefreshUIColors();
-          } else {
-            AbilityButtons[count].InitButton(SelectionType.None, (Ability)null, (SVGAsset)null, "", "", (AbstractActor)null);
-            AbilityButtons[count].isClickable = false;
-            AbilityButtons[count].RefreshUIColors();
-          }
-        }
-      }
-      if (actor.team.CommandAbilities.Count > 0) {
-        Ability commandAbility = actor.team.CommandAbilities[0];
-        __instance.CommandButton.InitButton(CombatHUDMechwarriorTray.GetSelectionTypeFromTargeting(commandAbility.Def.Targeting, false), commandAbility, commandAbility.Def.AbilityIcon, commandAbility.Def.Description.Id, commandAbility.Def.Description.Name, (AbstractActor)null);
-      } else
-        __instance.CommandButton.InitButton(SelectionType.None, (Ability)null, (SVGAsset)null, "", "", (AbstractActor)null);
-      return false;
-    }
-  }
 
 }

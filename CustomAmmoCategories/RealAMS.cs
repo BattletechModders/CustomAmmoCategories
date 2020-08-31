@@ -1329,11 +1329,28 @@ namespace CustAmmoCategories {
                 continue;
               }
               AdvWeaponHitInfo advInfo = weaponHitInfo[groupIndex][weaponIndex].Value.advInfo();
+              advInfo.FillResolveHitInfo();
+            }
+          }
+        } catch (Exception e) {
+          Log.LogWrite("WARNING! Hits ordering FAIL\n" + e.ToString() + "\n", true);
+        }
+        try {
+          WeaponHitInfo?[][] weaponHitInfo = (WeaponHitInfo?[][])typeof(AttackDirector.AttackSequence).GetField("weaponHitInfo", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(__instance);
+          for (int groupIndex = 0; groupIndex < weaponHitInfo.Length; ++groupIndex) {
+            for (int weaponIndex = 0; weaponIndex < weaponHitInfo[groupIndex].Length; ++weaponIndex) {
+              if (weaponHitInfo[groupIndex][weaponIndex].HasValue == false) {
+                Log.M.TWL(0, "WeaponHitInfo at grp:" + groupIndex + " index:" + weaponHitInfo + " is null. How?! Again weapon without representation?! You realy should stop it!", true);
+                continue;
+              }
+              AdvWeaponHitInfo advInfo = weaponHitInfo[groupIndex][weaponIndex].Value.advInfo();
               if (advInfo == null) { continue; }
               Log.M.TWL(0, "Damage variance grp:"+groupIndex+" index:"+weaponIndex+" wpn:"+advInfo.weapon.defId+" ammo:"+advInfo.weapon.ammo().Id+" mode:"+advInfo.weapon.mode().Id);
               foreach (AdvWeaponHitInfoRec advRec in advInfo.hits) {
                 advRec.ApplyVariance(null);
               }
+              advInfo.FillResolveHitInfo();
+              advInfo.ApplyHitEffects();
               AdvWeaponHitInfo.AddToExpected(advInfo);
             }
           }

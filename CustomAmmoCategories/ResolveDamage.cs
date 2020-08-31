@@ -47,7 +47,10 @@ namespace CustAmmoCategories {
       Weapon weapon = advInfo.weapon;
       bool effectPerHit = weapon.StatusEffectsPerHit();
       Log.M.TWL(0, "ResolveTargetWeaponDamageEffects:" + advInfo.weapon.defId+" "+target.DisplayName);
-      if ((advRes.hitLocations.Count > 0) && (!target.IsDead) && (target != null)) {
+      foreach(string msgtext in advRes.floatieMessages) {
+        advInfo.Sequence.Director.Combat.MessageCenter.PublishMessage((MessageCenterMessage)new FloatieMessage(advInfo.Sequence.attacker.GUID, target.GUID, msgtext, FloatieMessage.MessageNature.Debuff));
+      }
+      /*if ((advRes.hitLocations.Count > 0) && (!target.IsDead) && (target != null)) {
         EffectData[] effects = weapon.StatusEffects();
         foreach (EffectData statusEffect in effects) {
           if (statusEffect.targetingData.effectTriggerType == EffectTriggerType.OnHit) {
@@ -86,7 +89,7 @@ namespace CustAmmoCategories {
             targetActor.Combat.EffectManager.CreateEffect(effectsForTriggerType[index], string.Format("OnDamagedEffect_{0}_{1}", (object)target.GUID, (object)hitInfo.attackSequenceId), advInfo.Sequence.stackItemUID, target, (ICombatant)advInfo.Sequence.attacker, hitInfo, advRes.hitLocations[0].location, false);
           }
         }
-      }
+      }*/
     }
     public static void CheckForCrit(this ICombatant target,  ref WeaponHitInfo hitInfo, AdvCritLocationInfo critInfo, Weapon weapon){
       if (CustomAmmoCategories.Settings.AdvancedCirtProcessing) {

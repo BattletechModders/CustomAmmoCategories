@@ -1192,6 +1192,10 @@ namespace CustAmmoCategories {
     public float ToHitVehicleFromFront { get; set; }
     public float ToHitVehicleFromSide { get; set; }
     public float ToHitVehicleFromRear { get; set; }
+    public string ShowActiveAbilitiesIcon { get; set; }
+    public string ShowPassiveAbilitiesIcon { get; set; }
+    public string HideActiveAbilitiesIcon { get; set; }
+    public string HidePassiveAbilitiesIcon { get; set; }
     public Settings() {
       directory = string.Empty;
       debugLog = true;

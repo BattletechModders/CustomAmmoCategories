@@ -171,6 +171,7 @@
     <Compile Include="DebugSpawnHelper.cs" />
     <Compile Include="DecrementAmmo.cs" />
     <Compile Include="DeferredEffect.cs" />
+    <Compile Include="DefferedIconsLoader.cs" />
     <Compile Include="DynamicMap.cs" />
     <Compile Include="DynamicTrees.cs" />
     <Compile Include="ExplosionAPI.cs" />

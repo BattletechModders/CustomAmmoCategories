@@ -5,6 +5,7 @@ using BattleTech.Rendering;
 using BattleTech.UI;
 using BattleTech.UI.TMProWrapper;
 using BattleTech.UI.Tooltips;
+using CustAmmoCategories;
 using DG.Tweening;
 using Harmony;
 using Localize;
@@ -414,7 +415,13 @@ namespace CustomUnits {
   public class MechBayUIUpButton : MechBayUIButton {
     public override void Init(MechBayPanel panel, MechBayRowGroupWidget bays, MechBayPanelEx parent) {
       base.Init(panel, bays, parent);
-      this.icon.vectorGraphics = panel.DataManager.GetObjectOfType<SVGAsset>(Core.Settings.MechBaySwitchIconUp, BattleTechResourceType.SVGAsset);
+      CustomSvgCache.setIcon(this.icon, Core.Settings.MechBaySwitchIconUp, panel.DataManager);
+      //this.icon.vectorGraphics = CustomSvgCache.get(Core.Settings.MechBaySwitchIconUp); //panel.DataManager.GetObjectOfType<SVGAsset>(Core.Settings.MechBaySwitchIconUp, BattleTechResourceType.SVGAsset);
+    }
+    protected override void Upd() {
+      if (this.icon.vectorGraphics == null) {
+        CustomSvgCache.setIcon(this.icon, Core.Settings.MechBaySwitchIconUp, mechBayPanel.DataManager);
+      }
     }
     protected override void initUI() {
       if (parent == null) { return; }
@@ -436,7 +443,13 @@ namespace CustomUnits {
   public class MechBayUIDownButton : MechBayUIButton {
     public override void Init(MechBayPanel panel, MechBayRowGroupWidget bays, MechBayPanelEx parent) {
       base.Init(panel, bays, parent);
-      this.icon.vectorGraphics = panel.DataManager.GetObjectOfType<SVGAsset>(Core.Settings.MechBaySwitchIconDown, BattleTechResourceType.SVGAsset);
+      CustomSvgCache.setIcon(this.icon, Core.Settings.MechBaySwitchIconDown, panel.DataManager);
+      //this.icon.vectorGraphics = CustomSvgCache.get(Core.Settings.MechBaySwitchIconDown);//panel.DataManager.GetObjectOfType<SVGAsset>(Core.Settings.MechBaySwitchIconDown, BattleTechResourceType.SVGAsset);
+    }
+    protected override void Upd() {
+      if (this.icon.vectorGraphics == null) {
+        CustomSvgCache.setIcon(this.icon, Core.Settings.MechBaySwitchIconDown, mechBayPanel.DataManager);
+      }
     }
     protected override void initUI() {
       if (parent == null) { return; }
@@ -459,18 +472,30 @@ namespace CustomUnits {
   public class MechBayUISwitch : MechBayUIButton {
     public override void Init(MechBayPanel panel, MechBayRowGroupWidget bays, MechBayPanelEx parent) {
       base.Init(panel, bays, parent);
-      this.icon.vectorGraphics = panel.DataManager.GetObjectOfType<SVGAsset>(Core.Settings.MechBaySwitchIconMech, BattleTechResourceType.SVGAsset);
+      CustomSvgCache.setIcon(this.icon, Core.Settings.MechBaySwitchIconMech, panel.DataManager);
+        //CustomSvgCache.get(Core.Settings.MechBaySwitchIconMech);//panel.DataManager.GetObjectOfType<SVGAsset>(Core.Settings.MechBaySwitchIconMech, BattleTechResourceType.SVGAsset);
       parent.MechVehicleState = false;
+    }
+    protected override void Upd() {
+      if(this.icon.vectorGraphics == null) {
+        if (parent.MechVehicleState) {
+          CustomSvgCache.setIcon(this.icon, Core.Settings.MechBaySwitchIconVehicle, mechBayPanel.DataManager);
+        } else {
+          CustomSvgCache.setIcon(this.icon, Core.Settings.MechBaySwitchIconMech, mechBayPanel.DataManager);
+        }
+      }
     }
     public override void OnClick() {
       base.OnClick();
       parent.MechVehicleState = !parent.MechVehicleState;
       parent.startRow = 0;
       if (parent.MechVehicleState) {
-        this.icon.vectorGraphics = mechBayPanel.DataManager.GetObjectOfType<SVGAsset>(Core.Settings.MechBaySwitchIconVehicle, BattleTechResourceType.SVGAsset);
+        CustomSvgCache.setIcon(this.icon, Core.Settings.MechBaySwitchIconVehicle, mechBayPanel.DataManager);
+        //this.icon.vectorGraphics = CustomSvgCache.get(Core.Settings.MechBaySwitchIconVehicle);//mechBayPanel.DataManager.GetObjectOfType<SVGAsset>(Core.Settings.MechBaySwitchIconVehicle, BattleTechResourceType.SVGAsset);
         mechBays.ShowVehicleBays(parent.startRow);
       } else {
-        this.icon.vectorGraphics = mechBayPanel.DataManager.GetObjectOfType<SVGAsset>(Core.Settings.MechBaySwitchIconMech, BattleTechResourceType.SVGAsset);
+        CustomSvgCache.setIcon(this.icon, Core.Settings.MechBaySwitchIconMech, mechBayPanel.DataManager);
+        //this.icon.vectorGraphics = CustomSvgCache.get(Core.Settings.MechBaySwitchIconMech);//mechBayPanel.DataManager.GetObjectOfType<SVGAsset>(Core.Settings.MechBaySwitchIconMech, BattleTechResourceType.SVGAsset);
         mechBays.ShowMechBays(parent.startRow);
       }
     }
@@ -489,6 +514,7 @@ namespace CustomUnits {
       this.mechBays = bays;
       this.parent = parent;
       this.icon = gameObject.GetComponent<SVGImage>();
+      this.icon.vectorGraphics = null;
     }
     protected virtual void initUI() {
       if (mechBayPanel == null) { return; }
@@ -500,9 +526,14 @@ namespace CustomUnits {
       icon.color = Color.white;
       ui_inited = true;
     }
+    protected virtual void Upd() {
+
+    }
     public void Update() {
       if (ui_inited == false) {
         initUI();
+      } else {
+        Upd();
       }
     }
     public virtual void OnClick() {

@@ -5,14 +5,18 @@ using CustAmmoCategories;
 using CustomAmmoCategoriesLog;
 using CustomAmmoCategoriesPatches;
 using Harmony;
+using HBS;
 using InControl;
 using Localize;
+using SVGImporter;
 using System;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Reflection.Emit;
 using System.Text;
 using UnityEngine;
+using UnityEngine.UI;
+using Text = Localize.Text;
 
 namespace CustAmmoCategories {
   public class SelectionStateCommandAttackGround : SelectionStateCommandTargetSinglePoint {
@@ -1150,15 +1154,173 @@ namespace CustomAmmoCategoriesPatches {
       }
     }
   }
+  public class CombatHUDMechwarriorTrayEx: MonoBehaviour {
+    public List<CombatHUDActionButton> ActiveAbilitiesButtons;
+    public List<CombatHUDActionButton> PassiveAbilitiesButtons;
+    public List<CombatHUDActionButton> NormalButtons;
+    public CombatHUDActionButton ShowActiveAbilitiesButton;
+    public CombatHUDActionButton ShowPassiveAbilitiesButton;
+    public CombatHUDActionButton HideActiveAbilitiesButton;
+    public CombatHUDActionButton HidePassiveAbilitiesButton;
+    public static readonly int BUTTONS_COUNT = 10;
+    public static readonly string SHOW_ACTIVE_BUTTON_GUID = "BTN_ShowActiveButtons";
+    public static readonly string HIDE_ACTIVE_BUTTON_GUID = "BTN_HideActiveButtons";
+    public static readonly string SHOW_PASSIVE_BUTTON_GUID = "BTN_ShowPassiveButtons";
+    public static readonly string HIDE_PASSIVE_BUTTON_GUID = "BTN_HidePassiveButtons";
+    public static readonly string SHOW_ACTIVE_BUTTON_NAME = "ACT.ABIL.";
+    public static readonly string SHOW_PASSIVE_BUTTON_NAME = "PAS.ABIL.";
+    public CombatHUD HUD;
+    public CombatGameState Combat;
+    public CombatHUDMechwarriorTray mechWarriorTray;
+    public CombatHUDMechwarriorTrayEx() {
+      ActiveAbilitiesButtons = new List<CombatHUDActionButton>();
+      PassiveAbilitiesButtons = new List<CombatHUDActionButton>();
+      NormalButtons = new List<CombatHUDActionButton>();
+    }
+    public void Init(CombatHUDMechwarriorTray mechWarriorTray, CombatHUD HUD, CombatGameState Combat) {
+      this.mechWarriorTray = mechWarriorTray;
+      this.HUD = HUD;
+      this.Combat = Combat;
+      for (int index = 0; index < (BUTTONS_COUNT-1); ++index) {
+        CombatHUDSidePanelHoverElement panelHoverElement = ActiveAbilitiesButtons[index].gameObject.GetComponentInChildren<CombatHUDSidePanelHoverElement>(true);
+        if ((UnityEngine.Object)panelHoverElement == (UnityEngine.Object)null) {
+          panelHoverElement = ActiveAbilitiesButtons[index].gameObject.AddComponent<CombatHUDSidePanelHoverElement>();
+        }
+        panelHoverElement.Init(HUD);
+        if (index < 9) {
+          ActiveAbilitiesButtons[index].Init(Combat, HUD, BTInput.Instance.Combat_Abilities()[index], true);
+        }
+        ActiveAbilitiesButtons[index].gameObject.transform.parent.gameObject.SetActive(false);
+        panelHoverElement = PassiveAbilitiesButtons[index].gameObject.GetComponentInChildren<CombatHUDSidePanelHoverElement>(true);
+        if ((UnityEngine.Object)panelHoverElement == (UnityEngine.Object)null) {
+          panelHoverElement = PassiveAbilitiesButtons[index].gameObject.AddComponent<CombatHUDSidePanelHoverElement>();
+        }
+        panelHoverElement.Init(HUD);
+        if (index < 9) {
+          PassiveAbilitiesButtons[index].Init(Combat, HUD, BTInput.Instance.Combat_Abilities()[index], true);
+        }
+        PassiveAbilitiesButtons[index].gameObject.transform.parent.gameObject.SetActive(false);
+        NormalButtons[index].gameObject.transform.parent.gameObject.SetActive(true);
+      }
+      HideActiveAbilitiesButton.Init(Combat, HUD, BTInput.Instance.Combat_DoneWithMech(), true);
+      HidePassiveAbilitiesButton.Init(Combat, HUD, BTInput.Instance.Combat_DoneWithMech(), true);
+      HideActiveAbilitiesButton.gameObject.transform.parent.gameObject.SetActive(false);
+      HidePassiveAbilitiesButton.gameObject.transform.parent.gameObject.SetActive(false);
+    }
+    public void Instantine(CombatHUDMechwarriorTray mechWarriorTray) {
+      for (int index = 0; index < BUTTONS_COUNT; ++index) {
+        GameObject srcbtn = mechWarriorTray.ActionButtonHolders[index];
+        GameObject aabtn = GameObject.Instantiate(srcbtn);
+        CombatHUDActionButton abtn = aabtn.GetComponentInChildren<CombatHUDActionButton>(true);
+        aabtn.transform.SetParent(srcbtn.transform.parent);
+        if (index == 9) {
+          HideActiveAbilitiesButton = abtn;
+        } else {
+          ActiveAbilitiesButtons.Add(abtn);
+        }
+        NormalButtons.Add(srcbtn.GetComponentInChildren<CombatHUDActionButton>(true));
+      }
+      for (int index = 0; index < BUTTONS_COUNT; ++index) {
+        GameObject srcbtn = mechWarriorTray.ActionButtonHolders[index];
+        GameObject pabtn = GameObject.Instantiate(srcbtn);
+        CombatHUDActionButton abtn = pabtn.GetComponentInChildren<CombatHUDActionButton>(true);
+        pabtn.transform.SetParent(srcbtn.transform.parent);
+        if (index == 9) {
+          HidePassiveAbilitiesButton = abtn;
+        } else {
+          PassiveAbilitiesButtons.Add(abtn);
+        }
+        pabtn.SetActive(false);
+      }
+    }
+  };
   [HarmonyPatch(typeof(CombatHUDMechwarriorTray))]
   [HarmonyPatch("Init")]
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { typeof(CombatGameState), typeof(CombatHUD) })]
   public static class CombatHUDMechwarriorTray_Init {
+    public static void InstantineAbilitiesButtons(CombatHUDMechwarriorTray __instance) {
+
+    }
+    public static bool Prefix(CombatHUDMechwarriorTray __instance, CombatGameState Combat, CombatHUD HUD
+      ,ref CombatGameState ___Combat,ref CombatHUD ___HUD,ref CombatHUDPortrait[] ___Portraits
+    ) {
+      try {
+        ___Combat = Combat;
+        ___HUD = HUD;
+        ___Portraits = new CombatHUDPortrait[__instance.PortraitHolders.Length];
+        for (int index = 0; index < __instance.PortraitHolders.Length; ++index) {
+          ___Portraits[index] = __instance.PortraitHolders[index].GetComponentInChildren<CombatHUDPortrait>(true);
+          ___Portraits[index].Init(Combat, HUD, __instance.PortraitHolders[index].GetComponent<LayoutElement>(), __instance.portraitTweens[index]);
+        }
+        CombatHUDMechwarriorTrayEx trayEx = __instance.gameObject.GetComponent<CombatHUDMechwarriorTrayEx>();
+        if(trayEx == null) {
+          trayEx = __instance.gameObject.AddComponent<CombatHUDMechwarriorTrayEx>();
+          trayEx.Instantine(__instance);
+        }
+        Traverse.Create(__instance).Property<CombatHUDActionButton[]>("ActionButtons").Value = new CombatHUDActionButton[__instance.ActionButtonHolders.Length];
+        for (int index = 0; index < __instance.ActionButtonHolders.Length; ++index) {
+          __instance.ActionButtons[index] = __instance.ActionButtonHolders[index].GetComponentInChildren<CombatHUDActionButton>(true);
+          CombatHUDSidePanelHoverElement panelHoverElement = __instance.ActionButtons[index].GetComponentInChildren<CombatHUDSidePanelHoverElement>(true);
+          if ((UnityEngine.Object)panelHoverElement == (UnityEngine.Object)null)
+            panelHoverElement = __instance.ActionButtons[index].gameObject.AddComponent<CombatHUDSidePanelHoverElement>();
+          panelHoverElement.Init(HUD);
+          if (index < 9)
+            __instance.ActionButtons[index].Init(Combat, HUD, BTInput.Instance.Combat_Abilities()[index], true);
+        }
+        trayEx.Init(__instance, HUD, Combat);
+        Traverse.Create(__instance).Property<CombatHUDActionButton>("FireButton").Value = __instance.ActionButtons[0];
+        Traverse.Create(__instance).Property<CombatHUDActionButton>("MoveButton").Value = __instance.ActionButtons[1];
+        Traverse.Create(__instance).Property<CombatHUDActionButton>("SprintButton").Value = __instance.ActionButtons[2];
+        Traverse.Create(__instance).Property<CombatHUDActionButton>("JumpButton").Value = __instance.ActionButtons[3];
+        Traverse.Create(__instance).Property<CombatHUDActionButton>("DoneWithMechButton").Value = __instance.ActionButtons[9];
+        Traverse.Create(__instance).Property<CombatHUDActionButton>("EjectButton").Value = __instance.ActionButtons[10];
+        __instance.MeleeButtonHolder.GetComponentInChildren<CombatHUDActionButton>(true).Init(Combat, HUD, BTInput.Instance.Key_Return(), true);
+        __instance.DFAButtonHolder.GetComponentInChildren<CombatHUDActionButton>(true).Init(Combat, HUD, BTInput.Instance.Key_Return(), true);
+        Traverse.Create(__instance).Property<CombatHUDActionButton>("CommandButton").Value = __instance.CommandButtonHolder.GetComponentInChildren<CombatHUDActionButton>(true);
+        __instance.CommandButton.Init(Combat, HUD, BTInput.Instance.Combat_CommandAbility(), true);
+        Traverse.Create(__instance).Property<CombatHUDActionButton>("EquipmentButton").Value = __instance.EquipmentButtonHolder.GetComponentInChildren<CombatHUDActionButton>(true);
+        __instance.EquipmentButton.Init(Combat, HUD, BTInput.Instance.Key_None(), true);
+        __instance.DoneWithMechButton.Init(Combat, HUD, BTInput.Instance.Combat_DoneWithMech(), true);
+        __instance.EjectButton.Init(Combat, HUD, BTInput.Instance.Key_None(), true);
+        __instance.otherTurnIndicator.Init(HUD);
+
+        Traverse.Create(__instance).Property<CombatHUDActionButton[]>("AbilityButtons").Value = new CombatHUDActionButton[trayEx.ActiveAbilitiesButtons.Count + trayEx.PassiveAbilitiesButtons.Count + 1];
+        trayEx.ShowActiveAbilitiesButton = __instance.ActionButtons[5];
+        trayEx.ShowPassiveAbilitiesButton = __instance.ActionButtons[6];
+        for (int index = 0; index < trayEx.ActiveAbilitiesButtons.Count; ++index) {
+          Traverse.Create(__instance).Property<CombatHUDActionButton[]>("AbilityButtons").Value[index] = trayEx.ActiveAbilitiesButtons[index];
+        }
+        for (int index = 0; index < trayEx.PassiveAbilitiesButtons.Count; ++index) {
+          Traverse.Create(__instance).Property<CombatHUDActionButton[]>("AbilityButtons").Value[index + trayEx.ActiveAbilitiesButtons.Count] = trayEx.PassiveAbilitiesButtons[index];
+        }
+        Traverse.Create(__instance).Property<CombatHUDActionButton[]>("AbilityButtons").Value[trayEx.ActiveAbilitiesButtons.Count + trayEx.PassiveAbilitiesButtons.Count] = __instance.ActionButtons[4];
+
+        Traverse.Create(__instance).Property<CombatHUDActionButton[]>("MoraleButtons").Value = new CombatHUDActionButton[2];
+        for (int index = 0; index < 2; ++index) {
+          Traverse.Create(__instance).Property<CombatHUDActionButton[]>("MoraleButtons").Value[index] = __instance.ActionButtons[index + 7];
+        }
+        Traverse.Create(__instance).Property<CombatHUDActionButton>("RestartButton").Value = __instance.RestartButtonHolder.GetComponentInChildren<CombatHUDActionButton>(true);
+        __instance.RestartButton.Init(Combat, HUD, BTInput.Instance.Key_Return(), true);
+        __instance.RestartButton.InitButton(SelectionType.None, (Ability)null, LazySingletonBehavior<UIManager>.Instance.UILookAndColorConstants.RestartButtonIcon, "BTN_Restart", LazySingletonBehavior<UIManager>.Instance.UILookAndColorConstants.Tooltip_Restart, (AbstractActor)null);
+        __instance.RestartButton.Text.SetText("RESTART", (object[])Array.Empty<object>());
+        __instance.RestartButtonHolder.gameObject.SetActive(false);
+        Traverse.Create(__instance).Property<CombatHUDMoraleBar>("moraleDisplay").Value = __instance.GetComponentInChildren<CombatHUDMoraleBar>(true);
+        Traverse.Create(__instance).Property<CombatHUDMoraleBar>("moraleDisplay").Value.Init(Combat, HUD);
+        typeof(CombatHUDMechwarriorTray).GetMethod("SubscribeMessages", BindingFlags.Instance | BindingFlags.NonPublic).Invoke(__instance, new object[] { true });
+        __instance.transform.localPosition = __instance.TrayPosDown;
+        Traverse.Create(__instance).Property<Vector3>("targetTrayPos").Value = __instance.TrayPosDown;
+        Traverse.Create(__instance).Property<Vector3>("lastTrayPos").Value = __instance.TrayPosDown;
+        return false;
+      }catch(Exception e) {
+        Log.M.TWL(0,e.ToString(),true);
+        return true;
+      }
+    }
 
     public static void Postfix(CombatHUDMechwarriorTray __instance, CombatGameState Combat, CombatHUD HUD) {
       try {
-        if (CustomAmmoCategories.Settings.ShowAttackGroundButton == false) { return; }
+        /*if (CustomAmmoCategories.Settings.ShowAttackGroundButton == false) { return; }
         CustomAmmoCategoriesLog.Log.LogWrite("adding button\n");
         GameObject[] ActionButtonHolders = new GameObject[__instance.ActionButtonHolders.Length + 1];
         __instance.ActionButtonHolders.CopyTo(ActionButtonHolders, 0);
@@ -1195,7 +1357,7 @@ namespace CustomAmmoCategoriesPatches {
         PropertyInfo ActionButtonsProperty = typeof(CombatHUDMechwarriorTray).GetProperty("ActionButtons");
         //ActionButtonsProperty.DeclaringType.GetProperty("ActionButtons");
         ActionButtonsProperty.GetSetMethod(true).Invoke(__instance, new object[1] { (object)ActionButtons });
-        typeof(CombatHUDMechwarriorTray).GetProperty("AbilityButtons", BindingFlags.NonPublic | BindingFlags.Instance).SetValue(__instance, AbilityButtons, null);
+        typeof(CombatHUDMechwarriorTray).GetProperty("AbilityButtons", BindingFlags.NonPublic | BindingFlags.Instance).SetValue(__instance, AbilityButtons, null);*/
       }catch(Exception e){ Log.M.WL(e.ToString(),true); };
     }
   }
@@ -1263,6 +1425,57 @@ namespace CustomAmmoCategoriesPatches {
   public static class CombatHUDMechwarriorTray_InitAbilityButtons {
     public static readonly string AbilityName = "AbilityDefCAC_AttackGround";
     public static Dictionary<string, Ability> attackGroundAbilities = new Dictionary<string, Ability>();
+    public static bool Prefix(CombatHUDMechwarriorTray __instance, AbstractActor actor) {
+      CombatHUDMechwarriorTrayEx trayEx = __instance.gameObject.GetComponent<CombatHUDMechwarriorTrayEx>();
+      if (trayEx == null) { return true; }
+      Pilot pilot = actor.GetPilot();
+      if (pilot != null) {
+        List<Ability> activeList = new List<Ability>((IEnumerable<Ability>)pilot.ActiveAbilities);
+        for (int index = 0; index < activeList.Count; ++index) {
+          if (index >= trayEx.ActiveAbilitiesButtons.Count) { break; }
+          trayEx.ActiveAbilitiesButtons[index].InitButton(CombatHUDMechwarriorTray.GetSelectionTypeFromTargeting(activeList[index].Def.Targeting, false), activeList[index], activeList[index].Def.AbilityIcon, activeList[index].Def.Description.Id, activeList[index].Def.Description.Name, actor);
+          trayEx.ActiveAbilitiesButtons[index].isClickable = true;
+        }
+        for(int index = activeList.Count; index < trayEx.ActiveAbilitiesButtons.Count; ++index) {
+          trayEx.ActiveAbilitiesButtons[index].InitButton(SelectionType.None, (Ability)null, (SVGAsset)null, "", "", (AbstractActor)null);
+          trayEx.ActiveAbilitiesButtons[index].isClickable = false;
+          trayEx.ActiveAbilitiesButtons[index].RefreshUIColors();
+        }
+        List<Ability> passiveList = pilot.PassiveAbilities.FindAll((Predicate<Ability>)(x => x.Def.DisplayParams == AbilityDef.DisplayParameters.ShowInMWTRay));
+        for (int index = 0; index < passiveList.Count; ++index) {
+          if (index >= trayEx.PassiveAbilitiesButtons.Count) { break; }
+          trayEx.PassiveAbilitiesButtons[index].InitButton(SelectionType.None, passiveList[index], passiveList[index].Def.AbilityIcon, passiveList[index].Def.Description.Id, passiveList[index].Def.Description.Name, actor);
+          trayEx.PassiveAbilitiesButtons[index].isClickable = false;
+          trayEx.PassiveAbilitiesButtons[index].RefreshUIColors();
+        }
+        for (int index = passiveList.Count; index < trayEx.PassiveAbilitiesButtons.Count; ++index) {
+          trayEx.PassiveAbilitiesButtons[index].InitButton(SelectionType.None, (Ability)null, (SVGAsset)null, "", "", (AbstractActor)null);
+          trayEx.PassiveAbilitiesButtons[index].isClickable = false;
+          trayEx.PassiveAbilitiesButtons[index].RefreshUIColors();
+        }
+      }
+      UILookAndColorConstants andColorConstants = LazySingletonBehavior<UIManager>.Instance.UILookAndColorConstants;
+      trayEx.ShowActiveAbilitiesButton.InitButton(SelectionType.None, (Ability)null, andColorConstants.SprintButtonIcon, CombatHUDMechwarriorTrayEx.SHOW_ACTIVE_BUTTON_GUID, CombatHUDMechwarriorTrayEx.SHOW_ACTIVE_BUTTON_NAME, actor);
+      trayEx.ShowActiveAbilitiesButton.isClickable = true;
+      trayEx.ShowActiveAbilitiesButton.RefreshUIColors();
+      trayEx.ShowPassiveAbilitiesButton.InitButton(SelectionType.None, (Ability)null, andColorConstants.MoveButtonIcon, CombatHUDMechwarriorTrayEx.SHOW_PASSIVE_BUTTON_GUID, CombatHUDMechwarriorTrayEx.SHOW_PASSIVE_BUTTON_NAME, actor);
+      trayEx.ShowPassiveAbilitiesButton.isClickable = true;
+      trayEx.ShowPassiveAbilitiesButton.RefreshUIColors();
+      trayEx.HideActiveAbilitiesButton.InitButton(SelectionType.None, (Ability)null, andColorConstants.SprintButtonIcon, CombatHUDMechwarriorTrayEx.HIDE_ACTIVE_BUTTON_GUID, "RETURN", actor);
+      trayEx.HideActiveAbilitiesButton.isClickable = true;
+      trayEx.HideActiveAbilitiesButton.RefreshUIColors();
+      trayEx.HidePassiveAbilitiesButton.InitButton(SelectionType.None, (Ability)null, andColorConstants.MoveButtonIcon, CombatHUDMechwarriorTrayEx.HIDE_PASSIVE_BUTTON_GUID, "RETURN", actor);
+      trayEx.HidePassiveAbilitiesButton.isClickable = true;
+      trayEx.HidePassiveAbilitiesButton.RefreshUIColors();
+
+      if (actor.team.CommandAbilities.Count > 0) {
+        Ability commandAbility = actor.team.CommandAbilities[0];
+        __instance.CommandButton.InitButton(CombatHUDMechwarriorTray.GetSelectionTypeFromTargeting(commandAbility.Def.Targeting, false), commandAbility, commandAbility.Def.AbilityIcon, commandAbility.Def.Description.Id, commandAbility.Def.Description.Name, (AbstractActor)null);
+      } else {
+        __instance.CommandButton.InitButton(SelectionType.None, (Ability)null, (SVGAsset)null, "", "", (AbstractActor)null);
+      }
+      return false;
+    }
 
     public static void Postfix(CombatHUDMechwarriorTray __instance, AbstractActor actor) {
       Log.LogWrite("CombatHUDMechwarriorTray.InitAbilityButtons\n");
@@ -1279,6 +1492,122 @@ namespace CustomAmmoCategoriesPatches {
         Log.LogWrite(" ability def already loaded\n");
         id.OnAbilityLoad();
       }
+    }
+  }
+  [HarmonyPatch(typeof(CombatHUDMechwarriorTray))]
+  [HarmonyPatch("ResetMechwarriorButtons")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { typeof(AbstractActor) })]
+  public static class CombatHUDMechwarriorTray_ResetMechwarriorButtons {
+    public static void Postfix(CombatHUDMechwarriorTray __instance, AbstractActor actor) {
+      Log.LogWrite("CombatHUDMechwarriorTray.ResetMechwarriorButtons\n");
+      CombatHUDMechwarriorTrayEx trayEx = __instance.gameObject.GetComponent<CombatHUDMechwarriorTrayEx>();
+      if (trayEx == null) { return; }
+      foreach (CombatHUDActionButton btn in trayEx.NormalButtons) {
+        btn.transform.parent.gameObject.SetActive(true);
+      }
+      foreach (CombatHUDActionButton btn in trayEx.ActiveAbilitiesButtons) {
+        btn.transform.parent.gameObject.SetActive(false);
+      }
+      foreach (CombatHUDActionButton btn in trayEx.PassiveAbilitiesButtons) {
+        btn.transform.parent.gameObject.SetActive(false);
+      }
+      trayEx.HideActiveAbilitiesButton.transform.parent.gameObject.SetActive(false);
+      trayEx.HidePassiveAbilitiesButton.transform.parent.gameObject.SetActive(false);
+
+      if (actor == null) {
+        trayEx.ShowActiveAbilitiesButton.DisableButton();
+        trayEx.ShowPassiveAbilitiesButton.DisableButton();
+        trayEx.HideActiveAbilitiesButton.DisableButton();
+        trayEx.HidePassiveAbilitiesButton.DisableButton();
+      } else {
+        UILookAndColorConstants andColorConstants = LazySingletonBehavior<UIManager>.Instance.UILookAndColorConstants;
+        trayEx.ShowActiveAbilitiesButton.InitButton(SelectionType.Move, (Ability)null, andColorConstants.SprintButtonIcon, CombatHUDMechwarriorTrayEx.SHOW_ACTIVE_BUTTON_GUID, CombatHUDMechwarriorTrayEx.SHOW_ACTIVE_BUTTON_NAME, actor);
+        trayEx.ShowActiveAbilitiesButton.isClickable = true;
+        trayEx.ShowActiveAbilitiesButton.RefreshUIColors();
+        trayEx.ShowPassiveAbilitiesButton.InitButton(SelectionType.Move, (Ability)null, andColorConstants.MoveButtonIcon, CombatHUDMechwarriorTrayEx.SHOW_PASSIVE_BUTTON_GUID, CombatHUDMechwarriorTrayEx.SHOW_PASSIVE_BUTTON_NAME, actor);
+        trayEx.ShowPassiveAbilitiesButton.isClickable = true;
+        trayEx.ShowPassiveAbilitiesButton.RefreshUIColors();
+        trayEx.HideActiveAbilitiesButton.InitButton(SelectionType.Move, (Ability)null, andColorConstants.SprintButtonIcon, CombatHUDMechwarriorTrayEx.HIDE_ACTIVE_BUTTON_GUID, "RETURN", actor);
+        trayEx.HideActiveAbilitiesButton.isClickable = true;
+        trayEx.HideActiveAbilitiesButton.RefreshUIColors();
+        trayEx.HidePassiveAbilitiesButton.InitButton(SelectionType.Move, (Ability)null, andColorConstants.MoveButtonIcon, CombatHUDMechwarriorTrayEx.HIDE_PASSIVE_BUTTON_GUID, "RETURN", actor);
+        trayEx.HidePassiveAbilitiesButton.isClickable = true;
+        trayEx.HidePassiveAbilitiesButton.RefreshUIColors();
+      }
+    }
+  }
+  [HarmonyPatch(typeof(CombatHUDActionButton))]
+  [HarmonyPatch("ExecuteClick")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] {  })]
+  public static class CombatHUDActionButton_ExecuteClickAbilities {
+    public static bool Prefix(CombatHUDActionButton __instance) {
+      Log.LogWrite("CombatHUDActionButton.ExecuteClick\n");
+      CombatHUD HUD = Traverse.Create(__instance).Property<CombatHUD>("HUD").Value;
+      CombatHUDMechwarriorTrayEx trayEx = HUD.MechWarriorTray.gameObject.GetComponent<CombatHUDMechwarriorTrayEx>();
+      if (trayEx == null) { return true; };
+      if (__instance.GUID == CombatHUDMechwarriorTrayEx.SHOW_ACTIVE_BUTTON_GUID) {
+        foreach(CombatHUDActionButton btn in trayEx.NormalButtons) {
+          btn.transform.parent.gameObject.SetActive(false);
+        }
+        foreach (CombatHUDActionButton btn in trayEx.ActiveAbilitiesButtons) {
+          btn.transform.parent.gameObject.SetActive(true);
+          btn.RefreshUIColors();
+        }
+        foreach (CombatHUDActionButton btn in trayEx.PassiveAbilitiesButtons) {
+          btn.transform.parent.gameObject.SetActive(false);
+        }
+        trayEx.HideActiveAbilitiesButton.transform.parent.gameObject.SetActive(true);
+        trayEx.HidePassiveAbilitiesButton.transform.parent.gameObject.SetActive(false);
+        return false;
+      } else
+      if (__instance.GUID == CombatHUDMechwarriorTrayEx.SHOW_PASSIVE_BUTTON_GUID) {
+        foreach (CombatHUDActionButton btn in trayEx.NormalButtons) {
+          btn.transform.parent.gameObject.SetActive(false);
+        }
+        foreach (CombatHUDActionButton btn in trayEx.ActiveAbilitiesButtons) {
+          btn.transform.parent.gameObject.SetActive(false);
+        }
+        foreach (CombatHUDActionButton btn in trayEx.PassiveAbilitiesButtons) {
+          btn.transform.parent.gameObject.SetActive(true);
+          btn.RefreshUIColors();
+        }
+        trayEx.HideActiveAbilitiesButton.transform.parent.gameObject.SetActive(false);
+        trayEx.HidePassiveAbilitiesButton.transform.parent.gameObject.SetActive(true);
+        return false;
+      } else
+      if(__instance.GUID == CombatHUDMechwarriorTrayEx.HIDE_PASSIVE_BUTTON_GUID) {
+        foreach (CombatHUDActionButton btn in trayEx.NormalButtons) {
+          btn.transform.parent.gameObject.SetActive(true);
+          btn.RefreshUIColors();
+        }
+        foreach (CombatHUDActionButton btn in trayEx.ActiveAbilitiesButtons) {
+          btn.transform.parent.gameObject.SetActive(false);
+        }
+        foreach (CombatHUDActionButton btn in trayEx.PassiveAbilitiesButtons) {
+          btn.transform.parent.gameObject.SetActive(false);
+        }
+        trayEx.HideActiveAbilitiesButton.transform.parent.gameObject.SetActive(false);
+        trayEx.HidePassiveAbilitiesButton.transform.parent.gameObject.SetActive(false);
+        return false;
+      } else
+      if (__instance.GUID == CombatHUDMechwarriorTrayEx.HIDE_ACTIVE_BUTTON_GUID) {
+        foreach (CombatHUDActionButton btn in trayEx.NormalButtons) {
+          btn.transform.parent.gameObject.SetActive(true);
+          btn.RefreshUIColors();
+        }
+        foreach (CombatHUDActionButton btn in trayEx.ActiveAbilitiesButtons) {
+          btn.transform.parent.gameObject.SetActive(false);
+        }
+        foreach (CombatHUDActionButton btn in trayEx.PassiveAbilitiesButtons) {
+          btn.transform.parent.gameObject.SetActive(false);
+        }
+        trayEx.HideActiveAbilitiesButton.transform.parent.gameObject.SetActive(false);
+        trayEx.HidePassiveAbilitiesButton.transform.parent.gameObject.SetActive(false);
+        return false;
+      }
+      return true;
     }
   }
   [HarmonyPatch(typeof(CombatHUDMechwarriorTray))]
@@ -1325,7 +1654,13 @@ namespace CustomAmmoCategoriesPatches {
           }
         }
         //__instance.ResetAbilityButton(actor, this.AbilityButtons[index], abilityList[index], forceInactive);
-
+        CombatHUDMechwarriorTrayEx trayEx = __instance.gameObject.GetComponent<CombatHUDMechwarriorTrayEx>();
+        if(trayEx != null) {
+          trayEx.ShowActiveAbilitiesButton.ResetButtonIfNotActive(actor);
+          trayEx.ShowPassiveAbilitiesButton.ResetButtonIfNotActive(actor);
+          trayEx.HideActiveAbilitiesButton.ResetButtonIfNotActive(actor);
+          trayEx.HidePassiveAbilitiesButton.ResetButtonIfNotActive(actor);
+        }
       } else {
         CustomAmmoCategoriesLog.Log.LogWrite("Can't find AbilityDef CAC_AttackGround\n");
       }

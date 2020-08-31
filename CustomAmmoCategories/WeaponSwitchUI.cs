@@ -18,7 +18,7 @@ namespace CustomAmmoCategoriesPathes {
     public CombatHUDWeaponPanel weaponPanel;
     public CombatHUD HUD;
     public SVGImage image;
-    public SVGAsset icon;
+    public string iconid;
     public bool moveUp;
     //public string iconid;
     private bool hovered;
@@ -27,24 +27,21 @@ namespace CustomAmmoCategoriesPathes {
       parent = slot;
       this.HUD = HUD;
       this.moveUp = moveUp;
+      this.iconid = iconid;
       if (image == null) { this.gameObject.GetComponent<SVGImage>(); }
       Log.M.TWL(0, "WeaponSwitchButton.Init");
-      icon = HUD.Combat.DataManager.GetObjectOfType<SVGAsset>(iconid, BattleTechResourceType.SVGAsset);
-      if (icon != null) {
-        Log.M.WL(1, "icon " + iconid + " found");
-        if(image != null) image.vectorGraphics = icon;
-      } else {
-        Log.M.WL(1, "icon " + iconid + " not found");
-      }
+      //icon = CustomSvgCache.get(iconid); //HUD.Combat.DataManager.GetObjectOfType<SVGAsset>(iconid, BattleTechResourceType.SVGAsset);
+      CustomSvgCache.setIcon(image, iconid, HUD.Combat.DataManager);
     }
     public void Awake() {
       Log.M.TWL(0, "WeaponSwitchButton.Awake");
       image = this.gameObject.GetComponent<SVGImage>();
-      if(icon != null) {
+      CustomSvgCache.setIcon(image, iconid, HUD.Combat.DataManager);
+      /*if (icon != null) {
         image.vectorGraphics = icon;
       } else {
         Log.M.WL(1, "icon is null");
-      }
+      }*/
     }
     public override void OnPointerEnter(PointerEventData data) {
       Log.LogWrite("WeaponSwitchButton.OnPointerEnter called." + data.position + "\n");
