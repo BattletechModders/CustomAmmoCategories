@@ -1529,6 +1529,7 @@ namespace CACMain {
         //}
         harmony.PatchAll(Assembly.GetExecutingAssembly());
         InternalClassPathes.PatchInternalClasses(harmony);
+        AccessTools.Field(typeof(FootstepManager), "maxDecals").SetValue(null, 1023);
         Thread thread = new Thread(ThreadWork.DoWork);
         thread.Start();
         //Profiler.Init();
