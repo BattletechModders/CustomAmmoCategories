@@ -111,7 +111,7 @@ namespace CustAmmoCategories {
       if (advRec.isHit) { locArmor = advRec.target.ArmorForLocation(advRec.hitLocation); };
       if (!impactMessage.hasPlayedImpact) {
         Log.LogWrite(" impact not played\n");
-        advRec.ApplyTargetResistance();
+        //advRec.ApplyTargetResistance();
         impactMessage.hasPlayedImpact = true;
         if ((UnityEngine.Object)advRec.target.GameRep != (UnityEngine.Object)null) {
           Log.LogWrite(" gameRep exists\n");

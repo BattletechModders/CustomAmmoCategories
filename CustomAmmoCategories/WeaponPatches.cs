@@ -11,6 +11,7 @@ using CustomAmmoCategoriesLog;
 using BattleTech.UI;
 using UnityEngine;
 using CustomAmmoCategoriesPatches;
+using CustomAmmoCategoriesPathes;
 
 namespace CustAmmoCategories {
   public static partial class CustomAmmoCategories {
@@ -37,7 +38,7 @@ namespace CustAmmoCategories {
       WeaponMode mode = weapon.mode();
       float result = (baseDamage + extAmmoDef.DamagePerShot + mode.DamagePerShot) * extAmmoDef.DamageMultiplier * mode.DamageMultiplier;
       if (weapon.parent != null) {
-        if (weapon.parent.EvasivePipsCurrent > 0) {
+        if ((weapon.parent.EvasivePipsCurrent > 0)&&(weapon.parent.HasMovedThisRound)) {
           float evasiveMod = extWeapon.evasivePipsMods.Damage + extAmmoDef.evasivePipsMods.Damage + mode.evasivePipsMods.Damage;
           if (Mathf.Abs(evasiveMod) > CustomAmmoCategories.Epsilon) result = result * Mathf.Pow((float)weapon.parent.EvasivePipsCurrent, evasiveMod);
         }
@@ -51,7 +52,7 @@ namespace CustAmmoCategories {
       WeaponMode mode = weapon.mode();
       float result = (weapon.weaponDef.Damage + extAmmoDef.DamagePerShot + mode.DamagePerShot) * extAmmoDef.DamageMultiplier * mode.DamageMultiplier * baseDamage / weapon.weaponDef.Damage;
       if (weapon.parent != null) {
-        if (weapon.parent.EvasivePipsCurrent > 0) {
+        if ((weapon.parent.EvasivePipsCurrent > 0) && (weapon.parent.HasMovedThisRound)) {
           float evasiveMod = extWeapon.evasivePipsMods.Damage + extAmmoDef.evasivePipsMods.Damage + mode.evasivePipsMods.Damage;
           if (Mathf.Abs(evasiveMod) > CustomAmmoCategories.Epsilon) result = result * Mathf.Pow((float)weapon.parent.EvasivePipsCurrent, evasiveMod);
         }
@@ -64,7 +65,7 @@ namespace CustAmmoCategories {
       WeaponMode mode = weapon.mode();
       float result = (baseDamage + extAmmoDef.HeatDamagePerShot + mode.HeatDamagePerShot) * extAmmoDef.HeatMultiplier * mode.HeatMultiplier;
       if (weapon.parent != null) {
-        if (weapon.parent.EvasivePipsCurrent > 0) {
+        if ((weapon.parent.EvasivePipsCurrent > 0) && (weapon.parent.HasMovedThisRound)) {
           float evasiveMod = extWeapon.evasivePipsMods.Heat + extAmmoDef.evasivePipsMods.Heat + mode.evasivePipsMods.Heat;
           if (Mathf.Abs(evasiveMod) > CustomAmmoCategories.Epsilon) result = result * Mathf.Pow((float)weapon.parent.EvasivePipsCurrent, evasiveMod);
         } else {
@@ -80,7 +81,7 @@ namespace CustAmmoCategories {
       WeaponMode mode = weapon.mode();
       float result = (weapon.weaponDef.HeatDamage + extAmmoDef.HeatDamagePerShot + mode.HeatDamagePerShot) * extAmmoDef.HeatMultiplier * mode.HeatMultiplier * baseDamage / weapon.weaponDef.HeatDamage;
       if (weapon.parent != null) {
-        if (weapon.parent.EvasivePipsCurrent > 0) {
+        if ((weapon.parent.EvasivePipsCurrent > 0) && (weapon.parent.HasMovedThisRound)) {
           float evasiveMod = extWeapon.evasivePipsMods.Heat + extAmmoDef.evasivePipsMods.Heat + mode.evasivePipsMods.Heat;
           if (Mathf.Abs(evasiveMod) > CustomAmmoCategories.Epsilon) result = result * Mathf.Pow((float)weapon.parent.EvasivePipsCurrent, evasiveMod);
         }
@@ -93,7 +94,7 @@ namespace CustAmmoCategories {
       WeaponMode mode = weapon.mode();
       float result = (baseDamage + extAmmoDef.Instability + mode.Instability) * extAmmoDef.InstabilityMultiplier * mode.InstabilityMultiplier;
       if (weapon.parent != null) {
-        if (weapon.parent.EvasivePipsCurrent > 0) {
+        if ((weapon.parent.EvasivePipsCurrent > 0) && (weapon.parent.HasMovedThisRound)) {
           float evasiveMod = extWeapon.evasivePipsMods.Instablility + extAmmoDef.evasivePipsMods.Instablility + mode.evasivePipsMods.Instablility;
           if (Mathf.Abs(evasiveMod) > CustomAmmoCategories.Epsilon) result = result * Mathf.Pow((float)weapon.parent.EvasivePipsCurrent, evasiveMod);
         }
@@ -107,7 +108,7 @@ namespace CustAmmoCategories {
       WeaponMode mode = weapon.mode();
       float result = (weapon.weaponDef.Instability + extAmmoDef.Instability + mode.Instability) * extAmmoDef.InstabilityMultiplier * mode.InstabilityMultiplier * baseDamage / weapon.weaponDef.Instability;
       if (weapon.parent != null) {
-        if (weapon.parent.EvasivePipsCurrent > 0) {
+        if ((weapon.parent.EvasivePipsCurrent > 0) && (weapon.parent.HasMovedThisRound)) {
           float evasiveMod = extWeapon.evasivePipsMods.Instablility + extAmmoDef.evasivePipsMods.Instablility + mode.evasivePipsMods.Instablility;
           if (Mathf.Abs(evasiveMod) > CustomAmmoCategories.Epsilon) result = result * Mathf.Pow((float)weapon.parent.EvasivePipsCurrent, evasiveMod);
         }
@@ -120,7 +121,7 @@ namespace CustAmmoCategories {
       WeaponMode mode = weapon.mode();
       float result = (baseDamage + extAmmoDef.APDamage + mode.APDamage) * extAmmoDef.APDamageMultiplier * mode.APDamageMultiplier;
       if (weapon.parent != null) {
-        if (weapon.parent.EvasivePipsCurrent > 0) {
+        if ((weapon.parent.EvasivePipsCurrent > 0) && (weapon.parent.HasMovedThisRound)) {
           float evasiveMod = extWeapon.evasivePipsMods.APDamage + extAmmoDef.evasivePipsMods.APDamage + mode.evasivePipsMods.APDamage;
           if (Mathf.Abs(evasiveMod) > CustomAmmoCategories.Epsilon) result = result * Mathf.Pow((float)weapon.parent.EvasivePipsCurrent, evasiveMod);
         }
@@ -134,7 +135,7 @@ namespace CustAmmoCategories {
       WeaponMode mode = weapon.mode();
       float result = (extWeapon.APDamage + extAmmoDef.APDamage + mode.APDamage) * extAmmoDef.APDamageMultiplier * mode.APDamageMultiplier * baseDamage / extWeapon.APDamage;
       if (weapon.parent != null) {
-        if (weapon.parent.EvasivePipsCurrent > 0) {
+        if ((weapon.parent.EvasivePipsCurrent > 0) && (weapon.parent.HasMovedThisRound)) {
           float evasiveMod = extWeapon.evasivePipsMods.APDamage + extAmmoDef.evasivePipsMods.APDamage + mode.evasivePipsMods.APDamage;
           if (Mathf.Abs(evasiveMod) > CustomAmmoCategories.Epsilon) result = result * Mathf.Pow((float)weapon.parent.EvasivePipsCurrent, evasiveMod);
         }
@@ -153,7 +154,7 @@ namespace CustAmmoCategories {
         if (extWeapon.AOECapable != TripleBoolean.NotSet) { result = extWeapon.AOERange; }
       }
       if (weapon.parent != null) {
-        if (weapon.parent.EvasivePipsCurrent > 0) {
+        if ((weapon.parent.EvasivePipsCurrent > 0) && (weapon.parent.HasMovedThisRound)) {
           float evasiveMod = extWeapon.evasivePipsMods.AOERange + ammo.evasivePipsMods.AOERange + mode.evasivePipsMods.AOERange;
           if (Mathf.Abs(evasiveMod) > CustomAmmoCategories.Epsilon) result = result * Mathf.Pow((float)weapon.parent.EvasivePipsCurrent, evasiveMod);
         }
@@ -171,7 +172,7 @@ namespace CustAmmoCategories {
         if (extWeapon.AOECapable != TripleBoolean.NotSet) { result = extWeapon.AOEDamage; }
       }
       if (weapon.parent != null) {
-        if (weapon.parent.EvasivePipsCurrent > 0) {
+        if ((weapon.parent.EvasivePipsCurrent > 0)&& (weapon.parent.HasMovedThisRound)) {
           float evasiveMod = extWeapon.evasivePipsMods.AOEDamage + ammo.evasivePipsMods.AOEDamage + mode.evasivePipsMods.AOEDamage;
           if (Mathf.Abs(evasiveMod) > CustomAmmoCategories.Epsilon) result = result * Mathf.Pow((float)weapon.parent.EvasivePipsCurrent, evasiveMod);
         }
@@ -341,23 +342,24 @@ namespace CustAmmoCategoriesPatches {
   [HarmonyPatch(new Type[] { })]
   public static class MechComponent_UIName {
     public static void Postfix(MechComponent __instance, ref Text __result) {
-      Log.M.WL(0, "MechComponent.UIName "+__instance.defId);
-      Weapon weapon = __instance as Weapon;
-      if (weapon == null) { return; }
-      ExtAmmunitionDef ammo = weapon.ammo();
-      string ammoBoxName = string.Empty;
-      if (ammo.AmmoCategory.BaseCategory.Is_NotSet == false) {
-        Log.M.WL(1, "has ammo: "+ammo.Id+" isWeaponHasAmmoVariants:"+ weapon.isWeaponHasAmmoVariants()+ " ammo.HideIfOnlyVariant:"+ ammo.HideIfOnlyVariant);
-        if (weapon.isWeaponHasAmmoVariants()||(ammo.HideIfOnlyVariant == false)) {
-          if (string.IsNullOrEmpty(ammo.UIName) == false) { ammoBoxName = ammo.UIName; } else { ammoBoxName = ammo.Name; };
-        }
-      }
-      if (string.IsNullOrEmpty(ammoBoxName) == false) __result.Append("({0})", new object[1] { (object)ammoBoxName });
-      ExtWeaponDef extWeapon = CustomAmmoCategories.getExtWeaponDef(__instance.defId);
-      if (extWeapon.Modes.Count > 1) {
-        WeaponMode mode = weapon.mode();
-        if (string.IsNullOrEmpty(mode.UIName) == false) __result.Append("({0})", new object[1] { (object)mode.UIName });
-      }
+      return;
+      ////Log.M.WL(0, "MechComponent.UIName "+__instance.defId);
+      //Weapon weapon = __instance as Weapon;
+      //if (weapon == null) { return; }
+      //ExtAmmunitionDef ammo = weapon.ammo();
+      //string ammoBoxName = string.Empty;
+      //if (ammo.AmmoCategory.BaseCategory.Is_NotSet == false) {
+      //  Log.M.WL(1, "has ammo: "+ammo.Id+" isWeaponHasAmmoVariants:"+ weapon.isWeaponHasAmmoVariants()+ " ammo.HideIfOnlyVariant:"+ ammo.HideIfOnlyVariant);
+      //  if (weapon.isWeaponHasAmmoVariants()||(ammo.HideIfOnlyVariant == false)) {
+      //    if (string.IsNullOrEmpty(ammo.UIName) == false) { ammoBoxName = ammo.UIName; } else { ammoBoxName = ammo.Name; };
+      //  }
+      //}
+      //if (string.IsNullOrEmpty(ammoBoxName) == false) __result.Append("({0})", new object[1] { (object)ammoBoxName });
+      //ExtWeaponDef extWeapon = CustomAmmoCategories.getExtWeaponDef(__instance.defId);
+      //if (extWeapon.Modes.Count > 1) {
+      //  WeaponMode mode = weapon.mode();
+      //  if (string.IsNullOrEmpty(mode.UIName) == false) __result.Append("({0})", new object[1] { (object)mode.UIName });
+      //}
     }
   }
   [HarmonyPatch(typeof(Weapon))]
@@ -385,17 +387,23 @@ namespace CustAmmoCategoriesPatches {
       if (weapon == null) { return; }
       Log.M.TWL(0, "Weapon.InitStats");
       ExtWeaponDef def = weapon.exDef();
-      if ((weapon.weaponDef.StartingAmmoCapacity > 0)&&(def.AmmoCategory.BaseCategory.Is_NotSet == false)) {
-        ExtAmmunitionDef defaultAmmo = def.AmmoCategory.defaultAmmo();
-        if (defaultAmmo.AmmoCategory.BaseCategory.Is_NotSet == false) {
-          if (def.InternalAmmo.ContainsKey(defaultAmmo.Id) == false) {
-            def.InternalAmmo.Add(defaultAmmo.Id, weapon.weaponDef.StartingAmmoCapacity);
-          }
-        }
-      }
+      bool isPlayerMech = false;
+      if (UnityGameInstance.BattleTechGame.Simulation == null) { isPlayerMech = UnityGameInstance.BattleTechGame.Simulation.isPlayerMech(__instance.parent.PilotableActorDef); }
       foreach(var ia in def.InternalAmmo) {
         string statName = Weapon_InternalAmmo.InternalAmmoName + ia.Key;
-        __instance.StatCollection.AddStatistic<int>(statName, ia.Value);
+        int capacity = ia.Value;
+        if (isPlayerMech) {
+          AmmunitionDef ammo = __instance.parent.Combat.DataManager.AmmoDefs.Get(ia.Key);
+          if (ammo == null) { continue; }
+          if (ammo.extDef().AutoRefill != AutoRefilType.Automatic) {
+            int ammocount = UnityGameInstance.BattleTechGame.Simulation.GetReservedAmmoCount(ia.Key);
+            if (ammocount < capacity) { capacity = ammocount; }
+            ammocount -= capacity;
+            UnityGameInstance.BattleTechGame.Simulation.SetReservedAmmoCount(ia.Key, ammocount);
+            Log.M.WL(1, "Updating ammo count for " + ia.Key + " to " + UnityGameInstance.BattleTechGame.Simulation.GetReservedAmmoCount(ia.Key));
+          }
+        }
+        __instance.StatCollection.AddStatistic<int>(statName, capacity);
         Log.M.WL(1,statName+":"+ia.Key);
       }
     }

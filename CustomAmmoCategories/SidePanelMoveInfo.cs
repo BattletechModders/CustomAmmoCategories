@@ -125,6 +125,8 @@ namespace CustAmmoCategoriesPatches {
       if (__instance.HUD() == null) { return; }
       if (m_infoPanelShowState == false) { return; }
       if (__instance.HUD().SelectedActor == null) { return; }
+      if (__instance.HUD().SelectedActor.IsDeployDirector()) { return; }
+      if (__instance.HUD().SelectionHandler.ActiveState.Orders != null) { return; }
       if (__instance.IsHovered) { fTextNeedToBeRefreshed = true; return; }
       if (__instance.forceShown() || ___shownForSingleFrame || __instance.stayShown()) { fTextNeedToBeRefreshed = true; return; }
       if (fSidePanelNeedToBeRefreshed) { fTextNeedToBeRefreshed = true; __instance.HUD().UpdateInfoText(); }
@@ -205,29 +207,60 @@ namespace CustAmmoCategoriesPatches {
       StringBuilder result = new StringBuilder();
       List<WayPoint> waypointsFromPath = ActorMovementSequence.ExtractWaypointsFromPath(actor, actor.Pathing.CurrentPath, actor.Pathing.ResultDestination, (ICombatant)actor.Pathing.CurrentMeleeTarget, actor.Pathing.MoveType);
       List<MapPoint> mapPoints = DynamicMapHelper.getVisitedPoints(actor.Combat, waypointsFromPath);
-      int minefieldCells = 0;
-      int minefields = 0;
       int burnCells = 0;
+      float burnStrength = 0;
+      StringBuilder minefieldStr = new StringBuilder();
+      Dictionary<MineField, int> mfRolls = new Dictionary<MineField, int>();
       foreach (MapPoint mapPoint in mapPoints) {
         MapTerrainDataCellEx cell = actor.Combat.MapMetaData.mapTerrainDataCells[mapPoint.x, mapPoint.y] as MapTerrainDataCellEx;
-        if (cell == null) {
-          //Log.LogWrite("not extended cell "+mapPoint.x+","+mapPoint.y+"\n",true);
-          continue;
-        };
-        bool isMinefieldCell = false;
-        //Log.LogWrite(" hexCell: "+cell.hexCell.x+","+cell.hexCell.y+":"+cell.hexCell.MineField.Count+"\n");
-        foreach (MineField mineField in cell.hexCell.MineField) {
+        if (cell == null) { continue; };
+        foreach (MineField mineField in cell.hexCell.MineFields) {
           if (mineField.count <= 0) { continue; };
-          minefields += 1;
-          if (isMinefieldCell == false) { isMinefieldCell = true; minefieldCells += 1; };
+          if (mfRolls.ContainsKey(mineField)) { mfRolls[mineField] += 1; } else { mfRolls.Add(mineField,1); }
         }
-        if (cell.BurningStrength > 0) { burnCells += 1; };
+        if (cell.BurningStrength > 0) { burnCells += 1; burnStrength += cell.BurningStrength; };
       }
-      if (minefields > 0) {
-        minefield = "__/CAC.MINEFIELDONTHEWAY/__";
-      } else {
-        minefield = string.Empty;
+      Dictionary<MineFieldDef, Dictionary<bool, Dictionary<bool, int>>> mfDefRolls = new Dictionary<MineFieldDef, Dictionary<bool, Dictionary<bool, int>>>();
+      Dictionary<MineFieldDef, string> names = new Dictionary<MineFieldDef, string>();
+      foreach (var mfRoll in mfRolls) {
+        MineFieldStealthLevel sLvl = mfRoll.Key.stealthLevel(actor.team);
+        if (sLvl == MineFieldStealthLevel.Invisible) { continue; }
+        bool iff = mfRoll.Key.getIFFLevel(actor);
+        string name = string.Empty;
+        bool info = sLvl != MineFieldStealthLevel.Partial;
+        int count = Math.Min(mfRoll.Key.count, mfRoll.Value);
+        if(mfDefRolls.TryGetValue(mfRoll.Key.Def, out Dictionary<bool, Dictionary<bool, int>> mfInfo) == false) {
+          mfInfo = new Dictionary<bool, Dictionary<bool, int>>();
+          mfDefRolls.Add(mfRoll.Key.Def, mfInfo);
+        }
+        if(mfInfo.TryGetValue(info, out Dictionary<bool, int> mfIffs) == false) {
+          mfIffs = new Dictionary<bool, int>();
+          mfInfo.Add(info,mfIffs);
+        }
+        if (mfIffs.ContainsKey(iff) == false) { mfIffs.Add(iff, count); } else { mfIffs[iff] += count; };
+        if (names.ContainsKey(mfRoll.Key.Def) == false) { names.Add(mfRoll.Key.Def, mfRoll.Key.UIName); };
       }
+      foreach(var mfDefRoll in mfDefRolls) {
+        MineFieldDef def = mfDefRoll.Key;
+        foreach(var mfDefInfo in mfDefRoll.Value) {
+          bool info = mfDefInfo.Key;
+          foreach(var mfDefIff in mfDefInfo.Value) {
+            bool iff = mfDefIff.Key;
+            int count = mfDefIff.Value;
+            if (minefieldStr.Length > 0) { minefieldStr.Append(", "); }
+            if (iff) { minefieldStr.Append("<color=green>"); } else { minefieldStr.Append("<color=red>"); }
+            if (info) {
+              minefieldStr.Append(new Text(names[def]).ToString());
+              minefieldStr.Append("("+def.Damage+")");
+            } else {
+              minefieldStr.Append("__/CAC.LANDMINE_UNKNOWN/__");
+            }
+            minefieldStr.Append(" x"+count);
+            minefieldStr.Append("</color>");
+          }
+        }
+      }
+      minefield = minefieldStr.ToString();
       if (burnCells > 0) {
         burnterrain = "__/CAC.FLAMESONTHEWAY/__";
       } else {
@@ -248,19 +281,58 @@ namespace CustAmmoCategoriesPatches {
         if (cell == null) { continue; };
         hexes.Add(cell.hexCell);
       }
-      int minefields = 0;
-      //CustomAmmoCategoriesLog.Log.LogWrite(" rol mod:" + rollMod + "\n");
-      foreach (MapTerrainHexCell hex in hexes) {
-        foreach (MineField mineField in hex.MineField) {
-          if (mineField.count <= 0) { continue; };
-          minefields += 1;
+      StringBuilder minefieldStr = new StringBuilder();
+      Dictionary<MineField, int> mfRolls = new Dictionary<MineField, int>();
+      foreach (MineField mineField in ccell.hexCell.MineFields) {
+        if (mineField.count <= 0) { continue; };
+        if (mfRolls.ContainsKey(mineField)) { mfRolls[mineField] += mineField.count; } else { mfRolls.Add(mineField, mineField.count); }
+      }
+      Dictionary<MineFieldDef, Dictionary<bool, Dictionary<bool, int>>> mfDefRolls = new Dictionary<MineFieldDef, Dictionary<bool, Dictionary<bool, int>>>();
+      Dictionary<MineFieldDef, string> names = new Dictionary<MineFieldDef, string>();
+      foreach (var mfRoll in mfRolls) {
+        MineFieldStealthLevel sLvl = mfRoll.Key.stealthLevel(actor.team);
+        if (sLvl == MineFieldStealthLevel.Invisible) { continue; }
+        bool iff = mfRoll.Key.getIFFLevel(actor);
+        string name = string.Empty;
+        bool info = sLvl != MineFieldStealthLevel.Partial;
+        int count = Math.Min(mfRoll.Key.count, mfRoll.Value);
+        if (mfDefRolls.TryGetValue(mfRoll.Key.Def, out Dictionary<bool, Dictionary<bool, int>> mfInfo) == false) {
+          mfInfo = new Dictionary<bool, Dictionary<bool, int>>();
+          mfDefRolls.Add(mfRoll.Key.Def, mfInfo);
+        }
+        if (mfInfo.TryGetValue(info, out Dictionary<bool, int> mfIffs) == false) {
+          mfIffs = new Dictionary<bool, int>();
+          mfInfo.Add(info, mfIffs);
+        }
+        if (mfIffs.ContainsKey(iff) == false) { mfIffs.Add(iff, count); } else { mfIffs[iff] += count; };
+        if (names.ContainsKey(mfRoll.Key.Def) == false) { names.Add(mfRoll.Key.Def, mfRoll.Key.UIName); };
+      }
+      PathingCapabilitiesDef PathingCaps = Traverse.Create(actor.Pathing).Property<PathingCapabilitiesDef>("PathingCaps").Value;
+      float rollMod = 1f;
+      if (CustomAmmoCategories.Settings.MineFieldPathingMods.ContainsKey(PathingCaps.Description.Id)) {
+        rollMod = CustomAmmoCategories.Settings.MineFieldPathingMods[PathingCaps.Description.Id];
+      }
+      foreach (var mfDefRoll in mfDefRolls) {
+        MineFieldDef def = mfDefRoll.Key;
+        foreach (var mfDefInfo in mfDefRoll.Value) {
+          bool info = mfDefInfo.Key;
+          foreach (var mfDefIff in mfDefInfo.Value) {
+            bool iff = mfDefIff.Key;
+            int count = mfDefIff.Value;
+            if (minefieldStr.Length > 0) { minefieldStr.Append(", "); }
+            if (iff||actor.UnaffectedLandmines()) { minefieldStr.Append("<color=green>"); } else { minefieldStr.Append("<color=red>"); }
+            if (info) {
+              minefieldStr.Append(new Text(names[def]).ToString());
+              minefieldStr.Append("(" + def.Damage + " "+Mathf.Round(def.Chance * rollMod * 100.0f)+"%)");
+            } else {
+              minefieldStr.Append("__/CAC.LANDMINE_UNKNOWN/__");
+            }
+            minefieldStr.Append(" x" + count);
+            minefieldStr.Append("</color>");
+          }
         }
       }
-      if (minefields > 0) {
-        minefield = "__/CAC.JUMPTOMINEFIELD/__";
-      } else {
-        minefield = string.Empty;
-      }
+      minefield = minefieldStr.ToString();
       if (ccell.BurningStrength > 0) {
         burnterrain = "__/CAC.JUMPTOFLAMES/__";
       } else {
@@ -564,9 +636,7 @@ namespace CustAmmoCategoriesPatches {
       }
       if (string.IsNullOrEmpty(minefieldText) == false) {
         if (empty == false) { description.Append("\n"); };
-        description.Append("<color=#ff0000ff>");
         description.Append(minefieldText);
-        description.Append("</color>");
         if (empty == false) { title.Append(" "); };
         title.Append("<color=#ff0000ff>");
         title.Append("__/CAC.MINEFIELD/__");

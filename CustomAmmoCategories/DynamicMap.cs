@@ -11,14 +11,17 @@ using BattleTech.Data;
 using BattleTech.Rendering;
 using BattleTech.Rendering.Mood;
 using BattleTech.Rendering.Trees;
+using BattleTech.Rendering.UI;
 using BattleTech.Rendering.UrbanWarfare;
 using BattleTech.UI;
 using CustAmmoCategories;
+using CustAmmoCategoriesPatches;
 using CustomAmmoCategoriesLog;
 using CustomAmmoCategoriesPatches;
 using Harmony;
 using HBS.Util;
 using Localize;
+using SVGImporter;
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.SceneManagement;
@@ -26,24 +29,6 @@ using Random = UnityEngine.Random;
 
 namespace CustAmmoCategories {
   public static partial class CustomAmmoCategories {
-    /*public static DesignMaskDef getWeaponDesignImpactMask(Weapon weapon, TerrainMaskFlags terrainMaskFlags) {
-      Dictionary<TerrainMaskFlags, string> dmaskids = new Dictionary<TerrainMaskFlags, string>();
-      if (CustomAmmoCategories.checkExistance(weapon.StatCollection, CustomAmmoCategories.AmmoIdStatName) == true) {
-        string CurrentAmmoId = weapon.StatCollection.GetStatistic(CustomAmmoCategories.AmmoIdStatName).Value<string>();
-        ExtAmmunitionDef extAmmoDef = CustomAmmoCategories.findExtAmmo(CurrentAmmoId);
-        foreach (var sdm in extAmmoDef.SurfaceImpactDesignMaskId) {
-          if (dmaskids.ContainsKey(sdm.Key) == false) {
-            dmaskids.Add(sdm.Key, sdm.Value);
-          }
-        }
-      }
-      if (dmaskids.ContainsKey(terrainMaskFlags)) {
-        if (DynamicMapHelper.loadedMasksDef.ContainsKey(dmaskids[terrainMaskFlags])) {
-          return DynamicMapHelper.loadedMasksDef[dmaskids[terrainMaskFlags]];
-        }
-      }
-      return null;
-    }*/
     public static Vector3 GetBuildingHitPosition(this LineOfSight LOS, AbstractActor attacker, BattleTech.Building target, Vector3 attackPosition, float weaponRange, Vector3 origHitPosition) {
       Vector3 a = origHitPosition;
       Vector3 vector3_1 = attackPosition + attacker.HighestLOSPosition;
@@ -147,79 +132,6 @@ namespace CustAmmoCategories {
     public static MineFieldDef MineFieldDef(this Weapon weapon) {
       return weapon.ammo().MineField;
     }
-    /*public static int MineFieldRadius(this Weapon weapon) {
-      if (CustomAmmoCategories.checkExistance(weapon.StatCollection, CustomAmmoCategories.AmmoIdStatName) == true) {
-        string CurrentAmmoId = weapon.StatCollection.GetStatistic(CustomAmmoCategories.AmmoIdStatName).Value<string>();
-        ExtAmmunitionDef extAmmoDef = CustomAmmoCategories.findExtAmmo(CurrentAmmoId);
-        return extAmmoDef.MineFieldRadius;
-      }
-      return 0;
-    }
-    public static int MineFieldCount(this Weapon weapon) {
-      if (CustomAmmoCategories.checkExistance(weapon.StatCollection, CustomAmmoCategories.AmmoIdStatName) == true) {
-        string CurrentAmmoId = weapon.StatCollection.GetStatistic(CustomAmmoCategories.AmmoIdStatName).Value<string>();
-        ExtAmmunitionDef extAmmoDef = CustomAmmoCategories.findExtAmmo(CurrentAmmoId);
-        return extAmmoDef.MineFieldCount;
-      }
-      return 0;
-    }
-    public static string MineFieldVFX(this Weapon weapon) {
-      if (CustomAmmoCategories.checkExistance(weapon.StatCollection, CustomAmmoCategories.AmmoIdStatName) == true) {
-        string CurrentAmmoId = weapon.StatCollection.GetStatistic(CustomAmmoCategories.AmmoIdStatName).Value<string>();
-        ExtAmmunitionDef extAmmoDef = CustomAmmoCategories.findExtAmmo(CurrentAmmoId);
-        return extAmmoDef.MineFieldVFX;
-      }
-      return string.Empty;
-    }
-    public static CustomAudioSource MineFieldSFX(this Weapon weapon) {
-      if (CustomAmmoCategories.checkExistance(weapon.StatCollection, CustomAmmoCategories.AmmoIdStatName) == true) {
-        string CurrentAmmoId = weapon.StatCollection.GetStatistic(CustomAmmoCategories.AmmoIdStatName).Value<string>();
-        ExtAmmunitionDef extAmmoDef = CustomAmmoCategories.findExtAmmo(CurrentAmmoId);
-        return extAmmoDef.MineFieldSFX;
-      }
-      return null;
-    }
-    public static float MineFieldFXMinDistance(this Weapon weapon) {
-      if (CustomAmmoCategories.checkExistance(weapon.StatCollection, CustomAmmoCategories.AmmoIdStatName) == true) {
-        string CurrentAmmoId = weapon.StatCollection.GetStatistic(CustomAmmoCategories.AmmoIdStatName).Value<string>();
-        ExtAmmunitionDef extAmmoDef = CustomAmmoCategories.findExtAmmo(CurrentAmmoId);
-        return extAmmoDef.MineFieldFXMinRange;
-      }
-      return 20f;
-    }
-    public static float MineFieldHitChance(this Weapon weapon) {
-      if (CustomAmmoCategories.checkExistance(weapon.StatCollection, CustomAmmoCategories.AmmoIdStatName) == true) {
-        string CurrentAmmoId = weapon.StatCollection.GetStatistic(CustomAmmoCategories.AmmoIdStatName).Value<string>();
-        ExtAmmunitionDef extAmmoDef = CustomAmmoCategories.findExtAmmo(CurrentAmmoId);
-        return extAmmoDef.MineFieldHitChance;
-      }
-      return 0f;
-    }
-    public static float MineFieldDamage(this Weapon weapon) {
-      if (CustomAmmoCategories.checkExistance(weapon.StatCollection, CustomAmmoCategories.AmmoIdStatName) == true) {
-        string CurrentAmmoId = weapon.StatCollection.GetStatistic(CustomAmmoCategories.AmmoIdStatName).Value<string>();
-        ExtAmmunitionDef extAmmoDef = CustomAmmoCategories.findExtAmmo(CurrentAmmoId);
-        return extAmmoDef.MineFieldDamage;
-      }
-      return 0f;
-    }
-    public static float MineFieldInstability(this Weapon weapon) {
-      if (CustomAmmoCategories.checkExistance(weapon.StatCollection, CustomAmmoCategories.AmmoIdStatName) == true) {
-        string CurrentAmmoId = weapon.StatCollection.GetStatistic(CustomAmmoCategories.AmmoIdStatName).Value<string>();
-        ExtAmmunitionDef extAmmoDef = CustomAmmoCategories.findExtAmmo(CurrentAmmoId);
-        return extAmmoDef.MineFieldInstability;
-      }
-      return 0f;
-    }
-    public static float MineFieldHeat(this Weapon weapon) {
-      if (CustomAmmoCategories.checkExistance(weapon.StatCollection, CustomAmmoCategories.AmmoIdStatName) == true) {
-        string CurrentAmmoId = weapon.StatCollection.GetStatistic(CustomAmmoCategories.AmmoIdStatName).Value<string>();
-        ExtAmmunitionDef extAmmoDef = CustomAmmoCategories.findExtAmmo(CurrentAmmoId);
-        return extAmmoDef.MineFieldHeat;
-      }
-      return 0f;
-    }*/
-
     public static float FireTerrainChance(this Weapon weapon) {
       return (weapon.exDef().FireTerrainChance + weapon.ammo().FireTerrainChance + weapon.mode().FireTerrainChance) * DynamicMapHelper.BiomeLitFireChance();
     }
@@ -260,29 +172,141 @@ namespace CustAmmoCategories {
       return null;
     }
   }
-  /*public class AsyncDesignMaskUpdater{
-    public List<MapTerrainHexCell> hexes;
-    public DesignMaskDef dmask;
-    public int count;
-    public AsyncDesignMaskUpdater(MapTerrainHexCell hex,DesignMaskDef dm,int c) {
-      hexes = new List<MapTerrainHexCell>() { hex };
-      dmask = dm;
-      count = c;
+  public class DynMapBurnHexRequest {
+    public MapTerrainHexCell hex { get; private set; }
+    public Weapon weapon { get; private set; }
+    public float FireTerrainChance { get; private set; }
+    public int FireTerrainStrength { get; private set; }
+    public int FireDurationWithoutForest { get; private set; }
+    public DynMapBurnHexRequest(MapTerrainHexCell hex, Weapon weapon, float FireTerrainChance, int FireTerrainStrength, int FireDurationWithoutForest) {
+      this.hex = hex; this.weapon = weapon; this.FireTerrainChance = FireTerrainChance; this.FireTerrainStrength = FireTerrainStrength; this.FireDurationWithoutForest = FireDurationWithoutForest;
     }
-    public AsyncDesignMaskUpdater(List<MapTerrainHexCell> hex, DesignMaskDef dm, int c) {
-      hexes = new List<MapTerrainHexCell>();
-      hexes.AddRange(hex);
-      dmask = dm;
-      count = c;
-    }
-    public void asyncAddMask() {
-      if (dmask == null) { return; };
-      foreach (MapTerrainHexCell hexCell in hexes) {
-        Log.LogWrite("asyncAddMask "+hexCell.x+":"+hexCell.y+"\n");
-        hexCell.addTempTerrainMask(dmask, count);
+    public void Invoke() {
+      if(hex.TryBurnCellSync(weapon, FireTerrainChance, FireTerrainStrength, FireDurationWithoutForest)) {
+        DynamicMapHelper.burningHexes.Add(hex);
       }
     }
-  }*/
+  }
+  public class DynMapManipulateMineField {
+    public MapTerrainHexCell hex { get; private set; }
+    //public MineField mineField { get; private set; }
+    public MineFieldDef definition { get; private set; }
+    public AbstractActor owner { get; private set; }
+    public Weapon weapon { get; private set; }
+    public int ClearCount { get; private set; }
+    public float ClearChance { get; private set; }
+    public DynMapManipulateMineField(MapTerrainHexCell hex, MineFieldDef definition, AbstractActor owner, Weapon weapon, int ClearCount, float ClearChance) {
+      this.hex = hex; this.definition = definition; this.owner = owner; this.weapon = weapon; this.ClearCount = ClearCount; this.ClearChance = ClearChance;
+    }
+    public void Invoke() {
+      if (definition != null) { hex.AddMineFieldSync(new MineField(hex,definition,owner,weapon)); }
+      if(ClearCount > 0) {
+        hex.ClearMineFieldSync(ClearCount, ClearChance);
+      }
+    }
+  }
+  public class DynMapVFXRequest {
+    public MapTerrainHexCell hex { get; private set; }
+    public CombatGameState combat { get; private set; }
+    public string prefabVFX { get; private set; }
+    public int counter { get; private set; }
+    public Vector3 scale { get; private set; }
+    public DynMapVFXRequest(MapTerrainHexCell hex, CombatGameState combat, string prefabVFX, int counter, Vector3 scale) {
+      this.hex = hex; this.combat = combat; this.prefabVFX = prefabVFX; this.counter = counter; this.scale = scale;
+    }
+    public void Invoke() {
+      hex.addTempTerrainVFXSync(combat, prefabVFX, counter, scale);
+    }
+  }
+  public class DyncamicMapAsyncProcessor: MonoBehaviour {
+    private Queue<DynMapBurnHexRequest> burnRequests;
+    private Queue<AsyncDesignMaskApplyRecord> asyncTerrainDesignMaskQueue;
+    private Queue<DynMapVFXRequest> VFXRequests;
+    private Queue<DynMapManipulateMineField> MineFieldRequests;
+    public void Init() {
+      burnRequests.Clear();
+      asyncTerrainDesignMaskQueue.Clear();
+    }
+    public void TryBurnCellAsync(MapTerrainHexCell hex,Weapon weapon, float FireTerrainChance, int FireTerrainStrength, int FireDurationWithoutForest) {
+      burnRequests.Enqueue(new DynMapBurnHexRequest(hex, weapon,FireTerrainChance,FireTerrainStrength,FireDurationWithoutForest));
+    }
+    public void addDesignMaskAsync(MapTerrainHexCell hex, DesignMaskDef dm, int counter) {
+      if (dm == null) { return; }
+      asyncTerrainDesignMaskQueue.Enqueue(new AsyncDesignMaskApplyRecord(dm, hex, counter));
+    }
+    public void addTempTerrainVFX(MapTerrainHexCell hex, CombatGameState combat, string prefabVFX, int counter, Vector3 scale) {
+      VFXRequests.Enqueue(new DynMapVFXRequest(hex,combat, prefabVFX, counter, scale));
+    }
+    public void addMineField(MapTerrainHexCell hex, MineFieldDef definition, AbstractActor owner, Weapon weapon) {
+      MineFieldRequests.Enqueue(new DynMapManipulateMineField(hex, definition,owner,weapon, 0,0f));
+    }
+    public void clearMineField(MapTerrainHexCell hex, int count, float chance) {
+      MineFieldRequests.Enqueue(new DynMapManipulateMineField(hex, null, null, null, count, chance));
+    }
+    public DyncamicMapAsyncProcessor() {
+      burnRequests = new Queue<DynMapBurnHexRequest>();
+      asyncTerrainDesignMaskQueue = new Queue<AsyncDesignMaskApplyRecord>();
+      VFXRequests = new Queue<DynMapVFXRequest>();
+      MineFieldRequests = new Queue<DynMapManipulateMineField>();
+    }
+    public void Update() {
+      if(burnRequests.Count > 0) {
+        DynMapBurnHexRequest burnRequest = burnRequests.Dequeue();
+        burnRequest.Invoke();
+      }
+      if (asyncTerrainDesignMaskQueue.Count > 0) {
+        AsyncDesignMaskApplyRecord arec = asyncTerrainDesignMaskQueue.Dequeue();
+        Log.F.TWL(0, "async add design mask:" + arec.designMask.Id + " to " + arec.hexCell.center);
+        arec.hexCell.addTempTerrainMask(arec.designMask, arec.counter);
+      }
+      if (VFXRequests.Count > 0) {
+        DynMapVFXRequest VFXreq = VFXRequests.Dequeue();
+        VFXreq.Invoke();
+      }
+      if (MineFieldRequests.Count > 0) {
+        DynMapManipulateMineField MFReq = MineFieldRequests.Dequeue();
+        MFReq.Invoke();
+      }
+    }
+  }
+  public static class DynamicMapAsyncProcHelper {
+    private static DyncamicMapAsyncProcessor processor = null;
+    public static int MinefieldDetectionLevel(this AbstractActor actor) {
+      return Mathf.RoundToInt(actor.StatCollection.GetOrCreateStatisic<float>(CustomAmmoCategories.Settings.MinefieldDetectorStatName, 1.0f).Value<float>());
+    }
+    public static void Init(CombatHUD HUD) {
+      if (DynamicMapAsyncProcHelper.processor != null) { GameObject.Destroy(DynamicMapAsyncProcHelper.processor); DynamicMapAsyncProcHelper.processor = null; }
+      DynamicMapAsyncProcHelper.processor = HUD.gameObject.GetComponent<DyncamicMapAsyncProcessor>();
+      if (DynamicMapAsyncProcHelper.processor == null) {
+        DynamicMapAsyncProcHelper.processor = HUD.gameObject.AddComponent<DyncamicMapAsyncProcessor>();
+      }
+      DynamicMapAsyncProcHelper.processor.Init();
+    }
+    public static void TryBurnCellAsync(this MapTerrainHexCell hex, Weapon weapon) {
+      TryBurnCellAsync(hex, weapon, weapon.FireTerrainChance(), weapon.FireTerrainStrength(), weapon.FireDurationWithoutForest());
+    }
+    public static void TryBurnCellAsync(this MapTerrainHexCell hex, Weapon weapon, float FireTerrainChance, int FireTerrainStrength, int FireDurationWithoutForest) {
+      if (processor == null) { return; }
+      processor.TryBurnCellAsync(hex, weapon, FireTerrainChance, FireTerrainStrength, FireDurationWithoutForest);
+    }
+    public static void addTempTerrainVFX(this MapTerrainHexCell hex, CombatGameState combat, string prefabVFX, int counter, Vector3 scale) {
+      if (processor == null) { return; }
+      processor.addTempTerrainVFX(hex,combat,prefabVFX,counter,scale);
+    }
+    public static void addDesignMaskAsync(this MapTerrainHexCell hex, DesignMaskDef dm, int counter) {
+      if (processor == null) { return; }
+      processor.addDesignMaskAsync(hex,dm,counter);
+    }
+    public static void addMineField(this MapTerrainHexCell hex, MineFieldDef definition, AbstractActor owner, Weapon weapon) {
+      if (processor == null) { return; }
+      processor.addMineField(hex, definition, owner, weapon);
+    }
+    public static void clearMineField(this MapTerrainHexCell hex, int count, float chance) {
+      if (processor == null) { return; }
+      processor.clearMineField(hex, count, chance);
+    }
+
+  }
   public class ObjectSpawnDataSelf : ObjectSpawnData {
     public bool keepPrefabRotation;
     public Vector3 scale;
@@ -309,12 +333,6 @@ namespace CustAmmoCategories {
         return;
       }
       try {
-        //this.spawnedObject.SetActive(false);
-        //this.Combat.DataManager.PoolGameObject(this.prefabName, this.spawnedObject);
-        //ParticleSystem component = this.spawnedObject.GetComponent<ParticleSystem>();
-        //if ((UnityEngine.Object)component != (UnityEngine.Object)null) {
-        //component.Stop(true);
-        //}
         GameObject.Destroy(this.spawnedObject);
       } catch (Exception e) {
         CustomAmmoCategoriesLog.Log.LogWrite("Cleanup exception: " + e.ToString() + "\n", true);
@@ -403,7 +421,6 @@ namespace CustAmmoCategories {
         gameObject.transform.localRotation = Quaternion.identity;
       ParticleSystem component = gameObject.GetComponent<ParticleSystem>();
       if (component != null) {
-        //component.transform.localScale.Set(scale.x, scale.y, scale.z);
         gameObject.SetActive(true);
         component.Stop(true);
         component.Clear(true);
@@ -418,16 +435,54 @@ namespace CustAmmoCategories {
       return component;
     }
   }
+  public enum MineFieldStealthLevel {
+    Full,Partial,Invisible
+  }
   public class MineField {
-    public float count;
+    public int count;
+    public string UIName;
     public AbstractActor owner;
     public Weapon weapon;
     public MineFieldDef Def;
-    public MineField(MineFieldDef d, AbstractActor o, Weapon w) {
+    public Team team;
+    public int IFFLevel;
+    public int stealthLvl;
+    public MapTerrainHexCell hex;
+    public MineField(MapTerrainHexCell hex,MineFieldDef d, AbstractActor o, Weapon w) {
+      this.hex = hex;
       owner = o;
       weapon = w;
       Def = d;
       count = this.Def.Count;
+      IFFLevel = d.IFFLevel;
+      stealthLvl = d.stealthLevel;
+      team = o.team;
+      UIName = d.UIName;
+      if (string.IsNullOrEmpty(UIName)) { UIName = w.ammo().UIName; }
+      if (string.IsNullOrEmpty(UIName)) { UIName = w.ammo().Name; }
+      if (string.IsNullOrEmpty(UIName)) { UIName = "Generic"; }
+    }
+    public bool getIFFLevel(AbstractActor unit) {
+      if (IFFLevel == 0) { return false; }
+      return this.IFFLevel < unit.mineFieldIFFLevel();
+    }
+    public MineFieldStealthLevel stealthLevel(Team iteam) {
+      if (IFFLevel > 0) {
+        if ((iteam != null) && (team != null)) {
+          if (this.team.IsFriendly(iteam)) {
+            return MineFieldStealthLevel.Full;
+          }
+        }
+      }
+      if (iteam == null) {
+        return stealthLvl>0?MineFieldStealthLevel.Invisible:MineFieldStealthLevel.Partial;
+      }
+      int reduction = this.hex.mineFieldStealthReduction(iteam);
+      if ((reduction <= 0)&&(stealthLvl > 0)) { return MineFieldStealthLevel.Invisible; }
+      int effectiveLevel = stealthLvl - this.hex.mineFieldStealthReduction(iteam);
+      if (effectiveLevel <= 0) { return MineFieldStealthLevel.Full; }
+      if (effectiveLevel <= 1) { return MineFieldStealthLevel.Partial; }
+      return MineFieldStealthLevel.Invisible;
     }
   }
   public class tempTerrainVFXEffect {
@@ -454,11 +509,40 @@ namespace CustAmmoCategories {
       vfx.SpawnSelf(combat);
     }
   }
+  public class MineFieldCollider : MonoBehaviour {
+    public SphereCollider collider;
+    public MapTerrainHexCell hex;
+    public void Init(MapTerrainHexCell hex) {
+      this.hex = hex;
+      this.collider = gameObject.GetComponent<SphereCollider>();
+    }
+    public void OnTriggerEnter(Collider other) {
+      MineFieldDetector detector = other.gameObject.GetComponent<MineFieldDetector>();
+      if (detector == false) { return; }
+      Log.M.TWL(0, "MineFieldCollider.OnTriggerEnter " + other.name+" detector:"+(detector==null?"false":"true"));
+      hex.AddMineFieldStealthReductor(detector.owner);
+      hex.UpdateIndicatorVisibility();
+    }
+    public void OnTriggerExit(Collider other) {
+      MineFieldDetector detector = other.gameObject.GetComponent<MineFieldDetector>();
+      if (detector == false) { return; }
+      Log.M.TWL(0, "MineFieldCollider.OnTriggerExit " + other.name + " detector:" + (detector == null ? "false" : "true"));
+      hex.DelMineFieldStealthReductor(detector.owner);
+      hex.UpdateIndicatorVisibility();
+    }
+  }
+  public class MineFieldDetector: MonoBehaviour {
+    public AbstractActor owner;
+    public void Init(AbstractActor o) {
+      this.owner = o;
+    }
+  }
   public class MapTerrainHexCell {
-    public int x;
-    public int y;
-    public int mapX;
-    public int mapY;
+    //public int x;
+    //public int y;
+    //public int mapX;
+    //public int mapY;
+    public Vector3 center;
     public List<MapTerrainDataCellEx> terrainCells;
     public Dictionary<string, tempTerrainVFXEffect> tempVFXEffects;
     public ObjectSpawnDataSelf burnEffect;
@@ -468,8 +552,109 @@ namespace CustAmmoCategories {
     public bool wasHasForest;
     public bool expandingThisTurn;
     public int burnEffectCounter;
-    public List<MineField> MineField;
+    public List<MineField> MineFields;
+    public GameObject mineFieldVFX;
+    private HashSet<AbstractActor> minefieldStealthReductors;
+    private Dictionary<Team, int> minefieldStealthReductionCache;
+    public void UpdateIndicatorVisibility() {
+      if (mineFieldVFX == null) { return; }
+      bool hasVisibleMineFields = false;
+      Log.M.TWL(0, "UpdateIndicatorVisibility "+this.center);
+      //int reduction = this.mineFieldStealthReduction(Combat.LocalPlayerTeam);
+      foreach(MineField mf in MineFields) {
+        if (mf.count <= 0) { continue; }
+        MineFieldStealthLevel level = mf.stealthLevel(Combat.LocalPlayerTeam);
+        Log.M.WL(1, "stealth level "+level+" IFF:"+mf.IFFLevel);
+        if (level != MineFieldStealthLevel.Invisible) { hasVisibleMineFields = true; break; }
+      }
+      if (hasVisibleMineFields) {
+        UIMovementDot dot = mineFieldVFX.GetComponentInChildren<UIMovementDot>(true);
+        Log.M.WL(1, "making cell visible " + (dot==null?"null":"not null"));
+        if (dot != null) { dot.gameObject.SetActive(true); }
+      } else {
+        UIMovementDot dot = mineFieldVFX.GetComponentInChildren<UIMovementDot>(true);
+        Log.M.WL(1, "making cell hidden " + (dot == null ? "null" : "not null"));
+        if (dot != null) { dot.gameObject.SetActive(false); }
+      }
+    }
+    public void AddMineFieldStealthReductor(AbstractActor actor) {
+      minefieldStealthReductionCache.Clear();
+      minefieldStealthReductors.Add(actor);
+      Log.M.TWL(0, "AddMineFieldStealthReductor "+actor.DisplayName);
+      Log.M.WL(1, "local player reduction: " + this.mineFieldStealthReduction(Combat.LocalPlayerTeam));
+    }
+    public void DelMineFieldStealthReductor(AbstractActor actor) {
+      minefieldStealthReductionCache.Clear();
+      minefieldStealthReductors.Remove(actor);
+      Log.M.TWL(0, "DelMineFieldStealthReductor " + actor.DisplayName);
+      Log.M.WL(1, "local player reduction: " + this.mineFieldStealthReduction(Combat.LocalPlayerTeam));
+    }
+    public int mineFieldStealthReduction(Team team) {
+      if (team == null) { return 0; }
+      if (minefieldStealthReductionCache.TryGetValue(team,out int reduction)) {
+        return reduction;
+      }
+      foreach (AbstractActor actor in minefieldStealthReductors) {
+        if (actor.team == null) { continue; }
+        if (actor.team.IsFriendly(team) == false) { continue; }
+        int curRed = actor.MinefieldDetectionLevel();
+        if (reduction < curRed) { reduction = curRed; }
+      }
+      minefieldStealthReductionCache.Add(team, reduction);
+      return reduction;
+    }
+    public void AddMineFieldSync(MineField mf) {
+      this.MineFields.Add(mf);
+      if(mineFieldVFX == null) {
+        //Point p = new Point();
+        //p.X = this.mapY;
+        //p.Z = this.mapX;
+        Vector3 pos = this.center;
+        pos.y = Combat.MapMetaData.GetLerpedHeightAt(pos);
+        mineFieldVFX = new GameObject("minefield");
+        mineFieldVFX.SetActive(false);
+        mineFieldVFX.transform.SetParent(CombatMovementReticle.Instance.transform);
+        GameObject mfCollider = new GameObject("minefieldCollider");
+        mfCollider.AddComponent<Rigidbody>();
+        mfCollider.GetComponent<Rigidbody>().name = "minefieldCollider";
+        mfCollider.GetComponent<Rigidbody>().isKinematic = true;
+        mfCollider.GetComponent<Rigidbody>().useGravity = false;
+        mfCollider.gameObject.layer = LayerMask.NameToLayer("Combatant");
+        SphereCollider collider = mfCollider.AddComponent<SphereCollider>();
+        collider.name = "minefieldCollider";
+        collider.radius = 0.1f;//Combat.HexGrid.HexWidth;
+        collider.isTrigger = true;
+        collider.enabled = true;
+        mfCollider.transform.SetParent(mineFieldVFX.transform);
+        mfCollider.transform.localPosition = new Vector3(0f, -0.1f, 0f);
+        mfCollider.AddComponent<MineFieldCollider>();
+        mfCollider.GetComponent<MineFieldCollider>().Init(this);
 
+        //GameObject sphere = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+        //sphere.transform.SetParent(mineFieldVFX.transform);
+        //sphere.transform.localPosition = Vector3.zero;
+        //sphere.transform.localScale = Vector3.one * ((float)CustomAmmoCategories.Settings.BurningForestCellRadius*2.0f) * 4.0f;
+
+        GameObject indicator = GameObject.Instantiate(CombatMovementReticle.Instance.dangerousDotTemplate);
+        indicator.transform.SetParent(mineFieldVFX.transform);
+        indicator.transform.localRotation = Quaternion.Euler(90f, 0.0f, 0.0f);
+        indicator.transform.localScale *= 2f;
+        indicator.SetActive(false);
+        mineFieldVFX.transform.position = pos;
+        indicator.transform.localPosition = new Vector3(0f, 3f, 0f);
+        mineFieldVFX.SetActive(true);
+      } else {
+        //UIMovementDot dot = mineFieldVFX.GetComponentInChildren<UIMovementDot>();
+        //mineFieldVFX.SetActive(true);
+      }
+      UpdateIndicatorVisibility();
+      //SVGRenderer renderer = mineFieldVFX.GetComponentInChildren<SVGRenderer>();
+      //if (renderer != null) { renderer.vectorGraphics = CustomSvgCache.get(mf.Def.Icon, Combat.DataManager); }
+    }
+    public void ClearMineFieldSync(int count,float chance) {
+      this.MineFields.Clear();
+      UpdateIndicatorVisibility();
+    }
     public void deleteTrees(HashSet<object> redrawTreeDatas) {
       foreach (MapTerrainDataCellEx cell in terrainCells) {
         CustomAmmoCategoriesLog.Log.LogWrite("Deleting trees at cell " + cell.x + ":" + cell.y + " " + cell.mapMetaData.getWorldPos(new Point(cell.y, cell.x)) + " count:" + cell.trees.Count + "\n");
@@ -481,14 +666,14 @@ namespace CustAmmoCategories {
         }
       }
     }
-    public MapPoint mapPoint() {
-      return new MapPoint(this.x, this.y);
-    }
+    //public MapPoint mapPoint() {
+      //return new MapPoint(this.x, this.y);
+    //}
     public bool hasTempEffects() {
       return tempVFXEffects.Count > 0;
     }
     public void tempVFXTick() {
-      CustomAmmoCategoriesLog.Log.LogWrite("tempVFXTick:" + this.x + ":" + this.y + "\n");
+      CustomAmmoCategoriesLog.Log.LogWrite("tempVFXTick:" + this.center + "\n");
       HashSet<string> delVFXs = new HashSet<string>();
       foreach (var tvfx in this.tempVFXEffects) {
         tvfx.Value.tick();
@@ -509,7 +694,7 @@ namespace CustAmmoCategories {
         }
       }
     }
-    public void addTempTerrainVFX(CombatGameState combat, string prefabVFX, int counter, Vector3 scale) {
+    public void addTempTerrainVFXSync(CombatGameState combat, string prefabVFX, int counter, Vector3 scale) {
       this.Combat = combat;
       CustomAmmoCategoriesLog.Log.LogWrite("addTempTerrainVFX(" + prefabVFX + "," + counter + ")\n");
       if (tempVFXEffects == null) {
@@ -520,14 +705,14 @@ namespace CustAmmoCategories {
         if (tempVFXEffects.ContainsKey(prefabVFX) == true) {
           tempVFXEffects[prefabVFX].counter += counter;
         } else {
-          Point p = new Point();
-          p.X = this.mapY;
-          p.Z = this.mapX;
-          Vector3 pos = Combat.MapMetaData.getWorldPos(p);
+          //Point p = new Point();
+          //p.X = this.mapY;
+          //p.Z = this.mapX;
+          Vector3 pos = this.center;//Combat.MapMetaData.getWorldPos(p);
           pos.y = Combat.MapMetaData.GetLerpedHeightAt(pos);
           tempTerrainVFXEffect tmpEffect = new tempTerrainVFXEffect(Combat, prefabVFX, pos, scale, counter);
           tempVFXEffects.Add(prefabVFX, tmpEffect);
-          DynamicMapHelper.tempEffectHexes.Add(this.mapPoint());
+          DynamicMapHelper.tempEffectHexes.Add(this);
         }
       }
     }
@@ -540,8 +725,6 @@ namespace CustAmmoCategories {
         }
       }
     }
-    //public static readonly string firePrefab = "vfxPrfPrtl_fireTerrain_lrgLoop";
-    //public static readonly string firePrefab = "vfxPrfPrtl_artillerySmokeSignal_loop";
     public int CountTrees() {
       int result = 0;
       foreach (MapTerrainDataCellEx cell in this.terrainCells) {
@@ -551,10 +734,10 @@ namespace CustAmmoCategories {
     }
     public void applyBurnOutVisuals() {
       burnEffect.CleanupSelf();
-      Point p = new Point();
-      p.X = this.mapY;
-      p.Z = this.mapX;
-      Vector3 pos = Combat.MapMetaData.getWorldPos(p);
+      //Point p = new Point();
+      //p.X = this.mapY;
+      //p.Z = this.mapX;
+      Vector3 pos = this.center;//Combat.MapMetaData.getWorldPos(p);
       pos.y = Combat.MapMetaData.GetLerpedHeightAt(pos);
       float scale = CustomAmmoCategories.Settings.BurnedTrees.DecalScale;
       if (wasHasForest) {
@@ -567,10 +750,10 @@ namespace CustAmmoCategories {
       }
     }
     public void applyBurnVisuals() {
-      Point p = new Point();
-      p.X = this.mapY;
-      p.Z = this.mapX;
-      Vector3 pos = Combat.MapMetaData.getWorldPos(p);
+      //Point p = new Point();
+      //p.X = this.mapY;
+      //p.Z = this.mapX;
+      Vector3 pos = this.center;//Combat.MapMetaData.getWorldPos(p);
       pos.y = Combat.MapMetaData.GetLerpedHeightAt(pos);
       CustomAmmoCategoriesLog.Log.LogWrite("Spawning fire at " + pos + "\n");
       pos.x += CustomAmmoCategories.Settings.BurningOffsetX;
@@ -578,11 +761,6 @@ namespace CustAmmoCategories {
       pos.z += CustomAmmoCategories.Settings.BurningOffsetZ;
       if (burnEffect != null) { burnEffect.CleanupSelf(); };
       burnEffect = DynamicMapHelper.SpawnFXObject(Combat, CustomAmmoCategories.Settings.BurningFX, pos, new Vector3(CustomAmmoCategories.Settings.BurningScaleX, CustomAmmoCategories.Settings.BurningScaleY, CustomAmmoCategories.Settings.BurningScaleZ));
-      //HashSet<object> redrawTreeDatas = new HashSet<object>();
-      //this.deleteTrees(redrawTreeDatas);
-      //foreach (object redrawItem in redrawTreeDatas) {
-      //CACDynamicTree.redrawTrees(redrawTreeDatas);
-      //}
     }
     public void UpdateCellsBurn(Weapon weapon, int count, int strength) {
       foreach (MapTerrainDataCellEx cell in terrainCells) {
@@ -590,6 +768,16 @@ namespace CustAmmoCategories {
       }
     }
     public void SetCellsBurn(Weapon weapon, int count, int countNoForest, int strength, int strengthNoForest) {
+      foreach (MineField mf in MineFields) {
+        if (mf.count <= 0) { continue; }
+        if (mf.Def.burnReaction == MinefieldBurnReaction.None) { continue; }
+        switch (mf.Def.burnReaction) {
+          case MinefieldBurnReaction.Destroy: mf.count = 0; break;
+          case MinefieldBurnReaction.Explode: mf.count = 0; break;
+          case MinefieldBurnReaction.LooseElectronic: mf.IFFLevel = 0; mf.stealthLvl = 1; break;
+        }
+      }
+      this.UpdateIndicatorVisibility();
       foreach (MapTerrainDataCellEx cell in terrainCells) {
         CustomAmmoCategoriesLog.Log.LogWrite("SetCellsBurn:" + cell.x + ":" + cell.y + ":" + SplatMapInfo.IsForest(cell.terrainMask) + ":" + cell.CantHaveForest + "\n");
         if (SplatMapInfo.IsForest(cell.terrainMask) && (cell.CantHaveForest == false)) {
@@ -601,10 +789,8 @@ namespace CustAmmoCategories {
         }
       }
     }
-    public bool TryBurnCell(Weapon weapon) {
-      return TryBurnCell(weapon, weapon.FireTerrainChance(), weapon.FireTerrainStrength(), weapon.FireDurationWithoutForest());
-    }
-    public bool TryBurnCell(Weapon weapon, float FireTerrainChance, int FireTerrainStrength, int FireDurationWithoutForest) {
+
+    public bool TryBurnCellSync(Weapon weapon, float FireTerrainChance, int FireTerrainStrength, int FireDurationWithoutForest) {
       CustomAmmoCategoriesLog.Log.LogWrite("Try burn cell " + weapon.Name + " Chance:" + FireTerrainChance + " hasForest:" + isHasForest + "\n");
       if (FireTerrainChance > CustomAmmoCategories.Epsilon) {
         if ((FireDurationWithoutForest <= 0) && (this.isHasForest == false)) {
@@ -646,7 +832,7 @@ namespace CustAmmoCategories {
       return true;
     }
     public bool TryExpand(Weapon weapon) {
-      CustomAmmoCategoriesLog.Log.LogWrite("  test expand:" + this.x + ":" + this.y + "\n");
+      CustomAmmoCategoriesLog.Log.LogWrite("  test expand:" + this.center + "\n");
       if (isHasForest == false) {
         CustomAmmoCategoriesLog.Log.LogWrite("  no forest\n");
         return false;
@@ -684,10 +870,11 @@ namespace CustAmmoCategories {
       return true;
     }
     public MapTerrainHexCell() {
-      x = 0;
-      y = 0;
-      mapX = 0;
-      mapY = 0;
+      //x = 0;
+      //y = 0;
+      //mapX = 0;
+      //mapY = 0;
+      center = Vector3.zero;
       terrainCells = new List<MapTerrainDataCellEx>();
       tempVFXEffects = new Dictionary<string, tempTerrainVFXEffect>();
       burnEffect = null;
@@ -697,11 +884,14 @@ namespace CustAmmoCategories {
       Combat = null;
       expandingThisTurn = false;
       burningWeapon = null;
-      MineField = new List<MineField>();
+      MineFields = new List<MineField>();
+      mineFieldVFX = null;
+      minefieldStealthReductors = new HashSet<AbstractActor>();
+      minefieldStealthReductionCache = new Dictionary<Team, int>();
     }
     public static List<MapTerrainHexCell> listHexCellsByCellRadius(MapTerrainDataCellEx ccell, int r) {
-      HashSet<MapPoint> hexCells = new HashSet<MapPoint>();
-      List<MapTerrainHexCell> result = new List<MapTerrainHexCell>();
+      //HashSet<MapPoint> hexCells = new HashSet<MapPoint>();
+      HashSet<MapTerrainHexCell> result = new HashSet<MapTerrainHexCell>();
       List<MapPoint> affectedCells = MapPoint.calcMapCircle(new MapPoint(ccell.x, ccell.y), r);
       foreach (MapPoint aCell in affectedCells) {
         if (aCell.x < 0) { continue; }
@@ -710,12 +900,13 @@ namespace CustAmmoCategories {
         if (aCell.y >= ccell.mapMetaData.mapTerrainDataCells.GetLength(1)) { continue; }
         MapTerrainDataCellEx cell = ccell.mapMetaData.mapTerrainDataCells[aCell.x, aCell.y] as MapTerrainDataCellEx;
         if (cell == null) { continue; }
-        MapPoint hexCell = new MapPoint(cell.hexCell.x, cell.hexCell.y);
-        if (hexCells.Contains(hexCell)) { continue; };
-        hexCells.Add(hexCell);
+        //MapPoint hexCell = new MapPoint(cell.hexCell.x, cell.hexCell.y);
+        //if (hexCells.Contains(hexCell)) { continue; };
+        //hexCells.Add(hexCell);
+        if (cell.hexCell == null) { continue; }
         result.Add(cell.hexCell);
       }
-      return result;
+      return result.ToList();
     }
   }
   public class MapTerrainDataCellEx : MapTerrainDataCell {
@@ -771,7 +962,6 @@ namespace CustAmmoCategories {
       }
       DynamicMapHelper.tempMaskCells.Add(this.mapPoint());
     }
-
     public void ReconstructTempDesignMask() {
       CustomAmmoCategoriesLog.Log.LogWrite("Reconstructin design mask:" + this.x + ":" + this.y + "\n");
       tempDesignMask = null;
@@ -1090,9 +1280,10 @@ namespace CustAmmoCategories {
   }*/
   public static partial class DynamicMapHelper {
     public static Dictionary<string, DesignMaskDef> loadedMasksDef = new Dictionary<string, DesignMaskDef>();
-    public static MapTerrainHexCell[,] hexGrid = null;
+    public static Dictionary<Vector3, MapTerrainHexCell> hexGrid = new Dictionary<Vector3, MapTerrainHexCell>();
+    //public static MapTerrainHexCell[,] hexGrid = null;
     public static List<MapTerrainHexCell> burningHexes = new List<MapTerrainHexCell>();
-    public static HashSet<MapPoint> tempEffectHexes = new HashSet<MapPoint>();
+    public static HashSet<MapTerrainHexCell> tempEffectHexes = new HashSet<MapTerrainHexCell>();
     public static HashSet<MapPoint> tempMaskCells = new HashSet<MapPoint>();
     public static MapMetaData mapMetaData = null;
     //public static Dictionary<ICombatant, ActorMineFieldVFX> lastMineFieldFXPlayedPosition = new Dictionary<ICombatant, ActorMineFieldVFX>();
@@ -1159,14 +1350,18 @@ namespace CustAmmoCategories {
       DynamicMapHelper.tempMaskCells.Clear();
       try {
         if (DynamicMapHelper.hexGrid != null) {
-          int hmax = DynamicMapHelper.hexGrid.GetLength(0);
-          int hmay = DynamicMapHelper.hexGrid.GetLength(1);
-          CustomAmmoCategoriesLog.Log.LogWrite(" size:" + hmax + "x" + hmay + "\n");
-          for (int hx = 0; hx < hmax; ++hx) {
-            for (int hy = 0; hy < hmay; ++hy) {
+          //int hmax = DynamicMapHelper.hexGrid.GetLength(0);
+          //int hmay = DynamicMapHelper.hexGrid.GetLength(1);
+          //CustomAmmoCategoriesLog.Log.LogWrite(" size:" + hmax + "x" + hmay + "\n");
+          CustomAmmoCategoriesLog.Log.LogWrite(" size:" + DynamicMapHelper.hexGrid.Count + "\n");
+          //for (int hx = 0; hx < hmax; ++hx) {
+          { 
+            //for (int hy = 0; hy < hmay; ++hy) {
+            foreach(var vhcell in DynamicMapHelper.hexGrid) { 
               //CustomAmmoCategoriesLog.Log.LogWrite("  hex:" + hx + ":" + hy + "\n");
-              try {
-                MapTerrainHexCell hcell = DynamicMapHelper.hexGrid[hx, hy];
+                try {
+                //MapTerrainHexCell hcell = DynamicMapHelper.hexGrid[hx, hy];
+                MapTerrainHexCell hcell = vhcell.Value;//DynamicMapHelper.hexGrid[hx, hy];
                 if (hcell == null) {
                   CustomAmmoCategoriesLog.Log.LogWrite("  hex cell is null\n");
                   continue;
@@ -1203,7 +1398,17 @@ namespace CustAmmoCategories {
       for (int index = 0; index < DynamicMapHelper.burningHexes.Count; ++index) {
         MapTerrainHexCell hex = burningHexes[index];
         if (hex.expandingThisTurn == false) { continue; };
-        int hx = hex.x;
+        List<Vector3> hexesNerby = UnityGameInstance.BattleTechGame.Combat.HexGrid.GetGridPointsAroundPointWithinRadius(hex.center,1);
+        foreach(Vector3 hexPosNerby in hexesNerby) {
+          CustomAmmoCategoriesLog.Log.LogWrite(" expanding:" + hexPosNerby + "\n");
+          if(DynamicMapHelper.hexGrid.TryGetValue(hexPosNerby,out MapTerrainHexCell hexNear) == false) {
+            CustomAmmoCategoriesLog.Log.LogWrite("  can't find hex\n");
+            continue;
+          }
+          CustomAmmoCategoriesLog.Log.LogWrite("  hex found\n");
+          if (hexNear.TryExpand(hex.burningWeapon)) { DynamicMapHelper.burningHexes.Add(hexNear); }
+        }
+        /*int hx = hex.x;
         int hy = hex.y;
         CustomAmmoCategoriesLog.Log.LogWrite(" expanding:" + hx + ":" + hy + "\n");
         if (hx > 0) {
@@ -1217,7 +1422,7 @@ namespace CustAmmoCategories {
         }
         if (hy < (DynamicMapHelper.hexGrid.GetLength(1) - 1)) {
           if (DynamicMapHelper.hexGrid[hx, hy + 1].TryExpand(hex.burningWeapon)) { DynamicMapHelper.burningHexes.Add(DynamicMapHelper.hexGrid[hx, hy + 1]); }
-        }
+        }*/
       }
       HashSet<MapTerrainHexCell> cleanTrees = new HashSet<MapTerrainHexCell>();
       for (int index = 0; index < DynamicMapHelper.burningHexes.Count;) {
@@ -1233,34 +1438,34 @@ namespace CustAmmoCategories {
     }
     public static void TempTick() {
       CustomAmmoCategoriesLog.Log.LogWrite("TempTick\n");
-      HashSet<MapPoint> markDel = new HashSet<MapPoint>();
+      HashSet<MapTerrainHexCell> markDel = new HashSet<MapTerrainHexCell>();
       foreach (var hc in DynamicMapHelper.tempEffectHexes) {
-        if ((hc.x < 0) || (hc.y < 0) || (hc.x >= DynamicMapHelper.hexGrid.GetLength(0)) || (hc.y >= DynamicMapHelper.hexGrid.GetLength(1))) { continue; }
-        MapTerrainHexCell hcell = DynamicMapHelper.hexGrid[hc.x, hc.y];
+        //if ((hc.x < 0) || (hc.y < 0) || (hc.x >= DynamicMapHelper.hexGrid.GetLength(0)) || (hc.y >= DynamicMapHelper.hexGrid.GetLength(1))) { continue; }
+        MapTerrainHexCell hcell = hc;//DynamicMapHelper.hexGrid[hc.x, hc.y];
         hcell.tempVFXTick();
-        if (hcell.hasTempEffects() == false) { markDel.Add(hcell.mapPoint()); };
+        if (hcell.hasTempEffects() == false) { markDel.Add(hcell); };
       }
       foreach (var dp in markDel) {
         DynamicMapHelper.tempEffectHexes.Remove(dp);
       }
-      markDel.Clear();
+      HashSet<MapPoint> cellsDel = new HashSet<MapPoint>();
       if (DynamicMapHelper.mapMetaData == null) { return; };
       foreach (var hc in DynamicMapHelper.tempMaskCells) {
         if ((hc.x < 0) || (hc.y < 0) || (hc.x >= DynamicMapHelper.mapMetaData.mapTerrainDataCells.GetLength(0)) || (hc.y >= DynamicMapHelper.mapMetaData.mapTerrainDataCells.GetLength(1))) { continue; }
         MapTerrainDataCellEx cell = DynamicMapHelper.mapMetaData.mapTerrainDataCells[hc.x, hc.y] as MapTerrainDataCellEx;
         if (cell == null) { continue; }
         cell.tempMaskTick();
-        if (cell.tempDesignMask == null) { markDel.Add(cell.mapPoint()); };
+        if (cell.tempDesignMask == null) { cellsDel.Add(cell.mapPoint()); };
       }
-      foreach (var dp in markDel) {
+      foreach (var dp in cellsDel) {
         DynamicMapHelper.tempMaskCells.Remove(dp);
       }
     }
     public static void initHexGrid(MapMetaData mapMetaData) {
       DynamicMapHelper.mapMetaData = mapMetaData;
-      int hexStepX = (CustomAmmoCategories.Settings.BurningForestCellRadius * 3) / 2 + 1;
-      int hexStepY = Mathf.RoundToInt((float)CustomAmmoCategories.Settings.BurningForestCellRadius * 0.866025f);
-      List<MapPoint> hexPattern = MapPoint.createHexagon(0, 0, CustomAmmoCategories.Settings.BurningForestCellRadius);
+      //int hexStepX = (CustomAmmoCategories.Settings.BurningForestCellRadius * 3) / 2 + 1;
+      //int hexStepY = Mathf.RoundToInt((float)CustomAmmoCategories.Settings.BurningForestCellRadius * 0.866025f);
+      //List<MapPoint> hexPattern = MapPoint.createHexagon(0, 0, CustomAmmoCategories.Settings.BurningForestCellRadius);
       DynamicMapHelper.CurrentBiome = "";
       try {
         DynamicMapHelper.CurrentBiome = mapMetaData.biomeDesignMask.Description.Id;
@@ -1268,37 +1473,58 @@ namespace CustAmmoCategories {
         DynamicMapHelper.CurrentBiome = "NotSet";
       }
       bool noForest = CustomAmmoCategories.Settings.NoForestBiomes.Contains(DynamicMapHelper.CurrentBiome);
-      Log.LogWrite("Map biome:" + DynamicMapHelper.CurrentBiome + " noForest:" + noForest + "\n");
-      Log.LogWrite(" stack:" + Environment.StackTrace + "\n");
-      int hex_x = mapMetaData.mapTerrainDataCells.GetLength(0) / hexStepX;
-      if ((mapMetaData.mapTerrainDataCells.GetLength(0) % hexStepX) != 0) { ++hex_x; }
-      int hex_y = mapMetaData.mapTerrainDataCells.GetLength(1) / ((hexStepY * 2) - 1);
-      if ((mapMetaData.mapTerrainDataCells.GetLength(1) % ((hexStepY * 2) - 1)) != 0) { ++hex_y; }
-      DynamicMapHelper.hexGrid = new MapTerrainHexCell[hex_x, hex_y];
-      for (int hix = 0; hix < hex_x; ++hix) {
-        for (int hiy = 0; hiy < hex_y; ++hiy) {
-          int hx = hix * hexStepX;
-          int hy = hiy * hexStepY * 2 + (hx % 2) * hexStepY;
-          MapTerrainHexCell hexCell = new MapTerrainHexCell();
-          DynamicMapHelper.hexGrid[hix, hiy] = hexCell;
-          hexCell.x = hix;
-          hexCell.y = hiy;
-          hexCell.mapX = hx;
-          hexCell.mapY = hy;
-          foreach (MapPoint hp in hexPattern) {
-            int mx = hp.x + hx;
-            int my = hp.y + hy;
-            if (mx < 0) { continue; }
-            if (my < 0) { continue; }
-            if (mx >= mapMetaData.mapTerrainDataCells.GetLength(0)) { continue; }
-            if (my >= mapMetaData.mapTerrainDataCells.GetLength(1)) { continue; }
-            MapTerrainDataCellEx cell = mapMetaData.mapTerrainDataCells[mx, my] as MapTerrainDataCellEx;
-            if (cell == null) { continue; };
-            cell.hexCell = hexCell;
+      Log.M.TWL(0,"Map biome:" + DynamicMapHelper.CurrentBiome + " noForest:" + noForest+" hex grid:"+(UnityGameInstance.BattleTechGame.Combat.HexGrid == null?"null":"not null"));
+      //Log.LogWrite(" stack:" + Environment.StackTrace + "\n");
+      HexGrid hexGrid = UnityGameInstance.BattleTechGame.Combat.HexGrid;
+      DynamicMapHelper.hexGrid = new Dictionary<Vector3, MapTerrainHexCell>();
+      for (int mx = 0; mx < mapMetaData.mapTerrainDataCells.GetLength(0); ++mx) {
+        for (int my = 0; my < mapMetaData.mapTerrainDataCells.GetLength(1); ++my) {
+          MapTerrainDataCellEx cell = mapMetaData.mapTerrainDataCells[mx, my] as MapTerrainDataCellEx;
+          Vector3 hexPos = hexGrid.GetClosestPointOnGrid(cell.WorldPos());
+          if(DynamicMapHelper.hexGrid.TryGetValue(hexPos,out MapTerrainHexCell hexCell) == false) {
+            hexCell = new MapTerrainHexCell();
+            hexCell.center = hexPos;
+            hexCell.Combat = UnityGameInstance.BattleTechGame.Combat;
+            DynamicMapHelper.hexGrid.Add(hexPos, hexCell);
+          }
+          cell.hexCell = hexCell;
+          hexCell.terrainCells.Add(cell);
+          if (noForest) {
+            cell.hexCell.isHasForest = false; cell.hexCell.wasHasForest = false; cell.CantHaveForest = true;
+          } else {
+            if (SplatMapInfo.IsForest(cell.terrainMask) == true) { cell.hexCell.isHasForest = true; cell.hexCell.wasHasForest = true; cell.CantHaveForest = false; };
           }
         }
       }
-      for (int mx = 0; mx < mapMetaData.mapTerrainDataCells.GetLength(0); ++mx) {
+      //int hex_x = mapMetaData.mapTerrainDataCells.GetLength(0) / hexStepX;
+      //if ((mapMetaData.mapTerrainDataCells.GetLength(0) % hexStepX) != 0) { ++hex_x; }
+      //int hex_y = mapMetaData.mapTerrainDataCells.GetLength(1) / ((hexStepY * 2) - 1);
+      //if ((mapMetaData.mapTerrainDataCells.GetLength(1) % ((hexStepY * 2) - 1)) != 0) { ++hex_y; }
+      //DynamicMapHelper.hexGrid = new MapTerrainHexCell[hex_x, hex_y];
+      //for (int hix = 0; hix < hex_x; ++hix) {
+      //  for (int hiy = 0; hiy < hex_y; ++hiy) {
+      //    int hx = hix * hexStepX;
+      //    int hy = hiy * hexStepY * 2 + (hx % 2) * hexStepY;
+      //    MapTerrainHexCell hexCell = new MapTerrainHexCell();
+      //    DynamicMapHelper.hexGrid[hix, hiy] = hexCell;
+      //    hexCell.x = hix;
+      //    hexCell.y = hiy;
+      //    hexCell.mapX = hx;
+      //    hexCell.mapY = hy;
+      //    foreach (MapPoint hp in hexPattern) {
+      //      int mx = hp.x + hx;
+      //      int my = hp.y + hy;
+      //      if (mx < 0) { continue; }
+      //      if (my < 0) { continue; }
+      //      if (mx >= mapMetaData.mapTerrainDataCells.GetLength(0)) { continue; }
+      //      if (my >= mapMetaData.mapTerrainDataCells.GetLength(1)) { continue; }
+      //      MapTerrainDataCellEx cell = mapMetaData.mapTerrainDataCells[mx, my] as MapTerrainDataCellEx;
+      //      if (cell == null) { continue; };
+      //      cell.hexCell = hexCell;
+      //    }
+      //  }
+      //}
+      /*for (int mx = 0; mx < mapMetaData.mapTerrainDataCells.GetLength(0); ++mx) {
         for (int my = 0; my < mapMetaData.mapTerrainDataCells.GetLength(1); ++my) {
           MapTerrainDataCellEx cell = mapMetaData.mapTerrainDataCells[mx, my] as MapTerrainDataCellEx;
           if (cell == null) { continue; };
@@ -1313,50 +1539,17 @@ namespace CustAmmoCategories {
             if (SplatMapInfo.IsForest(cell.terrainMask) == true) { cell.hexCell.isHasForest = true; cell.hexCell.wasHasForest = true; cell.CantHaveForest = false; };
           }
         }
-      }
-      CustomAmmoCategoriesLog.Log.LogWrite("Hex Map:\n");
-      for (int hx = 0; hx < DynamicMapHelper.hexGrid.GetLength(0); ++hx) {
-        for (int hy = 0; hy < DynamicMapHelper.hexGrid.GetLength(1); ++hy) {
-          CustomAmmoCategoriesLog.Log.LogWrite((DynamicMapHelper.hexGrid[hx, hy].isHasForest ? "F" : "-"));
-        }
-        CustomAmmoCategoriesLog.Log.LogWrite("\n");
-      }
+      }*/
+      //CustomAmmoCategoriesLog.Log.LogWrite("Hex Map:\n");
+      //for (int hx = 0; hx < DynamicMapHelper.hexGrid.GetLength(0); ++hx) {
+        //for (int hy = 0; hy < DynamicMapHelper.hexGrid.GetLength(1); ++hy) {
+          //CustomAmmoCategoriesLog.Log.LogWrite((DynamicMapHelper.hexGrid[hx, hy].isHasForest ? "F" : "-"));
+        //}
+        //CustomAmmoCategoriesLog.Log.LogWrite("\n");
+      //}
     }
     public static ObjectSpawnDataSelf SpawnFXObject(CombatGameState Combat, string prefabName, Vector3 pos, Vector3 scale) {
-      //Vector3 groundPos = pos;
-      //groundPos.y = Combat.MapMetaData.GetLerpedHeightAt(groundPos);
       ObjectSpawnDataSelf objectSpawnData = new ObjectSpawnDataSelf(prefabName, pos, Quaternion.identity, scale, true, false);
-      /*if (objectSpawnData.spawnedObject == null) {
-        CustomAmmoCategoriesLog.Log.LogWrite("trying to spawn null. investigating\n");
-        VersionManifestEntry versionManifestEntry =  Combat.DataManager.ResourceLocator.EntryByID(prefabName, BattleTechResourceType.Prefab, false);
-        if (versionManifestEntry == null) {
-          CustomAmmoCategoriesLog.Log.LogWrite("Can't load version manifest for '" + prefabName + "'\n");
-          Dictionary<BattleTechResourceType, Dictionary<string, VersionManifestEntry>> baseManifest =
-            (Dictionary<BattleTechResourceType, Dictionary<string, VersionManifestEntry>>)typeof(BattleTechResourceLocator).GetField("baseManifest", BindingFlags.Instance | BindingFlags.NonPublic)
-            .GetValue(Combat.DataManager.ResourceLocator);
-          foreach (var manifests in baseManifest) {
-            CustomAmmoCategoriesLog.Log.LogWrite(manifests.Key + ":\n");
-            foreach (var manifest in manifests.Value) {
-              CustomAmmoCategoriesLog.Log.LogWrite(" " + manifest.Key + "\n");
-            }
-          }
-        } else {
-          CustomAmmoCategoriesLog.Log.LogWrite("versionManifestEntry.IsResourcesAsset:"+ versionManifestEntry.IsResourcesAsset + "\n");
-          PropertyInfo assetsManagerProp = typeof(DataManager).GetProperty("AssetBundleManager", BindingFlags.NonPublic | BindingFlags.Instance);
-          if(assetsManagerProp != null) {
-            AssetBundleManager manager = (AssetBundleManager)assetsManagerProp.GetGetMethod().Invoke(Combat.DataManager, null);
-            if(manager != null) {
-              CustomAmmoCategoriesLog.Log.LogWrite("manager tryied to load "+prefabName+","+ versionManifestEntry.AssetBundleName+"\n");
-              //Dictionary<string, object> loadedBundles = (Dictionary<string, object>)typeof(AssetBundleManager).GetField("");
-            } else {
-              CustomAmmoCategoriesLog.Log.LogWrite("can't get manager\n");
-            }
-          } else {
-            CustomAmmoCategoriesLog.Log.LogWrite("can't get property\n");
-          }
-          //.GetGetMethod();
-        }
-      } else {*/
       try {
         objectSpawnData.SpawnSelf(Combat);
         //objectSpawnData.spawnedObject.transform.localScale += scale;
@@ -1418,11 +1611,13 @@ namespace CustAmmoCategories {
       }
       CustomAmmoCategoriesLog.Log.LogWrite(" impact at " + pos + "\n");
       if (weapon.FireTerrainCellRadius() == 0) {
-        if (cell.hexCell.TryBurnCell(weapon)) { DynamicMapHelper.burningHexes.Add(cell.hexCell); };
+        cell.hexCell.TryBurnCellAsync(weapon);
+        //if (cell.hexCell.TryBurnCell(weapon)) { DynamicMapHelper.burningHexes.Add(cell.hexCell); };
       } else {
         List<MapTerrainHexCell> affectedHexCells = MapTerrainHexCell.listHexCellsByCellRadius(cell, weapon.FireTerrainCellRadius());
         foreach (MapTerrainHexCell hexCell in affectedHexCells) {
-          if (hexCell.TryBurnCell(weapon)) { DynamicMapHelper.burningHexes.Add(hexCell); };
+          hexCell.TryBurnCellAsync(weapon);
+          //if (hexCell.TryBurnCell(weapon)) { DynamicMapHelper.burningHexes.Add(hexCell); };
         }
       }
     }
@@ -1439,23 +1634,16 @@ namespace CustAmmoCategories {
       Vector3 scale;
       int radius = 0;
       DesignMaskDef mask = weapon.tempDesignMask(out turns, out vfx, out scale, out radius);
-      //if (mask == null) { return; };
       if (radius == 0) {
         cell.hexCell.addTempTerrainVFX(weapon.parent.Combat, vfx, turns, scale);
-        DynamicMapHelper.addDesignMaskAsync(cell.hexCell, mask, turns);
+        cell.hexCell.addDesignMaskAsync(mask, turns);
 
-        //AsyncDesignMaskUpdater admu = new AsyncDesignMaskUpdater(cell.hexCell,mask,turns);
-        //Thread designMaskApplyer = new Thread(new ThreadStart(admu.asyncAddMask));
-        //designMaskApplyer.Start();
       } else {
         List<MapTerrainHexCell> affectedHexCells = MapTerrainHexCell.listHexCellsByCellRadius(cell, radius);
         foreach (MapTerrainHexCell hexCell in affectedHexCells) {
           hexCell.addTempTerrainVFX(weapon.parent.Combat, vfx, turns, scale);
-          DynamicMapHelper.addDesignMaskAsync(hexCell, mask, turns);
+          hexCell.addDesignMaskAsync(mask, turns);
         }
-        //AsyncDesignMaskUpdater admu = new AsyncDesignMaskUpdater(affectedHexCells, mask, turns);
-        //Thread designMaskApplyer = new Thread(new ThreadStart(admu.asyncAddMask));
-        //designMaskApplyer.Start();
       }
     }
     public static void applyCleanMinefield(Weapon weapon, Vector3 pos) {
@@ -1467,19 +1655,23 @@ namespace CustAmmoCategories {
       }
       if (weapon.ClearMineFieldRadius() == 0) { return; };
       if (weapon.ClearMineFieldRadius() == 1) {
-        Log.LogWrite(" affected cell " + cell.hexCell.x + "," + cell.hexCell.y + "\n");
-        cell.hexCell.MineField.Clear();
+        //Log.LogWrite(" affected cell " + cell.hexCell.x + "," + cell.hexCell.y + "\n");
+        Log.LogWrite(" affected cell " + cell.hexCell.center + "\n");
+        cell.hexCell.clearMineField(1, 0f);
+          //MineField.Clear();
       } else {
         List<MapTerrainHexCell> affectedHexCells = MapTerrainHexCell.listHexCellsByCellRadius(cell, weapon.ClearMineFieldRadius());
         foreach (MapTerrainHexCell hexCell in affectedHexCells) {
-          Log.LogWrite(" affected cell " + hexCell.x + "," + hexCell.y + "\n");
-          hexCell.MineField.Clear();
+          //Log.LogWrite(" affected cell " + hexCell.x + "," + hexCell.y + "\n");
+          Log.LogWrite(" affected cell " + hexCell.center + "\n");
+          hexCell.clearMineField(1, 0f);
+          //hexCell.MineField.Clear();
         }
       }
     }
 
     public static void applyMineField(Weapon weapon, Vector3 pos) {
-      CustomAmmoCategoriesLog.Log.LogWrite("Applying minefield:" + weapon.defId + " " + pos + "\n");
+      CustomAmmoCategoriesLog.Log.LogWrite("Applying minefield:" + weapon.defId + " " + pos + " neares hex: "+weapon.parent.Combat.HexGrid.GetClosestPointOnGrid(pos)+"\n");
       MapTerrainDataCellEx cell = weapon.parent.Combat.MapMetaData.GetCellAt(pos) as MapTerrainDataCellEx;
       if (cell == null) {
         CustomAmmoCategoriesLog.Log.LogWrite(" cell is not extended\n");
@@ -1489,62 +1681,17 @@ namespace CustAmmoCategories {
       if (weapon.InstallMineField() == false) { return; }
       MineFieldDef mfd = weapon.MineFieldDef();
       if (mfd.InstallCellRange == 0) {
-        Log.LogWrite(" affected cell " + cell.hexCell.x + "," + cell.hexCell.y + ":" + mfd.Count + "\n");
-        cell.hexCell.MineField.Add(new MineField(mfd, weapon.parent, weapon));
+        //Log.LogWrite(" affected cell " + cell.hexCell.x + "," + cell.hexCell.y + ":" + mfd.Count + "\n");
+        Log.LogWrite(" affected cell " + cell.hexCell.center +":" + mfd.Count + "\n");
+        cell.hexCell.addMineField(mfd, weapon.parent, weapon);
       } else {
         List<MapTerrainHexCell> affectedHexCells = MapTerrainHexCell.listHexCellsByCellRadius(cell, mfd.InstallCellRange);
         foreach (MapTerrainHexCell hexCell in affectedHexCells) {
-          Log.LogWrite(" affected cell " + hexCell.x + "," + hexCell.y + ":" + mfd.Count + "\n");
-          hexCell.MineField.Add(new MineField(mfd, weapon.parent, weapon));
+          //Log.LogWrite(" affected cell " + hexCell.x + "," + hexCell.y + ":" + mfd.Count + "\n");
+          Log.LogWrite(" affected cell " + hexCell.center + ":" + mfd.Count + "\n");
+          hexCell.addMineField(mfd, weapon.parent, weapon);
         }
       }
-
-      /*List<MapPoint> affectedPoints = MapPoint.calcMapCircle(C, affectedRaduis);
-      if (affectedPoints.Count <= 0) {
-        CustomAmmoCategoriesLog.Log.LogWrite(" no affected points? O_o\n");
-        return;
-      }
-      int xlimit = cell.mapMetaData.mapTerrainDataCells.GetLength(0) - 1;
-      int ylimit = cell.mapMetaData.mapTerrainDataCells.GetLength(1) - 1;
-      CustomAmmoCategoriesLog.Log.LogWrite(" circle center " + cell.x + "," + cell.y + "\n");
-      foreach (MapPoint ap in affectedPoints) {
-        CustomAmmoCategoriesLog.Log.LogWrite(" affected cell " + ap.x + "," + ap.y + "(" + (ap.x - cell.x) + "," + (ap.y - cell.y) + ")\n");
-        if (ap.x < 0) { continue; };
-        if (ap.y < 0) { continue; };
-        if (ap.x > xlimit) { continue; };
-        if (ap.y > ylimit) { continue; };
-        MapTerrainDataCellEx acell = cell.mapMetaData.mapTerrainDataCells[ap.x, ap.y] as MapTerrainDataCellEx;
-        if (acell == null) { continue; };
-        CustomAmmoCategoriesLog.Log.LogWrite("  mine field " + damageChance + ":" + damage + ":" + weapon.parent.GUID + "\n");
-        acell.MineField.Add(new MineField(damageChance, damage, heat, instab, minesCount, weapon.parent, weapon));
-      }
-      //bool dngerOnImpact = CustomAmmoCategories.getWeaponBecomesDangerousOnImpact(weapon);
-      /*if (cell is MapTerrainDataCellEx) {
-        MapTerrainDataCellEx ecell = cell as MapTerrainDataCellEx;
-        CustomAmmoCategoriesLog.Log.LogWrite(" cell is extended cell ("+ecell.x+","+ecell.y+")\n");
-        int startx = ecell.x - 4;if (startx < 0) { startx = 0; };
-        int starty = ecell.y - 4; if (starty < 0) { starty = 0; };
-        int endx = ecell.x + 4; if (endx >= ecell.mapMetaData.mapTerrainDataCells.GetLength(0)) { endx = ecell.mapMetaData.mapTerrainDataCells.GetLength(0) - 1; };
-        int endy = ecell.y + 4; if (endy >= ecell.mapMetaData.mapTerrainDataCells.GetLength(1)) { endy = ecell.mapMetaData.mapTerrainDataCells.GetLength(1) - 1; };
-        FootstepManager.Instance.AddScorch(pos, new Vector3(Random.Range(0.0f, 1f), 0.0f, Random.Range(0.0f, 1f)).normalized, new Vector3(25f, 25f, 25f), true);
-        for (int x = startx; x < endx; ++x) {
-          for (int y = starty; y < endy; ++y) {
-            MapTerrainDataCellEx cecell = ecell.mapMetaData.mapTerrainDataCells[x,y] as MapTerrainDataCellEx;
-            if (cecell == null) { continue; };
-            CustomAmmoCategoriesLog.Log.LogWrite("  cell is extended cell (" + cecell.x + "," + cecell.y + ")\n");
-            TerrainMaskFlags tFlags = MapMetaData.GetPriorityTerrainMaskFlags(cecell);
-            DesignMaskDef dmask = CustomAmmoCategories.getWeaponDesignImpactMask(weapon, tFlags);
-            if (dmask == null) {
-              CustomAmmoCategoriesLog.Log.LogWrite(" no dmask\n");
-              continue;
-            }
-            cecell.AddTerrainMask(TerrainMaskFlags.Custom);
-            if (dngerOnImpact) { cecell.AddTerrainMask(TerrainMaskFlags.DangerousLocation); };
-            cecell.CustomDesignMask = dmask;
-            CustomAmmoCategoriesLog.Log.LogWrite("  updated to " + cecell.CustomDesignMask.Description.Name + "\n");
-          }
-        }
-      }*/
     }
     public static void TrackLoadedMaskDef(string key, DesignMaskDef mask) {
       CustomAmmoCategoriesLog.Log.LogWrite("Dynamic design mask loaded:" + key + " = " + mask.Description.Name + "\n");
@@ -1556,8 +1703,6 @@ namespace CustAmmoCategories {
     }
     public static DataManager DataManager = null;
     public static void VFXDepsLoaded(string key, GameObject vfx) {
-      //CustomAmmoCategoriesLog.Log.LogWrite("VFX Loaded:"+key+":"+vfx.GetInstanceID()+"\n");
-      //DynamicMapHelper.DataManager.PoolGameObject(key, vfx);
     }
     public static void LoadDesignMasks(DataManager dataManager) {
       DynamicMapHelper.DataManager = dataManager;
@@ -1565,11 +1710,6 @@ namespace CustAmmoCategories {
       foreach (string key in CustomAmmoCategories.Settings.DynamicDesignMasksDefs) {
         loadRequest.AddLoadRequest<DesignMaskDef>(BattleTechResourceType.DesignMaskDef, key, new Action<string, DesignMaskDef>(DynamicMapHelper.TrackLoadedMaskDef), false);
       }
-      //DataManager.InjectedDependencyLoadRequest dependencyLoad = new DataManager.InjectedDependencyLoadRequest(dataManager);
-      //dependencyLoad.RequestResource(BattleTechResourceType.Prefab, CustomAmmoCategories.Settings.BurningFX);
-      //dependencyLoad.RegisterLoadCompleteCallback(new Action(VFXDepsLoaded));
-      //dataManager.InjectDependencyLoader(dependencyLoad, 10U);
-      //loadRequest.AddLoadRequest<GameObject>(BattleTechResourceType.Prefab, CustomAmmoCategories.Settings.BurningFX, new Action<string, GameObject>(DynamicMapHelper.VFXDepsLoaded), false);
       loadRequest.ProcessRequests(10U);
     }
 
@@ -1679,329 +1819,11 @@ namespace CustAmmoCategories {
       if (vehicle != null) { return (mDmg.mineFieldDamage > CustomAmmoCategories.Epsilon) || (mDmg.mineFieldHeat > 0) || (mDmg.burnHeat > 0); };
       return false;
     }
-    /*public static void inflictRegistredMovingDamageMech(Mech __instance) {
-      CustomAmmoCategoriesLog.Log.LogWrite("inflictRegistredMovingDamageMech to " + __instance.DisplayName + ":" + __instance.GUID + "\n");
-      if (MineFieldHelper.registredMovingDamage.ContainsKey(__instance.GUID) == false) {
-        CustomAmmoCategoriesLog.Log.LogWrite("not exists moving damage " + __instance.DisplayName + ":" + __instance.GUID + "\n", true);
-        return;
-      }
-      movingDamage mDmg = MineFieldHelper.registredMovingDamage[__instance.GUID];
-      MineFieldHelper.registredMovingDamage.Remove(__instance.GUID);
-      if (mDmg.mineFieldDamage > CustomAmmoCategories.Epsilon) {
-        var fakeHit = new WeaponHitInfo(-1, -1, -1, -1, mDmg.weapon.parent.GUID, __instance.GUID, -1, null, null, null, null, null, null, new AttackImpactQuality[1] { AttackImpactQuality.Solid }, new AttackDirection[1] { AttackDirection.FromArtillery }, null, null, null);
-        __instance.TakeWeaponDamage(fakeHit, (int)ArmorLocation.LeftLeg, mDmg.weapon, mDmg.mineFieldDamage / 2f, 0, DamageType.DFASelf);
-        __instance.TakeWeaponDamage(fakeHit, (int)ArmorLocation.RightLeg, mDmg.weapon, mDmg.mineFieldDamage / 2f, 0, DamageType.DFASelf);
-        __instance.Combat.MessageCenter.PublishMessage((MessageCenterMessage)new FloatieMessage(__instance.GUID, __instance.GUID, "MINEFIELD DAMAGE " + mDmg.mineFieldDamage, FloatieMessage.MessageNature.CriticalHit));
-      }
-      if (mDmg.mineFieldHeat > 0) {
-        __instance.AddExternalHeat("MineField", mDmg.mineFieldHeat);
-        __instance.Combat.MessageCenter.PublishMessage((MessageCenterMessage)new FloatieMessage(__instance.GUID, __instance.GUID, "+ " + mDmg.mineFieldHeat + " HEAT FROM MINEFIELD", FloatieMessage.MessageNature.Debuff));
-      }
-      if (mDmg.burnHeat > 0) {
-        __instance.AddExternalHeat("BurningCell", mDmg.burnHeat);
-        __instance.Combat.MessageCenter.PublishMessage((MessageCenterMessage)new FloatieMessage(__instance.GUID, __instance.GUID, "+ " + mDmg.burnHeat + " HEAT FROM FIRE", FloatieMessage.MessageNature.Debuff));
-      }
-      if ((mDmg.burnHeat > 0) || (mDmg.mineFieldHeat > 0)) {
-        __instance.GenerateAndPublishHeatSequence(-1, true, false, __instance.GUID);
-      }
-      if (mDmg.mineFieldInstability > CustomAmmoCategories.Epsilon) {
-        __instance.AddAbsoluteInstability(mDmg.mineFieldInstability, StabilityChangeSource.Attack, mDmg.weapon.parent.GUID);
-      }
-      if (mDmg.weapon != null) {
-        bool needDone = false;
-        __instance.CheckForInstability();
-        if (__instance.IsFlaggedForDeath || __instance.IsFlaggedForKnockdown) {
-          needDone = true;
-        }
-        __instance.HandleKnockdown(-1, mDmg.weapon.parent.GUID, Vector2.one, (SequenceFinished)null);
-        __instance.HandleDeath(mDmg.weapon.parent.GUID);
-        if (needDone) {
-          __instance.HasFiredThisRound = true;
-          __instance.HasMovedThisRound = true;
-          __instance.Combat.MessageCenter.PublishMessage((MessageCenterMessage)new AddSequenceToStackMessage(__instance.DoneWithActor()));
-        }
-      }
-    }
-    public static void inflictRegistredMovingDamageVehicle(Vehicle __instance) {
-      CustomAmmoCategoriesLog.Log.LogWrite("inflictRegistredMovingDamageMech to " + __instance.DisplayName + ":" + __instance.GUID + "\n");
-      if (MineFieldHelper.registredMovingDamage.ContainsKey(__instance.GUID) == false) {
-        CustomAmmoCategoriesLog.Log.LogWrite("not exists moving damage " + __instance.DisplayName + ":" + __instance.GUID + "\n", true);
-        return;
-      }
-      movingDamage mDmg = MineFieldHelper.registredMovingDamage[__instance.GUID];
-      MineFieldHelper.registredMovingDamage.Remove(__instance.GUID);
-      float damage = mDmg.mineFieldDamage + (float)mDmg.mineFieldHeat + (float)mDmg.burnHeat;
-      if (damage > CustomAmmoCategories.Epsilon) {
-        var fakeHit = new WeaponHitInfo(-1, -1, -1, -1, mDmg.weapon.parent.GUID, __instance.GUID, -1, null, null, null, null, null, null, new AttackImpactQuality[1] { AttackImpactQuality.Solid }, new AttackDirection[1] { AttackDirection.FromArtillery }, null, null, null);
-        __instance.TakeWeaponDamage(fakeHit, (int)VehicleChassisLocations.Front, mDmg.weapon, damage / 4f, 0, DamageType.Combat);
-        __instance.TakeWeaponDamage(fakeHit, (int)VehicleChassisLocations.Rear, mDmg.weapon, damage / 4f, 0, DamageType.Combat);
-        __instance.TakeWeaponDamage(fakeHit, (int)VehicleChassisLocations.Right, mDmg.weapon, damage / 4f, 0, DamageType.Combat);
-        __instance.TakeWeaponDamage(fakeHit, (int)VehicleChassisLocations.Left, mDmg.weapon, damage / 4f, 0, DamageType.Combat);
-        string msg = "";
-        if ((mDmg.mineFieldDamage > CustomAmmoCategories.Epsilon) || (mDmg.mineFieldHeat > 0)) { msg = "MINE FIELD"; };
-        if (mDmg.burnHeat > 0) { if (string.IsNullOrEmpty(msg) == false) { msg += " AND "; }; msg += " BURN"; };
-        msg += " DAMAGE " + damage.ToString();
-        __instance.Combat.MessageCenter.PublishMessage((MessageCenterMessage)new FloatieMessage(__instance.GUID, __instance.GUID, msg, FloatieMessage.MessageNature.CriticalHit));
-      }
-      if (mDmg.weapon != null) {
-        bool needDone = false;
-        if (__instance.IsFlaggedForDeath) {
-          needDone = true;
-        }
-        __instance.HandleDeath(mDmg.weapon.parent.GUID);
-        if (needDone) {
-          __instance.HasFiredThisRound = true;
-          __instance.HasMovedThisRound = true;
-          __instance.Combat.MessageCenter.PublishMessage((MessageCenterMessage)new AddSequenceToStackMessage(__instance.DoneWithActor()));
-        }
-      }
-    }*/
     public static void registerMovingDamageFromPath(AbstractActor __instance, List<WayPoint> waypoints) {
       Log.LogWrite("registerMovingDamageFromPath to " + __instance.DisplayName + ":" + __instance.GUID + "\n");
-      /*try {
-        List<MapPoint> mapPoints = DynamicMapHelper.getVisitedPoints(__instance.Combat, waypoints);
-        float damage = 0f;
-        float heat = 0f;
-        float instability = 0f;
-        AbstractActor actor = null;
-        Weapon weapon = null;
-        int burnHeat = 0;
-        int burnCount = 0;
-        bool heatDamage = false;
-        float rollMod = 1f;
-        PathingCapabilitiesDef PathingCaps = (PathingCapabilitiesDef)typeof(Pathing).GetProperty("PathingCaps", BindingFlags.Instance | BindingFlags.NonPublic).GetGetMethod(true).Invoke(__instance.Pathing, null);
-        CustomAmmoCategoriesLog.Log.LogWrite(" current pathing:" + PathingCaps.Description.Id + "\n");
-        if (CustomAmmoCategories.Settings.MineFieldPathingMods.ContainsKey(PathingCaps.Description.Id)) {
-          rollMod = CustomAmmoCategories.Settings.MineFieldPathingMods[PathingCaps.Description.Id];
-        }
-        CustomAmmoCategoriesLog.Log.LogWrite(" rol mod:" + rollMod + "\n");
-        foreach (MapPoint mapPoint in mapPoints) {
-          MapTerrainDataCellEx cell = __instance.Combat.MapMetaData.mapTerrainDataCells[mapPoint.x, mapPoint.y] as MapTerrainDataCellEx;
-          if (cell == null) { continue; };
-          CustomAmmoCategoriesLog.Log.LogWrite(" cell:" + cell.x + ":" + cell.y + " mf:" + cell.MineField.Count + " burn:" + cell.BurningStrength + "/" + burnHeat + "/" + burnCount + "\n");
-          foreach (MineField mineField in cell.MineField) {
-            if (mineField.count <= 0) { continue; };
-            CustomAmmoCategoriesLog.Log.LogWrite("  mine field:" + (mineField.HitChance * rollMod) + ":" + mineField.damage + "\n");
-            float roll = Random.Range(0f, 1f);
-            if (roll < (mineField.HitChance * rollMod)) {
-              CustomAmmoCategoriesLog.Log.LogWrite("   hit:" + roll + "/" + (mineField.HitChance * rollMod) + ":" + damage + "\n");
-              damage += mineField.damage;
-              heat += mineField.heat;
-              instability += mineField.instability;
-              actor = mineField.owner;
-              weapon = mineField.weapon;
-              mineField.count -= 1;
-            }
-          }
-          if (cell.BurningStrength > 0) {
-            burnHeat += cell.BurningStrength; ++burnCount;
-            if (weapon == null) { weapon = cell.BurningWeapon; };
-          };
-        }
-        if (damage > CustomAmmoCategories.Epsilon) {
-          CustomAmmoCategoriesLog.Log.LogWrite(" taking damage:" + damage + "\n");
-          damage = Mathf.Round(damage);
-          //var fakeHit = new WeaponHitInfo(-1, -1, -1, -1, actor.GUID, __instance.GUID, -1, null, null, null, null, null, null, new AttackImpactQuality[1] { AttackImpactQuality.Solid }, AttackDirection.FromArtillery, Vector2.zero, null);
-          //__instance.TakeWeaponDamage(fakeHit, (int)ArmorLocation.LeftLeg, weapon, damage / 2f, 0, DamageType.DFASelf);
-          //__instance.TakeWeaponDamage(fakeHit, (int)ArmorLocation.RightLeg, weapon, damage / 2f, 0, DamageType.DFASelf);
-          //__instance.Combat.MessageCenter.PublishMessage((MessageCenterMessage)new FloatieMessage(__instance.GUID, __instance.GUID, "MINEFIELD DAMAGE " + damage, FloatieMessage.MessageNature.CriticalHit));
-        }
-        //if (instability > CustomAmmoCategories.Epsilon) {
-        //__instance.AddAbsoluteInstability(instability, StabilityChangeSource.Attack, actor.GUID);
-        //}
-        //__instance.CheckForInstability();
-        int iheat = Mathf.RoundToInt(heat);
-        if (iheat > 0) {
-          heatDamage = true;
-          //__instance.AddExternalHeat("MineField", iheat);
-          CustomAmmoCategoriesLog.Log.LogWrite(" heat from minefield:" + iheat + "\n");
-          //__instance.Combat.MessageCenter.PublishMessage((MessageCenterMessage)new FloatieMessage(__instance.GUID, __instance.GUID, "+ " + heat + " HEAT FROM MINEFIELD", FloatieMessage.MessageNature.Debuff));
-        }
-        CustomAmmoCategoriesLog.Log.LogWrite(" burning heat:" + burnHeat + "/" + burnCount + "\n");
-        burnHeat = Mathf.RoundToInt((float)burnHeat / (float)burnCount);
-        if (burnHeat > 0) {
-          CustomAmmoCategoriesLog.Log.LogWrite(" heat from fire:" + burnHeat + "\n");
-          //__instance.AddExternalHeat("BurningCell", burnHeat);
-          //__instance.Combat.MessageCenter.PublishMessage((MessageCenterMessage)new FloatieMessage(__instance.GUID, __instance.GUID, "+ " + burnHeat + " HEAT FROM FIRE", FloatieMessage.MessageNature.Debuff));
-        }
-        movingDamage movingDamage = new movingDamage();
-        movingDamage.burnHeat = burnHeat;
-        movingDamage.mineFieldDamage = damage;
-        movingDamage.mineFieldInstability = instability;
-        movingDamage.mineFieldHeat = iheat;
-        movingDamage.weapon = weapon;
-        if (MineFieldHelper.registredMovingDamage.ContainsKey(__instance.GUID) == false) {
-          MineFieldHelper.registredMovingDamage.Add(__instance.GUID, movingDamage);
-        } else {
-          CustomAmmoCategoriesLog.Log.LogWrite(" Strange behavior. Moving damage already registred for " + __instance.DisplayName + ":" + __instance.GUID + "\n", true);
-        }
-        if (heatDamage) {
-          //__instance.GenerateAndPublishHeatSequence(-1, true, false, __instance.GUID);
-        }
-        //if (actor != null) {
-        //__instance.HandleKnockdown(-1, actor.GUID, Vector2.one, (SequenceFinished)null);
-        //__instance.HandleDeath(actor.GUID);
-        //__instance.HasFiredThisRound = true;
-        //__instance.HasMovedThisRound = true;
-        //__instance.Combat.MessageCenter.PublishMessage((MessageCenterMessage)new AddSequenceToStackMessage(__instance.DoneWithActor()));
-        //}
-      } catch (Exception e) {
-        CustomAmmoCategoriesLog.Log.LogWrite(" Exception:" + e + "\n", true);
-      }*/
     }
     public static void registerJumpingDamageFrom(Mech __instance, Vector3 finalPosition) {
-      /*Log.LogWrite("Mech.OnJumpComplete\n");
-      MapTerrainDataCellEx ccell = __instance.Combat.MapMetaData.GetCellAt(finalPosition) as MapTerrainDataCellEx;
-      if (ccell == null) { return; };
-      List<MapPoint> mapPoints = MapPoint.calcMapCircle(ccell.mapPoint(), CustomAmmoCategories.Settings.JumpLandingMineAttractRadius);
-      float damage = 0f;
-      float heat = 0f;
-      float instability = 0f;
-      AbstractActor actor = null;
-      Weapon weapon = null;
-      int burnHeat = 0;
-      int burnCount = 0;
-      bool heatDamage = false;
-      float rollMod = 1f;
-      PathingCapabilitiesDef PathingCaps = (PathingCapabilitiesDef)typeof(Pathing).GetProperty("PathingCaps", BindingFlags.Instance | BindingFlags.NonPublic).GetGetMethod(true).Invoke(__instance.Pathing, null);
-      CustomAmmoCategoriesLog.Log.LogWrite(" current pathing:" + PathingCaps.Description.Id + "\n");
-      if (CustomAmmoCategories.Settings.MineFieldPathingMods.ContainsKey(PathingCaps.Description.Id)) {
-        rollMod = CustomAmmoCategories.Settings.MineFieldPathingMods[PathingCaps.Description.Id];
-      }
-      CustomAmmoCategoriesLog.Log.LogWrite(" rol mod:" + rollMod + "\n");
-      foreach (MapPoint mapPoint in mapPoints) {
-        MapTerrainDataCellEx cell = __instance.Combat.MapMetaData.mapTerrainDataCells[mapPoint.x, mapPoint.y] as MapTerrainDataCellEx;
-        if (cell == null) { continue; };
-        CustomAmmoCategoriesLog.Log.LogWrite(" cell:" + cell.x + ":" + cell.y + " mf:" + cell.MineField + " burn:" + cell.BurningStrength + "/" + burnHeat + "/" + burnCount + "\n");
-        foreach (MineField mineField in cell.MineField) {
-          if (mineField.count <= 0) { continue; };
-          CustomAmmoCategoriesLog.Log.LogWrite("  mine field:" + (mineField.HitChance * rollMod) + ":" + mineField.damage + "\n");
-          float roll = Random.Range(0f, 1f);
-          if (roll < (mineField.HitChance * rollMod)) {
-            CustomAmmoCategoriesLog.Log.LogWrite("   hit:" + roll + "/" + (mineField.HitChance * rollMod) + ":" + damage + "\n");
-            damage += mineField.damage;
-            heat += mineField.heat;
-            instability += mineField.instability;
-            actor = mineField.owner;
-            weapon = mineField.weapon;
-            mineField.count -= 1;
-          }
-        }
-        if (cell.BurningStrength > 0) { burnHeat += cell.BurningStrength; ++burnCount; };
-      }
-      if (damage > CustomAmmoCategories.Epsilon) {
-        CustomAmmoCategoriesLog.Log.LogWrite(" taking damage:" + damage + "\n");
-        damage = Mathf.Round(damage);
-        //var fakeHit = new WeaponHitInfo(-1, -1, -1, -1, actor.GUID, __instance.GUID, -1, null, null, null, null, null, null, new AttackImpactQuality[1] { AttackImpactQuality.Solid }, AttackDirection.FromArtillery, Vector2.zero, null);
-        //__instance.TakeWeaponDamage(fakeHit, (int)ArmorLocation.LeftLeg, weapon, damage / 2f, 0, DamageType.DFASelf);
-        //__instance.TakeWeaponDamage(fakeHit, (int)ArmorLocation.RightLeg, weapon, damage / 2f, 0, DamageType.DFASelf);
-        //__instance.Combat.MessageCenter.PublishMessage((MessageCenterMessage)new FloatieMessage(__instance.GUID, __instance.GUID, "MINEFIELD DAMAGE " + damage, FloatieMessage.MessageNature.CriticalHit));
-      }
-      if (instability > CustomAmmoCategories.Epsilon) {
-        //__instance.AddAbsoluteInstability(instability, StabilityChangeSource.Attack, actor.GUID);
-      }
-      //__instance.CheckForInstability();
-      //__instance.HandleKnockdown(-1, actor.GUID, Vector2.one, (SequenceFinished)null);
-      //__instance.HandleDeath(actor.GUID);
-      int iheat = Mathf.RoundToInt(heat);
-      if (iheat > 0) {
-        heatDamage = true;
-        //__instance.AddExternalHeat("MineField", iheat);
-        CustomAmmoCategoriesLog.Log.LogWrite(" heat from minefield:" + iheat + "\n");
-        //__instance.Combat.MessageCenter.PublishMessage((MessageCenterMessage)new FloatieMessage(__instance.GUID, __instance.GUID, "+ " + heat + " HEAT FROM MINEFIELD", FloatieMessage.MessageNature.Debuff));
-      }
-      CustomAmmoCategoriesLog.Log.LogWrite(" burning heat:" + burnHeat + "/" + burnCount + "\n");
-      burnHeat = Mathf.RoundToInt((float)burnHeat / (float)burnCount);
-      if (burnHeat > 0) {
-        CustomAmmoCategoriesLog.Log.LogWrite(" heat from fire:" + burnHeat + "\n");
-        //__instance.AddExternalHeat("BurningCell", burnHeat);
-        //__instance.Combat.MessageCenter.PublishMessage((MessageCenterMessage)new FloatieMessage(__instance.GUID, __instance.GUID, "+ " + burnHeat + " HEAT FROM FIRE", FloatieMessage.MessageNature.Debuff));
-      }
-      if (heatDamage) {
-        //__instance.GenerateAndPublishHeatSequence(-1, true, false, __instance.GUID);
-      }
-      movingDamage movingDamage = new movingDamage();
-      movingDamage.burnHeat = burnHeat;
-      movingDamage.mineFieldDamage = damage;
-      movingDamage.mineFieldInstability = instability;
-      movingDamage.mineFieldHeat = iheat;
-      movingDamage.weapon = weapon;
-      if (MineFieldHelper.registredMovingDamage.ContainsKey(__instance.GUID) == false) {
-        MineFieldHelper.registredMovingDamage.Add(__instance.GUID, movingDamage);
-      } else {
-        CustomAmmoCategoriesLog.Log.LogWrite(" Strange behavior. Moving damage already registred for " + __instance.DisplayName + ":" + __instance.GUID + "\n", true);
-      }*/
     }
-    /*public static void applyMoveMineFieldDamageToVehicle(Vehicle __instance, List<WayPoint> waypoints) {
-      CustomAmmoCategoriesLog.Log.LogWrite("Vehicle.OnMoveOrSprintComplete\n");
-      List<MapPoint> mapPoints = DynamicMapHelper.getVisitedPoints(__instance.Combat, waypoints);
-      float damage = 0f;
-      bool isBurning = false;
-      bool isMineField = false;
-      int burnHeat = 0;
-      int burnCount = 0;
-      //float heat = 0f;
-      AbstractActor actor = null;
-      Weapon weapon = null;
-      float rollMod = 1f;
-      PathingCapabilitiesDef PathingCaps = (PathingCapabilitiesDef)typeof(Pathing).GetProperty("PathingCaps", BindingFlags.Instance | BindingFlags.NonPublic).GetGetMethod(true).Invoke(__instance.Pathing, null);
-      CustomAmmoCategoriesLog.Log.LogWrite(" current pathing:" + PathingCaps.Description.Id + "\n");
-      if (CustomAmmoCategories.Settings.MineFieldPathingMods.ContainsKey(PathingCaps.Description.Id)) {
-        rollMod = CustomAmmoCategories.Settings.MineFieldPathingMods[PathingCaps.Description.Id];
-      }
-      CustomAmmoCategoriesLog.Log.LogWrite(" rol mod:" + rollMod + "\n");
-      foreach (MapPoint mapPoint in mapPoints) {
-        MapTerrainDataCellEx cell = __instance.Combat.MapMetaData.mapTerrainDataCells[mapPoint.x, mapPoint.y] as MapTerrainDataCellEx;
-        if (cell == null) { continue; };
-        CustomAmmoCategoriesLog.Log.LogWrite(" cell:" + cell.x + ":" + cell.y + "\n");
-        foreach (MineField mineField in cell.MineField) {
-          if (mineField.count <= 0) { continue; };
-          CustomAmmoCategoriesLog.Log.LogWrite("  mine field:" + (mineField.HitChance * rollMod) + ":" + mineField.damage + "\n");
-          float roll = Random.Range(0f, 1f);
-          if (roll < (mineField.HitChance * rollMod)) {
-            CustomAmmoCategoriesLog.Log.LogWrite("   hit:" + roll + "/" + (mineField.HitChance * rollMod) + ":" + damage + "\n");
-            damage += mineField.damage;
-            damage += mineField.heat;
-            actor = mineField.owner;
-            weapon = mineField.weapon;
-            mineField.count -= 1;
-          }
-        }
-        if (damage > CustomAmmoCategories.Epsilon) { isMineField = true; };
-        if (cell.BurningStrength > 0) {
-          burnHeat += cell.BurningStrength; ++burnCount;
-          if (weapon == null) { weapon = cell.BurningWeapon; actor = cell.BurningWeapon.parent; };
-        };
-      }
-      burnHeat = Mathf.RoundToInt((float)burnHeat / (float)burnCount);
-      if (burnHeat > 0) {
-        CustomAmmoCategoriesLog.Log.LogWrite(" moving from fire damage " + burnHeat + "\n");
-        isBurning = true;
-        damage += burnHeat;
-      }
-
-      if (damage > CustomAmmoCategories.Epsilon) {
-        CustomAmmoCategoriesLog.Log.LogWrite(" taking damage:" + damage + "\n");
-        damage = Mathf.Round(damage);
-        var fakeHit = new WeaponHitInfo(-1, -1, -1, -1, actor.GUID, __instance.GUID, -1, null, null, null, null, null, null, new AttackImpactQuality[1] { AttackImpactQuality.Solid }, new AttackDirection[1] { AttackDirection.FromArtillery }, null, null, null);
-        __instance.TakeWeaponDamage(fakeHit, (int)VehicleChassisLocations.Front, weapon, damage / 4f, 0, DamageType.Combat);
-        __instance.TakeWeaponDamage(fakeHit, (int)VehicleChassisLocations.Rear, weapon, damage / 4f, 0, DamageType.Combat);
-        __instance.TakeWeaponDamage(fakeHit, (int)VehicleChassisLocations.Right, weapon, damage / 4f, 0, DamageType.Combat);
-        __instance.TakeWeaponDamage(fakeHit, (int)VehicleChassisLocations.Left, weapon, damage / 4f, 0, DamageType.Combat);
-        string msg = "";
-        if (isMineField) { msg = "MINE FIELD"; };
-        if (isBurning) { if (string.IsNullOrEmpty(msg) == false) { msg += " AND "; }; msg += " BURN"; };
-        msg += " DAMAGE " + damage.ToString();
-        __instance.Combat.MessageCenter.PublishMessage((MessageCenterMessage)new FloatieMessage(__instance.GUID, __instance.GUID, msg, FloatieMessage.MessageNature.CriticalHit));
-        __instance.HandleDeath(actor.GUID);
-      }
-      //int iheat = Mathf.RoundToInt(heat);
-      //if (iheat > 0) {
-      //__instance.AddExternalHeat("MineField", iheat);
-      //__instance.GenerateAndPublishHeatSequence(-1, false, false, __instance.GUID);
-      //__instance.Combat.MessageCenter.PublishMessage((MessageCenterMessage)new FloatieMessage(__instance.GUID, __instance.GUID, "+ " + heat + " HEAT FROM MINEFIELD", FloatieMessage.MessageNature.Debuff));
-      //}
-    }*/
   }
 }
 
@@ -2124,31 +1946,13 @@ namespace CustomAmmoCategoriesPatches {
       DynamicMapHelper.LoadDesignMasks(dataManager);
     }
   }
-  /*[HarmonyPatch(typeof(FootstepManager))]
-  [HarmonyPatch("AddScorch")]
-  [HarmonyPatch(MethodType.Normal)]
-  [HarmonyPatch(new Type[] { typeof(Vector3), typeof(Vector3), typeof(Vector3), typeof(bool) })]
-  public static class FootstepManager_AddScorch {
-    public static List<bool> strongScorches = new List<bool>();
-    static void Postfix(FootstepManager __instance, Vector3 position, Vector3 forward, Vector3 scale, bool persistent) {
-      FootstepManager_AddScorch.strongScorches.Add(persistent);
+  [HarmonyPatch(typeof(HexGrid))]
+  [HarmonyPatch(MethodType.Constructor)]
+  [HarmonyPatch(new Type[] { typeof(CombatGameState) })]
+  public static class HexGrid_Constructor {
+    static void Postfix(HexGrid __instance, CombatGameState combat) {
     }
   }
-  [HarmonyPatch(typeof(FootstepManager))]
-  [HarmonyPatch("ProcessScorches")]
-  [HarmonyPatch(MethodType.Normal)]
-  public static class FootstepManager_ProcessScorches {
-    static void Postfix(FootstepManager __instance) {
-      float[] _scorchAlphas = (float[])typeof(FootstepManager).GetField("_scorchAlphas", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(__instance);
-      for(int t = 0; t < _scorchAlphas.Length; ++t) {
-        if (t >= FootstepManager_AddScorch.strongScorches.Count) { break; }
-        if(FootstepManager_AddScorch.strongScorches[t] == true) {
-          _scorchAlphas[t] = 0f;
-        }
-      }
-      Shader.SetGlobalFloatArray("_BT_ScorchAlpha", _scorchAlphas);
-    }
-  }*/
   [HarmonyPatch(typeof(MapMetaData))]
   [HarmonyPatch("Load")]
   [HarmonyPatch(MethodType.Normal)]
@@ -2167,41 +1971,15 @@ namespace CustomAmmoCategoriesPatches {
         for (int y = 0; y < ymax; ++y) {
           MapTerrainDataCellEx ecell = __instance.mapTerrainDataCells[x, y] as MapTerrainDataCellEx;
           if (ecell != null) {
-            //CustomAmmoCategoriesLog.Log.LogWrite(" " + x + " X " + y + " is ext cell\n");
             ecell.x = x;
             ecell.y = y;
             ecell.realTerrainHeight = ecell.terrainHeight;
-            //__instance.mapTerrainDataCells[x, y].RemoveTerrainMask(TerrainMaskFlags.Impassable);
           }
         }
       }
       if (Terrain.activeTerrain == null) {
         CustomAmmoCategoriesLog.Log.LogWrite(" active terrain is null \n");
       } else {
-        /*CustomAmmoCategoriesLog.Log.LogWrite(" trees:" + Terrain.activeTerrain.terrainData.treeInstanceCount + ":"+Terrain.activeTerrain.name+"\n");
-        //Terrain.activeTerrain.terrainData.treeInstances = new TreeInstance[0] { };
-        int treesCount = Terrain.activeTerrain.terrainData.treeInstanceCount;
-        TreeInstance[] treeInstances = Terrain.activeTerrain.terrainData.treeInstances;
-        TerrainData data = Terrain.activeTerrain.terrainData;
-        float width = data.size.x / 2;
-        float height = data.size.z / 2;
-        float y = data.size.y;
-        //int errorTrees = 0;
-        for (int t = 0; t < treesCount; ++t) {
-          Vector3 worldTreePos = Vector3.Scale(treeInstances[t].position, data.size) + Terrain.activeTerrain.transform.position;
-          MapTerrainDataCellEx cell =  __instance.GetCellAt(worldTreePos) as MapTerrainDataCellEx;
-          if (cell == null) { continue; };
-          //if (SplatMapInfo.IsForest(cell.terrainMask) == false) {
-            //CustomAmmoCategoriesLog.Log.LogWrite("  tree:"+ worldTreePos + ":"+ treeInstances[t].prototypeIndex+ ":"+ treeInstances[t].widthScale+ ":"+ treeInstances[t].heightScale+ " at cell "+cell.x+":"+cell.y+" which have no forest\n");
-            //++errorTrees;
-            //treeInstances[t].widthScale = 0f;
-            //treeInstances[t].heightScale = 0f;
-            //data.SetTreeInstance(t, treeInstances[t]);
-            //continue;
-          //}
-          cell.trees.Add(t);
-        }
-        CustomAmmoCategoriesLog.Log.LogWrite(" trees inited.\n");*/
         DynamicMapHelper.initHexGrid(__instance);
       }
     }
@@ -2216,16 +1994,6 @@ namespace CustomAmmoCategoriesPatches {
       DynamicMapHelper.TempTick();
     }
   }
-  /*[HarmonyPatch(typeof(QuadTree))]
-  [HarmonyPatch("Insert")]
-  [HarmonyPatch(MethodType.Normal)]
-  public static class QuadTree_Insert {
-    public static int counter = 0;
-    public static void Postfix(QuadTree __instance) {
-      CustomAmmoCategoriesLog.Log.LogWrite("QuadTree.Insert:"+counter+"\n");
-      ++counter;
-    }
-  }*/
   [HarmonyPatch(typeof(TreeContainer))]
   [HarmonyPatch("GatherTrees")]
   [HarmonyPatch(MethodType.Normal)]
@@ -2235,29 +2003,6 @@ namespace CustomAmmoCategoriesPatches {
       CustomAmmoCategoriesLog.Log.LogWrite("TreeContainer_GatherTrees.Postfix\n");
     }
   }
-  /*[HarmonyPatch(typeof(FootstepManager))]
-  [HarmonyPatch("scorchMaterial")]
-  [HarmonyPatch(MethodType.Getter)]
-  [HarmonyPatch(new Type[] { })]
-  public static class FootstepManager_scorchMaterial {
-    public static Material ScorchMaterial = null;
-    public static bool Prefix(FootstepManager __instance, ref Material __result) {
-      Material _scorchMaterial = (Material)typeof(FootstepManager).GetField("_scorchMaterial", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(__instance);
-      if (_scorchMaterial != null) { __result = _scorchMaterial; return false; };
-      CustomAmmoCategoriesLog.Log.LogWrite("FootstepManager.scorchMaterial init\n");
-      if (FootstepManager_scorchMaterial.ScorchMaterial == null) {
-        _scorchMaterial = Resources.Load<Material>("Decals/ScorchMaterial");
-      } else {
-        _scorchMaterial = FootstepManager_scorchMaterial.ScorchMaterial;
-      }
-      CustomAmmoCategoriesLog.Log.LogWrite(" scorch material:"+_scorchMaterial.name+"\n");
-      _scorchMaterial.enableInstancing = true;
-      //_scorchMaterial.EnableKeyword("_DYNAMIC");
-      __result = _scorchMaterial;
-      typeof(FootstepManager).GetField("_scorchMaterial", BindingFlags.Instance | BindingFlags.NonPublic).SetValue(__instance, _scorchMaterial);
-      return false;
-    }
-  }*/
   [HarmonyPatch(typeof(BTCustomRenderer))]
   [HarmonyPatch("DrawDecals")]
   [HarmonyPatch(MethodType.Normal)]
@@ -2268,7 +2013,10 @@ namespace CustomAmmoCategoriesPatches {
     public static FieldInfo deferredDecalsBufferField = null;
     public static FieldInfo skipDecalsField = null;
     public static FieldInfo effectsQualityField = null;
-    public static MethodInfo UseCameraMethod = null;
+    //public static MethodInfo UseCameraMethod = null;
+    public delegate object d_UseCameraMethod(BTCustomRenderer renderer, Camera camera);
+    public static d_UseCameraMethod i_UseCameraMethod = null;
+    public static object UseCameraMethod(this BTCustomRenderer renderer,Camera camera) { return i_UseCameraMethod(renderer,camera); }
     public static readonly int maxArraySize = 1000;
     public static List<List<Matrix4x4>> Scorches = new List<List<Matrix4x4>>();
     public static List<List<Matrix4x4>> Bloods = new List<List<Matrix4x4>>();
@@ -2328,10 +2076,26 @@ namespace CustomAmmoCategoriesPatches {
       BTCustomRenderer_DrawDecals.ScorchMaterial.SetFloat("_AffectTree", 0f);
       BTCustomRenderer_DrawDecals.ScorchMaterial.SetTexture("_MainTex", terrainTexture);
       BTCustomRenderer_DrawDecals.ScorchMaterial.enableInstancing = true;
-      BTCustomRenderer_DrawDecals.UseCameraMethod = typeof(BTCustomRenderer).GetMethod("UseCamera", BindingFlags.Instance | BindingFlags.NonPublic);
-      if (BTCustomRenderer_DrawDecals.UseCameraMethod == null) {
-        CustomAmmoCategoriesLog.Log.LogWrite("Fail to get UseCamera method\n"); ;
-        return false;
+
+
+
+      //BTCustomRenderer_DrawDecals.UseCameraMethod = typeof(BTCustomRenderer).GetMethod("UseCamera", BindingFlags.Instance | BindingFlags.NonPublic);
+      //if (BTCustomRenderer_DrawDecals.UseCameraMethod == null) {
+        //CustomAmmoCategoriesLog.Log.LogWrite("Fail to get UseCamera method\n"); ;
+        //return false;
+      //}
+
+
+      {
+        Type BTCustomRenderer_CustomCommandBuffers = typeof(BTCustomRenderer).GetNestedType("CustomCommandBuffers", BindingFlags.NonPublic);
+        MethodInfo UseCameraMethod = typeof(BTCustomRenderer).GetMethod("UseCamera", BindingFlags.Instance | BindingFlags.NonPublic);
+        var dm = new DynamicMethod("CACUseCameraMethod", BTCustomRenderer_CustomCommandBuffers, new Type[] {typeof(BTCustomRenderer), typeof(Camera) }, typeof(BTCustomRenderer));
+        var gen = dm.GetILGenerator();
+        gen.Emit(OpCodes.Ldarg_0);
+        gen.Emit(OpCodes.Ldarg_1);
+        gen.Emit(OpCodes.Call, UseCameraMethod);
+        gen.Emit(OpCodes.Ret);
+        i_UseCameraMethod = (d_UseCameraMethod)dm.CreateDelegate(typeof(d_UseCameraMethod));
       }
 
       BTCustomRenderer_DrawDecals.BloodMaterial = UnityEngine.Object.Instantiate(FootstepManager.Instance.scorchMaterial);
@@ -2354,12 +2118,12 @@ namespace CustomAmmoCategoriesPatches {
       //BTCustomRenderer_DrawDecals.BloodMaterial.color = Color.red;
       BTCustomRenderer_DrawDecals.BloodMaterial.enableInstancing = true;
 
-      BTCustomRenderer_DrawDecals.UseCameraMethod = typeof(BTCustomRenderer).GetMethod("UseCamera", BindingFlags.Instance | BindingFlags.NonPublic);
-      if (BTCustomRenderer_DrawDecals.UseCameraMethod == null) {
-        CustomAmmoCategoriesLog.Log.LogWrite("Fail to get UseCamera method\n"); ;
-        return false;
-      }
-      CustomAmmoCategoriesLog.Log.LogWrite("Success get UseCamera method\n");
+      //BTCustomRenderer_DrawDecals.UseCameraMethod = typeof(BTCustomRenderer).GetMethod("UseCamera", BindingFlags.Instance | BindingFlags.NonPublic);
+      //if (BTCustomRenderer_DrawDecals.UseCameraMethod == null) {
+        //CustomAmmoCategoriesLog.Log.LogWrite("Fail to get UseCamera method\n"); ;
+        //return false;
+      //}
+      //CustomAmmoCategoriesLog.Log.LogWrite("Success get UseCamera method\n");
       BTCustomRenderer_DrawDecals.deferredDecalsBufferField = typeof(BTCustomRenderer).Assembly.GetType("BattleTech.Rendering.BTCustomRenderer+CustomCommandBuffers").GetField("deferredDecalsBuffer", BindingFlags.Instance | BindingFlags.Public);
       if (BTCustomRenderer_DrawDecals.deferredDecalsBufferField == null) {
         CustomAmmoCategoriesLog.Log.LogWrite("Fail to get deferredDecalsBuffer field\n"); ;
@@ -2379,7 +2143,7 @@ namespace CustomAmmoCategoriesPatches {
       return true;
     }
     public static void Postfix(BTCustomRenderer __instance, Camera camera) {
-      object customCommandBuffers = BTCustomRenderer_DrawDecals.UseCameraMethod.Invoke(__instance, new object[1] { (object)camera });
+      object customCommandBuffers = __instance.UseCameraMethod(camera); //BTCustomRenderer_DrawDecals.UseCameraMethod.Invoke(__instance, new object[1] { (object)camera });
       if (customCommandBuffers == null)
         return;
       CommandBuffer deferredDecalsBuffer = (CommandBuffer)BTCustomRenderer_DrawDecals.deferredDecalsBufferField.GetValue(customCommandBuffers);
@@ -2484,45 +2248,6 @@ namespace CustomAmmoCategoriesPatches {
   [HarmonyPatch(new Type[] { typeof(bool) })]
   public static class PilotableActorRepresentation_RefreshSurfaceType {
     public static void Postfix(PilotableActorRepresentation __instance) {
-      /*try {
-        AbstractActor unit = __instance.parentCombatant as AbstractActor;
-        if (unit == null) { return; }
-        List<MapEncounterLayerDataCell> encounterLayerCells = unit.occupiedEncounterLayerCells;
-        if ((encounterLayerCells == null) || (encounterLayerCells.Count <= 0)) { return; }
-        MapTerrainDataCellEx cell = encounterLayerCells[0].relatedTerrainCell as MapTerrainDataCellEx;
-        if (cell == null) { return; };
-        MineField mf = cell.hexCell.getStrongestMineField();
-        if (mf == null) {
-          Log.LogWrite("PilotableActorRepresentation.RefreshSurfaceType no miefield\n");
-          return;
-        };
-        if (string.IsNullOrEmpty(mf.VFX)) {
-          Log.LogWrite("PilotableActorRepresentation.RefreshSurfaceType no vfx\n");
-          return;
-        };
-        ActorMineFieldVFX fieldVFX = null;
-        if (DynamicMapHelper.lastMineFieldFXPlayedPosition.ContainsKey(unit)) {
-          fieldVFX = DynamicMapHelper.lastMineFieldFXPlayedPosition[unit];
-        } else {
-          fieldVFX = new ActorMineFieldVFX();
-          DynamicMapHelper.lastMineFieldFXPlayedPosition[unit] = fieldVFX;
-        }
-        if (fieldVFX == null) { return; };
-        float distance = Vector3.Distance(unit.CurrentPosition, fieldVFX.lastVFXPos);
-        if (distance < mf.FXDistance) {
-          Log.LogWrite("PilotableActorRepresentation.RefreshSurfaceType distance to short " + distance + " < " + mf.FXDistance + "\n");
-          return;
-        };
-        Log.LogWrite("PilotableActorRepresentation.RefreshSurfaceType playing VFX " + mf.VFX + "\n");
-        //ParticleSystem component = __instance.PlayVFXAt((Transform)null, __instance.thisTransform.position, mf.VFX, false, Vector3.zero, true, -1f);
-        Vector3 scale = Vector3.one;
-        scale.x = 10f;
-        scale.y = 10f;
-        scale.z = 10f;
-        ParticleSystem component = ObjectSpawnDataSelf.playVFXAt(unit.Combat, mf.VFX, __instance.thisTransform.position, scale, Vector3.zero);
-        fieldVFX.fXPoolGameObjects.Add(new VFXPoolGameObject(mf.VFX, component.gameObject));
-        fieldVFX.lastVFXPos = __instance.thisTransform.position;
-      } catch (Exception e) { Log.LogWrite(e.ToString() + "\n", true); }*/
     }
   }
   [HarmonyPatch(typeof(DataManager))]

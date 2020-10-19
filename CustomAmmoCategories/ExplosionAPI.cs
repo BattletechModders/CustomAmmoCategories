@@ -105,15 +105,17 @@ namespace CustAmmoCategories {
       fireChance *= DynamicMapHelper.BiomeLitFireChance();
 
       if (fireRadius == 0) {
-        if (cell.hexCell.TryBurnCell(fakeWeapon, fireChance, fireStrength, fireDurationNoForest)) {
-          DynamicMapHelper.burningHexes.Add(cell.hexCell);
-        };
+        cell.hexCell.TryBurnCellAsync(fakeWeapon, fireChance, fireStrength, fireDurationNoForest);
+        //if (cell.hexCell.TryBurnCell(fakeWeapon, fireChance, fireStrength, fireDurationNoForest)) {
+          //DynamicMapHelper.burningHexes.Add(cell.hexCell);
+        //};
       } else {
         List<MapTerrainHexCell> affectedHexCells = MapTerrainHexCell.listHexCellsByCellRadius(cell, fireRadius);
         foreach (MapTerrainHexCell hexCell in affectedHexCells) {
-          if (hexCell.TryBurnCell(fakeWeapon, fireChance, fireStrength, fireDurationNoForest)) {
-            DynamicMapHelper.burningHexes.Add(hexCell);
-          };
+          hexCell.TryBurnCellAsync(fakeWeapon, fireChance, fireStrength, fireDurationNoForest);
+          //if (hexCell.TryBurnCell(fakeWeapon, fireChance, fireStrength, fireDurationNoForest)) {
+          //DynamicMapHelper.burningHexes.Add(hexCell);
+          //};
         }
       }
     }
@@ -128,7 +130,7 @@ namespace CustAmmoCategories {
       //if (mask == null) { return; };
       if (radius == 0) {
         cell.hexCell.addTempTerrainVFX(combat, LongVFX, turns, scale);
-        DynamicMapHelper.addDesignMaskAsync(cell.hexCell, mask, turns);
+        cell.hexCell.addDesignMaskAsync(mask, turns);
         //AsyncDesignMaskUpdater admu = new AsyncDesignMaskUpdater(cell.hexCell, mask, turns);
         //Thread designMaskApplyer = new Thread(new ThreadStart(admu.asyncAddMask));
         //designMaskApplyer.Start();
@@ -136,7 +138,7 @@ namespace CustAmmoCategories {
         List<MapTerrainHexCell> affectedHexCells = MapTerrainHexCell.listHexCellsByCellRadius(cell, radius);
         foreach (MapTerrainHexCell hexCell in affectedHexCells) {
           hexCell.addTempTerrainVFX(combat, LongVFX, turns, scale);
-          DynamicMapHelper.addDesignMaskAsync(hexCell, mask, turns);
+          hexCell.addDesignMaskAsync(mask, turns);
         }
         //AsyncDesignMaskUpdater admu = new AsyncDesignMaskUpdater(affectedHexCells, mask, turns);
         //Thread designMaskApplyer = new Thread(new ThreadStart(admu.asyncAddMask));
@@ -300,13 +302,15 @@ namespace CustAmmoCategories {
       CustomAmmoCategoriesLog.Log.LogWrite(" impact at " + pos + "\n");
       MineFieldDef mfd = def;
       if (mfd.InstallCellRange == 0) {
-        Log.LogWrite(" affected cell " + cell.hexCell.x + "," + cell.hexCell.y + ":" + mfd.Count + "\n");
-        cell.hexCell.MineField.Add(new MineField(mfd, fakeActor, fakeWeapon));
+        //Log.LogWrite(" affected cell " + cell.hexCell.x + "," + cell.hexCell.y + ":" + mfd.Count + "\n");
+        Log.LogWrite(" affected cell " + cell.hexCell.center + ":" + mfd.Count + "\n");
+        cell.hexCell.addMineField(mfd, fakeActor, fakeWeapon);
       } else {
         List<MapTerrainHexCell> affectedHexCells = MapTerrainHexCell.listHexCellsByCellRadius(cell, mfd.InstallCellRange);
         foreach (MapTerrainHexCell hexCell in affectedHexCells) {
-          Log.LogWrite(" affected cell " + hexCell.x + "," + hexCell.y + ":" + mfd.Count + "\n");
-          hexCell.MineField.Add(new MineField(mfd, fakeActor, fakeWeapon));
+          //Log.LogWrite(" affected cell " + hexCell.x + "," + hexCell.y + ":" + mfd.Count + "\n");
+          Log.LogWrite(" affected cell " + hexCell.center + ":" + mfd.Count + "\n");
+          hexCell.addMineField(mfd, fakeActor, fakeWeapon);
         }
       }
 

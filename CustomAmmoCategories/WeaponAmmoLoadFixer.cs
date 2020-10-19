@@ -35,6 +35,7 @@ namespace CustAmmoCategoriesPatches {
         prewarmRequests.Add(new PrewarmRequest(BattleTechResourceType.WeaponDef, PrewarmRequest.PREWARM_ALL_OF_TYPE));
         foreach(string iconid in uiIcons) {
           prewarmRequests.Add(new PrewarmRequest(BattleTechResourceType.SVGAsset, iconid));
+          CustomSvgCache.RegisterSVG(iconid);
         }
         typeof(ApplicationConstants).GetProperty("PrewarmRequests", BindingFlags.Instance | BindingFlags.Public).GetSetMethod(true).Invoke(__instance, new object[] { prewarmRequests.ToArray() });
         foreach (PrewarmRequest preq in __instance.PrewarmRequests) {
@@ -128,6 +129,11 @@ namespace CustAmmoCategoriesPatches {
               Log.M.WL(1, "present");
             }
           }
+        }
+        Log.M.WL(1, "Internal ammo");
+        foreach(var intAmmo in extWeaponDef.InternalAmmo) {
+          Log.M.W(2, intAmmo.Key);
+          if(___dataManager.AmmoDefs.Exists(intAmmo.Key) == false) { __result = false; Log.M.WL(1, "abcent"); return false; }
         }
         __result = true;
         Log.M.WL(1, "result:"+__result.ToString());
@@ -230,6 +236,11 @@ namespace CustAmmoCategoriesPatches {
               dependencyLoad.RequestResource(BattleTechResourceType.SVGAsset, mode.Value.statusEffects[index].Description.Icon);
             }
           }
+        }
+        Log.M.WL(1, "Internal ammo");
+        foreach(var intAmmo in extWeaponDef.InternalAmmo) {
+          Log.M.W(2, intAmmo.Key);
+          if(dataManager.Exists(BattleTechResourceType.AmmunitionDef, intAmmo.Key) == false) { dependencyLoad.RequestResource(BattleTechResourceType.AmmunitionDef, intAmmo.Key); }
         }
         return false;
       } catch (Exception e) {

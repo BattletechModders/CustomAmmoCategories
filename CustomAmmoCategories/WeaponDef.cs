@@ -1141,6 +1141,13 @@ namespace CustomAmmoCategoriesPatches {
           extDef.Modes.Add(mode.Id, mode);
         }
         CustomAmmoCategories.registerExtWeaponDef(__instance.Description.Id, extDef);
+        if (extDef.AmmoCategory.isDefaultAmmo()) {
+          ExtAmmunitionDef extAmmunition = extDef.AmmoCategory.defaultAmmo();
+          if (extDef.InternalAmmo.ContainsKey(extAmmunition.Id) == false) { extDef.InternalAmmo.Add(extAmmunition.Id, __instance.StartingAmmoCapacity); }
+          Traverse.Create(__instance).Property<int>("StartingAmmoCapacity").Value = 0;
+        } else {
+          __instance.RegisterForDefaultAmmoUpdate(extDef.AmmoCategory);
+        }
       } catch(Exception e) {
         Log.M.TWL(0,e.ToString(),true);
       }

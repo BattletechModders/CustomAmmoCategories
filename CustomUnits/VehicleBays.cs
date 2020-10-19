@@ -972,6 +972,7 @@ namespace CustomUnits {
       List<string> usedPrefabNames = new List<string>();
       Log.TWL(0, "MechRepresentationSimGame.LoadWeapons");
       VTOLBodyAnimation bodyAnimation = __instance.VTOLBodyAnim();
+      MechTurretAnimation MechTurret = __instance.gameObject.GetComponentInChildren<MechTurretAnimation>(true);
       Log.WL(1, "bodyAnimation:"+(bodyAnimation==null?"null":"not null"));
       for (int index = 0; index < __instance.mechDef.Inventory.Length; ++index) {
         MechComponentRef componentRef = __instance.mechDef.Inventory[index];
@@ -1082,6 +1083,13 @@ namespace CustomUnits {
                   Log.WL(2, "mainTransform:" + (attachInfo.main == null ? "null" : attachInfo.main.name));
                   attachTransform = attachInfo.attach;
                   attachInfo.bayComponents.Add(component1);
+                }
+              }
+            } else if(MechTurret != null) { 
+              Log.WL(1, "found mech turret:" + MountedLocation + " type:" + attachType);
+              if(attachType == HardpointAttachType.Turret) {
+                if (MechTurret.attachPoints.TryGetValue(componentRef.MountedLocation, out MechTurretAttachPoint attachPoint)) {
+                  attachTransform = attachPoint.attachTransform;
                 }
               }
             }

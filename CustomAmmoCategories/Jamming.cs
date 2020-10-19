@@ -253,17 +253,6 @@ namespace CustAmmoCategories {
       }, null, 1500, System.Threading.Timeout.Infinite);
     }
   }
-  [HarmonyPatch(typeof(AbstractActor))]
-  [HarmonyPatch("InitEffectStats")]
-  [HarmonyPatch(MethodType.Normal)]
-  [HarmonyPatch(new Type[] { })]
-  public static class AbstractActor_InitEffectStats {
-    public static void Postfix(AbstractActor __instance) {
-      Log.LogWrite("AbstractActor.InitEffectStats " + __instance.DisplayName + ":" + __instance.GUID + "\n");
-      __instance.FlatJammChance(0f);
-    }
-  }
-
   [HarmonyPatch(typeof(Weapon))]
   [HarmonyPatch("InitStats")]
   [HarmonyPatch(MethodType.Normal)]
@@ -274,7 +263,6 @@ namespace CustAmmoCategories {
       __instance.FlatJammChanceStat(0f);
     }
   }
-
   public static partial class CustomAmmoCategories {
     public static string JammedWeaponStatisticName = "CAC-JammedWeapon";
     public static string CooldownWeaponStatisticName = "CAC-CooldownWeapon";

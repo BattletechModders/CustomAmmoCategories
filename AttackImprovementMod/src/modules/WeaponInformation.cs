@@ -234,14 +234,22 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
       try {
         Weapon weapon = __instance.DisplayedWeapon;
 #if BT1_8
-        if (weapon == null || weapon.WeaponCategoryValue.IsMelee || !weapon.CanFire) return;
+        if (weapon == null || !weapon.CanFire || target == null) return;
 #else
         if (weapon == null || weapon.Category == WeaponCategory.Melee || !weapon.CanFire) return;
 #endif
         string text = null;
         AbstractActor owner = weapon.parent;
         Vector3 position = (owner.HasMovedThisRound ? null : ActiveState?.PreviewPos) ?? owner.CurrentPosition;
-        CustAmmoCategories.AdvWeaponHitInfoRec.PredictDamage(weapon, target, position, out float damage, out float ap, out float heat, out float stability, out int shots);
+        CustAmmoCategories.DamageModifiers mods = CustAmmoCategories.DamageModifiersCache.GetDamageModifiers(weapon,position, target);
+        float damage = weapon.DamagePerShot;
+        float ap = weapon.StructureDamagePerShot;
+        float heat = weapon.HeatDamagePerShot;
+        float stability = weapon.Instability();
+        int shots = weapon.ShotsWhenFired;
+        string descr = string.Empty;
+        mods.Calculate(-1,ref damage, ref ap, ref heat, ref stability, ref descr, false, true);
+        //CustAmmoCategories.AdvWeaponHitInfoRec.PredictDamage(weapon, target, position, out float damage, out float ap, out float heat, out float stability, out int shots);
         if (ShowingStabilityDamage) {
           if (!__instance.WeaponText.text.Contains(HeatPrefix))
             __instance.WeaponText.text += FormatHeat(weapon.HeatGenerated);

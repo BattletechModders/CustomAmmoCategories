@@ -105,15 +105,9 @@ namespace CustAmmoCategories {
       WeaponMode weaponMode = extWeapon.Modes[modeId];
       if (weaponMode.AmmoCategory.Index != ammoCategory.Index) { ammoCategory = weaponMode.AmmoCategory; };
       if (ammoCategory.Index == CustomAmmoCategories.NotSetCustomAmmoCategoty.Index) { result.Add(""); return result; };
-      foreach (AmmunitionBox box in weapon.ammoBoxes) {
-        if (box.IsFunctional == false) { continue; }
-        if (box.CurrentAmmo <= 0) { continue; }
-        CustomAmmoCategory boxAmmoCategory = CustomAmmoCategories.getAmmoAmmoCategory(box.ammoDef);
-        if (boxAmmoCategory.Index == ammoCategory.Index) {
-          if (result.Contains(box.ammoDef.Description.Id) == false) {
-            result.Add(box.ammoDef.Description.Id);
-          }
-        }
+      List<ExtAmmunitionDef> allAmmo = weapon.getAvaibleAmmo(ammoCategory);
+      foreach(ExtAmmunitionDef ammo in allAmmo) {
+        result.Add(ammo.Id);
       }
       return result;
     }

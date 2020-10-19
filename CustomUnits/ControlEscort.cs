@@ -1,6 +1,7 @@
 ﻿using BattleTech;
 using BattleTech.Designed;
 using BattleTech.UI;
+using CustAmmoCategories;
 using Harmony;
 using System;
 using System.Collections.Generic;
@@ -52,6 +53,95 @@ namespace CustomUnits {
     public static bool Prefix(HostilityMatrix __instance, BattleTech.Team teamOne, BattleTech.Team teamTwo, ref bool __result) {
       if (teamOne == null) { __result = false; return false; }
       if (teamTwo == null) { __result = false; return false; }
+      return true;
+    }
+  }
+  [HarmonyPatch(typeof(SelectionStateJump))]
+  [HarmonyPatch("ProcessLeftClick")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { typeof(Vector3) })]
+  public static class SelectionStateJump_ProcessLeftClick {
+    public static bool Prefix(SelectionStateMove __instance, Vector3 worldPos, ref bool __result) {
+      if (__instance.HasDestination == true) { return true; }
+      if(__instance.SelectedActor.IsValidEscortPosition(worldPos, out string message) == false) {
+        GenericPopupBuilder.Create(GenericPopupType.Warning, message).IsNestedPopupWithBuiltInFader().CancelOnEscape().Render();
+        __result = false;
+        return false;
+      }
+      return true;
+    }
+  }
+  [HarmonyPatch(typeof(SelectionStateMove))]
+  [HarmonyPatch("ProcessLeftClick")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { typeof(Vector3) })]
+  public static class SelectionStateMove_ProcessLeftClick {
+    public static float GetRouteDistance(this CombatGameState combat,Vector3 pos) {
+      combat.FillRoutePoints();
+      ConvoyRoutePoint nearest = pos.getNearestRoute();
+      float eDistNext = Vector3.Distance(pos, nearest.point);
+      float eDistPrev = eDistNext;
+      if (nearest.next != null) eDistNext += Vector3.Distance(pos, nearest.next.point);
+      if (nearest.prev != null) eDistPrev += Vector3.Distance(pos, nearest.prev.point);
+      eDistNext -= nearest.distanceNext;
+      eDistPrev -= nearest.distancePrev;
+      return Mathf.Min(eDistNext, eDistPrev);
+    }
+    public static float GetNearestPlayerDistance(this CombatGameState combat, Vector3 pos) {
+      List<AbstractActor> allActors = combat.AllActors;
+      float result = 0f;
+      foreach(AbstractActor actor in allActors) {
+        if (actor.IsDead) { continue; }
+        if (actor.TeamId != combat.LocalPlayerTeamGuid) { continue; }
+        if (actor.EncounterTags.Contains(Core.Settings.PlayerControlConvoyTag)) { continue; }
+        if (actor.IsDeployDirector()) { continue; }
+        float distance = Vector3.Distance(pos, actor.CurrentIntendedPosition);
+        if ((result == 0f) || (result > distance)) { result = distance; }
+      }
+      return result;
+    }
+    public static float GetFarestOtherDistance(this CombatGameState combat, Vector3 pos) {
+      List<AbstractActor> allActors = combat.AllActors;
+      float result = 0f;
+      foreach (AbstractActor actor in allActors) {
+        if (actor.IsDead) { continue; }
+        if (actor.TeamId != combat.LocalPlayerTeamGuid) { continue; }
+        if (actor.EncounterTags.Contains(Core.Settings.PlayerControlConvoyTag) == false) { continue; }
+        if (actor.IsDeployDirector()) { continue; }
+        float distance = Vector3.Distance(pos, actor.CurrentIntendedPosition);
+        if ((result == 0f) || (result < distance)) { result = distance; }
+      }
+      return result;
+    }
+    public static bool IsValidEscortPosition(this AbstractActor unit, Vector3 worldPos, out string message) {
+      message = string.Empty;
+      if (unit.EncounterTags.Contains(Core.Settings.ConvoyDenyMoveTag)) {
+        message = "You should wait at this point for extraction";
+        return false;
+      } else if (unit.EncounterTags.Contains(Core.Settings.PlayerControlConvoyTag)) {
+        bool result = true;
+        float routeDistance = unit.Combat.GetRouteDistance(worldPos);
+        StringBuilder content = new StringBuilder();
+        float playerDistnace = unit.Combat.GetNearestPlayerDistance(worldPos);
+        float otherDistnace = unit.Combat.GetFarestOtherDistance(worldPos);
+        if (routeDistance > Core.Settings.ConvoyMaxDistFromRoute) { content.Append("<color=red>"); result = false; } else { content.Append("<color=green>"); };
+        content.AppendLine("Distance from route: "+routeDistance+"/"+Core.Settings.ConvoyMaxDistFromRoute+"</color>");
+        if (playerDistnace > Core.Settings.ConvoyMaxDistFromPlayer) { content.Append("<color=red>"); result = false; } else { content.Append("<color=green>"); };
+        content.AppendLine("Distance from player: "+ playerDistnace + "/"+Core.Settings.ConvoyMaxDistFromPlayer);
+        if (otherDistnace > Core.Settings.ConvoyMaxDistFromOther) { content.Append("<color=red>"); result = false; } else { content.Append("<color=green>"); };
+        content.AppendLine("Distance from convoy: " + otherDistnace + "/" + Core.Settings.ConvoyMaxDistFromOther);
+        message = content.ToString();
+        return result;
+      }
+      return true;
+    }
+    public static bool Prefix(SelectionStateMove __instance, Vector3 worldPos, ref bool __result) {
+      if (__instance.HasDestination == true) { return true; }
+      if(__instance.SelectedActor.IsValidEscortPosition(worldPos, out string message) == false) {
+        GenericPopupBuilder.Create(GenericPopupType.Warning, message).IsNestedPopupWithBuiltInFader().CancelOnEscape().Render();
+        __result = false;
+        return false;
+      }
       return true;
     }
   }
@@ -280,6 +370,7 @@ namespace CustomUnits {
       distanceFormPlayerCache = new Dictionary<Vector3, float>();
       foreach (AbstractActor actor in unit.Combat.AllActors) {
         if (actor.GUID == unit.GUID) { continue; }
+        if (actor.IsDead) { continue; }
         if (actor.TeamId != actor.Combat.LocalPlayerTeamGuid) { continue; }
         if (actor.EncounterTags.Contains(Core.Settings.PlayerControlConvoyTag) == false) {
           player.Add(actor);
@@ -314,7 +405,7 @@ namespace CustomUnits {
       actorFromRouteCache.Clear();
       routePointsFilled = false;
     }
-    public static void FillRoutePoints(CombatGameState combat) {
+    public static void FillRoutePoints(this CombatGameState combat) {
       if (routePointsFilled) { return; }
       routePointsFilled = true;
       EscortChunkGameLogic escortLogic = combat.EncounterLayerData.gameObject.GetComponentInChildren<EscortChunkGameLogic>();
@@ -326,9 +417,9 @@ namespace CustomUnits {
       Log.TWL(0, "FillRoutePoints:" + rPoints.Length);
       for(int i = 0; i < rPoints.Length; ++i) {
         routePoints.Add(new ConvoyRoutePoint(rPoints[i].hexPosition));
-        GameObject sphere = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-        sphere.transform.position = rPoints[i].hexPosition;
-        sphere.transform.localScale = Vector3.one * 10f;
+        //GameObject sphere = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+        //sphere.transform.position = rPoints[i].hexPosition;
+        //sphere.transform.localScale = Vector3.one * 10f;
     }
       for (int i = 0; i < routePoints.Count; ++i) {
         if (i < (routePoints.Count - 1)) { routePoints[i].next = routePoints[i + 1]; }
@@ -405,15 +496,15 @@ namespace CustomUnits {
       return true;
     }
     public static void Postfix(PathNodeGrid __instance, PathNode from, PathNode to, float distanceAvailable, AbstractActor ___owningActor, CombatGameState ___combat, ref float __result) {
-      try {
-        if (__result > distanceAvailable) { return; }
-        if (___owningActor.isValidConvoyPosition(to.Position) == false) {
-          __result = 9999.9f;
-          return;
-        }
-      } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
-      }
+      //try {
+        //if (__result > distanceAvailable) { return; }
+        //if (___owningActor.isValidConvoyPosition(to.Position) == false) {
+          //__result = 9999.9f;
+          //return;
+        //}
+      //} catch (Exception e) {
+        //Log.TWL(0, e.ToString(), true);
+      //}
     }
   }
   [HarmonyPatch(typeof(JumpPathing))]
@@ -422,12 +513,12 @@ namespace CustomUnits {
   [HarmonyPatch(new Type[] { typeof(Vector3), typeof(List<AbstractActor>) })]
   public static class JumpPathing_IsValidLandingSpot {
     public static void Postfix(JumpPathing __instance, Vector3 worldPos, List<AbstractActor> allActors, ref bool __result) {
-      if (__result == false) { return; }
-      try {
-        if (Traverse.Create(__instance).Property<Mech>("Mech").Value.isValidConvoyPosition(worldPos) == false) { __result = false; return; }
-      }catch(Exception e) {
-        Log.TWL(0,e.ToString(),true);
-      }
+      //if (__result == false) { return; }
+      //try {
+        //if (Traverse.Create(__instance).Property<Mech>("Mech").Value.isValidConvoyPosition(worldPos) == false) { __result = false; return; }
+      //}catch(Exception e) {
+        //Log.TWL(0,e.ToString(),true);
+      //}
     }
   }
   [HarmonyPatch(typeof(ActorMovementSequence))]
@@ -436,19 +527,19 @@ namespace CustomUnits {
   [HarmonyPatch(new Type[] {  })]
   public static class ActorMovementSequence_OnAdded {
     public static void Postfix(ActorMovementSequence __instance) {
-      try {
-        if (__instance.OwningActor.TeamId != __instance.OwningActor.Combat.LocalPlayerTeamGuid) { return; }
-        foreach(AbstractActor unit in __instance.OwningActor.Combat.AllActors) {
-          if (unit.IsDead) { continue; }
-          if (unit.TeamId != __instance.OwningActor.Combat.LocalPlayerTeamGuid) { continue; }
-          if (unit.EncounterTags.Contains(Core.Settings.PlayerControlConvoyTag) == false) { continue; }
-          if (unit.HasMovedThisRound) { continue; }
-          unit.ResetPathing();
-          unit.UpdateConvoyPathingCache();
-        }
-      } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
-      }
+      //try {
+      //  if (__instance.OwningActor.TeamId != __instance.OwningActor.Combat.LocalPlayerTeamGuid) { return; }
+      //  foreach(AbstractActor unit in __instance.OwningActor.Combat.AllActors) {
+      //    if (unit.IsDead) { continue; }
+      //    if (unit.TeamId != __instance.OwningActor.Combat.LocalPlayerTeamGuid) { continue; }
+      //    if (unit.EncounterTags.Contains(Core.Settings.PlayerControlConvoyTag) == false) { continue; }
+      //    if (unit.HasMovedThisRound) { continue; }
+      //    unit.ResetPathing();
+      //    unit.UpdateConvoyPathingCache();
+      //  }
+      //} catch (Exception e) {
+      //  Log.TWL(0, e.ToString(), true);
+      //}
     }
   }
   [HarmonyPatch(typeof(MechJumpSequence))]
@@ -457,19 +548,19 @@ namespace CustomUnits {
   [HarmonyPatch(new Type[] { })]
   public static class MechJumpSequence_OnAdded {
     public static void Postfix(ActorMovementSequence __instance) {
-      try {
-        if (__instance.OwningActor.TeamId != __instance.OwningActor.Combat.LocalPlayerTeamGuid) { return; }
-        foreach (AbstractActor unit in __instance.OwningActor.Combat.AllActors) {
-          if (unit.IsDead) { continue; }
-          if (unit.TeamId != __instance.OwningActor.Combat.LocalPlayerTeamGuid) { continue; }
-          if (unit.EncounterTags.Contains(Core.Settings.PlayerControlConvoyTag) == false) { continue; }
-          if (unit.HasMovedThisRound) { continue; }
-          unit.ResetPathing();
-          unit.UpdateConvoyPathingCache();
-        }
-      } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
-      }
+      //try {
+      //  if (__instance.OwningActor.TeamId != __instance.OwningActor.Combat.LocalPlayerTeamGuid) { return; }
+      //  foreach (AbstractActor unit in __instance.OwningActor.Combat.AllActors) {
+      //    if (unit.IsDead) { continue; }
+      //    if (unit.TeamId != __instance.OwningActor.Combat.LocalPlayerTeamGuid) { continue; }
+      //    if (unit.EncounterTags.Contains(Core.Settings.PlayerControlConvoyTag) == false) { continue; }
+      //    if (unit.HasMovedThisRound) { continue; }
+      //    unit.ResetPathing();
+      //    unit.UpdateConvoyPathingCache();
+      //  }
+      //} catch (Exception e) {
+      //  Log.TWL(0, e.ToString(), true);
+      //}
     }
   }
   [HarmonyPatch(typeof(EncounterLayerParent))]

@@ -166,6 +166,48 @@ namespace CustAmmoCategories {
       }
       sortedAmmoBoxes.Remove(weapon);
     }
+    public static AmmunitionBox currentAmmoBox(this Weapon weapon) {
+      ExtAmmunitionDef ammo = weapon.ammo();
+      if (ammo.AmmoCategory.BaseCategory.Is_NotSet) { return null; }
+      if (weapon.InternalAmmo > 0) { return null; }
+      if (cachedAmmoBoxes.TryGetValue(weapon, out AmmunitionBox cBox)) {
+        if ((cBox.IsFunctional) && (cBox.CurrentAmmo > 0) && (cBox.ammoDef.Description.Id == ammo.Id)) {
+          return cBox;
+        } else {
+          cachedAmmoBoxes.Remove(weapon);
+        }
+      }
+      if (sortedAmmoBoxes.TryGetValue(weapon, out List<AmmunitionBox> boxes) == false) {
+        weapon.FillAmmoBoxesCache();
+        if (sortedAmmoBoxes.TryGetValue(weapon, out boxes) == false) {
+          boxes = weapon.ammoBoxes;
+        }
+      }
+      for (int i = 0; i < boxes.Count; ++i) {
+        AmmunitionBox box = boxes[i];
+        if (box.IsFunctional == false) { continue; }
+        if (box.CurrentAmmo < 1) { continue; }
+        if (box.ammoDef.Description.Id != ammo.Id) { continue; }
+        if (box.CurrentAmmo > 1) {
+          if (cachedAmmoBoxes.ContainsKey(weapon) == false) {
+            cachedAmmoBoxes.Add(weapon, box);
+          } else {
+            cachedAmmoBoxes[weapon] = box;
+          }
+        }
+        return box;
+      }
+      return null;
+    }
+    public static List<AmmunitionBox> SortedAmmoBoxes(this Weapon weapon) {
+      if (sortedAmmoBoxes.TryGetValue(weapon, out List<AmmunitionBox> boxes) == false) {
+        weapon.FillAmmoBoxesCache();
+        if (sortedAmmoBoxes.TryGetValue(weapon, out boxes) == false) {
+          boxes = weapon.ammoBoxes;
+        }
+      }
+      return boxes;
+    }
     public static bool DecrementOneAmmo(this Weapon weapon) {
       ExtAmmunitionDef ammo = weapon.ammo();
       if (ammo.AmmoCategory.BaseCategory.Is_NotSet) { return true; }

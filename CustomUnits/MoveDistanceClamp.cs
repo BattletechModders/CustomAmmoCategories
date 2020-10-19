@@ -59,7 +59,7 @@ namespace CustomUnits {
       try {
         AbstractActor unit = (AbstractActor)f_owningActor.GetValue(__instance);
         Log.LogWrite("PathNodeGrid.GetSampledPathNodes " + new Text(unit.DisplayName).ToString() + "\n");
-        VehicleCustomInfo info = unit.GetCustomInfo();
+        UnitCustomInfo info = unit.GetCustomInfo();
         if (info == null) {
           Log.LogWrite(" no custom info\n");
           return;

@@ -14,7 +14,7 @@ namespace CustomAmmoCategoriesLog {
     //CharlesB,
     Objects,
     Sounds,
-    Profile
+    Profile, HeatSinking
   }
   public class LogFile {
     private string m_logfile;
@@ -120,6 +120,7 @@ namespace CustomAmmoCategoriesLog {
     //public static LogFile CB { get { return Log.logs[LogFileType.CharlesB]; } }
     public static LogFile O { get { return Log.logs[LogFileType.Objects]; } }
     public static LogFile S { get { return Log.logs[LogFileType.Sounds]; } }
+    public static LogFile HS { get { return Log.logs[LogFileType.HeatSinking]; } }
     public static void InitLog() {
       //LogFile file = new LogFile("CAC_main_log.txt", CustomAmmoCategories.Settings.debugLog);
       Log.logs.Add(LogFileType.Main,new LogFile("CAC_main_log.txt", CustomAmmoCategories.Settings.debugLog));
@@ -129,6 +130,7 @@ namespace CustomAmmoCategoriesLog {
       Log.logs.Add(LogFileType.Profile, new LogFile("CAC_profiling_log.txt", CustomAmmoCategories.Settings.debugLog));
       Log.logs.Add(LogFileType.Objects, new LogFile("CAC_objects_log.txt", CustomAmmoCategories.Settings.debugLog));
       Log.logs.Add(LogFileType.Sounds, new LogFile("CAC_sounds_log.txt", CustomAmmoCategories.Settings.debugLog));
+      Log.logs.Add(LogFileType.HeatSinking, new LogFile("CAC_heatsink_log.txt", CustomAmmoCategories.Settings.debugLog));
       //Log.logs.Add(LogFileType.Main, null);
       Log.flushThread.Start();
     }

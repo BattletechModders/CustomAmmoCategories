@@ -117,14 +117,24 @@ namespace CustomUnits {
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { })]
   public static class MechRepresentation_SetIdleAnimState {
-    public static bool Prefix(MechRepresentation __instance, ref bool ___allowRandomIdles) {
-      //Log.LogWrite("VehicleRepresentation.OnAudioEvent " + __instance.name + " audioEvent:" + audioEvent + "\n");
+    public static bool Prefix(MechRepresentation __instance, ref bool ___allowRandomIdles, ref bool __state) {
+      __state = ___allowRandomIdles;
       if (___allowRandomIdles == true) {
-        VehicleCustomInfo info = __instance.parentMech.GetCustomInfo();
-        if (info == null) { return true; };
-        if (info.NoIdleAnimations) { ___allowRandomIdles = false; }
+        UnitCustomInfo info = __instance.parentMech.GetCustomInfo();
+        if (info != null) {
+          if (info.NoIdleAnimations) { ___allowRandomIdles = false; return true; }
+        };
+        CustomTwistAnimation custIdleAnim = __instance.gameObject.GetComponent<CustomTwistAnimation>();
+        if(custIdleAnim != null) {
+          custIdleAnim.PlayIdleAnimation();
+          ___allowRandomIdles = false; return true;
+        }
       }
       return true;
+    }
+    public static void Postfix(MechRepresentation __instance, ref bool ___allowRandomIdles, ref bool __state) {
+      //___allowRandomIdles = __state;
+      //Log.TWL(0, "MechRepresentation.SetIdleAnimState "+__instance.name+" "+__instance.thisAnimator.GetFloat(___idleRandomValueHash));
     }
   }
   [HarmonyPatch(typeof(VehicleRepresentation))]
@@ -237,7 +247,7 @@ namespace CustomUnits {
   public static class Vehicle_IsTargetPositionInFiringArc {
     public static bool Prefix(Vehicle __instance, ICombatant targetUnit, Vector3 attackPosition, Quaternion attackRotation, Vector3 targetPosition, ref bool __result) {
       //Log.LogWrite("Vehicle.IsTargetPositionInFiringArc " + __instance.DisplayName+" -> "+targetUnit.DisplayName+"\n");
-      VehicleCustomInfo info = __instance.GetCustomInfo();
+      UnitCustomInfo info = __instance.GetCustomInfo();
       if (info == null) {
         //Log.LogWrite(" no custom info\n");
         return true;
@@ -257,7 +267,7 @@ namespace CustomUnits {
   [HarmonyPatch(new Type[] { typeof(ICombatant), typeof(Vector3), typeof(Quaternion), typeof(Vector3) })]
   public static class Mech_IsTargetPositionInFiringArc {
     public static bool Prefix(Mech __instance, ICombatant targetUnit, Vector3 attackPosition, Quaternion attackRotation, Vector3 targetPosition, ref bool __result) {
-      VehicleCustomInfo info = __instance.GetCustomInfo();
+      UnitCustomInfo info = __instance.GetCustomInfo();
       //Log.TWL(0, "Mech.IsTargetPositionInFiringArc " + __instance.MechDef.Description.Id);
       if (info == null) {
         //Log.WL(1, "no custom info");
@@ -388,7 +398,7 @@ namespace CustomUnits {
       parent = a;
       Location = loc;
       if (this.renderers != null) {
-        Renderer[] renderers = this.gameObject.GetComponentsInChildren<Renderer>();
+        Renderer[] renderers = this.gameObject.GetComponentsInChildren<Renderer>(true);
         foreach (Renderer renderer in renderers) {
           this.renderers.Add(renderer);
         }
@@ -1044,6 +1054,9 @@ namespace CustomUnits {
         if (spawnPart.AnimationType == "Animation") {
           acomponent = gameObject.AddComponent<CustomMoveAnimator>();
         } else
+        if (spawnPart.AnimationType == "MechTurret") {
+          acomponent = gameObject.AddComponent<MechTurretAnimation>();
+        } else
         if (spawnPart.AnimationType == "CustomQuadLegController") {
           acomponent = gameObject.AddComponent<CustomQuadLegController>();
         } else {
@@ -1259,6 +1272,9 @@ namespace CustomUnits {
         if (spawnPart.AnimationType == "Animation") {
           acomponent = gameObject.AddComponent<CustomMoveAnimator>();
         } else
+        if (spawnPart.AnimationType == "MechTurret") {
+          acomponent = gameObject.AddComponent<MechTurretAnimation>();
+        } else
         if (spawnPart.AnimationType == "CustomQuadLegController") {
           acomponent = gameObject.AddComponent<CustomQuadLegController>();
         } else {
@@ -1284,7 +1300,7 @@ namespace CustomUnits {
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { typeof(DataManager), typeof(DataManager.DependencyLoadRequest), typeof(uint) })]
   public static class VehicleChassisDef_GatherDependencies {
-    public static void AddCustomDeps(this VehicleCustomInfo info, DataManager.DependencyLoadRequest dependencyLoad) {
+    public static void AddCustomDeps(this UnitCustomInfo info, DataManager.DependencyLoadRequest dependencyLoad) {
       foreach (CustomPart part in info.CustomParts) {
         if (string.IsNullOrEmpty(part.prefab)) { continue; }
         Log.LogWrite(1, "additional prefab:" + part.prefab, true);
@@ -1304,7 +1320,7 @@ namespace CustomUnits {
       }
     }
     public static void AddCustomDeps(this ChassisDef chassis, LoadRequest loadRequest) {
-      VehicleCustomInfo info = chassis.GetCustomInfo();
+      UnitCustomInfo info = chassis.GetCustomInfo();
       if (info != null) {
         foreach (CustomPart part in info.CustomParts) {
           if (string.IsNullOrEmpty(part.prefab)) { continue; }
@@ -1326,7 +1342,7 @@ namespace CustomUnits {
       }
     }
     public static void AddCustomDeps(this VehicleChassisDef chassis, LoadRequest loadRequest) {
-      VehicleCustomInfo info = chassis.GetCustomInfo();
+      UnitCustomInfo info = chassis.GetCustomInfo();
       if (info != null) {
         foreach (CustomPart part in info.CustomParts) {
           if (string.IsNullOrEmpty(part.prefab)) { continue; }
@@ -1350,7 +1366,7 @@ namespace CustomUnits {
     public static void Postfix(VehicleChassisDef __instance, DataManager dataManager, DataManager.DependencyLoadRequest dependencyLoad, uint activeRequestWeight) {
       Log.LogWrite(0, "VehicleChassisDef.GatherDependencies postfix " + __instance.Description.Id, true);
       try {
-        VehicleCustomInfo info = __instance.GetCustomInfo();
+        UnitCustomInfo info = __instance.GetCustomInfo();
         if (info == null) {
           Log.LogWrite(1, "no custom", true);
           return;
@@ -1367,7 +1383,7 @@ namespace CustomUnits {
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { typeof(uint) })]
   public static class VehicleChassisDef_DependenciesLoaded {
-    public static bool CheckCustomDeps(this VehicleCustomInfo info, DataManager dataManager) {
+    public static bool CheckCustomDeps(this UnitCustomInfo info, DataManager dataManager) {
       foreach (CustomPart part in info.CustomParts) {
         if (string.IsNullOrEmpty(part.prefab)) { continue; }
         Log.LogWrite(1, "additional prefab:" + part.prefab, false);
@@ -1402,7 +1418,7 @@ namespace CustomUnits {
       if (__instance.DataManager == null) { return; }
       if (__result == false) { return; }
       try {
-        VehicleCustomInfo info = __instance.GetCustomInfo();
+        UnitCustomInfo info = __instance.GetCustomInfo();
         if (info == null) {
           Log.LogWrite(1, "no custom", true);
           return;
@@ -1424,7 +1440,7 @@ namespace CustomUnits {
     public static void Postfix(VehicleChassisDef __instance, DataManager dataManager, DataManager.DependencyLoadRequest dependencyLoad, uint activeRequestWeight) {
       Log.LogWrite(0, "ChassisDef.GatherDependencies postfix " + activeRequestWeight + " " + __instance.Description.Id, true);
       try {
-        VehicleCustomInfo info = __instance.GetCustomInfo();
+        UnitCustomInfo info = __instance.GetCustomInfo();
         if (info == null) {
           Log.LogWrite(1, "no custom", true);
           return;
@@ -1470,7 +1486,7 @@ namespace CustomUnits {
       if (__instance.DataManager == null) { return; }
       if (__result == false) { return; }
       try {
-        VehicleCustomInfo info = __instance.GetCustomInfo();
+        UnitCustomInfo info = __instance.GetCustomInfo();
         if (info == null) {
           Log.LogWrite(1, "no custom", true);
           return;
@@ -1508,7 +1524,7 @@ namespace CustomUnits {
             return;
           }
           VehicleRepresentation vRep = vehicle.GameRep;
-          VehicleCustomInfo info = vehicle.GetCustomInfo();
+          UnitCustomInfo info = vehicle.GetCustomInfo();
           if (info == null) {
             Log.LogWrite(" no custom info\n");
             return;

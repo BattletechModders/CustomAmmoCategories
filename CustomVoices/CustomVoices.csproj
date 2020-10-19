@@ -78,6 +78,8 @@
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
-    <PostBuildEvent>copy /Y "$(TargetPath)" "$(ProjectDir)\..\..\Mods\CustomVoices"</PostBuildEvent>
+    <PostBuildEvent>copy /Y "$(TargetPath)" "$(ProjectDir)..\..\Mods\CustomVoices"
+copy /Y "$(TargetPath)" "$(ProjectDir)\..\..\RogueTechWorking\CustomVoices"
+copy /Y "$(TargetPath)" "$(ProjectDir)\..\..\Release_CAC\Release\CustomBundle\CustomVoices"</PostBuildEvent>
   </PropertyGroup>
 </Project>

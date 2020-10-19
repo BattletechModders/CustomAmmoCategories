@@ -432,7 +432,7 @@ namespace CustAmmoCategories {
           autoPoolObject.Init(this.weapon.parent.Combat.DataManager, str2, component);
         }
       }catch(Exception e) {
-        Log.M.TWL(0, ToString(), true);
+        Log.M.TWL(0, e.ToString(), true);
       }
     }
     protected override void PlayImpact() {

@@ -55,9 +55,13 @@ namespace CustAmmoCategories {
       this.AccuracyModifier = 0f;
       this.DamageVariance = 0f;
       this.CriticalChanceMultiplier = 0f;
+    }
   }
-}
+  public enum MinefieldBurnReaction {
+    None,Destroy,LooseElectronic,Explode
+  }
   public class MineFieldDef {
+    public string UIName { get; set; }
     public float Damage { get; set; }
     public float Heat { get; set; }
     public float Instability { get; set; }
@@ -89,6 +93,10 @@ namespace CustAmmoCategories {
     public float LongVFXOnImpactScaleY { get; set; }
     public float LongVFXOnImpactScaleZ { get; set; }
     public int tempDesignMaskCellRadius { get; set; }
+    public int stealthLevel { get; set; }
+    public int IFFLevel { get; set; }
+    public string Icon { get; set; }
+    public MinefieldBurnReaction burnReaction { get; set; }
     public DamageFalloffType AoEDmgFalloffType { get; set; }
     public float mAoEDmgFalloffType(float value) {
       switch (this.AoEDmgFalloffType) {
@@ -135,9 +143,18 @@ namespace CustAmmoCategories {
       tempDesignMaskCellRadius = 0;
       AoEDmgFalloffType = DamageFalloffType.Linear;
       statusEffects = new List<EffectData>();
+      UIName = string.Empty;
+      stealthLevel = 1;
+      IFFLevel = 1;
+      Icon = "bomb";
+      burnReaction = MinefieldBurnReaction.Destroy;
     }
     public void fromJSON(JToken json) {
       if (json["Damage"] != null) { Damage = (float)json["Damage"]; };
+      if (json["stealthLevel"] != null) { stealthLevel = (int)json["stealthLevel"]; };
+      if (json["IFFLevel"] != null) { IFFLevel = (int)json["IFFLevel"]; };
+      if (json["UIName"] != null) { UIName = (string)json["UIName"]; };
+      if (json["Icon"] != null) { Icon = (string)json["Icon"]; };
       if (json["Heat"] != null) { Heat = (float)json["Heat"]; };
       if (json["Instability"] != null) { Instability = (float)json["Instability"]; };
       if (json["AOERange"] != null) { AoERange = (float)json["AOERange"]; };
@@ -167,6 +184,7 @@ namespace CustAmmoCategories {
       if (json["LongVFXOnImpactScaleY"] != null) { LongVFXOnImpactScaleY = (float)json["LongVFXOnImpactScaleY"]; };
       if (json["LongVFXOnImpactScaleZ"] != null) { LongVFXOnImpactScaleZ = (float)json["LongVFXOnImpactScaleZ"]; };
       if (json["tempDesignMaskCellRadius"] != null) { tempDesignMaskCellRadius = (int)json["tempDesignMaskCellRadius"]; };
+      if (json["burnReaction"] != null) { burnReaction = (MinefieldBurnReaction)Enum.Parse(typeof(MinefieldBurnReaction), (string)json["burnReaction"]); };
       if (json["statusEffects"] != null) {
         if (json["statusEffects"].Type == JTokenType.Array) {
           JToken jStatusEffects = json["statusEffects"];
@@ -184,6 +202,7 @@ namespace CustAmmoCategories {
       return DynamicMapHelper.loadedMasksDef[this.tempDesignMaskOnImpact];
     }
   }
+  public enum AutoRefilType { Manual,Shop,Automatic }
   public class ExtAmmunitionDef {
     public string Id { get; set; }
     public string Name { get; set; }
@@ -306,6 +325,7 @@ namespace CustAmmoCategories {
     public DamageFalloffType AoEDmgFalloffType { get; set; }
     public float DamageFalloffStartDistance { get; set; }
     public float DamageFalloffEndDistance { get; set; }
+    public AutoRefilType AutoRefill { get; set; }
     public ExtAmmunitionDef() {
       Id = "NotSet";
       Name = string.Empty;
@@ -425,6 +445,7 @@ namespace CustAmmoCategories {
       AoEDmgFalloffType = DamageFalloffType.NotSet;
       DamageFalloffStartDistance = 0f;
       DamageFalloffEndDistance = 0f;
+      AutoRefill = AutoRefilType.Automatic;
     }
   }
 }
@@ -437,6 +458,9 @@ namespace CustomAmmoCategoriesPatches {
   public static class BattleTech_AmmunitionDef_fromJSON_Patch {
     private static Dictionary<string, HashSet<string>> ammunitionsDefs = new Dictionary<string, HashSet<string>>();
     private static Dictionary<string, ExtAmmunitionDef> defaultAmmunitions = new Dictionary<string, ExtAmmunitionDef>();
+    private static Dictionary<string, string> originals = new Dictionary<string, string>();
+    public static string getOriginal(this AmmunitionDef def) { if (originals.TryGetValue(def.Description.Id, out string result)) { return result; } else { return def.ToJSON(); } }
+    public static void setOriginal(this AmmunitionDef def, string json) { if (originals.ContainsKey(def.Description.Id)) { originals[def.Description.Id] = json; } else { originals.Add(def.Description.Id, json); } }
     public static bool Prefix(AmmunitionDef __instance, ref string json, ref ExtDefinitionParceInfo __state) {
       CustomAmmoCategories.CustomCategoriesInit();
       Log.LogWrite("AmmunitionDef fromJSON ");
@@ -1039,6 +1063,30 @@ namespace CustomAmmoCategoriesPatches {
       if (ammunitionsDefs.ContainsKey(AmmoCategoryName)) { return ammunitionsDefs[AmmoCategoryName]; }
       return new HashSet<string>();
     }
+    public static bool isDefaultAmmo(this CustomAmmoCategory cat) {
+      return defaultAmmunitions.ContainsKey(cat.Id);
+    }
+    private static Dictionary<string, HashSet<WeaponDef>> toDefaultAmmoUpdate = new Dictionary<string, HashSet<WeaponDef>>();
+    public static void UpdateDefaultAmmo(this CustomAmmoCategory cat) {
+      if (toDefaultAmmoUpdate.TryGetValue(cat.Id, out HashSet<WeaponDef> wDefs)) {
+        foreach(WeaponDef wDef in wDefs) {
+          if(wDef.StartingAmmoCapacity != 0) {
+            ExtAmmunitionDef extAmmunition = cat.defaultAmmo();
+            ExtWeaponDef extWeapon = wDef.exDef();
+            if (extWeapon.InternalAmmo.ContainsKey(extAmmunition.Id) == false) { extWeapon.InternalAmmo.Add(extAmmunition.Id, wDef.StartingAmmoCapacity); }
+            Traverse.Create(wDef).Property<int>("StartingAmmoCapacity").Value = 0;
+          }
+        }
+        toDefaultAmmoUpdate.Remove(cat.Id);
+      }
+    }
+    public static void RegisterForDefaultAmmoUpdate(this WeaponDef weaponDef, CustomAmmoCategory cat) {
+      if(toDefaultAmmoUpdate.TryGetValue(cat.Id, out HashSet<WeaponDef> wDefs) == false) {
+        wDefs = new HashSet<WeaponDef>();
+        toDefaultAmmoUpdate.Add(cat.Id, wDefs);
+      }
+      wDefs.Add(weaponDef);
+    }
     public static ExtAmmunitionDef defaultAmmo(this CustomAmmoCategory cat) {
       if (defaultAmmunitions.ContainsKey(cat.Id)) { return defaultAmmunitions[cat.Id]; };
       return CustomAmmoCategories.DefaultAmmo;
@@ -1052,6 +1100,7 @@ namespace CustomAmmoCategoriesPatches {
         } else {
           extAmmoDef = __state.extDef as ExtAmmunitionDef;
         }
+        __instance.setOriginal(__state.baseJson);
         if (extAmmoDef == null) {
           Log.M.TWL(0, "!WARNINIG! ext. definition parce error for " + __instance.Description.Id + "\n" + __state.errorStr + "\n" + __state.baseJson, true);
           extAmmoDef = new ExtAmmunitionDef();
@@ -1085,7 +1134,10 @@ namespace CustomAmmoCategoriesPatches {
           CustomAmmoCategoriesLog.Log.LogWrite("!Warning! null (" + (effects.Length - tmpList.Count) + "/" + effects.Length + ") status effects detected at ammo " + __instance.Description.Id + ".Removing\n");
           extAmmoDef.statusEffects = tmpList.ToArray();
         }
-        if (defaultAmmunitions.ContainsKey(extAmmoDef.AmmoCategory.Id) == false) { defaultAmmunitions.Add(extAmmoDef.AmmoCategory.Id, extAmmoDef); };
+        if (defaultAmmunitions.ContainsKey(extAmmoDef.AmmoCategory.Id) == false) {
+          defaultAmmunitions.Add(extAmmoDef.AmmoCategory.Id, extAmmoDef);
+          extAmmoDef.AmmoCategory.UpdateDefaultAmmo();
+        };
         CustomAmmoCategories.RegisterExtAmmoDef(extAmmoDef.Id, extAmmoDef);
         if (__instance.AmmoCategoryValue != null) {
           if (ammunitionsDefs.ContainsKey(__instance.AmmoCategoryValue.Name) == false) { ammunitionsDefs.Add(__instance.AmmoCategoryValue.Name, new HashSet<string>()); }

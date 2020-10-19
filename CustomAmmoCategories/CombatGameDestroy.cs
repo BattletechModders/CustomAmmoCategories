@@ -25,10 +25,6 @@ namespace CustomAmmoCategoriesPatches {
         }
         CustomAmmoCategories.additinalImpactEffects.Clear();
         AMSWeaponEffectStaticHelper.Clear();
-        if ((DynamicMapHelper.asyncTerrainDesignMask.ThreadState != ThreadState.Aborted)
-          && (DynamicMapHelper.asyncTerrainDesignMask.ThreadState == ThreadState.AbortRequested)) {
-          DynamicMapHelper.asyncTerrainDesignMask.Abort();
-        }
         DynamicMapHelper.ClearTerrain();
         MineFieldHelper.registredMovingDamage.Clear();
         BTCustomRenderer_DrawDecals.Clear();
@@ -41,7 +37,6 @@ namespace CustomAmmoCategoriesPatches {
         CustomAmmoCategories.terrainHitPositions.Clear();
         DeferredEffectHelper.Clear();
         PersistentFloatieHelper.Clear();
-        //ASWatchdog.EndWatchDogThread();
         Weapon_InternalAmmo.Clear();
         BraceNode_Tick.Clear();
         AreaOfEffectHelper.Clear();
@@ -49,6 +44,9 @@ namespace CustomAmmoCategoriesPatches {
         CombatHUDInfoSidePanelHelper.Clear();
         ExplosionAPIHelper.Clear();
         ToHitModifiersHelper.Clear();
+        DamageModifiersCache.Clear();
+        CombatHUDWeaponPanel_RefreshDisplayedWeapons.Clear();
+        AdvWeaponHitInfo.ClearAttackLog();
       } catch(Exception e) {
         Log.M.TWL(0, e.ToString());
       }

@@ -9,22 +9,28 @@ using BattleTech.UI.TMProWrapper;
 using BattleTech.UI.Tooltips;
 using CustAmmoCategories;
 using CustAmmoCategoriesPatches;
+using CustomAmmoCategoriesPatches;
 using DG.Tweening;
 using Harmony;
 using HBS;
 using HBS.Collections;
 using Localize;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using SVGImporter;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Reflection.Emit;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
 namespace CustomUnits {
+  public class AbilityDefEx {
+    public int Priority { get; set; }
+  }
   public class LanceConfigurationState {
     public int lanceId;
     public int lanceStartPos;
@@ -33,7 +39,7 @@ namespace CustomUnits {
   }
   public class LanceConfigutationNextSlot : LanceConfigutationSwitchBtn {
     public override void InitVisuals() {
-      if ((caption != null)&&(tooltip != null)) {
+      if ((caption != null) && (tooltip != null)) {
         tooltip.SetString("next slot");
         caption.SetText(">>");
         base.InitVisuals();
@@ -71,7 +77,7 @@ namespace CustomUnits {
         caption.SetText("<<");
         base.InitVisuals();
       }
-      
+
     }
     public override void OnClick() {
       state.lanceStartPos -= 4;
@@ -126,7 +132,7 @@ namespace CustomUnits {
       if (this.screen.CurViewStartPosition() > this.screen.UnitWidgets().Count - 4) { this.screen.CurViewStartPosition(this.screen.UnitWidgets().Count - 4); }
       if (this.screen.CurViewStartPosition() < 0) { this.screen.CurViewStartPosition(0); }
       for (int index = 0; index < screen.UnitWidgets().Count; ++index) {
-        screen.UnitWidgets()[index].gameObject.SetActive((index >= screen.CurViewStartPosition())&&(index < (screen.CurViewStartPosition() + 4)));
+        screen.UnitWidgets()[index].gameObject.SetActive((index >= screen.CurViewStartPosition()) && (index < (screen.CurViewStartPosition() + 4)));
       }
     }
     public override void Init() {
@@ -235,7 +241,7 @@ namespace CustomUnits {
           caption = bttn2_Text_optional.gameObject.GetComponent<LocalizableText>();
         } else {
           Transform bttn2_Text = this.transform.FindRecursive("bttn2_Text");
-          if(bttn2_Text != null) {
+          if (bttn2_Text != null) {
             caption = bttn2_Text.gameObject.GetComponent<LocalizableText>();
           }
         }
@@ -254,8 +260,8 @@ namespace CustomUnits {
     public CustomLanceDef(int s, int a, bool v) { size = s; allow = a; is_vehicle = v; }
   }
   public class PlayerLancesLoadout {
-    public Dictionary<string,int> loadout;
-    public PlayerLancesLoadout() { loadout = new Dictionary<string,int>(); }
+    public Dictionary<string, int> loadout;
+    public PlayerLancesLoadout() { loadout = new Dictionary<string, int>(); }
   }
   [HarmonyPatch(typeof(SimGameState), "Dehydrate")]
   public static class SimGameState_Dehydrate {
@@ -264,17 +270,17 @@ namespace CustomUnits {
       try {
         Log.WL(1, "playerLanceLoadout(" + CustomLanceHelper.playerLanceLoadout.loadout.Count + "):");
         foreach (var guid in CustomLanceHelper.playerLanceLoadout.loadout) {
-          Log.WL(2, "GUID:" + guid.Key+"->"+guid.Value);
+          Log.WL(2, "GUID:" + guid.Key + "->" + guid.Value);
         }
         Statistic playerMechContent = __instance.CompanyStats.GetStatistic(CustomLanceHelper.SaveReferenceName);
-        if(playerMechContent == null) {
-          __instance.CompanyStats.AddStatistic<string>(CustomLanceHelper.SaveReferenceName,JsonConvert.SerializeObject(CustomLanceHelper.playerLanceLoadout));
+        if (playerMechContent == null) {
+          __instance.CompanyStats.AddStatistic<string>(CustomLanceHelper.SaveReferenceName, JsonConvert.SerializeObject(CustomLanceHelper.playerLanceLoadout));
         } else {
           playerMechContent.SetValue<string>(JsonConvert.SerializeObject(CustomLanceHelper.playerLanceLoadout));
         }
         if (___LastUsedMechs == null) { ___LastUsedMechs = new List<string>(); }
         if (___LastUsedPilots == null) { ___LastUsedPilots = new List<string>(); }
-        for(int i = 0; i < ___LastUsedPilots.Count; ++i) {
+        for (int i = 0; i < ___LastUsedPilots.Count; ++i) {
           if (___LastUsedPilots[i] == null) {
             ___LastUsedPilots[i] = string.Empty;
           }
@@ -302,7 +308,7 @@ namespace CustomUnits {
           CustomLanceHelper.playerLanceLoadout = JsonConvert.DeserializeObject<PlayerLancesLoadout>(playerMechContent.Value<string>());
         }
         //CustomLanceHelper.playerAllyContent = references.GetItem<PlayerAllyLanceContent>(CustomLanceHelper.SaveReferenceName);
-        Log.WL(1, "playerLanceLoadout(" + CustomLanceHelper.playerLanceLoadout.loadout.Count+ "):");
+        Log.WL(1, "playerLanceLoadout(" + CustomLanceHelper.playerLanceLoadout.loadout.Count + "):");
         foreach (var guid in CustomLanceHelper.playerLanceLoadout.loadout) {
           Log.WL(2, "GUID:" + guid.Key + "->" + guid.Value);
         }
@@ -314,8 +320,8 @@ namespace CustomUnits {
   [HarmonyPatch(typeof(SimGameState))]
   [HarmonyPatch("SaveLastLance")]
   [HarmonyPatch(MethodType.Normal)]
-  public static class SimGameState_SaveLastLance{
-    public static bool Prefix(SimGameState __instance, LanceConfiguration config,ref List<string> ___LastUsedMechs,ref List<string> ___LastUsedPilots) {
+  public static class SimGameState_SaveLastLance {
+    public static bool Prefix(SimGameState __instance, LanceConfiguration config, ref List<string> ___LastUsedMechs, ref List<string> ___LastUsedPilots) {
       ___LastUsedMechs = new List<string>();
       ___LastUsedPilots = new List<string>();
       Log.TWL(0, "SimGameState.SaveLastLance");
@@ -328,7 +334,7 @@ namespace CustomUnits {
         string str2 = "";
         SpawnableUnit spawnableUnit = lanceUnit;
         if (spawnableUnit != null) {
-          if((spawnableUnit.Unit == null)&&(spawnableUnit.Pilot != null)) { continue; }
+          if ((spawnableUnit.Unit == null) && (spawnableUnit.Pilot != null)) { continue; }
           if ((spawnableUnit.Unit != null) && (spawnableUnit.Pilot == null)) { continue; }
           if (spawnableUnit.Unit != null && spawnableUnit.Pilot != null) {
             str1 = spawnableUnit.Unit.GUID;
@@ -382,7 +388,7 @@ namespace CustomUnits {
   [HarmonyPatch(MethodType.Normal)]
   public static class SimGameState_OnLanceConfiguratorAccept {
     private static MethodInfo m_SaveLastLance = typeof(SimGameState).GetMethod("SaveLastLance", BindingFlags.NonPublic | BindingFlags.Instance);
-    public static void SaveLastLance(this SimGameState sim,LanceConfiguration lanceConfiguration) {
+    public static void SaveLastLance(this SimGameState sim, LanceConfiguration lanceConfiguration) {
       m_SaveLastLance.Invoke(sim, new object[] { lanceConfiguration });
     }
     private static MethodInfo m_OnContractReady = typeof(SimGameState).GetMethod("OnContractReady", BindingFlags.NonPublic | BindingFlags.Instance);
@@ -391,7 +397,7 @@ namespace CustomUnits {
     }
     public static LanceConfiguration clearConfig(this LanceConfiguration lanceConfiguration) {
       LanceConfiguration result = new LanceConfiguration();
-      foreach(var lance in lanceConfiguration.Lances) {
+      foreach (var lance in lanceConfiguration.Lances) {
         foreach (var unit in lance.Value) {
           if (unit.Unit == null) { continue; }
           if (unit.Pilot == null) { continue; }
@@ -403,13 +409,13 @@ namespace CustomUnits {
     public static bool Prefix(SimGameState __instance) {
       Log.TWL(0, "SimGameState.OnLanceConfiguratorAccept");
       LanceConfiguration lanceConfiguration = __instance.RoomManager.CmdCenterRoom.lanceConfigBG.LC.CreateLanceConfiguration();
-      Log.WL(1, "lanceConfiguration created "+(lanceConfiguration == null?"null":"not null"));
+      Log.WL(1, "lanceConfiguration created " + (lanceConfiguration == null ? "null" : "not null"));
       __instance.SaveLastLance(lanceConfiguration);
       LanceConfiguration clearLanceConfiguration = lanceConfiguration.clearConfig();
       Log.WL(1, "clearLanceConfiguration valid:" + clearLanceConfiguration.LanceValid);
       foreach (var lance in clearLanceConfiguration.Lances) {
         foreach (var unit in lance.Value) {
-          Log.WL(2, "unit:" + unit.PilotId+":"+unit.UnitId+":"+unit.CanLoad());
+          Log.WL(2, "unit:" + unit.PilotId + ":" + unit.UnitId + ":" + unit.CanLoad());
         }
       }
       __instance.OnContractReady(clearLanceConfiguration);
@@ -430,14 +436,14 @@ namespace CustomUnits {
       }
       Log.WL(1, "pilots:");
       for (int i = 0; i < ___LastUsedPilots.Count; ++i) {
-        Log.WL(2, "["+i+"] "+ ___LastUsedPilots[i]);
+        Log.WL(2, "[" + i + "] " + ___LastUsedPilots[i]);
       }
       Log.WL(1, "units:");
       for (int i = 0; i < ___LastUsedMechs.Count; ++i) {
         Log.WL(2, "[" + i + "] " + ___LastUsedMechs[i]);
       }
       if (___LastUsedMechs != null && ___LastUsedPilots != null) {
-        int counter = Mathf.Max(___LastUsedMechs.Count,___LastUsedPilots.Count);
+        int counter = Mathf.Max(___LastUsedMechs.Count, ___LastUsedPilots.Count);
         for (int index = 0; index < counter; ++index) {
           string id = string.Empty;
           if (___LastUsedMechs.Count > index) { id = ___LastUsedMechs[index]; };
@@ -471,7 +477,7 @@ namespace CustomUnits {
     private static int rowsPerList = 3;
     public static int RowsPerList(this MechBayPanel panel) { return rowsPerList; }
     public static int MechBaysCount(this MechBayPanel panel) { return mechBaysCount; }
-    public static int VehicleBaysCount(this MechBayPanel panel) { return Core.Settings.ShowVehicleBays?vehicleBaysCount:0; }
+    public static int VehicleBaysCount(this MechBayPanel panel) { return Core.Settings.ShowVehicleBays ? vehicleBaysCount : 0; }
     public static int RowsPerList(this MechBayRowGroupWidget panel) { return rowsPerList; }
     public static int MechBaysCount(this MechBayRowGroupWidget panel) { return mechBaysCount; }
     public static int VehicleBaysCount(this MechBayRowGroupWidget panel) { return Core.Settings.ShowVehicleBays ? vehicleBaysCount : 0; }
@@ -479,10 +485,10 @@ namespace CustomUnits {
     public static void MissionControlDetected() { missionControlDetected = true; }
     public static void setLancesCount(int size) {
       if (size <= 0) { size = 1; };
-      if(lancesData.Count > size) {
+      if (lancesData.Count > size) {
         lancesData.RemoveRange(size, lancesData.Count - size);
-      }else if(lancesData.Count < size) {
-        for(int index=lancesData.Count;index < size; ++index) {
+      } else if (lancesData.Count < size) {
+        for (int index = lancesData.Count; index < size; ++index) {
           lancesData.Add(new CustomLanceDef());
         }
       }
@@ -495,11 +501,11 @@ namespace CustomUnits {
       lancesData[lanceid].allow = allow;
       lancesData[lanceid].is_vehicle = is_vehicle;
     }
-    public static void setOverallDeployCount(int value) { f_overallDeployCount = Mathf.Min(value,fullSlotsCount()); }
+    public static void setOverallDeployCount(int value) { f_overallDeployCount = Mathf.Min(value, fullSlotsCount()); }
     public static void playerControl(int mechs, int vehicles) { f_playerControlMechs = mechs; f_playerControlVehicles = vehicles; }
-    public static int overallDeployCount() { return missionControlDetected?f_overallDeployCount:4; }
-    public static int playerControlVehicles() { return missionControlDetected?f_playerControlVehicles:-1; }
-    public static int playerControlMechs() { return missionControlDetected?f_playerControlMechs:-1; }
+    public static int overallDeployCount() { return missionControlDetected ? f_overallDeployCount : 4; }
+    public static int playerControlVehicles() { return missionControlDetected ? f_playerControlVehicles : -1; }
+    public static int playerControlMechs() { return missionControlDetected ? f_playerControlMechs : -1; }
 
     public static int allowLanceSize(int lanceid) {
       if (fallbackAllow > 0) { return lanceid == 0 ? fallbackAllow : 0; }
@@ -544,7 +550,7 @@ namespace CustomUnits {
 
       Transform buttonPanel_SKIRMISH = __instance.transform.FindRecursive("buttonPanel-SKIRMISH");
       Transform buttonPanel = __instance.transform.FindRecursive("buttonPanel");
-      if ((buttonPanel_SKIRMISH != null)&&(buttonPanel != null)) {
+      if ((buttonPanel_SKIRMISH != null) && (buttonPanel != null)) {
         Transform lancePanel = __instance.transform.FindRecursive("lancePanel");
         if (lancePanel == null) {
           lancePanel = GameObject.Instantiate(buttonPanel_SKIRMISH.gameObject).transform;
@@ -611,7 +617,7 @@ namespace CustomUnits {
     private static int startUnitPosition = 0;
     public static int CurViewStartPosition(this AAR_SkirmishResult_Screen screen) { return startUnitPosition; }
     public static void CurViewStartPosition(this AAR_SkirmishResult_Screen screen, int value) { startUnitPosition = value; }
-    static void Prefix(AAR_SkirmishResult_Screen __instance,ref List<AAR_UnitStatusWidget> ___UnitWidgets) {
+    static void Prefix(AAR_SkirmishResult_Screen __instance, ref List<AAR_UnitStatusWidget> ___UnitWidgets) {
       Log.TWL(0, "AAR_SkirmishResult_Screen.InitializeSkirmishData", true);
       Transform unitDone_btn = __instance.transform.FindRecursive("uixPrfBttn_BASE_button2-done");
       if (unitDone_btn != null) {
@@ -654,7 +660,7 @@ namespace CustomUnits {
       }
       startUnitPosition = 0;
     }
-    static void Postfix(AAR_SkirmishResult_Screen __instance,ref List<AAR_UnitStatusWidget> ___UnitWidgets, ref List<UnitResult> ___PlayerUnitResults, ref List<UnitResult> ___OpponentUnitResults, ref int ___numUnits, ref int ___numOpponentUnits,ref Contract ___theContract,ref SimGameState ___simState,ref DataManager ___dm) {
+    static void Postfix(AAR_SkirmishResult_Screen __instance, ref List<AAR_UnitStatusWidget> ___UnitWidgets, ref List<UnitResult> ___PlayerUnitResults, ref List<UnitResult> ___OpponentUnitResults, ref int ___numUnits, ref int ___numOpponentUnits, ref Contract ___theContract, ref SimGameState ___simState, ref DataManager ___dm) {
       ___PlayerUnitResults.Clear();
       for (int index = 0; index < ___UnitWidgets.Count; ++index) {
         if (index < ___numUnits) {
@@ -691,9 +697,9 @@ namespace CustomUnits {
           ___UnitWidgets[index].SetNoUnitDeployedOverlayActive(false);
           //if (___UnitResults[index].pilot.pilotDef.isVehicleCrew() == false) {
           //if (___UnitResults[index].mech.IsChassisFake() == false) {
-            ___UnitWidgets[index].FillInData(experienceEarned);
+          ___UnitWidgets[index].FillInData(experienceEarned);
           //} else {
-            //___UnitWidgets[index].FillInData(0);
+          //___UnitWidgets[index].FillInData(0);
           //}
         } else {
           ___UnitWidgets[index].SetNoUnitDeployedOverlayActive(true);
@@ -723,7 +729,7 @@ namespace CustomUnits {
   public static class PilotDef_SetUnspentExperience {
     static bool Prefix(PilotDef __instance, ref int value) {
       //if (__instance.canPilotMech() == false) { value = 0; };
-      Log.TWL(0, "PilotDef.SetUnspentExperience canPilotMech:" + __instance.canPilotMech()+" value:"+value);
+      Log.TWL(0, "PilotDef.SetUnspentExperience canPilotMech:" + __instance.canPilotMech() + " value:" + value);
       return true;
     }
   }
@@ -731,10 +737,10 @@ namespace CustomUnits {
   public static class Pilot_AddExperience {
     static bool Prefix(Pilot __instance, ref int value) {
       //if (__instance.pilotDef.canPilotMech() == false) {
-        //value = 0;
-        //__instance.StatCollection.Set("ExperienceUnspent",0);
+      //value = 0;
+      //__instance.StatCollection.Set("ExperienceUnspent",0);
       //};
-      Log.TWL(0, "Pilot.AddExperience canPilotMech:" + __instance.pilotDef.canPilotMech() + " value:" + value+" unspent:"+__instance.UnspentXP);
+      Log.TWL(0, "Pilot.AddExperience canPilotMech:" + __instance.pilotDef.canPilotMech() + " value:" + value + " unspent:" + __instance.UnspentXP);
       return true;
     }
   }
@@ -744,13 +750,13 @@ namespace CustomUnits {
     public static SimGameInterruptManager interruptQueue(this SimGameState sim) { return (SimGameInterruptManager)f_interruptQueue.GetValue(sim); }
     static bool Prefix(LanceConfiguratorPanel __instance, ref LanceLoadoutSlot[] ___loadoutSlots) {
       Log.TWL(0, "LanceConfiguratorPanel.OnConfirmClicked");
-      if((__instance.sim != null)&&(__instance.activeContract != null)) {
+      if ((__instance.sim != null) && (__instance.activeContract != null)) {
         bool badBiome = false;
         string forbidTag = "NoBiome_" + __instance.activeContract.ContractBiome;
-        Log.WL(1, "SimGameState exists and activeContract too. Biome tag:"+ forbidTag);
+        Log.WL(1, "SimGameState exists and activeContract too. Biome tag:" + forbidTag);
         foreach (LanceLoadoutSlot slot in ___loadoutSlots) {
           if (slot.SelectedMech != null) {
-            if (slot.SelectedMech.MechDef.MechTags.Contains(forbidTag)) { badBiome = true; break; }
+            //if (slot.SelectedMech.MechDef.MechTags.Contains(forbidTag)) { badBiome = true; break; }
             foreach (MechComponentRef component in slot.SelectedMech.MechDef.Inventory) {
               if (component.Def.ComponentTags.Contains(forbidTag)) { badBiome = true; break; }
             }
@@ -766,7 +772,7 @@ namespace CustomUnits {
       }
       int overallSlotsCount = 0;
       if (overallSlotsCount > CustomLanceHelper.overallDeployCount()) {
-        GenericPopupBuilder.Create("Lance Cannot Be Deployed", Strings.T("Deploying units count {0} exceed limit {1}",overallSlotsCount,CustomLanceHelper.overallDeployCount())).AddFader(new UIColorRef?(LazySingletonBehavior<UIManager>.Instance.UILookAndColorConstants.PopupBackfill), 0.0f, true).Render();
+        GenericPopupBuilder.Create("Lance Cannot Be Deployed", Strings.T("Deploying units count {0} exceed limit {1}", overallSlotsCount, CustomLanceHelper.overallDeployCount())).AddFader(new UIColorRef?(LazySingletonBehavior<UIManager>.Instance.UILookAndColorConstants.PopupBackfill), 0.0f, true).Render();
         return false;
       }
       return true;
@@ -789,33 +795,33 @@ namespace CustomUnits {
     }
 
     public static void SetUnspentExperience(this PilotDef pilotDef, int value) {
-      Log.TWL(0, "SimGameState.ResolveCompleteContract.PilotDef.SetUnspentExperience "+ pilotDef.Description.Id + " PlayerUnitResults:" + (PlayerUnitResults==null?"null": PlayerUnitResults.Count.ToString()) +" crew:"+pilotDef.canPilotMech()+" value:"+value);
+      Log.TWL(0, "SimGameState.ResolveCompleteContract.PilotDef.SetUnspentExperience " + pilotDef.Description.Id + " PlayerUnitResults:" + (PlayerUnitResults == null ? "null" : PlayerUnitResults.Count.ToString()) + " crew:" + pilotDef.canPilotMech() + " value:" + value);
       if (PlayerUnitResults == null) {
         //if (pilotDef.canPilotMech() == false) {
-          //pilotDef.SetUnspentExperience(0);
+        //pilotDef.SetUnspentExperience(0);
         //} else {
-          pilotDef.SetUnspentExperience(value);
+        pilotDef.SetUnspentExperience(value);
         //}
       } else {
         UnitResult pilotResult = null;
-        foreach(UnitResult result in PlayerUnitResults) {
-          if(result.pilot.Description.Id == pilotDef.Description.Id) {
+        foreach (UnitResult result in PlayerUnitResults) {
+          if (result.pilot.Description.Id == pilotDef.Description.Id) {
             pilotResult = result; break;
           }
         }
-        if(pilotResult == null) {
-          Log.WL(1,"cant find pilot result for:"+ pilotDef.Description.Id);
+        if (pilotResult == null) {
+          Log.WL(1, "cant find pilot result for:" + pilotDef.Description.Id);
           //if (pilotDef.canPilotMech() == false) {
-            //pilotDef.SetUnspentExperience(0);
+          //pilotDef.SetUnspentExperience(0);
           //} else {
-            pilotDef.SetUnspentExperience(value);
+          pilotDef.SetUnspentExperience(value);
           //}
         } else {
-          Log.WL(1, "success find result for:" + pilotDef.Description.Id+" unit:"+ pilotResult.mech.ChassisID+ " idFake:"+ pilotResult.mech.IsChassisFake());
+          Log.WL(1, "success find result for:" + pilotDef.Description.Id + " unit:" + pilotResult.mech.ChassisID + " idFake:" + pilotResult.mech.IsChassisFake());
           //if (pilotResult.mech.IsChassisFake()) {
-            //pilotDef.SetUnspentExperience(0);
+          //pilotDef.SetUnspentExperience(0);
           //} else {
-            pilotDef.SetUnspentExperience(value);
+          pilotDef.SetUnspentExperience(value);
           //}
         }
       }
@@ -852,13 +858,13 @@ namespace CustomUnits {
       Log.TWL(0, "LanceConfiguratorPanel.LoadLanceConfiguration:");
       ___headerWidget.LanceName = Strings.T(__instance.oldLanceName);
       SpawnableUnit[] lanceUnits = config.GetLanceUnits("");
-      for(int i = 0; i < lanceUnits.Length; ++i) {
-        Log.WL(1, "["+i+"] pilot:" + lanceUnits[i].PilotId +" unit:" + lanceUnits[i].UnitId);
+      for (int i = 0; i < lanceUnits.Length; ++i) {
+        Log.WL(1, "[" + i + "] pilot:" + lanceUnits[i].PilotId + " unit:" + lanceUnits[i].UnitId);
       }
       List<LoadoutContent> spawnMechList = new List<LoadoutContent>();
       List<LoadoutContent> spawnVehicleList = new List<LoadoutContent>();
       int count = Mathf.Min(lanceUnits.Length, ___loadoutSlots.Length);
-      for(int i = 0; i < count; ++i) {
+      for (int i = 0; i < count; ++i) {
         SpawnableUnit unit = lanceUnits[i];
         IMechLabDraggableItem forcedMech = (IMechLabDraggableItem)null;
         if (unit.Unit != null) { forcedMech = __instance.mechListWidget.GetMechDefByGUID(unit.Unit.GUID); }
@@ -881,8 +887,8 @@ namespace CustomUnits {
           if (forcedMech != null) { if (forcedMech.MechDef.IsChassisFake() == false) { forcedMech = null; }; };
           if (forcedPilot != null) { if (forcedPilot.Pilot.pilotDef.canPilotVehicle() == false) { forcedPilot = null; }; };
         } else {
-          if((forcedMech != null)&&(forcedPilot != null)) {
-            if (forcedMech.MechDef.IsChassisFake() &&(forcedPilot.Pilot.pilotDef.canPilotVehicle() == false)) { forcedPilot = null; }
+          if ((forcedMech != null) && (forcedPilot != null)) {
+            if (forcedMech.MechDef.IsChassisFake() && (forcedPilot.Pilot.pilotDef.canPilotVehicle() == false)) { forcedPilot = null; }
             if ((forcedMech.MechDef.IsChassisFake() == false) && (forcedPilot.Pilot.pilotDef.canPilotMech() == false)) { forcedPilot = null; }
           }
         }
@@ -948,7 +954,7 @@ namespace CustomUnits {
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { typeof(LanceConfiguratorPanel), typeof(SimGameState), typeof(DataManager), typeof(bool), typeof(bool), typeof(float), typeof(float) })]
   public static class LanceLoadoutSlot_SetData {
-    public static void Prefix(LanceLoadoutSlot __instance, LanceConfiguratorPanel LC, SimGameState sim, DataManager dataManager, bool useDragAndDrop, ref bool locked, ref float minTonnage,ref float maxTonnage) {
+    public static void Prefix(LanceLoadoutSlot __instance, LanceConfiguratorPanel LC, SimGameState sim, DataManager dataManager, bool useDragAndDrop, ref bool locked, ref float minTonnage, ref float maxTonnage) {
       Log.TWL(0, "LanceLoadoutSlot.SetData " + __instance.GetInstanceID());
       try {
         bool overrideLocked = __instance.isOverrideLockedState();
@@ -956,20 +962,20 @@ namespace CustomUnits {
         int lanceid = __instance.LanceId();
         int lancepos = __instance.LancePos();
         int index = __instance.slotIndex();
-        Log.WL(1, "index:" +index+ " lanceid:" + lanceid + " lancepos:" + lancepos + " maxTonnage:" + maxTonnage + " locked:" + locked + " allow:" + (lanceid == -1 ? "unlim" : CustomLanceHelper.allowLanceSize(lanceid).ToString()));
+        Log.WL(1, "index:" + index + " lanceid:" + lanceid + " lancepos:" + lancepos + " maxTonnage:" + maxTonnage + " locked:" + locked + " allow:" + (lanceid == -1 ? "unlim" : CustomLanceHelper.allowLanceSize(lanceid).ToString()));
         if ((lanceid == -1) || (lancepos == -1)) { return; }
         if (maxTonnage == 0f) { return; }
         if (locked == true) { return; }
         locked = CustomLanceHelper.allowLanceSize(lanceid) <= lancepos;
         Log.WL(1, "locked:" + locked + " allow:" + CustomLanceHelper.allowLanceSize(lanceid));
-        if(index >= 4) {
+        if (index >= 4) {
           Log.WL(1, "extended slot detected");
           if (locked == false) {
             locked = LC.slotMaxTonnages[0] == 0f;
           }
           minTonnage = LC.slotMinTonnages[0];
           maxTonnage = LC.slotMaxTonnages[0];
-          Log.WL(1, "min max tonnage override. Min:"+minTonnage+" Max:"+maxTonnage+" lock state:"+locked);
+          Log.WL(1, "min max tonnage override. Min:" + minTonnage + " Max:" + maxTonnage + " lock state:" + locked);
         }
       } catch (Exception e) {
         Log.TWL(0, e.ToString(), true);
@@ -1026,9 +1032,9 @@ namespace CustomUnits {
               GenericPopupBuilder.Create("Cannot place mech", Strings.T("Mech cannot be placed to vehicle slot")).AddFader(new UIColorRef?(LazySingletonBehavior<UIManager>.Instance.UILookAndColorConstants.PopupBackfill), 0.0f, true).Render();
               return false;
             }
-          } else if(__instance.SelectedPilot != null) { 
+          } else if (__instance.SelectedPilot != null) {
             if (lanceLoadoutMechItem.MechDef.IsChassisFake() == false) {
-              if(__instance.SelectedPilot.Pilot.pilotDef.canPilotMech() == false) {
+              if (__instance.SelectedPilot.Pilot.pilotDef.canPilotMech() == false) {
                 if (___LC != null) { ___LC.ReturnItem(item); }
                 __result = false;
                 GenericPopupBuilder.Create("Cannot place mech", Strings.T("This pilot can't pilot mech")).AddFader(new UIColorRef?(LazySingletonBehavior<UIManager>.Instance.UILookAndColorConstants.PopupBackfill), 0.0f, true).Render();
@@ -1063,7 +1069,7 @@ namespace CustomUnits {
                   GenericPopupBuilder.Create("Cannot place pilot", Strings.T("This pilot can't pilot mech")).AddFader(new UIColorRef?(LazySingletonBehavior<UIManager>.Instance.UILookAndColorConstants.PopupBackfill), 0.0f, true).Render();
                   return false;
                 }
-              } else if(canPilotVehicle == false) {
+              } else if (canPilotVehicle == false) {
                 if (___LC != null) { ___LC.ReturnItem(item); }
                 __result = false;
                 GenericPopupBuilder.Create("Cannot place pilot", Strings.T("This pilot can't pilot vehicles")).AddFader(new UIColorRef?(LazySingletonBehavior<UIManager>.Instance.UILookAndColorConstants.PopupBackfill), 0.0f, true).Render();
@@ -1280,11 +1286,24 @@ namespace CustomUnits {
         prewarmRequests.AddRange(__instance.PrewarmRequests);
         foreach (string icon in Core.Settings.LancesIcons) {
           prewarmRequests.Add(new PrewarmRequest(BattleTechResourceType.SVGAsset, icon));
+          CustomSvgCache.RegisterSVG(icon);
         }
-        prewarmRequests.Add(new PrewarmRequest(BattleTechResourceType.SVGAsset, Core.Settings.MechBaySwitchIconMech));
-        prewarmRequests.Add(new PrewarmRequest(BattleTechResourceType.SVGAsset, Core.Settings.MechBaySwitchIconVehicle));
-        prewarmRequests.Add(new PrewarmRequest(BattleTechResourceType.SVGAsset, Core.Settings.MechBaySwitchIconUp));
-        prewarmRequests.Add(new PrewarmRequest(BattleTechResourceType.SVGAsset, Core.Settings.MechBaySwitchIconDown));
+        prewarmRequests.Add(new PrewarmRequest(BattleTechResourceType.SVGAsset, Core.Settings.MechBaySwitchIconMech)); CustomSvgCache.RegisterSVG(Core.Settings.MechBaySwitchIconMech);
+        prewarmRequests.Add(new PrewarmRequest(BattleTechResourceType.SVGAsset, Core.Settings.MechBaySwitchIconVehicle)); CustomSvgCache.RegisterSVG(Core.Settings.MechBaySwitchIconVehicle);
+        prewarmRequests.Add(new PrewarmRequest(BattleTechResourceType.SVGAsset, Core.Settings.MechBaySwitchIconUp)); CustomSvgCache.RegisterSVG(Core.Settings.MechBaySwitchIconUp);
+        prewarmRequests.Add(new PrewarmRequest(BattleTechResourceType.SVGAsset, Core.Settings.MechBaySwitchIconDown)); CustomSvgCache.RegisterSVG(Core.Settings.MechBaySwitchIconDown);
+        if (string.IsNullOrEmpty(Core.Settings.ShowActiveAbilitiesIcon) == false) {
+          prewarmRequests.Add(new PrewarmRequest(BattleTechResourceType.SVGAsset, Core.Settings.ShowActiveAbilitiesIcon)); CustomSvgCache.RegisterSVG(Core.Settings.ShowActiveAbilitiesIcon);
+        }
+        if (string.IsNullOrEmpty(Core.Settings.ShowPassiveAbilitiesIcon) == false) {
+          prewarmRequests.Add(new PrewarmRequest(BattleTechResourceType.SVGAsset, Core.Settings.ShowPassiveAbilitiesIcon)); CustomSvgCache.RegisterSVG(Core.Settings.ShowPassiveAbilitiesIcon);
+        }
+        if (string.IsNullOrEmpty(Core.Settings.HideActiveAbilitiesIcon) == false) {
+          prewarmRequests.Add(new PrewarmRequest(BattleTechResourceType.SVGAsset, Core.Settings.HideActiveAbilitiesIcon)); CustomSvgCache.RegisterSVG(Core.Settings.HideActiveAbilitiesIcon);
+        }
+        if (string.IsNullOrEmpty(Core.Settings.HidePassiveAbilitiesIcon) == false) {
+          prewarmRequests.Add(new PrewarmRequest(BattleTechResourceType.SVGAsset, Core.Settings.HidePassiveAbilitiesIcon)); CustomSvgCache.RegisterSVG(Core.Settings.HidePassiveAbilitiesIcon);
+        }
         typeof(ApplicationConstants).GetProperty("PrewarmRequests", BindingFlags.Instance | BindingFlags.Public).GetSetMethod(true).Invoke(__instance, new object[] { prewarmRequests.ToArray() });
         foreach (PrewarmRequest preq in __instance.PrewarmRequests) {
           Log.WL(1, preq.ResourceType + ":" + preq.ResourceID);
@@ -1373,7 +1392,7 @@ namespace CustomUnits {
       this.image = image;
       //lanceIcons = new List<SVGAsset>();
       Log.TWL(0, "LanceSwitcher.Init");
-      for(int index = lanceIcons.Count; index < Core.Settings.LancesIcons.Count; ++index) {
+      for (int index = lanceIcons.Count; index < Core.Settings.LancesIcons.Count; ++index) {
         string iconid = Core.Settings.LancesIcons[index];
         SVGAsset icon = CustomSvgCache.get(iconid, HUD.Combat.DataManager); //HUD.Combat.DataManager.GetObjectOfType<SVGAsset>(iconid, BattleTechResourceType.SVGAsset);
         if (icon != null) {
@@ -1423,7 +1442,7 @@ namespace CustomUnits {
     public static void Postfix(CombatHUD __instance, AbstractActor actor) {
       if (actor == null) { return; }
       int lanceId = actor.LanceId();
-      Log.TWL(0, "CombatHUD.updateHUDElements " + actor.DisplayName + " lanceId:" +lanceId);
+      Log.TWL(0, "CombatHUD.updateHUDElements " + actor.DisplayName + " lanceId:" + lanceId);
       if (lanceId >= 0) {
         if (__instance.MechWarriorTray.CurrentLance() != lanceId) {
           __instance.MechWarriorTray.HideLance(__instance.MechWarriorTray.CurrentLance());
@@ -1476,7 +1495,13 @@ namespace CustomUnits {
       return f_mwCommandButton;
     }
     public static void Postfix(CombatHUDMechwarriorTray __instance, CombatHUD ___HUD) {
-      __instance.mwCommandButton(___HUD).SetActive(true);
+      GameObject btn = __instance.mwCommandButton(___HUD);
+      if(___HUD.Combat.LocalPlayerTeam.unitCount == 1) {
+        if (___HUD.Combat.LocalPlayerTeam.units[0].IsDeployDirector()) {
+          btn.SetActive(false); return;
+        }
+      }
+      btn.SetActive(true);
     }
   }
   [HarmonyPatch(typeof(CombatHUDMechwarriorTray))]
@@ -1493,7 +1518,13 @@ namespace CustomUnits {
   [HarmonyPatch(MethodType.Normal)]
   public static class CombatHUDMechwarriorTray_OnCommandTrayInvoked {
     public static void Postfix(CombatHUDMechwarriorTray __instance, CombatHUD ___HUD) {
-      __instance.mwCommandButton(___HUD).SetActive(true);
+      GameObject btn = __instance.mwCommandButton(___HUD);
+      if (___HUD.Combat.LocalPlayerTeam.unitCount == 1) {
+        if (___HUD.Combat.LocalPlayerTeam.units[0].IsDeployDirector()) {
+          btn.SetActive(false); return;
+        }
+      }
+      btn.SetActive(true);
     }
   }
   [HarmonyPatch(typeof(CombatHUDMechwarriorTray))]
@@ -1596,7 +1627,7 @@ namespace CustomUnits {
       actorLanceIds.Clear();
     }
     public static int LanceId(this AbstractActor actor) {
-      if(actorLanceIds.TryGetValue(actor, out int lid)) {
+      if (actorLanceIds.TryGetValue(actor, out int lid)) {
         return lid;
       }
       return -1;
@@ -1617,13 +1648,30 @@ namespace CustomUnits {
             slot.holder.SetActive(false);
           }
         }
+        if ((team.unitCount == 1) && (team.units[0].IsDeployDirector())) {
+          avaibleSlots[0].portrait.DisplayedActor = team.units[0];
+          avaibleSlots[0].holder.SetActive(true);
+          for(int index=1;index< avaibleSlots.Count; ++index) {
+            avaibleSlots[index].holder.SetActive(false);
+          }
+          ___HUD.SelectionHandler.TrySelectActor(team.units[0],true);
+          return false;
+        }
         Dictionary<int, AbstractActor> predefinedActors = new Dictionary<int, AbstractActor>();
         List<AbstractActor> mechs = new List<AbstractActor>();
         List<AbstractActor> vehicles = new List<AbstractActor>();
+        Log.WL(1, "player lance layout");
+        foreach (var plLayout in CustomLanceHelper.playerLanceLoadout.loadout) {
+          Log.WL(2, plLayout.Key + ":" + plLayout.Value);
+        }
+        Log.WL(1, "avaible slots");
+        foreach (var slot in avaibleSlots) {
+          Log.WL(2, slot.Key + " lance:" + slot.Value.lance_index + " index:" + slot.Value.lance_id + " head:" + slot.Value.isHead);
+        }
         foreach (AbstractActor unit in ___displayedTeam.units) {
           string defGUID = string.Empty;
+          if (unit.IsDeployDirector()) { continue; }
           bool isVehicle = false;
-          Log.WL(1, unit.DisplayName+" "+unit.EncounterTags.ContentToString());
           if (unit.UnitType == UnitType.Mech) {
             defGUID = (unit as Mech).MechDef.GUID;
           } else if (unit.UnitType == UnitType.Vehicle) {
@@ -1632,6 +1680,7 @@ namespace CustomUnits {
           } else {
             continue;
           }
+          Log.WL(1, unit.DisplayName + " tags:" + unit.EncounterTags.ContentToString() + " defGUID:" + defGUID);
           if (string.IsNullOrEmpty(defGUID) == false) {
             if (CustomLanceHelper.playerLanceLoadout.loadout.TryGetValue(defGUID, out int slotIndex)) {
               if (avaibleSlots.TryGetValue(slotIndex, out CustomLanceInstance slot)) {
@@ -1689,7 +1738,7 @@ namespace CustomUnits {
         //if (nonemptyLance != 0) { __instance.HideLance(0); };
         __instance.ShowLance(nonemptyLance);
         Log.WL(1, "success");
-      }catch(Exception e) {
+      } catch (Exception e) {
         Log.TWL(0, e.ToString(), true);
       }
       return false;
@@ -1710,9 +1759,246 @@ namespace CustomUnits {
       this.isVehicle = isVehicle;
     }
   }
+  [HarmonyPatch(typeof(CombatHUDButtonBase))]
+  [HarmonyPatch("OnPointerEnter")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { typeof(PointerEventData) })]
+  public static class CombatHUDButtonBase_OnPointerEnter {
+    //private static bool toggleState = false;
+    public static void Postfix(CombatHUDButtonBase __instance, PointerEventData eventData) {
+      Log.TWL(0, "CombatHUDButtonBase.OnPointerEnter " + __instance.GUID);
+      CombatHUDMechwarriorTrayEx trayEx = Traverse.Create(__instance).Property<CombatHUD>("HUD").Value.MechWarriorTray.gameObject.GetComponent<CombatHUDMechwarriorTrayEx>();
+      if (trayEx == null) {
+        Log.WL(1, "no trayEx");
+        return;
+      }
+      CombatHUDActionButton instance = __instance as CombatHUDActionButton;
+      if (instance == null) {
+        Log.WL(1, "not a CombatHUDActionButton");
+        return;
+      }
+      if (trayEx.actionButtons.Contains(instance) == false) {
+        Log.WL(1, "not int actionButtons");
+        return;
+      };
+      foreach (CombatHUDActionButton btn in trayEx.actionButtons) {
+        Log.WL(1, "exiting:" + btn.GUID);
+        if (btn == __instance) { continue; }
+        btn.Tooltip.color = Color.clear;
+        Traverse.Create(btn).Field<float>("timeSinceColorsChanged").Value = 0.14f;
+        btn.OnPointerExit(eventData);
+      }
+    }
+  }
+  [HarmonyPatch(typeof(CombatHUDButtonBase))]
+  [HarmonyPatch("OnPointerExit")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { typeof(PointerEventData) })]
+  public static class CombatHUDButtonBase_OnPointerExit {
+    //private static bool toggleState = false;
+    public static void Postfix(CombatHUDButtonBase __instance, PointerEventData eventData) {
+      Log.TWL(0, "CombatHUDButtonBase.OnPointerExit " + __instance.GUID);
+    }
+  }
+  public class CombatHUDMechwarriorTrayEx : MonoBehaviour {
+    public HashSet<CombatHUDActionButton> actionButtons;
+    public List<CombatHUDActionButton> ActiveAbilitiesButtons;
+    public CanvasGroup ActiveAbilitiesCanvasGroup;
+    public CanvasGroup PassiveAbilitiesCanvasGroup;
+    public CombatHUDActionButton FirstActiveAbility;
+    public List<CombatHUDActionButton> PassiveAbilitiesButtons;
+    public List<CombatHUDActionButton> NormalButtons;
+    public CombatHUDActionButton ShowActiveAbilitiesButton;
+    public CombatHUDActionButton ShowPassiveAbilitiesButton;
+    public CombatHUDActionButton HideActiveAbilitiesButton;
+    public CombatHUDActionButton HidePassiveAbilitiesButton;
+    public GameObject ActiveButtonsLayout;
+    public GameObject PassiveButtonsLayout;
+    public bool AttackModeSelectorPosInited;
+    public Vector3 AttackModeSelectorUpPos;
+    public Vector3 AttackModeSelectorDownPos;
+    private bool ui_inited;
+    public static readonly int BUTTONS_COUNT = 10;
+    public static readonly string SHOW_ACTIVE_BUTTON_GUID = "BTN_ShowActiveButtons";
+    public static readonly string HIDE_ACTIVE_BUTTON_GUID = "BTN_HideActiveButtons";
+    public static readonly string SHOW_PASSIVE_BUTTON_GUID = "BTN_ShowPassiveButtons";
+    public static readonly string HIDE_PASSIVE_BUTTON_GUID = "BTN_HidePassiveButtons";
+    public static readonly string SHOW_ACTIVE_BUTTON_NAME = "ACT.ABIL.";
+    public static readonly string SHOW_PASSIVE_BUTTON_NAME = "PAS.ABIL.";
+    public CombatHUD HUD;
+    public CombatGameState Combat;
+    public CombatHUDMechwarriorTray mechWarriorTray;
+    public void initAttackModeSelectorPos() {
+      if (AttackModeSelectorPosInited) { return; }
+      AttackModeSelectorPosInited = true;
+      RectTransform selfTransform = ActiveButtonsLayout.GetComponent<RectTransform>();
+      AttackModeSelectorDownPos = HUD.AttackModeSelector.transform.localPosition;
+      AttackModeSelectorUpPos = HUD.AttackModeSelector.transform.localPosition;
+      AttackModeSelectorUpPos.y += selfTransform.sizeDelta.y;
+    }
+    public void ShowActiveAbilities() {
+      ActiveButtonsLayout.SetActive(true);
+      PassiveButtonsLayout.SetActive(false);
+      for (int index = 0; index < BUTTONS_COUNT; ++index) {
+        this.NormalButtons[index].ButtonAction = null;
+      }
+      for (int index = 0; index < (BUTTONS_COUNT - 1); ++index) {
+        this.ActiveAbilitiesButtons[index].SetHotKey(Core.Settings.DisableHotKeys ? null : BTInput.Instance.Combat_Abilities()[index], true);
+      }
+      UpdateExtButtons();
+      initAttackModeSelectorPos();
+    }
+    public void UpdateExtButtons() {
+      if (HUD.SelectedActor != null) {
+        HideActiveAbilitiesButton.Init(Combat, HUD, Core.Settings.DisableHotKeys ? null : BTInput.Instance.Combat_DoneWithMech(), true);
+        HideActiveAbilitiesButton.isClickable = true;
+        HideActiveAbilitiesButton.RefreshColors(HUD.SelectedActor);
+        HidePassiveAbilitiesButton.Init(Combat, HUD, Core.Settings.DisableHotKeys ? null : BTInput.Instance.Combat_DoneWithMech(), true);
+        HideActiveAbilitiesButton.isClickable = true;
+        HideActiveAbilitiesButton.RefreshColors(HUD.SelectedActor);
+      }
+    }
+    public void ShowPassiveAbilities() {
+      ActiveButtonsLayout.SetActive(false);
+      PassiveButtonsLayout.SetActive(true);
+      for (int index = 0; index < BUTTONS_COUNT; ++index) {
+        this.NormalButtons[index].ButtonAction = null;
+      }
+      for (int index = 0; index < (BUTTONS_COUNT - 1); ++index) {
+        this.PassiveAbilitiesButtons[index].SetHotKey(Core.Settings.DisableHotKeys ? null : BTInput.Instance.Combat_Abilities()[index], true);
+      }
+      UpdateExtButtons();
+      initAttackModeSelectorPos();
+    }
+    public void HideActiveAbilities() {
+      ActiveButtonsLayout.SetActive(false);
+      for (int index = 0; index < BUTTONS_COUNT; ++index) {
+        if (index == 9) {
+          this.NormalButtons[index].SetHotKey(Core.Settings.DisableHotKeys ? null : BTInput.Instance.Combat_DoneWithMech(), true);
+        } else {
+          this.NormalButtons[index].SetHotKey(Core.Settings.DisableHotKeys ? null : BTInput.Instance.Combat_Abilities()[index], true);
+        }
+      }
+    }
+    public void HidePassiveAbilities() {
+      PassiveButtonsLayout.SetActive(false);
+      for (int index = 0; index < BUTTONS_COUNT; ++index) {
+        if (index == 9) {
+          this.NormalButtons[index].SetHotKey(Core.Settings.DisableHotKeys ? null : BTInput.Instance.Combat_DoneWithMech(), true);
+        } else {
+          this.NormalButtons[index].SetHotKey(Core.Settings.DisableHotKeys ? null : BTInput.Instance.Combat_Abilities()[index], true);
+        }
+      }
+    }
+    public CombatHUDMechwarriorTrayEx() {
+      ActiveAbilitiesButtons = new List<CombatHUDActionButton>();
+      PassiveAbilitiesButtons = new List<CombatHUDActionButton>();
+      NormalButtons = new List<CombatHUDActionButton>();
+      ui_inited = false;
+      AttackModeSelectorPosInited = false;
+      actionButtons = new HashSet<CombatHUDActionButton>();
+    }
+    public void initUI() {
+      RectTransform portraits = mechWarriorTray.gameObject.transform.FindRecursive("mwPortraitLayoutGroup") as RectTransform;
+      RectTransform selfTransform = ActiveButtonsLayout.GetComponent<RectTransform>();
+      Vector3 locPos = Vector3.zero;
+      locPos.y = portraits.localPosition.y + (portraits.sizeDelta.y / 2f) + selfTransform.sizeDelta.y;
+      ActiveButtonsLayout.transform.localPosition = locPos;
+      PassiveButtonsLayout.transform.localPosition = locPos;
+    }
+    public void Update() {
+      if (ui_inited == false) {
+        initUI();
+      }
+      if (HUD != null) {
+        if (HUD.SelectedActor == null) {
+          ActiveButtonsLayout.SetActive(false);
+          PassiveButtonsLayout.SetActive(false);
+        } else {
+          if (this.AttackModeSelectorPosInited) {
+            if (ActiveButtonsLayout.activeSelf || PassiveButtonsLayout.activeSelf) {
+              HUD.AttackModeSelector.transform.localPosition = AttackModeSelectorUpPos;
+            }
+          }
+        }
+      }
+    }
+    public void Init(CombatHUDMechwarriorTray mechWarriorTray, CombatHUD HUD, CombatGameState Combat) {
+      this.mechWarriorTray = mechWarriorTray;
+      this.HUD = HUD;
+      this.Combat = Combat;
+      for (int index = 0; index < (BUTTONS_COUNT - 1); ++index) {
+        CombatHUDSidePanelHoverElement panelHoverElement = ActiveAbilitiesButtons[index].gameObject.GetComponentInChildren<CombatHUDSidePanelHoverElement>(true);
+        if ((UnityEngine.Object)panelHoverElement == (UnityEngine.Object)null) {
+          panelHoverElement = ActiveAbilitiesButtons[index].gameObject.AddComponent<CombatHUDSidePanelHoverElement>();
+        }
+        panelHoverElement.Init(HUD);
+        if (index < 9) {
+          ActiveAbilitiesButtons[index].Init(Combat, HUD, BTInput.Instance.Combat_Abilities()[index], true);
+        }
+        //ActiveAbilitiesButtons[index].gameObject.transform.parent.gameObject.SetActive(false);
+        panelHoverElement = PassiveAbilitiesButtons[index].gameObject.GetComponentInChildren<CombatHUDSidePanelHoverElement>(true);
+        if ((UnityEngine.Object)panelHoverElement == (UnityEngine.Object)null) {
+          panelHoverElement = PassiveAbilitiesButtons[index].gameObject.AddComponent<CombatHUDSidePanelHoverElement>();
+        }
+        panelHoverElement.Init(HUD);
+        if (index < 9) {
+          PassiveAbilitiesButtons[index].Init(Combat, HUD, BTInput.Instance.Combat_Abilities()[index], true);
+        }
+        //PassiveAbilitiesButtons[index].gameObject.transform.parent.gameObject.SetActive(false);
+      }
+      HideActiveAbilitiesButton.Init(Combat, HUD, BTInput.Instance.Combat_DoneWithMech(), true);
+      HidePassiveAbilitiesButton.Init(Combat, HUD, BTInput.Instance.Combat_DoneWithMech(), true);
+      //HideActiveAbilitiesButton.gameObject.transform.parent.gameObject.SetActive(false);
+      //HidePassiveAbilitiesButton.gameObject.transform.parent.gameObject.SetActive(false);
+    }
+    public void Instantine(CombatHUDMechwarriorTray mechWarriorTray) {
+      Transform buttons = mechWarriorTray.gameObject.transform.FindRecursive("mwt_ActionButtonsLayout");
+      GameObject activeBtns = GameObject.Instantiate(buttons.gameObject);
+      ActiveAbilitiesCanvasGroup = activeBtns.GetComponent<CanvasGroup>();
+      ActiveAbilitiesCanvasGroup.interactable = true;
+      ActiveAbilitiesCanvasGroup.blocksRaycasts = true;
+      activeBtns.transform.SetParent(buttons.transform.parent);
+      activeBtns.transform.localScale = Vector3.one;
+      ActiveButtonsLayout = activeBtns;
+      GameObject passiveBtns = GameObject.Instantiate(buttons.gameObject);
+      PassiveAbilitiesCanvasGroup = passiveBtns.GetComponent<CanvasGroup>();
+      PassiveAbilitiesCanvasGroup.interactable = true;
+      PassiveAbilitiesCanvasGroup.blocksRaycasts = true;
+      passiveBtns.transform.SetParent(buttons.transform.parent);
+      passiveBtns.transform.localScale = Vector3.one;
+      PassiveButtonsLayout = passiveBtns;
+      CombatHUDActionButton[] normalButtons = buttons.gameObject.GetComponentsInChildren<CombatHUDActionButton>(true);
+      for (int index = 0; index < BUTTONS_COUNT; ++index) {
+        CombatHUDActionButton abtn = normalButtons[index];
+        NormalButtons.Add(abtn);
+      }
+      CombatHUDActionButton[] activeButtons = activeBtns.GetComponentsInChildren<CombatHUDActionButton>(true);
+      for (int index = 0; index < BUTTONS_COUNT; ++index) {
+        CombatHUDActionButton abtn = activeButtons[index];
+        if (index == 9) {
+          HideActiveAbilitiesButton = abtn;
+        } else {
+          ActiveAbilitiesButtons.Add(abtn);
+        }
+        actionButtons.Add(abtn);
+      }
+      CombatHUDActionButton[] passiveButtons = passiveBtns.GetComponentsInChildren<CombatHUDActionButton>(true);
+      for (int index = 0; index < BUTTONS_COUNT; ++index) {
+        CombatHUDActionButton abtn = passiveButtons[index];
+        if (index == 9) {
+          HidePassiveAbilitiesButton = abtn;
+        } else {
+          PassiveAbilitiesButtons.Add(abtn);
+        }
+        actionButtons.Add(abtn);
+      }
+    }
+  };
   [HarmonyPatch(typeof(CombatHUDMechwarriorTray))]
   [HarmonyPatch("Init")]
   [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPriority(Priority.First)]
   public static class CombatHUDMechwarriorTray_Init {
     private static List<List<CustomLanceInstance>> lancesPortraitHolders = new List<List<CustomLanceInstance>>();
     public static List<List<CustomLanceInstance>> exPortraitHolders(this CombatHUDMechwarriorTray tray) { return lancesPortraitHolders; }
@@ -1747,29 +2033,29 @@ namespace CustomUnits {
         Log.TWL(0, "AddTween:" + toggle.gameObject.name + " anim:" + anim.buttonState + "->" + anim.endValueFloat);
         switch (anim.buttonState) {
           case ButtonState.Enabled:
-            toggle.OnEnabledTweens.Add(anim);
-            break;
+          toggle.OnEnabledTweens.Add(anim);
+          break;
           case ButtonState.Selected:
-            toggle.OnSelectedTweens.Add(anim);
-            break;
+          toggle.OnSelectedTweens.Add(anim);
+          break;
           case ButtonState.Highlighted:
-            toggle.OnHighlightedTweens.Add(anim);
-            break;
+          toggle.OnHighlightedTweens.Add(anim);
+          break;
           case ButtonState.Pressed:
-            toggle.OnPressedTweens.Add(anim);
-            break;
+          toggle.OnPressedTweens.Add(anim);
+          break;
           case ButtonState.Unavailable:
-            toggle.OnUnavailableTweens.Add(anim);
-            break;
+          toggle.OnUnavailableTweens.Add(anim);
+          break;
           case ButtonState.Disabled:
-            toggle.OnDisabledTweens.Add(anim);
-            break;
+          toggle.OnDisabledTweens.Add(anim);
+          break;
           default:
-            break;
+          break;
         }
       }
     }
-    public static void Prefix(CombatHUDMechwarriorTray __instance, CombatGameState Combat, CombatHUD HUD) {
+    public static void InitAdditinalPortraits(CombatHUDMechwarriorTray __instance, CombatGameState Combat, CombatHUD HUD) {
       List<GameObject> holders = new List<GameObject>();
       holders.AddRange(__instance.PortraitHolders);
       List<HBSDOTweenToggle> tweensHolders = new List<HBSDOTweenToggle>();
@@ -1779,7 +2065,7 @@ namespace CustomUnits {
       GameObject srcTween = tweensHolders[0].gameObject;
       HorizontalLayoutGroup layout = srcHolder.transform.parent.gameObject.GetComponent<HorizontalLayoutGroup>();
       layout.childAlignment = TextAnchor.MiddleLeft;
-      int all_lances_size = CustomLanceHelper.fullSlotsCount()+Core.Settings.ConvoyUnitsCount;
+      int all_lances_size = CustomLanceHelper.fullSlotsCount() + Core.Settings.ConvoyUnitsCount;
       for (int t = __instance.PortraitHolders.Length; t < all_lances_size; ++t) {
         GameObject newHolder = GameObject.Instantiate(srcHolder);
         newHolder.name = "mwPortraitHolder" + (t + 1).ToString();
@@ -1816,6 +2102,90 @@ namespace CustomUnits {
       __instance.PortraitHolders = holders.ToArray();
       __instance.portraitTweens = tweensHolders.ToArray();
     }
+
+    public static bool Prefix(CombatHUDMechwarriorTray __instance, CombatGameState Combat, CombatHUD HUD
+      , ref CombatGameState ___Combat, ref CombatHUD ___HUD, ref CombatHUDPortrait[] ___Portraits
+    ) {
+      try {
+        InitAdditinalPortraits(__instance, Combat, HUD);
+        ___Combat = Combat;
+        ___HUD = HUD;
+        ___Portraits = new CombatHUDPortrait[__instance.PortraitHolders.Length];
+        for (int index = 0; index < __instance.PortraitHolders.Length; ++index) {
+          ___Portraits[index] = __instance.PortraitHolders[index].GetComponentInChildren<CombatHUDPortrait>(true);
+          ___Portraits[index].Init(Combat, HUD, __instance.PortraitHolders[index].GetComponent<LayoutElement>(), __instance.portraitTweens[index]);
+        }
+        CombatHUDMechwarriorTrayEx trayEx = __instance.gameObject.GetComponent<CombatHUDMechwarriorTrayEx>();
+        if (trayEx == null) {
+          trayEx = __instance.gameObject.AddComponent<CombatHUDMechwarriorTrayEx>();
+          trayEx.Instantine(__instance);
+        }
+        Traverse.Create(__instance).Property<CombatHUDActionButton[]>("ActionButtons").Value = new CombatHUDActionButton[__instance.ActionButtonHolders.Length];
+        for (int index = 0; index < __instance.ActionButtonHolders.Length; ++index) {
+          __instance.ActionButtons[index] = __instance.ActionButtonHolders[index].GetComponentInChildren<CombatHUDActionButton>(true);
+          CombatHUDSidePanelHoverElement panelHoverElement = __instance.ActionButtons[index].GetComponentInChildren<CombatHUDSidePanelHoverElement>(true);
+          if ((UnityEngine.Object)panelHoverElement == (UnityEngine.Object)null)
+            panelHoverElement = __instance.ActionButtons[index].gameObject.AddComponent<CombatHUDSidePanelHoverElement>();
+          panelHoverElement.Init(HUD);
+          if (index < 9)
+            __instance.ActionButtons[index].Init(Combat, HUD, BTInput.Instance.Combat_Abilities()[index], true);
+        }
+        trayEx.Init(__instance, HUD, Combat);
+        Traverse.Create(__instance).Property<CombatHUDActionButton>("FireButton").Value = __instance.ActionButtons[0];
+        Traverse.Create(__instance).Property<CombatHUDActionButton>("MoveButton").Value = __instance.ActionButtons[1];
+        Traverse.Create(__instance).Property<CombatHUDActionButton>("SprintButton").Value = __instance.ActionButtons[2];
+        Traverse.Create(__instance).Property<CombatHUDActionButton>("JumpButton").Value = __instance.ActionButtons[3];
+        Traverse.Create(__instance).Property<CombatHUDActionButton>("DoneWithMechButton").Value = __instance.ActionButtons[9];
+        Traverse.Create(__instance).Property<CombatHUDActionButton>("EjectButton").Value = __instance.ActionButtons[10];
+        __instance.MeleeButtonHolder.GetComponentInChildren<CombatHUDActionButton>(true).Init(Combat, HUD, BTInput.Instance.Key_Return(), true);
+        __instance.DFAButtonHolder.GetComponentInChildren<CombatHUDActionButton>(true).Init(Combat, HUD, BTInput.Instance.Key_Return(), true);
+        Traverse.Create(__instance).Property<CombatHUDActionButton>("CommandButton").Value = __instance.CommandButtonHolder.GetComponentInChildren<CombatHUDActionButton>(true);
+        __instance.CommandButton.Init(Combat, HUD, BTInput.Instance.Combat_CommandAbility(), true);
+        Traverse.Create(__instance).Property<CombatHUDActionButton>("EquipmentButton").Value = __instance.EquipmentButtonHolder.GetComponentInChildren<CombatHUDActionButton>(true);
+        __instance.EquipmentButton.Init(Combat, HUD, BTInput.Instance.Key_None(), true);
+        __instance.DoneWithMechButton.Init(Combat, HUD, BTInput.Instance.Combat_DoneWithMech(), true);
+        __instance.EjectButton.Init(Combat, HUD, BTInput.Instance.Key_None(), true);
+        __instance.otherTurnIndicator.Init(HUD);
+
+        Traverse.Create(__instance).Property<CombatHUDActionButton[]>("AbilityButtons").Value = new CombatHUDActionButton[trayEx.ActiveAbilitiesButtons.Count + trayEx.PassiveAbilitiesButtons.Count + 1];
+        trayEx.ShowActiveAbilitiesButton = __instance.ActionButtons[5];
+        trayEx.ShowPassiveAbilitiesButton = __instance.ActionButtons[6];
+        Traverse.Create(__instance).Property<CombatHUDActionButton[]>("AbilityButtons").Value[0] = __instance.ActionButtons[4];
+        trayEx.FirstActiveAbility = __instance.ActionButtons[4];
+        CombatHUDDeployAutoActivator autoActivator = trayEx.FirstActiveAbility.gameObject.GetComponent<CombatHUDDeployAutoActivator>();
+        if(autoActivator == null) {
+          autoActivator = trayEx.FirstActiveAbility.gameObject.AddComponent<CombatHUDDeployAutoActivator>();
+        }
+        autoActivator.Init(trayEx.FirstActiveAbility, HUD);
+        for (int index = 0; index < trayEx.ActiveAbilitiesButtons.Count; ++index) {
+          Traverse.Create(__instance).Property<CombatHUDActionButton[]>("AbilityButtons").Value[index+1] = trayEx.ActiveAbilitiesButtons[index];
+        }
+        for (int index = 0; index < trayEx.PassiveAbilitiesButtons.Count; ++index) {
+          Traverse.Create(__instance).Property<CombatHUDActionButton[]>("AbilityButtons").Value[index + trayEx.ActiveAbilitiesButtons.Count+1] = trayEx.PassiveAbilitiesButtons[index];
+        }
+
+        Traverse.Create(__instance).Property<CombatHUDActionButton[]>("MoraleButtons").Value = new CombatHUDActionButton[2];
+        for (int index = 0; index < 2; ++index) {
+          Traverse.Create(__instance).Property<CombatHUDActionButton[]>("MoraleButtons").Value[index] = __instance.ActionButtons[index + 7];
+        }
+        Traverse.Create(__instance).Property<CombatHUDActionButton>("RestartButton").Value = __instance.RestartButtonHolder.GetComponentInChildren<CombatHUDActionButton>(true);
+        __instance.RestartButton.Init(Combat, HUD, BTInput.Instance.Key_Return(), true);
+        __instance.RestartButton.InitButton(SelectionType.None, (Ability)null, LazySingletonBehavior<UIManager>.Instance.UILookAndColorConstants.RestartButtonIcon, "BTN_Restart", LazySingletonBehavior<UIManager>.Instance.UILookAndColorConstants.Tooltip_Restart, (AbstractActor)null);
+        __instance.RestartButton.Text.SetText("RESTART", (object[])Array.Empty<object>());
+        __instance.RestartButtonHolder.gameObject.SetActive(false);
+        Traverse.Create(__instance).Property<CombatHUDMoraleBar>("moraleDisplay").Value = __instance.GetComponentInChildren<CombatHUDMoraleBar>(true);
+        Traverse.Create(__instance).Property<CombatHUDMoraleBar>("moraleDisplay").Value.Init(Combat, HUD);
+        typeof(CombatHUDMechwarriorTray).GetMethod("SubscribeMessages", BindingFlags.Instance | BindingFlags.NonPublic).Invoke(__instance, new object[] { true });
+        __instance.transform.localPosition = __instance.TrayPosDown;
+        Traverse.Create(__instance).Property<Vector3>("targetTrayPos").Value = __instance.TrayPosDown;
+        Traverse.Create(__instance).Property<Vector3>("lastTrayPos").Value = __instance.TrayPosDown;
+        return false;
+      } catch (Exception e) {
+        Log.TWL(0, e.ToString(), true);
+        return true;
+      }
+    }
+
     public static void Postfix(CombatHUDMechwarriorTray __instance, CombatGameState Combat, CombatHUD HUD, CombatHUDPortrait[] ___Portraits) {
       int lance_index = 0;
       int lance_id = 0;
@@ -1838,5 +2208,322 @@ namespace CustomUnits {
       }
     }
   }
+  [HarmonyPatch(typeof(CombatHUDMechwarriorTray))]
+  [HarmonyPatch("InitAbilityButtons")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { typeof(AbstractActor) })]
+  public static class CombatHUDMechwarriorTray_InitAbilityButtons {
+    public static bool Prefix(CombatHUDMechwarriorTray __instance, AbstractActor actor) {
+      CombatHUDMechwarriorTrayEx trayEx = __instance.gameObject.GetComponent<CombatHUDMechwarriorTrayEx>();
+      if (trayEx == null) { return true; }
+      Pilot pilot = actor.GetPilot();
+      if (pilot != null) {
+        List<Ability> activeList = new List<Ability>((IEnumerable<Ability>)pilot.ActiveAbilities);
+        activeList.Sort((x, y) => {
+          return y.Def.exDef().Priority - x.Def.exDef().Priority;
+        });
+        if((actor.IsDead == false) && (actor.IsDeployDirector())) {
+          trayEx.FirstActiveAbility.InitButton(CombatHUDMechwarriorTray.GetSelectionTypeFromTargeting(activeList[0].Def.Targeting, false), activeList[0], activeList[0].Def.AbilityIcon, activeList[0].Def.Description.Id, activeList[0].Def.Description.Name, actor);
+          trayEx.FirstActiveAbility.isClickable = true;
+          trayEx.HideActiveAbilities();
+          trayEx.HidePassiveAbilities();
+          foreach(CombatHUDActionButton btn in trayEx.NormalButtons) {
+            if (btn == trayEx.FirstActiveAbility) { continue; }
+            btn.gameObject.SetActive(false);
+          }
+          return false;
+        } else {
+          foreach (CombatHUDActionButton btn in trayEx.NormalButtons) {
+            btn.gameObject.SetActive(true);
+          }
+        }
+        if (activeList.Count > 0) {
+          if (activeList[0].Def.Description.Id == CustomAmmoCategoriesPatches.CombatHUDMechwarriorTray_InitAbilityButtons.AbilityName) {
+            CustomAmmoCategoriesPatches.CombatHUDMechwarriorTray_InitAbilityButtons.InitAttackGroundAbilityButton(actor, activeList[0], trayEx.FirstActiveAbility);
+          } else {
+            trayEx.FirstActiveAbility.InitButton(CombatHUDMechwarriorTray.GetSelectionTypeFromTargeting(activeList[0].Def.Targeting, false), activeList[0], activeList[0].Def.AbilityIcon, activeList[0].Def.Description.Id, activeList[0].Def.Description.Name, actor);
+            trayEx.FirstActiveAbility.isClickable = true;
+          }
+          activeList.RemoveAt(0);
+        } else {
+          trayEx.FirstActiveAbility.InitButton(SelectionType.None, (Ability)null, (SVGAsset)null, "", "", (AbstractActor)null);
+          trayEx.FirstActiveAbility.isClickable = false;
+          trayEx.FirstActiveAbility.RefreshUIColors();
+        }
+        for (int index = 0; index < activeList.Count; ++index) {
+          if (index >= trayEx.ActiveAbilitiesButtons.Count) { break; }
+          if (activeList[index].Def.Description.Id == CustomAmmoCategoriesPatches.CombatHUDMechwarriorTray_InitAbilityButtons.AbilityName) {
+            CustomAmmoCategoriesPatches.CombatHUDMechwarriorTray_InitAbilityButtons.InitAttackGroundAbilityButton(actor, activeList[index], trayEx.ActiveAbilitiesButtons[index]);
+          } else {
+            trayEx.ActiveAbilitiesButtons[index].InitButton(CombatHUDMechwarriorTray.GetSelectionTypeFromTargeting(activeList[index].Def.Targeting, false), activeList[index], activeList[index].Def.AbilityIcon, activeList[index].Def.Description.Id, activeList[index].Def.Description.Name, actor);
+            trayEx.ActiveAbilitiesButtons[index].isClickable = true;
+          }
+        }
+        for (int index = activeList.Count; index < trayEx.ActiveAbilitiesButtons.Count; ++index) {
+          trayEx.ActiveAbilitiesButtons[index].InitButton(SelectionType.None, (Ability)null, (SVGAsset)null, "", "", (AbstractActor)null);
+          trayEx.ActiveAbilitiesButtons[index].isClickable = false;
+          trayEx.ActiveAbilitiesButtons[index].RefreshUIColors();
+        }
+        List<Ability> passiveList = pilot.PassiveAbilities.FindAll((Predicate<Ability>)(x => x.Def.DisplayParams == AbilityDef.DisplayParameters.ShowInMWTRay));
+        for (int index = 0; index < passiveList.Count; ++index) {
+          if (index >= trayEx.PassiveAbilitiesButtons.Count) { break; }
+          trayEx.PassiveAbilitiesButtons[index].InitButton(SelectionType.None, passiveList[index], passiveList[index].Def.AbilityIcon, passiveList[index].Def.Description.Id, passiveList[index].Def.Description.Name, actor);
+          trayEx.PassiveAbilitiesButtons[index].isClickable = false;
+          trayEx.PassiveAbilitiesButtons[index].RefreshUIColors();
+        }
+        for (int index = passiveList.Count; index < trayEx.PassiveAbilitiesButtons.Count; ++index) {
+          trayEx.PassiveAbilitiesButtons[index].InitButton(SelectionType.None, (Ability)null, (SVGAsset)null, "", "", (AbstractActor)null);
+          trayEx.PassiveAbilitiesButtons[index].isClickable = false;
+          trayEx.PassiveAbilitiesButtons[index].RefreshUIColors();
+        }
+      }
+      UILookAndColorConstants andColorConstants = LazySingletonBehavior<UIManager>.Instance.UILookAndColorConstants;
+      trayEx.ShowActiveAbilitiesButton.InitButton(SelectionType.None, (Ability)null, 
+        (string.IsNullOrEmpty(Core.Settings.ShowActiveAbilitiesIcon)? andColorConstants.SprintButtonIcon: CustomSvgCache.get(Core.Settings.ShowActiveAbilitiesIcon, trayEx.HUD.Combat.DataManager))
+        , CombatHUDMechwarriorTrayEx.SHOW_ACTIVE_BUTTON_GUID, CombatHUDMechwarriorTrayEx.SHOW_ACTIVE_BUTTON_NAME, actor);
+      trayEx.ShowActiveAbilitiesButton.isClickable = true;
+      trayEx.ShowActiveAbilitiesButton.RefreshUIColors();
+      trayEx.ShowPassiveAbilitiesButton.InitButton(SelectionType.None, (Ability)null,
+        (string.IsNullOrEmpty(Core.Settings.ShowPassiveAbilitiesIcon) ? andColorConstants.MoveButtonIcon : CustomSvgCache.get(Core.Settings.ShowPassiveAbilitiesIcon, trayEx.HUD.Combat.DataManager))
+        , CombatHUDMechwarriorTrayEx.SHOW_PASSIVE_BUTTON_GUID, CombatHUDMechwarriorTrayEx.SHOW_PASSIVE_BUTTON_NAME, actor);
+      trayEx.ShowPassiveAbilitiesButton.isClickable = true;
+      trayEx.ShowPassiveAbilitiesButton.RefreshUIColors();
+      trayEx.HideActiveAbilitiesButton.InitButton(SelectionType.None, (Ability)null,
+        (string.IsNullOrEmpty(Core.Settings.HideActiveAbilitiesIcon) ? andColorConstants.SprintButtonIcon : CustomSvgCache.get(Core.Settings.HideActiveAbilitiesIcon, trayEx.HUD.Combat.DataManager))
+        , CombatHUDMechwarriorTrayEx.HIDE_ACTIVE_BUTTON_GUID, "RETURN", actor);
+      trayEx.HideActiveAbilitiesButton.isClickable = true;
+      trayEx.HideActiveAbilitiesButton.RefreshUIColors();
+      trayEx.HidePassiveAbilitiesButton.InitButton(SelectionType.None, (Ability)null,
+        (string.IsNullOrEmpty(Core.Settings.HidePassiveAbilitiesIcon) ? andColorConstants.MoveButtonIcon : CustomSvgCache.get(Core.Settings.HidePassiveAbilitiesIcon, trayEx.HUD.Combat.DataManager))
+        , CombatHUDMechwarriorTrayEx.HIDE_PASSIVE_BUTTON_GUID, "RETURN", actor);
+      trayEx.HidePassiveAbilitiesButton.isClickable = true;
+      trayEx.HidePassiveAbilitiesButton.RefreshUIColors();
 
+      if (actor.team.CommandAbilities.Count > 0) {
+        Ability commandAbility = actor.team.CommandAbilities[0];
+        __instance.CommandButton.InitButton(CombatHUDMechwarriorTray.GetSelectionTypeFromTargeting(commandAbility.Def.Targeting, false), commandAbility, commandAbility.Def.AbilityIcon, commandAbility.Def.Description.Id, commandAbility.Def.Description.Name, (AbstractActor)null);
+      } else {
+        __instance.CommandButton.InitButton(SelectionType.None, (Ability)null, (SVGAsset)null, "", "", (AbstractActor)null);
+      }
+      return false;
+    }
+  }
+  [HarmonyPatch(typeof(CombatHUDMechwarriorTray))]
+  [HarmonyPatch("RefreshActionHotKeys")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { })]
+  public static class CombatHUDMechwarriorTray_RefreshActionHotKeys {
+    public static bool Prefix(CombatHUDMechwarriorTray __instance) {
+      Log.LogWrite("CombatHUDMechwarriorTray.RefreshActionHotKeys\n");
+      CombatHUDMechwarriorTrayEx trayEx = __instance.gameObject.GetComponent<CombatHUDMechwarriorTrayEx>();
+      if (trayEx == null) { return true; }
+      if (trayEx.ActiveButtonsLayout.activeSelf) {
+        for (int index = 0; index < trayEx.NormalButtons.Count; ++index) {
+          if (index < 9) {
+            trayEx.NormalButtons[index].SetHotKey(null, true);
+          }
+        }
+        __instance.DoneWithMechButton.SetHotKey(null, true);
+        for (int index = 0; index < trayEx.ActiveAbilitiesButtons.Count; ++index) {
+          if (index < 9) {
+            trayEx.ActiveAbilitiesButtons[index].SetHotKey(Core.Settings.DisableHotKeys?null:BTInput.Instance.Combat_Abilities()[index], true);
+          }
+        }
+        trayEx.HideActiveAbilitiesButton.SetHotKey(Core.Settings.DisableHotKeys ? null : BTInput.Instance.Combat_DoneWithMech(), true);
+      } else
+      if (trayEx.PassiveButtonsLayout.activeSelf) {
+        for (int index = 0; index < trayEx.NormalButtons.Count; ++index) {
+          if (index < 9) {
+            trayEx.NormalButtons[index].SetHotKey(Core.Settings.DisableHotKeys ? null : BTInput.Instance.Combat_Abilities()[index], true);
+          }
+        }
+        __instance.DoneWithMechButton.SetHotKey(null, true);
+        trayEx.HidePassiveAbilitiesButton.SetHotKey(Core.Settings.DisableHotKeys ? null : BTInput.Instance.Combat_DoneWithMech(), true);
+      } else {
+        for (int index = 0; index < trayEx.NormalButtons.Count; ++index) {
+          if (index < 9) {
+            trayEx.NormalButtons[index].SetHotKey(Core.Settings.DisableHotKeys ? null : BTInput.Instance.Combat_Abilities()[index], true);
+          }
+        }
+        __instance.DoneWithMechButton.SetHotKey(Core.Settings.DisableHotKeys ? null : BTInput.Instance.Combat_DoneWithMech(), true);
+      }
+      return false;
+    }
+  }
+  [HarmonyPatch(typeof(CombatHUDMechwarriorTray))]
+  [HarmonyPatch("ResetMechwarriorButtons")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { typeof(AbstractActor) })]
+  public static class CombatHUDMechwarriorTray_ResetMechwarriorButtons {
+    public static void Postfix(CombatHUDMechwarriorTray __instance, AbstractActor actor) {
+      Log.LogWrite("CombatHUDMechwarriorTray.ResetMechwarriorButtons\n");
+      CombatHUDMechwarriorTrayEx trayEx = __instance.gameObject.GetComponent<CombatHUDMechwarriorTrayEx>();
+      if (trayEx == null) { return; }
+      if (actor == null) {
+        trayEx.ShowActiveAbilitiesButton.DisableButton();
+        trayEx.ShowPassiveAbilitiesButton.DisableButton();
+        trayEx.HideActiveAbilitiesButton.DisableButton();
+        trayEx.HidePassiveAbilitiesButton.DisableButton();
+        trayEx.HideActiveAbilities();
+        trayEx.HidePassiveAbilities();
+      } else {
+        UILookAndColorConstants andColorConstants = LazySingletonBehavior<UIManager>.Instance.UILookAndColorConstants;
+        trayEx.ShowActiveAbilitiesButton.InitButton(SelectionType.None, (Ability)null,
+          (string.IsNullOrEmpty(Core.Settings.ShowActiveAbilitiesIcon) ? andColorConstants.SprintButtonIcon : CustomSvgCache.get(Core.Settings.ShowActiveAbilitiesIcon, trayEx.HUD.Combat.DataManager))
+          , CombatHUDMechwarriorTrayEx.SHOW_ACTIVE_BUTTON_GUID, CombatHUDMechwarriorTrayEx.SHOW_ACTIVE_BUTTON_NAME, actor);
+        trayEx.ShowActiveAbilitiesButton.isClickable = true;
+        trayEx.ShowActiveAbilitiesButton.RefreshUIColors();
+        trayEx.ShowPassiveAbilitiesButton.InitButton(SelectionType.None, (Ability)null,
+          (string.IsNullOrEmpty(Core.Settings.ShowPassiveAbilitiesIcon) ? andColorConstants.MoveButtonIcon : CustomSvgCache.get(Core.Settings.ShowPassiveAbilitiesIcon, trayEx.HUD.Combat.DataManager))
+          , CombatHUDMechwarriorTrayEx.SHOW_PASSIVE_BUTTON_GUID, CombatHUDMechwarriorTrayEx.SHOW_PASSIVE_BUTTON_NAME, actor);
+        trayEx.ShowPassiveAbilitiesButton.isClickable = true;
+        trayEx.ShowPassiveAbilitiesButton.RefreshUIColors();
+        trayEx.HideActiveAbilitiesButton.InitButton(SelectionType.None, (Ability)null,
+          (string.IsNullOrEmpty(Core.Settings.HideActiveAbilitiesIcon) ? andColorConstants.SprintButtonIcon : CustomSvgCache.get(Core.Settings.HideActiveAbilitiesIcon, trayEx.HUD.Combat.DataManager))
+          , CombatHUDMechwarriorTrayEx.HIDE_ACTIVE_BUTTON_GUID, "RETURN", actor);
+        trayEx.HideActiveAbilitiesButton.isClickable = true;
+        trayEx.HideActiveAbilitiesButton.RefreshUIColors();
+        trayEx.HidePassiveAbilitiesButton.InitButton(SelectionType.None, (Ability)null,
+          (string.IsNullOrEmpty(Core.Settings.HidePassiveAbilitiesIcon) ? andColorConstants.MoveButtonIcon : CustomSvgCache.get(Core.Settings.HidePassiveAbilitiesIcon, trayEx.HUD.Combat.DataManager))
+          , CombatHUDMechwarriorTrayEx.HIDE_PASSIVE_BUTTON_GUID, "RETURN", actor);
+        trayEx.HidePassiveAbilitiesButton.isClickable = true;
+        trayEx.HidePassiveAbilitiesButton.RefreshUIColors();
+      }
+    }
+  }
+  [HarmonyPatch(typeof(CombatHUDActionButton))]
+  [HarmonyPatch("ExecuteClick")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { })]
+  public static class CombatHUDActionButton_ExecuteClickAbilities {
+    public static bool Prefix(CombatHUDActionButton __instance) {
+      Log.LogWrite("CombatHUDActionButton.ExecuteClick "+ __instance.GUID + "\n");
+      CombatHUD HUD = Traverse.Create(__instance).Property<CombatHUD>("HUD").Value;
+      CombatHUDMechwarriorTrayEx trayEx = HUD.MechWarriorTray.gameObject.GetComponent<CombatHUDMechwarriorTrayEx>();
+      if (trayEx == null) { return true; };
+      if (__instance.GUID == CombatHUDMechwarriorTrayEx.SHOW_ACTIVE_BUTTON_GUID) {
+        trayEx.ShowActiveAbilities();
+        trayEx.ShowActiveAbilitiesButton.ForceActive();
+        trayEx.ShowPassiveAbilitiesButton.ForceInactiveIfEnabled();
+        Log.LogWrite(" ShowActiveAbilities\n");
+        return false;
+      } else
+      if (__instance.GUID == CombatHUDMechwarriorTrayEx.SHOW_PASSIVE_BUTTON_GUID) {
+        trayEx.ShowPassiveAbilities();
+        trayEx.ShowPassiveAbilitiesButton.ForceActive();
+        trayEx.ShowActiveAbilitiesButton.ForceInactiveIfEnabled();
+        Log.LogWrite(" ShowPassiveAbilities\n");
+        return false;
+      } else
+      if (__instance.GUID == CombatHUDMechwarriorTrayEx.HIDE_PASSIVE_BUTTON_GUID) {
+        trayEx.HidePassiveAbilities();
+        trayEx.ShowPassiveAbilitiesButton.ForceInactiveIfEnabled();
+        trayEx.ShowActiveAbilitiesButton.ForceInactiveIfEnabled();
+        Log.LogWrite(" HidePassiveAbilities\n");
+        return false;
+      } else
+      if (__instance.GUID == CombatHUDMechwarriorTrayEx.HIDE_ACTIVE_BUTTON_GUID) {
+        trayEx.HideActiveAbilities();
+        trayEx.ShowPassiveAbilitiesButton.ForceInactiveIfEnabled();
+        trayEx.ShowActiveAbilitiesButton.ForceInactiveIfEnabled();
+        Log.LogWrite(" HideActiveAbilities\n");
+        return false;
+      }
+      return true;
+    }
+  }
+  [HarmonyPatch(typeof(CombatHUDMechwarriorTray))]
+  [HarmonyPatch("ResetAbilityButtons")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { typeof(AbstractActor) })]
+  public static class CombatHUDMechwarriorTray_ResetAbilityButtons {
+    public static bool Prefix(CombatHUDMechwarriorTray __instance, AbstractActor actor, CombatGameState ___Combat) {
+      Log.TWL(0, "CombatHUDMechwarriorTray.ResetAbilityButtons");
+      CombatHUDMechwarriorTrayEx trayEx = __instance.gameObject.GetComponent<CombatHUDMechwarriorTrayEx>();
+      if (trayEx == null) { return true; }
+      try {
+        Pilot pilot = actor.GetPilot();
+        bool forceInactive = actor.HasActivatedThisRound || actor.MovingToPosition != null || ___Combat.StackManager.IsAnyOrderActive && ___Combat.TurnDirector.IsInterleaved;
+        if (pilot == null) { return false; };
+        List<Ability> activeList = new List<Ability>((IEnumerable<Ability>)pilot.ActiveAbilities);
+        activeList.Sort((x, y) => {
+          return y.Def.exDef().Priority - x.Def.exDef().Priority;
+        });
+        if((actor.IsDead == false) && (actor.IsDeployDirector())) {
+          __instance.ResetDeployButton(actor, activeList[0], trayEx.FirstActiveAbility, forceInactive);
+          return false;
+        }
+        List<Ability> passiveList = new List<Ability>();
+        passiveList.AddRange((IEnumerable<Ability>)pilot.PassiveAbilities.FindAll((Predicate<Ability>)(x => x.Def.DisplayParams == AbilityDef.DisplayParameters.ShowInMWTRay)));
+        if (activeList.Count > 0) {
+          if (activeList[0].Def.Description.Id == CustomAmmoCategoriesPatches.CombatHUDMechwarriorTray_InitAbilityButtons.AbilityName) {
+            __instance.ResetAttackGroundButton(actor, activeList[0], trayEx.FirstActiveAbility, forceInactive);
+          } else {
+            __instance.ResetAbilityButton(actor, trayEx.FirstActiveAbility, activeList[0], forceInactive);
+          }
+          activeList.RemoveAt(0);
+        } else {
+          __instance.ResetAbilityButton(actor, trayEx.FirstActiveAbility, (Ability)null, false);
+        }
+        for (int index = 0; index < activeList.Count; ++index) {
+          if (activeList[index].Def.Description.Id == CustomAmmoCategoriesPatches.CombatHUDMechwarriorTray_InitAbilityButtons.AbilityName) {
+            __instance.ResetAttackGroundButton(actor, activeList[index], trayEx.ActiveAbilitiesButtons[index], forceInactive);
+          } else {
+            __instance.ResetAbilityButton(actor, trayEx.ActiveAbilitiesButtons[index], activeList[index], forceInactive);
+          }
+        }
+        for (int index = activeList.Count; index < trayEx.ActiveAbilitiesButtons.Count; ++index) {
+          __instance.ResetAbilityButton(actor, trayEx.ActiveAbilitiesButtons[index], (Ability)null, false);
+        }
+        for (int index = 0; index < passiveList.Count; ++index) {
+          __instance.ResetAbilityButton(actor, trayEx.PassiveAbilitiesButtons[index], passiveList[index], forceInactive);
+        }
+        for (int index = passiveList.Count; index < trayEx.PassiveAbilitiesButtons.Count; ++index) {
+          __instance.ResetAbilityButton(actor, trayEx.PassiveAbilitiesButtons[index], (Ability)null, false);
+        }
+        if (actor.team.CommandAbilities.Count > 0) {
+          __instance.ResetAbilityButton(actor, __instance.CommandButton, actor.team.CommandAbilities[0], forceInactive);
+        } else {
+          __instance.ResetAbilityButton(actor, __instance.CommandButton, (Ability)null, false);
+        }
+        return false;
+      } catch (Exception e) {
+        Log.TWL(0, e.ToString(), true);
+        return true;
+      }
+    }
+    public static void Postfix(CombatHUDMechwarriorTray __instance, AbstractActor actor) {
+      CombatHUDMechwarriorTrayEx trayEx = __instance.gameObject.GetComponent<CombatHUDMechwarriorTrayEx>();
+      if (trayEx != null) {
+        trayEx.ShowActiveAbilitiesButton.ResetButtonIfNotActive(actor);
+        trayEx.ShowPassiveAbilitiesButton.ResetButtonIfNotActive(actor);
+        trayEx.HideActiveAbilitiesButton.ResetButtonIfNotActive(actor);
+        trayEx.HidePassiveAbilitiesButton.ResetButtonIfNotActive(actor);
+      }
+    }
+  }
+  [HarmonyPatch(typeof(AbilityDef))]
+  [HarmonyPatch("FromJSON")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { typeof(string) })]
+  public static class AbilityDef_FromJSON {
+    private static Dictionary<string, AbilityDefEx> exDefinitions = new Dictionary<string, AbilityDefEx>();
+    private static AbilityDefEx empty = new AbilityDefEx();
+    public static AbilityDefEx exDef(this AbilityDef aDef) {
+      if (exDefinitions.TryGetValue(aDef.Id, out AbilityDefEx res)) {
+        return res;
+      }
+      return empty;
+    }
+    public static void Prefix(AbilityDef __instance, ref string json, ref AbilityDefEx __state) {
+      Log.LogWrite("AbilityDef.FromJSON");
+      JObject jAbilityDef = JObject.Parse(json);
+      __state = new AbilityDefEx();
+      __state.Priority = 0;
+      if (jAbilityDef["Priority"] != null) { __state.Priority = (int)jAbilityDef["Priority"]; }
+    }
+    public static void Postfix(AbilityDef __instance, string json, ref AbilityDefEx __state) {
+      if (exDefinitions.ContainsKey(__instance.Id)) { exDefinitions[__instance.Id] = __state; } else { exDefinitions.Add(__instance.Id, __state); }
+    }
+  }
 }

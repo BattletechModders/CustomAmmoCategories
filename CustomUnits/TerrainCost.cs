@@ -136,7 +136,7 @@ namespace CustomUnits {
     }
     public static float MoveCostModPerBiome(this AbstractActor unit) {
       //Log.LogWrite("MoveCostModPerBiome "+unit.DisplayName+":"+unit.GUID+"\n");
-      VehicleCustomInfo info = unit.GetCustomInfo();
+      UnitCustomInfo info = unit.GetCustomInfo();
       if (info == null) {
         //Log.LogWrite(" no custom info\n");
         return 1f;

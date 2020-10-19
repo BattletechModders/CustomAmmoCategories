@@ -149,12 +149,12 @@ namespace CustAmmoCategories {
       DesignMaskDef mask = this.getTerrainDesignMask();
       if (radius == 0) {
         if(string.IsNullOrEmpty(vfx) == false)cell.hexCell.addTempTerrainVFX(weapon.parent.Combat, vfx, turns, scale);
-        if (mask != null) DynamicMapHelper.addDesignMaskAsync(cell.hexCell, mask, turns);
+        if (mask != null) cell.hexCell.addDesignMaskAsync(mask, turns);
       } else {
         List<MapTerrainHexCell> affectedHexCells = MapTerrainHexCell.listHexCellsByCellRadius(cell, radius);
         foreach (MapTerrainHexCell hexCell in affectedHexCells) {
           if (string.IsNullOrEmpty(vfx) == false) hexCell.addTempTerrainVFX(weapon.parent.Combat, vfx, turns, scale);
-          if (mask != null) DynamicMapHelper.addDesignMaskAsync(hexCell, mask, turns);
+          if (mask != null) hexCell.addDesignMaskAsync(mask, turns);
         }
       }
     }
@@ -169,15 +169,17 @@ namespace CustAmmoCategories {
       }
       Log.LogWrite(" fire at " + worldPos + "\n");
       if (definition.FireTerrainCellRadius == 0) {
-        if (cell.hexCell.TryBurnCell(weapon, definition.FireTerrainChance, definition.FireTerrainStrength, definition.FireDurationWithoutForest)) {
-          DynamicMapHelper.burningHexes.Add(cell.hexCell);
-        };
+        cell.hexCell.TryBurnCellAsync(weapon, definition.FireTerrainChance, definition.FireTerrainStrength, definition.FireDurationWithoutForest);
+        //if (cell.hexCell.TryBurnCell(weapon, definition.FireTerrainChance, definition.FireTerrainStrength, definition.FireDurationWithoutForest)) {
+          //DynamicMapHelper.burningHexes.Add(cell.hexCell);
+        //};
       } else {
         List<MapTerrainHexCell> affectedHexCells = MapTerrainHexCell.listHexCellsByCellRadius(cell, definition.FireTerrainCellRadius);
         foreach (MapTerrainHexCell hexCell in affectedHexCells) {
-          if (hexCell.TryBurnCell(weapon, definition.FireTerrainChance, definition.FireTerrainStrength, definition.FireDurationWithoutForest)) {
-            DynamicMapHelper.burningHexes.Add(hexCell);
-          };
+          hexCell.TryBurnCellAsync(weapon, definition.FireTerrainChance, definition.FireTerrainStrength, definition.FireDurationWithoutForest);
+          //if (hexCell.TryBurnCell(weapon, definition.FireTerrainChance, definition.FireTerrainStrength, definition.FireDurationWithoutForest)) {
+            //DynamicMapHelper.burningHexes.Add(hexCell);
+          //};
         }
       }
 

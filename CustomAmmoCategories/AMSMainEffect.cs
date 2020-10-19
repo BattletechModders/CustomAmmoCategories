@@ -95,12 +95,23 @@ namespace CustAmmoCategories {
         }
       }
       Log.LogWrite(" not in pool. instansing.\n");
-      WeaponEffect we = weapon.getWeaponEffect();
+      if (weapon.weaponRep == null) {
+        Log.LogWrite("WARNING! Has no weapon representation no AMS effects!\n");
+        return null;
+      }
+      GameObject gameObject = weapon.parent.Combat.DataManager.PooledInstantiate(weapon.getWeaponEffectID(), BattleTechResourceType.Prefab, new Vector3?(), new Quaternion?(), (Transform)null);
+      if (gameObject == null) {
+        Log.LogWrite("WARNING! Fail to instantine "+ weapon.getWeaponEffectID() + "!\n");
+        return null;
+      }
+      WeaponEffect we = gameObject.GetComponent<WeaponEffect>();
       if (we == null) {
         Log.LogWrite("WARNING! Has no weapon effect. No main weapon effect no AMS fire effect!\n");
         return null;
       }
-      GameObject gameObject = GameObject.Instantiate(we.gameObject);
+      we.Init(weapon);
+      gameObject = GameObject.Instantiate(we.gameObject);
+      weapon.parent.Combat.DataManager.PoolGameObject(weapon.getWeaponEffectID(), we.gameObject);
       AMSWeaponEffect amsWE = gameObject.GetComponent<AMSWeaponEffect>();
       if (amsWE != null) {
         Log.LogWrite("WARNING! AMS weapon effect already installed!This shouldn't happend!\n");

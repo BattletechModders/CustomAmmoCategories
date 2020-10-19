@@ -96,6 +96,10 @@
     <Reference Include="UnityEngine.UI">
       <HintPath>..\..\BattleTech_Data\Managed\UnityEngine.UI.dll</HintPath>
     </Reference>
+    <Reference Include="UnityEngine.UIModule, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>D:\Games\BATTLETECH\BattleTech_Data\Managed\UnityEngine.UIModule.dll</HintPath>
+    </Reference>
     <Reference Include="UnityEngine.UnityWebRequestAudioModule, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\BattleTech_Data\Managed\UnityEngine.UnityWebRequestAudioModule.dll</HintPath>
@@ -108,9 +112,12 @@
   <ItemGroup>
     <Compile Include="AnimatedPartsHelper.cs" />
     <Compile Include="BiomeTagsFix.cs" />
+    <Compile Include="CustomMechStructureRules.cs" />
     <Compile Include="ControlEscort.cs" />
     <Compile Include="Core.cs" />
     <Compile Include="CustomMovement.cs" />
+    <Compile Include="DeployPosition.cs" />
+    <Compile Include="DisableMoveAnimation.cs" />
     <Compile Include="Hardpoints.cs" />
     <Compile Include="HUDImprove.cs" />
     <Compile Include="MechResizer\MechRepresentationPatch.cs" />
@@ -121,6 +128,7 @@
     <Compile Include="MechResizer\TurretRepresentationPatch.cs" />
     <Compile Include="MechResizer\VehicleRepresentationPatch.cs" />
     <Compile Include="MechResizer\WeaponEffectPatch.cs" />
+    <Compile Include="MechTurretAnimator.cs" />
     <Compile Include="MoveDistanceClamp.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="TerrainCost.cs" />

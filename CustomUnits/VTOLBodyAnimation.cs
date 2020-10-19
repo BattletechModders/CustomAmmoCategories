@@ -14,6 +14,7 @@ using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using Random = UnityEngine.Random;
 
 namespace CustomUnits {
@@ -58,11 +59,17 @@ namespace CustomUnits {
       __state = __instance.state();
     }
     static void Postfix(ActorTwistSequence __instance, float ___t, ref object __state, PilotableActorRepresentation ___actorRep) {
-      VTOLBodyAnimation vtolAnim = __instance.owningActor.VTOLAnimation();
-      if (vtolAnim == null) { return; }
       if (__state.ToString() != TwistState_RangedTwisting.ToString()) { return; }
+      VTOLBodyAnimation vtolAnim = __instance.owningActor.VTOLAnimation();
+      if (vtolAnim != null) {
+        vtolAnim.twist(___actorRep.currentTwistAngle);
+      }
+      CustomTwistAnimation customTwist = ___actorRep.gameObject.GetComponent<CustomTwistAnimation>();
+      if(customTwist != null) {
+        customTwist.twist(___actorRep.currentTwistAngle);
+      }
       //Log.TWL(0, "ActorTwistSequence.update " + ___actorRep.currentTwistAngle);
-      vtolAnim.twist(___actorRep.currentTwistAngle);
+      
       //Log.TWL(0, "ActorTwistSequence.update "+ ___actorRep.currentTwistAngle);
     }
   }
@@ -351,7 +358,7 @@ namespace CustomUnits {
     }
     public static void Clear() { bodyAnimationsCache.Clear(); }
   }
-  public class VTOLBodyAnimation: GenericAnimatedComponent {
+  public class VTOLBodyAnimation: GenericAnimatedComponent, IPointerClickHandler, IEventSystemHandler, IPointerEnterHandler, IPointerExitHandler {
     public Animator bodyAnimator { get; private set; }
     public Transform bodyAttach { get; private set; }
     public Animator engineAnimator { get; private set; }
@@ -505,6 +512,21 @@ namespace CustomUnits {
       }
       if (a != null) { a.VTOLAnimation(this); }
       this.RealiginLights();
+    }
+
+    public void OnPointerClick(PointerEventData eventData) {
+      Log.TWL(0, "VTOLBodyAnimation.OnPointerClick");
+      this.parent.GameRep.OnPointerClick(eventData);
+    }
+
+    public void OnPointerEnter(PointerEventData eventData) {
+      Log.TWL(0, "VTOLBodyAnimation.OnPointerEnter");
+      this.parent.GameRep.OnPointerEnter(eventData);
+    }
+
+    public void OnPointerExit(PointerEventData eventData) {
+      Log.TWL(0, "VTOLBodyAnimation.OnPointerExit");
+      this.parent.GameRep.OnPointerExit(eventData);
     }
   }
 }

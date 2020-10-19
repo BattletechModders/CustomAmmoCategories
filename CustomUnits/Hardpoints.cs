@@ -100,6 +100,11 @@ namespace CustomUnits {
           Log.LogWrite(e.ToString() + "\n", true);
         }
         if (hindex < 0) { continue; }
+        if(hindex >= __instance.HardpointData[index].weapons.Length) {
+          List<string[]> tmplist = __instance.HardpointData[index].weapons.ToList();
+          tmplist.Add(new string[] { });
+          __instance.HardpointData[index].weapons = tmplist.ToArray();
+        }
         List<string> tmp = __instance.HardpointData[index].weapons[hindex].ToList();
         tmp.Add(alias.Key);
         __instance.HardpointData[index].weapons[hindex] = tmp.ToArray();
@@ -479,8 +484,11 @@ namespace CustomUnits {
       if (attackSequence == null) { return; }
       foreach(Weapon weapon in attackSequence.attacker.Weapons) {
         AttachInfo info = weapon.attachInfo();
-        if (info == null) { continue; };
-        info.Postfire();
+        if (info != null) { info.Postfire(); };
+        if(weapon.weaponRep != null) {
+          WeaponAttachRepresentation weaponAttach = weapon.weaponRep.GetComponent<WeaponAttachRepresentation>();
+          if (weaponAttach != null) { if (weaponAttach.attachPoint != null) { weaponAttach.attachPoint.Postfire(); }; };
+        }
       }
     }
   }
@@ -544,6 +552,18 @@ namespace CustomUnits {
           weapon.baseComponentRef.hasPrefabName = true;
           if (!string.IsNullOrEmpty(weapon.baseComponentRef.prefabName)) {
             Transform attachTransform = __instance.GetAttachTransform(weapon.mechComponentRef.MountedLocation);
+            MechTurretAnimation MechTurret = __instance.GameRep.GetComponentInChildren<MechTurretAnimation>(true);
+            if(MechTurret != null) {
+              Log.WL(1, "MechTurret found");
+              if (MechTurret.attachPoints.TryGetValue(weapon.mechComponentRef.MountedLocation,out MechTurretAttachPoint turretAttachPoint)) {
+                Log.WL(2, "attach transform for location: "+ weapon.mechComponentRef.MountedLocation+" found:"+ turretAttachPoint.attachTransform);
+                attachTransform = turretAttachPoint.attachTransform;
+              } else {
+                Log.WL(2, "attach transform for location: " + weapon.mechComponentRef.MountedLocation + " not found");
+              }
+            } else {
+              Log.WL(1, "MechTurret not found");
+            }
             weapon.InitGameRep(weapon.baseComponentRef.prefabName, attachTransform, __instance.LogDisplayName);
             __instance.GameRep.weaponReps.Add(weapon.weaponRep);
             string mountingPointPrefabName = MechHardpointRules.GetComponentMountingPointPrefabName(__instance.MechDef, weapon.mechComponentRef);
@@ -655,22 +675,34 @@ namespace CustomUnits {
         weaponEffect.extPrefire(null);
         weaponEffect.Fire(hitInfo, hitIndex, emiter);
       } else {
-        AttachInfo info = weaponEffect.weapon.attachInfo();
-        if (info == null) {
-          weaponEffect.Fire(hitInfo, hitIndex, emiter);
-        } else {
-          try {
-            bool indirect = weaponEffect.weapon.parent.Combat.AttackDirector.GetAttackSequence(hitInfo.attackSequenceId).indirectFire;
-            if (weaponEffect.weapon.AlwaysIndirectVisuals()) { indirect = true; }
+        try {
+          AttachInfo info = weaponEffect.weapon.attachInfo();
+          bool indirect = weaponEffect.weapon.parent.Combat.AttackDirector.GetAttackSequence(hitInfo.attackSequenceId).indirectFire;
+          if (weaponEffect.weapon.AlwaysIndirectVisuals()) { indirect = true; }
+          if(weaponEffect.weapon.weaponRep != null) {
+            WeaponAttachRepresentation weaponAttach = weaponEffect.weapon.weaponRep.GetComponent<WeaponAttachRepresentation>();
+            if(weaponAttach != null) {
+              if(weaponAttach.attachPoint != null) {
+                weaponAttach.attachPoint.Prefire(hitInfo.hitPositions[hitIndex], indirect);
+                weaponEffect.extPrefire(new ExtPrefire(1f, hitInfo, hitIndex, emiter));
+                Traverse.Create(weaponEffect).Field("t").SetValue(0f);
+                weaponEffect.currentState = WeaponEffect.WeaponEffectState.PreFiring;
+                return;
+              }
+            }
+          }
+          if(info != null) { 
             info.Prefire(hitInfo.hitPositions[hitIndex], indirect);
             weaponEffect.extPrefire(new ExtPrefire(1f, hitInfo, hitIndex, emiter));
             Traverse.Create(weaponEffect).Field("t").SetValue(0f);
             weaponEffect.currentState = WeaponEffect.WeaponEffectState.PreFiring;
-          } catch (Exception e) {
-            Log.TWL(0,e.ToString(),true);
-            weaponEffect.extPrefire(null);
-            weaponEffect.Fire(hitInfo, hitIndex, emiter);
+            return;
           }
+          weaponEffect.Fire(hitInfo, hitIndex, emiter);
+        } catch (Exception e) {
+          Log.TWL(0, e.ToString(), true);
+          weaponEffect.extPrefire(null);
+          weaponEffect.Fire(hitInfo, hitIndex, emiter);
         }
       }
     }
@@ -697,6 +729,18 @@ namespace CustomUnits {
         Log.TWL(0, "WeaponEffect.Update real prefire");
         try {
           __instance.currentState = WeaponEffect.WeaponEffectState.NotStarted;
+          AdvWeaponHitInfo advInfo = extPrefire.hitInfo.advInfo();
+          if(advInfo != null) {
+            foreach(AdvWeaponHitInfoRec hit in advInfo.hits) {
+              if (hit.isAOE) { continue; }
+              if (hit.fragInfo.isFragPallet) { continue; }
+              Vector3 newPos = __instance.weapon.weaponRep.vfxTransforms[hit.hitIndex % __instance.weapon.weaponRep.vfxTransforms.Length].position;
+              if (newPos != hit.startPosition) {
+                Log.WL(1, "start position moved "+ hit.startPosition+" -> "+newPos+" updating trajectory");
+                hit.GenerateTrajectory();
+              }
+            }
+          }
           __instance.Fire(extPrefire.hitInfo,extPrefire.hitIndex,extPrefire.emitter);
           __instance.extPrefire(null);
         } catch (Exception e) {
@@ -770,8 +814,13 @@ namespace CustomUnits {
         return;
       }
       AttachInfo info = __instance.weapon.attachInfo();
-      if (info == null) { return; }
-      info.Recoil();
+      if (info != null) { info.Recoil(); }
+      WeaponAttachRepresentation weaponAttach = __instance.weapon.weaponRep.GetComponent<WeaponAttachRepresentation>();
+      if(weaponAttach != null) {
+        if(weaponAttach.attachPoint != null) {
+          weaponAttach.attachPoint.Recoil();
+        }
+      }
     }
   }
   [HarmonyPatch(typeof(Weapon))]

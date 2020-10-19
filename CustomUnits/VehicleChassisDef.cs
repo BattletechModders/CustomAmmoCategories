@@ -247,12 +247,20 @@ namespace CustomUnits {
       lightsTransforms = new List<CustomTransform>();
     }
   }
-  public class VehicleCustomInfo {
+  public class UnitCustomInfo {
     public bool NullifyBodyMesh { get; set; }
     public float AOEHeight { get; set; }
     public bool TieToGroundOnDeath { get; set; }
     public float FiringArc { get; set; }
     public bool NoIdleAnimations { get; set; }
+    public bool NoMoveAnimations { get; set; }
+    public bool ArmsCountedAsLegs { get; set; }
+    public float LegDestroyedMovePenalty { get; set; }
+    public float LegDamageRedMovePenalty { get; set; }
+    public float LegDamageYellowMovePenalty { get; set; }
+    public float LegDamageRelativeInstability { get; set; }
+    public float LegDestroyRelativeInstability { get; set; }
+    public float LocDestroyedPermanentStabilityLossMod { get; set; }
     public CustomVector HighestLOSPosition { get; set; }
     public UnitUnaffection Unaffected { get; set; }
     public CustomTransform TurretAttach { get; set; }
@@ -269,7 +277,7 @@ namespace CustomUnits {
     public HangarLocationTransforms HangarTransforms { get; set; }
     public string MoveCost { get; set; }
     public Dictionary<string, float> MoveCostModPerBiome { get; set; }
-    public VehicleCustomInfo() {
+    public UnitCustomInfo() {
       AOEHeight = 0f;
       HighestLOSPosition = new CustomVector(false);
       TurretAttach = new CustomTransform();
@@ -291,6 +299,14 @@ namespace CustomUnits {
       NoIdleAnimations = false;
       NullifyBodyMesh = false;
       HangarTransforms = new HangarLocationTransforms();
+      NoMoveAnimations = false;
+      ArmsCountedAsLegs = false;
+      LegDestroyedMovePenalty = -1f;
+      LegDamageRedMovePenalty = -1f;
+      LegDamageYellowMovePenalty = -1f;
+      LegDamageRelativeInstability = -1f;
+      LegDestroyRelativeInstability = 1f;
+      LocDestroyedPermanentStabilityLossMod = 1f;
     }
     public void debugLog(int initiation) {
       string init = new String(' ', initiation);
@@ -335,17 +351,17 @@ namespace CustomUnits {
     }
   }
   public static class VehicleCustomInfoHelper {
-    public static Dictionary<string, VehicleCustomInfo> vehicleChasissInfosDb = new Dictionary<string, VehicleCustomInfo>();
+    public static Dictionary<string, UnitCustomInfo> vehicleChasissInfosDb = new Dictionary<string, UnitCustomInfo>();
     public static Dictionary<int, AbstractActor> unityInstanceIdActor = new Dictionary<int, AbstractActor>();
-    public static VehicleCustomInfo GetCustomInfo(this VehicleChassisDef chassis) {
+    public static UnitCustomInfo GetCustomInfo(this VehicleChassisDef chassis) {
       if (vehicleChasissInfosDb.ContainsKey(chassis.Description.Id) == false) { return null; };
       return vehicleChasissInfosDb[chassis.Description.Id];
     }
-    public static VehicleCustomInfo GetCustomInfo(this ChassisDef chassis) {
+    public static UnitCustomInfo GetCustomInfo(this ChassisDef chassis) {
       if (vehicleChasissInfosDb.ContainsKey(chassis.Description.Id) == false) { return null; };
       return vehicleChasissInfosDb[chassis.Description.Id];
     }
-    public static VehicleCustomInfo GetCustomInfo(this AbstractActor actor) {
+    public static UnitCustomInfo GetCustomInfo(this AbstractActor actor) {
       Mech mech = actor as Mech;
       if (mech != null) { return mech.MechDef.Chassis.GetCustomInfo(); };
       Vehicle vehicle = actor as Vehicle;
@@ -365,7 +381,7 @@ namespace CustomUnits {
         string id = (string)definition["Description"]["Id"];
         Log.LogWrite(id + "\n");
         if (definition["CustomParts"] != null) {
-          VehicleCustomInfo info = definition["CustomParts"].ToObject<VehicleCustomInfo>();
+          UnitCustomInfo info = definition["CustomParts"].ToObject<UnitCustomInfo>();
           if (VehicleCustomInfoHelper.vehicleChasissInfosDb.ContainsKey(id) == false) {
             VehicleCustomInfoHelper.vehicleChasissInfosDb.Add(id, info);
           } else {
@@ -393,7 +409,7 @@ namespace CustomUnits {
         string id = (string)definition["Description"]["Id"];
         Log.LogWrite(id + "\n");
         if (definition["CustomParts"] != null) {
-          VehicleCustomInfo info = definition["CustomParts"].ToObject<VehicleCustomInfo>();
+          UnitCustomInfo info = definition["CustomParts"].ToObject<UnitCustomInfo>();
           if (VehicleCustomInfoHelper.vehicleChasissInfosDb.ContainsKey(id) == false) {
             VehicleCustomInfoHelper.vehicleChasissInfosDb.Add(id, info);
           } else {
@@ -503,6 +519,23 @@ namespace CustomUnits {
   }
 #pragma warning restore CS0252
   [HarmonyPatch(typeof(AbstractActor))]
+  [HarmonyPatch("ApplyDesignMaskStickyEffect")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { typeof(DesignMaskDef), typeof(int) })]
+  public static class AbstractActor_ApplyDesignMaskStickyEffect {
+    public static bool Prefix(AbstractActor __instance,ref DesignMaskDef mask, int stackItemUID) {
+      Log.LogWrite(0, "AbstractActor.ApplyDesignMaskStickyEffect prefx " + __instance.DisplayName + ":" + __instance.GUID, true);
+      try {
+        if (__instance.UnaffectedDesignMasks()) {
+          mask = null;
+        }
+      } catch (Exception e) {
+        Log.LogWrite(e.ToString() + "\n", true);
+      }
+      return true;
+    }
+  }
+  [HarmonyPatch(typeof(AbstractActor))]
   [HarmonyPatch("SetOccupiedDesignMask")]
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { typeof(DesignMaskDef), typeof(int), typeof(List<DesignMaskDef>) })]
@@ -536,21 +569,44 @@ namespace CustomUnits {
       occupiedDesignMaskSetInkover = (occupiedDesignMaskSetDelegate)dm.CreateDelegate(typeof(occupiedDesignMaskSetDelegate));
       return true;
     }
-    public static bool Prefix(AbstractActor __instance, DesignMaskDef mask, int stackItemUID, ref List<DesignMaskDef> approvedMasks) {
-      Log.LogWrite(0, "AbstractActor.SetOccupiedDesignMask prefx " + __instance.DisplayName + ":" + __instance.GUID, true);
+    public static bool Prefix(AbstractActor __instance,ref DesignMaskDef mask, int stackItemUID, ref List<DesignMaskDef> approvedMasks) {
+      Log.LogWrite(0, "AbstractActor.SetOccupiedDesignMask prefx " + __instance.DisplayName + ":" + __instance.GUID);
       try {
         if (__instance.UnaffectedDesignMasks()) {
           Log.LogWrite(1, "unaffected", true);
+          mask = null;
           //__instance.occupiedDesignMask = null;
-          occupiedDesignMaskSetInkover(__instance, mask);
-          opuDesignMask.SetValue(__instance, null);
+          //occupiedDesignMaskSetInkover(__instance, mask);
+          //opuDesignMask.SetValue(__instance, null);
           if (approvedMasks != null) { approvedMasks.Clear(); };
-          return false;
+          return true;
         }
       } catch (Exception e) {
         Log.LogWrite(e.ToString() + "\n", true);
       }
       return true;
+    }
+  }
+  [HarmonyPatch(typeof(AbstractActor))]
+  [HarmonyPatch("OnPositionUpdate")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { typeof(Vector3), typeof(Quaternion), typeof(int), typeof(bool), typeof(List<DesignMaskDef>), typeof(bool) })]
+  public static class AbstractActor_OnPositionUpdate {
+    public static bool Prefix(AbstractActor __instance, Vector3 position, Quaternion heading, int stackItemUID,ref bool updateDesignMask, List<DesignMaskDef> approvedMasks, bool skipAbilityLogging) {
+      //Log.LogWrite("Weapon.DamagePerShotPredicted prefix\n");
+      //Log.LogWrite(0, "AbstractActor.OnPositionUpdate prefx " + __instance.DisplayName + ":" + __instance.GUID);
+      if (__instance.UnaffectedDesignMasks()) {
+        //Log.LogWrite(1, "unaffected. Tie designMask to null", true);
+        updateDesignMask = false;
+      }
+      return true;
+    }
+    public static void Postfix(AbstractActor __instance, Vector3 position, Quaternion heading, int stackItemUID, bool updateDesignMask, List<DesignMaskDef> approvedMasks, bool skipAbilityLogging, ref DesignMaskDef ___opuDesignMask) {
+      if (__instance.UnaffectedDesignMasks()) {
+        //Log.LogWrite(1, "unaffected. Tie designMask to null", true);
+        Traverse.Create(__instance).Property<DesignMaskDef>("occupiedDesignMask").Value = null;
+        ___opuDesignMask = null;
+      }
     }
   }
   [HarmonyPatch(typeof(Weapon))]
@@ -650,7 +706,7 @@ namespace CustomUnits {
   public static class VehicleRepresentation_GetDestructibleObject {
     public static void Postfix(VehicleRepresentation __instance, ref MechDestructibleObject __result) {
       try {
-        VehicleCustomInfo info = __instance.parentActor.GetCustomInfo();
+        UnitCustomInfo info = __instance.parentActor.GetCustomInfo();
         if (info == null) { return; }
         if (info.NullifyBodyMesh) { __result = null; }
       } catch (Exception e) {
@@ -701,7 +757,7 @@ namespace CustomUnits {
           Log.LogWrite(" not a vehicle\n");
           return true;
         }
-        VehicleCustomInfo info = null;
+        UnitCustomInfo info = null;
         if (vehicle != null) { info = vehicle.GetCustomInfo(); } else if(__instance.RegistredChassis() != null) {
           info = __instance.RegistredChassis().GetCustomInfo();
         }
@@ -775,7 +831,7 @@ namespace CustomUnits {
     }
     public static void SpawnCustomParts(this MechDef mechDef, MechRepresentationSimGame rep) {
       Log.TWL(0, "mechDef.SpawnCustomParts " + mechDef.ChassisID);
-      VehicleCustomInfo info = mechDef.Chassis.GetCustomInfo();
+      UnitCustomInfo info = mechDef.Chassis.GetCustomInfo();
       if (info == null) {
         Log.WL(1, "no custom info");
         return;
@@ -833,7 +889,7 @@ namespace CustomUnits {
         } else {
           VehicleCustomInfoHelper.unityInstanceIdActor[instanceId] = unit;
         }
-        VehicleCustomInfo info = unit.GetCustomInfo();
+        UnitCustomInfo info = unit.GetCustomInfo();
         if (info == null) {
           Log.WL(1,"no custom info");
           return;
@@ -963,7 +1019,7 @@ namespace CustomUnits {
   public static class AbstractActor_InitStats {
     public static void Postfix(AbstractActor __instance) {
       Log.LogWrite("AbstractActor.InitEffectStats " + __instance.DisplayName + ":" + __instance.GUID + "\n");
-      VehicleCustomInfo info = __instance.GetCustomInfo();
+      UnitCustomInfo info = __instance.GetCustomInfo();
       if (info == null) {
         Log.LogWrite(" no custom info\n");
         return;
@@ -986,8 +1042,14 @@ namespace CustomUnits {
       if (__instance.StatCollection.ContainsStatistic(UnitUnaffectionsActorStats.MoveCostActorStat) == false) {
         __instance.StatCollection.AddStatistic<string>(UnitUnaffectionsActorStats.MoveCostActorStat, info.MoveCost);
       }
+      if (__instance.StatCollection.ContainsStatistic(UnitUnaffectionsActorStats.NoMoveAnimationActorStat) == false) {
+        __instance.StatCollection.AddStatistic<bool>(UnitUnaffectionsActorStats.NoMoveAnimationActorStat, info.NoMoveAnimations);
+      }
       if (__instance.StatCollection.ContainsStatistic(UnitUnaffectionsActorStats.MoveCostBiomeActorStat) == false) {
         __instance.StatCollection.AddStatistic<bool>(UnitUnaffectionsActorStats.MoveCostBiomeActorStat, info.Unaffected.MoveCostBiome);
+      }
+      if (__instance.StatCollection.ContainsStatistic(UnitUnaffectionsActorStats.ArmsCountedAsLegsActorStat) == false) {
+        __instance.StatCollection.AddStatistic<bool>(UnitUnaffectionsActorStats.ArmsCountedAsLegsActorStat, info.ArmsCountedAsLegs);
       }
       Log.LogWrite(1, "UnaffectedDesignMasks " + __instance.UnaffectedDesignMasks(), true);
       Log.LogWrite(1, "UnaffectedPathing " + __instance.UnaffectedPathing(), true);
@@ -1074,7 +1136,7 @@ namespace CustomUnits {
   public static class Vehicle_Init {
     public static void Postfix(Vehicle __instance, Vector3 position, float facing, bool checkEncounterCells) {
       Log.LogWrite("Vehicle.Init " + __instance.DisplayName + ":" + __instance.GUID + "\n");
-      VehicleCustomInfo info = __instance.GetCustomInfo();
+      UnitCustomInfo info = __instance.GetCustomInfo();
       if (info == null) {
         Log.LogWrite(" no custom info\n");
         return;

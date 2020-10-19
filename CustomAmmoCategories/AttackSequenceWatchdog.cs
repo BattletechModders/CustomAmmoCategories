@@ -129,6 +129,8 @@ namespace CustAmmoCategoriesPatches {
         wd.Init(__instance);
       }
       ExplosionAPIHelper.Init(Combat);
+      DynamicMapAsyncProcHelper.Init(__instance);
+      DamageModifiersCache.Init(__instance);
     }
   }
 }

@@ -645,8 +645,16 @@ namespace CustAmmoCategories {
       if (ExtAmmunitionDef.ContainsKey(defId) == false) {
         ExtAmmunitionDef.Add(defId, extAmmoDef);
       } else {
+        ExtAmmunitionDef[defId] = extAmmoDef;
         Log.M.WL("already registred");
       }
+    }
+    public static ExtAmmunitionDef extDef(this AmmunitionDef def) {
+      if (string.IsNullOrEmpty(def.Description.Id)) { return CustomAmmoCategories.DefaultAmmo; };
+      if (CustomAmmoCategories.ExtAmmunitionDef.ContainsKey(def.Description.Id)) {
+        return CustomAmmoCategories.ExtAmmunitionDef[def.Description.Id];
+      }
+      return CustomAmmoCategories.DefaultAmmo;
     }
     public static ExtAmmunitionDef findExtAmmo(string ammoDefId) {
       if (string.IsNullOrEmpty(ammoDefId)) { return CustomAmmoCategories.DefaultAmmo; };
@@ -1012,6 +1020,15 @@ namespace CustAmmoCategories {
       UseHBSMercySetting = true;
     }
   }
+  public static class CACConstants {
+    public static readonly string DeployMechDefID = "mechdef_deploy_director";
+    public static bool IsDeployDirector(this ICombatant unit) {
+      Mech mech = unit as Mech;
+      if (mech == null) { return false; }
+      if (mech.MechDef.Description.Id == CACConstants.DeployMechDefID) { return true; }
+      return false;
+    }
+  }
   public static class UnitUnaffectionsActorStats {
     public static readonly string DesignMasksActorStat = "CUDesignMasksUnaffected";
     public static readonly string PathingActorStat = "CUPathingUnaffected";
@@ -1019,6 +1036,10 @@ namespace CustAmmoCategories {
     public static readonly string MoveCostBiomeActorStat = "CUMoveCostBiomeUnaffected";
     public static readonly string FireActorStat = "CUFireActorStatUnaffected";
     public static readonly string LandminesActorStat = "CULandminesUnaffected";
+    public static readonly string NoMoveAnimationActorStat = "CUNoMoveAnimation";
+    public static readonly string NoRandomIdlesActorStat = "CUNoRandomIdleAnimations";
+    public static readonly string ArmsCountedAsLegsActorStat = "CUArmsCountedAsLegs";
+    public static readonly string NoDeathOnLegsActorStat = "CUNoDeathOnLegs";
     public static readonly string AOEHeightActorStat = "CUAOEHeight";
     public static bool UnaffectedDesignMasks(this ICombatant unit) {
       if (unit.StatCollection.ContainsStatistic(DesignMasksActorStat) == false) { return false; };
@@ -1035,6 +1056,14 @@ namespace CustAmmoCategories {
     public static bool UnaffectedFire(this ICombatant unit) {
       if (unit.StatCollection.ContainsStatistic(FireActorStat) == false) { return false; };
       return unit.StatCollection.GetStatistic(FireActorStat).Value<bool>();
+    }
+    public static bool NoMoveAnimation(this ICombatant unit) {
+      if (unit.StatCollection.ContainsStatistic(NoMoveAnimationActorStat) == false) { return false; };
+      return unit.StatCollection.GetStatistic(NoMoveAnimationActorStat).Value<bool>();
+    }
+    public static bool NoDependentLocations(this ICombatant unit) {
+      if (unit.StatCollection.ContainsStatistic(ArmsCountedAsLegsActorStat) == false) { return false; };
+      return unit.StatCollection.GetStatistic(ArmsCountedAsLegsActorStat).Value<bool>();
     }
     public static bool UnaffectedLandmines(this ICombatant unit) {
       if (unit.StatCollection.ContainsStatistic(LandminesActorStat) == false) { return false; };
@@ -1192,10 +1221,15 @@ namespace CustAmmoCategories {
     public float ToHitVehicleFromFront { get; set; }
     public float ToHitVehicleFromSide { get; set; }
     public float ToHitVehicleFromRear { get; set; }
-    public string ShowActiveAbilitiesIcon { get; set; }
-    public string ShowPassiveAbilitiesIcon { get; set; }
-    public string HideActiveAbilitiesIcon { get; set; }
-    public string HidePassiveAbilitiesIcon { get; set; }
+    public string MinefieldDetectorStatName { get; set; }
+    public string MinefieldIFFStatName { get; set; }
+    public bool AmmoNameInSidePanel { get; set; }
+    public bool ShowApplyHeatSinkMessage { get; set; }
+    public string ApplyHeatSinkMessageTemplate { get; set; }
+    public string ResetHeatSinkMessageTemplate { get; set; }
+    public string ApplyHeatSinkActorStat { get; set; }
+    public string OverrallShootsCountWeaponStat { get; set; }
+    public bool AmmoGenericBoxUINameAsName { get; set; }
     public Settings() {
       directory = string.Empty;
       debugLog = true;
@@ -1302,8 +1336,17 @@ namespace CustAmmoCategories {
       ToHitVehicleFromSide = -1f;
       ToHitVehicleFromRear = -2f;
       WeaponPanelHeightScale = 1f;
+      MinefieldDetectorStatName = "MinefieldDetection";
+      MinefieldIFFStatName = "MinefieldIFF";
+      AmmoNameInSidePanel = true;
+      ShowApplyHeatSinkMessage = true;
+      ResetHeatSinkMessageTemplate = "USED HEAT SINKS:{0}=>{1}";
+      ApplyHeatSinkMessageTemplate = "APPLY HEAT SINKS:{0}=>{1} HCAP:{1} USED:{2}=>{3}";
+      ApplyHeatSinkActorStat = "CACOverrallHeatSinked";
+      OverrallShootsCountWeaponStat = "CACOverallShoots";
+      AmmoGenericBoxUINameAsName = true;
+    }
   }
-}
 }
 
 namespace CACMain {

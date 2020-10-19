@@ -114,14 +114,10 @@ namespace CleverGirlAIDamagePrediction {
       bool damagePerPallet = weapon.DamagePerPallet();
       bool damagePerNotDiv = weapon.DamageNotDivided();
       inital.PossibleHitLocations = target.GetPossibleHitLocations(attackPos);
-      inital.Normal = this.weapon.DamagePerShotAdjusted(weapon.parent.occupiedDesignMask);
-      inital.Heat = this.weapon.HeatDamagePerShotAdjusted(AttackImpactQuality.Solid);
+      inital.Normal = this.weapon.DamagePerShot;
+      inital.Heat = this.weapon.HeatDamagePerShot;
       inital.Instability = this.weapon.Instability();
-#if BT1_8
-      inital.AP = this.weapon.StructureDamagePerShotAdjusted(weapon.parent.occupiedDesignMask);
-#else
-      inital.AP = this.weapon.APDamage();
-#endif
+      inital.AP = this.weapon.StructureDamagePerShot;
       if ((damagePerPallet == true) && (damagePerNotDiv == false)) {
         inital.Normal /= (float)weapon.ProjectilesPerShot;
         inital.Heat /= (float)weapon.ProjectilesPerShot;
@@ -291,7 +287,19 @@ namespace CleverGirlAIDamagePrediction {
       }
     }
     public void DamageVarianceProc(Vector3 attackPos, DamagePredictionRecord inital) {
-      float rawDamage = inital.Normal;
+      if (inital.isAoE) { return; }
+      DamageModifiers mods = weapon.GetDamageModifiers(attackPos, inital.Target);
+      float dmg = inital.Normal;
+      float ap = inital.AP;
+      float heat = inital.Heat;
+      float stability = inital.Instability;
+      string descr = string.Empty;
+      mods.Calculate(-1, ref dmg, ref ap, ref heat, ref stability, ref descr, false, true);
+      if (weapon.DamagePerShot > CustomAmmoCategories.Epsilon) { inital.Normal = (dmg / this.weapon.DamagePerShot) * inital.Normal; }
+      if (weapon.StructureDamagePerShot > CustomAmmoCategories.Epsilon) { inital.AP = (ap / this.weapon.StructureDamagePerShot) * inital.AP; }
+      if (weapon.HeatDamagePerShot > CustomAmmoCategories.Epsilon) { inital.Heat = (heat / this.weapon.HeatDamagePerShot) * inital.Heat; }
+      if (weapon.Instability() > CustomAmmoCategories.Epsilon) { inital.Instability = (stability / this.weapon.Instability()) * inital.Instability; }
+      /*float rawDamage = inital.Normal;
       float realDamage = rawDamage;
       float rawHeat = inital.Heat;
       if (realDamage >= 1.0f) {
@@ -365,7 +373,7 @@ namespace CleverGirlAIDamagePrediction {
 #endif
         inital.AP = inital.AP * (realDamage / inital.Normal);
         inital.Normal = realDamage;
-      }
+      }*/
     }
     public void DamageVarianceProc(Vector3 attackPos) {
       foreach (DamagePredictionRecord dmg in this.predictDamage) {
@@ -431,27 +439,6 @@ namespace CleverGirlAIDamagePrediction {
     //public static void ClearAmmunitionBoxesCache() {
       //ammoBoxesCache.Clear();
     //}
-    public static int AvaibleAmmo(this Weapon weapon) {
-      int result = 0;
-      ExtAmmunitionDef ammo = weapon.ammo();
-      if (ammo.AmmoCategory.BaseCategory.Is_NotSet) { return -1; }
-      /*if (ammoBoxesCache.ContainsKey(weapon.parent)) {
-        if (ammoBoxesCache[weapon.parent].ContainsKey(ammo.Id)) {
-          foreach(AmmunitionBox box in ammoBoxesCache[weapon.parent][ammo.Id]) {
-            if (box.IsFunctional == false) { continue; }
-            result += box.CurrentAmmo;
-          }
-        }
-      } else {
-        ammoBoxesCache.Add(weapon.parent, new )
-      }*/
-      foreach(AmmunitionBox box in weapon.ammoBoxes) {
-        if (box.IsFunctional == false) { continue; }
-        if (box.ammoDef.Description.Id != ammo.Id) { continue; }
-        result += box.CurrentAmmo;
-      }
-      return result;
-    }
     public static WeaponFirePredictedEffect CalcPredictedEffect(this Weapon weapon, Vector3 attackPos, ICombatant target) {
       WeaponFirePredictedEffect result = new WeaponFirePredictedEffect();
       try {
@@ -459,12 +446,14 @@ namespace CleverGirlAIDamagePrediction {
         result.exAmmo = weapon.ammo();
         if (result.exAmmo.AmmoCategory.BaseCategory.Is_NotSet == false) {
           result.ammo = weapon.parent.Combat.DataManager.AmmoDefs.Get(result.exAmmo.Id);
+          result.avaibleAmmo = weapon.CurrentAmmo;
+        } else {
+          result.avaibleAmmo = -1;
         }
         result.mode = weapon.mode();
         result.isAMS = weapon.isAMS();
         result.isAAMS = weapon.isAAMS();
         result.ammoUsage = weapon.ShotsWhenFired;
-        result.avaibleAmmo = weapon.AvaibleAmmo();
         result.JammChance = weapon.FlatJammingChance();
         result.DamageOnJamm = weapon.DamageOnJamming();
         result.DestroyOnJamm = weapon.DestroyOnJamming();

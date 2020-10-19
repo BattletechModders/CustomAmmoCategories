@@ -207,7 +207,7 @@ namespace CustAmmoCategories {
     public static string getGUIDFromHitInfo(WeaponHitInfo hitInfo) {
       return hitInfo.attackerId + "_" + hitInfo.targetId + "_" + hitInfo.attackWeaponIndex;
     }
-    public static string getWeaponEffectId(Weapon weapon) {
+    public static string getWeaponEffectId(this Weapon weapon) {
       string result = "";
       if (string.IsNullOrEmpty(result)) {
         result = weapon.mode().WeaponEffectID;
@@ -1260,6 +1260,8 @@ namespace CustAmmoCategories {
     [HarmonyPatch(new Type[] { })]
     public static class AttackSequence_GenerateHitInfoAMS {
       public static void Postfix(AttackDirector.AttackSequence __instance) {
+        Log.M.TWL(0, "AttackDirector.AttackSequence.GenerateToHitInfo");
+        Log.M.WL(0,Environment.StackTrace);
         try {
           WeaponHitInfo?[][] weaponHitInfo = (WeaponHitInfo?[][])typeof(AttackDirector.AttackSequence).GetField("weaponHitInfo", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(__instance);
           Log.LogWrite("Main stray generator\n", true);
@@ -1337,6 +1339,8 @@ namespace CustAmmoCategories {
         }
         try {
           WeaponHitInfo?[][] weaponHitInfo = (WeaponHitInfo?[][])typeof(AttackDirector.AttackSequence).GetField("weaponHitInfo", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(__instance);
+          DamageModifiersCache.ClearComulativeDamage();
+          Log.M.TWL(0, "Start damage variance:"+__instance.id);
           for (int groupIndex = 0; groupIndex < weaponHitInfo.Length; ++groupIndex) {
             for (int weaponIndex = 0; weaponIndex < weaponHitInfo[groupIndex].Length; ++weaponIndex) {
               if (weaponHitInfo[groupIndex][weaponIndex].HasValue == false) {
@@ -1345,15 +1349,18 @@ namespace CustAmmoCategories {
               }
               AdvWeaponHitInfo advInfo = weaponHitInfo[groupIndex][weaponIndex].Value.advInfo();
               if (advInfo == null) { continue; }
+              advInfo.weapon.ClearDamageCache();
               Log.M.TWL(0, "Damage variance grp:"+groupIndex+" index:"+weaponIndex+" wpn:"+advInfo.weapon.defId+" ammo:"+advInfo.weapon.ammo().Id+" mode:"+advInfo.weapon.mode().Id);
               foreach (AdvWeaponHitInfoRec advRec in advInfo.hits) {
                 advRec.ApplyVariance(null);
               }
               advInfo.FillResolveHitInfo();
               advInfo.ApplyHitEffects();
+              advInfo.ApplyMantanceStats();
               AdvWeaponHitInfo.AddToExpected(advInfo);
             }
           }
+          DamageModifiersCache.ClearComulativeDamage();
           AdvWeaponHitInfo.printExpectedMessages(__instance.id);
         } catch (Exception e) {
           Log.LogWrite("WARNING! Hits ordering FAIL\n" + e.ToString() + "\n", true);
@@ -1449,7 +1456,7 @@ namespace CustAmmoCategories {
           }
           AdvWeaponHitInfoHelper.ResolveAMSprocessing(sequenceId);
           AdvWeaponHitInfo.Sanitize(sequenceId);
-          AdvWeaponHitInfo.FlushInfo(sequenceId);
+          AdvWeaponHitInfo.FlushInfo(attackSequence);
           AdvWeaponHitInfo.Clear(sequenceId);
           //ICombatant actor = attackSequence.chosenTarget;
           //HashSet<Weapon> AMSs = new HashSet<Weapon>();

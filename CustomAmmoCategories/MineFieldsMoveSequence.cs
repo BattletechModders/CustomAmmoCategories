@@ -94,7 +94,7 @@ namespace CustAmmoCategories {
       //if (mask == null) { return; };
       if (radius == 0) {
         cell.hexCell.addTempTerrainVFX(combat, vfx, turns, scale);
-        DynamicMapHelper.addDesignMaskAsync(cell.hexCell, mask, turns);
+        cell.hexCell.addDesignMaskAsync(mask, turns);
         //AsyncDesignMaskUpdater admu = new AsyncDesignMaskUpdater(cell.hexCell, mask, turns);
         //Thread designMaskApplyer = new Thread(new ThreadStart(admu.asyncAddMask));
         //designMaskApplyer.Start();
@@ -102,7 +102,7 @@ namespace CustAmmoCategories {
         List<MapTerrainHexCell> affectedHexCells = MapTerrainHexCell.listHexCellsByCellRadius(cell, radius);
         foreach (MapTerrainHexCell hexCell in affectedHexCells) {
           hexCell.addTempTerrainVFX(combat, vfx, turns, scale);
-          DynamicMapHelper.addDesignMaskAsync(hexCell, mask, turns);
+          hexCell.addDesignMaskAsync(mask, turns);
         }
         //AsyncDesignMaskUpdater admu = new AsyncDesignMaskUpdater(affectedHexCells, mask, turns);
         //Thread designMaskApplyer = new Thread(new ThreadStart(admu.asyncAddMask));
@@ -112,15 +112,17 @@ namespace CustAmmoCategories {
     public void applyExplodeBurn(Weapon weapon) {
       Log.F.TWL(0, "Applying minefield burn effect:" + this.cell.x + "," + this.cell.y );
       if (def.FireTerrainCellRadius == 0) {
-        if (cell.hexCell.TryBurnCell(weapon, def.FireTerrainChance, def.FireTerrainStrength, def.FireDurationWithoutForest)) {
-          DynamicMapHelper.burningHexes.Add(cell.hexCell);
-        };
+        cell.hexCell.TryBurnCellAsync(weapon, def.FireTerrainChance, def.FireTerrainStrength, def.FireDurationWithoutForest);
+        //if (cell.hexCell.TryBurnCell(weapon, def.FireTerrainChance, def.FireTerrainStrength, def.FireDurationWithoutForest)) {
+        //  DynamicMapHelper.burningHexes.Add(cell.hexCell);
+        //};
       } else {
         List<MapTerrainHexCell> affectedHexCells = MapTerrainHexCell.listHexCellsByCellRadius(cell, def.FireTerrainCellRadius);
         foreach (MapTerrainHexCell hexCell in affectedHexCells) {
-          if (hexCell.TryBurnCell(weapon, def.FireTerrainChance, def.FireTerrainStrength, def.FireDurationWithoutForest)) {
-            DynamicMapHelper.burningHexes.Add(hexCell);
-          };
+          hexCell.TryBurnCellAsync(weapon, def.FireTerrainChance, def.FireTerrainStrength, def.FireDurationWithoutForest);
+          //if (hexCell.TryBurnCell(weapon, def.FireTerrainChance, def.FireTerrainStrength, def.FireDurationWithoutForest)) {
+            //DynamicMapHelper.burningHexes.Add(hexCell);
+          //};
         }
       }
     }
@@ -514,14 +516,14 @@ namespace CustAmmoCategories {
   public static partial class DynamicMapHelper {
     public static Dictionary<ICombatant, MineFieldDamage> registredMineFieldDamage = new Dictionary<ICombatant, MineFieldDamage>();
     public static List<DelayedGameObjectPoolRecord> delayedPoolList = new List<DelayedGameObjectPoolRecord>();
-    public static Queue<AsyncDesignMaskApplyRecord> asyncTerrainDesignMaskQueue = new Queue<AsyncDesignMaskApplyRecord>();
+    //public static Queue<AsyncDesignMaskApplyRecord> asyncTerrainDesignMaskQueue = new Queue<AsyncDesignMaskApplyRecord>();
     public static CombatGameState Combat = null;
-    public static Thread asyncTerrainDesignMask = new Thread(DynamicMapHelper.asyncTerrainDesignMaskProc);
-    public static void addDesignMaskAsync(MapTerrainHexCell hex,DesignMaskDef dm, int counter) {
-      if (dm == null) { return; }
-      asyncTerrainDesignMaskQueue.Enqueue(new AsyncDesignMaskApplyRecord(dm,hex,counter));
-    }
-    public static void asyncTerrainDesignMaskProc() {
+    //public static Thread asyncTerrainDesignMask = new Thread(DynamicMapHelper.asyncTerrainDesignMaskProc);
+    //public static void addDesignMaskAsync(this MapTerrainHexCell hex,DesignMaskDef dm, int counter) {
+    //  if (dm == null) { return; }
+    //  asyncTerrainDesignMaskQueue.Enqueue(new AsyncDesignMaskApplyRecord(dm,hex,counter));
+    //}
+    /*public static void asyncTerrainDesignMaskProc() {
       try {
         Log.F.TWL(0, "asyncTerrainDesignMaskProc started\n");
         while (true) {
@@ -537,7 +539,7 @@ namespace CustAmmoCategories {
         Log.F.TWL(0, "asyncTerrainDesignMaskProc aborted");
         asyncTerrainDesignMaskQueue.Clear();
       }
-    }
+    }*/
     public static void PoolDelayedGameObject() {
       if (DynamicMapHelper.Combat == null) { return; }
       Log.F.TWL(0, "DynamicMapHelper.PoolDelayedGameObject:" + delayedPoolList.Count);
@@ -626,21 +628,23 @@ namespace CustAmmoCategories {
           Log.F.WL(2, "cell without HEX????!!", true);
           continue;
         }
-        if (cell.cell.hexCell.MineField == null) {
+        if (cell.cell.hexCell.MineFields == null) {
           Log.F.WL(2, "HEX withlout landmines list????!!", true);
           continue;
         }
-        Log.F.WL(2, "Hex cell " + cell.cell.hexCell.x + ":" + cell.cell.hexCell.y + " minefields in hex:" + cell.cell.hexCell.MineField.Count);
+        //Log.F.WL(2, "Hex cell " + cell.cell.hexCell.x + ":" + cell.cell.hexCell.y + " minefields in hex:" + cell.cell.hexCell.MineFields.Count);
+        Log.F.WL(2, "Hex cell " + cell.cell.hexCell.center + " minefields in hex:" + cell.cell.hexCell.MineFields.Count);
         if (UnaffectedLandmines) {
           Log.F.WL(2, "Unaffected by landmines\n");
           continue;
         };
         //if (cell.cell.hexCell.MineField.Count == 0) { continue; }
-        foreach (MineField mineField in cell.cell.hexCell.MineField) {
+        foreach (MineField mineField in cell.cell.hexCell.MineFields) {
           if (mineField == null) { Log.F.WL(3, "null minefield???!!!", true); continue; }
           if (mineField.Def == null) { Log.F.WL(3, "mine field without def???!!!\n", true); continue; };
-          Log.F.WL(3, "mines in minefield:" + mineField.count + " chance:" + mineField.Def.Chance + " damage:" + mineField.Def.Damage);
+          Log.F.WL(3, "mines in minefield:" + mineField.count + " chance:" + mineField.Def.Chance + " damage:" + mineField.Def.Damage+" iff:"+ mineField.getIFFLevel(unit));
           if (mineField.count == 0) { continue; };
+          if (mineField.getIFFLevel(unit)) { continue; }
           float roll = Random.Range(0f, 1f);
           float chance = mineField.Def.Chance * rollMod;
           Log.F.WL(3, "roll:" + roll + " effective chance:" + chance);
@@ -732,22 +736,24 @@ namespace CustAmmoCategories {
           Log.F.WL(2, "cell without HEX????!!\n", true);
           return;
         }
-        if (hexCell.MineField == null) {
+        if (hexCell.MineFields == null) {
           Log.F.WL(2, "HEX withlout landmines list????!!\n", true);
           return;
         }
-        Log.F.WL(2, "Hex cell " + hexCell.x + ":" + hexCell.y + " minefields in hex:" + hexCell.MineField.Count);
+        Log.F.WL(2, "Hex cell " + hexCell.center + " minefields in hex:" + hexCell.MineFields.Count);
         //if (cell.cell.hexCell.MineField.Count == 0) { continue; }
-        foreach (MineField mineField in hexCell.MineField) {
+        foreach (MineField mineField in hexCell.MineFields) {
           if (mineField == null) { Log.F.WL(3, "null minefield???!!!", true); continue; }
           if (mineField.Def == null) { Log.F.WL(3, "mine field without def???!!!", true); continue; };
-          Log.F.WL(3, "mines in minefield:" + mineField.count + " chance:" + mineField.Def.Chance + " damage:" + mineField.Def.Damage);
+          Log.F.WL(3, "mines in minefield:" + mineField.count + " chance:" + mineField.Def.Chance + " damage:" + mineField.Def.Damage+" iff:"+ mineField.getIFFLevel(unit));
           if (mineField.count == 0) { continue; };
+          if (mineField.getIFFLevel(unit)) { continue; }
           float roll = Random.Range(0f, 1f);
           float chance = mineField.Def.Chance * rollMod;
           Log.F.WL(3, "roll:" + roll + " effective chance:" + chance);
           if (roll < chance) {
             mineField.count -= 1;
+            hexCell.UpdateIndicatorVisibility();
             minefieldWeapon = mineField.weapon;
             mfDamage.landminesTerrain.Add(new LandMineTerrainRecord(mineField.Def, cell));
             mfDamage.AddLandMineDamage(unit, mineField.Def, position, false);
@@ -872,19 +878,6 @@ namespace CustAmmoCategoriesPatches {
       } catch (Exception e) {
         Log.F.TWL(0, e.ToString(), true);
       }
-    }
-  }
-  [HarmonyPatch(typeof(CombatHUD))]
-  [HarmonyPatch("Init")]
-  [HarmonyPatch(MethodType.Normal)]
-  [HarmonyPatch(new Type[] { typeof(CombatGameState) })]
-  public static class CombatHUD_InitDynamicMap {
-    public static bool Prefix(CombatHUD __instance, CombatGameState Combat) {
-      if ((DynamicMapHelper.asyncTerrainDesignMask.ThreadState == ThreadState.Unstarted)
-        || (DynamicMapHelper.asyncTerrainDesignMask.ThreadState == ThreadState.Aborted)) {
-        DynamicMapHelper.asyncTerrainDesignMask.Start();
-      }
-      return true;
     }
   }
   [HarmonyPatch(typeof(MechMeleeSequence))]

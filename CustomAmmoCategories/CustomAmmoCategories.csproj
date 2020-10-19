@@ -24,7 +24,7 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <Prefer32Bit>false</Prefer32Bit>
-    <LangVersion>7.2</LangVersion>
+    <LangVersion>7.3</LangVersion>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -50,6 +50,12 @@
     <Reference Include="Assembly-CSharp-firstpass">
       <HintPath>..\..\BattleTech_Data\Managed\Assembly-CSharp-firstpass.dll</HintPath>
     </Reference>
+    <Reference Include="CustomComponents">
+      <HintPath>D:\Games\BATTLETECH\Mods\CustomComponents\CustomComponents.dll</HintPath>
+    </Reference>
+    <Reference Include="EPPlus">
+      <HintPath>C:\Games\BATTLETECH\Mods\CustomAmmoCategories\EPPlus.dll</HintPath>
+    </Reference>
     <Reference Include="InControl, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\BattleTech_Data\Managed\InControl.dll</HintPath>
@@ -65,10 +71,6 @@
     <Reference Include="System.Data, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\BattleTech_Data\Managed\System.Data.dll</HintPath>
-    </Reference>
-    <Reference Include="System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\BattleTech_Data\Managed\System.Drawing.dll</HintPath>
     </Reference>
     <Reference Include="System.EnterpriseServices, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
@@ -127,6 +129,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="AbstractActorInitEffectStats.cs" />
     <Compile Include="AdditionalImpactVFX.cs" />
     <Compile Include="AdvCritProc.cs" />
     <Compile Include="AdvWeaponHitInfo.cs" />
@@ -135,6 +138,7 @@
     <Compile Include="AIWeaponChoose.cs" />
     <Compile Include="AmmoCategoryValue.cs" />
     <Compile Include="AmmoCookoff.cs" />
+    <Compile Include="AmmoDepletion.cs" />
     <Compile Include="AmmoEject.cs" />
     <Compile Include="AmmoModeSwitcher.cs" />
     <Compile Include="AmmunitionDef.cs" />
@@ -155,6 +159,7 @@
     <Compile Include="AudioPlayer.cs" />
     <Compile Include="BlockWeapons.cs" />
     <Compile Include="BulletBallistic.cs" />
+    <Compile Include="CACUIStrings.cs" />
     <Compile Include="CACWeaponEffect.cs" />
     <Compile Include="CharlesB\Calculator.cs" />
     <Compile Include="CharlesB\CharlesB.cs" />
@@ -168,12 +173,14 @@
     <Compile Include="CustomDesignMask.cs" />
     <Compile Include="CustomReticle.cs" />
     <Compile Include="CustomSVGAsset.cs" />
+    <Compile Include="DamageCalculatorHelper.cs" />
     <Compile Include="DebugSpawnHelper.cs" />
     <Compile Include="DecrementAmmo.cs" />
     <Compile Include="DeferredEffect.cs" />
     <Compile Include="DefferedIconsLoader.cs" />
     <Compile Include="DynamicMap.cs" />
     <Compile Include="DynamicTrees.cs" />
+    <Compile Include="ElementManager.cs" />
     <Compile Include="ExplosionAPI.cs" />
     <Compile Include="Frag.cs" />
     <Compile Include="FragBallisticEffect.cs" />

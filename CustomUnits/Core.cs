@@ -132,6 +132,24 @@ namespace CustomUnits{
     public string MechBaySwitchIconVehicle { get; set; }
     public string MechBaySwitchIconUp { get; set; }
     public string MechBaySwitchIconDown { get; set; }
+    public string ShowActiveAbilitiesIcon { get; set; }
+    public string ShowPassiveAbilitiesIcon { get; set; }
+    public string HideActiveAbilitiesIcon { get; set; }
+    public string HidePassiveAbilitiesIcon { get; set; }
+    public float DeploySpawnRadius { get; set; }
+    public float DeployMaxDistanceFromOriginal { get; set; }
+    public float DeployMinDistanceFromEnemy { get; set; }
+    public bool DeployManual { get; set; }
+    private HashSet<string> fManualDeployForbidContractTypes { get; set; }
+    public List<string> ManualDeployForbidContractTypes { set {
+        if (fManualDeployForbidContractTypes == null) { fManualDeployForbidContractTypes = new HashSet<string>(); }
+        fManualDeployForbidContractTypes.Clear();
+        foreach (string ct in value) {
+          fManualDeployForbidContractTypes.Add(ct);
+        }
+    } }
+    public HashSet<string> DeployForbidContractTypes { get { return fManualDeployForbidContractTypes; } }
+    public bool DisableHotKeys { get; set; }
     public CUSettings() {
       debugLog = false;
       DeathHeight = 1f;
@@ -168,6 +186,16 @@ namespace CustomUnits{
       MechBaySwitchIconVehicle = "vehicle";
       MechBaySwitchIconUp = "weapon_up";
       MechBaySwitchIconDown = "weapon_down";
+      ShowActiveAbilitiesIcon = "";
+      ShowPassiveAbilitiesIcon = "";
+      HideActiveAbilitiesIcon = "";
+      HidePassiveAbilitiesIcon = "";
+      DeployManual = true;
+      DeploySpawnRadius = 50f;
+      DeployMaxDistanceFromOriginal = 30.0f;
+      DeployMinDistanceFromEnemy = 300f;
+      fManualDeployForbidContractTypes = new HashSet<string>();
+      DisableHotKeys = false;
     }
   }
   public static partial class Core{

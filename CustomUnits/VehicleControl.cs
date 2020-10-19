@@ -3,6 +3,7 @@ using BattleTech.Data;
 using BattleTech.UI;
 using BattleTech.UI.TMProWrapper;
 using BattleTech.UI.Tooltips;
+using CustAmmoCategories;
 using Harmony;
 using HBS;
 using HBS.Collections;
@@ -656,11 +657,11 @@ namespace CustomUnits {
       result.pilot(src.pilot);
       result.Init(src.CurrentPosition, 0f, false);
       result._hasHandledDeath(src.IsDead);
-      if (src.IsDead) {
-        result.StatCollection.Set<float>(result.GetStringForStructureLocation(ChassisLocations.CenterTorso), 0f);
-        result.StatCollection.Set<LocationDamageLevel>(result.GetStringForStructureDamageLevel(ChassisLocations.CenterTorso), LocationDamageLevel.Destroyed);
-        result.pilot.StatCollection.Set("LethalInjury",true);
-      }
+      //if (src.IsDead) {
+      //  result.StatCollection.Set<float>(result.GetStringForStructureLocation(ChassisLocations.CenterTorso), 0f);
+      //  result.StatCollection.Set<LocationDamageLevel>(result.GetStringForStructureDamageLevel(ChassisLocations.CenterTorso), LocationDamageLevel.Destroyed);
+      //  result.pilot.StatCollection.Set("LethalInjury",true);
+      //}
       result._team(src.team);
       result._teamId(src.TeamId);
       if (src.VehicleDef.Chassis.HasTurret) {
@@ -719,8 +720,12 @@ namespace CustomUnits {
       List<AbstractActor> allActors = combat.AllActors;
       HashSet<string> playerDefGuids = new HashSet<string>();
       foreach (var guid in CustomLanceHelper.playerLanceLoadout.loadout) { playerDefGuids.Add(guid.Key); }
+      for(int index=0;index< allMechs.Count;) {
+        if (allMechs[index].IsDeployDirector()) { allMechs.RemoveAt(index); } else { ++index; }
+      }
       foreach (AbstractActor actor in allActors) {
         try {
+          if (actor.IsDeployDirector()) { continue; }
           if(actor.UnitType == UnitType.Mech) {
             Mech mech = actor as Mech;
             Log.WL(1, "MechDef GUID:"+ mech.MechDef.GUID);
@@ -1817,6 +1822,12 @@ namespace CustomUnits {
     }
     public static bool IsChassisFake(this MechDef mechDef) {
       return fakeChassisDef.Contains(mechDef.ChassisID);
+    }
+    public static void AddToFake(this VehicleChassisDef def) {
+      fakeChassisDef.Add(def.Description.Id);
+    }
+    public static void AddToFake(this VehicleDef def) {
+      fakemechDefs.Add(def.Description.Id);
     }
     public static void Postfix(
             Dictionary<BattleTechResourceType, Dictionary<string, VersionManifestEntry>> ___baseManifest,

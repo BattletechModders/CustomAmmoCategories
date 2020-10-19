@@ -192,7 +192,7 @@ namespace CustomAmmoCategoriesPatches {
       return position;
     }
     private static void GetStreakHits(AttackDirector.AttackSequence instance, ref WeaponHitInfo hitInfo, int groupIdx, int weaponIdx, Weapon weapon, float toHitChance, float prevDodgedDamage) {
-      CustomAmmoCategoriesLog.Log.LogWrite("GetStreakHits\n");
+      Log.M.TWL(0, "GetStreakHits "+weapon.defId+" mode:"+weapon.mode().UIName+" ammo:"+weapon.ammo().Id+" clustering:"+ weapon.ClusteringModifier);
       if (hitInfo.numberOfShots == 0) { return; };
       if (AttackDirector.hitLogger.IsLogEnabled)
         AttackDirector.hitLogger.Log((object)string.Format("???????? RANDOM HIT ROLLS (GetStreakHits): Weapon Group: {0} // Weapon: {1}", (object)groupIdx, (object)weaponIdx));
@@ -205,12 +205,12 @@ namespace CustomAmmoCategoriesPatches {
       hitInfo.dodgeRolls = instance.GetRandomNumbers(groupIdx, weaponIdx, hitInfo.numberOfShots);
       hitInfo.hitVariance = instance.GetVarianceSums(groupIdx, weaponIdx, hitInfo.numberOfShots, weapon);
       int primeHitLocation = 0;
-      float originalMultiplier = 1f;
+      float originalMultiplier = 1f + weapon.ClusteringModifier;
       float adjacentMultiplier = 1f;
       AbstractActor target = instance.chosenTarget as AbstractActor;
       Team team = weapon == null || weapon.parent == null || weapon.parent.team == null ? (Team)null : weapon.parent.team;
       ICombatant primeTarget = instance.chosenTarget;
-      Log.LogWrite("Prime hit Generation\n");
+      Log.M.WL(1, "originalMultiplier:"+ originalMultiplier);
       bool primeSuccess = false;
       {
         float corrRolls = (float)typeof(AttackDirector.AttackSequence).GetMethod("GetCorrectedRoll", BindingFlags.NonPublic | BindingFlags.Instance).Invoke(instance, new object[2] { (object)hitInfo.toHitRolls[0], (object)team });
@@ -394,6 +394,7 @@ namespace CustomAmmoCategoriesPatches {
           hitInfo = (WeaponHitInfo)args[0];
           break;
         case HitGeneratorType.Cluster:
+          Log.M.TWL(0, "GetClusteredHits " + weapon.defId + " mode:" + weapon.mode().UIName + " ammo:" + weapon.ammo().Id + " clustering:" + weapon.ClusteringModifier);
           args[0] = hitInfo; args[1] = groupIdx; args[2] = weaponIdx; args[3] = weapon; args[4] = toHitChance; args[5] = dodgedDamage;
           typeof(AttackDirector.AttackSequence).GetMethod("GetClusteredHits", BindingFlags.Instance | BindingFlags.NonPublic).Invoke(instance, args);
           hitInfo = (WeaponHitInfo)args[0];

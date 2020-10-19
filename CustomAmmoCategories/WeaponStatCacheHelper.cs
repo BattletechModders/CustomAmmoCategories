@@ -52,6 +52,11 @@ namespace CustAmmoCategories {
       weaponExte.Add(weapon, exDef);
       return exDef;
     }
+    public static ExtWeaponDef exDef(this WeaponDef weaponDef) {
+      //Log.M.TWL(0, "ext def of:" + weapon.defId);
+      ExtWeaponDef exDef = CustomAmmoCategories.getExtWeaponDef(weaponDef.Description.Id);
+      return exDef;
+    }
     public static WeaponMode mode(this Weapon weapon) {
       //Log.M.TWL(0, "mode of:" + weapon.defId);
       if (weaponMode.TryGetValue(weapon, out WeaponMode mode)) { return mode; }

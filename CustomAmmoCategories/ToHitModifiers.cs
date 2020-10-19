@@ -121,9 +121,11 @@ namespace CustAmmoCategories {
       return instance.GetHeatModifier(attacker);
     }
     public static float GetTargetTerrainModifier(ToHit instance, AbstractActor attacker, Weapon weapon, ICombatant target, Vector3 attackPosition, Vector3 targetPosition, LineOfFireLevel lofLevel, MeleeAttackType meleeAttackType, bool isCalledShot) {
+      if (target.UnaffectedDesignMasks()) { return 0f; }
       return instance.GetTargetTerrainModifier(target, targetPosition, false);
     }
     public static float GetSelfTerrainModifier(ToHit instance, AbstractActor attacker, Weapon weapon, ICombatant target, Vector3 attackPosition, Vector3 targetPosition, LineOfFireLevel lofLevel, MeleeAttackType meleeAttackType, bool isCalledShot) {
+      if (attacker.UnaffectedDesignMasks()) { return 0f; };
       return instance.GetSelfTerrainModifier(attackPosition, false);
     }
     public static string GetTargetTerrainModifierName(ToHit instance, AbstractActor attacker, Weapon weapon, ICombatant target, Vector3 attackPosition, Vector3 targetPosition, LineOfFireLevel lofLevel, MeleeAttackType meleeAttackType, bool isCalledShot) {

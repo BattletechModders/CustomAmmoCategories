@@ -69,6 +69,7 @@ namespace CustAmmoCategories {
       if (rt == null) {
         rt = gameObject.AddComponent<TextRotateToCamera>();
       }
+      this.Text.raycastTarget = false;
     }
   }
   public static class PersistentFloatieHelper {

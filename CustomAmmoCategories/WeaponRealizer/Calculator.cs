@@ -28,7 +28,7 @@ namespace WeaponRealizer {
         damage = ReverseDistanceBasedVariance.Calculate(attackPos, target, weapon, damage, rawDamage,log);
       }
 
-      if (OverheatMultiplier.IsApplicable(weapon)) {
+      if (weapon.IsOverheatModApplicable()) {
         Log.M.WL("WR overheat muilt:" + weapon.defId + " target:" + target.DisplayName + " damage:" + damage + " rawDamage:" + rawDamage);
         damage = OverheatMultiplier.Calculate(weapon.parent, target, weapon, damage,log);
       }
