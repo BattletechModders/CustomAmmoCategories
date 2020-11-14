@@ -147,19 +147,6 @@ namespace CustAmmoCategories {
       }
       return wp.ProjectileScale;
     }
-    public static float APDamage(this Weapon weapon) {
-      ExtAmmunitionDef ammo = weapon.ammo();
-      WeaponMode mode = weapon.mode();
-      ExtWeaponDef wp = weapon.exDef();
-      float result = mode.APDamage + ammo.APDamage + wp.APDamage;
-      if (weapon.parent != null) {
-        if (weapon.parent.EvasivePipsCurrent > 0) {
-          float evasiveMod = weapon.exDef().evasivePipsMods.APDamage + ammo.evasivePipsMods.APDamage + mode.evasivePipsMods.APDamage;
-          if (Mathf.Abs(evasiveMod) > CustomAmmoCategories.Epsilon) result = result * Mathf.Pow((float)weapon.parent.EvasivePipsCurrent, evasiveMod);
-        }
-      }
-      return result;
-    }
     public static float FireAnimationSpeedMod(this Weapon weapon) {
       ExtAmmunitionDef ammo = weapon.ammo();
       WeaponMode mode = weapon.mode();
@@ -265,6 +252,12 @@ namespace CustAmmoCategories {
       if (ammo.isStabilityVariation != TripleBoolean.NotSet) { return ammo.isStabilityVariation == TripleBoolean.True; }
       return wp.isStabilityVariation == TripleBoolean.True;
     }
+    public static bool TargetLegsOnly(this Weapon weapon) {
+      WeaponMode mode = weapon.mode();
+      ExtWeaponDef wp = weapon.exDef();
+      if (mode.TargetMechLegsOnly != TripleBoolean.NotSet) { return mode.TargetMechLegsOnly == TripleBoolean.True; }
+      return wp.TargetMechLegsOnly == TripleBoolean.True;
+    }
     /*public static CustomVector MissileExplosionScale(this Weapon weapon) {
       ExtAmmunitionDef ammo = weapon.ammo();
       WeaponMode mode = weapon.mode();
@@ -324,8 +317,8 @@ namespace CustAmmoCategories {
         case DamageFalloffType.Cubic: return value * value * value;
         case DamageFalloffType.SquareRoot: return Mathf.Sqrt(value);
         case DamageFalloffType.Linear: return value;
-        case DamageFalloffType.Log10: return Mathf.Log10(value);
-        case DamageFalloffType.LogE: return Mathf.Log(value);
+        case DamageFalloffType.Log10: return Mathf.Log10(value+1f);
+        case DamageFalloffType.LogE: return Mathf.Log(value+1f);
         case DamageFalloffType.Exp: return Mathf.Exp(value);
         default: return value;
       }
@@ -443,7 +436,6 @@ namespace CustAmmoCategories {
     public List<ColorTableJsonEntry> ColorsTable { get; set; }
     public float ColorSpeedChange { get; set; }
     public ColorChangeRule ColorChangeRule { get; set; }
-    public float APDamage { get; set; }
     public float APCriticalChanceMultiplier { get; set; }
     public float APArmorShardsMod { get; set; }
     public float APMaxArmorThickness { get; set; }
@@ -479,6 +471,7 @@ namespace CustAmmoCategories {
     public DamageFalloffType AoEDmgFalloffType { get; set; }
     public float DamageFalloffStartDistance { get; set; }
     public float DamageFalloffEndDistance { get; set; }
+    public TripleBoolean TargetMechLegsOnly { get; set; }
     public ExtWeaponDef() {
       Id = string.Empty;
       Streak = false;
@@ -544,7 +537,6 @@ namespace CustAmmoCategories {
       ColorsTable = new List<ColorTableJsonEntry>();
       ColorSpeedChange = 0f;
       ColorChangeRule = ColorChangeRule.None;
-      APDamage = 0f;
       APCriticalChanceMultiplier = float.NaN;
       APArmorShardsMod = 0f;
       APMaxArmorThickness = 0f;
@@ -578,6 +570,7 @@ namespace CustAmmoCategories {
       AoEDmgFalloffType = DamageFalloffType.NotSet;
       DamageFalloffStartDistance = 0f;
       DamageFalloffEndDistance = 0f;
+      TargetMechLegsOnly = TripleBoolean.NotSet;
     }
   }
 }
@@ -757,11 +750,10 @@ namespace CustomAmmoCategoriesPatches {
         //  extDef.evasivePipsMods = defTemp["evasivePipsMods"].ToObject<EvasivePipsMods>();
         //  defTemp.Remove("evasivePipsMods");
         //}
-        //if (defTemp["APDamage"] != null) {
-        //  extDef.APDamage = (float)defTemp["APDamage"];
-        //  defTemp["StructureDamage"] = (float)defTemp["APDamage"];
-        //  defTemp.Remove("APDamage");
-        //}
+        if (defTemp["APDamage"] != null) {
+          defTemp["StructureDamage"] = (float)defTemp["APDamage"];
+          defTemp.Remove("APDamage");
+        }
         //if (defTemp["APCriticalChanceMultiplier"] != null) {
         //  extDef.APCriticalChanceMultiplier = (float)defTemp["APCriticalChanceMultiplier"];
         //  defTemp.Remove("APCriticalChanceMultiplier");
@@ -1124,13 +1116,13 @@ namespace CustomAmmoCategoriesPatches {
           property.GetSetMethod(true).Invoke(__instance, new object[1] { (object)tmpList.ToArray() });
         }
         ExtWeaponDef extDef = null;
-        if(__state == null) {
-          Log.M.TWL(0, "!WARNINIG! ExtDefinitionParceInfo is null for "+__instance.Description.Id+". Very very wrong!", true);
+        if (__state == null) {
+          Log.M.TWL(0, "!WARNINIG! ExtDefinitionParceInfo is null for " + __instance.Description.Id + ". Very very wrong!", true);
         } else {
           extDef = __state.extDef as ExtWeaponDef;
         }
-        if(extDef == null) {
-          Log.M.TWL(0, "!WARNINIG! ext. definition parce error for "+__instance.Description.Id+"\n"+__state.errorStr+"\n"+__state.baseJson, true);
+        if (extDef == null) {
+          Log.M.TWL(0, "!WARNINIG! ext. definition parce error for " + __instance.Description.Id + "\n" + __state.errorStr + "\n" + __state.baseJson, true);
           extDef = new ExtWeaponDef();
           extDef.Id = __instance.Description.Id;
           extDef.AmmoCategory = CustomAmmoCategories.find(__instance.AmmoCategoryValue.Name);
@@ -1141,12 +1133,14 @@ namespace CustomAmmoCategoriesPatches {
           extDef.Modes.Add(mode.Id, mode);
         }
         CustomAmmoCategories.registerExtWeaponDef(__instance.Description.Id, extDef);
-        if (extDef.AmmoCategory.isDefaultAmmo()) {
-          ExtAmmunitionDef extAmmunition = extDef.AmmoCategory.defaultAmmo();
-          if (extDef.InternalAmmo.ContainsKey(extAmmunition.Id) == false) { extDef.InternalAmmo.Add(extAmmunition.Id, __instance.StartingAmmoCapacity); }
-          Traverse.Create(__instance).Property<int>("StartingAmmoCapacity").Value = 0;
-        } else {
-          __instance.RegisterForDefaultAmmoUpdate(extDef.AmmoCategory);
+        if (__instance.StartingAmmoCapacity != 0) {
+          if (extDef.AmmoCategory.isDefaultAmmo()) {
+            ExtAmmunitionDef extAmmunition = extDef.AmmoCategory.defaultAmmo();
+            if (extDef.InternalAmmo.ContainsKey(extAmmunition.Id) == false) { extDef.InternalAmmo.Add(extAmmunition.Id, __instance.StartingAmmoCapacity); }
+            Traverse.Create(__instance).Property<int>("StartingAmmoCapacity").Value = 0;
+          } else {
+            __instance.RegisterForDefaultAmmoUpdate(extDef.AmmoCategory);
+          }
         }
       } catch(Exception e) {
         Log.M.TWL(0,e.ToString(),true);

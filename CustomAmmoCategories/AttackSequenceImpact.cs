@@ -118,7 +118,7 @@ namespace CustAmmoCategories {
       float middleRange = weapon.DamageFalloffEndDistance(); if (middleRange < minRange) { middleRange = weapon.MediumRange; };
       float ratio = 1f;
       if (distance < middleRange) {
-        if ((minRange - middleRange) > CustomAmmoCategories.Epsilon) { ratio = (distance - minRange) / (middleRange - minRange); };
+        if ((middleRange - minRange) > CustomAmmoCategories.Epsilon) { ratio = (distance - minRange) / (middleRange - minRange); };
       }
       if (baseMultiplier > 1f) {
         if (distance <= minRange) { varianceMultiplier = 1f; } else {
@@ -293,6 +293,7 @@ namespace CustomAmmoCategoriesPatches {
         foreach (string tag in CustomAmmoCategories.Settings.TransferHeatDamageToNormalTag) {
           if (mech.MechDef.Chassis.ChassisTags.Contains(tag)) { return false; }
         }
+        if (combatant.NoHeat()) { return false; }
       }catch(Exception e) {
         Log.M.TWL(0, e.ToString(), true);
       }
@@ -305,6 +306,7 @@ namespace CustomAmmoCategoriesPatches {
         foreach(string tag in CustomAmmoCategories.Settings.MechHasNoStabilityTag) {
           if (mech.MechDef.Chassis.ChassisTags.Contains(tag)) { return false; }
         }
+        if (combatant.NoStability()) { return false; }
       } catch (Exception e) {
         Log.M.TWL(0, e.ToString(), true);
       }

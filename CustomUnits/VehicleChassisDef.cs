@@ -18,6 +18,7 @@ using System.Text;
 using System.Threading;
 using UnityEngine;
 using CustomComponents;
+using CustomAmmoCategoriesPatches;
 
 namespace CustomUnits {
   public class CustomTransform {
@@ -247,7 +248,16 @@ namespace CustomUnits {
       lightsTransforms = new List<CustomTransform>();
     }
   }
+  public class MeleeWeaponOverrideDef {
+    public string DefaultWeapon { get; set; }
+    public Dictionary<string, string> Components { get; set; }
+    public MeleeWeaponOverrideDef() {
+      DefaultWeapon = "Weapon_MeleeAttack";
+      Components = new Dictionary<string, string>();
+    }
+  }
   public class UnitCustomInfo {
+    public TrooperSquadDef SquadInfo { get; set; }
     public bool NullifyBodyMesh { get; set; }
     public float AOEHeight { get; set; }
     public bool TieToGroundOnDeath { get; set; }
@@ -277,6 +287,7 @@ namespace CustomUnits {
     public HangarLocationTransforms HangarTransforms { get; set; }
     public string MoveCost { get; set; }
     public Dictionary<string, float> MoveCostModPerBiome { get; set; }
+    public MeleeWeaponOverrideDef MeleeWeaponOverride { get; set; }
     public UnitCustomInfo() {
       AOEHeight = 0f;
       HighestLOSPosition = new CustomVector(false);
@@ -307,6 +318,8 @@ namespace CustomUnits {
       LegDamageRelativeInstability = -1f;
       LegDestroyRelativeInstability = 1f;
       LocDestroyedPermanentStabilityLossMod = 1f;
+      SquadInfo = new TrooperSquadDef();
+      MeleeWeaponOverride = new MeleeWeaponOverrideDef();
     }
     public void debugLog(int initiation) {
       string init = new String(' ', initiation);
@@ -360,6 +373,10 @@ namespace CustomUnits {
     public static UnitCustomInfo GetCustomInfo(this ChassisDef chassis) {
       if (vehicleChasissInfosDb.ContainsKey(chassis.Description.Id) == false) { return null; };
       return vehicleChasissInfosDb[chassis.Description.Id];
+    }
+    public static UnitCustomInfo GetCustomInfo(this MechDef mechDef) {
+      if (vehicleChasissInfosDb.ContainsKey(mechDef.ChassisID) == false) { return null; };
+      return vehicleChasissInfosDb[mechDef.ChassisID];
     }
     public static UnitCustomInfo GetCustomInfo(this AbstractActor actor) {
       Mech mech = actor as Mech;
@@ -714,6 +731,9 @@ namespace CustomUnits {
       }
     }
   }
+  public class CustomPartsDirector : MonoBehaviour {
+
+  }
   [HarmonyPatch(typeof(PilotableActorRepresentation))]
   [HarmonyPatch("Init")]
   [HarmonyPatch(MethodType.Normal)]
@@ -829,6 +849,7 @@ namespace CustomUnits {
         default: return VehicleChassisLocations.Turret;
       }
     }
+
     public static void SpawnCustomParts(this MechDef mechDef, MechRepresentationSimGame rep) {
       Log.TWL(0, "mechDef.SpawnCustomParts " + mechDef.ChassisID);
       UnitCustomInfo info = mechDef.Chassis.GetCustomInfo();
@@ -837,6 +858,11 @@ namespace CustomUnits {
         return;
       }
       try {
+        //if (rep.gameObject.GetComponent<CustomPartsDirector>() != null) {
+          //Log.WL(1, "Custom parts already spawned");
+          //return;
+        //}
+        //rep.gameObject.AddComponent<CustomPartsDirector>();
         foreach (var AnimPart in info.CustomParts) {
           int location = 1;
           Log.WL(1, AnimPart.prefab + " req components: " + AnimPart.RequiredComponents.Count);
@@ -1050,6 +1076,16 @@ namespace CustomUnits {
       }
       if (__instance.StatCollection.ContainsStatistic(UnitUnaffectionsActorStats.ArmsCountedAsLegsActorStat) == false) {
         __instance.StatCollection.AddStatistic<bool>(UnitUnaffectionsActorStats.ArmsCountedAsLegsActorStat, info.ArmsCountedAsLegs);
+      }
+      if (__instance.StatCollection.ContainsStatistic(UnitUnaffectionsActorStats.NoHeatActorStat) == false) {
+        __instance.StatCollection.AddStatistic<bool>(UnitUnaffectionsActorStats.NoHeatActorStat, (info.SquadInfo.Troopers > 1));
+      }
+      if (__instance.StatCollection.ContainsStatistic(UnitUnaffectionsActorStats.NoStabilityActorStat) == false) {
+        __instance.StatCollection.AddStatistic<bool>(UnitUnaffectionsActorStats.NoStabilityActorStat, (info.SquadInfo.Troopers > 1));
+      }
+      if (__instance.StatCollection.ContainsStatistic(UnitUnaffectionsActorStats.HasNoLegsActorStat) == false) {
+        Vehicle vehcile = __instance as Vehicle;
+        __instance.StatCollection.AddStatistic<bool>(UnitUnaffectionsActorStats.HasNoLegsActorStat, (info.SquadInfo.Troopers > 1) || (vehcile != null));
       }
       Log.LogWrite(1, "UnaffectedDesignMasks " + __instance.UnaffectedDesignMasks(), true);
       Log.LogWrite(1, "UnaffectedPathing " + __instance.UnaffectedPathing(), true);
@@ -1364,6 +1400,42 @@ namespace CustomUnits {
             __result = 0f;
           }
         }
+      }
+    }
+  }
+  [HarmonyPatch(typeof(Mech))]
+  [HarmonyPatch("AddInstability")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { typeof(float), typeof(StabilityChangeSource), typeof(string) })]
+  public static class Mech_AddInstability {
+    public static bool Prefix(Mech __instance, float amt, StabilityChangeSource source, string sourceGuid) {
+      if (__instance.isHasStability() == false) { return false; }
+      return true;
+    }
+  }
+  [HarmonyPatch(typeof(MechDef))]
+  [HarmonyPatch("RefreshChassis")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { })]
+  public static class MechDef_RefreshChassis {
+    public static void Postfix(MechDef __instance) {
+      try {
+        if (__instance.Chassis == null) { return; }
+        Log.TWL(0, "MechDef.RefreshChassis " + __instance.Description.Id);
+        UnitCustomInfo info = __instance.GetCustomInfo();
+        if (info == null) { Log.WL(1, "info is null"); return; }
+        string meleeDef = info.MeleeWeaponOverride.DefaultWeapon;
+        foreach(MechComponentRef cref in __instance.Inventory) {
+          if (info.MeleeWeaponOverride.Components.ContainsKey(cref.ComponentDefID)) {
+            meleeDef = info.MeleeWeaponOverride.Components[cref.ComponentDefID];
+            break;
+          }
+        }
+        if (string.IsNullOrEmpty(meleeDef)) { meleeDef = "Weapon_MeleeAttack"; }
+        Log.WL(1, "meleeDef " + meleeDef);
+        __instance.meleeWeaponRef = new MechComponentRef(meleeDef, "", ComponentType.Weapon, ChassisLocations.CenterTorso, -1, ComponentDamageLevel.Functional, false);
+      } catch (Exception e) {
+        Log.TWL(0, e.ToString(), true);
       }
     }
   }

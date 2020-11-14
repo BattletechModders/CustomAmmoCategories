@@ -53,6 +53,7 @@ namespace CustomUnits {
   public static class ActorTwistSequence_update {
     public static object TwistState_RangedTwisting = Enum.Parse(typeof(ActorTwistSequence).GetField("state", BindingFlags.Instance | BindingFlags.NonPublic).FieldType, "RangedTwisting");
     public static object TwistState_Finished = Enum.Parse(typeof(ActorTwistSequence).GetField("state", BindingFlags.Instance | BindingFlags.NonPublic).FieldType, "Finished");
+    public static object TwistState_MeleeFacing = Enum.Parse(typeof(ActorTwistSequence).GetField("state", BindingFlags.Instance | BindingFlags.NonPublic).FieldType, "MeleeFacing");
     private static FieldInfo f_state = typeof(ActorTwistSequence).GetField("state", BindingFlags.Instance | BindingFlags.NonPublic);
     public static object state(this ActorTwistSequence seq) { return f_state.GetValue(seq); }
     static void Prefix(ActorTwistSequence __instance, ref object __state) {

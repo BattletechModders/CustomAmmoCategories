@@ -298,6 +298,21 @@ namespace CustomAmmoCategoriesPatches {
         }
       }
     }
+    public static ArmorLocation HitToLegs(this ArmorLocation aloc) {
+      switch (aloc) {
+        case ArmorLocation.LeftArm: return ArmorLocation.LeftLeg;
+        case ArmorLocation.RightArm: return ArmorLocation.RightLeg;
+        case ArmorLocation.LeftTorso: return ArmorLocation.LeftLeg;
+        case ArmorLocation.RightTorso: return ArmorLocation.RightLeg;
+        case ArmorLocation.LeftLeg: return ArmorLocation.LeftLeg;
+        case ArmorLocation.RightLeg: return ArmorLocation.RightLeg;
+        case ArmorLocation.CenterTorso: return UnityEngine.Random.Range(0f,1f) > 0.5f?ArmorLocation.RightLeg:ArmorLocation.LeftLeg;
+        case ArmorLocation.LeftTorsoRear: return ArmorLocation.LeftLeg;
+        case ArmorLocation.RightTorsoRear: return ArmorLocation.RightLeg;
+        case ArmorLocation.CenterTorsoRear: return UnityEngine.Random.Range(0f, 1f) > 0.5f ? ArmorLocation.RightLeg : ArmorLocation.LeftLeg;
+      }
+      return aloc;
+    }
     private static void GetAOEHits(AttackDirector.AttackSequence instance, ref WeaponHitInfo hitInfo, int groupIdx, int weaponIdx, Weapon weapon, float toHitChance, float prevDodgedDamage) {
       CustomAmmoCategoriesLog.Log.LogWrite("GetAOEHits\n");
       if (hitInfo.numberOfShots == 0) { return; };
@@ -478,6 +493,31 @@ namespace CustomAmmoCategoriesPatches {
             hitInfo.secondaryHitLocations[hitIndex] = 0;
             hitInfo.secondaryTargetIds[hitIndex] = null;
           }*/
+        }
+      }
+      if (weapon.TargetLegsOnly()) {
+        Log.M.WL(2,"to hit legs only");
+        for (int hitIndex = 0; hitIndex < hitInfo.numberOfShots; ++hitIndex) {
+          bool isSecondary = false;
+          Mech mech = target as Mech;
+          int hloc = 0;
+          if (string.IsNullOrEmpty(hitInfo.secondaryTargetIds[hitIndex]) == false) {
+            ICombatant strg = target.Combat.FindCombatantByGUID(hitInfo.secondaryTargetIds[hitIndex]);
+            if (strg != null) { isSecondary = true; mech = strg as Mech; hloc = hitInfo.secondaryHitLocations[hitIndex]; }
+          } else {
+            hloc = hitInfo.hitLocations[hitIndex];
+          }
+          if ((hloc == 0) || (hloc == 65535)) { continue; }
+          if (mech == null) { continue; }
+          if (mech.HasNoLegs()) { continue; }
+          ArmorLocation aloc = (ArmorLocation)hloc;
+          if(isSecondary == false) {
+            hitInfo.hitLocations[hitIndex] = (int)aloc.HitToLegs();
+            Log.M.WL(3, "[" + aloc + "] => " +(ArmorLocation)hitInfo.hitLocations[hitIndex]);
+          } else {
+            hitInfo.secondaryHitLocations[hitIndex] = (int)aloc.HitToLegs();
+            Log.M.WL(3, "[" + aloc + "] => " + (ArmorLocation)hitInfo.secondaryHitLocations[hitIndex]);
+          }
         }
       }
       CustomAmmoCategoriesLog.Log.LogWrite(" result(" + hitInfo.numberOfShots + "):");

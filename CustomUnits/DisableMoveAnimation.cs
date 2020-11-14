@@ -13,7 +13,7 @@ namespace CustomUnits {
   public static class ActorMovementSequence_UpdateSplineAnim {
     public static void Postfix(ActorMovementSequence __instance, Vector3 ___Forward, float ___t) {
       if (__instance.owningActor.NoMoveAnimation() == false) { return; }
-      Log.TWL(0, "ActorMovementSequence.UpdateSpline "+__instance.OwningActor.DisplayName+" forward:"+___Forward.normalized+" "+___Forward.magnitude+" velocity:"+__instance.Velocity.normalized+" "+__instance.Velocity.magnitude);
+      //Log.TWL(0, "ActorMovementSequence.UpdateSpline "+__instance.OwningActor.DisplayName+" forward:"+___Forward.normalized+" "+___Forward.magnitude+" velocity:"+__instance.Velocity.normalized+" "+__instance.Velocity.magnitude);
       Vector3 newPosition = __instance.owningActor.GameRep.thisTransform.position + __instance.Velocity * __instance.owningActor.Combat.StackManager.GetProgressiveDeltaTime(___t, __instance.isSpedUp);
       __instance.owningActor.GameRep.thisTransform.localRotation.SetLookRotation(___Forward);
       __instance.owningActor.GameRep.thisTransform.position = newPosition;

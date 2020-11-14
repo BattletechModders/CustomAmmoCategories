@@ -687,6 +687,10 @@ namespace CustAmmoCategories {
         result.Add(ammo);
       }
       if (result.Count == 0) { result.Add(category.defaultAmmo()); }
+      Log.M.TWL(0, "getAvaibleAmmo "+weapon.defId+" category:"+category+" ammo count:"+result.Count);
+      foreach (var res in result) {
+        Log.M.WL(1,res.Id);
+      }
       return result.ToList();
     }
     public static List<ExtAmmunitionDef> getAllAvaibleAmmo(this Weapon weapon) {
@@ -1041,6 +1045,21 @@ namespace CustAmmoCategories {
     public static readonly string ArmsCountedAsLegsActorStat = "CUArmsCountedAsLegs";
     public static readonly string NoDeathOnLegsActorStat = "CUNoDeathOnLegs";
     public static readonly string AOEHeightActorStat = "CUAOEHeight";
+    public static readonly string NoHeatActorStat = "CUNoHeat";
+    public static readonly string NoStabilityActorStat = "CUNoStability";
+    public static readonly string HasNoLegsActorStat = "CUHasNoLegs";
+    public static bool NoHeat(this ICombatant unit) {
+      if (unit.StatCollection.ContainsStatistic(NoHeatActorStat) == false) { return false; };
+      return unit.StatCollection.GetStatistic(NoHeatActorStat).Value<bool>();
+    }
+    public static bool NoStability(this ICombatant unit) {
+      if (unit.StatCollection.ContainsStatistic(NoStabilityActorStat) == false) { return false; };
+      return unit.StatCollection.GetStatistic(NoStabilityActorStat).Value<bool>();
+    }
+    public static bool HasNoLegs(this ICombatant unit) {
+      if (unit.StatCollection.ContainsStatistic(HasNoLegsActorStat) == false) { return false; };
+      return unit.StatCollection.GetStatistic(HasNoLegsActorStat).Value<bool>();
+    }
     public static bool UnaffectedDesignMasks(this ICombatant unit) {
       if (unit.StatCollection.ContainsStatistic(DesignMasksActorStat) == false) { return false; };
       return unit.StatCollection.GetStatistic(DesignMasksActorStat).Value<bool>();
@@ -1230,6 +1249,7 @@ namespace CustAmmoCategories {
     public string ApplyHeatSinkActorStat { get; set; }
     public string OverrallShootsCountWeaponStat { get; set; }
     public bool AmmoGenericBoxUINameAsName { get; set; }
+    public bool NoSVGCacheClear { get; set; }
     public Settings() {
       directory = string.Empty;
       debugLog = true;
@@ -1345,6 +1365,7 @@ namespace CustAmmoCategories {
       ApplyHeatSinkActorStat = "CACOverrallHeatSinked";
       OverrallShootsCountWeaponStat = "CACOverallShoots";
       AmmoGenericBoxUINameAsName = true;
+      NoSVGCacheClear = true;
     }
   }
 }

@@ -1288,6 +1288,25 @@ namespace CustomUnits {
           prewarmRequests.Add(new PrewarmRequest(BattleTechResourceType.SVGAsset, icon));
           CustomSvgCache.RegisterSVG(icon);
         }
+        prewarmRequests.Add(new PrewarmRequest(BattleTechResourceType.SVGAsset, Core.Settings.VehicleFrontArmorIcon)); CustomSvgCache.RegisterSVG(Core.Settings.VehicleFrontArmorIcon);
+        prewarmRequests.Add(new PrewarmRequest(BattleTechResourceType.SVGAsset, Core.Settings.VehicleFrontArmorOutlineIcon)); CustomSvgCache.RegisterSVG(Core.Settings.VehicleFrontArmorOutlineIcon);
+        prewarmRequests.Add(new PrewarmRequest(BattleTechResourceType.SVGAsset, Core.Settings.VehicleFrontStructureIcon)); CustomSvgCache.RegisterSVG(Core.Settings.VehicleFrontStructureIcon);
+        prewarmRequests.Add(new PrewarmRequest(BattleTechResourceType.SVGAsset, Core.Settings.VehicleRearArmorIcon)); CustomSvgCache.RegisterSVG(Core.Settings.VehicleRearArmorIcon);
+        prewarmRequests.Add(new PrewarmRequest(BattleTechResourceType.SVGAsset, Core.Settings.VehicleRearArmorOutlineIcon)); CustomSvgCache.RegisterSVG(Core.Settings.VehicleRearArmorOutlineIcon);
+        prewarmRequests.Add(new PrewarmRequest(BattleTechResourceType.SVGAsset, Core.Settings.VehicleRearStructureIcon)); CustomSvgCache.RegisterSVG(Core.Settings.VehicleRearStructureIcon);
+        prewarmRequests.Add(new PrewarmRequest(BattleTechResourceType.SVGAsset, Core.Settings.VehicleLeftArmorIcon)); CustomSvgCache.RegisterSVG(Core.Settings.VehicleLeftArmorIcon);
+        prewarmRequests.Add(new PrewarmRequest(BattleTechResourceType.SVGAsset, Core.Settings.VehicleLeftArmorOutlineIcon)); CustomSvgCache.RegisterSVG(Core.Settings.VehicleLeftArmorOutlineIcon);
+        prewarmRequests.Add(new PrewarmRequest(BattleTechResourceType.SVGAsset, Core.Settings.VehicleLeftStructureIcon)); CustomSvgCache.RegisterSVG(Core.Settings.VehicleLeftStructureIcon);
+        prewarmRequests.Add(new PrewarmRequest(BattleTechResourceType.SVGAsset, Core.Settings.VehicleRightArmorIcon)); CustomSvgCache.RegisterSVG(Core.Settings.VehicleRightArmorIcon);
+        prewarmRequests.Add(new PrewarmRequest(BattleTechResourceType.SVGAsset, Core.Settings.VehicleRightArmorOutlineIcon)); CustomSvgCache.RegisterSVG(Core.Settings.VehicleRightArmorOutlineIcon);
+        prewarmRequests.Add(new PrewarmRequest(BattleTechResourceType.SVGAsset, Core.Settings.VehicleRightStructureIcon)); CustomSvgCache.RegisterSVG(Core.Settings.VehicleRightStructureIcon);
+        prewarmRequests.Add(new PrewarmRequest(BattleTechResourceType.SVGAsset, Core.Settings.VehicleTurretArmorIcon)); CustomSvgCache.RegisterSVG(Core.Settings.VehicleTurretArmorIcon);
+        prewarmRequests.Add(new PrewarmRequest(BattleTechResourceType.SVGAsset, Core.Settings.VehicleTurretArmorOutlineIcon)); CustomSvgCache.RegisterSVG(Core.Settings.VehicleTurretArmorOutlineIcon);
+        prewarmRequests.Add(new PrewarmRequest(BattleTechResourceType.SVGAsset, Core.Settings.VehicleTurretStructureIcon)); CustomSvgCache.RegisterSVG(Core.Settings.VehicleTurretStructureIcon);
+
+        prewarmRequests.Add(new PrewarmRequest(BattleTechResourceType.SVGAsset, Core.Settings.SquadStructureIcon)); CustomSvgCache.RegisterSVG(Core.Settings.SquadStructureIcon);
+        prewarmRequests.Add(new PrewarmRequest(BattleTechResourceType.SVGAsset, Core.Settings.SquadArmorOutlineIcon)); CustomSvgCache.RegisterSVG(Core.Settings.SquadArmorOutlineIcon);
+        prewarmRequests.Add(new PrewarmRequest(BattleTechResourceType.SVGAsset, Core.Settings.SquadArmorIcon)); CustomSvgCache.RegisterSVG(Core.Settings.MechBaySwitchIconUp);
         prewarmRequests.Add(new PrewarmRequest(BattleTechResourceType.SVGAsset, Core.Settings.MechBaySwitchIconMech)); CustomSvgCache.RegisterSVG(Core.Settings.MechBaySwitchIconMech);
         prewarmRequests.Add(new PrewarmRequest(BattleTechResourceType.SVGAsset, Core.Settings.MechBaySwitchIconVehicle)); CustomSvgCache.RegisterSVG(Core.Settings.MechBaySwitchIconVehicle);
         prewarmRequests.Add(new PrewarmRequest(BattleTechResourceType.SVGAsset, Core.Settings.MechBaySwitchIconUp)); CustomSvgCache.RegisterSVG(Core.Settings.MechBaySwitchIconUp);

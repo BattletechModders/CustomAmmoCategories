@@ -213,6 +213,7 @@ namespace CustAmmoCategories {
     public float HeatDamagePerShot { get; set; }
     public float CriticalChanceMultiplier { get; set; }
     public int ShotsWhenFired { get; set; }
+    public float ShotsWhenFiredMod { get; set; }
     public int AIBattleValue { get; set; }
     public int ProjectilesPerShot { get; private set; }
     public EffectData[] statusEffects { get; set; }
@@ -326,6 +327,8 @@ namespace CustAmmoCategories {
     public float DamageFalloffStartDistance { get; set; }
     public float DamageFalloffEndDistance { get; set; }
     public AutoRefilType AutoRefill { get; set; }
+    public HashSet<string> ammoOnlyBoxes { get; set; }
+    public HashSet<string> AvailableOnPlanet { get; set; }
     public ExtAmmunitionDef() {
       Id = "NotSet";
       Name = string.Empty;
@@ -336,6 +339,7 @@ namespace CustAmmoCategories {
       HeatDamagePerShot = 0;
       ProjectilesPerShot = 0;
       ShotsWhenFired = 0;
+      ShotsWhenFiredMod = 1f;
       CriticalChanceMultiplier = 0;
       DamageMultiplier = 1.0f;
       HeatMultiplier = 1.0f;
@@ -446,6 +450,8 @@ namespace CustAmmoCategories {
       DamageFalloffStartDistance = 0f;
       DamageFalloffEndDistance = 0f;
       AutoRefill = AutoRefilType.Automatic;
+      ammoOnlyBoxes = new HashSet<string>();
+      AvailableOnPlanet = new HashSet<string>();
     }
   }
 }
@@ -652,6 +658,20 @@ namespace CustomAmmoCategoriesPatches {
         //  extAmmoDef.ClearMineFieldRadius = (int)defTemp["ClearMineFieldRadius"];
         //  defTemp.Remove("ClearMineFieldRadius");
         //}
+        if(defTemp["ammoOnlyBoxes"] != null) {
+          extAmmoDef.ammoOnlyBoxes = new HashSet<string>();
+          JArray boxes = defTemp["ammoOnlyBoxes"] as JArray;
+          if(boxes != null) {
+            foreach(string box in boxes) { extAmmoDef.ammoOnlyBoxes.Add(box); }
+          }
+        }
+        if (defTemp["AvailableOnPlanet"] != null) {
+          extAmmoDef.AvailableOnPlanet = new HashSet<string>();
+          JArray tags = defTemp["AvailableOnPlanet"] as JArray;
+          if (tags != null) {
+            foreach (string tag in tags) { extAmmoDef.AvailableOnPlanet.Add(tag); }
+          }
+        }
         if (defTemp["MineFieldHitChance"] != null) {
           extAmmoDef.MineField.Chance = (float)defTemp["MineFieldHitChance"];
           defTemp.Remove("MineFieldHitChance");
@@ -1142,6 +1162,11 @@ namespace CustomAmmoCategoriesPatches {
         if (__instance.AmmoCategoryValue != null) {
           if (ammunitionsDefs.ContainsKey(__instance.AmmoCategoryValue.Name) == false) { ammunitionsDefs.Add(__instance.AmmoCategoryValue.Name, new HashSet<string>()); }
           if (ammunitionsDefs[__instance.AmmoCategoryValue.Name].Contains(__instance.Description.Id) == false) { ammunitionsDefs[__instance.AmmoCategoryValue.Name].Add(__instance.Description.Id); }
+        }
+        if(extAmmoDef.AutoRefill != AutoRefilType.Automatic) {
+          extAmmoDef.ammoOnlyBoxes.Add(__instance.getGenericBox());
+        } else {
+          extAmmoDef.ammoOnlyBoxes.Clear();
         }
       } catch (Exception e) {
         Log.M.TWL(0, e.ToString(), true);

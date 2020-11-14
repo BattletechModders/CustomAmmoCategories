@@ -37,13 +37,13 @@ namespace CustomAmmoCategoriesPatches {
       m_CycleWeapon.Invoke(slot, new object[] { });
     }
   }
-  public class DebugMouseClickTester: MonoBehaviour {
+  public class DebugMouseClickTester : MonoBehaviour {
     void Update() {
       if (Input.GetMouseButtonDown(0)) {
         Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
         RaycastHit hit;
         if (Physics.Raycast(ray, out hit, 1000)) {
-          Log.O.TWL(0,"MouseClick: "+ hit.transform.gameObject.name);
+          Log.O.TWL(0, "MouseClick: " + hit.transform.gameObject.name);
         }
       }
     }
@@ -62,7 +62,7 @@ namespace CustomAmmoCategoriesPatches {
       ui_inited = false;
     }
     public void Refresh() {
-      foreach(CombatHUDWeaponSlotEx slotEx in slotsEx) {
+      foreach (CombatHUDWeaponSlotEx slotEx in slotsEx) {
         slotEx.Refresh();
       }
       header.ResetUI();
@@ -96,7 +96,7 @@ namespace CustomAmmoCategoriesPatches {
       weaponPanel.transform.position = pos;
       return true;
     }
-    public void Init(CombatHUD HUD,CombatHUDWeaponPanel weaponPanel) {
+    public void Init(CombatHUD HUD, CombatHUDWeaponPanel weaponPanel) {
       this.HUD = HUD;
       this.weaponPanel = weaponPanel;
       List<CombatHUDWeaponSlot> WeaponSlots = Traverse.Create(weaponPanel).Field<List<CombatHUDWeaponSlot>>("WeaponSlots").Value;
@@ -158,7 +158,7 @@ namespace CustomAmmoCategoriesPatches {
       downButton = null;
     }
     public void RefreshText() {
-      if(ammoHover != null) ammoHover.RefreshText();
+      if (ammoHover != null) ammoHover.RefreshText();
       if (modeHover != null) modeHover.RefreshText();
     }
     public void RefreshColor(bool parentHovered) {
@@ -169,147 +169,119 @@ namespace CustomAmmoCategoriesPatches {
       if (modeHover != null) modeHover.Refresh();
       if (ammoHover != null) ammoHover.Refresh();
     }
-    public void Init(CombatHUDWeaponPanelEx panel,CombatHUDWeaponSlot slot) {
+    public void Init(CombatHUDWeaponPanelEx panel, CombatHUDWeaponSlot slot) {
       this.panel = panel;
       this.slot = slot;
       HorizontalLayoutGroup HL = slot.gameObject.GetComponent<HorizontalLayoutGroup>();
       HL.spacing = 2.0f;
-      if (slot.weaponSlotType == CombatHUDWeaponSlot.WeaponSlotType.Normal) {
-        GameObject btnupgo = slot.gameObject.FindRecursive("weapon_button_up");
-        if(btnupgo == null) {
-          btnupgo = GameObject.Instantiate(slot.ToggleButton.childImage.gameObject);
-          btnupgo.name = "weapon_button_up";
-          btnupgo.transform.SetParent(slot.gameObject.transform);
-          btnupgo.transform.localScale = Vector3.one;
-          btnupgo.transform.SetSiblingIndex(0);
-        }
-        upButton = btnupgo.GetComponent<WeaponSwitchButton>();
-        if (upButton == null) { upButton = btnupgo.AddComponent<WeaponSwitchButton>(); }
-        upButton.Init(panel.HUD, panel.weaponPanel, slot, "weapon_up", true);
-
-        GameObject btndowngo = slot.gameObject.FindRecursive("weapon_button_down");
-        if (btndowngo == null) {
-          btndowngo = GameObject.Instantiate(slot.ToggleButton.childImage.gameObject);
-          btndowngo.gameObject.name = "weapon_button_down";
-          btndowngo.transform.SetParent(slot.gameObject.transform);
-          btndowngo.transform.localScale = Vector3.one;
-          btndowngo.transform.SetSiblingIndex(1);
-        }
-        downButton = btndowngo.gameObject.GetComponent<WeaponSwitchButton>();
-        if (downButton == null) { downButton = btndowngo.gameObject.AddComponent<WeaponSwitchButton>(); }
-        downButton.Init(panel.HUD, panel.weaponPanel, slot, "weapon_down", false);
-        //RectTransform btnupTr = btnupgo.gameObject.GetComponent<RectTransform>();
-        //size = btnupTr.sizeDelta;
-        //size.x = upDownButtonsWidth;
-        //btnupTr.sizeDelta = size;
-        //WeaponSwitchButton btn = btnupgo.GetComponent<WeaponSwitchButton>();
-        //if (btn == null) { btn = btnupgo.AddComponent<WeaponSwitchButton>(); }
-        //GameObject btndowngo = GameObject.Instantiate(slots[0].ToggleButton.childImage.gameObject);
-        //btndowngo.name = "weapon_button_up";
-        //btndowngo.transform.SetParent(slot.gameObject.transform);
-        //btndowngo.transform.localScale = Vector3.one;
-        //btndowngo.transform.SetSiblingIndex(1);
-        //RectTransform btndownTr = btndowngo.gameObject.GetComponent<RectTransform>();
-        //size = btndownTr.sizeDelta;
-        //size.x = upDownButtonsWidth;
-        //btndownTr.sizeDelta = size;
-        //btn = btndowngo.GetComponent<WeaponSwitchButton>();
-        //if (btn == null) { btn = btndowngo.AddComponent<WeaponSwitchButton>(); }
-        //btn.Init(HUD, __instance, slot, "weapon_down", false);
-        GameObject modText = slot.gameObject.FindRecursive("mode_text");
-        if (modText == null) {
-          modText = GameObject.Instantiate(slot.DamageText.gameObject);
-          modText.name = "mode_text";
-          modText.transform.SetParent(slot.transform);
-          modText.transform.localScale = Vector3.one;
-          modText.transform.SetSiblingIndex(4);
-          WeaponDamageHover unusedDmgCover = modText.GetComponent<WeaponDamageHover>();
-          if (unusedDmgCover != null) { GameObject.Destroy(unusedDmgCover); unusedDmgCover = null; }
-        }
-        GameObject modTextBack = slot.gameObject.FindRecursive("mode_text_background");
-        if (modTextBack == null) {
-          modTextBack = GameObject.Instantiate(slot.ToggleButton.childImage.gameObject);
-          modTextBack.name = "mode_text_background";
-          modTextBack.transform.SetParent(modText.transform);
-          modTextBack.transform.localScale = Vector3.one;
-          modTextBack.transform.localPosition = Vector3.zero;
-        }
-        this.modeHover = modTextBack.GetComponent<WeaponModeHover>();
-        if (this.modeHover == null) { this.modeHover = modTextBack.AddComponent<WeaponModeHover>(); }
-        this.modeHover.Init(panel.HUD, panel.weaponPanel, slot, this);
-        slot.RegisterHover(modeHover);
-
-        GameObject ammoText = slot.gameObject.FindRecursive("ammo_name_text");
-        if (ammoText == null) {
-          ammoText = GameObject.Instantiate(slot.DamageText.gameObject);
-          ammoText.name = "ammo_name_text";
-          ammoText.transform.SetParent(slot.transform);
-          ammoText.transform.localScale = Vector3.one;
-          ammoText.transform.SetSiblingIndex(4);
-          WeaponDamageHover unusedDmgCover = modText.GetComponent<WeaponDamageHover>();
-          if (unusedDmgCover != null) { GameObject.Destroy(unusedDmgCover); unusedDmgCover = null; }
-        }
-        GameObject ammoTextBack = slot.gameObject.FindRecursive("ammo_name_text_background");
-        if (ammoTextBack == null) {
-          ammoTextBack = GameObject.Instantiate(slot.ToggleButton.childImage.gameObject);
-          ammoTextBack.name = "ammo_name_text_background";
-          ammoTextBack.transform.SetParent(ammoText.transform);
-          ammoTextBack.transform.localScale = Vector3.one;
-          ammoTextBack.transform.localPosition = Vector3.zero;
-        }
-        ammoHover = ammoTextBack.GetComponent<WeaponAmmoHover>();
-        if (ammoHover == null) { ammoHover = ammoTextBack.AddComponent<WeaponAmmoHover>(); }
-        ammoHover.Init(panel.HUD, panel.weaponPanel, slot, this);
-        slot.RegisterHover(ammoHover);
-
-        //RectTransform modTextTr = modText.GetComponent<RectTransform>();
-        //size = modTextTr.sizeDelta;
-        //size.x = (widthDelta * 0.5f) - 10f;
-        //modTextTr.sizeDelta = size;
-        //modText.GetComponent<LocalizableText>().SetText("MODE");
-        //GameObject modTextBack = GameObject.Instantiate(slot.ToggleButton.childImage.gameObject);
-        //modTextBack.name = "modTextBack";
-        //RectTransform modTextBackTR = modTextBack.GetComponent<RectTransform>();
-        //modTextBackTR.SetParent(modTextTr);
-        //modTextBackTR.localScale = Vector3.one;
-        //modTextBackTR.localPosition = Vector3.zero;
-        //modTextBackTR.sizeDelta = size;
-        //modTextBack.GetComponent<SVGImage>().vectorGraphics = CustomSvgCache.get("weapon_btn", HUD.Combat.DataManager);
-        //WeaponModeHover modeHover = modTextBack.AddComponent<WeaponModeHover>();
-        //modeHover.Init(HUD, __instance, slot);
-        ////modeHovers.Add(slot, modeHover);
-        //slot.RegisterHover(modeHover);
-
-        //GameObject ammoText = GameObject.Instantiate(slot.DamageText.gameObject);
-        //ammoCounterHover = ammoText.GetComponent<WeaponDamageHover>();
-        //if (ammoCounterHover != null) { GameObject.Destroy(ammoCounterHover); ammoCounterHover = null; }
-        //ammoText.name = "ammoName_text";
-        //ammoText.transform.SetParent(slot.transform);
-        //ammoText.transform.localScale = Vector3.one;
-        //RectTransform ammoTextTr = ammoText.GetComponent<RectTransform>();
-        //size = ammoTextTr.sizeDelta;
-        //size.x = (widthDelta * 0.5f) - 10f;
-        //ammoTextTr.sizeDelta = size;
-        //ammoTextTr.SetSiblingIndex(5);
-        //ammoText.GetComponent<LocalizableText>().SetText("AMMO");
-        //GameObject ammoTextBack = GameObject.Instantiate(slot.ToggleButton.childImage.gameObject);
-        //ammoTextBack.name = "ammoName_text";
-        //RectTransform ammoTextBackTR = ammoTextBack.GetComponent<RectTransform>();
-        //ammoTextBackTR.SetParent(ammoTextTr);
-        //ammoTextBackTR.localScale = Vector3.one;
-        //ammoTextBackTR.localPosition = Vector3.zero;
-        //ammoTextBackTR.sizeDelta = size;
-        //ammoTextBack.GetComponent<SVGImage>().vectorGraphics = CustomSvgCache.get("weapon_btn", HUD.Combat.DataManager);
-        //WeaponAmmoHover ammoHover = ammoTextBack.AddComponent<WeaponAmmoHover>();
-        //ammoHover.Init(HUD, __instance, slot);
-        //slot.RegisterHover(ammoHover);
-        //ammoHovers.Add(slot, ammoHover);
-      } else {
-        LayoutElement nameLayout = slot.WeaponText.gameObject.GetComponent<LayoutElement>();
-        LayoutElement damageLayout = slot.DamageText.gameObject.GetComponent<LayoutElement>();
-        LayoutElement buttonLayout = slot.ToggleButton.childImage.gameObject.GetComponent<LayoutElement>();
-        if ((nameLayout != null)&&(damageLayout != null)&&(buttonLayout != null)) { nameLayout.preferredWidth += (damageLayout.preferredWidth * 2.0f + buttonLayout.preferredWidth*2.0f + HL.spacing*4.0f); };
+      //if (slot.weaponSlotType == CombatHUDWeaponSlot.WeaponSlotType.Normal) {
+      GameObject btnupgo = slot.gameObject.FindRecursive("weapon_button_up");
+      if (btnupgo == null) {
+        btnupgo = GameObject.Instantiate(slot.ToggleButton.childImage.gameObject);
+        btnupgo.name = "weapon_button_up";
+        btnupgo.transform.SetParent(slot.gameObject.transform);
+        btnupgo.transform.localScale = Vector3.one;
+        btnupgo.transform.SetSiblingIndex(0);
+        btnupgo.SetActive(true);
       }
+      if (slot.weaponSlotType != CombatHUDWeaponSlot.WeaponSlotType.Normal) { btnupgo.SetActive(false); }
+
+      upButton = btnupgo.GetComponent<WeaponSwitchButton>();
+      if (upButton == null) { upButton = btnupgo.AddComponent<WeaponSwitchButton>(); }
+      upButton.Init(panel.HUD, panel.weaponPanel, slot, "weapon_up", true);
+
+      GameObject btndowngo = slot.gameObject.FindRecursive("weapon_button_down");
+      if (btndowngo == null) {
+        btndowngo = GameObject.Instantiate(slot.ToggleButton.childImage.gameObject);
+        btndowngo.gameObject.name = "weapon_button_down";
+        btndowngo.transform.SetParent(slot.gameObject.transform);
+        btndowngo.transform.localScale = Vector3.one;
+        btndowngo.transform.SetSiblingIndex(1);
+        btndowngo.SetActive(true);
+      }
+      if (slot.weaponSlotType != CombatHUDWeaponSlot.WeaponSlotType.Normal) { btndowngo.SetActive(false); }
+
+      downButton = btndowngo.gameObject.GetComponent<WeaponSwitchButton>();
+      if (downButton == null) { downButton = btndowngo.gameObject.AddComponent<WeaponSwitchButton>(); }
+      downButton.Init(panel.HUD, panel.weaponPanel, slot, "weapon_down", false);
+      GameObject modText = slot.gameObject.FindRecursive("mode_text");
+      if (modText == null) {
+        modText = GameObject.Instantiate(slot.DamageText.gameObject);
+        modText.name = "mode_text";
+        modText.transform.SetParent(slot.transform);
+        modText.transform.localScale = Vector3.one;
+        modText.transform.SetSiblingIndex(slot.WeaponText.gameObject.transform.GetSiblingIndex() + 1);
+        WeaponDamageHover unusedDmgCover = modText.GetComponent<WeaponDamageHover>();
+        if (unusedDmgCover != null) { GameObject.Destroy(unusedDmgCover); unusedDmgCover = null; }
+      }
+      GameObject modTextBack = slot.gameObject.FindRecursive("mode_text_background");
+      if (modTextBack == null) {
+        modTextBack = GameObject.Instantiate(slot.ToggleButton.childImage.gameObject);
+        modTextBack.name = "mode_text_background";
+        modTextBack.transform.SetParent(modText.transform);
+        modTextBack.transform.localScale = Vector3.one;
+        modTextBack.transform.localPosition = Vector3.zero;
+        modTextBack.SetActive(true);
+      }
+      this.modeHover = modTextBack.GetComponent<WeaponModeHover>();
+      if (this.modeHover == null) { this.modeHover = modTextBack.AddComponent<WeaponModeHover>(); }
+      this.modeHover.Init(panel.HUD, panel.weaponPanel, slot, this);
+      slot.RegisterHover(modeHover);
+
+      GameObject ammoText = slot.gameObject.FindRecursive("ammo_name_text");
+      if (ammoText == null) {
+        ammoText = GameObject.Instantiate(slot.DamageText.gameObject);
+        ammoText.name = "ammo_name_text";
+        ammoText.transform.SetParent(slot.transform);
+        ammoText.transform.localScale = Vector3.one;
+        ammoText.transform.SetSiblingIndex(slot.AmmoText.gameObject.transform.GetSiblingIndex() - 1);
+        WeaponDamageHover unusedDmgCover = modText.GetComponent<WeaponDamageHover>();
+        if (unusedDmgCover != null) { GameObject.Destroy(unusedDmgCover); unusedDmgCover = null; }
+      }
+      GameObject ammoTextBack = slot.gameObject.FindRecursive("ammo_name_text_background");
+      if (ammoTextBack == null) {
+        ammoTextBack = GameObject.Instantiate(slot.ToggleButton.childImage.gameObject);
+        ammoTextBack.name = "ammo_name_text_background";
+        ammoTextBack.transform.SetParent(ammoText.transform);
+        ammoTextBack.transform.localScale = Vector3.one;
+        ammoTextBack.transform.localPosition = Vector3.zero;
+        ammoTextBack.SetActive(true);
+      }
+      ammoHover = ammoTextBack.GetComponent<WeaponAmmoHover>();
+      if (ammoHover == null) { ammoHover = ammoTextBack.AddComponent<WeaponAmmoHover>(); }
+      ammoHover.Init(panel.HUD, panel.weaponPanel, slot, this);
+      slot.RegisterHover(ammoHover);
+      if (slot.weaponSlotType != CombatHUDWeaponSlot.WeaponSlotType.Normal) { ammoText.SetActive(false); }
+      //} else {
+      //  LayoutElement nameLayout = slot.WeaponText.gameObject.GetComponent<LayoutElement>();
+      //  LayoutElement damageLayout = slot.DamageText.gameObject.GetComponent<LayoutElement>();
+      //  LayoutElement buttonLayout = slot.ToggleButton.childImage.gameObject.GetComponent<LayoutElement>();
+      //  GameObject modText = slot.gameObject.FindRecursive("mode_text");
+      //  if (modText == null) {
+      //    modText = GameObject.Instantiate(slot.DamageText.gameObject);
+      //    modText.name = "mode_text";
+      //    modText.transform.SetParent(slot.transform);
+      //    modText.transform.localScale = Vector3.one;
+      //    modText.transform.SetSiblingIndex(4);
+      //    WeaponDamageHover unusedDmgCover = modText.GetComponent<WeaponDamageHover>();
+      //    if (unusedDmgCover != null) { GameObject.Destroy(unusedDmgCover); unusedDmgCover = null; }
+      //  }
+      //  GameObject modTextBack = slot.gameObject.FindRecursive("mode_text_background");
+      //  if (modTextBack == null) {
+      //    modTextBack = GameObject.Instantiate(slot.ToggleButton.childImage.gameObject);
+      //    modTextBack.name = "mode_text_background";
+      //    modTextBack.transform.SetParent(modText.transform);
+      //    modTextBack.transform.localScale = Vector3.one;
+      //    modTextBack.transform.localPosition = Vector3.zero;
+      //  }
+      //  this.modeHover = modTextBack.GetComponent<WeaponModeHover>();
+      //  if (this.modeHover == null) { this.modeHover = modTextBack.AddComponent<WeaponModeHover>(); }
+      //  this.modeHover.Init(panel.HUD, panel.weaponPanel, slot, this);
+      //  slot.RegisterHover(modeHover);
+      //  if ((nameLayout != null)&&(damageLayout != null)&&(buttonLayout != null)) {
+      //    nameLayout.preferredWidth += (buttonLayout.preferredWidth*2.0f + HL.spacing*3.0f);
+      //  };
+      //}
       damageHover = slot.DamageText.gameObject.GetComponent<WeaponDamageHover>();
       if (damageHover == null) { damageHover = slot.DamageText.gameObject.AddComponent<WeaponDamageHover>(); }
       damageHover.Init(panel.HUD, panel.weaponPanel, slot);
@@ -340,7 +312,7 @@ namespace CustomAmmoCategoriesPatches {
       float widthMod = destWidth / width;
       size.x = size.x * (widthMod);
       tr.sizeDelta = size;
-      Log.M.TWL(0, "CombatHUDWeaponSlotEx.UIInit " + this.transform.parent.name + " width:" + width + " desWidth:" + destWidth + " new width:"+ tr.worldWidth());
+      Log.M.TWL(0, "CombatHUDWeaponSlotEx.UIInit " + this.transform.parent.name + " width:" + width + " desWidth:" + destWidth + " new width:" + tr.worldWidth());
       if (modeHover != null) {
         modeHover.gameObject.GetComponent<SVGImage>().vectorGraphics = CustomSvgCache.get("weapon_btn", panel.HUD.Combat.DataManager);
         this.modeHover.transform.localPosition = Vector3.zero;
@@ -358,20 +330,39 @@ namespace CustomAmmoCategoriesPatches {
         this.ammoHover.gameObject.GetComponent<RectTransform>().sizeDelta = size;
       }
       if (slot.weaponSlotType != CombatHUDWeaponSlot.WeaponSlotType.Normal) {
+        size = panel.slotsEx[0].slot.WeaponText.gameObject.GetComponent<RectTransform>().sizeDelta;
+        slot.WeaponText.gameObject.GetComponent<RectTransform>().sizeDelta = size;
+        size = panel.slotsEx[0].ammoHover.gameObject.GetComponent<RectTransform>().sizeDelta;
+        this.ammoHover.gameObject.GetComponent<RectTransform>().sizeDelta = size;
+        size = panel.slotsEx[0].modeHover.gameObject.GetComponent<RectTransform>().sizeDelta;
+        this.modeHover.gameObject.GetComponent<RectTransform>().sizeDelta = size;
         HorizontalLayoutGroup HL = slot.gameObject.GetComponent<HorizontalLayoutGroup>();
         size = slot.WeaponText.gameObject.GetComponent<RectTransform>().sizeDelta;
         size.x = panel.slotsEx[0].upButton.gameObject.GetComponent<RectTransform>().sizeDelta.x;
         size.x += panel.slotsEx[0].downButton.gameObject.GetComponent<RectTransform>().sizeDelta.x;
         size.x += panel.slotsEx[0].slot.WeaponText.gameObject.GetComponent<RectTransform>().sizeDelta.x;
         size.x += panel.slotsEx[0].modeHover.modeText.gameObject.GetComponent<RectTransform>().sizeDelta.x;
-        size.x += panel.slotsEx[0].ammoHover.ammoText.gameObject.GetComponent<RectTransform>().sizeDelta.x;
-        size.x += (HL.spacing * 4.0f);
+        size.x += (HL.spacing * 3.0f);
         slot.WeaponText.gameObject.GetComponent<RectTransform>().sizeDelta = size;
         LayoutElement layoutElement = slot.WeaponText.gameObject.GetComponent<LayoutElement>();
         if (layoutElement.preferredWidth * 0.9f < size.x) { ui_inited = true; }
       } else {
         ui_inited = true;
       }
+      //  HorizontalLayoutGroup HL = slot.gameObject.GetComponent<HorizontalLayoutGroup>();
+      //  size = slot.WeaponText.gameObject.GetComponent<RectTransform>().sizeDelta;
+      //  size.x = panel.slotsEx[0].upButton.gameObject.GetComponent<RectTransform>().sizeDelta.x;
+      //  size.x += panel.slotsEx[0].downButton.gameObject.GetComponent<RectTransform>().sizeDelta.x;
+      //  size.x += panel.slotsEx[0].slot.WeaponText.gameObject.GetComponent<RectTransform>().sizeDelta.x;
+      //  size.x += panel.slotsEx[0].modeHover.modeText.gameObject.GetComponent<RectTransform>().sizeDelta.x;
+      //  size.x += panel.slotsEx[0].ammoHover.ammoText.gameObject.GetComponent<RectTransform>().sizeDelta.x;
+      //  size.x += (HL.spacing * 4.0f);
+      //  slot.WeaponText.gameObject.GetComponent<RectTransform>().sizeDelta = size;
+      //  LayoutElement layoutElement = slot.WeaponText.gameObject.GetComponent<LayoutElement>();
+      //  if (layoutElement.preferredWidth * 0.9f < size.x) { ui_inited = true; }
+      //} else {
+      //  ui_inited = true;
+      //}
     }
     public void Update() {
       if (ui_inited) { return; }
@@ -410,6 +401,8 @@ namespace CustomAmmoCategoriesPatches {
         }
         description.Append(descr.ToString());
       }
+      this.parent.DisplayedWeapon.FlatJammingChance(out string jammDescr);
+      description.Append("\n"+ jammDescr);
       HUD.SidePanel.ForceShowPersistant(title, description, null, false);
     }
     public override void OnPointerEnter(PointerEventData data) {
@@ -488,7 +481,7 @@ namespace CustomAmmoCategoriesPatches {
         }
       } else {
         modeText.SetText("--");
-      }      
+      }
     }
     public void RefreshColor(bool parentHovered) {
       this.parentHovered = parentHovered;
@@ -513,7 +506,7 @@ namespace CustomAmmoCategoriesPatches {
       size.y = slotRt.sizeDelta.y;
       selfRt.sizeDelta = size;
       this.transform.localPosition = Vector3.zero;
-      Log.M.TWL(0, "WeaponModeHover.initUI "+size.x+"x"+size.y);
+      Log.M.TWL(0, "WeaponModeHover.initUI " + size.x + "x" + size.y);
       //RectTransform selfRt = this.gameObject.GetComponent<RectTransform>();
       //RectTransform parentRt = this.gameObject.transform.parent.gameObject.GetComponent<RectTransform>();
       //RectTransform imgRt = this.background.gameObject.GetComponent<RectTransform>();
@@ -523,7 +516,7 @@ namespace CustomAmmoCategoriesPatches {
       //imgRt.sizeDelta = size;
       //imgRt.localPosition = Vector3.zero;
       //background.color = new Color32(0xff, 0xff, 0xff,0xff);
-      if(layoutElement.preferredWidth*0.8f < size.x) ui_inited = true;
+      if (layoutElement.preferredWidth * 0.8f < size.x) ui_inited = true;
     }
     public void Init(CombatHUD HUD, CombatHUDWeaponPanel panel, CombatHUDWeaponSlot slot, CombatHUDWeaponSlotEx slotEx) {
       this.HUD = HUD;
@@ -541,13 +534,14 @@ namespace CustomAmmoCategoriesPatches {
       Text description = new Text("__/CAC.MODE_SIZE_HEADER/__");
       List<WeaponMode> modes = this.parent.DisplayedWeapon.AvaibleModes();
       WeaponMode mode = this.parent.DisplayedWeapon.mode();
-      foreach(WeaponMode m in modes) {
+      description.AppendLine("\n" + mode.Description);
+      foreach (WeaponMode m in modes) {
         if (m == mode) {
           description.Append("<size=150%>");
         } else {
           description.Append("<size=100%>");
         }
-        description.Append(m.UIName);
+        description.Append(m.Name);
         description.AppendLine("</size>");
       }
       HUD.SidePanel.ForceShowPersistant(title, description, null, false);
@@ -668,12 +662,12 @@ namespace CustomAmmoCategoriesPatches {
         ExtAmmunitionDef ammo = this.parent.DisplayedWeapon.ammo();
         List<ExtAmmunitionDef> AvaibleAmmo = CustomAmmoCategories.getAvaibleAmmo(this.parent.DisplayedWeapon, weaponAmmoCategory);
         foreach (ExtAmmunitionDef ammoDef in AvaibleAmmo) {
-          if(ammoDef.Id == ammo.Id) {
+          if (ammoDef.Id == ammo.Id) {
             description.Append("<size=150%>");
           } else {
             description.Append("<size=100%>");
           }
-          description.Append(CustomAmmoCategories.Settings.AmmoNameInSidePanel?ammoDef.Name:ammoDef.UIName);
+          description.Append(CustomAmmoCategories.Settings.AmmoNameInSidePanel ? ammoDef.Name : ammoDef.UIName);
           description.AppendLine("</size>");
         }
       }
@@ -724,7 +718,7 @@ namespace CustomAmmoCategoriesPatches {
       RefreshText();
     }
   }
-  public class WeaponDamageHover: EventTrigger {
+  public class WeaponDamageHover : EventTrigger {
     public CombatHUDWeaponSlot parent;
     public CombatHUDWeaponPanel weaponPanel;
     public CombatHUD HUD;
@@ -757,7 +751,7 @@ namespace CustomAmmoCategoriesPatches {
     public void ShowSidePanel() {
       Text title = new Text(this.parent.DisplayedWeapon.UIName);
       Text description = new Text("__/CAC.DAMAGE_SIZE_HEADER/__");
-      if(HUD.SelectedTarget != null) {
+      if (HUD.SelectedTarget != null) {
         Vector3 position = (parent.DisplayedWeapon.parent.HasMovedThisRound ? null : HUD.SelectionHandler.ActiveState?.PreviewPos) ?? parent.DisplayedWeapon.parent.CurrentPosition;
         CustAmmoCategories.DamageModifiers mods = parent.DisplayedWeapon.GetDamageModifiers(position, HUD.SelectedTarget);
         float damage = parent.DisplayedWeapon.DamagePerShot;
@@ -766,8 +760,8 @@ namespace CustomAmmoCategoriesPatches {
         float stability = parent.DisplayedWeapon.Instability();
         int shots = parent.DisplayedWeapon.ShotsWhenFired;
         string descr = string.Empty;
-        mods.Calculate(-1,ref damage, ref ap, ref heat, ref stability, ref descr, false, true);
-        description.Append("<size=80%>"+descr+"</size>");
+        mods.Calculate(-1, ref damage, ref ap, ref heat, ref stability, ref descr, false, true);
+        description.Append("<size=80%>" + descr + "</size>");
       }
       HUD.SidePanel.ForceShowPersistant(title, description, null, false);
     }
@@ -825,28 +819,28 @@ namespace CustomAmmoCategoriesPatches {
       AmmunitionBox currentBox = this.parent.DisplayedWeapon.currentAmmoBox();
       List<AmmunitionBox> boxes = this.parent.DisplayedWeapon.SortedAmmoBoxes();
       ExtAmmunitionDef ammo = this.parent.DisplayedWeapon.ammo();
-      foreach(AmmunitionBox box in boxes) {
+      foreach (AmmunitionBox box in boxes) {
         if (box.ammoDef.Description.Id != ammo.Id) { continue; }
-        description.Append(box==currentBox?"<size=100%>":"<size=80%>");
-        if(box.IsFunctional == false) {
+        description.Append(box == currentBox ? "<size=100%>" : "<size=80%>");
+        if (box.IsFunctional == false) {
           description.Append("<color=red>");
-        }else
-        if(box.CurrentAmmo == 0) {
+        } else
+        if (box.CurrentAmmo == 0) {
           description.Append("<color=orange>");
         } else {
           description.Append("<color=white>");
         }
         description.Append(box.Description.UIName);
-        if(box.mechComponentRef != null) {
-          description.Append("("+Mech.GetAbbreviatedChassisLocation(box.mechComponentRef.MountedLocation)+ ")");
-        } else if(box.vehicleComponentRef != null) {
+        if (box.mechComponentRef != null) {
+          description.Append("(" + Mech.GetAbbreviatedChassisLocation(box.mechComponentRef.MountedLocation) + ")");
+        } else if (box.vehicleComponentRef != null) {
           description.Append("(" + Vehicle.GetLongChassisLocation(box.vehicleComponentRef.MountedLocation) + ")");
         }
-        description.Append(" "+box.CurrentAmmo+"/"+box.ammunitionBoxDef.Capacity);
+        description.Append(" " + box.CurrentAmmo + "/" + box.ammunitionBoxDef.Capacity);
         description.Append("</color>");
         description.Append("</size>\n");
       }
-      if(currentBox != null) {
+      if (currentBox != null) {
         description.Append("__/CAC.AMMO_COUNT_CURRENT_SIDE_HEADER/__");
         ExtendedDetails extDescr = currentBox.componentDef.GetComponent<ExtendedDetails>();
         if (extDescr == null) {
@@ -949,7 +943,7 @@ namespace CustomAmmoCategoriesPatches {
       //if (hovered) { ShowSidePanel(); }
     }
   }
-  public class WeaponSwitchButton: EventTrigger {
+  public class WeaponSwitchButton : EventTrigger {
     public CombatHUDWeaponSlot parent;
     public CombatHUDWeaponPanel weaponPanel;
     public CombatHUD HUD;
@@ -958,7 +952,7 @@ namespace CustomAmmoCategoriesPatches {
     public bool moveUp;
     //public string iconid;
     private bool hovered;
-    public void Init(CombatHUD HUD, CombatHUDWeaponPanel panel,CombatHUDWeaponSlot slot, string iconid, bool moveUp) {
+    public void Init(CombatHUD HUD, CombatHUDWeaponPanel panel, CombatHUDWeaponSlot slot, string iconid, bool moveUp) {
       Log.M.TWL(0, "WeaponSwitchButton.Init");
       try {
         weaponPanel = panel;
@@ -993,7 +987,7 @@ namespace CustomAmmoCategoriesPatches {
         } else {
           Log.M.WL(1, "icon is null");
         }*/
-      }catch(Exception e) {
+      } catch (Exception e) {
         Log.M.TWL(0, e.ToString());
       }
     }
@@ -1014,7 +1008,7 @@ namespace CustomAmmoCategoriesPatches {
       if (moveUp) {
         if (this.weaponPanel.DisplayedActor.MoveWeaponUp(this.parent.DisplayedWeapon) == false) { return; }
         if (index <= 0) { return; }
-        if (index >= this.weaponPanel.DisplayedWeaponSlots.Count) { return; }        
+        if (index >= this.weaponPanel.DisplayedWeaponSlots.Count) { return; }
         Weapon curWeapon = this.parent.DisplayedWeapon;
         Weapon upWeapon = this.weaponPanel.DisplayedWeaponSlots[index - 1].DisplayedWeapon;
         this.parent.DisplayedWeapon = upWeapon;
@@ -1035,7 +1029,7 @@ namespace CustomAmmoCategoriesPatches {
     public void Update() {
       if (image == null) {
         image = this.gameObject.GetComponent<SVGImage>();
-        if(image != null) {
+        if (image != null) {
           CustomSvgCache.setIcon(image, iconid, HUD.Combat.DataManager);
         }
       }
@@ -1062,7 +1056,7 @@ namespace CustomAmmoCategoriesPatches {
     public void ResetUI() {
       ui_inited = false;
     }
-    public void Init(CombatHUDWeaponPanel panel,CombatHUDWeaponSlotEx slot) {
+    public void Init(CombatHUDWeaponPanel panel, CombatHUDWeaponSlotEx slot) {
       this.slot = slot;
       text_WeaponText = panel.gameObject.transform.FindRecursive("wp_Labels").FindRecursive("text_WeaponText") as RectTransform;
       text_Mode = panel.gameObject.transform.FindRecursive("wp_Labels").FindRecursive("text_Mode") as RectTransform;
@@ -1102,8 +1096,8 @@ namespace CustomAmmoCategoriesPatches {
       if (text_AmmoName != null) text_AmmoName.SetPosX(slot.ammoHover.transform.position.x);
       if (text_AmmoCount != null) text_AmmoCount.SetPosX(slot.counterHover.transform.position.x);
       if (text_Damage != null) text_Damage.SetPosX(slot.damageHover.transform.position.x);
-      if (text_HitChance != null) text_HitChance.SetPosX(slot.hitChanceHover.transform.position.x+20f);
-      if (text_WeaponText != null) Log.M.WL(1, "text_WeaponText x:"+ text_WeaponText.transform.position.x);
+      if (text_HitChance != null) text_HitChance.SetPosX(slot.hitChanceHover.transform.position.x + 20f);
+      if (text_WeaponText != null) Log.M.WL(1, "text_WeaponText x:" + text_WeaponText.transform.position.x);
       if (text_Mode != null) Log.M.WL(1, "text_Mode x:" + text_Mode.transform.position.x);
       if (text_AmmoName != null) Log.M.WL(1, "text_AmmoName x:" + text_AmmoName.transform.position.x);
       if (text_AmmoCount != null) Log.M.WL(1, "text_AmmoCount x:" + text_AmmoCount.transform.position.x);
@@ -1117,20 +1111,20 @@ namespace CustomAmmoCategoriesPatches {
   [HarmonyPatch(MethodType.Normal)]
   public static class AttackSequence_SortSelectedWeapons {
     public static void Postfix(AttackDirector.AttackSequence __instance, ref List<List<Weapon>> ___sortedWeapons) {
-      Log.M.TWL(0, "AttackSequence.SortSelectedWeapons "+new Localize.Text(__instance.attacker.DisplayName).ToString());
+      Log.M.TWL(0, "AttackSequence.SortSelectedWeapons " + new Localize.Text(__instance.attacker.DisplayName).ToString());
       List<Weapon> uiSorted = __instance.attacker.sortedUIWeapons();
       if (uiSorted == null) { return; };
-      Log.M.WL(1, "ui weapons order found:"+uiSorted.Count);
+      Log.M.WL(1, "ui weapons order found:" + uiSorted.Count);
       Dictionary<Weapon, int> uiIndexes = new Dictionary<Weapon, int>();
-      for(int i = 0; i < uiSorted.Count; ++i) {
-        Log.M.WL(2, "["+i+"]"+uiSorted[i].defId);
+      for (int i = 0; i < uiSorted.Count; ++i) {
+        Log.M.WL(2, "[" + i + "]" + uiSorted[i].defId);
         uiIndexes.Add(uiSorted[i], i);
       }
-      for(int gid = 0; gid < ___sortedWeapons.Count; ++gid) {
+      for (int gid = 0; gid < ___sortedWeapons.Count; ++gid) {
         bool weaponHasNoUISortIndex = false;
         Log.M.WL(1, "original");
         for (int wid = 0; wid < ___sortedWeapons[gid].Count; ++wid) {
-          Log.M.WL(2, "weapon["+gid+"][" + wid + "] = " + ___sortedWeapons[gid][wid].defId+" "+(uiIndexes.ContainsKey(___sortedWeapons[gid][wid])? uiIndexes[___sortedWeapons[gid][wid]].ToString():"none"));
+          Log.M.WL(2, "weapon[" + gid + "][" + wid + "] = " + ___sortedWeapons[gid][wid].defId + " " + (uiIndexes.ContainsKey(___sortedWeapons[gid][wid]) ? uiIndexes[___sortedWeapons[gid][wid]].ToString() : "none"));
           if (uiIndexes.ContainsKey(___sortedWeapons[gid][wid]) == false) {
             weaponHasNoUISortIndex = true;
           }
@@ -1161,14 +1155,14 @@ namespace CustomAmmoCategoriesPatches {
   public static class CombatHUDWeaponPanel_CombatHUDWeaponPanel {
     private static Dictionary<AbstractActor, List<Weapon>> sortedWeaponsByActor = new Dictionary<AbstractActor, List<Weapon>>();
     public static List<Weapon> sortedUIWeapons(this AbstractActor unit) {
-      if(sortedWeaponsByActor.TryGetValue(unit,out List<Weapon> result)) {
+      if (sortedWeaponsByActor.TryGetValue(unit, out List<Weapon> result)) {
         return result;
       }
       return null;
     }
     public static void Clear() { sortedWeaponsByActor.Clear(); }
-    public static bool MoveWeaponUp(this AbstractActor unit,Weapon weapon) {
-      if(sortedWeaponsByActor.TryGetValue(unit,out List<Weapon> sortedList)) {
+    public static bool MoveWeaponUp(this AbstractActor unit, Weapon weapon) {
+      if (sortedWeaponsByActor.TryGetValue(unit, out List<Weapon> sortedList)) {
         int index = sortedList.IndexOf(weapon);
         if (index <= 0) { return false; }
         if (index >= sortedList.Count) { return false; }
@@ -1182,7 +1176,7 @@ namespace CustomAmmoCategoriesPatches {
       if (sortedWeaponsByActor.TryGetValue(unit, out List<Weapon> sortedList)) {
         int index = sortedList.IndexOf(weapon);
         if (index < 0) { return false; }
-        if (index >= (sortedList.Count-1)) { return false; }
+        if (index >= (sortedList.Count - 1)) { return false; }
         sortedList[index] = sortedList[index + 1];
         sortedList[index + 1] = weapon;
         return true;
@@ -1197,7 +1191,7 @@ namespace CustomAmmoCategoriesPatches {
           ___sortedWeaponsList.AddRange(weapons);
           return false;
         }
-      }catch(Exception e) {
+      } catch (Exception e) {
         Log.M.TWL(0, e.ToString(), true);
       }
       return true;
@@ -1210,7 +1204,7 @@ namespace CustomAmmoCategoriesPatches {
           sorted.AddRange(___sortedWeaponsList);
           sortedWeaponsByActor.Add(__instance.DisplayedActor, sorted);
         }
-      }catch(Exception e) {
+      } catch (Exception e) {
         Log.M.TWL(0, e.ToString(), true);
       }
     }
@@ -1243,12 +1237,12 @@ namespace CustomAmmoCategoriesPatches {
         CombatHUDWeaponPanelEx weaponPanelEx = __instance.gameObject.GetComponent<CombatHUDWeaponPanelEx>();
         if (weaponPanelEx == null) { weaponPanelEx = __instance.gameObject.AddComponent<CombatHUDWeaponPanelEx>(); };
         weaponPanelEx.Init(HUD, __instance);
-        foreach(var aInit in additionalInit) {
+        foreach (var aInit in additionalInit) {
           aInit(__instance);
         }
         //DebugMouseClickTester tester = HUD.gameObject.GetComponent<DebugMouseClickTester>();
         //if (tester == null) { tester = HUD.gameObject.AddComponent<DebugMouseClickTester>(); }
-      } catch(Exception e){
+      } catch (Exception e) {
         Log.M.TWL(0, e.ToString(), true);
       }
     }
@@ -1256,12 +1250,9 @@ namespace CustomAmmoCategoriesPatches {
   [HarmonyPatch(typeof(UIModule))]
   [HarmonyPatch("OnAddedToHierarchy")]
   [HarmonyPatch(MethodType.Normal)]
-  public static class UIModule_OnAddedToHierarchy
-  {
-    public static void Postfix(UIModule __instance)
-    {
-      try
-      {
+  public static class UIModule_OnAddedToHierarchy {
+    public static void Postfix(UIModule __instance) {
+      try {
         //CombatHUD HUD = __instance as CombatHUD;
         //if(HUD == null) { return; }
         //Log.M.TWL(0, "CombatHUD.OnAddedToHierarchy");
@@ -1275,7 +1266,7 @@ namespace CustomAmmoCategoriesPatches {
         //wp_Slot0.localScale = Vector3.one;
         //Log.M.WL(1, "wp_Slot0 instanced succesfully");
         //wp_Slot0.SetSiblingIndex(wp_Slot1.GetSiblingIndex());
-      } catch(Exception e) {
+      } catch (Exception e) {
         Log.M.TWL(0, e.ToString(), true);
       }
     }
@@ -1310,7 +1301,7 @@ namespace CustomAmmoCategoriesPatches {
       if (ammoHovers.ContainsKey(slot)) { ammoHovers[slot] = hover; } else { ammoHovers.Add(slot, hover); }
     }
     public static CombatHUD HUD(this CombatHUDWeaponPanel panel) { return (CombatHUD)p_HUD.GetValue(panel); }
-    private static int panelInstance = -1;
+    //private static int panelInstance = -1;
     public static Transform FindRecursive(this Transform transform, string checkName) {
       foreach (Transform t in transform) {
         if (t.name == checkName) return t;
@@ -1345,168 +1336,10 @@ namespace CustomAmmoCategoriesPatches {
       return corners[3].x - corners[0].x;
     }
     public static void Postfix(CombatHUDWeaponPanel __instance, List<CombatHUDWeaponSlot> ___WeaponSlots, bool consideringJump, bool useCOILPathingPreview, CombatHUDWeaponSlot ___meleeSlot, CombatHUDWeaponSlot ___dfaSlot) {
-      //if (CustomAmmoCategories.Settings.ShowWeaponOrderButtons == false) { return; }
-      //return;
       last_consideringJump = consideringJump;
       last_useCOILPathingPreview = useCOILPathingPreview;
       CombatHUDWeaponPanelEx panelEx = __instance.gameObject.GetComponent<CombatHUDWeaponPanelEx>();
       if (panelEx != null) { panelEx.Refresh(); }
-      //if (__instance.gameObject.GetInstanceID() == panelInstance) {
-      //  WeaponPanelHeaderAligner ha = __instance.gameObject.GetComponent<WeaponPanelHeaderAligner>();
-      //  if (ha != null) { ha.ResetUI(); }
-      //  return;
-      //}
-      //Log.M.TWL(0, "CombatHUDWeaponPanel.RefreshDisplayedWeapons " + __instance.gameObject.GetInstanceID());
-      //panelInstance = __instance.gameObject.GetInstanceID();
-      //if (ExpandWeaponPanel(__instance) == false) { panelInstance = -1; return; }
-      //CombatHUD HUD = __instance.HUD();
-      //float upDownButtonsWidth = 0f;
-      ////float upDownButtonsPadding = 0f;
-      //float newSlotWidth = 0f;
-      //float widthDelta = 0f;
-      //for(int si = 0; si < ___WeaponSlots.Count;) {
-      //  CombatHUDWeaponSlot slot = ___WeaponSlots[si];
-      //  if(slot == null) {
-      //    ___WeaponSlots.RemoveAt(si);
-      //    continue;
-      //  }
-      //  ++si;
-      //  RectTransform slotTr = slot.gameObject.GetComponent<RectTransform>();
-      //  if (slot.weaponSlotType != CombatHUDWeaponSlot.WeaponSlotType.Normal) { continue; }
-      //  if (upDownButtonsWidth == 0f) { upDownButtonsWidth = slotTr.sizeDelta.y * CustomAmmoCategories.Settings.OrderButtonWidthScale; }
-      //  //if (upDownButtonsPadding == 0f) { upDownButtonsPadding = slotTr.sizeDelta.y * CustomAmmoCategories.Settings.OrderButtonWidthScale * CustomAmmoCategories.Settings.OrderButtonPaddingScale; }
-      //  if((upDownButtonsWidth > 0f)) {
-      //    newSlotWidth = slotTr.sizeDelta.x * (CustomAmmoCategories.Settings.WeaponPanelBackWidthScale+0.05f);
-      //    widthDelta = newSlotWidth - slotTr.sizeDelta.x;
-      //    break;
-      //  }
-      //}
-      //RectTransform text_WeaponText = __instance.gameObject.transform.FindRecursive("wp_Labels").FindRecursive("text_WeaponText") as RectTransform;
-      //RectTransform text_Ammo = __instance.gameObject.transform.FindRecursive("wp_Labels").FindRecursive("text_Ammo") as RectTransform;
-      //RectTransform text_Damage = __instance.gameObject.transform.FindRecursive("wp_Labels").FindRecursive("text_Damage") as RectTransform;
-      //RectTransform text_HitChance = __instance.gameObject.transform.FindRecursive("wp_Labels").FindRecursive("text_HitChance") as RectTransform;
-      //GameObject text_Mode = GameObject.Instantiate(text_Ammo.gameObject);
-      //text_Mode.name = "text_Mode";
-      //text_Mode.transform.SetParent(text_Ammo.parent);
-      //text_Mode.transform.localScale = Vector3.one;
-      //text_Mode.transform.SetSiblingIndex(1);
-      //text_Mode.GetComponent<LocalizableText>().SetText("__/CAC.MODE_LABEL/__");
-      //text_Mode.transform.localPosition = text_Ammo.localPosition;
-      //GameObject text_AmmoName = GameObject.Instantiate(text_Ammo.gameObject);
-      //text_AmmoName.name = "text_AmmoName";
-      //text_AmmoName.transform.SetParent(text_Ammo.parent);
-      //text_AmmoName.transform.localScale = Vector3.one;
-      //text_AmmoName.transform.SetSiblingIndex(2);
-      //text_AmmoName.GetComponent<LocalizableText>().SetText("__/CAC.AMMO_NAME_LABEL/__");
-      //text_AmmoName.transform.localPosition = text_Ammo.localPosition;
-      //text_Ammo.gameObject.GetComponent<LocalizableText>().SetText("__/CAC.AMMO_COUNT_LABEL/__");
-      //List<CombatHUDWeaponSlot> slots = new List<CombatHUDWeaponSlot>();
-      //for(int si = 0; si < ___WeaponSlots.Count;) {
-      //  CombatHUDWeaponSlot slot = ___WeaponSlots[si];
-      //  if(slot == null) {
-      //    ___WeaponSlots.RemoveAt(si);
-      //    continue;
-      //  }
-      //  ++si;
-      //  slots.Add(slot);
-      //}
-      //{
-      //  slots.Add(___dfaSlot);
-      //}
-      //{
-      //  slots.Add(___meleeSlot);
-      //}
-      //foreach (CombatHUDWeaponSlot slot in slots) {
-      //  GameObject go = slot.gameObject;
-      //  RectTransform slotTr = slot.gameObject.GetComponent<RectTransform>();
-      //  if (slotTr == null) { continue; };
-      //  HorizontalLayoutGroup HL = slot.gameObject.GetComponent<HorizontalLayoutGroup>();
-      //  HL.spacing = 5.0f;
-      //  Vector2 size = slotTr.sizeDelta;
-      //  size.x = newSlotWidth;
-      //  slotTr.sizeDelta = size;
-      //  if (slot.weaponSlotType == CombatHUDWeaponSlot.WeaponSlotType.Normal) {
-      //    GameObject btnupgo = GameObject.Instantiate(slots[0].ToggleButton.childImage.gameObject);
-      //    btnupgo.name = "weapon_button_up";
-      //    btnupgo.transform.SetParent(slot.gameObject.transform);
-      //    btnupgo.transform.localScale = Vector3.one;
-      //    btnupgo.transform.SetSiblingIndex(0);
-      //    RectTransform btnupTr = btnupgo.gameObject.GetComponent<RectTransform>();
-      //    size = btnupTr.sizeDelta;
-      //    size.x = upDownButtonsWidth;
-      //    btnupTr.sizeDelta = size;
-      //    WeaponSwitchButton btn = btnupgo.GetComponent<WeaponSwitchButton>();
-      //    if (btn == null) { btn = btnupgo.AddComponent<WeaponSwitchButton>(); }
-      //    btn.Init(HUD, __instance, slot, "weapon_up", true);
-      //    GameObject btndowngo = GameObject.Instantiate(slots[0].ToggleButton.childImage.gameObject);
-      //    btndowngo.name = "weapon_button_up";
-      //    btndowngo.transform.SetParent(slot.gameObject.transform);
-      //    btndowngo.transform.localScale = Vector3.one;
-      //    btndowngo.transform.SetSiblingIndex(1);
-      //    RectTransform btndownTr = btndowngo.gameObject.GetComponent<RectTransform>();
-      //    size = btndownTr.sizeDelta;
-      //    size.x = upDownButtonsWidth;
-      //    btndownTr.sizeDelta = size;
-      //    btn = btndowngo.GetComponent<WeaponSwitchButton>();
-      //    if (btn == null) { btn = btndowngo.AddComponent<WeaponSwitchButton>(); }
-      //    btn.Init(HUD, __instance, slot, "weapon_down", false);
-
-      //    GameObject modText = GameObject.Instantiate(slot.DamageText.gameObject);
-      //    WeaponDamageHover ammoCounterHover = modText.GetComponent<WeaponDamageHover>();
-      //    if (ammoCounterHover != null) { GameObject.Destroy(ammoCounterHover); ammoCounterHover = null; }
-      //    modText.name = "mode_text";
-      //    modText.transform.SetParent(slot.transform);
-      //    modText.transform.localScale = Vector3.one;
-      //    RectTransform modTextTr = modText.GetComponent<RectTransform>();
-      //    size = modTextTr.sizeDelta;
-      //    size.x = (widthDelta * 0.5f) - 10f;
-      //    modTextTr.sizeDelta = size;
-      //    modTextTr.SetSiblingIndex(4);
-      //    modText.GetComponent<LocalizableText>().SetText("MODE");
-      //    GameObject modTextBack = GameObject.Instantiate(slot.ToggleButton.childImage.gameObject);
-      //    modTextBack.name = "modTextBack";
-      //    RectTransform modTextBackTR = modTextBack.GetComponent<RectTransform>();
-      //    modTextBackTR.SetParent(modTextTr);
-      //    modTextBackTR.localScale = Vector3.one;
-      //    modTextBackTR.localPosition = Vector3.zero;
-      //    modTextBackTR.sizeDelta = size;
-      //    modTextBack.GetComponent<SVGImage>().vectorGraphics = CustomSvgCache.get("weapon_btn", HUD.Combat.DataManager);
-      //    WeaponModeHover modeHover = modTextBack.AddComponent<WeaponModeHover>();
-      //    modeHover.Init(HUD, __instance, slot);
-      //    //modeHovers.Add(slot, modeHover);
-      //    slot.RegisterHover(modeHover);
-
-      //    GameObject ammoText = GameObject.Instantiate(slot.DamageText.gameObject);
-      //    ammoCounterHover = ammoText.GetComponent<WeaponDamageHover>();
-      //    if (ammoCounterHover != null) { GameObject.Destroy(ammoCounterHover); ammoCounterHover = null; }
-      //    ammoText.name = "ammoName_text";
-      //    ammoText.transform.SetParent(slot.transform);
-      //    ammoText.transform.localScale = Vector3.one;
-      //    RectTransform ammoTextTr = ammoText.GetComponent<RectTransform>();
-      //    size = ammoTextTr.sizeDelta;
-      //    size.x = (widthDelta * 0.5f) - 10f;
-      //    ammoTextTr.sizeDelta = size;
-      //    ammoTextTr.SetSiblingIndex(5);
-      //    ammoText.GetComponent<LocalizableText>().SetText("AMMO");
-      //    GameObject ammoTextBack = GameObject.Instantiate(slot.ToggleButton.childImage.gameObject);
-      //    ammoTextBack.name = "ammoName_text";
-      //    RectTransform ammoTextBackTR = ammoTextBack.GetComponent<RectTransform>();
-      //    ammoTextBackTR.SetParent(ammoTextTr);
-      //    ammoTextBackTR.localScale = Vector3.one;
-      //    ammoTextBackTR.localPosition = Vector3.zero;
-      //    ammoTextBackTR.sizeDelta = size;
-      //    ammoTextBack.GetComponent<SVGImage>().vectorGraphics = CustomSvgCache.get("weapon_btn", HUD.Combat.DataManager);
-      //    WeaponAmmoHover ammoHover = ammoTextBack.AddComponent<WeaponAmmoHover>();
-      //    ammoHover.Init(HUD, __instance, slot);
-      //    slot.RegisterHover(ammoHover);
-      //    //ammoHovers.Add(slot, ammoHover);
-      //  } else {
-      //    RectTransform nameTransform = slot.WeaponText.gameObject.GetComponent<RectTransform>();
-      //    size = nameTransform.sizeDelta;
-      //    size.x += (widthDelta-20f);
-      //    nameTransform.sizeDelta = size;
-      //  }
-      //}
     }
   }
 }

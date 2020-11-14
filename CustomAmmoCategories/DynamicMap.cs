@@ -463,8 +463,11 @@ namespace CustAmmoCategories {
       if (string.IsNullOrEmpty(UIName)) { UIName = "Generic"; }
     }
     public bool getIFFLevel(AbstractActor unit) {
-      if (IFFLevel == 0) { return false; }
-      return this.IFFLevel < unit.mineFieldIFFLevel();
+      if (IFFLevel <= 0) { return false; }
+      if(unit.team == null) { return this.IFFLevel < unit.mineFieldIFFLevel(); }
+      if(this.team == null) { return this.IFFLevel < unit.mineFieldIFFLevel(); }
+      if (this.team.IsEnemy(unit.team)) { return this.IFFLevel < unit.mineFieldIFFLevel(); }
+      return true;
     }
     public MineFieldStealthLevel stealthLevel(Team iteam) {
       if (IFFLevel > 0) {

@@ -1,5 +1,6 @@
 ﻿using BattleTech;
 using BattleTech.Data;
+using CustAmmoCategories;
 using CustomAmmoCategoriesPatches;
 using Harmony;
 using Localize;
@@ -150,6 +151,26 @@ namespace CustomUnits{
     } }
     public HashSet<string> DeployForbidContractTypes { get { return fManualDeployForbidContractTypes; } }
     public bool DisableHotKeys { get; set; }
+    public string SquadStructureIcon { get; set; }
+    public string SquadArmorOutlineIcon { get; set; }
+    public string SquadArmorIcon { get; set; }
+    public string VehicleFrontStructureIcon { get; set; }
+    public string VehicleFrontArmorOutlineIcon { get; set; }
+    public string VehicleFrontArmorIcon { get; set; }
+    public string VehicleRearStructureIcon { get; set; }
+    public string VehicleRearArmorOutlineIcon { get; set; }
+    public string VehicleRearArmorIcon { get; set; }
+    public string VehicleLeftStructureIcon { get; set; }
+    public string VehicleLeftArmorOutlineIcon { get; set; }
+    public string VehicleLeftArmorIcon { get; set; }
+    public string VehicleRightStructureIcon { get; set; }
+    public string VehicleRightArmorOutlineIcon { get; set; }
+    public string VehicleRightArmorIcon { get; set; }
+    public string VehicleTurretStructureIcon { get; set; }
+    public string VehicleTurretArmorOutlineIcon { get; set; }
+    public string VehicleTurretArmorIcon { get; set; }
+    public string ConvoyRouteBeaconVFX { get; set; }
+    public CustomVector ConvoyRouteBeaconVFXScale { get; set; }
     public CUSettings() {
       debugLog = false;
       DeathHeight = 1f;
@@ -196,8 +217,28 @@ namespace CustomUnits{
       DeployMinDistanceFromEnemy = 300f;
       fManualDeployForbidContractTypes = new HashSet<string>();
       DisableHotKeys = false;
+      SquadStructureIcon = "ba_structure";
+      SquadArmorOutlineIcon = "ba_armor_outline";
+      SquadArmorIcon = "ba_armor";
+      VehicleFrontStructureIcon = "vehicle_readout_f_structure";
+      VehicleFrontArmorOutlineIcon = "vehicle_readout_f_armor_outline";
+      VehicleFrontArmorIcon = "vehicle_readout_f_armor";
+      VehicleRearStructureIcon = "vehicle_readout_r_structure";
+      VehicleRearArmorOutlineIcon = "vehicle_readout_r_armor_outline";
+      VehicleRearArmorIcon = "vehicle_readout_r_armor";
+      VehicleLeftStructureIcon = "vehicle_readout_l_structure";
+      VehicleLeftArmorOutlineIcon = "vehicle_readout_l_armor_outline";
+      VehicleLeftArmorIcon = "vehicle_readout_l_armor";
+      VehicleRightStructureIcon = "vehicle_readout_ri_structure";
+      VehicleRightArmorOutlineIcon = "vehicle_readout_ri_armor_outline";
+      VehicleRightArmorIcon = "vehicle_readout_ri_armor";
+      VehicleTurretStructureIcon = "vehicle_readout_t_structure";
+      VehicleTurretArmorOutlineIcon = "vehicle_readout_t_armor_outline";
+      VehicleTurretArmorIcon = "vehicle_readout_t_armor";
+      ConvoyRouteBeaconVFX = "vfxPrfPrtl_artillerySmokeSignal_loop";
+      ConvoyRouteBeaconVFXScale = new CustomVector(true);
     }
-  }
+}
   public static partial class Core{
     public static readonly float Epsilon = 0.001f;
     public static CUSettings Settings;
@@ -205,6 +246,15 @@ namespace CustomUnits{
       Log.TWL(0, "FinishedLoading", true);
       try {
         foreach(string name in loadOrder) { if (name == "Mission Control") { CustomLanceHelper.MissionControlDetected(); break; }; }
+        CustAmmoCategories.HitTableHelper.RegisterGetHitTableFunction(typeof(TrooperSquad), TrooperSquad.GetHitTable);
+        CustAmmoCategories.GetLongArmorLocationHelper.RegisterGetLongArmorLocationFunction(typeof(TrooperSquad), TrooperSquad.GetLongArmorLocation);
+        CustAmmoCategories.GetDFASelfDamageLocationsHelper.RegisterDFASelfDamageLocationsFunction(typeof(TrooperSquad), TrooperSquad.GetDFASelfDamageLocations);
+        CustAmmoCategories.GetLandmineDamageLocationsHelper.RegisterLandmineDamageLocationsFunction(typeof(TrooperSquad), TrooperSquad.GetLandmineDamageLocations);
+        CustAmmoCategories.GetBurnDamageLocationsHelper.RegisterBurnDamageLocationsFunction(typeof(TrooperSquad), TrooperSquad.GetBurnDamageLocations);
+        CustAmmoCategories.GetAOESpreadLocationsHelper.RegisterAOELocationsFunction(typeof(TrooperSquad), TrooperSquad.GetAOESpreadLocations);
+        CustAmmoCategories.GetAOEPossibleHitLocationsHelper.RegisterAOELocationsFunction(typeof(TrooperSquad), TrooperSquad.GetAOEPossibleHitLocations);
+        CustAmmoCategories.ToHitModifiersHelper.registerModifier("SQUAD SIZE", "SQUAD SIZE", true, false, TrooperSquad.GetSquadSizeToHitMod, TrooperSquad.GetSquadSizeToHitModName);
+        CustAmmoCategories.DamageModifiersCache.RegisterDamageModifier("SQUAD SIZE", "SQUAD SIZE", true, true, true, true, true, TrooperSquad.SquadSizeDamageMod, TrooperSquad.SquadSizeDamageModName);
       } catch (Exception e) {
         Log.TWL(0, e.ToString(), true);
       }

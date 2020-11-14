@@ -13,13 +13,14 @@ namespace CustAmmoCategories {
       advInfo.isResolved = true;
       if (advInfo.Sequence.meleeAttackType == MeleeAttackType.DFA) {
         float damageAmount = advInfo.Sequence.attacker.StatCollection.GetValue<float>("DFASelfDamage");
-#if BT1_8
-        advInfo.Sequence.attacker.TakeWeaponDamage(hitInfo, 64, advInfo.weapon, damageAmount,0f, 0, DamageType.DFASelf);
-        advInfo.Sequence.attacker.TakeWeaponDamage(hitInfo, 128, advInfo.weapon, damageAmount,0f, 0, DamageType.DFASelf);
-#else
-        advInfo.Sequence.attacker.TakeWeaponDamage(hitInfo, 64, advInfo.weapon, damageAmount, 0, DamageType.DFASelf);
-        advInfo.Sequence.attacker.TakeWeaponDamage(hitInfo, 128, advInfo.weapon, damageAmount, 0, DamageType.DFASelf);
-#endif
+        Mech mech = advInfo.Sequence.attacker as Mech;
+        if (mech != null) {
+          HashSet<ArmorLocation> DFALocs = mech.GetDFASelfDamageLocations();
+          foreach (ArmorLocation aloc in DFALocs) {
+            advInfo.Sequence.attacker.TakeWeaponDamage(hitInfo, (int)aloc, advInfo.weapon, damageAmount, 0f, 0, DamageType.DFASelf);
+            advInfo.Sequence.attacker.TakeWeaponDamage(hitInfo, (int)aloc, advInfo.weapon, damageAmount, 0f, 0, DamageType.DFASelf);
+          }
+        }
         if (AttackDirector.damageLogger.IsLogEnabled)
           AttackDirector.damageLogger.Log((object)string.Format("@@@@@@@@ {0} takes {1} damage to its legs from the DFA attack!", (object)advInfo.Sequence.attacker.DisplayName, (object)damageAmount));
       }

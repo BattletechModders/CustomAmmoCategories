@@ -162,6 +162,20 @@ namespace CustAmmoCategories {
   [HarmonyPatch(MethodType.Getter)]
   [HarmonyPatch(new Type[] { })]
   public static class JammingRealizer {
+    public static string CantFireReason(this Weapon weapon) {
+      if (weapon.IsFunctional == false) { return "DESTROYED"; }
+      if (weapon.StatCollection.GetValue<bool>("TemporarilyDisabled")) { return "TEMP.DISABLED"; }
+      if (weapon.IsEnabled == false) { return "NOT ENABLED"; }
+      if (weapon.IsDisabled) { return "DISABLED"; }
+      if (weapon.IsJammed()) { return "JAMMED"; }
+      if (weapon.IsCooldown() > 0) { return "COOLDOWN"; }
+      if (weapon.isAMS() && weapon.isCantAMSFire()) { return "USED AS WEAPON"; }
+      if ((weapon.isAMS() == false) && weapon.isCantNormalFire()) { return "USED AS AMS"; };
+      if (weapon.NoModeToFire()) { return "NO MODE TO FIRE"; };
+      if (weapon.isBlocked()) { return "BLOCKED"; };
+      if ((weapon.ammo().AmmoCategory.BaseCategory.Is_NotSet == false) && (weapon.CurrentAmmo <= 0)) { return "OUT OF AMMO"; }
+      return "UNKNOWN";
+    }
     public static void Postfix(Weapon __instance, ref bool __result) {
       if (__result == false) { return; }
       if (__instance.IsJammed()) { __result = false; }
@@ -202,7 +216,7 @@ namespace CustAmmoCategories {
         }
         weapon.AMSShootsCount(0);
         weapon.setCantNormalFire(true);
-        float flatJammingChance = weapon.FlatJammingChance();
+        float flatJammingChance = weapon.FlatJammingChance(out string descr);
         CustomAmmoCategoriesLog.Log.LogWrite($"  flatJammingChance " + flatJammingChance + "\n");
         if (flatJammingChance > CustomAmmoCategories.Epsilon) {
           CustomAmmoCategoriesLog.Log.LogWrite($"  Try jamm weapon " + weapon.UIName + "\n");
@@ -228,7 +242,7 @@ namespace CustAmmoCategories {
         if (weapon.roundsSinceLastFire > 0) {
           continue;
         }
-        float flatJammingChance = weapon.FlatJammingChance();
+        float flatJammingChance = weapon.FlatJammingChance(out string descr);
         CustomAmmoCategoriesLog.Log.LogWrite($"  flatJammingChance " + flatJammingChance + "\n");
         if (flatJammingChance > CustomAmmoCategories.Epsilon) {
           CustomAmmoCategoriesLog.Log.LogWrite($"  Try jamm weapon " + weapon.UIName + "\n");
@@ -261,6 +275,7 @@ namespace CustAmmoCategories {
     public static void Postfix(Weapon __instance) {
       Log.LogWrite("Weapon.InitStats " + __instance.defId + ":" + __instance.parent.GUID + "\n");
       __instance.FlatJammChanceStat(0f);
+      __instance.ModJammChanceStat(1f);
     }
   }
   public static partial class CustomAmmoCategories {
@@ -269,6 +284,7 @@ namespace CustAmmoCategories {
     public static string NoNormalFireStatisticName = "CAC-NoNormalFire";
     public static string NoAMSFireStatisticName = "CAC-AMSFire";
     public static string FlatJammingChanceStatisticName = "CACFlatJammingChance";
+    public static string ModJammingChanceStatisticName = "CACModJammingChance";
     //public static string TemporarilyDisabledStatisticName = "TemporarilyDisabled";
     public static float Epsilon = 0.001f;
     public static float FlatJammChance(this ICombatant unit) {
@@ -288,11 +304,23 @@ namespace CustAmmoCategories {
       if (stat == null) { return 0f; }
       return stat.Value<float>();
     }
+    public static float ModJammChanceStat(this Weapon weapon) {
+      Statistic stat = weapon.StatCollection.GetStatistic(ModJammingChanceStatisticName);
+      if (stat == null) { return 0f; }
+      return stat.Value<float>();
+    }
     public static void FlatJammChanceStat(this Weapon weapon, float val) {
       if (weapon.StatCollection.ContainsStatistic(FlatJammingChanceStatisticName) == false) {
         weapon.StatCollection.AddStatistic<float>(FlatJammingChanceStatisticName, val);
       } else {
         weapon.StatCollection.Set<float>(FlatJammingChanceStatisticName, val);
+      }
+    }
+    public static void ModJammChanceStat(this Weapon weapon, float val) {
+      if (weapon.StatCollection.ContainsStatistic(ModJammingChanceStatisticName) == false) {
+        weapon.StatCollection.AddStatistic<float>(ModJammingChanceStatisticName, val);
+      } else {
+        weapon.StatCollection.Set<float>(ModJammingChanceStatisticName, val);
       }
     }
     public static bool isCantNormalFire(this Weapon weapon) {
@@ -372,33 +400,58 @@ namespace CustAmmoCategories {
       var statistic = StatisticHelper.GetOrCreateStatisic<int>(weapon.StatCollection, CooldownWeaponStatisticName, 0);
       return statistic.Value<int>();
     }
-    public static float FlatJammingChance(this Weapon weapon) {
+    public static float FlatJammingChance(this Weapon weapon, out string description) {
+      StringBuilder descr = new StringBuilder();
       ExtWeaponDef def = weapon.exDef();
       ExtAmmunitionDef ammo = weapon.ammo();
       WeaponMode mode = weapon.mode();
       float result = weapon.FlatJammChanceStat();
+      result += weapon.parent.FlatJammChance();
+      result += def.FlatJammingChance;
+      result += ammo.FlatJammingChance;
+      result += mode.FlatJammingChance;
+      float mult = 0;
+      float baseval = 0f;
+      mult += ammo.GunneryJammingMult;
+      if (ammo.GunneryJammingBase > 0f) { baseval = ammo.GunneryJammingBase; };
+      mult += def.GunneryJammingMult;
+      if ((def.GunneryJammingBase > 0f) && (baseval == 0f)) { baseval = def.GunneryJammingBase; };
+      mult += mode.GunneryJammingMult;
+      if ((mode.GunneryJammingBase > 0f) && (baseval == 0f)) { baseval = mode.GunneryJammingBase; };
+      float evasiveModifier = 1f;
       if (weapon.parent != null) {
         if (weapon.parent.EvasivePipsCurrent > 0) {
           float evasiveMod = def.evasivePipsMods.FlatJammingChance + ammo.evasivePipsMods.FlatJammingChance + mode.evasivePipsMods.FlatJammingChance;
-          if (Mathf.Abs(evasiveMod) > CustomAmmoCategories.Epsilon) result = result * Mathf.Pow((float)weapon.parent.EvasivePipsCurrent, evasiveMod);
+          if (Mathf.Abs(evasiveMod) > CustomAmmoCategories.Epsilon) evasiveModifier = Mathf.Pow((float)weapon.parent.EvasivePipsCurrent, evasiveMod);
         }
       }
-      result += weapon.parent.FlatJammChance();
-      float mult = 0;
-      float baseval = 0f;
-      result += ammo.FlatJammingChance;
-      mult += ammo.GunneryJammingMult;
-      if (ammo.GunneryJammingBase > 0f) { baseval = ammo.GunneryJammingBase; };
-      result += def.FlatJammingChance;
-      mult += def.GunneryJammingMult;
-      if ((def.GunneryJammingBase > 0f) && (baseval == 0f)) { baseval = def.GunneryJammingBase; };
-      result += mode.FlatJammingChance;
-      mult += mode.GunneryJammingMult;
-      if ((mode.GunneryJammingBase > 0f) && (baseval == 0f)) { baseval = mode.GunneryJammingBase; };
+      result *= evasiveModifier;
       if (weapon.parent != null) {
         if (baseval == 0f) { baseval = 5f; }
         result += ((baseval - weapon.parent.SkillGunnery) * mult);
       }
+      result *= weapon.ModJammChanceStat();
+      descr.Append("JAMM CHANCE = "+ result+" = ((");
+      descr.Append(def.FlatJammingChance >= 0f ? def.FlatJammingChance.ToString() : ("-" + def.FlatJammingChance));
+      descr.Append("(w)");
+      descr.Append(weapon.FlatJammChanceStat() >= 0f?"+"+weapon.FlatJammChanceStat():("-"+ weapon.FlatJammChanceStat()));
+      descr.Append("(st)");
+      descr.Append(ammo.FlatJammingChance >= 0f ? "+" + ammo.FlatJammingChance : ("-" + ammo.FlatJammingChance));
+      descr.Append("(a)");
+      descr.Append(mode.FlatJammingChance >= 0f ? "+" + mode.FlatJammingChance : ("-" + mode.FlatJammingChance));
+      descr.Append("(m)");
+      descr.Append(weapon.parent.FlatJammChance() >= 0f ? "+" + weapon.parent.FlatJammChance() : ("-" + weapon.parent.FlatJammChance()));
+      descr.Append("(u))x("+ evasiveModifier + "(evasive))+(");
+      descr.Append(baseval >= 0f ? baseval.ToString() : ("-" + baseval));
+      descr.Append(weapon.parent.SkillGunnery >= 0f ? ("-" + weapon.parent.SkillGunnery) : ("+" + weapon.parent.SkillGunnery));
+      descr.Append("(sk))x(");
+      descr.Append(def.GunneryJammingMult >= 0f ? def.GunneryJammingMult.ToString() : ("-" + def.GunneryJammingMult));
+      descr.Append("(w)");
+      descr.Append(ammo.GunneryJammingMult >= 0f ? "+"+ammo.GunneryJammingMult : ("-" + ammo.GunneryJammingMult));
+      descr.Append("(a)");
+      descr.Append(mode.GunneryJammingMult >= 0f ? "+"+mode.GunneryJammingMult : ("-" + mode.GunneryJammingMult));
+      descr.Append("(m))) x ("+weapon.ModJammChanceStat()+") = "+result);
+      description = descr.ToString();
       return result;
     }
     public static bool DamageOnJamming(this Weapon weapon) {

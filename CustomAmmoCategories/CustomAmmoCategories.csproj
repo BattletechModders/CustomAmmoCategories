@@ -189,6 +189,8 @@
     <Compile Include="FragWeaponEffect.cs" />
     <Compile Include="GenerateHitInfo.cs" />
     <Compile Include="GetEvasivePipsModifier.cs" />
+    <Compile Include="CustomMechRulesHelper.cs" />
+    <Compile Include="HandleSanitizeHelper.cs" />
     <Compile Include="ImprovedMissiles.cs" />
     <Compile Include="IndirectFireCapable.cs" />
     <Compile Include="InternalClassPathes.cs" />

@@ -181,11 +181,9 @@ namespace CustAmmoCategories {
       this.BurnHeat = 0f;
       List<int> hitLocations = new List<int> { 1 };
       if (mech != null) {
-        hitLocations = new List<int> { (int)ArmorLocation.LeftLeg, (int)ArmorLocation.RightLeg
-          , (int)ArmorLocation.RightArm, (int)ArmorLocation.LeftArm
-          , (int)ArmorLocation.RightTorso, (int)ArmorLocation.LeftTorso, (int)ArmorLocation.CenterTorso
-          , (int)ArmorLocation.RightTorsoRear, (int)ArmorLocation.LeftTorsoRear, (int)ArmorLocation.CenterTorsoRear
-        };
+        HashSet<ArmorLocation> aLocs = mech.GetBurnDamageArmorLocations();
+        hitLocations = new List<int>();
+        foreach (ArmorLocation aloc in aLocs) { hitLocations.Add((int)aloc); }
       } else {
         if (vehicle != null) {
           hitLocations = new List<int> { (int)VehicleChassisLocations.Front, (int)VehicleChassisLocations.Left, (int)VehicleChassisLocations.Right, (int)VehicleChassisLocations.Left };
@@ -206,7 +204,8 @@ namespace CustAmmoCategories {
       Vehicle vehicle = target as Vehicle;
       List<int> hitLocations = new List<int> { 1 };
       if (mech != null) {
-        hitLocations = new List<int> { (int)ArmorLocation.LeftLeg, (int)ArmorLocation.RightLeg };
+        HashSet<ArmorLocation> lmLocs = mech.GetLandmineDamageArmorLocations();
+        foreach (ArmorLocation aloc in lmLocs) { hitLocations.Add((int)aloc); }
       } else {
         if (vehicle != null) {
           hitLocations = new List<int> { (int)VehicleChassisLocations.Front, (int)VehicleChassisLocations.Left, (int)VehicleChassisLocations.Right, (int)VehicleChassisLocations.Left };
@@ -214,6 +213,7 @@ namespace CustAmmoCategories {
       }
       bool result = false;
       foreach (int hitLocation in hitLocations) {
+        if (target.StructureForLocation(hitLocation) < CustomAmmoCategories.Epsilon) { continue; }
         if (target.ArmorForLocation(hitLocation) < CustomAmmoCategories.Epsilon) { result = true; };
       }
       return result;
@@ -229,7 +229,9 @@ namespace CustAmmoCategories {
       float Damage = def.Damage;
       List<int> hitLocations = new List<int> { 1 };
       if (mech != null) {
-        hitLocations = new List<int> { (int)ArmorLocation.LeftLeg, (int)ArmorLocation.RightLeg };
+        hitLocations.Clear();
+        HashSet<ArmorLocation> lmLocs = mech.GetLandmineDamageArmorLocations();
+        foreach (ArmorLocation aloc in lmLocs) { hitLocations.Add((int)aloc); }
       } else {
         if (vehicle != null) {
           hitLocations = new List<int> { (int)VehicleChassisLocations.Front, (int)VehicleChassisLocations.Left, (int)VehicleChassisLocations.Right, (int)VehicleChassisLocations.Left };
@@ -282,58 +284,57 @@ namespace CustAmmoCategories {
         float HeatDamage = def.AoEHeat * unitTypeAoEMult * tagAoEDamage * distanceRatio * targetAoEMult * targetHeatMult;
         float Damage = def.AoEDamage * unitTypeAoEMult * tagAoEDamage * distanceRatio * targetAoEMult;
         float StabDamage = def.AoEInstability * unitTypeAoEMult * tagAoEDamage * distanceRatio * targetAoEMult * targetStabMult;
+        if (target.isHasHeat() == false) { Damage += HeatDamage; HeatDamage = 0f; }
+        if (target.isHasStability() == false) { StabDamage = 0f; }
         Mech mech = target as Mech;
         Vehicle vehicle = target as Vehicle;
-        if(target.isHasHeat() == false) {
-          Damage += HeatDamage;
-          HeatDamage = 0f;
-        }
-        if(target.isHasStability() == false) {
-          StabDamage = 0f;
-        }
-        List<int> hitLocations = null;
-        Dictionary<int, float> AOELocationDict = null;
+        HashSet<int> reachableLocations = new HashSet<int>();
+        Dictionary<int, float> SpreadLocations = null;
         if (mech != null) {
-          hitLocations = unit.Combat.HitLocation.GetPossibleHitLocations(pos, mech);
-          if (CustomAmmoCategories.MechHitLocations == null) { CustomAmmoCategories.InitHitLocationsAOE(); };
-          AOELocationDict = CustomAmmoCategories.MechHitLocations;
-          int HeadIndex = hitLocations.IndexOf((int)ArmorLocation.Head);
-          if ((HeadIndex >= 0) && (HeadIndex < hitLocations.Count)) { hitLocations.RemoveAt(HeadIndex); };
+          List<int> hitLocations = mech.GetAOEPossibleHitLocations(pos);//unit.Combat.HitLocation.GetPossibleHitLocations(pos, mech);
+          foreach (int loc in hitLocations) { reachableLocations.Add(loc); }
+          SpreadLocations = mech.GetAOESpreadArmorLocations();
         } else
-        if (target is Vehicle) {
-          hitLocations = unit.Combat.HitLocation.GetPossibleHitLocations(pos, vehicle);
+        if (vehicle != null) {
+          List<int> hitLocations = unit.Combat.HitLocation.GetPossibleHitLocations(pos, vehicle);
           if (CustomAmmoCategories.VehicleLocations == null) { CustomAmmoCategories.InitHitLocationsAOE(); };
-          AOELocationDict = CustomAmmoCategories.VehicleLocations;
+          foreach (int loc in hitLocations) { reachableLocations.Add(loc); }
+          SpreadLocations = CustomAmmoCategories.VehicleLocations;
         } else {
-          hitLocations = new List<int>() { 1 };
+          List<int> hitLocations = new List<int>() { 1 };
           if (CustomAmmoCategories.OtherLocations == null) { CustomAmmoCategories.InitHitLocationsAOE(); };
-          AOELocationDict = CustomAmmoCategories.OtherLocations;
+          foreach (int loc in hitLocations) { reachableLocations.Add(loc); }
+          SpreadLocations = CustomAmmoCategories.OtherLocations;
         }
-        float fullLocationDamage = 0.0f;
-        foreach (int hitLocation in hitLocations) {
-          if (AOELocationDict.ContainsKey(hitLocation)) {
-            fullLocationDamage += AOELocationDict[hitLocation];
-          } else {
-            fullLocationDamage += 100f;
-          }
+        float locationsCoeff = 0f;
+        foreach (var sLoc in SpreadLocations) {
+          if (reachableLocations.Contains(sLoc.Key)) { locationsCoeff += sLoc.Value; }
         }
+        Dictionary<int, float> AOELocationDamage = new Dictionary<int, float>();
+        Log.M.W(2, "Location spread:");
+        foreach (var sLoc in SpreadLocations) {
+          if (reachableLocations.Contains(sLoc.Key) == false) { continue; }
+          if (sLoc.Value < CustomAmmoCategories.Epsilon) { continue; }
+          AOELocationDamage.Add(sLoc.Key, sLoc.Value / locationsCoeff);
+          string lname = sLoc.Key.ToString();
+          if (mech != null) { lname = ((ArmorLocation)sLoc.Key).ToString(); } else
+          if (vehicle != null) { lname = ((VehicleChassisLocations)sLoc.Key).ToString(); } else
+            lname = ((BuildingLocation)sLoc.Key).ToString();
+          Log.M.W(1, lname + ":" + sLoc.Value / locationsCoeff);
+        }
+        Log.M.WL(0, "");
         if (AoEDamage.ContainsKey(target) == false) { AoEDamage.Add(target, new AoEExplosionRecord(target)); };
         AoEExplosionRecord AoERecord = AoEDamage[target];
         AoERecord.HeatDamage += HeatDamage;
         AoERecord.StabDamage += StabDamage;
-        foreach (int hitLocation in hitLocations) {
-          float currentDamageCoeff = 100f;
-          if (AOELocationDict.ContainsKey(hitLocation)) {
-            currentDamageCoeff = AOELocationDict[hitLocation];
-          }
-          currentDamageCoeff /= fullLocationDamage;
-          float CurrentLocationDamage = Damage * currentDamageCoeff;
+        foreach (var hitLocation in AOELocationDamage) {
+          float CurrentLocationDamage = Damage * hitLocation.Value;
           if (CurrentLocationDamage < CustomAmmoCategories.Epsilon) { continue; }
-          if (AoERecord.hitRecords.ContainsKey(hitLocation)) {
-            AoERecord.hitRecords[hitLocation].Damage += CurrentLocationDamage;
+          if (AoERecord.hitRecords.ContainsKey(hitLocation.Key)) {
+            AoERecord.hitRecords[hitLocation.Key].Damage += CurrentLocationDamage;
           } else {
-            Vector3 hitPos = target.getImpactPositionSimple(unit, pos, hitLocation);
-            AoERecord.hitRecords[hitLocation] = new AoEExplosionHitRecord(hitPos, CurrentLocationDamage);
+            Vector3 hitPos = target.getImpactPositionSimple(unit, pos, hitLocation.Key);
+            AoERecord.hitRecords.Add(hitLocation.Key,new AoEExplosionHitRecord(hitPos, CurrentLocationDamage));
           }
         }
       }
@@ -562,8 +563,11 @@ namespace CustAmmoCategories {
       return result;
     }*/
     public static bool testMineFiledDamage(Mech mech, float damage, float heat, float stability) {
-      if (mech.LeftLegArmor < (damage / 2f)) { return true; }
-      if (mech.RightLegArmor < (damage / 2f)) { return true; }
+      HashSet<ArmorLocation> alocs = mech.GetLandmineDamageArmorLocations();
+      float dmg = damage / alocs.Count;
+      foreach(ArmorLocation aloc in alocs) {
+        if (mech.GetCurrentArmor(aloc) < dmg) { return true; }
+      }
       if ((mech.CurrentHeat + heat) > mech.MaxHeat) { return true; }
       if ((mech.CurrentStability + stability) > mech.MaxStability) { return true; }
       return false;
@@ -865,12 +869,14 @@ namespace CustAmmoCategoriesPatches {
     private static void Postfix(ActorMovementSequence __instance) {
       Log.F.TWL(0, "ActorMovementSequence.CompleteOrders " + __instance.owningActor.DisplayName + ":" + __instance.owningActor.GUID);
       try {
-        if (DynamicMapHelper.registredMineFieldDamage.ContainsKey(__instance.owningActor) == false) { return; };
+        __instance.owningActor.Combat.HandleSanitize();
+        if (DynamicMapHelper.registredMineFieldDamage.ContainsKey(__instance.owningActor) == false) { __instance.owningActor.Combat.HandleSanitize(); return; };
         MineFieldDamage mfDamage = DynamicMapHelper.registredMineFieldDamage[__instance.owningActor];
         if (__instance.meleeType == MeleeAttackType.NotSet) {
           try {
             mfDamage.resolveMineFiledDamage(__instance.owningActor, __instance.SequenceGUID);
-          }catch(Exception e) {
+            __instance.owningActor.Combat.HandleSanitize();
+          } catch(Exception e) {
             Log.F.TWL(0, "resolving minefield damage exception:"+e.ToString());
           }
           DynamicMapHelper.registredMineFieldDamage.Remove(__instance.owningActor);
@@ -936,10 +942,11 @@ namespace CustAmmoCategoriesPatches {
     private static void Postfix(MechMeleeSequence __instance) {
       Log.F.TWL(0, "MechMeleeSequence.CompleteOrders " + __instance.owningActor.DisplayName + ":" + __instance.owningActor.GUID);
       try {
-        if (DynamicMapHelper.registredMineFieldDamage.ContainsKey(__instance.owningActor) == false) { return; };
+        if (DynamicMapHelper.registredMineFieldDamage.ContainsKey(__instance.owningActor) == false) { __instance.owningActor.Combat.HandleSanitize(); return; };
         MineFieldDamage mfDamage = DynamicMapHelper.registredMineFieldDamage[__instance.owningActor];
         mfDamage.resolveMineFiledDamage(__instance.owningActor, __instance.SequenceGUID);
         DynamicMapHelper.registredMineFieldDamage.Remove(__instance.owningActor);
+        __instance.owningActor.Combat.HandleSanitize();
       } catch (Exception e) {
         Log.F.TWL(0, e.ToString(), true);
       }
@@ -957,10 +964,11 @@ namespace CustAmmoCategoriesPatches {
         DynamicMapHelper.calculateJumpDamage(__instance.owningActor, __instance.FinalPos);
         if (DFATarget == null) {
           Log.F.WL(1, "not DFA");
-          if (DynamicMapHelper.registredMineFieldDamage.ContainsKey(__instance.owningActor) == false) { return; };
+          if (DynamicMapHelper.registredMineFieldDamage.ContainsKey(__instance.owningActor) == false) { __instance.owningActor.Combat.HandleSanitize(); return; };
           MineFieldDamage mfDamage = DynamicMapHelper.registredMineFieldDamage[__instance.owningActor];
           mfDamage.resolveMineFiledDamage(__instance.owningActor, __instance.SequenceGUID);
           DynamicMapHelper.registredMineFieldDamage.Remove(__instance.owningActor);
+          __instance.owningActor.Combat.HandleSanitize();
         } else {
           Log.F.WL(1, "DFA");
         }

@@ -437,7 +437,7 @@ namespace CustAmmoCategories {
       if (this.isHit) {
         if (this.isImplemented == true) { return; }
         if (this.impactMessage == null) { return; }
-        Log.M.TWL(0, "Applying damage " +this.parent.weapon.defId+" to "+this.target.DisplayName + " UID:"+this.UID);
+        Log.M.TWL(0, "Applying damage " +this.parent.weapon.defId+" to "+this.target.DisplayName + " UID:"+this.UID+ " isAPProtected:"+ this.target.isAPProtected());
         this.isImplemented = true;
         this.setApplyState();
         //this.ApplyTargetResistance();

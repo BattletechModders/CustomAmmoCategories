@@ -1318,6 +1318,12 @@ namespace CustomUnits {
           }
         }
       }
+      Log.LogWrite(1, "additional melee def:" + info.MeleeWeaponOverride.DefaultWeapon, true);
+      dependencyLoad.RequestResource(BattleTechResourceType.WeaponDef, info.MeleeWeaponOverride.DefaultWeapon);
+      foreach(var cm in info.MeleeWeaponOverride.Components) {
+        Log.LogWrite(1, "additional melee def:" + cm.Key, true);
+        dependencyLoad.RequestResource(BattleTechResourceType.WeaponDef, cm.Key);
+      }
     }
     public static void AddCustomDeps(this ChassisDef chassis, LoadRequest loadRequest) {
       UnitCustomInfo info = chassis.GetCustomInfo();
@@ -1410,6 +1416,14 @@ namespace CustomUnits {
           }
           Log.LogWrite(2, "exists", true);
         }
+      }
+      Log.LogWrite(1, "additional melee def:" + info.MeleeWeaponOverride.DefaultWeapon, false);
+      if (dataManager.Exists(BattleTechResourceType.WeaponDef, info.MeleeWeaponOverride.DefaultWeapon) == false) { Log.LogWrite(2, "not exists", true); return false; }
+      Log.LogWrite(2, "exists", true);
+      foreach (var cm in info.MeleeWeaponOverride.Components) {
+        Log.LogWrite(1, "additional melee def:" + cm.Key, true);
+        if (dataManager.Exists(BattleTechResourceType.WeaponDef, cm.Key) == false) { Log.LogWrite(2, "not exists", true); return false; };
+        Log.LogWrite(2, "exists", true);
       }
       return true;
     }

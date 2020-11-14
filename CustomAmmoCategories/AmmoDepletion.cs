@@ -52,12 +52,16 @@ namespace CustAmmoCategories {
         AmmunitionBoxDef ammunitionBox = item as AmmunitionBoxDef;
         WeaponDef weapon = item as WeaponDef;
         if(ammunitionBox != null) {
-          ammoCapacity.AddAmmo(ammunitionBox.Ammo.extDef(), ammunitionBox.Capacity);
+          ExtAmmunitionDef extAmmo = ammunitionBox.Ammo.extDef();
+          if (extAmmo.AutoRefill == AutoRefilType.Automatic) { continue; }
+          if (extAmmo.AutoRefill == AutoRefilType.Manual) { continue; }
+          ammoCapacity.AddAmmo(extAmmo, ammunitionBox.Capacity);
         }else if(weapon != null) {
           ExtWeaponDef extWeapon = weapon.exDef();
           foreach(var iammo in extWeapon.InternalAmmo) {
             ExtAmmunitionDef extAmmo = CustomAmmoCategories.findExtAmmo(iammo.Key);
             if (extAmmo.AutoRefill == AutoRefilType.Automatic) { continue; }
+            if (extAmmo.AutoRefill == AutoRefilType.Manual) { continue; }
             ammoCapacity.AddAmmo(extAmmo, iammo.Value);
           }
         }
@@ -69,12 +73,17 @@ namespace CustAmmoCategories {
           AmmunitionBoxDef ammunitionBox = item.Def as AmmunitionBoxDef;
           WeaponDef weapon = item.Def as WeaponDef;
           if (ammunitionBox != null) {
-            if (ammunitionBox.Ammo.extDef().AutoRefill == AutoRefilType.Automatic) { continue; }
-            ammoCapacity.AddAmmo(ammunitionBox.Ammo.extDef(), ammunitionBox.Capacity);
+            ExtAmmunitionDef extAmmo = ammunitionBox.Ammo.extDef();
+            if (extAmmo.AutoRefill == AutoRefilType.Automatic) { continue; }
+            if (extAmmo.AutoRefill == AutoRefilType.Manual) { continue; }
+            ammoCapacity.AddAmmo(extAmmo, ammunitionBox.Capacity);
           } else if (weapon != null) {
             ExtWeaponDef extWeapon = weapon.exDef();
             foreach (var iammo in extWeapon.InternalAmmo) {
-              ammoCapacity.AddAmmo(CustomAmmoCategories.findExtAmmo(iammo.Key), iammo.Value);
+              ExtAmmunitionDef extAmmo = CustomAmmoCategories.findExtAmmo(iammo.Key);
+              if (extAmmo.AutoRefill == AutoRefilType.Automatic) { continue; }
+              if (extAmmo.AutoRefill == AutoRefilType.Manual) { continue; }
+              ammoCapacity.AddAmmo(extAmmo, iammo.Value);
             }
           }
         }
@@ -86,22 +95,25 @@ namespace CustAmmoCategories {
           AmmunitionBoxDef ammunitionBox = item.Def as AmmunitionBoxDef;
           WeaponDef weapon = item.Def as WeaponDef;
           if (ammunitionBox != null) {
-            if (ammunitionBox.Ammo.extDef().AutoRefill == AutoRefilType.Automatic) { continue; }
-            ammoCapacity.AddAmmo(ammunitionBox.Ammo.extDef(), ammunitionBox.Capacity);
+            ExtAmmunitionDef extAmmo = ammunitionBox.Ammo.extDef();
+            if (extAmmo.AutoRefill == AutoRefilType.Automatic) { continue; }
+            if (extAmmo.AutoRefill == AutoRefilType.Manual) { continue; }
+            ammoCapacity.AddAmmo(extAmmo, ammunitionBox.Capacity);
           } else if (weapon != null) {
             ExtWeaponDef extWeapon = weapon.exDef();
             foreach (var iammo in extWeapon.InternalAmmo) {
               ExtAmmunitionDef extAmmo = CustomAmmoCategories.findExtAmmo(iammo.Key);
               if (extAmmo.AutoRefill == AutoRefilType.Automatic) { continue; }
+              if (extAmmo.AutoRefill == AutoRefilType.Manual) { continue; }
               ammoCapacity.AddAmmo(extAmmo, iammo.Value);
             }
           }
         }
       }
       foreach (var ammocap in ammoCapacity) {
-        if(ammocap.Key.AutoRefill == AutoRefilType.Automatic) {
-          sim.SetAmmoCount(ammocap.Key.Id, ammocap.Value);
-        }
+        if (ammocap.Key.AutoRefill == AutoRefilType.Automatic) { continue; }
+        if (ammocap.Key.AutoRefill == AutoRefilType.Manual) { continue; }
+        sim.SetAmmoCount(ammocap.Key.Id, ammocap.Value);
       }
     }
     public static void Prefix(Contract __instance) {
@@ -155,21 +167,32 @@ namespace CustAmmoCategories {
   [HarmonyPatch("AddItemStat")]
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { typeof(string), typeof(string), typeof(bool) })]
-  public static class SimGameState_AddItemStat {
-    public static void Prefix(SimGameState __instance, string id, string type, bool damaged) {
+  public static class SimGameState_AddItemStatString {
+    public static bool Prefix(SimGameState __instance, string id, string type, bool damaged) {
       try {
-        if (damaged == false) { return; }
+        if (damaged == false) { return true; }
         Log.M.TWL(0, "SimGameState.AddItemStat " + id + " type:" + type + " damaged:" + damaged);
         if (type == "AmmunitionBoxDef") {
           AmmunitionBoxDef ammoBox = __instance.DataManager.AmmoBoxDefs.Get(id);
-          if (ammoBox == null) { return; }
-          if (ammoBox.Ammo.extDef().AutoRefill == AutoRefilType.Automatic) { return; }
-          int ammocount = __instance.GetAmmoCount(ammoBox.AmmoID);
-          __instance.SetAmmoCount(ammoBox.AmmoID, ammocount + ammoBox.Capacity);
-          Log.M.WL(1, "add ammo:" + ammoBox.AmmoID + "=>" + __instance.GetAmmoCount(ammoBox.AmmoID));
-        }else if(type == "WeaponDef") {
+          ExtAmmunitionDef extAmmo = ammoBox.Ammo.extDef();
+          if (ammoBox == null) { return true; }
+          if (extAmmo.AutoRefill == AutoRefilType.Automatic) { return true; }
+          if (extAmmo.ammoOnlyBoxes.Contains(id) == false) {
+            int ammocount = __instance.GetAmmoCount(ammoBox.AmmoID);
+            __instance.SetAmmoCount(ammoBox.AmmoID, ammocount + ammoBox.Capacity);
+            Log.M.WL(1, "add ammo:" + ammoBox.AmmoID + "=>" + __instance.GetAmmoCount(ammoBox.AmmoID));
+          } else {
+            Log.M.WL(1, "ammo only box detected");
+            int ammocount = __instance.GetAmmoCount(ammoBox.AmmoID);
+            int capacity = ammoBox.Capacity;
+            if (capacity <= 0) { capacity = 1; }
+            __instance.SetAmmoCount(ammoBox.AmmoID, ammocount + capacity);
+            Log.M.WL(1, "add ammo:" + ammoBox.AmmoID + "=>" + __instance.GetAmmoCount(ammoBox.AmmoID));
+            return false;
+          }
+        } else if(type == "WeaponDef") {
           WeaponDef def = __instance.DataManager.WeaponDefs.Get(id);
-          if (def == null) { return; }
+          if (def == null) { return true; }
           ExtWeaponDef exDef = def.exDef();
           foreach (var iammo in exDef.InternalAmmo) {
             AmmunitionDef ammo = __instance.DataManager.AmmoDefs.Get(iammo.Key);
@@ -183,6 +206,53 @@ namespace CustAmmoCategories {
       } catch (Exception e) {
         Log.M.TWL(0, e.ToString());
       }
+      return true;
+    }
+  }
+  [HarmonyPatch(typeof(SimGameState))]
+  [HarmonyPatch("AddItemStat")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { typeof(string), typeof(System.Type), typeof(bool) })]
+  public static class SimGameState_AddItemStatType {
+    public static bool Prefix(SimGameState __instance, string id, System.Type type, bool damaged) {
+      try {
+        if (damaged == false) { return true; }
+        Log.M.TWL(0, "SimGameState.AddItemStat " + id + " type:" + type + " damaged:" + damaged);
+        if (type == typeof(AmmunitionBoxDef)) {
+          AmmunitionBoxDef ammoBox = __instance.DataManager.AmmoBoxDefs.Get(id);
+          if (ammoBox == null) { return true; }
+          ExtAmmunitionDef extAmmo = ammoBox.Ammo.extDef();
+          if (extAmmo.AutoRefill == AutoRefilType.Automatic) { return true; }
+          if (extAmmo.ammoOnlyBoxes.Contains(id) == false) {
+            int ammocount = __instance.GetAmmoCount(ammoBox.AmmoID);
+            __instance.SetAmmoCount(ammoBox.AmmoID, ammocount + ammoBox.Capacity);
+            Log.M.WL(1, "add ammo:" + ammoBox.AmmoID + "=>" + __instance.GetAmmoCount(ammoBox.AmmoID));
+          } else {
+            Log.M.WL(1, "ammo only box detected");
+            int ammocount = __instance.GetAmmoCount(ammoBox.AmmoID);
+            int capacity = ammoBox.Capacity;
+            if (capacity <= 0) { capacity = 1; }
+            __instance.SetAmmoCount(ammoBox.AmmoID, ammocount + capacity);
+            Log.M.WL(1, "add ammo:" + ammoBox.AmmoID + "=>" + __instance.GetAmmoCount(ammoBox.AmmoID));
+            return false;
+          }
+        } else if (type == typeof(WeaponDef)) {
+          WeaponDef def = __instance.DataManager.WeaponDefs.Get(id);
+          if (def == null) { return true; }
+          ExtWeaponDef exDef = def.exDef();
+          foreach (var iammo in exDef.InternalAmmo) {
+            AmmunitionDef ammo = __instance.DataManager.AmmoDefs.Get(iammo.Key);
+            if (ammo == null) { continue; };
+            if (ammo.extDef().AutoRefill == AutoRefilType.Automatic) { continue; }
+            int ammocount = __instance.GetAmmoCount(iammo.Key);
+            __instance.SetAmmoCount(iammo.Key, ammocount + iammo.Value);
+            Log.M.WL(1, "add ammo:" + iammo.Key + "=>" + __instance.GetAmmoCount(iammo.Key));
+          }
+        }
+      } catch (Exception e) {
+        Log.M.TWL(0, e.ToString());
+      }
+      return true;
     }
   }
   [HarmonyPatch()]
@@ -351,13 +421,50 @@ namespace CustAmmoCategories {
       }
     }
   }
-  [HarmonyPatch(typeof(SimGameState))]
-  [HarmonyPatch("AddFromShopDefItem")]
+  [HarmonyPatch(typeof(Shop))]
+  [HarmonyPatch("GetAllInventoryShopItems")]
   [HarmonyPatch(MethodType.Normal)]
-  [HarmonyPatch(new Type[] { typeof(ShopDefItem), typeof(bool), typeof(int), typeof(SimGamePurchaseMessage.TransactionType) })]
+  [HarmonyPatch(new Type[] { })]
   public static class SimGameState_AddFromShopDefItem {
-    public static void Postfix(SimGameState __instance, ShopDefItem item, bool useCount, int cost, SimGamePurchaseMessage.TransactionType transactionType) {
+    public static List<AmmunitionBoxDef> GetAllInventoryAmmoCountDefs(this SimGameState sim) {
+      List<AmmunitionBoxDef> result = new List<AmmunitionBoxDef>();
+      foreach (string allInventoryString in sim.GetAllInventoryAmmoCountString()) {
+        if (sim.CompanyStats.GetValue<int>(allInventoryString) >= 1) {
+          string[] strArray = allInventoryString.Split('.');
+          string ammoId = strArray[0];
+          AmmunitionDef ammoDef = sim.DataManager.AmmoDefs.Get(ammoId);
+          if (ammoDef == null) { continue; }
+          ExtAmmunitionDef extAmmo = ammoDef.extDef();
+          if (extAmmo.AutoRefill == AutoRefilType.Automatic) { continue; }
+          AmmunitionBoxDef boxDef = sim.DataManager.AmmoBoxDefs.Get(ammoDef.getGenericBox());
+          if (boxDef == null) { continue; }
+          result.Add(boxDef);
+        }
+      }
+      return result;
+    }
+    public static List<string> GetAllInventoryAmmoCountString(this SimGameState sim) {
+      List<string> result = new List<string>();
+      Dictionary<string, Statistic>.KeyCollection items = sim.CompanyStats.Items;
+      foreach (string str in items) {
+        if (str.Contains(string.Format("{0}.{1}", "AmmunitionDef", "AmmoCount"))) { result.Add(str); };
+      }
+      return result;
+    }
+    public static void Postfix(Shop __instance, ref List<ShopDefItem> __result) {
       try {
+        SimGameState sim = Traverse.Create(__instance).Field<SimGameState>("Sim").Value;
+        foreach (AmmunitionBoxDef ammoBoxDef in sim.GetAllInventoryAmmoCountDefs()) {
+          float cost = (float)ammoBoxDef.Description.Cost;
+          int amount = sim.GetAmmoCount(ammoBoxDef.AmmoID);
+          ShopDefItem shopDefItem = new ShopDefItem();
+          shopDefItem.ID = ammoBoxDef.Description.Id;
+          ComponentType componentType = ammoBoxDef.ComponentType;
+          shopDefItem.Type = Shop.ComponentTypeToStopItemType(componentType);
+          shopDefItem.SellCost = Mathf.FloorToInt(cost * sim.Constants.Finances.ShopSellModifier);
+          shopDefItem.Count = amount;
+          __result.Add(shopDefItem);
+        }
       } catch (Exception e) {
         Log.M.TWL(0, e.ToString());
       }
@@ -373,7 +480,19 @@ namespace CustAmmoCategories {
         if (___isInBuyingState == false) { return; };
         HashSet<string> ammoToAdd = new HashSet<string>();
         foreach(var ammoGenBox in ___dm.AmmoDefs) {
-          if (ammoGenBox.Value.extDef().AutoRefill == AutoRefilType.Automatic) { continue; }
+          ExtAmmunitionDef extAmmo = ammoGenBox.Value.extDef();
+          if (extAmmo.AutoRefill == AutoRefilType.Automatic) { continue; }
+          if(extAmmo.AvailableOnPlanet.Count > 0) {
+            StarSystem system = Traverse.Create(shop).Field<StarSystem>("system").Value;
+            if (system == null) { continue; }
+            Log.M.TWL(0, "SG_Shop_Screen.AddShopInventory testing planet "+system.Def.Description.Id);
+            bool containsAll = true;
+            foreach(string tag in extAmmo.AvailableOnPlanet) {
+              Log.M.WL(1, tag + " exists:" + system.Tags.Contains(tag));
+              if (system.Tags.Contains(tag) == false) { containsAll = false; break; }
+            }
+            if (containsAll == false) { continue; }
+          }
           if (___dm.AmmoBoxDefs.Exists(ammoGenBox.Value.getGenericBox())) {
             ammoToAdd.Add(ammoGenBox.Value.getGenericBox());
           }
@@ -434,6 +553,7 @@ namespace CustAmmoCategories {
   [HarmonyPatch(new Type[] { })]
   public static class AmmunitionBox_InitStats {
     public static bool isPlayerMech(this SimGameState sim, PilotableActorDef def) {
+      if (sim.ActiveMechs == null) { return false; }
       foreach(var amech in sim.ActiveMechs) {
         if (amech.Value.GUID == def.GUID) { return true; }
       }
@@ -654,6 +774,8 @@ namespace CustAmmoCategories {
       if (UnityGameInstance.BattleTechGame.Simulation == null) { return false; }
       if (ammoBoxDef.Ammo.extDef().AutoRefill != AutoRefilType.Automatic) {
         ammocount = UnityGameInstance.BattleTechGame.Simulation.GetAmmoCount(ammoBoxDef.AmmoID);
+      } else {
+        return false;
       }
       capacity = ammoBoxDef.Capacity;
       return true;
@@ -680,7 +802,7 @@ namespace CustAmmoCategories {
         foreach (string ammoId in ammoIds) {
           ammocount += UnityGameInstance.BattleTechGame.Simulation.GetAmmoCount(ammoId);
         }
-        return true;
+        return ammocount >= 0;
       }
       return false;
     }
@@ -733,6 +855,8 @@ namespace CustAmmoCategories {
       try {
         Dictionary<string, HashSet<AmmunitionBoxDef>> ammoBoxesSets = new Dictionary<string, HashSet<AmmunitionBoxDef>>();
         foreach (var ammoBox in __instance.DataManager.AmmoBoxDefs) {
+          if (ammoBox.Value.Ammo == null) { continue; }
+          if (ammoBox.Value.Ammo.extDef() == null) { continue; }
           if (ammoBox.Value.Ammo.extDef().AutoRefill == AutoRefilType.Automatic) { continue; }
           if(ammoBoxesSets.TryGetValue(ammoBox.Value.AmmoID,out HashSet<AmmunitionBoxDef> boxes) == false) {
             boxes = new HashSet<AmmunitionBoxDef>();

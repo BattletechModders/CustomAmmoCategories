@@ -454,7 +454,7 @@ namespace CleverGirlAIDamagePrediction {
         result.isAMS = weapon.isAMS();
         result.isAAMS = weapon.isAAMS();
         result.ammoUsage = weapon.ShotsWhenFired;
-        result.JammChance = weapon.FlatJammingChance();
+        result.JammChance = weapon.FlatJammingChance(out string jdescr);
         result.DamageOnJamm = weapon.DamageOnJamming();
         result.DestroyOnJamm = weapon.DestroyOnJamming();
         result.Cooldown = weapon.Cooldown();

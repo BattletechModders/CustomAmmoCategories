@@ -1,5 +1,6 @@
 ﻿using BattleTech;
 using BattleTech.Designed;
+using BattleTech.Framework;
 using BattleTech.UI;
 using CustAmmoCategories;
 using Harmony;
@@ -25,7 +26,7 @@ namespace CustomUnits {
         }
       }
       if (flag) { return; }
-      Log.TWL(0, "LanceSpawnerGameLogic.OnUnitSpawnComplete "+__instance.Name);
+      Log.TWL(0, "LanceSpawnerGameLogic.OnUnitSpawnComplete " + __instance.Name);
       CombatHUD HUD = __instance.HUD();
       if (HUD == null) { return; }
       HUD.MechWarriorTray.RefreshTeam(HUD.Combat.LocalPlayerTeam);
@@ -38,7 +39,7 @@ namespace CustomUnits {
   public static class LanceSpawnerGameLogic_GetRealMissionObjectiveResults {
     public static void Postfix(Contract __instance, TeamController teamController, ref List<MissionObjectiveResult> __result) {
       Log.TWL(0, "Contract.GetRealMissionObjectiveResults");
-      foreach(MissionObjectiveResult result in __result) {
+      foreach (MissionObjectiveResult result in __result) {
         Log.WL(1, result.guid);
         Log.WL(2, result.title);
         Log.WL(2, result.status.ToString());
@@ -63,7 +64,7 @@ namespace CustomUnits {
   public static class SelectionStateJump_ProcessLeftClick {
     public static bool Prefix(SelectionStateMove __instance, Vector3 worldPos, ref bool __result) {
       if (__instance.HasDestination == true) { return true; }
-      if(__instance.SelectedActor.IsValidEscortPosition(worldPos, out string message) == false) {
+      if (__instance.SelectedActor.IsValidEscortPosition(worldPos, out string message) == false) {
         GenericPopupBuilder.Create(GenericPopupType.Warning, message).IsNestedPopupWithBuiltInFader().CancelOnEscape().Render();
         __result = false;
         return false;
@@ -76,21 +77,21 @@ namespace CustomUnits {
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { typeof(Vector3) })]
   public static class SelectionStateMove_ProcessLeftClick {
-    public static float GetRouteDistance(this CombatGameState combat,Vector3 pos) {
-      combat.FillRoutePoints();
-      ConvoyRoutePoint nearest = pos.getNearestRoute();
-      float eDistNext = Vector3.Distance(pos, nearest.point);
-      float eDistPrev = eDistNext;
-      if (nearest.next != null) eDistNext += Vector3.Distance(pos, nearest.next.point);
-      if (nearest.prev != null) eDistPrev += Vector3.Distance(pos, nearest.prev.point);
-      eDistNext -= nearest.distanceNext;
-      eDistPrev -= nearest.distancePrev;
-      return Mathf.Min(eDistNext, eDistPrev);
+    public static float GetRouteDistance(this CombatGameState combat, Vector3 pos) {
+      List<ConvoyRoutePoint> route = combat.getConvoyRoutePoints();
+      float result = 0f;
+      for(int t = 0; t < (route.Count - 1); ++t) {
+        Vector3 point = route[t].point;
+        Vector3 pointNext = route[t+1].point;
+        float routeDist = Vector3.Distance(pos, point) + Vector3.Distance(pos, pointNext) - Vector3.Distance(point, pointNext);
+        if ((result == 0f) || (result > routeDist)) { result = routeDist; }
+      }
+      return result;
     }
     public static float GetNearestPlayerDistance(this CombatGameState combat, Vector3 pos) {
       List<AbstractActor> allActors = combat.AllActors;
       float result = 0f;
-      foreach(AbstractActor actor in allActors) {
+      foreach (AbstractActor actor in allActors) {
         if (actor.IsDead) { continue; }
         if (actor.TeamId != combat.LocalPlayerTeamGuid) { continue; }
         if (actor.EncounterTags.Contains(Core.Settings.PlayerControlConvoyTag)) { continue; }
@@ -121,13 +122,15 @@ namespace CustomUnits {
       } else if (unit.EncounterTags.Contains(Core.Settings.PlayerControlConvoyTag)) {
         bool result = true;
         float routeDistance = unit.Combat.GetRouteDistance(worldPos);
+        float curRouteDistance = unit.Combat.GetRouteDistance(unit.CurrentIntendedPosition);
+        float routeDistanceLimit = curRouteDistance > Core.Settings.ConvoyMaxDistFromRoute ? curRouteDistance : Core.Settings.ConvoyMaxDistFromRoute;
         StringBuilder content = new StringBuilder();
         float playerDistnace = unit.Combat.GetNearestPlayerDistance(worldPos);
         float otherDistnace = unit.Combat.GetFarestOtherDistance(worldPos);
-        if (routeDistance > Core.Settings.ConvoyMaxDistFromRoute) { content.Append("<color=red>"); result = false; } else { content.Append("<color=green>"); };
-        content.AppendLine("Distance from route: "+routeDistance+"/"+Core.Settings.ConvoyMaxDistFromRoute+"</color>");
+        if (routeDistance > routeDistanceLimit) { content.Append("<color=red>"); result = false; } else { content.Append("<color=green>"); };
+        content.AppendLine("Distance from route: " + routeDistance + "/" + routeDistanceLimit + "</color>");
         if (playerDistnace > Core.Settings.ConvoyMaxDistFromPlayer) { content.Append("<color=red>"); result = false; } else { content.Append("<color=green>"); };
-        content.AppendLine("Distance from player: "+ playerDistnace + "/"+Core.Settings.ConvoyMaxDistFromPlayer);
+        content.AppendLine("Distance from player: " + playerDistnace + "/" + Core.Settings.ConvoyMaxDistFromPlayer);
         if (otherDistnace > Core.Settings.ConvoyMaxDistFromOther) { content.Append("<color=red>"); result = false; } else { content.Append("<color=green>"); };
         content.AppendLine("Distance from convoy: " + otherDistnace + "/" + Core.Settings.ConvoyMaxDistFromOther);
         message = content.ToString();
@@ -137,7 +140,11 @@ namespace CustomUnits {
     }
     public static bool Prefix(SelectionStateMove __instance, Vector3 worldPos, ref bool __result) {
       if (__instance.HasDestination == true) { return true; }
-      if(__instance.SelectedActor.IsValidEscortPosition(worldPos, out string message) == false) {
+      if (__instance.HasTarget) {
+        GenericPopupBuilder.Create(GenericPopupType.Warning, "CONVOY UNITS CAN'T MELEE").IsNestedPopupWithBuiltInFader().CancelOnEscape().Render();
+        return false;
+      }
+      if (__instance.SelectedActor.IsValidEscortPosition(__instance.SelectedActor.Pathing.ResultDestination, out string message) == false) {
         GenericPopupBuilder.Create(GenericPopupType.Warning, message).IsNestedPopupWithBuiltInFader().CancelOnEscape().Render();
         __result = false;
         return false;
@@ -155,10 +162,10 @@ namespace CustomUnits {
         DespawnActorMessage despawnActorMessage = message as DespawnActorMessage;
         if (despawnActorMessage == null) { return; }
         if (!(despawnActorMessage.affectedObjectGuid == __instance.GUID)) { return; }
-        Log.TWL(0, "AbstractActor.DespawnActor " + __instance.DisplayName+":"+despawnActorMessage.deathMethod);
+        Log.TWL(0, "AbstractActor.DespawnActor " + __instance.DisplayName + ":" + despawnActorMessage.deathMethod);
         if (__instance.TeamId != __instance.Combat.LocalPlayerTeamGuid) { return; };
         string transferTeamId = string.Empty;
-        foreach(string tag in __instance.EncounterTags) {
+        foreach (string tag in __instance.EncounterTags) {
           if (tag.StartsWith(Core.Settings.TransferTeamOnDeathPrefixTag)) {
             transferTeamId = tag.Substring(Core.Settings.TransferTeamOnDeathPrefixTag.Length);
             break;
@@ -256,7 +263,7 @@ namespace CustomUnits {
   [HarmonyPatch(typeof(OccupyRegionObjective))]
   [HarmonyPatch("UpdateCounts")]
   [HarmonyPatch(MethodType.Normal)]
-  [HarmonyPatch(new Type[] {  })]
+  [HarmonyPatch(new Type[] { })]
   public static class OccupyRegionObjective_UpdateCounts {
     public static void Postfix(OccupyRegionObjective __instance) {
       try {
@@ -264,13 +271,45 @@ namespace CustomUnits {
         for (int index = 0; index < targetUnits.Count; ++index) {
           ICombatant combatant = targetUnits[index];
           if (combatant.IsDead) { continue; }
-          if (combatant.IsInRegion(__instance.occupyTargetRegion.EncounterObjectGuid) == false) { continue; }
           AbstractActor unit = combatant as AbstractActor;
           if (unit == null) { continue; }
-          if (unit.EncounterTags.Contains(Core.Settings.PlayerControlConvoyTag) == false) { continue; }
-          if (unit.EncounterTags.Contains(Core.Settings.ConvoyDenyMoveTag)) { continue; }
           if (unit.TeamId != unit.Combat.LocalPlayerTeamGuid) { continue; }
-          unit.EncounterTags.Add(Core.Settings.ConvoyDenyMoveTag);
+          if (unit.EncounterTags.Contains(Core.Settings.PlayerControlConvoyTag) == false) { continue; }
+          if (combatant.IsInRegion(__instance.occupyTargetRegion.EncounterObjectGuid) == false) {
+            if (unit.EncounterTags.Contains(Core.Settings.ConvoyDenyMoveTag)) { unit.EncounterTags.Remove(Core.Settings.ConvoyDenyMoveTag); }
+          } else {
+            if (unit.EncounterTags.Contains(Core.Settings.ConvoyDenyMoveTag) == false) { unit.EncounterTags.Add(Core.Settings.ConvoyDenyMoveTag); }
+          }
+        }
+      } catch (Exception e) {
+        Log.TWL(0, e.ToString(), true);
+      }
+    }
+  }
+  [HarmonyPatch(typeof(ObjectiveGameLogic))]
+  [HarmonyPatch("ActivateObjective")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { })]
+  public static class ObjectiveGameLogic_ActivateObjectiveConvoy {
+    private static string escortTargetRegion = string.Empty;
+    public static void Prefix(ObjectiveGameLogic __instance) {
+      try {
+        Log.TWL(0, "ObjectiveGameLogic.ActivateObjective "+ __instance.GetType().ToString()+ " IsComplete:" + __instance.IsComplete);
+        if (__instance.IsComplete) { return; }
+        EscortXUnitsObjective escortXUnitsObjective = __instance as EscortXUnitsObjective;
+        if (escortXUnitsObjective == null) { return; }
+        __instance.Combat.FillRoutePoints();
+        List<ConvoyRoutePoint> route = __instance.Combat.getConvoyRoutePoints();
+        Log.WL(1, "route:" + route.Count);
+        foreach (ConvoyRoutePoint point in route) {
+          MapTerrainDataCellEx cell = escortXUnitsObjective.Combat.MapMetaData.GetCellAt(point.point) as MapTerrainDataCellEx;
+          Log.WL(2, "point:" + point.point+" cell:"+(cell==null?"null":"not null"));
+          //GameObject sphere = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+          //sphere.transform.SetParent(null);
+          //sphere.transform.position = point.point;
+          //sphere.transform.localScale = Vector3.one * 10f;
+          if (cell == null) { continue; }
+          cell.hexCell.addTempTerrainVFX(escortXUnitsObjective.Combat, Core.Settings.ConvoyRouteBeaconVFX, 999, Core.Settings.ConvoyRouteBeaconVFXScale.vector);
         }
       } catch (Exception e) {
         Log.TWL(0, e.ToString(), true);
@@ -279,24 +318,26 @@ namespace CustomUnits {
   }
   public class ConvoyRoutePoint {
     public Vector3 point { get; set; }
+    public float distToEnd { get; set; }
     private ConvoyRoutePoint _next;
     private ConvoyRoutePoint _prev;
     public ConvoyRoutePoint next { get { return _next; } set { _next = value; distanceNext = _next == null ? 0f : Vector3.Distance(point, _next.point); } }
     public ConvoyRoutePoint prev { get { return _prev; } set { _prev = value; distancePrev = _prev == null ? 0f : Vector3.Distance(point, _prev.point); } }
     public float distanceNext { get; set; }
     public float distancePrev { get; set; }
-    public ConvoyRoutePoint(Vector3 p) {
+    public ConvoyRoutePoint(Vector3 p,Vector3 endPos) {
       point = p;
       distanceNext = 0f;
       distancePrev = 0f;
       _next = null;
       _prev = null;
+      distToEnd = Vector3.Distance(p,endPos);
     }
   }
   public class ConvoyRoutePointInfoCache {
     public ConvoyRoutePoint nearest { get; set; }
     public float elipticDistance { get; set; }
-    public ConvoyRoutePointInfoCache(Vector3 pos){
+    public ConvoyRoutePointInfoCache(Vector3 pos) {
       nearest = pos.getNearestRoute();
       float eDistNext = Vector3.Distance(pos, nearest.point);
       float eDistPrev = eDistNext;
@@ -317,7 +358,7 @@ namespace CustomUnits {
     public Dictionary<Vector3, float> distanceFormOthersCache { get; set; }
     public Dictionary<Vector3, float> distanceFormPlayerCache { get; set; }
     public void UpdatePositionValues(int round, bool forced) {
-      if ((this.round == round)&&(forced == false)) { return; }
+      if ((this.round == round) && (forced == false)) { return; }
       distanceFormOthersCache.Clear();
       distanceFormPlayerCache.Clear();
       this.round = round;
@@ -333,19 +374,19 @@ namespace CustomUnits {
       foreach (AbstractActor punit in player) {
         float distance = Vector3.Distance(unit.CurrentIntendedPosition, punit.CurrentIntendedPosition);
         if (punit.IsDead) { continue; }
-        if ((nearestPlayerDist > distance)||(nearestPlayerDist == 0f)) { nearestPlayerDist = distance; NearestPlayer = punit; }
+        if ((nearestPlayerDist > distance) || (nearestPlayerDist == 0f)) { nearestPlayerDist = distance; NearestPlayer = punit; }
       }
     }
     public float getDistanceFromOthers(Vector3 pos) {
-      if(distanceFormOthersCache.TryGetValue(pos, out float result) == false) {
+      if (distanceFormOthersCache.TryGetValue(pos, out float result) == false) {
         result = 0f;
-        foreach(AbstractActor other in others) {
+        foreach (AbstractActor other in others) {
           if (other.IsDead) { continue; }
           float dist = Vector3.Distance(pos, other.CurrentIntendedPosition);
           if (dist > result) { result = dist; FarestOther = other; }
         }
         distanceFormOthersCache.Add(pos, result);
-        Log.TWL(0, "getDistanceFromOthers round:" + round + " pos:" + pos+" farest:"+FarestOther.DisplayName+" result:"+result + "/" + Core.Settings.ConvoyMaxDistFromOther);
+        Log.TWL(0, "getDistanceFromOthers round:" + round + " pos:" + pos + " farest:" + FarestOther.DisplayName + " result:" + result + "/" + Core.Settings.ConvoyMaxDistFromOther);
       }
       return result;
     }
@@ -358,7 +399,7 @@ namespace CustomUnits {
           if ((dist < result) || (result == 0f)) { result = dist; NearestPlayer = other; }
         }
         distanceFormPlayerCache.Add(pos, result);
-        Log.TWL(0, "getDistanceFromPlayer round:" + round + " pos:" + pos + " nearest:"+ NearestPlayer.DisplayName+ " result:" + result+"/"+Core.Settings.ConvoyMaxDistFromPlayer);
+        Log.TWL(0, "getDistanceFromPlayer round:" + round + " pos:" + pos + " nearest:" + NearestPlayer.DisplayName + " result:" + result + "/" + Core.Settings.ConvoyMaxDistFromPlayer);
       }
       return result;
     }
@@ -379,7 +420,7 @@ namespace CustomUnits {
         }
       }
       this.round = -1;
-      this.UpdatePositionValues(unit.Combat.TurnDirector.CurrentRound,true);
+      this.UpdatePositionValues(unit.Combat.TurnDirector.CurrentRound, true);
     }
   }
   public class ConvoyPositionPathingLimitCache {
@@ -394,7 +435,8 @@ namespace CustomUnits {
   [HarmonyPatch(new Type[] { typeof(PathNode), typeof(PathNode), typeof(float) })]
   public static class PathNodeGrid_GetTerrainModifiedCost {
     private static List<ConvoyRoutePoint> routePoints = new List<ConvoyRoutePoint>();
-    private static bool routePointsFilled = false;
+    public static List<ConvoyRoutePoint> getConvoyRoutePoints(this CombatGameState combat) { return routePoints; }
+    //private static bool routePointsFilled = false;
     private static Dictionary<AbstractActor, ConvoyActorPathingLimitCache> convoyPathing = new Dictionary<AbstractActor, ConvoyActorPathingLimitCache>();
     private static Dictionary<Vector3, ConvoyRoutePointInfoCache> distanceFromRouteCache = new Dictionary<Vector3, ConvoyRoutePointInfoCache>();
     private static Dictionary<Vector3, Dictionary<Vector3, float>> actorFromRouteCache = new Dictionary<Vector3, Dictionary<Vector3, float>>();
@@ -403,27 +445,62 @@ namespace CustomUnits {
       convoyPathing.Clear();
       distanceFromRouteCache.Clear();
       actorFromRouteCache.Clear();
-      routePointsFilled = false;
+      //routePointsFilled = false;
     }
     public static void FillRoutePoints(this CombatGameState combat) {
-      if (routePointsFilled) { return; }
-      routePointsFilled = true;
+      //if (routePointsFilled) { return; }
+      //routePointsFilled = true;
+      routePoints.Clear();
       EscortChunkGameLogic escortLogic = combat.EncounterLayerData.gameObject.GetComponentInChildren<EscortChunkGameLogic>();
+      RegionPointGameLogic[] regions = escortLogic.GetComponentsInChildren<RegionPointGameLogic>();
+      float x = 0f;
+      float y = 0f;
+      float z = 0f;
+      float i = 0f;
+      UnitSpawnPointGameLogic[] spoints = escortLogic.GetComponentsInChildren<UnitSpawnPointGameLogic>();
+      foreach (UnitSpawnPointGameLogic spoint in spoints) {
+        x += spoint.hexPosition.x;
+        y += spoint.hexPosition.y;
+        z += spoint.hexPosition.z;
+        i += 1f;
+      }
+      Vector3 startPos = new Vector3(x / i, y / i, z / i);
+      startPos.y = combat.MapMetaData.GetCellAt(startPos).cachedHeight;
+      x = 0f;
+      y = 0f;
+      z = 0f;
+      i = 0f;
+      foreach (RegionPointGameLogic rpoint in regions) {
+        x += rpoint.hexPosition.x;
+        y += rpoint.hexPosition.y;
+        z += rpoint.hexPosition.z;
+        i += 1f;
+      }
+      Vector3 endPos = new Vector3(x / i, y / i, z / i);
+      endPos.y = combat.MapMetaData.GetCellAt(endPos).cachedHeight;
       if (escortLogic == null) { return; }
       RouteGameLogic route = escortLogic.GetComponentInChildren<RouteGameLogic>();
       if (route == null) { return; }
       RoutePointGameLogic[] rPoints = route.routePointList;
-      //RouteGameLogic convoy_route = null;
-      Log.TWL(0, "FillRoutePoints:" + rPoints.Length);
-      for(int i = 0; i < rPoints.Length; ++i) {
-        routePoints.Add(new ConvoyRoutePoint(rPoints[i].hexPosition));
-        //GameObject sphere = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-        //sphere.transform.position = rPoints[i].hexPosition;
-        //sphere.transform.localScale = Vector3.one * 10f;
-    }
-      for (int i = 0; i < routePoints.Count; ++i) {
-        if (i < (routePoints.Count - 1)) { routePoints[i].next = routePoints[i + 1]; }
-        if (i > 0) { routePoints[i].prev = routePoints[i - 1]; }
+      //if (rPoints.Length > 0) {
+      //  float fpToEndDist = Vector3.Distance(rPoints[0].hexPosition,endPos);
+      //  float stToEndDist = Vector3.Distance(startPos, endPos);
+      //  if (stToEndDist > fpToEndDist) {
+      //    routePoints.Add(new ConvoyRoutePoint(startPos, endPos));
+      //  }
+      //} else {
+      routePoints.Add(new ConvoyRoutePoint(startPos, endPos));
+      //}
+      for (int t = 0; t < rPoints.Length; ++t) {
+        routePoints.Add(new ConvoyRoutePoint(rPoints[t].hexPosition, endPos));
+      }
+      routePoints.Add(new ConvoyRoutePoint(endPos, endPos));
+      //routePoints.Sort((a, b) => a.distToEnd.CompareTo(b.distToEnd));
+      Log.TWL(0, "FillRoutePoints:" + routePoints.Count);
+      for (int t = 0; t < routePoints.Count; ++t) {
+        //Log.WL(1,"point:"+ routePoints[t].point+" end dist:"+ routePoints[t].distToEnd);
+        if (t < (routePoints.Count - 1)) { routePoints[t].next = routePoints[t + 1]; }
+        if (t > 0) { routePoints[t].prev = routePoints[t - 1]; }
       }
     }
     public static ConvoyRoutePoint getNearestRoute(this Vector3 pos) {
@@ -454,7 +531,7 @@ namespace CustomUnits {
         return false;
       }
       if (actor.EncounterTags.Contains(Core.Settings.PlayerControlConvoyTag)) {
-        FillRoutePoints(actor.Combat);
+        //FillRoutePoints(actor.Combat);
         //Log.TWL(0, "isValidConvoyPosition:" + actor.DisplayName + ":"+actor.Combat.TurnDirector.CurrentRound+":" + pos);
         if (distanceFromRouteCache.TryGetValue(pos, out ConvoyRoutePointInfoCache posDistCache) == false) {
           posDistCache = new ConvoyRoutePointInfoCache(pos);
@@ -481,11 +558,11 @@ namespace CustomUnits {
             return false;
           }
         }
-        if(convoyPathing.TryGetValue(actor, out ConvoyActorPathingLimitCache convoyActorPathing) == false) {
+        if (convoyPathing.TryGetValue(actor, out ConvoyActorPathingLimitCache convoyActorPathing) == false) {
           convoyActorPathing = new ConvoyActorPathingLimitCache(actor);
           convoyPathing.Add(actor, convoyActorPathing);
         }
-        convoyActorPathing.UpdatePositionValues(actor.Combat.TurnDirector.CurrentRound,false);
+        convoyActorPathing.UpdatePositionValues(actor.Combat.TurnDirector.CurrentRound, false);
         float distanceFromOthers = convoyActorPathing.getDistanceFromOthers(pos);
         //Log.WL(1, "distanceFromOthers:" + distanceFromOthers + " / " + Core.Settings.ConvoyMaxDistFromOther);
         if (distanceFromOthers > Core.Settings.ConvoyMaxDistFromOther) { return false; }
@@ -497,13 +574,13 @@ namespace CustomUnits {
     }
     public static void Postfix(PathNodeGrid __instance, PathNode from, PathNode to, float distanceAvailable, AbstractActor ___owningActor, CombatGameState ___combat, ref float __result) {
       //try {
-        //if (__result > distanceAvailable) { return; }
-        //if (___owningActor.isValidConvoyPosition(to.Position) == false) {
-          //__result = 9999.9f;
-          //return;
-        //}
+      //if (__result > distanceAvailable) { return; }
+      //if (___owningActor.isValidConvoyPosition(to.Position) == false) {
+      //__result = 9999.9f;
+      //return;
+      //}
       //} catch (Exception e) {
-        //Log.TWL(0, e.ToString(), true);
+      //Log.TWL(0, e.ToString(), true);
       //}
     }
   }
@@ -515,16 +592,28 @@ namespace CustomUnits {
     public static void Postfix(JumpPathing __instance, Vector3 worldPos, List<AbstractActor> allActors, ref bool __result) {
       //if (__result == false) { return; }
       //try {
-        //if (Traverse.Create(__instance).Property<Mech>("Mech").Value.isValidConvoyPosition(worldPos) == false) { __result = false; return; }
+      //if (Traverse.Create(__instance).Property<Mech>("Mech").Value.isValidConvoyPosition(worldPos) == false) { __result = false; return; }
       //}catch(Exception e) {
-        //Log.TWL(0,e.ToString(),true);
+      //Log.TWL(0,e.ToString(),true);
       //}
     }
   }
+  //[HarmonyPatch(typeof(EncounterChunkGameLogic))]
+  //[HarmonyPatch("EncounterStart")]
+  //[HarmonyPatch(MethodType.Normal)]
+  //[HarmonyPatch(new Type[] { })]
+  //public static class EncounterChunkGameLogic_EncounterStart {
+  //  public static void Postfix(EncounterChunkGameLogic __instance) {
+  //    EscortChunkGameLogic escortChunkGameLogic = __instance as EscortChunkGameLogic;
+  //    if (escortChunkGameLogic == null) { return; }
+  //    Log.TWL(0, "EscortChunkGameLogic.EncounterStart");
+  //    __instance.Combat.FillRoutePoints();
+  //  }
+  //}
   [HarmonyPatch(typeof(ActorMovementSequence))]
   [HarmonyPatch("OnAdded")]
   [HarmonyPatch(MethodType.Normal)]
-  [HarmonyPatch(new Type[] {  })]
+  [HarmonyPatch(new Type[] { })]
   public static class ActorMovementSequence_OnAdded {
     public static void Postfix(ActorMovementSequence __instance) {
       //try {
@@ -570,8 +659,8 @@ namespace CustomUnits {
   public static class CombatGameState_InitializeContract {
     public static string ContentToString(this HBS.Collections.TagSet tags) {
       StringBuilder result = new StringBuilder();
-      foreach(var val in tags) {
-        result.Append(val);result.Append(";");
+      foreach (var val in tags) {
+        result.Append(val); result.Append(";");
       }
       return result.ToString();
     }
@@ -580,8 +669,8 @@ namespace CustomUnits {
         InitializeContractMessage initializeContractMessage = message as InitializeContractMessage;
         CombatGameState combat = initializeContractMessage.combat;
         Contract activeContract = combat.ActiveContract;
-        Log.TWL(0, "LanceSpawnerList:"+ Traverse.Create(combat.EncounterLayerData).Property("LanceSpawnerList").GetValue<LanceSpawnerGameLogic[]>().Length);
-        foreach(LanceSpawnerGameLogic lanceSpawner in Traverse.Create(combat.EncounterLayerData).Property("LanceSpawnerList").GetValue<LanceSpawnerGameLogic[]>()) {
+        Log.TWL(0, "LanceSpawnerList:" + Traverse.Create(combat.EncounterLayerData).Property("LanceSpawnerList").GetValue<LanceSpawnerGameLogic[]>().Length);
+        foreach (LanceSpawnerGameLogic lanceSpawner in Traverse.Create(combat.EncounterLayerData).Property("LanceSpawnerList").GetValue<LanceSpawnerGameLogic[]>()) {
           Log.WL(1, "Name:" + lanceSpawner.Name + "/" + lanceSpawner.DisplayName);
           Log.WL(2, "Lance:" + lanceSpawner.LanceGuid + "/" + lanceSpawner.spawnEffectTags.ContentToString());
           Log.WL(2, "encounterObjectName:" + lanceSpawner.encounterObjectName);
@@ -593,14 +682,14 @@ namespace CustomUnits {
             continue;
           };
           lanceSpawner.spawnEffectTags.Remove(Core.Settings.PlayerControlConvoyTag);
-          if ((oldTeam == null)||(playerTeam == null)) {
-            Log.WL(2, "oldTeam:" + (oldTeam == null?"null":oldTeam.DisplayName)+" new team:"+(playerTeam == null?"null":playerTeam.DisplayName));
+          if ((oldTeam == null) || (playerTeam == null)) {
+            Log.WL(2, "oldTeam:" + (oldTeam == null ? "null" : oldTeam.DisplayName) + " new team:" + (playerTeam == null ? "null" : playerTeam.DisplayName));
             continue;
           }
           if (!string.IsNullOrEmpty(lanceSpawner.LanceGuid)) {
             lance = combat.ItemRegistry.GetItemByGUID<Lance>(lanceSpawner.LanceGuid);
           }
-          if(lance == null) {
+          if (lance == null) {
             Log.WL(2, "lance is null");
             continue;
           }

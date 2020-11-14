@@ -24,6 +24,16 @@ namespace CustAmmoCategories {
       CustomSvgCache.flushRegistredSVGs(__instance);
     }
   }
+  [HarmonyPatch(typeof(SVGCache))]
+  [HarmonyPatch("Clear")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { })]
+  public static class SVGCache_Clear {
+    public static bool Prefix(SVGCache __instance) {
+      Log.M.TWL(0, "SVGCache.Clear NoSVGCacheClear:"+ CustomAmmoCategories.Settings.NoSVGCacheClear);
+      return CustomAmmoCategories.Settings.NoSVGCacheClear == false;
+    }
+  }
 
   public static class CustomSvgCache {
     private static Dictionary<string, SVGAsset> cache = new Dictionary<string, SVGAsset>();

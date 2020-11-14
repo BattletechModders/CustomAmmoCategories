@@ -34,7 +34,7 @@ namespace CustAmmoCategories {
       ShootsRemains = 0;
       ShootsCount = 0;
       if (weapon.CanFire) {
-        ShootsRemains = weapon.DecrementAmmo(-1);
+        ShootsRemains = weapon.ShotsWhenFired;
       }
       int alreadyShooted = weapon.AMSShootsCount();
       if (weapon.AMSShootsEveryAttack() == false) {
@@ -563,7 +563,7 @@ namespace CustAmmoCategories {
         };
         foreach (Weapon weapon in targetActor.Weapons) {
           ExtWeaponDef extWeapon = CustomAmmoCategories.getExtWeaponDef(weapon.defId);
-          Log.LogWrite("  " + weapon.defId + " GUID:"+weapon.GUID+" AMS:"+ weapon.isAMS()  + " AAMS:" + weapon.isAAMS()+ " have weaponRep:"+(weapon.weaponRep == null?"false":"true")+"\n");
+          Log.M.WL(2,weapon.defId +" mode:" + weapon.mode().Id + " ammo:" + weapon.ammo().Id +" AMS:"+ weapon.isAMS()  + " AAMS:" + weapon.isAAMS()+ " have weaponRep:"+(weapon.weaponRep == null?"false":"true"));
           if ((weapon.isAMS()) && (weapon.isAAMS() == false) && (weapon.weaponRep != null)) {
             Log.LogWrite("  AMS "+weapon.UIName+"\n");
             ams.Add(new AMSRecord(weapon, extWeapon, false));
@@ -586,7 +586,7 @@ namespace CustAmmoCategories {
         };
         foreach (Weapon weapon in enemy.Weapons) {
           ExtWeaponDef extWeapon = CustomAmmoCategories.getExtWeaponDef(weapon.defId);
-          Log.LogWrite("  " + weapon.defId + " GUID:" + weapon.GUID + " AAMS:" + weapon.isAAMS() + " have weaponRep:" + (weapon.weaponRep == null ? "false" : "true") + "\n");
+          Log.M.WL(2, weapon.defId + " mode:" + weapon.mode().Id + " ammo:" + weapon.ammo().Id + " AMS:" + weapon.isAMS() + " AAMS:" + weapon.isAAMS() + " have weaponRep:" + (weapon.weaponRep == null ? "false" : "true"));
           if (weapon.isAAMS() && (weapon.weaponRep != null)) {
             Log.LogWrite("  AAMS " + weapon.UIName + "\n");
             ams.Add(new AMSRecord(weapon, extWeapon, true));
@@ -598,6 +598,13 @@ namespace CustAmmoCategories {
         return;
       };
       bool NoActiveAMS = true;
+      Log.M.TWL(0,"FIELD AMS LIST. ROUND:"+combat.TurnDirector.CurrentRound+" PHASE:"+combat.TurnDirector.CurrentPhase+" seqId:"+ instance.id);
+      foreach (AMSRecord amsrec in ams) {
+        Log.M.WL(2, amsrec.weapon.parent.DisplayName +"." + amsrec.weapon.defId + " ShootsRemains:" + amsrec.ShootsRemains + " CanFire:" + amsrec.weapon.CanFire + " AMSShootsEveryAttack:" + amsrec.weapon.AMSShootsEveryAttack() + " mode:" + amsrec.weapon.mode().Id + " ammo:" + amsrec.weapon.ammo().Id + " AMS:" + amsrec.weapon.isAMS() + " AAMS:" + amsrec.weapon.isAAMS() + " have weaponRep:" + (amsrec.weapon.weaponRep == null ? "false" : "true"));
+        if(amsrec.weapon.CanFire == false) {
+          combat.MessageCenter.PublishMessage(new FloatieMessage(amsrec.weapon.parent.GUID, amsrec.weapon.parent.GUID, new Text("AMS: {0} CAN'T FIRE {1}", amsrec.weapon.UIName, amsrec.weapon.CantFireReason()), FloatieMessage.MessageNature.Debuff));
+        }
+      }
       foreach (AMSRecord amsrec in ams) {
         if (amsrec.ShootsRemains > 0) { NoActiveAMS = false; break; };
       }
@@ -1340,6 +1347,7 @@ namespace CustAmmoCategories {
         try {
           WeaponHitInfo?[][] weaponHitInfo = (WeaponHitInfo?[][])typeof(AttackDirector.AttackSequence).GetField("weaponHitInfo", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(__instance);
           DamageModifiersCache.ClearComulativeDamage();
+          HashSet<ICombatant> affectedCombatants = new HashSet<ICombatant>();
           Log.M.TWL(0, "Start damage variance:"+__instance.id);
           for (int groupIndex = 0; groupIndex < weaponHitInfo.Length; ++groupIndex) {
             for (int weaponIndex = 0; weaponIndex < weaponHitInfo[groupIndex].Length; ++weaponIndex) {
@@ -1352,16 +1360,25 @@ namespace CustAmmoCategories {
               advInfo.weapon.ClearDamageCache();
               Log.M.TWL(0, "Damage variance grp:"+groupIndex+" index:"+weaponIndex+" wpn:"+advInfo.weapon.defId+" ammo:"+advInfo.weapon.ammo().Id+" mode:"+advInfo.weapon.mode().Id);
               foreach (AdvWeaponHitInfoRec advRec in advInfo.hits) {
+                affectedCombatants.Add(advRec.target);
                 advRec.ApplyVariance(null);
               }
               advInfo.FillResolveHitInfo();
               advInfo.ApplyHitEffects();
               advInfo.ApplyMantanceStats();
+
               AdvWeaponHitInfo.AddToExpected(advInfo);
             }
           }
           DamageModifiersCache.ClearComulativeDamage();
           AdvWeaponHitInfo.printExpectedMessages(__instance.id);
+          Log.M.TWL(0, "Combatants affected by attack:" + affectedCombatants.Count);
+          foreach(ICombatant trg in affectedCombatants) {
+            Log.M.WL(1, trg.DisplayName + ":" + trg.GUID);
+            foreach(var stat in trg.StatCollection) {
+              Log.M.WL(2, stat.Key +"="+stat.Value.CurrentValue.type+":"+stat.Value.CurrentValue.ToString());
+            }
+          }
         } catch (Exception e) {
           Log.LogWrite("WARNING! Hits ordering FAIL\n" + e.ToString() + "\n", true);
         }
@@ -1458,6 +1475,7 @@ namespace CustAmmoCategories {
           AdvWeaponHitInfo.Sanitize(sequenceId);
           AdvWeaponHitInfo.FlushInfo(attackSequence);
           AdvWeaponHitInfo.Clear(sequenceId);
+          __instance.Combat.HandleSanitize();
           //ICombatant actor = attackSequence.chosenTarget;
           //HashSet<Weapon> AMSs = new HashSet<Weapon>();
           /*if (CustomAmmoCategories.MissileCurveCache != null) {

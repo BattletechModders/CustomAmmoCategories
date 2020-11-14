@@ -216,7 +216,7 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
         CombatHUDTooltipHoverElement ToolTip = (CombatHUDTooltipHoverElement)MechTrayArmorHoverToolTipProp.GetValue(me, null);
         ToolTip.BuffStrings.Clear();
         ToolTip.DebuffStrings.Clear();
-        ToolTip.BasicString = Mech.GetLongArmorLocation(location);
+        ToolTip.BasicString = CustAmmoCategories.GetLongArmorLocationHelper.GetLongArmorLocation(mech,location);
         foreach (MechComponent mechComponent in mech.GetComponentsForLocation(MechStructureRules.GetChassisLocationFromArmorLocation(location), ComponentType.NotSet)) {
           string componentName = mechComponent.UIName.ToString();
           int allAmmo = 1;
@@ -318,7 +318,6 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
           }
         string ton = ((int)mech.tonnage) + "T " + weight;
         return jets > 0 ? new Text("{0}, {1} __/AIM.JETS/__", ton, jets) : new Text(ton);
-
       } else if (target is Vehicle vehicle) {
         string weight = vehicle.weightClass.ToString();
         switch (vehicle.weightClass) {

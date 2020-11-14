@@ -324,6 +324,39 @@ namespace CustAmmoCategories {
       modifiers.Add(new DamageModifier("IS damage".UI(), DamageModifierType.AP, true, false, weapon.ISDmgMult(), null));
       modifiers.Add(new DamageModifier("Armor damage".UI()+"(x"+Math.Round(weapon.ArmorDmgMult())+")", DamageModifierType.Normal, false, false, float.NaN, armorDamageModifier));
 
+      foreach(var dmgMod in DamageModifiersCache.damageModifiers) {
+        string name = string.Empty;
+        if (dmgMod.Value.modname != null) { name = dmgMod.Value.modname(weapon,attackPosition,target,IsBreachingShot,(int)ArmorLocation.None,0f,0f,0f,0f); }
+        if (string.IsNullOrEmpty(name)) { name = dmgMod.Value.modnameStatic; }
+        if (string.IsNullOrEmpty(name)) { name = dmgMod.Key; }
+        if (dmgMod.Value.isStatic) {
+          if (dmgMod.Value.isNormal) {
+            modifiers.Add(new DamageModifier(name.UI(), DamageModifierType.Normal, true, false, dmgMod.Value.modifier(weapon, attackPosition, target, IsBreachingShot, (int)ArmorLocation.None, 0f, 0f, 0f, 0f), null));
+          }
+          if (dmgMod.Value.isAP) {
+            modifiers.Add(new DamageModifier(name.UI(), DamageModifierType.AP, true, false, dmgMod.Value.modifier(weapon, attackPosition, target, IsBreachingShot, (int)ArmorLocation.None, 0f, 0f, 0f, 0f), null));
+          }
+          if (dmgMod.Value.isStability) {
+            modifiers.Add(new DamageModifier(name.UI(), DamageModifierType.Stability, true, false, dmgMod.Value.modifier(weapon, attackPosition, target, IsBreachingShot, (int)ArmorLocation.None, 0f, 0f, 0f, 0f), null));
+          }
+          if (dmgMod.Value.isHeat) {
+            modifiers.Add(new DamageModifier(name.UI(), DamageModifierType.Heat, true, false, dmgMod.Value.modifier(weapon, attackPosition, target, IsBreachingShot, (int)ArmorLocation.None, 0f, 0f, 0f, 0f), null));
+          }
+        } else {
+          if (dmgMod.Value.isNormal) {
+            modifiers.Add(new DamageModifier(name.UI(), DamageModifierType.Normal, true, false, float.NaN, dmgMod.Value.modifier));
+          }
+          if (dmgMod.Value.isAP) {
+            modifiers.Add(new DamageModifier(name.UI(), DamageModifierType.AP, true, false, float.NaN, dmgMod.Value.modifier));
+          }
+          if (dmgMod.Value.isStability) {
+            modifiers.Add(new DamageModifier(name.UI(), DamageModifierType.Stability, true, false, float.NaN, dmgMod.Value.modifier));
+          }
+          if (dmgMod.Value.isHeat) {
+            modifiers.Add(new DamageModifier(name.UI(), DamageModifierType.Heat, true, false, float.NaN, dmgMod.Value.modifier));
+          }
+        }
+      }
       modifiers.Add(new DamageModifier("Heat to damage".UI(), DamageModifierType.Normal, true, true, float.NaN, HeatToNormal));
       modifiers.Add(new DamageModifier("Heat to damage".UI(), DamageModifierType.Heat, true, false, target.isHasHeat()?1f:0f, null));
       //descr.AppendLine("Normal damage modifiers".UI());
@@ -344,6 +377,28 @@ namespace CustAmmoCategories {
       //}
     }
   }
+  public class DamageModifierDelegate {
+    public string id { get; private set; }
+    public Func<Weapon, Vector3, ICombatant, bool, int, float, float, float, float, float> modifier { get; private set; }
+    public Func<Weapon, Vector3, ICombatant, bool, int, float, float, float, float, string> modname { get; private set; }
+    public string modnameStatic { get; private set; }
+    public bool isStatic;
+    public bool isNormal;
+    public bool isAP;
+    public bool isHeat;
+    public bool isStability;
+    public DamageModifierDelegate(string id, string staticName, bool isStatic, bool isNormal, bool isAP, bool isHeat, bool isStability, Func<Weapon, Vector3, ICombatant, bool, int, float, float, float, float, float> modifier, Func<Weapon, Vector3, ICombatant, bool, int, float, float, float, float, string> modname) {
+      this.id = id;
+      this.modnameStatic = staticName;
+      this.isStatic = isStatic;
+      this.isNormal = isNormal;
+      this.isAP = isAP;
+      this.isHeat = isHeat;
+      this.isStability = isStability;
+      this.modifier = modifier;
+      this.modname = modname;
+    }
+  }
   public static class DamageModifiersCache {
     private static Dictionary<ICombatant, Dictionary<int, float>> comulativeDamageCache = new Dictionary<ICombatant, Dictionary<int, float>>();
     public static Dictionary<string, Func<Weapon, string>> eModesNameDelegates = new Dictionary<string, Func<Weapon, string>>();
@@ -351,11 +406,19 @@ namespace CustAmmoCategories {
     public static Dictionary<string, Func<Weapon, float>> eModesAPDelegates = new Dictionary<string, Func<Weapon, float>>();
     public static Dictionary<string, Func<Weapon, float>> eModesHeatDelegates = new Dictionary<string, Func<Weapon, float>>();
     public static Dictionary<string, Func<Weapon, float>> eModesStabilityDelegates = new Dictionary<string, Func<Weapon, float>>();
+    public static Dictionary<string, DamageModifierDelegate> damageModifiers = new Dictionary<string, DamageModifierDelegate>();
     private static int CacheTurn = 0;
     private static Dictionary<Weapon, Dictionary<bool, Dictionary<ExtAmmunitionDef, Dictionary<WeaponMode, Dictionary<Vector3, Dictionary<ICombatant, DamageModifiers>>>>>> modifiersCache = new Dictionary<Weapon, Dictionary<bool, Dictionary<ExtAmmunitionDef, Dictionary<WeaponMode, Dictionary<Vector3, Dictionary<ICombatant, DamageModifiers>>>>>>();
     private static CombatHUD HUD = null;
     public static void Init(CombatHUD HUD) {
       DamageModifiersCache.HUD = HUD;
+    }
+    public static void RegisterDamageModifier(string id, string staticName, bool isStatic, bool isNormal, bool isAP, bool isHeat, bool isStability, Func<Weapon, Vector3, ICombatant, bool, int, float, float, float, float, float> modifier, Func<Weapon, Vector3, ICombatant, bool, int, float, float, float, float, string> modname) {
+      if (damageModifiers.ContainsKey(id)) {
+        damageModifiers[id] = new DamageModifierDelegate(id,staticName,isStatic,isNormal,isAP,isHeat,isStability,modifier,modname);
+      } else {
+        damageModifiers.Add(id,new DamageModifierDelegate(id, staticName, isStatic, isNormal, isAP, isHeat, isStability, modifier, modname));
+      }
     }
     public static void Clear() {
       modifiersCache.Clear();

@@ -281,7 +281,7 @@ namespace CustAmmoCategories {
       }
       if (toHit < Epsilon) { record.HeatDamageCoeff = 0f; record.NormDamageCoeff = 0f; record.PredictHeatDamage = 0f; };
       float coolDownCoeff = 1.0f / (1.0f + weapon.Cooldown());
-      float jammCoeff = (1.0f - weapon.FlatJammingChance())/CustomAmmoCategories.Settings.JamAIAvoid;
+      float jammCoeff = (1.0f - weapon.FlatJammingChance(out string jdescr))/CustomAmmoCategories.Settings.JamAIAvoid;
       float damageJammCoeff = weapon.DamageOnJamming() ? (1.0f / CustomAmmoCategories.Settings.DamageJamAIAvoid) : 1.0f;
       jammCoeff *= damageJammCoeff;
       if (CustomAmmoCategories.IsIHaveExposedLocations(unit)) {

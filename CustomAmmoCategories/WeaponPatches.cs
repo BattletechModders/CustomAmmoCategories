@@ -133,7 +133,7 @@ namespace CustAmmoCategories {
       if (baseDamage < CustomAmmoCategories.Epsilon) { return 0f; }
       ExtAmmunitionDef extAmmoDef = weapon.ammo();
       WeaponMode mode = weapon.mode();
-      float result = (extWeapon.APDamage + extAmmoDef.APDamage + mode.APDamage) * extAmmoDef.APDamageMultiplier * mode.APDamageMultiplier * baseDamage / extWeapon.APDamage;
+      float result = (weapon.weaponDef.StructureDamage + extAmmoDef.APDamage + mode.APDamage) * extAmmoDef.APDamageMultiplier * mode.APDamageMultiplier * baseDamage / weapon.weaponDef.StructureDamage;
       if (weapon.parent != null) {
         if ((weapon.parent.EvasivePipsCurrent > 0) && (weapon.parent.HasMovedThisRound)) {
           float evasiveMod = extWeapon.evasivePipsMods.APDamage + extAmmoDef.evasivePipsMods.APDamage + mode.evasivePipsMods.APDamage;
@@ -388,7 +388,11 @@ namespace CustAmmoCategoriesPatches {
       Log.M.TWL(0, "Weapon.InitStats");
       ExtWeaponDef def = weapon.exDef();
       bool isPlayerMech = false;
-      if (UnityGameInstance.BattleTechGame.Simulation == null) { isPlayerMech = UnityGameInstance.BattleTechGame.Simulation.isPlayerMech(__instance.parent.PilotableActorDef); }
+      try {
+        if (UnityGameInstance.BattleTechGame.Simulation != null) { isPlayerMech = UnityGameInstance.BattleTechGame.Simulation.isPlayerMech(__instance.parent.PilotableActorDef); }
+      }catch(Exception e) {
+
+      }
       foreach(var ia in def.InternalAmmo) {
         string statName = Weapon_InternalAmmo.InternalAmmoName + ia.Key;
         int capacity = ia.Value;
@@ -504,8 +508,11 @@ namespace CustAmmoCategoriesPatches {
   [HarmonyPatch(new Type[] { })]
   public static class Weapon_ShotsWhenFired {
     public static void Postfix(Weapon __instance, ref int __result) {
-      __result += __instance.ammo().ShotsWhenFired;
-      __result += __instance.mode().ShotsWhenFired;
+      ExtAmmunitionDef ammo = __instance.ammo();
+      WeaponMode mode = __instance.mode();
+      __result += ammo.ShotsWhenFired;
+      __result += mode.ShotsWhenFired;
+      __result = Mathf.RoundToInt(__result * ammo.ShotsWhenFiredMod * mode.ShotsWhenFiredMod);
     }
   }
   [HarmonyPatch(typeof(Weapon))]

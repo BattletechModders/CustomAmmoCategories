@@ -104,6 +104,8 @@ namespace CustAmmoCategories {
     public static string NONE_MODE_NAME = "!NONE!";
     public string UIName { get; set; }
     public string Id { get; set; }
+    public string Name { get; set; }
+    public string Description { get; set; }
     public float AccuracyModifier { get; set; }
     public float DirectFireModifier { get; set; }
     public float DamagePerShot { get; set; }
@@ -111,6 +113,7 @@ namespace CustAmmoCategories {
     public int HeatGenerated { get; set; }
     public float CriticalChanceMultiplier { get; set; }
     public int ShotsWhenFired { get; set; }
+    public float ShotsWhenFiredMod { get; set; }
     public int AIBattleValue { get; set; }
     public int ProjectilesPerShot { get; set; }
     public List<EffectData> statusEffects { get; set; }
@@ -209,6 +212,7 @@ namespace CustAmmoCategories {
     public float DamageFalloffStartDistance { get; set; }
     public float DamageFalloffEndDistance { get; set; }
     public TripleBoolean AMSShootsEveryAttack { get; set; }
+    public TripleBoolean TargetMechLegsOnly { get; set; }
     public WeaponMode() {
       Id = WeaponMode.NONE_MODE_NAME;
       UIName = WeaponMode.BASE_MODE_NAME;
@@ -219,6 +223,7 @@ namespace CustAmmoCategories {
       HeatGenerated = 0;
       ProjectilesPerShot = 0;
       ShotsWhenFired = 0;
+      ShotsWhenFiredMod = 1f;
       CriticalChanceMultiplier = 0;
       MinRange = 0;
       MaxRange = 0;
@@ -316,7 +321,10 @@ namespace CustAmmoCategories {
       DamageFalloffStartDistance = 0f;
       DamageFalloffEndDistance = 0f;
       AMSShootsEveryAttack = TripleBoolean.NotSet;
-  }
+      TargetMechLegsOnly = TripleBoolean.NotSet;
+      Description = string.Empty;
+      Name = WeaponMode.BASE_MODE_NAME;
+    }
     public void fromJSON(string json) {
       JObject jWeaponMode = JObject.Parse(json);
       if (jWeaponMode["Id"] != null) {
@@ -324,6 +332,14 @@ namespace CustAmmoCategories {
       }
       if (jWeaponMode["UIName"] != null) {
         this.UIName = (string)jWeaponMode["UIName"];
+      }
+      if (jWeaponMode["Description"] != null) {
+        this.Description = (string)jWeaponMode["Description"];
+      }
+      if (jWeaponMode["Name"] != null) {
+        this.Name = (string)jWeaponMode["Name"];
+      } else {
+        this.Name = this.UIName;
       }
       if (jWeaponMode["AccuracyModifier"] != null) {
         this.AccuracyModifier = (float)jWeaponMode["AccuracyModifier"];
@@ -345,6 +361,9 @@ namespace CustAmmoCategories {
       }
       if (jWeaponMode["ShotsWhenFired"] != null) {
         this.ShotsWhenFired = (int)jWeaponMode["ShotsWhenFired"];
+      }
+      if (jWeaponMode["ShotsWhenFiredMod"] != null) {
+        this.ShotsWhenFiredMod = (float)jWeaponMode["ShotsWhenFiredMod"];
       }
       if (jWeaponMode["CriticalChanceMultiplier"] != null) {
         this.CriticalChanceMultiplier = (float)jWeaponMode["CriticalChanceMultiplier"];

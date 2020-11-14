@@ -119,10 +119,11 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
       }
 
       [ Harmony.HarmonyPriority( Harmony.Priority.Low ) ]
-      public static bool OverrideHUDMechCalledShotPercent ( ref string __result, ArmorLocation location, ArmorLocation targetedLocation ) { try {
-         Dictionary<ArmorLocation, int> hitTable = ( targetedLocation == ArmorLocation.None || ! CallShotClustered || ! Settings.ShowRealMechCalledShotChance )
-                                                   ? Combat.HitLocation.GetMechHitTable( AttackDirection )
-                                                   : CombatConstants.GetMechClusterTable( targetedLocation, AttackDirection );
+      public static bool OverrideHUDMechCalledShotPercent (Mech ___displayedMech, ref string __result, ArmorLocation location, ArmorLocation targetedLocation ) { try {
+        Dictionary<ArmorLocation, int> hitTable = CustAmmoCategories.HitTableHelper.GetHitTable(___displayedMech, CallShotClustered && Settings.ShowRealMechCalledShotChance, targetedLocation, AttackDirection);
+          //( targetedLocation == ArmorLocation.None || ! CallShotClustered || ! Settings.ShowRealMechCalledShotChance )
+          //                                         ? Combat.HitLocation.GetMechHitTable( AttackDirection )
+          //                                         : CombatConstants.GetMechClusterTable( targetedLocation, AttackDirection );
          if ( CacheNeedRefresh( hitTable, (int) targetedLocation ) )
             HitTableTotalWeight = SumWeight( hitTable, targetedLocation, FixMultiplier( targetedLocation, ActorCalledShotBonus ), scale );
 

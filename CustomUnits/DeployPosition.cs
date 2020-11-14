@@ -651,6 +651,7 @@ namespace CustomUnits {
       Log.TWL(0, "DeployDirectorLoadRequest.RestoreAndSpawn start pos generation",true);
       foreach(UnitSpawnPointGameLogic sp in playerLanceSpawner.unitSpawnPointGameLogicList) {
         Vector3 rndPos = pos;
+        float nearest = 9999f;
         do {
           rndPos = pos;
           float radius = UnityEngine.Random.Range(0.5f * Core.Settings.DeploySpawnRadius, Core.Settings.DeploySpawnRadius);
@@ -661,8 +662,10 @@ namespace CustomUnits {
           rndPos.z += Mathf.Cos(direction) * radius;
           rndPos.y = HUD.Combat.MapMetaData.GetLerpedHeightAt(rndPos);
           rndPos = HUD.Combat.HexGrid.GetClosestPointOnGrid(rndPos);
-          Log.WL(1,rndPos.ToString()+" distance:"+Vector3.Distance(rndPos,pos),true);
-        } while (deployPositions.Contains(rndPos));
+          nearest = 9999f;
+          foreach (Vector3 depPos in deployPositions) { float dist = Vector3.Distance(depPos, rndPos); if (nearest > dist) { nearest = dist; }; };
+          Log.WL(1, rndPos.ToString() + " distance:" + Vector3.Distance(rndPos, pos) + " nearest:"+nearest+" rejected:"+(nearest < Core.Settings.DeploySpawnRadius / 4f), true);
+        } while (nearest < Core.Settings.DeploySpawnRadius/4f);
         deployPositions.Add(rndPos);
         sp.Position = rndPos;
       }
