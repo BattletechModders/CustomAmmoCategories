@@ -1047,6 +1047,7 @@ namespace CustAmmoCategories {
     public static readonly string AOEHeightActorStat = "CUAOEHeight";
     public static readonly string NoHeatActorStat = "CUNoHeat";
     public static readonly string NoStabilityActorStat = "CUNoStability";
+    public static readonly string NoCritTransferActorStat = "CUNoCritTransfer";
     public static readonly string HasNoLegsActorStat = "CUHasNoLegs";
     public static bool NoHeat(this ICombatant unit) {
       if (unit.StatCollection.ContainsStatistic(NoHeatActorStat) == false) { return false; };
@@ -1055,6 +1056,10 @@ namespace CustAmmoCategories {
     public static bool NoStability(this ICombatant unit) {
       if (unit.StatCollection.ContainsStatistic(NoStabilityActorStat) == false) { return false; };
       return unit.StatCollection.GetStatistic(NoStabilityActorStat).Value<bool>();
+    }
+    public static bool NoCritTransfer(this ICombatant unit) {
+      if (unit.StatCollection.ContainsStatistic(NoCritTransferActorStat) == false) { return false; };
+      return unit.StatCollection.GetStatistic(NoCritTransferActorStat).Value<bool>();
     }
     public static bool HasNoLegs(this ICombatant unit) {
       if (unit.StatCollection.ContainsStatistic(HasNoLegsActorStat) == false) { return false; };
@@ -1250,6 +1255,8 @@ namespace CustAmmoCategories {
     public string OverrallShootsCountWeaponStat { get; set; }
     public bool AmmoGenericBoxUINameAsName { get; set; }
     public bool NoSVGCacheClear { get; set; }
+    public bool AMSCantFireFloatie { get; set; }
+    public bool ShowJammChance { get; set; }
     public Settings() {
       directory = string.Empty;
       debugLog = true;
@@ -1366,6 +1373,8 @@ namespace CustAmmoCategories {
       OverrallShootsCountWeaponStat = "CACOverallShoots";
       AmmoGenericBoxUINameAsName = true;
       NoSVGCacheClear = true;
+      AMSCantFireFloatie = false;
+      ShowJammChance = true;
     }
   }
 }

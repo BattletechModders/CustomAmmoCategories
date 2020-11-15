@@ -390,9 +390,12 @@ namespace CustomAmmoCategoriesPatches {
       ICombatant originaltarget = instance.chosenTarget;
       instance.chosenTarget = target;
       if (weapon.AlwaysIndirectVisuals()) { indirectFire = true; };
-      CustomAmmoCategoriesLog.Log.M.TWL(0,"generateWeaponHitInfo indirect:"+indirectFire+" missInSircle:"+missInCircle);
+      WeaponMode mode = weapon.mode();
+      ExtAmmunitionDef ammo = weapon.ammo();
+      CustomAmmoCategoriesLog.Log.M.TWL(0,"generateWeaponHitInfo "+weapon.defId+" ammo:"+ammo.Id+" mode:"+mode.Id+" indirect capable:"+weapon.IndirectFireCapable()+" indirect:"+indirectFire+" missInSircle:"+missInCircle);
       CustomAmmoCategoriesLog.Log.LogWrite(" altering target:" + originaltarget.GUID + "->" + target.GUID + "\n");
       float toHitChance = instance.Director.Combat.ToHit.GetToHitChance(instance.attacker, weapon, target, instance.attackPosition, target.CurrentPosition, instance.numTargets, instance.meleeAttackType, instance.isMoraleAttack);
+      if (indirectFire && (weapon.IndirectFireCapable() == false)) { toHitChance = 0f; };
       CustomAmmoCategoriesLog.Log.LogWrite(" filling to hit records " + target.DisplayName + " " + target.GUID + " weapon:" + weapon.defId + " shots:" + hitInfo.numberOfShots + " toHit:" + toHitChance + "\n");
       if (Mech.TEST_KNOCKDOWN)
         toHitChance = 1f;
@@ -603,7 +606,7 @@ namespace CustomAmmoCategoriesPatches {
           }
         }*/
         //weapon.RealDecrementAmmo(hitInfo.stackItemUID, weapon.HitsToShots(realAmmoUsedCount));
-        hitInfo.initGenericAdvInfo(toHitChance, __instance, __instance.Director.Combat);
+        hitInfo.initGenericAdvInfo(toHitChance, __instance, __instance.Director.Combat, indirectFire);
         __result = hitInfo;
         return false;
       } catch (Exception e) {

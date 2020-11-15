@@ -22,12 +22,12 @@ namespace CustAmmoCategories {
           actor.HandleDeath("DEZOMBIFICATOR");
         }
         if (actor.IsDead == false) {
-          Mech mech = actor as Mech;
-          if (mech != null) {
-            if (mech.isHasStability()) { mech.CheckForInstability(); mech.HandleKnockdown(-1, "DEZOMBIFICATOR", Vector2.zero, null); }
-          }
-          actor.CheckPilotStatusFromAttack("DEZOMBIFICATOR", -1, -1);
-          actor.HandleDeath("DEZOMBIFICATOR");
+          //Mech mech = actor as Mech;
+          //if (mech != null) {
+            //if (mech.isHasStability()) { mech.CheckForInstability(); mech.HandleKnockdown(-1, "DEZOMBIFICATOR", Vector2.zero, null); }
+          //}
+          //actor.CheckPilotStatusFromAttack("DEZOMBIFICATOR", -1, -1);
+          //actor.HandleDeath("DEZOMBIFICATOR");
         }
       }
     }

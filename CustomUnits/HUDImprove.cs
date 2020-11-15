@@ -508,8 +508,16 @@ namespace CustomUnits {
     public static int playerControlMechs() { return missionControlDetected ? f_playerControlMechs : -1; }
 
     public static int allowLanceSize(int lanceid) {
-      if (fallbackAllow > 0) { return lanceid == 0 ? fallbackAllow : 0; }
-      return lancesData[lanceid].allow;
+      if (fallbackAllow > 0) {
+        int result = fallbackAllow;
+        for (int t = 0; t < lanceid; ++t) {
+          result -= lancesData[lanceid].allow;
+          if (result <= 0) { return 0; }
+        }
+        return result > lancesData[lanceid].allow ? lancesData[lanceid].allow : result;
+      } else {
+        return lancesData[lanceid].allow;
+      }
     }
     public static void setFallbackAllow(int value) { fallbackAllow = value; }
     public static void allowLanceSize(int lanceid, int size) { lancesData[lanceid].allow = size; }
@@ -1660,6 +1668,21 @@ namespace CustomUnits {
       actorLanceIds.Clear();
       fHUD = ___HUD;
       try {
+        Log.WL(1, "Team:" +team.units.Count);
+        foreach(AbstractActor unit in team.units) {
+          Log.WL(2, unit.DisplayName + " " + unit.PilotableActorDef.Description.Id + " GUID:" + unit.PilotableActorDef.GUID);
+        }
+        SimGameState sim = UnityGameInstance.BattleTechGame.Simulation;
+        if (sim != null) {
+          try {
+            Log.WL(1, "PlayerBayUnits:" + sim.ActiveMechs.Count);
+            foreach (var unit in sim.ActiveMechs) {
+              Log.WL(2, unit.Key.ToString() + ":" + unit.Value.Description.Id + " GUID:" + unit.Value.GUID);
+            }
+          }catch(Exception e) {
+            Log.TWL(0, e.ToString(), true);
+          }
+        }
         Dictionary<int, CustomLanceInstance> avaibleSlots = new Dictionary<int, CustomLanceInstance>();
         foreach (var lance in __instance.exPortraitHolders()) {
           foreach (var slot in lance) {

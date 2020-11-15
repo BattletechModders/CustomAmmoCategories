@@ -1083,6 +1083,9 @@ namespace CustomUnits {
       if (__instance.StatCollection.ContainsStatistic(UnitUnaffectionsActorStats.NoStabilityActorStat) == false) {
         __instance.StatCollection.AddStatistic<bool>(UnitUnaffectionsActorStats.NoStabilityActorStat, (info.SquadInfo.Troopers > 1));
       }
+      if (__instance.StatCollection.ContainsStatistic(UnitUnaffectionsActorStats.NoCritTransferActorStat) == false) {
+        __instance.StatCollection.AddStatistic<bool>(UnitUnaffectionsActorStats.NoCritTransferActorStat, (info.SquadInfo.Troopers > 1));
+      }
       if (__instance.StatCollection.ContainsStatistic(UnitUnaffectionsActorStats.HasNoLegsActorStat) == false) {
         Vehicle vehcile = __instance as Vehicle;
         __instance.StatCollection.AddStatistic<bool>(UnitUnaffectionsActorStats.HasNoLegsActorStat, (info.SquadInfo.Troopers > 1) || (vehcile != null));
@@ -1424,8 +1427,11 @@ namespace CustomUnits {
         Log.TWL(0, "MechDef.RefreshChassis " + __instance.Description.Id);
         UnitCustomInfo info = __instance.GetCustomInfo();
         if (info == null) { Log.WL(1, "info is null"); return; }
+        if (info.MeleeWeaponOverride == null) { return; }
         string meleeDef = info.MeleeWeaponOverride.DefaultWeapon;
         foreach(MechComponentRef cref in __instance.Inventory) {
+          if (cref == null) { continue; }
+          if (string.IsNullOrEmpty(cref.ComponentDefID)) { continue; }
           if (info.MeleeWeaponOverride.Components.ContainsKey(cref.ComponentDefID)) {
             meleeDef = info.MeleeWeaponOverride.Components[cref.ComponentDefID];
             break;

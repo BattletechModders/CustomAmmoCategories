@@ -683,6 +683,7 @@ namespace CustomUnits {
       dest.heraldryID(src.VehicleDef.HeraldryID);
       dest.heraldryDef(src.VehicleDef.HeraldryDef);
       dest.MechTags_set(new TagSet(src.VehicleDef.VehicleTags));
+      //dest.MechTags.Add();
       dest.simGameMechPartCost(src.VehicleDef.Description.Cost);
       LocationLoadoutDef[] locations = new LocationLoadoutDef[8];
       if (src.VehicleDef.Chassis.HasTurret) {

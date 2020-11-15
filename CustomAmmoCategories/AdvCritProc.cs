@@ -78,7 +78,9 @@ namespace CustAmmoCategories {
       Mech mech = unit as Mech;
       if (mech != null) {
         while ((components.Count == 0) && (location != 0)) {
-          location = (int)AdvancedCriticalProcessor.GetCritTransferLocation((ChassisLocations)location);
+          if (mech.NoCritTransfer()) { location = 0; } else {
+            location = (int)AdvancedCriticalProcessor.GetCritTransferLocation((ChassisLocations)location);
+          }
           if (location != 0) { components = mech.GetCritsComponentsForLocation(location); };
         }
       }

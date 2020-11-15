@@ -381,13 +381,13 @@ namespace CustAmmoCategories {
       WeaponMode mode = weapon.mode();
       ExtAmmunitionDef extAmmo = weapon.ammo();
       ExtWeaponDef extWeapon = CustomAmmoCategories.getExtWeaponDef(weapon.defId);
-      return mode.AMSDamage + extAmmo.AMSDamage + extWeapon.AMSDamage;
+      return (mode.AMSDamage + extAmmo.AMSDamage + weapon.GetStatisticFloat("AMSDamage")) * (weapon.GetStatisticMod("AMSDamage")); //+ extWeapon.AMSDamage;
     }
     public static float MissileHealth(this Weapon weapon) {
       WeaponMode mode = weapon.mode();
       ExtAmmunitionDef extAmmo = weapon.ammo();
       ExtWeaponDef extWeapon = CustomAmmoCategories.getExtWeaponDef(weapon.defId);
-      return mode.MissileHealth + extAmmo.MissileHealth + extWeapon.MissileHealth;
+      return (mode.MissileHealth + extAmmo.MissileHealth + weapon.GetStatisticFloat("MissileHealth")) * (weapon.GetStatisticMod("MissileHealth")); //+ extWeapon.MissileHealth;
     }
     public static bool getWeaponAMSImmune(Weapon weapon) {
       WeaponMode mode = weapon.mode();
@@ -599,10 +599,14 @@ namespace CustAmmoCategories {
       };
       bool NoActiveAMS = true;
       Log.M.TWL(0,"FIELD AMS LIST. ROUND:"+combat.TurnDirector.CurrentRound+" PHASE:"+combat.TurnDirector.CurrentPhase+" seqId:"+ instance.id);
-      foreach (AMSRecord amsrec in ams) {
-        Log.M.WL(2, amsrec.weapon.parent.DisplayName +"." + amsrec.weapon.defId + " ShootsRemains:" + amsrec.ShootsRemains + " CanFire:" + amsrec.weapon.CanFire + " AMSShootsEveryAttack:" + amsrec.weapon.AMSShootsEveryAttack() + " mode:" + amsrec.weapon.mode().Id + " ammo:" + amsrec.weapon.ammo().Id + " AMS:" + amsrec.weapon.isAMS() + " AAMS:" + amsrec.weapon.isAAMS() + " have weaponRep:" + (amsrec.weapon.weaponRep == null ? "false" : "true"));
-        if(amsrec.weapon.CanFire == false) {
-          combat.MessageCenter.PublishMessage(new FloatieMessage(amsrec.weapon.parent.GUID, amsrec.weapon.parent.GUID, new Text("AMS: {0} CAN'T FIRE {1}", amsrec.weapon.UIName, amsrec.weapon.CantFireReason()), FloatieMessage.MessageNature.Debuff));
+      if (missiles.Count > 0) {
+        foreach (AMSRecord amsrec in ams) {
+          Log.M.WL(2, amsrec.weapon.parent.DisplayName + "." + amsrec.weapon.defId + " ShootsRemains:" + amsrec.ShootsRemains + " CanFire:" + amsrec.weapon.CanFire + " AMSShootsEveryAttack:" + amsrec.weapon.AMSShootsEveryAttack() + " mode:" + amsrec.weapon.mode().Id + " ammo:" + amsrec.weapon.ammo().Id + " AMS:" + amsrec.weapon.isAMS() + " AAMS:" + amsrec.weapon.isAAMS() + " have weaponRep:" + (amsrec.weapon.weaponRep == null ? "false" : "true"));
+          if (amsrec.weapon.CanFire == false) {
+            if (CustomAmmoCategories.Settings.AMSCantFireFloatie) {
+              combat.MessageCenter.PublishMessage(new FloatieMessage(amsrec.weapon.parent.GUID, amsrec.weapon.parent.GUID, new Text("AMS: {0} CAN'T FIRE {1}", amsrec.weapon.UIName, amsrec.weapon.CantFireReason()), FloatieMessage.MessageNature.Debuff));
+            }
+          }
         }
       }
       foreach (AMSRecord amsrec in ams) {

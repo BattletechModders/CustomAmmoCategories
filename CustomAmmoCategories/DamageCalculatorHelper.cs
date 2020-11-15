@@ -112,7 +112,12 @@ namespace CustAmmoCategories {
     public static float HeatToNormal(Weapon weapon, Vector3 attackPosition, ICombatant target, bool IsBreachingShot, int location, float dmg, float ap, float heat, float stab) {
       return target.isHasHeat()?0f:heat;
     }
-
+    public static float SanitizeDamage(float dmg) {
+      if (float.IsNaN(dmg)) { return 0f; };
+      if (float.IsInfinity(dmg)) { return 0f; };
+      if (dmg < 0f) { return 0f; }
+      return dmg;
+    }
     public void Calculate(int location, ref float damage,ref float ap, ref float heat, ref float stability, ref string descr, bool force, bool ui) {
       if (force) { isCalculated = false; }
       if (isCalculated) {
@@ -164,6 +169,10 @@ namespace CustAmmoCategories {
         if (ui) { actds.AppendLine("</color>"); } else { actds.AppendLine(); };
       }
       isCalculated = true;
+      damage = SanitizeDamage(damage);
+      heat = SanitizeDamage(heat);
+      stability = SanitizeDamage(stability);
+      ap = SanitizeDamage(ap);
       this.Damage = damage;
       this.AP = ap;
       this.Heat = heat;

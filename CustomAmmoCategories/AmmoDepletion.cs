@@ -58,6 +58,7 @@ namespace CustAmmoCategories {
           ammoCapacity.AddAmmo(extAmmo, ammunitionBox.Capacity);
         }else if(weapon != null) {
           ExtWeaponDef extWeapon = weapon.exDef();
+          if (extWeapon == null) { continue; }
           foreach(var iammo in extWeapon.InternalAmmo) {
             ExtAmmunitionDef extAmmo = CustomAmmoCategories.findExtAmmo(iammo.Key);
             if (extAmmo.AutoRefill == AutoRefilType.Automatic) { continue; }
@@ -79,6 +80,7 @@ namespace CustAmmoCategories {
             ammoCapacity.AddAmmo(extAmmo, ammunitionBox.Capacity);
           } else if (weapon != null) {
             ExtWeaponDef extWeapon = weapon.exDef();
+            if (extWeapon == null) { continue; }
             foreach (var iammo in extWeapon.InternalAmmo) {
               ExtAmmunitionDef extAmmo = CustomAmmoCategories.findExtAmmo(iammo.Key);
               if (extAmmo.AutoRefill == AutoRefilType.Automatic) { continue; }
@@ -101,6 +103,7 @@ namespace CustAmmoCategories {
             ammoCapacity.AddAmmo(extAmmo, ammunitionBox.Capacity);
           } else if (weapon != null) {
             ExtWeaponDef extWeapon = weapon.exDef();
+            if (extWeapon == null) { continue; }
             foreach (var iammo in extWeapon.InternalAmmo) {
               ExtAmmunitionDef extAmmo = CustomAmmoCategories.findExtAmmo(iammo.Key);
               if (extAmmo.AutoRefill == AutoRefilType.Automatic) { continue; }

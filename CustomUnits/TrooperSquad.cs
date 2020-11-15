@@ -2116,6 +2116,7 @@ namespace CustomUnits {
       try {
         if (__instance.OrdersAreComplete) { return; }
         TrooperSquad squad = __instance.OwningMech as TrooperSquad;
+        if (squad == null) { return; }
         foreach (var sRep in squad.squadReps) {
           if (squad.IsLocationDestroyed(sRep.Key)) {
             sRep.Value.GameRep.transform.position = sRep.Value.deadLocation;

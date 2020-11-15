@@ -272,96 +272,6 @@ namespace CustAmmoCategories {
         mods.Calculate(this.hitLocation, ref this.Damage, ref this.APDamage, ref this.Heat, ref this.Stability, ref description, true, false);
         Log.M.TWL(0, description);
         this.target.AddComulativeDamage(this.hitLocation, this.Damage);
-        /*float realDamage = this.Damage;
-        float rawDamage = this.Damage;
-        float rawAPDamage = this.APDamage;
-        float rawHeat = this.Heat;
-        float rawStability = this.Stability;
-        if (realDamage >= 1.0f) {
-          if (parent.weapon.DamageVariance() > CustomAmmoCategories.Epsilon) {
-            realDamage = CustomAmmoCategories.WeaponDamageSimpleVariance(parent.weapon, rawDamage);
-          } else {
-            Log.M.WL("no simple variance defined");
-          }
-          if (parent.weapon.DistantVariance() > CustomAmmoCategories.Epsilon) {
-            if (parent.weapon.DistantVarianceReversed() == false) {
-              realDamage = CustomAmmoCategories.WeaponDamageDistance(parent.Sequence.attacker.TargetPosition, target, parent.weapon, realDamage, rawDamage);
-            } else {
-              realDamage = CustomAmmoCategories.WeaponDamageRevDistance(parent.Sequence.attacker.TargetPosition, target, parent.weapon, realDamage, rawDamage);
-            }
-          } else {
-            Log.M.WL("no distance variance defined");
-          }
-          if ((hitLocation != 0) && (hitLocation != 65536)) {
-            float CurArmor = target.ArmorForLocation(hitLocation);
-            CustomAmmoCategoriesLog.Log.LogWrite("  location armor = " + CurArmor + "\n");
-            float ArmorDmgMuil = parent.weapon.ArmorDmgMult();
-            if (CurArmor / ArmorDmgMuil > realDamage) {
-              realDamage *= ArmorDmgMuil;
-              CustomAmmoCategoriesLog.Log.LogWrite("  all damage to armor = " + realDamage + "\n");
-            } else {
-              float ISDdamagePart = (realDamage - CurArmor / ArmorDmgMuil) * parent.weapon.ISDmgMult();
-              CustomAmmoCategoriesLog.Log.LogWrite("  damage to armor = " + CurArmor + "\n");
-              CustomAmmoCategoriesLog.Log.LogWrite("  part of damage to IS = " + ISDdamagePart + "\n");
-              realDamage = CurArmor + ISDdamagePart;
-            }
-          }
-          if (realDamage >= 1.0f) {
-            Log.LogWrite("Applying WeaponRealizer variance. Current damage: " + realDamage + "\n");
-            realDamage = WeaponRealizer.Calculator.ApplyDamageModifiers(parent.Sequence.attacker.TargetPosition, target, parent.weapon, realDamage,true);
-            Log.LogWrite("damage after WeaponRealizer variance: " + realDamage + "\n");
-          }
-        } else {
-          CustomAmmoCategoriesLog.Log.LogWrite("WARNING! raw damage is less than 1.0f. Variance calculation is forbidden with this damage value\n", true);
-        }
-        if (float.IsNaN(realDamage)) {
-          CustomAmmoCategoriesLog.Log.LogWrite("WARNING! real damage is NaN. That is sad. Rounding to 0.1\n", true);
-          realDamage = 0.1f;
-        }
-        if (float.IsInfinity(realDamage)) {
-          CustomAmmoCategoriesLog.Log.LogWrite("WARNING! real damage is positive infinity. That is sad. Rounding to 0.1\n", true);
-          realDamage = 0.1f;
-        }
-        if (realDamage < CustomAmmoCategories.Epsilon) {
-          CustomAmmoCategoriesLog.Log.LogWrite("WARNING! real damage is less than epsilon. May be negative. That is sad. Rounding to 0.1\n", true);
-          realDamage = 0.1f;
-        }
-        if (parent.weapon.isDamageVariation()) {
-          this.Damage = realDamage;
-          rawAPDamage *= rawDamage > CustomAmmoCategories.Epsilon ? (realDamage / rawDamage) : 0f;
-          this.APDamage = rawAPDamage;
-        } else {
-          Log.LogWrite(" damge variation forbidden by weapon's settings\n");
-        }
-        if (parent.weapon.isHeatVariation()) {
-          rawHeat *= rawDamage > CustomAmmoCategories.Epsilon ? (realDamage / rawDamage) : 0f;
-        } else {
-          Log.LogWrite("  heat variation forbidden by weapon's settings\n");
-        }
-        if (parent.weapon.isStabilityVariation()) {
-          rawStability *= rawDamage > CustomAmmoCategories.Epsilon ? (realDamage / rawDamage) : 0f;
-        } else {
-          Log.LogWrite("  stability variation forbidden by weapon's settings\n");
-        }
-        this.Heat = rawHeat;
-        this.Stability = rawStability;
-        if (target.isHasStability() == false) { this.Stability = 0f; }
-        Log.LogWrite("  real heat = " + this.Heat + "\n");
-        if ((target.isHasHeat() == false) && (rawHeat >= 0.5f)) {
-          Log.M.WL("  heat damage exists, but target can't be heated");
-          float heatAsNormal = target.HeatDamage(rawHeat);
-          Log.M.WL("  heat transfered to normal damage:" + heatAsNormal);
-          this.Damage += heatAsNormal;
-          this.Heat = 0f;
-        }
-        float qualityMultiplier = this.parent.Sequence.Director.Combat.ToHit.GetBlowQualityMultiplier(this.impactQuality);
-        this.Heat *= target.IncomingHeatMult();
-        this.Stability *= target.IncomingStabilityMult();
-        this.Damage *= qualityMultiplier;
-        this.APDamage *= (qualityMultiplier * target.APDamageMult());
-        this.ApplyTargetResistance();
-        if (target.isAPProtected()) { this.APDamage = 0f; }
-        Log.LogWrite("  qualityMultiplier = " + qualityMultiplier + "\n");*/
         Log.LogWrite("  real damage = " + this.Damage + "\n");
         Log.LogWrite("  real APdamage = " + this.APDamage + "\n");
         Log.LogWrite("  real heat = " + this.Heat + "\n");
@@ -414,23 +324,6 @@ namespace CustAmmoCategories {
         }
       } catch (Exception e) {
         Log.M.TWL(0, e.ToString(), true);
-      }
-    }
-    public void ApplyTargetResistance() {
-      AbstractActor actorTarget = this.target as AbstractActor;
-      Log.M.W(1, "applying target resistance " + this.Damage + ":" + this.APDamage + "->");
-      if (this.isTargetResitanceApplied == false) {
-        this.isTargetResitanceApplied = true;
-        if (actorTarget != null) {
-          LineOfFireLevel lineOfFireLevel = parent.Sequence.attacker.VisibilityCache.VisibilityToTarget((ICombatant)actorTarget).LineOfFireLevel;
-          float aDamage = actorTarget.GetAdjustedDamage(this.Damage, parent.weapon.WeaponCategoryValue, actorTarget.occupiedDesignMask, lineOfFireLevel, true);
-          this.Damage = actorTarget.GetAdjustedDamageForMelee(aDamage, parent.weapon.WeaponCategoryValue);
-          float aAPDamage = actorTarget.GetAdjustedDamage(this.APDamage, parent.weapon.WeaponCategoryValue, actorTarget.occupiedDesignMask, lineOfFireLevel, true);
-          this.APDamage = actorTarget.GetAdjustedDamageForMelee(aAPDamage, parent.weapon.WeaponCategoryValue);
-        }
-        Log.M.WL(0, this.Damage + ":" + this.APDamage);
-      } else {
-        Log.M.WL(0, "already applied");
       }
     }
     public void Apply() {
@@ -727,7 +620,7 @@ namespace CustAmmoCategories {
       hitInfo.attackDirections = new AttackDirection[numberOfShots];
       return hitInfo;
     }
-    public static AdvWeaponHitInfo initGenericAdvInfo(this WeaponHitInfo hitInfo, float hitChance, AttackDirector.AttackSequence sequence, CombatGameState combat) {
+    public static AdvWeaponHitInfo initGenericAdvInfo(this WeaponHitInfo hitInfo, float hitChance, AttackDirector.AttackSequence sequence, CombatGameState combat, bool indirectFire) {
       Log.LogWrite("initGenericAdvInfo: " + hitInfo.numberOfShots + "\n");
       if (hitInfo.isAdvanced() == true) {
         Log.LogWrite(" already exists\n");
@@ -801,7 +694,7 @@ namespace CustAmmoCategories {
           if (weapon.Unguided()) {
             hit.trajectoryInfo.type = TrajectoryType.Unguided;
           } else {
-            if (sequence.indirectFire || CustomAmmoCategories.AlwaysIndirectVisuals(weapon)) {
+            if ((sequence.indirectFire && weapon.IndirectFireCapable()) || CustomAmmoCategories.AlwaysIndirectVisuals(weapon)) {
               hit.trajectoryInfo.type = TrajectoryType.Indirect;
             } else {
               hit.trajectoryInfo.type = TrajectoryType.Direct;
@@ -815,7 +708,7 @@ namespace CustAmmoCategories {
           if (weapon.Unguided()) {
             hit.trajectoryInfo.type = TrajectoryType.Unguided;
           } else {
-            if (sequence.indirectFire || CustomAmmoCategories.AlwaysIndirectVisuals(weapon)) {
+            if ((sequence.indirectFire && weapon.IndirectFireCapable()) || CustomAmmoCategories.AlwaysIndirectVisuals(weapon)) {
               hit.trajectoryInfo.type = TrajectoryType.Indirect;
             } else {
               hit.trajectoryInfo.type = TrajectoryType.Direct;
@@ -823,7 +716,7 @@ namespace CustAmmoCategories {
           }
         } else
         if (msBallistic != null) {
-          if (sequence.indirectFire || CustomAmmoCategories.AlwaysIndirectVisuals(weapon)) {
+          if ((sequence.indirectFire && weapon.IndirectFireCapable()) || CustomAmmoCategories.AlwaysIndirectVisuals(weapon)) {
             hit.trajectoryInfo.type = TrajectoryType.Indirect;
           } else {
             hit.trajectoryInfo.type = TrajectoryType.Unguided;

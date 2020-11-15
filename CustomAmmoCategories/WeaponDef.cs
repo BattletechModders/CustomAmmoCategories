@@ -13,6 +13,13 @@ using System.Text;
 using UnityEngine;
 
 namespace CustAmmoCategories {
+  [System.AttributeUsage(System.AttributeTargets.Property)]
+  public class StatCollectionFloatAttribute : System.Attribute {
+    public float defaultValue;
+    public StatCollectionFloatAttribute(float defVal) {
+      this.defaultValue = defVal;
+    }
+  }
   public class DeferredEffectDef {
     public string id { get; set; }
     public int rounds { get; set; }
@@ -346,6 +353,8 @@ namespace CustAmmoCategories {
     }
   }
   public class ExtWeaponDef {
+    public static readonly string StatisticAttributePrefix = "CAC_";
+    public static readonly string StatisticModifierSuffix = "_Mod";
     public static void RemoveTag(ref JObject json,string tag) {
       Log.LogWrite("ExtWeaponDef.RemoveTag("+tag+")\n");
       if (json["ComponentTags"] == null) {
@@ -462,10 +471,14 @@ namespace CustAmmoCategories {
         return false;
     } }
     public string preFireSFX { get; set; }
+    [StatCollectionFloat(0f)]
     public float MinMissRadius { get; set; }
+    [StatCollectionFloat(0f)]
     public float MaxMissRadius { get; set; }
     public Dictionary<string, float> TagsAccuracyModifiers { get; set; }
+    [StatCollectionFloat(0f)]
     public float AMSDamage { get; set; }
+    [StatCollectionFloat(0f)]
     public float MissileHealth { get; set; }
     public DamageFalloffType RangedDmgFalloffType { get; set; }
     public DamageFalloffType AoEDmgFalloffType { get; set; }
@@ -499,6 +512,7 @@ namespace CustAmmoCategories {
       AmmoCategory = new CustomAmmoCategory();
       AOECapable = TripleBoolean.NotSet;
       AOERange = 0f;
+      AOEDamage = 0f;
       AOEInstability = 0f;
       AOEHeatDamage = 0f;
       IFFDef = "";

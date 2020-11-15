@@ -186,19 +186,25 @@ namespace CustAmmoCategories {
       float result = ammo.ShotsPerAmmo * extWeapon.ShotsPerAmmo * mode.ShotsPerAmmo;
       return result;
     }
+    public static float GetStatisticFloat(this Weapon weapon, string name) {
+      return weapon.StatCollection.GetStatistic(CustAmmoCategories.ExtWeaponDef.StatisticAttributePrefix + name).Value<float>();
+    }
+    public static float GetStatisticMod(this Weapon weapon, string name) {
+      return weapon.StatCollection.GetStatistic(CustAmmoCategories.ExtWeaponDef.StatisticAttributePrefix + name+ CustAmmoCategories.ExtWeaponDef.StatisticModifierSuffix).Value<float>();
+    }
     public static float MinMissRadius(this Weapon weapon) {
       ExtAmmunitionDef ammo = weapon.ammo();
       ExtWeaponDef extWeapon = weapon.exDef();
       WeaponMode mode = weapon.mode();
-      float result = ammo.MinMissRadius + extWeapon.MinMissRadius + mode.MinMissRadius;
-      return result;
+      float result = ammo.MinMissRadius + mode.MinMissRadius + weapon.GetStatisticFloat("MinMissRadius"); //extWeapon.MinMissRadius;
+      return result*weapon.GetStatisticMod("MinMissRadius");
     }
     public static float MaxMissRadius(this Weapon weapon) {
       ExtAmmunitionDef ammo = weapon.ammo();
       ExtWeaponDef extWeapon = weapon.exDef();
       WeaponMode mode = weapon.mode();
-      float result = ammo.MaxMissRadius + extWeapon.MaxMissRadius + mode.MaxMissRadius;
-      return result;
+      float result = ammo.MaxMissRadius + mode.MaxMissRadius + weapon.GetStatisticFloat("MaxMissRadius"); //extWeapon.MaxMissRadius;
+      return result * weapon.GetStatisticMod("MaxMissRadius");
     }
     public static float AOEHeatDamage(this Weapon weapon) {
       float result = 0f;
@@ -409,6 +415,16 @@ namespace CustAmmoCategoriesPatches {
         }
         __instance.StatCollection.AddStatistic<int>(statName, capacity);
         Log.M.WL(1,statName+":"+ia.Key);
+      }
+      PropertyInfo[] props = typeof(ExtWeaponDef).GetProperties(BindingFlags.Instance | BindingFlags.Public);
+      foreach(PropertyInfo prop in props) {
+        object[] attrs = prop.GetCustomAttributes(true);
+        foreach(object attr in attrs) {
+          StatCollectionFloatAttribute fattr = attr as StatCollectionFloatAttribute;
+          if (fattr == null) { continue; }
+          weapon.StatCollection.AddStatistic<float>(ExtWeaponDef.StatisticAttributePrefix + prop.Name,(float)prop.GetValue(def));
+          weapon.StatCollection.AddStatistic<float>(ExtWeaponDef.StatisticAttributePrefix + prop.Name+ExtWeaponDef.StatisticModifierSuffix, 1f);
+        }
       }
     }
   }

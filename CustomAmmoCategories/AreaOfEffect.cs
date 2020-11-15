@@ -204,6 +204,7 @@ namespace CustAmmoCategories {
           targetsHeatCache[target] += heatDamage;
           targetsStabCache[target] += stabDamage;
           Log.LogWrite(" full damage " + fullDamage + " AoEDamage: "+ AoEDamage + " byTypeMod:"+ CustomAmmoCategories.Settings.DefaultAoEDamageMult[target.UnitType].Damage + " tagAoEDamage:"+ tagAoEDamage + " distanceRatio:" + distanceRatio+ " targetAoEMult:"+ targetAoEMult + "\n");
+          if (fullDamage < 0f) { fullDamage = 0f; };
           HashSet<int> reachableLocations = new HashSet<int>();
           Dictionary<int, float> SpreadLocations = null;
           Mech mech = target as Mech;

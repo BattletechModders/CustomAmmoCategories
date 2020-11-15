@@ -386,6 +386,11 @@ namespace CustomAmmoCategoriesPatches {
       Text title = new Text(this.parent.DisplayedWeapon.UIName);
       Text description = new Text("__/CAC.WEAPON_SIDE_HEADER/__");
       ExtendedDetails extDescr = parent.DisplayedWeapon.componentDef.GetComponent<ExtendedDetails>();
+      if (parent.DisplayedWeapon.CanFire) {
+        description.AppendLine("OPERATIONAL");
+      } else {
+        description.AppendLine(parent.DisplayedWeapon.CantFireReason());
+      }
       if (extDescr == null) {
         description.Append("<size=80%>" + parent.DisplayedWeapon.Description.Details + "</size>");
         Log.M.WL(1, "no extended description:" + description);
@@ -401,8 +406,10 @@ namespace CustomAmmoCategoriesPatches {
         }
         description.Append(descr.ToString());
       }
-      this.parent.DisplayedWeapon.FlatJammingChance(out string jammDescr);
-      description.Append("\n"+ jammDescr);
+      if (CustomAmmoCategories.Settings.ShowJammChance) {
+        this.parent.DisplayedWeapon.FlatJammingChance(out string jammDescr);
+        description.Append("\n" + jammDescr);
+      }
       HUD.SidePanel.ForceShowPersistant(title, description, null, false);
     }
     public override void OnPointerEnter(PointerEventData data) {
