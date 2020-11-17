@@ -148,20 +148,3 @@ namespace CustAmmoCategories {
     }
   }
 }
-namespace CustAmmoCategoriesPathes {
-  [HarmonyPatch(typeof(CombatHUD))]
-  [HarmonyPatch("Init")]
-  [HarmonyPatch(MethodType.Normal)]
-  [HarmonyPatch(new Type[] { typeof(CombatGameState) })]
-  public static class CombatHUD_Init_Postfix {
-    public static void Postfix(CombatHUD __instance, CombatGameState Combat) {
-      try {
-        PersistentFloatieHelper.Init(__instance);
-        DeferredEffectHelper.Clear();
-        PersistentFloatieHelper.Clear();
-      } catch(Exception e) {
-        Log.M.TWL(0, e.ToString(), true);
-      }
-    }
-  }
-}

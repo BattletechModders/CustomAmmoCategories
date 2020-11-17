@@ -170,6 +170,8 @@
     <Compile Include="CheatHttpServer.cs" />
     <Compile Include="CleverGirlWeaponDamagePrediction.cs" />
     <Compile Include="CombatGameDestroy.cs" />
+    <Compile Include="CombatHUDEvasiveBarPips.cs" />
+    <Compile Include="CombatHUDInit.cs" />
     <Compile Include="CustomDesignMask.cs" />
     <Compile Include="CustomReticle.cs" />
     <Compile Include="CustomSVGAsset.cs" />

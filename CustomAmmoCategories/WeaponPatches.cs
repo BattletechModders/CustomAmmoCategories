@@ -708,6 +708,8 @@ namespace CustAmmoCategoriesPatches {
         float evasiveMod = __instance.exDef().evasivePipsMods.GeneratedHeat + ammoDef.evasivePipsMods.GeneratedHeat + mode.evasivePipsMods.GeneratedHeat;
         if (Mathf.Abs(evasiveMod) > CustomAmmoCategories.Epsilon) __result = __result * Mathf.Pow((float)__instance.parent.EvasivePipsCurrent, evasiveMod);
       }
+      __result *= ammoDef.HeatGeneratedModifier;
+      __result *= mode.HeatGeneratedModifier;
     }
   }
   [HarmonyPatch(typeof(Weapon))]

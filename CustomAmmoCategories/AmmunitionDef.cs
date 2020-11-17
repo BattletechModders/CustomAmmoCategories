@@ -264,6 +264,7 @@ namespace CustAmmoCategories {
     public float UnseparatedDamageMult { get; set; }
     public float ArmorDamageModifier { get; set; }
     public float ISDamageModifier { get; set; }
+    public float HeatGeneratedModifier { get; set; }
     public float CanBeExhaustedAt { get; set; }
     //public Dictionary<TerrainMaskFlags,string> SurfaceImpactDesignMaskId { get; set; }
     public TripleBoolean SurfaceBecomeDangerousOnImpact { get; set; }
@@ -383,6 +384,7 @@ namespace CustAmmoCategories {
       UnseparatedDamageMult = 1f;
       ISDamageModifier = 1f;
       ArmorDamageModifier = 1f;
+      HeatGeneratedModifier = 1f;
       CanBeExhaustedAt = 0f;
       //SurfaceImpactDesignMaskId = new Dictionary<TerrainMaskFlags, string>();
       Unguided = TripleBoolean.NotSet;

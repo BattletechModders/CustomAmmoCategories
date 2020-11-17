@@ -502,16 +502,6 @@ namespace CustAmmoCategories {
       registerModifier("MELEE TARGET MOVED", "TARGET MOVED", false, true, GetMeleeEvesionMod, null);
     }
   }
-  [HarmonyPatch(typeof(CombatHUD))]
-  [HarmonyPatch("Init")]
-  [HarmonyPatch(MethodType.Normal)]
-  [HarmonyPriority(Priority.Last)]
-  [HarmonyPatch(new Type[] { typeof(CombatGameState) })]
-  public static class CombatHUD_Init {
-    public static void Postfix(CombatHUD __instance, CombatGameState Combat) {
-      ToHitModifiersHelper.InitHUD(__instance);
-    }
-  }
   [HarmonyPatch(typeof(CombatHUDWeaponSlot))]
   [HarmonyPatch("UpdateTooltipStrings")]
   [HarmonyPatch(MethodType.Normal)]

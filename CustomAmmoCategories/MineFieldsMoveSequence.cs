@@ -454,7 +454,14 @@ namespace CustAmmoCategories {
       }
       foreach (Mech trgmech in instabilitySequence) {
         Log.F.WL(2, "HandleKnockdown\n");
+        trgmech.CheckForInstability();
         trgmech.HandleKnockdown(-1, "LANDMINES", this.weapon.parent.CurrentPosition, null);
+      }
+      foreach (ICombatant trg in deathSequence) {
+        AbstractActor atrg = trg as AbstractActor;
+        if (atrg == null) { continue; }
+        Log.F.WL(2, "CheckPilot status\n");
+        atrg.CheckPilotStatusFromAttack("LANDMINES", -1, -1);
       }
       foreach (ICombatant trg in deathSequence) {
         Log.F.WL(2, "HandleDeath\n");

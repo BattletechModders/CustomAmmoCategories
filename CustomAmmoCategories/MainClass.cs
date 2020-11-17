@@ -110,25 +110,6 @@ namespace CustomAmmoCategoriesPatches {
       }
     }
   }
-  [HarmonyPatch(typeof(CombatHUD))]
-  [HarmonyPatch("Init")]
-  [HarmonyPatch(MethodType.Normal)]
-  [HarmonyPatch(new Type[] { typeof(CombatGameState) })]
-  public static class CombatHUD_Init {
-    public static bool Prefix(CombatHUD __instance, CombatGameState Combat) {
-      CustomAmmoCategoriesLog.Log.LogWrite("pre CombatHUD.Init\n");
-      //AttackSequenceWatchDogHelper.StartWatchDogThread();
-      CustomAmmoCategories.ActorsEjectedAmmo.Clear();
-      //CustomAmmoCategories.ClearPlayerWeapons();
-      foreach (var unit in Combat.AllActors) {
-        CustomAmmoCategoriesLog.Log.LogWrite("  " + unit.DisplayName + "\n");
-        foreach (var Weapon in unit.Weapons) {
-          CustomAmmoCategories.RegisterPlayerWeapon(Weapon);
-        }
-      }
-      return true;
-    }
-  }
   [HarmonyPatch(typeof(Weapon))]
   [HarmonyPatch("SetAmmoBoxes")]
   [HarmonyPatch(MethodType.Normal)]
@@ -1257,6 +1238,10 @@ namespace CustAmmoCategories {
     public bool NoSVGCacheClear { get; set; }
     public bool AMSCantFireFloatie { get; set; }
     public bool ShowJammChance { get; set; }
+    public bool ShowEvasiveAsNumber { get; set; }
+    public float EvasiveNumberFontSize { get; set; }
+    public float EvasiveNumberWidth { get; set; }
+    public float EvasiveNumberHeight { get; set; }
     public Settings() {
       directory = string.Empty;
       debugLog = true;
@@ -1375,6 +1360,10 @@ namespace CustAmmoCategories {
       NoSVGCacheClear = true;
       AMSCantFireFloatie = false;
       ShowJammChance = true;
+      ShowEvasiveAsNumber = true;
+      EvasiveNumberFontSize = 24f;
+      EvasiveNumberWidth = 20f;
+      EvasiveNumberHeight = 25f;
     }
   }
 }

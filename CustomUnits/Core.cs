@@ -211,7 +211,7 @@ namespace CustomUnits{
       ShowPassiveAbilitiesIcon = "";
       HideActiveAbilitiesIcon = "";
       HidePassiveAbilitiesIcon = "";
-      DeployManual = true;
+      DeployManual = false;
       DeploySpawnRadius = 50f;
       DeployMaxDistanceFromOriginal = 30.0f;
       DeployMinDistanceFromEnemy = 300f;

@@ -115,22 +115,4 @@ namespace CustAmmoCategoriesPatches {
       return true;
     }
   }
-  [HarmonyPatch(typeof(CombatHUD))]
-  [HarmonyPatch("Init")]
-  [HarmonyPatch(MethodType.Normal)]
-  [HarmonyPatch(new Type[] { typeof(CombatGameState) })]
-  public static class CombatHUD_Init {
-    public static void Postfix(CombatHUD __instance, CombatGameState Combat) {
-      ASWatchdog wd = __instance.gameObject.GetComponent<ASWatchdog>();
-      if(wd == null) {
-        wd = __instance.gameObject.AddComponent<ASWatchdog>();
-      }
-      if(wd != null) {
-        wd.Init(__instance);
-      }
-      ExplosionAPIHelper.Init(Combat);
-      DynamicMapAsyncProcHelper.Init(__instance);
-      DamageModifiersCache.Init(__instance);
-    }
-  }
 }

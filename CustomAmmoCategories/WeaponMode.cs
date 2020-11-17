@@ -213,6 +213,8 @@ namespace CustAmmoCategories {
     public float DamageFalloffEndDistance { get; set; }
     public TripleBoolean AMSShootsEveryAttack { get; set; }
     public TripleBoolean TargetMechLegsOnly { get; set; }
+    public float HeatGeneratedModifier { get; set; }
+
     public WeaponMode() {
       Id = WeaponMode.NONE_MODE_NAME;
       UIName = WeaponMode.BASE_MODE_NAME;
@@ -268,6 +270,7 @@ namespace CustAmmoCategories {
       MaxShellsDistance = 30f;
       ArmorDamageModifier = 1f;
       ISDamageModifier = 1f;
+      HeatGeneratedModifier = 1f;
       FireTerrainChance = 0f;
       FireDurationWithoutForest = 0;
       FireTerrainStrength = 0;
@@ -370,6 +373,9 @@ namespace CustAmmoCategories {
       }
       if (jWeaponMode["FireDelayMultiplier"] != null) {
         this.FireDelayMultiplier = (float)jWeaponMode["FireDelayMultiplier"];
+      }
+      if (jWeaponMode["HeatGeneratedModifier"] != null) {
+        this.HeatGeneratedModifier = (float)jWeaponMode["HeatGeneratedModifier"];
       }
       if (jWeaponMode["ProjectileSpeedMultiplier"] != null) {
         this.ProjectileSpeedMultiplier = (float)jWeaponMode["ProjectileSpeedMultiplier"];

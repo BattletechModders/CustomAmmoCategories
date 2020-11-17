@@ -22,7 +22,7 @@ namespace CustAmmoCategories {
       } else {
         externalSelfInfo[actor] = text;
       }
-      CombatHUD_InitSidePanel.HUD().RefreshSidePanelInfo();
+      CombatHUD_Init.HUD().RefreshSidePanelInfo();
     }
     public static void SetTargetInfo(AbstractActor actor,ICombatant target, Text text) {
       if (externalTargetsInfo.TryGetValue(actor, out Dictionary<ICombatant, Text> targetsInfo) == false) {
@@ -34,7 +34,7 @@ namespace CustAmmoCategories {
       } else {
         targetsInfo[target] = text;
       }
-      CombatHUD_InitSidePanel.HUD().RefreshSidePanelInfo();
+      CombatHUD_Init.HUD().RefreshSidePanelInfo();
     }
     public static Text getSelfInfo(this AbstractActor unit) {
       if(externalSelfInfo.TryGetValue(unit, out Text info) == false) {
@@ -133,22 +133,6 @@ namespace CustAmmoCategoriesPatches {
       if (fTextNeedToBeRefreshed) { __instance.ForceShowSingleFrame(title, description, null, false); fTextNeedToBeRefreshed = false; } else {
         ___shownForSingleFrame = true;
       }
-    }
-  }
-  [HarmonyPatch(typeof(CombatHUD))]
-  [HarmonyPatch("Init")]
-  [HarmonyPatch(MethodType.Normal)]
-  [HarmonyPatch(new Type[] { typeof(CombatGameState) })]
-  public static class CombatHUD_InitSidePanel {
-    private static CombatHUD m_HUD = null;
-    private static CombatGameState m_Combat = null;
-    public static CombatHUD HUD() { return m_HUD; }
-    public static CombatHUD HUD(this CombatHUDInfoSidePanel panel) { return m_HUD; }
-    public static CombatGameState Combat(this CombatHUDInfoSidePanel panel) { return m_Combat; }
-    public static void Postfix(CombatHUD __instance, CombatGameState Combat) {
-      m_HUD = __instance;
-      m_Combat = Combat;
-      __instance.SidePanelInit();
     }
   }
   [HarmonyPatch(typeof(CombatHUD))]

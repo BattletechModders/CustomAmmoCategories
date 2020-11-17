@@ -183,8 +183,6 @@ namespace CustomAmmoCategoriesPatches {
       if ((maxradius - minradius) < CustomAmmoCategories.Epsilon) { maxradius = minradius * 3f; }
       float radius = Mathf.Lerp(minradius, maxradius, hitMargin);
       float direction = Mathf.Deg2Rad * UnityEngine.Random.Range(0f, 360f);
-      //radius *= UnityEngine.Random.Range(targetRep.parentCombatant.Combat.Constants.ResolutionConstants.MissOffsetHorizontalMin, targetRep.parentCombatant.Combat.Constants.ResolutionConstants.MissOffsetHorizontalMax);
-      //Vector2 vector2 = UnityEngine.Random.insideUnitCircle.normalized * radius;
       Vector3 centerPosition = position;
       position.x += Mathf.Sin(direction) * radius;
       position.z += Mathf.Cos(direction) * radius;

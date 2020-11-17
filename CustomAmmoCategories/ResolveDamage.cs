@@ -16,8 +16,9 @@ namespace CustAmmoCategories {
         Mech mech = advInfo.Sequence.attacker as Mech;
         if (mech != null) {
           HashSet<ArmorLocation> DFALocs = mech.GetDFASelfDamageLocations();
+          Log.M.TWL(0,"DFA self damage "+mech.DisplayName);
           foreach (ArmorLocation aloc in DFALocs) {
-            advInfo.Sequence.attacker.TakeWeaponDamage(hitInfo, (int)aloc, advInfo.weapon, damageAmount, 0f, 0, DamageType.DFASelf);
+            Log.M.WL(1, aloc.ToString()+":"+ damageAmount);
             advInfo.Sequence.attacker.TakeWeaponDamage(hitInfo, (int)aloc, advInfo.weapon, damageAmount, 0f, 0, DamageType.DFASelf);
           }
         }
