@@ -193,6 +193,8 @@ namespace CustomUnits {
       mech.ResetPathing(false);
       if (mech.GameRep != null) {
         mech.GameRep.UpdateLegDamageAnimFlags(mech.LeftLegDamageLevel, mech.RightLegDamageLevel);
+        QuadRepresentation quadRepresentation = mech.GameRep.GetComponent<QuadRepresentation>();
+        if (quadRepresentation != null) { quadRepresentation.fLegsRep.LegsRep.UpdateLegDamageAnimFlags(mech.LeftArmDamageLevel,mech.RightArmDamageLevel); }
       }
     }
     public static bool Prefix(Mech __instance, ChassisLocations location, LocationDamageLevel oldDamageLevel, LocationDamageLevel newDamageLevel, string sourceID, int stackItemUID) {
@@ -330,6 +332,7 @@ namespace CustomUnits {
         {
           (object) Mech.GetAbbreviatedChassisLocation(location)
         }), FloatieMessage.MessageNature.LocationDestroyed, true)));
+      Log.TWL(0, "OnLocationDestroyedGeneral " + instance.DisplayName+" "+location);
       AttackDirector.AttackSequence attackSequence = instance.Combat.AttackDirector.GetAttackSequence(hitInfo.attackSequenceId);
       if (attackSequence != null) { attackSequence.FlagAttackDestroyedAnyLocation(instance.GUID); };
       UnitCustomInfo info = instance.GetCustomInfo();
@@ -344,7 +347,8 @@ namespace CustomUnits {
           armsAsLegs = true;
         }
       }
-      int destroyedLegsCount = 0;//instance.DestroyedLegsCount();
+      int destroyedLegsCount = instance.DestroyedLegsCount();
+      Log.WL(0, "destroyedLegsCount:"+ destroyedLegsCount);
       if (legs.Contains(location)) {
         if ((armsAsLegs == false) || (destroyedLegsCount >= 2)) {
           instance.StatCollection.ModifyStat<float>(attackSequence == null ? "debug" : attackSequence.attacker.GUID, attackSequence == null ? -1 : attackSequence.attackSequenceIdx, "RunSpeed", StatCollection.StatOperation.Set, 0.0f, -1, true);

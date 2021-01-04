@@ -489,63 +489,6 @@ namespace CustomUnits {
       }
     }
   }
-  [HarmonyPatch(typeof(ActorMovementSequence))]
-  [HarmonyPatch(MethodType.Normal)]
-  [HarmonyPatch("UpdateSpline")]
-  [HarmonyPatch(new Type[] { })]
-  public static class ActorMovementSequence_UpdateSplineSquad {
-    public static void Postfix(ActorMovementSequence __instance, Vector3 ___Forward, float ___t) {
-      try {
-        TrooperSquad squad = __instance.owningActor as TrooperSquad;
-        if (squad == null) { return; }
-        //Log.TWL(0, "ActorMovementSequence.UpdateSpline " + __instance.owningActor.PilotableActorDef.Description.Id);
-        Transform MoverTransform = Traverse.Create(__instance).Property<Transform>("MoverTransform").Value;
-        foreach (var sRep in squad.squadReps) {
-          if (squad.IsLocationDestroyed(sRep.Key)) {
-            sRep.Value.GameRep.transform.position = sRep.Value.deadLocation;
-            sRep.Value.GameRep.transform.rotation = sRep.Value.deadRotation;
-          } else {
-            Vector3 newPosition = MoverTransform.position + sRep.Value.delta;
-            newPosition.y = __instance.owningActor.Combat.MapMetaData.GetCellAt(newPosition).cachedHeight;
-            //__instance.owningActor.Combat.MapMetaData.GetLerpedHeightAt(newPosition);
-            sRep.Value.GameRep.transform.LookAt(newPosition + ___Forward, Vector3.up);
-            sRep.Value.GameRep.transform.position = newPosition;
-          }
-          //Log.WL(1, sRep.Value.GameRep.name + " pos:"+ newPosition+ " Velocity:"+ __instance.Velocity);
-        }
-      } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
-      }
-    }
-  }
-  [HarmonyPatch(typeof(ActorMovementSequence))]
-  [HarmonyPatch(MethodType.Normal)]
-  [HarmonyPatch("CompleteMove")]
-  [HarmonyPatch(new Type[] { })]
-  public static class ActorMovementSequence_CompleteMoveSquad {
-    public static void Prefix(ActorMovementSequence __instance, Vector3 ___Forward, float ___t) {
-      try {
-        TrooperSquad squad = __instance.owningActor as TrooperSquad;
-        if (squad == null) { return; }
-        //Log.TWL(0, "ActorMovementSequence.UpdateSpline " + __instance.owningActor.PilotableActorDef.Description.Id);
-        foreach (var sRep in squad.squadReps) {
-          if (squad.IsLocationDestroyed(sRep.Key)) {
-            sRep.Value.GameRep.transform.position = sRep.Value.deadLocation;
-            sRep.Value.GameRep.transform.rotation = sRep.Value.deadRotation;
-          } else {
-            Vector3 newPosition = __instance.FinalPos + sRep.Value.delta;
-            newPosition.y = __instance.owningActor.Combat.MapMetaData.GetCellAt(newPosition).cachedHeight;
-            //__instance.owningActor.Combat.MapMetaData.GetLerpedHeightAt(newPosition);
-            sRep.Value.GameRep.transform.rotation = Quaternion.LookRotation(__instance.FinalHeading, Vector3.up);
-            sRep.Value.GameRep.transform.position = newPosition;
-          }
-          //Log.WL(1, sRep.Value.GameRep.name + " pos:"+ newPosition+ " Velocity:"+ __instance.Velocity);
-        }
-      } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
-      }
-    }
-  }
   public class BaySquadReadoutAligner: MonoBehaviour {
     private bool ui_inited = false;
     private bool svg_inited = false;
@@ -1505,137 +1448,6 @@ namespace CustomUnits {
       }
     }
   }
-  [HarmonyPatch(typeof(ActorMovementSequence))]
-  [HarmonyPatch("TurnParam")]
-  [HarmonyPatch(MethodType.Setter)]
-  [HarmonyPatch(new Type[] { typeof(float) })]
-  public static class ActorMovementSequence_TurnParamSquad {
-    public static void Postfix(ActorMovementSequence __instance, float value) {
-      try {
-        TrooperSquad squad = __instance.owningActor as TrooperSquad;
-        if (squad == null) { return; }
-        foreach(var sRep in squad.squadReps) {
-          if (squad.IsLocationDestroyed(sRep.Key)) { continue; }
-          sRep.Value.TurnParam = value;
-        }
-      } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
-      }
-    }
-  }
-  [HarmonyPatch(typeof(ActorMovementSequence))]
-  [HarmonyPatch("ForwardParam")]
-  [HarmonyPatch(MethodType.Setter)]
-  [HarmonyPatch(new Type[] { typeof(float) })]
-  public static class ActorMovementSequence_ForwardParamSquad {
-    public static void Postfix(ActorMovementSequence __instance, float value) {
-      try {
-        TrooperSquad squad = __instance.owningActor as TrooperSquad;
-        if (squad == null) { return; }
-        foreach (var sRep in squad.squadReps) {
-          if (squad.IsLocationDestroyed(sRep.Key)) { continue; }
-          sRep.Value.ForwardParam = value;
-        }
-      } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
-      }
-    }
-  }
-  [HarmonyPatch(typeof(ActorMovementSequence))]
-  [HarmonyPatch("IsMovingParam")]
-  [HarmonyPatch(MethodType.Setter)]
-  [HarmonyPatch(new Type[] { typeof(bool) })]
-  public static class ActorMovementSequence_IsMovingParamSquad {
-    public static void Postfix(ActorMovementSequence __instance, bool value) {
-      try {
-        TrooperSquad squad = __instance.owningActor as TrooperSquad;
-        if (squad == null) { return; }
-        foreach (var sRep in squad.squadReps) {
-          if (squad.IsLocationDestroyed(sRep.Key)) { continue; }
-          sRep.Value.IsMovingParam = value;
-        }
-      } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
-      }
-    }
-  }
-  [HarmonyPatch(typeof(ActorMovementSequence))]
-  [HarmonyPatch("BeginMovementParam")]
-  [HarmonyPatch(MethodType.Setter)]
-  [HarmonyPatch(new Type[] { typeof(bool) })]
-  public static class ActorMovementSequence_BeginMovementParamSquad {
-    public static void Postfix(ActorMovementSequence __instance, bool value) {
-      try {
-        TrooperSquad squad = __instance.owningActor as TrooperSquad;
-        if (squad == null) { return; }
-        foreach (var sRep in squad.squadReps) {
-          if (squad.IsLocationDestroyed(sRep.Key)) { continue; }
-          sRep.Value.BeginMovementParam = value;
-        }
-      } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
-      }
-    }
-  }
-  [HarmonyPatch(typeof(ActorMovementSequence))]
-  [HarmonyPatch("DamageParam")]
-  [HarmonyPatch(MethodType.Setter)]
-  [HarmonyPatch(new Type[] { typeof(float) })]
-  public static class ActorMovementSequence_DamageParamSquad {
-    public static void Postfix(ActorMovementSequence __instance, float value) {
-      try {
-        TrooperSquad squad = __instance.owningActor as TrooperSquad;
-        if (squad == null) { return; }
-        foreach (var sRep in squad.squadReps) {
-          if (squad.IsLocationDestroyed(sRep.Key)) { continue; }
-          sRep.Value.DamageParam = value;
-        }
-      } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
-      }
-    }
-  }
-  [HarmonyPatch(typeof(MechRepresentation))]
-  [HarmonyPatch("OnPlayerVisibilityChanged")]
-  [HarmonyPatch(MethodType.Normal)]
-  [HarmonyPatch(new Type[] { typeof(VisibilityLevel) })]
-  public static class MechRepresentation_OnPlayerVisibilityChangedSquad {
-    public static void Postfix(MechRepresentation __instance, VisibilityLevel newLevel) {
-      try {
-        TrooperSquad squad = __instance.parentMech as TrooperSquad;
-        if (squad == null) { return; }
-        if (squad.MechReps.Contains(__instance)) { return; }
-        foreach (var sRep in squad.squadReps) {
-          if (squad.IsLocationDestroyed(sRep.Key)) { continue; }
-          sRep.Value.MechRep.OnPlayerVisibilityChanged(newLevel);
-          sRep.Value.MechRep.BlipObjectUnknown.SetActive(false);
-          sRep.Value.MechRep.BlipObjectIdentified.SetActive(false);
-          sRep.Value.MechRep.BlipObjectGhostWeak.SetActive(false);
-          sRep.Value.MechRep.BlipObjectGhostStrong.SetActive(false);
-        }
-      } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
-      }
-    }
-  }
-  [HarmonyPatch(typeof(MechRepresentation))]
-  [HarmonyPatch("OnCombatGameDestroyed")]
-  [HarmonyPatch(MethodType.Normal)]
-  [HarmonyPatch(new Type[] { })]
-  public static class MechRepresentation_OnCombatGameDestroyedSquad {
-    public static void Postfix(MechRepresentation __instance) {
-      try {
-        TrooperSquad squad = __instance.parentMech as TrooperSquad;
-        if (squad == null) { return; }
-        if (squad.MechReps.Contains(__instance)) { return; }
-        foreach (var sRep in squad.squadReps) {
-          sRep.Value.MechRep.OnCombatGameDestroyed();
-        }
-      } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
-      }
-    }
-  }
   [HarmonyPatch(typeof(MechRepresentation))]
   [HarmonyPatch("StartPersistentAudio")]
   [HarmonyPatch(MethodType.Normal)]
@@ -1682,26 +1494,32 @@ namespace CustomUnits {
   public static class MechRepresentation_PlayPersistentDamageVFXSquad {
     public static bool Prefix(MechRepresentation __instance, int location,ref List<string> ___persistentDmgList) {
       try {
+        AlternateMechRepresentations altReps = __instance.GetComponent<AlternateMechRepresentations>();
+        if(altReps != null) {
+          altReps.PlayPersistentDamageVFX(location);
+          return false;
+        }
         TrooperSquad squad = __instance.parentMech as TrooperSquad;
-        if (squad == null) { return true; }
-        ArmorLocation armorLocation = (ArmorLocation)location;
-        if (___persistentDmgList.Count <= 0) { return true; }
-        int index = UnityEngine.Random.Range(0, ___persistentDmgList.Count);
-        string persistentDmg = ___persistentDmgList[index];
-        ___persistentDmgList.RemoveAt(index);
-        if (persistentDmg.Contains("Smoke")) {
-          int num1 = (int)WwiseManager.PostEvent<AudioEventList_mech>(AudioEventList_mech.mech_fire_small_internal, __instance.audioObject, (AkCallbackManager.EventCallback)null, (object)null);
-        } else if (persistentDmg.Contains("Electrical")) {
-          int num2 = (int)WwiseManager.PostEvent<AudioEventList_mech>(AudioEventList_mech.mech_damage_burning_electrical_start, __instance.audioObject, (AkCallbackManager.EventCallback)null, (object)null);
-        } else {
-          int num3 = (int)WwiseManager.PostEvent<AudioEventList_mech>(AudioEventList_mech.mech_damage_burning_sparks_start, __instance.audioObject, (AkCallbackManager.EventCallback)null, (object)null);
+        if (squad != null) {
+          ArmorLocation armorLocation = (ArmorLocation)location;
+          if (___persistentDmgList.Count <= 0) { return true; }
+          int index = UnityEngine.Random.Range(0, ___persistentDmgList.Count);
+          string persistentDmg = ___persistentDmgList[index];
+          ___persistentDmgList.RemoveAt(index);
+          if (persistentDmg.Contains("Smoke")) {
+            int num1 = (int)WwiseManager.PostEvent<AudioEventList_mech>(AudioEventList_mech.mech_fire_small_internal, __instance.audioObject, (AkCallbackManager.EventCallback)null, (object)null);
+          } else if (persistentDmg.Contains("Electrical")) {
+            int num2 = (int)WwiseManager.PostEvent<AudioEventList_mech>(AudioEventList_mech.mech_damage_burning_electrical_start, __instance.audioObject, (AkCallbackManager.EventCallback)null, (object)null);
+          } else {
+            int num3 = (int)WwiseManager.PostEvent<AudioEventList_mech>(AudioEventList_mech.mech_damage_burning_sparks_start, __instance.audioObject, (AkCallbackManager.EventCallback)null, (object)null);
+          }
+          Transform parentTransform = __instance.GetVFXTransform((int)ArmorLocation.CenterTorso);
+          if (squad.squadReps.TryGetValue(MechStructureRules.GetChassisLocationFromArmorLocation(armorLocation), out TrooperRepresentation trooperRep)) {
+            parentTransform = trooperRep.MechRep.vfxCenterTorsoTransform;
+          }
+          __instance.PlayVFXAt(parentTransform, Vector3.zero, persistentDmg, true, Vector3.zero, false, -1f);
+          return false;
         }
-        Transform parentTransform = __instance.GetVFXTransform((int)ArmorLocation.CenterTorso);
-        if (squad.squadReps.TryGetValue(MechStructureRules.GetChassisLocationFromArmorLocation(armorLocation), out TrooperRepresentation trooperRep)) {
-          parentTransform = trooperRep.MechRep.vfxCenterTorsoTransform;
-        }
-        __instance.PlayVFXAt(parentTransform, Vector3.zero, persistentDmg, true, Vector3.zero, false, -1f);
-        return false;
       } catch (Exception e) {
         Log.TWL(0, e.ToString(), true);
       }
@@ -1715,140 +1533,29 @@ namespace CustomUnits {
   public static class MechRepresentation_PlayComponentCritVFXSquad {
     public static bool Prefix(MechRepresentation __instance, int location, ref List<string> ___persistentCritList) {
       try {
-        TrooperSquad squad = __instance.parentMech as TrooperSquad;
-        if (squad == null) { return true; }
-        ArmorLocation armorLocation = (ArmorLocation)location;
-        if (___persistentCritList.Count <= 0) { return true; };
-        int index = UnityEngine.Random.Range(0, ___persistentCritList.Count);
-        string persistentCrit = ___persistentCritList[index];
-        ___persistentCritList.RemoveAt(index);
-        Transform parentTransform = __instance.GetVFXTransform((int)ArmorLocation.CenterTorso);
-        if (squad.squadReps.TryGetValue(MechStructureRules.GetChassisLocationFromArmorLocation(armorLocation), out TrooperRepresentation trooperRep)) {
-          parentTransform = trooperRep.MechRep.vfxCenterTorsoTransform;
+        AlternateMechRepresentations altReps = __instance.GetComponent<AlternateMechRepresentations>();
+        if (altReps != null) {
+          altReps.PlayComponentCritVFX(location);
+          return false;
         }
-        __instance.PlayVFXAt(parentTransform, Vector3.zero, persistentCrit, true, Vector3.zero, false, -1f);
-        return false;
+        TrooperSquad squad = __instance.parentMech as TrooperSquad;
+        if (squad != null) {
+          ArmorLocation armorLocation = (ArmorLocation)location;
+          if (___persistentCritList.Count <= 0) { return true; };
+          int index = UnityEngine.Random.Range(0, ___persistentCritList.Count);
+          string persistentCrit = ___persistentCritList[index];
+          ___persistentCritList.RemoveAt(index);
+          Transform parentTransform = __instance.GetVFXTransform((int)ArmorLocation.CenterTorso);
+          if (squad.squadReps.TryGetValue(MechStructureRules.GetChassisLocationFromArmorLocation(armorLocation), out TrooperRepresentation trooperRep)) {
+            parentTransform = trooperRep.MechRep.vfxCenterTorsoTransform;
+          }
+          __instance.PlayVFXAt(parentTransform, Vector3.zero, persistentCrit, true, Vector3.zero, false, -1f);
+          return false;
+        }
       } catch (Exception e) {
         Log.TWL(0, e.ToString(), true);
       }
       return true;
-    }
-  }
-  [HarmonyPatch(typeof(MechRepresentation))]
-  [HarmonyPatch("SetMeleeIdleState")]
-  [HarmonyPatch(MethodType.Normal)]
-  [HarmonyPatch(new Type[] { typeof(bool) })]
-  public static class MechRepresentation_SetMeleeIdleStateSquad {
-    public static void Postfix(MechRepresentation __instance, bool isMelee) {
-      try {
-        TrooperSquad squad = __instance.parentMech as TrooperSquad;
-        if (squad == null) { return; }
-        if (squad.MechReps.Contains(__instance)) { return; }
-        foreach (var sRep in squad.squadReps) {
-          if (squad.IsLocationDestroyed(sRep.Key)) { continue; }
-          sRep.Value.MechRep.thisAnimator.SetFloat("MeleeEngaged", isMelee ? 1f : 0.0f);
-        }
-      } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
-      }
-    }
-  }
-  [HarmonyPatch(typeof(MechRepresentation))]
-  [HarmonyPatch("TriggerMeleeTransition")]
-  [HarmonyPatch(MethodType.Normal)]
-  [HarmonyPatch(new Type[] { typeof(bool) })]
-  public static class MechRepresentation_TriggerMeleeTransitionSquad {
-    public static void Postfix(MechRepresentation __instance, bool meleeIn) {
-      try {
-        TrooperSquad squad = __instance.parentMech as TrooperSquad;
-        if (squad == null) { return; }
-        if (squad.MechReps.Contains(__instance)) { return; }
-        foreach (var sRep in squad.squadReps) {
-          if (squad.IsLocationDestroyed(sRep.Key)) { continue; }
-          if (meleeIn)
-            sRep.Value.MechRep.thisAnimator.SetTrigger("MeleeIdleIn");
-          else
-            sRep.Value.MechRep.thisAnimator.SetTrigger("MeleeIdleOut");
-        }
-      } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
-      }
-    }
-  }
-  [HarmonyPatch(typeof(MechRepresentation))]
-  [HarmonyPatch("ToggleRandomIdles")]
-  [HarmonyPatch(MethodType.Normal)]
-  [HarmonyPatch(new Type[] { typeof(bool) })]
-  public static class MechRepresentation_ToggleRandomIdlesSquad {
-    public static void Postfix(MechRepresentation __instance, bool shouldIdle) {
-      try {
-        TrooperSquad squad = __instance.parentMech as TrooperSquad;
-        if (squad == null) { return; }
-        if (squad.MechReps.Contains(__instance)) { return; }
-        foreach (var sRep in squad.squadReps) {
-          if (squad.IsLocationDestroyed(sRep.Key)) { continue; }
-          sRep.Value.MechRep.ToggleRandomIdles(shouldIdle);
-        }
-      } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
-      }
-    }
-  }
-  [HarmonyPatch(typeof(MechRepresentation))]
-  [HarmonyPatch("PlayFireAnim")]
-  [HarmonyPatch(MethodType.Normal)]
-  [HarmonyPatch(new Type[] { typeof(AttackSourceLimb), typeof(int) })]
-  public static class MechRepresentation_PlayFireAnimSquad {
-    public static void Postfix(MechRepresentation __instance, AttackSourceLimb sourceLimb, int recoilStrength) {
-      try {
-        TrooperSquad squad = __instance.parentMech as TrooperSquad;
-        if (squad == null) { return; }
-        if (squad.MechReps.Contains(__instance)) { return; }
-        foreach (var sRep in squad.squadReps) {
-          if (squad.IsLocationDestroyed(sRep.Key)) { continue; }
-          sRep.Value.MechRep.PlayFireAnim(sourceLimb, recoilStrength);
-        }
-      } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
-      }
-    }
-  }
-  [HarmonyPatch(typeof(MechRepresentation))]
-  [HarmonyPatch("PlayMeleeAnim")]
-  [HarmonyPatch(MethodType.Normal)]
-  [HarmonyPatch(new Type[] {  typeof(int) })]
-  public static class MechRepresentation_PlayMeleeAnimSquad {
-    public static void Postfix(MechRepresentation __instance, int meleeHeight) {
-      try {
-        TrooperSquad squad = __instance.parentMech as TrooperSquad;
-        if (squad == null) { return; }
-        if (squad.MechReps.Contains(__instance)) { return; }
-        foreach (var sRep in squad.squadReps) {
-          if (squad.IsLocationDestroyed(sRep.Key)) { continue; }
-          sRep.Value.MechRep.PlayMeleeAnim(meleeHeight);
-        }
-      } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
-      }
-    }
-  }
-  [HarmonyPatch(typeof(MechRepresentation))]
-  [HarmonyPatch("PlayImpactAnim")]
-  [HarmonyPatch(MethodType.Normal)]
-  [HarmonyPatch(new Type[] { typeof(WeaponHitInfo), typeof(int), typeof(Weapon), typeof(MeleeAttackType), typeof(float) })]
-  public static class MechRepresentation_PlayImpactAnimSquad {
-    public static void Postfix(MechRepresentation __instance, WeaponHitInfo hitInfo, int hitIndex, Weapon weapon, MeleeAttackType meleeType, float cumulativeDamage) {
-      try {
-        TrooperSquad squad = __instance.parentMech as TrooperSquad;
-        if (squad == null) { return; }
-        if (squad.MechReps.Contains(__instance)) { return; }
-        foreach (var sRep in squad.squadReps) {
-          if (squad.IsLocationDestroyed(sRep.Key)) { continue; }
-          sRep.Value.MechRep.PlayImpactAnim(hitInfo, hitIndex, weapon, meleeType, cumulativeDamage);
-        }
-      } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
-      }
     }
   }
   [HarmonyPatch(typeof(MechRepresentation))]
@@ -1884,156 +1591,6 @@ namespace CustomUnits {
           if (squad.IsLocationDestroyed(sRep.Key)) { continue; }
           sRep.Value.MechRep.StopJumpjetAudio();
         }
-      } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
-      }
-    }
-  }
-  [HarmonyPatch(typeof(MechRepresentation))]
-  [HarmonyPatch("PlayJumpLaunchAnim")]
-  [HarmonyPatch(MethodType.Normal)]
-  [HarmonyPatch(new Type[] { })]
-  public static class MechRepresentation_PlayJumpLaunchAnimSquad {
-    public static void Postfix(MechRepresentation __instance) {
-      try {
-        TrooperSquad squad = __instance.parentMech as TrooperSquad;
-        if (squad == null) { return; }
-        if (squad.MechReps.Contains(__instance)) { return; }
-        foreach (var sRep in squad.squadReps) {
-          if (squad.IsLocationDestroyed(sRep.Key)) { continue; }
-          sRep.Value.MechRep.PlayJumpLaunchAnim();
-        }
-      } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
-      }
-    }
-  }
-  [HarmonyPatch(typeof(MechRepresentation))]
-  [HarmonyPatch("PlayFallingAnim")]
-  [HarmonyPatch(MethodType.Normal)]
-  [HarmonyPatch(new Type[] { typeof(Vector2) })]
-  public static class MechRepresentation_PlayFallingAnimSquad {
-    public static void Postfix(MechRepresentation __instance, Vector2 direction) {
-      try {
-        TrooperSquad squad = __instance.parentMech as TrooperSquad;
-        if (squad == null) { return; }
-        if (squad.MechReps.Contains(__instance)) { return; }
-        foreach (var sRep in squad.squadReps) {
-          if (squad.IsLocationDestroyed(sRep.Key)) { continue; }
-          sRep.Value.MechRep.PlayFallingAnim(direction);
-        }
-      } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
-      }
-    }
-  }
-  [HarmonyPatch(typeof(MechRepresentation))]
-  [HarmonyPatch("UpdateJumpAirAnim")]
-  [HarmonyPatch(MethodType.Normal)]
-  [HarmonyPatch(new Type[] { typeof(float), typeof(float) })]
-  public static class MechRepresentation_UpdateJumpAirAnimSquad {
-    public static void Postfix(MechRepresentation __instance, float forward, float side) {
-      try {
-        TrooperSquad squad = __instance.parentMech as TrooperSquad;
-        if (squad == null) { return; }
-        if (squad.MechReps.Contains(__instance)) { return; }
-        foreach (var sRep in squad.squadReps) {
-          if (squad.IsLocationDestroyed(sRep.Key)) { continue; }
-          sRep.Value.MechRep.UpdateJumpAirAnim(forward,side);
-        }
-      } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
-      }
-    }
-  }
-  [HarmonyPatch(typeof(MechRepresentation))]
-  [HarmonyPatch("PlayJumpLandAnim")]
-  [HarmonyPatch(MethodType.Normal)]
-  [HarmonyPatch(new Type[] { typeof(bool) })]
-  public static class MechRepresentation_PlayJumpLandAnimSquad {
-    public static void Postfix(MechRepresentation __instance, bool isDFA) {
-      try {
-        TrooperSquad squad = __instance.parentMech as TrooperSquad;
-        if (squad == null) { return; }
-        if (squad.MechReps.Contains(__instance)) { return; }
-        foreach (var sRep in squad.squadReps) {
-          if (squad.IsLocationDestroyed(sRep.Key)) { continue; }
-          sRep.Value.MechRep.PlayJumpLandAnim(isDFA);
-        }
-      } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
-      }
-    }
-  }
-  [HarmonyPatch(typeof(MechRepresentation))]
-  [HarmonyPatch("StartJumpjetEffect")]
-  [HarmonyPatch(MethodType.Normal)]
-  [HarmonyPatch(new Type[] { })]
-  public static class MechRepresentation_StartJumpjetEffectSquad {
-    public static void Postfix(MechRepresentation __instance) {
-      try {
-        TrooperSquad squad = __instance.parentMech as TrooperSquad;
-        if (squad == null) { return; }
-        if (squad.MechReps.Contains(__instance)) { return; }
-        foreach (var sRep in squad.squadReps) {
-          if (squad.IsLocationDestroyed(sRep.Key)) { continue; }
-          sRep.Value.MechRep.StartJumpjetEffect();
-        }
-      } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
-      }
-    }
-  }
-  [HarmonyPatch(typeof(MechRepresentation))]
-  [HarmonyPatch("StopJumpjetEffect")]
-  [HarmonyPatch(MethodType.Normal)]
-  [HarmonyPatch(new Type[] { })]
-  public static class MechRepresentation_StopJumpjetEffectSquad {
-    public static void Postfix(MechRepresentation __instance) {
-      try {
-        TrooperSquad squad = __instance.parentMech as TrooperSquad;
-        if (squad == null) { return; }
-        if (squad.MechReps.Contains(__instance)) { return; }
-        foreach (var sRep in squad.squadReps) {
-          if (squad.IsLocationDestroyed(sRep.Key)) { continue; }
-          sRep.Value.MechRep.StopJumpjetEffect();
-        }
-      } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
-      }
-    }
-  }
-  [HarmonyPatch(typeof(PilotableActorRepresentation))]
-  [HarmonyPatch("UpdateStateInfo")]
-  [HarmonyPatch(MethodType.Normal)]
-  [HarmonyPatch(new Type[] { })]
-  public static class MechRepresentation_UpdateStateInfo {
-    public static bool Prefix(PilotableActorRepresentation __instance) {
-      try {
-        TrooperSquad squad = __instance.parentActor as TrooperSquad;
-        if (squad == null) { return true; }
-        MechRepresentation mechRep = __instance as MechRepresentation;
-        if (squad.MechReps.Contains(mechRep)) { return false; }
-      } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
-      }
-      return true;
-    }
-  }
-  [HarmonyPatch(typeof(MechRepresentation))]
-  [HarmonyPatch("HandleDeath")]
-  [HarmonyPatch(MethodType.Normal)]
-  [HarmonyPatch(new Type[] { typeof(DeathMethod), typeof(int) })]
-  public static class MechRepresentation_HandleDeathSquad {
-    public static void Postfix(MechRepresentation __instance, DeathMethod deathMethod, int location) {
-      try {
-        //TrooperSquad squad = __instance.parentMech as TrooperSquad;
-        //if (squad == null) { return; }
-        //if (squad.MechReps.Contains(__instance)) { return; }
-        //ArmorLocation armorLocation = (ArmorLocation)location;
-        //if (squad.squadReps.TryGetValue(MechStructureRules.GetChassisLocationFromArmorLocation(armorLocation), out TrooperRepresentation trooperRep)) {
-        //  trooperRep.MechRep.HandleDeath(deathMethod, (int)ArmorLocation.CenterTorso);
-        //}
       } catch (Exception e) {
         Log.TWL(0, e.ToString(), true);
       }
@@ -2322,6 +1879,22 @@ namespace CustomUnits {
       info = mDef.GetCustomInfo();
       if (info == null) {
         throw new NullReferenceException("UnitCustomInfo is not defined for "+mDef.ChassisID);
+      }
+    }
+    public void UpdateSpline(ActorMovementSequence __instance, Vector3 ___Forward) {
+      Transform MoverTransform = Traverse.Create(__instance).Property<Transform>("MoverTransform").Value;
+      foreach (var sRep in this.squadReps) {
+        if (this.IsLocationDestroyed(sRep.Key)) {
+          sRep.Value.GameRep.transform.position = sRep.Value.deadLocation;
+          sRep.Value.GameRep.transform.rotation = sRep.Value.deadRotation;
+        } else {
+          Vector3 newPosition = MoverTransform.position + sRep.Value.delta;
+          newPosition.y = __instance.owningActor.Combat.MapMetaData.GetCellAt(newPosition).cachedHeight;
+          //__instance.owningActor.Combat.MapMetaData.GetLerpedHeightAt(newPosition);
+          sRep.Value.GameRep.transform.LookAt(newPosition + ___Forward, Vector3.up);
+          sRep.Value.GameRep.transform.position = newPosition;
+        }
+        //Log.WL(1, sRep.Value.GameRep.name + " pos:"+ newPosition+ " Velocity:"+ __instance.Velocity);
       }
     }
     public void OnLocationDestroyed(ChassisLocations location, Vector3 attackDirection, WeaponHitInfo hitInfo, DamageType damageType) {
@@ -2956,6 +2529,7 @@ namespace CustomUnits {
       MechRepresentationSimGame __instance = this.simGameRep;
       VTOLBodyAnimation bodyAnimation = __instance.VTOLBodyAnim();
       MechTurretAnimation MechTurret = __instance.gameObject.GetComponentInChildren<MechTurretAnimation>(true);
+      QuadBodyAnimation quadBody = __instance.gameObject.GetComponentInChildren<QuadBodyAnimation>(true);
       Log.WL(1, "bodyAnimation:" + (bodyAnimation == null ? "null" : "not null"));
       for (int index = 0; index < __instance.mechDef.Inventory.Length; ++index) {
         MechComponentRef componentRef = __instance.mechDef.Inventory[index];
@@ -3104,12 +2678,14 @@ namespace CustomUnits {
         }
       }
       if (bodyAnimation != null) { bodyAnimation.ResolveAttachPoints(); };
-      __instance.CreateBlankPrefabs(usedPrefabNames, ChassisLocations.CenterTorso);
-      __instance.CreateBlankPrefabs(usedPrefabNames, ChassisLocations.LeftTorso);
-      __instance.CreateBlankPrefabs(usedPrefabNames, ChassisLocations.RightTorso);
+      if (quadBody != null) {
+        __instance.CreateBlankPrefabs(usedPrefabNames, ChassisLocations.CenterTorso);
+        __instance.CreateBlankPrefabs(usedPrefabNames, ChassisLocations.LeftTorso);
+        __instance.CreateBlankPrefabs(usedPrefabNames, ChassisLocations.RightTorso);
+        __instance.CreateBlankPrefabs(usedPrefabNames, ChassisLocations.Head);
+      }
       __instance.CreateBlankPrefabs(usedPrefabNames, ChassisLocations.LeftArm);
       __instance.CreateBlankPrefabs(usedPrefabNames, ChassisLocations.RightArm);
-      __instance.CreateBlankPrefabs(usedPrefabNames, ChassisLocations.Head);
     }
     public TrooperRepresentationSimGame Init(ChassisLocations loc, SquadRepresentationSimGame parent) {
       this.location = loc;
@@ -3167,93 +2743,6 @@ namespace CustomUnits {
         MechRepresentationSimGame squadRep = squadTroopers[index].GetComponent<MechRepresentationSimGame>();
         squadSimGameReps.Add(location, squadRep.gameObject.AddComponent<TrooperRepresentationSimGame>().Init(location,this));
       }
-    }
-  }
-  [HarmonyPatch(typeof(MechRepresentationSimGame))]
-  [HarmonyPatch("Init")]
-  [HarmonyPatch(MethodType.Normal)]
-  [HarmonyPatch(new Type[] { typeof(DataManager), typeof(MechDef), typeof(Transform), typeof(HeraldryDef) })]
-  public static class MechRepresentationSimGame_InitSquad {
-    public static bool Prefix(MechRepresentationSimGame __instance, DataManager dataManager, MechDef mechDef, Transform parentTransform, HeraldryDef heraldryDef) {
-      if (__instance.GetComponent<TrooperRepresentationSimGame>() != null) {
-        Log.TWL(0, "TrooperRepresentationSimGame.Init");
-        mechDef.SpawnCustomParts(__instance);
-        return true;
-      }
-      Log.TWL(0, "MechRepresentationSimGame.Init");
-      UnitCustomInfo info = mechDef.GetCustomInfo();
-      if (info != null) {
-        if (info.SquadInfo.Troopers >= 1) {
-          SquadRepresentationSimGame squadRepresentationSimGame = __instance.GetComponent<SquadRepresentationSimGame>();
-          if (squadRepresentationSimGame == null) {
-            List<GameObject> squadTroopers = new List<GameObject>();
-            for (int index = 0; index < info.SquadInfo.Troopers; ++index) {
-              GameObject squadTrooper = GameObject.Instantiate(__instance.gameObject);
-              squadTroopers.Add(GameObject.Instantiate(__instance.gameObject));
-            }
-            squadRepresentationSimGame = __instance.gameObject.AddComponent<SquadRepresentationSimGame>();
-            squadRepresentationSimGame.Instantine(mechDef,squadTroopers);
-          }
-          squadRepresentationSimGame.Init(dataManager, mechDef, parentTransform, heraldryDef);
-        } else {
-          mechDef.SpawnCustomParts(__instance);
-        }
-      }
-      return true;
-    }
-    public static void Postfix(MechRepresentationSimGame __instance, DataManager dataManager, MechDef mechDef, Transform parentTransform, HeraldryDef heraldryDef) {
-      SquadRepresentationSimGame squadRepresentationSimGame = __instance.GetComponent<SquadRepresentationSimGame>();
-      if (squadRepresentationSimGame != null) {
-        string arg = string.IsNullOrEmpty(mechDef.prefabOverride) ? mechDef.Chassis.PrefabBase : mechDef.prefabOverride.Replace("chrPrfMech_", "");
-        arg += "_squad";
-        __instance.prefabName = string.Format("chrPrfComp_{0}_simgame", arg);
-      }
-    }
-  }
-  [HarmonyPatch(typeof(MechRepresentationSimGame))]
-  [HarmonyPatch("LoadDamageState")]
-  [HarmonyPatch(MethodType.Normal)]
-  [HarmonyPatch(new Type[] { })]
-  public static class MechRepresentationSimGame_LoadDamageState {
-    public delegate void d_LoadDamageState(MechRepresentationSimGame mechRepresentation);
-    private static d_LoadDamageState i_LoadDamageState = null;
-    public delegate void d_CollapseLocation(MechRepresentationSimGame mechRepresentation, int location, bool isDestroyed);
-    private static d_CollapseLocation i_CollapseLocation = null;
-    public static bool Prepare() {
-      {
-        MethodInfo method = typeof(MechRepresentationSimGame).GetMethod("LoadDamageState", BindingFlags.NonPublic | BindingFlags.Instance);
-        var dm = new DynamicMethod("CULoadDamageState", null, new Type[] { typeof(MechRepresentationSimGame) });
-        var gen = dm.GetILGenerator();
-        gen.Emit(OpCodes.Ldarg_0);
-        gen.Emit(OpCodes.Call, method);
-        gen.Emit(OpCodes.Ret);
-        i_LoadDamageState = (d_LoadDamageState)dm.CreateDelegate(typeof(d_LoadDamageState));
-      }
-      {
-        MethodInfo method = typeof(MechRepresentationSimGame).GetMethod("CollapseLocation", BindingFlags.NonPublic | BindingFlags.Instance);
-        var dm = new DynamicMethod("CUCollapseLocation", null, new Type[] { typeof(MechRepresentationSimGame), typeof(int), typeof(bool) });
-        var gen = dm.GetILGenerator();
-        gen.Emit(OpCodes.Ldarg_0);
-        gen.Emit(OpCodes.Ldarg_1);
-        gen.Emit(OpCodes.Ldarg_2);
-        gen.Emit(OpCodes.Call, method);
-        gen.Emit(OpCodes.Ret);
-        i_CollapseLocation = (d_CollapseLocation)dm.CreateDelegate(typeof(d_CollapseLocation));
-      }
-      return true;
-    }
-    public static void LoadDamageState(this MechRepresentationSimGame simRep) { i_LoadDamageState(simRep); }
-    public static void CollapseLocation(this MechRepresentationSimGame simRep, int location, bool isDestroyed) { i_CollapseLocation(simRep, location, isDestroyed); }
-    public static bool Prefix(MechRepresentationSimGame __instance) {
-      if (__instance.gameObject.GetComponent<SquadRepresentationSimGame>() != null) {
-        __instance.gameObject.GetComponent<SquadRepresentationSimGame>().LoadDamageState();
-        return false;
-      }
-      if (__instance.gameObject.GetComponent<TrooperRepresentationSimGame>() != null) {
-        //__instance.gameObject.GetComponent<TrooperRepresentationSimGame>().LoadDamageState(isDestroyed);
-        return false;
-      }
-      return true;
     }
   }
 }

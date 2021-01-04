@@ -1030,6 +1030,20 @@ namespace CustAmmoCategories {
     public static readonly string NoStabilityActorStat = "CUNoStability";
     public static readonly string NoCritTransferActorStat = "CUNoCritTransfer";
     public static readonly string HasNoLegsActorStat = "CUHasNoLegs";
+    public static readonly string AlternateRepresentationActorStat = "CUAlternateRepresentation";
+    public static readonly string AlternateRepresentationIndexActorStat = "CUAlternateRepresentationIndex";
+    public static readonly string BlockComponentsActivationActorStat = "CUBlockComponentsActivation";
+    public static readonly string FiringArcActorStat = "CUFiringArc";
+    public static float FiringArc(this ICombatant unit) {
+      if (unit.StatCollection.ContainsStatistic(FiringArcActorStat) == false) { return 0f; };
+      return unit.StatCollection.GetStatistic(FiringArcActorStat).Value<float>();
+    }
+    public static void FiringArc(this ICombatant unit, float value) {
+      if (unit.StatCollection.ContainsStatistic(FiringArcActorStat) == false) {
+        unit.StatCollection.AddStatistic<float>(FiringArcActorStat, 0f);
+      };
+      unit.StatCollection.Set<float>(FiringArcActorStat,value);
+    }
     public static bool NoHeat(this ICombatant unit) {
       if (unit.StatCollection.ContainsStatistic(NoHeatActorStat) == false) { return false; };
       return unit.StatCollection.GetStatistic(NoHeatActorStat).Value<bool>();
@@ -1049,6 +1063,16 @@ namespace CustAmmoCategories {
     public static bool UnaffectedDesignMasks(this ICombatant unit) {
       if (unit.StatCollection.ContainsStatistic(DesignMasksActorStat) == false) { return false; };
       return unit.StatCollection.GetStatistic(DesignMasksActorStat).Value<bool>();
+    }
+    public static bool BlockComponentsActivation(this ICombatant unit) {
+      if (unit.StatCollection.ContainsStatistic(BlockComponentsActivationActorStat) == false) { return false; };
+      return unit.StatCollection.GetStatistic(BlockComponentsActivationActorStat).Value<bool>();
+    }
+    public static void BlockComponentsActivation(this ICombatant unit, bool value) {
+      if (unit.StatCollection.ContainsStatistic(BlockComponentsActivationActorStat) == false) {
+        unit.StatCollection.AddStatistic<bool>(BlockComponentsActivationActorStat, false);
+      };
+      unit.StatCollection.Set<bool>(BlockComponentsActivationActorStat,value);
     }
     public static bool UnaffectedPathing(this ICombatant unit) {
       try {
@@ -1085,6 +1109,16 @@ namespace CustAmmoCategories {
     public static bool UnaffectedMoveCostBiome(this ICombatant unit) {
       if (unit.StatCollection.ContainsStatistic(MoveCostBiomeActorStat) == false) { return false; };
       return unit.StatCollection.GetStatistic(MoveCostBiomeActorStat).Value<bool>();
+    }
+    public static bool NoRandomIdles(this ICombatant unit) {
+      if (unit.StatCollection.ContainsStatistic(NoRandomIdlesActorStat) == false) { return false; };
+      return unit.StatCollection.GetStatistic(NoRandomIdlesActorStat).Value<bool>();
+    }
+    public static void NoRandomIdles(this ICombatant unit, bool value) {
+      if (unit.StatCollection.ContainsStatistic(NoRandomIdlesActorStat) == false) {
+        unit.StatCollection.AddStatistic<bool>(NoRandomIdlesActorStat, false);
+      };
+      unit.StatCollection.GetStatistic(NoRandomIdlesActorStat).SetValue<bool>(value);
     }
   }
   public class AoEModifiers {

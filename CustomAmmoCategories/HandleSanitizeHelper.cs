@@ -6,7 +6,7 @@ using UnityEngine;
 
 namespace CustAmmoCategories {
   public static class HandleSanitiseHelper {
-    public static void HandleSanitize(this CombatGameState combat){
+    public static void HandleSanitize(this CombatGameState combat, bool checkForStability = false, bool checkForPilot = false){
       List<AbstractActor> allActors = combat.AllActors;
       Log.M.TWL(0, "HandleSanitize:"+allActors.Count);
       foreach(AbstractActor actor in allActors) {
@@ -22,12 +22,16 @@ namespace CustAmmoCategories {
           actor.HandleDeath("DEZOMBIFICATOR");
         }
         if (actor.IsDead == false) {
-          //Mech mech = actor as Mech;
-          //if (mech != null) {
-            //if (mech.isHasStability()) { mech.CheckForInstability(); mech.HandleKnockdown(-1, "DEZOMBIFICATOR", Vector2.zero, null); }
-          //}
-          //actor.CheckPilotStatusFromAttack("DEZOMBIFICATOR", -1, -1);
-          //actor.HandleDeath("DEZOMBIFICATOR");
+          if (checkForStability) {
+            Mech mech = actor as Mech;
+            if (mech != null) {
+              if (mech.isHasStability()) { mech.CheckForInstability(); mech.HandleKnockdown(-1, "DEZOMBIFICATOR", Vector2.zero, null); }
+            }
+          }
+          if (checkForPilot) {
+            actor.CheckPilotStatusFromAttack("DEZOMBIFICATOR", -1, -1);
+            actor.HandleDeath("DEZOMBIFICATOR");
+          }
         }
       }
     }

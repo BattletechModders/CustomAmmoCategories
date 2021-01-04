@@ -84,7 +84,8 @@ namespace CustomUnits {
     }
     public override bool ProcessLeftClick(Vector3 worldPos) {
       if (this.NumPositionsLocked != 0) { return false; }
-      float originalDist = Vector3.Distance(worldPos, PlayerLanceSpawnerGameLogic_OnEnterActive.deployLoadRequest.playerLanceSpawner.Position);
+      //float originalDist = Vector3.Distance(worldPos, PlayerLanceSpawnerGameLogic_OnEnterActive.deployLoadRequest.playerLanceSpawner.Position);
+      float originalDist = Vector3.Distance(worldPos, this.HUD.SelectedActor.CurrentPosition);
       List<Vector3> enemies = this.Combat.ActiveContract.deplayedEnemySpawnPositions();
       float nearesEnemyDist = 9999f;
       foreach (Vector3 unit in enemies) {

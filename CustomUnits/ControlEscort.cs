@@ -610,27 +610,6 @@ namespace CustomUnits {
   //    __instance.Combat.FillRoutePoints();
   //  }
   //}
-  [HarmonyPatch(typeof(ActorMovementSequence))]
-  [HarmonyPatch("OnAdded")]
-  [HarmonyPatch(MethodType.Normal)]
-  [HarmonyPatch(new Type[] { })]
-  public static class ActorMovementSequence_OnAdded {
-    public static void Postfix(ActorMovementSequence __instance) {
-      //try {
-      //  if (__instance.OwningActor.TeamId != __instance.OwningActor.Combat.LocalPlayerTeamGuid) { return; }
-      //  foreach(AbstractActor unit in __instance.OwningActor.Combat.AllActors) {
-      //    if (unit.IsDead) { continue; }
-      //    if (unit.TeamId != __instance.OwningActor.Combat.LocalPlayerTeamGuid) { continue; }
-      //    if (unit.EncounterTags.Contains(Core.Settings.PlayerControlConvoyTag) == false) { continue; }
-      //    if (unit.HasMovedThisRound) { continue; }
-      //    unit.ResetPathing();
-      //    unit.UpdateConvoyPathingCache();
-      //  }
-      //} catch (Exception e) {
-      //  Log.TWL(0, e.ToString(), true);
-      //}
-    }
-  }
   [HarmonyPatch(typeof(MechJumpSequence))]
   [HarmonyPatch("OnAdded")]
   [HarmonyPatch(MethodType.Normal)]

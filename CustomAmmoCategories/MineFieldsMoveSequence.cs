@@ -882,7 +882,7 @@ namespace CustAmmoCategoriesPatches {
         if (__instance.meleeType == MeleeAttackType.NotSet) {
           try {
             mfDamage.resolveMineFiledDamage(__instance.owningActor, __instance.SequenceGUID);
-            __instance.owningActor.Combat.HandleSanitize();
+            __instance.owningActor.Combat.HandleSanitize(true,true);
           } catch(Exception e) {
             Log.F.TWL(0, "resolving minefield damage exception:"+e.ToString());
           }
@@ -953,7 +953,7 @@ namespace CustAmmoCategoriesPatches {
         MineFieldDamage mfDamage = DynamicMapHelper.registredMineFieldDamage[__instance.owningActor];
         mfDamage.resolveMineFiledDamage(__instance.owningActor, __instance.SequenceGUID);
         DynamicMapHelper.registredMineFieldDamage.Remove(__instance.owningActor);
-        __instance.owningActor.Combat.HandleSanitize();
+        __instance.owningActor.Combat.HandleSanitize(true,true);
       } catch (Exception e) {
         Log.F.TWL(0, e.ToString(), true);
       }
@@ -975,7 +975,7 @@ namespace CustAmmoCategoriesPatches {
           MineFieldDamage mfDamage = DynamicMapHelper.registredMineFieldDamage[__instance.owningActor];
           mfDamage.resolveMineFiledDamage(__instance.owningActor, __instance.SequenceGUID);
           DynamicMapHelper.registredMineFieldDamage.Remove(__instance.owningActor);
-          __instance.owningActor.Combat.HandleSanitize();
+          __instance.owningActor.Combat.HandleSanitize(true,true);
         } else {
           Log.F.WL(1, "DFA");
         }
@@ -996,6 +996,7 @@ namespace CustAmmoCategoriesPatches {
         MineFieldDamage mfDamage = DynamicMapHelper.registredMineFieldDamage[__instance.owningActor];
         mfDamage.resolveMineFiledDamage(__instance.owningActor, __instance.SequenceGUID);
         DynamicMapHelper.registredMineFieldDamage.Remove(__instance.owningActor);
+        __instance.owningActor.Combat.HandleSanitize(true, true);
       } catch (Exception e) {
         Log.F.TWL(0, e.ToString(), true);
       }

@@ -60,6 +60,8 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\BattleTech_Data\Managed\Newtonsoft.Json.dll</HintPath>
     </Reference>
+    <Reference Include="System" />
+    <Reference Include="System.Data" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="System.Xml" />
@@ -110,12 +112,14 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="AlternateRepresentation.cs" />
     <Compile Include="AnimatedPartsHelper.cs" />
     <Compile Include="BiomeTagsFix.cs" />
     <Compile Include="CustomMechStructureRules.cs" />
     <Compile Include="ControlEscort.cs" />
     <Compile Include="Core.cs" />
     <Compile Include="CustomMovement.cs" />
+    <Compile Include="CustomTwistSequence.cs" />
     <Compile Include="DeployPosition.cs" />
     <Compile Include="DisableMoveAnimation.cs" />
     <Compile Include="Hardpoints.cs" />
@@ -131,6 +135,8 @@
     <Compile Include="MechTurretAnimator.cs" />
     <Compile Include="MoveDistanceClamp.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="QuadBodyAnimator.cs" />
+    <Compile Include="QuadRepresentation.cs" />
     <Compile Include="TerrainCost.cs" />
     <Compile Include="TerrainMaskPatch.cs" />
     <Compile Include="TrooperSquad.cs" />

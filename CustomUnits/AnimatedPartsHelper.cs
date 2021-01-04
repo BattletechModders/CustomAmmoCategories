@@ -82,36 +82,6 @@ namespace CustomUnits {
       return true;
     }
   }
-  [HarmonyPatch(typeof(ActorMovementSequence))]
-  [HarmonyPatch("Init")]
-  [HarmonyPatch(MethodType.Normal)]
-  [HarmonyPatch(new Type[] { typeof(AbstractActor), typeof(Transform) })]
-  public static class ActorMovementSequence_Init {
-    public static void Postfix(ActorMovementSequence __instance, AbstractActor actor, Transform xform) {
-      Log.LogWrite("ActorMovementSequence.Init\n");
-      CustomQuadLegController[] customMoveAnimators = xform.gameObject.GetComponentsInChildren<CustomQuadLegController>();
-      foreach (CustomQuadLegController customMoveAnimatior in customMoveAnimators) {
-        Log.LogWrite(" CustomMoveAnimator:" + customMoveAnimatior.name + "\n");
-        customMoveAnimatior.StartAnimation();
-      }
-      return;
-    }
-  }
-  [HarmonyPatch(typeof(ActorMovementSequence))]
-  [HarmonyPatch("CompleteMove")]
-  [HarmonyPatch(MethodType.Normal)]
-  [HarmonyPatch(new Type[] { })]
-  public static class ActorMovementSequence_CompleteMoveAnimations {
-    public static void Postfix(ActorMovementSequence __instance) {
-      Log.LogWrite("ActorMovementSequence.CompleteMove\n");
-      CustomQuadLegController[] customMoveAnimators = __instance.owningActor.GameRep.gameObject.GetComponentsInChildren<CustomQuadLegController>();
-      foreach (CustomQuadLegController customMoveAnimatior in customMoveAnimators) {
-        Log.LogWrite(" CustomMoveAnimator:" + customMoveAnimatior.name + "\n");
-        customMoveAnimatior.StopAnimation();
-      }
-      return;
-    }
-  }
   [HarmonyPatch(typeof(MechRepresentation))]
   [HarmonyPatch("SetIdleAnimState")]
   [HarmonyPatch(MethodType.Normal)]
@@ -252,11 +222,11 @@ namespace CustomUnits {
         //Log.LogWrite(" no custom info\n");
         return true;
       }
-      if (info.FiringArc <= 10f) { return true; }
+      if (__instance.FiringArc() <= 10f) { return true; }
       Vector3 forward = targetPosition - attackPosition;
       forward.y = 0.0f;
       Quaternion b = Quaternion.LookRotation(forward);
-      __result = (double)Quaternion.Angle(attackRotation, b) < (double)info.FiringArc;
+      __result = (double)Quaternion.Angle(attackRotation, b) < (double)__instance.FiringArc();
       //Log.LogWrite(" rotation to target: " + Quaternion.Angle(attackRotation, b) + " firingArc:" + info.FiringArc + " result: " + __result + "\n");
       return false;
     }
@@ -273,7 +243,7 @@ namespace CustomUnits {
         //Log.WL(1, "no custom info");
         return true;
       }
-      if (info.FiringArc <= 10f) {
+      if (__instance.FiringArc() <= 10f) {
         //Log.WL(1, "too low arc value");
         return true;
       }
@@ -287,7 +257,7 @@ namespace CustomUnits {
         }
       }
       Quaternion b = Quaternion.LookRotation(forward);
-      __result = (double)Quaternion.Angle(attackRotation, b) < (double)info.FiringArc;
+      __result = (double)Quaternion.Angle(attackRotation, b) < (double)__instance.FiringArc();
       //Log.WL(1, Quaternion.Angle(attackRotation, b) + " and " + info.FiringArc + " : " + __result);
       return false;
     }
@@ -373,6 +343,7 @@ namespace CustomUnits {
     protected string AudioEventNameStop;
     public string PrefabName { get; private set; }
     public virtual bool StayOnDeath() { return false; }
+    public virtual bool StayOnLocationDestruction() { return false; }
     public virtual void OnDeath() {
       if (string.IsNullOrEmpty(AudioEventNameStop) == false) {
         if (SceneSingletonBehavior<WwiseManager>.HasInstance) {
@@ -791,6 +762,10 @@ namespace CustomUnits {
     }
     public static void Clear(ICombatant unit, bool combatEnd) {
       if (animatedParts.ContainsKey(unit) == false) { return; };
+      bool wasDespawned = false;
+      AbstractActor actor = unit as AbstractActor;
+      if (actor != null) { wasDespawned = actor.WasDespawned; }
+      Log.TWL(0, "UnitsAnimatedPartsHelper.Clear "+unit.DisplayName+ " combatEnd:"+ combatEnd+ " animatedParts:" + animatedParts[unit].Count);
       for (int t = 0; t < animatedParts[unit].Count; ++t) {
         if (animatedParts[unit][t] != null) {
           GenericAnimatedComponent[] components = animatedParts[unit][t].GetComponents<GenericAnimatedComponent>();
@@ -798,11 +773,14 @@ namespace CustomUnits {
             bool keepObject = false;
             foreach (GenericAnimatedComponent component in components) {
               if (component == null) { continue; }
-              if (component.StayOnDeath() && (combatEnd == false)) { keepObject = true; continue; }
+              if (wasDespawned == false) {
+                if (component.StayOnDeath() && (combatEnd == false)) { keepObject = true; continue; }
+              }
               component.Clear();
               GameObject.Destroy(component);
             }
-            if(keepObject == false) {
+            Log.WL(0, animatedParts[unit][t].name + " keep:"+ keepObject);
+            if (keepObject == false) {
               GameObject.Destroy(animatedParts[unit][t]);
               animatedParts[unit][t] = null;
             }
@@ -823,6 +801,7 @@ namespace CustomUnits {
             foreach (GenericAnimatedComponent component in components) {
               if (component == null) { continue; };
               if (component.Location != location) { continue; };
+              if (component.StayOnLocationDestruction()) { continue; }
               toDestroy.Add(animatedParts[unit][t]);
             }
           }
@@ -1059,6 +1038,9 @@ namespace CustomUnits {
         } else
         if (spawnPart.AnimationType == "CustomQuadLegController") {
           acomponent = gameObject.AddComponent<CustomQuadLegController>();
+        } else
+        if (spawnPart.AnimationType == "QuadBody") {
+          acomponent = gameObject.AddComponent<QuadBodyAnimation>();
         } else {
           acomponent = gameObject.AddComponent<GenericAnimatedComponent>();
         }
@@ -1277,6 +1259,9 @@ namespace CustomUnits {
         } else
         if (spawnPart.AnimationType == "CustomQuadLegController") {
           acomponent = gameObject.AddComponent<CustomQuadLegController>();
+        } else
+        if (spawnPart.AnimationType == "QuadBody") {
+          acomponent = gameObject.AddComponent<QuadBodyAnimation>();
         } else {
           acomponent = gameObject.AddComponent<GenericAnimatedComponent>();
         }
@@ -1344,6 +1329,18 @@ namespace CustomUnits {
               }
             }
           }
+        }
+      }
+    }
+    public static void AddQuadDeps(this ChassisDef chassis, LoadRequest loadRequest) {
+      UnitCustomInfo info = chassis.GetCustomInfo();
+      if (info != null) {
+        if (info.quadVisualInfo.UseQuadVisuals == false) { return; }
+        if (string.IsNullOrEmpty(info.quadVisualInfo.FLegsPrefab) == false) {
+          loadRequest.AddBlindLoadRequest(BattleTechResourceType.Prefab, info.quadVisualInfo.FLegsPrefab);
+        }
+        if (string.IsNullOrEmpty(info.quadVisualInfo.RLegsPrefab) == false) {
+          loadRequest.AddBlindLoadRequest(BattleTechResourceType.Prefab, info.quadVisualInfo.RLegsPrefab);
         }
       }
     }
@@ -1451,6 +1448,32 @@ namespace CustomUnits {
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { typeof(DataManager), typeof(DataManager.DependencyLoadRequest), typeof(uint) })]
   public static class ChassisDef_GatherDependencies {
+    public static void AddQuadDeps(this UnitCustomInfo info, DataManager.DependencyLoadRequest dependencyLoad) {
+      if (info.quadVisualInfo.UseQuadVisuals == false) { return; }
+      if (string.IsNullOrEmpty(info.quadVisualInfo.FLegsPrefab) == false) {
+        dependencyLoad.RequestResource(BattleTechResourceType.Prefab, info.quadVisualInfo.FLegsPrefab);
+      }
+      if (string.IsNullOrEmpty(info.quadVisualInfo.RLegsPrefab) == false) {
+        dependencyLoad.RequestResource(BattleTechResourceType.Prefab, info.quadVisualInfo.RLegsPrefab);
+      }
+    }
+    public static void AddAlternateDeps(this UnitCustomInfo info, DataManager.DependencyLoadRequest dependencyLoad) {
+      foreach (var altRep in info.AlternateRepresentations) {
+        foreach(string addPrefab in altRep.AdditionalPrefabs) {
+          if (string.IsNullOrEmpty(addPrefab)) { continue; }
+          dependencyLoad.RequestResource(BattleTechResourceType.Prefab, addPrefab);
+        }
+        foreach (AirMechVerticalJetsDef vJetDef in altRep.AirMechVerticalJets) {
+          if (string.IsNullOrEmpty(vJetDef.Prefab)) { continue; }
+          dependencyLoad.RequestResource(BattleTechResourceType.Prefab, vJetDef.Prefab);
+        }
+        if (string.IsNullOrEmpty(altRep.HardpointDataDef) == false) {
+          dependencyLoad.RequestResource(BattleTechResourceType.HardpointDataDef, altRep.HardpointDataDef);
+        }
+        if (string.IsNullOrEmpty(altRep.PrefabIdentifier)) { continue; }
+        dependencyLoad.RequestResource(BattleTechResourceType.Prefab, altRep.PrefabIdentifier);
+      }
+    }
     public static void Postfix(VehicleChassisDef __instance, DataManager dataManager, DataManager.DependencyLoadRequest dependencyLoad, uint activeRequestWeight) {
       Log.LogWrite(0, "ChassisDef.GatherDependencies postfix " + activeRequestWeight + " " + __instance.Description.Id, true);
       try {
@@ -1460,6 +1483,11 @@ namespace CustomUnits {
           return;
         }
         info.AddCustomDeps(dependencyLoad);
+        info.AddQuadDeps(dependencyLoad);
+        info.AddAlternateDeps(dependencyLoad);
+        if(string.IsNullOrEmpty(Core.Settings.CustomJumpJetsPrefabSrc) == false) {
+          dependencyLoad.RequestResource(BattleTechResourceType.Prefab, Core.Settings.CustomJumpJetsPrefabSrc);
+        }
       } catch (Exception e) {
         Log.LogWrite(e.ToString() + "\n", true);
       }
@@ -1495,6 +1523,34 @@ namespace CustomUnits {
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { typeof(uint) })]
   public static class ChassisDef_DependenciesLoaded {
+    public static bool CheckQuadDeps(this UnitCustomInfo info, DataManager dataManager) {
+      if (info.quadVisualInfo.UseQuadVisuals == false) { return true; }
+      if(string.IsNullOrEmpty(info.quadVisualInfo.FLegsPrefab) == false) {
+        if (dataManager.Exists(BattleTechResourceType.Prefab, info.quadVisualInfo.FLegsPrefab) == false) { return false; }
+      }
+      if (string.IsNullOrEmpty(info.quadVisualInfo.RLegsPrefab) == false) {
+        if (dataManager.Exists(BattleTechResourceType.Prefab, info.quadVisualInfo.RLegsPrefab) == false) { return false; }
+      }
+      return true;
+    }
+    public static bool CheckAltDeps(this UnitCustomInfo info, DataManager dataManager) {
+      foreach (var altRep in info.AlternateRepresentations) {
+        foreach (string addPrefab in altRep.AdditionalPrefabs) {
+          if (string.IsNullOrEmpty(addPrefab)) { continue; }
+          if (dataManager.Exists(BattleTechResourceType.Prefab, addPrefab) == false) { return false; }
+        }
+        foreach (AirMechVerticalJetsDef vJetDef in altRep.AirMechVerticalJets) {
+          if (string.IsNullOrEmpty(vJetDef.Prefab)) { continue; }
+          if (dataManager.Exists(BattleTechResourceType.Prefab, vJetDef.Prefab) == false) { return false; }
+        }
+        if (string.IsNullOrEmpty(altRep.HardpointDataDef) == false) {
+          if (dataManager.Exists(BattleTechResourceType.HardpointDataDef, altRep.HardpointDataDef) == false) { return false; }
+        }
+        if (string.IsNullOrEmpty(altRep.PrefabIdentifier)) { continue; }
+        if (dataManager.Exists(BattleTechResourceType.Prefab, altRep.PrefabIdentifier) == false) { return false; }
+      }
+      return true;
+    }
     public static void Postfix(ChassisDef __instance, uint loadWeight, ref bool __result) {
       Log.LogWrite(0, "ChassisDef.DependenciesLoaded postfix " + loadWeight + " "+ __instance.Description.Id, true);
       if (__instance.DataManager == null) { return; }
@@ -1507,6 +1563,17 @@ namespace CustomUnits {
         }
         if (info.CheckCustomDeps(__instance.DataManager) == false) {
           __result = false;
+        }
+        if (info.CheckQuadDeps(__instance.DataManager) == false) {
+          __result = false;
+        }
+        if (info.CheckAltDeps(__instance.DataManager) == false) {
+          __result = false;
+        }
+        if (string.IsNullOrEmpty(Core.Settings.CustomJumpJetsPrefabSrc) == false) {
+          if(__instance.DataManager.Exists(BattleTechResourceType.Prefab, Core.Settings.CustomJumpJetsPrefabSrc) == false) {
+            __result = false;
+          }
         }
       } catch (Exception e) {
         Log.LogWrite(e.ToString() + "\n", true);

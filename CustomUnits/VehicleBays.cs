@@ -176,12 +176,24 @@ namespace CustomUnits {
     public static string GetSimGamePrefabName(this MechDef mechDef) {
       string arg = string.IsNullOrEmpty(mechDef.prefabOverride) ? mechDef.Chassis.PrefabBase : mechDef.prefabOverride.Replace("chrPrfMech_", "");
       UnitCustomInfo info = mechDef.GetCustomInfo();
+      if (info != null) {
+        if (info.quadVisualInfo.UseQuadVisuals) {
+          arg = info.quadVisualInfo.RLegsPrefabBase;
+        };
+      }
       if (info != null) { if (info.SquadInfo.Troopers >= 1) { arg += "_squad"; } }
+      if (info != null) { if (info.quadVisualInfo.UseQuadVisuals) { arg += "_quad"; } }
       string mechPrefabName = string.Format("chrPrfComp_{0}_simgame", arg);
       return mechPrefabName;
     }
     public static string GetSimGameBasePrefabName(this MechDef mechDef) {
       string arg = string.IsNullOrEmpty(mechDef.prefabOverride) ? mechDef.Chassis.PrefabBase : mechDef.prefabOverride.Replace("chrPrfMech_", "");
+      UnitCustomInfo info = mechDef.GetCustomInfo();
+      if(info != null) {
+        if (info.quadVisualInfo.UseQuadVisuals) {
+          arg = info.quadVisualInfo.RLegsPrefabBase;
+        };
+      }
       string mechPrefabName = string.Format("chrPrfComp_{0}_simgame", arg);
       return mechPrefabName;
     }
@@ -203,6 +215,7 @@ namespace CustomUnits {
         Log.TWL(0, "TransitionMech requesting bay game representation " + mechDef.ChassisID + " " + mechPrefabName);
         loadRequest.AddBlindLoadRequest(BattleTechResourceType.Prefab, mechPrefabName, new bool?(false));
         mechDef.Chassis.AddCustomDeps(loadRequest);
+        mechDef.Chassis.AddQuadDeps(loadRequest);
         mechDef.Refresh();
         if (mechDef.meleeWeaponRef.Def != null)
           if (string.IsNullOrEmpty(mechDef.meleeWeaponRef.prefabName) == false) loadRequest.AddBlindLoadRequest(BattleTechResourceType.Prefab, mechDef.meleeWeaponRef.prefabName);
@@ -1137,6 +1150,7 @@ namespace CustomUnits {
       List<string> usedPrefabNames = new List<string>();
       VTOLBodyAnimation bodyAnimation = __instance.VTOLBodyAnim();
       MechTurretAnimation MechTurret = __instance.gameObject.GetComponentInChildren<MechTurretAnimation>(true);
+      QuadBodyAnimation quadBody = __instance.gameObject.GetComponentInChildren<QuadBodyAnimation>(true);
       Log.WL(1, "bodyAnimation:"+(bodyAnimation==null?"null":"not null"));
       for (int index = 0; index < __instance.mechDef.Inventory.Length; ++index) {
         MechComponentRef componentRef = __instance.mechDef.Inventory[index];

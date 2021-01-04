@@ -36,19 +36,6 @@ namespace CustomUnits {
       }
     }
   }
-  [HarmonyPatch(typeof(ActorMovementSequence))]
-  [HarmonyPatch("CompleteOrders")]
-  [HarmonyPatch(MethodType.Normal)]
-  [HarmonyPatch(new Type[] { })]
-  public static class ActorMovementSequence_CompleteOrders {
-    public static void Postfix(ActorMovementSequence __instance) {
-      VTOLBodyAnimation bodyAnimation = __instance.owningActor.VTOLAnimation();
-      if (bodyAnimation == null) { return; }
-      if (bodyAnimation.bodyAnimator == null) { return; }
-      bodyAnimation.bodyAnimator.SetFloat("backward", 0f);
-      bodyAnimation.bodyAnimator.SetFloat("forward", 0f);
-    }
-  }
   [HarmonyPatch(typeof(ActorTwistSequence), "update")]
   public static class ActorTwistSequence_update {
     public static object TwistState_RangedTwisting = Enum.Parse(typeof(ActorTwistSequence).GetField("state", BindingFlags.Instance | BindingFlags.NonPublic).FieldType, "RangedTwisting");
@@ -72,12 +59,6 @@ namespace CustomUnits {
       //Log.TWL(0, "ActorTwistSequence.update " + ___actorRep.currentTwistAngle);
       
       //Log.TWL(0, "ActorTwistSequence.update "+ ___actorRep.currentTwistAngle);
-    }
-  }
-  [HarmonyPatch(typeof(PilotableActorRepresentation), "FacePoint")]
-  public static class PilotableActorRepresentation_FacePoint {
-    static void Postfix(PilotableActorRepresentation __instance, Vector3 lookAt, bool isMelee) {
-      Log.TWL(0, "PilotableActorRepresentation.FacePoint "+ new Text(__instance.parentActor.DisplayName).ToString()+" lookAt:"+lookAt+" isMelee:"+ isMelee + " curAngle:"+__instance.currentTwistAngle);
     }
   }
   public class VTOLFallStoper : MonoBehaviour {
@@ -369,6 +350,7 @@ namespace CustomUnits {
     private VTOLFallStoper fallStopper = null;
     public override bool StayOnDeath() { return true; }
     public override bool KeepPosOnDeath() { return true; }
+    public override bool StayOnLocationDestruction() { return true; }
     private MechRepresentationSimGame findParentSimGameRep(Transform parent) {
       MechRepresentationSimGame result = parent.GetComponent<MechRepresentationSimGame>();
       if (result != null) { return result; }

@@ -509,9 +509,11 @@ namespace CustomUnits {
 
     public static int allowLanceSize(int lanceid) {
       if (fallbackAllow > 0) {
+        Log.TWL(0, "allowLanceSize:"+lanceid+" allow value:"+ fallbackAllow);
         int result = fallbackAllow;
         for (int t = 0; t < lanceid; ++t) {
-          result -= lancesData[lanceid].allow;
+          result -= lancesData[t].allow;
+          Log.WL(1,"Lance:"+t+" allow:"+ lancesData[t].allow+" result:"+ result);
           if (result <= 0) { return 0; }
         }
         return result > lancesData[lanceid].allow ? lancesData[lanceid].allow : result;

@@ -12,6 +12,9 @@ namespace CustomUnits {
   [HarmonyPatch(MethodType.Constructor)]
   [HarmonyPatch(new Type[] { typeof(AbstractActor), typeof(Vector3), typeof(bool), typeof(bool), typeof(float), typeof(int), typeof(int), typeof(GameRepresentation.RotationCompleteDelegate) })]
   public static class ActorTwistSequence_Constructor {
+    public static void Prefix(ref Animator ___actorAnim, ref PilotableActorRepresentation ___actorRep, ref float ___desiredAngle, ActorTwistSequence __instance, AbstractActor actor, Vector3 lookAt, bool isLookVector, bool isBodyRotation, float twistDuration, int stackItemUID, int sequenceId, GameRepresentation.RotationCompleteDelegate completeDelegate) {
+      Log.TWL(0, "ActorTwistSequence.Constructor isBodyRotation:" + isBodyRotation);
+    }
     public static void Postfix(ref Animator ___actorAnim,ref PilotableActorRepresentation ___actorRep,ref float ___desiredAngle, ActorTwistSequence __instance, AbstractActor actor, Vector3 lookAt, bool isLookVector, bool isBodyRotation, float twistDuration, int stackItemUID, int sequenceId, GameRepresentation.RotationCompleteDelegate completeDelegate) {
       CustomTwistAnimation custAnimator = ___actorRep.GetComponent<CustomTwistAnimation>();
       if (custAnimator == null) { return; }
@@ -96,6 +99,7 @@ namespace CustomUnits {
     }
     public void noRandomIdlesChanged(Statistic value) {
       allowRandomIdles = !value.Value<bool>();
+      Log.TWL(0, "CustomTwistAnimation.noRandomIdlesChanged allowRandomIdles:"+ allowRandomIdles);
       if(allowRandomIdles == false) {
         this.ReturnToIdleNeturalFacing();
       }
@@ -215,6 +219,8 @@ namespace CustomUnits {
   public class MechTurretAnimation: GenericAnimatedComponent {
     public Animator turnAnimator { get; set; }
     public Dictionary<ChassisLocations, MechTurretAttachPoint> attachPoints;
+    public override bool StayOnDeath() { return true; }
+    public override bool StayOnLocationDestruction() { return true; }
     public override void Init(ICombatant a, int loc, string data, string prefabName) {
       base.Init(a, loc, data, prefabName);
       MechTurretAnimData turretData = JsonConvert.DeserializeObject<MechTurretAnimData>(data);
@@ -227,10 +233,6 @@ namespace CustomUnits {
       Mech mech = a as Mech;
     }
   }
-  [HarmonyPatch(typeof(Mech))]
-  [HarmonyPatch("InitGameRep")]
-  [HarmonyPatch(MethodType.Normal)]
-  [HarmonyPatch(new Type[] { typeof(Transform) })]
   public static class Mech_InitGameRepTurret {
     public static void Postfix(Mech __instance, Transform parentTransform){
       Log.TWL(0, "Mech.InitGameRep "+__instance.DisplayName);

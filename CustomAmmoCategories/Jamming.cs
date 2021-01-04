@@ -163,18 +163,20 @@ namespace CustAmmoCategories {
   [HarmonyPatch(new Type[] { })]
   public static class JammingRealizer {
     public static string CantFireReason(this Weapon weapon) {
-      if (weapon.IsFunctional == false) { return "DESTROYED"; }
-      if (weapon.StatCollection.GetValue<bool>("TemporarilyDisabled")) { return "TEMP.DISABLED"; }
-      if (weapon.IsEnabled == false) { return "NOT ENABLED"; }
-      if (weapon.IsDisabled) { return "DISABLED"; }
-      if (weapon.IsJammed()) { return "JAMMED"; }
-      if (weapon.IsCooldown() > 0) { return "COOLDOWN"; }
-      if (weapon.isAMS() && weapon.isCantAMSFire()) { return "USED AS WEAPON"; }
-      if ((weapon.isAMS() == false) && weapon.isCantNormalFire()) { return "USED AS AMS"; };
-      if (weapon.NoModeToFire()) { return "NO MODE TO FIRE"; };
-      if (weapon.isBlocked()) { return "BLOCKED"; };
-      if ((weapon.ammo().AmmoCategory.BaseCategory.Is_NotSet == false) && (weapon.CurrentAmmo <= 0)) { return "OUT OF AMMO"; }
-      return "UNKNOWN";
+      string result = string.Empty;
+      if (weapon.IsFunctional == false) { result+="DESTROYED;"; }
+      if (weapon.StatCollection.GetValue<bool>("TemporarilyDisabled")) { result+="TEMP.DISABLED;"; }
+      if (weapon.IsDisabled) { result += "DISABLED;"; }
+      if (weapon.IsJammed()) { result += "JAMMED;"; }
+      if (weapon.IsCooldown() > 0) { result += "COOLDOWN;"; }
+      if (weapon.isAMS() && weapon.isCantAMSFire()) { result += "USED AS WEAPON;"; }
+      if ((weapon.isAMS() == false) && weapon.isCantNormalFire()) { result += "USED AS AMS;"; };
+      if (weapon.mode().Lock.isAvaible(weapon) == false) { return "MODE IS LOCKED;"; };
+      if (weapon.isBlocked()) { return "BLOCKED;"; };
+      if ((weapon.ammo().AmmoCategory.BaseCategory.Is_NotSet == false) && (weapon.CurrentAmmo <= 0)) { return "OUT OF AMMO;"; }
+      if (weapon.IsEnabled == false) { return "NOT ENABLED;"; }
+      return result;
+      //return "UNKNOWN";
     }
     public static void Postfix(Weapon __instance, ref bool __result) {
       if (__result == false) { return; }
@@ -182,7 +184,7 @@ namespace CustAmmoCategories {
       if (__instance.IsCooldown() > 0) { __result = false; }
       if (__instance.isAMS() && __instance.isCantAMSFire()) { __result = false; };
       if ((__instance.isAMS() == false) && __instance.isCantNormalFire()) { __result = false; };
-      if (__instance.NoModeToFire()) { __result = false; };
+      if (__instance.mode().Lock.isAvaible(__instance) == false) { __result = false; };
       if (__instance.isBlocked()) { __result = false; };
     }
   }

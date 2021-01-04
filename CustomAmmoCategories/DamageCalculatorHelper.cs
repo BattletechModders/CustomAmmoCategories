@@ -329,6 +329,21 @@ namespace CustAmmoCategories {
         modifiers.Add(new DamageModifier("Target type".UI(), DamageModifierType.Normal, true, false, weapon.WeaponCategoryValue.VehicleDamageMultiplier, null));
         modifiers.Add(new DamageModifier("Target type".UI(), DamageModifierType.AP, true, false, weapon.WeaponCategoryValue.VehicleDamageMultiplier, null));
       }
+      if(target is BattleTech.Building) {
+        if (WeaponRealizer.Core.ModSettings.HeatDamageAppliesToBuildingAsNormalDamage) {
+          modifiers.Add(new DamageModifier("Building".UI(), DamageModifierType.Heat, true, false, WeaponRealizer.Core.ModSettings.HeatDamageApplicationToBuildingMultiplier, null));
+        }
+      }else
+      if(target is Vehicle) {
+        if (WeaponRealizer.Core.ModSettings.HeatDamageAppliesToVehicleAsNormalDamage) {
+          modifiers.Add(new DamageModifier("Vehicle".UI(), DamageModifierType.Heat, true, false, WeaponRealizer.Core.ModSettings.HeatDamageApplicationToVehicleMultiplier, null));
+        }
+      } else
+      if (target is Turret) {
+        if (WeaponRealizer.Core.ModSettings.HeatDamageAppliesToTurretAsNormalDamage) {
+          modifiers.Add(new DamageModifier("Turret".UI(), DamageModifierType.Heat, true, false, WeaponRealizer.Core.ModSettings.HeatDamageApplicationToTurretMultiplier, null));
+        }
+      }
 
       modifiers.Add(new DamageModifier("IS damage".UI(), DamageModifierType.AP, true, false, weapon.ISDmgMult(), null));
       modifiers.Add(new DamageModifier("Armor damage".UI()+"(x"+Math.Round(weapon.ArmorDmgMult())+")", DamageModifierType.Normal, false, false, float.NaN, armorDamageModifier));

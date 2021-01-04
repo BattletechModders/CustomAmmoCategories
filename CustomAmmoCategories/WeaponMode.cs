@@ -11,37 +11,37 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 
-namespace CustAmmoCategoriesPatches {
-  [HarmonyPatch(typeof(Mech))]
-  [HarmonyPatch("ApplyHeatSinks")]
-  [HarmonyPatch(MethodType.Normal)]
-  [HarmonyPatch(new Type[] { typeof(int) })]
-  public static class Mech_ApplyHeatSinksModesLock {
-    public static void Postfix(Mech __instance, int stackID) {
-      Log.M.TWL(0,"Mech.ApplyHeatSinks:" + __instance.DisplayName + ":" + __instance.GUID);
-      foreach(Weapon weapon in __instance.Weapons) {
-        List<WeaponMode> modes = weapon.AvaibleModes();
-        Log.M.WL(1,"avaible modes count:"+modes.Count);
-        if (modes.Count == 0) {
-          Log.M.WL(1, "no modes avaible. disable weapon");
-          weapon.NoModeToFire(true);
-          continue;
-        };
-        Log.M.WL(1, "at least one mode avaible. enable weapon");
-        weapon.NoModeToFire(false);
-        WeaponMode mode = weapon.mode();
-        if (mode.Lock.isAvaible(weapon) == false) {
-          Log.M.WL(1, "current mode:"+mode.Id+" not avaible. Cycling.");
-          CustomAmmoCategories.CycleMode(weapon);
-        }
-      }
-    }
-  }
-};
+//namespace CustAmmoCategoriesPatches {
+//  [HarmonyPatch(typeof(Mech))]
+//  [HarmonyPatch("ApplyHeatSinks")]
+//  [HarmonyPatch(MethodType.Normal)]
+//  [HarmonyPatch(new Type[] { typeof(int) })]
+//  public static class Mech_ApplyHeatSinksModesLock {
+//    public static void Postfix(Mech __instance, int stackID) {
+//      Log.M.TWL(0,"Mech.ApplyHeatSinks:" + __instance.DisplayName + ":" + __instance.GUID);
+//      foreach(Weapon weapon in __instance.Weapons) {
+//        List<WeaponMode> modes = weapon.AvaibleModes();
+//        Log.M.WL(1,"avaible modes count:"+modes.Count);
+//        if (modes.Count == 0) {
+//          Log.M.WL(1, "no modes avaible. disable weapon");
+//          weapon.NoModeToFire(true);
+//          continue;
+//        };
+//        Log.M.WL(1, "at least one mode avaible. enable weapon");
+//        weapon.NoModeToFire(false);
+//        WeaponMode mode = weapon.mode();
+//        if (mode.Lock.isAvaible(weapon) == false) {
+//          Log.M.WL(1, "current mode:"+mode.Id+" not avaible. Cycling.");
+//          CustomAmmoCategories.CycleMode(weapon);
+//        }
+//      }
+//    }
+//  }
+//};
 
 namespace CustAmmoCategories {
   public static partial class CustomAmmoCategories {
-    public static readonly string NoModeToFireStatisticName = "CACNoModeToFire";
+    //public static readonly string NoModeToFireStatisticName = "CACNoModeToFire";
     public static List<WeaponMode> AvaibleModes(this Weapon weapon) {
       List<WeaponMode> result = new List<WeaponMode>();
       ExtWeaponDef extWeapon = weapon.exDef();
@@ -50,17 +50,17 @@ namespace CustAmmoCategories {
       }
       return result;
     }
-    public static bool NoModeToFire(this Weapon weapon) {
-      Statistic stat = weapon.StatCollection.GetStatistic(NoModeToFireStatisticName);
-      if (stat == null) { return false; }
-      return stat.Value<bool>();
-    }
-    public static void NoModeToFire(this Weapon weapon,bool value) {
-      if (weapon.StatCollection.ContainsStatistic(NoModeToFireStatisticName) == false) {
-        weapon.StatCollection.AddStatistic<bool>(NoModeToFireStatisticName, false);
-      }
-      weapon.StatCollection.Set<bool>(NoModeToFireStatisticName, value);
-    }
+    //public static bool NoModeToFire(this Weapon weapon) {
+    //  Statistic stat = weapon.StatCollection.GetStatistic(NoModeToFireStatisticName);
+    //  if (stat == null) { return false; }
+    //  return stat.Value<bool>();
+    //}
+    //public static void NoModeToFire(this Weapon weapon,bool value) {
+    //  if (weapon.StatCollection.ContainsStatistic(NoModeToFireStatisticName) == false) {
+    //    weapon.StatCollection.AddStatistic<bool>(NoModeToFireStatisticName, false);
+    //  }
+    //  weapon.StatCollection.Set<bool>(NoModeToFireStatisticName, value);
+    //}
   }
   public class ModeLockSetting {
     public float Low { get; set; }
@@ -70,7 +70,11 @@ namespace CustAmmoCategories {
       High = float.NaN;
     }
     public bool isSet() {
-      return (float.IsNaN(Low) == false) && (float.IsNaN(High) == false);
+      if (float.IsNaN(Low)) { return false; }
+      if (float.IsNaN(High)) { return false; }
+      if (float.IsInfinity(Low)) { return false; }
+      if (float.IsInfinity(High)) { return false; }
+      return true;
     }
   }
   public class ModeLockSettings {
@@ -214,7 +218,7 @@ namespace CustAmmoCategories {
     public TripleBoolean AMSShootsEveryAttack { get; set; }
     public TripleBoolean TargetMechLegsOnly { get; set; }
     public float HeatGeneratedModifier { get; set; }
-
+    public MeleeAttackType meleeAttackType { get; set; }
     public WeaponMode() {
       Id = WeaponMode.NONE_MODE_NAME;
       UIName = WeaponMode.BASE_MODE_NAME;
@@ -327,6 +331,7 @@ namespace CustAmmoCategories {
       TargetMechLegsOnly = TripleBoolean.NotSet;
       Description = string.Empty;
       Name = WeaponMode.BASE_MODE_NAME;
+      meleeAttackType = MeleeAttackType.NotSet;
     }
     public void fromJSON(string json) {
       JObject jWeaponMode = JObject.Parse(json);

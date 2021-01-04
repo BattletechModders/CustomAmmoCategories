@@ -256,7 +256,29 @@ namespace CustomUnits {
       Components = new Dictionary<string, string>();
     }
   }
+  public class QuadVisualInfo {
+    public bool UseQuadVisuals { get; set; }
+    public string FLegsPrefab { get; set; }
+    public string RLegsPrefab { get; set; }
+    public float BodyLength { get; set; }
+    public string FLegsPrefabBase { get; set; }
+    public string RLegsPrefabBase { get; set; }
+    public List<string> SuppressRenderers { get; private set; }
+    public List<string> NotSuppressRenderers { get; private set; }
+    public QuadVisualInfo() {
+      FLegsPrefab = string.Empty;
+      RLegsPrefab = string.Empty;
+      UseQuadVisuals = false;
+      SuppressRenderers = new List<string>();
+      NotSuppressRenderers = new List<string>();
+      BodyLength = 0f;
+      FLegsPrefabBase = string.Empty;
+      RLegsPrefabBase = string.Empty;
+    }
+  }
   public class UnitCustomInfo {
+    public List<AlternateRepresentationDef> AlternateRepresentations { get; set; }
+    public QuadVisualInfo quadVisualInfo { get; set; }
     public TrooperSquadDef SquadInfo { get; set; }
     public bool NullifyBodyMesh { get; set; }
     public float AOEHeight { get; set; }
@@ -320,6 +342,8 @@ namespace CustomUnits {
       LocDestroyedPermanentStabilityLossMod = 1f;
       SquadInfo = new TrooperSquadDef();
       MeleeWeaponOverride = new MeleeWeaponOverrideDef();
+      quadVisualInfo = new QuadVisualInfo();
+      AlternateRepresentations = new List<AlternateRepresentationDef>();
     }
     public void debugLog(int initiation) {
       string init = new String(' ', initiation);
@@ -786,13 +810,20 @@ namespace CustomUnits {
           return true;
         }
         if (info.NullifyBodyMesh) {
+          //Transform j_Root = vRep.transform.FindRecursive("j_Root");
           SkinnedMeshRenderer[] meshes = vRep.GetComponentsInChildren<SkinnedMeshRenderer>();
+
           GameObject go = new GameObject("Empty");
+          //j_Null.transform.SetParent(vRep.transform);
+          //j_Null.transform.localPosition = Vector3.down * 1000f;
+          //j_Null.transform.localScale = Vector3.zero;
           Mesh emptyMesh = go.AddComponent<MeshFilter>().mesh;
           go.AddComponent<MeshRenderer>();
           if (meshes != null) {
             foreach (SkinnedMeshRenderer mesh in meshes) {
               mesh.sharedMesh = emptyMesh;
+              //mesh.transform.localScale = Vector3.zero;
+              //mesh.rootBone = j_Null.transform;
             }
           }
           GameObject.Destroy(go);
@@ -909,6 +940,10 @@ namespace CustomUnits {
       if (unit == null) { return; };
       Log.TWL(0, "PilotableActorRepresentation.Init postfix " + new Text(unit.DisplayName).ToString() + ":" + unit.GUID);
       try {
+        QuadLegsRepresentation quadLegs = __instance.gameObject.GetComponent<QuadLegsRepresentation>();
+        if (quadLegs != null) { return; }
+        AlternateMechRepresentations altReps = __instance.gameObject.GetComponent<AlternateMechRepresentations>();
+        if (altReps != null) { return; }
         int instanceId = unit.GameRep.gameObject.GetInstanceID();
         if (VehicleCustomInfoHelper.unityInstanceIdActor.ContainsKey(instanceId) == false) {
           VehicleCustomInfoHelper.unityInstanceIdActor.Add(instanceId, unit);
@@ -1015,29 +1050,6 @@ namespace CustomUnits {
       }
     }
   }
-  [HarmonyPatch(typeof(ActorMovementSequence))]
-  [HarmonyPatch("CompleteMove")]
-  [HarmonyPatch(MethodType.Normal)]
-  [HarmonyPatch(new Type[] { })]
-  public static class ActorMovementSequence_CompleteMove {
-    public static bool Prepare() {
-      return true;
-    }
-    public static bool Prefix(ActorMovementSequence __instance, ref Vehicle __state) {
-      __state = null;
-      if (__instance.OwningVehicle != null) {
-        if (__instance.OwningVehicle.UnaffectedPathing() == false) { return true; };
-        __state = __instance.OwningVehicle;
-        __instance.OwningVehicle(null);
-      }
-      return true;
-    }
-    public static void Postfix(ActorMovementSequence __instance, ref Vehicle __state) {
-      if (__state != null) {
-        __instance.OwningVehicle(__state);
-      }
-    }
-  }
   [HarmonyPatch(typeof(AbstractActor))]
   [HarmonyPatch("InitEffectStats")]
   [HarmonyPatch(MethodType.Normal)]
@@ -1071,6 +1083,9 @@ namespace CustomUnits {
       if (__instance.StatCollection.ContainsStatistic(UnitUnaffectionsActorStats.NoMoveAnimationActorStat) == false) {
         __instance.StatCollection.AddStatistic<bool>(UnitUnaffectionsActorStats.NoMoveAnimationActorStat, info.NoMoveAnimations);
       }
+      if (__instance.StatCollection.ContainsStatistic(UnitUnaffectionsActorStats.FiringArcActorStat) == false) {
+        __instance.StatCollection.AddStatistic<float>(UnitUnaffectionsActorStats.FiringArcActorStat, info.FiringArc);
+      }
       if (__instance.StatCollection.ContainsStatistic(UnitUnaffectionsActorStats.MoveCostBiomeActorStat) == false) {
         __instance.StatCollection.AddStatistic<bool>(UnitUnaffectionsActorStats.MoveCostBiomeActorStat, info.Unaffected.MoveCostBiome);
       }
@@ -1079,6 +1094,9 @@ namespace CustomUnits {
       }
       if (__instance.StatCollection.ContainsStatistic(UnitUnaffectionsActorStats.NoHeatActorStat) == false) {
         __instance.StatCollection.AddStatistic<bool>(UnitUnaffectionsActorStats.NoHeatActorStat, (info.SquadInfo.Troopers > 1));
+      }
+      if (__instance.StatCollection.ContainsStatistic(UnitUnaffectionsActorStats.BlockComponentsActivationActorStat) == false) {
+        __instance.StatCollection.AddStatistic<bool>(UnitUnaffectionsActorStats.BlockComponentsActivationActorStat, false);
       }
       if (__instance.StatCollection.ContainsStatistic(UnitUnaffectionsActorStats.NoStabilityActorStat) == false) {
         __instance.StatCollection.AddStatistic<bool>(UnitUnaffectionsActorStats.NoStabilityActorStat, (info.SquadInfo.Troopers > 1));
@@ -1108,22 +1126,6 @@ namespace CustomUnits {
       if (__result > CustomAmmoCategories.Epsilon) {
         if (target.UnaffectedDesignMasks()) { __result = 0f; };
       }
-    }
-  }
-  [HarmonyPatch(typeof(PilotableActorRepresentation))]
-  [HarmonyPatch("RefreshSurfaceType")]
-  [HarmonyPatch(MethodType.Normal)]
-  [HarmonyPatch(new Type[] { typeof(bool) })]
-  public static class PilotableActorRepresentation_RefreshSurfaceType {
-    public static bool Prefix(PilotableActorRepresentation __instance, bool forceUpdate, ref bool __result) {
-      Log.LogWrite("PilotableActorRepresentation.RefreshSurfaceType Prefix\n");
-      if (__instance.parentCombatant == null) { return false; }
-      if (__instance.parentCombatant.UnaffectedDesignMasks()) {
-        Log.LogWrite(" unaffected\n");
-        __result = true;
-        return false;
-      }
-      return true;
     }
   }
   [HarmonyPatch(typeof(DestructibleUrbanFlimsy))]
@@ -1319,12 +1321,14 @@ namespace CustomUnits {
     public static bool Prefix(CombatHUDFireButton __instance) {
       CombatHUD HUD = (CombatHUD)typeof(CombatHUDFireButton).GetProperty("HUD", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(__instance, null);
       CombatHUDFireButton.FireMode fireMode = (CombatHUDFireButton.FireMode)typeof(CombatHUDFireButton).GetField("currentFireMode", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(__instance);
-      if (fireMode == CombatHUDFireButton.FireMode.Engage) {
+      if ((fireMode == CombatHUDFireButton.FireMode.Engage)|| (fireMode == CombatHUDFireButton.FireMode.DFA)) {
         Log.LogWrite("CombatHUDFireButton.OnClick: " + HUD.SelectedActor.DisplayName + " fire mode:" + fireMode + "\n");
         if (HUD.SelectedTarget.UnaffectedPathing()) {
-          GenericPopupBuilder popupBuilder = GenericPopupBuilder.Create("FORBIDEN", "You can't select this unit as melee target");
-          popupBuilder.Render();
-          return false;
+          if (HUD.SelectedActor.UnaffectedPathing() == false) {
+            GenericPopupBuilder popupBuilder = GenericPopupBuilder.Create("FORBIDEN", "You can't select this unit as melee target");
+            popupBuilder.Render();
+            return false;
+          }
         }
       }
       if (fireMode == CombatHUDFireButton.FireMode.DFA) {
@@ -1357,6 +1361,40 @@ namespace CustomUnits {
       return true;
     }
   }
+  [HarmonyPatch(typeof(AIUtil))]
+  [HarmonyPatch("ExpectedDamageForAttack")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { typeof(AbstractActor), typeof(AIUtil.AttackType), typeof(List<Weapon>), typeof(ICombatant), typeof(Vector3), typeof(Vector3), typeof(bool), typeof(AbstractActor) })]
+  public static class AIUtil_ExpectedDamageForAttack {
+    public static void Postfix(AbstractActor unit, AIUtil.AttackType attackType, ICombatant target, ref float __result) {
+      if ((attackType != AIUtil.AttackType.Melee) && (attackType != AIUtil.AttackType.DeathFromAbove)) { return; }
+      if (target.UnaffectedPathing() == false) { return; }
+      if (unit.UnaffectedPathing()) { return; }
+      __result = 0f;
+    }
+  }
+  [HarmonyPatch(typeof(HostileDamageFactor))]
+  [HarmonyPatch("expectedDamageForMelee")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { typeof(AbstractActor), typeof(Vector3), typeof(Quaternion), typeof(ICombatant), typeof(Vector3), typeof(Quaternion), typeof(bool) })]
+  public static class HostileDamageFactor_expectedDamageForMelee {
+    public static void Postfix(AbstractActor attackingUnit, ICombatant targetUnit, ref float __result) {
+      if (targetUnit.UnaffectedPathing() == false) { return; }
+      if (attackingUnit.UnaffectedPathing()) { return; }
+      __result = 0f;
+    }
+  }
+  [HarmonyPatch(typeof(HostileDamageFactor))]
+  [HarmonyPatch("expectedDamageForDFA")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { typeof(AbstractActor), typeof(Vector3), typeof(Quaternion), typeof(ICombatant), typeof(Vector3), typeof(Quaternion), typeof(bool) })]
+  public static class HostileDamageFactor_expectedDamageForDFA {
+    public static void Postfix(AbstractActor attackingUnit, ICombatant targetUnit, ref float __result) {
+      if (targetUnit.UnaffectedPathing() == false) { return; }
+      if (attackingUnit.UnaffectedPathing()) { return; }
+      __result = 0f;
+    }
+  }
   [HarmonyPatch(typeof(CombatHUDWeaponSlot))]
   [HarmonyPatch("contemplatingMelee")]
   [HarmonyPatch(MethodType.Normal)]
@@ -1377,14 +1415,11 @@ namespace CustomUnits {
   public static class Weapon_GetToHitFromPosition {
     public static void Postfix(Weapon __instance, ICombatant target, int numTargets, Vector3 attackPosition, Vector3 targetPosition, bool bakeInEvasiveModifier, bool targetIsEvasive, bool isMoraleAttack, ref float __result) {
       if (__result > 0f) {
-        //Log.LogWrite("ToWeaponHit.GetToHitFromPosition " + __instance.defId + " " + target.DisplayName + " tohit:" + __result + "\n");
-        if (((__instance.Type == WeaponType.Melee) && (__instance.WeaponSubType == WeaponSubType.Melee)) || (__instance.CantHitUnaffectedByPathing() == true)) {
-          //Log.LogWrite(" melee\n");
-          if (target.UnaffectedPathing()) {
-            //Log.LogWrite(" unaffected\n");
-            __result = 0f;
-          }
-        }
+        if ((__instance.Type != WeaponType.Melee) || (__instance.WeaponSubType != WeaponSubType.Melee)) { return; }
+        if (target.UnaffectedPathing() == false) { return; }
+        if (__instance.CantHitUnaffectedByPathing() == false) { return; }
+        if (__instance.parent.UnaffectedPathing() == true) { return; }
+        __result = 0f;
       }
     }
   }
@@ -1395,14 +1430,11 @@ namespace CustomUnits {
   public static class ToHit_GetToHitChance {
     public static void Postfix(ToHit __instance, AbstractActor attacker, Weapon weapon, ICombatant target, Vector3 attackPosition, Vector3 targetPosition, int numTargets, MeleeAttackType meleeAttackType, bool isMoraleAttack, ref float __result) {
       if (__result > 0f) {
-        //Log.LogWrite("ToHit.GetToHitChance "+weapon.defId+" "+target.DisplayName+" tohit:"+__result+"\n");
-        if (((weapon.Type == WeaponType.Melee) && (weapon.WeaponSubType == WeaponSubType.Melee)) || (weapon.CantHitUnaffectedByPathing() == true)) {
-          //Log.LogWrite(" melee\n");
-          if (target.UnaffectedPathing()) {
-            //Log.LogWrite(" unaffected\n");
-            __result = 0f;
-          }
-        }
+        if ((weapon.Type != WeaponType.Melee) || (weapon.WeaponSubType != WeaponSubType.Melee)) { return; }
+        if (target.UnaffectedPathing() == false) { return; }
+        if (weapon.CantHitUnaffectedByPathing() == false) { return; }
+        if (attacker.UnaffectedPathing() == true) { return; }
+        __result = 0f;
       }
     }
   }
@@ -1429,19 +1461,21 @@ namespace CustomUnits {
         if (info == null) { Log.WL(1, "info is null"); return; }
         if (info.MeleeWeaponOverride == null) { return; }
         string meleeDef = info.MeleeWeaponOverride.DefaultWeapon;
-        foreach(MechComponentRef cref in __instance.Inventory) {
-          if (cref == null) { continue; }
-          if (string.IsNullOrEmpty(cref.ComponentDefID)) { continue; }
-          if (info.MeleeWeaponOverride.Components.ContainsKey(cref.ComponentDefID)) {
-            meleeDef = info.MeleeWeaponOverride.Components[cref.ComponentDefID];
-            break;
+        if (info.MeleeWeaponOverride.Components != null) {
+          foreach (BaseComponentRef cref in __instance.Inventory) {
+            if (cref == null) { continue; }
+            if (string.IsNullOrEmpty(cref.ComponentDefID)) { continue; }
+            if (info.MeleeWeaponOverride.Components.ContainsKey(cref.ComponentDefID)) {
+              meleeDef = info.MeleeWeaponOverride.Components[cref.ComponentDefID];
+              break;
+            }
           }
         }
         if (string.IsNullOrEmpty(meleeDef)) { meleeDef = "Weapon_MeleeAttack"; }
         Log.WL(1, "meleeDef " + meleeDef);
         __instance.meleeWeaponRef = new MechComponentRef(meleeDef, "", ComponentType.Weapon, ChassisLocations.CenterTorso, -1, ComponentDamageLevel.Functional, false);
       } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
+        //Log.TWL(0, e.ToString(), true);
       }
     }
   }

@@ -167,10 +167,10 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
 
     public static void ShowBaseMeleeChance(CombatHUDWeaponSlot __instance, ICombatant target) {
       try {
-        AbstractActor unit = HUD.SelectedActor;
-        if (unit == null) { return; }
-        float baseChance = 0f;// RollModifier.StepHitChance( Combat.ToHit.GetBaseMeleeToHitChance( unit ) ) * 100;
-        __instance.ToolTipHoverElement.BuffStrings.Add(new Text("{0} {1} = " + BaseChanceFormat, Translate(Pilot.PILOTSTAT_PILOTING), unit.SkillPiloting, baseChance));
+        Mech mech = HUD.SelectedActor as Mech;
+        if (mech == null) { return; }
+        float baseChance = RollModifier.StepHitChance( Combat.ToHit.GetBaseMeleeToHitChance(mech) ) * 100;
+        __instance.ToolTipHoverElement.BuffStrings.Add(new Text("{0} {1} = " + BaseChanceFormat, Translate(Pilot.PILOTSTAT_PILOTING), mech.SkillPiloting, baseChance));
       } catch (Exception ex) { Error(ex); }
     }
 

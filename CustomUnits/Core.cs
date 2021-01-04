@@ -171,6 +171,12 @@ namespace CustomUnits{
     public string VehicleTurretArmorIcon { get; set; }
     public string ConvoyRouteBeaconVFX { get; set; }
     public CustomVector ConvoyRouteBeaconVFXScale { get; set; }
+    public string CustomJumpJetsPrefabSrc { get; set; }
+    public string CustomJumpJetsComponentPrefab { get; set; }
+    public string CustomJumpJetsPrefabSrcObjectName { get; set; }
+    public string CustomHeadlightComponentPrefab { get; set; }
+    public string CustomHeadlightPrefabSrcObjectName { get; set; }
+    public string FullTransparentMaterialSource { get; set; }
     public CUSettings() {
       debugLog = false;
       DeathHeight = 1f;
@@ -193,7 +199,7 @@ namespace CustomUnits{
       CanPilotVehicleDescription = String.Format(HumanDescriptionDef.PilotGenDetailFormatting, "Piloting", "Can pilot only vehicles");
       CanPilotBothDescription = String.Format(HumanDescriptionDef.PilotGenDetailFormatting, "Piloting", "Can pilot both mechs and vehicles"); ;
       EMPLOYER_LANCE_GUID = "ecc8d4f2-74b4-465d-adf6-84445e5dfc230";
-      CountContractMaxUnits4AsUnlimited = true;
+      CountContractMaxUnits4AsUnlimited = false;
       PlayerControlConvoyTag = "convoy_player_control";
       TransferTeamOnDeathPrefixTag = "transfer-on-death:";
       ConvoyDenyMoveTag = "convoy_palyer_control_deny_move";
@@ -237,6 +243,12 @@ namespace CustomUnits{
       VehicleTurretArmorIcon = "vehicle_readout_t_armor";
       ConvoyRouteBeaconVFX = "vfxPrfPrtl_artillerySmokeSignal_loop";
       ConvoyRouteBeaconVFXScale = new CustomVector(true);
+      CustomJumpJetsPrefabSrc = "chrPrfMech_atlasBase-001";
+      CustomJumpJetsPrefabSrcObjectName = "JumpJetPrefab (4)";
+      CustomJumpJetsComponentPrefab = "chrPrfComp_atlas_leftleg_jumpjet";
+      CustomHeadlightComponentPrefab = "chrPrfComp_atlas_leftshoulder_headlight";
+      CustomHeadlightPrefabSrcObjectName = "PtLight - Torso (3)";
+      FullTransparentMaterialSource = "full_transparent";
     }
 }
   public static partial class Core{

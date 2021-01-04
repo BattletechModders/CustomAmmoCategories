@@ -442,10 +442,13 @@ namespace CustAmmoCategories {
     }
     private static float HalfMaxMeleeVerticalOffset = 4f;
     public static float GetMeleeHeightMod(ToHit instance, AbstractActor attacker, Weapon weapon, ICombatant target, Vector3 attackPosition, Vector3 targetPosition, LineOfFireLevel lofLevel, MeleeAttackType meleeAttackType, bool isCalledShot) {
-      if (meleeAttackType == MeleeAttackType.DFA)
-        return instance.GetHeightModifier(attacker.CurrentPosition.y, target.CurrentPosition.y);
-      if(attacker.UnaffectedPathing() != target.UnaffectedPathing()) {
-        if (target.UnaffectedPathing()) { return 100f; }
+      if (meleeAttackType == MeleeAttackType.DFA) { return instance.GetHeightModifier(attacker.CurrentPosition.y, target.CurrentPosition.y); }
+      if(attacker.UnaffectedPathing() == false) {
+        if (target.UnaffectedPathing()) {
+          return 100f;
+        }
+      } else {
+        return 0f;
       }
       float diff = attackPosition.y - target.CurrentPosition.y;
       if (Math.Abs(diff) < HalfMaxMeleeVerticalOffset || (diff < 0 && !attacker.Combat.Constants.ToHit.ToHitElevationApplyPenalties)) return 0f;
