@@ -44,7 +44,7 @@ namespace CustAmmoCategories {
     public static float JumpingWeaponDamageModifier(Weapon weapon, Vector3 attackPosition, ICombatant target, bool IsBreachingShot, int location, float dmg, float ap, float heat, float stab) {
       float jumpDmgMod = 1f;
       if (weapon.parent.UnitType == UnitType.Mech && weapon.parent.HasJumpedThisRound) {
-        jumpDmgMod = Mathf.Max(jumpDmgMod, weapon.StatCollection.GetValue<float>("JumpingWeaponDamageModifier"));
+        jumpDmgMod = weapon.StatCollection.GetValue<float>("JumpingWeaponDamageModifier");
       }
       return jumpDmgMod;
     }

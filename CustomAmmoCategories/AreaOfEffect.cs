@@ -11,37 +11,10 @@ namespace CustAmmoCategories {
   public static class AreaOfEffectHelper {
     private static Dictionary<ICombatant, bool> isDropshipCache = new Dictionary<ICombatant, bool>();
     public static void Clear() { isDropshipCache.Clear(); }
-    public static HashSet<string> tags(this ICombatant target) {
-      HashSet<string> result = new HashSet<string>();
-      Mech mech = target as Mech;
-      if (mech != null) {
-        foreach (var tag in mech.MechDef.MechTags) {
-          result.Add(tag);
-        }
-        foreach (var tag in mech.MechDef.Chassis.ChassisTags) {
-          result.Add(tag);
-        }
-      } else {
-        Vehicle vehicle = target as Vehicle;
-        if(vehicle != null) {
-          foreach (var tag in vehicle.VehicleDef.VehicleTags) {
-            result.Add(tag);
-          }
-        } else {
-          Turret turret = target as Turret;
-          if(turret != null) {
-            foreach (var tag in turret.TurretDef.TurretTags) {
-              result.Add(tag);
-            }
-          }
-        }
-      }
-      return result;
-    }
     public static void TagAoEModifiers(this ICombatant target, out float range, out float damage) {
       range = 1f;
       damage = 1f;
-      HashSet<string> tags = target.tags();
+      HBS.Collections.TagSet tags = target.Tags();
       foreach (var tag in tags) {
         if(CustomAmmoCategories.Settings.TagAoEDamageMult.TryGetValue(tag,out AoEModifiers mods)) {
           range *= mods.Range; damage *= mods.Damage;

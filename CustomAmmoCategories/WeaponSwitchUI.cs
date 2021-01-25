@@ -19,6 +19,8 @@ using System.Text;
 using CustomAmmoCategoriesPatches;
 using HBS;
 using TMPro;
+using UnityEngine.Events;
+using Newtonsoft.Json;
 
 namespace CustomAmmoCategoriesPatches {
   public static class CombatHUDWeaponSlotHelper {
@@ -1148,12 +1150,151 @@ namespace CustomAmmoCategoriesPatches {
       }
     }
   }
-  [HarmonyPatch(typeof(CombatHUDWeaponSlot))]
-  [HarmonyPatch("Init")]
+  public class WeaponOrderData {
+    public Dictionary<string, List<string>> definitionOrders;
+    public WeaponOrderData() {
+      definitionOrders = new Dictionary<string, List<string>>();
+    }
+  }
+  public static class WeaponOrderSimGameHelper {
+    public static WeaponOrderData ordersData;
+    public static readonly string WeaponOrderStatisticName = "CACWeaponOrder";
+    public static void InitSimGame(SimGameState sim) {
+      Statistic stat = sim.CompanyStats.GetStatistic(WeaponOrderStatisticName);
+      if (stat != null) { ordersData = JsonConvert.DeserializeObject<WeaponOrderData>(stat.Value<string>()); } else {
+        ordersData = new WeaponOrderData();
+      }
+    }
+  }
+  [HarmonyPatch(typeof(MechBayPanel))]
+  [HarmonyPatch("OnAddedToHierarchy")]
   [HarmonyPatch(MethodType.Normal)]
-  [HarmonyPatch(new Type[] { typeof(CombatGameState), typeof(CombatHUD), typeof(GameObject) })]
-  public static class CombatHUDWeaponSlot_Init {
-    public static void Postfix(CombatHUDWeaponSlot __instance, CombatGameState Combat, CombatHUD HUD, GameObject ToolTipPosition) {
+  [HarmonyPatch(new Type[] {  })]
+  public static class MechBayPanel_ViewBays {
+    private static MechBayPanel mechBayPanel = null;
+    private static GenericPopup popup = null;
+    private static List<MechComponentRef> weapons = new List<MechComponentRef>();
+    private static int selectedWeapon = 0;
+    private static string BuildText() {
+      StringBuilder result = new StringBuilder();
+      for(int index = 0; index < weapons.Count; ++index) {
+        if (index == selectedWeapon) { result.Append("<color=orange>"); }
+        result.Append(weapons[index].Def.Description.UIName);
+        if (index == selectedWeapon) { result.Append("</color>"); }
+        result.AppendLine();
+      }
+      return result.ToString();
+    }
+    private static void Init() {
+      if (mechBayPanel == null) { return; }
+      MechBayMechUnitElement selectedMech = Traverse.Create(mechBayPanel).Field<MechBayMechUnitElement>("selectedMech").Value;
+      if (selectedMech == null) { return; }
+      weapons.Clear();
+      selectedWeapon = 0;
+      List<MechComponentRef> allweapons = new List<MechComponentRef>();
+      for (int index = 0; index < selectedMech.MechDef.Inventory.Length; ++index) {
+        if(selectedMech.MechDef.Inventory[index].ComponentDefType == ComponentType.Weapon) {
+          allweapons.Add(selectedMech.MechDef.Inventory[index]);
+        }
+      }
+      if (WeaponOrderSimGameHelper.ordersData.definitionOrders.TryGetValue(selectedMech.MechDef.GUID, out List<string> weaponsOrder) == false) {
+        weaponsOrder = new List<string>();
+      }
+      int count = allweapons.Count;
+      for (int index = 0; index < count; ++index) {
+        string defid = string.Empty;
+        if (index < weaponsOrder.Count) { defid = weaponsOrder[index]; };
+        if (string.IsNullOrEmpty(defid)) { weapons.Add(null); }
+        bool found = false;
+        for(int i = 0; i < allweapons.Count; ++i) {
+          if (allweapons[i].ComponentDefID == defid) { weapons.Add(allweapons[i]); allweapons.RemoveAt(i); found = true; break; }
+        }
+        if (found == false) { weapons.Add(null); };
+      }
+      for (int index = 0; index < weapons.Count; ++index) {
+        if (weapons[index] != null) { continue; }
+        if (allweapons.Count == 0) { continue; }
+        weapons.Add(allweapons[0]);
+        allweapons.RemoveAt(0);
+      }
+      for (int index = 0; index < weapons.Count;) {
+        if (weapons[index] != null) { ++index; continue; }
+        weapons.RemoveAt(index);
+      }
+    }
+    private static void Clear() {
+      selectedWeapon = 0;
+      weapons.Clear();
+    }
+    private static void Save() {
+      if (mechBayPanel == null) { return; }
+      MechBayMechUnitElement selectedMech = Traverse.Create(mechBayPanel).Field<MechBayMechUnitElement>("selectedMech").Value;
+      if (selectedMech == null) { return; }
+      if (WeaponOrderSimGameHelper.ordersData.definitionOrders.TryGetValue(selectedMech.MechDef.GUID, out List<string> weaponsOrder) == false) {
+        weaponsOrder = new List<string>();
+        WeaponOrderSimGameHelper.ordersData.definitionOrders.Add(selectedMech.MechDef.GUID,weaponsOrder);
+      }
+      weaponsOrder.Clear();
+      for(int index = 0;index < weapons.Count; ++index) {
+        weaponsOrder.Add(weapons[index].ComponentDefID);
+      }
+      Statistic stat = UnityGameInstance.BattleTechGame.Simulation.CompanyStats.GetStatistic(WeaponOrderSimGameHelper.WeaponOrderStatisticName);
+      if (stat == null) {
+        stat = UnityGameInstance.BattleTechGame.Simulation.CompanyStats.AddStatistic(WeaponOrderSimGameHelper.WeaponOrderStatisticName,string.Empty);
+      }
+      stat.SetValue<string>(JsonConvert.SerializeObject(WeaponOrderSimGameHelper.ordersData));
+    }
+    private static void Left() {
+      selectedWeapon = (selectedWeapon + 1) % weapons.Count;
+      popup.TextContent = BuildText();
+    }
+    private static void Right() {
+      selectedWeapon = selectedWeapon - 1;
+      if (selectedWeapon < 0) { selectedWeapon = weapons.Count - 1; }
+      popup.TextContent = BuildText();
+    }
+    private static void Up() {
+      if(selectedWeapon > 0) {
+        MechComponentRef tmp = weapons[selectedWeapon - 1];
+        weapons[selectedWeapon - 1] = weapons[selectedWeapon];
+        weapons[selectedWeapon] = tmp;
+        selectedWeapon -= 1;
+      }
+      popup.TextContent = BuildText();
+    }
+    private static void Down() {
+      if (selectedWeapon < (weapons.Count - 1)) {
+        MechComponentRef tmp = weapons[selectedWeapon + 1];
+        weapons[selectedWeapon + 1] = weapons[selectedWeapon];
+        weapons[selectedWeapon] = tmp;
+        selectedWeapon += 1;
+      }
+      popup.TextContent = BuildText();
+    }
+    public static void OnWeaponOrderButtonClick() {
+      MechBayPanel_ViewBays.Init();
+      GenericPopupBuilder builder = GenericPopupBuilder.Create("Weapons order", MechBayPanel_ViewBays.BuildText());
+      builder.AddButton("X", new Action(MechBayPanel_ViewBays.Clear), true);
+      builder.AddButton("Up", new Action(MechBayPanel_ViewBays.Up), false);
+      builder.AddButton("<-", new Action(MechBayPanel_ViewBays.Right), false);
+      builder.AddButton("Dwn", new Action(MechBayPanel_ViewBays.Down), false);
+      builder.AddButton("->", new Action(MechBayPanel_ViewBays.Left), false);
+      builder.AddButton("Ok", new Action(MechBayPanel_ViewBays.Save), true);
+      popup = builder.CancelOnEscape().Render();
+    }
+    public static void Postfix(MechBayPanel __instance) {
+      Log.M.TWL(0, "MechBayPanel.OnAddedToHierarchy");
+      Transform weaponOrder = __instance.transform.FindRecursive("uixPrfBttn_BASE_iconActionButton-MANAGED-repair");
+      if (weaponOrder == null) { return; }
+      Log.M.WL(1, "uixPrfBttn_BASE_iconActionButton-MANAGED-repair found");
+      Transform label = weaponOrder.FindRecursive("iconBtn_highlightLabel");
+      if (label == null) { return; }
+      Log.M.WL(1, "iconBtn_highlightLabel");
+      label.gameObject.GetComponent<LocalizableText>().SetText("__/WEAPON ORDER/__");
+      MechBayPanel_ViewBays.mechBayPanel = __instance;
+      HBSDOTweenButton button = weaponOrder.gameObject.GetComponent<HBSDOTweenButton>();
+      button.OnClicked.AddListener(new UnityAction(OnWeaponOrderButtonClick));
+      weaponOrder.gameObject.SetActive(true);
     }
   }
   [HarmonyPatch(typeof(CombatHUDWeaponPanel))]
@@ -1197,6 +1338,35 @@ namespace CustomAmmoCategoriesPatches {
           ___sortedWeaponsList.Clear();
           ___sortedWeaponsList.AddRange(weapons);
           return false;
+        } else {
+          if(WeaponOrderSimGameHelper.ordersData.definitionOrders.TryGetValue(__instance.DisplayedActor.PilotableActorDef.GUID, out List<string> simGameOrder)) {
+            List<Weapon> allweapons = new List<Weapon>();
+            List<Weapon> result = new List<Weapon>();
+            allweapons.AddRange(__instance.DisplayedActor.Weapons);
+            int count = allweapons.Count;
+            for(int index = 0; index < count; ++index) {
+              string defid = string.Empty;
+              if (index < simGameOrder.Count) { defid = simGameOrder[index]; }
+              if (string.IsNullOrEmpty(defid)) { result.Add(null); continue; }
+              bool found = false;
+              for(int i = 0; i < allweapons.Count; ++i) {
+                if (allweapons[i].defId == defid) { found = true; result.Add(allweapons[i]); allweapons.RemoveAt(i); break; }
+              }
+              if(found == false) { result.Add(null); }
+            }
+            for(int index = 0; index < result.Count; ++index) {
+              if (result[index] != null) { continue; }
+              if (allweapons.Count == 0) { continue; }
+              result[index] = allweapons[0]; allweapons.RemoveAt(0);
+            }
+            for (int index = 0; index < result.Count;) {
+              if (result[index] != null) { ++index; continue; }
+              result.RemoveAt(index);
+            }
+            ___sortedWeaponsList.Clear();
+            ___sortedWeaponsList.AddRange(result);
+            return false;
+          }
         }
       } catch (Exception e) {
         Log.M.TWL(0, e.ToString(), true);

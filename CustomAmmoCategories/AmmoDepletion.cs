@@ -856,6 +856,7 @@ namespace CustAmmoCategories {
     private static void Postfix(SimGameState __instance, GameInstanceSave gameInstanceSave) {
       Log.M.TWL(0, "SimGameState.Rehydrate");
       try {
+        WeaponOrderSimGameHelper.InitSimGame(__instance);
         Dictionary<string, HashSet<AmmunitionBoxDef>> ammoBoxesSets = new Dictionary<string, HashSet<AmmunitionBoxDef>>();
         foreach (var ammoBox in __instance.DataManager.AmmoBoxDefs) {
           if (ammoBox.Value.Ammo == null) { continue; }

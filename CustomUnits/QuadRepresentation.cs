@@ -86,6 +86,9 @@ namespace CustomUnits {
     public float ForwardParam { set { fLegsRep.ForwardParam = value; } }
     public bool IsMovingParam { set { fLegsRep.IsMovingParam = value; } }
     public bool BeginMovementParam { set { fLegsRep.BeginMovementParam = value; } }
+    public void InitPaintScheme(HeraldryDef heraldryDef, string teamGUID) {
+      fLegsRep.InitPaintScheme(heraldryDef, teamGUID);
+    }
     public float DamageParam {
       set {
         if (mechRep.parentMech.LeftArmDamageLevel == LocationDamageLevel.Destroyed) { fLegsRep.DamageParam = -1f; } else
@@ -145,6 +148,9 @@ namespace CustomUnits {
     }
     public QuadLegsRepresentation() {
 
+    }
+    public void InitPaintScheme(HeraldryDef heraldryDef, string teamGUID) {
+      LegsRep.InitPaintScheme(heraldryDef, teamGUID);
     }
     public void Awake() {
       LegsRep = this.GetComponent<MechRepresentation>();

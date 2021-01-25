@@ -1544,4 +1544,32 @@ namespace CustomUnits {
       return false;
     }
   }
+  [HarmonyPatch(typeof(PilotableActorRepresentation))]
+  [HarmonyPatch("InitPaintScheme")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { typeof(HeraldryDef), typeof(string) })]
+  public static class PilotableActorRepresentation_InitPaintScheme {
+    public static void Postfix(PilotableActorRepresentation __instance, HeraldryDef heraldryDef, string teamGUID) {
+      try {
+        AlternateMechRepresentations altReps = __instance.GetComponent(typeof(AlternateMechRepresentations)) as AlternateMechRepresentations;
+        if (altReps != null) { altReps.InitPaintScheme(heraldryDef, teamGUID); }
+        MechRepresentation mechRep = __instance as MechRepresentation;
+        if (mechRep != null) {
+          TrooperSquad squad = mechRep.parentMech as TrooperSquad;
+          if (squad != null) {
+            if (squad.MechReps.Contains(mechRep)) { return; }
+            foreach (var sRep in squad.squadReps) {
+              sRep.Value.MechRep.InitPaintScheme(heraldryDef, teamGUID);
+            }
+          }
+        }
+        QuadRepresentation quadRep = __instance.GetComponent<QuadRepresentation>();
+        if (quadRep != null) { quadRep.InitPaintScheme(heraldryDef, teamGUID); }
+      } catch (Exception e) {
+        Log.TWL(0, e.ToString(), true);
+        return;
+      }
+      return;
+    }
+  }
 }

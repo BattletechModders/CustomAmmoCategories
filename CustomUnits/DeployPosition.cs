@@ -530,12 +530,17 @@ namespace CustomUnits {
     public static List<Vector3> deplayedEnemySpawnPositions(this Contract contract) {
       List<Vector3> result = new List<Vector3>();
       foreach(LanceSpawnerGameLogic spawner in delayedSpawners) {
-        Team team = spawner.Combat.TurnDirector.GetTurnActorByUniqueId(spawner.teamDefinitionGuid) as Team;
-        if (team == null) { continue; }
-        if (team.IsEnemy(spawner.Combat.LocalPlayerTeam) == false) { continue; }
-        foreach(UnitSpawnPointGameLogic spawnPoint in spawner.unitSpawnPointGameLogicList) {
-          if (spawnPoint.unitType == UnitType.UNDEFINED) { continue; }
-          result.Add(spawnPoint.Position);
+        try {
+          if (spawner == null) { continue; }
+          Team team = spawner.Combat.TurnDirector.GetTurnActorByUniqueId(spawner.teamDefinitionGuid) as Team;
+          if (team == null) { continue; }
+          if (team.IsEnemy(spawner.Combat.LocalPlayerTeam) == false) { continue; }
+          foreach (UnitSpawnPointGameLogic spawnPoint in spawner.unitSpawnPointGameLogicList) {
+            if (spawnPoint.unitType == UnitType.UNDEFINED) { continue; }
+            result.Add(spawnPoint.Position);
+          }
+        }catch(Exception e) {
+          Log.TWL(0, e.ToString(), true);
         }
       }
       return result;

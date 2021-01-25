@@ -122,6 +122,7 @@
     <Compile Include="CustomTwistSequence.cs" />
     <Compile Include="DeployPosition.cs" />
     <Compile Include="DisableMoveAnimation.cs" />
+    <Compile Include="ExActorRepresentation.cs" />
     <Compile Include="Hardpoints.cs" />
     <Compile Include="HUDImprove.cs" />
     <Compile Include="MechResizer\MechRepresentationPatch.cs" />
