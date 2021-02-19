@@ -13,6 +13,24 @@ using System.Text;
 using UnityEngine;
 
 namespace CustAmmoCategories {
+  public static class PathingInfoHelper {
+    private static Func<AbstractActor, float> MaxMoveDelegate = null;
+    private static Func<AbstractActor, float> CostLeftDelegate = null;
+    public static float MaxMoveDistance(this AbstractActor unit) {
+      if (MaxMoveDelegate == null) { return unit.Pathing.MaxCost; }
+      return MaxMoveDelegate(unit);
+    }
+    public static float MoveCostLeft(this AbstractActor unit) {
+      if (CostLeftDelegate == null) { return unit.Pathing.CostLeft; }
+      return CostLeftDelegate(unit);
+    }
+    public static void RegisterMaxMoveDeligate(Func<AbstractActor, float> maxcost) {
+      MaxMoveDelegate = maxcost;
+    }
+    public static void RegisterMoveCostLeft(Func<AbstractActor, float> costleft) {
+      CostLeftDelegate = costleft;
+    }
+  }
   public static class CombatHUDInfoSidePanelHelper {
     private static Dictionary<AbstractActor, Text> externalSelfInfo = new Dictionary<AbstractActor, Text>();
     private static Dictionary<AbstractActor, Dictionary<ICombatant, Text>> externalTargetsInfo = new Dictionary<AbstractActor, Dictionary<ICombatant, Text>>();
@@ -163,13 +181,6 @@ namespace CustAmmoCategoriesPatches {
       if (CustomAmmoCategories.Settings.SidePanelInfoSelfExternal == false) {
         __instance.HUD.RefreshSidePanelInfo();
       }
-    }
-  }
-  [HarmonyPatch(typeof(CombatHUDMechTray))]
-  [HarmonyPatch("Update")]
-  [HarmonyPatch(MethodType.Normal)]
-  public static class CombatHUDMechTray_Update {
-    public static void Postfix(CombatHUDMechTray __instance, CombatHUD ___HUD) {
     }
   }
   [HarmonyPatch(typeof(MoveStatusPreview))]
@@ -399,9 +410,11 @@ namespace CustAmmoCategoriesPatches {
       float spareMove = 0, maxMove = 0;
       try {
         if (HUD.SelectionHandler.ActiveState is SelectionStateMove move) {
-          maxMove = move is SelectionStateSprint sprint ? actor.MaxSprintDistance : actor.MaxWalkDistance;
-          actor.Pathing.CurrentGrid.GetPathTo(move.PreviewPos, actor.Pathing.CurrentDestination, maxMove, null, out spareMove, out Vector3 ResultDestination, out float lockedAngle, false, 0f, 0f, 0f, true, false);
-          spareMove = DeduceLockedAngle(spareMove, actor.Pathing, ref maxMove);
+          //maxMove = move is SelectionStateSprint sprint ? actor.MaxSprintDistance : actor.MaxWalkDistance;
+          maxMove = actor.MaxMoveDistance();
+          //actor.Pathing.CurrentGrid.GetPathTo(move.PreviewPos, actor.Pathing.CurrentDestination, maxMove, null, out spareMove, out Vector3 ResultDestination, out float lockedAngle, false, 0f, 0f, 0f, true, false);
+          spareMove = actor.MoveCostLeft();
+          //spareMove = DeduceLockedAngle(spareMove, actor.Pathing, ref maxMove);
           moveType = move is SelectionStateSprint ? HUD.uiManager().UILookAndColorConstants.Tooltip_Sprint : HUD.uiManager().UILookAndColorConstants.Tooltip_Move;
         } else if ((HUD.SelectionHandler.ActiveState is SelectionStateJump jump)&&(mech != null)) {
           maxMove = mech.JumpDistance;
@@ -555,14 +568,6 @@ namespace CustAmmoCategoriesPatches {
     public static void shownForSingleFrame(this CombatHUDInfoSidePanel pr, bool val) {
       fShownForSingleFrame.SetValue(pr, val);
     }
-    //private class TerrainSidePanelData {
-    //public Text title;
-    //public Text description;
-    //public TerrainSidePanelData() { }
-    //}
-    //private static Dictionary<MapTerrainDataCell, TerrainSidePanelData> cacheSidePanelInfoData = new Dictionary<MapTerrainDataCell, TerrainSidePanelData>();
-    //private static MapTerrainDataCell lastDisplayedCell = null;
-    //private static int firstCounter = 100;
     public static bool appendTerrainText(this CombatHUD HUD,AbstractActor actor, Vector3 worldPos, MoveType moveType, ref Text title, ref Text description) {
       List<MapEncounterLayerDataCell> cells = new List<MapEncounterLayerDataCell>();
       cells.Add(HUD.Combat.EncounterLayerData.GetCellAt(worldPos));
@@ -640,6 +645,10 @@ namespace CustAmmoCategoriesPatches {
       }
       return empty;
     }
+    private static string externalMoveTypeText = string.Empty;
+    private static string originalMoveTypeText = string.Empty;
+    public static void ClearMoveTypeText(this CombatHUD hud) { externalMoveTypeText = string.Empty; CombatMovementReticle.Instance.StatusPreview.MoveTypeText.SetText(originalMoveTypeText); }
+    public static void SetExMoveTypeText(this CombatHUD hud,string info) { externalMoveTypeText = info; CombatMovementReticle.Instance.StatusPreview.MoveTypeText.SetText(externalMoveTypeText); }
     private static bool Prefix(MoveStatusPreview __instance, AbstractActor actor, Vector3 worldPos, MoveType moveType) {
       /*if (firstCounter > 0) {
         __instance.sidePanel().ForceShowSingleFrame(new Text("TITLE"), new Text("DESCRIPTION"), null, false);
@@ -702,23 +711,17 @@ namespace CustAmmoCategoriesPatches {
 #endif
       }
       switch (moveType) {
-        case MoveType.Walking:
-          __instance.MoveTypeText.SetText(HUD.MoveButton.Tooltip.text, new object[0]);
-          break;
-        case MoveType.Sprinting:
-          __instance.MoveTypeText.SetText(HUD.SprintButton.Tooltip.text, new object[0]);
-          break;
-        case MoveType.Backward:
-          break;
-        case MoveType.Jumping:
-          __instance.MoveTypeText.SetText(HUD.JumpButton.Tooltip.text, new object[0]);
-          break;
-        case MoveType.Melee:
-          __instance.MoveTypeText.SetText(HUD.MoveButton.Tooltip.text, new object[0]);
-          break;
-        default:
-          __instance.MoveTypeText.SetText(string.Empty, new object[0]);
-          break;
+        case MoveType.Walking: originalMoveTypeText = HUD.MoveButton.Tooltip.text; break;
+        case MoveType.Sprinting: originalMoveTypeText = HUD.SprintButton.Tooltip.text; break;
+        case MoveType.Backward: break;
+        case MoveType.Jumping: originalMoveTypeText = HUD.JumpButton.Tooltip.text;  break;
+        case MoveType.Melee: originalMoveTypeText = HUD.MoveButton.Tooltip.text; break;
+        default: originalMoveTypeText = string.Empty; break;
+      }
+      if (string.IsNullOrEmpty(externalMoveTypeText)) {
+        __instance.MoveTypeText.SetText(originalMoveTypeText, new object[0]);
+      } else {
+        __instance.MoveTypeText.SetText(externalMoveTypeText, new object[0]);
       }
       return false;
     }

@@ -1157,7 +1157,7 @@ namespace CustomAmmoCategoriesPatches {
     }
   }
   public static class WeaponOrderSimGameHelper {
-    public static WeaponOrderData ordersData;
+    public static WeaponOrderData ordersData = new WeaponOrderData();
     public static readonly string WeaponOrderStatisticName = "CACWeaponOrder";
     public static void InitSimGame(SimGameState sim) {
       Statistic stat = sim.CompanyStats.GetStatistic(WeaponOrderStatisticName);
@@ -1339,6 +1339,7 @@ namespace CustomAmmoCategoriesPatches {
           ___sortedWeaponsList.AddRange(weapons);
           return false;
         } else {
+          if (string.IsNullOrEmpty(__instance.DisplayedActor.PilotableActorDef.GUID)) { return true; }
           if(WeaponOrderSimGameHelper.ordersData.definitionOrders.TryGetValue(__instance.DisplayedActor.PilotableActorDef.GUID, out List<string> simGameOrder)) {
             List<Weapon> allweapons = new List<Weapon>();
             List<Weapon> result = new List<Weapon>();

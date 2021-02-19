@@ -135,6 +135,7 @@
     <Compile Include="MechResizer\WeaponEffectPatch.cs" />
     <Compile Include="MechTurretAnimator.cs" />
     <Compile Include="MoveDistanceClamp.cs" />
+    <Compile Include="PartialMovement.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="QuadBodyAnimator.cs" />
     <Compile Include="QuadRepresentation.cs" />

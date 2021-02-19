@@ -135,7 +135,6 @@ namespace CustomUnits {
       return true;
     }
     public static float MoveCostModPerBiome(this AbstractActor unit) {
-      //Log.LogWrite("MoveCostModPerBiome "+unit.DisplayName+":"+unit.GUID+"\n");
       UnitCustomInfo info = unit.GetCustomInfo();
       if (info == null) {
         //Log.LogWrite(" no custom info\n");
@@ -249,8 +248,12 @@ namespace CustomUnits {
       }
     }
     public static bool Prefix(MapTerrainDataCell cell, AbstractActor unit, MoveType moveType, ref float __result) {
-      //Log.LogWrite("PathNodeGrid.GetTerrainCost prefix\n", true);
-      __result = GetTerrainCost(cell, unit, moveType);
+      try {
+        __result = GetTerrainCost(cell, unit, moveType);
+      }catch(Exception e) {
+        Log.TWL(0, e.ToString(), true);
+        return true;
+      }
       return false;
     }
   }
@@ -302,7 +305,7 @@ namespace CustomUnits {
         __result = ___pathNodes[x, z];
         return false;
       } catch (Exception e) {
-        Log.LogWrite(e.ToString() + "\n");
+        Log.TWL(0,e.ToString());
         return true;
       }
     }
@@ -349,27 +352,30 @@ namespace CustomUnits {
       }
     }*/
     public static void Postfix(PathNode __instance, PathNode from, int x, int z, Vector3 pos, int angle, MapTerrainDataCell cell, List<AbstractActor> collisionTestActors, AbstractActor owningActor) {
-      //Log.LogWrite("PathNode.Constructor postfix\n");
-      MapTerrainDataCellEx ecell = cell as MapTerrainDataCellEx;
-      if (ecell == null) { return; }
-      if ((ecell.cachedHeight - ecell.realTerrainHeight) > 5f) {
-        //Log.LogWrite(1, "detected lifted up cell. " + pos + " cell height:" + cell.cachedHeight + "/" + ecell.realTerrainHeight + "\n");
-      }
-      if (__instance.HasCollision || (__instance.IsValidDestination == false)) {
-        //Log.LogWrite(1, "X:" + ecell.x + " Y:" + ecell.y, true);
-        //Log.LogWrite(1, "HasCollision:" + __instance.HasCollision, true);
-        //Log.LogWrite(1, "IsValidDestination:" + __instance.IsValidDestination, true);
-        //Log.LogWrite(1, "Priority Terrain Flag:" + MapMetaData.GetPriorityTerrainMaskFlags(ecell) + "(" + ((int)ecell.terrainMask) + ")", true);
-        if (owningActor.UnaffectedPathing()) {
-          if (__instance.HasCollision) {
-          } else {
-            if (SplatMapInfo.IsMapBoundary(cell.terrainMask) == false) {
-              //Log.LogWrite(1, "Unaffected by pathing", true);
-              __instance.IsValidDestination = true;
-            }
-          }
-        }
-      }
+      //try {
+      //  MapTerrainDataCellEx ecell = cell as MapTerrainDataCellEx;
+      //  if (ecell == null) { return; }
+      //  if ((ecell.cachedHeight - ecell.realTerrainHeight) > 5f) {
+      //    //Log.LogWrite(1, "detected lifted up cell. " + pos + " cell height:" + cell.cachedHeight + "/" + ecell.realTerrainHeight + "\n");
+      //  }
+      //  if (__instance.HasCollision || (__instance.IsValidDestination == false)) {
+      //    //Log.LogWrite(1, "X:" + ecell.x + " Y:" + ecell.y, true);
+      //    //Log.LogWrite(1, "HasCollision:" + __instance.HasCollision, true);
+      //    //Log.LogWrite(1, "IsValidDestination:" + __instance.IsValidDestination, true);
+      //    //Log.LogWrite(1, "Priority Terrain Flag:" + MapMetaData.GetPriorityTerrainMaskFlags(ecell) + "(" + ((int)ecell.terrainMask) + ")", true);
+      //    if (owningActor.UnaffectedPathingF()) {
+      //      if (__instance.HasCollision) {
+      //      } else {
+      //        if (SplatMapInfo.IsMapBoundary(cell.terrainMask) == false) {
+      //          //Log.LogWrite(1, "Unaffected by pathing", true);
+      //          __instance.IsValidDestination = true;
+      //        }
+      //      }
+      //    }
+      //  }
+      //}catch(Exception e) {
+      //  Log.TWL(0, e.ToString(), true);
+      //}
     }
   }
   [HarmonyPatch(typeof(PathNodeGrid))]
@@ -406,7 +412,7 @@ namespace CustomUnits {
           //Log.LogWrite(1, node.Position + " cell height:" + node.MapTerrainDataCell.cachedHeight + "/" + (ecell == null ? "null" : ecell.realTerrainHeight.ToString()) + " water:" + water, true);
         }
       }catch(Exception e) {
-        Log.LogWrite(e.ToString()+"\n",true);
+        Log.TWL(0,e.ToString(),true);
       }
     }
   }

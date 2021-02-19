@@ -464,45 +464,45 @@ namespace CustAmmoCategories {
     }
     public static void Init() {
       //build in modifiers
-      registerModifier("RANGE", "RANGE", true, false, GetRangeModifier, GetRangeModifierName);
-      registerModifier("OBSTRUCTED", "OBSTRUCTED", true, false, GetCoverModifier, null);
-      registerModifier("ARM MOUNTED", "ARM MOUNTED", true, false, GetSelfArmMountedModifier, null);
-      registerModifier("HEIGHT DIFF", "HEIGHT DIFF", true, false, GetHeightModifier, null);
-      registerModifier("FROM", "FROM", true, false, GetSelfTerrainModifier, GetSelfTerrainModifierName);
-      registerModifier("INTO", "INTO", true, false, GetTargetTerrainModifier, GetTargetTerrainModifierName);
-      registerModifier("TARGET MOVED", "TARGET MOVED", true, false, GetTargetSpeedModifier, null);
-      registerModifier("TARGET SIZE", "TARGET SIZE", true, false, GetTargetSizeModifier, null);
-      registerModifier("ATTACKER ACCURACY", "ATTACKER ACCURACY", true, false, GetAttackerAccuracyModifier, GetAttackerAccuracyModifierName);
-      registerModifier("REFIRE", "REFIRE", true, false, GetRefireModifier, null);
-      registerModifier("SENSOR LOCK", "SENSOR LOCK", true, false, GetTargetDirectFireModifier, null);
-      registerModifier("INDIRECT FIRE", "INDIRECT FIRE", true, false, GetIndirectModifier, null);
-      registerModifier("MORALE", "MORALE", true, false, GetMoraleAttackModifier, GetMoraleAttackModifierName);
-      registerModifier("INDIRECT FIRE", "INDIRECT FIRE", true, false, GetIndirectModifier, null);
-      registerModifier("DIRECT", "__/AIM.DIRECT/__", true, false, GetDirectAttackModifier, null);
-      registerModifier("TARGET TYPE", "__/AIM.TARGET_TYPE/__", true, false, GetChassisTagsModifyer, null);
+      HashSet<string> modsToRemove = new HashSet<string>();
+      foreach(string modid in CustomAmmoCategories.Settings.RemoveToHitModifiers) { modsToRemove.Add(modid); }
+      if(modsToRemove.Contains("RANGE") == false) registerModifier("RANGE", "RANGE", true, false, GetRangeModifier, GetRangeModifierName);
+      if (modsToRemove.Contains("OBSTRUCTED") == false) registerModifier("OBSTRUCTED", "OBSTRUCTED", true, false, GetCoverModifier, null);
+      if (modsToRemove.Contains("ARM MOUNTED") == false) registerModifier("ARM MOUNTED", "ARM MOUNTED", true, false, GetSelfArmMountedModifier, null);
+      if (modsToRemove.Contains("HEIGHT DIFF") == false) registerModifier("HEIGHT DIFF", "HEIGHT DIFF", true, false, GetHeightModifier, null);
+      if (modsToRemove.Contains("FROM") == false) registerModifier("FROM", "FROM", true, false, GetSelfTerrainModifier, GetSelfTerrainModifierName);
+      if (modsToRemove.Contains("INTO") == false) registerModifier("INTO", "INTO", true, false, GetTargetTerrainModifier, GetTargetTerrainModifierName);
+      if (modsToRemove.Contains("TARGET MOVED") == false) registerModifier("TARGET MOVED", "TARGET MOVED", true, false, GetTargetSpeedModifier, null);
+      if (modsToRemove.Contains("ATTACKER ACCURACY") == false) registerModifier("ATTACKER ACCURACY", "ATTACKER ACCURACY", true, false, GetAttackerAccuracyModifier, GetAttackerAccuracyModifierName);
+      if (modsToRemove.Contains("REFIRE") == false) registerModifier("REFIRE", "REFIRE", true, false, GetRefireModifier, null);
+      if (modsToRemove.Contains("SENSOR LOCK") == false) registerModifier("SENSOR LOCK", "SENSOR LOCK", true, false, GetTargetDirectFireModifier, null);
+      if (modsToRemove.Contains("MORALE") == false) registerModifier("MORALE", "MORALE", true, false, GetMoraleAttackModifier, GetMoraleAttackModifierName);
+      if (modsToRemove.Contains("INDIRECT FIRE") == false) registerModifier("INDIRECT FIRE", "INDIRECT FIRE", true, false, GetIndirectModifier, null);
+      if (modsToRemove.Contains("DIRECT") == false) registerModifier("DIRECT", "__/AIM.DIRECT/__", true, false, GetDirectAttackModifier, null);
+      if (modsToRemove.Contains("TARGET TYPE") == false) registerModifier("TARGET TYPE", "__/AIM.TARGET_TYPE/__", true, false, GetChassisTagsModifyer, null);
 
-      registerModifier("JUMPED", "__/AIM.JUMPED/__", false, false, GetJumpedModifier, null);
-      registerModifier("MOVED SELF", "MOVED SELF", false, false, GetSelfSpeedModifier, null);
-      registerModifier("HEAT", "HEAT", false, false, GetHeatModifier, null);
-      registerModifier("STOOD UP", "STOOD UP", false, false, GetStoodUpModifier, null);
-      registerModifier("WEAPON ACCURACY", "WEAPON ACCURACY", false, false, GetWeaponAccuracyModifier, null);
-      registerModifier("SPRINTED", "SPRINTED", false, false, GetSelfSprintedModifier, null);
-      registerModifier("WEAPON DAMAGED", "WEAPON DAMAGED", false, false, GetToHitModifierWeaponDamage, null);
-      registerModifier("DAMAGED", "DAMAGED", false, false, GetSelfDamageModifier, GetSelfDamageModifierName);
+      if (modsToRemove.Contains("JUMPED") == false) registerModifier("JUMPED", "__/AIM.JUMPED/__", false, false, GetJumpedModifier, null);
+      if (modsToRemove.Contains("MOVED SELF") == false) registerModifier("MOVED SELF", "MOVED SELF", false, false, GetSelfSpeedModifier, null);
+      if (modsToRemove.Contains("HEAT") == false) registerModifier("HEAT", "HEAT", false, false, GetHeatModifier, null);
+      if (modsToRemove.Contains("STOOD UP") == false) registerModifier("STOOD UP", "STOOD UP", false, false, GetStoodUpModifier, null);
+      if (modsToRemove.Contains("WEAPON ACCURACY") == false) registerModifier("WEAPON ACCURACY", "WEAPON ACCURACY", false, false, GetWeaponAccuracyModifier, null);
+      if (modsToRemove.Contains("SPRINTED") == false) registerModifier("SPRINTED", "SPRINTED", false, false, GetSelfSprintedModifier, null);
+      if (modsToRemove.Contains("WEAPON DAMAGED") == false) registerModifier("WEAPON DAMAGED", "WEAPON DAMAGED", false, false, GetToHitModifierWeaponDamage, null);
+      if (modsToRemove.Contains("DAMAGED") == false) registerModifier("DAMAGED", "DAMAGED", false, false, GetSelfDamageModifier, GetSelfDamageModifierName);
 
-      registerModifier("DIRECTION", "DIRECTION", true, true, GetDirectionModifier, GetDirectionModifierName);
-      registerModifier("TARGET SIZE", "TARGET SIZE", true, true, GetTargetSizeModifier, null);
-      registerModifier("TARGET SHUTDOWN", "TARGET SHUTDOWN", true, true, GetTargetShutdownModifier, null);
-      registerModifier("TARGET PRONE", "TARGET PRONE", true, true, GetTargetProneModifier, null);
-      registerModifier("ENEMY EFFECTS", "ENEMY EFFECTS", true, true, GetEnemyEffectModifier, null);
+      if (modsToRemove.Contains("DIRECTION") == false) registerModifier("DIRECTION", "DIRECTION", true, true, GetDirectionModifier, GetDirectionModifierName);
+      if (modsToRemove.Contains("TARGET SIZE") == false) registerModifier("TARGET SIZE", "TARGET SIZE", true, true, GetTargetSizeModifier, null);
+      if (modsToRemove.Contains("TARGET SHUTDOWN") == false) registerModifier("TARGET SHUTDOWN", "TARGET SHUTDOWN", true, true, GetTargetShutdownModifier, null);
+      if (modsToRemove.Contains("TARGET PRONE") == false) registerModifier("TARGET PRONE", "TARGET PRONE", true, true, GetTargetProneModifier, null);
+      if (modsToRemove.Contains("ENEMY EFFECTS") == false) registerModifier("ENEMY EFFECTS", "ENEMY EFFECTS", true, true, GetEnemyEffectModifier, null);
 
-      registerModifier("DEATH FROM ABOVE", "DEATH FROM ABOVE", false, true, GetDFAModifier, null);
-      registerModifier("CHASSIS BONUS", "CHASSIS BONUS", false, true, GetMeleeChassisToHitModifier, GetMeleeChassisToHitModifierName);
-      registerModifier("TERRAIN", "TERRAIN", false, true, GetTargetTerrainModifier, null);
-      registerModifier("MELEE ARM MOUNTED", "__/AIM.PUNCHING_ARM/__", false, true, GetMeleeArmMount, null);
-      registerModifier("MELEE HEIGHT DIFF", "HEIGHT DIFF", false, true, GetMeleeHeightMod, null);
-      registerModifier("MELEE RECOIL", "RE ATTACK", false, true, GetRefireModifier, null);
-      registerModifier("MELEE TARGET MOVED", "TARGET MOVED", false, true, GetMeleeEvesionMod, null);
+      if (modsToRemove.Contains("DEATH FROM ABOVE") == false) registerModifier("DEATH FROM ABOVE", "DEATH FROM ABOVE", false, true, GetDFAModifier, null);
+      if (modsToRemove.Contains("CHASSIS BONUS") == false) registerModifier("CHASSIS BONUS", "CHASSIS BONUS", false, true, GetMeleeChassisToHitModifier, GetMeleeChassisToHitModifierName);
+      if (modsToRemove.Contains("TERRAIN") == false) registerModifier("TERRAIN", "TERRAIN", false, true, GetTargetTerrainModifier, null);
+      if (modsToRemove.Contains("MELEE ARM MOUNTED") == false) registerModifier("MELEE ARM MOUNTED", "__/AIM.PUNCHING_ARM/__", false, true, GetMeleeArmMount, null);
+      if (modsToRemove.Contains("MELEE HEIGHT DIFF") == false) registerModifier("MELEE HEIGHT DIFF", "HEIGHT DIFF", false, true, GetMeleeHeightMod, null);
+      if (modsToRemove.Contains("MELEE RECOIL") == false) registerModifier("MELEE RECOIL", "RE ATTACK", false, true, GetRefireModifier, null);
+      if (modsToRemove.Contains("MELEE TARGET MOVED") == false) registerModifier("MELEE TARGET MOVED", "TARGET MOVED", false, true, GetMeleeEvesionMod, null);
     }
   }
   [HarmonyPatch(typeof(CombatHUDWeaponSlot))]

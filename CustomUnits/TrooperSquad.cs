@@ -1691,21 +1691,6 @@ namespace CustomUnits {
       }
     }
   }
-  [HarmonyPatch(typeof(Mech))]
-  [HarmonyPatch("WorkingJumpjets")]
-  [HarmonyPatch(MethodType.Getter)]
-  [HarmonyPatch(new Type[] { })]
-  public static class Mech_WorkingJumpjets {
-    public static void Postfix(Mech __instance, ref int __result) {
-      try {
-        TrooperSquad squad = __instance as TrooperSquad;
-        if (squad == null) { return; }
-        __result = squad.isHasWorkingJumpjets() ? 1 : 0;
-      } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
-      }
-    }
-  }
   [HarmonyPatch(typeof(HitLocation))]
   [HarmonyPatch("GetPossibleHitLocations")]
   [HarmonyPatch(MethodType.Normal)]
@@ -2187,7 +2172,6 @@ namespace CustomUnits {
       Log.TWL(0, "TrooperSquad.GetSquadSizeToHitMod " + target.DisplayName);
       TrooperSquad squad = target as TrooperSquad;
       if (squad == null) { return 0f; };
-      float result = 0f;
       UnitCustomInfo info = squad.GetCustomInfo();
       if (info == null) { return 0f; };
       int deadUnitsCount = 0;
@@ -2652,8 +2636,16 @@ namespace CustomUnits {
             } else if (MechTurret != null) {
               Log.WL(1, "found mech turret:" + MountedLocation + " type:" + attachType);
               if (attachType == HardpointAttachType.Turret) {
-                if (MechTurret.attachPoints.TryGetValue(Location, out MechTurretAttachPoint attachPoint)) {
-                  attachTransform = attachPoint.attachTransform;
+                if(string.IsNullOrEmpty(customHardpoint.attachOverride) == false) {
+                  if (MechTurret.attachPointsNames.TryGetValue(customHardpoint.attachOverride, out MechTurretAttachPoint attachPoint)) {
+                    attachTransform = attachPoint.attachTransform;
+                  }
+                } else {
+                  if (MechTurret.attachPoints.TryGetValue(Location, out List<MechTurretAttachPoint> attachPoints)) {
+                    if (attachPoints.Count > 0) {
+                      attachTransform = attachPoints[0].attachTransform;
+                    }
+                  }
                 }
               }
             }

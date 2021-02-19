@@ -140,6 +140,11 @@ namespace CustomUnits{
     public float DeploySpawnRadius { get; set; }
     public float DeployMaxDistanceFromOriginal { get; set; }
     public float DeployMinDistanceFromEnemy { get; set; }
+    public float DeployMaxDistanceFromMates { get; set; }
+    public float DeploySingleCircleRadius { get; set; }
+    public float DeploySingleCircleRadiusTarget { get; set; }
+    public float DeployLabelHeight { get; set; }
+    public float DeployLabelFontSize { get; set; }
     public bool DeployManual { get; set; }
     private HashSet<string> fManualDeployForbidContractTypes { get; set; }
     public List<string> ManualDeployForbidContractTypes { set {
@@ -177,6 +182,7 @@ namespace CustomUnits{
     public string CustomHeadlightComponentPrefab { get; set; }
     public string CustomHeadlightPrefabSrcObjectName { get; set; }
     public string FullTransparentMaterialSource { get; set; }
+    public float MaxHoveringHeightWithWorkingJets { get; set; }
     public CUSettings() {
       debugLog = false;
       DeathHeight = 1f;
@@ -221,6 +227,11 @@ namespace CustomUnits{
       DeploySpawnRadius = 50f;
       DeployMaxDistanceFromOriginal = 30.0f;
       DeployMinDistanceFromEnemy = 300f;
+      DeployMaxDistanceFromMates = 100f;
+      DeploySingleCircleRadius = 5f;
+      DeploySingleCircleRadiusTarget = 10f;
+      DeployLabelHeight = 10f;
+      DeployLabelFontSize = 32f;
       fManualDeployForbidContractTypes = new HashSet<string>();
       DisableHotKeys = false;
       SquadStructureIcon = "ba_structure";
@@ -249,6 +260,7 @@ namespace CustomUnits{
       CustomHeadlightComponentPrefab = "chrPrfComp_atlas_leftshoulder_headlight";
       CustomHeadlightPrefabSrcObjectName = "PtLight - Torso (3)";
       FullTransparentMaterialSource = "full_transparent";
+      MaxHoveringHeightWithWorkingJets = 1f;
     }
 }
   public static partial class Core{
@@ -321,6 +333,7 @@ namespace CustomUnits{
           Log.TWL(0, "can't find DataManager.PrefabLoadRequest");
         }*/
         harmony.PatchAll(Assembly.GetExecutingAssembly());
+        PathingInfoHelper.RegisterMaxMoveDeligate(PathingHelper.MaxMoveDistance);
         WeightedFactorHelper.PatchInfluenceMapPositionFactor(harmony);
         WeaponRepresentation_PlayWeaponEffect.i_extendedFire = extendedFireHelper.extendedFire;
       } catch (Exception e) {

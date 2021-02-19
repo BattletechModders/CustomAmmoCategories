@@ -122,6 +122,7 @@ namespace CustomUnits {
     }
   }
   public class MechTurretMountData {
+    public string Name { get; set; }
     public ChassisLocations Location { get; set; }
     public string AttachTo { get; set; }
     public string Animator { get; set; }
@@ -135,6 +136,7 @@ namespace CustomUnits {
   }
   public class MechTurretAttachPoint {
     private static HashSet<Animator> AnimatorsInPosition = new HashSet<Animator>();
+    public string Name { get; set; }
     public MechTurretAnimation parent { get; set; }
     public Animator animator { get; set; }
     public ChassisLocations Location { get; set; }
@@ -195,6 +197,8 @@ namespace CustomUnits {
     public MechTurretAttachPoint(MechTurretAnimation parent, MechTurretMountData data) {
       this.Location = data.Location;
       this.parent = parent;
+      this.Name = data.Name;
+      if (string.IsNullOrEmpty(this.Name)) { this.Name = data.Location.ToString(); }
       Transform anim = parent.gameObject.transform.FindRecursive(data.Animator);
       if (anim != null) { this.animator = anim.gameObject.GetComponent<Animator>(); }
       Transform attach = parent.gameObject.transform.FindRecursive(data.AttachTo);
@@ -218,7 +222,8 @@ namespace CustomUnits {
   }
   public class MechTurretAnimation: GenericAnimatedComponent {
     public Animator turnAnimator { get; set; }
-    public Dictionary<ChassisLocations, MechTurretAttachPoint> attachPoints;
+    public Dictionary<ChassisLocations, List<MechTurretAttachPoint>> attachPoints;
+    public Dictionary<string, MechTurretAttachPoint> attachPointsNames;
     public override bool StayOnDeath() { return true; }
     public override bool StayOnLocationDestruction() { return true; }
     public override void Init(ICombatant a, int loc, string data, string prefabName) {
@@ -226,9 +231,16 @@ namespace CustomUnits {
       MechTurretAnimData turretData = JsonConvert.DeserializeObject<MechTurretAnimData>(data);
       Transform anim = this.gameObject.transform.FindRecursive(turretData.TurnAnimator);
       if (anim != null) { turnAnimator = anim.gameObject.GetComponent<Animator>(); };
-      attachPoints = new Dictionary<ChassisLocations, MechTurretAttachPoint>();
+      attachPoints = new Dictionary<ChassisLocations, List<MechTurretAttachPoint>>();
+      attachPointsNames = new Dictionary<string, MechTurretAttachPoint>();
       foreach (MechTurretMountData apData in turretData.AttachPoints) {
-        attachPoints.Add(apData.Location, new MechTurretAttachPoint(this, apData));
+        if(attachPoints.TryGetValue(apData.Location, out List<MechTurretAttachPoint> aPoints) == false) {
+          aPoints = new List<MechTurretAttachPoint>();
+          attachPoints.Add(apData.Location, aPoints);
+        }
+        MechTurretAttachPoint mtPoint = new MechTurretAttachPoint(this, apData);
+        aPoints.Add(mtPoint);
+        attachPointsNames.Add(mtPoint.Name, mtPoint);
       }
       Mech mech = a as Mech;
     }
@@ -244,7 +256,26 @@ namespace CustomUnits {
       Log.WL(1, "MechTurretAnimation found "+MechTurret.name);
       foreach (WeaponRepresentation weaponRep in __instance.GameRep.weaponReps) {
         if (weaponRep == null) { continue; }
-        if(MechTurret.attachPoints.TryGetValue(weaponRep.weapon.mechComponentRef.MountedLocation, out MechTurretAttachPoint attachPoint)) {
+        Log.WL(2, "prefab " + weaponRep.weapon.mechComponentRef.prefabName);
+        CustomHardpointDef customHardpoint = CustomHardPointsHelper.Find(weaponRep.weapon.mechComponentRef.prefabName);
+        if (customHardpoint == null) { Log.WL(3, "no custom hardpoint"); continue; }
+        Log.WL(3, "attachType:"+ customHardpoint.attachType+ " attachOverride:"+ customHardpoint.attachOverride);
+        if (customHardpoint.attachType != HardpointAttachType.Turret) { continue; }
+        MechTurretAttachPoint attachPoint = null;
+        if (string.IsNullOrEmpty(customHardpoint.attachOverride) == false) {
+          if (MechTurret.attachPointsNames.ContainsKey(customHardpoint.attachOverride)) {
+            attachPoint = MechTurret.attachPointsNames[customHardpoint.attachOverride];
+          };
+        }
+        if (attachPoint == null) {
+          if (MechTurret.attachPoints.ContainsKey(weaponRep.weapon.mechComponentRef.MountedLocation)) {
+            if (MechTurret.attachPoints[weaponRep.weapon.mechComponentRef.MountedLocation].Count > 0) {
+              attachPoint = MechTurret.attachPoints[weaponRep.weapon.mechComponentRef.MountedLocation][0];
+            }
+          }
+        }
+        Log.WL(3, "attachPoint:"+(attachPoint == null?"null": attachPoint.attachTransform.name));
+        if (attachPoint != null) {
           if (weaponRep.parentTransform != null) { weaponRep.parentTransform = attachPoint.attachTransform; }
           if (weaponRep.thisTransform != null) {
             weaponRep.thisTransform.SetParent(attachPoint.attachTransform,false);

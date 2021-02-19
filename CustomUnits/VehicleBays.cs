@@ -1266,8 +1266,16 @@ namespace CustomUnits {
             } else if(MechTurret != null) { 
               Log.WL(1, "found mech turret:" + MountedLocation + " type:" + attachType);
               if(attachType == HardpointAttachType.Turret) {
-                if (MechTurret.attachPoints.TryGetValue(componentRef.MountedLocation, out MechTurretAttachPoint attachPoint)) {
-                  attachTransform = attachPoint.attachTransform;
+                if (string.IsNullOrEmpty(customHardpoint.attachOverride) == false) {
+                  if (MechTurret.attachPointsNames.TryGetValue(customHardpoint.attachOverride,out MechTurretAttachPoint attachPoint)) {
+                    attachTransform = attachPoint.attachTransform;
+                  }
+                } else {
+                  if (MechTurret.attachPoints.TryGetValue(componentRef.MountedLocation, out List<MechTurretAttachPoint> attachPoints)) {
+                    if (attachPoints.Count > 0) {
+                      attachTransform = attachPoints[0].attachTransform;
+                    }
+                  }
                 }
               }
             }

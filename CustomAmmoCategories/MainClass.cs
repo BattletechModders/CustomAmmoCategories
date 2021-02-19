@@ -1074,7 +1074,17 @@ namespace CustAmmoCategories {
       };
       unit.StatCollection.Set<bool>(BlockComponentsActivationActorStat,value);
     }
+    //public static bool UnaffectedPathing(this ICombatant unit) {
+    //  //return false;
+    //  try {
+    //    if (unit.StatCollection.ContainsStatistic(PathingActorStat) == false) { return false; };
+    //    return unit.StatCollection.GetStatistic(PathingActorStat).Value<bool>();
+    //  } catch (Exception) {
+    //    return false;
+    //  }
+    //}
     public static bool UnaffectedPathing(this ICombatant unit) {
+      //return false;
       try {
         if (unit.StatCollection.ContainsStatistic(PathingActorStat) == false) { return false; };
         return unit.StatCollection.GetStatistic(PathingActorStat).Value<bool>();
@@ -1276,6 +1286,8 @@ namespace CustAmmoCategories {
     public float EvasiveNumberFontSize { get; set; }
     public float EvasiveNumberWidth { get; set; }
     public float EvasiveNumberHeight { get; set; }
+    public List<string> RemoveToHitModifiers { get; set; }
+    public bool ImprovedBallisticByDefault { get; set; }
     public Settings() {
       directory = string.Empty;
       debugLog = true;
@@ -1398,6 +1410,8 @@ namespace CustAmmoCategories {
       EvasiveNumberFontSize = 24f;
       EvasiveNumberWidth = 20f;
       EvasiveNumberHeight = 25f;
+      RemoveToHitModifiers = new List<string>();
+      ImprovedBallisticByDefault = true;
     }
   }
 }

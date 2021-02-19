@@ -198,6 +198,7 @@ namespace CustomUnits {
     public bool MoveCostBiome { get; set; }
     public bool Fire { get; set; }
     public bool Landmines { get; set; }
+    public float MinJumpDistance { get; set; }
     public float MoveClamp {
       get {
         if (Pathing && (FMoveClamp < MinMoveClamp)) { return MinMoveClamp; }
@@ -684,11 +685,13 @@ namespace CustomUnits {
       return true;
     }
     public static void Postfix(PathNodeGrid __instance, Vector3 from, Vector3 to, ref bool __result) {
-      AbstractActor owningActor = (AbstractActor)FowningActor.GetValue(__instance);
-      if (owningActor.UnaffectedPathing()) {
-        //Log.LogWrite("PathNodeGrid.FindBlockerBetween postfix " + owningActor.DisplayName + ":" + owningActor.GUID + " from " + from + " to " + to + " result: " + __result + "\n");
-        //Log.LogWrite(1, "can't be blocked", true);
-        __result = false;
+      try {
+        AbstractActor owningActor = (AbstractActor)FowningActor.GetValue(__instance);
+        if (owningActor.UnaffectedPathing()) {
+          __result = false;
+        }
+      }catch(Exception e) {
+        Log.TWL(0, e.ToString(), true);
       }
     }
   }
@@ -716,7 +719,8 @@ namespace CustomUnits {
         if (__instance.FindBlockerBetween(from, to) == true) { __result = true; return false; };
         if (__instance.FindBlockerBetween(to, from) == true) { __result = true; return false; };
         __result = false;
-      } catch (Exception) {
+      } catch (Exception e) {
+        Log.TWL(0, e.ToString(), true);
         __result = true;
       }
       return false;
@@ -1193,26 +1197,30 @@ namespace CustomUnits {
   //[HarmonyPatch(new Type[] { typeof(AbstractActor), typeof(List<AbstractActor>), typeof(Vector3), typeof(Vector3), typeof(AbstractActor), typeof(float) })]
   public static class PathingUtil_DoesMovementLineCollide {
     public static bool Prefix(AbstractActor thisActor, ref List<AbstractActor> actors) {
-      int index = 0;
-      if (actors == null) { return true; }
-      if (thisActor == null) { return true; }
-      bool mePathingUnaffected = thisActor.UnaffectedPathing();
-      if (mePathingUnaffected == false) {
-        while (index < actors.Count) {
-          if (actors[index].UnaffectedPathing()) {
-            actors.RemoveAt(index);
-          } else {
-            ++index;
+      try {
+        int index = 0;
+        if (actors == null) { return true; }
+        if (thisActor == null) { return true; }
+        bool mePathingUnaffected = thisActor.UnaffectedPathing();
+        if (mePathingUnaffected == false) {
+          while (index < actors.Count) {
+            if (actors[index].UnaffectedPathing()) {
+              actors.RemoveAt(index);
+            } else {
+              ++index;
+            }
+          }
+        } else {
+          while (index < actors.Count) {
+            if (actors[index].UnaffectedPathing() == false) {
+              actors.RemoveAt(index);
+            } else {
+              ++index;
+            }
           }
         }
-      } else {
-        while (index < actors.Count) {
-          if (actors[index].UnaffectedPathing() == false) {
-            actors.RemoveAt(index);
-          } else {
-            ++index;
-          }
-        }
+      }catch(Exception e) {
+        Log.TWL(0, e.ToString(), true);
       }
       return true;
     }
@@ -1229,27 +1237,31 @@ namespace CustomUnits {
   //[HarmonyPatch(new Type[] { typeof(Vector3), typeof(AbstractActor), typeof(List<AbstractActor>),  })]
   public static class PathNode_HasCollisionAt {
     public static bool Prefix(AbstractActor unit, ref List<AbstractActor> allActors) {
-      int index = 0;
-      //occupyingActor = (AbstractActor)null;
-      if (allActors == null) { return true; }
-      if (unit == null) { return true; }
-      bool mePathingUnaffected = unit.UnaffectedPathing();
-      if (mePathingUnaffected == false) {
-        while (index < allActors.Count) {
-          if (allActors[index].UnaffectedPathing()) {
-            allActors.RemoveAt(index);
-          } else {
-            ++index;
+      try {
+        int index = 0;
+        //occupyingActor = (AbstractActor)null;
+        if (allActors == null) { return true; }
+        if (unit == null) { return true; }
+        bool mePathingUnaffected = unit.UnaffectedPathing();
+        if (mePathingUnaffected == false) {
+          while (index < allActors.Count) {
+            if (allActors[index].UnaffectedPathing()) {
+              allActors.RemoveAt(index);
+            } else {
+              ++index;
+            }
+          }
+        } else {
+          while (index < allActors.Count) {
+            if (allActors[index].UnaffectedPathing() == false) {
+              allActors.RemoveAt(index);
+            } else {
+              ++index;
+            }
           }
         }
-      } else {
-        while (index < allActors.Count) {
-          if (allActors[index].UnaffectedPathing() == false) {
-            allActors.RemoveAt(index);
-          } else {
-            ++index;
-          }
-        }
+      }catch(Exception e) {
+        Log.TWL(0, e.ToString(), true);
       }
       return true;
     }
@@ -1265,7 +1277,6 @@ namespace CustomUnits {
   [HarmonyPatch(new Type[] { typeof(float) })]
   public static class PathNodeGrid_GetGradeModifier {
     public static void Postfix(PathNodeGrid __instance, float grade, AbstractActor ___owningActor, ref float __result) {
-      //Log.LogWrite("PathNodeGrid.GetGradeModifier postfix " + ___owningActor.DisplayName + ":" + ___owningActor.GUID + " " + grade + "->" + __result + "\n");
       if (___owningActor.UnaffectedPathing()) {
         __result = 1f;
       }

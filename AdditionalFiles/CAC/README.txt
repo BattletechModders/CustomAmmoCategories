@@ -37,6 +37,7 @@ CACIncomingStabilityMult - float - multipicator for all incoming stability (weap
 
 {
 "debugLog":true, - enable debug log 
+"ImprovedBallisticByDefault": true - Default value for ImprovedBallistic flag if not set explicitly in weapon definition. Default true.
 "ShowEvasiveAsNumber": true, - if true near evasive pips bar its amount will be showed as number
 "EvasiveNumberFontSize" : 24 - font size for evasive pips count
 "EvasiveNumberWidth": 25 - size of background for evasive pips count. You should adjust this if changed font size. 
@@ -225,7 +226,9 @@ NOTE: Current values is my own vision of flame mechanics process, adjust them fo
       "Damage": 5
     }
   },
-  "TagAoEDamageMult": {      - AoE modifiers by unit's tags. Tags watching lists: for mechs: MechTags, ChassisTags; for vehicles: VehicleTags; for turrets: TurretTags
+  "TagAoEDamageMult": {      - AoE modifiers by unit's tags. Tags watching lists: for mechs: MechTags and ChassisTags; for vehicles: VehicleTags; for turrets: TurretTags
+							   Note: all unit types also use EncounterTags. This tags listed at contract definitions. 
+							   Also alternate representation switching can alter unit EncounterTags
     "aoe_increased_minor": {
       "Range": 1.2,
       "Damage": 1.2
@@ -287,6 +290,46 @@ NOTE: Current values is my own vision of flame mechanics process, adjust them fo
   "ShowApplyHeatSinkMessage": true - show floatie message on heatsinks appying.
   "AMSCantFireFloatie": false, - if true if AMS can't fire reason will be shown in floatie message
   "ShowJammChance": true - if true side panel will show jam chance calculation formula
+  "RemoveToHitModifiers":[] - list of to-hit modifiers to forbid 
+                              posible values
+								ranged only
+							        "RANGE"
+									"OBSTRUCTED"
+									"ARM MOUNTED"
+									"HEIGHT DIFF"
+									"FROM" - attacker design mask
+									"INTO" - target design mask
+									"TARGET MOVED"
+									"ATTACKER ACCURACY" - (SENSORS IMPAIRED/INSPIRED)
+									"REFIRE"
+									"SENSOR LOCK"
+									"INDIRECT FIRE"
+									"MORALE"
+									"DIRECT"
+									"TARGET TYPE"  - tags
+								both
+									"JUMPED"
+									"MOVED SELF"
+									"HEAT"
+									"STOOD UP"
+									"WEAPON ACCURACY"
+									"SPRINTED"
+									"WEAPON DAMAGED"
+									"DAMAGED" - location damaged
+									"DIRECTION" - flank/rear
+									"TARGET SIZE"
+									"TARGET SHUTDOWN"
+									"TARGET PRONE"
+									"ENEMY EFFECTS"
+								melee
+									"DEATH FROM ABOVE"
+									"CHASSIS BONUS"
+									"TERRAIN" - same as INTO for ranged
+									"MELEE ARM MOUNTED"
+									"MELEE HEIGHT DIFF"
+									"MELEE RECOIL"
+									"MELEE TARGET MOVED"
+
 }
 
 Weapon definition

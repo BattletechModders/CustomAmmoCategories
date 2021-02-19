@@ -1,6 +1,7 @@
 ﻿using BattleTech;
 using BattleTech.Data;
 using BattleTech.Rendering;
+using BattleTech.UI;
 using CustAmmoCategories;
 using Harmony;
 using Localize;
@@ -635,20 +636,31 @@ namespace CustomUnits {
   public static class MechRepresentation_PlayImpactAnimSquad {
     public static void Postfix(MechRepresentation __instance, WeaponHitInfo hitInfo, int hitIndex, Weapon weapon, MeleeAttackType meleeType, float cumulativeDamage) {
       try {
+        if (__instance == null) { return; }
         QuadLegsRepresentation quadLegsRepresentation = __instance.GetComponent<QuadLegsRepresentation>();
         if (quadLegsRepresentation != null) { return; }
         QuadRepresentation quadRepresentation = __instance.GetComponent<QuadRepresentation>();
         if (quadRepresentation != null) {
-          quadRepresentation.fLegsRep.LegsRep.PlayImpactAnim(hitInfo, hitIndex, weapon, meleeType, cumulativeDamage);
+          if (quadRepresentation.fLegsRep != null) {
+            if (quadRepresentation.fLegsRep.LegsRep != null) {
+              quadRepresentation.fLegsRep.LegsRep.PlayImpactAnim(hitInfo, hitIndex, weapon, meleeType, cumulativeDamage);
+            }
+          }
         }
-        AlternateMechRepresentations altReps = __instance.GetComponent<AlternateMechRepresentations>();
+        AlternateMechRepresentations altReps = null;
+        try { altReps = __instance.GetComponent<AlternateMechRepresentations>(); } catch (Exception) { altReps = null; }
         if (altReps != null) { altReps.PlayImpactAnim(hitInfo, hitIndex, weapon, meleeType, cumulativeDamage); }
-        TrooperSquad squad = __instance.parentMech as TrooperSquad;
+        TrooperSquad squad = null;
+        try { squad = __instance.parentMech as TrooperSquad; } catch(Exception) { squad = null; };
         if (squad == null) {
-          if (squad.MechReps.Contains(__instance)) { return; }
-          foreach (var sRep in squad.squadReps) {
-            if (squad.IsLocationDestroyed(sRep.Key)) { continue; }
-            sRep.Value.MechRep.PlayImpactAnim(hitInfo, hitIndex, weapon, meleeType, cumulativeDamage);
+          if (squad.MechReps != null) {
+            if (squad.MechReps.Contains(__instance)) { return; }
+            foreach (var sRep in squad.squadReps) {
+              if (squad.IsLocationDestroyed(sRep.Key)) { continue; }
+              if (sRep.Value == null) { continue; }
+              if (sRep.Value.MechRep == null) { continue; }
+              sRep.Value.MechRep.PlayImpactAnim(hitInfo, hitIndex, weapon, meleeType, cumulativeDamage);
+            }
           }
         }
       } catch (Exception e) {
@@ -797,6 +809,8 @@ namespace CustomUnits {
           quadRepresentation.fLegsRep.LegsRep.ForceKnockdown(attackDirection);
           __instance.parentActor.NoRandomIdles(true);
         }
+        AlternateMechRepresentations altReps = __instance.GetComponent<AlternateMechRepresentations>();
+        if (altReps != null) { altReps.ForceKnockdown(attackDirection); }
         TrooperSquad squad = __instance.parentMech as TrooperSquad;
         if (squad != null) {
           if (squad.MechReps.Contains(__instance)) { return; }
@@ -852,6 +866,8 @@ namespace CustomUnits {
         if (quadRepresentation != null) {
           quadRepresentation.fLegsRep.LegsRep.PlayJumpLaunchAnim();
         }
+        AlternateMechRepresentations altReps = __instance.GetComponent<AlternateMechRepresentations>();
+        if (altReps != null) { altReps.PlayJumpLaunchAnim(); }
         TrooperSquad squad = __instance.parentMech as TrooperSquad;
         if (squad != null) {
           if (squad.MechReps.Contains(__instance)) { return; }
@@ -878,6 +894,8 @@ namespace CustomUnits {
         if (quadRepresentation != null) {
           quadRepresentation.fLegsRep.LegsRep.PlayFallingAnim(direction);
         }
+        AlternateMechRepresentations altReps = __instance.GetComponent<AlternateMechRepresentations>();
+        if (altReps != null) { altReps.PlayFallingAnim(direction); }
         TrooperSquad squad = __instance.parentMech as TrooperSquad;
         if (squad != null) {
           if (squad.MechReps.Contains(__instance)) { return; }
@@ -904,6 +922,8 @@ namespace CustomUnits {
         if (quadRepresentation != null) {
           quadRepresentation.fLegsRep.LegsRep.UpdateJumpAirAnim(forward,side);
         }
+        AlternateMechRepresentations altReps = __instance.GetComponent<AlternateMechRepresentations>();
+        if (altReps != null) { altReps.UpdateJumpAirAnim(forward,side); }
         TrooperSquad squad = __instance.parentMech as TrooperSquad;
         if (squad != null) {
           if (squad.MechReps.Contains(__instance)) { return; }
@@ -930,6 +950,8 @@ namespace CustomUnits {
         if (quadRepresentation != null) {
           quadRepresentation.fLegsRep.LegsRep.PlayJumpLandAnim(isDFA);
         }
+        AlternateMechRepresentations altReps = __instance.GetComponent<AlternateMechRepresentations>();
+        if (altReps != null) { altReps.PlayJumpLandAnim(isDFA); }
         TrooperSquad squad = __instance.parentMech as TrooperSquad;
         if (squad != null) {
           if (squad.MechReps.Contains(__instance)) { return; }
@@ -1009,6 +1031,8 @@ namespace CustomUnits {
           quadRepresentation.fLegsRep.LegsRep.PlayShutdownAnim();
           __instance.parentActor.NoRandomIdles(true);
         }
+        AlternateMechRepresentations altReps = __instance.GetComponent<AlternateMechRepresentations>();
+        if (altReps != null) { altReps.PlayShutdownAnim(); }
         TrooperSquad squad = __instance.parentMech as TrooperSquad;
         if (squad != null) {
           if (squad.MechReps.Contains(__instance)) { return; }
@@ -1053,6 +1077,19 @@ namespace CustomUnits {
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { typeof(DeathMethod), typeof(int) })]
   public static class MechRepresentation_HandleDeathSquad {
+    public static bool Prefix(MechRepresentation __instance, DeathMethod deathMethod, int location) {
+      Log.TWL(0, "MechRepresentation.HandleDeath "+__instance.parentActor.DisplayName);
+      AlternateMechRepresentations altReps = __instance.GetComponent<AlternateMechRepresentations>();
+      if (altReps != null) {
+        Log.WL(1, "CanHandleDeath:"+ altReps.CanHandleDeath);
+        if (altReps.CanHandleDeath == false) {
+          altReps.DelayedHandleDeath(deathMethod, location); return false;
+        } else {
+          altReps.HandleDeath(deathMethod, location); return false;
+        }
+      }
+      return true;
+    }
     public static void Postfix(MechRepresentation __instance, DeathMethod deathMethod, int location) {
       try {
         QuadLegsRepresentation quadLegs = __instance.GetComponent<QuadLegsRepresentation>();
@@ -1062,6 +1099,7 @@ namespace CustomUnits {
           quadRepresentation.fLegsRep.LegsRep.HandleDeath(deathMethod, location);
           __instance.parentActor.NoRandomIdles(true);
         }
+
         //TrooperSquad squad = __instance.parentMech as TrooperSquad;
         //if (squad == null) { return; }
         //if (squad.MechReps.Contains(__instance)) { return; }
@@ -1570,6 +1608,138 @@ namespace CustomUnits {
         return;
       }
       return;
+    }
+  }
+  [HarmonyPatch(typeof(Mech))]
+  [HarmonyPatch("WorkingJumpjets")]
+  [HarmonyPatch(MethodType.Getter)]
+  [HarmonyPatch(new Type[] { })]
+  public static class Mech_WorkingJumpjets {
+    public static void Postfix(Mech __instance, ref int __result) {
+      try {
+        TrooperSquad squad = __instance as TrooperSquad;
+        if (squad != null) {
+          __result = squad.isHasWorkingJumpjets() ? 1 : 0;
+        }
+        if (__instance.GameRep != null) {
+          AlternateMechRepresentations altReps = __instance.GameRep.GetComponent<AlternateMechRepresentations>();
+          if (altReps != null) {
+            if (altReps.NoJumpjetsBlock == false) {
+              if (altReps.isHovering && (altReps.HoveringHeight > Core.Settings.MaxHoveringHeightWithWorkingJets)) { __result = 0; }
+            }
+          }
+        }
+      } catch (Exception e) {
+        Log.TWL(0, e.ToString(), true);
+      }
+    }
+  }
+  [HarmonyPatch(typeof(GameRepresentation))]
+  [HarmonyPatch("OnDestroy")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { })]
+  public static class GameRepresentation_OnDestroy {
+    public static bool Prefix(GameRepresentation __instance) {
+      try {
+        __instance.OnCombatGameDestroyed();
+        if ((UnityEngine.Object)__instance.audioObject != (UnityEngine.Object)null) {
+          AkSoundEngine.StopAll(__instance.audioObject.gameObject);
+        }
+        if (__instance.persistentVFXParticles != null) { __instance.persistentVFXParticles.Clear(); };
+        if (__instance.pilotRep != null) {
+          __instance.pilotRep.gameRep = (GameRepresentation)null;
+        }
+        __instance.pilotRep = (PilotRepresentation)null;
+        Traverse.Create(__instance).Field<PropertyBlockManager>("_propertyBlock").Value = (PropertyBlockManager)null;
+        if(__instance.renderers != null) __instance.renderers.Clear();
+        Traverse.Create(__instance).Field < ICombatant > ("_parentCombatant").Value = (ICombatant)null;
+        Traverse.Create(__instance).Field<AbstractActor>("_parentActor").Value = (AbstractActor)null;
+        return false;
+      } catch (Exception e) {
+        Log.TWL(0, e.ToString(), true);
+      }
+      return true;
+    }
+  }
+  [HarmonyPatch(typeof(SelectionStateJump))]
+  [HarmonyPatch("GetAllDFATargets")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { })]
+  public static class SelectionStateJump_GetAllDFATargets {
+    private static Dictionary<AbstractActor, bool> dfaForbiddenCache = new Dictionary<AbstractActor, bool>();
+    public static bool isDFAForbidden(this AbstractActor unit) {
+      if (dfaForbiddenCache.TryGetValue(unit, out bool result)) { return result; }
+      dfaForbiddenCache.Add(unit, false);
+      return false;
+    }
+    public static void isDFAForbidden(this AbstractActor unit, bool DFAForbidden) {
+      if (dfaForbiddenCache.ContainsKey(unit)) { dfaForbiddenCache[unit] = DFAForbidden; return; }
+      dfaForbiddenCache.Add(unit, DFAForbidden);
+    }
+    public static void Clear() {
+      dfaForbiddenCache.Clear();
+    }
+    public static void Postfix(SelectionStateJump __instance, ref List<ICombatant> __result) {
+      try {
+        if (__instance.SelectedActor.isDFAForbidden()) { __result.Clear(); }
+      } catch (Exception e) {
+        Log.TWL(0, e.ToString(), true);
+      }
+    }
+  }
+  [HarmonyPatch(typeof(Mech))]
+  [HarmonyPatch("CanDFATargetFromPosition")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { typeof(ICombatant), typeof(Vector3) })]
+  public static class Mech_CanDFATargetFromPosition {
+    public static void Postfix(Mech __instance, ICombatant target, Vector3 position, ref bool __result) {
+      try {
+        if(__result == true) { if (__instance.isDFAForbidden()) { __result = false; } }
+      } catch (Exception e) {
+        Log.TWL(0, e.ToString(), true);
+      }
+    }
+  }
+  [HarmonyPatch(typeof(Mech))]
+  [HarmonyPatch("GuardLevel")]
+  [HarmonyPatch(MethodType.Getter)]
+  [HarmonyPatch(new Type[] {  })]
+  public static class Mech_GuardLevel {
+    public static void Postfix(Mech __instance, ref int __result) {
+      try {
+        if (__result != 0) { if (__instance.isDFAForbidden()) { __result = 0; } }
+      } catch (Exception e) {
+        Log.TWL(0, e.ToString(), true);
+      }
+    }
+  }
+  //[HarmonyPatch(new Type[] { typeof(ICombatant), typeof(out string) })]
+  [HarmonyPatch()]
+  public static class Mech_CanEngageTarget {
+    public static MethodBase TargetMethod() {
+      List<MethodInfo> methods = AccessTools.GetDeclaredMethods(typeof(Mech));
+      Log.TWL(0, "Mech.CanEngageTarget searching");
+      foreach (MethodInfo info in methods) {
+        Log.WL(1, info.Name);
+        if (info.Name != "CanEngageTarget") { continue; }
+        ParameterInfo[] pars = info.GetParameters();
+        Log.WL(2, "params:"+pars.Length);
+        foreach (ParameterInfo pinfo in pars) { Log.WL(3, pinfo.ParameterType.ToString()); }
+        if (pars.Length == 2) {
+          return info;
+        }
+      }
+      return null;
+      //return AccessTools.Method(typeof(Mech), "OnLoadedWithText");
+    }
+    public static void Postfix(Mech __instance, ICombatant target, ref string debugMsg, ref bool __result) {
+      try {
+        if(__result == true) {
+          if ((__instance.UnaffectedPathing() == false) && (target.UnaffectedPathing() == true)) { __result = false; }
+        }
+      } catch (Exception e) {
+        Log.TWL(0, e.ToString(), true);
+      }
     }
   }
 }

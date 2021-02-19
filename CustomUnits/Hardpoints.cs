@@ -13,6 +13,7 @@ using System.Reflection.Emit;
 using System.Text;
 using System.Threading.Tasks;
 using UnityEngine;
+using static BattleTech.Data.DataManager;
 
 namespace CustomUnits {
   public class CustomHardpointDef {
@@ -21,6 +22,7 @@ namespace CustomUnits {
     public CustomVector rotate { get; set; }
     public float prefireAnimationLength { get; set; }
     public float fireAnimationLength { get; set; }
+    public string name { get; set; }
     public string prefab { get; set; }
     public string shaderSrc { get; set; }
     public List<string> keepShaderIn { get; set; }
@@ -29,6 +31,7 @@ namespace CustomUnits {
     public string preFireAnimation { get; set; }
     public HardpointAttachType attachType { get; set; }
     public List<string> fireEmitterAnimation { get; set; }
+    public string attachOverride { get; set; }
     public CustomHardpointDef() {
       emitters = new List<string>();
       fireEmitterAnimation = new List<string>();
@@ -41,6 +44,8 @@ namespace CustomUnits {
       prefireAnimationLength = 1f;
       fireAnimationLength = 1.5f;
       attachType = HardpointAttachType.None;
+      attachOverride = string.Empty;
+      name = string.Empty;
     }
   };
   public class HadrpointAlias {
@@ -70,7 +75,9 @@ namespace CustomUnits {
         if (definition["CustomHardpoints"] != null) {
           __state = definition["CustomHardpoints"].ToObject<CustomHardpoints>();
           foreach (CustomHardpointDef chd in __state.prefabs) {
-            CustomHardPointsHelper.Add(chd.prefab, chd);
+            if (string.IsNullOrEmpty(chd.name)) { chd.name = chd.prefab; }
+            if (string.IsNullOrEmpty(chd.name)) { continue; }
+            CustomHardPointsHelper.Add(chd.name, chd);
           }
           foreach (var alias in __state.aliases) {
             alias.Value.name = alias.Key;
@@ -412,7 +419,7 @@ namespace CustomUnits {
       return false;
     }*/
     public static void Postfix(HardpointDataDef hardpointDataDef, BaseComponentRef componentRef, string prefabBase, string location, ref List<string> usedPrefabNames, ref string __result) {
-      Log.WL(0, "MechHardpointRules.GetComponentPrefabName "+componentRef.ComponentDefID+" "+__result);
+      Log.WL(0, "MechHardpointRules.GetComponentPrefabName "+componentRef.ComponentDefID+ " prefabBase:"+ prefabBase + " location:"+ location + " " + __result);
       if (string.IsNullOrEmpty(__result)) {
         if(componentRef.Def.ComponentType == ComponentType.Weapon) {
           __result = "fake_weapon_prefab";
@@ -719,6 +726,8 @@ namespace CustomUnits {
           prefab = ___combat.DataManager.PooledInstantiate(customHardpoint.prefab, BattleTechResourceType.Prefab, new Vector3?(), new Quaternion?(), (Transform)null);
           if (prefab == null) {
             prefab = ___combat.DataManager.PooledInstantiate(prefabName, BattleTechResourceType.Prefab, new Vector3?(), new Quaternion?(), (Transform)null);
+          } else {
+            prefabName = customHardpoint.prefab;
           }
         } else {
           Log.LogWrite(1, prefabName + " have no custom hardpoint\n", true);
@@ -753,8 +762,8 @@ namespace CustomUnits {
                 Renderer shaderComponent = shaderPrefab.GetComponentInChildren<Renderer>();
                 if (shaderComponent != null) {
                   Log.LogWrite(1, "shader renderer found:" + shaderComponent.name + " material: " + shaderComponent.material.name + " shader:" + shaderComponent.material.shader.name + "\n");
-                  MeshRenderer[] renderers = prefab.GetComponentsInChildren<MeshRenderer>();
-                  foreach (MeshRenderer renderer in renderers) {
+                  Renderer[] renderers = prefab.GetComponentsInChildren<Renderer>();
+                  foreach (Renderer renderer in renderers) {
                     for (int mindex = 0; mindex < renderer.materials.Length; ++mindex) {
                       if (customHardpoint.keepShaderIn.Contains(renderer.gameObject.transform.name)) {
                         Log.LogWrite(2, "keep original shader: "+ renderer.gameObject.transform.name + "\n");
@@ -856,5 +865,85 @@ namespace CustomUnits {
       }
     }
   }
-
+  [HarmonyPatch(typeof(DataManager))]
+  [HarmonyPatch("Exists")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { typeof(BattleTechResourceType), typeof(string) })]
+  public static class DataManager_Exists {
+    public static void Prefix(DataManager __instance, BattleTechResourceType resourceType,ref string id) {
+      try {
+        if (resourceType != BattleTechResourceType.Prefab) { return; }
+        CustomHardpointDef customHardpoint = CustomHardPointsHelper.Find(id);
+        Log.TWL(0, "DataManager.Exists " + id + " -> " + (customHardpoint == null ? "null" : customHardpoint.prefab));
+        if (customHardpoint != null) { id = customHardpoint.prefab; }
+      } catch (Exception e) {
+        Log.TWL(0,e.ToString(),true);
+      }
+    }
+  }
+  [HarmonyPatch(typeof(DependencyLoadRequest))]
+  [HarmonyPatch("RequestResource")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { typeof(BattleTechResourceType), typeof(string) })]
+  public static class DependencyLoadRequest_RequestResource {
+    public static void Prefix(DependencyLoadRequest __instance, BattleTechResourceType type, ref string id) {
+      try {
+        if (type != BattleTechResourceType.Prefab) { return; }
+        CustomHardpointDef customHardpoint = CustomHardPointsHelper.Find(id);
+        Log.TWL(0, "DependencyLoadRequest.RequestResource " + id + " -> " + (customHardpoint == null ? "null" : customHardpoint.prefab));
+        if (customHardpoint != null) { id = customHardpoint.prefab; }
+      } catch (Exception e) {
+        Log.TWL(0, e.ToString(), true);
+      }
+    }
+  }
+  [HarmonyPatch(typeof(DependencyLoadRequest))]
+  [HarmonyPatch("Contains")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { typeof(BattleTechResourceType), typeof(string) })]
+  public static class DependencyLoadRequest_Contains {
+    public static void Prefix(DependencyLoadRequest __instance, BattleTechResourceType type,ref string resourceId) {
+      try {
+        if (type != BattleTechResourceType.Prefab) { return; }
+        CustomHardpointDef customHardpoint = CustomHardPointsHelper.Find(resourceId);
+        Log.TWL(0, "DependencyLoadRequest.Contains " + resourceId + " -> " + (customHardpoint == null ? "null" : customHardpoint.prefab));
+        if (customHardpoint != null) { resourceId = customHardpoint.prefab; }
+      } catch (Exception e) {
+        Log.TWL(0, e.ToString(), true);
+      }
+    }
+  }
+  [HarmonyPatch(typeof(DataManager))]
+  [HarmonyPatch("PooledInstantiate")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPriority(Priority.First)]
+  [HarmonyPatch(new Type[] { typeof(string), typeof(BattleTechResourceType), typeof(Vector3?), typeof(Quaternion?), typeof(Transform) })]
+  public static class DataManager_PooledInstantiate {
+    public static void Prefix(DataManager __instance,ref string id, BattleTechResourceType resourceType, Vector3? position, Quaternion? rotation, Transform parent) {
+      try {
+        if (resourceType != BattleTechResourceType.Prefab) { return; }
+        CustomHardpointDef customHardpoint = CustomHardPointsHelper.Find(id);
+        Log.TWL(0, "DataManager.PooledInstantiate " + id + " -> " + (customHardpoint == null ? "null" : customHardpoint.prefab));
+        if (customHardpoint != null) { id = customHardpoint.prefab; }
+      } catch (Exception e) {
+        Log.TWL(0, e.ToString(), true);
+      }
+    }
+  }
+  [HarmonyPatch(typeof(DataManager))]
+  [HarmonyPatch("PoolGameObject")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPriority(Priority.First)]
+  [HarmonyPatch(new Type[] { typeof(string), typeof(GameObject) })]
+  public static class DataManager_PoolGameObject {
+    public static void Prefix(DataManager __instance, ref string id, GameObject gameObj) {
+      try {
+        CustomHardpointDef customHardpoint = CustomHardPointsHelper.Find(id);
+        Log.TWL(0, "DataManager.PoolGameObject " + id + " -> " + (customHardpoint == null ? "null" : customHardpoint.prefab));
+        if (customHardpoint != null) { id = customHardpoint.prefab; }
+      } catch (Exception e) {
+        Log.TWL(0, e.ToString(), true);
+      }
+    }
+  }
 }

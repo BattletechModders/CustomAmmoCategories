@@ -136,8 +136,14 @@ namespace CustomUnits {
         axis.transform.localRotation = Quaternion.Euler(0f, 0f, 90f);
         axis.transform.localScale = new Vector3(1f, 6f, 1f);
       }
-      MechTurretAnimation mechTurret = this.parentRepresentation.GetComponentInChildren<MechTurretAnimation>(true);
-      if (mechTurret != null) { mechTurret.transform.SetParent(TurretAttach); };
+      if (TurretAttach != null) {
+        MechTurretAnimation mechTurret = this.parentRepresentation.GetComponentInChildren<MechTurretAnimation>(true);
+        if (mechTurret != null) {
+          mechTurret.transform.SetParent(TurretAttach);
+          mechTurret.transform.localPosition = Vector3.zero;
+          mechTurret.transform.localRotation = Quaternion.identity;
+        };
+      }
       if (this.DamageAnimator != null) {
         this.DamageAnimator.SetBool("RTDamage", this.parentRepresentation.mechRep.parentMech.RightTorsoDamageLevel != LocationDamageLevel.Destroyed);
         this.DamageAnimator.SetBool("LTDamage", this.parentRepresentation.mechRep.parentMech.LeftTorsoDamageLevel != LocationDamageLevel.Destroyed);

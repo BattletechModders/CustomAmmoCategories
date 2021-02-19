@@ -536,7 +536,7 @@ namespace CustAmmoCategories {
       AdditionalImpactVFX = string.Empty;
       ClearMineFieldRadius = 0;
       Cooldown = 0;
-      ImprovedBallistic = true;
+      ImprovedBallistic = CustomAmmoCategories.Settings.ImprovedBallisticByDefault;
       BallisticDamagePerPallet = TripleBoolean.NotSet;
       StatusEffectsPerHit = TripleBoolean.NotSet;
       AdditionalAudioEffect = string.Empty;

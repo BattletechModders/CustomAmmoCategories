@@ -1656,6 +1656,11 @@ namespace CustomUnits {
         ActorMovementSequence_InitDistanceClamp.Clear();
         VTOLBodyAnimationHelper.Clear();
         CombatHUDMechwarriorTray_RefreshTeam.Clear();
+        //AlternateRepresentationHelper.Clear();
+        TargetingCirclesHelper.Clear();
+        MoveClampHelper.Clear();
+        SelectionStateJump_GetAllDFATargets.Clear();
+        PathingHelper.Clear();
       } catch (Exception e) {
         Log.LogWrite(e.ToString() + "\n");
       }

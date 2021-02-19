@@ -22,6 +22,7 @@ namespace CustAmmoCategories {
       text = null;
     }
     public LocalizableText text { get; set; }
+    //public
     public void Init(CombatHUDEvasiveBarPips bar, CombatHUD HUD) {
       if (this.text == null) {
         GameObject textGO = new GameObject("EvasiveText");
@@ -40,6 +41,7 @@ namespace CustAmmoCategories {
         this.text.overflowMode = TextOverflowModes.Overflow;
         this.text.enableWordWrapping = false;
         this.text.alignment = TextAlignmentOptions.Center;
+        this.text.autoSizeTextContainer = true;
         LayoutElement lEl = textGO.AddComponent<LayoutElement>();
         lEl.minWidth = CustomAmmoCategories.Settings.EvasiveNumberWidth;
         lEl.minHeight = CustomAmmoCategories.Settings.EvasiveNumberHeight;

@@ -30,6 +30,12 @@ namespace CustomUnits {
     public string PrefabBase { get; set; }
     public string HoveringSoundStart { get; set; }
     public string HoveringSoundEnd { get; set; }
+    public string TransformationSound { get; set; }
+    public string MoveStartSound { get; set; }
+    public string MoveStopSound { get; set; }
+    public float MoveClamp { get; set; }
+    public bool NoJumpjetsBlock { get; set; }
+    public float MinJumpDistance { get; set; }
     public List<string> additionalEncounterTags { get; set; }
     public AlternateRepType Type { get; set; }
     public float FlyHeight { get; set; }
@@ -41,7 +47,13 @@ namespace CustomUnits {
       Type = AlternateRepType.Normal;
       HoveringSoundStart = "jet_start";
       HoveringSoundEnd = "jet_end";
+      TransformationSound = string.Empty;
+      MoveStartSound = string.Empty;
+      MoveStopSound = string.Empty;
       additionalEncounterTags = new List<string>();
+      MoveClamp = 0f;
+      NoJumpjetsBlock = false;
+      MinJumpDistance = 1f;
     }
     public AlternateRepresentationDef(MechDef def) {
       AdditionalPrefabs = new List<string>();
@@ -53,7 +65,13 @@ namespace CustomUnits {
       FlyHeight = 0f;
       HoveringSoundStart = string.Empty;
       HoveringSoundEnd = string.Empty;
+      TransformationSound = string.Empty;
+      MoveStartSound = string.Empty;
+      MoveStopSound = string.Empty;
       additionalEncounterTags = new List<string>();
+      UnitCustomInfo info = def.GetCustomInfo();
+      MoveClamp = info == null ? 0f : info.Unaffected.MoveClamp;
+      MinJumpDistance = info == null ? 1f : info.Unaffected.MinJumpDistance;
     }
   }
   public class AirMechRepresentationData {
@@ -97,9 +115,22 @@ namespace CustomUnits {
     public AlternateMechRepresentations parent { get; set; }
     public Dictionary<MechComponent, ComponentRepresentation> components { get; set; }
     public AlternateRepresentationDef def { get; set; }
+    public float DefaultFlyHeight { get; set; }
     public List<JumpjetRepresentation> verticalJets { get; set; }
     public List<GameObject> verticalJetsObjects { get; set; }
     public bool isVisible { get; set; }
+    public void HandleDeath(DeathMethod deathMethod, int location) {
+      if ((UnityEngine.Object)this.mechRep.VisibleObjectLight != (UnityEngine.Object)null) {
+        this.mechRep.VisibleObjectLight.SetActive(false);
+      }
+      this.mechRep.thisAnimator.SetTrigger("Death");
+      this.mechRep.OnDeath();
+      List<string> stringList = new List<string>((IEnumerable<string>)this.mechRep.persistentVFXParticles.Keys);
+      for (int index = stringList.Count - 1; index >= 0; --index)
+        this.mechRep.StopManualPersistentVFX(stringList[index]);
+      this.mechRep.IsDead = true;
+      this.mechRep.ToggleHeadlights(false);
+    }
     public AlternateMechRepresentation() {
       components = new Dictionary<MechComponent, ComponentRepresentation>();
       rate = 0.25f;
@@ -108,6 +139,7 @@ namespace CustomUnits {
       verticalJetsObjects = new List<GameObject>();
       meleeState = AltRepMeleeState.Idle;
       meleeRate = 1f;
+      DefaultFlyHeight = 0f;
     }
     public bool Inited { get; set; }
     public bool isBasic { get; set; }
@@ -143,10 +175,24 @@ namespace CustomUnits {
     public void StartMovement() {
       Log.TWL(0, "AlternateMechRepresentation.StartMovement " + this.gameObject.name);
       isMoving = true;
+      if (string.IsNullOrEmpty(this.def.MoveStartSound) == false) {
+        uint soundid = SceneSingletonBehavior<WwiseManager>.Instance.PostEventByName(this.def.MoveStartSound, this.parent.parentMech.GameRep.audioObject, (AkCallbackManager.EventCallback)null, (object)null);
+        Log.TWL(0, "StartMovement by id (" + def.MoveStartSound + "):" + soundid);
+      }
     }
     public void EndMovement() {
       Log.TWL(0, "AlternateMechRepresentation.EndMovement "+this.gameObject.name);
       isMoving = false;
+      if (string.IsNullOrEmpty(this.def.MoveStopSound) == false) {
+        uint soundid = SceneSingletonBehavior<WwiseManager>.Instance.PostEventByName(this.def.MoveStopSound, this.parent.parentMech.GameRep.audioObject, (AkCallbackManager.EventCallback)null, (object)null);
+        Log.TWL(0, "EndMovement by id (" + def.MoveStopSound + "):" + soundid);
+      }
+    }
+    public void PlayTransformSound() {
+      if (string.IsNullOrEmpty(this.def.TransformationSound) == false) {
+        uint soundid = SceneSingletonBehavior<WwiseManager>.Instance.PostEventByName(this.def.TransformationSound, this.parent.parentMech.GameRep.audioObject, (AkCallbackManager.EventCallback)null, (object)null);
+        Log.TWL(0, "PlayTransformSound by id (" + def.TransformationSound + "):" + soundid);
+      }
     }
     public void UpdateFlyingAnim(Vector3 forward) {
       Vector3 normalized = forward.normalized;
@@ -187,22 +233,28 @@ namespace CustomUnits {
     public void PlayStartAnimation() {
       Log.TWL(0, "AlternateMechRepresentation.PlayStartAnimation " + this.gameObject.name);
       HeightChangeState();
-      mechRep.SetMeleeIdleState(false);
-      foreach (GameObject jet in verticalJetsObjects) { jet.SetActive(true); }
-      foreach (JumpjetRepresentation jet in verticalJets) { jet.SetState(JumpjetRepresentation.JumpjetState.Launching); }
-      this.isJumping = true;
-      mechRep.StartJumpjetAudio();
-      mechRep.PlayVFXAt((Transform)null, mechRep.parentActor.CurrentPosition, (string)mechRep.Constants.VFXNames.jumpjet_launch, false, Vector3.zero, true, -1f);
+      if (DefaultFlyHeight > Core.Settings.MaxHoveringHeightWithWorkingJets) {
+        mechRep.SetMeleeIdleState(false);
+        if (this.isVisible) {
+          foreach (GameObject jet in verticalJetsObjects) { jet.SetActive(true); }
+          foreach (JumpjetRepresentation jet in verticalJets) { jet.SetState(JumpjetRepresentation.JumpjetState.Launching); }
+        }
+        this.isJumping = true;
+        mechRep.StartJumpjetAudio();
+        mechRep.PlayVFXAt((Transform)null, mechRep.parentActor.CurrentPosition, (string)mechRep.Constants.VFXNames.jumpjet_launch, false, Vector3.zero, true, -1f);
+      }
     }
     public void PlayLandAnimation() {
       this.isJumping = false;
       HeightSteadyState();
-      mechRep.StopJumpjetAudio();
-      foreach (GameObject jet in verticalJetsObjects) { jet.SetActive(false); }
+      if (DefaultFlyHeight > Core.Settings.MaxHoveringHeightWithWorkingJets) {
+        mechRep.StopJumpjetAudio();
+        foreach (GameObject jet in verticalJetsObjects) { jet.SetActive(false); }
+      }
     }
     public void Starting() {
       t = 0f;
-      rate = 0.25f;
+      rate = DefaultFlyHeight > Core.Settings.MaxHoveringHeightWithWorkingJets?0.25f:2f;
       this.state = AltRepState.Starting;
       isJumpjetsActive = true;
       PlayStartAnimation();
@@ -224,7 +276,9 @@ namespace CustomUnits {
       this.parent.parentMech.BlockComponentsActivation(true);
     }
     public void Flying() {
-      foreach (JumpjetRepresentation jet in verticalJets) { jet.SetState(JumpjetRepresentation.JumpjetState.Flight); }
+      if (DefaultFlyHeight > Core.Settings.MaxHoveringHeightWithWorkingJets) {
+        foreach (JumpjetRepresentation jet in verticalJets) { jet.SetState(JumpjetRepresentation.JumpjetState.Flight); }
+      }
       if (meleeState != AltRepMeleeState.Idle) {
         if (meleeT >= 1f) {
           if(meleeState == AltRepMeleeState.MeleeAnim) {
@@ -238,11 +292,11 @@ namespace CustomUnits {
           }
         } else {
           if (meleeState == AltRepMeleeState.ToHeight) {
-            j_Root.localPosition = Vector3.up * Mathf.Lerp(def.FlyHeight, targetHeight, meleeT);
+            j_Root.localPosition = Vector3.up * Mathf.Lerp(this.DefaultFlyHeight, targetHeight, meleeT);
           } else {
             meleeT += meleeRate * Time.deltaTime;
             if (meleeState == AltRepMeleeState.FromHeight) {
-              j_Root.localPosition = Vector3.up * Mathf.Lerp(targetHeight, def.FlyHeight, meleeT);
+              j_Root.localPosition = Vector3.up * Mathf.Lerp(targetHeight, this.DefaultFlyHeight, meleeT);
             }
           }
         }
@@ -263,6 +317,14 @@ namespace CustomUnits {
     public void Land() {
       PlayLandAnimation();
       isJumpjetsActive = false;
+      if (def.FlyHeight > Core.Settings.MaxHoveringHeightWithWorkingJets) {
+        DynamicMapHelper.calculateJumpDamage(this.parent.parentMech, this.parent.parentMech.CurrentPosition);
+        if (DynamicMapHelper.registredMineFieldDamage.ContainsKey(this.parent.parentMech) == false) { this.parent.parentMech.Combat.HandleSanitize(); return; };
+        MineFieldDamage mfDamage = DynamicMapHelper.registredMineFieldDamage[this.parent.parentMech];
+        mfDamage.resolveMineFiledDamage(this.parent.parentMech, -1);
+        DynamicMapHelper.registredMineFieldDamage.Remove(this.parent.parentMech);
+        this.parent.parentMech.Combat.HandleSanitize(true, true);
+      }
     }
     private AltRepMeleeState meleeState;
     private float meleeT;
@@ -295,17 +357,17 @@ namespace CustomUnits {
       }
       if (state == AltRepState.Starting) {
         if ((t >= 0.5f)&&(isJumpjetsActive)) { this.StopJumpjets(); };
-        if (t < 1.0f) { j_Root.localPosition = Vector3.up * Mathf.Lerp(0f, def.FlyHeight, t); } else {
+        if (t < 1.0f) { j_Root.localPosition = Vector3.up * Mathf.Lerp(0f, this.DefaultFlyHeight, t); } else {
           t = 0f; state = AltRepState.Flying;
           HeightSteadyState();
-          mechRep.StopJumpjetAudio();
+          if (DefaultFlyHeight > Core.Settings.MaxHoveringHeightWithWorkingJets) { mechRep.StopJumpjetAudio(); }
           this.StartHoverAudio();
           this.parent.parentMech.BlockComponentsActivation(false);
           while (endAnimationQueue.Count > 0) { endAnimationQueue.Dequeue().Invoke(); }
         }
       } else
       if (state == AltRepState.Falling) {
-        if (t < 1.0f) { j_Root.localPosition = Vector3.up * Mathf.Lerp(def.FlyHeight, 0f, t); } else {
+        if (t < 1.0f) { j_Root.localPosition = Vector3.up * Mathf.Lerp(this.DefaultFlyHeight, 0f, t); } else {
           t = 0f; state = AltRepState.Grounded;
           this.parent.parentMech.BlockComponentsActivation(false);
           this.Land();
@@ -429,6 +491,7 @@ namespace CustomUnits {
               JumpJetSrc = JumpJetSrcPrefab.transform.FindRecursive(Core.Settings.CustomJumpJetsPrefabSrcObjectName);
               Log.WL(2, "jumpJetSrc:" + (JumpJetSrc == null ? "null" : JumpJetSrc.name));
             }
+            this.DefaultFlyHeight = 0f;
             foreach (AirMechVerticalJetsDef vJet in def.AirMechVerticalJets) {
               Log.WL(3,"attach:"+vJet.Attach+" prefab:"+vJet.Prefab+ " JetsAttachPoints:"+vJet.JetsAttachPoints.Count);
               Transform attach = this.transform.FindRecursive(vJet.Attach);
@@ -441,6 +504,7 @@ namespace CustomUnits {
                 Log.WL(4, "jetSpwanPoint:"+ jetSpwanPoint);
                 Transform spawnJetPoint = vJetGO.transform.FindRecursive(jetSpwanPoint);
                 if (spawnJetPoint == null) { Log.WL(5, "spawnJetPoint is null"); continue; }
+                this.DefaultFlyHeight = def.FlyHeight;
                 GameObject jumpJetBase = new GameObject("jumpJet");
                 jumpJetBase.transform.SetParent(spawnJetPoint);
                 jumpJetBase.transform.localPosition = Vector3.zero;
@@ -620,17 +684,17 @@ namespace CustomUnits {
     public void SetVisible(bool isVisible, bool isGhost) {
       this.isVisible = isVisible;
       mechRep.VisibleObject.SetActive(isVisible);
-      //if (this.isBasic == false) {
-        mechRep.BlipObjectUnknown.SetActive(false);
-        mechRep.BlipObjectIdentified.SetActive(false);
-        mechRep.BlipObjectGhostWeak.SetActive(false);
-      //}
+      foreach (GameObject jet in verticalJetsObjects) { jet.SetActive(isVisible); }
+      mechRep.BlipObjectUnknown.SetActive(false);
+      mechRep.BlipObjectIdentified.SetActive(false);
+      mechRep.BlipObjectGhostWeak.SetActive(false);
       mechRep.BlipObjectGhostStrong.SetActive(isGhost);
       this.mainCollider.enabled = isVisible;
       if (mechRep.IsDead == false) {
         if (mechRep.VisibleLights != null) {
-          foreach (Behaviour visibleLight in mechRep.VisibleLights)
+          foreach (Behaviour visibleLight in mechRep.VisibleLights) {
             visibleLight.enabled = true;
+          }
         }
         if (mechRep.weaponReps != null) {
           for (int index = 0; index < mechRep.weaponReps.Count; ++index) {
@@ -698,10 +762,29 @@ namespace CustomUnits {
       if (this.state != AltRepState.Flying) { return; }
     }
   }
+  public enum PendingAnimationStyle {
+    None, PlayKnockdownAnim, ForceKnockdown, PlayShutdownAnim
+  }
   public class AlternateMechRepresentations : MonoBehaviour {
     public Statistic noRandomIdlesStat;
     public bool noRandomIdles;
     public bool allowRandomIdles;
+    private PendingAnimationStyle pendingAnimation;
+    private Vector2 pendingAnimationDir;
+    public float MoveClamp {
+      get {
+        if (CurrentRep < 0) { return 0f; }
+        if (CurrentRep >= mechReps.Count) { return 0f; }
+        return mechReps[CurrentRep].def.MoveClamp;
+      }
+    }
+    public float MinJumpDistance {
+      get {
+        if (CurrentRep < 0) { return 1f; }
+        if (CurrentRep >= mechReps.Count) { return 1f; }
+        return mechReps[CurrentRep].def.MinJumpDistance;
+      }
+    }
     public Mech parentMech { get; set; }
     public Statistic CurrentRepStat { get; set; }
     public int CurrentRep { get; set; }
@@ -728,6 +811,14 @@ namespace CustomUnits {
         if (altRep.def.Type == AlternateRepType.Normal) { return false; }
         if (altRep.state == AltRepState.Flying) { return true; }
         return false;
+      }
+    }
+    public bool NoJumpjetsBlock {
+      get {
+        if (CurrentRep < 0) { return true; }
+        if (CurrentRep >= mechReps.Count) { return true; }
+        AlternateMechRepresentation altRep = mechReps[CurrentRep];
+        return altRep.def.NoJumpjetsBlock;
       }
     }
     public float HoveringHeight {
@@ -818,15 +909,46 @@ namespace CustomUnits {
         altRep.mechRep.PlayComponentCritVFX(location);
       }
     }
-    public void PlayDeathVFX(DeathMethod deathMethod, int location) {
+    public bool CanHandleDeath {
+      get {
+        AlternateMechRepresentation altRep = mechReps[CurrentRep];
+        if (altRep.def.Type == AlternateRepType.Normal) { return true; }
+        if (altRep.state == AltRepState.Grounded) { return true; }
+        return false;
+      }
+    }
+    public void DelayedHandleDeath(DeathMethod deathMethod, int location) {
       AlternateMechRepresentation altRep = mechReps[CurrentRep];
       if (altRep.def.Type == AlternateRepType.Normal) {
-        altRep.mechRep.PlayDeathVFX(deathMethod, location);
+        return;
       } else if (altRep.state == AltRepState.Grounded) {
-        altRep.mechRep.PlayDeathVFX(deathMethod, location);
+        return;
       } else {
+        Log.TWL(0, "AlternateRepresentations.DelayedHandleDeath:"+this.parentMech.DisplayName);
         altRep.Landing();
-        altRep.pushQueue(altRep.mechRep, AccessTools.Method(typeof(MechRepresentation), "PlayDeathVFX"), new object[] { deathMethod, location });
+        altRep.pushQueue(this, AccessTools.Method(typeof(AlternateMechRepresentations), "HandleDeath"), new object[] { deathMethod, location });
+      }
+    }
+    public void HandleDeath(DeathMethod deathMethod, int location) {
+      Log.TWL(0, "AlternateRepresentations.HandleDeath:" + this.parentMech.DisplayName);
+      MechRepresentation mechRep = this.parentMech.GameRep;
+      if ((UnityEngine.Object)mechRep.VisibleObjectLight != (UnityEngine.Object)null) {
+        mechRep.VisibleObjectLight.SetActive(false);
+      }
+      mechRep.thisAnimator.SetTrigger("Death");
+      mechRep.OnDeath();
+      List<string> stringList = new List<string>((IEnumerable<string>)mechRep.persistentVFXParticles.Keys);
+      for (int index = stringList.Count - 1; index >= 0; --index) {
+        mechRep.StopManualPersistentVFX(stringList[index]);
+      }      
+      mechRep.IsDead = true;
+      mechRep.ToggleHeadlights(false);
+
+      AlternateMechRepresentation curRep = mechReps[CurrentRep];
+      curRep.mechRep.HandleDeath(deathMethod, location);
+      foreach (AlternateMechRepresentation altRep in mechReps) {
+        if (altRep == curRep) { continue; }
+        altRep.HandleDeath(deathMethod,location);
       }
     }
     public void PlayKnockdownAnim(Vector2 attackDirection) {
@@ -836,8 +958,10 @@ namespace CustomUnits {
       } else if (altRep.state == AltRepState.Grounded) {
         altRep.mechRep.PlayKnockdownAnim(attackDirection);
       } else {
-        altRep.Landing();
-        altRep.pushQueue(altRep.mechRep, AccessTools.Method(typeof(MechRepresentation), "PlayKnockdownAnim"), new object[] { attackDirection });
+        this.pendingAnimation = PendingAnimationStyle.PlayKnockdownAnim;
+        this.pendingAnimationDir = attackDirection;
+        //altRep.Landing();
+        //altRep.pushQueue(altRep.mechRep, AccessTools.Method(typeof(MechRepresentation), "PlayKnockdownAnim"), new object[] { attackDirection });
       }
     }
     public void PlayStandAnim() {
@@ -856,8 +980,33 @@ namespace CustomUnits {
       } else if (altRep.state == AltRepState.Grounded) {
         altRep.mechRep.ForceKnockdown(attackDirection);
       } else {
-        altRep.Landing();
-        altRep.pushQueue(altRep.mechRep, AccessTools.Method(typeof(MechRepresentation), "ForceKnockdown"), new object[] { attackDirection });
+        this.pendingAnimation = PendingAnimationStyle.ForceKnockdown;
+        this.pendingAnimationDir = attackDirection;
+        //altRep.Landing();
+        //altRep.pushQueue(altRep.mechRep, AccessTools.Method(typeof(MechRepresentation), "ForceKnockdown"), new object[] { attackDirection });
+      }
+    }
+    public void PlayShutdownAnim() {
+      AlternateMechRepresentation altRep = mechReps[CurrentRep];
+      if (altRep.def.Type == AlternateRepType.Normal) {
+        altRep.mechRep.PlayShutdownAnim();
+        this.pendingAnimation = PendingAnimationStyle.None;
+      } else if (altRep.state == AltRepState.Grounded) {
+        altRep.mechRep.PlayShutdownAnim();
+        this.pendingAnimation = PendingAnimationStyle.None;
+      } else {
+        this.pendingAnimation = PendingAnimationStyle.PlayShutdownAnim;
+        //altRep.Landing();
+        //altRep.pushQueue(altRep.mechRep, AccessTools.Method(typeof(MechRepresentation), "PlayShutdownAnim"), new object[] { });
+      }
+    }
+    public void PlayStartupAnim() {
+      AlternateMechRepresentation altRep = mechReps[CurrentRep];
+      if (altRep.def.Type == AlternateRepType.Normal) {
+        altRep.mechRep.PlayStartupAnim();
+      } else if (altRep.state == AltRepState.Grounded) {
+        altRep.mechRep.PlayStartupAnim();
+        altRep.Standing();
       }
     }
     public void PlayImpactAnim(WeaponHitInfo hitInfo, int hitIndex, Weapon weapon, MeleeAttackType meleeType, float cumulativeDamage) {
@@ -894,6 +1043,18 @@ namespace CustomUnits {
       foreach (AlternateMechRepresentation altRep in mechReps) {
         altRep.mechRep.PlayMeleeAnim(meleeHeight);
       }
+    }
+    public void PlayJumpLaunchAnim() {
+      currentAltRep.mechRep.PlayJumpLaunchAnim();
+    }
+    public void PlayFallingAnim(Vector2 direction) {
+      currentAltRep.mechRep.PlayFallingAnim(direction);
+    }
+    public void UpdateJumpAirAnim(float forward, float side) {
+      currentAltRep.mechRep.UpdateJumpAirAnim(forward,side);
+    }
+    public void PlayJumpLandAnim(bool isDFA) {
+      currentAltRep.mechRep.PlayJumpLandAnim(isDFA);
     }
     public void PlayMeleeAnim(ICombatant target, MeleeAttackType meleeType) {
       if ((meleeType == MeleeAttackType.Stomp)||(meleeType == MeleeAttackType.Tackle)) {
@@ -1114,6 +1275,9 @@ namespace CustomUnits {
     }
     private int pendingRepIndex;
     public void LateUpdate() {
+      if (this.parentMech == null) { return; }
+      if (this.parentMech.IsFlaggedForDeath) { return; }
+      if (this.parentMech.IsDead) { return; }
       if (CurrentRepStat != null) {
         if (pendingRepIndex != Mathf.RoundToInt(CurrentRepStat.Value<float>())) {
           CurrentRepChanged(CurrentRepStat);
@@ -1139,14 +1303,30 @@ namespace CustomUnits {
         this.parentMech.EncounterTags.Add(tag);
       }
     }
+    public void PlayPendingAnimations() {
+      if (this.pendingAnimation == PendingAnimationStyle.None) { return; }
+      PendingAnimationStyle animType = this.pendingAnimation;
+      this.pendingAnimation = PendingAnimationStyle.None;
+      switch (animType) {
+        case PendingAnimationStyle.PlayKnockdownAnim: this.PlayKnockdownAnim(this.pendingAnimationDir); break;
+        case PendingAnimationStyle.ForceKnockdown: this.ForceKnockdown(this.pendingAnimationDir); break;
+        case PendingAnimationStyle.PlayShutdownAnim: this.PlayShutdownAnim(); break;
+      }
+    }
     public void ChangeVisiblity(int repIndex) {
       if (repIndex < 0) { return; }
       if (repIndex >= mechReps.Count) { return; }
+      if (this.parentMech.IsDead) { return; }
+      if (this.parentMech.IsFlaggedForDeath) { return; }
       CurrentRep = repIndex;
       UpdateVisibility();
       mechReps[CurrentRep].RestorePrefabs(this.parentMech);
+      mechReps[CurrentRep].PlayTransformSound();
+      if (mechReps[CurrentRep].def.Type == AlternateRepType.Normal) { this.PlayPendingAnimations(); }
       ClearAllTags();
       AddCurrentTags();
+      MoveClampHelper.Clear(this.parentMech);
+      this.parentMech.isDFAForbidden((mechReps[CurrentRep].def.Type == AlternateRepType.AirMech) && (mechReps[CurrentRep].def.FlyHeight > Core.Settings.MaxHoveringHeightWithWorkingJets));
     }
     public void UpdateVisibility() {
       if (currentVisibilityLevel == VisibilityLevel.LOSFull || currentVisibilityLevel == VisibilityLevel.BlipGhost) {
@@ -1239,6 +1419,7 @@ namespace CustomUnits {
       }
     }
     public void Init(Mech mech) {
+      pendingAnimation = PendingAnimationStyle.None;
       currentVisibilityLevel = VisibilityLevel.None;
       noRandomIdlesStat = mech.StatCollection.GetStatistic(UnitUnaffectionsActorStats.NoRandomIdlesActorStat);
       if (noRandomIdlesStat == null) { noRandomIdlesStat = mech.StatCollection.AddStatistic<bool>(UnitUnaffectionsActorStats.NoRandomIdlesActorStat, mech.MechDef.Chassis.GetCustomInfo().NoIdleAnimations); }
@@ -1301,7 +1482,6 @@ namespace CustomUnits {
       Log.TWL(0, "Mech.InitGameRep posftix " + __instance.DisplayName + " " + __instance.GameRep.name);
       try {
         Mech_InitGameRepTurret.Postfix(__instance, parentTransform);
-
         AlternateMechRepresentations alternateRepresentations = __instance.GameRep.GetComponent<AlternateMechRepresentations>();
         if (alternateRepresentations == null) { Log.WL(1, "no AlternateMechRepresentations"); return; }
         if (__state == null) { Log.WL(1, "no state"); return; }
