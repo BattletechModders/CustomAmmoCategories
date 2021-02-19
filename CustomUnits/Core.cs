@@ -183,6 +183,7 @@ namespace CustomUnits{
     public string CustomHeadlightPrefabSrcObjectName { get; set; }
     public string FullTransparentMaterialSource { get; set; }
     public float MaxHoveringHeightWithWorkingJets { get; set; }
+    public float PartialMovementGuardDistance { get; set; }
     public CUSettings() {
       debugLog = false;
       DeathHeight = 1f;
@@ -261,6 +262,7 @@ namespace CustomUnits{
       CustomHeadlightPrefabSrcObjectName = "PtLight - Torso (3)";
       FullTransparentMaterialSource = "full_transparent";
       MaxHoveringHeightWithWorkingJets = 1f;
+      PartialMovementGuardDistance = 15f;
     }
 }
   public static partial class Core{

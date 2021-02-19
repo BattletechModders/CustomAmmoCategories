@@ -1,5 +1,6 @@
 ﻿using BattleTech;
 using BattleTech.UI;
+using CustAmmoCategories;
 using Harmony;
 using System;
 using System.Collections.Generic;
@@ -57,7 +58,7 @@ namespace CustomUnits {
     }
     public static void UpdateWaypoint(this AbstractActor unit, bool justStoodUp) {
       if (unit.Pathing == null) { return; }
-      if (unit.Pathing.CostLeft < 10f) { return; }
+      if (unit.Pathing.CostLeft < Core.Settings.PartialMovementGuardDistance) { return; }
       if (pathingStorage.TryGetValue(unit, out StoredPathing spath) == false) {
         spath = new StoredPathing(unit);
         spath.owner = unit;
@@ -191,6 +192,7 @@ namespace CustomUnits {
         if (__instance.HasTarget) { return true; }
         if (__instance.Orders != null || !__instance.SelectedActor.Pathing.ArePathGridsComplete || __instance.SelectedActor.HasFiredThisRound && !__instance.SelectedActor.CanMoveAfterShooting) { return true; }
         if (Input.GetKey(KeyCode.LeftShift) == false) { return true; }
+        if (__instance.SelectedActor.AllowPartialMovement() == false) { __result = false; return false; }
         __instance.SelectedActor.UpdateWaypoint(__instance.SelectedActor.StoodUpThisRound);
         __result = false;
         return false;

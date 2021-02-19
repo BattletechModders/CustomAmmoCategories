@@ -1034,6 +1034,7 @@ namespace CustAmmoCategories {
     public static readonly string AlternateRepresentationIndexActorStat = "CUAlternateRepresentationIndex";
     public static readonly string BlockComponentsActivationActorStat = "CUBlockComponentsActivation";
     public static readonly string FiringArcActorStat = "CUFiringArc";
+    public static readonly string AllowPartialMovementActorStat = "CUAllowPartialMovement";
     public static float FiringArc(this ICombatant unit) {
       if (unit.StatCollection.ContainsStatistic(FiringArcActorStat) == false) { return 0f; };
       return unit.StatCollection.GetStatistic(FiringArcActorStat).Value<float>();
@@ -1129,6 +1130,16 @@ namespace CustAmmoCategories {
         unit.StatCollection.AddStatistic<bool>(NoRandomIdlesActorStat, false);
       };
       unit.StatCollection.GetStatistic(NoRandomIdlesActorStat).SetValue<bool>(value);
+    }
+    public static bool AllowPartialMovement(this ICombatant unit) {
+      if (unit.StatCollection.ContainsStatistic(AllowPartialMovementActorStat) == false) { return false; };
+      return unit.StatCollection.GetStatistic(AllowPartialMovementActorStat).Value<bool>();
+    }
+    public static void AllowPartialMovement(this ICombatant unit, bool value) {
+      if (unit.StatCollection.ContainsStatistic(AllowPartialMovementActorStat) == false) {
+        unit.StatCollection.AddStatistic<bool>(AllowPartialMovementActorStat, false);
+      };
+      unit.StatCollection.GetStatistic(AllowPartialMovementActorStat).SetValue<bool>(value);
     }
   }
   public class AoEModifiers {

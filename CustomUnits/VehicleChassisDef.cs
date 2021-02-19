@@ -199,6 +199,7 @@ namespace CustomUnits {
     public bool Fire { get; set; }
     public bool Landmines { get; set; }
     public float MinJumpDistance { get; set; }
+    public bool AllowPartialMovement { get; set; }
     public float MoveClamp {
       get {
         if (Pathing && (FMoveClamp < MinMoveClamp)) { return MinMoveClamp; }
@@ -216,6 +217,7 @@ namespace CustomUnits {
       Landmines = false;
       MoveCostBiome = false;
       FMoveClamp = 0f;
+      AllowPartialMovement = true;
     }
     public void debugLog(int initiation) {
       Log.LogWrite(initiation, "DesignMasks:" + DesignMasks, true);
@@ -1064,10 +1066,16 @@ namespace CustomUnits {
       UnitCustomInfo info = __instance.GetCustomInfo();
       if (info == null) {
         Log.LogWrite(" no custom info\n");
+        if (__instance.StatCollection.ContainsStatistic(UnitUnaffectionsActorStats.AllowPartialMovementActorStat) == false) {
+          __instance.StatCollection.AddStatistic<bool>(UnitUnaffectionsActorStats.AllowPartialMovementActorStat, true);
+        }
         return;
       }
       if (__instance.StatCollection.ContainsStatistic(UnitUnaffectionsActorStats.DesignMasksActorStat) == false) {
         __instance.StatCollection.AddStatistic<bool>(UnitUnaffectionsActorStats.DesignMasksActorStat, info.Unaffected.DesignMasks);
+      }
+      if (__instance.StatCollection.ContainsStatistic(UnitUnaffectionsActorStats.AllowPartialMovementActorStat) == false) {
+        __instance.StatCollection.AddStatistic<bool>(UnitUnaffectionsActorStats.AllowPartialMovementActorStat, info.Unaffected.AllowPartialMovement);
       }
       if (__instance.StatCollection.ContainsStatistic(UnitUnaffectionsActorStats.PathingActorStat) == false) {
         __instance.StatCollection.AddStatistic<bool>(UnitUnaffectionsActorStats.PathingActorStat, info.Unaffected.Pathing);
