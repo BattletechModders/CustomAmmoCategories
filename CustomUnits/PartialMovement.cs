@@ -148,16 +148,24 @@ namespace CustomUnits {
   public static class Pathing_UpdateMeleePath {
     private static Vector3 resultDest = Vector3.zero;
     public static void Postfix(Pathing __instance, bool calledFromUI) {
-      float dist = Vector3.Distance(__instance.ResultDestination, resultDest);
-      bool show = dist > 1f;
-      resultDest = __instance.ResultDestination;
-      if (show) Log.TWL(0, "Pathing.UpdateMeleePath " + __instance.OwningActor.DisplayName + " " + __instance.OwningActor.CurrentPosition + " origin:" + __instance.CurrentGrid.WorldPosOrigin);
-      if (show && (__instance.CurrentPath != null)) foreach (PathNode node in __instance.CurrentPath) { Log.WL(1, node.Position.ToString()); }
-      if (show) Log.WL(1, "dest:"+__instance.ResultDestination.ToString());
-      __instance.PrependStoredPath(ref __instance.CurrentPath);
-      if (show) {
-        Log.WL(1, "fullpath:");
-        foreach (PathNode node in __instance.CurrentPath) { Log.WL(2,node.Position.ToString()); }
+      try
+      {
+        float dist = Vector3.Distance(__instance.ResultDestination, resultDest);
+        bool show = dist > 1f;
+        resultDest = __instance.ResultDestination;
+        if (show) Log.TWL(0, "Pathing.UpdateMeleePath " + __instance.OwningActor.DisplayName + " " + __instance.OwningActor.CurrentPosition + " origin:" + __instance.CurrentGrid.WorldPosOrigin);
+        if (show && (__instance.CurrentPath != null)) foreach (PathNode node in __instance.CurrentPath) { Log.WL(1, node.Position.ToString()); }
+        if (show) Log.WL(1, "dest:" + __instance.ResultDestination.ToString());
+        __instance.PrependStoredPath(ref __instance.CurrentPath);
+        if (show)
+        {
+            Log.WL(1, "fullpath:");
+            if (__instance.CurrentPath != null) foreach (PathNode node in __instance.CurrentPath) { Log.WL(2, node.Position.ToString()); }
+        }
+      }
+      catch (Exception e)
+      {
+        Log.WL("Pathing.UpdateMeleePath failed due to error:" + e.Message);
       }
     }
   }
