@@ -234,7 +234,7 @@ namespace Sheepy.Reflector {
 
       // ============ Helpers ============
 
-      public string NormaliseQuery ( string query ) {
+      new public string NormaliseQuery ( string query ) {
          if ( string.IsNullOrEmpty( query ) ) return null;
          return Regex.Replace( query, "\\s+", "" );
       }

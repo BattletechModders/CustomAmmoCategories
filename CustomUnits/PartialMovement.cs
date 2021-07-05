@@ -11,12 +11,16 @@ namespace CustomUnits {
     public AbstractActor owner { get; set; }
     public List<PathNode> Path { get; set; }
     public float FullInitalMovement { get; set; }
-    public float FullMovementSpent { get; set; }
+    public float FullMovementSpent {
+      get {
+        return owner.PartialMovementSpent();
+      }
+    }
     public StoredPathing(AbstractActor o) {
       this.owner = o;
       Path = new List<PathNode>();
       FullInitalMovement = o.Pathing.MaxCost;
-      FullMovementSpent = 0f;
+      //FullMovementSpent = 0f;
     }
   }
   public static class PathingHelper {
@@ -26,6 +30,7 @@ namespace CustomUnits {
     }
     public static void ClearStoredPathing(this AbstractActor unit) {
       Log.TWL(0, "PathingHelper.ClearStoredPathing "+unit.DisplayName);
+      unit.PartialMovementSpent(0f);
       pathingStorage.Remove(unit);
     }
     public static void Clear() {
@@ -67,9 +72,9 @@ namespace CustomUnits {
       Log.TWL(0, "PathingHelper.UpdateWaypoint "+unit.DisplayName + " " + unit.CurrentPosition);
       spath.Path.Clear();
       if(unit.Pathing.CurrentPath != null) spath.Path.AddRange(unit.Pathing.CurrentPath);
-      spath.FullMovementSpent += (unit.Pathing.MaxCost - unit.Pathing.CostLeft);
+      unit.PartialMovementSpent(unit.PartialMovementSpent() + (unit.Pathing.MaxCost - unit.Pathing.CostLeft));
       foreach (PathNode node in spath.Path) { Log.WL(1,node.Position.ToString()); }
-      Log.WL(1,"rest path:"+unit.RestPathingModifier());
+      Log.WL(1,"rest path: "+unit.RestPathingModifier()+ " MaxCost:" + unit.Pathing.MaxCost+ " CostLeft:"+ unit.Pathing.CostLeft+ " PartialMovementSpent:" + unit.PartialMovementSpent());
       unit.Pathing.ResetPathGrid(unit.Pathing.ResultDestination, unit.Pathing.ResultAngle, unit, justStoodUp);
       unit.Combat.PathingManager.AddPathing(unit.Pathing);
     }
@@ -125,6 +130,7 @@ namespace CustomUnits {
     private static Vector3 resultDest = Vector3.zero;
     public static void Postfix(Pathing __instance, bool calledFromUI) {
       try {
+        if (__instance == null) { return; }
         float dist = Vector3.Distance(__instance.ResultDestination, resultDest);
         bool show = dist > 1f;
         resultDest = __instance.ResultDestination;
@@ -148,16 +154,21 @@ namespace CustomUnits {
   public static class Pathing_UpdateMeleePath {
     private static Vector3 resultDest = Vector3.zero;
     public static void Postfix(Pathing __instance, bool calledFromUI) {
-      float dist = Vector3.Distance(__instance.ResultDestination, resultDest);
-      bool show = dist > 1f;
-      resultDest = __instance.ResultDestination;
-      if (show) Log.TWL(0, "Pathing.UpdateMeleePath " + __instance.OwningActor.DisplayName + " " + __instance.OwningActor.CurrentPosition + " origin:" + __instance.CurrentGrid.WorldPosOrigin);
-      if (show && (__instance.CurrentPath != null)) foreach (PathNode node in __instance.CurrentPath) { Log.WL(1, node.Position.ToString()); }
-      if (show) Log.WL(1, "dest:"+__instance.ResultDestination.ToString());
-      __instance.PrependStoredPath(ref __instance.CurrentPath);
-      if (show) {
-        Log.WL(1, "fullpath:");
-        foreach (PathNode node in __instance.CurrentPath) { Log.WL(2,node.Position.ToString()); }
+      try {
+        if (__instance == null) { return; }
+        float dist = Vector3.Distance(__instance.ResultDestination, resultDest);
+        bool show = dist > 1f;
+        resultDest = __instance.ResultDestination;
+        if (show) Log.TWL(0, "Pathing.UpdateMeleePath " + __instance.OwningActor.DisplayName + " " + __instance.OwningActor.CurrentPosition + " origin:" + __instance.CurrentGrid.WorldPosOrigin);
+        if (show && (__instance.CurrentPath != null)) foreach (PathNode node in __instance.CurrentPath) { Log.WL(1, node.Position.ToString()); }
+        if (show) Log.WL(1, "dest:"+__instance.ResultDestination.ToString());
+        __instance.PrependStoredPath(ref __instance.CurrentPath);
+        if (show) {
+          Log.WL(1, "fullpath:");
+          foreach (PathNode node in __instance.CurrentPath) { Log.WL(2,node.Position.ToString()); }
+        }
+      } catch (Exception e) {
+        Log.TWL(0, e.ToString(), true);
       }
     }
   }
@@ -192,7 +203,13 @@ namespace CustomUnits {
         if (__instance.HasTarget) { return true; }
         if (__instance.Orders != null || !__instance.SelectedActor.Pathing.ArePathGridsComplete || __instance.SelectedActor.HasFiredThisRound && !__instance.SelectedActor.CanMoveAfterShooting) { return true; }
         if (Input.GetKey(KeyCode.LeftShift) == false) { return true; }
+        if(Core.Settings.AllowPartialMove == false) { __result = false; return false; }
         if (__instance.SelectedActor.AllowPartialMovement() == false) { __result = false; return false; }
+        if (__instance.SelectedActor.MoveClamp() > Core.Epsilon) { __result = false; return false; }
+        if (__instance.SelectedActor.Pathing.MoveType == MoveType.Sprinting) {
+          if (Core.Settings.AllowPartialSprint == false) { __result = false; return false; }
+          if (__instance.SelectedActor.AllowPartialSprint() == false) { __result = false; return false; }
+        }
         __instance.SelectedActor.UpdateWaypoint(__instance.SelectedActor.StoodUpThisRound);
         __result = false;
         return false;
@@ -248,6 +265,28 @@ namespace CustomUnits {
       try {
         if (__result == true) { return; }
         if (__instance.SelectedActor.HasStoredPathing()) { __result = true; }
+      } catch (Exception e) {
+        Log.TWL(0, e.ToString(), true);
+      }
+    }
+  }
+  [HarmonyPatch(typeof(JumpPathing))]
+  [HarmonyPatch("UpdateCurrentPath")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { })]
+  public static class JumpPathing_UpdateCurrentPath {
+    public static void Prefix(JumpPathing __instance, ref float __state) {
+      try {
+        if (Traverse.Create(__instance).Property<Mech>("Mech").Value.AllowRotateWhileJump()) { return; }
+        if (__instance.IsLockedToDest) { __state = __instance.ResultAngle; }
+      } catch (Exception e) {
+        Log.TWL(0, e.ToString(), true);
+      }
+    }
+    public static void Postfix(JumpPathing __instance, ref float __state) {
+      try {
+        if (Traverse.Create(__instance).Property<Mech>("Mech").Value.AllowRotateWhileJump()) { return; }
+        if (__instance.IsLockedToDest) { __instance.ResultAngle = __state; }
       } catch (Exception e) {
         Log.TWL(0, e.ToString(), true);
       }

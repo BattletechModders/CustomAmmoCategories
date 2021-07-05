@@ -202,23 +202,123 @@ namespace CustomUnits {
   public class AttachInfoRecord {
     public string visuals { get; set; }
     public string animator { get; set; }
+    public Dictionary<string, float> Animators { get; set; }
+    public string Name { get; set; }
     public string attach { get; set; }
+    public string location { get; set; }
+    public HardpointAttachType type { get; set; }
     public bool hideIfEmpty { get; set; }
     public bool noRecoil { get; set; }
-    public AttachInfoRecord() { visuals = string.Empty; animator = string.Empty ; attach = string.Empty; hideIfEmpty = false; noRecoil = false; }
+    public AttachInfoRecord() { visuals = string.Empty; animator = string.Empty; Animators = new Dictionary<string, float>(); attach = string.Empty; hideIfEmpty = false; noRecoil = false; }
   }
+  public class AttachInfoAnimator {
+    public bool HasRecoil { get; protected set; }
+    public bool HasVertical { get; protected set; }
+    public bool HasVerticalUp { get; protected set; }
+    public bool HasIndirect { get; protected set; }
+    public bool HasNormal { get; protected set; }
+    public bool HasEmiterIndex { get; protected set; }
+    private int RecoilHash;
+    private int VerticalHash;
+    private int VerticalUpHash;
+    private int IndirectHash;
+    private int NormalHash;
+    private int EmiterIndexHash;
+    public float animationRate;
+    public Animator animator { get; protected set; }
+    public float Recoil {
+      set {
+        if (this.animator == null) { return; }
+        if (this.HasRecoil == false) { return; }
+        animator.SetFloat(RecoilHash, value);
+      }
+    }
+    public float ToFireNormal {
+      set {
+        if (this.animator == null) { return; }
+        if (this.HasNormal == false) { return; }
+        animator.SetFloat(NormalHash, value);
+        Log.TWL(0, animator.gameObject.name + " NormalHash" + value);
+      }
+    }
+    public float Indirect {
+      set {
+        if (this.animator == null) { return; }
+        if (this.HasIndirect == false) { return; }
+        animator.SetFloat(IndirectHash, value);
+      }
+    }
+    public float Vertical {
+      set {
+        if (this.animator == null) { return; }
+        if (this.HasVertical == false) { return; }
+        animator.SetFloat(VerticalHash, value);
+        Log.TWL(0,animator.gameObject.name+ " VerticalHash"+value);
+      }
+    }
+    public float VerticalUp {
+      set {
+        if (this.animator == null) { return; }
+        if (this.HasVerticalUp == false) { return; }
+        animator.SetFloat(VerticalUpHash, value);
+      }
+    }
+    public int EmiterIndex {
+      set {
+        if (this.animator == null) { return; }
+        if (this.HasEmiterIndex == false) { return; }
+        animator.SetInteger(EmiterIndexHash, value);
+      }
+    }
+    public AttachInfoAnimator(Animator anim, float rate) {
+      this.animator = anim;
+      this.animationRate = rate;
+      HasRecoil = false;
+      HasVertical = false;
+      HasIndirect = false;
+      HasNormal = false;
+      HasEmiterIndex = false;
+      HasVerticalUp = false;
+      RecoilHash = Animator.StringToHash("recoil");
+      VerticalHash = Animator.StringToHash("vertical"); ;
+      VerticalUpHash = Animator.StringToHash("vertical_up"); ;
+      IndirectHash = Animator.StringToHash("indirect"); ;
+      NormalHash = Animator.StringToHash("to_fire_normal"); ;
+      EmiterIndexHash = Animator.StringToHash("emiter_index"); ;
+      if (this.animator != null) {
+        AnimatorControllerParameter[] parameters = this.animator.parameters;
+        for (int index = 0; index < parameters.Length; ++index) {
+          if (parameters[index].nameHash == this.RecoilHash)
+            this.HasRecoil = true;
+          if (parameters[index].nameHash == this.VerticalHash)
+            this.HasVertical = true;
+          if (parameters[index].nameHash == this.VerticalUpHash)
+            this.HasVerticalUp = true;
+          if (parameters[index].nameHash == this.IndirectHash)
+            this.HasIndirect = true;
+          if (parameters[index].nameHash == this.NormalHash)
+            this.HasNormal = true;
+          if (parameters[index].nameHash == this.EmiterIndexHash)
+            this.HasEmiterIndex = true;
+        }
+      }
+
+    }
+  };
   public class AttachInfo {
     private static HashSet<Animator> AnimatorsInPosition = new HashSet<Animator>();
-    public VTOLBodyAnimation parent { get; private set; }
+    //public VTOLBodyAnimation parent { get; private set; }
     public string location { get; private set; }
+    public string Name { get; set; }
     public HardpointAttachType type { get; private set; }
     public Transform main { get; private set; }
     public Transform attach { get; private set; }
-    public Animator animator { get; private set; }
+    public HashSet<AttachInfoAnimator> animators { get; private set; }
     public bool hideIfEmpty { get; private set; }
     public bool noRecoil { get; private set; }
     private float recoilValue;
     private float recoilDelta;
+    public float RecoilValue { set { foreach(AttachInfoAnimator anim in animators) { anim.Recoil = value; } } }
     public void Update(float t) {
       if(recoilDelta == 0f) { return; };
       recoilValue += recoilDelta * t;
@@ -230,54 +330,100 @@ namespace CustomUnits {
         recoilValue = 1f; recoilDelta = -1f;
         Log.TWL(0, "AttachInfo.Recoiled " + main.name + " down");
       };
-      animator.SetFloat("recoil",recoilValue);
+      this.RecoilValue = recoilValue;
+      //animator.SetFloat("recoil",recoilValue);
     }
     public void Recoil() {
-      Log.TWL(0, "AttachInfo.Recoil:"+main.name+" no recoil:"+noRecoil);
-      if (noRecoil == false) { recoilDelta = 10f; }
+      try {
+        Log.TWL(0, "AttachInfo.Recoil:" + main.name + " no recoil:" + noRecoil);
+        if (noRecoil == false) { recoilDelta = 10f; }
+      }catch(Exception e) {
+        Log.TWL(0, "AttachInfo.Recoil "+this.Name+" exception:"+e.ToString(), true);
+      }
     }
-    public List<MechComponent> weapons { get; private set; }
+    public HashSet<MechComponent> weapons { get; private set; }
     public List<ComponentRepresentation> bayComponents { get; private set; }
-    public void Prefire(Vector3 target,bool indirect) {
-      Log.WL(1, "AttachInfo.Prefire animator:"+(animator==null?"null":"not null"));
-      if (animator == null) { return; }
-      bool inPos = AnimatorsInPosition.Contains(animator);
-      if (inPos) { return; }
-      if (indirect) {
-        animator.SetFloat("to_fire_normal", 0.98f);
-        animator.SetFloat("indirect", 1f);
-        AnimatorsInPosition.Add(animator);
-      } else {
-        animator.SetFloat("indirect", 0.98f);
-        animator.SetFloat("to_fire_normal",1f);
-        if (this.attach != null) {
-          Vector3 desiredLookDirection = target - attach.position;
-          float angle = NvMath.AngleSigned(attach.forward, desiredLookDirection.normalized, Vector3.right);
-          Log.WL(2, "angle:" + angle);
-          angle /= 90f;
-          Log.WL(2, "vertical anim:" + angle);
-          if (angle < 0f) { angle = 0f; }
-          animator.SetFloat("vertical", angle);
+    public void Prefire(Weapon weapon,Vector3 target,bool indirect) {
+      Log.WL(1, "AttachInfo.Prefire");
+      foreach (AttachInfoAnimator anim in this.animators) {
+        if (anim.animator == null) { continue; }
+        Log.WL(2, "animator:"+anim.animator.name);
+        bool inPos = AnimatorsInPosition.Contains(anim.animator);
+        if (inPos) { continue; }
+        if (indirect) {
+          anim.ToFireNormal = 0.98f;
+          anim.Indirect = 1f;
         } else {
-          animator.SetFloat("vertical", 0.5f);
+          anim.ToFireNormal = 1f;
+          anim.Indirect = 0.98f;
+          if (this.attach != null) {
+            //Vector3 desiredLookDirection = target - attach.position;
+            Vector3 firePosition = weapon.parent.CurrentPosition + Vector3.up * weapon.parent.FlyingHeight();
+            float distance = Vector3.Distance(firePosition, target);
+            float heightDiff = target.y - firePosition.y;
+            float angle = (heightDiff > 0f?1f:-1f)* Mathf.Acos(Mathf.Abs(heightDiff)/distance) * Mathf.Rad2Deg;
+            //float angle = NvMath.AngleSigned(attach.forward, desiredLookDirection.normalized, Vector3.right);
+            Log.WL(3, "angle:" + angle);
+            angle /= 90f;
+            Log.WL(3, "vertical anim:" + angle);
+            //if (angle < 0f) { angle = 0f; }
+            if (angle < 0f) {
+              anim.VerticalUp = angle;
+              anim.VerticalUp = 0f;
+            } else {
+              anim.Vertical = 0f;
+              anim.VerticalUp = Mathf.Abs(angle);
+            }
+          } else {
+            anim.Vertical = 0.5f;
+            anim.VerticalUp = 0f;
+          }
         }
-        AnimatorsInPosition.Add(animator);
+        AnimatorsInPosition.Add(anim.animator);
       }
     }
     public void Postfire() {
-      Log.WL(1, "AttachInfo.Postfire animator:" + (animator == null ? "null" : "not null"));
-      if (animator == null) { return; }
-      animator.SetFloat("to_fire_normal", 0.98f);
-      animator.SetFloat("indirect", 0.98f);
-      AnimatorsInPosition.Remove(animator);
+      Log.WL(1, "AttachInfo.Postfire animator");
+      foreach (AttachInfoAnimator anim in this.animators) {
+        if (anim.animator == null) { continue; }
+        Log.WL(2, "animator:" + anim.animator.name);
+        anim.ToFireNormal = 0.98f;
+        anim.Indirect = 0.98f;
+        AnimatorsInPosition.Remove(anim.animator);
+      }
+    }
+    public void AddHardpointAnimators(WeaponRepresentation weaponRep) {
+      CustomHardpointRepresentation customHardpointRep = weaponRep.gameObject.GetComponent<CustomHardpointRepresentation>();
+      if (customHardpointRep == null) { return; }
+      if (customHardpointRep.def == null) { return; }
+      foreach (var anim in customHardpointRep.def.animators) {
+        Transform animTR = weaponRep.transform.FindRecursive(anim.Key);
+        if (animTR == null) { continue; }
+        Animator animAnimator = animTR.GetComponent<Animator>();
+        if (animAnimator == null) { continue; }
+        this.animators.Add(new AttachInfoAnimator(animAnimator, anim.Value));
+      }
+    }
+    public void AddHardpointAnimators(ComponentRepresentation compRep) {
+      CustomHardpointRepresentation customHardpointRep = compRep.gameObject.GetComponent<CustomHardpointRepresentation>();
+      if (customHardpointRep == null) { return; }
+      if (customHardpointRep.def == null) { return; }
+      foreach (var anim in customHardpointRep.def.animators) {
+        Transform animTR = compRep.transform.FindRecursive(anim.Key);
+        if (animTR == null) { continue; }
+        Animator animAnimator = animTR.GetComponent<Animator>();
+        if (animAnimator == null) { continue; }
+        this.animators.Add(new AttachInfoAnimator(animAnimator, anim.Value));
+      }
     }
     public AttachInfo(VTOLBodyAnimation parent, string location, HardpointAttachType type, AttachInfoRecord rec) {
-      this.parent = parent;
+      //this.parent = parent;
+      this.animators = new HashSet<AttachInfoAnimator>();
       this.location = location;
       this.type = type;
       main = parent.transform.FindRecursive(rec.visuals);
-      if(main != null) {
-        animator = null;
+      Animator animator = null;
+      if (main != null) {
         if (string.IsNullOrEmpty(rec.animator) == false) {
           Transform animTr = parent.transform.FindRecursive(rec.animator);
           if (animTr != null) {
@@ -287,16 +433,81 @@ namespace CustomUnits {
         if (animator == null) {
           animator = main.GetComponentInChildren<Animator>();
         }
-        if (animator != null) { this.animator.enabled = true; }
+        if (animator != null) { animator.enabled = true; }
         attach = main.transform.FindRecursive(rec.attach);
       }
-      weapons = new List<MechComponent>();
+      if (animator != null) { this.animators.Add(new AttachInfoAnimator(animator, 1f)); }
+      weapons = new HashSet<MechComponent>();
       bayComponents = new List<ComponentRepresentation>();
       hideIfEmpty = rec.hideIfEmpty;
       noRecoil = rec.noRecoil;
       recoilValue = 0f;
       recoilDelta = 0f;
       //inPosition = false;
+    }
+    public AttachInfo(GameObject parent, AttachInfoRecord rec) {
+      //this.parent = parent;
+      this.animators = new HashSet<AttachInfoAnimator>();
+      this.location = location;
+      this.type = rec.type;
+      if (parent != null) {
+        main = parent.transform.FindRecursive(rec.visuals);
+        foreach (var animName in rec.Animators) {
+          if (string.IsNullOrEmpty(animName.Key)) { continue; }
+          Transform animTR = parent.transform.FindRecursive(animName.Key);
+          if (animTR == null) { continue; }
+          Animator animator = animTR.gameObject.GetComponent<Animator>();
+          if (animator == null) { continue; }
+          this.animators.Add(new AttachInfoAnimator(animator,animName.Value));
+        }
+        attach = parent.transform.FindRecursive(rec.attach);
+      }
+      weapons = new HashSet<MechComponent>();
+      bayComponents = new List<ComponentRepresentation>();
+      hideIfEmpty = rec.hideIfEmpty;
+      noRecoil = rec.noRecoil;
+      recoilValue = 0f;
+      recoilDelta = 0f;
+      //inPosition = false;
+    }
+    public AttachInfo(MechTurretAnimation parent, MechTurretMountData data) {
+      this.location = data.Location.ToString();
+      //this.parent = parent;
+      this.Name = data.Name;
+      this.main = parent.transform;
+      Animator animator = null;
+      if (string.IsNullOrEmpty(this.Name)) { this.Name = data.Location.ToString(); }
+      Transform anim = parent.gameObject.transform.FindRecursive(data.Animator);
+      if (anim != null) { animator = anim.gameObject.GetComponent<Animator>(); }
+      Transform attach = parent.gameObject.transform.FindRecursive(data.AttachTo);
+      if (attach != null) { this.attach = attach; } else { this.attach = parent.gameObject.transform; }
+      if (animator != null) { this.animators.Add(new AttachInfoAnimator(animator, 1f)); }
+      hideIfEmpty = true;
+      noRecoil = false;
+      recoilValue = 0f;
+      recoilDelta = 0f;
+    }
+    public float LowestPrefireRate {
+      get {
+        float result = 1000f;
+        foreach(AttachInfoAnimator anim in animators) {
+          if (anim.animator == null) { continue; }
+          if ((anim.HasIndirect == false) && (anim.HasNormal == false) && (anim.HasVertical == false)) { continue; }
+          if (result < anim.animationRate) { result = anim.animationRate; }
+        }
+        return result;
+      }
+    }
+    public float LowestFireRate {
+      get {
+        float result = 1000f;
+        foreach (AttachInfoAnimator anim in animators) {
+          if (anim.animator == null) { continue; }
+          if ((anim.HasEmiterIndex == false)) { continue; }
+          if (result < anim.animationRate) { result = anim.animationRate; }
+        }
+        return result;
+      }
     }
   }
   public class VTOLBodyAnimationData {

@@ -19,6 +19,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using System.Reflection.Emit;
+using System.Threading;
 using UnityEngine;
 using UnityEngine.UI;
 using static BattleTech.Data.DataManager;
@@ -89,6 +90,29 @@ namespace CustomUnits {
       structure = s; armor = a;
     }
   }
+  [HarmonyPatch(typeof(Mech))]
+  [HarmonyPatch("GetActorInfoFromVisLevel")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { typeof(VisibilityLevel) })]
+  public static class Mech_GetActorInfoFromVisLevel {
+    public static void Postfix(Mech __instance, VisibilityLevel visLevel, ref Localize.Text __result) {
+      if (Core.Settings.LowVisDetected) { return; }
+      if (visLevel == VisibilityLevel.LOSFull || visLevel == VisibilityLevel.BlipGhost) { return; }
+      if (__instance.TrooperSquad()) {
+        if(visLevel >= VisibilityLevel.Blip4Maximum) {
+          __result = new Localize.Text("SQUAD, {0}t", new object[1] { (object)__instance.MechDef.Chassis.Tonnage });
+        } else if (visLevel == VisibilityLevel.Blip1Type) {
+          __result = new Localize.Text("UNKNOWN SQUAD");
+        }
+      }else if (__instance.FakeVehicle()) {
+        if (visLevel >= VisibilityLevel.Blip4Maximum) {
+          __result = new Localize.Text("VEHICLE, {0}t", new object[1] { (object)__instance.MechDef.Chassis.Tonnage });
+        } else if (visLevel == VisibilityLevel.Blip1Type) {
+          __result = new Localize.Text("UNKNOWN VEHICLE");
+        }
+      }
+    }
+  }
   [HarmonyPatch(typeof(StatTooltipData))]
   [HarmonyPatch("SetHeatData")]
   [HarmonyPatch(MethodType.Normal)]
@@ -96,8 +120,7 @@ namespace CustomUnits {
   public static class StatTooltipData_SetHeatData {
     public static bool Prefix(StatTooltipData __instance, MechDef def) {
       if (def == null) { return true; }
-      if (def.Chassis == null) { return true; }
-      if (def.Chassis.IsFake(def.ChassisID) == false) { return true; }
+      if (def.IsVehicle() == false) { return true; }
       Log.TWL(0, "StatTooltipData.SetHeatData " + def.ChassisID);
       __instance.dataList.Add(Strings.T("Heat Sinking"), Strings.T("N/A"));
       __instance.dataList.Add(Strings.T("Alpha Strike"), Strings.T("N/A"));
@@ -116,8 +139,7 @@ namespace CustomUnits {
       ___HeatEffBar.gameObject.SetActive(true);
       MechDef mechDef = data as MechDef;
       if (mechDef == null) { return; };
-      if (mechDef.Chassis == null) { return; }
-      if (mechDef.Chassis.IsFake(mechDef.ChassisID) == false) { return; }
+      if (mechDef.IsVehicle() == false) { return; }
       ___MeleeBar.gameObject.SetActive(false);
       ___HeatEffBar.gameObject.SetActive(false);
     }
@@ -129,7 +151,7 @@ namespace CustomUnits {
   public static class SG_Shop_FullMechDetailPanel_FillInFullMech {
     public static void Postfix(SG_Shop_FullMechDetailPanel __instance, MechDef theMech, ref LanceStat ___Stat4, ref LanceStat ___Stat6) {
       VerticalLayoutGroup layout = ___Stat4.transform.parent.gameObject.GetComponent<VerticalLayoutGroup>();
-      if (theMech.Chassis.IsFake(theMech.ChassisID) == false) {
+      if (theMech.IsVehicle() == false) {
         layout.childControlHeight = true;
         ___Stat4.gameObject.SetActive(true);
         ___Stat6.gameObject.SetActive(true);
@@ -146,7 +168,7 @@ namespace CustomUnits {
   [HarmonyPatch(new Type[] { typeof(InventoryItemElement) })]
   public static class InventoryDataObject_ShopFullMech_RefreshInfoOnWidget {
     public static void Postfix(InventoryDataObject_ShopFullMech __instance, InventoryItemElement theWidget) {
-      if (__instance.mechDef.IsChassisFake()) { theWidget.manufacturerName.SetText("{0}", "__/VEHICLE/__"); }
+      if (__instance.mechDef.IsVehicle()) { theWidget.manufacturerName.SetText("{0}", "__/VEHICLE/__"); }
     }
   }
   [HarmonyPatch(typeof(InventoryDataObject_SalvageFullMech))]
@@ -155,7 +177,7 @@ namespace CustomUnits {
   [HarmonyPatch(new Type[] { typeof(InventoryItemElement) })]
   public static class InventoryDataObject_SalvageFullMech_RefreshInfoOnWidget {
     public static void Postfix(InventoryDataObject_ShopFullMech __instance, InventoryItemElement theWidget) {
-      if (__instance.mechDef.IsChassisFake()) { theWidget.manufacturerName.SetText("{0}", "__/VEHICLE/__"); }
+      if (__instance.mechDef.IsVehicle()) { theWidget.manufacturerName.SetText("{0}", "__/VEHICLE/__"); }
     }
   }
   [HarmonyPatch(typeof(StatTooltipData))]
@@ -165,8 +187,7 @@ namespace CustomUnits {
   public static class StatTooltipData_SetMeleeData {
     public static bool Prefix(StatTooltipData __instance, MechDef def) {
       if (def == null) { return true; }
-      if (def.Chassis == null) { return true; }
-      if (def.Chassis.IsFake(def.ChassisID) == false) { return true; }
+      if (def.IsVehicle() == false) { return true; }
       Log.TWL(0, "StatTooltipData.SetHeatData " + def.ChassisID);
       __instance.dataList.Add(Strings.T("Base Dmg"), Strings.T("N/A"));
       __instance.dataList.Add(Strings.T("Chassis Quirk"), Strings.T("N/A"));
@@ -412,7 +433,7 @@ namespace CustomUnits {
     public static void Postfix(LanceMechEquipmentList __instance, List<LanceStat> ___statList, MechDef ___activeMech) {
       Log.TWL(0, "MechDetails.SetStats " + ___activeMech.ChassisID);
       VerticalLayoutGroup layout = ___statList[1].transform.parent.gameObject.GetComponent<VerticalLayoutGroup>();
-      if (___activeMech.Chassis.IsFake(___activeMech.ChassisID) == false) {
+      if (___activeMech.IsVehicle() == false) {
         layout.childControlHeight = true;
         ___statList[1].gameObject.SetActive(true);
         ___statList[7].gameObject.SetActive(true);
@@ -430,8 +451,7 @@ namespace CustomUnits {
   public static class MechBayMechInfoWidget_OnMechLabClicked {
     public static bool Prefix(MechBayMechInfoWidget __instance,ref MechDef ___selectedMech) {
       if (___selectedMech == null) { return true; }
-      if (___selectedMech.Chassis == null) { return true; }
-      if (___selectedMech.Chassis.IsFake(___selectedMech.ChassisID) == false) { return true; }
+      if (___selectedMech.IsVehicle() == false) { return true; }
       if (Core.Settings.AllowVehiclesEdit == true) { return true; }
       GenericPopupBuilder.Create("Cannot Refit vehicle", Strings.T("Vehicles can't be refited")).AddFader(new UIColorRef?(LazySingletonBehavior<UIManager>.Instance.UILookAndColorConstants.PopupBackfill), 0.0f, true).Render();
       return false;
@@ -444,8 +464,7 @@ namespace CustomUnits {
   public static class MechBayMechInfoWidget_OnUnreadyClicked {
     public static bool Prefix(MechBayMechInfoWidget __instance, ref MechDef ___selectedMech) {
       if (___selectedMech == null) { return true; }
-      if (___selectedMech.Chassis == null) { return true; }
-      if (___selectedMech.Chassis.IsFake(___selectedMech.ChassisID) == false) { return true; }
+      if (___selectedMech.IsVehicle() == false) { return true; }
       if (Core.Settings.AllowVehiclesEdit == true) { return true; }
       GenericPopupBuilder.Create("Cannot store vehicle", Strings.T("Vehicles can't be stored")).AddFader(new UIColorRef?(LazySingletonBehavior<UIManager>.Instance.UILookAndColorConstants.PopupBackfill), 0.0f, true).Render();
       return false;
@@ -483,8 +502,7 @@ namespace CustomUnits {
   public static class MechBayMechInfoWidget_OnRepairClicked {
     public static bool Prefix(MechBayMechInfoWidget __instance, ref MechDef ___selectedMech,ref MechBayMechUnitElement ___selectedMechElement) {
       if (___selectedMech == null) { return true; }
-      if (___selectedMech.Chassis == null) { return true; }
-      if (___selectedMech.Chassis.IsFake(___selectedMech.ChassisID) == false) { return true; }
+      if (___selectedMech.IsVehicle() == false) { return true; }
       if (___selectedMechElement.inMaintenance) {
         GenericPopupBuilder.Create("Cannot Repair Vehicle", Strings.T("This 'Vehicle is already under maintenance. You must first cancel the existing task in order to begin repairs on this 'Vehicle.")).AddFader(new UIColorRef?(LazySingletonBehavior<UIManager>.Instance.UILookAndColorConstants.PopupBackfill), 0.0f, true).Render();
         return false;
@@ -520,11 +538,11 @@ namespace CustomUnits {
             lanceConfiguration.AddUnit(__instance.playerGUID, string.Empty, string.Empty, UnitType.UNDEFINED);
             continue;
           }
-          if (lanceLoadoutSlot.SelectedMech.MechDef.IsChassisFake() && (lanceLoadoutSlot.SelectedPilot.Pilot.pilotDef.canPilotVehicle())) {
+          if (lanceLoadoutSlot.SelectedMech.MechDef.IsVehicle() && (lanceLoadoutSlot.SelectedPilot.Pilot.pilotDef.canPilotVehicle())) {
             isVehicle = true;
-          } else if (lanceLoadoutSlot.SelectedMech.MechDef.IsChassisFake()&&(!lanceLoadoutSlot.SelectedPilot.Pilot.pilotDef.canPilotVehicle())) {
+          } else if (lanceLoadoutSlot.SelectedMech.MechDef.IsVehicle()&&(!lanceLoadoutSlot.SelectedPilot.Pilot.pilotDef.canPilotVehicle())) {
             continue;
-          } else if ((!lanceLoadoutSlot.SelectedMech.MechDef.IsChassisFake())&&(!lanceLoadoutSlot.SelectedPilot.Pilot.pilotDef.canPilotMech())) {
+          } else if ((!lanceLoadoutSlot.SelectedMech.MechDef.IsVehicle())&&(!lanceLoadoutSlot.SelectedPilot.Pilot.pilotDef.canPilotMech())) {
             continue;
           } else {
             isVehicle = false;
@@ -582,8 +600,7 @@ namespace CustomUnits {
     }
     public static bool Prefix(MechBayMechInfoWidget __instance, ref MechDef ___selectedMech, ref MechBayMechUnitElement ___selectedMechElement) {
       if (___selectedMech == null) { return true; }
-      if (___selectedMech.Chassis == null) { return true; }
-      if (___selectedMech.Chassis.IsFake(___selectedMech.ChassisID) == false) { return true; }
+      if (___selectedMech.IsVehicle() == false) { return true; }
       if (___selectedMechElement.inMaintenance) {
         GenericPopupBuilder.Create("Cannot Scrap Vehicle", Strings.T("This 'Vehicle is already under maintenance. You must first cancel the existing task in order to scrap this 'Vehicle.")).AddFader(new UIColorRef?(LazySingletonBehavior<UIManager>.Instance.UILookAndColorConstants.PopupBackfill), 0.0f, true).Render();
       } else {
@@ -823,7 +840,7 @@ namespace CustomUnits {
   [HarmonyPriority(Priority.Last)]
   public static class MechStatisticsRules_CalculateHeatEfficiencyStat {
     public static void Postfix(MechDef mechDef, ref float currentValue, ref float maxValue) {
-      if (mechDef.Chassis.IsFake(mechDef.ChassisID)) {
+      if (mechDef.IsVehicle()) {
         currentValue = 0f;
         maxValue = 10f;
       }
@@ -835,7 +852,7 @@ namespace CustomUnits {
   [HarmonyPriority(Priority.Last)]
   public static class MechStatisticsRules_CalculateTonnage {
     public static void Postfix(MechDef mechDef, ref float currentValue, ref float maxValue) {
-      if (mechDef.Chassis.IsFake(mechDef.ChassisID)) {
+      if (mechDef.IsVehicle()) {
         currentValue = mechDef.Chassis.Tonnage;
       }
     }
@@ -846,7 +863,7 @@ namespace CustomUnits {
   [HarmonyPriority(Priority.Last)]
   public static class MechStatisticsRules_CalculateCBillValue {
     public static void Postfix(MechDef mechDef, ref float currentValue, ref float maxValue) {
-      if (mechDef.Chassis.IsFake(mechDef.ChassisID)) {
+      if (mechDef.IsVehicle()) {
         currentValue = mechDef.Description.Cost;
       }
     }
@@ -871,7 +888,7 @@ namespace CustomUnits {
   [HarmonyPatch(MethodType.Normal)]
   public static class MechStatisticsRules_CalculateMeleeStat {
     public static bool Prefix(MechDef mechDef, ref float currentValue, ref float maxValue) {
-      if (mechDef.Chassis.IsFake(mechDef.ChassisID)) {
+      if (mechDef.IsVehicle()) {
         currentValue = 0f;
         maxValue = 10f;
         return false;
@@ -887,7 +904,7 @@ namespace CustomUnits {
     public static void Postfix(LanceMechEquipmentList __instance, LanceStat[] ___mechStats, MechDef ___selectedMech) {
       if (___selectedMech == null) { return; }
       VerticalLayoutGroup layout = ___mechStats[3].transform.parent.gameObject.GetComponent<VerticalLayoutGroup>();
-      if (___selectedMech.Chassis.IsFake(___selectedMech.ChassisID) == false) {
+      if (___selectedMech.IsVehicle() == false) {
         layout.childControlHeight = true;
         ___mechStats[3].gameObject.SetActive(true);
         ___mechStats[5].gameObject.SetActive(true);
@@ -914,32 +931,26 @@ namespace CustomUnits {
         LocalizableText ___rightLegLabel,
         MechDef ___activeMech
     ) {
-      if (___activeMech.Chassis.IsFake(___activeMech.ChassisID) == false) {
-        UnitCustomInfo info = ___activeMech.GetCustomInfo();
-        int troopersCount = 0;
-        if(info != null) {
-          troopersCount = info.SquadInfo.Troopers;
-        }
-        if (troopersCount <= 1) {
-          ___headLabel.SetText("H");
-          ___centerTorsoLabel.SetText("CT"); ___centerTorsoLabel.gameObject.transform.parent.gameObject.SetActive(true);
-          ___leftTorsoLabel.SetText("LT"); ___leftTorsoLabel.gameObject.transform.parent.gameObject.SetActive(true);
-          ___rightTorsoLabel.SetText("RT"); ___rightTorsoLabel.gameObject.transform.parent.gameObject.SetActive(true);
-          ___leftArmLabel.SetText("LA"); ___leftArmLabel.gameObject.transform.parent.gameObject.SetActive(true);
-          ___rightArmLabel.SetText("RA"); ___rightArmLabel.gameObject.transform.parent.gameObject.SetActive(true);
-          ___leftLegLabel.SetText("LL"); ___leftLegLabel.gameObject.transform.parent.gameObject.SetActive(true);
-          ___rightLegLabel.SetText("RL"); ___rightLegLabel.gameObject.transform.parent.gameObject.SetActive(true);
-        } else {
-          ___headLabel.SetText("U0");
-          ___centerTorsoLabel.SetText("U1"); ___centerTorsoLabel.gameObject.transform.parent.gameObject.SetActive(true);
-          ___leftTorsoLabel.SetText("U2"); ___leftTorsoLabel.gameObject.transform.parent.gameObject.SetActive(troopersCount >= 3);
-          ___rightTorsoLabel.SetText("U3"); ___rightTorsoLabel.gameObject.transform.parent.gameObject.SetActive(troopersCount >= 4);
-          ___leftArmLabel.SetText("U4"); ___leftArmLabel.gameObject.transform.parent.gameObject.SetActive(troopersCount >= 5);
-          ___rightArmLabel.SetText("U5"); ___rightArmLabel.gameObject.transform.parent.gameObject.SetActive(troopersCount >= 6);
-          ___leftLegLabel.SetText("U6"); ___leftLegLabel.gameObject.transform.parent.gameObject.SetActive(troopersCount >= 7);
-          ___rightLegLabel.SetText("U7"); ___rightLegLabel.gameObject.transform.parent.gameObject.SetActive(troopersCount >= 8);
-        }
-      } else {
+      bool isVehicle = false;
+      bool isTrooper = false;
+      int troopersCount = 0;
+      if (___activeMech.IsVehicle()) { isVehicle = true; }
+      UnitCustomInfo info = ___activeMech.GetCustomInfo();
+      if(info != null) {
+        troopersCount = info.SquadInfo.Troopers;
+        if (troopersCount > 1) { isTrooper = true; }
+      }
+      if (isTrooper) {
+        ___headLabel.SetText("U0");
+        ___centerTorsoLabel.SetText("U1"); ___centerTorsoLabel.gameObject.transform.parent.gameObject.SetActive(true);
+        ___leftTorsoLabel.SetText("U2"); ___leftTorsoLabel.gameObject.transform.parent.gameObject.SetActive(troopersCount >= 3);
+        ___rightTorsoLabel.SetText("U3"); ___rightTorsoLabel.gameObject.transform.parent.gameObject.SetActive(troopersCount >= 4);
+        ___leftArmLabel.SetText("U4"); ___leftArmLabel.gameObject.transform.parent.gameObject.SetActive(troopersCount >= 5);
+        ___rightArmLabel.SetText("U5"); ___rightArmLabel.gameObject.transform.parent.gameObject.SetActive(troopersCount >= 6);
+        ___leftLegLabel.SetText("U6"); ___leftLegLabel.gameObject.transform.parent.gameObject.SetActive(troopersCount >= 7);
+        ___rightLegLabel.SetText("U7"); ___rightLegLabel.gameObject.transform.parent.gameObject.SetActive(troopersCount >= 8);
+      }else
+      if (isVehicle) {
         ___headLabel.SetText("T");
         ___centerTorsoLabel.SetText("CT"); ___centerTorsoLabel.gameObject.transform.parent.gameObject.SetActive(false);
         ___leftTorsoLabel.SetText("LT"); ___leftTorsoLabel.gameObject.transform.parent.gameObject.SetActive(false);
@@ -948,234 +959,16 @@ namespace CustomUnits {
         ___rightArmLabel.SetText("R");
         ___leftLegLabel.SetText("L");
         ___rightLegLabel.SetText("R");
+      } else {
+        ___headLabel.SetText("H");
+        ___centerTorsoLabel.SetText("CT"); ___centerTorsoLabel.gameObject.transform.parent.gameObject.SetActive(true);
+        ___leftTorsoLabel.SetText("LT"); ___leftTorsoLabel.gameObject.transform.parent.gameObject.SetActive(true);
+        ___rightTorsoLabel.SetText("RT"); ___rightTorsoLabel.gameObject.transform.parent.gameObject.SetActive(true);
+        ___leftArmLabel.SetText("LA"); ___leftArmLabel.gameObject.transform.parent.gameObject.SetActive(true);
+        ___rightArmLabel.SetText("RA"); ___rightArmLabel.gameObject.transform.parent.gameObject.SetActive(true);
+        ___leftLegLabel.SetText("LL"); ___leftLegLabel.gameObject.transform.parent.gameObject.SetActive(true);
+        ___rightLegLabel.SetText("RL"); ___rightLegLabel.gameObject.transform.parent.gameObject.SetActive(true);
       }
-    }
-  }
-  public class VehicleReadoutAligner : MonoBehaviour {
-    private bool ui_inited = false;
-    private bool svg_inited = false;
-    private HUDMechArmorReadout parent;
-    private RectTransform frontArmor;
-    public void ResetUI() {
-      ui_inited = false;
-    }
-    public void Init(HUDMechArmorReadout readout, RectTransform frontArmor) {
-      parent = readout;
-      this.frontArmor = frontArmor;
-    }
-    public static readonly float SQUAD_ICON_SIZE = 45f;
-    public static readonly string OUTLINE_SUFFIX = "Outline";
-    public static readonly string ARMOR_PREFIX = "MechTray_Armor";
-    public static readonly string STRUCTURE_PREFIX = "Mech_TrayInternal";
-    public static readonly List<string> READOUT_NAMES = new List<string>() { "Head", "RA", "RT", "Torso", "LT", "LA", "RL", "LL" };
-    public static readonly List<VehicleChassisLocations> READOUT_LOCATIONS = new List<VehicleChassisLocations>() {
-      VehicleChassisLocations.Turret, VehicleChassisLocations.Front, VehicleChassisLocations.None,
-      VehicleChassisLocations.None, VehicleChassisLocations.None, VehicleChassisLocations.Rear, VehicleChassisLocations.Left, VehicleChassisLocations.Right };
-    public static readonly List<Vector2> ArmorIconSizes = new List<Vector2>() {
-      new Vector2(20f,50f), new Vector2(40f,20f), new Vector2(0f,0f), new Vector2(0f,0f),
-      new Vector2(0f,0f), new Vector2(40f,20f), new Vector2(15f,40f), new Vector2(15f,40f)
-    };
-    public static readonly List<Vector2> ArmorIconPivot = new List<Vector2>() {
-      new Vector2(-0.8f,1.2f), new Vector2(-0.15f,1.15f), new Vector2(0f,0f), new Vector2(0f,0f),
-      new Vector2(0f,0f), new Vector2(-0.17f,3.7f), new Vector2(-0.2f,1.45f), new Vector2(-2.3f,1.45f)
-    };
-    public static readonly List<Vector2> StructureIconSizes = new List<Vector2>() {
-      new Vector2(20f,50f), new Vector2(40f,18f), new Vector2(0f,0f), new Vector2(0f,0f),
-      new Vector2(0f,0f), new Vector2(40f,18f), new Vector2(15f,30f), new Vector2(15f,35f)
-    };
-    public static readonly List<Vector2> StructureIconPivot = new List<Vector2>() {
-      new Vector2(-0.8f,1.2f), new Vector2(-0.15f,1.15f), new Vector2(0f,0f), new Vector2(0f,0f),
-      new Vector2(0f,0f), new Vector2(-0.17f,4.1f), new Vector2(-0.2f,1.77f), new Vector2(-2.3f,1.6f)
-    };
-    public static string ReadoutIndexToArmorIconName(int index) {
-      switch (READOUT_LOCATIONS[index]) {
-        case VehicleChassisLocations.Turret: return Core.Settings.VehicleTurretArmorIcon;
-        case VehicleChassisLocations.Front: return Core.Settings.VehicleFrontArmorIcon;
-        case VehicleChassisLocations.Rear: return Core.Settings.VehicleRearArmorIcon;
-        case VehicleChassisLocations.Left: return Core.Settings.VehicleLeftArmorIcon;
-        case VehicleChassisLocations.Right: return Core.Settings.VehicleRightArmorIcon;
-      }
-      return null;
-    }
-    public static string ReadoutIndexToArmorOutlineIconName(int index) {
-      switch (READOUT_LOCATIONS[index]) {
-        case VehicleChassisLocations.Turret: return Core.Settings.VehicleTurretArmorOutlineIcon;
-        case VehicleChassisLocations.Front: return Core.Settings.VehicleFrontArmorOutlineIcon;
-        case VehicleChassisLocations.Rear: return Core.Settings.VehicleRearArmorOutlineIcon;
-        case VehicleChassisLocations.Left: return Core.Settings.VehicleLeftArmorOutlineIcon;
-        case VehicleChassisLocations.Right: return Core.Settings.VehicleRightArmorOutlineIcon;
-      }
-      return null;
-    }
-    public static string ReadoutIndexToStructureIconName(int index) {
-      switch (READOUT_LOCATIONS[index]) {
-        case VehicleChassisLocations.Turret: return Core.Settings.VehicleTurretStructureIcon;
-        case VehicleChassisLocations.Front: return Core.Settings.VehicleFrontStructureIcon;
-        case VehicleChassisLocations.Rear: return Core.Settings.VehicleRearStructureIcon;
-        case VehicleChassisLocations.Left: return Core.Settings.VehicleLeftStructureIcon;
-        case VehicleChassisLocations.Right: return Core.Settings.VehicleRightStructureIcon;
-      }
-      return null;
-    }
-    private void SVGInit() {
-      try {
-        for (int index = 0; index < READOUT_NAMES.Count; ++index) {
-          string armorName = ARMOR_PREFIX + READOUT_NAMES[index];
-          string armorOutlineName = ARMOR_PREFIX + READOUT_NAMES[index] + OUTLINE_SUFFIX;
-          string structureName = STRUCTURE_PREFIX + READOUT_NAMES[index];
-          RectTransform MechTray_Armor = this.gameObject.transform.FindRecursive(armorName) as RectTransform;
-          string armorIconName = ReadoutIndexToArmorIconName(index);
-          if (string.IsNullOrEmpty(armorIconName)) {
-            MechTray_Armor.gameObject.SetActive(false);
-          } else {
-            MechTray_Armor.gameObject.GetComponent<SVGImage>().vectorGraphics = CustomSvgCache.get(armorIconName, UnityGameInstance.BattleTechGame.DataManager);
-            MechTray_Armor.pivot = ArmorIconPivot[index];
-            MechTray_Armor.anchoredPosition = Vector2.zero; MechTray_Armor.sizeDelta = ArmorIconSizes[index];
-          }
-          string armorOutlineIconName = ReadoutIndexToArmorOutlineIconName(index);
-          RectTransform MechTray_ArmorOutline = this.gameObject.transform.FindRecursive(armorOutlineName) as RectTransform;
-          if (string.IsNullOrEmpty(armorOutlineIconName)) {
-            MechTray_ArmorOutline.gameObject.SetActive(false);
-          } else {
-            MechTray_ArmorOutline.gameObject.GetComponent<SVGImage>().vectorGraphics = CustomSvgCache.get(armorOutlineIconName, UnityGameInstance.BattleTechGame.DataManager);
-            MechTray_ArmorOutline.pivot = new Vector2(0f,1f);
-            MechTray_ArmorOutline.anchoredPosition = Vector2.zero; MechTray_ArmorOutline.sizeDelta = ArmorIconSizes[index];
-          }
-          string structureIconName = ReadoutIndexToStructureIconName(index);
-          RectTransform Mech_TrayInternal = this.gameObject.transform.FindRecursive(structureName) as RectTransform;
-          if (string.IsNullOrEmpty(structureIconName)) {
-            Mech_TrayInternal.gameObject.SetActive(false);
-          } else {
-            Mech_TrayInternal.gameObject.GetComponent<SVGImage>().vectorGraphics = CustomSvgCache.get(structureIconName, UnityGameInstance.BattleTechGame.DataManager);
-            Mech_TrayInternal.pivot = StructureIconPivot[index];
-            Mech_TrayInternal.anchoredPosition = Vector2.zero; Mech_TrayInternal.sizeDelta = StructureIconSizes[index];
-          }
-        }
-      } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
-      }
-      svg_inited = true;
-    }
-    public void UIInit() {
-      this.transform.localPosition = frontArmor.localPosition;
-
-      ui_inited = true;
-    }
-    public void Update() {
-      if (svg_inited == false) { SVGInit(); }
-      if (ui_inited == false) { UIInit(); }
-    }
-  }
-  [HarmonyPatch(typeof(HUDMechArmorReadout))]
-  [HarmonyPatch("Init")]
-  [HarmonyPatch(MethodType.Normal)]
-  [HarmonyPatch(new Type[] { typeof(CombatHUD), typeof(bool), typeof(bool), typeof(bool) })]
-  public static class HUDMechArmorReadout_Init_info {
-    //private static GameObject vehicleReadout = null;
-    //public static Dictionary<int, Vector3> d_originalFrontPos = new Dictionary<int, Vector3>();
-    //public static Dictionary<VehicleChassisLocations, VehicleReadoutImage> vehicleImages = new Dictionary<VehicleChassisLocations, VehicleReadoutImage>();
-    //public static Dictionary<int, List<HUDMechArmorReadoutOriginal>> d_originalStructure = new Dictionary<int, List<HUDMechArmorReadoutOriginal>>();
-    //public static Dictionary<int, List<HUDMechArmorReadoutOriginal>> d_originalArmor = new Dictionary<int, List<HUDMechArmorReadoutOriginal>>();
-    //public static Dictionary<int, List<HUDMechArmorReadoutOriginal>> d_originalArmorOutline = new Dictionary<int, List<HUDMechArmorReadoutOriginal>>();
-    public static void Prefix(HUDMechArmorReadout __instance, CombatHUD HUD, bool useHoversForCalledShots, bool hideArmorWhenStructureDamage, bool showArmorAllOrNothing) {
-      if (HUD != null) { return; }
-      Transform vehicle_FrontArmor = __instance.gameObject.transform.FindRecursive("vehicle_FrontArmor");
-      if (vehicle_FrontArmor == null) {
-        Transform mech_FrontArmor = __instance.gameObject.transform.FindRecursive("mech_FrontArmor");
-        if (mech_FrontArmor != null) {
-          vehicle_FrontArmor = GameObject.Instantiate(mech_FrontArmor.gameObject).transform;
-          vehicle_FrontArmor.gameObject.name = "vehicle_FrontArmor";
-          vehicle_FrontArmor.SetParent(mech_FrontArmor.parent, false);
-          vehicle_FrontArmor.localPosition = mech_FrontArmor.localPosition;
-          vehicle_FrontArmor.localScale = mech_FrontArmor.localScale;
-          vehicle_FrontArmor.gameObject.AddComponent<VehicleReadoutAligner>().Init(__instance, mech_FrontArmor as RectTransform);
-        }
-      }
-      //d_originalStructure.Remove(__instance.GetInstanceID());
-      //d_originalArmor.Remove(__instance.GetInstanceID());
-      //d_originalArmorOutline.Remove(__instance.GetInstanceID());
-      //d_originalFrontPos.Remove(__instance.GetInstanceID());
-      //if (HUDMechArmorReadout_Init_info.d_originalFrontPos.TryGetValue(__instance.GetInstanceID(), out Vector3 pos) == false) {
-      //  for (int index = 0; index < __instance.Armor.Length; ++index) {
-      //    if (__instance.Armor[index] == null) { continue; }
-      //    HUDMechArmorReadout_Init_info.d_originalFrontPos.Add(__instance.GetInstanceID(), __instance.Armor[index].transform.parent.localPosition);
-      //    break;
-      //  }
-      //}
-      //if (HUDMechArmorReadout_Init_info.d_originalArmor.TryGetValue(__instance.GetInstanceID(), out List<HUDMechArmorReadoutOriginal> originalArmor) == false) {
-      //  originalArmor = new List<HUDMechArmorReadoutOriginal>(); HUDMechArmorReadout_Init_info.d_originalArmor.Add(__instance.GetInstanceID(), originalArmor);
-      //  for (int index = 0; index < __instance.Armor.Length; ++index) {
-      //    if (__instance.Armor[index] == null) { originalArmor.Add(null); continue; };
-      //    originalArmor.Add(new HUDMechArmorReadoutOriginal(
-      //      __instance.Armor[index].rectTransform,
-      //      __instance.Armor[index]
-      //    ));
-      //  }
-      //}
-      //if (HUDMechArmorReadout_Init_info.d_originalArmorOutline.TryGetValue(__instance.GetInstanceID(), out List<HUDMechArmorReadoutOriginal> originalArmorOutline) == false) {
-      //  originalArmorOutline = new List<HUDMechArmorReadoutOriginal>(); HUDMechArmorReadout_Init_info.d_originalArmorOutline.Add(__instance.GetInstanceID(), originalArmorOutline);
-      //  for (int index = 0; index < __instance.ArmorOutline.Length; ++index) {
-      //    if (__instance.ArmorOutline[index] == null) { originalArmorOutline.Add(null); continue; };
-      //    originalArmorOutline.Add(new HUDMechArmorReadoutOriginal(
-      //      __instance.ArmorOutline[index].rectTransform,
-      //      __instance.ArmorOutline[index]
-      //    ));
-      //  }
-      //}
-      //if (HUDMechArmorReadout_Init_info.d_originalStructure.TryGetValue(__instance.GetInstanceID(), out List<HUDMechArmorReadoutOriginal> originalStructure) == false) {
-      //  originalStructure = new List<HUDMechArmorReadoutOriginal>(); HUDMechArmorReadout_Init_info.d_originalStructure.Add(__instance.GetInstanceID(), originalStructure);
-      //  for (int index = 0; index < __instance.Structure.Length; ++index) {
-      //    if (__instance.Structure[index] == null) { originalStructure.Add(null); continue; };
-      //    originalStructure.Add(new HUDMechArmorReadoutOriginal(
-      //      __instance.Structure[index].rectTransform,
-      //      __instance.Structure[index]
-      //    ));
-      //  }
-      //}
-      //if (vehicleReadout == null) {
-      //  if (UIManager.HasInstance == false) { Log.WL(1, "no UIManager instance"); return; }
-      //  GameObject calledshot = UIManager.Instance.dataManager.PooledInstantiate("uixPrfPanl_targetingComputer", BattleTechResourceType.UIModulePrefabs);
-      //  if (calledshot == null) { Log.WL(1, "can't instante uixPrfPanl_targetingComputer"); return; }
-      //  //vehicleReadout = calledshot;
-      //  //vehicleReadout.SetActive(false);
-      //  vehicleReadout = GameObject.Instantiate(calledshot.transform.FindRecursive("tgtHud_VehicleArmorReadout").gameObject);
-      //  vehicleReadout.transform.SetParent(__instance.gameObject.transform.parent);
-      //  vehicleReadout.transform.localPosition = __instance.transform.localPosition;
-      //  vehicleReadout.name = "fakeVehicleReadout";
-      //  GameObject.Destroy(calledshot);
-      //  vehicleReadout.SetActive(false);
-      //  vehicleImages.Clear();
-      //  vehicleImages.Add(VehicleChassisLocations.Front,
-      //    new VehicleReadoutImage(
-      //      vehicleReadout.transform.FindRecursive("Vehicle_ArmorFront").gameObject.transform as RectTransform,
-      //      vehicleReadout.transform.FindRecursive("Vehicle_InternalFront").gameObject.GetComponent<SVGImage>().vectorGraphics,
-      //      vehicleReadout.transform.FindRecursive("Vehicle_ArmorFront").gameObject.GetComponent<SVGImage>().vectorGraphics)
-      //   );
-      //  vehicleImages.Add(VehicleChassisLocations.Rear,
-      //    new VehicleReadoutImage(
-      //      vehicleReadout.transform.FindRecursive("Vehicle_ArmorRear").gameObject.transform as RectTransform,
-      //      vehicleReadout.transform.FindRecursive("Vehicle_InternalRear").gameObject.GetComponent<SVGImage>().vectorGraphics,
-      //      vehicleReadout.transform.FindRecursive("Vehicle_ArmorRear").gameObject.GetComponent<SVGImage>().vectorGraphics)
-      //   );
-      //  vehicleImages.Add(VehicleChassisLocations.Left,
-      //    new VehicleReadoutImage(
-      //      vehicleReadout.transform.FindRecursive("Vehicle_ArmorL").gameObject.transform as RectTransform,
-      //      vehicleReadout.transform.FindRecursive("Vehicle_InternalL").gameObject.GetComponent<SVGImage>().vectorGraphics,
-      //      vehicleReadout.transform.FindRecursive("Vehicle_ArmorL").gameObject.GetComponent<SVGImage>().vectorGraphics)
-      //   );
-      //  vehicleImages.Add(VehicleChassisLocations.Right,
-      //    new VehicleReadoutImage(
-      //      vehicleReadout.transform.FindRecursive("Vehicle_ArmorR").gameObject.transform as RectTransform,
-      //      vehicleReadout.transform.FindRecursive("Vehicle_InternalR").gameObject.GetComponent<SVGImage>().vectorGraphics,
-      //      vehicleReadout.transform.FindRecursive("Vehicle_ArmorR").gameObject.GetComponent<SVGImage>().vectorGraphics)
-      //   );
-      //  vehicleImages.Add(VehicleChassisLocations.Turret,
-      //    new VehicleReadoutImage(
-      //      vehicleReadout.transform.FindRecursive("Vehicle_ArmorTurret").gameObject.transform as RectTransform,
-      //      vehicleReadout.transform.FindRecursive("Vehicle_InternalTurret").gameObject.GetComponent<SVGImage>().vectorGraphics,
-      //      vehicleReadout.transform.FindRecursive("Vehicle_ArmorTurret").gameObject.GetComponent<SVGImage>().vectorGraphics)
-      //   );
-      //}
     }
   }
   [HarmonyPatch(typeof(HUDMechArmorReadout))]
@@ -1184,184 +977,9 @@ namespace CustomUnits {
   [HarmonyPatch(MethodType.Normal)]
   public static class HUDMechArmorReadout_UpdateMechStructureAndArmor_info {
     public static bool Prefix(HUDMechArmorReadout __instance) {
-      //if (__instance.DisplayedMech != null) { return true; }
-      //if (__instance.DisplayedMechDef == null) { return true; }
-      //UnitCustomInfo info = __instance.DisplayedMechDef.GetCustomInfo();
-      //if ((info == null) || ((info != null) && (info.SquadInfo.Troopers <= 1))) {
-      //  for (int index = 0; index < __instance.ArmorRear.Length; ++index) {
-      //    if (__instance.ArmorRear[index] != null) { __instance.ArmorRear[index].gameObject.transform.parent.gameObject.SetActive(true); break; }
-      //  }
-      //}
-      //for (int index = 0; index < __instance.Armor.Length; ++index) {
-      //  if (__instance.Armor[index] == null) { continue; }
-      //  __instance.Armor[index].gameObject.transform.parent.localScale = Vector3.one * 0.3f;
-      //  break;
-      //}
-      //if (HUDMechArmorReadout_Init_info.d_originalArmor.TryGetValue(__instance.GetInstanceID(), out List<HUDMechArmorReadoutOriginal> originalArmor) == false) {
-      //  originalArmor = null;
-      //}
-      //if (HUDMechArmorReadout_Init_info.d_originalArmorOutline.TryGetValue(__instance.GetInstanceID(), out List<HUDMechArmorReadoutOriginal> originalArmorOutline) == false) {
-      //  originalArmorOutline = null;
-      //}
-      //if (HUDMechArmorReadout_Init_info.d_originalStructure.TryGetValue(__instance.GetInstanceID(), out List<HUDMechArmorReadoutOriginal> originalStructure) == false) {
-      //  originalStructure = null;
-      //}
-      //if (HUDMechArmorReadout_Init_info.d_originalFrontPos.TryGetValue(__instance.GetInstanceID(), out Vector3 frontLocalPos)) {
-      //  for (int index = 0; index < __instance.Armor.Length; ++index) {
-      //    if (__instance.Armor[index] == null) { continue; }
-      //    __instance.Armor[index].transform.parent.localPosition = frontLocalPos;
-      //    break;
-      //  }
-      //}
-      //Log.TWL(0, "HUDMechArmorReadout.UpdateMechStructureAndArmor " + __instance.GetInstanceID());
-      //bool isFakeChassis = __instance.DisplayedMechDef.Chassis.IsFake(__instance.DisplayedMechDef.ChassisID);
-      //Transform mech_FrontArmor = __instance.gameObject.transform.FindRecursive("mech_FrontArmor");
-      //for (int index = 0; index < __instance.Armor.Length; ++index) {
-      //  if (originalArmor == null) { break; }
-      //  if (originalArmor.Count <= index) { break; }
-      //  string armorName = SquadReadoutAligner.ARMOR_PREFIX + SquadReadoutAligner.READOUT_NAMES[SquadReadoutAligner.READOUT_INDEX_TO_SQUAD[index]];
-      //  SVGImage img = mech_FrontArmor.FindRecursive(armorName).gameObject.GetComponent<SVGImage>();
-      //  HUDMechArmorReadoutOriginal orig = originalArmor[index];
-      //  if (orig == null) { continue; }
-      //  img.gameObject.SetActive(true);
-      //  img.vectorGraphics = orig.icon;
-      //  img.transform.localPosition = orig.localPosition;
-      //  orig.Restore(img.rectTransform, ref img);
-      //}
-      //for (int index = 0; index < __instance.ArmorOutline.Length; ++index) {
-      //  if (originalArmorOutline == null) { break; }
-      //  if (originalArmorOutline.Count <= index) { break; }
-      //  string armorOutlineName = SquadReadoutAligner.ARMOR_PREFIX + SquadReadoutAligner.READOUT_NAMES[SquadReadoutAligner.READOUT_INDEX_TO_SQUAD[index]] + SquadReadoutAligner.OUTLINE_SUFFIX;
-      //  SVGImage img = mech_FrontArmor.FindRecursive(armorOutlineName).gameObject.GetComponent<SVGImage>();
-      //  HUDMechArmorReadoutOriginal orig = originalArmorOutline[index];
-      //  if (orig == null) { continue; }
-      //  img.gameObject.SetActive(true);
-      //  img.vectorGraphics = orig.icon;
-      //  img.transform.localPosition = orig.localPosition;
-      //  orig.Restore(img.rectTransform, ref img);
-      //}
-      //for (int index = 0; index < __instance.Structure.Length; ++index) {
-      //  if (originalStructure == null) { break; }
-      //  if (originalStructure.Count <= index) { break; }
-      //  string structureName = SquadReadoutAligner.STRUCTURE_PREFIX + SquadReadoutAligner.READOUT_NAMES[SquadReadoutAligner.READOUT_INDEX_TO_SQUAD[index]];
-      //  SVGImage img = mech_FrontArmor.FindRecursive(structureName).gameObject.GetComponent<SVGImage>();
-      //  HUDMechArmorReadoutOriginal orig = originalStructure[index];
-      //  if (orig == null) { continue; }
-      //  img.gameObject.SetActive(true);
-      //  img.vectorGraphics = orig.icon;
-      //  orig.Restore(img.rectTransform, ref img);
-      //  Log.WL(1, "[" + index + "] " + img.transform.localPosition + "->" + orig.localPosition);
-      //  img.transform.localPosition = orig.localPosition;
-      //  if (isFakeChassis == false) {
-      //    if (orig.color.HasValue) {
-      //      img.color = orig.color.Value;
-      //      orig.color = null;
-      //    }
-      //  }
-      //}
       return true;
     }
     public static void Postfix(HUDMechArmorReadout __instance) {
-      //if (__instance.DisplayedMech != null) { return; }
-      //if (__instance.DisplayedMechDef == null) { return; }
-      //if (__instance.DisplayedMechDef.Chassis.IsFake(__instance.DisplayedMechDef.ChassisID) == false) { return; }
-      //Log.TWL(0, "HUDMechArmorReadout.UpdateMechStructureAndArmor");
-      //for (int index = 0; index < __instance.Armor.Length; ++index) {
-      //  if (__instance.Armor[index] == null) { continue; }
-      //  Vector3 pos = __instance.Armor[index].transform.parent.localPosition;
-      //  pos.x -= 10f;
-      //  __instance.Armor[index].transform.parent.localPosition = pos;
-      //  break;
-      //}
-      //for (int index = 0; index < __instance.ArmorRear.Length; ++index) {
-      //  if (__instance.ArmorRear[index] != null) { __instance.ArmorRear[index].gameObject.transform.parent.gameObject.SetActive(false); break; }
-      //}
-      //for (int index = 0; index < __instance.Armor.Length; ++index) {
-      //  if (__instance.Armor[index] == null) { continue; }
-      //  __instance.Armor[index].gameObject.transform.parent.localScale = Vector3.one * 0.5f;
-      //  break;
-      //}
-      //for (int index = 0; index < __instance.Armor.Length; ++index) {
-      //  if (__instance.Armor[index] == null) { continue; }
-      //  if (index == 2) { __instance.Armor[index].gameObject.SetActive(false); continue; } else
-      //  if (index == 3) { __instance.Armor[index].gameObject.SetActive(false); continue; } else
-      //  if (index == 4) { __instance.Armor[index].gameObject.SetActive(false); continue; };
-      //  VehicleChassisLocations vloc = VehicleChassisLocations.Turret;
-      //  ArmorLocation aloc = ArmorLocation.Head;
-      //  ChassisLocations loc = ChassisLocations.Head;
-      //  if (index == 0) { vloc = VehicleChassisLocations.Turret; aloc = ArmorLocation.Head; loc = ChassisLocations.Head; } else
-      //  if (index == 1) { vloc = VehicleChassisLocations.Rear; aloc = ArmorLocation.RightArm; loc = ChassisLocations.RightArm; } else
-      //  if (index == 5) { vloc = VehicleChassisLocations.Front; aloc = ArmorLocation.LeftArm; loc = ChassisLocations.LeftArm; } else
-      //  if (index == 6) { vloc = VehicleChassisLocations.Right; aloc = ArmorLocation.RightLeg; loc = ChassisLocations.RightLeg; } else
-      //  if (index == 7) { vloc = VehicleChassisLocations.Left; aloc = ArmorLocation.LeftLeg; loc = ChassisLocations.LeftLeg; }
-      //  if ((vloc == VehicleChassisLocations.Turret) && (__instance.DisplayedMechDef.Chassis.Head.InternalStructure <= 1.0f)) { __instance.Armor[index].gameObject.SetActive(false); continue; }
-      //  float curAVal = HUDMechArmorReadout.GetCurrentArmorForLocation(__instance.DisplayedMechDef, aloc);
-      //  float intAVal = HUDMechArmorReadout.GetInitialArmorForLocation(__instance.DisplayedMechDef, aloc);
-      //  float curSVal = HUDMechArmorReadout.GetCurrentStructureForLocation(__instance.DisplayedMechDef, aloc);
-      //  float intSVal = HUDMechArmorReadout.GetInitialStructureForLocation(__instance.DisplayedMechDef, loc);
-      //  if ((intAVal - curAVal) >= 1.0f) { __instance.Armor[index].gameObject.SetActive(false); continue; }
-      //  if ((intSVal - curSVal) >= 1.0f) { __instance.Armor[index].gameObject.SetActive(false); continue; }
-      //  VehicleReadoutImage replaceimage = HUDMechArmorReadout_Init_info.vehicleImages[vloc];
-      //  __instance.Armor[index].gameObject.transform.position = __instance.gameObject.transform.position + replaceimage.pos;
-      //  replaceimage.Update(__instance.Armor[index].rectTransform);
-      //  __instance.Armor[index].vectorGraphics = replaceimage.armor;
-      //}
-      //for (int index = 0; index < __instance.ArmorOutline.Length; ++index) {
-      //  if (__instance.ArmorOutline[index] == null) { continue; }
-      //  if (index == 2) { __instance.ArmorOutline[index].gameObject.SetActive(false); continue; } else
-      //  if (index == 3) { __instance.ArmorOutline[index].gameObject.SetActive(false); continue; } else
-      //  if (index == 4) { __instance.ArmorOutline[index].gameObject.SetActive(false); continue; };
-      //  VehicleChassisLocations vloc = VehicleChassisLocations.Turret;
-      //  ArmorLocation aloc = ArmorLocation.Head;
-      //  ChassisLocations loc = ChassisLocations.Head;
-      //  if (index == 0) { vloc = VehicleChassisLocations.Turret; aloc = ArmorLocation.Head; loc = ChassisLocations.Head; } else
-      //  if (index == 1) { vloc = VehicleChassisLocations.Rear; aloc = ArmorLocation.RightArm; loc = ChassisLocations.RightArm; } else
-      //  if (index == 5) { vloc = VehicleChassisLocations.Front; aloc = ArmorLocation.LeftArm; loc = ChassisLocations.LeftArm; } else
-      //  if (index == 6) { vloc = VehicleChassisLocations.Right; aloc = ArmorLocation.RightLeg; loc = ChassisLocations.RightLeg; } else
-      //  if (index == 7) { vloc = VehicleChassisLocations.Left; aloc = ArmorLocation.LeftLeg; loc = ChassisLocations.LeftLeg; }
-      //  if ((vloc == VehicleChassisLocations.Turret) && (__instance.DisplayedMechDef.Chassis.Head.InternalStructure <= 1.0f)) { __instance.ArmorOutline[index].gameObject.SetActive(false); continue; }
-      //  float curAVal = HUDMechArmorReadout.GetCurrentArmorForLocation(__instance.DisplayedMechDef, aloc);
-      //  float intAVal = HUDMechArmorReadout.GetInitialArmorForLocation(__instance.DisplayedMechDef, aloc);
-      //  float curSVal = HUDMechArmorReadout.GetCurrentStructureForLocation(__instance.DisplayedMechDef, aloc);
-      //  float intSVal = HUDMechArmorReadout.GetInitialStructureForLocation(__instance.DisplayedMechDef, loc);
-      //  if ((intAVal - curAVal) >= 1.0f) { __instance.ArmorOutline[index].gameObject.SetActive(false); continue; }
-      //  if ((intSVal - curSVal) >= 1.0f) { __instance.ArmorOutline[index].gameObject.SetActive(false); continue; }
-      //  VehicleReadoutImage replaceimage = HUDMechArmorReadout_Init_info.vehicleImages[vloc];
-      //  replaceimage.Update(__instance.ArmorOutline[index].rectTransform);
-      //  __instance.ArmorOutline[index].transform.localPosition = Vector3.zero;
-      //  __instance.ArmorOutline[index].transform.localScale = Vector3.one * 0.8f;
-      //  __instance.ArmorOutline[index].vectorGraphics = replaceimage.armor;
-      //}
-      //if (HUDMechArmorReadout_Init_info.d_originalStructure.TryGetValue(__instance.GetInstanceID(), out List<HUDMechArmorReadoutOriginal> originalStructure) == false) {
-      //  originalStructure = null;
-      //}
-      //for (int index = 0; index < __instance.Structure.Length; ++index) {
-      //  if (__instance.Structure[index] == null) { continue; }
-      //  if (index == 2) { __instance.Structure[index].gameObject.SetActive(false); continue; } else
-      //  if (index == 3) { __instance.Structure[index].gameObject.SetActive(false); continue; } else
-      //  if (index == 4) { __instance.Structure[index].gameObject.SetActive(false); continue; };
-      //  VehicleChassisLocations vloc = VehicleChassisLocations.Turret;
-      //  ArmorLocation aloc = ArmorLocation.Head;
-      //  ChassisLocations loc = ChassisLocations.Head;
-      //  if (index == 0) { vloc = VehicleChassisLocations.Turret; aloc = ArmorLocation.Head; loc = ChassisLocations.Head; } else
-      //  if (index == 1) { vloc = VehicleChassisLocations.Rear; aloc = ArmorLocation.RightArm; loc = ChassisLocations.RightArm; } else
-      //  if (index == 5) { vloc = VehicleChassisLocations.Front; aloc = ArmorLocation.LeftArm; loc = ChassisLocations.LeftArm; } else
-      //  if (index == 6) { vloc = VehicleChassisLocations.Right; aloc = ArmorLocation.RightLeg; loc = ChassisLocations.RightLeg; } else
-      //  if (index == 7) { vloc = VehicleChassisLocations.Left; aloc = ArmorLocation.LeftLeg; loc = ChassisLocations.LeftLeg; }
-      //  if ((vloc == VehicleChassisLocations.Turret) && (__instance.DisplayedMechDef.Chassis.Head.InternalStructure <= 1.0f)) { __instance.Structure[index].gameObject.SetActive(false); }
-      //  VehicleReadoutImage replaceimage = HUDMechArmorReadout_Init_info.vehicleImages[vloc];
-      //  float curSVal = HUDMechArmorReadout.GetCurrentStructureForLocation(__instance.DisplayedMechDef, aloc);
-      //  float intSVal = HUDMechArmorReadout.GetInitialStructureForLocation(__instance.DisplayedMechDef, loc);
-      //  __instance.Structure[index].gameObject.transform.position = __instance.gameObject.transform.position + replaceimage.pos;
-      //  replaceimage.Update(__instance.Structure[index].rectTransform);
-      //  __instance.Structure[index].vectorGraphics = replaceimage.structure;
-      //  if(originalStructure != null) {
-      //    HUDMechArmorReadoutOriginal orig = originalStructure[index];
-      //    if (orig != null) { if (orig.color.HasValue == false) { orig.color = __instance.Structure[index].color; }; }
-      //  }
-      //  if (curSVal <= 0f) { __instance.Structure[index].color = UIManager.Instance.UIColorRefs.structureDestroyed; } else
-      //  if ((intSVal - curSVal) >= 1.0f) { __instance.Structure[index].color = UIManager.Instance.UIColorRefs.structureDamaged; }
-      //}
     }
   }
   [HarmonyPatch(typeof(UnitSpawnPointGameLogic))]
@@ -1475,7 +1093,8 @@ namespace CustomUnits {
       return Transpilers.MethodReplacer(instructions, targetMethod, replacementMethod);
     }
     public static AbstractActor SpawnMech(UnitSpawnPointGameLogic instance, MechDef mDef, PilotDef pilot, Team team, Lance lance, HeraldryDef customHeraldryDef) {
-      Log.TWL(0, "UnitSpawnPointGameLogic.Spawn SpawnMech " + mDef.Description.Id + " chassis:" + mDef.ChassisID);
+      Log.TWL(0, "UnitSpawnPointGameLogic.Spawn SpawnMech " + mDef.Description.Id + " chassis:" + (mDef.Chassis == null?"null":mDef.Chassis.Description.Id));
+      if (mDef.Chassis == null) { return null; }
       DataManager dataManager = mDef.DataManager;
       if (dataManager == null) { dataManager = mDef.Chassis.DataManager; }
       if (dataManager == null) { dataManager = instance.Combat.DataManager; }
@@ -1483,16 +1102,17 @@ namespace CustomUnits {
       Log.WL(1, "dataManager:" + (dataManager == null ? "null" : "not null"));
       AbstractActor result = null;
       try {
-        if (mDef.IsFake(mDef.Description.Id) == false) {
-          if (mDef.Chassis.IsFake(mDef.Chassis.Description.Id) == false) {
-            Log.WL(1, "spawning mech");
-            result = instance.SpawnMech(mDef, pilot, team, lance, customHeraldryDef);
-          } else {
-            Log.WL(1, "spawning vehicle");
-            VehicleDef def = mDef.toVehicleDef(dataManager);
-            Log.WL(1, def.ToJSON());
-            result = instance.SpawnVehicle(def, pilot, team, lance, customHeraldryDef); ;
+        bool spawnAsVehicle = false;
+        if(mDef.Chassis.ChassisInfo().SpawnAs == SpawnType.Undefined) {
+          if (mDef.ChassisID.IsInFakeChassis()) {
+            spawnAsVehicle = true;
           }
+        } else {
+          spawnAsVehicle = mDef.Chassis.ChassisInfo().SpawnAs == SpawnType.AsVehicle;
+        }
+        if (spawnAsVehicle == false) {
+          Log.WL(1, "spawning mech");
+          result = instance.SpawnMech(mDef, pilot, team, lance, customHeraldryDef);
         } else {
           Log.WL(1, "spawning vehicle");
           VehicleDef def = mDef.toVehicleDef(dataManager);
@@ -1507,13 +1127,139 @@ namespace CustomUnits {
       }
     }
   }
+  [HarmonyPatch(typeof(ActorMovementSequence))]
+  [HarmonyPatch("AlignVehicleToGround")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { typeof(Transform), typeof(float) })]
+  public static class ActorMovementSequence_AlignVehicleToGround {
+    public static bool Prefix(Transform vehicleTransform, float deltaTime) {
+
+      PilotableActorRepresentation rep = vehicleTransform.gameObject.GetComponent<PilotableActorRepresentation>();
+      if (rep != null) {
+        if (rep.parentActor != null) {
+          if (rep.parentActor.UnaffectedPathing()) { return false; }
+        }
+      }
+      //Log.TWL(0, "ActorMovementSequence.AlignVehicleToGround "+ vehicleTransform.name);
+      if (Traverse.Create(typeof(ActorMovementSequence)).Field<int>("ikLayerMask").Value == 0) {
+        Traverse.Create(typeof(ActorMovementSequence)).Field<int>("ikLayerMask").Value = LayerMask.GetMask("Terrain", "Obstruction", "Combatant");
+      }
+      RaycastHit[] raycastHitArray = Physics.RaycastAll(new Ray(vehicleTransform.position + Vector3.up * 20f, Vector3.down), 40f, Traverse.Create(typeof(ActorMovementSequence)).Field<int>("ikLayerMask").Value);
+      RaycastHit? nullable = new RaycastHit?();
+      RaycastHit raycastHit;
+      for (int index = 0; index < raycastHitArray.Length; ++index) {
+        if (raycastHitArray[index].collider.transform.name.Contains("SBODY")) { continue; }
+        //Log.WL(1, "ray hit:" + raycastHitArray[index].point + " hit collider:" + raycastHitArray[index].collider.transform.name);
+        if (!((UnityEngine.Object)raycastHitArray[index].transform == (UnityEngine.Object)vehicleTransform)) {
+          if (!nullable.HasValue) {
+            nullable = new RaycastHit?(raycastHitArray[index]);
+          } else {
+            raycastHit = nullable.Value;
+            if ((double)raycastHit.point.y < (double)raycastHitArray[index].point.y)
+              nullable = new RaycastHit?(raycastHitArray[index]);
+          }
+        }
+      }
+      if (!nullable.HasValue) { return false; }
+      raycastHit = nullable.Value;
+      Vector3 normal = raycastHit.normal;
+      //Log.WL(1, "ray hit found. Point:" + raycastHit.point + " hit collider:" + raycastHit.collider.transform.name);
+      Quaternion to = Quaternion.FromToRotation(vehicleTransform.up, normal) * Quaternion.Euler(0.0f, vehicleTransform.rotation.eulerAngles.y, 0.0f);
+      vehicleTransform.rotation = Quaternion.RotateTowards(vehicleTransform.rotation, to, 180f * deltaTime);
+      return false;
+    }
+  }
+  [HarmonyPatch(typeof(UnitSpawnPointGameLogic))]
+  [HarmonyPatch("SpawnMech")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { typeof(MechDef), typeof(PilotDef), typeof(Team), typeof(Lance), typeof(HeraldryDef) })]
+  public static class UnitSpawnPointGameLogic_SpawnMechAlign {
+    public static void Postfix(UnitSpawnPointGameLogic __instance, MechDef mDef, PilotDef pilot, Team team, Lance lance, HeraldryDef customHeraldryDef, ref Mech __result) {
+      UnitCustomInfo info = mDef.GetCustomInfo();
+      Log.TWL(0, "UnitSpawnPointGameLogic.SpawnMech "+mDef.Description.Id);
+      if (info != null) {
+        if (info.FakeVehicle) {
+          Log.WL(1, "AlignVehicleToGround "+ __result.GameRep.transform.name+" rotation:"+__result.GameRep.transform.rotation);
+          ActorMovementSequence.AlignVehicleToGround(__result.GameRep.transform, 100f);
+          Log.WL(1, "rotation:" + __result.GameRep.transform.rotation);
+        }
+      };
+    }
+  }
+  [HarmonyPatch(typeof(ActorMovementSequence))]
+  [HarmonyPatch("UpdateRotation")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { })]
+  public static class ActorMovementSequence_UpdateRotation {
+    private static MethodInfo mOwningVehicleSet;
+    private delegate void OwningVehicleSetDelegate(ActorMovementSequence seq, Vehicle v);
+    private static OwningVehicleSetDelegate OwningVehicleSetInvoker = null;
+    public static bool Prepare() {
+      mOwningVehicleSet = null;
+      try {
+        mOwningVehicleSet = typeof(ActorMovementSequence).GetProperty("OwningVehicle", BindingFlags.Instance | BindingFlags.Public).GetSetMethod(true);
+        if (mOwningVehicleSet == null) { return false; }
+      } catch (Exception e) {
+        Log.LogWrite(e.ToString() + "\n");
+        return false;
+      }
+      var dm = new DynamicMethod("CUOwningVehicleSet", null, new Type[] { typeof(ActorMovementSequence), typeof(Vehicle) }, typeof(ActorMovementSequence));
+      var gen = dm.GetILGenerator();
+      gen.Emit(OpCodes.Ldarg_0);
+      gen.Emit(OpCodes.Ldarg_1);
+      gen.Emit(OpCodes.Call, mOwningVehicleSet);
+      gen.Emit(OpCodes.Ret);
+      OwningVehicleSetInvoker = (OwningVehicleSetDelegate)dm.CreateDelegate(typeof(OwningVehicleSetDelegate));
+      return true;
+    }
+    public static void OwningVehicle(this ActorMovementSequence seq, Vehicle v) {
+      OwningVehicleSetInvoker(seq, v);
+    }
+    public static bool Prefix(ActorMovementSequence __instance, ref Vehicle __state, Vector3 ___Forward) {
+      __state = null;
+      CustomMechRepresentation custRep = __instance.ActorRep as CustomMechRepresentation;
+      if (custRep != null) {
+        if (__instance.OrdersAreComplete == false) {
+          Transform MoverTransform = Traverse.Create(__instance).Property<Transform>("MoverTransform").Value;
+          float deltaTime = Traverse.Create(__instance).Property<float>("deltaTime").Value;
+          custRep.UpdateRotation(MoverTransform, ___Forward, deltaTime);
+          return false;
+        }
+      }
+      if (__instance.OwningVehicle != null) {
+        if (__instance.OwningVehicle.UnaffectedPathing() == false) { return true; };
+        __state = __instance.OwningVehicle;
+        __instance.OwningVehicle(null);
+      }
+      return true;
+    }
+    public static void Postfix(ActorMovementSequence __instance, ref Vehicle __state,ref Vector3 ___Forward) {
+      if (__state != null) {
+        __instance.OwningVehicle(__state);
+      }
+      //if (__instance.OwningMech != null) {
+        //UnitCustomInfo info = __instance.OwningMech.GetCustomInfo();
+        //if (info != null) {
+        //  if (info.FakeVehicle) {
+        //    Transform MoverTransform = Traverse.Create(__instance).Property<Transform>("MoverTransform").Value;
+        //    float deltaTime = Traverse.Create(__instance).Property<float>("deltaTime").Value;
+        //    MoverTransform.rotation = Quaternion.RotateTowards(MoverTransform.rotation, Quaternion.LookRotation(___Forward), 180f * deltaTime);
+        //    ActorMovementSequence.AlignVehicleToGround(MoverTransform, deltaTime);
+        //  }
+        //}
+      //}
+    }
+  }
+
   [HarmonyPatch(typeof(MechDef))]
   [HarmonyPatch("GatherDependencies")]
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { typeof(DataManager), typeof(DataManager.DependencyLoadRequest), typeof(uint) })]
   public static class MechDef_GatherDependencies_fake {
     public static void Postfix(MechDef __instance, DataManager dataManager, DataManager.DependencyLoadRequest dependencyLoad, uint activeRequestWeight) {
-      if (__instance.IsFake(__instance.Description.Id) == false) { return; }
+      if (__instance.Description.Id.IsInFakeDef() == false) { return; }
+      UnitCustomInfo info = __instance.GetCustomInfo();
+      if (info != null) { if (info.FakeVehicle) { return; } }
       Log.TWL(0, "MechDef.GatherDependencies fake " + __instance.Description.Id);
       dependencyLoad.RequestResource(BattleTechResourceType.VehicleDef, __instance.Description.Id);
       dependencyLoad.RequestResource(BattleTechResourceType.VehicleChassisDef, __instance.ChassisID);
@@ -1533,7 +1279,7 @@ namespace CustomUnits {
     public static DataManager DataManager(this ActorDef def) { return dataManager; }
     public static void Postfix(ChassisDef __instance, DataManager dataManager, DataManager.DependencyLoadRequest dependencyLoad, uint activeRequestWeight) {
       ChassisDef_GatherDependencies_fake.dataManager = dataManager;
-      if (__instance.IsFake(__instance.Description.Id) == false) { return; }
+      if (__instance.Description.Id.IsInFakeChassis() == false) { return; }
       Log.TWL(0, "ChassisDef.GatherDependencies fake " + __instance.Description.Id);
       if (dataManager.VehicleChassisDefs.TryGet(__instance.Description.Id, out VehicleChassisDef vchassis)) {
         //vchassis.GatherDependencies(dataManager, dependencyLoad, activeRequestWeight);
@@ -1563,8 +1309,10 @@ namespace CustomUnits {
   public static class MechDef_IsLocationDestroyed {
     public static void Postfix(MechDef __instance, ChassisLocations loc, ref bool __result) {
       if (__result == false) { return; }
-      if (__instance.IsFake(__instance.Description.Id) == false) { return; };
-      if (loc == ChassisLocations.Head) { if (__instance.Chassis.Head.InternalStructure == 0f) { __result = false; }; }
+      LocationDef locDef = __instance.Chassis.GetLocationDef(loc);
+      if ((locDef.InternalStructure <= 1.0f) && (locDef.MaxArmor == 0f)) { __result = false; }
+      //if (__instance.IsFake(__instance.Description.Id) == false) { return; };
+      //if (loc == ChassisLocations.Head) { if (__instance.Chassis.Head.InternalStructure == 0f) { __result = false; }; }
       //if (loc == ChassisLocations.CenterTorso) { __result = false; return; }
       //if (loc == ChassisLocations.RightTorso) { __result = false; return; }
       //if (loc == ChassisLocations.LeftTorso) { __result = false; return; }
@@ -1576,10 +1324,10 @@ namespace CustomUnits {
   public static class MechValidationRules_ValidateMechStructureSimple {
     public static void Postfix(MechDef mechDef, ref bool __result) {
       if (__result == true) { return; }
-      if (mechDef.Chassis.IsFake(mechDef.ChassisID) == false) { return; };
+      if (mechDef.IsVehicle()) { return; };
       __result = ((double)mechDef.LeftArm.CurrentInternalStructure >= 1.0) && ((double)mechDef.RightArm.CurrentInternalStructure >= 1.0) && ((double)mechDef.LeftLeg.CurrentInternalStructure >= 1.0) && ((double)mechDef.RightLeg.CurrentInternalStructure >= 1.0);
       if (mechDef.Chassis.Head.InternalStructure > 0f) { __result = __result && (mechDef.Head.CurrentInternalStructure >= 1f); };
-      Log.TWL(0, "MechValidationRules.ValidateMechStructureSimple " + mechDef.Chassis.Description.Id + " fake:" + mechDef.Chassis.IsFake(mechDef.ChassisID) + " result:" + __result);
+      Log.TWL(0, "MechValidationRules.ValidateMechStructureSimple " + mechDef.Chassis.Description.Id + " isVehicle:" + mechDef.IsVehicle() + " result:" + __result);
     }
   }
   [HarmonyPatch(typeof(Contract))]
@@ -1600,23 +1348,21 @@ namespace CustomUnits {
     public static void Postfix(SimGameState sim, MechDef mechDef, ref bool __result) {
       if (__result == true) { return; }
       try {
-        Log.TWL(0, "MechValidationRules.ValidateMechCanBeFielded");
+        Log.TW(0, "MechValidationRules.ValidateMechCanBeFielded");
         if (mechDef == null) { Log.WL(1, "mechDef is null"); return; };
-        Log.WL(1, mechDef.Description.Id);
-        bool isFake = BattleTechResourceLocator_RefreshTypedEntries_Patch.IsChassisFake(mechDef.ChassisID);
-        if (isFake == false) { return; };
-        Log.WL(1, mechDef.ChassisID + " fake:" + isFake + " result:" + __result);
+        Log.W(1, mechDef.Description.Id);
+        bool isFake = mechDef.IsVehicle();
+        Log.W(1, mechDef.ChassisID + " fake:" + isFake + " result:" + __result);
+        //if (isFake == false) { return; };
 
-        int num1 = MechValidationRules.ValidateSimGameMechNotInMaintenance(sim, mechDef) ? 1 : 0;
-        Log.WL(1, "num1 = " + num1);
-        bool flag1 = MechValidationRules.ValidateMechStructureSimple(mechDef);
-        Log.WL(1, "flag1 = " + flag1);
-        bool flag2 = MechValidationRules.ValidateMechPosessesWeaponsSimple(mechDef);
-        Log.WL(1, "flag2 = " + flag2);
-        int num2 = flag1 ? 1 : 0;
-        Log.WL(1, "num2 = " + num2);
-        __result = (num1 & num2 & (flag2 ? 1 : 0)) != 0;
-        Log.WL(1, "result:" + __result);
+        bool inMaintaince = MechValidationRules.ValidateSimGameMechNotInMaintenance(sim, mechDef) == false;
+        Log.WL(1, "inMaintaince = " + inMaintaince);
+        bool badStructure = MechValidationRules.ValidateMechStructureSimple(mechDef);
+        Log.WL(1, "badStructure = " + badStructure);
+        bool badWeapon = MechValidationRules.ValidateMechPosessesWeaponsSimple(mechDef);
+        Log.WL(1, "badWeapon = " + badWeapon);
+        __result = (inMaintaince || badStructure || badWeapon) == false;
+        Log.WL(1, "CanBeFielded:" + __result);
       } catch (Exception e) {
         Log.TWL(0, e.ToString());
       }
@@ -1628,78 +1374,11 @@ namespace CustomUnits {
   public static class MechValidationRules_ValidateMechPosessesWeaponsSimple {
     public static void Postfix(MechDef mechDef, ref bool __result) {
       if (__result == true) { return; }
-      if (mechDef.Chassis.IsFake(mechDef.Chassis.Description.Id) == false) { return; };
-      Log.TWL(0, "MechValidationRules.ValidateMechPosessesWeaponsSimple " + mechDef.Chassis.Description.Id + " fake:" + mechDef.Chassis.IsFake(mechDef.Chassis.Description.Id) + " result:" + __result);
+      if (mechDef.IsVehicle() == false) { return; };
+      Log.TWL(0, "MechValidationRules.ValidateMechPosessesWeaponsSimple " + mechDef.Chassis.Description.Id + " is vehicle:" + mechDef.IsVehicle() + " result:" + __result);
     }
   }
 
-#pragma warning disable CS0252
-  [HarmonyPatch(typeof(MechDef))]
-  [HarmonyPatch("RefreshInventory")]
-  [HarmonyPatch(MethodType.Normal)]
-  [HarmonyPatch(new Type[] { })]
-  public static class MechDef_RefreshInventory {
-    static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) {
-      Log.TWL(0, "MechDef.RefreshInventory Transpiler");
-      MethodInfo targetMethod = typeof(MechHardpointRules).GetMethod("GetComponentPrefabName", BindingFlags.Static | BindingFlags.Public);
-      MethodInfo removeMethod = typeof(ChassisDef).GetProperty("HardpointDataDef").GetMethod;
-      var replacementMethod = AccessTools.Method(typeof(MechDef_RefreshInventory), nameof(GetComponentPrefabName));
-      List<CodeInstruction> uInstructions = new List<CodeInstruction>();
-      uInstructions.AddRange(instructions);
-      int MethodPos = -1;
-      for (int t = 0; t < uInstructions.Count; ++t) {
-        if ((uInstructions[t].opcode == OpCodes.Call) && (uInstructions[t].operand == targetMethod)) {
-          MethodPos = t; break;
-        }
-      }
-      if (MethodPos < 0) {
-        Log.WL(1, "can't find MechHardpointRules.GetComponentPrefabName call");
-        return uInstructions;
-      }
-      Log.WL(1, "found MechHardpointRules.GetComponentPrefabName call " + MethodPos.ToString("X"));
-      int RemovePos = -1;
-      for (int t = MethodPos; t >= 0; --t) {
-        if ((uInstructions[t].opcode == OpCodes.Callvirt) && (uInstructions[t].operand == removeMethod)) {
-          RemovePos = t; break;
-        }
-      }
-      if (RemovePos < 0) {
-        Log.WL(1, "can't find ChassisDef::get_HardpointDataDef() call");
-        return uInstructions;
-      }
-      Log.WL(1, "found ChassisDef::get_HardpointDataDef() call " + RemovePos.ToString("X"));
-      uInstructions[MethodPos].operand = replacementMethod;
-      uInstructions.RemoveAt(RemovePos);
-      return uInstructions;
-    }
-#pragma warning restore CS0252
-
-    private static string GetComponentPrefabName(ChassisDef chassis, BaseComponentRef componentRef, string prefabBase, string location, ref List<string> usedPrefabNames) {
-      Log.TWL(0, "MechDef.RefreshInventory.GetComponentPrefabName chassis " + chassis.Description.Id + " fake: " + chassis.IsFake(chassis.Description.Id));
-      Log.W(1, location);
-      if (chassis.IsFake(chassis.Description.Id)) {
-        if (location == ChassisLocations.LeftArm.ToString().ToLower()) {
-          location = VehicleChassisLocations.Front.ToString().ToLower();
-        } else if (location == ChassisLocations.RightArm.ToString().ToLower()) {
-          location = VehicleChassisLocations.Rear.ToString().ToLower();
-        } else if (location == ChassisLocations.LeftLeg.ToString().ToLower()) {
-          location = VehicleChassisLocations.Left.ToString().ToLower();
-        } else if (location == ChassisLocations.RightLeg.ToString().ToLower()) {
-          location = VehicleChassisLocations.Right.ToString().ToLower();
-        } else if (location == ChassisLocations.CenterTorso.ToString().ToLower()) {
-          location = VehicleChassisLocations.Turret.ToString().ToLower();
-        } else if (location == ChassisLocations.RightTorso.ToString().ToLower()) {
-          location = VehicleChassisLocations.Turret.ToString().ToLower();
-        } else if (location == ChassisLocations.LeftTorso.ToString().ToLower()) {
-          location = VehicleChassisLocations.Turret.ToString().ToLower();
-        } else if (location == ChassisLocations.Head.ToString().ToLower()) {
-          location = VehicleChassisLocations.Turret.ToString().ToLower();
-        }
-      }
-      Log.WL(0, "->" + location);
-      return MechHardpointRules.GetComponentPrefabName(chassis.HardpointDataDef, componentRef, prefabBase, location, ref usedPrefabNames);
-    }
-  }
   /*[HarmonyPatch(typeof(MechDef))]
   [HarmonyPatch("RefreshInventory")]
   [HarmonyPatch(MethodType.Normal)]
@@ -1755,7 +1434,7 @@ namespace CustomUnits {
         JObject olddef = JObject.Parse(json);
         string id = (string)olddef["Description"]["Id"];
         string chassisId = (string)olddef["ChassisID"];
-        bool isFake = BattleTechResourceLocator_RefreshTypedEntries_Patch.IsChassisFake(chassisId);
+        bool isFake = chassisId.IsInFakeChassis();
         Log.WL(1,id+" chassis:"+chassisId+" isFake:"+isFake);
         if (isFake == false) { return true; }
         Log.WL(1, "constants " + (BattleTech.UnityGameInstance.BattleTechGame.constantsManifest() == null ? "null" : BattleTech.UnityGameInstance.BattleTechGame.constantsManifest().FilePath));
@@ -1878,22 +1557,18 @@ namespace CustomUnits {
       return true;
     }
   }
-  [HarmonyPatch(typeof(ChassisDef))]
-  [HarmonyPatch("FromJSON")]
-  [HarmonyPatch(MethodType.Normal)]
-  [HarmonyPatch(new Type[] { typeof(string) })]
-  [HarmonyPriority(Priority.First)]
   public static class ChassisDef_FromJSON_fake {
     private static HashSet<string> fakeHardpoints = new HashSet<string>();
     public static bool isFakeHardpoint(this HardpointDataDef hardpoint) { return fakeHardpoints.Contains(hardpoint.ID); }
-    public static bool Prefix(ChassisDef __instance, ref string json) {
-      Log.TW(0, "ChassisDef.FromJSON fake");
+    public static string ConstructMechFakeVehicle(this string json) {
+      Log.TW(0, "ChassisDef.ConstructFake");
+      string result = json;
       try {
         JObject olddef = JObject.Parse(json);
         string id = (string)olddef["Description"]["Id"];
-        bool isFake = BattleTechResourceLocator_RefreshTypedEntries_Patch.IsChassisFake(id);
+        bool isFake = id.IsInFakeChassis();
         Log.WL(1, id + " isFake:" + isFake);
-        if (isFake == false) { return true; }
+        if (isFake == false) { return result; }
         Log.WL(1, "constants " + (BattleTech.UnityGameInstance.BattleTechGame.constantsManifest() == null ? "null" : BattleTech.UnityGameInstance.BattleTechGame.constantsManifest().FilePath));
         float ArmorMultiplierVehicle = 1f;
         float StructureMultiplierVehicle = 1f;
@@ -1912,6 +1587,9 @@ namespace CustomUnits {
         Log.WL(1, "ArmorMultiplierVehicle:" + ArmorMultiplierVehicle);
         Log.WL(1, "StructureMultiplierVehicle:" + StructureMultiplierVehicle);
         JObject newdef = new JObject();
+        if (olddef["Custom"] != null) {
+          newdef["Custom"] = olddef["Custom"];
+        }
         newdef["Description"] = olddef["Description"];
         newdef["MovementCapDefID"] = olddef["MovementCapDefID"];
         newdef["PathingCapDefID"] = olddef["PathingCapDefID"];
@@ -2003,38 +1681,55 @@ namespace CustomUnits {
           mLocations.Add(adLoc);
         }
         newdef["Locations"] = mLocations;
-        json = newdef.ToString(Newtonsoft.Json.Formatting.Indented);
-        Log.WL(1, json);
+        result = newdef.ToString(Newtonsoft.Json.Formatting.Indented);
+        Log.WL(1, result);
       } catch (Exception e) {
-        Log.LogWrite(json, true);
-        Log.LogWrite(e.ToString() + "\n", true);
+        Log.TWL(0,json, true);
+        Log.TWL(0,e.ToString(), true);
       }
-      return true;
+      return result;
     }
   }
   [HarmonyPatch(typeof(BattleTechResourceLocator), "RefreshTypedEntries")]
   public static class BattleTechResourceLocator_RefreshTypedEntries_Patch {
     private static HashSet<string> fakemechDefs = new HashSet<string>();
     private static HashSet<string> fakeChassisDef = new HashSet<string>();
+    private static Dictionary<string, HashSet<string>> chassisMechsRegistry = new Dictionary<string, HashSet<string>>();
     private static VersionManifestEntry CombatGameConstants = null;
     public static VersionManifestEntry constantsManifest(this GameInstance game) { return CombatGameConstants; }
-    public static bool IsFake(this MechDef mechDef, string id) {
+    //public static void RegisterMech(this MechDef def, string mechId, string chassisId) {
+    //  if(chassisMechsRegistry.TryGetValue(chassisId, out HashSet<string> registry) == false) {
+    //    registry = new HashSet<string>();
+    //    chassisMechsRegistry.Add(chassisId, registry);
+    //  }
+    //  registry.Add(mechId);
+    //}
+    //public static void AddAllRegisterdMechsToFake(this ChassisDef chassis, string chassisId) {
+    //  if (chassisMechsRegistry.TryGetValue(chassisId, out HashSet<string> registry)) {
+    //    foreach (string mechid in registry) { fakemechDefs.Add(mechid); }
+    //  }
+    //}
+    public static bool IsInFakeChassis(this string id) {
+      return fakeChassisDef.Contains(id);
+    }
+    public static bool IsInFakeDef(this string id) {
       return fakemechDefs.Contains(id);
     }
-    public static bool IsFake(this ChassisDef chassisDef, string id) {
-      return fakeChassisDef.Contains(id);
+    public static bool IsVehicle(this ChassisDef chassisDef) {
+      if (chassisDef == null) { return false; }
+      UnitCustomInfo info = chassisDef.GetCustomInfo();
+      if (info == null) { return false; }
+      return info.FakeVehicle;
     }
-    public static bool IsChassisFake(string id) {
-      return fakeChassisDef.Contains(id);
-    }
-    public static bool IsChassisFake(this MechDef mechDef) {
-      return fakeChassisDef.Contains(mechDef.ChassisID);
-    }
-    public static void AddToFake(this VehicleChassisDef def) {
-      fakeChassisDef.Add(def.Description.Id);
-    }
-    public static void AddToFake(this VehicleDef def) {
-      fakemechDefs.Add(def.Description.Id);
+    public static bool IsVehicle(this MechDef mechDef) {
+      if (fakeChassisDef.Contains(mechDef.ChassisID)) { return true; }
+      if (mechDef.Chassis != null) {
+        UnitCustomInfo info = mechDef.GetCustomInfo();
+        if (info != null) { if (info.FakeVehicle) { return true; } }
+      } else {
+        if (mechDef.MechTags.Contains(Core.Settings.MechIsVehicleTag)) { return true; }
+      }
+      return false;
     }
     public static void Postfix(
             Dictionary<BattleTechResourceType, Dictionary<string, VersionManifestEntry>> ___baseManifest,
@@ -2055,13 +1750,12 @@ namespace CustomUnits {
           if (mechs.ContainsKey(vehicle.Key)) { continue; }
           Log.WL(1, "adding MechDef " + vehicle.Key + " " + vehicle.Value.GetRawPath());
           fakemechDefs.Add(vehicle.Key);
-          mechs.Add(vehicle.Key, new VersionManifestEntry(vehicle.Key
-            , vehicle.Value.GetRawPath()
-            , BattleTechResourceType.MechDef.ToString()
-            , vehicle.Value.AddedOn
-            , vehicle.Value.Version.ToString()
-            , vehicle.Value.AssetBundleName
-            , vehicle.Value.IsAssetBundlePersistent));
+          mechs.Add(vehicle.Key, new VersionManifestEntry(vehicle.Key, vehicle.Value.GetRawPath(), BattleTechResourceType.MechDef.ToString()
+            ,vehicle.Value.AddedOn
+            ,vehicle.Value.Version.ToString()
+            ,vehicle.Value.AssetBundleName
+            ,vehicle.Value.IsAssetBundlePersistent)
+          );
         }
       }
       if (___baseManifest.TryGetValue(BattleTechResourceType.VehicleChassisDef, out Dictionary<string, VersionManifestEntry> vchassis)) {
@@ -2108,7 +1802,15 @@ namespace CustomUnits {
       TakeDamageMessage takeDamageMessage = message as TakeDamageMessage;
       if (__instance.DisplayedActor == null || !(takeDamageMessage.affectedObjectGuid == __instance.DisplayedActor.GUID)) { return false; }
       if (__instance.DisplayedActor.UnitType == UnitType.Mech) {
-        __instance.MechArmorDisplay.OnActorTakeDamage((MessageCenterMessage)takeDamageMessage);
+        UnitCustomInfo info = __instance.DisplayedActor.GetCustomInfo();
+        bool FakeVehicle = false;
+        HUDFakeVehicleArmorReadout fakeVehicleArmor = __instance.FakeVehicleArmorDisplay();
+        if (info != null) { if (info.FakeVehicle) { if (fakeVehicleArmor != null) { FakeVehicle = true; } } }
+        if (FakeVehicle) {
+          __instance.MechArmorDisplay.OnActorTakeDamage((MessageCenterMessage)takeDamageMessage);
+        } else {
+          __instance.FakeVehicleArmorDisplay().OnActorTakeDamage((MessageCenterMessage)takeDamageMessage);
+        }
       } else if (__instance.DisplayedActor.UnitType == UnitType.Vehicle) {
         __instance.VehicleArmorDisplay().OnActorTakeDamage((MessageCenterMessage)takeDamageMessage);
       }
@@ -2172,37 +1874,17 @@ namespace CustomUnits {
     public static Vector3 targetTrayPos(this CombatHUDMechTray tray) { return i_targetTrayPos_get(tray); }
     public static Vector3 lastTrayPos(this CombatHUDMechTray tray) { return i_lastTrayPos_get(tray); }
     public static void timeSinceLastPosChange(this CombatHUDMechTray tray, float value) { i_timeSinceLastPosChange_set(tray, value); }
-    /*public static bool Prefix(CombatHUDMechTray __instance, AbstractActor ___displayedActor, object ___TrayState, CombatHUD ___HUD) {
-      float timeSinceLastPosChange = __instance.timeSinceLastPosChange();
-      if (timeSinceLastPosChange < __instance.TimeToMoveTray) {
-        __instance.timeSinceLastPosChange(timeSinceLastPosChange + Time.unscaledDeltaTime);
-        if (timeSinceLastPosChange < __instance.TimeToMoveTray) {
-          __instance.transform.localPosition = (Vector3)Vector2.Lerp((Vector2)__instance.lastTrayPos(), (Vector2)__instance.targetTrayPos(), Mathf.SmoothStep(0.0f, 1f, timeSinceLastPosChange / __instance.TimeToMoveTray));
-        } else {
-          __instance.transform.localPosition = __instance.targetTrayPos();
-          if (___TrayState == __instance.Down())
-            __instance.gameObject.SetActive(false);
-        }
-      }
-      if (___displayedActor == null) { return false; }
-      __instance.HeatMeter().UpdateHeat(___displayedActor as Mech);
-      if ((UnityEngine.Object)__instance.ActorInfo != (UnityEngine.Object)null && ___HUD.SelectedActor != null && (___displayedActor.GUID == ___HUD.SelectedActor.GUID && ___displayedActor.IsAvailableThisPhase)) {
-        if (!___displayedActor.HasFiredThisRound || ___displayedActor.CanMoveAfterShooting && !___displayedActor.HasMovedThisRound)
-          __instance.ActorInfo.RefreshPredictedHeatInfo();
-        if (!___displayedActor.HasBegunActivation || ___displayedActor.HasFiredThisRound && ___displayedActor.CanMoveAfterShooting && !___displayedActor.HasMovedThisRound)
-          __instance.ActorInfo.RefreshPredictedStabilityInfo();
-      }
-      if (___displayedActor.UnitType == UnitType.Mech) {
-        __instance.MechArmorDisplay.UpdateMechStructureAndArmor(__instance.shownAttackDirection);
-      } else if (___displayedActor.UnitType == UnitType.Vehicle) { 
-        __instance.VehicleArmorDisplay().UpdateVehicleStructureAndArmor(__instance.shownAttackDirection);
-      };
-      return false;
-    }*/
     public static void Postfix(CombatHUDMechTray __instance, AbstractActor ___displayedActor) {
       if (___displayedActor == null) { return; }
       if (___displayedActor.UnitType == UnitType.Vehicle) {
         __instance.VehicleArmorDisplay().UpdateVehicleStructureAndArmor(__instance.shownAttackDirection);
+      }else if(___displayedActor.UnitType == UnitType.Mech) {
+        UnitCustomInfo info = ___displayedActor.GetCustomInfo();
+        if (info != null) {
+          if (info.FakeVehicle) {
+            __instance.FakeVehicleArmorDisplay().UpdateVehicleStructureAndArmor(__instance.shownAttackDirection);
+          }
+        }
       }
     }
   }
@@ -2220,21 +1902,6 @@ namespace CustomUnits {
   [HarmonyPatch(MethodType.Normal)]
   public static class VehicleDef_Refresh {
     public static bool Prefix(VehicleDef __instance, ref VehicleLocationLoadoutDef[] ___Locations) {
-      /*List<VehicleLocationLoadoutDef> locations = new List<VehicleLocationLoadoutDef>();
-      List<VehicleLocationLoadoutDef> orderedLocations = new List<VehicleLocationLoadoutDef>();
-      locations.AddRange(___Locations);
-      VehicleLocationLoadoutDef? addloc = null;
-      int index = locations.FindIndex(loc => loc.Location == VehicleChassisLocations.Front);
-      if (index == -1) { addloc = new VehicleLocationLoadoutDef(VehicleChassisLocations.Front); } else { addloc = locations[index]; }; orderedLocations.Add(addloc.Value);
-      index = locations.FindIndex(loc => loc.Location == VehicleChassisLocations.Left);
-      if (index == -1) { addloc = new VehicleLocationLoadoutDef(VehicleChassisLocations.Left); } else { addloc = locations[index]; }; orderedLocations.Add(addloc.Value);
-      index = locations.FindIndex(loc => loc.Location == VehicleChassisLocations.Right);
-      if (index == -1) { addloc = new VehicleLocationLoadoutDef(VehicleChassisLocations.Right); } else { addloc = locations[index]; }; orderedLocations.Add(addloc.Value);
-      index = locations.FindIndex(loc => loc.Location == VehicleChassisLocations.Rear);
-      if (index == -1) { addloc = new VehicleLocationLoadoutDef(VehicleChassisLocations.Rear); } else { addloc = locations[index]; }; orderedLocations.Add(addloc.Value);
-      index = locations.FindIndex(loc => loc.Location == VehicleChassisLocations.Turret);
-      if (index == -1) { addloc = new VehicleLocationLoadoutDef(VehicleChassisLocations.Turret); } else { addloc = locations[index]; }; orderedLocations.Add(addloc.Value);
-      ___Locations = orderedLocations.ToArray();*/
       return true;
     }
   }
@@ -2243,25 +1910,6 @@ namespace CustomUnits {
   [HarmonyPatch(MethodType.Normal)]
   public static class VehicleChassisDef_Refresh {
     public static bool Prefix(VehicleChassisDef __instance, ref VehicleLocationLoadoutDef[] ___Locations) {
-      /*List<VehicleLocationLoadoutDef> locations = new List<VehicleLocationLoadoutDef>();
-      List<VehicleLocationLoadoutDef> orderedLocations = new List<VehicleLocationLoadoutDef>();
-      locations.AddRange(___Locations);
-      VehicleLocationLoadoutDef? addloc = null;
-      int index = locations.FindIndex(loc => loc.Location == VehicleChassisLocations.Front);
-      if (index == -1) { addloc = new VehicleLocationLoadoutDef(VehicleChassisLocations.Front); } else { addloc = locations[index]; }; orderedLocations.Add(addloc.Value);
-      index = locations.FindIndex(loc => loc.Location == VehicleChassisLocations.Left);
-      if (index == -1) { addloc = new VehicleLocationLoadoutDef(VehicleChassisLocations.Left); } else { addloc = locations[index]; }; orderedLocations.Add(addloc.Value);
-      index = locations.FindIndex(loc => loc.Location == VehicleChassisLocations.Right);
-      if (index == -1) { addloc = new VehicleLocationLoadoutDef(VehicleChassisLocations.Right); } else { addloc = locations[index]; }; orderedLocations.Add(addloc.Value);
-      index = locations.FindIndex(loc => loc.Location == VehicleChassisLocations.Rear);
-      if (index == -1) { addloc = new VehicleLocationLoadoutDef(VehicleChassisLocations.Rear); } else { addloc = locations[index]; }; orderedLocations.Add(addloc.Value);
-      index = locations.FindIndex(loc => loc.Location == VehicleChassisLocations.Turret);
-      if (index == -1) {
-      } else {
-        addloc = locations[index];
-        orderedLocations.Add(addloc.Value);
-      }; 
-      ___Locations = orderedLocations.ToArray();*/
       return true;
     }
   }
@@ -2273,7 +1921,6 @@ namespace CustomUnits {
     private static object CombatHUDMechTray_MWTrayState_Up = null;
     private static MethodInfo mi_SetTrayState = null;
     private delegate void d_SetTrayState(CombatHUDMechTray tray, object newState);
-    //private static d_SetTrayState i_SetTrayState = null;
     private delegate CombatHUDHeatMeter d_HeatMeter(CombatHUDMechTray tray);
     private static d_HeatMeter i_HeatMeter = null;
     private delegate void d_RefreshStabilityInfo(CombatHUDMechTray tray);
@@ -2285,16 +1932,6 @@ namespace CustomUnits {
       CombatHUDMechTray_MWTrayState_Down = Enum.Parse(MWTrayState, "Down");
       CombatHUDMechTray_MWTrayState_Up = Enum.Parse(MWTrayState, "Up");
       mi_SetTrayState = typeof(CombatHUDMechTray).GetMethod("SetTrayState", BindingFlags.NonPublic | BindingFlags.Instance);
-      /*{
-        MethodInfo method = typeof(CombatHUDMechTray).GetMethod("SetTrayState", BindingFlags.NonPublic | BindingFlags.Instance);
-        var dm = new DynamicMethod("CUSetTrayState", null, new Type[] { typeof(CombatHUDMechTray), typeof(object) }, typeof(CombatHUDMechTray));
-        var gen = dm.GetILGenerator();
-        gen.Emit(OpCodes.Ldarg_0);
-        gen.Emit(OpCodes.Ldarg_1);
-        gen.Emit(OpCodes.Callvirt, method);
-        gen.Emit(OpCodes.Ret);
-        i_SetTrayState = (d_SetTrayState)dm.CreateDelegate(typeof(d_SetTrayState));
-      }*/
       {
         MethodInfo method = typeof(CombatHUDMechTray).GetProperty("HeatMeter", BindingFlags.NonPublic | BindingFlags.Instance).GetMethod;
         var dm = new DynamicMethod("CUHeatMeter_get", typeof(CombatHUDHeatMeter), new Type[] { typeof(CombatHUDMechTray) }, typeof(CombatHUDMechTray));
@@ -2330,10 +1967,8 @@ namespace CustomUnits {
     public static bool Prefix(CombatHUDMechTray __instance, CombatHUDStatusPanel ___StatusPanel, AbstractActor ___displayedActor) {
       ___StatusPanel.DisplayedCombatant = (ICombatant)___displayedActor;
       if (___displayedActor == null) {
-        //typeof(CombatHUDMechTray).GetMethod("SetTrayState", BindingFlags.NonPublic | BindingFlags.Instance).Invoke(__instance, new object[1] { CombatHUDMechTray_MWTrayState_Down });
         __instance.SetTrayState(CombatHUDMechTray_MWTrayState_Down);
       } else {
-        //typeof(CombatHUDMechTray).GetMethod("SetTrayState", BindingFlags.NonPublic | BindingFlags.Instance).Invoke(__instance, new object[1] { CombatHUDMechTray_MWTrayState_Up });
         __instance.SetTrayState(CombatHUDMechTray_MWTrayState_Up);
         __instance.MechNameText.SetText(___displayedActor.DisplayName, (object[])Array.Empty<object>());
         Mech mech = ___displayedActor as Mech;
@@ -2348,16 +1983,33 @@ namespace CustomUnits {
           } else {
             __instance.WarriorNameText.SetText(pilot.Description.Callsign, (object[])Array.Empty<object>());
             if (mech != null) {
-              __instance.MechPaperDoll().SetActive(true);
-              __instance.MechArmorDisplay.DisplayedMech = mech;
-              __instance.VehicleArmorDisplay().DisplayedVehicle = vehicle;
-              __instance.VehicleArmorDisplay().gameObject.SetActive(false);
-              __instance.RefreshStabilityInfo();
+              bool fakeVehile = false;
+              UnitCustomInfo info = mech.GetCustomInfo();
+              if (info != null) { if (info.FakeVehicle) { fakeVehile = true; } }
+              if (fakeVehile) {
+                __instance.MechPaperDoll().SetActive(false);
+                __instance.MechArmorDisplay.DisplayedMech = null;
+                __instance.VehicleArmorDisplay().DisplayedVehicle = vehicle;
+                __instance.VehicleArmorDisplay().gameObject.SetActive(false);
+                __instance.FakeVehicleArmorDisplay().gameObject.SetActive(true);
+                __instance.FakeVehicleArmorDisplay().DisplayedVehicle = mech;
+                __instance.RefreshStabilityInfo();
+              } else {
+                __instance.MechPaperDoll().SetActive(true);
+                __instance.MechArmorDisplay.DisplayedMech = mech;
+                __instance.VehicleArmorDisplay().DisplayedVehicle = vehicle;
+                __instance.VehicleArmorDisplay().gameObject.SetActive(false);
+                __instance.FakeVehicleArmorDisplay().gameObject.SetActive(false);
+                __instance.FakeVehicleArmorDisplay().DisplayedVehicle = null;
+                __instance.RefreshStabilityInfo();
+              }
             } else if (vehicle != null) {
               __instance.MechPaperDoll().SetActive(false);
-              __instance.VehicleArmorDisplay().gameObject.SetActive(true);
               __instance.MechArmorDisplay.DisplayedMech = mech;
+              __instance.VehicleArmorDisplay().gameObject.SetActive(true);
               __instance.VehicleArmorDisplay().DisplayedVehicle = vehicle;
+              __instance.FakeVehicleArmorDisplay().gameObject.SetActive(false);
+              __instance.FakeVehicleArmorDisplay().DisplayedVehicle = null;
             }
           }
         }
@@ -2365,115 +2017,13 @@ namespace CustomUnits {
       return false;
     }
   }
-  [HarmonyPatch(typeof(HUDVehicleArmorReadout))]
-  [HarmonyPatch("Init")]
-  [HarmonyPatch(MethodType.Normal)]
-  public static class HUDVehicleArmorReadout_Init {
-    private static HUDVehicleArmorReadout fVehicleArmorDisplay = null;
-    private static GameObject fMechPaperDoll = null;
-    public static HUDVehicleArmorReadout VehicleArmorDisplay(this CombatHUDMechTray tray) {
-      return fVehicleArmorDisplay;
-    }
-    public static GameObject MechPaperDoll(this CombatHUDMechTray tray) {
-      return fMechPaperDoll;
-    }
-    //public static readonly string playerGUID = "bf40fd39-ccf9-47c4-94a6-061809681140";
-    public static void Postfix(HUDVehicleArmorReadout __instance, CombatHUD HUD, bool usedForCalledShots) {
-      Log.TWL(0, "HUDVehicleArmorReadout.Init gameObject:" + __instance.gameObject.name + " parent:" + __instance.gameObject.transform.parent.gameObject.name);
-      if (usedForCalledShots) { return; }
-      if (__instance.gameObject.name == "MechTray(vehicle)") { return; }
-      List<CombatHUDVehicleArmorHover> result = new List<CombatHUDVehicleArmorHover>();
-      __instance.GetComponentsInChildren<CombatHUDVehicleArmorHover>(true, result);
-      Log.WL(1, "parent vehicleSlots:" + result.Count);
-      for (int index = 0; index < result.Count; ++index) {
-        CombatHUDVehicleArmorHover armorSlot = result[index];
-        CombatHUDTooltipHoverElement ToolTip = armorSlot.GetComponent<CombatHUDTooltipHoverElement>();
-        //typeof(CombatHUDTooltipHoverElement).GetProperty("ToolTip")
-        if (ToolTip == null) { continue; }
-        Log.WL(2, "[" + index + "] toolTip:" + ToolTip.GetInstanceID() + " hoverpanel:" + (ToolTip.ToolTip == null ? "null" : ToolTip.ToolTip.GetInstanceID().ToString()));
-        //ToolTip.transform.position = slotPos;
-        //Log.WL(0," -> "+ ToolTip.transform.position);
-      }
-      GameObject vehiclePaperDoll = GameObject.Instantiate(__instance.gameObject);
-      vehiclePaperDoll.name = "MechTray(vehicle)";
-      vehiclePaperDoll.transform.SetParent(HUD.MechTray.MechArmorDisplay.gameObject.transform);
-      vehiclePaperDoll.transform.localScale = Vector3.one * 1.2f;
-      fMechPaperDoll = HUD.MechTray.MechArmorDisplay.gameObject.transform.Find("MechPaperDoll").gameObject;
-      GameObject MechTray_ArmorTorso = fMechPaperDoll.transform.FindRecursive("MechTray_ArmorTorso").gameObject;
-      GameObject MechTray_ArmorLL = fMechPaperDoll.transform.FindRecursive("MechTray_ArmorLL").gameObject;
-      vehiclePaperDoll.transform.position = MechTray_ArmorTorso.transform.position;
-      RectTransform MechTray_ArmorLLrt = MechTray_ArmorLL.transform as RectTransform;
-      RectTransform vehiclePaperDollrt = vehiclePaperDoll.transform as RectTransform;
-      Vector3[] MechTray_ArmorLLc = new Vector3[4];
-      Vector3[] vehiclePaperDollc = new Vector3[4];
-      MechTray_ArmorLLrt.GetWorldCorners(MechTray_ArmorLLc);
-      vehiclePaperDollrt.GetWorldCorners(vehiclePaperDollc);
-      float bottom_desired = MechTray_ArmorLLc[0].y;
-      float bottom_real = vehiclePaperDollc[0].y;
-      Vector3 realposition = vehiclePaperDoll.transform.localPosition;
-      Log.W(1, "vehiclePaperDoll.transform.position " + vehiclePaperDoll.transform.position);
-      realposition.y += (bottom_desired - bottom_real);
-      vehiclePaperDoll.transform.localPosition = realposition;
-      Log.WL(0, " -> " + vehiclePaperDoll.transform.position);
-
-      vehiclePaperDoll.SetActive(true);
-      fVehicleArmorDisplay = vehiclePaperDoll.GetComponent<HUDVehicleArmorReadout>();
-      List<CombatHUDMechTrayArmorHover> mechSlots = new List<CombatHUDMechTrayArmorHover>();
-      HUD.MechTray.MechArmorDisplay.GetComponentsInChildren<CombatHUDMechTrayArmorHover>(true, mechSlots);
-      Vector3 slotPos = Vector3.zero;
-      Log.WL(1, "mechSlots:" + mechSlots.Count);
-      GameObject DisplayPosition = null;
-      Vector3 DisplayOffset = Vector3.zero;
-      CombatHUDTooltipHoverElement mechToolTip = null;
-      for (int index = 0; index < mechSlots.Count; ++index) {
-        CombatHUDMechTrayArmorHover mechSlot = mechSlots[index];
-        CombatHUDTooltipHoverElement ToolTip = mechSlot.GetComponent<CombatHUDTooltipHoverElement>();
-        mechToolTip = ToolTip;
-        if (ToolTip == null) { continue; }
-        DisplayPosition = ToolTip.DisplayPosition;
-        DisplayOffset = ToolTip.DisplayOffset;
-        Log.WL(2, "[" + index + "] tooltip:" + ToolTip.GetInstanceID() + " orientation:" + ToolTip.Orientation + " DisplayPosition:" + ToolTip.DisplayPosition.GetInstanceID());
-        slotPos = mechSlot.transform.position;
-      }
-      vehiclePaperDoll.GetComponentsInChildren<CombatHUDVehicleArmorHover>(true, result);
-      Log.WL(1, "vehicleSlots:" + result.Count);
-      for (int index = 0; index < result.Count; ++index) {
-        CombatHUDVehicleArmorHover armorSlot = result[index];
-        CombatHUDTooltipHoverElement ToolTip = armorSlot.GetComponent<CombatHUDTooltipHoverElement>();
-        //typeof(CombatHUDTooltipHoverElement).GetProperty("ToolTip")
-        if (ToolTip == null) { continue; }
-        ToolTip.DisplayPosition = DisplayPosition;
-        ToolTip.Orientation = CombatHUDTooltipHoverElement.ToolTipOrientation.Up;
-        ToolTip.DisplayOffset = DisplayOffset;
-        Log.WL(2, "[" + index + "] toolTip:" + ToolTip.GetInstanceID() + " hoverpanel:" + (ToolTip.ToolTip == null ? "null" : ToolTip.ToolTip.GetInstanceID().ToString()));
-        //ToolTip.transform.position = slotPos;
-        //Log.WL(0," -> "+ ToolTip.transform.position);
-      }
-      fVehicleArmorDisplay.Init(HUD, false);
-      fVehicleArmorDisplay.ArmorBar = HUD.MechTray.MechArmorDisplay.ArmorBar;
-      fVehicleArmorDisplay.StructureBar = HUD.MechTray.MechArmorDisplay.StructureBar;
-      fVehicleArmorDisplay.HoverInfoTextArmor = HUD.MechTray.MechArmorDisplay.HoverInfoTextArmor;
-      fVehicleArmorDisplay.HoverInfoTextStructure = HUD.MechTray.MechArmorDisplay.HoverInfoTextStructure;
-    }
-  }
   [HarmonyPatch(typeof(SkirmishSettings_Beta))]
   [HarmonyPatch("FinalizeLances")]
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { })]
   public static class SkirmishSettings_Beta_FinalizeLances {
-    //public static readonly string playerGUID = "bf40fd39-ccf9-47c4-94a6-061809681140";
     public static void Postfix(SkirmishSettings_Beta __instance, ref LanceConfiguration __result, LancePreviewPanel ___playerLancePreview, UIManager ___uiManager) {
       Log.TWL(0, "SkirmishSettings_Beta.FinalizeLances units:" + __result.Lances[___playerLancePreview.playerGUID].Count);
-      /*if (__result.Lances[___playerLancePreview.playerGUID].Count < 4) {
-        VehicleDef testUnitDef = ___uiManager.dataManager.VehicleDefs.Get("vehicledef_WARRIOR_VTOL");
-        PilotDef testPilotDef = ___uiManager.dataManager.PilotDefs.Get("pilot_kbeta_kraken");
-        Log.WL(1, "unit:"+(testUnitDef == null?"null":"not null"));
-        Log.WL(1, "pilot:" + (testPilotDef == null ? "null" : "not null"));
-        if ((testUnitDef != null)&&(testPilotDef != null)) {
-          __result.AddUnit(___playerLancePreview.playerGUID, testUnitDef,testPilotDef);
-        }
-      }*/
-      //return true;
     }
   }
   [HarmonyPatch(typeof(SkirmishSettings_Beta))]
@@ -2481,7 +2031,6 @@ namespace CustomUnits {
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { })]
   public static class SkirmishSettings_Beta_OnAddedToHierarchy {
-    //public static readonly string playerGUID = "bf40fd39-ccf9-47c4-94a6-061809681140";
     public static void Prefix(SkirmishSettings_Beta __instance) {
       Log.TWL(0, "SkirmishSettings_Beta.OnAddedToHierarchy");
       Core.InitLancesLoadoutDefault();
@@ -2492,9 +2041,7 @@ namespace CustomUnits {
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { })]
   public static class CombatHUDHeatMeter_RefreshHeatInfo {
-    //public static readonly string playerGUID = "bf40fd39-ccf9-47c4-94a6-061809681140";
     public static bool Prefix(CombatHUDHeatMeter __instance, float ___underlyingHeatTarget, float ___underlyingHeatDisplayed, float ___underlyingPredictionTarget, float ___underlyingPredictionDisplayed) {
-      //Log.TWL(0, "CombatHUDHeatMeter.RefreshHeatInfo");
       if (__instance.DisplayedActor == null) {
         ___underlyingHeatTarget = 0f;
         ___underlyingHeatDisplayed = 0f;
@@ -2510,84 +2057,9 @@ namespace CustomUnits {
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { typeof(ICombatant) })]
   public static class CombatHUDWeaponSlot_UpdateToolTipsFiring {
-    //public static readonly string playerGUID = "bf40fd39-ccf9-47c4-94a6-061809681140";
     public static bool Prepare() { return false; }
     public static bool Prefix(CombatHUDWeaponSlot __instance, ICombatant target, CombatHUD ___HUD, Weapon ___displayedWeapon, ref int ___modifier, CombatGameState ___Combat) {
       return true;
-      /*AbstractActor abstractActor = target as AbstractActor;
-      LineOfFireLevel lofLevel = ___HUD.SelectionHandler.ActiveState.FiringPreview.GetPreviewInfo((ICombatant)abstractActor).LOFLevel;
-      bool flag = ___HUD.SelectionHandler.ActiveState.SelectionType == SelectionType.FireMorale;
-      __instance.ToolTipHoverElement.BasicModifierInt = (int)___Combat.ToHit.GetAllModifiers(___HUD.SelectedActor, ___displayedWeapon, target, ___HUD.SelectionHandler.ActiveState.PreviewPos, target.TargetPosition, lofLevel, flag);
-      ___modifier = (int)___Combat.ToHit.GetRangeModifier(___displayedWeapon, ___HUD.SelectionHandler.ActiveState.PreviewPos, target.TargetPosition);
-      float num = Vector3.Distance(___displayedWeapon.parent.TargetPosition, target.TargetPosition);
-      if ((double)num < (double)___displayedWeapon.MinRange)
-        __instance.AddToolTipDetail("MIN RANGE", ___modifier);
-      else if ((double)num < (double)___displayedWeapon.ShortRange)
-        __instance.AddToolTipDetail("SHORT RANGE", ___modifier);
-      else if ((double)num < (double)___displayedWeapon.MediumRange)
-        __instance.AddToolTipDetail("MEDIUM RANGE", ___modifier);
-      else if ((double)num < (double)___displayedWeapon.LongRange)
-        __instance.AddToolTipDetail("LONG RANGE", ___modifier);
-      else if ((double)num < (double)___displayedWeapon.MaxRange)
-        __instance.AddToolTipDetail("MAX RANGE", ___modifier);
-      else
-        __instance.AddToolTipDetail("OUT OF RANGE", ___modifier);
-      ___modifier = (int)___Combat.ToHit.GetCoverModifier(___HUD.SelectedActor, target, lofLevel);
-      __instance.AddToolTipDetail("OBSTRUCTED", ___modifier);
-      ___modifier = (int)___Combat.ToHit.GetSelfSpeedModifier(___displayedWeapon.parent);
-      __instance.AddToolTipDetail("MOVED SELF", ___modifier);
-      ___modifier = (int)___Combat.ToHit.GetSelfSprintedModifier(___displayedWeapon.parent);
-      __instance.AddToolTipDetail("SPRINTED", ___modifier);
-      ___modifier = (int)___Combat.ToHit.GetSelfArmMountedModifier(___displayedWeapon);
-      __instance.AddToolTipDetail("ARM MOUNTED", ___modifier);
-      ___modifier = (int)___Combat.ToHit.GetStoodUpModifier(___displayedWeapon.parent);
-      __instance.AddToolTipDetail("STOOD UP", ___modifier);
-      ___modifier = (int)___Combat.ToHit.GetHeightModifier(___HUD.SelectionHandler.ActiveState.PreviewPos.y, target.TargetPosition.y);
-      __instance.AddToolTipDetail("HEIGHT DIFF", ___modifier);
-      ___modifier = (int)___Combat.ToHit.GetHeatModifier(___displayedWeapon.parent);
-      __instance.AddToolTipDetail("HEAT", ___modifier);
-      if (abstractActor != null) {
-        if (___displayedWeapon.parent.occupiedDesignMask != null) {
-          ___modifier = (int)___Combat.ToHit.GetSelfTerrainModifier(___HUD.SelectionHandler.ActiveState.PreviewPos, false);
-          __instance.AddToolTipDetail(Strings.T("FROM {0}", (object)___displayedWeapon.parent.occupiedDesignMask.Description.Name), ___modifier);
-        }
-        if (abstractActor.occupiedDesignMask != null) {
-          ___modifier = (int)___Combat.ToHit.GetTargetTerrainModifier(target, target.CurrentPosition, false);
-          __instance.AddToolTipDetail(Strings.T("INTO {0}", (object)abstractActor.occupiedDesignMask.Description.Name), ___modifier);
-        }
-      }
-      ___modifier = (int)___Combat.ToHit.GetTargetSpeedModifier(target, ___displayedWeapon);
-      __instance.AddToolTipDetail("TARGET MOVED", ___modifier);
-      if (___displayedWeapon.parent.UnitType == UnitType.Mech) {
-        ___modifier = (int)MechStructureRules.GetToHitModifierLocationDamage((Mech)___displayedWeapon.parent, ___displayedWeapon);
-        __instance.AddToolTipDetail(Strings.T("{0} DAMAGED", (object)Mech.GetAbbreviatedChassisLocation((ChassisLocations)___displayedWeapon.Location)), ___modifier);
-      }
-      ___modifier = (int)CombatHUDWeaponSlot_UpdateToolTipsSelf.GetToHitModifierWeaponDamage(___displayedWeapon.parent, ___displayedWeapon);
-      __instance.AddToolTipDetail("WEAPON DAMAGED", ___modifier);
-      ___modifier = (int)___Combat.ToHit.GetTargetSizeModifier(target);
-      __instance.AddToolTipDetail("TARGET SIZE", ___modifier);
-      ___modifier = (int)___Combat.ToHit.GetTargetShutdownModifier(target, false);
-      __instance.AddToolTipDetail("TARGET SHUTDOWN", ___modifier);
-      ___modifier = (int)___Combat.ToHit.GetTargetProneModifier(target, false);
-      __instance.AddToolTipDetail("TARGET PRONE", ___modifier);
-      ___modifier = (int)___Combat.ToHit.GetWeaponAccuracyModifier(___HUD.SelectedActor, ___displayedWeapon);
-      __instance.AddToolTipDetail("WEAPON ACCURACY", ___modifier);
-      ___modifier = (int)___Combat.ToHit.GetAttackerAccuracyModifier(___HUD.SelectedActor);
-      if (___modifier > 0)
-        __instance.AddToolTipDetail("SENSORS IMPAIRED", ___modifier);
-      else
-        __instance.AddToolTipDetail("INSPIRED", ___modifier);
-      ___modifier = (int)___Combat.ToHit.GetEnemyEffectModifier(target, ___displayedWeapon);
-      __instance.AddToolTipDetail("ENEMY EFFECTS", ___modifier);
-      ___modifier = (int)___Combat.ToHit.GetRefireModifier(___displayedWeapon);
-      __instance.AddToolTipDetail("REFIRE", ___modifier);
-      ___modifier = (int)___Combat.ToHit.GetTargetDirectFireModifier(target, lofLevel < LineOfFireLevel.LOFObstructed && ___displayedWeapon.IndirectFireCapable);
-      __instance.AddToolTipDetail("SENSOR LOCK", ___modifier);
-      ___modifier = (int)___Combat.ToHit.GetIndirectModifier(___displayedWeapon.parent, lofLevel < LineOfFireLevel.LOFObstructed && ___displayedWeapon.IndirectFireCapable);
-      __instance.AddToolTipDetail("INDIRECT FIRE", ___modifier);
-      ___modifier = (int)___Combat.ToHit.GetMoraleAttackModifier(target, flag);
-      __instance.AddToolTipDetail(___Combat.Constants.CombatUIConstants.MoraleAttackDescription.Name, ___modifier);
-      return false;*/
     }
   }
   [HarmonyPatch(typeof(SelectionStateMoveBase))]
@@ -2638,7 +2110,6 @@ namespace CustomUnits {
     public static void PublishInvocation(this SelectionState state, MessageCenter messageCenter, MessageCenterMessage invocation) {
       i_PublishInvocation(state, messageCenter, invocation);
     }
-    //public static readonly string playerGUID = "bf40fd39-ccf9-47c4-94a6-061809681140";
     public static bool Prefix(SelectionStateMoveBase __instance, bool isJump, ref bool __result) {
       Mech mech = __instance.SelectedActor as Mech;
       Vehicle vehicle = __instance.SelectedActor as Vehicle;
@@ -2694,9 +2165,7 @@ namespace CustomUnits {
         return attacker.Combat.Constants.ToHit.ToHitSelfWeaponDamaged;
       return 0.0f;
     }
-    //public static readonly string playerGUID = "bf40fd39-ccf9-47c4-94a6-061809681140";
     public static bool Prefix(CombatHUDWeaponSlot __instance, Weapon ___displayedWeapon, ref int ___modifier, CombatGameState ___Combat) {
-      //Log.TWL(0, "CombatHUDHeatMeter.RefreshHeatInfo");
       __instance.ToolTipHoverElement.BasicString = new Localize.Text(___displayedWeapon.Name, (object[])Array.Empty<object>());
       ___modifier = (int)___Combat.ToHit.GetSelfSpeedModifier(___displayedWeapon.parent);
       __instance.AddToolTipDetail("MOVED SELF", ___modifier);
@@ -2709,8 +2178,10 @@ namespace CustomUnits {
 
       Mech mech = ___displayedWeapon.parent as Mech;
       if (mech != null) {
+        Thread.CurrentThread.pushActor(mech);
         ___modifier = (int)MechStructureRules.GetToHitModifierLocationDamage(mech, ___displayedWeapon);
         __instance.AddToolTipDetail(Strings.T("{0} DAMAGED", (object)Mech.GetAbbreviatedChassisLocation((ChassisLocations)___displayedWeapon.Location)), ___modifier);
+        Thread.CurrentThread.clearActor();
       }
       ___modifier = (int)CombatHUDWeaponSlot_UpdateToolTipsSelf.GetToHitModifierWeaponDamage(___displayedWeapon.parent, ___displayedWeapon);
       __instance.AddToolTipDetail("WEAPON DAMAGED", ___modifier);
@@ -2763,7 +2234,6 @@ namespace CustomUnits {
     public static CombatHUD HUD(this CombatHUDWeaponPanel panel) { return getHUDInvoker(panel); }
     public static ICombatant target(this CombatHUDWeaponPanel panel) { return get_target(panel); }
     public static ICombatant hoveredTarget(this CombatHUDWeaponPanel panel) { return get_hoveredTarget(panel); }
-    //public static readonly string playerGUID = "bf40fd39-ccf9-47c4-94a6-061809681140";
     public static bool Prefix(CombatHUDWeaponPanel __instance, bool consideringJump, bool useCOILPathingPreview, AbstractActor ___displayedActor, CombatHUDWeaponSlot ___meleeSlot, CombatHUDWeaponSlot ___dfaSlot, List<CombatHUDWeaponSlot> ___WeaponSlots) {
       SelectionState activeState1 = __instance.HUD().SelectionHandler.ActiveState;
       ICombatant target = activeState1 == null || !(activeState1 is SelectionStateMove) ? __instance.target() ?? __instance.hoveredTarget() : __instance.hoveredTarget() ?? __instance.target();

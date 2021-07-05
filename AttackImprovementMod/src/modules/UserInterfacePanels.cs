@@ -20,7 +20,7 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
     public override void GameStartsOnce() {
       // Done on game load to be effective in campaign mech bay
       Type ReadoutType = typeof(HUDMechArmorReadout);
-      if (Settings.ShowUnderArmourDamage || Settings.FixPaperDollRearStructure)
+      if (AIMSettings.ShowUnderArmourDamage || AIMSettings.FixPaperDollRearStructure)
         TryRun(Log, () => {
           outlineProp = ReadoutType.GetProperty("armorOutlineCached", NonPublic | Instance);
           armorProp = ReadoutType.GetProperty("armorCached", NonPublic | Instance);
@@ -30,28 +30,28 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
           structureRearProp = ReadoutType.GetProperty("structureRearCached", NonPublic | Instance);
           timeSinceStructureDamagedProp = typeof(HUDMechArmorReadout).GetProperty("timeSinceStructureDamaged", NonPublic | Instance);
         });
-      if (Settings.ShowUnderArmourDamage) {
+      if (AIMSettings.ShowUnderArmourDamage) {
         if (AnyNull(outlineProp, armorProp, structureProp, outlineRearProp, armorRearProp, structureRearProp))
           Error("Cannot find outline, armour, and/or structure colour cache of HUDMechArmorReadout.  Cannot make paper dolls divulge under skin damage.");
         else {
-          if (!Settings.FixPaperDollRearStructure)
+          if (!AIMSettings.FixPaperDollRearStructure)
             Warn("PaperDollDivulgeUnderskinDamage does not imply FixPaperDollRearStructure. Readout may still be bugged.");
           Patch(ReadoutType, "RefreshMechStructureAndArmor", null, "ShowStructureDamageThroughArmour");
         }
       }
-      if (Settings.FixPaperDollRearStructure) {
+      if (AIMSettings.FixPaperDollRearStructure) {
         if (structureRearProp == null || timeSinceStructureDamagedProp == null)
           Error("Cannot find HUDMechArmorReadout.structureRearCached, and/or HUDMechArmorReadout.timeSinceStructureDamaged, paper doll rear structures not fixed.");
         else
           Patch(typeof(HUDMechArmorReadout), "UpdateMechStructureAndArmor", null, "FixRearStructureDisplay");
       }
       // Must be placed here to have effect
-      if (Settings.LabelPaperDollSide)
+      if (AIMSettings.LabelPaperDollSide)
         Patch(typeof(HUDMechArmorReadout), "Init", null, "AddPaperDollSideLabel");
     }
 
     public override void CombatStartsOnce() {
-      if (Settings.ShowNumericInfo) {
+      if (AIMSettings.ShowNumericInfo) {
         //Patch(typeof(CombatHUDActorDetailsDisplay), "RefreshInfo", null, "ShowNumericInfo");
         //Patch(typeof(CombatHUDActorInfo), "RefreshAllInfo", "RecordTarget", "ShowBuildingInfo");
         //Patch(typeof(CombatHUDActorInfo), "RefreshPredictedHeatInfo", null, "RecordRefresh");
@@ -63,10 +63,10 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
         //Patch(typeof(SelectionStateJump), "ProcessMousePos", null, "RefreshMoveAndDist");
         //HeauUpDisplay.HookCalloutToggle(RefreshTargetInfo);
       }
-      if (Settings.FixHeatPreview)
+      if (AIMSettings.FixHeatPreview)
         Patch(typeof(Mech), "get_AdjustedHeatsinkCapacity", null, "CorrectProjectedHeat");
 
-      if (Settings.ShowAmmoInTooltip || Settings.ShowEnemyAmmoInTooltip) {
+      if (AIMSettings.ShowAmmoInTooltip || AIMSettings.ShowEnemyAmmoInTooltip) {
         MechTrayArmorHoverToolTipProp = typeof(CombatHUDMechTrayArmorHover).GetProperty("ToolTip", NonPublic | Instance);
         if (MechTrayArmorHoverToolTipProp == null)
           Warn("Cannot access CombatHUDMechTrayArmorHover.ToolTip, ammo not displayed in paperdoll tooltip.");
@@ -74,14 +74,14 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
           Patch(typeof(CombatHUDMechTrayArmorHover), "setToolTipInfo", new Type[] { typeof(Mech), typeof(ArmorLocation) }, "OverridePaperDollTooltip", null);
       }
 
-      if (Settings.ShortPilotHint != null) {
+      if (AIMSettings.ShortPilotHint != null) {
         PilotStatus = new Dictionary<CombatHUDMWStatus, Pilot>(4);
         Patch(typeof(CombatHUDMWStatus), "OnPortraitRightClicked", null, "RefreshPilotHint");
         Patch(typeof(CombatHUDMWStatus), "ForceUnexpand", null, "RefreshPilotHint");
         Patch(typeof(CombatHUDMWStatus), "RefreshPilot", null, "ReplacePilotHint");
       }
 
-      if (Settings.MechTrayGreyActedPilot)
+      if (AIMSettings.MechTrayGreyActedPilot)
         Patch(typeof(CombatHUDPortrait), "RefreshDisplayedActor", null, "ColourPilotNames");
     }
 
@@ -211,7 +211,7 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
     [HarmonyPriority(Priority.Low)]
     public static bool OverridePaperDollTooltip(CombatHUDMechTrayArmorHover __instance, Mech mech, ArmorLocation location) {
       try {
-        if (!FriendOrFoe(mech, Settings.ShowAmmoInTooltip, Settings.ShowEnemyAmmoInTooltip)) return true;
+        if (!FriendOrFoe(mech, AIMSettings.ShowAmmoInTooltip, AIMSettings.ShowEnemyAmmoInTooltip)) return true;
         CombatHUDMechTrayArmorHover me = __instance;
         CombatHUDTooltipHoverElement ToolTip = (CombatHUDTooltipHoverElement)MechTrayArmorHoverToolTipProp.GetValue(me, null);
         ToolTip.BuffStrings.Clear();
@@ -511,7 +511,7 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
         if (!PilotStatus.ContainsKey(__instance))
           PilotStatus.Add(__instance, pilot);
         if ((HUD.SelectedActor != null || !__instance.IsExpanded) && !pilot.IsIncapacitated)
-          __instance.InjuriesItem?.ShowExistingIcon(new Text(Settings.ShortPilotHint, new object[]{
+          __instance.InjuriesItem?.ShowExistingIcon(new Text(AIMSettings.ShortPilotHint, new object[]{
                pilot.Injuries, ( pilot.Health - pilot.Injuries ), pilot.Health, pilot.Gunnery, pilot.Piloting, pilot.Guts, pilot.Tactics }),
              CombatHUDPortrait.GetPilotInjuryColor(pilot, HUD));
       } catch (Exception ex) { Error(ex); }

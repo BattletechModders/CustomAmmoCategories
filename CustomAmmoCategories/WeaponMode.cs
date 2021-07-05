@@ -219,6 +219,14 @@ namespace CustAmmoCategories {
     public TripleBoolean TargetMechLegsOnly { get; set; }
     public float HeatGeneratedModifier { get; set; }
     public MeleeAttackType meleeAttackType { get; set; }
+    public float BuildingsDamageModifier { get; set; }
+    public float TurretDamageModifier { get; set; }
+    public float VehicleDamageModifier { get; set; }
+    public float VTOLDamageModifier { get; set; }
+    public float MechDamageModifier { get; set; }
+    public float QuadDamageModifier { get; set; }
+    public float TrooperSquadDamageModifier { get; set; }
+    public float AirMechDamageModifier { get; set; }
     public WeaponMode() {
       Id = WeaponMode.NONE_MODE_NAME;
       UIName = WeaponMode.BASE_MODE_NAME;
@@ -332,6 +340,14 @@ namespace CustAmmoCategories {
       Description = string.Empty;
       Name = WeaponMode.BASE_MODE_NAME;
       meleeAttackType = MeleeAttackType.NotSet;
+      BuildingsDamageModifier = 1f;
+      TurretDamageModifier = 1f;
+      VehicleDamageModifier = 1f;
+      MechDamageModifier = 1f;
+      QuadDamageModifier = 1f;
+      TrooperSquadDamageModifier = 1f;
+      AirMechDamageModifier = 1f;
+      VTOLDamageModifier = 1f;
     }
     public void fromJSON(string json) {
       JObject jWeaponMode = JObject.Parse(json);

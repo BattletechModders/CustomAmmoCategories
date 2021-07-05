@@ -172,57 +172,57 @@ namespace CustAmmoCategories {
       return result;
     }
 
-    public static bool IsIHaveExposedLocations(AbstractActor iam) {
-      if (iam is Vehicle) {
-        IEnumerator enumerator = Enum.GetValues(typeof(VehicleChassisLocations)).GetEnumerator();
-        try {
-          while (enumerator.MoveNext()) {
-            VehicleChassisLocations current = (VehicleChassisLocations)enumerator.Current;
-            switch (current) {
-              case VehicleChassisLocations.None:
-              case VehicleChassisLocations.MainBody:
-              case VehicleChassisLocations.All:
-              case VehicleChassisLocations.Invalid:
-                continue;
-              default:
-                float locArmor = iam.ArmorForLocation((int)current);
-                if (locArmor < 1.0f) { return true; }
-                continue;
-            }
-          }
-        } finally {
-          IDisposable disposable;
-          if ((disposable = enumerator as IDisposable) != null)
-            disposable.Dispose();
-        }
-      }
-      if (iam is Mech) {
-        IEnumerator enumerator = Enum.GetValues(typeof(ArmorLocation)).GetEnumerator();
-        try {
-          while (enumerator.MoveNext()) {
-            ArmorLocation current = (ArmorLocation)enumerator.Current;
-            switch (current) {
-              case ArmorLocation.None:
-              case ArmorLocation.Invalid:
-                continue;
-              default:
-                float locArmor = iam.ArmorForLocation((int)current);
-                if (locArmor < 1.0f) { return true; }
-                continue;
-            }
-          }
-        } finally {
-          IDisposable disposable;
-          if ((disposable = enumerator as IDisposable) != null)
-            disposable.Dispose();
-        }
-      }
-      if (iam is Turret) {
-        float locArmor = (iam as Turret).CurrentArmor;
-        if (locArmor < 1.0f) { return true; }
-      }
-      return false;
-    }
+    //public static bool IsIHaveExposedLocations(this AbstractActor iam) {
+    //  if (iam is Vehicle) {
+    //    IEnumerator enumerator = Enum.GetValues(typeof(VehicleChassisLocations)).GetEnumerator();
+    //    try {
+    //      while (enumerator.MoveNext()) {
+    //        VehicleChassisLocations current = (VehicleChassisLocations)enumerator.Current;
+    //        switch (current) {
+    //          case VehicleChassisLocations.None:
+    //          case VehicleChassisLocations.MainBody:
+    //          case VehicleChassisLocations.All:
+    //          case VehicleChassisLocations.Invalid:
+    //            continue;
+    //          default:
+    //            float locArmor = iam.ArmorForLocation((int)current);
+    //            if (locArmor < 1.0f) { return true; }
+    //            continue;
+    //        }
+    //      }
+    //    } finally {
+    //      IDisposable disposable;
+    //      if ((disposable = enumerator as IDisposable) != null)
+    //        disposable.Dispose();
+    //    }
+    //  }
+    //  if (iam is Mech) {
+    //    IEnumerator enumerator = Enum.GetValues(typeof(ArmorLocation)).GetEnumerator();
+    //    try {
+    //      while (enumerator.MoveNext()) {
+    //        ArmorLocation current = (ArmorLocation)enumerator.Current;
+    //        switch (current) {
+    //          case ArmorLocation.None:
+    //          case ArmorLocation.Invalid:
+    //            continue;
+    //          default:
+    //            float locArmor = iam.ArmorForLocation((int)current);
+    //            if (locArmor < 1.0f) { return true; }
+    //            continue;
+    //        }
+    //      }
+    //    } finally {
+    //      IDisposable disposable;
+    //      if ((disposable = enumerator as IDisposable) != null)
+    //        disposable.Dispose();
+    //    }
+    //  }
+    //  if (iam is Turret) {
+    //    float locArmor = (iam as Turret).CurrentArmor;
+    //    if (locArmor < 1.0f) { return true; }
+    //  }
+    //  return false;
+    //}
 
     public static float CalcAMSAIDamageCoeff(this Weapon weapon) {
       if (weapon.parent == null) { return 0f; }
@@ -284,7 +284,7 @@ namespace CustAmmoCategories {
       float jammCoeff = (1.0f - weapon.FlatJammingChance(out string jdescr))/CustomAmmoCategories.Settings.JamAIAvoid;
       float damageJammCoeff = weapon.DamageOnJamming() ? (1.0f / CustomAmmoCategories.Settings.DamageJamAIAvoid) : 1.0f;
       jammCoeff *= damageJammCoeff;
-      if (CustomAmmoCategories.IsIHaveExposedLocations(unit)) {
+      if (unit.IsAnyStructureExposed) {
         CustomAmmoCategoriesLog.Log.LogWrite(" i have exposed locations. I will die soon. No fear of jamming or weapon explosion.\n");
         damageJammCoeff = 1.0f;
         jammCoeff = 1.0f;

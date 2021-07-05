@@ -29,17 +29,17 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
 
 #pragma warning disable CS0162 // Disable "unreachable code" warnings due to DebugLog flag
     public override void CombatStartsOnce() {
-      if (Settings.AttackLogLevel == null) return;
+      if (AIMSettings.AttackLogLevel == null) return;
 
       Type MechType = typeof(Mech);
       Type VehiType = typeof(Vehicle);
       Type TurtType = typeof(Turret);
       Type BuldType = typeof(BattleTech.Building);
 
-      switch (Settings.AttackLogFormat.Trim().ToLower()) {
+      switch (AIMSettings.AttackLogFormat.Trim().ToLower()) {
         default:
-          Warn("Unknown AttackLogFormat " + Settings.AttackLogFormat);
-          Settings.AttackLogFormat = "csv";
+          Warn("Unknown AttackLogFormat " + AIMSettings.AttackLogFormat);
+          AIMSettings.AttackLogFormat = "csv";
           goto case "csv";
         case "csv":
           Separator = ",";
@@ -51,7 +51,7 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
       }
 
       // Patch prefix early to increase chance of successful capture in face of other mods.
-      switch (Settings.AttackLogLevel.Trim().ToLower()) {
+      switch (AIMSettings.AttackLogLevel.Trim().ToLower()) {
         case "all":
         case "critical":
           LogCritical = true;
@@ -103,7 +103,7 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
           break;
 
         default:
-          Warn("Unknown AttackLogLevel " + Settings.AttackLogLevel);
+          Warn("Unknown AttackLogLevel " + AIMSettings.AttackLogLevel);
           goto case "none";
         case null:
         case "none":
@@ -117,7 +117,7 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
 
     public static void CreateLogger(string filename, bool time = false) {
       if (time) filename += "." + TimeToFilename(DateTime.UtcNow);
-      string file = filename + "." + Settings.AttackLogFormat;
+      string file = filename + "." + AIMSettings.AttackLogFormat;
       if (!time && File.Exists(file)) try {
           using (File.Open(file, FileMode.Open)) { }
         } catch (IOException) {
@@ -284,7 +284,7 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
          .OrderBy(e => e.LastWriteTimeUtc)
          .ToArray();
 
-      long cap = Settings.AttackLogArchiveMaxMB * 1024L * 1024L,
+      long cap = AIMSettings.AttackLogArchiveMaxMB * 1024L * 1024L,
             sum = oldLogs.Select(e => e.Length).Sum();
       Info("Background: Found {0} old log(s) totalling {1:#,##0} bytes. Cap is {2:#,##0}.", oldLogs.Length, sum, cap);
       if (sum <= cap) return;
@@ -637,7 +637,7 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
       try {
         if (aLoc == ArmorLocation.None || aLoc == ArmorLocation.Invalid || !IsLoggedDamage(damageType)) return;
         int line = LogActorDamage(__instance.GetCurrentArmor(aLoc), __instance.GetCurrentStructure(MechStructureRules.GetChassisLocationFromArmorLocation(aLoc)));
-        if (line >= 0 && Settings.CritFollowDamageTransfer && hitMap != null) {
+        if (line >= 0 && AIMSettings.CritFollowDamageTransfer && hitMap != null) {
           string newKey = GetHitKey(weapon.uid, aLoc, __instance.GUID);
           if (DebugLog) Verbo("Log damage transfer {0} = {1}", newKey, line);
           hitMap[newKey] = line;

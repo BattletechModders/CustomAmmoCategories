@@ -21,6 +21,7 @@ using HBS;
 using TMPro;
 using UnityEngine.Events;
 using Newtonsoft.Json;
+using System.Threading;
 
 namespace CustomAmmoCategoriesPatches {
   public static class CombatHUDWeaponSlotHelper {
@@ -376,13 +377,13 @@ namespace CustomAmmoCategoriesPatches {
     public CombatHUDWeaponPanel weaponPanel;
     public CombatHUD HUD;
     public UILookAndColorConstants LookAndColorConstants;
-    private bool hovered;
+    //private bool hovered;
     public void Init(CombatHUD HUD, CombatHUDWeaponPanel panel, CombatHUDWeaponSlot slot) {
       this.HUD = HUD;
       parent = slot;
       weaponPanel = panel;
       LookAndColorConstants = LazySingletonBehavior<UIManager>.Instance.UILookAndColorConstants;
-      hovered = false;
+      //hovered = false;
     }
     public void ShowSidePanel() {
       Text title = new Text(this.parent.DisplayedWeapon.UIName);
@@ -418,13 +419,13 @@ namespace CustomAmmoCategoriesPatches {
       Log.LogWrite("WeaponDamageHover.OnPointerEnter called." + data.position + "\n");
       if (this.parent.DisplayedWeapon == null) { return; }
       if (this.weaponPanel.DisplayedActor == null) { return; }
-      hovered = true;
+      //hovered = true;
       ShowSidePanel();
     }
     public override void OnPointerExit(PointerEventData data) {
       Log.LogWrite("WeaponDamageHover.OnPointerExit called." + data.position + "\n");
       HUD.SidePanel.ForceHide();
-      hovered = false;
+      //hovered = false;
     }
     public override void OnPointerDown(PointerEventData data) {
       Log.LogWrite("WeaponDamageHover.OnPointerClick called." + data.position + "\n");
@@ -840,11 +841,13 @@ namespace CustomAmmoCategoriesPatches {
           description.Append("<color=white>");
         }
         description.Append(box.Description.UIName);
+        Thread.CurrentThread.pushActor(this.parent.DisplayedWeapon.parent);
         if (box.mechComponentRef != null) {
           description.Append("(" + Mech.GetAbbreviatedChassisLocation(box.mechComponentRef.MountedLocation) + ")");
         } else if (box.vehicleComponentRef != null) {
           description.Append("(" + Vehicle.GetLongChassisLocation(box.vehicleComponentRef.MountedLocation) + ")");
         }
+        Thread.CurrentThread.clearActor();
         description.Append(" " + box.CurrentAmmo + "/" + box.ammunitionBoxDef.Capacity);
         description.Append("</color>");
         description.Append("</size>\n");
@@ -892,7 +895,7 @@ namespace CustomAmmoCategoriesPatches {
     public CombatHUDWeaponSlot parent;
     public CombatHUDWeaponPanel weaponPanel;
     public CombatHUD HUD;
-    private bool hovered;
+    //private bool hovered;
     //public SVGImage background;
     public WeaponHitChanceHover() {
       ui_inited = false;
@@ -927,13 +930,13 @@ namespace CustomAmmoCategoriesPatches {
       Log.LogWrite("WeaponHitChanceHover.OnPointerEnter called." + data.position + "\n");
       if (this.parent.DisplayedWeapon == null) { return; }
       if (this.weaponPanel.DisplayedActor == null) { return; }
-      hovered = true;
+      //hovered = true;
       ShowSidePanel();
     }
     public override void OnPointerExit(PointerEventData data) {
       Log.LogWrite("WeaponHitChanceHover.OnPointerExit called." + data.position + "\n");
       //HUD.SidePanel.ForceHide();
-      hovered = false;
+      //hovered = false;
     }
     public override void OnPointerClick(PointerEventData data) {
       //Log.LogWrite("WeaponHitChanceHover.OnPointerClick called." + data.position + "\n");

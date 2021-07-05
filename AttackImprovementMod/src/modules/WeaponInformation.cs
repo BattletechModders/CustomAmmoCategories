@@ -16,34 +16,34 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
     public override void CombatStartsOnce() {
       Type SlotType = typeof(CombatHUDWeaponSlot), PanelType = typeof(CombatHUDWeaponPanel);
 
-      if (Settings.SaturationOfLoadout != 0 || Settings.ShowDamageInLoadout || Settings.ShowMeleeDamageInLoadout || Settings.ShowAlphaDamageInLoadout != null)
+      if (AIMSettings.SaturationOfLoadout != 0 || AIMSettings.ShowDamageInLoadout || AIMSettings.ShowMeleeDamageInLoadout || AIMSettings.ShowAlphaDamageInLoadout != null)
         Patch(typeof(CombatHUDTargetingComputer), "RefreshWeaponList", null, "EnhanceWeaponLoadout");
 
-      if (Settings.ShowBaseHitchance) {
+      if (AIMSettings.ShowBaseHitchance) {
         //Patch(SlotType, "UpdateToolTipsFiring", typeof(ICombatant), "ShowBaseHitChance", null);
         //Patch(SlotType, "UpdateToolTipsMelee", typeof(ICombatant), "ShowBaseMeleeChance", null);
       }
-      if (Settings.ShowNeutralRangeInBreakdown) {
+      if (AIMSettings.ShowNeutralRangeInBreakdown) {
         rangedPenalty = ModifierList.GetRangedModifierFactor("range");
         //Patch(SlotType, "UpdateToolTipsFiring", typeof(ICombatant), "ShowNeutralRange", null);
       }
-      if (Settings.ShowWeaponProp || Settings.WeaponRangeFormat != null)
+      if (AIMSettings.ShowWeaponProp || AIMSettings.WeaponRangeFormat != null)
         Patch(SlotType, "GenerateToolTipStrings", null, "UpdateWeaponTooltip");
 
-      if (Settings.ShowReducedWeaponDamage || Settings.CalloutWeaponStability) {
+      if (AIMSettings.ShowReducedWeaponDamage || AIMSettings.CalloutWeaponStability) {
         Patch(SlotType, "RefreshDisplayedWeapon", null, "UpdateWeaponDamage");
       }
-      if (Settings.ShowTotalWeaponDamage) {
+      if (AIMSettings.ShowTotalWeaponDamage) {
         Patch(PanelType, "ShowWeaponsUpTo", null, "ShowTotalDamageSlot");
         Patch(PanelType, "RefreshDisplayedWeapons", "ResetTotalWeaponDamage", "ShowTotalWeaponDamage");
         Patch(SlotType, "RefreshHighlighted", "BypassTotalSlotHighlight", null);
       }
-      if (Settings.ShowReducedWeaponDamage || Settings.ShowTotalWeaponDamage) {
+      if (AIMSettings.ShowReducedWeaponDamage || AIMSettings.ShowTotalWeaponDamage) {
         // Update damage numbers (and multi-target highlights) _after_ all slots are in a correct state.
         Patch(typeof(SelectionStateFireMulti), "SetTargetedCombatant", null, "RefreshTotalDamage");
         Patch(SlotType, "OnPointerUp", null, "RefreshTotalDamage");
       }
-      if (Settings.CalloutWeaponStability)
+      if (AIMSettings.CalloutWeaponStability)
         HeauUpDisplay.HookCalloutToggle(ToggleStabilityDamage);
 
       //if ( HasMod( "com.joelmeador.WeaponRealizer", "WeaponRealizer.Core" ) ) TryRun( ModLog, InitWeaponRealizerBridge );
@@ -92,7 +92,7 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
           Weapon w = weapons[i];
           if (w == null || !w.CanFire) continue;
           float damage = w.DamagePerShot * w.ShotsWhenFired;
-          if (Settings.ShowDamageInLoadout)
+          if (AIMSettings.ShowDamageInLoadout)
             ___weaponNames[i].text = ___weaponNames[i].text.Replace(" +", "+") + MetaColour + " (" + damage + ")";
           if (ByType.Length > 0 && ___weaponNames[i].color == colours.qualityA) {
 #if BT1_8
@@ -108,12 +108,12 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
           else far += damage;
         }
 
-        if (Settings.ShowAlphaDamageInLoadout != null && HasDamageLabel(colours.white))
-          loadout.text = new Text(Settings.ShowAlphaDamageInLoadout, close + medium + far, close, medium, far, medium + far).ToString();
+        if (AIMSettings.ShowAlphaDamageInLoadout != null && HasDamageLabel(colours.white))
+          loadout.text = new Text(AIMSettings.ShowAlphaDamageInLoadout, close + medium + far, close, medium, far, medium + far).ToString();
 
-        if (Settings.ShowMeleeDamageInLoadout && actor is Mech mech) {
+        if (AIMSettings.ShowMeleeDamageInLoadout && actor is Mech mech) {
           int start = weapons.Count, dmg = (int)(mech.MeleeWeapon?.DamagePerShot * mech.MeleeWeapon?.ShotsWhenFired);
-          string format = Settings.ShowDamageInLoadout ? "{0} {1}({2})" : "{0} {1}{2}";
+          string format = AIMSettings.ShowDamageInLoadout ? "{0} {1}({2})" : "{0} {1}{2}";
           if (start < ___weaponNames.Count && dmg > 0)
             SetWeapon(___weaponNames[start], colours.white, format, Translate("__/AIM.MELEE/__"), MetaColour, dmg);
           dmg = (int)(mech.DFAWeapon?.DamagePerShot * mech.DFAWeapon?.ShotsWhenFired);
@@ -136,9 +136,9 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
     }
 
     private static Color[] LerpWeaponColours(UIColorRefs ui) {
-      if (Settings.SaturationOfLoadout <= 0) return new Color[0];
+      if (AIMSettings.SaturationOfLoadout <= 0) return new Color[0];
       Color[] colours = new Color[] { Color.clear, ui.ballisticColor, ui.energyColor, ui.missileColor, ui.smallColor };
-      float saturation = (float)Settings.SaturationOfLoadout, lower = saturation * 0.8f;
+      float saturation = (float)AIMSettings.SaturationOfLoadout, lower = saturation * 0.8f;
       for (int i = colours.Length - 1; i > 0; i--) {
         Color.RGBToHSV(colours[i], out float h, out float s, out float v);
         colours[i] = Color.HSVToRGB(h, i == 3 ? lower : saturation, 1);
@@ -189,10 +189,10 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
         Weapon weapon = __instance.DisplayedWeapon;
         List<Text> spec = __instance.ToolTipHoverElement?.WeaponStrings;
         if (weapon == null || spec == null || spec.Count != 3) return;
-        if (Settings.ShowWeaponProp && !string.IsNullOrEmpty(weapon.weaponDef.BonusValueA))
+        if (AIMSettings.ShowWeaponProp && !string.IsNullOrEmpty(weapon.weaponDef.BonusValueA))
           spec[0] = new Text(string.IsNullOrEmpty(weapon.weaponDef.BonusValueB) ? "{0}" : "{0}, {1}", weapon.weaponDef.BonusValueA, weapon.weaponDef.BonusValueB);
-        if (Settings.WeaponRangeFormat != null)
-          spec[2] = new Text(Settings.WeaponRangeFormat, weapon.MinRange, weapon.ShortRange, weapon.MediumRange, weapon.LongRange, weapon.MaxRange);
+        if (AIMSettings.WeaponRangeFormat != null)
+          spec[2] = new Text(AIMSettings.WeaponRangeFormat, weapon.MinRange, weapon.ShortRange, weapon.MediumRange, weapon.LongRange, weapon.MaxRange);
       } catch (Exception ex) { Error(ex); }
     }
 
@@ -304,7 +304,7 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
     public static void ShowTotalWeaponDamage(List<CombatHUDWeaponSlot> ___WeaponSlots) {
       try {
         if (TotalSlot == null) return;
-        if (!Settings.ShowReducedWeaponDamage) { // Sum damage when reduced damage patch is not applied.
+        if (!AIMSettings.ShowReducedWeaponDamage) { // Sum damage when reduced damage patch is not applied.
           foreach (CombatHUDWeaponSlot slot in ___WeaponSlots) {
             Weapon w = slot.DisplayedWeapon;
             if (w != null && w.IsEnabled && w.CanFire)

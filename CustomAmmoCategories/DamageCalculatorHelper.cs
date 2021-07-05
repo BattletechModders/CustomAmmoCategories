@@ -29,7 +29,7 @@ namespace CustAmmoCategories {
     }
   }
   public class DamageModifiers {
-    public HashSet<DamageModifier> modifiers;
+    public List<DamageModifier> modifiers;
     public float Damage;
     public float AP;
     public float Heat;
@@ -198,7 +198,7 @@ namespace CustAmmoCategories {
       this.target = target;
       isCalculated = false;
       //StringBuilder descr = new StringBuilder();
-      modifiers = new HashSet<DamageModifier>();
+      modifiers = new List<DamageModifier>();
       //Dictionary<string, float> damageMods = new Dictionary<string, float>();
       //Dictionary<string, float> apMods = new Dictionary<string, float>();
       //Dictionary<string, float> heatMods = new Dictionary<string, float>();
@@ -325,7 +325,7 @@ namespace CustAmmoCategories {
         modifiers.Add(new DamageModifier("Target type".UI(), DamageModifierType.Normal, true, false, weapon.WeaponCategoryValue.TurretDamageMultiplier, null));
         modifiers.Add(new DamageModifier("Target type".UI(), DamageModifierType.AP, true, false, weapon.WeaponCategoryValue.TurretDamageMultiplier, null));
       }else
-      if (target.UnitType == UnitType.Vehicle) {
+      if ((target.UnitType == UnitType.Vehicle)||(target.FakeVehicle())) {
         modifiers.Add(new DamageModifier("Target type".UI(), DamageModifierType.Normal, true, false, weapon.WeaponCategoryValue.VehicleDamageMultiplier, null));
         modifiers.Add(new DamageModifier("Target type".UI(), DamageModifierType.AP, true, false, weapon.WeaponCategoryValue.VehicleDamageMultiplier, null));
       }
@@ -334,7 +334,7 @@ namespace CustAmmoCategories {
           modifiers.Add(new DamageModifier("Building".UI(), DamageModifierType.Heat, true, false, WeaponRealizer.Core.ModSettings.HeatDamageApplicationToBuildingMultiplier, null));
         }
       }else
-      if(target is Vehicle) {
+      if((target is Vehicle) || target.FakeVehicle()) {
         if (WeaponRealizer.Core.ModSettings.HeatDamageAppliesToVehicleAsNormalDamage) {
           modifiers.Add(new DamageModifier("Vehicle".UI(), DamageModifierType.Heat, true, false, WeaponRealizer.Core.ModSettings.HeatDamageApplicationToVehicleMultiplier, null));
         }

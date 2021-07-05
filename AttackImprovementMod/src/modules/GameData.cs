@@ -9,7 +9,7 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
    public class GameData : BattleModModule {
 
       public override void GameStarts () {
-         if ( ! Settings.FixWeaponStats ) return;
+         if ( ! AIMSettings.FixWeaponStats ) return;
          weaponDefs = new Dictionary<string, WeaponDef>();
          weaponsToFix = new HashSet<string>( new string[]{ 
             "Weapon_LRM_LRM5_2-Delta", "Weapon_LRM_LRM10_2-Delta", "Weapon_LRM_LRM15_2-Delta", // Since Launch

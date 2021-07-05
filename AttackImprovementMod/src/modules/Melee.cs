@@ -13,10 +13,10 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
 
       public override void CombatStartsOnce () {
          Type PathingType = typeof( Pathing );
-         if ( Settings.UnlockMeleePositioning )
+         if ( AIMSettings.UnlockMeleePositioning )
             Patch( PathingType, "GetMeleeDestsForTarget", typeof( AbstractActor ), null, null, "UnlockMeleeDests" );
 
-         if ( Settings.MaxMeleeVerticalOffsetByClass != null )
+         if ( AIMSettings.MaxMeleeVerticalOffsetByClass != null )
             if ( InitMaxVerticalOffset() ) {
                Patch( PathingType, "GetMeleeDestsForTarget", "SetMeleeTarget", "ClearMeleeTarget" );
                Patch( PathingType, "GetPathNodesForPoints", null, "CheckMeleeVerticalOffset" );
@@ -26,11 +26,11 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
       }
 
       public override void CombatStarts () {
-         if ( Settings.IncreaseMeleePositionChoice || Settings.IncreaseDFAPositionChoice || MaxMeleeVerticalOffsetByClass != null ) {
+         if ( AIMSettings.IncreaseMeleePositionChoice || AIMSettings.IncreaseDFAPositionChoice || MaxMeleeVerticalOffsetByClass != null ) {
             MovementConstants con = CombatConstants.MoveConstants;
-            if ( Settings.IncreaseMeleePositionChoice )
+            if ( AIMSettings.IncreaseMeleePositionChoice )
                con.NumMeleeDestinationChoices = 6;
-            if ( Settings.IncreaseDFAPositionChoice )
+            if ( AIMSettings.IncreaseDFAPositionChoice )
                con.NumDFADestinationChoices = 6;
             if ( MaxMeleeVerticalOffsetByClass != null )
                con.MaxMeleeVerticalOffset = 1000;
@@ -61,7 +61,7 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
             return false;
          }
          List<float> list = new List<float>();
-         foreach ( string e in Settings.MaxMeleeVerticalOffsetByClass.Split( ',' ) ) try {
+         foreach ( string e in AIMSettings.MaxMeleeVerticalOffsetByClass.Split( ',' ) ) try {
             if ( list.Count >= 4 ) break;
             float offset = float.Parse( e.Trim(), CultureInfo.InvariantCulture);
             if ( offset < 0 || float.IsNaN( offset ) || float.IsInfinity( offset ) ) throw new ArgumentOutOfRangeException();

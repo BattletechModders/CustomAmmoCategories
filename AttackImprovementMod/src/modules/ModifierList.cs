@@ -57,7 +57,7 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
     public override void CombatStarts() {
       Hit = Combat.ToHit;
       MovementConstants con = CombatConstants.MoveConstants;
-      HalfMaxMeleeVerticalOffset = Settings.MaxMeleeVerticalOffsetByClass != null
+      HalfMaxMeleeVerticalOffset = AIMSettings.MaxMeleeVerticalOffsetByClass != null
          ? Melee.MaxMeleeVerticalOffsetByClass[1] / 2
          : CombatConstants.MoveConstants.MaxMeleeVerticalOffset / 2;
     }
@@ -131,13 +131,13 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
             AttackDirection dir = Combat.HitLocation.GetAttackDirection(AttackPos, Target);
             if (Target is Mech mech) {
               if (mech.IsProne) return new AttackModifier(); // Prone is another modifier
-              if (dir == AttackDirection.FromFront) return new AttackModifier("__/AIM.FRONT_ATTACK/__", Settings.ToHitMechFromFront);
-              if (dir == AttackDirection.FromLeft || dir == AttackDirection.FromRight) return new AttackModifier("__/AIM.SIDE_ATTACK/__", Settings.ToHitMechFromSide);
-              if (dir == AttackDirection.FromBack) return new AttackModifier("__/AIM.REAR_ATTACK/__", Settings.ToHitMechFromRear);
+              if (dir == AttackDirection.FromFront) return new AttackModifier("__/AIM.FRONT_ATTACK/__", AIMSettings.ToHitMechFromFront);
+              if (dir == AttackDirection.FromLeft || dir == AttackDirection.FromRight) return new AttackModifier("__/AIM.SIDE_ATTACK/__", AIMSettings.ToHitMechFromSide);
+              if (dir == AttackDirection.FromBack) return new AttackModifier("__/AIM.REAR_ATTACK/__", AIMSettings.ToHitMechFromRear);
             } else if (Target is Vehicle vehicle) {
-              if (dir == AttackDirection.FromFront) return new AttackModifier("__/AIM.FRONT_ATTACK/__", Settings.ToHitVehicleFromFront);
-              if (dir == AttackDirection.FromLeft || dir == AttackDirection.FromRight) return new AttackModifier("__/AIM.SIDE_ATTACK/__", Settings.ToHitVehicleFromSide);
-              if (dir == AttackDirection.FromBack) return new AttackModifier("__/AIM.REAR_ATTACK/__", Settings.ToHitVehicleFromRear);
+              if (dir == AttackDirection.FromFront) return new AttackModifier("__/AIM.FRONT_ATTACK/__", AIMSettings.ToHitVehicleFromFront);
+              if (dir == AttackDirection.FromLeft || dir == AttackDirection.FromRight) return new AttackModifier("__/AIM.SIDE_ATTACK/__", AIMSettings.ToHitVehicleFromSide);
+              if (dir == AttackDirection.FromBack) return new AttackModifier("__/AIM.REAR_ATTACK/__", AIMSettings.ToHitVehicleFromRear);
             }
             return new AttackModifier();
           };
@@ -201,7 +201,7 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
         }
         if (TotalModifiers < 0 && !CombatConstants.ResolutionConstants.AllowTotalNegativeModifier)
           TotalModifiers = 0;
-        tip.BasicModifierInt = Settings.ReverseInCombatModifier ? -TotalModifiers : TotalModifiers;
+        tip.BasicModifierInt = AIMSettings.ReverseInCombatModifier ? -TotalModifiers : TotalModifiers;
       } catch (Exception) {
         // Reset before giving up
         tip?.DebuffStrings.Clear();
@@ -227,10 +227,10 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
       int mod = Mathf.RoundToInt(tooltip.Value);
       if (mod == 0) return 0;
       List<Text> TipList = mod > 0 ? tip.DebuffStrings : tip.BuffStrings;
-      if (Settings.ReverseInCombatModifier) mod = -mod;
+      if (AIMSettings.ReverseInCombatModifier) mod = -mod;
       string numTxt = (mod > 0 ? " +" : " ") + mod;
       TipList.Add(new Text(tooltip.DisplayName + numTxt));
-      return Settings.ReverseInCombatModifier ? -mod : mod;
+      return AIMSettings.ReverseInCombatModifier ? -mod : mod;
     }
 
     // ============ Ranged ============
@@ -362,7 +362,7 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
 
     // ============ Melee ============
 
-    private static MethodInfo contemplatingDFA;
+    //private static MethodInfo contemplatingDFA;
     public static MeleeAttackType AttackType { get; private set; }
 
     internal static void InitMeleeModifiers(string[] factors) {
@@ -425,7 +425,7 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
     public static bool OverrideMeleeToolTips(CombatHUDWeaponSlot __instance, ICombatant target) {
       try {
         CombatHUDWeaponSlot slot = __instance;
-        bool isDFA = (bool)contemplatingDFA?.Invoke(slot, new object[] { target });
+        bool isDFA = false;//(bool)contemplatingDFA?.Invoke(slot, new object[] { target });
         AttackType = isDFA ? MeleeAttackType.DFA : MeleeAttackType.Punch;
         SaveStates(HUD.SelectedActor, target, slot.DisplayedWeapon);
         SetToolTips(__instance, MeleeModifiers);

@@ -6,7 +6,7 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
 
   public class Mod : BattleMod {
 
-    public static ModSettings Settings = new ModSettings();
+    public static ModSettings AIMSettings = new ModSettings();
     public static bool failToLoad = true;
 
     public static void Init(string directory, string settingsJSON) {
@@ -19,7 +19,7 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
 
     public override void ModStarts() {
       ModLogDir = LogDir;
-      LoadSettings(ref Settings, SanitizeSettings);
+      LoadSettings(ref AIMSettings, SanitizeSettings);
       NormaliseSettings();
       new Logger(LogDir + "Log_AttackImprovementMod.txt").Delete(); // Delete log of old version
 
@@ -209,43 +209,43 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
 
     /* Changes that we don't want to write back to settings.json */
     private void NormaliseSettings() {
-      NullIfEmpty(ref Settings.ShortPilotHint);
-      NullIfEmpty(ref Settings.WeaponRangeFormat);
-      NullIfEmpty(ref Settings.ShowEnemyWounds);
-      NullIfEmpty(ref Settings.ShowAllyHealth);
-      NullIfEmpty(ref Settings.ShowPlayerHealth);
-      NullIfEmpty(ref Settings.ShowAlphaDamageInLoadout);
+      NullIfEmpty(ref AIMSettings.ShortPilotHint);
+      NullIfEmpty(ref AIMSettings.WeaponRangeFormat);
+      NullIfEmpty(ref AIMSettings.ShowEnemyWounds);
+      NullIfEmpty(ref AIMSettings.ShowAllyHealth);
+      NullIfEmpty(ref AIMSettings.ShowPlayerHealth);
+      NullIfEmpty(ref AIMSettings.ShowAlphaDamageInLoadout);
 
-      NullIfEmpty(ref Settings.NameplateColourPlayer);
-      NullIfEmpty(ref Settings.NameplateColourEnemy);
-      NullIfEmpty(ref Settings.NameplateColourAlly);
-      NullIfEmpty(ref Settings.FloatingArmorColourPlayer);
-      NullIfEmpty(ref Settings.FloatingArmorColourEnemy);
-      NullIfEmpty(ref Settings.FloatingArmorColourAlly);
+      NullIfEmpty(ref AIMSettings.NameplateColourPlayer);
+      NullIfEmpty(ref AIMSettings.NameplateColourEnemy);
+      NullIfEmpty(ref AIMSettings.NameplateColourAlly);
+      NullIfEmpty(ref AIMSettings.FloatingArmorColourPlayer);
+      NullIfEmpty(ref AIMSettings.FloatingArmorColourEnemy);
+      NullIfEmpty(ref AIMSettings.FloatingArmorColourAlly);
 
-      NullIfEmpty(ref Settings.LOSMeleeColors);
-      NullIfEmpty(ref Settings.LOSClearColors);
-      NullIfEmpty(ref Settings.LOSBlockedPreColors);
-      NullIfEmpty(ref Settings.LOSBlockedPostColors);
-      NullIfEmpty(ref Settings.LOSIndirectColors);
-      NullIfEmpty(ref Settings.LOSNoAttackColors);
+      NullIfEmpty(ref AIMSettings.LOSMeleeColors);
+      NullIfEmpty(ref AIMSettings.LOSClearColors);
+      NullIfEmpty(ref AIMSettings.LOSBlockedPreColors);
+      NullIfEmpty(ref AIMSettings.LOSBlockedPostColors);
+      NullIfEmpty(ref AIMSettings.LOSIndirectColors);
+      NullIfEmpty(ref AIMSettings.LOSNoAttackColors);
 
-      NullIfEmpty(ref Settings.FacingMarkerPlayerColors);
-      NullIfEmpty(ref Settings.FacingMarkerEnemyColors);
-      NullIfEmpty(ref Settings.FacingMarkerTargetColors);
+      NullIfEmpty(ref AIMSettings.FacingMarkerPlayerColors);
+      NullIfEmpty(ref AIMSettings.FacingMarkerEnemyColors);
+      NullIfEmpty(ref AIMSettings.FacingMarkerTargetColors);
 
-      NullIfEmpty(ref Settings.CalledChanceFormat);
-      NullIfEmpty(ref Settings.HitChanceFormat);
+      NullIfEmpty(ref AIMSettings.CalledChanceFormat);
+      NullIfEmpty(ref AIMSettings.HitChanceFormat);
 
-      NullIfEmpty(ref Settings.RangedAccuracyFactors);
-      NullIfEmpty(ref Settings.MeleeAccuracyFactors);
+      NullIfEmpty(ref AIMSettings.RangedAccuracyFactors);
+      NullIfEmpty(ref AIMSettings.MeleeAccuracyFactors);
       //NullIfEmpty( ref Settings.MixingIndirectFire ); Never null after validation
 
-      NullIfEmpty(ref Settings.MaxMeleeVerticalOffsetByClass);
+      NullIfEmpty(ref AIMSettings.MaxMeleeVerticalOffsetByClass);
 
-      NullIfEmpty(ref Settings.SkipBeatingDeadMech);
+      NullIfEmpty(ref AIMSettings.SkipBeatingDeadMech);
 
-      NullIfEmpty(ref Settings.AttackLogLevel);
+      NullIfEmpty(ref AIMSettings.AttackLogLevel);
     }
 
     internal static bool FriendOrFoe(BattleTech.AbstractActor subject, bool TrueIfFriend, bool TrueIfFoe) {

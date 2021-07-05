@@ -82,31 +82,31 @@ namespace CustomUnits {
       return true;
     }
   }
-  [HarmonyPatch(typeof(MechRepresentation))]
-  [HarmonyPatch("SetIdleAnimState")]
-  [HarmonyPatch(MethodType.Normal)]
-  [HarmonyPatch(new Type[] { })]
-  public static class MechRepresentation_SetIdleAnimState {
-    public static bool Prefix(MechRepresentation __instance, ref bool ___allowRandomIdles, ref bool __state) {
-      __state = ___allowRandomIdles;
-      if (___allowRandomIdles == true) {
-        UnitCustomInfo info = __instance.parentMech.GetCustomInfo();
-        if (info != null) {
-          if (info.NoIdleAnimations) { ___allowRandomIdles = false; return true; }
-        };
-        CustomTwistAnimation custIdleAnim = __instance.gameObject.GetComponent<CustomTwistAnimation>();
-        if(custIdleAnim != null) {
-          custIdleAnim.PlayIdleAnimation();
-          ___allowRandomIdles = false; return true;
-        }
-      }
-      return true;
-    }
-    public static void Postfix(MechRepresentation __instance, ref bool ___allowRandomIdles, ref bool __state) {
-      //___allowRandomIdles = __state;
-      //Log.TWL(0, "MechRepresentation.SetIdleAnimState "+__instance.name+" "+__instance.thisAnimator.GetFloat(___idleRandomValueHash));
-    }
-  }
+  //[HarmonyPatch(typeof(MechRepresentation))]
+  //[HarmonyPatch("SetIdleAnimState")]
+  //[HarmonyPatch(MethodType.Normal)]
+  //[HarmonyPatch(new Type[] { })]
+  //public static class MechRepresentation_SetIdleAnimState {
+  //  public static bool Prefix(MechRepresentation __instance, ref bool ___allowRandomIdles, ref bool __state) {
+  //    __state = ___allowRandomIdles;
+  //    if (___allowRandomIdles == true) {
+  //      UnitCustomInfo info = __instance.parentMech.GetCustomInfo();
+  //      if (info != null) {
+  //        if (info.NoIdleAnimations) { ___allowRandomIdles = false; return true; }
+  //      };
+  //      CustomTwistAnimation custIdleAnim = __instance.gameObject.GetComponent<CustomTwistAnimation>();
+  //      if(custIdleAnim != null) {
+  //        custIdleAnim.PlayIdleAnimation();
+  //        ___allowRandomIdles = false; return true;
+  //      }
+  //    }
+  //    return true;
+  //  }
+  //  public static void Postfix(MechRepresentation __instance, ref bool ___allowRandomIdles, ref bool __state) {
+  //    //___allowRandomIdles = __state;
+  //    //Log.TWL(0, "MechRepresentation.SetIdleAnimState "+__instance.name+" "+__instance.thisAnimator.GetFloat(___idleRandomValueHash));
+  //  }
+  //}
   [HarmonyPatch(typeof(VehicleRepresentation))]
   [HarmonyPatch("PlayEngineStartAudio")]
   [HarmonyPatch(MethodType.Normal)]
@@ -884,7 +884,7 @@ namespace CustomUnits {
           }
         }
       }
-      if (parentTransform == null) { parentTransform = def.IsChassisFake()?rep.getAttachVehicle(Location) :rep.getAttachMech(Location); };
+      if (parentTransform == null) { parentTransform = def.IsVehicle()?rep.getAttachVehicle(Location) :rep.getAttachMech(Location); };
       gameObject.transform.parent = parentTransform;
       gameObject.transform.localPosition = spawnPart.prefabTransform.offset.vector;
       Quaternion rotation = Quaternion.Euler(spawnPart.prefabTransform.rotate.vector);
@@ -1005,7 +1005,7 @@ namespace CustomUnits {
       if (component != null) {
         Log.LogWrite("ParticleSystem for " + spawnPart.prefab + " found\n");
         //component.transform.localScale.Set(scale.x, scale.y, scale.z);
-        component.transform.parent = def.IsChassisFake() ? rep.getAttachVehicle(Location) : rep.getAttachMech(Location);
+        component.transform.parent = def.IsVehicle() ? rep.getAttachVehicle(Location) : rep.getAttachMech(Location);
         component.transform.localPosition = spawnPart.prefabTransform.offset.vector;
         component.transform.localRotation = rotation;
         gameObject.SetActive(true);
@@ -1038,10 +1038,10 @@ namespace CustomUnits {
         } else
         if (spawnPart.AnimationType == "CustomQuadLegController") {
           acomponent = gameObject.AddComponent<CustomQuadLegController>();
-        } else
-        if (spawnPart.AnimationType == "QuadBody") {
-          acomponent = gameObject.AddComponent<QuadBodyAnimation>();
-        } else {
+        } else { 
+        //if (spawnPart.AnimationType == "QuadBody") {
+          //acomponent = gameObject.AddComponent<QuadBodyAnimation>();
+        //} else {
           acomponent = gameObject.AddComponent<GenericAnimatedComponent>();
         }
         if (acomponent != null) {
@@ -1259,9 +1259,9 @@ namespace CustomUnits {
         } else
         if (spawnPart.AnimationType == "CustomQuadLegController") {
           acomponent = gameObject.AddComponent<CustomQuadLegController>();
-        } else
-        if (spawnPart.AnimationType == "QuadBody") {
-          acomponent = gameObject.AddComponent<QuadBodyAnimation>();
+          //        } else
+          //        if (spawnPart.AnimationType == "QuadBody") {
+          //          acomponent = gameObject.AddComponent<QuadBodyAnimation>();
         } else {
           acomponent = gameObject.AddComponent<GenericAnimatedComponent>();
         }
@@ -1278,307 +1278,6 @@ namespace CustomUnits {
       };
       animatedParts[unit].Add(gameObject);
       Log.LogWrite("animatedParts.Count = " + animatedParts[unit].Count + "\n");
-    }
-  }
-  [HarmonyPatch(typeof(VehicleChassisDef))]
-  [HarmonyPatch("GatherDependencies")]
-  [HarmonyPatch(MethodType.Normal)]
-  [HarmonyPatch(new Type[] { typeof(DataManager), typeof(DataManager.DependencyLoadRequest), typeof(uint) })]
-  public static class VehicleChassisDef_GatherDependencies {
-    public static void AddCustomDeps(this UnitCustomInfo info, DataManager.DependencyLoadRequest dependencyLoad) {
-      foreach (CustomPart part in info.CustomParts) {
-        if (string.IsNullOrEmpty(part.prefab)) { continue; }
-        Log.LogWrite(1, "additional prefab:" + part.prefab, true);
-        dependencyLoad.RequestResource(BattleTechResourceType.Prefab, part.prefab);
-        foreach (var mi in part.MaterialInfo) {
-          if (string.IsNullOrEmpty(mi.Value.shader) == false) {
-            Log.LogWrite(1, "additional shader:" + mi.Value.shader, true);
-            dependencyLoad.RequestResource(BattleTechResourceType.Prefab, mi.Value.shader);
-          }
-          foreach (var ti in mi.Value.materialTextures) {
-            if (string.IsNullOrEmpty(ti.Value) == false) {
-              Log.LogWrite(1, "additional textures:" + ti.Value, true);
-              dependencyLoad.RequestResource(BattleTechResourceType.Texture2D, ti.Value);
-            }
-          }
-        }
-      }
-      Log.LogWrite(1, "additional melee def:" + info.MeleeWeaponOverride.DefaultWeapon, true);
-      dependencyLoad.RequestResource(BattleTechResourceType.WeaponDef, info.MeleeWeaponOverride.DefaultWeapon);
-      foreach(var cm in info.MeleeWeaponOverride.Components) {
-        Log.LogWrite(1, "additional melee def:" + cm.Key, true);
-        dependencyLoad.RequestResource(BattleTechResourceType.WeaponDef, cm.Key);
-      }
-    }
-    public static void AddCustomDeps(this ChassisDef chassis, LoadRequest loadRequest) {
-      UnitCustomInfo info = chassis.GetCustomInfo();
-      if (info != null) {
-        foreach (CustomPart part in info.CustomParts) {
-          if (string.IsNullOrEmpty(part.prefab)) { continue; }
-          Log.LogWrite(1, "additional prefab:" + part.prefab, true);
-          loadRequest.AddBlindLoadRequest(BattleTechResourceType.Prefab, part.prefab, new bool?(false));
-          foreach (var mi in part.MaterialInfo) {
-            if (string.IsNullOrEmpty(mi.Value.shader) == false) {
-              Log.LogWrite(1, "additional shader:" + mi.Value.shader, true);
-              loadRequest.AddBlindLoadRequest(BattleTechResourceType.Prefab, mi.Value.shader, new bool?(false));
-            }
-            foreach (var ti in mi.Value.materialTextures) {
-              if (string.IsNullOrEmpty(ti.Value) == false) {
-                Log.LogWrite(1, "additional textures:" + ti.Value, true);
-                loadRequest.AddBlindLoadRequest(BattleTechResourceType.Texture2D, ti.Value, new bool?(false));
-              }
-            }
-          }
-        }
-      }
-    }
-    public static void AddQuadDeps(this ChassisDef chassis, LoadRequest loadRequest) {
-      UnitCustomInfo info = chassis.GetCustomInfo();
-      if (info != null) {
-        if (info.quadVisualInfo.UseQuadVisuals == false) { return; }
-        if (string.IsNullOrEmpty(info.quadVisualInfo.FLegsPrefab) == false) {
-          loadRequest.AddBlindLoadRequest(BattleTechResourceType.Prefab, info.quadVisualInfo.FLegsPrefab);
-        }
-        if (string.IsNullOrEmpty(info.quadVisualInfo.RLegsPrefab) == false) {
-          loadRequest.AddBlindLoadRequest(BattleTechResourceType.Prefab, info.quadVisualInfo.RLegsPrefab);
-        }
-      }
-    }
-    public static void AddCustomDeps(this VehicleChassisDef chassis, LoadRequest loadRequest) {
-      UnitCustomInfo info = chassis.GetCustomInfo();
-      if (info != null) {
-        foreach (CustomPart part in info.CustomParts) {
-          if (string.IsNullOrEmpty(part.prefab)) { continue; }
-          Log.LogWrite(1, "additional prefab:" + part.prefab, true);
-          loadRequest.AddBlindLoadRequest(BattleTechResourceType.Prefab, part.prefab, new bool?(false));
-          foreach (var mi in part.MaterialInfo) {
-            if (string.IsNullOrEmpty(mi.Value.shader) == false) {
-              Log.LogWrite(1, "additional shader:" + mi.Value.shader, true);
-              loadRequest.AddBlindLoadRequest(BattleTechResourceType.Prefab, mi.Value.shader, new bool?(false));
-            }
-            foreach (var ti in mi.Value.materialTextures) {
-              if (string.IsNullOrEmpty(ti.Value) == false) {
-                Log.LogWrite(1, "additional textures:" + ti.Value, true);
-                loadRequest.AddBlindLoadRequest(BattleTechResourceType.Texture2D, ti.Value, new bool?(false));
-              }
-            }
-          }
-        }
-      }
-    }
-    public static void Postfix(VehicleChassisDef __instance, DataManager dataManager, DataManager.DependencyLoadRequest dependencyLoad, uint activeRequestWeight) {
-      Log.LogWrite(0, "VehicleChassisDef.GatherDependencies postfix " + __instance.Description.Id, true);
-      try {
-        UnitCustomInfo info = __instance.GetCustomInfo();
-        if (info == null) {
-          Log.LogWrite(1, "no custom", true);
-          return;
-        }
-        info.AddCustomDeps(dependencyLoad);
-      } catch (Exception e) {
-        Log.LogWrite(e.ToString() + "\n", true);
-      }
-      return;
-    }
-  }
-  [HarmonyPatch(typeof(VehicleChassisDef))]
-  [HarmonyPatch("DependenciesLoaded")]
-  [HarmonyPatch(MethodType.Normal)]
-  [HarmonyPatch(new Type[] { typeof(uint) })]
-  public static class VehicleChassisDef_DependenciesLoaded {
-    public static bool CheckCustomDeps(this UnitCustomInfo info, DataManager dataManager) {
-      foreach (CustomPart part in info.CustomParts) {
-        if (string.IsNullOrEmpty(part.prefab)) { continue; }
-        Log.LogWrite(1, "additional prefab:" + part.prefab, false);
-        if (dataManager.Exists(BattleTechResourceType.Prefab, part.prefab) == false) {
-          Log.LogWrite(1, " not exists", true);
-          return false;
-        }
-        foreach (var mi in part.MaterialInfo) {
-          if (string.IsNullOrEmpty(mi.Value.shader)) { continue; };
-          Log.LogWrite(1, "additional shader:" + mi.Value.shader, false);
-          if (dataManager.Exists(BattleTechResourceType.Prefab, mi.Value.shader) == false) {
-            Log.LogWrite(2, "not exists", true);
-            return false;
-          }
-          Log.LogWrite(2, "exists", true);
-          foreach (var ti in mi.Value.materialTextures) {
-            if (string.IsNullOrEmpty(ti.Value) == false) {
-              Log.LogWrite(1, "additional texture:" + ti.Value, true);
-              if (dataManager.Exists(BattleTechResourceType.Texture2D, ti.Value) == false) {
-                Log.LogWrite(2, "not exists", true);
-                return false;
-              }
-            }
-          }
-          Log.LogWrite(2, "exists", true);
-        }
-      }
-      Log.LogWrite(1, "additional melee def:" + info.MeleeWeaponOverride.DefaultWeapon, false);
-      if (dataManager.Exists(BattleTechResourceType.WeaponDef, info.MeleeWeaponOverride.DefaultWeapon) == false) { Log.LogWrite(2, "not exists", true); return false; }
-      Log.LogWrite(2, "exists", true);
-      foreach (var cm in info.MeleeWeaponOverride.Components) {
-        Log.LogWrite(1, "additional melee def:" + cm.Key, true);
-        if (dataManager.Exists(BattleTechResourceType.WeaponDef, cm.Key) == false) { Log.LogWrite(2, "not exists", true); return false; };
-        Log.LogWrite(2, "exists", true);
-      }
-      return true;
-    }
-    public static void Postfix(VehicleChassisDef __instance, uint loadWeight, ref bool __result) {
-      Log.LogWrite(0, "VehicleChassisDef.DependenciesLoaded postfix " + __instance.Description.Id, true);
-      if (__instance.DataManager == null) { return; }
-      if (__result == false) { return; }
-      try {
-        UnitCustomInfo info = __instance.GetCustomInfo();
-        if (info == null) {
-          Log.LogWrite(1, "no custom", true);
-          return;
-        }
-        if (info.CheckCustomDeps(__instance.DataManager) == false) {
-          __result = false;
-        }
-      } catch (Exception e) {
-        Log.LogWrite(e.ToString() + "\n", true);
-      }
-      return;
-    }
-  }
-  [HarmonyPatch(typeof(ChassisDef))]
-  [HarmonyPatch("GatherDependencies")]
-  [HarmonyPatch(MethodType.Normal)]
-  [HarmonyPatch(new Type[] { typeof(DataManager), typeof(DataManager.DependencyLoadRequest), typeof(uint) })]
-  public static class ChassisDef_GatherDependencies {
-    public static void AddQuadDeps(this UnitCustomInfo info, DataManager.DependencyLoadRequest dependencyLoad) {
-      if (info.quadVisualInfo.UseQuadVisuals == false) { return; }
-      if (string.IsNullOrEmpty(info.quadVisualInfo.FLegsPrefab) == false) {
-        dependencyLoad.RequestResource(BattleTechResourceType.Prefab, info.quadVisualInfo.FLegsPrefab);
-      }
-      if (string.IsNullOrEmpty(info.quadVisualInfo.RLegsPrefab) == false) {
-        dependencyLoad.RequestResource(BattleTechResourceType.Prefab, info.quadVisualInfo.RLegsPrefab);
-      }
-    }
-    public static void AddAlternateDeps(this UnitCustomInfo info, DataManager.DependencyLoadRequest dependencyLoad) {
-      foreach (var altRep in info.AlternateRepresentations) {
-        foreach(string addPrefab in altRep.AdditionalPrefabs) {
-          if (string.IsNullOrEmpty(addPrefab)) { continue; }
-          dependencyLoad.RequestResource(BattleTechResourceType.Prefab, addPrefab);
-        }
-        foreach (AirMechVerticalJetsDef vJetDef in altRep.AirMechVerticalJets) {
-          if (string.IsNullOrEmpty(vJetDef.Prefab)) { continue; }
-          dependencyLoad.RequestResource(BattleTechResourceType.Prefab, vJetDef.Prefab);
-        }
-        if (string.IsNullOrEmpty(altRep.HardpointDataDef) == false) {
-          dependencyLoad.RequestResource(BattleTechResourceType.HardpointDataDef, altRep.HardpointDataDef);
-        }
-        if (string.IsNullOrEmpty(altRep.PrefabIdentifier)) { continue; }
-        dependencyLoad.RequestResource(BattleTechResourceType.Prefab, altRep.PrefabIdentifier);
-      }
-    }
-    public static void Postfix(VehicleChassisDef __instance, DataManager dataManager, DataManager.DependencyLoadRequest dependencyLoad, uint activeRequestWeight) {
-      Log.LogWrite(0, "ChassisDef.GatherDependencies postfix " + activeRequestWeight + " " + __instance.Description.Id, true);
-      try {
-        UnitCustomInfo info = __instance.GetCustomInfo();
-        if (info == null) {
-          Log.LogWrite(1, "no custom", true);
-          return;
-        }
-        info.AddCustomDeps(dependencyLoad);
-        info.AddQuadDeps(dependencyLoad);
-        info.AddAlternateDeps(dependencyLoad);
-        if(string.IsNullOrEmpty(Core.Settings.CustomJumpJetsPrefabSrc) == false) {
-          dependencyLoad.RequestResource(BattleTechResourceType.Prefab, Core.Settings.CustomJumpJetsPrefabSrc);
-        }
-      } catch (Exception e) {
-        Log.LogWrite(e.ToString() + "\n", true);
-      }
-      return;
-    }
-  }
-  [HarmonyPatch(typeof(MechDef))]
-  [HarmonyPatch("GatherDependencies")]
-  [HarmonyPatch(MethodType.Normal)]
-  [HarmonyPatch(new Type[] { typeof(DataManager), typeof(DataManager.DependencyLoadRequest), typeof(uint) })]
-  public static class MechDef_GatherDependencies {
-    public static void Postfix(MechDef __instance, DataManager dataManager, DataManager.DependencyLoadRequest dependencyLoad, uint activeRequestWeight) {
-      Log.LogWrite(0, "MechDef.GatherDependencies postfix " + __instance.Description.Id + " " + activeRequestWeight, true);
-    }
-  }
-  [HarmonyPatch(typeof(Contract))]
-  [HarmonyPatch("BeginRequestResources")]
-  [HarmonyPatch(MethodType.Normal)]
-  [HarmonyPatch(new Type[] { typeof(bool) })]
-  public static class Contract_BeginRequestResources {
-    public static void Prefix(Contract __instance) {
-      Log.TWL(0, "Contract.BeginRequestResources");
-      foreach (var lance in __instance.Lances.Lances) {
-        Log.WL(1, "lance:"+lance.Key);
-        foreach (var lanceUnit in lance.Value) {
-          Log.WL(2, "unit:" + lanceUnit.PilotId + " " + lanceUnit.UnitId + " " +lanceUnit.unitType);
-        }
-      }
-    }
-  }
-  [HarmonyPatch(typeof(ChassisDef))]
-  [HarmonyPatch("DependenciesLoaded")]
-  [HarmonyPatch(MethodType.Normal)]
-  [HarmonyPatch(new Type[] { typeof(uint) })]
-  public static class ChassisDef_DependenciesLoaded {
-    public static bool CheckQuadDeps(this UnitCustomInfo info, DataManager dataManager) {
-      if (info.quadVisualInfo.UseQuadVisuals == false) { return true; }
-      if(string.IsNullOrEmpty(info.quadVisualInfo.FLegsPrefab) == false) {
-        if (dataManager.Exists(BattleTechResourceType.Prefab, info.quadVisualInfo.FLegsPrefab) == false) { return false; }
-      }
-      if (string.IsNullOrEmpty(info.quadVisualInfo.RLegsPrefab) == false) {
-        if (dataManager.Exists(BattleTechResourceType.Prefab, info.quadVisualInfo.RLegsPrefab) == false) { return false; }
-      }
-      return true;
-    }
-    public static bool CheckAltDeps(this UnitCustomInfo info, DataManager dataManager) {
-      foreach (var altRep in info.AlternateRepresentations) {
-        foreach (string addPrefab in altRep.AdditionalPrefabs) {
-          if (string.IsNullOrEmpty(addPrefab)) { continue; }
-          if (dataManager.Exists(BattleTechResourceType.Prefab, addPrefab) == false) { return false; }
-        }
-        foreach (AirMechVerticalJetsDef vJetDef in altRep.AirMechVerticalJets) {
-          if (string.IsNullOrEmpty(vJetDef.Prefab)) { continue; }
-          if (dataManager.Exists(BattleTechResourceType.Prefab, vJetDef.Prefab) == false) { return false; }
-        }
-        if (string.IsNullOrEmpty(altRep.HardpointDataDef) == false) {
-          if (dataManager.Exists(BattleTechResourceType.HardpointDataDef, altRep.HardpointDataDef) == false) { return false; }
-        }
-        if (string.IsNullOrEmpty(altRep.PrefabIdentifier)) { continue; }
-        if (dataManager.Exists(BattleTechResourceType.Prefab, altRep.PrefabIdentifier) == false) { return false; }
-      }
-      return true;
-    }
-    public static void Postfix(ChassisDef __instance, uint loadWeight, ref bool __result) {
-      Log.LogWrite(0, "ChassisDef.DependenciesLoaded postfix " + loadWeight + " "+ __instance.Description.Id, true);
-      if (__instance.DataManager == null) { return; }
-      if (__result == false) { return; }
-      try {
-        UnitCustomInfo info = __instance.GetCustomInfo();
-        if (info == null) {
-          Log.LogWrite(1, "no custom", true);
-          return;
-        }
-        if (info.CheckCustomDeps(__instance.DataManager) == false) {
-          __result = false;
-        }
-        if (info.CheckQuadDeps(__instance.DataManager) == false) {
-          __result = false;
-        }
-        if (info.CheckAltDeps(__instance.DataManager) == false) {
-          __result = false;
-        }
-        if (string.IsNullOrEmpty(Core.Settings.CustomJumpJetsPrefabSrc) == false) {
-          if(__instance.DataManager.Exists(BattleTechResourceType.Prefab, Core.Settings.CustomJumpJetsPrefabSrc) == false) {
-            __result = false;
-          }
-        }
-      } catch (Exception e) {
-        Log.LogWrite(e.ToString() + "\n", true);
-      }
-      return;
     }
   }
   [HarmonyPatch(typeof(AbstractActor))]
@@ -1598,7 +1297,7 @@ namespace CustomUnits {
       try {
         if (__instance.IsDead) {
           Log.LogWrite("AbstractActor.HandleDeath " + __instance.DisplayName + ":" + __instance.GUID + "\n");
-          UnitsAnimatedPartsHelper.Clear(__instance,false);
+          UnitsAnimatedPartsHelper.Clear(__instance, false);
           Vehicle vehicle = __instance as Vehicle;
           if (vehicle == null) {
             Log.LogWrite(" not a vehicle\n");
@@ -1611,7 +1310,7 @@ namespace CustomUnits {
             return;
           }
           if (info.TieToGroundOnDeath) {
-            Dictionary<GenericAnimatedComponent, Vector3> keepPos =  UnitsAnimatedPartsHelper.storePositions(__instance);
+            Dictionary<GenericAnimatedComponent, Vector3> keepPos = UnitsAnimatedPartsHelper.storePositions(__instance);
             TieToGround(vRep.TurretAttach.transform, "TurretAttach", __instance.Combat.MapMetaData);
             TieToGround(vRep.BodyAttach.transform, "BodyAttach", __instance.Combat.MapMetaData);
             TieToGround(vRep.TurretLOS.transform, "TurretLOS", __instance.Combat.MapMetaData);
@@ -1642,29 +1341,6 @@ namespace CustomUnits {
       } catch (Exception e) {
         Log.LogWrite(e.ToString() + "\n");
       }
-    }
-  }
-  [HarmonyPatch(typeof(CombatGameState))]
-  [HarmonyPatch("OnCombatGameDestroyed")]
-  [HarmonyPatch(MethodType.Normal)]
-  [HarmonyPatch(new Type[] { })]
-  public static class CombatGameState_OnCombatGameDestroyedMap {
-    public static bool Prefix(CombatGameState __instance) {
-      try {
-        HardpointAnimatorHelper.Clear();
-        UnitsAnimatedPartsHelper.Clear();
-        ActorMovementSequence_InitDistanceClamp.Clear();
-        VTOLBodyAnimationHelper.Clear();
-        CombatHUDMechwarriorTray_RefreshTeam.Clear();
-        //AlternateRepresentationHelper.Clear();
-        TargetingCirclesHelper.Clear();
-        MoveClampHelper.Clear();
-        SelectionStateJump_GetAllDFATargets.Clear();
-        PathingHelper.Clear();
-      } catch (Exception e) {
-        Log.LogWrite(e.ToString() + "\n");
-      }
-      return true;
     }
   }
 }

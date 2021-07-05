@@ -17,14 +17,14 @@ namespace CustomUnits {
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { typeof(AbstractActor), typeof(Transform) })]
   public static class ActorMovementSequence_InitDistanceClamp {
-    private static Dictionary<AbstractActor, float> lastMoveDistance = new Dictionary<AbstractActor, float>();
-    public static void Clear() {
-      lastMoveDistance.Clear();
-    }
-    public static float LastMoveDistance(this AbstractActor unit) {
-      if(lastMoveDistance.TryGetValue(unit,out float lmd)) { return lmd; }
-      return 0f;
-    }
+    //private static Dictionary<AbstractActor, float> lastMoveDistance = new Dictionary<AbstractActor, float>();
+    //public static void Clear() {
+      //lastMoveDistance.Clear();
+    //}
+    //public static float LastMoveDistance(this AbstractActor unit) {
+      //if(lastMoveDistance.TryGetValue(unit,out float lmd)) { return lmd; }
+      //return 0f;
+    //}
     public static void Postfix(ActorMovementSequence __instance, AbstractActor actor, Transform xform) {
       Log.TWL(0,"ActorMovementSequence.Init "+new Text(actor.DisplayName).ToString());
       try {
@@ -43,11 +43,12 @@ namespace CustomUnits {
           Log.LogWrite("  overriding distance\n");
         }
         Log.LogWrite(" distance:"+ distance + "\n");
-        if (lastMoveDistance.ContainsKey(actor) == false){
-          lastMoveDistance.Add(actor, costUsed);
-        } else {
-          lastMoveDistance[actor] = costUsed;
-        }
+        actor.LastMoveDistance(costUsed);
+        //if (lastMoveDistance.ContainsKey(actor) == false){
+        //  lastMoveDistance.Add(actor, costUsed);
+        //} else {
+        //  lastMoveDistance[actor] = costUsed;
+        //}
       } catch (Exception e) {
         Log.LogWrite(e.ToString() + "\n", true);
       }
@@ -166,7 +167,15 @@ namespace CustomUnits {
       if (mech != null) {
         TrooperSquad squad = unit as TrooperSquad;
         if (squad == null) {
-          return mech.RunSpeed * Traverse.Create(mech).Property<float>("MoveMultiplier").Value;
+          if (mech.FakeVehicle()) {
+            return mech.RunSpeed;
+          } else {
+            if (Core.Settings.CBTBEDetected == false) {
+              return mech.RunSpeed * Traverse.Create(mech).Property<float>("MoveMultiplier").Value;
+            } else {
+              return CBTBehaviorsEnhancedAPIHelper.FinalRunSpeed(mech);
+            }
+          }
         } else {
           return mech.RunSpeed;
         }
@@ -180,19 +189,76 @@ namespace CustomUnits {
       if (mech != null) {
         TrooperSquad squad = unit as TrooperSquad;
         if (squad == null) {
-          return mech.WalkSpeed * Traverse.Create(mech).Property<float>("MoveMultiplier").Value;
+          if (mech.FakeVehicle()) {
+            return mech.WalkSpeed;
+          } else {
+            if (Core.Settings.CBTBEDetected == false) {
+              return mech.WalkSpeed * Traverse.Create(mech).Property<float>("MoveMultiplier").Value;
+            } else {
+              return CBTBehaviorsEnhancedAPIHelper.FinalWalkSpeed(mech);
+            }
+          }
         } else {
-          return mech.RunSpeed;
+          return mech.WalkSpeed;
         }
       }
       Vehicle vehicle = unit as Vehicle;
       if (vehicle != null) { return vehicle.CruiseSpeed * Traverse.Create(vehicle).Property<float>("MoveMultiplier").Value; }
       return 0f;
     }
+    public static float MaxSprintDistanceMod(Mech mech, float value) {
+      Log.TW(0, "MaxSprintDistanceMod " + mech.Description.Id + " value:" + value + " lastMove:" + mech.LastMoveDistance() + " spent:" + mech.PartialMovementSpent()+" clamp:"+ mech.MoveClamp()+" restMod:"+ mech.RestPathingModifier());
+      if (mech.MoveClamp() > Core.Epsilon) {
+        mech.MoveClamp(value, out float min, out float max);
+        value = max;
+      } else {
+        value = value * mech.RestPathingModifier();
+      }
+      Log.WL(1, "value:" + value);
+      return value;
+    }
+    public static float MaxWalkDistanceMod(Mech mech, float value) {
+      Log.TW(0, "MaxWalkDistanceMod " + mech.Description.Id + " value:" + value + " lastMove:" + mech.LastMoveDistance() + " spent:" + mech.PartialMovementSpent() + " clamp:" + mech.MoveClamp() + " restMod:" + mech.RestPathingModifier());
+      if (mech.MoveClamp() > Core.Epsilon) {
+        mech.MoveClamp(value, out float min, out float max);
+        value = max;
+      } else {
+        value = value * mech.RestPathingModifier();
+      }
+      Log.WL(1, "value:" + value);
+      return value;
+    }
+    public static float MaxBackwardDistanceMod(Mech mech, float value) {
+      Log.TW(0, "MaxBackwardDistanceMod " + mech.Description.Id + " value:" + value + " lastMove:" + mech.LastMoveDistance() + " spent:" + mech.PartialMovementSpent() + " clamp:" + mech.MoveClamp() + " restMod:" + mech.RestPathingModifier());
+      if (mech.MoveClamp() > Core.Epsilon) {
+        mech.MoveClamp(value, out float min, out float max);
+        value = max;
+      } else {
+        value = value * mech.RestPathingModifier();
+      }
+      Log.WL(1, "value:" + value);
+      return value;
+    }
+    public static float MaxMeleeEngageRangeDistanceMod(Mech mech, float value) {
+      Log.TW(0, "MaxMeleeEngageRangeDistanceMod " + mech.Description.Id + " value:" + value + " lastMove:" + mech.LastMoveDistance() + " spent:" + mech.PartialMovementSpent() + " clamp:" + mech.MoveClamp() + " restMod:" + mech.RestPathingModifier());
+      if (mech.MoveClamp() > Core.Epsilon) {
+        mech.MoveClamp(value, out float min, out float max);
+        value = max;
+      } else {
+        value = value * mech.RestPathingModifier();
+      }
+      Log.WL(1, "value:" + value);
+      return value;
+    }
     public static void Postfix(Mech __instance, ref float __result) {
       try {
-        __instance.MoveClamp(__result, out float min, out float max);
-        __result = max * __instance.RestPathingModifier();
+        if (Core.Settings.CBTBEDetected) { return; }
+        if (__instance.MoveClamp() > Core.Epsilon) {
+          __instance.MoveClamp(__result, out float min, out float max);
+          __result = max;
+        } else {
+          __result = __result * __instance.RestPathingModifier();
+        }
       } catch (Exception e) {
         Log.TWL(0, e.ToString(), true);
       }
@@ -205,8 +271,15 @@ namespace CustomUnits {
   public static class Mech_MaxSprintDistance {
     public static void Postfix(Mech __instance, ref float __result) {
       try {
-        __instance.MoveClamp(__result, out float min, out float max);
-        __result = max * __instance.RestPathingModifier();
+        if (Core.Settings.CBTBEDetected) { return; }
+        Log.TW(0, "Mech.MaxSprintDistance " + __instance.Description.Id + " inital:" + __result + " clamp:" + __instance.MoveClamp()+ " RestPathingModifier:" + __instance.RestPathingModifier());
+        if (__instance.MoveClamp() > Core.Epsilon) {
+          __instance.MoveClamp(__result, out float min, out float max);
+          __result = max;
+        } else {
+          __result = __result * __instance.RestPathingModifier();
+        }
+        Log.WL(1, "result:" + __result);
       } catch (Exception e) {
         Log.TWL(0, e.ToString(), true);
       }
@@ -219,8 +292,12 @@ namespace CustomUnits {
   public static class Vehicle_MaxWalkDistance {
     public static void Postfix(Vehicle __instance, ref float __result) {
       try {
-        __instance.MoveClamp(__result, out float min, out float max);
-        __result = max * __instance.RestPathingModifier();
+        if (__instance.MoveClamp() > Core.Epsilon) {
+          __instance.MoveClamp(__result, out float min, out float max);
+          __result = max;
+        } else {
+          __result = __result * __instance.RestPathingModifier();
+        }
       } catch (Exception e) {
         Log.TWL(0, e.ToString(), true);
       }
@@ -233,8 +310,12 @@ namespace CustomUnits {
   public static class Vehicle_MaxSprintDistance {
     public static void Postfix(Vehicle __instance, ref float __result) {
       try {
-        __instance.MoveClamp(__result, out float min, out float max);
-        __result = max * __instance.RestPathingModifier();
+        if (__instance.MoveClamp() > Core.Epsilon) {
+          __instance.MoveClamp(__result, out float min, out float max);
+          __result = max;
+        } else {
+          __result = __result * __instance.RestPathingModifier();
+        }
       } catch (Exception e) {
         Log.TWL(0, e.ToString(), true);
       }

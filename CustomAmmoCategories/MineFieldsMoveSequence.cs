@@ -265,7 +265,7 @@ namespace CustAmmoCategories {
         if (target.GUID == unit.GUID) { continue; };
         if (target.IsDead) { continue; };
         if (target.isDropshipNotLanded()) { continue; };
-        Vector3 CurrentPosition = target.CurrentPosition + Vector3.up * target.AoEHeightFix();
+        Vector3 CurrentPosition = target.CurrentPosition + Vector3.up * target.FlyingHeight();
         float distance = Vector3.Distance(CurrentPosition, pos);
         Log.LogWrite(" " + target.DisplayName + ":" + target.GUID + " " + distance + "("+ CustomAmmoCategories.Settings.DefaultAoEDamageMult[target.UnitType].Range + ")\n");
         if (CustomAmmoCategories.Settings.DefaultAoEDamageMult[target.UnitType].Range < CustomAmmoCategories.Epsilon) { CustomAmmoCategories.Settings.DefaultAoEDamageMult[target.UnitType].Range = 1f; }

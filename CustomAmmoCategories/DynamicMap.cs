@@ -546,6 +546,7 @@ namespace CustAmmoCategories {
     //public int mapX;
     //public int mapY;
     public Vector3 center;
+    public MapTerrainDataCellEx centerCell;
     public List<MapTerrainDataCellEx> terrainCells;
     public Dictionary<string, tempTerrainVFXEffect> tempVFXEffects;
     public ObjectSpawnDataSelf burnEffect;
@@ -622,7 +623,7 @@ namespace CustAmmoCategories {
         mfCollider.GetComponent<Rigidbody>().name = "minefieldCollider";
         mfCollider.GetComponent<Rigidbody>().isKinematic = true;
         mfCollider.GetComponent<Rigidbody>().useGravity = false;
-        mfCollider.gameObject.layer = LayerMask.NameToLayer("Combatant");
+        mfCollider.gameObject.layer = LayerMask.NameToLayer("NoCollision");
         SphereCollider collider = mfCollider.AddComponent<SphereCollider>();
         collider.name = "minefieldCollider";
         collider.radius = 0.1f;//Combat.HexGrid.HexWidth;
@@ -891,6 +892,7 @@ namespace CustAmmoCategories {
       mineFieldVFX = null;
       minefieldStealthReductors = new HashSet<AbstractActor>();
       minefieldStealthReductionCache = new Dictionary<Team, int>();
+      centerCell = null;
     }
     public static List<MapTerrainHexCell> listHexCellsByCellRadius(MapTerrainDataCellEx ccell, int r) {
       //HashSet<MapPoint> hexCells = new HashSet<MapPoint>();
@@ -1487,6 +1489,7 @@ namespace CustAmmoCategories {
           if(DynamicMapHelper.hexGrid.TryGetValue(hexPos,out MapTerrainHexCell hexCell) == false) {
             hexCell = new MapTerrainHexCell();
             hexCell.center = hexPos;
+            hexCell.centerCell = mapMetaData.GetCellAt(hexCell.center) as MapTerrainDataCellEx;
             hexCell.Combat = UnityGameInstance.BattleTechGame.Combat;
             DynamicMapHelper.hexGrid.Add(hexPos, hexCell);
           }
@@ -2260,6 +2263,17 @@ namespace CustomAmmoCategoriesPatches {
   public static class DataManager_PooledInstantiate {
     private static PropertyInfo pGameObjectPool = null;
     private static PropertyInfo pAssetBundleManager = null;
+    private static List<Func<BattleTechResourceType, string, string>> IdFilters = new List<Func<BattleTechResourceType, string, string>>();
+    private static List<Action<BattleTechResourceType,string, string, GameObject>> PoolPostProcessors = new List<Action<BattleTechResourceType, string, string, GameObject>>();
+    public static void RegisterIdFilter(Func<BattleTechResourceType, string, string> filter) {
+      IdFilters.Add(filter);
+    }
+    private static string InvokeIdFilters(BattleTechResourceType resourceType, string id) {
+      foreach(Func<BattleTechResourceType, string, string> filter in IdFilters) {
+        id = filter(resourceType, id);
+      }
+      return id;
+    }
     public static bool Prepare() {
       pGameObjectPool = typeof(DataManager).GetProperty("GameObjectPool", BindingFlags.Instance | BindingFlags.NonPublic);
       if (pGameObjectPool == null) {

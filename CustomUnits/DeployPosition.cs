@@ -134,13 +134,20 @@ namespace CustomUnits {
       this.SelectedActor = actor;
       HasActivated = false;
     }
+#if BT_PUBLIC_ASSEMBLY
+    public override bool ShouldShowWeaponsUI { get { return false; } }
+    public override bool ShouldShowTargetingLines { get { return false; } }
+    public override bool ShouldShowFiringArcs { get { return false; } }
+    public override bool showHeatWarnings { get { return false; } }
+#else
     protected override bool ShouldShowWeaponsUI { get { return false; } }
     protected override bool ShouldShowTargetingLines { get { return false; } }
     protected override bool ShouldShowFiringArcs { get { return false; } }
+    protected override bool showHeatWarnings { get { return false; } }
+#endif
     public override bool ConsumesMovement { get { return false; } }
     public override bool ConsumesFiring { get { return false; } }
     public override bool CanBackOut { get { return NumPositionsLocked > 0; } }
-    protected override bool showHeatWarnings { get { return false; } }
     public virtual bool HasCalledShot { get { return false; } }
     public virtual bool NeedsCalledShot { get { return false; } }
     public override bool CanActorUseThisState(AbstractActor actor) { return actor.IsDeployDirector(); }
@@ -254,7 +261,7 @@ namespace CustomUnits {
       Mech deployDirector = HUD.SelectedActor as Mech;
       if (PlayerLanceSpawnerGameLogic_OnEnterActive.deployLoadRequest != null) {
         PlayerLanceSpawnerGameLogic_OnEnterActive.deployLoadRequest.RestoreAndSpawn(this.deployPositions, deployDirector, this.HUD);
-        PlayerLanceSpawnerGameLogic_OnEnterActive.Clear();
+        //PlayerLanceSpawnerGameLogic_OnEnterActive.Clear();
       }
       return true;
     }
@@ -803,6 +810,9 @@ namespace CustomUnits {
   [HarmonyPatch(new Type[] { typeof(AbstractActor) })]
   public static class CombatSelectionHandler_DeselectActor {
     public static bool Prefix(CombatSelectionHandler __instance, AbstractActor actor) {
+      if (actor == null) { return true; }
+      if (actor.Combat == null) { return true; }
+      if (actor.Combat.LocalPlayerTeam == null) { return true; }
       if (actor.Combat.LocalPlayerTeam.unitCount != 1) { return true; }
       if (actor.IsDeployDirector() && (actor.IsDead == false)) { return false; }
       return true;
@@ -953,8 +963,11 @@ namespace CustomUnits {
     public Dictionary<UnitSpawnPointGameLogic,UnitType> originalUnitTypes;
     public SpawnUnitMethodType originalSpawnMethod;
     public Mech deployDirector;
+    private bool isSpawned;
     public CombatHUD HUD;
     public void RestoreAndSpawn(List<DeployPosition> positions, Mech deployDirector, CombatHUD HUD) {
+      if (isSpawned) { return; }
+      isSpawned = true;
       this.deployDirector = deployDirector;
       FogOfWarSystem_WipeToValue.NormalFoW();
       LazySingletonBehavior<FogOfWarView>.Instance.FowSystem.WipeToValue(HUD.Combat.EncounterLayerData.startingFogOfWarVisibility);
@@ -1097,6 +1110,7 @@ namespace CustomUnits {
     }
     public DeployDirectorLoadRequest(PlayerLanceSpawnerGameLogic playerLanceSpawner) {
       Log.TWL(0, "DeployDirectorLoadRequest.DeployDirectorLoadRequest");
+      isSpawned = false;
       FogOfWarSystem_WipeToValue.RevealFoW();
       UnitSpawnPointGameLogic[] pointGameLogicList = playerLanceSpawner.unitSpawnPointGameLogicList;
       this.playerLanceSpawner = playerLanceSpawner;
@@ -1168,7 +1182,7 @@ namespace CustomUnits {
     public static readonly string DeployPilotDefID = "pilot_deploy_director";
     public static readonly string DeployAbilityDefID = "AbilityDefCU_DeploySetPosition";
     public static DeployDirectorLoadRequest deployLoadRequest = null;
-    public static void Clear() { deployLoadRequest = null; }
+    //public static void Clear() { deployLoadRequest = null; }
     public static void ResetDeployButton(this CombatHUDMechwarriorTray tray, AbstractActor actor, Ability ability, CombatHUDActionButton button, bool forceInactive) {
       CustomAmmoCategoriesLog.Log.LogWrite("ResetDeployButton:" + actor.DisplayName + "\n");
       CustomAmmoCategoriesLog.Log.LogWrite(" actor.HasActivatedThisRound:" + actor.HasActivatedThisRound + "\n");

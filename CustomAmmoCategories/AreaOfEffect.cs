@@ -148,8 +148,8 @@ namespace CustAmmoCategories {
           if (target.IsDead) { continue; };
           if (target.isDropshipNotLanded()) { continue; };
           Vector3 CurrentPosition = target.CurrentPosition;
-          if(advRec.isHit == false) { CurrentPosition += Vector3.up* target.AoEHeightFix(); } else {
-            if (advRec.target.GUID != target.GUID) { CurrentPosition += Vector3.up * target.AoEHeightFix(); }
+          if(advRec.isHit == false) { CurrentPosition += Vector3.up* target.FlyingHeight(); } else {
+            if (advRec.target.GUID != target.GUID) { CurrentPosition += Vector3.up * target.FlyingHeight(); }
           }
           float distance = Vector3.Distance(CurrentPosition, hitPosition);
           Log.LogWrite(" testing combatant " + target.DisplayName + " " + target.GUID + " " + distance + "("+CustomAmmoCategories.Settings.DefaultAoEDamageMult[target.UnitType].Range+")/" + AOERange + "\n");

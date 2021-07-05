@@ -10,14 +10,14 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
    public class HitResolution : BattleModModule {
 
       public override void CombatStartsOnce () {
-         if ( Settings.KillZeroHpLocation ) {
+         if ( AIMSettings.KillZeroHpLocation ) {
             Patch( typeof( Mech )   , "DamageLocation", null, "FixZombieMech" );
             Patch( typeof( Vehicle ), "DamageLocation", null, "FixZombieVehicle" );
             Patch( typeof( Turret ) , "DamageLocation", null, "FixZombieTurret" );
             Patch( typeof( BattleTech.Building ), "DamageBuilding", null, "FixZombieBuilding" );
          }
 
-         if ( Settings.ShowMissMargin ) {
+         if ( AIMSettings.ShowMissMargin ) {
             hitChance = new Dictionary<int, float>();
             Patch( typeof( AttackDirector.AttackSequence ), "GetIndividualHits", "RecordHitChance", null );
             Patch( typeof( AttackDirector.AttackSequence ), "GetClusteredHits" , "RecordHitChance", null );
@@ -144,7 +144,7 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
       public static bool OverrideDecrementAmmo ( Weapon __instance, ref int __result, int stackItemUID ) { try {
          Weapon me = __instance;
          if ( me.AmmoCategoryValue.Is_NotSet || ! ( me.parent is Mech mech ) ) return true;
-         if ( ! FriendOrFoe( mech, Settings.BalanceAmmoConsumption, Settings.BalanceEnemyAmmoConsumption ) ) return true;
+         if ( ! FriendOrFoe( mech, AIMSettings.BalanceAmmoConsumption, AIMSettings.BalanceEnemyAmmoConsumption ) ) return true;
 
          int needAmmo = __result = me.ShotsWhenFired;
          if ( needAmmo <= 0 ) return false;

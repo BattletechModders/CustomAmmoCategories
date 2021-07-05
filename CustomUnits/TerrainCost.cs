@@ -154,37 +154,75 @@ namespace CustomUnits {
     }
     public static DesignMaskMoveCostInfo MoveCostByTerrain(this AbstractActor unit, DesignMaskDef mask, float defValue) {
       if (mask == null) { return new DesignMaskMoveCostInfo(defValue, 1f); };
-      //Log.LogWrite(0, "MoveCostByTerrain "+unit.DisplayName+":"+unit.GUID+" mask:"+mask.Id,true);
       CustomDesignMaskInfo maskInfo = mask.GetCustomDesignMaskInfo();
-      //if (maskInfo != null) { Log.LogWrite(1,"maskInfo:",true); maskInfo.debugLog(2); };
       string MoveCostKey = unit.CustomMoveCostKey();
-      if (string.IsNullOrEmpty(MoveCostKey) == false) { Log.LogWrite(1, "MoveCostKey:" + MoveCostKey, true); };
+      if (string.IsNullOrEmpty(MoveCostKey) == false) { Log.LogWrite(1, "MoveCostKey:" + MoveCostKey); };
       if ((maskInfo != null) && (string.IsNullOrEmpty(MoveCostKey) == false)) {
         if (maskInfo.CustomMoveCost.ContainsKey(MoveCostKey)) {
           DesignMaskMoveCostInfo result = maskInfo.CustomMoveCost[MoveCostKey];
-          Log.LogWrite(1, "result:" + result.moveCost + "," + result.SprintMultiplier, true);
+          Log.LogWrite(1, "result:" + result.moveCost + "," + result.SprintMultiplier);
           return result;
         } else {
-          Log.LogWrite(1, "move cost not found", true);
+          Log.LogWrite(1, "move cost not found");
         }
       }
       Mech mech = unit as Mech;
       Vehicle vehicle = unit as Vehicle;
       float moveCost = defValue;
       if (mech != null) {
-        switch (mech.weightClass) {
-          case WeightClass.LIGHT:
+        bool FakeVehicle = false;
+        UnitCustomInfo info = unit.GetCustomInfo();
+        if (info != null) { if (info.FakeVehicle) { FakeVehicle = true; } }
+        if (FakeVehicle == false) {
+          switch (mech.weightClass) {
+            case WeightClass.LIGHT:
             moveCost = mask.moveCostMechLight;
             break;
-          case WeightClass.MEDIUM:
+            case WeightClass.MEDIUM:
             moveCost = mask.moveCostMechMedium;
             break;
-          case WeightClass.HEAVY:
+            case WeightClass.HEAVY:
             moveCost = mask.moveCostMechHeavy;
             break;
-          case WeightClass.ASSAULT:
+            case WeightClass.ASSAULT:
             moveCost = mask.moveCostMechAssault;
             break;
+          }
+        } else {
+          switch (info.FakeVehicleMovementType) {
+            case VehicleMovementType.Wheeled:
+            switch (mech.weightClass) {
+              case WeightClass.LIGHT:
+              moveCost = mask.moveCostWheeledLight;
+              break;
+              case WeightClass.MEDIUM:
+              moveCost = mask.moveCostWheeledMedium;
+              break;
+              case WeightClass.HEAVY:
+              moveCost = mask.moveCostWheeledHeavy;
+              break;
+              case WeightClass.ASSAULT:
+              moveCost = mask.moveCostWheeledAssault;
+              break;
+            };
+            break;
+            case VehicleMovementType.Tracked:
+            switch (mech.weightClass) {
+              case WeightClass.LIGHT:
+              moveCost = mask.moveCostTrackedLight;
+              break;
+              case WeightClass.MEDIUM:
+              moveCost = mask.moveCostTrackedMedium;
+              break;
+              case WeightClass.HEAVY:
+              moveCost = mask.moveCostTrackedHeavy;
+              break;
+              case WeightClass.ASSAULT:
+              moveCost = mask.moveCostTrackedAssault;
+              break;
+            };
+            break;
+          }
         }
       } else
       if (vehicle != null) {
@@ -231,6 +269,9 @@ namespace CustomUnits {
       float num = gtcScratchGrid.Capabilities.MoveCostNormal;
       FgtcScratchGrid.SetValue(null, gtcScratchGrid);
       if (cell == null) { return num * unit.MoveCostModPerBiome(); };
+      if (unit.NavalUnit()) {
+        if (cell.HasWater() == false) { return 99999.9f; }
+      }
       bool UnaffectedPathing = unit.UnaffectedPathing();
       if (UnaffectedPathing) { return num * unit.MoveCostModPerBiome(); }
       if (SplatMapInfo.IsImpassable(cell.terrainMask) && (UnaffectedPathing == false)) { return 99999.9f; };

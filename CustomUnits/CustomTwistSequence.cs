@@ -1,6 +1,7 @@
 ﻿using BattleTech;
 using HBS.Math;
 using HBS.Util;
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -8,8 +9,8 @@ namespace CustomUnits {
   public class CustomTwistSequence : MultiSequence {
     public AbstractActor owningActor;
     private PilotableActorRepresentation actorRep;
-    private AlternateMechRepresentation altRep;
-    private Animator actorAnim;
+    private CustomMechRepresentation customRep;
+    private Animator defaultAnim;
     private CustomTwistSequence.TwistState state;
     private float timeInCurrentState;
     private bool isBodyRotation;
@@ -35,37 +36,15 @@ namespace CustomUnits {
       Log.TWL(0, "CustomTwistSequence " + actor.DisplayName + " isBodyRotation:" + isBodyRotation + " lookAt:" + lookAt);
       this.isUpdateRotation = isBodyRotation;
       this.owningActor = actor;
-      AlternateMechRepresentations altReps = actor.GameRep.GetComponent<AlternateMechRepresentations>();
-      this.altRep = null;
-      if (altReps != null) {
-        this.actorRep = altReps.currentRepresentation;
-        this.altRep = altReps.currentAltRep;
-      } else {
-        this.actorRep = actor.GameRep as PilotableActorRepresentation;
-      }
+      this.actorRep = actor.GameRep as PilotableActorRepresentation;
+      this.customRep = actor.GameRep as CustomMechRepresentation;
       Log.WL(1, "current representation:"+ this.actorRep.name);
-      this.actorAnim = this.actorRep.thisAnimator;
+      this.defaultAnim = this.actorRep.thisAnimator;
       CustomTwistAnimation custAnimator = this.actorRep.GetComponent<CustomTwistAnimation>();
       if (custAnimator != null) {
-        if(custAnimator.mechTurret != null) {
-          if(custAnimator.mechTurret.turnAnimator != null) {
-            this.actorAnim = custAnimator.mechTurret.turnAnimator;
-            Log.WL(1, "mech turret found:" + this.actorAnim.name);
-          }
-        }
+        if(custAnimator.HasTurret) { this.defaultAnim = null; }
       }
-      QuadRepresentation quadRepresentation = this.actorRep.GetComponent<QuadRepresentation>();
       this.isBodyRotation = isBodyRotation;
-      if ((quadRepresentation != null)&&(this.actorAnim == this.actorRep.thisAnimator)) {
-        this.isBodyRotation = true;
-        Log.WL(1, "quad without turret");
-      }
-      if (altReps != null) {
-        if (altReps.isHovering) {
-          Log.WL(1, "hovering mech");
-          this.isBodyRotation = true;
-        }
-      }
       this.vtolAnim = this.owningActor.VTOLAnimation();
       this.customTwistAnim = this.actorRep.gameObject.GetComponent<CustomTwistAnimation>();
       this.attackStackItemUID = stackItemUID;
@@ -87,7 +66,13 @@ namespace CustomUnits {
       }
       if ((double)this.twistTime <= 0.0) { this.twistTime = 1f; }
       this.twistRate = 1f / this.twistTime;
-      Log.WL(1, "isBodyRotation:" + this.isBodyRotation+ " isUpdateRotation:" + this.isUpdateRotation + " skipTwist:" + this.skipTwist+ " twistRate:"+ this.twistRate+ " startingRotation:"+ this.startingRotation+ " desiredRotation:"+ this.desiredRotation);
+      Log.WL(1, "isBodyRotation:" + this.isBodyRotation 
+        + " isUpdateRotation:" + this.isUpdateRotation 
+        + " skipTwist:" + this.skipTwist+ " twistRate:"+ this.twistRate
+        + " startAngle:" + this.startAngle + " desiredAngle:" + this.desiredAngle
+        + " startingRotation:" + this.startingRotation+ " desiredRotation:"+ this.desiredRotation
+        );
+      Log.WL(1,Environment.StackTrace);
     }
 
     private void update() {
@@ -107,7 +92,11 @@ namespace CustomUnits {
           this.t += this.twistRate * Time.deltaTime;
           if ((double)this.t >= 1.0) { this.t = 1f; }
           this.actorRep.currentTwistAngle = this.startAngle + this.angleDifference * this.t;
-          this.actorAnim.SetFloat("Twist", this.actorRep.currentTwistAngle);
+          if (this.customRep != null) {
+            this.customRep.Twist(this.actorRep.currentTwistAngle);
+          }else{
+            if (defaultAnim != null) { this.defaultAnim.SetFloat("Twist", this.actorRep.currentTwistAngle); };
+          }
           if (vtolAnim != null) { vtolAnim.twist(this.actorRep.currentTwistAngle); }
           if (customTwistAnim != null) { customTwistAnim.twist(this.actorRep.currentTwistAngle); }
           if ((double)this.t < 1.0) { break; }

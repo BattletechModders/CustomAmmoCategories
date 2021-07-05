@@ -27,24 +27,24 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
       }
       if (HasMod("aa.battletech.realhitchance", "RealHitChance.Loader")) {
         BattleMod.BTML_LOG.Warn(Mod.Name + " detected casualmods's Real Hit Chance mod, which should be REMOVED because it does not support AIM's features. Just remember to set AIM's ShowCorrectedHitChance to true!");
-        Settings.ShowCorrectedHitChance = true;
+        AIMSettings.ShowCorrectedHitChance = true;
       }
 
-      RollCorrectionStrength = (float)Settings.RollCorrectionStrength;
-      MissStreakBreakerThreshold = (float)Settings.MissStreakBreakerThreshold;
-      MissStreakBreakerDivider = (float)Settings.MissStreakBreakerDivider;
+      RollCorrectionStrength = (float)AIMSettings.RollCorrectionStrength;
+      MissStreakBreakerThreshold = (float)AIMSettings.MissStreakBreakerThreshold;
+      MissStreakBreakerDivider = (float)AIMSettings.MissStreakBreakerDivider;
       NoRollCorrection = RollCorrectionStrength == 0;
 
       if (!NoRollCorrection && !TrueRNG) {
         if (RollCorrectionStrength != 1)
           Patch(typeof(AttackDirector.AttackSequence), "GetCorrectedRoll", new Type[] { typeof(float), typeof(Team) }, "OverrideRollCorrection", null);
-        if (Settings.ShowCorrectedHitChance) {
+        if (AIMSettings.ShowCorrectedHitChance) {
           correctionCache = new Dictionary<float, float>(20);
           Patch(typeof(CombatHUDWeaponSlot), "SetHitChance", typeof(float), "ShowCorrectedHitChance", null);
         }
-      } else if (Settings.ShowCorrectedHitChance) {
+      } else if (AIMSettings.ShowCorrectedHitChance) {
         Info("ShowCorrectedHitChance auto-disabled because roll Correction is disabled.");
-        Settings.ShowCorrectedHitChance = false;
+        AIMSettings.ShowCorrectedHitChance = false;
       }
 
       if ((MissStreakBreakerThreshold != 0.5f || MissStreakBreakerDivider != 5) && !TrueRNG) {
@@ -54,13 +54,13 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
           Patch(typeof(Team), "ProcessRandomRoll", new Type[] { typeof(float), typeof(bool) }, "OverrideMissStreakBreaker", null);
       }
 
-      if (Settings.HitChanceFormat != null)
-        WeaponHitChanceFormat = Settings.HitChanceFormat;
-      else if (Settings.HitChanceStep == 0 && !Settings.DiminishingHitChanceModifier)
+      if (AIMSettings.HitChanceFormat != null)
+        WeaponHitChanceFormat = AIMSettings.HitChanceFormat;
+      else if (AIMSettings.HitChanceStep == 0 && !AIMSettings.DiminishingHitChanceModifier)
         WeaponHitChanceFormat = "{0:0.#}%";
 
-      bool HitChanceFormatChanged = Settings.HitChanceFormat != null || (Settings.HitChanceStep == 0 && Settings.HitChanceFormat != "{0:0}%");
-      if (HitChanceFormatChanged || Settings.ShowCorrectedHitChance || Settings.MinFinalHitChance < 0.05m || Settings.MaxFinalHitChance > 0.95m) {
+      bool HitChanceFormatChanged = AIMSettings.HitChanceFormat != null || (AIMSettings.HitChanceStep == 0 && AIMSettings.HitChanceFormat != "{0:0}%");
+      if (HitChanceFormatChanged || AIMSettings.ShowCorrectedHitChance || AIMSettings.MinFinalHitChance < 0.05m || AIMSettings.MaxFinalHitChance > 0.95m) {
         HitChance = typeof(CombatHUDWeaponSlot).GetMethod("set_HitChance", Instance | NonPublic);
         Refresh = typeof(CombatHUDWeaponSlot).GetMethod("RefreshNonHighlighted", Instance | NonPublic);
         Patch(typeof(CombatHUDWeaponSlot), "SetHitChance", typeof(float), "OverrideDisplayedHitChance", null);

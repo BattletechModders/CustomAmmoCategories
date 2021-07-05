@@ -4,6 +4,7 @@ using Harmony;
 using Localize;
 using System;
 using System.Collections.Generic;
+using System.Threading;
 using UnityEngine;
 
 namespace CustAmmoCategories {
@@ -37,12 +38,16 @@ namespace CustAmmoCategories {
       Vehicle vehicle = combatant as Vehicle;
       Turret turret = combatant as Turret;
       Building building = combatant as Building;
-      if (mech != null) { return mech.GetStringForArmorLocation((ArmorLocation)aLoc); } else
-      if (vehicle != null) { return vehicle.GetStringForArmorLocation((VehicleChassisLocations)aLoc); } else
-      if (turret != null) { return turret.GetStringForArmorLocation((BuildingLocation)aLoc); } else
-      if (building != null) { return "Structure"; } else {
-        return "Unknown";
-      }
+      Thread.CurrentThread.pushActor(combatant as AbstractActor);
+      Thread.CurrentThread.SetFlag("CHANGE_MECH_LOCATION_NAME");
+      string result = "Unknown";
+      if (mech != null) { result = mech.GetLongArmorLocation((ArmorLocation)aLoc).ToString(); } else
+      if (vehicle != null) { result = vehicle.GetStringForArmorLocation((VehicleChassisLocations)aLoc); } else
+      if (turret != null) { result = turret.GetStringForArmorLocation((BuildingLocation)aLoc); } else
+      if (building != null) { result = "Structure"; }
+      Thread.CurrentThread.ClearFlag("CHANGE_MECH_LOCATION_NAME");
+      Thread.CurrentThread.clearActor();
+      return result;
     }
     public static ChassisLocations GetCritTransferLocation(ChassisLocations location) {
       if (CustomAmmoCategories.Settings.CritLocationTransfer == false) { return ChassisLocations.None; }
@@ -72,11 +77,12 @@ namespace CustAmmoCategories {
       }
       return mechComponentList;
     }
-    public static List<MechComponent> GetCriticalSlotsInLocation(this AbstractActor unit, int location) {
+    public static List<MechComponent> GetCriticalSlotsInLocation(this AbstractActor unit,ref int location) {
       List<MechComponent> result = new List<MechComponent>();
       List<MechComponent> components = unit.GetCritsComponentsForLocation(location);
       Mech mech = unit as Mech;
       if (mech != null) {
+        LocationDamageLevel dmgLvl = mech.GetLocationDamageLevel((ChassisLocations)location);
         while ((components.Count == 0) && (location != 0)) {
           if (mech.NoCritTransfer()) { location = 0; } else {
             location = (int)AdvancedCriticalProcessor.GetCritTransferLocation((ChassisLocations)location);
@@ -161,7 +167,7 @@ namespace CustAmmoCategories {
       Log.C.WL(1, string.Format("SEQ:{0}: WEAP:{1} Loc:{2} Final crit chance: {3:P2}", (object)hitInfo.attackSequenceId, (object)hitInfo.attackWeaponIndex, (object)location.ToString(), (object)critChance));
       Log.C.WL(1, string.Format("SEQ:{0}: WEAP:{1} Loc:{2} Crit roll: {3:P2}", (object)hitInfo.attackSequenceId, (object)hitInfo.attackWeaponIndex, (object)location.ToString(), (object)randomFromCache[0]));
       if ((double)randomFromCache[0] <= (double)critChance) {
-        List<MechComponent> critComponents = unit.GetCriticalSlotsInLocation(location);
+        List<MechComponent> critComponents = unit.GetCriticalSlotsInLocation(ref location);
         if (critComponents.Count == 0) {
           Log.C.WL(1, "Can't find critical components in location:" + location + "\n", true);
           return;

@@ -535,6 +535,21 @@ namespace CustomUnits {
       }
       return null;
     }
+    public static string GetRelativePath(this Transform transform, Transform parent) {
+      string result = string.Empty;
+      Transform temp = transform;
+      while((temp != parent)&&(temp != null)) {
+        result = result + "." + temp.name;
+        temp = temp.parent;
+      }
+      return result;
+    }
+    public static Transform FindByPath(this Transform parent, string path) {
+      Transform[] transforms = parent.GetComponentsInChildren<Transform>(true);
+      Transform result = null;
+      foreach (Transform transform in transforms) { if (transform.GetRelativePath(parent) == path) { result = transform; break; } }
+      return result;
+    }
   }
   [HarmonyPatch(typeof(AAR_UnitsResult_Screen), "InitializeData")]
   public static class AAR_UnitsResult_Screen_InitializeSkirmishData {
@@ -827,7 +842,7 @@ namespace CustomUnits {
           pilotDef.SetUnspentExperience(value);
           //}
         } else {
-          Log.WL(1, "success find result for:" + pilotDef.Description.Id + " unit:" + pilotResult.mech.ChassisID + " idFake:" + pilotResult.mech.IsChassisFake());
+          Log.WL(1, "success find result for:" + pilotDef.Description.Id + " unit:" + pilotResult.mech.ChassisID + " idFake:" + pilotResult.mech.IsVehicle());
           //if (pilotResult.mech.IsChassisFake()) {
           //pilotDef.SetUnspentExperience(0);
           //} else {
@@ -894,12 +909,12 @@ namespace CustomUnits {
         if (loadoutSlot.isMechLocked) { forcedMech = null; }
         if (loadoutSlot.isPilotLocked) { forcedPilot = null; }
         if (loadoutSlot.isForVehicle()) {
-          if (forcedMech != null) { if (forcedMech.MechDef.IsChassisFake() == false) { forcedMech = null; }; };
+          if (forcedMech != null) { if (forcedMech.MechDef.IsVehicle() == false) { forcedMech = null; }; };
           if (forcedPilot != null) { if (forcedPilot.Pilot.pilotDef.canPilotVehicle() == false) { forcedPilot = null; }; };
         } else {
           if ((forcedMech != null) && (forcedPilot != null)) {
-            if (forcedMech.MechDef.IsChassisFake() && (forcedPilot.Pilot.pilotDef.canPilotVehicle() == false)) { forcedPilot = null; }
-            if ((forcedMech.MechDef.IsChassisFake() == false) && (forcedPilot.Pilot.pilotDef.canPilotMech() == false)) { forcedPilot = null; }
+            if (forcedMech.MechDef.IsVehicle() && (forcedPilot.Pilot.pilotDef.canPilotVehicle() == false)) { forcedPilot = null; }
+            if ((forcedMech.MechDef.IsVehicle() == false) && (forcedPilot.Pilot.pilotDef.canPilotMech() == false)) { forcedPilot = null; }
           }
         }
         if (forcedPilot != null) { __instance.pilotListWidget.RemovePilot(__instance.availablePilots.Find((Predicate<Pilot>)(x => x.Description.Id == forcedPilot.Pilot.Description.Id))); }
@@ -1036,14 +1051,14 @@ namespace CustomUnits {
         if (item.ItemType == MechLabDraggableItemType.Mech) {
           LanceLoadoutMechItem lanceLoadoutMechItem = item as LanceLoadoutMechItem;
           if (isVehicle) {
-            if (lanceLoadoutMechItem.MechDef.IsChassisFake() == false) {
+            if (lanceLoadoutMechItem.MechDef.IsVehicle() == false) {
               if (___LC != null) { ___LC.ReturnItem(item); }
               __result = false;
               GenericPopupBuilder.Create("Cannot place mech", Strings.T("Mech cannot be placed to vehicle slot")).AddFader(new UIColorRef?(LazySingletonBehavior<UIManager>.Instance.UILookAndColorConstants.PopupBackfill), 0.0f, true).Render();
               return false;
             }
           } else if (__instance.SelectedPilot != null) {
-            if (lanceLoadoutMechItem.MechDef.IsChassisFake() == false) {
+            if (lanceLoadoutMechItem.MechDef.IsVehicle() == false) {
               if (__instance.SelectedPilot.Pilot.pilotDef.canPilotMech() == false) {
                 if (___LC != null) { ___LC.ReturnItem(item); }
                 __result = false;
@@ -1072,7 +1087,7 @@ namespace CustomUnits {
             }
           } else {
             if (__instance.SelectedMech != null) {
-              if (__instance.SelectedMech.MechDef.IsChassisFake() == false) {
+              if (__instance.SelectedMech.MechDef.IsVehicle() == false) {
                 if (canPilotMech == false) {
                   if (___LC != null) { ___LC.ReturnItem(item); }
                   __result = false;

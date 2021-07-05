@@ -330,6 +330,14 @@ namespace CustAmmoCategories {
     public AutoRefilType AutoRefill { get; set; }
     public HashSet<string> ammoOnlyBoxes { get; set; }
     public HashSet<string> AvailableOnPlanet { get; set; }
+    public float BuildingsDamageModifier { get; set; }
+    public float TurretDamageModifier { get; set; }
+    public float VehicleDamageModifier { get; set; }
+    public float MechDamageModifier { get; set; }
+    public float QuadDamageModifier { get; set; }
+    public float TrooperSquadDamageModifier { get; set; }
+    public float AirMechDamageModifier { get; set; }
+    public float VTOLDamageModifier { get; set; }
     public ExtAmmunitionDef() {
       Id = "NotSet";
       Name = string.Empty;
@@ -454,6 +462,14 @@ namespace CustAmmoCategories {
       AutoRefill = AutoRefilType.Automatic;
       ammoOnlyBoxes = new HashSet<string>();
       AvailableOnPlanet = new HashSet<string>();
+      BuildingsDamageModifier = 1f;
+      TurretDamageModifier = 1f;
+      VehicleDamageModifier = 1f;
+      MechDamageModifier = 1f;
+      QuadDamageModifier = 1f;
+      TrooperSquadDamageModifier = 1f;
+      AirMechDamageModifier = 1f;
+      VTOLDamageModifier = 1f;
     }
   }
 }

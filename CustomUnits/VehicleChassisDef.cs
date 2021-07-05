@@ -200,6 +200,8 @@ namespace CustomUnits {
     public bool Landmines { get; set; }
     public float MinJumpDistance { get; set; }
     public bool AllowPartialMovement { get; set; }
+    public bool AllowPartialSprint { get; set; }
+    public bool AllowRotateWhileJump { get; set; }
     public float MoveClamp {
       get {
         if (Pathing && (FMoveClamp < MinMoveClamp)) { return MinMoveClamp; }
@@ -218,6 +220,8 @@ namespace CustomUnits {
       MoveCostBiome = false;
       FMoveClamp = 0f;
       AllowPartialMovement = true;
+      AllowPartialSprint = Core.Settings.PartialMovementOnlyWalkByDefault == false;
+      AllowRotateWhileJump = Core.Settings.AllowRotateWhileJumpByDefault;
     }
     public void debugLog(int initiation) {
       Log.LogWrite(initiation, "DesignMasks:" + DesignMasks, true);
@@ -262,30 +266,74 @@ namespace CustomUnits {
   public class QuadVisualInfo {
     public bool UseQuadVisuals { get; set; }
     public string FLegsPrefab { get; set; }
-    public string RLegsPrefab { get; set; }
+    public string BodyPrefab { get; set; }
     public float BodyLength { get; set; }
     public string FLegsPrefabBase { get; set; }
-    public string RLegsPrefabBase { get; set; }
+    public string BodyShaderSource { get; set; }
     public List<string> SuppressRenderers { get; private set; }
     public List<string> NotSuppressRenderers { get; private set; }
+    public List<string> JumpJets { get; private set; }
+    public List<string> HeadLights { get; private set; }
+    public List<AttachInfoRecord> WeaponsAttachPoints { get; private set; }
+    public List<string> Animators { get; private set; }
+    public List<string> TwistAnimators { get; private set; }
+    public Dictionary<ChassisLocations, CustomDestructableDef> Destructables { get; private set;  }
     public QuadVisualInfo() {
       FLegsPrefab = string.Empty;
-      RLegsPrefab = string.Empty;
       UseQuadVisuals = false;
       SuppressRenderers = new List<string>();
       NotSuppressRenderers = new List<string>();
+      JumpJets = new List<string>();
+      HeadLights = new List<string>();
+      Animators = new List<string>();
+      TwistAnimators = new List<string>();
       BodyLength = 0f;
+      BodyPrefab = string.Empty;
       FLegsPrefabBase = string.Empty;
-      RLegsPrefabBase = string.Empty;
+      BodyShaderSource = "chrPrfWeap_atlas_centertorso_laser_eh1";
+      WeaponsAttachPoints = new List<AttachInfoRecord>();
+      Destructables = new Dictionary<ChassisLocations, CustomDestructableDef>();
+    }
+  }
+  public static class ChassisAdditinalInfoHelper {
+    private static Dictionary<string, ChassisAdditionalInfo> f_ChassisAdditionalInfos = new Dictionary<string, ChassisAdditionalInfo>();
+    public static ChassisAdditionalInfo ChassisInfo(this VehicleChassisDef chassis) {
+      if(f_ChassisAdditionalInfos.TryGetValue(chassis.Description.Id, out ChassisAdditionalInfo info)) {
+        return info;
+      } else {
+        info = new ChassisAdditionalInfo(chassis.Description.Id, SpawnType.Undefined);
+        info.SpawnAs = SpawnType.AsVehicle;
+        f_ChassisAdditionalInfos.Add(chassis.Description.Id, info);
+        return info;
+      }
+    }
+    public static ChassisAdditionalInfo ChassisInfo(this ChassisDef chassis) {
+      if (f_ChassisAdditionalInfos.TryGetValue(chassis.Description.Id, out ChassisAdditionalInfo info)) {
+        return info;
+      } else {
+        info = new ChassisAdditionalInfo(chassis.Description.Id, SpawnType.Undefined);
+        f_ChassisAdditionalInfos.Add(chassis.Description.Id, info);
+        return info;
+      }
+    }
+  }
+  public enum SpawnType { Undefined, AsMech, AsVehicle };
+  public class ChassisAdditionalInfo {
+    public string Id { get; protected set; }
+    public SpawnType SpawnAs { get; set; }
+    public ChassisAdditionalInfo(string id, SpawnType spawn) {
+      SpawnAs = spawn;
+      Id = id;
     }
   }
   public class UnitCustomInfo {
     public List<AlternateRepresentationDef> AlternateRepresentations { get; set; }
-    public QuadVisualInfo quadVisualInfo { get; set; }
     public TrooperSquadDef SquadInfo { get; set; }
     public bool NullifyBodyMesh { get; set; }
-    public float AOEHeight { get; set; }
+    public float FlyingHeight { get; set; }
+    public float AOEHeight { get { return FlyingHeight; } set { FlyingHeight = value; } }
     public bool TieToGroundOnDeath { get; set; }
+    public List<ChassisLocations> LethalLocations { get; set; }
     public float FiringArc { get; set; }
     public bool NoIdleAnimations { get; set; }
     public bool NoMoveAnimations { get; set; }
@@ -311,10 +359,40 @@ namespace CustomUnits {
     public List<CustomPart> CustomParts { get; set; }
     public HangarLocationTransforms HangarTransforms { get; set; }
     public string MoveCost { get; set; }
+    public string SourcePrefabIdentifier { get; set; }
+    public string SourcePrefabBase { get; set; }
     public Dictionary<string, float> MoveCostModPerBiome { get; set; }
     public MeleeWeaponOverrideDef MeleeWeaponOverride { get; set; }
+    public bool FakeVehicle { get; set; }
+    public bool Naval { get; set; }
+    public VehicleMovementType FakeVehicleMovementType { get; set; }
+    public DesignMaskMoveCostInfo defaultMoveCost { get; set; }
+    public ChassisLocations MechVehicleCrewLocation {
+      get {
+        return f_FakeVehicleCrewLocation.toFakeChassis();
+      }
+      set {
+        f_FakeVehicleCrewLocation = value.toVehicleLocation();
+      }
+    }
+    private VehicleChassisLocations f_FakeVehicleCrewLocation;
+    public string FakeVehicleCrewLocation {
+      get {
+        return f_FakeVehicleCrewLocation.ToString();
+      }
+      set {
+        if(Enum.TryParse<VehicleChassisLocations>(value, out VehicleChassisLocations vloc)) {
+          f_FakeVehicleCrewLocation = vloc;
+        } else if (Enum.TryParse<ChassisLocations>(value, out ChassisLocations mloc)) {
+          f_FakeVehicleCrewLocation = mloc.toVehicleLocation();
+        } else {
+          f_FakeVehicleCrewLocation = VehicleChassisLocations.Turret;
+        }
+      }
+    }
     public UnitCustomInfo() {
-      AOEHeight = 0f;
+      FlyingHeight = 0f;
+      Naval = false;
       HighestLOSPosition = new CustomVector(false);
       TurretAttach = new CustomTransform();
       BodyAttach = new CustomTransform();
@@ -345,8 +423,15 @@ namespace CustomUnits {
       LocDestroyedPermanentStabilityLossMod = 1f;
       SquadInfo = new TrooperSquadDef();
       MeleeWeaponOverride = new MeleeWeaponOverrideDef();
-      quadVisualInfo = new QuadVisualInfo();
+      //quadVisualInfo = new QuadVisualInfo();
       AlternateRepresentations = new List<AlternateRepresentationDef>();
+      SourcePrefabIdentifier = string.Empty;
+      SourcePrefabBase = string.Empty;
+      LethalLocations = new List<ChassisLocations>();
+      FakeVehicle = false;
+      FakeVehicleMovementType = VehicleMovementType.Tracked;
+      defaultMoveCost = new DesignMaskMoveCostInfo();
+      FakeVehicleCrewLocation = "Turret";
     }
     public void debugLog(int initiation) {
       string init = new String(' ', initiation);
@@ -393,17 +478,33 @@ namespace CustomUnits {
   public static class VehicleCustomInfoHelper {
     public static Dictionary<string, UnitCustomInfo> vehicleChasissInfosDb = new Dictionary<string, UnitCustomInfo>();
     public static Dictionary<int, AbstractActor> unityInstanceIdActor = new Dictionary<int, AbstractActor>();
+    public static Dictionary<string, string> CustomMechRepresentationsPrefabs = new Dictionary<string, string>();
+    public static Dictionary<string, string> CustomVehicleRepresentationsPrefabs = new Dictionary<string, string>();
+    public static Dictionary<string, string> CustomMechBayRepresentationsPrefabs = new Dictionary<string, string>();
+    public static Dictionary<string, string> CustomVehicleBayRepresentationsPrefabs = new Dictionary<string, string>();
+    public static UnitCustomInfo GetInfoByChassisId(string id) {
+      if(vehicleChasissInfosDb.TryGetValue(id, out UnitCustomInfo result)) {
+        return result;
+      }
+      return null;
+    }
     public static UnitCustomInfo GetCustomInfo(this VehicleChassisDef chassis) {
-      if (vehicleChasissInfosDb.ContainsKey(chassis.Description.Id) == false) { return null; };
-      return vehicleChasissInfosDb[chassis.Description.Id];
+      if (vehicleChasissInfosDb.TryGetValue(chassis.Description.Id, out UnitCustomInfo result)) {
+        return result;
+      }
+      return null;
     }
     public static UnitCustomInfo GetCustomInfo(this ChassisDef chassis) {
-      if (vehicleChasissInfosDb.ContainsKey(chassis.Description.Id) == false) { return null; };
-      return vehicleChasissInfosDb[chassis.Description.Id];
+      if (vehicleChasissInfosDb.TryGetValue(chassis.Description.Id, out UnitCustomInfo result)) {
+        return result;
+      }
+      return null;
     }
     public static UnitCustomInfo GetCustomInfo(this MechDef mechDef) {
-      if (vehicleChasissInfosDb.ContainsKey(mechDef.ChassisID) == false) { return null; };
-      return vehicleChasissInfosDb[mechDef.ChassisID];
+      if (vehicleChasissInfosDb.TryGetValue(mechDef.ChassisID, out UnitCustomInfo result)) {
+        return result;
+      }
+      return null;
     }
     public static UnitCustomInfo GetCustomInfo(this AbstractActor actor) {
       Mech mech = actor as Mech;
@@ -418,27 +519,43 @@ namespace CustomUnits {
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { typeof(string) })]
   public static class BattleTech_VehicleChassisDef_fromJSON_Patch {
-    public static bool Prefix(VehicleChassisDef __instance, ref string json) {
-      Log.LogWrite("VehicleChassisDef.FromJSON\n");
+    public static bool Prefix(VehicleChassisDef __instance, ref string json,ref UnitCustomInfo __state) {
+      Log.TW(0,"VehicleChassisDef.FromJSON"); //vehiclechassisdef_WARRIOR_VTOL
+      __state = null;
       try {
         JObject definition = JObject.Parse(json);
         string id = (string)definition["Description"]["Id"];
-        Log.LogWrite(id + "\n");
+        Log.WL(1,id);
         if (definition["CustomParts"] != null) {
-          UnitCustomInfo info = definition["CustomParts"].ToObject<UnitCustomInfo>();
+          __state = definition["CustomParts"].ToObject<UnitCustomInfo>();
           if (VehicleCustomInfoHelper.vehicleChasissInfosDb.ContainsKey(id) == false) {
-            VehicleCustomInfoHelper.vehicleChasissInfosDb.Add(id, info);
+            VehicleCustomInfoHelper.vehicleChasissInfosDb.Add(id, __state);
           } else {
-            VehicleCustomInfoHelper.vehicleChasissInfosDb[id] = info;
+            VehicleCustomInfoHelper.vehicleChasissInfosDb[id] = __state;
           }
-          info.debugLog(1);
+          __state.debugLog(1);
           definition.Remove("CustomParts");
         }
         json = definition.ToString();
       } catch (Exception e) {
-        Log.LogWrite(e.ToString() + "\n", true);
+        Log.TWL(0,e.ToString(), true);
       }
       return true;
+    }
+    public static void Postfix(VehicleChassisDef __instance, ref UnitCustomInfo __state) {
+      CustomActorRepresentationDef custRepDef = CustomActorRepresentationHelper.Find(__instance.PrefabIdentifier);
+      __instance.ChassisInfo().SpawnAs = SpawnType.AsVehicle;
+      if (custRepDef != null) {
+        if (custRepDef.SupressAllMeshes) {
+          __instance.ChassisInfo().SpawnAs = SpawnType.AsMech;
+          Log.W(1, "CustomActorRepresentationDef found on " + __instance.PrefabIdentifier);
+          if (__state != null) {
+            __state.FakeVehicle = true;
+            __state.FakeVehicleMovementType = __instance.movementType;
+            Log.WL(1, " FakeVehicle:" + __instance.GetCustomInfo().FakeVehicle);
+          }
+        }
+      }
     }
   }
   [HarmonyPatch(typeof(ChassisDef))]
@@ -446,30 +563,74 @@ namespace CustomUnits {
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { typeof(string) })]
   public static class BattleTech_ChassisDef_fromJSON_Patch {
+    public static bool isVehiclePaperDoll(this ChassisDef def) {
+      UnitCustomInfo info = def.GetCustomInfo();
+      if (info == null) { return false; }
+      return info.FakeVehicle;
+    }
+    public static bool isVehiclePaperDoll(this MechDef def) {
+      UnitCustomInfo info = def.GetCustomInfo();
+      if (info == null) { return false; }
+      return info.FakeVehicle;
+    }
     public static bool Prefix(ChassisDef __instance, ref string json) {
-      Log.LogWrite("ChassisDef.FromJSON\n");
+      Log.TW(0,"ChassisDef.FromJSON");
       try {
         JObject definition = JObject.Parse(json);
         string id = (string)definition["Description"]["Id"];
-        Log.LogWrite(id + "\n");
-        if (definition["CustomParts"] != null) {
-          UnitCustomInfo info = definition["CustomParts"].ToObject<UnitCustomInfo>();
-          if (VehicleCustomInfoHelper.vehicleChasissInfosDb.ContainsKey(id) == false) {
-            VehicleCustomInfoHelper.vehicleChasissInfosDb.Add(id, info);
-          } else {
-            VehicleCustomInfoHelper.vehicleChasissInfosDb[id] = info;
+        Log.W(1,id);
+        bool isFake = id.IsInFakeChassis();
+        Log.WL(1, " isFake:" + isFake);
+        if (isFake) {
+          json = json.ConstructMechFakeVehicle();
+        } else {
+          if (definition["CustomParts"] != null) {
+            UnitCustomInfo info = definition["CustomParts"].ToObject<UnitCustomInfo>();
+            if (VehicleCustomInfoHelper.vehicleChasissInfosDb.ContainsKey(id) == false) {
+              VehicleCustomInfoHelper.vehicleChasissInfosDb.Add(id, info);
+            } else {
+              VehicleCustomInfoHelper.vehicleChasissInfosDb[id] = info;
+            }
+            info.debugLog(1);
+            definition.Remove("CustomParts");
+            json = definition.ToString();
           }
-          info.debugLog(1);
-          definition.Remove("CustomParts");
         }
-        json = definition.ToString();
       } catch (Exception e) {
-        Log.LogWrite(json, true);
-        Log.LogWrite(e.ToString() + "\n", true);
+        Log.TWL(0, json, true);
+        Log.TWL(0,e.ToString(), true);
       }
       return true;
     }
+    public static void Postfix(ChassisDef __instance) {
+      if (__instance.ChassisInfo().SpawnAs == SpawnType.Undefined) {
+        __instance.ChassisInfo().SpawnAs = SpawnType.AsMech;
+        if (__instance.Description.Id.IsInFakeChassis()) {
+          UnitCustomInfo info = __instance.GetCustomInfo();
+          if (info != null) { info.FakeVehicle = true; }
+          __instance.ChassisInfo().SpawnAs = SpawnType.AsVehicle;
+          CustomActorRepresentationDef custRepDef = CustomActorRepresentationHelper.Find(__instance.PrefabIdentifier);
+          if(custRepDef != null) { if (custRepDef.SupressAllMeshes) { __instance.ChassisInfo().SpawnAs = SpawnType.AsMech; } }
+        };
+      }
+    }
   }
+  //[HarmonyPatch(typeof(MechDef))]
+  //[HarmonyPatch("FromJSON")]
+  //[HarmonyPatch(MethodType.Normal)]
+  //[HarmonyPatch(new Type[] { typeof(string) })]
+  //public static class MechDef_FromJSON {
+  //  public static void Postfix(MechDef __instance, ref string json) {
+  //    Log.TWL(0, "MechDef.FromJSON "+ __instance.Description.Id);
+  //    try {
+  //      __instance.RegisterMech(__instance.Description.Id,__instance.ChassisID);
+  //      if (__instance.IsVehicle()) { __instance.AddToFake(); }
+  //    } catch (Exception e) {
+  //      Log.LogWrite(json, true);
+  //      Log.LogWrite(e.ToString() + "\n", true);
+  //    }
+  //  }
+  //}
 #pragma warning disable CS0252
   [HarmonyPatch(typeof(ToHit))]
   [HarmonyPatch("GetAllModifiers")]
@@ -614,7 +775,7 @@ namespace CustomUnits {
       return true;
     }
     public static bool Prefix(AbstractActor __instance,ref DesignMaskDef mask, int stackItemUID, ref List<DesignMaskDef> approvedMasks) {
-      Log.LogWrite(0, "AbstractActor.SetOccupiedDesignMask prefx " + __instance.DisplayName + ":" + __instance.GUID);
+      Log.TWL(0, "AbstractActor.SetOccupiedDesignMask prefx " + __instance.DisplayName + ":" + __instance.GUID);
       try {
         if (__instance.UnaffectedDesignMasks()) {
           Log.LogWrite(1, "unaffected", true);
@@ -764,11 +925,7 @@ namespace CustomUnits {
   public class CustomPartsDirector : MonoBehaviour {
 
   }
-  [HarmonyPatch(typeof(PilotableActorRepresentation))]
-  [HarmonyPatch("Init")]
-  [HarmonyPatch(MethodType.Normal)]
-  [HarmonyPatch(new Type[] { typeof(AbstractActor), typeof(Transform), typeof(bool) })]
-  public static class PilotableActorRepresentation_Init {
+  public static class PilotableActorRepresentation_Init_vehicle {
     private static Dictionary<int, VehicleChassisDef> registredVehiclesChassis = new Dictionary<int, VehicleChassisDef>();
     public static void RegisterChassis(this PilotableActorRepresentation rep, VehicleChassisDef def) {
       if (registredVehiclesChassis.ContainsKey(rep.GetInstanceID())) {
@@ -925,7 +1082,7 @@ namespace CustomUnits {
             if (AnimPart.RequiredUpgradesSet.Count > 0) {
               bool found = false;
               foreach (MechComponentRef component in mechDef.Inventory) {
-                if (mechDef.IsChassisFake()) {
+                if (mechDef.IsVehicle()) {
                   if (AnimPart.VehicleChassisLocation != component.MountedLocation.toVehicleLocation()) { continue; }
                 } else {
                   if (AnimPart.MechChassisLocation != component.MountedLocation) { continue; }
@@ -934,7 +1091,7 @@ namespace CustomUnits {
               }
               if (found == false) { continue; }
             }
-            location = mechDef.IsChassisFake()?(int)AnimPart.VehicleChassisLocation:(int)AnimPart.MechChassisLocation;
+            location = mechDef.IsVehicle()?(int)AnimPart.VehicleChassisLocation:(int)AnimPart.MechChassisLocation;
           }
           UnitsAnimatedPartsHelper.SpawnAnimatedPart(mechDef,rep,AnimPart,location);
         }
@@ -1012,50 +1169,6 @@ namespace CustomUnits {
       }
     }
   }
-  [HarmonyPatch(typeof(ActorMovementSequence))]
-  [HarmonyPatch("UpdateRotation")]
-  [HarmonyPatch(MethodType.Normal)]
-  [HarmonyPatch(new Type[] { })]
-  public static class ActorMovementSequence_UpdateRotation {
-    private static MethodInfo mOwningVehicleSet;
-    private delegate void OwningVehicleSetDelegate(ActorMovementSequence seq, Vehicle v);
-    private static OwningVehicleSetDelegate OwningVehicleSetInvoker = null;
-    public static bool Prepare() {
-      mOwningVehicleSet = null;
-      try {
-        mOwningVehicleSet = typeof(ActorMovementSequence).GetProperty("OwningVehicle", BindingFlags.Instance | BindingFlags.Public).GetSetMethod(true);
-        if (mOwningVehicleSet == null) { return false; }
-      } catch (Exception e) {
-        Log.LogWrite(e.ToString() + "\n");
-        return false;
-      }
-      var dm = new DynamicMethod("CUOwningVehicleSet", null, new Type[] { typeof(ActorMovementSequence), typeof(Vehicle) }, typeof(ActorMovementSequence));
-      var gen = dm.GetILGenerator();
-      gen.Emit(OpCodes.Ldarg_0);
-      gen.Emit(OpCodes.Ldarg_1);
-      gen.Emit(OpCodes.Call, mOwningVehicleSet);
-      gen.Emit(OpCodes.Ret);
-      OwningVehicleSetInvoker = (OwningVehicleSetDelegate)dm.CreateDelegate(typeof(OwningVehicleSetDelegate));
-      return true;
-    }
-    public static void OwningVehicle(this ActorMovementSequence seq, Vehicle v) {
-      OwningVehicleSetInvoker(seq, v);
-    }
-    public static bool Prefix(ActorMovementSequence __instance, ref Vehicle __state) {
-      __state = null;
-      if (__instance.OwningVehicle != null) {
-        if (__instance.OwningVehicle.UnaffectedPathing() == false) { return true; };
-        __state = __instance.OwningVehicle;
-        __instance.OwningVehicle(null);
-      }
-      return true;
-    }
-    public static void Postfix(ActorMovementSequence __instance, ref Vehicle __state) {
-      if (__state != null) {
-        __instance.OwningVehicle(__state);
-      }
-    }
-  }
   [HarmonyPatch(typeof(AbstractActor))]
   [HarmonyPatch("InitEffectStats")]
   [HarmonyPatch(MethodType.Normal)]
@@ -1069,6 +1182,21 @@ namespace CustomUnits {
         if (__instance.StatCollection.ContainsStatistic(UnitUnaffectionsActorStats.AllowPartialMovementActorStat) == false) {
           __instance.StatCollection.AddStatistic<bool>(UnitUnaffectionsActorStats.AllowPartialMovementActorStat, true);
         }
+        if (__instance.StatCollection.ContainsStatistic(UnitUnaffectionsActorStats.AllowPartialSprintActorStat) == false) {
+          __instance.StatCollection.AddStatistic<bool>(UnitUnaffectionsActorStats.AllowPartialSprintActorStat, Core.Settings.PartialMovementOnlyWalkByDefault == false);
+        }
+        if (__instance.StatCollection.ContainsStatistic(UnitUnaffectionsActorStats.AllowRotateWhileJumpActorStat) == false) {
+          __instance.StatCollection.AddStatistic<bool>(UnitUnaffectionsActorStats.AllowRotateWhileJumpActorStat, Core.Settings.AllowRotateWhileJumpByDefault);
+        }
+        if (__instance.StatCollection.ContainsStatistic(UnitUnaffectionsActorStats.FakeVehicleActorStat) == false) {
+          __instance.StatCollection.AddStatistic<bool>(UnitUnaffectionsActorStats.FakeVehicleActorStat, false);
+        }
+        if (__instance.StatCollection.ContainsStatistic(UnitUnaffectionsActorStats.NavalUnitActorStat) == false) {
+          __instance.StatCollection.AddStatistic<bool>(UnitUnaffectionsActorStats.NavalUnitActorStat, false);
+        }
+        if (__instance.StatCollection.ContainsStatistic(UnitUnaffectionsActorStats.PathingActorStat) == false) {
+          __instance.StatCollection.AddStatistic<bool>(UnitUnaffectionsActorStats.PathingActorStat, false);
+        }
         return;
       }
       if (__instance.StatCollection.ContainsStatistic(UnitUnaffectionsActorStats.DesignMasksActorStat) == false) {
@@ -1076,6 +1204,12 @@ namespace CustomUnits {
       }
       if (__instance.StatCollection.ContainsStatistic(UnitUnaffectionsActorStats.AllowPartialMovementActorStat) == false) {
         __instance.StatCollection.AddStatistic<bool>(UnitUnaffectionsActorStats.AllowPartialMovementActorStat, info.Unaffected.AllowPartialMovement);
+      }
+      if (__instance.StatCollection.ContainsStatistic(UnitUnaffectionsActorStats.AllowPartialSprintActorStat) == false) {
+        __instance.StatCollection.AddStatistic<bool>(UnitUnaffectionsActorStats.AllowPartialSprintActorStat, info.Unaffected.AllowPartialSprint);
+      }
+      if (__instance.StatCollection.ContainsStatistic(UnitUnaffectionsActorStats.AllowRotateWhileJumpActorStat) == false) {
+        __instance.StatCollection.AddStatistic<bool>(UnitUnaffectionsActorStats.AllowRotateWhileJumpActorStat, info.Unaffected.AllowRotateWhileJump);
       }
       if (__instance.StatCollection.ContainsStatistic(UnitUnaffectionsActorStats.PathingActorStat) == false) {
         __instance.StatCollection.AddStatistic<bool>(UnitUnaffectionsActorStats.PathingActorStat, info.Unaffected.Pathing);
@@ -1086,8 +1220,8 @@ namespace CustomUnits {
       if (__instance.StatCollection.ContainsStatistic(UnitUnaffectionsActorStats.LandminesActorStat) == false) {
         __instance.StatCollection.AddStatistic<bool>(UnitUnaffectionsActorStats.LandminesActorStat, info.Unaffected.Landmines);
       }
-      if (__instance.StatCollection.ContainsStatistic(UnitUnaffectionsActorStats.AOEHeightActorStat) == false) {
-        __instance.StatCollection.AddStatistic<float>(UnitUnaffectionsActorStats.AOEHeightActorStat, info.AOEHeight);
+      if (__instance.StatCollection.ContainsStatistic(UnitUnaffectionsActorStats.FlyingHeightActorStat) == false) {
+        __instance.StatCollection.AddStatistic<float>(UnitUnaffectionsActorStats.FlyingHeightActorStat, info.FlyingHeight);
       }
       if (__instance.StatCollection.ContainsStatistic(UnitUnaffectionsActorStats.MoveCostActorStat) == false) {
         __instance.StatCollection.AddStatistic<string>(UnitUnaffectionsActorStats.MoveCostActorStat, info.MoveCost);
@@ -1120,13 +1254,32 @@ namespace CustomUnits {
         Vehicle vehcile = __instance as Vehicle;
         __instance.StatCollection.AddStatistic<bool>(UnitUnaffectionsActorStats.HasNoLegsActorStat, (info.SquadInfo.Troopers > 1) || (vehcile != null));
       }
+      if (info.SquadInfo.Troopers > 1) {
+        if (__instance.StatCollection.ContainsStatistic(UnitUnaffectionsActorStats.FakeVehicleActorStat) == false) {
+          __instance.StatCollection.AddStatistic<bool>(UnitUnaffectionsActorStats.FakeVehicleActorStat, false);
+        }
+        if (__instance.StatCollection.ContainsStatistic(UnitUnaffectionsActorStats.TrooperSquadActorStat) == false) {
+          __instance.StatCollection.AddStatistic<bool>(UnitUnaffectionsActorStats.TrooperSquadActorStat, true);
+        }
+      } else {
+        if (__instance.StatCollection.ContainsStatistic(UnitUnaffectionsActorStats.FakeVehicleActorStat) == false) {
+          __instance.StatCollection.AddStatistic<bool>(UnitUnaffectionsActorStats.FakeVehicleActorStat, (info.FakeVehicle));
+        }
+        if (__instance.StatCollection.ContainsStatistic(UnitUnaffectionsActorStats.TrooperSquadActorStat) == false) {
+          __instance.StatCollection.AddStatistic<bool>(UnitUnaffectionsActorStats.TrooperSquadActorStat, false);
+        }
+      }
+      if (__instance.StatCollection.ContainsStatistic(UnitUnaffectionsActorStats.NavalUnitActorStat) == false) {
+        __instance.StatCollection.AddStatistic<bool>(UnitUnaffectionsActorStats.NavalUnitActorStat, (info.Naval));
+      }
       Log.LogWrite(1, "UnaffectedDesignMasks " + __instance.UnaffectedDesignMasks(), true);
       Log.LogWrite(1, "UnaffectedPathing " + __instance.UnaffectedPathing(), true);
       Log.LogWrite(1, "UnaffectedFire " + __instance.UnaffectedFire(), true);
       Log.LogWrite(1, "UnaffectedLandmines " + __instance.UnaffectedLandmines(), true);
       Log.LogWrite(1, "UnaffectedMoveCostBiome " + __instance.UnaffectedMoveCostBiome(), true);
-      Log.LogWrite(1, "AoEHeightFix " + __instance.AoEHeightFix(), true);
+      Log.LogWrite(1, "AoEHeightFix " + __instance.FlyingHeight(), true);
       Log.LogWrite(1, "MoveCost " + __instance.CustomMoveCostKey(), true);
+      Log.LogWrite(1, "FakeVehicle " + __instance.FakeVehicle(), true);
     }
   }
   [HarmonyPatch(typeof(ToHit))]
@@ -1323,12 +1476,16 @@ namespace CustomUnits {
   [HarmonyPatch(new Type[] { typeof(ICombatant), typeof(Vector3), typeof(Quaternion) })]
   public static class Weapon_WillFireAtTargetFromPosition {
     public static void Postfix(Weapon __instance, ICombatant target, Vector3 position, Quaternion rotation, ref bool __result) {
-      if (__result == true) {
-        if (((__instance.Type == WeaponType.Melee) && (__instance.WeaponSubType == WeaponSubType.Melee)) || (__instance.CantHitUnaffectedByPathing() == true)) {
-          if (target.UnaffectedPathing()) {
-            __result = false;
+      try {
+        if (__result == true) {
+          if (((__instance.Type == WeaponType.Melee) && (__instance.WeaponSubType == WeaponSubType.Melee)) || (__instance.CantHitUnaffectedByPathing() == true)) {
+            if (target.UnaffectedPathing()) {
+              __result = false;
+            }
           }
         }
+      }catch(Exception e) {
+        Log.TWL(0,e.ToString());
       }
     }
   }
@@ -1493,7 +1650,7 @@ namespace CustomUnits {
         if (string.IsNullOrEmpty(meleeDef)) { meleeDef = "Weapon_MeleeAttack"; }
         Log.WL(1, "meleeDef " + meleeDef);
         __instance.meleeWeaponRef = new MechComponentRef(meleeDef, "", ComponentType.Weapon, ChassisLocations.CenterTorso, -1, ComponentDamageLevel.Functional, false);
-      } catch (Exception e) {
+      } catch (Exception) {
         //Log.TWL(0, e.ToString(), true);
       }
     }

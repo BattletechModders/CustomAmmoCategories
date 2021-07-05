@@ -46,7 +46,7 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
       losColors.Clear();
     }
     public override void CombatStartsOnce() {
-      if (Settings.FacingMarkerPlayerColors != null || Settings.FacingMarkerEnemyColors != null || Settings.FacingMarkerTargetColors != null) {
+      if (AIMSettings.FacingMarkerPlayerColors != null || AIMSettings.FacingMarkerEnemyColors != null || AIMSettings.FacingMarkerTargetColors != null) {
         SetColors = typeof(AttackDirectionIndicator).GetMethod("SetColors", NonPublic | Instance);
         if (SetColors == null) {
           Warn("Cannot find AttackDirectionIndicator.SetColors, direction marker colors not patched.");
@@ -57,15 +57,15 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
       }
 
       Type IndicatorType = typeof(WeaponRangeIndicators);
-      if (Settings.LOSMarkerBlockedMultiplier != 1)
+      if (AIMSettings.LOSMarkerBlockedMultiplier != 1)
         Patch(IndicatorType, "Init", null, "ResizeLOS");
 
       TryRun(ModLog, InitColours);
-      LinesChanged = Settings.LOSIndirectDotted || Settings.LOSMeleeDotted || Settings.LOSBlockedPostDotted
-                  || Settings.LOSBlockedPreDotted || Settings.LOSClearDotted || !Settings.LOSNoAttackDotted
-                  || Settings.LOSWidthBlocked != 0.75m || Settings.LOSWidth != 1 || parsedColours.Count > 0;
-      LinesAnimated = (Settings.LOSHueDeviation != 0 && Settings.LOSHueHalfCycleMS > 0)
-                   || (Settings.LOSBrightnessDeviation != 0 && Settings.LOSBrightnessHalfCycleMS > 0);
+      LinesChanged = AIMSettings.LOSIndirectDotted || AIMSettings.LOSMeleeDotted || AIMSettings.LOSBlockedPostDotted
+                  || AIMSettings.LOSBlockedPreDotted || AIMSettings.LOSClearDotted || !AIMSettings.LOSNoAttackDotted
+                  || AIMSettings.LOSWidthBlocked != 0.75m || AIMSettings.LOSWidth != 1 || parsedColours.Count > 0;
+      LinesAnimated = (AIMSettings.LOSHueDeviation != 0 && AIMSettings.LOSHueHalfCycleMS > 0)
+                   || (AIMSettings.LOSBrightnessDeviation != 0 && AIMSettings.LOSBrightnessHalfCycleMS > 0);
 
       if (LinesChanged || LinesAnimated) {
         Patch(IndicatorType, "Init", null, "CreateLOSTexture");
@@ -105,7 +105,7 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
       } else
         parsedColours = null;
 
-      if (Settings.ArcLinePoints != 18) {
+      if (AIMSettings.ArcLinePoints != 18) {
         Patch(IndicatorType, "DrawLine", null, null, "ModifyArcPoints");
         Patch(typeof(CombatPathLine), "DrawJumpPath", null, null, "ModifyArcPoints");
       }
@@ -182,9 +182,9 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
       FacingMarkerEnemyColors = new Color?[LOSDirectionCount];
       FacingMarkerTargetColors = new Color?[LOSDirectionCount];
 
-      string[] player = Settings.FacingMarkerPlayerColors?.Split(',').Select(e => e.Trim()).ToArray();
-      string[] enemy = Settings.FacingMarkerEnemyColors?.Split(',').Select(e => e.Trim()).ToArray();
-      string[] active = Settings.FacingMarkerTargetColors?.Split(',').Select(e => e.Trim()).ToArray();
+      string[] player = AIMSettings.FacingMarkerPlayerColors?.Split(',').Select(e => e.Trim()).ToArray();
+      string[] enemy = AIMSettings.FacingMarkerEnemyColors?.Split(',').Select(e => e.Trim()).ToArray();
+      string[] active = AIMSettings.FacingMarkerTargetColors?.Split(',').Select(e => e.Trim()).ToArray();
 
       for (int i = 0; i < LOSDirectionCount; i++) {
         if (player != null && player.Length > i)
@@ -236,7 +236,7 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
 
     public static void ResizeLOS(WeaponRangeIndicators __instance) {
       try {
-        float size = (float)Settings.LOSMarkerBlockedMultiplier;
+        float size = (float)AIMSettings.LOSMarkerBlockedMultiplier;
         if (size != 1 && !losTextureScaled) {
           //Info( "Scaling LOS block marker by {0}", width );
           Vector3 zoom = __instance.CoverTemplate.transform.localScale;
@@ -263,12 +263,12 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
 
     // Parse existing colours and leave the rest as null, called at CombatStartOnce
     private static void InitColours() {
-      HueDeviation = (float)Settings.LOSHueDeviation;
-      BrightnessDeviation = (float)Settings.LOSBrightnessDeviation;
+      HueDeviation = (float)AIMSettings.LOSHueDeviation;
+      BrightnessDeviation = (float)AIMSettings.LOSBrightnessDeviation;
       parsedColours = new Dictionary<Line, Color?[]>(LOSDirectionCount);
       foreach (Line line in (Line[])Enum.GetValues(typeof(Line))) {
         FieldInfo colorsField = typeof(ModSettings).GetField("LOS" + line + "Colors");
-        string colorTxt = colorsField.GetValue(Settings)?.ToString();
+        string colorTxt = colorsField.GetValue(AIMSettings)?.ToString();
         List<string> colorList = colorTxt?.Split(',').Select(e => e.Trim()).ToList();
         if (colorList == null) continue;
         Color?[] colors = new Color?[LOSDirectionCount];
@@ -295,7 +295,7 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
         Info("LOS {0} = {1}", line, colours);
       }
       if (LinesAnimated)
-        Info("LOS animation, Hue = {0} @ {1}ms, Brightness = {2} @ {3}ms", HueDeviation, Settings.LOSHueHalfCycleMS, BrightnessDeviation, Settings.LOSBrightnessHalfCycleMS);
+        Info("LOS animation, Hue = {0} @ {1}ms, Brightness = {2} @ {3}ms", HueDeviation, AIMSettings.LOSHueHalfCycleMS, BrightnessDeviation, AIMSettings.LOSBrightnessHalfCycleMS);
       else
         Info("LOS is not animated.");
     }
@@ -328,12 +328,12 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
     private static LosMaterial[] NewMat(Line line) {
       string name = line.ToString();
       Color?[] colors = parsedColours[line];
-      bool dotted = (bool)typeof(ModSettings).GetField("LOS" + name + "Dotted").GetValue(Settings);
+      bool dotted = (bool)typeof(ModSettings).GetField("LOS" + name + "Dotted").GetValue(AIMSettings);
       //Log( "LOS " + line + " = " + Join( ",", colors ) );
       LosMaterial[] lineMats = new LosMaterial[LOSDirectionCount];
       for (int i = 0; i < LOSDirectionCount; i++) {
         string matName = name + "LOS" + i;
-        float width = (float)(i != BlockedPost ? Settings.LOSWidth : Settings.LOSWidthBlocked);
+        float width = (float)(i != BlockedPost ? AIMSettings.LOSWidth : AIMSettings.LOSWidthBlocked);
         Color colour = colors[i] ?? OrigColours[i != NoAttack ? 0 : 1];
         lineMats[i] = LinesAnimated
            ? new LosAnimated(colour, dotted, width, matName)
@@ -354,8 +354,8 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
 
     public static void SetupLOSAnimation() {
       int tick = Environment.TickCount & int.MaxValue;
-      HueLerp = HueDeviation * Math.Abs(TickToCycle(tick, Settings.LOSHueHalfCycleMS));
-      BrightnessLerp = TickToCycle(tick, Settings.LOSBrightnessHalfCycleMS);
+      HueLerp = HueDeviation * Math.Abs(TickToCycle(tick, AIMSettings.LOSHueHalfCycleMS));
+      BrightnessLerp = TickToCycle(tick, AIMSettings.LOSBrightnessHalfCycleMS);
     }
 
     public static void SetupLOS(WeaponRangeIndicators __instance, Vector3 position, AbstractActor selectedActor, ICombatant target, bool usingMultifire, bool isMelee) {
@@ -421,7 +421,7 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
     public static IEnumerable<CodeInstruction> ModifyArcPoints(IEnumerable<CodeInstruction> input) {
       return ReplaceIL(input,
          (code) => code.opcode.Name == "ldc.i4.s" && code.operand != null && code.operand.Equals((sbyte)18),
-         (code) => { code.operand = (sbyte)Settings.ArcLinePoints; return code; },
+         (code) => { code.operand = (sbyte)AIMSettings.ArcLinePoints; return code; },
          2, "SetIndirectSegments", ModLog);
     }
 

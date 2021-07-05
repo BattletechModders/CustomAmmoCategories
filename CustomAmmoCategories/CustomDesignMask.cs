@@ -31,6 +31,12 @@ namespace CustAmmoCategories {
   }
   public class CustomDesignMaskInfo {
     public Dictionary<string, DesignMaskMoveCostInfo> CustomMoveCost { get; set; }
+    public void AppendDefault() {
+      foreach(var costInfo in CustomAmmoCategories.Settings.DefaultMoveCosts) {
+        if (this.CustomMoveCost.ContainsKey(costInfo.Key)) { continue; }
+        this.CustomMoveCost.Add(costInfo.Key,costInfo.Value);
+      }
+    }
     public CustomDesignMaskInfo() {
       CustomMoveCost = new Dictionary<string, DesignMaskMoveCostInfo>();
     }
@@ -204,6 +210,7 @@ namespace CustAmmoCategoriesPatches {
         Log.LogWrite(id + "\n");
         if (definition["Custom"] != null) {
           CustomDesignMaskInfo info = definition["Custom"].ToObject<CustomDesignMaskInfo>();
+          info.AppendDefault();
           if (CustomAmmoCategories.customDesignMaskInfo.ContainsKey(id) == false) {
             CustomAmmoCategories.customDesignMaskInfo.Add(id, info);
           } else {

@@ -5,14 +5,21 @@ using UnityEngine;
 using static MechResizer.MechResizer;
 
 namespace MechResizer {
-  [HarmonyPatch(typeof(MechRepresentation), "Init", new[] { typeof(Mech), typeof(Transform), typeof(bool) })]
-  public static class MechRepresentationInitPatch {
-    static void Postfix(
-        Mech mech,
-        Transform parentTransform,
-        bool isParented,
-        MechRepresentation __instance) {
-      Log.TWL(0, "mech size initialization " + __instance.gameObject.name);
+  public static class MechRepresentationInitHelper {
+    public static void sizeMultiplier(this MechDef def, Transform repTransform) {
+      Log.TWL(0, "mech size initialization " + repTransform.name);
+      var identifier = def.ChassisID;
+      var sizeMultiplier = SizeMultiplier.Get(def.Chassis);
+      Log.TWL(0, $"{identifier}: {sizeMultiplier}");
+      Transform transformToScale = repTransform;
+      if (MechResizer.ModSettings.MechScaleJRoot) {
+        Transform j_Root = repTransform.FindRecursive("j_Root");
+        if (j_Root != null) { transformToScale = j_Root; }
+      }
+      transformToScale.localScale = sizeMultiplier;
+    }
+    public static void sizeMultiplier(this Mech mech) {
+      Log.TWL(0, "mech size initialization " + mech.GameRep.name);
       var identifier = mech.MechDef.ChassisID;
       var sizeMultiplier = SizeMultiplier.Get(mech.MechDef.Chassis);
       Log.TWL(0, $"{identifier}: {sizeMultiplier}");
@@ -22,13 +29,12 @@ namespace MechResizer {
       var newTargetPositions = ModSettings.LOSTargetPositions(identifier, originalLOSTargetPositions, sizeMultiplier);
       Traverse.Create(mech).Field("originalLOSSourcePositions").SetValue(newSourcePositions);
       Traverse.Create(mech).Field("originalLOSTargetPositions").SetValue(newTargetPositions);
-      Transform transformToScale = __instance.thisTransform;
+      Transform transformToScale = mech.GameRep.thisTransform;
       if (MechResizer.ModSettings.MechScaleJRoot) {
-        Transform j_Root = __instance.gameObject.transform.FindRecursive("j_Root");
+        Transform j_Root = mech.GameRep.gameObject.transform.FindRecursive("j_Root");
         if (j_Root != null) { transformToScale = j_Root; }
       }
       transformToScale.localScale = sizeMultiplier;
-      //
     }
   }
 }

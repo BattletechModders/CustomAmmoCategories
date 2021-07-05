@@ -20,8 +20,8 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
 
       public override void CombatStartsOnce () {
          instance = this;
-         NameplateColours = ParseColours( Settings.NameplateColourPlayer, Settings.NameplateColourEnemy, Settings.NameplateColourAlly );
-         if ( Settings.ShowEnemyWounds != null || Settings.ShowAllyHealth != null || Settings.ShowPlayerHealth != null ) {
+         NameplateColours = ParseColours( AIMSettings.NameplateColourPlayer, AIMSettings.NameplateColourEnemy, AIMSettings.NameplateColourAlly );
+         if ( AIMSettings.ShowEnemyWounds != null || AIMSettings.ShowAllyHealth != null || AIMSettings.ShowPlayerHealth != null ) {
             Patch( typeof( CombatHUDActorNameDisplay ), "RefreshInfo", typeof( VisibilityLevel ), null, "ShowPilotWounds" );
             Patch( typeof( Pilot ), "InjurePilot", null, "RefreshPilotNames" );
          }
@@ -29,7 +29,7 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
             Info( "Nameplate colours: {0}", NameplateColours );
             Patch( typeof( CombatHUDNumFlagHex ), "OnActorChanged", null, "SetNameplateColor" );
          }
-         FloatingArmorColours = ParseColours( Settings.FloatingArmorColourPlayer, Settings.FloatingArmorColourEnemy, Settings.FloatingArmorColourAlly );
+         FloatingArmorColours = ParseColours( AIMSettings.FloatingArmorColourPlayer, AIMSettings.FloatingArmorColourEnemy, AIMSettings.FloatingArmorColourAlly );
          if ( FloatingArmorColours != null ) {
             Info( "Armor colours: {0}", FloatingArmorColours );
             BarOwners = new Dictionary<CombatHUDPipBar, ICombatant>();
@@ -37,14 +37,14 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
             Patch( typeof( CombatHUDNumFlagHex ), "OnActorChanged", "SetArmorBarOwner", null );
          }
 
-         if ( Settings.ShowDangerousTerrain ) {
+         if ( AIMSettings.ShowDangerousTerrain ) {
             /*SidePanelProp = typeof( MoveStatusPreview ).GetProperty( "sidePanel", NonPublic | Instance );
             if ( SidePanelProp == null )
                Warn( "MoveStatusPreview.sidePanel not found, ShowDangerousTerrain not patched." );
             else
                Patch( typeof( MoveStatusPreview ), "DisplayPreviewStatus", null, "AppendDangerousTerrainText" );*/
          }
-         if ( Settings.ShowMeleeTerrain ) { // Considered transpiler but we'll only save one method call. Not worth trouble?
+         if ( AIMSettings.ShowMeleeTerrain ) { // Considered transpiler but we'll only save one method call. Not worth trouble?
             UpdateStatusMethod = typeof( CombatMovementReticle ).GetMethod( "UpdateStatusPreview", NonPublic | Instance );
             StatusPreviewProp = typeof( CombatMovementReticle ).GetProperty( "StatusPreview", NonPublic | Instance );
             if ( AnyNull<object>( UpdateStatusMethod, StatusPreviewProp ) )
@@ -54,21 +54,21 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
                Patch( typeof( CombatMovementReticle ), "drawJumpPath", null, "ShowDFATerrainText" );
             }
          }
-         if ( Settings.SpecialTerrainDotSize != 1 || Settings.NormalTerrainDotSize != 1 )
+         if ( AIMSettings.SpecialTerrainDotSize != 1 || AIMSettings.NormalTerrainDotSize != 1 )
             Patch( typeof( MovementDotMgr.MovementDot ).GetConstructors()[0], null, "ScaleMovementDot" );
-         if ( Settings.BoostTerrainDotColor )
+         if ( AIMSettings.BoostTerrainDotColor )
             Patch( typeof( CombatMovementReticle ), "Awake", null, "ColourMovementDot" );
       }
 
       public override void CombatStarts () {
-         if ( Settings.MovementPreviewRadius > 0 ) {
+         if ( AIMSettings.MovementPreviewRadius > 0 ) {
             MovementConstants con = CombatConstants.MoveConstants;
-            con.ExperimentalHexRadius = Settings.MovementPreviewRadius;
+            con.ExperimentalHexRadius = AIMSettings.MovementPreviewRadius;
             typeof( CombatGameConstants ).GetProperty( "MoveConstants" ).SetValue( CombatConstants, con, null );
          }
-         if ( Settings.FunctionKeySelectPC )
+         if ( AIMSettings.FunctionKeySelectPC )
             Combat.MessageCenter.AddSubscriber( MessageCenterMessageType.KeyPressedMessage, KeyPressed );
-         if ( Settings.ConsolidateWeaponCheevons ) {
+         if ( AIMSettings.ConsolidateWeaponCheevons ) {
             // If we want to consolidate weapon damage, need to overwrite CombatHUDWeaponTickMarks.UpdateTicksShown to not depends on GetValidSlots
             CombatUIConstantsDef uiConst = CombatConstants.CombatUIConstants;
             uiConst.collapseWeaponTypesInTickMarks = true;
@@ -78,7 +78,7 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
 
       public override void CombatEnds () {
          BarOwners?.Clear();
-         if ( Settings.FunctionKeySelectPC )
+         if ( AIMSettings.FunctionKeySelectPC )
             Combat.MessageCenter.RemoveSubscriber( MessageCenterMessageType.KeyPressedMessage, KeyPressed );
       }
 
@@ -135,11 +135,11 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
          string format = null;
          object[] args = new object[]{ null, pilot.Injuries, pilot.Health - pilot.Injuries, pilot.Health };
          if ( team == Combat.LocalPlayerTeam ) {
-            format = Settings.ShowPlayerHealth;
+            format = AIMSettings.ShowPlayerHealth;
          } else if ( team.IsFriendly( Combat.LocalPlayerTeam ) ) {
-            format = Settings.ShowAllyHealth;
+            format = AIMSettings.ShowAllyHealth;
          } else if ( visLevel == VisibilityLevel.LOSFull ) {
-            format = Settings.ShowEnemyWounds;
+            format = AIMSettings.ShowEnemyWounds;
             args[2] = args[3] = "?";
          }
          if ( format != null )
@@ -244,7 +244,7 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
       }                 catch ( Exception ex ) { Error( ex ); } }
 
       public static void ScaleMovementDot ( MovementDotMgr.DotType type, GameObject ___dotObject ) { try {
-         float size = (float) ( type == MovementDotMgr.DotType.Normal ? Settings.NormalTerrainDotSize : Settings.SpecialTerrainDotSize );
+         float size = (float) ( type == MovementDotMgr.DotType.Normal ? AIMSettings.NormalTerrainDotSize : AIMSettings.SpecialTerrainDotSize );
          if ( size == 1 ) return;
          Vector3 scale = ___dotObject.transform.localScale;
          scale.x *= size;

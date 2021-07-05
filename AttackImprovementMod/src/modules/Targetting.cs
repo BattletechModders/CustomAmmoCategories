@@ -15,7 +15,7 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
     public override void CombatStartsOnce() {
       Type MultiTargetType = typeof(SelectionStateFireMulti), HandlerType = typeof(CombatSelectionHandler), PanelType = typeof(CombatHUDWeaponPanel);
 
-      if (Settings.AggressiveMultiTargetAssignment) {
+      if (AIMSettings.AggressiveMultiTargetAssignment) {
         SlotSetTargetIndexMethod = typeof(CombatHUDWeaponSlot).GetMethod("SetTargetIndex", NonPublic | Instance);
         if (SlotSetTargetIndexMethod != null) {
           Patch(PanelType, "OnActorMultiTargeted", "OverrideMultiTargetAssignment", null);
@@ -24,7 +24,7 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
           Warn("CombatHUDWeaponSlot.SetTargetIndex not found. AggressiveMultiTargetAssignment not patched.");
       }
 
-      if (Settings.FixMultiTargetBackout) {
+      if (AIMSettings.FixMultiTargetBackout) {
         TryRun(Log, () => {
           weaponTargetIndices = MultiTargetType.GetProperty("weaponTargetIndices", NonPublic | Instance);
           RemoveTargetedCombatant = MultiTargetType.GetMethod("RemoveTargetedCombatant", NonPublic | Instance);
@@ -43,9 +43,9 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
         }
       }
 
-      if (Settings.CtrlClickDisableWeapon)
+      if (AIMSettings.CtrlClickDisableWeapon)
         MultiTargetDisabledWeaponTarget = new Dictionary<Weapon, ICombatant>();
-      if (Settings.ShiftKeyReverseSelection) {
+      if (AIMSettings.ShiftKeyReverseSelection) {
         SelectNextMethod = HandlerType.GetMethod("ProcessSelectNext", NonPublic | Instance);
         SelectPrevMethod = HandlerType.GetMethod("ProcessSelectPrevious", NonPublic | Instance);
         if (AnyNull(SelectNextMethod, SelectPrevMethod)) {
@@ -55,7 +55,7 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
           Patch(HandlerType, "ProcessSelectPrevious", "CheckReversePrevSelection", null);
         }
       }
-      if (Settings.CtrlClickDisableWeapon || Settings.ShiftKeyReverseSelection) {
+      if (AIMSettings.CtrlClickDisableWeapon || AIMSettings.ShiftKeyReverseSelection) {
         WeaponTargetIndicesProp = MultiTargetType.GetProperty("weaponTargetIndices", NonPublic | Instance);
         if (WeaponTargetIndicesProp == null)
           Warn("SelectionStateFireMulti.weaponTargetIndices not found.  Multi-Target weapon shift/ctrl click not patched.");
@@ -63,7 +63,7 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
           Patch(MultiTargetType, "CycleWeapon", "OverrideMultiTargetCycle", null);
       }
 
-      if (Settings.FixLosPreviewHeight)
+      if (AIMSettings.FixLosPreviewHeight)
         Patch(typeof(Pathing), "UpdateFreePath", null, "FixMoveDestinationHeight");
 
 
@@ -137,9 +137,9 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
     public static bool OverrideMultiTargetCycle(SelectionStateFireMulti __instance, ref int __result, Weapon weapon) {
       try {
         int newIndex = -2;
-        if (Settings.CtrlClickDisableWeapon && IsToggleKeyPressed())
+        if (AIMSettings.CtrlClickDisableWeapon && IsToggleKeyPressed())
           newIndex = FindToogleTargetIndex(__instance, weapon);
-        else if (Settings.ShiftKeyReverseSelection && IsReverseKeyPressed())
+        else if (AIMSettings.ShiftKeyReverseSelection && IsReverseKeyPressed())
           newIndex = FindReverseTargetIndex(__instance, weapon);
         if (newIndex > -2) {
           ((Dictionary<Weapon, int>)WeaponTargetIndicesProp.GetValue(__instance, null))[weapon] = newIndex;
@@ -160,7 +160,7 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
       MultiTargetDisabledWeaponTarget.TryGetValue(weapon, out ICombatant lastTarget);
       int newIndex = lastTarget == null ? -1 : targets.IndexOf(lastTarget);
       if (newIndex < 0) {
-        if (Settings.AggressiveMultiTargetAssignment)
+        if (AIMSettings.AggressiveMultiTargetAssignment)
           newIndex = FindBestTargetForWeapon(weapon, targets);
         if (newIndex < 0) newIndex = 0;
       }

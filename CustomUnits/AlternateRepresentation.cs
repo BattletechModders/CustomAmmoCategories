@@ -55,13 +55,15 @@ namespace CustomUnits {
       NoJumpjetsBlock = false;
       MinJumpDistance = 1f;
     }
-    public AlternateRepresentationDef(MechDef def) {
+    public AlternateRepresentationDef(ChassisDef def) {
+      UnitCustomInfo info = def.GetCustomInfo();
       AdditionalPrefabs = new List<string>();
       AirMechVerticalJets = new List<AirMechVerticalJetsDef>();
-      PrefabIdentifier = def.Chassis.PrefabIdentifier;
-      PrefabBase = def.Chassis.PrefabBase;
-      HardpointDataDef = def.Chassis.HardpointDataDefID;
+      PrefabIdentifier = def.PrefabIdentifier;
+      PrefabBase = def.PrefabBase;
+      HardpointDataDef = def.HardpointDataDefID;
       Type = AlternateRepType.Normal;
+      if (info != null) { if (info.Unaffected.Pathing) { this.Type = AlternateRepType.AirMech; } }
       FlyHeight = 0f;
       HoveringSoundStart = string.Empty;
       HoveringSoundEnd = string.Empty;
@@ -69,7 +71,6 @@ namespace CustomUnits {
       MoveStartSound = string.Empty;
       MoveStopSound = string.Empty;
       additionalEncounterTags = new List<string>();
-      UnitCustomInfo info = def.GetCustomInfo();
       MoveClamp = info == null ? 0f : info.Unaffected.MoveClamp;
       MinJumpDistance = info == null ? 1f : info.Unaffected.MinJumpDistance;
     }
@@ -739,7 +740,7 @@ namespace CustomUnits {
     }
     public void PlayComponentDestroyedVFX(int location, Vector3 attackDirection, string vfxName) {
       mechRep.PlayVFX(location, vfxName, false, Vector3.zero, true, -1f);
-      mechRep.CollapseLocation(location, attackDirection, false);
+      //mechRep.CollapseLocation(location, attackDirection, false);
       mechRep.needsToRefreshCombinedMesh = true;
     }
     public void ToggleRandomIdles(bool shouldIdle) {
@@ -854,6 +855,15 @@ namespace CustomUnits {
       if (altRep.def.Type == AlternateRepType.Normal) { return; }
       if (altRep.state != AltRepState.Flying) { return; }
       altRep.updateMeleeT(mt);
+    }
+    public void twist(float angle) {
+      Quaternion eulerTwist = Quaternion.Euler(0f,90.0f*angle,0f);
+      //Log.TWL(0,"AlternateRepresentation twist:"+angle+" euler:"+eulerTwist.eulerAngles);
+      foreach (AlternateMechRepresentation altRep in this.mechReps) {
+        if (altRep.def.Type == AlternateRepType.Normal) { altRep.mechRep.currentTwistAngle = angle; if (altRep.mechRep.thisAnimator != null) { altRep.mechRep.thisAnimator.SetFloat("Twist",angle); } } else {
+          altRep.mechRep.thisTransform.localRotation = eulerTwist;
+        }
+      }
     }
     public void FacePoint() {
       Log.TWL(0, "AlternateMechRepresentations.FacePoint " + CurrentRep + " count:" + mechReps.Count);
@@ -1060,7 +1070,7 @@ namespace CustomUnits {
       if ((meleeType == MeleeAttackType.Stomp)||(meleeType == MeleeAttackType.Tackle)) {
         Vehicle vehicle = target as Vehicle;
         if(vehicle != null) {
-          if (vehicle.AoEHeightFix() > 0.5f) { meleeType = MeleeAttackType.Punch; }
+          if (vehicle.FlyingHeight() > 0.5f) { meleeType = MeleeAttackType.Punch; }
         }
       }
       this.parentMech.GameRep.PlayMeleeAnim(target.Combat.MeleeRules.GetMeleeHeightFromAttackType(meleeType));
@@ -1378,7 +1388,7 @@ namespace CustomUnits {
           if (alternateRepresentation == null) { alternateRepresentation = gameObject.AddComponent<AlternateMechRepresentation>(); }
           alternateRepresentation.mechRep = mechRep;
           gameObject.GetComponent<Animator>().enabled = true;
-          alternateRepresentation.def = new AlternateRepresentationDef(mech.MechDef);
+          alternateRepresentation.def = new AlternateRepresentationDef(mech.MechDef.Chassis);
           alternateRepresentation.Inited = false;
           alternateRepresentation.isBasic = true;
           alternateRepresentation.parent = this;
@@ -1457,54 +1467,54 @@ namespace CustomUnits {
     public static void CreateBlankPrefabs(this Mech mech, List<string> usedPrefabNames, ChassisLocations location) {
       m_CreateBlankPrefabs.Invoke(mech, new object[] { usedPrefabNames, location });
     }
-    public static void Prefix(Mech __instance, Transform parentTransform, ref Dictionary<BaseComponentRef, HasPrefabData> __state) {
-      Log.TWL(0, "Mech.InitGameRep prefix " + __instance.DisplayName);
-      try {
-        //if (__instance.GameRep.GetComponent<AlternateMechRepresentation>() != null) { return; }
-        __state = new Dictionary<BaseComponentRef, HasPrefabData>();
-        foreach (MechComponent allComponent in __instance.allComponents) {
-          if (__state.ContainsKey(allComponent.baseComponentRef)) { continue; }
-          __state.Add(allComponent.baseComponentRef, new HasPrefabData(allComponent.baseComponentRef.prefabName, allComponent.baseComponentRef.hasPrefabName));
-        }
-        foreach (Weapon weapon in __instance.Weapons) {
-          if (__state.ContainsKey(weapon.baseComponentRef)) { continue; }
-          __state.Add(weapon.baseComponentRef, new HasPrefabData(weapon.baseComponentRef.prefabName, weapon.baseComponentRef.hasPrefabName));
-        }
-        foreach (MechComponent supportComponent in __instance.supportComponents) {
-          if (__state.ContainsKey(supportComponent.baseComponentRef)) { continue; }
-          __state.Add(supportComponent.baseComponentRef, new HasPrefabData(supportComponent.baseComponentRef.prefabName, supportComponent.baseComponentRef.hasPrefabName));
-        }
-      } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
-      }
-    }
-    public static void Postfix(Mech __instance, Transform parentTransform, ref Dictionary<BaseComponentRef, HasPrefabData> __state) {
-      Log.TWL(0, "Mech.InitGameRep posftix " + __instance.DisplayName + " " + __instance.GameRep.name);
-      try {
-        Mech_InitGameRepTurret.Postfix(__instance, parentTransform);
-        AlternateMechRepresentations alternateRepresentations = __instance.GameRep.GetComponent<AlternateMechRepresentations>();
-        if (alternateRepresentations == null) { Log.WL(1, "no AlternateMechRepresentations"); return; }
-        if (__state == null) { Log.WL(1, "no state"); return; }
-        AlternateMechRepresentations.ClearVisuals(__instance.GameRep);
-        AlternateMechRepresentations.ClearComponents(__instance.GameRep);
-        alternateRepresentations.InitRepresentations(__instance, parentTransform);
-        MechRepresentation mainRep = __instance.GameRep;
-        foreach (var altRep in alternateRepresentations.mechReps) {
-          Log.WL(1, "alternate representation: " + altRep.def.PrefabBase);
-          altRep.Reset(__instance, __state);
-          Traverse.Create(__instance).Field<GameRepresentation>("_gameRep").Value = altRep.mechRep;
-          altRep.InitGameRep(__instance, parentTransform);
-          Mech_InitGameRepTurret.Postfix(__instance, parentTransform);
-          altRep.StoreComponents(__instance);
-          Traverse.Create(__instance).Field<GameRepresentation>("_gameRep").Value = mainRep;
-        }
-        alternateRepresentations.mechReps[0].RestorePrefabs(__instance);
-        alternateRepresentations.Init(__instance);
+    //public static void Prefix(Mech __instance, Transform parentTransform, ref Dictionary<BaseComponentRef, HasPrefabData> __state) {
+    //  Log.TWL(0, "Mech.InitGameRep prefix " + __instance.DisplayName);
+    //  try {
+    //    //if (__instance.GameRep.GetComponent<AlternateMechRepresentation>() != null) { return; }
+    //    __state = new Dictionary<BaseComponentRef, HasPrefabData>();
+    //    foreach (MechComponent allComponent in __instance.allComponents) {
+    //      if (__state.ContainsKey(allComponent.baseComponentRef)) { continue; }
+    //      __state.Add(allComponent.baseComponentRef, new HasPrefabData(allComponent.baseComponentRef.prefabName, allComponent.baseComponentRef.hasPrefabName));
+    //    }
+    //    foreach (Weapon weapon in __instance.Weapons) {
+    //      if (__state.ContainsKey(weapon.baseComponentRef)) { continue; }
+    //      __state.Add(weapon.baseComponentRef, new HasPrefabData(weapon.baseComponentRef.prefabName, weapon.baseComponentRef.hasPrefabName));
+    //    }
+    //    foreach (MechComponent supportComponent in __instance.supportComponents) {
+    //      if (__state.ContainsKey(supportComponent.baseComponentRef)) { continue; }
+    //      __state.Add(supportComponent.baseComponentRef, new HasPrefabData(supportComponent.baseComponentRef.prefabName, supportComponent.baseComponentRef.hasPrefabName));
+    //    }
+    //  } catch (Exception e) {
+    //    Log.TWL(0, e.ToString(), true);
+    //  }
+    //}
+    //public static void Postfix(Mech __instance, Transform parentTransform, ref Dictionary<BaseComponentRef, HasPrefabData> __state) {
+    //  Log.TWL(0, "Mech.InitGameRep posftix " + __instance.DisplayName + " " + __instance.GameRep.name);
+    //  try {
+    //    Mech_InitGameRepTurret.Postfix(__instance, parentTransform);
+    //    AlternateMechRepresentations alternateRepresentations = __instance.GameRep.GetComponent<AlternateMechRepresentations>();
+    //    if (alternateRepresentations == null) { Log.WL(1, "no AlternateMechRepresentations"); return; }
+    //    if (__state == null) { Log.WL(1, "no state"); return; }
+    //    AlternateMechRepresentations.ClearVisuals(__instance.GameRep);
+    //    AlternateMechRepresentations.ClearComponents(__instance.GameRep);
+    //    alternateRepresentations.InitRepresentations(__instance, parentTransform);
+    //    MechRepresentation mainRep = __instance.GameRep;
+    //    foreach (var altRep in alternateRepresentations.mechReps) {
+    //      Log.WL(1, "alternate representation: " + altRep.def.PrefabBase);
+    //      altRep.Reset(__instance, __state);
+    //      Traverse.Create(__instance).Field<GameRepresentation>("_gameRep").Value = altRep.mechRep;
+    //      altRep.InitGameRep(__instance, parentTransform);
+    //      Mech_InitGameRepTurret.Postfix(__instance, parentTransform);
+    //      altRep.StoreComponents(__instance);
+    //      Traverse.Create(__instance).Field<GameRepresentation>("_gameRep").Value = mainRep;
+    //    }
+    //    alternateRepresentations.mechReps[0].RestorePrefabs(__instance);
+    //    alternateRepresentations.Init(__instance);
 
-      } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
-      }
-    }
+    //  } catch (Exception e) {
+    //    Log.TWL(0, e.ToString(), true);
+    //  }
+    //}
     //public static bool Prefix(Mech __instance, Transform parentTransform) {
     //  Log.TWL(0, "Mech.InitGameRep prefix:" + new Text(__instance.DisplayName).ToString());
     //  try {

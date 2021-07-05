@@ -18,7 +18,7 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
     <DebugType>embedded</DebugType>
-    <Optimize>false</Optimize>
+    <Optimize>true</Optimize>
     <OutputPath>bin\Debug\</OutputPath>
     <DefineConstants>TRACE;DEBUG;UNITY_5_6_OR_NEWER;UNITY_5_5_OR_NEWER;BT1_8</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
@@ -44,7 +44,8 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\Mods\ModTek\0Harmony.dll</HintPath>
     </Reference>
-    <Reference Include="Assembly-CSharp">
+    <Reference Include="Assembly-CSharp, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\BattleTech_Data\Managed\Assembly-CSharp.dll</HintPath>
     </Reference>
     <Reference Include="Assembly-CSharp-firstpass">
@@ -173,6 +174,7 @@
     <Compile Include="CombatHUDEvasiveBarPips.cs" />
     <Compile Include="CombatHUDInit.cs" />
     <Compile Include="CustomDesignMask.cs" />
+    <Compile Include="CustomMechHelper.cs" />
     <Compile Include="CustomReticle.cs" />
     <Compile Include="CustomSVGAsset.cs" />
     <Compile Include="DamageCalculatorHelper.cs" />
@@ -197,6 +199,7 @@
     <Compile Include="IndirectFireCapable.cs" />
     <Compile Include="InternalClassPathes.cs" />
     <Compile Include="Log.cs" />
+    <Compile Include="MechHitTable.cs" />
     <Compile Include="MessageBox.cs" />
     <Compile Include="MineFieldsMoveSequence.cs" />
     <Compile Include="MuiltyShotEffects\ImproveWeaponEffect.cs" />
@@ -220,6 +223,7 @@
     <Compile Include="PersistentFloatieMessage.cs" />
     <Compile Include="PlayProjectile.cs" />
     <Compile Include="SidePanelMoveInfo.cs" />
+    <Compile Include="StackHelper.cs" />
     <Compile Include="Streak.cs" />
     <Compile Include="ToHitModifiers.cs" />
     <Compile Include="TurretlessVehicle.cs" />

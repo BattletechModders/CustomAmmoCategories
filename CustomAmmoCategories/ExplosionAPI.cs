@@ -169,7 +169,7 @@ namespace CustAmmoCategories {
       foreach (ICombatant target in combat.GetAllLivingCombatants()) {
         if (target.IsDead) { continue; };
         if (target.isDropshipNotLanded()) { continue; };
-        Vector3 CurrentPosition = target.CurrentPosition + Vector3.up * target.AoEHeightFix();
+        Vector3 CurrentPosition = target.CurrentPosition + Vector3.up * target.FlyingHeight();
         float distance = Vector3.Distance(CurrentPosition, pos);
         if (CustomAmmoCategories.Settings.DefaultAoEDamageMult[target.UnitType].Range < CustomAmmoCategories.Epsilon) { CustomAmmoCategories.Settings.DefaultAoEDamageMult[target.UnitType].Range = 1f; }
         distance /= CustomAmmoCategories.Settings.DefaultAoEDamageMult[target.UnitType].Range;

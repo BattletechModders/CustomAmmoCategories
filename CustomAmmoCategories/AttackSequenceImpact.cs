@@ -302,11 +302,12 @@ namespace CustomAmmoCategoriesPatches {
     public static bool isHasStability(this ICombatant combatant) {
       Mech mech = combatant as Mech;
       if (mech == null) { return false; }
+      if (mech.FakeVehicle()) { return false; }
+      if (combatant.NoStability()) { return false; }
       try {
         foreach(string tag in CustomAmmoCategories.Settings.MechHasNoStabilityTag) {
           if (mech.MechDef.Chassis.ChassisTags.Contains(tag)) { return false; }
         }
-        if (combatant.NoStability()) { return false; }
       } catch (Exception e) {
         Log.M.TWL(0, e.ToString(), true);
       }

@@ -9,20 +9,21 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
    using static Mod;
    using static HitLocation;
   using Localize;
-
+  using CustomAmmoCategoriesPatches;
+  using CustAmmoCategories;
   public class CalledShotPopUp : BattleModModule {
 
       private static string CalledShotHitChanceFormat = "{0:0}%";
 
       public override void CombatStartsOnce () {
          Type CalledShot = typeof( CombatHUDCalledShotPopUp );
-         if ( Settings.ShowLocationInfoInCalledShot )
+         if ( AIMSettings.ShowLocationInfoInCalledShot )
             Patch( CalledShot, "UpdateMechDisplay", null, "ShowCalledLocationHP" );
 
-         if ( Settings.CalledChanceFormat != null )
-            CalledShotHitChanceFormat = Settings.CalledChanceFormat;
+         if ( AIMSettings.CalledChanceFormat != null )
+            CalledShotHitChanceFormat = AIMSettings.CalledChanceFormat;
 
-         if ( Settings.FixBossHeadCalledShotDisplay ) {
+         if ( AIMSettings.FixBossHeadCalledShotDisplay ) {
             currentHitTableProp = typeof( CombatHUDCalledShotPopUp ).GetProperty( "currentHitTable", NonPublic | Instance );
             if ( currentHitTableProp == null )
                Error( "Cannot find CombatHUDCalledShotPopUp.currentHitTable, boss head called shot display not fixed. Boss should still be immune from headshot." );
@@ -30,13 +31,13 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
                Patch( CalledShot, "UpdateMechDisplay", "FixBossHead", "CleanupBossHead" );
          }
 
-         if ( Settings.ShowRealMechCalledShotChance || Settings.ShowRealVehicleCalledShotChance || Settings.CalledChanceFormat != null ) {
+         if ( AIMSettings.ShowRealMechCalledShotChance || AIMSettings.ShowRealVehicleCalledShotChance || AIMSettings.CalledChanceFormat != null ) {
             Patch( CalledShot, "set_ShownAttackDirection", typeof( AttackDirection ), null, "RecordAttackDirection" );
 
-            if ( Settings.ShowRealMechCalledShotChance || Settings.CalledChanceFormat != null )
+            if ( AIMSettings.ShowRealMechCalledShotChance || AIMSettings.CalledChanceFormat != null )
                Patch( CalledShot, "GetHitPercent", new Type[]{ typeof( ArmorLocation ), typeof( ArmorLocation ) }, "OverrideHUDMechCalledShotPercent", null );
 
-            if ( Settings.ShowRealVehicleCalledShotChance || Settings.CalledChanceFormat != null )
+            if ( AIMSettings.ShowRealVehicleCalledShotChance || AIMSettings.CalledChanceFormat != null )
                Patch( CalledShot, "GetHitPercent", new Type[]{ typeof( VehicleChassisLocations ), typeof( VehicleChassisLocations ) }, "OverrideHUDVehicleCalledShotPercent", null );
          }
       }
@@ -120,18 +121,25 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
 
       [ Harmony.HarmonyPriority( Harmony.Priority.Low ) ]
       public static bool OverrideHUDMechCalledShotPercent (Mech ___displayedMech, ref string __result, ArmorLocation location, ArmorLocation targetedLocation ) { try {
-        Dictionary<ArmorLocation, int> hitTable = CustAmmoCategories.HitTableHelper.GetHitTable(___displayedMech, CallShotClustered && Settings.ShowRealMechCalledShotChance, targetedLocation, AttackDirection);
-          //( targetedLocation == ArmorLocation.None || ! CallShotClustered || ! Settings.ShowRealMechCalledShotChance )
-          //                                         ? Combat.HitLocation.GetMechHitTable( AttackDirection )
-          //                                         : CombatConstants.GetMechClusterTable( targetedLocation, AttackDirection );
+        Dictionary<ArmorLocation, int> hitTable = null;//CustAmmoCategories.HitTableHelper.GetHitTable(___displayedMech, targetedLocation, AttackDirection);
+        ICustomMech custMech = ___displayedMech as ICustomMech;
+        if (custMech != null) {
+          hitTable = (targetedLocation == ArmorLocation.None || !CallShotClustered || !AIMSettings.ShowRealMechCalledShotChance)
+                                                   ? custMech.GetHitTable(AttackDirection)
+                                                   : custMech.GetHitTableCluster(AttackDirection, targetedLocation);
+        } else {
+          hitTable = (targetedLocation == ArmorLocation.None || !CallShotClustered || !AIMSettings.ShowRealMechCalledShotChance)
+                                                   ? Combat.HitLocation.GetMechHitTable(AttackDirection)
+                                                   : Combat.Constants.GetMechClusterTable(targetedLocation, AttackDirection);
+        }
          if ( CacheNeedRefresh( hitTable, (int) targetedLocation ) )
-            HitTableTotalWeight = SumWeight( hitTable, targetedLocation, FixMultiplier( targetedLocation, ActorCalledShotBonus ), scale );
+            HitTableTotalWeight = SumWeight( hitTable, targetedLocation, FixMultiplier( targetedLocation, ActorCalledShotBonus, (custMech != null?((custMech.isSquad==false)&& (custMech.isVehicle == false)):true), (custMech != null ? custMech.isVehicle : false)), scale );
 
          int local = TryGet( hitTable, location ) * scale;
          if ( location == targetedLocation )
-            local = (int)( local * FixMultiplier( targetedLocation, ActorCalledShotBonus ) );
+            local = (int)( local * FixMultiplier( targetedLocation, ActorCalledShotBonus, (custMech != null ? ((custMech.isSquad == false) && (custMech.isVehicle == false)) : true), (custMech != null ? custMech.isVehicle : false)) );
 
-         __result = FineTuneAndFormat( hitTable, location, local, Settings.ShowRealMechCalledShotChance );
+         __result = FineTuneAndFormat( hitTable, location, local, AIMSettings.ShowRealMechCalledShotChance );
          return false;
       }                 catch ( Exception ex ) { return Error( ex ); } }
 
@@ -145,7 +153,7 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
          if ( location == targetedLocation )
             local = (int)( local * FixMultiplier( targetedLocation, ActorCalledShotBonus ) );
 
-         __result = FineTuneAndFormat( hitTable, location, local, Settings.ShowRealVehicleCalledShotChance );
+         __result = FineTuneAndFormat( hitTable, location, local, AIMSettings.ShowRealVehicleCalledShotChance );
          return false;
       }                 catch ( Exception ex ) { return Error( ex ); } }
 

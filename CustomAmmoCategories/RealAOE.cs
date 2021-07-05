@@ -444,6 +444,7 @@ namespace CustAmmoCategories {
     }
     public static Dictionary<int, float> NormMechHitLocations = null;
     public static Dictionary<int, float> SquadHitLocations = null;
+    public static Dictionary<int, float> FakeVehicleLocations = null;
     public static Dictionary<int, float> VehicleLocations = null;
     public static Dictionary<int, float> OtherLocations = null;
     public static readonly float AOEHitIndicator = -10f;
@@ -460,6 +461,18 @@ namespace CustAmmoCategories {
       CustomAmmoCategories.NormMechHitLocations[(int)ArmorLocation.LeftLeg] = 50f;
       CustomAmmoCategories.NormMechHitLocations[(int)ArmorLocation.RightLeg] = 50f;
       CustomAmmoCategories.NormMechHitLocations[(int)ArmorLocation.Head] = 0f;
+      CustomAmmoCategories.FakeVehicleLocations = new Dictionary<int, float>();
+      CustomAmmoCategories.FakeVehicleLocations[(int)ArmorLocation.CenterTorso] = 0f;
+      CustomAmmoCategories.FakeVehicleLocations[(int)ArmorLocation.CenterTorsoRear] = 0f;
+      CustomAmmoCategories.FakeVehicleLocations[(int)ArmorLocation.LeftTorso] = 0f;
+      CustomAmmoCategories.FakeVehicleLocations[(int)ArmorLocation.LeftTorsoRear] = 0f;
+      CustomAmmoCategories.FakeVehicleLocations[(int)ArmorLocation.RightTorso] = 0f;
+      CustomAmmoCategories.FakeVehicleLocations[(int)ArmorLocation.RightTorsoRear] = 0f;
+      CustomAmmoCategories.FakeVehicleLocations[(int)ArmorLocation.LeftArm] = 100f;
+      CustomAmmoCategories.FakeVehicleLocations[(int)ArmorLocation.RightArm] = 100f;
+      CustomAmmoCategories.FakeVehicleLocations[(int)ArmorLocation.LeftLeg] = 100f;
+      CustomAmmoCategories.FakeVehicleLocations[(int)ArmorLocation.RightLeg] = 100f;
+      CustomAmmoCategories.FakeVehicleLocations[(int)ArmorLocation.Head] = 100f;
       CustomAmmoCategories.SquadHitLocations = new Dictionary<int, float>();
       CustomAmmoCategories.SquadHitLocations[(int)ArmorLocation.CenterTorso] = 100f;
       CustomAmmoCategories.SquadHitLocations[(int)ArmorLocation.CenterTorsoRear] = 0f;

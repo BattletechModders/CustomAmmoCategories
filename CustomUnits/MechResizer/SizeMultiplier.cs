@@ -11,7 +11,7 @@ namespace MechResizer {
       return Get(
           identifier: def.Description.Id,
           tags: def.ChassisTags,
-          type: typeof(Mech),
+          type: def.IsVehicle()?typeof(Vehicle):typeof(Mech),
           prefab: def.PrefabBase);
     }
 
@@ -34,7 +34,7 @@ namespace MechResizer {
       return Get(
           identifier: def.Description.Id,
           tags: def.MechTags,
-          type: typeof(Vehicle),
+          type: def.IsVehicle() ? typeof(Vehicle) : typeof(Mech),
           prefab: def.Chassis.PrefabBase);
     }
 

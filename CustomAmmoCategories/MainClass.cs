@@ -1025,7 +1025,7 @@ namespace CustAmmoCategories {
     public static readonly string NoRandomIdlesActorStat = "CUNoRandomIdleAnimations";
     public static readonly string ArmsCountedAsLegsActorStat = "CUArmsCountedAsLegs";
     public static readonly string NoDeathOnLegsActorStat = "CUNoDeathOnLegs";
-    public static readonly string AOEHeightActorStat = "CUAOEHeight";
+    public static readonly string FlyingHeightActorStat = "CUAOEHeight";
     public static readonly string NoHeatActorStat = "CUNoHeat";
     public static readonly string NoStabilityActorStat = "CUNoStability";
     public static readonly string NoCritTransferActorStat = "CUNoCritTransfer";
@@ -1035,6 +1035,33 @@ namespace CustAmmoCategories {
     public static readonly string BlockComponentsActivationActorStat = "CUBlockComponentsActivation";
     public static readonly string FiringArcActorStat = "CUFiringArc";
     public static readonly string AllowPartialMovementActorStat = "CUAllowPartialMovement";
+    public static readonly string AllowPartialSprintActorStat = "CUAllowPartialSprint";
+    public static readonly string AllowRotateWhileJumpActorStat = "CUAllowRotateWhileJump";
+    public static readonly string FakeVehicleActorStat = "CUFakeVehicle";
+    public static readonly string TrooperSquadActorStat = "CUTrooperSquad";
+    public static readonly string NavalUnitActorStat = "CUNavalUnit";
+    public static readonly string PartialMovementSpentActorStat = "CUPartialMovementSpent";
+    public static readonly string LastMoveDistanceActorStat = "CULastMoveDistance";
+    public static float LastMoveDistance(this ICombatant unit) {
+      if (unit.StatCollection.ContainsStatistic(LastMoveDistanceActorStat) == false) { return 0f; };
+      return unit.StatCollection.GetStatistic(LastMoveDistanceActorStat).Value<float>();
+    }
+    public static void LastMoveDistance(this ICombatant unit, float value) {
+      if (unit.StatCollection.ContainsStatistic(LastMoveDistanceActorStat) == false) {
+        unit.StatCollection.AddStatistic<float>(LastMoveDistanceActorStat, 0f);
+      };
+      unit.StatCollection.Set<float>(FiringArcActorStat, value);
+    }
+    public static float PartialMovementSpent(this ICombatant unit) {
+      if (unit.StatCollection.ContainsStatistic(PartialMovementSpentActorStat) == false) { return 0f; };
+      return unit.StatCollection.GetStatistic(PartialMovementSpentActorStat).Value<float>();
+    }
+    public static void PartialMovementSpent(this ICombatant unit, float value) {
+      if (unit.StatCollection.ContainsStatistic(PartialMovementSpentActorStat) == false) {
+        unit.StatCollection.AddStatistic<float>(PartialMovementSpentActorStat, 0f);
+      };
+      unit.StatCollection.Set<float>(PartialMovementSpentActorStat, value);
+    }
     public static float FiringArc(this ICombatant unit) {
       if (unit.StatCollection.ContainsStatistic(FiringArcActorStat) == false) { return 0f; };
       return unit.StatCollection.GetStatistic(FiringArcActorStat).Value<float>();
@@ -1054,6 +1081,7 @@ namespace CustAmmoCategories {
       return unit.StatCollection.GetStatistic(NoStabilityActorStat).Value<bool>();
     }
     public static bool NoCritTransfer(this ICombatant unit) {
+      if (unit.FakeVehicle()) { return true; }
       if (unit.StatCollection.ContainsStatistic(NoCritTransferActorStat) == false) { return false; };
       return unit.StatCollection.GetStatistic(NoCritTransferActorStat).Value<bool>();
     }
@@ -1074,6 +1102,36 @@ namespace CustAmmoCategories {
         unit.StatCollection.AddStatistic<bool>(BlockComponentsActivationActorStat, false);
       };
       unit.StatCollection.Set<bool>(BlockComponentsActivationActorStat,value);
+    }
+    public static bool FakeVehicle(this ICombatant unit) {
+      if (unit.StatCollection.ContainsStatistic(FakeVehicleActorStat) == false) { return false; };
+      return unit.StatCollection.GetStatistic(FakeVehicleActorStat).Value<bool>();
+    }
+    public static bool TrooperSquad(this ICombatant unit) {
+      if (unit.StatCollection.ContainsStatistic(TrooperSquadActorStat) == false) { return false; };
+      return unit.StatCollection.GetStatistic(TrooperSquadActorStat).Value<bool>();
+    }
+    public static void FakeVehicle(this ICombatant unit, bool value) {
+      if (unit.StatCollection.ContainsStatistic(FakeVehicleActorStat) == false) {
+        unit.StatCollection.AddStatistic<bool>(FakeVehicleActorStat, false);
+      };
+      unit.StatCollection.Set<bool>(FakeVehicleActorStat, value);
+    }
+    public static void TrooperSquad(this ICombatant unit, bool value) {
+      if (unit.StatCollection.ContainsStatistic(TrooperSquadActorStat) == false) {
+        unit.StatCollection.AddStatistic<bool>(TrooperSquadActorStat, false);
+      };
+      unit.StatCollection.Set<bool>(TrooperSquadActorStat, value);
+    }
+    public static bool NavalUnit(this ICombatant unit) {
+      if (unit.StatCollection.ContainsStatistic(NavalUnitActorStat) == false) { return false; };
+      return unit.StatCollection.GetStatistic(NavalUnitActorStat).Value<bool>();
+    }
+    public static void NavalUnit(this ICombatant unit, bool value) {
+      if (unit.StatCollection.ContainsStatistic(NavalUnitActorStat) == false) {
+        unit.StatCollection.AddStatistic<bool>(NavalUnitActorStat, false);
+      };
+      unit.StatCollection.Set<bool>(NavalUnitActorStat, value);
     }
     //public static bool UnaffectedPathing(this ICombatant unit) {
     //  //return false;
@@ -1109,9 +1167,15 @@ namespace CustAmmoCategories {
       if (unit.StatCollection.ContainsStatistic(LandminesActorStat) == false) { return false; };
       return unit.StatCollection.GetStatistic(LandminesActorStat).Value<bool>();
     }
-    public static float AoEHeightFix(this ICombatant unit) {
-      if (unit.StatCollection.ContainsStatistic(AOEHeightActorStat) == false) { return 0f; };
-      return unit.StatCollection.GetStatistic(AOEHeightActorStat).Value<float>();
+    public static float FlyingHeight(this ICombatant unit) {
+      if (unit.StatCollection.ContainsStatistic(FlyingHeightActorStat) == false) { return 0f; };
+      return unit.StatCollection.GetStatistic(FlyingHeightActorStat).Value<float>();
+    }
+    public static void FlyingHeight(this ICombatant unit, float value) {
+      if (unit.StatCollection.ContainsStatistic(FlyingHeightActorStat) == false) {
+        unit.StatCollection.AddStatistic<float>(FlyingHeightActorStat, 0f);
+      };
+      unit.StatCollection.Set<float>(FlyingHeightActorStat, value);
     }
     public static string CustomMoveCostKey(this ICombatant unit) {
       if (unit.StatCollection.ContainsStatistic(MoveCostActorStat) == false) { return string.Empty; };
@@ -1135,11 +1199,13 @@ namespace CustAmmoCategories {
       if (unit.StatCollection.ContainsStatistic(AllowPartialMovementActorStat) == false) { return false; };
       return unit.StatCollection.GetStatistic(AllowPartialMovementActorStat).Value<bool>();
     }
-    public static void AllowPartialMovement(this ICombatant unit, bool value) {
-      if (unit.StatCollection.ContainsStatistic(AllowPartialMovementActorStat) == false) {
-        unit.StatCollection.AddStatistic<bool>(AllowPartialMovementActorStat, false);
-      };
-      unit.StatCollection.GetStatistic(AllowPartialMovementActorStat).SetValue<bool>(value);
+    public static bool AllowPartialSprint(this ICombatant unit) {
+      if (unit.StatCollection.ContainsStatistic(AllowPartialSprintActorStat) == false) { return false; };
+      return unit.StatCollection.GetStatistic(AllowPartialSprintActorStat).Value<bool>();
+    }
+    public static bool AllowRotateWhileJump(this ICombatant unit) {
+      if (unit.StatCollection.ContainsStatistic(AllowRotateWhileJumpActorStat) == false) { return false; };
+      return unit.StatCollection.GetStatistic(AllowRotateWhileJumpActorStat).Value<bool>();
     }
   }
   public class AoEModifiers {
@@ -1299,6 +1365,8 @@ namespace CustAmmoCategories {
     public float EvasiveNumberHeight { get; set; }
     public List<string> RemoveToHitModifiers { get; set; }
     public bool ImprovedBallisticByDefault { get; set; }
+    public Dictionary<string, DesignMaskMoveCostInfo> DefaultMoveCosts { get; set; }
+    public bool DestroyedLocationsCritTransfer { get; set; }
     public Settings() {
       directory = string.Empty;
       debugLog = true;
@@ -1423,6 +1491,8 @@ namespace CustAmmoCategories {
       EvasiveNumberHeight = 25f;
       RemoveToHitModifiers = new List<string>();
       ImprovedBallisticByDefault = true;
+      DefaultMoveCosts = new Dictionary<string, DesignMaskMoveCostInfo>();
+      DestroyedLocationsCritTransfer = false;
     }
   }
 }
@@ -1526,37 +1596,6 @@ namespace CACMain {
         }
       }
       WeaponRealizer.Core.Init(directory, WRSettings);
-      /*
-      if (string.IsNullOrEmpty(CustomAmmoCategories.Settings.WeaponRealizerStandalone) == false) {
-        CustomAmmoCategoriesLog.Log.LogWrite("standalone WeaponRealizer detected\n");
-        string WRPath = Path.Combine(directory, CustomAmmoCategories.Settings.WeaponRealizerStandalone);
-        string WRSettingsFile = Path.Combine(directory, CustomAmmoCategories.Settings.WeaponRealizerSettings);
-        WeaponRealizer.Settings WRSettings = null;
-        if (File.Exists(WRSettingsFile) == false) {
-          Log.LogWrite("WeaponRealizer settings not exists\n");
-          Log.flush();
-          WRSettings = new WeaponRealizer.Settings();
-        }
-        if (File.Exists(WRPath) == false) {
-          Log.LogWrite("WeaponRealizer.dll not exists. I will not load\n");
-          Log.flush();
-          throw new Exception("WeaponRealizer.dll not exists. I will not load");
-        } else {
-          CustomAmmoCategoriesLog.Log.LogWrite(WRPath + " - exists. Loading assembly.\n");
-          Assembly.LoadFile(WRPath);
-          CustomAmmoCategoriesLog.Log.LogWrite("Initing WR\n");
-          string WRSettingsContent = File.ReadAllText(WRSettingsFile);
-          WRSettings = new WeaponRealizer.Settings();
-          try {
-            WRSettings = JsonConvert.DeserializeObject<WeaponRealizer.Settings>(WRSettingsContent);
-          } catch (Exception ex) {
-            Log.LogWrite(ex + "\n");
-            WRSettings = new WeaponRealizer.Settings();
-          }
-          CustomAmmoCategoriesLog.Log.LogWrite("Initing WR:\n" + WRSettingsContent + "\n");
-          //typeof(WeaponRealizer.Core).GetMethod("Init", BindingFlags.Public | BindingFlags.Static).Invoke(null, new object[2] { (object)directory, (object)settingsJson });
-        }
-      }*/
       if (string.IsNullOrEmpty(CustomAmmoCategories.Settings.AIMStandalone) == false) {
         string AIMPath = Path.Combine(directory, CustomAmmoCategories.Settings.AIMStandalone);
         if (File.Exists(AIMPath) == false) {
@@ -1570,7 +1609,7 @@ namespace CACMain {
           Type AIMMod = AIM.GetType("Sheepy.BattleTechMod.AttackImprovementMod.Mod");
           AIMMod.GetField("failToLoad",BindingFlags.Static|BindingFlags.Public).SetValue(null, false);
           AIMMod.GetMethod("Init", BindingFlags.Static | BindingFlags.Public).Invoke(null, new object[2] { directory, string.Empty});
-          AIMModSettings = (Sheepy.BattleTechMod.AttackImprovementMod.ModSettings)AIMMod.GetField("Settings").GetValue(null);
+          AIMModSettings = (Sheepy.BattleTechMod.AttackImprovementMod.ModSettings)AIMMod.GetField("AIMSettings").GetValue(null);
           //Sheepy.BattleTechMod.AttackImprovementMod.Mod.failToLoad = false;
           //Sheepy.BattleTechMod.AttackImprovementMod.Mod.Init(directory, string.Empty);
         }

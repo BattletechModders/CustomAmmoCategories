@@ -46,7 +46,7 @@ namespace CustAmmoCategories {
       }
       foreach (ICombatant combatant in combatants) {
         if (combatant.IsDead) { continue; };
-        Vector3 CurrentPosition = combatant.CurrentPosition + Vector3.up * combatant.AoEHeightFix();
+        Vector3 CurrentPosition = combatant.CurrentPosition + Vector3.up * combatant.FlyingHeight();
         float distance = Vector3.Distance(combatant.CurrentPosition, shootPosition);
         if (distance <= spreadDistance) {
           spreadRNDMax += (spreadDistance - distance);

@@ -7,6 +7,7 @@ using Harmony;
 using Localize;
 using System;
 using System.Collections.Generic;
+using System.Threading;
 using UnityEngine;
 using UnityEngine.EventSystems;
 
@@ -30,14 +31,80 @@ namespace CustAmmoCategories {
       this.melee = melee;
     }
   }
+  public class ToHitNodeModifier {
+    public string id { get; set; }
+    public string name { get; set; }
+    public bool ranged { get; set; }
+    public bool melee { get; set; }
+    public Func<object, ToHit, AbstractActor, Weapon, ICombatant, Vector3, Vector3, LineOfFireLevel, MeleeAttackType, bool, float> modifier { get; set; }
+    public Func<object, ToHit, AbstractActor, Weapon, ICombatant, Vector3, Vector3, LineOfFireLevel, MeleeAttackType, bool, string> dname { get; set; }
+    public ToHitNodeModifier(string id, string name, bool ranged, bool melee,
+      Func<object, ToHit, AbstractActor, Weapon, ICombatant, Vector3, Vector3, LineOfFireLevel, MeleeAttackType, bool, float> modifier,
+      Func<object, ToHit, AbstractActor, Weapon, ICombatant, Vector3, Vector3, LineOfFireLevel, MeleeAttackType, bool, string> dname
+      ) {
+      this.id = id;
+      this.name = name;
+      this.modifier = modifier;
+      this.dname = dname;
+      this.ranged = ranged;
+      this.melee = melee;
+    }
+  }
+  public class ToHitModifierNode {
+    public string id { get; set; }
+    public Func<ToHit, AbstractActor, Weapon, ICombatant, Vector3, Vector3, LineOfFireLevel, MeleeAttackType, bool, object> prepare { get; set; }
+    public Dictionary<string, ToHitNodeModifier> modifiers = null;
+    public ToHitModifierNode(string id,
+      Func<ToHit, AbstractActor, Weapon, ICombatant, Vector3, Vector3, LineOfFireLevel, MeleeAttackType, bool, object> prepare
+    ) {
+      this.id = id;
+      this.prepare = prepare;
+      this.modifiers = new Dictionary<string, ToHitNodeModifier>();
+    }
+    public void registerModifier(string id, string name, bool ranged, bool melee,
+      Func<object, ToHit, AbstractActor, Weapon, ICombatant, Vector3, Vector3, LineOfFireLevel, MeleeAttackType, bool, float> modifier,
+      Func<object, ToHit, AbstractActor, Weapon, ICombatant, Vector3, Vector3, LineOfFireLevel, MeleeAttackType, bool, string> dname
+      ) {
+      Log.M.TWL(0, "registerModifier:" + id + "/" + name + " r:" + ranged + " m:" + melee, true);
+      if (modifiers.TryGetValue(id, out ToHitNodeModifier mod)) {
+        mod.name = name;
+        mod.ranged = ranged;
+        mod.melee = melee;
+        mod.modifier = modifier;
+        mod.dname = dname;
+      } else {
+        modifiers.Add(id, new ToHitNodeModifier(id, name, ranged, melee, modifier, dname));
+      }
+    }
+  }
   public static class ToHitModifiersHelper {
     public static Dictionary<string, ToHitModifier> modifiers = new Dictionary<string, ToHitModifier>();
+    public static Dictionary<string, ToHitModifierNode> mod_nodes = new Dictionary<string, ToHitModifierNode>();
     public static CombatHUD HUD = null;
     public static void InitHUD(CombatHUD HUD) {
       ToHitModifiersHelper.HUD = HUD;
     }
     public static void Clear() {
       HUD = null;
+    }
+    public static void registerNode(string id, Func<ToHit, AbstractActor, Weapon, ICombatant, Vector3, Vector3, LineOfFireLevel, MeleeAttackType, bool, object> prepare) {
+      Log.M.TWL(0, "registerNode:" + id, true);
+      if(mod_nodes.TryGetValue(id, out ToHitModifierNode node)) {
+        node.prepare = prepare;
+      } else {
+        mod_nodes.Add(id, new ToHitModifierNode(id, prepare));
+      }
+    }
+    public static void registerNodeModifier(string nodeId, string id, string name, bool ranged, bool melee,
+      Func<object, ToHit, AbstractActor, Weapon, ICombatant, Vector3, Vector3, LineOfFireLevel, MeleeAttackType, bool, float> modifier,
+      Func<object, ToHit, AbstractActor, Weapon, ICombatant, Vector3, Vector3, LineOfFireLevel, MeleeAttackType, bool, string> dname
+      ) {
+      Log.M.TWL(0, "registerNodeModifier: node:" + nodeId + " id:"  + id + "/" + name + " r:" + ranged + " m:" + melee, true);
+      if (mod_nodes.TryGetValue(nodeId, out ToHitModifierNode node)) {
+        node.registerModifier(id,name,ranged,melee, modifier, dname);
+      } else {
+        Log.M.WL(1,"!Can't find node id:"+nodeId, true);
+      }
     }
     public static void registerModifier(string id, string name, bool ranged, bool melee,
       Func<ToHit, AbstractActor, Weapon, ICombatant, Vector3, Vector3, LineOfFireLevel, MeleeAttackType, bool, float> modifier,
@@ -155,7 +222,8 @@ namespace CustAmmoCategories {
         location = GetMeleeWeaponLocation(attacker, meleeAttackType);
       } else {
         switch (attacker.UnitType) {
-          case UnitType.Mech: location = weapon.mechComponentRef != null ? (int)weapon.mechComponentRef.MountedLocation : weapon.Location; break;
+          case UnitType.Mech: location = weapon.mechComponentRef != null ? (int)weapon.mechComponentRef.MountedLocation : weapon.Location;
+          break;
           case UnitType.Vehicle: location = weapon.vehicleComponentRef!=null?(int)weapon.vehicleComponentRef.MountedLocation:(int)VehicleChassisLocations.Front; break;
           case UnitType.Turret: location = (int)BuildingLocation.Structure; break;
         }
@@ -171,6 +239,7 @@ namespace CustAmmoCategories {
       }
     }
     public static int GetMeleeWeaponLocation(Mech mech, MeleeAttackType meleeAttackType) {
+      if (mech.FakeVehicle()) { return (int)ChassisLocations.LeftArm; }
       if (mech == null) { return (int)ChassisLocations.CenterTorso; }
       switch (meleeAttackType) {
         case MeleeAttackType.Punch: return mech.MechDef.Chassis.PunchesWithLeftArm?(int)ChassisLocations.LeftArm: (int)ChassisLocations.RightArm;
@@ -259,6 +328,7 @@ namespace CustAmmoCategories {
       ChassisLocations loc = (ChassisLocations)location;
       string locName = unit.GetStringForStructureDamageLevel(loc);
       if (string.IsNullOrEmpty(locName)) { loc = ChassisLocations.CenterTorso; }
+      Thread.CurrentThread.pushActor(unit);
       switch (unit.GetLocationDamageLevel(loc)) {
         case LocationDamageLevel.Penalized:
           num = new Text("{0} DAMAGED", (object)Mech.GetAbbreviatedChassisLocation(loc)).ToString();
@@ -267,7 +337,24 @@ namespace CustAmmoCategories {
           num = new Text("{0} DESTROYED", (object)Mech.GetAbbreviatedChassisLocation(loc)).ToString();
           break;
       }
+      Thread.CurrentThread.clearActor();
       return num;
+    }
+    public static string GetAbbreviatedChassisLocation(this AbstractActor unit, int location) {
+      Mech mech = unit as Mech;
+      if(mech != null) {
+        Thread.CurrentThread.pushActor(unit);
+        string result = Mech.GetAbbreviatedChassisLocation((ChassisLocations)location).ToString();
+        Thread.CurrentThread.clearActor();
+        return result;
+      }
+      Vehicle vehicle = unit as Vehicle;
+      if (vehicle != null) {
+        return GetAbbreviatedChassisLocation((VehicleChassisLocations)location).ToString();
+      }
+      Turret turret = unit as Turret;
+      if (turret != null) { return "S"; };
+      return "-";
     }
     public static string GetToHitModifierName(Turret unit, int location) {
       if (unit == null) { return string.Empty; }
@@ -578,6 +665,30 @@ namespace CustAmmoCategories {
         }
         all_modifiers += modifier;
       }
+      foreach(var node in ToHitModifiersHelper.mod_nodes) {
+        object state = node.Value.prepare(Combat.ToHit,
+          HUD.SelectedActor, slot.DisplayedWeapon,
+          target,
+          HUD.SelectionHandler.ActiveState.PreviewPos, target.TargetPosition, LineOfFireLevel.LOFClear, meleeAttackType, calledShot);
+        foreach(var mod in node.Value.modifiers) {
+          if ((mod.Value.melee == false) && (mod.Value.ranged == true)) { continue; }
+          int modifier = (int)mod.Value.modifier(state,Combat.ToHit,
+            HUD.SelectedActor, slot.DisplayedWeapon,
+            target,
+            HUD.SelectionHandler.ActiveState.PreviewPos, target.TargetPosition, LineOfFireLevel.LOFClear, meleeAttackType, calledShot);
+          string name = mod.Value.name;
+          if (mod.Value.dname != null) {
+            name = mod.Value.dname(state,Combat.ToHit,
+            HUD.SelectedActor, slot.DisplayedWeapon,
+            target,
+            HUD.SelectionHandler.ActiveState.PreviewPos, target.TargetPosition, LineOfFireLevel.LOFClear, meleeAttackType, calledShot);
+          }
+          if ((modifier != 0) && (string.IsNullOrEmpty(name) == false)) {
+            slot.AddToolTipDetail(name, modifier);
+          }
+          all_modifiers += modifier;
+        }
+      }
       if ((all_modifiers < 0) && (Combat.Constants.ResolutionConstants.AllowTotalNegativeModifier == false)) { all_modifiers = 0; };
       slot.ToolTipHoverElement.BasicModifierInt = all_modifiers;
     }
@@ -610,6 +721,30 @@ namespace CustAmmoCategories {
         }
         all_modifiers += modifier;
       }
+      foreach (var node in ToHitModifiersHelper.mod_nodes) {
+        object state = node.Value.prepare(Combat.ToHit,
+          HUD.SelectedActor, slot.DisplayedWeapon,
+          target,
+          HUD.SelectionHandler.ActiveState.PreviewPos, target.TargetPosition, LineOfFireLevel.LOFClear, meleeAttackType, calledShot);
+        foreach (var mod in node.Value.modifiers) {
+          if ((mod.Value.melee == true) && (mod.Value.ranged == false)) { continue; }
+          int modifier = (int)mod.Value.modifier(state, Combat.ToHit,
+            HUD.SelectedActor, slot.DisplayedWeapon,
+            target,
+            HUD.SelectionHandler.ActiveState.PreviewPos, target.TargetPosition, LineOfFireLevel.LOFClear, meleeAttackType, calledShot);
+          string name = mod.Value.name;
+          if (mod.Value.dname != null) {
+            name = mod.Value.dname(state, Combat.ToHit,
+            HUD.SelectedActor, slot.DisplayedWeapon,
+            target,
+            HUD.SelectionHandler.ActiveState.PreviewPos, target.TargetPosition, LineOfFireLevel.LOFClear, meleeAttackType, calledShot);
+          }
+          if ((modifier != 0) && (string.IsNullOrEmpty(name) == false)) {
+            slot.AddToolTipDetail(name, modifier);
+          }
+          all_modifiers += modifier;
+        }
+      }
       if ((all_modifiers < 0) && (Combat.Constants.ResolutionConstants.AllowTotalNegativeModifier == false)) { all_modifiers = 0; };
       slot.ToolTipHoverElement.BasicModifierInt = all_modifiers;
     }
@@ -636,6 +771,31 @@ namespace CustAmmoCategories {
         }
         if ((modifier != 0) && (string.IsNullOrEmpty(name) == false)) {
           slot.AddToolTipDetail(name, modifier);
+        }
+      }
+      foreach (var node in ToHitModifiersHelper.mod_nodes) {
+        if (slot.DisplayedWeapon == null) { continue; }
+        if (HUD.SelectedActor == null) { continue; }
+        object state = node.Value.prepare(Combat.ToHit,
+          HUD.SelectedActor, slot.DisplayedWeapon,
+          HUD.SelectedTarget,
+          HUD.SelectionHandler.ActiveState.PreviewPos, HUD.SelectedActor.TargetPosition, LineOfFireLevel.LOFClear, meleeAttackType, calledShot);
+        foreach (var mod in node.Value.modifiers) {
+          if ((mod.Value.ranged != false) || (mod.Value.melee != false)) { continue; }
+          int modifier = (int)mod.Value.modifier(state, Combat.ToHit,
+            HUD.SelectedActor, slot.DisplayedWeapon,
+            HUD.SelectedTarget,
+            HUD.SelectionHandler.ActiveState.PreviewPos, HUD.SelectedActor.TargetPosition, LineOfFireLevel.LOFClear, meleeAttackType, calledShot);
+          string name = mod.Value.name;
+          if (mod.Value.dname != null) {
+            name = mod.Value.dname(state, Combat.ToHit,
+            HUD.SelectedActor, slot.DisplayedWeapon,
+            HUD.SelectedTarget,
+            HUD.SelectionHandler.ActiveState.PreviewPos, HUD.SelectedActor.TargetPosition, LineOfFireLevel.LOFClear, meleeAttackType, calledShot);
+          }
+          if ((modifier != 0) && (string.IsNullOrEmpty(name) == false)) {
+            slot.AddToolTipDetail(name, modifier);
+          }
         }
       }
       slot.ToolTipHoverElement.UseModifier = false;
@@ -667,7 +827,14 @@ namespace CustAmmoCategories {
         if ((mod.Value.ranged == false)&&(mod.Value.melee == true)) { continue; }
         __result += mod.Value.modifier(__instance,attacker,weapon,target,attackPosition,targetPosition,lofLevel,MeleeAttackType.NotSet,isCalledShot);
       }
-      if((__result < 0f) && (Traverse.Create(__instance).Field<CombatGameState>("combat").Value.Constants.ResolutionConstants.AllowTotalNegativeModifier == false)) {
+      foreach (var node in ToHitModifiersHelper.mod_nodes) {
+        object state = node.Value.prepare(__instance, attacker, weapon, target, attackPosition, targetPosition, lofLevel, MeleeAttackType.NotSet, isCalledShot);
+        foreach (var mod in node.Value.modifiers) {
+          if ((mod.Value.ranged == false) && (mod.Value.melee == true)) { continue; }
+          __result += (int)mod.Value.modifier(state, __instance, attacker, weapon, target, attackPosition, targetPosition, lofLevel, MeleeAttackType.NotSet, isCalledShot);
+        }
+      }
+      if ((__result < 0f) && (Traverse.Create(__instance).Field<CombatGameState>("combat").Value.Constants.ResolutionConstants.AllowTotalNegativeModifier == false)) {
         __result = 0f;
       }
     }
@@ -686,6 +853,13 @@ namespace CustAmmoCategories {
       foreach (var mod in ToHitModifiersHelper.modifiers) {
         if ((mod.Value.ranged == true) && (mod.Value.melee == false)) { continue; }
         __result += mod.Value.modifier(__instance, attacker, attacker.MeleeWeapon, target, targetPosition, targetPosition, LineOfFireLevel.LOFClear, meleeAttackType, false);
+      }
+      foreach (var node in ToHitModifiersHelper.mod_nodes) {
+        object state = node.Value.prepare(__instance, attacker, attacker.MeleeWeapon, target, targetPosition, targetPosition, LineOfFireLevel.LOFClear, MeleeAttackType.NotSet, false);
+        foreach (var mod in node.Value.modifiers) {
+          if ((mod.Value.ranged == true) && (mod.Value.melee == false)) { continue; }
+          __result += (int)mod.Value.modifier(state, __instance, attacker, attacker.MeleeWeapon, target, targetPosition, targetPosition, LineOfFireLevel.LOFClear, MeleeAttackType.NotSet, false);
+        }
       }
       if ((__result < 0f) && (Traverse.Create(__instance).Field<CombatGameState>("combat").Value.Constants.ResolutionConstants.AllowTotalNegativeModifier == false)) {
         __result = 0f;

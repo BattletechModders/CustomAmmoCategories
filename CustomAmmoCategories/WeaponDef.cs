@@ -484,6 +484,14 @@ namespace CustAmmoCategories {
     public DamageFalloffType AoEDmgFalloffType { get; set; }
     public float DamageFalloffStartDistance { get; set; }
     public float DamageFalloffEndDistance { get; set; }
+    public float BuildingsDamageModifier { get; set; }
+    public float TurretDamageModifier { get; set; }
+    public float VehicleDamageModifier { get; set; }
+    public float VTOLDamageModifier { get; set; }
+    public float MechDamageModifier { get; set; }
+    public float QuadDamageModifier { get; set; }
+    public float TrooperSquadDamageModifier { get; set; }
+    public float AirMechDamageModifier { get; set; }
     public TripleBoolean TargetMechLegsOnly { get; set; }
     public ExtWeaponDef() {
       Id = string.Empty;
@@ -585,8 +593,16 @@ namespace CustAmmoCategories {
       DamageFalloffStartDistance = 0f;
       DamageFalloffEndDistance = 0f;
       TargetMechLegsOnly = TripleBoolean.NotSet;
-    }
+      BuildingsDamageModifier = 1f;
+      TurretDamageModifier = 1f;
+      VehicleDamageModifier = 1f;
+      MechDamageModifier = 1f;
+      QuadDamageModifier = 1f;
+      TrooperSquadDamageModifier = 1f;
+      AirMechDamageModifier = 1f;
+      VTOLDamageModifier = 1f;
   }
+}
 }
 
 namespace CustomAmmoCategoriesPatches {

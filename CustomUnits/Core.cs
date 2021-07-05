@@ -12,6 +12,7 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Threading;
+using UnityEngine;
 
 namespace CustomUnits{
   public static class Log {
@@ -96,6 +97,11 @@ namespace CustomUnits{
       line = "[" + DateTime.Now.ToString("HH:mm:ss.fff") + "]" + init + line;
       WL(line, isCritical);
     }
+  }
+  public class ComponentPrefabMap {
+    public string PrefabIdentifier { get; set; }
+    public Dictionary<string,float> HardpointCandidates { get; set; }
+    public ComponentPrefabMap() { PrefabIdentifier = string.Empty; HardpointCandidates = new Dictionary<string, float>(); }
   }
   public class CUSettings {
     public string CanPilotVehicleTag { get; set; }
@@ -184,6 +190,38 @@ namespace CustomUnits{
     public string FullTransparentMaterialSource { get; set; }
     public float MaxHoveringHeightWithWorkingJets { get; set; }
     public float PartialMovementGuardDistance { get; set; }
+    public bool PartialMovementOnlyWalkByDefault { get; set; }
+    public bool AllowRotateWhileJumpByDefault { get; set; }
+    public string MechIsVehicleTag { get; set; }
+    [JsonIgnore]
+    public Dictionary<string, Dictionary<string, float>> weaponPrefabMappings { get; private set; }
+    public ComponentPrefabMap[] WeaponPrefabMappings {
+      set {
+        this.weaponPrefabMappings = new Dictionary<string, Dictionary<string, float>>();
+        foreach (var val in value) {
+          foreach (var candidate in val.HardpointCandidates) {
+            if (weaponPrefabMappings.TryGetValue(candidate.Key, out Dictionary<string, float> candidates) == false) {
+              candidates = new Dictionary<string, float>();
+              weaponPrefabMappings.Add(candidate.Key, candidates);
+            }
+            if (candidates.ContainsKey(val.PrefabIdentifier.ToLower())) {
+              candidates[val.PrefabIdentifier] = candidate.Value;
+            } else {
+              candidates.Add(val.PrefabIdentifier.ToLower(), candidate.Value);
+            }
+          }
+        }
+      }
+    }
+    //public Features.HardpointFix.HardpointFixSettings HardpointFix { get; set; }
+    [JsonIgnore]
+    public bool LowVisDetected { get; set; }
+    [JsonIgnore]
+    public bool MechEngineerDetected { get; set; }
+    [JsonIgnore]
+    public bool CBTBEDetected { get; set; }
+    public bool AllowPartialMove { get; set; }
+    public bool AllowPartialSprint { get; set; }
     public CUSettings() {
       debugLog = false;
       DeathHeight = 1f;
@@ -263,24 +301,128 @@ namespace CustomUnits{
       FullTransparentMaterialSource = "full_transparent";
       MaxHoveringHeightWithWorkingJets = 1f;
       PartialMovementGuardDistance = 15f;
+      PartialMovementOnlyWalkByDefault = true;
+      AllowRotateWhileJumpByDefault = true;
+      MechIsVehicleTag = "unit_vehicle";
+      WeaponPrefabMappings = new ComponentPrefabMap[] { };
+      LowVisDetected = false;
+      MechEngineerDetected = false;
+      AllowPartialMove = true;
+      AllowPartialSprint = true;
+      //HardpointFix = new Features.HardpointFix.HardpointFixSettings();
     }
 }
-  public static partial class Core{
+  public static partial class Core {
     public static readonly float Epsilon = 0.001f;
     public static CUSettings Settings;
-    public static void FinishedLoading(List<string> loadOrder) {
+    public static string BaseDir { get; private set; }
+    public static float TypeDmgCACModifier(Weapon weapon, Vector3 attackPosition, ICombatant target, bool IsBreachingShot, int location, float dmg, float ap, float heat, float stab) {
+      ExtWeaponDef def = weapon.exDef();
+      ExtAmmunitionDef ammo = weapon.ammo();
+      WeaponMode mode = weapon.mode();
+      if(target is BattleTech.Building) {
+        return def.BuildingsDamageModifier * ammo.BuildingsDamageModifier * mode.BuildingsDamageModifier;
+      }
+      if (target is Turret) {
+        return def.TurretDamageModifier * ammo.TurretDamageModifier * mode.TurretDamageModifier;
+      }
+      if (target is Vehicle vehicle) {
+        UnitCustomInfo info = vehicle.GetCustomInfo();
+        if (info != null) {
+          if ((info.AOEHeight > Core.Settings.MaxHoveringHeightWithWorkingJets) && (vehicle.UnaffectedPathing())) {
+            return def.VTOLDamageModifier * ammo.VTOLDamageModifier * mode.VTOLDamageModifier * def.VehicleDamageModifier * ammo.VehicleDamageModifier * mode.VehicleDamageModifier;
+          }
+        }
+        return def.VehicleDamageModifier * ammo.VehicleDamageModifier * mode.VehicleDamageModifier;
+      }
+      if (target is TrooperSquad squad) {
+        return def.TrooperSquadDamageModifier * ammo.TrooperSquadDamageModifier * mode.TrooperSquadDamageModifier;
+      }
+      if (target.GameRep != null) {
+        AlternateMechRepresentations altReps = target.GameRep.GetComponent<AlternateMechRepresentations>();
+        if(altReps != null) {
+          if (altReps.isHovering) {
+            return def.AirMechDamageModifier * ammo.AirMechDamageModifier * mode.AirMechDamageModifier * def.MechDamageModifier * ammo.MechDamageModifier * mode.MechDamageModifier;
+          }
+        }
+        QuadRepresentation quadRep = target.GameRep.GetComponent<QuadRepresentation>();
+        if (quadRep != null) {
+          return def.QuadDamageModifier * ammo.QuadDamageModifier * mode.QuadDamageModifier * def.MechDamageModifier * ammo.MechDamageModifier * mode.MechDamageModifier;
+        }
+      }
+      if(target is Mech mech) {
+        return def.MechDamageModifier * ammo.MechDamageModifier * mode.MechDamageModifier;
+      }
+      return 1f;
+    }
+    public static string TypeDmgCACModifierName(Weapon weapon, Vector3 attackPosition, ICombatant target, bool IsBreachingShot, int location, float dmg, float ap, float heat, float stab) {
+      if (target is BattleTech.Building) {
+        return "Building (x"+Math.Round(TypeDmgCACModifier(weapon,attackPosition,target,IsBreachingShot,location,dmg,ap,heat,stab), 1)+")";
+      }
+      if (target is Turret) {
+        return "Turret (x" + Math.Round(TypeDmgCACModifier(weapon, attackPosition, target, IsBreachingShot, location, dmg, ap, heat, stab), 1) + ")";
+      }
+      if (target is Vehicle vehicle) {
+        UnitCustomInfo info = vehicle.GetCustomInfo();
+        if (info != null) {
+          if ((info.AOEHeight > Core.Settings.MaxHoveringHeightWithWorkingJets) && (vehicle.UnaffectedPathing())) {
+            return "VTOL; Vehicle (x" + Math.Round(TypeDmgCACModifier(weapon, attackPosition, target, IsBreachingShot, location, dmg, ap, heat, stab), 1) + ")"; ;
+          }
+        }
+        return "Vehicle (x" + Math.Round(TypeDmgCACModifier(weapon, attackPosition, target, IsBreachingShot, location, dmg, ap, heat, stab), 1) + ")"; ;
+      }
+      if (target is TrooperSquad squad) {
+        return "Trooper squad (x" + Math.Round(TypeDmgCACModifier(weapon, attackPosition, target, IsBreachingShot, location, dmg, ap, heat, stab), 1) + ")"; ;
+      }
+      if (target.GameRep != null) {
+        AlternateMechRepresentations altReps = target.GameRep.GetComponent<AlternateMechRepresentations>();
+        if (altReps != null) {
+          if (altReps.isHovering) {
+            return "AirMech; Mech (x" + Math.Round(TypeDmgCACModifier(weapon, attackPosition, target, IsBreachingShot, location, dmg, ap, heat, stab), 1) + ")"; ;
+          }
+        }
+        QuadRepresentation quadRep = target.GameRep.GetComponent<QuadRepresentation>();
+        if (quadRep != null) {
+          return "Quad; Mech (x" + Math.Round(TypeDmgCACModifier(weapon, attackPosition, target, IsBreachingShot, location, dmg, ap, heat, stab), 1) + ")"; ;
+        }
+      }
+      if (target is Mech mech) {
+        return "Mech (x" + Math.Round(TypeDmgCACModifier(weapon, attackPosition, target, IsBreachingShot, location, dmg, ap, heat, stab), 1) + ")"; ;
+      }
+      return "Target type (x" + Math.Round(TypeDmgCACModifier(weapon, attackPosition, target, IsBreachingShot, location, dmg, ap, heat, stab), 1) + ")"; ;
+    }
+    public static void FinishedLoading(List<string> loadOrder, Dictionary<string, Dictionary<string, VersionManifestEntry>> customResources) {
       Log.TWL(0, "FinishedLoading", true);
       try {
         foreach(string name in loadOrder) { if (name == "Mission Control") { CustomLanceHelper.MissionControlDetected(); break; }; }
-        CustAmmoCategories.HitTableHelper.RegisterGetHitTableFunction(typeof(TrooperSquad), TrooperSquad.GetHitTable);
-        CustAmmoCategories.GetLongArmorLocationHelper.RegisterGetLongArmorLocationFunction(typeof(TrooperSquad), TrooperSquad.GetLongArmorLocation);
-        CustAmmoCategories.GetDFASelfDamageLocationsHelper.RegisterDFASelfDamageLocationsFunction(typeof(TrooperSquad), TrooperSquad.GetDFASelfDamageLocations);
-        CustAmmoCategories.GetLandmineDamageLocationsHelper.RegisterLandmineDamageLocationsFunction(typeof(TrooperSquad), TrooperSquad.GetLandmineDamageLocations);
-        CustAmmoCategories.GetBurnDamageLocationsHelper.RegisterBurnDamageLocationsFunction(typeof(TrooperSquad), TrooperSquad.GetBurnDamageLocations);
-        CustAmmoCategories.GetAOESpreadLocationsHelper.RegisterAOELocationsFunction(typeof(TrooperSquad), TrooperSquad.GetAOESpreadLocations);
-        CustAmmoCategories.GetAOEPossibleHitLocationsHelper.RegisterAOELocationsFunction(typeof(TrooperSquad), TrooperSquad.GetAOEPossibleHitLocations);
+        foreach (string name in loadOrder) { if (name == "MechEngineer") { Core.Settings.MechEngineerDetected = true; break; }; }
+        foreach (string name in loadOrder) { if (name == "LowVisibility") { LowVisibilityAPIHelper.Init(); break; }; }
+        foreach (string name in loadOrder) { if (name == "CBTBehaviorsEnhanced") { CBTBehaviorsEnhancedAPIHelper.Init(); break; }; }
+        foreach (var customResource in customResources) {
+          Log.TWL(0, "customResource:"+ customResource.Key);
+          if(customResource.Key == "CustomMechRepresentationDef") {
+            foreach(var custMechRep in customResource.Value) {
+              try {
+                Log.WL(1, "Path:" + custMechRep.Value.FilePath);
+                CustomMechRepresentationDef mechRepDef = JsonConvert.DeserializeObject<CustomMechRepresentationDef>(File.ReadAllText(custMechRep.Value.FilePath));
+                mechRepDef.Register();
+              } catch(Exception e) {
+                Log.TWL(0, custMechRep.Key,true);
+                Log.WL(0, e.ToString(), true);
+              }
+            }
+          }
+        }
+        //CustAmmoCategories.HitTableHelper.RegisterGetHitTableFunction(typeof(TrooperSquad), TrooperSquad.GetHitTable);
+        //CustAmmoCategories.GetLongArmorLocationHelper.RegisterGetLongArmorLocationFunction(typeof(TrooperSquad), TrooperSquad.GetLongArmorLocation);
+        //CustAmmoCategories.GetDFASelfDamageLocationsHelper.RegisterDFASelfDamageLocationsFunction(typeof(TrooperSquad), TrooperSquad.GetDFASelfDamageLocations);
+        //CustAmmoCategories.GetLandmineDamageLocationsHelper.RegisterLandmineDamageLocationsFunction(typeof(TrooperSquad), TrooperSquad.GetLandmineDamageLocations);
+        //CustAmmoCategories.GetBurnDamageLocationsHelper.RegisterBurnDamageLocationsFunction(typeof(TrooperSquad), TrooperSquad.GetBurnDamageLocations);
+        //CustAmmoCategories.GetAOESpreadLocationsHelper.RegisterAOELocationsFunction(typeof(TrooperSquad), TrooperSquad.GetAOESpreadLocations);
+        //CustAmmoCategories.GetAOEPossibleHitLocationsHelper.RegisterAOELocationsFunction(typeof(TrooperSquad), TrooperSquad.GetAOEPossibleHitLocations);
         CustAmmoCategories.ToHitModifiersHelper.registerModifier("SQUAD SIZE", "SQUAD SIZE", true, false, TrooperSquad.GetSquadSizeToHitMod, TrooperSquad.GetSquadSizeToHitModName);
         CustAmmoCategories.DamageModifiersCache.RegisterDamageModifier("SQUAD SIZE", "SQUAD SIZE", true, true, true, true, true, TrooperSquad.SquadSizeDamageMod, TrooperSquad.SquadSizeDamageModName);
+        DamageModifiersCache.RegisterDamageModifier("TYPEMOD", "TYPEMOD", false, true, true, true, true, TypeDmgCACModifier, TypeDmgCACModifierName);
       } catch (Exception e) {
         Log.TWL(0, e.ToString(), true);
       }
@@ -301,6 +443,7 @@ namespace CustomUnits{
     public static void Init(string directory, string settingsJson) {
       Log.BaseDirectory = directory;
       Log.InitLog();
+      Core.BaseDir = directory;
       Core.Settings = JsonConvert.DeserializeObject<CustomUnits.CUSettings>(settingsJson);
       Log.LogWrite("Initing... " + directory + " version: " + Assembly.GetExecutingAssembly().GetName().Version + "\n", true);
       InitLancesLoadoutDefault();
@@ -308,6 +451,7 @@ namespace CustomUnits{
       MechResizer.MechResizer.Init(directory, settingsJson);
       try {
         var harmony = HarmonyInstance.Create("io.mission.customunits");
+        HitLocation_GetMechHitTableCustom.i_GetMechHitTable = HitLocation_GetMechHitTable.Get;
         /*Type AssetBundleTracker = typeof(WeaponEffect).Assembly.GetType("BattleTech.Assetbundles.AssetBundleTracker");
         if (AssetBundleTracker != null) {
           MethodInfo BuildObjectMap = AssetBundleTracker.GetMethod("BuildObjectMap", BindingFlags.Instance | BindingFlags.NonPublic);

@@ -31,7 +31,7 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
       MethodInfo ResolveWeaponDamage = MechType.GetMethod("ResolveWeaponDamage", ResolveParams);
       TryRun(ModLog, InitCritChance);
 
-      switch (Settings.SkipBeatingDeadMech?.Trim().ToLower()) {
+      switch (AIMSettings.SkipBeatingDeadMech?.Trim().ToLower()) {
         case "damage":
           //Patch(MechType, "TakeWeaponDamage", "SkipBeatingDeadMech", null);
           goto case "critical";
@@ -43,7 +43,7 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
         case null:
           break;
         default:
-          Warn("Unknown SkipBeatingDeadMech: {0}", Settings.SkipBeatingDeadMech);
+          Warn("Unknown SkipBeatingDeadMech: {0}", AIMSettings.SkipBeatingDeadMech);
           break;
       }
 
@@ -51,14 +51,14 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
         //Patch(typeof(CritChanceRules), "GetCritMultiplier", "SetNPCCritMultiplier", null);
       }
 
-      if (Settings.CritChanceVsTurret > 0 || Settings.CriChanceVsVehicle > 0) {
+      if (AIMSettings.CritChanceVsTurret > 0 || AIMSettings.CriChanceVsVehicle > 0) {
         //if (Settings.CritChanceVsTurret > 0)
           //Patch(typeof(Turret), "ResolveWeaponDamage", typeof(WeaponHitInfo), null, "EnableNonMechCrit");
         //if (Settings.CriChanceVsVehicle > 0)
           //Patch(typeof(Vehicle), "ResolveWeaponDamage", typeof(WeaponHitInfo), null, "EnableNonMechCrit");
       }
 
-      if (ThroughArmorCritEnabled = Settings.CritChanceZeroArmor > 0) {
+      if (ThroughArmorCritEnabled = AIMSettings.CritChanceZeroArmor > 0) {
         //Patch(ResolveWeaponDamage, "ReplaceCritHandling", null);
         //Patch(typeof(WeaponHitInfo), "ConsolidateCriticalHitInfo", "Skip_ConsolidateCriticalHitInfo", null);
         //TryRun(ModLog, InitThroughArmourCrit);
@@ -92,15 +92,15 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
     }
 
     private void InitCritChance() {
-      MultiplierEnemy = (float)Settings.CritChanceEnemy;
-      MultiplierAlly = (float)Settings.CritChanceAlly;
-      CritChanceMin = (float)Settings.CritChanceMin;
-      CritChanceMax = (float)Settings.CritChanceMax;
-      CritChanceBase = (float)Settings.CritChanceFullStructure;
-      CritChanceVar = (float)Settings.CritChanceZeroStructure - CritChanceBase;
+      MultiplierEnemy = (float)AIMSettings.CritChanceEnemy;
+      MultiplierAlly = (float)AIMSettings.CritChanceAlly;
+      CritChanceMin = (float)AIMSettings.CritChanceMin;
+      CritChanceMax = (float)AIMSettings.CritChanceMax;
+      CritChanceBase = (float)AIMSettings.CritChanceFullStructure;
+      CritChanceVar = (float)AIMSettings.CritChanceZeroStructure - CritChanceBase;
       Info("Crit chance (structural): Base {0} Var {1}, Min {2} Max {3}", CritChanceBase, CritChanceVar, CritChanceMin, CritChanceMax);
-      if (Settings.CritLocationTransfer) {
-        if (!Settings.CritFollowDamageTransfer)
+      if (AIMSettings.CritLocationTransfer) {
+        if (!AIMSettings.CritFollowDamageTransfer)
           Warn("Disabling CritFollowDamageTransfer will cause less crit to be checked, diminishing CritLocationTransfer.");
       }
       // SFX enums have varied between 1.2 and 1.2-skill-preview.  Throws if value not found and must be caught.
@@ -111,18 +111,18 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
     }
 
     private void InitThroughArmourCrit() {
-      if (Settings.FixFullStructureCrit) {
+      if (AIMSettings.FixFullStructureCrit) {
         Warn("FullStructureCrit disabled because ThroughArmorCritical is enabled, meaning full structure can be crit'ed.");
-        Settings.FixFullStructureCrit = false;
+        AIMSettings.FixFullStructureCrit = false;
       }
-      TACritChanceBase = (float)Settings.CritChanceFullArmor;
-      TACritChanceVar = (float)Settings.CritChanceZeroArmor - TACritChanceBase;
-      if (Settings.ThroughArmorCritThreshold > 1)
-        TAC_Threshold = (float)Settings.ThroughArmorCritThreshold;
+      TACritChanceBase = (float)AIMSettings.CritChanceFullArmor;
+      TACritChanceVar = (float)AIMSettings.CritChanceZeroArmor - TACritChanceBase;
+      if (AIMSettings.ThroughArmorCritThreshold > 1)
+        TAC_Threshold = (float)AIMSettings.ThroughArmorCritThreshold;
       else
-        TAC_ThresholdPerc = (float)Settings.ThroughArmorCritThreshold;
+        TAC_ThresholdPerc = (float)AIMSettings.ThroughArmorCritThreshold;
       Info("Crit chance (armour): Base {0} Var {1}, Threshold {2} or {3}%", TACritChanceBase, TACritChanceVar, TAC_Threshold, TAC_ThresholdPerc);
-      if (Settings.ThroughArmorCritThreshold != 0 && !Settings.CritFollowDamageTransfer)
+      if (AIMSettings.ThroughArmorCritThreshold != 0 && !AIMSettings.CritFollowDamageTransfer)
         Warn("Disabling CritFollowDamageTransfer may affect ThroughArmorCritThreshold calculation.");
     }
 
@@ -226,7 +226,7 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
             AttackLog.LogCritResult(target, info.weapon);
             logCrit = false;
           }
-          if (!Settings.MultipleCrits) break;
+          if (!AIMSettings.MultipleCrits) break;
           chance -= critRoll;
         }
         PostCheckForCrit(info, logCrit);
@@ -322,11 +322,11 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
 
     public static float GetMultiplier(AIMCritInfo info) {
       float critMultiplier = Combat.CritChance.GetCritMultiplier(info.target, info.weapon, true);
-      if (DebugLog) Verbo("Base crit multiplier x{0}, vehicle x{1}, Turret x{2}", critMultiplier, Settings.CriChanceVsVehicle, Settings.CritChanceVsTurret);
-      if (info.target is Vehicle && Settings.CriChanceVsVehicle != 1)
-        critMultiplier *= (float)Settings.CriChanceVsVehicle;
-      else if (info.target is Turret && Settings.CritChanceVsTurret != 1)
-        critMultiplier *= (float)Settings.CritChanceVsTurret;
+      if (DebugLog) Verbo("Base crit multiplier x{0}, vehicle x{1}, Turret x{2}", critMultiplier, AIMSettings.CriChanceVsVehicle, AIMSettings.CritChanceVsTurret);
+      if (info.target is Vehicle && AIMSettings.CriChanceVsVehicle != 1)
+        critMultiplier *= (float)AIMSettings.CriChanceVsVehicle;
+      else if (info.target is Turret && AIMSettings.CritChanceVsTurret != 1)
+        critMultiplier *= (float)AIMSettings.CritChanceVsTurret;
       AttackLog.LogCritMultiplier(critMultiplier);
       return critMultiplier;
     }
@@ -334,14 +334,14 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
     public static MechComponent GetComponentFromRoll(AbstractActor me, int location, float random) {
       List<MechComponent> list = ListComponentsAtLocation(me, location);
       if (me is Mech mech) {
-        if ((list.IsNullOrEmpty() || list.All(e => e.DamageLevel >= ComponentDamageLevel.Destroyed)) && Settings.CritLocationTransfer) {
+        if ((list.IsNullOrEmpty() || list.All(e => e.DamageLevel >= ComponentDamageLevel.Destroyed)) && AIMSettings.CritLocationTransfer) {
           ArmorLocation newLocation = MechStructureRules.GetPassthroughLocation(MechStructureRules.GetArmorFromChassisLocation((ChassisLocations)location) & FrontArmours, AttackDirection.FromFront);
           if (newLocation != ArmorLocation.None) {
             Verbo("Crit list empty at {0} of {1}, transferring crit to {2}", (ChassisLocations)location, me, newLocation);
             ChassisLocations chassis = MechStructureRules.GetChassisLocationFromArmorLocation(newLocation);
             return GetComponentFromRoll(me, (int)chassis, random);
           }
-        } else if (!Settings.CritIgnoreEmptySlots) {
+        } else if (!AIMSettings.CritIgnoreEmptySlots) {
           int MinSlots = mech.MechDef.GetChassisLocationDef((ChassisLocations)location).InventorySlots;
           if (DebugLog && MinSlots > list.Count) Verbo("Padding list to {0} with empty slots", MinSlots);
           for (int i = list.Count; i < MinSlots; i++)
@@ -362,7 +362,7 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
         int flag = componentLocation & location;
         if (flag <= 0) continue;
         if (DebugLog) Verbo("List components at {0}, {1} size {2} ({3})", location, component, component.inventorySize, component.DamageLevel);
-        if (Settings.CritIgnoreDestroyedComponent && component.DamageLevel >= ComponentDamageLevel.Destroyed) continue;
+        if (AIMSettings.CritIgnoreDestroyedComponent && component.DamageLevel >= ComponentDamageLevel.Destroyed) continue;
         for (int i = component.inventorySize; i > 0; i--)
           list.Add(component);
       }
@@ -386,7 +386,7 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
 
       public int HitLocation { get; protected set; }
       public float currentArmour, maxArmour, currentStructure, maxStructure;
-      public bool IsArmourBreached { get => currentArmour <= 0 && (!Settings.FixFullStructureCrit || currentStructure < maxStructure); }
+      public bool IsArmourBreached { get => currentArmour <= 0 && (!AIMSettings.FixFullStructureCrit || currentStructure < maxStructure); }
       public abstract bool CanBeCrit();
       public virtual void SetHitLocation(int location) { HitLocation = location; }
       protected void SetStates(float currA, float maxA, float currS, float maxS) {

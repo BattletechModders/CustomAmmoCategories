@@ -14,56 +14,56 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
       private static float BaseHitChanceModifier, MeleeHitChanceModifier, HitChanceStep, MaxFinalHitChance, MinFinalHitChance;
 
       public override void CombatStartsOnce () {
-         BaseHitChanceModifier = (float) Settings.BaseHitChanceModifier;
-         MeleeHitChanceModifier = (float) Settings.MeleeHitChanceModifier;
-         HitChanceStep = (float) Settings.HitChanceStep;
-         MaxFinalHitChance = (float) Settings.MaxFinalHitChance;
-         MinFinalHitChance = (float) Settings.MinFinalHitChance;
+         BaseHitChanceModifier = (float) AIMSettings.BaseHitChanceModifier;
+         MeleeHitChanceModifier = (float) AIMSettings.MeleeHitChanceModifier;
+         HitChanceStep = (float) AIMSettings.HitChanceStep;
+         MaxFinalHitChance = (float) AIMSettings.MaxFinalHitChance;
+         MinFinalHitChance = (float) AIMSettings.MinFinalHitChance;
 
          Type ToHitType = typeof( ToHit );
-         if ( Settings.AllowNetBonusModifier && ! Settings.DiminishingHitChanceModifier )
+         if ( AIMSettings.AllowNetBonusModifier && ! AIMSettings.DiminishingHitChanceModifier )
             Patch( ToHitType, "GetSteppedValue", new Type[]{ typeof( float ), typeof( float ) }, "ProcessNetBonusModifier", null );
          if ( BaseHitChanceModifier != 0 )
             Patch( ToHitType, "GetBaseToHitChance", new Type[]{ typeof( AbstractActor ) }, null, "ModifyBaseHitChance" );
          if ( MeleeHitChanceModifier != 0 )
             Patch( ToHitType, "GetBaseMeleeToHitChance", new Type[]{ typeof( Mech ) }, null, "ModifyBaseMeleeHitChance" );
 
-         if ( Settings.HitChanceStep != 0.05m || Settings.MaxFinalHitChance != 0.95m || Settings.MinFinalHitChance != 0.05m || Settings.DiminishingHitChanceModifier ) {
-            if ( ! Settings.DiminishingHitChanceModifier )
+         if ( AIMSettings.HitChanceStep != 0.05m || AIMSettings.MaxFinalHitChance != 0.95m || AIMSettings.MinFinalHitChance != 0.05m || AIMSettings.DiminishingHitChanceModifier ) {
+            if ( ! AIMSettings.DiminishingHitChanceModifier )
                Patch( ToHitType, "GetUMChance", new Type[]{ typeof( float ), typeof( float ) }, "OverrideHitChanceStepNClamp", null );
             else {
                Patch( ToHitType, "GetUMChance", new Type[]{ typeof( float ), typeof( float ) }, "OverrideHitChanceDiminishing", null );
-               diminishingBonus = new float[ Settings.DiminishingBonusMax ];
-               diminishingPenalty = new float[ Settings.DiminishingPenaltyMax ];
+               diminishingBonus = new float[ AIMSettings.DiminishingBonusMax ];
+               diminishingPenalty = new float[ AIMSettings.DiminishingPenaltyMax ];
                TryRun( ModLog, FillDiminishingModifiers );
             }
          }
 
-         if ( Settings.SmartIndirectFire ) {
+         if ( AIMSettings.SmartIndirectFire ) {
             //Patch( typeof( FiringPreviewManager ), "GetPreviewInfo", null, "SmartIndirectFireLoF" );
             //Patch( typeof( ToHit ), "GetCoverModifier", null, "SmartIndirectReplaceCover" );
             //Patch( typeof( ToHit ), "GetIndirectModifier", new Type[]{ typeof( AbstractActor ), typeof( bool ) }, null, "SmartIndirectReplaceIndirect" );
             //Patch( typeof( MissileLauncherEffect ), "SetupMissiles", null, "SmartIndirectFireArc" );
          }
 
-         if ( Settings.FixSelfSpeedModifierPreview ) {
+         if ( AIMSettings.FixSelfSpeedModifierPreview ) {
             Patch( ToHitType, "GetSelfSpeedModifier", new Type[]{ typeof( AbstractActor ) }, null, "Preview_SelfSpeedModifier" );
             Patch( ToHitType, "GetSelfSprintedModifier", new Type[]{ typeof( AbstractActor ) }, null, "Preview_SelfSprintedModifier" );
          }
       }
 
       public override void CombatStarts () {
-         if ( Settings.AllowNetBonusModifier ) {
+         if ( AIMSettings.AllowNetBonusModifier ) {
             CombatResolutionConstantsDef con = CombatConstants.ResolutionConstants;
             con.AllowTotalNegativeModifier = true;
             typeof( CombatGameConstants ).GetProperty( "ResolutionConstants" ).SetValue( CombatConstants, con, null );
          }
-         if ( Settings.AllowLowElevationPenalty ) {
+         if ( AIMSettings.AllowLowElevationPenalty ) {
             ToHitConstantsDef con = CombatConstants.ToHit;
             con.ToHitElevationApplyPenalties = true;
             typeof( CombatGameConstants ).GetProperty( "ToHit" ).SetValue( CombatConstants, con, null );
          }
-         if ( Settings.AllowNetBonusModifier && steppingModifier == null && ! Settings.DiminishingHitChanceModifier )
+         if ( AIMSettings.AllowNetBonusModifier && steppingModifier == null && ! AIMSettings.DiminishingHitChanceModifier )
             TryRun( ModLog, FillSteppedModifiers );
       }
 
@@ -101,11 +101,11 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
       }
 
       private static void FillDiminishingModifiers () {
-         double bonusBase = (double) Settings.DiminishingBonusPowerBase, bonusDiv = (double) Settings.DiminishingBonusPowerDivisor;
-         double penaltyBase = (double) Settings.DiminishingPenaltyPowerBase, penaltyDiv = (double) Settings.DiminishingPenaltyPowerDivisor;
-         for ( int i = 1 ; i <= Settings.DiminishingBonusMax ; i++ )
+         double bonusBase = (double) AIMSettings.DiminishingBonusPowerBase, bonusDiv = (double) AIMSettings.DiminishingBonusPowerDivisor;
+         double penaltyBase = (double) AIMSettings.DiminishingPenaltyPowerBase, penaltyDiv = (double) AIMSettings.DiminishingPenaltyPowerDivisor;
+         for ( int i = 1 ; i <= AIMSettings.DiminishingBonusMax ; i++ )
             diminishingBonus[ i-1 ] = (float) ( 2.0 - Math.Pow( bonusBase, i / bonusDiv ) );
-         for ( int i = 1 ; i <= Settings.DiminishingPenaltyMax ; i++ )
+         for ( int i = 1 ; i <= AIMSettings.DiminishingPenaltyMax ; i++ )
             diminishingPenalty[ i-1 ] = (float) Math.Pow( penaltyBase, i / penaltyDiv );
          Info( "Diminishing hit% multipliers (bonus) {0}", diminishingBonus );
          Info( "Diminishing hit% multipliers (penalty) {0}", diminishingPenalty );
@@ -149,10 +149,10 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
          // A pretty intense routine that AI use to evaluate attacks
          int mod = Mathf.RoundToInt( totalModifiers );
          if ( mod < 0 ) {
-            mod = Math.Min( Settings.DiminishingBonusMax, -mod );
+            mod = Math.Min( AIMSettings.DiminishingBonusMax, -mod );
             baseChance *= diminishingBonus  [ mod -1 ];
          } else if ( mod > 0 ) {
-            mod = Math.Min( Settings.DiminishingPenaltyMax, mod );
+            mod = Math.Min( AIMSettings.DiminishingPenaltyMax, mod );
             baseChance *= diminishingPenalty[ mod -1 ];
          }
          __result = ClampHitChance( baseChance );
@@ -252,12 +252,12 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
          float movement = -1;
          if ( attacker.HasMovedThisRound && attacker.JumpedLastRound ) {
             movement = attacker.DistMovedThisRound;
-         } else if ( Settings.FixSelfSpeedModifierPreview ) {
+         } else if ( AIMSettings.FixSelfSpeedModifierPreview ) {
             if ( ActiveState is SelectionStateJump jump )
                movement = 100; // Vector3.Distance( attacker.CurrentPosition, jump.PreviewPos );
          }
          if ( movement <= 0 ) return 0;
-         return Settings.ToHitSelfJumped;
+         return AIMSettings.ToHitSelfJumped;
       }
    }
 }
