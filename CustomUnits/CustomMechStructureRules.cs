@@ -217,7 +217,7 @@ namespace CustomUnits {
           }
         } else
         if (mech.FakeVehicle()) {
-          __result = new Text(ToHitModifiersHelper.GetAbbreviatedChassisLocation(CombatHUDFakeVehicleArmorHover.vehicleLocationFromMechLocation(location)));
+          __result = new Text(ToHitModifiersHelper.GetAbbreviatedChassisLocation(location.toFakeVehicleChassis()));
         }
       } catch (Exception e) {
         Log.TWL(0, e.ToString(), true);
@@ -880,7 +880,7 @@ namespace CustomUnits {
           Dictionary<VehicleChassisLocations, int> vehicleHitTable = __instance.GetVehicleHitTable(__instance.GetAttackDirection(attackerPosition, (ICombatant)target), false);
           if (vehicleHitTable == null) { __result = null; }
           foreach (var vHit in vehicleHitTable) {
-            ArmorLocation aLoc = CombatHUDFakeVehicleArmorHover.armorLocationFromVehicleLocation(vHit.Key);
+            ArmorLocation aLoc = vHit.Key.toFakeArmor();
             __result.Add((int)aLoc);
           }
           if (__result.Count == 0) { __result = null; }

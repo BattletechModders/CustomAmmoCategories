@@ -1,6 +1,7 @@
 ﻿using BattleTech;
 using BattleTech.UI;
 using BattleTech.UI.TMProWrapper;
+using CustAmmoCategories;
 using Harmony;
 using HBS;
 using Localize;
@@ -39,7 +40,7 @@ namespace CustomUnits {
     private void setToolTipInfo(Mech vehicle, ChassisLocations location) {
       this.ToolTip.BuffStrings.Clear();
       this.ToolTip.DebuffStrings.Clear();
-      this.ToolTip.BasicString = new Localize.Text(Vehicle.GetLongChassisLocation(vehicleLocationFromMechLocation(location)), (object[])Array.Empty<object>());
+      this.ToolTip.BasicString = new Localize.Text(Vehicle.GetLongChassisLocation(location.toVehicleLocation()), (object[])Array.Empty<object>());
       for (int index = 0; index < vehicle.allComponents.Count; ++index) {
         MechComponent allComponent = vehicle.allComponents[index];
         if ((ChassisLocations)allComponent.Location == location) {
@@ -66,9 +67,9 @@ namespace CustomUnits {
       if (!this.usedForCalledShots || !(this.Readout.HUD.SelectionHandler.ActiveState is SelectionStateFire activeState) || (!activeState.NeedsCalledShot || !this.Readout.gameObject.activeSelf) || (this.ArmorLocation == ChassisLocations.None || !(activeState.TargetedCombatant is Mech targetedCombatant) || targetedCombatant.IsLocationDestroyed(this.ArmorLocation)))
         return;
       Dictionary<VehicleChassisLocations, int> vehicleHitTable = this.Readout.HUD.Combat.HitLocation.GetVehicleHitTable(this.Readout.HUD.Combat.HitLocation.GetAttackDirection(this.Readout.HUD.SelectedActor, (ICombatant)this.Readout.DisplayedVehicle), false);
-      if (!vehicleHitTable.ContainsKey(vehicleLocationFromMechLocation(this.ArmorLocation)) || vehicleHitTable[vehicleLocationFromMechLocation(this.ArmorLocation)] == 0)
+      if (!vehicleHitTable.ContainsKey(this.ArmorLocation.toVehicleLocation()) || vehicleHitTable[this.ArmorLocation.toVehicleLocation()] == 0)
         return;
-      activeState.SetCalledShot(vehicleLocationFromMechLocation(this.ArmorLocation));
+      activeState.SetCalledShot(this.ArmorLocation.toVehicleLocation());
     }
   }
   public class HUDFakeVehicleArmorReadout : HUDArmorReadout {
@@ -218,26 +219,26 @@ namespace CustomUnits {
         return;
       Log.TWL(0, "HUDFakeVehicleArmorReadout.RefreshHoverInfo "+ this.HoveredArmor);
       if (this.HoveredArmor == ChassisLocations.None) {
-        float input1 = this.displayedVehicle.GetCurrentArmor(CombatHUDFakeVehicleArmorHover.armorLocationFromVehicleLocation(VehicleChassisLocations.Front)) 
-          + this.displayedVehicle.GetCurrentArmor(CombatHUDFakeVehicleArmorHover.armorLocationFromVehicleLocation(VehicleChassisLocations.Turret)) 
-          + this.displayedVehicle.GetCurrentArmor(CombatHUDFakeVehicleArmorHover.armorLocationFromVehicleLocation(VehicleChassisLocations.Left)) 
-          + this.displayedVehicle.GetCurrentArmor(CombatHUDFakeVehicleArmorHover.armorLocationFromVehicleLocation(VehicleChassisLocations.Right)) 
-          + this.displayedVehicle.GetCurrentArmor(CombatHUDFakeVehicleArmorHover.armorLocationFromVehicleLocation(VehicleChassisLocations.Rear));
-        float input2 = this.displayedVehicle.GetCurrentStructure(CombatHUDFakeVehicleArmorHover.chassisLocationFromVehicleLocation(VehicleChassisLocations.Front))
-          + this.displayedVehicle.GetCurrentStructure(CombatHUDFakeVehicleArmorHover.chassisLocationFromVehicleLocation(VehicleChassisLocations.Turret)) 
-          + this.displayedVehicle.GetCurrentStructure(CombatHUDFakeVehicleArmorHover.chassisLocationFromVehicleLocation(VehicleChassisLocations.Left)) 
-          + this.displayedVehicle.GetCurrentStructure(CombatHUDFakeVehicleArmorHover.chassisLocationFromVehicleLocation(VehicleChassisLocations.Right)) 
-          + this.displayedVehicle.GetCurrentStructure(CombatHUDFakeVehicleArmorHover.chassisLocationFromVehicleLocation(VehicleChassisLocations.Rear));
-        float input3 = this.displayedVehicle.GetMaxArmor(CombatHUDFakeVehicleArmorHover.armorLocationFromVehicleLocation(VehicleChassisLocations.Front)) 
-          + this.displayedVehicle.GetMaxArmor(CombatHUDFakeVehicleArmorHover.armorLocationFromVehicleLocation(VehicleChassisLocations.Turret))
-          + this.displayedVehicle.GetMaxArmor(CombatHUDFakeVehicleArmorHover.armorLocationFromVehicleLocation(VehicleChassisLocations.Left)) 
-          + this.displayedVehicle.GetMaxArmor(CombatHUDFakeVehicleArmorHover.armorLocationFromVehicleLocation(VehicleChassisLocations.Right)) 
-          + this.displayedVehicle.GetMaxArmor(CombatHUDFakeVehicleArmorHover.armorLocationFromVehicleLocation(VehicleChassisLocations.Rear));
-        float input4 = this.displayedVehicle.GetMaxStructure(CombatHUDFakeVehicleArmorHover.chassisLocationFromVehicleLocation(VehicleChassisLocations.Front)) 
-          + this.displayedVehicle.GetMaxStructure(CombatHUDFakeVehicleArmorHover.chassisLocationFromVehicleLocation(VehicleChassisLocations.Turret)) 
-          + this.displayedVehicle.GetMaxStructure(CombatHUDFakeVehicleArmorHover.chassisLocationFromVehicleLocation(VehicleChassisLocations.Left)) 
-          + this.displayedVehicle.GetMaxStructure(CombatHUDFakeVehicleArmorHover.chassisLocationFromVehicleLocation(VehicleChassisLocations.Right)) 
-          + this.displayedVehicle.GetMaxStructure(CombatHUDFakeVehicleArmorHover.chassisLocationFromVehicleLocation(VehicleChassisLocations.Rear));
+        float input1 = this.displayedVehicle.GetCurrentArmor(VehicleChassisLocations.Front.toFakeArmor()) 
+          + this.displayedVehicle.GetCurrentArmor(VehicleChassisLocations.Turret.toFakeArmor()) 
+          + this.displayedVehicle.GetCurrentArmor(VehicleChassisLocations.Left.toFakeArmor()) 
+          + this.displayedVehicle.GetCurrentArmor(VehicleChassisLocations.Right.toFakeArmor()) 
+          + this.displayedVehicle.GetCurrentArmor(VehicleChassisLocations.Rear.toFakeArmor());
+        float input2 = this.displayedVehicle.GetCurrentStructure(VehicleChassisLocations.Front.toFakeChassis())
+          + this.displayedVehicle.GetCurrentStructure(VehicleChassisLocations.Turret.toFakeChassis()) 
+          + this.displayedVehicle.GetCurrentStructure(VehicleChassisLocations.Left.toFakeChassis()) 
+          + this.displayedVehicle.GetCurrentStructure(VehicleChassisLocations.Right.toFakeChassis()) 
+          + this.displayedVehicle.GetCurrentStructure(VehicleChassisLocations.Rear.toFakeChassis());
+        float input3 = this.displayedVehicle.GetMaxArmor(VehicleChassisLocations.Front.toFakeArmor()) 
+          + this.displayedVehicle.GetMaxArmor(VehicleChassisLocations.Turret.toFakeArmor())
+          + this.displayedVehicle.GetMaxArmor(VehicleChassisLocations.Left.toFakeArmor()) 
+          + this.displayedVehicle.GetMaxArmor(VehicleChassisLocations.Right.toFakeArmor()) 
+          + this.displayedVehicle.GetMaxArmor(VehicleChassisLocations.Rear.toFakeArmor());
+        float input4 = this.displayedVehicle.GetMaxStructure(VehicleChassisLocations.Front.toFakeChassis()) 
+          + this.displayedVehicle.GetMaxStructure(VehicleChassisLocations.Turret.toFakeChassis()) 
+          + this.displayedVehicle.GetMaxStructure(VehicleChassisLocations.Left.toFakeChassis()) 
+          + this.displayedVehicle.GetMaxStructure(VehicleChassisLocations.Right.toFakeChassis()) 
+          + this.displayedVehicle.GetMaxStructure(VehicleChassisLocations.Rear.toFakeChassis());
         this.HoverInfoTextArmor.SetText("{0}/{1}", (object)HUDMechArmorReadout.FormatForSummary(input1), (object)HUDMechArmorReadout.FormatForSummary(input3));
         this.HoverInfoTextStructure.SetText("{0}/{1}", (object)HUDMechArmorReadout.FormatForSummary(input2), (object)HUDMechArmorReadout.FormatForSummary(input4));
         this.ResetArmorStructureBars();
@@ -304,10 +305,10 @@ namespace CustomUnits {
     private void RefreshVehicleStructureAndArmor() {
       for (int index = 0; index < 5; ++index) {
         VehicleChassisLocations locationFromIndex = HUDVehicleArmorReadout.GetVCLocationFromIndex(index);
-        float currentArmor = this.displayedVehicle.GetCurrentArmor(CombatHUDFakeVehicleArmorHover.armorLocationFromVehicleLocation(locationFromIndex));
-        float currentStructure = this.displayedVehicle.GetCurrentStructure(CombatHUDFakeVehicleArmorHover.chassisLocationFromVehicleLocation(locationFromIndex));
-        float armorForVlocation = HUDFakeVehicleArmorReadout.GetInitialArmorForVLocation(this.displayedVehicle, CombatHUDFakeVehicleArmorHover.chassisLocationFromVehicleLocation(locationFromIndex));
-        float structureForVlocation = HUDFakeVehicleArmorReadout.getInitialStructureForVLocation(this.displayedVehicle, CombatHUDFakeVehicleArmorHover.chassisLocationFromVehicleLocation(locationFromIndex));
+        float currentArmor = this.displayedVehicle.GetCurrentArmor(locationFromIndex.toFakeArmor());
+        float currentStructure = this.displayedVehicle.GetCurrentStructure(locationFromIndex.toFakeChassis());
+        float armorForVlocation = HUDFakeVehicleArmorReadout.GetInitialArmorForVLocation(this.displayedVehicle, locationFromIndex.toFakeChassis());
+        float structureForVlocation = HUDFakeVehicleArmorReadout.getInitialStructureForVLocation(this.displayedVehicle, locationFromIndex.toFakeChassis());
         if ((double)currentArmor <= 0.0) {
           this.vArmorOutlineCached[index] = LazySingletonBehavior<UIManager>.Instance.UIColorRefs.armorDamaged;
           this.vArmorCached[index] = Color.clear;
@@ -428,12 +429,12 @@ namespace CustomUnits {
         VehicleChassisLocations locationFromIndex = HUDVehicleArmorReadout.GetVCLocationFromIndex(index);
         bool showLocation = !this.UseForCalledShots || dictionary != null && dictionary.ContainsKey(locationFromIndex) && (uint)dictionary[locationFromIndex] > 0U;
         int ishowLocation = !this.UseForCalledShots ? 0 : (!showLocation ? 1 : 0);
-        //if (this.UseForCalledShots) { Log.WL(1, "index: "+index+" location:" + locationFromIndex +" fakeLocation:" + CombatHUDFakeVehicleArmorHover.chassisLocationFromVehicleLocation(locationFromIndex)+" isShow:"+ showLocation); }
-        Color a1 = !showLocation || this.HoveredArmor != CombatHUDFakeVehicleArmorHover.chassisLocationFromVehicleLocation(locationFromIndex) ? this.vArmorOutlineCached[index] : Color.Lerp(this.vArmorOutlineCached[index], color2, 0.5f);
+        //if (this.UseForCalledShots) { Log.WL(1, "index: "+index+" location:" + locationFromIndex +" fakeLocation:" + locationFromIndex)+" isShow:"+ showLocation); }
+        Color a1 = !showLocation || this.HoveredArmor != locationFromIndex.toFakeChassis() ? this.vArmorOutlineCached[index] : Color.Lerp(this.vArmorOutlineCached[index], color2, 0.5f);
         if (ishowLocation != 0)
           a1 = Color.Lerp(a1, Color.black, this.hiddenColorLerp);
         UIHelpers.SetImageColor((Graphic)this.VArmorOutline[index], Color.Lerp(a1, color1, armorTime));
-        Color a2 = !showLocation || this.HoveredArmor != CombatHUDFakeVehicleArmorHover.chassisLocationFromVehicleLocation(locationFromIndex) ? this.vArmorCached[index] : Color.Lerp(this.vArmorCached[index], color2, 0.5f);
+        Color a2 = !showLocation || this.HoveredArmor != locationFromIndex.toFakeChassis() ? this.vArmorCached[index] : Color.Lerp(this.vArmorCached[index], color2, 0.5f);
         if (ishowLocation != 0)
           a2 = Color.Lerp(a2, Color.black, this.hiddenColorLerp);
         UIHelpers.SetImageColor((Graphic)this.VArmor[index], Color.Lerp(a2, color1, armorTime));

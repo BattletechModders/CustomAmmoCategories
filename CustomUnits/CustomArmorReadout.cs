@@ -122,7 +122,7 @@ namespace CustomUnits {
     }
 
     public void UpdateFakeVehicleDisplay() {
-      VehicleChassisLocations hoveredArmor = CombatHUDFakeVehicleArmorHover.vehicleLocationFromMechLocation(fakeVehicleReadout.HoveredArmor);
+      VehicleChassisLocations hoveredArmor = fakeVehicleReadout.HoveredArmor.toFakeVehicleChassis();
       switch (hoveredArmor) {
         case VehicleChassisLocations.None:
         case VehicleChassisLocations.Invalid:
