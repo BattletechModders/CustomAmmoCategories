@@ -298,6 +298,7 @@ namespace CustomUnits {
     public virtual bool isVehicle { get { return false; } }
   }
   public partial class CustomMechRepresentation : MechRepresentation, ICustomizationTarget {
+    public HashSet<CustomParticleSystemRep> CustomParticleSystemReps { get; set; } = new HashSet<CustomParticleSystemRep>();
     public virtual GameObject _gameObject { get { return this.gameObject; } }
     public virtual GameObject _visibleObject { get { return this.VisibleObject; } }
     public virtual ChassisDef chassisDef { get; set; }
@@ -1029,6 +1030,58 @@ namespace CustomUnits {
     protected virtual void InitSlaves() {
       foreach (CustomMechRepresentation slave in this.slaveRepresentations) { slave.Init(this.custMech,this.j_Root,true); }
     }
+    public void InitCustomParticles(GameObject source, CustomActorRepresentationDef custRepDef) {
+      try {
+        Log.TWL(0, "CustomMechRepresentation.InitCustomParticles " + source.transform.name);
+        Dictionary<string, CustomParticleSystemDef> definitions = new Dictionary<string, CustomParticleSystemDef>();
+        foreach (CustomParticleSystemDef customParticleSystemDef in custRepDef.Particles) {
+          definitions.Add(customParticleSystemDef.object_name, customParticleSystemDef);
+        }
+        ParticleSystem[] particles = source.GetComponentsInChildren<ParticleSystem>(true);
+        foreach (ParticleSystem ps in particles) {
+          Log.W(1, ps.transform.name);
+          if (definitions.TryGetValue(ps.transform.name, out CustomParticleSystemDef def)) {
+            Log.WL(1, ":" + def.Location);
+            CustomParticleSystemReps.Add(new CustomParticleSystemRep(ps, def.Location));
+           } else {
+            CustomParticleSystemReps.Add(new CustomParticleSystemRep(ps, ChassisLocations.None));
+            Log.WL(1, ":" + ChassisLocations.None);
+          }
+        }
+      } catch (Exception e) {
+        Log.TWL(0, e.ToString(), true);
+      }
+    }
+    public void StopCustomParticlesInLocation(ChassisLocations location) {
+      foreach (CustomParticleSystemRep psRep in CustomParticleSystemReps) {
+        if (psRep.location == location) { psRep.ps.Stop(true); }
+      }
+    }
+    public void StopCustomParticles() {
+      foreach (CustomParticleSystemRep psRep in CustomParticleSystemReps) {
+        psRep.ps.Stop(true);
+      }
+    }
+    public void StartCustomParticles() {
+      foreach (CustomParticleSystemRep psRep in CustomParticleSystemReps) {
+        psRep.ps.Play(true);
+      }
+    }
+    public void ShowCustomParticles(VisibilityLevel newLevel) {
+      //return;
+      //if(newLevel == VisibilityLevel.LOSFull) {
+      try {
+        Log.TWL(0, "CustomRepresentation.ShowCustomParticles " + this.name+":"+ newLevel);
+        foreach (CustomParticleSystemRep psRep in CustomParticleSystemReps) {
+          Log.WL(1, psRep.ps.gameObject.name);
+          psRep.ps.gameObject.SetActive(newLevel == VisibilityLevel.LOSFull);
+        }
+      } catch (Exception e) {
+        Log.TWL(0, e.ToString(), true);
+      }
+      //}
+    }
+
     public virtual void Init(CustomMech mech, Transform parentTransform, bool isParented) {
       Log.TWL(0, "CustomMechRepresentation.Init "+mech.Description.Id);
       this.customRep = this.GetComponent<CustomRepresentation>();

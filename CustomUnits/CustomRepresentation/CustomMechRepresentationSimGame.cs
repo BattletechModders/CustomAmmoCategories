@@ -362,6 +362,7 @@ namespace CustomUnits {
     public Transform j_Root {
       get { if (f_j_Root == null) { f_j_Root = this.transform.FindRecursive("j_Root"); }; return f_j_Root; }
     }
+    public HashSet<CustomParticleSystemRep> CustomParticleSystemReps { get; set; } = new HashSet<CustomParticleSystemRep>();
     public CustomMechRepresentationSimGame parentRepresentation { get; set; } = null;
     public HashSet<GameObject> VisualObjects { get; set; } = new HashSet<GameObject>();
     public GameObject _gameObject { get { return this.gameObject; } }
@@ -915,6 +916,43 @@ namespace CustomUnits {
         break;
       }
       return destructibleObject;
+    }
+    public void InitCustomParticles(GameObject source, CustomActorRepresentationDef custRepDef) {
+      try {
+        Log.TWL(0, "CustomMechRepresentation.InitCustomParticles " + source.transform.name);
+        Dictionary<string, CustomParticleSystemDef> definitions = new Dictionary<string, CustomParticleSystemDef>();
+        foreach (CustomParticleSystemDef customParticleSystemDef in custRepDef.Particles) {
+          definitions.Add(customParticleSystemDef.object_name, customParticleSystemDef);
+        }
+        ParticleSystem[] particles = source.GetComponentsInChildren<ParticleSystem>(true);
+        foreach (ParticleSystem ps in particles) {
+          Log.W(1, ps.transform.name);
+          if (definitions.TryGetValue(ps.transform.name, out CustomParticleSystemDef def)) {
+            Log.WL(1, ":" + def.Location);
+            CustomParticleSystemReps.Add(new CustomParticleSystemRep(ps, def.Location));
+          } else {
+            CustomParticleSystemReps.Add(new CustomParticleSystemRep(ps, ChassisLocations.None));
+            Log.WL(1, ":" + ChassisLocations.None);
+          }
+        }
+      } catch (Exception e) {
+        Log.TWL(0, e.ToString(), true);
+      }
+    }
+    public void StopCustomParticlesInLocation(ChassisLocations location) {
+      foreach (CustomParticleSystemRep psRep in CustomParticleSystemReps) {
+        if (psRep.location == location) { psRep.ps.Stop(true); }
+      }
+    }
+    public void StopCustomParticles() {
+      foreach (CustomParticleSystemRep psRep in CustomParticleSystemReps) {
+        psRep.ps.Stop(true);
+      }
+    }
+    public void StartCustomParticles() {
+      foreach (CustomParticleSystemRep psRep in CustomParticleSystemReps) {
+        psRep.ps.Play(true);
+      }
     }
 
   }

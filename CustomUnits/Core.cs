@@ -393,11 +393,11 @@ namespace CustomUnits{
     }
     public static void FinishedLoading(List<string> loadOrder, Dictionary<string, Dictionary<string, VersionManifestEntry>> customResources) {
       Log.TWL(0, "FinishedLoading", true);
+      IRBTModUtils.Extension.MechExtensions.RegisterMoveDistanceModifier("CustomUnits", 10, Mech_MaxWalkDistance.MaxWalkDistanceMod, Mech_MaxWalkDistance.MaxSprintDistanceMod);
       try {
         foreach(string name in loadOrder) { if (name == "Mission Control") { CustomLanceHelper.MissionControlDetected(); break; }; }
         foreach (string name in loadOrder) { if (name == "MechEngineer") { Core.Settings.MechEngineerDetected = true; break; }; }
         foreach (string name in loadOrder) { if (name == "LowVisibility") { LowVisibilityAPIHelper.Init(); break; }; }
-        foreach (string name in loadOrder) { if (name == "CBTBehaviorsEnhanced") { CBTBehaviorsEnhancedAPIHelper.Init(); break; }; }
         foreach (var customResource in customResources) {
           Log.TWL(0, "customResource:"+ customResource.Key);
           if(customResource.Key == "CustomMechRepresentationDef") {

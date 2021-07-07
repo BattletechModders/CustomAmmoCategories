@@ -5,6 +5,7 @@ using BattleTech.Rendering.MechCustomization;
 using BattleTech.Rendering.UI;
 using CustAmmoCategories;
 using Harmony;
+using Newtonsoft.Json;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -45,6 +46,19 @@ namespace CustomUnits {
       parentRep.OnPointerExit(eventData);
     }
   }
+  public class CustomParticleSystemDef {
+    public string object_name { get; set; }
+    [JsonIgnore]
+    public ChassisLocations Location { get; private set; }
+    public string location {
+      set {
+        if (Enum.TryParse<ChassisLocations>(value, out ChassisLocations loc)) { Location = loc; } else
+          if (Enum.TryParse<VehicleChassisLocations>(value, out VehicleChassisLocations vloc)) { Location = vloc.toFakeChassis(); }else{
+          throw new Exception("invalid location value "+value);
+        }
+      }
+    }
+  }
   public class CustomActorRepresentationDef {
     public enum RepresentationType { None, Mech, Vehicle, Turret }
     public enum RepresentationApplyType { MoveBone, None }
@@ -60,14 +74,16 @@ namespace CustomUnits {
     public List<string> TwistAnimators { get; set; }
     public List<string> HeadLights { get; set; }
     public List<string> Animators { get; set; }
+    public List<CustomParticleSystemDef> Particles { get; set; }
     public List<AttachInfoRecord> WeaponAttachPoints { get; set; }
     public CustomDestructionDef OnDestroy { get; set; }
     public List<string> CustomMouseReceiver { get; set; }
     public string persistentAudioStart { get; set; }
     public string persistentAudioStop { get; set; }
     public QuadVisualInfo quadVisualInfo { get; set; }
-
+    [JsonIgnore]
     private Dictionary<ChassisLocations, CustomDestructableDef> f_destructibles;
+    [JsonIgnore]
     public Dictionary<ChassisLocations, CustomDestructableDef> destructibles {
       get {
         return f_destructibles;
@@ -105,6 +121,7 @@ namespace CustomUnits {
       persistentAudioStop = string.Empty;
       f_destructibles = new Dictionary<ChassisLocations, CustomDestructableDef>();
       quadVisualInfo = new QuadVisualInfo();
+      Particles = new List<CustomParticleSystemDef>();
     }
   }
   public class CustomMechRepresentationDef: CustomActorRepresentationDef{
@@ -219,6 +236,13 @@ namespace CustomUnits {
       }
     }
   }
+  public class CustomParticleSystemRep {
+    public ParticleSystem ps { get; set; }
+    public ChassisLocations location { get; set; }
+    public CustomParticleSystemRep(ParticleSystem obj, ChassisLocations loc) {
+      this.ps = obj; this.location = loc;
+    }
+  }
   public class CustomRepresentation : MonoBehaviour {
     //public AlternateMechRepresentations altRepresentations { get; protected set; }
     public List<CustomMouseInteactions> custMouseReceivers { get; set; } = new List<CustomMouseInteactions>();
@@ -257,7 +281,7 @@ namespace CustomUnits {
     }
     public bool StartRandomIdle {
       set {
-        Log.TWL(0, "CustomTwistAnimation.StartRandomIdle: "+value);
+        Log.TWL(0, "CustomTwistAnimation.StartRandomIdle: " + value);
         if (value) { if (idleTimeElapsed.IsRunning == false) { idleTimeElapsed.Reset(); idleTimeElapsed.Start(); }; } else { idleTimeElapsed.Reset(); idleTimeElapsed.Stop(); }
         foreach (CustomTwistAnimatorInfo info in twistAnimators) { info.StartRandomIdle = value; }
       }
@@ -272,7 +296,7 @@ namespace CustomUnits {
     private Stopwatch idleTimeElapsed = new Stopwatch();
     private bool isInIdleRotated = false;
     public void IdleTwist(float value) {
-      Log.TWL(0, "CustomRepresentation.IdleTwist value:"+value+ " IsRunning:" + idleTimeElapsed.IsRunning+ " ElapsedMilliseconds:"+ idleTimeElapsed.ElapsedMilliseconds+ " isInIdleRotated:"+ isInIdleRotated);
+      Log.TWL(0, "CustomRepresentation.IdleTwist value:" + value + " IsRunning:" + idleTimeElapsed.IsRunning + " ElapsedMilliseconds:" + idleTimeElapsed.ElapsedMilliseconds + " isInIdleRotated:" + isInIdleRotated);
       //StartRandomIdle = true;
       if (idleTimeElapsed.IsRunning == false) { return; }
       if (idleTimeElapsed.ElapsedMilliseconds < 5000) { return; }
@@ -287,9 +311,9 @@ namespace CustomUnits {
         isInIdleRotated = true;
       }
       float angle = 0.0f;
-      if (value == 0.6f) { angle = 0f; }else
-      if (value == 0.7f) { angle = -0.3f; }else
-      if (value == 0.8f) { angle = 0.5f; }else
+      if (value == 0.6f) { angle = 0f; } else
+      if (value == 0.7f) { angle = -0.3f; } else
+      if (value == 0.8f) { angle = 0.5f; } else
       if (value == 0.9f) { angle = -0.5f; }
       Log.TWL(0, "CustomTwistAnimation.IdleTwist " + angle);
       if (angle >= 0f) { this.IdleTwistL = 0f; this.IdleTwistR = angle; } else
@@ -298,16 +322,16 @@ namespace CustomUnits {
     private void InitDestructable() {
       Log.TWL(0, "CustomRepresentation.InitDestructable");
       if (GameRepresentation == null) { return; }
-      foreach(var ddef in CustomDefinition.destructibles) {
+      foreach (var ddef in CustomDefinition.destructibles) {
         if (string.IsNullOrEmpty(ddef.Value.Name)) { continue; }
         Transform destructableTR = null;
         Transform[] transforms = GameRepresentation.gameObject.GetComponentsInChildren<Transform>(true);
-        foreach(Transform tr in transforms) { if (tr.name == ddef.Value.Name) { destructableTR = tr; break; }; }
+        foreach (Transform tr in transforms) { if (tr.name == ddef.Value.Name) { destructableTR = tr; break; }; }
         if (destructableTR == null) { continue; }
-        Log.WL(1, ddef.Value.Name+" found");
+        Log.WL(1, ddef.Value.Name + " found");
         MechDestructibleObject destr = destructableTR.gameObject.GetComponent<MechDestructibleObject>();
         if (destr == null) { destr = destructableTR.gameObject.AddComponent<MechDestructibleObject>(); }
-        if(string.IsNullOrEmpty(ddef.Value.destroyedObj) == false) {
+        if (string.IsNullOrEmpty(ddef.Value.destroyedObj) == false) {
           Transform destroyedObjTR = null;
           foreach (Transform tr in transforms) { if (tr.name == ddef.Value.destroyedObj) { destroyedObjTR = tr; break; }; }
           Log.WL(2, ddef.Value.destroyedObj + " found");
@@ -335,7 +359,7 @@ namespace CustomUnits {
             case ChassisLocations.RightLeg: this.mechRepresentation.rightLegDestructible = destr; break;
           }
         }
-        if(this.SimGameRepresentation != null) {
+        if (this.SimGameRepresentation != null) {
           switch (ddef.Key) {
             case ChassisLocations.Head: this.SimGameRepresentation.headDestructible = destr; break;
             case ChassisLocations.CenterTorso: this.SimGameRepresentation.centerTorsoDestructible = destr; break;
@@ -356,9 +380,9 @@ namespace CustomUnits {
       //return;
       if (CustomDefinition.OnDestroy.SuppressCombinedMesh) {
         MechRepresentation mechRep = this.GameRepresentation as MechRepresentation;
-        if(mechRep != null) {
+        if (mechRep != null) {
           MechMeshMerge mechMerge = Traverse.Create(mechRep).Field<MechMeshMerge>("mechMerge").Value;
-          if(mechMerge != null) {
+          if (mechMerge != null) {
             GameObject newMeshRoot0 = Traverse.Create(mechMerge).Field<GameObject>("newMeshRoot0").Value;
             GameObject newMeshRoot1 = Traverse.Create(mechMerge).Field<GameObject>("newMeshRoot1").Value;
             if (newMeshRoot0 != null) { newMeshRoot0.SetActive(false); }
@@ -407,7 +431,7 @@ namespace CustomUnits {
       if (anim == null) { return; }
       this.twistAnimators.Add(new CustomTwistAnimatorInfo(anim));
     }
-    public void AddWeaponAttachPoint(GameObject parent,AttachInfoRecord wAttach) {
+    public void AddWeaponAttachPoint(GameObject parent, AttachInfoRecord wAttach) {
       WeaponAttachPoints.Add(wAttach.Name, new AttachInfo(parent, wAttach));
     }
     public void Init(PilotableActorRepresentation rep, CustomActorRepresentationDef def) {
@@ -434,7 +458,7 @@ namespace CustomUnits {
         this.twistAnimators.Add(new CustomTwistAnimatorInfo(anim));
       }
       Headlights = new List<Transform>();
-      foreach(string headlightA in def.HeadLights) {
+      foreach (string headlightA in def.HeadLights) {
         Transform headlightTR = rep.transform.FindRecursive(headlightA);
         if (headlightTR != null) { Headlights.Add(headlightTR); }
       }
@@ -444,7 +468,7 @@ namespace CustomUnits {
     }
     public void InitMouceReceivers() {
       if (this.GameRepresentation == null) { return; }
-      foreach(Transform tr in this.GameRepresentation.gameObject.GetComponentsInChildren<Transform>(true)) {
+      foreach (Transform tr in this.GameRepresentation.gameObject.GetComponentsInChildren<Transform>(true)) {
         if (this.CustomDefinition.CustomMouseReceiver.Contains(tr.name) == false) { continue; }
         if (tr.GetComponent<Collider>() == null) { continue; }
         CustomMouseInteactions cmi = tr.gameObject.AddComponent<CustomMouseInteactions>();
@@ -540,24 +564,24 @@ namespace CustomUnits {
             Log.TWL(0, e.ToString(), true);
           }
         }
-        foreach(var ap in this.WeaponAttachPoints) {
+        foreach (var ap in this.WeaponAttachPoints) {
           if (ap.Value.hideIfEmpty == false) { continue; }
           if (ap.Value.main == null) { continue; }
           if (ap.Value.weapons.Count == 0) { ap.Value.main.gameObject.SetActive(false); }
         }
-      }catch(Exception e) {
-        Log.TWL(0,e.ToString(),true);
+      } catch (Exception e) {
+        Log.TWL(0, e.ToString(), true);
       }
     }
     public void AttachWeaponsSimGame() {
-      Log.TWL(0, "CustomRepresentation.AttachWeaponsSimGame "+(this.SimGameRepresentation == null?"null": this.SimGameRepresentation.gameObject.name));
+      Log.TWL(0, "CustomRepresentation.AttachWeaponsSimGame " + (this.SimGameRepresentation == null ? "null" : this.SimGameRepresentation.gameObject.name));
       try {
         if (this.SimGameRepresentation == null) { return; }
         List<ComponentRepresentation> componentReps = this.SimGameRepresentation.componentReps;
-        if(this.SimGameRepresentation is CustomMechRepresentationSimGame custRepSimgame) {
+        if (this.SimGameRepresentation is CustomMechRepresentationSimGame custRepSimgame) {
           componentReps = new List<ComponentRepresentation>();
-          foreach(var compRepsLocation in custRepSimgame.componentReps) {
-            foreach(ComponentRepresentation compRep in compRepsLocation.Value) {
+          foreach (var compRepsLocation in custRepSimgame.componentReps) {
+            foreach (ComponentRepresentation compRep in compRepsLocation.Value) {
               componentReps.Add(compRep);
             }
           }
@@ -1058,7 +1082,7 @@ namespace CustomUnits {
         }
       }
     }
-    public static void MoveBone(this MechRepresentationSimGame mechRep, CustomActorRepresentationDef custRepDef, DataManager dataManager) {
+    public static void MoveBone(this CustomMechRepresentationSimGame mechRep, CustomActorRepresentationDef custRepDef, DataManager dataManager) {
       GameObject meshSource = null;
       if (string.IsNullOrEmpty(custRepDef.Id) == false) { meshSource = dataManager.PooledInstantiate(custRepDef.Id, BattleTechResourceType.Prefab); }
       if (meshSource != null) {
@@ -1067,12 +1091,14 @@ namespace CustomUnits {
       }
       mechRep.gameObject.SuppressMeshes(custRepDef);
       if (meshSource != null) {
+        mechRep.InitCustomParticles(meshSource, custRepDef);
+        mechRep.StopCustomParticles();
         meshSource.MoveBonesAndRenderers(mechRep.gameObject);
       }
       mechRep.MoveVFXTransforms(meshSource,custRepDef);
       if (meshSource != null) { GameObject.Destroy(meshSource); }
     }
-    public static void MoveBone(this MechRepresentation mechRep, CustomActorRepresentationDef custRepDef, DataManager dataManager) {
+    public static void MoveBone(this CustomMechRepresentation mechRep, CustomActorRepresentationDef custRepDef, DataManager dataManager) {
       GameObject meshSource = null;
       if (string.IsNullOrEmpty(custRepDef.Id) == false) { meshSource = dataManager.PooledInstantiate(custRepDef.Id, BattleTechResourceType.Prefab); }
       if (meshSource != null) {
@@ -1081,6 +1107,8 @@ namespace CustomUnits {
       }
       mechRep.gameObject.SuppressMeshes(custRepDef);
       if (meshSource != null) {
+        mechRep.InitCustomParticles(meshSource, custRepDef);
+        mechRep.StartCustomParticles();
         meshSource.MoveBonesAndRenderers(mechRep.gameObject);
       }
       mechRep.MoveVFXTransforms(custRepDef);
@@ -1242,7 +1270,7 @@ namespace CustomUnits {
         }
         switch (custRepDef.ApplyType) {
           //case CustomActorRepresentationDef.RepresentationApplyType.CopyMesh: mechRep.CopyModel(source, dataManager); break;
-          case CustomActorRepresentationDef.RepresentationApplyType.MoveBone: mechRep.MoveBone(custRepDef, dataManager); break;
+          case CustomActorRepresentationDef.RepresentationApplyType.MoveBone: custMechRep.MoveBone(custRepDef, dataManager); break;
         }
         if (custMechRep.BlipObjectIdentified != null) { custMechRep.RegisterRenderersCustomHeraldry(custMechRep.BlipObjectIdentified, null); }
         if (custMechRep.BlipObjectUnknown != null) { custMechRep.RegisterRenderersCustomHeraldry(custMechRep.BlipObjectUnknown, null); }
@@ -1298,7 +1326,7 @@ namespace CustomUnits {
         }
         switch (custRepDef.ApplyType) {
           //case CustomActorRepresentationDef.RepresentationApplyType.CopyMesh: mechRep.CopyModel(source, dataManager); break;
-          case CustomActorRepresentationDef.RepresentationApplyType.MoveBone: mechRep.MoveBone(custRepDef, dataManager); break;
+          case CustomActorRepresentationDef.RepresentationApplyType.MoveBone: custMechRep.MoveBone(custRepDef, dataManager); break;
         }
         custMechRep.RegisterRenderersMainHeraldry(custMechRep.VisibleObject);
         CustomRepresentation customRepresentation = result.GetComponent<CustomRepresentation>();

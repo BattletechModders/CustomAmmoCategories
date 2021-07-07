@@ -1050,7 +1050,7 @@ namespace CustAmmoCategories {
       if (unit.StatCollection.ContainsStatistic(LastMoveDistanceActorStat) == false) {
         unit.StatCollection.AddStatistic<float>(LastMoveDistanceActorStat, 0f);
       };
-      unit.StatCollection.Set<float>(FiringArcActorStat, value);
+      unit.StatCollection.Set<float>(LastMoveDistanceActorStat, value);
     }
     public static float PartialMovementSpent(this ICombatant unit) {
       if (unit.StatCollection.ContainsStatistic(PartialMovementSpentActorStat) == false) { return 0f; };

@@ -170,10 +170,10 @@ namespace CustomUnits {
           if (mech.FakeVehicle()) {
             return mech.RunSpeed;
           } else {
-            if (Core.Settings.CBTBEDetected == false) {
+            if (IRBTModUtils.Mod.Config.Features.EnableMovementModifiers == false) {
               return mech.RunSpeed * Traverse.Create(mech).Property<float>("MoveMultiplier").Value;
             } else {
-              return CBTBehaviorsEnhancedAPIHelper.FinalRunSpeed(mech);
+              return IRBTModUtils.Extension.MechExtensions.ModifiedRunDistanceExt(mech, false, "CustomUnits");
             }
           }
         } else {
@@ -192,10 +192,10 @@ namespace CustomUnits {
           if (mech.FakeVehicle()) {
             return mech.WalkSpeed;
           } else {
-            if (Core.Settings.CBTBEDetected == false) {
+            if (IRBTModUtils.Mod.Config.Features.EnableMovementModifiers == false) {
               return mech.WalkSpeed * Traverse.Create(mech).Property<float>("MoveMultiplier").Value;
             } else {
-              return CBTBehaviorsEnhancedAPIHelper.FinalWalkSpeed(mech);
+              return IRBTModUtils.Extension.MechExtensions.ModifiedWalkDistanceExt(mech, false, "CustomUnits");
             }
           }
         } else {
@@ -252,7 +252,7 @@ namespace CustomUnits {
     }
     public static void Postfix(Mech __instance, ref float __result) {
       try {
-        if (Core.Settings.CBTBEDetected) { return; }
+        if (IRBTModUtils.Mod.Config.Features.EnableMovementModifiers) { return; }
         if (__instance.MoveClamp() > Core.Epsilon) {
           __instance.MoveClamp(__result, out float min, out float max);
           __result = max;
@@ -271,7 +271,7 @@ namespace CustomUnits {
   public static class Mech_MaxSprintDistance {
     public static void Postfix(Mech __instance, ref float __result) {
       try {
-        if (Core.Settings.CBTBEDetected) { return; }
+        if (IRBTModUtils.Mod.Config.Features.EnableMovementModifiers) { return; }
         Log.TW(0, "Mech.MaxSprintDistance " + __instance.Description.Id + " inital:" + __result + " clamp:" + __instance.MoveClamp()+ " RestPathingModifier:" + __instance.RestPathingModifier());
         if (__instance.MoveClamp() > Core.Epsilon) {
           __instance.MoveClamp(__result, out float min, out float max);

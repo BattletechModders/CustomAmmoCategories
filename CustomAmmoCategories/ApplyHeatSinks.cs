@@ -145,9 +145,11 @@ namespace CustAmmoCategoriesPatches {
       if(__instance.HasBegunActivation == false) {
         Mech mech = __instance as Mech;
         if (mech != null) {
-          if (CustomAmmoCategories.Settings.ShowApplyHeatSinkMessage) {
-            Text message = new Text(CustomAmmoCategories.Settings.ResetHeatSinkMessageTemplate, mech.UsedHeatSinksCap(), 0);
-            __instance.Combat.MessageCenter.PublishMessage((MessageCenterMessage)new AddSequenceToStackMessage((IStackSequence)new ShowActorInfoSequence((ICombatant)__instance, message, FloatieMessage.MessageNature.Buff, false)));
+          if (mech.isHasHeat()) {
+            if (CustomAmmoCategories.Settings.ShowApplyHeatSinkMessage) {
+              Text message = new Text(CustomAmmoCategories.Settings.ResetHeatSinkMessageTemplate, mech.UsedHeatSinksCap(), 0);
+              __instance.Combat.MessageCenter.PublishMessage((MessageCenterMessage)new AddSequenceToStackMessage((IStackSequence)new ShowActorInfoSequence((ICombatant)__instance, message, FloatieMessage.MessageNature.Buff, false)));
+            }
           }
           Log.HS.WL(1, "Reseting used heat sinks");
           mech.UsedHeatSinksCap(0);

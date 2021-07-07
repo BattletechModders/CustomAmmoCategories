@@ -946,6 +946,7 @@ namespace CustomUnits {
         this.StopAllPersistentVFXAttachedToLocation(location);
         break;
       }
+      if (this.customRep != null) { this.StopCustomParticlesInLocation((ChassisLocations)location); }
     }
     public override void PlayDeathVFX(DeathMethod deathMethod, int location) {
       if (deathMethod == DeathMethod.PilotKilled) { return; }
@@ -1495,6 +1496,7 @@ namespace CustomUnits {
           if (isSlave == false) this._StopJumpjetAudio();
       }
       this.ToggleHeadlights(newLevel == VisibilityLevel.LOSFull);
+      if (this.customRep != null) { this.ShowCustomParticles(newLevel); }
       if (this.HeightController != null) { this.HeightController.OnVisibilityChange(newLevel); }
     }
     public virtual void _ToggleHeadlights(bool headlightsActive) {
@@ -1527,6 +1529,7 @@ namespace CustomUnits {
     }
     public override void HandleDeath(DeathMethod deathMethod, int location) {
       PilotableRepresentation_HandleDeath(deathMethod, location);
+      if (this.customRep != null) { this.StopCustomParticles(); }
       if (isSlave == false) this._PlayDeathFloatie(deathMethod);
       if (this.parentActor.WasDespawned) { return; }
       if (this.VisibleObjectLight != null) { this.VisibleObjectLight.SetActive(false); }
