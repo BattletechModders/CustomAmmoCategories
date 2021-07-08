@@ -61,7 +61,7 @@ namespace CustomUnits {
   }
   public class CustomActorRepresentationDef {
     public enum RepresentationType { None, Mech, Vehicle, Turret }
-    public enum RepresentationApplyType { MoveBone, None }
+    public enum RepresentationApplyType { MoveBone, CopyMesh }
     public virtual RepresentationType RepType { get { return RepresentationType.None; } }
     public string Id { get; set; }
     public string PrefabBase { get; set; }
@@ -905,16 +905,124 @@ namespace CustomUnits {
         if (meshesTrg != null) {
           Log.WL(1, "skinned renderers:");
           foreach (SkinnedMeshRenderer r in meshesTrg.GetComponentsInChildren<SkinnedMeshRenderer>(true)) {
-            Log.W(2, r.name);
-            if (r.rootBone == null) { Log.WL(1,"no root bone"); continue; }
-            if (resultTransforms.ContainsValue(r.rootBone)) { Log.WL(1, "already moved"); continue; }
-            string tr_name = r.rootBone.RelativeName(bones);
-            if (resultTransforms.ContainsKey(tr_name) == false) { Log.WL(1, tr_name + " not exists"); continue; }
-            r.rootBone = resultTransforms[tr_name];
-            Log.WL(1, tr_name + " moved to");
+            Log.WL(2, r.name);
+            if (r.rootBone != null) {
+              if (resultTransforms.ContainsValue(r.rootBone) == false) {
+                string tr_name = r.rootBone.RelativeName(bones);
+                if (resultTransforms.ContainsKey(tr_name)) {
+                  r.rootBone = resultTransforms[tr_name];
+                  Log.WL(3, "rootBone:" + tr_name + " moved to");
+                }
+              }
+            }
+            List<Transform> r_bones = new List<Transform>(r.bones);
+            for (int i=0; i < r_bones.Count; ++i) {
+              if (r_bones[i] == null) { continue; }
+              if (resultTransforms.ContainsValue(r_bones[i]) == false) {
+                string tr_name = r_bones[i].RelativeName(bones);
+                if (resultTransforms.ContainsKey(tr_name)) {
+                  r_bones[i] = resultTransforms[tr_name];
+                }
+              }
+            }
+            r.bones = r_bones.ToArray();
+            for (int i = 0; i < r.bones.Length; ++i) {
+              Log.WL(3,"bones["+i+"] -> "+(r.bones[i] == null?"null": r.bones[i].RelativeName(j_Root)));
+            }  
           }
         }
       }
+    }
+    public static void MoveBonesAndRenderersSimGame(this CustomMechRepresentationSimGame mechRep, GameObject source) {
+      Log.TWL(0, "MoveBonesAndRenderersSimGame:"+source.name);
+      Transform meshesTrg = mechRep.transform.FindRecursive("mesh");
+      Transform meshesSrc = source.transform.FindRecursive("meshes");
+      if (meshesSrc == null) {
+        meshesSrc = source.transform.FindRecursive("mesh");
+      }
+      if ((meshesSrc != null) && (meshesTrg != null)) {
+        HashSet<Transform> visuals = new HashSet<Transform>();
+        foreach (Transform tr in meshesSrc.GetComponentInChildren<Transform>(true)) {
+          if (tr.parent != meshesSrc) { continue; }
+          visuals.Add(tr);
+        }
+        foreach (Transform tr in visuals) {
+          Vector3 pos = tr.localPosition;
+          Quaternion rot = tr.localRotation;
+          Vector3 scale = tr.localScale;
+          tr.SetParent(meshesTrg, false);
+          tr.localPosition = pos;
+          tr.localRotation = rot;
+          tr.localScale = scale;
+        }
+      }
+      Dictionary<string, Transform> targetTransformsDict = new Dictionary<string, Transform>();
+      HashSet<Transform> targetTransforms = new HashSet<Transform>();
+      Transform target_j_Root = mechRep.transform.FindRecursive("j_Root");
+      Transform source_j_Root = source.transform.FindRecursive("j_Root");
+      //source_j_Root.SetParent(target_j_Root.parent, false);
+      //resultTransforms.Add("j_Root", j_Root);
+      foreach (Transform tr in target_j_Root.GetComponentsInChildren<Transform>(true)) {
+        if (tr == target_j_Root) { continue; };
+        targetTransforms.Add(tr);
+        targetTransformsDict.Add(tr.RelativeName(target_j_Root), tr);
+      }
+      foreach (SkinnedMeshRenderer r in meshesTrg.GetComponentsInChildren<SkinnedMeshRenderer>(true)) {
+        if (r.rootBone == null) { continue; }
+        if (targetTransforms.Contains(r.rootBone)) { continue; }
+        string rootBoneName = r.rootBone.RelativeName(source_j_Root);
+        Log.WL(1,r.transform.name+" rootBone:"+ rootBoneName);
+        if(targetTransformsDict.TryGetValue(rootBoneName, out Transform newRootBone)) {
+          Log.WL(2, "found");
+          r.rootBone = newRootBone;
+        }
+      }
+
+      //Log.TWL(0, "MoveBonesAndRenderers from " + meshSource.name + " to " + mechRep.name);
+      //foreach (var rt in resultTransforms) { Log.WL(1, rt.Key); };
+      //Transform bones = meshSource.transform.FindRecursive("bones");
+      //if (bones != null) {
+      //  Log.WL(1, "merging");
+      //  foreach (Transform tr in bones.GetComponentsInChildren<Transform>(true)) {
+      //    if (tr == bones) { continue; }
+      //    string tr_name = tr.RelativeName(bones);
+      //    Log.WL(2, "name: " + tr_name);
+      //    if (resultTransforms.ContainsKey(tr_name)) { continue; }
+      //    if (tr.parent == null) { continue; }
+      //    string parent_name = tr.parent.RelativeName(bones);
+      //    Log.WL(2, "parent name: " + parent_name);
+      //    if (resultTransforms.ContainsKey(parent_name) == false) { continue; }
+      //    Log.WL(2, "moving");
+      //    Transform parent = resultTransforms[parent_name];
+      //    Vector3 pos = tr.localPosition;
+      //    Quaternion rot = tr.localRotation;
+      //    Vector3 scale = tr.localScale;
+      //    tr.SetParent(parent, false);
+      //    tr.localPosition = pos;
+      //    tr.localRotation = rot;
+      //    tr.localScale = scale;
+      //    resultTransforms.Add(tr_name, tr);
+      //    Log.WL(2, "adding");
+      //    foreach (Transform subTR in tr.GetComponentsInChildren<Transform>()) {
+      //      if (subTR == tr) { continue; }
+      //      string str_name = subTR.RelativeName(j_Root.parent);
+      //      Log.WL(3, "str_name:" + str_name);
+      //      resultTransforms.Add(str_name, subTR);
+      //    }
+      //  }
+      //  if (meshesTrg != null) {
+      //    Log.WL(1, "skinned renderers:");
+      //    foreach (SkinnedMeshRenderer r in meshesTrg.GetComponentsInChildren<SkinnedMeshRenderer>(true)) {
+      //      Log.W(2, r.name);
+      //      if (r.rootBone == null) { Log.WL(1, "no root bone"); continue; }
+      //      if (resultTransforms.ContainsValue(r.rootBone)) { Log.WL(1, "already moved"); continue; }
+      //      string tr_name = r.rootBone.RelativeName(bones);
+      //      if (resultTransforms.ContainsKey(tr_name) == false) { Log.WL(1, tr_name + " not exists"); continue; }
+      //      r.rootBone = resultTransforms[tr_name];
+      //      Log.WL(1, tr_name + " moved to");
+      //    }
+      //  }
+      //}
     }
     public static void MoveVFXTransforms(this MechRepresentationSimGame mechRep, GameObject meshSource, CustomActorRepresentationDef custRepDef) {
       CustomMechRepresentationDef custMechDef = custRepDef as CustomMechRepresentationDef;
@@ -1086,14 +1194,17 @@ namespace CustomUnits {
       GameObject meshSource = null;
       if (string.IsNullOrEmpty(custRepDef.Id) == false) { meshSource = dataManager.PooledInstantiate(custRepDef.Id, BattleTechResourceType.Prefab); }
       if (meshSource != null) {
+        mechRep.gameObject.name = meshSource.name;
         meshSource.CopyShader(dataManager, custRepDef);
-        meshSource.InitBindPoses();
+        //meshSource.InitBindPoses();
       }
       mechRep.gameObject.SuppressMeshes(custRepDef);
       if (meshSource != null) {
         mechRep.InitCustomParticles(meshSource, custRepDef);
         mechRep.StopCustomParticles();
+        mechRep.InitCamoflage(meshSource);
         meshSource.MoveBonesAndRenderers(mechRep.gameObject);
+        //mechRep.MoveBonesAndRenderersSimGame(meshSource);
       }
       mechRep.MoveVFXTransforms(meshSource,custRepDef);
       if (meshSource != null) { GameObject.Destroy(meshSource); }
@@ -1102,6 +1213,7 @@ namespace CustomUnits {
       GameObject meshSource = null;
       if (string.IsNullOrEmpty(custRepDef.Id) == false) { meshSource = dataManager.PooledInstantiate(custRepDef.Id, BattleTechResourceType.Prefab); }
       if (meshSource != null) {
+        mechRep.gameObject.name = meshSource.name;
         meshSource.CopyShader(dataManager, custRepDef);
         meshSource.InitBindPoses();
       }
@@ -1109,13 +1221,56 @@ namespace CustomUnits {
       if (meshSource != null) {
         mechRep.InitCustomParticles(meshSource, custRepDef);
         mechRep.StartCustomParticles();
+        mechRep.InitCamoflage(meshSource);
         meshSource.MoveBonesAndRenderers(mechRep.gameObject);
       }
       mechRep.MoveVFXTransforms(custRepDef);
       mechRep.MoveBlips(dataManager,custRepDef);
       if (meshSource != null) { GameObject.Destroy(meshSource); }
     }
-    public static void CopyModel(this MechRepresentationSimGame mechRep, GameObject meshSource, DataManager dataManager) {
+    public static void InitCamoflage(this CustomMechRepresentationSimGame mechRep, GameObject source) {
+      Log.TWL(0, "CustomMechRepresentation.InitCamoflage "+mechRep.name);
+      Transform camoholder = null;
+      Transform[] transforms = source.GetComponentsInChildren<Transform>(true);
+      foreach (Transform tr in transforms) {
+        if (tr.parent != source.transform) { continue; }
+        if (tr.name != "camoholder") { continue; }
+        camoholder = tr;
+        break;
+      }
+      if (camoholder == null) { Log.WL(1, "camoholder not found"); return; }
+      MeshRenderer renderer = camoholder.GetComponent<MeshRenderer>();
+      if (renderer == null) { Log.WL(1, "camoholder has no meshRenderer"); return; }
+      for (int index = 0; index < renderer.materials.Length; ++index) {
+        if (index >= mechRep.defaultMechCustomization.paintPatterns.Length) { break; }
+        mechRep.defaultMechCustomization.paintPatterns[index] = renderer.materials[index].GetTexture("_MainTex") as Texture2D;
+        Log.WL(1, "material:" + renderer.materials[index].name);
+        Log.WL(1, "found paint scheme:" + (mechRep.defaultMechCustomization.paintPatterns[index] == null ? "null" : mechRep.defaultMechCustomization.paintPatterns[index].name));
+      }
+    }
+    public static void InitCamoflage(this CustomMechRepresentation mechRep, GameObject source) {
+      Log.TWL(0, "CustomMechRepresentationSimGame.InitCamoflage " + mechRep.name);
+      Transform camoholder = null;
+      Transform[] transforms = source.GetComponentsInChildren<Transform>(true);
+      foreach (Transform tr in transforms) {
+        if (tr.parent != source.transform) { continue; }
+        if (tr.name != "camoholder") { continue; }
+        camoholder = tr;
+        break;
+      }
+      if (camoholder == null) { Log.WL(1, "camoholder not found"); return; }
+      MeshRenderer renderer = camoholder.GetComponent<MeshRenderer>();
+      if (renderer == null) { Log.WL(1, "camoholder has no meshRenderer"); return; }
+      for (int index = 0; index < renderer.materials.Length; ++index) {
+        if (index >= mechRep.defaultMechCustomization.paintPatterns.Length) { break; }
+        mechRep.defaultMechCustomization.paintPatterns[index] = renderer.materials[index].GetTexture("_MainTex") as Texture2D;
+        Log.WL(1, "material:" + renderer.materials[index].name);
+        Log.WL(1, "found paint scheme:" + (mechRep.defaultMechCustomization.paintPatterns[index] == null ? "null" : mechRep.defaultMechCustomization.paintPatterns[index].name));
+      }
+    }
+    public static void CopyModel(this MechRepresentationSimGame mechRep, CustomActorRepresentationDef custRepDef, DataManager dataManager) {
+      GameObject meshSource = null;
+      if (string.IsNullOrEmpty(custRepDef.Id) == false) { meshSource = dataManager.PooledInstantiate(custRepDef.Id, BattleTechResourceType.Prefab); }
       Log.TWL(0, "CustomActorRepresentationHelper.CopyMechRep " + mechRep.name + " meshSrc:" + meshSource.name);
       try {
         SkinnedMeshRenderer[] recvRenderers = mechRep.GetComponentsInChildren<SkinnedMeshRenderer>(true);
@@ -1325,7 +1480,7 @@ namespace CustomUnits {
           custMechCust.Init(custMechRep);
         }
         switch (custRepDef.ApplyType) {
-          //case CustomActorRepresentationDef.RepresentationApplyType.CopyMesh: mechRep.CopyModel(source, dataManager); break;
+          case CustomActorRepresentationDef.RepresentationApplyType.CopyMesh: custMechRep.CopyModel(custRepDef, dataManager); break;
           case CustomActorRepresentationDef.RepresentationApplyType.MoveBone: custMechRep.MoveBone(custRepDef, dataManager); break;
         }
         custMechRep.RegisterRenderersMainHeraldry(custMechRep.VisibleObject);

@@ -784,10 +784,15 @@ namespace CustomUnits {
       this.propertyBlock.UpdateCache();
     }
     public virtual void CreateBlankPrefabs(List<string> usedPrefabNames, HardpointDataDef hardpointData, ChassisLocations location, string parentDisplayName) {
+      Log.TWL(0, "CustomMechRepresentation.CreateBlankPrefabs " + hardpointData.ID + " location:" + location);
       List<string> componentBlankNames = this.GetComponentBlankNames(usedPrefabNames, hardpointData, location);
       Transform attachTransform = this.GetAttachTransform(location);
       for (int index = 0; index < componentBlankNames.Count; ++index) {
-        GameObject blankGO = this.DataManager.PooledInstantiate(componentBlankNames[index], BattleTechResourceType.Prefab);
+        string blankName = componentBlankNames[index];
+        CustomHardpointDef customHardpoint = CustomHardPointsHelper.Find(blankName);
+        Log.WL(1, "blankName:" + blankName + (customHardpoint == null ? "" : ("->" + customHardpoint.prefab)));
+        if (customHardpoint != null) { blankName = customHardpoint.prefab; }
+        GameObject blankGO = this.DataManager.PooledInstantiate(blankName, BattleTechResourceType.Prefab);
         if (blankGO != null) {
           this.RegisterRenderersMainHeraldry(blankGO);
           ComponentRepresentation component = blankGO.GetComponent<ComponentRepresentation>();

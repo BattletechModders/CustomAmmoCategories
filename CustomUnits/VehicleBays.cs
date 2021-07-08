@@ -324,6 +324,10 @@ namespace CustomUnits {
           loadRequest.AddBlindLoadRequest(BattleTechResourceType.Prefab, simgameid, new bool?(false));
           Log.WL(1, "requesting custom:" + custRepDef.Id);
           Log.WL(1, "requesting custom:" + simgameid);
+          if (string.IsNullOrEmpty(custRepDef.ShaderSource) == false) {
+            loadRequest.AddBlindLoadRequest(BattleTechResourceType.Prefab, custRepDef.ShaderSource, new bool?(false));
+            Log.WL(1, "requesting custom:" + custRepDef.ShaderSource);
+          }
         } else {
           loadRequest.AddBlindLoadRequest(BattleTechResourceType.Prefab, mechPrefabName, new bool?(false));
         }

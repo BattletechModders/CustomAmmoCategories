@@ -414,10 +414,16 @@ namespace CustomUnits {
         }
         if (index == -1) { continue; }
         int hindex = 0;
+        if (alias.Key.Contains("_blank_")) {
+          HashSet<string> tmp_blank = __instance.HardpointData[index].blanks.ToHashSet();
+          tmp_blank.Add(alias.Key);
+          __instance.HardpointData[index].blanks = tmp_blank.ToArray();
+          continue;
+        }
         try {
           hindex = int.Parse(alias.Key.Substring(alias.Key.Length - 1)) - 1;
         } catch (Exception e) {
-          Log.LogWrite(e.ToString() + "\n", true);
+          Log.TWL(0,e.ToString(), true);
         }
         if (hindex < 0) { continue; }
         if(hindex >= __instance.HardpointData[index].weapons.Length) {
@@ -425,9 +431,9 @@ namespace CustomUnits {
           tmplist.Add(new string[] { });
           __instance.HardpointData[index].weapons = tmplist.ToArray();
         }
-        List<string> tmp = __instance.HardpointData[index].weapons[hindex].ToList();
-        tmp.Add(alias.Key);
-        __instance.HardpointData[index].weapons[hindex] = tmp.ToArray();
+        HashSet<string> tmp_weapons = __instance.HardpointData[index].weapons[hindex].ToHashSet();
+        tmp_weapons.Add(alias.Key);
+        __instance.HardpointData[index].weapons[hindex] = tmp_weapons.ToArray();
       }
       __state.InitGroups(__instance);
       Log.TWL(0,JsonConvert.SerializeObject(__instance, Formatting.Indented));

@@ -1139,10 +1139,15 @@ namespace CustomUnits {
       return stringList1;
     }
     public virtual void CreateBlankPrefabs(List<string> usedPrefabNames, HardpointDataDef hardpointData, ChassisLocations location, string parentDisplayName) {
+      Log.TWL(0, "CustomMechRepresentation.CreateBlankPrefabs "+ hardpointData.ID+" location:"+location);
       List<string> componentBlankNames = this.GetComponentBlankNames(usedPrefabNames, hardpointData, location);
       Transform attachTransform = this.GetAttachTransform(location);
       for (int index = 0; index < componentBlankNames.Count; ++index) {
-        GameObject blankGO = this._Combat.DataManager.PooledInstantiate(componentBlankNames[index], BattleTechResourceType.Prefab);
+        string blankName = componentBlankNames[index];
+        CustomHardpointDef customHardpoint = CustomHardPointsHelper.Find(blankName);
+        Log.WL(1,"blankName:"+blankName+(customHardpoint == null?"":("->"+ customHardpoint.prefab)));
+        if (customHardpoint != null) { blankName = customHardpoint.prefab; }
+        GameObject blankGO = this._Combat.DataManager.PooledInstantiate(blankName, BattleTechResourceType.Prefab);
         if (blankGO != null) {
           this.RegisterRenderersMainHeraldry(blankGO);
           WeaponRepresentation component = blankGO.GetComponent<WeaponRepresentation>();
@@ -1206,8 +1211,10 @@ namespace CustomUnits {
           string originalPrefabName = calculator.GetComponentPrefabNameNoAlias(weapon.baseComponentRef);
           if (string.IsNullOrEmpty(originalPrefabName) == false) {
             string mountingPointPrefabName = this.GetComponentMountingPointPrefabName(this.HardpointData, originalPrefabName, cmp.attachLocation);
-            Log.WL(1, cmp.component.defId + " mount point:" + mountingPointPrefabName);
             if (string.IsNullOrEmpty(mountingPointPrefabName) == false) {
+              CustomHardpointDef customHardpoint = CustomHardPointsHelper.Find(mountingPointPrefabName);
+              Log.WL(1, cmp.component.defId + " mount point:" + mountingPointPrefabName+(customHardpoint == null?"":("->"+ customHardpoint.prefab)));
+              if (customHardpoint != null) { mountingPointPrefabName = customHardpoint.prefab; }
               GameObject mountPointGO = this._Combat.DataManager.PooledInstantiate(mountingPointPrefabName, BattleTechResourceType.Prefab);
               if (mountPointGO != null) {
                 this.RegisterRenderersMainHeraldry(mountPointGO);
