@@ -1486,18 +1486,22 @@ namespace CustomUnits {
     }
 
     public override void OnPlayerVisibilityChanged(VisibilityLevel newLevel) {
-      PilotableActorRepresentation_OnPlayerVisibilityChanged(newLevel);
-      for (int index = 0; index < this.jumpjetReps.Count; ++index)
-        this.jumpjetReps[index].OnPlayerVisibilityChanged(newLevel);
-      if (this.isJumping) {
-        if (newLevel == VisibilityLevel.LOSFull)
-          if (isSlave == false) this._StartJumpjetAudio();
-          else
-          if (isSlave == false) this._StopJumpjetAudio();
+      try {
+        PilotableActorRepresentation_OnPlayerVisibilityChanged(newLevel);
+        for (int index = 0; index < this.jumpjetReps.Count; ++index)
+          this.jumpjetReps[index].OnPlayerVisibilityChanged(newLevel);
+        if (this.isJumping) {
+          if (newLevel == VisibilityLevel.LOSFull)
+            if (isSlave == false) this._StartJumpjetAudio();
+            else
+            if (isSlave == false) this._StopJumpjetAudio();
+        }
+        this.ToggleHeadlights(newLevel == VisibilityLevel.LOSFull);
+        if (this.customRep != null) { this.ShowCustomParticles(newLevel); }
+        if (this.HeightController != null) { this.HeightController.OnVisibilityChange(newLevel); }
+      }catch(Exception e) {
+        Log.TWL(0, e.ToString(), true);
       }
-      this.ToggleHeadlights(newLevel == VisibilityLevel.LOSFull);
-      if (this.customRep != null) { this.ShowCustomParticles(newLevel); }
-      if (this.HeightController != null) { this.HeightController.OnVisibilityChange(newLevel); }
     }
     public virtual void _ToggleHeadlights(bool headlightsActive) {
       if (this.IsDead)

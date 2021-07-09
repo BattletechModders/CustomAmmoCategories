@@ -61,7 +61,7 @@ namespace CustomUnits {
   }
   public class CustomActorRepresentationDef {
     public enum RepresentationType { None, Mech, Vehicle, Turret }
-    public enum RepresentationApplyType { MoveBone, CopyMesh }
+    public enum RepresentationApplyType { MoveBone, None }
     public virtual RepresentationType RepType { get { return RepresentationType.None; } }
     public string Id { get; set; }
     public string PrefabBase { get; set; }
@@ -1445,50 +1445,54 @@ namespace CustomUnits {
     }
     public static GameObject ProcessSimGame(DataManager dataManager, ref GameObject result, CustomActorRepresentationDef custRepDef, ChassisDef chassisDef) {
       Log.TWL(0, "CustomActorRepresentationHelper.ProcessSimGame custom representation found:" + custRepDef.Id);
-      MechRepresentationSimGame mechRep = result.gameObject.GetComponent<MechRepresentationSimGame>();
-      if (mechRep == null) {
-        Log.WL(1, "no MechRepresentationSimGame:" + result.name);
-      } else {
-        CustomMechRepresentationSimGame custMechRep = result.gameObject.GetComponent<CustomMechRepresentationSimGame>();
-        if (custMechRep == null) {
-          custMechRep = result.gameObject.AddComponent<CustomMechRepresentationSimGame>();
-          custMechRep.CopyFrom(mechRep);
-          custMechRep.chassisDef = chassisDef;
-          GameObject.DestroyImmediate(mechRep);
-          mechRep = custMechRep;
-        }
-        MechCustomization mechCust = custMechRep.mechCustomization;
-        custMechRep.PrefabBase = chassisDef.PrefabBase;
-        custMechRep.HardpointData = chassisDef.HardpointDataDef;
-        CustomPropertyBlockManager custPropertyBlock = custMechRep.GetComponentInChildren<CustomPropertyBlockManager>();
-        if (custPropertyBlock == null) {
-          PropertyBlockManager propertyBlock = custMechRep.GetComponentInChildren<PropertyBlockManager>();
-          if (propertyBlock != null) {
-            custPropertyBlock = propertyBlock.gameObject.AddComponent<CustomPropertyBlockManager>();
-            custPropertyBlock.Copy(propertyBlock);
-            GameObject.DestroyImmediate(propertyBlock);
-            propertyBlock = null;
-            custMechRep.propertyBlock = custPropertyBlock;
-            Log.WL(0, "customPropertyBlock " + (custMechRep.customPropertyBlock == null ? "null" : custMechRep.customPropertyBlock.gameObject.name));
+      try {
+        MechRepresentationSimGame mechRep = result.gameObject.GetComponent<MechRepresentationSimGame>();
+        if (mechRep == null) {
+          Log.WL(1, "no MechRepresentationSimGame:" + result.name);
+        } else {
+          CustomMechRepresentationSimGame custMechRep = result.gameObject.GetComponent<CustomMechRepresentationSimGame>();
+          if (custMechRep == null) {
+            custMechRep = result.gameObject.AddComponent<CustomMechRepresentationSimGame>();
+            custMechRep.CopyFrom(mechRep);
+            custMechRep.chassisDef = chassisDef;
+            GameObject.DestroyImmediate(mechRep);
+            mechRep = custMechRep;
           }
+          MechCustomization mechCust = custMechRep.mechCustomization;
+          custMechRep.PrefabBase = chassisDef.PrefabBase;
+          custMechRep.HardpointData = chassisDef.HardpointDataDef;
+          CustomPropertyBlockManager custPropertyBlock = custMechRep.GetComponentInChildren<CustomPropertyBlockManager>();
+          if (custPropertyBlock == null) {
+            PropertyBlockManager propertyBlock = custMechRep.GetComponentInChildren<PropertyBlockManager>();
+            if (propertyBlock != null) {
+              custPropertyBlock = propertyBlock.gameObject.AddComponent<CustomPropertyBlockManager>();
+              custPropertyBlock.Copy(propertyBlock);
+              GameObject.DestroyImmediate(propertyBlock);
+              propertyBlock = null;
+              custMechRep.propertyBlock = custPropertyBlock;
+              Log.WL(0, "customPropertyBlock " + (custMechRep.customPropertyBlock == null ? "null" : custMechRep.customPropertyBlock.gameObject.name));
+            }
+          }
+          if (mechCust != null) {
+            CustomMechCustomization custMechCust = custMechRep.VisibleObject.AddComponent<CustomMechCustomization>();
+            custMechCust.Copy(mechCust);
+            GameObject.DestroyImmediate(mechCust);
+            custMechRep.defaultMechCustomization = custMechCust;
+            custMechCust.Init(custMechRep);
+          }
+          switch (custRepDef.ApplyType) {
+            //case CustomActorRepresentationDef.RepresentationApplyType.CopyMesh: custMechRep.CopyModel(custRepDef, dataManager); break;
+            case CustomActorRepresentationDef.RepresentationApplyType.MoveBone: custMechRep.MoveBone(custRepDef, dataManager); break;
+          }
+          custMechRep.RegisterRenderersMainHeraldry(custMechRep.VisibleObject);
+          CustomRepresentation customRepresentation = result.GetComponent<CustomRepresentation>();
+          if (customRepresentation == null) { customRepresentation = result.AddComponent<CustomRepresentation>(); }
+          customRepresentation.Init(mechRep, custRepDef);
+          customRepresentation.InBattle = false;
+          custMechRep.customRep = customRepresentation;
         }
-        if (mechCust != null) {
-          CustomMechCustomization custMechCust = custMechRep.VisibleObject.AddComponent<CustomMechCustomization>();
-          custMechCust.Copy(mechCust);
-          GameObject.DestroyImmediate(mechCust);
-          custMechRep.defaultMechCustomization = custMechCust;
-          custMechCust.Init(custMechRep);
-        }
-        switch (custRepDef.ApplyType) {
-          case CustomActorRepresentationDef.RepresentationApplyType.CopyMesh: custMechRep.CopyModel(custRepDef, dataManager); break;
-          case CustomActorRepresentationDef.RepresentationApplyType.MoveBone: custMechRep.MoveBone(custRepDef, dataManager); break;
-        }
-        custMechRep.RegisterRenderersMainHeraldry(custMechRep.VisibleObject);
-        CustomRepresentation customRepresentation = result.GetComponent<CustomRepresentation>();
-        if (customRepresentation == null) { customRepresentation = result.AddComponent<CustomRepresentation>(); }
-        customRepresentation.Init(mechRep, custRepDef);
-        customRepresentation.InBattle = false;
-        custMechRep.customRep = customRepresentation;
+      } catch (Exception e) {
+        Log.TWL(0,e.ToString(),true);
       }
       return result;
     }

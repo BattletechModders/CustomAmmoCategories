@@ -1169,23 +1169,23 @@ namespace CustomUnits {
       return false;
     }
   }
-  [HarmonyPatch(typeof(UnitSpawnPointGameLogic))]
-  [HarmonyPatch("SpawnMech")]
-  [HarmonyPatch(MethodType.Normal)]
-  [HarmonyPatch(new Type[] { typeof(MechDef), typeof(PilotDef), typeof(Team), typeof(Lance), typeof(HeraldryDef) })]
-  public static class UnitSpawnPointGameLogic_SpawnMechAlign {
-    public static void Postfix(UnitSpawnPointGameLogic __instance, MechDef mDef, PilotDef pilot, Team team, Lance lance, HeraldryDef customHeraldryDef, ref Mech __result) {
-      UnitCustomInfo info = mDef.GetCustomInfo();
-      Log.TWL(0, "UnitSpawnPointGameLogic.SpawnMech "+mDef.Description.Id);
-      if (info != null) {
-        if (info.FakeVehicle) {
-          Log.WL(1, "AlignVehicleToGround "+ __result.GameRep.transform.name+" rotation:"+__result.GameRep.transform.rotation);
-          ActorMovementSequence.AlignVehicleToGround(__result.GameRep.transform, 100f);
-          Log.WL(1, "rotation:" + __result.GameRep.transform.rotation);
-        }
-      };
-    }
-  }
+  //[HarmonyPatch(typeof(UnitSpawnPointGameLogic))]
+  //[HarmonyPatch("SpawnMech")]
+  //[HarmonyPatch(MethodType.Normal)]
+  //[HarmonyPatch(new Type[] { typeof(MechDef), typeof(PilotDef), typeof(Team), typeof(Lance), typeof(HeraldryDef) })]
+  //public static class UnitSpawnPointGameLogic_SpawnMechAlign {
+  //  public static void Postfix(UnitSpawnPointGameLogic __instance, MechDef mDef, PilotDef pilot, Team team, Lance lance, HeraldryDef customHeraldryDef, ref Mech __result) {
+  //    UnitCustomInfo info = mDef.GetCustomInfo();
+  //    Log.TWL(0, "UnitSpawnPointGameLogic.SpawnMech "+mDef.Description.Id);
+  //    if (info != null) {
+  //      if (info.FakeVehicle) {
+  //        Log.WL(1, "AlignVehicleToGround "+ __result.GameRep.transform.name+" rotation:"+__result.GameRep.transform.rotation);
+  //        ActorMovementSequence.AlignVehicleToGround(__result.GameRep.transform, 100f);
+  //        Log.WL(1, "rotation:" + __result.GameRep.transform.rotation);
+  //      }
+  //    };
+  //  }
+  //}
   [HarmonyPatch(typeof(ActorMovementSequence))]
   [HarmonyPatch("UpdateRotation")]
   [HarmonyPatch(MethodType.Normal)]

@@ -754,7 +754,7 @@ namespace CustomUnits {
         //}
       }
     }
-      public void AliginToTerrain(float deltaTime) {
+    public void AliginToTerrain(float deltaTime) {
       Log.TWL(0, "ActorMovementSequence.AliginToTerrain " + this.parentMech.MechDef.ChassisID);
       if (Traverse.Create(typeof(ActorMovementSequence)).Field<int>("ikLayerMask").Value == 0) {
         Traverse.Create(typeof(ActorMovementSequence)).Field<int>("ikLayerMask").Value = LayerMask.GetMask("Terrain", "Obstruction");

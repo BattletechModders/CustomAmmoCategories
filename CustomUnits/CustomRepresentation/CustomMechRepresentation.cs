@@ -44,6 +44,50 @@ namespace CustomUnits {
       }
     }
   }
+  [HarmonyPatch(typeof(UnitSpawnPointGameLogic))]
+  [HarmonyPatch("initializeActor")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { typeof(AbstractActor), typeof(Team), typeof(Lance) })]
+  public static class UnitSpawnPointGameLogic_initializeActor {
+    public static bool Prefix(UnitSpawnPointGameLogic __instance, AbstractActor actor, Team team, Lance lance) {
+      try {
+        Log.TWL(0, "UnitSpawnPointGameLogic.initializeActor " + actor.PilotableActorDef.Description.Id);
+        Vector3 spawnPosition = Traverse.Create(__instance).Method("GetSpawnPosition").GetValue<Vector3>(); //__instance.GetSpawnPosition();
+        __instance.LogMessage(spawnPosition.ToString());
+        actor.Init(spawnPosition, __instance.facing, true);
+        actor.InitGameRep((Transform)null);
+        team.AddUnit(actor);
+        lance.AddUnitGUID(actor.GUID);
+        actor.AddToLance(lance);
+        if (__instance.Combat.HostilityMatrix.IsLocalPlayerFriendly(team) || __instance.Combat.LocalPlayerTeam.VisibilityToTarget((ICombatant)actor) != VisibilityLevel.None) {
+
+        } else {
+          actor.OnPlayerVisibilityChanged(VisibilityLevel.None);
+        }
+        return false;
+      } catch (Exception e) {
+        Log.TWL(0, e.ToString(), true);
+        return true;
+      }
+    }
+  }
+  [HarmonyPatch(typeof(UnitSpawnPointGameLogic))]
+  [HarmonyPatch("SpawnMech")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { typeof(MechDef), typeof(PilotDef), typeof(Team), typeof(Lance), typeof(HeraldryDef) })]
+  public static class UnitSpawnPointGameLogic_SpawnMechAlign {
+    public static void Postfix(UnitSpawnPointGameLogic __instance, MechDef mDef, PilotDef pilot, Team team, Lance lance, HeraldryDef customHeraldryDef, ref Mech __result) {
+      try {
+        Log.TWL(0, "UnitSpawnPointGameLogic.SpawnMech " + __result.PilotableActorDef.Description.Id);
+        CustomMechRepresentation custRep = __result.GameRep as CustomMechRepresentation;
+        if (custRep != null) {
+          custRep.UpdateRotation(custRep.transform, custRep.transform.forward, 9999f);
+        }
+      } catch (Exception e) {
+        Log.TWL(0, e.ToString(), true);
+      }
+    }
+  }
   [HarmonyPatch(typeof(MechDestructibleObject))]
   [HarmonyPatch("Collapse")]
   [HarmonyPatch(MethodType.Normal)]
@@ -119,58 +163,62 @@ namespace CustomUnits {
     }
     public virtual void _InitGameRep(Transform parentTransform) {
       Log.TWL(0, "CustomMech._InitGameRep:"+ this.MechDef.Chassis.PrefabIdentifier);
-      string prefabIdentifier = this.MechDef.Chassis.PrefabIdentifier;
-      if (AbstractActor.initLogger.IsLogEnabled) { AbstractActor.initLogger.Log((object)("InitGameRep Loading this -" + prefabIdentifier)); }
-      GameObject gameObject = this.Combat.DataManager.PooledInstantiate_CustomMechRep_Battle(prefabIdentifier, this.MechDef.Chassis, true, true, true);
-      if (gameObject == null) {
-        throw new Exception(prefabIdentifier + " fail to load. Chassis:"+this.MechDef.ChassisID);
-      }
-      MechRepresentation mechRep = gameObject.GetComponent<MechRepresentation>();
-      if (mechRep == null) {
-        throw new Exception(prefabIdentifier + " is not a mech prefab. Chassis:" + this.MechDef.ChassisID);
-      }
-      CustomMechRepresentation custMechRepLoc = gameObject.GetComponent<CustomMechRepresentation>();
-      if (custMechRepLoc == null) {
-        throw new Exception(prefabIdentifier + " CustomMech can only operate CustomMechRepresentation");
-      }
-      Log.WL(1, "current game representation:" + (mechRep == null ? "null" : mechRep.name));
-      this._gameRep = (GameRepresentation)mechRep;
-      this.custGameRep.Init(this, parentTransform, false);
-      if(parentTransform == null) {
-        this.custGameRep.gameObject.transform.position = this.currentPosition;
-        this.custGameRep.gameObject.transform.rotation = this.currentRotation;
-      }
-      this.InitWeapons();
-      bool flag1 = this.MechDef.MechTags.Contains("PlaceholderUnfinishedMaterial");
-      bool flag2 = this.MechDef.MechTags.Contains("PlaceholderImpostorMaterial");
-      if (flag1 | flag2) {
-        SkinnedMeshRenderer[] componentsInChildren = this.GameRep.GetComponentsInChildren<SkinnedMeshRenderer>(true);
-        for (int index = 0; index < componentsInChildren.Length; ++index) {
-          if (flag1)
-            componentsInChildren[index].sharedMaterial = Traverse.Create(this.Combat.DataManager).Property<TextureManager>("TextureManager").Value.PlaceholderUnfinishedMaterial;
-          if (flag2)
-            componentsInChildren[index].sharedMaterial = Traverse.Create(this.Combat.DataManager).Property<TextureManager>("TextureManager").Value.PlaceholderImpostorMaterial;
+      try {
+        string prefabIdentifier = this.MechDef.Chassis.PrefabIdentifier;
+        if (AbstractActor.initLogger.IsLogEnabled) { AbstractActor.initLogger.Log((object)("InitGameRep Loading this -" + prefabIdentifier)); }
+        GameObject gameObject = this.Combat.DataManager.PooledInstantiate_CustomMechRep_Battle(prefabIdentifier, this.MechDef.Chassis, true, true, true);
+        if (gameObject == null) {
+          throw new Exception(prefabIdentifier + " fail to load. Chassis:" + this.MechDef.ChassisID);
         }
-      }
-      this.custGameRep.GatherColliders();
-      //this.custGameRep.CustomPostInit();
-      this.GameRep.RefreshEdgeCache();
-      this.GameRep.FadeIn(1f);
-      if (this.IsDead || !this.Combat.IsLoadingFromSave) { return; }
-      if (this.AuraComponents != null) {
-        foreach (MechComponent auraComponent in this.AuraComponents) {
-          for (int index = 0; index < auraComponent.componentDef.statusEffects.Length; ++index) {
-            if (auraComponent.componentDef.statusEffects[index].targetingData.auraEffectType == AuraEffectType.ECM_GHOST) {
-              this.GameRep.PlayVFXAt(this.GameRep.thisTransform, Vector3.zero, "vfxPrfPrtl_ECM_loop", true, Vector3.zero, false, -1f);
-              this.GameRep.PlayVFXAt(this.GameRep.thisTransform, Vector3.zero, "vfxPrfPrtl_ECMcarrierAura_loop", true, Vector3.zero, false, -1f);
-              return;
+        MechRepresentation mechRep = gameObject.GetComponent<MechRepresentation>();
+        if (mechRep == null) {
+          throw new Exception(prefabIdentifier + " is not a mech prefab. Chassis:" + this.MechDef.ChassisID);
+        }
+        CustomMechRepresentation custMechRepLoc = gameObject.GetComponent<CustomMechRepresentation>();
+        if (custMechRepLoc == null) {
+          throw new Exception(prefabIdentifier + " CustomMech can only operate CustomMechRepresentation");
+        }
+        Log.WL(1, "current game representation:" + (mechRep == null ? "null" : mechRep.name));
+        this._gameRep = (GameRepresentation)mechRep;
+        this.custGameRep.Init(this, parentTransform, false);
+        if (parentTransform == null) {
+          this.custGameRep.gameObject.transform.position = this.currentPosition;
+          this.custGameRep.gameObject.transform.rotation = this.currentRotation;
+        }
+        this.InitWeapons();
+        bool flag1 = this.MechDef.MechTags.Contains("PlaceholderUnfinishedMaterial");
+        bool flag2 = this.MechDef.MechTags.Contains("PlaceholderImpostorMaterial");
+        if (flag1 | flag2) {
+          SkinnedMeshRenderer[] componentsInChildren = this.GameRep.GetComponentsInChildren<SkinnedMeshRenderer>(true);
+          for (int index = 0; index < componentsInChildren.Length; ++index) {
+            if (flag1)
+              componentsInChildren[index].sharedMaterial = Traverse.Create(this.Combat.DataManager).Property<TextureManager>("TextureManager").Value.PlaceholderUnfinishedMaterial;
+            if (flag2)
+              componentsInChildren[index].sharedMaterial = Traverse.Create(this.Combat.DataManager).Property<TextureManager>("TextureManager").Value.PlaceholderImpostorMaterial;
+          }
+        }
+        this.custGameRep.GatherColliders();
+        //this.custGameRep.CustomPostInit();
+        this.GameRep.RefreshEdgeCache();
+        this.GameRep.FadeIn(1f);
+        if (this.IsDead || !this.Combat.IsLoadingFromSave) { return; }
+        if (this.AuraComponents != null) {
+          foreach (MechComponent auraComponent in this.AuraComponents) {
+            for (int index = 0; index < auraComponent.componentDef.statusEffects.Length; ++index) {
+              if (auraComponent.componentDef.statusEffects[index].targetingData.auraEffectType == AuraEffectType.ECM_GHOST) {
+                this.GameRep.PlayVFXAt(this.GameRep.thisTransform, Vector3.zero, "vfxPrfPrtl_ECM_loop", true, Vector3.zero, false, -1f);
+                this.GameRep.PlayVFXAt(this.GameRep.thisTransform, Vector3.zero, "vfxPrfPrtl_ECMcarrierAura_loop", true, Vector3.zero, false, -1f);
+                return;
+              }
             }
           }
         }
-      }
-      if (this.VFXDataFromLoad != null) {
-        foreach (VFXEffect.StoredVFXEffectData storedVfxEffectData in this.VFXDataFromLoad)
-          this.GameRep.PlayVFXAt(this.GameRep.GetVFXTransform(storedVfxEffectData.hitLocation), storedVfxEffectData.hitPos, storedVfxEffectData.vfxName, storedVfxEffectData.isAttached, storedVfxEffectData.lookatPos, storedVfxEffectData.isOneShot, storedVfxEffectData.duration);
+        if (this.VFXDataFromLoad != null) {
+          foreach (VFXEffect.StoredVFXEffectData storedVfxEffectData in this.VFXDataFromLoad)
+            this.GameRep.PlayVFXAt(this.GameRep.GetVFXTransform(storedVfxEffectData.hitLocation), storedVfxEffectData.hitPos, storedVfxEffectData.vfxName, storedVfxEffectData.isAttached, storedVfxEffectData.lookatPos, storedVfxEffectData.isOneShot, storedVfxEffectData.duration);
+        }
+      }catch(Exception e) {
+        Log.TWL(0, e.ToString(), true);
       }
     }
     public virtual void InitWeapons() {
