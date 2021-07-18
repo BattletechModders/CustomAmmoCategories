@@ -252,7 +252,12 @@ namespace CustomUnits {
         this.HoverInfoTextStructure.SetText("{0}/{1}", (object)HUDMechArmorReadout.FormatForSummary(currentStructure), (object)HUDMechArmorReadout.FormatForSummary(structureForVlocation));
         this.StructureBar.ShowNewComponent(currentStructure, structureForVlocation, (double)currentArmor < 1.0);
       }
-      LowVisibilityAPIHelper.ObfuscateArmorAndStructText(this.displayedVehicle, this.HoverInfoTextArmor, this.HoverInfoTextStructure);
+      if (this.displayedVehicle != null && this.HoverInfoTextArmor != null && this.HoverInfoTextStructure != null) {
+        if (!this.displayedVehicle.Combat.HostilityMatrix.IsLocalPlayerFriendly(this.displayedVehicle.TeamId)) {
+          Log.TWL(0,$"Hiding armor and structure on target: {(this.displayedVehicle.DisplayName)}");
+          LowVisibilityAPIHelper.ObfuscateArmorAndStructText(this.displayedVehicle, this.HoverInfoTextArmor, this.HoverInfoTextStructure);
+        }
+      }
     }
 
     private void ResetArmorStructureBars() {

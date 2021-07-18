@@ -122,7 +122,7 @@ namespace CustAmmoCategories {
       pushToStack(thread, MECH_DEF_NAME, def);
     }
     public static void clearActorDef(this Thread thread) {
-      popFromStack<PilotableActorDef>(thread, WEAPON_NAME);
+      popFromStack<PilotableActorDef>(thread, MECH_DEF_NAME);
     }
   }
 }

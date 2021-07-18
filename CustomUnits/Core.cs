@@ -222,6 +222,7 @@ namespace CustomUnits{
     public bool CBTBEDetected { get; set; }
     public bool AllowPartialMove { get; set; }
     public bool AllowPartialSprint { get; set; }
+    public SortByTonnage.Settings SortBy { get; set; }
     public CUSettings() {
       debugLog = false;
       DeathHeight = 1f;
@@ -309,6 +310,7 @@ namespace CustomUnits{
       MechEngineerDetected = false;
       AllowPartialMove = true;
       AllowPartialSprint = true;
+      SortBy = new SortByTonnage.Settings();
       //HardpointFix = new Features.HardpointFix.HardpointFixSettings();
     }
 }
@@ -449,6 +451,7 @@ namespace CustomUnits{
       InitLancesLoadoutDefault();
       CustomLanceHelper.BaysCount(3+(Core.Settings.BaysCountExternalControl?0:Core.Settings.ArgoBaysFix));
       MechResizer.MechResizer.Init(directory, settingsJson);
+      SortByTonnage.SortByTonnage.Init(directory, Core.Settings.SortBy);
       try {
         var harmony = HarmonyInstance.Create("io.mission.customunits");
         HitLocation_GetMechHitTableCustom.i_GetMechHitTable = HitLocation_GetMechHitTable.Get;

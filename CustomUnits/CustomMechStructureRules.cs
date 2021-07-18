@@ -177,6 +177,7 @@ namespace CustomUnits {
   public static class Mech_GetLongArmorLocation {
     public static void Postfix(ArmorLocation location, ref Text __result) {
       try {
+        if (Thread.CurrentThread.isFlagSet("GetLongArmorLocation_CallNative")) { return; }
         Log.TWL(0, "Mech.GetLongArmorLocation Prefix" + (Thread.CurrentThread.currentActor() == null ? "null" : Thread.CurrentThread.currentActor().Description.Id));
         if (Thread.CurrentThread.isFlagSet("CHANGE_MECH_LOCATION_NAME")) {
           ICustomMech mech = Thread.CurrentThread.currentMech() as ICustomMech;

@@ -633,7 +633,8 @@ namespace CustAmmoCategories {
     public static ExtAmmunitionDef extDef(this AmmunitionDef def) {
       if (string.IsNullOrEmpty(def.Description.Id)) { return CustomAmmoCategories.DefaultAmmo; };
       if (CustomAmmoCategories.ExtAmmunitionDef.ContainsKey(def.Description.Id)) {
-        return CustomAmmoCategories.ExtAmmunitionDef[def.Description.Id];
+        ExtAmmunitionDef result = CustomAmmoCategories.ExtAmmunitionDef[def.Description.Id];
+        if (result == null) { return CustomAmmoCategories.DefaultAmmo; }
       }
       return CustomAmmoCategories.DefaultAmmo;
     }

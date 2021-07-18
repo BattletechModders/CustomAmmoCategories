@@ -953,6 +953,38 @@ namespace CustomUnits {
       }
     }
   }
+  [HarmonyPatch(typeof(Mech))]
+  [HarmonyPatch("DEBUG_DamageLocation")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { typeof(ArmorLocation), typeof(float), typeof(AbstractActor), typeof(DamageType), typeof(string) })]
+  public static class Mech_DEBUG_DamageLocation {
+    public static void Prefix(Mech __instance, ref ArmorLocation aLoc, float totalDamage, AbstractActor attacker, DamageType damageType, string attackerGUID) {
+      try {
+        if (__instance.IsDeployDirector()) { aLoc = ArmorLocation.None; }
+      }catch(Exception e) {
+        Log.TWL(0, e.ToString());
+      }
+    }
+  }
+  [HarmonyPatch(typeof(AITeam))]
+  [HarmonyPatch("getInvocationForCurrentUnit")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] {  })]
+  public static class AITeam_getInvocationForCurrentUnit {
+    public static bool Prefix(AITeam __instance, AbstractActor ___currentUnit, ref InvocationMessage __result) {
+      try {
+        if (PlayerLanceSpawnerGameLogic_OnEnterActive.deployLoadRequest == null) { return true; }
+        if (PlayerLanceSpawnerGameLogic_OnEnterActive.deployLoadRequest.deployDirector == null) { return true; }
+        if (PlayerLanceSpawnerGameLogic_OnEnterActive.deployLoadRequest.deployDirector.IsDead) { return true; }
+        Log.TWL(0, "AITeam.getInvocationForCurrentUnit deploy director still alive bracing");
+        __result = (InvocationMessage)new ReserveActorInvocation(___currentUnit, ReserveActorAction.DONE, __instance.Combat.TurnDirector.CurrentRound);
+        return false;
+      }catch(Exception e) {
+        Log.TWL(0,e.ToString(), true);
+        return true;
+      }
+    }
+  }
 
   public class DeployDirectorLoadRequest {
     public PlayerLanceSpawnerGameLogic playerLanceSpawner;
@@ -962,7 +994,7 @@ namespace CustomUnits {
     public PilotDef originalPilotDef;
     public Dictionary<UnitSpawnPointGameLogic,UnitType> originalUnitTypes;
     public SpawnUnitMethodType originalSpawnMethod;
-    public Mech deployDirector;
+    public Mech deployDirector { get; private set; }
     private bool isSpawned;
     public CombatHUD HUD;
     public void RestoreAndSpawn(List<DeployPosition> positions, Mech deployDirector, CombatHUD HUD) {

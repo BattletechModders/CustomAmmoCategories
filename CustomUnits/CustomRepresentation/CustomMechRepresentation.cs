@@ -155,11 +155,145 @@ namespace CustomUnits {
     }
   }
   public class CustomMech: Mech, ICustomMech {
+    public delegate void d_AbstractActor_EjectPilot(AbstractActor unit, string sourceID, int stackItemID, DeathMethod deathMethod, bool isSilent);
+    private static d_AbstractActor_EjectPilot i_AbstractActor_EjectPilot = null;
+    public delegate void d_AbstractActor_Init(AbstractActor unit, Vector3 position, float facing, bool checkEncounterCells);
+    private static d_AbstractActor_Init i_AbstractActor_Init = null;
+    public static void AbstractActor_Init(AbstractActor unit, Vector3 position, float facing, bool checkEncounterCells) {
+      if (i_AbstractActor_Init == null) {
+        MethodInfo method = typeof(AbstractActor).GetMethod("Init", BindingFlags.Public | BindingFlags.Instance);
+        var dm = new DynamicMethod("CACAbstractActor_Init", null, new Type[] { typeof(AbstractActor), typeof(Vector3), typeof(float), typeof(bool) });
+        var gen = dm.GetILGenerator();
+        gen.Emit(OpCodes.Ldarg_0);
+        gen.Emit(OpCodes.Ldarg_1);
+        gen.Emit(OpCodes.Ldarg_2);
+        gen.Emit(OpCodes.Ldarg_3);
+        gen.Emit(OpCodes.Call, method);
+        gen.Emit(OpCodes.Ret);
+        i_AbstractActor_Init = (d_AbstractActor_Init)dm.CreateDelegate(typeof(d_AbstractActor_Init));
+      }
+      if (i_AbstractActor_Init == null) { return; }
+      i_AbstractActor_Init(unit,position,facing,checkEncounterCells);
+    }
+    public static void AbstractActor_EjectPilot(AbstractActor unit, string sourceID, int stackItemID, DeathMethod deathMethod, bool isSilent) {
+      if(i_AbstractActor_EjectPilot == null)
+      {
+        MethodInfo method = typeof(AbstractActor).GetMethod("EjectPilot", BindingFlags.Public | BindingFlags.Instance);
+        var dm = new DynamicMethod("CACAbstractActor_EjectPilot", null, new Type[] { typeof(AbstractActor), typeof(string), typeof(int), typeof(DeathMethod), typeof(bool) });
+        var gen = dm.GetILGenerator();
+        gen.Emit(OpCodes.Ldarg_0);
+        gen.Emit(OpCodes.Ldarg_1);
+        gen.Emit(OpCodes.Ldarg_2);
+        gen.Emit(OpCodes.Ldarg_3);
+        gen.Emit(OpCodes.Ldarg_S, 4);
+        gen.Emit(OpCodes.Call, method);
+        gen.Emit(OpCodes.Ret);
+        i_AbstractActor_EjectPilot = (d_AbstractActor_EjectPilot)dm.CreateDelegate(typeof(d_AbstractActor_EjectPilot));
+      }
+      if (i_AbstractActor_EjectPilot == null) { return; }
+      i_AbstractActor_EjectPilot(unit,sourceID,stackItemID, deathMethod, isSilent);
+    }
     public CustomMechRepresentation custGameRep { get { return this.GameRep as CustomMechRepresentation; } }
     public CustomMech(MechDef mDef, PilotDef pilotDef, TagSet additionalTags, string UID, CombatGameState combat, string spawnerId, HeraldryDef customHeraldryDef)
       : base(mDef, pilotDef, additionalTags, UID, combat, spawnerId, customHeraldryDef) 
     {
 
+    }
+    //public override void Init(Vector3 position, float facing, bool checkEncounterCells) {
+    //  AbstractActor_Init(this,position, facing, checkEncounterCells);
+    //  this.isPilotable = true;
+    //  if (this.Combat.IsLoadingFromSave) {
+    //    this.InitAbstractActor(this.uid, this.spawnerGUID, this.Combat);
+    //    this.MeleeWeapon.InitFromSave(this.Combat, (AbstractActor)this);
+    //    this.DFAWeapon.InitFromSave(this.Combat, (AbstractActor)this);
+    //    this.pilot.CombatInitFromSave();
+    //    this.InitStats();
+    //    this.ResetPathing();
+    //  } else {
+    //    int num = 0;
+    //    for (int index = 0; index < this.MechDef.Inventory.Length; ++index) {
+    //      MechComponentRef mcRef = this.MechDef.Inventory[index];
+    //      mcRef.DataManager = this.MechDef.DataManager;
+    //      mcRef.RefreshComponentDef();
+    //      if (mcRef.ComponentDefType == ComponentType.Weapon) {
+    //        Weapon weapon = new Weapon(this, this.Combat, mcRef, num.ToString());
+    //        this.Weapons.Add(weapon);
+    //        this.allComponents.Add((MechComponent)weapon);
+    //      } else if (mcRef.ComponentDefType == ComponentType.AmmunitionBox) {
+    //        AmmunitionBox ammunitionBox = new AmmunitionBox(this, mcRef, num.ToString());
+    //        this.ammoBoxes.Add(ammunitionBox);
+    //        this.allComponents.Add((MechComponent)ammunitionBox);
+    //      } else if (mcRef.ComponentDefType == ComponentType.JumpJet) {
+    //        Jumpjet jumpjet = new Jumpjet(this, mcRef, num.ToString());
+    //        this.jumpjets.Add(jumpjet);
+    //        this.allComponents.Add((MechComponent)jumpjet);
+    //      } else {
+    //        MechComponent mechComponent = new MechComponent(this, this.Combat, mcRef, num.ToString());
+    //        this.miscComponents.Add(mechComponent);
+    //        this.allComponents.Add(mechComponent);
+    //      }
+    //      ++num;
+    //    }
+    //    if (AbstractActor.initLogger.IsDebugEnabled) {
+    //      for (int index = 0; index < this.Weapons.Count; ++index)
+    //        AbstractActor.initLogger.LogDebug((object)string.Format("Mech {0} on team {1} has weapon {2} with uid {3}", (object)this.UnitName, this.team != null ? (object)this.team.GUID : (object)"NO TEAM YET", (object)this.Weapons[index].Name, (object)this.Weapons[index].uid));
+    //    }
+    //    this.MechDef.meleeWeaponRef.DataManager = this.MechDef.DataManager;
+    //    this.MechDef.meleeWeaponRef.RefreshComponentDef();
+    //    this.MeleeWeapon = new Weapon(this, this.Combat, this.MechDef.meleeWeaponRef, this.uid + "_Melee");
+    //    this.MeleeWeapon.EnableWeapon();
+    //    this.MeleeWeapon.ResetWeapon();
+    //    this.MechDef.dfaWeaponRef.DataManager = this.MechDef.DataManager;
+    //    this.MechDef.dfaWeaponRef.RefreshComponentDef();
+    //    this.DFAWeapon = new Weapon(this, this.Combat, this.MechDef.dfaWeaponRef, this.uid + "_DFA");
+    //    this.DFAWeapon.EnableWeapon();
+    //    this.DFAWeapon.ResetWeapon();
+    //    this.MechDef.imaginaryLaserWeaponRef.DataManager = this.MechDef.DataManager;
+    //    this.MechDef.imaginaryLaserWeaponRef.RefreshComponentDef();
+    //    this.ImaginaryLaserWeapon = new Weapon(this, this.Combat, this.MechDef.imaginaryLaserWeaponRef, this.uid + "_ImaginaryLaser");
+    //    this.ImaginaryLaserWeapon.EnableWeapon();
+    //    this.ImaginaryLaserWeapon.ResetWeapon();
+    //    this.InitStats();
+    //    this.ResetPathing();
+    //    for (int index = 0; index < this.Weapons.Count; ++index)
+    //      this.Weapons[index].EnableWeapon();
+    //  }
+    //}
+
+    //public virtual void AbstractActor_EjectPilot(string sourceID, int stackItemID, DeathMethod deathMethod, bool isSilent) {
+    //  Pilot pilot = this.GetPilot();
+    //  if (pilot == null) { return; }
+    //  if (!isSilent) {
+    //    PilotableActorRepresentation gameRep = this.GameRep as PilotableActorRepresentation;
+    //    if ((UnityEngine.Object)gameRep != (UnityEngine.Object)null) { gameRep.PlayEjectFX(); }
+    //  }
+    //  pilot.EjectPilot(sourceID, stackItemID);
+    //  this.FlagForDeath("Ejection", deathMethod, DamageType.Unknown, 1, stackItemID, this.GUID, isSilent);
+    //  this.HandleDeath(this.GUID);
+    //}
+    public override void EjectPilot(string sourceID, int stackItemID, DeathMethod deathMethod, bool isSilent) {
+      AbstractActor_EjectPilot(this, sourceID, stackItemID, deathMethod, isSilent);
+      WeaponHitInfo hitInfo = new WeaponHitInfo(0, 0, 0, 0, "EJECTED", this.GUID, 1, (float[])null, (float[])null, (float[])null, (bool[])null, (int[])null, (int[])null, (AttackImpactQuality[])null, new AttackDirection[1]
+      {
+        AttackDirection.FromFront
+      }, (Vector3[])null, (string[])null, (int[])null);
+      ArmorLocation crewArmor = ArmorLocation.Head;
+      ChassisLocations crewLocation = ChassisLocations.Head;
+      UnitCustomInfo info = this.GetCustomInfo();
+      if (info != null) {
+        crewArmor = (ArmorLocation)info.MechVehicleCrewLocation;
+        crewLocation = info.MechVehicleCrewLocation;
+      }
+      this.statCollection.ModifyStat<float>(sourceID, stackItemID, this.GetStringForArmorLocation(crewArmor), StatCollection.StatOperation.Set, 0.0f);
+      this.statCollection.ModifyStat<float>(sourceID, stackItemID, this.GetStringForStructureLocation(crewLocation), StatCollection.StatOperation.Set, 0.0f);
+      foreach (MechComponent allComponent in this.allComponents) {
+        if (allComponent.Location == 1) {
+          allComponent.DamageComponent(hitInfo, ComponentDamageLevel.Destroyed, false);
+          if (AbstractActor.damageLogger.IsLogEnabled)
+            AbstractActor.damageLogger.Log((object)string.Format("====@@@ Component Destroyed: {0}", (object)allComponent.Name));
+        }
+      }
+      this.Combat.MessageCenter.PublishMessage((MessageCenterMessage)new FloatieMessage(sourceID, this.GUID, "HEAD DESTROYED", FloatieMessage.MessageNature.ComponentDestroyed));
     }
     public virtual void _InitGameRep(Transform parentTransform) {
       Log.TWL(0, "CustomMech._InitGameRep:"+ this.MechDef.Chassis.PrefabIdentifier);
@@ -303,7 +437,10 @@ namespace CustomUnits {
       return this.Combat.HitLocation.GetPossibleHitLocations(attackPos, this);
     }
     public new virtual Text GetLongArmorLocation(ArmorLocation location) {
-      return Mech.GetLongArmorLocation(location);
+      Thread.CurrentThread.SetFlag("GetLongArmorLocation_CallNative");
+      Text result = Mech.GetLongArmorLocation(location);
+      Thread.CurrentThread.ClearFlag("GetLongArmorLocation_CallNative");
+      return result;
     }
     public virtual ArmorLocation GetAdjacentLocations(ArmorLocation location) {
       return MechStructureRules.GetAdjacentLocations(location);

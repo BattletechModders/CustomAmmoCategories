@@ -19,6 +19,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Reflection.Emit;
+using System.Threading;
 using UnityEngine;
 using UnityEngine.EventSystems;
 
@@ -308,7 +309,8 @@ namespace CustomUnits {
       if (!string.IsNullOrEmpty(mechDef.prefabOverride)) {
         loadRequest.AddBlindLoadRequest(BattleTechResourceType.Prefab, mechbay.simState.DataManager.Unlocks().GetBasePrefabIdForPrefabId(mechDef.Chassis.PrefabIdentifier), new bool?(false));
       }
-      if (mechDef.Description.Id.IsInFakeDef()||mechDef.ChassisID.IsInFakeChassis()) {
+      CustomActorRepresentationDef custRepDef = CustomActorRepresentationHelper.FindSimGame(mechPrefabName);
+      if ((mechDef.Description.Id.IsInFakeDef()||mechDef.ChassisID.IsInFakeChassis())&&(custRepDef == null)) {
         Log.TWL(0, "TransitionMech requesting battle game representation " + mechDef.ChassisID + " " + mechDef.Chassis.PrefabIdentifier);
         loadRequest.AddBlindLoadRequest(BattleTechResourceType.Prefab, mechDef.Chassis.PrefabIdentifier, new bool?(false));
         VehicleChassisDef vchassis = mechbay.simState.DataManager.VehicleChassisDefs.Get(mechDef.ChassisID);
@@ -317,7 +319,6 @@ namespace CustomUnits {
         mechDef.Refresh();
       } else {
         Log.TWL(0, "TransitionMech requesting bay game representation " + mechDef.ChassisID + " " + mechPrefabName);
-        CustomActorRepresentationDef custRepDef = CustomActorRepresentationHelper.FindSimGame(mechPrefabName);
         if (custRepDef != null) {
           string simgameid = mechPrefabName.Replace(custRepDef.PrefabBase, custRepDef.SourcePrefabBase);
           loadRequest.AddBlindLoadRequest(BattleTechResourceType.Prefab, custRepDef.Id, new bool?(false));
@@ -1115,6 +1116,24 @@ namespace CustomUnits {
     }
   }
   [HarmonyPatch(typeof(SimGameState))]
+  [HarmonyPatch("AddFromShopDefItem")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { typeof(ShopDefItem), typeof(bool), typeof(int), typeof(SimGamePurchaseMessage.TransactionType) })]
+  public static class SimGameState_AddFromShopDefItem {
+    public static void Prefix(SimGameState __instance, ShopDefItem item, bool useCount, int cost, SimGamePurchaseMessage.TransactionType transactionType) {
+      Log.TWL(0, "SimGameState.AddFromShopDefItem "+item.ID+":"+item.Type);
+      if(item.Type == ShopItemType.Mech) {
+        MechDef mechDef = __instance.DataManager.MechDefs.Get(item.ID);
+        Thread.CurrentThread.pushActorDef(mechDef);
+      }
+    }
+    public static void Postfix(SimGameState __instance, ShopDefItem item, bool useCount, int cost, SimGamePurchaseMessage.TransactionType transactionType) {
+      if (item.Type == ShopItemType.Mech) {
+        Thread.CurrentThread.clearActorDef();
+      }
+    }
+  }
+  [HarmonyPatch(typeof(SimGameState))]
   [HarmonyPatch("AddMechs")]
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { typeof(List<MechDef>) })]
@@ -1141,6 +1160,20 @@ namespace CustomUnits {
     }
   }
   [HarmonyPatch(typeof(SimGameState))]
+  [HarmonyPatch("GetFirstFreeMechBay")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { })]
+  public static class SimGameState_GetFirstFreeMechBay {
+    public static void Prefix(SimGameState __instance, ref int __result) {
+      MechDef mechDef = Thread.CurrentThread.currentMechDef();
+      Log.TWL(0, "SimGameState.GetFirstFreeMechBay " + (mechDef == null ? "null": mechDef.Description.Id));
+      if(mechDef != null) {
+        __result = __instance.GetFirstFreeMechBay(mechDef);
+      }
+      Log.WL(1, "SimGameState.GetFirstFreeMechBay:"+__result);
+    }
+  }
+  [HarmonyPatch(typeof(SimGameState))]
   [HarmonyPatch("AddMech")]
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { typeof(int), typeof(MechDef), typeof(bool), typeof(bool), typeof(bool), typeof(string) })]
@@ -1149,6 +1182,7 @@ namespace CustomUnits {
       return 100;
     }
     public static int GetFirstFreeMechBay(this SimGameState sim, MechDef mech) {
+      Log.TWL(0, "SimGameState.AddMech.GetFirstFreeMechBay "+ mech.Description.Id+ " IsVehicle:" + mech.IsVehicle()+ " IsInFakeDef:" + mech.Description.Id.IsInFakeDef() + " IsInFakeChassis:" + mech.ChassisID.IsInFakeChassis());
       if (mech == null) { return sim.GetFirstFreeMechBay(); };
       if (mech.IsVehicle() == false) { return sim.GetFirstFreeMechBay(); }
       int maxActiveMechs = sim.GetMaxActiveMechs() + sim.VehicleShift();
@@ -1176,10 +1210,12 @@ namespace CustomUnits {
           text.Append(mech.Description.UIName, (object[])Array.Empty<object>());
           ___interruptQueue.QueuePauseNotification(text.ToString(true), mech.Chassis.YangsThoughts, __instance.GetCrewPortrait(SimGameCrew.Crew_Yang), "notification_mechreadycomplete", (Action)(() => {
             int firstFreeMechBay = __instance.GetFirstFreeMechBay(mech);
-            if (firstFreeMechBay >= 0)
+            if (firstFreeMechBay >= 0) {
               __instance.ActiveMechs[firstFreeMechBay] = mech;
-            else
+              SortByTonnage.SortByTonnage.SortMechLabMechs(__instance.GetMaxActiveMechs(), __instance.ActiveMechs, __instance.ReadyingMechs);
+            } else {
               __instance.CreateMechPlacementPopup(mech);
+            }
           }), "Continue", (Action)null, (string)null);
         } else if (!forcePlacement && __instance.GetFirstFreeMechBay(mech) < 0) {
           __instance.CreateMechPlacementPopup(mech);

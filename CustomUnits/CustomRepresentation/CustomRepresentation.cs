@@ -64,6 +64,7 @@ namespace CustomUnits {
     public enum RepresentationApplyType { MoveBone, None }
     public virtual RepresentationType RepType { get { return RepresentationType.None; } }
     public string Id { get; set; }
+    public CustomVector Scale { get; set; }
     public string PrefabBase { get; set; }
     public string SourcePrefabIdentifier { get; set; }
     public string SourcePrefabBase { get; set; }
@@ -122,6 +123,7 @@ namespace CustomUnits {
       f_destructibles = new Dictionary<ChassisLocations, CustomDestructableDef>();
       quadVisualInfo = new QuadVisualInfo();
       Particles = new List<CustomParticleSystemDef>();
+      Scale = new CustomVector(true);
     }
   }
   public class CustomMechRepresentationDef: CustomActorRepresentationDef{

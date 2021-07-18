@@ -15,6 +15,7 @@ using System.Collections.Generic;
 using System.Reflection;
 using System.Reflection.Emit;
 using System.Text;
+using System.Threading;
 using UnityEngine;
 using static BattleTech.Data.DataManager;
 
@@ -428,7 +429,7 @@ namespace CustAmmoCategories {
   [HarmonyPatch("GetAllInventoryShopItems")]
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { })]
-  public static class SimGameState_AddFromShopDefItem {
+  public static class Shop_GetAllInventoryShopItems {
     public static List<AmmunitionBoxDef> GetAllInventoryAmmoCountDefs(this SimGameState sim) {
       List<AmmunitionBoxDef> result = new List<AmmunitionBoxDef>();
       foreach (string allInventoryString in sim.GetAllInventoryAmmoCountString()) {
@@ -519,8 +520,9 @@ namespace CustAmmoCategories {
   [HarmonyPatch(new Type[] { typeof(int), typeof(MechDef), typeof(bool), typeof(bool), typeof(bool), typeof(string) })]
   public static class SimGameState_AddMech {
     public static void Prefix(SimGameState __instance, int idx, MechDef mech, bool active, bool forcePlacement, bool displayMechPopup, string mechAddedHeader) {
+      Log.M.TWL(0, "SimGameState.AddMech " + mech.Description.Id);
+      Thread.CurrentThread.pushActorDef(mech);
       try {
-        Log.M.TWL(0, "SimGameState.AddMech " + mech.Description.Id);
         if (active == false) { return; }
         foreach (MechComponentRef component in mech.Inventory) {
           if (component.DamageLevel == ComponentDamageLevel.Destroyed) { continue; }
@@ -538,7 +540,9 @@ namespace CustAmmoCategories {
             foreach (var iammo in exDef.InternalAmmo) {
               AmmunitionDef ammo = __instance.DataManager.AmmoDefs.Get(iammo.Key);
               if(ammo == null) { continue; }
-              if (ammo.extDef().AutoRefill == AutoRefilType.Automatic) { continue; }
+              ExtAmmunitionDef ammoExtDef = ammo.extDef();
+              if (ammoExtDef == null) { continue; }
+              if (ammoExtDef.AutoRefill == AutoRefilType.Automatic) { continue; }
               int ammocount = __instance.GetAmmoCount(iammo.Key);
               __instance.SetAmmoCount(iammo.Key, ammocount + iammo.Value);
               Log.M.WL(1, "add ammo:" + iammo.Key + "=>" + __instance.GetAmmoCount(iammo.Key));
@@ -546,6 +550,13 @@ namespace CustAmmoCategories {
           }
         }
       } catch (Exception e) {
+        Log.M.TWL(0, e.ToString());
+      }
+    }
+    public static void Postfix(SimGameState __instance) {
+      try {
+        Thread.CurrentThread.clearActorDef();
+      }catch(Exception e) {
         Log.M.TWL(0, e.ToString());
       }
     }
