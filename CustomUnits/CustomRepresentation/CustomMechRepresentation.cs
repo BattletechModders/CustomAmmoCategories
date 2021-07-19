@@ -50,8 +50,10 @@ namespace CustomUnits {
   [HarmonyPatch(new Type[] { typeof(AbstractActor), typeof(Team), typeof(Lance) })]
   public static class UnitSpawnPointGameLogic_initializeActor {
     public static bool Prefix(UnitSpawnPointGameLogic __instance, AbstractActor actor, Team team, Lance lance) {
+      string temp = "!NOT INITED!";
       try {
         Log.TWL(0, "UnitSpawnPointGameLogic.initializeActor " + actor.PilotableActorDef.Description.Id);
+        temp = actor.PilotableActorDef.Description.Id;
         Vector3 spawnPosition = Traverse.Create(__instance).Method("GetSpawnPosition").GetValue<Vector3>(); //__instance.GetSpawnPosition();
         __instance.LogMessage(spawnPosition.ToString());
         actor.Init(spawnPosition, __instance.facing, true);
@@ -66,8 +68,24 @@ namespace CustomUnits {
         }
         return false;
       } catch (Exception e) {
+        Log.TWL(0, "UnitSpawnPointGameLogic.initializeActor:"+temp);
         Log.TWL(0, e.ToString(), true);
         return true;
+      }
+    }
+  }
+  [HarmonyPatch(typeof(UnitSpawnPointGameLogic))]
+  [HarmonyPatch("ContractInitialize")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] {  })]
+  public static class UnitSpawnPointGameLogic_ContractInitialize {
+    public static void Postfix(UnitSpawnPointGameLogic __instance) {
+      try {
+        Log.TW(0, "UnitSpawnPointGameLogic.ContractInitialize " + __instance.UnitDefId+":"+__instance.unitType);
+        if (__instance.unitType == UnitType.Vehicle) { __instance.mechDefId = __instance.vehicleDefId; __instance.vehicleDefId = string.Empty; __instance.unitType = UnitType.Mech; }
+        Log.WL(0, "->" + __instance.UnitDefId + ":" + __instance.unitType);
+      } catch (Exception e) {
+        Log.TWL(0, e.ToString(), true);
       }
     }
   }
@@ -83,6 +101,19 @@ namespace CustomUnits {
         if (custRep != null) {
           custRep.UpdateRotation(custRep.transform, custRep.transform.forward, 9999f);
         }
+      } catch (Exception e) {
+        Log.TWL(0, e.ToString(), true);
+      }
+    }
+  }
+  [HarmonyPatch(typeof(ActorFactory))]
+  [HarmonyPatch("CreateVehicle")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { typeof(VehicleDef), typeof(PilotDef), typeof(TagSet), typeof(CombatGameState), typeof(string), typeof(string), typeof(HeraldryDef) })]
+  public static class ActorFactory_CreateVehicle {
+    public static void Postfix(VehicleDef vDef,PilotDef pilot,TagSet additionalTags,CombatGameState combat,string uniqueId,string spawnerId,HeraldryDef customHeraldryDef, ref Vehicle __result) {
+      try {
+        Log.TWL(0, "ActorFactory.CreateVehicle " + vDef.Description.Id+" result:"+(__result == null?"null": __result.GUID));
       } catch (Exception e) {
         Log.TWL(0, e.ToString(), true);
       }

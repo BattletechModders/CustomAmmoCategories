@@ -64,7 +64,7 @@ namespace CustomUnits {
       textGO.transform.localPosition = Vector3.up * Core.Settings.DeployLabelHeight;
       //text.SetText("!TEXT!");
     }
-    public void Update(Vector3 pos, float radius, string t) {
+    public void UpdatePOS(Vector3 pos, float radius, string t) {
       Vector3 localScale = circle.transform.localScale;
       localScale.x = radius * 2f;
       localScale.z = radius * 2f;
@@ -115,7 +115,7 @@ namespace CustomUnits {
       if (index >= circles.Count) { return; }
       //if (rootReticle.activeSelf == false) { rootReticle.SetActive(true); }
       //if(circles[index].activeSelf == false) { circles[index].SetActive(true); }
-      circles[index].Update(pos, radius, text);
+      circles[index].UpdatePOS(pos, radius, text);
     }
   }
   public class DeployPosition {
@@ -513,13 +513,49 @@ namespace CustomUnits {
       return true;
     }
   }
-  [HarmonyPatch(typeof(TriggerSpawn))]
-  [HarmonyPatch(MethodType.Constructor)]
-  [HarmonyPatch(new Type[] { typeof(string) })]
-  public static class TriggerSpawn_Constructor {
-    public static void Postfix(TriggerSpawn __instance, string spawnerGUID) {
-      Log.TWL(0, "TriggerSpawn("+ spawnerGUID + ")");
-      Log.WL(0,Environment.StackTrace);
+  [HarmonyPatch(typeof(LanceSpawnerGameLogic))]
+  [HarmonyPatch("SpawnUnits")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { typeof(bool) })]
+  public static class LanceSpawnerGameLogic_SpawnUnits {
+    private class OnUnitSpawnComplete_delegate {
+      public LanceSpawnerGameLogic __instance { get; set; }
+      public void OnUnitSpawnComplete() {
+        Log.TWL(0, "LanceSpawnerGameLogic.OnUnitSpawnComplete " + __instance.Name);
+        Traverse.Create(__instance).Method("OnUnitSpawnComplete").GetValue();
+      }
+      public OnUnitSpawnComplete_delegate(LanceSpawnerGameLogic __instance) { this.__instance = __instance; }
+    }
+    public static bool Prefix(LanceSpawnerGameLogic __instance, bool offScreen) {
+      try {
+        Log.TWL(0, "LanceSpawnerGameLogic.SpawnUnits " + __instance.Name);
+        UnitSpawnPointGameLogic[] pointGameLogicList = __instance.unitSpawnPointGameLogicList;
+        for (int index = 0; index < pointGameLogicList.Length; ++index)
+          pointGameLogicList[index].MarkUnitSpawnInProgress();
+        for (int index = 0; index < pointGameLogicList.Length; ++index)
+          pointGameLogicList[index].SpawnUnit(offScreen, new Action(new OnUnitSpawnComplete_delegate(__instance).OnUnitSpawnComplete));
+      } catch (Exception e) {
+        Log.TWL(0, e.ToString(), true);
+      }
+      return false;
+    }
+  }
+  [HarmonyPatch(typeof(UnitSpawnPointGameLogic))]
+  [HarmonyPatch("SpawnUnit")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { typeof(bool), typeof(Action) })]
+  public static class UnitSpawnPointGameLogic_SpawnUnit {
+    public static void Prefix(UnitSpawnPointGameLogic __instance, bool spawnOffScreen, Action onComplete) {
+      Log.TWL(0, "UnitSpawnPointGameLogic.SpawnUnit "+ __instance.UnitDefId+":"+__instance.unitType+ " UnitIsLoaded:" + Traverse.Create(__instance).Method("UnitIsLoaded").GetValue<bool>());
+    }
+  }
+  [HarmonyPatch(typeof(UnitSpawnPointGameLogic))]
+  [HarmonyPatch("CompleteSpawnUnit")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { })]
+  public static class UnitSpawnPointGameLogic_CompleteSpawnUnit {
+    public static void Prefix(UnitSpawnPointGameLogic __instance) {
+      Log.TWL(0, "UnitSpawnPointGameLogic.CompleteSpawnUnit " + __instance.UnitDefId + ":" + __instance.unitType);
     }
   }
   [HarmonyPatch(typeof(AbstractActor))]
@@ -888,10 +924,13 @@ namespace CustomUnits {
     }
     public static bool isObjectivesReady(this Contract contract) { return (delayedSpawners.Count == 0)&&(contract.isManualSpawn() == false); }
     public static bool Prefix(LanceSpawnerGameLogic __instance) {
-      if (__instance.Combat.ActiveContract == null) { return true; }
-      if (__instance.Combat.ActiveContract.isManualSpawn() == false) { return true; }
-      if (__instance.unitSpawnPointGameLogicList.Length == 0) { return true; }
-      if (__instance.unitSpawnPointGameLogicList[0].mechDefId == CACConstants.DeployMechDefID) { return true; }
+      Log.TW(0, "LanceSpawnerGameLogic.OnEnterActive "+__instance.Name+ " HasUnitToSpawn:"+__instance.HasUnitToSpawn());
+      foreach (UnitSpawnPointGameLogic unit in __instance.unitSpawnPointGameLogicList) { Log.W(1, unit.UnitDefId); }
+      if (__instance.Combat.ActiveContract == null) { Log.WL(1, "ActiveContract is null"); return true; }
+      if (__instance.Combat.ActiveContract.isManualSpawn() == false) { Log.WL(1, "not manual spawn"); return true; }
+      if (__instance.unitSpawnPointGameLogicList.Length == 0) { Log.WL(1, "empty lance"); return true; }
+      if (__instance.unitSpawnPointGameLogicList[0].mechDefId == CACConstants.DeployMechDefID) { Log.WL(1, "deploy director"); return true; }
+      Log.WL(1, "delayed");
       delayedSpawners.Add(__instance);
       return false;
     }

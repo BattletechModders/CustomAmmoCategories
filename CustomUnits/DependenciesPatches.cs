@@ -475,6 +475,59 @@ namespace CustomUnits {
       Log.LogWrite(0, "MechDef.GatherDependencies postfix " + __instance.Description.Id + " " + activeRequestWeight, true);
     }
   }
+  [HarmonyPatch(typeof(MechDef))]
+  [HarmonyPatch("DependenciesLoaded")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { typeof(uint) })]
+  public static class MechDef_DependenciesLoaded {
+    public static string GetNoDependenciesLoadedReason(this MechDef __instance, uint loadWeight) {
+      if (__instance.DataManager == null) { return "no data manager"; }
+      if (__instance.DataManager.ChassisDefs.Exists(__instance.ChassisID) == false) { return "chassis " + __instance.ChassisID + " not exists"; }
+      if ((string.IsNullOrEmpty(__instance.HeraldryID) == false) && (__instance.HeraldryDef == null)) { return "HeraldryID " + __instance.HeraldryID + " is null"; }
+      if ((string.IsNullOrEmpty(__instance.HeraldryID) == false) && (__instance.HeraldryDef != null) && (__instance.HeraldryDef.DependenciesLoaded(loadWeight) == false)) { return "HeraldryID " + __instance.HeraldryID + " has unresolved dependencies"; }
+      for (int index = 0; index < __instance.inventory().Length; ++index) {
+        DataManager.ILoadDependencies loadDependencies = (DataManager.ILoadDependencies)__instance.inventory()[index];
+        if (loadDependencies != null) {
+          loadDependencies.DataManager = __instance.DataManager;
+          if (loadDependencies.DependenciesLoaded(loadWeight) == false) {
+            return "component " + __instance.inventory()[index].ComponentDefID + " has unresolved dependencies";
+          }
+        }
+      }
+      if (__instance.meleeWeaponRef.DependenciesLoaded(loadWeight) == false) { return "component " + __instance.meleeWeaponRef.ComponentDefID + " has unresolved dependencies"; }
+      if (__instance.dfaWeaponRef.DependenciesLoaded(loadWeight) == false) { return "component " + __instance.dfaWeaponRef.ComponentDefID + " has unresolved dependencies"; }
+      if (__instance.Chassis == null) { return "no chassis"; }
+      if (__instance.Chassis.DependenciesLoaded(loadWeight) == false) { return "chassis " + __instance.ChassisID + " has unresolved dependencies"; }
+      if (__instance.Chassis.DependenciesLoaded(loadWeight) == false) { return "chassis " + __instance.ChassisID + " has unresolved dependencies"; }
+      if (__instance.Chassis.HardpointDataDef == null) { return "chassis " + __instance.ChassisID + " has no hardpoints def " + __instance.Chassis.HardpointDataDefID; }
+      HashSet<MechComponentRef> inventory = new HashSet<MechComponentRef>();
+      foreach(MechComponentRef compRef in __instance.inventory()) {
+        inventory.Add(compRef);
+      }
+      inventory.Add(__instance.meleeWeaponRef);
+      inventory.Add(__instance.dfaWeaponRef);
+      inventory.Add(__instance.imaginaryLaserWeaponRef);
+      foreach(MechComponentRef compRef in inventory) {
+        if (compRef.Def == null) { return compRef.ComponentDefID + " has no def"; }
+        if (loadWeight <= 10U) { continue; }
+        if (compRef.hasPrefabName) {
+          if(string.IsNullOrEmpty(compRef.prefabName) == false) {
+            if(__instance.DataManager.Exists(BattleTechResourceType.Prefab, compRef.prefabName) == false) {
+              return compRef.ComponentDefID + " has no prefab "+ compRef.prefabName;
+            }
+          }
+        }
+      }
+      return "unknown";
+    }
+    public static void Postfix(MechDef __instance, uint loadWeight, ref bool __result) {
+      if (__result == true) {
+        return;
+      }
+      string reason = __instance.GetNoDependenciesLoadedReason(loadWeight);
+      Log.TWL(0, "MechDef.DependenciesLoaded " + __instance.Description.Id + " fail reason:" + reason);
+    }
+  }
   [HarmonyPatch(typeof(Contract))]
   [HarmonyPatch("BeginRequestResources")]
   [HarmonyPatch(MethodType.Normal)]

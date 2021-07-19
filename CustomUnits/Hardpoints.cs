@@ -851,21 +851,25 @@ namespace CustomUnits {
   [HarmonyPatch(new Type[] {  typeof(uint) })]
   public static class MechDef_InventoryPrefabsLoaded {
     public static bool Prefix(MechDef __instance, uint loadWeight, MechComponentRef[] ___inventory, ref bool __result) {
+      __result = false;
       try {
         Log.TWL(0, "MechDef.InventoryPrefabsLoaded defId:" + __instance.Description.Id + " " + loadWeight);
-        if (loadWeight <= 10U) { return true; }
-        __result = false;
-        if (__instance.Chassis == null) { return false; }
-        if (__instance.Chassis.HardpointDataDef == null) { return false; }
-        for (int index = 0; index < ___inventory.Length; ++index) {
-          if (___inventory[index].Def == null) { continue; }
-          if (___inventory[index].hasPrefabName == false) { continue; }
-          if (string.IsNullOrEmpty(___inventory[index].prefabName)) { continue; }
-          CustomHardpointDef customHardpoint = CustomHardPointsHelper.Find(___inventory[index].prefabName);
-          Log.WL(1,"prefab:" + ___inventory[index].prefabName);
+        if (__instance.Chassis == null) { __result = false; return false; }
+        if (__instance.Chassis.HardpointDataDef == null) { __result = false; return false; }
+        HashSet<MechComponentRef> inventory = ___inventory.ToHashSet();
+        inventory.Add(__instance.imaginaryLaserWeaponRef);
+        inventory.Add(__instance.meleeWeaponRef);
+        inventory.Add(__instance.dfaWeaponRef);
+        foreach (MechComponentRef compRef in inventory) {
+          if (compRef.Def == null) { __result = false; return false; }
+          if (loadWeight <= 10U) { continue; }
+          if (compRef.hasPrefabName == false) { continue; }
+          if (string.IsNullOrEmpty(compRef.prefabName)) { continue; }
+          CustomHardpointDef customHardpoint = CustomHardPointsHelper.Find(compRef.prefabName);
+          Log.WL(1,"prefab:" + compRef.prefabName);
           if (customHardpoint == null) {
             Log.WL(2, "no custom hardpoint");
-            if (__instance.DataManager.Exists(BattleTechResourceType.Prefab, ___inventory[index].prefabName) == false) {
+            if (__instance.DataManager.Exists(BattleTechResourceType.Prefab, compRef.prefabName) == false) {
               Log.WL(3, "not exists in data manager");
               __result = false; return false;
             }
@@ -876,37 +880,27 @@ namespace CustomUnits {
                 Log.WL(3, "not exists in data manager");
                 __result = false; return false;
               }
+              if (string.IsNullOrEmpty(customHardpoint.shaderSrc)) {
+                Log.WL(3, "no shader source\n");
+              } else {
+                if (__instance.DataManager.Exists(BattleTechResourceType.Prefab, customHardpoint.shaderSrc) == false) {
+                  Log.WL(3,"shader source " + customHardpoint.shaderSrc + " not loaded\n");
+                  __result = false; return false;
+                }
+              }
             } else {
-              if (__instance.DataManager.Exists(BattleTechResourceType.Prefab, ___inventory[index].prefabName) == false) {
+              if (__instance.DataManager.Exists(BattleTechResourceType.Prefab, compRef.prefabName) == false) {
                 Log.WL(3, "not exists in data manager");
                 __result = false; return false;
               }
             }
           }
         }
-        return false;
+        __result = true;
       }catch(Exception e) {
         Log.TWL(0,e.ToString(),true);
-        return true;
       }
-    }
-    public static void Postfix(MechDef __instance, uint loadWeight, MechComponentRef[] ___inventory, ref bool __result) {
-      if (__result == false) { return; }
-      if (loadWeight <= 10U) { return; }        
-      Log.TWL(0,"MechDef.InventoryPrefabsLoaded defId:" + __instance.Description.Id + " " + loadWeight);
-      for (int index = 0; index < ___inventory.Length; ++index) {
-        if (___inventory[index].Def == null) { continue; }
-        if (___inventory[index].hasPrefabName == false) { continue; }
-        if (string.IsNullOrEmpty(___inventory[index].prefabName)) { continue; }
-        CustomHardpointDef customHardpoint = CustomHardPointsHelper.Find(___inventory[index].prefabName);
-        Log.LogWrite(" prefab:"+ ___inventory[index].prefabName+"\n");
-        if (customHardpoint == null) { Log.LogWrite("  no custom hardpoint\n"); continue; };
-        if (string.IsNullOrEmpty(customHardpoint.shaderSrc)) { Log.LogWrite("  no shader source\n"); continue; };
-        if(__instance.DataManager.Exists(BattleTechResourceType.Prefab, customHardpoint.shaderSrc) == false) {
-          Log.LogWrite("  shader source "+ customHardpoint.shaderSrc + " not loaded\n");
-          __result = false; return;
-        }
-      }
+      return false;
     }
   }
   [HarmonyPatch(typeof(AttackDirector))]
