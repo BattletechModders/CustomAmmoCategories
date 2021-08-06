@@ -1360,9 +1360,9 @@ namespace CustAmmoCategories {
           //CustomAmmoCategoriesLog.Log.LogWrite(" size:" + hmax + "x" + hmay + "\n");
           CustomAmmoCategoriesLog.Log.LogWrite(" size:" + DynamicMapHelper.hexGrid.Count + "\n");
           //for (int hx = 0; hx < hmax; ++hx) {
-          { 
+          {
             //for (int hy = 0; hy < hmay; ++hy) {
-            foreach(var vhcell in DynamicMapHelper.hexGrid) { 
+            foreach(var vhcell in DynamicMapHelper.hexGrid) {
               //CustomAmmoCategoriesLog.Log.LogWrite("  hex:" + hx + ":" + hy + "\n");
                 try {
                 //MapTerrainHexCell hcell = DynamicMapHelper.hexGrid[hx, hy];
@@ -1565,14 +1565,9 @@ namespace CustAmmoCategories {
         VersionManifestEntry versionManifestEntry = Combat.DataManager.ResourceLocator.EntryByID(prefabName, BattleTechResourceType.Prefab, false);
         if (versionManifestEntry == null) {
           CustomAmmoCategoriesLog.Log.LogWrite("Can't load version manifest for '" + prefabName + "'\n");
-          Dictionary<BattleTechResourceType, Dictionary<string, VersionManifestEntry>> baseManifest =
-            (Dictionary<BattleTechResourceType, Dictionary<string, VersionManifestEntry>>)typeof(BattleTechResourceLocator).GetField("baseManifest", BindingFlags.Instance | BindingFlags.NonPublic)
-            .GetValue(Combat.DataManager.ResourceLocator);
-          foreach (var manifests in baseManifest) {
-            CustomAmmoCategoriesLog.Log.LogWrite(manifests.Key + ":\n");
-            foreach (var manifest in manifests.Value) {
-              CustomAmmoCategoriesLog.Log.LogWrite(" " + manifest.Key + "\n");
-            }
+          var entries = Combat.DataManager.ResourceLocator.AllEntries();
+          foreach (var entry in entries) { // not necessary for ModTek v2 as it dumps the manifest under .modtek/Manifest.csv, kept here for ModTek v0.8 support
+            CustomAmmoCategoriesLog.Log.LogWrite( $"{entry.Type} {entry.Id}:\n");
           }
         } else {
           CustomAmmoCategoriesLog.Log.LogWrite("versionManifestEntry.IsResourcesAsset:" + versionManifestEntry.IsResourcesAsset + "\n");
