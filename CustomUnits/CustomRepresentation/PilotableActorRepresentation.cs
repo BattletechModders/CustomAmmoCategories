@@ -260,12 +260,12 @@ namespace CustomUnits {
             }
           }
         }
+        Log.WL(1, "texture_id:"+ texture_id);
+        if (texture_id < 0) { texture_id = UnityEngine.Random.Range(0, this.mechCustomizations[0].paintPatterns.Length); }
         foreach (CustomMechCustomization mechCustomization in mechCustomizations) {
-          if (texture_id != -1) {
-            if(mechCustomization.paintPatterns.Length > texture_id) {
-              str = mechCustomization.paintPatterns[texture_id].name;
-            }
-          }
+          if (mechCustomization.paintPatterns.Length == 0) { continue; }
+          str = mechCustomization.paintPatterns[texture_id % mechCustomization.paintPatterns.Length].name;
+          Log.WL(2, "object: " + mechCustomization.gameObject.name+ " apply texture:" + str);
           mechCustomization.ApplyHeraldry(heraldryDef, str);
         }
       }
@@ -580,17 +580,19 @@ namespace CustomUnits {
       }
       if (this.__IsDead == false) {
         if (this.weaponReps != null) {
+          Log.TWL(0, "CustomMechRepresentation.OnPlayerVisibilityChanged "+this.gameObject.name+" "+this.parentActor.PilotableActorDef.Description.Id+" team:"+this.parentActor.TeamId+" vislevel:"+newLevel+" weaponRepsCount:"+ this.weaponReps.Count);
           for (int index = 0; index < this.weaponReps.Count; ++index) {
-            if ((UnityEngine.Object)this.weaponReps[index] != (UnityEngine.Object)null) {
+            if (this.weaponReps[index] != null) {
               int mountedLocation = this.weaponReps[index].mountedLocation;
               ChassisLocations chassisLocations = (ChassisLocations)mountedLocation;
-              bool flag = (double)this.parentActor.StructureForLocation(mountedLocation) > 0.0;
-              if (chassisLocations != ChassisLocations.LeftArm && chassisLocations != ChassisLocations.RightArm)
-                flag = true;
-              if (flag)
-                this.weaponReps[index].OnPlayerVisibilityChanged(newLevel);
-              else
+              bool isWeaponForceHide = false;
+              if (isWeaponForceHide) {
                 this.weaponReps[index].OnPlayerVisibilityChanged(VisibilityLevel.None);
+                Log.WL(1, this.weaponReps[index].name + ":" + VisibilityLevel.None);
+              } else {
+                Log.WL(1, this.weaponReps[index].name+":"+newLevel);
+                this.weaponReps[index].OnPlayerVisibilityChanged(newLevel);
+              }
             }
           }
         }

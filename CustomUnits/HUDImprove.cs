@@ -30,6 +30,7 @@ using UnityEngine.UI;
 namespace CustomUnits {
   public class AbilityDefEx {
     public int Priority { get; set; }
+    public bool CanBeUsedInShutdown { get; set; }
   }
   public class LanceConfigurationState {
     public int lanceId;
@@ -532,6 +533,15 @@ namespace CustomUnits {
         if (t.name == checkName) return t;
         Transform possibleTransform = FindRecursive(t, checkName);
         if (possibleTransform != null) return possibleTransform;
+      }
+      return null;
+    }
+    public static Transform FindTopLevelChild(this Transform transform, string checkName) {
+      Transform[] trs = transform.GetComponentsInChildren<Transform>();
+      foreach (Transform tr in trs) {
+        if (tr.parent != transform) { continue; }
+        if (tr.name != checkName) { continue; }
+        return tr;
       }
       return null;
     }
@@ -1859,7 +1869,7 @@ namespace CustomUnits {
       Log.TWL(0, "CombatHUDButtonBase.OnPointerExit " + __instance.GUID);
     }
   }
-  public class CombatHUDMechwarriorTrayEx : MonoBehaviour {
+  public partial class CombatHUDMechwarriorTrayEx : MonoBehaviour {
     public HashSet<CombatHUDActionButton> actionButtons;
     public List<CombatHUDActionButton> ActiveAbilitiesButtons;
     public CanvasGroup ActiveAbilitiesCanvasGroup;
@@ -1964,6 +1974,7 @@ namespace CustomUnits {
       locPos.y = portraits.localPosition.y + (portraits.sizeDelta.y / 2f) + selfTransform.sizeDelta.y;
       ActiveButtonsLayout.transform.localPosition = locPos;
       PassiveButtonsLayout.transform.localPosition = locPos;
+      this.InitSutdownButtonUI();
     }
     public void Update() {
       if (ui_inited == false) {
@@ -2011,7 +2022,7 @@ namespace CustomUnits {
       //HideActiveAbilitiesButton.gameObject.transform.parent.gameObject.SetActive(false);
       //HidePassiveAbilitiesButton.gameObject.transform.parent.gameObject.SetActive(false);
     }
-    public void Instantine(CombatHUDMechwarriorTray mechWarriorTray) {
+    public void Instantine(CombatHUDMechwarriorTray mechWarriorTray, CombatHUD HUD) {
       Transform buttons = mechWarriorTray.gameObject.transform.FindRecursive("mwt_ActionButtonsLayout");
       GameObject activeBtns = GameObject.Instantiate(buttons.gameObject);
       ActiveAbilitiesCanvasGroup = activeBtns.GetComponent<CanvasGroup>();
@@ -2052,6 +2063,7 @@ namespace CustomUnits {
         }
         actionButtons.Add(abtn);
       }
+      this.InstantineShutdownButton(HUD);
     }
   };
   [HarmonyPatch(typeof(CombatHUDMechwarriorTray))]
@@ -2177,7 +2189,7 @@ namespace CustomUnits {
         CombatHUDMechwarriorTrayEx trayEx = __instance.gameObject.GetComponent<CombatHUDMechwarriorTrayEx>();
         if (trayEx == null) {
           trayEx = __instance.gameObject.AddComponent<CombatHUDMechwarriorTrayEx>();
-          trayEx.Instantine(__instance);
+          trayEx.Instantine(__instance, HUD);
         }
         Traverse.Create(__instance).Property<CombatHUDActionButton[]>("ActionButtons").Value = new CombatHUDActionButton[__instance.ActionButtonHolders.Length];
         for (int index = 0; index < __instance.ActionButtonHolders.Length; ++index) {
@@ -2196,6 +2208,7 @@ namespace CustomUnits {
         Traverse.Create(__instance).Property<CombatHUDActionButton>("JumpButton").Value = __instance.ActionButtons[3];
         Traverse.Create(__instance).Property<CombatHUDActionButton>("DoneWithMechButton").Value = __instance.ActionButtons[9];
         Traverse.Create(__instance).Property<CombatHUDActionButton>("EjectButton").Value = __instance.ActionButtons[10];
+        trayEx.ShutdownBtn = __instance.ActionButtons[11];
         __instance.MeleeButtonHolder.GetComponentInChildren<CombatHUDActionButton>(true).Init(Combat, HUD, BTInput.Instance.Key_Return(), true);
         __instance.DFAButtonHolder.GetComponentInChildren<CombatHUDActionButton>(true).Init(Combat, HUD, BTInput.Instance.Key_Return(), true);
         Traverse.Create(__instance).Property<CombatHUDActionButton>("CommandButton").Value = __instance.CommandButtonHolder.GetComponentInChildren<CombatHUDActionButton>(true);
@@ -2204,6 +2217,7 @@ namespace CustomUnits {
         __instance.EquipmentButton.Init(Combat, HUD, BTInput.Instance.Key_None(), true);
         __instance.DoneWithMechButton.Init(Combat, HUD, BTInput.Instance.Combat_DoneWithMech(), true);
         __instance.EjectButton.Init(Combat, HUD, BTInput.Instance.Key_None(), true);
+        trayEx.ShutdownBtn?.Init(Combat, HUD, BTInput.Instance.Key_None(), true);
         __instance.otherTurnIndicator.Init(HUD);
 
         Traverse.Create(__instance).Property<CombatHUDActionButton[]>("AbilityButtons").Value = new CombatHUDActionButton[trayEx.ActiveAbilitiesButtons.Count + trayEx.PassiveAbilitiesButtons.Count + 1];
@@ -2414,7 +2428,7 @@ namespace CustomUnits {
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { typeof(AbstractActor) })]
   public static class CombatHUDMechwarriorTray_ResetMechwarriorButtons {
-    public static void Postfix(CombatHUDMechwarriorTray __instance, AbstractActor actor) {
+    public static void Postfix(CombatHUDMechwarriorTray __instance, AbstractActor actor, CombatGameState ___Combat) {
       Log.LogWrite("CombatHUDMechwarriorTray.ResetMechwarriorButtons\n");
       CombatHUDMechwarriorTrayEx trayEx = __instance.gameObject.GetComponent<CombatHUDMechwarriorTrayEx>();
       if (trayEx == null) { return; }
@@ -2425,8 +2439,22 @@ namespace CustomUnits {
         trayEx.HidePassiveAbilitiesButton.DisableButton();
         trayEx.HideActiveAbilities();
         trayEx.HidePassiveAbilities();
+        trayEx.ShutdownBtn?.DisableButton();
       } else {
         UILookAndColorConstants andColorConstants = LazySingletonBehavior<UIManager>.Instance.UILookAndColorConstants;
+        if(actor.IsShutDown) __instance.DoneWithMechButton.InitButton(SelectionType.DoneWithMech, null, andColorConstants.SprintButtonIcon, "BTN_DoneWithMech", andColorConstants.Tooltip_DoneWithMechNoBrace, actor);
+        Ability shutdownAbility = actor.ShutdownAbility();
+        if (shutdownAbility != null) {
+          trayEx.ShutdownBtn?.InitButton(CombatHUDMechwarriorTray.GetSelectionTypeFromTargeting(shutdownAbility.Def.Targeting, false), shutdownAbility, shutdownAbility.Def.AbilityIcon, shutdownAbility.Def.Description.Id, shutdownAbility.Def.Description.Name, actor);
+        }
+        if (actor.HasActivatedThisRound || !actor.IsAvailableThisPhase || ___Combat.StackManager.IsAnyOrderActive && ___Combat.TurnDirector.IsInterleaved) {
+          trayEx.ShutdownBtn?.DisableButton();
+          if (actor.IsShutDown) __instance.DoneWithMechButton.DisableButton();
+        } else {
+          trayEx.ShutdownBtn?.ResetButtonIfNotActive(actor);
+          if (actor.IsShutDown) __instance.DoneWithMechButton.ResetButtonIfNotActive(actor);
+        }
+        if (actor.IsShutDown) { trayEx.ShutdownBtn?.DisableButton(); }
         trayEx.ShowActiveAbilitiesButton.InitButton(SelectionType.None, (Ability)null,
           (string.IsNullOrEmpty(Core.Settings.ShowActiveAbilitiesIcon) ? andColorConstants.SprintButtonIcon : CustomSvgCache.get(Core.Settings.ShowActiveAbilitiesIcon, trayEx.HUD.Combat.DataManager))
           , CombatHUDMechwarriorTrayEx.SHOW_ACTIVE_BUTTON_GUID, CombatHUDMechwarriorTrayEx.SHOW_ACTIVE_BUTTON_NAME, actor);
@@ -2579,7 +2607,9 @@ namespace CustomUnits {
       JObject jAbilityDef = JObject.Parse(json);
       __state = new AbilityDefEx();
       __state.Priority = 0;
-      if (jAbilityDef["Priority"] != null) { __state.Priority = (int)jAbilityDef["Priority"]; }
+      if (jAbilityDef["Priority"] != null) { __state.Priority = (int)jAbilityDef["Priority"]; jAbilityDef.Remove("Priority"); }
+      if (jAbilityDef["CanBeUsedInShutdown"] != null) { __state.CanBeUsedInShutdown = (bool)jAbilityDef["CanBeUsedInShutdown"]; jAbilityDef.Remove("CanBeUsedInShutdown"); }
+      json = jAbilityDef.ToString(Formatting.Indented);
     }
     public static void Postfix(AbilityDef __instance, string json, ref AbilityDefEx __state) {
       if (exDefinitions.ContainsKey(__instance.Id)) { exDefinitions[__instance.Id] = __state; } else { exDefinitions.Add(__instance.Id, __state); }

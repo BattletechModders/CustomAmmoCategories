@@ -597,6 +597,20 @@ namespace CustomUnits {
       MeshRenderer[] mRenderer = src.GetComponentsInChildren<MeshRenderer>(true);
       SkinnedMeshRenderer[] sRenderer = src.GetComponentsInChildren<SkinnedMeshRenderer>(true);
       Log.WL(1, "MeshRenderers:"+mRenderer.Length+ " SkinnedMeshRenderer:"+ sRenderer.Length);
+      Dictionary<Renderer, MeshRenderer> customCamoHolders = new Dictionary<Renderer, MeshRenderer>();
+      Transform[] trs = src.GetComponentsInChildren<Transform>();
+      foreach (Transform tr in trs) {
+        if (tr.name.StartsWith("camoholder") == false) { continue; }
+        MeshRenderer camoholder = tr.gameObject.GetComponent<MeshRenderer>();
+        if (camoholder == null) { continue; }
+        SkinnedMeshRenderer parentSkinnedRenderer = tr.parent.gameObject.GetComponent<SkinnedMeshRenderer>();
+        MeshRenderer parentMeshRenderer = tr.parent.gameObject.GetComponent<MeshRenderer>();
+        Renderer parentRenderer = parentSkinnedRenderer;
+        if (parentRenderer == null) { parentRenderer = parentMeshRenderer; }
+        if (parentRenderer == null) { continue; }
+        if (customCamoHolders.ContainsKey(parentRenderer)) { continue; }
+        customCamoHolders.Add(parentRenderer, camoholder);
+      }
       foreach (MeshRenderer renderer in mRenderer) {
         if (renderer.gameObject.GetComponent<BTDecal>() != null) { continue; }
         if (meshRenderersCache.ContainsKey(renderer)) { continue; }
@@ -604,7 +618,11 @@ namespace CustomUnits {
         this.meshRenderersCache.Add(renderer, true);
         CustomPaintPattern paintPattern = renderer.gameObject.GetComponent<CustomPaintPattern>();
         if (paintPattern == null) { paintPattern = renderer.gameObject.AddComponent<CustomPaintPattern>(); }
-        paintPattern.Init(renderer, this.defaultMechCustomization);
+        if (customCamoHolders.TryGetValue(renderer, out MeshRenderer localPaintHolder)) {
+          paintPattern.Init(renderer, localPaintHolder);
+        } else {
+          paintPattern.Init(renderer, this.defaultMechCustomization);
+        }
       }
       foreach (SkinnedMeshRenderer renderer in sRenderer) {
         if (skinnedMeshRenderersCache.ContainsKey(renderer)) { continue; };
@@ -612,7 +630,11 @@ namespace CustomUnits {
         Log.WL(1, "skinned renderer:" + renderer.gameObject.name+" heraldry:"+true);
         CustomPaintPattern paintPattern = renderer.gameObject.GetComponent<CustomPaintPattern>();
         if (paintPattern == null) { paintPattern = renderer.gameObject.AddComponent<CustomPaintPattern>(); }
-        paintPattern.Init(renderer, this.defaultMechCustomization);
+        if (customCamoHolders.TryGetValue(renderer, out MeshRenderer localPaintHolder)) {
+          paintPattern.Init(renderer, localPaintHolder);
+        } else {
+          paintPattern.Init(renderer, this.defaultMechCustomization);
+        }
       }
       Collider[] colliders = src.GetComponentsInChildren<Collider>(true);
       foreach (Collider collider in colliders) {

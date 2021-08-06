@@ -263,38 +263,6 @@ namespace CustomUnits {
       Components = new Dictionary<string, string>();
     }
   }
-  public class QuadVisualInfo {
-    public bool UseQuadVisuals { get; set; }
-    public string FLegsPrefab { get; set; }
-    public string BodyPrefab { get; set; }
-    public float BodyLength { get; set; }
-    public string FLegsPrefabBase { get; set; }
-    public string BodyShaderSource { get; set; }
-    public List<string> SuppressRenderers { get; private set; }
-    public List<string> NotSuppressRenderers { get; private set; }
-    public List<string> JumpJets { get; private set; }
-    public List<string> HeadLights { get; private set; }
-    public List<AttachInfoRecord> WeaponsAttachPoints { get; private set; }
-    public List<string> Animators { get; private set; }
-    public List<string> TwistAnimators { get; private set; }
-    public Dictionary<ChassisLocations, CustomDestructableDef> Destructables { get; private set;  }
-    public QuadVisualInfo() {
-      FLegsPrefab = string.Empty;
-      UseQuadVisuals = false;
-      SuppressRenderers = new List<string>();
-      NotSuppressRenderers = new List<string>();
-      JumpJets = new List<string>();
-      HeadLights = new List<string>();
-      Animators = new List<string>();
-      TwistAnimators = new List<string>();
-      BodyLength = 0f;
-      BodyPrefab = string.Empty;
-      FLegsPrefabBase = string.Empty;
-      BodyShaderSource = "chrPrfWeap_atlas_centertorso_laser_eh1";
-      WeaponsAttachPoints = new List<AttachInfoRecord>();
-      Destructables = new Dictionary<ChassisLocations, CustomDestructableDef>();
-    }
-  }
   public static class ChassisAdditinalInfoHelper {
     private static Dictionary<string, ChassisAdditionalInfo> f_ChassisAdditionalInfos = new Dictionary<string, ChassisAdditionalInfo>();
     public static ChassisAdditionalInfo ChassisInfo(this VehicleChassisDef chassis) {
@@ -863,26 +831,31 @@ namespace CustomUnits {
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { typeof(Vector3), typeof(Vector3) })]
   public static class PathNodeGrid_FindBlockerReciprocal {
-    private static FieldInfo FowningActor = null;
-    public static bool Prepare() {
-      try {
-        FowningActor = typeof(PathNodeGrid).GetField("owningActor", BindingFlags.Instance | BindingFlags.NonPublic);
-        if (FowningActor == null) {
-          Log.LogWrite(0, "Can't find owningActor", true);
-          return false;
-        }
-      } catch (Exception e) {
-        Log.LogWrite(0, e.ToString(), true);
-        return false;
-      }
-      return true;
-    }
-    public static bool Prefix(PathNodeGrid __instance, Vector3 from, Vector3 to, ref bool __result) {
+    //private static FieldInfo FowningActor = null;
+    //public static bool Prepare() {
+    //  try {
+    //    FowningActor = typeof(PathNodeGrid).GetField("owningActor", BindingFlags.Instance | BindingFlags.NonPublic);
+    //    if (FowningActor == null) {
+    //      Log.LogWrite(0, "Can't find owningActor", true);
+    //      return false;
+    //    }
+    //  } catch (Exception e) {
+    //    Log.LogWrite(0, e.ToString(), true);
+    //    return false;
+    //  }
+    //  return true;
+    //}
+    public static bool Prefix(PathNodeGrid __instance, AbstractActor ___owningActor, Vector3 from, Vector3 to, ref bool __result) {
       try {
         if (__instance.FindBlockerBetween(from, to) == true) { __result = true; return false; };
         if (__instance.FindBlockerBetween(to, from) == true) { __result = true; return false; };
         __result = false;
-      } catch (Exception e) {
+      } 
+      catch (System.IndexOutOfRangeException) {
+        __result = true;
+      }
+      catch(Exception e){
+        Log.TWL(0, "Actor:" + (___owningActor==null?"null": ___owningActor.PilotableActorDef.Description.Id)+" from:"+from+" to:"+to, true);
         Log.TWL(0, e.ToString(), true);
         __result = true;
       }

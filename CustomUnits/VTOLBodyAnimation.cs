@@ -152,7 +152,7 @@ namespace CustomUnits {
       if (gameObject == null) {
         Log.TWL(0,"Exploded vehicle have wrong explosion VFX: " + explosionName);
       } else {
-        gameObject.ScaleEffect(new CustomVector(5f,5f,5f));
+        gameObject.ScaleEffect(new CustAmmoCategories.CustomVector(5f,5f,5f));
         ParticleSystem component = gameObject.GetComponent<ParticleSystem>();
         BTLight componentInChildren1 = gameObject.GetComponentInChildren<BTLight>(true);
         BTWindZone componentInChildren2 = gameObject.GetComponentInChildren<BTWindZone>(true);
@@ -197,19 +197,6 @@ namespace CustomUnits {
         }
       }
     }
-  }
-  public enum HardpointAttachType { Turret, Body, None };
-  public class AttachInfoRecord {
-    public string visuals { get; set; }
-    public string animator { get; set; }
-    public Dictionary<string, float> Animators { get; set; }
-    public string Name { get; set; }
-    public string attach { get; set; }
-    public string location { get; set; }
-    public HardpointAttachType type { get; set; }
-    public bool hideIfEmpty { get; set; }
-    public bool noRecoil { get; set; }
-    public AttachInfoRecord() { visuals = string.Empty; animator = string.Empty; Animators = new Dictionary<string, float>(); attach = string.Empty; hideIfEmpty = false; noRecoil = false; }
   }
   public class AttachInfoAnimator {
     public bool HasRecoil { get; protected set; }

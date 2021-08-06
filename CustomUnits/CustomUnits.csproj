@@ -128,6 +128,7 @@
     <Compile Include="CustomRepresentation\CustomMechMeshMerge.cs" />
     <Compile Include="CustomRepresentation\CustomMechRepresentation.cs" />
     <Compile Include="CustomRepresentation\CustomMechRepresentationSimGame.cs" />
+    <Compile Include="CustomRepresentation\CustomReprefentationDefinitions.cs" />
     <Compile Include="CustomRepresentation\CustomRepresentation.cs" />
     <Compile Include="CustomMechStructureRules.cs" />
     <Compile Include="ControlEscort.cs" />
@@ -168,6 +169,7 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="QuadBodyAnimator.cs" />
     <Compile Include="QuadRepresentation.cs" />
+    <Compile Include="ShutdownManual.cs" />
     <Compile Include="SortByTonnage\SortByTonnage.cs" />
     <Compile Include="TerrainCost.cs" />
     <Compile Include="TerrainMaskPatch.cs" />
@@ -190,6 +192,7 @@
   <PropertyGroup>
     <PostBuildEvent>copy /Y "$(TargetPath)" "$(ProjectDir)\..\..\Mods\CustomUnits"
 copy /Y "$(TargetPath)" "$(ProjectDir)\..\..\RogueTechWorking\CustomUnits"
+copy /Y "$(TargetPath)" "$(ProjectDir)\..\..\BattleTech-Advanced\CustomUnits"
 copy /Y "$(TargetPath)" "$(ProjectDir)\..\..\Release_CAC\Release\CustomBundle\CustomUnits"
 xcopy /Y /S /E "$(ProjectDir)..\AdditionalFiles\CU" "$(ProjectDir)\..\..\Release_CAC\Release\CustomBundle\CustomUnits"</PostBuildEvent>
   </PropertyGroup>

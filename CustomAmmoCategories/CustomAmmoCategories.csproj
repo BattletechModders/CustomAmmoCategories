@@ -269,6 +269,7 @@
   <PropertyGroup>
     <PostBuildEvent>copy /Y "$(TargetPath)" "$(ProjectDir)..\..\Mods\CustomAmmoCategories"
 copy /Y "$(TargetPath)" "$(ProjectDir)\..\..\RogueTechWorking\CustomAmmoCategories"
+copy /Y "$(TargetPath)" "$(ProjectDir)\..\..\BattleTech-Advanced\CustomAmmoCategories"
 copy /Y "$(TargetPath)" "$(ProjectDir)\..\..\Release_CAC\Release\CustomBundle\CustomAmmoCategories"
 xcopy /Y /S /E "$(ProjectDir)..\AdditionalFiles\CAC" "$(ProjectDir)..\..\Release_CAC\Release\CustomBundle\CustomAmmoCategories"</PostBuildEvent>
   </PropertyGroup>

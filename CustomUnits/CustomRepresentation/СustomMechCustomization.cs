@@ -9,28 +9,46 @@ using UnityEngine.Rendering;
 
 namespace CustomUnits {
   public class CustomPaintPattern: MonoBehaviour {
-    public List<Texture2D> paintPatterns { get; set; } = new List<Texture2D>();
+    public List<Texture2D> _paintPatterns = null;
+    public int _currentIndex = -1;
+    public int currentIndex { get { return _currentIndex; } }
+    public List<Texture2D> paintPatterns {
+      get {
+        if (_paintPatterns == null) { _paintPatterns = new List<Texture2D>(); }
+        return _paintPatterns;
+      }
+    }
     public Renderer renderer { get; set; } = null;
     public PropertyBlockManager.PropertySetting paintSchemeProperty { get; set; } = new PropertyBlockManager.PropertySetting("_PaintScheme", Texture2D.blackTexture);
-    public void Init(Renderer renderer) {
+    public void Init(Renderer renderer, MeshRenderer paintSchemeHolder) {
+      Log.TWL(0, "CustomPaintPattern.Init custom "+renderer.gameObject.name+" "+(paintSchemeHolder==null?"null": paintSchemeHolder.sharedMaterials.Length.ToString()));
       this.renderer = renderer;
-      this.paintPatterns.Add(Texture2D.blackTexture);
-    }
-    public void Init(Renderer renderer,MeshRenderer paintSchemeHolder) {
-      this.renderer = renderer;
+      if (this._paintPatterns == null) { this._paintPatterns = new List<Texture2D>(); }
       if (paintSchemeHolder != null) {
-        foreach (Material mat in paintSchemeHolder.sharedMaterials) { this.paintPatterns.Add(mat.mainTexture); }
+        foreach (Material mat in paintSchemeHolder.sharedMaterials) {
+          this._paintPatterns.Add(mat.mainTexture as Texture2D);
+          Log.WL(1, "add texture:" + (mat.mainTexture as Texture2D).name+":"+ this._paintPatterns.Count);
+        }
       }
-      if (this.paintPatterns.Count == 0) { this.paintPatterns.Add(Texture2D.blackTexture); }
+      if (this._paintPatterns.Count == 0) {
+        this._paintPatterns.Add(Texture2D.blackTexture);
+      }
+      Log.WL(1, "paintPatterns:" + this._paintPatterns.Count);
+      foreach(Texture2D tex in this._paintPatterns) {
+        Log.WL(2,tex.name);
+      }
     }
     public void ApplyPaintScheme(int index) {
       if (index < 0) { index = 0; }
-      paintSchemeProperty.PropertyTexture = paintPatterns[index % paintPatterns.Count];
+      paintSchemeProperty.PropertyTexture = this.paintPatterns[index % paintPatterns.Count];
       Log.TWL(0, "CustomPaintPattern.ApplyPaintScheme " + index + " renderer:" + this.renderer.gameObject.name+" texture:"+ paintSchemeProperty.PropertyTexture.name);
+      this._currentIndex = index;
     }
     public void Init(Renderer renderer,CustomMechCustomization customization) {
       this.renderer = renderer;
-      foreach(Texture2D tex in customization.paintPatterns) { if (tex == null) { continue; }; this.paintPatterns.Add(tex); }
+      Log.TWL(0, "CustomPaintPattern.Init default " + renderer.gameObject.name + " " + (customization == null ? "null" : customization.paintPatterns.Length.ToString()));
+      if (this._paintPatterns == null) { this._paintPatterns = new List<Texture2D>(); }
+      foreach (Texture2D tex in customization.paintPatterns) { if (tex == null) { continue; }; this._paintPatterns.Add(tex); }
     }
   }
   public class CustomMechCustomization : MonoBehaviour {
@@ -177,6 +195,9 @@ namespace CustomUnits {
         this.propertyBlock._AddProperty(ref prop);
       } else
         prop.PropertyFloat = value;
+    }
+    public void UpdatePaintPatterns() {
+
     }
     private void ApplyPaintSchemeTexture() {
       CustomPaintPattern[] paintPatterns = this.parent._gameObject.GetComponentsInChildren<CustomPaintPattern>(true);

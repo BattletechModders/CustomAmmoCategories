@@ -1518,6 +1518,10 @@ namespace CustomUnits {
         this.thisAnimator.SetTrigger("PowerOff");
       }
       this._ToggleHeadlights(false);
+      this.HeightController.PendingHeight = 0f;
+      this.parentCombatant.FlyingHeight(0f);
+      this.customRep.InBattle = false;
+      this.StopPersistentAudio();
     }
     public override void PlayStartupAnim() {
       GameRepresentation_PlayStartupAnim();
@@ -1530,6 +1534,9 @@ namespace CustomUnits {
           AudioEventManager.PlayComputerVO(ComputerVOEvents.Mech_Powerup_Enemy);
       }
       this.thisAnimator.SetTrigger("PowerOn");
+      this.HeightController.PendingHeight = this.parentCombatant.FlyingHeight();
+      this.customRep.InBattle = true;
+      this.StartPersistentAudio();
     }
     public override void HandleDeath(DeathMethod deathMethod, int location) {
       PilotableRepresentation_HandleDeath(deathMethod, location);
@@ -1857,7 +1864,8 @@ namespace CustomUnits {
 
     }
     public virtual void CompleteMove(ActorMovementSequence sequence, bool playedMelee, ICombatant meleeTarget) {
-      this.PlayMovementStartAudio();
+      this.lastStateWasVisible = (this.rootParentRepresentation.BlipDisplayed == false);
+      if (this.lastStateWasVisible) { this.PlayMovementStopAudio(); }
       if (meleeTarget != null) {
         if (this.HeightController != null) {
           float targetHeight = meleeTarget.FlyingHeight();

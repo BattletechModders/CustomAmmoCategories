@@ -55,6 +55,8 @@
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
-    <PostBuildEvent>copy /Y "$(TargetPath)" "$(ProjectDir)\..\..\Mods\CACDemoModifier"</PostBuildEvent>
+    <PostBuildEvent>if exist "$(SolutionDir)\..\..\Mods\CACDemoModifier" (
+   xcopy "$(TargetDir)$(TargetFileName)" "$(SolutionDir)\..\..\Mods\CACDemoModifier" /y
+)</PostBuildEvent>
   </PropertyGroup>
 </Project>

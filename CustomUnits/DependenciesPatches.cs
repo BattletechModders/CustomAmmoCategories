@@ -50,10 +50,11 @@ namespace CustomUnits {
       MechComponentRef[] inventory = Traverse.Create(mechDef).Field<MechComponentRef[]>("inventory").Value;
       Log.TWL(0, "MechDef.CollectInventoryPrefabs " + mechDef.Description.Id + " inventory:" + inventory.Length);
       for (int index = 0; index < inventory.Length; ++index) {
+        Log.W(1, "index:" + index);
         if (inventory[index].Def != null) {
+          Log.WL(1, inventory[index].Def.Description.Id + " prefabName:" + inventory[index].prefabName+ " hasPrefabName:" + inventory[index].hasPrefabName);
           string prefabName = inventory[index].prefabName;
           if (string.IsNullOrEmpty(prefabName)) { continue; }
-          Log.WL(1, prefabName);
           if (prefabName.Contains("|")) {
             string[] prefabNames = prefabName.Split('|');
             foreach (string name in prefabNames) {
@@ -65,6 +66,7 @@ namespace CustomUnits {
             inventory[index].prefabName = prefabNames[0];
           } else {
             if (prefabName == HardpointCalculator.FakeWeaponPrefab) { continue; }
+            if (prefabName == HardpointCalculator.FakeComponentPrefab) { continue; }
             result.Add(prefabName);
           }
         }
@@ -82,7 +84,11 @@ namespace CustomUnits {
       Log.TWL(0, "MechDef.RequestInventoryPrefabs "+mechDef.Description.Id+" inventory:"+inventory.Length);
       HashSet<string> prefabNames = mechDef.CollectInventoryPrefabs(true);
       foreach(string prefabName in prefabNames) {
-        dependencyLoad.RequestResource(BattleTechResourceType.Prefab, prefabName);
+        string effective_prefabName = prefabName;
+        CustomHardpointDef customHardpoint = CustomHardPointsHelper.Find(prefabName);
+        if (customHardpoint != null) { if (string.IsNullOrEmpty(customHardpoint.prefab) == false) { effective_prefabName = customHardpoint.prefab; } }
+        Log.WL(0,"Request:"+effective_prefabName);
+        dependencyLoad.RequestResource(BattleTechResourceType.Prefab, effective_prefabName);
       }
     }
 
@@ -145,7 +151,7 @@ namespace CustomUnits {
       }
     }
     public static void RefreshInventory(this MechDef mechDef) {
-      Log.TWL(0, "MechDef.RefreshInventory " + mechDef.ChassisID);
+      Log.TWL(0, "MechDef.RefreshInventory " + mechDef.Description.Id);
       mechDef.InsertFixedEquipmentIntoInventory();
       MechComponentRef[] inventory = Traverse.Create(mechDef).Field<MechComponentRef[]>("inventory").Value;
       for (int index = 0; index < inventory.Length; ++index) {
@@ -153,13 +159,21 @@ namespace CustomUnits {
         if (mechComponentRef == null) {
           Debug.Log((object)"Found an empty inventory slot");
         } else {
-          if (mechComponentRef.DataManager == null)
+          if (mechComponentRef.DataManager == null) {
             mechComponentRef.DataManager = mechDef.DataManager;
+          }
+          if (mechComponentRef.Def == null) {
+            mechComponentRef.hasPrefabName = false;
+            mechComponentRef.prefabName = string.Empty;
+          }
           mechComponentRef.RefreshComponentDef();
         }
       }
       mechDef.meleeWeaponRef.DataManager = mechDef.DataManager;
       mechDef.meleeWeaponRef.RefreshComponentDef();
+      for (int index = 0; index < inventory.Length; ++index) {
+        Log.WL(1, "[" + index + "] " + (inventory[index].Def == null ? "null" : inventory[index].Def.Description.Id) + " prefabName:" + inventory[index].prefabName + " hasPrefabName:" + inventory[index].hasPrefabName);
+      }
       if (mechDef.meleeWeaponRef.Def != null && !mechDef.meleeWeaponRef.hasPrefabName) {
         mechDef.meleeWeaponRef.prefabName = "chrPrfWeap_generic_melee";
         mechDef.meleeWeaponRef.hasPrefabName = true;
@@ -189,6 +203,10 @@ namespace CustomUnits {
             mechDef.RequestMechInventoryPrefabsSquad(components);
           }
         }
+      }
+      Log.TWL(0, "MechDef.RefreshInventoryResult " + mechDef.Description.Id);
+      for (int index = 0; index < inventory.Length; ++index) {
+        Log.WL(1, "["+index+"] " + (inventory[index].Def==null?"null":inventory[index].Def.Description.Id) + " prefabName:" + inventory[index].prefabName + " hasPrefabName:" + inventory[index].hasPrefabName);
       }
     }
     //private static Dictionary<int, HardpointCalculator> calulatorStack = new Dictionary<int, HardpointCalculator>();
@@ -282,6 +300,9 @@ namespace CustomUnits {
         if (custRepDef.quadVisualInfo.UseQuadVisuals == false) { return; }
         if (string.IsNullOrEmpty(custRepDef.quadVisualInfo.FLegsPrefab) == false) {
           loadRequest.AddBlindLoadRequest(BattleTechResourceType.Prefab, custRepDef.quadVisualInfo.FLegsPrefab);
+        }
+        if (string.IsNullOrEmpty(custRepDef.quadVisualInfo.RLegsPrefab) == false) {
+          loadRequest.AddBlindLoadRequest(BattleTechResourceType.Prefab, custRepDef.quadVisualInfo.RLegsPrefab);
         }
         if (string.IsNullOrEmpty(custRepDef.quadVisualInfo.BodyPrefab) == false) {
           loadRequest.AddBlindLoadRequest(BattleTechResourceType.Prefab, custRepDef.quadVisualInfo.BodyPrefab);
@@ -401,6 +422,9 @@ namespace CustomUnits {
       if (custRepDef.quadVisualInfo.UseQuadVisuals == false) { return; }
       if (string.IsNullOrEmpty(custRepDef.quadVisualInfo.FLegsPrefab) == false) {
         dependencyLoad.RequestResource(BattleTechResourceType.Prefab, custRepDef.quadVisualInfo.FLegsPrefab);
+      }
+      if (string.IsNullOrEmpty(custRepDef.quadVisualInfo.RLegsPrefab) == false) {
+        dependencyLoad.RequestResource(BattleTechResourceType.Prefab, custRepDef.quadVisualInfo.RLegsPrefab);
       }
       if (string.IsNullOrEmpty(custRepDef.quadVisualInfo.BodyPrefab) == false) {
         dependencyLoad.RequestResource(BattleTechResourceType.Prefab, custRepDef.quadVisualInfo.BodyPrefab);
@@ -554,6 +578,9 @@ namespace CustomUnits {
       if (custRepDef.quadVisualInfo.UseQuadVisuals == false) { return true; }
       if (string.IsNullOrEmpty(custRepDef.quadVisualInfo.FLegsPrefab) == false) {
         if (dataManager.Exists(BattleTechResourceType.Prefab, custRepDef.quadVisualInfo.FLegsPrefab) == false) { return false; }
+      }
+      if (string.IsNullOrEmpty(custRepDef.quadVisualInfo.RLegsPrefab) == false) {
+        if (dataManager.Exists(BattleTechResourceType.Prefab, custRepDef.quadVisualInfo.RLegsPrefab) == false) { return false; }
       }
       if (string.IsNullOrEmpty(custRepDef.quadVisualInfo.BodyPrefab) == false) {
         if (dataManager.Exists(BattleTechResourceType.Prefab, custRepDef.quadVisualInfo.BodyPrefab) == false) { return false; }

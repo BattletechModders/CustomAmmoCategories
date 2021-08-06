@@ -2,7 +2,9 @@
 using BattleTech.Data;
 using BattleTech.Rendering;
 using BattleTech.Rendering.MechCustomization;
+using BattleTech.UI;
 using Harmony;
+using Localize;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -10,6 +12,108 @@ using System.Reflection;
 using UnityEngine;
 
 namespace CustomUnits {
+  public class MechPaintPatternSelectorWidgetCust: MonoBehaviour {
+    public CustomMechCustomization ActiveCustomization { get; set; }
+    public void Init(CustomMechCustomization ActiveCustomization) {
+      this.ActiveCustomization = ActiveCustomization;
+    }
+  }
+  [HarmonyPatch(typeof(MechPaintPatternSelectorWidget))]
+  [HarmonyPatch("TryShow")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { typeof(MechRepresentationSimGame) })]
+  public static class MechPaintPatternSelectorWidget_TryShow {
+    public static void TryShow(this MechPaintPatternSelectorWidget __instance, CustomMechCustomization customization, MechDef def) {
+      if (customization == null || def == null) {
+        __instance.gameObject.SetActive(false);
+      } else {
+        if (def == Traverse.Create(__instance).Field<MechDef>("ActiveDef").Value) { return; }
+        Traverse.Create(__instance).Field<MechCustomization>("ActiveCustomization").Value = null;
+        MechPaintPatternSelectorWidgetCust custWidget = __instance.gameObject.GetComponent<MechPaintPatternSelectorWidgetCust>();
+        if (custWidget == null) { custWidget = __instance.gameObject.AddComponent<MechPaintPatternSelectorWidgetCust>(); }
+        custWidget.Init(customization);
+        Traverse.Create(__instance).Field<MechDef>("ActiveDef").Value = def;
+        List<string> stringList1 = new List<string>();
+        List<string> stringList2 = new List<string>();
+        int length = customization.paintPatterns.Length;
+        for (int index = 0; index < length; ++index) {
+          stringList1.Add(customization.paintPatterns[index].name);
+          stringList2.Add(Strings.T("Pattern {0}", (object)(index + 1)));
+        }
+        int num = stringList1.IndexOf(customization.paintScheme.paintSchemeTex.name);
+        Traverse.Create(__instance).Field<HorizontalScrollSelectorText>("ScrollSelector").Value.ClearOptions();
+        Traverse.Create(__instance).Field<HorizontalScrollSelectorText>("ScrollSelector").Value.AddOptions(stringList2.ToArray());
+        Traverse.Create(__instance).Field<HorizontalScrollSelectorText>("ScrollSelector").Value.selectionIdx = num;
+        __instance.gameObject.SetActive(customization.paintPatterns.Length > 1);
+      }
+    }
+
+    public static bool Prefix(MechPaintPatternSelectorWidget __instance, MechRepresentationSimGame mechRep) {
+      try {
+        CustomMechRepresentationSimGame simGame = mechRep as CustomMechRepresentationSimGame;
+        if (simGame == null) {
+          MechPaintPatternSelectorWidgetCust custWidget = __instance.gameObject.GetComponent<MechPaintPatternSelectorWidgetCust>();
+          if (custWidget == null) { custWidget = __instance.gameObject.AddComponent<MechPaintPatternSelectorWidgetCust>(); }
+          custWidget.Init(null);
+          return true;
+        }
+        __instance.TryShow(simGame.defaultMechCustomization, simGame._mechDef);
+        return false;
+      } catch (Exception e) {
+        Log.TWL(0, e.ToString(), true);
+        return true;
+      }
+    }
+  }
+  [HarmonyPatch(typeof(MechPaintPatternSelectorWidget))]
+  [HarmonyPatch("OnValueChanged")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { })]
+  public static class MechPaintPatternSelectorWidget_OnValueChanged {
+    public static bool Prefix(MechPaintPatternSelectorWidget __instance) {
+      try {
+        if (Traverse.Create(__instance).Field<MechCustomization>("ActiveCustomization").Value != null) { return true; }
+        if (Traverse.Create(__instance).Field<MechDef>("ActiveDef").Value == null) { return true; }
+        if (Traverse.Create(__instance).Field<bool>("ableToChange").Value == false) { return true; }
+        if (Traverse.Create(__instance).Field<bool>("skipOnValueChanged").Value == true) { return true; }
+        MechPaintPatternSelectorWidgetCust custWidget = __instance.gameObject.GetComponent<MechPaintPatternSelectorWidgetCust>();
+        if (custWidget == null) { return true; }
+        int length = custWidget.ActiveCustomization.paintPatterns.Length;
+        int selectionIdx = Traverse.Create(__instance).Field<HorizontalScrollSelectorText>("ScrollSelector").Value.selectionIdx;
+        if (selectionIdx > length) { return false; }
+        string name = custWidget.ActiveCustomization.paintPatterns[selectionIdx].name;
+        if (name == custWidget.ActiveCustomization.paintScheme.paintSchemeTex.name) { return false; }
+        Traverse.Create(__instance).Field<MechDef>("ActiveDef").Value.UpdatePaintTextureId(name);
+        __instance.SetAllowInput(false);
+        __instance.RefreshPaintSelector();
+        return false;
+      } catch (Exception e) {
+        Log.TWL(0, e.ToString(), true);
+        return true;
+      }
+    }
+  }
+  [HarmonyPatch(typeof(MechLabPanel))]
+  [HarmonyPatch("RefreshPaintSelector")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { })]
+  public static class MechLabPanel_RefreshPaintSelector {
+    public static bool Prefix(MechLabPanel __instance, MechPaintPatternSelectorWidget ___paintSelector) {
+      try {
+        if (__instance.Sim == null || __instance.Sim.RoomManager.MechBayRoom.LoadedMechObject == null) { return true; }
+        CustomMechRepresentationSimGame component = __instance.Sim.RoomManager.MechBayRoom.LoadedMechObject.GetComponent<CustomMechRepresentationSimGame>();
+        if (component == null) { return true; }
+        ___paintSelector.SetAllowInput(true);
+        ___paintSelector.TryShow(component);
+        component.loadCustomization(__instance.Sim.Player1sMercUnitHeraldryDef);
+        return false;
+      } catch (Exception e) {
+        Log.TWL(0, e.ToString(), true);
+        return true;
+      }
+    }
+  }
+
   public class ComponentRepresentationSimGameInfo {
     public MechComponentRef componentRef { get; private set; }
     public ComponentRepresentation componentRep { get; set; }
@@ -420,6 +524,7 @@ namespace CustomUnits {
 
     }
     public virtual void InitSimGameRepresentation(DataManager dataManager, MechDef mechDef, Transform parentTransform, HeraldryDef heraldryDef) {
+      Log.TWL(0, "CustomMechRepresentationSimGame.InitSimGameRepresentation def:"+mechDef.Description.Id+" object:"+this.gameObject.name+ " heraldry:"+(heraldryDef == null?"null":(heraldryDef.Description.Id+" c1:"+heraldryDef.PrimaryMechColor.paintLayer.paintColor.ToString())));
       this.DataManager = dataManager;
       this._mechDef = mechDef;
       //this.prefabName = string.Format("chrPrfComp_{0}_simgame", string.IsNullOrEmpty(mechDef.prefabOverride) ? (object)mechDef.Chassis.PrefabBase : (object)mechDef.prefabOverride.Replace("chrPrfMech_", ""));
@@ -439,35 +544,44 @@ namespace CustomUnits {
     }
 
     public virtual void loadCustomization(HeraldryDef heraldryDef) {
-      if (this.defaultMechCustomization != null && heraldryDef != null && this.mechDef != null) {
-        string paintTextureId = this.mechDef.PaintTextureID;
-        SimGameState simulation = UnityGameInstance.BattleTechGame.Simulation;
-        if (string.IsNullOrEmpty(paintTextureId) && simulation != null) {
-          if (!simulation.pilotableActorPaintDiscardPile.ContainsKey(this.mechDef.Description.Id))
-            simulation.pilotableActorPaintDiscardPile.Add(this.mechDef.Description.Id, new List<string>());
-          List<string> stringList1 = simulation.pilotableActorPaintDiscardPile[this.mechDef.Description.Id];
-          List<string> stringList2 = new List<string>();
-          foreach (Texture2D paintPattern in this.defaultMechCustomization.paintPatterns) {
-            if (!stringList1.Contains(paintPattern.name))
-              stringList2.Add(paintPattern.name);
+      Log.TWL(0, "CustomMechRepresentationSimGame.loadCustomization "
+        + " customization:"+ (this.defaultMechCustomization==null?"null": this.defaultMechCustomization.gameObject.name)
+        + " heraldryDef:" + (heraldryDef == null ? "null" : heraldryDef.Description.Id)
+        + " mechDef:" + (this._mechDef == null ? "null" : this._mechDef.Description.Id)
+      );
+      try {
+        if (this.defaultMechCustomization != null && heraldryDef != null && this._mechDef != null) {
+          string paintTextureId = this._mechDef.PaintTextureID;
+          SimGameState simulation = UnityGameInstance.BattleTechGame.Simulation;
+          if (string.IsNullOrEmpty(paintTextureId) && simulation != null) {
+            if (!simulation.pilotableActorPaintDiscardPile.ContainsKey(this._mechDef.Description.Id))
+              simulation.pilotableActorPaintDiscardPile.Add(this._mechDef.Description.Id, new List<string>());
+            List<string> stringList1 = simulation.pilotableActorPaintDiscardPile[this._mechDef.Description.Id];
+            List<string> stringList2 = new List<string>();
+            foreach (Texture2D paintPattern in this.defaultMechCustomization.paintPatterns) {
+              if (!stringList1.Contains(paintPattern.name))
+                stringList2.Add(paintPattern.name);
+            }
+            if (stringList1.Count >= stringList2.Count)
+              stringList1.Clear();
+            if (stringList2.Count > 0) {
+              string textureId = stringList2[UnityEngine.Random.Range(0, stringList2.Count - 1)];
+              this._mechDef.UpdatePaintTextureId(textureId);
+              stringList1.Add(textureId);
+            }
           }
-          if (stringList1.Count >= stringList2.Count)
-            stringList1.Clear();
-          if (stringList2.Count > 0) {
-            string textureId = stringList2[UnityEngine.Random.Range(0, stringList2.Count - 1)];
-            this.mechDef.UpdatePaintTextureId(textureId);
-            stringList1.Add(textureId);
-          }
+          this.defaultMechCustomization.ApplyHeraldry(heraldryDef, this._mechDef.PaintTextureID);
+        } else {
+          ColorSwatch layer0 = Resources.Load("Swatches/Player1_0", typeof(ColorSwatch)) as ColorSwatch;
+          ColorSwatch layer1 = Resources.Load("Swatches/Player1_1", typeof(ColorSwatch)) as ColorSwatch;
+          ColorSwatch layer2 = Resources.Load("Swatches/Player1_2", typeof(ColorSwatch)) as ColorSwatch;
+          if (this.defaultMechCustomization != null && this.defaultMechCustomization.paintPatterns != null && this.defaultMechCustomization.paintPatterns.Length != 0)
+            this.defaultMechCustomization.paintScheme = new MechPaintScheme(this.defaultMechCustomization.paintPatterns[UnityEngine.Random.Range(0, this.defaultMechCustomization.paintPatterns.Length)], layer0, layer1, layer2);
+          else
+            Log.TWL(0, this.chassisDef.Description.Id + " problem initializing custom paint scheme");
         }
-        this.defaultMechCustomization.ApplyHeraldry(heraldryDef, this.mechDef.PaintTextureID);
-      } else {
-        ColorSwatch layer0 = Resources.Load("Swatches/Player1_0", typeof(ColorSwatch)) as ColorSwatch;
-        ColorSwatch layer1 = Resources.Load("Swatches/Player1_1", typeof(ColorSwatch)) as ColorSwatch;
-        ColorSwatch layer2 = Resources.Load("Swatches/Player1_2", typeof(ColorSwatch)) as ColorSwatch;
-        if (this.defaultMechCustomization != null && this.defaultMechCustomization.paintPatterns != null && this.defaultMechCustomization.paintPatterns.Length != 0)
-          this.defaultMechCustomization.paintScheme = new MechPaintScheme(this.defaultMechCustomization.paintPatterns[UnityEngine.Random.Range(0, this.defaultMechCustomization.paintPatterns.Length)], layer0, layer1, layer2);
-        else
-          Log.TWL(0,this.chassisDef.Description.Id+" problem initializing custom paint scheme");
+      }catch(Exception e) {
+        Log.TWL(0,e.ToString(),true);
       }
     }
     public virtual void ClearComponentReps() {

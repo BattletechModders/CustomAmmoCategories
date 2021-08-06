@@ -904,8 +904,8 @@ namespace CustomUnits {
         if (actor.UnitType != UnitType.Mech) { return true; }
         if (actor.FakeVehicle()) {
           computerCustom.fakeVehicleReadout.UpdateVehicleStructureAndArmor(__instance.shownAttackDirection);
+          return false;
         }
-        return false;
       } catch (Exception e) {
         Log.TWL(0, e.ToString(), true);
       }

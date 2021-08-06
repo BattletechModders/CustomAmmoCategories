@@ -19,6 +19,9 @@ namespace SortByTonnage {
 
     public bool orderByNickname = false;
     public bool OrderByNickname => orderByNickname;
+
+    public bool orderByTonnage = false;
+    public bool OrderByTonnage => orderByTonnage;
   }
   public static class SortByTonnage {
     public const string ModName = "SortByTonnage";
@@ -74,7 +77,9 @@ namespace SortByTonnage {
     private static List<IMechLabDraggableItem> SortMechDefs(List<IMechLabDraggableItem> mechs) {
       try {
         Log.TWL(0, $"pre-sort count: {mechs.Count}");
-
+        if ((ModSettings.OrderByNickname == false) && (ModSettings.OrderByCbillValue == false) && (ModSettings.OrderByTonnage == false)) {
+          Log.TWL(0, "sorting disabled");
+        }
         if (ModSettings.OrderByNickname) {
           return
               mechs

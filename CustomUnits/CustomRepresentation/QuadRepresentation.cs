@@ -172,17 +172,19 @@ namespace CustomUnits {
       }
     }
     public virtual void AddBody(GameObject bodyGo, DataManager dataManager) {
+
       if (this.j_Root == null) {
         this.j_Root = this.transform.FindRecursive("j_Root");
       }
       Transform bodyRoot = bodyGo.transform.FindRecursive("j_Root");
-      Transform bodyMesh = bodyGo.transform.FindRecursive("mesh");
-      Transform camoholderGo = bodyGo.transform.FindRecursive("camoholder");
+      Transform bodyMesh = bodyGo.transform.FindTopLevelChild("mesh");
+      Transform camoholderGo = bodyGo.transform.FindTopLevelChild("camoholder");
       MeshRenderer camoholder = null;
       if (camoholderGo != null) {
         camoholder = camoholderGo.gameObject.GetComponent<MeshRenderer>();
         camoholderGo.transform.SetParent(this.VisibleObject.transform);
       }
+      Log.TWL(0, "QuadRepresentation.AddBody: camoholder:" + (camoholder==null?"null":camoholder.name));
       if (bodyRoot != null) {
         bodyRoot.name = "j_QuadSkeleton";
         bodyRoot.SetParent(this.j_Root);

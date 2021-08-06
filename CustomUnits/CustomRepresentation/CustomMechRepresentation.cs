@@ -190,6 +190,8 @@ namespace CustomUnits {
     private static d_AbstractActor_EjectPilot i_AbstractActor_EjectPilot = null;
     public delegate void d_AbstractActor_Init(AbstractActor unit, Vector3 position, float facing, bool checkEncounterCells);
     private static d_AbstractActor_Init i_AbstractActor_Init = null;
+    public delegate void d_AbstractActor_ApplyBraced(AbstractActor unit);
+    private static d_AbstractActor_ApplyBraced i_AbstractActor_ApplyBraced = null;
     public static void AbstractActor_Init(AbstractActor unit, Vector3 position, float facing, bool checkEncounterCells) {
       if (i_AbstractActor_Init == null) {
         MethodInfo method = typeof(AbstractActor).GetMethod("Init", BindingFlags.Public | BindingFlags.Instance);
@@ -205,6 +207,19 @@ namespace CustomUnits {
       }
       if (i_AbstractActor_Init == null) { return; }
       i_AbstractActor_Init(unit,position,facing,checkEncounterCells);
+    }
+    public static void AbstractActor_ApplyBraced(AbstractActor unit) {
+      if (i_AbstractActor_ApplyBraced == null) {
+        MethodInfo method = typeof(AbstractActor).GetMethod("ApplyBraced", BindingFlags.Public | BindingFlags.Instance);
+        var dm = new DynamicMethod("CACAbstractActor_ApplyBraced", null, new Type[] { typeof(AbstractActor) });
+        var gen = dm.GetILGenerator();
+        gen.Emit(OpCodes.Ldarg_0);
+        gen.Emit(OpCodes.Call, method);
+        gen.Emit(OpCodes.Ret);
+        i_AbstractActor_ApplyBraced = (d_AbstractActor_ApplyBraced)dm.CreateDelegate(typeof(d_AbstractActor_ApplyBraced));
+      }
+      if (i_AbstractActor_ApplyBraced == null) { return; }
+      i_AbstractActor_ApplyBraced(unit);
     }
     public static void AbstractActor_EjectPilot(AbstractActor unit, string sourceID, int stackItemID, DeathMethod deathMethod, bool isSilent) {
       if(i_AbstractActor_EjectPilot == null)
@@ -229,6 +244,15 @@ namespace CustomUnits {
       : base(mDef, pilotDef, additionalTags, UID, combat, spawnerId, customHeraldryDef) 
     {
 
+    }
+    public override void ApplyBraced() {
+      if (this.IsDead || this.IsOrWillBeProne || this.IsShutDown || this.isVehicle || this.isSquad) { return; };
+      AbstractActor_ApplyBraced(this);
+      this.BracedLastRound = true;
+      this.IsEntrenched = true;
+      this.ApplyInstabilityReduction(StabilityChangeSource.Bracing);
+      if (this.GameRep != null) { return; }
+      this.GameRep.TriggerMeleeTransition(true);
     }
     //public override void Init(Vector3 position, float facing, bool checkEncounterCells) {
     //  AbstractActor_Init(this,position, facing, checkEncounterCells);
