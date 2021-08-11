@@ -1437,16 +1437,13 @@ namespace CustomUnits {
         bool isFake = chassisId.IsInFakeChassis();
         Log.WL(1,id+" chassis:"+chassisId+" isFake:"+isFake);
         if (isFake == false) { return true; }
-        Log.WL(1, "constants " + (BattleTech.UnityGameInstance.BattleTechGame.constantsManifest() == null ? "null" : BattleTech.UnityGameInstance.BattleTechGame.constantsManifest().FilePath));
         JObject newdef = new JObject();
         if (olddef["Chassis"] != null) { return true; };
         float ArmorMultiplierVehicle = 1f;
         float StructureMultiplierVehicle = 1f;
         if (CombatValueMultipliers.HasValue == false) {
-          if (BattleTech.UnityGameInstance.BattleTechGame.constantsManifest() != null) {
-            CombatGameConstantsFake constants = new CombatGameConstantsFake();
-            JSONSerializationUtility.FromJSON<CombatGameConstantsFake>(constants, File.ReadAllText(BattleTech.UnityGameInstance.BattleTechGame.constantsManifest().FilePath));
-            CombatValueMultipliers = constants.CombatValueMultipliers;
+          if (Core.Settings.DefaultCombatValueMultipliers != null) {
+            CombatValueMultipliers = Core.Settings.DefaultCombatValueMultipliers;
             ArmorMultiplierVehicle = CombatValueMultipliers.Value.ArmorMultiplierVehicle;
             StructureMultiplierVehicle = CombatValueMultipliers.Value.StructureMultiplierVehicle;
           }
@@ -1569,14 +1566,11 @@ namespace CustomUnits {
         bool isFake = id.IsInFakeChassis();
         Log.WL(1, id + " isFake:" + isFake);
         if (isFake == false) { return result; }
-        Log.WL(1, "constants " + (BattleTech.UnityGameInstance.BattleTechGame.constantsManifest() == null ? "null" : BattleTech.UnityGameInstance.BattleTechGame.constantsManifest().FilePath));
         float ArmorMultiplierVehicle = 1f;
         float StructureMultiplierVehicle = 1f;
         if (MechDef_FromJSON_fake.CombatValueMultipliers.HasValue == false) {
-          if (BattleTech.UnityGameInstance.BattleTechGame.constantsManifest() != null) {
-            MechDef_FromJSON_fake.CombatGameConstantsFake constants = new MechDef_FromJSON_fake.CombatGameConstantsFake();
-            JSONSerializationUtility.FromJSON<MechDef_FromJSON_fake.CombatGameConstantsFake>(constants, File.ReadAllText(BattleTech.UnityGameInstance.BattleTechGame.constantsManifest().FilePath));
-            MechDef_FromJSON_fake.CombatValueMultipliers = constants.CombatValueMultipliers;
+          if (Core.Settings.DefaultCombatValueMultipliers != null) {
+            MechDef_FromJSON_fake.CombatValueMultipliers = Core.Settings.DefaultCombatValueMultipliers;
             ArmorMultiplierVehicle = MechDef_FromJSON_fake.CombatValueMultipliers.Value.ArmorMultiplierVehicle;
             StructureMultiplierVehicle = MechDef_FromJSON_fake.CombatValueMultipliers.Value.StructureMultiplierVehicle;
           }
@@ -1717,15 +1711,6 @@ namespace CustomUnits {
     private static HashSet<string> fakeChassisDef = new HashSet<string>();
     private static Dictionary<string, HashSet<string>> chassisMechsRegistry = new Dictionary<string, HashSet<string>>();
     private static BattleTechResourceLocator ResourceLocator => UnityGameInstance.BattleTechGame.DataManager.ResourceLocator;
-
-    [Obsolete]
-    // TODO introduce settings somewhere else, if in same file -> CC, otherwise settings file for VehicleControl
-    public static VersionManifestEntry constantsManifest(this GameInstance game)
-    {
-      return null;
-      // in ModTek V2, the returned constants file is not pointing to any merged file. Merging is done as part of the data manager loading process
-      //return game.DataManager.ResourceLocator.EntryByID("CombatGameConstants", BattleTechResourceType.CombatGameConstants);
-    }
     //public static void RegisterMech(this MechDef def, string mechId, string chassisId) {
     //  if(chassisMechsRegistry.TryGetValue(chassisId, out HashSet<string> registry) == false) {
     //    registry = new HashSet<string>();
