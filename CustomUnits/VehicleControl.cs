@@ -1692,11 +1692,11 @@ namespace CustomUnits {
       try
       {
         Log.TWL(0, "ContentPackIndex.TryFinalizeDataLoad");
-        // called every time content packs manifest information is fully loaded
+        // called every time content packs defs are fully loaded from default manifest
         // and dlc ownership changes are detected (e.g. after paradox login and backer unlock)
         if (__instance.AllContentPacksLoaded())
         {
-          BattleTechResourceLocator_RefreshTypedEntries_Patch.AllContentPacksLoaded();
+          FakeDatabase.AllContentPacksLoaded();
         }
       }
       catch (Exception e)
@@ -1705,8 +1705,8 @@ namespace CustomUnits {
       }
     }
   }
-  //[HarmonyPatch(typeof(BattleTechResourceLocator), "RefreshTypedEntries")]
-  public static class BattleTechResourceLocator_RefreshTypedEntries_Patch {
+
+  internal static class FakeDatabase {
     private static HashSet<string> fakemechDefs = new HashSet<string>();
     private static HashSet<string> fakeChassisDef = new HashSet<string>();
     private static Dictionary<string, HashSet<string>> chassisMechsRegistry = new Dictionary<string, HashSet<string>>();
