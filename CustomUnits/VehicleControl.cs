@@ -1437,16 +1437,13 @@ namespace CustomUnits {
         bool isFake = chassisId.IsInFakeChassis();
         Log.WL(1,id+" chassis:"+chassisId+" isFake:"+isFake);
         if (isFake == false) { return true; }
-        Log.WL(1, "constants " + (BattleTech.UnityGameInstance.BattleTechGame.constantsManifest() == null ? "null" : BattleTech.UnityGameInstance.BattleTechGame.constantsManifest().FilePath));
         JObject newdef = new JObject();
         if (olddef["Chassis"] != null) { return true; };
         float ArmorMultiplierVehicle = 1f;
         float StructureMultiplierVehicle = 1f;
         if (CombatValueMultipliers.HasValue == false) {
-          if (BattleTech.UnityGameInstance.BattleTechGame.constantsManifest() != null) {
-            CombatGameConstantsFake constants = new CombatGameConstantsFake();
-            JSONSerializationUtility.FromJSON<CombatGameConstantsFake>(constants, File.ReadAllText(BattleTech.UnityGameInstance.BattleTechGame.constantsManifest().FilePath));
-            CombatValueMultipliers = constants.CombatValueMultipliers;
+          if (Core.Settings.DefaultCombatValueMultipliers != null) {
+            CombatValueMultipliers = Core.Settings.DefaultCombatValueMultipliers;
             ArmorMultiplierVehicle = CombatValueMultipliers.Value.ArmorMultiplierVehicle;
             StructureMultiplierVehicle = CombatValueMultipliers.Value.StructureMultiplierVehicle;
           }
@@ -1569,14 +1566,11 @@ namespace CustomUnits {
         bool isFake = id.IsInFakeChassis();
         Log.WL(1, id + " isFake:" + isFake);
         if (isFake == false) { return result; }
-        Log.WL(1, "constants " + (BattleTech.UnityGameInstance.BattleTechGame.constantsManifest() == null ? "null" : BattleTech.UnityGameInstance.BattleTechGame.constantsManifest().FilePath));
         float ArmorMultiplierVehicle = 1f;
         float StructureMultiplierVehicle = 1f;
         if (MechDef_FromJSON_fake.CombatValueMultipliers.HasValue == false) {
-          if (BattleTech.UnityGameInstance.BattleTechGame.constantsManifest() != null) {
-            MechDef_FromJSON_fake.CombatGameConstantsFake constants = new MechDef_FromJSON_fake.CombatGameConstantsFake();
-            JSONSerializationUtility.FromJSON<MechDef_FromJSON_fake.CombatGameConstantsFake>(constants, File.ReadAllText(BattleTech.UnityGameInstance.BattleTechGame.constantsManifest().FilePath));
-            MechDef_FromJSON_fake.CombatValueMultipliers = constants.CombatValueMultipliers;
+          if (Core.Settings.DefaultCombatValueMultipliers != null) {
+            MechDef_FromJSON_fake.CombatValueMultipliers = Core.Settings.DefaultCombatValueMultipliers;
             ArmorMultiplierVehicle = MechDef_FromJSON_fake.CombatValueMultipliers.Value.ArmorMultiplierVehicle;
             StructureMultiplierVehicle = MechDef_FromJSON_fake.CombatValueMultipliers.Value.StructureMultiplierVehicle;
           }
@@ -1690,13 +1684,33 @@ namespace CustomUnits {
       return result;
     }
   }
-  [HarmonyPatch(typeof(BattleTechResourceLocator), "RefreshTypedEntries")]
-  public static class BattleTechResourceLocator_RefreshTypedEntries_Patch {
+  [HarmonyPatch(typeof(ContentPackIndex), "TryFinalizeDataLoad")]
+  public static class ContentPackIndex_TryFinalizeDataLoad_Patch
+  {
+    public static void Postfix(ContentPackIndex __instance)
+    {
+      try
+      {
+        Log.TWL(0, "ContentPackIndex.TryFinalizeDataLoad");
+        // called every time content packs defs are fully loaded from default manifest
+        // and dlc ownership changes are detected (e.g. after paradox login and backer unlock)
+        if (__instance.AllContentPacksLoaded())
+        {
+          FakeDatabase.AllContentPacksLoaded();
+        }
+      }
+      catch (Exception e)
+      {
+        Log.WL(0, $"Exception: {e}");
+      }
+    }
+  }
+
+  internal static class FakeDatabase {
     private static HashSet<string> fakemechDefs = new HashSet<string>();
     private static HashSet<string> fakeChassisDef = new HashSet<string>();
     private static Dictionary<string, HashSet<string>> chassisMechsRegistry = new Dictionary<string, HashSet<string>>();
-    private static VersionManifestEntry CombatGameConstants = null;
-    public static VersionManifestEntry constantsManifest(this GameInstance game) { return CombatGameConstants; }
+    private static BattleTechResourceLocator ResourceLocator => UnityGameInstance.BattleTechGame.DataManager.ResourceLocator;
     //public static void RegisterMech(this MechDef def, string mechId, string chassisId) {
     //  if(chassisMechsRegistry.TryGetValue(chassisId, out HashSet<string> registry) == false) {
     //    registry = new HashSet<string>();
@@ -1731,52 +1745,43 @@ namespace CustomUnits {
       }
       return false;
     }
-    public static void Postfix(
-            Dictionary<BattleTechResourceType, Dictionary<string, VersionManifestEntry>> ___baseManifest,
-            Dictionary<BattleTechResourceType, Dictionary<string, VersionManifestEntry>> ___contentPacksManifest) {
-      Log.TWL(0, "BattleTechResourceLocator.RefreshTypedEntries");
-      if (___baseManifest.TryGetValue(BattleTechResourceType.CombatGameConstants, out Dictionary<string, VersionManifestEntry> costants)) {
-        if(costants.TryGetValue(nameof(CombatGameConstants),out VersionManifestEntry manifest)) {
-          CombatGameConstants = manifest;
-        }
-      }
-      if (___baseManifest.TryGetValue(BattleTechResourceType.VehicleDef, out Dictionary<string, VersionManifestEntry> vehicles)) {
-        if (___baseManifest.TryGetValue(BattleTechResourceType.MechDef, out Dictionary<string, VersionManifestEntry> mechs) == false) {
-          mechs = new Dictionary<string, VersionManifestEntry>();
-          ___baseManifest.Add(BattleTechResourceType.MechDef, mechs);
-        }
+
+    private static readonly VersionManifestAddendum FakeEntries = new VersionManifestAddendum("CustomUnitsVehicles");
+    internal static void AllContentPacksLoaded() {
+      ResourceLocator.RemoveAddendum(FakeEntries); // remove old entries
+
+      {
         fakemechDefs.Clear();
-        foreach (var vehicle in vehicles) {
-          if (mechs.ContainsKey(vehicle.Key)) { continue; }
-          Log.WL(1, "adding MechDef " + vehicle.Key + " " + vehicle.Value.GetRawPath());
-          fakemechDefs.Add(vehicle.Key);
-          mechs.Add(vehicle.Key, new VersionManifestEntry(vehicle.Key, vehicle.Value.GetRawPath(), BattleTechResourceType.MechDef.ToString()
-            ,vehicle.Value.AddedOn
-            ,vehicle.Value.Version.ToString()
-            ,vehicle.Value.AssetBundleName
-            ,vehicle.Value.IsAssetBundlePersistent)
+        foreach (var vehicle in ResourceLocator.AllEntriesOfResource(BattleTechResourceType.VehicleDef)) {
+          Log.WL(1, "adding MechDef " + vehicle.Id + " " + vehicle.GetRawPath());
+          fakemechDefs.Add(vehicle.Id);
+          FakeEntries.Add(new VersionManifestEntry(vehicle.Id
+            , vehicle.GetRawPath()
+            , BattleTechResourceType.MechDef.ToString()
+            , vehicle.AddedOn
+            , vehicle.Version.ToString()
+            , vehicle.AssetBundleName
+            , vehicle.IsAssetBundlePersistent)
           );
         }
       }
-      if (___baseManifest.TryGetValue(BattleTechResourceType.VehicleChassisDef, out Dictionary<string, VersionManifestEntry> vchassis)) {
-        if (___baseManifest.TryGetValue(BattleTechResourceType.ChassisDef, out Dictionary<string, VersionManifestEntry> mchassis) == false) {
-          mchassis = new Dictionary<string, VersionManifestEntry>();
-          ___baseManifest.Add(BattleTechResourceType.ChassisDef, mchassis);
-        }
+
+      {
         fakeChassisDef.Clear();
-        foreach (var vchassi in vchassis) {
-          if (mchassis.ContainsKey(vchassi.Key)) { continue; }
-          Log.WL(1, "adding ChassisDef " + vchassi.Key + " " + vchassi.Value.GetRawPath());
-          fakeChassisDef.Add(vchassi.Key);
-          mchassis.Add(vchassi.Key, new VersionManifestEntry(vchassi.Key
-            , vchassi.Value.GetRawPath()
+        foreach (var vchassi in ResourceLocator.AllEntriesOfResource(BattleTechResourceType.VehicleChassisDef)) {
+          Log.WL(1, "adding ChassisDef " + vchassi.Id + " " + vchassi.GetRawPath());
+          fakeChassisDef.Add(vchassi.Id);
+          FakeEntries.Add(new VersionManifestEntry(vchassi.Id
+            , vchassi.GetRawPath()
             , BattleTechResourceType.ChassisDef.ToString()
-            , vchassi.Value.AddedOn
-            , vchassi.Value.Version.ToString()
-            , vchassi.Value.AssetBundleName
-            , vchassi.Value.IsAssetBundlePersistent));
+            , vchassi.AddedOn
+            , vchassi.Version.ToString()
+            , vchassi.AssetBundleName
+            , vchassi.IsAssetBundlePersistent));
         }
       }
+
+      ResourceLocator.ApplyAddendum(FakeEntries);
     }
   }
   [HarmonyPatch(typeof(CombatHUDMechTray))]

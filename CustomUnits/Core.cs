@@ -193,6 +193,8 @@ namespace CustomUnits{
     public bool PartialMovementOnlyWalkByDefault { get; set; }
     public bool AllowRotateWhileJumpByDefault { get; set; }
     public string MechIsVehicleTag { get; set; }
+    public CombatValueMultipliersDef? DefaultCombatValueMultipliers { get; set; }
+
     [JsonIgnore]
     public Dictionary<string, Dictionary<string, float>> weaponPrefabMappings { get; private set; }
     public ComponentPrefabMap[] WeaponPrefabMappings {
@@ -460,7 +462,7 @@ namespace CustomUnits{
           MethodInfo BuildObjectMap = AssetBundleTracker.GetMethod("BuildObjectMap", BindingFlags.Instance | BindingFlags.NonPublic);
           if (BuildObjectMap != null) {
             MethodInfo patched = typeof(AssetBundleTracker_BuildObjectMap).GetMethod("Postfix", BindingFlags.Static | BindingFlags.Public);
-            if(patched != null) { 
+            if(patched != null) {
               harmony.Patch(BuildObjectMap,null,new HarmonyMethod(patched));
               Log.TWL(0, "BattleTech.Assetbundles.AssetBundleTracker.BuildObjectMap patched");
             }
