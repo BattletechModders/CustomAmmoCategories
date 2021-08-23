@@ -6,6 +6,7 @@ using BattleTech.UI.TMProWrapper;
 using CustAmmoCategoriesPatches;
 using CustomAmmoCategoriesLog;
 using CustomAmmoCategoriesPatches;
+using CustomComponents.Patches;
 using Harmony;
 using HBS;
 using HBS.Data;
@@ -724,7 +725,7 @@ namespace CustAmmoCategories {
         }
         for (int index = 0; index < ___activeMech.Inventory.Length; ++index) {
           MechComponentRef componentRef = ___activeMech.Inventory[index];
-          if (componentRef.MountedLocation == location) {
+          if (LanceMechEquipmentList_SetLoadout_Patch.MountedLocation(componentRef.MountedLocation) == location) {
             GameObject gameObject = ___dataManager.PooledInstantiate("uixPrfPanl_LC_MechLoadoutItem", BattleTechResourceType.UIModulePrefabs, new Vector3?(), new Quaternion?(), (Transform)null);
             LanceMechEquipmentListItem component = gameObject.GetComponent<LanceMechEquipmentListItem>();
             UIColor bgColor = MechComponentRef.GetUIColor(componentRef);
