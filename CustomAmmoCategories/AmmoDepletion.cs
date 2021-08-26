@@ -706,6 +706,35 @@ namespace CustAmmoCategories {
   [HarmonyPatch("SetLoadout")]
   [HarmonyPatch(new Type[] { typeof(LocalizableText), typeof(UIColorRefTracker), typeof(Transform), typeof(ChassisLocations) })]
   public static class LanceMechEquipmentList_SetLoadout {
+    public delegate ChassisLocations d_LanceMechEquipmentList_SetLoadout_Patch_MountedLocation(MechComponentRef componentRef);
+    private static d_LanceMechEquipmentList_SetLoadout_Patch_MountedLocation i_LanceMechEquipmentList_SetLoadout_Patch_MountedLocation = null;
+    public static ChassisLocations CC_MountedLocation(this MechComponentRef componentRef) {
+      if (i_LanceMechEquipmentList_SetLoadout_Patch_MountedLocation != null) { return i_LanceMechEquipmentList_SetLoadout_Patch_MountedLocation(componentRef); }
+      return componentRef.MountedLocation;
+    }
+    public static bool Prepare() {
+      {
+        Type LanceMechEquipmentList_SetLoadout_Patch = typeof(CustomComponents.Validator).Assembly.GetType("CustomComponents.Patches.LanceMechEquipmentList_SetLoadout_Patch");
+        if (LanceMechEquipmentList_SetLoadout_Patch == null) {
+          Log.M.TWL(0, "CustomComponents class CustomComponents.Patches.LanceMechEquipmentList_SetLoadout_Patch not found");
+          return true;
+        }
+        Log.M.TWL(0, "CustomComponents class CustomComponents.Patches.LanceMechEquipmentList_SetLoadout_Patch found");
+        MethodInfo method = LanceMechEquipmentList_SetLoadout_Patch.GetMethod("MountedLocation", BindingFlags.Public | BindingFlags.Static);
+        if (method == null) {
+          Log.M.TWL(0, "CustomComponents method CustomComponents.Patches.LanceMechEquipmentList_SetLoadout_Patch.MountedLocation not found");
+          return true;
+        }
+        Log.M.TWL(0, "CustomComponents method CustomComponents.Patches.LanceMechEquipmentList_SetLoadout_Patch.MountedLocation found");
+        var dm = new DynamicMethod("CACLanceMechEquipmentList_SetLoadout_Patch_MountedLocation", typeof(ChassisLocations), new Type[] { typeof(MechComponentRef) });
+        var gen = dm.GetILGenerator();
+        gen.Emit(OpCodes.Ldarg_0);
+        gen.Emit(OpCodes.Call, method);
+        gen.Emit(OpCodes.Ret);
+        i_LanceMechEquipmentList_SetLoadout_Patch_MountedLocation = (d_LanceMechEquipmentList_SetLoadout_Patch_MountedLocation)dm.CreateDelegate(typeof(d_LanceMechEquipmentList_SetLoadout_Patch_MountedLocation));
+      }
+      return true;
+    }
     public static bool Prefix(LanceMechEquipmentList __instance,ref MechDef ___activeMech, ref List<GameObject> ___allComponents, DataManager ___dataManager, LocalizableText headerLabel, UIColorRefTracker headerColor, Transform layoutParent, ChassisLocations location, ref UIColor __state) {
       try {
         if (UnityGameInstance.BattleTechGame.Simulation == null) { return true; }
@@ -725,7 +754,7 @@ namespace CustAmmoCategories {
         }
         for (int index = 0; index < ___activeMech.Inventory.Length; ++index) {
           MechComponentRef componentRef = ___activeMech.Inventory[index];
-          if (LanceMechEquipmentList_SetLoadout_Patch.MountedLocation(componentRef.MountedLocation) == location) {
+          if (componentRef.CC_MountedLocation() == location) {
             GameObject gameObject = ___dataManager.PooledInstantiate("uixPrfPanl_LC_MechLoadoutItem", BattleTechResourceType.UIModulePrefabs, new Vector3?(), new Quaternion?(), (Transform)null);
             LanceMechEquipmentListItem component = gameObject.GetComponent<LanceMechEquipmentListItem>();
             UIColor bgColor = MechComponentRef.GetUIColor(componentRef);
