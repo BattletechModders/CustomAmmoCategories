@@ -437,6 +437,9 @@ namespace CustAmmoCategories {
           this.IsAMS = TripleBoolean.True;
         }
       }
+      if (jWeaponMode["AMSShootsEveryAttack"] != null) {
+        this.AMSShootsEveryAttack = ((bool)jWeaponMode["AMSShootsEveryAttack"] == true) ? TripleBoolean.True : TripleBoolean.False;
+      }
       if (jWeaponMode["isDamageVariation"] != null) {
         this.isDamageVariation = ((bool)jWeaponMode["isDamageVariation"] == true) ? TripleBoolean.True : TripleBoolean.False;
       }

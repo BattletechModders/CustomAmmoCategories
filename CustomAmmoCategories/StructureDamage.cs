@@ -44,6 +44,8 @@ namespace CustAmmoCategories {
   }
   public static class ExDamageHelper {
     public static readonly string APProtectionStatisticName = "CACAPProtection";
+    public static readonly string APShardsStatisticName = "CACAPShardsMult";
+    public static readonly string APMaxArmorThiknessStatisticName = "CACAPMaxThiknessMult";
     public static readonly string AoEDamageMultStatisticName = "CACAoEDamageMult";
     public static readonly string APDamageMultStatisticName = "CACAPDamageMult";
     public static readonly string IncomingHeatMultStatisticName = "CACIncomingHeatMult";
@@ -68,9 +70,23 @@ namespace CustAmmoCategories {
       if (unit.StatCollection.ContainsStatistic(IncomingStabilityMultStatisticName) == false) { return 1f; }
       return unit.StatCollection.GetStatistic(IncomingStabilityMultStatisticName).Value<float>();
     }
+    public static float APShardsMult(this ICombatant unit) {
+      if (unit.StatCollection.ContainsStatistic(APShardsStatisticName) == false) { return 1f; }
+      return unit.StatCollection.GetStatistic(APShardsStatisticName).Value<float>();
+    }
+    public static float APMaxArmorThiknessMult(this ICombatant unit) {
+      if (unit.StatCollection.ContainsStatistic(APMaxArmorThiknessStatisticName) == false) { return 1f; }
+      return unit.StatCollection.GetStatistic(APMaxArmorThiknessStatisticName).Value<float>();
+    }
     public static void InitExDamageStats(this ICombatant unit) {
       if (unit.StatCollection.ContainsStatistic(APProtectionStatisticName) == false) {
         unit.StatCollection.AddStatistic<bool>(APProtectionStatisticName, false);
+      }
+      if (unit.StatCollection.ContainsStatistic(APShardsStatisticName) == false) {
+        unit.StatCollection.AddStatistic<float>(APShardsStatisticName, 1.0f);
+      }
+      if (unit.StatCollection.ContainsStatistic(APMaxArmorThiknessStatisticName) == false) {
+        unit.StatCollection.AddStatistic<float>(APMaxArmorThiknessStatisticName, 1.0f);
       }
       if (unit.StatCollection.ContainsStatistic(AoEDamageMultStatisticName) == false) {
         unit.StatCollection.AddStatistic<float>(AoEDamageMultStatisticName, 1f);

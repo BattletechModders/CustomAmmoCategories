@@ -34,6 +34,8 @@ CACAoEDamageMult - float - multipicator for all AoE damage to unit including AoE
 CACAPDamageMult - float - multipicator for all AP damage to unit (only pierce through part of damage)
 CACIncomingHeatMult - float - multipicator for all incoming heat (weapon attacks, landmines, burning terrain, AoE damage)
 CACIncomingStabilityMult - float - multipicator for all incoming stability (weapon attacks, landmines, burning terrain, AoE damage)
+CACAPShardsMult - float - multipicator for weapon shards TAC modifier (shardsMod = weapon.APArmorShardsMod() * unit.{CACAPShardsMult}) default 1.0
+CACAPMaxThiknessMult - float - multipicator for weapon max armor thikness TAC modifier (maxThickness = weapon.APMaxArmorThickness() * unit.{CACAPMaxThiknessMult}) default 1.0
 
 {
 "debugLog":true, - enable debug log 

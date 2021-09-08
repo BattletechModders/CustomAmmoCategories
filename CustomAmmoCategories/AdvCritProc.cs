@@ -119,11 +119,11 @@ namespace CustAmmoCategories {
       }
       if (armor > CustomAmmoCategories.Epsilon) {
         float baseCritChance = AdvancedCriticalProcessor.GetBaseAPCritChance(unit, critInfo);
-        float shardsCritChance = 1f; float shardsMod = weapon.APArmorShardsMod();
+        float shardsCritChance = 1f; float shardsMod = weapon.APArmorShardsMod() * unit.APShardsMult();
         if (shardsMod > CustomAmmoCategories.Epsilon) {
           shardsCritChance += (1f - armor / unit.MaxArmorForLocation(critInfo.armorLocation)) * shardsMod;
         }
-        float thicknessCritChance = 1f; float maxThickness = weapon.APMaxArmorThickness();
+        float thicknessCritChance = 1f; float maxThickness = weapon.APMaxArmorThickness() * unit.APMaxArmorThiknessMult();
         if (maxThickness > CustomAmmoCategories.Epsilon) {
           if (armor >= maxThickness) { thicknessCritChance = 0f; } else {
             thicknessCritChance = (1f - armor / maxThickness);
