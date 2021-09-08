@@ -124,13 +124,12 @@ namespace CustomUnits {
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { typeof(Vector3), typeof(float) })]
   public static class MechDestructibleObject_Collapse {
-    //public static void GatherRigidbodies(this MechDestructibleObject __instance, ref Rigidbody[] destroyedRigidbodies) {
-    //  if (__instance.destroyedObj != null) {
-    //    this.destroyedRigidbodies = this.destroyedObj.GetComponentsInChildren<Rigidbody>();
-    //    this.destroyedObj.SetActive(false);
-    //  } else
-    //    this.destroyedRigidbodies = new Rigidbody[0];
-    //}
+    public static void GatherRigidbodies(this MechDestructibleObject __instance, ref Rigidbody[] destroyedRigidbodies) {
+      if (__instance.destroyedObj != null) {
+        destroyedRigidbodies = __instance.destroyedObj.GetComponentsInChildren<Rigidbody>();
+      } else
+        destroyedRigidbodies = new Rigidbody[0];
+    }
     public static bool Prefix(MechDestructibleObject __instance, Vector3 forceDirection, float forceMagnitude,ref Rigidbody[] ___destroyedRigidbodies) {
       try {
         Log.TWL(0, "MechDestructibleObject.Collapse " + __instance.gameObject.name);
@@ -140,6 +139,7 @@ namespace CustomUnits {
         foreach(Rigidbody body in bodies) {
           Log.WL(2, "Rigidbody " + body.name);
           SkinnedMeshRenderer rnd_body = body.gameObject.GetComponent<SkinnedMeshRenderer>();
+          if (rnd_body == null) { continue; }
           if (rnd_body.rootBone == null) { continue; }
           if (rnd_body.rootBone == rnd_body.gameObject.transform) { continue; }
           Transform prevRoot = rnd_body.rootBone;
@@ -147,6 +147,30 @@ namespace CustomUnits {
           rnd_body.gameObject.transform.position = prevRoot.position;
           rnd_body.gameObject.transform.rotation = prevRoot.rotation;
           rnd_body.gameObject.transform.localScale = prevRoot.lossyScale;
+        }
+        if (__instance.wholeObj != null) { __instance.wholeObj.SetActive(false); }
+        if (__instance.destroyedObj == null) { return false; }
+        __instance.destroyedObj.SetActive(true);
+        if (___destroyedRigidbodies == null) { __instance.GatherRigidbodies(ref ___destroyedRigidbodies); }
+        for (int index = 0; index < ___destroyedRigidbodies.Length; ++index) {
+          Rigidbody destroyedRigidbody = ___destroyedRigidbodies[index];
+          Collider component = destroyedRigidbody.gameObject.GetComponent<Collider>();
+          Vector3 position = destroyedRigidbody.gameObject.transform.position;
+          Quaternion rotation = destroyedRigidbody.gameObject.transform.rotation;
+          Vector3 scale = destroyedRigidbody.gameObject.transform.lossyScale;
+          Log.WL(2, "Destroyed rig body:" + destroyedRigidbody.name+" scale:"+ scale);
+          destroyedRigidbody.gameObject.transform.parent = (Transform)null;
+          destroyedRigidbody.gameObject.transform.position = position;
+          destroyedRigidbody.gameObject.transform.rotation = rotation;
+          destroyedRigidbody.gameObject.transform.localScale = scale;
+          if (!__instance.CheckCollisionWithTerrain(component)) {
+            if (!destroyedRigidbody.isKinematic) {
+              destroyedRigidbody.gameObject.layer = LayerMask.NameToLayer("VFXPhysicsActive");
+              float num = Mathf.Pow(9f, (float)Mathf.FloorToInt(Mathf.Log10(destroyedRigidbody.mass * scale.magnitude)));
+              destroyedRigidbody.AddExplosionForce(forceMagnitude * num, __instance.destroyedObj.transform.position - forceDirection * 3f, 0.0f, 10f, ForceMode.Impulse);
+            }
+          } else
+            Debug.LogError((object)(destroyedRigidbody.name + " failed collapse "));
         }
         //if (__instance.wholeObj != null) { __instance.wholeObj.SetActive(false); }
         //if (__instance.destroyedObj == null) { return false; }
@@ -169,7 +193,7 @@ namespace CustomUnits {
       } catch (Exception e) {
         Log.TWL(0, e.ToString(), true);
       }
-      return true;
+      return false;
     }
   }
   public class ComponentRepresentationInfo {
@@ -254,78 +278,6 @@ namespace CustomUnits {
       if (this.GameRep != null) { return; }
       this.GameRep.TriggerMeleeTransition(true);
     }
-    //public override void Init(Vector3 position, float facing, bool checkEncounterCells) {
-    //  AbstractActor_Init(this,position, facing, checkEncounterCells);
-    //  this.isPilotable = true;
-    //  if (this.Combat.IsLoadingFromSave) {
-    //    this.InitAbstractActor(this.uid, this.spawnerGUID, this.Combat);
-    //    this.MeleeWeapon.InitFromSave(this.Combat, (AbstractActor)this);
-    //    this.DFAWeapon.InitFromSave(this.Combat, (AbstractActor)this);
-    //    this.pilot.CombatInitFromSave();
-    //    this.InitStats();
-    //    this.ResetPathing();
-    //  } else {
-    //    int num = 0;
-    //    for (int index = 0; index < this.MechDef.Inventory.Length; ++index) {
-    //      MechComponentRef mcRef = this.MechDef.Inventory[index];
-    //      mcRef.DataManager = this.MechDef.DataManager;
-    //      mcRef.RefreshComponentDef();
-    //      if (mcRef.ComponentDefType == ComponentType.Weapon) {
-    //        Weapon weapon = new Weapon(this, this.Combat, mcRef, num.ToString());
-    //        this.Weapons.Add(weapon);
-    //        this.allComponents.Add((MechComponent)weapon);
-    //      } else if (mcRef.ComponentDefType == ComponentType.AmmunitionBox) {
-    //        AmmunitionBox ammunitionBox = new AmmunitionBox(this, mcRef, num.ToString());
-    //        this.ammoBoxes.Add(ammunitionBox);
-    //        this.allComponents.Add((MechComponent)ammunitionBox);
-    //      } else if (mcRef.ComponentDefType == ComponentType.JumpJet) {
-    //        Jumpjet jumpjet = new Jumpjet(this, mcRef, num.ToString());
-    //        this.jumpjets.Add(jumpjet);
-    //        this.allComponents.Add((MechComponent)jumpjet);
-    //      } else {
-    //        MechComponent mechComponent = new MechComponent(this, this.Combat, mcRef, num.ToString());
-    //        this.miscComponents.Add(mechComponent);
-    //        this.allComponents.Add(mechComponent);
-    //      }
-    //      ++num;
-    //    }
-    //    if (AbstractActor.initLogger.IsDebugEnabled) {
-    //      for (int index = 0; index < this.Weapons.Count; ++index)
-    //        AbstractActor.initLogger.LogDebug((object)string.Format("Mech {0} on team {1} has weapon {2} with uid {3}", (object)this.UnitName, this.team != null ? (object)this.team.GUID : (object)"NO TEAM YET", (object)this.Weapons[index].Name, (object)this.Weapons[index].uid));
-    //    }
-    //    this.MechDef.meleeWeaponRef.DataManager = this.MechDef.DataManager;
-    //    this.MechDef.meleeWeaponRef.RefreshComponentDef();
-    //    this.MeleeWeapon = new Weapon(this, this.Combat, this.MechDef.meleeWeaponRef, this.uid + "_Melee");
-    //    this.MeleeWeapon.EnableWeapon();
-    //    this.MeleeWeapon.ResetWeapon();
-    //    this.MechDef.dfaWeaponRef.DataManager = this.MechDef.DataManager;
-    //    this.MechDef.dfaWeaponRef.RefreshComponentDef();
-    //    this.DFAWeapon = new Weapon(this, this.Combat, this.MechDef.dfaWeaponRef, this.uid + "_DFA");
-    //    this.DFAWeapon.EnableWeapon();
-    //    this.DFAWeapon.ResetWeapon();
-    //    this.MechDef.imaginaryLaserWeaponRef.DataManager = this.MechDef.DataManager;
-    //    this.MechDef.imaginaryLaserWeaponRef.RefreshComponentDef();
-    //    this.ImaginaryLaserWeapon = new Weapon(this, this.Combat, this.MechDef.imaginaryLaserWeaponRef, this.uid + "_ImaginaryLaser");
-    //    this.ImaginaryLaserWeapon.EnableWeapon();
-    //    this.ImaginaryLaserWeapon.ResetWeapon();
-    //    this.InitStats();
-    //    this.ResetPathing();
-    //    for (int index = 0; index < this.Weapons.Count; ++index)
-    //      this.Weapons[index].EnableWeapon();
-    //  }
-    //}
-
-    //public virtual void AbstractActor_EjectPilot(string sourceID, int stackItemID, DeathMethod deathMethod, bool isSilent) {
-    //  Pilot pilot = this.GetPilot();
-    //  if (pilot == null) { return; }
-    //  if (!isSilent) {
-    //    PilotableActorRepresentation gameRep = this.GameRep as PilotableActorRepresentation;
-    //    if ((UnityEngine.Object)gameRep != (UnityEngine.Object)null) { gameRep.PlayEjectFX(); }
-    //  }
-    //  pilot.EjectPilot(sourceID, stackItemID);
-    //  this.FlagForDeath("Ejection", deathMethod, DamageType.Unknown, 1, stackItemID, this.GUID, isSilent);
-    //  this.HandleDeath(this.GUID);
-    //}
     public override void EjectPilot(string sourceID, int stackItemID, DeathMethod deathMethod, bool isSilent) {
       AbstractActor_EjectPilot(this, sourceID, stackItemID, deathMethod, isSilent);
       WeaponHitInfo hitInfo = new WeaponHitInfo(0, 0, 0, 0, "EJECTED", this.GUID, 1, (float[])null, (float[])null, (float[])null, (bool[])null, (int[])null, (int[])null, (AttackImpactQuality[])null, new AttackDirection[1]
@@ -754,16 +706,14 @@ namespace CustomUnits {
       this.HasCalledOutLimping = source.HasCalledOutLimping;
       this.isPlayingJumpSound = Traverse.Create(source).Field<bool>("isPlayingJumpSound").Value;
       this.isJumping = Traverse.Create(source).Field<bool>("isJumping").Value;
-      //this.voDelay = Traverse.Create(source).Field<float>("voDelay").Value;
       this.heatAmount = Traverse.Create(source).Field<PropertyBlockManager.PropertySetting>("heatAmount").Value;
       this.isFakeOverheated = Traverse.Create(source).Field<bool>("isFakeOverheated").Value;
       this.needsToRefreshCombinedMesh = source.needsToRefreshCombinedMesh;
-      //this.mechMerge = null;
       this.triggerFootVFX = Traverse.Create(source).Field<bool>("triggerFootVFX").Value;
       this.leftFootVFX = Traverse.Create(source).Field<int>("leftFootVFX").Value;
       this.persistentCritList = Traverse.Create(source).Field<List<string>>("persistentCritList").Value;
     }
-    public bool SetupFallbackTransforms() {
+    public virtual bool SetupFallbackTransforms() {
       bool flag = false;
       if ((UnityEngine.Object)this.twistTransform == (UnityEngine.Object)null) {
         flag = true;
@@ -1016,6 +966,7 @@ namespace CustomUnits {
     public List<GameObject> VisualObjects { get; set; } = new List<GameObject>();
     public CustomMechRepresentation parentRepresentation { get; set; } = null;
     public CustomRepresentation customRep { get; set; } = null;
+
     public List<CustomMechRepresentation> slaveRepresentations { get; set; } = new List<CustomMechRepresentation>();
     public CustomMechRepresentation rootParentRepresentation {
       get {
@@ -1028,7 +979,23 @@ namespace CustomUnits {
     private static d_Update i_Update = null;
     public bool isSlave { get; set; } = false;
     //public bool isRoot { get; set; }
-    public virtual Transform j_Root { get; protected set; }
+    private Transform f_j_Root = null;
+    public virtual Transform j_Root {
+      get {
+        if(this.f_j_Root != null) { return f_j_Root; }
+        Transform[] trs = this.gameObject.GetComponentsInChildren<Transform>(true);
+        foreach(Transform tr in trs) {
+          if (tr.parent == null) { continue; }
+          if (tr.transform.parent != this.transform) { continue; }
+          if (tr.name == "j_Root") { this.f_j_Root = tr; break; }
+        }
+        if (f_j_Root == null) {
+          throw new Exception("can't find j_Root in " + this.gameObject.name);
+        }
+        return f_j_Root;
+      }
+    }
+    public virtual void Test() { }
     public virtual CustomMech custMech { get; protected set; }
     public virtual HardpointDataDef HardpointData { get; set; }
     public virtual string PrefabBase { get; set; }
@@ -1046,7 +1013,7 @@ namespace CustomUnits {
     //public CustomRepresentation customRepresentation { get; set; }
     public virtual void _Init(Mech mech, Transform parentTransform, bool isParented) {
       Log.TWL(0,this.GetType().ToString()+"._Init "+mech.MechDef.ChassisID);
-      this.j_Root = this.transform.FindRecursive("j_Root");
+      //this.j_Root = this.transform.FindRecursive("j_Root");
       this.gameObject.GetComponent<Animator>().enabled = true;
       Animator[] animators = this.gameObject.GetComponentsInChildren<Animator>(true);
       foreach (Animator animator in animators) { animator.enabled = true; animator.cullingMode = AnimatorCullingMode.AlwaysAnimate; }
@@ -1183,8 +1150,7 @@ namespace CustomUnits {
       this.isPlayingJumpSound = false;
       this.persistentCritList = new List<string>((IEnumerable<string>)this.Constants.VFXNames.persistentCritNames);
       flag = this.SetupFallbackTransforms();
-      //this.mechMerges = new List<CustomMechMeshMerge>();
-      if ((UnityEngine.Object)this.VisibleObject == (UnityEngine.Object)null)
+      if (this.VisibleObject == null)
         Debug.LogError((object)("================= ERROR! Mech " + this.parentMech.DisplayName + " has no visible object!!! FIX THIS ======================"));
       else {
         if (VisualObjects.Count == 0) {
@@ -1197,9 +1163,9 @@ namespace CustomUnits {
       }
       if (flag)
         Debug.LogError((object)("================== ERROR! Found missing transforms in mech " + this.parentMech.DisplayName + "; auto-settings are going to look wrong! FIX THIS ============"));
-      if ((UnityEngine.Object)this.audioObject == (UnityEngine.Object)null)
+      if (this.audioObject == null)
         Debug.LogError((object)("================= ERROR! Mech " + this.parentMech.DisplayName + " has no audio object!!! FIX THIS ======================"));
-      if ((UnityEngine.Object)this.audioObject != (UnityEngine.Object)null) {
+      if (this.audioObject != null) {
         AudioSwitch_mech_weight_type switchEnumValue = AudioSwitch_mech_weight_type.b_medium;
         switch (this.parentMech.MechDef.Chassis.weightClass) {
           case WeightClass.LIGHT:
@@ -1226,6 +1192,7 @@ namespace CustomUnits {
         WwiseManager.SetSwitch<AudioSwitch_mech_engine_damaged_badly_yesno>(AudioSwitch_mech_engine_damaged_badly_yesno.damaged_badly_no, this.audioObject);
       }
       int count = ((IEnumerable<MechComponentRef>)mech.MechDef.Inventory).Where<MechComponentRef>((Func<MechComponentRef, bool>)(x => x.ComponentDefType == ComponentType.JumpJet)).Count<MechComponentRef>();
+      Log.WL(1,"JumpJets count:"+count);
       if (count > 0) {
         this.SetupJumpJets();
         mech.Combat.DataManager.PrecachePrefab("JumpjetCurves", BattleTechResourceType.Prefab, count);

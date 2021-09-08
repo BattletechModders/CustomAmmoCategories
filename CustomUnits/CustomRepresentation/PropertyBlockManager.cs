@@ -196,7 +196,7 @@ namespace CustomUnits {
       ICustomizationTarget custRep = this.rootObject.GetComponent<CustomMechRepresentation>() as ICustomizationTarget;
       if (custRep == null) { custRep = this.rootObject.GetComponent<CustomMechRepresentationSimGame>() as ICustomizationTarget; }
       if (custRep != null) {
-        Log.TWL(0, "PropertyBlockManager.UpdateCache " + custRep._gameObject.name + " chassis:" + (custRep.chassisDef == null ? "null" : custRep.chassisDef.Description.Id));
+        //Log.TWL(0, "PropertyBlockManager.UpdateCache " + custRep._gameObject.name + " chassis:" + (custRep.chassisDef == null ? "null" : custRep.chassisDef.Description.Id));
         //this._skinnedRendererCache = 
         //this._meshRendererCache = 
         this._skinnedRendererCache = custRep.skinnedMeshRenderersCache.Keys.ToArray();
@@ -206,14 +206,14 @@ namespace CustomUnits {
         foreach (SkinnedMeshRenderer renderer in _skinnedRendererCache) {
           CustomPaintPattern pattern = renderer.gameObject.GetComponent<CustomPaintPattern>();
           if (pattern == null) { continue; }
-          Log.WL(0,"renderer:"+ renderer.name+" "+ pattern.paintSchemeProperty.PropertyName);
+          //Log.WL(0,"renderer:"+ renderer.name+" "+ pattern.paintSchemeProperty.PropertyName);
           this.paintSchemes.Add(renderer, pattern.paintSchemeProperty);
           this.materialBlocks.Add(renderer, new MaterialPropertyBlock());
         }
         foreach (MeshRenderer renderer in _meshRendererCache) {
           CustomPaintPattern pattern = renderer.gameObject.GetComponent<CustomPaintPattern>();
           if (pattern == null) { continue; }
-          Log.WL(0, "renderer:" + renderer.name + " " + pattern.paintSchemeProperty.PropertyName);
+          //Log.WL(0, "renderer:" + renderer.name + " " + pattern.paintSchemeProperty.PropertyName);
           this.paintSchemes.Add(renderer, pattern.paintSchemeProperty);
           this.materialBlocks.Add(renderer, new MaterialPropertyBlock());
         }

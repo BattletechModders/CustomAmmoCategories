@@ -337,6 +337,14 @@ namespace CustomUnits {
     public static void Postfix(VehicleChassisDef __instance, DataManager dataManager, DataManager.DependencyLoadRequest dependencyLoad, uint activeRequestWeight) {
       Log.LogWrite(0, "VehicleChassisDef.GatherDependencies postfix " + __instance.Description.Id, true);
       try {
+        if (string.IsNullOrEmpty(Core.Settings.CustomJumpJetsPrefabSrc) == false) {
+          //if (dataManager.Exists(BattleTechResourceType.Prefab,Core.Settings.CustomJumpJetsPrefabSrc) == false) {
+          dependencyLoad.RequestResource(BattleTechResourceType.Prefab, Core.Settings.CustomJumpJetsPrefabSrc);
+          //}
+        }
+        if (string.IsNullOrEmpty(Core.Settings.DefaultMechBattleRepresentationPrefab) == false) {
+          dependencyLoad.RequestResource(BattleTechResourceType.Prefab, Core.Settings.DefaultMechBattleRepresentationPrefab);
+        }
         UnitCustomInfo info = __instance.GetCustomInfo();
         if (info == null) {
           Log.LogWrite(1, "no custom", true);
@@ -397,6 +405,18 @@ namespace CustomUnits {
       if (__instance.DataManager == null) { return; }
       if (__result == false) { return; }
       try {
+        if (string.IsNullOrEmpty(Core.Settings.CustomJumpJetsPrefabSrc) == false) {
+          if (__instance.DataManager.Exists(BattleTechResourceType.Prefab, Core.Settings.CustomJumpJetsPrefabSrc) == false) {
+            Log.WL(1, Core.Settings.CustomJumpJetsPrefabSrc + " fail");
+            __result = false;
+          }
+        }
+        if (string.IsNullOrEmpty(Core.Settings.DefaultMechBattleRepresentationPrefab) == false) {
+          if (__instance.DataManager.Exists(BattleTechResourceType.Prefab, Core.Settings.DefaultMechBattleRepresentationPrefab) == false) {
+            Log.WL(1, Core.Settings.DefaultMechBattleRepresentationPrefab + " fail");
+            __result = false;
+          }
+        }
         UnitCustomInfo info = __instance.GetCustomInfo();
         if (info == null) {
           Log.LogWrite(1, "no custom", true);
@@ -467,6 +487,14 @@ namespace CustomUnits {
     public static void Postfix(ChassisDef __instance, DataManager dataManager, DataManager.DependencyLoadRequest dependencyLoad, uint activeRequestWeight) {
       Log.LogWrite(0, "ChassisDef.GatherDependencies postfix " + activeRequestWeight + " " + __instance.Description.Id, true);
       try {
+        if (string.IsNullOrEmpty(Core.Settings.CustomJumpJetsPrefabSrc) == false) {
+          //if (dataManager.Exists(BattleTechResourceType.Prefab,Core.Settings.CustomJumpJetsPrefabSrc) == false) {
+            dependencyLoad.RequestResource(BattleTechResourceType.Prefab, Core.Settings.CustomJumpJetsPrefabSrc);
+          //}
+        }
+        if(string.IsNullOrEmpty(Core.Settings.DefaultMechBattleRepresentationPrefab) == false) {
+          dependencyLoad.RequestResource(BattleTechResourceType.Prefab, Core.Settings.DefaultMechBattleRepresentationPrefab);
+        }
         __instance.AddCustomRepDeps(dependencyLoad);
         UnitCustomInfo info = __instance.GetCustomInfo();
         if (info == null) {
@@ -476,9 +504,6 @@ namespace CustomUnits {
         info.AddCustomDeps(dependencyLoad);
         __instance.AddQuadDeps(dependencyLoad);
         info.AddAlternateDeps(dependencyLoad);
-        if (string.IsNullOrEmpty(Core.Settings.CustomJumpJetsPrefabSrc) == false) {
-          dependencyLoad.RequestResource(BattleTechResourceType.Prefab, Core.Settings.CustomJumpJetsPrefabSrc);
-        }
       } catch (Exception e) {
         Log.LogWrite(e.ToString() + "\n", true);
       }
@@ -521,7 +546,6 @@ namespace CustomUnits {
       if (__instance.meleeWeaponRef.DependenciesLoaded(loadWeight) == false) { return "component " + __instance.meleeWeaponRef.ComponentDefID + " has unresolved dependencies"; }
       if (__instance.dfaWeaponRef.DependenciesLoaded(loadWeight) == false) { return "component " + __instance.dfaWeaponRef.ComponentDefID + " has unresolved dependencies"; }
       if (__instance.Chassis == null) { return "no chassis"; }
-      if (__instance.Chassis.DependenciesLoaded(loadWeight) == false) { return "chassis " + __instance.ChassisID + " has unresolved dependencies"; }
       if (__instance.Chassis.DependenciesLoaded(loadWeight) == false) { return "chassis " + __instance.ChassisID + " has unresolved dependencies"; }
       if (__instance.Chassis.HardpointDataDef == null) { return "chassis " + __instance.ChassisID + " has no hardpoints def " + __instance.Chassis.HardpointDataDefID; }
       HashSet<MechComponentRef> inventory = new HashSet<MechComponentRef>();
@@ -624,15 +648,23 @@ namespace CustomUnits {
       return true;
     }
     public static void Postfix(ChassisDef __instance, uint loadWeight, ref bool __result) {
-      Log.LogWrite(0, "ChassisDef.DependenciesLoaded postfix " + loadWeight + " " + __instance.Description.Id, true);
+      Log.TWL(0, "ChassisDef.DependenciesLoaded postfix " + loadWeight + " " + __instance.Description.Id);
       if (__instance.DataManager == null) { return; }
       if (__result == false) { return; }
       try {
         if (__instance.CheckCustomRepDeps(__instance.DataManager) == false) {
+          Log.WL(1, "CheckCustomRepDeps fail");
           __result = false;
         }
         if (string.IsNullOrEmpty(Core.Settings.CustomJumpJetsPrefabSrc) == false) {
           if (__instance.DataManager.Exists(BattleTechResourceType.Prefab, Core.Settings.CustomJumpJetsPrefabSrc) == false) {
+            Log.WL(1, Core.Settings.CustomJumpJetsPrefabSrc + " fail");
+            __result = false;
+          }
+        }
+        if (string.IsNullOrEmpty(Core.Settings.DefaultMechBattleRepresentationPrefab) == false) {
+          if (__instance.DataManager.Exists(BattleTechResourceType.Prefab, Core.Settings.DefaultMechBattleRepresentationPrefab) == false) {
+            Log.WL(1, Core.Settings.DefaultMechBattleRepresentationPrefab + " fail");
             __result = false;
           }
         }
@@ -651,7 +683,7 @@ namespace CustomUnits {
           __result = false;
         }
       } catch (Exception e) {
-        Log.LogWrite(e.ToString() + "\n", true);
+        Log.TWL(0,e.ToString(), true);
       }
       return;
     }

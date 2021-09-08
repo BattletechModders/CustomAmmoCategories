@@ -118,8 +118,8 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
       }
 
       public static void PrefixMechCalledShot ( ref Dictionary<ArmorLocation, int> hitTable, ArmorLocation bonusLocation, ref float bonusLocationMultiplier ) { try {
-         Error("PrefixMechCalledShot target:"+ (Thread.CurrentThread.currentActor() == null ? "null" : Thread.CurrentThread.currentActor().PilotableActorDef.Description.Id) + " weapon:"+(Thread.CurrentThread.currentWeapon() == null?"null": Thread.CurrentThread.currentWeapon().defId));
-         Error(Environment.StackTrace);
+         //Error("PrefixMechCalledShot target:"+ (Thread.CurrentThread.currentActor() == null ? "null" : Thread.CurrentThread.currentActor().PilotableActorDef.Description.Id) + " weapon:"+(Thread.CurrentThread.currentWeapon() == null?"null": Thread.CurrentThread.currentWeapon().defId));
+         //Error(Environment.StackTrace);
          ICustomMech custMech = Thread.CurrentThread.currentActor() as ICustomMech;
          bonusLocationMultiplier = FixMultiplier( bonusLocation, bonusLocationMultiplier, (custMech != null ? ((custMech.isSquad == false) && (custMech.isVehicle == false)) : true), (custMech != null ? custMech.isVehicle : false));
          if ( AIMSettings.CalledShotUseClustering && CurrentHitDirection != AttackDirection.None ) {

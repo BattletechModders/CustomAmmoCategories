@@ -496,14 +496,16 @@ namespace CustomUnits {
         Log.WL(1,id);
         if (definition["CustomParts"] != null) {
           __state = definition["CustomParts"].ToObject<UnitCustomInfo>();
-          if (VehicleCustomInfoHelper.vehicleChasissInfosDb.ContainsKey(id) == false) {
-            VehicleCustomInfoHelper.vehicleChasissInfosDb.Add(id, __state);
-          } else {
-            VehicleCustomInfoHelper.vehicleChasissInfosDb[id] = __state;
-          }
-          __state.debugLog(1);
           definition.Remove("CustomParts");
+        } else {
+          __state = new UnitCustomInfo();
         }
+        if (VehicleCustomInfoHelper.vehicleChasissInfosDb.ContainsKey(id) == false) {
+          VehicleCustomInfoHelper.vehicleChasissInfosDb.Add(id, __state);
+        } else {
+          VehicleCustomInfoHelper.vehicleChasissInfosDb[id] = __state;
+        }
+        __state.debugLog(1);
         json = definition.ToString();
       } catch (Exception e) {
         Log.TWL(0,e.ToString(), true);
@@ -511,19 +513,20 @@ namespace CustomUnits {
       return true;
     }
     public static void Postfix(VehicleChassisDef __instance, ref UnitCustomInfo __state) {
-      CustomActorRepresentationDef custRepDef = CustomActorRepresentationHelper.Find(__instance.PrefabIdentifier);
-      __instance.ChassisInfo().SpawnAs = SpawnType.AsVehicle;
-      if (custRepDef != null) {
-        if (custRepDef.SupressAllMeshes) {
-          __instance.ChassisInfo().SpawnAs = SpawnType.AsMech;
-          Log.W(1, "CustomActorRepresentationDef found on " + __instance.PrefabIdentifier);
-          if (__state != null) {
-            __state.FakeVehicle = true;
-            __state.FakeVehicleMovementType = __instance.movementType;
-            Log.WL(1, " FakeVehicle:" + __instance.GetCustomInfo().FakeVehicle);
-          }
-        }
+      if (__state != null) {
+        __state.FakeVehicle = true;
+        __state.FakeVehicleMovementType = __instance.movementType;
+        if (__instance.HasTurret) { __state.FiringArc = 360f; }
+        Log.WL(1, " FakeVehicle:" + __instance.GetCustomInfo().FakeVehicle+ " HasTurret:"+ __instance.HasTurret);
       }
+      __instance.ChassisInfo().SpawnAs = SpawnType.AsMech;
+      //CustomActorRepresentationDef custRepDef = CustomActorRepresentationHelper.Find(__instance.PrefabIdentifier);
+      //if (custRepDef != null) {
+      //  if (custRepDef.SupressAllMeshes) {
+      //    __instance.ChassisInfo().SpawnAs = SpawnType.AsMech;
+      //    Log.W(1, "CustomActorRepresentationDef found on " + __instance.PrefabIdentifier);
+      //  }
+      //}
     }
   }
   [HarmonyPatch(typeof(ChassisDef))]

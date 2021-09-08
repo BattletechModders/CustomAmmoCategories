@@ -1,16 +1,64 @@
 ﻿using BattleTech;
 using CustAmmoCategories;
+using Harmony;
 using HBS.Collections;
 using Localize;
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
 namespace CustomUnits {
+  [HarmonyPatch(typeof(Mech))]
+  [HarmonyPatch(MethodType.Getter)]
+  [HarmonyPatch("WalkSpeed")]
+  [HarmonyPatch(new Type[] { })]
+  public static class Mech_WalkSpeed {
+    public static void Postfix(Mech __instance, ref float __result) {
+      try {
+        if (__instance is FakeVehicleMech vehicle) {
+          __result = vehicle.CruiseSpeed;
+          //Log.TWL(0, "FakeVehicleMech.WalkSpeed " + __instance.MechDef.Description.Id+" "+__result);
+        }
+      } catch (Exception e) {
+        Log.TWL(0, e.ToString(), true);
+      }
+    }
+  }
+  [HarmonyPatch(typeof(Mech))]
+  [HarmonyPatch(MethodType.Getter)]
+  [HarmonyPatch("RunSpeed")]
+  [HarmonyPatch(new Type[] { })]
+  public static class Mech_RunSpeed {
+    public static void Postfix(Mech __instance, ref float __result) {
+      try {
+        if (__instance is FakeVehicleMech vehicle) {
+          __result = vehicle.FlankSpeed;
+          //Log.TWL(0, "FakeVehicleMech.RunSpeed " + __instance.MechDef.Description.Id + " " + __result);
+        }
+      } catch (Exception e) {
+        Log.TWL(0, e.ToString(), true);
+      }
+    }
+  }
   public class FakeVehicleMech: CustomMech, ICustomMech{
     public static List<ArmorLocation> locations = new List<ArmorLocation>() { ArmorLocation.Head, ArmorLocation.LeftLeg, ArmorLocation.RightLeg, ArmorLocation.LeftArm, ArmorLocation.RightArm };
     public FakeVehicleMech(MechDef mDef, PilotDef pilotDef, TagSet additionalTags, string UID, CombatGameState combat, string spawnerId, HeraldryDef customHeraldryDef)
       : base(mDef, pilotDef, additionalTags, UID, combat, spawnerId, customHeraldryDef) {
 
+    }
+    public override bool IsDead {
+      get {
+        if (this.HasHandledDeath) { return true; }
+        if (this.pilot.IsIncapacitated) { return true; }
+        if (this.pilot.HasEjected) { return true; }
+        foreach (ArmorLocation alocation in FakeVehicleMech.locations) {
+          ChassisLocations location = MechStructureRules.GetChassisLocationFromArmorLocation(alocation);
+          LocationDef locDef = this.MechDef.Chassis.GetLocationDef(location);
+          if ((locDef.MaxArmor <= 0f) && (locDef.InternalStructure <= 1f)) { continue; }
+          if (this.GetCurrentStructure(location) <= Core.Epsilon) { return true; }
+        }
+        return false;
+      }
     }
     public override List<int> GetPossibleHitLocations(AbstractActor attacker) {
       List<int> result = new List<int>();
@@ -127,6 +175,13 @@ namespace CustomUnits {
     }
     public override bool isSquad { get { return false; } }
     public override bool isVehicle { get { return true; } }
-
+    public float CruiseSpeed => this.statCollection.GetValue<float>(nameof(CruiseSpeed));
+    public float FlankSpeed => this.statCollection.GetValue<float>(nameof(FlankSpeed));
+    protected override void InitStats() {
+      Log.TWL(0, "FakeVehicleMech.InitStats");
+      this.statCollection.AddStatistic<float>("CruiseSpeed", this.MovementCaps.MaxWalkDistance);
+      this.statCollection.AddStatistic<float>("FlankSpeed", this.MovementCaps.MaxSprintDistance);
+      base.InitStats();
+    }
   }
 }

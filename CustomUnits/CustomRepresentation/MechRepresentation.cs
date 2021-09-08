@@ -581,6 +581,7 @@ namespace CustomUnits {
     }
     public virtual void SetupJumpJets() {
       this.jumpjetReps.Clear();
+      Log.TWL(0, "CustomMechRepresentation.SetupJumpJets");
       if (this.HasOwnVisuals == false) { return; }
       string id1 = string.Format("chrPrfComp_{0}_centertorso_jumpjet", (object)this.PrefabBase);
       string id2 = string.Format("chrPrfComp_{0}_leftleg_jumpjet", (object)this.PrefabBase);

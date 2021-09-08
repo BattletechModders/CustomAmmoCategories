@@ -45,7 +45,10 @@ namespace MechResizer {
         return null;
       }
       foreach (var t in tags) {
-        if (!t.StartsWith("MR-Resize-", ignoreCase: true, culture: CultureInfo.InvariantCulture)) continue;
+        if (!t.StartsWith("MR-Resize-", ignoreCase: true, culture: CultureInfo.InvariantCulture)) {
+          Log.WL(1," tag "+t+" is not starting from MR-Resize-");
+          continue;
+        }
         Log.TWL(0, $"found a tag in for loop: {t}");
         return t;
       }

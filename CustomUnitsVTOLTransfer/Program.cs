@@ -25,16 +25,16 @@ namespace CustomUnitsVTOLTransfer {
       //HashSet<string> VTOLBody_prefabs = new HashSet<string>();
       Dictionary<string, VTOL_replace> VTOLBody_prefab_repaces = new Dictionary<string, VTOL_replace>();
       Dictionary<string, Quad_replace> QuadBody_prefab_repaces = new Dictionary<string, Quad_replace>();
-      QuadBody_prefab_repaces.Add("bargbody", new Quad_replace() { PrefabIdentifier = "chrprfmech_barghest", HardpointDataDefID = "hardpointdatadef_barghest", PrefabBase = "barghest" });
-      QuadBody_prefab_repaces.Add("jgoliathbody", new Quad_replace() { PrefabIdentifier = "chrprfmech_goliath", HardpointDataDefID = "hardpointdatadef_goliath", PrefabBase = "goliath" });
+      QuadBody_prefab_repaces.Add("bargbody", new Quad_replace() { PrefabIdentifier = "chrprfmech_barghest", HardpointDataDefID = "hardpointdatadef_cubarghest", PrefabBase = "cubarghest" });
+      QuadBody_prefab_repaces.Add("jgoliathbody", new Quad_replace() { PrefabIdentifier = "chrprfmech_goliath", HardpointDataDefID = "hardpointdatadef_cugoliath", PrefabBase = "cugoliath" });
 
-      VTOLBody_prefab_repaces.Add("warrior_body", new VTOL_replace() { PrefabIdentifier = "chrprfmech_warrior_vtol", HardpointDataDefID = "hardpointdatadef_warriorvtol", PrefabBase = "warriorvtol" });
-      VTOLBody_prefab_repaces.Add("yellowjacket_body", new VTOL_replace() { PrefabIdentifier = "chrprfmech_yellowjacket_vtol", HardpointDataDefID = "hardpointdatadef_yellowjacket", PrefabBase = "yellowjacket" });
-      VTOLBody_prefab_repaces.Add("strix_body", new VTOL_replace() { PrefabIdentifier = "chrprfmech_strix_vtol", HardpointDataDefID = "hardpointdatadef_strix", PrefabBase = "strix" });
-      VTOLBody_prefab_repaces.Add("chrprfvhcl_urbicopter", new VTOL_replace() { PrefabIdentifier = "chrprfmech_urbiecopter_vtol", HardpointDataDefID = "hardpointdatadef_urbiecopter", PrefabBase = "urbiecopter" });
-      VTOLBody_prefab_repaces.Add("rakirov_body", new VTOL_replace() { PrefabIdentifier = "chrprfmech_rakirov_vtol", HardpointDataDefID = "hardpointdatadef_rakirov", PrefabBase = "rakirov" });
-      VTOLBody_prefab_repaces.Add("perikirov_body", new VTOL_replace() { PrefabIdentifier = "chrprfmech_perikirov_vtol", HardpointDataDefID = "hardpointdatadef_perikirov", PrefabBase = "perikirov" });
-      VTOLBody_prefab_repaces.Add("dixon_body", new VTOL_replace() { PrefabIdentifier = "chrprfmech_dixon_vtol", HardpointDataDefID = "hardpointdatadef_dixon", PrefabBase = "dixon" });
+      VTOLBody_prefab_repaces.Add("warrior_body", new VTOL_replace() { PrefabIdentifier = "chrprfmech_warrior_vtol", HardpointDataDefID = "hardpointdatadef_cuwarriorvtol", PrefabBase = "cuwarriorvtol" });
+      VTOLBody_prefab_repaces.Add("yellowjacket_body", new VTOL_replace() { PrefabIdentifier = "chrprfmech_yellowjacket_vtol", HardpointDataDefID = "hardpointdatadef_cuyellowjacket", PrefabBase = "cuyellowjacket" });
+      VTOLBody_prefab_repaces.Add("strix_body", new VTOL_replace() { PrefabIdentifier = "chrprfmech_strix_vtol", HardpointDataDefID = "hardpointdatadef_custrix", PrefabBase = "custrix" });
+      VTOLBody_prefab_repaces.Add("chrprfvhcl_urbicopter", new VTOL_replace() { PrefabIdentifier = "chrprfmech_urbiecopter_vtol", HardpointDataDefID = "hardpointdatadef_cuurbiecopter", PrefabBase = "cuurbiecopter" });
+      VTOLBody_prefab_repaces.Add("rakirov_body", new VTOL_replace() { PrefabIdentifier = "chrprfmech_rakirov_vtol", HardpointDataDefID = "hardpointdatadef_curakirov", PrefabBase = "curakirov" });
+      VTOLBody_prefab_repaces.Add("perikirov_body", new VTOL_replace() { PrefabIdentifier = "chrprfmech_perikirov_vtol", HardpointDataDefID = "hardpointdatadef_cuperikirov", PrefabBase = "cuperikirov" });
+      VTOLBody_prefab_repaces.Add("dixon_body", new VTOL_replace() { PrefabIdentifier = "chrprfmech_dixon_vtol", HardpointDataDefID = "hardpointdatadef_cudixon", PrefabBase = "cudixon" });
 
       foreach (string fname in jsons) {
         if (Path.GetFileName(fname) == "mod.json") { continue; }

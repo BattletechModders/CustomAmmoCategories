@@ -537,7 +537,7 @@ namespace CustomUnits {
       return null;
     }
     public static Transform FindTopLevelChild(this Transform transform, string checkName) {
-      Transform[] trs = transform.GetComponentsInChildren<Transform>();
+      Transform[] trs = transform.GetComponentsInChildren<Transform>(true);
       foreach (Transform tr in trs) {
         if (tr.parent != transform) { continue; }
         if (tr.name != checkName) { continue; }

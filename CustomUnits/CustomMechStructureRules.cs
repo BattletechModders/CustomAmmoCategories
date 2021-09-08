@@ -267,22 +267,16 @@ namespace CustomUnits {
   public static class HUDMechArmorReadout_UpdateMechStructureAndArmorSquad {
     public static void Prefix(HUDMechArmorReadout __instance) {
       try {
-        HUDMechArmorReadout readout = Traverse.Create(__instance).Property<HUDMechArmorReadout>("Readout").Value;
-        Mech m = null;
-        if (readout != null) { m = readout.DisplayedMech; }
-        //Log.TWL(0, "HUDMechArmorReadout.UpdateMechStructureAndArmor Prefix " + (m != null ? m.Description.Id : "null") + " threadid:" + Thread.CurrentThread.ManagedThreadId);
-        Thread.CurrentThread.pushActor(m);
+        if(__instance.DisplayedMech != null){ Thread.CurrentThread.pushActor(__instance.DisplayedMech); }
+        if (__instance.DisplayedMechDef != null) { Thread.CurrentThread.pushActorDef(__instance.DisplayedMechDef); }
       } catch (Exception e) {
         Log.TWL(0, e.ToString(), true);
       }
     }
     public static void Postfix(HUDMechArmorReadout __instance) {
       try {
-        HUDMechArmorReadout readout = Traverse.Create(__instance).Property<HUDMechArmorReadout>("Readout").Value;
-        Mech m = null;
-        if (readout != null) { m = readout.DisplayedMech; }
-        //Log.TWL(0, "HUDMechArmorReadout.UpdateMechStructureAndArmor Postfix " + (m != null ? m.Description.Id : "null") + " threadid:" + Thread.CurrentThread.ManagedThreadId);
-        Thread.CurrentThread.clearActor();
+        if (__instance.DisplayedMechDef != null) { Thread.CurrentThread.clearActorDef(); }
+        if (__instance.DisplayedMech != null) { Thread.CurrentThread.clearActor(); }
       } catch (Exception e) {
         Log.TWL(0, e.ToString(), true);
       }

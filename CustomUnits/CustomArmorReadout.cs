@@ -883,6 +883,9 @@ namespace CustomUnits {
             __instance.MechArmorDisplay.gameObject.SetActive(false);
             computerCustom.fakeVehicleReadout.gameObject.SetActive(true);
             computerCustom.fakeVehicleReadout.DisplayedVehicle = DisplayedCombatant as Mech;
+          } else {
+            computerCustom.fakeVehicleReadout.gameObject.SetActive(false);
+            computerCustom.fakeVehicleReadout.DisplayedVehicle = null;
           }
         }
       } catch (Exception e) {

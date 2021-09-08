@@ -156,14 +156,16 @@ namespace CustomUnits {
       if (mask == null) { return new DesignMaskMoveCostInfo(defValue, 1f); };
       CustomDesignMaskInfo maskInfo = mask.GetCustomDesignMaskInfo();
       string MoveCostKey = unit.CustomMoveCostKey();
-      if (string.IsNullOrEmpty(MoveCostKey) == false) { Log.LogWrite(1, "MoveCostKey:" + MoveCostKey); };
+      if (string.IsNullOrEmpty(MoveCostKey) == false) {
+        //Log.WL(1, "MoveCostKey:" + MoveCostKey);
+      };
       if ((maskInfo != null) && (string.IsNullOrEmpty(MoveCostKey) == false)) {
         if (maskInfo.CustomMoveCost.ContainsKey(MoveCostKey)) {
           DesignMaskMoveCostInfo result = maskInfo.CustomMoveCost[MoveCostKey];
-          Log.LogWrite(1, "result:" + result.moveCost + "," + result.SprintMultiplier);
+          //Log.LogWrite(1, "result:" + result.moveCost + "," + result.SprintMultiplier);
           return result;
         } else {
-          Log.LogWrite(1, "move cost not found");
+          //Log.LogWrite(1, "move cost not found");
         }
       }
       Mech mech = unit as Mech;

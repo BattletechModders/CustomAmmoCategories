@@ -4,7 +4,9 @@ using System;
 using System.Linq;
 
 namespace Sheepy.BattleTechMod.AttackImprovementMod {
-   using static ArmorLocation;
+  using CustAmmoCategories;
+  using System.Threading;
+  using static ArmorLocation;
    using static Mod;
 
    public class HitResolution : BattleModModule {
@@ -46,12 +48,14 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
          ClusterChanceOriginalLocationMultiplier = CombatConstants.ToHit.ClusterChanceOriginalLocationMultiplier;
          if ( HeadHitWeights == null ) {
             HeadHitWeights = new Dictionary<Dictionary<ArmorLocation, int>, int>();
+            Thread.CurrentThread.SetFlag("CallOriginal_GetMechHitTable");
             foreach ( AttackDirection direction in Enum.GetValues( typeof( AttackDirection ) ) ) {
                if ( direction == AttackDirection.None ) continue;
                Dictionary<ArmorLocation, int> hitTable = Combat.HitLocation.GetMechHitTable( direction );
                if ( ! hitTable.TryGetValue( Head, out int head ) || head == 0 ) continue;
                HeadHitWeights.Add( hitTable, head );
             }
+            Thread.CurrentThread.ClearFlag("CallOriginal_GetMechHitTable");
          }
       }
 

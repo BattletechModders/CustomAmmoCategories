@@ -640,14 +640,14 @@ namespace CustomUnits {
       return num1;
     }
     public override Text GetLongArmorLocation(ArmorLocation location) {
-      Log.TWL(0, "TrooperSquad.GetLongArmorLocation " + this.DisplayName+" "+location);
+      //Log.TWL(0, "TrooperSquad.GetLongArmorLocation " + this.DisplayName+" "+location);
       if (BaySquadReadoutAligner.ARMOR_TO_SQUAD.TryGetValue(location, out int index)) {
         return new Text("UNIT {0}", BaySquadReadoutAligner.ARMOR_TO_SQUAD[location]);
       }
       return new Text("UNIT");
     }
     public override HashSet<ArmorLocation> GetDFASelfDamageLocations() {
-      Log.TWL(0, "TrooperSquad.GetDFASelfDamageLocations " + this.DisplayName);
+      //Log.TWL(0, "TrooperSquad.GetDFASelfDamageLocations " + this.DisplayName);
       HashSet<ArmorLocation> result = new HashSet<ArmorLocation>();
       foreach(ArmorLocation aloc in TrooperSquad.armorLocations) {
         LocationDef locDef = this.MechDef.Chassis.GetLocationDef(MechStructureRules.GetChassisLocationFromArmorLocation(aloc));
@@ -657,7 +657,7 @@ namespace CustomUnits {
       return result;
     }
     public HashSet<ArmorLocation> GetLandmineDamageLocations() {
-      Log.TWL(0, "TrooperSquad.GetLandmineDamageLocations " + this.MechDef.ChassisID);
+      //Log.TWL(0, "TrooperSquad.GetLandmineDamageLocations " + this.MechDef.ChassisID);
       HashSet<ArmorLocation> result = new HashSet<ArmorLocation>();
       foreach (ArmorLocation aloc in TrooperSquad.armorLocations) {
         LocationDef locDef = this.MechDef.Chassis.GetLocationDef(MechStructureRules.GetChassisLocationFromArmorLocation(aloc));
@@ -667,7 +667,7 @@ namespace CustomUnits {
       return result;
     }
     public HashSet<ArmorLocation> GetBurnDamageLocations() {
-      Log.TWL(0, "TrooperSquad.GetBurnDamageLocations " + this.DisplayName);
+      //Log.TWL(0, "TrooperSquad.GetBurnDamageLocations " + this.DisplayName);
       HashSet<ArmorLocation> result = new HashSet<ArmorLocation>();
       foreach (ArmorLocation aloc in TrooperSquad.armorLocations) {
         LocationDef locDef = this.MechDef.Chassis.GetLocationDef(MechStructureRules.GetChassisLocationFromArmorLocation(aloc));
@@ -677,14 +677,14 @@ namespace CustomUnits {
       return result;
     }
     public static Dictionary<int, float> GetAOESpreadLocations(Mech m) {
-      Log.TWL(0, "TrooperSquad.GetAOESpreadLocations " + m.DisplayName);
+      //Log.TWL(0, "TrooperSquad.GetAOESpreadLocations " + m.DisplayName);
       TrooperSquad squad = m as TrooperSquad;
       if (squad == null) { return null; };
       if (CustomAmmoCategories.SquadHitLocations == null) { CustomAmmoCategories.InitHitLocationsAOE(); }
       return CustomAmmoCategories.SquadHitLocations;
     }
     public static List<int> GetAOEPossibleHitLocations(Mech m, Vector3 attackPos) {
-      Log.TWL(0, "TrooperSquad.GetAOEPossibleHitLocations " + m.DisplayName);
+      //Log.TWL(0, "TrooperSquad.GetAOEPossibleHitLocations " + m.DisplayName);
       TrooperSquad squad = m as TrooperSquad;
       if (squad == null) { return null; };
       List<int> result = new List<int>();
@@ -696,7 +696,7 @@ namespace CustomUnits {
       return result;
     }
     public static float GetSquadSizeToHitMod(ToHit instance, AbstractActor attacker, Weapon weapon, ICombatant target, Vector3 attackPosition, Vector3 targetPosition, LineOfFireLevel lofLevel, MeleeAttackType meleeAttackType, bool isCalledShot) {
-      Log.TWL(0, "TrooperSquad.GetSquadSizeToHitMod " + target.DisplayName);
+      //Log.TWL(0, "TrooperSquad.GetSquadSizeToHitMod " + target.DisplayName);
       TrooperSquad squad = target as TrooperSquad;
       if (squad == null) { return 0f; };
       UnitCustomInfo info = squad.GetCustomInfo();

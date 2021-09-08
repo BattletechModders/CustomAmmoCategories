@@ -1340,6 +1340,11 @@ namespace CustomUnits {
         Log.TWL(0,e.ToString(),true);
       }
     }
+    public static void Postfix(DataManager __instance, BattleTechResourceType resourceType, string id, ref bool __result) {
+      if (__result == false) { return; }
+      if (resourceType != BattleTechResourceType.Prefab) { return; }
+      __result = CustomPrefabHelper.Exists(__instance, id);
+    }
   }
   [HarmonyPatch(typeof(DependencyLoadRequest))]
   [HarmonyPatch("RequestResource")]
@@ -1352,6 +1357,7 @@ namespace CustomUnits {
         CustomHardpointDef customHardpoint = CustomHardPointsHelper.Find(id);
         Log.TWL(0, "DependencyLoadRequest.RequestResource " + id + " -> " + (customHardpoint == null ? "no change" : customHardpoint.prefab));
         if (customHardpoint != null) { id = customHardpoint.prefab; }
+        CustomPrefabHelper.RequestResource(__instance, id);
       } catch (Exception e) {
         Log.TWL(0, e.ToString(), true);
       }

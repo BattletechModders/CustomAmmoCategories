@@ -19,9 +19,9 @@ namespace MechResizer {
       transformToScale.localScale = sizeMultiplier;
     }
     public static void sizeMultiplier(this Mech mech) {
-      Log.TWL(0, "mech size initialization " + mech.GameRep.name);
+      Log.TWL(0, "mech size initialization " + mech.GameRep.name+" chassis is fake: "+ mech.MechDef.ChassisID.IsInFakeChassis());
       var identifier = mech.MechDef.ChassisID;
-      var sizeMultiplier = SizeMultiplier.Get(mech.MechDef.Chassis);
+      var sizeMultiplier = mech.MechDef.ChassisID.IsInFakeChassis() ? SizeMultiplier.Get(mech.MechDef) : SizeMultiplier.Get(mech.MechDef.Chassis);
       Log.TWL(0, $"{identifier}: {sizeMultiplier}");
       var originalLOSSourcePositions = Traverse.Create(mech).Field("originalLOSSourcePositions").GetValue<Vector3[]>();
       var originalLOSTargetPositions = Traverse.Create(mech).Field("originalLOSTargetPositions").GetValue<Vector3[]>();
@@ -31,8 +31,12 @@ namespace MechResizer {
       Traverse.Create(mech).Field("originalLOSTargetPositions").SetValue(newTargetPositions);
       Transform transformToScale = mech.GameRep.thisTransform;
       if (MechResizer.ModSettings.MechScaleJRoot) {
-        Transform j_Root = mech.GameRep.gameObject.transform.FindRecursive("j_Root");
-        if (j_Root != null) { transformToScale = j_Root; }
+        Transform j_Root = mech.GameRep.gameObject.transform.FindTopLevelChild("j_Root");
+        Transform VisibleObject = mech.GameRep.VisibleObject.transform;
+        if (j_Root != null) {
+          transformToScale = j_Root;
+          if (VisibleObject != null) { VisibleObject.localScale = sizeMultiplier; }
+        }
       }
       transformToScale.localScale = sizeMultiplier;
     }

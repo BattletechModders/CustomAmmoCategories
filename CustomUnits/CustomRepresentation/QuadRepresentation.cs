@@ -68,9 +68,6 @@ namespace CustomUnits {
     }
     public virtual void AddForwardLegs(CustomMechRepresentation flegs) {
       Log.TWL(0, "QuadRepresentation.AddForwardLegs " + this.gameObject.name + " " + (flegs == null ? "null" : flegs.name));
-      if (this.j_Root == null) {
-        this.j_Root = this.transform.FindRecursive("j_Root");
-      }
       this.ForwardLegs = flegs;
       flegs.transform.SetParent(j_Root);
       //frontLegs.HardpointData = dataManager.GetObjectOfType<HardpointDataDef>(customInfo.quadVisualInfo.);
@@ -95,9 +92,6 @@ namespace CustomUnits {
       this.rightArmDestructible = this.ForwardLegs.rightLegDestructible;
     }
     public virtual void AddRearLegs(CustomMechRepresentation rlegs) {
-      if (this.j_Root == null) {
-        this.j_Root = this.transform.FindRecursive("j_Root");
-      }
       this.RearLegs = rlegs;
       rlegs.transform.SetParent(j_Root);
       //frontLegs.HardpointData = dataManager.GetObjectOfType<HardpointDataDef>(customInfo.quadVisualInfo.);
@@ -172,10 +166,6 @@ namespace CustomUnits {
       }
     }
     public virtual void AddBody(GameObject bodyGo, DataManager dataManager) {
-
-      if (this.j_Root == null) {
-        this.j_Root = this.transform.FindRecursive("j_Root");
-      }
       Transform bodyRoot = bodyGo.transform.FindRecursive("j_Root");
       Transform bodyMesh = bodyGo.transform.FindTopLevelChild("mesh");
       Transform camoholderGo = bodyGo.transform.FindTopLevelChild("camoholder");

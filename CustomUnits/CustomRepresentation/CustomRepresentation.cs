@@ -468,7 +468,7 @@ namespace CustomUnits {
     private static Dictionary<string, CustomActorRepresentationDef> customSimGameRepresentations = new Dictionary<string, CustomActorRepresentationDef>();
     public static void Register(this CustomActorRepresentationDef customRepDef) {
       if (customRepresentations.ContainsKey(customRepDef.Id)) {
-        Log.TWL(0,"Custom"+ customRepDef.RepType+ "RepresentationDef "+customRepDef.Id+" already registered skipping");
+        Log.TWL(0, "Custom" + customRepDef.RepType + "RepresentationDef " + customRepDef.Id + " already registered skipping");
         return;
       }
       customRepresentations.Add(customRepDef.Id, customRepDef);
@@ -492,8 +492,15 @@ namespace CustomUnits {
       }
       return null;
     }
+    //public static void PrepareForCustom(this VehicleRepresentation vehicleRep) {
+    //  Transform j_Root = null;
+    //  Transform mesh = null;
+    //  HashSet<Transform> other_transforms = null;
+    //  vehicleRep.gameObject.name = "j_Body";
+
+    //}
     public static void CopyModel(this MechRepresentation mechRep, GameObject meshSource, DataManager dataManager) {
-      Log.TWL(0, "CustomActorRepresentationHelper.CopyMechRep "+mechRep.name+" meshSrc:"+meshSource.name);
+      Log.TWL(0, "CustomActorRepresentationHelper.CopyMechRep " + mechRep.name + " meshSrc:" + meshSource.name);
       try {
         SkinnedMeshRenderer[] recvRenderers = mechRep.GetComponentsInChildren<SkinnedMeshRenderer>(true);
         SkinnedMeshRenderer[] srcRenderers = meshSource.GetComponentsInChildren<SkinnedMeshRenderer>(true);
@@ -608,7 +615,7 @@ namespace CustomUnits {
             };
           }
         }
-      }catch(Exception e) {
+      } catch (Exception e) {
         Log.TWL(0, e.ToString(), true);
       }
     }
@@ -661,7 +668,9 @@ namespace CustomUnits {
       }
     }
     public static void SuppressMeshes(this GameObject mechRep, CustomActorRepresentationDef custRepDef) {
-      if (custRepDef.SupressAllMeshes) {
+      bool supress = false;
+      if (custRepDef == null) { supress = true; } else { supress = custRepDef.SupressAllMeshes; }
+      if (supress) {
         Transform mesh = mechRep.transform.FindRecursive("mesh");
         CustomMechRepresentation custRep = mechRep.GetComponent<CustomMechRepresentation>();
         HashSet<GameObject> toDestroy = new HashSet<GameObject>();
@@ -696,7 +705,7 @@ namespace CustomUnits {
           if (tr.parent != meshesSrc) { continue; }
           visuals.Add(tr);
         }
-        foreach(Transform tr in visuals) {
+        foreach (Transform tr in visuals) {
           Vector3 pos = tr.localPosition;
           Quaternion rot = tr.localRotation;
           Vector3 scale = tr.localScale;
@@ -709,10 +718,10 @@ namespace CustomUnits {
       Dictionary<string, Transform> resultTransforms = new Dictionary<string, Transform>();
       Transform j_Root = mechRep.transform.FindRecursive("j_Root");
       resultTransforms.Add("j_Root", j_Root);
-      foreach(Transform tr in j_Root.GetComponentsInChildren<Transform>(true)) {
+      foreach (Transform tr in j_Root.GetComponentsInChildren<Transform>(true)) {
         if (tr == j_Root) { continue; }; resultTransforms.Add(tr.RelativeName(j_Root.parent), tr);
       }
-      Log.TWL(0, "MoveBonesAndRenderers from "+meshSource.name+" to "+mechRep.name);
+      Log.TWL(0, "MoveBonesAndRenderers from " + meshSource.name + " to " + mechRep.name);
       foreach (var rt in resultTransforms) { Log.WL(1, rt.Key); };
       Transform bones = meshSource.transform.FindRecursive("bones");
       if (bones != null) {
@@ -720,7 +729,7 @@ namespace CustomUnits {
         foreach (Transform tr in bones.GetComponentsInChildren<Transform>(true)) {
           if (tr == bones) { continue; }
           string tr_name = tr.RelativeName(bones);
-          Log.WL(2, "name: "+tr_name);
+          Log.WL(2, "name: " + tr_name);
           if (resultTransforms.ContainsKey(tr_name)) { continue; }
           if (tr.parent == null) { continue; }
           string parent_name = tr.parent.RelativeName(bones);
@@ -740,7 +749,7 @@ namespace CustomUnits {
           foreach (Transform subTR in tr.GetComponentsInChildren<Transform>()) {
             if (subTR == tr) { continue; }
             string str_name = subTR.RelativeName(j_Root.parent);
-            Log.WL(3, "str_name:"+ str_name);
+            Log.WL(3, "str_name:" + str_name);
             resultTransforms.Add(str_name, subTR);
           }
         }
@@ -758,7 +767,7 @@ namespace CustomUnits {
               }
             }
             List<Transform> r_bones = new List<Transform>(r.bones);
-            for (int i=0; i < r_bones.Count; ++i) {
+            for (int i = 0; i < r_bones.Count; ++i) {
               if (r_bones[i] == null) { continue; }
               if (resultTransforms.ContainsValue(r_bones[i]) == false) {
                 string tr_name = r_bones[i].RelativeName(bones);
@@ -769,14 +778,14 @@ namespace CustomUnits {
             }
             r.bones = r_bones.ToArray();
             for (int i = 0; i < r.bones.Length; ++i) {
-              Log.WL(3,"bones["+i+"] -> "+(r.bones[i] == null?"null": r.bones[i].RelativeName(j_Root)));
-            }  
+              Log.WL(3, "bones[" + i + "] -> " + (r.bones[i] == null ? "null" : r.bones[i].RelativeName(j_Root)));
+            }
           }
         }
       }
     }
     public static void MoveBonesAndRenderersSimGame(this CustomMechRepresentationSimGame mechRep, GameObject source) {
-      Log.TWL(0, "MoveBonesAndRenderersSimGame:"+source.name);
+      Log.TWL(0, "MoveBonesAndRenderersSimGame:" + source.name);
       Transform meshesTrg = mechRep.transform.FindRecursive("mesh");
       Transform meshesSrc = source.transform.FindRecursive("meshes");
       if (meshesSrc == null) {
@@ -813,8 +822,8 @@ namespace CustomUnits {
         if (r.rootBone == null) { continue; }
         if (targetTransforms.Contains(r.rootBone)) { continue; }
         string rootBoneName = r.rootBone.RelativeName(source_j_Root);
-        Log.WL(1,r.transform.name+" rootBone:"+ rootBoneName);
-        if(targetTransformsDict.TryGetValue(rootBoneName, out Transform newRootBone)) {
+        Log.WL(1, r.transform.name + " rootBone:" + rootBoneName);
+        if (targetTransformsDict.TryGetValue(rootBoneName, out Transform newRootBone)) {
           Log.WL(2, "found");
           r.rootBone = newRootBone;
         }
@@ -1048,7 +1057,7 @@ namespace CustomUnits {
         meshSource.MoveBonesAndRenderers(mechRep.gameObject);
         //mechRep.MoveBonesAndRenderersSimGame(meshSource);
       }
-      mechRep.MoveVFXTransforms(meshSource,custRepDef);
+      mechRep.MoveVFXTransforms(meshSource, custRepDef);
       if (meshSource != null) { GameObject.Destroy(meshSource); }
     }
     public static void MoveBone(this CustomMechRepresentation mechRep, CustomActorRepresentationDef custRepDef, DataManager dataManager) {
@@ -1067,11 +1076,11 @@ namespace CustomUnits {
         meshSource.MoveBonesAndRenderers(mechRep.gameObject);
       }
       mechRep.MoveVFXTransforms(custRepDef);
-      mechRep.MoveBlips(dataManager,custRepDef);
+      mechRep.MoveBlips(dataManager, custRepDef);
       if (meshSource != null) { GameObject.Destroy(meshSource); }
     }
     public static void InitCamoflage(this CustomMechRepresentationSimGame mechRep, GameObject source) {
-      Log.TWL(0, "CustomMechRepresentation.InitCamoflage "+mechRep.name);
+      Log.TWL(0, "CustomMechRepresentation.InitCamoflage " + mechRep.name);
       Transform camoholder = null;
       Transform[] transforms = source.GetComponentsInChildren<Transform>(true);
       foreach (Transform tr in transforms) {
@@ -1233,56 +1242,143 @@ namespace CustomUnits {
         Log.TWL(0, e.ToString(), true);
       }
     }
+    public static HashSet<Renderer> GetMeshRenderers(this GameObject go) {
+      HashSet<Renderer> result = new HashSet<Renderer>();
+      SkinnedMeshRenderer[] srs = go.GetComponentsInChildren<SkinnedMeshRenderer>(true);
+      MeshRenderer[] rs = go.GetComponentsInChildren<MeshRenderer>(true);
+      foreach (var r in srs) { result.Add(r); }
+      foreach (var r in rs) { result.Add(r); }
+      return result;
+    }
+    public static void Prepare(this VehicleRepresentation vRep) {
+      HashSet<Renderer> renderers = vRep.VisibleObject.GetMeshRenderers();
+      Transform[] trs = vRep.VisibleObject.GetComponentsInChildren<Transform>(true);
+      HashSet<Renderer> nomerges = new HashSet<Renderer>();
+      foreach (Transform tr in trs) {
+        if (tr.name != "nomerge") { continue; }
+        Renderer r = tr.parent.GetComponent<Renderer>();
+        if (r == null) { continue; }
+        nomerges.Add(r);
+      }
+      foreach (Renderer renderer in renderers) {
+        if (nomerges.Contains(renderer)) { continue; }
+        GameObject nomerge = new GameObject("nomerge");
+        nomerge.transform.SetParent(renderer.gameObject.transform);
+      }
+    }
+    private static Dictionary<string, bool> BlipObjectNames = new Dictionary<string, bool>() { { "BlipObjectUnknown", true }, { "BlipObjectIdentified", true }, { "BlipObjectGhostWeak", false }, { "BlipObjectGhostStrong",false } };
+    public static VehicleDrivenMechRepresentation InitFromVehicle(this VehicleRepresentation vRep, DataManager dataManager) {
+      GameObject defaultMechRepGO = dataManager.PooledInstantiate(Core.Settings.DefaultMechBattleRepresentationPrefab, BattleTechResourceType.Prefab);
+      MechRepresentation mechRep = defaultMechRepGO.GetComponent<MechRepresentation>();
+      VehicleDrivenMechRepresentation custMechRep = defaultMechRepGO.GetComponent<VehicleDrivenMechRepresentation>();
+      if (custMechRep == null) { custMechRep = defaultMechRepGO.AddComponent<VehicleDrivenMechRepresentation>(); custMechRep.Copy(mechRep); GameObject.DestroyImmediate(mechRep); mechRep = custMechRep; }
+      defaultMechRepGO.SuppressMeshes(null);
+      defaultMechRepGO.name = vRep.gameObject.name;
+      vRep.Prepare();
+      custMechRep.Copy(vRep);
+      MechCustomization vehicleCust = vRep.gameObject.GetComponentInChildren<MechCustomization>(true);
+      if (vehicleCust != null) { GameObject.DestroyImmediate(vehicleCust); }
+      Log.TWL(0, "CustomMechRepresentation.InitFromVehicle");
+      foreach(var blipName in BlipObjectNames) {
+        Transform BlipObjectM = defaultMechRepGO.transform.FindRecursive(blipName.Key);
+        Transform BlipObjectV = vRep.transform.FindRecursive(blipName.Key);
+        Log.WL(1, "blip:" + blipName.Key + ":" + blipName.Value+" mech found "+(BlipObjectM!=null)+" vehcile found "+ (BlipObjectV!=null));
+        Transform parent = defaultMechRepGO.transform;
+        if (BlipObjectM != null) { parent = BlipObjectM.parent; }
+        if ((BlipObjectM != null)&&(BlipObjectV != null)) {
+          GameObject.DestroyImmediate(BlipObjectM.gameObject);
+          Traverse.Create(custMechRep).Field<GameObject>(blipName.Key).Value = BlipObjectV.gameObject;
+        }
+        if (blipName.Value) {
+          if (BlipObjectV != null) BlipObjectV.SetParent(parent);
+        }
+      }
+      Transform visibleObject = vRep.VisibleObject.transform;
+      if (visibleObject == null) { visibleObject = vRep.transform.FindRecursive("mesh"); }
+      Transform target_visibleObject = custMechRep.VisibleObject.transform;
+      if (target_visibleObject == null) { target_visibleObject = custMechRep.transform.FindRecursive("mesh"); }
+      if ((visibleObject != null)&&(target_visibleObject != null)) {
+        HashSet<Transform> visibleObjects = new HashSet<Transform>();
+        Transform[] trs = visibleObject.GetComponentsInChildren<Transform>(true);
+        foreach(Transform tr in trs) {
+          if (tr.parent != visibleObject) { continue; }
+          visibleObjects.Add(tr);
+        }
+        foreach (Transform tr in visibleObjects) {
+          tr.SetParent(target_visibleObject);
+        }
+      }
+      vRep.gameObject.name = "j_Body";
+      GameObject vRepGO = vRep.gameObject;
+      //GameObject.DestroyImmediate(vRep);
+      Transform j_Root = custMechRep.j_Root;
+      vRepGO.transform.SetParent(j_Root);
+      vRepGO.transform.localPosition = Vector3.zero;
+      vRepGO.transform.localScale = Vector3.one;
+      vRepGO.transform.localRotation = Quaternion.identity;
+      custMechRep.vehicleRep = vRepGO.transform;
+      Log.WL(1, "vRep now parent: "+ (custMechRep.vehicleRep.parent == null?"null": custMechRep.vehicleRep.name));
+      return custMechRep;
+    }
     public static GameObject ProcessBattle(DataManager dataManager,ref GameObject result, CustomActorRepresentationDef custRepDef, ChassisDef chassisDef) {
       Log.TWL(0, "CustomActorRepresentationHelper.ProcessBattle custom representation found:" + custRepDef.Id);
-      MechRepresentation mechRep = result.gameObject.GetComponent<MechRepresentation>();
+      MechRepresentation mechRep = result.GetComponent<MechRepresentation>();
+      CustomMechRepresentation custMechRep = null;
       if (mechRep == null) {
         Log.WL(1, "no MechRepresentation:" + result.name);
+        VehicleRepresentation vehicleRep = result.GetComponent<VehicleRepresentation>();
+        if (vehicleRep == null) {
+          Log.WL(1, "no VehicleRepresentation:" + result.name);
+          return result;
+        }
+        custMechRep = vehicleRep.InitFromVehicle(dataManager);
+        result = custMechRep.gameObject;
       } else {
-        CustomMechRepresentation custMechRep = result.gameObject.GetComponent<CustomMechRepresentation>();
-        if (custMechRep == null) { custMechRep = result.gameObject.AddComponent<CustomMechRepresentation>(); custMechRep.Copy(mechRep); GameObject.DestroyImmediate(mechRep); mechRep = custMechRep; }
-        custMechRep.RegisterColliders(custMechRep.gameObject);
-        MechCustomization mechCust = custMechRep.GetComponentInChildren<MechCustomization>(true);
-        custMechRep.PrefabBase = chassisDef.PrefabBase;
-        custMechRep.HardpointData = chassisDef.HardpointDataDef;
-        custMechRep.chassisDef = chassisDef;
-        CustomPropertyBlockManager custPropertyBlock = custMechRep.GetComponentInChildren<CustomPropertyBlockManager>();
-        if(custPropertyBlock == null) {
-          PropertyBlockManager propertyBlock = custMechRep.GetComponentInChildren<PropertyBlockManager>();
-          if(propertyBlock != null) {
-            custPropertyBlock = propertyBlock.gameObject.AddComponent<CustomPropertyBlockManager>();
-            custPropertyBlock.Copy(propertyBlock);
-            GameObject.DestroyImmediate(propertyBlock);
-            propertyBlock = null;
-            custMechRep._propertyBlock = custPropertyBlock;
-            Log.WL(0, "customPropertyBlock " + (custMechRep.customPropertyBlock == null ? "null" : custMechRep.customPropertyBlock.gameObject.name));
-          }
-        }
-        if (mechCust != null) {
-          CustomMechCustomization custMechCust = custMechRep.VisibleObject.AddComponent<CustomMechCustomization>();
-          custMechCust.Copy(mechCust);
-          GameObject.DestroyImmediate(mechCust);
-          custMechRep.defaultMechCustomization = custMechCust;
-          custMechCust.Init(custMechRep);
-        }
-        switch (custRepDef.ApplyType) {
-          //case CustomActorRepresentationDef.RepresentationApplyType.CopyMesh: mechRep.CopyModel(source, dataManager); break;
-          case CustomActorRepresentationDef.RepresentationApplyType.MoveBone: custMechRep.MoveBone(custRepDef, dataManager); break;
-        }
-        if (custMechRep.BlipObjectIdentified != null) { custMechRep.RegisterRenderersCustomHeraldry(custMechRep.BlipObjectIdentified, null); }
-        if (custMechRep.BlipObjectUnknown != null) { custMechRep.RegisterRenderersCustomHeraldry(custMechRep.BlipObjectUnknown, null); }
-        if (custMechRep.BlipObjectGhostStrong != null) { custMechRep.RegisterRenderersCustomHeraldry(custMechRep.BlipObjectGhostStrong, null); }
-        if (custMechRep.BlipObjectGhostWeak != null) { custMechRep.RegisterRenderersCustomHeraldry(custMechRep.BlipObjectGhostWeak, null); }
-        custMechRep.RegisterRenderersMainHeraldry(custMechRep.VisibleObject);
-        CustomRepresentation customRepresentation = result.GetComponent<CustomRepresentation>();
-        if (customRepresentation == null) { customRepresentation = result.AddComponent<CustomRepresentation>(); }
-        customRepresentation.Init(mechRep, custRepDef);
-        customRepresentation.InBattle = true;
-        custMechRep.customRep = customRepresentation;
-        MechFlyHeightController heightController = result.GetComponent<MechFlyHeightController>();
-        if (heightController == null) { heightController = result.AddComponent<MechFlyHeightController>(); };
-        custMechRep.HeightController = heightController;
+        custMechRep = result.GetComponent<CustomMechRepresentation>();
+        if (custMechRep == null) { custMechRep = result.AddComponent<CustomMechRepresentation>(); custMechRep.Copy(mechRep); GameObject.DestroyImmediate(mechRep); mechRep = custMechRep; }
       }
+      custMechRep.RegisterColliders(custMechRep.gameObject);
+      MechCustomization mechCust = custMechRep.GetComponentInChildren<MechCustomization>(true);
+      custMechRep.PrefabBase = chassisDef.PrefabBase;
+      custMechRep.HardpointData = chassisDef.HardpointDataDef;
+      custMechRep.chassisDef = chassisDef;
+      CustomPropertyBlockManager custPropertyBlock = custMechRep.GetComponentInChildren<CustomPropertyBlockManager>();
+      if(custPropertyBlock == null) {
+        PropertyBlockManager propertyBlock = custMechRep.GetComponentInChildren<PropertyBlockManager>();
+        if(propertyBlock != null) {
+          custPropertyBlock = propertyBlock.gameObject.AddComponent<CustomPropertyBlockManager>();
+          custPropertyBlock.Copy(propertyBlock);
+          GameObject.DestroyImmediate(propertyBlock);
+          propertyBlock = null;
+          custMechRep._propertyBlock = custPropertyBlock;
+          Log.WL(0, "customPropertyBlock " + (custMechRep.customPropertyBlock == null ? "null" : custMechRep.customPropertyBlock.gameObject.name));
+        }
+      }
+      if (mechCust != null) {
+        CustomMechCustomization custMechCust = custMechRep.VisibleObject.AddComponent<CustomMechCustomization>();
+        custMechCust.Copy(mechCust);
+        GameObject.DestroyImmediate(mechCust);
+        custMechRep.defaultMechCustomization = custMechCust;
+        custMechCust.Init(custMechRep);
+      }
+      switch (custRepDef.ApplyType) {
+        //case CustomActorRepresentationDef.RepresentationApplyType.CopyMesh: mechRep.CopyModel(source, dataManager); break;
+        case CustomActorRepresentationDef.RepresentationApplyType.MoveBone: custMechRep.MoveBone(custRepDef, dataManager); break;
+      }
+      if (custMechRep.BlipObjectIdentified != null) { custMechRep.RegisterRenderersCustomHeraldry(custMechRep.BlipObjectIdentified, null); }
+      if (custMechRep.BlipObjectUnknown != null) { custMechRep.RegisterRenderersCustomHeraldry(custMechRep.BlipObjectUnknown, null); }
+      if (custMechRep.BlipObjectGhostStrong != null) { custMechRep.RegisterRenderersCustomHeraldry(custMechRep.BlipObjectGhostStrong, null); }
+      if (custMechRep.BlipObjectGhostWeak != null) { custMechRep.RegisterRenderersCustomHeraldry(custMechRep.BlipObjectGhostWeak, null); }
+      custMechRep.RegisterRenderersMainHeraldry(custMechRep.VisibleObject);
+      CustomRepresentation customRepresentation = result.GetComponent<CustomRepresentation>();
+      if (customRepresentation == null) { customRepresentation = result.AddComponent<CustomRepresentation>(); }
+      customRepresentation.Init(custMechRep, custRepDef);
+      customRepresentation.InBattle = true;
+      custMechRep.customRep = customRepresentation;
+      MechFlyHeightController heightController = result.GetComponent<MechFlyHeightController>();
+      if (heightController == null) { heightController = result.AddComponent<MechFlyHeightController>(); };
+      custMechRep.HeightController = heightController;
+      custMechRep.Test();
       return result;
     }
     public static GameObject ProcessSimGame(DataManager dataManager, ref GameObject result, CustomActorRepresentationDef custRepDef, ChassisDef chassisDef) {

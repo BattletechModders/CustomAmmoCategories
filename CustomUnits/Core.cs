@@ -193,6 +193,8 @@ namespace CustomUnits{
     public bool PartialMovementOnlyWalkByDefault { get; set; }
     public bool AllowRotateWhileJumpByDefault { get; set; }
     public string MechIsVehicleTag { get; set; }
+    public string DefaultMechBattleRepresentationPrefab { get; set; }
+    public string DefaultMechSimgameRepresentationPrefab { get; set; }
     public CombatValueMultipliersDef? DefaultCombatValueMultipliers { get; set; }
 
     [JsonIgnore]
@@ -302,6 +304,8 @@ namespace CustomUnits{
       CustomHeadlightComponentPrefab = "chrPrfComp_atlas_leftshoulder_headlight";
       CustomHeadlightPrefabSrcObjectName = "PtLight - Torso (3)";
       FullTransparentMaterialSource = "full_transparent";
+      DefaultMechBattleRepresentationPrefab = "chrPrfMech_atlasBase-001";
+      DefaultMechSimgameRepresentationPrefab = "chrPrfComp_atlas_simgame";
       MaxHoveringHeightWithWorkingJets = 1f;
       PartialMovementGuardDistance = 15f;
       PartialMovementOnlyWalkByDefault = true;
@@ -404,14 +408,25 @@ namespace CustomUnits{
         foreach (string name in loadOrder) { if (name == "LowVisibility") { LowVisibilityAPIHelper.Init(); break; }; }
         foreach (var customResource in customResources) {
           Log.TWL(0, "customResource:"+ customResource.Key);
-          if(customResource.Key == "CustomMechRepresentationDef") {
-            foreach(var custMechRep in customResource.Value) {
+          if (customResource.Key == "CustomMechRepresentationDef") {
+            foreach (var custMechRep in customResource.Value) {
               try {
                 Log.WL(1, "Path:" + custMechRep.Value.FilePath);
                 CustomMechRepresentationDef mechRepDef = JsonConvert.DeserializeObject<CustomMechRepresentationDef>(File.ReadAllText(custMechRep.Value.FilePath));
                 mechRepDef.Register();
-              } catch(Exception e) {
-                Log.TWL(0, custMechRep.Key,true);
+              } catch (Exception e) {
+                Log.TWL(0, custMechRep.Key, true);
+                Log.WL(0, e.ToString(), true);
+              }
+            }
+          } else if (customResource.Key == "CustomPrefabDef") {
+            foreach (var custMechRep in customResource.Value) {
+              try {
+                Log.WL(1, "Path:" + custMechRep.Value.FilePath);
+                CustomPrefabDef mechRepDef = JsonConvert.DeserializeObject<CustomPrefabDef>(File.ReadAllText(custMechRep.Value.FilePath));
+                mechRepDef.Register();
+              } catch (Exception e) {
+                Log.TWL(0, custMechRep.Key, true);
                 Log.WL(0, e.ToString(), true);
               }
             }

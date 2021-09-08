@@ -12,6 +12,15 @@ namespace CustAmmoCategories {
       foreach(AbstractActor actor in allActors) {
         Log.M.WL(1, actor.DisplayName+":"+actor.GUID+ " IsDead:"+actor.IsDead+ " HasHandledDeath:"+ actor.HasHandledDeath+ " isHasStability:"+actor.isHasStability());
         if ((actor.HasHandledDeath == false)&&(actor.IsDead == true)) {
+          
+          if(actor is Mech mech) {
+            Log.M.WL(2, "pilot.IsIncapacitated:"+ mech.pilot.IsIncapacitated);
+            Log.M.WL(2, "pilot.HasEjected:" + mech.pilot.HasEjected);
+            Log.M.WL(2, "HeadStructure:" + mech.HeadStructure);
+            Log.M.WL(2, "CenterTorsoStructure:" + mech.CenterTorsoStructure);
+            Log.M.WL(2, "LeftLegStructure:" + mech.LeftLegStructure);
+            Log.M.WL(2, "RightLegStructure:" + mech.RightLegStructure);
+          }
           int deathLocation = 0;
           switch (actor.UnitType) {
             case UnitType.Building: deathLocation = (int)BuildingLocation.Structure; break;

@@ -877,6 +877,10 @@ namespace CustomUnits {
         try {
           if (MechFlyHeightController.JumpJetSrcPrefab == null) {
             MechFlyHeightController.JumpJetSrcPrefab = dataManager.PooledInstantiate(Core.Settings.CustomJumpJetsComponentPrefab, BattleTechResourceType.Prefab);
+            if(MechFlyHeightController.JumpJetSrcPrefab == null) {
+              Log.WL(2, "jumpJetSrcPrefab:" + (JumpJetSrcPrefab == null ? "null" : JumpJetSrcPrefab.name));
+              return;
+            }
             MechFlyHeightController.JumpJetSrcPrefab.SetActive(false);
           }
           Log.WL(2, "jumpJetSrcPrefab:" + (JumpJetSrcPrefab == null ? "null" : JumpJetSrcPrefab.name));

@@ -124,6 +124,7 @@
     <Compile Include="BiomeTagsFix.cs" />
     <Compile Include="CombatDestroyed.cs" />
     <Compile Include="CustomArmorReadout.cs" />
+    <Compile Include="CustomPrefab.cs" />
     <Compile Include="CustomRepresentation\AltRepresentations.cs" />
     <Compile Include="CustomRepresentation\CustomMechMeshMerge.cs" />
     <Compile Include="CustomRepresentation\CustomMechRepresentation.cs" />
@@ -138,6 +139,7 @@
     <Compile Include="CustomRepresentation\PropertyBlockManager.cs" />
     <Compile Include="CustomRepresentation\QuadRepresentation.cs" />
     <Compile Include="CustomRepresentation\SquadRepresentation.cs" />
+    <Compile Include="CustomRepresentation\VehicleDrivenMechRepresentation.cs" />
     <Compile Include="CustomTwistSequence.cs" />
     <Compile Include="DependenciesPatches.cs" />
     <Compile Include="DeployPosition.cs" />

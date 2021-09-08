@@ -49,8 +49,18 @@ namespace CustomUnits {
       Log.TWL(0, "LowVisibilityAPIHelper.SetArmorDisplayActive DisplayedCombatant:" + (DisplayedCombatant == null ? "null" : (DisplayedCombatant.PilotableActorDef.Description.Id + " fake:" + DisplayedCombatant.FakeVehicle())) + " computerCustom:" + (computerCustom == null ? "null" : "not null"));
       if (DisplayedCombatant is Mech mech) {
         if (computerCustom == null) { __instance.MechArmorDisplay.gameObject.SetActive(active); } else {
-          if (DisplayedCombatant.FakeVehicle() == false) { __instance.MechArmorDisplay.gameObject.SetActive(active); } 
-          else { computerCustom.fakeVehicleReadout.gameObject.SetActive(active); }
+          if(active == true) {
+            if (DisplayedCombatant.FakeVehicle() == false) {
+              __instance.MechArmorDisplay.gameObject.SetActive(true);
+              computerCustom.fakeVehicleReadout.gameObject.SetActive(false);
+            } else {
+              __instance.MechArmorDisplay.gameObject.SetActive(false);
+              computerCustom.fakeVehicleReadout.gameObject.SetActive(true);
+            }
+          } else { 
+            __instance.MechArmorDisplay.gameObject.SetActive(false);
+            computerCustom.fakeVehicleReadout.gameObject.SetActive(false);
+          }
         }
       } else 
       if (DisplayedCombatant is Vehicle vehicle) { __instance.VehicleArmorDisplay.gameObject.SetActive(active); } else 

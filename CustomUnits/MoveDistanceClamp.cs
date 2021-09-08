@@ -207,47 +207,47 @@ namespace CustomUnits {
       return 0f;
     }
     public static float MaxSprintDistanceMod(Mech mech, float value) {
-      Log.TW(0, "MaxSprintDistanceMod " + mech.Description.Id + " value:" + value + " lastMove:" + mech.LastMoveDistance() + " spent:" + mech.PartialMovementSpent()+" clamp:"+ mech.MoveClamp()+" restMod:"+ mech.RestPathingModifier());
+      //Log.TW(0, "MaxSprintDistanceMod " + mech.Description.Id + " value:" + value + " lastMove:" + mech.LastMoveDistance() + " spent:" + mech.PartialMovementSpent()+" clamp:"+ mech.MoveClamp()+" restMod:"+ mech.RestPathingModifier());
       if (mech.MoveClamp() > Core.Epsilon) {
         mech.MoveClamp(value, out float min, out float max);
         value = max;
       } else {
         value = value * mech.RestPathingModifier();
       }
-      Log.WL(1, "value:" + value);
+      //Log.WL(1, "value:" + value);
       return value;
     }
     public static float MaxWalkDistanceMod(Mech mech, float value) {
-      Log.TW(0, "MaxWalkDistanceMod " + mech.Description.Id + " value:" + value + " lastMove:" + mech.LastMoveDistance() + " spent:" + mech.PartialMovementSpent() + " clamp:" + mech.MoveClamp() + " restMod:" + mech.RestPathingModifier());
+      //Log.TW(0, "MaxWalkDistanceMod " + mech.Description.Id + " value:" + value + " lastMove:" + mech.LastMoveDistance() + " spent:" + mech.PartialMovementSpent() + " clamp:" + mech.MoveClamp() + " restMod:" + mech.RestPathingModifier());
       if (mech.MoveClamp() > Core.Epsilon) {
         mech.MoveClamp(value, out float min, out float max);
         value = max;
       } else {
         value = value * mech.RestPathingModifier();
       }
-      Log.WL(1, "value:" + value);
+      //Log.WL(1, "value:" + value);
       return value;
     }
     public static float MaxBackwardDistanceMod(Mech mech, float value) {
-      Log.TW(0, "MaxBackwardDistanceMod " + mech.Description.Id + " value:" + value + " lastMove:" + mech.LastMoveDistance() + " spent:" + mech.PartialMovementSpent() + " clamp:" + mech.MoveClamp() + " restMod:" + mech.RestPathingModifier());
+      //Log.TW(0, "MaxBackwardDistanceMod " + mech.Description.Id + " value:" + value + " lastMove:" + mech.LastMoveDistance() + " spent:" + mech.PartialMovementSpent() + " clamp:" + mech.MoveClamp() + " restMod:" + mech.RestPathingModifier());
       if (mech.MoveClamp() > Core.Epsilon) {
         mech.MoveClamp(value, out float min, out float max);
         value = max;
       } else {
         value = value * mech.RestPathingModifier();
       }
-      Log.WL(1, "value:" + value);
+      //Log.WL(1, "value:" + value);
       return value;
     }
     public static float MaxMeleeEngageRangeDistanceMod(Mech mech, float value) {
-      Log.TW(0, "MaxMeleeEngageRangeDistanceMod " + mech.Description.Id + " value:" + value + " lastMove:" + mech.LastMoveDistance() + " spent:" + mech.PartialMovementSpent() + " clamp:" + mech.MoveClamp() + " restMod:" + mech.RestPathingModifier());
+      //Log.TW(0, "MaxMeleeEngageRangeDistanceMod " + mech.Description.Id + " value:" + value + " lastMove:" + mech.LastMoveDistance() + " spent:" + mech.PartialMovementSpent() + " clamp:" + mech.MoveClamp() + " restMod:" + mech.RestPathingModifier());
       if (mech.MoveClamp() > Core.Epsilon) {
         mech.MoveClamp(value, out float min, out float max);
         value = max;
       } else {
         value = value * mech.RestPathingModifier();
       }
-      Log.WL(1, "value:" + value);
+      //Log.WL(1, "value:" + value);
       return value;
     }
     public static void Postfix(Mech __instance, ref float __result) {
