@@ -46,26 +46,62 @@ namespace CustomUnits {
       CombatHUDTargetingComputerCustom computerCustom = __instance.gameObject.GetComponent<CombatHUDTargetingComputerCustom>();
       ICombatant DisplayedCombatant = __instance.ActivelyShownCombatant;
       //if (DisplayedCombatant == null) { DisplayedCombatant = __instance.MechArmorDisplay.DisplayedMech; }
-      Log.TWL(0, "LowVisibilityAPIHelper.SetArmorDisplayActive DisplayedCombatant:" + (DisplayedCombatant == null ? "null" : (DisplayedCombatant.PilotableActorDef.Description.Id + " fake:" + DisplayedCombatant.FakeVehicle())) + " computerCustom:" + (computerCustom == null ? "null" : "not null"));
-      if (DisplayedCombatant is Mech mech) {
-        if (computerCustom == null) { __instance.MechArmorDisplay.gameObject.SetActive(active); } else {
-          if(active == true) {
-            if (DisplayedCombatant.FakeVehicle() == false) {
-              __instance.MechArmorDisplay.gameObject.SetActive(true);
-              computerCustom.fakeVehicleReadout.gameObject.SetActive(false);
-            } else {
-              __instance.MechArmorDisplay.gameObject.SetActive(false);
-              computerCustom.fakeVehicleReadout.gameObject.SetActive(true);
-            }
-          } else { 
+      Log.TWL(0, "LowVisibilityAPIHelper.SetArmorDisplayActive DisplayedCombatant:" + (DisplayedCombatant == null ? "null" : (DisplayedCombatant.PilotableActorDef.Description.Id + " fake:" + DisplayedCombatant.FakeVehicle())) + " computerCustom:" + (computerCustom == null ? "null" : "not null")+" active:"+active);
+      if(active == false) {
+        __instance.VehicleArmorDisplay.gameObject.SetActive(false);
+        __instance.TurretArmorDisplay.gameObject.SetActive(false);
+        __instance.BuildingArmorDisplay.gameObject.SetActive(false);
+        __instance.MechArmorDisplay.gameObject.SetActive(false);
+        if (computerCustom != null) { computerCustom.fakeVehicleReadout.gameObject.SetActive(false); }
+      } else {
+        if (DisplayedCombatant is Mech mech) {
+          if (DisplayedCombatant.FakeVehicle() == false) {
+            Log.WL(1, "Mech");
+            __instance.MechArmorDisplay.gameObject.SetActive(true);
+            __instance.VehicleArmorDisplay.gameObject.SetActive(false);
+            __instance.TurretArmorDisplay.gameObject.SetActive(false);
+            __instance.BuildingArmorDisplay.gameObject.SetActive(false);
+            if (computerCustom != null) { computerCustom.fakeVehicleReadout.gameObject.SetActive(false); }
+          } else {
+            Log.WL(1, "fake vehicle");
             __instance.MechArmorDisplay.gameObject.SetActive(false);
-            computerCustom.fakeVehicleReadout.gameObject.SetActive(false);
+            __instance.VehicleArmorDisplay.gameObject.SetActive(false);
+            __instance.TurretArmorDisplay.gameObject.SetActive(false);
+            __instance.BuildingArmorDisplay.gameObject.SetActive(false);
+            if (computerCustom != null) { computerCustom.fakeVehicleReadout.gameObject.SetActive(true); }
           }
+        }else
+        if (DisplayedCombatant is Vehicle vehicle) {
+          Log.WL(1, "vehicle");
+          __instance.MechArmorDisplay.gameObject.SetActive(false);
+          __instance.VehicleArmorDisplay.gameObject.SetActive(true);
+          __instance.TurretArmorDisplay.gameObject.SetActive(false);
+          __instance.BuildingArmorDisplay.gameObject.SetActive(false);
+          if (computerCustom != null) { computerCustom.fakeVehicleReadout.gameObject.SetActive(false); }
+        } else
+        if (DisplayedCombatant is Turret turret) {
+          Log.WL(1, "turret");
+          __instance.MechArmorDisplay.gameObject.SetActive(false);
+          __instance.VehicleArmorDisplay.gameObject.SetActive(false);
+          __instance.TurretArmorDisplay.gameObject.SetActive(true);
+          __instance.BuildingArmorDisplay.gameObject.SetActive(false);
+          if (computerCustom != null) { computerCustom.fakeVehicleReadout.gameObject.SetActive(false); }
+        } else
+        if (DisplayedCombatant is BattleTech.Building building) {
+          Log.WL(1, "building");
+          __instance.MechArmorDisplay.gameObject.SetActive(false);
+          __instance.VehicleArmorDisplay.gameObject.SetActive(false);
+          __instance.TurretArmorDisplay.gameObject.SetActive(false);
+          __instance.BuildingArmorDisplay.gameObject.SetActive(true);
+          if (computerCustom != null) { computerCustom.fakeVehicleReadout.gameObject.SetActive(false); }
         }
-      } else 
-      if (DisplayedCombatant is Vehicle vehicle) { __instance.VehicleArmorDisplay.gameObject.SetActive(active); } else 
-      if (DisplayedCombatant is Turret turret) { __instance.TurretArmorDisplay.gameObject.SetActive(active); } else 
-      if (DisplayedCombatant is BattleTech.Building building) { __instance.BuildingArmorDisplay.gameObject.SetActive(active); }        
+      }
+      Log.WL(1, "MechArmorDisplay:"+ __instance.MechArmorDisplay.gameObject.activeInHierarchy
+        + " VehicleArmorDisplay:"+ __instance.VehicleArmorDisplay.gameObject.activeInHierarchy
+        + " TurretArmorDisplay:"+ __instance.TurretArmorDisplay.gameObject.activeInHierarchy
+        + " BuildingArmorDisplay:" + __instance.BuildingArmorDisplay.gameObject.activeInHierarchy
+        + " fakeVehicleReadout:" + (computerCustom != null? computerCustom.fakeVehicleReadout.gameObject.activeInHierarchy:false)
+      );
     }
     public static void LowVis_PilotableActorRepresentation_OnPlayerVisibilityChanged(PilotableActorRepresentation __instance, VisibilityLevel newLevel) {
       i_PilotableActorRepresentation_OnPlayerVisibilityChanged?.Invoke(__instance, newLevel);

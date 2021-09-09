@@ -865,6 +865,22 @@ namespace CustomUnits {
       }
     }
   }
+  [HarmonyPatch(typeof(CombatHUDCalledShotPopUp))]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch("ShowVehicleDisplay")]
+  [HarmonyPatch(new Type[] { })]
+  public static class CombatHUDCalledShotPopUp_ShowVehicleDisplay {
+    public static void Postfix(CombatHUDCalledShotPopUp __instance) {
+      try {
+        Log.TWL(0, "CombatHUDCalledShotPopUp.ShowVehicleDisplay");
+        CombatHUDCalledShotPopUpCustom customPopup = __instance.gameObject.GetComponent<CombatHUDCalledShotPopUpCustom>();
+        if (customPopup == null) { return; }
+        customPopup.fakeVehicleReadout.gameObject.SetActive(false);
+      } catch (Exception e) {
+        Log.TWL(0, e.ToString(), true);
+      }
+    }
+  }
   [HarmonyPatch(typeof(CombatHUDTargetingComputer))]
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch("ShowMechDisplay")]
@@ -888,6 +904,51 @@ namespace CustomUnits {
             computerCustom.fakeVehicleReadout.DisplayedVehicle = null;
           }
         }
+      } catch (Exception e) {
+        Log.TWL(0, e.ToString(), true);
+      }
+    }
+  }
+  [HarmonyPatch(typeof(CombatHUDTargetingComputer))]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch("showVehicleDisplay")]
+  [HarmonyPatch(new Type[] { })]
+  public static class CombatHUDTargetingComputer_showVehicleDisplay {
+    public static void Postfix(CombatHUDTargetingComputer __instance) {
+      try {
+        CombatHUDTargetingComputerCustom computerCustom = __instance.gameObject.GetComponent<CombatHUDTargetingComputerCustom>();
+        if (computerCustom == null) { return; }
+        computerCustom.fakeVehicleReadout.gameObject.SetActive(false);
+      } catch (Exception e) {
+        Log.TWL(0, e.ToString(), true);
+      }
+    }
+  }
+  [HarmonyPatch(typeof(CombatHUDTargetingComputer))]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch("showBuildingDisplay")]
+  [HarmonyPatch(new Type[] { })]
+  public static class CombatHUDTargetingComputer_showBuildingDisplay {
+    public static void Postfix(CombatHUDTargetingComputer __instance) {
+      try {
+        CombatHUDTargetingComputerCustom computerCustom = __instance.gameObject.GetComponent<CombatHUDTargetingComputerCustom>();
+        if (computerCustom == null) { return; }
+        computerCustom.fakeVehicleReadout.gameObject.SetActive(false);
+      } catch (Exception e) {
+        Log.TWL(0, e.ToString(), true);
+      }
+    }
+  }
+  [HarmonyPatch(typeof(CombatHUDTargetingComputer))]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch("showTurretDisplay")]
+  [HarmonyPatch(new Type[] { })]
+  public static class CombatHUDTargetingComputer_showTurretDisplay {
+    public static void Postfix(CombatHUDTargetingComputer __instance) {
+      try {
+        CombatHUDTargetingComputerCustom computerCustom = __instance.gameObject.GetComponent<CombatHUDTargetingComputerCustom>();
+        if (computerCustom == null) { return; }
+        computerCustom.fakeVehicleReadout.gameObject.SetActive(false);
       } catch (Exception e) {
         Log.TWL(0, e.ToString(), true);
       }

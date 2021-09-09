@@ -214,7 +214,7 @@ namespace CustomUnits {
       } else {
         value = value * mech.RestPathingModifier();
       }
-      //Log.WL(1, "value:" + value);
+      Log.WL(1, "value:" + value);
       return value;
     }
     public static float MaxWalkDistanceMod(Mech mech, float value) {
@@ -225,7 +225,7 @@ namespace CustomUnits {
       } else {
         value = value * mech.RestPathingModifier();
       }
-      //Log.WL(1, "value:" + value);
+      Log.WL(1, "value:" + value);
       return value;
     }
     public static float MaxBackwardDistanceMod(Mech mech, float value) {
@@ -236,7 +236,7 @@ namespace CustomUnits {
       } else {
         value = value * mech.RestPathingModifier();
       }
-      //Log.WL(1, "value:" + value);
+      Log.WL(1, "value:" + value);
       return value;
     }
     public static float MaxMeleeEngageRangeDistanceMod(Mech mech, float value) {
@@ -247,7 +247,7 @@ namespace CustomUnits {
       } else {
         value = value * mech.RestPathingModifier();
       }
-      //Log.WL(1, "value:" + value);
+      Log.WL(1, "value:" + value);
       return value;
     }
     public static void Postfix(Mech __instance, ref float __result) {
