@@ -22,6 +22,28 @@ namespace CustAmmoCategories {
   //  return result;
   //}
   //}
+  public static class CustomGetHitTableHelper {
+    private static Dictionary<string,Func<ICustomMech, Weapon, int, Dictionary<ArmorLocation, int>, Dictionary<ArmorLocation, int>>> GetUnitHitTableFilters = new Dictionary<string,Func<ICustomMech, Weapon, int, Dictionary<ArmorLocation, int>, Dictionary<ArmorLocation, int>>>();
+    public static void RegisterFilter(string id, Func<ICustomMech, Weapon, int, Dictionary<ArmorLocation, int>, Dictionary<ArmorLocation, int>> filter) {
+      if(GetUnitHitTableFilters.ContainsKey(id) == false) {
+        GetUnitHitTableFilters.Add(id,filter);
+      } else {
+        GetUnitHitTableFilters[id] = filter;
+      }
+    }
+    public static Dictionary<ArmorLocation, int> InvokeFilters(Dictionary<ArmorLocation, int> inital) {
+      if (GetUnitHitTableFilters.Count == 0) { return inital; }
+      ICustomMech mech = Thread.CurrentThread.currentActor() as ICustomMech;
+      Weapon weapon = Thread.CurrentThread.currentWeapon();
+      int attackSeqId = Thread.CurrentThread.currentAttackSequence();
+      Dictionary<ArmorLocation, int> result = new Dictionary<ArmorLocation, int>();
+      foreach (var r in inital) { result.Add(r.Key, r.Value); }
+      foreach (var filter in GetUnitHitTableFilters) {
+        result = filter.Value(mech, weapon, attackSeqId, result);
+      }
+      return result;
+    }
+  }
   public static class FakeVehicleLocationConvertHelper {
     public static VehicleChassisLocations vehicleLocationFromMechLocation(ChassisLocations location) {
       switch (location) {

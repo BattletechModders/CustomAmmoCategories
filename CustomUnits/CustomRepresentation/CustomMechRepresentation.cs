@@ -28,9 +28,11 @@ namespace CustomUnits {
         if (info != null) {
           if (info.SquadInfo.Troopers >= 1) {
             __result = new TrooperSquad(mDef, pilot, additionalTags, uniqueId, combat, spawnerId, customHeraldryDef);
-          }
+          }else
           if((info.FakeVehicle == true) || (mDef.ChassisID.IsInFakeChassis() == true)) {
             __result = new FakeVehicleMech(mDef, pilot, additionalTags, uniqueId, combat, spawnerId, customHeraldryDef);
+          }else if(info.ArmsCountedAsLegs == true) {
+            __result = new QuadMech(mDef, pilot, additionalTags, uniqueId, combat, spawnerId, customHeraldryDef);
           }
         }
         if (__result == null) {
@@ -488,6 +490,7 @@ namespace CustomUnits {
     }
     public virtual bool isSquad { get { return false; } }
     public virtual bool isVehicle { get { return false; } }
+    public virtual bool isQuad { get { return false; } }
   }
   public partial class CustomMechRepresentation : MechRepresentation, ICustomizationTarget {
     public HashSet<CustomParticleSystemRep> CustomParticleSystemReps { get; set; } = new HashSet<CustomParticleSystemRep>();

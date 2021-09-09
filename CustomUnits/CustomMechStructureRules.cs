@@ -300,18 +300,14 @@ namespace CustomUnits {
       return result;
     }
     public static void Postfix(AttackDirection from, ref Dictionary<ArmorLocation, int> __result) {
-      //if (Thread.CurrentThread.isFlagSet("BuildClusterTables")) { return; }
-      //if (Thread.CurrentThread.isFlagSet("RunHitDiagnostics")) { return; }
       if (Thread.CurrentThread.isFlagSet("CallOriginal_GetMechHitTable")) { return; }
       Mech mech = Thread.CurrentThread.currentMech();
       if (mech == null) {
-        //Log.TWL(0, "illegal GetMechHitTable call :"+Environment.StackTrace);
         throw new Exception("illegal GetMechHitTable call");
       } else { 
         ICustomMech customMech = mech as ICustomMech;
-        if (customMech != null) {
-          __result = customMech.GetHitTable(from);
-        }
+        if (customMech != null) { __result = customMech.GetHitTable(from); }
+        __result = CustomGetHitTableHelper.InvokeFilters(__result);
       }
     }
   }

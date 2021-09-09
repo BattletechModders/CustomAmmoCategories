@@ -8,6 +8,7 @@ namespace CustAmmoCategories {
   public interface ICustomMech {
     bool isSquad { get; }
     bool isVehicle { get; }
+    bool isQuad { get; }
     HashSet<ArmorLocation> GetDFASelfDamageLocations();
     HashSet<ArmorLocation> GetLandmineDamageArmorLocations();
     HashSet<ArmorLocation> GetBurnDamageArmorLocations();

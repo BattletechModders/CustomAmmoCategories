@@ -325,6 +325,7 @@ namespace CustomUnits {
     //public HashSet<TrooperRepresentation> Reps;
     //public HashSet<MechRepresentation> MechReps;
     public UnitCustomInfo info;
+    public bool isQuad { get { return false; } }
     public TrooperSquad(MechDef mDef, PilotDef pilotDef, TagSet additionalTags, string UID, CombatGameState combat, string spawnerId, HeraldryDef customHeraldryDef)
                   :base (mDef, pilotDef, additionalTags, UID, combat, spawnerId, customHeraldryDef)
     {
