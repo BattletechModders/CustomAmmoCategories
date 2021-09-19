@@ -280,6 +280,7 @@ namespace CustAmmoCategories {
     }
     public static void Postfix(UnityGameInstance __instance) {
       try {
+        Online.OnlineClientHelper.KeepAlive();
         if (httpRequests.Count == 0) { return; }
         CACHTTPRequestItem request = httpRequests.Dequeue();
         MethodInfo method = typeof(UnityGameInstance_UpdateCACHTTP).GetMethod(request.name,BindingFlags.Static|BindingFlags.Public);

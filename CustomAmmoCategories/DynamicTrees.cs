@@ -343,6 +343,16 @@ namespace CustAmmoCategories {
 
 namespace CustAmmoCategoriesPatches {
   [HarmonyPatch(typeof(RenderTrees))]
+  [HarmonyPatch("OnPreCull")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { })]
+  public static class RenderTrees_OnPreCull {
+    //public static bool Prefix(RenderTrees __instance) {
+      //Log.M.TWL(0, "RenderTrees.OnPreCull");
+      //return false;
+    //}
+  }
+  [HarmonyPatch(typeof(RenderTrees))]
   [HarmonyPatch("InitQuadTree")]
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { })]

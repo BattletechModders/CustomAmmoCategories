@@ -1368,6 +1368,9 @@ namespace CustAmmoCategories {
     public bool ImprovedBallisticByDefault { get; set; }
     public Dictionary<string, DesignMaskMoveCostInfo> DefaultMoveCosts { get; set; }
     public bool DestroyedLocationsCritTransfer { get; set; }
+    public string OnlineServerHost { get; set; }
+    public int OnlineServerServicePort { get; set; }
+    public int OnlineServerDataPort { get; set; }
     public Settings() {
       directory = string.Empty;
       debugLog = true;
@@ -1380,6 +1383,9 @@ namespace CustAmmoCategories {
       JamAIAvoid = 1.0f;
       DamageJamAIAvoid = 2.0f;
       WeaponRealizerStandalone = "";
+      OnlineServerHost = "192.168.78.162";
+      OnlineServerServicePort = 143;
+      OnlineServerDataPort = 443;
       modHTTPListen = "http://localhost:65080";
       DynamicDesignMasksDefs = new List<string>();
       BurningForestDesignMask = "DesignMaskBurningForest";
@@ -1564,6 +1570,7 @@ namespace CACMain {
         Log.M.WL(1, dd.Key.ToString() + "={range:"+dd.Value.Range+" damage:"+dd.Value.Damage+"}");
       }
       ToHitModifiersHelper.Init();
+      CustomAmmoCategories.InitHitLocationsAOE();
       //string CharlesBSettings = Path.Combine(directory, "CharlesB_settings.json");
       //if (File.Exists(CharlesBSettings)) {
       //CharlesB.Core.Init(directory, File.ReadAllText(CharlesBSettings));
@@ -1692,6 +1699,7 @@ namespace CACMain {
         InternalClassPathes.PatchInternalClasses(harmony);
         Thread thread = new Thread(ThreadWork.DoWork);
         thread.Start();
+        CustAmmoCategories.Online.OnlineClientHelper.Init();
         //Profiler.Init();
       } catch (Exception e) {
         CustomAmmoCategoriesLog.Log.LogWrite(e.ToString() + "\n");

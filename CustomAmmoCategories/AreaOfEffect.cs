@@ -201,6 +201,7 @@ namespace CustAmmoCategories {
             if (CustomAmmoCategories.OtherLocations == null) { CustomAmmoCategories.InitHitLocationsAOE(); };
             SpreadLocations = CustomAmmoCategories.OtherLocations;
           }
+          Log.M.TWL(0, "SpreadLocations:"+(SpreadLocations==null?"null":"not null"));
           float locationsCoeff = 0f;
           foreach (var sLoc in SpreadLocations) {
             if (reachableLocations.Contains(sLoc.Key)) { locationsCoeff += sLoc.Value; }

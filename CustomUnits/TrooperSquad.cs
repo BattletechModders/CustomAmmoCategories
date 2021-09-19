@@ -325,7 +325,7 @@ namespace CustomUnits {
     //public HashSet<TrooperRepresentation> Reps;
     //public HashSet<MechRepresentation> MechReps;
     public UnitCustomInfo info;
-    public bool isQuad { get { return false; } }
+    public override bool isQuad { get { return false; } }
     public TrooperSquad(MechDef mDef, PilotDef pilotDef, TagSet additionalTags, string UID, CombatGameState combat, string spawnerId, HeraldryDef customHeraldryDef)
                   :base (mDef, pilotDef, additionalTags, UID, combat, spawnerId, customHeraldryDef)
     {
@@ -516,38 +516,55 @@ namespace CustomUnits {
     private static Dictionary<int, Dictionary<ArmorLocation, int>> GetHitTable_cache = new Dictionary<int, Dictionary<ArmorLocation, int>>();
     private static Dictionary<int, Dictionary<ArmorLocation, Dictionary<ArmorLocation, int>>> GetHitTableCluster_cache = new Dictionary<int, Dictionary<ArmorLocation, Dictionary<ArmorLocation, int>>>();
     private int location_index = -1;
+    private HashSet<ArmorLocation> avaible_locations = new HashSet<ArmorLocation>();
     public override Dictionary<ArmorLocation, int> GetHitTable(AttackDirection from) {
-      if (location_index == -1) {
-        location_index = 0;
+      Log.TWL(0,"TrooperSquad.GetHitTable "+this.MechDef.Description.Id+" location index:" + (this.location_index>=0?Convert.ToString(this.location_index,2).PadLeft(16,'0'):"-1"));
+      if (this.location_index == -1) {
+        this.location_index = 0;
+        avaible_locations.Clear();
+        bool has_not_destroyed_locations = false;
+        foreach (ArmorLocation alocation in TrooperSquad.locations) {
+          ChassisLocations location = MechStructureRules.GetChassisLocationFromArmorLocation(alocation);
+          if (this.IsLocationDestroyed(location)) { continue; }
+          has_not_destroyed_locations = true; break;
+        }
         foreach (ArmorLocation alocation in TrooperSquad.locations) {
           ChassisLocations location = MechStructureRules.GetChassisLocationFromArmorLocation(alocation);
           LocationDef locDef = this.MechDef.Chassis.GetLocationDef(location);
+          Log.W(1, "location:" + alocation + "()" + location + " max armor:" + locDef.MaxArmor + " structure:"+ locDef.InternalStructure+" is destroyed:"+ this.IsLocationDestroyed(location)+" has not destroyed:"+ has_not_destroyed_locations);
           if ((locDef.MaxArmor <= 0f) && (locDef.InternalStructure <= 1f)) { continue; }
-          if (this.IsLocationDestroyed(location)) { continue; }
-          location_index |= (int)alocation;
-          //alocations.Add(alocation);
+          if (this.IsLocationDestroyed(location)&&(has_not_destroyed_locations == true)) { continue; }
+          this.location_index |= (int)alocation;
+          avaible_locations.Add(alocation);
         }
+        Log.WL(1, "recalculated: " + (this.location_index >= 0 ? Convert.ToString(this.location_index, 2).PadLeft(16, '0') : "-1"));
       }
       Dictionary<ArmorLocation, int> result = null;
-      if (GetHitTable_cache.TryGetValue(location_index, out result)) { return result; }
-      result = new Dictionary<ArmorLocation, int>();
-      HashSet<ArmorLocation> alocations = new HashSet<ArmorLocation>();
-      foreach (ArmorLocation aloc in alocations) {
-        result.Add(aloc, ToHitTableSumm / alocations.Count);
+      if (GetHitTable_cache.TryGetValue(location_index, out result)) {
+        Log.WL(1,"cached:"+result.Count);
+        return result;
       }
+      result = new Dictionary<ArmorLocation, int>();
+      if (avaible_locations.Count > 0) {
+        foreach (ArmorLocation aloc in avaible_locations) {
+          result.Add(aloc, ToHitTableSumm / avaible_locations.Count);
+        }
+      }
+      GetHitTable_cache.Add(location_index, result);
       return result.Count > 0 ? result : null;
     }
     private static Dictionary<int, Dictionary<ArmorLocation, Dictionary<ArmorLocation, int>>> GetClusterTable_cache = new Dictionary<int, Dictionary<ArmorLocation, Dictionary<ArmorLocation, int>>>();
     public override Dictionary<ArmorLocation, int> GetClusterTable(ArmorLocation originalLocation, Dictionary<ArmorLocation, int> hitTable) {
       if (location_index == -1) {
         location_index = 0;
+        avaible_locations.Clear();
         foreach (ArmorLocation alocation in TrooperSquad.locations) {
           ChassisLocations location = MechStructureRules.GetChassisLocationFromArmorLocation(alocation);
           LocationDef locDef = this.MechDef.Chassis.GetLocationDef(location);
           if ((locDef.MaxArmor <= 0f) && (locDef.InternalStructure <= 1f)) { continue; }
           if (this.IsLocationDestroyed(location)) { continue; }
           location_index |= (int)alocation;
-          //alocations.Add(alocation);
+          avaible_locations.Add(alocation);
         }
       }
       if (GetClusterTable_cache.TryGetValue(location_index, out Dictionary<ArmorLocation, Dictionary<ArmorLocation, int>> squad_tables) == false) {
@@ -598,8 +615,23 @@ namespace CustomUnits {
     //  return squad.GetHitTable(from);
     //}
     public override int GetHitLocation(AbstractActor attacker, Vector3 attackPosition, float hitLocationRoll, int calledShotLocation, float bonusMultiplier) {
-      Dictionary<ArmorLocation, int> hitTable = this.GetHitTable(AttackDirection.FromFront);
-      return (int)HitLocation.GetHitLocation<ArmorLocation>(hitTable, hitLocationRoll, (ArmorLocation)calledShotLocation, bonusMultiplier);
+      try {
+        Log.TWL(0, "TrooperSquad.GetHitLocation " + this.MechDef.Description.Id);
+        Dictionary<ArmorLocation, int> hitTable = this.GetHitTable(AttackDirection.FromFront);
+        Log.WL(1, "hitTable:" + (hitTable == null ? "null" : "not null"));
+        int result = (int)HitLocation.GetHitLocation(hitTable, hitLocationRoll, (ArmorLocation)calledShotLocation, bonusMultiplier);
+        if ((result == 0) || (result == 65535)) {
+          Log.WL(1, "Exception. something went wrong. location is bad:"+result);
+          foreach (var ht in hitTable) {
+            Log.W(1, ht.Key.ToString() + ":" + ht.Value);
+          }
+          Log.WL(1, "");
+        }
+        return result;
+      } catch (Exception e) {
+        Log.TWL(0, e.ToString(), true);
+        return 0;
+      }
     }
     public override int GetAdjacentHitLocation(Vector3 attackPosition, float randomRoll, int previousHitLocation, float originalMultiplier = 1f, float adjacentMultiplier = 1f) {
       Dictionary<ArmorLocation, int> hitTable = this.GetHitTable(AttackDirection.FromFront);

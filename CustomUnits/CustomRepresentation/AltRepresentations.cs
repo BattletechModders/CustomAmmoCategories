@@ -804,8 +804,10 @@ namespace CustomUnits {
       raycastHit = nullable.Value;
       Vector3 normal = raycastHit.normal;
       Log.WL(1, "ray hit found. Point:" + raycastHit.point + " hit collider:" + raycastHit.collider.transform.name);
-      Quaternion to = Quaternion.FromToRotation(this.j_Root.up, normal) * Quaternion.Euler(0.0f, this.j_Root.rotation.eulerAngles.y, 0.0f);
-      this.j_Root.rotation = Quaternion.RotateTowards(this.j_Root.rotation, to, 180f * deltaTime);
+      //Quaternion to = Quaternion.FromToRotation(this.j_Root.up, normal) * Quaternion.Euler(0.0f, this.j_Root.rotation.eulerAngles.y, 0.0f);
+      //this.j_Root.rotation = Quaternion.RotateTowards(this.j_Root.rotation, to, 180f * deltaTime);
+      Quaternion to = Quaternion.FromToRotation(this.transform.up, normal) * Quaternion.Euler(0.0f, this.transform.rotation.eulerAngles.y, 0.0f);
+      this.j_Root.rotation = Quaternion.RotateTowards(this.transform.rotation, to, 180f * deltaTime);
     }
     public virtual void OnAttackComplete() {
       if(this.HeightController != null) {

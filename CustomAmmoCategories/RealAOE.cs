@@ -442,6 +442,7 @@ namespace CustAmmoCategories {
       }
       return false;
     }
+    private static bool HitLocationsInited = false;
     public static Dictionary<int, float> NormMechHitLocations = null;
     public static Dictionary<int, float> SquadHitLocations = null;
     public static Dictionary<int, float> FakeVehicleLocations = null;
@@ -449,6 +450,8 @@ namespace CustAmmoCategories {
     public static Dictionary<int, float> OtherLocations = null;
     public static readonly float AOEHitIndicator = -10f;
     public static void InitHitLocationsAOE() {
+      if (HitLocationsInited) { return; }
+      HitLocationsInited = true;
       CustomAmmoCategories.NormMechHitLocations = new Dictionary<int, float>();
       CustomAmmoCategories.NormMechHitLocations[(int)ArmorLocation.CenterTorso] = 100f;
       CustomAmmoCategories.NormMechHitLocations[(int)ArmorLocation.CenterTorsoRear] = 100f;

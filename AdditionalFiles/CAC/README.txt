@@ -1,4 +1,5 @@
 Special thanks to janxious, LadyAlekto, MpStark, Morphyum, m22spencer, bloodydoves, Colobos, CptMoore, Danadan, LtShade, CWolf and many others make this mod possible
+Special thanks to janxious, LadyAlekto, MpStark, Morphyum, m22spencer, bloodydoves, Colobos, CptMoore, Danadan, LtShade, CWolf and many others make this mod possible
 
 CharlesB cannibalized. Readme in CharlesB_README.md. Settings in CharlesB_settings.json 
 Unpack to Mods folder

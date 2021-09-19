@@ -1310,7 +1310,7 @@ namespace CustomUnits {
       }
       vRep.gameObject.name = "j_Body";
       GameObject vRepGO = vRep.gameObject;
-      //GameObject.DestroyImmediate(vRep);
+      GameObject.DestroyImmediate(vRep);
       Transform j_Root = custMechRep.j_Root;
       vRepGO.transform.SetParent(j_Root);
       vRepGO.transform.localPosition = Vector3.zero;
