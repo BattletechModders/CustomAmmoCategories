@@ -171,8 +171,9 @@ namespace CustomUnits {
       Dictionary<int, DeployPosition> avaibleSlots = new Dictionary<int, DeployPosition>();
       {
         int index = 0;
-        for (int lanceid = 0; lanceid < CustomLanceHelper.lancesCount(); ++lanceid) {
-          for (int lancepos = 0; lancepos < CustomLanceHelper.lanceSize(lanceid); ++lancepos) {
+        for (int lanceid = 0; lanceid < UnityGameInstance.BattleTechGame.Simulation.currentLayout().dropLances.Count; ++lanceid) {
+          DropLanceDef lanceDef = UnityGameInstance.BattleTechGame.Simulation.currentLayout().dropLances[lanceid];
+          for (int lancepos = 0; lancepos < lanceDef.dropSlots.Count; ++lancepos) {
             DeployPosition position = new DeployPosition();
             position.lanceid = lanceid;
             position.posid = lancepos;
@@ -200,7 +201,7 @@ namespace CustomUnits {
       }
       for (int spawnid = 0; spawnid < PlayerLanceSpawnerGameLogic_OnEnterActive.deployLoadRequest.playerLanceSpawner.unitSpawnerCount; ++spawnid) {
         if (definitions.TryGetValue(spawnid, out PilotableActorDef def) == false) { continue; }
-        for(int slotid = 0; slotid < CustomLanceHelper.fullSlotsCount(); ++slotid) {
+        for(int slotid = 0; slotid < UnityGameInstance.BattleTechGame.Simulation.currentLayout().slotsCount; ++slotid) {
           if (avaibleSlots.TryGetValue(slotid, out DeployPosition slot) == false) { continue; }
           slot.def = def;
           slot.spawnPoint = PlayerLanceSpawnerGameLogic_OnEnterActive.deployLoadRequest.playerLanceSpawner.unitSpawnPointGameLogicList[spawnid];
@@ -211,7 +212,7 @@ namespace CustomUnits {
       }
       deployPositions = new List<DeployPosition>();
       Log.TWL(0,"fill deploy positions:");
-      for(int t = 0; t < CustomLanceHelper.fullSlotsCount(); ++t) {
+      for(int t = 0; t < UnityGameInstance.BattleTechGame.Simulation.currentLayout().slotsCount; ++t) {
         if (positions.TryGetValue(t, out DeployPosition pos) == false) { continue; }
         if ((pos.def == null) || (pos.spawnPoint == null)) { continue; }
         Log.WL(1,t+":"+ (pos.def == null?"null":pos.def.Description.Id)+" lance:"+pos.lanceid+" pos:"+pos.posid+" spawn:"+(pos.spawnPoint == null?"null":pos.spawnPoint.GUID));

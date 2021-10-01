@@ -423,8 +423,8 @@ namespace CustAmmoCategories {
         while (cac_request.is_ready == false) { Thread.Sleep(10); }
         SendResponce(ref response, cac_request.output);
         continue;
-        if (Path.GetFileName(filename) == "listitems") {
-        }
+        //if (Path.GetFileName(filename) == "listitems") {
+        //}
         //if (Path.GetFileName(filename) == "getchassisjson") {
         //  using (System.IO.StreamReader reader = new System.IO.StreamReader(request.InputStream, request.ContentEncoding)) {
         //    CustomAmmoCategoriesLog.Log.LogWrite("Запрос на получение файла шасси\n");
@@ -633,8 +633,8 @@ namespace CustAmmoCategories {
         //  SendResponce(ref response, jresp);
         //  continue;
         //}
-        CustomAmmoCategoriesLog.Log.LogWrite("Неизвестный запрос\n");
-        SendError(ref response, 400, "Не могу найти " + filename);
+        //CustomAmmoCategoriesLog.Log.LogWrite("Неизвестный запрос\n");
+        //SendError(ref response, 400, "Не могу найти " + filename);
       }
     }
   }

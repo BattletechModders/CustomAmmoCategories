@@ -526,47 +526,47 @@ namespace CustomUnits {
         LanceConfiguration lanceConfiguration = new LanceConfiguration();
         //List<KeyValuePair<LanceLoadoutSlot,int>> mechSlots = new List<KeyValuePair<LanceLoadoutSlot, int>>();
         //List<KeyValuePair<LanceLoadoutSlot, int>> vehicleSlots = new List<KeyValuePair<LanceLoadoutSlot, int>>();
-        int vehcilesCount = 0;
-        int mechesCount = 0;
+        //int vehcilesCount = 0;
+        //int mechesCount = 0;
         CustomLanceHelper.playerLanceLoadout.loadout.Clear();
         for (int i = 0; i < ___loadoutSlots.Length; i++) {
           LanceLoadoutSlot lanceLoadoutSlot = ___loadoutSlots[i];
-          bool isVehicle = false;
+          //bool isVehicle = false;
           if ((lanceLoadoutSlot.SelectedMech == null) && (lanceLoadoutSlot.SelectedPilot != null)) { continue; }
           if ((lanceLoadoutSlot.SelectedMech != null) && (lanceLoadoutSlot.SelectedPilot == null)) { continue; }
           if ((lanceLoadoutSlot.SelectedMech == null) && (lanceLoadoutSlot.SelectedPilot == null)) {
             lanceConfiguration.AddUnit(__instance.playerGUID, string.Empty, string.Empty, UnitType.UNDEFINED);
             continue;
           }
-          if (lanceLoadoutSlot.SelectedMech.MechDef.IsVehicle() && (lanceLoadoutSlot.SelectedPilot.Pilot.pilotDef.canPilotVehicle())) {
-            isVehicle = true;
-          } else if (lanceLoadoutSlot.SelectedMech.MechDef.IsVehicle()&&(!lanceLoadoutSlot.SelectedPilot.Pilot.pilotDef.canPilotVehicle())) {
-            continue;
-          } else if ((!lanceLoadoutSlot.SelectedMech.MechDef.IsVehicle())&&(!lanceLoadoutSlot.SelectedPilot.Pilot.pilotDef.canPilotMech())) {
-            continue;
-          } else {
-            isVehicle = false;
-          }
+          //if (lanceLoadoutSlot.SelectedMech.MechDef.IsVehicle() && (lanceLoadoutSlot.SelectedPilot.Pilot.pilotDef.canPilotVehicle())) {
+            //isVehicle = true;
+          //} else if (lanceLoadoutSlot.SelectedMech.MechDef.IsVehicle()&&(!lanceLoadoutSlot.SelectedPilot.Pilot.pilotDef.canPilotVehicle())) {
+            //continue;
+          //} else if ((!lanceLoadoutSlot.SelectedMech.MechDef.IsVehicle())&&(!lanceLoadoutSlot.SelectedPilot.Pilot.pilotDef.canPilotMech())) {
+            //continue;
+          //} else {
+            //isVehicle = false;
+          //}
           bool isPlayer = true;
-          if (isVehicle) {
-            if(CustomLanceHelper.playerControlVehicles() == -1) {
-              isPlayer = true;
-            } else if(vehcilesCount >= CustomLanceHelper.playerControlVehicles()) {
-              isPlayer = false;
-            } else {
-              isPlayer = true;
-            }
-            ++vehcilesCount;
-          } else {
-            if (CustomLanceHelper.playerControlMechs() == -1) {
-              isPlayer = true;
-            } else if (mechesCount >= CustomLanceHelper.playerControlMechs()) {
-              isPlayer = false;
-            } else {
-              isPlayer = true;
-            }
-            ++mechesCount;
-          }
+          //if (isVehicle) {
+          //  if(CustomLanceHelper.playerControlVehicles() == -1) {
+          //    isPlayer = true;
+          //  } else if(vehcilesCount >= CustomLanceHelper.playerControlVehicles()) {
+          //    isPlayer = false;
+          //  } else {
+          //    isPlayer = true;
+          //  }
+          //  ++vehcilesCount;
+          //} else {
+          //  if (CustomLanceHelper.playerControlMechs() == -1) {
+          //    isPlayer = true;
+          //  } else if (mechesCount >= CustomLanceHelper.playerControlMechs()) {
+          //    isPlayer = false;
+          //  } else {
+          //    isPlayer = true;
+          //  }
+          //  ++mechesCount;
+          //}
           if (isPlayer) {
             lanceConfiguration.AddUnit(__instance.playerGUID, lanceLoadoutSlot.SelectedMech.MechDef, lanceLoadoutSlot.SelectedPilot.Pilot.pilotDef);
           } else {
@@ -1618,7 +1618,15 @@ namespace CustomUnits {
         newdef["DFAToHitModifier"] = 0;
         newdef["DFASelfDamage"] = 0;
         newdef["DFAInstability"] = 0;
-        newdef["ChassisTags"] = JObject.Parse("{ \"items\": [\"fake_vehicle_chassis\"], \"tagSetSourceFile\": \"\" }");
+        TagSet ChassisTags = null;
+        if (olddef["ChassisTags"] != null) {
+          ChassisTags = new TagSet();
+          ChassisTags.FromJSON(olddef["ChassisTags"].ToString());
+        } else {
+          ChassisTags = new TagSet();
+        }
+        ChassisTags.Add("fake_vehicle_chassis");
+        newdef["ChassisTags"] = JObject.Parse(ChassisTags.ToJSON());
         JArray vLocations = olddef["Locations"] as JArray;
         JArray mLocations = new JArray();
         HashSet<ChassisLocations> existingLocation = new HashSet<ChassisLocations>();
@@ -2038,7 +2046,7 @@ namespace CustomUnits {
   public static class SkirmishSettings_Beta_OnAddedToHierarchy {
     public static void Prefix(SkirmishSettings_Beta __instance) {
       Log.TWL(0, "SkirmishSettings_Beta.OnAddedToHierarchy");
-      Core.InitLancesLoadoutDefault();
+      //Core.InitLancesLoadoutDefault();
     }
   }
   [HarmonyPatch(typeof(CombatHUDHeatMeter))]

@@ -266,7 +266,7 @@ namespace CustAmmoCategories.Online {
   }
   public class CACOnlineClient {
     private CACTcpClient mTcpClinet = null;
-    private bool mTransportConnectionStatus = false;
+    //private bool mTransportConnectionStatus = false;
     private int mReconnect = 10;
     public int Reconnect {
       get {
@@ -352,12 +352,12 @@ namespace CustAmmoCategories.Online {
     public static void Init() {
       try {
         return;
-        keep_alive = new Stopwatch();
-        keep_alive.Start();
-        online_connection_id = UnityEngine.Random.Range(0, int.MaxValue);
-        online_instance_id = UnityEngine.Random.Range(0, int.MaxValue);
-        client = new CACOnlineClient();
-        client.InitializeTransport();
+        //keep_alive = new Stopwatch();
+        //keep_alive.Start();
+        //online_connection_id = UnityEngine.Random.Range(0, int.MaxValue);
+        //online_instance_id = UnityEngine.Random.Range(0, int.MaxValue);
+        //client = new CACOnlineClient();
+        //client.InitializeTransport();
         //httpClient = 
       } catch (Exception e) {
         Log.M.TWL(0, e.ToString(), true);

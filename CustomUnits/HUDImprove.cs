@@ -47,27 +47,26 @@ namespace CustomUnits {
       }
     }
     public override void OnClick() {
-      state.lanceStartPos += 4;
-      int maxStartPos = CustomLanceHelper.lanceSize(state.lanceId) - 4;
-      if (maxStartPos < 0) { maxStartPos = 0; };
-      if (state.lanceStartPos > maxStartPos) { state.lanceStartPos = maxStartPos; }
-      LanceConfiguratorPanel_SetData.updateSlots();
+      //state.lanceStartPos += 4;
+      //int maxStartPos = CustomLanceHelper.lanceSize(state.lanceId) - 4;
+      //if (maxStartPos < 0) { maxStartPos = 0; };
+      //if (state.lanceStartPos > maxStartPos) { state.lanceStartPos = maxStartPos; }
+      //LanceConfiguratorPanel_SetData.updateSlots(this.customLayout);
       base.OnClick();
     }
   }
   public class LanceConfigutationNextLance : LanceConfigutationSwitchBtn {
     public override void InitVisuals() {
       if ((caption != null) && (tooltip != null)) {
-        tooltip.SetString("switch lance");
-        caption.SetText("Lance " + (state.lanceId + 1));
+        tooltip.SetString("Switch Lance");
+        caption.SetText(customLayout.LayoutDef.dropLances[customLayout.currentLanceIndex].description.Name);
         base.InitVisuals();
       }
     }
     public override void OnClick() {
-      state.lanceId = (state.lanceId + 1) % CustomLanceHelper.lancesCount();
-      caption.SetText("Lance " + (state.lanceId + 1));
-      state.lanceStartPos = 0;
-      LanceConfiguratorPanel_SetData.updateSlots();
+      customLayout.currentLanceIndex = (customLayout.currentLanceIndex + 1) % customLayout.LayoutDef.dropLances.Count;
+      caption.SetText(customLayout.LayoutDef.dropLances[customLayout.currentLanceIndex].description.Name);
+      customLayout.UpdateSlots();
       base.OnClick();
     }
   }
@@ -81,17 +80,19 @@ namespace CustomUnits {
 
     }
     public override void OnClick() {
-      state.lanceStartPos -= 4;
-      if (state.lanceStartPos < 0) { state.lanceStartPos = 0; };
-      LanceConfiguratorPanel_SetData.updateSlots();
+      //state.lanceStartPos -= 4;
+      //if (state.lanceStartPos < 0) { state.lanceStartPos = 0; };
+      //LanceConfiguratorPanel_SetData.updateSlots(this.customLayout);
       base.OnClick();
     }
 
   }
   public class LanceConfigutationSwitchBtn : CUCustomButton {
-    public LanceConfigurationState state;
-    public void Init(LanceConfigurationState state) {
-      this.state = state;
+    //public LanceConfigurationState state;
+    public ShuffleLanceSlotsLayout customLayout { get; set; }
+    public void Init(ShuffleLanceSlotsLayout customLayout) {
+      //this.state = state;
+      this.customLayout = customLayout;
       this.Init();
     }
     public override void Init() {
@@ -468,11 +469,11 @@ namespace CustomUnits {
     public static PlayerLancesLoadout playerLanceLoadout = new PlayerLancesLoadout();
     private static List<CustomLanceDef> lancesData = new List<CustomLanceDef>(new CustomLanceDef[] { new CustomLanceDef(4, 4, false) });
     //private static List<int> allowLanceSizes = new List<int>(new int[] { 5, 3 });
-    private static int fallbackAllow = -1;
-    private static int f_overallDeployCount = 4;
-    private static int f_playerControlMechs = -1;
-    private static int f_playerControlVehicles = -1;
-    private static bool missionControlDetected = false;
+    //private static int fallbackAllow = -1;
+    //private static int f_overallDeployCount = 4;
+    //private static int f_playerControlMechs = -1;
+    //private static int f_playerControlVehicles = -1;
+    //private static bool missionControlDetected = false;
     private static int mechBaysCount = 3;
     private static int vehicleBaysCount = 0;
     private static int rowsPerList = 3;
@@ -483,51 +484,23 @@ namespace CustomUnits {
     public static int MechBaysCount(this MechBayRowGroupWidget panel) { return mechBaysCount; }
     public static int VehicleBaysCount(this MechBayRowGroupWidget panel) { return Core.Settings.ShowVehicleBays ? vehicleBaysCount : 0; }
     public static void BaysCount(int count) { mechBaysCount = count; vehicleBaysCount = count; }
-    public static void MissionControlDetected() { missionControlDetected = true; }
+    public static bool MissionControlDetected { get; set; } = false;
     public static void setLancesCount(int size) {
-      if (size <= 0) { size = 1; };
-      if (lancesData.Count > size) {
-        lancesData.RemoveRange(size, lancesData.Count - size);
-      } else if (lancesData.Count < size) {
-        for (int index = lancesData.Count; index < size; ++index) {
-          lancesData.Add(new CustomLanceDef());
-        }
-      }
+      return;
+      //if (size <= 0) { size = 1; };
+      //if (lancesData.Count > size) {
+      //  lancesData.RemoveRange(size, lancesData.Count - size);
+      //} else if (lancesData.Count < size) {
+      //  for (int index = lancesData.Count; index < size; ++index) {
+      //    lancesData.Add(new CustomLanceDef());
+      //  }
+      //}
     }
     public static void setLanceData(int lanceid, int size, int allow, bool is_vehicle) {
-      if (lanceid >= lancesData.Count) { return; }
-      if (size < 4) { size = 4; }
-      if (allow < 0) { allow = 0; }
-      lancesData[lanceid].size = size;
-      lancesData[lanceid].allow = allow;
-      lancesData[lanceid].is_vehicle = is_vehicle;
+      return;
     }
-    public static void setOverallDeployCount(int value) { f_overallDeployCount = Mathf.Min(value, fullSlotsCount()); }
-    public static void playerControl(int mechs, int vehicles) { f_playerControlMechs = mechs; f_playerControlVehicles = vehicles; }
-    public static int overallDeployCount() { return missionControlDetected ? f_overallDeployCount : 4; }
-    public static int playerControlVehicles() { return missionControlDetected ? f_playerControlVehicles : -1; }
-    public static int playerControlMechs() { return missionControlDetected ? f_playerControlMechs : -1; }
-
-    public static int allowLanceSize(int lanceid) {
-      if (fallbackAllow > 0) {
-        Log.TWL(0, "allowLanceSize:"+lanceid+" allow value:"+ fallbackAllow);
-        int result = fallbackAllow;
-        for (int t = 0; t < lanceid; ++t) {
-          result -= lancesData[t].allow;
-          Log.WL(1,"Lance:"+t+" allow:"+ lancesData[t].allow+" result:"+ result);
-          if (result <= 0) { return 0; }
-        }
-        return result > lancesData[lanceid].allow ? lancesData[lanceid].allow : result;
-      } else {
-        return lancesData[lanceid].allow;
-      }
-    }
-    public static void setFallbackAllow(int value) { fallbackAllow = value; }
-    public static void allowLanceSize(int lanceid, int size) { lancesData[lanceid].allow = size; }
-    public static int lancesCount() { return lancesData.Count; }
-    public static bool lanceVehicle(int lanceid) { return lancesData[lanceid].is_vehicle; }
-    public static int lanceSize(int lanceid) { return lancesData[lanceid].size; }
-    public static int fullSlotsCount() { int result = 0; foreach (CustomLanceDef def in lancesData) { result += def.size; }; return result; }
+    public static void setOverallDeployCount(int value) { return; }
+    public static void playerControl(int mechs, int vehicles) {return;/*f_playerControlMechs = mechs; f_playerControlVehicles = vehicles;*/}
     public static Transform FindRecursive(this Transform transform, string checkName) {
       foreach (Transform t in transform) {
         if (t.name == checkName) return t;
@@ -613,7 +586,7 @@ namespace CustomUnits {
         }
         //HorizontalLayoutGroup layout = buttonPanel_SKIRMISH.transform.parent.gameObject.GetComponent<HorizontalLayoutGroup>();
       }
-      int unitWidgetsCount = Mathf.CeilToInt((float)CustomLanceHelper.fullSlotsCount() / 4.0f) * 4;
+      int unitWidgetsCount = Mathf.CeilToInt((float)UnityGameInstance.BattleTechGame.Simulation.currentLayout().slotsCount / 4.0f) * 4;
       AAR_UnitStatusWidget src = ___UnitWidgets[0];
       Log.WL(0, "unitWidgetsCount:" + unitWidgetsCount);
       for (int index = ___UnitWidgets.Count; index < unitWidgetsCount; ++index) {
@@ -681,7 +654,7 @@ namespace CustomUnits {
           unitDown_btn.gameObject.GetComponent<AARSkirmishScreenButton>().Init(__instance, 4);
         }
       }
-      int unitWidgetsCount = Mathf.CeilToInt((float)CustomLanceHelper.fullSlotsCount() / 4.0f) * 4;
+      int unitWidgetsCount = Mathf.CeilToInt((float)UnityGameInstance.BattleTechGame.Simulation.currentLayout().slotsCount / 4.0f) * 4;
       AAR_UnitStatusWidget src = ___UnitWidgets[0];
       Log.WL(0, "unitWidgetsCount:" + unitWidgetsCount);
       for (int index = ___UnitWidgets.Count; index < unitWidgetsCount; ++index) {
@@ -760,25 +733,6 @@ namespace CustomUnits {
       return false;
     }
   }
-  [HarmonyPatch(typeof(PilotDef), "SetUnspentExperience")]
-  public static class PilotDef_SetUnspentExperience {
-    static bool Prefix(PilotDef __instance, ref int value) {
-      //if (__instance.canPilotMech() == false) { value = 0; };
-      Log.TWL(0, "PilotDef.SetUnspentExperience canPilotMech:" + __instance.canPilotMech() + " value:" + value);
-      return true;
-    }
-  }
-  [HarmonyPatch(typeof(Pilot), "AddExperience")]
-  public static class Pilot_AddExperience {
-    static bool Prefix(Pilot __instance, ref int value) {
-      //if (__instance.pilotDef.canPilotMech() == false) {
-      //value = 0;
-      //__instance.StatCollection.Set("ExperienceUnspent",0);
-      //};
-      Log.TWL(0, "Pilot.AddExperience canPilotMech:" + __instance.pilotDef.canPilotMech() + " value:" + value + " unspent:" + __instance.UnspentXP);
-      return true;
-    }
-  }
   [HarmonyPatch(typeof(LanceConfiguratorPanel), "OnConfirmClicked")]
   public static class LanceConfiguratorPanel_OnConfirmClicked {
     private static FieldInfo f_interruptQueue = typeof(SimGameState).GetField("interruptQueue", BindingFlags.Instance | BindingFlags.NonPublic);
@@ -791,7 +745,6 @@ namespace CustomUnits {
         Log.WL(1, "SimGameState exists and activeContract too. Biome tag:" + forbidTag);
         foreach (LanceLoadoutSlot slot in ___loadoutSlots) {
           if (slot.SelectedMech != null) {
-            //if (slot.SelectedMech.MechDef.MechTags.Contains(forbidTag)) { badBiome = true; break; }
             foreach (MechComponentRef component in slot.SelectedMech.MechDef.Inventory) {
               if (component.Def.ComponentTags.Contains(forbidTag)) { badBiome = true; break; }
             }
@@ -805,9 +758,21 @@ namespace CustomUnits {
           return false;
         }
       }
-      int overallSlotsCount = 0;
-      if (overallSlotsCount > CustomLanceHelper.overallDeployCount()) {
-        GenericPopupBuilder.Create("Lance Cannot Be Deployed", Strings.T("Deploying units count {0} exceed limit {1}", overallSlotsCount, CustomLanceHelper.overallDeployCount())).AddFader(new UIColorRef?(LazySingletonBehavior<UIManager>.Instance.UILookAndColorConstants.PopupBackfill), 0.0f, true).Render();
+      int overallSlotsCount = UnityGameInstance.BattleTechGame.Simulation.currentLayout().OverallUnits;
+      if (__instance.activeContract != null) {
+        if (__instance.activeContract.IsFlashpointCampaignContract || __instance.activeContract.IsFlashpointContract) {
+          overallSlotsCount = __instance.activeContract.Override.maxNumberOfPlayerUnits;
+        } else {
+          if((__instance.activeContract.Override.maxNumberOfPlayerUnits != 4)||(Core.Settings.CountContractMaxUnits4AsUnlimited == false)) {
+            overallSlotsCount = __instance.activeContract.Override.maxNumberOfPlayerUnits;
+          }
+        }
+      }
+      if (CustomLanceHelper.MissionControlDetected == false) { if (overallSlotsCount > 4) { overallSlotsCount = 4; } }
+      int deployCount = 0;
+      foreach (LanceLoadoutSlot slot in ___loadoutSlots) {if (slot.SelectedMech != null) { ++deployCount; } }
+      if (overallSlotsCount < deployCount) {
+        GenericPopupBuilder.Create("Lance Cannot Be Deployed", Strings.T("Deploying units count {0} exceed limit {1}", deployCount, overallSlotsCount)).AddFader(new UIColorRef?(LazySingletonBehavior<UIManager>.Instance.UILookAndColorConstants.PopupBackfill), 0.0f, true).Render();
         return false;
       }
       return true;
@@ -830,13 +795,9 @@ namespace CustomUnits {
     }
 
     public static void SetUnspentExperience(this PilotDef pilotDef, int value) {
-      Log.TWL(0, "SimGameState.ResolveCompleteContract.PilotDef.SetUnspentExperience " + pilotDef.Description.Id + " PlayerUnitResults:" + (PlayerUnitResults == null ? "null" : PlayerUnitResults.Count.ToString()) + " crew:" + pilotDef.canPilotMech() + " value:" + value);
+      Log.TWL(0, "SimGameState.ResolveCompleteContract.PilotDef.SetUnspentExperience " + pilotDef.Description.Id + " PlayerUnitResults:" + (PlayerUnitResults == null ? "null" : PlayerUnitResults.Count.ToString()) + " value:" + value);
       if (PlayerUnitResults == null) {
-        //if (pilotDef.canPilotMech() == false) {
-        //pilotDef.SetUnspentExperience(0);
-        //} else {
         pilotDef.SetUnspentExperience(value);
-        //}
       } else {
         UnitResult pilotResult = null;
         foreach (UnitResult result in PlayerUnitResults) {
@@ -846,18 +807,10 @@ namespace CustomUnits {
         }
         if (pilotResult == null) {
           Log.WL(1, "cant find pilot result for:" + pilotDef.Description.Id);
-          //if (pilotDef.canPilotMech() == false) {
-          //pilotDef.SetUnspentExperience(0);
-          //} else {
           pilotDef.SetUnspentExperience(value);
-          //}
         } else {
           Log.WL(1, "success find result for:" + pilotDef.Description.Id + " unit:" + pilotResult.mech.ChassisID + " idFake:" + pilotResult.mech.IsVehicle());
-          //if (pilotResult.mech.IsChassisFake()) {
-          //pilotDef.SetUnspentExperience(0);
-          //} else {
           pilotDef.SetUnspentExperience(value);
-          //}
         }
       }
     }
@@ -918,15 +871,15 @@ namespace CustomUnits {
         LanceLoadoutSlot loadoutSlot = ___loadoutSlots[i];
         if (loadoutSlot.isMechLocked) { forcedMech = null; }
         if (loadoutSlot.isPilotLocked) { forcedPilot = null; }
-        if (loadoutSlot.isForVehicle()) {
-          if (forcedMech != null) { if (forcedMech.MechDef.IsVehicle() == false) { forcedMech = null; }; };
-          if (forcedPilot != null) { if (forcedPilot.Pilot.pilotDef.canPilotVehicle() == false) { forcedPilot = null; }; };
-        } else {
-          if ((forcedMech != null) && (forcedPilot != null)) {
-            if (forcedMech.MechDef.IsVehicle() && (forcedPilot.Pilot.pilotDef.canPilotVehicle() == false)) { forcedPilot = null; }
-            if ((forcedMech.MechDef.IsVehicle() == false) && (forcedPilot.Pilot.pilotDef.canPilotMech() == false)) { forcedPilot = null; }
-          }
-        }
+        //if (loadoutSlot.isForVehicle()) {
+          //if (forcedMech != null) { if (forcedMech.MechDef.IsVehicle() == false) { forcedMech = null; }; };
+          //if (forcedPilot != null) { if (forcedPilot.Pilot.pilotDef.canPilotVehicle() == false) { forcedPilot = null; }; };
+        //} else {
+          //if ((forcedMech != null) && (forcedPilot != null)) {
+            //if (forcedMech.MechDef.IsVehicle() && (forcedPilot.Pilot.pilotDef.canPilotVehicle() == false)) { forcedPilot = null; }
+            //if ((forcedMech.MechDef.IsVehicle() == false) && (forcedPilot.Pilot.pilotDef.canPilotMech() == false)) { forcedPilot = null; }
+          //}
+        //}
         if (forcedPilot != null) { __instance.pilotListWidget.RemovePilot(__instance.availablePilots.Find((Predicate<Pilot>)(x => x.Description.Id == forcedPilot.Pilot.Description.Id))); }
         loadoutSlot.SetLockedData(forcedMech, forcedPilot, false);
       }
@@ -984,44 +937,11 @@ namespace CustomUnits {
       Log.TWL(0, "LancePreviewPanel.OnLanceConfiguratorCancel", true);
     }
   }
-  [HarmonyPatch(typeof(LanceLoadoutSlot))]
-  [HarmonyPatch("SetData")]
-  [HarmonyPatch(MethodType.Normal)]
-  [HarmonyPatch(new Type[] { typeof(LanceConfiguratorPanel), typeof(SimGameState), typeof(DataManager), typeof(bool), typeof(bool), typeof(float), typeof(float) })]
-  public static class LanceLoadoutSlot_SetData {
-    public static void Prefix(LanceLoadoutSlot __instance, LanceConfiguratorPanel LC, SimGameState sim, DataManager dataManager, bool useDragAndDrop, ref bool locked, ref float minTonnage, ref float maxTonnage) {
-      Log.TWL(0, "LanceLoadoutSlot.SetData " + __instance.GetInstanceID());
-      try {
-        bool overrideLocked = __instance.isOverrideLockedState();
-        if (overrideLocked == false) { return; }
-        int lanceid = __instance.LanceId();
-        int lancepos = __instance.LancePos();
-        int index = __instance.slotIndex();
-        Log.WL(1, "index:" + index + " lanceid:" + lanceid + " lancepos:" + lancepos + " maxTonnage:" + maxTonnage + " locked:" + locked + " allow:" + (lanceid == -1 ? "unlim" : CustomLanceHelper.allowLanceSize(lanceid).ToString()));
-        if ((lanceid == -1) || (lancepos == -1)) { return; }
-        if (maxTonnage == 0f) { return; }
-        if (locked == true) { return; }
-        locked = CustomLanceHelper.allowLanceSize(lanceid) <= lancepos;
-        Log.WL(1, "locked:" + locked + " allow:" + CustomLanceHelper.allowLanceSize(lanceid));
-        if (index >= 4) {
-          Log.WL(1, "extended slot detected");
-          if (locked == false) {
-            locked = LC.slotMaxTonnages[0] == 0f;
-          }
-          minTonnage = LC.slotMinTonnages[0];
-          maxTonnage = LC.slotMaxTonnages[0];
-          Log.WL(1, "min max tonnage override. Min:" + minTonnage + " Max:" + maxTonnage + " lock state:" + locked);
-        }
-      } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
-      }
-    }
-  }
   [HarmonyPatch(typeof(LancePreviewPanel), "SetData")]
   public static class LancePreviewPanel_SetData {
     static void Prefix(LancePreviewPanel __instance, ref int maxUnits) {
       try {
-        maxUnits = CustomLanceHelper.fullSlotsCount();
+        maxUnits = UnityGameInstance.BattleTechGame.Simulation.currentLayout().slotsCount; //CustomLanceHelper.fullSlotsCount();
         GameObject srcSlot = __instance.loadoutSlots[0].gameObject;
         List<LanceLoadoutSlot> slots = new List<LanceLoadoutSlot>();
         slots.AddRange(__instance.loadoutSlots);
@@ -1030,283 +950,9 @@ namespace CustomUnits {
           slots.Add(newSlot.GetComponent<LanceLoadoutSlot>());
         }
         __instance.loadoutSlots = slots.ToArray();
-        int lance_id = 0;
-        int lance_index = 0;
-        for (int index = 0; index < slots.Count; ++index) {
-          slots[index].isForVehicle(CustomLanceHelper.lanceVehicle(lance_id));
-          slots[index].LanceId(lance_id);
-          slots[index].LancePos(lance_index);
-          slots[index].slotIndex(index);
-          slots[index].isOverrideLockedState(false);
-          ++lance_index;
-          if (lance_index >= CustomLanceHelper.lanceSize(lance_id)) { ++lance_id; lance_index = 0; };
-        }
       } catch (Exception e) {
         Log.TWL(0, e.ToString());
       }
-    }
-  }
-  [HarmonyPatch(typeof(LanceLoadoutSlot))]
-  [HarmonyPatch("OnAddItem")]
-  [HarmonyPatch(MethodType.Normal)]
-  [HarmonyPatch(new Type[] { typeof(IMechLabDraggableItem), typeof(bool) })]
-  public static class LanceLoadoutSlot_OnAddItem {
-    public static bool canPilotVehicle(this PilotDef pilotDef) { return pilotDef.PilotTags.Contains(Core.Settings.CanPilotVehicleTag); }
-    public static bool canPilotMech(this PilotDef pilotDef) { return !pilotDef.PilotTags.Contains(Core.Settings.CannotPilotMechTag); }
-    public static bool Prefix(LanceLoadoutSlot __instance, IMechLabDraggableItem item, bool validate, bool __result, LanceConfiguratorPanel ___LC) {
-      Log.TWL(0, "LanceLoadoutSlot.OnAddItem " + __instance.GetInstanceID());
-      try {
-        if ((item.ItemType != MechLabDraggableItemType.Mech) && (item.ItemType != MechLabDraggableItemType.Pilot)) { return true; }
-        bool isVehicle = __instance.isForVehicle();
-        if (item.ItemType == MechLabDraggableItemType.Mech) {
-          LanceLoadoutMechItem lanceLoadoutMechItem = item as LanceLoadoutMechItem;
-          if (isVehicle) {
-            if (lanceLoadoutMechItem.MechDef.IsVehicle() == false) {
-              if (___LC != null) { ___LC.ReturnItem(item); }
-              __result = false;
-              GenericPopupBuilder.Create("Cannot place mech", Strings.T("Mech cannot be placed to vehicle slot")).AddFader(new UIColorRef?(LazySingletonBehavior<UIManager>.Instance.UILookAndColorConstants.PopupBackfill), 0.0f, true).Render();
-              return false;
-            }
-          } else if (__instance.SelectedPilot != null) {
-            if (lanceLoadoutMechItem.MechDef.IsVehicle() == false) {
-              if (__instance.SelectedPilot.Pilot.pilotDef.canPilotMech() == false) {
-                if (___LC != null) { ___LC.ReturnItem(item); }
-                __result = false;
-                GenericPopupBuilder.Create("Cannot place mech", Strings.T("This pilot can't pilot mech")).AddFader(new UIColorRef?(LazySingletonBehavior<UIManager>.Instance.UILookAndColorConstants.PopupBackfill), 0.0f, true).Render();
-                return false;
-              }
-            } else {
-              if (__instance.SelectedPilot.Pilot.pilotDef.canPilotVehicle() == false) {
-                if (___LC != null) { ___LC.ReturnItem(item); }
-                __result = false;
-                GenericPopupBuilder.Create("Cannot place mech", Strings.T("This pilot can't pilot vehicle")).AddFader(new UIColorRef?(LazySingletonBehavior<UIManager>.Instance.UILookAndColorConstants.PopupBackfill), 0.0f, true).Render();
-                return false;
-              }
-            }
-          }
-        } else if (item.ItemType == MechLabDraggableItemType.Pilot) {
-          SGBarracksRosterSlot barracksRosterSlot = item as SGBarracksRosterSlot;
-          bool canPilotVehicle = barracksRosterSlot.Pilot.pilotDef.canPilotVehicle();
-          bool canPilotMech = barracksRosterSlot.Pilot.pilotDef.canPilotMech();
-          if (isVehicle) {
-            if (canPilotVehicle == false) {
-              if (___LC != null) { ___LC.ReturnItem(item); }
-              __result = false;
-              GenericPopupBuilder.Create("Cannot place pilot", Strings.T("This pilot can't pilot vehicles")).AddFader(new UIColorRef?(LazySingletonBehavior<UIManager>.Instance.UILookAndColorConstants.PopupBackfill), 0.0f, true).Render();
-              return false;
-            }
-          } else {
-            if (__instance.SelectedMech != null) {
-              if (__instance.SelectedMech.MechDef.IsVehicle() == false) {
-                if (canPilotMech == false) {
-                  if (___LC != null) { ___LC.ReturnItem(item); }
-                  __result = false;
-                  GenericPopupBuilder.Create("Cannot place pilot", Strings.T("This pilot can't pilot mech")).AddFader(new UIColorRef?(LazySingletonBehavior<UIManager>.Instance.UILookAndColorConstants.PopupBackfill), 0.0f, true).Render();
-                  return false;
-                }
-              } else if (canPilotVehicle == false) {
-                if (___LC != null) { ___LC.ReturnItem(item); }
-                __result = false;
-                GenericPopupBuilder.Create("Cannot place pilot", Strings.T("This pilot can't pilot vehicles")).AddFader(new UIColorRef?(LazySingletonBehavior<UIManager>.Instance.UILookAndColorConstants.PopupBackfill), 0.0f, true).Render();
-                return false;
-              }
-            }
-          }
-        }
-        return true;
-      } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
-        return true;
-      }
-    }
-  }
-  [HarmonyPatch(typeof(LanceConfiguratorPanel), "SetData")]
-  public static class LanceConfiguratorPanel_SetData {
-    private static List<List<LanceLoadoutSlot>> lanceSlots = new List<List<LanceLoadoutSlot>>();
-    private static List<LanceLoadoutSlot> fillerSlots = new List<LanceLoadoutSlot>();
-    private static LanceConfigurationState lanceConfigState = new LanceConfigurationState();
-    private static FieldInfo f_loadoutSlots = typeof(LanceConfiguratorPanel).GetField("loadoutSlots", BindingFlags.Instance | BindingFlags.NonPublic);
-    public static LanceLoadoutSlot[] loadoutSlots(this LanceConfiguratorPanel panel) { return (LanceLoadoutSlot[])f_loadoutSlots.GetValue(panel); }
-    public static Dictionary<LanceLoadoutSlot, bool> isVehicleSlot = new Dictionary<LanceLoadoutSlot, bool>();
-    public static Dictionary<LanceLoadoutSlot, bool> isOverLockedState = new Dictionary<LanceLoadoutSlot, bool>();
-    public static Dictionary<LanceLoadoutSlot, int> slotsLanceIds = new Dictionary<LanceLoadoutSlot, int>();
-    public static Dictionary<LanceLoadoutSlot, int> slotsIndexes = new Dictionary<LanceLoadoutSlot, int>();
-    public static Dictionary<LanceLoadoutSlot, int> slotsLancePos = new Dictionary<LanceLoadoutSlot, int>();
-    public static Dictionary<LanceLoadoutSlot, bool> isFillerSlot = new Dictionary<LanceLoadoutSlot, bool>();
-    public static bool isForVehicle(this LanceLoadoutSlot slot) { if (isVehicleSlot.TryGetValue(slot, out bool result)) { return result; } else { return false; }; }
-    public static void isForVehicle(this LanceLoadoutSlot slot, bool val) { if (isVehicleSlot.ContainsKey(slot) == false) { isVehicleSlot.Add(slot, val); } else { isVehicleSlot[slot] = val; }; }
-    public static bool isOverrideLockedState(this LanceLoadoutSlot slot) { if (isOverLockedState.TryGetValue(slot, out bool result)) { return result; } else { return false; }; }
-    public static void isOverrideLockedState(this LanceLoadoutSlot slot, bool val) { if (isOverLockedState.ContainsKey(slot) == false) { isOverLockedState.Add(slot, val); } else { isOverLockedState[slot] = val; }; }
-    public static bool isFiller(this LanceLoadoutSlot slot) { if (isFillerSlot.TryGetValue(slot, out bool result)) { return result; } else { return true; }; }
-    public static int LanceId(this LanceLoadoutSlot slot) { if (slotsLanceIds.TryGetValue(slot, out int result)) { return result; } else { return -1; }; }
-    public static void LanceId(this LanceLoadoutSlot slot, int val) { if (slotsLanceIds.ContainsKey(slot) == false) { slotsLanceIds.Add(slot, val); } else { slotsLanceIds[slot] = val; }; }
-    public static int slotIndex(this LanceLoadoutSlot slot) { if (slotsIndexes.TryGetValue(slot, out int result)) { return result; } else { return -1; }; }
-    public static void slotIndex(this LanceLoadoutSlot slot, int val) { if (slotsIndexes.ContainsKey(slot) == false) { slotsIndexes.Add(slot, val); } else { slotsIndexes[slot] = val; }; }
-    public static int LancePos(this LanceLoadoutSlot slot) { if (slotsLancePos.TryGetValue(slot, out int result)) { return result; } else { return -1; }; }
-    public static void LancePos(this LanceLoadoutSlot slot, int val) { if (slotsLancePos.ContainsKey(slot) == false) { slotsLancePos.Add(slot, val); } else { slotsLancePos[slot] = val; }; }
-    public static void loadoutSlots(this LanceConfiguratorPanel panel, LanceLoadoutSlot[] value) { f_loadoutSlots.SetValue(panel, value); }
-    public static void updateSlots() {
-      Log.TWL(0, "LanceConfiguratorPanel.updateSlots " + lanceConfigState.lanceId + "-" + lanceConfigState.lanceStartPos);
-      for (int lid = 0; lid < lanceSlots.Count; ++lid) {
-        if (lanceConfigState.lanceId != lid) {
-          Log.WL(1, "lanceId " + lid);
-          foreach (LanceLoadoutSlot slot in lanceSlots[lid]) {
-            Log.WL(2, slot.gameObject.name + " disable");
-            slot.gameObject.SetActive(false);
-          };
-          continue;
-        };
-        int showedCount = 0;
-        Log.WL(1, "lanceId " + lid);
-        for (int lindex = 0; lindex < lanceSlots[lid].Count; ++lindex) {
-          LanceLoadoutSlot slot = lanceSlots[lid][lindex];
-          if (lindex < lanceConfigState.lanceStartPos) {
-            Log.WL(2, slot.gameObject.name + " disable");
-            slot.gameObject.SetActive(false);
-            continue;
-          };
-          if (lindex > (lanceConfigState.lanceStartPos + 3)) {
-            Log.WL(2, slot.gameObject.name + " disable");
-            slot.gameObject.SetActive(false);
-            continue;
-          };
-          Log.WL(2, slot.gameObject.name + " enable");
-          slot.gameObject.SetActive(true);
-          ++showedCount;
-        }
-        Log.WL(1, "filler");
-        for (int t = 0; t < fillerSlots.Count; ++t) {
-          Log.WL(1, fillerSlots[t].name + " " + (t > showedCount ? "enable" : "disable"));
-          fillerSlots[t].gameObject.SetActive(t > showedCount);
-        }
-      }
-    }
-    static void Prefix(LanceConfiguratorPanel __instance, ref int maxUnits, Contract contract) {
-      try {
-        Log.TWL(0, "LanceConfiguratorPanel.SetData");
-        lanceConfigState.Clear();
-        fillerSlots.Clear();
-        Transform buttons_tr = __instance.transform.FindRecursive("lanceSwitchButtons-layout");
-        if (buttons_tr == null) {
-          Log.WL(1, "lanceSwitchButtons-layout not found");
-          buttons_tr = __instance.transform.FindRecursive("lanceSaveButtons-layout");
-          if (buttons_tr == null) {
-            Log.WL(1, "lanceSaveButtons-layout not found");
-            return;
-          };
-          Transform DeployBttn_layout = __instance.transform.FindRecursive("DeployBttn-layout");
-          Transform nbtn = GameObject.Instantiate(buttons_tr.gameObject).transform;
-          nbtn.SetParent(buttons_tr.parent);
-          nbtn.localPosition = buttons_tr.localPosition;
-          if (DeployBttn_layout != null) {
-            Vector3 pos = nbtn.localPosition;
-            pos.y = DeployBttn_layout.localPosition.y;
-            nbtn.localPosition = pos;
-          }
-          buttons_tr = nbtn;
-          buttons_tr.gameObject.name = "lanceSwitchButtons-layout";
-          buttons_tr.Find("uixPrfBttn_BASE_button2-MANAGED-delete").gameObject.AddComponent<LanceConfigutationNextLance>().Init(lanceConfigState);
-          buttons_tr.Find("uixPrfBttn_BASE_button2-MANAGED-save").gameObject.AddComponent<LanceConfigutationPrevSlot>().Init(lanceConfigState);
-          buttons_tr.Find("uixPrfBttn_BASE_button2-MANAGED-copy (1)").gameObject.AddComponent<LanceConfigutationNextSlot>().Init(lanceConfigState);
-        } else {
-          buttons_tr.Find("uixPrfBttn_BASE_button2-MANAGED-delete").gameObject.GetComponent<LanceConfigutationNextLance>().Init(lanceConfigState);
-          buttons_tr.Find("uixPrfBttn_BASE_button2-MANAGED-save").gameObject.GetComponent<LanceConfigutationPrevSlot>().Init(lanceConfigState);
-          buttons_tr.Find("uixPrfBttn_BASE_button2-MANAGED-copy (1)").gameObject.GetComponent<LanceConfigutationNextSlot>().Init(lanceConfigState);
-        }
-        buttons_tr.gameObject.SetActive(true);
-        LanceLoadoutSlot[] loadoutSlots = (LanceLoadoutSlot[])typeof(LanceConfiguratorPanel).GetField("loadoutSlots", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(__instance);
-        float[] slotMaxTonnages = (float[])AccessTools.Field(typeof(LanceConfiguratorPanel), "slotMaxTonnages").GetValue(__instance);
-        float[] slotMinTonnages = (float[])AccessTools.Field(typeof(LanceConfiguratorPanel), "slotMinTonnages").GetValue(__instance);
-        List<float> listMaxTonnages = slotMaxTonnages.ToList();
-        List<float> listMinTonnages = slotMinTonnages.ToList();
-        Log.WL(0, "loadoutSlots:" + loadoutSlots.Length + "/" + CustomLanceHelper.fullSlotsCount());
-        List<LanceLoadoutSlot> slots = new List<LanceLoadoutSlot>();
-        slots.AddRange(loadoutSlots);
-        //if (loadoutSlots.Length >= CustomLanceHelper.fullSlotsCount()) { return; }
-        GameObject lanceSlotSrc = loadoutSlots[0].gameObject;
-        for (int t = loadoutSlots.Length; t < CustomLanceHelper.fullSlotsCount() + 4; ++t) {
-          GameObject lanceSlotNew = GameObject.Instantiate(lanceSlotSrc);
-          lanceSlotNew.transform.SetParent(lanceSlotSrc.transform.parent);
-          lanceSlotNew.name = "lanceSlot" + (t + 1).ToString();
-          slots.Add(lanceSlotNew.GetComponent<LanceLoadoutSlot>());
-          Log.WL(0, lanceSlotNew.name + " parent:" + lanceSlotNew.transform.parent.name);
-          listMaxTonnages.Add(listMaxTonnages[0]);
-          listMinTonnages.Add(listMinTonnages[0]);
-        }
-        for (int t = 0; t < slots.Count; ++t) { slots[t].gameObject.SetActive(false); }
-        int lance_index = 0;
-        int lance_id = 0;
-        lanceSlots.Clear();
-        List<LanceLoadoutSlot> lance = null;
-        int maxLanceSize = CustomLanceHelper.fullSlotsCount();
-        for (int index = 0; index < slots.Count; ++index) {
-          LanceLoadoutSlot slot = slots[index];
-          if (index >= maxLanceSize) { fillerSlots.Add(slot); continue; }
-          if (lanceSlots.Count <= lance_id) {
-            lance = new List<LanceLoadoutSlot>();
-            lanceSlots.Add(lance);
-            lance_index = 0;
-          }
-          lance.Add(slot);
-          ++lance_index;
-          if (lance_index >= CustomLanceHelper.lanceSize(lance_id)) { ++lance_id; };
-        }
-        maxUnits = maxLanceSize;
-        if (contract == null) { CustomLanceHelper.setFallbackAllow(-1); } else {
-          if (contract.IsFlashpointContract | contract.IsFlashpointCampaignContract) {
-            CustomLanceHelper.setFallbackAllow(contract.Override.maxNumberOfPlayerUnits);
-          } else if (contract.Override.maxNumberOfPlayerUnits > 0) {
-            if (Core.Settings.CountContractMaxUnits4AsUnlimited && (contract.Override.maxNumberOfPlayerUnits == 4)) {
-              CustomLanceHelper.setFallbackAllow(-1);
-            } else {
-              CustomLanceHelper.setFallbackAllow(contract.Override.maxNumberOfPlayerUnits);
-            }
-          } else {
-            CustomLanceHelper.setFallbackAllow(-1);
-          }
-        }
-        //maxUnits = 4;
-        loadoutSlots = slots.ToArray();
-        Log.WL(1, "loadoutSlots:" + slots.Count + "/" + maxUnits);
-        __instance.loadoutSlots(slots.ToArray());
-        AccessTools.Field(typeof(LanceConfiguratorPanel), "slotMaxTonnages").SetValue(__instance, listMaxTonnages.ToArray());
-        AccessTools.Field(typeof(LanceConfiguratorPanel), "slotMinTonnages").SetValue(__instance, listMinTonnages.ToArray());
-        //AccessTools.Field(typeof(LanceConfiguratorPanel), "loadoutSlots").SetValue(__instance, ___loadoutSlots);
-        for (int lanceid = 0; lanceid < lanceSlots.Count; ++lanceid) {
-          Log.WL(1, "lance " + lanceid);
-          for (int lancepos = 0; lancepos < lanceSlots[lanceid].Count; ++lancepos) {
-            Log.WL(2, "slot[" + lancepos + "]" + lanceSlots[lanceid][lancepos].gameObject.name + ":" + lanceSlots[lanceid][lancepos].GetInstanceID());
-            lanceSlots[lanceid][lancepos].gameObject.transform.localScale = Vector3.one;
-            if (isVehicleSlot.ContainsKey(lanceSlots[lanceid][lancepos])) { isVehicleSlot[lanceSlots[lanceid][lancepos]] = CustomLanceHelper.lanceVehicle(lanceid); } else {
-              isVehicleSlot.Add(lanceSlots[lanceid][lancepos], CustomLanceHelper.lanceVehicle(lanceid));
-            }
-            if (slotsLanceIds.ContainsKey(lanceSlots[lanceid][lancepos])) { slotsLanceIds[lanceSlots[lanceid][lancepos]] = lanceid; } else {
-              slotsLanceIds.Add(lanceSlots[lanceid][lancepos], lanceid);
-            }
-            if (slotsLancePos.ContainsKey(lanceSlots[lanceid][lancepos])) { slotsLancePos[lanceSlots[lanceid][lancepos]] = lancepos; } else {
-              slotsLancePos.Add(lanceSlots[lanceid][lancepos], lancepos);
-            }
-            lanceSlots[lanceid][lancepos].transform.FindRecursive("mechDragLabel").FindRecursive("dragText").gameObject.GetComponent<LocalizableText>().SetText(
-              CustomLanceHelper.lanceVehicle(lanceid) ? "Drag Vehicle HERE" : "Drag BattleMech HERE"
-            );
-            lanceSlots[lanceid][lancepos].transform.FindRecursive("mwSlot").FindRecursive("dragText").gameObject.GetComponent<LocalizableText>().SetText(
-              CustomLanceHelper.lanceVehicle(lanceid) ? "Drag crew here" : "Drag mechwarrior here"
-            );
-            lanceSlots[lanceid][lancepos].isOverrideLockedState(true);
-          }
-        }
-        Log.WL(1, "filler");
-        for (int lancepos = 0; lancepos < fillerSlots.Count; ++lancepos) {
-          Log.WL(2, "slot[" + lancepos + "]" + fillerSlots[lancepos].gameObject.name + ":" + fillerSlots[lancepos].GetInstanceID());
-          fillerSlots[lancepos].gameObject.transform.localScale = Vector3.one;
-        }
-      } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
-      }
-    }
-    public static void Postfix(LanceConfiguratorPanel __instance) {
-      Log.TWL(0, "LanceConfiguratorPanel.SetData:" + __instance.maxUnits + "/" + __instance.loadoutSlots().Length);
-      updateSlots();
     }
   }
   [HarmonyPatch(typeof(ApplicationConstants))]
@@ -1343,6 +989,7 @@ namespace CustomUnits {
         prewarmRequests.Add(new PrewarmRequest(BattleTechResourceType.SVGAsset, Core.Settings.SquadArmorOutlineIcon)); CustomSvgCache.RegisterSVG(Core.Settings.SquadArmorOutlineIcon);
         prewarmRequests.Add(new PrewarmRequest(BattleTechResourceType.SVGAsset, Core.Settings.SquadArmorIcon)); CustomSvgCache.RegisterSVG(Core.Settings.MechBaySwitchIconUp);
         prewarmRequests.Add(new PrewarmRequest(BattleTechResourceType.SVGAsset, Core.Settings.MechBaySwitchIconMech)); CustomSvgCache.RegisterSVG(Core.Settings.MechBaySwitchIconMech);
+        prewarmRequests.Add(new PrewarmRequest(BattleTechResourceType.SVGAsset, Core.Settings.PilotingIcon)); CustomSvgCache.RegisterSVG(Core.Settings.PilotingIcon);
         prewarmRequests.Add(new PrewarmRequest(BattleTechResourceType.SVGAsset, Core.Settings.MechBaySwitchIconVehicle)); CustomSvgCache.RegisterSVG(Core.Settings.MechBaySwitchIconVehicle);
         prewarmRequests.Add(new PrewarmRequest(BattleTechResourceType.SVGAsset, Core.Settings.MechBaySwitchIconUp)); CustomSvgCache.RegisterSVG(Core.Settings.MechBaySwitchIconUp);
         prewarmRequests.Add(new PrewarmRequest(BattleTechResourceType.SVGAsset, Core.Settings.MechBaySwitchIconDown)); CustomSvgCache.RegisterSVG(Core.Settings.MechBaySwitchIconDown);
@@ -1727,8 +1374,7 @@ namespace CustomUnits {
           return false;
         }
         Dictionary<int, AbstractActor> predefinedActors = new Dictionary<int, AbstractActor>();
-        List<AbstractActor> mechs = new List<AbstractActor>();
-        List<AbstractActor> vehicles = new List<AbstractActor>();
+        List<AbstractActor> units = new List<AbstractActor>();
         Log.WL(1, "player lance layout");
         foreach (var plLayout in CustomLanceHelper.playerLanceLoadout.loadout) {
           Log.WL(2, plLayout.Key + ":" + plLayout.Value);
@@ -1740,12 +1386,10 @@ namespace CustomUnits {
         foreach (AbstractActor unit in ___displayedTeam.units) {
           string defGUID = string.Empty;
           if (unit.IsDeployDirector()) { continue; }
-          bool isVehicle = false;
           if (unit.UnitType == UnitType.Mech) {
             defGUID = (unit as Mech).MechDef.GUID;
           } else if (unit.UnitType == UnitType.Vehicle) {
             defGUID = (unit as Vehicle).VehicleDef.GUID;
-            isVehicle = false;
           } else {
             continue;
           }
@@ -1770,24 +1414,15 @@ namespace CustomUnits {
             avaibleSlots.Remove(slotIndex);
             continue;
           }
-          if (isVehicle) { vehicles.Add(unit); } else { mechs.Add(unit); }
+          units.Add(unit);
         }
         HashSet<int> restSlots = avaibleSlots.Keys.ToHashSet();
         foreach (int slotIndex in restSlots) {
-          if (avaibleSlots[slotIndex].isVehicle && (vehicles.Count > 0)) {
-            avaibleSlots[slotIndex].portrait.DisplayedActor = vehicles[0];
-            avaibleSlots[slotIndex].holder.SetActive(false);
-            vehicles.RemoveAt(0);
-            avaibleSlots.Remove(slotIndex);
-            continue;
-          }
-          if ((avaibleSlots[slotIndex].isVehicle == false) && (mechs.Count > 0)) {
-            avaibleSlots[slotIndex].portrait.DisplayedActor = mechs[0];
-            avaibleSlots[slotIndex].holder.SetActive(false);
-            mechs.RemoveAt(0);
-            avaibleSlots.Remove(slotIndex);
-            continue;
-          }
+          if (units.Count == 0) { break; }
+          avaibleSlots[slotIndex].portrait.DisplayedActor = units[0];
+          avaibleSlots[slotIndex].holder.SetActive(false);
+          units.RemoveAt(0);
+          avaibleSlots.Remove(slotIndex);
         }
         foreach (var slot in avaibleSlots) {
           slot.Value.portrait.DisplayedActor = null;
@@ -1818,14 +1453,14 @@ namespace CustomUnits {
     public int index { get; set; }
     public int lance_id { get; set; }
     public int lance_index { get; set; }
-    public bool isVehicle { get; set; }
+    public bool service { get; set; }
     public GameObject holder { get; set; }
     public CombatHUDPortrait portrait { get; set; }
-    public CustomLanceInstance(GameObject h, CombatHUDPortrait p, int index, bool head, int lanceid, int lance_pos, bool isVehicle) {
+    public CustomLanceInstance(GameObject h, CombatHUDPortrait p, int index, bool head, int lanceid, int lance_pos, bool service) {
       holder = h; portrait = p; this.index = index; isHead = head;
       this.lance_id = lanceid;
       this.lance_index = lance_pos;
-      this.isVehicle = isVehicle;
+      this.service = service;
     }
   }
   [HarmonyPatch(typeof(CombatHUDButtonBase))]
@@ -2136,7 +1771,7 @@ namespace CustomUnits {
       GameObject srcTween = tweensHolders[0].gameObject;
       HorizontalLayoutGroup layout = srcHolder.transform.parent.gameObject.GetComponent<HorizontalLayoutGroup>();
       layout.childAlignment = TextAnchor.MiddleLeft;
-      int all_lances_size = CustomLanceHelper.fullSlotsCount() + Core.Settings.ConvoyUnitsCount;
+      int all_lances_size = UnityGameInstance.BattleTechGame.Simulation.currentLayout().slotsCount + Core.Settings.ConvoyUnitsCount;
       for (int t = __instance.PortraitHolders.Length; t < all_lances_size; ++t) {
         GameObject newHolder = GameObject.Instantiate(srcHolder);
         newHolder.name = "mwPortraitHolder" + (t + 1).ToString();
@@ -2174,9 +1809,7 @@ namespace CustomUnits {
       __instance.portraitTweens = tweensHolders.ToArray();
     }
 
-    public static bool Prefix(CombatHUDMechwarriorTray __instance, CombatGameState Combat, CombatHUD HUD
-      , ref CombatGameState ___Combat, ref CombatHUD ___HUD, ref CombatHUDPortrait[] ___Portraits
-    ) {
+    public static bool Prefix(CombatHUDMechwarriorTray __instance, CombatGameState Combat, CombatHUD HUD, ref CombatGameState ___Combat, ref CombatHUD ___HUD, ref CombatHUDPortrait[] ___Portraits) {
       try {
         InitAdditinalPortraits(__instance, Combat, HUD);
         ___Combat = Combat;
@@ -2264,6 +1897,7 @@ namespace CustomUnits {
       int lance_id = 0;
       lancesPortraitHolders.Clear();
       List<CustomLanceInstance> lance = null;
+      DropSlotsDef layout = UnityGameInstance.BattleTechGame.Simulation.currentLayout();
       for (int index = 0; index < ___Portraits.Length; ++index) {
         GameObject holder = __instance.PortraitHolders[index];
         holder.SetActive(false);
@@ -2273,9 +1907,9 @@ namespace CustomUnits {
           lancesPortraitHolders.Add(lance);
           lance_index = 0;
         }
-        bool lanceVehicle = lance_id < CustomLanceHelper.lancesCount() ? CustomLanceHelper.lanceVehicle(lance_id) : true;
-        int lanceSize = lance_id < CustomLanceHelper.lancesCount() ? CustomLanceHelper.lanceSize(lance_id) : Core.Settings.ConvoyUnitsCount;
-        lance.Add(new CustomLanceInstance(holder, portrait, index, lance_index == 0, lance_id, lance_index, lanceVehicle));
+        //bool lanceVehicle = lance_id < CustomLanceHelper.lancesCount() ? CustomLanceHelper.lanceVehicle(lance_id) : true;
+        int lanceSize = lance_id < layout.dropLances.Count ? layout.dropLances[lance_id].dropSlots.Count : Core.Settings.ConvoyUnitsCount;
+        lance.Add(new CustomLanceInstance(holder, portrait, index, lance_index == 0, lance_id, lance_index, lance_id >= layout.dropLances.Count));
         ++lance_index;
         if (lance_index >= lanceSize) { ++lance_id; };
       }

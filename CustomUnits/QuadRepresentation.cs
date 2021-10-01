@@ -8,7 +8,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using UnityEngine;
-using UnityFBXExporter;
 
 namespace CustomUnits {
   //public class QuadLegsRepresentationSimGame: MonoBehaviour {

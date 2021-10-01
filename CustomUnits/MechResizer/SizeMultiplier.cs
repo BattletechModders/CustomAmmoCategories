@@ -10,7 +10,8 @@ namespace MechResizer {
     public static Vector3 Get(ChassisDef def) {
       return Get(
           identifier: def.Description.Id,
-          tags: def.ChassisTags,
+          primary_tags: def.ChassisTags,
+          secondary_tags: null,
           type: def.IsVehicle()?typeof(Vehicle):typeof(Mech),
           prefab: def.PrefabBase);
     }
@@ -18,7 +19,8 @@ namespace MechResizer {
     public static Vector3 Get(VehicleDef def) {
       return Get(
           identifier: def.Description.Id,
-          tags: def.VehicleTags,
+          primary_tags: def.VehicleTags,
+          secondary_tags: null,
           type: typeof(Vehicle),
           prefab: def.Chassis.PrefabBase);
     }
@@ -26,14 +28,16 @@ namespace MechResizer {
     public static Vector3 Get(TurretDef def) {
       return Get(
           identifier: def.Description.Id,
-          tags: def.TurretTags,
+          primary_tags: def.TurretTags,
+          secondary_tags: null,
           type: typeof(Turret),
           prefab: def.Chassis.PrefabBase);
     }
     public static Vector3 Get(MechDef def) {
       return Get(
           identifier: def.Description.Id,
-          tags: def.MechTags,
+          primary_tags: def.MechTags,
+          secondary_tags: def.Chassis != null?def.Chassis.ChassisTags:null,
           type: def.IsVehicle() ? typeof(Vehicle) : typeof(Mech),
           prefab: def.Chassis.PrefabBase);
     }
@@ -41,30 +45,42 @@ namespace MechResizer {
     public static Vector3 Get(WeaponDef def) {
       return Get(
           identifier: def.Description.Id,
-          tags: def.ComponentTags,
+          primary_tags: def.ComponentTags,
+          secondary_tags: null,
           type: typeof(Weapon),
           prefab: def.PrefabIdentifier);
     }
 
-    private static Vector3 Get(string identifier, TagSet tags, Type type, string prefab = null) {
+    private static Vector3 Get(string identifier, TagSet primary_tags, TagSet secondary_tags, Type type, string prefab = null) {
       if (Cache.Get(identifier, out var mVector)) {
         Log.TWL(0, $"{type.FullName}: Found Cached '{identifier}'");
         return mVector;
       }
       Vector3 returnValue;
-      if (TagUnderstander.ReadSizeFromTags(tags, out var tSize, out string rawTag)) {
+      if (TagUnderstander.ReadSizeFromTags(primary_tags, out var tSize, out string rawTag)) {
         Log.TWL(0, $"{type.FullName}: Found By Tag '{rawTag}'");
         returnValue = Cache.Set(identifier, tSize.Value);
-      } else if (Cache.Get(identifier, out mVector, simple: true)) {
+        return returnValue;
+      }
+      if (secondary_tags != null) {
+        if(TagUnderstander.ReadSizeFromTags(secondary_tags, out var tsSize, out string rawsTag)) {
+          Log.TWL(0, $"{type.FullName}: Found By Tag '{rawsTag}'");
+          returnValue = Cache.Set(identifier, tsSize.Value);
+          return returnValue;
+        }
+      }
+      if (Cache.Get(identifier, out mVector, simple: true)) {
         Log.TWL(0, $"{type.FullName}: Found Simple '{identifier}");
         returnValue = Cache.Set(identifier, mVector);
-      } else if (Cache.Get(identifier, out mVector, prefab: prefab)) {
+        return returnValue;
+      }
+      if (Cache.Get(identifier, out mVector, prefab: prefab)) {
         Log.TWL(0, $"{type.FullName}: Found prefab '{identifier}' w/ prefab '{prefab}'");
         returnValue = Cache.Set(identifier, mVector);
-      } else {
-        Log.TWL(0, $"{type.FullName}: Using Default Size for '{identifier}'");
-        returnValue = Cache.SetDefault(identifier, type);
+        return returnValue;
       }
+      Log.TWL(0, $"{type.FullName}: Using Default Size for '{identifier}'");
+      returnValue = Cache.SetDefault(identifier, type);
 
       return returnValue;
     }

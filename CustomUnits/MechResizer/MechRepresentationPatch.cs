@@ -21,7 +21,7 @@ namespace MechResizer {
     public static void sizeMultiplier(this Mech mech) {
       Log.TWL(0, "mech size initialization " + mech.GameRep.name+" chassis is fake: "+ mech.MechDef.ChassisID.IsInFakeChassis());
       var identifier = mech.MechDef.ChassisID;
-      var sizeMultiplier = mech.MechDef.ChassisID.IsInFakeChassis() ? SizeMultiplier.Get(mech.MechDef) : SizeMultiplier.Get(mech.MechDef.Chassis);
+      var sizeMultiplier = SizeMultiplier.Get(mech.MechDef);
       Log.TWL(0, $"{identifier}: {sizeMultiplier}");
       var originalLOSSourcePositions = Traverse.Create(mech).Field("originalLOSSourcePositions").GetValue<Vector3[]>();
       var originalLOSTargetPositions = Traverse.Create(mech).Field("originalLOSTargetPositions").GetValue<Vector3[]>();

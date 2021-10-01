@@ -44,7 +44,7 @@ namespace CustomUnitsVTOLTransfer {
         JObject json = null;
         try {
           json = JObject.Parse(File.ReadAllText(fname));
-        } catch (Exception e) {
+        } catch (Exception) {
           continue;
         }
         if (json["PrefabIdentifier"] == null) { continue; }

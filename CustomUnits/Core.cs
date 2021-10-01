@@ -159,7 +159,7 @@ namespace CustomUnits{
         foreach (string ct in value) {
           fManualDeployForbidContractTypes.Add(ct);
         }
-    } }
+      } }
     public HashSet<string> DeployForbidContractTypes { get { return fManualDeployForbidContractTypes; } }
     public bool DisableHotKeys { get; set; }
     public string SquadStructureIcon { get; set; }
@@ -227,6 +227,14 @@ namespace CustomUnits{
     public bool AllowPartialMove { get; set; }
     public bool AllowPartialSprint { get; set; }
     public SortByTonnage.Settings SortBy { get; set; }
+    public string PilotingIcon { get; set; }
+    public string DefaultSkirmishDropLayout { get; set; }
+    public string DefaultSimgameDropLayout { get; set; }
+    public List<string> vehicleForcedTags { get; set; }
+    public List<string> mechForcedTags { get; set; }
+    public List<string> squadForcedTags { get; set; }
+    public List<string> navalForcedTags { get; set; }
+    public int baysWidgetsCount { get; set; }
     public CUSettings() {
       debugLog = false;
       DeathHeight = 1f;
@@ -317,9 +325,17 @@ namespace CustomUnits{
       AllowPartialMove = true;
       AllowPartialSprint = true;
       SortBy = new SortByTonnage.Settings();
+      PilotingIcon = "piloting";
+      DefaultSkirmishDropLayout = "default_skirmish_layout";
+      DefaultSimgameDropLayout = "default_simgame_layout";
+      vehicleForcedTags = new List<string>() { "unit_drop_type_generic_vehicle", "unit_piloting_type_generic_vehicle", "vehicle_bays" };
+      mechForcedTags = new List<string>() { "unit_drop_type_generic_mech", "unit_piloting_type_generic_mech" };
+      squadForcedTags = new List<string>() { "battle_armor_bays" };
+      navalForcedTags = new List<string>() { "unit_naval" };
+      baysWidgetsCount = 4;
       //HardpointFix = new Features.HardpointFix.HardpointFixSettings();
     }
-}
+  }
   public static partial class Core {
     public static readonly float Epsilon = 0.001f;
     public static CUSettings Settings;
@@ -403,7 +419,7 @@ namespace CustomUnits{
       Log.TWL(0, "FinishedLoading", true);
       IRBTModUtils.Extension.MechExtensions.RegisterMoveDistanceModifier("CustomUnits", 10, Mech_MaxWalkDistance.MaxWalkDistanceMod, Mech_MaxWalkDistance.MaxSprintDistanceMod);
       try {
-        foreach(string name in loadOrder) { if (name == "Mission Control") { CustomLanceHelper.MissionControlDetected(); break; }; }
+        foreach(string name in loadOrder) { if (name == "Mission Control") { CustomLanceHelper.MissionControlDetected = true; break; }; }
         foreach (string name in loadOrder) { if (name == "MechEngineer") { Core.Settings.MechEngineerDetected = true; break; }; }
         foreach (string name in loadOrder) { if (name == "LowVisibility") { LowVisibilityAPIHelper.Init(); break; }; }
         foreach (var customResource in customResources) {
@@ -430,33 +446,109 @@ namespace CustomUnits{
                 Log.WL(0, e.ToString(), true);
               }
             }
+          } else if (customResource.Key == "DropSlotDef") {
+            foreach (var custItem in customResource.Value) {
+              try {
+                Log.WL(1, "Path:" + custItem.Value.FilePath);
+                DropSlotDef def = JsonConvert.DeserializeObject<DropSlotDef>(File.ReadAllText(custItem.Value.FilePath));
+                Log.WL(1, "id:" + def.Description.Id);
+                Log.WL(1, JsonConvert.SerializeObject(def, Formatting.Indented));
+                def.Register();
+              } catch (Exception e) {
+                Log.TWL(0, custItem.Key, true);
+                Log.WL(0, e.ToString(), true);
+              }
+            }
+          } else if (customResource.Key == "DropLanceDef") {
+            foreach (var custItem in customResource.Value) {
+              try {
+                Log.WL(1, "Path:" + custItem.Value.FilePath);
+                DropLanceDef def = JsonConvert.DeserializeObject<DropLanceDef>(File.ReadAllText(custItem.Value.FilePath));
+                Log.WL(1, "id:" + def.Description.Id);
+                Log.WL(1, JsonConvert.SerializeObject(def, Formatting.Indented));
+                def.Register();
+              } catch (Exception e) {
+                Log.TWL(0, custItem.Key, true);
+                Log.WL(0, e.ToString(), true);
+              }
+            }
+          } else if (customResource.Key == "DropSlotsDef") {
+            foreach (var custItem in customResource.Value) {
+              try {
+                Log.WL(1, "Path:" + custItem.Value.FilePath);
+                DropSlotsDef def = JsonConvert.DeserializeObject<DropSlotsDef>(File.ReadAllText(custItem.Value.FilePath));
+                Log.WL(1, "id:" + def.Description.Id);
+                Log.WL(1, JsonConvert.SerializeObject(def, Formatting.Indented));
+                def.Register();
+              } catch (Exception e) {
+                Log.TWL(0, custItem.Key, true);
+                Log.WL(0, e.ToString(), true);
+              }
+            }
+          } else if (customResource.Key == "DropSlotDecorationDef") {
+            foreach (var custItem in customResource.Value) {
+              try {
+                Log.WL(1, "Path:" + custItem.Value.FilePath);
+                DropSlotDecorationDef def = JsonConvert.DeserializeObject<DropSlotDecorationDef>(File.ReadAllText(custItem.Value.FilePath));
+                Log.WL(1, "id:" + def.Description.Id);
+                Log.WL(1, JsonConvert.SerializeObject(def, Formatting.Indented));
+                def.Register();
+              } catch (Exception e) {
+                Log.TWL(0, custItem.Key, true);
+                Log.WL(0, e.ToString(), true);
+              }
+            }
+          } else if (customResource.Key == "DropClassDef") {
+            foreach (var custItem in customResource.Value) {
+              try {
+                Log.WL(1, "Path:" + custItem.Value.FilePath);
+                DropClassDef def = JsonConvert.DeserializeObject<DropClassDef>(File.ReadAllText(custItem.Value.FilePath));
+                Log.WL(1, "id:" + def.Description.Id);
+                Log.WL(1, JsonConvert.SerializeObject(def, Formatting.Indented));
+                def.Register();
+              } catch (Exception e) {
+                Log.TWL(0, custItem.Key, true);
+                Log.WL(0, e.ToString(), true);
+              }
+            }
+          } else if (customResource.Key == "PilotingClassDef") {
+            foreach (var custItem in customResource.Value) {
+              try {
+                Log.WL(1, "Path:" + custItem.Value.FilePath);
+                PilotingClassDef def = JsonConvert.DeserializeObject<PilotingClassDef>(File.ReadAllText(custItem.Value.FilePath));
+                Log.WL(1, "id:" + def.Description.Id);
+                Log.WL(1, JsonConvert.SerializeObject(def, Formatting.Indented));
+                def.Register();
+              } catch (Exception e) {
+                Log.TWL(0, custItem.Key, true);
+                Log.WL(0, e.ToString(), true);
+              }
+            }
+          } else if (customResource.Key == nameof(CustomHangarDef)) {
+            foreach (var custItem in customResource.Value) {
+              try {
+                Log.WL(1, "Path:" + custItem.Value.FilePath);
+                CustomHangarDef def = JsonConvert.DeserializeObject<CustomHangarDef>(File.ReadAllText(custItem.Value.FilePath));
+                Log.WL(1, "id:" + def.Description.Id);
+                Log.WL(1, JsonConvert.SerializeObject(def, Formatting.Indented));
+                def.Register();
+              } catch (Exception e) {
+                Log.TWL(0, custItem.Key, true);
+                Log.WL(0, e.ToString(), true);
+              }
+            }
+          } else {
+            throw new Exception("Unknown resource "+ customResource.Key);
           }
         }
-        //CustAmmoCategories.HitTableHelper.RegisterGetHitTableFunction(typeof(TrooperSquad), TrooperSquad.GetHitTable);
-        //CustAmmoCategories.GetLongArmorLocationHelper.RegisterGetLongArmorLocationFunction(typeof(TrooperSquad), TrooperSquad.GetLongArmorLocation);
-        //CustAmmoCategories.GetDFASelfDamageLocationsHelper.RegisterDFASelfDamageLocationsFunction(typeof(TrooperSquad), TrooperSquad.GetDFASelfDamageLocations);
-        //CustAmmoCategories.GetLandmineDamageLocationsHelper.RegisterLandmineDamageLocationsFunction(typeof(TrooperSquad), TrooperSquad.GetLandmineDamageLocations);
-        //CustAmmoCategories.GetBurnDamageLocationsHelper.RegisterBurnDamageLocationsFunction(typeof(TrooperSquad), TrooperSquad.GetBurnDamageLocations);
-        //CustAmmoCategories.GetAOESpreadLocationsHelper.RegisterAOELocationsFunction(typeof(TrooperSquad), TrooperSquad.GetAOESpreadLocations);
-        //CustAmmoCategories.GetAOEPossibleHitLocationsHelper.RegisterAOELocationsFunction(typeof(TrooperSquad), TrooperSquad.GetAOEPossibleHitLocations);
         CustAmmoCategories.ToHitModifiersHelper.registerModifier("SQUAD SIZE", "SQUAD SIZE", true, false, TrooperSquad.GetSquadSizeToHitMod, TrooperSquad.GetSquadSizeToHitModName);
         CustAmmoCategories.DamageModifiersCache.RegisterDamageModifier("SQUAD SIZE", "SQUAD SIZE", true, true, true, true, true, TrooperSquad.SquadSizeDamageMod, TrooperSquad.SquadSizeDamageModName);
         DamageModifiersCache.RegisterDamageModifier("TYPEMOD", "TYPEMOD", false, true, true, true, true, TypeDmgCACModifier, TypeDmgCACModifierName);
+        PilotingClassHelper.Validate();
+        //DropClassDef.Validate();
+        DropSystemHelper.Validate();
       } catch (Exception e) {
         Log.TWL(0, e.ToString(), true);
-      }
-    }
-    public static void InitLancesLoadoutDefault() {
-      if (Core.Settings.Lances.Count > 0) {
-        CustomLanceHelper.setLancesCount(Core.Settings.Lances.Count);
-        for (int lanceid = 0; lanceid < Core.Settings.Lances.Count; ++lanceid) {
-          CustomLanceHelper.setLanceData(lanceid, Core.Settings.Lances[lanceid].size, Core.Settings.Lances[lanceid].allow, Core.Settings.Lances[lanceid].is_vehicle);
-        }
-        CustomLanceHelper.setOverallDeployCount(Core.Settings.overallDeploySize);
-      } else {
-        CustomLanceHelper.setLancesCount(1);
-        CustomLanceHelper.setLanceData(0, 4, 4, false);
-        CustomLanceHelper.setOverallDeployCount(4);
       }
     }
     public static void Init(string directory, string settingsJson) {
@@ -464,11 +556,13 @@ namespace CustomUnits{
       Log.InitLog();
       Core.BaseDir = directory;
       Core.Settings = JsonConvert.DeserializeObject<CustomUnits.CUSettings>(settingsJson);
+      //PilotingClass.Validate();
       Log.LogWrite("Initing... " + directory + " version: " + Assembly.GetExecutingAssembly().GetName().Version + "\n", true);
-      InitLancesLoadoutDefault();
+      //InitLancesLoadoutDefault();
       CustomLanceHelper.BaysCount(3+(Core.Settings.BaysCountExternalControl?0:Core.Settings.ArgoBaysFix));
       MechResizer.MechResizer.Init(directory, settingsJson);
       SortByTonnage.SortByTonnage.Init(directory, Core.Settings.SortBy);
+
       try {
         var harmony = HarmonyInstance.Create("io.mission.customunits");
         HitLocation_GetMechHitTableCustom.i_GetMechHitTable = HitLocation_GetMechHitTable.Get;
