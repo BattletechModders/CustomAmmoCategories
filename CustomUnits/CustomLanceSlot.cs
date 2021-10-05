@@ -16,6 +16,46 @@ using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
 namespace CustomUnits {
+  [HarmonyPatch(typeof(CombatHUDActionButton))]
+  [HarmonyPatch("ExecuteClick")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { })]
+  public static class CombatHUDActionButton_ExecuteClick {
+    public static bool Prefix(CombatHUDActionButton __instance) {
+      try {
+        Log.LogWrite("CombatHUDActionButton.ExecuteClick '" + __instance.GUID + "'/'" + CombatHUD.ButtonID_Move + "' " + (__instance.GUID == CombatHUD.ButtonID_Move) + "\n");
+        CombatHUD HUD = (CombatHUD)typeof(CombatHUDActionButton).GetProperty("HUD", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(__instance, null);
+        bool modifyers = (Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.RightControl));
+        if (modifyers) {
+          Log.LogWrite(" button GUID:" + __instance.GUID + "\n");
+          if (__instance.Ability != null) {
+            CustomAmmoCategoriesLog.Log.LogWrite(" button ability:" + __instance.Ability.Def.Description.Id + "\n");
+          } else {
+            Log.LogWrite(" button ability:null\n");
+          }
+          SelectionType selectionType = (SelectionType)typeof(CombatHUDActionButton).GetProperty("SelectionType", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(__instance, null);
+          Log.LogWrite(" selection type:" + selectionType + "\n");
+          if (__instance.GUID == "ID_ATTACKGROUND") {
+            List<Vector3> pointWithinRadius = HUD.Combat.HexGrid.GetGridPointsAroundPointWithinRadius(HUD.SelectedActor.CurrentPosition, 1);
+            Log.TWL(0, "SpawnHOTDROP:" + HUD.SelectedActor.CurrentPosition);
+            for (int t = 0; t < pointWithinRadius.Count; ++t) { pointWithinRadius[t] = new Vector3(pointWithinRadius[t].x, HUD.Combat.MapMetaData.GetLerpedHeightAt(pointWithinRadius[t]), pointWithinRadius[t].z); }
+            foreach (Vector3 pos in pointWithinRadius) { Log.WL(1, pos.ToString()); }
+            GenericPopupBuilder.Create("DEBUG HOTDROP SPAWN", "DEBUG HOTDROP SPAWN")
+            .AddButton("OK", (Action)(() => {
+              CustomLanceHelper.HotDrop(pointWithinRadius, HUD.SelectedActor.GUID);
+            }), true)
+            .AddButton("CANCEL", (Action)(() => {
+            }), true)
+            .AddFader(new UIColorRef?(LazySingletonBehavior<UIManager>.Instance.UILookAndColorConstants.PopupBackfill), 0.0f, true).Render();
+
+          }
+          return true;
+        }
+        return true;
+      } catch (Exception e) { Log.TWL(0, e.ToString()); return true; }
+    }
+  }
+
   [HarmonyPatch(typeof(LanceLoadoutSlot))]
   [HarmonyPatch("SetData")]
   [HarmonyPatch(MethodType.Normal)]
@@ -50,6 +90,81 @@ namespace CustomUnits {
     }
     public static void Postfix(LanceLoadoutSlot __instance, IMechLabDraggableItem forcedMech, IMechLabDraggableItem forcedPilot, bool shouldBeLocked) {
       if (shouldBeLocked) { Thread.CurrentThread.ClearFlag("LanceLoadoutSlot.LOCKED"); }
+    }
+  }
+  [HarmonyPatch(typeof(SimGameState))]
+  [HarmonyPatch("SaveLastLance")]
+  [HarmonyPatch(MethodType.Normal)]
+  public static class SimGameState_SaveLastLance {
+    public static bool Prefix(SimGameState __instance, LanceConfiguration config, ref List<string> ___LastUsedMechs, ref List<string> ___LastUsedPilots) {
+      ___LastUsedMechs = new List<string>();
+      ___LastUsedPilots = new List<string>();
+      Log.TWL(0, "SimGameState.SaveLastLance");
+      if (config == null) {
+        Log.WL(0, "no config - no to save");
+        return false;
+      }
+      for (int t=0;t<__instance.currentLayout().slotsCount;++t) {
+        ___LastUsedMechs.Add(string.Empty);
+        ___LastUsedPilots.Add(string.Empty);
+      }
+      foreach (SpawnableUnit lanceUnit in config.GetLanceUnits("bf40fd39-ccf9-47c4-94a6-061809681140")) {
+        SpawnableUnit spawnableUnit = lanceUnit;
+        if (spawnableUnit != null) {
+          if (spawnableUnit.Unit == null) { continue; }
+          if (spawnableUnit.Pilot == null) { continue; }
+          string GUID = spawnableUnit.Unit.GUID + "_" + spawnableUnit.Unit.Description.Id + "_" + spawnableUnit.Pilot.Description.Id;
+          if(CustomLanceHelper.playerLanceLoadout.loadout.TryGetValue(GUID,out int index)) {
+            ___LastUsedPilots[index] = spawnableUnit.Pilot.Description.Id;
+            ___LastUsedMechs[index] = spawnableUnit.Unit.GUID;
+          }
+        }
+      }
+      foreach (SpawnableUnit lanceUnit in config.GetLanceUnits("HOTDROP_bf40fd39-ccf9-47c4-94a6-061809681140")) {
+        SpawnableUnit spawnableUnit = lanceUnit;
+        if (spawnableUnit != null) {
+          if (spawnableUnit.Unit == null) { continue; }
+          if (spawnableUnit.Pilot == null) { continue; }
+          string GUID = spawnableUnit.Unit.GUID + "_" + spawnableUnit.Unit.Description.Id + "_" + spawnableUnit.Pilot.Description.Id;
+          if (CustomLanceHelper.playerLanceLoadout.loadout.TryGetValue(GUID, out int index)) {
+            ___LastUsedPilots[index] = spawnableUnit.Pilot.Description.Id;
+            ___LastUsedMechs[index] = spawnableUnit.Unit.GUID;
+          }
+        }
+      }
+      foreach (SpawnableUnit lanceUnit in config.GetLanceUnits(Core.Settings.EMPLOYER_LANCE_GUID)) {
+        SpawnableUnit spawnableUnit = lanceUnit;
+        if (spawnableUnit != null) {
+          if (spawnableUnit.Unit == null) { continue; }
+          if (spawnableUnit.Pilot == null) { continue; }
+          string GUID = spawnableUnit.Unit.GUID + "_" + spawnableUnit.Unit.Description.Id + "_" + spawnableUnit.Pilot.Description.Id;
+          if (CustomLanceHelper.playerLanceLoadout.loadout.TryGetValue(GUID, out int index)) {
+            ___LastUsedPilots[index] = spawnableUnit.Pilot.Description.Id;
+            ___LastUsedMechs[index] = spawnableUnit.Unit.GUID;
+          }
+        }
+      }
+      foreach (SpawnableUnit lanceUnit in config.GetLanceUnits("HOTDROP_"+Core.Settings.EMPLOYER_LANCE_GUID)) {
+        SpawnableUnit spawnableUnit = lanceUnit;
+        if (spawnableUnit != null) {
+          if (spawnableUnit.Unit == null) { continue; }
+          if (spawnableUnit.Pilot == null) { continue; }
+          string GUID = spawnableUnit.Unit.GUID + "_" + spawnableUnit.Unit.Description.Id + "_" + spawnableUnit.Pilot.Description.Id;
+          if (CustomLanceHelper.playerLanceLoadout.loadout.TryGetValue(GUID, out int index)) {
+            ___LastUsedPilots[index] = spawnableUnit.Pilot.Description.Id;
+            ___LastUsedMechs[index] = spawnableUnit.Unit.GUID;
+          }
+        }
+      }
+      Log.WL(1, "pilots:");
+      for (int i = 0; i < ___LastUsedPilots.Count; ++i) {
+        Log.WL(2, "[" + i + "] " + ___LastUsedPilots[i]);
+      }
+      Log.WL(1, "units:");
+      for (int i = 0; i < ___LastUsedMechs.Count; ++i) {
+        Log.WL(2, "[" + i + "] " + ___LastUsedMechs[i]);
+      }
+      return false;
     }
   }
   [HarmonyPatch(typeof(LanceLoadoutSlot))]
@@ -102,6 +217,63 @@ namespace CustomUnits {
       } catch (Exception e) {
         Log.TWL(0, e.ToString(), true);
         return true;
+      }
+    }
+  }
+  [HarmonyPatch(typeof(LanceConfiguratorPanel))]
+  [HarmonyPatch("CreateLanceConfiguration")]
+  public static class LanceConfiguratorPanel_CreateLanceConfiguration {
+    static bool Prefix(LanceConfiguratorPanel __instance, ref LanceConfiguration __result) {
+      try {
+        return false;
+      } catch (Exception) {
+        return false;
+      }
+    }
+
+    static void Postfix(LanceConfiguratorPanel __instance, ref LanceConfiguration __result, ref LanceLoadoutSlot[] ___loadoutSlots) {
+      try {
+        Log.TWL(0, "LanceConfiguratorPanel.CreateLanceConfiguration");
+        LanceConfiguration lanceConfiguration = new LanceConfiguration();
+        CustomLanceHelper.playerLanceLoadout.loadout.Clear();
+        CustomLanceHelper.hotdropLayout.Clear();
+        for (int i = 0; i < ___loadoutSlots.Length; i++) {
+          LanceLoadoutSlot lanceLoadoutSlot = ___loadoutSlots[i];
+          CustomLanceSlot customSlot = lanceLoadoutSlot.gameObject.GetComponent<CustomLanceSlot>();
+          if ((lanceLoadoutSlot.SelectedMech == null) && (lanceLoadoutSlot.SelectedPilot != null)) { continue; }
+          if ((lanceLoadoutSlot.SelectedMech != null) && (lanceLoadoutSlot.SelectedPilot == null)) { continue; }
+          if ((lanceLoadoutSlot.SelectedMech == null) && (lanceLoadoutSlot.SelectedPilot == null)) {
+            lanceConfiguration.AddUnit(__instance.playerGUID, string.Empty, string.Empty, UnitType.UNDEFINED);
+            continue;
+          }
+          bool isPlayer = true;
+          bool hotdrop = false;
+          if (customSlot != null) {
+            if (customSlot.slotDef != null) {
+              if (customSlot.slotDef.PlayerControl == false) { isPlayer = false; }
+              if (customSlot.slotDef.HotDrop) { hotdrop = true; }
+            }
+          }
+          string teamGUID = __instance.playerGUID;
+          if (isPlayer == false) { teamGUID = Core.Settings.EMPLOYER_LANCE_GUID; };
+          string GUID = lanceLoadoutSlot.SelectedMech.MechDef.GUID + "_" + lanceLoadoutSlot.SelectedMech.MechDef.Description.Id + "_" + lanceLoadoutSlot.SelectedPilot.Pilot.Description.Id;
+          int index = 0;
+          while (CustomLanceHelper.playerLanceLoadout.loadout.ContainsKey(GUID)) {
+            ++index;
+            lanceLoadoutSlot.SelectedMech.MechDef.SetGuid(GUID + "_" + index.ToString());
+            GUID = lanceLoadoutSlot.SelectedMech.MechDef.GUID + "_" + lanceLoadoutSlot.SelectedMech.MechDef.Description.Id + "_" + lanceLoadoutSlot.SelectedPilot.Pilot.Description.Id;
+          }
+          CustomLanceHelper.playerLanceLoadout.loadout.Add(GUID, i);
+          if (hotdrop) {
+            CustomLanceHelper.hotdropLayout.Add(new HotDropDefinition(lanceLoadoutSlot.SelectedMech.MechDef, lanceLoadoutSlot.SelectedPilot.Pilot, teamGUID));
+          }
+          if (hotdrop) { teamGUID = "HOTDROP_" + teamGUID; }
+          lanceConfiguration.AddUnit(teamGUID, lanceLoadoutSlot.SelectedMech.MechDef, lanceLoadoutSlot.SelectedPilot.Pilot.pilotDef);
+          Log.WL(1, teamGUID+" "+GUID+":"+i);
+        }
+        __result = lanceConfiguration;
+      } catch (Exception e) {
+        Log.TWL(0, e.ToString(), true);
       }
     }
   }

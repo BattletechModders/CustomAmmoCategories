@@ -11,34 +11,6 @@ using UnityEngine;
 using UnityEngine.EventSystems;
 
 namespace CustomAmmoCategoriesPatches {
-  [HarmonyPatch(typeof(CombatHUDActionButton))]
-  [HarmonyPatch("ExecuteClick")]
-  [HarmonyPatch(MethodType.Normal)]
-  [HarmonyPatch(new Type[] { })]
-  public static class CombatHUDActionButton_ExecuteClick {
-    public static bool Prefix(CombatHUDActionButton __instance) {
-      try {
-        Log.LogWrite("CombatHUDActionButton.ExecuteClick '" + __instance.GUID + "'/'" + CombatHUD.ButtonID_Move + "' " + (__instance.GUID == CombatHUD.ButtonID_Move) + "\n");
-        CombatHUD HUD = (CombatHUD)typeof(CombatHUDActionButton).GetProperty("HUD", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(__instance, null);
-        bool modifyers = (Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.RightControl));
-        if (modifyers) {
-          Log.LogWrite(" button GUID:" + __instance.GUID + "\n");
-          if (__instance.Ability != null) {
-            CustomAmmoCategoriesLog.Log.LogWrite(" button ability:" + __instance.Ability.Def.Description.Id + "\n");
-          } else {
-            Log.LogWrite(" button ability:null\n");
-          }
-          SelectionType selectionType = (SelectionType)typeof(CombatHUDActionButton).GetProperty("SelectionType", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(__instance, null);
-          Log.LogWrite(" selection type:" + selectionType + "\n");
-          if (__instance.GUID == "ID_ATTACKGROUND") {
-            SpawnVehicleDialogHelper.Dialog.Render(HUD.Combat);
-          }
-          return true;
-        }
-        return true;
-      } catch (Exception e) { Log.M.WL(e.ToString()); return true; }
-    }
-  }
   [HarmonyPatch(typeof(CombatHUDWeaponSlot))]
   [HarmonyPatch("OnPointerDown")]
   [HarmonyPatch(MethodType.Normal)]

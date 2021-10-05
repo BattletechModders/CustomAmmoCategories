@@ -9,10 +9,20 @@ using System.Text;
 using static BattleTech.Data.DataManager;
 
 namespace CustomUnits {
+  public class HotDropDefinition {
+    public MechDef mechDef { get; set; }
+    public Pilot pilot { get; set; }
+    public string TeamGUID { get; set; }
+    public HotDropDefinition(MechDef mech, Pilot pilot, string team) {
+      this.mechDef = mech;
+      this.pilot = pilot;
+      this.TeamGUID = team;
+    }
+  }
   public static class DropSystemHelper {
     public static readonly string CURRENT_DROP_LAYOUT_STAT_NAME = "CURRENT_DROP_LAYOUT";
-    private static DropSlotDef fallbackSlot = new DropSlotDef();
-    private static DropSlotDef fallbackDisabledSlot = new DropSlotDef();
+    public static DropSlotDef fallbackSlot = new DropSlotDef();
+    public static DropSlotDef fallbackDisabledSlot = new DropSlotDef();
     private static DropLanceDef fallbackLance = new DropLanceDef();
     private static DropSlotsDef fallbackLayout = new DropSlotsDef();
     private static Dictionary<string, DropClassDef> dropClasses = new Dictionary<string, DropClassDef>();
@@ -231,6 +241,7 @@ namespace CustomUnits {
     public List<string> Decorations { get; set; } = new List<string>();
     public bool Disabled { get; set; } = false;
     public bool PlayerControl { get; set; } = true;
+    public bool HotDrop { get; set; } = false;
   }
   public class DropLanceDef {
     public DropDescriptionDef Description { get; set; } = new DropDescriptionDef();
@@ -271,6 +282,15 @@ namespace CustomUnits {
         foreach (DropLanceDef lance in dropLances) { f_slotsCount += lance.dropSlots.Count; }
         return f_slotsCount;
       }
+    }
+    public DropSlotDef GetSlotByIndex(int index) {
+      int lance_index = 0;
+      while (dropLances[lance_index].dropSlots.Count <= index) {
+        index -= dropLances[lance_index].dropSlots.Count;
+        ++lance_index;
+        if (lance_index >= this.dropLances.Count) { return DropSystemHelper.fallbackSlot; }
+      }
+      return dropLances[lance_index].dropSlots[index];
     }
   }
   public class DropSlotDecorationDef: ILoadDependencies {

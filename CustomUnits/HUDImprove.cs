@@ -320,52 +320,6 @@ namespace CustomUnits {
     }
   }
   [HarmonyPatch(typeof(SimGameState))]
-  [HarmonyPatch("SaveLastLance")]
-  [HarmonyPatch(MethodType.Normal)]
-  public static class SimGameState_SaveLastLance {
-    public static bool Prefix(SimGameState __instance, LanceConfiguration config, ref List<string> ___LastUsedMechs, ref List<string> ___LastUsedPilots) {
-      ___LastUsedMechs = new List<string>();
-      ___LastUsedPilots = new List<string>();
-      Log.TWL(0, "SimGameState.SaveLastLance");
-      if (config == null) {
-        Log.WL(0, "no config - no to save");
-        return false;
-      }
-      foreach (SpawnableUnit lanceUnit in config.GetLanceUnits("bf40fd39-ccf9-47c4-94a6-061809681140")) {
-        string str1 = "";
-        string str2 = "";
-        SpawnableUnit spawnableUnit = lanceUnit;
-        if (spawnableUnit != null) {
-          if ((spawnableUnit.Unit == null) && (spawnableUnit.Pilot != null)) { continue; }
-          if ((spawnableUnit.Unit != null) && (spawnableUnit.Pilot == null)) { continue; }
-          if (spawnableUnit.Unit != null && spawnableUnit.Pilot != null) {
-            str1 = spawnableUnit.Unit.GUID;
-            str2 = spawnableUnit.Pilot.Description.Id;
-          } else {
-            ___LastUsedMechs.Add(string.Empty);
-            ___LastUsedPilots.Add(string.Empty);
-          }
-          if (!string.IsNullOrEmpty(str1) && !string.IsNullOrEmpty(str2)) {
-            ___LastUsedMechs.Add(str1);
-            ___LastUsedPilots.Add(str2);
-          }
-        } else {
-          ___LastUsedMechs.Add(string.Empty);
-          ___LastUsedPilots.Add(string.Empty);
-        }
-      }
-      Log.WL(1, "pilots:");
-      for (int i = 0; i < ___LastUsedPilots.Count; ++i) {
-        Log.WL(2, "[" + i + "] " + ___LastUsedPilots[i]);
-      }
-      Log.WL(1, "units:");
-      for (int i = 0; i < ___LastUsedMechs.Count; ++i) {
-        Log.WL(2, "[" + i + "] " + ___LastUsedMechs[i]);
-      }
-      return false;
-    }
-  }
-  [HarmonyPatch(typeof(SimGameState))]
   [HarmonyPatch("FillContractLance")]
   [HarmonyPatch(MethodType.Normal)]
   public static class SimGameState_FillContractLance {
@@ -464,26 +418,144 @@ namespace CustomUnits {
       return false;
     }
   }
+  //public class HotDropDelegate {
+  //  private List<Vector3> dropPositions;
+  //  private string GUID;
+  //  public HotDropDelegate(List<Vector3> dp, string guid) {
+  //    this.dropPositions = dp;
+  //    this.GUID = guid;
+  //  }
+  //  public void Drop() {
+  //    bool gatherDeps = false;
+  //    Log.TWL(0, "HotDropDelegate.Drop");
+  //    try {
+  //      if (UnityGameInstance.BattleTechGame.DataManager.Exists(BattleTechResourceType.Prefab, "vfxPrfPrtl_dropPod_urban") == false) {
+  //        Log.WL(1, "vfxPrfPrtl_dropPod_generic not all loaded");
+  //        gatherDeps = true;
+  //      }
+  //      for (int t = 0; t < CustomLanceHelper.hotdropLayout.Count; ++t) {
+  //        if (t >= dropPositions.Count) { break; }
+  //        if (this.dropPositions[t] == Vector3.zero) { continue; }
+  //        if (CustomLanceHelper.hotdropLayout[t].mechDef.DependenciesLoaded(1000u) == false) {
+  //          Log.WL(1, CustomLanceHelper.hotdropLayout[t].mechDef.Description.Id + " not all deps loaded");
+  //          gatherDeps = true; break;
+  //        }
+  //        if (CustomLanceHelper.hotdropLayout[t].pilot.pilotDef.DependenciesLoaded(1000u) == false) {
+  //          Log.WL(1, CustomLanceHelper.hotdropLayout[t].pilot.pilotDef.Description.Id + " not all deps loaded");
+  //          gatherDeps = true; break;
+  //        }
+  //      }
+  //      if (gatherDeps) {
+  //        DataManager.InjectedDependencyLoadRequest dependencyLoad = new DataManager.InjectedDependencyLoadRequest(UnityGameInstance.BattleTechGame.DataManager);
+  //        dependencyLoad.RegisterLoadCompleteCallback(new Action(this.Drop));
+  //        if (UnityGameInstance.BattleTechGame.DataManager.Exists(BattleTechResourceType.Prefab, "vfxPrfPrtl_dropPod_urban") == false) {
+  //          dependencyLoad.RequestResource(BattleTechResourceType.Prefab, "vfxPrfPrtl_dropPod_urban");
+  //        }
+  //        for (int t = 0; t < CustomLanceHelper.hotdropLayout.Count; ++t) {
+  //          if (t >= dropPositions.Count) { break; }
+  //          if (this.dropPositions[t] == Vector3.zero) { continue; }
+  //          HotDropDefinition dropDef = CustomLanceHelper.hotdropLayout[t];
+  //          if (dropDef.mechDef.DependenciesLoaded(1000u) == false) {
+  //            Log.WL(1, dropDef.mechDef.Description.Id + " gather deps");
+  //            dropDef.mechDef.GatherDependencies(UnityGameInstance.BattleTechGame.DataManager, (DataManager.DependencyLoadRequest)dependencyLoad, 1000U);
+  //          }
+  //          if (dropDef.pilot.pilotDef.DependenciesLoaded(1000u) == false) {
+  //            Log.WL(1, dropDef.pilot.pilotDef.Description.Id + " gather deps");
+  //            dropDef.pilot.pilotDef.GatherDependencies(UnityGameInstance.BattleTechGame.DataManager, (DataManager.DependencyLoadRequest)dependencyLoad, 1000U);
+  //          }
+  //        }
+  //        UnityGameInstance.BattleTechGame.DataManager.InjectDependencyLoader(dependencyLoad, 1000U);
+  //      } else {
+  //        CombatHUD HUD = null;
+  //        for (int t = 0; t < CustomLanceHelper.hotdropLayout.Count; ++t) {
+  //          if (t >= dropPositions.Count) { break; }
+  //          if (this.dropPositions[t] == Vector3.zero) { continue; }
+  //          HotDropDefinition dropDef = CustomLanceHelper.hotdropLayout[t];
+  //          Team team = UnityGameInstance.BattleTechGame.Combat.GetLoadedTeamByGUID(dropDef.TeamGUID);
+  //          if (team == null) { team = UnityGameInstance.BattleTechGame.Combat.LocalPlayerTeam; }
+  //          if (string.IsNullOrEmpty(this.GUID)) { this.GUID = team.GUID; }
+
+  //          EncounterLayerParent encounterParent = UnityGameInstance.BattleTechGame.Combat.EncounterLayerData.gameObject.GetComponentInParent<EncounterLayerParent>();
+  //          if(encounterParent != null) {
+  //            if (encounterParent.DropPodVfxPrefab != null) {
+  //              ParticleSystem dropPodVfxPrefab = UnityEngine.Object.Instantiate<ParticleSystem>(encounterParent.DropPodVfxPrefab, null);
+  //              dropPodVfxPrefab.transform.position = this.dropPositions[t];
+  //              dropPodVfxPrefab.Pause();
+  //              dropPodVfxPrefab.Clear();
+  //              dropPodVfxPrefab.Simulate(0.0f);
+  //              dropPodVfxPrefab.Play();
+  //            }
+  //            if(encounterParent.dropPodLandedPrefab != null) {
+  //              GameObject dropPodLandedPrefab = UnityEngine.Object.Instantiate<GameObject>(encounterParent.dropPodLandedPrefab, this.dropPositions[t], Quaternion.identity);
+  //            }
+  //          }
+
+  //          Mech mech = ActorFactory.CreateMech(dropDef.mechDef, dropDef.pilot.pilotDef, team.EncounterTags, UnityGameInstance.BattleTechGame.Combat, Guid.NewGuid().ToString(), this.GUID, team.HeraldryDef);
+  //          mech.Init(this.dropPositions[t], 0f, true);
+  //          mech.InitGameRep((Transform)null);
+  //          team.AddUnit(mech);
+  //          Lance spawnLance = null;
+  //          foreach (Lance lance in team.lances) {
+  //            spawnLance = lance;
+  //            break;
+  //          }
+  //          if (spawnLance != null) {
+  //            spawnLance.AddUnitGUID(mech.GUID);
+  //            mech.AddToLance(spawnLance);
+  //          }
+  //          mech.OnPlayerVisibilityChanged(VisibilityLevel.LOSFull);
+  //          UnitSpawnedMessage unitSpawnedMessage = new UnitSpawnedMessage(this.GUID, mech.GUID);
+  //          mech.OnPositionUpdate(this.dropPositions[t], Quaternion.identity, -1, true, (List<DesignMaskDef>)null, false);
+  //          mech.BehaviorTree = BehaviorTreeFactory.MakeBehaviorTree(UnityGameInstance.BattleTechGame, mech, BehaviorTreeIDEnum.CoreAITree);
+  //          UnityGameInstance.BattleTechGame.Combat.MessageCenter.PublishMessage((MessageCenterMessage)new UnitSpawnedMessage("HOTDROP_SPAWNER", mech.GUID));
+  //          if (team == UnityGameInstance.BattleTechGame.Combat.LocalPlayerTeam) { HUD = mech.HUD(); }
+  //          Log.WL(1,"spawned:"+mech.PilotableActorDef.Description.Id + ":"+mech.pilot.Description.Id + " "+mech.CurrentPosition);
+  //        }
+  //        if (HUD != null) { HUD.MechWarriorTray.RefreshTeam(UnityGameInstance.BattleTechGame.Combat.LocalPlayerTeam); }
+  //      }
+  //    }catch(Exception e) {
+  //      Log.TWL(0,e.ToString().ToString(), true);
+  //    }
+  //  }
+  //}
   public static class CustomLanceHelper {
     public static readonly string SaveReferenceName = "PlayedAllyLanceContent";
-    public static PlayerLancesLoadout playerLanceLoadout = new PlayerLancesLoadout();
-    private static List<CustomLanceDef> lancesData = new List<CustomLanceDef>(new CustomLanceDef[] { new CustomLanceDef(4, 4, false) });
-    //private static List<int> allowLanceSizes = new List<int>(new int[] { 5, 3 });
-    //private static int fallbackAllow = -1;
-    //private static int f_overallDeployCount = 4;
-    //private static int f_playerControlMechs = -1;
-    //private static int f_playerControlVehicles = -1;
-    //private static bool missionControlDetected = false;
-    private static int mechBaysCount = 3;
-    private static int vehicleBaysCount = 0;
-    private static int rowsPerList = 3;
-    public static int RowsPerList(this MechBayPanel panel) { return rowsPerList; }
-    public static int MechBaysCount(this MechBayPanel panel) { return mechBaysCount; }
-    public static int VehicleBaysCount(this MechBayPanel panel) { return Core.Settings.ShowVehicleBays ? vehicleBaysCount : 0; }
-    public static int RowsPerList(this MechBayRowGroupWidget panel) { return rowsPerList; }
-    public static int MechBaysCount(this MechBayRowGroupWidget panel) { return mechBaysCount; }
-    public static int VehicleBaysCount(this MechBayRowGroupWidget panel) { return Core.Settings.ShowVehicleBays ? vehicleBaysCount : 0; }
-    public static void BaysCount(int count) { mechBaysCount = count; vehicleBaysCount = count; }
+    public static PlayerLancesLoadout playerLanceLoadout { get; set; } = new PlayerLancesLoadout();
+    public static List<HotDropDefinition> hotdropLayout { get; set; } = new List<HotDropDefinition>();
+    public static void HotDrop(List<Vector3> dropPositions, string spawnerGUID) {
+      EncounterLayerParent encounterLayerParent = UnityGameInstance.BattleTechGame.Combat.EncounterLayerData.GetComponentInParent<EncounterLayerParent>();
+      HotDropManager hotdropManager = encounterLayerParent.GetComponent<HotDropManager>();
+      hotdropManager.HotDrop(dropPositions,spawnerGUID);
+    }
+    public static void PushDropLayout(string id, List<List<string>> layout, int maxUnits) {
+      DropSlotsDef newlayout = new DropSlotsDef();
+      newlayout.Description = new DropDescriptionDef();
+      newlayout.Description.Id = id;
+      newlayout.Description.Name = id;
+      newlayout.Description.Details = id;
+      newlayout.OverallUnits = maxUnits;
+      for (int t= 0;t < layout.Count;++t) {
+        List<string> lance = layout[t];
+        DropLanceDef newLance = new DropLanceDef();
+        newLance.Description = new DropDescriptionDef();
+        newLance.Description.Id = newlayout.Description.Id + "_lance_" + t;
+        newLance.dropSlots = new List<DropSlotDef>();
+        newLance.DropSlots = new List<string>();
+        foreach (string slotid in lance) {
+          DropSlotDef slot = DropSystemHelper.getSlot(slotid);
+          newLance.dropSlots.Add(slot);
+          newLance.DropSlots.Add(slotid);
+        }
+        for(int tt= newLance.dropSlots.Count;tt<4;++tt) {
+          newLance.dropSlots.Add(DropSystemHelper.fallbackDisabledSlot);
+        }
+        newLance.Register();
+      }
+      newlayout.Register();
+      if(UnityGameInstance.BattleTechGame.Simulation != null) {
+        UnityGameInstance.BattleTechGame.Simulation.CompanyStats.GetOrCreateStatisic<string>(DropSystemHelper.CURRENT_DROP_LAYOUT_STAT_NAME, "fallback_layout").SetValue<string>(newlayout.Description.Id);
+      }
+    }
     public static bool MissionControlDetected { get; set; } = false;
     public static void setLancesCount(int size) {
       return;
@@ -770,7 +842,11 @@ namespace CustomUnits {
       }
       if (CustomLanceHelper.MissionControlDetected == false) { if (overallSlotsCount > 4) { overallSlotsCount = 4; } }
       int deployCount = 0;
-      foreach (LanceLoadoutSlot slot in ___loadoutSlots) {if (slot.SelectedMech != null) { ++deployCount; } }
+      for (int t = 0; t < ___loadoutSlots.Length; ++t) {
+        if (DropSystemHelper.currentLayout(UnityGameInstance.BattleTechGame.Simulation).GetSlotByIndex(t).HotDrop == false) {
+          if (___loadoutSlots[t].SelectedMech != null) { ++deployCount; }
+        }
+      }
       if (overallSlotsCount < deployCount) {
         GenericPopupBuilder.Create("Lance Cannot Be Deployed", Strings.T("Deploying units count {0} exceed limit {1}", deployCount, overallSlotsCount)).AddFader(new UIColorRef?(LazySingletonBehavior<UIManager>.Instance.UILookAndColorConstants.PopupBackfill), 0.0f, true).Render();
         return false;
@@ -1386,13 +1462,7 @@ namespace CustomUnits {
         foreach (AbstractActor unit in ___displayedTeam.units) {
           string defGUID = string.Empty;
           if (unit.IsDeployDirector()) { continue; }
-          if (unit.UnitType == UnitType.Mech) {
-            defGUID = (unit as Mech).MechDef.GUID;
-          } else if (unit.UnitType == UnitType.Vehicle) {
-            defGUID = (unit as Vehicle).VehicleDef.GUID;
-          } else {
-            continue;
-          }
+          defGUID = unit.PilotableActorDef.GUID + "_" + unit.PilotableActorDef.Description.Id + "_" + unit.GetPilot().Description.Id;
           Log.WL(1, unit.DisplayName + " tags:" + unit.EncounterTags.ContentToString() + " defGUID:" + defGUID);
           if (string.IsNullOrEmpty(defGUID) == false) {
             if (CustomLanceHelper.playerLanceLoadout.loadout.TryGetValue(defGUID, out int slotIndex)) {

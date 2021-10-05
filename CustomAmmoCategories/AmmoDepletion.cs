@@ -531,6 +531,7 @@ namespace CustAmmoCategories {
           WeaponDef weaponDef = component.Def as WeaponDef;
           if (ammoBox != null) { 
             int ammocount = __instance.GetAmmoCount(ammoBox.AmmoID);
+            if (ammoBox.Ammo == null) { continue; }
             if (ammoBox.Ammo.extDef().AutoRefill == AutoRefilType.Automatic) { continue; }
             __instance.SetAmmoCount(ammoBox.AmmoID, ammocount + ammoBox.Capacity);
             Log.M.WL(1, "add ammo:" + ammoBox.AmmoID + "=>" + __instance.GetAmmoCount(ammoBox.AmmoID));

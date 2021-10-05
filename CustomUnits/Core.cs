@@ -559,7 +559,7 @@ namespace CustomUnits{
       //PilotingClass.Validate();
       Log.LogWrite("Initing... " + directory + " version: " + Assembly.GetExecutingAssembly().GetName().Version + "\n", true);
       //InitLancesLoadoutDefault();
-      CustomLanceHelper.BaysCount(3+(Core.Settings.BaysCountExternalControl?0:Core.Settings.ArgoBaysFix));
+      //CustomLanceHelper.BaysCount(3+(Core.Settings.BaysCountExternalControl?0:Core.Settings.ArgoBaysFix));
       MechResizer.MechResizer.Init(directory, settingsJson);
       SortByTonnage.SortByTonnage.Init(directory, Core.Settings.SortBy);
 

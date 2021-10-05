@@ -334,7 +334,7 @@ namespace CustAmmoCategories.Online {
   public static class OnlineClientHelper {
     private static CACOnlineClient client = null;
     private static int online_connection_id = 0;
-    private static int online_instance_id = 0;
+    //private static int online_instance_id = 0;
     private static Stopwatch keep_alive = null;
     //private static readonly HttpClient httpClient = new HttpClient();
     public static void UpdateInstanceData() {

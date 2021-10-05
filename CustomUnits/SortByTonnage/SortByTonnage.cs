@@ -22,6 +22,7 @@ namespace SortByTonnage {
 
     public bool orderByTonnage = false;
     public bool OrderByTonnage => orderByTonnage;
+    public bool isAnySortingEnabled { get { return OrderByCbillValue || OrderByNickname || OrderByTonnage; } }
   }
   public static class SortByTonnage {
     public const string ModName = "SortByTonnage";
@@ -77,8 +78,9 @@ namespace SortByTonnage {
     private static List<IMechLabDraggableItem> SortMechDefs(List<IMechLabDraggableItem> mechs) {
       try {
         Log.TWL(0, $"pre-sort count: {mechs.Count}");
-        if ((ModSettings.OrderByNickname == false) && (ModSettings.OrderByCbillValue == false) && (ModSettings.OrderByTonnage == false)) {
+        if (ModSettings.isAnySortingEnabled == false) {
           Log.TWL(0, "sorting disabled");
+          return mechs;
         }
         if (ModSettings.OrderByNickname) {
           return
@@ -126,6 +128,10 @@ namespace SortByTonnage {
           } else {
             Log.WL(1, $"key {i} not found");
           }
+        }
+        if (ModSettings.isAnySortingEnabled == false) {
+          Log.TWL(0, "sorting disabled");
+          return mechs.Values.ToList();
         }
 
         if (ModSettings.OrderByNickname) {
@@ -182,12 +188,19 @@ namespace SortByTonnage {
         Log.TWL(0, "sorting disabled");
         return mechs;
       }
-
+      if(ModSettings.isAnySortingEnabled == false) {
+        Log.TWL(0, "sorting disabled");
+        return mechs;
+      }
       return SortMechDefs(mechs);
     }
 
     public static void SortMechLabMechs(int mechSlots, Dictionary<int, MechDef> activeMechs, Dictionary<int, MechDef> readyingMechs) {
       if (!_isSortEnabled) {
+        Log.TWL(0, "sorting disabled");
+        return;
+      }
+      if (ModSettings.isAnySortingEnabled == false) {
         Log.TWL(0, "sorting disabled");
         return;
       }
@@ -227,6 +240,10 @@ namespace SortByTonnage {
   [HarmonyPatch(typeof(MechBayMechStorageWidget), "SetSorting")]
   public static class MechBayMechStorageWidget_SetSorting_Patch {
     static bool Prefix(MechBayMechStorageWidget __instance) {
+      if (ModSettings.isAnySortingEnabled == false) {
+        Log.TWL(0, "sorting disabled");
+        return true;
+      }
       __instance.inventory = SortStorageWidgetMechs(__instance.inventory);
       Traverse.Create(__instance).Method("ApplySort").GetValue();
       return false;

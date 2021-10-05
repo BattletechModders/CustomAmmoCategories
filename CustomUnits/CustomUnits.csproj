@@ -152,6 +152,7 @@
     <Compile Include="FakeVehicleMovement.cs" />
     <Compile Include="CustomRepresentation\GameRepresentation.cs" />
     <Compile Include="Hardpoints.cs" />
+    <Compile Include="HotDropManager.cs" />
     <Compile Include="HUDFakeVehicleArmorReadout.cs" />
     <Compile Include="HUDImprove.cs" />
     <Compile Include="LowVisibility.cs" />

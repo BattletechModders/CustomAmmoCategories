@@ -700,9 +700,9 @@ namespace CustAmmoCategories {
     }
     public void addTempTerrainVFXSync(CombatGameState combat, string prefabVFX, int counter, Vector3 scale) {
       this.Combat = combat;
-      CustomAmmoCategoriesLog.Log.LogWrite("addTempTerrainVFX(" + prefabVFX + "," + counter + ")\n");
+      Log.M.WL(0,"addTempTerrainVFX(" + prefabVFX + "," + counter + ")");
       if (tempVFXEffects == null) {
-        CustomAmmoCategoriesLog.Log.LogWrite(" tempVFXEffects is null\n");
+        Log.M.WL(1,"tempVFXEffects is null");
         return;
       }
       if (string.IsNullOrEmpty(prefabVFX) == false) {
@@ -714,6 +714,7 @@ namespace CustAmmoCategories {
           //p.Z = this.mapX;
           Vector3 pos = this.center;//Combat.MapMetaData.getWorldPos(p);
           pos.y = Combat.MapMetaData.GetLerpedHeightAt(pos);
+          Log.M.WL(1, "position:"+ pos);
           tempTerrainVFXEffect tmpEffect = new tempTerrainVFXEffect(Combat, prefabVFX, pos, scale, counter);
           tempVFXEffects.Add(prefabVFX, tmpEffect);
           DynamicMapHelper.tempEffectHexes.Add(this);

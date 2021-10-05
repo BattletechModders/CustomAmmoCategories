@@ -181,6 +181,9 @@ namespace CustomUnits {
       }
       foreach (MechDef mech in activeMechs) {
         HashSet<PilotingClassDef> unit_classes = mech.Chassis.GetPilotingClass();
+        Log.W(1, "mech:"+mech.ChassisID);
+        foreach (PilotingClassDef pcl in unit_classes) { Log.W(1,pcl.Description.Id); }
+        Log.WL(0, "");
         List<PilotDef> pilots = gatherPilotCanApplyVehicleDriving(activePilots, unit_classes);
         if (pilots.Count == 0) { continue; }
         PilotDef pilot = pilots[UnityEngine.Random.Range(0, pilots.Count)];
@@ -193,6 +196,16 @@ namespace CustomUnits {
       foreach (PilotDef pilot in rest_pilots) {
         HashSet<PilotingClassDef> pclasses = pilot.GetPilotingClass();
         pilot.fallbackPiloting();
+      }
+      activePilots.Clear();
+      activePilots.Add(simgame.Commander.pilotDef);
+      foreach (var pilot in simgame.PilotRoster) {
+        activePilots.Add(pilot.pilotDef);
+      }
+      foreach (PilotDef pilot in activePilots) {
+        Log.W(1, "pilot:" + pilot.Description.Id + "/" + pilot.Description.Callsign);
+        foreach (string tag in pilot.PilotTags) { Log.W(1, tag); }
+        Log.WL(0, "");
       }
     }
     public static List<PilotDef> gatherPilotCanApplyVehicleDriving(HashSet<PilotDef> activePilots, HashSet<PilotingClassDef> unit_classes) {

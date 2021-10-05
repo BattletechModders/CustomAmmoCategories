@@ -83,6 +83,82 @@ namespace CustomUnits {
   public class CustomHangarInfo: MonoBehaviour {
     public CustomHangarDef definition { get; set; } = null;
   }
+  public class CustomBaysPopupUICaster: MonoBehaviour {
+    private bool UIInited { get; set; } = false;
+    private RectTransform m_rectTransform = null;
+    public SimGameState SimGame { get; set; } = null;
+    public MechPlacementPopup parent { get; set; } = null;
+    public MechBayPanel BayPanel { get; set; } = null;
+    public RectTransform rectTransform { get { if (m_rectTransform != null) { return m_rectTransform; } m_rectTransform = this.transform as RectTransform; return m_rectTransform; } }
+    public void Update() {
+      if (UIInited) { return; }
+      if (SimGame == null) { return; }
+      if (parent == null) { return; }
+      if (BayPanel == null) { return; }
+      if (SimGame.mechBayPanel() == null) { return; }
+      try {
+        Transform layout_storageScroller = Traverse.Create(this.BayPanel).Field<MechBayMechStorageWidget>("storageWidget").Value.gameObject.transform.FindRecursive("layout_storageScroller");
+        Transform layout_bays = Traverse.Create(this.parent).Field<MechBayRowGroupWidget>("rowGroupWidget").Value.gameObject.transform.FindRecursive("layout_bays");
+        if ((layout_storageScroller != null) && (layout_bays != null)) {
+          GameObject layout_baysScroller = GameObject.Instantiate(layout_storageScroller.gameObject);
+          layout_baysScroller.transform.SetParent(layout_bays.parent);
+          layout_baysScroller.name = "layout_baysScroller";
+          RectTransform layout_baysScrollerTR = layout_baysScroller.transform as RectTransform;
+          RectTransform layout_baysTR = layout_bays as RectTransform;
+          layout_baysScrollerTR.sizeDelta = layout_baysTR.sizeDelta;
+          layout_baysScroller.transform.localPosition = layout_baysTR.localPosition;
+          layout_baysScroller.transform.localRotation = layout_baysTR.localRotation;
+          layout_baysScroller.transform.localScale = layout_baysTR.localScale;
+          layout_baysScrollerTR.pivot = layout_baysTR.pivot;
+          GridLayoutGroup grid = layout_baysScroller.GetComponentInChildren<GridLayoutGroup>();
+          GameObject gridGO = grid.gameObject;
+          GameObject.DestroyImmediate(grid);
+          VerticalLayoutGroup old_vertical = layout_bays.GetComponent<VerticalLayoutGroup>();
+          VerticalLayoutGroup vertical = gridGO.AddComponent<VerticalLayoutGroup>();
+          vertical.childAlignment = old_vertical.childAlignment;
+          vertical.childControlHeight = old_vertical.childControlHeight;
+          vertical.childControlWidth = old_vertical.childControlWidth;
+          vertical.childForceExpandHeight = old_vertical.childForceExpandHeight;
+          vertical.childForceExpandWidth = old_vertical.childForceExpandWidth;
+          vertical.spacing = old_vertical.spacing;
+          vertical.padding = old_vertical.padding;
+          HashSet<Transform> childs = new HashSet<Transform>();
+          List<MechBayRowWidget> rows = new List<MechBayRowWidget>(Traverse.Create(this.parent).Field<MechBayRowGroupWidget>("rowGroupWidget").Value.Bays);
+          Transform rowsParent = rows[0].gameObject.transform.parent;
+          Log.TWL(0, "CustomBaysPopupUICaster.Spawn rowsParent:"+ rowsParent.name);
+          for (int t = 0; t < rows[0].gameObject.transform.parent.childCount; ++t) {
+            Transform child = rows[0].gameObject.transform.parent.GetChild(t); childs.Add(child);
+            Log.WL(1, child.name);
+          }
+          foreach (Transform child in childs) {
+            child.SetParent(gridGO.transform);
+            Log.WL(1, child.name+".parent => "+ child.parent.transform.name);
+          }
+          layout_bays.gameObject.SetActive(false);
+          //foreach (MechBayRowWidget row in Traverse.Create(this.parent).Field<MechBayRowGroupWidget>("rowGroupWidget").Value.Bays) {
+           //row.transform.SetParent(gridGO.transform);
+          //}
+          ScrollRect scroll = layout_baysScroller.GetComponent<ScrollRect>();
+          scroll.verticalScrollbar.gameObject.transform.localPosition = new Vector3(layout_baysScrollerTR.sizeDelta.x, 0f - (layout_baysScrollerTR.sizeDelta.y/2f), 0f);
+          int baysCount = Core.Settings.baysWidgetsCount > rows.Count ? Core.Settings.baysWidgetsCount : rows.Count;
+          for (int t = rows.Count; t < baysCount; ++t) {
+            GameObject bayRowGO = GameObject.Instantiate(rows[0].gameObject);
+            bayRowGO.transform.SetParent(rows[0].gameObject.transform.parent);
+            bayRowGO.transform.localPosition = rows[0].gameObject.transform.localPosition;
+            bayRowGO.transform.localScale = rows[0].gameObject.transform.localScale;
+            bayRowGO.transform.localRotation = rows[0].gameObject.transform.localRotation;
+            bayRowGO.transform.SetSiblingIndex(t);
+            rows.Add(bayRowGO.GetComponent<MechBayRowWidget>());
+          }
+          Traverse.Create(Traverse.Create(this.parent).Field<MechBayRowGroupWidget>("rowGroupWidget").Value).Field<MechBayRowWidget[]>("bays").Value = rows.ToArray();
+          Traverse.Create(this.parent).Field<MechBayRowGroupWidget>("rowGroupWidget").Value.SetData(this.parent, this.SimGame);
+        }
+        UIInited = true;
+      }catch(Exception e) {
+        Log.TWL(0,e.ToString(),true);
+      }
+    }
+  }
   public class CustomBaysUICaster: MonoBehaviour {
     private bool UIInited { get; set; } = false;
     private bool UIAligned { get; set; } = false;
@@ -218,9 +294,12 @@ namespace CustomUnits {
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { typeof(SimGameState) })]
   public static class MechBayPanel_Init {
+    private static MechBayPanel f_mechBayPanel = null;
+    public static MechBayPanel mechBayPanel(this SimGameState sim) { return f_mechBayPanel; }
     public static void Prefix(MechBayPanel __instance, SimGameState sim) {
       try {
         Log.TWL(0, "MechBayPanel.Init");
+        f_mechBayPanel = __instance;
         Transform layout_tabs = __instance.gameObject.transform.FindRecursive("layout_tabs");
         if (layout_tabs != null) {
           CustomBaysUICaster caster = layout_tabs.gameObject.GetComponent<CustomBaysUICaster>();
