@@ -412,7 +412,7 @@ namespace CustAmmoCategories {
       }
     }*/
     public static float StrayRange(this Weapon weapon) {
-      return weapon.exDef().SpreadRange + weapon.ammo().SpreadRange + weapon.mode().SpreadRange;
+      return (weapon.exDef().SpreadRangeStat(weapon) + weapon.ammo().SpreadRange + weapon.mode().SpreadRange) * weapon.exDef().SpreadRangeMod(weapon);
     }
     public static bool AOECapable(this Weapon weapon) {
       ExtAmmunitionDef ammo = weapon.ammo();

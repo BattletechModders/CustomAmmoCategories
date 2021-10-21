@@ -15,10 +15,7 @@ using UnityEngine;
 namespace CustAmmoCategories {
   [System.AttributeUsage(System.AttributeTargets.Property)]
   public class StatCollectionFloatAttribute : System.Attribute {
-    public float defaultValue;
-    public StatCollectionFloatAttribute(float defVal) {
-      this.defaultValue = defVal;
-    }
+    public StatCollectionFloatAttribute() {}
   }
   public class DeferredEffectDef {
     public string id { get; set; }
@@ -50,6 +47,7 @@ namespace CustAmmoCategories {
     public bool sticky { get; set; }
     public float MinMissRadius { get; set; }
     public float MaxMissRadius { get; set; }
+    public List<string> callMethod { get; set; }
     public DeferredEffectDef() {
       id = "id";
       rounds = 0;
@@ -59,6 +57,7 @@ namespace CustAmmoCategories {
       VFXtime = 10f;
       damageApplyTime = 5f;
       statusEffects = new List<EffectData>();
+      callMethod = new List<string>();
       AOERange = 0f;
       AOEDamage = 0f;
       AOEHeatDamage = 0f;
@@ -352,11 +351,12 @@ namespace CustAmmoCategories {
       return wp.ColorChangeRule;
     }
   }
+  [SelfDocumentedClass("Weapons","Weapons", "WeaponDef")]
   public class ExtWeaponDef {
     public static readonly string StatisticAttributePrefix = "CAC_";
     public static readonly string StatisticModifierSuffix = "_Mod";
-    public static void RemoveTag(ref JObject json,string tag) {
-      Log.LogWrite("ExtWeaponDef.RemoveTag("+tag+")\n");
+    public static void RemoveTag(ref JObject json, string tag) {
+      Log.LogWrite("ExtWeaponDef.RemoveTag(" + tag + ")\n");
       if (json["ComponentTags"] == null) {
         Log.LogWrite(" no ComponentTags section\n");
         return;
@@ -374,235 +374,144 @@ namespace CustAmmoCategories {
         Log.LogWrite(" no items not converted array\n");
         return;
       }
-      for(int t = 0; t < items.Count;) {
-        Log.LogWrite(" tag:"+ items[t] + "\n");
-        if (((string)items[t]) != tag) { ++t; } else {items.RemoveAt(t); Log.LogWrite("  removed\n");};
+      for (int t = 0; t < items.Count;) {
+        Log.LogWrite(" tag:" + items[t] + "\n");
+        if (((string)items[t]) != tag) { ++t; } else { items.RemoveAt(t); Log.LogWrite("  removed\n"); };
       }
     }
-    public string Id { get; set; }
-    public HitGeneratorType HitGenerator { get; set; }
-    public bool Streak { get; set; }
-    public float DirectFireModifier { get; set; }
-    public string baseModeId { get; set; }
-    public float FlatJammingChance { get; set; }
-    public float AMSHitChance { get; set; }
-    public float GunneryJammingBase { get; set; }
-    public float GunneryJammingMult { get; set; }
-    public TripleBoolean DamageOnJamming { get; set; }
-    public TripleBoolean DestroyOnJamming { get; set; }
-    public TripleBoolean AMSImmune { get; set; }
-    public bool AlternateDamageCalc { get; set; }
-    public bool AlternateHeatDamageCalc { get; set; }
-    public bool AlternateInstabilityCalc { get; set; }
-    public bool AlternateAPDamageCalc { get; set; }
-    public TripleBoolean IsAMS { get; set; }
-    public TripleBoolean IsAAMS { get; set; }
-    public TripleBoolean AMSShootsEveryAttack { get; set; }
-    public float SpreadRange { get; set; }
-    public TripleBoolean NotUseInMelee { get; set; }
-    public Dictionary<string, WeaponMode> Modes { get; set; }
-    public CustomAmmoCategory AmmoCategory { get; set; }
-    public TripleBoolean DisableClustering { get; set; }
-    public TripleBoolean AOECapable { get; set; }
-    public float AOERange { get; set; }
-    public float AOEDamage { get; set; }
-    public float AOEHeatDamage { get; set; }
-    public float AOEInstability { get; set; }
-    public string IFFDef { get; set; }
-    //public string ShrapnelWeaponEffectID { get; set; }
-    public TripleBoolean HasShells { get; set; }
-    public float ShellsRadius { get; set; }
-    public float MinShellsDistance { get; set; }
-    public float MaxShellsDistance { get; set; }
-    public TripleBoolean Unguided { get; set; }
-    public TripleBoolean AOEEffectsFalloff { get; set; }
-    public float ArmorDamageModifier { get; set; }
-    public float ISDamageModifier { get; set; }
-    //public TripleBoolean AOECapable { get; set; }
-    public float FireTerrainChance { get; set; }
-    public int FireDurationWithoutForest { get; set; }
-    public int FireTerrainStrength { get; set; }
-    public int FireTerrainCellRadius { get; set; }
-    public string AdditionalImpactVFX { get; set; }
-    public TripleBoolean FireOnSuccessHit { get; set; }
-    public float AdditionalImpactVFXScaleX { get; set; }
-    public float AdditionalImpactVFXScaleY { get; set; }
-    public float AdditionalImpactVFXScaleZ { get; set; }
-    public int ClearMineFieldRadius { get; set; }
-    public int Cooldown { get; set; }
-    public bool ImprovedBallistic { get; set; }
-    public TripleBoolean BallisticDamagePerPallet { get; set; }
-    public TripleBoolean StatusEffectsPerHit { get; set; }
-    public string AdditionalAudioEffect { get; set; }
-    public float FireDelayMultiplier { get; set; }
-    public float MissileFiringIntervalMultiplier { get; set; }
-    public float MissileVolleyIntervalMultiplier { get; set; }
-    public float ProjectileSpeedMultiplier { get; set; }
-    public TripleBoolean CantHitUnaffecedByPathing { get; set; }
-    public int MissileVolleySize { get; set; }
-    public CustomVector ProjectileScale { get; set; }
-    //public CustomVector MissileExplosionScale { get; set; }
-    public List<ColorTableJsonEntry> ColorsTable { get; set; }
-    public float ColorSpeedChange { get; set; }
-    public ColorChangeRule ColorChangeRule { get; set; }
-    public float APCriticalChanceMultiplier { get; set; }
-    public float APArmorShardsMod { get; set; }
-    public float APMaxArmorThickness { get; set; }
-    public TripleBoolean DamageNotDivided { get; set; }
-    public TripleBoolean isHeatVariation { get; set; }
-    public TripleBoolean isStabilityVariation { get; set; }
-    public TripleBoolean isDamageVariation { get; set; }
-    public float DistantVariance { get; set; }
-    public TripleBoolean DistantVarianceReversed { get; set; }
-    public float PrefireAnimationSpeedMod { get; set; }
-    public float FireAnimationSpeedMod { get; set; }
-    public TripleBoolean AlwaysIndirectVisuals { get; set; }
-    public float ForbiddenRange { get; set; }
-    public EvasivePipsMods evasivePipsMods { get; set; }
-    public float ShotsPerAmmo { get; set; }
-    public DeferredEffectDef deferredEffect { get; set; }
-    public Dictionary<string, int> InternalAmmo { get; set; }
-    public List<ChassisLocations> blockWeaponsInMechLocations { get; set; }
-    public bool blockWeaponsInInstalledLocation { get; set; }
-    public bool CanBeBlocked { get; set; }
-    public bool EjectWeapon { get; set; }
+    public string Id { get; set; } = string.Empty;
+    public HitGeneratorType HitGenerator { get; set; } = HitGeneratorType.NotSet;
+    public bool Streak { get; set; } = false;
+    [StatCollectionFloat]
+    public float DirectFireModifier { get; set; } = 0f;
+    public float DirectFireModifierStat(Weapon weapon) { return weapon.GetStatisticFloat(nameof(DirectFireModifier)); }
+    public float DirectFireModifierMod(Weapon weapon) { return weapon.GetStatisticMod(nameof(DirectFireModifier)); }
+    [JsonIgnore, SkipDocumentation]
+    public string baseModeId { get; set; } = WeaponMode.BASE_MODE_NAME;
+    public float FlatJammingChance { get; set; } = 0f;
+    public float AMSHitChance { get; set; } = 0f;
+    public float GunneryJammingBase { get; set; } = 0f;
+    public float GunneryJammingMult { get; set; } = 0f;
+    public TripleBoolean DamageOnJamming { get; set; } = TripleBoolean.NotSet;
+    public TripleBoolean DestroyOnJamming { get; set; } = TripleBoolean.NotSet;
+    public TripleBoolean AMSImmune { get; set; } = TripleBoolean.NotSet;
+    public bool AlternateDamageCalc { get; set; } = false;
+    public bool AlternateHeatDamageCalc { get; set; } = false;
+    public bool AlternateInstabilityCalc { get; set; } = false;
+    public bool AlternateAPDamageCalc { get; set; } = false;
+    public TripleBoolean IsAMS { get; set; } = TripleBoolean.NotSet;
+    public TripleBoolean IsAAMS { get; set; } = TripleBoolean.NotSet;
+    public TripleBoolean AMSShootsEveryAttack { get; set; } = TripleBoolean.NotSet;
+    [StatCollectionFloat]
+    public float SpreadRange { get; set; } = 0f;
+    public float SpreadRangeStat(Weapon weapon) { return weapon.GetStatisticFloat(nameof(SpreadRange)); }
+    public float SpreadRangeMod(Weapon weapon) { return weapon.GetStatisticMod(nameof(SpreadRange)); }
+    public TripleBoolean NotUseInMelee { get; set; } = TripleBoolean.NotSet;
+    [SelfDocumentationTypeName("dictionary of string => WeaponMode"), SelfDocumentationDefaultValue("empty")]
+    public Dictionary<string, WeaponMode> Modes { get; set; } = new Dictionary<string, WeaponMode>();
+    [JsonIgnore, SelfDocumentationTypeName("string, id from BattleTech.AmmoCategoryEnumeration or CustomAmmo"), SelfDocumentationDefaultValue("NotSet")]
+    public CustomAmmoCategory AmmoCategory { get; set; } = new CustomAmmoCategory();
+    public TripleBoolean DisableClustering { get; set; } = TripleBoolean.NotSet;
+    public TripleBoolean AOECapable { get; set; } = TripleBoolean.NotSet;
+    public float AOERange { get; set; } = 0f;
+    public float AOEDamage { get; set; } = 0f;
+    public float AOEHeatDamage { get; set; } = 0f;
+    public float AOEInstability { get; set; } = 0f;
+    public string IFFDef { get; set; } = string.Empty;
+    public TripleBoolean HasShells { get; set; } = TripleBoolean.NotSet;
+    public float ShellsRadius { get; set; } = 0f;
+    public float MinShellsDistance { get; set; } = 30f;
+    public float MaxShellsDistance { get; set; } = 30f;
+    public TripleBoolean Unguided { get; set; } = TripleBoolean.NotSet;
+    public TripleBoolean AOEEffectsFalloff { get; set; } = TripleBoolean.NotSet;
+    public float ArmorDamageModifier { get; set; } = 1f;
+    public float ISDamageModifier { get; set; } = 1f;
+    public float FireTerrainChance { get; set; } = 0f;
+    public int FireDurationWithoutForest { get; set; } = 0;
+    public int FireTerrainStrength { get; set; } = 0;
+    public int FireTerrainCellRadius { get; set; } = 0;
+    public string AdditionalImpactVFX { get; set; } = string.Empty;
+    public TripleBoolean FireOnSuccessHit { get; set; } = TripleBoolean.NotSet;
+    public float AdditionalImpactVFXScaleX { get; set; } = 1f;
+    public float AdditionalImpactVFXScaleY { get; set; } = 1f;
+    public float AdditionalImpactVFXScaleZ { get; set; } = 1f;
+    public int ClearMineFieldRadius { get; set; } = 0;
+    public int Cooldown { get; set; } = 0;
+    [SelfDocumentationDefaultValue("ImprovedBallisticByDefault value from settings")]
+    public bool ImprovedBallistic { get; set; } = CustomAmmoCategories.Settings.ImprovedBallisticByDefault;
+    public TripleBoolean BallisticDamagePerPallet { get; set; } = TripleBoolean.NotSet;
+    public TripleBoolean StatusEffectsPerHit { get; set; } = TripleBoolean.NotSet;
+    public string AdditionalAudioEffect { get; set; } = string.Empty;
+    public float FireDelayMultiplier { get; set; } = 10f;
+    public float MissileFiringIntervalMultiplier { get; set; } = 1f;
+    public float MissileVolleyIntervalMultiplier { get; set; } = 1f;
+    public float ProjectileSpeedMultiplier { get; set; } = 1f;
+    public TripleBoolean CantHitUnaffecedByPathing { get; set; } = TripleBoolean.NotSet;
+    public int MissileVolleySize { get; set; } = 0;
+    [SelfDocumentationDefaultValue("{ \"x\": 1.0,\"y\":1.0, \"z\":1.0 }"), SelfDocumentationTypeName("Vector")]
+    public CustomVector ProjectileScale { get; set; } = new CustomVector(true);
+    [SelfDocumentationDefaultValue("empty"), SelfDocumentationTypeName("array of { \"I\": <float intensivity>, \"C\":\"<html color string>\"}")]
+    public List<ColorTableJsonEntry> ColorsTable { get; set; } = new List<ColorTableJsonEntry>();
+    public float ColorSpeedChange { get; set; } = 0f;
+    public ColorChangeRule ColorChangeRule { get; set; } = ColorChangeRule.None;
+    [SelfDocumentationDefaultValue("undefined")]
+    public float APCriticalChanceMultiplier { get; set; } = float.NaN;
+    public float APArmorShardsMod { get; set; } = 0f;
+    public float APMaxArmorThickness { get; set; } = 0f;
+    public TripleBoolean DamageNotDivided { get; set; } = TripleBoolean.NotSet;
+    public TripleBoolean isHeatVariation { get; set; } = TripleBoolean.NotSet;
+    public TripleBoolean isStabilityVariation { get; set; } = TripleBoolean.NotSet;
+    public TripleBoolean isDamageVariation { get; set; } = TripleBoolean.NotSet;
+    public float DistantVariance { get; set; } = 0f;
+    public TripleBoolean DistantVarianceReversed { get; set; } = TripleBoolean.NotSet;
+    public float PrefireAnimationSpeedMod { get; set; } = 1f;
+    public float FireAnimationSpeedMod { get; set; } = 1f;
+    public TripleBoolean AlwaysIndirectVisuals { get; set; } = TripleBoolean.NotSet;
+    public float ForbiddenRange { get; set; } = 0f;
+    [SelfDocumentationDefaultValue("empty"), SelfDocumentationTypeName("EvasivePipsMods structure")]
+    public EvasivePipsMods evasivePipsMods { get; set; } = new EvasivePipsMods();
+    public float ShotsPerAmmo { get; set; } = 1f;
+    [SelfDocumentationDefaultValue("empty"), SelfDocumentationTypeName("DeferredEffectDef structure")]
+    public DeferredEffectDef deferredEffect { get; set; } = new DeferredEffectDef();
+    [SelfDocumentationDefaultValue("empty"), SelfDocumentationTypeName("Dictionary of {\"<ammo id>\":<integer internal ammo amount>}")]
+    public Dictionary<string, int> InternalAmmo { get; set; } = new Dictionary<string, int>();
+    [SelfDocumentationDefaultValue("empty"), SelfDocumentationTypeName("List of mech chassis locations")]
+    public List<ChassisLocations> blockWeaponsInMechLocations { get; set; } = new List<ChassisLocations>();
+    public bool blockWeaponsInInstalledLocation { get; set; } = false;
+    public bool CanBeBlocked { get; set; } = true;
+    public bool EjectWeapon { get; set; } = false;
+    [JsonIgnore, SkipDocumentation]
     public bool isHaveInternalAmmo { get {
         foreach (var ia in InternalAmmo) { if (ia.Value > 0) { return true; }; }
         return false;
     } }
-    public string preFireSFX { get; set; }
-    [StatCollectionFloat(0f)]
-    public float MinMissRadius { get; set; }
-    [StatCollectionFloat(0f)]
-    public float MaxMissRadius { get; set; }
-    public Dictionary<string, float> TagsAccuracyModifiers { get; set; }
-    [StatCollectionFloat(0f)]
-    public float AMSDamage { get; set; }
-    [StatCollectionFloat(0f)]
-    public float MissileHealth { get; set; }
-    public DamageFalloffType RangedDmgFalloffType { get; set; }
-    public DamageFalloffType AoEDmgFalloffType { get; set; }
-    public float DamageFalloffStartDistance { get; set; }
-    public float DamageFalloffEndDistance { get; set; }
-    public float BuildingsDamageModifier { get; set; }
-    public float TurretDamageModifier { get; set; }
-    public float VehicleDamageModifier { get; set; }
-    public float VTOLDamageModifier { get; set; }
-    public float MechDamageModifier { get; set; }
-    public float QuadDamageModifier { get; set; }
-    public float TrooperSquadDamageModifier { get; set; }
-    public float AirMechDamageModifier { get; set; }
-    public TripleBoolean TargetMechLegsOnly { get; set; }
-    public ExtWeaponDef() {
-      Id = string.Empty;
-      Streak = false;
-      HitGenerator = HitGeneratorType.NotSet;
-      DirectFireModifier = 0;
-      FlatJammingChance = 0;
-      GunneryJammingBase = 0;
-      GunneryJammingMult = 0;
-      AMSHitChance = 0f;
-      SpreadRange = 0f;
-      AlternateDamageCalc = false;
-      AMSImmune = TripleBoolean.NotSet;
-      //AOECapable = TripleBoolean.NotSet;
-      IsAMS = TripleBoolean.NotSet;
-      IsAAMS = TripleBoolean.NotSet;
-      AlternateHeatDamageCalc = false;
-      AlternateInstabilityCalc = false;
-      AlternateAPDamageCalc = false;
-      AMSShootsEveryAttack = TripleBoolean.NotSet;
-      baseModeId = WeaponMode.NONE_MODE_NAME;
-      DisableClustering = TripleBoolean.True;
-      NotUseInMelee = TripleBoolean.NotSet;
-      DamageOnJamming = TripleBoolean.NotSet;
-      DestroyOnJamming = TripleBoolean.NotSet;
-      AmmoCategory = new CustomAmmoCategory();
-      AOECapable = TripleBoolean.NotSet;
-      AOERange = 0f;
-      AOEDamage = 0f;
-      AOEInstability = 0f;
-      AOEHeatDamage = 0f;
-      IFFDef = "";
-      //ShrapnelWeaponEffectID = "";
-      HasShells = TripleBoolean.NotSet;
-      ShellsRadius = 0f;
-      MinShellsDistance = 30f;
-      MaxShellsDistance = 30f;
-      Unguided = TripleBoolean.NotSet;
-      Modes = new Dictionary<string, WeaponMode>();
-      ArmorDamageModifier = 1f;
-      ISDamageModifier = 1f;
-      FireTerrainChance = 0f;
-      FireDurationWithoutForest = 0;
-      FireTerrainStrength = 0;
-      FireOnSuccessHit = TripleBoolean.NotSet;
-      FireTerrainCellRadius = 0;
-      AdditionalImpactVFXScaleX = 1f;
-      AdditionalImpactVFXScaleY = 1f;
-      AdditionalImpactVFXScaleZ = 1f;
-      AdditionalImpactVFX = string.Empty;
-      ClearMineFieldRadius = 0;
-      Cooldown = 0;
-      ImprovedBallistic = CustomAmmoCategories.Settings.ImprovedBallisticByDefault;
-      BallisticDamagePerPallet = TripleBoolean.NotSet;
-      StatusEffectsPerHit = TripleBoolean.NotSet;
-      AdditionalAudioEffect = string.Empty;
-      MissileFiringIntervalMultiplier = 1f;
-      MissileVolleyIntervalMultiplier = 1f;
-      ProjectileSpeedMultiplier = 1f;
-      FireDelayMultiplier = 10f;
-      CantHitUnaffecedByPathing = TripleBoolean.NotSet;
-      MissileVolleySize = 0;
-      ProjectileScale = new CustomVector(true);
-      //MissileExplosionScale = new CustomVector(true);
-      ColorsTable = new List<ColorTableJsonEntry>();
-      ColorSpeedChange = 0f;
-      ColorChangeRule = ColorChangeRule.None;
-      APCriticalChanceMultiplier = float.NaN;
-      APArmorShardsMod = 0f;
-      APMaxArmorThickness = 0f;
-      DamageNotDivided = TripleBoolean.NotSet;
-      isHeatVariation = TripleBoolean.NotSet;
-      isDamageVariation = TripleBoolean.True;
-      isStabilityVariation = TripleBoolean.NotSet;
-      DistantVariance = 0f;
-      DistantVarianceReversed = TripleBoolean.NotSet;
-      AOEEffectsFalloff = TripleBoolean.NotSet;
-      PrefireAnimationSpeedMod = 1f;
-      FireAnimationSpeedMod = 1f;
-      AlwaysIndirectVisuals = TripleBoolean.NotSet;
-      ForbiddenRange = 0f;
-      evasivePipsMods = new EvasivePipsMods();
-      ShotsPerAmmo = 1f;
-      deferredEffect = new DeferredEffectDef();
-      InternalAmmo = new Dictionary<string, int>();
-      preFireSFX = null;
-      CanBeBlocked = true;
-      EjectWeapon = false;
-      blockWeaponsInMechLocations = new List<ChassisLocations>();
-      blockWeaponsInInstalledLocation = false;
-      MinMissRadius = 0f;
-      MaxMissRadius = 0f;
-      TagsAccuracyModifiers = new Dictionary<string, float>();
-      AMSImmune = TripleBoolean.NotSet;
-      AMSDamage = 1f;
-      MissileHealth = 1f;
-      RangedDmgFalloffType = DamageFalloffType.NotSet;
-      AoEDmgFalloffType = DamageFalloffType.NotSet;
-      DamageFalloffStartDistance = 0f;
-      DamageFalloffEndDistance = 0f;
-      TargetMechLegsOnly = TripleBoolean.NotSet;
-      BuildingsDamageModifier = 1f;
-      TurretDamageModifier = 1f;
-      VehicleDamageModifier = 1f;
-      MechDamageModifier = 1f;
-      QuadDamageModifier = 1f;
-      TrooperSquadDamageModifier = 1f;
-      AirMechDamageModifier = 1f;
-      VTOLDamageModifier = 1f;
+    public string preFireSFX { get; set; } = string.Empty;
+    [StatCollectionFloat()]
+    public float MinMissRadius { get; set; } = 0f;
+    [StatCollectionFloat()]
+    public float MaxMissRadius { get; set; } = 0f;
+    [SelfDocumentationDefaultValue("empty"), SelfDocumentationTypeName("Dictionary of {\"<tag name>\":<float modifier>}")]
+    public Dictionary<string, float> TagsAccuracyModifiers { get; set; } = new Dictionary<string, float>();
+    [StatCollectionFloat]
+    public float AMSDamage { get; set; } = 0f;
+    [StatCollectionFloat]
+    public float MissileHealth { get; set; } = 1f;
+    [SelfDocumentationDefaultValue("Linear")]
+    public DamageFalloffType RangedDmgFalloffType { get; set; } = DamageFalloffType.NotSet;
+    public DamageFalloffType AoEDmgFalloffType { get; set; } = DamageFalloffType.NotSet;
+    public float DamageFalloffStartDistance { get; set; } = 0f;
+    public float DamageFalloffEndDistance { get; set; } = 0f;
+    public float BuildingsDamageModifier { get; set; } = 1f;
+    public float TurretDamageModifier { get; set; } = 1f;
+    public float VehicleDamageModifier { get; set; } = 1f;
+    public float VTOLDamageModifier { get; set; } = 1f;
+    public float MechDamageModifier { get; set; } = 1f;
+    public float QuadDamageModifier { get; set; } = 1f;
+    public float TrooperSquadDamageModifier { get; set; } = 1f;
+    public float AirMechDamageModifier { get; set; } = 1f;
+    public TripleBoolean TargetMechLegsOnly { get; set; } = TripleBoolean.NotSet;
+    public ExtWeaponDef() { }
   }
-}
 }
 
 namespace CustomAmmoCategoriesPatches {
@@ -634,7 +543,6 @@ namespace CustomAmmoCategoriesPatches {
         string AmmoCategory = "NotSet";
         if ((defTemp["AmmoCategory"] != null)&&(defTemp["ammoCategoryID"] == null)) {
           AmmoCategory = (string)defTemp["AmmoCategory"];
-          //defTemp["ammoCategoryID"] = AmmoCategory;
         } else {
           AmmoCategory = (string)defTemp["ammoCategoryID"];
         }
@@ -677,199 +585,14 @@ namespace CustomAmmoCategoriesPatches {
           }
           defTemp.Remove("HitGenerator");
         }
-        //if (defTemp["FlatJammingChance"] != null) {
-        //  extDef.FlatJammingChance = (float)defTemp["FlatJammingChance"];
-        //  defTemp.Remove("FlatJammingChance");
-        //}
-        //if (defTemp["FireTerrainChance"] != null) {
-        //  extDef.FireTerrainChance = (float)defTemp["FireTerrainChance"];
-        //  defTemp.Remove("FireTerrainChance");
-        //}
-        //if (defTemp["FireDurationWithoutForest"] != null) {
-        //  extDef.FireDurationWithoutForest = (int)defTemp["FireDurationWithoutForest"];
-        //  defTemp.Remove("FireDurationWithoutForest");
-        //}
-        //if (defTemp["FireTerrainStrength"] != null) {
-        //  extDef.FireTerrainStrength = (int)defTemp["FireTerrainStrength"];
-        //  defTemp.Remove("FireTerrainStrength");
-        //}
-        //if (defTemp["FireOnSuccessHit"] != null) {
-        //  extDef.FireOnSuccessHit = ((bool)defTemp["FireOnSuccessHit"] == true) ? TripleBoolean.True : TripleBoolean.False;
-        //  defTemp.Remove("FireOnSuccessHit");
-        //}
-        //if (defTemp["DistantVarianceReversed"] != null) {
-        //  extDef.DistantVarianceReversed = ((bool)defTemp["DistantVarianceReversed"] == true) ? TripleBoolean.True : TripleBoolean.False;
-        //  defTemp.Remove("DistantVarianceReversed");
-        //}
-        //if (defTemp["AlwaysIndirectVisuals"] != null) {
-        //  extDef.AlwaysIndirectVisuals = ((bool)defTemp["AlwaysIndirectVisuals"] == true) ? TripleBoolean.True : TripleBoolean.False;
-        //  defTemp.Remove("AlwaysIndirectVisuals");
-        //}
-        //if (defTemp["GunneryJammingBase"] != null) {
-        //  extDef.GunneryJammingBase = (float)defTemp["GunneryJammingBase"];
-        //  defTemp.Remove("GunneryJammingBase");
-        //}
-        //if (defTemp["ForbiddenRange"] != null) {
-        //  extDef.ForbiddenRange = (float)defTemp["ForbiddenRange"];
-        //  defTemp.Remove("ForbiddenRange");
-        //}
-        //if (defTemp["FireDelayMultiplier"] != null) {
-        //  extDef.FireDelayMultiplier = (float)defTemp["FireDelayMultiplier"];
-        //  defTemp.Remove("FireDelayMultiplier");
-        //}
-        //if (defTemp["MissileFiringIntervalMultiplier"] != null) {
-        //  extDef.MissileFiringIntervalMultiplier = (float)defTemp["MissileFiringIntervalMultiplier"];
-        //  defTemp.Remove("MissileFiringIntervalMultiplier");
-        //}
-        //if (defTemp["MissileVolleyIntervalMultiplier"] != null) {
-        //  extDef.MissileVolleyIntervalMultiplier = (float)defTemp["MissileVolleyIntervalMultiplier"];
-        //  defTemp.Remove("MissileVolleyIntervalMultiplier");
-        //}
-        //if (defTemp["ProjectileSpeedMultiplier"] != null) {
-        //  extDef.ProjectileSpeedMultiplier = (float)defTemp["ProjectileSpeedMultiplier"];
-        //  defTemp.Remove("ProjectileSpeedMultiplier");
-        //}
-        //if (defTemp["MaxMissRadius"] != null) {
-        //  extDef.MaxMissRadius = (float)defTemp["MaxMissRadius"];
-        //  defTemp.Remove("MaxMissRadius");
-        //}
-        //if (defTemp["MinMissRadius"] != null) {
-        //  extDef.MinMissRadius = (float)defTemp["MinMissRadius"];
-        //  defTemp.Remove("MinMissRadius");
-        //}
-        //if (defTemp["GunneryJammingMult"] != null) {
-        //  extDef.GunneryJammingMult = (float)defTemp["GunneryJammingMult"];
-        //  defTemp.Remove("GunneryJammingMult");
-        //}
-        //if (defTemp["DirectFireModifier"] != null) {
-        //  extDef.DirectFireModifier = (float)defTemp["DirectFireModifier"];
-        //  defTemp.Remove("DirectFireModifier");
-        //}
-        //if (defTemp["SpreadRange"] != null) {
-        //  extDef.SpreadRange = (float)defTemp["SpreadRange"];
-        //  defTemp.Remove("SpreadRange");
-        //}
-        //if (defTemp["ShotsPerAmmo"] != null) {
-        //  extDef.ShotsPerAmmo = (float)defTemp["ShotsPerAmmo"];
-        //  defTemp.Remove("ShotsPerAmmo");
-        //}
-        //if (defTemp["ArmorDamageModifier"] != null) {
-        //  extDef.ArmorDamageModifier = (float)defTemp["ArmorDamageModifier"];
-        //  defTemp.Remove("ArmorDamageModifier");
-        //}
-        //if (defTemp["ISDamageModifier"] != null) {
-        //  extDef.ISDamageModifier = (float)defTemp["ISDamageModifier"];
-        //  defTemp.Remove("ISDamageModifier");
-        //}
-        //if (defTemp["AlternateDamageCalc"] != null) {
-        //  extDef.AlternateDamageCalc = (bool)defTemp["AlternateDamageCalc"];
-        //  defTemp.Remove("AlternateDamageCalc");
-        //}
-        //if (defTemp["MissileVolleySize"] != null) {
-        //  extDef.MissileVolleySize = (int)defTemp["MissileVolleySize"];
-        //  defTemp.Remove("MissileVolleySize");
-        //}
-        //if (defTemp["AMSShootsEveryAttack"] != null) {
-        //  extDef.AMSShootsEveryAttack = (bool)defTemp["AMSShootsEveryAttack"];
-        //  defTemp.Remove("AMSShootsEveryAttack");
-        //}
-        //if (defTemp["StructureDamage"] != null) {
-        //  extDef.APDamage = (float)defTemp["StructureDamage"];
-        //}
-        //if (defTemp["evasivePipsMods"] != null) {
-        //  extDef.evasivePipsMods = defTemp["evasivePipsMods"].ToObject<EvasivePipsMods>();
-        //  defTemp.Remove("evasivePipsMods");
-        //}
         if (defTemp["APDamage"] != null) {
           defTemp["StructureDamage"] = (float)defTemp["APDamage"];
           defTemp.Remove("APDamage");
         }
-        //if (defTemp["APCriticalChanceMultiplier"] != null) {
-        //  extDef.APCriticalChanceMultiplier = (float)defTemp["APCriticalChanceMultiplier"];
-        //  defTemp.Remove("APCriticalChanceMultiplier");
-        //}
-        //if (defTemp["APArmorShardsMod"] != null) {
-        //  extDef.APArmorShardsMod = (float)defTemp["APArmorShardsMod"];
-        //  defTemp.Remove("APArmorShardsMod");
-        //}
-        //if (defTemp["APMaxArmorThickness"] != null) {
-        //  extDef.APMaxArmorThickness = (float)defTemp["APMaxArmorThickness"];
-        //  defTemp.Remove("APMaxArmorThickness");
-        //}
-        //if (defTemp["AdditionalImpactVFXScaleX"] != null) {
-        //  extDef.AdditionalImpactVFXScaleX = (float)defTemp["AdditionalImpactVFXScaleX"];
-        //  defTemp.Remove("AdditionalImpactVFXScaleX");
-        //}
-        //if (defTemp["AdditionalImpactVFXScaleY"] != null) {
-        //  extDef.AdditionalImpactVFXScaleY = (float)defTemp["AdditionalImpactVFXScaleY"];
-        //  defTemp.Remove("AdditionalImpactVFXScaleY");
-        //}
-        //if (defTemp["ProjectileScale"] != null) {
-        //  extDef.ProjectileScale = defTemp["ProjectileScale"].ToObject<CustomVector>();
-        //  defTemp.Remove("ProjectileScale");
-        //}
-        //if (defTemp["DamageNotDivided"] != null) {
-        //  extDef.DamageNotDivided = ((bool)defTemp["DamageNotDivided"] == true) ? TripleBoolean.True : TripleBoolean.False;
-        //  defTemp.Remove("DamageNotDivided");
-        //}
-        //if (defTemp["AOEEffectsFalloff"] != null) {
-        //  extDef.AOEEffectsFalloff = ((bool)defTemp["AOEEffectsFalloff"] == true) ? TripleBoolean.True : TripleBoolean.False;
-        //  defTemp.Remove("AOEEffectsFalloff");
-        //}
-        //if (defTemp["isDamageVariation"] != null) {
-        //  extDef.isDamageVariation = ((bool)defTemp["isDamageVariation"] == true) ? TripleBoolean.True : TripleBoolean.False;
-        //  defTemp.Remove("isDamageVariation");
-        //}
-        //if (defTemp["isHeatVariation"] != null) {
-        //  extDef.isHeatVariation = ((bool)defTemp["isHeatVariation"] == true) ? TripleBoolean.True : TripleBoolean.False;
-        //  defTemp.Remove("isHeatVariation");
-        //}
-        //if (defTemp["isStabilityVariation"] != null) {
-        //  extDef.isStabilityVariation = ((bool)defTemp["isStabilityVariation"] == true) ? TripleBoolean.True : TripleBoolean.False;
-        //  defTemp.Remove("isStabilityVariation");
-        //}
-        //if (defTemp["FireAnimationSpeedMod"] != null) {
-        //  extDef.FireAnimationSpeedMod = (float)defTemp["FireAnimationSpeedMod"];
-        //  defTemp.Remove("FireAnimationSpeedMod");
-        //}
-        //if (defTemp["PrefireAnimationSpeedMod"] != null) {
-        //  extDef.PrefireAnimationSpeedMod = (float)defTemp["PrefireAnimationSpeedMod"];
-        //  defTemp.Remove("PrefireAnimationSpeedMod");
-        //}
-        //if (defTemp["MissileExplosionScale"] != null) {
-        //extDef.MissileExplosionScale = defTemp["MissileExplosionScale"].ToObject<CustomVector>();
-        //defTemp.Remove("MissileExplosionScale");
-        //}
-        //if (defTemp["DistantVariance"] != null) {
-        //  extDef.DistantVariance = (float)defTemp["DistantVariance"];
-        //  defTemp.Remove("DistantVariance");
-        //}
-        //Log.M.WL(1, "extDef.DistantVariance:" + extDef.DistantVariance);
         if (defTemp["ColorsTable"] != null) {
           extDef.ColorsTable = defTemp["ColorsTable"].ToObject<List<ColorTableJsonEntry>>();
           defTemp.Remove("ColorsTable");
         }
-        /*
-        if (defTemp["ColorSpeedChange"] != null) {
-          extDef.ColorSpeedChange = (float)defTemp["ColorSpeedChange"];
-          defTemp.Remove("ColorSpeedChange");
-        }
-        if (defTemp["ColorChangeRule"] != null) {
-          extDef.ColorChangeRule = (ColorChangeRule)Enum.Parse(typeof(ColorChangeRule), (string)defTemp["ColorChangeRule"]);
-          defTemp.Remove("ColorChangeRule");
-        }
-        if (defTemp["RangedDmgFalloffType"] != null) {
-          extDef.RangedDmgFalloffType = (DamageFalloffType)Enum.Parse(typeof(DamageFalloffType), (string)defTemp["RangedDmgFalloffType"]);
-          defTemp.Remove("RangedDmgFalloffType");
-        }
-        if (defTemp["AoEDmgFalloffType"] != null) {
-          extDef.AoEDmgFalloffType = (DamageFalloffType)Enum.Parse(typeof(DamageFalloffType), (string)defTemp["AoEDmgFalloffType"]);
-          defTemp.Remove("AoEDmgFalloffType");
-        }
-        if (defTemp["AdditionalImpactVFXScaleZ"] != null) {
-          extDef.AdditionalImpactVFXScaleZ = (float)defTemp["AdditionalImpactVFXScaleZ"];
-          defTemp.Remove("AdditionalImpactVFXScaleZ");
-        }*/
         if (defTemp["ChassisTagsAccuracyModifiers"] != null) {
           extDef.TagsAccuracyModifiers = JsonConvert.DeserializeObject<Dictionary<string, float>>(defTemp["ChassisTagsAccuracyModifiers"].ToString());
           Log.LogWrite((string)defTemp["Description"]["Id"] + " ChassisTagsAccuracyModifiers:\n");
@@ -878,34 +601,6 @@ namespace CustomAmmoCategoriesPatches {
           }
           defTemp.Remove("ChassisTagsAccuracyModifiers");
         }
-        //if (defTemp["AlternateHeatDamageCalc"] != null) {
-        //  extDef.AlternateHeatDamageCalc = (bool)defTemp["AlternateHeatDamageCalc"];
-        //  defTemp.Remove("AlternateHeatDamageCalc");
-        //}
-        //if (defTemp["AlternateInstabilityCalc"] != null) {
-        //  extDef.AlternateInstabilityCalc = (bool)defTemp["AlternateInstabilityCalc"];
-        //  defTemp.Remove("AlternateInstabilityCalc");
-        //}
-        //if (defTemp["AlternateAPDamageCalc"] != null) {
-        //  extDef.AlternateAPDamageCalc = (bool)defTemp["AlternateAPDamageCalc"];
-        //  defTemp.Remove("AlternateAPDamageCalc");
-        //}
-        //if (defTemp["FireTerrainCellRadius"] != null) {
-        //  extDef.FireTerrainCellRadius = (int)defTemp["FireTerrainCellRadius"];
-        //  defTemp.Remove("FireTerrainCellRadius");
-        //}
-        //if (defTemp["ClearMineFieldRadius"] != null) {
-        //  extDef.ClearMineFieldRadius = (int)defTemp["ClearMineFieldRadius"];
-        //  defTemp.Remove("ClearMineFieldRadius");
-        //}
-        //if (defTemp["Cooldown"] != null) {
-        //  extDef.Cooldown = (int)defTemp["Cooldown"];
-        //  defTemp.Remove("Cooldown");
-        //}
-        //if (defTemp["AdditionalImpactVFX"] != null) {
-        //  extDef.AdditionalImpactVFX = (string)defTemp["AdditionalImpactVFX"];
-        //  defTemp.Remove("AdditionalImpactVFX");
-        //}
         if (defTemp["IsAMS"] != null) {
           extDef.IsAMS = ((bool)defTemp["IsAMS"] == true) ? TripleBoolean.True : TripleBoolean.False;
           defTemp.Remove("IsAMS");
@@ -917,25 +612,6 @@ namespace CustomAmmoCategoriesPatches {
           }
           defTemp.Remove("IsAAMS");
         }
-        //if (defTemp["AMSHitChance"] != null) {
-        //  extDef.AMSHitChance = (float)defTemp["AMSHitChance"];
-        //  defTemp.Remove("AMSHitChance");
-        //}
-        //if (defTemp["DisableClustering"] != null) {
-        //  extDef.DisableClustering = ((bool)defTemp["DisableClustering"] == true) ? TripleBoolean.True : TripleBoolean.False;
-        //  defTemp.Remove("DisableClustering");
-        //}
-        //if (defTemp["AOECapable"] != null) {
-        //  extDef.AOECapable = ((bool)defTemp["AOECapable"] == true) ? TripleBoolean.True : TripleBoolean.False;
-        //}
-        //if (defTemp["HasShells"] != null) {
-        //  extDef.HasShells = ((bool)defTemp["HasShells"] == true) ? TripleBoolean.True : TripleBoolean.False;
-        //  defTemp.Remove("HasShells");
-        //}
-        //if (defTemp["CantHitUnaffecedByPathing"] != null) {
-        //  extDef.CantHitUnaffecedByPathing = ((bool)defTemp["CantHitUnaffecedByPathing"] == true) ? TripleBoolean.True : TripleBoolean.False;
-        //  defTemp.Remove("CantHitUnaffecedByPathing");
-        //}
         if (defTemp["ImprovedBallistic"] != null) {
           extDef.ImprovedBallistic = (bool)defTemp["ImprovedBallistic"];
           if (extDef.ImprovedBallistic) {
@@ -944,90 +620,6 @@ namespace CustomAmmoCategoriesPatches {
           }
           defTemp.Remove("ImprovedBallistic");
         }
-        //if (defTemp["BallisticDamagePerPallet"] != null) {
-        //  extDef.BallisticDamagePerPallet = ((bool)defTemp["BallisticDamagePerPallet"] == true) ? TripleBoolean.True : TripleBoolean.False;
-        //  defTemp.Remove("BallisticDamagePerPallet");
-        //}
-        //if (defTemp["StatusEffectsPerHit"] != null) {
-        //  extDef.StatusEffectsPerHit = ((bool)defTemp["StatusEffectsPerHit"] == true) ? TripleBoolean.True : TripleBoolean.False;
-        //  defTemp.Remove("StatusEffectsPerHit");
-        //}
-        //if (defTemp["MinShellsDistance"] != null) {
-        //  extDef.MinShellsDistance = (float)defTemp["MinShellsDistance"];
-        //  defTemp.Remove("MinShellsDistance");
-        //}
-        //if (defTemp["MaxShellsDistance"] != null) {
-        //  extDef.MaxShellsDistance = (float)defTemp["MaxShellsDistance"];
-        //  defTemp.Remove("MaxShellsDistance");
-        //}
-        //if (defTemp["DamageFalloffStartDistance"] != null) {
-        //  extDef.DamageFalloffStartDistance = (float)defTemp["DamageFalloffStartDistance"];
-        //  defTemp.Remove("DamageFalloffStartDistance");
-        //}
-        //if (defTemp["DamageFalloffEndDistance"] != null) {
-        //  extDef.DamageFalloffEndDistance = (float)defTemp["DamageFalloffEndDistance"];
-        //  defTemp.Remove("DamageFalloffEndDistance");
-        //}
-        //if (defTemp["ShellsRadius"] != null) {
-        //  extDef.ShellsRadius = (float)defTemp["ShellsRadius"];
-        //  defTemp.Remove("ShellsRadius");
-        //}
-        //if (defTemp["MinShellsDistance"] != null) {
-        //  extDef.ShellsRadius = (float)defTemp["ShellsRadius"];
-        //  defTemp.Remove("ShellsRadius");
-        //}
-        //if (defTemp["AOERange"] != null) {
-        //  extDef.AOERange = (float)defTemp["AOERange"];
-        //  defTemp.Remove("AOERange");
-        //}
-        //if (defTemp["AOEDamage"] != null) {
-        //  extDef.AOEDamage = (float)defTemp["AOEDamage"];
-        //  defTemp.Remove("AOEDamage");
-        //}
-        //if (defTemp["AOEHeatDamage"] != null) {
-        //  extDef.AOEHeatDamage = (float)defTemp["AOEHeatDamage"];
-        //  defTemp.Remove("AOEHeatDamage");
-        //}
-        //if (defTemp["AOEInstability"] != null) {
-        //  extDef.AOEInstability = (float)defTemp["AOEInstability"];
-        //  defTemp.Remove("AOEInstability");
-        //}
-        //if (defTemp["Unguided"] != null) {
-        //  extDef.Unguided = ((bool)defTemp["Unguided"] == true) ? TripleBoolean.True : TripleBoolean.False;
-        //  defTemp.Remove("Unguided");
-        //}
-        //if (defTemp["NotUseInMelee"] != null) {
-        //  extDef.NotUseInMelee = ((bool)defTemp["NotUseInMelee"] == true) ? TripleBoolean.True : TripleBoolean.False;
-        //  defTemp.Remove("NotUseInMelee");
-        //}
-        //if (defTemp["AdditionalAudioEffect"] != null) {
-        //  extDef.AdditionalAudioEffect = (string)defTemp["AdditionalAudioEffect"];
-        //  defTemp.Remove("AdditionalAudioEffect");
-        //}
-        //if (defTemp["preFireSFX"] != null) {
-        //  extDef.preFireSFX = (string)defTemp["preFireSFX"];
-        //  defTemp.Remove("preFireSFX");
-        //}
-        //if (defTemp["DamageOnJamming"] != null) {
-        //  extDef.DamageOnJamming = ((bool)defTemp["DamageOnJamming"] == true) ? TripleBoolean.True : TripleBoolean.False;
-        //  defTemp.Remove("DamageOnJamming");
-        //}
-        //if (defTemp["DestroyOnJamming"] != null) {
-        //  extDef.DestroyOnJamming = ((bool)defTemp["DestroyOnJamming"] == true) ? TripleBoolean.True : TripleBoolean.False;
-        //  defTemp.Remove("DestroyOnJamming");
-        //}
-        //if (defTemp["AMSImmune"] != null) {
-        //  extDef.AMSImmune = ((bool)defTemp["AMSImmune"] == true) ? TripleBoolean.True : TripleBoolean.False;
-        //  defTemp.Remove("AMSImmune");
-        //}
-        //if (defTemp["AMSDamage"] != null) {
-        //  extDef.AMSDamage = (float)defTemp["AMSDamage"];
-        //  defTemp.Remove("AMSDamage");
-        //}
-        //if (defTemp["MissileHealth"] != null) {
-        //  extDef.MissileHealth = (float)defTemp["MissileHealth"];
-        //  defTemp.Remove("MissileHealth");
-        //}
         if (defTemp["InternalAmmo"] != null) {
           extDef.InternalAmmo = JsonConvert.DeserializeObject<Dictionary<string, int>>(defTemp["InternalAmmo"].ToString());
           defTemp.Remove("InternalAmmo");
@@ -1036,22 +628,6 @@ namespace CustomAmmoCategoriesPatches {
           extDef.blockWeaponsInMechLocations = JsonConvert.DeserializeObject<List<ChassisLocations>>(defTemp["blockWeaponsInMechLocations"].ToString());
           defTemp.Remove("blockWeaponsInMechLocations");
         }
-        /*if (defTemp["CanBeBlocked"] != null) {
-          extDef.CanBeBlocked = (bool)defTemp["CanBeBlocked"];
-          defTemp.Remove("CanBeBlocked");
-        }
-        if (defTemp["blockWeaponsInInstalledLocation"] != null) {
-          extDef.blockWeaponsInInstalledLocation = (bool)defTemp["blockWeaponsInInstalledLocation"];
-          defTemp.Remove("blockWeaponsInInstalledLocation");
-        }
-        if (defTemp["EjectWeapon"] != null) {
-          extDef.EjectWeapon = (bool)defTemp["EjectWeapon"];
-          defTemp.Remove("EjectWeapon");
-        }
-        if (defTemp["IFFDef"] != null) {
-          extDef.IFFDef = (string)defTemp["IFFDef"];
-          defTemp.Remove("IFFDef");
-        }*/
         if(defTemp["deferredEffect"] != null) {
           extDef.deferredEffect = JsonConvert.DeserializeObject<DeferredEffectDef>(defTemp["deferredEffect"].ToString());
           if(defTemp["deferredEffect"]["statusEffects"] != null) {
@@ -1080,10 +656,6 @@ namespace CustomAmmoCategoriesPatches {
           } else { continue; }
           defTemp.Remove(prop.Name);
         }
-        //if (defTemp["ShrapnelWeaponEffectID"] != null) {
-        //  extDef.ShrapnelWeaponEffectID = (string)defTemp["ShrapnelWeaponEffectID"];
-        //  defTemp.Remove("ShrapnelWeaponEffectID");
-        //}
         if (defTemp["Modes"] != null) {
           if (defTemp["Modes"].Type == JTokenType.Array) {
             extDef.Modes.Clear();
@@ -1110,16 +682,10 @@ namespace CustomAmmoCategoriesPatches {
           extDef.Modes.Add(mode.Id, mode);
           CustomAmmoCategoriesLog.Log.LogWrite(" adding base only mode '" + mode.Id + "'\n");
         }
-        //CustomAmmoCategories.registerExtWeaponDef((string)defTemp["Description"]["Id"], extDef);
-        //defTemp["AmmoCategory"] = custCat.BaseCategory.Name;
         defTemp["ammoCategoryID"] = custCat.BaseCategory.Name;
-        //CustomAmmoCategoriesLog.Log.LogWrite("\n--------------ORIG----------------\n" + json + "\n----------------------------------\n");
-        //CustomAmmoCategoriesLog.Log.LogWrite("\n--------------MOD----------------\n" + defTemp.ToString() + "\n----------------------------------\n");
         CustomAmmoCategoriesLog.Log.LogWrite("\n--------------RESULT----------------\n" + JsonConvert.SerializeObject(extDef,Formatting.Indented) + "\n----------------------------------\n");
-
         json = defTemp.ToString();
         __state.extDef = extDef;
-
       }catch(Exception e) {
         __state.errorStr = e.ToString();
       }

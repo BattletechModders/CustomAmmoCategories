@@ -1,6 +1,7 @@
 ﻿using BattleTech;
 using CustAmmoCategoriesPatches;
 using CustomAmmoCategoriesLog;
+using System;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Runtime.CompilerServices;
@@ -47,7 +48,14 @@ namespace CustAmmoCategories {
     }
     public static ExtWeaponDef exDef(this Weapon weapon) {
       //Log.M.TWL(0, "ext def of:" + weapon.defId);
+      if (weapon == null) { return null; }
       if (weaponExte.TryGetValue(weapon, out ExtWeaponDef eDef)) { return eDef; }
+      if (weapon == null) {
+        throw new Exception("exDef() called for null weapon. This should not happen CustomAmmoCategories is just a victim here");
+      }
+      if (weapon.weaponDef == null) {
+        throw new Exception("exDef() called for weapon with null definition. This should not happen CustomAmmoCategories is just a victim here. Weapon uid:" + weapon.uid);
+      }
       ExtWeaponDef exDef = CustomAmmoCategories.getExtWeaponDef(weapon.defId);
       weaponExte.Add(weapon, exDef);
       return exDef;
@@ -60,6 +68,9 @@ namespace CustAmmoCategories {
     public static WeaponMode mode(this Weapon weapon) {
       //Log.M.TWL(0, "mode of:" + weapon.defId);
       if (weaponMode.TryGetValue(weapon, out WeaponMode mode)) { return mode; }
+      if (weapon == null) {
+        throw new Exception("mode() called for null weapon. This should not happen CustomAmmoCategories is just a victim here");
+      }
       ExtWeaponDef extWeapon = weapon.exDef();
       string modeId = extWeapon.baseModeId;
       Statistic modeIdStat = weapon.StatCollection.GetStatistic(CustomAmmoCategories.WeaponModeStatisticName);

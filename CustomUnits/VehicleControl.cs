@@ -4,6 +4,7 @@ using BattleTech.UI;
 using BattleTech.UI.TMProWrapper;
 using BattleTech.UI.Tooltips;
 using CustAmmoCategories;
+using CustomAmmoCategoriesPatches;
 using Harmony;
 using HBS;
 using HBS.Collections;
@@ -531,6 +532,136 @@ namespace CustomUnits {
         GenericPopupBuilder.Create(Strings.T("Scrap 'Vehicle - {0}", (object)___selectedMech.Description.Name), Strings.T("Are you sure you want to scrap this 'Vehicle?\n\nThis 'Vehicle's components will be stored and its chassis removed permanently from your inventory.\n\nSCRAP VALUE: <color=#F79B26FF>{0}</color>", (object)SimGameState.GetCBillString(Mathf.RoundToInt((float)___selectedMech.Chassis.Description.Cost * __instance.sim.Constants.Finances.MechScrapModifier)))).AddButton("Cancel", (Action)null, true, (PlayerAction)null).AddButton("Scrap", new Action(new d_MechBayMechInfoWidget(__instance).ConfirmScrapClicked), true, (PlayerAction)null).CancelOnEscape().AddFader(new UIColorRef?(LazySingletonBehavior<UIManager>.Instance.UILookAndColorConstants.PopupBackfill), 0.0f, true).Render();
       }
       return false;
+    }
+  }
+  [HarmonyPatch(typeof(CombatHUDHeatDisplay))]
+  [HarmonyPatch("GetProjectedHeat")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { typeof(Mech), typeof(CombatHUD) })]
+  public static class CombatHUDHeatDisplay_GetProjectedHeat {
+    public static void Postfix(CombatHUDHeatDisplay __instance, Mech mech, CombatHUD hud, ref int __result) {
+      try {
+        if (mech.isHasHeat() == false) { __result = 0; }
+      } catch(Exception e) {
+        Log.TWL(0,e.ToString(),true);
+      }
+    }
+  }
+  [HarmonyPatch(typeof(Mech))]
+  [HarmonyPatch("_heat")]
+  [HarmonyPatch(MethodType.Getter)]
+  [HarmonyPatch(new Type[] { })]
+  public static class Mech__heat_get {
+    public static void Postfix(Mech __instance, ref int __result) {
+      try {
+        if (__instance.isHasHeat() == false) { __result = 0; }
+      } catch (Exception e) {
+        Log.TWL(0, e.ToString(), true);
+      }
+    }
+  }
+  [HarmonyPatch(typeof(Mech))]
+  [HarmonyPatch("_heat")]
+  [HarmonyPatch(MethodType.Setter)]
+  [HarmonyPatch(new Type[] { })]
+  public static class Mech__heat_set {
+    public static void Prefix(Mech __instance, ref int value) {
+      try {
+        if (__instance.isHasHeat() == false) { value = 0; }
+      } catch (Exception e) {
+        Log.TWL(0, e.ToString(), true);
+      }
+    }
+  }
+  [HarmonyPatch(typeof(Mech))]
+  [HarmonyPatch("TempHeat")]
+  [HarmonyPatch(MethodType.Getter)]
+  [HarmonyPatch(new Type[] { })]
+  public static class Mech_TempHeat_get {
+    public static void Postfix(Mech __instance, ref int __result,ref int ____tempHeat) {
+      try {
+        if (__instance.isHasHeat() == false) { __result = 0; ____tempHeat = 0; }
+      } catch (Exception e) {
+        Log.TWL(0, e.ToString(), true);
+      }
+    }
+  }
+  [HarmonyPatch(typeof(Mech))]
+  [HarmonyPatch("AddEngineDamageHeat")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { })]
+  public static class Mech_AddEngineDamageHeat {
+    public static void Postfix(Mech __instance, ref int ____tempHeat) {
+      try {
+        if (__instance.isHasHeat() == false) { ____tempHeat = 0; }
+      } catch (Exception e) {
+        Log.TWL(0, e.ToString(), true);
+      }
+    }
+  }
+  [HarmonyPatch(typeof(Mech))]
+  [HarmonyPatch("AddExternalHeat")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { typeof(string), typeof(int) })]
+  public static class Mech_AddExternalHeat {
+    public static void Postfix(Mech __instance, ref int ____tempHeat, string reason, int amt) {
+      try {
+        if (__instance.isHasHeat() == false) { ____tempHeat = 0; }
+      } catch (Exception e) {
+        Log.TWL(0, e.ToString(), true);
+      }
+    }
+  }
+  [HarmonyPatch(typeof(Mech))]
+  [HarmonyPatch("AddJumpHeat")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { typeof(float) })]
+  public static class Mech_AddJumpHeat {
+    public static void Postfix(Mech __instance, ref int ____tempHeat) {
+      try {
+        if (__instance.isHasHeat() == false) { ____tempHeat = 0; }
+      } catch (Exception e) {
+        Log.TWL(0, e.ToString(), true);
+      }
+    }
+  }
+  [HarmonyPatch(typeof(Mech))]
+  [HarmonyPatch("AddWalkHeat")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { })]
+  public static class Mech_AddWalkHeat {
+    public static void Postfix(Mech __instance, ref int ____tempHeat) {
+      try {
+        if (__instance.isHasHeat() == false) { ____tempHeat = 0; }
+      } catch (Exception e) {
+        Log.TWL(0, e.ToString(), true);
+      }
+    }
+  }
+  [HarmonyPatch(typeof(Mech))]
+  [HarmonyPatch("AddTempHeat")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { })]
+  public static class Mech_AddSprintHeat {
+    public static void Postfix(Mech __instance, ref int ____tempHeat) {
+      try {
+        if (__instance.isHasHeat() == false) { ____tempHeat = 0; Traverse.Create(__instance).Property<int>("_heat").Value = 0; }
+      } catch (Exception e) {
+        Log.TWL(0, e.ToString(), true);
+      }
+    }
+  }
+  [HarmonyPatch(typeof(Mech))]
+  [HarmonyPatch("AddWeaponHeat")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { typeof(Weapon), typeof(int) })]
+  public static class Mech_AddWeaponHeat {
+    public static void Postfix(Mech __instance, ref int ____tempHeat) {
+      try {
+        if (__instance.isHasHeat() == false) { ____tempHeat = 0; }
+      } catch (Exception e) {
+        Log.TWL(0, e.ToString(), true);
+      }
     }
   }
   [HarmonyPatch(typeof(Contract))]

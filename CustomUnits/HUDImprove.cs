@@ -528,6 +528,13 @@ namespace CustomUnits {
       hotdropManager.HotDrop(dropPositions,spawnerGUID);
     }
     public static void PushDropLayout(string id, List<List<string>> layout, int maxUnits) {
+      Log.TWL(0, "CustomLanceHelper.PushDropLayout id:"+id+ " maxUnits:"+maxUnits+" layout:"+layout.Count);
+      for(int t = 0; t < layout.Count; ++t) { 
+        foreach(string dropdef in layout[t]) {
+          Log.WL(1, "[" + t + "]:" + dropdef);
+        }
+      }
+      if (layout.Count == 0) { return; }
       DropSlotsDef newlayout = new DropSlotsDef();
       newlayout.Description = new DropDescriptionDef();
       newlayout.Description.Id = id;
@@ -539,6 +546,7 @@ namespace CustomUnits {
         DropLanceDef newLance = new DropLanceDef();
         newLance.Description = new DropDescriptionDef();
         newLance.Description.Id = newlayout.Description.Id + "_lance_" + t;
+        newLance.Description.Name = "LANCE " + t;
         newLance.dropSlots = new List<DropSlotDef>();
         newLance.DropSlots = new List<string>();
         foreach (string slotid in lance) {
@@ -550,6 +558,8 @@ namespace CustomUnits {
           newLance.dropSlots.Add(DropSystemHelper.fallbackDisabledSlot);
         }
         newLance.Register();
+        newlayout.dropLances.Add(newLance);
+        newlayout.DropLances.Add(newLance.Description.Id);
       }
       newlayout.Register();
       if(UnityGameInstance.BattleTechGame.Simulation != null) {
@@ -843,9 +853,14 @@ namespace CustomUnits {
       if (CustomLanceHelper.MissionControlDetected == false) { if (overallSlotsCount > 4) { overallSlotsCount = 4; } }
       int deployCount = 0;
       for (int t = 0; t < ___loadoutSlots.Length; ++t) {
-        if (DropSystemHelper.currentLayout(UnityGameInstance.BattleTechGame.Simulation).GetSlotByIndex(t).HotDrop == false) {
-          if (___loadoutSlots[t].SelectedMech != null) { ++deployCount; }
+        if (___loadoutSlots[t].SelectedMech == null) { continue; }
+        DropSlotDef def = DropSystemHelper.currentLayout(UnityGameInstance.BattleTechGame.Simulation).GetSlotByIndex(t);
+        if (CustomLanceHelper.MissionControlDetected) {
+          if (def.UseMaxUnits == false) { continue; }
+        } else {
+          if((def.UseMaxUnits == false)&&(def.HotDrop == true)) { continue; }
         }
+        ++deployCount;
       }
       if (overallSlotsCount < deployCount) {
         GenericPopupBuilder.Create("Lance Cannot Be Deployed", Strings.T("Deploying units count {0} exceed limit {1}", deployCount, overallSlotsCount)).AddFader(new UIColorRef?(LazySingletonBehavior<UIManager>.Instance.UILookAndColorConstants.PopupBackfill), 0.0f, true).Render();

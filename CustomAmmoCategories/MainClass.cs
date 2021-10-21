@@ -1214,73 +1214,87 @@ namespace CustAmmoCategories {
     public float Damage { get; set; }
     public AoEModifiers() { Range = 1f; Damage = 1f; }
   }
+  [SelfDocumentedClass("Settings", "CustomAmmoCategoriesSettings", "Settings")]
   public class Settings {
+    [SkipDocumentation]
     public bool debugLog { get; set; }
-    public bool forbiddenRangeEnable { get; set; }
-    public bool AmmoCanBeExhausted { get; set; }
-    public bool Joke { get; set; }
-    public float ClusterAIMult { get; set; }
-    public float PenetrateAIMult { get; set; }
-    public float JamAIAvoid { get; set; }
-    public float DamageJamAIAvoid { get; set; }
-    public bool modHTTPServer { get; set; }
-    public string modHTTPListen { get; set; }
-    public string WeaponRealizerStandalone { get; set; }
-    public string AIMStandalone { get; set; }
-    public List<string> DynamicDesignMasksDefs { get; set; }
-    public string BurningTerrainDesignMask { get; set; }
-    public string BurningForestDesignMask { get; set; }
-    public string BurningFX { get; set; }
-    public string BurnedFX { get; set; }
-    public float BurningScaleX { get; set; }
-    public float BurningScaleY { get; set; }
-    public float BurningScaleZ { get; set; }
-    public float BurnedScaleX { get; set; }
-    public float BurnedScaleY { get; set; }
-    public float BurnedScaleZ { get; set; }
-    public float BurnedOffsetX { get; set; }
-    public float BurnedOffsetY { get; set; }
-    public float BurnedOffsetZ { get; set; }
-    public float BurningOffsetX { get; set; }
-    public float BurningOffsetY { get; set; }
-    public float BurningOffsetZ { get; set; }
-    public string BurnedForestDesignMask { get; set; }
-    public int BurningForestCellRadius { get; set; }
-    public int BurningForestTurns { get; set; }
-    public int BurningForestStrength { get; set; }
-    public float BurningForestBaseExpandChance { get; set; }
-    public List<string> AdditinalAssets { get; set; }
-    public bool DontShowNotDangerouceJammMessages { get; set; }
+    public bool forbiddenRangeEnable { get; set; } = true;
+    public bool AmmoCanBeExhausted { get; set; } = true;
+    public bool Joke { get; set; } = false;
+    public float ClusterAIMult { get; set; } = 0.2f;
+    public float PenetrateAIMult { get; set; } = 0.4f;
+    public float JamAIAvoid { get; set; } = 1.0f;
+    public float DamageJamAIAvoid { get; set; } = 2.0f;
+    public bool modHTTPServer { get; set; } = true;
+    public string modHTTPListen { get; set; } = "http://localhost:65080/";
+    public string WeaponRealizerStandalone { get; set; } = "WeaponRealizer.dll";
+    public string AIMStandalone { get; set; } = "AttackImprovementMod.dll";
+    [SelfDocumentationDefaultValue("empty"), SelfDocumentationTypeName("list of strings")]
+    public List<string> DynamicDesignMasksDefs { get; set; } = new List<string>();
+    public string BurningTerrainDesignMask { get; set; } = "DesignMaskBurningTerrain";
+    public string BurningForestDesignMask { get; set; } = "DesignMaskBurningForest";
+    public string BurningFX { get; set; } = "vfxPrfPrtl_fireTerrain_lrgLoop";
+    public string BurnedFX { get; set; } = "vfxPrfPrtl_miningSmokePlume_lrg_loop";
+    public float BurningScaleX { get; set; } = 1f;
+    public float BurningScaleY { get; set; } = 1f;
+    public float BurningScaleZ { get; set; } = 1f;
+    public float BurnedScaleX { get; set; } = 1f;
+    public float BurnedScaleY { get; set; } = 1f;
+    public float BurnedScaleZ { get; set; } = 1f;
+    public float BurnedOffsetX { get; set; } = 0f;
+    public float BurnedOffsetY { get; set; } = 0f;
+    public float BurnedOffsetZ { get; set; } = 0f;
+    public float BurningOffsetX { get; set; } = 0f;
+    public float BurningOffsetY { get; set; } = 0f;
+    public float BurningOffsetZ { get; set; } = 0f;
+    public string BurnedForestDesignMask { get; set; } = "DesignMaskBurnedForest";
+    public int BurningForestCellRadius { get; set; } = 3;
+    public int BurningForestTurns { get; set; } = 3;
+    public int BurningForestStrength { get; set; } = 5;
+    public float BurningForestBaseExpandChance { get; set; } = 0.5f;
+    [SelfDocumentationDefaultValue("empty"), SelfDocumentationTypeName("list of strings")]
+    public List<string> AdditinalAssets { get; set; } = new List<string>();
+    public bool DontShowNotDangerouceJammMessages { get; set; } = false;
+    [SelfDocumentationDefaultValue("empty"), SelfDocumentationTypeName("list of strings")]
     public List<string> NoForestBiomes { get; set; }
+    [SelfDocumentationDefaultValue("empty"), SelfDocumentationTypeName("dictionary { \"<string>\":<float>}")]
     public Dictionary<string, float> ForestBurningDurationBiomeMult { get; set; }
+    [SelfDocumentationDefaultValue("empty"), SelfDocumentationTypeName("dictionary { \"<string>\":<float>}")]
     public Dictionary<string, float> WeaponBurningDurationBiomeMult { get; set; }
+    [SelfDocumentationDefaultValue("empty"), SelfDocumentationTypeName("dictionary { \"<string>\":<float>}")]
     public Dictionary<string, float> ForestBurningStrengthBiomeMult { get; set; }
+    [SelfDocumentationDefaultValue("empty"), SelfDocumentationTypeName("dictionary { \"<string>\":<float>}")]
     public Dictionary<string, float> WeaponBurningStrengthBiomeMult { get; set; }
+    [SelfDocumentationDefaultValue("empty"), SelfDocumentationTypeName("dictionary { \"<string>\":<float>}")]
     public Dictionary<string, float> LitFireChanceBiomeMult { get; set; }
+    [SelfDocumentationDefaultValue("empty"), SelfDocumentationTypeName("dictionary { \"<string>\":<float>}")]
     public Dictionary<string, float> MineFieldPathingMods { get; set; }
-    public int JumpLandingMineAttractRadius { get; set; }
-    public int AttackSequenceMaxLength { get; set; }
+    public int JumpLandingMineAttractRadius { get; set; } = 2;
+    public int AttackSequenceMaxLength { get; set; } = 15000;
+    [SelfDocumentationDefaultValue("empty"), SelfDocumentationTypeName("BurnedTreesSettings structure")]
     public BurnedTreesSettings BurnedTrees { get; set; }
-    public bool DontShowBurnedTrees { get; set; }
-    public bool DontShowBurnedTreesTemporary { get; set; }
-    public bool DontShowScorchTerrain { get; set; }
-    public float AAMSAICoeff { get; set; }
-    public bool AIPeerToPeerNodeEnabled { get; set; }
-    public bool AIPeerToPeerFirewallPierceThrough { get; set; }
-    public string WeaponRealizerSettings { get; set; }
+    public bool DontShowBurnedTrees { get; set; } = false;
+    public bool DontShowBurnedTreesTemporary { get; set; } = false;
+    public bool DontShowScorchTerrain { get; set; } = false;
+    public float AAMSAICoeff { get; set; } = 0.2f;
+    public bool AIPeerToPeerNodeEnabled { get; set; } = false;
+    public bool AIPeerToPeerFirewallPierceThrough { get; set; } = false;
+    public string WeaponRealizerSettings { get; set; } = "WeaponRealizerSettings.json";
+    [SelfDocumentationDefaultValue("empty"), SelfDocumentationTypeName("AmmoCookoffSettings structure")]
     public AmmoCookoffSettings AmmoCookoff { get; set; }
     //public bool WaterHeightFix { get; set; }
-    public float TerrainFiendlyFireRadius { get; set; }
-    public bool AdvancedCirtProcessing { get; set; }
-    public bool DestroyedComponentsCritTrap { get; set; }
-    public bool CritLocationTransfer { get; set; }
-    public float APMinCritChance { get; set; }
-    public string RemoveFromCritRollStatName { get; set; }
-    public bool SpawnMenuEnabled { get; set; }
+    public float TerrainFiendlyFireRadius { get; set; } = 10f;
+    public bool AdvancedCirtProcessing { get; set; } = true;
+    public bool DestroyedComponentsCritTrap { get; set; } = true;
+    public bool CritLocationTransfer { get; set; } = true;
+    public float APMinCritChance { get; set; } = 0.1f;
+    public string RemoveFromCritRollStatName { get; set; } = "IgnoreDamage";
+    public bool SpawnMenuEnabled { get; set; } = false;
+    [SelfDocumentationDefaultValue("empty"), SelfDocumentationTypeName("boolean")]
     public bool NoCritFloatieMessage { set { FNoCritFloatieMessage = value ? TripleBoolean.True : TripleBoolean.False; } }
-    [JsonIgnore]
+    [JsonIgnore, SkipDocumentation]
     public TripleBoolean FNoCritFloatieMessage { get; private set; }
-    [JsonIgnore]
+    [JsonIgnore, SkipDocumentation]
     public TripleBoolean MechEngineerDetected { get; set; }
     public void MechEngineerDetect() {
       Log.M.WL(0, "Detecting MechEngineer:");
@@ -1304,202 +1318,215 @@ namespace CustAmmoCategories {
         }
       }
     }
-    public int FiringPreviewRecalcTrottle { get; set; }
-    public int SelectionStateMoveBaseProcessMousePosTrottle { get; set; }
-    public int UpdateReticleTrottle { get; set; }
-    public BloodSettings bloodSettings { get; set; }
-    public bool fixPrewarmRequests { get; set; }
+    public int FiringPreviewRecalcTrottle { get; set; } = 500;
+    public int SelectionStateMoveBaseProcessMousePosTrottle { get; set; } = 4;
+    public int UpdateReticleTrottle { get; set; } = 8;
+    [SelfDocumentationDefaultValue("empty"), SelfDocumentationTypeName("BloodSettings structure")]
+    public BloodSettings bloodSettings { get; set; } = new BloodSettings();
+    public bool fixPrewarmRequests { get; set; } = true;
+    [SkipDocumentation]
     public string directory { get; set; }
-    public ShowMissBehavior showMissBehavior { get; set; }
-    public bool extendedBraceBehavior { get; set; }
-    public Dictionary<string, AoEModifiers> TagAoEDamageMult { get; set; }
+    public ShowMissBehavior showMissBehavior { get; set; } = ShowMissBehavior.Default;
+    public bool extendedBraceBehavior { get; set; } = true;
+    [SelfDocumentationDefaultValue("empty"), SelfDocumentationTypeName("dictionary of { \"<string>\": { AoEModifiers structure } }")]
+    public Dictionary<string, AoEModifiers> TagAoEDamageMult { get; set; } = new Dictionary<string, AoEModifiers>();
     [JsonIgnore]
-    private Dictionary<UnitType, AoEModifiers> FDefaultAoEDamageMult;
-    public Dictionary<UnitType, AoEModifiers> DefaultAoEDamageMult { get { return FDefaultAoEDamageMult;  } set {
+    private Dictionary<UnitType, AoEModifiers> FDefaultAoEDamageMult = new Dictionary<UnitType, AoEModifiers>();
+    [SelfDocumentationDefaultValue("empty"), SelfDocumentationTypeName("dictionary of { \"<UnitType enum>\": { AoEModifiers structure } }")]
+    public Dictionary<UnitType, AoEModifiers> DefaultAoEDamageMult {
+      get { return FDefaultAoEDamageMult; }
+      set {
         Log.M.TWL(0, "set DefaultAoEDamageMult");
         foreach (var val in value) {
-          Log.M.WL(1, val.Key.ToString() + " = {range:"+val.Value.Range+" damage:"+val.Value.Damage+"}");
+          Log.M.WL(1, val.Key.ToString() + " = {range:" + val.Value.Range + " damage:" + val.Value.Damage + "}");
           FDefaultAoEDamageMult[val.Key] = val.Value;
         }
-      } }
-    public List<string> screamsIds { get; set; }
-    public List<string> uiIcons { get; set; }
-    public bool NullifyDestoryedLocationDamage { get; set; }
-    public bool DestoryedLocationDamageTransferStructure { get; set; }
-    public bool DestoryedLocationCriticalAllow { get; set; }
+      }
+    }
+    [SelfDocumentationDefaultValue("empty"), SelfDocumentationTypeName("list of strings")]
+    public List<string> screamsIds { get; set; } = new List<string>();
+    [SelfDocumentationDefaultValue("empty"), SelfDocumentationTypeName("list of strings")]
+    public List<string> uiIcons { get; set; } = new List<string>();
+    public bool NullifyDestoryedLocationDamage { get; set; } = true;
+    public bool DestoryedLocationDamageTransferStructure { get; set; } = true;
+    public bool DestoryedLocationCriticalAllow { get; set; } = true;
+    [SelfDocumentationDefaultValue("empty"), SelfDocumentationTypeName("list of strings")]
     public List<string> TransferHeatDamageToNormalTag { get; set; }
-    public float WeaponPanelBackWidthScale { get; set; }
-    public float WeaponPanelHeightScale { get; set; }
-    public float WeaponPanelWidthScale { get; set; }
-    public float OrderButtonWidthScale { get; set; }
-    public float OrderButtonPaddingScale { get; set; }
-    public float AttackSequenceTimeout { get; set; }
-    public bool SidePanelInfoSelfExternal { get; set; }
-    public bool SidePanelInfoTargetExternal { get; set; }
-    public List<string> MechHasNoStabilityTag { get; set; }
-    public bool InfoPanelDefaultState { get; set; }
-    public bool AttackLogWrite { get; set; }
-    public bool ShowAttackGroundButton { get; set; }
-    public bool ShowWeaponOrderButtons { get; set; }
-    public float ToHitSelfJumped { get; set; }
-    public float ToHitMechFromFront { get; set; }
-    public float ToHitMechFromSide { get; set; }
-    public float ToHitMechFromRear { get; set; }
-    public float ToHitVehicleFromFront { get; set; }
-    public float ToHitVehicleFromSide { get; set; }
-    public float ToHitVehicleFromRear { get; set; }
-    public string MinefieldDetectorStatName { get; set; }
-    public string MinefieldIFFStatName { get; set; }
-    public bool AmmoNameInSidePanel { get; set; }
-    public bool ShowApplyHeatSinkMessage { get; set; }
-    public string ApplyHeatSinkMessageTemplate { get; set; }
-    public string ResetHeatSinkMessageTemplate { get; set; }
-    public string ApplyHeatSinkActorStat { get; set; }
-    public string OverrallShootsCountWeaponStat { get; set; }
-    public bool AmmoGenericBoxUINameAsName { get; set; }
-    public bool NoSVGCacheClear { get; set; }
-    public bool AMSCantFireFloatie { get; set; }
-    public bool ShowJammChance { get; set; }
-    public bool ShowEvasiveAsNumber { get; set; }
-    public float EvasiveNumberFontSize { get; set; }
-    public float EvasiveNumberWidth { get; set; }
-    public float EvasiveNumberHeight { get; set; }
+    public float WeaponPanelBackWidthScale { get; set; } = 1.1f;
+    public float WeaponPanelHeightScale { get; set; } = 1f;
+    public float WeaponPanelWidthScale { get; set; } = 1f;
+    public float OrderButtonWidthScale { get; set; } = 0.5f;
+    public float OrderButtonPaddingScale { get; set; } = 0.3f;
+    public float AttackSequenceTimeout { get; set; } = 60f;
+    public bool SidePanelInfoSelfExternal { get; set; } = false;
+    public bool SidePanelInfoTargetExternal { get; set; } = false;
+    [SelfDocumentationDefaultValue("empty"), SelfDocumentationTypeName("list of strings")]
+    public List<string> MechHasNoStabilityTag { get; set; } = new List<string>();
+    public bool InfoPanelDefaultState { get; set; } = false;
+    public bool AttackLogWrite { get; set; } = false;
+    public bool ShowAttackGroundButton { get; set; } = false;
+    public bool ShowWeaponOrderButtons { get; set; } = false;
+    public float ToHitSelfJumped { get; set; } = 2f;
+    public float ToHitMechFromFront { get; set; } = 0f;
+    public float ToHitMechFromSide { get; set; } = -1f;
+    public float ToHitMechFromRear { get; set; } = -2f;
+    public float ToHitVehicleFromFront { get; set; } = 0f;
+    public float ToHitVehicleFromSide { get; set; } = -1f;
+    public float ToHitVehicleFromRear { get; set; } = -2f;
+    public string MinefieldDetectorStatName { get; set; } = "MinefieldDetection";
+    public string MinefieldIFFStatName { get; set; } = "MinefieldIFF";
+    public bool AmmoNameInSidePanel { get; set; } = true;
+    public bool ShowApplyHeatSinkMessage { get; set; } = true;
+    public string ApplyHeatSinkMessageTemplate { get; set; } = "APPLY HEAT SINKS:{0}=>{1} HCAP:{1} USED:{2}=>{3}";
+    public string ResetHeatSinkMessageTemplate { get; set; } = "USED HEAT SINKS:{0}=>{1}";
+    public string ApplyHeatSinkActorStat { get; set; } = "CACOverrallHeatSinked";
+    public string OverrallShootsCountWeaponStat { get; set; } = "CACOverallShoots";
+    public bool AmmoGenericBoxUINameAsName { get; set; } = true;
+    public bool NoSVGCacheClear { get; set; } = true;
+    public bool AMSCantFireFloatie { get; set; } = false;
+    public bool ShowJammChance { get; set; } = true;
+    public bool ShowEvasiveAsNumber { get; set; } = true;
+    public float EvasiveNumberFontSize { get; set; } = 24f;
+    public float EvasiveNumberWidth { get; set; } = 20f;
+    public float EvasiveNumberHeight { get; set; } = 25f;
+    [SelfDocumentationDefaultValue("empty"), SelfDocumentationTypeName("list of strings")]
     public List<string> RemoveToHitModifiers { get; set; }
-    public bool ImprovedBallisticByDefault { get; set; }
+    public bool ImprovedBallisticByDefault { get; set; } = true;
+    [SelfDocumentationDefaultValue("empty"), SelfDocumentationTypeName("dictionary of { \"<string>\": { DesignMaskMoveCostInfo structure } }")]
     public Dictionary<string, DesignMaskMoveCostInfo> DefaultMoveCosts { get; set; }
-    public bool DestroyedLocationsCritTransfer { get; set; }
-    public string OnlineServerHost { get; set; }
-    public int OnlineServerServicePort { get; set; }
-    public int OnlineServerDataPort { get; set; }
+    public bool DestroyedLocationsCritTransfer { get; set; } = false;
+    public string OnlineServerHost { get; set; } = "192.168.78.162";
+    public int OnlineServerServicePort { get; set; } = 143;
+    public int OnlineServerDataPort { get; set; } = 443;
     public Settings() {
-      directory = string.Empty;
-      debugLog = true;
-      modHTTPServer = true;
-      forbiddenRangeEnable = true;
-      Joke = false;
-      AmmoCanBeExhausted = true;
-      ClusterAIMult = 0.2f;
-      PenetrateAIMult = 0.4f;
-      JamAIAvoid = 1.0f;
-      DamageJamAIAvoid = 2.0f;
-      WeaponRealizerStandalone = "";
-      OnlineServerHost = "192.168.78.162";
-      OnlineServerServicePort = 143;
-      OnlineServerDataPort = 443;
-      modHTTPListen = "http://localhost:65080";
-      DynamicDesignMasksDefs = new List<string>();
-      BurningForestDesignMask = "DesignMaskBurningForest";
-      BurnedForestDesignMask = "DesignMaskBurnedForest";
-      BurningTerrainDesignMask = "DesignMaskBurningTerrain";
-      BurningForestCellRadius = 3;
-      BurningForestTurns = 3;
-      BurningForestStrength = 5;
-      BurningForestBaseExpandChance = 0.5f;
-      BurningFX = "vfxPrfPrtl_fireTerrain_lrgLoop";
-      BurnedFX = "vfxPrfPrtl_miningSmokePlume_lrg_loop";
-      BurningScaleX = 1f;
-      BurningScaleY = 1f;
-      BurningScaleZ = 1f;
-      BurnedScaleX = 1f;
-      BurnedScaleY = 1f;
-      BurnedScaleZ = 1f;
-      BurnedOffsetX = 0f;
-      BurnedOffsetY = 0f;
-      BurnedOffsetZ = 0f;
-      BurningOffsetX = 0f;
-      BurningOffsetY = 0f;
-      BurningOffsetZ = 0f;
-      AttackSequenceMaxLength = 15000;
-      AdditinalAssets = new List<string>();
-      DontShowNotDangerouceJammMessages = false;
-      NoForestBiomes = new List<string>();
-      ForestBurningDurationBiomeMult = new Dictionary<string, float>();
-      WeaponBurningDurationBiomeMult = new Dictionary<string, float>();
-      ForestBurningStrengthBiomeMult = new Dictionary<string, float>();
-      WeaponBurningStrengthBiomeMult = new Dictionary<string, float>();
-      LitFireChanceBiomeMult = new Dictionary<string, float>();
-      MineFieldPathingMods = new Dictionary<string, float>();
-      JumpLandingMineAttractRadius = 2;
-      BurnedTrees = new BurnedTreesSettings();
-      DontShowBurnedTrees = false;
-      DontShowScorchTerrain = false;
-      AIPeerToPeerNodeEnabled = false;
-      AIPeerToPeerFirewallPierceThrough = false;
-      AAMSAICoeff = 0.2f;
-      WeaponRealizerSettings = "WeaponRealizerSettings.json";
-      WeaponRealizerStandalone = "WeaponRealizer.dll";
-      AIMStandalone = "AttackImprovementMod.dll";
-      AmmoCookoff = new AmmoCookoffSettings();
-      DontShowBurnedTreesTemporary = false;
-      //WaterHeightFix = true;
-      TerrainFiendlyFireRadius = 10f;
-      AdvancedCirtProcessing = true;
-      DestroyedComponentsCritTrap = true;
-      CritLocationTransfer = true;
-      APMinCritChance = 0.1f;
-      RemoveFromCritRollStatName = "IgnoreDamage";
-      FNoCritFloatieMessage = TripleBoolean.NotSet;
-      MechEngineerDetected = TripleBoolean.NotSet;
-      SpawnMenuEnabled = false;
-      patchWeaponSlotsOverflowCultures = new HashSet<Strings.Culture>();
-      FiringPreviewRecalcTrottle = 500;
-      SelectionStateMoveBaseProcessMousePosTrottle = 4;
-      UpdateReticleTrottle = 8;
-      bloodSettings = new BloodSettings();
-      fixPrewarmRequests = true;
-      showMissBehavior = ShowMissBehavior.Default;
-      extendedBraceBehavior = true;
+      //directory = string.Empty;
+      //debugLog = true;
+      //modHTTPServer = true;
+      //forbiddenRangeEnable = true;
+      //Joke = false;
+      //AmmoCanBeExhausted = true;
+      //ClusterAIMult = 0.2f;
+      //PenetrateAIMult = 0.4f;
+      //JamAIAvoid = 1.0f;
+      //DamageJamAIAvoid = 2.0f;
+      //WeaponRealizerStandalone = "";
+      //OnlineServerHost = "192.168.78.162";
+      //OnlineServerServicePort = 143;
+      //OnlineServerDataPort = 443;
+      //modHTTPListen = "http://localhost:65080";
+      //DynamicDesignMasksDefs = new List<string>();
+      //BurningForestDesignMask = "DesignMaskBurningForest";
+      //BurnedForestDesignMask = "DesignMaskBurnedForest";
+      //BurningTerrainDesignMask = "DesignMaskBurningTerrain";
+      //BurningForestCellRadius = 3;
+      //BurningForestTurns = 3;
+      //BurningForestStrength = 5;
+      //BurningForestBaseExpandChance = 0.5f;
+      //BurningFX = "vfxPrfPrtl_fireTerrain_lrgLoop";
+      //BurnedFX = "vfxPrfPrtl_miningSmokePlume_lrg_loop";
+      //BurningScaleX = 1f;
+      //BurningScaleY = 1f;
+      //BurningScaleZ = 1f;
+      //BurnedScaleX = 1f;
+      //BurnedScaleY = 1f;
+      //BurnedScaleZ = 1f;
+      //BurnedOffsetX = 0f;
+      //BurnedOffsetY = 0f;
+      //BurnedOffsetZ = 0f;
+      //BurningOffsetX = 0f;
+      //BurningOffsetY = 0f;
+      //BurningOffsetZ = 0f;
+      //AttackSequenceMaxLength = 15000;
+      //AdditinalAssets = new List<string>();
+      //DontShowNotDangerouceJammMessages = false;
+      //NoForestBiomes = new List<string>();
+      //ForestBurningDurationBiomeMult = new Dictionary<string, float>();
+      //WeaponBurningDurationBiomeMult = new Dictionary<string, float>();
+      //ForestBurningStrengthBiomeMult = new Dictionary<string, float>();
+      //WeaponBurningStrengthBiomeMult = new Dictionary<string, float>();
+      //LitFireChanceBiomeMult = new Dictionary<string, float>();
+      //MineFieldPathingMods = new Dictionary<string, float>();
+      //JumpLandingMineAttractRadius = 2;
+      //BurnedTrees = new BurnedTreesSettings();
+      //DontShowBurnedTrees = false;
+      //DontShowScorchTerrain = false;
+      //AIPeerToPeerNodeEnabled = false;
+      //AIPeerToPeerFirewallPierceThrough = false;
+      //AAMSAICoeff = 0.2f;
+      //WeaponRealizerSettings = "WeaponRealizerSettings.json";
+      //WeaponRealizerStandalone = "WeaponRealizer.dll";
+      //AIMStandalone = "AttackImprovementMod.dll";
+      //AmmoCookoff = new AmmoCookoffSettings();
+      //DontShowBurnedTreesTemporary = false;
+      ////WaterHeightFix = true;
+      //TerrainFiendlyFireRadius = 10f;
+      //AdvancedCirtProcessing = true;
+      //DestroyedComponentsCritTrap = true;
+      //CritLocationTransfer = true;
+      //APMinCritChance = 0.1f;
+      //RemoveFromCritRollStatName = "IgnoreDamage";
+      //FNoCritFloatieMessage = TripleBoolean.NotSet;
+      //MechEngineerDetected = TripleBoolean.NotSet;
+      //SpawnMenuEnabled = false;
+      //patchWeaponSlotsOverflowCultures = new HashSet<Strings.Culture>();
+      //FiringPreviewRecalcTrottle = 500;
+      //SelectionStateMoveBaseProcessMousePosTrottle = 4;
+      //UpdateReticleTrottle = 8;
+      //bloodSettings = new BloodSettings();
+      //fixPrewarmRequests = true;
+      //showMissBehavior = ShowMissBehavior.Default;
+      //extendedBraceBehavior = true;
       FDefaultAoEDamageMult = new Dictionary<UnitType, AoEModifiers>();
       foreach (UnitType t in Enum.GetValues(typeof(UnitType))) {
         FDefaultAoEDamageMult[t] = new AoEModifiers();
       }
       FDefaultAoEDamageMult[UnitType.Building].Range = 1.5f;
       FDefaultAoEDamageMult[UnitType.Building].Damage = 5f;
-      screamsIds = new List<string>();
-      TagAoEDamageMult = new Dictionary<string, AoEModifiers>();
-      uiIcons = new List<string>();
-      NullifyDestoryedLocationDamage = true;
-      DestoryedLocationDamageTransferStructure = true;
-      DestoryedLocationCriticalAllow = true;
-      TransferHeatDamageToNormalTag = new List<string>();
-      WeaponPanelBackWidthScale = 1.1f;
-      OrderButtonWidthScale = 0.5f;
-      OrderButtonPaddingScale = 0.3f;
-      AttackSequenceTimeout = 60f;
-      SidePanelInfoSelfExternal = false;
-      MechHasNoStabilityTag = new List<string>();
-      InfoPanelDefaultState = false;
-      AttackLogWrite = false;
-      ShowAttackGroundButton = false;
-      ShowWeaponOrderButtons = false;
-      ToHitSelfJumped = 2f;
-      ToHitMechFromFront = 0f;
-      ToHitMechFromSide = -1f;
-      ToHitMechFromRear = -2f;
-      ToHitVehicleFromFront = 0f;
-      ToHitVehicleFromSide = -1f;
-      ToHitVehicleFromRear = -2f;
-      WeaponPanelHeightScale = 1f;
-      MinefieldDetectorStatName = "MinefieldDetection";
-      MinefieldIFFStatName = "MinefieldIFF";
-      AmmoNameInSidePanel = true;
-      ShowApplyHeatSinkMessage = true;
-      ResetHeatSinkMessageTemplate = "USED HEAT SINKS:{0}=>{1}";
-      ApplyHeatSinkMessageTemplate = "APPLY HEAT SINKS:{0}=>{1} HCAP:{1} USED:{2}=>{3}";
-      ApplyHeatSinkActorStat = "CACOverrallHeatSinked";
-      OverrallShootsCountWeaponStat = "CACOverallShoots";
-      AmmoGenericBoxUINameAsName = true;
-      NoSVGCacheClear = true;
-      AMSCantFireFloatie = false;
-      ShowJammChance = true;
-      ShowEvasiveAsNumber = true;
-      EvasiveNumberFontSize = 24f;
-      EvasiveNumberWidth = 20f;
-      EvasiveNumberHeight = 25f;
-      RemoveToHitModifiers = new List<string>();
-      ImprovedBallisticByDefault = true;
-      DefaultMoveCosts = new Dictionary<string, DesignMaskMoveCostInfo>();
-      DestroyedLocationsCritTransfer = false;
+      //screamsIds = new List<string>();
+      //TagAoEDamageMult = new Dictionary<string, AoEModifiers>();
+      //uiIcons = new List<string>();
+      //NullifyDestoryedLocationDamage = true;
+      //DestoryedLocationDamageTransferStructure = true;
+      //DestoryedLocationCriticalAllow = true;
+      //TransferHeatDamageToNormalTag = new List<string>();
+      //WeaponPanelBackWidthScale = 1.1f;
+      //OrderButtonWidthScale = 0.5f;
+      //OrderButtonPaddingScale = 0.3f;
+      //AttackSequenceTimeout = 60f;
+      //SidePanelInfoSelfExternal = false;
+      //MechHasNoStabilityTag = new List<string>();
+      //InfoPanelDefaultState = false;
+      //AttackLogWrite = false;
+      //ShowAttackGroundButton = false;
+      //ShowWeaponOrderButtons = false;
+      //ToHitSelfJumped = 2f;
+      //ToHitMechFromFront = 0f;
+      //ToHitMechFromSide = -1f;
+      //ToHitMechFromRear = -2f;
+      //ToHitVehicleFromFront = 0f;
+      //ToHitVehicleFromSide = -1f;
+      //ToHitVehicleFromRear = -2f;
+      //WeaponPanelHeightScale = 1f;
+      //MinefieldDetectorStatName = "MinefieldDetection";
+      //MinefieldIFFStatName = "MinefieldIFF";
+      //AmmoNameInSidePanel = true;
+      //ShowApplyHeatSinkMessage = true;
+      //ResetHeatSinkMessageTemplate = "USED HEAT SINKS:{0}=>{1}";
+      //ApplyHeatSinkMessageTemplate = "APPLY HEAT SINKS:{0}=>{1} HCAP:{1} USED:{2}=>{3}";
+      //ApplyHeatSinkActorStat = "CACOverrallHeatSinked";
+      //OverrallShootsCountWeaponStat = "CACOverallShoots";
+      //AmmoGenericBoxUINameAsName = true;
+      //NoSVGCacheClear = true;
+      //AMSCantFireFloatie = false;
+      //ShowJammChance = true;
+      //ShowEvasiveAsNumber = true;
+      //EvasiveNumberFontSize = 24f;
+      //EvasiveNumberWidth = 20f;
+      //EvasiveNumberHeight = 25f;
+      //RemoveToHitModifiers = new List<string>();
+      //ImprovedBallisticByDefault = true;
+      //DefaultMoveCosts = new Dictionary<string, DesignMaskMoveCostInfo>();
+      //DestroyedLocationsCritTransfer = false;
     }
   }
 }
@@ -1552,18 +1579,16 @@ namespace CACMain {
       }
     }
     public static void Init(string directory, string settingsJson) {
-      //SavesForm savesForm = new SavesForm();
       CustomAmmoCategoriesLog.Log.BaseDirectory = directory;
       string settings_filename = Path.Combine(CustomAmmoCategoriesLog.Log.BaseDirectory, "CustomAmmoCategoriesSettings.json");
-      //settings_filename = Path.Combine(settings_filename, "CustomAmmoCategoriesSettings.json");
       JObject jsettings = JObject.Parse(File.ReadAllText(settings_filename));
       CustomAmmoCategories.Settings = new CustAmmoCategories.Settings {
         debugLog = (bool)jsettings["debugLog"]
       };
       Log.InitLog();
-      //CustomAmmoCategories.Settings.debugLog = true;
       Log.M.TWL(0,"Initing... " + directory + " version: " + Assembly.GetExecutingAssembly().GetName().Version + " debug:"+ CustomAmmoCategories.Settings.debugLog, true);
       Log.M.TWL(0,"Reading settings");
+      SelfDocumentationHelper.CreateSelfDocumentation(directory);
       CustomAmmoCategories.Settings = JsonConvert.DeserializeObject<CustAmmoCategories.Settings>(File.ReadAllText(settings_filename));
       CustomAmmoCategories.Settings.directory = directory;
       foreach(var dd in CustomAmmoCategories.Settings.DefaultAoEDamageMult) {
@@ -1571,22 +1596,15 @@ namespace CACMain {
       }
       ToHitModifiersHelper.Init();
       CustomAmmoCategories.InitHitLocationsAOE();
-      //string CharlesBSettings = Path.Combine(directory, "CharlesB_settings.json");
-      //if (File.Exists(CharlesBSettings)) {
-      //CharlesB.Core.Init(directory, File.ReadAllText(CharlesBSettings));
-      //}
-      //uint testEventId0 = 0;
       try {
         Dictionary<string, uint> audioEvents = (Dictionary<string, uint>)typeof(WwiseManager).GetField("guidIdMap",BindingFlags.Instance|BindingFlags.NonPublic).GetValue(SceneSingletonBehavior<WwiseManager>.Instance);
         Log.LogWrite("audioEvents:\n", true);
         foreach (var aEvent in audioEvents) {
           Log.LogWrite(" '" +aEvent.Key+"':"+aEvent.Value+"\n");
         }
-        //    testEventId0 = (uint)EnumValueToEventId.Invoke(SceneSingletonBehavior<WwiseManager>.Instance, new object[1] { val });
       } catch(Exception e) {
         Log.LogWrite("Can't audioEvents " + e.ToString()+"\n",true);
       }
-      //CustomAmmoCategories.Settings.MechEngineerDetect();
       WeaponRealizer.Settings WRSettings = null;
       string WRSettingsFile = Path.Combine(directory, CustomAmmoCategories.Settings.WeaponRealizerSettings);
       if (File.Exists(WRSettingsFile) == false) {
@@ -1618,11 +1636,8 @@ namespace CACMain {
           AIMMod.GetField("failToLoad",BindingFlags.Static|BindingFlags.Public).SetValue(null, false);
           AIMMod.GetMethod("Init", BindingFlags.Static | BindingFlags.Public).Invoke(null, new object[2] { directory, string.Empty});
           AIMModSettings = (Sheepy.BattleTechMod.AttackImprovementMod.ModSettings)AIMMod.GetField("AIMSettings").GetValue(null);
-          //Sheepy.BattleTechMod.AttackImprovementMod.Mod.failToLoad = false;
-          //Sheepy.BattleTechMod.AttackImprovementMod.Mod.Init(directory, string.Empty);
         }
       }
-      //typeof(BattleTech.AttackDirectorHelpers.MessageCoordinator).GetField("logger", BindingFlags.Static | BindingFlags.Public).SetValue(null, (object)HBS.Logging.Logger.GetLogger("CombatLog.MechImpacts", HBS.Logging.LogLevel.Debug));
       try {
         string apath = Path.Combine(directory, "assets");
         CustomAmmoCategoriesLog.Log.LogWrite("additional assets:" + CustomAmmoCategories.Settings.AdditinalAssets.Count + "\n");
@@ -1651,15 +1666,15 @@ namespace CACMain {
                 if (AdditinalMeshes.ContainsKey(msh.name) == false) AdditinalMeshes.Add(msh.name, msh);
               }
               UnityEngine.Material[] materials = assetBundle.LoadAllAssets<Material>();
-              CustomAmmoCategoriesLog.Log.LogWrite("Materials:\n");
+              Log.M.WL(0, "Materials:");
               foreach (var mat in materials) {
-                CustomAmmoCategoriesLog.Log.LogWrite(" " + mat.name + "\n");
+                Log.M.WL(1,mat.name + "\n");
                 if (AdditinalMaterials.ContainsKey(mat.name) == false) {
                   if (AdditinalMaterials.ContainsKey(mat.name) == false) AdditinalMaterials.Add(mat.name, mat);
                 }
               }
               UnityEngine.Shader[] shaders = assetBundle.LoadAllAssets<Shader>();
-              CustomAmmoCategoriesLog.Log.LogWrite("Shaders:\n");
+              Log.M.WL(0, "Shaders:");
               foreach (var shdr in shaders) {
                 CustomAmmoCategoriesLog.Log.LogWrite(" " + shdr.name + "\n");
                 if (AdditinalShaders.ContainsKey(shdr.name) == false) {
@@ -1667,42 +1682,28 @@ namespace CACMain {
                 }
               }
               UnityEngine.AudioClip[] audio = assetBundle.LoadAllAssets<AudioClip>();
-              CustomAmmoCategoriesLog.Log.LogWrite("Audio:\n");
+              Log.M.WL(0, "Audio:");
               foreach (var au in audio) {
-                CustomAmmoCategoriesLog.Log.LogWrite(" " + au.name + "\n");
+                Log.M.WL(1, au.name);
                 if (AdditinalAudio.ContainsKey(au.name) == false) {
                   if (AdditinalAudio.ContainsKey(au.name) == false) AdditinalAudio.Add(au.name, au);
                 }
               }
             } else {
-              CustomAmmoCategoriesLog.Log.LogWrite("fail to load:" + path + "\n");
+              Log.M.WL(0, "fail to load:" + path);
             }
           } else {
-            CustomAmmoCategoriesLog.Log.LogWrite("not exists:" + path + "\n");
+            Log.M.WL(0,"not exists:" + path);
           }
         }
-        //(typeof(FootstepManager)).GetField("_scorchMaterial", BindingFlags.NonPublic | BindingFlags.Instance).SetValue(
-        //FootstepManager.Instance, AdditinalMaterials["SolidColor"]
-        //);
-        //FootstepManager_scorchMaterial.ScorchMaterial = AdditinalMaterials["bullethole-decal"];
         var harmony = HarmonyInstance.Create("io.mission.modrepuation");
-        //Assembly.LoadFile(Path.Combine(directory,"CACPatches.dll"));
-        //harmony.PatchAll(Assembly.)
-        //var ancorType = AccessTools.TypeByName("MechComponent_UIName");
-        //if (ancorType == null) {
-        //  CustomAmmoCategoriesLog.Log.LogWrite("Can't find ancor type\n");
-        //} else {
-        //CustomAmmoCategoriesLog.Log.LogWrite("Ancor type found "+ancorType.Assembly.FullName+"\n");
-        //harmony.PatchAll(ancorType.Assembly);
-        //}
         harmony.PatchAll(Assembly.GetExecutingAssembly());
         InternalClassPathes.PatchInternalClasses(harmony);
         Thread thread = new Thread(ThreadWork.DoWork);
         thread.Start();
         CustAmmoCategories.Online.OnlineClientHelper.Init();
-        //Profiler.Init();
       } catch (Exception e) {
-        CustomAmmoCategoriesLog.Log.LogWrite(e.ToString() + "\n");
+        Log.M.TWL(0,e.ToString());
       }
     }
   }

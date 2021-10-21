@@ -12,6 +12,7 @@ using CustomAmmoCategoriesLog;
 namespace CustAmmoCategories {
   public static partial class CustomAmmoCategories {
     public static CustomAmmoCategory CustomAmmoCategory(this Weapon weapon) {
+      if (weapon == null) { return null; }
       WeaponMode mode = weapon.mode();
       if(mode.AmmoCategory == null) {
         ExtWeaponDef extWeapon = weapon.exDef();
@@ -282,6 +283,9 @@ namespace CustomAmmoCategoriesPatches {
       return Transpilers.MethodReplacer(instructions, targetPropertyGetter, replacementMethod);
     }
     private static AmmoCategoryValue AmmoCategory(Weapon weapon) {
+      if (weapon == null) {
+        throw new Exception("HasAmmo called for null weapon. This should not happen CustomAmmoCategories is just a victim here");
+      }
       //CustomAmmoCategoriesLog.Log.LogWrite("get AIUtil_UnitHasLOFToTargetFromPosition IndirectFireCapable\n");
       return weapon.CustomAmmoCategory().BaseCategory;
     }

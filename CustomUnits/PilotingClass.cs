@@ -27,6 +27,7 @@ namespace CustomUnits {
     public static PilotingClassDef DEFAULT_MECH_PILOTING_CLASS { get; private set; } = null;
     public static PilotingClassDef DEFAULT_VEHICLE_PILOTING_CLASS { get; private set; } = null;
     public static void Validate() {
+      Log.TWL(0, "PilotingClassHelper.Validate");
       if (pilotingClasses.TryGetValue(PilotingClassDef.DEFAULT_MECH_PILOTING_NAME, out PilotingClassDef GenericMechClass) == false) {
         GenericMechClass = new PilotingClassDef();
         GenericMechClass.expertiseGenerationChance = Core.Settings.CanPilotAlsoMechProbability;
@@ -63,6 +64,9 @@ namespace CustomUnits {
           }
         }
       }
+      Log.WL(1, "default mech class:"+ PilotingClassHelper.DEFAULT_MECH_PILOTING_CLASS==null?"null": PilotingClassHelper.DEFAULT_MECH_PILOTING_CLASS.Description.Id);
+      Log.WL(1, "default vehicle class:" + PilotingClassHelper.DEFAULT_VEHICLE_PILOTING_CLASS == null ? "null" : PilotingClassHelper.DEFAULT_VEHICLE_PILOTING_CLASS.Description.Id);
+
     }
 
     private static readonly string IS_IN_STARTING_PILOTS_GENERATING_FLAG = "STARTING_PILOTS_GENERATING";
@@ -272,18 +276,33 @@ namespace CustomUnits {
   public static class PilotDef_FromJSON {
     public static void fallbackPiloting(this PilotDef __instance) {
       try {
+        Log.TWL(0, "PilotDef.fallbackPiloting " + __instance.Description.Id + ":" + __instance.Description.Callsign);
+        if (__instance.PilotTags == null) { Traverse.Create(__instance).Property<TagSet>("PilotTags").Value = new TagSet(); }
+        Log.W(1, "tags:"); foreach (string tag in __instance.PilotTags) { Log.W(1, tag); }; Log.WL(0, "");
+        Log.WL(1,"default mech:"+(PilotingClassHelper.DEFAULT_MECH_PILOTING_CLASS==null?"null": PilotingClassHelper.DEFAULT_MECH_PILOTING_CLASS.Description.Id));
+        if(PilotingClassHelper.DEFAULT_MECH_PILOTING_CLASS.pilotTags != null) {
+          Log.W(2, "tags:"); foreach (string tag in PilotingClassHelper.DEFAULT_MECH_PILOTING_CLASS.pilotTags) { Log.W(1, tag); }; Log.WL(0, "");
+        }
+        Log.WL(1, "default vehicle:" + (PilotingClassHelper.DEFAULT_VEHICLE_PILOTING_CLASS == null ? "null" : PilotingClassHelper.DEFAULT_VEHICLE_PILOTING_CLASS.Description.Id));
+        if (PilotingClassHelper.DEFAULT_VEHICLE_PILOTING_CLASS.pilotTags != null) {
+          Log.W(2, "tags:"); foreach (string tag in PilotingClassHelper.DEFAULT_VEHICLE_PILOTING_CLASS.pilotTags) { Log.W(1, tag); }; Log.WL(0, "");
+        }
         HashSet<PilotingClassDef> classes = __instance.GetPilotingClass();
         if (classes.Count == 0) {
           if (__instance.PilotTags.Contains(Core.Settings.CannotPilotMechTag) == false) {
             __instance.PilotTags.UnionWith(PilotingClassHelper.DEFAULT_MECH_PILOTING_CLASS.pilotTags);
+            Log.W(2, "adding tags:"); foreach (string tag in PilotingClassHelper.DEFAULT_MECH_PILOTING_CLASS.pilotTags) { Log.W(1, tag); }; Log.WL(0, "");
           } else if (__instance.PilotTags.Contains(Core.Settings.CanPilotVehicleTag) == false) {
             __instance.PilotTags.UnionWith(PilotingClassHelper.DEFAULT_MECH_PILOTING_CLASS.pilotTags);
+            Log.W(2, "adding tags:"); foreach (string tag in PilotingClassHelper.DEFAULT_MECH_PILOTING_CLASS.pilotTags) { Log.W(1, tag); }; Log.WL(0, "");
           }
           if (__instance.PilotTags.Contains(Core.Settings.CanPilotVehicleTag)) {
+            Log.W(2, "adding tags:"); foreach (string tag in PilotingClassHelper.DEFAULT_VEHICLE_PILOTING_CLASS.pilotTags) { Log.W(1, tag); }; Log.WL(0, "");
             __instance.PilotTags.UnionWith(PilotingClassHelper.DEFAULT_VEHICLE_PILOTING_CLASS.pilotTags);
           }
         }
-      }catch(Exception e) {
+        Log.W(1, "finall tags:"); foreach (string tag in __instance.PilotTags) { Log.W(1, tag); }; Log.WL(0, "");
+      } catch (Exception e) {
         Log.TWL(0,e.ToString());
       }
     }

@@ -1,10 +1,13 @@
 ﻿using BattleTech;
 using BattleTech.Data;
+using CustAmmoCategories;
 using Harmony;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Reflection;
 using System.Reflection.Emit;
+using System.Threading;
 using UnityEngine;
 
 namespace CustomUnits {
@@ -150,14 +153,16 @@ namespace CustomUnits {
         mechDef.RequestMechInventoryPrefabsAlternates(squad_components);
       }
     }
+    private static Stopwatch RefreshInventory_timer = new Stopwatch();
     public static void RefreshInventory(this MechDef mechDef) {
+      RefreshInventory_timer.Start();
       Log.TWL(0, "MechDef.RefreshInventory " + mechDef.Description.Id);
       mechDef.InsertFixedEquipmentIntoInventory();
       MechComponentRef[] inventory = Traverse.Create(mechDef).Field<MechComponentRef[]>("inventory").Value;
       for (int index = 0; index < inventory.Length; ++index) {
         MechComponentRef mechComponentRef = inventory[index];
         if (mechComponentRef == null) {
-          Debug.Log((object)"Found an empty inventory slot");
+          Log.TWL(0,"Found an empty inventory slot",true);
         } else {
           if (mechComponentRef.DataManager == null) {
             mechComponentRef.DataManager = mechDef.DataManager;
@@ -190,21 +195,24 @@ namespace CustomUnits {
         return;
       mechDef.imaginaryLaserWeaponRef.prefabName = "chrPrfWeap_generic_melee";
       mechDef.imaginaryLaserWeaponRef.hasPrefabName = true;
-      if(mechDef.Chassis != null) {
-        if(mechDef.Chassis.HardpointDataDef != null) {
-          List<HardpointCalculator.Element> components = new List<HardpointCalculator.Element>();
-          bool unrequestedComponents = false;
-          foreach(MechComponentRef component in inventory) {
-            if (component.Def == null) { continue; }
-            if (component.hasPrefabName == false) { unrequestedComponents = true; };
-            components.Add(new HardpointCalculator.Element() { location = component.MountedLocation, componentRef = component });
-          }
-          if (unrequestedComponents) {
-            mechDef.RequestMechInventoryPrefabsSquad(components);
+      if (Thread.CurrentThread.isFlagSet("GatherPrefabs")) {
+        if (mechDef.Chassis != null) {
+          if (mechDef.Chassis.HardpointDataDef != null) {
+            List<HardpointCalculator.Element> components = new List<HardpointCalculator.Element>();
+            bool unrequestedComponents = false;
+            foreach (MechComponentRef component in inventory) {
+              if (component.Def == null) { continue; }
+              if (component.hasPrefabName == false) { unrequestedComponents = true; };
+              components.Add(new HardpointCalculator.Element() { location = component.MountedLocation, componentRef = component });
+            }
+            if (unrequestedComponents) {
+              mechDef.RequestMechInventoryPrefabsSquad(components);
+            }
           }
         }
       }
-      Log.TWL(0, "MechDef.RefreshInventoryResult " + mechDef.Description.Id);
+      RefreshInventory_timer.Stop();
+      Log.TWL(0, "MechDef.RefreshInventoryResult " + mechDef.Description.Id+" overall time:"+ RefreshInventory_timer.Elapsed.TotalSeconds);
       for (int index = 0; index < inventory.Length; ++index) {
         Log.WL(1, "["+index+"] " + (inventory[index].Def==null?"null":inventory[index].Def.Description.Id) + " prefabName:" + inventory[index].prefabName + " hasPrefabName:" + inventory[index].hasPrefabName);
       }
@@ -568,7 +576,22 @@ namespace CustomUnits {
       }
       return "unknown";
     }
+    public static void Prefix(MechDef __instance, uint loadWeight) {
+      try {
+        if (__instance.DataManager == null) { return; }
+        if (string.IsNullOrEmpty(__instance.Description.Icon)) { return; }
+        if (__instance.DataManager.ResourceLocator.EntryByID(__instance.Description.Icon, BattleTechResourceType.Sprite, true) == null) {
+          Traverse.Create(Traverse.Create(__instance).Property<DescriptionDef>("Description").Value).Property<string>("Icon").Value = string.Empty;
+        }
+        if(loadWeight > 10u) { Thread.CurrentThread.SetFlag("GatherPrefabs");
+          __instance.RefreshInventory();
+        }
+      } catch (Exception e) {
+        Log.TWL(0, e.ToString(), true);
+      }
+    }
     public static void Postfix(MechDef __instance, uint loadWeight, ref bool __result) {
+      if (loadWeight > 10u) { Thread.CurrentThread.ClearFlag("GatherPrefabs"); }
       if (__result == true) {
         return;
       }
@@ -647,8 +670,19 @@ namespace CustomUnits {
       }
       return true;
     }
+    public static void Prefix(ChassisDef __instance, uint loadWeight) {
+      try {
+        if (__instance.DataManager == null) { return; }
+        if (string.IsNullOrEmpty(__instance.Description.Icon)) { return; }
+        if (__instance.DataManager.ResourceLocator.EntryByID(__instance.Description.Icon, BattleTechResourceType.Sprite, true) == null) {
+          Traverse.Create(Traverse.Create(__instance).Property<DescriptionDef>("Description").Value).Property<string>("Icon").Value = string.Empty;
+        }
+      } catch (Exception e) {
+        Log.TWL(0, e.ToString(), true);
+      }
+    }
     public static void Postfix(ChassisDef __instance, uint loadWeight, ref bool __result) {
-      Log.TWL(0, "ChassisDef.DependenciesLoaded postfix " + loadWeight + " " + __instance.Description.Id);
+      Log.TWL(0, "ChassisDef.DependenciesLoaded postfix " + loadWeight + " " + __instance.Description.Id+" DataManager:"+(__instance.DataManager==null?"null":"not null")+" result:"+__result);
       if (__instance.DataManager == null) { return; }
       if (__result == false) { return; }
       try {

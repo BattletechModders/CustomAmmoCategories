@@ -122,6 +122,15 @@ namespace CustomUnits {
           vertical.childForceExpandWidth = old_vertical.childForceExpandWidth;
           vertical.spacing = old_vertical.spacing;
           vertical.padding = old_vertical.padding;
+          HashSet<Transform> old_childs = new HashSet<Transform>();
+          Log.TWL(0, "CustomBaysPopupUICaster.Spawn grid already contains:"+ gridGO.transform.childCount);
+          for(int t=0;t < gridGO.transform.childCount; ++t) {
+            old_childs.Add(gridGO.transform.GetChild(t));
+          }
+          foreach (Transform child in old_childs) {
+            Log.WL(1,"removing:"+child.name, true);
+            GameObject.DestroyImmediate(child.gameObject);
+          }
           HashSet<Transform> childs = new HashSet<Transform>();
           List<MechBayRowWidget> rows = new List<MechBayRowWidget>(Traverse.Create(this.parent).Field<MechBayRowGroupWidget>("rowGroupWidget").Value.Bays);
           Transform rowsParent = rows[0].gameObject.transform.parent;
@@ -264,6 +273,15 @@ namespace CustomUnits {
             vertical.childForceExpandWidth = old_vertical.childForceExpandWidth;
             vertical.spacing = old_vertical.spacing;
             vertical.padding = old_vertical.padding;
+            HashSet<Transform> old_childs = new HashSet<Transform>();
+            Log.TWL(0, "CustomBaysUICaster.Spawn grid already contains:" + gridGO.transform.childCount);
+            for (int t = 0; t < gridGO.transform.childCount; ++t) {
+              old_childs.Add(gridGO.transform.GetChild(t));
+            }
+            foreach (Transform child in old_childs) {
+              Log.WL(1, "removing:" + child.name, true);
+              GameObject.DestroyImmediate(child.gameObject);
+            }
             layout_bays.gameObject.SetActive(false);
             foreach(MechBayRowWidget row in Traverse.Create(this.BayPanel).Field<MechBayRowGroupWidget>("bayGroupWidget").Value.Bays) {
               row.transform.SetParent(gridGO.transform);

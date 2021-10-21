@@ -23,7 +23,7 @@ namespace CustAmmoCategories {
     }
     //public static bool isIndirectFireCapable(this Weapon weapon) {return getIndirectFireCapable(weapon);}
     public static float DirectFireModifier(this Weapon weapon) {
-      return weapon.exDef().DirectFireModifier + weapon.ammo().DirectFireModifier + weapon.mode().DirectFireModifier;
+      return (weapon.exDef().DirectFireModifierStat(weapon) + weapon.ammo().DirectFireModifier + weapon.mode().DirectFireModifier) * weapon.exDef().DirectFireModifierStat(weapon);
     }
     public static float ForbiddenRange(this Weapon weapon) {
       return weapon.exDef().ForbiddenRange + weapon.ammo().ForbiddenRange + weapon.mode().ForbiddenRange;

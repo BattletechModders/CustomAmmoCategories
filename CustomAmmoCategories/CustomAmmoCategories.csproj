@@ -225,6 +225,8 @@
     <Compile Include="OnlineClient.cs" />
     <Compile Include="PersistentFloatieMessage.cs" />
     <Compile Include="PlayProjectile.cs" />
+    <Compile Include="PrewarmAll.cs" />
+    <Compile Include="SelfDocumentation.cs" />
     <Compile Include="SidePanelMoveInfo.cs" />
     <Compile Include="StackHelper.cs" />
     <Compile Include="Streak.cs" />

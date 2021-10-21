@@ -12,10 +12,23 @@ using Random = UnityEngine.Random;
 
 namespace CustAmmoCategories {
   public static class DeferredEffectHelper {
+    private static Dictionary<string, Action<Weapon, Vector3>> defferedEffectsCallbacks = new Dictionary<string, Action<Weapon, Vector3>>();
     private static HashSet<DeferredEffect> deferredEffects = new HashSet<DeferredEffect>();
     private static HashSet<DeferredEffect> playingEffects = new HashSet<DeferredEffect>();
     private static HashSet<DeferredEffect> clearEffects = new HashSet<DeferredEffect>();
     private static int CurrentRound = -1;
+    public static void RegisterCallback(string id, Action<Weapon, Vector3> callback) {
+      if (defferedEffectsCallbacks.ContainsKey(id)) {
+        defferedEffectsCallbacks[id] = callback;
+      } else {
+        defferedEffectsCallbacks.Add(id, callback);
+      }
+    }
+    public static void CallDefferedMethod(this Weapon weapon, string id, Vector3 pos) {
+      if (defferedEffectsCallbacks.TryGetValue(id, out Action<Weapon, Vector3> callback)) {
+        callback(weapon, pos);
+      }
+    }
     public static DeferredEffectDef DeferredEffect(this Weapon weapon) {
       WeaponMode mode = weapon.mode();
       if (mode.deferredEffect.rounds > 0) { return mode.deferredEffect; }
@@ -54,7 +67,7 @@ namespace CustAmmoCategories {
       }
     }
     public static bool HasUnApplyedEffects() {
-      //TODO подумать начсет конкурентного доступа
+      //TODO подумать насчет конкурентного доступа
       foreach (DeferredEffect effect in playingEffects) {
         if (effect.DamageApplyied == false) { return true; }
       }
@@ -213,6 +226,7 @@ namespace CustAmmoCategories {
       Vector3 pos = offset;
       if (ancor != null) { pos += ancor.position; };
       Log.M.TWL(0, "DeferredEffect.PlayEffect vfx:"+definition.VFX+" sfx:"+ definition.SFX);
+      applyCallbacks();
       if (string.IsNullOrEmpty(definition.VFX) == false) {
         vfx = new ObjectSpawnDataSelf(definition.VFX, pos, Quaternion.identity, definition.VFXscale.vector, true, false);
         vfx.SpawnSelf(weapon.parent.Combat);
@@ -247,6 +261,7 @@ namespace CustAmmoCategories {
         }
       }
     }
+    //public void 
     public void UpdateText(int currentRound) {
       if (definition == null) { return; }
       if (CountDownFloatie != null) {
@@ -332,6 +347,15 @@ namespace CustAmmoCategories {
       Log.M.WL(2, "falloff roll success");
       string effectID = string.Format("OnDeferredHitEffect_{0}_{1}", (object)weapon.parent.GUID, (object)this.SequenceId);
       weapon.parent.Combat.EffectManager.CreateEffect(effect, effectID, this.SequenceId, weapon.parent, target, new WeaponHitInfo(), 0, false);
+    }
+    public void applyCallbacks() {
+      if (definition == null) { return; }
+      Vector3 pos = this.offset;
+      if (ancor != null) { pos += ancor.position; }
+      pos.y = weapon.parent.Combat.MapMetaData.GetLerpedHeightAt(pos);
+      foreach(string callback_id in definition.callMethod) {
+        weapon.CallDefferedMethod(callback_id, pos);
+      }
     }
     public void applyAOEDamage() {
       if (definition == null) { return; }

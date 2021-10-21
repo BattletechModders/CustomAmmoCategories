@@ -10,6 +10,7 @@ using System.Reflection;
 using BattleTech;
 using CustomAmmoCategoriesLog;
 using Harmony;
+using Newtonsoft.Json.Linq;
 
 namespace CustAmmoCategories {
   [HarmonyPatch(typeof(UnityGameInstance))]
@@ -236,6 +237,29 @@ namespace CustAmmoCategories {
       Log.M.WL(1, "result:" + items.Count);
       request.ready(items);
     }
+    public static void listpilots(CACHTTPRequestItem request) {
+      Log.M.TWL(0, "listpilots");
+      System.Collections.Generic.Dictionary<string, string> jresp = new Dictionary<string, string>();
+      BattleTech.GameInstance gameInstance = BattleTech.UnityGameInstance.BattleTechGame;
+      CustomAmmoCategoriesLog.Log.LogWrite("get gameInstance\n");
+      if (gameInstance == null) {
+        jresp["error"] = "gameInstance is null";
+        request.ready(jresp);
+        return;
+      }
+      BattleTech.Data.DataManager dataManager = gameInstance.DataManager;
+      if (dataManager == null) {
+        jresp["error"] = "DataManager is null";
+        request.ready(jresp);
+        return;
+      }
+      List<string> pilots = new List<string>();
+      foreach(var pilot in dataManager.PilotDefs) {
+        pilots.Add(pilot.Key);
+      }
+      Log.M.WL(1, "result:" + pilots.Count);
+      request.ready(pilots);
+    }
     public static void additem(CACHTTPRequestItem request) {
       Log.M.TWL(0,"Запрос на добавление предмета");
       System.Collections.Generic.Dictionary<string, string> jresp = new Dictionary<string, string>();
@@ -270,6 +294,38 @@ namespace CustAmmoCategories {
         } else {
           gameState.AddFromShopDefItem(new BattleTech.ShopDefItem(itm.name, itm.type, 0.0f, itm.count, false, false, itm.price));
         }
+        jresp["success"] = "yes";
+      } catch (Exception e) {
+        jresp["error"] = e.ToString();
+      }
+
+      //gameState.PilotRoster.ElementAt(0).AddAbility("");
+      request.ready(jresp);
+    }
+    public static void addpilot(CACHTTPRequestItem request) {
+      Log.M.TWL(0, "add pilot request");
+      System.Collections.Generic.Dictionary<string, string> jresp = new Dictionary<string, string>();
+      BattleTech.GameInstance gameInstance = BattleTech.UnityGameInstance.BattleTechGame;
+      Log.M.WL(1, "Получен gameInstance");
+      if (gameInstance == null) {
+        jresp["error"] = "Не могу получить инстанс игры";
+        request.ready(jresp);
+        return;
+      }
+      BattleTech.SimGameState gameState = gameInstance.Simulation;
+      CustomAmmoCategoriesLog.Log.LogWrite("Получен gameState\n");
+      if (gameState == null) {
+        jresp["error"] = "Не могу получить состояние симулятора. Скорее всего не загружено сохранение";
+        request.ready(jresp);
+        return;
+      }
+      if ((gameState.SimGameMode != BattleTech.SimGameState.SimGameType.CAREER) && (gameState.SimGameMode != BattleTech.SimGameState.SimGameType.KAMEA_CAMPAIGN)) {
+        jresp["error"] = "Неправильный режим компании:" + gameState.SimGameMode.ToString();
+      }
+      JObject json = JObject.Parse(request.input);
+      Log.M.WL(1,"pilot:"+ (string)json["pilotdef"]);
+      try {
+        gameState.AddPilotToRoster((string)json["pilotdef"]);
         jresp["success"] = "yes";
       } catch (Exception e) {
         jresp["error"] = e.ToString();

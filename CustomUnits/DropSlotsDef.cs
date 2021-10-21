@@ -242,6 +242,7 @@ namespace CustomUnits {
     public bool Disabled { get; set; } = false;
     public bool PlayerControl { get; set; } = true;
     public bool HotDrop { get; set; } = false;
+    public bool UseMaxUnits { get; set; } = true;
   }
   public class DropLanceDef {
     public DropDescriptionDef Description { get; set; } = new DropDescriptionDef();

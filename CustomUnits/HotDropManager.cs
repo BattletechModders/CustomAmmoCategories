@@ -237,19 +237,26 @@ namespace CustomUnits {
       }
     }
     private bool refreshHUDCheck = false;
+    public static void DefferedHotDrop(Weapon weapon, Vector3 pos) {
+      EncounterLayerParent encounterLayerParent = weapon.parent.Combat.EncounterLayerData.GetComponentInParent<EncounterLayerParent>();
+      HotDropManager hotdropManager = encounterLayerParent.GetComponent<HotDropManager>();
+      hotdropManager.HotDrop(new List<Vector3>() { pos }, weapon.parent.GUID);
+    }
     public void HotDrop(List<Vector3> positions, string spawnGUID) {
       if (this.Combat == null) { return; }
       if (string.IsNullOrEmpty(spawnGUID)) { throw new Exception("spawnGUID should not be empty"); }
       this.UpdateDropped();
       Log.TWL(0, "HotDropManager.HotDrop");
-      for(int t = 0; t < positions.Count; ++t) {
-        if (t >= this.dropPoints.Count) { break; }
-        Log.WL(1, "dropDef:" + (this.dropPoints[t].dropDef == null?"null": this.dropPoints[t].dropDef.mechDef.Description.Id) + " unit:" + (this.dropPoints[t].unit == null?"null": this.dropPoints[t].unit.DisplayName)+ " InDroping:"+ this.dropPoints[t].InDroping);
-        if (this.dropPoints[t].dropDef == null) { continue; }
-        if (this.dropPoints[t].unit != null) { continue; }
-        if (this.dropPoints[t].InDroping) { continue; }
-        if (this.dropPoints[t].dropDef.TeamGUID == this.Combat.LocalPlayerTeamGuid) { refreshHUDCheck = true; }
-        this.dropPoints[t].HotDrop(positions[t], OnDropCompleete, spawnGUID);
+      foreach(Vector3 pos in positions) {
+        foreach(HotDropPoint dropPoint in this.dropPoints) {
+          Log.WL(1, "dropDef:" + (dropPoint.dropDef == null ? "null" : dropPoint.dropDef.mechDef.Description.Id) + " unit:" + (dropPoint.unit == null ? "null" : dropPoint.unit.DisplayName) + " InDroping:" + dropPoint.InDroping);
+          if (dropPoint.dropDef == null) { continue; }
+          if (dropPoint.unit != null) { continue; }
+          if (dropPoint.InDroping) { continue; }
+          if (dropPoint.dropDef.TeamGUID == this.Combat.LocalPlayerTeamGuid) { refreshHUDCheck = true; }
+          dropPoint.HotDrop(pos, OnDropCompleete, spawnGUID);
+          break;
+        }
       }
     }
   }
@@ -295,10 +302,11 @@ namespace CustomUnits {
     public void HotDrop(Vector3 pos, Action onDropEnd, string sGUID) {
       if (this.dropDef == null) { return; }
       if (this.unit != null) { return; }
+      this.InDroping = true;
       this.spawnGUID = sGUID;
       this.onDropCompleete = onDropEnd;
       this.gameObject.transform.position = pos;
-      this.InDroping = true;
+      Log.TWL(0, "HotDropPoint.HotDrop:"+pos+" "+ this.dropDef.mechDef.Description.Id+":deps - "+ this.dropDef.mechDef.DependenciesLoaded(1000u)+" pilot:"+ this.dropDef.pilot.pilotDef.Description.Id+" deps - "+ this.dropDef.pilot.pilotDef.DependenciesLoaded(1000u));
       if (
         (this.dropDef.mechDef.DependenciesLoaded(1000u) == false)
         ||(this.dropDef.pilot.pilotDef.DependenciesLoaded(1000u) == false)
