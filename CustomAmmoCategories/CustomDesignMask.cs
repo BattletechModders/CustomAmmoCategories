@@ -8,13 +8,11 @@ using System.Collections.Generic;
 using System.Reflection;
 
 namespace CustAmmoCategories {
+  [SelfDocumentedClass("Settings", "DesignMaskMoveCostInfo", "DesignMaskMoveCostInfo")]
   public class DesignMaskMoveCostInfo {
-    public float moveCost { get; set; }
-    public float SprintMultiplier { get; set; }
-    public DesignMaskMoveCostInfo() {
-      moveCost = 1f;
-      SprintMultiplier = 1f;
-    }
+    public float moveCost { get; set; } = 1f;
+    public float SprintMultiplier { get; set; } = 1f;
+    public DesignMaskMoveCostInfo() { }
     public DesignMaskMoveCostInfo(float mc,float sm) {
       moveCost = mc;
       SprintMultiplier = sm;

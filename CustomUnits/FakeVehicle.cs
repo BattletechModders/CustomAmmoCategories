@@ -177,6 +177,8 @@ namespace CustomUnits {
     public override bool isVehicle { get { return true; } }
     public float CruiseSpeed => this.statCollection.GetValue<float>(nameof(CruiseSpeed));
     public float FlankSpeed => this.statCollection.GetValue<float>(nameof(FlankSpeed));
+    public override void ApplyBraced() {}
+    public override bool CanBeEntrenched { get { return false; } }
     protected override void InitStats() {
       Log.TWL(0, "FakeVehicleMech.InitStats");
       this.statCollection.AddStatistic<float>("CruiseSpeed", this.MovementCaps.MaxWalkDistance);

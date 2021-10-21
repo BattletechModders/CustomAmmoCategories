@@ -308,9 +308,13 @@ namespace CustAmmoCategories {
             content.Append("@Default:");
             {
               bool flag = true;
-              foreach (var defVal in docRecord.Value.defaultValue) {
-                if (flag) { flag = false; } else { content.Append(","); }; content.Append(defVal.Key+"="+defVal.Value);
-              };
+              if (docRecord.Value.defaultValue.Count == 1) {
+                content.Append(docRecord.Value.defaultValue.First().Value);
+              } else {
+                foreach (var defVal in docRecord.Value.defaultValue) {
+                  if (flag) { flag = false; } else { content.Append(","); }; content.Append(defVal.Key + "=" + defVal.Value);
+                };
+              }
             };
             content.AppendLine();
             content.AppendLine("@Description:" + docRecord.Value.description);

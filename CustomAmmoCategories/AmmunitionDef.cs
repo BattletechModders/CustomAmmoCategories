@@ -345,7 +345,7 @@ namespace CustAmmoCategories {
     public float DamageFalloffEndDistance { get; set; } = 0f;
     public AutoRefilType AutoRefill { get; set; } = AutoRefilType.Automatic;
     [SkipDocumentation]
-    public HashSet<string> ammoOnlyBoxes { get; set; }
+    public HashSet<string> ammoOnlyBoxes { get; set; } = new HashSet<string>();
     [SelfDocumentationDefaultValue("empty"), SelfDocumentationTypeName("list of strings")]
     public HashSet<string> AvailableOnPlanet { get; set; } = new HashSet<string>();
     public float BuildingsDamageModifier { get; set; } = 1f;

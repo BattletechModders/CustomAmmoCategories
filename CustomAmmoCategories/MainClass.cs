@@ -962,38 +962,26 @@ namespace CustAmmoCategories {
 }
 
 namespace CustAmmoCategories {
+  [SelfDocumentedClass("Settings", "BurnedTreesSettings", "BurnedTreesSettings")]
   public class BurnedTreesSettings {
-    public string Mesh { get; set; }
-    public string BumpMap { get; set; }
-    public string MainTex { get; set; }
-    public string OcculusionMap { get; set; }
-    public string Transmission { get; set; }
-    public string MetallicGlossMap { get; set; }
-    public float BurnedTreeScale { get; set; }
-    public float DecalScale { get; set; }
-    public string DecalTexture { get; set; }
-    public BurnedTreesSettings() {
-      Mesh = "envMdlTree_deadWood_polar_frozen_shapeA_LOD0";
-      BumpMap = "envTxrTree_treesVaried_polar_frozen_nrm";
-      MainTex = "envTxrTree_treesVaried_polar_frozen_alb";
-      OcculusionMap = "envTxrTree_treesVaried_polar_frozen_amb";
-      Transmission = "envTxrTree_treesVaried_polar_frozen_trs";
-      MetallicGlossMap = "envTxrTree_treesVaried_polar_frozen_mtl";
-      BurnedTreeScale = 2f;
-      DecalScale = 40f;
-      DecalTexture = "envTxrDecl_terrainDmgSmallBlack_alb";
-    }
+    public string Mesh { get; set; } = "envMdlTree_deadWood_polar_frozen_shapeA_LOD0";
+    public string BumpMap { get; set; } = "envTxrTree_treesVaried_polar_frozen_nrm";
+    public string MainTex { get; set; } = "envTxrTree_treesVaried_polar_frozen_alb";
+    public string OcculusionMap { get; set; } = "envTxrTree_treesVaried_polar_frozen_amb";
+    public string Transmission { get; set; } = "envTxrTree_treesVaried_polar_frozen_trs";
+    public string MetallicGlossMap { get; set; } = "envTxrTree_treesVaried_polar_frozen_mtl";
+    public float BurnedTreeScale { get; set; } = 2f;
+    public float DecalScale { get; set; } = 40f;
+    public string DecalTexture { get; set; } = "envTxrDecl_terrainDmgSmallBlack_alb";
   }
+  [SelfDocumentedClass("Settings", "BloodSettings", "BloodSettings")]
   public class BloodSettings {
-    public Dictionary<FlimsyDestructType, float> DecalScales { get; set; }
-    public string DecalTexture { get; set; }
-    public float DrawBloodChance { get; set; }
-    public BloodSettings() {
-      DecalScales = new Dictionary<FlimsyDestructType, float>();
-      DecalTexture = "envTxrDecl_terrainDmgSmallBlood_alb";
-      DrawBloodChance = 0.7f;
-    }
+    [SelfDocumentationDefaultValue("empty"), SelfDocumentationTypeName("dictionary { \"<FlimsyDestructType enum>\":<float>}")]
+    public Dictionary<FlimsyDestructType, float> DecalScales { get; set; } = new Dictionary<FlimsyDestructType, float>();
+    public string DecalTexture { get; set; } = "envTxrDecl_terrainDmgSmallBlood_alb";
+    public float DrawBloodChance { get; set; } = 0.7f;
   };
+  [SelfDocumentedClass("Settings", "AmmoCookoffSettings", "AmmoCookoffSettings")]
   public class AmmoCookoffSettings {
     public bool Enabled { get; set; }
     public float OverheatChance { get; set; }
@@ -1209,10 +1197,10 @@ namespace CustAmmoCategories {
       return unit.StatCollection.GetStatistic(AllowRotateWhileJumpActorStat).Value<bool>();
     }
   }
+  [SelfDocumentedClass("Settings", "AoEModifiers", "AoEModifiers")]
   public class AoEModifiers {
-    public float Range { get; set; }
-    public float Damage { get; set; }
-    public AoEModifiers() { Range = 1f; Damage = 1f; }
+    public float Range { get; set; } = 1f;
+    public float Damage { get; set; } = 1f;
   }
   [SelfDocumentedClass("Settings", "CustomAmmoCategoriesSettings", "Settings")]
   public class Settings {
@@ -1310,14 +1298,10 @@ namespace CustAmmoCategories {
       MechEngineerDetect();
       return MechEngineerDetected != TripleBoolean.False;
     }
+    [SkipDocumentation, JsonIgnore]
     public HashSet<Strings.Culture> patchWeaponSlotsOverflowCultures { get; private set; }
-    public List<Strings.Culture> PatchWeaponSlotsOverflowCultures {
-      set {
-        foreach (Strings.Culture culture in value) {
-          patchWeaponSlotsOverflowCultures.Add(culture);
-        }
-      }
-    }
+    [SelfDocumentationDefaultValue("empty"), SelfDocumentationTypeName("list of Strings.Culture")]
+    public List<Strings.Culture> PatchWeaponSlotsOverflowCultures { set { patchWeaponSlotsOverflowCultures = value.ToHashSet(); } }
     public int FiringPreviewRecalcTrottle { get; set; } = 500;
     public int SelectionStateMoveBaseProcessMousePosTrottle { get; set; } = 4;
     public int UpdateReticleTrottle { get; set; } = 8;
