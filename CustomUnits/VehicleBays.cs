@@ -1371,7 +1371,7 @@ namespace CustomUnits {
         } else if (___mechBay.Sim.GetFirstFreeMechBay(___selectedChassis) < 0) {
           GenericPopupBuilder.Create("Cannot Ready 'Vehicle", "There are no available slots in the 'Vehicle Bay. You must move an active 'Vehicle into storage before readying this chassis.").AddFader(new UIColorRef?(LazySingletonBehavior<UIManager>.Instance.UILookAndColorConstants.PopupBackfill), 0.0f, true).Render();
         } else {
-          GenericPopupBuilder.Create("Ready 'Vehicle?", Strings.T("It will take {0} day(s) to ready this BattleMech chassis for combat.", (object)Mathf.CeilToInt((float)___mechBay.Sim.Constants.Story.MechReadyTime / (float)___mechBay.Sim.MechTechSkill))).AddButton("Cancel", (Action)null, true, (PlayerAction)null)
+          GenericPopupBuilder.Create("Ready 'Vehicle?", Strings.T("It will take {0} day(s) to ready this vehicle chassis for combat.", (object)Mathf.CeilToInt((float)___mechBay.Sim.Constants.Story.MechReadyTime / (float)___mechBay.Sim.MechTechSkill))).AddButton("Cancel", (Action)null, true, (PlayerAction)null)
             .AddButton("Ready", (Action)(() => {
               ___mechBay.OnReadyMech(___chassisElement);
               __instance.SetData(___mechBay, (MechBayChassisUnitElement)null);

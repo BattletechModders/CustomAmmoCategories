@@ -55,12 +55,22 @@
     <Reference Include="CustomComponents">
       <HintPath>D:\Games\BATTLETECH\Mods\CustomComponents\CustomComponents.dll</HintPath>
     </Reference>
+    <Reference Include="CustomLocalization">
+      <HintPath>..\..\Mods\CustomLocalization\CustomLocalization.dll</HintPath>
+    </Reference>
+    <Reference Include="Dapper.Unity">
+      <HintPath>..\..\BattleTech_Data\Managed\Dapper.Unity.dll</HintPath>
+    </Reference>
     <Reference Include="EPPlus">
       <HintPath>..\..\Mods\CustomLocalization\EPPlus.dll</HintPath>
     </Reference>
     <Reference Include="InControl, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\BattleTech_Data\Managed\InControl.dll</HintPath>
+    </Reference>
+    <Reference Include="Mono.Data.Sqlite, Version=2.0.0.0, Culture=neutral, PublicKeyToken=0738eb9f132ed756, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\BattleTech_Data\Managed\Mono.Data.Sqlite.dll</HintPath>
     </Reference>
     <Reference Include="Newtonsoft.Json, Version=10.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed">
       <SpecificVersion>False</SpecificVersion>

@@ -4,6 +4,7 @@ using HBS.Collections;
 using Newtonsoft.Json;
 using SVGImporter;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Text;
 using static BattleTech.Data.DataManager;
@@ -152,14 +153,14 @@ namespace CustomUnits {
         }
       }
     }
-    private static Dictionary<string, HashSet<DropClassDef>> dropClassesCacheBySlot = new Dictionary<string, HashSet<DropClassDef>>();
+    private static ConcurrentDictionary<string, HashSet<DropClassDef>> dropClassesCacheBySlot = new ConcurrentDictionary<string, HashSet<DropClassDef>>();
     public static HashSet<DropClassDef> GetDropClass(this DropSlotDef slot) {
       if (dropClassesCacheBySlot.TryGetValue(slot.Description.Id, out HashSet<DropClassDef> result)) { return result; }
       result = new HashSet<DropClassDef>();
       foreach (var dropClass in dropClasses) {
         if (dropClass.Value.isMySlotClass(slot.tags)) { result.Add(dropClass.Value); }
       }
-      dropClassesCacheBySlot.Add(slot.Description.Id, result);
+      dropClassesCacheBySlot.TryAdd(slot.Description.Id, result);
       return result;
     }
     public static bool CanBeDropedInto(this ChassisDef chassis, DropSlotDef slot, out string title, out string message) {
@@ -183,7 +184,7 @@ namespace CustomUnits {
       }
       return result;
     }
-    private static Dictionary<string, HashSet<DropClassDef>> dropClassesCache = new Dictionary<string, HashSet<DropClassDef>>();
+    private static ConcurrentDictionary<string, HashSet<DropClassDef>> dropClassesCache = new ConcurrentDictionary<string, HashSet<DropClassDef>>();
     public static void fallbackDropClass(this ChassisDef chassis) {
       UnitCustomInfo info = chassis.GetCustomInfo();
       if (info.FakeVehicle) {
@@ -191,7 +192,7 @@ namespace CustomUnits {
           chassis.ChassisTags.UnionWith(pclass.unitTags);
           if (dropClassesCache.TryGetValue(chassis.Description.Id, out HashSet<DropClassDef> result) == false) {
             result = new HashSet<DropClassDef>();
-            dropClassesCache.Add(chassis.Description.Id, result);
+            dropClassesCache.TryAdd(chassis.Description.Id, result);
           }
           result.Add(pclass);
         }
@@ -200,7 +201,7 @@ namespace CustomUnits {
           chassis.ChassisTags.UnionWith(pclass.unitTags);
           if (dropClassesCache.TryGetValue(chassis.Description.Id, out HashSet<DropClassDef> result) == false) {
             result = new HashSet<DropClassDef>();
-            dropClassesCache.Add(chassis.Description.Id, result);
+            dropClassesCache.TryAdd(chassis.Description.Id, result);
           }
           result.Add(pclass);
         }
@@ -212,7 +213,7 @@ namespace CustomUnits {
       foreach (var dropClass in dropClasses) {
         if (dropClass.Value.isMyUnitClass(chassis.ChassisTags)) { result.Add(dropClass.Value); }
       }
-      dropClassesCache.Add(chassis.Description.Id, result);
+      dropClassesCache.TryAdd(chassis.Description.Id, result);
       return result;
     }
   }

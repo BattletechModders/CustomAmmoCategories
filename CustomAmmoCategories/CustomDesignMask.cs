@@ -4,6 +4,7 @@ using CustomAmmoCategoriesLog;
 using Harmony;
 using Newtonsoft.Json.Linq;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Reflection;
 
@@ -28,7 +29,7 @@ namespace CustAmmoCategories {
     }
   }
   public class CustomDesignMaskInfo {
-    public Dictionary<string, DesignMaskMoveCostInfo> CustomMoveCost { get; set; }
+    public Dictionary<string, DesignMaskMoveCostInfo> CustomMoveCost { get; set; } = new Dictionary<string, DesignMaskMoveCostInfo>();
     public void AppendDefault() {
       foreach(var costInfo in CustomAmmoCategories.Settings.DefaultMoveCosts) {
         if (this.CustomMoveCost.ContainsKey(costInfo.Key)) { continue; }
@@ -68,7 +69,7 @@ namespace CustAmmoCategories {
   }
   public static partial class CustomAmmoCategories {
     public static Dictionary<string, DesignMaskDef> tempDesignMasksDefs = new Dictionary<string, DesignMaskDef>();
-    public static Dictionary<string, CustomDesignMaskInfo> customDesignMaskInfo = new Dictionary<string, CustomDesignMaskInfo>();
+    public static ConcurrentDictionary<string, CustomDesignMaskInfo> customDesignMaskInfo = new ConcurrentDictionary<string, CustomDesignMaskInfo>();
     public static Dictionary<string, List<EffectData>> tempDesignMasksStickyEffects = new Dictionary<string, List<EffectData>>();
     public static CustomDesignMaskInfo GetCustomDesignMaskInfo(this DesignMaskDef mask) {
       if (customDesignMaskInfo.ContainsKey(mask.Description.Id) == false) { return null; }
@@ -162,11 +163,12 @@ namespace CustAmmoCategories {
       CustomDesignMaskInfo new_customDesignMaskInfo = new CustomDesignMaskInfo(parent_customDesignMaskInfo);
       new_customDesignMaskInfo.Merge(newMask.GetCustomDesignMaskInfo());
       CustomAmmoCategories.tempDesignMasksDefs.Add(newDesignMaskId, result);
-      if (customDesignMaskInfo.ContainsKey(result.Description.Id)) {
-        customDesignMaskInfo[result.Description.Id] = new_customDesignMaskInfo;
-      } else {
-        customDesignMaskInfo.Add(result.Description.Id, new_customDesignMaskInfo);
-      }
+      customDesignMaskInfo.AddOrUpdate(result.Description.Id, new_customDesignMaskInfo, (k, v) => { return new_customDesignMaskInfo; });
+      //if (customDesignMaskInfo.ContainsKey(result.Description.Id)) {
+      //  customDesignMaskInfo[result.Description.Id] = new_customDesignMaskInfo;
+      //} else {
+      //  customDesignMaskInfo.TryAdd(result.Description.Id, new_customDesignMaskInfo);
+      //}
       return result;
     }
   }
@@ -199,7 +201,7 @@ namespace CustAmmoCategoriesPatches {
   [HarmonyPatch("FromJSON")]
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { typeof(string) })]
-  public static class BattleTech_VehicleChassisDef_fromJSON_Patch {
+  public static class DesignMaskDef_fromJSON {
     public static bool Prefix(VehicleChassisDef __instance, ref string json) {
       Log.LogWrite("DesignMaskDef.FromJSON\n");
       try {
@@ -209,11 +211,7 @@ namespace CustAmmoCategoriesPatches {
         if (definition["Custom"] != null) {
           CustomDesignMaskInfo info = definition["Custom"].ToObject<CustomDesignMaskInfo>();
           info.AppendDefault();
-          if (CustomAmmoCategories.customDesignMaskInfo.ContainsKey(id) == false) {
-            CustomAmmoCategories.customDesignMaskInfo.Add(id, info);
-          } else {
-            CustomAmmoCategories.customDesignMaskInfo[id] = info;
-          }
+          CustomAmmoCategories.customDesignMaskInfo.AddOrUpdate(id, info, (k,v)=> { return info; });
           info.debugLog(1);
           definition.Remove("Custom");
         }

@@ -386,6 +386,7 @@ namespace CustAmmoCategories {
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { typeof(string) })]
   public static class AmmunitionBoxDef_FromJSON {
+    private static SpinLock spinLock = new SpinLock();
     private static Dictionary<string, Dictionary<string, string>> registerToReparce = new Dictionary<string, Dictionary<string, string>>();
     public static bool hasBoxesToReparce(this AmmunitionDef def) { return registerToReparce.ContainsKey(def.Description.Id); }
     public static Dictionary<string, string> getBoxesToReparce(this AmmunitionDef def) { return registerToReparce[def.Description.Id]; }
@@ -401,6 +402,7 @@ namespace CustAmmoCategories {
       }
       Log.M.TWL(0, "AmmunitionBoxDef.FromJSON "+ boxJSON["Description"]["Id"]);
       string AmmoID = (string)boxJSON["AmmoID"];
+      if (string.IsNullOrEmpty(AmmoID)) { return; }
       if (AmmunitionDef_OnLoadedWithJSON.isRegisredCustomSection(AmmoID)) {
         Log.M.WL(1, "custom section exists");
         JsonMergeSettings msettings = new JsonMergeSettings {
@@ -411,13 +413,21 @@ namespace CustAmmoCategories {
         Log.M.WL(1, "Merged custom section:"+ (boxJSON["Custom"] as JObject).ToString(Newtonsoft.Json.Formatting.Indented));
       } else {
         Log.M.WL(1, "ammo custom section not exists");
-        if (registerToReparce.TryGetValue(AmmoID, out Dictionary<string, string> reparce) == false) {
-          reparce = new Dictionary<string, string>();
-          registerToReparce.Add(AmmoID, reparce);
+        bool locked = false;
+        try {
+          spinLock.Enter(ref locked);
+          if (registerToReparce.TryGetValue(AmmoID, out Dictionary<string, string> reparce) == false) {
+            reparce = new Dictionary<string, string>();
+            registerToReparce.Add(AmmoID, reparce);
+          }
+          if (reparce.ContainsKey((string)boxJSON["Description"]["Id"]) == false) {
+            reparce.Add((string)boxJSON["Description"]["Id"], json);
+          }
+        }catch(Exception e) {
+          if (locked) { spinLock.Exit(); locked = false; }
+          throw e;
         }
-        if (reparce.ContainsKey((string)boxJSON["Description"]["Id"]) == false) {
-          reparce.Add((string)boxJSON["Description"]["Id"], json);
-        }
+        if (locked) { spinLock.Exit(); }
       }
     }
     public static void Postfix(AmmunitionBoxDef __instance, ref string __state) {

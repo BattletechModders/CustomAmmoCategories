@@ -9,6 +9,7 @@ using UnityEngine;
 using System.Reflection;
 using System.Reflection.Emit;
 using CustomAmmoCategoriesPatches;
+using System.Threading;
 
 namespace CustAmmoCategoriesPatches {
   [HarmonyPatch(typeof(ApplicationConstants))]
@@ -254,6 +255,7 @@ namespace CustAmmoCategoriesPatches {
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { typeof(string) })]
   public static class AmmunitionBoxDef_FromJSON {
+    private static SpinLock spinLock = new SpinLock();
     private static Dictionary<string, HashSet<string>> ammoBoxes = new Dictionary<string, HashSet<string>>();
     public static HashSet<string> ammoBoxesForAmmoId(string AmmoId) {
       if (ammoBoxes.ContainsKey(AmmoId)) { return ammoBoxes[AmmoId]; }
@@ -263,8 +265,16 @@ namespace CustAmmoCategoriesPatches {
       Log.M.TWL(0, "AmmunitionBoxDef.FromJSON:" + __instance.Description.Id);
       try {
         if (string.IsNullOrEmpty(__instance.AmmoID) == false) {
-          if (ammoBoxes.ContainsKey(__instance.AmmoID) == false) { ammoBoxes.Add(__instance.AmmoID, new HashSet<string>()); }
-          if (ammoBoxes[__instance.AmmoID].Contains(__instance.Description.Id) == false) { ammoBoxes[__instance.AmmoID].Add(__instance.Description.Id); }
+          bool locked = false;
+          try {
+            spinLock.Enter(ref locked);
+            if (ammoBoxes.ContainsKey(__instance.AmmoID) == false) { ammoBoxes.Add(__instance.AmmoID, new HashSet<string>()); }
+            if (ammoBoxes[__instance.AmmoID].Contains(__instance.Description.Id) == false) { ammoBoxes[__instance.AmmoID].Add(__instance.Description.Id); }
+          } catch (Exception e) {
+            if (locked) { spinLock.Exit(); locked = false; }
+            throw e;
+          }
+          if (locked) { spinLock.Exit(); locked = false; }
         }
       } catch (Exception e) {
         Log.M.TWL(0, e.ToString(), true);

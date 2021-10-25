@@ -16,15 +16,15 @@ using Localize;
 using System.Reflection;
 
 namespace CustomUnits {
-  [HarmonyPatch(typeof(LoadRequest))]
-  [HarmonyPatch("AddBlindLoadRequestInternal")]
-  [HarmonyPatch(MethodType.Normal)]
-  [HarmonyPatch(new Type[] { typeof(BattleTechResourceType), typeof(string), typeof(bool), typeof(bool?) })]
-  public static class LoadRequest_AddBlindLoadRequestInternal {
-    public static void Postfix(LoadRequest __instance, BattleTechResourceType resourceType, string resourceId, bool allowDuplicateInstantiation, bool? filterByOwnerShip) {
-      Log.LogWrite("LoadRequest.AddBlindLoadRequestInternal type: " + resourceType + " id " + resourceId + "\n");
-    }
-  }
+  //[HarmonyPatch(typeof(LoadRequest))]
+  //[HarmonyPatch("AddBlindLoadRequestInternal")]
+  //[HarmonyPatch(MethodType.Normal)]
+  //[HarmonyPatch(new Type[] { typeof(BattleTechResourceType), typeof(string), typeof(bool), typeof(bool?) })]
+  //public static class LoadRequest_AddBlindLoadRequestInternal {
+  //  public static void Postfix(LoadRequest __instance, BattleTechResourceType resourceType, string resourceId, bool allowDuplicateInstantiation, bool? filterByOwnerShip) {
+  //    Log.LogWrite("LoadRequest.AddBlindLoadRequestInternal type: " + resourceType + " id " + resourceId + "\n");
+  //  }
+  //}
   [HarmonyPatch(typeof(LoadRequest))]
   [HarmonyPatch("CompleteLoadTracker")]
   [HarmonyPatch(MethodType.Normal)]
@@ -35,6 +35,7 @@ namespace CustomUnits {
     }
     public static void Postfix(LoadRequest __instance, object tracker, bool loadSuccess) {
       try {
+        if (loadSuccess == true) { return; }
         Log.LogWrite("LoadRequest.CompleteLoadTracker tracker: " + tracker + " loadSuccess " + loadSuccess + "\n");
         VersionManifestEntry manifest = (VersionManifestEntry)tracker.GetType().GetField("resourceManifestEntry").GetValue(tracker);
         Log.WL(1, manifest.Type + " streamingAssetsPath:" + Application.streamingAssetsPath + " path:" + manifest.path());

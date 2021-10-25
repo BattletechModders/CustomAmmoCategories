@@ -493,7 +493,7 @@ namespace CustAmmoCategories {
     [SelfDocumentationDefaultValue("empty"), SelfDocumentationTypeName("Dictionary of {\"<tag name>\":<float modifier>}")]
     public Dictionary<string, float> TagsAccuracyModifiers { get; set; } = new Dictionary<string, float>();
     [StatCollectionFloat]
-    public float AMSDamage { get; set; } = 0f;
+    public float AMSDamage { get; set; } = 1f;
     [StatCollectionFloat]
     public float MissileHealth { get; set; } = 1f;
     [SelfDocumentationDefaultValue("Linear")]
@@ -522,7 +522,7 @@ namespace CustomAmmoCategoriesPatches {
   public static class BattleTech_WeaponDef_fromJSON_Patch {
     public static bool Prefix(WeaponDef __instance, ref string json, ref ExtDefinitionParceInfo __state) {
       CustomAmmoCategories.CustomCategoriesInit();
-      Log.LogWrite("WeaponDef fromJSON ");
+      //Log.LogWrite("WeaponDef fromJSON ");
       JObject defTemp = null;
       __state = new ExtDefinitionParceInfo();
       __state.baseJson = json;
@@ -683,7 +683,7 @@ namespace CustomAmmoCategoriesPatches {
           CustomAmmoCategoriesLog.Log.LogWrite(" adding base only mode '" + mode.Id + "'\n");
         }
         defTemp["ammoCategoryID"] = custCat.BaseCategory.Name;
-        CustomAmmoCategoriesLog.Log.LogWrite("\n--------------RESULT----------------\n" + JsonConvert.SerializeObject(extDef,Formatting.Indented) + "\n----------------------------------\n");
+        //CustomAmmoCategoriesLog.Log.LogWrite("\n--------------RESULT----------------\n" + JsonConvert.SerializeObject(extDef,Formatting.Indented) + "\n----------------------------------\n");
         json = defTemp.ToString();
         __state.extDef = extDef;
       }catch(Exception e) {

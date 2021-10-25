@@ -6,6 +6,7 @@ using Localize;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
@@ -320,20 +321,20 @@ namespace CustomUnits {
     }
     public void InitGroups(HardpointDataDef hardpointData) {
       this.hardpointsGroups.Clear();
-      Log.TWL(0, "CustomHardpointsDef.InitGroups " + hardpointData.ID + " ");
+      //Log.TWL(0, "CustomHardpointsDef.InitGroups " + hardpointData.ID + " ");
       foreach (var locationData in hardpointData.HardpointData) {
-        Log.WL(1, "location:" + locationData.location.ToLower());
+        //Log.WL(1, "location:" + locationData.location.ToLower());
         if (hardpointsGroups.TryGetValue(locationData.location.ToLower(), out HashSet<HardpointsGroup> groups) == false) {
           groups = new HashSet<HardpointsGroup>();
           hardpointsGroups.Add(locationData.location.ToLower(), groups);
         }
         for (int grp_index = 0; grp_index < locationData.weapons.Length;++grp_index) {
           string[] prefabGroup = locationData.weapons[grp_index];
-          Log.WL(2, "group");
+          //Log.WL(2, "group");
           HardpointsGroup group = new HardpointsGroup(grp_index);
           groups.Add(group);
           foreach (string prefabName in prefabGroup) {
-            Log.WL(3, "prefab:"+prefabName);
+            //Log.WL(3, "prefab:"+prefabName);
             ComponentPrefabName name = new ComponentPrefabName(prefabName);
             if (name.content.Length != 5) { Log.TWL(0,"!!!WARNING!!! hardpoint data definition "+hardpointData.ID+" contains bad weapon prefab "+prefabName); continue; }
             //if (group.GroupPrefabs.ContainsKey(name.prefabIdentifier.ToLower())) { Log.TWL(0, "!!!WARNING!!! hardpoint data definition " + hardpointData.ID + " contains duplicates weapon prefab identifiers "+ name.prefabIdentifier.ToLower() + " in one group " + prefabName); continue; }
@@ -359,16 +360,16 @@ namespace CustomUnits {
           }
         }
       }
-      Log.WL(0, "result:");
-      foreach (var hglocs in this.hardpointsGroups) {
-        Log.WL(1, "location:"+ hglocs.Key);
-        foreach (var hg in hglocs.Value) {
-          Log.WL(2, "group");
-          foreach (var pc in hg.GroupPrefabs) {
-            Log.WL(3, pc.Key+": "+pc.Value.PrefabName+" weight:"+pc.Value.weight);
-          }
-        }
-      }
+      ////Log.WL(0, "result:");
+      //foreach (var hglocs in this.hardpointsGroups) {
+      //  //Log.WL(1, "location:"+ hglocs.Key);
+      //  foreach (var hg in hglocs.Value) {
+      //    //Log.WL(2, "group");
+      //    foreach (var pc in hg.GroupPrefabs) {
+      //      //Log.WL(3, pc.Key+": "+pc.Value.PrefabName+" weight:"+pc.Value.weight);
+      //    }
+      //  }
+      //}
     }
   }
   [HarmonyPatch(typeof(HardpointDataDef))]
@@ -381,7 +382,7 @@ namespace CustomUnits {
       try {
         JObject definition = JObject.Parse(json);
         string id = (string)definition["ID"];
-        Log.TWL(0, "HardpointDataDef.FromJSON:" + id);
+        //Log.TWL(0, "HardpointDataDef.FromJSON:" + id);
         if (definition["CustomHardpoints"] != null) {
           __state = definition["CustomHardpoints"].ToObject<CustomHardpointsDef>();
           foreach (CustomHardpointDef chd in __state.prefabs) {
@@ -439,7 +440,7 @@ namespace CustomUnits {
         __instance.HardpointData[index].weapons[hindex] = tmp_weapons.ToArray();
       }
       __state.InitGroups(__instance);
-      Log.TWL(0,JsonConvert.SerializeObject(__instance, Formatting.Indented));
+      //Log.TWL(0,JsonConvert.SerializeObject(__instance, Formatting.Indented));
     }
   }
   public class HardPointAnimationController : BaseHardPointAnimationController {
@@ -604,20 +605,21 @@ namespace CustomUnits {
   }
   public static class CustomHardPointsHelper {
     private static CustomHardpointsDef EmptyCustomHardpointsDef = new CustomHardpointsDef();
-    private static Dictionary<string, CustomHardpointsDef> CustomHardpointsDefs = new Dictionary<string, CustomHardpointsDef>();
-    private static Dictionary<string, string> hardPointAliases = new Dictionary<string, string>();
-    private static Dictionary<string, CustomHardpointDef> CustomHardpointDefs = new Dictionary<string, CustomHardpointDef>();
+    private static ConcurrentDictionary<string, CustomHardpointsDef> CustomHardpointsDefs = new ConcurrentDictionary<string, CustomHardpointsDef>();
+    private static ConcurrentDictionary<string, string> hardPointAliases = new ConcurrentDictionary<string, string>();
+    private static ConcurrentDictionary<string, CustomHardpointDef> CustomHardpointDefs = new ConcurrentDictionary<string, CustomHardpointDef>();
     public static HardPointAnimationController hadrpointAnimator(this WeaponRepresentation weaponRep) {
       HardPointAnimationController result = weaponRep.gameObject.GetComponent<HardPointAnimationController>();
       if (result == null) { result = weaponRep.gameObject.AddComponent<HardPointAnimationController>(); result.Init(weaponRep); };
       return result;
     }
     public static void Add(string id, CustomHardpointsDef defs) {
-      if (CustomHardpointsDefs.ContainsKey(id) == false) {
-        CustomHardpointsDefs.Add(id, defs);
-      } else {
-        CustomHardpointsDefs[id] = defs;
-      }
+      CustomHardpointsDefs.AddOrUpdate(id, defs, (k,v)=> { return defs; });
+      //if (CustomHardpointsDefs.ContainsKey(id) == false) {
+      //  CustomHardpointsDefs.Add(id, defs);
+      //} else {
+      //  CustomHardpointsDefs[id] = defs;
+      //}
     }
     public static CustomHardpointsDef CustomHardpoints(this HardpointDataDef data) {
       if(CustomHardpointsDefs.TryGetValue(data.ID, out CustomHardpointsDef result)) {
@@ -626,11 +628,13 @@ namespace CustomUnits {
       return EmptyCustomHardpointsDef;
     }
     public static void Add(string name, CustomHardpointDef def) {
-      CustomHardpointDefs.Add(name, def);
+      CustomHardpointDefs.AddOrUpdate(name, def, (k, v) => { return def; });
+      //CustomHardpointDefs.Add(name, def);
     }
     public static void Add(string name, string prefab) {
-      if (hardPointAliases.ContainsKey(name) == false) { hardPointAliases.Add(name, prefab); return; };
-      hardPointAliases[name] = prefab;
+      hardPointAliases.AddOrUpdate(name, prefab, (k, v) => { return prefab; });
+      //if (hardPointAliases.ContainsKey(name) == false) { hardPointAliases.Add(name, prefab); return; };
+      //hardPointAliases[name] = prefab;
     }
     public static CustomHardpointDef Find(string name) {
       if (CustomHardpointDefs.ContainsKey(name) == false) { return null; };
@@ -757,7 +761,7 @@ namespace CustomUnits {
       return false;
     }*/
     public static void Postfix(HardpointDataDef hardpointDataDef, BaseComponentRef componentRef, string prefabBase, string location, ref List<string> usedPrefabNames, ref string __result) {
-      Log.WL(0, "MechHardpointRules.GetComponentPrefabName "+componentRef.ComponentDefID+ " prefabBase:"+ prefabBase + " location:"+ location + " " + __result);
+      //Log.WL(0, "MechHardpointRules.GetComponentPrefabName "+componentRef.ComponentDefID+ " prefabBase:"+ prefabBase + " location:"+ location + " " + __result);
       if (string.IsNullOrEmpty(__result)) {
         if(componentRef.Def.ComponentType == ComponentType.Weapon) {
           __result = HardpointCalculator.FakeWeaponPrefab;
@@ -765,7 +769,7 @@ namespace CustomUnits {
         return;
       }
       __result = CustomHardPointsHelper.Alias(__result);
-      Log.WL(1, " custom hardpoint found: prefab replacing:"+__result);
+      //Log.WL(1, " custom hardpoint found: prefab replacing:"+__result);
     }
   }
 
@@ -1334,7 +1338,9 @@ namespace CustomUnits {
       try {
         if (resourceType != BattleTechResourceType.Prefab) { return; }
         CustomHardpointDef customHardpoint = CustomHardPointsHelper.Find(id);
-        Log.TWL(0, "DataManager.Exists " + id + " -> " + (customHardpoint == null ? "null" : customHardpoint.prefab));
+        if (customHardpoint != null) {
+          Log.TWL(0, "DataManager.Exists " + id + " -> " + (customHardpoint == null ? "null" : customHardpoint.prefab));
+        }
         if (customHardpoint != null) { id = customHardpoint.prefab; }
       } catch (Exception e) {
         Log.TWL(0,e.ToString(),true);
@@ -1355,7 +1361,9 @@ namespace CustomUnits {
       try {
         if (type != BattleTechResourceType.Prefab) { return; }
         CustomHardpointDef customHardpoint = CustomHardPointsHelper.Find(id);
-        Log.TWL(0, "DependencyLoadRequest.RequestResource " + id + " -> " + (customHardpoint == null ? "no change" : customHardpoint.prefab));
+        if (customHardpoint != null) {
+          Log.TWL(0, "DependencyLoadRequest.RequestResource " + id + " -> " + (customHardpoint == null ? "no change" : customHardpoint.prefab));
+        }
         if (customHardpoint != null) { id = customHardpoint.prefab; }
         CustomPrefabHelper.RequestResource(__instance, id);
       } catch (Exception e) {

@@ -6,10 +6,12 @@ using HBS.Util;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Text;
+using System.Threading;
 using UnityEngine;
 
 namespace CustAmmoCategories {
@@ -292,7 +294,7 @@ namespace CustAmmoCategories {
     public TripleBoolean BallisticDamagePerPallet { get; set; } = TripleBoolean.NotSet;
     public string AdditionalAudioEffect { get; set; } = string.Empty;
     [SelfDocumentationDefaultValue("empty"), SelfDocumentationTypeName("MineFieldDef structure")]
-    public MineFieldDef MineField { get; set; }
+    public MineFieldDef MineField { get; set; } = new MineFieldDef();
     [SelfDocumentationDefaultValue("empty"), SelfDocumentationTypeName("Dictionary of {\"<tag name>\":<float modifier>}")]
     public Dictionary<string, float> TagsAccuracyModifiers { get; set; }
     public TripleBoolean Streak { get; set; } = TripleBoolean.NotSet;
@@ -499,10 +501,15 @@ namespace CustomAmmoCategoriesPatches {
   [HarmonyPatch(new Type[] { typeof(string) })]
   public static class BattleTech_AmmunitionDef_fromJSON_Patch {
     private static Dictionary<string, HashSet<string>> ammunitionsDefs = new Dictionary<string, HashSet<string>>();
-    private static Dictionary<string, ExtAmmunitionDef> defaultAmmunitions = new Dictionary<string, ExtAmmunitionDef>();
-    private static Dictionary<string, string> originals = new Dictionary<string, string>();
+    private static SpinLock ammunitionsDefs_lock = new SpinLock();
+    private static ConcurrentDictionary<string, ExtAmmunitionDef> defaultAmmunitions = new ConcurrentDictionary<string, ExtAmmunitionDef>();
+    private static ConcurrentDictionary<string, string> originals = new ConcurrentDictionary<string, string>();
     public static string getOriginal(this AmmunitionDef def) { if (originals.TryGetValue(def.Description.Id, out string result)) { return result; } else { return def.ToJSON(); } }
-    public static void setOriginal(this AmmunitionDef def, string json) { if (originals.ContainsKey(def.Description.Id)) { originals[def.Description.Id] = json; } else { originals.Add(def.Description.Id, json); } }
+    public static void setOriginal(this AmmunitionDef def, string json) {
+      originals.AddOrUpdate(def.Description.Id, json, (k,v)=> { return json; });
+      //if (originals.ContainsKey(def.Description.Id)) { originals[def.Description.Id] = json; } else { originals.Add(def.Description.Id, json);
+      //}
+    }
     public static bool Prefix(AmmunitionDef __instance, ref string json, ref ExtDefinitionParceInfo __state) {
       CustomAmmoCategories.CustomCategoriesInit();
       Log.LogWrite("AmmunitionDef fromJSON ");
@@ -708,6 +715,7 @@ namespace CustomAmmoCategoriesPatches {
             foreach (string tag in tags) { extAmmoDef.AvailableOnPlanet.Add(tag); }
           }
         }
+        if (extAmmoDef.MineField == null) { extAmmoDef.MineField = new MineFieldDef(); }
         if (defTemp["MineFieldHitChance"] != null) {
           extAmmoDef.MineField.Chance = (float)defTemp["MineFieldHitChance"];
           defTemp.Remove("MineFieldHitChance");
@@ -1123,18 +1131,27 @@ namespace CustomAmmoCategoriesPatches {
       return defaultAmmunitions.ContainsKey(cat.Id);
     }
     private static Dictionary<string, HashSet<WeaponDef>> toDefaultAmmoUpdate = new Dictionary<string, HashSet<WeaponDef>>();
+    private static SpinLock toDefaultAmmoUpdate_spinlock = new SpinLock();
     public static void UpdateDefaultAmmo(this CustomAmmoCategory cat) {
-      if (toDefaultAmmoUpdate.TryGetValue(cat.Id, out HashSet<WeaponDef> wDefs)) {
-        foreach(WeaponDef wDef in wDefs) {
-          if(wDef.StartingAmmoCapacity != 0) {
-            ExtAmmunitionDef extAmmunition = cat.defaultAmmo();
-            ExtWeaponDef extWeapon = wDef.exDef();
-            if (extWeapon.InternalAmmo.ContainsKey(extAmmunition.Id) == false) { extWeapon.InternalAmmo.Add(extAmmunition.Id, wDef.StartingAmmoCapacity); }
-            Traverse.Create(wDef).Property<int>("StartingAmmoCapacity").Value = 0;
+      bool locked = false;
+      try {
+        toDefaultAmmoUpdate_spinlock.Enter(ref locked);
+        if (toDefaultAmmoUpdate.TryGetValue(cat.Id, out HashSet<WeaponDef> wDefs)) {
+          foreach (WeaponDef wDef in wDefs) {
+            if (wDef.StartingAmmoCapacity != 0) {
+              ExtAmmunitionDef extAmmunition = cat.defaultAmmo();
+              ExtWeaponDef extWeapon = wDef.exDef();
+              if (extWeapon.InternalAmmo.ContainsKey(extAmmunition.Id) == false) { extWeapon.InternalAmmo.Add(extAmmunition.Id, wDef.StartingAmmoCapacity); }
+              Traverse.Create(wDef).Property<int>("StartingAmmoCapacity").Value = 0;
+            }
           }
+          toDefaultAmmoUpdate.Remove(cat.Id);
         }
-        toDefaultAmmoUpdate.Remove(cat.Id);
+      } catch(Exception e){
+        if (locked) { toDefaultAmmoUpdate_spinlock.Exit(); locked = false; }
+        throw e;
       }
+      if (locked) { toDefaultAmmoUpdate_spinlock.Exit(); locked = false; }
     }
     public static void RegisterForDefaultAmmoUpdate(this WeaponDef weaponDef, CustomAmmoCategory cat) {
       if(toDefaultAmmoUpdate.TryGetValue(cat.Id, out HashSet<WeaponDef> wDefs) == false) {
@@ -1191,13 +1208,21 @@ namespace CustomAmmoCategoriesPatches {
           extAmmoDef.statusEffects = tmpList.ToArray();
         }
         if (defaultAmmunitions.ContainsKey(extAmmoDef.AmmoCategory.Id) == false) {
-          defaultAmmunitions.Add(extAmmoDef.AmmoCategory.Id, extAmmoDef);
+          defaultAmmunitions.TryAdd(extAmmoDef.AmmoCategory.Id, extAmmoDef);
           extAmmoDef.AmmoCategory.UpdateDefaultAmmo();
         };
         CustomAmmoCategories.RegisterExtAmmoDef(extAmmoDef.Id, extAmmoDef);
         if (__instance.AmmoCategoryValue != null) {
-          if (ammunitionsDefs.ContainsKey(__instance.AmmoCategoryValue.Name) == false) { ammunitionsDefs.Add(__instance.AmmoCategoryValue.Name, new HashSet<string>()); }
-          if (ammunitionsDefs[__instance.AmmoCategoryValue.Name].Contains(__instance.Description.Id) == false) { ammunitionsDefs[__instance.AmmoCategoryValue.Name].Add(__instance.Description.Id); }
+          bool locked = false;
+          try {
+            ammunitionsDefs_lock.Enter(ref locked);
+            if (ammunitionsDefs.ContainsKey(__instance.AmmoCategoryValue.Name) == false) { ammunitionsDefs.Add(__instance.AmmoCategoryValue.Name, new HashSet<string>()); }
+            if (ammunitionsDefs[__instance.AmmoCategoryValue.Name].Contains(__instance.Description.Id) == false) { ammunitionsDefs[__instance.AmmoCategoryValue.Name].Add(__instance.Description.Id); }
+          }catch(Exception e) {
+            if (locked) { ammunitionsDefs_lock.Exit(); locked = false; }
+            throw e;
+          }
+          if (locked) { ammunitionsDefs_lock.Exit(); locked = false; }
         }
         if(extAmmoDef.AutoRefill != AutoRefilType.Automatic) {
           extAmmoDef.ammoOnlyBoxes.Add(__instance.getGenericBox());

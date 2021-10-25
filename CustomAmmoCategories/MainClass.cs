@@ -25,6 +25,7 @@ using BattleTech.Rendering;
 using CustomAmmoCategoriesPatches;
 using CustomAmmoCategoriesLog;
 using CustAmmoCategoriesPatches;
+using System.Collections.Concurrent;
 
 namespace CustomAmmoCategoriesPatches {
 
@@ -418,10 +419,10 @@ namespace CustAmmoCategories {
     public static string GUIDStatisticName = "WeaponGUID";
     public static string StreakStatisticName = "Streak";
     public static string WeaponModeStatisticName = "CAC-WeaponMode";
-    private static Dictionary<string, CustomAmmoCategory> items;
-    private static Dictionary<string, ExtAmmunitionDef> ExtAmmunitionDef;
-    private static Dictionary<string, ExtWeaponDef> ExtWeaponDef;
-    private static Dictionary<string, Dictionary<string, WeaponEffect>> WeaponEffects;
+    private static ConcurrentDictionary<string, CustomAmmoCategory> items;
+    private static ConcurrentDictionary<string, ExtAmmunitionDef> ExtAmmunitionDef;
+    private static ConcurrentDictionary<string, ExtWeaponDef> ExtWeaponDef;
+    private static ConcurrentDictionary<string, ConcurrentDictionary<string, WeaponEffect>> WeaponEffects;
     public static CustomAmmoCategory NotSetCustomAmmoCategoty;
     public static ExtAmmunitionDef DefaultAmmo;
     public static ExtWeaponDef DefaultWeapon;
@@ -473,11 +474,11 @@ namespace CustAmmoCategories {
       return result;
     }
     public static void registerExtWeaponDef(string defId, ExtWeaponDef def) {
-      if (CustomAmmoCategories.ExtWeaponDef.ContainsKey(defId) == false) {
-        CustomAmmoCategories.ExtWeaponDef.Add(defId, def);
-      } else {
-        CustomAmmoCategories.ExtWeaponDef[defId] = def;
-      }
+      //if (CustomAmmoCategories.ExtWeaponDef.ContainsKey(defId) == false) {
+      CustomAmmoCategories.ExtWeaponDef.AddOrUpdate(defId, def, (k,v) => { return def; });
+      //} else {
+        //CustomAmmoCategories.ExtWeaponDef[defId] = def;
+      //}
     }
     public static bool isRegistredWeapon(string defId) {
       return CustomAmmoCategories.ExtWeaponDef.ContainsKey(defId);
@@ -527,7 +528,7 @@ namespace CustAmmoCategories {
       return CustomAmmoCategories.WeaponEffects[wGUID][weaponEffectId];
     }
     public static void ClearWeaponEffects(string wGUID) {
-      if (CustomAmmoCategories.WeaponEffects.ContainsKey(wGUID)) { WeaponEffects.Remove(wGUID); };
+      if (CustomAmmoCategories.WeaponEffects.ContainsKey(wGUID)) { WeaponEffects.TryRemove(wGUID, out var val); };
     }
 
     /*public static void testFireAMS(Weapon weapon) {
@@ -573,7 +574,7 @@ namespace CustAmmoCategories {
         Log.LogWrite(" already contains GUID:" + wGUID + "\n");
         return;
       }
-      WeaponEffects[wGUID] = new Dictionary<string, WeaponEffect>();
+      WeaponEffects[wGUID] = new ConcurrentDictionary<string, WeaponEffect>();
       List<ExtAmmunitionDef> avaibleAmmo = CustomAmmoCategories.getAllAvaibleAmmo(weapon);
       foreach (ExtAmmunitionDef extAmmo in avaibleAmmo) {
         if (string.IsNullOrEmpty(extAmmo.WeaponEffectID)) {
@@ -624,7 +625,7 @@ namespace CustAmmoCategories {
     public static void RegisterExtAmmoDef(string defId, ExtAmmunitionDef extAmmoDef) {
       CustomAmmoCategoriesLog.Log.LogWrite("Registring extAmmoDef " + defId + " D/H/A " + extAmmoDef.ProjectilesPerShot + "/" + extAmmoDef.HeatDamagePerShot + "/" + extAmmoDef.AccuracyModifier + "\n");
       if (ExtAmmunitionDef.ContainsKey(defId) == false) {
-        ExtAmmunitionDef.Add(defId, extAmmoDef);
+        ExtAmmunitionDef.AddOrUpdate(defId, extAmmoDef, (k,v)=> { return extAmmoDef; });
       } else {
         ExtAmmunitionDef[defId] = extAmmoDef;
         Log.M.WL("already registred");
@@ -880,13 +881,13 @@ namespace CustAmmoCategories {
     public static void CustomCategoriesInit() {
       if (isInited == true) { return; };
       isInited = true;
-      CustomAmmoCategories.items = new Dictionary<string, CustomAmmoCategory>();
+      CustomAmmoCategories.items = new ConcurrentDictionary<string, CustomAmmoCategory>();
       //CustomAmmoCategories.AmmunitionDef = new Dictionary<string, CustomAmmoCategory>();
       //CustomAmmoCategories.WeaponDef = new Dictionary<string, CustomAmmoCategory>();
-      CustomAmmoCategories.WeaponEffects = new Dictionary<string, Dictionary<string, WeaponEffect>>();
+      CustomAmmoCategories.WeaponEffects = new ConcurrentDictionary<string, ConcurrentDictionary<string, WeaponEffect>>();
       //CustomAmmoCategories.WeaponAmmo = new Dictionary<string, WeaponAmmoInfo>();
-      CustomAmmoCategories.ExtAmmunitionDef = new Dictionary<string, ExtAmmunitionDef>();
-      CustomAmmoCategories.ExtWeaponDef = new Dictionary<string, ExtWeaponDef>();
+      CustomAmmoCategories.ExtAmmunitionDef = new ConcurrentDictionary<string, ExtAmmunitionDef>();
+      CustomAmmoCategories.ExtWeaponDef = new ConcurrentDictionary<string, ExtWeaponDef>();
       CustomAmmoCategories.DefaultAmmo = new ExtAmmunitionDef();
       CustomAmmoCategories.DefaultWeapon = new ExtWeaponDef();
       CustomAmmoCategories.DefaultWeaponMode = new WeaponMode();
@@ -1377,11 +1378,12 @@ namespace CustAmmoCategories {
     public List<string> RemoveToHitModifiers { get; set; }
     public bool ImprovedBallisticByDefault { get; set; } = true;
     [SelfDocumentationDefaultValue("empty"), SelfDocumentationTypeName("dictionary of { \"<string>\": { DesignMaskMoveCostInfo structure } }")]
-    public Dictionary<string, DesignMaskMoveCostInfo> DefaultMoveCosts { get; set; }
+    public Dictionary<string, DesignMaskMoveCostInfo> DefaultMoveCosts { get; set; } = new Dictionary<string, DesignMaskMoveCostInfo>();
     public bool DestroyedLocationsCritTransfer { get; set; } = false;
     public string OnlineServerHost { get; set; } = "192.168.78.162";
     public int OnlineServerServicePort { get; set; } = 143;
     public int OnlineServerDataPort { get; set; } = 443;
+    public bool UseFastPreloading { get; set; } = false;
     public Settings() {
       //directory = string.Empty;
       //debugLog = true;
@@ -1558,6 +1560,7 @@ namespace CACMain {
       Log.M.TWL(0, "FinishedLoading", true);
       try {
         CustomAmmoCategories.CustomCategoriesInit();
+        CustomTranslation.Core.RegisterResetCache(FixedMechDefHelper.ResetCache);
       }catch(Exception e) {
         Log.M.TWL(0, e.ToString(), true);
       }
@@ -1573,6 +1576,7 @@ namespace CACMain {
       Log.M.TWL(0,"Initing... " + directory + " version: " + Assembly.GetExecutingAssembly().GetName().Version + " debug:"+ CustomAmmoCategories.Settings.debugLog, true);
       Log.M.TWL(0,"Reading settings");
       SelfDocumentationHelper.CreateSelfDocumentation(directory);
+      FixedMechDefHelper.Init(directory);
       CustomAmmoCategories.Settings = JsonConvert.DeserializeObject<CustAmmoCategories.Settings>(File.ReadAllText(settings_filename));
       CustomAmmoCategories.Settings.directory = directory;
       foreach(var dd in CustomAmmoCategories.Settings.DefaultAoEDamageMult) {

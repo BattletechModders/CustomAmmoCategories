@@ -84,13 +84,13 @@ namespace CustomUnits {
     public static void RequestInventoryPrefabs(this MechDef mechDef, DataManager.DependencyLoadRequest dependencyLoad, uint loadWeight) {
       if (loadWeight <= 10U) return;
       MechComponentRef[] inventory = Traverse.Create(mechDef).Field<MechComponentRef[]>("inventory").Value;
-      Log.TWL(0, "MechDef.RequestInventoryPrefabs "+mechDef.Description.Id+" inventory:"+inventory.Length);
+      //Log.TWL(0, "MechDef.RequestInventoryPrefabs "+mechDef.Description.Id+" inventory:"+inventory.Length);
       HashSet<string> prefabNames = mechDef.CollectInventoryPrefabs(true);
       foreach(string prefabName in prefabNames) {
         string effective_prefabName = prefabName;
         CustomHardpointDef customHardpoint = CustomHardPointsHelper.Find(prefabName);
         if (customHardpoint != null) { if (string.IsNullOrEmpty(customHardpoint.prefab) == false) { effective_prefabName = customHardpoint.prefab; } }
-        Log.WL(0,"Request:"+effective_prefabName);
+        //Log.WL(0,"Request:"+effective_prefabName);
         dependencyLoad.RequestResource(BattleTechResourceType.Prefab, effective_prefabName);
       }
     }
@@ -154,15 +154,23 @@ namespace CustomUnits {
       }
     }
     private static Stopwatch RefreshInventory_timer = new Stopwatch();
+    private static SpinLock inventory_lock = new SpinLock();
     public static void RefreshInventory(this MechDef mechDef) {
       RefreshInventory_timer.Start();
-      Log.TWL(0, "MechDef.RefreshInventory " + mechDef.Description.Id);
+      //Log.TWL(0, "MechDef.RefreshInventory " + mechDef.Description.Id);
       mechDef.InsertFixedEquipmentIntoInventory();
-      MechComponentRef[] inventory = Traverse.Create(mechDef).Field<MechComponentRef[]>("inventory").Value;
+      MechComponentRef[] inventory = null;
+      bool locked = false;
+      try {
+        if (inventory_lock.IsHeldByCurrentThread == false) { inventory_lock.Enter(ref locked); }
+        inventory = Traverse.Create(mechDef).Field<MechComponentRef[]>("inventory").Value;
+      }finally {
+        if (locked) { inventory_lock.Exit(); }
+      }
       for (int index = 0; index < inventory.Length; ++index) {
         MechComponentRef mechComponentRef = inventory[index];
         if (mechComponentRef == null) {
-          Log.TWL(0,"Found an empty inventory slot",true);
+          //Log.TWL(0,"Found an empty inventory slot",true);
         } else {
           if (mechComponentRef.DataManager == null) {
             mechComponentRef.DataManager = mechDef.DataManager;
@@ -176,9 +184,9 @@ namespace CustomUnits {
       }
       mechDef.meleeWeaponRef.DataManager = mechDef.DataManager;
       mechDef.meleeWeaponRef.RefreshComponentDef();
-      for (int index = 0; index < inventory.Length; ++index) {
-        Log.WL(1, "[" + index + "] " + (inventory[index].Def == null ? "null" : inventory[index].Def.Description.Id) + " prefabName:" + inventory[index].prefabName + " hasPrefabName:" + inventory[index].hasPrefabName);
-      }
+      //for (int index = 0; index < inventory.Length; ++index) {
+      //  Log.WL(1, "[" + index + "] " + (inventory[index].Def == null ? "null" : inventory[index].Def.Description.Id) + " prefabName:" + inventory[index].prefabName + " hasPrefabName:" + inventory[index].hasPrefabName);
+      //}
       if (mechDef.meleeWeaponRef.Def != null && !mechDef.meleeWeaponRef.hasPrefabName) {
         mechDef.meleeWeaponRef.prefabName = "chrPrfWeap_generic_melee";
         mechDef.meleeWeaponRef.hasPrefabName = true;
@@ -210,12 +218,12 @@ namespace CustomUnits {
             }
           }
         }
+        //Log.TWL(0, "MechDef.RefreshInventoryResult " + mechDef.Description.Id + " overall time:" + RefreshInventory_timer.Elapsed.TotalSeconds);
+        //for (int index = 0; index < inventory.Length; ++index) {
+        //  Log.WL(1, "[" + index + "] " + (inventory[index].Def == null ? "null" : inventory[index].Def.Description.Id) + " prefabName:" + inventory[index].prefabName + " hasPrefabName:" + inventory[index].hasPrefabName);
+        //}
       }
       RefreshInventory_timer.Stop();
-      Log.TWL(0, "MechDef.RefreshInventoryResult " + mechDef.Description.Id+" overall time:"+ RefreshInventory_timer.Elapsed.TotalSeconds);
-      for (int index = 0; index < inventory.Length; ++index) {
-        Log.WL(1, "["+index+"] " + (inventory[index].Def==null?"null":inventory[index].Def.Description.Id) + " prefabName:" + inventory[index].prefabName + " hasPrefabName:" + inventory[index].hasPrefabName);
-      }
     }
     //private static Dictionary<int, HardpointCalculator> calulatorStack = new Dictionary<int, HardpointCalculator>();
 #pragma warning restore CS0252
@@ -343,7 +351,7 @@ namespace CustomUnits {
       }
     }
     public static void Postfix(VehicleChassisDef __instance, DataManager dataManager, DataManager.DependencyLoadRequest dependencyLoad, uint activeRequestWeight) {
-      Log.LogWrite(0, "VehicleChassisDef.GatherDependencies postfix " + __instance.Description.Id, true);
+      //Log.LogWrite(0, "VehicleChassisDef.GatherDependencies postfix " + __instance.Description.Id, true);
       try {
         if (string.IsNullOrEmpty(Core.Settings.CustomJumpJetsPrefabSrc) == false) {
           //if (dataManager.Exists(BattleTechResourceType.Prefab,Core.Settings.CustomJumpJetsPrefabSrc) == false) {
@@ -355,7 +363,7 @@ namespace CustomUnits {
         }
         UnitCustomInfo info = __instance.GetCustomInfo();
         if (info == null) {
-          Log.LogWrite(1, "no custom", true);
+          //Log.LogWrite(1, "no custom", true);
           return;
         }
         info.AddCustomDeps(dependencyLoad);
@@ -409,7 +417,7 @@ namespace CustomUnits {
       return true;
     }
     public static void Postfix(VehicleChassisDef __instance, uint loadWeight, ref bool __result) {
-      Log.LogWrite(0, "VehicleChassisDef.DependenciesLoaded postfix " + __instance.Description.Id, true);
+      //Log.LogWrite(0, "VehicleChassisDef.DependenciesLoaded postfix " + __instance.Description.Id, true);
       if (__instance.DataManager == null) { return; }
       if (__result == false) { return; }
       try {
@@ -427,7 +435,7 @@ namespace CustomUnits {
         }
         UnitCustomInfo info = __instance.GetCustomInfo();
         if (info == null) {
-          Log.LogWrite(1, "no custom", true);
+          //Log.LogWrite(1, "no custom", true);
           return;
         }
         if (info.CheckCustomDeps(__instance.DataManager) == false) {
@@ -493,7 +501,7 @@ namespace CustomUnits {
       }
     }
     public static void Postfix(ChassisDef __instance, DataManager dataManager, DataManager.DependencyLoadRequest dependencyLoad, uint activeRequestWeight) {
-      Log.LogWrite(0, "ChassisDef.GatherDependencies postfix " + activeRequestWeight + " " + __instance.Description.Id, true);
+      //Log.LogWrite(0, "ChassisDef.GatherDependencies postfix " + activeRequestWeight + " " + __instance.Description.Id, true);
       try {
         if (string.IsNullOrEmpty(Core.Settings.CustomJumpJetsPrefabSrc) == false) {
           //if (dataManager.Exists(BattleTechResourceType.Prefab,Core.Settings.CustomJumpJetsPrefabSrc) == false) {
@@ -506,7 +514,7 @@ namespace CustomUnits {
         __instance.AddCustomRepDeps(dependencyLoad);
         UnitCustomInfo info = __instance.GetCustomInfo();
         if (info == null) {
-          Log.LogWrite(1, "no custom", true);
+          //Log.LogWrite(1, "no custom", true);
           return;
         }
         info.AddCustomDeps(dependencyLoad);
@@ -529,7 +537,7 @@ namespace CustomUnits {
       return Transpilers.MethodReplacer(instructions, targetPropertyGetter, replacementMethod);
     }
     public static void Postfix(MechDef __instance, DataManager dataManager, DataManager.DependencyLoadRequest dependencyLoad, uint activeRequestWeight) {
-      Log.LogWrite(0, "MechDef.GatherDependencies postfix " + __instance.Description.Id + " " + activeRequestWeight, true);
+      //Log.LogWrite(0, "MechDef.GatherDependencies postfix " + __instance.Description.Id + " " + activeRequestWeight, true);
     }
   }
   [HarmonyPatch(typeof(MechDef))]
@@ -682,7 +690,7 @@ namespace CustomUnits {
       }
     }
     public static void Postfix(ChassisDef __instance, uint loadWeight, ref bool __result) {
-      Log.TWL(0, "ChassisDef.DependenciesLoaded postfix " + loadWeight + " " + __instance.Description.Id+" DataManager:"+(__instance.DataManager==null?"null":"not null")+" result:"+__result);
+      //Log.TWL(0, "ChassisDef.DependenciesLoaded postfix " + loadWeight + " " + __instance.Description.Id+" DataManager:"+(__instance.DataManager==null?"null":"not null")+" result:"+__result);
       if (__instance.DataManager == null) { return; }
       if (__result == false) { return; }
       try {

@@ -16,6 +16,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using SVGImporter;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
@@ -1484,13 +1485,13 @@ namespace CustomUnits {
     //  }
     //}
     public static bool Prefix(MechDef __instance, ref string json) {
-      Log.TW(0, "MechDef.FromJSON fake");
+      //Log.TW(0, "MechDef.FromJSON fake");
       try {
         JObject olddef = JObject.Parse(json);
         string id = (string)olddef["Description"]["Id"];
         string chassisId = (string)olddef["ChassisID"];
         bool isFake = chassisId.IsInFakeChassis();
-        Log.WL(1,id+" chassis:"+chassisId+" isFake:"+isFake);
+        //Log.WL(1,id+" chassis:"+chassisId+" isFake:"+isFake);
         if (isFake == false) { return true; }
         JObject newdef = new JObject();
         if (olddef["Chassis"] != null) { return true; };
@@ -1506,18 +1507,26 @@ namespace CustomUnits {
           ArmorMultiplierVehicle = CombatValueMultipliers.Value.ArmorMultiplierVehicle;
           StructureMultiplierVehicle = CombatValueMultipliers.Value.StructureMultiplierVehicle;
         }
-        Log.WL(1, "ArmorMultiplierVehicle:"+ ArmorMultiplierVehicle);
-        Log.WL(1, "StructureMultiplierVehicle:" + StructureMultiplierVehicle);
+        //Log.WL(1, "ArmorMultiplierVehicle:"+ ArmorMultiplierVehicle);
+        //Log.WL(1, "StructureMultiplierVehicle:" + StructureMultiplierVehicle);
         newdef["Description"] = olddef["Description"];
         newdef["ChassisID"] = olddef["ChassisID"];
         newdef["simGameMechPartCost"] = 0;
         newdef["MechTags"] = olddef["VehicleTags"];
-
+        TagSet MechTags = null;
+        if (olddef["VehicleTags"] != null) {
+          MechTags = new TagSet();
+          MechTags.FromJSON(olddef["VehicleTags"].ToString());
+        } else {
+          MechTags = new TagSet();
+        }
+        MechTags.Add("fake_vehicle");
+        newdef["MechTags"] = JObject.Parse(MechTags.ToJSON());
         JArray vInventory = olddef["inventory"] as JArray;
         JArray mInventory = new JArray();
-        Log.WL(1, "inventory");
+       // Log.WL(1, "inventory");
         foreach (JObject vcRef in vInventory) {
-          Log.WL(2, vcRef["ComponentDefID"] + ":" + vcRef["MountedLocation"]);
+          //Log.WL(2, vcRef["ComponentDefID"] + ":" + vcRef["MountedLocation"]);
           VehicleChassisLocations vLocation = (VehicleChassisLocations)Enum.Parse(typeof(VehicleChassisLocations), (string)vcRef["MountedLocation"]);
           ChassisLocations location = ChassisLocations.Head;
           switch (vLocation) {
@@ -1601,7 +1610,7 @@ namespace CustomUnits {
         }
         newdef["Locations"] = mLocations;
         json = newdef.ToString(Newtonsoft.Json.Formatting.Indented);
-        Log.WL(1, json);
+        //Log.WL(1, json);
       } catch (Exception e) {
         Log.LogWrite(json, true);
         Log.LogWrite(e.ToString() + "\n", true);
@@ -1610,16 +1619,16 @@ namespace CustomUnits {
     }
   }
   public static class ChassisDef_FromJSON_fake {
-    private static HashSet<string> fakeHardpoints = new HashSet<string>();
-    public static bool isFakeHardpoint(this HardpointDataDef hardpoint) { return fakeHardpoints.Contains(hardpoint.ID); }
+    private static ConcurrentDictionary<string, byte> fakeHardpoints = new ConcurrentDictionary<string, byte>();
+    public static bool isFakeHardpoint(this HardpointDataDef hardpoint) { return fakeHardpoints.ContainsKey(hardpoint.ID); }
     public static string ConstructMechFakeVehicle(this string json) {
-      Log.TW(0, "ChassisDef.ConstructFake");
+      //Log.TW(0, "ChassisDef.ConstructFake");
       string result = json;
       try {
         JObject olddef = JObject.Parse(json);
         string id = (string)olddef["Description"]["Id"];
         bool isFake = id.IsInFakeChassis();
-        Log.WL(1, id + " isFake:" + isFake);
+        //Log.WL(1, id + " isFake:" + isFake);
         if (isFake == false) { return result; }
         float ArmorMultiplierVehicle = 1f;
         float StructureMultiplierVehicle = 1f;
@@ -1633,8 +1642,8 @@ namespace CustomUnits {
           ArmorMultiplierVehicle = MechDef_FromJSON_fake.CombatValueMultipliers.Value.ArmorMultiplierVehicle;
           StructureMultiplierVehicle = MechDef_FromJSON_fake.CombatValueMultipliers.Value.StructureMultiplierVehicle;
         }
-        Log.WL(1, "ArmorMultiplierVehicle:" + ArmorMultiplierVehicle);
-        Log.WL(1, "StructureMultiplierVehicle:" + StructureMultiplierVehicle);
+        //Log.WL(1, "ArmorMultiplierVehicle:" + ArmorMultiplierVehicle);
+        //Log.WL(1, "StructureMultiplierVehicle:" + StructureMultiplierVehicle);
         JObject newdef = new JObject();
         if (olddef["Custom"] != null) {
           newdef["Custom"] = olddef["Custom"];
@@ -1643,7 +1652,7 @@ namespace CustomUnits {
         newdef["MovementCapDefID"] = olddef["MovementCapDefID"];
         newdef["PathingCapDefID"] = olddef["PathingCapDefID"];
         newdef["HardpointDataDefID"] = olddef["HardpointDataDefID"];
-        fakeHardpoints.Add((string)olddef["HardpointDataDefID"]);
+        fakeHardpoints.TryAdd((string)olddef["HardpointDataDefID"],1);
         newdef["PrefabIdentifier"] = olddef["PrefabIdentifier"];
         newdef["PrefabBase"] = olddef["PrefabBase"];
         newdef["VariantName"] = olddef["Description"]["Name"];
@@ -1697,7 +1706,7 @@ namespace CustomUnits {
           //foreach (JObject vcLoc in vLocations) {
           ChassisLocations location = ChassisLocations.None;
           JToken vcLoc = vLocations[loc_index];
-          Log.WL(2, vcLoc["Location"] + ":" + vcLoc["InternalStructure"]);
+          //Log.WL(2, vcLoc["Location"] + ":" + vcLoc["InternalStructure"]);
           VehicleChassisLocations vLocation = VehicleChassisLocations.None;
           if (vcLoc["Location"] == null) {
             switch (loc_index) {
@@ -1739,7 +1748,7 @@ namespace CustomUnits {
         }
         newdef["Locations"] = mLocations;
         result = newdef.ToString(Newtonsoft.Json.Formatting.Indented);
-        Log.WL(1, result);
+        //Log.WL(1, result);
       } catch (Exception e) {
         Log.TWL(0,json, true);
         Log.TWL(0,e.ToString(), true);

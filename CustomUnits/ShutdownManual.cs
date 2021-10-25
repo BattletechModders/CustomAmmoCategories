@@ -355,7 +355,7 @@ namespace CustomUnits {
   public static class PilotDef_GatherDependencies {
     public static void Postfix(PilotDef __instance, DataManager dataManager, DataManager.DependencyLoadRequest dependencyLoad, uint activeRequestWeight) {
       try {
-        Log.TWL(0, "PilotDef.GatherDependencies " + __instance.Description.Id);
+        //Log.TWL(0, "PilotDef.GatherDependencies " + __instance.Description.Id);
         dependencyLoad.RequestResource(BattleTechResourceType.AbilityDef, CombatHUDMechwarriorTrayEx.ShutdownAbilityId);
       } catch (Exception e) {
         Log.TWL(0, e.ToString(), true);

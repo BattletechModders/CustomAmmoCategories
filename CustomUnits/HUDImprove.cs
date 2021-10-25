@@ -19,6 +19,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using SVGImporter;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -2313,7 +2314,7 @@ namespace CustomUnits {
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { typeof(string) })]
   public static class AbilityDef_FromJSON {
-    private static Dictionary<string, AbilityDefEx> exDefinitions = new Dictionary<string, AbilityDefEx>();
+    private static ConcurrentDictionary<string, AbilityDefEx> exDefinitions = new ConcurrentDictionary<string, AbilityDefEx>();
     private static AbilityDefEx empty = new AbilityDefEx();
     public static AbilityDefEx exDef(this AbilityDef aDef) {
       if (exDefinitions.TryGetValue(aDef.Id, out AbilityDefEx res)) {
@@ -2322,7 +2323,7 @@ namespace CustomUnits {
       return empty;
     }
     public static void Prefix(AbilityDef __instance, ref string json, ref AbilityDefEx __state) {
-      Log.LogWrite("AbilityDef.FromJSON");
+      //Log.LogWrite("AbilityDef.FromJSON");
       JObject jAbilityDef = JObject.Parse(json);
       __state = new AbilityDefEx();
       __state.Priority = 0;
@@ -2330,8 +2331,9 @@ namespace CustomUnits {
       if (jAbilityDef["CanBeUsedInShutdown"] != null) { __state.CanBeUsedInShutdown = (bool)jAbilityDef["CanBeUsedInShutdown"]; jAbilityDef.Remove("CanBeUsedInShutdown"); }
       json = jAbilityDef.ToString(Formatting.Indented);
     }
-    public static void Postfix(AbilityDef __instance, string json, ref AbilityDefEx __state) {
-      if (exDefinitions.ContainsKey(__instance.Id)) { exDefinitions[__instance.Id] = __state; } else { exDefinitions.Add(__instance.Id, __state); }
+    public static void Postfix(AbilityDef __instance, string json, AbilityDefEx __state) {
+      exDefinitions.AddOrUpdate(__instance.Id, __state, (k, v) => { return __state; });
+      //if (exDefinitions.ContainsKey(__instance.Id)) { exDefinitions[__instance.Id] = __state; } else { exDefinitions.Add(__instance.Id, __state); }
     }
   }
 }
