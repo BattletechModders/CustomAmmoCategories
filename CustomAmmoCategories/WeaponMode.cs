@@ -219,7 +219,7 @@ namespace CustAmmoCategories {
     public float MinMissRadius { get; set; } = 0f;
     public float MaxMissRadius { get; set; } = 0f;
     [SelfDocumentationDefaultValue("empty"), SelfDocumentationTypeName("Dictionary of {\"<tag name>\":<float modifier>}")]
-    public Dictionary<string, float> TagsAccuracyModifiers { get; set; }
+    public Dictionary<string, float> TagsAccuracyModifiers { get; set; } = new Dictionary<string, float>();
     public TripleBoolean AMSImmune { get; set; } = TripleBoolean.NotSet;
     public float AMSDamage { get; set; } = 0f;
     public float MissileHealth { get; set; } = 0f;

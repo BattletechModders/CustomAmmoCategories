@@ -251,7 +251,7 @@ namespace CustAmmoCategories {
     public float HeatMultiplier { get; set; } = 1f;
     public float InstabilityMultiplier { get; set; } = 1f;
     [JsonIgnore, SelfDocumentationTypeName("string, id from BattleTech.AmmoCategoryEnumeration or CustomAmmo"), SelfDocumentationDefaultValue("NotSet")]
-    public CustomAmmoCategory AmmoCategory { get; set; }
+    public CustomAmmoCategory AmmoCategory { get; set; } = CustomAmmoCategories.NotSetCustomAmmoCategoty;
     public float SpreadRange { get; set; } = 0f;
     public float AOERange { get; set; } = 0f;
     public float AOEDamage { get; set; } = 0f;
@@ -296,7 +296,7 @@ namespace CustAmmoCategories {
     [SelfDocumentationDefaultValue("empty"), SelfDocumentationTypeName("MineFieldDef structure")]
     public MineFieldDef MineField { get; set; } = new MineFieldDef();
     [SelfDocumentationDefaultValue("empty"), SelfDocumentationTypeName("Dictionary of {\"<tag name>\":<float modifier>}")]
-    public Dictionary<string, float> TagsAccuracyModifiers { get; set; }
+    public Dictionary<string, float> TagsAccuracyModifiers { get; set; } = new Dictionary<string, float>();
     public TripleBoolean Streak { get; set; } = TripleBoolean.NotSet;
     public float FireDelayMultiplier { get; set; } = 1f;
     public float MissileFiringIntervalMultiplier { get; set; } = 1f;

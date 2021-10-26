@@ -608,19 +608,28 @@ namespace CustomAmmoCategoriesPatches {
       this.ui_inited = false;
     }
     public void RefreshText() {
-      if (ammoText == null) { return; }
-      if (parent.DisplayedWeapon == null) { ammoText.SetText("--"); return; }
-      ExtAmmunitionDef ammo = parent.DisplayedWeapon.ammo();
-      string ammoBoxName = string.Empty;
-      if (ammo.AmmoCategory.BaseCategory.Is_NotSet == false) {
-        if (parent.DisplayedWeapon.isWeaponHasAmmoVariants() || (ammo.HideIfOnlyVariant == false)) {
-          if (string.IsNullOrEmpty(ammo.UIName) == false) { ammoBoxName = ammo.UIName; } else { ammoBoxName = ammo.Name; };
+      try {
+        if (ammoText == null) { return; }
+        if (parent.DisplayedWeapon == null) { ammoText.SetText("--"); return; }
+        ExtAmmunitionDef ammo = parent.DisplayedWeapon.ammo();
+        string ammoBoxName = string.Empty;
+        if (ammo.AmmoCategory.BaseCategory.Is_NotSet == false) {
+          if (parent.DisplayedWeapon.isWeaponHasAmmoVariants() || (ammo.HideIfOnlyVariant == false)) {
+            if (string.IsNullOrEmpty(ammo.UIName) == false) { ammoBoxName = ammo.UIName; } else { ammoBoxName = ammo.Name; };
+          }
         }
-      }
-      if (string.IsNullOrEmpty(ammoBoxName)) {
-        ammoText.SetText("--");
-      } else {
-        ammoText.SetText(ammoBoxName);
+        if (string.IsNullOrEmpty(ammoBoxName)) {
+          ammoText.SetText("--");
+        } else {
+          ammoText.SetText(ammoBoxName);
+        }
+      }catch(Exception e) {
+        Log.M.TWL(0, "parent.DisplayedWeapon:"+(parent.DisplayedWeapon == null?"null": parent.DisplayedWeapon.defId));
+        if(parent.DisplayedWeapon != null) {
+          ExtAmmunitionDef ammo = parent.DisplayedWeapon.ammo();
+          Log.M.WL(1, "ammo:" + (ammo == null?"null":ammo.Id));
+        }
+        Log.M.TWL(0, e.ToString(), true);
       }
     }
     public void RefreshColor(bool parentHovered) {
