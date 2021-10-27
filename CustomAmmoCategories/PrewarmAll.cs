@@ -1,8 +1,10 @@
 ﻿using BattleTech;
 using BattleTech.Data;
 using BattleTech.Save;
+using BattleTech.Save.Core;
 using CustomAmmoCategoriesLog;
 using CustomComponents;
+using CustomTranslation;
 using Dapper;
 using Harmony;
 using HBS.Data;
@@ -19,8 +21,11 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
+using UnityEngine;
+using Log = CustomAmmoCategoriesLog.Log;
 
 namespace CustAmmoCategories {
   [HarmonyPatch(typeof(JSONSerializationUtility))]
@@ -197,115 +202,106 @@ namespace CustAmmoCategories {
       Log.P.TWL(0, "GameInstanceSave.RequestResourcesCustom:" + __state.Elapsed.TotalSeconds, true);
     }
   }
+  [HarmonyPatch(typeof(SaveManager))]
+  [HarmonyPatch(MethodType.Constructor)]
+  [HarmonyPatch(new Type[] { typeof(MessageCenter) })]
+  public static class SaveManager_Constructor {
+    public static void Postfix(SaveManager __instance) {
+      Log.P.TWL(0, "SaveManager:" + Traverse.Create(Traverse.Create(Traverse.Create(__instance).Field<SaveSystem>("saveSystem").Value).Field<WriteLocation>("localWriteLocation").Value).Field<string>("rootPath").Value);
+      FixedMechDefHelper.Init(Path.GetDirectoryName(Traverse.Create(Traverse.Create(Traverse.Create(__instance).Field<SaveSystem>("saveSystem").Value).Field<WriteLocation>("localWriteLocation").Value).Field<string>("rootPath").Value));
+    }
+  }
   public enum FastLoadStage { Preload, Dependencies, RefreshMechs, Final, None  }
   public class MechDefCacheItem {
-    public string id { get; set; }
-    public string moddate { get; set; }
-    public string filepath { get; set; }
-  }
-  public class originalData {
-    public DateTime lastwriteTime { get; set; }
-    public JObject content { get; set; }
+    public string id { get; set; } = string.Empty;
+    public string Hash { get { return hash.toString(); } set { hash = value.toByteArray(); } }
+    [JsonIgnore]
+    public byte[] hash { get; set; } = new byte[] { };
+    [JsonIgnore]
+    public bool needUpdate { get; set; } = false;
+    //[JsonIgnore]
+    //public DateTime ModDate { get; set; }
+    //public string moddate { get { return ModDate.ToString(FastDataLoadHelper.DATETIME_FORMAT); } set { ModDate = DateTime.ParseExact(value, FastDataLoadHelper.DATETIME_FORMAT, CultureInfo.InvariantCulture); } }
+    public string payload { get; set; }
   }
   public static class FixedMechDefHelper {
+    private static string CacheFilePath = string.Empty;
     private static ConcurrentDictionary<string, MechDefCacheItem> mechDefsCache = new ConcurrentDictionary<string, MechDefCacheItem>();
-    private static ConcurrentDictionary<string, originalData> originalContent = new ConcurrentDictionary<string, originalData>();
-    private static string fullMDDBPath;
-    private static SqliteConnection connection;
-    public static string DBFilePath { get; set; }
-    public static string ConnectionURI => FixedMechDefHelper.CONNECTION_URI;
-    private static string ActiveDbPath => FixedMechDefHelper.DBFilePath;
-    private static string CONNECTION_URI => "URI=file:" + FixedMechDefHelper.ActiveDbPath;
-    public static bool ConnectionOpen {
-      get {
-        if (!FixedMechDefHelper.DatabaseExists() || FixedMechDefHelper.connection == null)
-          return false;
-        return FixedMechDefHelper.connection.State != ConnectionState.Broken || (uint)FixedMechDefHelper.connection.State > 0U;
+    private static readonly uint[] _lookup32 = CreateLookup32();
+    private static uint[] CreateLookup32() {
+      var result = new uint[256];
+      for (int i = 0; i < 256; i++) {
+        string s = i.ToString("X2");
+        result[i] = ((uint)s[0]) + ((uint)s[1] << 16);
       }
+      return result;
     }
-    public static bool DatabaseExists() {
-      if (string.IsNullOrEmpty(FixedMechDefHelper.fullMDDBPath))
-        FixedMechDefHelper.fullMDDBPath = FixedMechDefHelper.ActiveDbPath;
-      return File.Exists(FixedMechDefHelper.fullMDDBPath);
-    }
-    public static void Open() {
-      if (!FixedMechDefHelper.DatabaseExists()) {
-        Log.P.TWL(0,"Database does not exist on disk at: " + FixedMechDefHelper.fullMDDBPath);
-      } else {
-        if (FixedMechDefHelper.ConnectionOpen)
-          return;
-        try {
-          FixedMechDefHelper.connection = new SqliteConnection(FixedMechDefHelper.CONNECTION_URI);
-          FixedMechDefHelper.connection.Open();
-        } catch (Exception ex) {
-          Log.P.TWL(0, ex.ToString());
-          throw ex;
-        }
+    public static string toString(this byte[] bytes) {
+      var lookup32 = _lookup32;
+      var result = new char[bytes.Length * 2];
+      for (int i = 0; i < bytes.Length; i++) {
+        var val = lookup32[bytes[i]];
+        result[2 * i] = (char)val;
+        result[2 * i + 1] = (char)(val >> 16);
       }
+      return new string(result);
     }
-    public static void Close(bool autoCommitTransaction = false) {
-      if (ConnectionOpen == false) { return; }
-      connection.Close();
-      connection.Dispose();
-      connection = null;
-    }
-    public static string GetFromCache(string id,string path) {
-      if(mechDefsCache.TryGetValue(id,out MechDefCacheItem cacheItem) == false) {
-        return path;
+    public static byte[] toByteArray(this string hex) {
+      if (hex.Length % 2 == 1)
+        throw new Exception("The binary key cannot have an odd number of digits");
+      byte[] arr = new byte[hex.Length >> 1];
+      for (int i = 0; i < hex.Length >> 1; ++i) {
+        arr[i] = (byte)((GetHexVal(hex[i << 1]) << 4) + (GetHexVal(hex[(i << 1) + 1])));
       }
-      DateTime origDateTime = File.GetLastWriteTime(path);
-      DateTime cacheDateTime = DateTime.ParseExact(cacheItem.moddate, FastDataLoadHelper.DATETIME_FORMAT, CultureInfo.InvariantCulture);
-      TimeSpan delta = origDateTime - cacheDateTime;
-      if (delta.TotalSeconds > 1.0) {
-        cacheItem.filepath = path;
-        cacheItem.moddate = origDateTime.ToString(FastDataLoadHelper.DATETIME_FORMAT);
-      }
-      //Log.P.TWL(0, "GetFromCache:" + id + " origDate:" + origDateTime.ToString(FastDataLoadHelper.DATETIME_FORMAT) + " cacheTime:" + cacheDateTime.ToString(FastDataLoadHelper.DATETIME_FORMAT) + "(" + cacheItem.moddate + ")\n" + cacheItem.filepath + "\n" + path);
-      return cacheItem.filepath;
+      return arr;
     }
-    public static void StoreOriginalContent(string id, JObject json, DateTime lastWrite) {
-      originalData item = new originalData() { content = json, lastwriteTime = lastWrite };
-      originalContent.AddOrUpdate(id, item, (k,v)=> { return item; });
+    private static int GetHexVal(char hex) {
+      int val = (int)hex;
+      return val - (val < 58 ? 48 : (val < 97 ? 55 : 87));
     }
     public static void Init() {
       if (CustomAmmoCategories.Settings.UseFastPreloading == false) { return; }
-      if (File.Exists(DBFilePath) == false) {
-        SqliteConnection.CreateFile(DBFilePath);
-      }
-      FixedMechDefHelper.Open();
-      string sql = string.Empty;
-      if (FixedMechDefHelper.isTableExists("fixedmechdefs") == false) {
-        sql = "create table fixedmechdefs (id varchar(246), moddate varchar(256), filepath varchar(4096))";
-        SqliteCommand command = new SqliteCommand(sql, connection);
-        command.ExecuteNonQuery();
-      }
-      sql = "SELECT * FROM fixedmechdefs";
-      var cacheItems = connection.Query<MechDefCacheItem>(sql);
-      foreach (MechDefCacheItem item in cacheItems) {
-        mechDefsCache.AddOrUpdate(item.id, item, (k, v) => { return item; });
-      }
-      Log.P.TWL(0, "Files cache loaded. Records count:" + mechDefsCache.Count);
     }
     public static void Init(string directory) {
-      FixedMechDefHelper.DBFilePath = Path.Combine(directory, "fixmechdefs.db");
-      Init();
-    }
-    public static IEnumerable<T> Query<T>(string sql, object param = null, IDbTransaction transaction = null, bool buffered = true, int? commandTimeout = null, CommandType? commandType = null) {
-      if (CustomAmmoCategories.Settings.UseFastPreloading == false) { return null; }
-      FixedMechDefHelper.Open();
-      return SqlMapper.Query<T>(FixedMechDefHelper.connection, sql, param, transaction, buffered, commandTimeout, commandType);
-    }
-    public static void UpdateDatabase(string id, string path, DateTime lastwrite) {
-      if (CustomAmmoCategories.Settings.UseFastPreloading == false) { return; }
-      if (mechDefsCache.TryGetValue(id, out MechDefCacheItem item)) {
-        item.moddate = lastwrite.ToString(FastDataLoadHelper.DATETIME_FORMAT);
-        item.filepath = path;
-        string sql = "UPDATE fixedmechdefs SET moddate = @ins_moddate, filepath = @ins_filepath WHERE id = @ins_id";
-        connection.Execute(sql, new { ins_id = id, ins_moddate = lastwrite.ToString(FastDataLoadHelper.DATETIME_FORMAT), ins_filepath = path });
-      } else {
-        string sql = "INSERT INTO fixedmechdefs(id, moddate, filepath) VALUES(@ins_id, @ins_moddate, @ins_filepath)";
-        connection.Execute(sql, new { ins_id = id, ins_moddate = lastwrite.ToString(FastDataLoadHelper.DATETIME_FORMAT), ins_filepath = path });
+      FixedMechDefHelper.CacheFilePath = Path.Combine(directory,"mechdefs_cache.json");
+      Log.P.TWL(0, "FixedMechDefHelper.CacheFilePath:"+ CacheFilePath);
+      if (File.Exists(FixedMechDefHelper.CacheFilePath)) {
+        string cacheContent = File.ReadAllText(FixedMechDefHelper.CacheFilePath);
+        mechDefsCache = JsonConvert.DeserializeObject<ConcurrentDictionary<string, MechDefCacheItem>>(cacheContent);
       }
+      Log.P.WL(1, "cache content:"+ mechDefsCache.Count);
+    }
+    public static void Flush() {
+      Log.P.TWL(0, "FixedMechDefHelper.Flush:" + mechDefsCache.Count + ":" + CacheFilePath);
+      File.WriteAllText(FixedMechDefHelper.CacheFilePath,JsonConvert.SerializeObject(mechDefsCache,Formatting.Indented));
+    }
+    private static System.Text.UTF8Encoding hash_enc = new UTF8Encoding();
+    public static bool GetFromCache(string id, string path, ref string content, ref byte[] hash) {
+      byte[] origContent = File.ReadAllBytes(path);
+      SHA1 crypto = new SHA1CryptoServiceProvider();
+      hash = crypto.ComputeHash(origContent);
+      if (mechDefsCache.TryGetValue(id, out MechDefCacheItem cacheItem)) {
+        if(cacheItem.hash.SequenceEqual(hash)) {
+          content = cacheItem.payload;
+          return true;
+        }
+        cacheItem.hash = hash;
+        cacheItem.payload = Encoding.UTF8.GetString(origContent);
+        cacheItem.needUpdate = true;
+        content = cacheItem.payload;
+        return true;
+      } else {
+        content = Encoding.UTF8.GetString(origContent);
+        return false;
+      }
+    }
+    public static void AddToCache(string id, string content, byte[] hash) {
+      MechDefCacheItem cacheItem = new MechDefCacheItem();
+      cacheItem.id = id;
+      cacheItem.hash = hash;
+      cacheItem.payload = content;
+      cacheItem.needUpdate = true;
+      mechDefsCache.AddOrUpdate(id, cacheItem, (k,v)=> { return cacheItem; });
     }
     public static void AutoFixMechs(SimGameState simgame) {
       try {
@@ -316,48 +312,40 @@ namespace CustAmmoCategories {
         foreach (MechDef def in list) {
           if (def.MechTags.Contains(FastDataLoadHelper.NOAUTOFIX_TAG)) { continue; }
           if (def.MechTags.Contains(FastDataLoadHelper.FAKE_VEHICLE_TAG)) { continue; }
+          if(mechDefsCache.TryGetValue(def.Description.Id, out MechDefCacheItem cacheItem)) {
+            if (cacheItem.needUpdate == false) {
+              def.MechTags.Add(FastDataLoadHelper.NOAUTOFIX_TAG);
+              continue;
+            }
+          }
           ++count;
         }
         Log.P.TWL(0, "MechDefs need autofix:"+count);
         AutoFixer.Shared.FixMechDef(list);
-        string cacheDir = Path.Combine(Path.GetDirectoryName(FixedMechDefHelper.DBFilePath), "autofixcache");
-        if (Directory.Exists(cacheDir) == false) { Directory.CreateDirectory(cacheDir); }
+        //string cacheDir = Path.Combine(Path.GetDirectoryName(FixedMechDefHelper.DBFilePath), "autofixcache");
+        //if (Directory.Exists(cacheDir) == false) { Directory.CreateDirectory(cacheDir); }
         count = 0;
         foreach (MechDef def in list) {
-          if (def.MechTags.Contains(FastDataLoadHelper.NOAUTOFIX_TAG)) { continue; }
           if (def.MechTags.Contains(FastDataLoadHelper.FAKE_VEHICLE_TAG)) { continue; }
-          def.MechTags.Add(FastDataLoadHelper.NOAUTOFIX_TAG);
-          if (originalContent.TryGetValue(def.Description.Id, out originalData originalObj)) {
-            JObject fixedObj = JObject.Parse(def.ToJSON());
-            originalObj.content.Merge(fixedObj, new JsonMergeSettings() { MergeArrayHandling = MergeArrayHandling.Replace, MergeNullValueHandling = MergeNullValueHandling.Ignore });
-            if (originalObj.content["Chassis"] != null) {
-              originalObj.content.Remove("Chassis");
-            }
-            string filePath = Path.Combine(cacheDir, def.Description.Id + ".json");
-            File.WriteAllText(filePath, originalObj.content.ToString(Formatting.Indented));
-            UpdateDatabase(def.Description.Id, filePath, originalObj.lastwriteTime);
-            ++count;
-          }          
+          if (mechDefsCache.TryGetValue(def.Description.Id, out MechDefCacheItem cacheItem) == false) { continue; };
+          def.MechTags.Remove(FastDataLoadHelper.NOAUTOFIX_TAG);
+          if (cacheItem.needUpdate == false) { continue; }
+          JObject originalJson = JObject.Parse(cacheItem.payload);
+          JObject fixedJson = JObject.Parse(def.ToJSON());
+          if (fixedJson["Chassis"] != null) { fixedJson.Remove("Chassis"); };
+          originalJson.Merge(fixedJson, new JsonMergeSettings() { MergeArrayHandling = MergeArrayHandling.Replace, MergeNullValueHandling = MergeNullValueHandling.Ignore });
+          cacheItem.payload = originalJson.ToString(Formatting.None);
+          cacheItem.needUpdate = false;
+          ++count;
         }
+        if (count > 0) { Flush(); }
         Log.P.TWL(0, "AutoFixMechs saved to cache:" + count);
       }catch(Exception e) {
         Log.P.TWL(0,e.ToString(),true);
       }
     }
-    public static bool isTableExists(string table) {
-      if (CustomAmmoCategories.Settings.UseFastPreloading == false) { return false; }
-      return FixedMechDefHelper.Query<string>("SELECT name FROM sqlite_master WHERE type='table' AND name=@TableName", (object)new { TableName = table }).Count<string>() == 1;
-    }
     public static void ResetCache() {
       mechDefsCache.Clear();
-      Close();
-      if (File.Exists(FixedMechDefHelper.DBFilePath)) { File.Delete(FixedMechDefHelper.DBFilePath); }
-      Init();
-      string cacheDir = Path.Combine(Path.GetDirectoryName(FixedMechDefHelper.DBFilePath), "autofixcache");
-      if (Directory.Exists(cacheDir)) {
-        string[] files = Directory.GetFiles(cacheDir, "*.json", SearchOption.TopDirectoryOnly);
-        foreach (string fn in files) { File.Delete(fn); }
-      }
     }
   }
   public static class FastDataLoadHelper {
@@ -543,21 +531,38 @@ namespace CustAmmoCategories {
                 jsonTemplate.FromJSON(content);
               }
             } else {
-              string path = FixedMechDefHelper.GetFromCache(item.id, item.path);
-              using (var reader = new StreamReader(path)) {
-                content = reader.ReadToEnd();
+              byte[] hash = new byte[] { };
+              bool cached = FixedMechDefHelper.GetFromCache(item.id, item.path, ref content, ref hash);
+              //using (var reader = new StreamReader(path)) {
+              //content = reader.ReadToEnd();
+              if (cached == false) {
+                string origContent = content;
+                HashSet<jtProcGenericEx> procs = item.path.getLocalizationProcs();
+                if (procs != null) {
+                  bool updated = CustomTranslation.Core.LocalizeString(ref content, item.path, procs);
+                }
                 mechDef.FromJSON(content);
-              }
-              if (path == item.path) {
                 if ((mechDef.MechTags.Contains(FastDataLoadHelper.NOAUTOFIX_TAG) == false) && (mechDef.MechTags.Contains(FastDataLoadHelper.FAKE_VEHICLE_TAG) == false)) {
-                  FixedMechDefHelper.StoreOriginalContent(item.id, JObject.Parse(content), File.GetLastWriteTime(item.path));
-                  Log.P.TWL(0, item.id + " original");
+                  FixedMechDefHelper.AddToCache(item.id, origContent, hash);
                 }
               } else {
-                if (mechDef.MechTags.Contains(FastDataLoadHelper.NOAUTOFIX_TAG) == false) {
-                  Log.P.TWL(0, item.id + " cached. without "+ FastDataLoadHelper.NOAUTOFIX_TAG+"?");
+                HashSet<jtProcGenericEx> procs = item.path.getLocalizationProcs();
+                if (procs != null) {
+                  bool updated = CustomTranslation.Core.LocalizeString(ref content, item.path, procs);
                 }
+                mechDef.FromJSON(content);
               }
+              //}
+              //if (path == item.path) {
+              //  if ((mechDef.MechTags.Contains(FastDataLoadHelper.NOAUTOFIX_TAG) == false) && (mechDef.MechTags.Contains(FastDataLoadHelper.FAKE_VEHICLE_TAG) == false)) {
+              //    FixedMechDefHelper.StoreOriginalContent(item.id, JObject.Parse(content), File.GetLastWriteTime(item.path));
+              //    Log.P.TWL(0, item.id + " original");
+              //  }
+              //} else {
+              //  if (mechDef.MechTags.Contains(FastDataLoadHelper.NOAUTOFIX_TAG) == false) {
+              //    Log.P.TWL(0, item.id + " cached. without "+ FastDataLoadHelper.NOAUTOFIX_TAG+"?");
+              //  }
+              //}
             }
             //Log.M.TWL(0, "PrewarmThread[" + index + "]:parsing success");
             //ParceJson(ref jsonTemplate, item.resType, content);

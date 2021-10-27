@@ -333,7 +333,7 @@ namespace CustAmmoCategories {
     public EvasivePipsMods evasivePipsMods { get; set; } = new EvasivePipsMods();
     public float ShotsPerAmmo { get; set; } = 1f;
     [SelfDocumentationDefaultValue("empty"), SelfDocumentationTypeName("DeferredEffectDef structure")]
-    public DeferredEffectDef deferredEffect { get; set; }
+    public DeferredEffectDef deferredEffect { get; set; } = new DeferredEffectDef();
     public string preFireSFX { get; set; } = string.Empty;
     public bool HideIfOnlyVariant { get; set; } = false;
     public float MinMissRadius { get; set; } = 0f;

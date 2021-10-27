@@ -888,9 +888,6 @@ namespace CustAmmoCategories {
       //CustomAmmoCategories.WeaponAmmo = new Dictionary<string, WeaponAmmoInfo>();
       CustomAmmoCategories.ExtAmmunitionDef = new ConcurrentDictionary<string, ExtAmmunitionDef>();
       CustomAmmoCategories.ExtWeaponDef = new ConcurrentDictionary<string, ExtWeaponDef>();
-      CustomAmmoCategories.DefaultAmmo = new ExtAmmunitionDef();
-      CustomAmmoCategories.DefaultWeapon = new ExtWeaponDef();
-      CustomAmmoCategories.DefaultWeaponMode = new WeaponMode();
       CustomAmmoCategories.amsWeapons = new Dictionary<string, Weapon>();
       //AmmoCategoryEnumeration.Instance.RefreshStaticData();
       foreach (var baseAmmoCat in AmmoCategoryEnumeration.AmmoCategoryList) {
@@ -901,6 +898,9 @@ namespace CustAmmoCategories {
         items[itm.Id] = itm;
         if (itm.Index == 0) { NotSetCustomAmmoCategoty = itm; };
       }
+      CustomAmmoCategories.DefaultAmmo = new ExtAmmunitionDef();
+      CustomAmmoCategories.DefaultWeaponMode = new WeaponMode();
+      CustomAmmoCategories.DefaultWeapon = new ExtWeaponDef();
       CustomAmmoCategories.printItems();
     }
     /*  DirectoryInfo di = new DirectoryInfo(CustomAmmoCategoriesLog.Log.BaseDirectory);
@@ -1561,7 +1561,8 @@ namespace CACMain {
       try {
         CustomAmmoCategories.CustomCategoriesInit();
         CustomTranslation.Core.RegisterResetCache(FixedMechDefHelper.ResetCache);
-      }catch(Exception e) {
+        //FixedMechDefHelper.Init(CustomAmmoCategories.Settings.directory);
+      } catch (Exception e) {
         Log.M.TWL(0, e.ToString(), true);
       }
     }
@@ -1576,10 +1577,9 @@ namespace CACMain {
       Log.M.TWL(0,"Initing... " + directory + " version: " + Assembly.GetExecutingAssembly().GetName().Version + " debug:"+ CustomAmmoCategories.Settings.debugLog, true);
       Log.M.TWL(0,"Reading settings");
       SelfDocumentationHelper.CreateSelfDocumentation(directory);
-      FixedMechDefHelper.Init(directory);
       CustomAmmoCategories.Settings = JsonConvert.DeserializeObject<CustAmmoCategories.Settings>(File.ReadAllText(settings_filename));
       CustomAmmoCategories.Settings.directory = directory;
-      foreach(var dd in CustomAmmoCategories.Settings.DefaultAoEDamageMult) {
+      foreach (var dd in CustomAmmoCategories.Settings.DefaultAoEDamageMult) {
         Log.M.WL(1, dd.Key.ToString() + "={range:"+dd.Value.Range+" damage:"+dd.Value.Damage+"}");
       }
       ToHitModifiersHelper.Init();

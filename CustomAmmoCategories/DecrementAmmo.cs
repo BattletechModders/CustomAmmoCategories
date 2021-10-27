@@ -210,6 +210,7 @@ namespace CustAmmoCategories {
     }
     public static bool DecrementOneAmmo(this Weapon weapon) {
       ExtAmmunitionDef ammo = weapon.ammo();
+      Log.M.TWL(0, "Weapon.DecrementOneAmmo "+weapon.defId+" ammo:"+(ammo == null?"null":ammo.Id+" category:"+(ammo.AmmoCategory==null?"null":ammo.AmmoCategory.Id)));
       if (ammo.AmmoCategory.BaseCategory.Is_NotSet) { return true; }
       if (assaultTurretsWeapon.Contains(weapon)) { return true; }
       if (weapon.parent != null) {
