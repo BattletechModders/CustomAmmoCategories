@@ -34,7 +34,6 @@ namespace CustomAmmoCategoriesPatches {
     public static WeaponHitInfo GenerateHitInfo(this AttackDirector.AttackSequence instance, Weapon weapon, int groupIdx, int weaponIdx, int numberOfShots, bool indirectFire, float dodgedDamage) {
       return generateHitInfoInvoker(instance,weapon,groupIdx,weaponIdx,numberOfShots, indirectFire, dodgedDamage);
     }
-
     public static bool Prefix(AttackDirector.AttackSequence __instance,MessageCenterMessage message, List<List<Weapon>> ___sortedWeapons, int[][] ___numberOfShots, WeaponHitInfo?[][] ___weaponHitInfo) {
       Log.M.TWL(0, "AttackDirector.OnAttackSequenceFire");
       //Log.LogWrite("WeaponHitInfo.ConsolidateInstability\n");
@@ -108,11 +107,7 @@ namespace CustomAmmoCategoriesPatches {
                     AdvWeaponHitInfoRec aoeRec = advRec.parent.hits[aoeHitIndex];
                     if (aoeRec.isAOE == false) { continue; }
                     Log.LogWrite(" hitIndex = " + aoeHitIndex + " " + aoeRec.target.GUID + " " + aoeRec.Damage + "/" + aoeRec.Heat + "/" + aoeRec.Stability + "\n");
-#if BT1_8
                     __instance.Director.Combat.MessageCenter.PublishMessage((MessageCenterMessage)new AttackSequenceImpactMessage(hitInfo, aoeHitIndex, aoeRec.Damage, 0f));
-#else
-                    __instance.weapon.parent.Combat.MessageCenter.PublishMessage((MessageCenterMessage)new AttackSequenceImpactMessage(__instance.hitInfo, aoeHitIndex, aoeRec.Damage));
-#endif
                   }
                 }
               }

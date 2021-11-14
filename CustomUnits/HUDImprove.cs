@@ -816,6 +816,109 @@ namespace CustomUnits {
       return false;
     }
   }
+  [HarmonyPatch(typeof(LanceConfiguratorPanel), "ValidateLanceTonnage")]
+  public static class LanceConfiguratorPanel_ValidateLanceTonnage {
+    public static bool Prefix(LanceConfiguratorPanel __instance, ref bool __result,ref LanceLoadoutSlot[] ___loadoutSlots,ref Localize.Text ___lanceErrorText) {
+      Log.TWL(0, "LanceConfiguratorPanel.ValidateLanceTonnage maxTonnage:"+ __instance.lanceMaxTonnage);
+      try {
+        List<MechDef> mechs = new List<MechDef>();
+        bool flag1 = true;
+        for (int index = 0; index < __instance.maxUnits; ++index) {
+          LanceLoadoutSlot loadoutSlot = ___loadoutSlots[index];
+          if (loadoutSlot.SelectedMech != null) {
+            if (!MechValidationRules.MechTonnageWithinRange(loadoutSlot.SelectedMech.MechDef, __instance.slotMinTonnages[index], __instance.slotMaxTonnages[index])) {
+              flag1 = false;
+              if ((double)__instance.slotMinTonnages[index] >= 0.0 && (double)__instance.slotMaxTonnages[index] >= 0.0)
+                ___lanceErrorText.Append("Lance slot {0} requires a 'Mech between {1} and {2} Tons\n", (object)index, (object)__instance.slotMinTonnages[index], (object)__instance.slotMaxTonnages[index]);
+              else if ((double)__instance.slotMinTonnages[index] >= 0.0)
+                ___lanceErrorText.Append("Lance slot {0} requires a 'Mech over {1} Tons\n", (object)index, (object)__instance.slotMinTonnages[index]);
+              else if ((double)__instance.slotMaxTonnages[index] >= 0.0)
+                ___lanceErrorText.Append("Lance slot {0} requires a 'Mech under {1} Tons\n", (object)index, (object)__instance.slotMaxTonnages[index]);
+            }
+            DropSlotDef def = DropSystemHelper.currentLayout(UnityGameInstance.BattleTechGame.Simulation).GetSlotByIndex(index);
+            if (def != null) { if (def.UseMaxUnits == false) { continue; } }
+            mechs.Add(loadoutSlot.SelectedMech.MechDef);
+          }
+        }
+        bool flag2 = MechValidationRules.LanceTonnageWithinRange(mechs, __instance.lanceMinTonnage, __instance.lanceMaxTonnage);
+        if (!flag2) {
+          if ((double)__instance.lanceMinTonnage >= 0.0 && (double)__instance.lanceMaxTonnage >= 0.0)
+            ___lanceErrorText.Append("Total Lance tonnage must be between {0} and {1} Tons\n", (object)__instance.lanceMinTonnage, (object)__instance.lanceMaxTonnage);
+          else if ((double)__instance.lanceMinTonnage >= 0.0)
+            ___lanceErrorText.Append("Total Lance tonnage must be greater than {0} Tons\n", (object)__instance.lanceMinTonnage);
+          else if ((double)__instance.lanceMaxTonnage >= 0.0)
+            ___lanceErrorText.Append("Total Lance tonnage must be less than {0} Tons\n", (object)__instance.lanceMaxTonnage);
+        }
+        __result = flag1 & flag2;
+        return false;
+      }catch(Exception e) {
+        Log.TWL(0,e.ToString(), true);
+        return true;
+      }
+    }
+  }
+  [HarmonyPatch(typeof(LanceConfiguratorPanel), "ValidateLance")]
+  public static class LanceConfiguratorPanel_ValidateLance {
+    public static bool Prefix(LanceConfiguratorPanel __instance, ref bool __result, ref LanceLoadoutSlot[] ___loadoutSlots, ref Localize.Text ___lanceErrorText,ref LanceHeaderWidget ___headerWidget) {
+      Log.TWL(0, "LanceConfiguratorPanel.ValidateLance");
+      try {
+        __instance.lanceValid = false;
+        ___lanceErrorText = new Localize.Text();
+        int num1 = 0;
+        int num2 = 0;
+        int num3 = 0;
+        __instance.currentLanceValue = 0;
+        List<MechDef> mechs = new List<MechDef>();
+        //List<UnitResult> unitResultList = new List<UnitResult>();
+        bool flag = Traverse.Create(__instance).Method("ValidateLanceTonnage").GetValue<bool>(); //__instance.ValidateLanceTonnage();
+        for (int index = 0; index < __instance.maxUnits; ++index) {
+          LanceLoadoutSlot loadoutSlot = ___loadoutSlots[index];
+          DropSlotDef def = DropSystemHelper.currentLayout(UnityGameInstance.BattleTechGame.Simulation).GetSlotByIndex(index);
+          if ((UnityEngine.Object)loadoutSlot.SelectedMech != (UnityEngine.Object)null) {
+            bool skip = false;
+            if (def != null) { if (def.UseMaxUnits == false) { skip = true; } };
+            if (skip == false) {
+              __instance.currentLanceValue += loadoutSlot.SelectedMech.MechDef.Description.Cost;
+              mechs.Add(loadoutSlot.SelectedMech.MechDef);
+            }
+          }
+          if ((UnityEngine.Object)loadoutSlot.SelectedMech != (UnityEngine.Object)null && (UnityEngine.Object)loadoutSlot.SelectedPilot != (UnityEngine.Object)null) {
+            ++num1;
+            //unitResultList.Add(new UnitResult(loadoutSlot.SelectedMech.MechDef, loadoutSlot.SelectedPilot.Pilot));
+          } else if ((UnityEngine.Object)loadoutSlot.SelectedMech != (UnityEngine.Object)null && (UnityEngine.Object)loadoutSlot.SelectedPilot == (UnityEngine.Object)null || (UnityEngine.Object)loadoutSlot.SelectedMech == (UnityEngine.Object)null && (UnityEngine.Object)loadoutSlot.SelectedPilot != (UnityEngine.Object)null)
+            ++num2;
+          else
+            ++num3;
+        }
+        if (__instance.maxLanceValue < 0) {
+          __instance.lanceValid = true;
+        } else {
+          __instance.lanceValid = __instance.currentLanceValue <= __instance.maxLanceValue;
+          if (!__instance.lanceValid)
+            ___lanceErrorText.Append("Lance budget exceeds limit\n", (object[])Array.Empty<object>());
+        }
+        if (num1 < 1 || num2 > 0) {
+          __instance.lanceValid = false;
+          if (num1 < 1)
+            ___lanceErrorText.Append("Lance must not be empty\n", (object[])Array.Empty<object>());
+          else
+            ___lanceErrorText.Append("Lance slots require both a 'Mech and MechWarrior\n", (object[])Array.Empty<object>());
+        }
+        if (!__instance.allowUnevenLances && num1 < __instance.maxUnits) {
+          __instance.lanceValid = false;
+          ___lanceErrorText.Append("Lance must fill all slots\n", (object[])Array.Empty<object>());
+        }
+        ___headerWidget.RefreshLanceInfo(__instance.lanceValid & flag, ___lanceErrorText, mechs);
+        __instance.RefreshLanceInitiative();
+        __result = __instance.lanceValid & flag;
+        return false;
+      } catch (Exception e) {
+        Log.TWL(0, e.ToString(), true);
+        return true;
+      }
+    }
+  }
+
   [HarmonyPatch(typeof(LanceConfiguratorPanel), "OnConfirmClicked")]
   public static class LanceConfiguratorPanel_OnConfirmClicked {
     private static FieldInfo f_interruptQueue = typeof(SimGameState).GetField("interruptQueue", BindingFlags.Instance | BindingFlags.NonPublic);

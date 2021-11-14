@@ -102,16 +102,22 @@ namespace CustAmmoCategories {
       //Log.M.WL(1, PPCspark.name + ":" + PPCspark.ColorBB());
       //Log.M.WL(1, ppcTrail.name + ":" + ppcTrail.ColorBB());
     }
+#if PUBLIC_ASSEMBLIES
+    public override int ImpactPrecacheCount {
+#else
     protected override int ImpactPrecacheCount {
+#endif
       get {
         return 1;
       }
     }
-
+#if PUBLIC_ASSEMBLIES
+    public override void Awake() {
+#else
     protected override void Awake() {
+#endif
       base.Awake();
     }
-
     protected override void Start() {
       base.Start();
     }
@@ -119,7 +125,6 @@ namespace CustAmmoCategories {
       base.Init(original);
       CustomAmmoCategoriesLog.Log.LogWrite("MultiShotPPCEffect.Init\n");
     }
-
     public void Init(Weapon weapon, MultiShotPPCEffect parentProjector) {
       this.Init(weapon);
       this.parentProjector = parentProjector;
@@ -128,7 +133,6 @@ namespace CustAmmoCategories {
       this.projectileSpeed = parentProjector.projectileSpeed * weapon.ProjectileSpeedMultiplier();
       this.subEffect = true;
     }
-
     public virtual void Fire(WeaponHitInfo hitInfo, int hitIndex = 0, int emitterIndex = 0, bool pb = false) {
       Log.LogWrite("MultiShotPPCEffect.Fire " + hitInfo.attackWeaponIndex + " " + hitIndex + " ep:" + hitInfo.hitPositions[hitIndex] + " prime:" + pb + "\n");
       this.primePulse = pb;
@@ -151,7 +155,6 @@ namespace CustAmmoCategories {
       this.rate = 1f / this.duration;
       this.PlayPreFire();
     }
-
     protected override void PlayPreFire() {
       base.PlayPreFire();
       string snd = this.weapon.preFireSFX();
@@ -163,7 +166,6 @@ namespace CustAmmoCategories {
         }
       }
     }
-
     public override void InitProjectile() {
       base.InitProjectile();
       Log.LogWrite("MultiShotPulseEffect.InitProjectile\n");
@@ -172,12 +174,10 @@ namespace CustAmmoCategories {
         Log.LogWrite(" " + component.name + ":" + component.GetType().ToString() + "\n");
       }
     }
-
     protected override void PlayProjectile() {
       this.PlayMuzzleFlash();
       base.PlayProjectile();
     }
-
     protected override void PlayImpact() {
       this.PlayImpactAudio();
       base.PlayImpact();
@@ -185,8 +185,11 @@ namespace CustAmmoCategories {
         return;
       this.projectileParticles.Stop(true);
     }
-
+#if PUBLIC_ASSEMBLIES
+    public override void Update() {
+#else
     protected override void Update() {
+#endif
       base.Update();
       if (this.currentState != WeaponEffect.WeaponEffectState.Firing)
         return;
@@ -200,35 +203,22 @@ namespace CustAmmoCategories {
       this.PlayImpact();
       this.OnComplete();
     }
-
     protected override void OnPreFireComplete() {
       base.OnPreFireComplete();
       this.PlayProjectile();
     }
 
-#if BT1_8
     protected override void OnImpact(float hitDamage = 0.0f, float structureDamage = 0f) {
-#else
-    protected override void OnImpact(float hitDamage = 0.0f) {
-#endif
       Log.LogWrite("MultiShotPulseEffect.OnImpact wi:" + this.hitInfo.attackWeaponIndex + " hi:" + this.hitInfo + " bi:" + this.pulseIdx + " prime:" + this.primePulse + "\n");
       if (this.primePulse) {
         Log.LogWrite(" prime. Damage message fired\n");
         float damage = this.weapon.DamagePerShotAdjusted(this.weapon.parent.occupiedDesignMask);
-#if BT1_8
         float apDamage = this.weapon.StructureDamagePerShotAdjusted(this.weapon.parent.occupiedDesignMask);
-#endif
         if (this.weapon.DamagePerPallet()&&(this.weapon.DamageNotDivided() == false)) {
           damage /= this.weapon.ProjectilesPerShot;
-#if BT1_8
           apDamage /= this.weapon.ProjectilesPerShot;
-#endif
         };
-#if BT1_8
         base.OnImpact(damage, apDamage);
-#else
-        base.OnImpact(damage);
-#endif
       } else {
         Log.LogWrite(" no prime. No damage message fired\n");
       }
@@ -236,11 +226,9 @@ namespace CustAmmoCategories {
       if (!((UnityEngine.Object)this.projectileParticles != (UnityEngine.Object)null)) { return; };
       this.projectileParticles.Stop(true);
     }
-
     protected override void OnComplete() {
       base.OnComplete();
     }
-
     public override void Reset() {
       base.Reset();
     }

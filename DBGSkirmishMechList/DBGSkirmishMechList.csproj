@@ -65,6 +65,7 @@
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
-    <PostBuildEvent>copy /Y "$(TargetPath)" "$(ProjectDir)\..\..\Mods\DBGSkirmishMechList"</PostBuildEvent>
+    <PostBuildEvent>copy /Y "$(TargetPath)" "$(ProjectDir)\..\..\Mods\DBGSkirmishMechList"
+copy /Y "$(TargetPath)" "$(ProjectDir)\..\..\RogueTechWorking\DBGSkirmishMechList"</PostBuildEvent>
   </PropertyGroup>
 </Project>

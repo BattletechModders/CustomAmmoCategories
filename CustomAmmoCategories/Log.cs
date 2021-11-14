@@ -67,7 +67,7 @@ namespace CustomAmmoCategoriesLog {
           this.mutex.ReleaseMutex();
         }
         //if (isCritical) { this.flush(); };
-        if (m_logfile.Length > Log.flushBufferLength) { this.flush(); };
+        if ((m_logfile.Length > Log.flushBufferLength)||(isCritical)) { this.flush(); };
       }
     }
     public void WL(string line, bool isCritical = false) {

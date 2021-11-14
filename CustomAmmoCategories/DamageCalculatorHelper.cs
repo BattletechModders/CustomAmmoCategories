@@ -190,7 +190,6 @@ namespace CustAmmoCategories {
       descr = ds.ToString();
       this.Description = ds.ToString();
     }
-
     public DamageModifiers(Weapon weapon, Vector3 attackPosition, ICombatant target, bool IsBreachingShot) {
       this.IsBreachingShot = IsBreachingShot;
       this.weapon = weapon;

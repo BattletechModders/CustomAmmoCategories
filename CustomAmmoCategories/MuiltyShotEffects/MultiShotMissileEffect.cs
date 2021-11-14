@@ -257,11 +257,7 @@ public class MultiShotMissileEffect : CopyAbleWeaponEffect {
     }
     if (this.currentState == WeaponEffect.WeaponEffectState.Firing && (double)this.t <= 1.0)
       this.t += this.rate * this.Combat.StackManager.GetProgressiveAttackDeltaTime(this.t);
-#if BT1_8
       if (!this.Active || this.subEffect || (this.weapon.WeaponCategoryValue.IsMelee || (double)this.attackSequenceNextDelayTimer <= 0.0))
-#else
-    if (!this.Active || this.subEffect || (this.weapon.Category == WeaponCategory.Melee || (double)this.attackSequenceNextDelayTimer <= 0.0))
-#endif
       return;
     this.attackSequenceNextDelayTimer -= this.Combat.StackManager.GetProgressiveAttackDeltaTime(0.01f);
     if ((double)this.attackSequenceNextDelayTimer > 0.0)
@@ -405,17 +401,10 @@ public class MultiShotMissileEffect : CopyAbleWeaponEffect {
     base.OnPreFireComplete();
     this.PlayProjectile();
   }
-
-#if BT1_8
-    protected override void OnImpact(float hitDamage = 0.0f, float structureDamage = 0f) {
-#else
-  protected override void OnImpact(float hitDamage = 0.0f) {
-#endif
+  protected override void OnImpact(float hitDamage = 0.0f, float structureDamage = 0f) {
     base.OnImpact(
       this.weapon.DamagePerShotAdjusted(this.weapon.parent.occupiedDesignMask)
-#if BT1_8
       ,this.weapon.StructureDamagePerShotAdjusted(this.weapon.parent.occupiedDesignMask)
-#endif
     );
     if ((Object)this.projectileParticles != (Object)null)
       this.projectileParticles.Stop(true);

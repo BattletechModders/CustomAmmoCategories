@@ -477,7 +477,6 @@ namespace CustAmmoCategories {
       if (Core.AIMModSettings != null) { return Core.AIMModSettings.ToHitSelfJumped; }
       return CustAmmoCategories.CustomAmmoCategories.Settings.ToHitSelfJumped;
     }
-
     public static float GetDirectionModifier(ToHit instance, AbstractActor attacker, Weapon weapon, ICombatant target, Vector3 attackPosition, Vector3 targetPosition, LineOfFireLevel lofLevel, MeleeAttackType meleeAttackType, bool isCalledShot) {
       if (attacker.GUID == target.GUID) { return 0f; }
       AttackDirection dir = attacker.Combat.HitLocation.GetAttackDirection(attackPosition, target);
@@ -615,7 +614,6 @@ namespace CustAmmoCategories {
       SelectionState activeState = Traverse.Create(slot).Field<CombatHUD>("HUD").Value.SelectionHandler.ActiveState;
       return activeState != null && activeState.SelectionType == SelectionType.Jump && (activeState.PotentialMeleeTarget == target || activeState.TargetedCombatant == target);
     }
-
     public static bool contemplatingMelee(this CombatHUDWeaponSlot slot,ICombatant target) {
       if (target == null)
         return false;

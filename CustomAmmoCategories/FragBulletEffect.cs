@@ -11,12 +11,20 @@ namespace CustAmmoCategories {
     [HideInInspector]
     public int bulletIdx;
     private FragBallisticEffect parentLauncher;
+#if PUBLIC_ASSEMBLIES
+    public override int ImpactPrecacheCount {
+#else
     protected override int ImpactPrecacheCount {
+#endif
       get {
         return 5;
       }
     }
+#if PUBLIC_ASSEMBLIES
+    public override void Awake() {
+#else
     protected override void Awake() {
+#endif
       base.Awake();
     }
     protected override void Start() {
@@ -52,26 +60,25 @@ namespace CustAmmoCategories {
       this.rate = 1f / this.duration;
       this.PlayPreFire();
     }
-
     protected override void PlayPreFire() {
       base.PlayPreFire();
     }
-
     protected override void PlayMuzzleFlash() {
       base.PlayMuzzleFlash();
     }
-
     protected override void PlayProjectile() {
       base.PlayProjectile();
       this.PlayMuzzleFlash();
     }
-
     protected override void PlayImpact() {
       this.PlayImpactAudio();
       base.PlayImpact();
     }
-
+#if PUBLIC_ASSEMBLIES
+    public override void Update() {
+#else
     protected override void Update() {
+#endif
       base.Update();
       if (this.currentState != WeaponEffect.WeaponEffectState.Firing)
         return;
@@ -84,39 +91,29 @@ namespace CustAmmoCategories {
       this.PlayImpact();
       this.OnComplete();
     }
-
     protected override void OnPreFireComplete() {
       base.OnPreFireComplete();
       this.PlayProjectile();
     }
-#if BT1_8
     protected override void OnImpact(float hitDamage = 0.0f, float structureDamage = 0f) {
-#else
-    protected override void OnImpact(float hitDamage = 0.0f) {
-#endif
       CustomAmmoCategoriesLog.Log.LogWrite("FragBulletEffect.OnImpact wi:" + hitInfo.attackWeaponIndex + " hi:" + hitIndex + "\n");
       base.OnImpact(
         this.weapon.DamagePerShotAdjusted(this.weapon.parent.occupiedDesignMask)/this.weapon.ProjectilesPerShot
-#if BT1_8
         ,this.weapon.StructureDamagePerShotAdjusted(this.weapon.parent.occupiedDesignMask) / this.weapon.ProjectilesPerShot
-#endif
       );
       if (!((UnityEngine.Object)this.projectileParticles != (UnityEngine.Object)null))
         return;
       this.projectileParticles.Stop(true);
     }
-
     protected override void OnComplete() {
       base.OnComplete();
     }
-
     public void OnDisable() {
       if (!((UnityEngine.Object)this.projectileAudioObject != (UnityEngine.Object)null))
         return;
       AkSoundEngine.StopAll(this.projectileAudioObject.gameObject);
       int num = (int)AkSoundEngine.UnregisterGameObj(this.projectileAudioObject.gameObject);
     }
-
     public override void Reset() {
       base.Reset();
     }

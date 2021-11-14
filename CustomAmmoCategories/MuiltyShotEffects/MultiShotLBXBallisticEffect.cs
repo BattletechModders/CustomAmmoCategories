@@ -18,17 +18,23 @@ namespace CustAmmoCategories {
     public int volleySize;
     public int shotHitIndex;
     public string LBXEffectPrefab;
+#if PUBLIC_ASSEMBLIES
+    public override int ImpactPrecacheCount {
+#else
     protected override int ImpactPrecacheCount {
+#endif
       get {
         return 5;
       }
     }
-
+#if PUBLIC_ASSEMBLIES
+    public override void Awake() {
+#else
     protected override void Awake() {
+#endif
       base.Awake();
       this.AllowMissSkipping = false;
     }
-
     protected override void Start() {
       base.Start();
     }
@@ -37,12 +43,10 @@ namespace CustAmmoCategories {
       Log.LogWrite("MultiShotLBXBallisticEffect.Init\n");
       this.LBXEffectPrefab = prefab;
     }
-
     public override void Init(Weapon weapon) {
       Log.LogWrite("MultiShotLBXBallisticEffect.BaseInit\n");
       base.Init(weapon);
     }
-
     protected void SetupBulets() {
       Log.LogWrite("MultiShotLBXBallisticEffect.SetupBeams\n");
       this.currentVolley = 0;
@@ -105,7 +109,6 @@ namespace CustAmmoCategories {
         }
       }
     }
-
     protected void ClearBullets() {
       string prefabName = MultiShotLBXBallisticEffect.ImprovedLaserPrefabPrefix + this.LBXEffectPrefab;
       Log.LogWrite("MultiShotLBXBulletEffect.ClearBullets\n");
@@ -156,7 +159,6 @@ namespace CustAmmoCategories {
       base.OnPreFireComplete();
       this.PlayProjectile();
     }
-
     protected override void PlayProjectile() {
       this.currentState = WeaponEffect.WeaponEffectState.Firing;
       base.PlayProjectile(false);
@@ -178,10 +180,18 @@ namespace CustAmmoCategories {
       if (this.currentVolley < this.bullets.Count) { return; }
       this.currentState = WeaponEffect.WeaponEffectState.WaitingForImpact;
     }
+#if PUBLIC_ASSEMBLIES
+    public override void PlayImpact() {
+#else
     protected override void PlayImpact() {
+#endif
       //base.PlayImpact();
     }
+#if PUBLIC_ASSEMBLIES
+    public override void Update() {
+#else
     protected override void Update() {
+#endif
       base.Update();
       if (this.currentState != WeaponEffect.WeaponEffectState.WaitingForImpact || !this.AllBulletsComplete())
         return;

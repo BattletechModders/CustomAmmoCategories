@@ -30,15 +30,27 @@ namespace CustAmmoCategories {
       this.floatieInterval = (float)typeof(BurstBallisticEffect).GetField("floatieInterval", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(original);
       this.nextFloatie = (float)typeof(BurstBallisticEffect).GetField("nextFloatie", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(original);
     }
+#if PUBLIC_ASSEMBLIES
+    public override int ImpactPrecacheCount {
+#else
     protected override int ImpactPrecacheCount {
+#endif
       get {
         return 5;
       }
     }
+#if PUBLIC_ASSEMBLIES
+    public override void Awake() {
+#else
     protected override void Awake() {
+#endif
       base.Awake();
     }
+#if PUBLIC_ASSEMBLIES
+    public override void Start() {
+#else
     protected override void Start() {
+# endif
       base.Start();
       this.floatieInterval = 1f / (float)this.weapon.ProjectilesPerShot;
     }
@@ -57,17 +69,29 @@ namespace CustAmmoCategories {
       this.rate = 1f / this.duration;
       this.PlayPreFire();
     }
+#if PUBLIC_ASSEMBLIES
+    public override void PlayPreFire() {
+#else
     protected override void PlayPreFire() {
+#endif
       base.PlayPreFire();
       this.t = 0.0f;
       if (string.IsNullOrEmpty(this.preFireSoundEvent))
         return;
       int num = (int)WwiseManager.PostEvent(this.preFireSoundEvent, this.projectileAudioObject, (AkCallbackManager.EventCallback)null, (object)null);
     }
+#if PUBLIC_ASSEMBLIES
+    public override void PlayMuzzleFlash() {
+#else
     protected override void PlayMuzzleFlash() {
+#endif
       base.PlayMuzzleFlash();
     }
+#if PUBLIC_ASSEMBLIES
+    public override void PlayProjectile() {
+#else
     protected override void PlayProjectile() {
+#endif
       this.PlayMuzzleFlash();
       this.t = 0.0f;
       if (!string.IsNullOrEmpty(this.projectileSoundEvent)) {
@@ -75,30 +99,44 @@ namespace CustAmmoCategories {
       }
       base.PlayProjectile();
     }
+#if PUBLIC_ASSEMBLIES
+    public override void PlayImpact() {
+#else
     protected override void PlayImpact() {
+#endif
       this.PlayImpactAudio();
       base.PlayImpact();
     }
+#if PUBLIC_ASSEMBLIES
+    public override void Update() {
+#else
     protected override void Update() {
+#endif
       base.Update();
       if (this.currentState != WeaponEffect.WeaponEffectState.Firing) { return; }
       if ((double)this.t < 1.0) { return; };
       this.OnComplete();
     }
+#if PUBLIC_ASSEMBLIES
+    public override void OnPreFireComplete() {
+#else
     protected override void OnPreFireComplete() {
+#endif
       base.OnPreFireComplete();
       this.PlayProjectile();
     }
-#if BT1_8
-    protected override void OnImpact(float hitDamage = 0.0f, float structureDamage = 0f) {
+#if PUBLIC_ASSEMBLIES
+    public override void OnImpact(float hitDamage = 0.0f, float structureDamage = 0.0f) {
+#else
+    protected override void OnImpact(float hitDamage = 0.0f, float structureDamage = 0.0f) {
+#endif
       base.OnImpact(hitDamage, structureDamage);
     }
+#if PUBLIC_ASSEMBLIES
+    public override void OnComplete() {
 #else
-    protected override void OnImpact(float hitDamage = 0.0f) {
-      base.OnImpact(hitDamage);
-    }
-#endif
     protected override void OnComplete() {
+#endif
       base.OnComplete();
       if ((UnityEngine.Object)this.projectileParticles != (UnityEngine.Object)null)
         this.projectileParticles.Stop(true);

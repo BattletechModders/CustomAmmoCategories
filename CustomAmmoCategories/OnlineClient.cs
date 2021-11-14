@@ -174,7 +174,6 @@ namespace CustAmmoCategories.Online {
       }
       e.Result = result;
     }
-
     private void BwConnector_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e) {
       try {
         //// raise connection fail event if client not connected to server

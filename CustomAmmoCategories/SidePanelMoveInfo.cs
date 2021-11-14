@@ -664,11 +664,7 @@ namespace CustAmmoCategoriesPatches {
       CombatHUDInfoSidePanel sidePanel = __instance.sidePanel();
       cells.Add(HUD.Combat.EncounterLayerData.GetCellAt(worldPos));
       MapTerrainDataCell relatedTerrainCell = cells[0].relatedTerrainCell;
-#if BT1_8
       __instance.PreviewStatusPanel.ShowPreviewStatuses(actor, relatedTerrainCell, moveType, worldPos);
-#else
-      __instance.PreviewStatusPanel.ShowPreviewStatuses(actor, cells, moveType, worldPos);
-#endif
       DesignMaskDef priorityDesignMask = actor.Combat.MapMetaData.GetPriorityDesignMask(relatedTerrainCell);
       MapTerrainDataCellEx cell = relatedTerrainCell as MapTerrainDataCellEx;
       Text description = new Text();

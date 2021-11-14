@@ -658,12 +658,12 @@ namespace CustAmmoCategoriesPatches {
   [HarmonyPatch(new Type[] { })]
   public static class Weapon_MediumRange {
     public static void Postfix(Weapon __instance, ref float __result) {
-      Log.M.TW(0, "Weapon.MediumRange " + __instance.defId + ":" + __result);
+      //Log.M.TW(0, "Weapon.MediumRange " + __instance.defId + ":" + __result);
       ExtAmmunitionDef ammo = __instance.ammo();
       WeaponMode mode = __instance.mode();
       __result += ammo.MediumRange;
       __result += mode.MediumRange;
-      Log.M.WL(1,"ammo "+ammo.Id+":"+ammo.MediumRange+" mode "+mode.Id+":"+mode.MediumRange+" result: "+__result);
+      //Log.M.WL(1,"ammo "+ammo.Id+":"+ammo.MediumRange+" mode "+mode.Id+":"+mode.MediumRange+" result: "+__result);
       if (__instance.parent != null) {
         if (__instance.parent.EvasivePipsCurrent > 0) {
           float evasiveMod = __instance.exDef().evasivePipsMods.MediumRange + ammo.evasivePipsMods.MediumRange + mode.evasivePipsMods.MediumRange;

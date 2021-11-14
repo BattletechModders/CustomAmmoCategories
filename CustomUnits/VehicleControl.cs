@@ -1485,7 +1485,11 @@ namespace CustomUnits {
     //  }
     //}
     public static bool Prefix(MechDef __instance, ref string json) {
-      //Log.TW(0, "MechDef.FromJSON fake");
+      //Log.TWL(0, "MechDef.FromJSON fake "+(__instance.Description == null?"null": __instance.Description.Id));
+      if (__instance.Description != null) {
+        //Log.TWL(0, "MechDef.FromJSON fake already preloaded:"+__instance.Description.Id);
+        return true;
+      }
       try {
         JObject olddef = JObject.Parse(json);
         string id = (string)olddef["Description"]["Id"];
@@ -1565,7 +1569,7 @@ namespace CustomUnits {
         for(int loc_index=0;loc_index < vLocations.Count; ++loc_index) {
           //foreach (JObject vcLoc in vLocations) {
           JToken vcLoc = vLocations[loc_index];
-          Log.WL(2, vcLoc["Location"] + ":" + vcLoc["AssignedArmor"]);
+          //Log.WL(2, vcLoc["Location"] + ":" + vcLoc["AssignedArmor"]);
           VehicleChassisLocations vLocation = VehicleChassisLocations.None;
           if (vcLoc["Location"] == null) {
             switch (loc_index) {

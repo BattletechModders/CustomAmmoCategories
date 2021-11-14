@@ -16,7 +16,6 @@ namespace WeaponRealizer {
       BuildBallisticEffectOnImpact();
       return true;
     }
-
     private static void BuildWeaponEffectOnComplete() {
       // build a call to WeaponEffect.OnComplete() so it can be called
       // a la base.OnComplete() from the context of a BallisticEffect
@@ -32,26 +31,17 @@ namespace WeaponRealizer {
       gen.Emit(OpCodes.Ret);
       WeaponEffect_OnComplete = (Action<BallisticEffect>)dm.CreateDelegate(typeof(Action<BallisticEffect>));
     }
-
     private static void BuildBallisticEffectOnImpact() {
       // OnImpact is protected
-#if BT1_8
       var mi = AccessTools.Method(typeof(BallisticEffect), "OnImpact", new Type[] { typeof(float), typeof(float) });
-#else
-      var mi = AccessTools.Method(typeof(BallisticEffect), "OnImpact", new Type[] { typeof(float) });
-#endif
       BallisticEffect_OnImpact = MethodInvoker.GetHandler(mi);
     }
 
     static bool Prefix(ref int ___hitIndex, BallisticEffect __instance) {
       var damage = __instance.weapon.DamagePerShotAdjusted(__instance.weapon.parent.occupiedDesignMask);
-#if BT1_8
       var apDamage = __instance.weapon.StructureDamagePerShotAdjusted(__instance.weapon.parent.occupiedDesignMask);
-#endif
       BallisticEffect_OnImpact.Invoke(__instance, new object[] { damage
-#if BT1_8
         , apDamage
-#endif
       });
       if (___hitIndex >= __instance.hitInfo.numberOfShots - 1) {
         WeaponEffect_OnComplete(__instance);
@@ -70,7 +60,6 @@ namespace WeaponRealizer {
       return Core.ModSettings.BallisticNumberOfShots &&
              hitIndex % effect.weapon.ProjectilesPerShot == 0;
     }
-
     private static readonly Dictionary<int, bool> _isClustered = new Dictionary<int, bool>();
     private static bool IsClustered(BallisticEffect effect) {
       var effectId = effect.GetInstanceID();

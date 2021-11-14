@@ -149,7 +149,6 @@ namespace CustAmmoCategories {
       this.t = 0.0f;
       this.currentState = WeaponEffect.WeaponEffectState.PreFiring;
     }
-
     protected override void PlayMuzzleFlash() {
       if (!((UnityEngine.Object)this.muzzleFlashVFXPrefab != (UnityEngine.Object)null))
         return;
@@ -172,7 +171,6 @@ namespace CustAmmoCategories {
       componentInChildren.StopAnimation();
       componentInChildren.PlayAnimation();
     }
-
     protected override void PlayProjectile() {
       this.t = 0.0f;
       this.currentState = WeaponEffect.WeaponEffectState.Firing;
@@ -215,7 +213,6 @@ namespace CustAmmoCategories {
         return;
       this.PublishWeaponCompleteMessage();
     }
-
     protected override void PlayImpact() {
       if (!string.IsNullOrEmpty(this.impactVFXBase) && this.hitInfo.hitLocations[this.hitIndex] != 0) {
         string str1 = string.Empty;

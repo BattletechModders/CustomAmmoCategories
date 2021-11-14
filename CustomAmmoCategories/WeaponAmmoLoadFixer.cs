@@ -31,9 +31,11 @@ namespace CustAmmoCategoriesPatches {
           if ((preq.ResourceType == BattleTechResourceType.SVGAsset)&&(uiIcons.Contains(preq.ResourceID))) { toDel.Add(preq); } 
         }
         foreach (var preq in toDel) { prewarmRequests.Remove(preq); };
-        prewarmRequests.Add(new PrewarmRequest(BattleTechResourceType.AmmunitionDef, PrewarmRequest.PREWARM_ALL_OF_TYPE));
-        prewarmRequests.Add(new PrewarmRequest(BattleTechResourceType.AmmunitionBoxDef, PrewarmRequest.PREWARM_ALL_OF_TYPE));
-        prewarmRequests.Add(new PrewarmRequest(BattleTechResourceType.WeaponDef, PrewarmRequest.PREWARM_ALL_OF_TYPE));
+        if (CustomPrewarm.Core.Settings.UseFastPreloading == false) {
+          prewarmRequests.Add(new PrewarmRequest(BattleTechResourceType.AmmunitionDef, PrewarmRequest.PREWARM_ALL_OF_TYPE));
+          prewarmRequests.Add(new PrewarmRequest(BattleTechResourceType.AmmunitionBoxDef, PrewarmRequest.PREWARM_ALL_OF_TYPE));
+          prewarmRequests.Add(new PrewarmRequest(BattleTechResourceType.WeaponDef, PrewarmRequest.PREWARM_ALL_OF_TYPE));
+        }
         foreach(string iconid in uiIcons) {
           prewarmRequests.Add(new PrewarmRequest(BattleTechResourceType.SVGAsset, iconid));
           CustomSvgCache.RegisterSVG(iconid);
@@ -47,19 +49,19 @@ namespace CustAmmoCategoriesPatches {
       }
     }
   }
-  [HarmonyPatch(typeof(MechComponentDef))]
-  [HarmonyPatch("DependenciesLoaded")]
-  [HarmonyPatch(MethodType.Normal)]
-  [HarmonyPatch(new Type[] { typeof(uint) })]
-  public static class MechComponentDef_DependenciesLoaded {
-    public static void Postfix(MechComponentDef __instance, uint loadWeight, bool __result) {
-      try {
-        Log.M.TWL(0, "MechComponentDef.DependenciesLoaded(" + loadWeight + "):" + __instance.Description.Id + " result:" + __result);
-      } catch (Exception e) {
-        Log.M.TWL(0, e.ToString(), true);
-      }
-    }
-  }
+  //[HarmonyPatch(typeof(MechComponentDef))]
+  //[HarmonyPatch("DependenciesLoaded")]
+  //[HarmonyPatch(MethodType.Normal)]
+  //[HarmonyPatch(new Type[] { typeof(uint) })]
+  //public static class MechComponentDef_DependenciesLoaded {
+  //  public static void Postfix(MechComponentDef __instance, uint loadWeight, bool __result) {
+  //    try {
+  //      //Log.M.TWL(0, "MechComponentDef.DependenciesLoaded(" + loadWeight + "):" + __instance.Description.Id + " result:" + __result);
+  //    } catch (Exception e) {
+  //      Log.M.TWL(0, e.ToString(), true);
+  //    }
+  //  }
+  //}
   [HarmonyPatch(typeof(WeaponDef))]
   [HarmonyPatch("DependenciesLoaded")]
   [HarmonyPatch(MethodType.Normal)]

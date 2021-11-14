@@ -3,6 +3,7 @@ using BattleTech.Data;
 using CustAmmoCategories;
 using Harmony;
 using Localize;
+using MessagePack;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
@@ -18,23 +19,41 @@ using UnityEngine;
 using static BattleTech.Data.DataManager;
 
 namespace CustomUnits {
+  [MessagePackObject]
   public class CustomHardpointDef {
+    [Key(0)]
     public CustomVector offset { get; set; }
+    [Key(1)]
     public CustomVector scale { get; set; }
+    [Key(2)]
     public CustomVector rotate { get; set; }
+    [Key(3)]
     public float prefireAnimationLength { get; set; }
+    [Key(4)]
     public float fireAnimationLength { get; set; }
+    [Key(5)]
     public string name { get; set; }
+    [Key(6)]
     public string prefab { get; set; }
+    [Key(7)]
     public string shaderSrc { get; set; }
+    [Key(8)]
     public List<string> keepShaderIn { get; set; }
+    [Key(9)]
     public string positionSrc { get; set; }
+    [Key(10)]
     public string paintSchemePlaceholder { get; set; }
+    [Key(11)]
     public List<string> emitters { get; set; }
+    [Key(12)]
     public HardpointAttachType attachType { get; set; }
+    [Key(13)]
     public Dictionary<string, float> animators { get; set; }
+    [Key(14)]
     public List<string> fireEmitterAnimation { get; set; }
+    [Key(15)]
     public string preFireAnimation { get; set; }
+    [Key(16)]
     public string attachOverride { get; set; }
     public CustomHardpointDef() {
       emitters = new List<string>();
@@ -62,22 +81,36 @@ namespace CustomUnits {
       this.weaponRep = weaponRep;
     }
   }
+  [MessagePackObject]
   public class HadrpointAlias {
-    public string name { get; set; }
-    public string prefab { get; set; }
-    public string location { get; set; }
+    [Key(0)]
+    public string name { get; set; } = string.Empty;
+    [Key(1)]
+    public string prefab { get; set; } = string.Empty;
+    [Key(2)]
+    public string location { get; set; } = string.Empty;
+    public HadrpointAlias() { }
   }
+  [MessagePackObject]
   public class HardpointPrefabCandidate {
-    public string PrefabIdentifier { get; set; }
-    public string PrefabName { get; set; }
-    public float weight { get; set; }
+    [Key(0)]
+    public string PrefabIdentifier { get; set; } = string.Empty;
+    [Key(1)]
+    public string PrefabName { get; set; } = string.Empty;
+    [Key(2)]
+    public float weight { get; set; } = 0f;
+    public HardpointPrefabCandidate() { }
     public HardpointPrefabCandidate(string id, string name, float w) {
       PrefabIdentifier = id; PrefabName = name; this.weight = w;
     }
   }
+  [MessagePackObject]
   public class HardpointsGroup {
-    public int index { get; set; }
+    [Key(0)]
+    public int index { get; set; } = 0;
+    [Key(1)]
     public Dictionary<string, HardpointPrefabCandidate> GroupPrefabs { get; set; } = new Dictionary<string, HardpointPrefabCandidate>();
+    public HardpointsGroup() { }
     public HardpointsGroup(int i) { this.index = i; }
   }
   public class HardpointCalculator {
@@ -306,21 +339,31 @@ namespace CustomUnits {
       this.content = prefabName.Split('_');
     }
   }
+  [MessagePackObject]
   public class CustomHardpointsDef {
+    [Key(0)]
     public bool IsVehicleStyleLocations { get; set; }
+    [Key(1)]
     public List<CustomHardpointDef> prefabs { get; set; }
-    public List<string> depend_hardpointdatadefs { get; set; }
+    [Key(2)]
     public Dictionary<string, HadrpointAlias> aliases { get; set; }
+    [Key(3), JsonIgnore]
     public Dictionary<string, HashSet<HardpointsGroup>> hardpointsGroups { get; set; }
+    [Key(4), JsonIgnore]
+    public string HardpointDataDefID { get; set; } = string.Empty;
     public CustomHardpointsDef() {
       prefabs = new List<CustomHardpointDef>();
       aliases = new Dictionary<string, HadrpointAlias>();
       IsVehicleStyleLocations = false;
-      depend_hardpointdatadefs = new List<string>();
       hardpointsGroups = new Dictionary<string, HashSet<HardpointsGroup>>();
     }
     public void InitGroups(HardpointDataDef hardpointData) {
-      this.hardpointsGroups.Clear();
+      if (hardpointData.ID != this.HardpointDataDefID) {
+        this.HardpointDataDefID = hardpointData.ID;
+        hardpointsGroups.Clear();
+      } else {
+        return;
+      }
       //Log.TWL(0, "CustomHardpointsDef.InitGroups " + hardpointData.ID + " ");
       foreach (var locationData in hardpointData.HardpointData) {
         //Log.WL(1, "location:" + locationData.location.ToLower());
@@ -378,26 +421,22 @@ namespace CustomUnits {
   [HarmonyPatch(new Type[] { typeof(string) })]
   public static class HardpointDataDef_FromJSON {
     public static bool Prefix(HardpointDataDef __instance, ref string json, ref CustomHardpointsDef __state) {
-      __state = null;
       try {
+        if (string.IsNullOrEmpty(__instance.ID) == false) {
+          CustomHardpointsDef extDef = CustomPrewarm.Core.getDeserializedObject(BattleTechResourceType.HardpointDataDef, __instance.ID, "CustomUnits") as CustomHardpointsDef;
+          if(extDef != null) {
+            __state = extDef;
+            return true;
+          }
+          Log.TWL(0, "HardpointDataDef.FromJSON "+ __instance.ID + " has no CustomHardpointsDef");
+        }
+        __state = new CustomHardpointsDef();
         JObject definition = JObject.Parse(json);
         string id = (string)definition["ID"];
         //Log.TWL(0, "HardpointDataDef.FromJSON:" + id);
         if (definition["CustomHardpoints"] != null) {
           __state = definition["CustomHardpoints"].ToObject<CustomHardpointsDef>();
-          foreach (CustomHardpointDef chd in __state.prefabs) {
-            if (string.IsNullOrEmpty(chd.name)) { chd.name = chd.prefab; }
-            if (string.IsNullOrEmpty(chd.name)) { continue; }
-            string custHardpointName = id + "." + chd.name;
-            CustomHardPointsHelper.Add(custHardpointName, chd);
-          }
-          foreach (var alias in __state.aliases) {
-            alias.Value.name = alias.Key;
-            CustomHardPointsHelper.Add(alias.Value.name, id+"."+alias.Value.prefab);
-          }
           definition.Remove("CustomHardpoints");
-        } else {
-          __state = new CustomHardpointsDef();
         }
         json = definition.ToString();
         return true;
@@ -408,6 +447,17 @@ namespace CustomUnits {
     }
     public static void Postfix(HardpointDataDef __instance, ref CustomHardpointsDef __state) {
       if (__state == null) { return; }
+      string id = __instance.ID;
+      foreach (CustomHardpointDef chd in __state.prefabs) {
+        if (string.IsNullOrEmpty(chd.name)) { chd.name = chd.prefab; }
+        if (string.IsNullOrEmpty(chd.name)) { continue; }
+        string custHardpointName = id + "." + chd.name;
+        CustomHardPointsHelper.Add(custHardpointName, chd);
+      }
+      foreach (var alias in __state.aliases) {
+        alias.Value.name = alias.Key;
+        CustomHardPointsHelper.Add(alias.Value.name, id + "." + alias.Value.prefab);
+      }
       if (string.IsNullOrEmpty(__instance.ID) == false) {
         CustomHardPointsHelper.Add(__instance.ID, __state);
       }
@@ -604,7 +654,7 @@ namespace CustomUnits {
     }
   }
   public static class CustomHardPointsHelper {
-    private static CustomHardpointsDef EmptyCustomHardpointsDef = new CustomHardpointsDef();
+    public static readonly CustomHardpointsDef EmptyCustomHardpointsDef = new CustomHardpointsDef();
     private static ConcurrentDictionary<string, CustomHardpointsDef> CustomHardpointsDefs = new ConcurrentDictionary<string, CustomHardpointsDef>();
     private static ConcurrentDictionary<string, string> hardPointAliases = new ConcurrentDictionary<string, string>();
     private static ConcurrentDictionary<string, CustomHardpointDef> CustomHardpointDefs = new ConcurrentDictionary<string, CustomHardpointDef>();
@@ -622,7 +672,10 @@ namespace CustomUnits {
       //}
     }
     public static CustomHardpointsDef CustomHardpoints(this HardpointDataDef data) {
-      if(CustomHardpointsDefs.TryGetValue(data.ID, out CustomHardpointsDef result)) {
+      return CustomHardpoints(data.ID);
+    }
+    public static CustomHardpointsDef CustomHardpoints(string ID) {
+      if (CustomHardpointsDefs.TryGetValue(ID, out CustomHardpointsDef result)) {
         return result;
       }
       return EmptyCustomHardpointsDef;

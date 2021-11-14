@@ -59,7 +59,11 @@ namespace CustAmmoCategories {
       }
       if (callbase) { base.PlayProjectile(); }
     }
+#if PUBLIC_ASSEMBLIES
+    public override void Update() {
+#else
     protected override void Update() {
+#endif
       if (this.currentState == WeaponEffectState.PreFiring) {
         if (baseHardpointAnimator != null) {
           if (baseHardpointAnimator.isPrefireAnimCompleete() == false) { return; }
@@ -310,7 +314,11 @@ namespace CustAmmoCategories {
         this.colorT += this.rate * this.Combat.StackManager.GetProgressiveAttackDeltaTime(this.colorT) * this.ColorChangeSpeed;
       }
     }
+#if PUBLIC_ASSEMBLIES
+    public override void PlayProjectile() {
+#else
     protected override void PlayProjectile() {
+#endif
       this.ColorChangeSpeed = this.weapon.ColorSpeedChange();
       this.colorsTable = this.weapon.ColorsTable();
       this.colorChangeRule = this.weapon.colorChangeRule();
@@ -359,7 +367,11 @@ namespace CustAmmoCategories {
     public override void Fire(WeaponHitInfo hitInfo, int hitIndex = 0, int emitterIndex = 0) {
       base.Fire(hitInfo, hitIndex, emitterIndex);
     }
+#if PUBLIC_ASSEMBLIES
+    public override void Update() {
+#else
     protected override void Update() {
+#endif
       base.Update();
     }
     protected override void PlayTerrainImpactVFX() {
@@ -435,7 +447,11 @@ namespace CustAmmoCategories {
         Log.M.TWL(0, e.ToString(), true);
       }
     }
+#if PUBLIC_ASSEMBLIES
+    public override void PlayImpact() {
+#else
     protected override void PlayImpact() {
+#endif
       if (this.hitInfo.DidShotHitAnything(this.hitIndex) && !string.IsNullOrEmpty(this.impactVFXBase)) {
         string str1 = string.Empty;
         AbstractActor actorByGuid = this.Combat.FindActorByGUID(this.hitInfo.ShotTargetId(this.hitIndex));

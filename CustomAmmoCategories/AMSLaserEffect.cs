@@ -38,15 +38,27 @@ namespace CustAmmoCategories {
     public override float calculateInterceptCorrection(float curPath, float pathLenth, float distance, float missileProjectileSpeed) {
       return curPath / pathLenth;
     }
+#if PUBLIC_ASSEMBLIES
+    public override int ImpactPrecacheCount {
+#else
     protected override int ImpactPrecacheCount {
+#endif
       get {
         return 1;
       }
     }
+#if PUBLIC_ASSEMBLIES
+    public override void Awake() {
+#else
     protected override void Awake() {
+#endif
       base.Awake();
     }
+#if PUBLIC_ASSEMBLIES
+    public override void Start() {
+#else
     protected override void Start() {
+# endif
       base.Start();
     }
     public virtual void Init(LaserEffect original) {
@@ -105,16 +117,28 @@ namespace CustAmmoCategories {
       this.projectileTransform.localRotation = Quaternion.identity;
       this.pulseTime = this.pulseDelay;
     }
+#if PUBLIC_ASSEMBLIES
+    public override void PlayPreFire() {
+#else
     protected override void PlayPreFire() {
+#endif
       base.PlayPreFire();
       if (string.IsNullOrEmpty(this.beamStartSFX))
         return;
       int num = (int)WwiseManager.PostEvent(this.beamStartSFX, this.parentAudioObject, (AkCallbackManager.EventCallback)null, (object)null);
     }
+#if PUBLIC_ASSEMBLIES
+    public override void PlayMuzzleFlash() {
+#else
     protected override void PlayMuzzleFlash() {
+#endif
       base.PlayMuzzleFlash();
     }
+#if PUBLIC_ASSEMBLIES
+    public override void PlayProjectile() {
+#else
     protected override void PlayProjectile() {
+#endif
       this.SetupLaser();
       this.PlayMuzzleFlash();
       if (!string.IsNullOrEmpty(this.pulseSFX)) {
@@ -125,14 +149,16 @@ namespace CustAmmoCategories {
       this.projectileTransform.position = this.endPos;
       this.PlayImpact();
     }
+#if PUBLIC_ASSEMBLIES
+    public override void PlayImpact() {
+#else
     protected override void PlayImpact() {
+#endif
       this.PlayImpactAudio();
       this.OnImpact(0.0f);
     }
-
     protected override void DestroyFlimsyObjects() {
     }
-
     protected override void Update() {
       base.Update();
       if (this.currentState == WeaponEffect.WeaponEffectState.Firing) {
@@ -165,28 +191,19 @@ namespace CustAmmoCategories {
         return;
       base.OnComplete();
     }
-
     protected override void LateUpdate() {
       base.LateUpdate();
     }
-
     protected override void OnPreFireComplete() {
       base.OnPreFireComplete();
       this.PlayProjectile();
     }
 
-#if BT1_8
     protected override void OnImpact(float hitDamage = 0.0f, float structureDamage = 0f) {
-#else
-    protected override void OnImpact(float hitDamage = 0.0f) {
-#endif
       base.OnImpact(this.weapon.DamagePerShotAdjusted(this.weapon.parent.occupiedDesignMask)
-#if BT1_8
         ,this.weapon.StructureDamagePerShotAdjusted(this.weapon.parent.occupiedDesignMask)
-#endif
       );
     }
-
     protected override void OnComplete() {
       if (!string.IsNullOrEmpty(this.beamStopSFX)) {
         int num = (int)WwiseManager.PostEvent(this.beamStopSFX, this.parentAudioObject, (AkCallbackManager.EventCallback)null, (object)null);
@@ -205,7 +222,6 @@ namespace CustAmmoCategories {
       this.t = 0.0f;
       this.currentState = WeaponEffect.WeaponEffectState.WaitingForImpact;
     }
-
     public override void Reset() {
       if (this.Active && !string.IsNullOrEmpty(this.beamStopSFX)) {
         int num = (int)WwiseManager.PostEvent(this.beamStopSFX, this.parentAudioObject, (AkCallbackManager.EventCallback)null, (object)null);

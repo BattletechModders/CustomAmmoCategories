@@ -232,15 +232,9 @@ public class MultiShotMissileLauncherEffect : CopyAbleWeaponEffect {
     this.PlayProjectile();
   }
 
-#if BT1_8
-    protected override void OnImpact(float hitDamage = 0.0f,float structureDamage = 0f) {
-      base.OnImpact(0.0f,0f);
-    }
-#else
-  protected override void OnImpact(float hitDamage = 0.0f) {
-    base.OnImpact(0.0f);
+  protected override void OnImpact(float hitDamage = 0.0f,float structureDamage = 0f) {
+    base.OnImpact(0.0f,0f);
   }
-#endif
 
   protected override void OnComplete() {
     base.OnComplete();

@@ -3,6 +3,7 @@ using CustAmmoCategories;
 using CustomAmmoCategoriesLog;
 using Harmony;
 using HBS.Util;
+using MessagePack;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
@@ -15,27 +16,47 @@ using System.Threading;
 using UnityEngine;
 
 namespace CustAmmoCategories {
-  [SelfDocumentedClass("Weapons", "Weapons", "EvasivePipsMods")]
+  [SelfDocumentedClass("Weapons", "Weapons", "EvasivePipsMods"), MessagePackObject]
   public class EvasivePipsMods {
+    [Key(0)]
     public float Damage { get; set; } = 0f;
+    [Key(1)]
     public float APDamage { get; set; } = 0f;
+    [Key(2)]
     public float Heat { get; set; } = 0f;
+    [Key(3)]
     public float Instablility { get; set; } = 0f;
+    [Key(4)]
     public float GeneratedHeat { get; set; } = 0f;
+    [Key(5)]
     public float FlatJammingChance { get; set; } = 0f;
+    [Key(6)]
     public float MinRange { get; set; } = 0f;
+    [Key(7)]
     public float ShortRange { get; set; } = 0f;
+    [Key(8)]
     public float MediumRange { get; set; } = 0f;
+    [Key(9)]
     public float LongRange { get; set; } = 0f;
+    [Key(10)]
     public float MaxRange { get; set; } = 0f;
+    [Key(11)]
     public float AOERange { get; set; } = 0f;
+    [Key(12)]
     public float AOEDamage { get; set; } = 0f;
+    [Key(13)]
     public float AOEHeatDamage { get; set; } = 0f;
+    [Key(14)]
     public float AOEInstability { get; set; } = 0f;
+    [Key(15)]
     public float RefireModifier { get; set; } = 0f;
+    [Key(16)]
     public float APCriticalChanceMultiplier { get; set; } = 0f;
+    [Key(17)]
     public float AccuracyModifier { get; set; } = 0f;
+    [Key(18)]
     public float DamageVariance { get; set; } = 0f;
+    [Key(19)]
     public float CriticalChanceMultiplier { get; set; } = 0f;
     public EvasivePipsMods() {
       //this.Damage = 0f;
@@ -63,45 +84,81 @@ namespace CustAmmoCategories {
   public enum MinefieldBurnReaction {
     None,Destroy,LooseElectronic,Explode
   }
-  [SelfDocumentedClass("Weapons", "Weapons", "MineFieldDef")]
+  [SelfDocumentedClass("Weapons", "Weapons", "MineFieldDef"), MessagePackObject]
   public class MineFieldDef {
+    [Key(0)]
     public string UIName { get; set; } = string.Empty;
+    [Key(1)]
     public float Damage { get; set; } = 0f;
+    [Key(2)]
     public float Heat { get; set; } = 0f;
+    [Key(3)]
     public float Instability { get; set; } = 0f;
+    [Key(4)]
     public float AoEDamage { get; set; } = 0f;
+    [Key(5)]
     public float AoEHeat { get; set; } = 0f;
+    [Key(6)]
     public float AoEInstability { get; set; } = 0f;
+    [Key(7)]
     public float AoERange { get; set; } = 0f;
+    [Key(8)]
     public float Chance { get; set; } = 0f;
+    [Key(9)]
     public int Count { get; set; } = 0;
+    [Key(10)]
     public string VFXprefab { get; set; } = string.Empty;
+    [Key(11)]
     public float VFXScaleX { get; set; } = 1f;
+    [Key(12)]
     public float VFXScaleY { get; set; } = 1f;
+    [Key(13)]
     public float VFXScaleZ { get; set; } = 1f;
+    [Key(14)]
     public float VFXOffsetX { get; set; } = 0f;
+    [Key(15)]
     public float VFXOffsetY { get; set; } = 0f;
+    [Key(16)]
     public float VFXOffsetZ { get; set; } = 0f;
+    [Key(17)]
     public float VFXMinDistance { get; set; } = 20f;
+    [Key(18)]
     public int InstallCellRange { get; set; } = 0;
+    [Key(19)]
     public string SFX { get; set; } = string.Empty;
-    [SelfDocumentationTypeName("List of statusEffects"), SelfDocumentationDefaultValue("empty")]
+    [SelfDocumentationTypeName("List of statusEffects"), SelfDocumentationDefaultValue("empty"), Key(36)]
     public List<EffectData> statusEffects { get; set; } = new List<EffectData>();
+    [Key(20)]
     public float FireTerrainChance { get; set; } = 0f;
+    [Key(21)]
     public int FireDurationWithoutForest { get; set; } = 0;
+    [Key(22)]
     public int FireTerrainStrength { get; set; } = 0;
+    [Key(23)]
     public int FireTerrainCellRadius { get; set; } = 0;
+    [Key(24)]
     public string LongVFXOnImpact { get; set; } = string.Empty;
+    [Key(25)]
     public string tempDesignMaskOnImpact { get; set; } = string.Empty;
+    [Key(26)]
     public int tempDesignMaskOnImpactTurns { get; set; } = 0;
+    [Key(27)]
     public float LongVFXOnImpactScaleX { get; set; } = 0f;
+    [Key(28)]
     public float LongVFXOnImpactScaleY { get; set; } = 0f;
+    [Key(29)]
     public float LongVFXOnImpactScaleZ { get; set; } = 0f;
+    [Key(30)]
     public int tempDesignMaskCellRadius { get; set; } = 0;
+    [Key(31)]
     public int stealthLevel { get; set; } = 1;
+    [Key(32)]
     public int IFFLevel { get; set; } = 1;
+    [Key(33)]
     public string Icon { get; set; } = "bomb";
+    [Key(34)]
     public MinefieldBurnReaction burnReaction { get; set; } = MinefieldBurnReaction.Destroy;
+    [Key(35)]
     public DamageFalloffType AoEDmgFalloffType { get; set; } = DamageFalloffType.Linear;
     public float mAoEDmgFalloffType(float value) {
       switch (this.AoEDmgFalloffType) {
@@ -208,155 +265,270 @@ namespace CustAmmoCategories {
     }
   }
   public enum AutoRefilType { Manual,Shop,Automatic }
-  [SelfDocumentedClass("Weapons", "Weapons", "AmmunitionDef")]
+  [SelfDocumentedClass("Weapons", "Weapons", "AmmunitionDef"), MessagePackObject]
   public class ExtAmmunitionDef {
-    [SkipDocumentation]
+    [SkipDocumentation, Key(0)]
     public string Id { get; set; } = "NotSet";
+    [Key(1)]
     public string Name { get; set; } = string.Empty;
+    [Key(2)]
     public string UIName { get; set; } = string.Empty;
+    [Key(3)]
     public float AccuracyModifier { get; set; } = 0f;
+    [Key(4)]
     public float DirectFireModifier { get; set; } = 0f;
+    [Key(5)]
     public float DamagePerShot { get; set; } = 0f;
+    [Key(6)]
     public float HeatDamagePerShot { get; set; } = 0f;
+    [Key(7)]
     public float CriticalChanceMultiplier { get; set; } = 0f;
+    [Key(8)]
     public int ShotsWhenFired { get; set; } = 0;
+    [Key(9)]
     public float ShotsWhenFiredMod { get; set; } = 1f;
-    [SkipDocumentation]
+    [SkipDocumentation, Key(10)]
     public int AIBattleValue { get; set; }
-    public int ProjectilesPerShot { get; private set; } = 0;
-    [SelfDocumentationTypeName("List of statusEffects"), SelfDocumentationDefaultValue("empty")]
+    [Key(11)]
+    public int ProjectilesPerShot { get; set; } = 0;
+    [SelfDocumentationTypeName("List of statusEffects"), SelfDocumentationDefaultValue("empty"), Key(12)]
     public EffectData[] statusEffects { get; set; } = new EffectData[] { };
+    [Key(13)]
     public float MinRange { get; set; } = 0f;
+    [Key(14)]
     public float MaxRange { get; set; } = 0f;
+    [Key(15)]
     public float LongRange { get; set; } = 0f;
+    [Key(16)]
     public float ShortRange { get; set; } = 0f;
+    [Key(17)]
     public float ForbiddenRange { get; set; } = 0f;
+    [Key(18)]
     public float MediumRange { get; set; } = 0f;
+    [Key(19)]
     public int RefireModifier { get; set; } = 0;
+    [Key(20)]
     public int AttackRecoil { get; set; } = 0;
+    [Key(21)]
     public float Instability { get; set; } = 0f;
+    [Key(22)]
     public string WeaponEffectID { get; set; } = string.Empty;
+    [Key(23)]
     public float EvasivePipsIgnored { get; set; } = 0f;
+    [Key(24)]
     public TripleBoolean IndirectFireCapable { get; set; } = TripleBoolean.NotSet;
+    [Key(25)]
     public TripleBoolean AOECapable { get; set; } = TripleBoolean.NotSet;
+    [Key(26)]
     public HitGeneratorType HitGenerator { get; set; } = HitGeneratorType.NotSet;
+    [Key(27)]
     public float FlatJammingChance { get; set; } = 0f;
+    [Key(28)]
     public float AMSHitChance { get; set; } = 0f;
+    [Key(29)]
     public float GunneryJammingBase { get; set; } = 0f;
+    [Key(30)]
     public float GunneryJammingMult { get; set; } = 0f;
+    [Key(31)]
     public float DistantVariance { get; set; } = 0f;
+    [Key(32)]
     public TripleBoolean DistantVarianceReversed { get; set; } = TripleBoolean.NotSet;
+    [Key(33)]
     public float DamageVariance { get; set; } = 0f;
+    [Key(34)]
     public float DamageMultiplier { get; set; } = 1f;
+    [Key(35)]
     public float HeatMultiplier { get; set; } = 1f;
+    [Key(36)]
     public float InstabilityMultiplier { get; set; } = 1f;
-    [JsonIgnore, SelfDocumentationTypeName("string, id from BattleTech.AmmoCategoryEnumeration or CustomAmmo"), SelfDocumentationDefaultValue("NotSet")]
+    [JsonIgnore, SelfDocumentationTypeName("string, id from BattleTech.AmmoCategoryEnumeration or CustomAmmo"), SelfDocumentationDefaultValue("NotSet"), IgnoreMember]
     public CustomAmmoCategory AmmoCategory { get; set; } = CustomAmmoCategories.NotSetCustomAmmoCategoty;
+    [Key(37), SkipDocumentation, JsonIgnore]
+    public string AmmoCategoryId { get { return AmmoCategory==null? CustomAmmoCategories.NotSetCustomAmmoCategoty.Id : AmmoCategory.Id; } set { AmmoCategory = CustomAmmoCategories.find(value); } }
+    [Key(38)]
     public float SpreadRange { get; set; } = 0f;
+    [Key(39)]
     public float AOERange { get; set; } = 0f;
+    [Key(40)]
     public float AOEDamage { get; set; } = 0f;
+    [Key(41)]
     public float AOEHeatDamage { get; set; } = 0f;
+    [Key(42)]
     public float AOEInstability { get; set; } = 0f;
+    [Key(43)]
     public TripleBoolean AOEEffectsFalloff { get; set; } = TripleBoolean.NotSet;
+    [Key(44)]
     public TripleBoolean AlwaysIndirectVisuals { get; set; } = TripleBoolean.NotSet;
+    [Key(45)]
     public string IFFDef { get; set; } = string.Empty;
+    [Key(46)]
     public string LongVFXOnImpact { get; set; } = string.Empty;
+    [Key(47)]
     public string tempDesignMaskOnImpact { get; set; } = string.Empty;
+    [Key(48)]
     public int tempDesignMaskOnImpactTurns { get; set; } = 0;
+    [Key(49)]
     public float LongVFXOnImpactScaleX { get; set; } = 1f;
+    [Key(50)]
     public float LongVFXOnImpactScaleY { get; set; } = 1f;
+    [Key(51)]
     public float LongVFXOnImpactScaleZ { get; set; } = 1f;
+    [Key(52)]
     public int tempDesignMaskCellRadius { get; set; } = 0;
+    [Key(53)]
     public TripleBoolean HasShells { get; set; } = TripleBoolean.NotSet;
+    [Key(54)]
     public float ShellsRadius { get; set; } = 0f;
+    [Key(55)]
     public float MinShellsDistance { get; set; } = 30f;
+    [Key(56)]
     public float MaxShellsDistance { get; set; } = 30f;
+    [Key(57)]
     public float UnseparatedDamageMult { get; set; } = 1f;
+    [Key(58)]
     public float ArmorDamageModifier { get; set; } = 1f;
+    [Key(59)]
     public float ISDamageModifier { get; set; } = 1f;
+    [Key(60)]
     public float HeatGeneratedModifier { get; set; } = 1f;
+    [Key(61)]
     public float CanBeExhaustedAt { get; set; } = 0f;
     //public Dictionary<TerrainMaskFlags,string> SurfaceImpactDesignMaskId { get; set; }
+    [Key(62)]
     public TripleBoolean SurfaceBecomeDangerousOnImpact { get; set; } = TripleBoolean.NotSet;
+    [Key(63)]
     public TripleBoolean Unguided { get; set; } = TripleBoolean.NotSet;
+    [Key(64)]
     public int ClearMineFieldRadius { get; set; } = 0;
+    [Key(65)]
     public float FireTerrainChance { get; set; } = 0f;
+    [Key(66)]
     public int FireDurationWithoutForest { get; set; } = 0;
+    [Key(67)]
     public int FireTerrainStrength { get; set; } = 0;
+    [Key(68)]
     public int FireTerrainCellRadius { get; set; } = 0;
+    [Key(69)]
     public string AdditionalImpactVFX { get; set; } = string.Empty;
+    [Key(70)]
     public float AdditionalImpactVFXScaleX { get; set; } = 1f;
+    [Key(71)]
     public float AdditionalImpactVFXScaleY { get; set; } = 1f;
+    [Key(72)]
     public float AdditionalImpactVFXScaleZ { get; set; } = 1f;
+    [Key(73)]
     public TripleBoolean FireOnSuccessHit { get; set; } = TripleBoolean.NotSet;
+    [Key(74)]
     public TripleBoolean IsAMS { get; set; } = TripleBoolean.NotSet;
+    [Key(75)]
     public TripleBoolean IsAAMS { get; set; } = TripleBoolean.NotSet;
+    [Key(76)]
     public TripleBoolean BallisticDamagePerPallet { get; set; } = TripleBoolean.NotSet;
+    [Key(77)]
     public string AdditionalAudioEffect { get; set; } = string.Empty;
-    [SelfDocumentationDefaultValue("empty"), SelfDocumentationTypeName("MineFieldDef structure")]
+    [Key(78),SelfDocumentationDefaultValue("empty"), SelfDocumentationTypeName("MineFieldDef structure")]
     public MineFieldDef MineField { get; set; } = new MineFieldDef();
-    [SelfDocumentationDefaultValue("empty"), SelfDocumentationTypeName("Dictionary of {\"<tag name>\":<float modifier>}")]
+    [Key(79),SelfDocumentationDefaultValue("empty"), SelfDocumentationTypeName("Dictionary of {\"<tag name>\":<float modifier>}")]
     public Dictionary<string, float> TagsAccuracyModifiers { get; set; } = new Dictionary<string, float>();
+    [Key(80)]
     public TripleBoolean Streak { get; set; } = TripleBoolean.NotSet;
+    [Key(81)]
     public float FireDelayMultiplier { get; set; } = 1f;
+    [Key(82)]
     public float MissileFiringIntervalMultiplier { get; set; } = 1f;
+    [Key(83)]
     public float MissileVolleyIntervalMultiplier { get; set; } = 1f;
+    [Key(84)]
     public float ProjectileSpeedMultiplier { get; set; } = 1f;
+    [Key(85)]
     public TripleBoolean CantHitUnaffecedByPathing { get; set; } = TripleBoolean.NotSet;
+    [Key(86)]
     public int MissileVolleySize { get; set; } = 0;
-    [SelfDocumentationDefaultValue("{ \"x\": 1.0,\"y\":1.0, \"z\":1.0 }"), SelfDocumentationTypeName("Vector")]
+    [Key(87),SelfDocumentationDefaultValue("{ \"x\": 1.0,\"y\":1.0, \"z\":1.0 }"), SelfDocumentationTypeName("Vector")]
     public CustomVector ProjectileScale { get; set; } = new CustomVector(true);
-    [SelfDocumentationDefaultValue("{ \"x\": 1.0,\"y\":1.0, \"z\":1.0 }"), SelfDocumentationTypeName("Vector")]
+    [Key(88),SelfDocumentationDefaultValue("{ \"x\": 1.0,\"y\":1.0, \"z\":1.0 }"), SelfDocumentationTypeName("Vector")]
     public CustomVector MissileExplosionScale { get; set; } = new CustomVector(true);
-    public void ProjectilesPerShotSet(int value) {
-      this.ProjectilesPerShot = value;
-    }
+    [Key(89)]
     public float ColorSpeedChange { get; set; } = 0f;
+    [Key(90)]
     public ColorChangeRule ColorChangeRule { get; set; } = ColorChangeRule.None;
+    [Key(91)]
     public float APDamage { get; set; } = 0f;
+    [Key(92)]
     public float APDamageMultiplier { get; set; } = 1f;
-    [SelfDocumentationDefaultValue("undefined")]
+    [Key(93),SelfDocumentationDefaultValue("undefined")]
     public float APCriticalChanceMultiplier { get; set; } = float.NaN;
+    [Key(94)]
     public float APArmorShardsMod { get; set; } = 0f;
+    [Key(95)]
     public float APMaxArmorThickness { get; set; } = 0f;
+    [Key(96)]
     public TripleBoolean DamageNotDivided { get; set; } = TripleBoolean.NotSet;
-    [SelfDocumentationDefaultValue("empty"), SelfDocumentationTypeName("array of { \"I\": <float intensivity>, \"C\":\"<html color string>\"}")]
+    [Key(97),SelfDocumentationDefaultValue("empty"), SelfDocumentationTypeName("array of { \"I\": <float intensivity>, \"C\":\"<html color string>\"}")]
     public List<ColorTableJsonEntry> ColorsTable { get; set; } = new List<ColorTableJsonEntry>();
+    [Key(98)]
     public TripleBoolean isHeatVariation { get; set; } = TripleBoolean.NotSet;
+    [Key(99)]
     public TripleBoolean isStabilityVariation { get; set; } = TripleBoolean.NotSet;
+    [Key(100)]
     public TripleBoolean isDamageVariation { get; set; } = TripleBoolean.NotSet;
+    [Key(101)]
     public float ClusteringModifier { get; set; } = 0f;
+    [Key(102)]
     public float PrefireAnimationSpeedMod { get; set; } = 1f;
+    [Key(104)]
     public float FireAnimationSpeedMod { get; set; } = 1f;
+    [Key(105)]
     public float HeatGenerated { get; set; } = 0f;
-    [SelfDocumentationDefaultValue("empty"), SelfDocumentationTypeName("EvasivePipsMods structure")]
+    [Key(106),SelfDocumentationDefaultValue("empty"), SelfDocumentationTypeName("EvasivePipsMods structure")]
     public EvasivePipsMods evasivePipsMods { get; set; } = new EvasivePipsMods();
+    [Key(107)]
     public float ShotsPerAmmo { get; set; } = 1f;
-    [SelfDocumentationDefaultValue("empty"), SelfDocumentationTypeName("DeferredEffectDef structure")]
+    [Key(108),SelfDocumentationDefaultValue("empty"), SelfDocumentationTypeName("DeferredEffectDef structure")]
     public DeferredEffectDef deferredEffect { get; set; } = new DeferredEffectDef();
+    [Key(109)]
     public string preFireSFX { get; set; } = string.Empty;
+    [Key(110)]
     public bool HideIfOnlyVariant { get; set; } = false;
+    [Key(111)]
     public float MinMissRadius { get; set; } = 0f;
+    [Key(112)]
     public float MaxMissRadius { get; set; } = 0f;
+    [Key(113)]
     public TripleBoolean AMSImmune { get; set; } = TripleBoolean.NotSet;
+    [Key(114)]
     public float AMSDamage { get; set; } = 0f;
+    [Key(115)]
     public float MissileHealth { get; set; } = 0f;
+    [Key(116)]
     public DamageFalloffType RangedDmgFalloffType { get; set; } = DamageFalloffType.NotSet;
+    [Key(117)]
     public DamageFalloffType AoEDmgFalloffType { get; set; } = DamageFalloffType.NotSet;
+    [Key(118)]
     public float DamageFalloffStartDistance { get; set; } = 0f;
+    [Key(119)]
     public float DamageFalloffEndDistance { get; set; } = 0f;
+    [Key(120)]
     public AutoRefilType AutoRefill { get; set; } = AutoRefilType.Automatic;
-    [SkipDocumentation]
+    [Key(121),SkipDocumentation]
     public HashSet<string> ammoOnlyBoxes { get; set; } = new HashSet<string>();
-    [SelfDocumentationDefaultValue("empty"), SelfDocumentationTypeName("list of strings")]
+    [Key(122),SelfDocumentationDefaultValue("empty"), SelfDocumentationTypeName("list of strings")]
     public HashSet<string> AvailableOnPlanet { get; set; } = new HashSet<string>();
+    [Key(123)]
     public float BuildingsDamageModifier { get; set; } = 1f;
+    [Key(124)]
     public float TurretDamageModifier { get; set; } = 1f;
+    [Key(125)]
     public float VehicleDamageModifier { get; set; } = 1f;
+    [Key(126)]
     public float MechDamageModifier { get; set; } = 1f;
+    [Key(127)]
     public float QuadDamageModifier { get; set; } = 1f;
+    [Key(128)]
     public float TrooperSquadDamageModifier { get; set; } = 1f;
+    [Key(129)]
     public float AirMechDamageModifier { get; set; } = 1f;
+    [Key(130)]
     public float VTOLDamageModifier { get; set; } = 1f;
     public ExtAmmunitionDef() {
       //Id = "NotSet";
@@ -512,9 +684,17 @@ namespace CustomAmmoCategoriesPatches {
     }
     public static bool Prefix(AmmunitionDef __instance, ref string json, ref ExtDefinitionParceInfo __state) {
       CustomAmmoCategories.CustomCategoriesInit();
-      Log.LogWrite("AmmunitionDef fromJSON ");
       __state = new ExtDefinitionParceInfo();
       __state.baseJson = json;
+      if(__instance.Description != null) {
+        ExtAmmunitionDef extDef = CustomPrewarm.Core.getDeserializedObject(BattleTechResourceType.AmmunitionDef, __instance.Description.Id, "CustomAmmoCategories") as ExtAmmunitionDef;
+        if(extDef != null) {
+          __state.extDef = extDef;
+          return true;
+        }
+        Log.M.TWL(0, "AmmunitionDef fromJSON "+__instance.Description.Id+ " has no ExtAmmunitionDef. should not happend");
+      }
+      Log.LogWrite("AmmunitionDef fromJSON ");
       JObject defTemp = null;
       try {
         defTemp = JObject.Parse(json);

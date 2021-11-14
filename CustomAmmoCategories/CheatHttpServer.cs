@@ -422,7 +422,6 @@ namespace CustAmmoCategories {
       output.Close();
       response.Close();
     }
-
     public static void DoWork() {
       CustomAmmoCategoriesLog.Log.LogWrite("Initing http server " + CustomAmmoCategories.Settings.modHTTPServer + "...\n");
       if (CustomAmmoCategories.Settings.modHTTPServer == false) { return; }

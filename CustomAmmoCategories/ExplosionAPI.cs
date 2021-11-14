@@ -264,11 +264,7 @@ namespace CustAmmoCategories {
             }), combat.Constants.CombatUIConstants.floatieSizeMedium, FloatieMessage.MessageNature.ArmorDamage, AOEHitRecord.Value.hitPosition.x, AOEHitRecord.Value.hitPosition.y, AOEHitRecord.Value.hitPosition.z));
           }
           fakeHit.hitPositions[0] = AOEHitRecord.Value.hitPosition;
-#if BT1_8
           AoEDamage[index].target.TakeWeaponDamage(fakeHit, AOEHitRecord.Key, fakeWeapon, AOEHitRecord.Value.Damage, 0f, 0, DamageType.AmmoExplosion);
-#else
-          AoEDamage[index].target.TakeWeaponDamage(fakeHit, AOEHitRecord.Key, fakeWeapon, AOEHitRecord.Value.Damage, 0, DamageType.AmmoExplosion);
-#endif
         }
         AoEDamage[index].target.HandleDeath(fakeActor.GUID);
         Mech mech = AoEDamage[index].target as Mech;

@@ -9,7 +9,6 @@ namespace WeaponRealizer {
     public static float ApplyDamageModifiers(Vector3 attackPos, ICombatant target, Weapon weapon, float rawDamage, bool log) {
       return ApplyAllDamageModifiers(attackPos, target, weapon, rawDamage, true, log);
     }
-
     public static float ApplyAllDamageModifiers(Vector3 attackPos, ICombatant target, Weapon weapon, float rawDamage, bool calculateRandomComponent, bool log) {
       var damage = rawDamage;
 

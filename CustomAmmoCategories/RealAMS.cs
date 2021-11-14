@@ -979,11 +979,7 @@ namespace CustAmmoCategories {
             for (int shHitIndex = 0; shHitIndex < advRec.fragInfo.fragsCount; ++shHitIndex) {
               int shrapnelHitIndex = (shHitIndex + advRec.fragInfo.fragStartHitIndex);
               Log.LogWrite("  shellsHitIndex = " + shrapnelHitIndex + " dmg:" + advRec.Damage + "\n");
-#if BT1_8
               advRec.parent.weapon.parent.Combat.MessageCenter.PublishMessage((MessageCenterMessage)new AttackSequenceImpactMessage(__instance.hitInfo, shrapnelHitIndex, advRec.Damage, advRec.APDamage));
-#else
-              advRec.parent.weapon.parent.Combat.MessageCenter.PublishMessage((MessageCenterMessage)new AttackSequenceImpactMessage(__instance.hitInfo, shrapnelHitIndex, advRec.Damage));
-#endif
             }
           }
         }
@@ -993,11 +989,7 @@ namespace CustAmmoCategories {
             AdvWeaponHitInfoRec aoeRec = advRec.parent.hits[aoeHitIndex];
             if (aoeRec.isAOE == false) { continue; }
             Log.LogWrite(" hitIndex = " + aoeHitIndex + " " + aoeRec.target.GUID + " " + aoeRec.Damage + "/" + aoeRec.Heat + "/" + aoeRec.Stability + "\n");
-#if BT1_8
             __instance.weapon.parent.Combat.MessageCenter.PublishMessage((MessageCenterMessage)new AttackSequenceImpactMessage(__instance.hitInfo, aoeHitIndex, aoeRec.Damage, 0f));
-#else
-            __instance.weapon.parent.Combat.MessageCenter.PublishMessage((MessageCenterMessage)new AttackSequenceImpactMessage(__instance.hitInfo, aoeHitIndex, aoeRec.Damage));
-#endif
           }
         }
       }

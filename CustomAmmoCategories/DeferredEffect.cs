@@ -467,11 +467,7 @@ namespace CustAmmoCategories {
             }), weapon.parent.Combat.Constants.CombatUIConstants.floatieSizeMedium, FloatieMessage.MessageNature.ArmorDamage, mfdmg.Value.hitPosition.x, mfdmg.Value.hitPosition.y, mfdmg.Value.hitPosition.z));
           }
           Log.M.WL(2, "take weapon damage "+mfdmg.Value.Damage);
-#if BT1_8
           target.TakeWeaponDamage(fakeHit, mfdmg.Key, this.weapon, mfdmg.Value.Damage, 0f, 0, DamageType.AmmoExplosion);
-#else
-          target.TakeWeaponDamage(fakeHit, mfdmg.Key, this.weapon, mfdmg.Value.Damage, 0, DamageType.AmmoExplosion);
-#endif
         }
         if (mfdmgs.Value.hitRecords.Count > 0) {
           Log.M.WL(2, "floatie message explosion");

@@ -40,21 +40,17 @@ namespace CustAmmoCategories {
     private Vector3 offset;
 
     private GameObject auraRangeScaledObject { get; set; }
-
     private GameObject activeProbeRangeScaledObject { get; set; }
-
     private ButtonState DesiredAuraProjectionState {
       get {
         return ButtonState.Enabled;
       }
     }
-
     private ButtonState DesiredAuraReceptionState {
       get {
         return ButtonState.Enabled;
       }
     }
-
     public void Copy(CombatAuraReticle src) {
       this.VisRange = src.VisRange;
       this.SensorRange = src.SensorRange;
@@ -77,7 +73,6 @@ namespace CustAmmoCategories {
       this.mortarTargetIndicator = src.mortarTargetIndicator;
       this.currentAuraRange = 0f;
     }
-
     public void Init(CombatHUD HUD, Vector3 offset, Transform parentTransform, float Range) {
       this.HUD = HUD;
       this.thisTransform = this.transform;
@@ -98,23 +93,19 @@ namespace CustAmmoCategories {
       AuraRange = Range;
       this.UpdatePosition();
     }
-
     public void RefreshAuraColors(bool isBright) {
       if (this.currentAuraIsBright == isBright) { return; }
       this.currentAuraIsBright = isBright;
       this.auraRangeDecal.DecalMaterial = this.auraRangeMatBright;
     }
-
     private void UpdatePosition() {
       if (this.parentTransform != null) { this.thisTransform.position = parentTransform.position + this.groundOffset + this.offset; } else {
         this.thisTransform.position = this.offset + this.groundOffset;
       }
     }
-
     private void LateUpdate() {
       this.RefreshAuraIndicators();
     }
-
     public void RefreshAuraIndicators() {
       this.UpdatePosition();
       ButtonState auraProjectionState = this.DesiredAuraProjectionState;
@@ -123,7 +114,6 @@ namespace CustAmmoCategories {
       this.RefreshAuraColors(true);
       this.auraReceptionTweens.SetState(this.DesiredAuraReceptionState, true);
     }
-
     private void RefreshAuraRange(ButtonState auraProjectionState) {
       if (auraProjectionState == ButtonState.Disabled) {
         this.auraRangeScaledObject.SetActive(false);

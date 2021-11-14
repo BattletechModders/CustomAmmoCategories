@@ -18,17 +18,23 @@ namespace CustAmmoCategories {
     public int beamHitIndex;
     public string LaserEffectPrefab;
     public float spreadAngle = 0.5f;
+#if PUBLIC_ASSEMBLIES
+    public override int ImpactPrecacheCount {
+#else
     protected override int ImpactPrecacheCount {
+#endif
       get {
         return 5;
       }
     }
-
+#if PUBLIC_ASSEMBLIES
+    public override void Awake() {
+#else
     protected override void Awake() {
+#endif
       base.Awake();
       this.AllowMissSkipping = false;
     }
-
     protected override void Start() {
       base.Start();
     }
@@ -37,12 +43,10 @@ namespace CustAmmoCategories {
       Log.LogWrite("MultiShotLaserEffect.Init\n");
       this.LaserEffectPrefab = prefab;
     }
-
     public override void Init(Weapon weapon) {
       Log.LogWrite("MultiShotLaserEffect.BaseInit\n");
       base.Init(weapon);
     }
-
     protected void SetupBeams() {
       Log.LogWrite("MultiShotLaserEffect.SetupBeams\n");
       this.currentBeam = 0;
@@ -101,7 +105,6 @@ namespace CustAmmoCategories {
         }
       }
     }
-
     protected void ClearBeams() {
       string prefabName = MultiShotLaserEffect.ImprovedLaserPrefabPrefix + this.LaserEffectPrefab;
       Log.LogWrite("MultiShotLaserEffect.ClearBullets\n");
@@ -152,7 +155,6 @@ namespace CustAmmoCategories {
       base.OnPreFireComplete();
       this.PlayProjectile();
     }
-
     protected override void PlayProjectile() {
       this.currentState = WeaponEffect.WeaponEffectState.Firing;
       base.PlayProjectile(false);
@@ -181,27 +183,22 @@ namespace CustAmmoCategories {
         return;
       this.currentState = WeaponEffect.WeaponEffectState.WaitingForImpact;
     }
-
     protected override void PlayImpact() {
       //base.PlayImpact();
     }
-
+#if PUBLIC_ASSEMBLIES
+    public override void Update() {
+#else
     protected override void Update() {
+#endif
       base.Update();
       if (this.currentState != WeaponEffect.WeaponEffectState.WaitingForImpact || !this.AllBeamsComplete())
         return;
       this.OnComplete();
     }
-
-#if BT1_8
     protected override void OnImpact(float hitDamage = 0.0f,float structureDamage = 0f) {
       base.OnImpact(0.0f,0f);
     }
-#else
-    protected override void OnImpact(float hitDamage = 0.0f) {
-      base.OnImpact(0.0f);
-    }
-#endif
     protected override void OnComplete() {
       base.OnComplete();
       this.ClearBeams();

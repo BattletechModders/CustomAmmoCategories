@@ -23,18 +23,25 @@ namespace CustAmmoCategories {
     public string fireCompleteStopEvent;
     private float floatieInterval;
     //private float nextFloatie;
+#if PUBLIC_ASSEMBLIES
+    public override int ImpactPrecacheCount {
+#else
     protected override int ImpactPrecacheCount {
+#endif
       get {
         return 5;
       }
     }
+#if PUBLIC_ASSEMBLIES
+    public override void Awake() {
+#else
     protected override void Awake() {
+#endif
       base.Awake();
     }
     protected override void Start() {
       base.Start();
     }
-
     public override void Init(Weapon weapon) {
       this.Init(weapon);
       this.weapon = weapon;
@@ -99,7 +106,11 @@ namespace CustAmmoCategories {
     protected override void PlayMuzzleFlash() {
       base.PlayMuzzleFlash();
     }
+#if PUBLIC_ASSEMBLIES
+    public override void PlayProjectile() {
+#else
     protected override void PlayProjectile() {
+#endif
       this.PlayMuzzleFlash();
       this.t = 0.0f;
       if (!string.IsNullOrEmpty(this.projectileSoundEvent)) {
@@ -107,12 +118,20 @@ namespace CustAmmoCategories {
       }
       base.PlayProjectile();
     }
+#if PUBLIC_ASSEMBLIES
+    public override void PlayImpact() {
+#else
     protected override void PlayImpact() {
+#endif
       ++this.bulletsFired;
       this.PlayImpactAudio();
       base.PlayImpact();
     }
+#if PUBLIC_ASSEMBLIES
+    public override void Update() {
+#else
     protected override void Update() {
+#endif
       base.Update();
       if (this.currentState != WeaponEffect.WeaponEffectState.Firing || (double)this.t < 1.0)
         return;

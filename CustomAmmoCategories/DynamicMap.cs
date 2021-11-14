@@ -794,7 +794,6 @@ namespace CustAmmoCategories {
         }
       }
     }
-
     public bool TryBurnCellSync(Weapon weapon, float FireTerrainChance, int FireTerrainStrength, int FireDurationWithoutForest) {
       CustomAmmoCategoriesLog.Log.LogWrite("Try burn cell " + weapon.Name + " Chance:" + FireTerrainChance + " hasForest:" + isHasForest + "\n");
       if (FireTerrainChance > CustomAmmoCategories.Epsilon) {
@@ -1043,7 +1042,6 @@ namespace CustAmmoCategories {
       }
       this.ReconstructTempDesignMask();
     }
-
     public List<MapTerrainDataCellEx> getNearestCells() {
       List<MapTerrainDataCellEx> result = new List<MapTerrainDataCellEx>();
       if (this.x > 0) {
@@ -1671,7 +1669,6 @@ namespace CustAmmoCategories {
         }
       }
     }
-
     public static void applyMineField(Weapon weapon, Vector3 pos) {
       CustomAmmoCategoriesLog.Log.LogWrite("Applying minefield:" + weapon.defId + " " + pos + " neares hex: "+weapon.parent.Combat.HexGrid.GetClosestPointOnGrid(pos)+"\n");
       MapTerrainDataCellEx cell = weapon.parent.Combat.MapMetaData.GetCellAt(pos) as MapTerrainDataCellEx;
@@ -1714,7 +1711,6 @@ namespace CustAmmoCategories {
       }
       loadRequest.ProcessRequests(10U);
     }
-
     public static List<MapPoint> getVisitedPoints(CombatGameState combat, List<WayPoint> waypoints) {
       HashSet<MapPoint> result = new HashSet<MapPoint>();
       if (waypoints == null || waypoints.Count == 0)
@@ -1855,17 +1851,10 @@ namespace CustomAmmoCategoriesPatches {
             float damage = (float)cell.BurningStrength;
             Weapon weapon = cell.BurningWeapon;
             var fakeHit = new WeaponHitInfo(-1, -1, -1, -1, actor.GUID, __instance.GUID, -1, null, null, null, null, null, null, new AttackImpactQuality[1] { AttackImpactQuality.Solid }, new AttackDirection[1] { AttackDirection.FromArtillery }, null, null, null);
-#if BT1_8
             __instance.TakeWeaponDamage(fakeHit, (int)VehicleChassisLocations.Front, weapon, damage / 4f, 0f, 0, DamageType.Combat);
             __instance.TakeWeaponDamage(fakeHit, (int)VehicleChassisLocations.Rear, weapon, damage / 4f, 0f, 0, DamageType.Combat);
             __instance.TakeWeaponDamage(fakeHit, (int)VehicleChassisLocations.Right, weapon, damage / 4f, 0f, 0, DamageType.Combat);
             __instance.TakeWeaponDamage(fakeHit, (int)VehicleChassisLocations.Left, weapon, damage / 4f, 0f, 0, DamageType.Combat);
-#else
-            __instance.TakeWeaponDamage(fakeHit, (int)VehicleChassisLocations.Front, weapon, damage / 4f, 0, DamageType.Combat);
-            __instance.TakeWeaponDamage(fakeHit, (int)VehicleChassisLocations.Rear, weapon, damage / 4f, 0, DamageType.Combat);
-            __instance.TakeWeaponDamage(fakeHit, (int)VehicleChassisLocations.Right, weapon, damage / 4f, 0, DamageType.Combat);
-            __instance.TakeWeaponDamage(fakeHit, (int)VehicleChassisLocations.Left, weapon, damage / 4f, 0, DamageType.Combat);
-#endif
             __instance.Combat.MessageCenter.PublishMessage((MessageCenterMessage)new FloatieMessage(__instance.GUID, __instance.GUID, "__/CAC.DAMAGEFROMSTANDINGINFIRE/__", FloatieMessage.MessageNature.CriticalHit));
             __instance.HandleDeath(actor.GUID);
           }
@@ -2303,7 +2292,6 @@ namespace CustomAmmoCategoriesPatches {
       PrefabCache.RST rst = new PrefabCache.RST(obj);
       cache.gameObjectRST().Add(id, rst);
     }
-
     public static GameObject PooledInstantiateEx(this PrefabCache cache,string id, Vector3? position = null, Quaternion? rotation = null, Transform parent = null, bool forceInstantiate = false) {
       if (forceInstantiate == false) {
         GameObject go = null;
@@ -2391,7 +2379,6 @@ namespace CustomAmmoCategoriesPatches {
         return true;
       }
     }
-
     public static void Postfix(DataManager __instance, string id, BattleTechResourceType resourceType, ref GameObject __result) {
       try {
         if (resourceType != BattleTechResourceType.Prefab) { return; }

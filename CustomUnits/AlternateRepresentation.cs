@@ -12,48 +12,70 @@ using System.Reflection;
 using UnityEngine;
 using System.Linq;
 using HBS;
+using MessagePack;
 
 namespace CustomUnits {
   public enum AlternateRepType { Normal, AirMech };
+  [MessagePackObject]
   public class AirMechVerticalJetsDef {
+    [Key(0)]
     public string Prefab { get; set; }
+    [Key(1)]
     public string Attach { get; set; }
+    [Key(2)]
     public List<string> JetsAttachPoints { get; set; }
     public AirMechVerticalJetsDef() {
       JetsAttachPoints = new List<string>();
     }
   }
+  [MessagePackObject]
   public class AlternateRepresentationDef {
-    public string PrefabIdentifier { get; set; }
-    public string HardpointDataDef { get; set; }
-    public List<string> AdditionalPrefabs { get; set; }
-    public string PrefabBase { get; set; }
-    public string HoveringSoundStart { get; set; }
-    public string HoveringSoundEnd { get; set; }
-    public string TransformationSound { get; set; }
-    public string MoveStartSound { get; set; }
-    public string MoveStopSound { get; set; }
-    public float MoveClamp { get; set; }
-    public bool NoJumpjetsBlock { get; set; }
-    public float MinJumpDistance { get; set; }
-    public List<string> additionalEncounterTags { get; set; }
-    public AlternateRepType Type { get; set; }
-    public float FlyHeight { get; set; }
-    public List<AirMechVerticalJetsDef> AirMechVerticalJets { get; set; }
+    [Key(0)]
+    public string PrefabIdentifier { get; set; } = string.Empty;
+    [Key(1)]
+    public string HardpointDataDef { get; set; } = string.Empty;
+    [Key(2)]
+    public List<string> AdditionalPrefabs { get; set; } = new List<string>();
+    [Key(3)]
+    public string PrefabBase { get; set; } = string.Empty;
+    [Key(4)]
+    public string HoveringSoundStart { get; set; } = "jet_start";
+    [Key(5)]
+    public string HoveringSoundEnd { get; set; } = "jet_end";
+    [Key(6)]
+    public string TransformationSound { get; set; } = string.Empty;
+    [Key(7)]
+    public string MoveStartSound { get; set; } = string.Empty;
+    [Key(8)]
+    public string MoveStopSound { get; set; } = string.Empty;
+    [Key(9)]
+    public float MoveClamp { get; set; } = 0f;
+    [Key(10)]
+    public bool NoJumpjetsBlock { get; set; } = false;
+    [Key(11)]
+    public float MinJumpDistance { get; set; } = 1f;
+    [Key(12)]
+    public List<string> additionalEncounterTags { get; set; } = new List<string>();
+    [Key(13)]
+    public AlternateRepType Type { get; set; } = AlternateRepType.Normal;
+    [Key(14)]
+    public float FlyHeight { get; set; } = 0f;
+    [Key(15)]
+    public List<AirMechVerticalJetsDef> AirMechVerticalJets { get; set; } = new List<AirMechVerticalJetsDef>();
     public AlternateRepresentationDef() {
-      AdditionalPrefabs = new List<string>();
-      AirMechVerticalJets = new List<AirMechVerticalJetsDef>();
-      FlyHeight = 0f;
-      Type = AlternateRepType.Normal;
-      HoveringSoundStart = "jet_start";
-      HoveringSoundEnd = "jet_end";
-      TransformationSound = string.Empty;
-      MoveStartSound = string.Empty;
-      MoveStopSound = string.Empty;
-      additionalEncounterTags = new List<string>();
-      MoveClamp = 0f;
-      NoJumpjetsBlock = false;
-      MinJumpDistance = 1f;
+      //AdditionalPrefabs = new List<string>();
+      //AirMechVerticalJets = new List<AirMechVerticalJetsDef>();
+      //FlyHeight = 0f;
+      //Type = AlternateRepType.Normal;
+      //HoveringSoundStart = "jet_start";
+      //HoveringSoundEnd = "jet_end";
+      //TransformationSound = string.Empty;
+      //MoveStartSound = string.Empty;
+      //MoveStopSound = string.Empty;
+      //additionalEncounterTags = new List<string>();
+      //MoveClamp = 0f;
+      //NoJumpjetsBlock = false;
+      //MinJumpDistance = 1f;
     }
     public AlternateRepresentationDef(ChassisDef def) {
       UnitCustomInfo info = def.GetCustomInfo();

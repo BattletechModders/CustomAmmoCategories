@@ -64,16 +64,22 @@ namespace CustAmmoCategories {
       this.spline.Refresh();
     }
 
+#if PUBLIC_ASSEMBLIES
+    public override int ImpactPrecacheCount {
+#else
     protected override int ImpactPrecacheCount {
+#endif
       get {
         return 5;
       }
     }
-
+#if PUBLIC_ASSEMBLIES
+    public override void Awake() {
+#else
     protected override void Awake() {
+#endif
       base.Awake();
     }
-
     protected override void Start() {
       base.Start();
     }
@@ -90,7 +96,6 @@ namespace CustAmmoCategories {
         this.spline = this.gameObject.AddComponent<CurvySpline>();
       }
     }
-
     public virtual void Fire(WeaponHitInfo hitInfo, int hitIndex = 0, int emitterIndex = 0, bool pb = false) {
       Log.LogWrite("MultiShotBulletEffect.Fire "+hitInfo.attackWeaponIndex+" "+hitIndex+" emitter:" + emitterIndex + " ep:"+hitInfo.hitPositions[hitIndex]+" prime:"+pb+"\n");
       this.primeBullet = pb;
@@ -167,22 +172,33 @@ namespace CustAmmoCategories {
         Log.LogWrite(" " + component.name + ":" + component.GetType().ToString() + "\n");
       }
     }
-
     protected override void PlayPreFire() {
       base.PlayPreFire();
     }
     protected override void PlayMuzzleFlash() {
       base.PlayMuzzleFlash();
     }
+#if PUBLIC_ASSEMBLIES
+    public override void PlayProjectile() {
+#else
     protected override void PlayProjectile() {
+#endif
       base.PlayProjectile();
       this.PlayMuzzleFlash();
     }
+#if PUBLIC_ASSEMBLIES
+    public override void PlayImpact() {
+#else
     protected override void PlayImpact() {
+#endif
       this.PlayImpactAudio();
       base.PlayImpact();
     }
+#if PUBLIC_ASSEMBLIES
+    public override void Update() {
+#else
     protected override void Update() {
+#endif
       base.Update();
       if (this.currentState != WeaponEffect.WeaponEffectState.Firing)
         return;
@@ -206,11 +222,7 @@ namespace CustAmmoCategories {
       base.OnPreFireComplete();
       this.PlayProjectile();
     }
-#if BT1_8
     protected override void OnImpact(float hitDamage = 0.0f, float structureDamage = 0f) {
-#else
-    protected override void OnImpact(float hitDamage = 0.0f) {
-#endif
       /*if (this.hitInfo.hitLocations[this.hitIndex] != 0 && this.hitInfo.hitLocations[this.hitIndex] != 65536) {
         AbstractActor combatantByGuid = this.Combat.FindCombatantByGUID(this.hitInfo.targetId) as AbstractActor;
         if (combatantByGuid != null && ((UnityEngine.Object)combatantByGuid.GameRep != (UnityEngine.Object)null)) {
@@ -221,20 +233,12 @@ namespace CustAmmoCategories {
       if (this.primeBullet) {
         Log.LogWrite(" prime. Damage message fired\n");
         float damage = this.weapon.DamagePerShotAdjusted(this.weapon.parent.occupiedDesignMask);
-#if BT1_8
         float apDamage = this.weapon.StructureDamagePerShotAdjusted(this.weapon.parent.occupiedDesignMask);
-#endif
         if (this.weapon.DamagePerPallet()&&(this.weapon.DamageNotDivided() == false)) {
           damage /= this.weapon.ProjectilesPerShot;
-#if BT1_8
           apDamage /= this.weapon.ProjectilesPerShot;
-#endif
         };
-#if BT1_8
         base.OnImpact(damage, apDamage);
-#else
-        base.OnImpact(damage);
-#endif
       } else {
         Log.LogWrite(" no prime. No damage message fired\n");
       }

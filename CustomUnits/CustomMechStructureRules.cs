@@ -504,7 +504,7 @@ namespace CustomUnits {
         UnitCustomInfo info = __instance.GetCustomInfo();
         if (info != null) {
           if (__result == false) {
-            foreach (ChassisLocations location in info.LethalLocations) {
+            foreach (ChassisLocations location in info.lethalLocations) {
               if (__instance.GetCurrentStructure(location) <= 0f) { __result = true; return; }
             }
           }
@@ -732,7 +732,7 @@ namespace CustomUnits {
         deathMethod = DeathMethod.VehicleLocationDestroyed;
       }
       if (info != null) {
-        if (info.LethalLocations.Contains(location)) {
+        if (info.lethalLocations.Contains(location)) {
           deathMethod = instance.FakeVehicle()?DeathMethod.VehicleLocationDestroyed:DeathMethod.CenterTorsoDestruction;
           reason = "Location Destroyed: " + location.ToString();
         }

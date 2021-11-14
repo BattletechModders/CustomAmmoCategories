@@ -835,7 +835,6 @@ namespace CustAmmoCategories {
       capacity = ammoBoxDef.Capacity;
       return true;
     }
-
     public static bool getAmmoCapacity(this WeaponDef weaponDef, out int ammocount, out int capacity) {
       ammocount = -1;
       capacity = -1;

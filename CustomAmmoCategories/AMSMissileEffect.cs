@@ -26,20 +26,25 @@ namespace CustAmmoCategories {
       this.doppler = original.doppler;
     }
 
+#if PUBLIC_ASSEMBLIES
+    public override int ImpactPrecacheCount {
+#else
     protected override int ImpactPrecacheCount {
+#endif
       get {
         return 14;
       }
     }
-
+#if PUBLIC_ASSEMBLIES
+    public override void Awake() {
+#else
     protected override void Awake() {
+#endif
       base.Awake();
     }
-
     protected override void Start() {
       base.Start();
     }
-
     public void Init(Weapon weapon, AMSMissileLauncherEffect parentLauncher) {
       this.weaponImpactType = parentLauncher.weaponImpactType;
       this.Init(weapon);
@@ -49,7 +54,6 @@ namespace CustAmmoCategories {
       float max = this.projectileSpeed * 0.1f;
       this.projectileSpeed += Random.Range(-max, max);
     }
-
     public override void Fire(Vector3[] hitPositions, int hitIndex = 0, int emitterIndex = 0) {
       Log.LogWrite("AMSMissileEffect.Fire\n");
       base.Fire(hitPositions, hitIndex, emitterIndex);
@@ -62,20 +66,16 @@ namespace CustAmmoCategories {
       }
       this.PlayPreFire();
     }
-
     public void Fire(WeaponHitInfo hitInfo, int hitIndex, int emitterIndex, bool isIndirect) {
       CustomAmmoCategoriesLog.Log.LogWrite("AMSmissile effect can't fire normaly. Something is wrong.\n");
       base.Fire(hitInfo, hitIndex, emitterIndex);
     }
-
     protected override void PlayPreFire() {
       base.PlayPreFire();
     }
-
     protected override void PlayMuzzleFlash() {
       base.PlayMuzzleFlash();
     }
-
     protected override void PlayProjectile() {
       this.PlayMuzzleFlash();
       this.startPos = this.preFireEndPos;
@@ -106,7 +106,6 @@ namespace CustAmmoCategories {
         }
       }
     }
-
     protected override void PlayImpact() {
       this.PlayImpactAudio();
       if (this.isSRM) {
@@ -120,10 +119,8 @@ namespace CustAmmoCategories {
         this.projectileLightObject.SetActive(false);
       this.OnImpact(0.0f);
     }
-
     private void SpawnImpactExplosion(string explosionName) {
     }
-
     protected override void Update() {
       base.Update();
       if (this.currentState == WeaponEffect.WeaponEffectState.PreFiring && (double)this.t < 1.0) {
@@ -143,7 +140,6 @@ namespace CustAmmoCategories {
       this.PlayImpact();
       this.OnComplete();
     }
-
     private void ApplyDoppler(GameObject audioListener) {
     }
 
@@ -153,15 +149,9 @@ namespace CustAmmoCategories {
       this.PlayProjectile();
     }
 
-#if BT1_8
     protected override void OnImpact(float hitDamage = 0.0f, float structureDamage = 0f) {
-#else
-    protected override void OnImpact(float hitDamage = 0.0f) {
-#endif
       base.OnImpact(this.weapon.DamagePerShotAdjusted(this.weapon.parent.occupiedDesignMask)
-#if BT1_8
         ,this.weapon.StructureDamagePerShotAdjusted(this.weapon.parent.occupiedDesignMask)
-#endif
       );
       if ((UnityEngine.Object)this.projectileParticles != (UnityEngine.Object)null)
         this.projectileParticles.Stop(true);
@@ -169,18 +159,15 @@ namespace CustAmmoCategories {
         return;
       this.doppler.enabled = false;
     }
-
     protected override void OnComplete() {
       base.OnComplete();
     }
-
     public void OnDisable() {
       if (!((UnityEngine.Object)this.projectileAudioObject != (UnityEngine.Object)null))
         return;
       AkSoundEngine.StopAll(this.projectileAudioObject.gameObject);
       int num = (int)AkSoundEngine.UnregisterGameObj(this.projectileAudioObject.gameObject);
     }
-
     public override void Reset() {
       if (this.Active) {
         if (this.isSRM) {

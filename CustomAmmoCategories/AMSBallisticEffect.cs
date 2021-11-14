@@ -41,16 +41,28 @@ namespace CustAmmoCategories {
       this.middleShotSFX = original.middleShotSFX;
       this.lastShotSFX = original.lastShotSFX;
     }
+#if PUBLIC_ASSEMBLIES
+    public override int ImpactPrecacheCount {
+#else
     protected override int ImpactPrecacheCount {
+#endif
       get {
         return 5;
       }
     }
+#if PUBLIC_ASSEMBLIES
+    public override void Awake() {
+#else
     protected override void Awake() {
+#endif
       base.Awake();
       this.AllowMissSkipping = false;
     }
+#if PUBLIC_ASSEMBLIES
+    public override void Start() {
+#else
     protected override void Start() {
+# endif
       base.Start();
     }
     public override void Init(Weapon weapon) {
@@ -136,15 +148,25 @@ namespace CustAmmoCategories {
       this.FireBullet(hitIndex);
       this.PlayPreFire();
     }
-
+#if PUBLIC_ASSEMBLIES
+    public override void PlayPreFire() {
+#else
     protected override void PlayPreFire() {
+#endif
       base.PlayPreFire();
     }
-
+#if PUBLIC_ASSEMBLIES
+    public override void PlayMuzzleFlash() {
+#else
     protected override void PlayMuzzleFlash() {
+#endif
       base.PlayMuzzleFlash();
     }
+#if PUBLIC_ASSEMBLIES
+    public override void PlayProjectile() {
+#else
     protected override void PlayProjectile() {
+#endif
       base.PlayProjectile();
       //this.FireNextBullet();
     }
@@ -166,36 +188,48 @@ namespace CustAmmoCategories {
       }
       this.currentState = WeaponEffect.WeaponEffectState.WaitingForImpact;
     }
+#if PUBLIC_ASSEMBLIES
+    public override void PlayImpact() {
+#else
     protected override void PlayImpact() {
+#endif
       base.PlayImpact();
     }
+#if PUBLIC_ASSEMBLIES
+    public override void Update() {
+#else
     protected override void Update() {
+#endif
       base.Update();
       if (this.currentState != WeaponEffect.WeaponEffectState.WaitingForImpact || !this.AllBulletsComplete())
         return;
       this.OnComplete();
     }
+#if PUBLIC_ASSEMBLIES
+    public override void OnPreFireComplete() {
+#else
     protected override void OnPreFireComplete() {
+#endif
       base.OnPreFireComplete();
       this.PlayProjectile();
     }
-#if BT1_8
-    protected override void OnImpact(float hitDamage = 0.0f, float structureDamage = 0f) {
+#if PUBLIC_ASSEMBLIES
+    public override void OnImpact(float hitDamage = 0.0f, float structureDamage = 0.0f) {
 #else
-    protected override void OnImpact(float hitDamage = 0.0f) {
+    protected override void OnImpact(float hitDamage = 0.0f, float structureDamage = 0.0f) {
 #endif
       if ((double)hitDamage <= 1.0 / 1000.0)
         return;
-#if BT1_8
       base.OnImpact(hitDamage, structureDamage);
-#else
-      base.OnImpact(hitDamage);
-#endif
     }
     public void OnBulletImpact(BulletEffect bullet) {
       this.OnImpact(0.0f);
     }
+#if PUBLIC_ASSEMBLIES
+    public override void OnComplete() {
+#else
     protected override void OnComplete() {
+#endif
       this.OnImpact(0.0f);
       base.OnComplete();
     }

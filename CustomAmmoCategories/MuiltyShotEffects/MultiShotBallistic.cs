@@ -85,17 +85,24 @@ namespace CustAmmoCategories {
       UnitySpline.Refresh();
       return UnitySpline;
     }
+#if PUBLIC_ASSEMBLIES
+    public override int ImpactPrecacheCount {
+#else
     protected override int ImpactPrecacheCount {
+#endif
+
       get {
         return 5;
       }
     }
-
+#if PUBLIC_ASSEMBLIES
+    public override void Awake() {
+#else
     protected override void Awake() {
+#endif
       base.Awake();
       this.AllowMissSkipping = false;
     }
-
     protected override void Start() {
       base.Start();
     }
@@ -109,14 +116,12 @@ namespace CustAmmoCategories {
       this.middleShotSFX = original.middleShotSFX;
       this.lastShotSFX = original.lastShotSFX;
     }
-
     public override void Init(Weapon weapon) {
       base.Init(weapon);
       if (!((UnityEngine.Object)this.bulletPrefab != (UnityEngine.Object)null))
         return;
       this.Combat.DataManager.PrecachePrefabAsync(this.bulletPrefab.name, BattleTechResourceType.Prefab, weapon.ProjectilesPerShot);
     }
-
     protected void SetupBullets() {
       this.currentBullet = 0;
       this.bulletHitIndex = 0;
@@ -174,7 +179,6 @@ namespace CustAmmoCategories {
         }
       }
     }
-
     protected void ClearBullets() {
       string prefabName = MultiShotBallisticEffect.ImprovedBulletPrefabPrefix + this.bulletPrefab.name;
       Log.LogWrite("MultiShotBallisticEffect.ClearBullets\n");
@@ -224,7 +228,11 @@ namespace CustAmmoCategories {
     protected override void PlayMuzzleFlash() {
       base.PlayMuzzleFlash();
     }
+#if PUBLIC_ASSEMBLIES
+    public override void PlayProjectile() {
+#else
     protected override void PlayProjectile() {
+#endif
       this.currentState = WeaponEffect.WeaponEffectState.Firing;
       base.PlayProjectile(false);
       this.t = 1f;
@@ -262,32 +270,27 @@ namespace CustAmmoCategories {
         return;
       this.currentState = WeaponEffect.WeaponEffectState.WaitingForImpact;
     }
-
     protected override void PlayImpact() {
       base.PlayImpact();
     }
-
+#if PUBLIC_ASSEMBLIES
+    public override void Update() {
+#else
     protected override void Update() {
+#endif
       base.Update();
       if (this.currentState != WeaponEffect.WeaponEffectState.WaitingForImpact || !this.AllBulletsComplete())
         return;
       this.OnComplete();
     }
-
     protected override void OnPreFireComplete() {
       base.OnPreFireComplete();
       this.PlayProjectile();
     }
 
-#if BT1_8
     protected override void OnImpact(float hitDamage = 0.0f,float structureDamage = 0f) {
       base.OnImpact(0.0f,0f);
     }
-#else
-    protected override void OnImpact(float hitDamage = 0.0f) {
-      base.OnImpact(0.0f);
-    }
-#endif
     protected override void OnComplete() {
       base.OnComplete();
       this.ClearBullets();

@@ -144,7 +144,6 @@ namespace CustAmmoCategories {
       CustomAmmoCategories.applyWeaponAmmoMode(weapon, currentMode, currentAmmo);
       return result;
     }
-
     public static int getWeaponPierceLocations(List<int> hitLocations, ICombatant target, float DamagePerShot) {
       int result = 0;
       CustomAmmoCategoriesLog.Log.LogWrite("getWeaponPierceLocations " + target.DisplayName + " : " + DamagePerShot + "\n");
@@ -223,7 +222,6 @@ namespace CustAmmoCategories {
     //  }
     //  return false;
     //}
-
     public static float CalcAMSAIDamageCoeff(this Weapon weapon) {
       if (weapon.parent == null) { return 0f; }
       CustomAmmoCategoriesLog.Log.LogWrite("CalcAMSAIDamageCoeff " +weapon.UIName+" " + weapon.parent.DisplayName + ":"+weapon.parent.GUID+"\n");
@@ -261,7 +259,6 @@ namespace CustAmmoCategories {
       result *= (float)weapon.ShotsWhenFired / (float)AMSCount;
       return result;
     }
-
     public static void fillWeaponPredictRecord(ref DamagePredictRecord record, AbstractActor unit, ICombatant target, Weapon weapon, ref List<int> hitLocations, ref float AverageArmor) {
       CustomAmmoCategoriesLog.Log.LogWrite("fillWeaponPredictRecord " + unit.DisplayName + " target " + target.DisplayName + " weapon " + weapon.defId + "\n");
       CustomAmmoCategories.applyWeaponAmmoMode(weapon, record.Id.modeId, record.Id.ammoId);

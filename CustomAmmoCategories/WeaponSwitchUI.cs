@@ -22,8 +22,327 @@ using TMPro;
 using UnityEngine.Events;
 using Newtonsoft.Json;
 using System.Threading;
+using BattleTech.Data;
+using CustomSettings;
+using Log = CustomAmmoCategoriesLog.Log;
+using InControl;
+using System.Reflection.Emit;
 
 namespace CustomAmmoCategoriesPatches {
+  [HarmonyPatch(typeof(MechDef))]
+  [HarmonyPatch("Refresh")]
+  [HarmonyPatch(MethodType.Normal)]
+  public static class MechDef_Refresh {
+    public static void Postfix(MechDef __instance) {
+      if (DataManager_PooledInstantiate_CombatHUD.desiredWeapons < __instance.Inventory.Length) { DataManager_PooledInstantiate_CombatHUD.desiredWeapons = __instance.Inventory.Length; }
+    }
+  }
+  [HarmonyPatch(typeof(VehicleDef))]
+  [HarmonyPatch("Refresh")]
+  [HarmonyPatch(MethodType.Normal)]
+  public static class VehicleDef_Refresh {
+    public static void Postfix(VehicleDef __instance) {
+      int inventory_length = Traverse.Create(__instance).Field<VehicleComponentRef[]>("inventory").Value.Length;
+      if (DataManager_PooledInstantiate_CombatHUD.desiredWeapons < inventory_length) { DataManager_PooledInstantiate_CombatHUD.desiredWeapons = inventory_length; }
+    }
+  }
+  [HarmonyPatch(typeof(TurretDef))]
+  [HarmonyPatch("Refresh")]
+  [HarmonyPatch(MethodType.Normal)]
+  public static class TurretDef_Refresh {
+    public static void Postfix(TurretDef __instance) {
+      int inventory_length = Traverse.Create(__instance).Field<TurretComponentRef[]>("inventory").Value.Length;
+      if (DataManager_PooledInstantiate_CombatHUD.desiredWeapons < inventory_length) { DataManager_PooledInstantiate_CombatHUD.desiredWeapons = inventory_length; }
+    }
+  }
+  [HarmonyPatch(typeof(WeaponRangeIndicators))]
+  [HarmonyPatch("SetAllWeaponsArc")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { typeof(List<Weapon>) })]
+  public static class WeaponRangeIndicators_SetAllWeaponsArc_Debug {
+    //private static bool calloriginal = false;
+    private static Vector4 GetRangesVector(this WeaponRangeIndicators __instance, float minRange,float shortRange,float medRange,float maxRange) {
+      return Traverse.Create(__instance).Method("GetRangesVector", new Type[] { typeof(float), typeof(float), typeof(float), typeof(float) }, new object[] { minRange, shortRange, medRange, maxRange }).GetValue<Vector4>();
+    }
+    private static void setArcState(this WeaponRangeIndicators __instance, WeaponRangeIndicators.FiringArcState newState) {
+      Traverse.Create(__instance).Method("setArcState", new Type[] { typeof(WeaponRangeIndicators.FiringArcState) }, new object[] { newState }).GetValue();
+    }
+    public static bool Prefix(WeaponRangeIndicators __instance,ref List<Weapon> weapons,ref int[] ___MultWeaponShaderVectorInts,ref int[] ___MultWeaponShaderStrengthInts,ref int ___MultiWeaponNumberInt) {
+      //if (calloriginal) { return true; }
+      //calloriginal = true;
+      try {
+        Log.M.TWL(0, "SetAllWeaponsArc " + weapons.Count);
+        weapons.Sort((a, b) => {
+          try {
+            float damage_b = 0f;
+            try { damage_b = b.DamagePerShot * (float)b.ShotsWhenFired; } catch (Exception e) {
+              Log.M.TWL(0, "damage_b fail " + e.ToString(), true);
+            }
+            float damage_a = 0f;
+            try { damage_a = a.DamagePerShot * (float)a.ShotsWhenFired; } catch (Exception e) {
+              Log.M.TWL(0, "damage_a fail " + e.ToString(), true);
+            }
+            return damage_b.CompareTo(damage_a);
+          } catch(Exception e) {
+            Log.M.TWL(0,e.ToString(), true);
+          }
+          return 0;
+        });
+        int index1 = 0;
+        List<Vector4> vector4List = new List<Vector4>();
+        for (int index2 = 0; index2 < weapons.Count; ++index2) {
+          if (index1 >= 7) {
+            Debug.Log((object)"Note - trying to add more than 7 weapon arcs. Only showing 7 highest DamagePerShot weapons.");
+            break;
+          }
+          Weapon weapon = weapons[index2];
+          if (weapon.IsEnabled && weapon.WillFire && !weapon.Name.Contains("Melee")) {
+            Vector4 ranges = __instance.GetRangesVector(weapon.MinRange, weapon.ShortRange, weapon.MediumRange, weapon.MaxRange);
+            if (!vector4List.Find((Predicate<Vector4>)(x => x.Equals(ranges))).Equals(ranges)) {
+              vector4List.Add(ranges);
+              Traverse.Create(__instance).Property<Material>("allWeaponsMat").Value.SetVector(___MultWeaponShaderVectorInts[index1], ranges);
+              Traverse.Create(__instance).Property<Material>("allWeaponsMat").Value.SetFloat(___MultWeaponShaderStrengthInts[index1], 1f);
+              //__instance.allWeaponsMat.SetFloat(__instance.MultWeaponShaderStrengthInts[index1], 1f);
+              ++index1;
+            }
+          }
+        }
+        if (index1 == 0) {
+          Traverse.Create(__instance).Property<Material>("allWeaponsMat").Value.SetVector(___MultWeaponShaderVectorInts[0], __instance.GetRangesVector(0.0f, 0.0f, 0.0f, 270f));
+          Traverse.Create(__instance).Property<Material>("allWeaponsMat").Value.SetFloat(___MultWeaponShaderStrengthInts[0], 1f);
+          index1 = 1;
+        }
+        Traverse.Create(__instance).Property<Material>("allWeaponsMat").Value.SetFloat(___MultiWeaponNumberInt, (float)index1);
+        for (int index2 = index1; index2 < 7; ++index2) {
+          Traverse.Create(__instance).Property<Material>("allWeaponsMat").Value.SetVector(___MultWeaponShaderVectorInts[index2], Vector4.zero);
+          Traverse.Create(__instance).Property<Material>("allWeaponsMat").Value.SetFloat(___MultWeaponShaderStrengthInts[index2], 0.0f);
+        }
+        __instance.setArcState(WeaponRangeIndicators.FiringArcState.AllWeapons);
+      } catch (Exception e) {
+        Log.M.TWL(0, e.ToString(), true);
+      }
+      //calloriginal = false;
+      return false;
+    }
+  }
+  //[HarmonyPatch(typeof(ActorMovementSequence))]
+  //[HarmonyPatch("Update")]
+  //[HarmonyPatch(MethodType.Normal)]
+  //[HarmonyPatch(new Type[] { })]
+  //public static class ActorMovementSequence_Update_Debug {
+  //  private static bool originalcall = false;
+  //  public static bool Prefix(ActorMovementSequence __instance, float ___distanceMovedThisFrame) {
+  //    if (originalcall) { return true; }
+  //    originalcall = true;
+  //    try {
+  //      __instance.Update();
+  //      Transform MoverTransform = Traverse.Create(__instance).Property<Transform>("MoverTransform").Value;
+  //      MovementCapabilitiesDef Capabilities = Traverse.Create(__instance).Property<MovementCapabilitiesDef>("Capabilities").Value;
+  //      //Log.M.TWL(0, "ActorMovementSequence.Update " + MoverTransform.name+" pos:"+ MoverTransform.position+ " Velocity:" + __instance.Velocity+" distFrame:"+ ___distanceMovedThisFrame+" capabilities:"+Capabilities.Description.Id+" sprint:"+ Capabilities.SprintVelocity+ " MaxVelAdjusted:"+__instance.MaxVelAdjusted);
+  //    } catch (Exception e) {
+  //      Log.M.TWL(0, e.ToString(), true);
+  //    }
+  //    originalcall = false;
+  //    return false;
+  //  }
+  //}
+  [HarmonyPatch(typeof(SelectionStateMove))]
+  [HarmonyPatch("OnAddToStack")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { })]
+  public static class SelectionStateMove_OnAddToStack_Debug {
+    public static bool originalcall = false;
+    public delegate void d_OnAddToStack(SelectionStateMove instance);
+    private static d_OnAddToStack i_OnAddToStack = null;
+    public static bool Prefix(SelectionStateMove __instance) {
+      try {
+        if (originalcall) { return true; }
+        if(i_OnAddToStack == null) {
+          MethodInfo method = typeof(SelectionStateMove).GetMethod("OnAddToStack", BindingFlags.Public | BindingFlags.Instance);
+          var dm = new DynamicMethod("CACOnAddToStack", null, new Type[] { typeof(SelectionStateMove) });
+          var gen = dm.GetILGenerator();
+          gen.Emit(OpCodes.Ldarg_0);
+          gen.Emit(OpCodes.Call, method);
+          gen.Emit(OpCodes.Ret);
+          i_OnAddToStack = (d_OnAddToStack)dm.CreateDelegate(typeof(d_OnAddToStack));
+        }
+        originalcall = true;
+        Log.M.TWL(0, "SelectionStateMove.OnAddToStack");
+        i_OnAddToStack(__instance);
+        originalcall = false;
+        return false;
+      } catch (Exception e) {
+        Log.M.TWL(0, e.ToString(), true);
+        return true;
+      }
+    }
+  }
+  [HarmonyPatch(typeof(CameraControl))]
+  [HarmonyPatch("UpdatePlayerControl")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { })]
+  public static class CameraControl_UpdatePlayerControl {
+    public static bool AllowZoom = true;
+    private static PlayerOneAxisAction FakeAxis = null;
+    public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) {
+      var targetPropertyGetter = AccessTools.Method(typeof(InputManagerExtended), "Combat_CameraZoom");
+      var replacementMethod = AccessTools.Method(typeof(CameraControl_UpdatePlayerControl), "Combat_CameraZoom");
+      return Transpilers.MethodReplacer(instructions, targetPropertyGetter, replacementMethod);
+    }
+    public static void Prefix(ref bool __state) {
+      try {
+        if (FakeAxis == null) {
+          FakeAxis = (PlayerOneAxisAction)typeof(PlayerOneAxisAction).GetConstructor(BindingFlags.Instance | BindingFlags.NonPublic, null, new Type[] { typeof(PlayerAction), typeof(PlayerAction) }, null).Invoke(new object[] { BTInput.Instance.StaticActions.None, BTInput.Instance.StaticActions.None });
+        }
+      }catch(Exception e) {
+        Log.M.TWL(0,e.ToString(),true);
+      }
+    }
+    public static PlayerOneAxisAction Combat_CameraZoom(BTInput btInput) {
+      if ((AllowZoom == false)&&(FakeAxis != null)) {
+        return FakeAxis;
+      }
+      return btInput.StaticActions.MouseScroll.WasPressed ? btInput.StaticActions.MouseScroll : btInput.DynamicActions.CameraZoom;      //Log.LogWrite(0, "MechDef.GatherDependencies postfix " + __instance.Description.Id + " " + activeRequestWeight, true);
+    }
+  }
+  public class CombatHUDWeaponSlotsScrollControl: MonoBehaviour {
+    public RectTransform weaponPanelRect { get; set; }
+    public RectTransform main { get; set; }
+    public RectTransform scrollerRect { get; set; }
+    public RectTransform scrollBarRect { get; set; }
+    public ScrollRect scroller { get; set; }
+    public void Update() {
+      if (weaponPanelRect == null) { return; }
+      if (main == null) { return; }
+      if (scrollerRect == null) { return; }
+      if (scrollBarRect == null) { return; }
+      if (scroller == null) { return; }
+      float y = weaponPanelRect.sizeDelta.y - 200;
+      if (y > 200f) { y = 200f; }
+      scrollerRect.sizeDelta = new Vector2(weaponPanelRect.sizeDelta.x, y);
+      this.scrollerRect.gameObject.SetActive(this.weaponPanelRect.gameObject.activeSelf);
+      Vector3 localPos = scrollBarRect.localPosition;
+      localPos.x = weaponPanelRect.sizeDelta.x + 60f;
+      scrollBarRect.localPosition = localPos;
+    }
+  }
+  public class CombatHUDWeaponPanelScroller : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IScrollHandler {
+    public ScrollRect weaponPannelScrollRect { get; set; } = null;
+    public RectTransform slotTransform { get; set; } = null;
+    public bool hovered { get; set; } = false;
+    public void OnPointerEnter(PointerEventData eventData) {
+      Log.M.TWL(0, "CombatHUDWeaponPanelScroller.OnPointerEnter");
+      CameraControl_UpdatePlayerControl.AllowZoom = false;
+      this.hovered = true;
+    }
+    public void OnPointerExit(PointerEventData eventData) {
+      Log.M.TWL(0, "CombatHUDWeaponPanelScroller.OnPointerExit");
+      CameraControl_UpdatePlayerControl.AllowZoom = true;
+      this.hovered = false;
+    }
+    public void OnScroll(PointerEventData eventData) {
+      if (hovered == false) { return; }
+      if (weaponPannelScrollRect == null) { return; }
+      if (slotTransform == null) { return; }
+      if (weaponPannelScrollRect.verticalScrollbar.gameObject.activeSelf == false) { return; }
+      float delta = eventData.scrollDelta.y * (slotTransform.sizeDelta.y / weaponPannelScrollRect.content.sizeDelta.y);
+      weaponPannelScrollRect.verticalNormalizedPosition += delta;
+      weaponPannelScrollRect.verticalNormalizedPosition = Mathf.Clamp(weaponPannelScrollRect.verticalNormalizedPosition, 0f, 1f);
+      //weaponPannelScrollRect.verticalNormalizedPosition += 
+      Log.M.TWL(0, "CombatHUDWeaponPanelScroller.OnScroll "+eventData.scrollDelta+" normPos:"+ weaponPannelScrollRect.verticalNormalizedPosition);
+    }
+  }
+  [HarmonyPatch(typeof(DataManager))]
+  [HarmonyPatch("PooledInstantiate")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { typeof(string), typeof(BattleTechResourceType), typeof(Vector3?), typeof(Quaternion?), typeof(Transform) })]
+  public static class DataManager_PooledInstantiate_CombatHUD {
+    public static int desiredWeapons = 14;
+    public static void Postfix(DataManager __instance, string id, BattleTechResourceType resourceType, ref GameObject __result) {
+      try {
+        //return;
+        if (resourceType != BattleTechResourceType.UIModulePrefabs) { return; }
+        if (__result == null) { return; }
+        if (id != "uixPrfPanl_HUD") { return; }
+        Log.M.TWL(0, "DataManager.PooledInstantiate " + id);
+        CombatHUD HUD = __result.GetComponent<CombatHUD>();
+        CombatHUDWeaponPanel weaponPanel = __result.GetComponentInChildren<CombatHUDWeaponPanel>(true);
+        CombatHUDWeaponSlotsScrollControl scroller = weaponPanel.gameObject.GetComponentInChildren<CombatHUDWeaponSlotsScrollControl>(true);
+        if (scroller == null) {
+          GameObject uixPrfPanl_STG_gameModule = __instance.PooledInstantiate("uixPrfPanl_STG_gameModule", BattleTechResourceType.UIModulePrefabs);
+          GameSettingsModule module = uixPrfPanl_STG_gameModule.GetComponent<GameSettingsModule>();
+          GameObject.DestroyImmediate(module);
+          uixPrfPanl_STG_gameModule.transform.SetParent(weaponPanel.transform.parent);
+          uixPrfPanl_STG_gameModule.transform.localPosition = weaponPanel.transform.localPosition;
+          uixPrfPanl_STG_gameModule.transform.localScale = Vector3.one;
+          uixPrfPanl_STG_gameModule.transform.localRotation = Quaternion.identity;
+
+          RectTransform scrollRect = uixPrfPanl_STG_gameModule.transform as RectTransform;
+          RectTransform weaponsRect = weaponPanel.transform as RectTransform;
+          scrollRect.anchoredPosition = weaponsRect.anchoredPosition;
+          scrollRect.sizeDelta = new Vector2(weaponsRect.sizeDelta.x * CustomAmmoCategories.Settings.WeaponPanelWidthScale, weaponsRect.sizeDelta.y);
+          scrollRect.pivot = weaponsRect.pivot;
+          scrollRect.anchorMax = new Vector2(1f, 0f);
+          scrollRect.anchorMin = new Vector2(0.5f, 0.5f);
+          scrollRect.anchoredPosition = new Vector2(0f, -240f);
+          scrollRect.pivot = Vector2.one;
+          //scrollRect.localPosition = new Vector3(0f, -240f, 0f);
+          VerticalLayoutGroup Content = uixPrfPanl_STG_gameModule.FindObject<VerticalLayoutGroup>("Content");
+          if (Content != null) { GameObject.DestroyImmediate(Content.gameObject); }
+          Image viewport = uixPrfPanl_STG_gameModule.FindObject<Image>("Viewport");
+          if (viewport != null) { viewport.enabled = false; }
+          ScrollRect gameplay_scroll = uixPrfPanl_STG_gameModule.FindObject<ScrollRect>("gameplay_scroll");
+          RectTransform gameplay_scroll_TR = gameplay_scroll.transform as RectTransform;
+          RectTransform scrollBar = gameplay_scroll.verticalScrollbar.transform as RectTransform;
+          scrollBar.sizeDelta = new Vector2(0f, -50f);
+          scrollBar.pivot = new Vector2(1f, 0f);
+          scrollBar.anchoredPosition = Vector2.zero;
+          gameplay_scroll_TR.anchoredPosition = Vector2.zero;
+          gameplay_scroll_TR.pivot = new Vector2(-0.2f, 0f);
+          gameplay_scroll_TR.anchoredPosition = Vector2.zero;
+          gameplay_scroll_TR.anchorMax = new Vector3(0.5f, 0f);
+          gameplay_scroll_TR.anchorMin = new Vector3(0f, 0.5f);
+          //(gameplay_scroll.transform as RectTransform).anchoredPosition = Vector2.zero;
+          gameplay_scroll.content = weaponsRect;
+          weaponPanel.transform.SetParent(gameplay_scroll.viewport.transform);
+          weaponPanel.transform.localPosition = Vector3.zero;
+          weaponPanel.transform.localScale = new Vector3(CustomAmmoCategories.Settings.WeaponPanelWidthScale, CustomAmmoCategories.Settings.WeaponPanelHeightScale, 1f); ;
+          weaponPanel.transform.localRotation = Quaternion.identity;
+          weaponsRect.anchoredPosition = Vector2.zero;
+          weaponsRect.pivot = new Vector2(CustomAmmoCategories.Settings.WeaponPanelBackWidthScale, 0f);
+          scroller = uixPrfPanl_STG_gameModule.AddComponent<CombatHUDWeaponSlotsScrollControl>();
+          scroller.main = scrollRect;
+          scroller.weaponPanelRect = weaponsRect;
+          scroller.scrollerRect = gameplay_scroll_TR;
+          scroller.scroller = gameplay_scroll;
+          scroller.scrollBarRect = gameplay_scroll.verticalScrollbar.transform as RectTransform;
+          gameplay_scroll.verticalScrollbarVisibility = ScrollRect.ScrollbarVisibility.AutoHide;
+          Log.M.WL(1, "weaponPanel.transform.localScale:" + weaponPanel.transform.localScale + " WeaponPanelWidthScale:" + CustomAmmoCategories.Settings.WeaponPanelWidthScale);
+          CombatHUDWeaponPanelScroller zoomDisabler = weaponPanel.gameObject.GetComponent<CombatHUDWeaponPanelScroller>();
+          if (zoomDisabler == null) { zoomDisabler = weaponPanel.gameObject.AddComponent<CombatHUDWeaponPanelScroller>(); }
+          zoomDisabler.weaponPannelScrollRect = gameplay_scroll;
+          CombatHUDWeaponSlot[] zoomSlots = weaponPanel.gameObject.GetComponentsInChildren<CombatHUDWeaponSlot>(true);
+          zoomDisabler.slotTransform = zoomSlots[0].gameObject.transform.parent as RectTransform;
+        }
+        CombatHUDWeaponSlot[] slotsArr = weaponPanel.gameObject.GetComponentsInChildren<CombatHUDWeaponSlot>(true);
+        Log.M.WL(1, "desiredCount:"+ desiredWeapons);
+        List<CombatHUDWeaponSlot> slots = new List<CombatHUDWeaponSlot>();
+        foreach (CombatHUDWeaponSlot slot in slotsArr) { if (slot.weaponSlotType == CombatHUDWeaponSlot.WeaponSlotType.Normal) { slots.Add(slot); }; };
+        for(int t=slots.Count; t < desiredWeapons; ++t) {
+          GameObject slotGO = GameObject.Instantiate(slots[0].gameObject.transform.parent.gameObject);
+          slotGO.name = "wp_Slot" + (t + 1);
+          slotGO.transform.SetParent(slots[0].gameObject.transform.parent.gameObject.transform.parent);
+          slotGO.transform.localScale = slots[0].transform.parent.localScale;
+          slotGO.transform.localPosition = slots[0].transform.parent.localPosition;
+          slotGO.transform.localRotation = slots[0].transform.parent.localRotation;
+          slotGO.transform.SetSiblingIndex(slots[slots.Count - 1].transform.parent.GetSiblingIndex() + (t - slots.Count) + 1);
+          Log.M.WL(1, slotGO.name+ " SiblingIndex:"+ slotGO.transform.GetSiblingIndex());
+        }
+      } catch (Exception e) {
+        Log.M.TWL(0,e.ToString(), true);
+      }
+    }
+  }
   public static class CombatHUDWeaponSlotHelper {
     private static MethodInfo m_ShowTextColor = null;
     private static MethodInfo m_CycleWeapon = null;
@@ -73,6 +392,7 @@ namespace CustomAmmoCategoriesPatches {
     public bool ExpandWeaponPanel() {
       if (weaponPanel == null) { return false; }
       weaponPanel.gameObject.transform.localScale = new Vector3(CustomAmmoCategories.Settings.WeaponPanelWidthScale, CustomAmmoCategories.Settings.WeaponPanelHeightScale, 1f);
+      Log.M.TWL(0, "weaponPanel.transform.localScale:" + weaponPanel.gameObject.transform.localScale);
       panelBackground = weaponPanel.transform.FindRecursive("panel_background") as RectTransform;
       if (panelBackground == null) { return false; }
       RectTransform wp_sideLineVert_left = weaponPanel.transform.FindRecursive("wp_sideLineVert (1)") as RectTransform;
@@ -88,15 +408,15 @@ namespace CustomAmmoCategoriesPatches {
       Vector3 pos = panelBackground.position;
       pos.x += (newWidth - oldWidth) * 0.5f;
       panelBackground.position = pos;
-      Vector3 rightBottom = wp_sideLineVert_left.WorldRightBottom();
-      Camera mainUiCamera = LazySingletonBehavior<UIManager>.Instance.UICamera;
-      Vector3 desRightBottom = mainUiCamera.ScreenToWorldPoint(new Vector3(mainUiCamera.pixelWidth - 3f, 0f, mainUiCamera.nearClipPlane));
-      float xDelta = desRightBottom.x - rightBottom.x;
-      CanvasRenderer canvas = weaponPanel.gameObject.GetComponent<CanvasRenderer>();
-      Log.M.WL(1, mainUiCamera.pixelWidth.ToString() + "x" + mainUiCamera.pixelHeight + " worldCorner:" + desRightBottom + " delta:" + xDelta);
-      pos = weaponPanel.transform.position;
-      pos.x += xDelta;
-      weaponPanel.transform.position = pos;
+      //Vector3 rightBottom = wp_sideLineVert_left.WorldRightBottom();
+      //Camera mainUiCamera = LazySingletonBehavior<UIManager>.Instance.UICamera;
+      //Vector3 desRightBottom = mainUiCamera.ScreenToWorldPoint(new Vector3(mainUiCamera.pixelWidth - 3f, 0f, mainUiCamera.nearClipPlane));
+      //float xDelta = desRightBottom.x - rightBottom.x;
+      //CanvasRenderer canvas = weaponPanel.gameObject.GetComponent<CanvasRenderer>();
+      //Log.M.WL(1, mainUiCamera.pixelWidth.ToString() + "x" + mainUiCamera.pixelHeight + " worldCorner:" + desRightBottom + " delta:" + xDelta);
+      //pos = weaponPanel.transform.position;
+      //pos.x += xDelta;
+      //weaponPanel.transform.position = pos;
       return true;
     }
     public void Init(CombatHUD HUD, CombatHUDWeaponPanel weaponPanel) {
@@ -1046,7 +1366,6 @@ namespace CustomAmmoCategoriesPatches {
         this.weaponPanel.RefreshDisplayedWeapons(CombatHUDWeaponPanel_RefreshDisplayedWeapons.last_consideringJump, CombatHUDWeaponPanel_RefreshDisplayedWeapons.last_useCOILPathingPreview);
       }
     }
-
     public void Update() {
       if (image == null) {
         image = this.gameObject.GetComponent<SVGImage>();

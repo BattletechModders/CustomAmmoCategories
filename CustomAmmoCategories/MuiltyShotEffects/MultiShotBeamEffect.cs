@@ -3,6 +3,7 @@ using BattleTech.Rendering;
 using BattleTech.Rendering.UrbanWarfare;
 using CustomAmmoCategoriesLog;
 using FluffyUnderware.Curvy;
+using MessagePack;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
@@ -17,6 +18,7 @@ namespace CustAmmoCategories {
   public enum ColorChangeRule {
     None,Linear,Random,RandomOnce,t0,t1,t2,t3,t4,t5,t6,t7,t8,t9,t10,t11,t12,t13,t14,t15,t16,t17,t18,t19,t20,t21,t22,t23,t24,t25,t26,t27,t28,t29,t30,t31
   }
+  [MessagePackObject]
   public class ColorTableJsonEntry {
     public ColorTableJsonEntry() {
       FRealColor = Color.magenta;
@@ -29,6 +31,7 @@ namespace CustAmmoCategories {
       FColor.b = FRealColor.b * FI;
       FColor.a = 1f;
     }
+    [IgnoreMember]
     public string C {
       set {
         Color temp;
@@ -40,19 +43,20 @@ namespace CustAmmoCategories {
         }
       }
     }
+    [IgnoreMember]
     public float I { set {
         FI = value; SyncColor();
     } }
-    [JsonIgnore]
+    [JsonIgnore, IgnoreMember]
     public Color Color { get {
         return FColor;
       }
     }
-    [JsonIgnore]
+    [JsonIgnore, Key(0)]
     private Color FColor;
-    [JsonIgnore]
+    [JsonIgnore, IgnoreMember]
     private Color FRealColor;
-    [JsonIgnore]
+    [JsonIgnore, IgnoreMember]
     private float FI;
 
   }
@@ -79,16 +83,22 @@ namespace CustAmmoCategories {
     public MultiShotLaserEffect parentProjector;
     public int beamIdx;
     public bool primeBeam;
+#if PUBLIC_ASSEMBLIES
+    public override int ImpactPrecacheCount {
+#else
     protected override int ImpactPrecacheCount {
+#endif
       get {
         return 1;
       }
     }
-
+#if PUBLIC_ASSEMBLIES
+    public override void Awake() {
+#else
     protected override void Awake() {
+#endif
       base.Awake();
     }
-
     protected override void Start() {
       base.Start();
     }
@@ -119,7 +129,6 @@ namespace CustAmmoCategories {
       this.weaponRep = weapon.weaponRep;
       this.subEffect = true;
     }
-
     public virtual void Fire(WeaponHitInfo hitInfo, int hitIndex = 0, int emitterIndex = 0, bool pb = false) {
       Log.LogWrite("MultiShotBeamEffect.Fire " + hitInfo.attackWeaponIndex + " " + hitIndex + " ep:" + hitInfo.hitPositions[hitIndex] + " prime:" + pb + "\n");
       this.primeBeam = pb;
@@ -137,7 +146,6 @@ namespace CustAmmoCategories {
       this.rate = 1f / this.duration;
       this.PlayPreFire();
     }
-
     protected void SetupLaser() {
       this.beamRenderer = this.projectile.GetComponent<LineRenderer>();
       this.beamRenderer.SetPosition(0, this.startPos);
@@ -183,18 +191,15 @@ namespace CustAmmoCategories {
     public override void RestoreOriginalColor() {
       //this.beamRenderer.material.SetColor("_ColorBB", this.originalColor);
     }
-
     protected override void PlayPreFire() {
       base.PlayPreFire();
       if (string.IsNullOrEmpty(this.beamStartSFX))
         return;
       int num = (int)WwiseManager.PostEvent(this.beamStartSFX, this.parentAudioObject, (AkCallbackManager.EventCallback)null, (object)null);
     }
-
     protected override void PlayMuzzleFlash() {
       base.PlayMuzzleFlash();
     }
-
     protected override void PlayProjectile() {
       this.SetupLaser();
       this.PlayMuzzleFlash();
@@ -206,7 +211,6 @@ namespace CustAmmoCategories {
       this.projectileTransform.position = this.endPos;
       this.PlayImpact();
     }
-
     protected override void PlayImpact() {
       this.PlayImpactAudio();
       if (this.hitInfo.DidShotHitAnything(this.hitIndex) && !string.IsNullOrEmpty(this.impactVFXBase)) {
@@ -240,7 +244,6 @@ namespace CustAmmoCategories {
       this.DestroyFlimsyObjects();
       this.OnImpact(0.0f);
     }
-
     protected override void DestroyFlimsyObjects() {
       if (!this.shotsDestroyFlimsyObjects)
         return;
@@ -259,8 +262,11 @@ namespace CustAmmoCategories {
           component2.PlayDestruction(normalized, num);
       }
     }
-
+#if PUBLIC_ASSEMBLIES
+    public override void Update() {
+#else
     protected override void Update() {
+#endif
       base.Update();
       if (this.currentState == WeaponEffect.WeaponEffectState.Firing) {
         if ((double)this.t >= 1.0) { this.OnComplete(); }
@@ -291,46 +297,31 @@ namespace CustAmmoCategories {
       if ((double)this.t < 1.0) { return; };
       base.OnComplete();
     }
-
     protected override void LateUpdate() {
       base.LateUpdate();
     }
-
     protected override void OnPreFireComplete() {
       base.OnPreFireComplete();
       this.PlayProjectile();
     }
-#if BT1_8
     protected override void OnImpact(float hitDamage = 0.0f, float structureDamage = 0f) {
-#else
-    protected override void OnImpact(float hitDamage = 0.0f) {
-#endif
       //base.OnImpact(this.weapon.DamagePerShotAdjusted(this.weapon.parent.occupiedDesignMask));
       Log.LogWrite("MultiShotBeamEffect.OnImpact wi:" + this.hitInfo.attackWeaponIndex + " hi:" + this.hitInfo + " bi:" + this.beamIdx + " prime:" + this.primeBeam + "\n");
       if (this.primeBeam) {
         Log.LogWrite(" prime. Damage message fired\n");
         float damage = this.weapon.DamagePerShotAdjusted(this.weapon.parent.occupiedDesignMask);
-#if BT1_8
         float apDamage = this.weapon.StructureDamagePerShotAdjusted(this.weapon.parent.occupiedDesignMask);
-#endif
         if (this.weapon.DamagePerPallet()&&(this.weapon.DamageNotDivided() == false)) {
           damage /= this.weapon.ProjectilesPerShot;
-#if BT1_8
           apDamage /= this.weapon.ProjectilesPerShot;
-#endif
         };
-#if BT1_8
         base.OnImpact(damage, apDamage);
-#else
-        base.OnImpact(damage);
-#endif
       } else {
         Log.LogWrite(" no prime. No damage message fired\n");
       }
       if (!((UnityEngine.Object)this.projectileParticles != (UnityEngine.Object)null)) { return; };
       this.projectileParticles.Stop(true);
     }
-
     protected override void OnComplete() {
       if (!string.IsNullOrEmpty(this.beamStopSFX)) {
         int num = (int)WwiseManager.PostEvent(this.beamStopSFX, this.parentAudioObject, (AkCallbackManager.EventCallback)null, (object)null);
@@ -354,7 +345,6 @@ namespace CustAmmoCategories {
       this.t = 0.0f;
       this.currentState = WeaponEffect.WeaponEffectState.WaitingForImpact;
     }
-
     public override void Reset() {
       if (this.Active && !string.IsNullOrEmpty(this.beamStopSFX)) {
         int num = (int)WwiseManager.PostEvent(this.beamStopSFX, this.parentAudioObject, (AkCallbackManager.EventCallback)null, (object)null);

@@ -17,12 +17,10 @@ namespace WeaponRealizer {
           nameof(ShotsWhenFiredRandomizerOverider));
       return Transpilers.MethodReplacer(instructions, targetPropertyGetter, replacementMethod);
     }
-
     private static int ShotsWhenFiredRandomizerOverider(Weapon weapon) {
       if (!IsClustered(weapon)) return weapon.ShotsWhenFired;
       return weapon.ShotsWhenFired * weapon.ProjectilesPerShot;
     }
-
     private static readonly Dictionary<string, bool> _isClustered = new Dictionary<string, bool>();
     private static bool IsClustered(Weapon weapon) {
       var weaponId = weapon.defId;
@@ -45,7 +43,6 @@ namespace WeaponRealizer {
       BuildAttackSequenceGetClusteredHits();
       return true;
     }
-
     private static void BuildAttackSequenceGetClusteredHits() {
       var mi = AccessTools.Method(typeof(AttackDirector.AttackSequence), "GetClusteredHits");
       AttackSequenceGetClusteredHits = MethodInvoker.GetHandler(mi);
@@ -78,7 +75,6 @@ namespace WeaponRealizer {
       hitInfo.numberOfShots = originalNumberOfShots;
       return false;
     }
-
     private static void PrintHitLocations(WeaponHitInfo hitInfo) {
       if (!Core.ModSettings.debug) return;
       try {

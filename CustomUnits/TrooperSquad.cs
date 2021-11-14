@@ -6,6 +6,7 @@ using CustomComponents;
 using Harmony;
 using HBS.Collections;
 using Localize;
+using MessagePack;
 using SVGImporter;
 using System;
 using System.Collections.Generic;
@@ -214,17 +215,23 @@ namespace CustomUnits {
       }
     }
   }
+  [MessagePackObject]
   public class TrooperSquadDef {
-    public int Troopers { get; set; }
-    public int DeadUnitToHitMod { get; set; }
-    public float UnitSize { get; set; }
-    public WeightClass weightClass { get; set; }
-    public Dictionary<string, ChassisLocations> Hardpoints { get; set; }
+    [Key(0)]
+    public int Troopers { get; set; } = 0;
+    [Key(1)]
+    public int DeadUnitToHitMod { get; set; } = 0;
+    [Key(2)]
+    public float UnitSize { get; set; } = 1f;
+    [Key(3)]
+    public WeightClass weightClass { get; set; } = WeightClass.MEDIUM;
+    [Key(4)]
+    public Dictionary<string, ChassisLocations> Hardpoints { get; set; } = new Dictionary<string, ChassisLocations>();
     public TrooperSquadDef() {
-      Hardpoints = new Dictionary<string, ChassisLocations>();
-      UnitSize = 1f;
-      DeadUnitToHitMod = 0;
-      weightClass = WeightClass.MEDIUM;
+      //Hardpoints = new Dictionary<string, ChassisLocations>();
+      //UnitSize = 1f;
+      //DeadUnitToHitMod = 0;
+      //weightClass = WeightClass.MEDIUM;
     }
   }
   public class TrooperRepresentation {

@@ -38,7 +38,6 @@ namespace CharlesB {
       instructionList.InsertRange(insertionIndex, damageMethodCalloutInstructions);
       return instructionList;
     }
-
     private const int FinishedState = 3;
 
     private static readonly ArmorLocation[] possibleLocations = new[]

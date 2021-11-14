@@ -366,11 +366,7 @@ namespace CustAmmoCategories {
                       (object) (int) Mathf.Max(1f, bdmg.Value.Damage)
           }), unit.Combat.Constants.CombatUIConstants.floatieSizeMedium, FloatieMessage.MessageNature.ArmorDamage, bdmg.Value.hitPosition.x, bdmg.Value.hitPosition.y, bdmg.Value.hitPosition.z));
         }
-#if BT1_8
         unit.TakeWeaponDamage(fakeHit, bdmg.Key, this.weapon, bdmg.Value.Damage, 0f, 0, DamageType.AmmoExplosion);
-#else
-        unit.TakeWeaponDamage(fakeHit, bdmg.Key, this.weapon, bdmg.Value.Damage, 0, DamageType.AmmoExplosion);
-#endif
       }
       Log.F.WL(1, "Applying burn floatie message");
       if (this.burnDamage.Count > 0) {
@@ -404,11 +400,7 @@ namespace CustAmmoCategories {
           }
           Log.F.WL(2, "take weapon damage");
           fakeHit.hitPositions[0] = mfdmg.Value.hitPosition;
-#if BT1_8
           target.TakeWeaponDamage(fakeHit, mfdmg.Key, this.weapon, mfdmg.Value.Damage,0f, 0, DamageType.AmmoExplosion);
-#else
-          target.TakeWeaponDamage(fakeHit, mfdmg.Key, this.weapon, mfdmg.Value.Damage, 0, DamageType.AmmoExplosion);
-#endif
         }
         if (mfdmgs.Value.hitRecords.Count > 0) {
           Log.F.WL(2, "floatie message explosion");

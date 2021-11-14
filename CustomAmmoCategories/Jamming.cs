@@ -466,7 +466,6 @@ namespace CustAmmoCategories {
       if (mode.DestroyOnJamming != TripleBoolean.NotSet) { return mode.DestroyOnJamming == TripleBoolean.True; }
       return weapon.exDef().DestroyOnJamming == TripleBoolean.True;
     }
-
     public static int Cooldown(this Weapon weapon) {
       return weapon.exDef().Cooldown + weapon.mode().Cooldown;
     }

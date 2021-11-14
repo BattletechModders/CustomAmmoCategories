@@ -45,13 +45,11 @@ namespace WeaponRealizer {
         }
       }
     }
-
     private static float GetRefireModifier(Weapon weapon) {
       if (weapon.RefireModifier > 0 && weapon.roundsSinceLastFire < 2)
         return (float)weapon.RefireModifier;
       return 0.0f;
     }
-
     private static bool AttemptToAddJam(AbstractActor actor, Weapon weapon) {
       // TODO: can we exponentially increase refiremodifier?
       // LadyAlekto: every turn fired, the refiremodifier gets added
@@ -84,7 +82,6 @@ namespace WeaponRealizer {
       AddJam(actor, weapon);
       return true;
     }
-
     private static bool AttemptToRemoveJam(AbstractActor actor, Weapon weapon) {
       var skill = actor.SkillGunnery;
       var mitigationRoll = Random.Range(1, 10);
@@ -100,7 +97,6 @@ namespace WeaponRealizer {
       Logger.Debug(sb.ToString());
       return false;
     }
-
     private const string TemporarilyDisabledStatisticName = "TemporarilyDisabled";
     private const string DamageableWeaponTag = "wr-damage_when_jam";
     internal const string JammedWeaponStatisticName = "WR-JammedWeapon";
@@ -128,7 +124,6 @@ namespace WeaponRealizer {
       }
 
     }
-
     private static void RemoveJam(AbstractActor actor, Weapon weapon) {
       weapon.StatCollection.Set<bool>(JammedWeaponStatisticName, false);
       weapon.StatCollection.Set<bool>(TemporarilyDisabledStatisticName, false);
@@ -137,17 +132,14 @@ namespace WeaponRealizer {
               new ShowActorInfoSequence(actor, $"{weapon.UIName} __/CAC.Unjammed/__!", FloatieMessage.MessageNature.Buff,
                   true)));
     }
-
     private static bool IsJammed(Weapon weapon) {
       var statistic =
           StatisticHelper.GetOrCreateStatisic<bool>(weapon.StatCollection, JammedWeaponStatisticName, false);
       return statistic.Value<bool>();
     }
-
     private static bool IsJammable(Weapon weapon) {
       return weapon.weaponDef.ComponentTags.Contains(JammableWeaponTag) && HasJamMultiplier(weapon);
     }
-
     private static readonly Dictionary<string, float> JamMultipliers = new Dictionary<string, float>();
 
     private static bool HasJamMultiplier(Weapon weapon) {
@@ -155,11 +147,9 @@ namespace WeaponRealizer {
         JamMultipliers[weapon.defId] = ParseBaseMultiplier(weapon);
       return JamMultipliers[weapon.defId] > Calculator.Epsilon;
     }
-
     private static bool DamagesWhenJams(Weapon weapon) {
       return weapon.weaponDef.ComponentTags.Contains(DamageableWeaponTag);
     }
-
     private const string JamMultiplierTagPrefix = "wr-jam_chance_multiplier";
     private static readonly char[] TagDelimiter = new char[] { '-' };
 
@@ -182,7 +172,6 @@ namespace WeaponRealizer {
     public static bool Prepare() {
       return Core.ModSettings.Jamming;
     }
-
     public static void Postfix(MechComponent __instance, ref Text __result) {
       if (!__instance.IsFunctional) return;
       if (__instance.GetType() != typeof(Weapon)) return;

@@ -88,7 +88,6 @@ namespace CustomAmmoCategoriesPatches {
       var replacementMethod = AccessTools.Method(typeof(AttackEvaluator_MakeWeaponSetsForEvasive), nameof(AmmoCategory));
       return Transpilers.MethodReplacer(instructions, targetPropertyGetter, replacementMethod);
     }
-
     private static AmmoCategoryValue AmmoCategory(this Weapon weapon) {
       //CustomAmmoCategoriesLog.Log.LogWrite("get AIUtil_UnitHasLOFToTargetFromPosition IndirectFireCapable\n");
       return weapon.CustomAmmoCategory().BaseCategory;
@@ -213,7 +212,6 @@ namespace CustomAmmoCategoriesPatches {
           nameof(ShotsWhenFiredDisplayOverider));
       return Transpilers.MethodReplacer(instructions, targetPropertyGetter, replacementMethod);
     }
-
     private static int ShotsWhenFiredDisplayOverider(Weapon weapon) {
       //Log.LogWrite("ShotsWhenFiredDisplayOverider "+weapon.UIName+"\n");
       int result = weapon.ShotsWhenFired;

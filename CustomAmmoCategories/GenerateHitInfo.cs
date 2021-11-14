@@ -669,7 +669,6 @@ namespace CustomAmmoCategoriesPatches {
       instance.chosenTarget = originaltarget;
       return toHitChance;
     }
-
     public static bool Prefix(AttackDirector.AttackSequence __instance, Weapon weapon, int groupIdx, int weaponIdx, int numberOfShots, ref bool indirectFire, float dodgedDamage, ref WeaponHitInfo __result) {
       Log.LogWrite("Generating HitInfo " + weapon.defId + " grp:" + groupIdx + " id:" + weaponIdx + " shots:" + numberOfShots + " indirect:" + indirectFire + " " + dodgedDamage + "\n");
       if (__instance.attacker.GUID == __instance.chosenTarget.GUID) {

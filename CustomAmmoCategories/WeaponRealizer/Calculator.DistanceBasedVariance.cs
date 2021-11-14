@@ -71,7 +71,6 @@ namespace WeaponRealizer {
         return multiplier;
       }
     }
-
     private static class ReverseDistanceBasedVariance {
       public static bool IsApplicable(Weapon weapon) {
         Logger.Debug($"reverse enabled? {Core.ModSettings.ReverseDistanceBasedVariance}\nvariance?{HasPositiveVarianceMultiplier(weapon)}");

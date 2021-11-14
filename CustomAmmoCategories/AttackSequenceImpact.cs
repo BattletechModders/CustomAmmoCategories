@@ -151,7 +151,6 @@ namespace CustAmmoCategories {
       }
       return computedDamage;
     }
-
     public static float TargetOverheatModifier(this Weapon weapon, ICombatant target, bool log = true) {
       if (weapon.IsOverheatModApplicable() == false) { return 1f; }
       var rawMultiplier = weapon.weaponDef.OverheatedDamageMultiplier;
@@ -170,7 +169,6 @@ namespace CustAmmoCategories {
       }
       return result;
     }
-
     public static float WeaponDamageTargetOverheat(ICombatant target, Weapon weapon, float rawDamage, bool log = true) {
       var multiplier = weapon.TargetOverheatModifier(target,log);
       var damage = rawDamage * multiplier;
@@ -182,7 +180,6 @@ namespace CustAmmoCategories {
       }
       return damage;
     }
-
     public static float WeaponDamageSimpleVariance(Weapon weapon, float rawDamage) {
       Log.LogWrite("Simple damage variance for weapon " + weapon.UIName + "\n");
       var damagePerShot = weapon.DamagePerShot;
@@ -242,18 +239,10 @@ namespace CustomAmmoCategoriesPatches {
 
   [HarmonyPatch(typeof(AbstractActor))]
   [HarmonyPatch("GetAdjustedDamage")]
-#if BT1_8
   [HarmonyPatch(new Type[] { typeof(float), typeof(WeaponCategoryValue), typeof(DesignMaskDef), typeof(LineOfFireLevel), typeof(bool) })]
-#else
-  [HarmonyPatch(new Type[] { typeof(float), typeof(WeaponCategory), typeof(DesignMaskDef), typeof(LineOfFireLevel), typeof(bool) })]
-#endif
   public static class AbstractActor_GetAdjustedDamage {
     [HarmonyPriority(Priority.Last)]
-#if BT1_8
     public static void Postfix(AbstractActor __instance, float incomingDamage, WeaponCategoryValue weaponCategoryValue, DesignMaskDef designMask, LineOfFireLevel lofLevel, bool doLogging, ref float __result) {
-#else
-    public static void Postfix(AbstractActor __instance, float incomingDamage, WeaponCategory category, DesignMaskDef designMask, LineOfFireLevel lofLevel, bool doLogging, ref float __result) {
-#endif
       //CustomAmmoCategoriesLog.Log.LogWrite("Checking GetAdjustedDamage incDmg:" + incomingDamage + "\n");
       if (float.IsNaN(__result)) {
         CustomAmmoCategoriesLog.Log.LogWrite("Checking GetAdjustedDamage incDmg:" + incomingDamage + "\n");
@@ -322,7 +311,6 @@ namespace CustomAmmoCategoriesPatches {
         default: return heat;
       }
     }
-
     public static bool Prefix(AttackDirector.AttackSequence __instance, ref MessageCenterMessage message) {
       AttackSequenceImpactMessage impactMessage = (AttackSequenceImpactMessage)message;
       if (impactMessage.hitInfo.attackSequenceId != __instance.id) { return true; }

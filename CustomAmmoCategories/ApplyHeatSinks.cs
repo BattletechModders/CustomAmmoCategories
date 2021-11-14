@@ -249,7 +249,6 @@ namespace CustAmmoCategoriesPatches {
       var replacementMethod = AccessTools.Method(typeof(OrderSequence_OnUpdate), nameof(IsInterleaved));
       return Transpilers.MethodReplacer(instructions, targetPropertyGetter, replacementMethod);
     }
-
     public static bool IsInterleaved(this TurnDirector turnDirector) {
       Log.M.TWL(0, "OrderSequence.OnUpdate.TurnDirector.IsInterleaved");
       return true;

@@ -19,17 +19,23 @@ namespace CustAmmoCategories {
     public string middleShotSFX;
     public string lastShotSFX;
 
+#if PUBLIC_ASSEMBLIES
+    public override int ImpactPrecacheCount {
+#else
     protected override int ImpactPrecacheCount {
+#endif
       get {
         return 5;
       }
     }
-
+#if PUBLIC_ASSEMBLIES
+    public override void Awake() {
+#else
     protected override void Awake() {
+#endif
       base.Awake();
       this.AllowMissSkipping = false;
     }
-
     protected override void Start() {
       base.Start();
     }
@@ -44,14 +50,12 @@ namespace CustAmmoCategories {
       this.lastShotSFX = original.lastShotSFX;
       this.subEffect = true;
     }
-
     public override void Init(Weapon weapon) {
       base.Init(weapon);
       if (!((UnityEngine.Object)this.bulletPrefab != (UnityEngine.Object)null))
         return;
       this.Combat.DataManager.PrecachePrefabAsync(this.bulletPrefab.name, BattleTechResourceType.Prefab, weapon.ProjectilesPerShot);
     }
-
     protected void SetupBullets() {
       if ((double)this.shotDelay <= 0.0)
         this.shotDelay = 0.5f;
@@ -101,7 +105,6 @@ namespace CustAmmoCategories {
         }
       }
     }
-
     protected void ClearBullets() {
       string prefabName = FragBallisticEffect.FragPrefabPrefix + this.bulletPrefab.name;
       Log.LogWrite("FragBallisticEffect.ClearBullets\n");
@@ -115,7 +118,6 @@ namespace CustAmmoCategories {
       }
       this.bullets.Clear();
     }
-
     protected bool AllBulletsComplete() {
       if (this.currentState != WeaponEffect.WeaponEffectState.Firing && this.currentState != WeaponEffect.WeaponEffectState.WaitingForImpact)
         return false;
@@ -125,27 +127,22 @@ namespace CustAmmoCategories {
       }
       return true;
     }
-
     public override void Fire(Vector3 sPos,WeaponHitInfo hitInfo, int hitIndex = 0, int emitterIndex = 0) {
       Log.LogWrite("FragBallisticEffect.Fire "+sPos+" wi:"+hitInfo.attackWeaponIndex+" hi:"+hitIndex+"\n");
       base.Fire(sPos,hitInfo, hitIndex, emitterIndex);
       this.SetupBullets();
       this.PlayPreFire();
     }
-
     protected override void PlayPreFire() {
       base.PlayPreFire();
     }
-
     protected override void PlayMuzzleFlash() {
       base.PlayMuzzleFlash();
     }
-
     protected override void PlayProjectile() {
       base.PlayProjectile();
       this.FireBullets();
     }
-
     protected void FireBullets() {
       Log.LogWrite("FragBallisticEffect.FireBullets " + this.startPos + " wi:" + hitInfo.attackWeaponIndex + " hi:" + hitIndex + "\n");
       if (this.hitIndex < 0 || this.hitIndex >= this.hitInfo.hitLocations.Length) { return; }
@@ -171,31 +168,26 @@ namespace CustAmmoCategories {
       this.t = 0.0f;
       this.currentState = WeaponEffect.WeaponEffectState.WaitingForImpact;
     }
-
     protected override void PlayImpact() {
       base.PlayImpact();
     }
-
+#if PUBLIC_ASSEMBLIES
+    public override void Update() {
+#else
     protected override void Update() {
+#endif
       base.Update();
       if (this.currentState != WeaponEffect.WeaponEffectState.WaitingForImpact || !this.AllBulletsComplete()) { return; }
       this.OnComplete();
     }
-
     protected override void OnPreFireComplete() {
       Log.LogWrite("FragBallisticEffect.OnPreFireComplete " + this.startPos + " wi:" + hitInfo.attackWeaponIndex + " hi:" + hitIndex + "\n");
       base.OnPreFireComplete();
       this.PlayProjectile();
     }
-#if BT1_8
     protected override void OnImpact(float hitDamage = 0.0f, float structureDamage = 0f) {
       base.OnImpact(0.0f, 0f);
     }
-#else
-    protected override void OnImpact(float hitDamage = 0.0f) {
-      base.OnImpact(0.0f);
-    }
-#endif
     public void OnBulletImpact(FragBulletEffect bullet) {
       //this.OnImpact(this.weapon.DamagePerShotAdjusted(this.weapon.parent.occupiedDesignMask));
       /*if (this.hitInfo.hitLocations[this.hitIndex] == 0 || this.hitInfo.hitLocations[this.hitIndex] == 65536 || bullet.bulletIdx >= this.weapon.ProjectilesPerShot - 1)
@@ -205,7 +197,6 @@ namespace CustAmmoCategories {
         return;
       combatantByGuid.GameRep.PlayImpactAnim(this.hitInfo, this.hitIndex, this.weapon, MeleeAttackType.NotSet, 0.0f);*/
     }
-
     protected override void OnComplete() {
       //this.OnImpact(this.weapon.DamagePerShotAdjusted(this.weapon.parent.occupiedDesignMask) * (float)this.weapon.ShotsWhenFired);
       base.OnComplete();
@@ -216,7 +207,6 @@ namespace CustAmmoCategories {
         this.parentWeaponEffect.PublishWeaponCompleteMessage();
       }
     }
-
     public override void Reset() {
       base.Reset();
     }

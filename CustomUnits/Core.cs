@@ -418,6 +418,10 @@ namespace CustomUnits{
     public static void FinishedLoading(List<string> loadOrder, Dictionary<string, Dictionary<string, VersionManifestEntry>> customResources) {
       Log.TWL(0, "FinishedLoading", true);
       IRBTModUtils.Extension.MechExtensions.RegisterMoveDistanceModifier("CustomUnits", 10, Mech_MaxWalkDistance.MaxWalkDistanceMod, Mech_MaxWalkDistance.MaxSprintDistanceMod);
+      CustomPrewarm.Core.RegisterSerializator("CustomUnits", BattleTechResourceType.ChassisDef, VehicleCustomInfoHelper.GetInfoByChassisId);
+      CustomPrewarm.Core.RegisterSerializator("CustomUnits", BattleTechResourceType.VehicleChassisDef, VehicleCustomInfoHelper.GetInfoByChassisId);
+      CustomPrewarm.Core.RegisterSerializator("CustomUnits", BattleTechResourceType.HardpointDataDef, CustomHardPointsHelper.CustomHardpoints);
+      CustomPrewarm.Core.RegisterSerializator("CustomUnitsChassisTags", BattleTechResourceType.VehicleChassisDef, BattleTech_VehicleChassisDef_fromJSON_Patch.serializeChassisTags);
       try {
         foreach(string name in loadOrder) { if (name == "Mission Control") { CustomLanceHelper.MissionControlDetected = true; break; }; }
         foreach (string name in loadOrder) { if (name == "MechEngineer") { Core.Settings.MechEngineerDetected = true; break; }; }

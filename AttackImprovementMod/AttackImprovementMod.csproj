@@ -23,6 +23,7 @@
     <WarningLevel>4</WarningLevel>
     <LangVersion>7.3</LangVersion>
     <Prefer32Bit>false</Prefer32Bit>
+    <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>none</DebugType>
@@ -100,6 +101,7 @@
     <Compile Include="src\modules\WeaponInformation.cs" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="app.config" />
     <None Include="mod.json" />
     <None Include="changelog.txt" />
   </ItemGroup>

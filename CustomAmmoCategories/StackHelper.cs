@@ -81,7 +81,6 @@ namespace CustAmmoCategories {
       }
       return default(T);
     }
-
     public static int currentAttackSequence(this Thread thread) {
       return peekFromStack<int>(thread, ATTACK_SEQUENCE_NAME);
     }

@@ -49,13 +49,11 @@ namespace CustAmmoCategories {
         return false;
       }
     }
-
     public override bool ConsumesFiring {
       get {
         return true;
       }
     }
-
     public override bool CanBackOut {
       get {
         if (this.Orders == null) {
@@ -64,7 +62,6 @@ namespace CustAmmoCategories {
         return false;
       }
     }
-
     protected override bool showHeatWarnings {
       get {
         return true;
@@ -103,7 +100,6 @@ namespace CustAmmoCategories {
       Log.LogWrite("SelectionStateCommandAttackGround.OnAddToStack ToggleRandomIdles false\n");
       gameRep.ToggleRandomIdles(false);
     }
-
     public override void OnInactivate() {
       Log.M.TWL(0,"SelectionStateCommandAttackGround.OnInactivate HasActivated: "+ HasActivated);
       base.OnInactivate();
@@ -317,26 +313,18 @@ namespace CustAmmoCategories {
       ICombatant target = null;
       switch (this.NumPositionsLocked) {
         case 0:
-#if BT1_8
           if(this.UpdateWeapons(worldPos,out range)) {
             this.CircleRange = range;
             Log.M.TWL(0, "SelectionStateCommandAttackGround.UpdateWeapons "+ NumPositionsLocked + " true range:"+range+" trg:"+(target==null?"null":(new Text(target.DisplayName).ToString())));
           }
           CombatTargetingReticle.Instance.UpdateReticle(worldPos, CircleRange, false);
-#else
-          CombatTargetingReticle.Instance.UpdateReticle(worldPos, CircleRange);
-#endif
           break;
         case 1:
-#if BT1_8
           if (this.UpdateWeapons(targetPosition, out range)) {
             this.CircleRange = range;
             Log.M.TWL(0, "SelectionStateCommandAttackGround.UpdateWeapons " + NumPositionsLocked + " true range:" + range + " trg:" + (target == null ? "null" : (new Text(target.DisplayName).ToString())));
           }
           CombatTargetingReticle.Instance.UpdateReticle(this.targetPosition, CircleRange, false);
-#else
-          CombatTargetingReticle.Instance.UpdateReticle(this.targetPosition, CircleRange);
-#endif
           break;
       }
       Log.M.TWL(0, "SelectionState_ProcessMousePos");
@@ -570,7 +558,6 @@ namespace CustomAmmoCategoriesPatches {
       var replacementMethod = AccessTools.Method(typeof(SelectionStateMoveBase_CreateMoveOrders), nameof(IsInterleaved));
       return Transpilers.MethodReplacer(instructions, targetPropertyGetter, replacementMethod);
     }
-
     private static bool IsInterleaved(TurnDirector director) {
       CustomAmmoCategoriesLog.Log.LogWrite("SelectionStateMoveBase.CreateMoveOrders.IsInterleaved\n");
       return true;
@@ -586,7 +573,6 @@ namespace CustomAmmoCategoriesPatches {
       var replacementMethod = AccessTools.Method(typeof(AbstractActorMovementInvocation_Invoke), nameof(AutoBrace));
       return Transpilers.MethodReplacer(instructions, targetPropertySetter, replacementMethod);
     }
-
     private static void AutoBrace(AbstractActor actor, bool value) {
       CustomAmmoCategoriesLog.Log.LogWrite("AbstractActorMovementInvocation.Invoke.AutoBrace\n");
       actor.AutoBrace = false;
@@ -729,16 +715,16 @@ namespace CustomAmmoCategoriesPatches {
       return false;
     }
   }
-  [HarmonyPatch(typeof(WeaponRangeIndicators))]
-  [HarmonyPatch("UpdateTargetingLines")]
-  [HarmonyPatch(MethodType.Normal)]
-  [HarmonyPatch(new Type[] { typeof(AbstractActor), typeof(Vector3), typeof(Quaternion), typeof(bool), typeof(ICombatant), typeof(bool), typeof(List<ICombatant>), typeof(bool) })]
-  public static class WeaponRangeIndicators_UpdateTargetingLines {
-    private static bool Prefix(WeaponRangeIndicators __instance, AbstractActor selectedActor, Vector3 position, Quaternion rotation, bool isPositionLocked, ICombatant targetedActor, bool useMultiFire, List<ICombatant> lockedTargets, bool isMelee) {
-      Log.M.TWL(0, "WeaponRangeIndicators.UpdateTargetingLines position:" + position + " actor:" + new Text(selectedActor.DisplayName).ToString() + " trg:" + (targetedActor==null?"null":(new Text(targetedActor.DisplayName).ToString())));
-      return true;
-    }
-  }
+  //[HarmonyPatch(typeof(WeaponRangeIndicators))]
+  //[HarmonyPatch("UpdateTargetingLines")]
+  //[HarmonyPatch(MethodType.Normal)]
+  //[HarmonyPatch(new Type[] { typeof(AbstractActor), typeof(Vector3), typeof(Quaternion), typeof(bool), typeof(ICombatant), typeof(bool), typeof(List<ICombatant>), typeof(bool) })]
+  //public static class WeaponRangeIndicators_UpdateTargetingLines {
+  //  private static bool Prefix(WeaponRangeIndicators __instance, AbstractActor selectedActor, Vector3 position, Quaternion rotation, bool isPositionLocked, ICombatant targetedActor, bool useMultiFire, List<ICombatant> lockedTargets, bool isMelee) {
+  //    Log.M.TWL(0, "WeaponRangeIndicators.UpdateTargetingLines position:" + position + " actor:" + new Text(selectedActor.DisplayName).ToString() + " trg:" + (targetedActor==null?"null":(new Text(targetedActor.DisplayName).ToString())));
+  //    return true;
+  //  }
+  //}
   [HarmonyPatch(typeof(WeaponRangeIndicators))]
   [HarmonyPatch("ShowLineToTarget")]
   [HarmonyPatch(MethodType.Normal)]

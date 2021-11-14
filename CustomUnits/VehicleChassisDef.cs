@@ -21,11 +21,16 @@ using CustomComponents;
 using CustomAmmoCategoriesPatches;
 using HBS.Collections;
 using System.Collections.Concurrent;
+using MessagePack;
 
 namespace CustomUnits {
+  [MessagePackObject]
   public class CustomTransform {
+    [Key(0)]
     public CustomVector offset { get; set; }
+    [Key(1)]
     public CustomVector scale { get; set; }
+    [Key(2)]
     public CustomVector rotate { get; set; }
     public CustomTransform() {
       offset = new CustomVector(false);
@@ -39,9 +44,13 @@ namespace CustomUnits {
       Log.LogWrite(init + "rotate:" + rotate + "\n");
     }
   }
+  [MessagePackObject]
   public class CustomMaterialInfo {
+    [Key(0)]
     public string shader { get; set; }
+    [Key(1)]
     public List<string> shaderKeyWords { get; set; }
+    [Key(2)]
     public Dictionary<string, string> materialTextures { get; set; }
     public CustomMaterialInfo() {
       shader = string.Empty;
@@ -59,14 +68,19 @@ namespace CustomUnits {
     }
   }
 
+  [MessagePackObject]
   public class RequiredComponent {
+    [Key(0)]
     public string CategoryId { get; set; }
+    [Key(1)]
     public string DefId { get; set; }
-    [JsonIgnore]
+    [JsonIgnore, Key(2)]
     public HashSet<int> SearchLocations { get; set; }
+    [IgnoreMember]
     public List<ChassisLocations> MechSearchLocations { set {
         foreach(ChassisLocations loc in value){ SearchLocations.Add((int)loc); }
       } }
+    [IgnoreMember]
     public List<VehicleChassisLocations> VehicleSearchLocations {
       set {
         foreach (VehicleChassisLocations loc in value) { SearchLocations.Add((int)loc); }
@@ -134,27 +148,42 @@ namespace CustomUnits {
       return true;
     }
   }
+  [MessagePackObject]
   public class CustomPart {
+    [Key(0)]
     public string prefab { get; set; }
+    [Key(1)]
     public string boneName { get; set; }
+    [Key(2)]
     public Dictionary<string, CustomMaterialInfo> MaterialInfo { get; set; }
+    [Key(3)]
     public CustomTransform prefabTransform { get; set; }
+    [Key(4)]
     public VehicleChassisLocations VehicleChassisLocation { get; set; }
+    [Key(5)]
     public ChassisLocations MechChassisLocation { get; set; }
+    [Key(6)]
     public List<RequiredComponent> RequiredComponents { get; set; }
-    public List<string> RequiredUpgrades { set {
-        foreach(string def in value) { this.RequiredUpgradesSet.Add(def);}
+    [Key(7)]
+    public List<string> RequiredUpgrades {
+      get {
+        return RequiredUpgradesSet.ToList();
+      }
+      set {
+        RequiredUpgradesSet = value.ToHashSet();
       }
     }
-    [JsonIgnore]
+    [JsonIgnore,IgnoreMember]
     public HashSet<string> RequiredUpgradesSet { get; private set; }
+    [Key(8)]
     public string AnimationType { get; set; }
+    [IgnoreMember]
     public JObject AnimationData {
       set {
         this.Data = value.ToString(Formatting.None);
       }
     }
-    [JsonIgnore]
+    [JsonIgnore, Key(9)]
     public string Data { get; set; }
     public CustomPart() {
       prefab = string.Empty;
@@ -190,20 +219,31 @@ namespace CustomUnits {
       return null;
     }
   }
+  [MessagePackObject]
   public class UnitUnaffection {
     private static readonly float MinMoveClamp = 0.2f;
     private static readonly float MaxMoveClamp = 0.5f;
-    [JsonIgnore]
+    [JsonIgnore,IgnoreMember]
     private float FMoveClamp;
+    [Key(0)]
     public bool DesignMasks { get; set; }
+    [Key(1)]
     public bool Pathing { get; set; }
+    [Key(2)]
     public bool MoveCostBiome { get; set; }
+    [Key(3)]
     public bool Fire { get; set; }
+    [Key(4)]
     public bool Landmines { get; set; }
+    [Key(5)]
     public float MinJumpDistance { get; set; }
+    [Key(6)]
     public bool AllowPartialMovement { get; set; }
+    [Key(7)]
     public bool AllowPartialSprint { get; set; }
+    [Key(8)]
     public bool AllowRotateWhileJump { get; set; }
+    [Key(9)]
     public float MoveClamp {
       get {
         if (Pathing && (FMoveClamp < MinMoveClamp)) { return MinMoveClamp; }
@@ -233,16 +273,27 @@ namespace CustomUnits {
       Log.LogWrite(initiation, "MoveCostBiome:" + MoveCostBiome, true);
     }
   }
+  [MessagePackObject]
   public class HangarLocationTransforms {
+    [Key(0)]
     public CustomTransform TurretAttach { get; set; }
+    [Key(1)]
     public CustomTransform BodyAttach { get; set; }
+    [Key(2)]
     public CustomTransform TurretLOS { get; set; }
+    [Key(3)]
     public CustomTransform LeftSideLOS { get; set; }
+    [Key(4)]
     public CustomTransform RightSideLOS { get; set; }
+    [Key(5)]
     public CustomTransform leftVFXTransform { get; set; }
+    [Key(6)]
     public CustomTransform rightVFXTransform { get; set; }
+    [Key(7)]
     public CustomTransform rearVFXTransform { get; set; }
+    [Key(8)]
     public List<CustomTransform> lightsTransforms { get; set; }
+    [Key(9)]
     public CustomTransform thisTransform { get; set; }
     public HangarLocationTransforms() {
       TurretAttach = new CustomTransform();
@@ -257,8 +308,11 @@ namespace CustomUnits {
       lightsTransforms = new List<CustomTransform>();
     }
   }
+  [MessagePackObject]
   public class MeleeWeaponOverrideDef {
+    [Key(0)]
     public string DefaultWeapon { get; set; }
+    [Key(1)]
     public Dictionary<string, string> Components { get; set; }
     public MeleeWeaponOverrideDef() {
       DefaultWeapon = "Weapon_MeleeAttack";
@@ -288,120 +342,182 @@ namespace CustomUnits {
     }
   }
   public enum SpawnType { Undefined, AsMech, AsVehicle };
+  [MessagePackObject]
   public class ChassisAdditionalInfo {
-    public string Id { get; protected set; }
+    [Key(0)]
+    public string Id { get; set; }
+    [Key(1)]
     public SpawnType SpawnAs { get; set; }
     public ChassisAdditionalInfo(string id, SpawnType spawn) {
       SpawnAs = spawn;
       Id = id;
     }
   }
+  [MessagePackObject]
   public class UnitCustomInfo {
-    public List<AlternateRepresentationDef> AlternateRepresentations { get; set; }
-    public TrooperSquadDef SquadInfo { get; set; }
-    public bool NullifyBodyMesh { get; set; }
-    public float FlyingHeight { get; set; }
+    [Key(0)]
+    public List<AlternateRepresentationDef> AlternateRepresentations { get; set; } = new List<AlternateRepresentationDef>();
+    [Key(1)]
+    public TrooperSquadDef SquadInfo { get; set; } = new TrooperSquadDef();
+    [Key(2)]
+    public bool NullifyBodyMesh { get; set; } = false;
+    [Key(3)]
+    public float FlyingHeight { get; set; } = 0f;
+    [IgnoreMember]
     public float AOEHeight { get { return FlyingHeight; } set { FlyingHeight = value; } }
-    public bool TieToGroundOnDeath { get; set; }
-    public List<ChassisLocations> LethalLocations { get; set; }
-    public float FiringArc { get; set; }
-    public bool NoIdleAnimations { get; set; }
-    public bool NoMoveAnimations { get; set; }
-    public bool ArmsCountedAsLegs { get; set; }
-    public float LegDestroyedMovePenalty { get; set; }
-    public float LegDamageRedMovePenalty { get; set; }
-    public float LegDamageYellowMovePenalty { get; set; }
-    public float LegDamageRelativeInstability { get; set; }
-    public float LegDestroyRelativeInstability { get; set; }
-    public float LocDestroyedPermanentStabilityLossMod { get; set; }
-    public CustomVector HighestLOSPosition { get; set; }
-    public UnitUnaffection Unaffected { get; set; }
-    public CustomTransform TurretAttach { get; set; }
-    public CustomTransform BodyAttach { get; set; }
-    public CustomTransform TurretLOS { get; set; }
-    public CustomTransform LeftSideLOS { get; set; }
-    public CustomTransform RightSideLOS { get; set; }
-    public CustomTransform leftVFXTransform { get; set; }
-    public CustomTransform rightVFXTransform { get; set; }
-    public CustomTransform rearVFXTransform { get; set; }
-    public List<CustomTransform> lightsTransforms { get; set; }
-    public CustomTransform thisTransform { get; set; }
-    public List<CustomPart> CustomParts { get; set; }
-    public HangarLocationTransforms HangarTransforms { get; set; }
-    public string MoveCost { get; set; }
-    public string SourcePrefabIdentifier { get; set; }
-    public string SourcePrefabBase { get; set; }
-    public Dictionary<string, float> MoveCostModPerBiome { get; set; }
-    public MeleeWeaponOverrideDef MeleeWeaponOverride { get; set; }
-    public bool FakeVehicle { get; set; }
-    public bool Naval { get; set; }
-    public VehicleMovementType FakeVehicleMovementType { get; set; }
-    public DesignMaskMoveCostInfo defaultMoveCost { get; set; }
-    public ChassisLocations MechVehicleCrewLocation {
-      get {
-        return f_FakeVehicleCrewLocation.toFakeChassis();
-      }
+    [Key(4)]
+    public bool TieToGroundOnDeath { get; set; } = false;
+    [IgnoreMember, JsonIgnore]
+    public List<ChassisLocations> lethalLocations { get; private set; } = new List<ChassisLocations>();
+    [IgnoreMember, JsonIgnore]
+    private List<string> f_lethalLocations = new List<string>();
+    [Key(5)]
+    public List<string> LethalLocations {
+      get { return f_lethalLocations; }
       set {
-        f_FakeVehicleCrewLocation = value.toVehicleLocation();
+        f_lethalLocations = value == null ? new List<string>() : value;
+        lethalLocations = new List<ChassisLocations>();
+        foreach (string loc in value) {
+          if (Enum.TryParse<ChassisLocations>(loc, out ChassisLocations cloc)) { lethalLocations.Add(cloc); } else
+            if (Enum.TryParse<VehicleChassisLocations>(loc, out VehicleChassisLocations vloc)) { lethalLocations.Add(vloc.toFakeChassis()); } else {
+            throw new Exception(loc + " is not valid mech or vehicle location");
+          }
+        }
       }
     }
-    private VehicleChassisLocations f_FakeVehicleCrewLocation;
-    public string FakeVehicleCrewLocation {
+    [Key(6)]
+    public float FiringArc { get; set; } = 0f;
+    [Key(7)]
+    public bool NoIdleAnimations { get; set; } = false;
+    [Key(8)]
+    public bool NoMoveAnimations { get; set; } = false;
+    [Key(9)]
+    public bool ArmsCountedAsLegs { get; set; } = false;
+    [Key(10)]
+    public float LegDestroyedMovePenalty { get; set; } = -1f;
+    [Key(11)]
+    public float LegDamageRedMovePenalty { get; set; } = -1f;
+    [Key(12)]
+    public float LegDamageYellowMovePenalty { get; set; } = -1f;
+    [Key(13)]
+    public float LegDamageRelativeInstability { get; set; } = -1f;
+    [Key(14)]
+    public float LegDestroyRelativeInstability { get; set; } = 1f;
+    [Key(15)]
+    public float LocDestroyedPermanentStabilityLossMod { get; set; } = 1f;
+    [Key(16)]
+    public CustomVector HighestLOSPosition { get; set; } = new CustomVector(false);
+    [Key(17)]
+    public UnitUnaffection Unaffected { get; set; } = new UnitUnaffection();
+    [Key(18)]
+    public CustomTransform TurretAttach { get; set; } = new CustomTransform();
+    [Key(19)]
+    public CustomTransform BodyAttach { get; set; } = new CustomTransform();
+    [Key(20)]
+    public CustomTransform TurretLOS { get; set; } = new CustomTransform();
+    [Key(21)]
+    public CustomTransform LeftSideLOS { get; set; } = new CustomTransform();
+    [Key(22)]
+    public CustomTransform RightSideLOS { get; set; } = new CustomTransform();
+    [Key(23)]
+    public CustomTransform leftVFXTransform { get; set; } = new CustomTransform();
+    [Key(24)]
+    public CustomTransform rightVFXTransform { get; set; } = new CustomTransform();
+    [Key(25)]
+    public CustomTransform rearVFXTransform { get; set; } = new CustomTransform();
+    [Key(26)]
+    public List<CustomTransform> lightsTransforms { get; set; } = new List<CustomTransform>();
+    [Key(27)]
+    public CustomTransform thisTransform { get; set; } = new CustomTransform();
+    [Key(28)]
+    public List<CustomPart> CustomParts { get; set; } = new List<CustomPart>();
+    [Key(29)]
+    public HangarLocationTransforms HangarTransforms { get; set; } = new HangarLocationTransforms();
+    [Key(30)]
+    public string MoveCost { get; set; } = string.Empty;
+    [Key(31)]
+    public string SourcePrefabIdentifier { get; set; } = string.Empty;
+    [Key(32)]
+    public string SourcePrefabBase { get; set; } = string.Empty;
+    [Key(33)]
+    public Dictionary<string, float> MoveCostModPerBiome { get; set; } = new Dictionary<string, float>();
+    [Key(34)]
+    public MeleeWeaponOverrideDef MeleeWeaponOverride { get; set; } = new MeleeWeaponOverrideDef();
+    [Key(35)]
+    public bool FakeVehicle { get; set; } = false;
+    [Key(36)]
+    public bool Naval { get; set; } = false;
+    [Key(37)]
+    public VehicleMovementType FakeVehicleMovementType { get; set; } = VehicleMovementType.Tracked;
+    [Key(38)]
+    public DesignMaskMoveCostInfo defaultMoveCost { get; set; } = new DesignMaskMoveCostInfo();
+    [IgnoreMember, JsonIgnore]
+    public ChassisLocations MechVehicleCrewLocation {
+      get {
+        return f_FakeVehicleCrewLocation;
+      }
+      set {
+        f_FakeVehicleCrewLocation = value;
+      }
+    }
+    [IgnoreMember,JsonIgnore]
+    private ChassisLocations f_FakeVehicleCrewLocation = ChassisLocations.Head;
+    [Key(39)]
+    public string CrewLocation {
       get {
         return f_FakeVehicleCrewLocation.ToString();
       }
       set {
-        if(Enum.TryParse<VehicleChassisLocations>(value, out VehicleChassisLocations vloc)) {
-          f_FakeVehicleCrewLocation = vloc;
-        } else if (Enum.TryParse<ChassisLocations>(value, out ChassisLocations mloc)) {
-          f_FakeVehicleCrewLocation = mloc.toVehicleLocation();
+        if(Enum.TryParse<ChassisLocations>(value, out ChassisLocations mloc)) {
+          f_FakeVehicleCrewLocation = mloc;
+        } else if (Enum.TryParse<VehicleChassisLocations>(value, out VehicleChassisLocations vloc)) {
+          f_FakeVehicleCrewLocation = vloc.toFakeChassis();
         } else {
-          f_FakeVehicleCrewLocation = VehicleChassisLocations.Turret;
+          throw new Exception(value + " is not valid mech or vehicle location");
         }
       }
     }
     public UnitCustomInfo() {
-      FlyingHeight = 0f;
-      Naval = false;
-      HighestLOSPosition = new CustomVector(false);
-      TurretAttach = new CustomTransform();
-      BodyAttach = new CustomTransform();
-      TurretLOS = new CustomTransform();
-      LeftSideLOS = new CustomTransform();
-      RightSideLOS = new CustomTransform();
-      leftVFXTransform = new CustomTransform();
-      rightVFXTransform = new CustomTransform();
-      rearVFXTransform = new CustomTransform();
-      thisTransform = new CustomTransform();
-      CustomParts = new List<CustomPart>();
-      Unaffected = new UnitUnaffection();
-      lightsTransforms = new List<CustomTransform>();
-      MoveCostModPerBiome = new Dictionary<string, float>();
-      MoveCost = string.Empty;
-      FiringArc = 0f;
-      TieToGroundOnDeath = false;
-      NoIdleAnimations = false;
-      NullifyBodyMesh = false;
-      HangarTransforms = new HangarLocationTransforms();
-      NoMoveAnimations = false;
-      ArmsCountedAsLegs = false;
-      LegDestroyedMovePenalty = -1f;
-      LegDamageRedMovePenalty = -1f;
-      LegDamageYellowMovePenalty = -1f;
-      LegDamageRelativeInstability = -1f;
-      LegDestroyRelativeInstability = 1f;
-      LocDestroyedPermanentStabilityLossMod = 1f;
-      SquadInfo = new TrooperSquadDef();
-      MeleeWeaponOverride = new MeleeWeaponOverrideDef();
-      //quadVisualInfo = new QuadVisualInfo();
-      AlternateRepresentations = new List<AlternateRepresentationDef>();
-      SourcePrefabIdentifier = string.Empty;
-      SourcePrefabBase = string.Empty;
-      LethalLocations = new List<ChassisLocations>();
-      FakeVehicle = false;
-      FakeVehicleMovementType = VehicleMovementType.Tracked;
-      defaultMoveCost = new DesignMaskMoveCostInfo();
-      FakeVehicleCrewLocation = "Turret";
+      //FlyingHeight = 0f;
+      //Naval = false;
+      //HighestLOSPosition = new CustomVector(false);
+      //TurretAttach = new CustomTransform();
+      //BodyAttach = new CustomTransform();
+      //TurretLOS = new CustomTransform();
+      //LeftSideLOS = new CustomTransform();
+      //RightSideLOS = new CustomTransform();
+      //leftVFXTransform = new CustomTransform();
+      //rightVFXTransform = new CustomTransform();
+      //rearVFXTransform = new CustomTransform();
+      //thisTransform = new CustomTransform();
+      //CustomParts = new List<CustomPart>();
+      //Unaffected = new UnitUnaffection();
+      //lightsTransforms = new List<CustomTransform>();
+      //MoveCostModPerBiome = new Dictionary<string, float>();
+      //MoveCost = string.Empty;
+      //FiringArc = 0f;
+      //TieToGroundOnDeath = false;
+      //NoIdleAnimations = false;
+      //NullifyBodyMesh = false;
+      //HangarTransforms = new HangarLocationTransforms();
+      //NoMoveAnimations = false;
+      //ArmsCountedAsLegs = false;
+      //LegDestroyedMovePenalty = -1f;
+      //LegDamageRedMovePenalty = -1f;
+      //LegDamageYellowMovePenalty = -1f;
+      //LegDamageRelativeInstability = -1f;
+      //LegDestroyRelativeInstability = 1f;
+      //LocDestroyedPermanentStabilityLossMod = 1f;
+      //SquadInfo = new TrooperSquadDef();
+      //MeleeWeaponOverride = new MeleeWeaponOverrideDef();
+      ////quadVisualInfo = new QuadVisualInfo();
+      //AlternateRepresentations = new List<AlternateRepresentationDef>();
+      //SourcePrefabIdentifier = string.Empty;
+      //SourcePrefabBase = string.Empty;
+      //lethalLocations = new List<ChassisLocations>();
+      //FakeVehicle = false;
+      //FakeVehicleMovementType = VehicleMovementType.Tracked;
+      //defaultMoveCost = new DesignMaskMoveCostInfo();
     }
     public void debugLog(int initiation) {
       string init = new String(' ', initiation);
@@ -453,28 +569,29 @@ namespace CustomUnits {
     public static Dictionary<string, string> CustomMechBayRepresentationsPrefabs = new Dictionary<string, string>();
     public static Dictionary<string, string> CustomVehicleBayRepresentationsPrefabs = new Dictionary<string, string>();
     public static UnitCustomInfo GetInfoByChassisId(string id) {
-      if(vehicleChasissInfosDb.TryGetValue(id, out UnitCustomInfo result)) {
-        return result;
+      if(vehicleChasissInfosDb.TryGetValue(id, out UnitCustomInfo result) == false) {
+        result = new UnitCustomInfo();
+        vehicleChasissInfosDb.AddOrUpdate(id, result, (k,v)=>{ return result; });
       }
-      return null;
+      return result;
     }
     public static UnitCustomInfo GetCustomInfo(this VehicleChassisDef chassis) {
-      if (vehicleChasissInfosDb.TryGetValue(chassis.Description.Id, out UnitCustomInfo result)) {
-        return result;
-      }
-      return null;
+      //if (vehicleChasissInfosDb.TryGetValue(chassis.Description.Id, out UnitCustomInfo result)) {
+        //return result;
+      //}
+      return GetInfoByChassisId(chassis.Description.Id);
     }
     public static UnitCustomInfo GetCustomInfo(this ChassisDef chassis) {
-      if (vehicleChasissInfosDb.TryGetValue(chassis.Description.Id, out UnitCustomInfo result)) {
-        return result;
-      }
-      return null;
+      //if (vehicleChasissInfosDb.TryGetValue(chassis.Description.Id, out UnitCustomInfo result)) {
+        //return result;
+      //}
+      return GetInfoByChassisId(chassis.Description.Id);
     }
     public static UnitCustomInfo GetCustomInfo(this MechDef mechDef) {
-      if (vehicleChasissInfosDb.TryGetValue(mechDef.ChassisID, out UnitCustomInfo result)) {
-        return result;
-      }
-      return null;
+      //if (vehicleChasissInfosDb.TryGetValue(mechDef.ChassisID, out UnitCustomInfo result)) {
+      //  return result;
+      //}
+      return GetInfoByChassisId(mechDef.ChassisID);
     }
     public static UnitCustomInfo GetCustomInfo(this AbstractActor actor) {
       Mech mech = actor as Mech;
@@ -496,10 +613,30 @@ namespace CustomUnits {
       }
       return tags;
     }
+    public static CustomPrewarm.Serialize.TagSet serializeChassisTags(string id) {
+      if (VehicleChassisDef_ChassisTags.TryGetValue(id, out TagSet tags) == false) {
+        tags = new TagSet(); VehicleChassisDef_ChassisTags.Add(id, tags);
+      }
+      return new CustomPrewarm.Serialize.TagSet(tags);
+    }
     public static bool Prefix(VehicleChassisDef __instance, ref string json) {
       //Log.TW(0,"VehicleChassisDef.FromJSON"); //vehiclechassisdef_WARRIOR_VTOL
       UnitCustomInfo info = null;
       try {
+        if (__instance.Description != null) {
+          CustomPrewarm.Serialize.TagSet ChassisTags = CustomPrewarm.Core.getDeserializedObject(BattleTechResourceType.VehicleChassisDef, __instance.Description.Id, "CustomUnitsChassisTags") as CustomPrewarm.Serialize.TagSet;
+          UnitCustomInfo dinfo = CustomPrewarm.Core.getDeserializedObject(BattleTechResourceType.VehicleChassisDef, __instance.Description.Id, "CustomUnits") as UnitCustomInfo;
+          if ((dinfo != null)&&(ChassisTags != null)) {
+            VehicleCustomInfoHelper.vehicleChasissInfosDb.AddOrUpdate(__instance.Description.Id, dinfo, (k, v) => { return dinfo; });
+            if (VehicleChassisDef_ChassisTags.ContainsKey(__instance.Description.Id) == false) {
+              VehicleChassisDef_ChassisTags.Add(__instance.Description.Id, ChassisTags.toBT());
+            } else {
+              VehicleChassisDef_ChassisTags[__instance.Description.Id] = ChassisTags.toBT();
+            }
+            return true;
+          }
+          Log.TWL(0, "ChassisDef:" + __instance.Description.Id + " has no deserialized UnitCustomInfo or ChassisTags. Should not happend");
+        }
         JObject definition = JObject.Parse(json);
         string id = (string)definition["Description"]["Id"];
         Log.WL(1,id);
@@ -569,6 +706,14 @@ namespace CustomUnits {
     public static bool Prefix(ChassisDef __instance, ref string json) {
       //Log.TW(0,"ChassisDef.FromJSON");
       try {
+        if (__instance.Description != null) {
+          UnitCustomInfo dinfo = CustomPrewarm.Core.getDeserializedObject(BattleTechResourceType.ChassisDef, __instance.Description.Id, "CustomUnits") as UnitCustomInfo;
+          if (dinfo != null) {
+            VehicleCustomInfoHelper.vehicleChasissInfosDb.AddOrUpdate(__instance.Description.Id, dinfo, (k, v) => { return dinfo; });
+            return true;
+          }
+          Log.TWL(0,"ChassisDef:"+ __instance.Description.Id+" has no deserialized UnitCustomInfo. Should not happend");
+        }
         JObject definition = JObject.Parse(json);
         string id = (string)definition["Description"]["Id"];
         Log.W(1,id);

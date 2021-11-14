@@ -372,7 +372,6 @@ namespace CustAmmoCategories {
       }
       this.parent.Sequence.messageCoordinator().MessageComplete((MessageCenterMessage)impactMessage);
     }
-
     public AdvWeaponHitInfoRec(AdvWeaponHitInfo parent) {
       this.parent = parent;
       EffectsMod = 1f;

@@ -43,7 +43,6 @@ namespace CustomAmmoCategoriesPatches {
       var replacementMethod = AccessTools.Method(typeof(AIUtil_UnitHasLOFToTargetFromPosition), nameof(IndirectFireCapable));
       return Transpilers.MethodReplacer(instructions, targetPropertyGetter, replacementMethod);
     }
-
     public static bool IndirectFireCapable(this Weapon weapon) {
       //CustomAmmoCategoriesLog.Log.LogWrite("get AIUtil_UnitHasLOFToTargetFromPosition IndirectFireCapable\n");
       return CustomAmmoCategories.IndirectFireCapable(weapon);
@@ -59,7 +58,6 @@ namespace CustomAmmoCategoriesPatches {
       var replacementMethod = AccessTools.Method(typeof(AIUtil_UnitHasLOFToUnit), nameof(IndirectFireCapable));
       return Transpilers.MethodReplacer(instructions, targetPropertyGetter, replacementMethod);
     }
-
     private static bool IndirectFireCapable(Weapon weapon) {
       //CustomAmmoCategoriesLog.Log.LogWrite("get AIUtil_UnitHasLOFToUnit IndirectFireCapable\n");
       return weapon.IndirectFireCapable();
@@ -75,7 +73,6 @@ namespace CustomAmmoCategoriesPatches {
       var replacementMethod = AccessTools.Method(typeof(AIRoleAssignment_EvaluateSniper), nameof(IndirectFireCapable));
       return Transpilers.MethodReplacer(instructions, targetPropertyGetter, replacementMethod);
     }
-
     private static bool IndirectFireCapable(Weapon weapon) {
       //CustomAmmoCategoriesLog.Log.LogWrite("get AIRoleAssignment_EvaluateSniper IndirectFireCapable\n");
       return weapon.IndirectFireCapable();
@@ -91,7 +88,6 @@ namespace CustomAmmoCategoriesPatches {
       var replacementMethod = AccessTools.Method(typeof(AbstractActor_GetLongestRangeWeapon), nameof(IndirectFireCapable));
       return Transpilers.MethodReplacer(instructions, targetPropertyGetter, replacementMethod);
     }
-
     private static bool IndirectFireCapable(Weapon weapon) {
       //CustomAmmoCategoriesLog.Log.LogWrite("get AbstractActor_GetLongestRangeWeapon IndirectFireCapable\n");
       return weapon.IndirectFireCapable();
@@ -107,7 +103,6 @@ namespace CustomAmmoCategoriesPatches {
       var replacementMethod = AccessTools.Method(typeof(AbstractActor_HasIndirectLOFToTargetUnit), nameof(IndirectFireCapable));
       return Transpilers.MethodReplacer(instructions, targetPropertyGetter, replacementMethod);
     }
-
     private static bool IndirectFireCapable(Weapon weapon) {
       //CustomAmmoCategoriesLog.Log.LogWrite("get AbstractActor_HasIndirectLOFToTargetUnit IndirectFireCapable\n");
       return weapon.IndirectFireCapable();
@@ -123,7 +118,6 @@ namespace CustomAmmoCategoriesPatches {
       var replacementMethod = AccessTools.Method(typeof(AbstractActor_HasLOFToTargetUnit), nameof(IndirectFireCapable));
       return Transpilers.MethodReplacer(instructions, targetPropertyGetter, replacementMethod);
     }
-
     private static bool IndirectFireCapable(Weapon weapon) {
       //CustomAmmoCategoriesLog.Log.LogWrite("get AbstractActor_HasLOFToTargetUnit IndirectFireCapable\n");
       return weapon.IndirectFireCapable();
@@ -139,7 +133,6 @@ namespace CustomAmmoCategoriesPatches {
       var replacementMethod = AccessTools.Method(typeof(HostileDamageFactor_expectedDamageForShooting), nameof(IndirectFireCapable));
       return Transpilers.MethodReplacer(instructions, targetPropertyGetter, replacementMethod);
     }
-
     private static bool IndirectFireCapable(Weapon weapon) {
       //CustomAmmoCategoriesLog.Log.LogWrite("get HostileDamageFactor_expectedDamageForShooting IndirectFireCapable\n");
       return weapon.IndirectFireCapable();
@@ -155,7 +148,6 @@ namespace CustomAmmoCategoriesPatches {
       var replacementMethod = AccessTools.Method(typeof(MultiAttack_FindWeaponToHitTarget), nameof(IndirectFireCapable));
       return Transpilers.MethodReplacer(instructions, targetPropertyGetter, replacementMethod);
     }
-
     private static bool IndirectFireCapable(Weapon weapon) {
       //CustomAmmoCategoriesLog.Log.LogWrite("get MultiAttack_FindWeaponToHitTarget IndirectFireCapable\n");
       return weapon.IndirectFireCapable();
@@ -171,7 +163,6 @@ namespace CustomAmmoCategoriesPatches {
       var replacementMethod = AccessTools.Method(typeof(MultiAttack_GetExpectedDamageForMultiTargetWeapon), nameof(IndirectFireCapable));
       return Transpilers.MethodReplacer(instructions, targetPropertyGetter, replacementMethod);
     }
-
     private static bool IndirectFireCapable(Weapon weapon) {
       //CustomAmmoCategoriesLog.Log.LogWrite("get MultiAttack_GetExpectedDamageForMultiTargetWeapon IndirectFireCapable\n");
       return weapon.IndirectFireCapable();
@@ -197,7 +188,6 @@ namespace CustomAmmoCategoriesPatches {
       var replacementMethod = AccessTools.Method(typeof(MultiAttack_PartitionWeaponListToKillTarget), nameof(IndirectFireCapable));
       return Transpilers.MethodReplacer(instructions, targetPropertyGetter, replacementMethod);
     }
-
     private static bool IndirectFireCapable(Weapon weapon) {
       //CustomAmmoCategoriesLog.Log.LogWrite("get MultiAttack_PartitionWeaponListToKillTarget IndirectFireCapable\n");
       return weapon.IndirectFireCapable();
@@ -213,7 +203,6 @@ namespace CustomAmmoCategoriesPatches {
       var replacementMethod = AccessTools.Method(typeof(MultiAttack_ValidateMultiAttackOrder), nameof(IndirectFireCapable));
       return Transpilers.MethodReplacer(instructions, targetPropertyGetter, replacementMethod);
     }
-
     private static bool IndirectFireCapable(Weapon weapon) {
       //CustomAmmoCategoriesLog.Log.LogWrite("get MultiAttack_ValidateMultiAttackOrder IndirectFireCapable\n");
       return weapon.IndirectFireCapable();
@@ -229,7 +218,6 @@ namespace CustomAmmoCategoriesPatches {
       var replacementMethod = AccessTools.Method(typeof(PreferExposedAlonePositionalFactor_InitEvaluationForPhaseForUnit), nameof(IndirectFireCapable));
       return Transpilers.MethodReplacer(instructions, targetPropertyGetter, replacementMethod);
     }
-
     private static bool IndirectFireCapable(Weapon weapon) {
       //CustomAmmoCategoriesLog.Log.LogWrite("get PreferExposedAlonePositionalFactor_InitEvaluationForPhaseForUnit IndirectFireCapable\n");
       return weapon.IndirectFireCapable();
@@ -245,7 +233,6 @@ namespace CustomAmmoCategoriesPatches {
       var replacementMethod = AccessTools.Method(typeof(PreferFiringSolutionWhenExposedAllyPositionalFactor_EvaluateInfluenceMapFactorAtPosition), nameof(IndirectFireCapable));
       return Transpilers.MethodReplacer(instructions, targetPropertyGetter, replacementMethod);
     }
-
     private static bool IndirectFireCapable(Weapon weapon) {
       //CustomAmmoCategoriesLog.Log.LogWrite("get PreferFiringSolutionWhenExposedAllyPositionalFactor_EvaluateInfluenceMapFactorAtPosition IndirectFireCapable\n");
       return weapon.IndirectFireCapable();
@@ -261,7 +248,6 @@ namespace CustomAmmoCategoriesPatches {
       var replacementMethod = AccessTools.Method(typeof(PreferLethalDamageToRearArcFromHostileFactor_expectedDamageForShooting), nameof(IndirectFireCapable));
       return Transpilers.MethodReplacer(instructions, targetPropertyGetter, replacementMethod);
     }
-
     private static bool IndirectFireCapable(Weapon weapon) {
       //CustomAmmoCategoriesLog.Log.LogWrite("get PreferLethalDamageToRearArcFromHostileFactor_expectedDamageForShooting IndirectFireCapable\n");
       return weapon.IndirectFireCapable();
@@ -277,7 +263,6 @@ namespace CustomAmmoCategoriesPatches {
       var replacementMethod = AccessTools.Method(typeof(PreferNotLethalPositionFactor_expectedDamageForShooting), nameof(IndirectFireCapable));
       return Transpilers.MethodReplacer(instructions, targetPropertyGetter, replacementMethod);
     }
-
     public static bool IndirectFireCapable(Weapon weapon) {
       //CustomAmmoCategoriesLog.Log.LogWrite("get PreferNotLethalPositionFactor_expectedDamageForShooting IndirectFireCapable\n");
       return weapon.IndirectFireCapable();
@@ -294,12 +279,10 @@ namespace CustomAmmoCategoriesPatches {
       var replacementMethod = AccessTools.Method(typeof(ToHit_GetAllModifiers), nameof(IndirectFireCapable));
       return Transpilers.MethodReplacer(instructions, targetPropertyGetter, replacementMethod);
     }
-
     private static bool IndirectFireCapable(Weapon weapon) {
       CustomAmmoCategoriesLog.Log.LogWrite("get ToHit_GetAllModifiers IndirectFireCapable\n");
       return weapon.IndirectFireCapable();
     }
-
     public static HBS.Collections.TagSet Tags(this ICombatant target) {
       HBS.Collections.TagSet result = new HBS.Collections.TagSet();
       Mech mech = target as Mech;
@@ -317,23 +300,23 @@ namespace CustomAmmoCategoriesPatches {
       ExtWeaponDef exDef = weapon.exDef();
       WeaponMode mode = weapon.mode();
       HBS.Collections.TagSet tags = target.Tags();
-      Log.M.TWL(0, "GetChassisTagsModifyer "+weapon.defId+" "+target.DisplayName);
+      //Log.M.TWL(0, "GetChassisTagsModifyer "+weapon.defId+" "+target.DisplayName);
       foreach (string tag in tags) {
-        Log.M.W(1,tag);
+        //Log.M.W(1,tag);
       }
       Log.M.WL(1, "");
       if (tags == null) { return 0f; };
       foreach(string tag in tags) {
         if (ammo.TagsAccuracyModifiers.TryGetValue(tag, out float mod)) {
-          Log.M.W(1, "ammo:" + tag + ":" + mod);
+          //Log.M.W(1, "ammo:" + tag + ":" + mod);
           result += mod;
         }
         if (exDef.TagsAccuracyModifiers.TryGetValue(tag, out mod)) {
-          Log.M.W(1,"def:" + tag + ":" + mod);
+          //Log.M.W(1,"def:" + tag + ":" + mod);
           result += mod;
         }
         if (mode.TagsAccuracyModifiers.TryGetValue(tag, out  mod)) {
-          Log.M.W(1, "mode:" + tag + ":" + mod);
+          //Log.M.W(1, "mode:" + tag + ":" + mod);
           result += mod;
         }
       }
@@ -402,7 +385,6 @@ namespace CustomAmmoCategoriesPatches {
       var replacementMethod = AccessTools.Method(typeof(ToHit_GetAllModifiersDescription), nameof(IndirectFireCapable));
       return Transpilers.MethodReplacer(instructions, targetPropertyGetter, replacementMethod);
     }
-
     private static bool IndirectFireCapable(Weapon weapon) {
       //CustomAmmoCategoriesLog.Log.LogWrite("get ToHit_GetAllModifiersDescription IndirectFireCapable\n");
       return weapon.IndirectFireCapable();
@@ -450,7 +432,6 @@ namespace CustomAmmoCategoriesPatches {
       var replacementMethod = AccessTools.Method(typeof(CombatHUDWeaponSlot_UpdateToolTipsFiring), nameof(IndirectFireCapable));
       return Transpilers.MethodReplacer(instructions, targetPropertyGetter, replacementMethod);
     }
-
     private static bool IndirectFireCapable(Weapon weapon) {
       //CustomAmmoCategoriesLog.Log.LogWrite("get CombatHUDWeaponSlot_UpdateToolTipsFiring IndirectFireCapable\n");
       return weapon.IndirectFireCapable();
@@ -466,7 +447,6 @@ namespace CustomAmmoCategoriesPatches {
       var replacementMethod = AccessTools.Method(typeof(CombatHUDWeaponTickMarks_GetValidSlots), nameof(IndirectFireCapable));
       return Transpilers.MethodReplacer(instructions, targetPropertyGetter, replacementMethod);
     }
-
     private static bool IndirectFireCapable(Weapon weapon) {
       //CustomAmmoCategoriesLog.Log.LogWrite("get CombatHUDWeaponTickMarks_GetValidSlots IndirectFireCapable\n");
       return weapon.IndirectFireCapable();
@@ -532,7 +512,6 @@ namespace CustomAmmoCategoriesPatches {
       var replacementMethod = AccessTools.Method(typeof(LOFCache_UnitHasLOFToTarget), nameof(IndirectFireCapable));
       return Transpilers.MethodReplacer(instructions, targetPropertyGetter, replacementMethod);
     }
-
     private static bool IndirectFireCapable(Weapon weapon) {
       //CustomAmmoCategoriesLog.Log.LogWrite("get LOFCache_UnitHasLOFToTarget IndirectFireCapable\n");
       return weapon.IndirectFireCapable();

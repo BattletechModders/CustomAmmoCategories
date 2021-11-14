@@ -24,12 +24,20 @@ namespace CustAmmoCategories {
       if (shotIdx >= this.missiles.Count) { return curPath / pathLenth; };
       return this.missiles[shotIdx].calculateInterceptCorrection(curPath, pathLenth, distance, missileProjectileSpeed);
     }
+#if PUBLIC_ASSEMBLIES
+    public override int ImpactPrecacheCount {
+#else
     protected override int ImpactPrecacheCount {
+#endif
       get {
         return 14;
       }
     }
+#if PUBLIC_ASSEMBLIES
+    public override void Awake() {
+#else
     protected override void Awake() {
+#endif
       base.Awake();
       this.AllowMissSkipping = false;
     }
@@ -131,26 +139,25 @@ namespace CustAmmoCategories {
     protected override void PlayPreFire() {
       base.PlayPreFire();
     }
-
     protected override void PlayMuzzleFlash() {
       base.PlayMuzzleFlash();
     }
-
     protected override void PlayProjectile() {
       base.PlayProjectile();
     }
-
     protected override void PlayImpact() {
       base.PlayImpact();
     }
-
+#if PUBLIC_ASSEMBLIES
+    public override void Update() {
+#else
     protected override void Update() {
+#endif
       base.Update();
       if (this.currentState != WeaponEffect.WeaponEffectState.WaitingForImpact || !this.AllMissilesComplete())
         return;
       this.OnComplete();
     }
-
     private void FireMissile(int missileIdx) {
       if (missileIdx < 0 || missileIdx >= this.missiles.Count) { return; }
       if (missileIdx == (this.missiles.Count - 1)) {
@@ -175,26 +182,18 @@ namespace CustAmmoCategories {
       this.t = 0.0f;
       this.rate = this.firingIntervalRate;
     }
-
     protected override void OnPreFireComplete() {
       base.OnPreFireComplete();
       this.PlayProjectile();
     }
 
-#if BT1_8
     protected override void OnImpact(float hitDamage = 0.0f, float structureDamage = 0f) {
       base.OnImpact(hitDamage, structureDamage);
     }
-#else
-    protected override void OnImpact(float hitDamage = 0.0f) {
-      base.OnImpact(0.0f);
-    }
-#endif
     protected override void OnComplete() {
       base.OnComplete();
       this.ClearBullets();
     }
-
     public override void Reset() {
       base.Reset();
     }

@@ -185,7 +185,6 @@ namespace CustAmmoCategories {
       if (CustomAmmoCategories._shellsEffectsStorage.ContainsKey(wGUID)) { CustomAmmoCategories._shellsEffectsStorage.Remove(wGUID); };
       if (CustomAmmoCategories._shellsEffectsQueue.ContainsKey(wGUID)) { CustomAmmoCategories._shellsEffectsQueue.Remove(wGUID); };
     }
-
     public static void pushWeaponShellsEffect(BallisticEffect effect) {
       Weapon weapon = effect.weapon;
       CustomAmmoCategoriesLog.Log.LogWrite("pushWeaponShellsEffect " + effect.weapon.defId + "\n");
@@ -284,7 +283,6 @@ namespace CustAmmoCategories {
       UnitySpline.Refresh();
       return UnitySpline;
     }
-
     public static Vector3 interpolateSeparationPosition(CurvySpline UnitySpline, Vector3 startPos, Vector3 targetPos, float sMin, float sMax) {
       float t = 0f;
       bool rudeAproachFound = false;
@@ -347,7 +345,6 @@ namespace CustAmmoCategories {
       Log.LogWrite(" no separation\n");
       return Vector3.zero;
     }
-
     public static void printHitPositions(this WeaponHitInfo hitInfo) {
       Log.LogWrite("WeaponPositions:" + hitInfo.attackWeaponIndex + "\n");
       for (int t = 0; t < hitInfo.numberOfShots; ++t) {
