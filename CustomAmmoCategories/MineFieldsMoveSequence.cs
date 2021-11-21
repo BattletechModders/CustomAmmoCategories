@@ -874,6 +874,9 @@ namespace CustAmmoCategoriesPatches {
         if (__instance.meleeType == MeleeAttackType.NotSet) {
           try {
             mfDamage.resolveMineFiledDamage(__instance.owningActor, __instance.SequenceGUID);
+            if ((mfDamage.sequenceAborted)&&(__instance.owningActor.IsDead == false)&&(__instance.owningActor.IsFlaggedForDeath == false)) {
+              __instance.owningActor.Combat.MessageCenter.PublishMessage((MessageCenterMessage)new AddSequenceToStackMessage(__instance.owningActor.DoneWithActor()));
+            };
             __instance.owningActor.Combat.HandleSanitize(true,true);
           } catch(Exception e) {
             Log.F.TWL(0, "resolving minefield damage exception:"+e.ToString());
@@ -944,6 +947,9 @@ namespace CustAmmoCategoriesPatches {
         if (DynamicMapHelper.registredMineFieldDamage.ContainsKey(__instance.owningActor) == false) { __instance.owningActor.Combat.HandleSanitize(); return; };
         MineFieldDamage mfDamage = DynamicMapHelper.registredMineFieldDamage[__instance.owningActor];
         mfDamage.resolveMineFiledDamage(__instance.owningActor, __instance.SequenceGUID);
+        if ((mfDamage.sequenceAborted) && (__instance.owningActor.IsDead == false) && (__instance.owningActor.IsFlaggedForDeath == false)) {
+          __instance.owningActor.Combat.MessageCenter.PublishMessage((MessageCenterMessage)new AddSequenceToStackMessage(__instance.owningActor.DoneWithActor()));
+        };
         DynamicMapHelper.registredMineFieldDamage.Remove(__instance.owningActor);
         __instance.owningActor.Combat.HandleSanitize(true,true);
       } catch (Exception e) {

@@ -40,6 +40,7 @@ namespace CustAmmoCategories {
         target.Key.ResolveTargetWeaponHeat(ref hitInfo);
         target.Key.ResolveTargetWeaponInstability(ref hitInfo);
       }
+      advInfo.Sequence.attacker.ResolveJamming(ref hitInfo);
       advInfo.Sequence.attacker.HandleDeath(advInfo.Sequence.attacker.GUID);
     }
     public static void ResolveTargetWeaponDamageEffects(this ICombatant target, ref WeaponHitInfo hitInfo) {
@@ -139,6 +140,11 @@ namespace CustAmmoCategories {
           mech.AddAbsoluteInstability(advRes.Stability * target.StatCollection.GetValue<float>("ReceivedInstabilityMultiplier") * mech.EntrenchedMultiplier, StabilityChangeSource.Attack, hitInfo.attackerId);
         }
       }
+    }
+    public static void ResolveJamming(this ICombatant attacker, ref WeaponHitInfo hitInfo) {
+      AdvWeaponHitInfo advInfo = hitInfo.advInfo();
+      if (advInfo == null) { return; }
+      advInfo.weapon.jammWeapon(advInfo.jammInfo);
     }
   }
 }

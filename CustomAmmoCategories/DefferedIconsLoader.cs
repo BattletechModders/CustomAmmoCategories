@@ -5,6 +5,7 @@ using Harmony;
 using SVGImporter;
 using System;
 using System.Collections.Generic;
+using System.IO;
 
 namespace CustAmmoCategories {
   public class SVGImageLoadDelegate {
@@ -64,20 +65,39 @@ namespace CustAmmoCategories {
     }
     public static void setIcon(SVGImage img, string id, DataManager dataManager) {
       if (img == null) { return; }
+      Log.M.TWL(0, "CustomSvgCache.setIcon "+id+" img:"+img.gameObject.name);
       SVGAsset icon = get(id,dataManager);
       if (icon != null) { img.vectorGraphics = icon; return; }
-      if(defferedRequests.TryGetValue(id, out HashSet<SVGImage> images) == false) {
-        images = new HashSet<SVGImage>();
-        defferedRequests.Add(id, images);
-        return;
+      try { 
+      //if(defferedRequests.TryGetValue(id, out HashSet<SVGImage> images) == false) {
+      //  images = new HashSet<SVGImage>();
+      //  defferedRequests.Add(id, images);
+      //  return;
+      //}
+      //images.Add(img);
+        VersionManifestEntry entry = dataManager.ResourceLocator.EntryByID(id, BattleTechResourceType.SVGAsset);
+        if(entry == null) {
+          Log.M.TWL(0, id+" not found in SVG manifest");
+          return;
+        }
+        SVGAsset svg = SVGAsset.Load(File.ReadAllText(entry.FilePath));
+        if(svg != null) {
+          Traverse.Create(dataManager).Property<SVGCache>("SVGCache").Value.AddSVGAsset(id, svg);
+          CustomSvgCache.cache.Add(id, svg);
+          Log.M.TWL(0, "Success load SVG:" + id + " " + entry.FilePath);
+          img.vectorGraphics = svg;
+        } else {
+          Log.M.TWL(0, "Fail to load SVG:"+id+" "+ entry.FilePath);
+        }
+      }catch(Exception e) {
+        Log.M.TWL(0, e.ToString());
       }
-      images.Add(img);
-      SVGImageLoadDelegate dl = new SVGImageLoadDelegate();
-      dl.id = id;
-      DataManager.InjectedDependencyLoadRequest dependencyLoad = new DataManager.InjectedDependencyLoadRequest(dataManager);
-      dependencyLoad.RequestResource(BattleTechResourceType.SVGAsset, id);
-      dependencyLoad.RegisterLoadCompleteCallback(new Action(dl.onLoad));
-      dataManager.InjectDependencyLoader(dependencyLoad, 1000U);
+      //SVGImageLoadDelegate dl = new SVGImageLoadDelegate();
+      //dl.id = id;
+      //DataManager.InjectedDependencyLoadRequest dependencyLoad = new DataManager.InjectedDependencyLoadRequest(dataManager);
+      //dependencyLoad.RequestResource(BattleTechResourceType.SVGAsset, id);
+      //dependencyLoad.RegisterLoadCompleteCallback(new Action(dl.onLoad));
+      //dataManager.InjectDependencyLoader(dependencyLoad, 1000U);
     }
     public static SVGAsset get(string id, DataManager dataManager) {
       Log.M.TWL(0, "CustomSvgCache.get " + id);

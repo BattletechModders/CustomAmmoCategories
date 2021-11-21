@@ -201,6 +201,21 @@ namespace CustomUnits {
       }
     }
   }
+  [HarmonyPatch(typeof(Mech))]
+  [HarmonyPatch("JumpDistance")]
+  [HarmonyPatch(MethodType.Getter)]
+  [HarmonyPatch(new Type[] { })]
+  public static class Mech_JumpDistance {
+    public static void Postfix(Mech __instance, ref float __result) {
+      try {
+        if (__instance is TrooperSquad squad) {
+          __result /= (float)squad.workingJumpsLocations().Count;
+        }
+      } catch (Exception e) {
+        Log.TWL(0, e.ToString(), true);
+      }
+    }
+  }
   [HarmonyPatch(typeof(MechJumpSequence))]
   [HarmonyPatch("CompleteJump")]
   [HarmonyPatch(MethodType.Normal)]
@@ -1745,16 +1760,23 @@ namespace CustomUnits {
       try {
         TrooperSquad squad = __instance as TrooperSquad;
         if (squad != null) {
-          __result = squad.isHasWorkingJumpjets() ? 1 : 0;
+          __result = squad.workingJumpsLocations().Count; //squad.isHasWorkingJumpjets() ? 1 : 0;
         }
-        if (__instance.GameRep != null) {
-          AlternateMechRepresentations altReps = __instance.GameRep.GetComponent<AlternateMechRepresentations>();
-          if (altReps != null) {
-            if (altReps.NoJumpjetsBlock == false) {
-              if (altReps.isHovering && (altReps.HoveringHeight > Core.Settings.MaxHoveringHeightWithWorkingJets)) { __result = 0; }
+        if (__instance.GameRep is CustomMechRepresentation custRep) {
+          if (__instance.FlyingHeight() > Core.Settings.MaxHoveringHeightWithWorkingJets) {
+            if(custRep.altDef.NoJumpjetsBlock == false) {
+              __result = 0;
             }
           }
         }
+        //if (__instance.GameRep != null) {
+        //  AlternateMechRepresentations altReps = __instance.GameRep.GetComponent<AlternateMechRepresentations>();
+        //  if (altReps != null) {
+        //    if (altReps.NoJumpjetsBlock == false) {
+        //      if (altReps.isHovering && (altReps.HoveringHeight > Core.Settings.MaxHoveringHeightWithWorkingJets)) { __result = 0; }
+        //    }
+        //  }
+        //}
       } catch (Exception e) {
         Log.TWL(0, e.ToString(), true);
       }

@@ -31,9 +31,19 @@ namespace CustAmmoCategories {
       message = msg;
     }
   }
+  public class AMSJammInfoMessage {
+    public Weapon weapon { get; set; } = null;
+    public float chance { get; set; } = 0f;
+    public string description { get; set; } = string.Empty;
+    public AMSJammInfoMessage(Weapon w) {
+      this.weapon = w;
+      this.chance = weapon.FlatJammingChance(out string descr);
+      this.description = descr;
+    }
+  }
   public static partial class CustomAmmoCategories {
     private static Queue<JammMessage> jammQueue = new Queue<JammMessage>();
-    public static Queue<Weapon> jammAMSQueue = new Queue<Weapon>();
+    public static Queue<AMSJammInfoMessage> jammAMSQueue = new Queue<AMSJammInfoMessage>();
     public static Queue<AmmunitionBox> ammoExposionQueue = new Queue<AmmunitionBox>();
     public static readonly string AmmoBoxGUID = "CACAmmoBoxGUID";
     public static void AddToExposionCheck(AmmunitionBox box) {
@@ -193,6 +203,40 @@ namespace CustAmmoCategories {
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { typeof(MessageCenterMessage) })]
   public static class JammingEnabler {
+    //private static Dictionary<Weapon, JammInfo> normalJammProcess = new Dictionary<Weapon, JammInfo>();
+    //private static Dictionary<Weapon, JammInfo> amsJammProcess = new Dictionary<Weapon, JammInfo>();
+    //public static void normalJammInfoUpdate(this Weapon weapon) {
+    //  if(normalJammProcess.TryGetValue(weapon, out JammInfo jammInfo) == false) {
+    //    normalJammProcess.Add(weapon, new JammInfo(weapon, false));
+    //  }
+    //}
+    //public static void amsJammInfoUpdate(this Weapon weapon) {
+    //  if (amsJammProcess.TryGetValue(weapon, out JammInfo jammInfo) == false) {
+    //    amsJammProcess.Add(weapon, new JammInfo(weapon, true));
+    //  }
+    //}
+    //public static void clearNormalJammInfo() {
+    //  normalJammProcess.Clear();
+    //}
+    //public static void clearAMSJammInfo() {
+    //  amsJammProcess.Clear();
+    //}
+    //public static bool getAMSJammInfo(this Weapon weapon,out JammInfo info) {
+    //  if(amsJammProcess.TryGetValue(weapon, out info)) {
+    //    amsJammProcess.Remove(weapon);
+    //    return true;
+    //  }
+    //  info = null;
+    //  return false;
+    //}
+    //public static bool getNormalJammInfo(this Weapon weapon, out JammInfo info) {
+    //  if (normalJammProcess.TryGetValue(weapon, out info)) {
+    //    normalJammProcess.Remove(weapon);
+    //    return true;
+    //  }
+    //  info = null;
+    //  return false;
+    //}
     public static bool Prefix(AttackDirector __instance, MessageCenterMessage message) {
       AttackCompleteMessage attackCompleteMessage = (AttackCompleteMessage)message;
       int sequenceId = attackCompleteMessage.sequenceId;
@@ -203,13 +247,18 @@ namespace CustAmmoCategories {
       //JammingEnabler.jammQueue.Enqueue(attackSequence.attacker);
       //AbstractActor actor = attackSequence.target as AbstractActor;
       //JammingEnabler.jammAMS();
-      JammingEnabler.jamm(attackSequence.attacker);
+      //JammingEnabler.jamm(attackSequence.attacker);
       return true;
     }
     public static void jammAMS() {
-      CustomAmmoCategoriesLog.Log.LogWrite($"Jamming AMS sequence\n");
+      Log.M.TWL(0,"Jamming AMS sequence");
       while (CustomAmmoCategories.jammAMSQueue.Count > 0) {
-        Weapon weapon = CustomAmmoCategories.jammAMSQueue.Dequeue();
+        AMSJammInfoMessage jammInfo = CustomAmmoCategories.jammAMSQueue.Dequeue();
+        Weapon weapon = jammInfo.weapon;
+        //if(weapon.getAMSJammInfo(out JammInfo info) == false) {
+        //  Log.M.WL(1, weapon.defId+" has no jamm info");
+        //  continue;
+        //}
         int shootsCount = weapon.AMSShootsCount();
         Log.LogWrite(" " + weapon.parent.DisplayName + ":" + weapon.parent.GUID + ":" + weapon.UIName + " shots:" + shootsCount + "\n");
         if (shootsCount <= 0) {
@@ -218,14 +267,15 @@ namespace CustAmmoCategories {
         }
         weapon.AMSShootsCount(0);
         weapon.setCantNormalFire(true);
-        float flatJammingChance = weapon.FlatJammingChance(out string descr);
-        CustomAmmoCategoriesLog.Log.LogWrite($"  flatJammingChance " + flatJammingChance + "\n");
+        float flatJammingChance = jammInfo.chance;//weapon.FlatJammingChance(out string descr);
+        string descr = jammInfo.description;
+        Log.M.WL(2,"flatJammingChance " + flatJammingChance);
         if (flatJammingChance > CustomAmmoCategories.Epsilon) {
-          CustomAmmoCategoriesLog.Log.LogWrite($"  Try jamm weapon " + weapon.UIName + "\n");
+          Log.M.WL(2, "Try jamm weapon " + weapon.UIName);
           float Roll = Random.Range(0.0f, 1.0f);
-          CustomAmmoCategoriesLog.Log.LogWrite($" Jamming chance " + flatJammingChance + " roll " + Roll + "\n");
+          Log.M.WL(1, "Jamming chance " + flatJammingChance + " roll " + Roll);
           if (Roll < flatJammingChance) {
-            CustomAmmoCategoriesLog.Log.LogWrite($" Jammed!\n");
+            Log.M.WL(1, "Jammed!");
             CustomAmmoCategories.AddJam(weapon.parent, weapon);
           }
         }
@@ -234,24 +284,42 @@ namespace CustAmmoCategories {
         }
       }
     }
+    public static void jammWeapon(this Weapon weapon, JammInfo info) {
+      Log.M.TWL(1, "Try jamm weapon of " + weapon.parent.PilotableActorDef.Description.Id);
+      float flatJammingChance = info.chance;
+      Log.M.WL(2, "flatJammingChance " + flatJammingChance + " description:"+info.description);
+      if (flatJammingChance > CustomAmmoCategories.Epsilon) {
+        Log.M.WL(2, "Try jamm weapon " + weapon.UIName);
+        float Roll = Random.Range(0.0f, 1.0f);
+        Log.M.WL(2, "Jamming chance " + flatJammingChance + " roll " + Roll);
+        if (Roll < flatJammingChance) {
+          Log.M.WL(2, "Jammed!");
+          CustomAmmoCategories.AddJam(weapon.parent, weapon);
+        }
+      }
+      if (weapon.Cooldown() > 0) {
+        weapon.Cooldown(weapon.Cooldown(), true);
+      }
+
+    }
     public static void jamm(AbstractActor actor) {
-      CustomAmmoCategoriesLog.Log.LogWrite($"Try jamm weapon\n");
+      Log.M.TWL(0, "Try jamm weapon");
       //while (JammingEnabler.jammQueue.Count > 0) {
       //AbstractActor actor = JammingEnabler.jammQueue.Dequeue();
-      CustomAmmoCategoriesLog.Log.LogWrite($"Try jamm weapon of " + actor.DisplayName + "\n");
+      Log.M.WL(1, "Try jamm weapon of " + actor.PilotableActorDef.Description.Id);
       foreach (Weapon weapon in actor.Weapons) {
-        CustomAmmoCategoriesLog.Log.LogWrite($"  weapon " + weapon.UIName + " rounds since last fire " + weapon.roundsSinceLastFire + "\n");
+        Log.M.WL(2, "weapon " + weapon.UIName + " rounds since last fire " + weapon.roundsSinceLastFire);
         if (weapon.roundsSinceLastFire > 0) {
           continue;
         }
         float flatJammingChance = weapon.FlatJammingChance(out string descr);
-        CustomAmmoCategoriesLog.Log.LogWrite($"  flatJammingChance " + flatJammingChance + "\n");
+        Log.M.WL(2, "flatJammingChance " + flatJammingChance);
         if (flatJammingChance > CustomAmmoCategories.Epsilon) {
-          CustomAmmoCategoriesLog.Log.LogWrite($"  Try jamm weapon " + weapon.UIName + "\n");
+          Log.M.WL(2, "Try jamm weapon " + weapon.UIName);
           float Roll = Random.Range(0.0f, 1.0f);
-          CustomAmmoCategoriesLog.Log.LogWrite($" Jamming chance " + flatJammingChance + " roll " + Roll + "\n");
+          Log.M.WL(2, "Jamming chance " + flatJammingChance + " roll " + Roll);
           if (Roll < flatJammingChance) {
-            CustomAmmoCategoriesLog.Log.LogWrite($" Jammed!\n");
+            Log.M.WL(2, "Jammed!");
             CustomAmmoCategories.AddJam(actor, weapon);
           }
         }

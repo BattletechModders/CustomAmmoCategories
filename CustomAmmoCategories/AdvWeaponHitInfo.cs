@@ -643,6 +643,7 @@ namespace CustAmmoCategories {
         //return null;
       }
       result.weapon = weapon;
+      result.jammInfo = new JammInfo(result.weapon);
       //result.weaponEffect = effect;
       result.Sequence = sequence;
       MissileLauncherEffect launcher = effect as MissileLauncherEffect;
@@ -811,10 +812,19 @@ namespace CustAmmoCategories {
       }
     }
   }
+  public class JammInfo {
+    public float chance { get; set; } = 0f;
+    public string description { get; set; } = string.Empty;
+    public JammInfo(Weapon w) {
+      this.chance = w.FlatJammingChance(out string descr);
+      this.description = descr;
+    }
+  }
   public class AdvWeaponHitInfo {
     public static Dictionary<int, Dictionary<int, Dictionary<int, AdvWeaponHitInfo>>> advancedWeaponHitInfo = new Dictionary<int, Dictionary<int, Dictionary<int, AdvWeaponHitInfo>>>();
     public static Dictionary<int, Dictionary<AdvHitMessage, int>> advHitMessagesMap = new Dictionary<int, Dictionary<AdvHitMessage, int>>();
     public static Dictionary<int, List<AdvHitMessage>> advHitMessages = new Dictionary<int, List<AdvHitMessage>>();
+    public JammInfo jammInfo { get; set; } = null;
     private static CombatGameState FCombat = null;
     public CombatGameState Combat { get { return AdvWeaponHitInfo.FCombat; } }
     public AttackDirector Director { get { return AdvWeaponHitInfo.FCombat.AttackDirector; } }
@@ -824,7 +834,7 @@ namespace CustAmmoCategories {
     public int attackSequenceId;
     public int groupIdx { get; set; }
     public int weaponIdx { get; set; }
-    public Weapon weapon;
+    public Weapon weapon { get; set; }
     public AttackSequenceResolveDamageMessage resolveDamageMessage { get; set; }
     public AdvHitMessage advHitMessage { get; set; }
     public void setApplyState() { if (advHitMessage != null) { advHitMessage.isApplied = true; } }

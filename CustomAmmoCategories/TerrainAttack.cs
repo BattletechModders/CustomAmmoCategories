@@ -806,7 +806,7 @@ namespace CustomAmmoCategoriesPatches {
           CombatHUD_OnAttackEnd.needSelect = __state;
         }
         JammingEnabler.jammAMS();
-        JammingEnabler.jamm(__state);
+        //JammingEnabler.jamm(__state);
         SpawnVehicleDialogHelper.SpawnSelected(-1);
       }
     }

@@ -307,6 +307,24 @@ namespace CustomUnits {
       }
     }
   }
+
+  [HarmonyPatch(typeof(MechBayPanel))]
+  [HarmonyPatch("GetBayRowFromSlot")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { typeof(int) })]
+  public static class MechBayPanel_GetBayRowFromSlot {
+    public static void Prefix(MechBayPanel __instance,ref int slot) {
+      Log.TWL(0, "MechBayPanel.GetBayRowFromSlot "+slot);
+      try {
+        CustomHangarInfo hangar = __instance.GetComponentInChildren<CustomHangarInfo>();
+        if (hangar == null) { return; }
+        slot -= hangar.definition.PositionShift;
+        Log.WL(1, "hangar:"+hangar.definition.Description.Id+" slot:"+slot);
+      } catch (Exception e) {
+        Log.TWL(0, e.ToString(), true);
+      }
+    }
+  }
   [HarmonyPatch(typeof(MechBayPanel))]
   [HarmonyPatch("Init")]
   [HarmonyPatch(MethodType.Normal)]

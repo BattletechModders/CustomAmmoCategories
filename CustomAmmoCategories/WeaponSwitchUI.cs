@@ -885,15 +885,19 @@ namespace CustomAmmoCategoriesPatches {
       ShowSidePanel();
     }
     public override void OnPointerExit(PointerEventData data) {
-      Log.LogWrite("WeaponModeHover.OnPointerExit called." + data.position + "\n");
+      Log.M.TWL(0, "WeaponModeHover.OnPointerExit called." + data.position);
       HUD.SidePanel.ForceHide();
       hovered = false;
       RefreshColor(this.parentHovered);
     }
     public override void OnPointerClick(PointerEventData data) {
-      Log.LogWrite("WeaponHitChanceHover.OnPointerClick called." + data.position + "\n");
+      Log.M.TWL(0,"WeaponHitChanceHover.OnPointerClick called." + data.position);
       if (this.parent.DisplayedWeapon == null) { return; }
       if (this.weaponPanel.DisplayedActor == null) { return; }
+      if (parent.DisplayedWeapon.parent.Combat.AttackDirector.IsAnyAttackSequenceActive) {
+        Log.M.WL(1, "Attack sequence is active");
+        return;
+      }
       bool prevIndirectState = parent.DisplayedWeapon.IndirectFireCapable();
       if (CustomAmmoCategories.CycleMode(parent.DisplayedWeapon)) {
         if (SceneSingletonBehavior<WwiseManager>.HasInstance) {
@@ -1027,9 +1031,13 @@ namespace CustomAmmoCategoriesPatches {
       RefreshColor(this.parentHovered);
     }
     public override void OnPointerClick(PointerEventData data) {
-      Log.LogWrite("WeaponAmmoHover.OnPointerClick called." + data.position + "\n");
+      Log.M.TWL(0,"WeaponAmmoHover.OnPointerClick called." + data.position);
       if (this.parent.DisplayedWeapon == null) { return; }
       if (this.weaponPanel.DisplayedActor == null) { return; }
+      if (parent.DisplayedWeapon.parent.Combat.AttackDirector.IsAnyAttackSequenceActive) {
+        Log.M.WL(1,"Attack sequence is active");
+        return;
+      }
       bool prevIndirectState = parent.DisplayedWeapon.IndirectFireCapable();
       bool modifyers = (Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.RightControl));
       if (modifyers) {

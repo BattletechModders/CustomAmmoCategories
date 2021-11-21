@@ -519,7 +519,7 @@ namespace CustAmmoCategories {
     }*/
 
     public static void genreateAMSInterceptionInfo(AttackDirector.AttackSequence instance) {
-      Log.M.TWL(0,"genreateAMSInterceptionInfo");
+      Log.M.TWL(0, "genreateAMSInterceptionInfo");
       /*if (CustomAmmoCategories.MissileCurveCache == null) {
         CustomAmmoCategoriesLog.Log.LogWrite("Curve cache is not inited. No missiles since battle start.\n");
         return;
@@ -529,7 +529,8 @@ namespace CustAmmoCategories {
         return;
       };*/
       List<AdvWeaponHitInfoRec> missiles = instance.Interceptables();
-      Log.LogWrite("missiles:"+missiles.Count+"\n");
+      Dictionary<Weapon, AMSJammInfoMessage> amsJammingInfo = new Dictionary<Weapon, AMSJammInfoMessage>();
+      Log.LogWrite("missiles:" + missiles.Count + "\n");
       List<AMSRecord> ams = new List<AMSRecord>();
       HashSet<string> targetsGUIDs = new HashSet<string>();
       List<ICombatant> targetsList = new List<ICombatant>();
@@ -546,7 +547,7 @@ namespace CustAmmoCategories {
       }
       Log.LogWrite("AMS list:\n");
       foreach (ICombatant target in targetsList) {
-        Log.LogWrite(" actor:"+target.DisplayName+":"+target.GUID+"\n");
+        Log.LogWrite(" actor:" + target.DisplayName + ":" + target.GUID + "\n");
         AbstractActor targetActor = target as AbstractActor;
         if (targetActor == null) { continue; };
         if (targetActor.GUID == instance.attacker.GUID) {
@@ -563,9 +564,9 @@ namespace CustAmmoCategories {
         };
         foreach (Weapon weapon in targetActor.Weapons) {
           ExtWeaponDef extWeapon = CustomAmmoCategories.getExtWeaponDef(weapon.defId);
-          Log.M.WL(2,weapon.defId +" mode:" + weapon.mode().Id + " ammo:" + weapon.ammo().Id +" AMS:"+ weapon.isAMS()  + " AAMS:" + weapon.isAAMS()+ " have weaponRep:"+(weapon.weaponRep == null?"false":"true"));
+          Log.M.WL(2, weapon.defId + " mode:" + weapon.mode().Id + " ammo:" + weapon.ammo().Id + " AMS:" + weapon.isAMS() + " AAMS:" + weapon.isAAMS() + " have weaponRep:" + (weapon.weaponRep == null ? "false" : "true"));
           if ((weapon.isAMS()) && (weapon.isAAMS() == false) && (weapon.weaponRep != null)) {
-            Log.LogWrite("  AMS "+weapon.UIName+"\n");
+            Log.LogWrite("  AMS " + weapon.UIName + "\n");
             ams.Add(new AMSRecord(weapon, extWeapon, false));
           }
         }
@@ -598,7 +599,7 @@ namespace CustAmmoCategories {
         return;
       };
       bool NoActiveAMS = true;
-      Log.M.TWL(0,"FIELD AMS LIST. ROUND:"+combat.TurnDirector.CurrentRound+" PHASE:"+combat.TurnDirector.CurrentPhase+" seqId:"+ instance.id);
+      Log.M.TWL(0, "FIELD AMS LIST. ROUND:" + combat.TurnDirector.CurrentRound + " PHASE:" + combat.TurnDirector.CurrentPhase + " seqId:" + instance.id);
       if (missiles.Count > 0) {
         foreach (AMSRecord amsrec in ams) {
           Log.M.WL(2, amsrec.weapon.parent.DisplayName + "." + amsrec.weapon.defId + " ShootsRemains:" + amsrec.ShootsRemains + " CanFire:" + amsrec.weapon.CanFire + " AMSShootsEveryAttack:" + amsrec.weapon.AMSShootsEveryAttack() + " mode:" + amsrec.weapon.mode().Id + " ammo:" + amsrec.weapon.ammo().Id + " AMS:" + amsrec.weapon.isAMS() + " AAMS:" + amsrec.weapon.isAAMS() + " have weaponRep:" + (amsrec.weapon.weaponRep == null ? "false" : "true"));
@@ -647,7 +648,7 @@ namespace CustAmmoCategories {
           missilesInCharge = true;
           Vector3 pos = missile.trajectorySpline.InterpolateByDistance(path);
           bool AMSInCharge = false;
-          CustomAmmoCategoriesLog.Log.M.WL(2,"missile interception " + missile.parent.weapon.defId + " hitIndex:" + missile.hitIndex + " weaponId:" + missile.parent.weaponIdx + " hp:"+ missile.interceptInfo.missileHealth);
+          CustomAmmoCategoriesLog.Log.M.WL(2, "missile interception " + missile.parent.weapon.defId + " hitIndex:" + missile.hitIndex + " weaponId:" + missile.parent.weaponIdx + " hp:" + missile.interceptInfo.missileHealth);
           foreach (AMSRecord amsrec in ams) {
             if (amsrec.ShootsRemains <= 0) { continue; };
             if ((amsrec.isAAMS == false)) {
@@ -661,9 +662,12 @@ namespace CustAmmoCategories {
             float distance = Vector3.Distance(pos, amsrec.weapon.parent.CurrentPosition);
             CustomAmmoCategoriesLog.Log.LogWrite(distance + "\n");
             if (distance > amsrec.Range) { continue; };
-            CustomAmmoCategoriesLog.Log.LogWrite("   AMS ready to fire " + amsrec.weapon.defId + " dmg:"+ amsrec.weapon.AMSDamage() + " shoot remains:"+ amsrec.ShootsRemains + "\n");
+            CustomAmmoCategoriesLog.Log.LogWrite("   AMS ready to fire " + amsrec.weapon.defId + " dmg:" + amsrec.weapon.AMSDamage() + " shoot remains:" + amsrec.ShootsRemains + "\n");
+            if (amsJammingInfo.ContainsKey(amsrec.weapon) == false) {
+              amsJammingInfo.Add(amsrec.weapon, new AMSJammInfoMessage(amsrec.weapon));
+            }
             if (amsrec.weapon.DecrementOneAmmo() == false) {
-              CustomAmmoCategoriesLog.Log.LogWrite("   AMS ammo depleted "+amsrec.weapon.tCurrentAmmo()+"\n");
+              CustomAmmoCategoriesLog.Log.LogWrite("   AMS ammo depleted " + amsrec.weapon.tCurrentAmmo() + "\n");
               amsrec.ShootsRemains = 0;
               continue;
             }
@@ -676,7 +680,7 @@ namespace CustAmmoCategories {
             int AMSShootIdx = amsrec.weapon.AMS().AddHitPosition(pos);
             if (interceptRoll < amsrec.AMSHitChance) {
               missile.interceptInfo.missileHealth -= amsrec.weapon.AMSDamage();
-              CustomAmmoCategoriesLog.Log.M.WL(3,"hit. New missile health:"+ missile.interceptInfo.missileHealth);
+              CustomAmmoCategoriesLog.Log.M.WL(3, "hit. New missile health:" + missile.interceptInfo.missileHealth);
             }
             if (missile.interceptInfo.missileHealth < CustomAmmoCategories.Epsilon) {
               CustomAmmoCategoriesLog.Log.M.WL(3, "missile down");
@@ -684,7 +688,7 @@ namespace CustAmmoCategories {
               missile.hitPosition = pos;
               missile.hitLocation = 0;
               missile.GenerateTrajectory();
-              missile.interceptInfo.InterceptedT = amsrec.weapon.AMS().calculateInterceptCorrection(AMSShootIdx,path, missile.trajectorySpline.Length, distance, missile.projectileSpeed);
+              missile.interceptInfo.InterceptedT = amsrec.weapon.AMS().calculateInterceptCorrection(AMSShootIdx, path, missile.trajectorySpline.Length, distance, missile.projectileSpeed);
               //  CustomAmmoCategories.calculateInterceptCorrection(CustomAmmoCategories.getWeaponEffect(amsrec.weapon), path, missile.UnitySpline.Length, distance, missile.missileProjectileSpeed);
               missile.interceptInfo.InterceptedAMS = amsrec.weapon;
               float t = missile.interceptInfo.InterceptedT;
@@ -694,7 +698,7 @@ namespace CustAmmoCategories {
               amsShoot = new AMSShoot(AMSShootIdx, t, missile.interceptInfo.InterceptedAMS);
             } else {
               float t = path / missile.trajectorySpline.Length;
-              CustomAmmoCategoriesLog.Log.M.WL(3,"still flying " + t + "\n");
+              CustomAmmoCategoriesLog.Log.M.WL(3, "still flying " + t + "\n");
               amsShoot = new AMSShoot(AMSShootIdx, t, amsrec.weapon);
             }
             if (amsShoot != null) {
@@ -713,6 +717,9 @@ namespace CustAmmoCategories {
           break;
         }
       }
+      foreach (var jummInfoRec in amsJammingInfo) { 
+        CustomAmmoCategories.jammAMSQueue.Enqueue(jummInfoRec.Value);
+      }
       foreach (AMSRecord amsrec in ams) {
         CustomAmmoCategoriesLog.Log.LogWrite("AMS " + amsrec.weapon.defId + " shoots:" + amsrec.ShootsCount + "\n");
         if (amsrec.ShootsCount > 0) {
@@ -723,7 +730,6 @@ namespace CustAmmoCategories {
           } else {
             CustomAmmoCategoriesLog.Log.LogWrite("WARNING! missile launcher has no parent. That is very odd\n", true);
           }
-          CustomAmmoCategories.jammAMSQueue.Enqueue(amsrec.weapon);
           amsrec.weapon.AMSShootsCount(amsrec.weapon.AMSShootsCount() + amsrec.ShootsCount);
         }
       }
