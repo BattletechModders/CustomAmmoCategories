@@ -37,38 +37,38 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="0Harmony">
-      <HintPath>..\..\Mods\ModTek\0Harmony.dll</HintPath>
+      <HintPath>$(BattleTechGameDir)\Mods\ModTek\0Harmony.dll</HintPath>
     </Reference>
     <Reference Include="Assembly-CSharp">
-      <HintPath>..\..\BattleTech_Data\Managed\Assembly-CSharp.dll</HintPath>
+      <HintPath>$(BattleTechGameDir)\BattleTech_Data\Managed\Assembly-CSharp.dll</HintPath>
     </Reference>
     <Reference Include="Assembly-CSharp-firstpass">
-      <HintPath>..\..\BattleTech_Data\Managed\Assembly-CSharp-firstpass.dll</HintPath>
+      <HintPath>$(BattleTechGameDir)\BattleTech_Data\Managed\Assembly-CSharp-firstpass.dll</HintPath>
     </Reference>
     <Reference Include="CustomComponents">
-      <HintPath>..\..\Mods\CustomComponents\CustomComponents.dll</HintPath>
+      <HintPath>$(BattleTechGameDir)\Mods\CustomComponents\CustomComponents.dll</HintPath>
     </Reference>
     <Reference Include="CustomPrewarm">
-      <HintPath>..\..\Mods\CustomPrewarm\CustomPrewarm.dll</HintPath>
+      <HintPath>$(BattleTechGameDir)\Mods\CustomPrewarm\CustomPrewarm.dll</HintPath>
     </Reference>
     <Reference Include="DOTween, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\BattleTech_Data\Managed\DOTween.dll</HintPath>
+      <HintPath>$(BattleTechGameDir)\BattleTech_Data\Managed\DOTween.dll</HintPath>
     </Reference>
     <Reference Include="DOTweenPro, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null" />
     <Reference Include="InControl, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\BattleTech_Data\Managed\InControl.dll</HintPath>
+      <HintPath>$(BattleTechGameDir)\BattleTech_Data\Managed\InControl.dll</HintPath>
     </Reference>
     <Reference Include="IRBTModUtils">
-      <HintPath>..\..\Mods\IRBTModUtils\IRBTModUtils.dll</HintPath>
+      <HintPath>$(BattleTechGameDir)\Mods\IRBTModUtils\IRBTModUtils.dll</HintPath>
     </Reference>
     <Reference Include="MessagePack">
-      <HintPath>..\..\Mods\CustomPrewarm\MessagePack.dll</HintPath>
+      <HintPath>$(BattleTechGameDir)\Mods\CustomPrewarm\MessagePack.dll</HintPath>
     </Reference>
     <Reference Include="Newtonsoft.Json, Version=6.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\BattleTech_Data\Managed\Newtonsoft.Json.dll</HintPath>
+      <HintPath>$(BattleTechGameDir)\BattleTech_Data\Managed\Newtonsoft.Json.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Data" />
@@ -76,37 +76,37 @@
     <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="System.Xml" />
     <Reference Include="Unity.TextMeshPro">
-      <HintPath>..\..\BattleTech_Data\Managed\Unity.TextMeshPro.dll</HintPath>
+      <HintPath>$(BattleTechGameDir)\BattleTech_Data\Managed\Unity.TextMeshPro.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine">
-      <HintPath>..\..\BattleTech_Data\Managed\UnityEngine.dll</HintPath>
+      <HintPath>$(BattleTechGameDir)\BattleTech_Data\Managed\UnityEngine.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.AnimationModule">
-      <HintPath>..\..\BattleTech_Data\Managed\UnityEngine.AnimationModule.dll</HintPath>
+      <HintPath>$(BattleTechGameDir)\BattleTech_Data\Managed\UnityEngine.AnimationModule.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.AssetBundleModule, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\BattleTech_Data\Managed\UnityEngine.AssetBundleModule.dll</HintPath>
+      <HintPath>$(BattleTechGameDir)\BattleTech_Data\Managed\UnityEngine.AssetBundleModule.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.AudioModule, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\BattleTech_Data\Managed\UnityEngine.AudioModule.dll</HintPath>
+      <HintPath>$(BattleTechGameDir)\BattleTech_Data\Managed\UnityEngine.AudioModule.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.CoreModule">
-      <HintPath>..\..\BattleTech_Data\Managed\UnityEngine.CoreModule.dll</HintPath>
+      <HintPath>$(BattleTechGameDir)\BattleTech_Data\Managed\UnityEngine.CoreModule.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.Networking">
-      <HintPath>..\..\BattleTech_Data\Managed\UnityEngine.Networking.dll</HintPath>
+      <HintPath>$(BattleTechGameDir)\BattleTech_Data\Managed\UnityEngine.Networking.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.ParticleSystemModule">
-      <HintPath>..\..\BattleTech_Data\Managed\UnityEngine.ParticleSystemModule.dll</HintPath>
+      <HintPath>$(BattleTechGameDir)\BattleTech_Data\Managed\UnityEngine.ParticleSystemModule.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.PhysicsModule">
-      <HintPath>..\..\BattleTech_Data\Managed\UnityEngine.PhysicsModule.dll</HintPath>
+      <HintPath>$(BattleTechGameDir)\BattleTech_Data\Managed\UnityEngine.PhysicsModule.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.TextRenderingModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null" />
     <Reference Include="UnityEngine.UI">
-      <HintPath>..\..\BattleTech_Data\Managed\UnityEngine.UI.dll</HintPath>
+      <HintPath>$(BattleTechGameDir)\BattleTech_Data\Managed\UnityEngine.UI.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.UIModule, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
@@ -114,14 +114,14 @@
     </Reference>
     <Reference Include="UnityEngine.UnityWebRequestAudioModule, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\BattleTech_Data\Managed\UnityEngine.UnityWebRequestAudioModule.dll</HintPath>
+      <HintPath>$(BattleTechGameDir)\BattleTech_Data\Managed\UnityEngine.UnityWebRequestAudioModule.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.UnityWebRequestModule, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\BattleTech_Data\Managed\UnityEngine.UnityWebRequestModule.dll</HintPath>
+      <HintPath>$(BattleTechGameDir)\BattleTech_Data\Managed\UnityEngine.UnityWebRequestModule.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.WindModule">
-      <HintPath>..\..\BattleTech_Data\Managed\UnityEngine.WindModule.dll</HintPath>
+      <HintPath>$(BattleTechGameDir)\BattleTech_Data\Managed\UnityEngine.WindModule.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup>
@@ -204,10 +204,27 @@
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
-    <PostBuildEvent>copy /Y "$(TargetPath)" "$(ProjectDir)\..\..\Mods\CustomUnits"
-copy /Y "$(TargetPath)" "$(ProjectDir)\..\..\RogueTechWorking\CustomUnits"
-copy /Y "$(TargetPath)" "$(ProjectDir)\..\..\BattleTech-Advanced\CustomUnits"
-copy /Y "$(TargetPath)" "$(ProjectDir)\..\..\Release_CAC\Release\CustomBundle\CustomUnits"
-xcopy /Y /S /E "$(ProjectDir)..\AdditionalFiles\CU" "$(ProjectDir)\..\..\Release_CAC\Release\CustomBundle\CustomUnits"</PostBuildEvent>
+    <PostBuildEvent>if exist "$(BattleTechGameDir)\Mods_CBDE\CustomUnits" (
+  echo %25BattleTechGameDir%25
+  copy /Y "$(TargetPath)" "$(BattleTechGameDir)\Mods_CBDE\CustomUnits"
+)
+if exist "$(BattleTechGameDir)\Mods\CustomUnits" (
+  echo %25BattleTechGameDir%25
+  copy /Y "$(TargetPath)" "$(BattleTechGameDir)\Mods\CustomUnits"
+)
+if exist "$(RogueTechRepo)\CustomUnits" (
+  echo %25BattleTechGameDir%25
+  copy /Y "$(TargetPath)" "$(RogueTechRepo)\CustomUnits"
+)
+if exist "$(BTARepo)\CustomUnits" (
+  echo %25BattleTechGameDir%25
+  copy /Y "$(TargetPath)" "$(BTARepo)\CustomUnits"
+)
+if exist "$(BattleTechGameDir)\Release_CAC" (
+  echo %25BattleTechGameDir%25
+  copy /Y "$(TargetPath)" "$(BattleTechGameDir)\Release_CAC\Release\CustomBundle\CustomUnits"
+  xcopy /Y /S /E "$(ProjectDir)..\AdditionalFiles\CU" "$(BattleTechGameDir)\Release_CAC\Release\CustomBundle\CustomUnits"
+)
+		</PostBuildEvent>
   </PropertyGroup>
 </Project>

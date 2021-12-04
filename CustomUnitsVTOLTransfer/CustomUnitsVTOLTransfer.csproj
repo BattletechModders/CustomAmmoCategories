@@ -33,7 +33,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="Newtonsoft.Json">
-      <HintPath>..\..\BattleTech_Data\Managed\Newtonsoft.Json.dll</HintPath>
+      <HintPath>$(BattleTechGameDir)\BattleTech_Data\Managed\Newtonsoft.Json.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
@@ -53,6 +53,27 @@
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
-    <PostBuildEvent>copy /Y "$(TargetPath)" "$(ProjectDir)..\..\Mods\CustomUnits"</PostBuildEvent>
+    <PostBuildEvent>
+if exist "$(BattleTechGameDir)\Mods_CBDE\CustomUnits" (
+  echo %25BattleTechGameDir%25
+  copy /Y "$(TargetPath)" "$(BattleTechGameDir)\Mods_CBDE\CustomUnits"
+)
+if exist "$(BattleTechGameDir)\Mods\CustomUnits" (
+  echo %25BattleTechGameDir%25
+  copy /Y "$(TargetPath)" "$(BattleTechGameDir)\Mods\CustomUnits"
+)
+if exist "$(RogueTechRepo)\CustomUnits" (
+  echo %25BattleTechGameDir%25
+  copy /Y "$(TargetPath)" "$(RogueTechRepo)\CustomUnits"
+)
+if exist "$(BTARepo)\CustomUnits" (
+  echo %25BattleTechGameDir%25
+  copy /Y "$(TargetPath)" "$(BTARepo)\CustomUnits"
+)
+if exist "$(BattleTechGameDir)\Release_CAC" (
+  echo %25BattleTechGameDir%25
+	copy /Y "$(TargetPath)" "$(BattleTechGameDir)\Release_CAC\Release\CustomBundle\CustomUnits"
+)		
+		</PostBuildEvent>
   </PropertyGroup>
 </Project>

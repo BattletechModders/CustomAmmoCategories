@@ -40,26 +40,26 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="0Harmony">
-      <HintPath>..\..\Mods\ModTek\0Harmony.dll</HintPath>
+      <HintPath>$(BattleTechGameDir)\Mods\ModTek\0Harmony.dll</HintPath>
     </Reference>
     <Reference Include="Assembly-CSharp">
-      <HintPath>..\..\BattleTech_Data\Managed\Assembly-CSharp.dll</HintPath>
+      <HintPath>$(BattleTechGameDir)\BattleTech_Data\Managed\Assembly-CSharp.dll</HintPath>
     </Reference>
     <Reference Include="Assembly-CSharp-firstpass">
-      <HintPath>..\..\BattleTech_Data\Managed\Assembly-CSharp-firstpass.dll</HintPath>
+      <HintPath>$(BattleTechGameDir)\BattleTech_Data\Managed\Assembly-CSharp-firstpass.dll</HintPath>
     </Reference>
     <Reference Include="CustomUnits">
-      <HintPath>..\..\Mods\CustomUnits\CustomUnits.dll</HintPath>
+      <HintPath>$(BattleTechGameDir)\Mods\CustomUnits\CustomUnits.dll</HintPath>
     </Reference>
     <Reference Include="InControl">
-      <HintPath>..\..\BattleTech_Data\Managed\InControl.dll</HintPath>
+      <HintPath>$(BattleTechGameDir)\BattleTech_Data\Managed\InControl.dll</HintPath>
     </Reference>
     <Reference Include="IRBTModUtils">
-      <HintPath>..\..\Mods\IRBTModUtils\IRBTModUtils.dll</HintPath>
+      <HintPath>$(BattleTechGameDir)\Mods\IRBTModUtils\IRBTModUtils.dll</HintPath>
     </Reference>
     <Reference Include="Newtonsoft.Json, Version=6.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\BattleTech_Data\Managed\Newtonsoft.Json.dll</HintPath>
+      <HintPath>$(BattleTechGameDir)\BattleTech_Data\Managed\Newtonsoft.Json.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
@@ -68,16 +68,16 @@
     <Reference Include="System.Data" />
     <Reference Include="System.Xml" />
     <Reference Include="Unity.TextMeshPro">
-      <HintPath>..\..\BattleTech_Data\Managed\Unity.TextMeshPro.dll</HintPath>
+      <HintPath>$(BattleTechGameDir)\BattleTech_Data\Managed\Unity.TextMeshPro.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine">
-      <HintPath>..\..\BattleTech_Data\Managed\UnityEngine.dll</HintPath>
+      <HintPath>$(BattleTechGameDir)\BattleTech_Data\Managed\UnityEngine.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.CoreModule">
-      <HintPath>..\..\BattleTech_Data\Managed\UnityEngine.CoreModule.dll</HintPath>
+      <HintPath>$(BattleTechGameDir)\BattleTech_Data\Managed\UnityEngine.CoreModule.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.UI">
-      <HintPath>..\..\BattleTech_Data\Managed\UnityEngine.UI.dll</HintPath>
+      <HintPath>$(BattleTechGameDir)\BattleTech_Data\Managed\UnityEngine.UI.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup>
@@ -117,9 +117,23 @@
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
-    <PostBuildEvent>copy /Y "$(TargetPath)" "$(ProjectDir)\..\..\Mods\CustomAmmoCategories"
-copy /Y "$(TargetPath)" "$(ProjectDir)\..\..\RogueTechWorking\CustomAmmoCategories"
-copy /Y "$(TargetPath)" "$(ProjectDir)\..\..\BattleTech-Advanced\CustomAmmoCategories"
-copy /Y "$(TargetPath)" "$(ProjectDir)\..\..\Release_CAC\Release\CustomBundle\CustomAmmoCategories"</PostBuildEvent>
+    <PostBuildEvent>
+if exist "$(BattleTechGameDir)\Mods_CBDE\CustomAmmoCategories" (
+   echo %25BattleTechGameDir%25
+   copy /Y "$(TargetPath)" "$(BattleTechGameDir)\Mods_CBDE\CustomAmmoCategories"
+)
+if exist "$(BattleTechGameDir)\Mods\CustomAmmoCategories" (
+   echo %25BattleTechGameDir%25
+   copy /Y "$(TargetPath)" "$(BattleTechGameDir)\Mods\CustomAmmoCategories"
+)
+if exist "$(RogueTechRepo)\CustomAmmoCategories" (
+   echo %25BattleTechGameDir%25
+   copy /Y "$(TargetPath)" "$(RogueTechRepo)\CustomAmmoCategories"
+)
+if exist "$(BTARepo)\CustomAmmoCategories" (
+   echo %25BattleTechGameDir%25
+   copy /Y "$(TargetPath)" "$(BTARepo)\CustomAmmoCategories"
+)
+		</PostBuildEvent>
   </PropertyGroup>
 </Project>

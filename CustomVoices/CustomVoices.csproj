@@ -32,21 +32,21 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="0Harmony">
-      <HintPath>..\..\Mods\ModTek\0Harmony.dll</HintPath>
+      <HintPath>$(BattleTechGameDir)\Mods\ModTek\0Harmony.dll</HintPath>
     </Reference>
     <Reference Include="Assembly-CSharp">
-      <HintPath>..\..\BattleTech_Data\Managed\Assembly-CSharp.dll</HintPath>
+      <HintPath>$(BattleTechGameDir)\BattleTech_Data\Managed\Assembly-CSharp.dll</HintPath>
     </Reference>
     <Reference Include="InControl, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\BattleTech_Data\Managed\InControl.dll</HintPath>
+      <HintPath>$(BattleTechGameDir)\BattleTech_Data\Managed\InControl.dll</HintPath>
     </Reference>
     <Reference Include="ModTek">
-      <HintPath>..\..\Mods\ModTek\ModTek.dll</HintPath>
+      <HintPath>$(BattleTechGameDir)\Mods\ModTek\ModTek.dll</HintPath>
     </Reference>
     <Reference Include="Newtonsoft.Json, Version=6.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\BattleTech_Data\Managed\Newtonsoft.Json.dll</HintPath>
+      <HintPath>$(BattleTechGameDir)\BattleTech_Data\Managed\Newtonsoft.Json.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
@@ -58,17 +58,17 @@
     <Reference Include="System.Xml" />
     <Reference Include="Unity.TextMeshPro, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\BattleTech_Data\Managed\Unity.TextMeshPro.dll</HintPath>
+      <HintPath>$(BattleTechGameDir)\BattleTech_Data\Managed\Unity.TextMeshPro.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine">
-      <HintPath>..\..\BattleTech_Data\Managed\UnityEngine.dll</HintPath>
+      <HintPath>$(BattleTechGameDir)\BattleTech_Data\Managed\UnityEngine.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.CoreModule">
-      <HintPath>..\..\BattleTech_Data\Managed\UnityEngine.CoreModule.dll</HintPath>
+      <HintPath>$(BattleTechGameDir)\BattleTech_Data\Managed\UnityEngine.CoreModule.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.UI, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\BattleTech_Data\Managed\UnityEngine.UI.dll</HintPath>
+      <HintPath>$(BattleTechGameDir)\BattleTech_Data\Managed\UnityEngine.UI.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup>
@@ -78,8 +78,27 @@
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
-    <PostBuildEvent>copy /Y "$(TargetPath)" "$(ProjectDir)..\..\Mods\CustomVoices"
-copy /Y "$(TargetPath)" "$(ProjectDir)\..\..\RogueTechWorking\CustomVoices"
-copy /Y "$(TargetPath)" "$(ProjectDir)\..\..\Release_CAC\Release\CustomBundle\CustomVoices"</PostBuildEvent>
+    <PostBuildEvent>
+if exist "$(BattleTechGameDir)\Mods_CBDE\CustomVoices" (
+  echo %25BattleTechGameDir%25
+  copy /Y "$(TargetPath)" "$(BattleTechGameDir)\Mods_CBDE\CustomVoices"
+)
+if exist "$(BattleTechGameDir)\Mods\CustomVoices" (
+  echo %25BattleTechGameDir%25
+  copy /Y "$(TargetPath)" "$(BattleTechGameDir)\Mods\CustomVoices"
+)
+if exist "$(RogueTechRepo)\CustomVoices" (
+  echo %25BattleTechGameDir%25
+  copy /Y "$(TargetPath)" "$(RogueTechRepo)\CustomVoices"
+)
+if exist "$(BTARepo)\CustomVoices" (
+  echo %25BattleTechGameDir%25
+  copy /Y "$(TargetPath)" "$(BTARepo)\CustomVoices"
+)
+if exist "$(BattleTechGameDir)\Release_CAC" (
+  echo %25BattleTechGameDir%25
+	copy /Y "$(TargetPath)" "$(BattleTechGameDir)\Release_CAC\Release\CustomBundle\CustomVoices"
+)
+		</PostBuildEvent>
   </PropertyGroup>
 </Project>

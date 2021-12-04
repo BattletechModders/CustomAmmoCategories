@@ -32,17 +32,17 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="0Harmony">
-      <HintPath>..\..\Mods\ModTek\0Harmony.dll</HintPath>
+      <HintPath>$(BattleTechGameDir)\Mods\ModTek\0Harmony.dll</HintPath>
     </Reference>
     <Reference Include="Assembly-CSharp">
-      <HintPath>..\..\BattleTech_Data\Managed\Assembly-CSharp.dll</HintPath>
+      <HintPath>$(BattleTechGameDir)\BattleTech_Data\Managed\Assembly-CSharp.dll</HintPath>
     </Reference>
     <Reference Include="ModTek">
-      <HintPath>..\..\Mods\ModTek\ModTek.dll</HintPath>
+      <HintPath>$(BattleTechGameDir)\Mods\ModTek\ModTek.dll</HintPath>
     </Reference>
     <Reference Include="Newtonsoft.Json, Version=6.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\BattleTech_Data\Managed\Newtonsoft.Json.dll</HintPath>
+      <HintPath>$(BattleTechGameDir)\BattleTech_Data\Managed\Newtonsoft.Json.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
@@ -53,10 +53,10 @@
     <Reference Include="System.Xml" />
     <Reference Include="UnityEngine, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\BattleTech_Data\Managed\UnityEngine.dll</HintPath>
+      <HintPath>$(BattleTechGameDir)\BattleTech_Data\Managed\UnityEngine.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.CoreModule">
-      <HintPath>..\..\BattleTech_Data\Managed\UnityEngine.CoreModule.dll</HintPath>
+      <HintPath>$(BattleTechGameDir)\BattleTech_Data\Managed\UnityEngine.CoreModule.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup>
@@ -65,7 +65,27 @@
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
-    <PostBuildEvent>copy /Y "$(TargetPath)" "$(ProjectDir)\..\..\Mods\DBGSkirmishMechList"
-copy /Y "$(TargetPath)" "$(ProjectDir)\..\..\RogueTechWorking\DBGSkirmishMechList"</PostBuildEvent>
+    <PostBuildEvent>
+if exist "$(BattleTechGameDir)\Mods_CBDE\DBGSkirmishMechList" (
+  echo %25BattleTechGameDir%25
+  copy /Y "$(TargetPath)" "$(BattleTechGameDir)\Mods_CBDE\DBGSkirmishMechList"
+)
+if exist "$(BattleTechGameDir)\Mods\DBGSkirmishMechList" (
+  echo %25BattleTechGameDir%25
+  copy /Y "$(TargetPath)" "$(BattleTechGameDir)\Mods\DBGSkirmishMechList"
+)
+if exist "$(RogueTechRepo)\DBGSkirmishMechList" (
+  echo %25BattleTechGameDir%25
+  copy /Y "$(TargetPath)" "$(RogueTechRepo)\DBGSkirmishMechList"
+)
+if exist "$(BTARepo)\DBGSkirmishMechList" (
+  echo %25BattleTechGameDir%25
+  copy /Y "$(TargetPath)" "$(BTARepo)\DBGSkirmishMechList"
+)
+if exist "$(BattleTechGameDir)\Release_CAC" (
+  echo %25BattleTechGameDir%25
+	copy /Y "$(TargetPath)" "$(BattleTechGameDir)\Release_CAC\Release\CustomBundle\DBGSkirmishMechList"
+)
+		</PostBuildEvent>
   </PropertyGroup>
 </Project>

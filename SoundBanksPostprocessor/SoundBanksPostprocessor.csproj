@@ -81,9 +81,27 @@
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
-    <PostBuildEvent>copy /Y "$(TargetPath)" "$(ProjectDir)..\..\Mods\CustomVoices"
-copy /Y "$(TargetPath)" "$(ProjectDir)\..\..\RogueTechWorking\CustomVoices"
-copy /Y "$(TargetPath)" "$(ProjectDir)\..\..\Release_CAC\Release\CustomBundle\CustomVoices"
-</PostBuildEvent>
+    <PostBuildEvent>
+if exist "$(BattleTechGameDir)\Mods_CBDE\CustomVoices" (
+  echo %25BattleTechGameDir%25
+  copy /Y "$(TargetPath)" "$(BattleTechGameDir)\Mods_CBDE\CustomVoices"
+)
+if exist "$(BattleTechGameDir)\Mods\CustomVoices" (
+  echo %25BattleTechGameDir%25
+  copy /Y "$(TargetPath)" "$(BattleTechGameDir)\Mods\CustomVoices"
+)
+if exist "$(RogueTechRepo)\CustomVoices" (
+  echo %25BattleTechGameDir%25
+  copy /Y "$(TargetPath)" "$(RogueTechRepo)\CustomVoices"
+)
+if exist "$(BTARepo)\CustomVoices" (
+  echo %25BattleTechGameDir%25
+  copy /Y "$(TargetPath)" "$(BTARepo)\CustomVoices"
+)
+if exist "$(BattleTechGameDir)\Release_CAC" (
+  echo %25BattleTechGameDir%25
+	copy /Y "$(TargetPath)" "$(BattleTechGameDir)\Release_CAC\Release\CustomBundle\CustomVoices"
+)
+		</PostBuildEvent>
   </PropertyGroup>
 </Project>

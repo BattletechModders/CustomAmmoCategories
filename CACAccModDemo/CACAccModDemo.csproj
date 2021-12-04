@@ -32,10 +32,10 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="Assembly-CSharp">
-      <HintPath>..\..\BattleTech_Data\Managed\Assembly-CSharp.dll</HintPath>
+      <HintPath>$(BattleTechGameDir)\BattleTech_Data\Managed\Assembly-CSharp.dll</HintPath>
     </Reference>
     <Reference Include="CustomAmmoCategories">
-      <HintPath>..\..\Mods\CustomAmmoCategories\CustomAmmoCategories.dll</HintPath>
+      <HintPath>$(BattleTechGameDir)\Mods\CustomAmmoCategories\CustomAmmoCategories.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
@@ -46,7 +46,7 @@
     <Reference Include="System.Net.Http" />
     <Reference Include="System.Xml" />
     <Reference Include="UnityEngine.CoreModule">
-      <HintPath>..\..\BattleTech_Data\Managed\UnityEngine.CoreModule.dll</HintPath>
+      <HintPath>$(BattleTechGameDir)\BattleTech_Data\Managed\UnityEngine.CoreModule.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup>
@@ -55,8 +55,15 @@
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
-    <PostBuildEvent>if exist "$(SolutionDir)\..\..\Mods\CACDemoModifier" (
-   xcopy "$(TargetDir)$(TargetFileName)" "$(SolutionDir)\..\..\Mods\CACDemoModifier" /y
-)</PostBuildEvent>
+    <PostBuildEvent>
+if exist "$(BattleTechGameDir)\Mods_CBDE\CACDemoModifier" (
+   echo %25BattleTechGameDir%25
+   copy /Y "$(TargetPath)" "$(BattleTechGameDir)\Mods_CBDE\CACDemoModifier"
+)
+if exist "$(BattleTechGameDir)\Mods\CACDemoModifier" (
+   echo %25BattleTechGameDir%25
+   copy /Y "$(TargetPath)" "$(BattleTechGameDir)\Mods\CACDemoModifier"
+)
+</PostBuildEvent>
   </PropertyGroup>
 </Project>
