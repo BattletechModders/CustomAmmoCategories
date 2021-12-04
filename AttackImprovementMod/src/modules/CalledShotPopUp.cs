@@ -11,6 +11,8 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
   using Localize;
   using CustomAmmoCategoriesPatches;
   using CustAmmoCategories;
+  using IRBTModUtils;
+
   public class CalledShotPopUp : BattleModModule {
 
       private static string CalledShotHitChanceFormat = "{0:0}%";

@@ -6,6 +6,7 @@ using BattleTech.UI.Tooltips;
 using CustAmmoCategories;
 using Harmony;
 using HBS.Util;
+using IRBTModUtils;
 using Localize;
 using System;
 using System.Collections.Generic;

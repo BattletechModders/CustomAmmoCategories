@@ -11,6 +11,7 @@ using Harmony;
 using HBS;
 using HBS.Data;
 using InControl;
+using IRBTModUtils;
 using Localize;
 using MechResizer;
 using SVGImporter;
@@ -1095,6 +1096,13 @@ namespace CustomUnits {
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { typeof(int), typeof(MechDef), typeof(bool), typeof(bool), typeof(bool), typeof(string) })]
   public static class SimGameState_AddMech {
+    public static int VehicleShift(this SimGameState sim) {
+      ChassisDef chassis = Thread.CurrentThread.peekFromStack<ChassisDef>("OnReadyMech_chassis");
+      if(chassis != null) {
+        return chassis.GetHangarShift();
+      }
+      return CustomHangarHelper.FallbackVehicleShift();
+    }
     public static int GetFirstFreeMechBay(this SimGameState sim, MechDef mech, int? default_position = null) {
       Log.TWL(0, "SimGameState.AddMech.GetFirstFreeMechBay "+ mech.Description.Id+ " IsVehicle:" + mech.IsVehicle()+ " IsInFakeDef:" + mech.Description.Id.IsInFakeDef() + " IsInFakeChassis:" + mech.ChassisID.IsInFakeChassis());
       if (mech == null) { return sim.GetFirstFreeMechBay(); };
@@ -1396,6 +1404,10 @@ namespace CustomUnits {
   public static class MechBayPanel_OnReadyMech {
     public static void Prefix(MechBayPanel __instance, MechBayChassisUnitElement chassisElement, MechBayRowGroupWidget ___bayGroupWidget) {
       Log.TWL(0, "MechBayPanel.OnReadyMech "+ chassisElement.ChassisDef.Description.Id+" "+ ___bayGroupWidget.GetFirstFreeBaySlot());
+      Thread.CurrentThread.pushToStack<ChassisDef>("OnReadyMech_chassis", chassisElement.ChassisDef);
+    }
+    public static void Postfix(MechBayPanel __instance) {
+      Thread.CurrentThread.popFromStack<ChassisDef>("OnReadyMech_chassis");
     }
     public static int GetFirstFreeMechBayTranspiler(SimGameState simGameState, MechBayChassisUnitElement chassisElement) {
       Log.TWL(0, "MechBayPanel.OnReadyMech.GetFirstFreeMechBay " + chassisElement.ChassisDef.Description.Id);

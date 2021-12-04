@@ -702,7 +702,16 @@ namespace CustAmmoCategories {
       if (boxAmmoCategory.Index == CustomAmmoCategories.NotSetCustomAmmoCategoty.Index) { boxAmmoCategory = CustomAmmoCategories.find(ammoDef.AmmoCategoryValue.Name); }
       return boxAmmoCategory;
     }
-    public static bool CycleAmmo(Weapon weapon) {
+    public static bool SyncAmmo(this Weapon trgWeapon, Weapon srcWeapon) {
+      if (srcWeapon.StatCollection.ContainsStatistic(CustomAmmoCategories.AmmoIdStatName) == false) {
+        return false;
+      }
+      string AmmoId = srcWeapon.StatCollection.GetStatistic(CustomAmmoCategories.AmmoIdStatName).Value<string>();
+      trgWeapon.StatCollection.Set<string>(CustomAmmoCategories.AmmoIdStatName, AmmoId);
+      trgWeapon.ClearAmmoModeCache();
+      return true;
+    }
+    public static bool CycleAmmo(Weapon weapon, bool direction = true) {
       CustomAmmoCategoriesLog.Log.LogWrite("Cycle Ammo\n");
       if ((weapon.ammoBoxes.Count == 0)&&(weapon.exDef().InternalAmmo.Count == 0)) {
         CustomAmmoCategoriesLog.Log.LogWrite(" no ammo\n");
@@ -725,7 +734,9 @@ namespace CustAmmoCategories {
         return true;
       }
       if (AvaibleAmmo.Count == 1) { return false; }
-      ExtAmmunitionDef tempAmmo = AvaibleAmmo[(1 + CurrentAmmoIndex) % AvaibleAmmo.Count];
+      int nextIndex = (CurrentAmmoIndex + (direction?1:-1)) % AvaibleAmmo.Count;
+      if (nextIndex < 0) { nextIndex = AvaibleAmmo.Count - 1; }
+      ExtAmmunitionDef tempAmmo = AvaibleAmmo[nextIndex];
       CustomAmmoCategoriesLog.Log.LogWrite("   cycled to " + tempAmmo.Id + "\n");
       weapon.StatCollection.Set<string>(CustomAmmoCategories.AmmoIdStatName, tempAmmo.Id);
       weapon.ClearAmmoModeCache();
@@ -742,7 +753,17 @@ namespace CustAmmoCategories {
       CustomAmmoCategoriesLog.Log.LogWrite(" "+weaponAmmoCategory.Id+"\n");
       return weaponAmmoCategory;
     }*/
-    public static bool CycleMode(Weapon weapon) {
+    public static bool SyncMode(this Weapon trgWeapon, Weapon srcWeapon) {
+      if (srcWeapon.StatCollection.ContainsStatistic(CustomAmmoCategories.WeaponModeStatisticName) == false) {
+        return false;
+      }
+      string ModeId = srcWeapon.StatCollection.GetStatistic(CustomAmmoCategories.WeaponModeStatisticName).Value<string>();
+      trgWeapon.StatCollection.Set<string>(CustomAmmoCategories.WeaponModeStatisticName, ModeId);
+      trgWeapon.ClearAmmoModeCache();
+      return true;
+    }
+
+    public static bool CycleMode(Weapon weapon, bool direction = true) {
       ExtWeaponDef extWeapon = CustomAmmoCategories.getExtWeaponDef(weapon.defId);
       Log.M.TWL(0,"Cycling mode "+weapon.defId);
       if (extWeapon.Modes.Count <= 1) {
@@ -758,10 +779,10 @@ namespace CustAmmoCategories {
       CustomAmmoCategory oldWeaponAmmoCategory = weapon.CustomAmmoCategory();
       List<WeaponMode> avaibleModes = weapon.AvaibleModes();
       if (avaibleModes.Count == 0) { return false; };
-      int nextIndex = 0;
+      int nextIndex = direction?0:avaibleModes.Count-1;
       for (int t = 0; t < avaibleModes.Count; ++t) {
         if (avaibleModes[t].Id == modeId) {
-          nextIndex = (t + 1) % avaibleModes.Count;
+          nextIndex = direction?(t + 1) % avaibleModes.Count:(t > 0? t-1:avaibleModes.Count-1);
           break;
         }
       }

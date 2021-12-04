@@ -859,36 +859,61 @@ namespace CustomUnits {
   }
   [HarmonyPatch(typeof(LanceConfiguratorPanel), "ValidateLance")]
   public static class LanceConfiguratorPanel_ValidateLance {
+    public static void RefreshLanceInfo(this LanceHeaderWidget header, bool lanceValid, Localize.Text errorText, List<MechDef> mechs, int currentUnits, int maxUnits) {
+      header.RefreshLanceInfo(lanceValid, errorText, mechs);
+      if (lanceValid) {
+        Traverse.Create(header).Field<LocalizableText>("simReadyLanceText").Value.SetText("Lance Ready {0} units of {1}", currentUnits, maxUnits);
+      }
+    }
     public static bool Prefix(LanceConfiguratorPanel __instance, ref bool __result, ref LanceLoadoutSlot[] ___loadoutSlots, ref Localize.Text ___lanceErrorText,ref LanceHeaderWidget ___headerWidget) {
       Log.TWL(0, "LanceConfiguratorPanel.ValidateLance");
       try {
         __instance.lanceValid = false;
         ___lanceErrorText = new Localize.Text();
-        int num1 = 0;
-        int num2 = 0;
-        int num3 = 0;
+        int filledSlots = 0;
+        int partialSlots = 0;
+        int emptySlots = 0;
+        int countedSlots = 0;
         __instance.currentLanceValue = 0;
         List<MechDef> mechs = new List<MechDef>();
         //List<UnitResult> unitResultList = new List<UnitResult>();
         bool flag = Traverse.Create(__instance).Method("ValidateLanceTonnage").GetValue<bool>(); //__instance.ValidateLanceTonnage();
+        int overallSlotsCount = UnityGameInstance.BattleTechGame.Simulation.currentLayout().OverallUnits;
+        if (__instance.activeContract != null) {
+          if (__instance.activeContract.IsFlashpointCampaignContract || __instance.activeContract.IsFlashpointContract) {
+            overallSlotsCount = __instance.activeContract.Override.maxNumberOfPlayerUnits;
+          } else {
+            if ((__instance.activeContract.Override.maxNumberOfPlayerUnits != 4) || (Core.Settings.CountContractMaxUnits4AsUnlimited == false)) {
+              overallSlotsCount = __instance.activeContract.Override.maxNumberOfPlayerUnits;
+            }
+          }
+        }
+        if (CustomLanceHelper.MissionControlDetected == false) { if (overallSlotsCount > 4) { overallSlotsCount = 4; } }
+        overallSlotsCount = Mathf.Min(overallSlotsCount, __instance.maxUnits);
+        //overallSlotsCount = 4;
         for (int index = 0; index < __instance.maxUnits; ++index) {
           LanceLoadoutSlot loadoutSlot = ___loadoutSlots[index];
           DropSlotDef def = DropSystemHelper.currentLayout(UnityGameInstance.BattleTechGame.Simulation).GetSlotByIndex(index);
-          if ((UnityEngine.Object)loadoutSlot.SelectedMech != (UnityEngine.Object)null) {
-            bool skip = false;
-            if (def != null) { if (def.UseMaxUnits == false) { skip = true; } };
+          bool skip = false;
+          if (CustomLanceHelper.MissionControlDetected) {
+            if (def.UseMaxUnits == false) { skip = true; }
+          } else {
+            if ((def.UseMaxUnits == false) && (def.HotDrop == true)) { skip = true; }
+          }
+          if (loadoutSlot.SelectedMech != null) {
             if (skip == false) {
               __instance.currentLanceValue += loadoutSlot.SelectedMech.MechDef.Description.Cost;
               mechs.Add(loadoutSlot.SelectedMech.MechDef);
             }
           }
-          if ((UnityEngine.Object)loadoutSlot.SelectedMech != (UnityEngine.Object)null && (UnityEngine.Object)loadoutSlot.SelectedPilot != (UnityEngine.Object)null) {
-            ++num1;
-            //unitResultList.Add(new UnitResult(loadoutSlot.SelectedMech.MechDef, loadoutSlot.SelectedPilot.Pilot));
-          } else if ((UnityEngine.Object)loadoutSlot.SelectedMech != (UnityEngine.Object)null && (UnityEngine.Object)loadoutSlot.SelectedPilot == (UnityEngine.Object)null || (UnityEngine.Object)loadoutSlot.SelectedMech == (UnityEngine.Object)null && (UnityEngine.Object)loadoutSlot.SelectedPilot != (UnityEngine.Object)null)
-            ++num2;
-          else
-            ++num3;
+          if (loadoutSlot.SelectedMech != null && loadoutSlot.SelectedPilot != null) {
+            ++filledSlots;
+            countedSlots += (skip ? 0 : 1);
+          } else if ((loadoutSlot.SelectedMech != null && loadoutSlot.SelectedPilot == null) || (loadoutSlot.SelectedMech == null && loadoutSlot.SelectedPilot != null)) {
+            ++partialSlots;
+          } else {
+            ++emptySlots;
+          }
         }
         if (__instance.maxLanceValue < 0) {
           __instance.lanceValid = true;
@@ -897,18 +922,22 @@ namespace CustomUnits {
           if (!__instance.lanceValid)
             ___lanceErrorText.Append("Lance budget exceeds limit\n", (object[])Array.Empty<object>());
         }
-        if (num1 < 1 || num2 > 0) {
+        if (filledSlots < 1 || partialSlots > 0) {
           __instance.lanceValid = false;
-          if (num1 < 1)
+          if (filledSlots < 1)
             ___lanceErrorText.Append("Lance must not be empty\n", (object[])Array.Empty<object>());
           else
-            ___lanceErrorText.Append("Lance slots require both a 'Mech and MechWarrior\n", (object[])Array.Empty<object>());
+            ___lanceErrorText.Append("Lance slots require both a 'unit and pilot\n", (object[])Array.Empty<object>());
         }
-        if (!__instance.allowUnevenLances && num1 < __instance.maxUnits) {
+        if (!__instance.allowUnevenLances && countedSlots < overallSlotsCount) {
           __instance.lanceValid = false;
-          ___lanceErrorText.Append("Lance must fill all slots\n", (object[])Array.Empty<object>());
+          ___lanceErrorText.Append("Lance must have at least {0} units in initial drop\n", overallSlotsCount);
         }
-        ___headerWidget.RefreshLanceInfo(__instance.lanceValid & flag, ___lanceErrorText, mechs);
+        if(countedSlots > overallSlotsCount) {
+          __instance.lanceValid = false;
+          ___lanceErrorText.Append("You are not allowed to drop {0} units, only {1}\n", countedSlots, overallSlotsCount);
+        }
+        ___headerWidget.RefreshLanceInfo(__instance.lanceValid & flag, ___lanceErrorText, mechs, countedSlots, overallSlotsCount);
         __instance.RefreshLanceInitiative();
         __result = __instance.lanceValid & flag;
         return false;

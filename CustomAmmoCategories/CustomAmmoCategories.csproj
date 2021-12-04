@@ -74,6 +74,9 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\BattleTech_Data\Managed\InControl.dll</HintPath>
     </Reference>
+    <Reference Include="IRBTModUtils">
+      <HintPath>..\..\Mods\IRBTModUtils\IRBTModUtils.dll</HintPath>
+    </Reference>
     <Reference Include="MessagePack">
       <HintPath>..\..\Mods\CustomPrewarm\MessagePack.dll</HintPath>
     </Reference>

@@ -10,6 +10,7 @@ using CustomComponents.Patches;
 using Harmony;
 using HBS;
 using HBS.Data;
+using IRBTModUtils;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;

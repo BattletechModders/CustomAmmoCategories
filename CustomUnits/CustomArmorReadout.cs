@@ -3,6 +3,7 @@ using BattleTech.UI;
 using BattleTech.UI.TMProWrapper;
 using CustAmmoCategories;
 using Harmony;
+using IRBTModUtils;
 using SVGImporter;
 using System;
 using System.Collections.Generic;

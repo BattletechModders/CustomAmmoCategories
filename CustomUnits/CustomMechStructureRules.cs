@@ -5,6 +5,7 @@ using CustAmmoCategories;
 using CustomAmmoCategoriesPatches;
 using CustomComponents;
 using Harmony;
+using IRBTModUtils;
 using Localize;
 using System;
 using System.Collections;

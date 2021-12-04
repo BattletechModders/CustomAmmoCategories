@@ -2,6 +2,7 @@
 using CustAmmoCategories;
 using Harmony;
 using HBS.Collections;
+using IRBTModUtils;
 using Localize;
 using System;
 using System.Collections.Generic;

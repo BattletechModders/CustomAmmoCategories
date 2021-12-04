@@ -4,6 +4,7 @@ using CACMain;
 using CustomAmmoCategoriesLog;
 using CustomAmmoCategoriesPatches;
 using Harmony;
+using IRBTModUtils;
 using Localize;
 using System;
 using System.Collections.Generic;

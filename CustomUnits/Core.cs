@@ -552,10 +552,22 @@ namespace CustomUnits{
         PilotingClassHelper.Validate();
         //DropClassDef.Validate();
         DropSystemHelper.Validate();
+        Core.HarmonyInstance.Patch(typeof(Mech).GetMethod("InitGameRep", BindingFlags.Public | BindingFlags.Instance),new HarmonyMethod(typeof(CustomMech).GetMethod(nameof(CustomMech.InitGameRepStatic), BindingFlags.Static | BindingFlags.Public)));
+        Log.TWL(0, "Harmony log Mech.InitGameRep");
+        Patches patches = Core.HarmonyInstance.GetPatchInfo(typeof(Mech).GetMethod("InitGameRep", BindingFlags.Public | BindingFlags.Instance));
+        Log.WL(1, "Prefixes:");
+        foreach (var patch in patches.Prefixes) {
+          Log.WL(2, patch.owner+" index:"+patch.index+" method:"+patch.patch.Name);
+        }
+        Log.WL(1, "Postfixes:");
+        foreach (var patch in patches.Postfixes) {
+          Log.WL(2, patch.owner + " index:" + patch.index + " method:" + patch.patch.Name);
+        }
       } catch (Exception e) {
         Log.TWL(0, e.ToString(), true);
       }
     }
+    public static HarmonyInstance HarmonyInstance = null;
     public static void Init(string directory, string settingsJson) {
       Log.BaseDirectory = directory;
       Log.InitLog();
@@ -569,7 +581,7 @@ namespace CustomUnits{
       SortByTonnage.SortByTonnage.Init(directory, Core.Settings.SortBy);
 
       try {
-        var harmony = HarmonyInstance.Create("io.mission.customunits");
+        HarmonyInstance = HarmonyInstance.Create("io.mission.customunits");
         HitLocation_GetMechHitTableCustom.i_GetMechHitTable = HitLocation_GetMechHitTable.Get;
         /*Type AssetBundleTracker = typeof(WeaponEffect).Assembly.GetType("BattleTech.Assetbundles.AssetBundleTracker");
         if (AssetBundleTracker != null) {
@@ -597,9 +609,9 @@ namespace CustomUnits{
         } else {
           Log.TWL(0, "can't find DataManager.PrefabLoadRequest");
         }*/
-        harmony.PatchAll(Assembly.GetExecutingAssembly());
+        HarmonyInstance.PatchAll(Assembly.GetExecutingAssembly());
         PathingInfoHelper.RegisterMaxMoveDeligate(PathingHelper.MaxMoveDistance);
-        WeightedFactorHelper.PatchInfluenceMapPositionFactor(harmony);
+        WeightedFactorHelper.PatchInfluenceMapPositionFactor(HarmonyInstance);
         WeaponRepresentation_PlayWeaponEffect.i_extendedFire = extendedFireHelper.extendedFire;
       } catch (Exception e) {
         Log.LogWrite(e.ToString()+"\n");

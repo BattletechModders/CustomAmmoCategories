@@ -1,6 +1,7 @@
 ﻿using BattleTech;
 using CustAmmoCategories;
 using Harmony;
+using IRBTModUtils;
 using System;
 
 namespace CustomUnits {
@@ -21,7 +22,7 @@ namespace CustomUnits {
         MoveClampHelper.Clear();
         SelectionStateJump_GetAllDFATargets.Clear();
         PathingHelper.Clear();
-        StackDataHelper.Clear();
+        //StackDataHelper.Clear();
       } catch (Exception e) {
         Log.LogWrite(e.ToString() + "\n");
       }

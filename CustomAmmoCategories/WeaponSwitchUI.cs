@@ -27,6 +27,7 @@ using CustomSettings;
 using Log = CustomAmmoCategoriesLog.Log;
 using InControl;
 using System.Reflection.Emit;
+using IRBTModUtils;
 
 namespace CustomAmmoCategoriesPatches {
   [HarmonyPatch(typeof(MechDef))]
@@ -205,6 +206,21 @@ namespace CustomAmmoCategoriesPatches {
       return btInput.StaticActions.MouseScroll.WasPressed ? btInput.StaticActions.MouseScroll : btInput.DynamicActions.CameraZoom;      //Log.LogWrite(0, "MechDef.GatherDependencies postfix " + __instance.Description.Id + " " + activeRequestWeight, true);
     }
   }
+  [HarmonyPatch(typeof(CombatSelectionHandler))]
+  [HarmonyPatch("ProcessInput")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { })]
+  public static class CombatSelectionHandler_ProcessInput {
+    public static bool AllowRightButton = true;
+    public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) {
+      var targetPropertyGetter = AccessTools.Method(typeof(InputManagerExtended), "Mouse_RightButton");
+      var replacementMethod = AccessTools.Method(typeof(CombatSelectionHandler_ProcessInput), "Mouse_RightButton");
+      return Transpilers.MethodReplacer(instructions, targetPropertyGetter, replacementMethod);
+    }
+    public static PlayerAction Mouse_RightButton(BTInput btInput) {
+      return AllowRightButton?btInput.Mouse_RightButton():btInput.Key_None();
+    }
+  }
   public class CombatHUDWeaponSlotsScrollControl: MonoBehaviour {
     public RectTransform weaponPanelRect { get; set; }
     public RectTransform main { get; set; }
@@ -230,14 +246,23 @@ namespace CustomAmmoCategoriesPatches {
     public ScrollRect weaponPannelScrollRect { get; set; } = null;
     public RectTransform slotTransform { get; set; } = null;
     public bool hovered { get; set; } = false;
+    public Image panel_background { get; set; } = null;
+    public void Awake() {
+      if (panel_background == null) { panel_background = this.gameObject.FindObject<Image>("panel_background"); }
+    }
     public void OnPointerEnter(PointerEventData eventData) {
       Log.M.TWL(0, "CombatHUDWeaponPanelScroller.OnPointerEnter");
       CameraControl_UpdatePlayerControl.AllowZoom = false;
+      CombatSelectionHandler_ProcessInput.AllowRightButton = false;
+      //if (panel_background != null) { panel_background.color = Color.white; }
       this.hovered = true;
     }
     public void OnPointerExit(PointerEventData eventData) {
       Log.M.TWL(0, "CombatHUDWeaponPanelScroller.OnPointerExit");
       CameraControl_UpdatePlayerControl.AllowZoom = true;
+      CombatSelectionHandler_ProcessInput.AllowRightButton = true;
+      //InputManagerExtended_Mouse_RightButton.AllowPress = true;
+      //if (panel_background != null) { panel_background.color = Color.black; }
       this.hovered = false;
     }
     public void OnScroll(PointerEventData eventData) {
@@ -748,6 +773,7 @@ namespace CustomAmmoCategoriesPatches {
       //hovered = false;
     }
     public override void OnPointerDown(PointerEventData data) {
+      if (data.button != PointerEventData.InputButton.Left) { return; }
       Log.LogWrite("WeaponDamageHover.OnPointerClick called." + data.position + "\n");
       if (this.parent.DisplayedWeapon == null) { return; }
       if (this.weaponPanel.DisplayedActor == null) { return; }
@@ -758,22 +784,39 @@ namespace CustomAmmoCategoriesPatches {
       parent.ToggleButton.childImage.color = this.LookAndColorConstants.WeaponSlotColors.PressedToggleColor;
     }
     public override void OnPointerUp(PointerEventData data) {
+      if (data.button != PointerEventData.InputButton.Left) { return; }
       Log.LogWrite("WeaponDamageHover.OnPointerClick called." + data.position + "\n");
       if (this.parent.DisplayedWeapon == null) { return; }
       if (this.weaponPanel.DisplayedActor == null) { return; }
-      if (data.button != PointerEventData.InputButton.Left || parent.weaponSlotType == CombatHUDWeaponSlot.WeaponSlotType.DFA || parent.weaponSlotType == CombatHUDWeaponSlot.WeaponSlotType.Melee)
+      if (data.button != PointerEventData.InputButton.Left || parent.weaponSlotType == CombatHUDWeaponSlot.WeaponSlotType.DFA || parent.weaponSlotType == CombatHUDWeaponSlot.WeaponSlotType.Melee) {
         return;
-      if (parent.DisplayedWeapon.IsDisabled || HUD.Combat.StackManager.GetAnyAttackSequence() != null)
+      }
+      bool isShift = (Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.LeftShift));
+      if (parent.DisplayedWeapon.IsDisabled || HUD.Combat.StackManager.GetAnyAttackSequence() != null) {
         this.HUD.GenerateButtonEvent("WeaponSlot", AudioEventList_ui.ui_weapon_destroyed);
-      else if (this.HUD.SelectionHandler.ActiveState != null && this.HUD.SelectionHandler.ActiveState.SelectionType == SelectionType.FireMulti)
+      } else if (this.HUD.SelectionHandler.ActiveState != null && this.HUD.SelectionHandler.ActiveState.SelectionType == SelectionType.FireMulti) {
         parent.CycleWeapon();
-      else if (!parent.DisplayedWeapon.IsEnabled) {
+      } else if (!parent.DisplayedWeapon.IsEnabled) {
         this.HUD.GenerateButtonEvent("WeaponSlot", AudioEventList_ui.ui_weapon_choose_yes);
         parent.DisplayedWeapon.EnableWeapon();
+        if (isShift) {
+          foreach(Weapon weapon in parent.DisplayedWeapon.parent.Weapons) {
+            if (weapon == parent.DisplayedWeapon) { continue; }
+            if (weapon.defId != parent.DisplayedWeapon.defId) { continue; }
+            weapon.EnableWeapon();
+          }
+        }
         this.HUD.OnWeaponModified();
       } else {
         this.HUD.GenerateButtonEvent("WeaponSlot", AudioEventList_ui.ui_weapon_disabled);
         parent.DisplayedWeapon.DisableWeapon();
+        if (isShift) {
+          foreach (Weapon weapon in parent.DisplayedWeapon.parent.Weapons) {
+            if (weapon == parent.DisplayedWeapon) { continue; }
+            if (weapon.defId != parent.DisplayedWeapon.defId) { continue; }
+            weapon.DisableWeapon();
+          }
+        }
         this.HUD.OnWeaponModified();
       }
       parent.RefreshDisplayedWeapon((ICombatant)null, new int?(), false, false);
@@ -898,13 +941,23 @@ namespace CustomAmmoCategoriesPatches {
         Log.M.WL(1, "Attack sequence is active");
         return;
       }
+      bool isShift = (Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.LeftShift));
       bool prevIndirectState = parent.DisplayedWeapon.IndirectFireCapable();
-      if (CustomAmmoCategories.CycleMode(parent.DisplayedWeapon)) {
+      if (CustomAmmoCategories.CycleMode(parent.DisplayedWeapon, data.button == PointerEventData.InputButton.Left)) {
         if (SceneSingletonBehavior<WwiseManager>.HasInstance) {
           uint num2 = SceneSingletonBehavior<WwiseManager>.Instance.PostEventById(390458608, parent.DisplayedWeapon.parent.GameRep.audioObject, (AkCallbackManager.EventCallback)null, (object)null);
           Log.S.TWL(0, "Playing sound by id:" + num2);
         } else {
           Log.S.TWL(0, "Can't play");
+        }
+        if (isShift) {
+          foreach (CombatHUDWeaponSlot slot in this.weaponPanel.DisplayedWeaponSlots) {
+            if (slot.DisplayedWeapon == parent.DisplayedWeapon) { continue; }
+            if (slot.DisplayedWeapon.defId != parent.DisplayedWeapon.defId) { continue; }
+            bool indState = slot.DisplayedWeapon.IndirectFireCapable();
+            slot.DisplayedWeapon.SyncMode(parent.DisplayedWeapon);
+            slot.RefreshWeaponCapabilities(indState);
+          }
         }
       }
       parent.RefreshWeaponCapabilities(prevIndirectState);
@@ -1052,12 +1105,22 @@ namespace CustomAmmoCategoriesPatches {
         if (hovered) { ShowSidePanel(); }
         return;
       }
-      if (CustomAmmoCategories.CycleAmmo(parent.DisplayedWeapon)) {
+      bool isShift = (Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.LeftShift));
+      if (CustomAmmoCategories.CycleAmmo(parent.DisplayedWeapon, data.button == PointerEventData.InputButton.Left)) {
         if (SceneSingletonBehavior<WwiseManager>.HasInstance) {
           uint num2 = SceneSingletonBehavior<WwiseManager>.Instance.PostEventById(390458608, parent.DisplayedWeapon.parent.GameRep.audioObject, (AkCallbackManager.EventCallback)null, (object)null);
           Log.S.TWL(0, "Playing sound by id:" + num2);
         } else {
           Log.S.TWL(0, "Can't play");
+        }
+        if (isShift) {
+          foreach (CombatHUDWeaponSlot slot in this.weaponPanel.DisplayedWeaponSlots) {
+            if (slot.DisplayedWeapon == parent.DisplayedWeapon) { continue; }
+            if (slot.DisplayedWeapon.defId != parent.DisplayedWeapon.defId) { continue; }
+            bool indState = slot.DisplayedWeapon.IndirectFireCapable();
+            slot.DisplayedWeapon.SyncAmmo(parent.DisplayedWeapon);
+            slot.RefreshWeaponCapabilities(indState);
+          }
         }
       }
       parent.RefreshWeaponCapabilities(prevIndirectState);
@@ -1490,7 +1553,7 @@ namespace CustomAmmoCategoriesPatches {
     }
   }
   public class WeaponOrderData {
-    public Dictionary<string, List<string>> definitionOrders;
+    public Dictionary<string, List<string>> definitionOrders { get; set; } = null;
     public WeaponOrderData() {
       definitionOrders = new Dictionary<string, List<string>>();
     }

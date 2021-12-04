@@ -11,6 +11,7 @@ using HBS.Collections;
 using HBS.Data;
 using HBS.Util;
 using InControl;
+using IRBTModUtils;
 using Localize;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -1807,6 +1808,10 @@ namespace CustomUnits {
     }
     public static bool IsVehicle(this ChassisDef chassisDef) {
       if (chassisDef == null) { return false; }
+      ChassisDef chassis = Thread.CurrentThread.peekFromStack<ChassisDef>("OnReadyMech_chassis");
+      if (chassis != null) {
+        return chassis.GetHangarShift() > 0;
+      }
       UnitCustomInfo info = chassisDef.GetCustomInfo();
       if (info == null) { return false; }
       return info.FakeVehicle;

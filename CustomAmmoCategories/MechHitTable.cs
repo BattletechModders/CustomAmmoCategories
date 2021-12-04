@@ -2,6 +2,7 @@
 using CustAmmoCategories;
 using CustomAmmoCategoriesLog;
 using Harmony;
+using IRBTModUtils;
 using System;
 using System.Collections.Generic;
 using System.Threading;

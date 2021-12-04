@@ -2,6 +2,7 @@
 using CustAmmoCategories;
 using CustomUnits;
 using HBS.Collections;
+using IRBTModUtils;
 using System.Collections.Generic;
 using UnityEngine;
 

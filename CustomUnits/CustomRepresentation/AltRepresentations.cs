@@ -10,6 +10,10 @@ using UnityEngine;
 
 namespace CustomUnits {
   public class AlternatesRepresentation : CustomMechRepresentation {
+    public override AlternateRepresentationDef altDef {
+      get { return (this.CurrentIndex >= 0) && (this.CurrentIndex < this.Alternates.Count) ? Alternates[CurrentIndex].altDef : this.altDef; }
+      set { base.altDef = value; }
+    }
     public override bool HasOwnVisuals { get { return false; } }
     public virtual List<CustomMechRepresentation> Alternates { get; protected set; } = new List<CustomMechRepresentation>();
     public virtual CustomMechRepresentation CurrentRepresentation { get; protected set; } = null;

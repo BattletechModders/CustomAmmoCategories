@@ -12,6 +12,7 @@ using CustomAmmoCategoriesLog;
 using Localize;
 using System.Reflection.Emit;
 using System.Threading;
+using IRBTModUtils;
 
 namespace CustAmmoCategories {
   public static partial class CustomAmmoCategories {

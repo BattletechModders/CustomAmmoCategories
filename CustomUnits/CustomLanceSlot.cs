@@ -5,6 +5,7 @@ using BattleTech.UI.Tooltips;
 using CustAmmoCategories;
 using Harmony;
 using HBS;
+using IRBTModUtils;
 using SVGImporter;
 using System;
 using System.Collections.Generic;

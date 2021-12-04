@@ -5,6 +5,7 @@ using CustAmmoCategories;
 using CustomComponents;
 using Harmony;
 using HBS.Collections;
+using IRBTModUtils;
 using Localize;
 using MessagePack;
 using SVGImporter;

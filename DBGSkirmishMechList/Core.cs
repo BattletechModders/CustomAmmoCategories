@@ -313,10 +313,10 @@ namespace DBGSkirmishMechList {
       foreach (string modName in Core.settings.skirmishMechesMods) {
         Log.WL(1, "searching mod:"+modName);
         if (ModTek.ModTek.allModDefs.ContainsKey(modName) == false) { Log.WL(2, "not exists"); continue; }
-        ModTek.ModDefEx mod = ModTek.ModTek.allModDefs[modName];
+        var mod = ModTek.ModTek.allModDefs[modName];
         if (mod.LoadFail == true) { Log.WL(2, "failed to load"); continue; }
         if (mod.Enabled == false) { Log.WL(2, "disabled"); continue; }
-        foreach (ModTek.ModEntry entry in mod.Manifest) {
+        foreach (var entry in mod.Manifest) {
           Log.WL(2, "entry:"+entry.Id);
           if ((entry.Type != "MechDef")&&(entry.Type != "VehicleDef")) { Log.WL(3, "not unit"); continue; }
           if (mechNames.Contains(entry.Id) == false) {

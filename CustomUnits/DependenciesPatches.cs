@@ -2,6 +2,7 @@
 using BattleTech.Data;
 using CustAmmoCategories;
 using Harmony;
+using IRBTModUtils;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;

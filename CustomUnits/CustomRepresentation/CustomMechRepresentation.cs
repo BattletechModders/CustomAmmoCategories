@@ -14,6 +14,7 @@ using BattleTech.Rendering.UI;
 using MechResizer;
 using Localize;
 using System.Threading;
+using IRBTModUtils;
 
 namespace CustomUnits {
   [HarmonyPatch(typeof(ActorFactory))]
@@ -296,13 +297,13 @@ namespace CustomUnits {
       this.statCollection.ModifyStat<float>(sourceID, stackItemID, this.GetStringForArmorLocation(crewArmor), StatCollection.StatOperation.Set, 0.0f);
       this.statCollection.ModifyStat<float>(sourceID, stackItemID, this.GetStringForStructureLocation(crewLocation), StatCollection.StatOperation.Set, 0.0f);
       foreach (MechComponent allComponent in this.allComponents) {
-        if (allComponent.Location == 1) {
+        if (allComponent.Location == (int)crewLocation) {
           allComponent.DamageComponent(hitInfo, ComponentDamageLevel.Destroyed, false);
           if (AbstractActor.damageLogger.IsLogEnabled)
             AbstractActor.damageLogger.Log((object)string.Format("====@@@ Component Destroyed: {0}", (object)allComponent.Name));
         }
       }
-      this.Combat.MessageCenter.PublishMessage((MessageCenterMessage)new FloatieMessage(sourceID, this.GUID, "HEAD DESTROYED", FloatieMessage.MessageNature.ComponentDestroyed));
+      this.Combat.MessageCenter.PublishMessage((MessageCenterMessage)new FloatieMessage(sourceID, this.GUID, "COCKPIT DESTROYED", FloatieMessage.MessageNature.ComponentDestroyed));
     }
     public virtual void _InitGameRep(Transform parentTransform) {
       Log.TWL(0, "CustomMech._InitGameRep:"+ this.MechDef.Chassis.PrefabIdentifier);
@@ -391,11 +392,87 @@ namespace CustomUnits {
       }
       this.DFAWeapon.InitGameRep(this.DFAWeapon.mechComponentRef.prefabName, this.GetAttachTransform(this.DFAWeapon.mechComponentRef.MountedLocation), this.LogDisplayName);
     }
+    private static MethodInfo Mech_InitGameRep = null;
+    private static Patches Mech_InitGameRep_patches = null;
+    public virtual void MechInitGameRep_prefixes(Transform parentTransform) {
+      Log.TWL(0, "Mech.InitGameRep.prefixes");
+      if (Mech_InitGameRep == null) { Mech_InitGameRep = typeof(Mech).GetMethod("InitGameRep"); }
+      if (Mech_InitGameRep == null) {
+        Log.WL(1, "Can't find Mech.InitGameRep");
+        return;
+      }
+      if (Mech_InitGameRep_patches == null) {
+        Mech_InitGameRep_patches = Core.HarmonyInstance.GetPatchInfo(Mech_InitGameRep);
+      }
+      if (Mech_InitGameRep_patches == null) {
+        Log.WL(1, "Mech.InitGameRep has no patches");
+        return;
+      }
+      foreach(Patch patch in Mech_InitGameRep_patches.Prefixes) {
+        Log.WL(1, patch.owner+":"+ patch.patch.Name);
+        try {
+          List<object> methodParams = new List<object>();
+          foreach(var param in patch.patch.GetParameters()) {
+            if (param.Name == "__instance") { methodParams.Add(this); }
+            if (param.Name == "parentTransform") { methodParams.Add(parentTransform); }
+            if (param.Name.StartsWith("___")) { methodParams.Add(Traverse.Create(this).Field(param.Name.Substring(3)).GetValue()); }
+            Log.WL(2, param.Name + " is ref:" + param.GetType().IsByRef);
+          }
+          patch.patch.Invoke(null, methodParams.ToArray());
+        } catch(Exception e) {
+          Log.TWL(0,e.ToString(),true);
+        }
+      }
+    }
+    public virtual void MechInitGameRep_postfixes(Transform parentTransform) {
+      Log.TWL(0, "Mech.InitGameRep.postfixes");
+      if (Mech_InitGameRep == null) { Mech_InitGameRep = typeof(Mech).GetMethod("InitGameRep"); }
+      if (Mech_InitGameRep == null) {
+        Log.WL(1, "Can't find Mech.InitGameRep");
+        return;
+      }
+      if (Mech_InitGameRep_patches == null) {
+        Mech_InitGameRep_patches = Core.HarmonyInstance.GetPatchInfo(Mech_InitGameRep);
+      }
+      if (Mech_InitGameRep_patches == null) {
+        Log.WL(1, "Mech.InitGameRep has no patches");
+        return;
+      }
+      foreach (Patch patch in Mech_InitGameRep_patches.Postfixes) {
+        Log.WL(1, patch.owner + ":" + patch.patch.Name);
+        try {
+          List<object> methodParams = new List<object>();
+          foreach (var param in patch.patch.GetParameters()) {
+            if (param.Name == "__instance") { methodParams.Add(this); }
+            if (param.Name == "parentTransform") { methodParams.Add(parentTransform); }
+            if (param.Name.StartsWith("___")) { methodParams.Add(Traverse.Create(this).Field(param.Name.Substring(3)).GetValue()); }
+            Log.WL(2, param.Name + " is ref:" + param.GetType().IsByRef);
+          }
+          patch.patch.Invoke(null, methodParams.ToArray());
+        } catch (Exception e) {
+          Log.TWL(0, e.ToString(), true);
+        }
+      }
+    }
+    public static bool InitGameRepStatic(Mech __instance, Transform parentTransform) {
+      Log.TWL(0, "CustomMech.InitGameRepStatic "+ __instance.MechDef.Description.Id+" "+__instance.GetType().Name);
+      try {
+        if (__instance is CustomMech custMech) {
+          custMech._InitGameRep(parentTransform);
+          return false;
+        }
+        return true;
+      }catch(Exception e) {
+        Log.TWL(0, e.ToString(), true);
+      }
+      return true;
+    }
     public override void InitGameRep(Transform parentTransform) {
-      //this.MechInitGameRep_prefixes();
-      this._InitGameRep(parentTransform);
+      base.InitGameRep(parentTransform);
+      //this.MechInitGameRep_prefixes(parentTransform);
+      //this._InitGameRep(parentTransform);
       this.custGameRep.HeightController.ForceHeight(this.FlyingHeight());
-      //this.MechInitGameRep_postfixes();
+      //this.MechInitGameRep_postfixes(parentTransform);
     }
     public override int GetHitLocation(AbstractActor attacker,Vector3 attackPosition,float hitLocationRoll, int calledShotLocation, float bonusMultiplier) {
       Dictionary<ArmorLocation, int> hitTable = this.GetHitTable(this.IsProne ? AttackDirection.ToProne : this.Combat.HitLocation.GetAttackDirection(attackPosition, this));

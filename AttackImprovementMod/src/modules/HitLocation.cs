@@ -6,6 +6,7 @@ using System.Reflection;
 
 namespace Sheepy.BattleTechMod.AttackImprovementMod {
   using CustAmmoCategories;
+  using IRBTModUtils;
   using System.Threading;
   using static ArmorLocation;
    using static Mod;

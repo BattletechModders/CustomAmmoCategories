@@ -361,6 +361,12 @@ namespace CustomUnits {
       }
       return null;
     }
+    public static int FallbackVehicleShift() {
+      if(hangars.TryGetValue(CustomHangarDef.DEFAULT_VEHICLE_HANGAR_ID, out CustomHangarDef def)) {
+        return def.PositionShift;
+      }
+      return 0;
+    }
     public static int GetHangarShift(this MechDef mechDef) {
       if (mechDef.DataManager == null) { mechDef.DataManager = UnityGameInstance.BattleTechGame.DataManager; }
       if (mechDef.Chassis == null) { mechDef.Chassis = mechDef.DataManager.ChassisDefs.Get(mechDef.ChassisID); };

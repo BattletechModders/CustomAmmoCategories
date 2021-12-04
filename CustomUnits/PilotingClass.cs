@@ -4,6 +4,7 @@ using BattleTech.UI.Tooltips;
 using CustAmmoCategories;
 using Harmony;
 using HBS.Collections;
+using IRBTModUtils;
 using Newtonsoft.Json;
 using SVGImporter;
 using System;
