@@ -419,47 +419,6 @@ namespace CustomUnits {
     }
   }
   [HarmonyPatch(typeof(Mech))]
-  [HarmonyPatch("MoveMultiplier")]
-  [HarmonyPatch(MethodType.Getter)]
-  [HarmonyPatch(new Type[] { })]
-  public static class Mech_MoveMultiplier {
-    public static bool Prefix(Mech __instance, ref float __result) {
-      try {
-        if (__instance.FakeVehicle()) { __result = 1f; return false; }
-        UnitCustomInfo info = __instance.GetCustomInfo();
-        if (info == null) { return true; }
-        float num = 0.0f;
-        if (__instance.IsOverheated) {
-          num += __instance.Combat.Constants.MoveConstants.OverheatedMovePenalty;
-        }
-        List<ChassisLocations> legsDamageLevels = new List<ChassisLocations>();
-        legsDamageLevels.Add(ChassisLocations.LeftLeg);
-        legsDamageLevels.Add(ChassisLocations.RightLeg);
-        if (info.ArmsCountedAsLegs) {
-          legsDamageLevels.Add(ChassisLocations.LeftArm);
-          legsDamageLevels.Add(ChassisLocations.RightArm);
-        }
-        float blackMod = info.LegDestroyedMovePenalty >= 0f ? info.LegDestroyedMovePenalty : __instance.Combat.Constants.MoveConstants.LegDestroyedPenalty;
-        float redMod = info.LegDamageRedMovePenalty >= 0f ? info.LegDamageRedMovePenalty : __instance.Combat.Constants.MoveConstants.LegDamageRedPenalty;
-        float yellowMod = info.LegDamageYellowMovePenalty >= 0f ? info.LegDamageYellowMovePenalty : __instance.Combat.Constants.MoveConstants.LegDamageYellowPenalty;
-        foreach (ChassisLocations location in legsDamageLevels) {
-          if (__instance.IsLocationDestroyed(location)) {
-            num += blackMod;
-          } else if (__instance.GetLocationDamageLevel(location) > LocationDamageLevel.Penalized) {
-            num += redMod;
-          } else {
-            num += yellowMod;
-          }
-        }
-        __result = Mathf.Max(__instance.Combat.Constants.MoveConstants.MinMoveSpeed, 1f - num);
-        return false;
-      }catch(Exception e) {
-        Log.TWL(0,e.ToString());
-        return true;
-      }
-    }
-  }
-  [HarmonyPatch(typeof(Mech))]
   [HarmonyPatch("IsLegged")]
   [HarmonyPatch(MethodType.Getter)]
   [HarmonyPatch(new Type[] { })]

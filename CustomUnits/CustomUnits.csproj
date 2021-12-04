@@ -132,6 +132,7 @@
     <Compile Include="CustomArmorReadout.cs" />
     <Compile Include="CustomHangarDef.cs" />
     <Compile Include="CustomLanceSlot.cs" />
+    <Compile Include="CustomMech.cs" />
     <Compile Include="CustomPrefab.cs" />
     <Compile Include="CustomRepresentation\AltRepresentations.cs" />
     <Compile Include="CustomRepresentation\CustomMechMeshMerge.cs" />

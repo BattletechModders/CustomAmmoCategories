@@ -45,8 +45,9 @@ namespace CustomUnits {
     public static List<ArmorLocation> locations = new List<ArmorLocation>() { ArmorLocation.Head, ArmorLocation.LeftLeg, ArmorLocation.RightLeg, ArmorLocation.LeftArm, ArmorLocation.RightArm };
     public FakeVehicleMech(MechDef mDef, PilotDef pilotDef, TagSet additionalTags, string UID, CombatGameState combat, string spawnerId, HeraldryDef customHeraldryDef)
       : base(mDef, pilotDef, additionalTags, UID, combat, spawnerId, customHeraldryDef) {
-
     }
+    public override bool _MoveMultiplierOverride { get { return true; } }
+    public override float _MoveMultiplier { get { return 1f; } }
     public override bool IsDead {
       get {
         if (this.HasHandledDeath) { return true; }

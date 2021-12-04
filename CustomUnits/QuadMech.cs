@@ -13,6 +13,8 @@ namespace CustomUnits {
       : base(mDef, pilotDef, additionalTags, UID, combat, spawnerId, customHeraldryDef) {
 
     }
+    public override bool _MoveMultiplierOverride { get { return true; } }
+    public override float _MoveMultiplier { get { return base._MoveMultiplier; } }
     public override bool IsDead {
       get {
         if (this.HasHandledDeath) { return true; }

@@ -454,26 +454,29 @@ namespace CustomUnits {
         return true;
       }
     }
-    public override float MaxWalkDistance {
-      get {
-        return this.WalkSpeed;
-      }
-    }
-    public override float MaxSprintDistance {
-      get {
-        return this.RunSpeed;
-      }
-    }
+    public override bool _MoveMultiplierOverride { get { return true; } }
+    public override float _MoveMultiplier { get { return 1f; } }
+
+    //public override float MaxWalkDistance {
+    //  get {
+    //    return this.WalkSpeed;
+    //  }
+    //}
+    //public override float MaxSprintDistance {
+    //  get {
+    //    return this.RunSpeed;
+    //  }
+    //}
     public override bool CanSprint {
       get {
         return !this.HasFiredThisRound;
       }
     }
-    public override float MaxBackwardDistance {
-      get {
-        return this.WalkSpeed;
-      }
-    }
+    //public override float MaxBackwardDistance {
+    //  get {
+    //    return this.WalkSpeed;
+    //  }
+    //}
     public override void VentCoolant() {
     }
     public override bool IsProne {
