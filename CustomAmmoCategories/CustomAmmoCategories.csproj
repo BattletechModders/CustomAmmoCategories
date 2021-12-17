@@ -192,6 +192,7 @@
     <Compile Include="CharlesB\MechFallSequenceDamageAdder.cs" />
     <Compile Include="CharlesB\Settings.cs" />
     <Compile Include="CheatHttpServer.cs" />
+    <Compile Include="CheatsProtection.cs" />
     <Compile Include="CleverGirlWeaponDamagePrediction.cs" />
     <Compile Include="LocalSettings.cs" />
     <Compile Include="CombatGameDestroy.cs" />

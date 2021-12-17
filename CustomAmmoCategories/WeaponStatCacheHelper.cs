@@ -1,64 +1,392 @@
 ﻿using BattleTech;
+using BattleTech.UI;
 using CustAmmoCategoriesPatches;
 using CustomAmmoCategoriesLog;
+using CustomAmmoCategoriesPatches;
+using Harmony;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using UnityEngine;
 
 namespace CustAmmoCategories {
+  [HarmonyPatch(typeof(Weapon))]
+  [HarmonyPatch(MethodType.Constructor)]
+  [HarmonyPatch(new Type[] { typeof(Mech), typeof(CombatGameState), typeof(MechComponentRef), typeof(string) })]
+  public static class Weapon_Constructor_Mech {
+    public static void Postfix(Weapon __instance, Mech parent, CombatGameState combat, MechComponentRef mcRef, string UID) {
+      try {
+        if (parent == null) {
+          Log.M?.TWL(0,"weapon without parent\n"+Environment.StackTrace);
+          return;
+        }
+        if (__instance.weaponDef == null) {
+          Log.M?.TWL(0, "weapon without definition\n" + Environment.StackTrace);
+          return;
+        }
+        if (__instance.weaponDef.Description == null) {
+          Log.M?.TWL(0, "weapon without description\n" + Environment.StackTrace);
+          return;
+        }
+        Log.M?.TWL(0, "Weapon.Constructor " + parent.PilotableActorDef.Description.Id + " " + __instance.weaponDef.Description.Id);
+        __instance.Register(new WeaponExtendedInfo(__instance, __instance.weaponDef));
+      }catch(Exception e) {
+        Log.M?.TWL(0, e.ToString(), true);
+      }
+    }
+  }
+  [HarmonyPatch(typeof(Weapon))]
+  [HarmonyPatch(MethodType.Constructor)]
+  [HarmonyPatch(new Type[] { typeof(Vehicle), typeof(CombatGameState), typeof(VehicleComponentRef), typeof(string) })]
+  public static class Weapon_Constructor_Vehicle {
+    public static void Postfix(Weapon __instance, Vehicle parent, CombatGameState combat, VehicleComponentRef vcRef, string UID) {
+      try {
+        Log.M?.TWL(0, "Weapon.Constructor " + parent.PilotableActorDef.Description.Id + " " + __instance.weaponDef.Description.Id);
+        __instance.Register(new WeaponExtendedInfo(__instance, __instance.weaponDef));
+      } catch (Exception e) {
+        Log.M?.TWL(0, e.ToString(), true);
+      }
+    }
+  }
+  [HarmonyPatch(typeof(Weapon))]
+  [HarmonyPatch(MethodType.Constructor)]
+  [HarmonyPatch(new Type[] { typeof(Turret), typeof(CombatGameState), typeof(TurretComponentRef), typeof(string) })]
+  public static class Weapon_Constructor_Turret {
+    public static void Postfix(Weapon __instance, Turret parent, CombatGameState combat, TurretComponentRef tcRef, string UID) {
+      try {
+        Log.M?.TWL(0, "Weapon.Constructor " + parent.PilotableActorDef.Description.Id + " " + __instance.weaponDef.Description.Id);
+        __instance.Register(new WeaponExtendedInfo(__instance, __instance.weaponDef));
+      } catch (Exception e) {
+        Log.M?.TWL(0, e.ToString(), true);
+      }
+    }
+  }
+  [HarmonyPatch(typeof(AbstractActor))]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch("AssignAmmoToWeapons")]
+  [HarmonyPatch(new Type[] { })]
+  public static class AbstractActor_AssignAmmoToWeapons {
+    public static void Postfix(AbstractActor __instance) {
+      try {
+        Log.M?.TWL(0, "AbstractActor.AssignAmmoToWeapons " + __instance.PilotableActorDef.Description.Id);
+        foreach (Weapon weapon in __instance.Weapons) {
+          weapon.Revalidate();
+        }
+      } catch (Exception e) {
+        Log.M?.TWL(0, e.ToString(), true);
+      }
+    }
+  }
+  [HarmonyPatch(typeof(CombatHUDWeaponSlot))]
+  [HarmonyPatch(MethodType.Setter)]
+  [HarmonyPatch("DisplayedWeapon")]
+  [HarmonyPatch(new Type[] { typeof(Weapon) })]
+  public static class CombatHUDWeaponSlot_DisplayedWeapon {
+    public static void Postfix(CombatHUDWeaponSlot __instance, Weapon value) {
+      try {
+        if (value == null) { return; }
+        value.info().HUDSlot = __instance;
+      } catch (Exception e) {
+        Log.M?.TWL(0, e.ToString(), true);
+      }
+    }
+  }
+  //DEMO
+  //[HarmonyPatch(typeof(Mech))]
+  //[HarmonyPatch(MethodType.Normal)]
+  //[HarmonyPatch("Init")]
+  //[HarmonyPatch(new Type[] { typeof(Vector3), typeof(float), typeof(bool) })]
+  //public static class Mech_Init_Melee_Demo {
+  //  public static void Postfix(Mech __instance, Vector3 position, float facing, bool checkEncounterCells) {
+  //    try {
+  //      Log.M?.TWL(0,"Mech init melee demo "+__instance.PilotableActorDef.Description.Id);
+  //      WeaponExtendedInfo info = __instance.MeleeWeapon.info();
+  //      WeaponMode modeToDel = info.mode;
+  //      WeaponMode chargeMode = new WeaponMode();
+  //      chargeMode.Id = "charge";
+  //      chargeMode.Name = "CHARGE";
+  //      chargeMode.UIName = "CHARGE";
+  //      chargeMode.DamagePerShot = 10f;
+  //      chargeMode.ShotsWhenFired = 5;
+  //      chargeMode.isBaseMode = true;
+  //      info.AddMode(chargeMode, true);
+  //      WeaponMode kickMode = new WeaponMode();
+  //      kickMode.Id = "kick";
+  //      kickMode.Name = "KICK";
+  //      kickMode.UIName = "KICK";
+  //      kickMode.ShotsWhenFired = 0;
+  //      kickMode.DamagePerShot = 15f;
+  //      info.AddMode(kickMode, false);
+  //      WeaponMode punchMode = new WeaponMode();
+  //      punchMode.Id = "punch";
+  //      punchMode.Name = "PUNCH";
+  //      punchMode.UIName = "PUNCH";
+  //      punchMode.ShotsWhenFired = 1;
+  //      punchMode.DamagePerShot = 20f;
+  //      info.AddMode(punchMode, false);
+  //      info.RemoveMode(modeToDel);
+  //    } catch (Exception e) {
+  //      Log.M?.TWL(0, e.ToString(), true);
+  //    }
+  //  }
+  //}
+  public class WeaponExtendedInfo {
+    public Weapon weapon { get; set; }
+    public WeaponMode mode { get; set; }
+    public Dictionary<string, WeaponMode> modes { get; set; } = new Dictionary<string, WeaponMode>();
+    public ExtWeaponDef extDef { get; set; }
+    public ExtAmmunitionDef ammo { get; set; }
+    public bool HasAmmoVariants { get; set; }
+    public bool NoValidAmmo { get; set; }
+    public bool needRevalidate { get; set; }
+    public CustomAmmoCategory effectiveAmmoCategory { get { return mode.AmmoCategory == null ? extDef.AmmoCategory : mode.AmmoCategory; } }
+    private CombatHUDWeaponSlot f_HUDSlot = null;
+    public CombatHUDWeaponSlot HUDSlot {
+      get {
+        if (f_HUDSlot == null) { return null; }
+        if (f_HUDSlot.DisplayedWeapon != this.weapon) { f_HUDSlot = null; }
+        return f_HUDSlot;
+      }
+      set {
+        f_HUDSlot = value;
+      }
+    }
+    public bool setMode(string modeId) {
+      if(this.modes.TryGetValue(modeId, out var Mode) == false) {
+        return false;
+      }
+      this.mode = Mode;
+      this.needRevalidate = true;
+      Statistic modeIdStat = weapon.StatCollection.GetStatistic(CustomAmmoCategories.WeaponModeStatisticName);
+      if (modeIdStat == null) {
+        modeIdStat = weapon.StatCollection.AddStatistic(CustomAmmoCategories.WeaponModeStatisticName, modeId);
+      } else {
+        modeIdStat.SetValue<string>(modeId);
+      }
+      if(mode.AmmoCategory != null) {
+        if (this.ammo.AmmoCategory != mode.AmmoCategory) {
+          this.ammo = this.findBestAmmo(mode.AmmoCategory);
+          Statistic ammoId = weapon.StatCollection.GetStatistic(CustomAmmoCategories.AmmoIdStatName);
+          if (ammoId == null) {
+            ammoId = weapon.StatCollection.AddStatistic(CustomAmmoCategories.AmmoIdStatName, this.ammo.Id);
+          } else {
+            ammoId.SetValue<string>(this.ammo.Id);
+          }
+        }
+      }
+      HUDSlot?.RefreshDisplayedWeapons();
+      return true;
+    }
+    public void AddMode(WeaponMode mode, bool switchTo) {
+      this.modes.Add(mode.Id, mode);
+      this.setMode(mode.Id);
+    }
+    public void RemoveMode(string id) {
+      this.modes.Remove(id);
+    }
+    public void RemoveMode(WeaponMode m) {
+      string id_to_remove = string.Empty;
+      foreach(var mode in this.modes) {
+        if (m == mode.Value) { id_to_remove = mode.Key; break; }
+      }
+      if (string.IsNullOrEmpty(id_to_remove) == false) { this.modes.Remove(id_to_remove); }
+    }
+    public List<WeaponMode> avaibleModes() {
+      List<WeaponMode> result = new List<WeaponMode>();
+      foreach (var mode in this.modes) {
+        if (mode.Value.Lock.isAvaible(weapon)) { result.Add(mode.Value); };
+      }
+      return result;
+    }
+    public List<ExtAmmunitionDef> getAvaibleAmmo(CustomAmmoCategory category) {
+      HashSet<ExtAmmunitionDef> result = new HashSet<ExtAmmunitionDef>();
+      for (int index = 0; index < weapon.ammoBoxes.Count; ++index) {
+        if (weapon.ammoBoxes[index].IsFunctional == false) { continue; };
+        if (weapon.ammoBoxes[index].CurrentAmmo <= 0) { continue; };
+        ExtAmmunitionDef ammo = CustomAmmoCategories.findExtAmmo(weapon.ammoBoxes[index].ammoDef.Description.Id);
+        if (ammo.AmmoCategory.Id != category.Id) { continue; };
+        result.Add(ammo);
+      }
+      ExtWeaponDef def = this.extDef;
+      foreach (var intAmmo in def.InternalAmmo) {
+        ExtAmmunitionDef ammo = CustomAmmoCategories.findExtAmmo(intAmmo.Key);
+        if (ammo.AmmoCategory.Id != category.Id) { continue; };
+        result.Add(ammo);
+      }
+      if (result.Count == 0) { result.Add(category.defaultAmmo()); }
+      Log.M.TWL(0, "getAvaibleAmmo " + weapon.defId + " category:" + category + " ammo count:" + result.Count);
+      foreach (var res in result) {
+        Log.M.WL(1, res.Id);
+      }
+      return result.ToList();
+    }
+    public ExtAmmunitionDef findBestAmmo(CustomAmmoCategory effectiveCategory) {
+      List<ExtAmmunitionDef> avaibleAmmo = this.getAvaibleAmmo(effectiveCategory);
+      if (avaibleAmmo.Count > 0) { this.NoValidAmmo = false; return avaibleAmmo[0]; }
+      NoValidAmmo = true;
+      return effectiveCategory.defaultAmmo();
+    }
+    public WeaponExtendedInfo(Weapon weapon, WeaponDef def) {
+      this.weapon = weapon;
+      this.extDef = def.exDef();
+      string modeId = extDef.baseModeId;
+      Statistic modeIdStat = weapon.StatCollection.GetStatistic(CustomAmmoCategories.WeaponModeStatisticName);
+      if (modeIdStat == null) {
+        modeIdStat = weapon.StatCollection.AddStatistic(CustomAmmoCategories.WeaponModeStatisticName, modeId);
+      } else {
+        modeIdStat.SetValue<string>(modeId);
+      }
+      foreach (var defMode in this.extDef.Modes) { this.modes.Add(defMode.Key, defMode.Value); }
+      if(this.modes.TryGetValue(modeId, out var Mode)) {
+        this.mode = Mode;
+      } else {
+        this.modes.Add(modeId, CustomAmmoCategories.DefaultWeaponMode);
+        this.mode = CustomAmmoCategories.DefaultWeaponMode;
+      }
+      Statistic ammoId = weapon.StatCollection.GetStatistic(CustomAmmoCategories.AmmoIdStatName);
+      if (ammoId == null) {
+        ammoId = weapon.StatCollection.AddStatistic(CustomAmmoCategories.AmmoIdStatName,CustomAmmoCategories.DefaultAmmo.Id);
+      }
+      ammo = CustomAmmoCategories.DefaultAmmo;
+      needRevalidate = true;
+      NoValidAmmo = true;
+      HasAmmoVariants = false;
+    }
+    public void Revalidate() {
+      if (this.weapon.StatCollection == null) { return; }
+      string modeId = extDef.baseModeId;
+      Statistic modeIdStat = weapon.StatCollection.GetStatistic(CustomAmmoCategories.WeaponModeStatisticName);
+      if (modeIdStat == null) {
+        modeIdStat = weapon.StatCollection.AddStatistic(CustomAmmoCategories.WeaponModeStatisticName, modeId);
+      } else {
+        modeId = modeIdStat.Value<string>();
+      }
+      if(this.modes.TryGetValue(modeId, out WeaponMode Mode)) {
+        this.mode = Mode;
+      } else if(extDef.Modes.TryGetValue(modeId, out WeaponMode defMode)) {
+        this.modes.Add(modeId, defMode);
+        this.mode = defMode;
+      } else if (this.modes.TryGetValue(extDef.baseModeId, out WeaponMode baseMode)) {
+        this.mode = baseMode;
+      } else if (extDef.Modes.TryGetValue(extDef.baseModeId, out WeaponMode baseDefMode)) {
+        this.modes.Add(extDef.baseModeId, defMode);
+        this.mode = baseDefMode;
+      } else {
+        this.modes.Add(extDef.baseModeId, CustomAmmoCategories.DefaultWeaponMode);
+        this.mode = CustomAmmoCategories.DefaultWeaponMode;
+      }
+      CustomAmmoCategory effectiveCategory = extDef.AmmoCategory;
+      if (mode.AmmoCategory != null) { effectiveCategory = mode.AmmoCategory; } 
+      Statistic ammoIdStat = weapon.StatCollection.GetStatistic(CustomAmmoCategories.AmmoIdStatName);
+      if (ammoIdStat == null) {
+        ammoIdStat = weapon.StatCollection.AddStatistic(CustomAmmoCategories.AmmoIdStatName, CustomAmmoCategories.DefaultAmmo.Id);
+      }
+      string ammoId = ammoIdStat.Value<string>();
+      ExtAmmunitionDef ammoDef = CustomAmmoCategories.findExtAmmo(ammoId);
+      if ((ammoDef == null) || (ammoDef.AmmoCategory.Id != effectiveCategory.Id)) {
+        if(effectiveCategory.BaseCategory.Is_NotSet) {
+          this.ammo = CustomAmmoCategories.DefaultAmmo;
+          this.NoValidAmmo = false;
+        } else {
+          this.ammo = this.findBestAmmo(effectiveCategory);
+        }
+        ammoIdStat.SetValue(this.ammo.Id);
+      } else {
+        this.NoValidAmmo = false;
+        this.ammo = ammoDef;
+      }
+      this.HasAmmoVariants = this.isWeaponHasAmmoVariantsNoCache();
+      needRevalidate = false;
+      HUDSlot?.RefreshDisplayedWeapons();
+    }
+    public bool isWeaponHasAmmoVariantsNoCache() {
+      CustomAmmoCategory ammoCategory = extDef.AmmoCategory;
+      if (this.mode.AmmoCategory != null) { ammoCategory = this.mode.AmmoCategory; }
+      if (ammoCategory.BaseCategory.Is_NotSet) { return false; }
+      List<ExtAmmunitionDef> ammos = this.getAvaibleAmmo(ammoCategory);
+      return ammos.Count > 1;
+    }
+
+  }
   public static class WeaponStatCacheHelper {
-    private static Dictionary<Weapon, ExtAmmunitionDef> weaponAmmo = new Dictionary<Weapon, ExtAmmunitionDef>();
-    private static Dictionary<Weapon, WeaponMode> weaponMode = new Dictionary<Weapon, WeaponMode>();
-    private static Dictionary<Weapon, ExtWeaponDef> weaponExte = new Dictionary<Weapon, ExtWeaponDef>();
-    private static Dictionary<Weapon, bool> weaponHasAmmoVariants = new Dictionary<Weapon, bool>();
+    private static Dictionary<Weapon, WeaponExtendedInfo> weaponExtInfo = new Dictionary<Weapon, WeaponExtendedInfo>();
+    public static void RefreshDisplayedWeapons(this CombatHUDWeaponSlot slot) {
+      Traverse.Create(slot).Field<CombatHUD>("HUD").Value.WeaponPanel.RefreshDisplayedWeapons();
+    }
+    public static WeaponExtendedInfo info(this Weapon weapon) {
+      if (weaponExtInfo.TryGetValue(weapon, out var info)) {
+        if (info.needRevalidate) { info.Revalidate(); };
+      } else {
+        info = new WeaponExtendedInfo(weapon, weapon.weaponDef);
+        info.Revalidate();
+      }
+      return info;
+    }
+    public static void Revalidate(this Weapon weapon) {
+      if (weaponExtInfo.TryGetValue(weapon, out var info)) {
+        if (info.needRevalidate) { info.Revalidate(); };
+      } else {
+        info = new WeaponExtendedInfo(weapon, weapon.weaponDef);
+        info.Revalidate();
+      }
+    }
+    public static void Register(this Weapon weapon, WeaponExtendedInfo info) {
+      weaponExtInfo.Add(weapon, info);
+    }
+    //private static Dictionary<Weapon, ExtAmmunitionDef> weaponAmmo = new Dictionary<Weapon, ExtAmmunitionDef>();
+    //private static Dictionary<Weapon, WeaponMode> weaponMode = new Dictionary<Weapon, WeaponMode>();
+    //private static Dictionary<Weapon, ExtWeaponDef> weaponExte = new Dictionary<Weapon, ExtWeaponDef>();
+    //private static Dictionary<Weapon, bool> weaponHasAmmoVariants = new Dictionary<Weapon, bool>();
     public static void Clear() {
-      weaponAmmo.Clear();
-      weaponMode.Clear();
-      weaponExte.Clear();
-      weaponHasAmmoVariants.Clear();
+      //weaponAmmo.Clear();
+      //weaponMode.Clear();
+      //weaponExte.Clear();
+      //weaponHasAmmoVariants.Clear();
+      weaponExtInfo.Clear();
     }
     public static void ClearAmmoModeCache(this Weapon weapon) {
-      weaponAmmo.Remove(weapon);
-      weaponMode.Remove(weapon);
-      weaponHasAmmoVariants.Remove(weapon);
+      if(weaponExtInfo.TryGetValue(weapon, out var info)) {
+        info.needRevalidate = true;
+      } else {
+        weapon.Register(new WeaponExtendedInfo(weapon, weapon.weaponDef));
+      }
       weapon.ClearInternalAmmoCache();
     }
     public static bool isWeaponHasAmmoVariants(this Weapon weapon) {
-      if (weaponHasAmmoVariants.TryGetValue(weapon, out bool result)) { return result; } else {
-        result = weapon.isWeaponHasAmmoVariantsNoCache();
-        weaponHasAmmoVariants.Add(weapon, result);
-        return result;
+      if (weaponExtInfo.TryGetValue(weapon, out var info)) {
+        if (info.needRevalidate) { info.Revalidate(); };
+      } else {
+        info = new WeaponExtendedInfo(weapon, weapon.weaponDef);
+        info.Revalidate();
       }
+      return info.HasAmmoVariants;
       //return weapon.CustomAmmoCategory().BaseCategory.Is_NotSet == false;
     }
-    private static bool isWeaponHasAmmoVariantsNoCache(this Weapon weapon) {
-      CustomAmmoCategory ammoCategory = weapon.CustomAmmoCategory();
-      if (ammoCategory.BaseCategory.Is_NotSet) { return false; }
-      List<ExtAmmunitionDef> ammos = weapon.getAvaibleAmmo(ammoCategory);
-      return ammos.Count > 1;
-    }
     public static ExtAmmunitionDef ammo(this Weapon weapon) {
-      //Log.M.TWL(0, "ammo of:" + weapon.defId);
-      if (weaponAmmo.TryGetValue(weapon, out ExtAmmunitionDef ammo)) { return ammo; }
-      Statistic ammoId = weapon.StatCollection.GetStatistic(CustomAmmoCategories.AmmoIdStatName);
-      if (ammoId == null) { weaponAmmo.Add(weapon, CustomAmmoCategories.DefaultAmmo); return CustomAmmoCategories.DefaultAmmo; }
-      ExtAmmunitionDef extAmmoDef = CustomAmmoCategories.findExtAmmo(ammoId.Value<string>());
-      weaponAmmo.Add(weapon, extAmmoDef); return extAmmoDef;
+      if (weaponExtInfo.TryGetValue(weapon, out var info) == false) {
+        info = new WeaponExtendedInfo(weapon, weapon.weaponDef);
+        weapon.Register(info);
+      }
+      if (info.needRevalidate) { info.Revalidate(); }
+      return info.ammo;
     }
     public static ExtWeaponDef exDef(this Weapon weapon) {
       //Log.M.TWL(0, "ext def of:" + weapon.defId);
       if (weapon == null) { return null; }
-      if (weaponExte.TryGetValue(weapon, out ExtWeaponDef eDef)) { return eDef; }
       if (weapon == null) {
         throw new Exception("exDef() called for null weapon. This should not happen CustomAmmoCategories is just a victim here");
       }
       if (weapon.weaponDef == null) {
         throw new Exception("exDef() called for weapon with null definition. This should not happen CustomAmmoCategories is just a victim here. Weapon uid:" + weapon.uid);
       }
-      ExtWeaponDef exDef = CustomAmmoCategories.getExtWeaponDef(weapon.defId);
-      weaponExte.Add(weapon, exDef);
-      return exDef;
+      if (weaponExtInfo.TryGetValue(weapon, out var info) == false) {
+        info = new WeaponExtendedInfo(weapon, weapon.weaponDef);
+        weapon.Register(info);
+      }
+      if (info.needRevalidate) { info.Revalidate(); }
+      return info.extDef;
     }
     public static ExtWeaponDef exDef(this WeaponDef weaponDef) {
       //Log.M.TWL(0, "ext def of:" + weapon.defId);
@@ -67,21 +395,15 @@ namespace CustAmmoCategories {
     }
     public static WeaponMode mode(this Weapon weapon) {
       //Log.M.TWL(0, "mode of:" + weapon.defId);
-      if (weaponMode.TryGetValue(weapon, out WeaponMode mode)) { return mode; }
       if (weapon == null) {
         throw new Exception("mode() called for null weapon. This should not happen CustomAmmoCategories is just a victim here");
       }
-      ExtWeaponDef extWeapon = weapon.exDef();
-      string modeId = extWeapon.baseModeId;
-      Statistic modeIdStat = weapon.StatCollection.GetStatistic(CustomAmmoCategories.WeaponModeStatisticName);
-      if (modeIdStat != null) { modeId = modeIdStat.Value<string>(); }
-      if (extWeapon.Modes.ContainsKey(modeId)) {
-        WeaponMode wmode = extWeapon.Modes[modeId];
-        weaponMode.Add(weapon, wmode);
-        return wmode;
+      if (weaponExtInfo.TryGetValue(weapon, out var info) == false) {
+        info = new WeaponExtendedInfo(weapon, weapon.weaponDef);
+        weapon.Register(info);
       }
-      weaponMode.Add(weapon, CustomAmmoCategories.DefaultWeaponMode);
-      return CustomAmmoCategories.DefaultWeaponMode;
+      if (info.needRevalidate) { info.Revalidate(); }
+      return info.mode;
     }
   }
 }

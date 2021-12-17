@@ -723,8 +723,9 @@ namespace CustAmmoCategories {
         weapon.ClearAmmoModeCache();
         return true;
       }
-      ExtAmmunitionDef CurrentAmmo = weapon.ammo();
-      CustomAmmoCategory weaponAmmoCategory = weapon.CustomAmmoCategory();
+      WeaponExtendedInfo info = weapon.info();
+      ExtAmmunitionDef CurrentAmmo = info.ammo;
+      CustomAmmoCategory weaponAmmoCategory = info.effectiveAmmoCategory;
       if (weaponAmmoCategory.BaseCategory.Is_NotSet) { return false; };
       List<ExtAmmunitionDef> AvaibleAmmo = CustomAmmoCategories.getAvaibleAmmo(weapon, weaponAmmoCategory);
       int CurrentAmmoIndex = AvaibleAmmo.IndexOf(CurrentAmmo);
@@ -764,20 +765,24 @@ namespace CustAmmoCategories {
     }
 
     public static bool CycleMode(Weapon weapon, bool direction = true) {
-      ExtWeaponDef extWeapon = CustomAmmoCategories.getExtWeaponDef(weapon.defId);
-      Log.M.TWL(0,"Cycling mode "+weapon.defId);
-      if (extWeapon.Modes.Count <= 1) {
+      WeaponExtendedInfo info = weapon.info();
+      if (info == null) { Log.M?.TWL(0,"!!!!THIS NEVER SHOULD HAPPEND!!!",true); return false; }
+      Log.M.TWL(0,"Cycling mode "+weapon.defId,true);
+      if (info.modes.Count <= 1) {
         Log.M.WL(1,"no weapon modes");
         return false;
       }
+      Log.M.WL(1, "checking "+ CustomAmmoCategories.WeaponModeStatisticName, true);
       if (weapon.StatCollection.ContainsStatistic(CustomAmmoCategories.WeaponModeStatisticName) == false) {
-        weapon.StatCollection.AddStatistic<string>(CustomAmmoCategories.WeaponModeStatisticName, extWeapon.baseModeId);
+        weapon.StatCollection.AddStatistic<string>(CustomAmmoCategories.WeaponModeStatisticName, info.mode.Id);
+        Log.M.WL(1, "CustomAmmoCategories.CycleAmmoBest", true);
         CustomAmmoCategories.CycleAmmoBest(weapon);
         return true;
       }
       string modeId = weapon.StatCollection.GetStatistic(CustomAmmoCategories.WeaponModeStatisticName).Value<string>();
-      CustomAmmoCategory oldWeaponAmmoCategory = weapon.CustomAmmoCategory();
-      List<WeaponMode> avaibleModes = weapon.AvaibleModes();
+      Log.M.WL(1, "CustomAmmoCategories.CycleAmmoBest", true);
+      CustomAmmoCategory oldWeaponAmmoCategory = info.effectiveAmmoCategory;
+      List<WeaponMode> avaibleModes = info.avaibleModes();
       if (avaibleModes.Count == 0) { return false; };
       int nextIndex = direction?0:avaibleModes.Count-1;
       for (int t = 0; t < avaibleModes.Count; ++t) {
@@ -790,7 +795,8 @@ namespace CustAmmoCategories {
       modeId = avaibleModes[nextIndex].Id;
       weapon.StatCollection.Set<string>(CustomAmmoCategories.WeaponModeStatisticName, modeId);
       weapon.ClearAmmoModeCache();
-      CustomAmmoCategory newWeaponAmmoCategory = weapon.CustomAmmoCategory();
+      info.Revalidate();
+      CustomAmmoCategory newWeaponAmmoCategory = info.effectiveAmmoCategory;
       if (oldWeaponAmmoCategory.Index != newWeaponAmmoCategory.Index) {
         CustomAmmoCategories.CycleAmmoBest(weapon);
       } else {
@@ -812,12 +818,12 @@ namespace CustAmmoCategories {
         CustomAmmoCategoriesLog.Log.LogWrite("  Parent is NULL\n");
         return;
       }
-      ExtWeaponDef extWeapon = CustomAmmoCategories.getExtWeaponDef(weapon.defId);
-      if (extWeapon.Modes.Count > 0) {
-        CustomAmmoCategoriesLog.Log.LogWrite(" Weapon modes count " + extWeapon.Modes.Count + "\n");
+      WeaponExtendedInfo info = weapon.info();
+      if (info.modes.Count > 0) {
+        CustomAmmoCategoriesLog.Log.LogWrite(" Weapon modes count " + info.modes.Count + "\n");
         if (weapon.StatCollection.ContainsStatistic(CustomAmmoCategories.WeaponModeStatisticName) == false) {
-          weapon.StatCollection.AddStatistic<string>(CustomAmmoCategories.WeaponModeStatisticName, extWeapon.baseModeId);
-          CustomAmmoCategoriesLog.Log.LogWrite(" Add to weapon stat collection " + extWeapon.baseModeId + "\n");
+          weapon.StatCollection.AddStatistic<string>(CustomAmmoCategories.WeaponModeStatisticName, info.mode.Id);
+          CustomAmmoCategoriesLog.Log.LogWrite(" Add to weapon stat collection " + info.mode.Id + "\n");
           weapon.ClearAmmoModeCache();
         }
       }

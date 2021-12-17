@@ -71,9 +71,9 @@ namespace CustAmmoCategories {
   public static partial class CustomAmmoCategories {
     public static bool DisableInternalWeaponChoose = false;
     public static void applyWeaponAmmoMode(this Weapon weapon, string modeId, string ammoId) {
-      ExtWeaponDef extWeapon = CustomAmmoCategories.getExtWeaponDef(weapon.defId);
+      WeaponExtendedInfo info = weapon.info();
       CustomAmmoCategoriesLog.Log.LogWrite("applyWeaponAmmoMode(" + weapon.defId + "," + modeId + "," + ammoId + ")\n");
-      if (extWeapon.Modes.ContainsKey(modeId)) {
+      if (info.modes.ContainsKey(modeId)) {
         if (weapon.StatCollection.ContainsStatistic(CustomAmmoCategories.WeaponModeStatisticName) == false) {
           weapon.StatCollection.AddStatistic<string>(CustomAmmoCategories.WeaponModeStatisticName, modeId);
         } else {
@@ -91,21 +91,22 @@ namespace CustAmmoCategories {
     }
     public static HashSet<string> getWeaponAvaibleAmmoForMode(Weapon weapon, string modeId) {
       HashSet<string> result = new HashSet<string>();
-      CustomAmmoCategory ammoCategory = CustomAmmoCategories.find(weapon.AmmoCategoryValue.Name);
-      ExtWeaponDef extWeapon = CustomAmmoCategories.getExtWeaponDef(weapon.defId);
-      if (extWeapon.AmmoCategory.BaseCategory.ID == weapon.AmmoCategoryValue.ID) { ammoCategory = extWeapon.AmmoCategory; }
-      if (extWeapon.Modes.Count < 1) {
+      //CustomAmmoCategory ammoCategory = CustomAmmoCategories.find(weapon.AmmoCategoryValue.Name);
+      WeaponExtendedInfo info = weapon.info();
+      //if (extWeapon.AmmoCategory.BaseCategory.ID == weapon.AmmoCategoryValue.ID) { ammoCategory = extWeapon.AmmoCategory; }
+      if (info.modes.Count < 1) {
         CustomAmmoCategoriesLog.Log.LogWrite("WARNING! " + weapon.defId + " has no modes. Even base mode. This means something is very very wrong\n", true);
         return result;
       }
-      if (extWeapon.Modes.ContainsKey(modeId) == false) {
+      if (info.modes.ContainsKey(modeId) == false) {
         CustomAmmoCategoriesLog.Log.LogWrite("WARNING! " + weapon.defId + " has no mode " + modeId + ".\n", true);
         return result;
       }
-      WeaponMode weaponMode = extWeapon.Modes[modeId];
-      if (weaponMode.AmmoCategory.Index != ammoCategory.Index) { ammoCategory = weaponMode.AmmoCategory; };
-      if (ammoCategory.Index == CustomAmmoCategories.NotSetCustomAmmoCategoty.Index) { result.Add(""); return result; };
-      List<ExtAmmunitionDef> allAmmo = weapon.getAvaibleAmmo(ammoCategory);
+      WeaponMode weaponMode = info.modes[modeId];
+      CustomAmmoCategory effectiveAmmoCategory = info.extDef.AmmoCategory;
+      if (weaponMode.AmmoCategory != null) { effectiveAmmoCategory = weaponMode.AmmoCategory; };
+      if (effectiveAmmoCategory.BaseCategory.Is_NotSet) { result.Add(""); return result; };
+      List<ExtAmmunitionDef> allAmmo = info.getAvaibleAmmo(effectiveAmmoCategory);
       foreach(ExtAmmunitionDef ammo in allAmmo) {
         result.Add(ammo.Id);
       }
@@ -113,9 +114,9 @@ namespace CustAmmoCategories {
     }
     public static List<DamagePredictRecord> getWeaponDamagePredict(AbstractActor unit, ICombatant target, Weapon weapon) {
       List<DamagePredictRecord> result = new List<DamagePredictRecord>();
-      ExtWeaponDef extWeapon = CustomAmmoCategories.getExtWeaponDef(weapon.defId);
+      WeaponExtendedInfo info = weapon.info();
       List<WeaponMode> modes = weapon.AvaibleModes();
-      if (extWeapon.Modes.Count < 1) {
+      if (info.modes.Count < 1) {
         //Log.LogWrite("WARNING! " + weapon.defId + " has no modes. Even base mode. This means something is very very wrong\n", true);
         return result;
       }
@@ -123,14 +124,8 @@ namespace CustAmmoCategories {
         //Log.LogWrite("Weapon has no mode to fire\n");
         return result;
       }
-      string currentMode = extWeapon.baseModeId;
-      if (weapon.StatCollection.ContainsStatistic(CustomAmmoCategories.WeaponModeStatisticName) == true) {
-        currentMode = weapon.StatCollection.GetStatistic(CustomAmmoCategories.WeaponModeStatisticName).Value<string>();
-      }
-      string currentAmmo = "";
-      if (weapon.StatCollection.ContainsStatistic(CustomAmmoCategories.AmmoIdStatName) == true) {
-        currentAmmo = weapon.StatCollection.GetStatistic(CustomAmmoCategories.AmmoIdStatName).Value<string>();
-      }
+      string currentMode = info.mode.Id;
+      string currentAmmo = info.ammo.Id;
       foreach (var mode in modes) {
         HashSet<string> ammos = CustomAmmoCategories.getWeaponAvaibleAmmoForMode(weapon, mode.Id);
         List<int> hitLocations = null;

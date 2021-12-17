@@ -11,25 +11,25 @@ using CustomAmmoCategoriesLog;
 
 namespace CustAmmoCategories {
   public static partial class CustomAmmoCategories {
-    public static CustomAmmoCategory CustomAmmoCategory(this Weapon weapon) {
-      if (weapon == null) { return null; }
-      WeaponMode mode = weapon.mode();
-      if(mode.AmmoCategory == null) {
-        ExtWeaponDef extWeapon = weapon.exDef();
-        if (extWeapon.AmmoCategory.BaseCategory.ID != weapon.AmmoCategoryValue.ID) {
-          return CustomAmmoCategories.find(weapon.AmmoCategoryValue.Name);
-        }
-        return extWeapon.AmmoCategory;
-      }
-      return mode.AmmoCategory;
-    }
-    public static string getWeaponAmmoId(Weapon weapon) {
-      if (weapon.CustomAmmoCategory() == CustomAmmoCategories.NotSetCustomAmmoCategoty) { return ""; }
-      Statistic stat = weapon.StatCollection.GetStatistic(CustomAmmoCategories.AmmoIdStatName);
-      if (stat != null) { return stat.Value<string>(); }
-      if (weapon.ammoBoxes.Count == 0) { return ""; };
-      return weapon.ammoBoxes[0].ammoDef.Description.Id;
-    }
+    //public static CustomAmmoCategory CustomAmmoCategory(this Weapon weapon) {
+    //  if (weapon == null) { return null; }
+    //  WeaponMode mode = weapon.mode();
+    //  if(mode.AmmoCategory == null) {
+    //    ExtWeaponDef extWeapon = weapon.exDef();
+    //    if (extWeapon.AmmoCategory.BaseCategory.ID != weapon.AmmoCategoryValue.ID) {
+    //      return CustomAmmoCategories.find(weapon.AmmoCategoryValue.Name);
+    //    }
+    //    return extWeapon.AmmoCategory;
+    //  }
+    //  return mode.AmmoCategory;
+    //}
+    //public static string getWeaponAmmoId(Weapon weapon) {
+    //  if (weapon.CustomAmmoCategory() == CustomAmmoCategories.NotSetCustomAmmoCategoty) { return ""; }
+    //  Statistic stat = weapon.StatCollection.GetStatistic(CustomAmmoCategories.AmmoIdStatName);
+    //  if (stat != null) { return stat.Value<string>(); }
+    //  if (weapon.ammoBoxes.Count == 0) { return ""; };
+    //  return weapon.ammoBoxes[0].ammoDef.Description.Id;
+    //}
     public static bool isWeaponCanShootNoAmmo(WeaponDef weaponDef) {
       ExtWeaponDef extWeapon = CustomAmmoCategories.getExtWeaponDef(weaponDef.Description.Id);
       if (weaponDef.AmmoCategoryValue.Is_NotSet) { return true; };
@@ -40,22 +40,22 @@ namespace CustAmmoCategories {
       }
       return false;
     }
-    public static List<CustomAmmoCategory> getWeaponAmmoCategories(Weapon weapon) {
-      List<CustomAmmoCategory> result = new List<CustomAmmoCategory>();
-      ExtWeaponDef extWeapon = CustomAmmoCategories.getExtWeaponDef(weapon.defId);
-      if (weapon.AmmoCategoryValue.Is_NotSet == false) {
-        if (extWeapon.AmmoCategory.BaseCategory.ID == weapon.AmmoCategoryValue.ID) {
-          result.Add(extWeapon.AmmoCategory);
-        } else {
-          result.Add(CustomAmmoCategories.find(weapon.AmmoCategoryValue.Name));
-        }
-      }
-      foreach (var mode in extWeapon.Modes) {
-        if (mode.Value.AmmoCategory == null) { continue; };
-        if (mode.Value.AmmoCategory.BaseCategory.Is_NotSet == false) { result.Add(mode.Value.AmmoCategory); };
-      }
-      return result;
-    }
+    //public static List<CustomAmmoCategory> getWeaponAmmoCategories(Weapon weapon) {
+    //  List<CustomAmmoCategory> result = new List<CustomAmmoCategory>();
+    //  ExtWeaponDef extWeapon = CustomAmmoCategories.getExtWeaponDef(weapon.defId);
+    //  if (weapon.AmmoCategoryValue.Is_NotSet == false) {
+    //    if (extWeapon.AmmoCategory.BaseCategory.ID == weapon.AmmoCategoryValue.ID) {
+    //      result.Add(extWeapon.AmmoCategory);
+    //    } else {
+    //      result.Add(CustomAmmoCategories.find(weapon.AmmoCategoryValue.Name));
+    //    }
+    //  }
+    //  foreach (var mode in extWeapon.Modes) {
+    //    if (mode.Value.AmmoCategory == null) { continue; };
+    //    if (mode.Value.AmmoCategory.BaseCategory.Is_NotSet == false) { result.Add(mode.Value.AmmoCategory); };
+    //  }
+    //  return result;
+    //}
     public static bool isWeaponCanUseAmmo(WeaponDef weaponDef,AmmunitionDef ammoDef) {
       Log.M.WL("Cheching if weapon "+weaponDef.Description.Id + " can use ammo "+ammoDef.Description.Id+"\n");
       ExtAmmunitionDef extAmmo = CustomAmmoCategories.findExtAmmo(ammoDef.Description.Id);
@@ -90,7 +90,7 @@ namespace CustomAmmoCategoriesPatches {
     }
     private static AmmoCategoryValue AmmoCategory(this Weapon weapon) {
       //CustomAmmoCategoriesLog.Log.LogWrite("get AIUtil_UnitHasLOFToTargetFromPosition IndirectFireCapable\n");
-      return weapon.CustomAmmoCategory().BaseCategory;
+      return weapon.info().effectiveAmmoCategory.BaseCategory;
     }
   }
   [HarmonyPatch(typeof(AbstractActor))]
@@ -107,9 +107,10 @@ namespace CustomAmmoCategoriesPatches {
       Dictionary<string, int> ammoUsed = new Dictionary<string, int>();
       for (int index1 = 0; index1 < __instance.Weapons.Count; ++index1) {
         CustomAmmoCategoriesLog.Log.LogWrite(" weapon "+ __instance.Weapons[index1].defId+ "\n");
-        string ammoId = CustomAmmoCategories.getWeaponAmmoId(__instance.Weapons[index1]);
+        string ammoId = __instance.Weapons[index1].info().ammo.Id;//CustomAmmoCategories.getWeaponAmmoId(__instance.Weapons[index1]);
         CustomAmmoCategoriesLog.Log.LogWrite("  ammoId " + ammoId + "\n");
         if (string.IsNullOrEmpty(ammoId)) { continue; };
+        if (ammoId == CustomAmmoCategories.DefaultAmmo.Id) { continue; };
         if (ammoUsed.ContainsKey(ammoId)) {
           ammoUsed[ammoId] += __instance.Weapons[index1].ShotsWhenFired;
         } else {
@@ -131,9 +132,10 @@ namespace CustomAmmoCategoriesPatches {
       }
       for (int index = 0; index < __instance.Weapons.Count; ++index) {
         CustomAmmoCategoriesLog.Log.LogWrite(" weapon " + __instance.Weapons[index].defId + "\n");
-        string ammoId = CustomAmmoCategories.getWeaponAmmoId(__instance.Weapons[index]);
+        string ammoId = __instance.Weapons[index].info().ammo.Id;
         CustomAmmoCategoriesLog.Log.LogWrite("  ammoId " + ammoId + "\n");
         if (string.IsNullOrEmpty(ammoId)) { continue; };
+        if (ammoId == CustomAmmoCategories.DefaultAmmo.Id) { continue; };
         int ammoCountAvaible = 0;
         if (ammoAvaible.ContainsKey(ammoId)) { ammoCountAvaible = ammoAvaible[ammoId]; };
         int ammoCountUsed = 0;
@@ -155,7 +157,7 @@ namespace CustomAmmoCategoriesPatches {
     }
     private static AmmoCategoryValue AmmoCategory(Weapon weapon) {
       //CustomAmmoCategoriesLog.Log.LogWrite("get AIUtil_UnitHasLOFToTargetFromPosition IndirectFireCapable\n");
-      return weapon.CustomAmmoCategory().BaseCategory;
+      return weapon.info().effectiveAmmoCategory.BaseCategory;
     }
   }
   [HarmonyPatch(typeof(PoorlyMaintainedEffect))]
@@ -168,7 +170,7 @@ namespace CustomAmmoCategoriesPatches {
     }
     private static AmmoCategoryValue AmmoCategory(Weapon weapon) {
       //CustomAmmoCategoriesLog.Log.LogWrite("get AIUtil_UnitHasLOFToTargetFromPosition IndirectFireCapable\n");
-      return weapon.CustomAmmoCategory().BaseCategory;
+      return weapon.info().effectiveAmmoCategory.BaseCategory;
     }
   }
   [HarmonyPatch(typeof(PoorlyMaintainedEffect))]
@@ -181,7 +183,7 @@ namespace CustomAmmoCategoriesPatches {
     }
     private static AmmoCategoryValue AmmoCategory(Weapon weapon) {
       //CustomAmmoCategoriesLog.Log.LogWrite("get AIUtil_UnitHasLOFToTargetFromPosition IndirectFireCapable\n");
-      return weapon.CustomAmmoCategory().BaseCategory;
+      return weapon.info().effectiveAmmoCategory.BaseCategory;
     }
   }
   [HarmonyPatch(typeof(PoorlyMaintainedEffect))]
@@ -194,7 +196,7 @@ namespace CustomAmmoCategoriesPatches {
     }
     private static AmmoCategoryValue AmmoCategory(Weapon weapon) {
       //CustomAmmoCategoriesLog.Log.LogWrite("get AIUtil_UnitHasLOFToTargetFromPosition IndirectFireCapable\n");
-      return weapon.CustomAmmoCategory().BaseCategory;
+      return weapon.info().effectiveAmmoCategory.BaseCategory;
     }
   }
   [HarmonyPatch(typeof(CombatHUDWeaponSlot))]
@@ -237,7 +239,7 @@ namespace CustomAmmoCategoriesPatches {
     }
     private static AmmoCategoryValue AmmoCategory(Weapon weapon) {
       //CustomAmmoCategoriesLog.Log.LogWrite("get AIUtil_UnitHasLOFToTargetFromPosition IndirectFireCapable\n");
-      return weapon.CustomAmmoCategory().BaseCategory;
+      return weapon.info().effectiveAmmoCategory.BaseCategory;
     }
   }
   [HarmonyPatch(typeof(CombatHUDWeaponSlot))]
@@ -255,7 +257,7 @@ namespace CustomAmmoCategoriesPatches {
     }
     private static AmmoCategoryValue AmmoCategory(Weapon weapon) {
       //CustomAmmoCategoriesLog.Log.LogWrite("get AIUtil_UnitHasLOFToTargetFromPosition IndirectFireCapable\n");
-      return weapon.CustomAmmoCategory().BaseCategory;
+      return weapon.info().effectiveAmmoCategory.BaseCategory;
     }
   }
   [HarmonyPatch(typeof(Weapon))]
@@ -268,7 +270,7 @@ namespace CustomAmmoCategoriesPatches {
     }
     private static AmmoCategoryValue AmmoCategory(Weapon weapon) {
       //CustomAmmoCategoriesLog.Log.LogWrite("get AIUtil_UnitHasLOFToTargetFromPosition IndirectFireCapable\n");
-      return weapon.CustomAmmoCategory().BaseCategory;
+      return weapon.info().effectiveAmmoCategory.BaseCategory;
     }
   }
   [HarmonyPatch(typeof(Weapon))]
@@ -285,7 +287,7 @@ namespace CustomAmmoCategoriesPatches {
         throw new Exception("HasAmmo called for null weapon. This should not happen CustomAmmoCategories is just a victim here");
       }
       //CustomAmmoCategoriesLog.Log.LogWrite("get AIUtil_UnitHasLOFToTargetFromPosition IndirectFireCapable\n");
-      return weapon.CustomAmmoCategory().BaseCategory;
+      return weapon.info().effectiveAmmoCategory.BaseCategory;
     }
   }
 }

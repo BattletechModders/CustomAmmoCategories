@@ -1278,7 +1278,7 @@ namespace CustAmmoCategories {
 
             for (int weaponIndex = 0; weaponIndex < weaponHitInfo[groupIndex].Length; ++weaponIndex) {
               if (weaponHitInfo[groupIndex][weaponIndex].HasValue == false) {
-                Log.M.TWL(0,"WeaponHitInfo at grp:"+groupIndex+" index:"+weaponHitInfo+" is null. How?! Again weapon without representation?! You realy should stop it!",true);
+                Log.M.TWL(0,"WeaponHitInfo at grp:"+groupIndex+" index:"+ weaponIndex + " is null. How?!",true);
                 continue;
               }
               WeaponHitInfo hitInfo = weaponHitInfo[groupIndex][weaponIndex].Value;

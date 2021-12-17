@@ -20,9 +20,9 @@ namespace CustAmmoCategories {
       }
     }
     public static bool canBeAMS(this Weapon weapon) {
-      ExtWeaponDef extWeapon = weapon.exDef();
-      if (extWeapon.IsAMS == TripleBoolean.True) { return true; }
-      foreach(var mode in extWeapon.Modes) {
+      WeaponExtendedInfo info = weapon.info();
+      if (info.extDef.IsAMS == TripleBoolean.True) { return true; }
+      foreach(var mode in info.modes) {
         if (mode.Value.IsAMS == TripleBoolean.True) { return true; }
       }
       foreach (var ammobox in weapon.ammoBoxes) {

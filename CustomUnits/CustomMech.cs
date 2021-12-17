@@ -9,6 +9,7 @@ using System;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Reflection.Emit;
+using System.Text;
 using System.Threading;
 using UnityEngine;
 
@@ -22,6 +23,7 @@ namespace CustomUnits {
       try {
         //if (__instance.FakeVehicle()) { __result = 1f; return false; }
         if (__instance is CustomMech custMech) { return false; }
+        //Log.TWL(0, "MoveMultiplier:"+__instance.PilotableActorDef.Description.Id+" not a custom mech");
         return true;
       } catch (Exception e) {
         Log.TWL(0, e.ToString());
@@ -95,8 +97,10 @@ namespace CustomUnits {
     public virtual float _MoveMultiplier {
       get {
         float num = 0.0f;
+        StringBuilder log = new StringBuilder();
         if (this.IsOverheated) {
           num += this.Combat.Constants.MoveConstants.OverheatedMovePenalty;
+          log.Append(" IsOverheated:" + this.IsOverheated+" penalty:"+ num);
         }
         List<ChassisLocations> legsDamageLevels = new List<ChassisLocations>();
         legsDamageLevels.Add(ChassisLocations.LeftLeg);
@@ -117,13 +121,18 @@ namespace CustomUnits {
         foreach (ChassisLocations location in legsDamageLevels) {
           if (this.IsLocationDestroyed(location)) {
             num += blackMod;
+            //log.Append(" location:" + location + " destroyed.penalty:" + num);
           } else if (this.GetLocationDamageLevel(location) > LocationDamageLevel.Penalized) {
             num += redMod;
-          } else {
+            //log.Append(" location:" + location + " damaged.penalty:" + num);
+          } else if(this.GetLocationDamageLevel(location) > LocationDamageLevel.Functional) { 
             num += yellowMod;
+            //log.Append(" location:" + location + " light damage.penalty:" + num);
           }
         }
-        return Mathf.Max(this.Combat.Constants.MoveConstants.MinMoveSpeed, 1f - num);
+        float result = Mathf.Max(this.Combat.Constants.MoveConstants.MinMoveSpeed, 1f - num);
+        //Log.TWL(0, "MoveMultiplier:"+this.PilotableActorDef.Description.Id+" "+result+" "+log.ToString());
+        return result;
       }
     }
     public override void ApplyBraced() {
@@ -220,31 +229,35 @@ namespace CustomUnits {
       }
     }
     public virtual void InitWeapons() {
-      List<ComponentRepresentationInfo> componentsToInit = new List<ComponentRepresentationInfo>();
-      foreach (MechComponent allComponent in this.allComponents) {
-        if (allComponent.componentType != ComponentType.Weapon) {
-          componentsToInit.Add(new ComponentRepresentationInfo(allComponent, allComponent.mechComponentRef.MountedLocation, allComponent.mechComponentRef.MountedLocation, ComponentRepresentationInfo.RepType.Component));
+      try {
+        List<ComponentRepresentationInfo> componentsToInit = new List<ComponentRepresentationInfo>();
+        foreach (MechComponent allComponent in this.allComponents) {
+          if (allComponent.componentType != ComponentType.Weapon) {
+            componentsToInit.Add(new ComponentRepresentationInfo(allComponent, allComponent.mechComponentRef.MountedLocation, allComponent.mechComponentRef.MountedLocation, ComponentRepresentationInfo.RepType.Component));
+          }
         }
-      }
-      foreach (Weapon weapon in this.Weapons) {
-        componentsToInit.Add(new ComponentRepresentationInfo(weapon, weapon.mechComponentRef.MountedLocation, weapon.mechComponentRef.MountedLocation, ComponentRepresentationInfo.RepType.Weapon));
-      }
-      foreach (MechComponent supportComponent in this.supportComponents) {
-        if (supportComponent is Weapon weapon) {
-          componentsToInit.Add(new ComponentRepresentationInfo(weapon, weapon.mechComponentRef.MountedLocation, weapon.mechComponentRef.MountedLocation, ComponentRepresentationInfo.RepType.Support));
+        foreach (Weapon weapon in this.Weapons) {
+          componentsToInit.Add(new ComponentRepresentationInfo(weapon, weapon.mechComponentRef.MountedLocation, weapon.mechComponentRef.MountedLocation, ComponentRepresentationInfo.RepType.Weapon));
         }
+        foreach (MechComponent supportComponent in this.supportComponents) {
+          if (supportComponent is Weapon weapon) {
+            componentsToInit.Add(new ComponentRepresentationInfo(weapon, weapon.mechComponentRef.MountedLocation, weapon.mechComponentRef.MountedLocation, ComponentRepresentationInfo.RepType.Support));
+          }
+        }
+        this.custGameRep.InitWeapons(componentsToInit, this.LogDisplayName);
+        if (!this.MeleeWeapon.baseComponentRef.hasPrefabName) {
+          this.MeleeWeapon.baseComponentRef.prefabName = "chrPrfWeap_generic_melee";
+          this.MeleeWeapon.baseComponentRef.hasPrefabName = true;
+        }
+        this.MeleeWeapon.InitGameRep(this.MeleeWeapon.baseComponentRef.prefabName, this.GetAttachTransform(this.MeleeWeapon.mechComponentRef.MountedLocation), this.LogDisplayName);
+        if (!this.DFAWeapon.mechComponentRef.hasPrefabName) {
+          this.DFAWeapon.mechComponentRef.prefabName = "chrPrfWeap_generic_melee";
+          this.DFAWeapon.mechComponentRef.hasPrefabName = true;
+        }
+        this.DFAWeapon.InitGameRep(this.DFAWeapon.mechComponentRef.prefabName, this.GetAttachTransform(this.DFAWeapon.mechComponentRef.MountedLocation), this.LogDisplayName);
+      }catch(Exception e) {
+        Log.TWL(0, e.ToString(),true);
       }
-      this.custGameRep.InitWeapons(componentsToInit, this.LogDisplayName);
-      if (!this.MeleeWeapon.baseComponentRef.hasPrefabName) {
-        this.MeleeWeapon.baseComponentRef.prefabName = "chrPrfWeap_generic_melee";
-        this.MeleeWeapon.baseComponentRef.hasPrefabName = true;
-      }
-      this.MeleeWeapon.InitGameRep(this.MeleeWeapon.baseComponentRef.prefabName, this.GetAttachTransform(this.MeleeWeapon.mechComponentRef.MountedLocation), this.LogDisplayName);
-      if (!this.DFAWeapon.mechComponentRef.hasPrefabName) {
-        this.DFAWeapon.mechComponentRef.prefabName = "chrPrfWeap_generic_melee";
-        this.DFAWeapon.mechComponentRef.hasPrefabName = true;
-      }
-      this.DFAWeapon.InitGameRep(this.DFAWeapon.mechComponentRef.prefabName, this.GetAttachTransform(this.DFAWeapon.mechComponentRef.MountedLocation), this.LogDisplayName);
     }
     private static MethodInfo Mech_InitGameRep = null;
     private static Patches Mech_InitGameRep_patches = null;

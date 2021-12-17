@@ -844,8 +844,8 @@ namespace CustomAmmoCategoriesPatches {
     public void RefreshText() {
       if (modeText == null) { return; }
       if (parent.DisplayedWeapon == null) { modeText.SetText("  "); return; }
-      ExtWeaponDef extWeapon = parent.DisplayedWeapon.exDef();
-      if (extWeapon.Modes.Count > 1) {
+      WeaponExtendedInfo info = parent.DisplayedWeapon.info();
+      if (info.modes.Count > 1) {
         WeaponMode mode = parent.DisplayedWeapon.mode();
         if (string.IsNullOrEmpty(mode.UIName) == false) {
           modeText.SetText(mode.UIName);
@@ -934,35 +934,39 @@ namespace CustomAmmoCategoriesPatches {
       RefreshColor(this.parentHovered);
     }
     public override void OnPointerClick(PointerEventData data) {
-      Log.M.TWL(0,"WeaponHitChanceHover.OnPointerClick called." + data.position);
+      Log.M.TWL(0,"WeaponHitChanceHover.OnPointerClick called." + data.position, true);
       if (this.parent.DisplayedWeapon == null) { return; }
       if (this.weaponPanel.DisplayedActor == null) { return; }
       if (parent.DisplayedWeapon.parent.Combat.AttackDirector.IsAnyAttackSequenceActive) {
         Log.M.WL(1, "Attack sequence is active");
         return;
       }
-      bool isShift = (Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.LeftShift));
-      bool prevIndirectState = parent.DisplayedWeapon.IndirectFireCapable();
-      if (CustomAmmoCategories.CycleMode(parent.DisplayedWeapon, data.button == PointerEventData.InputButton.Left)) {
-        if (SceneSingletonBehavior<WwiseManager>.HasInstance) {
-          uint num2 = SceneSingletonBehavior<WwiseManager>.Instance.PostEventById(390458608, parent.DisplayedWeapon.parent.GameRep.audioObject, (AkCallbackManager.EventCallback)null, (object)null);
-          Log.S.TWL(0, "Playing sound by id:" + num2);
-        } else {
-          Log.S.TWL(0, "Can't play");
-        }
-        if (isShift) {
-          foreach (CombatHUDWeaponSlot slot in this.weaponPanel.DisplayedWeaponSlots) {
-            if (slot.DisplayedWeapon == parent.DisplayedWeapon) { continue; }
-            if (slot.DisplayedWeapon.defId != parent.DisplayedWeapon.defId) { continue; }
-            bool indState = slot.DisplayedWeapon.IndirectFireCapable();
-            slot.DisplayedWeapon.SyncMode(parent.DisplayedWeapon);
-            slot.RefreshWeaponCapabilities(indState);
+      try {
+        bool isShift = (Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.LeftShift));
+        bool prevIndirectState = parent.DisplayedWeapon.IndirectFireCapable();
+        if (CustomAmmoCategories.CycleMode(parent.DisplayedWeapon, data.button == PointerEventData.InputButton.Left)) {
+          if (SceneSingletonBehavior<WwiseManager>.HasInstance) {
+            uint num2 = SceneSingletonBehavior<WwiseManager>.Instance.PostEventById(390458608, parent.DisplayedWeapon.parent.GameRep.audioObject, (AkCallbackManager.EventCallback)null, (object)null);
+            Log.S.TWL(0, "Playing sound by id:" + num2);
+          } else {
+            Log.S.TWL(0, "Can't play");
+          }
+          if (isShift) {
+            foreach (CombatHUDWeaponSlot slot in this.weaponPanel.DisplayedWeaponSlots) {
+              if (slot.DisplayedWeapon == parent.DisplayedWeapon) { continue; }
+              if (slot.DisplayedWeapon.defId != parent.DisplayedWeapon.defId) { continue; }
+              bool indState = slot.DisplayedWeapon.IndirectFireCapable();
+              slot.DisplayedWeapon.SyncMode(parent.DisplayedWeapon);
+              slot.RefreshWeaponCapabilities(indState);
+            }
           }
         }
+        parent.RefreshWeaponCapabilities(prevIndirectState);
+        if (hovered) { ShowSidePanel(); }
+        RefreshText();
+      }catch(Exception e) {
+        Log.M?.TWL(0, e.ToString(), true);
       }
-      parent.RefreshWeaponCapabilities(prevIndirectState);
-      if (hovered) { ShowSidePanel(); }
-      RefreshText();
     }
   }
   public class WeaponAmmoHover : EventTrigger {
@@ -1053,7 +1057,7 @@ namespace CustomAmmoCategoriesPatches {
     public void ShowSidePanel() {
       Text title = new Text(this.parent.DisplayedWeapon.UIName);
       Text description = new Text("__/CAC.AMMO_SIDE_HEADER/__");
-      CustomAmmoCategory weaponAmmoCategory = this.parent.DisplayedWeapon.CustomAmmoCategory();
+      CustomAmmoCategory weaponAmmoCategory = this.parent.DisplayedWeapon.info().effectiveAmmoCategory;
       if (weaponAmmoCategory.BaseCategory.Is_NotSet == false) {
         ExtAmmunitionDef ammo = this.parent.DisplayedWeapon.ammo();
         List<ExtAmmunitionDef> AvaibleAmmo = CustomAmmoCategories.getAvaibleAmmo(this.parent.DisplayedWeapon, weaponAmmoCategory);

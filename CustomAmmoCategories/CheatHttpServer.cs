@@ -257,6 +257,7 @@ namespace CustAmmoCategories {
       foreach(var pilot in dataManager.PilotDefs) {
         pilots.Add(pilot.Key);
       }
+      pilots.Sort();
       Log.M.WL(1, "result:" + pilots.Count);
       request.ready(pilots);
     }
@@ -325,7 +326,12 @@ namespace CustAmmoCategories {
       JObject json = JObject.Parse(request.input);
       Log.M.WL(1,"pilot:"+ (string)json["pilotdef"]);
       try {
-        gameState.AddPilotToRoster((string)json["pilotdef"]);
+        //gameState.AddPilotToRoster((string)json["pilotdef"]);
+        gameState.RequestItem<PilotDef>((string)json["pilotdef"], (Action<PilotDef>)(obj =>
+        {
+          if (obj == null) { return; }
+          gameState.CurSystem.AddAvailablePilot(obj,true);
+        }), BattleTechResourceType.PilotDef);
         jresp["success"] = "yes";
       } catch (Exception e) {
         jresp["error"] = e.ToString();

@@ -418,7 +418,8 @@ namespace CustAmmoCategories {
     public static void RealDecrementAmmo(this Weapon weapon, int stackItemUID, int realShootsUsed) {
       Log.M.TWL(0,"RealDecrementAmmo:" + weapon.defId);
       int ammoWhenFired = weapon.ShootsToAmmo(realShootsUsed);
-      CustomAmmoCategory ammoCategory = weapon.CustomAmmoCategory();
+      WeaponExtendedInfo info = weapon.info();
+      CustomAmmoCategory ammoCategory = info.effectiveAmmoCategory;
       if (ammoCategory.BaseCategory.Is_NotSet) { Log.M.WL(1, "not using ammo"); return; };
       ExtAmmunitionDef ammo = weapon.ammo();
       if (ammo.AmmoCategory.Id != ammoCategory.Id) {

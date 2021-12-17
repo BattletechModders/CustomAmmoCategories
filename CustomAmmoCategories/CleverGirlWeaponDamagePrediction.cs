@@ -406,9 +406,9 @@ namespace CleverGirlAIDamagePrediction {
     }
     public static List<AmmoModePair> getAvaibleFiringMethods(this Weapon weapon) {
       List<AmmoModePair> result = new List<AmmoModePair>();
-      ExtWeaponDef extWeapon = CustomAmmoCategories.getExtWeaponDef(weapon.defId);
+      WeaponExtendedInfo info = weapon.info();
       List<WeaponMode> modes = weapon.AvaibleModes();
-      if (extWeapon.Modes.Count < 1) {
+      if (info.modes.Count < 1) {
         //Log.LogWrite("WARNING! " + weapon.defId + " has no modes. Even base mode. This means something is very very wrong\n", true);
         return result;
       }

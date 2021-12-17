@@ -44,12 +44,13 @@ namespace CustAmmoCategories {
   public static partial class CustomAmmoCategories {
     //public static readonly string NoModeToFireStatisticName = "CACNoModeToFire";
     public static List<WeaponMode> AvaibleModes(this Weapon weapon) {
-      List<WeaponMode> result = new List<WeaponMode>();
-      ExtWeaponDef extWeapon = weapon.exDef();
-      foreach(var mode in extWeapon.Modes) {
-        if (mode.Value.Lock.isAvaible(weapon)) { result.Add(mode.Value); };
-      }
-      return result;
+      return weapon.info().avaibleModes();
+      //List<WeaponMode> result = new List<WeaponMode>();
+      //ExtWeaponDef extWeapon = weapon.exDef();
+      //foreach(var mode in extWeapon.Modes) {
+      //  if (mode.Value.Lock.isAvaible(weapon)) { result.Add(mode.Value); };
+      //}
+      //return result;
     }
     //public static bool NoModeToFire(this Weapon weapon) {
     //  Statistic stat = weapon.StatCollection.GetStatistic(NoModeToFireStatisticName);

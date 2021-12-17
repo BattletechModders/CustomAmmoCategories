@@ -339,6 +339,22 @@ namespace CustomUnits{
   public static partial class Core {
     public static readonly float Epsilon = 0.001f;
     public static CUSettings Settings;
+    public static Assembly MechEngineerAssembly = null;
+    public static void MechDefMovementStatistics_GetJumpCapacity(object __instance,ref MechDef ___mechDef, ref float __result) {
+      Log.TWL(0, "MechEngineer.Features.OverrideStatTooltips.Helper.MechDefMovementStatistics.GetJumpCapacity " + ___mechDef.Description.Id, true);
+      UnitCustomInfo info = ___mechDef.GetCustomInfo();
+      if (info != null) {
+        if(info.SquadInfo.Troopers > 1) {
+          HashSet<ChassisLocations> locations = new HashSet<ChassisLocations>();
+          foreach(ChassisLocations location in TrooperSquad.locations) {
+            LocationDef locationDef = ___mechDef.GetChassisLocationDef(location);
+            if((locationDef.MaxArmor == 0f)&&(locationDef.InternalStructure <= 1f)) { continue; }
+
+          }
+          __result /= info.SquadInfo.Troopers;
+        }
+      }
+    }
     public static string BaseDir { get; private set; }
     public static float TypeDmgCACModifier(Weapon weapon, Vector3 attackPosition, ICombatant target, bool IsBreachingShot, int location, float dmg, float ap, float heat, float stab) {
       ExtWeaponDef def = weapon.exDef();
@@ -417,7 +433,7 @@ namespace CustomUnits{
     }
     public static void FinishedLoading(List<string> loadOrder, Dictionary<string, Dictionary<string, VersionManifestEntry>> customResources) {
       Log.TWL(0, "FinishedLoading", true);
-      IRBTModUtils.Extension.MechExtensions.RegisterMoveDistanceModifier("CustomUnits", 10, Mech_MaxWalkDistance.MaxWalkDistanceMod, Mech_MaxWalkDistance.MaxSprintDistanceMod);
+      IRBTModUtils.Feature.MovementFeature.RegisterMoveDistanceModifier("CustomUnits", 10, Mech_MaxWalkDistance.MaxWalkDistanceMod, Mech_MaxWalkDistance.MaxSprintDistanceMod);
       CustomPrewarm.Core.RegisterSerializator("CustomUnits", BattleTechResourceType.ChassisDef, VehicleCustomInfoHelper.GetInfoByChassisId);
       CustomPrewarm.Core.RegisterSerializator("CustomUnits", BattleTechResourceType.VehicleChassisDef, VehicleCustomInfoHelper.GetInfoByChassisId);
       CustomPrewarm.Core.RegisterSerializator("CustomUnits", BattleTechResourceType.HardpointDataDef, CustomHardPointsHelper.CustomHardpoints);
@@ -426,6 +442,21 @@ namespace CustomUnits{
         foreach(string name in loadOrder) { if (name == "Mission Control") { CustomLanceHelper.MissionControlDetected = true; break; }; }
         foreach (string name in loadOrder) { if (name == "MechEngineer") { Core.Settings.MechEngineerDetected = true; break; }; }
         foreach (string name in loadOrder) { if (name == "LowVisibility") { LowVisibilityAPIHelper.Init(); break; }; }
+        foreach (Assembly assembly in AppDomain.CurrentDomain.GetAssemblies()) {
+          Log.WL(1, "Assembly:"+ assembly.FullName);
+          if (assembly.FullName.StartsWith("MechEngineer")) { Core.MechEngineerAssembly = assembly; }
+        }
+        if(Core.MechEngineerAssembly != null) {
+          Type meStatHelper = Core.MechEngineerAssembly.GetType("MechEngineer.Features.OverrideStatTooltips.Helper.MechDefMovementStatistics");
+          if(meStatHelper != null) {
+            Log.WL(1, "MechEngineer.Features.OverrideStatTooltips.Helper.MechDefMovementStatistics found " + meStatHelper.Name);
+            MethodInfo meStatHelper_GetJumpCapacity = meStatHelper.GetMethod("GetJumpCapacity", BindingFlags.NonPublic | BindingFlags.Instance);
+            if(meStatHelper_GetJumpCapacity != null) {
+              Log.WL(2, "MechEngineer.Features.OverrideStatTooltips.Helper.MechDefMovementStatistics GetJumpCapacity found");
+              Core.HarmonyInstance.Patch(meStatHelper_GetJumpCapacity, null, new HarmonyMethod(typeof(Core).GetMethod(nameof(MechDefMovementStatistics_GetJumpCapacity))));
+            }
+          }
+        }
         foreach (var customResource in customResources) {
           Log.TWL(0, "customResource:"+ customResource.Key);
           if (customResource.Key == "CustomMechRepresentationDef") {

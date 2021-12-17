@@ -35,9 +35,9 @@ namespace CustAmmoCategories {
       return Mathf.Abs(extWeapon.MissileVolleyIntervalMultiplier * mode.MissileVolleyIntervalMultiplier * ammo.MissileVolleyIntervalMultiplier);
     }
     public static bool AlternateBallistic(this Weapon weapon) {
-      ExtWeaponDef extWeapon = weapon.exDef();
-      if (extWeapon.HasShells == TripleBoolean.True) { return true; };
-      foreach (var mode in extWeapon.Modes) {
+      WeaponExtendedInfo info = weapon.info();
+      if (info.extDef.HasShells == TripleBoolean.True) { return true; };
+      foreach (var mode in info.modes) {
         if (mode.Value.HasShells == TripleBoolean.True) { return true; };
       }
       foreach (var box in weapon.ammoBoxes) {

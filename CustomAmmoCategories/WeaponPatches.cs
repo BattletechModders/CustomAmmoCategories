@@ -439,21 +439,21 @@ namespace CustAmmoCategoriesPatches {
     public static void ClearInternalAmmoCache(this Weapon weapon) { InternalAmmoCache.Remove(weapon); }
     public static void Clear(){ InternalAmmoCache.Clear(); }
     public static void DecInternalAmmo(this Weapon weapon, int stackItemUID, int ammoCount) {
-      CustomAmmoCategory cat = weapon.CustomAmmoCategory();
+      CustomAmmoCategory cat = weapon.info().effectiveAmmoCategory;
       if (cat.BaseCategory.Is_NotSet) {  return; }
       string statName = InternalAmmoName + weapon.ammo().Id;
       weapon.StatCollection.ModifyStat<int>(weapon.uid, stackItemUID, statName, StatCollection.StatOperation.Int_Subtract, ammoCount, -1, true);
       weapon.ClearInternalAmmoCache();
     }
     public static void SetInternalAmmo(this Weapon weapon, int stackItemUID, int ammoCount) {
-      CustomAmmoCategory cat = weapon.CustomAmmoCategory();
+      CustomAmmoCategory cat = weapon.info().effectiveAmmoCategory;
       if (cat.BaseCategory.Is_NotSet) { return; }
       string statName = InternalAmmoName + weapon.ammo().Id;
       weapon.StatCollection.ModifyStat<int>(weapon.uid, stackItemUID, statName, StatCollection.StatOperation.Set, ammoCount, -1, true);
       weapon.ClearInternalAmmoCache();
     }
     public static void ZeroInternalAmmo(this Weapon weapon, int stackItemUID) {
-      CustomAmmoCategory cat = weapon.CustomAmmoCategory();
+      CustomAmmoCategory cat = weapon.info().effectiveAmmoCategory;
       if (cat.BaseCategory.Is_NotSet) { return; }
       string statName = InternalAmmoName + weapon.ammo().Id;
       weapon.StatCollection.ModifyStat<int>(weapon.uid, stackItemUID, statName, StatCollection.StatOperation.Set, 0, -1, true);
@@ -461,7 +461,7 @@ namespace CustAmmoCategoriesPatches {
     }
     public static bool Prefix(Weapon __instance, ref int __result) {
       if (InternalAmmoCache.TryGetValue(__instance, out var intAmmo)) { __result = intAmmo; return false; };
-      CustomAmmoCategory cat = __instance.CustomAmmoCategory();
+      CustomAmmoCategory cat = __instance.info().effectiveAmmoCategory;
       if (cat.BaseCategory.Is_NotSet) { __result = 0; return false; }
       string statName = InternalAmmoName + __instance.ammo().Id;
       Statistic stat = __instance.StatCollection.GetStatistic(statName);
