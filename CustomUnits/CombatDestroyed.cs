@@ -17,6 +17,8 @@ namespace CustomUnits {
         //ActorMovementSequence_InitDistanceClamp.Clear();
         VTOLBodyAnimationHelper.Clear();
         CombatHUDMechwarriorTray_RefreshTeam.Clear();
+        ContractObjectiveGameLogic_Update.Clear();
+        ObjectiveGameLogic_Update.Clear();
         //AlternateRepresentationHelper.Clear();
         TargetingCirclesHelper.Clear();
         MoveClampHelper.Clear();

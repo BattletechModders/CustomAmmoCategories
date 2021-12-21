@@ -868,24 +868,74 @@ namespace CustomUnits {
       return true;
     }
   }
+  [HarmonyPatch(typeof(EncounterChunkGameLogic))]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch("EncounterStart")]
+  [HarmonyPatch(new Type[] {  })]
+  public static class EncounterChunkGameLogic_EncounterStart {
+    public static void Postfix(EncounterChunkGameLogic __instance) {
+      try {
+        if(__instance is AmbushChunkGameLogic ambush) {
+          Log.TWL(0, "AmbushChunkGameLogic.EncounterStart");
+          if (ambush.ambushTriggerRegion.encounterObject != null) {
+            Log.WL(1, "Trigger region is not null");
+
+          }
+        }
+      }catch(Exception e) {
+        Log.TWL(0, e.ToString(),true);
+      }
+    }
+  }
   [HarmonyPatch(typeof(GameInstance))]
   [HarmonyPatch("LaunchContract")]
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { typeof(Contract), typeof(string) })]
   public static class GameInstance_LaunchContract {
     public static bool SpawnDelayed = false;
+    private static bool originalInvoke = false;
     public static bool isManualSpawn(this Contract contract) { return SpawnDelayed; }
+    public static bool canManualSpawn(this Contract contract) {
+      if (Core.Settings.DeployManual == false) { return false; }
+      if (contract.SimGameContract == false) { return false; }
+      if (contract.IsFlashpointCampaignContract) { return false; }
+      if (contract.IsFlashpointContract) { return false; }
+      if (contract.IsRestorationContract) { return false; }
+      if (contract.IsStoryContract) { return false; }
+      if (Core.Settings.DeployForbidContractTypes.Contains(contract.ContractTypeValue.Name)) { return false; }
+      return true;
+    }
     public static void ClearManualSpawn(this Contract contract) { SpawnDelayed = false; }
-    public static void Prefix(GameInstance __instance, Contract contract, string playerGUID) {
+    public static bool Prefix(GameInstance __instance, Contract contract, string playerGUID) {
+      if (originalInvoke) { return true; }
       SpawnDelayed = false;
-      if (Core.Settings.DeployManual == false) { return; }
-      if (contract.SimGameContract == false) { return; }
-      if (contract.IsFlashpointCampaignContract) { return; }
-      if (contract.IsFlashpointContract) { return; }
-      if (contract.IsRestorationContract) { return; }
-      if (contract.IsStoryContract) { return; }
-      if (Core.Settings.DeployForbidContractTypes.Contains(contract.ContractTypeValue.Name)) { return; }
-      SpawnDelayed = true;
+      if (contract.canManualSpawn() == false) { return true; }
+      GenericPopup popup = GenericPopupBuilder.Create("DEPLOY POSITION", "WOULD YOU LIKE TO SET DEPLOY POSITION MANUALY?")
+        .AddButton("NO", (Action)(() => {
+          SpawnDelayed = false;
+          originalInvoke = true;
+          if (SceneSingletonBehavior<WwiseManager>.HasInstance) {
+            uint num2 = SceneSingletonBehavior<WwiseManager>.Instance.PostEventById(390458608, WwiseManager.GlobalAudioObject, (AkCallbackManager.EventCallback)null, (object)null);
+            Log.TWL(0, "Playing sound by id:" + num2);
+          } else {
+            Log.TWL(0, "Can't play");
+          }
+          __instance.LaunchContract(contract, playerGUID);
+          originalInvoke = false;
+        }), true, BTInput.Instance.Key_Escape())
+        .AddButton("YES", (Action)(() => {
+          SpawnDelayed = true;
+          originalInvoke = true;
+          if (SceneSingletonBehavior<WwiseManager>.HasInstance) {
+            uint num2 = SceneSingletonBehavior<WwiseManager>.Instance.PostEventById(390458608, WwiseManager.GlobalAudioObject, (AkCallbackManager.EventCallback)null, (object)null);
+            Log.TWL(0, "Playing sound by id:" + num2);
+          } else {
+            Log.TWL(0, "Can't play");
+          }
+          __instance.LaunchContract(contract, playerGUID);
+          originalInvoke = false;
+        }), true, BTInput.Instance.Key_Return()).IsNestedPopupWithBuiltInFader().SetAlwaysOnTop().Render();
+      return false;
     }
   }
   [HarmonyPatch(typeof(LanceSpawnerGameLogic))]
@@ -923,7 +973,14 @@ namespace CustomUnits {
       foreach (LanceSpawnerGameLogic sp in delayedSpawners) { spawners.Add(sp); }
       foreach (LanceSpawnerGameLogic sp in spawners) { sp.OnEnterActive(); }
     }
-    public static bool isObjectivesReady(this Contract contract) { return (delayedSpawners.Count == 0)&&(contract.isManualSpawn() == false); }
+    public static bool isObjectivesReady(this Contract contract) {
+      if (contract.isManualSpawn()) { return false; }
+      if (PlayerLanceSpawnerGameLogic_OnEnterActive.deployLoadRequest == null) { return true; }
+      if (PlayerLanceSpawnerGameLogic_OnEnterActive.deployLoadRequest.deployDirector == null) { return true; }
+      if (PlayerLanceSpawnerGameLogic_OnEnterActive.deployLoadRequest.deployDirector.IsDead) { return true; }
+      return false;
+      //return (delayedSpawners.Count == 0)&&(contract.isManualSpawn() == false);
+    }
     public static bool Prefix(LanceSpawnerGameLogic __instance) {
       Log.TW(0, "LanceSpawnerGameLogic.OnEnterActive "+__instance.Name+ " HasUnitToSpawn:"+__instance.HasUnitToSpawn());
       foreach (UnitSpawnPointGameLogic unit in __instance.unitSpawnPointGameLogicList) { Log.W(1, unit.UnitDefId); }
@@ -952,11 +1009,25 @@ namespace CustomUnits {
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { })]
   public static class ContractObjectiveGameLogic_Update {
+    private static Dictionary<ContractObjectiveGameLogic, float> logInterval = new Dictionary<ContractObjectiveGameLogic, float>();
+    public static void Clear() {
+      ContractObjectiveGameLogic_Update.logInterval.Clear();
+    }
     public static bool Prefix(ContractObjectiveGameLogic __instance) {
       if (__instance.Combat == null) { return true; }
       if (__instance.Combat.ActiveContract == null) { return true; }
-      if (__instance.Combat.ActiveContract.isObjectivesReady() == false) { return false; }
-      return true;
+      bool isObjectivesReady = __instance.Combat.ActiveContract.isObjectivesReady();
+      if(logInterval.TryGetValue(__instance, out float t) == false) {
+        t = 0f;
+        logInterval.Add(__instance, t);
+      }
+      t += Time.deltaTime;
+      if (t >= 1f) {
+        t = 0f;
+        Log.TWL(0, "ContractObjectiveGameLogic.Update "+__instance.title+" ready:"+ isObjectivesReady + " isManualSpawn:"+ __instance.Combat.ActiveContract.isManualSpawn()+" deplayedSpawns:"+ LanceSpawnerGameLogic_OnEnterActive.delayedSpawners.Count);
+      }
+      logInterval[__instance] = t;
+      return isObjectivesReady;
     }
   }
   [HarmonyPatch(typeof(ObjectiveGameLogic))]
@@ -964,11 +1035,25 @@ namespace CustomUnits {
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { })]
   public static class ObjectiveGameLogic_Update {
-    public static bool Prefix(ContractObjectiveGameLogic __instance) {
+    private static Dictionary<ObjectiveGameLogic, float> logInterval = new Dictionary<ObjectiveGameLogic, float>();
+    public static void Clear() {
+      ObjectiveGameLogic_Update.logInterval.Clear();
+    }
+    public static bool Prefix(ObjectiveGameLogic __instance) {
       if (__instance.Combat == null) { return true; }
       if (__instance.Combat.ActiveContract == null) { return true; }
-      if (__instance.Combat.ActiveContract.isObjectivesReady() == false) { return false; }
-      return true;
+      bool isObjectivesReady = __instance.Combat.ActiveContract.isObjectivesReady();
+      if (logInterval.TryGetValue(__instance, out float t) == false) {
+        t = 0f;
+        logInterval.Add(__instance, t);
+      }
+      t += Time.deltaTime;
+      if (t >= 1f) {
+        t = 0f;
+        Log.TWL(0, "ObjectiveGameLogic.Update " + __instance.title + " ready:" + isObjectivesReady);
+      }
+      logInterval[__instance] = t;
+      return isObjectivesReady;
     }
   }
   [HarmonyPatch(typeof(ObjectiveGameLogic))]
@@ -1298,6 +1383,11 @@ namespace CustomUnits {
     }
     public static bool Prefix(PlayerLanceSpawnerGameLogic __instance) {
       Log.TWL(0, "PlayerLanceSpawnerGameLogic.OnEnterActive");
+      try {
+        //typeof(HBS.DebugConsole.DebugConsole).GetProperty("DebugCommandsUnlocked", BindingFlags.Static | BindingFlags.Public).GetSetMethod(true).Invoke(null, new object[] { true });
+      }catch(Exception e) {
+        Log.TWL(0,e.ToString(),true);
+      }
       if (__instance.teamDefinitionGuid != __instance.Combat.LocalPlayerTeamGuid) { return true; }
       if (__instance.Combat.ActiveContract.isManualSpawn() == false) { return true; }
       deployLoadRequest = new DeployDirectorLoadRequest(__instance);

@@ -150,6 +150,7 @@ namespace CustomUnits {
           rnd_body.gameObject.transform.position = prevRoot.position;
           rnd_body.gameObject.transform.rotation = prevRoot.rotation;
           rnd_body.gameObject.transform.localScale = prevRoot.lossyScale;
+          Log.WL(2, "SkinnedMeshRenderer detected. scale:" + rnd_body.gameObject.transform.localScale);
         }
         if (__instance.wholeObj != null) { __instance.wholeObj.SetActive(false); }
         if (__instance.destroyedObj == null) { return false; }
@@ -160,7 +161,14 @@ namespace CustomUnits {
           Collider component = destroyedRigidbody.gameObject.GetComponent<Collider>();
           Vector3 position = destroyedRigidbody.gameObject.transform.position;
           Quaternion rotation = destroyedRigidbody.gameObject.transform.rotation;
+          SkinnedMeshRenderer rnd_body = destroyedRigidbody.gameObject.GetComponent<SkinnedMeshRenderer>();
           Vector3 scale = destroyedRigidbody.gameObject.transform.lossyScale;
+          if(rnd_body != null) {
+            if(rnd_body.rootBone == rnd_body.transform) {
+              scale = rnd_body.gameObject.transform.localScale;
+            }
+          }
+          //destroyedRigidbody.gameObject.transform.lossyScale;
           Log.WL(2, "Destroyed rig body:" + destroyedRigidbody.name+" scale:"+ scale);
           destroyedRigidbody.gameObject.transform.parent = (Transform)null;
           destroyedRigidbody.gameObject.transform.position = position;

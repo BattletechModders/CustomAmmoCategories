@@ -78,9 +78,6 @@
       <Name>CustomAmmoCategories</Name>
     </ProjectReference>
   </ItemGroup>
-  <ItemGroup>
-    <None Include="mod.json" />
-  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
     <PostBuildEvent>if exist "$(BattleTechGameDir)\Mods_CBDE\CustomUnits" (

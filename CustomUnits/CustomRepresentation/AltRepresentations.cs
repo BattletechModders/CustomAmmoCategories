@@ -221,8 +221,12 @@ namespace CustomUnits {
       if (isSlave == false) this._PlayDeathFloatie(deathMethod);
       if (this.parentActor.WasDespawned) { return; }
       if (this.VisibleObjectLight != null) { this.VisibleObjectLight.SetActive(false); }
-      foreach (CustomMechRepresentation alt in this.Alternates) { alt.VisibleObjectLight.SetActive(false); }
-      foreach (CustomMechRepresentation alt in this.Alternates) { alt.thisAnimator.SetTrigger("Death"); }
+      try {
+        foreach (CustomMechRepresentation alt in this.Alternates) { alt?.VisibleObjectLight?.SetActive(false); }
+        foreach (CustomMechRepresentation alt in this.Alternates) { alt?.thisAnimator?.SetTrigger("Death"); }
+      }catch(Exception e) {
+        Log.TWL(0,e.ToString(),true);
+      }
       if (!this.parentMech.Combat.IsLoadingFromSave) {
         if (isSlave == false) {
           if (this.parentMech.team.LocalPlayerControlsTeam)

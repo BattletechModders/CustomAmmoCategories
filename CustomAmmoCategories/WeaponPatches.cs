@@ -383,6 +383,22 @@ namespace CustAmmoCategoriesPatches {
       }
     }
   }
+  [HarmonyPatch(typeof(Weapon))]
+  [HarmonyPatch("ResetWeapon")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { })]
+  [HarmonyPriority(Priority.Last)]
+  public static class Weapon_ResetWeapon {
+    public static void Postfix(Weapon __instance) {
+      if (__instance.info().needRevalidate) { return; }
+      if (__instance.info().ammo.AmmoCategory.BaseCategory.Is_NotSet) { return; }
+      if ((__instance.ammoBoxes.Count == 0) && (__instance.InternalAmmo != 0)) {
+        __instance.DisableWeapon();
+        if (__instance.parent == null) { return; }
+        Log.M.TWL(0, __instance.parent.PilotableActorDef.Description.Id + " "+__instance.defId+" disabled by default");
+      }
+    }
+  }
   [HarmonyPatch(typeof(MechComponent))]
   [HarmonyPatch("InitStats")]
   [HarmonyPatch(MethodType.Normal)]

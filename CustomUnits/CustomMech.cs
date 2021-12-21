@@ -322,12 +322,13 @@ namespace CustomUnits {
       }
     }
     public static bool InitGameRepStatic(Mech __instance, Transform parentTransform) {
-      Log.TWL(0, "CustomMech.InitGameRepStatic " + __instance.MechDef.Description.Id + " " + __instance.GetType().Name);
       try {
+        Log.TWL(0, "CustomMech.InitGameRepStatic " + __instance.MechDef.Description.Id + " " + __instance.GetType().Name);
         if (__instance is CustomMech custMech) {
           custMech._InitGameRep(parentTransform);
           return false;
         }
+        Log.WL(1, "not a CustomMech proceed to default");
         return true;
       } catch (Exception e) {
         Log.TWL(0, e.ToString(), true);
