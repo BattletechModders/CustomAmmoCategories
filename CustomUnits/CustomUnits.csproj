@@ -194,13 +194,17 @@
     <Compile Include="CustomRepresentation\СustomMechCustomization.cs" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="app.config" />
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="..\CustomAmmoCategories\CustomAmmoCategories.csproj">
       <Project>{88bb9ff5-da8f-4e02-9554-58595e34378c}</Project>
       <Name>CustomAmmoCategories</Name>
     </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="app.config" />
+    <ProjectReference Include="..\CustomDeploy\CustomDeploy.csproj">
+      <Project>{ac7d1809-5127-4dd7-bd56-fb008c2e2ca2}</Project>
+      <Name>CustomDeploy</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>

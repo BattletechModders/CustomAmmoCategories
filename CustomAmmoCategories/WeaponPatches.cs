@@ -253,20 +253,20 @@ namespace CustAmmoCategoriesPatches {
   [HarmonyPatch(new Type[] { })]
   public static class Weapon_CurrentAmmo {
     public static bool Prefix(Weapon __instance, ref int __result) {
-      //CustomCategoriesLog.LogWrite("Weapon CurrentAmmo " + __instance.Description.Id + "\n");
-      Statistic stat = __instance.StatCollection.GetStatistic(CustomAmmoCategories.AmmoIdStatName);
-      if (stat == null) { return true; }
-      string CurrentAmmoId = stat.Value<string>();
+      //Log.M?.TWL(0,"Weapon.CurrentAmmo " + __instance.Description.Id + " current ammo:"+ __instance.info().ammo.Id);
+      //Statistic stat = __instance.StatCollection.GetStatistic(CustomAmmoCategories.AmmoIdStatName);
+      //if (stat == null) { return true; }
+      string CurrentAmmoId = __instance.info().ammo.Id;
       __result = __instance.InternalAmmo;
-      //CustomCategoriesLog.LogWrite("  internal ammo "+ __result.ToString());
+      //Log.M?.WL(1,"internal ammo "+ __result.ToString());
       for (int index = 0; index < __instance.ammoBoxes.Count; ++index) {
-        //CustomCategoriesLog.LogWrite("  AmmoBox " + __instance.ammoBoxes[index].Description.Id+" "+ __instance.ammoBoxes[index].CurrentAmmo+"\n");
+        //Log.M?.WL(1,"AmmoBox " + __instance.ammoBoxes[index].Description.Id+" "+ __instance.ammoBoxes[index].CurrentAmmo);
         if (__instance.ammoBoxes[index].CurrentAmmo <= 0) { continue; }
         if (__instance.ammoBoxes[index].IsFunctional == false) { continue; }
         if (__instance.ammoBoxes[index].ammoDef.Description.Id != CurrentAmmoId) { continue; };
         __result += __instance.ammoBoxes[index].CurrentAmmo;
       }
-      //CustomCategoriesLog.LogWrite("  Result " + __result.ToString()+"\n");
+      //Log.M?.WL(1, "Result:" + __result.ToString());
       return false;
     }
   }
@@ -460,6 +460,7 @@ namespace CustAmmoCategoriesPatches {
       weapon.ClearInternalAmmoCache();
     }
     public static bool Prefix(Weapon __instance, ref int __result) {
+      if (__instance.info().needRevalidate) { __result = 1; return false; }
       if (InternalAmmoCache.TryGetValue(__instance, out var intAmmo)) { __result = intAmmo; return false; };
       CustomAmmoCategory cat = __instance.info().effectiveAmmoCategory;
       if (cat.BaseCategory.Is_NotSet) { __result = 0; return false; }

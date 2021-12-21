@@ -20,7 +20,7 @@ namespace CustomUnits {
           aBay.gameObject.SetActive(true);
         }
         HBSDOTweenToggle main_toggle = this.parent.mainBay.gameObject.GetComponent<HBSDOTweenToggle>();
-        this.parent.mainBay.gameObject.GetComponentInChildren<LocalizableText>(true).SetText("Bays");
+        this.parent.mainBay.gameObject.GetComponentInChildren<LocalizableText>(true).SetText("Mech Bays");
       }
     }
   }
@@ -320,6 +320,29 @@ namespace CustomUnits {
         if (hangar == null) { return; }
         slot -= hangar.definition.PositionShift;
         Log.WL(1, "hangar:"+hangar.definition.Description.Id+" slot:"+slot);
+      } catch (Exception e) {
+        Log.TWL(0, e.ToString(), true);
+      }
+    }
+  }
+  [HarmonyPatch(typeof(MechBayPanel))]
+  [HarmonyPatch("ViewMechStorage")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { })]
+  public static class MechBayPanel_ViewMechStorage {
+    public static void Postfix(MechBayPanel __instance, MechBayRowGroupWidget ___bayGroupWidget, SimGameState ___sim) {
+      Log.TWL(0, "MechBayPanel.ViewMechStorage ");
+      try {
+        CustomHangarInfo hangar = ___bayGroupWidget.GetComponentInChildren<CustomHangarInfo>();
+        if (hangar == null) { return; }
+        if (hangar.definition == null) { return; }
+        hangar.definition = null;
+        ___bayGroupWidget.SetData((IMechLabDropTarget)__instance, ___sim);
+        CustomBaysUICaster baysUI = __instance.gameObject.GetComponentInChildren<CustomBaysUICaster>(true);
+        if(baysUI != null) {
+          baysUI.currentBay = baysUI.mainBay;
+          baysUI.mainBay.gameObject.GetComponentInChildren<LocalizableText>(true).SetText("Mech Bays");
+        }
       } catch (Exception e) {
         Log.TWL(0, e.ToString(), true);
       }

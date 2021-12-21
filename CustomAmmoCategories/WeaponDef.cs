@@ -560,7 +560,7 @@ namespace CustAmmoCategories {
     [Key(68)]
     public TripleBoolean isStabilityVariation { get; set; } = TripleBoolean.NotSet;
     [Key(69)]
-    public TripleBoolean isDamageVariation { get; set; } = TripleBoolean.NotSet;
+    public TripleBoolean isDamageVariation { get; set; } = TripleBoolean.True;
     [Key(70)]
     public float DistantVariance { get; set; } = 0f;
     [Key(71)]

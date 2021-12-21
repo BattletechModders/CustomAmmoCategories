@@ -153,13 +153,15 @@ namespace CustomUnits{
     public float DeployLabelFontSize { get; set; }
     public bool DeployManual { get; set; }
     private HashSet<string> fManualDeployForbidContractTypes { get; set; }
-    public List<string> ManualDeployForbidContractTypes { set {
+    public List<string> ManualDeployForbidContractTypes {
+      set {
         if (fManualDeployForbidContractTypes == null) { fManualDeployForbidContractTypes = new HashSet<string>(); }
         fManualDeployForbidContractTypes.Clear();
         foreach (string ct in value) {
           fManualDeployForbidContractTypes.Add(ct);
         }
-      } }
+      }
+    }
     public HashSet<string> DeployForbidContractTypes { get { return fManualDeployForbidContractTypes; } }
     public bool DisableHotKeys { get; set; }
     public string SquadStructureIcon { get; set; }
@@ -640,12 +642,15 @@ namespace CustomUnits{
         } else {
           Log.TWL(0, "can't find DataManager.PrefabLoadRequest");
         }*/
+        string DeployHelperAssemblyPath = Path.Combine(directory, "CustomDeploy.dll");
+        Assembly CustomDeployAssembly = Assembly.LoadFile(DeployHelperAssemblyPath);
+        CustomDeploy.Core.Init(directory, Core.Settings.debugLog);
         HarmonyInstance.PatchAll(Assembly.GetExecutingAssembly());
         PathingInfoHelper.RegisterMaxMoveDeligate(PathingHelper.MaxMoveDistance);
         WeightedFactorHelper.PatchInfluenceMapPositionFactor(HarmonyInstance);
         WeaponRepresentation_PlayWeaponEffect.i_extendedFire = extendedFireHelper.extendedFire;
       } catch (Exception e) {
-        Log.LogWrite(e.ToString()+"\n");
+        Log.TWL(0,e.ToString(),true);
       }
     }
   }

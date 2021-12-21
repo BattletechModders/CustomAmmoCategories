@@ -1808,6 +1808,7 @@ namespace CustomUnits {
     }
     public static bool IsVehicle(this ChassisDef chassisDef) {
       if (chassisDef == null) { return false; }
+      //Log.TWL(0, "ChassisDef.IsVehicle");
       ChassisDef chassis = Thread.CurrentThread.peekFromStack<ChassisDef>("OnReadyMech_chassis");
       if (chassis != null) {
         return chassis.GetHangarShift() > 0;

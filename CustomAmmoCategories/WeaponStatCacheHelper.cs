@@ -72,6 +72,7 @@ namespace CustAmmoCategories {
       try {
         Log.M?.TWL(0, "AbstractActor.AssignAmmoToWeapons " + __instance.PilotableActorDef.Description.Id);
         foreach (Weapon weapon in __instance.Weapons) {
+          weapon.info().isBoxesAssigned = true;
           weapon.Revalidate();
         }
       } catch (Exception e) {
@@ -134,6 +135,7 @@ namespace CustAmmoCategories {
   //}
   public class WeaponExtendedInfo {
     public Weapon weapon { get; set; }
+    public bool isBoxesAssigned { get; set; } = false;
     public WeaponMode mode { get; set; }
     public Dictionary<string, WeaponMode> modes { get; set; } = new Dictionary<string, WeaponMode>();
     public ExtWeaponDef extDef { get; set; }
@@ -201,6 +203,7 @@ namespace CustAmmoCategories {
       return result;
     }
     public List<ExtAmmunitionDef> getAvaibleAmmo(CustomAmmoCategory category) {
+      Log.M.TWL(0, "getAvaibleAmmo " + weapon.defId + " category:" + category.Id+ " ammoBoxes:" + weapon.ammoBoxes.Count);
       HashSet<ExtAmmunitionDef> result = new HashSet<ExtAmmunitionDef>();
       for (int index = 0; index < weapon.ammoBoxes.Count; ++index) {
         if (weapon.ammoBoxes[index].IsFunctional == false) { continue; };
@@ -216,7 +219,6 @@ namespace CustAmmoCategories {
         result.Add(ammo);
       }
       if (result.Count == 0) { result.Add(category.defaultAmmo()); }
-      Log.M.TWL(0, "getAvaibleAmmo " + weapon.defId + " category:" + category + " ammo count:" + result.Count);
       foreach (var res in result) {
         Log.M.WL(1, res.Id);
       }
@@ -230,20 +232,25 @@ namespace CustAmmoCategories {
     }
     public WeaponExtendedInfo(Weapon weapon, WeaponDef def) {
       this.weapon = weapon;
+      if (weapon.WeaponCategoryValue.IsMelee) { isBoxesAssigned = true; }
       this.extDef = def.exDef();
-      string modeId = extDef.baseModeId;
-      Statistic modeIdStat = weapon.StatCollection.GetStatistic(CustomAmmoCategories.WeaponModeStatisticName);
-      if (modeIdStat == null) {
-        modeIdStat = weapon.StatCollection.AddStatistic(CustomAmmoCategories.WeaponModeStatisticName, modeId);
-      } else {
-        modeIdStat.SetValue<string>(modeId);
-      }
       foreach (var defMode in this.extDef.Modes) { this.modes.Add(defMode.Key, defMode.Value); }
+      string modeId = extDef.baseModeId;
+      if (this.modes.Count == 0) {
+        modeId = CustomAmmoCategories.DefaultWeaponMode.Id;
+        this.modes.Add(modeId, CustomAmmoCategories.DefaultWeaponMode);
+      }
       if(this.modes.TryGetValue(modeId, out var Mode)) {
         this.mode = Mode;
       } else {
         this.modes.Add(modeId, CustomAmmoCategories.DefaultWeaponMode);
         this.mode = CustomAmmoCategories.DefaultWeaponMode;
+      }
+      Statistic modeIdStat = weapon.StatCollection.GetStatistic(CustomAmmoCategories.WeaponModeStatisticName);
+      if (modeIdStat == null) {
+        modeIdStat = weapon.StatCollection.AddStatistic(CustomAmmoCategories.WeaponModeStatisticName, modeId);
+      } else {
+        modeIdStat.SetValue<string>(modeId);
       }
       Statistic ammoId = weapon.StatCollection.GetStatistic(CustomAmmoCategories.AmmoIdStatName);
       if (ammoId == null) {
@@ -256,6 +263,8 @@ namespace CustAmmoCategories {
     }
     public void Revalidate() {
       if (this.weapon.StatCollection == null) { return; }
+      if (this.isBoxesAssigned == false) { return; }
+      Log.M?.TWL(0,"Revalidate:"+this.weapon.defId);
       string modeId = extDef.baseModeId;
       Statistic modeIdStat = weapon.StatCollection.GetStatistic(CustomAmmoCategories.WeaponModeStatisticName);
       if (modeIdStat == null) {
@@ -263,28 +272,39 @@ namespace CustAmmoCategories {
       } else {
         modeId = modeIdStat.Value<string>();
       }
-      if(this.modes.TryGetValue(modeId, out WeaponMode Mode)) {
+      Log.M?.WL(1, "Mode id:" + modeId);
+      if (this.modes.TryGetValue(modeId, out WeaponMode Mode)) {
+        Log.M?.WL(2, "mod found");
         this.mode = Mode;
       } else if(extDef.Modes.TryGetValue(modeId, out WeaponMode defMode)) {
         this.modes.Add(modeId, defMode);
         this.mode = defMode;
+        Log.M?.WL(2, "mod found in ext def");
       } else if (this.modes.TryGetValue(extDef.baseModeId, out WeaponMode baseMode)) {
         this.mode = baseMode;
+        modeIdStat.SetValue<string>(extDef.baseModeId);
+        Log.M?.WL(2, "not found - fallback to "+ extDef.baseModeId);
       } else if (extDef.Modes.TryGetValue(extDef.baseModeId, out WeaponMode baseDefMode)) {
         this.modes.Add(extDef.baseModeId, defMode);
         this.mode = baseDefMode;
+        modeIdStat.SetValue<string>(extDef.baseModeId);
+        Log.M?.WL(2, "not found - fallback to ext def " + extDef.baseModeId);
       } else {
-        this.modes.Add(extDef.baseModeId, CustomAmmoCategories.DefaultWeaponMode);
+        this.modes.Add(CustomAmmoCategories.DefaultWeaponMode.Id, CustomAmmoCategories.DefaultWeaponMode);
+        modeIdStat.SetValue<string>(CustomAmmoCategories.DefaultWeaponMode.Id);
         this.mode = CustomAmmoCategories.DefaultWeaponMode;
+        Log.M?.WL(2, "not found - fallback to ext def " + CustomAmmoCategories.DefaultWeaponMode.Id);
       }
       CustomAmmoCategory effectiveCategory = extDef.AmmoCategory;
-      if (mode.AmmoCategory != null) { effectiveCategory = mode.AmmoCategory; } 
+      if (mode.AmmoCategory != null) { effectiveCategory = mode.AmmoCategory; }
+      Log.M?.WL(1, "effective ammo category "+effectiveAmmoCategory.Id);
       Statistic ammoIdStat = weapon.StatCollection.GetStatistic(CustomAmmoCategories.AmmoIdStatName);
       if (ammoIdStat == null) {
         ammoIdStat = weapon.StatCollection.AddStatistic(CustomAmmoCategories.AmmoIdStatName, CustomAmmoCategories.DefaultAmmo.Id);
       }
       string ammoId = ammoIdStat.Value<string>();
       ExtAmmunitionDef ammoDef = CustomAmmoCategories.findExtAmmo(ammoId);
+      Log.M?.WL(1, "ammo id " + ammoId+" category:"+(ammoDef == null?"null": ammoDef.AmmoCategory.Id));
       if ((ammoDef == null) || (ammoDef.AmmoCategory.Id != effectiveCategory.Id)) {
         if(effectiveCategory.BaseCategory.Is_NotSet) {
           this.ammo = CustomAmmoCategories.DefaultAmmo;
@@ -292,11 +312,12 @@ namespace CustAmmoCategories {
         } else {
           this.ammo = this.findBestAmmo(effectiveCategory);
         }
-        ammoIdStat.SetValue(this.ammo.Id);
       } else {
         this.NoValidAmmo = false;
         this.ammo = ammoDef;
       }
+      ammoIdStat.SetValue(this.ammo.Id);
+      Log.M?.WL(1, "resulting ammo:"+ ammoIdStat.Value<string>());
       this.HasAmmoVariants = this.isWeaponHasAmmoVariantsNoCache();
       needRevalidate = false;
       HUDSlot?.RefreshDisplayedWeapons();
