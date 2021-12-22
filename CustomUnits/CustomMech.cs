@@ -1,6 +1,7 @@
 ﻿using BattleTech;
 using BattleTech.Data;
 using CustAmmoCategories;
+using CustomDeploy;
 using Harmony;
 using HBS.Collections;
 using IRBTModUtils;
@@ -328,19 +329,25 @@ namespace CustomUnits {
           custMech._InitGameRep(parentTransform);
           return false;
         }
-        Log.WL(1, "not a CustomMech proceed to default");
-        return true;
+        __instance.InitGameRepLocal(parentTransform);
+        return false;
       } catch (Exception e) {
         Log.TWL(0, e.ToString(), true);
       }
       return true;
     }
     public override void InitGameRep(Transform parentTransform) {
-      base.InitGameRep(parentTransform);
-      //this.MechInitGameRep_prefixes(parentTransform);
-      //this._InitGameRep(parentTransform);
-      this.custGameRep.HeightController.ForceHeight(this.FlyingHeight());
-      //this.MechInitGameRep_postfixes(parentTransform);
+      try {
+        foreach (var prefix in CustomMechHelper.InitGameRepPrefixes) { prefix(this,parentTransform); }
+        this._InitGameRep(parentTransform);
+        foreach (var postfix in CustomMechHelper.InitGameRepPostfixes) { postfix(this, parentTransform); }
+        //this.MechInitGameRep_prefixes(parentTransform);
+        //this._InitGameRep(parentTransform);
+        this.custGameRep.HeightController.ForceHeight(this.FlyingHeight());
+        //this.MechInitGameRep_postfixes(parentTransform);
+      }catch(Exception e) {
+        Log.TWL(0,e.ToString(),true);
+      }
     }
     public override int GetHitLocation(AbstractActor attacker, Vector3 attackPosition, float hitLocationRoll, int calledShotLocation, float bonusMultiplier) {
       Dictionary<ArmorLocation, int> hitTable = this.GetHitTable(this.IsProne ? AttackDirection.ToProne : this.Combat.HitLocation.GetAttackDirection(attackPosition, this));

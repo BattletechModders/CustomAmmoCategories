@@ -395,7 +395,113 @@ namespace CustomDeploy{
       }
     }
   }
+  public static class MechInitGameRepHelper {
+    public static void InitGameRepLocal(this Mech __instance,Transform parentTransform) {
+      try {
+        if (__instance == null) { Log.TWL(0, "Mech.InitGameRepLocal mech is null");  return;  }
+        Log.TWL(0, "Mech.InitGameRepLocal "+__instance.PilotableActorDef.Description.Id);
+        string prefabIdentifier = __instance.MechDef.Chassis.PrefabIdentifier;
+        if (AbstractActor.initLogger.IsLogEnabled)
+          AbstractActor.initLogger.Log((object)("InitGameRep Loading this -" + prefabIdentifier));
+        GameObject gameObject = __instance.Combat.DataManager.PooledInstantiate(prefabIdentifier, BattleTechResourceType.Prefab);
+        __instance._gameRep = (GameRepresentation)gameObject.GetComponent<MechRepresentation>();
+        gameObject.GetComponent<Animator>().enabled = true;
+        __instance.GameRep.Init(__instance, parentTransform, false);
+        if ((UnityEngine.Object)parentTransform == (UnityEngine.Object)null) {
+          gameObject.transform.position = __instance.currentPosition;
+          gameObject.transform.rotation = __instance.currentRotation;
+        }
+        List<string> usedPrefabNames = new List<string>();
+        foreach (MechComponent allComponent in __instance.allComponents) {
+          if (allComponent.componentType != ComponentType.Weapon) {
+            allComponent.baseComponentRef.prefabName = MechHardpointRules.GetComponentPrefabName(__instance.MechDef.Chassis.HardpointDataDef, allComponent.baseComponentRef, __instance.MechDef.Chassis.PrefabBase, allComponent.mechComponentRef.MountedLocation.ToString().ToLower(), ref usedPrefabNames);
+            allComponent.baseComponentRef.hasPrefabName = true;
+            if (!string.IsNullOrEmpty(allComponent.baseComponentRef.prefabName)) {
+              Transform attachTransform = __instance.GetAttachTransform(allComponent.mechComponentRef.MountedLocation);
+              allComponent.InitGameRep(allComponent.baseComponentRef.prefabName, attachTransform, __instance.LogDisplayName);
+              __instance.GameRep.miscComponentReps.Add(allComponent.componentRep);
+            }
+          }
+        }
+        foreach (Weapon weapon in __instance.Weapons) {
+          weapon.baseComponentRef.prefabName = MechHardpointRules.GetComponentPrefabName(__instance.MechDef.Chassis.HardpointDataDef, weapon.baseComponentRef, __instance.MechDef.Chassis.PrefabBase, weapon.mechComponentRef.MountedLocation.ToString().ToLower(), ref usedPrefabNames);
+          weapon.baseComponentRef.hasPrefabName = true;
+          if (!string.IsNullOrEmpty(weapon.baseComponentRef.prefabName)) {
+            Transform attachTransform = __instance.GetAttachTransform(weapon.mechComponentRef.MountedLocation);
+            weapon.InitGameRep(weapon.baseComponentRef.prefabName, attachTransform, __instance.LogDisplayName);
+            __instance.GameRep.weaponReps.Add(weapon.weaponRep);
+            string mountingPointPrefabName = MechHardpointRules.GetComponentMountingPointPrefabName(__instance.MechDef, weapon.mechComponentRef);
+            if (!string.IsNullOrEmpty(mountingPointPrefabName)) {
+              WeaponRepresentation component = __instance.Combat.DataManager.PooledInstantiate(mountingPointPrefabName, BattleTechResourceType.Prefab).GetComponent<WeaponRepresentation>();
+              component.Init((ICombatant)__instance, attachTransform, true, __instance.LogDisplayName, weapon.Location);
+              __instance.GameRep.weaponReps.Add(component);
+            }
+          }
+        }
+        foreach (MechComponent supportComponent in __instance.supportComponents) {
+          if (supportComponent is Weapon weapon) {
+            weapon.baseComponentRef.prefabName = MechHardpointRules.GetComponentPrefabName(__instance.MechDef.Chassis.HardpointDataDef, weapon.baseComponentRef, __instance.MechDef.Chassis.PrefabBase, weapon.mechComponentRef.MountedLocation.ToString().ToLower(), ref usedPrefabNames);
+            weapon.baseComponentRef.hasPrefabName = true;
+            if (!string.IsNullOrEmpty(weapon.baseComponentRef.prefabName)) {
+              Transform attachTransform = __instance.GetAttachTransform(weapon.mechComponentRef.MountedLocation);
+              weapon.InitGameRep(weapon.baseComponentRef.prefabName, attachTransform, __instance.LogDisplayName);
+              __instance.GameRep.miscComponentReps.Add((ComponentRepresentation)weapon.weaponRep);
+            }
+          }
+        }
+        __instance.CreateBlankPrefabs(usedPrefabNames, ChassisLocations.CenterTorso);
+        __instance.CreateBlankPrefabs(usedPrefabNames, ChassisLocations.LeftTorso);
+        __instance.CreateBlankPrefabs(usedPrefabNames, ChassisLocations.RightTorso);
+        __instance.CreateBlankPrefabs(usedPrefabNames, ChassisLocations.LeftArm);
+        __instance.CreateBlankPrefabs(usedPrefabNames, ChassisLocations.RightArm);
+        __instance.CreateBlankPrefabs(usedPrefabNames, ChassisLocations.Head);
+        if (!__instance.MeleeWeapon.baseComponentRef.hasPrefabName) {
+          __instance.MeleeWeapon.baseComponentRef.prefabName = "chrPrfWeap_generic_melee";
+          __instance.MeleeWeapon.baseComponentRef.hasPrefabName = true;
+        }
+        __instance.MeleeWeapon.InitGameRep(__instance.MeleeWeapon.baseComponentRef.prefabName, __instance.GetAttachTransform(__instance.MeleeWeapon.mechComponentRef.MountedLocation), __instance.LogDisplayName);
+        if (!__instance.DFAWeapon.mechComponentRef.hasPrefabName) {
+          __instance.DFAWeapon.mechComponentRef.prefabName = "chrPrfWeap_generic_melee";
+          __instance.DFAWeapon.mechComponentRef.hasPrefabName = true;
+        }
+        __instance.DFAWeapon.InitGameRep(__instance.DFAWeapon.mechComponentRef.prefabName, __instance.GetAttachTransform(__instance.DFAWeapon.mechComponentRef.MountedLocation), __instance.LogDisplayName);
+        bool flag1 = __instance.MechDef.MechTags.Contains("PlaceholderUnfinishedMaterial");
+        bool flag2 = __instance.MechDef.MechTags.Contains("PlaceholderImpostorMaterial");
+        if (flag1 | flag2) {
+          SkinnedMeshRenderer[] componentsInChildren = __instance.GameRep.GetComponentsInChildren<SkinnedMeshRenderer>(true);
+          for (int index = 0; index < componentsInChildren.Length; ++index) {
+            if (flag1)
+              componentsInChildren[index].sharedMaterial = __instance.Combat.DataManager.TextureManager.PlaceholderUnfinishedMaterial;
+            if (flag2)
+              componentsInChildren[index].sharedMaterial = __instance.Combat.DataManager.TextureManager.PlaceholderImpostorMaterial;
+          }
+        }
+        __instance.GameRep.RefreshEdgeCache();
+        __instance.GameRep.FadeIn(1f);
+        Log.WL(1, "GameRep inited successfully");
+        if (__instance.IsDead || !__instance.Combat.IsLoadingFromSave)
+          return;
+        if (__instance.AuraComponents != null) {
+          foreach (MechComponent auraComponent in __instance.AuraComponents) {
+            for (int index = 0; index < auraComponent.componentDef.statusEffects.Length; ++index) {
+              if (auraComponent.componentDef.statusEffects[index].targetingData.auraEffectType == AuraEffectType.ECM_GHOST) {
+                __instance.GameRep.PlayVFXAt(__instance.GameRep.thisTransform, Vector3.zero, "vfxPrfPrtl_ECM_loop", true, Vector3.zero, false, -1f);
+                __instance.GameRep.PlayVFXAt(__instance.GameRep.thisTransform, Vector3.zero, "vfxPrfPrtl_ECMcarrierAura_loop", true, Vector3.zero, false, -1f);
+                return;
+              }
+            }
+          }
+        }
+        if (__instance.VFXDataFromLoad != null) {
+          foreach (VFXEffect.StoredVFXEffectData storedVfxEffectData in __instance.VFXDataFromLoad)
+            __instance.GameRep.PlayVFXAt(__instance.GameRep.GetVFXTransform(storedVfxEffectData.hitLocation), storedVfxEffectData.hitPos, storedVfxEffectData.vfxName, storedVfxEffectData.isAttached, storedVfxEffectData.lookatPos, storedVfxEffectData.isOneShot, storedVfxEffectData.duration);
+        }
+      }catch(Exception e) {
+        Log.TWL(0, e.ToString(), true);
+      }
 
+    }
+  }
   public static class Core{
     public static string BaseDir { get; set; }
     public static bool debugLog { get; set; }
