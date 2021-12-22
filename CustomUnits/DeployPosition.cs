@@ -910,31 +910,36 @@ namespace CustomUnits {
       if (originalInvoke) { return true; }
       SpawnDelayed = false;
       if (contract.canManualSpawn() == false) { return true; }
-      GenericPopup popup = GenericPopupBuilder.Create("DEPLOY POSITION", "WOULD YOU LIKE TO SET DEPLOY POSITION MANUALY?")
-        .AddButton("NO", (Action)(() => {
-          SpawnDelayed = false;
-          originalInvoke = true;
-          if (SceneSingletonBehavior<WwiseManager>.HasInstance) {
-            uint num2 = SceneSingletonBehavior<WwiseManager>.Instance.PostEventById(390458608, WwiseManager.GlobalAudioObject, (AkCallbackManager.EventCallback)null, (object)null);
-            Log.TWL(0, "Playing sound by id:" + num2);
-          } else {
-            Log.TWL(0, "Can't play");
-          }
-          __instance.LaunchContract(contract, playerGUID);
-          originalInvoke = false;
-        }), true, BTInput.Instance.Key_Escape())
-        .AddButton("YES", (Action)(() => {
-          SpawnDelayed = true;
-          originalInvoke = true;
-          if (SceneSingletonBehavior<WwiseManager>.HasInstance) {
-            uint num2 = SceneSingletonBehavior<WwiseManager>.Instance.PostEventById(390458608, WwiseManager.GlobalAudioObject, (AkCallbackManager.EventCallback)null, (object)null);
-            Log.TWL(0, "Playing sound by id:" + num2);
-          } else {
-            Log.TWL(0, "Can't play");
-          }
-          __instance.LaunchContract(contract, playerGUID);
-          originalInvoke = false;
-        }), true, BTInput.Instance.Key_Return()).IsNestedPopupWithBuiltInFader().SetAlwaysOnTop().Render();
+      if (Core.Settings.AskForDeployManual) {
+        GenericPopup popup = GenericPopupBuilder.Create("DEPLOY POSITION", "WOULD YOU LIKE TO SET DEPLOY POSITION MANUALY?")
+          .AddButton("NO", (Action)(() => {
+            SpawnDelayed = false;
+            originalInvoke = true;
+            if (SceneSingletonBehavior<WwiseManager>.HasInstance) {
+              uint num2 = SceneSingletonBehavior<WwiseManager>.Instance.PostEventById(390458608, WwiseManager.GlobalAudioObject, (AkCallbackManager.EventCallback)null, (object)null);
+              Log.TWL(0, "Playing sound by id:" + num2);
+            } else {
+              Log.TWL(0, "Can't play");
+            }
+            __instance.LaunchContract(contract, playerGUID);
+            originalInvoke = false;
+          }), true, BTInput.Instance.Key_Escape())
+          .AddButton("YES", (Action)(() => {
+            SpawnDelayed = true;
+            originalInvoke = true;
+            if (SceneSingletonBehavior<WwiseManager>.HasInstance) {
+              uint num2 = SceneSingletonBehavior<WwiseManager>.Instance.PostEventById(390458608, WwiseManager.GlobalAudioObject, (AkCallbackManager.EventCallback)null, (object)null);
+              Log.TWL(0, "Playing sound by id:" + num2);
+            } else {
+              Log.TWL(0, "Can't play");
+            }
+            __instance.LaunchContract(contract, playerGUID);
+            originalInvoke = false;
+          }), true, BTInput.Instance.Key_Return()).IsNestedPopupWithBuiltInFader().SetAlwaysOnTop().Render();
+      } else {
+        SpawnDelayed = true;
+        return true;
+      }
       return false;
     }
   }

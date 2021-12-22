@@ -106,6 +106,7 @@ namespace CustomUnits{
   public class CUSettings {
     public string CanPilotVehicleTag { get; set; }
     public string CannotPilotMechTag { get; set; }
+    [GameplaySafe]
     public bool debugLog { get; set; }
     public float DeathHeight { get; set; }
     public bool fixWaterHeight { get; set; }
@@ -113,6 +114,7 @@ namespace CustomUnits{
     public float deepWaterSteepness { get; set; }
     public float deepWaterDepth { get; set; }
     public float waterFlatDepth { get; set; }
+    [GameplaySafe]
     public List<string> LancesIcons { get; set; }
     public List<CustomLanceDef> Lances { get; set; }
     public int overallDeploySize { get; set; }
@@ -152,6 +154,7 @@ namespace CustomUnits{
     public float DeployLabelHeight { get; set; }
     public float DeployLabelFontSize { get; set; }
     public bool DeployManual { get; set; }
+    public bool AskForDeployManual { get; set; } = true;
     private HashSet<string> fManualDeployForbidContractTypes { get; set; }
     public List<string> ManualDeployForbidContractTypes {
       set {
@@ -228,6 +231,7 @@ namespace CustomUnits{
     public bool CBTBEDetected { get; set; }
     public bool AllowPartialMove { get; set; }
     public bool AllowPartialSprint { get; set; }
+    [GameplaySafe]
     public SortByTonnage.Settings SortBy { get; set; }
     public string PilotingIcon { get; set; }
     public string DefaultSkirmishDropLayout { get; set; }
@@ -236,6 +240,7 @@ namespace CustomUnits{
     public List<string> mechForcedTags { get; set; }
     public List<string> squadForcedTags { get; set; }
     public List<string> navalForcedTags { get; set; }
+    [GameplaySafe]
     public int baysWidgetsCount { get; set; }
     public CUSettings() {
       debugLog = false;

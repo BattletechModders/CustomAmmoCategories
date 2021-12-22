@@ -211,18 +211,22 @@
     <PostBuildEvent>if exist "$(BattleTechGameDir)\Mods_CBDE\CustomUnits" (
   echo %25BattleTechGameDir%25
   copy /Y "$(TargetPath)" "$(BattleTechGameDir)\Mods_CBDE\CustomUnits"
+  copy /Y "$(ProjectDir)..\AdditionalFiles\CU\Readme.txt" "$(BattleTechGameDir)\Mods_CBDE\CustomUnits"
 )
 if exist "$(BattleTechGameDir)\Mods\CustomUnits" (
   echo %25BattleTechGameDir%25
   copy /Y "$(TargetPath)" "$(BattleTechGameDir)\Mods\CustomUnits"
+  copy /Y "$(ProjectDir)..\AdditionalFiles\CU\Readme.txt" "$(BattleTechGameDir)\Mods\CustomUnits"
 )
 if exist "$(RogueTechRepo)\CustomUnits" (
   echo %25BattleTechGameDir%25
   copy /Y "$(TargetPath)" "$(RogueTechRepo)\CustomUnits"
+  copy /Y "$(ProjectDir)..\AdditionalFiles\CU\Readme.txt" "$(RogueTechRepo)\CustomUnits"
 )
 if exist "$(BTARepo)\CustomUnits" (
   echo %25BattleTechGameDir%25
   copy /Y "$(TargetPath)" "$(BTARepo)\CustomUnits"
+  copy /Y "$(ProjectDir)..\AdditionalFiles\CU\Readme.txt" "$(BTARepo)\CustomUnits"
 )
 if exist "$(BattleTechGameDir)\Release_CAC" (
   echo %25BattleTechGameDir%25

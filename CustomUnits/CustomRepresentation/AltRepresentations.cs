@@ -216,6 +216,7 @@ namespace CustomUnits {
       foreach (CustomMechRepresentation alt in this.Alternates) { alt.PlayStartupAnim(); }
     }
     public override void HandleDeath(DeathMethod deathMethod, int location) {
+      this.ChangeVisibility(0);
       PilotableRepresentation_HandleDeath(deathMethod, location);
       foreach (CustomMechRepresentation alt in this.Alternates) { alt.PilotableRepresentation_HandleDeath(deathMethod, location); }
       if (isSlave == false) this._PlayDeathFloatie(deathMethod);

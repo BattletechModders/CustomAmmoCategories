@@ -262,8 +262,10 @@ namespace DBGSkirmishMechList {
             }
           }
           foreach (string id in Core.settings.skirmishMeches) { allowMechDefs.Add(id); }
+          Log.WL(1, "stockMechs:" + ___stockMechs.Count);
 
           foreach (MechDef mechDef in ___stockMechs) {
+            Log.WL(2, mechDef.Description.Id+ " allow:" + allowMechDefs.Contains(mechDef.Description.Id));
             if (allowMechDefs.Contains(mechDef.Description.Id)) { stockMechs.Add(mechDef); }
           }
           Log.WL(1, "stockMechs:"+ stockMechs.Count);

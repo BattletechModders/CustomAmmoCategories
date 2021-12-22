@@ -1758,14 +1758,18 @@ namespace CustomUnits {
       set {
         if (!this.HasTurnParam) { return; }
         if (this.parentMech.NoMoveAnimation()) { return; }
-        this.thisAnimator.SetFloat(this.TurnHash, value);
+        if (this.HeightController.CurrentHeight <= Core.Settings.MaxHoveringHeightWithWorkingJets) {
+          this.thisAnimator.SetFloat(this.TurnHash, value);
+        }
       }
     }
     public virtual float ForwardParam {
       set {
         if (!this.HasForwardParam) { return; }
         if (this.parentMech.NoMoveAnimation()) { return; }
-        this.thisAnimator.SetFloat(this.ForwardHash, value);
+        if (this.HeightController.CurrentHeight <= Core.Settings.MaxHoveringHeightWithWorkingJets) {
+          this.thisAnimator.SetFloat(this.ForwardHash, value);
+        }
         if (this.customRep != null) { this.customRep.Forward = value; }
       }
     }
