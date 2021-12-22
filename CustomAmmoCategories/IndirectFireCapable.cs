@@ -23,7 +23,7 @@ namespace CustAmmoCategories {
     }
     //public static bool isIndirectFireCapable(this Weapon weapon) {return getIndirectFireCapable(weapon);}
     public static float DirectFireModifier(this Weapon weapon) {
-      return (weapon.exDef().DirectFireModifierStat(weapon) + weapon.ammo().DirectFireModifier + weapon.mode().DirectFireModifier) * weapon.exDef().DirectFireModifierStat(weapon);
+      return (weapon.exDef().DirectFireModifierStat(weapon) + weapon.ammo().DirectFireModifier + weapon.mode().DirectFireModifier) * weapon.exDef().DirectFireModifierMod(weapon);
     }
     public static float ForbiddenRange(this Weapon weapon) {
       return weapon.exDef().ForbiddenRange + weapon.ammo().ForbiddenRange + weapon.mode().ForbiddenRange;
@@ -355,9 +355,11 @@ namespace CustomAmmoCategoriesPatches {
     public static float GetDirectFireModifier(this Weapon weapon, LineOfFireLevel lofLevel) {
       bool flag = lofLevel < LineOfFireLevel.LOFObstructed && (weapon.IndirectFireCapable());
       if (flag == false) {
-        //float directFireModifier = CustomAmmoCategories.getDirectFireModifier(weapon);
-        //CustomAmmoCategoriesLog.Log.LogWrite(attacker.DisplayName+" has LOS on "+target.DisplayName+ ". Apply DirectFireModifier "+directFireModifier+"\n");
-        return weapon.DirectFireModifier();
+        float directFireModifier = weapon.DirectFireModifier();
+        //Log.M?.TWL(0,"GetDirectFireModifier "+weapon.defId+" mod:"+ directFireModifier + " lofLevel:"+lofLevel+ " IndirectFireCapable:"+ weapon.IndirectFireCapable());
+        return directFireModifier;
+      } else {
+        //Log.M?.TWL(0,"GetDirectFireModifier " + weapon.defId + " lofLevel:" + lofLevel + " IndirectFireCapable:" + weapon.IndirectFireCapable());
       }
       return 0f;
     }

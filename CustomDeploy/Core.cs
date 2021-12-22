@@ -1,5 +1,7 @@
 ﻿using BattleTech;
+using BattleTech.Assetbundles;
 using BattleTech.Data;
+using BattleTech.ModSupport.Utils;
 using BattleTech.Rendering.UI;
 using BattleTech.Rendering.UrbanWarfare;
 using BattleTech.StringInterpolation;
@@ -9,6 +11,7 @@ using HBS;
 using HBS.Collections;
 using Newtonsoft.Json;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -18,6 +21,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using UnityEngine;
+using UnityHeapCrawler;
 
 namespace CustomDeploy{
   public static class Log {
@@ -111,6 +115,189 @@ namespace CustomDeploy{
     public static bool Prefix(Briefing __instance) {
       try {
         return true;
+      } catch (Exception e) {
+        Log.TWL(0, e.ToString());
+        return true;
+      }
+    }
+  }
+  [HarmonyPatch(typeof(Interpolator))]
+  [HarmonyPatch("GetStringFromObjectDispatch")]
+  [HarmonyPatch(MethodType.Normal)]
+  public static class Interpolator_GetStringFromObjectDispatch {
+    private static string GetStringFromObjectDispatch_Local(object obj, string expr) {
+      int num = expr.IndexOf('?');
+      string text = expr.Substring(0, num);
+      string text2 = expr.Substring(num + 1).Trim();
+      List<KeyValuePair<string, string>> list = new List<KeyValuePair<string, string>>();
+      string[] array = text2.Split(new char[]
+      {
+        '|'
+      });
+      for (int i = 0; i < array.Length; i++) {
+        int num2 = array[i].IndexOf(':');
+        string key = array[i].Substring(0, num2).Trim();
+        string value = array[i].Substring(num2 + 1);
+        list.Add(new KeyValuePair<string, string>(key, value));
+      }
+      object obj2 = null;
+      try {
+        obj2 = Interpolator.GetObjectByStringFromObject(text, obj);
+      } catch (Exception arg) {
+        string result = string.Format("ERROR: resolving '{0}' on {1}\n{2}", expr, obj, arg);
+        Log.TWL(0, result + "\n" + arg.ToString(), true);
+        return result;
+      }
+      if (obj2 == null) {
+        return string.Format("ERROR: can't resolve '{0}' on {1}. Null value.", text, obj);
+      }
+      string a = obj2.ToString();
+      for (int j = 0; j < list.Count; j++) {
+        if (a == list[j].Key || list[j].Key == "Default") {
+          return list[j].Value;
+        }
+      }
+      return string.Format("ERROR: Could not resolve '{0}'", expr);
+    }
+    public static bool Prefix(ref string __result, object obj, string expr) {
+      try {
+        __result = GetStringFromObjectDispatch_Local(obj, expr);
+        return false;
+      } catch (Exception e) {
+        Log.TWL(0, e.ToString());
+        return true;
+      }
+    }
+  }
+  [HarmonyPatch(typeof(Interpolator))]
+  [HarmonyPatch("LookupStringFromObjectAndMaybeDispatch")]
+  [HarmonyPatch(MethodType.Normal)]
+  public static class Interpolator_LookupStringFromObjectAndMaybeDispatch {
+    private static string LookupStringFromObjectAndMaybeDispatch_Local(object obj, string expr, out bool dispatchLocalize) {
+      if (expr.IndexOf('?') != -1) {
+        dispatchLocalize = false;
+        return Interpolator.GetStringFromObjectDispatch(obj, expr);
+      }
+      dispatchLocalize = true;
+      string result;
+      try {
+        object objectByStringFromObject = Interpolator.GetObjectByStringFromObject(expr, obj);
+        if (objectByStringFromObject != null) {
+          result = objectByStringFromObject.ToString();
+        } else {
+          result = string.Format("ERROR: can not resolve '{0}' on {1}. Null value.", expr, obj);
+        }
+      } catch (Exception ex) {
+        result = string.Format("ERROR: resolving '{0}' on {1}. {2}", expr, obj, ex.Message);
+        Log.TWL(0, result + "\n"+ ex.ToString(), true);
+      }
+      return result;
+    }
+
+    public static bool Prefix(ref string __result,object obj, string expr, ref bool dispatchLocalize) {
+      try {
+        __result = LookupStringFromObjectAndMaybeDispatch_Local(obj, expr, out dispatchLocalize);
+        return false;
+      } catch (Exception e) {
+        Log.TWL(0, e.ToString());
+        return true;
+      }
+    }
+  }
+  [HarmonyPatch(typeof(HeapSnapshotCollector))]
+  [HarmonyPatch("CollectStaticFields")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { })]
+  public static class HeapSnapshotCollector_CollectStaticFields {
+    private static void CollectStaticFields_Local(this HeapSnapshotCollector __instance) {
+      IEnumerable<Type> second = AppDomain.CurrentDomain.GetAssemblies().Where(new Func<Assembly, bool>(HeapSnapshotCollector.IsValidAssembly)).SelectMany((Assembly a) => a.GetTypesSafe());
+      IEnumerable<Type> enumerable = __instance.staticTypes.Concat(second);
+      HashSet<string> hashSet = new HashSet<string>();
+      foreach (Type type in enumerable) {
+        try {
+          __instance.AddStaticFields(type, hashSet);
+        } catch (Exception exception) {
+          Debug.LogException(exception);
+        }
+      }
+      if (hashSet.Count > 0) {
+        List<string> list = hashSet.ToList<string>();
+        list.Sort();
+        using (StreamWriter streamWriter = new StreamWriter(__instance.outputDir + "generic-static-fields.txt")) {
+          foreach (string value in list) {
+            streamWriter.WriteLine(value);
+          }
+        }
+      }
+    }
+    public static bool Prefix(HeapSnapshotCollector __instance) {
+      try {
+        __instance.CollectStaticFields_Local();
+        return false;
+      } catch (Exception e) {
+        Log.TWL(0, e.ToString());
+        return true;
+      }
+    }
+  }
+  [HarmonyPatch(typeof(AssemblyUtil))]
+  [HarmonyPatch("FindMethods")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { typeof(Assembly), typeof(string), typeof(string) })]
+  public static class AssemblyUtil_FindMethods {
+    public static MethodInfo[] FindMethods_Local(Assembly assembly, string methodName, string typeName = null) {
+      List<Type> list = new List<Type>();
+      if (typeName == null) {
+        list.AddRange(from x in assembly.GetTypesSafe()
+                      where x.GetMethod(methodName, BindingFlags.Static | BindingFlags.Public) != null
+                      select x);
+      } else {
+        list.Add(assembly.GetType(typeName));
+      }
+      if (list.Count == 0) {
+        return null;
+      }
+      List<MethodInfo> list2 = new List<MethodInfo>();
+      foreach (Type type in list) {
+        MethodInfo method = type.GetMethod(methodName, BindingFlags.Static | BindingFlags.Public);
+        list2.Add(method);
+      }
+      return list2.ToArray();
+    }
+    public static bool Prefix(ref MethodInfo[] __result, Assembly assembly, string methodName, string typeName) {
+      try {
+        __result = FindMethods_Local(assembly, methodName, typeName);
+        return false;
+      } catch (Exception e) {
+        Log.TWL(0, e.ToString());
+        return true;
+      }
+    }
+  }
+  [HarmonyPatch(typeof(AkTriggerBase))]
+  [HarmonyPatch("GetAllDerivedTypes")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { })]
+  public static class AkTriggerBase_GetAllDerivedTypes {
+    public static Dictionary<uint, string> GetAllDerivedTypes_Local() {
+      Type typeFromHandle = typeof(AkTriggerBase);
+      Type[] types = typeFromHandle.Assembly.GetTypesSafe();
+      Dictionary<uint, string> dictionary = new Dictionary<uint, string>();
+      for (int i = 0; i < types.Length; i++) {
+        if (types[i].IsClass && (types[i].IsSubclassOf(typeFromHandle) || (typeFromHandle.IsAssignableFrom(types[i]) && typeFromHandle != types[i]))) {
+          string name = types[i].Name;
+          dictionary.Add(AkUtilities.ShortIDGenerator.Compute(name), name);
+        }
+      }
+      dictionary.Add(AkUtilities.ShortIDGenerator.Compute("Awake"), "Awake");
+      dictionary.Add(AkUtilities.ShortIDGenerator.Compute("Start"), "Start");
+      dictionary.Add(AkUtilities.ShortIDGenerator.Compute("Destroy"), "Destroy");
+      return dictionary;
+    }
+    public static bool Prefix(ref Dictionary<uint, string> __result) {
+      try {
+        __result = GetAllDerivedTypes_Local();
+        return false;
       } catch (Exception e) {
         Log.TWL(0, e.ToString());
         return true;
@@ -401,8 +588,6 @@ namespace CustomDeploy{
         if (__instance == null) { Log.TWL(0, "Mech.InitGameRepLocal mech is null");  return;  }
         Log.TWL(0, "Mech.InitGameRepLocal "+__instance.PilotableActorDef.Description.Id);
         string prefabIdentifier = __instance.MechDef.Chassis.PrefabIdentifier;
-        if (AbstractActor.initLogger.IsLogEnabled)
-          AbstractActor.initLogger.Log((object)("InitGameRep Loading this -" + prefabIdentifier));
         GameObject gameObject = __instance.Combat.DataManager.PooledInstantiate(prefabIdentifier, BattleTechResourceType.Prefab);
         __instance._gameRep = (GameRepresentation)gameObject.GetComponent<MechRepresentation>();
         gameObject.GetComponent<Animator>().enabled = true;
@@ -503,6 +688,59 @@ namespace CustomDeploy{
     }
   }
   public static class Core{
+    public static System.Type[] GetTypesSafe(this Assembly assembly) {
+      try {
+        return assembly.GetTypes();
+      } catch (ReflectionTypeLoadException e) {
+        return e.Types.Where(x => x != null).ToArray();
+      }
+    }
+    private static HashSet<string> PooledInstantiate_Fallback_tracked = new HashSet<string>();
+    public static void PooledInstantiate_Fallback(this DataManager __instance,ref GameObject __result,string id,BattleTechResourceType resourceType,Vector3? position,Quaternion? rotation,Transform parent) {
+      if (__result != null) { return; }
+      if (resourceType != BattleTechResourceType.Prefab) { return; }
+      if (PooledInstantiate_Fallback_tracked.Contains(id)) { return; }
+      Log.TWL(0, "PooledInstantiate_Fallback: " + id + " result:" + (__result == null ? "null" : "not null"));
+      PooledInstantiate_Fallback_tracked.Add(id);
+      try {
+        VersionManifestEntry entry = __instance.ResourceLocator.EntryByID(id, BattleTechResourceType.Prefab);
+        if (entry == null) { Log.WL(1, "entry not found in manifest"); return; }
+        if (string.IsNullOrEmpty(entry.AssetBundleName)) { Log.WL(1, "entry not asset bundled"); return; }
+        VersionManifestEntry bundleEntry = __instance.ResourceLocator.EntryByID(entry.AssetBundleName, BattleTechResourceType.AssetBundle);
+        if (entry == null) { Log.WL(1, "AssetBundle " + entry.AssetBundleName + " not found in manifest"); return; }
+        if (__instance.AssetBundleManager.IsBundleLoaded(entry.AssetBundleName)) {
+          Log.WL(1, "AssetBundle " + entry.AssetBundleName + " is already loaded");
+          return;
+        }
+        AssetBundle bundle = AssetBundle.LoadFromFile(bundleEntry.FilePath);
+        if (bundle == null) {
+          Log.WL(1, "AssetBundle " + bundleEntry.FilePath + " fail to load");
+          return;
+        }
+        AssetBundleTracker tracker = new AssetBundleTracker(bundle, false);
+        tracker.ClearObjectMap();
+        foreach (UnityEngine.Object allAsset in tracker.assetBundle.LoadAllAssets()) {
+          System.Type type = allAsset.GetType();
+          Dictionary<string, UnityEngine.Object> dictionary;
+          if (!tracker.loadedObjects.TryGetValue(type, out dictionary)) {
+            dictionary = new Dictionary<string, UnityEngine.Object>();
+            tracker.loadedObjects[type] = dictionary;
+          }
+          if (!dictionary.ContainsKey(allAsset.name))
+            dictionary.Add(allAsset.name, allAsset);
+        }
+        tracker.CurrentState = AssetBundleTracker.State.Ready;
+        __instance.AssetBundleManager.loadedBundles.Add(entry.AssetBundleName, tracker);
+        Log.WL(1, "AssetBundle " + bundleEntry.Name + " loaded. Request " + id + " again");
+        __result = __instance.PooledInstantiate(id, BattleTechResourceType.Prefab, position, rotation, parent);
+        Log.WL(1, "result:" + (__result == null ? "null" : "not null"));
+      }catch(Exception e) {
+        Log.TWL(0, e.ToString(), true);
+      }
+    }
+    public static void FinishLoading() {
+      Core.HarmonyInstance.Patch(typeof(DataManager).GetMethod("PooledInstantiate", BindingFlags.Public | BindingFlags.Instance),null, new HarmonyMethod(typeof(CustomDeploy.Core).GetMethod(nameof(CustomDeploy.Core.PooledInstantiate_Fallback), BindingFlags.Static | BindingFlags.Public)));
+    }
     public static string BaseDir { get; set; }
     public static bool debugLog { get; set; }
     public static HarmonyInstance HarmonyInstance = null;
