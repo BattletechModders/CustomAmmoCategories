@@ -376,8 +376,10 @@ namespace CustomUnits {
       }
       float originalDist = Vector3.Distance(worldPos, this.HUD.SelectedActor.CurrentPosition);
       Log.WL(1, "original dist:"+originalDist+"/"+ Core.Settings.DeployMaxDistanceFromOriginal);
-      if (originalDist < Core.Settings.DeployMaxDistanceFromOriginal) { positionsCache.Add(worldPos, true); return true; }
       bool checkLancematesDistance = PlayerLanceSpawnerGameLogic_OnEnterActive.deployLoadRequest.originalSpawnMethod == SpawnUnitMethodType.ViaLeopardDropship;
+      if ((this.NumPositionsLocked == 0)||(checkLancematesDistance == false)) {
+        if (originalDist < Core.Settings.DeployMaxDistanceFromOriginal) { positionsCache.Add(worldPos, true); return true; }
+      }
       if (checkLancematesDistance) {
         Log.WL(1, "checking lancemates");
         Vector3? centerPoint = null;
@@ -428,26 +430,34 @@ namespace CustomUnits {
       //  break;
       //}
       //Log.TWL(0, "SelectionState_ProcessMousePos");
-      TargetingCirclesHelper.ShowCirclesCount(this.NumPositionsLocked);
-      for (int index = 0; index < this.NumPositionsLocked; ++index) {
-        if (deployPositions[index].position.HasValue) {
-          string text = String.Empty;
-          MechDef def = deployPositions[index].def as MechDef;
-          if (def != null) { text = def.Chassis.VariantName; } else {
-            text = deployPositions[index].def.Description.Name;
+      try {
+        try {
+          TargetingCirclesHelper.ShowCirclesCount(this.NumPositionsLocked);
+          for (int index = 0; index < this.NumPositionsLocked; ++index) {
+            if (deployPositions[index].position.HasValue) {
+              string text = String.Empty;
+              MechDef def = deployPositions[index].def as MechDef;
+              if (def != null) { text = def.Chassis.VariantName; } else {
+                text = deployPositions[index].def.Description.Name;
+              }
+              TargetingCirclesHelper.UpdateCircle(index, deployPositions[index].position.Value, Core.Settings.DeploySingleCircleRadiusTarget, text);
+            }
           }
-          TargetingCirclesHelper.UpdateCircle(index, deployPositions[index].position.Value, Core.Settings.DeploySingleCircleRadiusTarget, text);
+        }catch(Exception e) {
+          Log.TWL(0,e.ToString(), true);
         }
-      }
-      if (this.NumPositionsLocked < deployPositions.Count) {
-        worldPos = HUD.Combat.HexGrid.GetClosestPointOnGrid(worldPos);
-        if (this.CheckPosition(worldPos)) {
-          float range = Input.GetKey(KeyCode.LeftAlt) ? Core.Settings.DeploySingleCircleRadius : Core.Settings.DeploySpawnRadius;
-          CombatTargetingReticle.Instance.UpdateReticle(worldPos, range, false);
-          lastViewedPosition = worldPos;
+        if (this.NumPositionsLocked < deployPositions.Count) {
+          worldPos = HUD.Combat.HexGrid.GetClosestPointOnGrid(worldPos);
+          if (this.CheckPosition(worldPos)) {
+            float range = Input.GetKey(KeyCode.LeftAlt) ? Core.Settings.DeploySingleCircleRadius : Core.Settings.DeploySpawnRadius;
+            CombatTargetingReticle.Instance.UpdateReticle(worldPos, range, false);
+            lastViewedPosition = worldPos;
+          }
         }
+        this.SelectionState_ProcessMousePos(SelectedActor.CurrentPosition);
+      }catch(Exception e) {
+        Log.TWL(0, e.ToString(), true);
       }
-      this.SelectionState_ProcessMousePos(SelectedActor.CurrentPosition);
     }
     public override int ProjectedHeatForState { get { return 0; } }
   };

@@ -232,6 +232,15 @@ namespace CustAmmoCategories {
     }
     public WeaponExtendedInfo(Weapon weapon, WeaponDef def) {
       this.weapon = weapon;
+      if(weapon.weaponDef == null) {
+        this.mode = CustomAmmoCategories.DefaultWeaponMode;
+        this.needRevalidate = false;
+        this.ammo = CustomAmmoCategories.DefaultAmmo;
+        this.extDef = CustomAmmoCategories.DefaultWeapon;
+        this.HasAmmoVariants = false;
+        Log.M.TWL(0, "WeaponExtendedInfo parent:"+(weapon.parent == null?"null":weapon.parent.PilotableActorDef.Description.Id)+" has weapon without definition GUID:"+weapon.GUID);
+        return;
+      }
       if (weapon.WeaponCategoryValue.IsMelee) { isBoxesAssigned = true; }
       this.extDef = def.exDef();
       foreach (var defMode in this.extDef.Modes) { this.modes.Add(defMode.Key, defMode.Value); }

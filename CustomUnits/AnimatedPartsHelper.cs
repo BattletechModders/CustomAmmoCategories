@@ -259,7 +259,7 @@ namespace CustomUnits {
       }
       Quaternion b = Quaternion.LookRotation(forward);
       __result = (double)Quaternion.Angle(attackRotation, b) < (double)__instance.FiringArc();
-      //Log.WL(1, Quaternion.Angle(attackRotation, b) + " and " + info.FiringArc + " : " + __result);
+      //Log.WL(1, Quaternion.Angle(attackRotation, b) + " and " + __instance.FiringArc() + " : " + __result);
       return false;
     }
   }

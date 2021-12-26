@@ -82,6 +82,15 @@ namespace SortByTonnage {
           Log.TWL(0, "sorting disabled");
           return mechs;
         }
+        HashSet<IMechLabDraggableItem> sortable = new HashSet<IMechLabDraggableItem>();
+        HashSet<IMechLabDraggableItem> unsortable = new HashSet<IMechLabDraggableItem>();
+        foreach (IMechLabDraggableItem item in mechs) {
+          if (item.MechDef == null) { unsortable.Add(item); continue; }
+          if (item.MechDef.Chassis == null) {
+            Log.WL(1,"");
+            unsortable.Add(item); continue;
+          }
+        }
         if (ModSettings.OrderByNickname) {
           return
               mechs
@@ -114,6 +123,44 @@ namespace SortByTonnage {
 
     }
 
+    private static List<IMechLabDraggableItem> SortChassisDefs(List<IMechLabDraggableItem> chassis) {
+      try {
+        Log.TWL(0, $"pre-sort chassis count: {chassis.Count}");
+        if (ModSettings.isAnySortingEnabled == false) {
+          Log.TWL(0, "sorting disabled");
+          return chassis;
+        }
+        if (ModSettings.OrderByNickname) {
+          return
+              chassis
+                  .OrderByDescending(ch => ch.ChassisDef.Description.Name)
+                  .ThenBy(ch => ch.ChassisDef.Tonnage)
+                  .ThenBy(ch => ch.ChassisDef.VariantName)
+                  .ToList();
+        }
+
+        if (ModSettings.OrderByCbillValue) {
+          return
+              chassis
+                  .OrderByDescending(ch => ch.ChassisDef.Description.Cost)
+                  .ThenBy(ch => ch.ChassisDef.Tonnage)
+                  .ThenByDescending(ch => ch.ChassisDef.VariantName)
+                  .ThenBy(ch => ch.ChassisDef.Description.Name)
+                  .ToList();
+        }
+
+        return
+            chassis
+                .OrderBy(ch => ch.ChassisDef.Tonnage)
+                .ThenByDescending(ch => ch.ChassisDef.VariantName)
+                .ThenByDescending(ch => ch.ChassisDef.Description.Name)
+                .ToList();
+      } catch (Exception e) {
+        Log.TWL(0, e.ToString(), true);
+        return chassis;
+      }
+
+    }
     private static List<Tuple<MechState, MechDef>> SortMechDefs(Dictionary<int, Tuple<MechState, MechDef>> mechs) {
       try {
         Log.TWL(0, $"pre-sort count: {mechs.Count}");
@@ -183,16 +230,16 @@ namespace SortByTonnage {
       return combined;
     }
 
-    public static List<IMechLabDraggableItem> SortStorageWidgetMechs(List<IMechLabDraggableItem> mechs) {
+    public static List<IMechLabDraggableItem> SortStorageWidgetMechs(List<IMechLabDraggableItem> chassis) {
       if (!_isSortEnabled) {
         Log.TWL(0, "sorting disabled");
-        return mechs;
+        return chassis;
       }
       if(ModSettings.isAnySortingEnabled == false) {
         Log.TWL(0, "sorting disabled");
-        return mechs;
+        return chassis;
       }
-      return SortMechDefs(mechs);
+      return SortChassisDefs(chassis);
     }
 
     public static void SortMechLabMechs(int mechSlots, Dictionary<int, MechDef> activeMechs, Dictionary<int, MechDef> readyingMechs) {

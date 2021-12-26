@@ -28,6 +28,24 @@ namespace CustomUnits {
     }
     public static PilotingClassDef DEFAULT_MECH_PILOTING_CLASS { get; private set; } = null;
     public static PilotingClassDef DEFAULT_VEHICLE_PILOTING_CLASS { get; private set; } = null;
+    public static void CreateDefault() {
+      PilotingClassDef GenericVehicleClass = new PilotingClassDef();
+      GenericVehicleClass.expertiseGenerationChance = Core.Settings.CanPilotVehicleProbability;
+      GenericVehicleClass.expertiseGenerationMinCount = 1;
+      GenericVehicleClass.Description.Id = PilotingClassDef.DEFAULT_VEHICLE_PILOTING_NAME;
+      GenericVehicleClass.Description.Name = PilotingClassDef.DEFAULT_VEHICLE_PILOTING_UINAME;
+      PilotingClassDef GenericMechClass = new PilotingClassDef();
+      GenericMechClass.expertiseGenerationChance = Core.Settings.CanPilotAlsoMechProbability;
+      GenericMechClass.expertiseGenerationMinCount = 1;
+      GenericMechClass.Description.Id = PilotingClassDef.DEFAULT_MECH_PILOTING_NAME;
+      GenericMechClass.Description.Name = PilotingClassDef.DEFAULT_MECH_PILOTING_UINAME;
+      if (GenericMechClass.unitTags.Count == 0) { GenericMechClass.unitTags.Add(PilotingClassDef.DEFAULT_MECH_UNIT_TAG); }
+      if (GenericMechClass.pilotTags.Count == 0) { GenericMechClass.pilotTags.Add(PilotingClassDef.DEFAULT_MECH_PILOTING_TAG); }
+      if (GenericVehicleClass.unitTags.Count == 0) { GenericVehicleClass.unitTags.Add(PilotingClassDef.DEFAULT_VEHICLE_UNIT_TAG); }
+      if (GenericVehicleClass.pilotTags.Count == 0) { GenericVehicleClass.pilotTags.Add(PilotingClassDef.DEFAULT_VEHICLE_PILOTING_TAG); }
+      DEFAULT_MECH_PILOTING_CLASS = GenericMechClass;
+      DEFAULT_VEHICLE_PILOTING_CLASS = GenericVehicleClass;
+    }
     public static void Validate() {
       Log.TWL(0, "PilotingClassHelper.Validate");
       if (pilotingClasses.TryGetValue(PilotingClassDef.DEFAULT_MECH_PILOTING_NAME, out PilotingClassDef GenericMechClass) == false) {

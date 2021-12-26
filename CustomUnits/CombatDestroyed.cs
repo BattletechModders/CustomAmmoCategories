@@ -24,6 +24,7 @@ namespace CustomUnits {
         MoveClampHelper.Clear();
         SelectionStateJump_GetAllDFATargets.Clear();
         PathingHelper.Clear();
+        CustomDeploy.Core.ClearFallbackTracked();
         //StackDataHelper.Clear();
       } catch (Exception e) {
         Log.LogWrite(e.ToString() + "\n");

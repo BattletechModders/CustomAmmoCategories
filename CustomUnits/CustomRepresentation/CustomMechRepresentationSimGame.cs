@@ -541,6 +541,7 @@ namespace CustomUnits {
       this.gameObject.AddComponent<ShadowTracker>();
       this.mouseRotation = this.GetComponent<MouseRotation>();
       if (this.mouseRotation == null) { this.mouseRotation = this.gameObject.AddComponent<MouseRotation>(); }
+      MechSpin.Patches.MechRepresentationSimGame_Init_Patch.Postfix(this);
     }
 
     public virtual void loadCustomization(HeraldryDef heraldryDef) {

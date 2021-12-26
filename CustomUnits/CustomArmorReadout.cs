@@ -1517,6 +1517,7 @@ namespace CustomUnits {
       svg_inited = true;
     }
     public void UIInit() {
+      if (frontArmor == null) { return; }
       this.transform.localPosition = frontArmor.localPosition;
 
       ui_inited = true;

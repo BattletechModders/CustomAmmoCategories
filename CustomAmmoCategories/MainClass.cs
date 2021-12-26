@@ -1298,6 +1298,9 @@ namespace CACMain {
       Log.InitLog();
       Log.M.TWL(0,"Initing... " + directory + " version: " + Assembly.GetExecutingAssembly().GetName().Version + " debug:"+ CustomAmmoCategories.Settings.debugLog, true);
       Log.M.TWL(0,"Reading settings");
+      foreach(string arg in Environment.GetCommandLineArgs()) {
+        Log.M.WL(1, arg);
+      }
       SelfDocumentationHelper.CreateSelfDocumentation(directory);
       CustomAmmoCategories.Settings = JsonConvert.DeserializeObject<CustAmmoCategories.Settings>(File.ReadAllText(settings_filename));
       CustomAmmoCategories.GlobalSettings = JsonConvert.DeserializeObject<CustAmmoCategories.Settings>(File.ReadAllText(settings_filename));

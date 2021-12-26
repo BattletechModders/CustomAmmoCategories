@@ -1828,11 +1828,12 @@ namespace CustomUnits {
       dfaForbiddenCache.Clear();
     }
     public static void Postfix(SelectionStateJump __instance, ref List<ICombatant> __result) {
-      try {
-        if (__instance.SelectedActor.isDFAForbidden()) { __result.Clear(); }
-      } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
-      }
+      return;
+      //try {
+      //  if (__instance.SelectedActor.isDFAForbidden()) { __result.Clear(); }
+      //} catch (Exception e) {
+      //  Log.TWL(0, e.ToString(), true);
+      //}
     }
   }
   [HarmonyPatch(typeof(Mech))]
@@ -1842,7 +1843,8 @@ namespace CustomUnits {
   public static class Mech_CanDFATargetFromPosition {
     public static void Postfix(Mech __instance, ICombatant target, Vector3 position, ref bool __result) {
       try {
-        if(__result == true) { if (__instance.isDFAForbidden()) { __result = false; } }
+        //if(__result == true) { if (__instance.isDFAForbidden()) { __result = false; } }
+        return;
       } catch (Exception e) {
         Log.TWL(0, e.ToString(), true);
       }

@@ -9,6 +9,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using Random = UnityEngine.Random;
 
 namespace CustomUnits {
   [HarmonyPatch(typeof(UICreep))]
@@ -764,11 +765,7 @@ namespace CustomUnits {
         return this.parentCombatant.CurrentPosition;
       }
     }
-
-    public override Vector3 GetMissPosition(
-      Vector3 attackOrigin,
-      Weapon weapon,
-      NetworkRandom random) {
+    public override Vector3 GetMissPosition(Vector3 attackOrigin, Weapon weapon, NetworkRandom random) {
       Vector3 position = this.vfxCenterTorsoTransform.position;
       position.y = this.vfxCenterTorsoTransform.position.y;
       float radius = this.parentMech.MechDef.Chassis.Radius;
@@ -949,8 +946,34 @@ namespace CustomUnits {
       }
       if (this.customRep != null) { this.StopCustomParticlesInLocation((ChassisLocations)location); }
     }
+    public virtual void PlayDeathVFXVehicle(DeathMethod deathMethod, int location) {
+      Log.TWL(0, "MechRepresentation.PlayDeathVFXVehicle deathMethod:" + deathMethod);
+      string vehicleDeathA = (string)this.parentCombatant.Combat.Constants.VFXNames.vehicleDeath_A;
+      string vfxName;
+      AudioEventList_vehicle eventEnumValue;
+      if (Random.Range(0, 2) == 0) {
+        vfxName = (string)this.parentCombatant.Combat.Constants.VFXNames.vehicleDeath_A;
+        eventEnumValue = AudioEventList_vehicle.vehicle_explosion_a;
+      } else {
+        vfxName = (string)this.parentCombatant.Combat.Constants.VFXNames.vehicleDeath_B;
+        eventEnumValue = AudioEventList_vehicle.vehicle_explosion_b;
+      }
+      this.HeightController.PendingHeight = 0f;
+      this.customRep.OnUnitDestroy();
+      this.PlayVFX(location, vfxName, false, Vector3.zero, true, -1f);
+      if (this.parentActor.Combat.IsLoadingFromSave) { return; }
+      if (isSlave == false) {
+        int num = (int)WwiseManager.PostEvent<AudioEventList_vehicle>(eventEnumValue, this.audioObject);
+        Log.WL(1, "WwiseManager.PostEvent:" + eventEnumValue + " result:" + num);
+      }
+    }
+
     public override void PlayDeathVFX(DeathMethod deathMethod, int location) {
       if (deathMethod == DeathMethod.PilotKilled) { return; }
+      if (this.parentMech.FakeVehicle()) {
+        this.PlayDeathVFXVehicle(deathMethod, location);
+        return;
+      }
       string deathCenterTorsoA = (string)this.Constants.VFXNames.mechDeath_centerTorso_A;
       AudioEventList_mech eventEnumValue = AudioEventList_mech.mech_cockpit_explosion;
       bool attached = false;

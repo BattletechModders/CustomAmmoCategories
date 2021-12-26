@@ -304,6 +304,119 @@ namespace CustomDeploy{
       }
     }
   }
+  [HarmonyPatch(typeof(StarSystem))]
+  [HarmonyPatch("GetLastPilotAddedToHiringName")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { })]
+  public static class StarSystem_GetLastPilotAddedToHiringName {
+    public static bool Prefix(StarSystem __instance, ref string __result) {
+      try {
+        if (__instance == null) {
+          Log.TWL(0, "Warning call GetLastPilotAddedToHiringName from null star system");
+          __result = "ERROR: null star system";
+          return false;
+        }
+        if (__instance.LastPilotAdded == null) {
+          Log.TWL(0, "Warning call GetLastPilotAddedToHiringName with null LastPilotAdded. AvailablePilots:"+__instance.AvailablePilots.Count);
+          foreach(PilotDef pilot in __instance.AvailablePilots) {
+            Log.WL(1, pilot.Description.Id+":"+pilot.Description.Callsign);
+          }
+          if(__instance.AvailablePilots.Count > 0) {
+            __instance.LastPilotAdded = __instance.AvailablePilots.Last();
+            __result = __instance.LastPilotAdded.Description.Callsign;
+            return false;
+          } else {
+            __result = "ERROR: no pilots in roster";
+            return false;
+          }
+        }
+        return false;
+      } catch (Exception e) {
+        Log.TWL(0, e.ToString());
+        return true;
+      }
+    }
+  }
+  [HarmonyPatch(typeof(SimGameState))]
+  [HarmonyPatch("AddPilotToHiringHall")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { typeof(string), typeof(string) })]
+  public static class SimGameState_AddPilotToHiringHall {
+    public static bool Prefix(SimGameState __instance, string pilotDefID, string starSystemID, ref bool __result) {
+      try {
+        Log.TWL(0, "SimGameState.AddPilotToHiringHall "+pilotDefID+" "+starSystemID+" curSystem:"+(__instance.CurSystem==null?"null":__instance.CurSystem.Def.Description.Id));
+        if (string.IsNullOrEmpty(pilotDefID) || !__instance.starDict.ContainsKey(starSystemID)) {
+          __result = false;
+          return false;
+        }
+        StarSystem system = __instance.starDict[starSystemID];
+        if(__instance.DataManager.PilotDefs.TryGet(pilotDefID, out PilotDef def)) {
+          Log.WL(1, "pilot " + pilotDefID + ":" + def.Description.Callsign + " already exists in data manager");
+          __instance.AddPilotToHiringHall(def, system);
+          __result = true;
+          return false;
+        }
+        VersionManifestEntry pilotEntry = __instance.DataManager.ResourceLocator.EntryByID(pilotDefID, BattleTechResourceType.PilotDef);
+        if(pilotEntry == null) {
+          Log.WL(1,"no pilot entry "+pilotDefID+" in manifest");
+          __result = false;
+          return false;
+        }
+        try {
+          if (pilotEntry.IsAssetBundled) {
+            Log.WL(1, "Pilot "+pilotDefID+" is in asset bundle. Тут мои полномочия все (с)");
+            return true;
+          }
+          Log.WL(1, "Pilot " + pilotDefID + " reading from:" + pilotEntry.FilePath);
+          using (StreamReader stream = new StreamReader(pilotEntry.FilePath)) {
+            string json = stream.ReadToEnd();
+            def = new PilotDef();
+            def.FromJSON(json);
+            __instance.DataManager.pilotDefs.Add(def.Description.Id, def);
+            DataManager.InjectedDependencyLoadRequest dependencyLoad = new DataManager.InjectedDependencyLoadRequest(__instance.DataManager);
+            def.GatherDependencies(__instance.DataManager, dependencyLoad, 10u);
+            if(dependencyLoad.DependencyCount() > 0) {
+              Log.WL(2, "dependencies "+ dependencyLoad.DependencyCount());
+              foreach (var request in dependencyLoad.loadRequests) {
+                foreach (var dep in request.loadRequests) {
+                  Log.WL(3, dep.Key.id);
+                }
+              }
+              dependencyLoad.RegisterLoadCompleteCallback((Action)(() => {
+                Log.TWL(0, "SimGameState.AddPilotToHiringHall dependencies "+pilotDefID+" success");
+              }));
+              __instance.DataManager.InjectDependencyLoader(dependencyLoad, 10U);
+            }
+            __instance.AddPilotToHiringHall(def, system);
+            __result = true;
+            return false;
+          }
+        } catch(Exception e) {
+          Log.TWL(0, e.ToString());
+          return true;
+        }
+      } catch (Exception e) {
+        Log.TWL(0, e.ToString());
+        return true;
+      }
+    }
+  }
+  [HarmonyPatch(typeof(StarSystem))]
+  [HarmonyPatch("AddAvailablePilot")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { typeof(PilotDef), typeof(bool) })]
+  public static class StarSystem_AddAvailablePilot {
+    public static PilotDef lastPilotAdded { get; set; } = null;
+    public static void Prefix(StarSystem __instance, PilotDef def, bool isRonin) {
+      try {
+        Log.TWL(0, "StarSystem.AddAvailablePilot " + def.Description.Id + " "+__instance.Def.Description.Id);
+        lastPilotAdded = def;
+      } catch (Exception e) {
+        Log.TWL(0, e.ToString());
+      }
+    }
+  }
+
   [HarmonyPatch(typeof(Utilities))]
   [HarmonyPatch("BuildExtensionMethodCacheForType")]
   [HarmonyPatch(MethodType.Normal)]
@@ -696,9 +809,15 @@ namespace CustomDeploy{
       }
     }
     private static HashSet<string> PooledInstantiate_Fallback_tracked = new HashSet<string>();
+    public static void ClearFallbackTracked() {
+      Log.TWL(0, "ClearFallbackTracked");
+      PooledInstantiate_Fallback_tracked.Clear();
+    }
     public static void PooledInstantiate_Fallback(this DataManager __instance,ref GameObject __result,string id,BattleTechResourceType resourceType,Vector3? position,Quaternion? rotation,Transform parent) {
       if (__result != null) { return; }
       if (resourceType != BattleTechResourceType.Prefab) { return; }
+      if (BattleTech.UnityGameInstance.BattleTechGame == null) { return; }
+      if (BattleTech.UnityGameInstance.BattleTechGame.Combat == null) { return; }
       if (PooledInstantiate_Fallback_tracked.Contains(id)) { return; }
       Log.TWL(0, "PooledInstantiate_Fallback: " + id + " result:" + (__result == null ? "null" : "not null"));
       PooledInstantiate_Fallback_tracked.Add(id);

@@ -389,13 +389,18 @@ namespace CustAmmoCategoriesPatches {
   [HarmonyPatch(new Type[] { })]
   [HarmonyPriority(Priority.Last)]
   public static class Weapon_ResetWeapon {
+    private static HashSet<Weapon> defaultedWeapons = new HashSet<Weapon>();
+    public static void Clear() { defaultedWeapons.Clear(); }
     public static void Postfix(Weapon __instance) {
       if (__instance.info().needRevalidate) { return; }
       if (__instance.info().ammo.AmmoCategory.BaseCategory.Is_NotSet) { return; }
-      if ((__instance.ammoBoxes.Count == 0) && (__instance.InternalAmmo != 0)) {
-        __instance.DisableWeapon();
-        if (__instance.parent == null) { return; }
-        Log.M.TWL(0, __instance.parent.PilotableActorDef.Description.Id + " "+__instance.defId+" disabled by default");
+      if (defaultedWeapons.Contains(__instance) == false) {
+        if ((__instance.ammoBoxes.Count == 0) && (__instance.InternalAmmo != 0)) {
+          __instance.DisableWeapon();
+          if (__instance.parent == null) { return; }
+          Log.M.TWL(0, __instance.parent.PilotableActorDef.Description.Id + " " + __instance.defId + " disabled by default");
+        }
+        defaultedWeapons.Add(__instance);
       }
     }
   }

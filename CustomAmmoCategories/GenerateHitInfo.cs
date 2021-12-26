@@ -161,12 +161,13 @@ namespace CustomAmmoCategoriesPatches {
       TurretRepresentation tRep = targetRep as TurretRepresentation;
       MechRepresentation mRep = targetRep as MechRepresentation;
       VehicleRepresentation vRep = targetRep as VehicleRepresentation;
-      Vector3 position = targetRep.thisTransform.position;
+      Vector3 position = targetRep.parentCombatant.CurrentPosition;
       Team team = weapon == null || weapon.parent == null || weapon.parent.team == null ? (Team)null : weapon.parent.team;
       float minradius = 5f;
       if (mRep != null) {
-        position = mRep.vfxCenterTorsoTransform.position;
-        position.y = mRep.vfxCenterTorsoTransform.position.y;
+        //position = mRep.vfxCenterTorsoTransform.position;
+        //position.y = mRep.vfxCenterTorsoTransform.position.y;
+
         minradius = mRep.parentMech.MechDef.Chassis.Radius;
         //radius = mRep.parentMech.MechDef.Chassis.Radius * UnityEngine.Random.Range(mRep.Constants.ResolutionConstants.MissOffsetHorizontalMin, mRep.Constants.ResolutionConstants.MissOffsetHorizontalMax);
       } else

@@ -618,7 +618,7 @@ namespace CustomUnits{
       //CustomLanceHelper.BaysCount(3+(Core.Settings.BaysCountExternalControl?0:Core.Settings.ArgoBaysFix));
       MechResizer.MechResizer.Init(directory, settingsJson);
       SortByTonnage.SortByTonnage.Init(directory, Core.Settings.SortBy);
-
+      PilotingClassHelper.CreateDefault();
       try {
         HarmonyInstance = HarmonyInstance.Create("io.mission.customunits");
         HitLocation_GetMechHitTableCustom.i_GetMechHitTable = HitLocation_GetMechHitTable.Get;

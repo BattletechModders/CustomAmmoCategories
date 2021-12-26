@@ -47,6 +47,7 @@ namespace CustomAmmoCategoriesPatches {
         DamageModifiersCache.Clear();
         CombatHUDWeaponPanel_RefreshDisplayedWeapons.Clear();
         AdvWeaponHitInfo.ClearAttackLog();
+        Weapon_ResetWeapon.Clear();
       } catch(Exception e) {
         Log.M.TWL(0, e.ToString());
       }

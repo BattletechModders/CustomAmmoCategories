@@ -11,6 +11,7 @@ namespace CustomAmmoCategoriesLog {
     Main,
     Criticals,
     Minefields,
+    AIM,
     //CharlesB,
     Objects,
     Sounds,
@@ -121,6 +122,7 @@ namespace CustomAmmoCategoriesLog {
     public static LogFile O { get { return Log.logs[LogFileType.Objects]; } }
     public static LogFile S { get { return Log.logs[LogFileType.Sounds]; } }
     public static LogFile HS { get { return Log.logs[LogFileType.HeatSinking]; } }
+    public static LogFile AIM { get { return Log.logs[LogFileType.AIM]; } }
     public static void InitLog() {
       //LogFile file = new LogFile("CAC_main_log.txt", CustomAmmoCategories.Settings.debugLog);
       Log.logs.Add(LogFileType.Main,new LogFile("CAC_main_log.txt", CustomAmmoCategories.Settings.debugLog));
@@ -131,6 +133,7 @@ namespace CustomAmmoCategoriesLog {
       Log.logs.Add(LogFileType.Objects, new LogFile("CAC_objects_log.txt", CustomAmmoCategories.Settings.debugLog));
       Log.logs.Add(LogFileType.Sounds, new LogFile("CAC_sounds_log.txt", CustomAmmoCategories.Settings.debugLog));
       Log.logs.Add(LogFileType.HeatSinking, new LogFile("CAC_heatsink_log.txt", CustomAmmoCategories.Settings.debugLog));
+      Log.logs.Add(LogFileType.AIM, new LogFile("CAC_AIM_log.txt", CustomAmmoCategories.Settings.debugLog));
       //Log.logs.Add(LogFileType.Main, null);
       Log.flushThread.Start();
     }

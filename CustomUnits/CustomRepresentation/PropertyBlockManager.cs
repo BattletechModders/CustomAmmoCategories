@@ -42,14 +42,14 @@ namespace CustomUnits {
   [HarmonyPatch(new Type[] { })]
   public static class PropertyBlockManager_UpdateProperties {
     public static bool Prefix(PropertyBlockManager __instance) {
-      try {
-        if (__instance is CustomPropertyBlockManager customBlock) {
-          customBlock._UpdateProperties();
-          return false;
-        }
-      } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
+      //try {
+      if (__instance is CustomPropertyBlockManager customBlock) {
+        customBlock._UpdateProperties();
+        return false;
       }
+      //} catch (Exception e) {
+      //Log.TWL(0, e.ToString(), true);
+      //}
       return true;
     }
   }
@@ -102,16 +102,16 @@ namespace CustomUnits {
       this._UpdateCache();
     }
     public void _UpdateProperties() {
-      Log.TWL(0, "CustomPropertyBlockManager._UpdateProperties " + this.gameObject.name);
+      //Log.TWL(0, "CustomPropertyBlockManager._UpdateProperties " + this.gameObject.name);
       foreach (var mblock in materialBlocks) { if (mblock.Key == null) { continue; }; mblock.Value.Clear(); }
       foreach (PropertyBlockManager.PropertySetting property in this.main_properties) {
         this.AddPropertyToBlock(property);
-        Log.WL(1, property.PropertyName+":"+property.PropertyType+" common");
+        //Log.WL(1, property.PropertyName+":"+property.PropertyType+" common");
       }
       foreach (var paintTexture in this.paintSchemes) {
         if (paintTexture.Key == null) { continue; }
         if (materialBlocks.TryGetValue(paintTexture.Key, out MaterialPropertyBlock block)) {
-          Log.WL(1, paintTexture.Value.PropertyName+":" + paintTexture.Value.PropertyType+" renderer:"+ paintTexture.Key.gameObject.name+" texture:"+paintTexture.Value.PropertyTexture.name);
+          //Log.WL(1, paintTexture.Value.PropertyName+":" + paintTexture.Value.PropertyType+" renderer:"+ paintTexture.Key.gameObject.name+" texture:"+paintTexture.Value.PropertyTexture.name);
           this.AddPropertyToBlock(block, paintTexture.Value);
         }
       }

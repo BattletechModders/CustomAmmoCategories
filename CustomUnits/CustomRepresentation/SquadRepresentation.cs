@@ -126,11 +126,51 @@ namespace CustomUnits {
       }
     }
     public override Vector3 GetHitPosition(int location) {
-      if (this.squad.TryGetValue((ChassisLocations)location, out CustomMechRepresentation unit)) {
-        return unit.GetHitPosition((int)ChassisLocations.CenterTorso);
+      ChassisLocations chassisLocation = MechStructureRules.GetChassisLocationFromArmorLocation((ArmorLocation)location);
+      if (this.squad.TryGetValue(chassisLocation, out CustomMechRepresentation unit)) {
+        if (this.parentMech.IsLocationDestroyed(chassisLocation)) {
+          return this.parentMech.CurrentPosition + Vector3.up * this.HeightController.CurrentHeight;
+        } else {
+          return unit.GetHitPosition((int)ArmorLocation.CenterTorso);
+        }
       }
       return base.GetHitPosition(location);
     }
+    public override Vector3 GetMissPosition(Vector3 attackOrigin, Weapon weapon, NetworkRandom random) {
+      Vector3 position = this.parentMech.CurrentPosition + Vector3.up * this.HeightController.CurrentHeight;
+      float radius = this.parentMech.MechDef.Chassis.Radius;
+      AttackDirection attackDirection = this.parentActor.Combat.HitLocation.GetAttackDirection(weapon.parent, (ICombatant)this.parentActor);
+      bool flag = random.Int(max: 2) == 0;
+      float num1 = random.Float(this.Constants.ResolutionConstants.MissOffsetHorizontalMin, this.Constants.ResolutionConstants.MissOffsetHorizontalMax);
+      if (weapon.Type == WeaponType.LRM) {
+        Vector2 vector2 = random.Circle().normalized * (radius * num1);
+        position.x += vector2.x;
+        position.z += vector2.y;
+        return position;
+      }
+      Vector3 vector3;
+      switch (attackDirection) {
+        case AttackDirection.FromFront:
+        vector3 = !flag ? position - this.thisTransform.right * (radius * 1f) - this.thisTransform.right * num1 : position + this.thisTransform.right * (radius * 1f) + this.thisTransform.right * num1;
+        break;
+        case AttackDirection.FromLeft:
+        vector3 = !flag ? position - this.thisTransform.forward * (radius * 0.6f) - this.thisTransform.forward * num1 : position + this.thisTransform.forward * (radius * 0.6f) + this.thisTransform.forward * num1;
+        break;
+        case AttackDirection.FromRight:
+        vector3 = !flag ? position + this.thisTransform.forward * (radius * 0.6f) + this.thisTransform.forward * num1 : position - this.thisTransform.forward * (radius * 0.6f) - this.thisTransform.forward * num1;
+        break;
+        case AttackDirection.FromBack:
+        vector3 = !flag ? position + this.thisTransform.right * (radius * 1f) + this.thisTransform.right * num1 : position - this.thisTransform.right * (radius * 1f) - this.thisTransform.right * num1;
+        break;
+        default:
+        vector3 = !flag ? position - this.thisTransform.right * (radius * 1f) - this.thisTransform.right * num1 : position + this.thisTransform.right * (radius * 1f) + this.thisTransform.right * num1;
+        break;
+      }
+      float num2 = random.Float(-this.Constants.ResolutionConstants.MissOffsetVerticalMin, this.Constants.ResolutionConstants.MissOffsetVerticalMax);
+      vector3.y += num2;
+      return vector3;
+    }
+
     public override Transform GetVFXTransform(int location) {
       if (this.squad.TryGetValue((ChassisLocations)location, out CustomMechRepresentation unit)) {
         return unit.GetVFXTransform((int)ChassisLocations.CenterTorso);

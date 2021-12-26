@@ -11,20 +11,38 @@ using BattleTech;
 using CustomAmmoCategoriesLog;
 using Harmony;
 using Newtonsoft.Json.Linq;
+using BattleTech.UI;
+using UnityEngine;
 
 namespace CustAmmoCategories {
-  [HarmonyPatch(typeof(UnityGameInstance))]
-  [HarmonyPatch("Update")]
+  [HarmonyPatch(typeof(UIManager))]
+  [HarmonyPatch("Awake")]
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { })]
-  public static class UnityGameInstance_UpdateCACHTTP {
+  internal static class UIManager_Awake {
+    public static void Postfix(UIManager __instance) {
+      Log.M?.TWL(0, "UIManager.Awake");
+      try {
+        if(UnityGameInstance_UpdateCACHTTP.Instance == null) {
+          UnityGameInstance_UpdateCACHTTP.Instance = __instance.gameObject.GetComponent<UnityGameInstance_UpdateCACHTTP>();
+          if (UnityGameInstance_UpdateCACHTTP.Instance == null) {
+            UnityGameInstance_UpdateCACHTTP.Instance = __instance.gameObject.AddComponent<UnityGameInstance_UpdateCACHTTP>();
+          }
+        }
+      } catch (Exception ex) {
+        Log.M?.TWL(0, ex.ToString(), true);
+      }
+    }
+  }
+  public class UnityGameInstance_UpdateCACHTTP: MonoBehaviour {
     private static Queue<CACHTTPRequestItem> httpRequests = new Queue<CACHTTPRequestItem>();
-    public static CACHTTPRequestItem SendCACRequest(this UnityGameInstance instance, string name, string input) {
+    public static UnityGameInstance_UpdateCACHTTP Instance = null;
+    public static CACHTTPRequestItem SendCACRequest(string name, string input) {
       CACHTTPRequestItem request = new CACHTTPRequestItem(name, input);
       httpRequests.Enqueue(request);
       return request;
     }
-    public static void getreputation(CACHTTPRequestItem request) {
+    public  void getreputation(CACHTTPRequestItem request) {
       Log.M.TWL(0, "Запрос на получение репутации");
       System.Collections.Generic.Dictionary<string, string> jresp = new Dictionary<string, string>();
       BattleTech.GameInstance gameInstance = BattleTech.UnityGameInstance.BattleTechGame;
@@ -74,7 +92,7 @@ namespace CustAmmoCategories {
       }
       request.ready(jresp);
     }
-    public static void endcontract(CACHTTPRequestItem request) {
+    public  void endcontract(CACHTTPRequestItem request) {
       CustomAmmoCategoriesLog.Log.LogWrite("Запрос на завершение контракта\n");
       System.Collections.Generic.Dictionary<string, string> jresp = new Dictionary<string, string>();
       BattleTech.GameInstance gameInstance = BattleTech.UnityGameInstance.BattleTechGame;
@@ -111,7 +129,7 @@ namespace CustAmmoCategories {
       request.ready(jresp);
       //SendResponce(ref response, jresp);
     }
-    public static void setreputation(CACHTTPRequestItem request) {
+    public  void setreputation(CACHTTPRequestItem request) {
       ThreadWork.CSetReputation setrep = JsonConvert.DeserializeObject<ThreadWork.CSetReputation>(request.input);
       CustomAmmoCategoriesLog.Log.LogWrite("Запрос на установку репутации\n");
       System.Collections.Generic.Dictionary<string, string> jresp = new Dictionary<string, string>();
@@ -144,7 +162,7 @@ namespace CustAmmoCategories {
       }
       request.ready(jresp);
     }
-    public static void listitems(CACHTTPRequestItem request) {
+    public  void listitems(CACHTTPRequestItem request) {
       Log.M.TWL(0,"listitems");
       System.Collections.Generic.Dictionary<string, string> jresp = new Dictionary<string, string>();
       BattleTech.GameInstance gameInstance = BattleTech.UnityGameInstance.BattleTechGame;
@@ -237,7 +255,7 @@ namespace CustAmmoCategories {
       Log.M.WL(1, "result:" + items.Count);
       request.ready(items);
     }
-    public static void listpilots(CACHTTPRequestItem request) {
+    public  void listpilots(CACHTTPRequestItem request) {
       Log.M.TWL(0, "listpilots");
       System.Collections.Generic.Dictionary<string, string> jresp = new Dictionary<string, string>();
       BattleTech.GameInstance gameInstance = BattleTech.UnityGameInstance.BattleTechGame;
@@ -261,7 +279,7 @@ namespace CustAmmoCategories {
       Log.M.WL(1, "result:" + pilots.Count);
       request.ready(pilots);
     }
-    public static void additem(CACHTTPRequestItem request) {
+    public  void additem(CACHTTPRequestItem request) {
       Log.M.TWL(0,"Запрос на добавление предмета");
       System.Collections.Generic.Dictionary<string, string> jresp = new Dictionary<string, string>();
       BattleTech.GameInstance gameInstance = BattleTech.UnityGameInstance.BattleTechGame;
@@ -303,7 +321,7 @@ namespace CustAmmoCategories {
       //gameState.PilotRoster.ElementAt(0).AddAbility("");
       request.ready(jresp);
     }
-    public static void addpilot(CACHTTPRequestItem request) {
+    public  void addpilot(CACHTTPRequestItem request) {
       Log.M.TWL(0, "add pilot request");
       System.Collections.Generic.Dictionary<string, string> jresp = new Dictionary<string, string>();
       BattleTech.GameInstance gameInstance = BattleTech.UnityGameInstance.BattleTechGame;
@@ -340,9 +358,9 @@ namespace CustAmmoCategories {
       //gameState.PilotRoster.ElementAt(0).AddAbility("");
       request.ready(jresp);
     }
-    public static void Postfix(UnityGameInstance __instance) {
+    public void LateUpdate() {
       try {
-        Online.OnlineClientHelper.KeepAlive();
+        //Online.OnlineClientHelper.KeepAlive();
         if (httpRequests.Count == 0) { return; }
         CACHTTPRequestItem request = httpRequests.Dequeue();
         MethodInfo method = typeof(UnityGameInstance_UpdateCACHTTP).GetMethod(request.name,BindingFlags.Static|BindingFlags.Public);
@@ -480,7 +498,7 @@ namespace CustAmmoCategories {
           }
         }
         Log.M.WL(1,"Get data:'" + Path.GetFileName(filename));
-        CACHTTPRequestItem cac_request = UnityGameInstance.Instance.SendCACRequest(Path.GetFileName(filename), data);
+        CACHTTPRequestItem cac_request = UnityGameInstance_UpdateCACHTTP.SendCACRequest(Path.GetFileName(filename), data);
         while (cac_request.is_ready == false) { Thread.Sleep(10); }
         SendResponce(ref response, cac_request.output);
         continue;

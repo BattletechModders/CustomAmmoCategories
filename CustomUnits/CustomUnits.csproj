@@ -171,6 +171,9 @@
     <Compile Include="MechResizer\TurretRepresentationPatch.cs" />
     <Compile Include="MechResizer\VehicleRepresentationPatch.cs" />
     <Compile Include="MechResizer\WeaponEffectPatch.cs" />
+    <Compile Include="MechSpinner\Main.cs" />
+    <Compile Include="MechSpinner\Patches.cs" />
+    <Compile Include="MechSpinner\SpinComponent.cs" />
     <Compile Include="MechTurretAnimator.cs" />
     <Compile Include="MoveDistanceClamp.cs" />
     <Compile Include="NavalUnitsHelper.cs" />
@@ -206,6 +209,7 @@
       <Name>CustomDeploy</Name>
     </ProjectReference>
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
     <PostBuildEvent>if exist "$(BattleTechGameDir)\Mods_CBDE\CustomUnits" (

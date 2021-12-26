@@ -20,6 +20,30 @@ namespace CustAmmoCategories {
     public Dictionary<int, float> WatchDogInfo = new Dictionary<int, float>();
     public AttackDirector AttackDirector = null;
     private float t;
+    public bool isAnySequenceTracked() {
+      return WatchDogInfo.Count > 0;
+    }
+    public void logTrackedSequences() {
+      Log.M.TWL(0, "ASWatchdog.logTrackedSequences:"+ WatchDogInfo.Count);
+      try {
+        foreach (var seqid in WatchDogInfo) {
+          Log.M.WL(1, seqid.Key + " timer:" + seqid.Value);
+          AttackDirector.AttackSequence seq = AttackDirector.GetAttackSequence(seqid.Key);
+          if (seq == null) {
+            Log.M.WL(2, "expired. will be removed on update");
+            continue;
+          }
+          Log.M.WL(2, "attacker:" + seq.attacker.PilotableActorDef.Description.Id);
+          Log.M.WL(2, "main target:" + seq.chosenTarget.Description.Id);
+          Log.M.WL(2, "weapons:" + seq.allSelectedWeapons.Count);
+          foreach(Weapon weapon in seq.allSelectedWeapons) {
+            Log.M.WL(3,weapon.defId);
+          }
+        }
+      }catch(Exception e) {
+        Log.M.TWL(0,e.ToString(),true);
+      }
+    }
     public void Init(CombatHUD HUD) {
       t = 0f;
       AttackDirector = HUD.Combat.AttackDirector;
@@ -82,10 +106,14 @@ namespace CustAmmoCategoriesPatches {
   [HarmonyPatch(new Type[] { typeof(MessageCenterMessage) })]
   public static class AttackDirector_OnAttackSequenceBeginWD {
     private static void Postfix(AttackDirector __instance, MessageCenterMessage message) {
-      CustomAmmoCategoriesLog.Log.LogWrite("AttackDirector.OnAttackSequenceBegin add watchdog\n");
-      int sequenceId = ((AttackSequenceBeginMessage)message).sequenceId;
-      if (ASWatchdog.instance != null) {
-        ASWatchdog.instance.add(sequenceId);
+      try {
+        int sequenceId = ((AttackSequenceBeginMessage)message).sequenceId;
+        Log.M.TWL(0, "AttackDirector.OnAttackSequenceBegin add watchdog " + sequenceId);
+        if (ASWatchdog.instance != null) {
+          ASWatchdog.instance.add(sequenceId);
+        }
+      }catch(Exception e) {
+        Log.M.TWL(0,e.ToString(),true);
       }
     }
   }
@@ -95,11 +123,15 @@ namespace CustAmmoCategoriesPatches {
   [HarmonyPatch(new Type[] { typeof(MessageCenterMessage) })]
   public static class AttackDirector_OnAttackCompleteWD {
     private static void Postfix(AttackDirector __instance, MessageCenterMessage message) {
-      CustomAmmoCategoriesLog.Log.LogWrite("AttackDirector.OnAttackComplete del watchdog\n");
-      AttackCompleteMessage attackCompleteMessage = (AttackCompleteMessage)message;
-      int sequenceId = attackCompleteMessage.sequenceId;
-      if (ASWatchdog.instance != null) {
-        ASWatchdog.instance.del(sequenceId);
+      try {
+        AttackCompleteMessage attackCompleteMessage = (AttackCompleteMessage)message;
+        int sequenceId = attackCompleteMessage.sequenceId;
+        Log.M.TWL(0, "AttackDirector.OnAttackComplete del watchdog " + sequenceId);
+        if (ASWatchdog.instance != null) {
+          ASWatchdog.instance.del(sequenceId);
+        }
+      }catch(Exception e) {
+        Log.M.TWL(0, e.ToString(), true);
       }
     }
   }

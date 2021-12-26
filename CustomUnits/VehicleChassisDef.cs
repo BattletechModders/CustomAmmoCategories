@@ -675,7 +675,11 @@ namespace CustomUnits {
       if (info != null) {
         info.FakeVehicle = true;
         info.FakeVehicleMovementType = __instance.movementType;
-        if (__instance.HasTurret) { info.FiringArc = 360f; }
+        //Log.TW(0, "VehicleChassisDef.FromJSON " + __instance.Description.Id + " FiringArc:" + info.FiringArc);
+        if (info.FiringArc == 0f) {
+          if (__instance.HasTurret) { info.FiringArc = 360f; } else { info.FiringArc = 90f; };
+        }
+        //Log.WL(0, "=>"+ info.FiringArc);
         //Log.WL(1, " FakeVehicle:" + __instance.GetCustomInfo().FakeVehicle+ " HasTurret:"+ __instance.HasTurret);
       }
       __instance.ChassisInfo().SpawnAs = SpawnType.AsMech;

@@ -388,7 +388,50 @@ namespace CustomUnits {
           AudioEventManager.PlayAudioEvent("audioeventdef_musictriggers_combat", "enemy_mech_crippled");
       }
     }
+    public override void HandleDeath(DeathMethod deathMethod, int location) {
+      PilotableRepresentation_HandleDeath(deathMethod, location);
+      if (this.customRep != null) { this.StopCustomParticles(); }
+      if (isSlave == false) this._PlayDeathFloatie(deathMethod);
+      if (this.parentActor.WasDespawned) { return; }
+      if (this.VisibleObjectLight != null) { this.VisibleObjectLight.SetActive(false); }
+      //this.thisAnimator.SetTrigger("Death");
+      if (!this.parentMech.Combat.IsLoadingFromSave) {
+        if (isSlave == false) {
+          if (this.parentMech.team.LocalPlayerControlsTeam)
+            AudioEventManager.PlayAudioEvent("audioeventdef_musictriggers_combat", "friendly_mech_destroyed");
+          else if (!this.parentMech.team.IsFriendly(this.parentMech.Combat.LocalPlayerTeam))
+            AudioEventManager.PlayAudioEvent("audioeventdef_musictriggers_combat", "enemy_mech_destroyed");
+        }
+      }
+      //if (this.parentMech.IsOrWillBeProne || this.parentActor.WasEjected) { this.StartCoroutine(this.DelayProneOnDeath()); }
+      if (!this.parentActor.WasEjected) { this.PlayDeathVFX(deathMethod, location); }
+      this.HeightController.PendingHeight = 0f;
+      if (this.customRep != null) { this.customRep.InBattle = false; }
+      List<string> stringList = new List<string>((IEnumerable<string>)this.persistentVFXParticles.Keys);
+      for (int index = stringList.Count - 1; index >= 0; --index) { this.StopManualPersistentVFX(stringList[index]); }
+      this.__IsDead = true;
+      if (deathMethod != DeathMethod.PilotKilled && !this.parentActor.WasEjected) {
+        string vfxName;
+        switch (Random.Range(0, 4)) {
+          case 0:
+          vfxName = (string)this.parentCombatant.Combat.Constants.VFXNames.deadMechLoop_A;
+          break;
+          case 1:
+          vfxName = (string)this.parentCombatant.Combat.Constants.VFXNames.deadMechLoop_B;
+          break;
+          case 2:
+          vfxName = (string)this.parentCombatant.Combat.Constants.VFXNames.deadMechLoop_C;
+          break;
+          default:
+          vfxName = (string)this.parentCombatant.Combat.Constants.VFXNames.deadMechLoop_D;
+          break;
+        }
+        this.PlayVFX(8, vfxName, true, Vector3.zero, false, -1f);
+      }
+      this._ToggleHeadlights(false);
+    }
     public override void PlayDeathVFX(DeathMethod deathMethod, int location) {
+      Log.TWL(0, "VehicleDrivenMechRepresentation.PlayDeathVFX deathMethod:" +deathMethod);
       string vehicleDeathA = (string)this.parentCombatant.Combat.Constants.VFXNames.vehicleDeath_A;
       string vfxName;
       AudioEventList_vehicle eventEnumValue;
@@ -423,6 +466,7 @@ namespace CustomUnits {
         if (this.parentActor.Combat.IsLoadingFromSave) { return; }
         if (isSlave == false) {
           int num = (int)WwiseManager.PostEvent<AudioEventList_vehicle>(eventEnumValue, this.audioObject);
+          Log.WL(1, "WwiseManager.PostEvent:" + eventEnumValue+" result:"+num);
         }
       }
     }
@@ -480,6 +524,40 @@ namespace CustomUnits {
       this.renderers = new List<Renderer>((IEnumerable<Renderer>)this.VisibleObject.GetComponentsInChildren<MeshRenderer>(true));
       this.InitDestructedMaterials();
       this.Test();
+    }
+    public override Vector3 GetMissPosition(Vector3 attackOrigin, Weapon weapon, NetworkRandom random) {
+      Vector3 position = this.parentMech.CurrentPosition + Vector3.up * this.HeightController.CurrentHeight;
+      float radius = this.parentMech.MechDef.Chassis.Radius;
+      AttackDirection attackDirection = this.parentActor.Combat.HitLocation.GetAttackDirection(weapon.parent, (ICombatant)this.parentActor);
+      bool flag = random.Int(max: 2) == 0;
+      float num1 = random.Float(this.Constants.ResolutionConstants.MissOffsetHorizontalMin, this.Constants.ResolutionConstants.MissOffsetHorizontalMax);
+      if (weapon.Type == WeaponType.LRM) {
+        Vector2 vector2 = random.Circle().normalized * (radius * num1);
+        position.x += vector2.x;
+        position.z += vector2.y;
+        return position;
+      }
+      Vector3 vector3;
+      switch (attackDirection) {
+        case AttackDirection.FromFront:
+        vector3 = !flag ? position - this.thisTransform.right * (radius * 1f) - this.thisTransform.right * num1 : position + this.thisTransform.right * (radius * 1f) + this.thisTransform.right * num1;
+        break;
+        case AttackDirection.FromLeft:
+        vector3 = !flag ? position - this.thisTransform.forward * (radius * 0.6f) - this.thisTransform.forward * num1 : position + this.thisTransform.forward * (radius * 0.6f) + this.thisTransform.forward * num1;
+        break;
+        case AttackDirection.FromRight:
+        vector3 = !flag ? position + this.thisTransform.forward * (radius * 0.6f) + this.thisTransform.forward * num1 : position - this.thisTransform.forward * (radius * 0.6f) - this.thisTransform.forward * num1;
+        break;
+        case AttackDirection.FromBack:
+        vector3 = !flag ? position + this.thisTransform.right * (radius * 1f) + this.thisTransform.right * num1 : position - this.thisTransform.right * (radius * 1f) - this.thisTransform.right * num1;
+        break;
+        default:
+        vector3 = !flag ? position - this.thisTransform.right * (radius * 1f) - this.thisTransform.right * num1 : position + this.thisTransform.right * (radius * 1f) + this.thisTransform.right * num1;
+        break;
+      }
+      float num2 = random.Float(-this.Constants.ResolutionConstants.MissOffsetVerticalMin, this.Constants.ResolutionConstants.MissOffsetVerticalMax);
+      vector3.y += num2;
+      return vector3;
     }
 
   }

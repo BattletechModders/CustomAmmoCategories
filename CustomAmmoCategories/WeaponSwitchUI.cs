@@ -221,18 +221,51 @@ namespace CustomAmmoCategoriesPatches {
       return AllowRightButton?btInput.Mouse_RightButton():btInput.Key_None();
     }
   }
+  [HarmonyPatch(typeof(CombatHUDWeaponPanel))]
+  [HarmonyPatch("ShowWeaponsUpTo")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { typeof(int) })]
+  public static class CombatHUDWeaponPanel_ShowWeaponsUpTo {
+    public static void Postfix(CombatHUDWeaponPanel __instance, int topIndex) {
+      if (topIndex <= 0) { return; }
+      CombatHUDWeaponPanelScroller scroller = __instance.gameObject.GetComponentInParent<CombatHUDWeaponPanelScroller>();
+      if (scroller != null) {
+        scroller.weaponPannelScrollRect.verticalNormalizedPosition = 1f;
+        scroller.beenScrolled = false;
+      }
+    }
+  }
   public class CombatHUDWeaponSlotsScrollControl: MonoBehaviour {
     public RectTransform weaponPanelRect { get; set; }
+    public CombatHUDWeaponPanel weaponPanel { get; set; }
     public RectTransform main { get; set; }
     public RectTransform scrollerRect { get; set; }
     public RectTransform scrollBarRect { get; set; }
     public ScrollRect scroller { get; set; }
+    public CanvasGroup Canvas { get; set; } = null;
+    public void Awake() {
+      this.Canvas = this.gameObject.GetComponent<CanvasGroup>();
+      if (this.Canvas == null) { Canvas = this.gameObject.AddComponent<CanvasGroup>(); }
+      Canvas.alpha = 1f;
+      Canvas.blocksRaycasts = true;
+    }
+    public float lastSize = 0f;
     public void Update() {
       if (weaponPanelRect == null) { return; }
+      if (weaponPanel == null) { return; }
       if (main == null) { return; }
       if (scrollerRect == null) { return; }
       if (scrollBarRect == null) { return; }
       if (scroller == null) { return; }
+      if (weaponPanelRect.gameObject.activeSelf != scrollerRect.gameObject.activeSelf) {
+        scrollerRect.gameObject.SetActive(weaponPanelRect.gameObject.activeSelf);
+      }
+      if (this.Canvas.alpha != this.weaponPanel.Canvas.alpha) {
+        this.Canvas.alpha = this.weaponPanel.Canvas.alpha;
+      }
+      if (this.Canvas.blocksRaycasts != this.weaponPanel.Canvas.blocksRaycasts) {
+        this.Canvas.blocksRaycasts = this.weaponPanel.Canvas.blocksRaycasts;
+      }
       float y = weaponPanelRect.sizeDelta.y - 200;
       if (y > 200f) { y = 200f; }
       scrollerRect.sizeDelta = new Vector2(weaponPanelRect.sizeDelta.x, y);
@@ -240,12 +273,17 @@ namespace CustomAmmoCategoriesPatches {
       Vector3 localPos = scrollBarRect.localPosition;
       localPos.x = weaponPanelRect.sizeDelta.x + 60f;
       scrollBarRect.localPosition = localPos;
+      if(Mathf.Abs(lastSize - weaponPanelRect.sizeDelta.y) > 1.0f) {
+        lastSize = weaponPanelRect.sizeDelta.y;
+        scroller.verticalNormalizedPosition = 1f;
+      }      
     }
   }
   public class CombatHUDWeaponPanelScroller : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IScrollHandler {
     public ScrollRect weaponPannelScrollRect { get; set; } = null;
     public RectTransform slotTransform { get; set; } = null;
     public bool hovered { get; set; } = false;
+    public bool beenScrolled { get; set; } = false;
     public Image panel_background { get; set; } = null;
     public void Awake() {
       if (panel_background == null) { panel_background = this.gameObject.FindObject<Image>("panel_background"); }
@@ -265,11 +303,18 @@ namespace CustomAmmoCategoriesPatches {
       //if (panel_background != null) { panel_background.color = Color.black; }
       this.hovered = false;
     }
+    public void LateUpdate() {
+      //if (beenScrolled == false) {
+      //  weaponPannelScrollRect.verticalNormalizedPosition = 1f;
+      //}
+      //Log.M.TWL(0, "CombatHUDWeaponPanelScroller.weaponPannelScrollRect.verticalNormalizedPosition:"+ weaponPannelScrollRect.verticalNormalizedPosition);
+    }
     public void OnScroll(PointerEventData eventData) {
       if (hovered == false) { return; }
       if (weaponPannelScrollRect == null) { return; }
       if (slotTransform == null) { return; }
       if (weaponPannelScrollRect.verticalScrollbar.gameObject.activeSelf == false) { return; }
+      this.beenScrolled = true;
       float delta = eventData.scrollDelta.y * (slotTransform.sizeDelta.y / weaponPannelScrollRect.content.sizeDelta.y);
       weaponPannelScrollRect.verticalNormalizedPosition += delta;
       weaponPannelScrollRect.verticalNormalizedPosition = Mathf.Clamp(weaponPannelScrollRect.verticalNormalizedPosition, 0f, 1f);
@@ -338,6 +383,7 @@ namespace CustomAmmoCategoriesPatches {
           scroller = uixPrfPanl_STG_gameModule.AddComponent<CombatHUDWeaponSlotsScrollControl>();
           scroller.main = scrollRect;
           scroller.weaponPanelRect = weaponsRect;
+          scroller.weaponPanel = weaponPanel;
           scroller.scrollerRect = gameplay_scroll_TR;
           scroller.scroller = gameplay_scroll;
           scroller.scrollBarRect = gameplay_scroll.verticalScrollbar.transform as RectTransform;
@@ -905,6 +951,9 @@ namespace CustomAmmoCategoriesPatches {
     public void ShowSidePanel() {
       Text title = new Text(this.parent.DisplayedWeapon.UIName);
       Text description = new Text("__/CAC.MODE_SIZE_HEADER/__");
+      if ((ASWatchdog.instance != null)&&(ASWatchdog.instance.isAnySequenceTracked())) {
+        description.Append("\n<color=red>Attack in progress mode change forbidden</color>");
+      }
       List<WeaponMode> modes = this.parent.DisplayedWeapon.AvaibleModes();
       WeaponMode mode = this.parent.DisplayedWeapon.mode();
       description.AppendLine("\n" + mode.Description);
@@ -937,8 +986,9 @@ namespace CustomAmmoCategoriesPatches {
       Log.M.TWL(0,"WeaponHitChanceHover.OnPointerClick called." + data.position, true);
       if (this.parent.DisplayedWeapon == null) { return; }
       if (this.weaponPanel.DisplayedActor == null) { return; }
-      if (parent.DisplayedWeapon.parent.Combat.AttackDirector.IsAnyAttackSequenceActive) {
+      if ((ASWatchdog.instance != null) && (ASWatchdog.instance.isAnySequenceTracked())) {
         Log.M.WL(1, "Attack sequence is active");
+        ASWatchdog.instance.logTrackedSequences();
         return;
       }
       try {
@@ -1057,6 +1107,10 @@ namespace CustomAmmoCategoriesPatches {
     public void ShowSidePanel() {
       Text title = new Text(this.parent.DisplayedWeapon.UIName);
       Text description = new Text("__/CAC.AMMO_SIDE_HEADER/__");
+      if ((ASWatchdog.instance != null) && (ASWatchdog.instance.isAnySequenceTracked())) {
+        description.Append("\n<color=red>Attack in progress ammo change forbidden</color>");
+        return;
+      }
       CustomAmmoCategory weaponAmmoCategory = this.parent.DisplayedWeapon.info().effectiveAmmoCategory;
       if (weaponAmmoCategory.BaseCategory.Is_NotSet == false) {
         ExtAmmunitionDef ammo = this.parent.DisplayedWeapon.ammo();
@@ -1091,8 +1145,9 @@ namespace CustomAmmoCategoriesPatches {
       Log.M.TWL(0,"WeaponAmmoHover.OnPointerClick called." + data.position);
       if (this.parent.DisplayedWeapon == null) { return; }
       if (this.weaponPanel.DisplayedActor == null) { return; }
-      if (parent.DisplayedWeapon.parent.Combat.AttackDirector.IsAnyAttackSequenceActive) {
-        Log.M.WL(1,"Attack sequence is active");
+      if ((ASWatchdog.instance != null) && (ASWatchdog.instance.isAnySequenceTracked())) {
+        Log.M.WL(1, "Attack sequence is active");
+        ASWatchdog.instance.logTrackedSequences();
         return;
       }
       bool prevIndirectState = parent.DisplayedWeapon.IndirectFireCapable();

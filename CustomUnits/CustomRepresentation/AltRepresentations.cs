@@ -236,7 +236,9 @@ namespace CustomUnits {
             AudioEventManager.PlayAudioEvent("audioeventdef_musictriggers_combat", "enemy_mech_destroyed");
         }
       }
-      if (this.parentMech.IsOrWillBeProne || this.parentActor.WasEjected) { this.StartCoroutine(this.DelayProneOnDeath()); }
+      if (this.parentMech.FakeVehicle() == false) {
+        if (this.parentMech.IsOrWillBeProne || this.parentActor.WasEjected) { this.StartCoroutine(this.DelayProneOnDeath()); }
+      }
       if (!this.parentActor.WasEjected) { this.PlayDeathVFX(deathMethod, location); }
       List<string> stringList = new List<string>((IEnumerable<string>)this.persistentVFXParticles.Keys);
       for (int index = stringList.Count - 1; index >= 0; --index) { this.StopManualPersistentVFX(stringList[index]); }
