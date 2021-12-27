@@ -38,7 +38,6 @@ namespace Sheepy.Logging {
       // Worker states locked by queue which is private.
       private HashSet<string> exceptions = new HashSet<string>(); // Double as public get/set lock object
       private readonly List<LogEntry> queue;
-      private SpinLock queue_lock = new SpinLock();
       private Thread worker;
       private int writeDelay;
 

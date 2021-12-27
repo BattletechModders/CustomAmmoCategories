@@ -323,14 +323,13 @@ namespace CustomDeploy{
           }
           if(__instance.AvailablePilots.Count > 0) {
             __instance.LastPilotAdded = __instance.AvailablePilots.Last();
-            __result = __instance.LastPilotAdded.Description.Callsign;
-            return false;
+            return true;
           } else {
             __result = "ERROR: no pilots in roster";
             return false;
           }
         }
-        return false;
+        return true;
       } catch (Exception e) {
         Log.TWL(0, e.ToString());
         return true;

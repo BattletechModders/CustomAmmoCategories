@@ -1,6 +1,7 @@
 ﻿using BattleTech;
 using CustomAmmoCategoriesLog;
 using CustomAmmoCategoriesPatches;
+using IRBTModUtils;
 using Localize;
 using System;
 using System.Collections.Generic;
@@ -185,6 +186,12 @@ namespace CustAmmoCategories {
           Dictionary<int, float> SpreadLocations = null;
           Mech mech = target as Mech;
           Vehicle vehicle = target as Vehicle;
+          ICustomMech custMech = target as ICustomMech;
+          if(custMech != null) {
+            List<int> hitLocations = custMech.GetAOEPossibleHitLocations(hitPosition);
+            foreach (int loc in hitLocations) { reachableLocations.Add(loc); }
+            SpreadLocations = custMech.GetAOESpreadArmorLocations();
+          } else
           if (mech != null) {
             List<int> hitLocations = mech.GetAOEPossibleHitLocations(hitPosition);//advInfo.Sequence.attacker.Combat.HitLocation.GetPossibleHitLocations(hitPosition, target as Mech);
             foreach (int loc in hitLocations) { reachableLocations.Add(loc); }

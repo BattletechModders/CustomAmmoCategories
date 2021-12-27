@@ -11,6 +11,7 @@ using Harmony;
 using HBS;
 using HBS.Collections;
 using InControl;
+using Localize;
 using System;
 using System.Collections.Generic;
 using System.Reflection;
@@ -285,6 +286,7 @@ namespace CustomUnits {
       worldPos = HUD.Combat.HexGrid.GetClosestPointOnGrid(worldPos);
       this.deployPositions[this.NumPositionsLocked].position = worldPos;
       ++this.NumPositionsLocked;
+      this.ResetCache();
     }
     public void AddLancePosition(Vector3 worldPos) {
       int curLance = this.deployPositions[this.NumPositionsLocked].lanceid;
@@ -316,6 +318,7 @@ namespace CustomUnits {
         this.deployPositions[this.NumPositionsLocked + t].position = rndPos;
       }
       this.NumPositionsLocked += size;
+      this.ResetCache();
     }
     public override bool ProcessLeftClick(Vector3 worldPos) {
       //if (this.NumPositionsLocked != 0) { return false; }
@@ -356,31 +359,54 @@ namespace CustomUnits {
         return this.SelectedActor.CurrentPosition;
       }
     }
-    private Dictionary<Vector3, bool> positionsCache = new Dictionary<Vector3, bool>();
+    public class PositionInfo {
+      public string info { get; set; }
+      public bool result { get; set; }
+      public PositionInfo(string info, bool res) {
+        this.info = info;
+        result = res;
+      }
+    }
+    public void ShowSidePanel(PositionInfo info) {
+      Text title = new Text("DEPLOY POSITION INFO");
+      Text description = new Text(info.info);
+      HUD.SidePanel.ForceShowPersistant(title, description, null, false);
+    }
+
+    private Dictionary<Vector3, PositionInfo> positionsCache = new Dictionary<Vector3, PositionInfo>();
     public void ResetCache() { positionsCache.Clear(); }
     public bool CheckPosition(Vector3 worldPos) {
-      if (positionsCache.TryGetValue(worldPos, out bool result)) { return result; }
-      result = true;
+      if (positionsCache.TryGetValue(worldPos, out PositionInfo result)) {
+        ShowSidePanel(result);
+        return result.result;
+      }
+      result = new PositionInfo(string.Empty, true);
       Log.TWL(0, "SelectionStateCommandDeploy.CheckPosition "+worldPos);
       Vector3 f = worldPos + Vector3.forward * Core.Settings.DeploySpawnRadius;
       Vector3 b = worldPos + Vector3.back * Core.Settings.DeploySpawnRadius;
       Vector3 l = worldPos + Vector3.left * Core.Settings.DeploySpawnRadius;
       Vector3 r = worldPos + Vector3.right * Core.Settings.DeploySpawnRadius;
-      if (HUD.Combat.EncounterLayerData.IsInEncounterBounds(f) == false) { result = false; } else
-      if (HUD.Combat.EncounterLayerData.IsInEncounterBounds(b) == false) { result = false; } else
-      if (HUD.Combat.EncounterLayerData.IsInEncounterBounds(l) == false) { result = false; } else
-      if (HUD.Combat.EncounterLayerData.IsInEncounterBounds(r) == false) { result = false; };
-      if (result == false) {
+      if (HUD.Combat.EncounterLayerData.IsInEncounterBounds(f) == false) { result.result = false; } else
+      if (HUD.Combat.EncounterLayerData.IsInEncounterBounds(b) == false) { result.result = false; } else
+      if (HUD.Combat.EncounterLayerData.IsInEncounterBounds(l) == false) { result.result = false; } else
+      if (HUD.Combat.EncounterLayerData.IsInEncounterBounds(r) == false) { result.result = false; };
+      if (result.result == false) {
         Log.WL(1, "out of bounds");
-        positionsCache.Add(worldPos, false); return false;
+        result.info = "out of encounter bounds\n<color=red>DEPLOY FORBIDDEN</color>";
+        positionsCache.Add(worldPos, result); return false;
       }
       float originalDist = Vector3.Distance(worldPos, this.HUD.SelectedActor.CurrentPosition);
       Log.WL(1, "original dist:"+originalDist+"/"+ Core.Settings.DeployMaxDistanceFromOriginal);
+      result.info = "distance from suggested deploy position " + Mathf.Round(originalDist) + " max allowed " + Core.Settings.DeployMaxDistanceFromOriginal;
       bool checkLancematesDistance = PlayerLanceSpawnerGameLogic_OnEnterActive.deployLoadRequest.originalSpawnMethod == SpawnUnitMethodType.ViaLeopardDropship;
       if ((this.NumPositionsLocked == 0)||(checkLancematesDistance == false)) {
-        if (originalDist < Core.Settings.DeployMaxDistanceFromOriginal) { positionsCache.Add(worldPos, true); return true; }
+        if (originalDist < Core.Settings.DeployMaxDistanceFromOriginal) {
+          result.result = true;
+          result.info += "\n<color=green>DEPLOY ALLOWED</color>";
+          positionsCache.Add(worldPos, result); return result.result;
+        }
       }
-      if (checkLancematesDistance) {
+      if (checkLancematesDistance && this.NumPositionsLocked > 0) {
         Log.WL(1, "checking lancemates");
         Vector3? centerPoint = null;
         int count = 0;
@@ -403,10 +429,18 @@ namespace CustomUnits {
           float matesDistance = Vector3.Distance(tmp,worldPos);
           //Log.WL(1, worldPos + " centerPoint:" + tmp+" distance:"+matesDistance);
           if (matesDistance > Core.Settings.DeployMaxDistanceFromMates) {
-            positionsCache.Add(worldPos, false);
-            Log.WL(1, "too far from mates:"+matesDistance);
-            return false;
+            result.result = false;
+            result.info += "\ndistance from your lance mates "+ Mathf.Round(matesDistance) +" max allowed "+ Core.Settings.DeployMaxDistanceFromMates;
+            result.info += "\n<color=red>DEPLOY FORBIDDEN</color>";
+            positionsCache.Add(worldPos, result);
+            Log.WL(1, "too far from mates:"+matesDistance+">"+ Core.Settings.DeployMaxDistanceFromMates);
+            return result.result;
           }
+        }
+        if (originalDist < Core.Settings.DeployMaxDistanceFromOriginal) {
+          result.result = true;
+          result.info += "\n<color=green>DEPLOY ALLOWED</color>";
+          positionsCache.Add(worldPos, result); return result.result;
         }
       }
       List<Vector3> enemies = this.Combat.ActiveContract.delayedEnemySpawnPositions();
@@ -415,9 +449,17 @@ namespace CustomUnits {
         float dist = Vector3.Distance(worldPos, unit);
         if ((nearesEnemyDist == 9999f) || (dist < nearesEnemyDist)) { nearesEnemyDist = dist; }
       }
-      result = nearesEnemyDist > Core.Settings.DeployMinDistanceFromEnemy;
+      result.result = nearesEnemyDist > Core.Settings.DeployMinDistanceFromEnemy;
+      Log.WL(1, "nearest enemy:" + nearesEnemyDist + " setting:" + Core.Settings.DeployMinDistanceFromEnemy+" result:"+result);
+      result.info += "\ndistance from known enemy position " + Mathf.Round(nearesEnemyDist) + " min allowed " + Core.Settings.DeployMinDistanceFromEnemy;
+      if (result.result == false) {
+        result.info += "\n<color=red>DEPLOY FORBIDDEN</color>";
+      } else {
+        result.info += "\n<color=green>DEPLOY ALLOWED</color>";
+      }
       positionsCache.Add(worldPos,result);
-      return result;
+      ShowSidePanel(result);
+      return result.result;
     }
     public Vector3? lastViewedPosition;
     public override void ProcessMousePos(Vector3 worldPos) {

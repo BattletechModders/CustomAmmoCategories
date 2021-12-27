@@ -929,7 +929,7 @@ namespace CustAmmoCategories {
     public Weapon BurningWeapon;
     public bool CantHaveForest;
     public MapTerrainHexCell hexCell;
-    public Dictionary<string, int> tempDesignMaskCounters;
+    public Dictionary<DesignMaskDef, int> tempDesignMaskCounters;
     public DesignMaskDef tempDesignMask;
     public List<CACDynamicTree> trees;
     public MapPoint mapPoint() {
@@ -941,98 +941,257 @@ namespace CustAmmoCategories {
     public Vector3 WorldPos() {
       return this.mapMetaData.getWorldPos(this.GetPoint());
     }
+    public void DesignMaskDeepCopyData(DesignMaskDef source, DesignMaskDef dest) {
+      dest.hideInUI = source.hideInUI;
+      dest.moveCostMechLight = source.moveCostMechLight;
+      dest.moveCostMechMedium = source.moveCostMechMedium;
+      dest.moveCostMechHeavy = source.moveCostMechHeavy;
+      dest.moveCostMechAssault = source.moveCostMechAssault;
+      dest.moveCostTrackedLight = source.moveCostTrackedLight;
+      dest.moveCostTrackedMedium = source.moveCostTrackedMedium;
+      dest.moveCostTrackedHeavy = source.moveCostTrackedHeavy;
+      dest.moveCostTrackedAssault = source.moveCostTrackedAssault;
+      dest.moveCostWheeledLight = source.moveCostWheeledLight;
+      dest.moveCostWheeledMedium = source.moveCostWheeledMedium;
+      dest.moveCostWheeledHeavy = source.moveCostWheeledHeavy;
+      dest.moveCostWheeledAssault = source.moveCostWheeledAssault;
+      dest.moveCostSprintMultiplier = source.moveCostSprintMultiplier;
+      dest.stabilityDamageMultiplier = source.stabilityDamageMultiplier;
+      dest.visibilityMultiplier = source.visibilityMultiplier;
+      dest.visibilityHeight = source.visibilityHeight;
+      dest.signatureMultiplier = source.signatureMultiplier;
+      dest.sensorRangeMultiplier = source.sensorRangeMultiplier;
+      dest.targetabilityModifier = source.targetabilityModifier;
+      dest.meleeTargetabilityModifier = source.meleeTargetabilityModifier;
+      dest.grantsGuarded = source.grantsGuarded;
+      dest.grantsEvasive = source.grantsEvasive;
+      dest.toHitFromModifier = source.toHitFromModifier;
+      dest.heatSinkMultiplier = source.heatSinkMultiplier;
+      dest.heatPerTurn = source.heatPerTurn;
+      dest.legStructureDamageMin = source.legStructureDamageMin;
+      dest.legStructureDamageMax = source.legStructureDamageMax;
+      dest.canBurn = source.canBurn;
+      dest.canExplode = source.canExplode;
+      dest.allDamageDealtMultiplier = source.allDamageDealtMultiplier;
+      dest.allDamageTakenMultiplier = source.allDamageTakenMultiplier;
+      dest.antipersonnelDamageDealtMultiplier = source.antipersonnelDamageDealtMultiplier;
+      dest.antipersonnelDamageTakenMultiplier = source.antipersonnelDamageTakenMultiplier;
+      dest.energyDamageDealtMultiplier = source.energyDamageDealtMultiplier;
+      dest.energyDamageTakenMultiplier = source.energyDamageTakenMultiplier;
+      dest.ballisticDamageDealtMultiplier = source.ballisticDamageDealtMultiplier;
+      dest.ballisticDamageTakenMultiplier = source.ballisticDamageTakenMultiplier;
+      dest.missileDamageDealtMultiplier = source.missileDamageDealtMultiplier;
+      dest.missileDamageTakenMultiplier = source.missileDamageTakenMultiplier;
+      dest.audioSwitchSurfaceType = source.audioSwitchSurfaceType;
+      dest.audioSwitchRainingSurfaceType = source.audioSwitchRainingSurfaceType;
+      dest.customBiomeAudioSurfaceType = source.customBiomeAudioSurfaceType;
+      dest.stickyEffect = source.stickyEffect;
+      if (CustomAmmoCategories.tempDesignMasksStickyEffects.ContainsKey(dest.Id) == false) {
+        CustomAmmoCategories.tempDesignMasksStickyEffects.Add(dest.Id, new List<EffectData>());
+      }
+      CustomDesignMaskInfo parent_customDesignMaskInfo = source.GetCustomDesignMaskInfo();
+      CustomDesignMaskInfo new_customDesignMaskInfo = new CustomDesignMaskInfo(parent_customDesignMaskInfo);
+      CustomAmmoCategories.customDesignMaskInfo.AddOrUpdate(dest.Id, new_customDesignMaskInfo, (k, v) => { return new_customDesignMaskInfo; });
+    }
+    public void DesignMaskDeepAppendData(DesignMaskDef addMask, DesignMaskDef dest) {
+      dest.hideInUI = addMask.hideInUI;
+      dest.moveCostMechLight += (addMask.moveCostMechLight - 1f);
+      dest.moveCostMechMedium += (addMask.moveCostMechMedium - 1f);
+      dest.moveCostMechHeavy += (addMask.moveCostMechHeavy - 1f);
+      dest.moveCostMechAssault += (addMask.moveCostMechAssault - 1f);
+      dest.moveCostTrackedLight += (addMask.moveCostTrackedLight - 1f);
+      dest.moveCostTrackedMedium += (addMask.moveCostTrackedMedium - 1f);
+      dest.moveCostTrackedHeavy += (addMask.moveCostTrackedHeavy - 1f);
+      dest.moveCostTrackedAssault += (addMask.moveCostTrackedAssault - 1f);
+      dest.moveCostWheeledLight += (addMask.moveCostWheeledLight - 1f);
+      dest.moveCostWheeledMedium += (addMask.moveCostWheeledMedium - 1f);
+      dest.moveCostWheeledHeavy += (addMask.moveCostWheeledHeavy - 1f);
+      dest.moveCostWheeledAssault += (addMask.moveCostWheeledAssault - 1f);
+      dest.moveCostSprintMultiplier += (addMask.moveCostSprintMultiplier - 1f);
+      dest.stabilityDamageMultiplier += (addMask.stabilityDamageMultiplier - 1f);
+      dest.visibilityMultiplier += (addMask.visibilityMultiplier - 1f);
+      dest.visibilityHeight += (addMask.visibilityHeight - 1f);
+      dest.signatureMultiplier += (addMask.signatureMultiplier - 1f);
+      dest.sensorRangeMultiplier += (addMask.sensorRangeMultiplier - 1f);
+      dest.targetabilityModifier += (addMask.targetabilityModifier - 1f);
+      dest.meleeTargetabilityModifier += (addMask.meleeTargetabilityModifier - 1f);
+      dest.grantsGuarded = dest.grantsGuarded ? true : addMask.grantsGuarded;
+      dest.grantsEvasive = dest.grantsEvasive ? true : addMask.grantsEvasive;
+      dest.toHitFromModifier += addMask.toHitFromModifier;
+      dest.heatSinkMultiplier += (addMask.heatSinkMultiplier - 1f);
+      dest.heatPerTurn += addMask.heatPerTurn;
+      dest.legStructureDamageMin += addMask.legStructureDamageMin;
+      dest.legStructureDamageMax += addMask.legStructureDamageMax;
+      dest.canBurn = dest.canBurn ? true : addMask.canBurn;
+      dest.canExplode = dest.canExplode ? true : addMask.canExplode;
+      dest.allDamageDealtMultiplier += (addMask.allDamageDealtMultiplier - 1f);
+      dest.allDamageTakenMultiplier += (addMask.allDamageTakenMultiplier - 1f);
+      dest.antipersonnelDamageDealtMultiplier += (addMask.antipersonnelDamageDealtMultiplier - 1f);
+      dest.antipersonnelDamageTakenMultiplier += (addMask.antipersonnelDamageTakenMultiplier - 1f);
+      dest.energyDamageDealtMultiplier += (addMask.energyDamageDealtMultiplier - 1f);
+      dest.energyDamageTakenMultiplier += (addMask.energyDamageTakenMultiplier - 1f);
+      dest.ballisticDamageDealtMultiplier += (addMask.ballisticDamageDealtMultiplier - 1f);
+      dest.ballisticDamageTakenMultiplier += (addMask.ballisticDamageTakenMultiplier - 1f);
+      dest.missileDamageDealtMultiplier += (addMask.missileDamageDealtMultiplier - 1f);
+      dest.missileDamageTakenMultiplier += (addMask.missileDamageTakenMultiplier - 1f);
+      //dest.audioSwitchSurfaceType += source.audioSwitchSurfaceType;
+      //dest.audioSwitchRainingSurfaceType += source.audioSwitchRainingSurfaceType;
+      //dest.customBiomeAudioSurfaceType += source.customBiomeAudioSurfaceType;
+      if ((dest.stickyEffect == null) || (dest.stickyEffect.effectType == EffectType.NotSet)) {
+        dest.stickyEffect = addMask.stickyEffect;
+      } else if((addMask.stickyEffect != null)&&(addMask.stickyEffect.effectType != EffectType.NotSet)) { 
+        if (CustomAmmoCategories.tempDesignMasksStickyEffects.TryGetValue(dest.Id, out var stickyEffects) == false) {
+          stickyEffects = new List<EffectData>();
+          CustomAmmoCategories.tempDesignMasksStickyEffects.Add(dest.Id, stickyEffects);
+        }
+        stickyEffects.Add(addMask.stickyEffect);
+      }
+      CustomDesignMaskInfo addMaskCustomInfo = addMask.GetCustomDesignMaskInfo();
+      CustomDesignMaskInfo destCustomInfo = addMask.GetCustomDesignMaskInfo();
+      if(addMaskCustomInfo != null) {
+        if(destCustomInfo == null) {
+          destCustomInfo = new CustomDesignMaskInfo(addMaskCustomInfo);
+          CustomAmmoCategories.customDesignMaskInfo.AddOrUpdate(dest.Id, destCustomInfo, (k, v) => { return destCustomInfo; });
+        } else {
+          destCustomInfo.Merge(addMaskCustomInfo);
+        }
+      }
+    }
+    private static MethodInfo designMaskDefs_Add = null;
+    public DesignMaskDef CreateMask(DesignMaskDef baseMask, HashSet<DesignMaskDef> additionalMasks) {
+      try {
+        StringBuilder id = new StringBuilder();
+        StringBuilder name = new StringBuilder();
+        StringBuilder details = new StringBuilder();
+        string icon = string.Empty;
+        if (baseMask != null) {
+          name.Append(baseMask.Description.Name);
+          id.Append(baseMask.Description.Id);
+          details.Append(baseMask.Description.Details);
+          icon = baseMask.Description.Icon;
+        }
+        foreach (DesignMaskDef addMask in additionalMasks) {
+          if (string.IsNullOrEmpty(icon)) { icon = addMask.Description.Icon; }
+          id.Append(addMask.Id);
+          if (name.Length > 0) { name.Append(" "); }; name.Append(addMask.Description.Name);
+          if (details.Length > 0) { details.Append("\n"); }; details.Append(addMask.Description.Details);
+        }
+        Log.M.TWL(0, "CreateMask:"+id);
+        if (this.hexCell.Combat.DataManager.DesignMaskDefs.TryGet(id.ToString(), out DesignMaskDef result)) {
+          Log.M.WL(1, "found in data manager");
+          return result;
+        } else {
+          Log.M.WL(1, "DesignMask not found in data manager");
+          Log.M.WL(2, "name:" + name.ToString());
+          Log.M.WL(2, "details:" + details.ToString());
+        }
+        result = new DesignMaskDef();
+        Traverse.Create(result.Description).Property<string>("Id").Value = id.ToString();
+        Traverse.Create(result.Description).Property<string>("Name").Value = name.ToString();
+        Traverse.Create(result.Description).Property<string>("Details").Value = details.ToString();
+        Traverse.Create(result.Description).Property<string>("Icon").Value = icon;
+        bool inited = false;
+        if(baseMask != null) {
+          inited = true;
+          Log.M.WL(1, "setup base mask as "+ baseMask.Id);
+          DesignMaskDeepCopyData(baseMask, result);
+        }
+        foreach(DesignMaskDef tempMask in additionalMasks) {
+          try {
+            if (inited == false) {
+              inited = true;
+              Log.M.WL(1, "setup base mask as " + tempMask.Id);
+              DesignMaskDeepCopyData(tempMask, result);
+            } else {
+              Log.M.WL(1, "append mask as " + tempMask.Id);
+              DesignMaskDeepAppendData(tempMask, result);
+            }
+          }catch(Exception e) {
+            Log.M.TWL(0, e.ToString(), true);
+          }
+        }
+        Log.M.WL(1, "registering in data manager");
+        if (designMaskDefs_Add == null) {
+          designMaskDefs_Add = this.hexCell.Combat.DataManager.DesignMaskDefs.GetType().GetMethod("Add", BindingFlags.Instance | BindingFlags.Public);
+        }
+        if (designMaskDefs_Add == null) {
+          Log.M.WL(0, "!!can't find add method!!",true);
+        } else {
+          designMaskDefs_Add.Invoke(this.hexCell.Combat.DataManager.DesignMaskDefs, new object[] { result.Id, result });
+        }
+        return result;
+      } catch (Exception e) {
+        Log.M.TWL(0,e.ToString(),true);
+      }
+      return null;
+    }
     public void AddDesignMask(DesignMaskDef addMask, int counter) {
-      CustomAmmoCategoriesLog.Log.LogWrite("AddDesignMask(" + addMask.Id + "," + counter + "):" + this.x + ":" + this.y + "\n");
+      Log.M.TWL(0,"AddDesignMask(" + addMask.Id + "," + counter + "):" + this.x + ":" + this.y);
       if (counter <= 0) { return; }
-      if (tempDesignMaskCounters.ContainsKey(addMask.Id) == true) {
-        tempDesignMaskCounters[addMask.Id] += counter;
-        CustomAmmoCategoriesLog.Log.LogWrite(" +time:" + tempDesignMaskCounters[addMask.Id] + "\n");
+      if (tempDesignMaskCounters.ContainsKey(addMask) == true) {
+        tempDesignMaskCounters[addMask] += counter;
+        Log.M.WL(1,"+time:" + tempDesignMaskCounters[addMask]);
         return;
       }
-      CustomAmmoCategoriesLog.Log.LogWrite(" new mask\n");
-      List<string> maskId = this.tempDesignMaskCounters.Keys.ToList<string>();
-      CustomAmmoCategoriesLog.Log.LogWrite(" already have masks:" + maskId.Count + "\n");
-      maskId.Sort();
-      DesignMaskDef curMask = this.mapMetaData.GetPriorityDesignMask(this);
-      if (curMask != null) { if (maskId.Count == 0) { maskId.Add(curMask.Id); }; };
-      CustomAmmoCategoriesLog.Log.LogWrite(" curmask " + ((curMask == null) ? "null" : curMask.Id) + ":" + this.terrainMask + "\n");
-      tempDesignMask = CustomAmmoCategories.createDesignMask(maskId, curMask, addMask);
-      CustomAmmoCategoriesLog.Log.LogWrite(" new mask " + ((tempDesignMask == null) ? "null" : tempDesignMask.Id) + "\n");
-      if (curMask != null) {
-        if (curMask.Id != tempDesignMask.Id) {
-          this.tempDesignMaskCounters.Add(addMask.Id, counter);
-        }
+      Log.M.WL(1,"new mask");
+      this.tempDesignMaskCounters.Add(addMask, counter);
+      DesignMaskDef tempMask = this.tempDesignMask;
+      this.tempDesignMask = null;
+      DesignMaskDef baseDesignMask = this.mapMetaData.GetPriorityDesignMask(this);
+      DesignMaskDef newDesignMask = this.CreateMask(baseDesignMask, this.tempDesignMaskCounters.Keys.ToHashSet());
+      if(newDesignMask != null) {
+        this.tempDesignMask = newDesignMask;
       } else {
-        this.tempDesignMaskCounters.Add(addMask.Id, counter);
+        this.tempDesignMask = tempMask;
+        this.tempDesignMaskCounters.Remove(addMask);
       }
+      //List<string> maskId = this.tempDesignMaskCounters.Keys.ToList<string>();
+      //CustomAmmoCategoriesLog.Log.LogWrite(" already have masks:" + maskId.Count + "\n");
+      //maskId.Sort();
+      //DesignMaskDef curMask = this.mapMetaData.GetPriorityDesignMask(this);
+      //if (curMask != null) { if (maskId.Count == 0) { maskId.Add(curMask.Id); }; };
+      //CustomAmmoCategoriesLog.Log.LogWrite(" curmask " + ((curMask == null) ? "null" : curMask.Id) + ":" + this.terrainMask + "\n");
+      //tempDesignMask = CustomAmmoCategories.createDesignMask(maskId, curMask, addMask);
+      //CustomAmmoCategoriesLog.Log.LogWrite(" new mask " + ((tempDesignMask == null) ? "null" : tempDesignMask.Id) + "\n");
+      //if (curMask != null) {
+      //  if (curMask.Id != tempDesignMask.Id) {
+      //    this.tempDesignMaskCounters.Add(addMask.Id, counter);
+      //  }
+      //} else {
+      //  this.tempDesignMaskCounters.Add(addMask.Id, counter);
+      //}
       DynamicMapHelper.tempMaskCells.Add(this.mapPoint());
     }
     public void ReconstructTempDesignMask() {
-      CustomAmmoCategoriesLog.Log.LogWrite("Reconstructin design mask:" + this.x + ":" + this.y + "\n");
-      tempDesignMask = null;
-      DesignMaskDef baseMask = this.mapMetaData.GetPriorityDesignMask(this);
-      List<string> maskId = this.tempDesignMaskCounters.Keys.ToList<string>();
-      if (maskId.Count == 0) {
-        CustomAmmoCategoriesLog.Log.LogWrite(" no need temp mask\n");
-        return;
-      }
-      if (baseMask != null) { maskId.Add(baseMask.Id); };
-      maskId.Sort();
-      string newMaskId = maskId.DesignMaskId();
-      CustomAmmoCategoriesLog.Log.LogWrite(" current mask:" + newMaskId + "\n");
-      if (CustomAmmoCategories.tempDesignMasksDefs.ContainsKey(newMaskId)) {
-        CustomAmmoCategoriesLog.Log.LogWrite(" already in cache\n");
-        tempDesignMask = CustomAmmoCategories.tempDesignMasksDefs[newMaskId];
-        return;
-      }
-      CustomAmmoCategoriesLog.Log.LogWrite(" constructing\n");
-      List<string> constructingMask = new List<string>();
-      DesignMaskDef newDesignMask = null;
-      if (baseMask != null) {
-        newDesignMask = baseMask; constructingMask.Add(baseMask.Id); maskId.RemoveAt(0);
-        CustomAmmoCategoriesLog.Log.LogWrite(" base mask(b):" + newDesignMask.Id + "\n");
-      } else {
-        do {
-          if (DynamicMapHelper.loadedMasksDef.ContainsKey(maskId[0])) {
-            constructingMask.Add(maskId[0]);
-            newDesignMask = DynamicMapHelper.loadedMasksDef[maskId[0]];
-            maskId.RemoveAt(0);
-            CustomAmmoCategoriesLog.Log.LogWrite(" base mask(t):" + newDesignMask.Id + "\n");
-            break;
-          } else {
-            maskId.RemoveAt(0);
-          }
-        } while (maskId.Count > 0);
-      }
-      while (maskId.Count > 0) {
-        if (DynamicMapHelper.loadedMasksDef.ContainsKey(maskId[0])) {
-          CustomAmmoCategoriesLog.Log.LogWrite(" adding mask to:" + newDesignMask.Id + " " + DynamicMapHelper.loadedMasksDef[maskId[0]].Id + "\n");
-          newDesignMask = CustomAmmoCategories.createDesignMask(constructingMask, newDesignMask, DynamicMapHelper.loadedMasksDef[maskId[0]]);
-          constructingMask.Add(maskId[0]);
-          constructingMask.Sort();
-          CustomAmmoCategoriesLog.Log.LogWrite(" result:" + newDesignMask.Id + "\n");
-          maskId.RemoveAt(0);
+      try {
+        Log.M.TWL(0, "Reconstructing design mask:" + this.x + ":" + this.y);
+        if (this.tempDesignMaskCounters.Count == 0) {
+          Log.M.WL(1, "no reconstruction needed");
         }
-      }
-      if (newDesignMask != null) {
-        if (baseMask != null) {
-          if (baseMask.Id != newDesignMask.Id) { this.tempDesignMask = newDesignMask; }
-        } else {
+        DesignMaskDef tempMask = this.tempDesignMask;
+        this.tempDesignMask = null;
+        DesignMaskDef baseDesignMask = this.mapMetaData.GetPriorityDesignMask(this);
+        DesignMaskDef newDesignMask = this.CreateMask(baseDesignMask, this.tempDesignMaskCounters.Keys.ToHashSet());
+        if (newDesignMask != null) {
           this.tempDesignMask = newDesignMask;
+        } else {
+          this.tempDesignMask = tempMask;
         }
+      } catch (Exception e) {
+        Log.M.TWL(0, e.ToString(), true);
       }
     }
-    public void RemoveDesignMask(string id) {
-      if (tempDesignMaskCounters.ContainsKey(id) == false) { return; }
-      tempDesignMaskCounters.Remove(id);
-      List<string> maskId = this.tempDesignMaskCounters.Keys.ToList<string>();
-      if (maskId.Count == 0) { this.tempDesignMask = null; return; };
-      this.ReconstructTempDesignMask();
-    }
+    //public void RemoveDesignMask(string id) {
+    //  if (tempDesignMaskCounters.ContainsKey(id) == false) { return; }
+    //  tempDesignMaskCounters.Remove(id);
+    //  List<string> maskId = this.tempDesignMaskCounters.Keys.ToList<string>();
+    //  if (maskId.Count == 0) { this.tempDesignMask = null; return; };
+    //  this.ReconstructTempDesignMask();
+    //}
     public void tempMaskTick() {
-      CustomAmmoCategoriesLog.Log.LogWrite("Temp mask tick:" + this.x + ":" + this.y + "\n");
-      List<string> keys = this.tempDesignMaskCounters.Keys.ToList<string>();
-      foreach (string tdm in keys) {
+      Log.M.TWL(0,"Temp mask tick:" + this.x + ":" + this.y);
+      HashSet<DesignMaskDef> keys = this.tempDesignMaskCounters.Keys.ToHashSet();
+      foreach (DesignMaskDef tdm in keys) {
         if (this.tempDesignMaskCounters.ContainsKey(tdm) == false) { continue; };
         int counter = this.tempDesignMaskCounters[tdm];
         CustomAmmoCategoriesLog.Log.LogWrite(" " + tdm + ":" + counter + "\n");
@@ -1177,7 +1336,7 @@ namespace CustAmmoCategories {
       CantHaveForest = false;
       trees = new List<CACDynamicTree>();
       tempDesignMask = null;
-      tempDesignMaskCounters = new Dictionary<string, int>();
+      tempDesignMaskCounters = new Dictionary<DesignMaskDef, int>();
     }
   }
   public class MapPoint {
@@ -1950,8 +2109,23 @@ namespace CustomAmmoCategoriesPatches {
   [HarmonyPatch(new Type[] { typeof(SerializationStream) })]
   public static class MapMetaData_Load {
     static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) {
+      List<ConstructorInfo> baseConstructors = AccessTools.GetDeclaredConstructors(typeof(MapTerrainDataCell));
+      List<ConstructorInfo> replaceConstructors = AccessTools.GetDeclaredConstructors(typeof(MapTerrainDataCellEx));
+      ConstructorInfo replacConstructor = null;
+      Log.M.TWL(0, "MapMetaData.Load.Transpiler");
+      Log.M.WL(1, "MapTerrainDataCell constructors:"+ baseConstructors.Count);
+      foreach(ConstructorInfo info in baseConstructors) {
+        Log.M.WL(2,"parameters:"+info.GetParameters().Length);
+      }
+      Log.M.WL(1, "MapTerrainDataCellEx constructors:" + replaceConstructors.Count);
+      foreach (ConstructorInfo info in replaceConstructors) {
+        Log.M.WL(2, "parameters:" + info.GetParameters().Length);
+        Log.M.WL(2, "IsPublic:" + info.IsPublic);
+        Log.M.WL(2, "Name:" + info.Name);
+        if (info.IsPublic) { replacConstructor = info; }
+      }
       var targetConstructor = AccessTools.Constructor(typeof(MapTerrainDataCell));
-      var replacConstructor = AccessTools.Constructor(typeof(MapTerrainDataCellEx));
+      //replacConstructor = AccessTools.Constructor(typeof(MapTerrainDataCellEx));
       return Transpilers.MethodReplacer(instructions, targetConstructor, replacConstructor);
     }
     static void Postfix(MapMetaData __instance, SerializationStream stream) {
@@ -2406,7 +2580,10 @@ namespace CustomAmmoCategoriesPatches {
   public static class MapMetaDataExporter_GenerateTerrainData {
     static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) {
       var targetConstructor = AccessTools.Constructor(typeof(MapTerrainDataCell));
-      var replacConstructor = AccessTools.Constructor(typeof(MapTerrainDataCellEx));
+      ConstructorInfo replacConstructor = null; 
+      foreach(ConstructorInfo info in AccessTools.GetDeclaredConstructors(typeof(MapTerrainDataCellEx))) {
+        if (info.IsPublic == true) { replacConstructor = info; }
+      }
       return Transpilers.MethodReplacer(instructions, targetConstructor, replacConstructor);
     }
     static void Postfix(MapMetaDataExporter __instance, Terrain terrain, bool force) {

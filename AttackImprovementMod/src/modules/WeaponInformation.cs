@@ -95,13 +95,8 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
           if (AIMSettings.ShowDamageInLoadout)
             ___weaponNames[i].text = ___weaponNames[i].text.Replace(" +", "+") + MetaColour + " (" + damage + ")";
           if (ByType.Length > 0 && ___weaponNames[i].color == colours.qualityA) {
-#if BT1_8
             if ((int)w.WeaponCategoryValue.ID < ByType.Length)
               ___weaponNames[i].color = ByType[(int)w.WeaponCategoryValue.ID];
-#else
-            if ((int)w.Category < ByType.Length)
-              ___weaponNames[i].color = ByType[(int)w.Category];
-#endif
           }
           if (w.MaxRange <= 90) close += damage;
           else if (w.MaxRange <= 360) medium += damage;
@@ -233,11 +228,7 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
     public static void UpdateWeaponDamage(CombatHUDWeaponSlot __instance, ICombatant target) {
       try {
         Weapon weapon = __instance.DisplayedWeapon;
-#if BT1_8
         if (weapon == null || !weapon.CanFire || target == null) return;
-#else
-        if (weapon == null || weapon.Category == WeaponCategory.Melee || !weapon.CanFire) return;
-#endif
         string text = null;
         AbstractActor owner = weapon.parent;
         Vector3 position = (owner.HasMovedThisRound ? null : ActiveState?.PreviewPos) ?? owner.CurrentPosition;

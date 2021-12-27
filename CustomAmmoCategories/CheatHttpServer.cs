@@ -361,10 +361,11 @@ namespace CustAmmoCategories {
     public void LateUpdate() {
       try {
         //Online.OnlineClientHelper.KeepAlive();
+        //Log.M.TWL(0, "UnityGameInstance_UpdateCACHTTP.LateUpdate "+ httpRequests.Count);
         if (httpRequests.Count == 0) { return; }
         CACHTTPRequestItem request = httpRequests.Dequeue();
-        MethodInfo method = typeof(UnityGameInstance_UpdateCACHTTP).GetMethod(request.name,BindingFlags.Static|BindingFlags.Public);
-        if (method != null) { method.Invoke(null, new object[] { request }); return; }
+        MethodInfo method = typeof(UnityGameInstance_UpdateCACHTTP).GetMethod(request.name,BindingFlags.Instance|BindingFlags.Public);
+        if (method != null) { method.Invoke(this, new object[] { request }); return; }
         request.ready("not implemented");
       } catch (Exception e) {
         Log.M.TWL(0, e.ToString(), true);

@@ -116,6 +116,9 @@ namespace CustomUnits {
       if (vehicleHitTable == null) return (List<int>)null;
       List<int> intList = new List<int>();
       foreach (ArmorLocation key in vehicleHitTable.Keys) {
+        ChassisLocations chassisLoc = MechStructureRules.GetChassisLocationFromArmorLocation(key);
+        LocationDef location = this.MechDef.Chassis.GetLocationDef(chassisLoc);
+        if ((location.MaxArmor <= 0f) && (location.InternalStructure <= 1f)) { continue; }
         intList.Add((int)key);
       }
       return intList;
