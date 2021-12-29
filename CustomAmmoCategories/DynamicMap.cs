@@ -1119,6 +1119,7 @@ namespace CustAmmoCategories {
         } else {
           designMaskDefs_Add.Invoke(this.hexCell.Combat.DataManager.DesignMaskDefs, new object[] { result.Id, result });
         }
+        Log.M.WL(0,"Resulting mask:\n"+result.ToJSON());
         return result;
       } catch (Exception e) {
         Log.M.TWL(0,e.ToString(),true);
@@ -1166,7 +1167,9 @@ namespace CustAmmoCategories {
       try {
         Log.M.TWL(0, "Reconstructing design mask:" + this.x + ":" + this.y);
         if (this.tempDesignMaskCounters.Count == 0) {
-          Log.M.WL(1, "no reconstruction needed");
+          Log.M.WL(1, "no reconstruction needed. Nullify temp mask");
+          this.tempDesignMask = null;
+          return;
         }
         DesignMaskDef tempMask = this.tempDesignMask;
         this.tempDesignMask = null;

@@ -273,7 +273,9 @@ namespace CustomUnits {
       RemoveReadyClasses(ref classes_count);
       int watchdog = 0;
       while(classes_count.Count > 0) {
-        foreach (PilotingClassDef pclass in classes_count.Keys) {
+        HashSet<PilotingClassDef> classes_count_keys = new HashSet<PilotingClassDef>();
+        foreach (PilotingClassDef pclass in classes_count.Keys) { classes_count_keys.Add(pclass); }
+        foreach (PilotingClassDef pclass in classes_count_keys) {
           List<PilotDef> readypilots = gatherPilotsCanHaveClass(ref pilots, pclass);
           if (readypilots.Count == 0) { classes_count[pclass] = pclass.expertiseGenerationMinCount; continue; }
           int index = UnityEngine.Random.Range(0, readypilots.Count);

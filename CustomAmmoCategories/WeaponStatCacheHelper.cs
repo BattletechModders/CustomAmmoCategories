@@ -238,7 +238,7 @@ namespace CustAmmoCategories {
         this.ammo = CustomAmmoCategories.DefaultAmmo;
         this.extDef = CustomAmmoCategories.DefaultWeapon;
         this.HasAmmoVariants = false;
-        Log.M.TWL(0, "WeaponExtendedInfo parent:"+(weapon.parent == null?"null":weapon.parent.PilotableActorDef.Description.Id)+" has weapon without definition GUID:"+weapon.GUID);
+        Log.M.TWL(0, "WeaponExtendedInfo parent:"+(weapon.parent == null?"null":weapon.parent.PilotableActorDef.Description.Id)+" has weapon without definition uid:"+weapon.uid + " mechRef:"+(weapon.baseComponentRef != null? weapon.baseComponentRef.ComponentDefID: "null"));
         return;
       }
       if (weapon.WeaponCategoryValue.IsMelee) { isBoxesAssigned = true; }
@@ -406,10 +406,12 @@ namespace CustAmmoCategories {
       //Log.M.TWL(0, "ext def of:" + weapon.defId);
       if (weapon == null) { return null; }
       if (weapon == null) {
-        throw new Exception("exDef() called for null weapon. This should not happen CustomAmmoCategories is just a victim here");
+        return CustomAmmoCategories.DefaultWeapon;
+        //throw new Exception("exDef() called for null weapon. This should not happen CustomAmmoCategories is just a victim here");
       }
       if (weapon.weaponDef == null) {
-        throw new Exception("exDef() called for weapon with null definition. This should not happen CustomAmmoCategories is just a victim here. Weapon uid:" + weapon.uid);
+        return CustomAmmoCategories.DefaultWeapon;
+        //throw new Exception("exDef() called for weapon with null definition. This should not happen CustomAmmoCategories is just a victim here. Weapon uid:" + weapon.uid);
       }
       if (weaponExtInfo.TryGetValue(weapon, out var info) == false) {
         info = new WeaponExtendedInfo(weapon, weapon.weaponDef);

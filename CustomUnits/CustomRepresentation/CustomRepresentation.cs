@@ -15,6 +15,10 @@ using UnityEngine;
 using UnityEngine.EventSystems;
 
 namespace CustomUnits {
+  public class MechSimGameComponentRepresentation : MonoBehaviour {
+    public string HardpointDefId { get; set; }
+    public string OriginalPrefabId { get; set; }
+  }
   public class CustomMouseInteactions: MonoBehaviour, IPointerClickHandler, IEventSystemHandler, IPointerEnterHandler, IPointerExitHandler {
     public PilotableActorRepresentation parentRep { get; set; }
     public void OnPointerClick(PointerEventData eventData) {
@@ -429,10 +433,14 @@ namespace CustomUnits {
           }
         }
         foreach (ComponentRepresentation compRep in componentReps) {
-          if (compRep == null) { continue; }
           try {
-            Log.WL(1, "prefab " + compRep.gameObject.name);
-            CustomHardpointDef customHardpoint = CustomHardPointsHelper.Find(compRep.gameObject.name);
+            string prefab = compRep.gameObject.name;
+            MechSimGameComponentRepresentation simgameRep = compRep.gameObject.GetComponent<MechSimGameComponentRepresentation>();
+            if (simgameRep != null) {
+              prefab = simgameRep.OriginalPrefabId;
+            }
+            Log.WL(1, "prefab " + prefab);
+            CustomHardpointDef customHardpoint = CustomHardPointsHelper.Find(prefab);
             if (customHardpoint == null) { Log.WL(3, "no custom hardpoint"); continue; }
             Log.WL(2, "attachType:" + customHardpoint.attachType + " attachOverride:" + customHardpoint.attachOverride);
             AttachInfo attachPoint = null;

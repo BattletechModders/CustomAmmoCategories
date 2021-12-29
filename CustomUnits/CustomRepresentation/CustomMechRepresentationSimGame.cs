@@ -343,6 +343,7 @@ namespace CustomUnits {
       this.gameObject.AddComponent<ShadowTracker>();
       this.mouseRotation = this.GetComponent<MouseRotation>();
       if (this.mouseRotation == null) { this.mouseRotation = this.gameObject.AddComponent<MouseRotation>(); }
+      MechSpin.Patches.MechRepresentationSimGame_Init_Patch.Postfix(this);
     }
     public override void ClearComponentReps() {
       base.ClearComponentReps();
@@ -459,6 +460,7 @@ namespace CustomUnits {
       foreach (var unit in this.squad) { unit.Value.gameObject.AddComponent<ShadowTracker>(); }
       this.mouseRotation = this.GetComponent<MouseRotation>();
       if (this.mouseRotation == null) { this.mouseRotation = this.gameObject.AddComponent<MouseRotation>(); }
+      MechSpin.Patches.MechRepresentationSimGame_Init_Patch.Postfix(this);
     }
   }
   public class CustomMechRepresentationSimGame : MechRepresentationSimGame, ICustomizationTarget {
@@ -847,20 +849,25 @@ namespace CustomUnits {
         cmp.componentRef.hasPrefabName = true;
         if (string.IsNullOrEmpty(cmp.componentRef.prefabName)) { continue; }
         CustomHardpointDef customHardpoint = CustomHardPointsHelper.Find(cmp.componentRef.prefabName);
+        string prefabName = cmp.componentRef.prefabName;
         GameObject componentGO = null;
         if (customHardpoint != null) {
           componentGO = this.DataManager.PooledInstantiate(customHardpoint.prefab, BattleTechResourceType.Prefab, new Vector3?(), new Quaternion?(), (Transform)null);
           if (componentGO == null) {
-            componentGO = this.DataManager.PooledInstantiate(cmp.componentRef.prefabName, BattleTechResourceType.Prefab, new Vector3?(), new Quaternion?(), (Transform)null);
+            componentGO = this.DataManager.PooledInstantiate(prefabName, BattleTechResourceType.Prefab, new Vector3?(), new Quaternion?(), (Transform)null);
           } else {
-            cmp.componentRef.prefabName = customHardpoint.prefab;
+            prefabName = customHardpoint.prefab;
           }
         } else {
-          Log.LogWrite(1, cmp.componentRef.prefabName + " have no custom hardpoint\n", true);
-          componentGO = this.DataManager.PooledInstantiate(cmp.componentRef.prefabName, BattleTechResourceType.Prefab, new Vector3?(), new Quaternion?(), (Transform)null);
+          Log.LogWrite(1, prefabName + " have no custom hardpoint\n", true);
+          componentGO = this.DataManager.PooledInstantiate(prefabName, BattleTechResourceType.Prefab, new Vector3?(), new Quaternion?(), (Transform)null);
         }
-        Log.WL(1, cmp.componentRef.ComponentDefID + ":" + cmp.componentRef.prefabName+" gameObject:"+(componentGO == null?"null": componentGO.name));
+        Log.WL(1, cmp.componentRef.ComponentDefID + ":" + prefabName + " gameObject:"+(componentGO == null?"null": componentGO.name));
         if (componentGO == null) { continue; }
+        MechSimGameComponentRepresentation simgameRep = componentGO.GetComponent<MechSimGameComponentRepresentation>();
+        if (simgameRep == null) { simgameRep = componentGO.AddComponent<MechSimGameComponentRepresentation>(); }
+        simgameRep.HardpointDefId = this.HardpointData.ID;
+        simgameRep.OriginalPrefabId = cmp.componentRef.prefabName;
         Transform attachTransform = this.GetAttachTransform(cmp.attachLocation);
         cmp.componentRep = componentGO.GetComponent<ComponentRepresentation>();
         if (cmp.componentRep == null) { cmp.componentRep = this.AddComponentRepresentationSimGame(componentGO, customHardpoint); };
