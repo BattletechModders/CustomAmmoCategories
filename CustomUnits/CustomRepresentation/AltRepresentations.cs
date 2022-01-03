@@ -173,19 +173,24 @@ namespace CustomUnits {
       foreach (CustomMechRepresentation alt in this.Alternates) { alt._StopJumpjetEffect(); }
     }
     public override void OnPlayerVisibilityChanged(VisibilityLevel newLevel) {
-      PilotableActorRepresentation_OnPlayerVisibilityChanged(newLevel);
-      if (this.isJumping) {
-        if (newLevel == VisibilityLevel.LOSFull)
-          if (isSlave == false) this._StartJumpjetAudio();
-          else
-          if (isSlave == false) this._StopJumpjetAudio();
-      }
-      foreach (CustomMechRepresentation alt in this.Alternates) {
-        VisibilityLevel altLvl = VisibilityLevel.None;
-        if (alt == this.CurrentRepresentation) {
-          if (newLevel == VisibilityLevel.LOSFull) { altLvl = VisibilityLevel.LOSFull; }
+      if (DeployManualHelper.IsInManualSpawnSequence) { newLevel = VisibilityLevel.None; }
+      try {
+        PilotableActorRepresentation_OnPlayerVisibilityChanged(newLevel);
+        if (this.isJumping) {
+          if (newLevel == VisibilityLevel.LOSFull)
+            if (isSlave == false) this._StartJumpjetAudio();
+            else
+            if (isSlave == false) this._StopJumpjetAudio();
         }
-        alt.OnPlayerVisibilityChanged(altLvl);
+        foreach (CustomMechRepresentation alt in this.Alternates) {
+          VisibilityLevel altLvl = VisibilityLevel.None;
+          if (alt == this.CurrentRepresentation) {
+            if (newLevel == VisibilityLevel.LOSFull) { altLvl = VisibilityLevel.LOSFull; }
+          }
+          alt.OnPlayerVisibilityChanged(altLvl);
+        }
+      }catch(Exception e) {
+        Log.TWL(0,e.ToString(),true);
       }
     }
     public override void _ToggleHeadlights(bool headlightsActive) {
@@ -862,11 +867,11 @@ namespace CustomUnits {
       if((CurrentHeight < Core.Settings.MaxHoveringHeightWithWorkingJets)&&(this.PendingHeight > Core.Settings.MaxHoveringHeightWithWorkingJets)) {
         this.isJumpjetsActive = true;
         parent.SetMeleeIdleState(false);
-        if (parent.VisibleToPlayer) {
+        if (parent.VisibleToPlayer && (DeployManualHelper.IsInManualSpawnSequence == false)) {
           foreach (GameObject jet in verticalJetsObjects) { jet.SetActive(true); }
         }
         foreach (JumpjetRepresentation jet in verticalJets) { jet.SetState(JumpjetRepresentation.JumpjetState.Launching); }
-        if (parent.VisibleToPlayer) {
+        if (parent.VisibleToPlayer && (DeployManualHelper.IsInManualSpawnSequence == false)) {
           this.parent.rootParentRepresentation._StartJumpjetAudio();
           this.parent.PlayVFXAt((Transform)null, this.parent.j_Root.position, (string)this.parent.Constants.VFXNames.jumpjet_launch, false, Vector3.zero, true, -1f);
         }

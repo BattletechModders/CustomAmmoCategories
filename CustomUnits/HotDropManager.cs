@@ -5,11 +5,13 @@ using BattleTech.Rendering.UrbanWarfare;
 using BattleTech.UI;
 using Harmony;
 using HBS;
+using Localize;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Text;
 using UnityEngine;
 
 namespace CustomUnits {
@@ -38,7 +40,7 @@ namespace CustomUnits {
     public static Contract CreateProceduralContract(this SimGameState sim, StarSystem system, bool usingBreadcrumbs, MapAndEncounters level, object MapEncounterContractData, GameContext gameContext) {
       return (Contract)sim.GetType().GetMethod("CreateProceduralContract", BindingFlags.Instance | BindingFlags.NonPublic).Invoke(sim, new object[] { system, usingBreadcrumbs, level, MapEncounterContractData, gameContext });
     }
-    private static IEnumerator StartGeneratePotentialContractsRoutine(this SimGameState sim, bool clearExistingContracts,Action onContractGenComplete,StarSystem systemOverride,bool useWait) {
+    private static IEnumerator StartGeneratePotentialContractsRoutine(this SimGameState sim, bool clearExistingContracts, Action onContractGenComplete, StarSystem systemOverride, bool useWait) {
       Log.TWL(0, "SimGameState.StartGeneratePotentialContractsRoutine");
       int debugCount = 0;
       bool usingBreadcrumbs = systemOverride != null;
@@ -65,7 +67,7 @@ namespace CustomUnits {
         potentialContracts = Traverse.Create(sim).Method("GetSinglePlayerProceduralContractOverrides", difficultyRange).GetValue<Dictionary<int, List<ContractOverride>>>();
         playableMaps = MetadataDatabase.Instance.GetReleasedMapsAndEncountersBySinglePlayerProceduralContractTypeAndTags(system.Def.MapRequiredTags, system.Def.MapExcludedTags, system.Def.SupportedBiomes, true).ToWeightedList<MapAndEncounters>(WeightedListType.SimpleRandom);
         validParticipants = Traverse.Create(sim).Method("GetContractRangeDifficultyRange", system).GetValue();
-      }catch(Exception e) {
+      } catch (Exception e) {
         Log.TWL(0, e.ToString(), true);
       }
       bool genComplete = true;
@@ -80,7 +82,7 @@ namespace CustomUnits {
       } else {
         try {
           Traverse.Create(sim).Method("ClearUsedBiomeFromDiscardPile", playableMaps).GetValue();
-        }catch(Exception e) {
+        } catch (Exception e) {
           Log.TWL(0, e.ToString(), true);
         }
         while (contractList.Count < maxContracts && debugCount < 1000) {
@@ -106,8 +108,8 @@ namespace CustomUnits {
             GameContext gameContext = new GameContext((GameContext)sim.Context);
             gameContext.SetObject(GameContextObjectTagEnum.TargetStarSystem, (object)system);
             contractList.Add(sim.CreateProceduralContract(system, usingBreadcrumbs, next, MapEncounterContractData, gameContext));
-          }catch(Exception e) {
-            Log.TWL(0,e.ToString(), true);
+          } catch (Exception e) {
+            Log.TWL(0, e.ToString(), true);
           }
           if (useWait) { yield return (object)new WaitForSeconds(0.2f); }
         }
@@ -143,9 +145,9 @@ namespace CustomUnits {
   [HarmonyPatch(new Type[] { typeof(AbstractActor) })]
   public static class CombatHUDMechwarriorTray_ResetMechwarriorButtons_dbg {
     public static void Prefix(CombatHUDMechwarriorTray __instance, AbstractActor actor) {
-      Log.TWL(0, "CombatHUDMechwarriorTray.ResetMechwarriorButtons debug:"+(actor == null?"null":actor.DisplayName));
+      Log.TWL(0, "CombatHUDMechwarriorTray.ResetMechwarriorButtons debug:" + (actor == null ? "null" : actor.DisplayName));
       if (actor != null) {
-        Log.WL(1, "actor.HasActivatedThisRound:"+ actor.HasActivatedThisRound);
+        Log.WL(1, "actor.HasActivatedThisRound:" + actor.HasActivatedThisRound);
         Log.WL(1, "actor.IsAvailableThisPhase:" + actor.IsAvailableThisPhase);
         Log.WL(1, "Combat.StackManager.IsAnyOrderActive:" + actor.Combat.StackManager.IsAnyOrderActive);
         Log.WL(1, "TurnDirector.IsInterleaved:" + actor.Combat.TurnDirector.IsInterleaved);
@@ -181,25 +183,25 @@ namespace CustomUnits {
       hotdropManager.UpdateDropped();
     }
   }
-  public class HotDropManager: MonoBehaviour {
+  public class HotDropManager : MonoBehaviour {
     public EncounterLayerParent parent { get; set; } = null;
     public CombatGameState Combat { get; set; } = null;
     public CombatHUD HUD { get; set; } = null;
     public List<HotDropPoint> dropPoints { get; set; } = new List<HotDropPoint>();
     public void UpdateDropPodPrefabs() {
       HotDropPoint[] drops = this.gameObject.GetComponentsInChildren<HotDropPoint>(true);
-      foreach(HotDropPoint drop in drops) {
-        drop.LoadDropPodPrefabs(parent.DropPodVfxPrefab,parent.dropPodLandedPrefab);
+      foreach (HotDropPoint drop in drops) {
+        drop.LoadDropPodPrefabs(parent.DropPodVfxPrefab, parent.dropPodLandedPrefab);
       }
     }
     public void Awake() {
       HotDropPoint[] drops = this.gameObject.GetComponentsInChildren<HotDropPoint>(true);
-      for(int t = CustomLanceHelper.hotdropLayout.Count; t < drops.Length; ++t) {
+      for (int t = CustomLanceHelper.hotdropLayout.Count; t < drops.Length; ++t) {
         drops[t].dropDef = null;
         drops[t].unit = null;
       }
-      for (int t = drops.Length; t < CustomLanceHelper.hotdropLayout.Count;++t) {
-        GameObject drop = new GameObject("hotdropPoint"+t.ToString(),typeof(HotDropPoint));
+      for (int t = drops.Length; t < CustomLanceHelper.hotdropLayout.Count; ++t) {
+        GameObject drop = new GameObject("hotdropPoint" + t.ToString(), typeof(HotDropPoint));
         drop.transform.SetParent(this.gameObject.transform);
       }
       drops = this.gameObject.GetComponentsInChildren<HotDropPoint>(true);
@@ -216,7 +218,7 @@ namespace CustomUnits {
       List<AbstractActor> units = this.Combat.AllActors;
       foreach (AbstractActor unit in units) {
         string GUID = unit.PilotableActorDef.GUID + "_" + unit.PilotableActorDef.Description.Id + "_" + unit.GetPilot().Description.Id;
-        foreach(HotDropPoint dropPoint in dropPoints) {
+        foreach (HotDropPoint dropPoint in dropPoints) {
           if (dropPoint.dropDef == null) { continue; }
           if (dropPoint.InDroping) { continue; }
           string dropGUID = dropPoint.dropDef.mechDef.GUID + "_" + dropPoint.dropDef.mechDef.Description.Id + "_" + dropPoint.dropDef.pilot.Description.Id;
@@ -242,13 +244,96 @@ namespace CustomUnits {
       HotDropManager hotdropManager = encounterLayerParent.GetComponent<HotDropManager>();
       hotdropManager.HotDrop(new List<Vector3>() { pos }, weapon.parent.GUID);
     }
+    public static bool DefferedHotDrop(AbstractActor parent, Vector3 pos) {
+      EncounterLayerParent encounterLayerParent = parent.Combat.EncounterLayerData.GetComponentInParent<EncounterLayerParent>();
+      HotDropManager hotdropManager = encounterLayerParent.GetComponent<HotDropManager>();
+      GenericPopup popup = null;
+
+      StringBuilder text = new StringBuilder();
+      List<KeyValuePair<int, HotDropDefinition>> invList = new List<KeyValuePair<int, HotDropDefinition>>();
+      for(int t=0;t< hotdropManager.dropPoints.Count; ++t) { 
+        if (hotdropManager.dropPoints[t].dropDef == null) { continue; }
+        if (hotdropManager.dropPoints[t].unit != null) { continue; }
+        if (hotdropManager.dropPoints[t].InDroping) { continue; }
+        invList.Add(new KeyValuePair<int, HotDropDefinition>(t, hotdropManager.dropPoints[t].dropDef));
+      }
+      if (invList.Count <= 0) {
+        popup = GenericPopupBuilder.Create("NO UNIT TO HOTDROP", "You have empty hotdrop queue").IsNestedPopupWithBuiltInFader().SetAlwaysOnTop().Render();
+        return false;
+      }
+      int curIndex = 0;
+      int pageSize = 10;
+      for (int index = curIndex - curIndex % pageSize; index < curIndex - curIndex % pageSize + pageSize; ++index) {
+        if (index >= invList.Count) { break; }
+        if (index == curIndex) { text.Append("<size=150%><color=orange>"); };
+        text.Append(new Text(invList[index].Value.mechDef.Name).ToString() + ":" + invList[index].Value.pilot.Callsign);
+        if (index == curIndex) { text.Append("</size></color>"); };
+        text.AppendLine();
+      }
+
+      popup = GenericPopupBuilder.Create("CHOOSE UNIT TO HOTDROP", text.ToString())
+        .AddButton("X", (Action)(() => { }), true)
+        .AddButton("->", (Action)(() => {
+          try {
+            if (curIndex < (invList.Count - 1)) {
+              ++curIndex;
+              text.Clear();
+              for (int index = curIndex - curIndex % pageSize; index < curIndex - curIndex % pageSize + pageSize; ++index) {
+                if (index >= invList.Count) { break; }
+                if (index == curIndex) { text.Append("<size=150%><color=orange>"); };
+                text.Append(new Text(invList[index].Value.mechDef.Name).ToString() + ":" + invList[index].Value.pilot.Callsign);
+                if (index == curIndex) { text.Append("</size></color>"); };
+                text.AppendLine();
+              }
+              if (popup != null) popup.TextContent = text.ToString();
+            }
+          } catch (Exception e) {
+            Log.TWL(0, e.ToString(), true);
+          }
+        }), false)
+        .AddButton("<-", (Action)(() => {
+          try {
+            if (curIndex > 0) {
+              --curIndex;
+              text.Clear();
+              for (int index = curIndex - curIndex % pageSize; index < curIndex - curIndex % pageSize + pageSize; ++index) {
+                if (index >= invList.Count) { break; }
+                if (index == curIndex) { text.Append("<size=150%><color=orange>"); };
+                text.Append(new Text(invList[index].Value.mechDef.Name).ToString() + ":" + invList[index].Value.pilot.Callsign);
+                if (index == curIndex) { text.Append("</size></color>"); };
+                text.AppendLine();
+              }
+              if (popup != null) popup.TextContent = text.ToString();
+            }
+          } catch (Exception e) {
+            Log.TWL(0, e.ToString(), true);
+          }
+        }), false).AddButton("DROP", (Action)(() => {
+          hotdropManager.HotDrop(invList[curIndex].Key, pos, parent.GUID);
+          parent.Combat.MessageCenter.PublishMessage((MessageCenterMessage)new AddSequenceToStackMessage(parent.DoneWithActor()));
+        }), true).IsNestedPopupWithBuiltInFader().SetAlwaysOnTop().Render();
+
+      return true;
+    }
+    public void HotDrop(int index, Vector3 pos, string spawnGUID) {
+      if (this.Combat == null) { return; }
+      if (string.IsNullOrEmpty(spawnGUID)) { throw new Exception("spawnGUID should not be empty"); }
+      this.UpdateDropped();
+      Log.TWL(0, "HotDropManager.HotDrop " + index);
+      if ((index < 0) || (index >= dropPoints.Count)) { return; }
+      if (dropPoints[index].dropDef == null) { return; }
+      if (dropPoints[index].unit != null) { return; }
+      if (dropPoints[index].InDroping) { return; }
+      if (dropPoints[index].dropDef.TeamGUID == this.Combat.LocalPlayerTeamGuid) { refreshHUDCheck = true; }
+      dropPoints[index].HotDrop(pos, OnDropCompleete, spawnGUID);
+    }
     public void HotDrop(List<Vector3> positions, string spawnGUID) {
       if (this.Combat == null) { return; }
       if (string.IsNullOrEmpty(spawnGUID)) { throw new Exception("spawnGUID should not be empty"); }
       this.UpdateDropped();
       Log.TWL(0, "HotDropManager.HotDrop");
-      foreach(Vector3 pos in positions) {
-        foreach(HotDropPoint dropPoint in this.dropPoints) {
+      foreach (Vector3 pos in positions) {
+        foreach (HotDropPoint dropPoint in this.dropPoints) {
           Log.WL(1, "dropDef:" + (dropPoint.dropDef == null ? "null" : dropPoint.dropDef.mechDef.Description.Id) + " unit:" + (dropPoint.unit == null ? "null" : dropPoint.unit.DisplayName) + " InDroping:" + dropPoint.InDroping);
           if (dropPoint.dropDef == null) { continue; }
           if (dropPoint.unit != null) { continue; }
@@ -260,7 +345,7 @@ namespace CustomUnits {
       }
     }
   }
-  public class HotDropPoint: MonoBehaviour {
+  public class HotDropPoint : MonoBehaviour {
     public AbstractActor unit { get; set; } = null;
     public HotDropManager parent { get; set; } = null;
     public HotDropDefinition dropDef { get; set; } = null;
@@ -290,7 +375,7 @@ namespace CustomUnits {
       mech.OnPlayerVisibilityChanged(VisibilityLevel.None);
       UnitSpawnedMessage unitSpawnedMessage = new UnitSpawnedMessage(this.spawnGUID, mech.GUID);
       mech.OnPositionUpdate(this.transform.position, Quaternion.identity, -1, true, (List<DesignMaskDef>)null, false);
-      mech.BehaviorTree = null;
+      mech.BehaviorTree = BehaviorTreeFactory.MakeBehaviorTree(mech.Combat.BattleTechGame, mech, BehaviorTreeIDEnum.DoNothingTree); ;
       UnityGameInstance.BattleTechGame.Combat.MessageCenter.PublishMessage((MessageCenterMessage)new UnitSpawnedMessage("HOTDROP_SPAWNER", mech.GUID));
       Log.WL(1, "spawned:" + mech.PilotableActorDef.Description.Id + ":" + mech.pilot.Description.Id + " " + mech.CurrentPosition);
       this.unit = mech;
@@ -306,15 +391,14 @@ namespace CustomUnits {
       this.spawnGUID = sGUID;
       this.onDropCompleete = onDropEnd;
       this.gameObject.transform.position = pos;
-      Log.TWL(0, "HotDropPoint.HotDrop:"+pos+" "+ this.dropDef.mechDef.Description.Id+":deps - "+ this.dropDef.mechDef.DependenciesLoaded(1000u)+" pilot:"+ this.dropDef.pilot.pilotDef.Description.Id+" deps - "+ this.dropDef.pilot.pilotDef.DependenciesLoaded(1000u));
+      Log.TWL(0, "HotDropPoint.HotDrop:" + pos + " " + this.dropDef.mechDef.Description.Id + ":deps - " + this.dropDef.mechDef.DependenciesLoaded(1000u) + " pilot:" + this.dropDef.pilot.pilotDef.Description.Id + " deps - " + this.dropDef.pilot.pilotDef.DependenciesLoaded(1000u));
       if (
         (this.dropDef.mechDef.DependenciesLoaded(1000u) == false)
-        ||(this.dropDef.pilot.pilotDef.DependenciesLoaded(1000u) == false)
-        )
-      {
+        || (this.dropDef.pilot.pilotDef.DependenciesLoaded(1000u) == false)
+        ) {
         DataManager.InjectedDependencyLoadRequest dependencyLoad = new DataManager.InjectedDependencyLoadRequest(this.parent.Combat.DataManager);
         dependencyLoad.RegisterLoadCompleteCallback(new Action(this.OnDepsLoaded));
-        if(this.dropDef.mechDef.DependenciesLoaded(1000u) == false) {
+        if (this.dropDef.mechDef.DependenciesLoaded(1000u) == false) {
           this.dropDef.mechDef.GatherDependencies(this.parent.Combat.DataManager, dependencyLoad, 1000u);
         }
         if (this.dropDef.pilot.pilotDef.DependenciesLoaded(1000u) == false) {
@@ -336,7 +420,7 @@ namespace CustomUnits {
         this.dropPodLandedPrefab = UnityEngine.Object.Instantiate<GameObject>(dropPodLandedPrefab, this.offscreenDropPodPosition, Quaternion.identity);
       }
     }
-    public IEnumerator StartDropPodAnimation(float initialDelay,Action unitDropPodAnimationComplete) {
+    public IEnumerator StartDropPodAnimation(float initialDelay, Action unitDropPodAnimationComplete) {
       while (!EncounterLayerParent.encounterBegan)
         yield return (object)null;
       yield return (object)new WaitForSeconds(UnityEngine.Random.Range(0.5f, 1.75f) + initialDelay);

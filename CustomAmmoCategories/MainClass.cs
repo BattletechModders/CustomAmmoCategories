@@ -1035,6 +1035,9 @@ namespace CustAmmoCategories {
       return false;
     }
   }
+  public static class CACCombatState {
+    public static bool IsInDeployManualState { get; set; } = false;
+  }
   public static class UnitUnaffectionsActorStats {
     public static readonly string DesignMasksActorStat = "CUDesignMasksUnaffected";
     public static readonly string PathingActorStat = "CUPathingUnaffected";

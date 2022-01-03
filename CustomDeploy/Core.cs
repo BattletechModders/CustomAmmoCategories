@@ -812,7 +812,23 @@ namespace CustomDeploy{
       Log.TWL(0, "ClearFallbackTracked");
       PooledInstantiate_Fallback_tracked.Clear();
     }
+    public static void HideAll(this CombatHUDActorInfo __instance) {
+      __instance.SetGOActive((MonoBehaviour)__instance.DetailsDisplay, false);
+      __instance.SetGOActive((MonoBehaviour)__instance.PhaseDisplay, false);
+      __instance.SetGOActive((MonoBehaviour)__instance.InspiredDisplay, false);
+      __instance.SetGOActive((MonoBehaviour)__instance.StabilityDisplay, false);
+      __instance.SetGOActive((MonoBehaviour)__instance.HeatDisplay, false);
+      __instance.SetGOActive((MonoBehaviour)__instance.MarkDisplay, false);
+      __instance.SetGOActive((MonoBehaviour)__instance.StateStack, false);
+      __instance.SetGOActive((MonoBehaviour)__instance.NameDisplay, false);
+      __instance.SetGOActive((MonoBehaviour)__instance.LogoDisplay, false);
+      __instance.SetGOActive((MonoBehaviour)__instance.ArmorBar, false);
+      __instance.SetGOActive((MonoBehaviour)__instance.StructureBar, false);
+      __instance.SetGOActive((MonoBehaviour)__instance.ExplosiveDisplay, false);
+      __instance.gameObject.SetActive(false);
+    }
     public static void PooledInstantiate_Fallback(this DataManager __instance,ref GameObject __result,string id,BattleTechResourceType resourceType,Vector3? position,Quaternion? rotation,Transform parent) {
+      return;
       if (__result != null) { return; }
       if (resourceType != BattleTechResourceType.Prefab) { return; }
       if (BattleTech.UnityGameInstance.BattleTechGame == null) { return; }

@@ -344,7 +344,30 @@ namespace CustomUnits {
         throw new NullReferenceException("UnitCustomInfo is not defined for "+mDef.ChassisID);
       }
     }
+    public override void FlagForDeath(string reason, DeathMethod deathMethod, DamageType damageType, int location, int stackItemID, string attackerID, bool isSilent) {
+      if (this._flaggedForDeath) { return; }
+      Log.TWL(0, "TrooperSquad.FlagForDeath " + reason + " method:" + deathMethod + " dmgType:" + damageType + " location:" + location);
+      bool hasNonDestroyedLocations = false;
+      Log.WL(1, "testing locations");
+      foreach (ChassisLocations loc in TrooperSquad.locations) {
+        LocationDef locDef = this.MechDef.Chassis.GetLocationDef(loc);
+        Log.W(2, loc.ToString());
+        if ((locDef.MaxArmor <= 0f) && (locDef.InternalStructure <= 1f)) {
+          Log.WL(1, "not exists MaxArmor:" + locDef.MaxArmor + " InternalStructure:" + locDef.InternalStructure);
+          continue;
+        }
+        Log.WL(1, "IsLocationDestroyed:" + this.IsLocationDestroyed(loc));
+        if (this.IsLocationDestroyed(loc) == false) { hasNonDestroyedLocations = true; break; }
+      }
+      if (hasNonDestroyedLocations) {
+        Log.WL(1, "refuse to death cause have non destroyed locations");
+        Log.WL(0, Environment.StackTrace);
+        return;
+      }
+      base.FlagForDeath(reason, deathMethod, damageType, location, stackItemID, attackerID, isSilent);
+    }
     public void OnLocationDestroyedSquad(ChassisLocations location, Vector3 attackDirection, WeaponHitInfo hitInfo, DamageType damageType) {
+      Log.TWL(0, "TrooperSquad.OnLocationDestroyedSquad "+this.MechDef.ChassisID+" "+location);
       this.location_index = -1;
       this.Combat.MessageCenter.PublishMessage((MessageCenterMessage)new AddSequenceToStackMessage((IStackSequence)new ShowActorInfoSequence((ICombatant)this, new Text("UNIT DESTROYED"), FloatieMessage.MessageNature.LocationDestroyed, true)));
       AttackDirector.AttackSequence attackSequence = this.Combat.AttackDirector.GetAttackSequence(hitInfo.attackSequenceId);
@@ -364,14 +387,21 @@ namespace CustomUnits {
         }
       }
       bool hasNotDestroyedLocations = false;
+      Log.WL(1,"testing locations");
       foreach(ChassisLocations loc in TrooperSquad.locations) {
         LocationDef locDef = this.MechDef.Chassis.GetLocationDef(loc);
-        if ((locDef.MaxArmor <= 0f) && (locDef.InternalStructure <= 1f)) { continue; }
+        Log.W(2, loc.ToString());
+        if ((locDef.MaxArmor <= 0f) && (locDef.InternalStructure <= 1f)) {
+          Log.WL(1, "not exists MaxArmor:" + locDef.MaxArmor + " InternalStructure:" + locDef.InternalStructure);
+          continue;
+        }
+        Log.WL(1, "IsLocationDestroyed:" + this.IsLocationDestroyed(loc));
         if (this.IsLocationDestroyed(loc) == false) { hasNotDestroyedLocations = true; break; }
       }
       DeathMethod deathMethod = DeathMethod.NOT_SET;
       string reason = "";
       if (hasNotDestroyedLocations == false) {
+        Log.WL(1, "all trooper squad locations destroyed");
         deathMethod = DeathMethod.HeadDestruction;
         reason = "Squad destroyed";
         if (damageType == DamageType.AmmoExplosion) {
@@ -709,8 +739,10 @@ namespace CustomUnits {
       //Log.TWL(0, "TrooperSquad.GetDFASelfDamageLocations " + this.DisplayName);
       HashSet<ArmorLocation> result = new HashSet<ArmorLocation>();
       foreach(ArmorLocation aloc in TrooperSquad.armorLocations) {
-        LocationDef locDef = this.MechDef.Chassis.GetLocationDef(MechStructureRules.GetChassisLocationFromArmorLocation(aloc));
+        ChassisLocations loc = MechStructureRules.GetChassisLocationFromArmorLocation(aloc);
+        LocationDef locDef = this.MechDef.Chassis.GetLocationDef(loc);
         if ((locDef.MaxArmor <= 0f) && (locDef.InternalStructure <= 1f)) { continue; }
+        if (this.IsLocationDestroyed(loc)) { continue; }
         result.Add(aloc);
       }
       return result;
@@ -719,40 +751,43 @@ namespace CustomUnits {
       //Log.TWL(0, "TrooperSquad.GetLandmineDamageLocations " + this.MechDef.ChassisID);
       HashSet<ArmorLocation> result = new HashSet<ArmorLocation>();
       foreach (ArmorLocation aloc in TrooperSquad.armorLocations) {
-        LocationDef locDef = this.MechDef.Chassis.GetLocationDef(MechStructureRules.GetChassisLocationFromArmorLocation(aloc));
+        ChassisLocations loc = MechStructureRules.GetChassisLocationFromArmorLocation(aloc);
+        if (this.IsLocationDestroyed(loc)) { continue; }
+        LocationDef locDef = this.MechDef.Chassis.GetLocationDef(loc);
         if ((locDef.MaxArmor <= 0f) && (locDef.InternalStructure <= 1f)) { continue; }
         result.Add(aloc);
       }
       return result;
     }
-    public HashSet<ArmorLocation> GetBurnDamageLocations() {
+    public override HashSet<ArmorLocation> GetBurnDamageArmorLocations() {
       //Log.TWL(0, "TrooperSquad.GetBurnDamageLocations " + this.DisplayName);
       HashSet<ArmorLocation> result = new HashSet<ArmorLocation>();
       foreach (ArmorLocation aloc in TrooperSquad.armorLocations) {
-        LocationDef locDef = this.MechDef.Chassis.GetLocationDef(MechStructureRules.GetChassisLocationFromArmorLocation(aloc));
+        ChassisLocations chassisLoc = MechStructureRules.GetChassisLocationFromArmorLocation(aloc);
+        LocationDef locDef = this.MechDef.Chassis.GetLocationDef(chassisLoc);
         if ((locDef.MaxArmor <= 0f) && (locDef.InternalStructure <= 1f)) { continue; }
+        if (this.IsLocationDestroyed(chassisLoc)) { continue; }
         result.Add(aloc);
       }
       return result;
     }
-    public static Dictionary<int, float> GetAOESpreadLocations(Mech m) {
+    public override Dictionary<int, float> GetAOESpreadArmorLocations() {
       //Log.TWL(0, "TrooperSquad.GetAOESpreadLocations " + m.DisplayName);
-      TrooperSquad squad = m as TrooperSquad;
-      if (squad == null) { return null; };
       if (CustomAmmoCategories.SquadHitLocations == null) { CustomAmmoCategories.InitHitLocationsAOE(); }
       return CustomAmmoCategories.SquadHitLocations;
     }
-    public static List<int> GetAOEPossibleHitLocations(Mech m, Vector3 attackPos) {
-      //Log.TWL(0, "TrooperSquad.GetAOEPossibleHitLocations " + m.DisplayName);
-      TrooperSquad squad = m as TrooperSquad;
-      if (squad == null) { return null; };
-      List<int> result = new List<int>();
-      foreach (ArmorLocation aloc in TrooperSquad.armorLocations) {
-        LocationDef locDef = m.MechDef.Chassis.GetLocationDef(MechStructureRules.GetChassisLocationFromArmorLocation(aloc));
-        if ((locDef.MaxArmor <= 0f) && (locDef.InternalStructure <= 1f)) { continue; }
-        result.Add((int)aloc);
+    public override List<int> GetAOEPossibleHitLocations(Vector3 attackPos) {
+      Dictionary<ArmorLocation, int> squadHitTable = this.GetHitTable(this.Combat.HitLocation.GetAttackDirection(attackPos, (ICombatant)this));
+      if (squadHitTable == null) return (List<int>)null;
+      List<int> intList = new List<int>();
+      foreach (ArmorLocation key in squadHitTable.Keys) {
+        ChassisLocations chassisLoc = MechStructureRules.GetChassisLocationFromArmorLocation(key);
+        LocationDef location = this.MechDef.Chassis.GetLocationDef(chassisLoc);
+        if ((location.MaxArmor <= 0f) && (location.InternalStructure <= 1f)) { continue; }
+        if (this.IsLocationDestroyed(chassisLoc)) { continue; }
+        intList.Add((int)key);
       }
-      return result;
+      return intList;
     }
     public static float GetSquadSizeToHitMod(ToHit instance, AbstractActor attacker, Weapon weapon, ICombatant target, Vector3 attackPosition, Vector3 targetPosition, LineOfFireLevel lofLevel, MeleeAttackType meleeAttackType, bool isCalledShot) {
       //Log.TWL(0, "TrooperSquad.GetSquadSizeToHitMod " + target.DisplayName);

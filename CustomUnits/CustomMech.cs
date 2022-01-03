@@ -393,7 +393,11 @@ namespace CustomUnits {
     public virtual Dictionary<int, float> GetAOESpreadArmorLocations() {
       return CustomAmmoCategories.NormMechHitLocations;
     }
-
+    public override void FlagForDeath(string reason,DeathMethod deathMethod,DamageType damageType,int location,int stackItemID,string attackerID,bool isSilent) {
+      if (this._flaggedForDeath) { return; }
+      Log.TWL(0, "CustomMech.FlagForDeath " + reason + " method:" + deathMethod + " dmgType:" + damageType + " location:" + location);
+      base.FlagForDeath(reason, deathMethod, damageType, location, stackItemID, attackerID, isSilent);
+    }
     public virtual List<int> GetAOEPossibleHitLocations(Vector3 attackPos) {
       return this.Combat.HitLocation.GetPossibleHitLocations(attackPos, this);
     }

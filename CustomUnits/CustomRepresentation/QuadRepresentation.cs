@@ -3,6 +3,7 @@ using BattleTech.Data;
 using BattleTech.Rendering;
 using BattleTech.Rendering.UI;
 using CustAmmoCategories;
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -388,10 +389,15 @@ namespace CustomUnits {
       base._StopJumpjetEffect();
     }
     public override void OnPlayerVisibilityChanged(VisibilityLevel newLevel) {
-      base.OnPlayerVisibilityChanged(newLevel);
-      VisibilityLevel legsLevel = newLevel == VisibilityLevel.LOSFull ? VisibilityLevel.LOSFull : VisibilityLevel.None;
-      this.ForwardLegs.OnPlayerVisibilityChanged(legsLevel);
-      this.RearLegs.OnPlayerVisibilityChanged(legsLevel);
+      if (DeployManualHelper.IsInManualSpawnSequence) { newLevel = VisibilityLevel.None; }
+      try {
+        base.OnPlayerVisibilityChanged(newLevel);
+        VisibilityLevel legsLevel = newLevel == VisibilityLevel.LOSFull ? VisibilityLevel.LOSFull : VisibilityLevel.None;
+        this.ForwardLegs.OnPlayerVisibilityChanged(legsLevel);
+        this.RearLegs.OnPlayerVisibilityChanged(legsLevel);
+      }catch(Exception e) {
+        Log.TWL(0, e.ToString(),true);
+      }
     }
     public override void PlayShutdownAnim() {
       base.PlayShutdownAnim();
@@ -410,8 +416,8 @@ namespace CustomUnits {
       if (isSlave == false) this._PlayDeathFloatie(deathMethod);
       if (this.parentActor.WasDespawned) { return; }
       if (this.VisibleObjectLight != null) { this.VisibleObjectLight.SetActive(false); }
-      this.ForwardLegs.VisibleObjectLight.SetActive(false);
-      this.RearLegs.VisibleObjectLight.SetActive(false);
+      this.ForwardLegs?.VisibleObjectLight?.SetActive(false);
+      this.RearLegs?.VisibleObjectLight?.SetActive(false);
       this.ForwardLegs.thisAnimator.SetTrigger("Death");
       this.RearLegs.thisAnimator.SetTrigger("Death");
       if (!this.parentMech.Combat.IsLoadingFromSave) {

@@ -1046,7 +1046,7 @@ namespace CustomUnits {
       }
       this.PlayVFX(location, vfxName, attached, Vector3.zero, true, -1f);
       this.HeightController.PendingHeight = 0f;
-      this.customRep.OnUnitDestroy();
+      this.customRep?.OnUnitDestroy();
       if (this.parentMech.Combat.IsLoadingFromSave) { return; }
       if (isSlave == false) {
         int num = (int)WwiseManager.PostEvent<AudioEventList_mech>(eventEnumValue, this.audioObject);
@@ -1511,6 +1511,7 @@ namespace CustomUnits {
 
     public override void OnPlayerVisibilityChanged(VisibilityLevel newLevel) {
       try {
+        if (DeployManualHelper.IsInManualSpawnSequence) { newLevel = VisibilityLevel.None; }
         PilotableActorRepresentation_OnPlayerVisibilityChanged(newLevel);
         for (int index = 0; index < this.jumpjetReps.Count; ++index)
           this.jumpjetReps[index].OnPlayerVisibilityChanged(newLevel);

@@ -344,6 +344,9 @@ namespace CustomUnits {
         if (__instance.DataManager.AbilityDefs.TryGet(CombatHUDMechwarriorTrayEx.ShutdownAbilityId, out AbilityDef aDef) == false) {
           __result = false;
         }
+        if (__instance.DataManager.AbilityDefs.TryGet(SpawnHelper.SpawnAbilityDefID, out AbilityDef spawnAbilityDef) == false) {
+          __result = false;
+        }
       } catch (Exception e) {
         Log.TWL(0, e.ToString(), true);
       }
@@ -357,7 +360,12 @@ namespace CustomUnits {
     public static void Postfix(PilotDef __instance, DataManager dataManager, DataManager.DependencyLoadRequest dependencyLoad, uint activeRequestWeight) {
       try {
         //Log.TWL(0, "PilotDef.GatherDependencies " + __instance.Description.Id);
-        dependencyLoad.RequestResource(BattleTechResourceType.AbilityDef, CombatHUDMechwarriorTrayEx.ShutdownAbilityId);
+        if (dataManager.AbilityDefs.Exists(CombatHUDMechwarriorTrayEx.ShutdownAbilityId) == false) {
+          dependencyLoad.RequestResource(BattleTechResourceType.AbilityDef, CombatHUDMechwarriorTrayEx.ShutdownAbilityId);
+        }
+        if (dataManager.AbilityDefs.Exists(SpawnHelper.SpawnAbilityDefID) == false) {
+          dependencyLoad.RequestResource(BattleTechResourceType.AbilityDef, SpawnHelper.SpawnAbilityDefID);
+        }
       } catch (Exception e) {
         Log.TWL(0, e.ToString(), true);
       }

@@ -261,7 +261,7 @@ namespace CustomUnits {
           int index = 0;
           while (CustomLanceHelper.playerLanceLoadout.loadout.ContainsKey(GUID)) {
             ++index;
-            lanceLoadoutSlot.SelectedMech.MechDef.SetGuid(GUID + "_" + index.ToString());
+            lanceLoadoutSlot.SelectedMech.MechDef.SetGuid(lanceLoadoutSlot.SelectedMech.MechDef.GUID + "_" + index.ToString());
             GUID = lanceLoadoutSlot.SelectedMech.MechDef.GUID + "_" + lanceLoadoutSlot.SelectedMech.MechDef.Description.Id + "_" + lanceLoadoutSlot.SelectedPilot.Pilot.Description.Id;
           }
           CustomLanceHelper.playerLanceLoadout.loadout.Add(GUID, i);
@@ -312,8 +312,8 @@ namespace CustomUnits {
           buttons_tr = nbtn;
           buttons_tr.gameObject.name = "lanceSwitchButtons-layout";
           buttons_tr.Find("uixPrfBttn_BASE_button2-MANAGED-delete").gameObject.AddComponent<LanceConfigutationNextLance>().Init(customLanceSlotsLayout);
-          buttons_tr.Find("uixPrfBttn_BASE_button2-MANAGED-save").gameObject.SetActive(false);
-          buttons_tr.Find("uixPrfBttn_BASE_button2-MANAGED-copy (1)").gameObject.SetActive(false);
+          buttons_tr.Find("uixPrfBttn_BASE_button2-MANAGED-save").gameObject.SetActive(true);
+          buttons_tr.Find("uixPrfBttn_BASE_button2-MANAGED-copy (1)").gameObject.SetActive(true);
         } else {
           buttons_tr.Find("uixPrfBttn_BASE_button2-MANAGED-delete").gameObject.GetComponent<LanceConfigutationNextLance>().Init(customLanceSlotsLayout);
         }
@@ -622,7 +622,7 @@ namespace CustomUnits {
           group = decorationLocal.gameObject.AddComponent<HorizontalLayoutGroup>();
           group.spacing = 8f;
           group.padding = new RectOffset(10, 10, 0, 0);
-          group.childAlignment = TextAnchor.MiddleRight;
+          group.childAlignment = UnityEngine.TextAnchor.MiddleRight;
           group.childControlHeight = false;
           group.childControlWidth = false;
           group.childForceExpandHeight = false;

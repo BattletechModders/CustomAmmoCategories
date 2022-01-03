@@ -48,11 +48,17 @@
     <Reference Include="Assembly-CSharp-firstpass">
       <HintPath>$(BattleTechGameDir)\BattleTech_Data\Managed\Assembly-CSharp-firstpass.dll</HintPath>
     </Reference>
+    <Reference Include="BattletechPerformanceFix">
+      <HintPath>..\..\Mods\BattletechPerformanceFix\BattletechPerformanceFix.dll</HintPath>
+    </Reference>
     <Reference Include="CustomComponents">
       <HintPath>$(BattleTechGameDir)\Mods\CustomComponents\CustomComponents.dll</HintPath>
     </Reference>
     <Reference Include="CustomPrewarm">
       <HintPath>$(BattleTechGameDir)\Mods\CustomPrewarm\CustomPrewarm.dll</HintPath>
+    </Reference>
+    <Reference Include="CustomSalvage">
+      <HintPath>..\..\Mods\CustomSalvage\CustomSalvage.dll</HintPath>
     </Reference>
     <Reference Include="DOTween, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
@@ -133,6 +139,7 @@
     <Compile Include="BiomeTagsFix.cs" />
     <Compile Include="CombatDestroyed.cs" />
     <Compile Include="CustomArmorReadout.cs" />
+    <Compile Include="CustomChassisReady.cs" />
     <Compile Include="CustomHangarDef.cs" />
     <Compile Include="CustomLanceSlot.cs" />
     <Compile Include="CustomMech.cs" />
@@ -189,6 +196,7 @@
     <Compile Include="QuadRepresentation.cs" />
     <Compile Include="ShutdownManual.cs" />
     <Compile Include="SortByTonnage\SortByTonnage.cs" />
+    <Compile Include="SpawnActorHelper.cs" />
     <Compile Include="TerrainCost.cs" />
     <Compile Include="TerrainMaskPatch.cs" />
     <Compile Include="TrooperSquad.cs" />

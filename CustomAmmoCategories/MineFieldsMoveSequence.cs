@@ -4,6 +4,7 @@ using CustAmmoCategories;
 using CustomAmmoCategoriesLog;
 using CustomAmmoCategoriesPatches;
 using Harmony;
+using IRBTModUtils;
 using Localize;
 using System;
 using System.Collections.Generic;
@@ -180,6 +181,12 @@ namespace CustAmmoCategories {
       if (target.isHasHeat()) { this.BurnHeat = burnHeat; return; };
       this.BurnHeat = 0f;
       List<int> hitLocations = new List<int> { 1 };
+      ICustomMech custMech = target as ICustomMech;
+      if (custMech != null) {
+        HashSet<ArmorLocation> aLocs = custMech.GetBurnDamageArmorLocations();
+        hitLocations = new List<int>();
+        foreach (ArmorLocation aloc in aLocs) { hitLocations.Add((int)aloc); }
+      } else
       if (mech != null) {
         HashSet<ArmorLocation> aLocs = mech.GetBurnDamageArmorLocations();
         hitLocations = new List<int>();

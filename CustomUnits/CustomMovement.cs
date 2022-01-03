@@ -4,6 +4,7 @@ using BattleTech.Rendering;
 using BattleTech.UI;
 using CustAmmoCategories;
 using Harmony;
+using IRBTModUtils;
 using Localize;
 using System;
 using System.Collections.Generic;
@@ -1892,6 +1893,73 @@ namespace CustomUnits {
       }
     }
   }
+
+  [HarmonyPatch(typeof(MechDisplacementSequence))]
+  [HarmonyPatch("ApplyDamage")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { })]
+  public static class MechDisplacementSequence_ApplyDamage {
+    public static bool Prefix(MechDisplacementSequence __instance) {
+      try {
+        if (__instance.OwningMech.FlyingHeight() > Core.Settings.MaxHoveringHeightWithWorkingJets) { return false; }
+        ICustomMech custMech = __instance.OwningMech as ICustomMech;
+        if (custMech == null) { return true; }
+        float num = Mathf.Max(0.0f, __instance.OwningMech.StatCollection.GetValue<float>("DFASelfDamage"));
+        WeaponHitInfo hitInfo = new WeaponHitInfo(__instance.SequenceGUID, __instance.RootSequenceGUID, 0, 0, __instance.attackerGUID, __instance.OwningMech.GUID, 1, new float[1], new float[1], new float[1], new bool[1], new int[1], new int[1], new AttackImpactQuality[1], new AttackDirection[1], new Vector3[1], new string[1], new int[1]);
+        Vector3 vector3_1 = __instance.OwningMech.GameRep.GetHitPosition(64) + UnityEngine.Random.insideUnitSphere * 5f;
+        CombatGameState Combat = Traverse.Create(__instance).Property<CombatGameState>("Combat").Value;
+        FloatieMessage floatieMessage1;
+        if ((double)__instance.OwningMech.ArmorForLocation(64) < (double)num)
+          floatieMessage1 = new FloatieMessage(__instance.attackerGUID, __instance.OwningMech.GUID, new Text("{0}", new object[1]
+          {
+          (object) (int) Mathf.Max(1f, num)
+          }), Combat.Constants.CombatUIConstants.floatieSizeMedium, FloatieMessage.MessageNature.StructureDamage, vector3_1.x, vector3_1.y, vector3_1.z);
+        else
+          floatieMessage1 = new FloatieMessage(__instance.attackerGUID, __instance.OwningMech.GUID, new Text("{0}", new object[1]
+          {
+          (object) (int) Mathf.Max(1f, num)
+          }), Combat.Constants.CombatUIConstants.floatieSizeMedium, FloatieMessage.MessageNature.ArmorDamage, vector3_1.x, vector3_1.y, vector3_1.z);
+        Combat.MessageCenter.PublishMessage((MessageCenterMessage)floatieMessage1);
+        Vector3 vector3_2 = __instance.OwningMech.GameRep.GetHitPosition(128) + UnityEngine.Random.insideUnitSphere * 5f;
+        FloatieMessage floatieMessage2;
+        if ((double)__instance.OwningMech.ArmorForLocation(64) < (double)num)
+          floatieMessage2 = new FloatieMessage(__instance.attackerGUID, __instance.OwningMech.GUID, new Text("{0}", new object[1]
+          {
+          (object) (int) Mathf.Max(1f, num)
+          }), Combat.Constants.CombatUIConstants.floatieSizeMedium, FloatieMessage.MessageNature.StructureDamage, vector3_2.x, vector3_2.y, vector3_2.z);
+        else
+          floatieMessage2 = new FloatieMessage(__instance.attackerGUID, __instance.OwningMech.GUID, new Text("{0}", new object[1]
+          {
+          (object) (int) Mathf.Max(1f, num)
+          }), Combat.Constants.CombatUIConstants.floatieSizeMedium, FloatieMessage.MessageNature.ArmorDamage, vector3_2.x, vector3_2.y, vector3_2.z);
+        Combat.MessageCenter.PublishMessage((MessageCenterMessage)floatieMessage2);
+        Combat.MessageCenter.PublishMessage((MessageCenterMessage)new AddSequenceToStackMessage((IStackSequence)new ShowActorInfoSequence((ICombatant)__instance.OwningMech, new Text("FALL DAMAGE", (object[])Array.Empty<object>()), FloatieMessage.MessageNature.CriticalHit, true)));
+        Combat.MessageCenter.PublishMessage((MessageCenterMessage)new FloatieMessage(__instance.attackerGUID, __instance.OwningMech.GUID, new Text("FALL DAMAGE", (object[])Array.Empty<object>()), FloatieMessage.MessageNature.Debuff));
+        float damageAmount = __instance.OwningMech.StatCollection.GetValue<float>("DFASelfDamage");
+        HashSet<ArmorLocation> DFALocs = custMech.GetDFASelfDamageLocations();
+        Log.TWL(0, "Fall self damage " + __instance.OwningMech.MechDef.ChassisID);
+        foreach (ArmorLocation aloc in DFALocs) {
+          Log.WL(1, aloc.ToString() + ":" + damageAmount);
+          __instance.OwningMech.TakeWeaponDamage(hitInfo, (int)aloc, __instance.OwningMech.MeleeWeapon, num, 0.0f, 0, DamageType.DFASelf);
+        }
+        Log.TWL(0, string.Format("@@@@@@@@ {0} takes {1} damage to its  from falling!", (object)__instance.OwningMech.DisplayName, (object)num));
+        __instance.OwningMech.ApplyInstabilityReduction(StabilityChangeSource.Falling);
+        __instance.OwningMech.NeedsInstabilityCheck = true;
+        __instance.OwningMech.CheckForInstability();
+        __instance.OwningMech.NeedsInstabilityCheck = true;
+        __instance.OwningMech.CheckForInstability();
+        __instance.OwningMech.HandleDeath(__instance.attackerGUID);
+        if (__instance.OwningMech.IsDead == false) {
+          __instance.OwningMech.HandleKnockdown(__instance.RootSequenceGUID, __instance.attackerGUID, Vector2.one, (SequenceFinished)null);
+        }
+        return false;
+      } catch (Exception e) {
+        Log.TWL(0, e.ToString(), true);
+      }
+      return true;
+    }
+  }
+
   //[HarmonyPatch(typeof(ActorMovementSequence))]
   //[HarmonyPatch("Update")]
   //[HarmonyPatch(MethodType.Normal)]

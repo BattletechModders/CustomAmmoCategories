@@ -740,13 +740,15 @@ namespace CustomUnits {
       }
     }
     public static bool Prefix(Mech __instance, ChassisLocations location, Vector3 attackDirection, WeaponHitInfo hitInfo, DamageType damageType) {
-      Log.TWL(0, "Mech.OnLocationDestroyed "+__instance.DisplayName+" location:"+location);
+      Log.TWL(0, "Mech.OnLocationDestroyed "+__instance.MechDef.ChassisID+" location:"+location);
       Thread.CurrentThread.pushActor(__instance);
       try {
         TrooperSquad squad = __instance as TrooperSquad;
         if (squad == null) {
+          Log.WL(1,"Normal on location destroyed");
           __instance.OnLocationDestroyedGeneral(location, attackDirection, hitInfo, damageType);
         } else {
+          Log.WL(1, "Squad on location destroyed");
           squad.OnLocationDestroyedSquad(location, attackDirection, hitInfo, damageType);
         }
         return false;

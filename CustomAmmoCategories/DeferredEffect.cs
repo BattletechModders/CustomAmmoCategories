@@ -4,6 +4,7 @@ using CustAmmoCategories;
 using CustomAmmoCategoriesLog;
 using CustomAmmoCategoriesPatches;
 using Harmony;
+using IRBTModUtils;
 using Localize;
 using System;
 using System.Collections.Generic;
@@ -392,6 +393,12 @@ namespace CustAmmoCategories {
         Vehicle vehicle = target as Vehicle;
         HashSet<int> reachableLocations = new HashSet<int>();
         Dictionary<int, float> SpreadLocations = null;
+        ICustomMech custMech = target as ICustomMech;
+        if (custMech != null) {
+          List<int> hitLocations = custMech.GetAOEPossibleHitLocations(pos);
+          foreach (int loc in hitLocations) { reachableLocations.Add(loc); }
+          SpreadLocations = custMech.GetAOESpreadArmorLocations();
+        } else
         if (mech != null) {
           List<int> hitLocations = mech.GetAOEPossibleHitLocations(pos);//unit.Combat.HitLocation.GetPossibleHitLocations(pos, mech);
           foreach (int loc in hitLocations) { reachableLocations.Add(loc); }

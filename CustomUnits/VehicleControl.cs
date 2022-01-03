@@ -549,6 +549,36 @@ namespace CustomUnits {
       }
     }
   }
+  [HarmonyPatch(typeof(CombatHUDHeatDisplay))]
+  [HarmonyPatch("GetPredictedLevel")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { })]
+  public static class CombatHUDHeatDisplay_GetPredictedLevel {
+    public static bool Prefix(CombatHUDHeatDisplay __instance, ref float __result) {
+      try {
+        if (__instance.DisplayedActor == null) { return true; }
+        if (__instance.DisplayedActor.isHasHeat() == false) { __result = 0f; return false; }
+      } catch (Exception e) {
+        Log.TWL(0, e.ToString(), true);
+      }
+      return true;
+    }
+  }
+  [HarmonyPatch(typeof(CombatHUDStabilityDisplay))]
+  [HarmonyPatch("GetPredictedLevel")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] {  })]
+  public static class CombatHUDStabilityDisplay_GetPredictedLevel {
+    public static bool Prefix(CombatHUDHeatDisplay __instance, ref float __result) {
+      try {
+        if (__instance.DisplayedActor == null) { return true; }
+        if (__instance.DisplayedActor.isHasStability() == false) { __result = 0f; return false; }
+      } catch (Exception e) {
+        Log.TWL(0, e.ToString(), true);
+      }
+      return true;
+    }
+  }
   [HarmonyPatch(typeof(Mech))]
   [HarmonyPatch("_heat")]
   [HarmonyPatch(MethodType.Getter)]

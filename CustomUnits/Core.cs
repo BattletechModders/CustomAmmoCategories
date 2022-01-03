@@ -242,6 +242,7 @@ namespace CustomUnits{
     public List<string> navalForcedTags { get; set; }
     [GameplaySafe]
     public int baysWidgetsCount { get; set; }
+    public List<string> forcedLance { get; set; } = new List<string>();
     public CUSettings() {
       debugLog = false;
       DeathHeight = 1f;

@@ -1,6 +1,9 @@
 ﻿using BattleTech;
 using CustomAmmoCategoriesLog;
 using CustomAmmoCategoriesPatches;
+using Harmony;
+using Localize;
+using System;
 using System.Collections.Generic;
 using System.Reflection;
 using UnityEngine;

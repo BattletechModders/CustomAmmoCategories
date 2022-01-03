@@ -30,8 +30,8 @@ using UnityEngine.UI;
 
 namespace CustomUnits {
   public class AbilityDefEx {
-    public int Priority { get; set; }
-    public bool CanBeUsedInShutdown { get; set; }
+    public int Priority { get; set; } = 100;
+    public bool CanBeUsedInShutdown { get; set; } = false;
   }
   public class LanceConfigurationState {
     public int lanceId;
@@ -263,7 +263,7 @@ namespace CustomUnits {
     public CustomLanceDef(int s, int a, bool v) { size = s; allow = a; is_vehicle = v; }
   }
   public class PlayerLancesLoadout {
-    public Dictionary<string, int> loadout;
+    public Dictionary<string, int> loadout { get; set; }
     public PlayerLancesLoadout() { loadout = new Dictionary<string, int>(); }
   }
   [HarmonyPatch(typeof(SimGameState), "Dehydrate")]
@@ -556,6 +556,26 @@ namespace CustomUnits {
           newLance.DropSlots.Add(slotid);
         }
         for(int tt= newLance.dropSlots.Count;tt<4;++tt) {
+          newLance.dropSlots.Add(DropSystemHelper.fallbackDisabledSlot);
+        }
+        newLance.Register();
+        newlayout.dropLances.Add(newLance);
+        newlayout.DropLances.Add(newLance.Description.Id);
+      }
+      if (Core.Settings.forcedLance.Count != 0) {
+        List<string> lance = Core.Settings.forcedLance;
+        DropLanceDef newLance = new DropLanceDef();
+        newLance.Description = new DropDescriptionDef();
+        newLance.Description.Id = newlayout.Description.Id + "_lance_" + layout.Count;
+        newLance.Description.Name = "LANCE " + +layout.Count;
+        newLance.dropSlots = new List<DropSlotDef>();
+        newLance.DropSlots = new List<string>();
+        foreach (string slotid in lance) {
+          DropSlotDef slot = DropSystemHelper.getSlot(slotid);
+          newLance.dropSlots.Add(slot);
+          newLance.DropSlots.Add(slotid);
+        }
+        for (int tt = newLance.dropSlots.Count; tt < 4; ++tt) {
           newLance.dropSlots.Add(DropSystemHelper.fallbackDisabledSlot);
         }
         newLance.Register();
@@ -860,6 +880,7 @@ namespace CustomUnits {
   [HarmonyPatch(typeof(LanceConfiguratorPanel), "ValidateLance")]
   public static class LanceConfiguratorPanel_ValidateLance {
     public static void RefreshLanceInfo(this LanceHeaderWidget header, bool lanceValid, Localize.Text errorText, List<MechDef> mechs, int currentUnits, int maxUnits) {
+      Log.TWL(0, "RefreshLanceInfo:"+ maxUnits);
       header.RefreshLanceInfo(lanceValid, errorText, mechs);
       if (lanceValid) {
         Traverse.Create(header).Field<LocalizableText>("simReadyLanceText").Value.SetText("Lance Ready {0} units of {1}", currentUnits, maxUnits);
@@ -879,17 +900,19 @@ namespace CustomUnits {
         //List<UnitResult> unitResultList = new List<UnitResult>();
         bool flag = Traverse.Create(__instance).Method("ValidateLanceTonnage").GetValue<bool>(); //__instance.ValidateLanceTonnage();
         int overallSlotsCount = UnityGameInstance.BattleTechGame.Simulation.currentLayout().OverallUnits;
+        Log.WL(1, "overallSlotsCount:"+ overallSlotsCount);
         if (__instance.activeContract != null) {
           if (__instance.activeContract.IsFlashpointCampaignContract || __instance.activeContract.IsFlashpointContract) {
-            overallSlotsCount = __instance.activeContract.Override.maxNumberOfPlayerUnits;
+            overallSlotsCount = Mathf.Min(overallSlotsCount, __instance.activeContract.Override.maxNumberOfPlayerUnits);
           } else {
             if ((__instance.activeContract.Override.maxNumberOfPlayerUnits != 4) || (Core.Settings.CountContractMaxUnits4AsUnlimited == false)) {
-              overallSlotsCount = __instance.activeContract.Override.maxNumberOfPlayerUnits;
+              overallSlotsCount = Mathf.Min(overallSlotsCount,__instance.activeContract.Override.maxNumberOfPlayerUnits);
             }
           }
         }
         if (CustomLanceHelper.MissionControlDetected == false) { if (overallSlotsCount > 4) { overallSlotsCount = 4; } }
         overallSlotsCount = Mathf.Min(overallSlotsCount, __instance.maxUnits);
+        Log.WL(1, "overallSlotsCount:" + overallSlotsCount);
         //overallSlotsCount = 4;
         for (int index = 0; index < __instance.maxUnits; ++index) {
           LanceLoadoutSlot loadoutSlot = ___loadoutSlots[index];
@@ -937,6 +960,7 @@ namespace CustomUnits {
           __instance.lanceValid = false;
           ___lanceErrorText.Append("You are not allowed to drop {0} units, only {1}\n", countedSlots, overallSlotsCount);
         }
+        Log.WL(1, "overallSlotsCount:" + overallSlotsCount);
         ___headerWidget.RefreshLanceInfo(__instance.lanceValid & flag, ___lanceErrorText, mechs, countedSlots, overallSlotsCount);
         __instance.RefreshLanceInitiative();
         __result = __instance.lanceValid & flag;
@@ -1421,10 +1445,8 @@ namespace CustomUnits {
     }
     public static void Postfix(CombatHUDMechwarriorTray __instance, CombatHUD ___HUD) {
       GameObject btn = __instance.mwCommandButton(___HUD);
-      if(___HUD.Combat.LocalPlayerTeam.unitCount == 1) {
-        if (___HUD.Combat.LocalPlayerTeam.units[0].IsDeployDirector()) {
-          btn.SetActive(false); return;
-        }
+      if(DeployManualHelper.IsInManualSpawnSequence) {
+        btn.SetActive(false); return;
       }
       btn.SetActive(true);
     }
@@ -1588,13 +1610,14 @@ namespace CustomUnits {
             slot.holder.SetActive(false);
           }
         }
-        if ((team.unitCount == 1) && (team.units[0].IsDeployDirector())) {
-          avaibleSlots[0].portrait.DisplayedActor = team.units[0];
+        if (DeployManualHelper.IsInManualSpawnSequence) {
+          avaibleSlots[0].portrait.DisplayedActor = DeployManualHelper.deployDirector;
           avaibleSlots[0].holder.SetActive(true);
           for(int index=1;index< avaibleSlots.Count; ++index) {
             avaibleSlots[index].holder.SetActive(false);
           }
-          ___HUD.SelectionHandler.TrySelectActor(team.units[0],true);
+          //__instance.mwCommandButton(___HUD)?.SetActive(false);
+          ___HUD.SelectionHandler.TrySelectActor(DeployManualHelper.deployDirector, true);
           return false;
         }
         Dictionary<int, AbstractActor> predefinedActors = new Dictionary<int, AbstractActor>();
@@ -1658,6 +1681,7 @@ namespace CustomUnits {
         }
         if (nonemptyLance < 0) { nonemptyLance = 0; }
         //if (nonemptyLance != 0) { __instance.HideLance(0); };
+        //__instance.mwCommandButton(___HUD)?.SetActive(true);
         __instance.ShowLance(nonemptyLance);
         Log.WL(1, "success");
       } catch (Exception e) {
@@ -1945,6 +1969,12 @@ namespace CustomUnits {
         }
       }
     }
+    public static void HideLanceSwitcher() {
+      LanceSwitcher?.gameObject.SetActive(false);
+    }
+    public static void ShowLanceSwitcher() {
+      LanceSwitcher?.gameObject.SetActive(true);
+    }
     public static void HideLance(this CombatHUDMechwarriorTray tray, int lanceid) {
       if (lancesPortraitHolders.Count == 0) { return; }
       lanceid = lanceid % tray.lancesCount();
@@ -1985,7 +2015,6 @@ namespace CustomUnits {
       List<HBSDOTweenToggle> tweensHolders = new List<HBSDOTweenToggle>();
       tweensHolders.AddRange(__instance.portraitTweens);
       GameObject srcHolder = holders[0];
-
       GameObject srcTween = tweensHolders[0].gameObject;
       HorizontalLayoutGroup layout = srcHolder.transform.parent.gameObject.GetComponent<HorizontalLayoutGroup>();
       layout.childAlignment = TextAnchor.MiddleLeft;
@@ -2145,8 +2174,12 @@ namespace CustomUnits {
       if (pilot != null) {
         List<Ability> activeList = new List<Ability>((IEnumerable<Ability>)pilot.ActiveAbilities);
         activeList.Sort((x, y) => {
-          return y.Def.exDef().Priority - x.Def.exDef().Priority;
+          return y.Def.exDef().Priority.CompareTo(x.Def.exDef().Priority);
         });
+        Log.TWL(0, "activeList:"+ activeList.Count);
+        foreach(Ability ability in activeList) {
+          Log.WL(1,ability.Def.Description.Id+":"+ability.Def.exDef().Priority);
+        }
         if((actor.IsDead == false) && (actor.IsDeployDirector())) {
           trayEx.FirstActiveAbility.InitButton(CombatHUDMechwarriorTray.GetSelectionTypeFromTargeting(activeList[0].Def.Targeting, false), activeList[0], activeList[0].Def.AbilityIcon, activeList[0].Def.Description.Id, activeList[0].Def.Description.Name, actor);
           trayEx.FirstActiveAbility.isClickable = true;
@@ -2386,9 +2419,13 @@ namespace CustomUnits {
         if (pilot == null) { return false; };
         List<Ability> activeList = new List<Ability>((IEnumerable<Ability>)pilot.ActiveAbilities);
         activeList.Sort((x, y) => {
-          return y.Def.exDef().Priority - x.Def.exDef().Priority;
+          return y.Def.exDef().Priority.CompareTo(x.Def.exDef().Priority);
         });
-        if((actor.IsDead == false) && (actor.IsDeployDirector())) {
+        Log.WL(1, "activeList:"+ activeList.Count);
+        foreach(Ability ability in activeList) {
+          Log.WL(2, ability.Def.Description.Id + ":" + ability.Def.exDef().Priority);
+        }
+        if ((actor.IsDead == false) && (actor.IsDeployDirector())) {
           __instance.ResetDeployButton(actor, activeList[0], trayEx.FirstActiveAbility, forceInactive);
           return false;
         }

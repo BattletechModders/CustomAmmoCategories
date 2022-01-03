@@ -385,15 +385,20 @@ namespace CustomUnits {
       }
     }
     public override void OnPlayerVisibilityChanged(VisibilityLevel newLevel) {
-      PilotableActorRepresentation_OnPlayerVisibilityChanged(newLevel);
-      if (this.isJumping) {
-        if (newLevel == VisibilityLevel.LOSFull)
-          if (isSlave == false) this._StartJumpjetAudio();
-          else
-          if (isSlave == false) this._StopJumpjetAudio();
-      }
-      foreach (var unit in this.squad) {
-        unit.Value.OnPlayerVisibilityChanged(newLevel);
+      try {
+        if (DeployManualHelper.IsInManualSpawnSequence) { newLevel = VisibilityLevel.None; }
+        PilotableActorRepresentation_OnPlayerVisibilityChanged(newLevel);
+        if (this.isJumping) {
+          if (newLevel == VisibilityLevel.LOSFull)
+            if (isSlave == false) this._StartJumpjetAudio();
+            else
+            if (isSlave == false) this._StopJumpjetAudio();
+        }
+        foreach (var unit in this.squad) {
+          unit.Value.OnPlayerVisibilityChanged(newLevel);
+        }
+      }catch(Exception e) {
+        Log.TWL(0,e.ToString(),true);
       }
     }
     public override void _ToggleHeadlights(bool headlightsActive) {
