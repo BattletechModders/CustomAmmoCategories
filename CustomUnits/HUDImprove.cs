@@ -2495,7 +2495,7 @@ namespace CustomUnits {
       //Log.LogWrite("AbilityDef.FromJSON");
       JObject jAbilityDef = JObject.Parse(json);
       __state = new AbilityDefEx();
-      __state.Priority = 0;
+      //__state.Priority = 0;
       if (jAbilityDef["Priority"] != null) { __state.Priority = (int)jAbilityDef["Priority"]; jAbilityDef.Remove("Priority"); }
       if (jAbilityDef["CanBeUsedInShutdown"] != null) { __state.CanBeUsedInShutdown = (bool)jAbilityDef["CanBeUsedInShutdown"]; jAbilityDef.Remove("CanBeUsedInShutdown"); }
       json = jAbilityDef.ToString(Formatting.Indented);
