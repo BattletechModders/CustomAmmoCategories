@@ -258,7 +258,56 @@ namespace CustomUnits {
       return MechHardpointRules.GetComponentPrefabName(chassis.HardpointDataDef, componentRef, prefabBase, location, ref usedPrefabNames);
     }
   }
-
+  [HarmonyPatch(typeof(VehicleDef))]
+  [HarmonyPatch("GatherDependencies")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { typeof(DataManager), typeof(DataManager.DependencyLoadRequest), typeof(uint) })]
+  public static class VehicleDef_GatherDependencies {
+    public static bool Prefix(VehicleDef __instance, DataManager dataManager,DataManager.DependencyLoadRequest dependencyLoad,uint activeRequestWeight) {
+      try {
+        if (dataManager.MechDefs.TryGet(__instance.Description.Id, out MechDef mechDef)) {
+          mechDef.GatherDependencies(dataManager, dependencyLoad, activeRequestWeight);
+        }
+        return true;
+      }catch(Exception e) {
+        Log.TWL(0, e.ToString(),true);
+        return true;
+      }
+    }
+  }
+  [HarmonyPatch(typeof(VehicleDef))]
+  [HarmonyPatch("RequestInventoryPrefabs")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { typeof(DataManager.DependencyLoadRequest), typeof(uint) })]
+  public static class VehicleDef_RequestInventoryPrefabs {
+    public static bool Prefix(VehicleDef __instance, DataManager.DependencyLoadRequest dependencyLoad, uint activeRequestWeight) {
+      try {
+        Log.TWL(0, "VehicleDef.RequestInventoryPrefabs");
+        if (__instance.Chassis == null) {
+          __instance.Refresh();
+          if (__instance.Chassis == null) {
+            Log.TWL(0, "VehicleDef.RequestInventoryPrefabs without chassis. "+ __instance.Description.Id+" chassis:"+__instance.ChassisID);
+            return false;
+          }
+        }
+        if (__instance.Chassis.HardpointDataDef == null) {
+          Log.TWL(0, "VehicleDef.RequestInventoryPrefabs chassis without HardpointDataDef chassis:" + __instance.ChassisID+" fixing");
+          if (__instance.Chassis.DataManager == null) {
+            __instance.Chassis.DataManager = __instance.DataManager;
+          }
+          __instance.Chassis.Refresh();
+          if (__instance.Chassis.HardpointDataDef == null) {
+            Log.TWL(0, "VehicleDef.RequestInventoryPrefabs chassis without HardpointDataDef chassis:" + __instance.ChassisID+ " HardpointDataDefID:" + __instance.Chassis.HardpointDataDefID);
+            return false;
+          }
+        }
+        return true;
+      } catch (Exception e) {
+        Log.TWL(0, e.ToString(), true);
+        return true;
+      }
+    }
+  }
   [HarmonyPatch(typeof(VehicleChassisDef))]
   [HarmonyPatch("GatherDependencies")]
   [HarmonyPatch(MethodType.Normal)]

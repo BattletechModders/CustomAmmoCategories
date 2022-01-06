@@ -86,7 +86,7 @@ namespace CustomUnits {
       HardpointDataDef = def.HardpointDataDefID;
       Type = AlternateRepType.Normal;
       if (info != null) { if (info.Unaffected.Pathing) { this.Type = AlternateRepType.AirMech; } }
-      FlyHeight = 0f;
+      FlyHeight = info!=null? info.FlyingHeight: 0f;
       HoveringSoundStart = string.Empty;
       HoveringSoundEnd = string.Empty;
       TransformationSound = string.Empty;
@@ -1323,17 +1323,17 @@ namespace CustomUnits {
       }
     }
     public void ClearAllTags() {
-      foreach (AlternateMechRepresentation altRep in mechReps) {
-        foreach (string tag in altRep.def.additionalEncounterTags) {
-          this.parentMech.EncounterTags.Remove(tag);
-        }
-      }
+      //foreach (AlternateMechRepresentation altRep in mechReps) {
+      //  foreach (string tag in altRep.def.additionalEncounterTags) {
+      //    this.parentMech.EncounterTags.Remove(tag);
+      //  }
+      //}
     }
     public void AddCurrentTags() {
-      AlternateMechRepresentation curRep = mechReps[CurrentRep];
-      foreach(string tag in curRep.def.additionalEncounterTags) {
-        this.parentMech.EncounterTags.Add(tag);
-      }
+      //AlternateMechRepresentation curRep = mechReps[CurrentRep];
+      //foreach(string tag in curRep.def.additionalEncounterTags) {
+      //  this.parentMech.EncounterTags.Add(tag);
+      //}
     }
     public void PlayPendingAnimations() {
       if (this.pendingAnimation == PendingAnimationStyle.None) { return; }

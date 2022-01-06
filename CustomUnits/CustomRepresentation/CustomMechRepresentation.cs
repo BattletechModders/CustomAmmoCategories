@@ -17,6 +17,21 @@ using System.Threading;
 using IRBTModUtils;
 
 namespace CustomUnits {
+  [HarmonyPatch(typeof(UnitSpawnPointGameLogic))]
+  [HarmonyPatch("ContractInitialize")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { })]
+  public static class UnitSpawnPointGameLogic_ContractInitialize {
+    public static void Postfix(UnitSpawnPointGameLogic __instance) {
+      try {
+        Log.TW(0, "UnitSpawnPointGameLogic.ContractInitialize " + __instance.UnitDefId + ":" + __instance.unitType);
+        if (__instance.unitType == UnitType.Vehicle) { __instance.mechDefId = __instance.vehicleDefId; __instance.vehicleDefId = string.Empty; __instance.unitType = UnitType.Mech; }
+        Log.WL(0, "->" + __instance.UnitDefId + ":" + __instance.unitType);
+      } catch (Exception e) {
+        Log.TWL(0, e.ToString(), true);
+      }
+    }
+  }
   [HarmonyPatch(typeof(ActorFactory))]
   [HarmonyPatch("CreateMech")]
   [HarmonyPatch(MethodType.Normal)]
@@ -74,21 +89,6 @@ namespace CustomUnits {
         Log.TWL(0, "UnitSpawnPointGameLogic.initializeActor:"+temp);
         Log.TWL(0, e.ToString(), true);
         return true;
-      }
-    }
-  }
-  [HarmonyPatch(typeof(UnitSpawnPointGameLogic))]
-  [HarmonyPatch("ContractInitialize")]
-  [HarmonyPatch(MethodType.Normal)]
-  [HarmonyPatch(new Type[] {  })]
-  public static class UnitSpawnPointGameLogic_ContractInitialize {
-    public static void Postfix(UnitSpawnPointGameLogic __instance) {
-      try {
-        Log.TW(0, "UnitSpawnPointGameLogic.ContractInitialize " + __instance.UnitDefId+":"+__instance.unitType);
-        if (__instance.unitType == UnitType.Vehicle) { __instance.mechDefId = __instance.vehicleDefId; __instance.vehicleDefId = string.Empty; __instance.unitType = UnitType.Mech; }
-        Log.WL(0, "->" + __instance.UnitDefId + ":" + __instance.unitType);
-      } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
       }
     }
   }
@@ -177,7 +177,7 @@ namespace CustomUnits {
           if (!__instance.CheckCollisionWithTerrain(component)) {
             if (!destroyedRigidbody.isKinematic) {
               destroyedRigidbody.gameObject.layer = LayerMask.NameToLayer("VFXPhysicsActive");
-              float num = Mathf.Pow(9f, (float)Mathf.FloorToInt(Mathf.Log10(destroyedRigidbody.mass * scale.magnitude)));
+              float num = Mathf.Pow(9f, (float)Mathf.FloorToInt(Mathf.Log10(destroyedRigidbody.mass)));
               destroyedRigidbody.AddExplosionForce(forceMagnitude * num, __instance.destroyedObj.transform.position - forceDirection * 3f, 0.0f, 10f, ForceMode.Impulse);
             }
           } else
@@ -445,197 +445,229 @@ namespace CustomUnits {
       this.persistentCritList = Traverse.Create(source).Field<List<string>>("persistentCritList").Value;
     }
     public virtual bool SetupFallbackTransforms() {
+      bool NeedSetupDestructable = true;
+      UnitCustomInfo info = this.parentActor.GetCustomInfo();
+      if((info != null) && (info.FakeVehicle == true)) {
+        NeedSetupDestructable = false;
+      }
+      bool isPartOfQuad = false;
+      if(this.parentRepresentation != null) {
+        if (this.parentRepresentation is QuadRepresentation) {
+          isPartOfQuad = true;
+        }
+      }
       bool flag = false;
-      if ((UnityEngine.Object)this.twistTransform == (UnityEngine.Object)null) {
+      if (this.twistTransform == null) {
         flag = true;
         this.twistTransform = this.findRecursive(this.transform, "j_Spine2");
-        if ((UnityEngine.Object)this.twistTransform == (UnityEngine.Object)null)
+        if (this.twistTransform == null)
           Debug.LogWarning((object)("ERROR! Couldn't auto-setup twistTransform for mech " + this.parentMech.DisplayName));
       }
-      if ((UnityEngine.Object)this.LeftArmAttach == (UnityEngine.Object)null) {
+      if (this.LeftArmAttach == null) {
         flag = true;
         this.LeftArmAttach = this.findRecursive(this.transform, "j_LForearm");
-        if ((UnityEngine.Object)this.LeftArmAttach == (UnityEngine.Object)null)
+        if (this.LeftArmAttach == null)
           Debug.LogWarning((object)("ERROR! Couldn't auto-setup LeftArmAttach for mech " + this.parentMech.DisplayName));
       }
-      if ((UnityEngine.Object)this.RightArmAttach == (UnityEngine.Object)null) {
+      if (this.RightArmAttach == null) {
         flag = true;
         this.RightArmAttach = this.findRecursive(this.transform, "j_RForearm");
-        if ((UnityEngine.Object)this.RightArmAttach == (UnityEngine.Object)null)
+        if (this.RightArmAttach == null)
           Debug.LogWarning((object)("ERROR! Couldn't auto-setup RightArmAttach for mech " + this.parentMech.DisplayName));
       }
-      if ((UnityEngine.Object)this.TorsoAttach == (UnityEngine.Object)null) {
+      if (this.TorsoAttach == null) {
         flag = true;
         this.TorsoAttach = this.findRecursive(this.transform, "j_Spine2");
-        if ((UnityEngine.Object)this.TorsoAttach == (UnityEngine.Object)null)
+        if (this.TorsoAttach == null)
           Debug.LogWarning((object)("ERROR! Couldn't auto-setup TorsoAttach for mech " + this.parentMech.DisplayName));
       }
-      if ((UnityEngine.Object)this.LeftLegAttach == (UnityEngine.Object)null) {
+      if (this.LeftLegAttach == null) {
         flag = true;
         this.LeftLegAttach = this.findRecursive(this.transform, "j_LCalf");
-        if ((UnityEngine.Object)this.LeftLegAttach == (UnityEngine.Object)null)
+        if (this.LeftLegAttach == null)
           Debug.LogWarning((object)("ERROR! Couldn't auto-setup LeftLegAttach for mech " + this.parentMech.DisplayName));
       }
-      if ((UnityEngine.Object)this.leftFootTransform == (UnityEngine.Object)null) {
+      if (this.leftFootTransform == null) {
         flag = true;
         this.leftFootTransform = this.findRecursive(this.transform, "j_LHeel");
-        if ((UnityEngine.Object)this.leftFootTransform == (UnityEngine.Object)null)
+        if (this.leftFootTransform == null)
           Debug.LogWarning((object)("ERROR! Couldn't auto-setup leftFootTransform for mech " + this.parentMech.DisplayName));
       }
-      if ((UnityEngine.Object)this.RightLegAttach == (UnityEngine.Object)null) {
+      if (this.RightLegAttach == null) {
         flag = true;
         this.RightLegAttach = this.findRecursive(this.transform, "j_RCalf");
-        if ((UnityEngine.Object)this.RightLegAttach == (UnityEngine.Object)null)
+        if (this.RightLegAttach == null)
           Debug.LogWarning((object)("ERROR! Couldn't auto-setup RightLegAttach for mech " + this.parentMech.DisplayName));
       }
-      if ((UnityEngine.Object)this.rightFootTransform == (UnityEngine.Object)null) {
+      if (this.rightFootTransform == null) {
         flag = true;
         this.rightFootTransform = this.findRecursive(this.transform, "j_RHeel");
-        if ((UnityEngine.Object)this.rightFootTransform == (UnityEngine.Object)null)
+        if (this.rightFootTransform == null)
           Debug.LogWarning((object)("ERROR! Couldn't auto-setup rightFootTransform for mech " + this.parentMech.DisplayName));
       }
-      if ((UnityEngine.Object)this.vfxCenterTorsoTransform == (UnityEngine.Object)null) {
+      if (this.vfxCenterTorsoTransform == null) {
         flag = true;
         this.vfxCenterTorsoTransform = this.twistTransform;
-        if ((UnityEngine.Object)this.vfxCenterTorsoTransform == (UnityEngine.Object)null)
+        if (this.vfxCenterTorsoTransform == null)
           Debug.LogWarning((object)("ERROR! Couldn't auto-setup vfxCenterTorsoTransform for mech " + this.parentMech.DisplayName));
       }
-      if ((UnityEngine.Object)this.vfxLeftArmTransform == (UnityEngine.Object)null) {
+      if (this.vfxLeftArmTransform == null) {
         flag = true;
         this.vfxLeftArmTransform = this.LeftArmAttach;
-        if ((UnityEngine.Object)this.vfxLeftArmTransform == (UnityEngine.Object)null)
+        if (this.vfxLeftArmTransform == null)
           Debug.LogWarning((object)("ERROR! Couldn't auto-setup vfxLeftArmTransform for mech " + this.parentMech.DisplayName));
       }
-      if ((UnityEngine.Object)this.vfxRightArmTransform == (UnityEngine.Object)null) {
+      if (this.vfxRightArmTransform == null) {
         flag = true;
         this.vfxRightArmTransform = this.RightArmAttach;
-        if ((UnityEngine.Object)this.vfxRightArmTransform == (UnityEngine.Object)null)
+        if (this.vfxRightArmTransform == null)
           Debug.LogWarning((object)("ERROR! Couldn't auto-setup vfxRightArmTransform for mech " + this.parentMech.DisplayName));
       }
-      if ((UnityEngine.Object)this.vfxHeadTransform == (UnityEngine.Object)null) {
+      if (this.vfxHeadTransform == null) {
         flag = true;
         this.vfxHeadTransform = this.twistTransform;
-        if ((UnityEngine.Object)this.vfxHeadTransform == (UnityEngine.Object)null)
+        if (this.vfxHeadTransform == null)
           Debug.LogWarning((object)("ERROR! Couldn't auto-setup vfxHeadTransform for mech " + this.parentMech.DisplayName));
       }
-      if ((UnityEngine.Object)this.vfxLeftArmTransform == (UnityEngine.Object)null) {
+      if (this.vfxLeftArmTransform == null) {
         flag = true;
         this.vfxLeftArmTransform = this.LeftArmAttach;
-        if ((UnityEngine.Object)this.vfxLeftArmTransform == (UnityEngine.Object)null)
+        if (this.vfxLeftArmTransform == null)
           Debug.LogWarning((object)("ERROR! Couldn't auto-setup vfxLeftArmTransform for mech " + this.parentMech.DisplayName));
       }
-      if ((UnityEngine.Object)this.vfxRightArmTransform == (UnityEngine.Object)null) {
+      if (this.vfxRightArmTransform == null) {
         flag = true;
         this.vfxRightArmTransform = this.RightArmAttach;
-        if ((UnityEngine.Object)this.vfxRightArmTransform == (UnityEngine.Object)null)
+        if (this.vfxRightArmTransform == null)
           Debug.LogWarning((object)("ERROR! Couldn't auto-setup vfxRightArmTransform for mech " + this.parentMech.DisplayName));
       }
-      if ((UnityEngine.Object)this.vfxLeftLegTransform == (UnityEngine.Object)null) {
+      if (this.vfxLeftLegTransform == null) {
         flag = true;
         this.vfxLeftLegTransform = this.LeftLegAttach;
-        if ((UnityEngine.Object)this.vfxLeftLegTransform == (UnityEngine.Object)null)
+        if (this.vfxLeftLegTransform == null)
           Debug.LogWarning((object)("ERROR! Couldn't auto-setup vfxLeftLegTransform for mech " + this.parentMech.DisplayName));
       }
-      if ((UnityEngine.Object)this.vfxRightLegTransform == (UnityEngine.Object)null) {
+      if (this.vfxRightLegTransform == null) {
         flag = true;
         this.vfxRightLegTransform = this.RightLegAttach;
-        if ((UnityEngine.Object)this.vfxRightLegTransform == (UnityEngine.Object)null)
+        if (this.vfxRightLegTransform == null)
           Debug.LogWarning((object)("ERROR! Couldn't auto-setup vfxRightLegTransform for mech " + this.parentMech.DisplayName));
       }
-      if ((UnityEngine.Object)this.BlipObjectUnknown == (UnityEngine.Object)null) {
+      if (this.BlipObjectUnknown == null) {
         flag = true;
         Transform recursive = this.findRecursive(this.transform, "BlipObjectUnknown");
-        if ((UnityEngine.Object)recursive != (UnityEngine.Object)null)
+        if (recursive != null)
           this.BlipObjectUnknown = recursive.gameObject;
-        if ((UnityEngine.Object)this.BlipObjectUnknown == (UnityEngine.Object)null)
+        if (this.BlipObjectUnknown == null)
           Debug.LogWarning((object)("ERROR! Couldn't auto-setup Unknown Blip for mech " + this.parentMech.DisplayName));
       }
-      if ((UnityEngine.Object)this.BlipObjectIdentified == (UnityEngine.Object)null) {
+      if (this.BlipObjectIdentified == null) {
         flag = true;
         Transform recursive = this.findRecursive(this.transform, "BlipObjectIdentified");
-        if ((UnityEngine.Object)recursive != (UnityEngine.Object)null)
+        if (recursive != null)
           this.BlipObjectIdentified = recursive.gameObject;
-        if ((UnityEngine.Object)this.BlipObjectIdentified == (UnityEngine.Object)null)
+        if (this.BlipObjectIdentified == null)
           Debug.LogWarning((object)("ERROR! Couldn't auto-setup Identified Blip for mech " + this.parentMech.DisplayName));
       }
-      if ((UnityEngine.Object)this.BlipObjectGhostWeak == (UnityEngine.Object)null) {
+      if (this.BlipObjectGhostWeak == null) {
         flag = true;
         Transform recursive = this.findRecursive(this.transform, "BlipObjectGhostWeak");
-        if ((UnityEngine.Object)recursive != (UnityEngine.Object)null)
+        if (recursive != null)
           this.BlipObjectGhostWeak = recursive.gameObject;
-        if ((UnityEngine.Object)this.BlipObjectGhostWeak == (UnityEngine.Object)null)
+        if (this.BlipObjectGhostWeak == null)
           Debug.LogWarning((object)("ERROR! Couldn't auto-setup Weak Ghost Blip for mech " + this.parentMech.DisplayName));
       }
-      if ((UnityEngine.Object)this.BlipObjectGhostStrong == (UnityEngine.Object)null) {
+      if (this.BlipObjectGhostStrong == null) {
         flag = true;
         Transform recursive = this.findRecursive(this.transform, "BlipObjectGhostStrong");
-        if ((UnityEngine.Object)recursive != (UnityEngine.Object)null)
+        if (recursive != null)
           this.BlipObjectGhostStrong = recursive.gameObject;
-        if ((UnityEngine.Object)this.BlipObjectGhostStrong == (UnityEngine.Object)null)
+        if (this.BlipObjectGhostStrong == null)
           Debug.LogWarning((object)("ERROR! Couldn't auto-setup Strong Ghost Blip for mech " + this.parentMech.DisplayName));
       }
-      if ((UnityEngine.Object)this.headDestructible == (UnityEngine.Object)null) {
-        flag = true;
+      if (this.headDestructible == null) {
+        flag = isPartOfQuad==false? true:flag;
         Transform recursive = this.findRecursive(this.transform, "Head_whole");
-        if ((UnityEngine.Object)recursive != (UnityEngine.Object)null)
+        if (recursive != null)
           this.headDestructible = recursive.GetComponent<MechDestructibleObject>();
-        if ((UnityEngine.Object)this.headDestructible == (UnityEngine.Object)null)
+        if ((this.headDestructible == null)&&(isPartOfQuad == false))
           Debug.LogWarning((object)("ERROR! Couldn't auto-setup headDestructible for mech " + this.parentMech.DisplayName));
       }
-      if ((UnityEngine.Object)this.centerTorsoDestructible == (UnityEngine.Object)null) {
-        flag = true;
+      if (this.centerTorsoDestructible == null) {
+        flag = NeedSetupDestructable ? (isPartOfQuad == false ? true : flag) : flag;
         Transform recursive = this.findRecursive(this.transform, "torso_whole");
-        if ((UnityEngine.Object)recursive != (UnityEngine.Object)null)
+        if (recursive != null) {
           this.centerTorsoDestructible = recursive.GetComponent<MechDestructibleObject>();
-        if ((UnityEngine.Object)this.centerTorsoDestructible == (UnityEngine.Object)null)
+        } else {
+          this.centerTorsoDestructible = this.headDestructible;
+        }
+        if ((this.centerTorsoDestructible == null) && (isPartOfQuad == false))
           Debug.LogWarning((object)("ERROR! Couldn't auto-setup centerTorsoDestructible for mech " + this.parentMech.DisplayName));
       }
-      if ((UnityEngine.Object)this.leftTorsoDestructible == (UnityEngine.Object)null) {
-        flag = true;
+      if (this.leftTorsoDestructible == null) {
+        flag = NeedSetupDestructable ? (isPartOfQuad == false ? true : flag) : flag;
         Transform recursive = this.findRecursive(this.transform, "lefttorso_whole");
-        if ((UnityEngine.Object)recursive != (UnityEngine.Object)null)
+        if (recursive != null) { 
           this.leftTorsoDestructible = recursive.GetComponent<MechDestructibleObject>();
-        if ((UnityEngine.Object)this.leftTorsoDestructible == (UnityEngine.Object)null)
-          Debug.LogWarning((object)("ERROR! Couldn't auto-setup leftTorsoDestructible for mech " + this.parentMech.DisplayName));
-      }
-      if ((UnityEngine.Object)this.rightTorsoDestructible == (UnityEngine.Object)null) {
-        flag = true;
+        } else {
+          this.leftTorsoDestructible = this.centerTorsoDestructible;
+        }
+        if ((this.leftTorsoDestructible == null) && (isPartOfQuad == false))
+            Debug.LogWarning((object)("ERROR! Couldn't auto-setup leftTorsoDestructible for mech " + this.parentMech.DisplayName));
+       }
+      if (this.rightTorsoDestructible == null) {
+        flag = NeedSetupDestructable ? (isPartOfQuad == false ? true : flag) : flag;
         Transform recursive = this.findRecursive(this.transform, "righttorso_whole");
-        if ((UnityEngine.Object)recursive != (UnityEngine.Object)null)
+        if (recursive != null) {
           this.rightTorsoDestructible = recursive.GetComponent<MechDestructibleObject>();
-        if ((UnityEngine.Object)this.rightTorsoDestructible == (UnityEngine.Object)null)
+        } else {
+          this.rightTorsoDestructible = this.leftTorsoDestructible;
+        }
+        if ((this.rightTorsoDestructible == null) && (isPartOfQuad == false))
           Debug.LogWarning((object)("ERROR! Couldn't auto-setup rightTorsoDestructible for mech " + this.parentMech.DisplayName));
       }
-      if ((UnityEngine.Object)this.leftArmDestructible == (UnityEngine.Object)null) {
-        flag = true;
+      if (this.leftArmDestructible == null) {
+        flag = NeedSetupDestructable ? (isPartOfQuad == false ? true : flag) : flag;
         Transform recursive = this.findRecursive(this.transform, "LArm_whole");
-        if ((UnityEngine.Object)recursive != (UnityEngine.Object)null)
+        if (recursive != null) {
           this.leftArmDestructible = recursive.GetComponent<MechDestructibleObject>();
-        if ((UnityEngine.Object)this.leftArmDestructible == (UnityEngine.Object)null)
+        } else {
+          this.leftArmDestructible = this.rightTorsoDestructible;
+        }
+        if ((this.leftArmDestructible == null) && (isPartOfQuad == false))
           Debug.LogWarning((object)("ERROR! Couldn't auto-setup leftArmDestructible for mech " + this.parentMech.DisplayName));
       }
-      if ((UnityEngine.Object)this.rightArmDestructible == (UnityEngine.Object)null) {
-        flag = true;
+      if (this.rightArmDestructible == null) {
+        flag = NeedSetupDestructable ? true : flag;
         Transform recursive = this.findRecursive(this.transform, "RArm_whole");
-        if ((UnityEngine.Object)recursive != (UnityEngine.Object)null)
+        if (recursive != null) {
           this.rightArmDestructible = recursive.GetComponent<MechDestructibleObject>();
-        if ((UnityEngine.Object)this.rightArmDestructible == (UnityEngine.Object)null)
+        } else {
+          this.rightArmDestructible = this.leftArmDestructible;
+        }
+        if ((this.rightArmDestructible == null) && (isPartOfQuad == false))
           Debug.LogWarning((object)("ERROR! Couldn't auto-setup rightArmDestructible for mech " + this.parentMech.DisplayName));
       }
-      if ((UnityEngine.Object)this.leftLegDestructible == (UnityEngine.Object)null) {
-        flag = true;
+      if (this.leftLegDestructible == null) {
+        flag = NeedSetupDestructable ? true : flag;
         Transform recursive = this.findRecursive(this.transform, "LLeg_whole");
-        if ((UnityEngine.Object)recursive != (UnityEngine.Object)null)
+        if (recursive != null) {
           this.leftLegDestructible = recursive.GetComponent<MechDestructibleObject>();
-        if ((UnityEngine.Object)this.leftLegDestructible == (UnityEngine.Object)null)
+        } else {
+          this.leftLegDestructible = this.rightArmDestructible;
+        }
+        if ((this.leftLegDestructible == null))
           Debug.LogWarning((object)("ERROR! Couldn't auto-setup leftLegDestructible for mech " + this.parentMech.DisplayName));
       }
-      if ((UnityEngine.Object)this.rightLegDestructible == (UnityEngine.Object)null) {
-        flag = true;
+      if (this.rightLegDestructible == null) {
+        flag = NeedSetupDestructable ? true : flag;
         Transform recursive = this.findRecursive(this.transform, "RLeg_whole");
-        if ((UnityEngine.Object)recursive != (UnityEngine.Object)null)
+        if (recursive != null) {
           this.rightLegDestructible = recursive.GetComponent<MechDestructibleObject>();
-        if ((UnityEngine.Object)this.rightLegDestructible == (UnityEngine.Object)null)
+        } else {
+          this.rightLegDestructible = this.leftLegDestructible;
+        }
+        if ((this.rightLegDestructible == null))
           Debug.LogWarning((object)("ERROR! Couldn't auto-setup rightLegDestructible for mech " + this.parentMech.DisplayName));
       }
       return flag;
@@ -651,7 +683,7 @@ namespace CustomUnits {
       string id5 = string.Format("chrPrfComp_{0}_rightleg_headlight", (object)this.PrefabBase);
       this.headlightReps.Clear();
       GameObject gameObject1 = mech.Combat.DataManager.PooledInstantiate(id1, BattleTechResourceType.Prefab);
-      if ((UnityEngine.Object)gameObject1 != (UnityEngine.Object)null) {
+      if (gameObject1 != null) {
         gameObject1.transform.parent = this.vfxHeadTransform;
         gameObject1.transform.localPosition = Vector3.zero;
         gameObject1.transform.localRotation = Quaternion.identity;
@@ -659,7 +691,7 @@ namespace CustomUnits {
         this.headlightReps.Add(gameObject1);
       }
       GameObject gameObject2 = mech.Combat.DataManager.PooledInstantiate(id2, BattleTechResourceType.Prefab);
-      if ((UnityEngine.Object)gameObject2 != (UnityEngine.Object)null) {
+      if (gameObject2 != null) {
         gameObject2.transform.parent = this.vfxLeftShoulderTransform;
         gameObject2.transform.localPosition = Vector3.zero;
         gameObject2.transform.localRotation = Quaternion.identity;
@@ -667,7 +699,7 @@ namespace CustomUnits {
         this.headlightReps.Add(gameObject2);
       }
       GameObject gameObject3 = mech.Combat.DataManager.PooledInstantiate(id3, BattleTechResourceType.Prefab);
-      if ((UnityEngine.Object)gameObject3 != (UnityEngine.Object)null) {
+      if (gameObject3 != null) {
         gameObject3.transform.parent = this.vfxRightShoulderTransform;
         gameObject3.transform.localPosition = Vector3.zero;
         gameObject3.transform.localRotation = Quaternion.identity;
@@ -675,7 +707,7 @@ namespace CustomUnits {
         this.headlightReps.Add(gameObject3);
       }
       GameObject gameObject4 = mech.Combat.DataManager.PooledInstantiate(id4, BattleTechResourceType.Prefab);
-      if ((UnityEngine.Object)gameObject4 != (UnityEngine.Object)null) {
+      if (gameObject4 != null) {
         gameObject4.transform.parent = this.vfxLeftLegTransform;
         gameObject4.transform.localPosition = Vector3.zero;
         gameObject4.transform.localRotation = Quaternion.identity;
@@ -683,7 +715,7 @@ namespace CustomUnits {
         this.headlightReps.Add(gameObject4);
       }
       GameObject gameObject5 = mech.Combat.DataManager.PooledInstantiate(id5, BattleTechResourceType.Prefab);
-      if ((UnityEngine.Object)gameObject5 != (UnityEngine.Object)null) {
+      if (gameObject5 != null) {
         gameObject5.transform.parent = this.vfxRightLegTransform;
         gameObject5.transform.localPosition = Vector3.zero;
         gameObject5.transform.localRotation = Quaternion.identity;
@@ -1025,6 +1057,11 @@ namespace CustomUnits {
       this.customRep = this.GetComponent<CustomRepresentation>();
       this._Init(mech, parentTransform, isParented);
       mech.sizeMultiplier();
+    }
+    public virtual void ApplyScale(Vector3 sizeMultiplier) {
+      if (this.HasOwnVisuals) {
+        this.j_Root.localScale = sizeMultiplier;
+      }
     }
     public virtual string GetComponentMountingPointPrefabName(HardpointDataDef hardpointData, string prefabName, ChassisLocations MountedLocation) {
       string[] strArray = prefabName.Split('_');

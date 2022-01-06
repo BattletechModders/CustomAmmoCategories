@@ -959,7 +959,7 @@ namespace CustomUnits {
         eventEnumValue = AudioEventList_vehicle.vehicle_explosion_b;
       }
       this.HeightController.PendingHeight = 0f;
-      this.customRep.OnUnitDestroy();
+      this.customRep?.OnUnitDestroy();
       this.PlayVFX(location, vfxName, false, Vector3.zero, true, -1f);
       if (this.parentActor.Combat.IsLoadingFromSave) { return; }
       if (isSlave == false) {
@@ -1545,6 +1545,7 @@ namespace CustomUnits {
       this._ToggleHeadlights(false);
       this.HeightController.PendingHeight = 0f;
       this.parentCombatant.FlyingHeight(0f);
+      this.custMech.UpdateLOSHeight(0f);
       this.customRep.InBattle = false;
       this.StopPersistentAudio();
     }
@@ -1559,7 +1560,10 @@ namespace CustomUnits {
           AudioEventManager.PlayComputerVO(ComputerVOEvents.Mech_Powerup_Enemy);
       }
       this.thisAnimator.SetTrigger("PowerOn");
+      Log.TWL(0, "PlayStartupAnim:"+this.parentCombatant.PilotableActorDef.ChassisID);
+      this.parentCombatant.FlyingHeight(this.altDef.FlyHeight);
       this.HeightController.PendingHeight = this.parentCombatant.FlyingHeight();
+      this.custMech.UpdateLOSHeight(this.parentCombatant.FlyingHeight());
       this.customRep.InBattle = true;
       this.StartPersistentAudio();
     }

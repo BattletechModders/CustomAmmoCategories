@@ -450,6 +450,13 @@ namespace CustomUnits {
           Log.WL(1, "request:" + DeployManualHelper.DeployMechDefID);
           needLoadRequest = true;
         }
+        //{
+        //  LoadRequest rotundaRequest = contract.DataManager.CreateLoadRequest((Action<LoadRequest>)((LoadRequest loadRequest) => {
+        //    Log.TWL(0, "DeployManualHelper.CheckForDeps vehicledef_ROTUNDA_LRM loaded success");
+        //  }), false);
+        //  rotundaRequest.AddLoadRequest<VehicleDef>(BattleTechResourceType.VehicleDef, "vehicledef_ROTUNDA_LRM", null);
+        //  rotundaRequest.ProcessRequests(1000u);
+        //}
         if (needLoadRequest) {
           request.ProcessRequests(1000u);
           return false;

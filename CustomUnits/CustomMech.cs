@@ -35,7 +35,74 @@ namespace CustomUnits {
       if (__instance is CustomMech custMech) { __result = custMech._MoveMultiplierOverride ? custMech._MoveMultiplier : __result; }
     }
   }
-
+  [HarmonyPatch(typeof(Pilot))]
+  [HarmonyPatch("LogMechKillInflicted")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { typeof(int), typeof(string) })]
+  public static class Pilot_LogMechKillInflicted {
+    public static bool Prefix(Pilot __instance, int stackID, string sourceID) {
+      try {
+        ICustomMech custMech = Thread.CurrentThread.currentActor() as ICustomMech;
+        if (custMech == null) { return true; }
+        if (custMech.isVehicle) {
+          Log.TWL(0, "Pilot.LogMechKillInflicted fake vehicle");
+          __instance.LogOtherKillInflicted(stackID, sourceID);
+          return false;
+        } else {
+          return true;
+        }
+      } catch (Exception e) {
+        Log.TWL(0, e.ToString());
+        return true;
+      }
+    }
+  }
+  public class CustomLOSData {
+    public Vector3[] sourcePositions { get; set; }
+    public Vector3[] targetPositions { get; set; }
+    public Vector3 higest { get; set; }
+    public CustomLOSData(CustomMech custMech) {
+      float HeightFix = 0f;
+      UnitCustomInfo info = custMech.MechDef.GetCustomInfo();
+      if (info != null) {
+        HeightFix = info.FlyingHeight;
+      }
+      sourcePositions = new Vector3[custMech.MechDef.Chassis.LOSSourcePositions.Length];
+      targetPositions = new Vector3[custMech.MechDef.Chassis.LOSTargetPositions.Length];
+      Vector3? h = null;
+      float mechScaleMultiplier = custMech.Combat.Constants.CombatValueMultipliers.TEST_MechScaleMultiplier;
+      for (int t = 0; t < custMech.MechDef.Chassis.LOSSourcePositions.Length; ++t) {
+        FakeVector3 srcPos = custMech.MechDef.Chassis.LOSSourcePositions[t];
+        Vector3 pos = new Vector3(srcPos.x * mechScaleMultiplier, srcPos.y * mechScaleMultiplier, srcPos.z * mechScaleMultiplier);
+        if (HeightFix > Core.Epsilon) {
+          if (Mathf.Abs(pos.y - HeightFix) < 5f) { pos.y -= HeightFix; }
+        }
+        sourcePositions[t] = pos;
+      }
+      for (int t = 0; t < custMech.MechDef.Chassis.LOSTargetPositions.Length; ++t) {
+        FakeVector3 srcPos = custMech.MechDef.Chassis.LOSTargetPositions[t];
+        Vector3 pos = new Vector3(srcPos.x * mechScaleMultiplier, srcPos.y * mechScaleMultiplier, srcPos.z * mechScaleMultiplier);
+        if (HeightFix > Core.Epsilon) {
+          if (Mathf.Abs(pos.y - HeightFix) < 5f) { pos.y -= HeightFix; }
+        }
+        targetPositions[t] = pos;
+      }
+      for (int t = 0; t < sourcePositions.Length; ++t) {
+        if (h.HasValue == false) { h = sourcePositions[t]; continue; }
+        if (h.Value.y < sourcePositions[t].y) { h = sourcePositions[t]; }
+      }
+      higest = h.HasValue ? h.Value : Vector3.zero;
+    }
+    public void ApplyScale(Vector3 scale) {
+      for (int t = 0; t < sourcePositions.Length; ++t) {
+        sourcePositions[t] = Vector3.Scale(sourcePositions[t], scale);
+      }
+      for (int t = 0; t < targetPositions.Length; ++t) {
+        targetPositions[t] = Vector3.Scale(targetPositions[t], scale);
+      }
+      higest = Vector3.Scale(higest, scale);
+    }
+  }
   public class CustomMech : Mech, ICustomMech {
     public delegate void d_AbstractActor_EjectPilot(AbstractActor unit, string sourceID, int stackItemID, DeathMethod deathMethod, bool isSilent);
     private static d_AbstractActor_EjectPilot i_AbstractActor_EjectPilot = null;
@@ -43,6 +110,7 @@ namespace CustomUnits {
     private static d_AbstractActor_Init i_AbstractActor_Init = null;
     public delegate void d_AbstractActor_ApplyBraced(AbstractActor unit);
     private static d_AbstractActor_ApplyBraced i_AbstractActor_ApplyBraced = null;
+    public CustomLOSData custLosData { get; set; }
     public static void AbstractActor_Init(AbstractActor unit, Vector3 position, float facing, bool checkEncounterCells) {
       if (i_AbstractActor_Init == null) {
         MethodInfo method = typeof(AbstractActor).GetMethod("Init", BindingFlags.Public | BindingFlags.Instance);
@@ -93,6 +161,59 @@ namespace CustomUnits {
     public CustomMech(MechDef mDef, PilotDef pilotDef, TagSet additionalTags, string UID, CombatGameState combat, string spawnerId, HeraldryDef customHeraldryDef)
       : base(mDef, pilotDef, additionalTags, UID, combat, spawnerId, customHeraldryDef) {
 
+    }
+    protected override void InitStats() {
+      custLosData = new CustomLOSData(this);
+      custLosData.ApplyScale(MechResizer.SizeMultiplier.Get(this.MechDef));
+      base.InitStats();
+      UpdateLOSHeight(this.FlyingHeight());
+    }
+    public override void AddToTeam(Team team) {
+      try {
+        base.AddToTeam(team);
+        string no_biome_tag = "NoBiome_" + this.Combat.ActiveContract.ContractBiome.ToString();
+        bool immobilize = false;
+        if (this.Combat.LocalPlayerTeam != team) {
+          immobilize = this.MechDef.MechTags.Contains(no_biome_tag);
+        }
+        if (immobilize == false) {
+          foreach (MechComponent component in this.allComponents) {
+            if (component == null) { continue; }
+            if (component.componentDef == null) { continue; }
+            if (component.componentDef.ComponentTags.Contains(no_biome_tag)) { immobilize = true; break; }
+          }
+        }
+        if (immobilize) {
+          this.FlyingHeight(0f);
+          UpdateLOSHeight(this.FlyingHeight());
+          if (this.custGameRep != null) {
+            this.custGameRep.HeightController?.ForceHeight(0f);
+            if (this.custGameRep.customRep != null) {
+              this.custGameRep.customRep.InBattle = false;
+            }
+          }
+          Statistic irbtmu_immobile_unit = this.StatCollection.GetStatistic("irbtmu_immobile_unit");
+          if (irbtmu_immobile_unit == null) {
+            irbtmu_immobile_unit = this.StatCollection.AddStatistic("irbtmu_immobile_unit",false);
+          }
+          irbtmu_immobile_unit.SetValue(true);
+        }
+      }catch(Exception e) {
+        Log.TWL(0,e.ToString(),true);
+      }
+    }
+    public virtual void UpdateLOSHeight(float height) {
+      if (custLosData == null) { return; }
+      for(int t = 0; t < this.originalLOSSourcePositions.Length; ++t) {
+        if (t >= custLosData.sourcePositions.Length) { break; }
+        this.originalLOSSourcePositions[t] = custLosData.sourcePositions[t] + Vector3.up * height;
+      }
+      for (int t = 0; t < this.originalLOSTargetPositions.Length; ++t) {
+        if (t >= custLosData.targetPositions.Length) { break; }
+        this.originalLOSTargetPositions[t] = custLosData.targetPositions[t] + Vector3.up * height;
+      }
+      this.HighestLOSPosition = custLosData.higest + Vector3.up * height;
+      this.UpdateLOSPositions();
     }
     public virtual bool _MoveMultiplierOverride { get { return true; } }
     public virtual float _MoveMultiplier {
@@ -379,7 +500,6 @@ namespace CustomUnits {
           ArmorLocation.RightArm, ArmorLocation.LeftArm, ArmorLocation.LeftLeg, ArmorLocation.RightLeg
       };
     }
-
     public virtual Dictionary<ArmorLocation, int> GetHitTable(AttackDirection from) {
       Thread.CurrentThread.pushActor(this);
       Thread.CurrentThread.SetFlag("CallOriginal_GetMechHitTable");
@@ -389,14 +509,105 @@ namespace CustomUnits {
       if (!this.CanBeHeadShot && result.ContainsKey(ArmorLocation.Head)) result.Remove(ArmorLocation.Head);
       return result;
     }
-
+    public static bool DamageLocation_Override(Mech __instance, int originalHitLoc, WeaponHitInfo hitInfo, ArmorLocation aLoc, Weapon weapon, float totalArmorDamage, float directStructureDamage, int hitIndex, AttackImpactQuality impactQuality, DamageType damageType, ref bool __result) {
+      try {
+        if (__instance is CustomMech custMech) {
+          __result = custMech.DamageLocationCustom(originalHitLoc, hitInfo, aLoc, weapon, totalArmorDamage, directStructureDamage, hitIndex, impactQuality, damageType);
+          return false;
+        }
+        return true;
+      } catch (Exception e) {
+        Log.TWL(0, e.ToString(), true);
+      }
+      return true;
+    }
+    public virtual bool DamageLocationCustom(int originalHitLoc,WeaponHitInfo hitInfo,ArmorLocation aLoc,Weapon weapon,float totalArmorDamage,float directStructureDamage,int hitIndex,AttackImpactQuality impactQuality,DamageType damageType) {
+      try {
+        Log.TWL(0, "CustomMech.DamageLocationCustom "+this.MechDef.ChassisID+" location:"+aLoc);
+        if (aLoc == ArmorLocation.None || aLoc == ArmorLocation.Invalid)
+          return false;
+        if (Mech.attackSequenceLogger.IsDebugEnabled)
+          Mech.attackSequenceLogger.LogDebug((object)string.Format("[Mech.DamageLocation] GUID {4}, Group {3}, Weapon {0}, Hit Index {5}, Location {1}, Total Damage {2}", (object)hitInfo.attackWeaponIndex, (object)aLoc.ToString(), (object)totalArmorDamage, (object)hitInfo.attackGroupIndex, (object)this.GUID, (object)hitIndex));
+        AttackDirector.AttackSequence attackSequence = this.Combat.AttackDirector.GetAttackSequence(hitInfo.attackSequenceId);
+        if (AbstractActor.damageLogger.IsLogEnabled)
+          AbstractActor.damageLogger.Log((object)string.Format("{0} takes {1} Damage to its {2} from {3} (ID {4})", (object)this.Description.Name, (object)totalArmorDamage, (object)aLoc.ToString(), (object)weapon.Name, (object)hitInfo.attackWeaponIndex));
+        if (attackSequence != null) {
+          attackSequence.FlagAttackDidDamage(this.GUID);
+          this.Combat.MultiplayerGameVerification.RecordMechDamage(this.GUID, originalHitLoc, hitInfo, aLoc, weapon, totalArmorDamage, hitIndex, impactQuality);
+        }
+        float num1 = totalArmorDamage;
+        float num2 = directStructureDamage;
+        float currentArmor = this.GetCurrentArmor(aLoc);
+        if ((double)currentArmor > 0.0) {
+          float damage = Mathf.Min(totalArmorDamage, currentArmor);
+          if (AbstractActor.attackLogger.IsLogEnabled)
+            AbstractActor.attackLogger.Log((object)string.Format("SEQ:{0}: WEAP:{1} HITLOC: {2} ({3}) Armor damage: {4}", (object)hitInfo.attackSequenceId, (object)hitInfo.attackWeaponIndex, (object)originalHitLoc, (object)aLoc.ToString(), (object)damage));
+          if (AbstractActor.damageLogger.IsLogEnabled) {
+            float num3 = currentArmor - damage;
+            AbstractActor.damageLogger.Log((object)string.Format("==== Armor Damage: {0} / {1} || Now: {2}", (object)damage, (object)currentArmor, (object)num3));
+          }
+          this.ApplyArmorStatDamage(aLoc, damage, hitInfo);
+          num1 = totalArmorDamage - damage;
+        }
+        if ((double)num1 <= 0.0 && (double)num2 <= 0.0) {
+          this.Combat.MessageCenter.PublishMessage((MessageCenterMessage)new TakeDamageMessage(hitInfo.attackerId, this.GUID, totalArmorDamage, aLoc));
+          return true;
+        }
+        ChassisLocations fromArmorLocation = MechStructureRules.GetChassisLocationFromArmorLocation(aLoc);
+        Vector3 attackDirection = Vector3.one;
+        if ((UnityEngine.Object)this.GameRep != (UnityEngine.Object)null && (UnityEngine.Object)weapon.weaponRep != (UnityEngine.Object)null) {
+          Vector3 position = weapon.weaponRep.vfxTransforms[0].position;
+          Vector3 vector3 = this.GameRep.GetVFXTransform((int)fromArmorLocation).position - position;
+          vector3.Normalize();
+          vector3.y = 0.5f;
+          attackDirection = vector3 * totalArmorDamage;
+        }
+        float currentStructure = this.GetCurrentStructure(fromArmorLocation);
+        if ((double)currentStructure > 0.0) {
+          float damage1 = Mathf.Min(num1, currentStructure);
+          float val2 = currentStructure - damage1;
+          if (AbstractActor.attackLogger.IsLogEnabled)
+            AbstractActor.attackLogger.Log((object)string.Format("SEQ:{0}: WEAP:{1} HITLOC: {2} ({3}) Structure damage: {4}", (object)hitInfo.attackSequenceId, (object)hitInfo.attackWeaponIndex, (object)originalHitLoc, (object)fromArmorLocation.ToString(), (object)damage1));
+          if (AbstractActor.damageLogger.IsLogEnabled)
+            AbstractActor.damageLogger.Log((object)string.Format("==== Structure Damage: {0} / {1} || Now: {2}", (object)damage1, (object)currentStructure, (object)val2));
+          this.ApplyStructureStatDamage(fromArmorLocation, damage1, hitInfo);
+          num1 -= damage1;
+          float damage2 = Math.Min(num2, val2);
+          if (AbstractActor.attackLogger.IsLogEnabled)
+            AbstractActor.attackLogger.Log((object)string.Format("SEQ:{0}: WEAP:{1} HITLOC: {2} ({3}) Structure damage: {4}", (object)hitInfo.attackSequenceId, (object)hitInfo.attackWeaponIndex, (object)originalHitLoc, (object)fromArmorLocation.ToString(), (object)damage2));
+          if (AbstractActor.damageLogger.IsLogEnabled)
+            AbstractActor.damageLogger.Log((object)string.Format("==== Structure Damage: {0} / {1} || Now: {2}", (object)damage2, (object)val2, (object)(float)((double)val2 - (double)damage2)));
+          this.ApplyStructureStatDamage(fromArmorLocation, damage2, hitInfo);
+          num2 -= damage2;
+          float num3 = val2 - damage2;
+          if (this.IsLocationDestroyed(fromArmorLocation) && (double)num3 < (double)currentStructure)
+            this.NukeStructureLocation(hitInfo, originalHitLoc, fromArmorLocation, attackDirection, damageType);
+        } else if (this.IsDead && (double)num1 > 0.0 || (double)num2 > 0.0)
+          this.ShowFloatie(hitInfo.attackerId, MechStructureRules.GetArmorFromChassisLocation(fromArmorLocation), FloatieMessage.MessageNature.StructureDamage, string.Format("{0}", (object)(int)Mathf.Max(1f, num1 + num2)), this.Combat.Constants.CombatUIConstants.floatieSizeMedium);
+        this.Combat.MessageCenter.PublishMessage((MessageCenterMessage)new TakeDamageMessage(hitInfo.attackerId, this.GUID, totalArmorDamage, aLoc));
+        if ((double)num1 <= 0.0 && (double)num2 <= 0.0) { return true; }
+        Thread.CurrentThread.pushActor(this);
+        ArmorLocation passthroughLocation = MechStructureRules.GetPassthroughLocation(aLoc, hitInfo.attackDirections[hitIndex]);
+        Thread.CurrentThread.clearActor();
+        if (AbstractActor.attackLogger.IsLogEnabled)
+          AbstractActor.attackLogger.Log((object)string.Format("SEQ:{0}: WEAP:{1} HITLOC: {2} ({3}) Passing {4} damage through to {5}", (object)hitInfo.attackSequenceId, (object)hitInfo.attackWeaponIndex, (object)originalHitLoc, (object)fromArmorLocation.ToString(), (object)num1, (object)passthroughLocation.ToString()));
+        if (AbstractActor.damageLogger.IsLogEnabled)
+          AbstractActor.damageLogger.Log((object)string.Format("==== {0} Armor Destroyed: {1} Damage applied to {2}", (object)fromArmorLocation.ToString(), (object)num1, (object)passthroughLocation.ToString()));
+        return this.DamageLocation_private(originalHitLoc, hitInfo, passthroughLocation, weapon, num1, num2, hitIndex, impactQuality, damageType);
+      }catch(Exception e) {
+        Log.TWL(0,e.ToString(),true);
+      }
+      return false;
+    }
     public virtual Dictionary<int, float> GetAOESpreadArmorLocations() {
       return CustomAmmoCategories.NormMechHitLocations;
     }
     public override void FlagForDeath(string reason,DeathMethod deathMethod,DamageType damageType,int location,int stackItemID,string attackerID,bool isSilent) {
       if (this._flaggedForDeath) { return; }
       Log.TWL(0, "CustomMech.FlagForDeath " + reason + " method:" + deathMethod + " dmgType:" + damageType + " location:" + location);
+      Thread.CurrentThread.pushActor(this);
       base.FlagForDeath(reason, deathMethod, damageType, location, stackItemID, attackerID, isSilent);
+      Thread.CurrentThread.clearActor();
     }
     public virtual List<int> GetAOEPossibleHitLocations(Vector3 attackPos) {
       return this.Combat.HitLocation.GetPossibleHitLocations(attackPos, this);
@@ -447,6 +658,9 @@ namespace CustomUnits {
     public virtual bool isSquad { get { return false; } }
     public virtual bool isVehicle { get { return false; } }
     public virtual bool isQuad { get { return false; } }
+    public virtual void ApplyScale(Vector3 scale) {
+      this.custGameRep.ApplyScale(scale);
+    }
   }
 
 }

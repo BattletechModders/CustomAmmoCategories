@@ -59,7 +59,7 @@ namespace CustomUnits {
       this.angleDifference = this.desiredAngle - this.startAngle;
       if (this.isBodyRotation) {
         this.startingRotation = this.actorRep.thisTransform.rotation;
-        this.desiredRotation = Quaternion.LookRotation(this.desiredLookDirection);
+        this.desiredRotation = this.desiredLookDirection.sqrMagnitude > Core.Epsilon ? Quaternion.LookRotation(this.desiredLookDirection) : this.actorRep.thisTransform.rotation;
         this.skipTwist = (double)Mathf.Abs(Quaternion.Angle(startingRotation, desiredRotation)) < 0.0500000007450581;
       } else {
         this.skipTwist = (double)Mathf.Abs(this.angleDifference) < 0.0500000007450581;

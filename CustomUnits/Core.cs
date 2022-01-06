@@ -349,7 +349,7 @@ namespace CustomUnits{
     public static CUSettings Settings;
     public static Assembly MechEngineerAssembly = null;
     public static void MechDefMovementStatistics_GetJumpCapacity(object __instance,ref MechDef ___mechDef, ref float __result) {
-      Log.TWL(0, "MechEngineer.Features.OverrideStatTooltips.Helper.MechDefMovementStatistics.GetJumpCapacity " + ___mechDef.Description.Id, true);
+      //Log.TWL(0, "MechEngineer.Features.OverrideStatTooltips.Helper.MechDefMovementStatistics.GetJumpCapacity " + ___mechDef.Description.Id, true);
       UnitCustomInfo info = ___mechDef.GetCustomInfo();
       if (info != null) {
         if(info.SquadInfo.Troopers > 1) {
@@ -602,6 +602,7 @@ namespace CustomUnits{
         foreach (var patch in patches.Postfixes) {
           Log.WL(2, patch.owner + " index:" + patch.index + " method:" + patch.patch.Name);
         }
+        Core.HarmonyInstance.Patch(typeof(Mech).GetMethod("DamageLocation", BindingFlags.NonPublic | BindingFlags.Instance), new HarmonyMethod(typeof(CustomMech).GetMethod(nameof(CustomMech.DamageLocation_Override), BindingFlags.Static | BindingFlags.Public)));
         CustomDeploy.Core.FinishLoading();
       } catch (Exception e) {
         Log.TWL(0, e.ToString(), true);
@@ -656,6 +657,7 @@ namespace CustomUnits{
         PathingInfoHelper.RegisterMaxMoveDeligate(PathingHelper.MaxMoveDistance);
         WeightedFactorHelper.PatchInfluenceMapPositionFactor(HarmonyInstance);
         WeaponRepresentation_PlayWeaponEffect.i_extendedFire = extendedFireHelper.extendedFire;
+        //Debug.unityLogger.logEnabled = false;
       } catch (Exception e) {
         Log.TWL(0,e.ToString(),true);
       }

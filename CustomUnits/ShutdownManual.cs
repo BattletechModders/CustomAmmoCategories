@@ -167,6 +167,8 @@ namespace CustomUnits {
           Log.TWL(0,("Unit " + this.OwningActor.PilotableActorDef.Description.Id + " shuts down from pilot command"));
           this.OwningActor.IsShutDown = true;
           this.OwningActor.DumpAllEvasivePips();
+          this.Combat.MessageCenter.PublishMessage((MessageCenterMessage)new AddSequenceToStackMessage(this.OwningActor.DoneWithActor()));
+          Log.WL(1, "Done with actor");
         break;
       }
     }
@@ -243,7 +245,7 @@ namespace CustomUnits {
     public override bool Invoke(CombatGameState combatGameState) {
       AbstractActor actorByGuid = combatGameState.FindActorByGUID(this.SourceGUID);
       if (actorByGuid == null) {
-        Log.TWL(0,string.Format("EjectInvocation.Invoke failed! Source AbstractActor with GUID {0} not found!", (object)this.SourceGUID));
+        Log.TWL(0,string.Format("ShutdownInvocation.Invoke failed! Source AbstractActor with GUID {0} not found!", (object)this.SourceGUID));
         return false;
       }
       UnitShutdownSequence shutdownSequence = new UnitShutdownSequence(actorByGuid);

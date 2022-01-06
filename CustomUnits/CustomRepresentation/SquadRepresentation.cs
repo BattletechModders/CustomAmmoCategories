@@ -760,6 +760,9 @@ namespace CustomUnits {
         unit.Value.PlayVehicleTerrainImpactVFX(false);
       }
     }
-    //public override void InitS
+    public override void ApplyScale(Vector3 sizeMultiplier) {
+      Log.TWL(0,"SQUADS DOES NOT SUPPORT SCALING");
+      return;
+    }
   }
 }

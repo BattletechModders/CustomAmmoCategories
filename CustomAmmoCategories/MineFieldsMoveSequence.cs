@@ -930,7 +930,8 @@ namespace CustAmmoCategoriesPatches {
         List<Weapon> requestedWeapons = (List<Weapon>)typeof(MechMeleeSequence).GetField("requestedWeapons", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(__instance);
         requestedWeapons.Clear();
         ActorMovementSequence moveSequence = (ActorMovementSequence)typeof(MechMeleeSequence).GetField("moveSequence", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(__instance);
-        AttackStackSequence meleeSequence = new AttackStackSequence((AbstractActor)__instance.OwningMech, __instance.MeleeTarget, moveSequence.FinalPos, Quaternion.LookRotation(moveSequence.FinalHeading), new List<Weapon>(), MeleeAttackType.NotSet, 0, -1);
+        Quaternion attackRotation = moveSequence.FinalHeading.sqrMagnitude > CustomAmmoCategories.Epsilon ? Quaternion.LookRotation(moveSequence.FinalHeading) : Quaternion.identity;
+        AttackStackSequence meleeSequence = new AttackStackSequence((AbstractActor)__instance.OwningMech, __instance.MeleeTarget, moveSequence.FinalPos, attackRotation, new List<Weapon>(), MeleeAttackType.NotSet, 0, -1);
         typeof(MechMeleeSequence).GetField("meleeSequence", BindingFlags.Instance | BindingFlags.NonPublic).SetValue(__instance, meleeSequence);
         meleeSequence.willConsumeFiring = false;
         meleeSequence.hasOwningSequence = true;

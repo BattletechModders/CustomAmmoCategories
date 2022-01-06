@@ -269,68 +269,44 @@ namespace CustomUnits {
           Debug.LogWarning((object)("ERROR! Couldn't auto-setup Strong Ghost Blip for vehicle " + this.parentMech.DisplayName));
       }
       if (this.headDestructible == null) {
-        flag = true;
         Transform recursive = this.findRecursive(this.transform, "whole_group");
         if (recursive != null)
           this.headDestructible = recursive.GetComponent<MechDestructibleObject>();
-        if (this.headDestructible == null)
-          Debug.LogWarning((object)("ERROR! Couldn't auto-setup headDestructible for vehicle " + this.parentMech.DisplayName));
       }
       if (this.centerTorsoDestructible == null) {
-        flag = true;
         Transform recursive = this.findRecursive(this.transform, "whole_group");
         if (recursive != null)
           this.centerTorsoDestructible = recursive.GetComponent<MechDestructibleObject>();
-        if (this.centerTorsoDestructible == null)
-          Debug.LogWarning((object)("ERROR! Couldn't auto-setup centerTorsoDestructible for vehicle " + this.parentMech.DisplayName));
       }
       if (this.leftTorsoDestructible == null) {
-        flag = true;
         Transform recursive = this.findRecursive(this.transform, "whole_group");
         if (recursive != null)
           this.leftTorsoDestructible = recursive.GetComponent<MechDestructibleObject>();
-        if (this.leftTorsoDestructible == null)
-          Debug.LogWarning((object)("ERROR! Couldn't auto-setup leftTorsoDestructible for vehicle " + this.parentMech.DisplayName));
       }
       if (this.rightTorsoDestructible == null) {
-        flag = true;
         Transform recursive = this.findRecursive(this.transform, "whole_group");
         if (recursive != null)
           this.rightTorsoDestructible = recursive.GetComponent<MechDestructibleObject>();
-        if (this.rightTorsoDestructible == null)
-          Debug.LogWarning((object)("ERROR! Couldn't auto-setup rightTorsoDestructible for vehicle " + this.parentMech.DisplayName));
       }
       if (this.leftArmDestructible == null) {
-        flag = true;
         Transform recursive = this.findRecursive(this.transform, "whole_group");
         if (recursive != null)
           this.leftArmDestructible = recursive.GetComponent<MechDestructibleObject>();
-        if (this.leftArmDestructible == null)
-          Debug.LogWarning((object)("ERROR! Couldn't auto-setup leftArmDestructible for vehicle " + this.parentMech.DisplayName));
       }
       if (this.rightArmDestructible == null) {
-        flag = true;
         Transform recursive = this.findRecursive(this.transform, "whole_group");
         if (recursive != null)
           this.rightArmDestructible = recursive.GetComponent<MechDestructibleObject>();
-        if (this.rightArmDestructible == null)
-          Debug.LogWarning((object)("ERROR! Couldn't auto-setup rightArmDestructible for vehicle " + this.parentMech.DisplayName));
       }
       if (this.leftLegDestructible == null) {
-        flag = true;
         Transform recursive = this.findRecursive(this.transform, "whole_group");
         if (recursive != null)
           this.leftLegDestructible = recursive.GetComponent<MechDestructibleObject>();
-        if (this.leftLegDestructible == null)
-          Debug.LogWarning((object)("ERROR! Couldn't auto-setup leftLegDestructible for vehicle " + this.parentMech.DisplayName));
       }
       if (this.rightLegDestructible == null) {
-        flag = true;
         Transform recursive = this.findRecursive(this.transform, "whole_group");
         if (recursive != null)
           this.rightLegDestructible = recursive.GetComponent<MechDestructibleObject>();
-        if (this.rightLegDestructible == null)
-          Debug.LogWarning((object)("ERROR! Couldn't auto-setup rightLegDestructible for vehicle " + this.parentMech.DisplayName));
       }
       return flag;
     }

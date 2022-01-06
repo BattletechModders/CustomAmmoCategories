@@ -257,8 +257,12 @@ namespace CustomUnits {
           if (__instance.standingOnBuildingGuid == building.GUID || str == building.GUID) { __result = true; return false; }
         }
       }
-      Quaternion b = Quaternion.LookRotation(forward);
-      __result = (double)Quaternion.Angle(attackRotation, b) < (double)__instance.FiringArc();
+      if (forward.sqrMagnitude > Core.Epsilon) {
+        Quaternion b = Quaternion.LookRotation(forward);
+        __result = (double)Quaternion.Angle(attackRotation, b) < (double)__instance.FiringArc();
+      } else {
+        __result = true;
+      }
       //Log.WL(1, Quaternion.Angle(attackRotation, b) + " and " + __instance.FiringArc() + " : " + __result);
       return false;
     }
@@ -631,7 +635,7 @@ namespace CustomUnits {
         if (target.GameRep != null) {
           var lookPos = target.GameRep.transform.position - transform.position;
           lookPos.y = 0;
-          var rotation = Quaternion.LookRotation(lookPos);
+          var rotation = lookPos.sqrMagnitude > Core.Epsilon ? Quaternion.LookRotation(lookPos) : Quaternion.identity;
           transform.rotation = rotation;
         }
       } else {

@@ -370,6 +370,27 @@ namespace CustomUnits {
         wRep.weapon.componentRep_set(wRep);
       }
       this.parentMech.FlyingHeight(this.CurrentRepresentation.altDef.FlyHeight);
+      this.custMech.UpdateLOSHeight(this.CurrentRepresentation.altDef.FlyHeight);
+      this.ClearAllTags();
+      this.AddCurrentTags();
+    }
+    public virtual void ClearAllTags() {
+      Log.TW(0, "AlternatesRepresentation.ClearAllTags");
+      foreach (CustomMechRepresentation alt in this.Alternates) {
+        foreach (string tag in alt.altDef.additionalEncounterTags) {
+          this.parentMech.EncounterTags.Remove(tag);
+          Log.W(1, tag);
+        }
+      }
+      Log.WL(0, "");
+    }
+    public virtual void AddCurrentTags() {
+      Log.TW(0, "AlternatesRepresentation.AddCurrentTags");
+      foreach (string tag in this.CurrentRepresentation.altDef.additionalEncounterTags) {
+        this.parentMech.EncounterTags.Add(tag);
+        Log.W(1, tag);
+      }
+      Log.WL(0, "");
     }
     protected IEnumerator ChangeCurrentOnHeightCompleete(int index) {
       if (this.CurrentRepresentation == null) { this.ChangeVisibility(index); this.parentMech.BlockComponentsActivation(false); yield break; }
@@ -571,6 +592,11 @@ namespace CustomUnits {
     public override void PlayVehicleTerrainImpactVFX(bool forcedSlave = false) {
       if (this.isSlave == false) { forcedSlave = true; }
       this.CurrentRepresentation.PlayVehicleTerrainImpactVFX(forcedSlave);
+    }
+    public override void ApplyScale(Vector3 sizeMultiplier) {
+      foreach(var altRep in this.Alternates) {
+        altRep.ApplyScale(sizeMultiplier);
+      }
     }
   }
   public partial class CustomMechRepresentation {
@@ -819,7 +845,7 @@ namespace CustomUnits {
       if (!nullable.HasValue) { return; }
       raycastHit = nullable.Value;
       Vector3 normal = raycastHit.normal;
-      Log.WL(1, "ray hit found. Point:" + raycastHit.point + " hit collider:" + raycastHit.collider.transform.name);
+      Log.WL(1, "ray hit found. Point:" + raycastHit.point + " hit collider:" + raycastHit.collider.transform.name+ " normal:"+ normal);
       //Quaternion to = Quaternion.FromToRotation(this.j_Root.up, normal) * Quaternion.Euler(0.0f, this.j_Root.rotation.eulerAngles.y, 0.0f);
       //this.j_Root.rotation = Quaternion.RotateTowards(this.j_Root.rotation, to, 180f * deltaTime);
       Quaternion to = Quaternion.FromToRotation(this.transform.up, normal) * Quaternion.Euler(0.0f, this.transform.rotation.eulerAngles.y, 0.0f);
@@ -844,10 +870,14 @@ namespace CustomUnits {
         }
       }
       if (aliginToTerrain) {
-        moveTransform.rotation = Quaternion.RotateTowards(moveTransform.rotation, Quaternion.LookRotation(forward), 180f * deltaT);
+        if (forward.sqrMagnitude > Core.Epsilon) {
+          moveTransform.rotation = Quaternion.RotateTowards(moveTransform.rotation, Quaternion.LookRotation(forward), 180f * deltaT);
+        }
         this.AliginToTerrain(deltaT);
       } else {
-        moveTransform.LookAt(moveTransform.position + forward, Vector3.up);
+        if (forward.sqrMagnitude > Core.Epsilon) {
+          moveTransform.LookAt(moveTransform.position + forward, Vector3.up);
+        }
       }
     }
   }

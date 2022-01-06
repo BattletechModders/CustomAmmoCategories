@@ -2200,7 +2200,7 @@ namespace CustomAmmoCategoriesPatches {
       if (BTCustomRenderer_DrawDecals.Scorches[BTCustomRenderer_DrawDecals.Scorches.Count - 1].Count > BTCustomRenderer_DrawDecals.maxArraySize) {
         BTCustomRenderer_DrawDecals.Scorches.Add(new List<Matrix4x4>());
       }
-      Quaternion rotation = Quaternion.LookRotation(forward);
+      Quaternion rotation = forward.sqrMagnitude > CustomAmmoCategories.Epsilon?Quaternion.LookRotation(forward):Quaternion.identity;
       rotation = Quaternion.Euler(0.0f, rotation.eulerAngles.y, 0.0f);
       Matrix4x4 trs = Matrix4x4.TRS(position, rotation, scale);
       BTCustomRenderer_DrawDecals.Scorches[BTCustomRenderer_DrawDecals.Scorches.Count - 1].Add(trs);
@@ -2213,7 +2213,7 @@ namespace CustomAmmoCategoriesPatches {
       if (BTCustomRenderer_DrawDecals.Bloods[BTCustomRenderer_DrawDecals.Bloods.Count - 1].Count > BTCustomRenderer_DrawDecals.maxArraySize) {
         BTCustomRenderer_DrawDecals.Bloods.Add(new List<Matrix4x4>());
       }
-      Quaternion rotation = Quaternion.LookRotation(forward);
+      Quaternion rotation = forward.sqrMagnitude > CustomAmmoCategories.Epsilon ? Quaternion.LookRotation(forward) : Quaternion.identity;
       rotation = Quaternion.Euler(0.0f, rotation.eulerAngles.y, 0.0f);
       Matrix4x4 trs = Matrix4x4.TRS(position, rotation, scale);
       BTCustomRenderer_DrawDecals.Bloods[BTCustomRenderer_DrawDecals.Bloods.Count - 1].Add(trs);

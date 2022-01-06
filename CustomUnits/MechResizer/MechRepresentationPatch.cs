@@ -23,6 +23,10 @@ namespace MechResizer {
       var identifier = mech.MechDef.ChassisID;
       var sizeMultiplier = SizeMultiplier.Get(mech.MechDef);
       Log.TWL(0, $"{identifier}: {sizeMultiplier}");
+      if (mech is CustomMech custMech) {
+        custMech.ApplyScale(sizeMultiplier);
+        return;
+      }
       var originalLOSSourcePositions = Traverse.Create(mech).Field("originalLOSSourcePositions").GetValue<Vector3[]>();
       var originalLOSTargetPositions = Traverse.Create(mech).Field("originalLOSTargetPositions").GetValue<Vector3[]>();
       var newSourcePositions = ModSettings.LOSSourcePositions(identifier, originalLOSSourcePositions, sizeMultiplier);

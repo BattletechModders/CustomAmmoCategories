@@ -396,19 +396,24 @@ namespace CustomUnits {
       if (mechDef != null) {
         mechbay.LoadPrefab(mechDef);
         while (!mechbay.prefabsLoaded) { yield return null; }
-        string mechPrefabName = mechDef.GetCustomSimGamePrefabName();
-        GameObject gameObject = mechbay.simState.DataManager.PooledInstantiate(mechPrefabName, BattleTechResourceType.Prefab);
-        if (gameObject == null) {
-          mechPrefabName = mechDef.GetSimGamePrefabName();
-          gameObject = mechbay.simState.DataManager.PooledInstantiate_CustomMechRep_MechLab(mechPrefabName, mechDef.Chassis, true, true);
-        }
-        if (gameObject == null) {
-          mechPrefabName = mechDef.GetSimGameBasePrefabName();
-          gameObject = mechbay.simState.DataManager.PooledInstantiate_CustomMechRep_MechLab(mechPrefabName, mechDef.Chassis, true, true);
-        }
-        MechRepresentationSimGame bayRepresentation = null;
-        if (gameObject == null) {
-          //if (mechDef.Chassis.ChassisInfo().SpawnAs == SpawnType.AsVehicle) {
+        try {
+          Log.TWL(0, "MechBay.TransitionMech: all prefabs loaded. Instancing", true);
+          string mechPrefabName = mechDef.GetCustomSimGamePrefabName();
+          GameObject gameObject = mechbay.simState.DataManager.PooledInstantiate(mechPrefabName, BattleTechResourceType.Prefab);
+          Log.WL(1, "PooledInstantiate mechPrefabName " + mechPrefabName + ":" + (gameObject==null?"null":"not null"));
+          if (gameObject == null) {
+            mechPrefabName = mechDef.GetSimGamePrefabName();
+            gameObject = mechbay.simState.DataManager.PooledInstantiate_CustomMechRep_MechLab(mechPrefabName, mechDef.Chassis, true, true);
+            Log.WL(1, "PooledInstantiate_CustomMechRep_MechLab mechPrefabName " + mechPrefabName + ":" + (gameObject == null ? "null" : "not null"));
+          }
+          if (gameObject == null) {
+            mechPrefabName = mechDef.GetSimGameBasePrefabName();
+            gameObject = mechbay.simState.DataManager.PooledInstantiate_CustomMechRep_MechLab(mechPrefabName, mechDef.Chassis, true, true);
+            Log.WL(1, "PooledInstantiate_CustomMechRep_MechLab mechPrefabName " + mechPrefabName + ":" + (gameObject == null ? "null" : "not null"));
+          }
+          MechRepresentationSimGame bayRepresentation = null;
+          if (gameObject == null) {
+            //if (mechDef.Chassis.ChassisInfo().SpawnAs == SpawnType.AsVehicle) {
             Log.TWL(0, "TransitionMech spawning battle game representation " + mechDef.ChassisID + " " + mechDef.Chassis.PrefabIdentifier);
             GameObject battleGameObject = mechbay.simState.DataManager.PooledInstantiate(mechDef.Chassis.PrefabIdentifier, BattleTechResourceType.Prefab, null, null, null);
             //Vehicle vehicle = ActorFactory.CreateVehicle(vDef, pilot, team.EncounterTags, null, Guid.NewGuid().ToString(), spawnerGUID, team.HeraldryDef);
@@ -437,43 +442,49 @@ namespace CustomUnits {
             }
             //gameObject = mechbay.simState.DataManager.PooledInstantiate(mechPrefabName, BattleTechResourceType.Prefab, null, null, null);
             Log.WL(1, "requested from pool " + mechPrefabName + " result:" + (gameObject == null ? "null" : "not null"));
-          //}
-        }
-        if (gameObject != null) {
-          bayRepresentation = gameObject.GetComponent<MechRepresentationSimGame>();
-          if (bayRepresentation != null) {
-            mechbay.loadedMech(bayRepresentation);
-            CustomMechRepresentationSimGame custRep = mechbay.loadedMech() as CustomMechRepresentationSimGame;
-            if (custRep != null) {
-              custRep.InitSimGameRepresentation(mechbay.simState.DataManager, mechDef, mechbay.simState.CameraController.MechAnchor, mechbay.simState.Player1sMercUnitHeraldryDef);
-            } else {
-              mechbay.loadedMech().Init(mechbay.simState.DataManager, mechDef, mechbay.simState.CameraController.MechAnchor, mechbay.simState.Player1sMercUnitHeraldryDef);
-            }
-            Renderer[] componentsInChildren = gameObject.GetComponentsInChildren<Renderer>();
-            for (int j = 0; j < componentsInChildren.Length; j++) {
-              componentsInChildren[j].gameObject.layer = LayerMask.NameToLayer("Characters");
-            }
-            BTLightController.ResetAllShadowIndicies();
-            if (mechDef.IsVehicle()) {
+            //}
+          }
+          if (gameObject != null) {
+            bayRepresentation = gameObject.GetComponent<MechRepresentationSimGame>();
+            if (bayRepresentation != null) {
+              mechbay.loadedMech(bayRepresentation);
+              CustomMechRepresentationSimGame custRep = mechbay.loadedMech() as CustomMechRepresentationSimGame;
+              if (custRep != null) {
+                custRep.InitSimGameRepresentation(mechbay.simState.DataManager, mechDef, mechbay.simState.CameraController.MechAnchor, mechbay.simState.Player1sMercUnitHeraldryDef);
+              } else {
+                mechbay.loadedMech().Init(mechbay.simState.DataManager, mechDef, mechbay.simState.CameraController.MechAnchor, mechbay.simState.Player1sMercUnitHeraldryDef);
+              }
+              Renderer[] componentsInChildren = gameObject.GetComponentsInChildren<Renderer>();
+              for (int j = 0; j < componentsInChildren.Length; j++) {
+                componentsInChildren[j].gameObject.layer = LayerMask.NameToLayer("Characters");
+              }
+              BTLightController.ResetAllShadowIndicies();
+              //            if (mechDef.IsVehicle()) {
               var sizeMultiplier = SizeMultiplier.Get(mechDef);
               bayRepresentation.rootTransform.localScale = sizeMultiplier;
 
-              Log.WL(1, "scale as fake:" + sizeMultiplier);
+              Log.WL(1, "scale:" + sizeMultiplier);
               foreach (string tag in mechDef.MechTags) {
                 Log.WL(2, tag);
               }
-            } else {
-              var sizeMultiplier = SizeMultiplier.Get(mechDef.Chassis);
-              bayRepresentation.rootTransform.localScale = sizeMultiplier;
-              Log.WL(1, "scale normal:" + sizeMultiplier);
               foreach (string tag in mechDef.Chassis.ChassisTags) {
                 Log.WL(2, tag);
               }
+              //} else {
+              //  var sizeMultiplier = SizeMultiplier.Get(mechDef.Chassis);
+              //  bayRepresentation.rootTransform.localScale = sizeMultiplier;
+              //  Log.WL(1, "scale normal:" + sizeMultiplier);
+              //  foreach (string tag in mechDef.Chassis.ChassisTags) {
+              //    Log.WL(2, tag);
+              //  }
+              //}
             }
           }
+          mechbay.mechBay().RefreshPaintSelector();
+          mechPrefabName = null;
+        }catch(Exception e) {
+          Log.TWL(0,e.ToString(),true);
         }
-        mechbay.mechBay().RefreshPaintSelector();
-        mechPrefabName = null;
       }
       bool camSet = false;
       if (useCameraFit && mechbay.loadedMech() != null && !mechbay.simState.CameraController.CameraMoving) {

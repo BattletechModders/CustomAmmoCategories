@@ -26,6 +26,36 @@ namespace CustAmmoCategories {
     }
   }
   public static class ExplosionAPIHelper{
+    public class ExplosionWeaponData {
+      public AbstractActor unit { get; set; }
+      public BaseComponentRef componentRef { get; set; }
+      public Weapon weapon { get; set; }
+      public ExplosionWeaponData(AbstractActor unit) {
+        this.unit = unit;
+        if (unit is Mech mech) {
+          MechComponentRef mechComponentRef = new MechComponentRef("Weapon_Laser_AI_Imaginary", "", ComponentType.Weapon, ChassisLocations.CenterTorso);
+          mechComponentRef.DataManager = unit.Combat.DataManager;
+          mechComponentRef.RefreshComponentDef();
+          componentRef = mechComponentRef;
+          this.weapon = new Weapon(mech, unit.Combat, mechComponentRef, unit.uid + "_Explosion");
+        }else if(unit is Vehicle vehcile) {
+          VehicleComponentRef vehicleComponentRef = new VehicleComponentRef("Weapon_Laser_AI_Imaginary", "", ComponentType.Weapon, VehicleChassisLocations.Front);
+          vehicleComponentRef.DataManager = unit.Combat.DataManager;
+          vehicleComponentRef.RefreshComponentDef();
+          componentRef = vehicleComponentRef;
+          this.weapon = new Weapon(vehcile, unit.Combat, vehicleComponentRef, unit.uid + "_Explosion");
+        }else if(unit is Turret turret) {
+          TurretComponentRef turretComponentRef = new TurretComponentRef("Weapon_Laser_AI_Imaginary", "", ComponentType.Weapon, VehicleChassisLocations.Front);
+          turretComponentRef.DataManager = unit.Combat.DataManager;
+          turretComponentRef.RefreshComponentDef();
+          componentRef = turretComponentRef;
+          this.weapon = new Weapon(turret, unit.Combat, turretComponentRef, unit.uid + "_Explosion");
+        }
+        this.weapon.EnableWeapon();
+        this.weapon.ResetWeapon();
+      }
+    }
+    private static Dictionary<AbstractActor, ExplosionWeaponData> exposionWeapon = new Dictionary<AbstractActor, ExplosionWeaponData>();
     private static CombatGameState combat;
     private static AbstractActor fakeActor;
     private static Weapon fakeWeapon;
@@ -53,39 +83,49 @@ namespace CustAmmoCategories {
       combat = null;
       fakeWeapon = null;
       Inited = false;
+      exposionWeapon.Clear();
     }
     public static void Init(CombatGameState combat) {
-      GUID = "FAKE_"+Guid.NewGuid().ToString();
-      ExplosionAPIHelper.combat = combat;
-      AbstractActor srcActor = null;
-      foreach(AbstractActor actor in combat.AllActors) {
-        if((actor.TeamId == combat.LocalPlayerTeamGuid)&&(actor.Weapons.Count > 0)
-          &&((actor.UnitType == UnitType.Vehicle)||(actor.UnitType == UnitType.Mech))) { srcActor = actor; break; }
-      };
-      if (srcActor == null) { return; }
-      Mech srcMech = srcActor as Mech;
-      Vehicle srcVehicle = srcActor as Vehicle;
-      if ((srcMech == null) && (srcVehicle == null)) { return; }
-      if(srcMech != null) {
-        fakeActor = new Mech(srcMech.MechDef,srcMech.pilot.pilotDef,new HBS.Collections.TagSet(), GUID, combat, srcMech.spawnerGUID, srcMech.CustomHeraldryDef);
-        fakeActor.SetGuid(GUID);
-        MechComponentRef cmpRef = new MechComponentRef("FakeWeapon", "", ComponentType.Weapon, ChassisLocations.CenterTorso);
-        cmpRef.ComponentDefID = srcMech.Weapons[0].defId;
-        fakeWeapon = new Weapon(fakeActor as Mech,combat, cmpRef, GUID+".0");
-        typeof(MechComponent).GetProperty("componentDef", BindingFlags.Instance | BindingFlags.Public).GetSetMethod(true).Invoke(fakeWeapon, new object[1] { (object)srcMech.Weapons[0].componentDef });
+      try {
+        Log.M.TWL(0, "ExplosionAPIHelper.Init");
+        GUID = "FAKE_" + Guid.NewGuid().ToString();
+        ExplosionAPIHelper.combat = combat;
+        AbstractActor srcActor = null;
+        foreach (AbstractActor actor in combat.AllActors) {
+          if ((actor.TeamId == combat.LocalPlayerTeamGuid) && (actor.Weapons.Count > 0)
+            && ((actor.UnitType == UnitType.Vehicle) || (actor.UnitType == UnitType.Mech))) { srcActor = actor; break; }
+        };
+        if (srcActor == null) { return; }
+        Mech srcMech = srcActor as Mech;
+        Vehicle srcVehicle = srcActor as Vehicle;
+        if ((srcMech == null) && (srcVehicle == null)) { return; }
+        if (srcMech != null) {
+          fakeActor = new Mech(srcMech.MechDef, srcMech.pilot.pilotDef, new HBS.Collections.TagSet(), GUID, combat, srcMech.spawnerGUID, srcMech.CustomHeraldryDef);
+          fakeActor.SetGuid(GUID);
+          MechComponentRef cmpRef = new MechComponentRef("Weapon_Laser_AI_Imaginary", "", ComponentType.Weapon, ChassisLocations.CenterTorso);
+          cmpRef.DataManager = fakeActor.Combat.DataManager;
+          cmpRef.RefreshComponentDef();
+          //cmpRef.ComponentDefID = srcMech.Weapons[0].defId;
+          fakeWeapon = new Weapon(fakeActor as Mech, combat, cmpRef, GUID + ".Explosion");
+          typeof(MechComponent).GetProperty("componentDef", BindingFlags.Instance | BindingFlags.Public).GetSetMethod(true).Invoke(fakeWeapon, new object[1] { (object)srcMech.Weapons[0].componentDef });
+        }
+        if (srcVehicle != null) {
+          fakeActor = new Vehicle(srcVehicle.VehicleDef, srcVehicle.pilot.pilotDef, new HBS.Collections.TagSet(), GUID, combat, srcVehicle.spawnerGUID, srcVehicle.CustomHeraldryDef);
+          fakeActor.SetGuid(GUID);
+          VehicleComponentRef cmpRef = new VehicleComponentRef("Weapon_Laser_AI_Imaginary", "", ComponentType.Weapon, VehicleChassisLocations.Front);
+          cmpRef.DataManager = fakeActor.Combat.DataManager;
+          cmpRef.RefreshComponentDef();
+          //cmpRef.ComponentDefID = srcVehicle.Weapons[0].defId;
+          fakeWeapon = new Weapon(fakeActor as Vehicle, combat, cmpRef, GUID + ".Explosion");
+          typeof(MechComponent).GetProperty("componentDef", BindingFlags.Instance | BindingFlags.Public).GetSetMethod(true).Invoke(fakeWeapon, new object[1] { (object)srcVehicle.Weapons[0].componentDef });
+        }
+        if ((fakeActor == null) || (fakeWeapon == null)) { return; }
+        typeof(AbstractActor).GetField("_team", BindingFlags.NonPublic | BindingFlags.Instance).SetValue(fakeActor, combat.LocalPlayerTeam);
+        typeof(AbstractActor).GetField("_teamId", BindingFlags.NonPublic | BindingFlags.Instance).SetValue(fakeActor, combat.LocalPlayerTeamGuid);
+        Inited = true;
+      }catch(Exception e) {
+        Log.M.TWL(0,e.ToString(),true);
       }
-      if (srcVehicle != null) {
-        fakeActor = new Vehicle(srcVehicle.VehicleDef, srcVehicle.pilot.pilotDef, new HBS.Collections.TagSet(), GUID, combat, srcVehicle.spawnerGUID, srcVehicle.CustomHeraldryDef);
-        fakeActor.SetGuid(GUID);
-        VehicleComponentRef cmpRef = new VehicleComponentRef("FakeWeapon", "", ComponentType.Weapon, VehicleChassisLocations.Front);
-        cmpRef.ComponentDefID = srcVehicle.Weapons[0].defId;
-        fakeWeapon = new Weapon(fakeActor as Vehicle, combat, new VehicleComponentRef("FakeWeapon", "", ComponentType.Weapon, VehicleChassisLocations.Front), GUID + ".0");
-        typeof(MechComponent).GetProperty("componentDef", BindingFlags.Instance | BindingFlags.Public).GetSetMethod(true).Invoke(fakeWeapon, new object[1] { (object)srcVehicle.Weapons[0].componentDef });
-      }
-      if ((fakeActor == null)||(fakeWeapon == null)) { return; }
-      typeof(AbstractActor).GetField("_team", BindingFlags.NonPublic | BindingFlags.Instance).SetValue(fakeActor, combat.LocalPlayerTeam);
-      typeof(AbstractActor).GetField("_teamId", BindingFlags.NonPublic | BindingFlags.Instance).SetValue(fakeActor, combat.LocalPlayerTeamGuid);
-      Inited = true;
     }
     public static DesignMaskDef TempDesignMask(string name) {
       if (string.IsNullOrEmpty(name)) { return null; };

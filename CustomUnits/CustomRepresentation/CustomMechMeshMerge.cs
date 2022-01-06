@@ -498,6 +498,7 @@ namespace CustomUnits {
       if (this.combinedMesh0 != null) {
         this.mainSkinRenderer0.sharedMesh = this.combinedMesh0;
         this.mainSkinRenderer0.enabled = true;
+        this.mainSkinRenderer0.bones = this.boneList.ToArray();
       } else {
         this.mainSkinRenderer0.enabled = false;
       }
@@ -505,6 +506,7 @@ namespace CustomUnits {
         if ((Object)this.combinedMesh1 != (Object)null) {
           this.mainSkinRenderer1.sharedMesh = this.combinedMesh1;
           this.mainSkinRenderer1.enabled = true;
+          this.mainSkinRenderer1.bones = this.boneList.ToArray();
         } else {
           this.mainSkinRenderer1.enabled = false;
         }

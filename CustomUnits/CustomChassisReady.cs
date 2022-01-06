@@ -1,5 +1,7 @@
 ﻿using BattleTech;
 using BattleTech.Data;
+using BattleTech.Save;
+using BattleTech.Save.Core;
 using BattleTech.UI;
 using BattleTech.UI.TMProWrapper;
 using CustomComponents;
@@ -10,12 +12,51 @@ using Localize;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Text;
 using System.Threading;
 using UnityEngine;
 using UnityEngine.UI;
 
 namespace CustomUnits {
+  public static class SaveLayoutHelper {
+    public static string BaseDirectory { get; set; }
+    public static void Init(string dir) {
+      BaseDirectory = Path.Combine(dir,"user_layouts");
+      if (Directory.Exists(BaseDirectory) == false) { Directory.CreateDirectory(BaseDirectory); }
+    }
+    public static void Save(SavedLoadout layout) {
+      try {
+        string path = Path.Combine(BaseDirectory, layout.ChassisId + "_" + layout.Name + ".json");
+        File.WriteAllText(path, JsonConvert.SerializeObject(layout, Formatting.Indented));
+      }catch(Exception e) {
+        Log.TWL(0,e.ToString(),true);
+      }
+    }
+    public static List<SavedLoadout> Load(string ChassisId) {
+      List<SavedLoadout> result = new List<SavedLoadout>();
+      try {
+        string[] files = Directory.GetFiles(BaseDirectory, ChassisId + "_*.json", SearchOption.TopDirectoryOnly);
+        foreach (string f in files) {
+          try {
+            result.Add(JsonConvert.DeserializeObject<SavedLoadout>(File.ReadAllText(f)));
+          } catch (Exception e) {
+            Log.TWL(0, e.ToString(), true);
+          }
+        }
+      }catch(Exception e) {
+        Log.TWL(0, e.ToString(), true);
+      }
+      return result;
+    }
+    public static List<SavedLoadout> LoadAll(HashSet<string> chassisIds) {
+      List<SavedLoadout> result = new List<SavedLoadout>();
+      foreach(string chassisId in chassisIds) {
+        result.AddRange(Load(chassisId));
+      }
+      return result;
+    }
+  }
   public class SavedInventoryItem {
     public string ComponentID { get; set; }
     public ComponentType componentType { get; set; }
@@ -116,24 +157,19 @@ namespace CustomUnits {
         while (counter < 10) {
           if (result.ContainsKey(temp_name) == false) { result.Add(temp_name, inventory); break; }
           ++counter;
-          temp_name = name + " variant " + counter;
+          temp_name = name + " V" + counter;
         }
       }
-      if (this.mechLabPanel.IsSimGame) {
-        Statistic savedLayoutsStat = this.mechLabPanel.Sim.CompanyStats.GetStatistic(SAVED_LOADOUTS_STATISTIC);
-        if(savedLayoutsStat != null) {
-          string json = savedLayoutsStat.Value<string>();
-          try {
-            SavedLoadouts loadouts = JsonConvert.DeserializeObject<SavedLoadouts>(json);
-            foreach (var loadout in loadouts.loadouts) {
-              if (chassisIDs.Contains(loadout.Value.ChassisId) == false) { continue; }
-              ChassisDef chassisDef = this.mechLabPanel.dataManager.GetObjectOfType<ChassisDef>(loadout.Value.ChassisId, BattleTechResourceType.ChassisDef);
-              if (chassisDef == null) { continue; }
-              string name = chassisDef.VariantName + " " + loadout.Value.Name;
-              if (result.ContainsKey(name) == false) { result.Add(name, new List<SavedInventoryItem>(loadout.Value.inventory)); break; }
-            }
-          } catch(Exception e) {
-            Log.TWL(0,e.ToString(),true);
+      List<SavedLoadout> userLayouts = SaveLayoutHelper.LoadAll(chassisIDs);
+      foreach (SavedLoadout userConfig in userLayouts) {
+        if(this.mechLabPanel.dataManager.ChassisDefs.TryGet(userConfig.ChassisId, out ChassisDef confChassis)) {
+          string name = confChassis.VariantName + " " + userConfig.Name;
+          string temp_name = name;
+          int counter = 0;
+          while (counter < 10) {
+            if (result.ContainsKey(temp_name) == false) { result.Add(temp_name, new List<SavedInventoryItem>(userConfig.inventory)); break; }
+            ++counter;
+            temp_name = name + " V" + counter;
           }
         }
       }
@@ -222,10 +258,13 @@ namespace CustomUnits {
         return result;
       }
       Log.WL(1, "widget:" + item.ItemWidget == null ? "null" : item.ItemWidget.ComponentRef.ComponentDefID);
-      bool widgetControllerNormal = false;
+      //bool widgetControllerNormal = false;
       if ((item.ItemWidget != null) && (item.ItemWidget.controller == item)) {
         Log.WL(2, "widget controller is normal");
-        widgetControllerNormal = true;
+        //widgetControllerNormal = true;
+      } else {
+        Log.WL(2, "widget controller is bad");
+        return result;
       }
       MechLabItemSlotElement old_dragItem = Traverse.Create(this.mechLabPanel).Field<MechLabItemSlotElement>("dragItem").Value;
       MechComponentRef componentRef = null;
@@ -237,20 +276,17 @@ namespace CustomUnits {
       }
       Log.WL(1, "componentRef:"+ componentRef.ComponentDefID+" location:"+ componentRef.MountedLocation);
       MechLabPanel_ShowDropErrorMessage.errorMessage = null;
+      MechLabInventoryWidget inventoryWidget = Traverse.Create(this.mechLabPanel).Field<MechLabInventoryWidget>("inventoryWidget").Value;
+      Traverse.Create(this.mechLabPanel).Field<MechLabItemSlotElement>("dragItem").Value = this.mechLabPanel.CreateMechComponentItem(item.ItemWidget.ComponentRef, true, item.ItemWidget.ComponentRef.MountedLocation, item.ItemWidget.DropParent, item.ItemWidget);
       locationWidget.OnMechLabDrop(null, MechLabDropTargetType.NOT_SET);
-      if(MechLabPanel_ShowDropErrorMessage.errorMessage == null) {
-        if (widgetControllerNormal) {
-          MechLabInventoryWidget inventoryWidget = Traverse.Create(this.mechLabPanel).Field<MechLabInventoryWidget>("inventoryWidget").Value;
-          Traverse.Create(this.mechLabPanel).Field<MechLabItemSlotElement>("dragItem").Value = this.mechLabPanel.CreateMechComponentItem(item.ItemWidget.ComponentRef, true, item.ItemWidget.ComponentRef.MountedLocation, item.ItemWidget.DropParent, item.ItemWidget);
-          inventoryWidget.OnRemoveItem(item.ItemWidget, true);
-        } else {
-          Traverse.Create(this.mechLabPanel).Field<MechLabItemSlotElement>("dragItem").Value = this.mechLabPanel.CreateMechComponentItem(componentRef, true, componentRef.MountedLocation, locationWidget, null);
-        }
+      Traverse.Create(this.mechLabPanel).Field<MechLabItemSlotElement>("dragItem").Value = old_dragItem;
+      if (MechLabPanel_ShowDropErrorMessage.errorMessage == null) {
       } else {
         result = MechLabPanel_ShowDropErrorMessage.errorMessage;
         MechLabPanel_ShowDropErrorMessage.errorMessage = null;
       }
-      Traverse.Create(this.mechLabPanel).Field<MechLabItemSlotElement>("dragItem").Value = old_dragItem;
+      inventoryWidget.OnRemoveItem(item.ItemWidget, true);
+      Log.WL(1, "quantity:" + item.quantity);
       return result;
     }
     public static int ComponentRefWeight(MechComponentRef componentRef) {
@@ -277,24 +313,11 @@ namespace CustomUnits {
         inventory.Add(new SavedInventoryItem(componentRef.ComponentDefID, componentRef.ComponentDefType, componentRef.MountedLocation));
         Log.WL(1, componentRef.ComponentDefID+":"+componentRef.ComponentDefType+":"+componentRef.MountedLocation);
       }
-      SavedLoadouts loadouts = null;
-      Statistic savedLayoutsStat = this.mechLabPanel.Sim.CompanyStats.GetStatistic(SAVED_LOADOUTS_STATISTIC);
-      try {      
-        if (savedLayoutsStat != null) {
-          string json = savedLayoutsStat.Value<string>();
-          loadouts = JsonConvert.DeserializeObject<SavedLoadouts>(json);
-        }
-      } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
-      }
-      if (loadouts == null) { loadouts = new SavedLoadouts(); }
       SavedLoadout loadout = new SavedLoadout();
       loadout.ChassisId = this.mechLabPanel.originalMechDef.ChassisID;
       loadout.inventory = inventory;
       loadout.Name = name;
-      loadouts.loadouts.Add(Guid.NewGuid().ToString(),loadout);
-      if (savedLayoutsStat == null) { savedLayoutsStat = this.mechLabPanel.Sim.CompanyStats.AddStatistic<string>(SAVED_LOADOUTS_STATISTIC, string.Empty); }
-      savedLayoutsStat.SetValue<string>(JsonConvert.SerializeObject(loadouts));
+      SaveLayoutHelper.Save(loadout);
     }
     public void RestoreAs(string name,List<SavedInventoryItem> inventory) {
       try {
@@ -342,10 +365,10 @@ namespace CustomUnits {
           }
           string componentName = new Localize.Text(string.IsNullOrEmpty(componentRef.Def.Description.UIName) ? componentRef.Def.Description.Name : componentRef.Def.Description.UIName).ToString();
           if(foundItem == null) {
-            missingItems.AppendLine(componentName);
+            missingItems.AppendLine(componentName +" absent in storage");
             continue;
           }
-          Log.WL(1, "found:" + componentRef.Def.Description.Id+":"+ componentRef.MountedLocation + " widget:"+(foundItem.ItemWidget==null?"null": foundItem.ItemWidget.gameObject.name));
+          Log.WL(1, "found:" + componentRef.Def.Description.Id+":"+ componentRef.MountedLocation + " count:"+ foundItem.quantity);
           if(foundItem.ItemWidget != null) {
             Log.WL(2, "widget controller:" + (foundItem.ItemWidget.controller == null ? "null" : foundItem.ItemWidget.controller.componentDef.Description.Id));
           }
@@ -497,6 +520,17 @@ namespace CustomUnits {
       }
     }
   }
+  [HarmonyPatch(typeof(SaveManager))]
+  [HarmonyPatch(MethodType.Constructor)]
+  [HarmonyPatch(new Type[] { typeof(MessageCenter) })]
+  public static class SaveManager_Constructor {
+    public static void Postfix(SaveManager __instance) {
+      Log.TWL(0, "SaveManager:" + Traverse.Create(Traverse.Create(Traverse.Create(__instance).Field<SaveSystem>("saveSystem").Value).Field<WriteLocation>("localWriteLocation").Value).Field<string>("rootPath").Value);
+      //FixedMechDefHelper.Init(Path.GetDirectoryName(Traverse.Create(Traverse.Create(Traverse.Create(__instance).Field<SaveSystem>("saveSystem").Value).Field<WriteLocation>("localWriteLocation").Value).Field<string>("rootPath").Value));
+      SaveLayoutHelper.Init(Path.GetDirectoryName(Traverse.Create(Traverse.Create(Traverse.Create(__instance).Field<SaveSystem>("saveSystem").Value).Field<WriteLocation>("localWriteLocation").Value).Field<string>("rootPath").Value));
+    }
+  }
+
   [HarmonyPatch(typeof(MechLabPanel))]
   [HarmonyPatch("InitWidgets")]
   [HarmonyPatch(MethodType.Normal)]

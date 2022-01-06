@@ -23,7 +23,9 @@ namespace CustAmmoCategories {
           return;
         }
         if (__instance.weaponDef == null) {
-          Log.M?.TWL(0, "weapon without definition\n" + Environment.StackTrace);
+          Log.M?.TWL(0, "weapon without definition");
+          Log.M?.WL(1, "ref:" + (__instance.baseComponentRef==null?"null":__instance.baseComponentRef.ComponentDefID));
+          Log.M?.WL(1, "uid:"+__instance.uid);
           return;
         }
         if (__instance.weaponDef.Description == null) {

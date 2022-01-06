@@ -356,28 +356,32 @@ namespace CustomUnits {
       }
     }
   }
-  [HarmonyPatch(typeof(Mech))]
-  [HarmonyPatch("DamageLocation")]
-  [HarmonyPatch(MethodType.Normal)]
-  [HarmonyPatch(new Type[] { typeof(int), typeof(WeaponHitInfo), typeof(ArmorLocation), typeof(Weapon), typeof(float), typeof(float), typeof(int), typeof(AttackImpactQuality), typeof(DamageType) })]
-  public static class Mech_DamageLocation {
-    public static void Prefix(Mech __instance, int originalHitLoc, WeaponHitInfo hitInfo, ArmorLocation aLoc, Weapon weapon, float totalArmorDamage, float directStructureDamage, int hitIndex, AttackImpactQuality impactQuality, DamageType damageType) {
-      try {
-        Log.TWL(0, "Mech.NukeStructureLocation prefix " + __instance.Description.Id + " threadid:" + Thread.CurrentThread.ManagedThreadId);
-        Thread.CurrentThread.pushActor(__instance);
-      } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
-      }
-    }
-    public static void Postfix(Mech __instance, int originalHitLoc, WeaponHitInfo hitInfo, ArmorLocation aLoc, Weapon weapon, float totalArmorDamage, float directStructureDamage, int hitIndex, AttackImpactQuality impactQuality, DamageType damageType) {
-      try {
-        Log.TWL(0, "Mech.NukeStructureLocation postfix" + __instance.Description.Id + " threadid:" + Thread.CurrentThread.ManagedThreadId);
-        Thread.CurrentThread.clearActor();
-      } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
-      }
-    }
-  }
+  //[HarmonyPatch(typeof(Mech))]
+  //[HarmonyPatch("DamageLocation")]
+  //[HarmonyPatch(MethodType.Normal)]
+  //[HarmonyPatch(new Type[] { typeof(int), typeof(WeaponHitInfo), typeof(ArmorLocation), typeof(Weapon), typeof(float), typeof(float), typeof(int), typeof(AttackImpactQuality), typeof(DamageType) })]
+  //public static class Mech_DamageLocation {
+  //  public static void Prefix(Mech __instance, int originalHitLoc, WeaponHitInfo hitInfo, ArmorLocation aLoc, Weapon weapon, float totalArmorDamage, float directStructureDamage, int hitIndex, AttackImpactQuality impactQuality, DamageType damageType, ref bool? __state) {
+  //    try {
+  //      Log.TWL(0, "Mech.NukeStructureLocation prefix " + __instance.Description.Id + " threadid:" + Thread.CurrentThread.ManagedThreadId);
+  //      Thread.CurrentThread.pushActor(__instance);
+  //      __state = true;
+  //    } catch (Exception e) {
+  //      Log.TWL(0, e.ToString(), true);
+  //    }
+  //  }
+  //  public static void Postfix(Mech __instance, int originalHitLoc, WeaponHitInfo hitInfo, ArmorLocation aLoc, Weapon weapon, float totalArmorDamage, float directStructureDamage, int hitIndex, AttackImpactQuality impactQuality, DamageType damageType, ref bool? __state) {
+  //    try {
+  //      Log.TWL(0, "Mech.NukeStructureLocation postfix" + __instance.Description.Id + " threadid:" + Thread.CurrentThread.ManagedThreadId);
+  //      if ((__state != null) && (__state.HasValue) && (__state.Value == true)) {
+  //        Log.WL(1,"prefix been called. clearing actor");
+  //        Thread.CurrentThread.clearActor();
+  //      }
+  //    } catch (Exception e) {
+  //      Log.TWL(0, e.ToString(), true);
+  //    }
+  //  }
+  //}
   [HarmonyPatch(typeof(MechStructureRules))]
   [HarmonyPatch("GetDependentLocation")]
   [HarmonyPatch(MethodType.Normal)]

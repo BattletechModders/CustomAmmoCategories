@@ -1432,7 +1432,7 @@ namespace CustomUnits {
           __instance.OwningActor.LogSprintBegin();
         else
           __instance.OwningActor.LogMoveBegin();
-        __instance.OwningActor.MovingToPosition = new PositionAndRotation(__instance.FinalPos, Quaternion.LookRotation(__instance.FinalHeading), Combat.Constants);
+        __instance.OwningActor.MovingToPosition = new PositionAndRotation(__instance.FinalPos, __instance.FinalHeading.sqrMagnitude > Core.Epsilon ? Quaternion.LookRotation(__instance.FinalHeading) : Quaternion.identity, Combat.Constants);
         List<UnityEngine.Rect> Rectangles = new List<UnityEngine.Rect>();
         float num = __instance.OwningActor.Radius * 2f;
         Rectangles.Add(UnityEngine.Rect.MinMaxRect(__instance.OwningActor.CurrentPosition.x - num, __instance.OwningActor.CurrentPosition.z - num, __instance.OwningActor.CurrentPosition.x + num, __instance.OwningActor.CurrentPosition.z + num));

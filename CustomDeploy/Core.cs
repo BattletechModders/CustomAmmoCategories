@@ -23,6 +23,19 @@ using System.Threading.Tasks;
 using UnityEngine;
 using UnityHeapCrawler;
 
+namespace CustomUnits {
+  public static class DamageLocationHelper {
+    public static bool DamageLocation_private(this Mech mech,int originalHitLoc,WeaponHitInfo hitInfo,ArmorLocation aLoc,Weapon weapon,float totalArmorDamage,float directStructureDamage,int hitIndex,AttackImpactQuality impactQuality,DamageType damageType) {
+      try {
+        return mech.DamageLocation(originalHitLoc, hitInfo, aLoc, weapon, totalArmorDamage, directStructureDamage, hitIndex, impactQuality, damageType);
+      }catch(Exception e) {
+        CustomDeploy.Log.TWL(0,e.ToString(),true);
+        return false;
+      }
+    }
+  }
+}
+
 namespace CustomDeploy{
   public static class Log {
     //private static string m_assemblyFile;
@@ -107,20 +120,18 @@ namespace CustomDeploy{
       WL(line, isCritical);
     }
   }
-  [HarmonyPatch(typeof(Briefing))]
-  [HarmonyPatch("BeginPlaying")]
-  [HarmonyPatch(MethodType.Normal)]
-  [HarmonyPatch(new Type[] { })]
-  public static class Briefing_BeginPlaying {
-    public static bool Prefix(Briefing __instance) {
-      try {
-        return true;
-      } catch (Exception e) {
-        Log.TWL(0, e.ToString());
-        return true;
-      }
-    }
-  }
+  //[HarmonyPatch(typeof(Quaternion))]
+  //[HarmonyPatch("LookRotation")]
+  //[HarmonyPatch(MethodType.Normal)]
+  //[HarmonyPatch(new Type[] { typeof(Vector3), typeof(Vector3) })]
+  //public static class Quaternion_LookRotation {
+  //  public static void Prefix(Vector3 forward, Vector3 upwards) {
+  //    if (forward == Vector3.zero) {
+  //      Log.TWL(0, "Quaternion.LookRotation zero vector");
+  //      Log.WL(0, Environment.StackTrace);
+  //    }
+  //  }
+  //}
   [HarmonyPatch(typeof(Interpolator))]
   [HarmonyPatch("GetStringFromObjectDispatch")]
   [HarmonyPatch(MethodType.Normal)]

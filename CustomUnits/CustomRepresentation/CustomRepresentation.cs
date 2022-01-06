@@ -222,6 +222,12 @@ namespace CustomUnits {
     public void OnUnitDestroy() {
       Log.TWL(0, "CustomRepresentation.OnDestroy");
       this.InBattle = false;
+      this.idleTimeElapsed.Stop();
+      foreach (CustomTwistAnimatorInfo info in twistAnimators) { info.StartRandomIdle = false; }
+      this.IdleTwistL = 0f;
+      this.IdleTwistR = 0f;
+      this.TwistL = 0f;
+      this.TwistR = 0f;
       if (GameRepresentation == null) { return; }
       //return;
       if (CustomDefinition.OnDestroy.SuppressCombinedMesh) {
@@ -1561,11 +1567,12 @@ namespace CustomUnits {
         unitGO.transform.localPosition = Vector3.zero;
         unitGO.transform.localRotation = Quaternion.identity;
         unitGO.transform.localScale = new Vector3(1f, 1f, 1f);
-        Transform unit_j_Root = unitGO.transform.FindRecursive("j_Root");
-        if (unit_j_Root == null) { unit_j_Root = unitGO.transform; }
-        unit_j_Root.localScale = new Vector3(customInfo.SquadInfo.UnitSize, customInfo.SquadInfo.UnitSize, customInfo.SquadInfo.UnitSize);
+        //Transform unit_j_Root = unitGO.transform.FindRecursive("j_Root");
+        //if (unit_j_Root == null) { unit_j_Root = unitGO.transform; }
+        Vector3 unitScale = new Vector3(customInfo.SquadInfo.UnitSize, customInfo.SquadInfo.UnitSize, customInfo.SquadInfo.UnitSize);
         CustomMechRepresentation unitRep = unitGO.GetComponent<CustomMechRepresentation>();
         if (unitRep != null) {
+          unitRep.ApplyScale(unitScale);
           squadMechRepresentation.AddUnit(unitRep);
           unitRep.chassisDef = chassisDef;
           unitRep.HardpointData = chassisDef.HardpointDataDef;
@@ -1611,7 +1618,7 @@ namespace CustomUnits {
       objectsToDestroy.Clear();
       string squadRepId = id;
       if (custRepDef != null) {
-        if (string.IsNullOrEmpty(custRepDef.Id) == false) { squadRepId = custRepDef.Id; }
+        if (string.IsNullOrEmpty(custRepDef.PrefabBase) == false) { squadRepId = string.Format("chrPrfComp_{0}_simgame", custRepDef.PrefabBase); }
       }
       for (int index = 0; index < customInfo.SquadInfo.Troopers; ++index) {
         GameObject unitGO = dataManager.PooledInstantiate_CustomMechRep_MechLab(squadRepId, chassisDef, false, true);
@@ -1779,13 +1786,13 @@ namespace CustomUnits {
     public static GameObject PooledInstantiate_CustomMechRep_MechLab(this DataManager dataManager, string id, ChassisDef chassisDef, bool squadProcess, bool quadProcess) {
       string origId = id;
       CustomActorRepresentationDef custRepDef = CustomActorRepresentationHelper.FindSimGame(origId);
+      Log.TWL(0, "DataManager.PooledInstantiate_CustomMechRep_MechLab " +id + " custRepDef:" + (custRepDef == null?"null":"not null"));
       if (custRepDef == null) {
         custRepDef = CustomActorRepresentationHelper.defaultCustomMechRepDef;
       } else {
         //id = custRepDef.SourcePrefabIdentifier;
         id = origId.Replace(custRepDef.PrefabBase, custRepDef.SourcePrefabBase);
       }
-      Log.TWL(0, "DataManager.PooledInstantiateCustomRep " + origId + "->" + id);
       GameObject result = dataManager.PooledInstantiate(id, BattleTechResourceType.Prefab);
       UnitCustomInfo customInfo = chassisDef.GetCustomInfo();
       if (result != null) {

@@ -446,50 +446,57 @@ namespace CustomUnits {
       }
     }
     public static void Postfix(HardpointDataDef __instance, ref CustomHardpointsDef __state) {
-      if (__state == null) { return; }
-      string id = __instance.ID;
-      foreach (CustomHardpointDef chd in __state.prefabs) {
-        if (string.IsNullOrEmpty(chd.name)) { chd.name = chd.prefab; }
-        if (string.IsNullOrEmpty(chd.name)) { continue; }
-        string custHardpointName = id + "." + chd.name;
-        CustomHardPointsHelper.Add(custHardpointName, chd);
-      }
-      foreach (var alias in __state.aliases) {
-        alias.Value.name = alias.Key;
-        CustomHardPointsHelper.Add(alias.Value.name, id + "." + alias.Value.prefab);
-      }
-      if (string.IsNullOrEmpty(__instance.ID) == false) {
-        CustomHardPointsHelper.Add(__instance.ID, __state);
-      }
-      foreach (var alias in __state.aliases) {
-        int index = -1;
-        for (int i = 0; i < __instance.HardpointData.Length; ++i) {
-          if (__instance.HardpointData[i].location == alias.Value.location) { index = i; break; };
+      try {
+        if (__state == null) { return; }
+        string id = __instance.ID;
+        foreach (CustomHardpointDef chd in __state.prefabs) {
+          if (string.IsNullOrEmpty(chd.name)) { chd.name = chd.prefab; }
+          if (string.IsNullOrEmpty(chd.name)) { continue; }
+          string custHardpointName = id + "." + chd.name;
+          CustomHardPointsHelper.Add(custHardpointName, chd);
         }
-        if (index == -1) { continue; }
-        int hindex = 0;
-        if (alias.Key.Contains("_blank_")) {
-          HashSet<string> tmp_blank = __instance.HardpointData[index].blanks.ToHashSet();
-          tmp_blank.Add(alias.Key);
-          __instance.HardpointData[index].blanks = tmp_blank.ToArray();
-          continue;
+        foreach (var alias in __state.aliases) {
+          alias.Value.name = alias.Key;
+          CustomHardPointsHelper.Add(alias.Value.name, id + "." + alias.Value.prefab);
         }
-        try {
-          hindex = int.Parse(alias.Key.Substring(alias.Key.Length - 1)) - 1;
-        } catch (Exception e) {
-          Log.TWL(0,e.ToString(), true);
+        if (string.IsNullOrEmpty(__instance.ID) == false) {
+          CustomHardPointsHelper.Add(__instance.ID, __state);
         }
-        if (hindex < 0) { continue; }
-        if(hindex >= __instance.HardpointData[index].weapons.Length) {
-          List<string[]> tmplist = __instance.HardpointData[index].weapons.ToList();
-          tmplist.Add(new string[] { });
-          __instance.HardpointData[index].weapons = tmplist.ToArray();
+        foreach (var alias in __state.aliases) {
+          int index = -1;
+          for (int i = 0; i < __instance.HardpointData.Length; ++i) {
+            if (__instance.HardpointData[i].location == alias.Value.location) { index = i; break; };
+          }
+          if (index == -1) { continue; }
+          int hindex = 0;
+          if (alias.Key.Contains("_blank_")) {
+            HashSet<string> tmp_blank = __instance.HardpointData[index].blanks.ToHashSet();
+            tmp_blank.Add(alias.Key);
+            __instance.HardpointData[index].blanks = tmp_blank.ToArray();
+            continue;
+          }
+          try {
+            hindex = int.Parse(alias.Key.Substring(alias.Key.Length - 1)) - 1;
+          } catch (Exception e) {
+            Log.TWL(0, e.ToString(), true);
+          }
+          if (hindex < 0) { continue; }
+          if (hindex >= __instance.HardpointData[index].weapons.Length) {
+            List<string[]> tmplist = __instance.HardpointData[index].weapons.ToList();
+            tmplist.Add(new string[] { });
+            __instance.HardpointData[index].weapons = tmplist.ToArray();
+          }
+          HashSet<string> tmp_weapons = __instance.HardpointData[index].weapons[hindex].ToHashSet();
+          tmp_weapons.Add(alias.Key);
+          __instance.HardpointData[index].weapons[hindex] = tmp_weapons.ToArray();
         }
-        HashSet<string> tmp_weapons = __instance.HardpointData[index].weapons[hindex].ToHashSet();
-        tmp_weapons.Add(alias.Key);
-        __instance.HardpointData[index].weapons[hindex] = tmp_weapons.ToArray();
+        __state.InitGroups(__instance);
+        if (__instance.ID == "hardpointdatadef_rotunda") {
+          Log.TWL(0, "HardpointDataDef.Loaded:"+ __instance.ID+ " HardpointData:" + (__instance.HardpointData == null?"null": __instance.HardpointData.Length.ToString()));
+        }
+      }catch(Exception e) {
+        Log.TWL(0, e.ToString(), true);
       }
-      __state.InitGroups(__instance);
       //Log.TWL(0,JsonConvert.SerializeObject(__instance, Formatting.Indented));
     }
   }

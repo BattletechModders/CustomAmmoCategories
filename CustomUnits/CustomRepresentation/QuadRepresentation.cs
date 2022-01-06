@@ -147,17 +147,20 @@ namespace CustomUnits {
       rep.headlightReps.Clear();
     }
     public virtual void InitDestructable(Transform bodyRoot) {
+      Log.TWL(0, "QuadRepresentation.InitDestructable quadVisualInfo:"+(this.quadVisualInfo==null?"null":"not null"));
       if (this.quadVisualInfo == null) { return; }
       foreach(var destr in this.quadVisualInfo.Destructables) {
+        Log.WL(1, "searching obj:" + destr.Value.Name + " whole:" + destr.Value.wholeObj + " destroyedObj:" + destr.Value.destroyedObj);
         Transform obj = bodyRoot.FindRecursive(destr.Value.Name);
         Transform wholeObj = bodyRoot.FindRecursive(destr.Value.wholeObj);
         Transform destroyedObj = bodyRoot.FindRecursive(destr.Value.destroyedObj);
-        if (obj == null) { continue; }
-        if (wholeObj == null) { continue; }
-        if (destroyedObj == null) { continue; }
+        if (obj == null) { Log.WL(1, "obj not found"); continue; }
+        if (wholeObj == null) { Log.WL(1, "wholeObj not found"); continue; }
+        if (destroyedObj == null) { Log.WL(1, "destroyedObj not found"); continue; }
         MechDestructibleObject dObj = obj.gameObject.AddComponent<MechDestructibleObject>();
         dObj.destroyedObj = destroyedObj.gameObject;
         dObj.wholeObj = wholeObj.gameObject;
+        Log.WL(2, "updating destructible:" + destr.Key);
         switch (destr.Key) {
           case ChassisLocations.Head: this.headDestructible = dObj; break;
           case ChassisLocations.CenterTorso: this.centerTorsoDestructible = dObj; break;
@@ -167,6 +170,7 @@ namespace CustomUnits {
       }
     }
     public virtual void AddBody(GameObject bodyGo, DataManager dataManager) {
+      this.QuadBody = bodyGo;
       Transform bodyRoot = bodyGo.transform.FindRecursive("j_Root");
       Transform bodyMesh = bodyGo.transform.FindTopLevelChild("mesh");
       Transform camoholderGo = bodyGo.transform.FindTopLevelChild("camoholder");
@@ -186,11 +190,6 @@ namespace CustomUnits {
         this.vfxRightTorsoTransform = bodyRoot.FindRecursive("RT_vfx_transform");
         this.vfxHeadTransform = bodyRoot.FindRecursive("HEAD_vfx_transform");
         this.TorsoAttach = bodyRoot.FindRecursive("CT_vfx_transform");
-        this.headDestructible = null;
-        this.centerTorsoDestructible = null;
-        this.leftTorsoDestructible = null;
-        this.rightTorsoDestructible = null;
-        this.InitDestructable(bodyRoot);
       }
       if (bodyMesh != null) {
         bodyMesh.gameObject.name = "quad_body";
@@ -212,6 +211,11 @@ namespace CustomUnits {
             }
             dataManager.PoolGameObject(quadVisualInfo.BodyShaderSource, shaderSource);
           }
+          this.headDestructible = null;
+          this.centerTorsoDestructible = null;
+          this.leftTorsoDestructible = null;
+          this.rightTorsoDestructible = null;
+          this.InitDestructable(bodyMesh);
         }
         this.VisualObjects.Add(bodyMesh.gameObject);
         bodyMesh.gameObject.InitBindPoses();
@@ -392,7 +396,7 @@ namespace CustomUnits {
       if (DeployManualHelper.IsInManualSpawnSequence) { newLevel = VisibilityLevel.None; }
       try {
         base.OnPlayerVisibilityChanged(newLevel);
-        VisibilityLevel legsLevel = newLevel == VisibilityLevel.LOSFull ? VisibilityLevel.LOSFull : VisibilityLevel.None;
+        VisibilityLevel legsLevel = this.VisibleObject.activeSelf ? VisibilityLevel.LOSFull : VisibilityLevel.None;
         this.ForwardLegs.OnPlayerVisibilityChanged(legsLevel);
         this.RearLegs.OnPlayerVisibilityChanged(legsLevel);
       }catch(Exception e) {
@@ -632,6 +636,17 @@ namespace CustomUnits {
     public override void PlayVehicleTerrainImpactVFX(bool forcedSlave = false) {
       if (this.isSlave == false) { forcedSlave = true; }
       base.PlayVehicleTerrainImpactVFX(forcedSlave);
+    }
+    public override void ApplyScale(Vector3 sizeMultiplier) {
+      this.ForwardLegs?.ApplyScale(sizeMultiplier);
+      this.RearLegs?.ApplyScale(sizeMultiplier);
+      this.quadBodyKinematic.BodyTransform.localScale = sizeMultiplier;
+      if (this.ForwardLegs != null) {
+        this.ForwardLegs.transform.localPosition = new Vector3(0f, 0f, (quadVisualInfo.BodyLength / 2f) * sizeMultiplier.z);
+      }
+      if (this.RearLegs != null) {
+        this.RearLegs.transform.localPosition = new Vector3(0f, 0f, -(quadVisualInfo.BodyLength / 2f) * sizeMultiplier.z);
+      }
     }
 
   }

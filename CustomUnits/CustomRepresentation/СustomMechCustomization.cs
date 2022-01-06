@@ -20,6 +20,7 @@ namespace CustomUnits {
     }
     public Renderer renderer { get; set; } = null;
     public PropertyBlockManager.PropertySetting paintSchemeProperty { get; set; } = new PropertyBlockManager.PropertySetting("_PaintScheme", Texture2D.blackTexture);
+    //public PropertyBlockManager.PropertySetting paintEmblemProperty { get; set; } = new PropertyBlockManager.PropertySetting("_PaintScheme", Texture2D.blackTexture);
     public void Init(Renderer renderer, MeshRenderer paintSchemeHolder) {
       Log.TWL(0, "CustomPaintPattern.Init custom "+renderer.gameObject.name+" "+(paintSchemeHolder==null?"null": paintSchemeHolder.sharedMaterials.Length.ToString()));
       this.renderer = renderer;
