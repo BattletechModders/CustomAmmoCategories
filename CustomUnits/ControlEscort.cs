@@ -451,7 +451,11 @@ namespace CustomUnits {
       //if (routePointsFilled) { return; }
       //routePointsFilled = true;
       routePoints.Clear();
-      EscortChunkGameLogic escortLogic = combat.EncounterLayerData.gameObject.GetComponentInChildren<EscortChunkGameLogic>();
+      EscortChunkGameLogic escortLogic = combat.EncounterLayerData.gameObject.GetComponentInChildren<EscortChunkGameLogic>(true);
+      if(escortLogic == null) {
+        Log.TWL(0, "!Exception!: no EscortChunkGameLogic in EncounterLayerData");
+        return;
+      }
       RegionPointGameLogic[] regions = escortLogic.GetComponentsInChildren<RegionPointGameLogic>();
       float x = 0f;
       float y = 0f;

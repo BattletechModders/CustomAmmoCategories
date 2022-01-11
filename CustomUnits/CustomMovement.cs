@@ -1901,7 +1901,11 @@ namespace CustomUnits {
   public static class MechDisplacementSequence_ApplyDamage {
     public static bool Prefix(MechDisplacementSequence __instance) {
       try {
-        if (__instance.OwningMech.FlyingHeight() > Core.Settings.MaxHoveringHeightWithWorkingJets) { return false; }
+        Log.TWL(0, "MechDisplacementSequence.ApplyDamage "+ (__instance.OwningMech==null?"null":__instance.OwningMech.PilotableActorDef.ChassisID));
+        if (__instance.OwningMech.FlyingHeight() > Core.Settings.MaxHoveringHeightWithWorkingJets) {
+          Log.WL(0, __instance.OwningMech.FlyingHeight()+" > "+ Core.Settings.MaxHoveringHeightWithWorkingJets+" preventing");
+          return false;
+        }
         ICustomMech custMech = __instance.OwningMech as ICustomMech;
         if (custMech == null) { return true; }
         float num = Mathf.Max(0.0f, __instance.OwningMech.StatCollection.GetValue<float>("DFASelfDamage"));

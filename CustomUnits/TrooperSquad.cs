@@ -706,6 +706,8 @@ namespace CustomUnits {
     }
     public override bool isSquad { get { return true; } }
     public override bool isVehicle { get { return false; } }
+    public override string UnitTypeNameDefault { get { return "SQUAD"; } }
+
 #if BT_PUBLIC_ASSEMBLY
     public 
 #else
@@ -844,22 +846,6 @@ namespace CustomUnits {
         if (squad.IsLocationDestroyed(loc) == false) { ++liveUnitsCount; }
       }
       return string.Format("UNITS {0}/{1}", liveUnitsCount, allUnitsCount);
-    }
-    public override Text GetActorInfoFromVisLevel(VisibilityLevel visLevel) {      
-      if (visLevel == VisibilityLevel.LOSFull || visLevel == VisibilityLevel.BlipGhost)
-        return new Text("{0} - {1}", new object[2]
-        {
-          this.Combat.NetworkGameInstance != null && this.Combat.NetworkGameInstance.IsNetworkGameActive() && this.Combat.HostilityMatrix.IsLocalPlayerEnemy(this.team.GUID) ? (object) this.UnitName : (object) this.Nickname,
-          (object) this.VariantName
-        });
-      if (visLevel >= VisibilityLevel.Blip4Maximum)
-        return new Text("SQUAD, {0}t", new object[1]
-        {
-          (object) (this.MechDef.Chassis.Tonnage)
-        });
-      if (visLevel == VisibilityLevel.Blip1Type)
-        return new Text("UNKNOWN SQUAD", (object[])Array.Empty<object>());
-      return new Text("?", (object[])Array.Empty<object>());
     }
     public override Vector3 GetImpactPosition(AbstractActor attacker, Vector3 attackPosition, Weapon weapon, ref int hitLocation, ref AttackDirection attackDirection, ref string secondaryTargetId, ref int secondaryHitLocation) {
       return this.Combat.LOS.GetImpactPosition(attacker, (ICombatant)this, attackPosition, weapon, ref hitLocation, ref attackDirection, ref secondaryTargetId, ref secondaryHitLocation);

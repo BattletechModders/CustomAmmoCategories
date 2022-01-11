@@ -1021,6 +1021,7 @@ namespace CustomUnits {
       }
     }
     public static void MoveBlips(this MechRepresentation mechRep, DataManager dataManager, CustomActorRepresentationDef custRepDef) {
+      Log.TWL(0,"MoveBlips:"+ custRepDef.Id + " "+ mechRep.gameObject.name);
       if (string.IsNullOrEmpty(custRepDef.BlipSource) == false) {
         GameObject blipSource = dataManager.PooledInstantiate(custRepDef.BlipSource, BattleTechResourceType.Prefab);
         if (blipSource != null) {
@@ -1052,6 +1053,53 @@ namespace CustomUnits {
             }
           }
           dataManager.PoolGameObject(custRepDef.BlipSource, blipSource);
+        }
+      }
+      if (string.IsNullOrEmpty(custRepDef.BlipMeshSource) == false) {
+        Log.WL(1, "BlipMeshSource:" + custRepDef.BlipMeshSource);
+        GameObject blipSource = dataManager.PooledInstantiate(custRepDef.BlipMeshSource, BattleTechResourceType.Prefab);
+        if (blipSource != null) {
+          Log.WL(1, "blipSource:" + blipSource.gameObject.name);
+          Dictionary<string, MeshFilter> sourceRenderers = new Dictionary<string, MeshFilter>();
+          foreach(MeshFilter renderer in blipSource.GetComponentsInChildren<MeshFilter>(true)) {
+            sourceRenderers.Add(renderer.gameObject.transform.name, renderer);
+            Log.WL(2, renderer.gameObject.transform.name+ " mesh:" + renderer.mesh.name+ " sharedMesh:" + renderer.sharedMesh.name);
+          }
+          if(mechRep.BlipObjectUnknown != null) {
+            foreach (MeshFilter renderer in mechRep.BlipObjectUnknown.GetComponentsInChildren<MeshFilter>(true)) {
+              Log.WL(2, "BlipObjectUnknown:"+ renderer.gameObject.transform.name);
+              if (sourceRenderers.TryGetValue(renderer.gameObject.transform.name, out var sourceRenderer)) {
+                Log.WL(3, "found");
+                Log.WL(3, renderer.gameObject.transform.name + ".sharedMesh = " + renderer.sharedMesh.name);
+                Log.WL(3, renderer.gameObject.transform.name + ".mesh = " + renderer.mesh.name);
+                renderer.sharedMesh = sourceRenderer.sharedMesh;
+                renderer.mesh = sourceRenderer.mesh;
+                Log.WL(3, renderer.gameObject.transform.name+ ".sharedMesh = "+ renderer.sharedMesh.name);
+                Log.WL(3, renderer.gameObject.transform.name + ".mesh = " + renderer.mesh.name);
+                renderer.transform.localPosition = sourceRenderer.transform.localPosition;
+                renderer.transform.localRotation = sourceRenderer.transform.localRotation;
+                renderer.transform.localScale = sourceRenderer.transform.localScale;
+              }
+            }
+          }
+          if (mechRep.BlipObjectIdentified != null) {
+            foreach (MeshFilter renderer in mechRep.BlipObjectIdentified.GetComponentsInChildren<MeshFilter>(true)) {
+              Log.WL(2, "BlipObjectIdentified:" + renderer.gameObject.transform.name);
+              if (sourceRenderers.TryGetValue(renderer.gameObject.transform.name, out var sourceRenderer)) {
+                Log.WL(3, "found");
+                Log.WL(3, renderer.gameObject.transform.name + ".sharedMesh = " + renderer.sharedMesh.name);
+                Log.WL(3, renderer.gameObject.transform.name + ".mesh = " + renderer.mesh.name);
+                renderer.sharedMesh = sourceRenderer.sharedMesh;
+                renderer.mesh = sourceRenderer.mesh;
+                Log.WL(3, renderer.gameObject.transform.name + ".sharedMesh = " + renderer.sharedMesh.name);
+                Log.WL(3, renderer.gameObject.transform.name + ".mesh = " + renderer.mesh.name);
+                renderer.transform.localPosition = sourceRenderer.transform.localPosition;
+                renderer.transform.localRotation = sourceRenderer.transform.localRotation;
+                renderer.transform.localScale = sourceRenderer.transform.localScale;
+              }
+            }
+          }
+          GameObject.Destroy(blipSource);
         }
       }
     }
@@ -1092,6 +1140,11 @@ namespace CustomUnits {
       mechRep.MoveVFXTransforms(custRepDef);
       mechRep.MoveBlips(dataManager, custRepDef);
       if (meshSource != null) { GameObject.Destroy(meshSource); }
+    }
+    public static void MoveNone(this CustomMechRepresentation mechRep, CustomActorRepresentationDef custRepDef, DataManager dataManager) {
+      mechRep.gameObject.name = custRepDef.Id;
+      mechRep.gameObject.SuppressMeshes(custRepDef);
+      mechRep.MoveBlips(dataManager, custRepDef);
     }
     public static void InitCamoflage(this CustomMechRepresentationSimGame mechRep, GameObject source) {
       Log.TWL(0, "CustomMechRepresentation.InitCamoflage " + mechRep.name);
@@ -1378,6 +1431,7 @@ namespace CustomUnits {
       switch (custRepDef.ApplyType) {
         //case CustomActorRepresentationDef.RepresentationApplyType.CopyMesh: mechRep.CopyModel(source, dataManager); break;
         case CustomActorRepresentationDef.RepresentationApplyType.MoveBone: custMechRep.MoveBone(custRepDef, dataManager); break;
+        case CustomActorRepresentationDef.RepresentationApplyType.None: custMechRep.MoveNone(custRepDef, dataManager); break;
       }
       if (custMechRep.BlipObjectIdentified != null) { custMechRep.RegisterRenderersCustomHeraldry(custMechRep.BlipObjectIdentified, null); }
       if (custMechRep.BlipObjectUnknown != null) { custMechRep.RegisterRenderersCustomHeraldry(custMechRep.BlipObjectUnknown, null); }
@@ -1746,10 +1800,14 @@ namespace CustomUnits {
         if (frontLegs != null) {
           quadMechRepresentation.AddForwardLegs(frontLegs);
           frontLegs.chassisDef = chassisDef;
+          frontLegs.RegisterRenderersMainHeraldry(frontLegs.VisibleObject);
+          frontLegs.customPropertyBlock._UpdateCache();
         }
         if (rearLegs != null) {
           quadMechRepresentation.AddRearLegs(rearLegs);
           rearLegs.chassisDef = chassisDef;
+          rearLegs.RegisterRenderersMainHeraldry(rearLegs.VisibleObject);
+          rearLegs.customPropertyBlock._UpdateCache();
         }
       }
       return result;

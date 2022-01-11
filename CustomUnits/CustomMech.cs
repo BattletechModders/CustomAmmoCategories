@@ -60,9 +60,10 @@ namespace CustomUnits {
   public class CustomLOSData {
     public Vector3[] sourcePositions { get; set; }
     public Vector3[] targetPositions { get; set; }
-    public Vector3 higest { get; set; }
+    public Vector3 highest { get; set; }
     public CustomLOSData(CustomMech custMech) {
       float HeightFix = 0f;
+      Log.TWL(0, "CustomLOSData "+custMech.MechDef.ChassisID);
       UnitCustomInfo info = custMech.MechDef.GetCustomInfo();
       if (info != null) {
         HeightFix = info.FlyingHeight;
@@ -73,11 +74,13 @@ namespace CustomUnits {
       float mechScaleMultiplier = custMech.Combat.Constants.CombatValueMultipliers.TEST_MechScaleMultiplier;
       for (int t = 0; t < custMech.MechDef.Chassis.LOSSourcePositions.Length; ++t) {
         FakeVector3 srcPos = custMech.MechDef.Chassis.LOSSourcePositions[t];
+        Log.WL(1, "");
         Vector3 pos = new Vector3(srcPos.x * mechScaleMultiplier, srcPos.y * mechScaleMultiplier, srcPos.z * mechScaleMultiplier);
         if (HeightFix > Core.Epsilon) {
           if (Mathf.Abs(pos.y - HeightFix) < 5f) { pos.y -= HeightFix; }
         }
         sourcePositions[t] = pos;
+        Log.WL(1, "sourcePositions["+t+"] = " + sourcePositions[t]);
       }
       for (int t = 0; t < custMech.MechDef.Chassis.LOSTargetPositions.Length; ++t) {
         FakeVector3 srcPos = custMech.MechDef.Chassis.LOSTargetPositions[t];
@@ -86,21 +89,27 @@ namespace CustomUnits {
           if (Mathf.Abs(pos.y - HeightFix) < 5f) { pos.y -= HeightFix; }
         }
         targetPositions[t] = pos;
+        Log.WL(1, "targetPositions[" + t + "] = " + targetPositions[t]);
       }
       for (int t = 0; t < sourcePositions.Length; ++t) {
         if (h.HasValue == false) { h = sourcePositions[t]; continue; }
         if (h.Value.y < sourcePositions[t].y) { h = sourcePositions[t]; }
       }
-      higest = h.HasValue ? h.Value : Vector3.zero;
+      highest = h.HasValue ? h.Value : Vector3.zero;
+      Log.WL(1, "highest = " + highest);
     }
     public void ApplyScale(Vector3 scale) {
+      Log.TWL(0, "CustomLOSData.ApplyScale");
       for (int t = 0; t < sourcePositions.Length; ++t) {
         sourcePositions[t] = Vector3.Scale(sourcePositions[t], scale);
+        Log.WL(1, "sourcePositions[" + t + "] = " + sourcePositions[t]);
       }
       for (int t = 0; t < targetPositions.Length; ++t) {
         targetPositions[t] = Vector3.Scale(targetPositions[t], scale);
+        Log.WL(1, "targetPositions[" + t + "] = " + targetPositions[t]);
       }
-      higest = Vector3.Scale(higest, scale);
+      highest = Vector3.Scale(highest, scale);
+      Log.WL(1, "highest = " + highest);
     }
   }
   public class CustomMech : Mech, ICustomMech {
@@ -204,15 +213,19 @@ namespace CustomUnits {
     }
     public virtual void UpdateLOSHeight(float height) {
       if (custLosData == null) { return; }
+      Log.TWL(0, "CustomMech.UpdateLOSHeight "+this.PilotableActorDef.ChassisID+" height:"+height);
       for(int t = 0; t < this.originalLOSSourcePositions.Length; ++t) {
         if (t >= custLosData.sourcePositions.Length) { break; }
         this.originalLOSSourcePositions[t] = custLosData.sourcePositions[t] + Vector3.up * height;
+        Log.WL(1, "originalLOSSourcePositions["+t+"]"+ custLosData.sourcePositions[t]+"=>"+ this.originalLOSSourcePositions[t]);
       }
       for (int t = 0; t < this.originalLOSTargetPositions.Length; ++t) {
         if (t >= custLosData.targetPositions.Length) { break; }
         this.originalLOSTargetPositions[t] = custLosData.targetPositions[t] + Vector3.up * height;
+        Log.WL(1, "originalLOSTargetPositions[" + t + "]" + custLosData.targetPositions[t] + "=>" + this.originalLOSTargetPositions[t]);
       }
-      this.HighestLOSPosition = custLosData.higest + Vector3.up * height;
+      this.HighestLOSPosition = custLosData.highest + Vector3.up * height;
+      Log.WL(1, "HighestLOSPosition" + custLosData.highest + "=>" + this.HighestLOSPosition);
       this.UpdateLOSPositions();
     }
     public virtual bool _MoveMultiplierOverride { get { return true; } }
@@ -658,6 +671,34 @@ namespace CustomUnits {
     public virtual bool isSquad { get { return false; } }
     public virtual bool isVehicle { get { return false; } }
     public virtual bool isQuad { get { return false; } }
+    public virtual string UnitTypeName {
+      get {
+        UnitCustomInfo info = this.GetCustomInfo();
+        if (info == null) { return this.UnitTypeNameDefault; }
+        if(string.IsNullOrEmpty(info.UnitTypeName)) { return this.UnitTypeNameDefault; }
+        return info.UnitTypeName;
+      }
+    }
+    public override Text GetActorInfoFromVisLevel(VisibilityLevel visLevel) {
+      if (Core.Settings.LowVisDetected) { return base.GetActorInfoFromVisLevel(visLevel); }
+      if (visLevel == VisibilityLevel.LOSFull || visLevel == VisibilityLevel.BlipGhost)
+        return new Text("{0} - {1}", new object[2]
+        {
+          this.Combat.NetworkGameInstance != null && this.Combat.NetworkGameInstance.IsNetworkGameActive() && this.Combat.HostilityMatrix.IsLocalPlayerEnemy(this.team.GUID) ? (object) this.UnitName : (object) this.Nickname,
+          (object) this.VariantName
+        });
+      if (visLevel >= VisibilityLevel.Blip4Maximum)
+        return new Text("{0}, {1}t", new object[]
+        {
+          this.UnitTypeName,
+          (this.MechDef.Chassis.Tonnage)
+        });
+      if (visLevel == VisibilityLevel.Blip1Type)
+        return new Text("UNKNOWN {0}", this.UnitTypeName);
+      return new Text("?", (object[])Array.Empty<object>());
+    }
+
+    public virtual string UnitTypeNameDefault { get { return "MECH"; } }
     public virtual void ApplyScale(Vector3 scale) {
       this.custGameRep.ApplyScale(scale);
     }

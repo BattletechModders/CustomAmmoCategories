@@ -86,6 +86,7 @@ namespace CustomUnits {
     }
   }
   public class CustomPropertyBlockManager : PropertyBlockManager {
+    private static readonly bool DEBUG_LOG = false;
     private FastList<PropertyBlockManager.PropertySetting> main_properties = new FastList<PropertyBlockManager.PropertySetting>();
     protected Dictionary<Renderer, PropertyBlockManager.PropertySetting> paintSchemes { get; set; } = new Dictionary<Renderer, PropertyBlockManager.PropertySetting>();
     protected SkinnedMeshRenderer[] _skinnedRendererCache { get { return Traverse.Create(this).Field<SkinnedMeshRenderer[]>("skinnedRendererCache").Value; } set { Traverse.Create(this).Field<SkinnedMeshRenderer[]>("skinnedRendererCache").Value = value; } }
@@ -102,16 +103,16 @@ namespace CustomUnits {
       this._UpdateCache();
     }
     public void _UpdateProperties() {
-      //Log.TWL(0, "CustomPropertyBlockManager._UpdateProperties " + this.gameObject.name);
+      if(DEBUG_LOG) Log.TWL(0, "CustomPropertyBlockManager._UpdateProperties " + this.gameObject.name);
       foreach (var mblock in materialBlocks) { if (mblock.Key == null) { continue; }; mblock.Value.Clear(); }
       foreach (PropertyBlockManager.PropertySetting property in this.main_properties) {
         this.AddPropertyToBlock(property);
-        //Log.WL(1, property.PropertyName+":"+property.PropertyType+" common");
+        if (DEBUG_LOG) Log.WL(1, property.PropertyName+":"+property.PropertyType+" common");
       }
       foreach (var paintTexture in this.paintSchemes) {
         if (paintTexture.Key == null) { continue; }
         if (materialBlocks.TryGetValue(paintTexture.Key, out MaterialPropertyBlock block)) {
-          //Log.WL(1, paintTexture.Value.PropertyName+":" + paintTexture.Value.PropertyType+" renderer:"+ paintTexture.Key.gameObject.name+" texture:"+paintTexture.Value.PropertyTexture.name);
+          if (DEBUG_LOG) Log.WL(1, paintTexture.Value.PropertyName+":" + paintTexture.Value.PropertyType+" renderer:"+ paintTexture.Key.gameObject.name+" texture:"+paintTexture.Value.PropertyTexture.name);
           this.AddPropertyToBlock(block, paintTexture.Value);
         }
       }
@@ -196,7 +197,7 @@ namespace CustomUnits {
       ICustomizationTarget custRep = this.rootObject.GetComponent<CustomMechRepresentation>() as ICustomizationTarget;
       if (custRep == null) { custRep = this.rootObject.GetComponent<CustomMechRepresentationSimGame>() as ICustomizationTarget; }
       if (custRep != null) {
-        //Log.TWL(0, "PropertyBlockManager.UpdateCache " + custRep._gameObject.name + " chassis:" + (custRep.chassisDef == null ? "null" : custRep.chassisDef.Description.Id));
+        if (DEBUG_LOG) Log.TWL(0, "PropertyBlockManager.UpdateCache " + custRep._gameObject.name + " chassis:" + (custRep.chassisDef == null ? "null" : custRep.chassisDef.Description.Id));
         //this._skinnedRendererCache = 
         //this._meshRendererCache = 
         this._skinnedRendererCache = custRep.skinnedMeshRenderersCache.Keys.ToArray();
@@ -206,14 +207,14 @@ namespace CustomUnits {
         foreach (SkinnedMeshRenderer renderer in _skinnedRendererCache) {
           CustomPaintPattern pattern = renderer.gameObject.GetComponent<CustomPaintPattern>();
           if (pattern == null) { continue; }
-          //Log.WL(0,"renderer:"+ renderer.name+" "+ pattern.paintSchemeProperty.PropertyName);
+          if (DEBUG_LOG) Log.WL(0,"renderer:"+ renderer.name+" "+ pattern.paintSchemeProperty.PropertyName);
           this.paintSchemes.Add(renderer, pattern.paintSchemeProperty);
           this.materialBlocks.Add(renderer, new MaterialPropertyBlock());
         }
         foreach (MeshRenderer renderer in _meshRendererCache) {
           CustomPaintPattern pattern = renderer.gameObject.GetComponent<CustomPaintPattern>();
           if (pattern == null) { continue; }
-          //Log.WL(0, "renderer:" + renderer.name + " " + pattern.paintSchemeProperty.PropertyName);
+          if (DEBUG_LOG) Log.WL(0, "renderer:" + renderer.name + " " + pattern.paintSchemeProperty.PropertyName);
           this.paintSchemes.Add(renderer, pattern.paintSchemeProperty);
           this.materialBlocks.Add(renderer, new MaterialPropertyBlock());
         }

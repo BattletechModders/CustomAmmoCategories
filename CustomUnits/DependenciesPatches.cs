@@ -548,6 +548,9 @@ namespace CustomUnits {
         if (string.IsNullOrEmpty(custRepDef.BlipSource) == false) {
           dependencyLoad.RequestResource(BattleTechResourceType.Prefab, custRepDef.BlipSource);
         }
+        if (string.IsNullOrEmpty(custRepDef.BlipMeshSource) == false) {
+          dependencyLoad.RequestResource(BattleTechResourceType.Prefab, custRepDef.BlipMeshSource);
+        }
       }
     }
     public static void Postfix(ChassisDef __instance, DataManager dataManager, DataManager.DependencyLoadRequest dependencyLoad, uint activeRequestWeight) {
@@ -724,6 +727,9 @@ namespace CustomUnits {
         }
         if (string.IsNullOrEmpty(custRepDef.BlipSource) == false) {
           if (dataManager.Exists(BattleTechResourceType.Prefab, custRepDef.BlipSource) == false) { return false; }
+        }
+        if (string.IsNullOrEmpty(custRepDef.BlipMeshSource) == false) {
+          if (dataManager.Exists(BattleTechResourceType.Prefab, custRepDef.BlipMeshSource) == false) { return false; }
         }
       }
       return true;

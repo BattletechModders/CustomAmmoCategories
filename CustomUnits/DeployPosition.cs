@@ -2,6 +2,7 @@
 using BattleTech.Data;
 using BattleTech.Designed;
 using BattleTech.Framework;
+using BattleTech.Rendering;
 using BattleTech.Rendering.UrbanWarfare;
 using BattleTech.UI;
 using BattleTech.UI.TMProWrapper;
@@ -270,6 +271,25 @@ namespace CustomUnits {
         RestoreVisiblityState(HUD);
       }));
     }
+    public static Dictionary<ICombatant, VisibilityLevel> GetHighestPlayerVisibilityLevel(this CombatGameState combat) {
+      Dictionary<ICombatant, VisibilityLevel> result = new Dictionary<ICombatant, VisibilityLevel>();
+      Team localPlayerTeam = combat.LocalPlayerTeam;
+      List<ICombatant> allCombatants = combat.GetAllImporantCombatants();
+      foreach (var target in allCombatants) {
+        if (target is AbstractActor actor) {
+          if(actor.team == null) {
+            result.Add(target, VisibilityLevel.None);
+            continue;
+          }
+          if (actor.team.IsFriendly(localPlayerTeam)) {
+            result.Add(target, VisibilityLevel.LOSFull);
+            continue;
+          }
+        }
+        result.Add(target, localPlayerTeam.VisibilityToTarget(target));
+      }
+      return result;
+    }
     public static void RestoreVisiblityState(CombatHUD HUD) {
       try {
         Log.TWL(0, "RestoreVisiblityState");
@@ -288,6 +308,26 @@ namespace CustomUnits {
         foreach (AbstractActor actor in actors) {
           try {
             if (actor == deployDirector) { continue; }
+            Log.WL(1,actor.PilotableActorDef.ChassisID);
+            CustomMechMeshMerge[] custMerges = actor.GameRep.gameObject.GetComponentsInChildren<CustomMechMeshMerge>(true);
+            MechMeshMerge[] merges = actor.GameRep.gameObject.GetComponentsInChildren<MechMeshMerge>(true);
+            Log.WL(1, "CustomMechMeshMerge:"+ custMerges.Length);
+            Log.WL(1, "MechMeshMerge:" + merges.Length);
+            if ((custMerges.Length != 0)||(merges.Length != 0)) {
+              actor.OnPlayerVisibilityChanged(VisibilityLevel.LOSFull);
+            }
+            if (custMerges.Length != 0) {
+              foreach (CustomMechMeshMerge merge in custMerges) {
+                Log.WL(3, "CustomMechMeshMerge.RefreshCombinedMesh:" + merge.gameObject.name);
+                merge.RefreshCombinedMesh(true);
+              }
+            }
+            if (merges.Length != 0) {
+              foreach (MechMeshMerge merge in merges) {
+                Log.WL(3, "MechMeshMerge.RefreshCombinedMesh:" + merge.gameObject.name);
+                merge.RefreshCombinedMesh(true);
+              }
+            }
             if (actor.team == null) { actor.OnPlayerVisibilityChanged(VisibilityLevel.LOSFull); continue; }
             if (actor.team.IsFriendly(HUD.Combat.LocalPlayerTeam)) {
               actor.OnPlayerVisibilityChanged(VisibilityLevel.LOSFull);
@@ -306,6 +346,14 @@ namespace CustomUnits {
           } catch (Exception e) {
             Log.TWL(0, e.ToString(), true);
           }
+        }
+        Dictionary<ICombatant, VisibilityLevel> visibility = HUD.Combat.GetHighestPlayerVisibilityLevel();
+        Log.TWL(0, "Refresh visibility "+ visibility.Count);
+        foreach (var visLevel in visibility) {
+          Log.WL(1, "Refresh visibility " + (visLevel.Key.PilotableActorDef == null ? visLevel.Key.DisplayName : visLevel.Key.PilotableActorDef.ChassisID) + " " + visLevel.Value);
+          if (visLevel.Key is AbstractActor actor) {
+            actor.OnPlayerVisibilityChanged(visLevel.Value);
+          }else if (visLevel.Key.GameRep != null) { visLevel.Key.GameRep.OnPlayerVisibilityChanged(visLevel.Value); }
         }
         CombatHUDActorInfo[] actorInfos = UIManager.Instance.InWorldRoot.gameObject.GetComponentsInChildren<CombatHUDActorInfo>(true);
         foreach (CombatHUDActorInfo actorInfo in actorInfos) {
@@ -494,11 +542,10 @@ namespace CustomUnits {
         if (this.deployDirector.IsAvailableThisPhase) {
           this.combat.MessageCenter.PublishMessage((MessageCenterMessage)new AddSequenceToStackMessage(this.deployDirector.DoneWithActor()));
           Log.WL(1, "Done with actor");
-        } else {
-          EncounterLayerParent.EnqueueLoadAwareMessage((MessageCenterMessage)new DespawnActorMessage(this.deployDirector.spawnerGUID, this.deployDirector.GUID, DeathMethod.DespawnedNoMessage));
-          Log.WL(1, "Despawn");
-          this.deployDirector = null;
         }
+        EncounterLayerParent.EnqueueLoadAwareMessage((MessageCenterMessage)new DespawnActorMessage(this.deployDirector.spawnerGUID, this.deployDirector.GUID, DeathMethod.DespawnedNoMessage));
+        Log.WL(1, "Despawn");
+        this.deployDirector = null;
       } catch (Exception e) {
         Log.TWL(0, e.ToString(), true);
       }

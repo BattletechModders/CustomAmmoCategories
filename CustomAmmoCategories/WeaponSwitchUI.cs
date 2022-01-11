@@ -688,6 +688,11 @@ namespace CustomAmmoCategoriesPatches {
       counterHover = slot.AmmoText.gameObject.GetComponent<WeaponAmmoCounterHover>();
       if (counterHover == null) { counterHover = slot.AmmoText.gameObject.AddComponent<WeaponAmmoCounterHover>(); }
       counterHover.Init(panel.HUD, panel.weaponPanel, slot);
+      if(slot.weaponSlotType != CombatHUDWeaponSlot.WeaponSlotType.Normal) {
+        var sizeDelta = slot.HitChanceText.rectTransform.sizeDelta;
+        if (sizeDelta.y < 20f) { sizeDelta.y = 20f; };
+        slot.HitChanceText.rectTransform.sizeDelta = sizeDelta;
+      }
     }
     public void UIInit() {
       if (panel == null) { return; }

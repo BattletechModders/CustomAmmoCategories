@@ -305,6 +305,9 @@ namespace CustomUnits {
       }
     }
     private static void LoadPrefab(this SGRoomController_MechBay mechbay, MechDef mechDef) {
+      Thread.CurrentThread.SetFlag("GatherPrefabs");
+      mechDef.RefreshInventory();
+      Thread.CurrentThread.ClearFlag("GatherPrefabs");
       string mechPrefabName = mechDef.GetSimGameBasePrefabName();
       mechbay.prefabsLoaded = false;
       LoadRequest loadRequest = mechbay.simState.DataManager.CreateLoadRequest(delegate (LoadRequest request) { mechbay.prefabsLoaded = true; }, false);

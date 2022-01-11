@@ -20,6 +20,7 @@ namespace CustomUnits {
         //ContractObjectiveGameLogic_Update.Clear();
         //ObjectiveGameLogic_Update.Clear();
         //AlternateRepresentationHelper.Clear();
+        VehicleCustomInfoHelper.Clear();
         DeployManualHelper.Clean();
         TargetingCirclesHelper.Clear();
         MoveClampHelper.Clear();

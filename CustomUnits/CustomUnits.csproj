@@ -165,6 +165,7 @@
     <Compile Include="DisableMoveAnimation.cs" />
     <Compile Include="DropSlotsDef.cs" />
     <Compile Include="ExActorRepresentation.cs" />
+    <Compile Include="FakeHUDTurretArmorReadout.cs" />
     <Compile Include="FakeVehicle.cs" />
     <Compile Include="FakeVehicleMovement.cs" />
     <Compile Include="CustomRepresentation\GameRepresentation.cs" />

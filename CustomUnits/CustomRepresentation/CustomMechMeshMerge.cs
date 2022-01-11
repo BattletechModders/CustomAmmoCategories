@@ -327,8 +327,8 @@ namespace CustomUnits {
           this.combinedMesh1.UploadMeshData(true);
         }
       } else {
-        this.combinedMesh0.UploadMeshData(true);
-        this.combinedMesh1.UploadMeshData(true);
+        this.combinedMesh0?.UploadMeshData(true);
+        this.combinedMesh1?.UploadMeshData(true);
       }
       CustomMechMeshMerge.combineVerts.Clear();
       CustomMechMeshMerge.combineNormals.Clear();

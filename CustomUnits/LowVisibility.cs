@@ -55,6 +55,14 @@ namespace CustomUnits {
         if (computerCustom != null) { computerCustom.fakeVehicleReadout.gameObject.SetActive(false); }
       } else {
         if (DisplayedCombatant is Mech mech) {
+          if (mech.GetCustomInfo().TurretArmorReadout) {
+            Log.WL(1, "fake turret");
+            __instance.MechArmorDisplay.gameObject.SetActive(false);
+            __instance.VehicleArmorDisplay.gameObject.SetActive(false);
+            __instance.TurretArmorDisplay.gameObject.SetActive(true);
+            __instance.BuildingArmorDisplay.gameObject.SetActive(false);
+            if (computerCustom != null) { computerCustom.fakeVehicleReadout.gameObject.SetActive(false); }
+          } else
           if (DisplayedCombatant.FakeVehicle() == false) {
             Log.WL(1, "Mech");
             __instance.MechArmorDisplay.gameObject.SetActive(true);

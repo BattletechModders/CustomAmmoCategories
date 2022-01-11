@@ -894,12 +894,21 @@ namespace CustomUnits {
         //if (DisplayedCombatant == null) { DisplayedCombatant = __instance.MechArmorDisplay.DisplayedMech; }
         Log.TWL(0, "CombatHUDTargetingComputer.ShowMechDisplay DisplayedCombatant:" + (DisplayedCombatant == null ? "null":(DisplayedCombatant.PilotableActorDef.Description.Id + " fake:"+ DisplayedCombatant.FakeVehicle())) + " computerCustom:"+(computerCustom == null?"null":"not null"));
         if (computerCustom == null) { return; }
-        if (DisplayedCombatant != null) {
-          if (DisplayedCombatant.FakeVehicle()) {
+        if (DisplayedCombatant is AbstractActor actor) {
+          //Log.WL(1, "TurretArmorReadout:"+ actor.GetCustomInfo().TurretArmorReadout+" isFakeDisplay:" + );
+          if ((actor.GetCustomInfo().TurretArmorReadout)&&(__instance.TurretArmorDisplay is FakeHUDTurretArmorReadout fakeHUDTurretArmorReadout)) {
+            __instance.MechArmorDisplay.DisplayedMech = null;
+            __instance.MechArmorDisplay.gameObject.SetActive(false);
+            computerCustom.fakeVehicleReadout.gameObject.SetActive(false);
+            computerCustom.fakeVehicleReadout.DisplayedVehicle = null;
+            fakeHUDTurretArmorReadout.gameObject.SetActive(true);
+            fakeHUDTurretArmorReadout._DisplayedTurret = actor;
+          } else
+          if (actor.FakeVehicle()) {
             __instance.MechArmorDisplay.DisplayedMech = null;
             __instance.MechArmorDisplay.gameObject.SetActive(false);
             computerCustom.fakeVehicleReadout.gameObject.SetActive(true);
-            computerCustom.fakeVehicleReadout.DisplayedVehicle = DisplayedCombatant as Mech;
+            computerCustom.fakeVehicleReadout.DisplayedVehicle = actor as Mech;
           } else {
             computerCustom.fakeVehicleReadout.gameObject.SetActive(false);
             computerCustom.fakeVehicleReadout.DisplayedVehicle = null;
@@ -964,10 +973,15 @@ namespace CustomUnits {
       try {
         CombatHUDTargetingComputerCustom computerCustom = __instance.gameObject.GetComponent<CombatHUDTargetingComputerCustom>();
         if (computerCustom == null) { return true; }
+        if (__instance.ActivelyShownCombatant == null) { return true; }
+        if (__instance.ActivelyShownCombatant.UnitType != UnitType.Mech) { return true; }
         AbstractActor actor = __instance.ActivelyShownCombatant as AbstractActor;
         if (actor == null) { return true; }
-        if (actor.UnitType != UnitType.Mech) { return true; }
-        if (actor.FakeVehicle()) {
+        bool fakeVehicle = actor.FakeVehicle();
+        if (actor.GetCustomInfo().TurretArmorReadout) {
+          __instance.TurretArmorDisplay.UpdateTurretStructureAndArmor();
+          return false;
+        } else if (actor.FakeVehicle()) { 
           computerCustom.fakeVehicleReadout.UpdateVehicleStructureAndArmor(__instance.shownAttackDirection);
           return false;
         }

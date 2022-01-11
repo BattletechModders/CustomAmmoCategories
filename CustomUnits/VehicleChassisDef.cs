@@ -477,6 +477,10 @@ namespace CustomUnits {
         }
       }
     }
+    [Key(40)]
+    public bool TurretArmorReadout { get; set; } = false;
+    [Key(41)]
+    public string UnitTypeName { get; set; } = string.Empty;
     public UnitCustomInfo() {
       //FlyingHeight = 0f;
       //Naval = false;
@@ -568,6 +572,8 @@ namespace CustomUnits {
     public static Dictionary<string, string> CustomVehicleRepresentationsPrefabs = new Dictionary<string, string>();
     public static Dictionary<string, string> CustomMechBayRepresentationsPrefabs = new Dictionary<string, string>();
     public static Dictionary<string, string> CustomVehicleBayRepresentationsPrefabs = new Dictionary<string, string>();
+    private static Dictionary<AbstractActor, UnitCustomInfo> actorsCustomInfos = new Dictionary<AbstractActor, UnitCustomInfo>();
+    public static void Clear() { actorsCustomInfos.Clear(); }
     public static UnitCustomInfo GetInfoByChassisId(string id) {
       if(vehicleChasissInfosDb.TryGetValue(id, out UnitCustomInfo result) == false) {
         result = new UnitCustomInfo();
@@ -594,11 +600,12 @@ namespace CustomUnits {
       return GetInfoByChassisId(mechDef.ChassisID);
     }
     public static UnitCustomInfo GetCustomInfo(this AbstractActor actor) {
-      Mech mech = actor as Mech;
-      if (mech != null) { return mech.MechDef.Chassis.GetCustomInfo(); };
-      Vehicle vehicle = actor as Vehicle;
-      if (vehicle != null) { return vehicle.VehicleDef.Chassis.GetCustomInfo(); };
-      return null;
+      if (actor == null) { return new UnitCustomInfo(); }
+      if (actorsCustomInfos.TryGetValue(actor, out var info) == false) {
+        info = GetInfoByChassisId(actor.PilotableActorDef.ChassisID);
+        actorsCustomInfos.Add(actor, info);
+      }
+      return info;
     }
   }
   [HarmonyPatch(typeof(VehicleChassisDef))]
@@ -653,6 +660,21 @@ namespace CustomUnits {
           }
           tags.FromJSON(ChassisTags);
           definition.Remove("ChassisTags");
+        }
+        if (definition["MeleeDamage"] != null) {
+          definition.Remove("MeleeDamage");
+        }
+        if (definition["MeleeToHitModifier"] != null) {
+          definition.Remove("MeleeToHitModifier");
+        }
+        if (definition["DFADamage"] != null) {
+          definition.Remove("DFADamage");
+        }
+        if (definition["DFAToHitModifier"] != null) {
+          definition.Remove("DFAToHitModifier");
+        }
+        if (definition["DFASelfDamage"] != null) {
+          definition.Remove("DFASelfDamage");
         }
         VehicleCustomInfoHelper.vehicleChasissInfosDb.AddOrUpdate(id, info, (k,v)=> { return info; } );
         //if (VehicleCustomInfoHelper.vehicleChasissInfosDb.ContainsKey(id) == false) {

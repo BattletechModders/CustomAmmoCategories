@@ -95,6 +95,7 @@ namespace CustomUnits {
     public string SourcePrefabBase { get; set; }
     public string ShaderSource { get; set; }
     public string BlipSource { get; set; }
+    public string BlipMeshSource { get; set; }
     public bool SupressAllMeshes { get; set; }
     public RepresentationApplyType ApplyType { get; set; }
     public List<string> TwistAnimators { get; set; }

@@ -39,6 +39,8 @@ namespace CustomUnits {
           ArmorLocation.RightArm, ArmorLocation.LeftArm, ArmorLocation.LeftLeg, ArmorLocation.RightLeg
       };
     }
+    public override string UnitTypeNameDefault { get { return "QUAD"; } }
+
     public override bool isQuad { get { return true; } }
   }
 }
