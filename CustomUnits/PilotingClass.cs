@@ -342,6 +342,27 @@ namespace CustomUnits {
       __instance.fallbackPiloting();
     }
   }
+  [HarmonyPatch(typeof(SGCharacterCreationWidget))]
+  [HarmonyPatch("CreatePilot")]
+  [HarmonyPatch(MethodType.Normal)]
+  public static class SGCharacterCreationWidget_CreatePilot {
+    public static void Postfix(SGCharacterCreationWidget __instance,ref Pilot __result) {
+      Log.TWL(0, "SGCharacterCreationWidget.CreatePilot " + __result.pilotDef.Description.Callsign);
+      try {
+        Log.WL(1, "tags before:");
+        foreach (string tag in __result.pilotDef.PilotTags) {
+          Log.WL(2, tag);
+        }
+        __result.pilotDef.fallbackPiloting();
+        Log.WL(1, "tags after:");
+        foreach (string tag in __result.pilotDef.PilotTags) {
+          Log.WL(2, tag);
+        }
+      }catch(Exception e) {
+        Log.TWL(0, e.ToString(), true);
+      }
+    }
+  }
   [HarmonyPatch(typeof(SimGameState))]
   [HarmonyPatch("FirstTimeInitializeDataFromDefs")]
   [HarmonyPatch(MethodType.Normal)]
