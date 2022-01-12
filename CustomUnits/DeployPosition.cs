@@ -157,8 +157,11 @@ namespace CustomUnits {
         this.dropPodLandedPrefab.transform.rotation = this.transform.rotation;
       }
       this.unit.TeleportActor(spawnPosition);
+      this.unit.OnPositionUpdate(spawnPosition, unit.CurrentRotation, -1, true, new List<DesignMaskDef>());
       this.unit.GameRep.FadeIn(1f);
       this.unit.OnPlayerVisibilityChanged(VisibilityLevel.LOSFull);
+      if (this.unit.GameRep is PilotableActorRepresentation rep) { rep.RefreshSurfaceType(true); }
+      this.unit.ReapplyDesignMasks();
     }
     public IEnumerator DestroyFlimsyObjects() {
       Collider[] hits = Physics.OverlapSphere(this.gameObject.transform.position, 36f, -5, QueryTriggerInteraction.Ignore);
@@ -310,30 +313,30 @@ namespace CustomUnits {
             if (actor == deployDirector) { continue; }
             Log.WL(1,actor.PilotableActorDef.ChassisID);
             CustomMechMeshMerge[] custMerges = actor.GameRep.gameObject.GetComponentsInChildren<CustomMechMeshMerge>(true);
-            MechMeshMerge[] merges = actor.GameRep.gameObject.GetComponentsInChildren<MechMeshMerge>(true);
+            //MechMeshMerge[] merges = actor.GameRep.gameObject.GetComponentsInChildren<MechMeshMerge>(true);
             Log.WL(1, "CustomMechMeshMerge:"+ custMerges.Length);
-            Log.WL(1, "MechMeshMerge:" + merges.Length);
-            if ((custMerges.Length != 0)||(merges.Length != 0)) {
-              actor.OnPlayerVisibilityChanged(VisibilityLevel.LOSFull);
-            }
+            //Log.WL(1, "MechMeshMerge:" + merges.Length);
+            //if ((custMerges.Length != 0)||(merges.Length != 0)) {
+            //  actor.OnPlayerVisibilityChanged(VisibilityLevel.LOSFull);
+            //}
             if (custMerges.Length != 0) {
               foreach (CustomMechMeshMerge merge in custMerges) {
                 Log.WL(3, "CustomMechMeshMerge.RefreshCombinedMesh:" + merge.gameObject.name);
                 merge.RefreshCombinedMesh(true);
               }
             }
-            if (merges.Length != 0) {
-              foreach (MechMeshMerge merge in merges) {
-                Log.WL(3, "MechMeshMerge.RefreshCombinedMesh:" + merge.gameObject.name);
-                merge.RefreshCombinedMesh(true);
-              }
-            }
-            if (actor.team == null) { actor.OnPlayerVisibilityChanged(VisibilityLevel.LOSFull); continue; }
-            if (actor.team.IsFriendly(HUD.Combat.LocalPlayerTeam)) {
-              actor.OnPlayerVisibilityChanged(VisibilityLevel.LOSFull);
-            } else {
-              actor.OnPlayerVisibilityChanged(VisibilityLevel.None);
-            }
+            //if (merges.Length != 0) {
+            //  foreach (MechMeshMerge merge in merges) {
+            //    Log.WL(3, "MechMeshMerge.RefreshCombinedMesh:" + merge.gameObject.name);
+            //    merge.RefreshCombinedMesh(true);
+            //  }
+            //}
+            //if (actor.team == null) { actor.OnPlayerVisibilityChanged(VisibilityLevel.LOSFull); continue; }
+            //if (actor.team.IsFriendly(HUD.Combat.LocalPlayerTeam)) {
+            //  actor.OnPlayerVisibilityChanged(VisibilityLevel.LOSFull);
+            //} else {
+            //  actor.OnPlayerVisibilityChanged(VisibilityLevel.None);
+            //}
             actor.VisibilityCache.RebuildCache(allLivingCombatants);
           } catch (Exception e) {
             Log.TWL(0, e.ToString(), true);
@@ -378,7 +381,12 @@ namespace CustomUnits {
         foreach (DeployPosition dPos in positions) {
           if (dPos.position.HasValue) {
             dPos.unit?.TeleportActor(dPos.position.Value);
-            dPos.unit?.OnPlayerVisibilityChanged(VisibilityLevel.LOSFull);
+            dPos.unit?.OnPositionUpdate(dPos.position.Value, dPos.unit.CurrentRotation, -1, true, new List<DesignMaskDef>());
+            //dPos.unit?.OnPlayerVisibilityChanged(VisibilityLevel.LOSFull);
+            if(dPos.unit != null) {
+              if (dPos.unit.GameRep is PilotableActorRepresentation rep) { rep.RefreshSurfaceType(true); }
+            }
+            dPos.unit?.ReapplyDesignMasks();
           }
         };
         RestoreVisiblityState(HUD);
@@ -1094,6 +1102,18 @@ namespace CustomUnits {
       return true;
     }
   }
+  [HarmonyPatch(typeof(AbstractActor))]
+  [HarmonyPatch("OnPlayerVisibilityChanged")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { typeof(VisibilityLevel) })]
+  public static class AbstractActor_OnPlayerVisibilityChanged {
+    public static void Prefix(AbstractActor __instance, ref VisibilityLevel newLevel) {
+      if (DeployManualHelper.IsInManualSpawnSequence) {
+        Log.TWL(0, "AbstractActor.OnPlayerVisibilityChanged "+__instance.PilotableActorDef.ChassisID+" IsInManualSpawnSequence");
+        newLevel = VisibilityLevel.None;
+      }
+    }
+  }
   [HarmonyPatch(typeof(PathingManager))]
   [HarmonyPatch("removeDeadPaths")]
   [HarmonyPatch(MethodType.Normal)]
@@ -1591,12 +1611,14 @@ namespace CustomUnits {
     public static bool Prefix(GameInstance __instance, Contract contract, string playerGUID) {
       if (originalInvoke) { return true; }
       SpawnDelayed = false;
+      DeployManualHelper.IsInManualSpawnSequence = false;
       if (contract.canManualSpawn() == false) { return true; }
       if (DeployManualHelper.CheckForDeps(__instance, contract, playerGUID) == false) { return false; }
       if (Core.Settings.AskForDeployManual) {
         GenericPopup popup = GenericPopupBuilder.Create("DEPLOY POSITION", "WOULD YOU LIKE TO SET DEPLOY POSITION MANUALY?")
           .AddButton("NO", (Action)(() => {
             SpawnDelayed = false;
+            DeployManualHelper.IsInManualSpawnSequence = false;
             originalInvoke = true;
             if (SceneSingletonBehavior<WwiseManager>.HasInstance) {
               uint num2 = SceneSingletonBehavior<WwiseManager>.Instance.PostEventById(390458608, WwiseManager.GlobalAudioObject, (AkCallbackManager.EventCallback)null, (object)null);
@@ -1609,6 +1631,7 @@ namespace CustomUnits {
           }), true, BTInput.Instance.Key_Escape())
           .AddButton("YES", (Action)(() => {
             SpawnDelayed = true;
+            DeployManualHelper.IsInManualSpawnSequence = true;
             originalInvoke = true;
             if (SceneSingletonBehavior<WwiseManager>.HasInstance) {
               uint num2 = SceneSingletonBehavior<WwiseManager>.Instance.PostEventById(390458608, WwiseManager.GlobalAudioObject, (AkCallbackManager.EventCallback)null, (object)null);
@@ -1621,6 +1644,7 @@ namespace CustomUnits {
           }), true, BTInput.Instance.Key_Return()).IsNestedPopupWithBuiltInFader().SetAlwaysOnTop().Render();
       } else {
         SpawnDelayed = true;
+        DeployManualHelper.IsInManualSpawnSequence = true;
         return true;
       }
       return false;
@@ -2096,10 +2120,10 @@ namespace CustomUnits {
       } catch (Exception e) {
         Log.TWL(0, e.ToString(), true);
       }
-      DeployManualHelper.IsInManualSpawnSequence = false;
+      //DeployManualHelper.IsInManualSpawnSequence = false;
       if (__instance.teamDefinitionGuid != __instance.Combat.LocalPlayerTeamGuid) { return true; }
       if (__instance.Combat.ActiveContract.isManualSpawn() == false) { return true; }
-      DeployManualHelper.IsInManualSpawnSequence = true;
+      //DeployManualHelper.IsInManualSpawnSequence = true;
 
       EncounterLayerParent encounterLayerParent = __instance.Combat.EncounterLayerData.gameObject.GetComponentInParent<EncounterLayerParent>();
       DropShipManager dropManager = encounterLayerParent.gameObject.GetComponent<DropShipManager>();

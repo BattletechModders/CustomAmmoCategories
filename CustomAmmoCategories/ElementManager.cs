@@ -74,8 +74,21 @@ namespace CustAmmoCategoriesPatches {
           if (!((Object)renderCacheObject.renderer == (Object)null) && !((Object)renderCacheObject.renderer.sharedMaterial == (Object)null) && !renderCacheObject.renderer.sharedMaterial.IsKeywordEnabled("_STIPPLE_FADE")) {
             bool flag = (Object)renderCacheObject.renderer != (Object)null;
             if (!uiCreep.isBuilding ? ((flag ? 1 : 0) & (!renderCacheObject.renderer.gameObject.activeInHierarchy ? 0 : (renderCacheObject.renderer.enabled ? 1 : 0))) != 0 : flag & uiCreep.isSelected) {
-              for (int submeshIndex = 0; submeshIndex < renderCacheObject.numSubmesh; ++submeshIndex)
+              if (renderCacheObject.material == null) {
+                if (renderCacheObject.renderer.sharedMaterial == null) {
+                  if (___log100Count < 100) {
+                    Log.M.TWL(0, "!!!WARNING!!! " + renderCacheObject.renderer.gameObject.name + " has no material");
+                    ++___log100Count;
+                    renderCacheObject.renderer.enabled = false;
+                  }
+                } else {
+                  Traverse.Create(renderCacheObject).Property<Material>("material").Value = renderCacheObject.renderer.sharedMaterial;
+                }
+                continue;
+              }
+              for (int submeshIndex = 0; submeshIndex < renderCacheObject.numSubmesh; ++submeshIndex) {
                 ____uiCommandBuffer.DrawRenderer(renderCacheObject.renderer, renderCacheObject.material, submeshIndex, renderCacheObject.pass);
+              }
             }
           }
         }

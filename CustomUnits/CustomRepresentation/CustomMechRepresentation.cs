@@ -79,8 +79,11 @@ namespace CustomUnits {
         team.AddUnit(actor);
         lance.AddUnitGUID(actor.GUID);
         actor.AddToLance(lance);
+        if (DeployManualHelper.IsInManualSpawnSequence) {
+          actor.OnPlayerVisibilityChanged(VisibilityLevel.None);
+        }else
         if (__instance.Combat.HostilityMatrix.IsLocalPlayerFriendly(team) || __instance.Combat.LocalPlayerTeam.VisibilityToTarget((ICombatant)actor) != VisibilityLevel.None) {
-
+          //actor.OnPlayerVisibilityChanged(VisibilityLevel.LOSFull);
         } else {
           actor.OnPlayerVisibilityChanged(VisibilityLevel.None);
         }

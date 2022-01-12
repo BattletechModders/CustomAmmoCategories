@@ -57,6 +57,7 @@ namespace CustomUnits {
     private Material explodeWeaponMaterial;
     public List<Mesh> meshList;
     private bool SingleMesh = false;
+    private bool? NeedRebuildDamaged { get; set; } = null;
     private SkinnedMeshRenderer mainSkinRenderer0 { get; set; } = null;
     private SkinnedMeshRenderer mainSkinRenderer1 { get; set; } = null;
     private Mesh combinedMesh0 { get; set; } = null;
@@ -492,9 +493,17 @@ namespace CustomUnits {
     private void BuildCombinedMesh() {
       if (this.SingleMesh) { this.BuildCombinedMeshSingle(); } else { this.BuildCombinedMeshClassic(); }
     }
+    public void Update() {
+      if (this.NeedRebuildDamaged.HasValue == false) { return; }
+      if (this.visibleObject == null) { return; }
+      if (this.visibleObject.activeInHierarchy == false) { return; }
+      RefreshCombinedMesh(this.NeedRebuildDamaged.Value);
+    }
     public void RefreshCombinedMesh(bool damaged) {
       if (this.visibleObject == null) { return; }
+      if (this.visibleObject.activeInHierarchy == false) { this.NeedRebuildDamaged = damaged; return; }
       this.BuildCombinedMesh();
+      this.NeedRebuildDamaged = null;
       if (this.combinedMesh0 != null) {
         this.mainSkinRenderer0.sharedMesh = this.combinedMesh0;
         this.mainSkinRenderer0.enabled = true;
@@ -518,12 +527,9 @@ namespace CustomUnits {
           this.mechMaterial[index].SetTexture(MechMeshMerge.Uniforms._DamageNormalMap, (Texture)MechMeshMerge.damageNormal);
         }
       }
-      if ((Object)this.uiCreep != (Object)null)
-        this.uiCreep.RefreshCache();
-      if ((Object)this.blockManager != (Object)null)
-        this.blockManager.UpdateCache();
-      if (!damaged)
-        return;
+      if (this.uiCreep != null) { this.uiCreep.RefreshCache(); }
+      if (this.blockManager != null) { this.blockManager.UpdateCache(); }
+      if (!damaged) { return; }
       for (int index = 0; index < this.mechMaterial.Length; ++index) {
         if ((Object)this.mechMaterial[index] != (Object)null)
           this.mechMaterial[index].EnableKeyword("_DAMAGED");
