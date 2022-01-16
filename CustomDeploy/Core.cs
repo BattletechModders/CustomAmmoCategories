@@ -583,7 +583,6 @@ namespace CustomDeploy{
       if (resultsList != null) {
         TagDataStructFetcher dataStructFetcher = __instance.Context.GetObject(GameContextObjectTagEnum.TagDataStructFetcher) as TagDataStructFetcher;
         foreach (SimGameEventResult results in resultsList) {
-            if (!__instance.MeetsRequirements(results.Requirements)) continue;
           GameContext context1 = new GameContext(context);
           TagSet tagSet = (TagSet)null;
           Pilot pilot = (Pilot)null;
