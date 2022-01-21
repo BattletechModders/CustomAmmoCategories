@@ -788,6 +788,60 @@ namespace CustomUnits {
       ForcedVisible = true;
       this.custGameRep?.BossAppearAnimation();
     }
+    internal class DropOffDelegate {
+      public float height { get; set; } = 0f;
+      public CustomMech parent { get; set; } = null;
+      public Action OnLand { get; set; } = null;
+      public Action OnRestoreHeight { get; set; } = null;
+      public DropOffDelegate(CustomMech parent,float h, Action land, Action restore) {
+        this.height = h;
+        this.OnLand = land;
+        this.OnRestoreHeight = restore;
+        this.parent = parent;
+      }
+      public void OnLandInt() {
+        this.OnLand?.Invoke();
+        this.parent.custGameRep.HeightController.heightChangeCompleteAction.Add(this.OnRestoreInt);
+        this.parent.custGameRep.HeightController.PendingHeight = this.height;
+      }
+      public void OnRestoreInt() {
+        this.OnRestoreHeight?.Invoke();
+      }
+    }
+    public virtual void DropOffAnimation(Action OnLand = null, Action OnRestoreHeight = null) {
+      float current_height = this.custGameRep.HeightController.CurrentHeight;
+      if (current_height < Core.Epsilon) {
+        OnLand?.Invoke(); OnRestoreHeight?.Invoke();
+        return;
+      }
+      this.custGameRep.HeightController.heightChangeCompleteAction.Add(new DropOffDelegate(this, current_height, OnLand, OnRestoreHeight).OnLandInt);
+      this.custGameRep.HeightController.PendingHeight = 0f;
+    }
   }
+  public static class AttachExampleHelper {
+    internal class AttachExampleDelegate {
+      public TrooperSquad squad { get; set; }
+      public CustomMech attachTarget { get; set; }
+      public AttachExampleDelegate(TrooperSquad squad, CustomMech target) {
+        this.squad = squad;
+        this.attachTarget = target;
+      }
+      public void OnLand() {
+        //HIDE SQUAD REPRESENTATION
+      }
+    }
+    public static void AttachToExample(this TrooperSquad squad, AbstractActor attachTarget) {
+      if (attachTarget is CustomMech custMech) {
+        if (custMech.FlyingHeight() > 1.5f) { //Check if actually flying unit
+          //CALL ATTACH CODE BUT WITHOUT SQUAD REPRESENTATION HIDING 
+          custMech.DropOffAnimation(new AttachExampleDelegate(squad, custMech).OnLand);
+        } else {
+          //CALL DEFAULT ATTACH CODE
+        }
+      } else {
+        //CALL DEFAULT ATTACH CODE
+      }
+    }
 
+  }
 }

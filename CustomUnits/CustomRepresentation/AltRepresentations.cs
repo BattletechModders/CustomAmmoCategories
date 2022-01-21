@@ -898,6 +898,7 @@ namespace CustomUnits {
     public virtual bool FakeHeightControl { get; set; } = false;
     public virtual bool ForceJumpJetsActive { get; set; } = false;
     public virtual bool vfxEveryJet { get; set; } = false;
+    public virtual HashSet<Action> heightChangeCompleteAction { get; set; } = new HashSet<Action>();
     public virtual void OnHeightChange() {
       bool VisibleToPlayer = parent.VisibleToPlayer;
       if (ForceJumpJetsActive || ((CurrentHeight < Core.Settings.MaxHoveringHeightWithWorkingJets)&&(this.PendingHeight > Core.Settings.MaxHoveringHeightWithWorkingJets))) {
@@ -1052,6 +1053,10 @@ namespace CustomUnits {
         link.rootHeightTransform.localPosition = linkPos;
         link.actor.FakeHeightDelta(0f);
       }
+      foreach(Action onHeightChangeComleete in this.heightChangeCompleteAction) {
+        onHeightChangeComleete();
+      }
+      heightChangeCompleteAction.Clear();
     }
     public void LateUpdate() {
       if (parent == null) { return; }
