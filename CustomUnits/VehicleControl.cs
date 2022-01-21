@@ -1785,7 +1785,7 @@ namespace CustomUnits {
           adLoc["Tonnage"] = 0;
           adLoc["MaxArmor"] = 0;
           adLoc["InventorySlots"] = 0;
-          adLoc["InternalStructure"] = 1;
+          adLoc["InternalStructure"] = 0;
           mLocations.Add(adLoc);
         }
         newdef["Locations"] = mLocations;

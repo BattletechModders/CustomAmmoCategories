@@ -614,6 +614,13 @@ namespace CustomUnits {
       }
       return null;
     }
+    public static T FindComponent<T>(this GameObject go, string checkName) where T: Component {
+      T[] components = go.GetComponentsInChildren<T>(true);
+      foreach (T t in components) {
+        if (t.transform.name == checkName) return t;
+      }
+      return null;
+    }
     public static Transform FindTopLevelChild(this Transform transform, string checkName) {
       Transform[] trs = transform.GetComponentsInChildren<Transform>(true);
       foreach (Transform tr in trs) {

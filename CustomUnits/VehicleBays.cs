@@ -1098,11 +1098,28 @@ namespace CustomUnits {
   public static class SimGameState_GetFirstFreeMechBay {
     public static void Postfix(SimGameState __instance, ref int __result) {
       MechDef mechDef = Thread.CurrentThread.currentMechDef();
-      Log.TWL(0, "SimGameState.GetFirstFreeMechBay " + (mechDef == null ? "null": mechDef.Description.Id));
-      if((mechDef != null)&&(Thread.CurrentThread.isFlagSet("GetFirstFreeMechBay_original") == false)) {
-        __result = __instance.GetFirstFreeMechBay(mechDef, __result);
+      ChassisDef chassisDef = Thread.CurrentThread.peekFromStack<ChassisDef>("OnReadyMech_chassis");
+      Log.TWL(0, "SimGameState.GetFirstFreeMechBay mechDef:" + (mechDef == null ? "null": mechDef.Description.Id)+" chassisDef:"+ (chassisDef == null ? "null" : chassisDef.Description.Id));
+      if(((mechDef != null)||(chassisDef != null))&&(Thread.CurrentThread.isFlagSet("GetFirstFreeMechBay_original") == false)) {
+        __result = mechDef != null?__instance.GetFirstFreeMechBay(mechDef, __result): __instance.GetFirstFreeMechBay(chassisDef, __result);
       }
       Log.WL(1, "SimGameState.GetFirstFreeMechBay:"+__result);
+    }
+  }
+  [HarmonyPatch(typeof(MechBayRowGroupWidget))]
+  [HarmonyPatch("GetFirstFreeBaySlot")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { })]
+  public static class MechBayRowGroupWidget_GetFirstFreeBaySlot {
+    public static void Postfix(MechBayRowGroupWidget __instance, ref int __result) {
+      MechDef mechDef = Thread.CurrentThread.currentMechDef();
+      ChassisDef chassisDef = Thread.CurrentThread.peekFromStack<ChassisDef>("OnReadyMech_chassis");
+      SimGameState sim = UnityGameInstance.BattleTechGame.Simulation;
+      Log.TWL(0, "MechBayRowGroupWidget.GetFirstFreeBaySlot mechDef:" + (mechDef == null ? "null" : mechDef.Description.Id) + " chassisDef:" + (chassisDef == null ? "null" : chassisDef.Description.Id));
+      if (((mechDef != null) || (chassisDef != null)) && (Thread.CurrentThread.isFlagSet("GetFirstFreeMechBay_original") == false)) {
+        __result = mechDef != null ? sim.GetFirstFreeMechBay(mechDef, __result) : sim.GetFirstFreeMechBay(chassisDef, __result);
+      }
+      Log.WL(1, "MechBayRowGroupWidget.GetFirstFreeBaySlot:" + __result);
     }
   }
   [HarmonyPatch(typeof(SimGameState))]
@@ -1133,7 +1150,27 @@ namespace CustomUnits {
       int maxActiveMechs = sim.GetMaxActiveMechs() + mech.GetHangarShift();
       int minActiveMechs = mech.GetHangarShift();
       for (int key = minActiveMechs; key < maxActiveMechs; ++key) {
-        if (!sim.ActiveMechs.ContainsKey(key)) { return key; };
+        if (sim.ActiveMechs.ContainsKey(key)) { continue; };
+        if (sim.ReadyingMechs.ContainsKey(key)) { continue; };
+        return key;
+      }
+      return -1;
+    }
+    public static int GetFirstFreeMechBay(this SimGameState sim, ChassisDef chassis, int? default_position = null) {
+      Log.TWL(0, "SimGameState.AddMech.GetFirstFreeMechBay " + chassis.Description.Id + " IsVehicle:" + chassis.IsVehicle() + " IsInFakeChassis:" + chassis.Description.Id.IsInFakeChassis());
+      if (chassis == null) { return sim.GetFirstFreeMechBay(); };
+      if (chassis.GetHangarShift() == 0) {
+        Thread.CurrentThread.SetFlag("GetFirstFreeMechBay_original");
+        int result = default_position.HasValue ? default_position.Value : sim.GetFirstFreeMechBay();
+        Thread.CurrentThread.ClearFlag("GetFirstFreeMechBay_original");
+        return result;
+      }
+      int maxActiveMechs = sim.GetMaxActiveMechs() + chassis.GetHangarShift();
+      int minActiveMechs = chassis.GetHangarShift();
+      for (int key = minActiveMechs; key < maxActiveMechs; ++key) {
+        if (sim.ActiveMechs.ContainsKey(key)) { continue; };
+        if (sim.ReadyingMechs.ContainsKey(key)) { continue; };
+        return key;
       }
       return -1;
     }
@@ -1409,12 +1446,46 @@ namespace CustomUnits {
       }
       return false;
     }
-    public static int GetFirstFreeMechBayTranspiler(SimGameState simGameState, MechBayChassisInfoWidget chassisWidget) {
-      MechBayChassisUnitElement chassisElement = Traverse.Create(chassisWidget).Field<MechBayChassisUnitElement>("chassisElement").Value;
-      Log.TWL(0, "MechBayChassisInfoWidget.OnReadyClicked.GetFirstFreeMechBay "+chassisElement.ChassisDef.Description.Id);
-      return simGameState.GetFirstFreeMechBay(chassisElement.ChassisDef);
+    //public static int GetFirstFreeMechBayTranspiler(SimGameState simGameState, MechBayChassisInfoWidget chassisWidget) {
+    //  MechBayChassisUnitElement chassisElement = Traverse.Create(chassisWidget).Field<MechBayChassisUnitElement>("chassisElement").Value;
+    //  Log.TWL(0, "MechBayChassisInfoWidget.OnReadyClicked.GetFirstFreeMechBay "+chassisElement.ChassisDef.Description.Id);
+    //  return simGameState.GetFirstFreeMechBay(chassisElement.ChassisDef);
+    //}
+  }
+  [HarmonyPatch(typeof(MechBayPanel))]
+  [HarmonyPatch("OnAddedToHierarchy")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { })]
+  public static class MechBayPanel_ {
+    internal class MechBayChassisInfoWidget_OnReadyClickedDelegate {
+      public MechBayChassisInfoWidget chassisInfoWidget { get; set; } = null;
+      public MechBayChassisInfoWidget_OnReadyClickedDelegate(MechBayChassisInfoWidget chassisInfoWidget) {
+        this.chassisInfoWidget = chassisInfoWidget;
+      }
+      public void OnReadyClicked() {
+        ChassisDef chassis = Traverse.Create(chassisInfoWidget).Field<MechBayChassisUnitElement>("chassisElement").Value.ChassisDef;
+        Thread.CurrentThread.pushToStack<ChassisDef>("OnReadyMech_chassis", chassis);
+        Log.TWL(0, "MechBayChassisInfoWidget.OnReadyClicked chassisInfoWidget:" + (chassis == null ? "null" : chassis.Description.Id));
+        try {
+          chassisInfoWidget?.OnReadyClicked();
+        }catch(Exception e) {
+          Log.TWL(0, e.ToString(), true);
+        }
+        Thread.CurrentThread.popFromStack<ChassisDef>("OnReadyMech_chassis");
+      }
+    }
+    public static void Postfix(MechBayPanel __instance, MechBayChassisInfoWidget ___chassisInfoWidget) {
+      Log.TWL(0, "MechBayPanel.OnAddedToHierarchy chassisInfoWidget:"+(___chassisInfoWidget==null?"null":"not null"));
+      if(___chassisInfoWidget != null) {
+        HBSDOTweenButton button = ___chassisInfoWidget.gameObject.FindComponent<HBSDOTweenButton>("uixPrfBttn_BASE_button2-MANAGED");
+        if(button != null) {
+          button.OnClicked = new UnityEngine.Events.UnityEvent();
+          button.OnClicked.AddListener(new UnityEngine.Events.UnityAction(new MechBayChassisInfoWidget_OnReadyClickedDelegate(___chassisInfoWidget).OnReadyClicked));
+        }
+      }
     }
   }
+
   [HarmonyPatch(typeof(MechBayPanel))]
   [HarmonyPatch("OnReadyMech")]
   [HarmonyPatch(MethodType.Normal)]
@@ -1423,20 +1494,20 @@ namespace CustomUnits {
     public static void Prefix(MechBayPanel __instance, MechBayChassisUnitElement chassisElement, MechBayRowGroupWidget ___bayGroupWidget, ref bool __state) {
       int hangarShift = chassisElement.ChassisDef.GetHangarShift();
       Log.TWL(0, "MechBayPanel.OnReadyMech "+ chassisElement.ChassisDef.Description.Id+" hangarShift:"+ hangarShift);
-      if ((hangarShift > 0) && (chassisElement.ChassisDef.ChassisTags.Contains("fake_vehicle_chassis") == false)) { __state = true; chassisElement.ChassisDef.ChassisTags.Add("fake_vehicle_chassis"); };
+      //if ((hangarShift > 0) && (chassisElement.ChassisDef.ChassisTags.Contains("fake_vehicle_chassis") == false)) { __state = true; chassisElement.ChassisDef.ChassisTags.Add("fake_vehicle_chassis"); };
       Thread.CurrentThread.pushToStack<ChassisDef>("OnReadyMech_chassis", chassisElement.ChassisDef);
     }
     public static void Postfix(MechBayPanel __instance, MechBayChassisUnitElement chassisElement, ref bool __state) {
       Thread.CurrentThread.popFromStack<ChassisDef>("OnReadyMech_chassis");
-      if (__state) {
-        chassisElement.ChassisDef.ChassisTags.Remove("fake_vehicle_chassis");
-        Log.TWL(0, "MechBayPanel.OnReadyMech removing fake_vehicle tag");
-      }
+      //if (__state) {
+        //chassisElement.ChassisDef.ChassisTags.Remove("fake_vehicle_chassis");
+        //Log.TWL(0, "MechBayPanel.OnReadyMech removing fake_vehicle tag");
+      //}
     }
-    public static int GetFirstFreeMechBayTranspiler(SimGameState simGameState, MechBayChassisUnitElement chassisElement) {
-      Log.TWL(0, "MechBayPanel.OnReadyMech.GetFirstFreeMechBay " + chassisElement.ChassisDef.Description.Id);
-      return simGameState.GetFirstFreeMechBay(chassisElement.ChassisDef);
-    }
+    //public static int GetFirstFreeMechBayTranspiler(SimGameState simGameState, MechBayChassisUnitElement chassisElement) {
+    //  Log.TWL(0, "MechBayPanel.OnReadyMech.GetFirstFreeMechBay " + chassisElement.ChassisDef.Description.Id);
+    //  return simGameState.GetFirstFreeMechBay(chassisElement.ChassisDef);
+    //}
   }
   [HarmonyPatch()]
   public static class MechDefs_Get {
