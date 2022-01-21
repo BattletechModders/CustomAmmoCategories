@@ -950,21 +950,6 @@ namespace CustomUnits {
       }
     }
   }
-  [HarmonyPatch(typeof(CombatHUDInWorldScalingActorInfo))]
-  [HarmonyPatch("GetWorldPos")]
-  [HarmonyPatch(MethodType.Normal)]
-  [HarmonyPatch(new Type[] { })]
-  public static class CombatHUDInWorldScalingActorInfo_GetWorldPos {
-    public static void Postfix(CombatHUDInWorldScalingActorInfo __instance, ref Vector3 __result) {
-      try {
-        if (__instance.DisplayedActor != null) {
-          //Log.TWL(0, "CombatHUDInWorldScalingActorInfo.GetWorldPos " + __instance.anchorPosition + " " + __instance.DisplayedActor.PilotableActorDef.Description.Id + " currentPos:"+__instance.DisplayedActor.CurrentPosition+" result:"+__result+" diff:"+(__result - __instance.DisplayedActor.CurrentPosition));
-        }
-      } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
-      }
-    }
-  }
   [HarmonyPatch(typeof(PropertyBlockManager))]
   [HarmonyPatch("FadeIn")]
   [HarmonyPatch(MethodType.Normal)]

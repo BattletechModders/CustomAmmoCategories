@@ -269,6 +269,9 @@ namespace CustomUnits {
           __result = custMechRep._VisibleToPlayer;
           return false;
         }
+        if (__instance.parentCombatant is CustomMech custMech) {
+          if (custMech.ForcedVisible) { __result = true; return false; }
+        }
         return true;
       } catch (Exception e) {
         Log.TWL(0, e.ToString(), true);
@@ -491,10 +494,12 @@ namespace CustomUnits {
       if (slave.parentRepresentation != this) { return false; }
       return this._VisibleToPlayer;
     }
+    public virtual bool ForcedVisible { get; set; } = false;
     public virtual bool _VisibleToPlayer {
       get {
         if (this.parentCombatant == null || this.parentCombatant.Combat == null) { return false; }
         if (isSlave) { if (this.parentRepresentation != null) { return this.parentRepresentation.isSlaveVisible(this); }  }
+        if (this.custMech.ForcedVisible) { return true; }
         return this.parentCombatant.team.IsFriendly(this.parentCombatant.Combat.LocalPlayerTeam) || this.parentCombatant.Combat.LocalPlayerTeam.VisibilityToTarget((ICombatant)(this.parentCombatant as AbstractActor)) == VisibilityLevel.LOSFull;
       }
     }
@@ -905,6 +910,7 @@ namespace CustomUnits {
       ParticleSystem component = gameObject.GetComponent<ParticleSystem>();
       ParticleSystem.MainModule main = component.main;
       main.scalingMode = ParticleSystemScalingMode.Hierarchy;
+      Log.TWL(0, "GameRepresentation_PlayVFXAt "+this.gameObject.name+ gameObject.name+" "+ main.scalingMode);
       component.Stop(true); 
       component.Clear(true);
       Transform transform = gameObject.transform;
@@ -927,6 +933,12 @@ namespace CustomUnits {
       else
         transform.localRotation = Quaternion.identity;
       transform.localScale = Vector3.one;
+      if(this.customRep != null) {
+        if(this.customRep.CustomDefinition != null) {
+          transform.localScale = this.customRep.CustomDefinition.vfxScale.vector;
+        }
+      }
+      Log.WL(1, "transform.localScale " + transform.localScale);
       if (oneShot) {
         AutoPoolObject autoPoolObject = gameObject.GetComponent<AutoPoolObject>();
         if ((UnityEngine.Object)autoPoolObject == (UnityEngine.Object)null)

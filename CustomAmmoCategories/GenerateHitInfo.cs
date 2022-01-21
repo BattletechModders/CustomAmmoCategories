@@ -377,7 +377,7 @@ namespace CustomAmmoCategoriesPatches {
       }
     }
     public static void GetIndividualHits(this AttackDirector.AttackSequence instance, ref WeaponHitInfo hitInfo, int groupIdx, int weaponIdx, Weapon weapon, float toHitChance, float prevDodgedDamage) {
-      Log.M.TWL(0, "GetClusteredHits " + weapon.defId + " mode:" + weapon.mode().UIName + " ammo:" + weapon.ammo().Id + " clustering:" + weapon.ClusteringModifier);
+      Log.M.TWL(0, "GetIndividualHits " + weapon.defId + " mode:" + weapon.mode().UIName + " ammo:" + weapon.ammo().Id + " clustering:" + weapon.ClusteringModifier);
       if (hitInfo.numberOfShots == 0) { return; };
       if (AttackDirector.hitLogger.IsLogEnabled)
         AttackDirector.hitLogger.Log((object)string.Format("???????? RANDOM HIT ROLLS (GetIndividualHits): Weapon Group: {0} // Weapon: {1}", (object)groupIdx, (object)weaponIdx));

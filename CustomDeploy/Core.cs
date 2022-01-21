@@ -838,6 +838,119 @@ namespace CustomDeploy{
       __instance.SetGOActive((MonoBehaviour)__instance.ExplosiveDisplay, false);
       __instance.gameObject.SetActive(false);
     }
+    public static Func<UnitSpawnPointGameLogic, MechDef, PilotDef, Team, Lance, HeraldryDef, AbstractActor> SpawnMech_internal = null;
+    public static bool UnitSpawnPointGameLogic_Spawn(UnitSpawnPointGameLogic __instance, bool spawnOffScreen) {
+      try {
+        if (!__instance.HasUnitToSpawn) { return false; }
+        Log.TWL(0, "UnitSpawnPointGameLogic_Spawn "+ __instance.unitType + " mech:"+ __instance.mechDefId + " pilot:"+ __instance.pilotDefId);
+        Team turnActorByUniqueId = __instance.Combat.TurnDirector.GetTurnActorByUniqueId(__instance.teamDefinitionGuid) as Team;
+        if (__instance.teamDefinitionGuid == "421027ec-8480-4cc6-bf01-369f84a22012" || turnActorByUniqueId == null) {
+          UnitSpawnPointGameLogic.logger.LogError((object)string.Format("Invalid teamIndex for SpawnPoint [{0}][{1}] - TeamIndex[{2}]", (object)__instance.name, (object)__instance.encounterObjectGuid, (object)__instance.teamDefinitionGuid));
+        } else {
+          PilotDef t1 = (PilotDef)null;
+          HeraldryDef t2 = (HeraldryDef)null;
+          if (!string.IsNullOrEmpty(__instance.customHeraldryDefId) && !__instance.Combat.DataManager.Heraldries.TryGet(__instance.customHeraldryDefId, out t2))
+            __instance.LogError("Invalid custom heraldry id: " + __instance.customHeraldryDefId);
+          if (__instance.pilotDefOverride != null) {
+            t1 = __instance.pilotDefOverride;
+          } else {
+            string id = string.IsNullOrEmpty(__instance.pilotDefId) ? UnitSpawnPointGameLogic.PilotDef_Default : __instance.pilotDefId;
+            if (!__instance.Combat.DataManager.PilotDefs.TryGet(id, out t1)) {
+              __instance.LogError(string.Format("PilotDef [{0}] not previously requested. Falling back to [{1}]", (object)id, (object)UnitSpawnPointGameLogic.PilotDef_Default), true);
+              t1 = __instance.Combat.DataManager.PilotDefs.Get(UnitSpawnPointGameLogic.PilotDef_Default);
+            }
+          }
+          Lance lanceByUid = turnActorByUniqueId.GetLanceByUID(__instance.lanceGuid);
+          string empty = string.Empty;
+          string chassisId;
+          AbstractActor unit;
+          switch (__instance.unitType) {
+            case UnitType.Mech:
+            MechDef t3 = (MechDef)null;
+            if (__instance.mechDefOverride != null) {
+              t3 = __instance.mechDefOverride;
+            } else {
+              if (!__instance.Combat.DataManager.MechDefs.TryGet(__instance.mechDefId, out t3)) {
+                __instance.LogError(string.Format("MechDef [{0}] not previously requested. Aborting unit spawn.", (object)__instance.mechDefId), true);
+                return false;
+              }
+              if (!t3.DependenciesLoaded(1000U)) {
+                UnitSpawnPointGameLogic.logger.LogError((object)string.Format("Invalid mechdef for SpawnPoint [{0}][{1}] - [{2}]", (object)__instance.name, (object)__instance.encounterObjectGuid, (object)__instance.mechDefId), (UnityEngine.Object)__instance.gameObject);
+                return false;
+              }
+              t3.Refresh();
+            }
+            chassisId = t3.ChassisID;
+            Log.WL(1, "SpawnMech_internal:"+(SpawnMech_internal == null?"null":"not null"));
+            if (SpawnMech_internal != null) {
+              unit = (AbstractActor)SpawnMech_internal(__instance, t3, t1, turnActorByUniqueId, lanceByUid, t2);
+            } else {
+              unit = (AbstractActor)__instance.SpawnMech(t3, t1, turnActorByUniqueId, lanceByUid, t2);
+            }
+            break;
+            case UnitType.Vehicle:
+            VehicleDef t4 = (VehicleDef)null;
+            if (__instance.vehicleDefOverride != null) {
+              t4 = __instance.vehicleDefOverride;
+            } else {
+              if (!__instance.Combat.DataManager.VehicleDefs.TryGet(__instance.vehicleDefId, out t4)) {
+                __instance.LogError(string.Format("VehicleDef [{0}] not previously requested. Aborting unit spawn.", (object)__instance.vehicleDefId), true);
+                return false;
+              }
+              t4.Refresh();
+            }
+            chassisId = t4.ChassisID;
+            unit = (AbstractActor)__instance.SpawnVehicle(t4, t1, turnActorByUniqueId, lanceByUid, t2);
+            break;
+            case UnitType.Turret:
+            TurretDef t5 = (TurretDef)null;
+            if (__instance.turretDefOverride != null) {
+              t5 = __instance.turretDefOverride;
+            } else {
+              if (!__instance.Combat.DataManager.TurretDefs.TryGet(__instance.turretDefId, out t5)) {
+                __instance.LogError(string.Format("TurretDef [{0}] not previously requested. Aborting unit spawn.", (object)__instance.turretDefId), true);
+                return false;
+              }
+              t5.Refresh();
+            }
+            chassisId = t5.ChassisID;
+            unit = (AbstractActor)__instance.SpawnTurret(t5, t1, turnActorByUniqueId, lanceByUid, t2);
+            break;
+            default:
+            throw new ArgumentException("UnitSpawnPointGameLocic.SpawnUnit had invalid unitType: " + __instance.unitType.ToString());
+          }
+          Log.WL(1,"unit:"+(unit == null?"null":"not null"));
+          __instance.LogMessage(string.Format("Spawning unit - Team [{0}], UnitId [{1}], ChassisId [{2}], PilotId [{3}]", (object)turnActorByUniqueId.DisplayName, (object)unit.GUID, (object)chassisId, (object)__instance.pilotDefId));
+          unit.OverriddenPilotDisplayName = __instance.customUnitName;
+          __instance.lastSpawnedUnit = (ICombatant)unit;
+          if (spawnOffScreen) {
+            unit.PlaceFarAwayFromMap();
+            __instance.spawningOffScreen = true;
+            __instance.timePlacedOffScreen = 0.0f;
+          }
+          if ((!(turnActorByUniqueId is AITeam aiTeam) ? 0 : (aiTeam.ThinksOnThisMachine ? 1 : 0)) != 0) {
+            if (!Enum.IsDefined(typeof(BehaviorTreeIDEnum), (object)(int)__instance.behaviorTree))
+              __instance.behaviorTree = BehaviorTreeIDEnum.CoreAITree;
+            unit.BehaviorTree = BehaviorTreeFactory.MakeBehaviorTree(__instance.Combat.BattleTechGame, unit, __instance.behaviorTree);
+            for (int i = 0; i < __instance.aiOrderList.Count; ++i)
+              unit.IssueAIOrder(__instance.aiOrderList[i]);
+          }
+          for (int index = 0; index < __instance.spawnEffectTags.Count; ++index)
+            unit.CreateSpawnEffectByTag(__instance.spawnEffectTags[index]);
+          UnitSpawnedMessage unitSpawnedMessage = new UnitSpawnedMessage(__instance.encounterObjectGuid, unit.GUID);
+          EncounterLayerParent.EnqueueLoadAwareMessage((MessageCenterMessage)unitSpawnedMessage);
+          if (!__instance.triggerInterruptPhaseOnSpawn)
+            return false;
+          unit.IsInterruptActor = true;
+          __instance.Combat.StackManager.InsertInterruptPhase(turnActorByUniqueId.GUID, unitSpawnedMessage.messageIndex);
+          return false;
+        }
+      }catch(Exception e) {
+        Log.TWL(0, e.ToString(), true);
+      }
+      return true;
+    }
+
     public static void PooledInstantiate_Fallback(this DataManager __instance,ref GameObject __result,string id,BattleTechResourceType resourceType,Vector3? position,Quaternion? rotation,Transform parent) {
       return;
       if (__result != null) { return; }
@@ -885,6 +998,7 @@ namespace CustomDeploy{
     }
     public static void FinishLoading() {
       Core.HarmonyInstance.Patch(typeof(DataManager).GetMethod("PooledInstantiate", BindingFlags.Public | BindingFlags.Instance),null, new HarmonyMethod(typeof(CustomDeploy.Core).GetMethod(nameof(CustomDeploy.Core.PooledInstantiate_Fallback), BindingFlags.Static | BindingFlags.Public)));
+      //Core.HarmonyInstance.Patch(typeof(UnitSpawnPointGameLogic).GetMethod("Spawn", BindingFlags.NonPublic | BindingFlags.Instance), new HarmonyMethod(typeof(CustomDeploy.Core).GetMethod(nameof(CustomDeploy.Core.UnitSpawnPointGameLogic_Spawn), BindingFlags.Static | BindingFlags.Public)));
     }
     public static string BaseDir { get; set; }
     public static bool debugLog { get; set; }

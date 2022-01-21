@@ -131,6 +131,7 @@ namespace CustomUnits {
       Matrix4x4 worldToLocalMatrix = this.visibleObject.transform.worldToLocalMatrix;
       this.meshList = new List<Mesh>();
       this.bindPoses = new List<Matrix4x4>();
+      Log.TWL(0, "CustomMechMerge.GenerateCache "+this.parentRepresentation.gameObject.name);
       for (int index1 = 0; index1 < this.childrenRenderers.Count; ++index1) {
         if (this.childrenRenderers[index1].sharedMaterials.Length <= 1 && !((Object)this.childrenRenderers[index1].sharedMesh == (Object)null)) {
           Material sharedMaterial = this.childrenRenderers[index1].sharedMaterial;
@@ -144,7 +145,7 @@ namespace CustomUnits {
                 this.mechMaterial[matIndex].SetTextureScale("_DamageAlbedoMap", new Vector2(6f, 6f));
                 this.mechMaterial[matIndex].SetTexture(MechMeshMerge.Uniforms._DamageNormalMap, (Texture)MechMeshMerge.damageNormal);
               }
-              this.childrenRenderers[index1].sharedMaterial = this.mechMaterial[matIndex];
+              if (this.mechMaterial[matIndex] != null) { this.childrenRenderers[index1].sharedMaterial = this.mechMaterial[matIndex]; }
               Transform transform = this.childrenRenderers[index1].rootBone.gameObject.transform;
               int index2 = this.boneList.IndexOf(transform);
               if (index2 == -1) {

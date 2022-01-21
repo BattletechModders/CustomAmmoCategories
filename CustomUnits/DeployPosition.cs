@@ -1687,12 +1687,6 @@ namespace CustomUnits {
     //}
     public static bool isObjectivesReady(this Contract contract) {
       return DeployManualHelper.IsInManualSpawnSequence == false;
-      //if (contract.isManualSpawn()) { return false; }
-      //if (PlayerLanceSpawnerGameLogic_OnEnterActive.deployLoadRequest == null) { return true; }
-      //if (PlayerLanceSpawnerGameLogic_OnEnterActive.deployLoadRequest.deployDirector == null) { return true; }
-      //if (PlayerLanceSpawnerGameLogic_OnEnterActive.deployLoadRequest.deployDirector.IsDead) { return true; }
-      //return false;
-      //return (delayedSpawners.Count == 0)&&(contract.isManualSpawn() == false);
     }
     //public static bool Prefix(LanceSpawnerGameLogic __instance) {
     //  Log.TW(0, "LanceSpawnerGameLogic.OnEnterActive " + __instance.Name + " HasUnitToSpawn:" + __instance.HasUnitToSpawn());

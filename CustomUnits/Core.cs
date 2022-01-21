@@ -6,6 +6,7 @@ using Harmony;
 using Localize;
 using Newtonsoft.Json;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -188,6 +189,7 @@ namespace CustomUnits{
     public string ConvoyRouteBeaconVFX { get; set; }
     public CustomVector ConvoyRouteBeaconVFXScale { get; set; }
     public string CustomJumpJetsPrefabSrc { get; set; }
+    public string CustomJetsStreamsPrefabSrc { get; set; } = "chrPrfVhcl_leopard";
     public string CustomJumpJetsComponentPrefab { get; set; }
     public string CustomJumpJetsPrefabSrcObjectName { get; set; }
     public string CustomHeadlightComponentPrefab { get; set; }

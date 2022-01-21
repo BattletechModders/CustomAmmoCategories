@@ -404,9 +404,10 @@ namespace CustomUnits {
       //Log.LogWrite(0, "VehicleChassisDef.GatherDependencies postfix " + __instance.Description.Id, true);
       try {
         if (string.IsNullOrEmpty(Core.Settings.CustomJumpJetsPrefabSrc) == false) {
-          //if (dataManager.Exists(BattleTechResourceType.Prefab,Core.Settings.CustomJumpJetsPrefabSrc) == false) {
           dependencyLoad.RequestResource(BattleTechResourceType.Prefab, Core.Settings.CustomJumpJetsPrefabSrc);
-          //}
+        }
+        if (string.IsNullOrEmpty(Core.Settings.CustomJetsStreamsPrefabSrc) == false) {
+          dependencyLoad.RequestResource(BattleTechResourceType.Prefab, Core.Settings.CustomJetsStreamsPrefabSrc);
         }
         if (string.IsNullOrEmpty(Core.Settings.DefaultMechBattleRepresentationPrefab) == false) {
           dependencyLoad.RequestResource(BattleTechResourceType.Prefab, Core.Settings.DefaultMechBattleRepresentationPrefab);
@@ -474,6 +475,12 @@ namespace CustomUnits {
         if (string.IsNullOrEmpty(Core.Settings.CustomJumpJetsPrefabSrc) == false) {
           if (__instance.DataManager.Exists(BattleTechResourceType.Prefab, Core.Settings.CustomJumpJetsPrefabSrc) == false) {
             Log.WL(1, Core.Settings.CustomJumpJetsPrefabSrc + " fail");
+            __result = false;
+          }
+        }
+        if (string.IsNullOrEmpty(Core.Settings.CustomJetsStreamsPrefabSrc) == false) {
+          if (__instance.DataManager.Exists(BattleTechResourceType.Prefab, Core.Settings.CustomJetsStreamsPrefabSrc) == false) {
+            Log.WL(1, Core.Settings.CustomJetsStreamsPrefabSrc + " fail");
             __result = false;
           }
         }
@@ -557,11 +564,12 @@ namespace CustomUnits {
       //Log.LogWrite(0, "ChassisDef.GatherDependencies postfix " + activeRequestWeight + " " + __instance.Description.Id, true);
       try {
         if (string.IsNullOrEmpty(Core.Settings.CustomJumpJetsPrefabSrc) == false) {
-          //if (dataManager.Exists(BattleTechResourceType.Prefab,Core.Settings.CustomJumpJetsPrefabSrc) == false) {
             dependencyLoad.RequestResource(BattleTechResourceType.Prefab, Core.Settings.CustomJumpJetsPrefabSrc);
-          //}
         }
-        if(string.IsNullOrEmpty(Core.Settings.DefaultMechBattleRepresentationPrefab) == false) {
+        if (string.IsNullOrEmpty(Core.Settings.CustomJetsStreamsPrefabSrc) == false) {
+          dependencyLoad.RequestResource(BattleTechResourceType.Prefab, Core.Settings.CustomJetsStreamsPrefabSrc);
+        }
+        if (string.IsNullOrEmpty(Core.Settings.DefaultMechBattleRepresentationPrefab) == false) {
           dependencyLoad.RequestResource(BattleTechResourceType.Prefab, Core.Settings.DefaultMechBattleRepresentationPrefab);
         }
         __instance.AddCustomRepDeps(dependencyLoad);
@@ -757,6 +765,12 @@ namespace CustomUnits {
         if (string.IsNullOrEmpty(Core.Settings.CustomJumpJetsPrefabSrc) == false) {
           if (__instance.DataManager.Exists(BattleTechResourceType.Prefab, Core.Settings.CustomJumpJetsPrefabSrc) == false) {
             Log.WL(1, Core.Settings.CustomJumpJetsPrefabSrc + " fail");
+            __result = false;
+          }
+        }
+        if (string.IsNullOrEmpty(Core.Settings.CustomJetsStreamsPrefabSrc) == false) {
+          if (__instance.DataManager.Exists(BattleTechResourceType.Prefab, Core.Settings.CustomJetsStreamsPrefabSrc) == false) {
+            Log.WL(1, Core.Settings.CustomJetsStreamsPrefabSrc + " fail");
             __result = false;
           }
         }

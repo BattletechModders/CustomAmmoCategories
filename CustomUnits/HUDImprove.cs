@@ -528,13 +528,14 @@ namespace CustomUnits {
       HotDropManager hotdropManager = encounterLayerParent.GetComponent<HotDropManager>();
       hotdropManager.HotDrop(dropPositions,spawnerGUID);
     }
-    public static void PushDropLayout(string id, List<List<string>> layout, int maxUnits) {
-      Log.TWL(0, "CustomLanceHelper.PushDropLayout id:"+id+ " maxUnits:"+maxUnits+" layout:"+layout.Count);
+    public static void PushDropLayout(string id, List<List<string>> layout, int maxUnits, List<string> names) {
+      Log.TWL(0, "CustomLanceHelper.PushDropLayout id:"+id+ " maxUnits:"+maxUnits+" layout:"+layout.Count+ " names:"+(names == null?"null":"not null"));
       for(int t = 0; t < layout.Count; ++t) { 
         foreach(string dropdef in layout[t]) {
           Log.WL(1, "[" + t + "]:" + dropdef);
         }
       }
+      if (names == null) { names = new List<string>(); }
       if (layout.Count == 0) { return; }
       DropSlotsDef newlayout = new DropSlotsDef();
       newlayout.Description = new DropDescriptionDef();
@@ -547,7 +548,8 @@ namespace CustomUnits {
         DropLanceDef newLance = new DropLanceDef();
         newLance.Description = new DropDescriptionDef();
         newLance.Description.Id = newlayout.Description.Id + "_lance_" + t;
-        newLance.Description.Name = "LANCE " + t;
+        newLance.Description.Name = t < names.Count ? names[t] :"LANCE " + t;
+        Log.WL(1, "newLance["+t+"].Name=" + newLance.description.Name);
         newLance.dropSlots = new List<DropSlotDef>();
         newLance.DropSlots = new List<string>();
         foreach (string slotid in lance) {
@@ -567,7 +569,7 @@ namespace CustomUnits {
         DropLanceDef newLance = new DropLanceDef();
         newLance.Description = new DropDescriptionDef();
         newLance.Description.Id = newlayout.Description.Id + "_lance_" + layout.Count;
-        newLance.Description.Name = "LANCE " + +layout.Count;
+        newLance.Description.Name = "LANCE " +layout.Count;
         newLance.dropSlots = new List<DropSlotDef>();
         newLance.DropSlots = new List<string>();
         foreach (string slotid in lance) {

@@ -195,40 +195,56 @@ namespace CustomUnits {
     }
 
     private void ResetArmorStructureBars() {
-      if (this.displayedTurret == null)
-        return;
-      float summaryArmorCurrent = this.displayedTurret.SummaryArmorCurrent;
-      float summaryArmorMax = this.displayedTurret.SummaryArmorMax;
-      float structureCurrent = this.displayedTurret.SummaryStructureCurrent;
-      float summaryStructureMax = this.displayedTurret.SummaryStructureMax;
-      this.ArmorBar.ShowNewSummary(summaryArmorCurrent, summaryArmorMax, false);
-      this.StructureBar.ShowNewSummary(structureCurrent, summaryStructureMax, this.displayedTurret.IsAnyStructureExposed);
-      this.HoverInfoTextArmor.SetText("{0}/{1}", (object)HUDMechArmorReadout.FormatForSummary(summaryArmorCurrent), (object)HUDMechArmorReadout.FormatForSummary(summaryArmorMax));
-      this.HoverInfoTextStructure.SetText("{0}/{1}", (object)HUDMechArmorReadout.FormatForSummary(structureCurrent), (object)HUDMechArmorReadout.FormatForSummary(summaryStructureMax));
-      if (this.displayedTurret != null && this.HoverInfoTextArmor != null && this.HoverInfoTextStructure != null) {
-        if (!this.displayedTurret.Combat.HostilityMatrix.IsLocalPlayerFriendly(this.displayedTurret.TeamId)) {
-          //Log.TWL(0, $"Hiding armor and structure on target: {(this.displayedTurret.DisplayName)}");
-          LowVisibilityAPIHelper.ObfuscateArmorAndStructText(this.displayedTurret, this.HoverInfoTextArmor, this.HoverInfoTextStructure);
+      //Log.TWL(0, "FakeHUDTurretArmorReadout.ResetArmorStructureBars");
+      try {
+        if (this.displayedTurret == null)
+          return;
+        //Log.WL(1, "displayedTurret:" + displayedTurret.PilotableActorDef.ChassisID);
+        float summaryArmorCurrent = this.displayedTurret.SummaryArmorCurrent;
+        float summaryArmorMax = this.displayedTurret.SummaryArmorMax;
+        float structureCurrent = this.displayedTurret.SummaryStructureCurrent;
+        float summaryStructureMax = this.displayedTurret.SummaryStructureMax;
+        this.ArmorBar.ShowNewSummary(summaryArmorCurrent, summaryArmorMax, false);
+        this.StructureBar.ShowNewSummary(structureCurrent, summaryStructureMax, this.displayedTurret.IsAnyStructureExposed);
+        this.HoverInfoTextArmor.SetText("{0}/{1}", (object)HUDMechArmorReadout.FormatForSummary(summaryArmorCurrent), (object)HUDMechArmorReadout.FormatForSummary(summaryArmorMax));
+        this.HoverInfoTextStructure.SetText("{0}/{1}", (object)HUDMechArmorReadout.FormatForSummary(structureCurrent), (object)HUDMechArmorReadout.FormatForSummary(summaryStructureMax));
+        if (this.displayedTurret != null && this.HoverInfoTextArmor != null && this.HoverInfoTextStructure != null) {
+          if (!this.displayedTurret.Combat.HostilityMatrix.IsLocalPlayerFriendly(this.displayedTurret.TeamId)) {
+            //Log.TWL(0, $"Hiding armor and structure on target: {(this.displayedTurret.DisplayName)}");
+            LowVisibilityAPIHelper.ObfuscateArmorAndStructText(this.displayedTurret, this.HoverInfoTextArmor, this.HoverInfoTextStructure);
+          }
         }
+        //Log.WL(1, "FakeHUDTurretArmorReadout armor " + summaryArmorCurrent+"/"+ summaryArmorMax);
+        //Log.WL(1, "FakeHUDTurretArmorReadout structure " + structureCurrent + "/" + summaryStructureMax);
+      } catch (Exception e) {
+        Log.TWL(0,e.ToString(), true);
       }
     }
 
     private void UpdateArmorStructureBars() {
-      if (this.displayedTurret == null)
-        return;
-      float summaryArmorCurrent = this.displayedTurret.SummaryArmorCurrent;
-      float summaryArmorMax = this.displayedTurret.SummaryArmorMax;
-      float structureCurrent = this.displayedTurret.SummaryStructureCurrent;
-      float summaryStructureMax = this.displayedTurret.SummaryStructureMax;
-      this.ArmorBar.UpdateSummary(summaryArmorCurrent, false);
-      this.StructureBar.UpdateSummary(structureCurrent, this.displayedTurret.IsAnyStructureExposed);
-      this.HoverInfoTextArmor.SetText("{0}/{1}", (object)HUDMechArmorReadout.FormatForSummary(summaryArmorCurrent), (object)HUDMechArmorReadout.FormatForSummary(summaryArmorMax));
-      this.HoverInfoTextStructure.SetText("{0}/{1}", (object)HUDMechArmorReadout.FormatForSummary(structureCurrent), (object)HUDMechArmorReadout.FormatForSummary(summaryStructureMax));
-      if (this.displayedTurret != null && this.HoverInfoTextArmor != null && this.HoverInfoTextStructure != null) {
-        if (!this.displayedTurret.Combat.HostilityMatrix.IsLocalPlayerFriendly(this.displayedTurret.TeamId)) {
-          //Log.TWL(0, $"Hiding armor and structure on target: {(this.displayedTurret.DisplayName)}");
-          LowVisibilityAPIHelper.ObfuscateArmorAndStructText(this.displayedTurret, this.HoverInfoTextArmor, this.HoverInfoTextStructure);
+      //Log.TWL(0, "FakeHUDTurretArmorReadout.UpdateArmorStructureBars");
+      try {
+        if (this.displayedTurret == null)
+          return;
+        //Log.WL(1, "displayedTurret:"+ displayedTurret.PilotableActorDef.ChassisID);
+        float summaryArmorCurrent = this.displayedTurret.SummaryArmorCurrent;
+        float summaryArmorMax = this.displayedTurret.SummaryArmorMax;
+        float structureCurrent = this.displayedTurret.SummaryStructureCurrent;
+        float summaryStructureMax = this.displayedTurret.SummaryStructureMax;
+        this.ArmorBar.UpdateSummary(summaryArmorCurrent, false);
+        this.StructureBar.UpdateSummary(structureCurrent, this.displayedTurret.IsAnyStructureExposed);
+        this.HoverInfoTextArmor.SetText("{0}/{1}", (object)HUDMechArmorReadout.FormatForSummary(summaryArmorCurrent), (object)HUDMechArmorReadout.FormatForSummary(summaryArmorMax));
+        this.HoverInfoTextStructure.SetText("{0}/{1}", (object)HUDMechArmorReadout.FormatForSummary(structureCurrent), (object)HUDMechArmorReadout.FormatForSummary(summaryStructureMax));
+        if (this.displayedTurret != null && this.HoverInfoTextArmor != null && this.HoverInfoTextStructure != null) {
+          if (!this.displayedTurret.Combat.HostilityMatrix.IsLocalPlayerFriendly(this.displayedTurret.TeamId)) {
+            //Log.TWL(0, $"Hiding armor and structure on target: {(this.displayedTurret.DisplayName)}");
+            LowVisibilityAPIHelper.ObfuscateArmorAndStructText(this.displayedTurret, this.HoverInfoTextArmor, this.HoverInfoTextStructure);
+          }
         }
+        //Log.WL(1, "FakeHUDTurretArmorReadout armor " + summaryArmorCurrent + "/" + summaryArmorMax);
+        //Log.WL(1, "FakeHUDTurretArmorReadout structure " + structureCurrent + "/" + summaryStructureMax);
+      } catch (Exception e) {
+        Log.TWL(0, e.ToString(), true);
       }
     }
 

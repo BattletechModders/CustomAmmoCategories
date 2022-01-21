@@ -6,6 +6,7 @@ using IRBTModUtils;
 using Localize;
 using System;
 using System.Collections.Generic;
+using System.Threading;
 using UnityEngine;
 
 namespace CustomUnits {
@@ -72,7 +73,7 @@ namespace CustomUnits {
       }
       return result;
     }
-    private static Dictionary<AttackDirection, Dictionary<ArmorLocation, int>> GetHitTable_cache = new Dictionary<AttackDirection, Dictionary<ArmorLocation, int>>();
+    private Dictionary<AttackDirection, Dictionary<ArmorLocation, int>> GetHitTable_cache = new Dictionary<AttackDirection, Dictionary<ArmorLocation, int>>();
     public override Dictionary<ArmorLocation, int> GetHitTable(AttackDirection from) {
       if (from == AttackDirection.ToProne) { from = AttackDirection.FromArtillery; };
       Dictionary<ArmorLocation, int> result = null;
@@ -81,18 +82,29 @@ namespace CustomUnits {
       Dictionary<VehicleChassisLocations, int> vres = this.Combat.HitLocation.GetVehicleHitTable(from);
       foreach (var vloc in vres) {
         ArmorLocation aloc = vloc.Key.toFakeArmor();
+        LocationDef locationDef = this.MechDef.Chassis.GetLocationDef(vloc.Key.toFakeChassis());
+        if ((locationDef.MaxArmor <= 0f) && (locationDef.InternalStructure <= 1f)) { continue; }
         result.Add(aloc, vloc.Value);
       }
-      GetHitTable_cache.Add(from,result);
+      GetHitTable_cache.Add(from, result.Count > 0 ? result : null);
       return result.Count > 0 ? result : null;
     }
     public override int GetHitLocation(AbstractActor attacker, Vector3 attackPosition, float hitLocationRoll, int calledShotLocation, float bonusMultiplier) {
-      return (int)this.Combat.HitLocation.GetHitLocationFakeVehicle(attackPosition, this, hitLocationRoll, ((ArmorLocation)calledShotLocation).toFakeVehicleChassis(), bonusMultiplier).toFakeArmor();
+      AttackDirection attackDirection = this.Combat.HitLocation.GetAttackDirection(attackPosition, this);
+      if (attackDirection == AttackDirection.FromBack && this.StatCollection.GetValue<bool>("GuaranteeNextBackHit")) {
+        this.StatCollection.Set<bool>("GuaranteeNextBackHit", false);
+        return (int)(VehicleChassisLocations.Rear.toFakeArmor());
+      }
+      Dictionary<ArmorLocation, int> hitTable = this.GetHitTable(this.IsProne ? AttackDirection.ToProne : this.Combat.HitLocation.GetAttackDirection(attackPosition, this));
+      Thread.CurrentThread.pushActor(this);
+      int result = (int)(hitTable != null ? HitLocation.GetHitLocation(hitTable, hitLocationRoll, (ArmorLocation)calledShotLocation, bonusMultiplier) : ArmorLocation.None);
+      Thread.CurrentThread.clearActor();
+      return result;
+      //return (int)this.Combat.HitLocation.GetHitLocation(attackPosition, this, hitLocationRoll, ((ArmorLocation)calledShotLocation), bonusMultiplier).toFakeArmor();
     }
     public override int GetAdjacentHitLocation(Vector3 attackPosition, float randomRoll, int previousHitLocation, float originalMultiplier = 1f, float adjacentMultiplier = 1f) {
-      return (int)this.Combat.HitLocation.GetAdjacentHitLocation(attackPosition, this, randomRoll, (ArmorLocation)previousHitLocation, originalMultiplier, adjacentMultiplier, ArmorLocation.None, 0.0f);
+      return base.GetAdjacentHitLocation(attackPosition, randomRoll, previousHitLocation, originalMultiplier, adjacentMultiplier);
     }
-
     private static HashSet<ArmorLocation> DFASelfDamageLocations = new HashSet<ArmorLocation>() { VehicleChassisLocations.Front.toFakeArmor(), VehicleChassisLocations.Rear.toFakeArmor(), VehicleChassisLocations.Left.toFakeArmor(), VehicleChassisLocations.Right.toFakeArmor() };
     public override HashSet<ArmorLocation> GetDFASelfDamageLocations() {
       return DFASelfDamageLocations;
@@ -147,7 +159,7 @@ namespace CustomUnits {
       GetAdjacentLocations_cache.Add(location, result);
       return result;
     }
-    private static Dictionary<ArmorLocation, Dictionary<ArmorLocation, int>> GetClusterTable_cache = new Dictionary<ArmorLocation, Dictionary<ArmorLocation, int>>();
+    private Dictionary<ArmorLocation, Dictionary<ArmorLocation, int>> GetClusterTable_cache = new Dictionary<ArmorLocation, Dictionary<ArmorLocation, int>>();
     public override Dictionary<ArmorLocation, int> GetClusterTable(ArmorLocation originalLocation, Dictionary<ArmorLocation, int> hitTable) {
       if (GetClusterTable_cache.TryGetValue(originalLocation, out Dictionary<ArmorLocation, int> result)) { return result; }
       ArmorLocation adjacentLocations = this.GetAdjacentLocations(originalLocation);
@@ -164,7 +176,7 @@ namespace CustomUnits {
       GetClusterTable_cache.Add(originalLocation, dictionary);
       return dictionary;
     }
-    private static Dictionary<AttackDirection, Dictionary<ArmorLocation, Dictionary<ArmorLocation, int>>> GetClusterHitTable_cache = new Dictionary<AttackDirection, Dictionary<ArmorLocation, Dictionary<ArmorLocation, int>>>();
+    private Dictionary<AttackDirection, Dictionary<ArmorLocation, Dictionary<ArmorLocation, int>>> GetClusterHitTable_cache = new Dictionary<AttackDirection, Dictionary<ArmorLocation, Dictionary<ArmorLocation, int>>>();
     public override Dictionary<ArmorLocation, int> GetHitTableCluster(AttackDirection from, ArmorLocation originalLocation) {
       if (GetClusterHitTable_cache.TryGetValue(from, out Dictionary<ArmorLocation, Dictionary<ArmorLocation, int>> clusterTables) == false) {
         clusterTables = new Dictionary<ArmorLocation, Dictionary<ArmorLocation, int>>();

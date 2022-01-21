@@ -638,17 +638,26 @@ namespace CustomUnits {
         GameObject shaderSource = dataManager.PooledInstantiate(custRepDef.ShaderSource, BattleTechResourceType.Prefab);
         if (shaderSource != null) {
           Log.WL(1, "shader prefab found");
-          Renderer shaderComponent = shaderSource.GetComponentInChildren<Renderer>();
-          Renderer[] shaderTargets = meshSource.GetComponentsInChildren<Renderer>(true);
-          foreach (Renderer renderer in shaderTargets) {
-            SkinnedMeshRenderer s_renderer = renderer as SkinnedMeshRenderer;
-            MeshRenderer m_renderer = renderer as MeshRenderer;
-            if ((s_renderer == null) && (m_renderer == null)) { continue; }
-            Log.WL(2, "renderer:" + renderer.name);
-            for (int mindex = 0; mindex < renderer.materials.Length; ++mindex) {
-              Log.WL(3, "material:" + renderer.materials[mindex].name + " <- " + shaderComponent.material.shader.name);
-              renderer.materials[mindex].shader = shaderComponent.material.shader;
-              renderer.materials[mindex].shaderKeywords = shaderComponent.material.shaderKeywords;
+          Renderer shaderComponent = null;
+          Renderer[] shaderComponents = shaderSource.GetComponentsInChildren<Renderer>(true);
+          foreach(Renderer shaderCmp in shaderComponents) {
+            if (shaderCmp.sharedMaterial == null) { continue; }
+            shaderComponent = shaderCmp;
+            break;
+          }
+          if (shaderComponent != null) {
+            Log.WL(1, "shader renderer found");
+            Renderer[] shaderTargets = meshSource.GetComponentsInChildren<Renderer>(true);
+            foreach (Renderer renderer in shaderTargets) {
+              SkinnedMeshRenderer s_renderer = renderer as SkinnedMeshRenderer;
+              MeshRenderer m_renderer = renderer as MeshRenderer;
+              if ((s_renderer == null) && (m_renderer == null)) { continue; }
+              Log.WL(2, "renderer:" + renderer.name);
+              for (int mindex = 0; mindex < renderer.sharedMaterials.Length; ++mindex) {
+                Log.WL(3, "material:" + renderer.sharedMaterials[mindex].name + " <- " + shaderComponent.sharedMaterial.shader.name);
+                renderer.sharedMaterials[mindex].shader = shaderComponent.sharedMaterial.shader;
+                renderer.sharedMaterials[mindex].shaderKeywords = shaderComponent.sharedMaterial.shaderKeywords;
+              }
             }
           }
           dataManager.PoolGameObject(custRepDef.ShaderSource, shaderSource);
@@ -1105,7 +1114,10 @@ namespace CustomUnits {
     }
     public static void MoveBone(this CustomMechRepresentationSimGame mechRep, CustomActorRepresentationDef custRepDef, DataManager dataManager) {
       GameObject meshSource = null;
-      if (string.IsNullOrEmpty(custRepDef.Id) == false) { meshSource = dataManager.PooledInstantiate(custRepDef.Id, BattleTechResourceType.Prefab); }
+      if (string.IsNullOrEmpty(custRepDef.Id) == false) {
+        meshSource = dataManager.PooledInstantiate(custRepDef.Id, BattleTechResourceType.Prefab);
+        meshSource.TestMissingMaterials(custRepDef.Id, dataManager);
+      }
       if (meshSource != null) {
         mechRep.gameObject.name = meshSource.name;
         meshSource.CopyShader(dataManager, custRepDef);
@@ -1124,7 +1136,10 @@ namespace CustomUnits {
     }
     public static void MoveBone(this CustomMechRepresentation mechRep, CustomActorRepresentationDef custRepDef, DataManager dataManager) {
       GameObject meshSource = null;
-      if (string.IsNullOrEmpty(custRepDef.Id) == false) { meshSource = dataManager.PooledInstantiate(custRepDef.Id, BattleTechResourceType.Prefab); }
+      if (string.IsNullOrEmpty(custRepDef.Id) == false) {
+        meshSource = dataManager.PooledInstantiate(custRepDef.Id, BattleTechResourceType.Prefab);
+        meshSource.TestMissingMaterials(custRepDef.Id, dataManager);
+      }
       if (meshSource != null) {
         mechRep.gameObject.name = meshSource.name;
         meshSource.CopyShader(dataManager, custRepDef);
@@ -1888,6 +1903,7 @@ namespace CustomUnits {
       GameObject result = dataManager.PooledInstantiate(id, BattleTechResourceType.Prefab);
       UnitCustomInfo customInfo = chassisDef.GetCustomInfo();
       if (result != null) {
+        result.TestMissingMaterials(id, dataManager);
         bool setupAlternates = false;
         bool setupSquad = false;
         bool setupQuad = false;
@@ -1913,5 +1929,37 @@ namespace CustomUnits {
       }
       return result;
     }
+    public static void TestMissingMaterials(this GameObject prefab, string id, DataManager dataManager) {
+      Log.TWL(0, "TestMissingMaterials:"+id);
+      HashSet<Renderer> renderers = new HashSet<Renderer>();
+      foreach(SkinnedMeshRenderer renderer in prefab.GetComponentsInChildren<SkinnedMeshRenderer>(true)) {
+        renderers.Add(renderer);
+      }
+      foreach (MeshRenderer renderer in prefab.GetComponentsInChildren<MeshRenderer>(true)) {
+        if (renderer.gameObject.name.Contains("camoholder")) { continue; }
+        renderers.Add(renderer);
+      }
+      foreach (Renderer renderer in renderers) {
+        if (renderer.sharedMaterial == null) {
+          Log.WL(1, renderer.gameObject.name+" has missing material");
+        }
+      }
+    }
   }
+  [HarmonyPatch(typeof(Renderer))]
+  [HarmonyPatch("sharedMaterial")]
+  [HarmonyPatch(MethodType.Setter)]
+  [HarmonyPatch(new Type[] { typeof(Material) })]
+  public static class Renderer_sharedMaterial_set {
+    public static void Prefix(Renderer __instance, Material value) {
+      try {
+        if (value == null) {
+          Log.TWL(0, "Renderer.sharedMaterial set null "+ __instance.gameObject.name);
+        }
+      } catch (Exception e) {
+        Log.TWL(0, e.ToString(), true);
+      }
+    }
+  }
+
 }

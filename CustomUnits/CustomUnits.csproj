@@ -49,7 +49,7 @@
       <HintPath>$(BattleTechGameDir)\BattleTech_Data\Managed\Assembly-CSharp-firstpass.dll</HintPath>
     </Reference>
     <Reference Include="BattletechPerformanceFix">
-      <HintPath>..\..\Mods\BattletechPerformanceFix\BattletechPerformanceFix.dll</HintPath>
+      <HintPath>$(BattleTechGameDir)\Mods\BattletechPerformanceFix\BattletechPerformanceFix.dll</HintPath>
     </Reference>
     <Reference Include="CustomComponents">
       <HintPath>$(BattleTechGameDir)\Mods\CustomComponents\CustomComponents.dll</HintPath>
@@ -58,7 +58,10 @@
       <HintPath>$(BattleTechGameDir)\Mods\CustomPrewarm\CustomPrewarm.dll</HintPath>
     </Reference>
     <Reference Include="CustomSalvage">
-      <HintPath>..\..\Mods\CustomSalvage\CustomSalvage.dll</HintPath>
+      <HintPath>$(BattleTechGameDir)\Mods\CustomSalvage\CustomSalvage.dll</HintPath>
+    </Reference>
+    <Reference Include="CustomVoices">
+      <HintPath>$(BattleTechGameDir)\Mods\CustomVoices\CustomVoices.dll</HintPath>
     </Reference>
     <Reference Include="DOTween, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
@@ -137,6 +140,7 @@
     <Compile Include="AlternateRepresentation.cs" />
     <Compile Include="AnimatedPartsHelper.cs" />
     <Compile Include="BiomeTagsFix.cs" />
+    <Compile Include="BossAppearController.cs" />
     <Compile Include="CombatDestroyed.cs" />
     <Compile Include="CustomArmorReadout.cs" />
     <Compile Include="CustomChassisReady.cs" />
@@ -165,6 +169,7 @@
     <Compile Include="DisableMoveAnimation.cs" />
     <Compile Include="DropSlotsDef.cs" />
     <Compile Include="ExActorRepresentation.cs" />
+    <Compile Include="ExhaustJetHelper.cs" />
     <Compile Include="FakeHUDTurretArmorReadout.cs" />
     <Compile Include="FakeVehicle.cs" />
     <Compile Include="FakeVehicleMovement.cs" />

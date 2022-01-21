@@ -41,8 +41,11 @@ namespace CustomUnits {
     }
     protected override void InitSlaves() {
       foreach (Collider collider in selfColliders) { collider.enabled = false; }
+      UnitCustomInfo customInfo = this.chassisDef.GetCustomInfo();
+      Vector3 unitScale = new Vector3(customInfo.SquadInfo.UnitSize, customInfo.SquadInfo.UnitSize, customInfo.SquadInfo.UnitSize);
       foreach (var slave in this.squad) {
         slave.Value.Init(this.custMech, this.j_Root, true);
+        slave.Value.ApplyScale(unitScale);
       }
       Log.TWL(0, "SquadRepresentaion.InitSlaves");
       foreach (var slave in this.squad) {
@@ -384,9 +387,8 @@ namespace CustomUnits {
         unit.Value._StopJumpjetEffect();
       }
     }
-    public override void OnPlayerVisibilityChanged(VisibilityLevel newLevel) {
+    public override void OnPlayerVisibilityChangedCustom(VisibilityLevel newLevel) {
       try {
-        if (DeployManualHelper.IsInManualSpawnSequence) { newLevel = VisibilityLevel.None; }
         PilotableActorRepresentation_OnPlayerVisibilityChanged(newLevel);
         if (this.isJumping) {
           if (newLevel == VisibilityLevel.LOSFull)
@@ -395,7 +397,7 @@ namespace CustomUnits {
             if (isSlave == false) this._StopJumpjetAudio();
         }
         foreach (var unit in this.squad) {
-          unit.Value.OnPlayerVisibilityChanged(newLevel);
+          unit.Value.OnPlayerVisibilityChangedCustom(newLevel);
         }
       }catch(Exception e) {
         Log.TWL(0,e.ToString(),true);

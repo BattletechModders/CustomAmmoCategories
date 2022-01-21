@@ -496,9 +496,31 @@ namespace CustomUnits {
       return result;
     }
     public override int GetAdjacentHitLocation(Vector3 attackPosition, float randomRoll, int previousHitLocation, float originalMultiplier = 1f, float adjacentMultiplier = 1f) {
-      return (int)this.Combat.HitLocation.GetAdjacentHitLocation(attackPosition, this, randomRoll, (ArmorLocation)previousHitLocation, originalMultiplier, adjacentMultiplier, ArmorLocation.None, 0.0f);
+      return (int)this.GetAdjacentHitLocation(attackPosition, randomRoll, (ArmorLocation)previousHitLocation, originalMultiplier, adjacentMultiplier, ArmorLocation.None, 0.0f);
     }
-
+    public virtual ArmorLocation GetAdjacentHitLocation(Vector3 attackPosition, float randomRoll, ArmorLocation previousHitLocation, float originalMultiplier, float adjacentMultiplier, ArmorLocation bonusLocation, float bonusChanceMultiplier) {
+      AttackDirection attackDirection = this.Combat.HitLocation.GetAttackDirection(attackPosition, (ICombatant)this);
+      Dictionary<ArmorLocation, int> hitTable = this.GetHitTableCluster(attackDirection, previousHitLocation);
+      if (hitTable == null)
+        return ArmorLocation.None;
+      if ((double)originalMultiplier > 1.00999999046326 || (double)adjacentMultiplier > 1.00999999046326) {
+        Dictionary<ArmorLocation, int> dictionary = new Dictionary<ArmorLocation, int>();
+        ArmorLocation adjacentLocations = this.GetAdjacentLocations(previousHitLocation);
+        foreach (KeyValuePair<ArmorLocation, int> keyValuePair in hitTable) {
+          if (keyValuePair.Key == previousHitLocation)
+            dictionary.Add(keyValuePair.Key, (int)((double)keyValuePair.Value * (double)originalMultiplier));
+          else if ((adjacentLocations | keyValuePair.Key) == keyValuePair.Key)
+            dictionary.Add(keyValuePair.Key, (int)((double)keyValuePair.Value * (double)adjacentMultiplier));
+          else
+            dictionary.Add(keyValuePair.Key, keyValuePair.Value);
+        }
+        hitTable = dictionary;
+      }
+      Thread.CurrentThread.pushActor(this);
+      ArmorLocation result = HitLocation.GetHitLocation(hitTable, randomRoll, bonusLocation, bonusChanceMultiplier);
+      Thread.CurrentThread.clearActor();
+      return result;
+    }
     public virtual HashSet<ArmorLocation> GetDFASelfDamageLocations() {
       return new HashSet<ArmorLocation>() { ArmorLocation.LeftLeg, ArmorLocation.RightLeg };
     }
@@ -701,6 +723,70 @@ namespace CustomUnits {
     public virtual string UnitTypeNameDefault { get { return "MECH"; } }
     public virtual void ApplyScale(Vector3 scale) {
       this.custGameRep.ApplyScale(scale);
+    }
+    public virtual bool CanBeBossSeen { get; set; } = false;
+    public override void TeleportActor(Vector3 newPosition) {
+      if (this.GetCustomInfo().BossAppearAnimation == false) { this.TeleportActorCustom(newPosition); return; }
+      if (this.CanBeBossSeen) { this.TeleportActorCustom(newPosition); return; }
+    }
+    public virtual void TeleportActorCustom(Vector3 newPosition) {
+      Log.TWL(0, "TeleportActorCustom "+this.PilotableActorDef.ChassisID+" pos:"+newPosition);
+      base.TeleportActor(newPosition);
+      foreach (LinkedActor link in this.linkedActors) {
+        Log.WL(1, "link teleport " + link.actor.PilotableActorDef.ChassisID + " pos:" + (newPosition + link.relativePosition));
+        link.actor.TeleportActor(newPosition+link.relativePosition);
+        link.actor.CurrentPosition = newPosition + link.relativePosition;
+        link.actor.GameRep.transform.position = newPosition + link.relativePosition;
+        link.actor.IsTeleportedOffScreen = true;
+      }
+    }
+    public override void Init(Vector3 position, float facing, bool checkEncounterCells) {
+      if (this.GetCustomInfo().BossAppearAnimation) {
+        BossAppearManager.CreateBossBeacon(this, position);
+        position = this.Combat.LocalPlayerTeam.OffScreenPosition;
+      }
+      base.Init(position, facing, checkEncounterCells);
+      if (this.GetCustomInfo().BossAppearAnimation) { this.IsTeleportedOffScreen = true; }
+      if (this.IsTeleportedOffScreen) {
+        foreach (LinkedActor link in linkedActors) {
+          link.actor.CurrentPosition = this.Combat.LocalPlayerTeam.OffScreenPosition;
+          link.actor.GameRep.transform.position = this.Combat.LocalPlayerTeam.OffScreenPosition;
+          link.actor.IsTeleportedOffScreen = true;
+        }
+      }
+    }
+    public class LinkedActor {
+      public AbstractActor actor { get; set; }
+      public CustomMech customMech { get; set; }
+      public Transform rootHeightTransform { get; set; }
+      public Vector3 relativePosition { get; set; }
+      public bool keepPosition { get; set; }
+      public LinkedActor(CustomMech parent, AbstractActor linked, Vector3 relativePosition, bool keepPos) {
+        this.actor = linked;
+        this.customMech = linked as CustomMech;
+        if (this.customMech != null) { this.rootHeightTransform = this.customMech.custGameRep.j_Root; } else {
+          this.rootHeightTransform = this.actor.GameRep?.transform.FindRecursive("j_Root");
+        }
+        this.relativePosition = relativePosition;
+        this.keepPosition = keepPos;
+      }
+    }
+    public virtual HashSet<LinkedActor> linkedActors { get; set; } = new HashSet<LinkedActor>();
+    public virtual void AddLinkedActor(AbstractActor actor, Vector3 relativePosition, bool keepPosition) {
+      linkedActors.Add(new LinkedActor(this, actor, relativePosition, keepPosition));
+    }
+    public override void OnPositionUpdate(Vector3 position, Quaternion heading, int stackItemUID, bool updateDesignMask, List<DesignMaskDef> remainingMasks, bool skipLogging = false) {
+      base.OnPositionUpdate(position, heading, stackItemUID, updateDesignMask, remainingMasks, skipLogging);
+      foreach(LinkedActor link in this.linkedActors) {
+        if (link.keepPosition == true) { continue; }
+        Log.TWL(0, "OnPositionUpdate link " + link.actor.PilotableActorDef.ChassisID + " pos:" + (position + link.relativePosition));
+        link.actor.OnPositionUpdate(position + link.relativePosition, link.actor.CurrentRotation, stackItemUID, updateDesignMask, remainingMasks, skipLogging);
+      }
+    }
+    public virtual bool ForcedVisible { get; set; } = false;
+    public virtual void BossAppearAnimation() {
+      ForcedVisible = true;
+      this.custGameRep?.BossAppearAnimation();
     }
   }
 

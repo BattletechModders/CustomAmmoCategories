@@ -294,6 +294,7 @@ namespace DBGSkirmishMechList {
   }
   public static partial class Core {
     public static Settings settings;
+    public static HarmonyInstance harmony = null;
     public static void Init(string directory, string settingsJson) {
       Log.BaseDirectory = directory;
       Core.settings = JsonConvert.DeserializeObject<DBGSkirmishMechList.Settings>(settingsJson);
@@ -301,14 +302,41 @@ namespace DBGSkirmishMechList {
       Log.LogWrite("Initing... " + directory + " version: " + Assembly.GetExecutingAssembly().GetName().Version + "\n", true);
       Log.LogWrite("settings:"+JsonConvert.SerializeObject(Core.settings,Formatting.Indented)+"\n", true);
       try {
-        var harmony = HarmonyInstance.Create("io.mission.customunits");
-        harmony.PatchAll(Assembly.GetExecutingAssembly());
+        Core.harmony = HarmonyInstance.Create("io.mission.customunits");
+        Core.harmony.PatchAll(Assembly.GetExecutingAssembly());
       } catch (Exception e) {
         Log.LogWrite(e.ToString() + "\n");
       }
     }
+    public static bool getPrefabId(object __instance, ref string __result) {
+      if (Traverse.Create(__instance).Field<DataManager>("dataManager").Value == null) {
+        __result = "NO_DATA_MANAGER_JAMIE_FIX_THIS";
+        Log.TWL(0, "PilotAffinityManager.getPrefabId no data manager");
+        return false;
+      }
+      return true;
+    }
     public static void FinishedLoading(List<string> loadOrder) {
       Log.TWL(0,"FinishedLoading", true);
+      try {
+        Assembly[] assemblies = AppDomain.CurrentDomain.GetAssemblies();
+        foreach (Assembly assembly in assemblies) {
+          if (assembly.FullName.Contains("MechAffinity")) {
+            Type PilotAffinityManager = assembly.GetType("MechAffinity.PilotAffinityManager");
+            Type EIdType = assembly.GetType("MechAffinity.Data.EIdType");
+            Log.WL(1, "PilotAffinityManager:" + (PilotAffinityManager == null ? "null" : "not null"));
+            Log.WL(1, "EIdType:" + (EIdType == null ? "null" : "not null"));
+            if (PilotAffinityManager != null) {
+              MethodInfo getPrefabId = PilotAffinityManager.GetMethod("getPrefabId", BindingFlags.Instance | BindingFlags.NonPublic, null, new Type[] { typeof(AbstractActor), EIdType }, null);
+              Log.WL(1, "getPrefabId:" + (getPrefabId == null ? "null" : "not null"));
+              Core.harmony.Patch(getPrefabId, new HarmonyMethod(typeof(Core).GetMethod(nameof(Core.getPrefabId), BindingFlags.Static | BindingFlags.Public)));
+            }
+            break;
+          }
+        }
+      } catch (Exception e) {
+        Log.TWL(0,e.ToString(),true);
+      }
       HashSet<string> mechNames = new HashSet<string>();
       foreach(string mech in Core.settings.skirmishMeches) {if (mechNames.Contains(mech) == false) { mechNames.Add(mech); }; }
       Log.WL(1, "searching mods:" + Core.settings.skirmishMechesMods.Count);

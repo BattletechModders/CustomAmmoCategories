@@ -481,6 +481,8 @@ namespace CustomUnits {
     public bool TurretArmorReadout { get; set; } = false;
     [Key(41)]
     public string UnitTypeName { get; set; } = string.Empty;
+    [Key(42)]
+    public bool BossAppearAnimation { get; set; } = false;
     public UnitCustomInfo() {
       //FlyingHeight = 0f;
       //Naval = false;

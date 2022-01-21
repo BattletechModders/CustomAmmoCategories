@@ -172,8 +172,7 @@ namespace CustomUnits {
       if (isSlave == false) this._StopJumpjetAudio();
       foreach (CustomMechRepresentation alt in this.Alternates) { alt._StopJumpjetEffect(); }
     }
-    public override void OnPlayerVisibilityChanged(VisibilityLevel newLevel) {
-      if (DeployManualHelper.IsInManualSpawnSequence) { newLevel = VisibilityLevel.None; }
+    public override void OnPlayerVisibilityChangedCustom(VisibilityLevel newLevel) {
       try {
         PilotableActorRepresentation_OnPlayerVisibilityChanged(newLevel);
         if (this.isJumping) {
@@ -187,7 +186,7 @@ namespace CustomUnits {
           if (alt == this.CurrentRepresentation) {
             if (newLevel == VisibilityLevel.LOSFull) { altLvl = VisibilityLevel.LOSFull; }
           }
-          alt.OnPlayerVisibilityChanged(altLvl);
+          alt.OnPlayerVisibilityChangedCustom(altLvl);
         }
       }catch(Exception e) {
         Log.TWL(0,e.ToString(),true);
@@ -360,9 +359,9 @@ namespace CustomUnits {
       this.MoveChilds(oldRep, oldRep.vfxLeftShoulderTransform, curRep.vfxLeftShoulderTransform);
       Log.WL(1, "vfxRightShoulderTransform");
       this.MoveChilds(oldRep, oldRep.vfxRightShoulderTransform, curRep.vfxRightShoulderTransform);
-      oldRep.OnPlayerVisibilityChanged(VisibilityLevel.None);
+      oldRep.OnPlayerVisibilityChangedCustom(VisibilityLevel.None);
       if (this.rootParentRepresentation.BlipDisplayed == false) {
-        curRep.OnPlayerVisibilityChanged(VisibilityLevel.LOSFull);
+        curRep.OnPlayerVisibilityChangedCustom(VisibilityLevel.LOSFull);
       }
       foreach (WeaponRepresentation wRep in this.CurrentRepresentation.weaponReps) {
         if (wRep == null) { continue; }
@@ -893,18 +892,58 @@ namespace CustomUnits {
     public virtual CustomMechRepresentation parent { get; set; } = null;
     public List<JumpjetRepresentation> verticalJets { get; set; } = new List<JumpjetRepresentation>();
     public List<GameObject> verticalJetsObjects { get; set; } = new List<GameObject>();
+    public virtual float UpSpeed { get; set; } = 5f;
+    public virtual float DownSpeed { get; set; } = -20f;
+    public virtual float EffectiveDownSpeed { get; set; } = -20f;
+    public virtual bool FakeHeightControl { get; set; } = false;
+    public virtual bool ForceJumpJetsActive { get; set; } = false;
+    public virtual bool vfxEveryJet { get; set; } = false;
     public virtual void OnHeightChange() {
-      if((CurrentHeight < Core.Settings.MaxHoveringHeightWithWorkingJets)&&(this.PendingHeight > Core.Settings.MaxHoveringHeightWithWorkingJets)) {
+      bool VisibleToPlayer = parent.VisibleToPlayer;
+      if (ForceJumpJetsActive || ((CurrentHeight < Core.Settings.MaxHoveringHeightWithWorkingJets)&&(this.PendingHeight > Core.Settings.MaxHoveringHeightWithWorkingJets))) {
+        Log.TWL(0, "MechFlyHeightController.OnHeightChange " + this.parent.gameObject.name+ " VisibleToPlayer:" + VisibleToPlayer);
         this.isJumpjetsActive = true;
         parent.SetMeleeIdleState(false);
-        if (parent.VisibleToPlayer && (DeployManualHelper.IsInManualSpawnSequence == false)) {
+        if (VisibleToPlayer && (DeployManualHelper.IsInManualSpawnSequence == false)) {
           foreach (GameObject jet in verticalJetsObjects) { jet.SetActive(true); }
         }
-        foreach (JumpjetRepresentation jet in verticalJets) { jet.SetState(JumpjetRepresentation.JumpjetState.Launching); }
-        if (parent.VisibleToPlayer && (DeployManualHelper.IsInManualSpawnSequence == false)) {
-          this.parent.rootParentRepresentation._StartJumpjetAudio();
-          this.parent.PlayVFXAt((Transform)null, this.parent.j_Root.position, (string)this.parent.Constants.VFXNames.jumpjet_launch, false, Vector3.zero, true, -1f);
+        foreach (JumpjetRepresentation jet in verticalJets) {
+          Log.WL(1, "starting jets "+jet.gameObject.name);
+          jet.SetState(JumpjetRepresentation.JumpjetState.Launching);
         }
+        if (VisibleToPlayer && (DeployManualHelper.IsInManualSpawnSequence == false)) {
+          this.StartJumpjetAudio();
+          if (this.vfxEveryJet == false) {
+            this.parent.PlayVFXAt((Transform)null, this.parent.j_Root.position, (string)this.parent.Constants.VFXNames.jumpjet_launch, false, Vector3.zero, true, -1f);
+          } else {
+            foreach (GameObject jet in verticalJetsObjects) {
+              this.parent.PlayVFXAt((Transform)null, jet.transform.position, (string)this.parent.Constants.VFXNames.jumpjet_launch, false, Vector3.zero, true, -1f);
+            }
+          }
+        }
+      }
+    }
+    public bool JumpAudioActive { get; set; } = false;
+    public void StartJumpjetAudio() {
+      Log.TWL(0, "MechFlyHeightController.StartJumpjetAudio "+this.parent.parentMech.MechDef.ChassisID);
+      if (this.JumpAudioActive == false) {
+        if (this.parent.parentMech.weightClass == WeightClass.HEAVY || this.parent.parentMech.weightClass == WeightClass.ASSAULT) {
+          int num1 = (int)WwiseManager.PostEvent<AudioEventList_mech>(AudioEventList_mech.mech_jumpjets_heavy_start, this.parent.rootParentRepresentation.audioObject);
+        } else {
+          int num2 = (int)WwiseManager.PostEvent<AudioEventList_mech>(AudioEventList_mech.mech_jumpjets_light_start, this.parent.rootParentRepresentation.audioObject);
+        }
+        this.JumpAudioActive = true;
+      }
+    }
+    public void StopJumpjetAudio() {
+      Log.TWL(0, "MechFlyHeightController.StopJumpjetAudio " + this.parent.parentMech.MechDef.ChassisID);
+      if (this.JumpAudioActive) {
+        if (this.parent.parentMech.weightClass == WeightClass.HEAVY || this.parent.parentMech.weightClass == WeightClass.ASSAULT) {
+          int num1 = (int)WwiseManager.PostEvent<AudioEventList_mech>(AudioEventList_mech.mech_jumpjets_heavy_stop, this.parent.rootParentRepresentation.audioObject);
+        } else {
+          int num2 = (int)WwiseManager.PostEvent<AudioEventList_mech>(AudioEventList_mech.mech_jumpjets_light_stop, this.parent.rootParentRepresentation.audioObject);
+        }
+        this.JumpAudioActive = false;
       }
     }
     public void OnVisibilityChange(VisibilityLevel level) {
@@ -912,9 +951,9 @@ namespace CustomUnits {
       if (parent == null) { return; }
       if (isJumpjetsActive) {
         if(level == VisibilityLevel.LOSFull) {
-          this.parent.rootParentRepresentation._StartJumpjetAudio();
+          this.StartJumpjetAudio();
         } else {
-          this.parent.rootParentRepresentation._StopJumpjetAudio();
+          this.StopJumpjetAudio();
         }
       }
     }
@@ -923,6 +962,9 @@ namespace CustomUnits {
       if (string.IsNullOrEmpty(Core.Settings.CustomJumpJetsComponentPrefab) == false) {
         Log.WL(1, "spawning jump jets");
         try {
+          if (this.parent.parentActor.GetCustomInfo().BossAppearAnimation) {
+            this.AddBossJets();
+          }
           if (MechFlyHeightController.JumpJetSrcPrefab == null) {
             MechFlyHeightController.JumpJetSrcPrefab = dataManager.PooledInstantiate(Core.Settings.CustomJumpJetsComponentPrefab, BattleTechResourceType.Prefab);
             if(MechFlyHeightController.JumpJetSrcPrefab == null) {
@@ -987,32 +1029,59 @@ namespace CustomUnits {
       isInChangeHeight = false;
       FPendingHeight = height;
       this.StartingHeight = height;
+      this.FakeHeightControl = false;
     }
     public virtual void FinishChangeHeight() {
       if (this.isJumpjetsActive) {
         foreach (JumpjetRepresentation jet in verticalJets) { jet.SetState(JumpjetRepresentation.JumpjetState.Landing); }
-        if(this.parent.isJumping == false) this.parent.rootParentRepresentation.StopJumpjetAudio();
+        //foreach (GameObject jet in verticalJetsObjects) { jet.SetActive(false); }
+        this.StopJumpjetAudio();
         isJumpjetsActive = false;
       }
       Log.TWL(0, "MechFlyHeightController.FinishChangeHeight "+ this.StartingHeight+"->"+ this.CurrentHeight);
-      if (this.CurrentHeight <= Core.Settings.MaxHoveringHeightWithWorkingJets) {
-        if (this.StartingHeight > Core.Settings.MaxHoveringHeightWithWorkingJets) {
-          this.parent.OnJumpLand(true);
-        }
+      if (this.ForceJumpJetsActive ||((this.CurrentHeight <= Core.Settings.MaxHoveringHeightWithWorkingJets) && (this.StartingHeight > Core.Settings.MaxHoveringHeightWithWorkingJets))) {
+        this.parent.OnJumpLand(true);
       }
       this.StartingHeight = this.CurrentHeight;
+      this.FakeHeightControl = false;
+      this.parent.parentActor.FakeHeightDelta(0f);
+      foreach (var link in this.parent.custMech.linkedActors) {
+        if (link.customMech != null) { continue; }
+        Vector3 linkPos = link.rootHeightTransform.localPosition;
+        linkPos.y = 0f;
+        link.rootHeightTransform.localPosition = linkPos;
+        link.actor.FakeHeightDelta(0f);
+      }
     }
     public void LateUpdate() {
       if (parent == null) { return; }
       if (isInChangeHeight == false) { return; }
       float delta = Mathf.Abs(parent.j_Root.transform.localPosition.y - this.PendingHeight);
       if (delta > Core.Epsilon) {
+
+        float slowdown_factor = (delta / Mathf.Abs(this.StartingHeight - this.PendingHeight));
+        if (slowdown_factor > 0.5f) {
+          slowdown_factor = 1f;
+        } else {
+          slowdown_factor = 1f / ((0.5f - slowdown_factor) * 8f + 1f);
+        }
+        Log.WL(0, "HeightController.LateUpdate current height:" + parent.j_Root.transform.localPosition.y + " delta:"+delta+ " StartingHeight:"+ this.StartingHeight+ " PendingHeight:"+ PendingHeight+ " slowdown_factor:"+slowdown_factor);
         Vector3 localPos = parent.j_Root.transform.localPosition;
-        float sign = localPos.y < this.PendingHeight ? 5f : -20f;
+        float sign = localPos.y < this.PendingHeight ? this.UpSpeed : (this.DownSpeed * slowdown_factor);
         float ndelta = sign * Time.deltaTime;
         //Log.TWL(0,"Change height isInChange:"+this.isInChangeHeight+" cur:"+ localPos.y+" ndelta:"+ndelta+" delta:"+delta);
         if (Mathf.Abs(ndelta) >= delta) { localPos.y = this.PendingHeight; isInChangeHeight = false; } else { localPos.y += ndelta; }
         parent.j_Root.transform.localPosition = localPos;
+        if (this.FakeHeightControl) {
+          this.parent.parentActor.FakeHeightDelta(localPos.y);
+          foreach(var link in this.parent.custMech.linkedActors) {
+            if (link.customMech != null) { continue; }
+            Vector3 linkPos = link.rootHeightTransform.localPosition;
+            linkPos.y = localPos.y;
+            link.rootHeightTransform.localPosition = linkPos;
+            link.actor.FakeHeightDelta(localPos.y);
+          }
+        }
       } else {
         isInChangeHeight = false;
       }

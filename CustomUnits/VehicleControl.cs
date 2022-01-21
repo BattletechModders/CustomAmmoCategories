@@ -391,6 +391,8 @@ namespace CustomUnits {
         max2 = __instance.DisplayedChassisDef.GetMechDefMaxStructure();
         current2 = max2;
         exposed = true;
+      } else {
+        return false;
       }
       if (((UnityEngine.Object)__instance.ArmorBar == (UnityEngine.Object)null) || ((UnityEngine.Object)__instance.StructureBar == (UnityEngine.Object)null)){
         return false;
@@ -418,6 +420,8 @@ namespace CustomUnits {
         exposed = __instance.DisplayedMechDef.GetMechDefExposed();
       } else if (__instance.DisplayedChassisDef != null) {
         exposed = true;
+      } else {
+        return false;
       }
       if (((UnityEngine.Object)__instance.ArmorBar == (UnityEngine.Object)null) || ((UnityEngine.Object)__instance.StructureBar == (UnityEngine.Object)null)) {
         return false;
@@ -1175,6 +1179,7 @@ namespace CustomUnits {
     }
     public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) {
       Log.TWL(0, "UnitSpawnPointGameLogic.Spawn Transpiler");
+      CustomDeploy.Core.SpawnMech_internal = SpawnMech;
       MethodInfo targetMethod = typeof(UnitSpawnPointGameLogic).GetMethod("SpawnMech", BindingFlags.Instance | BindingFlags.Public);
       var replacementMethod = AccessTools.Method(typeof(UnitSpawnPointGameLogic_Spawn), nameof(SpawnMech));
       return Transpilers.MethodReplacer(instructions, targetMethod, replacementMethod);
@@ -1780,7 +1785,7 @@ namespace CustomUnits {
           adLoc["Tonnage"] = 0;
           adLoc["MaxArmor"] = 0;
           adLoc["InventorySlots"] = 0;
-          adLoc["InternalStructure"] = 0;
+          adLoc["InternalStructure"] = 1;
           mLocations.Add(adLoc);
         }
         newdef["Locations"] = mLocations;

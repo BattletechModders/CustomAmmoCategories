@@ -897,6 +897,7 @@ namespace CustomUnits {
         if (DisplayedCombatant is AbstractActor actor) {
           //Log.WL(1, "TurretArmorReadout:"+ actor.GetCustomInfo().TurretArmorReadout+" isFakeDisplay:" + );
           if ((actor.GetCustomInfo().TurretArmorReadout)&&(__instance.TurretArmorDisplay is FakeHUDTurretArmorReadout fakeHUDTurretArmorReadout)) {
+            Log.WL(1,"display as turret");
             __instance.MechArmorDisplay.DisplayedMech = null;
             __instance.MechArmorDisplay.gameObject.SetActive(false);
             computerCustom.fakeVehicleReadout.gameObject.SetActive(false);
@@ -905,11 +906,13 @@ namespace CustomUnits {
             fakeHUDTurretArmorReadout._DisplayedTurret = actor;
           } else
           if (actor.FakeVehicle()) {
+            Log.WL(1, "display as vehicle");
             __instance.MechArmorDisplay.DisplayedMech = null;
             __instance.MechArmorDisplay.gameObject.SetActive(false);
             computerCustom.fakeVehicleReadout.gameObject.SetActive(true);
             computerCustom.fakeVehicleReadout.DisplayedVehicle = actor as Mech;
           } else {
+            Log.WL(1, "display as mech");
             computerCustom.fakeVehicleReadout.gameObject.SetActive(false);
             computerCustom.fakeVehicleReadout.DisplayedVehicle = null;
           }
@@ -977,7 +980,7 @@ namespace CustomUnits {
         if (__instance.ActivelyShownCombatant.UnitType != UnitType.Mech) { return true; }
         AbstractActor actor = __instance.ActivelyShownCombatant as AbstractActor;
         if (actor == null) { return true; }
-        bool fakeVehicle = actor.FakeVehicle();
+        //bool fakeVehicle = actor.FakeVehicle();
         if (actor.GetCustomInfo().TurretArmorReadout) {
           __instance.TurretArmorDisplay.UpdateTurretStructureAndArmor();
           return false;

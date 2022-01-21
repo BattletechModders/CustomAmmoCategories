@@ -392,13 +392,12 @@ namespace CustomUnits {
     public override void _StopJumpjetEffect() {
       base._StopJumpjetEffect();
     }
-    public override void OnPlayerVisibilityChanged(VisibilityLevel newLevel) {
-      if (DeployManualHelper.IsInManualSpawnSequence) { newLevel = VisibilityLevel.None; }
+    public override void OnPlayerVisibilityChangedCustom(VisibilityLevel newLevel) {
       try {
-        base.OnPlayerVisibilityChanged(newLevel);
+        base.OnPlayerVisibilityChangedCustom(newLevel);
         VisibilityLevel legsLevel = this.VisibleObject.activeSelf ? VisibilityLevel.LOSFull : VisibilityLevel.None;
-        this.ForwardLegs.OnPlayerVisibilityChanged(legsLevel);
-        this.RearLegs.OnPlayerVisibilityChanged(legsLevel);
+        this.ForwardLegs.OnPlayerVisibilityChangedCustom(legsLevel);
+        this.RearLegs.OnPlayerVisibilityChangedCustom(legsLevel);
       }catch(Exception e) {
         Log.TWL(0, e.ToString(),true);
       }

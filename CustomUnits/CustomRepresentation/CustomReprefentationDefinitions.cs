@@ -100,6 +100,8 @@ namespace CustomUnits {
     public RepresentationApplyType ApplyType { get; set; }
     public List<string> TwistAnimators { get; set; }
     public List<string> HeadLights { get; set; }
+    public List<string> JetStreamsAttaches { get; set; } = new List<string>();
+    public CustomVector vfxScale { get; set; } = new CustomVector(true);
     public List<string> Animators { get; set; }
     public List<CustomParticleSystemDef> Particles { get; set; }
     public List<AttachInfoRecord> WeaponAttachPoints { get; set; }

@@ -20,6 +20,8 @@ namespace CustomUnits {
         //ContractObjectiveGameLogic_Update.Clear();
         //ObjectiveGameLogic_Update.Clear();
         //AlternateRepresentationHelper.Clear();
+        FakeHeightController.Clear();
+        BossAppearManager.Clear();
         VehicleCustomInfoHelper.Clear();
         DeployManualHelper.Clean();
         TargetingCirclesHelper.Clear();

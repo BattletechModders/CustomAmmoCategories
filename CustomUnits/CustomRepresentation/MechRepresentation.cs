@@ -4,7 +4,9 @@ using BattleTech.Rendering;
 using BattleTech.Rendering.UI;
 using BattleTech.Rendering.UrbanWarfare;
 using CustAmmoCategories;
+using FogOfWar;
 using Harmony;
+using HBS;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -539,6 +541,45 @@ namespace CustomUnits {
     }
   }
   public partial class CustomMechRepresentation {
+    public virtual float GetCameraDistance(DialogCameraDistance cameraDistance) {
+      switch (cameraDistance) {
+        case DialogCameraDistance.Far:
+        return 800f;
+        case DialogCameraDistance.Medium:
+        return 400f;
+        case DialogCameraDistance.Close:
+        return 200f;
+        default:
+        CameraControl.cameraLogger.LogError((object)"ERROR: no camera distance found for camera, returning default 100");
+        return 100f;
+      }
+    }
+    public virtual float GetCameraHeight(DialogCameraHeight cameraHeight, float distance) {
+      switch (cameraHeight) {
+        case DialogCameraHeight.Default:
+        return Mathf.Min(CameraControl.Instance.CurrentHeight, distance / 2f);
+        case DialogCameraHeight.Low:
+        return 32f;
+        case DialogCameraHeight.High:
+        return distance / 2f;
+        default:
+        CameraControl.cameraLogger.LogError((object)"ERROR: no camera height found for camera, returning default");
+        return CameraControl.Instance.CurrentHeight;
+      }
+    }
+    public virtual void ClearFocalPoint() {
+      if (this.focalPoint == null) { return; }
+      GameObject.Destroy(this.focalPoint);
+      this.focalPoint = null;
+    }
+    public virtual GameObject focalPoint { get; set; } = null;
+    public virtual int nextRevealatronIndex { get; set; } = 0;
+    public virtual int GetNextRevealatronIndex() {
+      int revealatronIndex = this.nextRevealatronIndex;
+      ++this.nextRevealatronIndex;
+      return revealatronIndex;
+    }
+
     public virtual void _SetLoadAnimation() {
       if (this.parentActor.IsDead) { return; }
       this._UpdateHeatSetting();
@@ -633,11 +674,28 @@ namespace CustomUnits {
       if (this.parentMech == null) { return; }
       this.parentMech.Combat.MessageCenter.RemoveSubscriber(MessageCenterMessageType.OnHeatChanged, new ReceiveMessageCenterMessage(this.OnHeatChanged));
     }
+    protected CustomVoices.AudioObject f_customAudioObject = null;
+    public virtual CustomVoices.AudioObject customAudioObject {
+      get {
+        if (f_customAudioObject == null) {
+          f_customAudioObject = this.gameObject.GetComponent<CustomVoices.AudioObject>();
+          if (f_customAudioObject == null) {
+            f_customAudioObject = this.gameObject.AddComponent<CustomVoices.AudioObject>();
+          }
+        }
+        return f_customAudioObject;
+      }
+    }
     public override void StartPersistentAudio() {
       //GameRepresentation_StartPersistentAudio();
       if (isSlave == false) {
         Log.TWL(0, "CustomMechRepresentaion.StartPersistentAudio " + (this.parentMech == null ? "null" : this.parentMech.MechDef.ChassisID));
         foreach (string event_name in this.presistantAudioStart) {
+          if (CustomVoices.AudioEngine.isInAudioManifest(event_name)) {
+            Log.WL(1, event_name + " playing custom");
+            this.customAudioObject.Play(event_name, true);
+            continue;
+          }
           //int num = (int)WwiseManager.PostEvent<AudioEventList_mech>(AudioEventList_mech.mech_engine_start, this.audioObject);
           int num = (int)WwiseManager.PostEvent(event_name, this.audioObject);
           Log.WL(1, event_name + ":" + num);
@@ -648,6 +706,13 @@ namespace CustomUnits {
       //base.StopPersistentAudio();
       if (isSlave == false) {
         Log.TWL(0, "CustomMechRepresentaion.StopPersistentAudio " + (this.parentMech == null ? "null" : this.parentMech.MechDef.ChassisID));
+        foreach (string event_name in this.presistantAudioStart) {
+          if (CustomVoices.AudioEngine.isInAudioManifest(event_name)) {
+            Log.WL(1, event_name + " stopping custom");
+            this.customAudioObject.Stop(event_name);
+            continue;
+          }
+        }
         foreach (string event_name in this.presistantAudioStop) {
           //int num = (int)WwiseManager.PostEvent<AudioEventList_mech>(AudioEventList_mech.mech_engine_stop, this.audioObject);
           int num = (int)WwiseManager.PostEvent(event_name, this.audioObject);
@@ -1438,6 +1503,7 @@ namespace CustomUnits {
       if (!this.VisibleToPlayer || this.isPlayingJumpSound)
         return;
       this.isPlayingJumpSound = true;
+      Log.TWL(0, "CustomMechRepresentation._StartJumpjetAudio "+this.parentMech.MechDef.ChassisID);
       if (this.parentMech.weightClass == WeightClass.HEAVY || this.parentMech.weightClass == WeightClass.ASSAULT) {
         int num1 = (int)WwiseManager.PostEvent<AudioEventList_mech>(AudioEventList_mech.mech_jumpjets_heavy_start, this.parentCombatant.GameRep.audioObject);
       } else {
@@ -1449,6 +1515,7 @@ namespace CustomUnits {
       if (!this.isPlayingJumpSound)
         return;
       this.isPlayingJumpSound = false;
+      Log.TWL(0, "CustomMechRepresentation._StopJumpjetAudio " + this.parentMech.MechDef.ChassisID);
       if (this.parentMech.weightClass == WeightClass.HEAVY || this.parentMech.weightClass == WeightClass.ASSAULT) {
         int num1 = (int)WwiseManager.PostEvent<AudioEventList_mech>(AudioEventList_mech.mech_jumpjets_heavy_stop, this.parentCombatant.GameRep.audioObject);
       } else {
@@ -1508,10 +1575,29 @@ namespace CustomUnits {
       for (int index = 0; index < this.jumpjetReps.Count; ++index)
         this.jumpjetReps[index].SetState(JumpjetRepresentation.JumpjetState.Landed);
     }
-
+    public static readonly string SeenByPlayer = "CUSeenByPlayer";
     public override void OnPlayerVisibilityChanged(VisibilityLevel newLevel) {
+      if (DeployManualHelper.IsInManualSpawnSequence) { newLevel = VisibilityLevel.None; }
+      if (this.isSlave == false) {
+        Statistic FirstSeenByPlayer_stat = this.parentCombatant.StatCollection.GetStatistic(SeenByPlayer);
+        if (FirstSeenByPlayer_stat == null) { FirstSeenByPlayer_stat = this.parentCombatant.StatCollection.AddStatistic(SeenByPlayer, false); }
+        if ((newLevel >= VisibilityLevel.Blip1Type) && (FirstSeenByPlayer_stat.Value<bool>() == false)) {
+          FirstSeenByPlayer_stat.SetValue<bool>(true);
+          if (this.parentActor.GetCustomInfo().BossAppearAnimation) {
+            Log.TWL(0, "BossAppearAnimation:"+this.parentActor.PilotableActorDef.ChassisID);
+            //Vector3 currentPosition = this.parentActor.CurrentPosition;
+            //float cameraDistance1 = this.GetCameraDistance(DialogCameraDistance.Far);
+            //float cameraHeight1 = this.GetCameraHeight(DialogCameraHeight.High, cameraDistance1);
+            //EncounterLayerParent.EnqueueLoadAwareMessage((MessageCenterMessage)new AddParallelSequenceToStackMessage((IStackSequence)CameraControl.Instance.ShowFocalCamAtHeight(currentPosition, cameraHeight1, cameraDistance1, 2f)));
+            //this.RevealRadius(this.mech.Radius * 2f);
+            return;
+          }
+        }
+      }
+      this.OnPlayerVisibilityChangedCustom(newLevel);
+    }
+    public virtual void OnPlayerVisibilityChangedCustom(VisibilityLevel newLevel) {
       try {
-        if (DeployManualHelper.IsInManualSpawnSequence) { newLevel = VisibilityLevel.None; }
         PilotableActorRepresentation_OnPlayerVisibilityChanged(newLevel);
         for (int index = 0; index < this.jumpjetReps.Count; ++index)
           this.jumpjetReps[index].OnPlayerVisibilityChanged(newLevel);

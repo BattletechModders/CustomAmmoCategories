@@ -793,8 +793,10 @@ namespace CustomUnits {
       if (this.altDef == null) { this.altDef = new AlternateRepresentationDef(mech.MechDef.Chassis); }
       if (this.f_presistantAudioStart.Count == 0) {
         if(this.altDef != null) {
-          if(string.IsNullOrEmpty(this.altDef.HoveringSoundStart) == false) {
-            this.f_presistantAudioStart.Add(this.altDef.HoveringSoundStart);
+          if (this.altDef.Type == AlternateRepType.AirMech) {
+            if (string.IsNullOrEmpty(this.altDef.HoveringSoundStart) == false) {
+              this.f_presistantAudioStart.Add(this.altDef.HoveringSoundStart);
+            }
           }
         }
         if(this.customRep != null) {
@@ -821,8 +823,10 @@ namespace CustomUnits {
       }
       if (this.f_presistantAudioStop.Count == 0) {
         if (this.altDef != null) {
-          if (string.IsNullOrEmpty(this.altDef.HoveringSoundEnd) == false) {
-            this.f_presistantAudioStop.Add(this.altDef.HoveringSoundEnd);
+          if (this.altDef.Type == AlternateRepType.AirMech) {
+            if (string.IsNullOrEmpty(this.altDef.HoveringSoundEnd) == false) {
+              this.f_presistantAudioStop.Add(this.altDef.HoveringSoundEnd);
+            }
           }
         }
         if (this.customRep != null) {
@@ -1229,6 +1233,27 @@ namespace CustomUnits {
       this.CreateBlankPrefabs(usedPrefabNames, this.HardpointData, ChassisLocations.Head, parentDisplayName);
       if (this.customRep != null) { this.customRep.AttachWeapons(); }
       this.propertyBlock.UpdateCache();
+    }
+    public virtual void BossAppearAnimation() {
+      float starting_height = 200f;
+      this.HeightController.ForceHeight(starting_height);
+      this.parentActor.FakeHeightDelta(starting_height);
+      this.HeightController.FakeHeightControl = true;
+      this.HeightController.ForceJumpJetsActive = true;
+      this.HeightController.DownSpeed = -50f;
+      foreach (var link in this.custMech.linkedActors) {
+        link.actor.FakeHeightDelta(starting_height);
+        if (link.customMech != null) {
+          link.customMech.custGameRep.HeightController.ForceHeight(starting_height);
+          link.customMech.custGameRep.HeightController.PendingHeight = 0f;
+          link.customMech.custGameRep.HeightController.FakeHeightControl = true;
+          link.customMech.custGameRep.HeightController.ForceJumpJetsActive = true;
+          continue;
+        };
+        link.rootHeightTransform.localPosition += Vector3.up * starting_height;
+      }
+      this.HeightController.PendingHeight = this.altDef.FlyHeight;
+      //this.HeightController.DownSpeed = -5f;
     }
   }
 }
