@@ -6,6 +6,7 @@ using Harmony;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 namespace CustomUnits {
@@ -1053,10 +1054,11 @@ namespace CustomUnits {
         link.rootHeightTransform.localPosition = linkPos;
         link.actor.FakeHeightDelta(0f);
       }
-      foreach(Action onHeightChangeComleete in this.heightChangeCompleteAction) {
+      List<Action> events = this.heightChangeCompleteAction.ToList();
+      heightChangeCompleteAction.Clear();
+      foreach (Action onHeightChangeComleete in events) {
         onHeightChangeComleete();
       }
-      heightChangeCompleteAction.Clear();
     }
     public void LateUpdate() {
       if (parent == null) { return; }
