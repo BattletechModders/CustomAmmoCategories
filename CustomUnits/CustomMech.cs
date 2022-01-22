@@ -740,11 +740,42 @@ namespace CustomUnits {
         link.actor.IsTeleportedOffScreen = true;
       }
     }
+    public virtual void CheckMeleeSystemWeapons() {
+      Log.TWL(0, "CustomMech.CheckMeleeSystemWeapons "+this.MechDef.ChassisID);
+      if (this.MechDef.meleeWeaponRef == null) {
+        Log.WL(1, "meleeWeaponRef is null should not happend");
+        this.MechDef.meleeWeaponRef = new MechComponentRef(Core.Settings.DefaultMeleeDefinition, "", ComponentType.Weapon, ChassisLocations.CenterTorso);
+      }
+      if (this.Combat.DataManager.WeaponDefs.Exists(this.MechDef.meleeWeaponRef.ComponentDefID) == false) {
+        Log.WL(1, "!!!!WARNING!!!! "+ this.MechDef.meleeWeaponRef.ComponentDefID + " does not exists in DataManager fix this");
+      } else {
+        Log.WL(1, this.MechDef.meleeWeaponRef.ComponentDefID+" exists in dataManager");
+      }
+      if (this.MechDef.dfaWeaponRef == null) {
+        Log.WL(1, "meleeWeaponRef is null should not happend");
+        this.MechDef.dfaWeaponRef = new MechComponentRef(Core.Settings.DefaultDFADefinition, "", ComponentType.Weapon, ChassisLocations.CenterTorso);
+      }
+      if (this.Combat.DataManager.WeaponDefs.Exists(this.MechDef.dfaWeaponRef.ComponentDefID) == false) {
+        Log.WL(1, "!!!!WARNING!!!! " + this.MechDef.dfaWeaponRef.ComponentDefID + " does not exists in DataManager fix this");
+      } else {
+        Log.WL(1, this.MechDef.dfaWeaponRef.ComponentDefID + " exists in dataManager");
+      }
+      if (this.MechDef.imaginaryLaserWeaponRef == null) {
+        Log.WL(1, "meleeWeaponRef is null should not happend");
+        this.MechDef.imaginaryLaserWeaponRef = new MechComponentRef(Core.Settings.DefaultAIImaginaryDefinition, "", ComponentType.Weapon, ChassisLocations.CenterTorso);
+      }
+      if (this.Combat.DataManager.WeaponDefs.Exists(this.MechDef.imaginaryLaserWeaponRef.ComponentDefID) == false) {
+        Log.WL(1, "!!!!WARNING!!!! " + this.MechDef.imaginaryLaserWeaponRef.ComponentDefID + " does not exists in DataManager fix this");
+      } else {
+        Log.WL(1, this.MechDef.imaginaryLaserWeaponRef.ComponentDefID + " exists in dataManager");
+      }
+    }
     public override void Init(Vector3 position, float facing, bool checkEncounterCells) {
       if (this.GetCustomInfo().BossAppearAnimation) {
         BossAppearManager.CreateBossBeacon(this, position);
         position = this.Combat.LocalPlayerTeam.OffScreenPosition;
       }
+      this.CheckMeleeSystemWeapons();
       base.Init(position, facing, checkEncounterCells);
       if (this.GetCustomInfo().BossAppearAnimation) { this.IsTeleportedOffScreen = true; }
       if (this.IsTeleportedOffScreen) {
@@ -842,6 +873,5 @@ namespace CustomUnits {
         //CALL DEFAULT ATTACH CODE
       }
     }
-
   }
 }

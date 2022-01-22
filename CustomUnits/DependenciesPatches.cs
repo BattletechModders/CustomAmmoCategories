@@ -400,8 +400,42 @@ namespace CustomUnits {
         }
       }
     }
+    public static void RequestDefaultWeaponDefinition(this DataManager dataManager, DataManager.DependencyLoadRequest dependencyLoad) {
+      if(string.IsNullOrEmpty(Core.Settings.DefaultMeleeDefinition) == false) {
+        if(dataManager.WeaponDefs.Exists(Core.Settings.DefaultMeleeDefinition) == false) {
+          dependencyLoad.RequestResource(BattleTechResourceType.WeaponDef, Core.Settings.DefaultMeleeDefinition);
+        }
+      }
+      if (string.IsNullOrEmpty(Core.Settings.DefaultDFADefinition) == false) {
+        if (dataManager.WeaponDefs.Exists(Core.Settings.DefaultDFADefinition) == false) {
+          dependencyLoad.RequestResource(BattleTechResourceType.WeaponDef, Core.Settings.DefaultDFADefinition);
+        }
+      }
+      if (string.IsNullOrEmpty(Core.Settings.DefaultAIImaginaryDefinition) == false) {
+        if (dataManager.WeaponDefs.Exists(Core.Settings.DefaultAIImaginaryDefinition) == false) {
+          dependencyLoad.RequestResource(BattleTechResourceType.WeaponDef, Core.Settings.DefaultAIImaginaryDefinition);
+        }
+      }
+    }
+    public static bool IsDefaultWeaponDefinitionLoaded(this DataManager dataManager) {
+      if (string.IsNullOrEmpty(Core.Settings.DefaultMeleeDefinition) == false) {
+        if (dataManager.WeaponDefs.Exists(Core.Settings.DefaultMeleeDefinition) == false) {
+          return false;
+        }
+      }
+      if (string.IsNullOrEmpty(Core.Settings.DefaultDFADefinition) == false) {
+        if (dataManager.WeaponDefs.Exists(Core.Settings.DefaultDFADefinition) == false) {
+          return false;
+        }
+      }
+      if (string.IsNullOrEmpty(Core.Settings.DefaultAIImaginaryDefinition) == false) {
+        if (dataManager.WeaponDefs.Exists(Core.Settings.DefaultAIImaginaryDefinition) == false) {
+          return false;
+        }
+      }
+      return true;
+    }
     public static void Postfix(VehicleChassisDef __instance, DataManager dataManager, DataManager.DependencyLoadRequest dependencyLoad, uint activeRequestWeight) {
-      //Log.LogWrite(0, "VehicleChassisDef.GatherDependencies postfix " + __instance.Description.Id, true);
       try {
         if (string.IsNullOrEmpty(Core.Settings.CustomJumpJetsPrefabSrc) == false) {
           dependencyLoad.RequestResource(BattleTechResourceType.Prefab, Core.Settings.CustomJumpJetsPrefabSrc);
@@ -414,12 +448,12 @@ namespace CustomUnits {
         }
         UnitCustomInfo info = __instance.GetCustomInfo();
         if (info == null) {
-          //Log.LogWrite(1, "no custom", true);
           return;
         }
         info.AddCustomDeps(dependencyLoad);
+        dataManager.RequestDefaultWeaponDefinition(dependencyLoad);
       } catch (Exception e) {
-        Log.LogWrite(e.ToString() + "\n", true);
+        Log.TWL(0,e.ToString(), true);
       }
       return;
     }
@@ -490,13 +524,14 @@ namespace CustomUnits {
             __result = false;
           }
         }
-        UnitCustomInfo info = __instance.GetCustomInfo();
-        if (info == null) {
-          //Log.LogWrite(1, "no custom", true);
-          return;
-        }
-        if (info.CheckCustomDeps(__instance.DataManager) == false) {
+        if (__instance.DataManager.IsDefaultWeaponDefinitionLoaded() == false) {
           __result = false;
+        }
+        UnitCustomInfo info = __instance.GetCustomInfo();
+        if (info != null) {
+          if (info.CheckCustomDeps(__instance.DataManager) == false) {
+            __result = false;
+          }
         }
       } catch (Exception e) {
         Log.LogWrite(e.ToString() + "\n", true);
@@ -572,15 +607,14 @@ namespace CustomUnits {
         if (string.IsNullOrEmpty(Core.Settings.DefaultMechBattleRepresentationPrefab) == false) {
           dependencyLoad.RequestResource(BattleTechResourceType.Prefab, Core.Settings.DefaultMechBattleRepresentationPrefab);
         }
+        dataManager.RequestDefaultWeaponDefinition(dependencyLoad);
         __instance.AddCustomRepDeps(dependencyLoad);
         UnitCustomInfo info = __instance.GetCustomInfo();
-        if (info == null) {
-          //Log.LogWrite(1, "no custom", true);
-          return;
+        if (info != null) {
+          info.AddCustomDeps(dependencyLoad);
+          __instance.AddQuadDeps(dependencyLoad);
+          info.AddAlternateDeps(dependencyLoad);
         }
-        info.AddCustomDeps(dependencyLoad);
-        __instance.AddQuadDeps(dependencyLoad);
-        info.AddAlternateDeps(dependencyLoad);
       } catch (Exception e) {
         Log.LogWrite(e.ToString() + "\n", true);
       }
@@ -598,6 +632,7 @@ namespace CustomUnits {
       return Transpilers.MethodReplacer(instructions, targetPropertyGetter, replacementMethod);
     }
     public static void Postfix(MechDef __instance, DataManager dataManager, DataManager.DependencyLoadRequest dependencyLoad, uint activeRequestWeight) {
+      dataManager.RequestDefaultWeaponDefinition(dependencyLoad);
       //Log.LogWrite(0, "MechDef.GatherDependencies postfix " + __instance.Description.Id + " " + activeRequestWeight, true);
     }
   }
@@ -662,10 +697,14 @@ namespace CustomUnits {
     public static void Postfix(MechDef __instance, uint loadWeight, ref bool __result) {
       if (loadWeight > 10u) { Thread.CurrentThread.ClearFlag("GatherPrefabs"); }
       if (__result == true) {
-        return;
+        if(__instance.DataManager.IsDefaultWeaponDefinitionLoaded() == false) {
+          __result = false;
+        }
       }
-      string reason = __instance.GetNoDependenciesLoadedReason(loadWeight);
-      Log.TWL(0, "MechDef.DependenciesLoaded " + __instance.Description.Id + " fail reason:" + reason);
+      if (__result == false) {
+        string reason = __instance.GetNoDependenciesLoadedReason(loadWeight);
+        Log.TWL(0, "MechDef.DependenciesLoaded " + __instance.Description.Id + " fail reason:" + reason);
+      }
     }
   }
   [HarmonyPatch(typeof(Contract))]
@@ -780,19 +819,22 @@ namespace CustomUnits {
             __result = false;
           }
         }
+        if (__instance.DataManager.IsDefaultWeaponDefinitionLoaded() == false) {
+          Log.WL(1, "default melee/system weapons definitions fail");
+          __result = false;
+        }
         UnitCustomInfo info = __instance.GetCustomInfo();
-        if (info == null) {
-          Log.LogWrite(1, "no custom", true);
+        if (info != null) {
+          if (info.CheckCustomDeps(__instance.DataManager) == false) {
+            __result = false;
+          }
+          if (__instance.CheckQuadDeps(__instance.DataManager) == false) {
+            __result = false;
+          }
+          if (info.CheckAltDeps(__instance.DataManager) == false) {
+            __result = false;
+          }
           return;
-        }
-        if (info.CheckCustomDeps(__instance.DataManager) == false) {
-          __result = false;
-        }
-        if (__instance.CheckQuadDeps(__instance.DataManager) == false) {
-          __result = false;
-        }
-        if (info.CheckAltDeps(__instance.DataManager) == false) {
-          __result = false;
         }
       } catch (Exception e) {
         Log.TWL(0,e.ToString(), true);

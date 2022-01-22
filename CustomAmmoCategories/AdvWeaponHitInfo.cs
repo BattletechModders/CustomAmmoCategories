@@ -474,7 +474,7 @@ namespace CustAmmoCategories {
     public float armorOnHit;
     public float structureOnHit;
     public bool isApplied;
-    public float critChance;
+    public float critChance { get; set; }
     public AbstractActor unit;
     public MechComponent component;
     public AdvCritLocationInfo(int aLoc, AbstractActor unit) {

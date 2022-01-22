@@ -245,6 +245,9 @@ namespace CustomUnits{
     [GameplaySafe]
     public int baysWidgetsCount { get; set; }
     public List<string> forcedLance { get; set; } = new List<string>();
+    public string DefaultMeleeDefinition { get; set; } = "Weapon_MeleeAttack";
+    public string DefaultDFADefinition { get; set; } = "Weapon_DFAAttack";
+    public string DefaultAIImaginaryDefinition { get; set; } = "Weapon_Laser_AI_Imaginary";
     public CUSettings() {
       debugLog = false;
       DeathHeight = 1f;
@@ -370,76 +373,143 @@ namespace CustomUnits{
       ExtWeaponDef def = weapon.exDef();
       ExtAmmunitionDef ammo = weapon.ammo();
       WeaponMode mode = weapon.mode();
+      float result = 1f;
       if(target is BattleTech.Building) {
-        return def.BuildingsDamageModifier * ammo.BuildingsDamageModifier * mode.BuildingsDamageModifier;
-      }
-      if (target is Turret) {
-        return def.TurretDamageModifier * ammo.TurretDamageModifier * mode.TurretDamageModifier;
-      }
+        result *= (def.BuildingsDamageModifier * ammo.BuildingsDamageModifier * mode.BuildingsDamageModifier);
+      }else
+      if ((target is Turret)) {
+        result *= def.TurretDamageModifier * ammo.TurretDamageModifier * mode.TurretDamageModifier;
+      }else
       if (target is Vehicle vehicle) {
         UnitCustomInfo info = vehicle.GetCustomInfo();
         if (info != null) {
           if ((info.AOEHeight > Core.Settings.MaxHoveringHeightWithWorkingJets) && (vehicle.UnaffectedPathing())) {
-            return def.VTOLDamageModifier * ammo.VTOLDamageModifier * mode.VTOLDamageModifier * def.VehicleDamageModifier * ammo.VehicleDamageModifier * mode.VehicleDamageModifier;
+            result *= def.VTOLDamageModifier * ammo.VTOLDamageModifier * mode.VTOLDamageModifier;
           }
         }
-        return def.VehicleDamageModifier * ammo.VehicleDamageModifier * mode.VehicleDamageModifier;
-      }
-      if (target is TrooperSquad squad) {
-        return def.TrooperSquadDamageModifier * ammo.TrooperSquadDamageModifier * mode.TrooperSquadDamageModifier;
-      }
-      if (target.GameRep != null) {
-        AlternateMechRepresentations altReps = target.GameRep.GetComponent<AlternateMechRepresentations>();
-        if(altReps != null) {
-          if (altReps.isHovering) {
-            return def.AirMechDamageModifier * ammo.AirMechDamageModifier * mode.AirMechDamageModifier * def.MechDamageModifier * ammo.MechDamageModifier * mode.MechDamageModifier;
+        result *= def.VehicleDamageModifier * ammo.VehicleDamageModifier * mode.VehicleDamageModifier;
+      }else
+      if(target is CustomMech custMech) {
+        if (custMech.isSquad) {
+          result *= (def.TrooperSquadDamageModifier * ammo.TrooperSquadDamageModifier * mode.TrooperSquadDamageModifier);
+        }else
+        if (custMech.isVehicle) {
+          result *= (def.VehicleDamageModifier * ammo.VehicleDamageModifier * mode.VehicleDamageModifier);
+          if(custMech.FlyingHeight() > Core.Settings.MaxHoveringHeightWithWorkingJets) {
+            result *= def.VTOLDamageModifier * ammo.VTOLDamageModifier * mode.VTOLDamageModifier;
+          }
+        } else {
+          result *= (def.MechDamageModifier * ammo.MechDamageModifier * mode.MechDamageModifier);
+          if (custMech.FlyingHeight() > Core.Settings.MaxHoveringHeightWithWorkingJets) {
+            result *= def.AirMechDamageModifier * ammo.AirMechDamageModifier * mode.AirMechDamageModifier;
           }
         }
-        QuadRepresentation quadRep = target.GameRep.GetComponent<QuadRepresentation>();
-        if (quadRep != null) {
-          return def.QuadDamageModifier * ammo.QuadDamageModifier * mode.QuadDamageModifier * def.MechDamageModifier * ammo.MechDamageModifier * mode.MechDamageModifier;
+        if (custMech.isQuad) {
+          result *= (def.QuadDamageModifier * ammo.QuadDamageModifier * mode.QuadDamageModifier);
         }
       }
-      if(target is Mech mech) {
-        return def.MechDamageModifier * ammo.MechDamageModifier * mode.MechDamageModifier;
-      }
-      return 1f;
+      //if (target is TrooperSquad squad) {
+      //  return def.TrooperSquadDamageModifier * ammo.TrooperSquadDamageModifier * mode.TrooperSquadDamageModifier;
+      //}
+      //if (target.GameRep != null) {
+      //  AlternateMechRepresentations altReps = target.GameRep.GetComponent<AlternateMechRepresentations>();
+      //  if(altReps != null) {
+      //    if (altReps.isHovering) {
+      //      return def.AirMechDamageModifier * ammo.AirMechDamageModifier * mode.AirMechDamageModifier * def.MechDamageModifier * ammo.MechDamageModifier * mode.MechDamageModifier;
+      //    }
+      //  }
+      //  QuadRepresentation quadRep = target.GameRep.GetComponent<QuadRepresentation>();
+      //  if (quadRep != null) {
+      //    return def.QuadDamageModifier * ammo.QuadDamageModifier * mode.QuadDamageModifier * def.MechDamageModifier * ammo.MechDamageModifier * mode.MechDamageModifier;
+      //  }
+      //}
+      //if(target is Mech mech) {
+      //  return def.MechDamageModifier * ammo.MechDamageModifier * mode.MechDamageModifier;
+      //}
+      return result;
     }
     public static string TypeDmgCACModifierName(Weapon weapon, Vector3 attackPosition, ICombatant target, bool IsBreachingShot, int location, float dmg, float ap, float heat, float stab) {
+      ExtWeaponDef def = weapon.exDef();
+      ExtAmmunitionDef ammo = weapon.ammo();
+      WeaponMode mode = weapon.mode();
+      StringBuilder result = new StringBuilder();
       if (target is BattleTech.Building) {
-        return "Building (x"+Math.Round(TypeDmgCACModifier(weapon,attackPosition,target,IsBreachingShot,location,dmg,ap,heat,stab), 1)+")";
-      }
-      if (target is Turret) {
-        return "Turret (x" + Math.Round(TypeDmgCACModifier(weapon, attackPosition, target, IsBreachingShot, location, dmg, ap, heat, stab), 1) + ")";
-      }
+        result.Append("Building:" + Math.Round(def.BuildingsDamageModifier * ammo.BuildingsDamageModifier * mode.BuildingsDamageModifier, 1)+";");
+      } else
+      if ((target is Turret)) {
+        result.Append("Turret:" + Math.Round(def.TurretDamageModifier * ammo.TurretDamageModifier * mode.TurretDamageModifier, 1) + ";");
+      } else
       if (target is Vehicle vehicle) {
         UnitCustomInfo info = vehicle.GetCustomInfo();
         if (info != null) {
           if ((info.AOEHeight > Core.Settings.MaxHoveringHeightWithWorkingJets) && (vehicle.UnaffectedPathing())) {
-            return "VTOL; Vehicle (x" + Math.Round(TypeDmgCACModifier(weapon, attackPosition, target, IsBreachingShot, location, dmg, ap, heat, stab), 1) + ")"; ;
+            result.Append("VTOL:" + Math.Round(def.VTOLDamageModifier * ammo.VTOLDamageModifier * mode.VTOLDamageModifier, 1) + ";");
+            //result *= def.VTOLDamageModifier * ammo.VTOLDamageModifier * mode.VTOLDamageModifier;
           }
         }
-        return "Vehicle (x" + Math.Round(TypeDmgCACModifier(weapon, attackPosition, target, IsBreachingShot, location, dmg, ap, heat, stab), 1) + ")"; ;
-      }
-      if (target is TrooperSquad squad) {
-        return "Trooper squad (x" + Math.Round(TypeDmgCACModifier(weapon, attackPosition, target, IsBreachingShot, location, dmg, ap, heat, stab), 1) + ")"; ;
-      }
-      if (target.GameRep != null) {
-        AlternateMechRepresentations altReps = target.GameRep.GetComponent<AlternateMechRepresentations>();
-        if (altReps != null) {
-          if (altReps.isHovering) {
-            return "AirMech; Mech (x" + Math.Round(TypeDmgCACModifier(weapon, attackPosition, target, IsBreachingShot, location, dmg, ap, heat, stab), 1) + ")"; ;
+        result.Append("Vehicle:" + Math.Round(def.VehicleDamageModifier * ammo.VehicleDamageModifier * mode.VehicleDamageModifier, 1) + ";");
+        //result *= def.VehicleDamageModifier * ammo.VehicleDamageModifier * mode.VehicleDamageModifier;
+      } else
+      if (target is CustomMech custMech) {
+        if (custMech.isSquad) {
+          //result *= (def.TrooperSquadDamageModifier * ammo.TrooperSquadDamageModifier * mode.TrooperSquadDamageModifier);
+          result.Append("Squad:" + Math.Round(def.TrooperSquadDamageModifier * ammo.TrooperSquadDamageModifier * mode.TrooperSquadDamageModifier, 1) + ";");
+        } else
+        if (custMech.isVehicle) {
+          //result *= (def.VehicleDamageModifier * ammo.VehicleDamageModifier * mode.VehicleDamageModifier);
+          result.Append("Vehicle:" + Math.Round(def.VehicleDamageModifier * ammo.VehicleDamageModifier * mode.VehicleDamageModifier, 1) + ";");
+          if (custMech.FlyingHeight() > Core.Settings.MaxHoveringHeightWithWorkingJets) {
+            //result *= def.VTOLDamageModifier * ammo.VTOLDamageModifier * mode.VTOLDamageModifier;
+            result.Append("VTOL:" + Math.Round(def.VTOLDamageModifier * ammo.VTOLDamageModifier * mode.VTOLDamageModifier, 1) + ";");
+          }
+        } else {
+          //result *= (def.MechDamageModifier * ammo.MechDamageModifier * mode.MechDamageModifier);
+          result.Append("Mech:" + Math.Round(def.MechDamageModifier * ammo.MechDamageModifier * mode.MechDamageModifier, 1) + ";");
+          if (custMech.FlyingHeight() > Core.Settings.MaxHoveringHeightWithWorkingJets) {
+            //result *= def.AirMechDamageModifier * ammo.AirMechDamageModifier * mode.AirMechDamageModifier;
+            result.Append("Flying:" + Math.Round(def.AirMechDamageModifier * ammo.AirMechDamageModifier * mode.AirMechDamageModifier, 1) + ";");
           }
         }
-        QuadRepresentation quadRep = target.GameRep.GetComponent<QuadRepresentation>();
-        if (quadRep != null) {
-          return "Quad; Mech (x" + Math.Round(TypeDmgCACModifier(weapon, attackPosition, target, IsBreachingShot, location, dmg, ap, heat, stab), 1) + ")"; ;
+        if (custMech.isQuad) {
+          //result *= (def.QuadDamageModifier * ammo.QuadDamageModifier * mode.QuadDamageModifier);
+          result.Append("Quad:" + Math.Round(def.AirMechDamageModifier * ammo.AirMechDamageModifier * mode.AirMechDamageModifier, 1) + ";");
         }
       }
-      if (target is Mech mech) {
-        return "Mech (x" + Math.Round(TypeDmgCACModifier(weapon, attackPosition, target, IsBreachingShot, location, dmg, ap, heat, stab), 1) + ")"; ;
-      }
-      return "Target type (x" + Math.Round(TypeDmgCACModifier(weapon, attackPosition, target, IsBreachingShot, location, dmg, ap, heat, stab), 1) + ")"; ;
+      return result.ToString();
+      //if (target is BattleTech.Building) {
+      //  return "Building (x"+Math.Round(TypeDmgCACModifier(weapon,attackPosition,target,IsBreachingShot,location,dmg,ap,heat,stab), 1)+")";
+      //}
+      //if (target is Turret) {
+      //  return "Turret (x" + Math.Round(TypeDmgCACModifier(weapon, attackPosition, target, IsBreachingShot, location, dmg, ap, heat, stab), 1) + ")";
+      //}
+      //if (target is Vehicle vehicle) {
+      //  UnitCustomInfo info = vehicle.GetCustomInfo();
+      //  if (info != null) {
+      //    if ((info.AOEHeight > Core.Settings.MaxHoveringHeightWithWorkingJets) && (vehicle.UnaffectedPathing())) {
+      //      return "VTOL; Vehicle (x" + Math.Round(TypeDmgCACModifier(weapon, attackPosition, target, IsBreachingShot, location, dmg, ap, heat, stab), 1) + ")"; ;
+      //    }
+      //  }
+      //  return "Vehicle (x" + Math.Round(TypeDmgCACModifier(weapon, attackPosition, target, IsBreachingShot, location, dmg, ap, heat, stab), 1) + ")"; ;
+      //}
+      //if (target is TrooperSquad squad) {
+      //  return "Trooper squad (x" + Math.Round(TypeDmgCACModifier(weapon, attackPosition, target, IsBreachingShot, location, dmg, ap, heat, stab), 1) + ")"; ;
+      //}
+      //if (target.GameRep != null) {
+      //  AlternateMechRepresentations altReps = target.GameRep.GetComponent<AlternateMechRepresentations>();
+      //  if (altReps != null) {
+      //    if (altReps.isHovering) {
+      //      return "AirMech; Mech (x" + Math.Round(TypeDmgCACModifier(weapon, attackPosition, target, IsBreachingShot, location, dmg, ap, heat, stab), 1) + ")"; ;
+      //    }
+      //  }
+      //  QuadRepresentation quadRep = target.GameRep.GetComponent<QuadRepresentation>();
+      //  if (quadRep != null) {
+      //    return "Quad; Mech (x" + Math.Round(TypeDmgCACModifier(weapon, attackPosition, target, IsBreachingShot, location, dmg, ap, heat, stab), 1) + ")"; ;
+      //  }
+      //}
+      //if (target is Mech mech) {
+      //  return "Mech (x" + Math.Round(TypeDmgCACModifier(weapon, attackPosition, target, IsBreachingShot, location, dmg, ap, heat, stab), 1) + ")"; ;
+      //}
+      //return "Target type (x" + Math.Round(TypeDmgCACModifier(weapon, attackPosition, target, IsBreachingShot, location, dmg, ap, heat, stab), 1) + ")"; ;
     }
     public static void FinishedLoading(List<string> loadOrder, Dictionary<string, Dictionary<string, VersionManifestEntry>> customResources) {
       Log.TWL(0, "FinishedLoading", true);
