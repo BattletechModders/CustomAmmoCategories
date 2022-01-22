@@ -243,6 +243,7 @@ namespace CustAmmoCategories {
     public int OnlineServerDataPort { get; set; } = 443;
     [GameplaySafe]
     public bool UseFastPreloading { get; set; } = false;
+    public bool AoECanCrit { get; set; } = false;
     public void ApplyLocal(Settings local) {
       PropertyInfo[] props = this.GetType().GetProperties(BindingFlags.Instance | BindingFlags.Public);
       Log.M.TWL(0, "Settings.ApplyLocal");

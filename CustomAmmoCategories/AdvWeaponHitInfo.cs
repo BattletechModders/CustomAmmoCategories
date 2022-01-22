@@ -344,8 +344,12 @@ namespace CustAmmoCategories {
         float critAPchance = this.parent.weapon.isAPCrit() ? this.parent.weapon.APCriticalChanceMultiplier() : float.NaN;
         Log.LogWrite(" crit testing - damage/armor " + damage + "/" + locArmor + " ap dmg:" + apdmg + " ap crit chance:" + critAPchance + "\n");
         if (damage > locArmor) {
-          Log.LogWrite("  crit to location armor breach:" + this.hitLocation + "\n");
-          this.parent.resolve(this.target).AddCrit(this.hitLocation, this.target);
+          if ((this.isAOE == false)||(CustomAmmoCategories.Settings.AoECanCrit == true)) {
+            Log.LogWrite("  crit to location armor breach:" + this.hitLocation + "\n");
+            this.parent.resolve(this.target).AddCrit(this.hitLocation, this.target);
+          } else {
+            Log.LogWrite("  AoE can't inflict crits due to settings\n");
+          }
         } else if (this.isAOE == false) {
           if (this.target.isAPProtected() == false) {
             if ((apdmg > CustomAmmoCategories.Epsilon) || this.parent.weapon.isAPCrit()) {
