@@ -178,6 +178,7 @@
     <Compile Include="HotDropManager.cs" />
     <Compile Include="HUDFakeVehicleArmorReadout.cs" />
     <Compile Include="HUDImprove.cs" />
+    <Compile Include="LanceConfigSave.cs" />
     <Compile Include="LowVisibility.cs" />
     <Compile Include="MechResizer\MechRepresentationPatch.cs" />
     <Compile Include="MechResizer\MechResizer.cs" />

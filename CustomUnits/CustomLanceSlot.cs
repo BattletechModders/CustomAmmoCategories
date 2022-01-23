@@ -312,10 +312,14 @@ namespace CustomUnits {
           buttons_tr = nbtn;
           buttons_tr.gameObject.name = "lanceSwitchButtons-layout";
           buttons_tr.Find("uixPrfBttn_BASE_button2-MANAGED-delete").gameObject.AddComponent<LanceConfigutationNextLance>().Init(customLanceSlotsLayout);
+          buttons_tr.Find("uixPrfBttn_BASE_button2-MANAGED-save").gameObject.AddComponent<LanceConfigSaver>().Init(__instance);
           buttons_tr.Find("uixPrfBttn_BASE_button2-MANAGED-save").gameObject.SetActive(true);
+          buttons_tr.Find("uixPrfBttn_BASE_button2-MANAGED-copy (1)").gameObject.AddComponent<LanceConfigLoader>().Init(__instance);
           buttons_tr.Find("uixPrfBttn_BASE_button2-MANAGED-copy (1)").gameObject.SetActive(true);
         } else {
           buttons_tr.Find("uixPrfBttn_BASE_button2-MANAGED-delete").gameObject.GetComponent<LanceConfigutationNextLance>().Init(customLanceSlotsLayout);
+          buttons_tr.Find("uixPrfBttn_BASE_button2-MANAGED-save").gameObject.GetComponent<LanceConfigSaver>().Init(__instance);
+          buttons_tr.Find("uixPrfBttn_BASE_button2-MANAGED-copy (1)").gameObject.GetComponent<LanceConfigLoader>().Init(__instance);
         }
         buttons_tr.gameObject.SetActive(true);
         List<float> listMaxTonnages = ___slotMaxTonnages.ToList();

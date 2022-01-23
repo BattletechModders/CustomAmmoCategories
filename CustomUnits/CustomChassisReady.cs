@@ -475,7 +475,7 @@ namespace CustomUnits {
         //  popup = GenericPopupBuilder.Create("DISMOUNT EQUIPMENT", "Unit's equipment dismounting should be confirmed").IsNestedPopupWithBuiltInFader().SetAlwaysOnTop().Render();
         //  return;
         //}
-        popup = GenericPopupBuilder.Create("AVAILABLE FOR CHASSIS", "Input name for layout").AddInput("name",this.SaveLoadoutName).IsNestedPopupWithBuiltInFader().SetAlwaysOnTop().Render();
+        popup = GenericPopupBuilder.Create("SAVE CURRENT LAYOUT AS", "Input name for layout").AddInput("name",this.SaveLoadoutName).IsNestedPopupWithBuiltInFader().SetAlwaysOnTop().Render();
       } catch (Exception e) {
         Log.TWL(0, e.ToString(), true);
       }
@@ -528,6 +528,7 @@ namespace CustomUnits {
       Log.TWL(0, "SaveManager:" + Traverse.Create(Traverse.Create(Traverse.Create(__instance).Field<SaveSystem>("saveSystem").Value).Field<WriteLocation>("localWriteLocation").Value).Field<string>("rootPath").Value);
       //FixedMechDefHelper.Init(Path.GetDirectoryName(Traverse.Create(Traverse.Create(Traverse.Create(__instance).Field<SaveSystem>("saveSystem").Value).Field<WriteLocation>("localWriteLocation").Value).Field<string>("rootPath").Value));
       SaveLayoutHelper.Init(Path.GetDirectoryName(Traverse.Create(Traverse.Create(Traverse.Create(__instance).Field<SaveSystem>("saveSystem").Value).Field<WriteLocation>("localWriteLocation").Value).Field<string>("rootPath").Value));
+      SaveDropLayoutHelper.Init(Path.GetDirectoryName(Traverse.Create(Traverse.Create(Traverse.Create(__instance).Field<SaveSystem>("saveSystem").Value).Field<WriteLocation>("localWriteLocation").Value).Field<string>("rootPath").Value));
     }
   }
 

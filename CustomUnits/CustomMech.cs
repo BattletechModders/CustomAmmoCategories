@@ -831,6 +831,7 @@ namespace CustomUnits {
         this.parent = parent;
       }
       public void OnLandInt() {
+        this.parent.custGameRep.HeightController.heightChangeCompleteAction.Clear();
         this.OnLand?.Invoke();
         this.parent.custGameRep.HeightController.heightChangeCompleteAction.Add(this.OnRestoreInt);
         this.parent.custGameRep.HeightController.PendingHeight = this.height;
@@ -845,6 +846,7 @@ namespace CustomUnits {
         OnLand?.Invoke(); OnRestoreHeight?.Invoke();
         return;
       }
+      this.custGameRep.HeightController.heightChangeCompleteAction.Clear();
       this.custGameRep.HeightController.heightChangeCompleteAction.Add(new DropOffDelegate(this, current_height, OnLand, OnRestoreHeight).OnLandInt);
       this.custGameRep.HeightController.PendingHeight = 0f;
     }
