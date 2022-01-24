@@ -764,9 +764,10 @@ namespace CustAmmoCategories {
       return true;
     }
 
-    public static bool CycleMode(Weapon weapon, bool direction = true) {
+    public static bool CycleMode(Weapon weapon, bool direction = true, bool fromUI = true) {
       WeaponExtendedInfo info = weapon.info();
       if (info == null) { Log.M?.TWL(0,"!!!!THIS NEVER SHOULD HAPPEND!!!",true); return false; }
+      if ((info.allowUIModSwitch == false) && (fromUI == false)) { return false; }
       Log.M.TWL(0,"Cycling mode "+weapon.defId,true);
       if (info.modes.Count <= 1) {
         Log.M.WL(1,"no weapon modes");

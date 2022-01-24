@@ -358,6 +358,8 @@ namespace CustAmmoCategories {
     public float TrooperSquadDamageModifier { get; set; } = 1f;
     [Key(118)]
     public float AirMechDamageModifier { get; set; } = 1f;
+    [IgnoreMember, JsonIgnore]
+    public bool Disabeld { get; set; } = false;
     public WeaponMode() {
       //Id = WeaponMode.NONE_MODE_NAME;
       //UIName = WeaponMode.BASE_MODE_NAME;

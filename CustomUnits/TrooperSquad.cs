@@ -35,6 +35,25 @@ namespace CustomUnits {
       }
     }
   }
+  [HarmonyPatch(typeof(MechComponent))]
+  [HarmonyPatch("DamageComponent")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { typeof(WeaponHitInfo), typeof(ComponentDamageLevel), typeof(bool) })]
+  public static class MechComponent_DamageComponent {
+    public static void Postfix(MechComponent __instance, WeaponHitInfo hitInfo, ComponentDamageLevel damageLevel, bool applyEffects) {
+      try {
+        Log.TWL(0, "MechComponent.DamageComponent Postfix " + __instance.defId + " DamageLevel:" + __instance.DamageLevel + "/" + damageLevel);
+        if ((__instance.DamageLevel >= ComponentDamageLevel.Destroyed) || (damageLevel >= ComponentDamageLevel.Destroyed)) {
+          if(__instance.parent is TrooperSquad squad) {
+            squad.ResetJumpjetlocationsCache();
+          }
+        }
+      } catch (Exception e) {
+        Log.TWL(0, e.ToString(), true);
+      }
+    }
+  }
+
   //[HarmonyPatch(typeof(MechRepresentation))]
   //[HarmonyPatch("StartPersistentAudio")]
   //[HarmonyPatch(MethodType.Normal)]
@@ -369,6 +388,7 @@ namespace CustomUnits {
     public void OnLocationDestroyedSquad(ChassisLocations location, Vector3 attackDirection, WeaponHitInfo hitInfo, DamageType damageType) {
       Log.TWL(0, "TrooperSquad.OnLocationDestroyedSquad "+this.MechDef.ChassisID+" "+location);
       this.location_index = -1;
+      this.ResetJumpjetlocationsCache();
       this.Combat.MessageCenter.PublishMessage((MessageCenterMessage)new AddSequenceToStackMessage((IStackSequence)new ShowActorInfoSequence((ICombatant)this, new Text("UNIT DESTROYED"), FloatieMessage.MessageNature.LocationDestroyed, true)));
       AttackDirector.AttackSequence attackSequence = this.Combat.AttackDirector.GetAttackSequence(hitInfo.attackSequenceId);
       if (attackSequence != null) { attackSequence.FlagAttackDestroyedAnyLocation(this.GUID); };
@@ -517,39 +537,36 @@ namespace CustomUnits {
 #endif
       set { return; }
     }
-    public bool isHasWorkingJumpjets() {
-      //HashSet<ChassisLocations> workingJumpsLocations = new HashSet<ChassisLocations>();
-      //foreach (Jumpjet component in jumpjets) {
-      //  if (component.IsFunctional == false) { continue; }
-      //  if (this.IsLocationDestroyed(component.mechComponentRef.MountedLocation)) { continue; }
-      //  workingJumpsLocations.Add(component.mechComponentRef.MountedLocation);
-      //}
-      //foreach(ChassisLocations loc in TrooperSquad.locations) {
-      //  LocationDef locDef = this.MechDef.Chassis.GetLocationDef(loc);
-      //  if ((locDef.MaxArmor <= 0f) && (locDef.InternalStructure <= 1f)) { continue; }
-      //  if (this.IsLocationDestroyed(loc)) { continue; }
-      //  if (workingJumpsLocations.Contains(loc) == false) { return false; }
-      //}
-      //return workingJumpsLocations.Count > 0;
-      return workingJumpsLocations().Count > 0;
+    private HashSet<ChassisLocations> workingJumpsLocations_cache = null;
+    public void ResetJumpjetlocationsCache() {
+      workingJumpsLocations_cache = null;
     }
     public HashSet<ChassisLocations> workingJumpsLocations() {
-      HashSet<ChassisLocations> workingJumpsLocations = new HashSet<ChassisLocations>();
+      if (workingJumpsLocations_cache != null) { return workingJumpsLocations_cache; }
+      Log.TWL(0, "TrooperSquad.workingJumpsLocations "+this.PilotableActorDef.ChassisID);
+      workingJumpsLocations_cache = new HashSet<ChassisLocations>();
       foreach (Jumpjet component in jumpjets) {
         if (component.IsFunctional == false) { continue; }
         LocationDef locDef = this.MechDef.Chassis.GetLocationDef(component.mechComponentRef.MountedLocation);
         if ((locDef.MaxArmor <= 0f) && (locDef.InternalStructure <= 1f)) { continue; }
         if (this.IsLocationDestroyed(component.mechComponentRef.MountedLocation)) { continue; }
-        workingJumpsLocations.Add(component.mechComponentRef.MountedLocation);
+        if (workingJumpsLocations_cache.Contains(component.mechComponentRef.MountedLocation) == false) {
+          Log.WL(1, component.mechComponentRef.MountedLocation+" has working jumpjets");
+        }
+        workingJumpsLocations_cache.Add(component.mechComponentRef.MountedLocation);
       }
       bool notAllLocations = false;
       foreach (ChassisLocations loc in TrooperSquad.locations) {
         LocationDef locDef = this.MechDef.Chassis.GetLocationDef(loc);
         if ((locDef.MaxArmor <= 0f) && (locDef.InternalStructure <= 1f)) { continue; }
         if (this.IsLocationDestroyed(loc)) { continue; }
-        if (workingJumpsLocations.Contains(loc) == false) { notAllLocations = true; break; }
+        if (workingJumpsLocations_cache.Contains(loc) == false) {
+          Log.WL(1, loc + " has no working jumpjets");
+          notAllLocations = true; break;
+        }
       }
-      return notAllLocations?new HashSet<ChassisLocations>():workingJumpsLocations;
+      if (notAllLocations) { workingJumpsLocations_cache.Clear(); }
+      return workingJumpsLocations_cache;
     }
     public override List<int> GetPossibleHitLocations(AbstractActor attacker) {
       List<int> result = new List<int>();

@@ -137,6 +137,7 @@ namespace CustAmmoCategories {
   //}
   public class WeaponExtendedInfo {
     public Weapon weapon { get; set; }
+    public HashSet<string> restrictedModes { get; set; } = new HashSet<string>();
     public bool isBoxesAssigned { get; set; } = false;
     public WeaponMode mode { get; set; }
     public Dictionary<string, WeaponMode> modes { get; set; } = new Dictionary<string, WeaponMode>();
@@ -145,6 +146,7 @@ namespace CustAmmoCategories {
     public bool HasAmmoVariants { get; set; }
     public bool NoValidAmmo { get; set; }
     public bool needRevalidate { get; set; }
+    public bool allowUIModSwitch { get; set; } = true;
     public CustomAmmoCategory effectiveAmmoCategory { get { return mode.AmmoCategory == null ? extDef.AmmoCategory : mode.AmmoCategory; } }
     private CombatHUDWeaponSlot f_HUDSlot = null;
     public CombatHUDWeaponSlot HUDSlot {
@@ -161,6 +163,7 @@ namespace CustAmmoCategories {
       if(this.modes.TryGetValue(modeId, out var Mode) == false) {
         return false;
       }
+      if (this.restrictedModes.Contains(modeId)) { return false; }
       this.mode = Mode;
       this.needRevalidate = true;
       Statistic modeIdStat = weapon.StatCollection.GetStatistic(CustomAmmoCategories.WeaponModeStatisticName);
@@ -190,6 +193,16 @@ namespace CustAmmoCategories {
     public void RemoveMode(string id) {
       this.modes.Remove(id);
     }
+    public void DisableMode(string id) {
+      this.restrictedModes.Add(id);
+      if (this.restrictedModes.Contains(id)) {
+        CustomAmmoCategories.CycleMode(this.weapon, true, false);
+        this.HUDSlot?.RefreshDisplayedWeapon();
+      }
+    }
+    public void EnableMode(string id) {
+      this.restrictedModes.Remove(id);
+    }
     public void RemoveMode(WeaponMode m) {
       string id_to_remove = string.Empty;
       foreach(var mode in this.modes) {
@@ -200,7 +213,9 @@ namespace CustAmmoCategories {
     public List<WeaponMode> avaibleModes() {
       List<WeaponMode> result = new List<WeaponMode>();
       foreach (var mode in this.modes) {
-        if (mode.Value.Lock.isAvaible(weapon)) { result.Add(mode.Value); };
+        if (mode.Value.Lock.isAvaible(weapon) == false) { continue; };
+        if (this.restrictedModes.Contains(mode.Key)) { continue; }
+        result.Add(mode.Value);
       }
       return result;
     }

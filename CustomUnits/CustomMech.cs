@@ -830,11 +830,18 @@ namespace CustomUnits {
         this.OnRestoreHeight = restore;
         this.parent = parent;
       }
-      public void OnLandInt() {
-        this.parent.custGameRep.HeightController.heightChangeCompleteAction.Clear();
+      public void OnAnimationCompleete() {
         this.OnLand?.Invoke();
         this.parent.custGameRep.HeightController.heightChangeCompleteAction.Add(this.OnRestoreInt);
         this.parent.custGameRep.HeightController.PendingHeight = this.height;
+      }
+      public void OnLandInt() {
+        this.parent.custGameRep.HeightController.heightChangeCompleteAction.Clear();
+        if(this.parent.custGameRep.customRep != null) {
+          this.parent.custGameRep.customRep.DropOffAnimation(this.OnAnimationCompleete);
+        } else {
+          this.OnAnimationCompleete();
+        }
       }
       public void OnRestoreInt() {
         this.OnRestoreHeight?.Invoke();

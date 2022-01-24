@@ -39,9 +39,11 @@ namespace CustomUnits {
     public bool HasInBattle { get; protected set; }
     public bool HasCharge { get; protected set; }
     public bool HasForward { get; protected set; }
+    public bool HasDropOff { get; protected set; }
     public int HashInBattle { get; protected set; }
     public int HashCharge { get; protected set; }
     public int HashForward { get; protected set; }
+    public int HashDropOff { get; protected set; }
     public Animator animator { get; protected set; }
     public bool InBattle {
       set {
@@ -49,6 +51,14 @@ namespace CustomUnits {
         if (HasInBattle == false) { return; }
         animator.SetBool(HashInBattle, value);
         Log.TWL(0, "CustomRepresentationAnimatorInfo.InBattle "+animator.name+" "+value);
+      }
+    }
+    public bool DropOff {
+      set {
+        if (animator == null) { return; }
+        if (HasDropOff == false) { return; }
+        animator.SetBool(HashDropOff, value);
+        Log.TWL(0, "CustomRepresentationAnimatorInfo.HashDropOff " + animator.name + " " + value);
       }
     }
     public void Charge() {
@@ -70,15 +80,18 @@ namespace CustomUnits {
       HasInBattle = false;
       HasCharge = false;
       HasForward = false;
+      HasDropOff = false;
       HashInBattle = Animator.StringToHash("in_battle");
       HashCharge = Animator.StringToHash("charge");
       HashForward = Animator.StringToHash("forward");
+      HashDropOff = Animator.StringToHash("drop_off");
       if (this.animator == null) { return; }
       AnimatorControllerParameter[] parameter = this.animator.parameters;
       foreach(AnimatorControllerParameter param in parameter) {
         if (param.nameHash == HashInBattle) { HasInBattle = true; }
         if (param.nameHash == HashCharge) { HasCharge = true; }
         if (param.nameHash == HashForward) { HasForward = true; }
+        if (param.nameHash == HashDropOff) { HasDropOff = true; }
       }
     }
   }
@@ -110,7 +123,29 @@ namespace CustomUnits {
     public HashSet<CustomTwistAnimatorInfo> twistAnimators { get; protected set; } = new HashSet<CustomTwistAnimatorInfo>();
     public bool HasTwistAnimators { get { return twistAnimators.Count > 0; } }
     public List<Transform> Headlights { get; protected set; }
+    private float dropOff_t = 0f;
+    private Action dropOffAnimationCompleete = null;
+    public void Update() {
+      if(dropOff_t > 0f) {
+        dropOff_t -= Time.deltaTime;
+        if (dropOff_t <= 0f) {
+          InDropOff = false;
+          dropOffAnimationCompleete?.Invoke();
+          dropOff_t = 0f;
+        }
+      }
+    }
+    public void DropOffAnimation(Action animCompleete) {
+      if (dropOff_t == 0f) {
+        InDropOff = true;
+        dropOff_t = 1f;
+        dropOffAnimationCompleete = animCompleete;
+      } else {
+        animCompleete?.Invoke();
+      }
+    }
     public bool InBattle { set { foreach (CustomRepresentationAnimatorInfo info in animators) { info.InBattle = value; } } }
+    public bool InDropOff { set { foreach (CustomRepresentationAnimatorInfo info in animators) { info.DropOff = value; } } }
     public void Charge() { foreach (CustomRepresentationAnimatorInfo info in animators) { info.Charge(); } }
     public float Forward { set { foreach (CustomRepresentationAnimatorInfo info in animators) { info.Forward = value; } } }
     public float TwistR {
