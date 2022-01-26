@@ -703,25 +703,33 @@ namespace CustomUnits {
     }
     public override Text GetActorInfoFromVisLevel(VisibilityLevel visLevel) {
       if (Core.Settings.LowVisDetected) { return base.GetActorInfoFromVisLevel(visLevel); }
-      if (visLevel == VisibilityLevel.LOSFull || visLevel == VisibilityLevel.BlipGhost)
-        return new Text("{0} - {1}", new object[2]
-        {
-          this.Combat.NetworkGameInstance != null && this.Combat.NetworkGameInstance.IsNetworkGameActive() && this.Combat.HostilityMatrix.IsLocalPlayerEnemy(this.team.GUID) ? (object) this.UnitName : (object) this.Nickname,
-          (object) this.VariantName
-        });
-      if (visLevel >= VisibilityLevel.Blip4Maximum)
+      if (visLevel == VisibilityLevel.LOSFull || visLevel == VisibilityLevel.BlipGhost) {
+        Text result = null;
+        bool displayNick = this.Combat.NetworkGameInstance != null && this.Combat.NetworkGameInstance.IsNetworkGameActive() && this.Combat.HostilityMatrix.IsLocalPlayerEnemy(this.team.GUID);
+        if (this.isVehicle || this.FakeVehicle()) {
+          result = new Text("{0}", displayNick ? this.Nickname : this.DisplayName);
+        }else if (this.isSquad) {
+          result = new Text("{0}", displayNick ? this.Nickname : this.DisplayName);
+        } else {
+          result = new Text("{0} - {1}", new object[2] { displayNick ? (object) this.UnitName : (object) this.Nickname, (object) this.VariantName });
+        }
+        return result == null?new Text("???"):result;
+      } else
+      if (visLevel >= VisibilityLevel.Blip4Maximum) {
         return new Text("{0}, {1}t", new object[]
         {
           this.UnitTypeName,
           (this.MechDef.Chassis.Tonnage)
         });
-      if (visLevel == VisibilityLevel.Blip1Type)
+      } else
+      if (visLevel == VisibilityLevel.Blip1Type) {
         return new Text("UNKNOWN {0}", this.UnitTypeName);
+      }
       return new Text("?", (object[])Array.Empty<object>());
     }
 
     public virtual string UnitTypeNameDefault { get { return "MECH"; } }
-    public virtual void ApplyScale(Vector3 scale) {
+    public virtual void ApplyScale(Vector3 scale) {GetActorInfoFromVisLevel
       this.custGameRep.ApplyScale(scale);
     }
     public virtual bool CanBeBossSeen { get; set; } = false;

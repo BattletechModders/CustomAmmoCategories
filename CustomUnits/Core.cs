@@ -686,8 +686,17 @@ namespace CustomUnits{
       Log.InitLog();
       Core.BaseDir = directory;
       Core.Settings = JsonConvert.DeserializeObject<CustomUnits.CUSettings>(settingsJson);
+
       //PilotingClass.Validate();
-      Log.LogWrite("Initing... " + directory + " version: " + Assembly.GetExecutingAssembly().GetName().Version + "\n", true);
+      Log.TWL(0,"Initing... " + directory + " version: " + Assembly.GetExecutingAssembly().GetName().Version + "\n", true);
+      Log.WL(1,"Core.Settings.weaponPrefabMappings");
+      foreach (var mapping in Core.Settings.weaponPrefabMappings) {
+        Log.W(2, mapping.Key);
+        foreach (var candidate in mapping.Value) {
+          Log.W(1, candidate.Key + ":" + candidate.Value);
+        };
+        Log.WL(0, "");
+      }
       //InitLancesLoadoutDefault();
       //CustomLanceHelper.BaysCount(3+(Core.Settings.BaysCountExternalControl?0:Core.Settings.ArgoBaysFix));
       MechResizer.MechResizer.Init(directory, settingsJson);

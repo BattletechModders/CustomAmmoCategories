@@ -196,7 +196,11 @@ namespace CustomUnits {
       foreach (string prefab in usedPrefabs) { conflictPrefabs.Add(prefab); }
       foreach(var locationGroups in HardpointData.HardpointData) {
         foreach(string[] group in locationGroups.weapons) {
-          if (isHasUsedPrefabs(group, usedPrefabs)) { foreach (string prefab in group) { conflictPrefabs.Add(prefab); } }
+          if (isHasUsedPrefabs(group, usedPrefabs)) {
+            foreach (string prefab in group) {
+              conflictPrefabs.Add(prefab);
+            }
+          }
         }
       }
       foreach (var locationGroups in HardpointData.HardpointData) {
@@ -207,8 +211,13 @@ namespace CustomUnits {
         }
         for(int group_index = 0; group_index < locationGroups.weapons.Length; ++group_index) {
           HardpointsGroup group = new HardpointsGroup(group_index);
+          //Log.WL(1, "Group:" + group_index);
           foreach (string prefabName in locationGroups.weapons[group_index]) {
-            if (conflictPrefabs.Contains(prefabName)) { continue; }
+            //Log.WL(2, "prefab:" + prefabName);
+            if (conflictPrefabs.Contains(prefabName)) {
+              //Log.WL(3, "conflict");
+              continue;
+            }
             ComponentPrefabName name = new ComponentPrefabName(prefabName);
             if (name.content.Length != 5) { Log.TWL(0, "!!!WARNING!!! hardpoint data definition " + HardpointData.ID + " contains bad weapon prefab " + prefabName); continue; }
             if (group.GroupPrefabs.TryGetValue(name.prefabIdentifier.ToLower(), out HardpointPrefabCandidate base_candidate)) {
@@ -219,13 +228,19 @@ namespace CustomUnits {
               group.GroupPrefabs.Add(name.prefabIdentifier.ToLower(), new HardpointPrefabCandidate(name.prefabIdentifier, prefabName, 1f));
             }
             if (Core.Settings.weaponPrefabMappings == null) { continue; }
+            //Log.WL(2, "prefabIdentifier:" + name.prefabIdentifier.ToLower());
             if (Core.Settings.weaponPrefabMappings.TryGetValue(name.prefabIdentifier.ToLower(), out Dictionary<string, float> candidates)) {
+              //Log.WL(3, "candidates:"+ candidates.Count);
               foreach (var cnd in candidates) {
                 float weight = cnd.Value;
                 string prefabIdentifier = cnd.Key.ToLower();
                 if (group.GroupPrefabs.TryGetValue(prefabIdentifier, out HardpointPrefabCandidate candidate)) {
-                  if (weight > candidate.weight) { candidate.PrefabName = prefabName; candidate.weight = weight; }
+                  if (weight > candidate.weight) {
+                    candidate.PrefabName = prefabName; candidate.weight = weight;
+                    //Log.WL(4, "update weight:" + prefabName + " " + weight);
+                  }
                 } else {
+                  //Log.WL(4, "add:" + prefabIdentifier+" "+ weight);
                   group.GroupPrefabs.Add(prefabIdentifier, new HardpointPrefabCandidate(prefabIdentifier, prefabName, weight));
                 }
               }
@@ -292,6 +307,7 @@ namespace CustomUnits {
             }
             HashSet<HardpointsGroup> tempGroups = new HashSet<HardpointsGroup>();
             foreach (HardpointsGroup tmpgrp in effectiveGroups) { tempGroups.Add(tmpgrp); }
+            Log.WL(2, "effectiveGroups: " + effectiveGroups.Count);
             foreach (HardpointsGroup curGroup in effectiveGroups) {
               tempGroups.Remove(curGroup);
               float cur_weight = CalculateWeight(component.componentRef.Def.PrefabIdentifier, curGroup, tempGroups, out string curPrefabName, out string debug);
@@ -308,8 +324,12 @@ namespace CustomUnits {
                 if (compWeight.Value.component.componentRef.Def.Tonnage > win_weight.component.componentRef.Def.Tonnage) {
                   win_weight = compWeight.Value;
                 } else if (compWeight.Value.component.componentRef.Def.Tonnage == win_weight.component.componentRef.Def.Tonnage) {
-                  if (compWeight.Value.component.componentRef.Def.InventorySize > win_weight.component.componentRef.Def.Tonnage) {
+                  if (compWeight.Value.component.componentRef.Def.InventorySize > win_weight.component.componentRef.Def.InventorySize) {
                     win_weight = compWeight.Value;
+                  } else if (compWeight.Value.component.componentRef.Def.InventorySize == win_weight.component.componentRef.Def.InventorySize) {
+                    if (compWeight.Value.group.index < win_weight.group.index) {
+                      win_weight = compWeight.Value;
+                    }
                   }
                 }
               }

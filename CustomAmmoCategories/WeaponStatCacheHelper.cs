@@ -16,6 +16,29 @@ namespace CustAmmoCategories {
   [HarmonyPatch(MethodType.Constructor)]
   [HarmonyPatch(new Type[] { typeof(Mech), typeof(CombatGameState), typeof(MechComponentRef), typeof(string) })]
   public static class Weapon_Constructor_Mech {
+    public static void Prefix(Mech parent, CombatGameState combat, MechComponentRef mcRef, string UID) {
+      try {
+        Log.M?.TWL(0, "Weapon.Constructor "+(parent == null?"null":parent.PilotableActorDef.ChassisID)+" "+ (mcRef == null ? "null" : (mcRef.ComponentDefID+":"+mcRef.ComponentDefType)));
+        Log.M?.WL(1, "incoming ref definition:" + (mcRef.Def == null ? "null" : (mcRef.Def.GetType().Name + ":" + mcRef.Def.Description.Id)));
+        if (mcRef.Def == null) {
+          Log.M?.WL(1,"definition is null. Trying to fix");
+          if (string.IsNullOrEmpty(mcRef.ComponentDefID) == false) {
+            Log.M?.WL(1, "checking in data manager "+ mcRef.ComponentDefID);
+            if (combat.DataManager.WeaponDefs.Exists(mcRef.ComponentDefID)) {
+              Log.M?.WL(1, "exists");
+              mcRef.DataManager = combat.DataManager;
+              mcRef.SetComponentDef(combat.DataManager.WeaponDefs.Get(mcRef.ComponentDefID));
+              mcRef.RefreshComponentDef();
+              if(mcRef.Def != null) {
+                Log.M?.WL(1, "fixed");
+              }
+            }
+          }
+        }
+      } catch (Exception e) {
+        Log.M?.TWL(0, e.ToString(), true);
+      }
+    }
     public static void Postfix(Weapon __instance, Mech parent, CombatGameState combat, MechComponentRef mcRef, string UID) {
       try {
         if (parent == null) {
@@ -25,6 +48,8 @@ namespace CustAmmoCategories {
         if (__instance.weaponDef == null) {
           Log.M?.TWL(0, "weapon without definition");
           Log.M?.WL(1, "ref:" + (__instance.baseComponentRef==null?"null":__instance.baseComponentRef.ComponentDefID));
+          Log.M?.WL(1, "incoming ref:" + (mcRef == null ? "null" : mcRef.ComponentDefID));
+          Log.M?.WL(1, "incoming ref definition:" + (mcRef.Def == null ? "null" : (mcRef.Def.GetType().Name + ":" + mcRef.Def.Description.Id)));
           Log.M?.WL(1, "uid:"+__instance.uid);
           return;
         }
