@@ -192,6 +192,7 @@
     <Compile Include="MechSpinner\Patches.cs" />
     <Compile Include="MechSpinner\SpinComponent.cs" />
     <Compile Include="MechTurretAnimator.cs" />
+    <Compile Include="MissionResultsStorage.cs" />
     <Compile Include="MoveDistanceClamp.cs" />
     <Compile Include="NavalUnitsHelper.cs" />
     <Compile Include="PartialMovement.cs" />

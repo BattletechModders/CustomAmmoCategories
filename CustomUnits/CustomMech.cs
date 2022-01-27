@@ -729,7 +729,7 @@ namespace CustomUnits {
     }
 
     public virtual string UnitTypeNameDefault { get { return "MECH"; } }
-    public virtual void ApplyScale(Vector3 scale) {GetActorInfoFromVisLevel
+    public virtual void ApplyScale(Vector3 scale) {
       this.custGameRep.ApplyScale(scale);
     }
     public virtual bool CanBeBossSeen { get; set; } = false;
