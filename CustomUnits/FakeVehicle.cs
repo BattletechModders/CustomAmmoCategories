@@ -99,6 +99,11 @@ namespace CustomUnits {
       Thread.CurrentThread.pushActor(this);
       int result = (int)(hitTable != null ? HitLocation.GetHitLocation(hitTable, hitLocationRoll, (ArmorLocation)calledShotLocation, bonusMultiplier) : ArmorLocation.None);
       Thread.CurrentThread.clearActor();
+      Log.TW(0, "FakeVehicleMech.GetHitLocation "+this.PilotableActorDef.ChassisID+" attacker:"+attacker.PilotableActorDef.ChassisID+" hitTable:");
+      foreach(var ht in hitTable) {
+        Log.W(1,ht.Key+"="+ht.Value);
+      }
+      Log.WL(1,"result:"+((ArmorLocation)result));
       return result;
       //return (int)this.Combat.HitLocation.GetHitLocation(attackPosition, this, hitLocationRoll, ((ArmorLocation)calledShotLocation), bonusMultiplier).toFakeArmor();
     }

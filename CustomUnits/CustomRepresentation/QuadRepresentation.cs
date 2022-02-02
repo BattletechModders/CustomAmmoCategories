@@ -218,7 +218,7 @@ namespace CustomUnits {
           this.InitDestructable(bodyMesh);
         }
         this.VisualObjects.Add(bodyMesh.gameObject);
-        bodyMesh.gameObject.InitBindPoses();
+        //bodyMesh.gameObject.InitBindPoses();
         CustomMechMeshMerge merge = bodyMesh.gameObject.AddComponent<CustomMechMeshMerge>();
         merge.Init(this, bodyMesh.gameObject, this.GetComponentInParent<UICreep>(), this.GetComponent<PropertyBlockManager>(), "body_", camoholder);
         this.mechMerges.Add(merge);

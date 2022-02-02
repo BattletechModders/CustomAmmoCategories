@@ -79,37 +79,6 @@ namespace CustAmmoCategories {
 }
 
 namespace CustomAmmoCategoriesPatches {
-  /*[HarmonyPatch(typeof(LineOfSight))]
-  [HarmonyPatch("GetImpactPosition")]
-  [HarmonyPatch(MethodType.Normal)]
-  //[HarmonyPatch(new Type[] { typeof(AbstractActor), typeof(Vector3), typeof(Weapon), typeof(int), typeof(AttackDirection), typeof(string), typeof(int) })]
-  public static class LineOfSight_GetImpactPosition {
-    public static void Postfix(AbstractActor attacker, ICombatant initialTarget, Vector3 attackPosition, Weapon weapon, ref int hitLocation, ref AttackDirection attackDirection, ref string secondaryTargetId, ref int secondaryHitLocation, ref Vector3 __result) {
-      Log.LogWrite("LineOfSight.GetImpactPosition " + initialTarget.DisplayName+":"+ initialTarget.GUID+" attaker:"+attacker.GUID+"\n");
-      if (initialTarget.GUID == attacker.GUID) { return; };
-      Vehicle vehicle = initialTarget as Vehicle;
-      if (vehicle == null) {
-        Log.LogWrite(" not vehicle\n");
-        return;
-      }
-      string chassisName = string.Empty;
-      if (String.IsNullOrEmpty(secondaryTargetId)) {
-        chassisName = vehicle.VehicleDef.Chassis.Description.Id;
-      } else {
-        AbstractActor secondaryTrg = vehicle.Combat.FindActorByGUID(secondaryTargetId);
-        if (secondaryTargetId == null) { return; }
-        vehicle = secondaryTrg as Vehicle;
-        if (vehicle == null) { return; }
-        chassisName = vehicle.VehicleDef.Chassis.Description.Id;
-      }
-      if (string.IsNullOrEmpty(chassisName)) { return; };
-      Log.LogWrite(" chassisName:"+chassisName+"\n");
-      if (CustomAmmoCategories.Settings.VTOLHeightFix.ContainsKey(chassisName) == false) { return; };
-      Log.LogWrite(" old pos:"+__result);
-      __result.y += CustomAmmoCategories.Settings.VTOLHeightFix[chassisName];
-      Log.LogWrite(" new pos:" + __result+"\n");
-    }
-  }*/
   [HarmonyPatch(typeof(AttackDirector.AttackSequence))]
   [HarmonyPatch("GenerateHitInfo")]
   [HarmonyPatch(MethodType.Normal)]
@@ -193,7 +162,7 @@ namespace CustomAmmoCategoriesPatches {
       return position;
     }
     public static void GetStreakHits(this AttackDirector.AttackSequence instance, ref WeaponHitInfo hitInfo, int groupIdx, int weaponIdx, Weapon weapon, float toHitChance, float prevDodgedDamage) {
-      Log.M.TWL(0, "GetStreakHits "+weapon.defId+" mode:"+weapon.mode().UIName+" ammo:"+weapon.ammo().Id+" clustering:"+ weapon.ClusteringModifier);
+      Log.M.TWL(0, "GetStreakHits "+weapon.defId+" mode:"+weapon.mode().UIName+" ammo:"+weapon.ammo().Id+" clustering:"+ weapon.ClusteringModifier+" choosenTarget type:" + instance.chosenTarget.GetType().Name);
       if (hitInfo.numberOfShots == 0) { return; };
       if (AttackDirector.hitLogger.IsLogEnabled)
         AttackDirector.hitLogger.Log((object)string.Format("???????? RANDOM HIT ROLLS (GetStreakHits): Weapon Group: {0} // Weapon: {1}", (object)groupIdx, (object)weaponIdx));
@@ -306,20 +275,8 @@ namespace CustomAmmoCategoriesPatches {
       ICombatant combatantByGuid = instance.Director.Combat.FindCombatantByGUID(hitInfo.secondaryTargetIds[hitIdx]);
       hitInfo.hitQualities[hitIdx] = instance.Director.Combat.ToHit.GetBlowQuality(instance.attacker, instance.attackPosition, weapon, combatantByGuid, instance.meleeAttackType, instance.IsBreachingShot);
     }
-    //public static ArmorLocation GetHitLocationCustom(this HitLocation hitLocation, Vector3 attackPosition, Mech target, float randomRoll,ArmorLocation calledShotLocation, float bonusChanceMultiplier) {
-    //  Dictionary<ArmorLocation, int> hitTable = new Dictionary<ArmorLocation, int>((IDictionary<ArmorLocation, int>)hitLocation.GetMechHitTableCustom(target.IsProne ? AttackDirection.ToProne : hitLocation.GetAttackDirection(attackPosition, (ICombatant)target), target, Thread.CurrentThread.currentWeapon(), Thread.CurrentThread.currentAttackSequence()));
-    //  if (!target.CanBeHeadShot && hitTable.ContainsKey(ArmorLocation.Head))
-    //    hitTable.Remove(ArmorLocation.Head);
-    //  return hitTable != null ? HitLocation.GetHitLocation<ArmorLocation>(hitTable, randomRoll, calledShotLocation, bonusChanceMultiplier) : ArmorLocation.None;
-    //}
-    //public static int GetHitLocationCustom(this ICombatant target, AbstractActor attacker, Vector3 attackPosition, float hitLocationRoll, int calledShotLocation, float bonusMultiplier) {
-    //  if(target is Mech mech) {
-    //    return (int)mech.Combat.HitLocation.GetHitLocationCustom(attackPosition, mech, hitLocationRoll, (ArmorLocation)calledShotLocation, bonusMultiplier);
-    //  }
-    //  return target.GetHitLocation(attacker, attackPosition, hitLocationRoll, calledShotLocation, bonusMultiplier);
-    //}
     public static void GetClusteredHits(this AttackDirector.AttackSequence instance, ref WeaponHitInfo hitInfo, int groupIdx, int weaponIdx, Weapon weapon, float toHitChance, float prevDodgedDamage) {
-      Log.M.TWL(0, "GetClusteredHits " + weapon.defId + " mode:" + weapon.mode().UIName + " ammo:" + weapon.ammo().Id + " clustering:" + weapon.ClusteringModifier);
+      Log.M.TWL(0, "GetClusteredHits " + weapon.defId + " mode:" + weapon.mode().UIName + " ammo:" + weapon.ammo().Id + " clustering:" + weapon.ClusteringModifier + " choosenTarget type:" + instance.chosenTarget.GetType().Name);
       if (hitInfo.numberOfShots == 0) { return; };
       if (AttackDirector.hitLogger.IsLogEnabled)
         AttackDirector.hitLogger.Log((object)string.Format("???????? RANDOM HIT ROLLS (GetClusteredHits): Weapon Group: {0} // Weapon: {1}", (object)groupIdx, (object)weaponIdx));
@@ -377,7 +334,7 @@ namespace CustomAmmoCategoriesPatches {
       }
     }
     public static void GetIndividualHits(this AttackDirector.AttackSequence instance, ref WeaponHitInfo hitInfo, int groupIdx, int weaponIdx, Weapon weapon, float toHitChance, float prevDodgedDamage) {
-      Log.M.TWL(0, "GetIndividualHits " + weapon.defId + " mode:" + weapon.mode().UIName + " ammo:" + weapon.ammo().Id + " clustering:" + weapon.ClusteringModifier);
+      Log.M.TWL(0, "GetIndividualHits " + weapon.defId + " mode:" + weapon.mode().UIName + " ammo:" + weapon.ammo().Id + " clustering:" + weapon.ClusteringModifier+" choosenTarget type:"+ instance.chosenTarget.GetType().Name);
       if (hitInfo.numberOfShots == 0) { return; };
       if (AttackDirector.hitLogger.IsLogEnabled)
         AttackDirector.hitLogger.Log((object)string.Format("???????? RANDOM HIT ROLLS (GetIndividualHits): Weapon Group: {0} // Weapon: {1}", (object)groupIdx, (object)weaponIdx));
@@ -573,21 +530,6 @@ namespace CustomAmmoCategoriesPatches {
           }
         }
       }
-      /*if ((weapon.SpreadRange() > CustomAmmoCategories.Epsilon) || (fragHits)) {
-        Log.LogWrite(" spread range non zero " + weapon.SpreadRange() + " or frag hit generation " + fragHits + ". disabling buildin stray\n");
-        for (int hitIndex = 0; hitIndex < hitInfo.numberOfShots; ++hitIndex) {
-          hitInfo.secondaryTargetIds[hitIndex] = null;
-          hitInfo.secondaryHitLocations[hitIndex] = 0;
-        }
-      } else {
-        Log.LogWrite(" spread range zero. testing buildin stray\n");
-        if (hitInfo.isHasStray()) {
-          Log.LogWrite(" weapon has stray.\n");
-          CustomAmmoCategories.prepareStrayHitInfo(ref hitInfo, dodgedDamage);
-        } else {
-          Log.LogWrite(" weapon has no stray.\n");
-        }
-      }*/
       if (hitInfo.numberOfShots != hitInfo.hitLocations.Length) {
         Log.LogWrite(" strange behavior. NumberOfShots: " + hitInfo.numberOfShots + " but HitLocations length:" + hitInfo.hitLocations.Length + ". Must be equal\n", true);
         hitInfo.numberOfShots = hitInfo.hitLocations.Length;
@@ -620,14 +562,6 @@ namespace CustomAmmoCategoriesPatches {
             hitInfo.hitPositions[hitIndex] = target.Combat.getMissInCircleToPosition(instance, terrainPos.pos, weapon, hitInfo.toHitRolls[hitIndex]);
             Log.LogWrite("  hi:" + hitIndex + " was " + oldPos + " become: " + hitInfo.hitPositions[hitIndex] + " distance "+Vector3.Distance(oldPos, hitInfo.hitPositions[hitIndex]) +"\n");
           }
-          /*for (int hitIndex = 0; hitIndex < numberOfShots; ++hitIndex) {
-            hitInfo.hitLocations[hitIndex] = 65536;
-            Log.LogWrite("  hi:" + hitIndex + " was " + hitInfo.hitPositions[hitIndex]);
-            hitInfo.hitPositions[hitIndex] = terrainPos.pos + (hitInfo.hitPositions[hitIndex] - target.CurrentPosition);
-            Log.LogWrite("  become: " + hitInfo.hitPositions[hitIndex] + "\n");
-            hitInfo.secondaryHitLocations[hitIndex] = 0;
-            hitInfo.secondaryTargetIds[hitIndex] = null;
-          }*/
         }
       }
       if (weapon.TargetLegsOnly()) {
@@ -655,7 +589,7 @@ namespace CustomAmmoCategoriesPatches {
           }
         }
       }
-      CustomAmmoCategoriesLog.Log.LogWrite(" result(" + hitInfo.numberOfShots + "):");
+      Log.M.WL(1,"result(" + hitInfo.numberOfShots + "):");
       for (int hitIndex = 0; hitIndex < hitInfo.numberOfShots; ++hitIndex) {
         Log.M.WL(2, "hit:" + hitIndex);
         Log.M.WL(2, "loc:" + hitInfo.hitLocations[hitIndex]);
@@ -672,7 +606,7 @@ namespace CustomAmmoCategoriesPatches {
       return toHitChance;
     }
     public static bool Prefix(AttackDirector.AttackSequence __instance, Weapon weapon, int groupIdx, int weaponIdx, int numberOfShots, ref bool indirectFire, float dodgedDamage, ref WeaponHitInfo __result) {
-      Log.LogWrite("Generating HitInfo " + weapon.defId + " grp:" + groupIdx + " id:" + weaponIdx + " shots:" + numberOfShots + " indirect:" + indirectFire + " " + dodgedDamage + "\n");
+      Log.M.TWL(0,"Generating HitInfo " + weapon.defId + " grp:" + groupIdx + " id:" + weaponIdx + " shots:" + numberOfShots + " indirect:" + indirectFire + " " + dodgedDamage);
       if (__instance.attacker.GUID == __instance.chosenTarget.GUID) {
         TerrainHitInfo terrainPos = CustomAmmoCategories.getTerrinHitPosition(__instance.attacker.GUID);
         if (terrainPos != null) {
@@ -724,19 +658,6 @@ namespace CustomAmmoCategoriesPatches {
         if(numberOfShots > hitInfo.numberOfShots) {
           CustomAmmoCategories.ReturnNoFireHeat(weapon, hitInfo.stackItemUID, numberOfShots, hitInfo.numberOfShots);
         }
-        //int realAmmoUsedCount = hitInfo.numberOfShots;
-        /*if (weapon.isStreak()) {
-          if (__instance.attacker.GUID != __instance.chosenTarget.GUID) {
-            CustomAmmoCategoriesLog.Log.LogWrite("Streak detected. Clearing missed.\n");
-            WeaponHitInfo streakHitInfo = CustomAmmoCategories.getSuccessOnly(hitInfo);
-            CustomAmmoCategories.ReturnNoFireHeat(weapon, hitInfo.stackItemUID, hitInfo.numberOfShots, streakHitInfo.numberOfShots);
-            hitInfo = streakHitInfo;
-            realAmmoUsedCount = streakHitInfo.numberOfShots;
-          } else {
-            CustomAmmoCategoriesLog.Log.LogWrite("Streak detected. But terrain attack. No misses clearence performed.\n");
-          }
-        }*/
-        //weapon.RealDecrementAmmo(hitInfo.stackItemUID, weapon.HitsToShots(realAmmoUsedCount));
         hitInfo.initGenericAdvInfo(toHitChance, __instance, __instance.Director.Combat, indirectFire);
         __result = hitInfo;
         return false;

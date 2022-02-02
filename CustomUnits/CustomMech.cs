@@ -488,6 +488,11 @@ namespace CustomUnits {
       Thread.CurrentThread.pushActor(this);
       int result = (int)(hitTable != null ? HitLocation.GetHitLocation(hitTable, hitLocationRoll, (ArmorLocation)calledShotLocation, bonusMultiplier) : ArmorLocation.None);
       Thread.CurrentThread.clearActor();
+      Log.TW(0, "CustomMech.GetHitLocation " + this.PilotableActorDef.ChassisID + " attacker:" + attacker.PilotableActorDef.ChassisID + " hitTable:");
+      foreach (var ht in hitTable) {
+        Log.W(1, ht.Key + "=" + ht.Value);
+      }
+      Log.WL(1, "result:" + ((ArmorLocation)result));
       return result;
     }
     public override List<int> GetPossibleHitLocations(AbstractActor attacker) {
@@ -519,6 +524,11 @@ namespace CustomUnits {
       Thread.CurrentThread.pushActor(this);
       ArmorLocation result = HitLocation.GetHitLocation(hitTable, randomRoll, bonusLocation, bonusChanceMultiplier);
       Thread.CurrentThread.clearActor();
+      Log.TW(0, "FakeVehicleMech.GetAdjacentHitLocation " + this.PilotableActorDef.ChassisID + " hitTable:");
+      foreach (var ht in hitTable) {
+        Log.W(1, ht.Key + "=" + ht.Value);
+      }
+      Log.WL(1, "result:" + ((ArmorLocation)result));
       return result;
     }
     public virtual HashSet<ArmorLocation> GetDFASelfDamageLocations() {

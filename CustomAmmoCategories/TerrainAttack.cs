@@ -647,50 +647,54 @@ namespace CustomAmmoCategoriesPatches {
   public static class CombatHUD_OnAttackEnd {
     public static AbstractActor needSelect = null;
     public static void Postfix(CombatHUD __instance, MessageCenterMessage message) {      
-      Log.LogWrite("CombatHUD.OnAttackEnd. SelectionForbidden: "+ CombatSelectionHandler_TrySelectActor.SelectionForbidden + "\n");
-      if (CombatSelectionHandler_TrySelectActor.SelectionForbidden == true) {
-        AttackDirector.AttackSequence attackSequence = __instance.Combat.AttackDirector.GetAttackSequence((message as AttackSequenceEndMessage).sequenceId);
-        AbstractActor attacker = null;
-        if (attackSequence == null) {
-          Log.LogWrite("Can't find sequence with id "+ (message as AttackSequenceEndMessage).sequenceId + "\n");
-          attacker = CombatHUD_OnAttackEnd.needSelect;
-        } else {
-          attacker = attackSequence.attacker;
-        }
-        //Log.LogWrite("Terrain attack end.\n");
-        CombatSelectionHandler_TrySelectActor.SelectionForbidden = false;
-        if (attacker != null) {
-          Log.LogWrite(" attacker " + attacker.DisplayName + ":" + attacker.GUID + ".\n");
-          MechRepresentation gameRep = attacker.GameRep as MechRepresentation;
-          if (gameRep != null) {
-            Log.LogWrite("CombatHUD.OnAttackEnd. ToggleRandomIdles true\n");
-            gameRep.ReturnToNeutralFacing(true, 0.5f, -1, -1, null);
-            gameRep.ToggleRandomIdles(true);
-          }
-          if (attacker.HasMovedThisRound || ((attacker.Combat.TurnDirector.IsInterleaved == true) && (attacker.CanMoveAfterShooting == false))) {
-            Log.LogWrite(" no need to select. already done with it\n");
+      Log.M.TWL(0,"CombatHUD.OnAttackEnd. SelectionForbidden: "+ CombatSelectionHandler_TrySelectActor.SelectionForbidden);
+      try {
+        if (CombatSelectionHandler_TrySelectActor.SelectionForbidden == true) {
+          AttackDirector.AttackSequence attackSequence = __instance.Combat.AttackDirector.GetAttackSequence((message as AttackSequenceEndMessage).sequenceId);
+          AbstractActor attacker = null;
+          if (attackSequence == null) {
+            Log.LogWrite("Can't find sequence with id " + (message as AttackSequenceEndMessage).sequenceId + "\n");
+            attacker = CombatHUD_OnAttackEnd.needSelect;
           } else {
-            Log.LogWrite(" try to select\n");
-            bool HasBegunActivation = attacker.HasBegunActivation;
-            bool HasActivatedThisRound = attacker.HasActivatedThisRound;
-            attacker.HasBegunActivation = false;
-            attacker.HasActivatedThisRound = false;
-            attacker.HasFiredThisRound = true;
-
-            __instance.SelectionHandler.DeselectActor(__instance.SelectedActor);
-            //MethodInfo OnActorSelected = typeof(CombatHUD).GetMethod("OnActorSelected", BindingFlags.NonPublic | BindingFlags.Instance);
-            //MethodInfo OnActorDeselected = typeof(CombatHUD).GetMethod("OnActorDeselected", BindingFlags.NonPublic | BindingFlags.Instance);
-            //OnActorDeselected.Invoke(__instance, new object[] { __instance.SelectedActor });
-            //OnActorSelected.Invoke(__instance, new object[] { attacker });
-            __instance.SelectionHandler.TrySelectActor(attacker, false);
-            attacker.HasBegunActivation = HasBegunActivation;
-            attacker.HasActivatedThisRound = HasActivatedThisRound;
-            __instance.MechWarriorTray.ConfirmAbilities(AbilityDef.ActivationTiming.ConsumedByFiring);
-            attacker = null;
+            attacker = attackSequence.attacker;
           }
-        }
-        //__instance.Combat.AttackDirector.RemoveAttackSequence(attackSequence.id);
+          //Log.LogWrite("Terrain attack end.\n");
+          CombatSelectionHandler_TrySelectActor.SelectionForbidden = false;
+          if (attacker != null) {
+            Log.LogWrite(" attacker " + attacker.DisplayName + ":" + attacker.GUID + ".\n");
+            MechRepresentation gameRep = attacker.GameRep as MechRepresentation;
+            if (gameRep != null) {
+              Log.LogWrite("CombatHUD.OnAttackEnd. ToggleRandomIdles true\n");
+              gameRep.ReturnToNeutralFacing(true, 0.5f, -1, -1, null);
+              gameRep.ToggleRandomIdles(true);
+            }
+            if (attacker.HasMovedThisRound || ((attacker.Combat.TurnDirector.IsInterleaved == true) && (attacker.CanMoveAfterShooting == false))) {
+              Log.LogWrite(" no need to select. already done with it\n");
+            } else {
+              Log.LogWrite(" try to select\n");
+              bool HasBegunActivation = attacker.HasBegunActivation;
+              bool HasActivatedThisRound = attacker.HasActivatedThisRound;
+              attacker.HasBegunActivation = false;
+              attacker.HasActivatedThisRound = false;
+              attacker.HasFiredThisRound = true;
 
+              __instance.SelectionHandler?.DeselectActor(__instance.SelectedActor);
+              //MethodInfo OnActorSelected = typeof(CombatHUD).GetMethod("OnActorSelected", BindingFlags.NonPublic | BindingFlags.Instance);
+              //MethodInfo OnActorDeselected = typeof(CombatHUD).GetMethod("OnActorDeselected", BindingFlags.NonPublic | BindingFlags.Instance);
+              //OnActorDeselected.Invoke(__instance, new object[] { __instance.SelectedActor });
+              //OnActorSelected.Invoke(__instance, new object[] { attacker });
+              __instance.SelectionHandler?.TrySelectActor(attacker, false);
+              attacker.HasBegunActivation = HasBegunActivation;
+              attacker.HasActivatedThisRound = HasActivatedThisRound;
+              __instance.MechWarriorTray.ConfirmAbilities(AbilityDef.ActivationTiming.ConsumedByFiring);
+              attacker = null;
+            }
+          }
+          //__instance.Combat.AttackDirector.RemoveAttackSequence(attackSequence.id);
+
+        }
+      }catch(Exception e) {
+        Log.M.TWL(0, e.ToString(), true);
       }
     }
   }

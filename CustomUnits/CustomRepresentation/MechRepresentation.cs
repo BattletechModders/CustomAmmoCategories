@@ -1732,57 +1732,61 @@ namespace CustomUnits {
       this.leftFootVFX = leftFoot;
     }
     public virtual void _TriggerFootFall(int leftFoot) {
-      if (this.rootParentRepresentation.BlipDisplayed) { return; }
-      if (this.parentMech.NoMoveAnimation()) { return; }
-      if (this.VisibleObject.activeSelf) {
-        Transform parentTransform = leftFoot > 0 ? this.leftFootTransform : this.rightFootTransform;
-        Vector3 position = parentTransform.position;
-        Vector3 currentPosition = this.parentMech.CurrentPosition;
-        position = new Vector3(position.x, currentPosition.y + 0.2f, position.z);
-        Vector3 forward = this.thisTransform.forward;
-        Vector3 lookAtPos = position + forward * 100f;
-        float num1;
-        switch (this.parentMech.MechDef.Chassis.weightClass) {
-          case WeightClass.LIGHT:
-          num1 = 3f;
-          break;
-          case WeightClass.MEDIUM:
-          num1 = 5f;
-          break;
-          case WeightClass.HEAVY:
-          num1 = 7f;
-          break;
-          default:
-          num1 = 7f;
-          break;
+      try {
+        if (this.rootParentRepresentation.BlipDisplayed) { return; }
+        if (this.parentMech.NoMoveAnimation()) { return; }
+        if (this.VisibleObject.activeSelf) {
+          Transform parentTransform = leftFoot > 0 ? this.leftFootTransform : this.rightFootTransform;
+          Vector3 position = parentTransform.position;
+          Vector3 currentPosition = this.parentMech.CurrentPosition;
+          position = new Vector3(position.x, currentPosition.y + 0.2f, position.z);
+          Vector3 forward = this.thisTransform.forward;
+          Vector3 lookAtPos = position + forward * 100f;
+          float num1;
+          switch (this.parentMech.MechDef.Chassis.weightClass) {
+            case WeightClass.LIGHT:
+            num1 = 3f;
+            break;
+            case WeightClass.MEDIUM:
+            num1 = 5f;
+            break;
+            case WeightClass.HEAVY:
+            num1 = 7f;
+            break;
+            default:
+            num1 = 7f;
+            break;
+          }
+          FootstepManager.Instance.AddFootstep(position, forward, new Vector3(num1, num1, num1));
+          string vfxName1 = string.Format("{0}{1}{2}{3}", (object)this.Constants.VFXNames.footfallBase, (object)(this.IsInAnyIdle ? "idle_" : ""), (object)this.rootParentRepresentation.terrainImpactParticleName, (object)this.rootParentRepresentation.vfxNameModifier);
+          Log.TWL(0, "_TriggerFootFall " + this.gameObject.name + " " + vfxName1);
+          this.PlayVFXAt(parentTransform, Vector3.zero, vfxName1, false, lookAtPos, true, -1f);
+          if (this.currentSurfaceType == AudioSwitch_surface_type.wood)
+            this.PlayVFX(8, "vfxPrfPrtl_envTreeRustle_vHigh", false, Vector3.zero, true, -1f);
+          WwiseManager.SetSwitch<AudioSwitch_mech_coil_fx_yesno>(AudioSwitch_mech_coil_fx_yesno.coil_fx_no, this.rootParentRepresentation.audioObject);
+          ActorMovementSequence movementSequence = (ActorMovementSequence)null;
+          if (this.parentActor != null && this.parentActor.Combat != null && this.parentActor.Combat.StackManager != null)
+            movementSequence = this.parentActor.Combat.StackManager.GetMoveSequenceForActor(this.parentActor);
+          if (movementSequence != null && !movementSequence.isSprinting && this.parentActor.Weapons.FindAll((Predicate<Weapon>)(x => x.weaponDef.Type == WeaponType.COIL && x.DamageLevel == ComponentDamageLevel.Functional)).Count > 0) {
+            string vfxName2 = (double)movementSequence.distanceTravelled < (double)this.parentActor.Combat.Constants.CombatUIConstants.COIL_Footstep_Charge_Max ? ((double)movementSequence.distanceTravelled < (double)this.parentActor.Combat.Constants.CombatUIConstants.COIL_Footstep_Charge_Med ? "vfxPrfPrtl_weaponCOILstepCharge_1" : "vfxPrfPrtl_weaponCOILstepCharge_2") : "vfxPrfPrtl_weaponCOILstepCharge_3";
+            this.PlayVFXAt(parentTransform, Vector3.zero, vfxName2, true, lookAtPos, true, -1f);
+            WwiseManager.SetSwitch<AudioSwitch_mech_coil_fx_yesno>(AudioSwitch_mech_coil_fx_yesno.coil_fx_yes, this.rootParentRepresentation.audioObject);
+          }
+          if (this.IsInAnyIdle) {
+            int num2 = (int)WwiseManager.PostEvent<AudioEventList_mech>(AudioEventList_mech.mech_footstep_idle, this.rootParentRepresentation.audioObject);
+          } else {
+            CameraControl.Instance?.AddCameraShake(this.parentMech.tonnage * this.Constants.CombatUIConstants.ScreenShakeFootfallRelativeMod + this.Constants.CombatUIConstants.ScreenShakeFootfallAbsoluteMod, 1f, this.parentMech.CurrentPosition);
+            int num3 = (int)WwiseManager.PostEvent<AudioEventList_mech>(AudioEventList_mech.mech_footstep, this.rootParentRepresentation.audioObject);
+          }
+          if (this.parentMech.LeftLegDamageLevel == LocationDamageLevel.Destroyed || this.parentMech.RightLegDamageLevel == LocationDamageLevel.Destroyed)
+            this.IsOnLimpingLeg = leftFoot <= 0 ? this.parentMech.RightLegDamageLevel == LocationDamageLevel.Destroyed : this.parentMech.LeftLegDamageLevel == LocationDamageLevel.Destroyed;
         }
-        FootstepManager.Instance.AddFootstep(position, forward, new Vector3(num1, num1, num1));
-        string vfxName1 = string.Format("{0}{1}{2}{3}", (object)this.Constants.VFXNames.footfallBase, (object)(this.IsInAnyIdle ? "idle_" : ""), (object)this.rootParentRepresentation.terrainImpactParticleName, (object)this.rootParentRepresentation.vfxNameModifier);
-        Log.TWL(0, "_TriggerFootFall "+this.gameObject.name+" "+ vfxName1);
-        this.PlayVFXAt(parentTransform, Vector3.zero, vfxName1, false, lookAtPos, true, -1f);
-        if (this.currentSurfaceType == AudioSwitch_surface_type.wood)
-          this.PlayVFX(8, "vfxPrfPrtl_envTreeRustle_vHigh", false, Vector3.zero, true, -1f);
-        WwiseManager.SetSwitch<AudioSwitch_mech_coil_fx_yesno>(AudioSwitch_mech_coil_fx_yesno.coil_fx_no, this.rootParentRepresentation.audioObject);
-        ActorMovementSequence movementSequence = (ActorMovementSequence)null;
-        if (this.parentActor != null && this.parentActor.Combat != null && this.parentActor.Combat.StackManager != null)
-          movementSequence = this.parentActor.Combat.StackManager.GetMoveSequenceForActor(this.parentActor);
-        if (movementSequence != null && !movementSequence.isSprinting && this.parentActor.Weapons.FindAll((Predicate<Weapon>)(x => x.weaponDef.Type == WeaponType.COIL && x.DamageLevel == ComponentDamageLevel.Functional)).Count > 0) {
-          string vfxName2 = (double)movementSequence.distanceTravelled < (double)this.parentActor.Combat.Constants.CombatUIConstants.COIL_Footstep_Charge_Max ? ((double)movementSequence.distanceTravelled < (double)this.parentActor.Combat.Constants.CombatUIConstants.COIL_Footstep_Charge_Med ? "vfxPrfPrtl_weaponCOILstepCharge_1" : "vfxPrfPrtl_weaponCOILstepCharge_2") : "vfxPrfPrtl_weaponCOILstepCharge_3";
-          this.PlayVFXAt(parentTransform, Vector3.zero, vfxName2, true, lookAtPos, true, -1f);
-          WwiseManager.SetSwitch<AudioSwitch_mech_coil_fx_yesno>(AudioSwitch_mech_coil_fx_yesno.coil_fx_yes, this.rootParentRepresentation.audioObject);
-        }
-        if (this.IsInAnyIdle) {
-          int num2 = (int)WwiseManager.PostEvent<AudioEventList_mech>(AudioEventList_mech.mech_footstep_idle, this.rootParentRepresentation.audioObject);
-        } else {
-          CameraControl.Instance.AddCameraShake(this.parentMech.tonnage * this.Constants.CombatUIConstants.ScreenShakeFootfallRelativeMod + this.Constants.CombatUIConstants.ScreenShakeFootfallAbsoluteMod, 1f, this.parentMech.CurrentPosition);
-          int num3 = (int)WwiseManager.PostEvent<AudioEventList_mech>(AudioEventList_mech.mech_footstep, this.rootParentRepresentation.audioObject);
-        }
-        if (this.parentMech.LeftLegDamageLevel == LocationDamageLevel.Destroyed || this.parentMech.RightLegDamageLevel == LocationDamageLevel.Destroyed)
-          this.IsOnLimpingLeg = leftFoot <= 0 ? this.parentMech.RightLegDamageLevel == LocationDamageLevel.Destroyed : this.parentMech.LeftLegDamageLevel == LocationDamageLevel.Destroyed;
+        if (!this.triggerFootVFX)
+          return;
+        this.triggerFootVFX = false;
+      }catch(Exception e) {
+        Log.TWL(0,e.ToString(),true);
       }
-      if (!this.triggerFootVFX)
-        return;
-      this.triggerFootVFX = false;
     }
     public override void OnAudioEvent(string audioEvent) {
       GameRepresentation_OnAudioEvent(audioEvent);

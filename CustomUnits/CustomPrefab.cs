@@ -89,68 +89,73 @@ namespace CustomUnits {
       return null;
     }
     public static void ReplaceShaders(DataManager __instance, string id, ref GameObject __result) {
-      CustomShaderReplacer replacer = __result.GetComponent<CustomShaderReplacer>();
-      if (replacer != null) { return; }
-      __result.AddComponent<CustomShaderReplacer>();
-      Log.TWL(0, "CustomPrefabHelper.Searching " + id);
-      if (CustomPrefabHelper.TryGet(id, out CustomPrefabDef def)) {
-        Log.WL(1, "found");
-        Renderer[] renderers = __result.GetComponentsInChildren<Renderer>(true);
-        Dictionary<string, GameObject> shaderSources = new Dictionary<string, GameObject>();
-        Dictionary<string, GameObject> materialSources = new Dictionary<string, GameObject>();
-        foreach (Renderer r in renderers) {
-          Material[] sharedMaterials = r.sharedMaterials;
-          for (int matIndex = 0; matIndex < sharedMaterials.Length; ++matIndex) {
-            Log.WL(2, "material:" + sharedMaterials[matIndex].name);
-            foreach (var mn in def.MaterialShaderReplacement) {
-              if (sharedMaterials[matIndex].name.StartsWith(mn.Key)) {
-                if (string.IsNullOrEmpty(mn.Value.prefab) == false) {
-                  if (shaderSources.TryGetValue(mn.Value.prefab, out GameObject shaderSource) == false) {
-                    shaderSource = __instance.PooledInstantiate(mn.Value.prefab, BattleTechResourceType.Prefab);
-                    shaderSources.Add(mn.Value.prefab, shaderSource);
+      try {
+        CustomShaderReplacer replacer = __result.GetComponent<CustomShaderReplacer>();
+        if (replacer != null) { return; }
+        __result.AddComponent<CustomShaderReplacer>();
+        Log.TWL(0, "CustomPrefabHelper.Searching " + id);
+        if (CustomPrefabHelper.TryGet(id, out CustomPrefabDef def)) {
+          Log.WL(1, "found");
+          Renderer[] renderers = __result.GetComponentsInChildren<Renderer>(true);
+          Dictionary<string, GameObject> shaderSources = new Dictionary<string, GameObject>();
+          Dictionary<string, GameObject> materialSources = new Dictionary<string, GameObject>();
+          foreach (Renderer r in renderers) {
+            Material[] sharedMaterials = r.sharedMaterials;
+            for (int matIndex = 0; matIndex < sharedMaterials.Length; ++matIndex) {
+              if (sharedMaterials[matIndex] == null) { continue; }
+              Log.WL(2, "material:" + sharedMaterials[matIndex].name);
+              foreach (var mn in def.MaterialShaderReplacement) {
+                if (sharedMaterials[matIndex].name.StartsWith(mn.Key)) {
+                  if (string.IsNullOrEmpty(mn.Value.prefab) == false) {
+                    if (shaderSources.TryGetValue(mn.Value.prefab, out GameObject shaderSource) == false) {
+                      shaderSource = __instance.PooledInstantiate(mn.Value.prefab, BattleTechResourceType.Prefab);
+                      shaderSources.Add(mn.Value.prefab, shaderSource);
+                    }
+                    if (shaderSource == null) { continue; }
+                    Shader sh = shaderSource.SearchForShader(mn.Value.material);
+                    if (sh != null) { sharedMaterials[matIndex].shader = sh; }
+                  } else if (string.IsNullOrEmpty(mn.Value.direct) == false) {
+                    Shader shader = Shader.Find(mn.Value.direct);
+                    if (shader != null) { sharedMaterials[matIndex].shader = shader; }
                   }
-                  if (shaderSource == null) { continue; }
-                  Shader sh = shaderSource.SearchForShader(mn.Value.material);
-                  if (sh != null) { sharedMaterials[matIndex].shader = sh; }
-                } else if (string.IsNullOrEmpty(mn.Value.direct) == false) {
-                  Shader shader = Shader.Find(mn.Value.direct);
-                  if (shader != null) { sharedMaterials[matIndex].shader = shader; }
                 }
               }
-            }
-            foreach (var mn in def.MaterialReplacement) {
-              if (sharedMaterials[matIndex].name.StartsWith(mn.Key)) {
-                Log.WL(3, "replacement:" + mn.Value.prefab + "." + mn.Value.material + " direct:" + mn.Value.direct);
-                if (string.IsNullOrEmpty(mn.Value.prefab) == false) {
-                  if (materialSources.TryGetValue(mn.Value.prefab, out GameObject materialSource) == false) {
-                    materialSource = __instance.PooledInstantiate(mn.Value.prefab, BattleTechResourceType.Prefab);
-                    materialSources.Add(mn.Value.prefab, materialSource);
-                  }
-                  if (materialSource == null) { continue; }
-                  Material mat = materialSource.SearchForMaterial(mn.Value.material);
-                  if (mat != null) { sharedMaterials[matIndex] = mat; }
-                } else if (string.IsNullOrEmpty(mn.Value.direct) == false) {
-                  Material[] mats = Material.FindObjectsOfType<Material>();
-                  foreach (Material mat in mats) {
-                    if (mat.name.StartsWith(mn.Value.direct)) {
-                      sharedMaterials[matIndex] = mat;
-                      Log.WL(4, "target material found " + r.name + ".sharedMaterials[" + matIndex + "] = " + sharedMaterials[matIndex].name + "/" + mat.name);
-                      break;
+              foreach (var mn in def.MaterialReplacement) {
+                if (sharedMaterials[matIndex].name.StartsWith(mn.Key)) {
+                  Log.WL(3, "replacement:" + mn.Value.prefab + "." + mn.Value.material + " direct:" + mn.Value.direct);
+                  if (string.IsNullOrEmpty(mn.Value.prefab) == false) {
+                    if (materialSources.TryGetValue(mn.Value.prefab, out GameObject materialSource) == false) {
+                      materialSource = __instance.PooledInstantiate(mn.Value.prefab, BattleTechResourceType.Prefab);
+                      materialSources.Add(mn.Value.prefab, materialSource);
+                    }
+                    if (materialSource == null) { continue; }
+                    Material mat = materialSource.SearchForMaterial(mn.Value.material);
+                    if (mat != null) { sharedMaterials[matIndex] = mat; }
+                  } else if (string.IsNullOrEmpty(mn.Value.direct) == false) {
+                    Material[] mats = Material.FindObjectsOfType<Material>();
+                    foreach (Material mat in mats) {
+                      if (mat.name.StartsWith(mn.Value.direct)) {
+                        sharedMaterials[matIndex] = mat;
+                        Log.WL(4, "target material found " + r.name + ".sharedMaterials[" + matIndex + "] = " + sharedMaterials[matIndex].name + "/" + mat.name);
+                        break;
+                      }
                     }
                   }
                 }
               }
-            }
 
+            }
+            r.sharedMaterials = sharedMaterials;
           }
-          r.sharedMaterials = sharedMaterials;
+          foreach (var shaderSource in shaderSources) {
+            __instance.PoolGameObject(shaderSource.Key, shaderSource.Value);
+          }
+          foreach (var matSource in materialSources) {
+            __instance.PoolGameObject(matSource.Key, matSource.Value);
+          }
         }
-        foreach (var shaderSource in shaderSources) {
-          __instance.PoolGameObject(shaderSource.Key, shaderSource.Value);
-        }
-        foreach (var matSource in materialSources) {
-          __instance.PoolGameObject(matSource.Key, matSource.Value);
-        }
+      }catch(Exception e) {
+        Log.TWL(0, e.ToString(), true);
       }
     }
     public static void Postfix(DataManager __instance, string id, BattleTechResourceType resourceType, ref GameObject __result) {

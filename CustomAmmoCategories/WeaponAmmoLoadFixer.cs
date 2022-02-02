@@ -217,7 +217,11 @@ namespace CustAmmoCategoriesPatches {
             foreach (string ammoBoxId in ammoBoxIds) {
               if (string.IsNullOrEmpty(ammoBoxId)) { continue; }
               Log.M.WL(3, "ammoBox:" + ammoBoxId);
-              if (dataManager.Exists(BattleTechResourceType.AmmunitionBoxDef, ammoBoxId) == false) { dependencyLoad.RequestResource(BattleTechResourceType.AmmunitionBoxDef, ammoBoxId); }
+              if (dataManager.Exists(BattleTechResourceType.AmmunitionBoxDef, ammoBoxId) == false) {
+                if (dataManager.ResourceLocator.EntryByID(ammoBoxId, BattleTechResourceType.AmmunitionBoxDef) != null) {
+                  dependencyLoad.RequestResource(BattleTechResourceType.AmmunitionBoxDef, ammoBoxId);
+                }
+              }
             }
           }
         }

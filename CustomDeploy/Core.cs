@@ -133,6 +133,40 @@ namespace CustomDeploy{
   //    }
   //  }
   //}
+  [HarmonyPatch(typeof(UnitSpawnPointGameLogic))]
+  [HarmonyPatch("DangerousLocationCellsList")]
+  [HarmonyPatch(MethodType.Getter)]
+  public static class UnitSpawnPointGameLogic_DangerousLocationCellsList {
+    public static bool Prefix(UnitSpawnPointGameLogic __instance,ref List<MapTerrainDataCell> __result) {
+      if (__instance.dangerousLocationCellList == null) {
+        __instance.dangerousLocationCellList = new List<MapTerrainDataCell>(9);
+        try {
+          int xindex = __instance.Combat.MapMetaData.GetXIndex(__instance.hexPosition.x);
+          int zindex = __instance.Combat.MapMetaData.GetZIndex(__instance.hexPosition.z);
+          if(xindex == 0 || xindex >= (__instance.Combat.MapMetaData.mapTerrainDataCells.GetLength(1) - 1)) {
+            Log.TWL(0, "UnitSpawnPointGameLogic too close to encounter bounds. Fix this! pos:"+ __instance.hexPosition+ " x:"+xindex+" z:"+zindex);
+          }
+          if (zindex == 0 || zindex >= (__instance.Combat.MapMetaData.mapTerrainDataCells.GetLength(0) - 1)) {
+            Log.TWL(0, "UnitSpawnPointGameLogic too close to encounter bounds. Fix this! pos:" + __instance.hexPosition + " x:" + xindex + " z:" + zindex);
+          }
+          if (__instance.Combat.MapMetaData.IsWithinBounds(xindex, zindex)) __instance.dangerousLocationCellList.Add(__instance.Combat.MapMetaData.GetCellAt(xindex, zindex));
+          if (__instance.Combat.MapMetaData.IsWithinBounds(xindex, zindex + 1)) __instance.dangerousLocationCellList.Add(__instance.Combat.MapMetaData.GetCellAt(xindex, zindex + 1));
+          if (__instance.Combat.MapMetaData.IsWithinBounds(xindex, zindex - 1)) __instance.dangerousLocationCellList.Add(__instance.Combat.MapMetaData.GetCellAt(xindex, zindex - 1));
+          if (__instance.Combat.MapMetaData.IsWithinBounds(xindex+1, zindex)) __instance.dangerousLocationCellList.Add(__instance.Combat.MapMetaData.GetCellAt(xindex + 1, zindex));
+          if (__instance.Combat.MapMetaData.IsWithinBounds(xindex+1, zindex+1)) __instance.dangerousLocationCellList.Add(__instance.Combat.MapMetaData.GetCellAt(xindex + 1, zindex + 1));
+          if (__instance.Combat.MapMetaData.IsWithinBounds(xindex+1, zindex-1)) __instance.dangerousLocationCellList.Add(__instance.Combat.MapMetaData.GetCellAt(xindex + 1, zindex - 1));
+          if (__instance.Combat.MapMetaData.IsWithinBounds(xindex-1, zindex)) __instance.dangerousLocationCellList.Add(__instance.Combat.MapMetaData.GetCellAt(xindex - 1, zindex));
+          if (__instance.Combat.MapMetaData.IsWithinBounds(xindex-1, zindex+1)) __instance.dangerousLocationCellList.Add(__instance.Combat.MapMetaData.GetCellAt(xindex - 1, zindex + 1));
+          if (__instance.Combat.MapMetaData.IsWithinBounds(xindex-1, zindex-1)) __instance.dangerousLocationCellList.Add(__instance.Combat.MapMetaData.GetCellAt(xindex - 1, zindex - 1));
+        }catch(Exception e) {
+          Log.TWL(0, e.ToString());
+        }
+      }
+      __result = __instance.dangerousLocationCellList;
+      return false;
+    }
+  }
+
   [HarmonyPatch(typeof(Interpolator))]
   [HarmonyPatch("GetStringFromObjectDispatch")]
   [HarmonyPatch(MethodType.Normal)]
@@ -313,6 +347,60 @@ namespace CustomDeploy{
       } catch (Exception e) {
         Log.TWL(0, e.ToString());
         return true;
+      }
+    }
+  }
+  [HarmonyPatch(typeof(MechStatisticsRules))]
+  [HarmonyPatch("CalculateCBillValue")]
+  [HarmonyPatch(MethodType.Normal)]
+  public static class MechStatisticsRules_CalculateCBillValues {
+    public static bool Prefix(MechDef mechDef, ref float currentValue,ref float maxValue) {
+      try {
+        Log.TWL(0, "MechStatisticsRules.CalculateCBillValue "+ (mechDef.chassisID));
+        if (mechDef.DataManager == null) {
+          Log.WL(1, "no data manager. Fixing. UnityGameInstance.BattleTechGame.DataManager: "+(UnityGameInstance.BattleTechGame.DataManager == null?"null":"not null"));
+          mechDef.DataManager = UnityGameInstance.BattleTechGame.DataManager;
+          mechDef.Refresh();
+        }
+        if(mechDef.Chassis == null) {
+          Log.WL(1, "no chassis manager. Fixing "+mechDef.ChassisID);
+          if (mechDef.DataManager.ChassisDefs.Exists(mechDef.ChassisID)) {
+            Log.WL(2, "found in data manager");
+            mechDef.Chassis = mechDef.DataManager.ChassisDefs.Get(mechDef.ChassisID);
+          }
+        }
+        currentValue = (float)mechDef.Chassis.Description.Cost;
+        float num1 = 10000f;
+        float num2 = (0.0f + mechDef.Head.AssignedArmor + mechDef.CenterTorso.AssignedArmor + mechDef.CenterTorso.AssignedRearArmor + mechDef.LeftTorso.AssignedArmor + mechDef.LeftTorso.AssignedRearArmor + mechDef.RightTorso.AssignedArmor + mechDef.RightTorso.AssignedRearArmor + mechDef.LeftArm.AssignedArmor + mechDef.RightArm.AssignedArmor + mechDef.LeftLeg.AssignedArmor + mechDef.RightLeg.AssignedArmor) * UnityGameInstance.BattleTechGame.MechStatisticsConstants.CBILLS_PER_ARMOR_POINT;
+        currentValue += num2;
+        for (int index = 0; index < mechDef.Inventory.Length; ++index) {
+          MechComponentRef mechComponentRef = mechDef.Inventory[index];
+          if (mechComponentRef.DataManager == null) { mechComponentRef.DataManager = mechDef.DataManager; }
+          if (mechComponentRef.Def == null) { continue; }
+          currentValue += (float)mechComponentRef.Def.Description.Cost;
+        }
+        currentValue = Mathf.Round(currentValue / num1) * num1;
+      }catch(Exception e) {
+        Log.TWL(0,e.ToString(),true);
+      }
+      return false;
+    }
+  }
+  [HarmonyPatch(typeof(LoadRequest))]
+  [HarmonyPatch("TryCreateAndAddLoadRequest")]
+  [HarmonyPatch(MethodType.Normal)]
+  public static class LoadRequest_TryCreateAndAddLoadRequest {
+    public static void Postfix(LoadRequest __instance, BattleTechResourceType resourceType, string resourceId, bool __result) {
+      try {
+        if (__result == true) { return; }
+        Log.TWL(0, "LoadRequest.TryCreateAndAddLoadRequest failed " + resourceId+" "+resourceType);
+        VersionManifestEntry versionManifestEntry = __instance.dataManager.ResourceLocator.EntryByID(resourceId, resourceType);
+        if (versionManifestEntry == null) {
+          Log.WL(1,"manifest entry is null");
+          Log.WL(1, Environment.StackTrace);
+        }
+      } catch (Exception e) {
+        Log.TWL(0, e.ToString(), true);
       }
     }
   }

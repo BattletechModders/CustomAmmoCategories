@@ -337,12 +337,13 @@ namespace CustAmmoCategories {
         float damage = this.Damage;
         float apdmg = this.APDamage;
         float locArmor = this.target.ArmorForLocation(this.hitLocation);
+        float locStructure = this.target.StructureForLocation(this.hitLocation);
         this.parent.Sequence.FlagAttackDidDamage(this.target.GUID);
         this.parent.Sequence.attackCompletelyMissed(false);
         this.parent.Sequence.cumulativeDamage += (damage + apdmg);
         this.parent.resolve(this.target).cumulativeDamage += (damage + apdmg);
         float critAPchance = this.parent.weapon.isAPCrit() ? this.parent.weapon.APCriticalChanceMultiplier() : float.NaN;
-        Log.LogWrite(" crit testing - damage/armor " + damage + "/" + locArmor + " ap dmg:" + apdmg + " ap crit chance:" + critAPchance + "\n");
+        Log.M.WL(1,"crit testing - damage:" + damage + " armor:" + locArmor +" structure:" + locStructure + " ap dmg:" + apdmg + " ap crit chance:" + critAPchance);
         if (damage > locArmor) {
           if ((this.isAOE == false)||(CustomAmmoCategories.Settings.AoECanCrit == true)) {
             Log.LogWrite("  crit to location armor breach:" + this.hitLocation + "\n");

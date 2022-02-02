@@ -1178,7 +1178,7 @@ namespace CustomUnits {
       if (meshSource != null) {
         mechRep.gameObject.name = meshSource.name;
         meshSource.CopyShader(dataManager, custRepDef);
-        meshSource.InitBindPoses();
+        //meshSource.InitBindPoses();
       }
       mechRep.gameObject.SuppressMeshes(custRepDef);
       if (meshSource != null) {

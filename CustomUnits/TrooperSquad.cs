@@ -53,6 +53,25 @@ namespace CustomUnits {
       }
     }
   }
+  [HarmonyPatch(typeof(Pilot))]
+  [HarmonyPatch("KillPilot")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { typeof(CombatGameConstants), typeof(string), typeof(int), typeof(DamageType), typeof(Weapon), typeof(AbstractActor) })]
+  public static class Pilot_KillPilot {
+    public static bool Prefix(Pilot __instance, CombatGameConstants constants, string sourceID, int stackItemUID, DamageType damageType, Weapon sourceWeapon, AbstractActor sourceActor) {
+      try {
+        Log.TWL(0, "Pilot.KillPilot "+__instance.Callsign+" "+(__instance.ParentActor == null?"null":__instance.ParentActor.PilotableActorDef.ChassisID));
+        if(__instance.ParentActor is TrooperSquad squad){
+          Log.WL(1,"squad can't be killed that way");
+          return false;
+        }
+        return true;
+      } catch (Exception e) {
+        Log.TWL(0, e.ToString(), true);
+        return true;
+      }
+    }
+  }
 
   //[HarmonyPatch(typeof(MechRepresentation))]
   //[HarmonyPatch("StartPersistentAudio")]
@@ -698,7 +717,7 @@ namespace CustomUnits {
           foreach (var ht in hitTable) {
             Log.W(1, ht.Key.ToString() + ":" + ht.Value);
           }
-          Log.WL(1, "");
+          Log.WL(1, "result:"+(ArmorLocation)result);
         }
         return result;
       } catch (Exception e) {

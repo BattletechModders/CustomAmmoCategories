@@ -10,6 +10,7 @@ using BattleTech.Rendering;
 using CustAmmoCategories;
 using CustomAmmoCategoriesLog;
 using Harmony;
+using IRBTModUtils;
 using UnityEngine;
 using Random = UnityEngine.Random;
 
@@ -845,23 +846,20 @@ namespace CustAmmoCategories {
     }
     [HarmonyPatch(typeof(Mech))]
     [HarmonyPatch("DamageLocation")]
-#if BT1_8
     [HarmonyPatch(new Type[] { typeof(int), typeof(WeaponHitInfo), typeof(ArmorLocation), typeof(Weapon), typeof(float), typeof(float), typeof(int), typeof(AttackImpactQuality), typeof(DamageType) })]
-#else
-    [HarmonyPatch(new Type[] { typeof(int), typeof(WeaponHitInfo), typeof(ArmorLocation), typeof(Weapon), typeof(float), typeof(int), typeof(AttackImpactQuality), typeof(DamageType) })]
-#endif
     public static class Mech_DamageLocation {
       [HarmonyPriority(Priority.First)]
-#if BT1_8
       public static bool Prefix(Mech __instance, int originalHitLoc, WeaponHitInfo hitInfo, ArmorLocation aLoc, Weapon weapon, float totalArmorDamage, float directStructureDamage, int hitIndex, AttackImpactQuality impactQuality, DamageType damageType) {
-#else
-      public static bool Prefix(Mech __instance, int originalHitLoc, WeaponHitInfo hitInfo, ArmorLocation aLoc, Weapon weapon, float totalDamage, int hitIndex, AttackImpactQuality impactQuality, DamageType damageType) {
-#endif
-#if BT1_8
-        CustomAmmoCategoriesLog.Log.LogWrite("DamageLocation " + __instance.DisplayName + " " + __instance.GUID + " loc:" + aLoc.ToString() + " dmg:" + totalArmorDamage + " strDmg:"+ directStructureDamage + " shot:" + hitIndex + "\n");
-#else
-        CustomAmmoCategoriesLog.Log.LogWrite("DamageLocation " + __instance.DisplayName + " " + __instance.GUID + " loc:" + aLoc.ToString() + " dmg:" + totalDamage + " shot:" + hitIndex + "\n");
-#endif
+        try {
+          ICustomMech custMech = __instance as ICustomMech;
+          if (custMech != null) {
+            float armor = __instance.ArmorForLocation((int)aLoc);
+            float structure = __instance.StructureForLocation((int)aLoc);
+            Log.M.TWL(0, "DamageLocation " + __instance.PilotableActorDef.ChassisID + " loc:" + custMech.GetLongArmorLocation(aLoc) + " dmg:" + totalArmorDamage + " strDmg:" + directStructureDamage + " shot:" + hitIndex+" armor before hit:"+armor+" structure before hit:"+structure);
+          }
+        }catch(Exception e) {
+          Log.M.TWL(0,e.ToString(),true);
+        }
         return true;
       }
     }

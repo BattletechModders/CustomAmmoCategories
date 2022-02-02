@@ -147,13 +147,30 @@ namespace CustomUnits {
               }
               if (this.mechMaterial[matIndex] != null) { this.childrenRenderers[index1].sharedMaterial = this.mechMaterial[matIndex]; }
               Transform transform = this.childrenRenderers[index1].rootBone.gameObject.transform;
-              int index2 = this.boneList.IndexOf(transform);
-              if (index2 == -1) {
+              int boneIndex = this.boneList.IndexOf(transform);
+              if (boneIndex == -1) {
                 this.boneList.Add(transform);
-                index2 = this.boneList.IndexOf(transform);
+                boneIndex = this.boneList.IndexOf(transform);
+                if(this.childrenRenderers[index1].bones == null || this.childrenRenderers[index1].bones.Length == 0) {
+                  Log.WL(1, this.childrenRenderers[index1].gameObject.name+" does not have bones");
+                  Transform[] bones = new Transform[1] { transform };
+                  this.childrenRenderers[index1].bones = bones;
+                  //BoneWeight[] weights = new BoneWeight[1];
+                  //weights[0].boneIndex0 = 0;
+                  //weights[0].weight0 = 1;
+                  //this.childrenRenderers[index1].sharedMesh.boneWeights = weights;
+                }
+                if(this.childrenRenderers[index1].sharedMesh.bindposes == null || this.childrenRenderers[index1].sharedMesh.bindposes.Length == 0) {
+                  Log.WL(1, this.childrenRenderers[index1].gameObject.name + " does not have bindposes. Bones count:"+ this.childrenRenderers[index1].bones.Length);
+                  Matrix4x4[] bindposes = new Matrix4x4[this.childrenRenderers[index1].bones.Length];
+                  for(int bindposeIndex = 0; bindposeIndex < bindposes.Length; ++bindposeIndex) {
+                    bindposes[bindposeIndex] = this.childrenRenderers[index1].bones[bindposeIndex].worldToLocalMatrix * transform.localToWorldMatrix;
+                  }
+                  this.childrenRenderers[index1].sharedMesh.bindposes = bindposes;
+                }
                 this.bindPoses.Add(this.childrenRenderers[index1].sharedMesh.bindposes[0] * this.childrenRenderers[index1].transform.worldToLocalMatrix);
               }
-              CustomMechMeshMerge.CombineInfo combineInfo = new CustomMechMeshMerge.CombineInfo(this.childrenRenderers[index1].sharedMesh, index2, this.childrenRenderers[index1].transform.localToWorldMatrix, matIndex);
+              CustomMechMeshMerge.CombineInfo combineInfo = new CustomMechMeshMerge.CombineInfo(this.childrenRenderers[index1].sharedMesh, boneIndex, this.childrenRenderers[index1].transform.localToWorldMatrix, matIndex);
               this.meshList.Add(combineInfo.newMesh);
               this.meshBoneDict.Add(this.childrenRenderers[index1], combineInfo);
               this.childrenRenderers[index1].enabled = false;
