@@ -360,11 +360,24 @@ namespace CustomUnits {
       if (this.ForwardLegs != null) { this.ForwardLegs.ClearComponentReps(); }
       if (this.RearLegs != null) { this.RearLegs.ClearComponentReps(); }
     }
-    public override void loadCustomization(HeraldryDef heraldryDef) {
-      base.loadCustomization(heraldryDef);
-      if (this.ForwardLegs != null) { this.ForwardLegs.loadCustomization(heraldryDef); }
-      if (this.RearLegs != null) { this.RearLegs.loadCustomization(heraldryDef); }
+
+    public override void loadCustomization(HeraldryDef heraldryDef) 
+    {
+        Log.TWL(0, $"Applying heraldry for unit: {this._mechDef?.Description?.Name}");
+        base.loadCustomization(heraldryDef);
+        if (this.ForwardLegs != null) 
+        {
+            Log.TWL(0, $"Applying ForwardLegs heraldry: {this.ForwardLegs._mechDef?.Description?.Name}");
+            this.ForwardLegs.loadCustomization(heraldryDef); 
+        }
+        if (this.RearLegs != null)
+        {
+            Log.TWL(0, $"Applying RearLegs heraldry: {this.RearLegs._mechDef?.Description?.Name}");
+            this.RearLegs.loadCustomization(heraldryDef);
+        }
+  
     }
+
     public override void InitWeapons(List<ComponentRepresentationSimGameInfo> compInfo, string parentDisplayName) {
       base.InitWeapons(compInfo, parentDisplayName);
     }
@@ -562,10 +575,12 @@ namespace CustomUnits {
         + " heraldryDef:" + (heraldryDef == null ? "null" : heraldryDef.Description.Id)
         + " mechDef:" + (this._mechDef == null ? "null" : this._mechDef.Description.Id)
       );
+
       try {
         if (this.defaultMechCustomization != null && heraldryDef != null && this._mechDef != null) {
           string paintTextureId = this._mechDef.PaintTextureID;
           SimGameState simulation = UnityGameInstance.BattleTechGame.Simulation;
+          
           if (string.IsNullOrEmpty(paintTextureId) && simulation != null) {
             if (!simulation.pilotableActorPaintDiscardPile.ContainsKey(this._mechDef.Description.Id))
               simulation.pilotableActorPaintDiscardPile.Add(this._mechDef.Description.Id, new List<string>());
@@ -579,10 +594,12 @@ namespace CustomUnits {
               stringList1.Clear();
             if (stringList2.Count > 0) {
               string textureId = stringList2[UnityEngine.Random.Range(0, stringList2.Count - 1)];
+              Log.TWL(0, $"Applying paint scheme textureId: {textureId}");
               this._mechDef.UpdatePaintTextureId(textureId);
               stringList1.Add(textureId);
             }
           }
+
           this.defaultMechCustomization.ApplyHeraldry(heraldryDef, this._mechDef.PaintTextureID);
         } else {
           ColorSwatch layer0 = Resources.Load("Swatches/Player1_0", typeof(ColorSwatch)) as ColorSwatch;
@@ -593,10 +610,13 @@ namespace CustomUnits {
           else
             Log.TWL(0, this.chassisDef.Description.Id + " problem initializing custom paint scheme");
         }
-      }catch(Exception e) {
+      } catch(Exception e) {
         Log.TWL(0,e.ToString(),true);
       }
+            Log.TWL(0, "CustomMechRepresentationSimGame.loadCustomization DONE");
     }
+
+
     public virtual void ClearComponentReps() {
       HashSet<ComponentRepresentation> toPool = new HashSet<ComponentRepresentation>();
       foreach (var reps in this.componentReps) {

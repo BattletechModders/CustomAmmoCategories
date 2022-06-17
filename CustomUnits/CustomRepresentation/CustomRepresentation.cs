@@ -501,6 +501,15 @@ namespace CustomUnits {
                 WeaponAttachRepresentation attachRep = compRep.gameObject.GetComponent<WeaponAttachRepresentation>();
                 if (attachRep == null) { attachRep = compRep.gameObject.AddComponent<WeaponAttachRepresentation>(); }
                 attachRep.Init(compRep, attachPoint);
+
+                //HACKY FIX: I'm not sure what KMission's intent with weapons was, but as far as I know they don't take paint.
+                //  Because of that, I'm disabling the paint patterns on them here. This prevents the 'corrupted texture' look in the mechbay.
+                CustomPaintPattern[] paintPatterns = attachRep.gameObject.GetComponentsInChildren<CustomPaintPattern>();
+                foreach (CustomPaintPattern cpp in paintPatterns)
+                {                    
+                    cpp._paintPatterns.Clear();
+                    cpp._currentIndex = -1;
+                }
               };
             }
           } catch (Exception e) {

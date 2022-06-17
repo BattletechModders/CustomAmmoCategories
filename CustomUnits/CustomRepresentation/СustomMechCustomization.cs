@@ -42,6 +42,7 @@ namespace CustomUnits {
     }
     public void ApplyPaintScheme(int index) {
       if (index < 0) { index = 0; }
+      if (paintPatterns.Count == 0) return;
       paintSchemeProperty.PropertyTexture = this.paintPatterns[index % paintPatterns.Count];
       Log.TWL(0, "CustomPaintPattern.ApplyPaintScheme " + index + " renderer:" + this.renderer.gameObject.name+" texture:"+ paintSchemeProperty.PropertyTexture.name);
       this._currentIndex = index;
@@ -442,6 +443,7 @@ namespace CustomUnits {
                     if (targetPatternId > -1 && targetPatternId < this.paintPatterns.Length)
                     {
                         camoMaskTexture = this.paintPatterns[targetPatternId];
+                        this.patternIndex = targetPatternId;
                         Log.TWL(0, $"camoMask was null, matched on string index: {camoMaskTexture}");
                     }
                     else
@@ -468,7 +470,7 @@ namespace CustomUnits {
                 }
             }
 
-            Log.WL(1, "  camo mask texture name:" + camoMaskTexture.name);
+            Log.WL(1, "  camo mask texture.name:" + camoMaskTexture.name);
             this.paintScheme = new MechPaintScheme(camoMaskTexture, heraldryDef.PrimaryMechColor, heraldryDef.SecondaryMechColor, heraldryDef.TertiaryMechColor);
             this.emblemScheme = new MechEmblemScheme(heraldryDef.TextureLogo, MechEmblemScheme.EmblemSetting.first);
         }
