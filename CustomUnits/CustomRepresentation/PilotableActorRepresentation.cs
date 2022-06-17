@@ -217,60 +217,113 @@ namespace CustomUnits {
       CustomMechCustomization[] customizations = this.VisibleObject.GetComponentsInChildren<CustomMechCustomization>(true);
       this.mechCustomizations = new List<CustomMechCustomization>();
     }
-    public virtual void _InitPaintScheme(HeraldryDef heraldryDef, string teamGUID) {
-      Log.TWL(0, "CustomMechRepresentation._InitPaintScheme "+this.mech.MechDef.ChassisID+" ");
-      if (this.paintSchemeInitialized) { return; }
-      this.paintSchemeInitialized = true;
-      CustomMechCustomization[] customizations = this.VisibleObject.GetComponentsInChildren<CustomMechCustomization>(true);
-      this.mechCustomizations = new List<CustomMechCustomization>(customizations);
-      if (this.mechCustomizations.Count == 0) {
-        this.LogPaintSchemeError("mechCustomization is null");
-      } else {
-        if (heraldryDef == null) {
-          this.LogPaintSchemeError("HeraldryDef is null");
-          if (teamGUID == "bf40fd39-ccf9-47c4-94a6-061809681140") {
-            heraldryDef = this.parentCombatant.Combat.DataManager.Heraldries.Get("heraldrydef_player");
-            heraldryDef.Refresh();
-          } else {
-            heraldryDef = this.parentCombatant.Combat.DataManager.Heraldries.Get("heraldrydef_enemy");
-            heraldryDef.Refresh();
-          }
-        }
-        string str = (string)null;
-        int texture_id = -1;
-        if (this.parentActor.team.IsLocalPlayer) {
-          str = this.parentActor.PilotableActorDef.PaintTextureID;
-          SimGameState simulation = UnityGameInstance.BattleTechGame.Simulation;
-          if (string.IsNullOrEmpty(str) && simulation != null) {
-            if (!simulation.pilotableActorPaintDiscardPile.ContainsKey(this.parentActor.PilotableActorDef.Description.Id))
-              simulation.pilotableActorPaintDiscardPile.Add(this.parentActor.PilotableActorDef.Description.Id, new List<string>());
-            List<string> discardList = simulation.pilotableActorPaintDiscardPile[this.parentActor.PilotableActorDef.Description.Id];
-            Dictionary<string, int> stringList2 = new Dictionary<string, int>();
-            for (int i = 0; i < this.mechCustomizations[0].paintPatterns.Length; ++i){ 
-              if (!discardList.Contains(this.mechCustomizations[0].paintPatterns[i].name))
-                stringList2.Add(this.mechCustomizations[0].paintPatterns[i].name, i);
+        public virtual void _InitPaintScheme(HeraldryDef heraldryDef, string teamGUID)
+        {
+            Log.TWL(0, "CustomMechRepresentation._InitPaintScheme " + this.mech.MechDef.ChassisID + " ");
+            if (this.paintSchemeInitialized) { return; }
+
+            this.paintSchemeInitialized = true;
+            CustomMechCustomization[] customizations = this.VisibleObject.GetComponentsInChildren<CustomMechCustomization>(true);
+            this.mechCustomizations = new List<CustomMechCustomization>(customizations);
+            if (this.mechCustomizations.Count == 0)
+            {
+                this.LogPaintSchemeError("mechCustomization is null");
             }
-            if (discardList.Count >= stringList2.Count) { discardList.Clear(); }
-            if (stringList2.Count > 0) {
-              List<string> textures = new List<string>(stringList2.Keys);
-              str = textures[UnityEngine.Random.Range(0, stringList2.Count - 1)];
-              this.parentActor.PilotableActorDef.UpdatePaintTextureId(str);
-              texture_id = stringList2[str];
-              discardList.Add(str);
+            else
+            {
+                if (heraldryDef == null)
+                {
+                    this.LogPaintSchemeError("HeraldryDef is null");
+                    if (teamGUID == "bf40fd39-ccf9-47c4-94a6-061809681140")
+                    {
+                        heraldryDef = this.parentCombatant.Combat.DataManager.Heraldries.Get("heraldrydef_player");
+                        heraldryDef.Refresh();
+                        Log.TWL(0, $"  heraldryDef is player. Colors: {heraldryDef.primaryMechColorID} / {heraldryDef.secondaryMechColorID} / {heraldryDef.tertiaryMechColorID}  logo: {heraldryDef.textureLogoID}");
+                    }
+                    else
+                    {
+                        heraldryDef = this.parentCombatant.Combat.DataManager.Heraldries.Get("heraldrydef_enemy");
+                        heraldryDef.Refresh();
+                        Log.TWL(0, $"  heraldryDef is enemy. Colors: {heraldryDef.primaryMechColorID} / {heraldryDef.secondaryMechColorID} / {heraldryDef.tertiaryMechColorID}  logo: {heraldryDef.textureLogoID}");
+                    }
+                }
+                else
+                {
+                    Log.TWL(0, $"  heraldryDef already set. Colors: {heraldryDef.primaryMechColorID} / {heraldryDef.secondaryMechColorID} / {heraldryDef.tertiaryMechColorID}  logo: {heraldryDef.textureLogoID}");
+                }
+
+                string camoMaskTextureId = (string)null;
+                int texture_id = -1;
+                if (this.parentActor.team.IsLocalPlayer)
+                {
+                    camoMaskTextureId = this.parentActor.PilotableActorDef.PaintTextureID;
+                    Log.TWL(0, $"  localPlayer parentActorDef.paintTextureId: {this.parentActor.PilotableActorDef.PaintTextureID}");
+
+                    SimGameState simulation = UnityGameInstance.BattleTechGame.Simulation;
+                    if (simulation != null)
+                    {
+                        if (string.IsNullOrEmpty(camoMaskTextureId))
+                        {
+                            // No camo texture specified, build one using discard logic
+                            if (!simulation.pilotableActorPaintDiscardPile.ContainsKey(this.parentActor.PilotableActorDef.Description.Id))
+                                simulation.pilotableActorPaintDiscardPile.Add(this.parentActor.PilotableActorDef.Description.Id, new List<string>());
+
+                            List<string> discardList = simulation.pilotableActorPaintDiscardPile[this.parentActor.PilotableActorDef.Description.Id];
+                            Dictionary<string, int> stringList2 = new Dictionary<string, int>();
+                            for (int i = 0; i < this.mechCustomizations[0].paintPatterns.Length; ++i)
+                            {
+                                if (!discardList.Contains(this.mechCustomizations[0].paintPatterns[i].name))
+                                    stringList2.Add(this.mechCustomizations[0].paintPatterns[i].name, i);
+                            }
+
+                            if (discardList.Count >= stringList2.Count) { discardList.Clear(); }
+                            if (stringList2.Count > 0)
+                            {
+                                List<string> textures = new List<string>(stringList2.Keys);
+                                camoMaskTextureId = textures[UnityEngine.Random.Range(0, stringList2.Count - 1)];
+                                this.parentActor.PilotableActorDef.UpdatePaintTextureId(camoMaskTextureId);
+                                texture_id = stringList2[camoMaskTextureId];
+                                discardList.Add(camoMaskTextureId);
+                            }
+                            Log.TWL(0, $"  Local player but not mask, randomized camoMask: {camoMaskTextureId}  new texture_id: {texture_id}");
+                        }
+                        else
+                        {
+                            // Camo texture specified, so go with player's choice
+                            Dictionary<string, int> stringList2 = new Dictionary<string, int>();
+                            for (int i = 0; i < this.mechCustomizations[0].paintPatterns.Length; ++i)
+                            {
+                                stringList2.Add(this.mechCustomizations[0].paintPatterns[i].name, i);
+                            }
+                            texture_id = stringList2[camoMaskTextureId];
+                            Log.TWL(0, $"  Local player retaining: {camoMaskTextureId}  new texture_id: {texture_id}");
+                        }
+                    }
+                    else
+                    {
+                        // Skirmish, randomize the player's skins
+                        texture_id = UnityEngine.Random.Range(0, this.mechCustomizations[0].paintPatterns.Length);
+                        Log.TWL(0, $"  Local player but skirmish, parentActorDef.paintTextureId: {this.parentActor.PilotableActorDef.PaintTextureID}  new texture_id: {texture_id}");
+                    }                    
+                }
+                else
+                {
+                    texture_id = UnityEngine.Random.Range(0, this.mechCustomizations[0].paintPatterns.Length);
+                    Log.TWL(0, $"  Not local player, parentActorDef.paintTextureId: {this.parentActor.PilotableActorDef.PaintTextureID}  new texture_id: {texture_id}");                    
+                }
+
+                // Set the texture on every mech customization
+                foreach (CustomMechCustomization mechCustomization in mechCustomizations)
+                {
+                    if (mechCustomization.paintPatterns.Length == 0) { continue; }
+                    camoMaskTextureId = mechCustomization.paintPatterns[texture_id % mechCustomization.paintPatterns.Length].name;
+                    Log.WL(2, "object: " + mechCustomization.gameObject.name + " apply texture:" + camoMaskTextureId);
+                    mechCustomization.ApplyHeraldry(heraldryDef, camoMaskTextureId);
+                }
             }
-          }
         }
-        Log.WL(1, "texture_id:"+ texture_id);
-        if (texture_id < 0) { texture_id = UnityEngine.Random.Range(0, this.mechCustomizations[0].paintPatterns.Length); }
-        foreach (CustomMechCustomization mechCustomization in mechCustomizations) {
-          if (mechCustomization.paintPatterns.Length == 0) { continue; }
-          str = mechCustomization.paintPatterns[texture_id % mechCustomization.paintPatterns.Length].name;
-          Log.WL(2, "object: " + mechCustomization.gameObject.name+ " apply texture:" + str);
-          mechCustomization.ApplyHeraldry(heraldryDef, str);
-        }
-      }
-    }
-    protected virtual void PilotableActorRepresentation_Update() {
+
+        protected virtual void PilotableActorRepresentation_Update() {
       if (DebugBridge.UseExperimentalPinkMechFix) {
         try {
           this.ReconnectMissingMaterial();
