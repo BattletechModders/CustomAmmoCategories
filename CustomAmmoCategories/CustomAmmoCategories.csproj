@@ -54,7 +54,7 @@
       <HintPath>$(BattleTechGameDir)\BattleTech_Data\Managed\Assembly-CSharp-firstpass.dll</HintPath>
     </Reference>
     <Reference Include="CustomComponents">
-      <HintPath>D:\Games\BATTLETECH\Mods\CustomComponents\CustomComponents.dll</HintPath>
+      <HintPath>$(BattleTechGameDir)\Mods\CustomComponents\CustomComponents.dll</HintPath>
     </Reference>
     <Reference Include="CustomLocalization">
       <HintPath>$(BattleTechGameDir)\Mods\CustomLocalization\CustomLocalization.dll</HintPath>
