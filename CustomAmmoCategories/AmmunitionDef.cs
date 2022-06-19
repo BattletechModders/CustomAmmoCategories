@@ -159,6 +159,8 @@ namespace CustAmmoCategories {
     [Key(34)]
     public MinefieldBurnReaction burnReaction { get; set; } = MinefieldBurnReaction.Destroy;
     [Key(35)]
+    public bool ExposedStructureEndMove { get; set; } = true;
+    [Key(36)]
     public DamageFalloffType AoEDmgFalloffType { get; set; } = DamageFalloffType.Linear;
     public float mAoEDmgFalloffType(float value) {
       switch (this.AoEDmgFalloffType) {
@@ -257,6 +259,7 @@ namespace CustAmmoCategories {
           }
         }
       }
+      if (json["ExposedStructureEndMove"] != null) { ExposedStructureEndMove = (bool) json["ExposedStructureEndMove"]; } ;
     }
     public DesignMaskDef TempDesignMask() {
       if (string.IsNullOrEmpty(this.tempDesignMaskOnImpact)) { return null; };

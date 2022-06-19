@@ -663,7 +663,7 @@ namespace CustAmmoCategories {
             mineField.count -= 1;
             minefieldWeapon = mineField.weapon;
             mfDamage.landminesTerrain.Add(new LandMineTerrainRecord(mineField.Def, cell.cell));
-            if (mfDamage.AddLandMineDamage(unit, mineField.Def, cellPosition, isArmorExposed == false)) { abortSequce = true; };
+            if (mfDamage.AddLandMineDamage(unit, mineField.Def, cellPosition, isArmorExposed == false)) { if (mineField.Def.ExposedStructureEndMove) abortSequce = true; }; //add reference to minefieldDef abortsequence setting
             mfDamage.AddLandMineExplosion(unit, mineField.Def, cellPosition);
             //mfDamage.debugPrint();
             if (string.IsNullOrEmpty(mineField.Def.VFXprefab) == false)
