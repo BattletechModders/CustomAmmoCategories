@@ -270,14 +270,34 @@ namespace CustAmmoCategories {
       List<MapTerrainHexCell> affectedHexCells = MapTerrainHexCell.listHexCellsByCellRadius(cellEx, Mathf.CeilToInt(range));
       foreach (var hexCell in affectedHexCells) {
         if (hexCell.MineFields.Count > 0) { 
+          MineField strongestMine = null;
+          Vector3 cellPosition = unit.Combat.MapMetaData.getWorldPos(new Point(hexCell.centerCell.y, hexCell.centerCell.x));
           foreach (var mineField in cellEx.hexCell.MineFields) {
+            if (string.IsNullOrEmpty(mineField.Def.VFXprefab) == false)
+              if ((strongestMine == null)) { strongestMine = mineField; }
+                else if (strongestMine.Def.Damage < mineField.Def.Damage) { strongestMine = mineField; }
             if (mineField.Def.SubjectToSympatheticDetonationChance > 0f) { 
               float detonateChanceRoll = Random.Range(0f, 1f);
               if (detonateChanceRoll < mineField.Def.SubjectToSympatheticDetonationChance) {
-                for (int i = 0; i < mineField.count; i++)
-                { 
+                for (int i = 0; i < mineField.count; i++) { 
                   mineField.count--;
-                  AddLandMineExplosion(unit, mineField.Def, hexCell.center);
+                  this.AddLandMineExplosion(unit, mineField.Def, hexCell.center);
+                }
+                if (strongestMine != null) { 
+                  if ((this.lastVFXPos == Vector3.zero) || (Vector3.Distance(this.lastVFXPos, cellPosition) >= strongestMine.Def.VFXMinDistance)) {
+                    LandMineFXRecord fxRec = new LandMineFXRecord(unit.Combat, hexCell.centerCell, strongestMine.Def, true, cellPosition);
+                    this.fxRecords.Add(fxRec);
+                    this.fxDictionary.Add(hexCell.centerCell, this.fxRecords.Count - 1);
+                    this.lastVFXPos = cellPosition;
+                  }else { 
+                    LandMineFXRecord fxRec = new LandMineFXRecord(unit.Combat, hexCell.centerCell, null, false, cellPosition);
+                    this.fxRecords.Add(fxRec);
+                    this.fxDictionary.Add(hexCell.centerCell, this.fxRecords.Count - 1);
+                  }
+                }else {
+                  LandMineFXRecord fxRec = new LandMineFXRecord(unit.Combat, hexCell.centerCell, null, false, cellPosition);
+                  this.fxRecords.Add(fxRec);
+                  this.fxDictionary.Add(hexCell.centerCell, this.fxRecords.Count - 1);
                 }
                 Log.F.TWL(0, $"detonated all mines in {mineField.UIName} due to roll {detonateChanceRoll} < sympatheticDetonationChance {mineField.Def.SubjectToSympatheticDetonationChance}");
               }
