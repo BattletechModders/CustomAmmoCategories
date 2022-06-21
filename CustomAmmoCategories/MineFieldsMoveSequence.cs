@@ -265,9 +265,51 @@ namespace CustAmmoCategories {
       }
       return result;
     }
+//tbone util for "sympathetic" minefield detonation
+    public void DetonateMineFieldsInRange(AbstractActor unit, MapTerrainDataCellEx cellEx, float range) {
+      List<MapTerrainHexCell> affectedHexCells = MapTerrainHexCell.listHexCellsByCellRadius(cellEx, Mathf.CeilToInt(range));
+      foreach (var hexCell in affectedHexCells) {
+        if (hexCell.MineFields.Count > 0) { 
+          MineField strongestMine = null;
+          Vector3 cellPosition = unit.Combat.MapMetaData.getWorldPos(new Point(hexCell.centerCell.y, hexCell.centerCell.x));
+          foreach (var mineField in cellEx.hexCell.MineFields) {
+            if (string.IsNullOrEmpty(mineField.Def.VFXprefab) == false)
+              if ((strongestMine == null)) { strongestMine = mineField; }
+                else if (strongestMine.Def.Damage < mineField.Def.Damage) { strongestMine = mineField; }
+            if (mineField.Def.SubjectToSympatheticDetonationChance > 0f) { 
+              float detonateChanceRoll = Random.Range(0f, 1f);
+              if (detonateChanceRoll < mineField.Def.SubjectToSympatheticDetonationChance) {
+                for (int i = 0; i < mineField.count; i++) { 
+                  mineField.count--;
+                  this.AddLandMineExplosion(unit, mineField.Def, hexCell.center);
+                }
+                if (strongestMine != null) { 
+                  if ((this.lastVFXPos == Vector3.zero) || (Vector3.Distance(this.lastVFXPos, cellPosition) >= strongestMine.Def.VFXMinDistance)) {
+                    LandMineFXRecord fxRec = new LandMineFXRecord(unit.Combat, hexCell.centerCell, strongestMine.Def, true, cellPosition);
+                    this.fxRecords.Add(fxRec);
+                    this.fxDictionary.Add(hexCell.centerCell, this.fxRecords.Count - 1);
+                    this.lastVFXPos = cellPosition;
+                  }else { 
+                    LandMineFXRecord fxRec = new LandMineFXRecord(unit.Combat, hexCell.centerCell, null, false, cellPosition);
+                    this.fxRecords.Add(fxRec);
+                    this.fxDictionary.Add(hexCell.centerCell, this.fxRecords.Count - 1);
+                  }
+                }else {
+                  LandMineFXRecord fxRec = new LandMineFXRecord(unit.Combat, hexCell.centerCell, null, false, cellPosition);
+                  this.fxRecords.Add(fxRec);
+                  this.fxDictionary.Add(hexCell.centerCell, this.fxRecords.Count - 1);
+                }
+                Log.F.TWL(0, $"detonated all mines in {mineField.UIName} due to roll {detonateChanceRoll} < sympatheticDetonationChance {mineField.Def.SubjectToSympatheticDetonationChance}");
+              }
+            }
+          }
+        }
+      }
+    }
     public void AddLandMineExplosion(AbstractActor unit, MineFieldDef def, Vector3 pos) {
       Log.F.TWL(0, "AddLandMineExplosion " + def.AoERange + "/" + def.AoEDamage + "/" + def.AoEHeat);
       if (def.AoERange < CustomAmmoCategories.Epsilon) { return; };
+      
       foreach (ICombatant target in unit.Combat.GetAllLivingCombatants()) {
         if (target.GUID == unit.GUID) { continue; };
         if (target.IsDead) { continue; };
@@ -660,11 +702,26 @@ namespace CustAmmoCategories {
           Log.F.WL(3, "roll:" + roll + " effective chance:" + chance);
           if (roll < chance) {
             Log.F.WL(3, "damage");
-            mineField.count -= 1;
             minefieldWeapon = mineField.weapon;
             mfDamage.landminesTerrain.Add(new LandMineTerrainRecord(mineField.Def, cell.cell));
-            if (mfDamage.AddLandMineDamage(unit, mineField.Def, cellPosition, isArmorExposed == false)) { abortSequce = true; };
+            if (mfDamage.AddLandMineDamage(unit, mineField.Def, cellPosition, isArmorExposed == false)) { if (mineField.Def.ExposedStructureEndMove) abortSequce = true; }; //add reference to minefieldDef abortsequence setting
+            mineField.count -= 1;
             mfDamage.AddLandMineExplosion(unit, mineField.Def, cellPosition);
+            //tbone sympathetic detonation and trigger all in stack logic
+            if (mineField.Def.DetonateAllMinesInStackChance > 0f) { 
+              float detonateChanceRoll = Random.Range(0f, 1f);
+              if (detonateChanceRoll < mineField.Def.DetonateAllMinesInStackChance) { 
+                for (int i = 0; i < mineField.count; i++) {
+                  mineField.count--;
+                  if (mfDamage.AddLandMineDamage(unit, mineField.Def, cellPosition, isArmorExposed == false)) { if (mineField.Def.ExposedStructureEndMove) abortSequce = true; }; 
+                  mfDamage.AddLandMineExplosion(unit, mineField.Def, cellPosition);
+                }
+                Log.F.WL(0, "detonated all mines in stack due to chance" + detonateChanceRoll + "<" + mineField.Def.DetonateAllMinesInStackChance);
+              }
+            }
+            if (mineField.Def.CausesSympatheticDetonation) { 
+              mfDamage.DetonateMineFieldsInRange(unit, cell.cell, mineField.Def.AoERange);
+            }
             //mfDamage.debugPrint();
             if (string.IsNullOrEmpty(mineField.Def.VFXprefab) == false)
               if ((strongestMine == null)) { strongestMine = mineField; } else
@@ -767,7 +824,23 @@ namespace CustAmmoCategories {
             minefieldWeapon = mineField.weapon;
             mfDamage.landminesTerrain.Add(new LandMineTerrainRecord(mineField.Def, cell));
             mfDamage.AddLandMineDamage(unit, mineField.Def, position, false);
+            mineField.count -= 1;
             mfDamage.AddLandMineExplosion(unit, mineField.Def, position);
+            //tbone sympathetic detonation and trigger all in stack logic
+            if (mineField.Def.DetonateAllMinesInStackChance > 0f) {
+              float detonateChanceRoll = Random.Range(0f, 1f);
+              if (detonateChanceRoll < mineField.Def.DetonateAllMinesInStackChance) {
+                for (int i = 0; i < mineField.count; i++) {
+                  mineField.count--;
+                  mfDamage.AddLandMineDamage(unit, mineField.Def, position, false);
+                  mfDamage.AddLandMineExplosion(unit, mineField.Def, position);
+                } 
+                Log.F.WL(0, "detonated all mines in stack due to chance" + detonateChanceRoll + "<" + mineField.Def.DetonateAllMinesInStackChance);
+              }
+            }
+            if (mineField.Def.CausesSympatheticDetonation) { 
+              mfDamage.DetonateMineFieldsInRange(unit, cell, mineField.Def.AoERange);
+            }
             if (string.IsNullOrEmpty(mineField.Def.VFXprefab) == false)
               if ((strongestMine == null)) { strongestMine = mineField; } else
                 if (strongestMine.Def.Damage < mineField.Def.Damage) { strongestMine = mineField; }

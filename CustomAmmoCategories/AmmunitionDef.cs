@@ -159,6 +159,22 @@ namespace CustAmmoCategories {
     [Key(34)]
     public MinefieldBurnReaction burnReaction { get; set; } = MinefieldBurnReaction.Destroy;
     [Key(35)]
+    public bool ExposedStructureEndMove { get; set; } = true;
+    [Key(36)]
+    public float MoveCostFactor { get; set; } = 0f;
+    [Key(37)]
+    public bool CausesSympatheticDetonation { get; set; } = false;
+    [Key(38)]
+    public float SubjectToSympatheticDetonationChance { get; set; } = 0f;
+    [Key(39)]
+    public float DetonateAllMinesInStackChance { get; set; } = 0f;
+    [Key(40)]
+    public float MisfireOnDeployChance { get; set; } = 0f;
+    [Key(41)]
+    public string MinefieldDefID { get; set; } = "GenericMinefield";
+    [Key(42)]
+    public bool ShouldAddToExistingFields { get; set; } = false;
+    [Key(43)]
     public DamageFalloffType AoEDmgFalloffType { get; set; } = DamageFalloffType.Linear;
     public float mAoEDmgFalloffType(float value) {
       switch (this.AoEDmgFalloffType) {
@@ -257,6 +273,14 @@ namespace CustAmmoCategories {
           }
         }
       }
+      if (json["ExposedStructureEndMove"] != null) { ExposedStructureEndMove = (bool) json["ExposedStructureEndMove"]; } ;
+      if (json["MoveCostFactor"] != null) { MoveCostFactor = (float) json["MoveCostFactor"]; } ;
+      if (json["CausesSympatheticDetonation"] != null) { CausesSympatheticDetonation = (bool) json["CausesSympatheticDetonation"]; } ;
+      if (json["SubjectToSympatheticDetonationChance"] != null) { SubjectToSympatheticDetonationChance = (float) json["SubjectToSympatheticDetonationChance"]; } ;
+      if (json["DetonateAllMinesInStackChance"] != null) { DetonateAllMinesInStackChance = (float) json["DetonateAllMinesInStackChance"]; } ;
+      if (json["MisfireOnDeployChance"] != null) { MisfireOnDeployChance = (float) json["MisfireOnDeployChance"]; } ;
+      if (json["MinefieldDefID"] != null) { MinefieldDefID = (string)json["MinefieldDefID"]; };
+      if (json["ShouldAddToExistingFields"] != null) { ShouldAddToExistingFields = (bool) json["ShouldAddToExistingFields"]; } ;
     }
     public DesignMaskDef TempDesignMask() {
       if (string.IsNullOrEmpty(this.tempDesignMaskOnImpact)) { return null; };

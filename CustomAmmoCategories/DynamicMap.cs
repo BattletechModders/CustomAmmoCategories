@@ -22,6 +22,7 @@ using Harmony;
 using HBS.Util;
 using Localize;
 using SVGImporter;
+using TB.ComponentModel;
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.SceneManagement;
@@ -454,6 +455,18 @@ namespace CustAmmoCategories {
       weapon = w;
       Def = d;
       count = this.Def.Count;
+      float misFire = d.MisfireOnDeployChance;
+      if (misFire > 0f) {
+        int functioning = 0;
+        for (int i = 0; i < d.Count; i++) {
+          float roll = Random.Range(0f, 1f);
+          if (roll > misFire) { 
+            functioning++;
+          }
+        }
+        Log.F.WL(0, $"{Def.Count - functioning} mines misfired, only deploying {functioning}");
+        count = functioning;
+      }
       IFFLevel = d.IFFLevel;
       stealthLvl = d.stealthLevel;
       team = o.team;
@@ -607,7 +620,15 @@ namespace CustAmmoCategories {
       minefieldStealthReductionCache.Add(team, reduction);
       return reduction;
     }
-    public void AddMineFieldSync(MineField mf) {
+
+    public void AddMineFieldSync(MineField mf)
+    {
+      if (mf.Def.ShouldAddToExistingFields && this.MineFields.Any(x => x.Def.MinefieldDefID == mf.Def.MinefieldDefID && x.team == mf.team)) { 
+        MineField mineField = this.MineFields.First(x => x.Def.MinefieldDefID == mf.Def.MinefieldDefID && x.team == mf.team);
+        Log.F.WL(0, $"Found existing minefield with ID {mf.Def.MinefieldDefID} for team {mf.team.DisplayName}; adding {mf.Def.Count} to current mineField count of {mineField.count}");
+        mineField.count += mf.count;
+        return;
+      } 
       this.MineFields.Add(mf);
       if(mineFieldVFX == null) {
         //Point p = new Point();
