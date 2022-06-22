@@ -678,7 +678,7 @@ namespace CustAmmoCategories {
             CustomAmmoCategoriesLog.Log.LogWrite("   roll:" + interceptRoll + " chance:" + effectiveHitChance + "\n");
             AMSShoot amsShoot = null;
             int AMSShootIdx = amsrec.weapon.AMS().AddHitPosition(pos);
-            if (interceptRoll < amsrec.AMSHitChance) {
+            if (interceptRoll < effectiveHitChance) {
               missile.interceptInfo.missileHealth -= amsrec.weapon.AMSDamage();
               CustomAmmoCategoriesLog.Log.M.WL(3, "hit. New missile health:" + missile.interceptInfo.missileHealth);
             }
