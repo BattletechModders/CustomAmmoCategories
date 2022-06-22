@@ -867,6 +867,12 @@ namespace CustomUnits {
             DropSlotDef def = DropSystemHelper.currentLayout(UnityGameInstance.BattleTechGame.Simulation).GetSlotByIndex(index);
             if (def != null) { if (def.UseMaxUnits == false) { continue; } }
             mechs.Add(loadoutSlot.SelectedMech.MechDef);
+          } else if (__instance.slotMinTonnages[index] >= 0.0) {
+              flag1 = false;
+              if ((double)__instance.slotMinTonnages[index] >= 0.0 && (double)__instance.slotMaxTonnages[index] >= 0.0)
+                  ___lanceErrorText.Append("Lance slot {0} requires a 'Mech between {1} and {2} Tons\n", (object)index, (object)__instance.slotMinTonnages[index], (object)__instance.slotMaxTonnages[index]);
+              else if ((double)__instance.slotMinTonnages[index] >= 0.0)
+                  ___lanceErrorText.Append("Lance slot {0} requires a 'Mech over {1} Tons\n", (object)index, (object)__instance.slotMinTonnages[index]);
           }
         }
         bool flag2 = MechValidationRules.LanceTonnageWithinRange(mechs, __instance.lanceMinTonnage, __instance.lanceMaxTonnage);
