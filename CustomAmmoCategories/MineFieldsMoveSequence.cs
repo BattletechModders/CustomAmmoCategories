@@ -283,25 +283,25 @@ namespace CustAmmoCategories {
                   mineField.count--;
                   this.AddLandMineExplosion(unit, mineField.Def, hexCell.center);
                 }
-                if (strongestMine != null) { 
-                  if ((this.lastVFXPos == Vector3.zero) || (Vector3.Distance(this.lastVFXPos, cellPosition) >= strongestMine.Def.VFXMinDistance)) {
-                    LandMineFXRecord fxRec = new LandMineFXRecord(unit.Combat, hexCell.centerCell, strongestMine.Def, true, cellPosition);
-                    this.fxRecords.Add(fxRec);
-                    this.fxDictionary.Add(hexCell.centerCell, this.fxRecords.Count - 1);
-                    this.lastVFXPos = cellPosition;
-                  }else { 
-                    LandMineFXRecord fxRec = new LandMineFXRecord(unit.Combat, hexCell.centerCell, null, false, cellPosition);
-                    this.fxRecords.Add(fxRec);
-                    this.fxDictionary.Add(hexCell.centerCell, this.fxRecords.Count - 1);
-                  }
-                }else {
-                  LandMineFXRecord fxRec = new LandMineFXRecord(unit.Combat, hexCell.centerCell, null, false, cellPosition);
-                  this.fxRecords.Add(fxRec);
-                  this.fxDictionary.Add(hexCell.centerCell, this.fxRecords.Count - 1);
-                }
                 Log.F.TWL(0, $"detonated all mines in {mineField.UIName} due to roll {detonateChanceRoll} < sympatheticDetonationChance {mineField.Def.SubjectToSympatheticDetonationChance}");
               }
             }
+          }
+          if (strongestMine != null) { 
+            if ((this.lastVFXPos == Vector3.zero) || (Vector3.Distance(this.lastVFXPos, cellPosition) >= strongestMine.Def.VFXMinDistance)) { 
+              LandMineFXRecord fxRec = new LandMineFXRecord(unit.Combat, hexCell.centerCell, strongestMine.Def, true, cellPosition);
+              this.fxRecords.Add(fxRec);
+              this.fxDictionary.Add(hexCell.centerCell, this.fxRecords.Count - 1);
+              this.lastVFXPos = cellPosition;
+            }else { 
+              LandMineFXRecord fxRec = new LandMineFXRecord(unit.Combat, hexCell.centerCell, null, false, cellPosition);
+              this.fxRecords.Add(fxRec);
+              this.fxDictionary.Add(hexCell.centerCell, this.fxRecords.Count - 1);
+            }
+          }else {
+            LandMineFXRecord fxRec = new LandMineFXRecord(unit.Combat, hexCell.centerCell, null, false, cellPosition);
+            this.fxRecords.Add(fxRec);
+            this.fxDictionary.Add(hexCell.centerCell, this.fxRecords.Count - 1);
           }
         }
       }
