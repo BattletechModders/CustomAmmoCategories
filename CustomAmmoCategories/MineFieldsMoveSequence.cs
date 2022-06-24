@@ -283,24 +283,26 @@ namespace CustAmmoCategories {
                   mineField.count--;
                   this.AddLandMineExplosion(unit, mineField.Def, hexCell.center);
                 }
-                if (strongestMine != null) { 
-                  if ((this.lastVFXPos == Vector3.zero) || (Vector3.Distance(this.lastVFXPos, cellPosition) >= strongestMine.Def.VFXMinDistance)) {
-                    LandMineFXRecord fxRec = new LandMineFXRecord(unit.Combat, hexCell.centerCell, strongestMine.Def, true, cellPosition);
-                    this.fxRecords.Add(fxRec);
-                    this.fxDictionary.Add(hexCell.centerCell, this.fxRecords.Count - 1);
-                    this.lastVFXPos = cellPosition;
-                  }else { 
-                    LandMineFXRecord fxRec = new LandMineFXRecord(unit.Combat, hexCell.centerCell, null, false, cellPosition);
-                    this.fxRecords.Add(fxRec);
-                    this.fxDictionary.Add(hexCell.centerCell, this.fxRecords.Count - 1);
-                  }
-                }else {
-                  LandMineFXRecord fxRec = new LandMineFXRecord(unit.Combat, hexCell.centerCell, null, false, cellPosition);
-                  this.fxRecords.Add(fxRec);
-                  this.fxDictionary.Add(hexCell.centerCell, this.fxRecords.Count - 1);
-                }
                 Log.F.TWL(0, $"detonated all mines in {mineField.UIName} due to roll {detonateChanceRoll} < sympatheticDetonationChance {mineField.Def.SubjectToSympatheticDetonationChance}");
               }
+            }
+          }
+          if (!this.fxDictionary.ContainsKey(hexCell.centerCell)) {
+            if (strongestMine != null) {
+              if ((this.lastVFXPos == Vector3.zero) || (Vector3.Distance(this.lastVFXPos, cellPosition) >= strongestMine.Def.VFXMinDistance)) { 
+                LandMineFXRecord fxRec = new LandMineFXRecord(unit.Combat, hexCell.centerCell, strongestMine.Def, true, cellPosition);
+                this.fxRecords.Add(fxRec);
+                this.fxDictionary.Add(hexCell.centerCell, this.fxRecords.Count - 1);
+                this.lastVFXPos = cellPosition;
+              }else { 
+                LandMineFXRecord fxRec = new LandMineFXRecord(unit.Combat, hexCell.centerCell, null, false, cellPosition);
+                this.fxRecords.Add(fxRec);
+                this.fxDictionary.Add(hexCell.centerCell, this.fxRecords.Count - 1);
+              }
+            }else { 
+              LandMineFXRecord fxRec = new LandMineFXRecord(unit.Combat, hexCell.centerCell, null, false, cellPosition);
+              this.fxRecords.Add(fxRec);
+              this.fxDictionary.Add(hexCell.centerCell, this.fxRecords.Count - 1);
             }
           }
         }
@@ -729,22 +731,28 @@ namespace CustAmmoCategories {
             break;
           }
         }
-        if (strongestMine != null) {
-          if ((mfDamage.lastVFXPos == Vector3.zero) || (Vector3.Distance(mfDamage.lastVFXPos, cellPosition) >= strongestMine.Def.VFXMinDistance)) {
-            LandMineFXRecord fxRec = new LandMineFXRecord(unit.Combat, cell.cell, strongestMine.Def, true, cellPosition);
+
+        if (!mfDamage.fxDictionary.ContainsKey(cell.cell)) { 
+          if (strongestMine != null) { 
+            if ((mfDamage.lastVFXPos == Vector3.zero) || (Vector3.Distance(mfDamage.lastVFXPos, cellPosition) >=
+                                               strongestMine.Def.VFXMinDistance)) {
+            LandMineFXRecord fxRec =
+            new LandMineFXRecord(unit.Combat, cell.cell, strongestMine.Def, true, cellPosition);
             mfDamage.fxRecords.Add(fxRec);
             mfDamage.fxDictionary.Add(cell.cell, mfDamage.fxRecords.Count - 1);
             mfDamage.lastVFXPos = cellPosition;
-          } else {
+            } else { 
+              LandMineFXRecord fxRec = new LandMineFXRecord(unit.Combat, cell.cell, null, false, cellPosition);
+              mfDamage.fxRecords.Add(fxRec);
+              mfDamage.fxDictionary.Add(cell.cell, mfDamage.fxRecords.Count - 1);
+            }
+          } else { 
             LandMineFXRecord fxRec = new LandMineFXRecord(unit.Combat, cell.cell, null, false, cellPosition);
             mfDamage.fxRecords.Add(fxRec);
             mfDamage.fxDictionary.Add(cell.cell, mfDamage.fxRecords.Count - 1);
           }
-        } else {
-          LandMineFXRecord fxRec = new LandMineFXRecord(unit.Combat, cell.cell, null, false, cellPosition);
-          mfDamage.fxRecords.Add(fxRec);
-          mfDamage.fxDictionary.Add(cell.cell, mfDamage.fxRecords.Count - 1);
         }
+
         if (abortSequce) {
           cellPosition = unit.Combat.HexGrid.GetClosestPointOnGrid(cellPosition);
           result.Add(new WayPoint(cellPosition, lastWaypoint.Backwards));
@@ -846,21 +854,23 @@ namespace CustAmmoCategories {
                 if (strongestMine.Def.Damage < mineField.Def.Damage) { strongestMine = mineField; }
           }
         }
-        if (strongestMine != null) {
-          if ((mfDamage.lastVFXPos == Vector3.zero) || (Vector3.Distance(mfDamage.lastVFXPos, position) >= strongestMine.Def.VFXMinDistance)) {
-            LandMineFXRecord fxRec = new LandMineFXRecord(unit.Combat, cell, strongestMine.Def, true, position);
-            mfDamage.fxRecords.Add(fxRec);
-            mfDamage.fxDictionary.Add(cell, mfDamage.fxRecords.Count - 1);
-            mfDamage.lastVFXPos = position;
+        if (!mfDamage.fxDictionary.ContainsKey(cell)) { 
+          if (strongestMine != null) {
+            if ((mfDamage.lastVFXPos == Vector3.zero) || (Vector3.Distance(mfDamage.lastVFXPos, position) >= strongestMine.Def.VFXMinDistance)) { 
+              LandMineFXRecord fxRec = new LandMineFXRecord(unit.Combat, cell, strongestMine.Def, true, position);
+              mfDamage.fxRecords.Add(fxRec);
+              mfDamage.fxDictionary.Add(cell, mfDamage.fxRecords.Count - 1);
+              mfDamage.lastVFXPos = position;
+            } else {
+              LandMineFXRecord fxRec = new LandMineFXRecord(unit.Combat, cell, null, false, position);
+              mfDamage.fxRecords.Add(fxRec);
+              mfDamage.fxDictionary.Add(cell, mfDamage.fxRecords.Count - 1);
+            }
           } else {
             LandMineFXRecord fxRec = new LandMineFXRecord(unit.Combat, cell, null, false, position);
             mfDamage.fxRecords.Add(fxRec);
             mfDamage.fxDictionary.Add(cell, mfDamage.fxRecords.Count - 1);
           }
-        } else {
-          LandMineFXRecord fxRec = new LandMineFXRecord(unit.Combat, cell, null, false, position);
-          mfDamage.fxRecords.Add(fxRec);
-          mfDamage.fxDictionary.Add(cell, mfDamage.fxRecords.Count - 1);
         }
       }
       //mfDamage.BurnHeat = BurnHeat;
