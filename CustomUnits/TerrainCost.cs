@@ -293,6 +293,20 @@ namespace CustomUnits {
     public static bool Prefix(MapTerrainDataCell cell, AbstractActor unit, MoveType moveType, ref float __result) {
       try {
         __result = GetTerrainCost(cell, unit, moveType);
+        //tbone movecost modifier for minefields
+        if (moveType != MoveType.Jumping && !unit.UnaffectedLandmines())
+        { 
+          if (cell is MapTerrainDataCellEx cellEx) {
+            if (cellEx.hexCell.MineFields.Count > 0) {
+              float modifier = 1f;
+              foreach (MineField mineField in cellEx.hexCell.MineFields) {
+                if (mineField.count > 0) modifier += (mineField.Def.MoveCostFactor * mineField.count);
+              } 
+              //CustomAmmoCategoriesLog.Log.F.TWL(0,$"{unit.DisplayName} movecost {__result} to be multiplied by {modifier} due to mines");//spammy log, not needed
+              __result *= modifier;
+            }
+          }
+        }
       }catch(Exception e) {
         Log.TWL(0, e.ToString(), true);
         return true;

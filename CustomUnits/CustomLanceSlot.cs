@@ -401,6 +401,19 @@ namespace CustomUnits {
     public static void Postfix(LanceConfiguratorPanel __instance,ref LanceLoadoutSlot[] ___loadoutSlots) {
       Log.TWL(0, "LanceConfiguratorPanel.SetData postfix:" + __instance.maxUnits + "/" + ___loadoutSlots.Length);
       ShuffleLanceSlotsLayout customLanceSlotsLayout = ___loadoutSlots[0].transform.parent.gameObject.GetComponent<ShuffleLanceSlotsLayout>();
+      float lastValidMaxTonnage = -1f;
+      for (var index = 3; index >= 0; index--) { 
+        if (__instance.slotMaxTonnages[index] >=0f) {
+          lastValidMaxTonnage = __instance.slotMaxTonnages[index];
+          break;
+        }
+      }
+      for (int i = 4; i < __instance.slotMaxTonnages.Length; i++) {
+        __instance.slotMaxTonnages[i] = lastValidMaxTonnage;
+      }
+      for (int i = 4; i < ___loadoutSlots.Length; i++) {
+        ___loadoutSlots[i].SetData(__instance, __instance.Sim, __instance.dataManager, true, i >= __instance.maxUnits || __instance.slotMaxTonnages[i] == 0f, __instance.slotMinTonnages[i], lastValidMaxTonnage);
+      }
       customLanceSlotsLayout.Refresh();
       customLanceSlotsLayout.UpdateSlots();
       //updateSlots(customLanceSlotsLayout);

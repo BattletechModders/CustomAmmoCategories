@@ -2,6 +2,7 @@
 using BattleTech.Rendering;
 using BattleTech.Rendering.MechCustomization;
 using Harmony;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
@@ -41,6 +42,7 @@ namespace CustomUnits {
     }
     public void ApplyPaintScheme(int index) {
       if (index < 0) { index = 0; }
+      if (paintPatterns.Count == 0) return;
       paintSchemeProperty.PropertyTexture = this.paintPatterns[index % paintPatterns.Count];
       Log.TWL(0, "CustomPaintPattern.ApplyPaintScheme " + index + " renderer:" + this.renderer.gameObject.name+" texture:"+ paintSchemeProperty.PropertyTexture.name);
       this._currentIndex = index;
@@ -205,6 +207,7 @@ namespace CustomUnits {
       foreach(CustomPaintPattern pattern in paintPatterns) {
         pattern.ApplyPaintScheme(this.patternIndex);
       }
+
       paintPatterns = this.parent._visibleObject.gameObject.GetComponentsInChildren<CustomPaintPattern>(true);
       foreach (CustomPaintPattern pattern in paintPatterns) {
         pattern.ApplyPaintScheme(this.patternIndex);
@@ -373,48 +376,105 @@ namespace CustomUnits {
         this.paintScheme.SetPatternTexture(this.paintPatterns[index]);
       }
     }
-    public void ApplyHeraldry(HeraldryDef heraldryDef, string paintTextureId = null) {
-      Log.TWL(0, "CustomMechCustomization.ApplyHeraldry " + this.gameObject.name + " heraldry:" + (heraldryDef == null ? "null" : heraldryDef.Description.Id) + " texture:" + (paintTextureId == null ? "null" : paintTextureId));
-      if (heraldryDef == null)
-        Log.TWL(0, "Tried to apply null heraldry to " + this.name);
-      else if (this.paintPatterns == null)
-        Log.TWL(0, "This unit has null paintPatterns " + this.name);
-      else if (this.paintPatterns.Length == 0) {
-        Log.TWL(0, "This unit has a 0 length paintPatterns array " + this.name);
-      } else {
-        Texture2D tex = null;
-        this.patternIndex = -1;
-        for (int i = 0; i < this.paintPatterns.Length; i++) {
-          Texture2D paintPattern = this.paintPatterns[i];
-          if (paintPattern == null) { Log.TWL(0, "Texture2d was null in paintPatterns for " + this.name); }
-          else if (paintPattern.name == paintTextureId) {
-            tex = paintPattern;
-            this.patternIndex = i;
-            break;
-          }
+        public void ApplyHeraldry(HeraldryDef heraldryDef, string paintTextureId = null)
+        {
+            Log.TWL(0, "CustomMechCustomization.ApplyHeraldry gameObject: " + this.gameObject.name + 
+                "  heraldryDef.Desc.Id:" + (heraldryDef == null ? "null" : heraldryDef.Description.Id) + 
+                "  paintTextureId:" + (paintTextureId == null ? "null" : paintTextureId));
+            
+            if (heraldryDef == null)
+            {
+                Log.TWL(0, "Tried to apply null heraldry to " + this.name);
+                return;
+            }
+            if (this.paintPatterns == null)
+            {
+                Log.TWL(0, "This unit has null paintPatterns " + this.name);
+                return;
+            }
+            if (this.paintPatterns.Length == 0)
+            {
+                Log.TWL(0, "This unit has a 0 length paintPatterns array " + this.name);
+                return;
+            }
+
+            Texture2D camoMaskTexture = null;
+            this.patternIndex = -1;
+            for (int i = 0; i < this.paintPatterns.Length; i++)
+            {
+                Texture2D paintPattern = this.paintPatterns[i];
+                if (paintPattern == null) 
+                { 
+                    Log.TWL(0, "Texture2d was null in paintPatterns for " + this.name); 
+                }
+                else if (paintPattern.name == paintTextureId)
+                {
+                    Log.TWL(0, $"Matched paintPattern: {paintPattern.name} to paintTextureId: {paintTextureId}");
+                    camoMaskTexture = paintPattern;
+                    this.patternIndex = i;
+                    break;
+                }
+                else
+                {
+                    Log.TWL(0, $"PaintPattern: {paintPattern.name} did not match target: {paintTextureId}, skipping.");
+                }
+            }
+
+            if (camoMaskTexture == null)
+            {
+
+                int targetPatternId = -1;
+                try
+                {
+                    string paintTextureIdDigits = new String(paintTextureId.Where(Char.IsDigit).ToArray());
+                    if (!String.IsNullOrEmpty(paintTextureIdDigits))
+                    {
+                        targetPatternId = int.Parse(paintTextureIdDigits) - 1; // String is human natural, need an index val
+                        Log.TWL(0, $"Matched patternId {targetPatternId} from string.");
+                    }
+                }
+                catch (Exception)
+                {
+                    Log.TWL(0, $"Failed to match by targetPatternId, falling back to random selection.");
+                }
+
+                if (this.paintPatterns != null && this.paintPatterns.Length != 0)
+                {
+                    if (targetPatternId > -1 && targetPatternId < this.paintPatterns.Length)
+                    {
+                        camoMaskTexture = this.paintPatterns[targetPatternId];
+                        this.patternIndex = targetPatternId;
+                        Log.TWL(0, $"camoMask was null, matched on string index: {camoMaskTexture}");
+                    }
+                    else
+                    {
+                        this.patternIndex = UnityEngine.Random.Range(0, this.paintPatterns.Length);
+                        camoMaskTexture = this.paintPatterns[this.patternIndex];
+                        Log.TWL(0, "camoMask was null, created new one randomly. patternIndex: " + this.patternIndex);
+                    }
+                }
+                else
+                {
+                    Log.TWL(0, "Eck :) didn't think this could happen. Defaulting to paint tex that exists on prefab. I'm keeping original error message");
+                    if (this.paintScheme != null && this.paintScheme.paintSchemeTex != null)
+                        camoMaskTexture = this.paintScheme.paintSchemeTex;
+                    else
+                        Log.TWL(0, "No paint scheme on prefab.");
+                }
+
+                if (camoMaskTexture == null)
+                {
+                    Log.TWL(0, "Could not find a paint pattern, defaulting to a black texture.");
+                    camoMaskTexture = Texture2D.blackTexture;
+                    this.patternIndex = 0;
+                }
+            }
+
+            Log.WL(1, "  camo mask texture.name:" + camoMaskTexture.name);
+            this.paintScheme = new MechPaintScheme(camoMaskTexture, heraldryDef.PrimaryMechColor, heraldryDef.SecondaryMechColor, heraldryDef.TertiaryMechColor);
+            this.emblemScheme = new MechEmblemScheme(heraldryDef.TextureLogo, MechEmblemScheme.EmblemSetting.first);
         }
-        if (tex == null) {
-          if (this.paintPatterns != null && this.paintPatterns.Length != 0) {
-            this.patternIndex = UnityEngine.Random.Range(0, this.paintPatterns.Length);
-            tex = this.paintPatterns[this.patternIndex];
-          } else {
-            Log.TWL(0, "Eck :) didn't think this could happen. Defaulting to paint tex that exists on prefab. I'm keeping original error message");
-            if (this.paintScheme != null && this.paintScheme.paintSchemeTex != null)
-              tex = this.paintScheme.paintSchemeTex;
-            else
-              Log.TWL(0, "No paint scheme on prefab.");
-          }
-          if (tex == null) {
-            Log.TWL(0, "Could not find a paint pattern, defaulting to a black texture.");
-            tex = Texture2D.blackTexture;
-            this.patternIndex = 0;
-          }
-        }
-        Log.WL(1,"paint scheme texture:"+tex.name);
-        this.paintScheme = new MechPaintScheme(tex, heraldryDef.PrimaryMechColor, heraldryDef.SecondaryMechColor, heraldryDef.TertiaryMechColor);
-        this.emblemScheme = new MechEmblemScheme(heraldryDef.TextureLogo, MechEmblemScheme.EmblemSetting.first);
-      }
-    }
+
     public void Init(CustomMechRepresentation parent) {
       this.parent = parent;
       this._propertyBlock = parent.customPropertyBlock;

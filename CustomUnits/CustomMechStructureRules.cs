@@ -50,7 +50,7 @@ namespace CustomUnits {
       try {
         Log.TWL(0, "Pilot.SetNeedsInjury Prefix" + __instance.Description.Id + " mech:" + (Thread.CurrentThread.currentActor() == null?"null": Thread.CurrentThread.currentActor().Description.Id));
         if (Thread.CurrentThread.isFlagSet("ApplyArmorStatDamage")) {
-          AbstractActor unit = Thread.CurrentThread.currentActor();
+          AbstractActor unit = Thread.CurrentThread.currentActor() != null ? Thread.CurrentThread.currentActor() : __instance.ParentActor;
           if (unit == null) { return true; }
           if (unit.FakeVehicle()) {
             Log.WL(1, "stop propagation");

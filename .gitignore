@@ -334,3 +334,6 @@ ASALocalRun/
 .localhistory/
 
 *.dll
+
+# Ignore the VS Directory.build.props file
+Directory.Build.props 
