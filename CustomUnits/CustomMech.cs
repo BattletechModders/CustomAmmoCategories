@@ -475,10 +475,10 @@ namespace CustomUnits {
         foreach (var prefix in CustomMechHelper.InitGameRepPrefixes) { prefix(this,parentTransform); }
         this._InitGameRep(parentTransform);
         foreach (var postfix in CustomMechHelper.InitGameRepPostfixes) { postfix(this, parentTransform); }
-        //this.MechInitGameRep_prefixes(parentTransform);
-        //this._InitGameRep(parentTransform);
+        foreach(MonoBehaviour component in this.GameRep.gameObject.GetComponentsInChildren<MonoBehaviour>(true)) {
+          if (component is IOnRepresentationInit onRepInit) { onRepInit.Init(this.GameRep.gameObject); }
+        }
         this.custGameRep.HeightController.ForceHeight(this.FlyingHeight());
-        //this.MechInitGameRep_postfixes(parentTransform);
       }catch(Exception e) {
         Log.TWL(0,e.ToString(),true);
       }

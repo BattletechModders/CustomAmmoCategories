@@ -56,7 +56,7 @@ namespace CustomUnits {
     private Material[] explodeMechMaterial = new Material[2];
     private Material explodeWeaponMaterial;
     public List<Mesh> meshList;
-    private bool SingleMesh = false;
+    private bool SingleMesh { get; set; } = false;
     private bool? NeedRebuildDamaged { get; set; } = null;
     private SkinnedMeshRenderer mainSkinRenderer0 { get; set; } = null;
     private SkinnedMeshRenderer mainSkinRenderer1 { get; set; } = null;
@@ -133,6 +133,7 @@ namespace CustomUnits {
       this.bindPoses = new List<Matrix4x4>();
       Log.TWL(0, "CustomMechMerge.GenerateCache "+this.parentRepresentation.gameObject.name);
       for (int index1 = 0; index1 < this.childrenRenderers.Count; ++index1) {
+        Log.WL(1, this.childrenRenderers[index1].gameObject.name+ " sharedMaterials:"+ this.childrenRenderers[index1].sharedMaterials.Length+ " sharedMesh:"+ (this.childrenRenderers[index1].sharedMesh==null?"null": this.childrenRenderers[index1].sharedMesh.name));
         if (this.childrenRenderers[index1].sharedMaterials.Length <= 1 && !((Object)this.childrenRenderers[index1].sharedMesh == (Object)null)) {
           Material sharedMaterial = this.childrenRenderers[index1].sharedMaterial;
           if (!((Object)sharedMaterial == (Object)null) && !sharedMaterial.name.Contains("weapons")) {
@@ -159,6 +160,8 @@ namespace CustomUnits {
                   //weights[0].boneIndex0 = 0;
                   //weights[0].weight0 = 1;
                   //this.childrenRenderers[index1].sharedMesh.boneWeights = weights;
+                } else {
+                  Log.WL(1, this.childrenRenderers[index1].gameObject.name + " have bones "+ this.childrenRenderers[index1].bones.Length);
                 }
                 if(this.childrenRenderers[index1].sharedMesh.bindposes == null || this.childrenRenderers[index1].sharedMesh.bindposes.Length == 0) {
                   Log.WL(1, this.childrenRenderers[index1].gameObject.name + " does not have bindposes. Bones count:"+ this.childrenRenderers[index1].bones.Length);
@@ -167,6 +170,8 @@ namespace CustomUnits {
                     bindposes[bindposeIndex] = this.childrenRenderers[index1].bones[bindposeIndex].worldToLocalMatrix * transform.localToWorldMatrix;
                   }
                   this.childrenRenderers[index1].sharedMesh.bindposes = bindposes;
+                } else {
+                  Log.WL(1, this.childrenRenderers[index1].gameObject.name + " have bindposes " + this.childrenRenderers[index1].sharedMesh.bindposes.Length);
                 }
                 this.bindPoses.Add(this.childrenRenderers[index1].sharedMesh.bindposes[0] * this.childrenRenderers[index1].transform.worldToLocalMatrix);
               }

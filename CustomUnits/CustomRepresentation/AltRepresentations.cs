@@ -482,6 +482,12 @@ namespace CustomUnits {
       if (this.CurrentRepresentation.triggerFootVFX) {
         this.CurrentRepresentation._TriggerFootFall(this.leftFootVFX);
       }
+      if(this.CurrentRepresentation.customFootFalls.Count > 0) {
+        foreach(Transform foot in this.CurrentRepresentation.customFootFalls) {
+          this.CurrentRepresentation.CustomFootFall(foot);
+        }
+        this.CurrentRepresentation.customFootFalls.Clear();
+      }
       if (this.parentMech == null) { return; }
       if (this.parentMech.IsFlaggedForDeath) { return; }
       if (this.parentMech.IsDead) { return; }

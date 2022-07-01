@@ -734,6 +734,10 @@ namespace CustomUnits{
         string DeployHelperAssemblyPath = Path.Combine(directory, "CustomDeploy.dll");
         Assembly CustomDeployAssembly = Assembly.LoadFile(DeployHelperAssemblyPath);
         CustomDeploy.Core.Init(directory, Core.Settings.debugLog);
+
+        string CUHelperAssemblyPath = Path.Combine(directory, "CustomUnitsHelper.dll");
+        Assembly CUHelperAssembly = Assembly.LoadFile(CUHelperAssemblyPath);
+        Log.TWL(0,"Helper assembly "+CUHelperAssembly.FullName);
         HarmonyInstance.PatchAll(Assembly.GetExecutingAssembly());
         PathingInfoHelper.RegisterMaxMoveDeligate(PathingHelper.MaxMoveDistance);
         WeightedFactorHelper.PatchInfluenceMapPositionFactor(HarmonyInstance);

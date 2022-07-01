@@ -320,6 +320,111 @@ namespace CustomDeploy{
       }
     }
   }
+  [HarmonyPatch(typeof(UnitSpawnPointGameLogic))]
+  [HarmonyPatch("OverrideSpawn")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { typeof(SpawnableUnit) })]
+  public static class UnitSpawnPointGameLogic_OverrideSpawn_unit {
+    public static void Postfix(UnitSpawnPointGameLogic __instance, SpawnableUnit spawnableUnit) {
+      try {
+        Log.TWL(0, "UnitSpawnPointGameLogic.OverrideSpawn SpawnableUnit");
+        Log.WL(1, "team:" + spawnableUnit.TeamDefinitionGuid + " type:" + spawnableUnit.unitType + " MechDef:" + (spawnableUnit.Unit == null ? "null" : spawnableUnit.Unit.Description.Id)
+          + " VehicleDef:" + (spawnableUnit.VUnit == null ? "null" : spawnableUnit.VUnit.Description.Id)
+          + " TurretDef:" + (spawnableUnit.TUnit == null ? "null" : spawnableUnit.TUnit.Description.Id)
+          + " UnitId:" + spawnableUnit.UnitId
+          );
+        if (__instance.Combat == null) { Log.WL(1,"combat is null. i can't proceed"); return; }
+        if ((__instance.vehicleDefOverride != null)&&(__instance.unitType == UnitType.Vehicle)) {
+          Log.WL(1, "vehicleDefOverride detected. replacing");
+          if (__instance.mechDefOverride != null) {
+            Log.WL(1, "strange mechDefOverride is also not null");
+          }
+          if (__instance.Combat.DataManager.MechDefs.Exists(__instance.vehicleDefOverride.Description.Id) == false) {
+            Log.WL(1, "can't find corresponding mech "+ __instance.vehicleDefOverride.Description.Id);
+            return;
+          }
+          __instance.mechDefOverride = __instance.Combat.DataManager.MechDefs.Get(__instance.vehicleDefOverride.Description.Id);
+          __instance.vehicleDefOverride = null;
+          __instance.unitType = UnitType.Mech;
+        }
+        if ((string.IsNullOrEmpty(__instance.vehicleDefId) == false) && (__instance.unitType == UnitType.Vehicle)) {
+          Log.WL(1, "vehicleDefId detected. replacing");
+          if (string.IsNullOrEmpty(__instance.mechDefId) == false) {
+            Log.WL(1, "strange mechDefId is also not null");
+          }
+          __instance.mechDefId = __instance.vehicleDefId;
+          __instance.vehicleDefId = string.Empty;
+          __instance.unitType = UnitType.Mech;
+        }
+      } catch (Exception e) {
+        Log.TWL(0, e.ToString());
+      }
+    }
+  }
+  [HarmonyPatch(typeof(LanceConfiguration))]
+  [HarmonyPatch("AddUnits")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { typeof(IEnumerable<SpawnableUnit>) })]
+  public static class LanceConfiguration_AddUnits {
+    public static void Prefix(LanceConfiguration __instance, IEnumerable<SpawnableUnit> units) {
+      try {
+        Log.TWL(0, "LanceConfiguration.AddUnits");
+        foreach(SpawnableUnit unit in units) {
+          Log.WL(1, "team:"+unit.TeamDefinitionGuid+" type:"+unit.unitType+" MechDef:"+(unit.Unit==null?"null":unit.Unit.Description.Id)
+            + " VehicleDef:" + (unit.VUnit == null ? "null" : unit.VUnit.Description.Id)
+            + " TurretDef:" + (unit.TUnit == null ? "null" : unit.TUnit.Description.Id)
+            + " UnitId:" + unit.UnitId
+            );
+          if (unit.unitType == UnitType.Vehicle) {
+            unit.unitType = UnitType.Mech;
+            if (unit.VUnit != null) {
+              Log.WL(1, "VUnit is not null. Replacing");
+              unit.VUnit = null;
+              unit.Unit = UnityGameInstance.BattleTechGame.DataManager.MechDefs.Get(unit.UnitId);
+            }
+          }
+        }
+      } catch (Exception e) {
+        Log.TWL(0, e.ToString());
+      }
+    }
+  }
+  [HarmonyPatch(typeof(UnitSpawnPointGameLogic))]
+  [HarmonyPatch("OverrideSpawn")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { typeof(UnitSpawnPointGameLogic) })]
+  public static class UnitSpawnPointGameLogic_OverrideSpawn_logic {
+    public static void Postfix(UnitSpawnPointGameLogic __instance, UnitSpawnPointGameLogic logic) {
+      try {
+        Log.TWL(0, "UnitSpawnPointGameLogic.OverrideSpawn SpawnableUnit");
+        if (__instance.Combat == null) { Log.WL(1, "combat is null. i can't proceed"); return; }
+        if ((__instance.vehicleDefOverride != null) && (__instance.unitType == UnitType.Vehicle)) {
+          Log.WL(1, "vehicleDefOverride detected. replacing");
+          if (__instance.mechDefOverride != null) {
+            Log.WL(1, "strange mechDefOverride is also not null");
+          }
+          if (__instance.Combat.DataManager.MechDefs.Exists(__instance.vehicleDefOverride.Description.Id) == false) {
+            Log.WL(1, "can't find corresponding mech " + __instance.vehicleDefOverride.Description.Id);
+            return;
+          }
+          __instance.mechDefOverride = __instance.Combat.DataManager.MechDefs.Get(__instance.vehicleDefOverride.Description.Id);
+          __instance.vehicleDefOverride = null;
+          __instance.unitType = UnitType.Mech;
+        }
+        if ((string.IsNullOrEmpty(__instance.vehicleDefId) == false) && (__instance.unitType == UnitType.Vehicle)) {
+          Log.WL(1, "vehicleDefId detected. replacing");
+          if (string.IsNullOrEmpty(__instance.mechDefId) == false) {
+            Log.WL(1, "strange mechDefId is also not null");
+          }
+          __instance.mechDefId = __instance.vehicleDefId;
+          __instance.vehicleDefId = string.Empty;
+          __instance.unitType = UnitType.Mech;
+        }
+      } catch (Exception e) {
+        Log.TWL(0, e.ToString());
+      }
+    }
+  }
   [HarmonyPatch(typeof(AkTriggerBase))]
   [HarmonyPatch("GetAllDerivedTypes")]
   [HarmonyPatch(MethodType.Normal)]

@@ -60,6 +60,9 @@
     <Reference Include="CustomSalvage">
       <HintPath>$(BattleTechGameDir)\Mods\CustomSalvage\CustomSalvage.dll</HintPath>
     </Reference>
+    <Reference Include="CustomUnitsHelper">
+      <HintPath>..\..\..\Mods\CustomUnits\CustomUnitsHelper.dll</HintPath>
+    </Reference>
     <Reference Include="CustomVoices">
       <HintPath>$(BattleTechGameDir)\Mods\CustomVoices\CustomVoices.dll</HintPath>
     </Reference>
@@ -89,6 +92,9 @@
     <Reference Include="System.Xml" />
     <Reference Include="Unity.TextMeshPro">
       <HintPath>$(BattleTechGameDir)\BattleTech_Data\Managed\Unity.TextMeshPro.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEditor">
+      <HintPath>..\..\..\BattleTech_Data\Managed\UnityEditor.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine">
       <HintPath>$(BattleTechGameDir)\BattleTech_Data\Managed\UnityEngine.dll</HintPath>
@@ -161,6 +167,7 @@
     <Compile Include="CustomRepresentation\MechRepresentation.cs" />
     <Compile Include="CustomRepresentation\PropertyBlockManager.cs" />
     <Compile Include="CustomRepresentation\QuadRepresentation.cs" />
+    <Compile Include="CustomRepresentation\ScorpionLegs.cs" />
     <Compile Include="CustomRepresentation\SquadRepresentation.cs" />
     <Compile Include="CustomRepresentation\VehicleDrivenMechRepresentation.cs" />
     <Compile Include="CustomTwistSequence.cs" />

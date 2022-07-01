@@ -97,7 +97,7 @@ namespace CustomUnits {
       }
       Dictionary<ArmorLocation, int> hitTable = this.GetHitTable(this.IsProne ? AttackDirection.ToProne : this.Combat.HitLocation.GetAttackDirection(attackPosition, this));
       Thread.CurrentThread.pushActor(this);
-      int result = (int)(hitTable != null ? HitLocation.GetHitLocation(hitTable, hitLocationRoll, (ArmorLocation)calledShotLocation, bonusMultiplier) : ArmorLocation.None);
+      int result = (int)(hitTable != null ? HitLocation.GetHitLocation<ArmorLocation>(hitTable, hitLocationRoll, (ArmorLocation)calledShotLocation, bonusMultiplier) : ArmorLocation.None);
       Thread.CurrentThread.clearActor();
       Log.TW(0, "FakeVehicleMech.GetHitLocation "+this.PilotableActorDef.ChassisID+" attacker:"+attacker.PilotableActorDef.ChassisID+" hitTable:");
       foreach(var ht in hitTable) {

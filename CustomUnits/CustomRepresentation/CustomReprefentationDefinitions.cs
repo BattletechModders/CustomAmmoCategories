@@ -84,11 +84,87 @@ namespace CustomUnits {
       }
     }
   }
+  //public class LegGrounderDef {
+  //  public enum LegGrounderType { Scorpion };
+  //  public LegGrounderType type { get; set; } = LegGrounderType.Scorpion;
+  //  public string parent { get; set; } = string.Empty;
+  //  public string groundTransform { get; set; } = string.Empty;
+  //  public void Apply(GameObject obj) {
+  //    if (string.IsNullOrEmpty(this.parent)) { return; }
+  //    Transform parent = obj.FindComponent<Transform>(this.parent);
+  //    if (parent == null) { return; }
+  //    ScorpionLegGrounder grounder = parent.gameObject.GetComponent<ScorpionLegGrounder>();
+  //    if (grounder == null) { grounder = parent.gameObject.AddComponent<ScorpionLegGrounder>(); }
+  //    if (string.IsNullOrEmpty(this.groundTransform)) { return; }
+  //    grounder.groundTransform = obj.FindComponent<Transform>(this.groundTransform);
+  //  }
+  //}
+  //public class LegSolverDef {
+  //  public enum LegSolverType { Scorpion };
+  //  public LegSolverType type { get; set; } = LegSolverType.Scorpion;
+  //  public string parent { get; set; } = string.Empty;
+  //  public string thigh { get; set; } = string.Empty;
+  //  public string calf { get; set; } = string.Empty;
+  //  public string foot { get; set; } = string.Empty;
+  //  public string target { get; set; } = string.Empty;
+  //  public void Apply(GameObject obj) {
+  //    if (string.IsNullOrEmpty(this.parent)) { return; }
+  //    Transform parent = obj.FindComponent<Transform>(this.parent);
+  //    if (parent == null) { return; }
+  //    ScorpionLegSolver solver = parent.gameObject.GetComponent<ScorpionLegSolver>();
+  //    if (solver == null) { solver = parent.gameObject.AddComponent<ScorpionLegSolver>(); }
+  //    if(string.IsNullOrEmpty(this.thigh) == false) {
+  //      solver.Thigh = obj.gameObject.FindComponent<Transform>(this.thigh);
+  //    }
+  //    if (string.IsNullOrEmpty(this.calf) == false) {
+  //      solver.Calf = obj.gameObject.FindComponent<Transform>(this.calf);
+  //    }
+  //    if (string.IsNullOrEmpty(this.foot) == false) {
+  //      solver.Foot = obj.gameObject.FindComponent<Transform>(this.foot);
+  //    }
+  //    if (string.IsNullOrEmpty(this.target) == false) {
+  //      solver.Target = obj.gameObject.FindComponent<Transform>(this.target);
+  //    }
+  //  }
+  //}
+  public class CustomAnimationEvent {
+    public float time { get; set; } = 0f;
+    public string functionName { get; set; } = string.Empty;
+    private float m_floatParameter { get; set; } = 0f;
+    private int m_intParameter { get; set; } = 0;
+    private string m_stringParameter { get; set; } = string.Empty;
+    public bool is_floatParameter { get; set; } = false;
+    public bool is_intParameter { get; set; } = false;
+    public bool is_stringParameter { get; set; } = false;
+    public float floatParameter { get { return m_floatParameter; } set { is_floatParameter = true; m_floatParameter = value; } }
+    public int intParameter { get { return m_intParameter; } set { is_intParameter = true; m_intParameter = value; } }
+    public string stringParameter { get { return m_stringParameter; } set { is_stringParameter = true; m_stringParameter = value; } }
+    public void Apply(AnimationClip clip) {
+      if (string.IsNullOrEmpty(functionName)) { return; }
+      AnimationEvent evt = new AnimationEvent();
+      evt.functionName = this.functionName;
+      evt.time = this.time;
+      if (is_floatParameter) { evt.floatParameter = m_floatParameter; }
+      if (is_intParameter) { evt.intParameter = m_intParameter; }
+      if (is_stringParameter) { evt.stringParameter = m_stringParameter; }
+      clip.AddEvent(evt);
+    }
+  }
   public class CustomActorRepresentationDef {
     public enum RepresentationType { None, Mech, Vehicle, Turret }
     public enum RepresentationApplyType { MoveBone, None }
     public virtual RepresentationType RepType { get { return RepresentationType.None; } }
     public string Id { get; set; }
+    public Dictionary<string, List<CustomAnimationEvent>> animationEvents { get; set; } = new Dictionary<string, List<CustomAnimationEvent>>();
+    public void ApplyAnimationEvent(AnimationClip clip) {
+      if(animationEvents.TryGetValue(clip.name, out var events)) {
+        foreach (var evt in events) { evt.Apply(clip); }
+      }
+    }
+    //public List<LegGrounderDef> legGrounders { get; set; } = new List<LegGrounderDef>();
+    //public void ApplyGrounders(GameObject obj) { foreach (var g in legGrounders) { g.Apply(obj); }  }
+    //public List<LegSolverDef> legSolvers { get; set; } = new List<LegSolverDef>();
+    //public void ApplySolvers(GameObject obj) { foreach (var g in legSolvers) { g.Apply(obj); } }
     public CustomVector Scale { get; set; }
     public string PrefabBase { get; set; }
     public string SourcePrefabIdentifier { get; set; }
@@ -97,6 +173,8 @@ namespace CustomUnits {
     public string BlipSource { get; set; }
     public string BlipMeshSource { get; set; }
     public bool SupressAllMeshes { get; set; }
+    public bool MoveSkeletalBones { get; set; } = false;
+    public bool MoveAnimations { get; set; } = false;
     public RepresentationApplyType ApplyType { get; set; }
     public List<string> TwistAnimators { get; set; }
     public List<string> HeadLights { get; set; }
@@ -104,7 +182,7 @@ namespace CustomUnits {
     public CustomVector vfxScale { get; set; } = new CustomVector(true);
     public List<string> Animators { get; set; }
     public List<CustomParticleSystemDef> Particles { get; set; }
-    public List<AttachInfoRecord> WeaponAttachPoints { get; set; }
+    public List<AttachInfoRecord> WeaponsAttachPoints { get; set; }
     public CustomDestructionDef OnDestroy { get; set; }
     public List<string> CustomMouseReceiver { get; set; }
     public string persistentAudioStart { get; set; }
@@ -140,7 +218,7 @@ namespace CustomUnits {
       }
     }
     public CustomActorRepresentationDef() {
-      WeaponAttachPoints = new List<AttachInfoRecord>();
+      WeaponsAttachPoints = new List<AttachInfoRecord>();
       TwistAnimators = new List<string>();
       Animators = new List<string>();
       HeadLights = new List<string>();

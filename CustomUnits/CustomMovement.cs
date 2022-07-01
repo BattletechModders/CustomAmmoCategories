@@ -106,9 +106,12 @@ namespace CustomUnits {
       }
     }
     public static void Postfix(ActorMovementSequence __instance, ref Vehicle __state) {
-      Log.LogWrite("ActorMovementSequence.CompleteMove\n");
       if (__state != null) {
         __instance.OwningVehicle(__state);
+      }
+      Log.TWL(0, "ActorMovementSequence.CompleteMove " + __instance.owningActor.GameRep.transform.name);
+      foreach (MonoBehaviour component in __instance.owningActor.GameRep.GetComponentsInChildren<MonoBehaviour>(true)) {
+        if (component is IEnableOnMove enInited) { enInited.Disable(); }
       }
       //CustomQuadLegController[] customMoveAnimators = __instance.owningActor.GameRep.gameObject.GetComponentsInChildren<CustomQuadLegController>();
       //foreach (CustomQuadLegController customMoveAnimatior in customMoveAnimators) {
@@ -1412,6 +1415,10 @@ namespace CustomUnits {
     public static void OrderSequence_OnAdded(this OrderSequence seq) { i_OrderSequenceOnAdded(seq); }
     public static bool Prefix(ActorMovementSequence __instance,ref MoveType ___moveType) {
       try {
+        Log.TWL(0, "ActorMovementSequence.OnAdded "+__instance.owningActor.GameRep.transform.name);
+        foreach(MonoBehaviour component in __instance.owningActor.GameRep.GetComponentsInChildren<MonoBehaviour>(true)) {
+          if (component is IEnableOnMove enInited) { enInited.Enable(); }
+        }
         CombatGameState Combat = Traverse.Create(__instance).Property<CombatGameState>("Combat").Value;
         if (__instance.owningActor.HasFiredThisRound)
           __instance.owningActor.Combat.MessageCenter.PublishMessage((MessageCenterMessage)new FloatieMessage(__instance.owningActor.GUID, __instance.owningActor.GUID, "ACE PILOT", FloatieMessage.MessageNature.Buff));

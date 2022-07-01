@@ -40,6 +40,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CustomRepresentationHelper"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CustomDeploy", "CustomDeploy\CustomDeploy.csproj", "{AC7D1809-5127-4DD7-BD56-FB008C2E2CA2}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CustomUnitsHelper", "CustomUnitsHelper\CustomUnitsHelper.csproj", "{40242289-B4AF-49A2-9F30-93C19763D97D}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -90,6 +92,10 @@ Global
 		{AC7D1809-5127-4DD7-BD56-FB008C2E2CA2}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{AC7D1809-5127-4DD7-BD56-FB008C2E2CA2}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{AC7D1809-5127-4DD7-BD56-FB008C2E2CA2}.Release|Any CPU.Build.0 = Release|Any CPU
+		{40242289-B4AF-49A2-9F30-93C19763D97D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{40242289-B4AF-49A2-9F30-93C19763D97D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{40242289-B4AF-49A2-9F30-93C19763D97D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{40242289-B4AF-49A2-9F30-93C19763D97D}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

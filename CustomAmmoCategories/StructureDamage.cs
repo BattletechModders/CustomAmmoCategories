@@ -24,6 +24,7 @@ namespace CustAmmoCategories {
     public static bool Prefix(Mech __instance, int originalHitLoc, WeaponHitInfo hitInfo, ArmorLocation aLoc, Weapon weapon, ref float totalArmorDamage, ref float directStructureDamage, int hitIndex, AttackImpactQuality impactQuality, DamageType damageType) {
       ArmorLocation oaLoc = (ArmorLocation)originalHitLoc;
       Log.M.TWL(0,"Mech.DamageLocation " + __instance.MechDef.ChassisID + " origHitLoc:" + oaLoc + " dmgLoc:"+aLoc);
+      if ((aLoc == ArmorLocation.Invalid) || (aLoc == ArmorLocation.None)) { return true; }
       if(oaLoc != aLoc) {
         Log.M.WL(1,"pass through location detected");
         if (CustomAmmoCategories.Settings.NullifyDestoryedLocationDamage) {

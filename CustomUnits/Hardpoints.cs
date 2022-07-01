@@ -1026,34 +1026,34 @@ namespace CustomUnits {
       if (custRep != null) { custRep.OnAttackComplete(); }
     }
   }
-  [HarmonyPatch(typeof(Vehicle))]
-  [HarmonyPatch("InitGameRep")]
-  [HarmonyPatch(MethodType.Normal)]
-  [HarmonyPatch(new Type[] { typeof(Transform) })]
-  public static class Vehicle_InitGameRep {
-    public static void Postfix(Vehicle __instance) {
-      Log.TWL(0, "Vehicle.InitGameRep "+__instance.VehicleDef.ChassisID);
-      VTOLBodyAnimation bodyAnimation = __instance.VTOLAnimation();
-      if (bodyAnimation == null) { return; }
-      bodyAnimation.ResolveAttachPoints();
-      Log.TWL(0, "Vehicle.InitGameRep:" + new Text(__instance.DisplayName).ToString());
-      foreach (Weapon weapon in __instance.Weapons) {
-        Log.WL(1, weapon.defId + " representation:" + (weapon.weaponRep == null ? "null" : weapon.weaponRep.GetInstanceID().ToString()));
-      }
-    }
-  }
-  [HarmonyPatch(typeof(Turret))]
-  [HarmonyPatch("InitGameRep")]
-  [HarmonyPatch(MethodType.Normal)]
-  [HarmonyPatch(new Type[] { typeof(Transform) })]
-  public static class Turret_InitGameRep {
-    public static void Postfix(Turret __instance) {
-      Log.TWL(0, "Turret.InitGameRep:" + new Text(__instance.DisplayName).ToString());
-      foreach (Weapon weapon in __instance.Weapons) {
-        Log.WL(1, weapon.defId + " representation:" + (weapon.weaponRep == null ? "null" : weapon.weaponRep.GetInstanceID().ToString()));
-      }
-    }
-  }
+  //[HarmonyPatch(typeof(Vehicle))]
+  //[HarmonyPatch("InitGameRep")]
+  //[HarmonyPatch(MethodType.Normal)]
+  //[HarmonyPatch(new Type[] { typeof(Transform) })]
+  //public static class Vehicle_InitGameRep {
+  //  public static void Postfix(Vehicle __instance) {
+  //    Log.TWL(0, "Vehicle.InitGameRep "+__instance.VehicleDef.ChassisID);
+  //    VTOLBodyAnimation bodyAnimation = __instance.VTOLAnimation();
+  //    if (bodyAnimation == null) { return; }
+  //    bodyAnimation.ResolveAttachPoints();
+  //    Log.TWL(0, "Vehicle.InitGameRep:" + new Text(__instance.DisplayName).ToString());
+  //    foreach (Weapon weapon in __instance.Weapons) {
+  //      Log.WL(1, weapon.defId + " representation:" + (weapon.weaponRep == null ? "null" : weapon.weaponRep.GetInstanceID().ToString()));
+  //    }
+  //  }
+  //}
+  //[HarmonyPatch(typeof(Turret))]
+  //[HarmonyPatch("InitGameRep")]
+  //[HarmonyPatch(MethodType.Normal)]
+  //[HarmonyPatch(new Type[] { typeof(Transform) })]
+  //public static class Turret_InitGameRep {
+  //  public static void Postfix(Turret __instance) {
+  //    Log.TWL(0, "Turret.InitGameRep:" + new Text(__instance.DisplayName).ToString());
+  //    foreach (Weapon weapon in __instance.Weapons) {
+  //      Log.WL(1, weapon.defId + " representation:" + (weapon.weaponRep == null ? "null" : weapon.weaponRep.GetInstanceID().ToString()));
+  //    }
+  //  }
+  //}
   public class ExtPrefire {
     public float t;
     public float rate;

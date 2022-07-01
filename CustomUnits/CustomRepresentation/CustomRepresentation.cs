@@ -37,20 +37,28 @@ namespace CustomUnits {
   }
   public class CustomRepresentationAnimatorInfo {
     public bool HasInBattle { get; protected set; }
-    public bool HasCharge { get; protected set; }
-    public bool HasForward { get; protected set; }
-    public bool HasDropOff { get; protected set; }
     public int HashInBattle { get; protected set; }
+    public bool HasCharge { get; protected set; }
     public int HashCharge { get; protected set; }
+    public bool HasForward { get; protected set; }
     public int HashForward { get; protected set; }
+    public bool HasDropOff { get; protected set; }
     public int HashDropOff { get; protected set; }
+    public bool HasIsMoving { get; protected set; }
+    public int HashIsMoving { get; protected set; }
+    public bool HasBeginMove { get; protected set; }
+    public int HashBeginMove { get; protected set; }
+    public bool HasTurnParam { get; protected set; }
+    public int HashTurnParam { get; protected set; }
+    public bool HasDeathAnim { get; protected set; }
+    public int HashDeathAnim { get; protected set; }
     public Animator animator { get; protected set; }
     public bool InBattle {
       set {
         if (animator == null) { return; }
         if (HasInBattle == false) { return; }
         animator.SetBool(HashInBattle, value);
-        Log.TWL(0, "CustomRepresentationAnimatorInfo.InBattle "+animator.name+" "+value);
+        CustomAmmoCategoriesLog.Log.O?.TWL(0, "CustomRepresentationAnimatorInfo.InBattle "+animator.name+" "+value);
       }
     }
     public bool DropOff {
@@ -58,33 +66,69 @@ namespace CustomUnits {
         if (animator == null) { return; }
         if (HasDropOff == false) { return; }
         animator.SetBool(HashDropOff, value);
-        Log.TWL(0, "CustomRepresentationAnimatorInfo.HashDropOff " + animator.name + " " + value);
+        CustomAmmoCategoriesLog.Log.O?.TWL(0, "CustomRepresentationAnimatorInfo.HashDropOff " + animator.name + " " + value);
       }
     }
     public void Charge() {
       if (animator == null) { return; }
       if (HasCharge == false) { return; }
       animator.SetTrigger(HashCharge);
-      Log.TWL(0, "CustomRepresentationAnimatorInfo.Charge " + animator.name);
+      CustomAmmoCategoriesLog.Log.O?.TWL(0, "CustomRepresentationAnimatorInfo.Charge " + animator.name);
     }
     public float Forward {
       set {
         if (animator == null) { return; }
         if (HasForward == false) { return; }
         animator.SetFloat(HashForward, value);
-        Log.TWL(0, "CustomRepresentationAnimatorInfo.Forward " + animator.name + " " + value);
+        CustomAmmoCategoriesLog.Log.O?.TWL(0, "CustomRepresentationAnimatorInfo.Forward " + animator.name + " " + value);
       }
+    }
+    public bool IsMoving {
+      set {
+        if (animator == null) { return; }
+        if (HasIsMoving == false) { return; }
+        animator.SetBool(HashIsMoving, value);
+        CustomAmmoCategoriesLog.Log.O?.TWL(0, "CustomRepresentationAnimatorInfo.IsMoving " + animator.name + " " + value);
+      }
+    }
+    public void BeginMove(bool value) {
+      if (animator == null) { return; }
+      if (HasBeginMove == false) { return; }
+      if (value) { animator.SetTrigger(HashBeginMove); } else { animator.ResetTrigger(HashBeginMove); }
+      CustomAmmoCategoriesLog.Log.O?.TWL(0, "CustomRepresentationAnimatorInfo.BeginMove " + animator.name);
+    }
+    public float TurnParam {
+      set {
+        if (animator == null) { return; }
+        if (HasTurnParam == false) { return; }
+        animator.SetFloat(HashTurnParam, value);
+        CustomAmmoCategoriesLog.Log.O?.TWL(0, "CustomRepresentationAnimatorInfo.TurnParam " + animator.name + " " + value);
+      }
+    }
+    public void DeathAnim() {
+      if (animator == null) { return; }
+      if (HasDeathAnim == false) { return; }
+      animator.SetTrigger(HashDeathAnim);
+      CustomAmmoCategoriesLog.Log.O?.TWL(0, "CustomRepresentationAnimatorInfo.DeathAnim " + animator.name);
     }
     public CustomRepresentationAnimatorInfo(Animator animator) {
       this.animator = animator;
       HasInBattle = false;
-      HasCharge = false;
-      HasForward = false;
-      HasDropOff = false;
       HashInBattle = Animator.StringToHash("in_battle");
+      HasCharge = false;
       HashCharge = Animator.StringToHash("charge");
+      HasForward = false;
       HashForward = Animator.StringToHash("forward");
+      HasDropOff = false;
       HashDropOff = Animator.StringToHash("drop_off");
+      HasIsMoving = false;
+      HashIsMoving = Animator.StringToHash("is_moving");
+      HasBeginMove = false;
+      HashBeginMove = Animator.StringToHash("begin_move_trigger");
+      HasTurnParam = false;
+      HashTurnParam = Animator.StringToHash("turn_param");
+      HasDeathAnim = false;
+      HashDeathAnim = Animator.StringToHash("death_trigger");
       if (this.animator == null) { return; }
       AnimatorControllerParameter[] parameter = this.animator.parameters;
       foreach(AnimatorControllerParameter param in parameter) {
@@ -92,6 +136,10 @@ namespace CustomUnits {
         if (param.nameHash == HashCharge) { HasCharge = true; }
         if (param.nameHash == HashForward) { HasForward = true; }
         if (param.nameHash == HashDropOff) { HasDropOff = true; }
+        if (param.nameHash == HashIsMoving) { HasIsMoving = true; }
+        if (param.nameHash == HashBeginMove) { HasBeginMove = true; }
+        if (param.nameHash == HashTurnParam) { HasTurnParam = true; }
+        if (param.nameHash == HashDeathAnim) { HasDeathAnim = true; }
       }
     }
   }
@@ -148,6 +196,9 @@ namespace CustomUnits {
     public bool InDropOff { set { foreach (CustomRepresentationAnimatorInfo info in animators) { info.DropOff = value; } } }
     public void Charge() { foreach (CustomRepresentationAnimatorInfo info in animators) { info.Charge(); } }
     public float Forward { set { foreach (CustomRepresentationAnimatorInfo info in animators) { info.Forward = value; } } }
+    public bool IsMoving { set { foreach (CustomRepresentationAnimatorInfo info in animators) { info.IsMoving = value; } } }
+    public float TurnParam { set { foreach (CustomRepresentationAnimatorInfo info in animators) { info.TurnParam = value; } } }
+    public void BeginMove() { foreach (CustomRepresentationAnimatorInfo info in animators) { info.BeginMove(true); } }
     public float TwistR {
       set { foreach (CustomTwistAnimatorInfo info in twistAnimators) { info.TwistR = value; } }
     }
@@ -322,12 +373,15 @@ namespace CustomUnits {
       WeaponAttachPoints.Add(wAttach.Name, new AttachInfo(parent, wAttach));
     }
     public void Init(PilotableActorRepresentation rep, CustomActorRepresentationDef def) {
+      Log.TWL(0, "CustomRepresentation.Init "+rep.name+" def:"+def.Id);
       GameRepresentation = rep;
       SimGameRepresentation = null;
       CustomDefinition = def;
       WeaponAttachPoints = new Dictionary<string, AttachInfo>();
       this.animators = new HashSet<CustomRepresentationAnimatorInfo>();
-      foreach (AttachInfoRecord wAttach in def.WeaponAttachPoints) {
+      Log.WL(1, "WeaponsAttachPoints:" + def.WeaponsAttachPoints.Count);
+      foreach (AttachInfoRecord wAttach in def.WeaponsAttachPoints) {
+        Log.WL(2, wAttach.Name);
         WeaponAttachPoints.Add(wAttach.Name, new AttachInfo(rep.gameObject, wAttach));
       }
       foreach (string animName in def.Animators) {
@@ -369,7 +423,7 @@ namespace CustomUnits {
       CustomDefinition = def;
       WeaponAttachPoints = new Dictionary<string, AttachInfo>();
       this.animators = new HashSet<CustomRepresentationAnimatorInfo>();
-      foreach (AttachInfoRecord wAttach in def.WeaponAttachPoints) {
+      foreach (AttachInfoRecord wAttach in def.WeaponsAttachPoints) {
         WeaponAttachPoints.Add(wAttach.Name, new AttachInfo(rep.gameObject, wAttach));
       }
       foreach (string animName in def.Animators) {
@@ -751,7 +805,7 @@ namespace CustomUnits {
       }
       return result;
     }
-    public static void MoveBonesAndRenderers(this GameObject meshSource, GameObject mechRep) {
+    public static void MoveBonesAndRenderers(this GameObject meshSource, GameObject mechRep, CustomActorRepresentationDef custRepDef) {
       Transform meshesTrg = mechRep.transform.FindRecursive("mesh");
       Transform meshesSrc = meshSource.transform.FindRecursive("meshes");
       if (meshesSrc == null) {
@@ -788,7 +842,15 @@ namespace CustomUnits {
           if (tr == bones) { continue; }
           string tr_name = tr.RelativeName(bones);
           Log.WL(2, "name: " + tr_name);
-          if (resultTransforms.ContainsKey(tr_name)) { continue; }
+          if (resultTransforms.TryGetValue(tr_name, out Transform resultTransform)) {
+            if (custRepDef.MoveSkeletalBones) {
+              Log.WL(3, "pos:" + resultTransform.localPosition + "=>" + tr.localPosition + " rot:" + resultTransform.localRotation.eulerAngles + "=>" + tr.localRotation + " scale:" + resultTransform.localScale + "=>" + tr.localScale);
+              resultTransform.localPosition = tr.localPosition;
+              resultTransform.localRotation = tr.localRotation;
+              resultTransform.localScale = tr.localScale;
+            }
+            continue;
+          }
           if (tr.parent == null) { continue; }
           string parent_name = tr.parent.RelativeName(bones);
           Log.WL(2, "parent name: " + parent_name);
@@ -840,7 +902,56 @@ namespace CustomUnits {
             }
           }
         }
+        if (custRepDef.MoveAnimations) {
+          Animator sourceAnimator = bones.gameObject.GetComponent<Animator>();
+          Animator targetAnimator = mechRep.GetComponent<Animator>();
+          Log.WL(1, "source animator:" + (sourceAnimator == null ? "null" : "not null"));
+          Log.WL(1, "target animator:" + (targetAnimator == null ? "null" : "not null"));
+          if (sourceAnimator != null && targetAnimator != null) {
+            Log.WL(1, "Moving animator");
+            //Log.WL(2, "source animator");
+            Dictionary<string, AnimationClip> sourceClips = new Dictionary<string, AnimationClip>();
+            foreach (AnimationClip clip in sourceAnimator.runtimeAnimatorController.animationClips) {
+              //Log.W(3, clip.name + " legacy:" + clip.legacy + " wrapMode:" + clip.wrapMode + " events:" + clip.events.Length);
+              //foreach (AnimationEvent aevent in clip.events) {
+                //Log.W(1, "'" + aevent.functionName + "'");
+              //}
+              //Log.WL(0, "");
+              sourceClips.Add(clip.name, clip);
+            }
+            Log.WL(2, "target animator");
+            AnimatorOverrideController animatorOverrideController = new AnimatorOverrideController(targetAnimator.runtimeAnimatorController);
+            Dictionary<string, AnimationClip> overrideClips = new Dictionary<string, AnimationClip>();
+            foreach (AnimationClip clip in sourceAnimator.runtimeAnimatorController.animationClips) {
+              Log.WL(3, clip.name);
+              if (sourceClips.TryGetValue(clip.name, out var overrideClip)) {
+                overrideClips.Add(clip.name, overrideClip);
+                foreach (AnimationEvent aevent in clip.events) {
+                  overrideClip.AddEvent(aevent);
+                }
+                //overrideClip.events = clip.events;
+                //overrideClip.wrapMode = clip.wrapMode;
+              }
+            }
+            Log.WL(2, "override clips");
+            foreach (var overrideClip in overrideClips) {
+              Log.W(3, overrideClip.Key + " wrapMode:" + overrideClip.Value.wrapMode + " events:" + overrideClip.Value.events.Length);
+              foreach (AnimationEvent aevent in overrideClip.Value.events) {
+                Log.W(1, "'" + aevent.functionName + "'");
+              }
+              Log.WL(0, "");
+              animatorOverrideController[overrideClip.Key] = overrideClip.Value;
+              custRepDef.ApplyAnimationEvent(overrideClip.Value);
+            }
+            targetAnimator.runtimeAnimatorController = animatorOverrideController;
+          }
+        }
       }
+      foreach(MonoBehaviour component in mechRep.GetComponentsInChildren<MonoBehaviour>(true)) {
+        if (component is IEnableOnMove enInited) { enInited.Init(); enInited.Enable(); enInited.Disable(); }
+      }
+      //custRepDef.ApplyGrounders(mechRep);
+      //custRepDef.ApplySolvers(mechRep);
     }
     public static void MoveBonesAndRenderersSimGame(this CustomMechRepresentationSimGame mechRep, GameObject source) {
       Log.TWL(0, "MoveBonesAndRenderersSimGame:" + source.name);
@@ -1163,7 +1274,7 @@ namespace CustomUnits {
         mechRep.InitCustomParticles(meshSource, custRepDef);
         mechRep.StopCustomParticles();
         mechRep.InitCamoflage(meshSource);
-        meshSource.MoveBonesAndRenderers(mechRep.gameObject);
+        meshSource.MoveBonesAndRenderers(mechRep.gameObject, custRepDef);
         //mechRep.MoveBonesAndRenderersSimGame(meshSource);
       }
       mechRep.MoveVFXTransforms(meshSource, custRepDef);
@@ -1185,7 +1296,7 @@ namespace CustomUnits {
         mechRep.InitCustomParticles(meshSource, custRepDef);
         mechRep.StartCustomParticles();
         mechRep.InitCamoflage(meshSource);
-        meshSource.MoveBonesAndRenderers(mechRep.gameObject);
+        meshSource.MoveBonesAndRenderers(mechRep.gameObject, custRepDef);
       }
       mechRep.MoveVFXTransforms(custRepDef);
       mechRep.MoveBlips(dataManager, custRepDef);

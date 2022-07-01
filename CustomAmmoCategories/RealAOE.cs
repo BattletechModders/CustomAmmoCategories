@@ -853,9 +853,13 @@ namespace CustAmmoCategories {
         try {
           ICustomMech custMech = __instance as ICustomMech;
           if (custMech != null) {
-            float armor = __instance.ArmorForLocation((int)aLoc);
-            float structure = __instance.StructureForLocation((int)aLoc);
-            Log.M.TWL(0, "DamageLocation " + __instance.PilotableActorDef.ChassisID + " loc:" + custMech.GetLongArmorLocation(aLoc) + " dmg:" + totalArmorDamage + " strDmg:" + directStructureDamage + " shot:" + hitIndex+" armor before hit:"+armor+" structure before hit:"+structure);
+            float armor = ((aLoc == ArmorLocation.Invalid) || (aLoc == ArmorLocation.None))?-1f:__instance.ArmorForLocation((int)aLoc);
+            float structure = ((aLoc == ArmorLocation.Invalid) || (aLoc == ArmorLocation.None)) ? -1f : __instance.StructureForLocation((int)aLoc);
+            string name = aLoc.ToString();
+            if ((aLoc != ArmorLocation.Invalid) && (aLoc != ArmorLocation.None)) {
+              name = custMech.GetLongArmorLocation(aLoc).ToString();
+            }
+            Log.M.TWL(0, "DamageLocation " + __instance.PilotableActorDef.ChassisID + " loc:" + name + " dmg:" + totalArmorDamage + " strDmg:" + directStructureDamage + " shot:" + hitIndex+" armor before hit:"+armor+" structure before hit:"+structure);
           }
         }catch(Exception e) {
           Log.M.TWL(0,e.ToString(),true);

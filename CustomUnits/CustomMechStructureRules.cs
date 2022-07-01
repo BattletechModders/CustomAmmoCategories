@@ -356,32 +356,6 @@ namespace CustomUnits {
       }
     }
   }
-  //[HarmonyPatch(typeof(Mech))]
-  //[HarmonyPatch("DamageLocation")]
-  //[HarmonyPatch(MethodType.Normal)]
-  //[HarmonyPatch(new Type[] { typeof(int), typeof(WeaponHitInfo), typeof(ArmorLocation), typeof(Weapon), typeof(float), typeof(float), typeof(int), typeof(AttackImpactQuality), typeof(DamageType) })]
-  //public static class Mech_DamageLocation {
-  //  public static void Prefix(Mech __instance, int originalHitLoc, WeaponHitInfo hitInfo, ArmorLocation aLoc, Weapon weapon, float totalArmorDamage, float directStructureDamage, int hitIndex, AttackImpactQuality impactQuality, DamageType damageType, ref bool? __state) {
-  //    try {
-  //      Log.TWL(0, "Mech.NukeStructureLocation prefix " + __instance.Description.Id + " threadid:" + Thread.CurrentThread.ManagedThreadId);
-  //      Thread.CurrentThread.pushActor(__instance);
-  //      __state = true;
-  //    } catch (Exception e) {
-  //      Log.TWL(0, e.ToString(), true);
-  //    }
-  //  }
-  //  public static void Postfix(Mech __instance, int originalHitLoc, WeaponHitInfo hitInfo, ArmorLocation aLoc, Weapon weapon, float totalArmorDamage, float directStructureDamage, int hitIndex, AttackImpactQuality impactQuality, DamageType damageType, ref bool? __state) {
-  //    try {
-  //      Log.TWL(0, "Mech.NukeStructureLocation postfix" + __instance.Description.Id + " threadid:" + Thread.CurrentThread.ManagedThreadId);
-  //      if ((__state != null) && (__state.HasValue) && (__state.Value == true)) {
-  //        Log.WL(1,"prefix been called. clearing actor");
-  //        Thread.CurrentThread.clearActor();
-  //      }
-  //    } catch (Exception e) {
-  //      Log.TWL(0, e.ToString(), true);
-  //    }
-  //  }
-  //}
   [HarmonyPatch(typeof(MechStructureRules))]
   [HarmonyPatch("GetDependentLocation")]
   [HarmonyPatch(MethodType.Normal)]
@@ -390,13 +364,13 @@ namespace CustomUnits {
     public static void Postfix(ChassisLocations location, ref ChassisLocations __result) {
       try {
         Mech mech = Thread.CurrentThread.currentMech();
-        if (mech != null) {
-          UnitCustomInfo info = mech.GetCustomInfo();
-          if (info != null) { if (info.SquadInfo.Troopers > 1) { __result = ChassisLocations.None; } }
-          if (mech.NoDependentLocations()) { __result = ChassisLocations.None; }
-          if (info.FakeVehicle) { __result = ChassisLocations.None; }
+        ICustomMech custMech = mech as ICustomMech;
+        if (custMech != null) {
+          if (custMech.isSquad) { __result = ChassisLocations.None; } else
+          if (custMech.isVehicle) { __result = ChassisLocations.None; } else
+          if (custMech.isQuad) { __result = ChassisLocations.None; }
         }
-        Log.TWL(0, "MechStructureRules.GetDependentLocation mech:" + (mech == null ? "null" : mech.Description.Id) + " " + location + "=>"+__result+" noDeps:" + (mech == null ? "null" : mech.NoDependentLocations().ToString()));
+        Log.TWL(0, "MechStructureRules.GetDependentLocation mech:" + (mech == null ? "null" : mech.Description.Id) + " " + location + "=>"+__result);
       } catch (Exception e) {
         Log.TWL(0, e.ToString(), true);
       }
@@ -410,13 +384,13 @@ namespace CustomUnits {
     public static void Postfix(ArmorLocation location,AttackDirection attackDirection, ref ArmorLocation __result) {
       try {
         Mech mech = Thread.CurrentThread.currentMech();
-        if (mech != null) {
+        ICustomMech custMech = mech as ICustomMech;
+        if (custMech != null) {
           UnitCustomInfo info = mech.GetCustomInfo();
-          if (info != null) { if (info.SquadInfo.Troopers > 1) { __result = ArmorLocation.None; } }
-          if (mech.NoDependentLocations()) { __result = ArmorLocation.None; }
-          if (mech.FakeVehicle()) { __result = ArmorLocation.None; }
+          if (custMech.isSquad) { __result = ArmorLocation.None; } else
+          if (custMech.isVehicle) { __result = ArmorLocation.None; }
         }
-        Log.TWL(0, "MechStructureRules.GetPassthroughLocation mech:" + (mech == null ? "null" : mech.Description.Id) + " " + location + "=>" + __result + " noDeps:" + (mech == null ? "null" : mech.NoDependentLocations().ToString()));
+        Log.TWL(0, "MechStructureRules.GetPassthroughLocation mech:" + (mech == null ? "null" : mech.Description.Id) + " " + location + "=>" + __result);
       } catch (Exception e) {
         Log.TWL(0, e.ToString(), true);
       }
@@ -481,6 +455,89 @@ namespace CustomUnits {
       }
     }
   }
+  [HarmonyPatch(typeof(Contract), "CompleteContract")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { typeof(MissionResult), typeof(bool) })]
+  public static class Contract_CompleteContract_log_only { 
+    public static void Prefix(Contract __instance, MissionResult result, bool isGoodFaithEffort) {
+      Thread.CurrentThread.SetFlag("Contract_CompleteContract");
+      Log.TWL(0, "Contract.CompleteContract start");
+    }
+    public static void Postfix(Contract __instance, MissionResult result, bool isGoodFaithEffort) {
+      Thread.CurrentThread.ClearFlag("Contract_CompleteContract");
+      Log.TWL(0, "Contract.CompleteContract end");
+    }
+  }
+  [HarmonyPatch(typeof(MechDef))]
+  [HarmonyPatch(MethodType.Getter)]
+  [HarmonyPatch("IsDestroyed")]
+  [HarmonyPatch(new Type[] { })]
+  public static class MechDef_IsDestroyed {
+    public static void Postfix(MechDef __instance, ref bool __result) {
+      try {
+        UnitCustomInfo info = __instance.GetCustomInfo();
+        bool debugprint = Thread.CurrentThread.isFlagSet("Contract_CompleteContract");
+        if (info == null) { return; }
+        if (__instance.Chassis == null) {
+          Log.TWL(0, "exception. MechDef without chassis is testing on IsDestroyed " + __instance.ChassisID);
+          Log.WL(0, Environment.StackTrace);
+          return;
+        }
+        if(debugprint)Log.TWL(0, "MechDef.IsDestroyed "+ __instance.ChassisID);
+        if(info.SquadInfo.Troopers > 1) {
+          bool result = true;
+          if (debugprint) Log.WL(1, "squad detected");
+          foreach (ChassisLocations location in TrooperSquad.locations) {
+            LocationDef cLoc = __instance.GetChassisLocationDef(location);
+            if (cLoc.MaxArmor == 0f && cLoc.InternalStructure <= 1f) { continue; }
+            if (debugprint) Log.WL(2, location.ToString() + " IsLocationDestroyed:"+ __instance.IsLocationDestroyed(location));
+            if (__instance.IsLocationDestroyed(location) == false) { result = false; break; }
+          }
+          if (debugprint) Log.WL(1, "result: " + result);
+          __result = result;
+          return;
+        }else
+        if(info.FakeVehicle == true) {
+          bool result = false;
+          if (debugprint) Log.WL(1, "vehicle detected");
+          foreach (ChassisLocations location in FakeVehicleMech.locations) {
+            LocationDef cLoc = __instance.GetChassisLocationDef(location);
+            if (cLoc.MaxArmor == 0f && cLoc.InternalStructure <= 1f) { continue; }
+            if (debugprint) Log.WL(2, location.toFakeVehicleChassis().ToString() + " IsLocationDestroyed:" + __instance.IsLocationDestroyed(location));
+            if (__instance.IsLocationDestroyed(location)) { result = true; break; }
+          }
+          if (debugprint) Log.WL(1, "result: "+result);
+          __result = result;
+          return;
+        } else if (info.ArmsCountedAsLegs) {
+          if (debugprint) Log.WL(1, "quad detected");
+          if (debugprint) Log.WL(2, ChassisLocations.Head.ToString() + " IsLocationDestroyed:" + __instance.IsLocationDestroyed(ChassisLocations.Head));
+          if (debugprint) Log.WL(2, ChassisLocations.CenterTorso.ToString() + " IsLocationDestroyed:" + __instance.IsLocationDestroyed(ChassisLocations.CenterTorso));
+          if (debugprint) Log.WL(2, ChassisLocations.LeftLeg.ToString() + " IsLocationDestroyed:" + __instance.IsLocationDestroyed(ChassisLocations.LeftLeg));
+          if (debugprint) Log.WL(2, ChassisLocations.RightLeg.ToString() + " IsLocationDestroyed:" + __instance.IsLocationDestroyed(ChassisLocations.RightLeg));
+          if (debugprint) Log.WL(2, ChassisLocations.LeftArm.ToString() + " IsLocationDestroyed:" + __instance.IsLocationDestroyed(ChassisLocations.LeftArm));
+          if (debugprint) Log.WL(2, ChassisLocations.RightArm.ToString() + " IsLocationDestroyed:" + __instance.IsLocationDestroyed(ChassisLocations.RightArm));
+          if (__instance.IsLocationDestroyed(ChassisLocations.Head) || __instance.IsLocationDestroyed(ChassisLocations.CenterTorso)) {
+            if (debugprint) Log.WL(1, "head or torso destroyed");
+            __result = true;
+          } else {
+            __result = __instance.IsLocationDestroyed(ChassisLocations.LeftLeg) 
+              && __instance.IsLocationDestroyed(ChassisLocations.RightLeg)
+              && __instance.IsLocationDestroyed(ChassisLocations.LeftArm)
+              && __instance.IsLocationDestroyed(ChassisLocations.RightArm);
+            if (debugprint) Log.WL(1, "all four legs destoryed:"+__result);
+          }
+          if (debugprint) Log.WL(1, "result: " + __result);
+          return;
+        } else {
+          if (debugprint) Log.WL(1, "normal mech: " + __result);
+        }
+      } catch (Exception e) {
+        Log.TWL(0, e.ToString(), true);
+      }
+    }
+  }
+
   [HarmonyPatch(typeof(Mech))]
   [HarmonyPatch("ApplyLegStructureEffects")]
   [HarmonyPatch(MethodType.Normal)]

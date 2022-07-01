@@ -125,7 +125,7 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
          bonusLocationMultiplier = FixMultiplier( bonusLocation, bonusLocationMultiplier, (custMech != null ? ((custMech.isSquad == false) && (custMech.isVehicle == false)) : true), (custMech != null ? custMech.isVehicle : false));
          if ( AIMSettings.CalledShotUseClustering && CurrentHitDirection != AttackDirection.None ) {
             if ( bonusLocation != ArmorLocation.None )
-               hitTable = CombatConstants.GetMechClusterTable( bonusLocation, CurrentHitDirection );
+               hitTable = custMech==null ? CombatConstants.GetMechClusterTable(bonusLocation, CurrentHitDirection) : custMech.GetHitTableCluster(CurrentHitDirection, bonusLocation);
             CurrentHitDirection = AttackDirection.None;
          }
       }                 catch ( Exception ex ) { Error( ex ); } }

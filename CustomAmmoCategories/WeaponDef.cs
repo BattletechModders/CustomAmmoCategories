@@ -110,6 +110,7 @@ namespace CustAmmoCategories {
     }
     public void ParceEffects(string json) {
       try {
+        statusEffects.Clear();
         JArray effects = JArray.Parse(json);
         foreach (JObject statusEffect in effects) {
           EffectData effect = new EffectData();
@@ -862,6 +863,10 @@ namespace CustomAmmoCategoriesPatches {
           extDef.Modes.Add(mode.Id, mode);
         }
         CustomAmmoCategories.registerExtWeaponDef(__instance.Description.Id, extDef);
+        if(__instance.Description.Id == "Weapon_Laser_TAG_Orbital") {
+          Log.M.TWL(0, "deferredEffect print:" + __instance.Description.Id);
+          extDef.deferredEffect.debugPrint(Log.M, 1);
+        }
         if (__instance.StartingAmmoCapacity != 0) {
           if (extDef.AmmoCategory.isDefaultAmmo()) {
             ExtAmmunitionDef extAmmunition = extDef.AmmoCategory.defaultAmmo();
