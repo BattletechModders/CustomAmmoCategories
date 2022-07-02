@@ -15,7 +15,6 @@ using MechResizer;
 using Localize;
 using System.Threading;
 using IRBTModUtils;
-using UnityEditor;
 
 namespace CustomUnits {
   [HarmonyPatch(typeof(UnitSpawnPointGameLogic))]
@@ -729,12 +728,7 @@ namespace CustomUnits {
       if (this.customRep != null) { this.customRep.AttachHeadlights(); }
     }
   }
-  public partial class CustomMechRepresentation : MechRepresentation, IOnFootFallReceiver {
-    public HashSet<Transform> customFootFalls = new HashSet<Transform>();
-    public virtual void OnCustomFootFall(Transform foot) {
-      Log.TWL(0, "CustomMechRepresentation.OnCustomFootFall "+this.transform.name+" foot:" + foot.name);
-      customFootFalls.Add(foot);
-    }
+  public partial class CustomMechRepresentation : MechRepresentation {
     public List<GameObject> VisualObjects { get; set; } = new List<GameObject>();
     public CustomMechRepresentation parentRepresentation { get; set; } = null;
     public CustomRepresentation customRep { get; set; } = null;
@@ -786,23 +780,6 @@ namespace CustomUnits {
     public virtual void _Init(Mech mech, Transform parentTransform, bool isParented) {
       Log.TWL(0,this.GetType().ToString()+"._Init "+mech.MechDef.ChassisID);
       //this.j_Root = this.transform.FindRecursive("j_Root");
-
-      this.gameObject.GetComponent<Animator>().enabled = false;
-      Animator mainAnimator = this.gameObject.GetComponent<Animator>();
-      //this.j_Root.FindRecursive("j_LHip").localPosition += Vector3.left * 10f;
-      Log.WL(1,"Main animator clips:"+ mainAnimator.runtimeAnimatorController.animationClips.Length);
-      //try {
-      //  foreach (AnimationClip clip in mainAnimator.runtimeAnimatorController.animationClips) {
-      //    EditorCurveBinding[] curves = AnimationUtility.GetCurveBindings(clip);
-      //    Log.WL(2, clip.name+":"+curves.Length);
-      //    foreach(EditorCurveBinding binding in curves) {
-      //      AnimationCurve curve = AnimationUtility.GetEditorCurve(clip, binding);
-      //      Log.WL(3,binding.path + "/" + binding.propertyName + ", Keys: " + curve.keys.Length);
-      //    }
-      //  }
-      //}catch(Exception e) {
-      //  Log.TWL(0,e.ToString(),true);
-      //}
       this.gameObject.GetComponent<Animator>().enabled = true;
       Animator[] animators = this.gameObject.GetComponentsInChildren<Animator>(true);
       foreach (Animator animator in animators) { animator.enabled = true; animator.cullingMode = AnimatorCullingMode.AlwaysAnimate; }
