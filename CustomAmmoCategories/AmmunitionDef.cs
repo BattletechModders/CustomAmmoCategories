@@ -125,9 +125,7 @@ namespace CustAmmoCategories {
     [Key(18)]
     public int InstallCellRange { get; set; } = 0;
     [Key(19)]
-    public string SFX { get; set; } = string.Empty;
-    [SelfDocumentationTypeName("List of statusEffects"), SelfDocumentationDefaultValue("empty"), Key(36)]
-    public List<EffectData> statusEffects { get; set; } = new List<EffectData>();
+    public string SFX { get; set; } = string.Empty;\
     [Key(20)]
     public float FireTerrainChance { get; set; } = 0f;
     [Key(21)]
@@ -158,23 +156,25 @@ namespace CustAmmoCategories {
     public string Icon { get; set; } = "bomb";
     [Key(34)]
     public MinefieldBurnReaction burnReaction { get; set; } = MinefieldBurnReaction.Destroy;
-    [Key(35)]
-    public bool ExposedStructureEndMove { get; set; } = true;
+    [SelfDocumentationTypeName("List of statusEffects"), SelfDocumentationDefaultValue("empty"), Key(35)]
+    public List<EffectData> statusEffects { get; set; } = new List<EffectData>();
     [Key(36)]
-    public float MoveCostFactor { get; set; } = 0f;
+    public bool ExposedStructureEndMove { get; set; } = true;
     [Key(37)]
-    public bool CausesSympatheticDetonation { get; set; } = false;
+    public float MoveCostFactor { get; set; } = 0f;
     [Key(38)]
-    public float SubjectToSympatheticDetonationChance { get; set; } = 0f;
+    public bool CausesSympatheticDetonation { get; set; } = false;
     [Key(39)]
-    public float DetonateAllMinesInStackChance { get; set; } = 0f;
+    public float SubjectToSympatheticDetonationChance { get; set; } = 0f;
     [Key(40)]
-    public float MisfireOnDeployChance { get; set; } = 0f;
+    public float DetonateAllMinesInStackChance { get; set; } = 0f;
     [Key(41)]
-    public string MinefieldDefID { get; set; } = "GenericMinefield";
+    public float MisfireOnDeployChance { get; set; } = 0f;
     [Key(42)]
-    public bool ShouldAddToExistingFields { get; set; } = false;
+    public string MinefieldDefID { get; set; } = "GenericMinefield";
     [Key(43)]
+    public bool ShouldAddToExistingFields { get; set; } = false;
+    [Key(44)]
     public DamageFalloffType AoEDmgFalloffType { get; set; } = DamageFalloffType.Linear;
     public float mAoEDmgFalloffType(float value) {
       switch (this.AoEDmgFalloffType) {
