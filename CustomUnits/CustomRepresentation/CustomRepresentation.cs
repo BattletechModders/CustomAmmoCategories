@@ -931,11 +931,6 @@ namespace CustomUnits {
             //Log.WL(2, "source animator");
             Dictionary<string, AnimationClip> sourceClips = new Dictionary<string, AnimationClip>();
             foreach (AnimationClip clip in sourceAnimator.runtimeAnimatorController.animationClips) {
-              //Log.W(3, clip.name + " legacy:" + clip.legacy + " wrapMode:" + clip.wrapMode + " events:" + clip.events.Length);
-              //foreach (AnimationEvent aevent in clip.events) {
-                //Log.W(1, "'" + aevent.functionName + "'");
-              //}
-              //Log.WL(0, "");
               sourceClips.Add(clip.name, clip);
             }
             Log.WL(2, "target animator");
@@ -948,21 +943,17 @@ namespace CustomUnits {
                 foreach (AnimationEvent aevent in clip.events) {
                   overrideClip.AddEvent(aevent);
                 }
-                //overrideClip.events = clip.events;
-                //overrideClip.wrapMode = clip.wrapMode;
               }
             }
-            Log.WL(2, "override clips");
             foreach (var overrideClip in overrideClips) {
-              Log.W(3, overrideClip.Key + " wrapMode:" + overrideClip.Value.wrapMode + " events:" + overrideClip.Value.events.Length);
-              foreach (AnimationEvent aevent in overrideClip.Value.events) {
-                Log.W(1, "'" + aevent.functionName + "'");
-              }
-              Log.WL(0, "");
               animatorOverrideController[overrideClip.Key] = overrideClip.Value;
               custRepDef.ApplyAnimationEvent(overrideClip.Value);
             }
             targetAnimator.runtimeAnimatorController = animatorOverrideController;
+            Log.WL(2, "resulting clips");
+            foreach (var clip in targetAnimator.runtimeAnimatorController.animationClips) {
+              Log.WL(3,clip.name+" events:"+clip.events.Length);
+            }
           }
         }
       }

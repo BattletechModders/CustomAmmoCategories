@@ -633,7 +633,7 @@ namespace CustomUnits {
     }
     public virtual void SetupJumpJets() {
       this.jumpjetReps.Clear();
-      Log.TWL(0, "CustomMechRepresentation.SetupJumpJets");
+      Log.TWL(0, "CustomMechRepresentation.SetupJumpJets " + this.PrefabBase);
       if (this.HasOwnVisuals == false) { return; }
       string id1 = string.Format("chrPrfComp_{0}_centertorso_jumpjet", (object)this.PrefabBase);
       string id2 = string.Format("chrPrfComp_{0}_leftleg_jumpjet", (object)this.PrefabBase);
@@ -655,22 +655,23 @@ namespace CustomUnits {
         this.jumpjetReps.Add(component);
       }
       GameObject gameObject3 = this._Combat.DataManager.PooledInstantiate(id3, BattleTechResourceType.Prefab);
-      if (!((UnityEngine.Object)gameObject3 != (UnityEngine.Object)null))
-        return;
-      this.RegisterRenderersMainHeraldry(gameObject3);
-      JumpjetRepresentation component1 = gameObject3.GetComponent<JumpjetRepresentation>();
-      if (mech != null)
-        component1.Init((ICombatant)mech, this.RightLegAttach, true, false, this.name);
-      this.jumpjetReps.Add(component1);
-      if (this.HasOwnVisuals == false) { return; }
+      if (gameObject3 != null) {
+        this.RegisterRenderersMainHeraldry(gameObject3);
+        JumpjetRepresentation component1 = gameObject3.GetComponent<JumpjetRepresentation>();
+        if (mech != null)
+          component1.Init((ICombatant)mech, this.RightLegAttach, true, false, this.name);
+        this.jumpjetReps.Add(component1);
+      }
       if (string.IsNullOrEmpty(Core.Settings.CustomJumpJetsComponentPrefab)) { return; }
       GameObject jumpJetSrcPrefab = this._Combat.DataManager.PooledInstantiate(Core.Settings.CustomJumpJetsComponentPrefab, BattleTechResourceType.Prefab);
       if (jumpJetSrcPrefab != null) {
         Transform jumpJetSrc = jumpJetSrcPrefab.transform.FindRecursive(Core.Settings.CustomJumpJetsPrefabSrcObjectName);
         if (jumpJetSrc != null) {
+          Log.WL(1, "JetStreamsAttaches:"+ this.customRep.CustomDefinition.JetStreamsAttaches.Count);
           foreach (string jumpjetAttachName in this.customRep.CustomDefinition.JetStreamsAttaches) {
             if (string.IsNullOrEmpty(jumpjetAttachName)) { continue; }
             Transform jumpJetAttach = this.gameObject.transform.FindRecursive(jumpjetAttachName);
+            Log.WL(2, "custom jet attach:"+ jumpjetAttachName+" transform found: "+(jumpJetAttach == null?"false":"true"));
             if (jumpJetAttach == null) { continue; }
             GameObject jumpJetBase = new GameObject("jumpJet");
             jumpJetBase.transform.SetParent(jumpJetAttach);

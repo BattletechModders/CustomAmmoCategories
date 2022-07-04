@@ -105,6 +105,11 @@ namespace CustomUnits {
   public interface IOnFootFallReceiver {
     void OnCustomFootFall(Transform foot);
   }
+  public class CustomAnimationEventReceiver: MonoBehaviour {
+    public void OnAudioEvent(string name) {
+      
+    }
+  }
   public class DelayedDisable : MonoBehaviour, IEnableOnMove {
     [NonSerialized]
     private float t;
