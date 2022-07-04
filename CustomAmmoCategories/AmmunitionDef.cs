@@ -135,7 +135,7 @@ namespace CustAmmoCategories {
     [Key(18)]
     public int InstallCellRange { get; set; } = 0;
     [Key(19)]
-    public string SFX { get; set; } = string.Empty;\
+    public string SFX { get; set; } = string.Empty;
     [Key(20)]
     public float FireTerrainChance { get; set; } = 0f;
     [Key(21)]
