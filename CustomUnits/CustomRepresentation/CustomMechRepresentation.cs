@@ -738,7 +738,12 @@ namespace CustomUnits {
       if (this.customRep != null) { this.customRep.AttachHeadlights(); }
     }
   }
-  public partial class CustomMechRepresentation : MechRepresentation {
+  public partial class CustomMechRepresentation : MechRepresentation, IOnFootFallReceiver {
+    public HashSet<Transform> customFootFalls { get; set; } = new HashSet<Transform>();
+    public virtual void OnCustomFootFall(Transform foot) {
+      Log.TWL(0, "CustomMechRepresentation.OnCustomFootFall " + this.transform.name + " foot:" + foot.name);
+      customFootFalls.Add(foot);
+    }
     public List<GameObject> VisualObjects { get; set; } = new List<GameObject>();
     public CustomMechRepresentation parentRepresentation { get; set; } = null;
     public CustomRepresentation customRep { get; set; } = null;
