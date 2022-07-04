@@ -1,4 +1,14 @@
-﻿using BattleTech;
+﻿/*  
+ *  This file is part of CustomAmmoCategories.
+ *  CustomAmmoCategories is free software: you can redistribute it and/or modify it under the terms of the 
+ *  GNU Lesser General Public License as published by the Free Software Foundation, either version 3 of the License, 
+ *  or (at your option) any later version. CustomAmmoCategories is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. 
+ *  See the GNU Lesser General Public License for more details.
+ *  You should have received a copy of the GNU Lesser General Public License along with CustomAmmoCategories. 
+ *  If not, see <https://www.gnu.org/licenses/>. 
+*/
+using BattleTech;
 using CustAmmoCategories;
 using CustomAmmoCategoriesLog;
 using Harmony;
@@ -160,8 +170,6 @@ namespace CustAmmoCategories {
     public MinefieldBurnReaction burnReaction { get; set; } = MinefieldBurnReaction.Destroy;
     [Key(35)]
     public bool ExposedStructureEndMove { get; set; } = true;
-    [Key(36)]
-    public float MoveCostFactor { get; set; } = 0f;
     [Key(37)]
     public bool CausesSympatheticDetonation { get; set; } = false;
     [Key(38)]
@@ -176,6 +184,9 @@ namespace CustAmmoCategories {
     public bool ShouldAddToExistingFields { get; set; } = false;
     [Key(43)]
     public DamageFalloffType AoEDmgFalloffType { get; set; } = DamageFalloffType.Linear;
+    [Key(44)]
+    public float MoveCostFactor { get; set; } = 0f;
+
     public float mAoEDmgFalloffType(float value) {
       switch (this.AoEDmgFalloffType) {
         case DamageFalloffType.Quadratic: return value * value;

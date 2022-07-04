@@ -12,7 +12,7 @@
   </PropertyGroup>
 
   <Target Name="PostBuild" AfterTargets="PostBuildEvent">
-    <Exec Command="copy /Y &quot;$(TargetPath)&quot; &quot;$(BattleTechGameDir)\Mods\CAB-CU&quot;" />
+    <Exec Command="copy /Y &quot;$(TargetPath)&quot; &quot;$(BattleTechGameDir)\Mods\Core\CAB-CU&quot;" />
   </Target>
 
   <ItemGroup>

@@ -64,13 +64,13 @@
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
     <PostBuildEvent>
-if exist "$(BattleTechGameDir)\Mods_CBDE\CustomProfiler" (
+if exist "$(BattleTechGameDir)\Mods_CBDE\Core\CustomProfiler" (
   echo %25BattleTechGameDir%25
-  copy /Y "$(TargetPath)" "$(BattleTechGameDir)\Mods_CBDE\CustomProfiler"
+  copy /Y "$(TargetPath)" "$(BattleTechGameDir)\Mods_CBDE\Core\CustomProfiler"
 )
-if exist "$(BattleTechGameDir)\Mods\CustomProfiler" (
+if exist "$(BattleTechGameDir)\Mods\Core\CustomProfiler" (
   echo %25BattleTechGameDir%25
-  copy /Y "$(TargetPath)" "$(BattleTechGameDir)\Mods\CustomProfiler"
+  copy /Y "$(TargetPath)" "$(BattleTechGameDir)\Mods\Core\CustomProfiler"
 )
 		</PostBuildEvent>
   </PropertyGroup>

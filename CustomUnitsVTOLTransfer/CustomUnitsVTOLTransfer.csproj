@@ -59,26 +59,15 @@
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
     <PostBuildEvent>
-if exist "$(BattleTechGameDir)\Mods_CBDE\CustomUnits" (
-  echo %25BattleTechGameDir%25
-  copy /Y "$(TargetPath)" "$(BattleTechGameDir)\Mods_CBDE\CustomUnits"
+if exist "$(BattleTechGameDir)\Mods_CBDE\Core\CustomUnits" (
+  copy /Y "$(TargetPath)" "$(BattleTechGameDir)\Mods_CBDE\Core\CustomUnits"
 )
-if exist "$(BattleTechGameDir)\Mods\CustomUnits" (
-  echo %25BattleTechGameDir%25
-  copy /Y "$(TargetPath)" "$(BattleTechGameDir)\Mods\CustomUnits"
+if exist "$(BattleTechGameDir)\Mods\Core\CustomUnits" (
+  copy /Y "$(TargetPath)" "$(BattleTechGameDir)\Mods\Core\CustomUnits"
 )
-if exist "$(RogueTechRepo)\CustomUnits" (
-  echo %25BattleTechGameDir%25
-  copy /Y "$(TargetPath)" "$(RogueTechRepo)\CustomUnits"
+if exist "$(RogueTechRepo)\Core\CustomUnits" (
+  copy /Y "$(TargetPath)" "$(RogueTechRepo)\Core\CustomUnits"
 )
-if exist "$(BTARepo)\CustomUnits" (
-  echo %25BattleTechGameDir%25
-  copy /Y "$(TargetPath)" "$(BTARepo)\CustomUnits"
-)
-if exist "$(BattleTechGameDir)\Release_CAC" (
-  echo %25BattleTechGameDir%25
-	copy /Y "$(TargetPath)" "$(BattleTechGameDir)\Release_CAC\Release\CustomBundle\CustomUnits"
-)		
 		</PostBuildEvent>
   </PropertyGroup>
 </Project>

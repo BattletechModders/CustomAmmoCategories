@@ -1,4 +1,14 @@
-﻿using BattleTech;
+﻿/*  
+ *  This file is part of CustomUnits.
+ *  CustomUnits is free software: you can redistribute it and/or modify it under the terms of the 
+ *  GNU Lesser General Public License as published by the Free Software Foundation, either version 3 of the License, 
+ *  or (at your option) any later version. CustomAmmoCategories is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. 
+ *  See the GNU Lesser General Public License for more details.
+ *  You should have received a copy of the GNU Lesser General Public License along with CustomAmmoCategories. 
+ *  If not, see <https://www.gnu.org/licenses/>. 
+*/
+using BattleTech;
 using BattleTech.Data;
 using BattleTech.Rendering;
 using BattleTech.Rendering.UI;
@@ -652,6 +662,31 @@ namespace CustomUnits {
       if (mech != null)
         component1.Init((ICombatant)mech, this.RightLegAttach, true, false, this.name);
       this.jumpjetReps.Add(component1);
+      if (this.HasOwnVisuals == false) { return; }
+      if (string.IsNullOrEmpty(Core.Settings.CustomJumpJetsComponentPrefab)) { return; }
+      GameObject jumpJetSrcPrefab = this._Combat.DataManager.PooledInstantiate(Core.Settings.CustomJumpJetsComponentPrefab, BattleTechResourceType.Prefab);
+      if (jumpJetSrcPrefab != null) {
+        Transform jumpJetSrc = jumpJetSrcPrefab.transform.FindRecursive(Core.Settings.CustomJumpJetsPrefabSrcObjectName);
+        if (jumpJetSrc != null) {
+          foreach (string jumpjetAttachName in this.customRep.CustomDefinition.JetStreamsAttaches) {
+            if (string.IsNullOrEmpty(jumpjetAttachName)) { continue; }
+            Transform jumpJetAttach = this.gameObject.transform.FindRecursive(jumpjetAttachName);
+            if (jumpJetAttach == null) { continue; }
+            GameObject jumpJetBase = new GameObject("jumpJet");
+            jumpJetBase.transform.SetParent(jumpJetAttach);
+            jumpJetBase.transform.localPosition = Vector3.zero;
+            jumpJetBase.transform.localRotation = Quaternion.Euler(0f, 0f, 0f);
+            GameObject jumpJet = GameObject.Instantiate(jumpJetSrc.gameObject);
+            jumpJet.transform.SetParent(jumpJetBase.transform);
+            jumpJet.transform.localPosition = Vector3.zero;
+            jumpJet.transform.localRotation = Quaternion.Euler(0f, 0f, 0f);
+            JumpjetRepresentation jRep = jumpJetBase.AddComponent<JumpjetRepresentation>();
+            jRep.Init(this.parentCombatant, jumpJetAttach, true, false, this.name);
+            this.jumpjetReps.Add(jRep);
+          }
+        }
+        this.parentActor.Combat.DataManager.PoolGameObject(Core.Settings.CustomJumpJetsComponentPrefab, jumpJetSrcPrefab);
+      }
     }
     protected virtual void OnHeatChanged(MessageCenterMessage message) {
       if (!((message as HeatChangedMessage).affectedObjectGuid == this.parentMech.GUID))

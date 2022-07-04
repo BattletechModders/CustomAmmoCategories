@@ -54,22 +54,22 @@
       <HintPath>$(BattleTechGameDir)\BattleTech_Data\Managed\Assembly-CSharp-firstpass.dll</HintPath>
     </Reference>
     <Reference Include="CustomComponents">
-      <HintPath>$(BattleTechGameDir)\Mods\CustomComponents\CustomComponents.dll</HintPath>
+      <HintPath>$(BattleTechGameDir)\Mods\Core\CustomComponents\CustomComponents.dll</HintPath>
     </Reference>
     <Reference Include="CustomLocalization">
-      <HintPath>$(BattleTechGameDir)\Mods\CustomLocalization\CustomLocalization.dll</HintPath>
+      <HintPath>$(BattleTechGameDir)\Mods\Core\CustomLocalization\CustomLocalization.dll</HintPath>
     </Reference>
     <Reference Include="CustomLocalSettings">
-      <HintPath>$(BattleTechGameDir)\Mods\CustomLocalSettings\CustomLocalSettings.dll</HintPath>
+      <HintPath>$(BattleTechGameDir)\Mods\Core\CustomLocalSettings\CustomLocalSettings.dll</HintPath>
     </Reference>
     <Reference Include="CustomPrewarm">
-      <HintPath>$(BattleTechGameDir)\Mods\CustomPrewarm\CustomPrewarm.dll</HintPath>
+      <HintPath>$(BattleTechGameDir)\Mods\Core\CustomPrewarm\CustomPrewarm.dll</HintPath>
     </Reference>
     <Reference Include="Dapper.Unity">
       <HintPath>$(BattleTechGameDir)\BattleTech_Data\Managed\Dapper.Unity.dll</HintPath>
     </Reference>
     <Reference Include="EPPlus">
-      <HintPath>$(BattleTechGameDir)\Mods\CustomLocalization\EPPlus.dll</HintPath>
+      <HintPath>$(BattleTechGameDir)\Mods\Core\CustomLocalization\EPPlus.dll</HintPath>
       <EmbedInteropTypes>False</EmbedInteropTypes>
     </Reference>
     <Reference Include="InControl, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
@@ -77,10 +77,10 @@
       <HintPath>$(BattleTechGameDir)\BattleTech_Data\Managed\InControl.dll</HintPath>
     </Reference>
     <Reference Include="IRBTModUtils">
-      <HintPath>$(BattleTechGameDir)\Mods\IRBTModUtils\IRBTModUtils.dll</HintPath>
+      <HintPath>$(BattleTechGameDir)\Mods\Core\IRBTModUtils\IRBTModUtils.dll</HintPath>
     </Reference>
     <Reference Include="MessagePack">
-      <HintPath>$(BattleTechGameDir)\Mods\CustomPrewarm\MessagePack.dll</HintPath>
+      <HintPath>$(BattleTechGameDir)\Mods\Core\CustomPrewarm\MessagePack.dll</HintPath>
     </Reference>
     <Reference Include="Mono.Data.Sqlite, Version=2.0.0.0, Culture=neutral, PublicKeyToken=0738eb9f132ed756, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
@@ -310,25 +310,15 @@ if exist "$(BattleTechGameDir)\Mods_CBDE\CustomAmmoCategories" (
   copy /Y "$(TargetPath)" "$(BattleTechGameDir)\Mods_CBDE\CustomAmmoCategories"
   copy /Y "$(ProjectDir)..\AdditionalFiles\CAC\README.txt" "$(BattleTechGameDir)\Mods_CBDE\CustomAmmoCategories"
 )
-if exist "$(BattleTechGameDir)\Mods\CustomAmmoCategories" (
+if exist "$(BattleTechGameDir)\Mods\Core\CustomAmmoCategories" (
   echo %25BattleTechGameDir%25
-  copy /Y "$(TargetPath)" "$(BattleTechGameDir)\Mods\CustomAmmoCategories"
-  copy /Y "$(ProjectDir)..\AdditionalFiles\CAC\README.txt" "$(BattleTechGameDir)\Mods\CustomAmmoCategories"
+  copy /Y "$(TargetPath)" "$(BattleTechGameDir)\Mods\Core\CustomAmmoCategories"
+  copy /Y "$(ProjectDir)..\AdditionalFiles\CAC\README.txt" "$(BattleTechGameDir)\Mods\Core\CustomAmmoCategories"
 )
-if exist "$(RogueTechRepo)\CustomAmmoCategories" (
+if exist "$(RogueTechRepo)\Core\CustomAmmoCategories" (
   echo %25BattleTechGameDir%25
-  copy /Y "$(TargetPath)" "$(RogueTechRepo)\CustomAmmoCategories"
-  copy /Y "$(ProjectDir)..\AdditionalFiles\CAC\README.txt" "$(RogueTechRepo)\CustomAmmoCategories"
-)
-if exist "$(BTARepo)\CustomAmmoCategories" (
-  echo %25BattleTechGameDir%25
-  copy /Y "$(TargetPath)" "$(BTARepo)\CustomAmmoCategories"
-  copy /Y "$(ProjectDir)..\AdditionalFiles\CAC\README.txt" "$(BTARepo)\CustomAmmoCategories"
-)
-if exist "$(BattleTechGameDir)\Release_CAC" (
-  echo %25BattleTechGameDir%25
-	copy /Y "$(TargetPath)" "$(BattleTechGameDir)\Release_CAC\Release\CustomBundle\CustomAmmoCategories"
-	xcopy /Y /S /E "$(ProjectDir)..\AdditionalFiles\CAC" "$(BattleTechGameDir)\Release_CAC\Release\CustomBundle\CustomAmmoCategories"
+  copy /Y "$(TargetPath)" "$(RogueTechRepo)\Core\CustomAmmoCategories"
+  copy /Y "$(ProjectDir)..\AdditionalFiles\CAC\README.txt" "$(RogueTechRepo)\Core\CustomAmmoCategories"
 )
 		</PostBuildEvent>
   </PropertyGroup>

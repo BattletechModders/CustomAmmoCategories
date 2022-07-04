@@ -51,13 +51,13 @@
       <HintPath>$(BattleTechGameDir)\BattleTech_Data\Managed\Assembly-CSharp-firstpass.dll</HintPath>
     </Reference>
     <Reference Include="CustomUnits">
-      <HintPath>$(BattleTechGameDir)\Mods\CustomUnits\CustomUnits.dll</HintPath>
+      <HintPath>$(BattleTechGameDir)\Mods\Core\CustomUnits\CustomUnits.dll</HintPath>
     </Reference>
     <Reference Include="InControl">
       <HintPath>$(BattleTechGameDir)\BattleTech_Data\Managed\InControl.dll</HintPath>
     </Reference>
     <Reference Include="IRBTModUtils">
-      <HintPath>$(BattleTechGameDir)\Mods\IRBTModUtils\IRBTModUtils.dll</HintPath>
+      <HintPath>$(BattleTechGameDir)\Mods\Core\IRBTModUtils\IRBTModUtils.dll</HintPath>
     </Reference>
     <Reference Include="Newtonsoft.Json, Version=6.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
@@ -120,21 +120,17 @@
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
     <PostBuildEvent>
-if exist "$(BattleTechGameDir)\Mods_CBDE\CustomAmmoCategories" (
+if exist "$(BattleTechGameDir)\Mods_CBDE\Core\CustomAmmoCategories" (
    echo %25BattleTechGameDir%25
-   copy /Y "$(TargetPath)" "$(BattleTechGameDir)\Mods_CBDE\CustomAmmoCategories"
+   copy /Y "$(TargetPath)" "$(BattleTechGameDir)\Mods_CBDE\Core\CustomAmmoCategories"
 )
-if exist "$(BattleTechGameDir)\Mods\CustomAmmoCategories" (
+if exist "$(BattleTechGameDir)\Mods\Core\CustomAmmoCategories" (
    echo %25BattleTechGameDir%25
-   copy /Y "$(TargetPath)" "$(BattleTechGameDir)\Mods\CustomAmmoCategories"
+   copy /Y "$(TargetPath)" "$(BattleTechGameDir)\Mods\Core\CustomAmmoCategories"
 )
-if exist "$(RogueTechRepo)\CustomAmmoCategories" (
+if exist "$(RogueTechRepo)\Core\CustomAmmoCategories" (
    echo %25BattleTechGameDir%25
-   copy /Y "$(TargetPath)" "$(RogueTechRepo)\CustomAmmoCategories"
-)
-if exist "$(BTARepo)\CustomAmmoCategories" (
-   echo %25BattleTechGameDir%25
-   copy /Y "$(TargetPath)" "$(BTARepo)\CustomAmmoCategories"
+   copy /Y "$(TargetPath)" "$(RogueTechRepo)\Core\CustomAmmoCategories"
 )
 		</PostBuildEvent>
   </PropertyGroup>

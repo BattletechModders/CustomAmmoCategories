@@ -70,25 +70,14 @@
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
     <PostBuildEvent>
-if exist "$(BattleTechGameDir)\Mods_CBDE\DBGSkirmishMechList" (
-  echo %25BattleTechGameDir%25
-  copy /Y "$(TargetPath)" "$(BattleTechGameDir)\Mods_CBDE\DBGSkirmishMechList"
+if exist "$(BattleTechGameDir)\Mods_CBDE\Core\DBGSkirmishMechList" (
+  copy /Y "$(TargetPath)" "$(BattleTechGameDir)\Mods_CBDE\Core\DBGSkirmishMechList"
 )
-if exist "$(BattleTechGameDir)\Mods\DBGSkirmishMechList" (
-  echo %25BattleTechGameDir%25
-  copy /Y "$(TargetPath)" "$(BattleTechGameDir)\Mods\DBGSkirmishMechList"
+if exist "$(BattleTechGameDir)\Mods\Core\DBGSkirmishMechList" (
+  copy /Y "$(TargetPath)" "$(BattleTechGameDir)\Mods\Core\DBGSkirmishMechList"
 )
-if exist "$(RogueTechRepo)\DBGSkirmishMechList" (
-  echo %25BattleTechGameDir%25
-  copy /Y "$(TargetPath)" "$(RogueTechRepo)\DBGSkirmishMechList"
-)
-if exist "$(BTARepo)\DBGSkirmishMechList" (
-  echo %25BattleTechGameDir%25
-  copy /Y "$(TargetPath)" "$(BTARepo)\DBGSkirmishMechList"
-)
-if exist "$(BattleTechGameDir)\Release_CAC" (
-  echo %25BattleTechGameDir%25
-	copy /Y "$(TargetPath)" "$(BattleTechGameDir)\Release_CAC\Release\CustomBundle\DBGSkirmishMechList"
+if exist "$(RogueTechRepo)\Core\DBGSkirmishMechList" (
+  copy /Y "$(TargetPath)" "$(RogueTechRepo)\Core\DBGSkirmishMechList"
 )
 		</PostBuildEvent>
   </PropertyGroup>
