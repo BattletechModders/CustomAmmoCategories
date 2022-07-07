@@ -830,9 +830,15 @@ namespace CustAmmoCategories {
   public class JammInfo {
     public float chance { get; set; } = 0f;
     public string description { get; set; } = string.Empty;
+    public bool damage { get; private set; }
+    public bool destroy { get; private set; }
+    public int cooldown { get; private set; }
     public JammInfo(Weapon w) {
       this.chance = w.FlatJammingChance(out string descr);
       this.description = descr;
+      this.damage = w.DamageOnJamming();
+      this.destroy = w.DestroyOnJamming();
+      this.cooldown = w.Cooldown();
     }
   }
   public class AdvWeaponHitInfo {

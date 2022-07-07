@@ -952,7 +952,24 @@ namespace CustomUnits {
             targetAnimator.runtimeAnimatorController = animatorOverrideController;
             Log.WL(2, "resulting clips");
             foreach (var clip in targetAnimator.runtimeAnimatorController.animationClips) {
-              Log.WL(3,clip.name+" events:"+clip.events.Length);
+              if (clip.events.Length > 0) {
+                Log.WL(3, "\"" + clip.name + "\":[");
+                bool first = true;
+                foreach (var cevent in clip.events) {
+                  if (first) { first = false; Log.W(3, " "); } else { Log.W(4, ","); }
+                  Log.W(0, "{ \"time\": " + cevent.time + ",\"functionName\": \"" + cevent.functionName + "\"");
+                  if (string.IsNullOrEmpty(cevent.stringParameter) == false) {
+                    Log.W(1, ",\"stringParameter\":\"" + cevent.stringParameter + "\"");
+                  }
+                  if(cevent.functionName == "OnFootFall") {
+                    Log.W(1, ",\"intParameter\":" + cevent.intParameter);
+                  }
+                  Log.WL(1, "}");
+                }
+                Log.WL(3, "],");
+              } else {
+                Log.WL(3, "\"" + clip.name + "\":[],");
+              }
             }
           }
         }

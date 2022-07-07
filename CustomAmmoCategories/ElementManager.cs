@@ -132,26 +132,40 @@ namespace CustAmmoCategoriesPatches {
         Transform transform = uiMovementDot.transform;
         Matrix4x4 matrix4x4 = Matrix4x4.TRS(transform.position, transform.rotation, transform.localScale);
         if (uiMovementDot.type == MovementDotMgr.DotType.Normal) {
-          ___normalTrs[count1] = matrix4x4;
-          ++count1;
+          if (count1 < ___normalTrs.Length) {
+            ___normalTrs[count1] = matrix4x4;
+            ++count1;
+          }
         } else if (uiMovementDot.type == MovementDotMgr.DotType.Water) {
-          ___waterTrs[count2] = matrix4x4;
-          ++count2;
+          if (count2 < ___waterTrs.Length) {
+            ___waterTrs[count2] = matrix4x4;
+            ++count2;
+          }
         } else if (uiMovementDot.type == MovementDotMgr.DotType.Forest) {
-          ___forestTrs[count3] = matrix4x4;
-          ++count3;
+          if (count3 < ___forestTrs.Length) {
+            ___forestTrs[count3] = matrix4x4;
+            ++count3;
+          }
         } else if (uiMovementDot.type == MovementDotMgr.DotType.Rough) {
-          ___roughTrs[count4] = matrix4x4;
-          ++count4;
+          if (count4 < ___roughTrs.Length) {
+            ___roughTrs[count4] = matrix4x4;
+            ++count4;
+          }
         } else if (uiMovementDot.type == MovementDotMgr.DotType.Road) {
-          ___roadTrs[count5] = matrix4x4;
-          ++count5;
+          if (count5 < ___roadTrs.Length) {
+            ___roadTrs[count5] = matrix4x4;
+            ++count5;
+          }
         } else if (uiMovementDot.type == MovementDotMgr.DotType.Special) {
-          ___specialTrs[count6] = matrix4x4;
-          ++count6;
+          if (count6 < ___specialTrs.Length) {
+            ___specialTrs[count6] = matrix4x4;
+            ++count6;
+          }
         } else if (uiMovementDot.type == MovementDotMgr.DotType.Dangerous) {
-          ___dangerousTrs[count7] = matrix4x4;
-          ++count7;
+          if (count7 < ___dangerousTrs.Length) {
+            ___dangerousTrs[count7] = matrix4x4;
+            ++count7;
+          }
         }
       }
       if (count1 > 0) {

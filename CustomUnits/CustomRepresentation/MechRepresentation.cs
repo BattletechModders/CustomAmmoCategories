@@ -1285,17 +1285,24 @@ namespace CustomUnits {
       //CustomTwistAnimation custIdleAnim = this.gameObject.GetComponent<CustomTwistAnimation>();
       Log.TWL(0, "CustomMechRepresentation.SetRandomIdleValue: " + this.gameObject.name + " " + (this.parentMech == null ? "null" : this.parentMech.MechDef.ChassisID) + " value:" + value + " RotateBody:" + this.RotateBody);
       if (this.RotateBody) {
+        Log.WL(1, "this.thisAnimator.SetFloat(this.idleRandomValueHash, 0.6f)");
         this.thisAnimator.SetFloat(this.idleRandomValueHash, 0.6f);
         return;
       }
       if (this.customRep != null) {
         if (this.customRep.HasTwistAnimators) {
-
           this.customRep.IdleTwist(value);
-          this.thisAnimator.SetFloat(this.idleRandomValueHash, 0.6f);
+          if (this.customRep.CustomDefinition.KeepRandomIdleAnimation) {
+            Log.WL(1, "this.thisAnimator.SetFloat(this.idleRandomValueHash, "+ value + ")");
+            this.thisAnimator.SetFloat(this.idleRandomValueHash, value);
+          } else {
+            Log.WL(1, "this.thisAnimator.SetFloat(this.idleRandomValueHash, 0.6f)");
+            this.thisAnimator.SetFloat(this.idleRandomValueHash, 0.6f);
+          }
           return;
         }
       }
+      Log.WL(1, "this.thisAnimator.SetFloat(this.idleRandomValueHash, " + value + ")");
       this.thisAnimator.SetFloat(this.idleRandomValueHash, value);
     }
     public virtual void _SetIdleAnimState() {
@@ -1871,6 +1878,7 @@ namespace CustomUnits {
     }
 
     public override void OnDeath() {
+      Log.TWL(0, "MechRepresentation.OnDeath " + this.name);
       PilotableRepresentation_OnDeath();
       int num1 = (int)WwiseManager.PostEvent<AudioEventList_mech>(AudioEventList_mech.mech_engine_powerdown_death, this.rootParentRepresentation.audioObject);
       int num2 = (int)WwiseManager.PostEvent<AudioEventList_mech>(AudioEventList_mech.mech_damage_burning_electrical_stop, this.rootParentRepresentation.audioObject);
@@ -1879,6 +1887,7 @@ namespace CustomUnits {
     }
 
     public override void OnGroundImpact() {
+      Log.TWL(0, "MechRepresentation.OnGroundImpact "+this.name);
       this.OnGroundImpact(false);
     }
     public virtual void OnGroundImpact(bool forcedSlave) {

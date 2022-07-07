@@ -188,6 +188,7 @@ namespace CustomUnits {
     public bool MoveAnimations { get; set; } = false;
     public RepresentationApplyType ApplyType { get; set; }
     public List<string> TwistAnimators { get; set; }
+    public bool KeepRandomIdleAnimation { get; set; } = false;
     public List<string> HeadLights { get; set; }
     public List<string> JetStreamsAttaches { get; set; } = new List<string>();
     public CustomVector vfxScale { get; set; } = new CustomVector(true);
