@@ -304,6 +304,7 @@ namespace CustomAmmoCategoriesPatches {
       if (mech == null) { return false; }
       if (combatant.FakeVehicle()) { return false; }
       if (combatant.NoStability()) { return false; }
+      if(mech.IsShutDown) { return false; }
       try {
         foreach(string tag in CustomAmmoCategories.Settings.MechHasNoStabilityTag) {
           if (mech.MechDef.Chassis.ChassisTags.Contains(tag)) { return false; }

@@ -784,6 +784,7 @@ namespace CustAmmoCategories {
       Log.F.TWL(0, "calculateJumpDamage " + unit.DisplayName + ":"+unit.GUID+" "+position+"\n");
       DynamicMapHelper.PoolDelayedGameObject();
       Mech mech = unit as Mech;
+      ICustomMech customMech = unit as ICustomMech;
       Vehicle vehicle = unit as Vehicle;
       float BurnHeat = 0f;
       float BurnAllHeat = 0f;
@@ -792,6 +793,8 @@ namespace CustAmmoCategories {
       float rollMod = 1f;
       Weapon minefieldWeapon = null;
       Weapon burnWeapon = null;
+      bool UnaffectedFire = unit.UnaffectedFire();
+      bool UnaffectedLandmines = unit.UnaffectedLandmines();
       PathingCapabilitiesDef PathingCaps = (PathingCapabilitiesDef)typeof(Pathing).GetProperty("PathingCaps", BindingFlags.Instance | BindingFlags.NonPublic).GetGetMethod(true).Invoke(unit.Pathing, null);
       Log.F.WL(1, "current pathing:" + PathingCaps.Description.Id);
       if (CustomAmmoCategories.Settings.MineFieldPathingMods.ContainsKey(PathingCaps.Description.Id)) {
@@ -801,7 +804,7 @@ namespace CustAmmoCategories {
       MapTerrainDataCellEx cell = unit.Combat.MapMetaData.GetCellAt(position) as MapTerrainDataCellEx;
       if (cell == null) { return; }
       Log.F.WL(1, "cell:" + cell.x + "," + cell.y + "\n");
-      if (cell.BurningStrength > 0) {
+      if ((cell.BurningStrength > 0) && (UnaffectedFire == false)) {
         BurnAllHeat += (float)cell.BurningStrength;
         BurnAllCount += 1f;
         BurnHeat = BurnAllHeat / BurnAllCount;
@@ -826,7 +829,9 @@ namespace CustAmmoCategories {
           return;
         }
         Log.F.WL(2, "Hex cell " + hexCell.center + " minefields in hex:" + hexCell.MineFields.Count);
-        //if (cell.cell.hexCell.MineField.Count == 0) { continue; }
+        if (UnaffectedLandmines) {
+          continue;
+        }
         foreach (MineField mineField in hexCell.MineFields) {
           if (mineField == null) { Log.F.WL(3, "null minefield???!!!", true); continue; }
           if (mineField.Def == null) { Log.F.WL(3, "mine field without def???!!!", true); continue; };

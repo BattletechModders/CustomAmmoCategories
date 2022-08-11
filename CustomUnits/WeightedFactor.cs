@@ -20,6 +20,10 @@ using System.Reflection.Emit;
 
 namespace CustomUnits {
 #pragma warning disable CS0252
+  public class WeightedFactorHelperTranspilerSafeException : Exception {
+    public WeightedFactorHelperTranspilerSafeException(string message) : base(message) {
+    }
+  }
   public static class WeightedFactorHelper {
     public static List<Type> FindAllDerivedTypes<T>() {
       return FindAllDerivedTypes<T>(Assembly.GetAssembly(typeof(T)));
@@ -50,22 +54,27 @@ namespace CustomUnits {
       }
       return designMaskDefList;
     }
+    private static bool patched_success = false;
     public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) {
+      patched_success = false;
       List<CodeInstruction> result = instructions.ToList();
       MethodInfo CollectMasks = typeof(WeightedFactor).GetMethod("CollectMasksForCellAndPathNode");
       if(CollectMasks == null) {
         Log.LogWrite("can't find WeightedFactor.CollectMasksForCellAndPathNode\n", true);
-        return result;
+        throw new Exception("fail");
+        //return result;
       }
       MethodInfo tCollectMasks = typeof(WeightedFactorHelper).GetMethod("CollectMasksForCellAndPathNode");
       if (CollectMasks == null) {
         Log.LogWrite("can't find WeightedFactorHelper.CollectMasksForCellAndPathNode\n", true);
-        return result;
+        throw new Exception("fail");
+        //return result;
       }
       int methodIndex = result.FindIndex(instruction => instruction.opcode == OpCodes.Call && instruction.operand == CollectMasks);
       if (methodIndex < 0) {
         Log.LogWrite("can't find WeightedFactorHelper.CollectMasksForCellAndPathNode call\n", true);
-        return result;
+        throw new Exception("fail");
+        //return result;
       }
       result[methodIndex].operand = tCollectMasks;
       while(methodIndex >= 0) {
@@ -75,6 +84,7 @@ namespace CustomUnits {
         }
         --methodIndex;
       }
+      patched_success = true;
       return result;
     }
     public static void PatchInfluenceMapPositionFactor(HarmonyInstance harmony) {
@@ -85,7 +95,6 @@ namespace CustomUnits {
         return;
       }
       foreach (Type tp in types) {
-        Log.LogWrite(0,"patching class "+tp.ToString()+"\n");
         MethodInfo method = tp.GetMethod("EvaluateInfluenceMapFactorAtPosition");
         if (method == null) {
           Log.LogWrite(1, "can't find EvaluateInfluenceMapFactorAtPosition method", true);
@@ -94,9 +103,14 @@ namespace CustomUnits {
         if (method.IsAbstract) {
           Log.LogWrite(1, "EvaluateInfluenceMapFactorAtPosition method is abstract", true);
           continue;
-
         }
-        harmony.Patch(method,null,null,new HarmonyMethod(transpliter));
+        patched_success = false;
+        try {
+          var patched = harmony.Patch(method, null, null, new HarmonyMethod(transpliter));
+          if (patched_success == false) harmony.Unpatch(patched, HarmonyPatchType.Transpiler);
+        } catch(Exception e) {
+          //Log.TWL(0,e.ToString());
+        }
       }
       //harmony.Patch()
     }

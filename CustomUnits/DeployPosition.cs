@@ -167,7 +167,24 @@ namespace CustomUnits {
         this.dropPodLandedPrefab.transform.rotation = this.transform.rotation;
       }
       this.unit.TeleportActor(spawnPosition);
-      this.unit.OnPositionUpdate(spawnPosition, unit.CurrentRotation, -1, true, new List<DesignMaskDef>());
+      Vector3 nearestEnemy = this.parent.nearestEnemy(spawnPosition);
+      if (nearestEnemy != Vector3.zero) {
+        Vector3 forwardNearestEnemy = (nearestEnemy - spawnPosition).normalized;
+        Quaternion facingNearestEnemy = Quaternion.LookRotation(forwardNearestEnemy);
+        facingNearestEnemy = Quaternion.Euler(0f, facingNearestEnemy.eulerAngles.y, 0f);
+        this.unit.OnPositionUpdate(spawnPosition, facingNearestEnemy, -1, true, new List<DesignMaskDef>());
+        this.unit.GameRep.transform.rotation = facingNearestEnemy;
+        if (this.unit.GameRep is CustomMechRepresentation custRep) {
+          custRep.UpdateRotation(this.unit.GameRep.transform, this.unit.GameRep.transform.forward, 9999f);
+        } else {
+          if(this.unit is Vehicle vehicle) {
+            ActorMovementSequence.AlignVehicleToGround(unit.GameRep.transform, 9999f);
+          }
+        }
+      } else {
+        this.unit.OnPositionUpdate(spawnPosition, unit.CurrentRotation, -1, true, new List<DesignMaskDef>());
+      }
+
       this.unit.GameRep.FadeIn(1f);
       this.unit.OnPlayerVisibilityChanged(VisibilityLevel.LOSFull);
       if (this.unit.GameRep is PilotableActorRepresentation rep) { rep.RefreshSurfaceType(true); }
@@ -198,6 +215,7 @@ namespace CustomUnits {
     public CombatGameState Combat { get; set; } = null;
     public CombatHUD HUD { get; set; } = null;
     public List<DropPodPoint> dropPoints { get; set; } = new List<DropPodPoint>();
+    private List<Vector3> enemiesPositions { get; set; } = new List<Vector3>();
     public Action OnAllDropCompleete { get; set; } = null;
     public void UpdateDropPodPrefabs() {
       DropPodPoint[] drops = this.gameObject.GetComponentsInChildren<DropPodPoint>(true);
@@ -205,10 +223,25 @@ namespace CustomUnits {
         drop.LoadDropPodPrefabs(parent.DropPodVfxPrefab, parent.dropPodLandedPrefab);
       }
     }
+    public static Vector3 nearestEnemy(List<Vector3> enemiesPositions, Vector3 pos) {
+      Vector3 nearest = pos;
+      float nearest_dist = 0f;
+      if (enemiesPositions.Count == 0) { return Vector3.zero; }
+      foreach (Vector3 epos in enemiesPositions) {
+        float dist = Vector3.Distance(pos, epos);
+        if ((nearest_dist == 0f) || (nearest_dist > dist)) { nearest = epos; nearest_dist = dist; }
+      }
+      if (nearest == pos) { return Vector3.zero; }
+      return nearest;
+    }
+    public Vector3 nearestEnemy(Vector3 pos) {
+      return DeployManualDropPodManager.nearestEnemy(enemiesPositions, pos);
+    }
     public void Init(CombatGameState Combat, CombatHUD HUD, EncounterLayerParent parent, List<DeployPosition> positions) {
       this.Combat = Combat;
       this.HUD = HUD;
       this.parent = parent;
+      this.enemiesPositions = Combat.enemiesPositions();
       DropPodPoint[] drops = this.gameObject.GetComponentsInChildren<DropPodPoint>(true);
       for (int t = 0; t < drops.Length; ++t) {
         drops[t].unit = null;
@@ -385,12 +418,36 @@ namespace CustomUnits {
       }
 
     }
+
     public static void TeleportToPositions(CombatHUD HUD, List<DeployPosition> positions) {
       try {
         IsInManualSpawnSequence = false;
+        List<Vector3> enemiesPositions = HUD.Combat.enemiesPositions();
+        Log.TWL(0, "DeployManualHelper.TeleportToPositions enemies:"+ enemiesPositions.Count);
         foreach (DeployPosition dPos in positions) {
           if (dPos.position.HasValue) {
+            if (dPos.unit == null) { continue; }
             dPos.unit?.TeleportActor(dPos.position.Value);
+            Vector3 nearestEnemy = DeployManualDropPodManager.nearestEnemy(enemiesPositions, dPos.position.Value);
+            Log.WL(1, "position:"+ dPos.position.Value+" nearest enemy:"+ nearestEnemy);
+            if (nearestEnemy != Vector3.zero) {
+              Vector3 forwardNearestEnemy = (nearestEnemy - dPos.position.Value).normalized;
+              Quaternion facingNearestEnemy = Quaternion.LookRotation(forwardNearestEnemy);
+              Log.WL(2, "forward to enemy:" + forwardNearestEnemy);
+              facingNearestEnemy = Quaternion.Euler(0f, facingNearestEnemy.eulerAngles.y, 0f);
+              Log.WL(2, "facing to enemy:"+ facingNearestEnemy.eulerAngles+" facing original:"+dPos.unit.CurrentRotation.eulerAngles);
+              dPos.unit.OnPositionUpdate(dPos.position.Value, facingNearestEnemy, -1, true, new List<DesignMaskDef>());
+              dPos.unit.GameRep.transform.rotation = facingNearestEnemy;
+              if (dPos.unit?.GameRep is CustomMechRepresentation custRep) {
+                custRep.UpdateRotation(dPos.unit.GameRep.transform, dPos.unit.GameRep.transform.forward, 9999f);
+              } else {
+                if (dPos.unit is Vehicle) {
+                  ActorMovementSequence.AlignVehicleToGround(dPos.unit?.GameRep.transform, 9999f);
+                }
+              }
+            } else {
+              dPos.unit?.OnPositionUpdate(dPos.position.Value, dPos.unit.CurrentRotation, -1, true, new List<DesignMaskDef>());
+            }
             dPos.unit?.OnPositionUpdate(dPos.position.Value, dPos.unit.CurrentRotation, -1, true, new List<DesignMaskDef>());
             //dPos.unit?.OnPlayerVisibilityChanged(VisibilityLevel.LOSFull);
             if(dPos.unit != null) {
@@ -706,7 +763,7 @@ namespace CustomUnits {
     public override bool CanActorUseThisState(AbstractActor actor) { return actor.IsDeployDirector(); }
     public override bool CanDeselect { get { return false; } }
     private int NeedPositionsCount { get; set; }
-    private List<DeployPosition> deployPositions;
+    private List<DeployPosition> deployPositions { get; set; } = new List<DeployPosition>();
     public void FillDeployPositionsInfo() {
       if (DeployManualHelper.IsInManualSpawnSequence == false) {
         deployPositions.Clear();
@@ -1023,9 +1080,16 @@ namespace CustomUnits {
       //}
       //Log.TWL(0, "SelectionState_ProcessMousePos");
       try {
+        if (deployPositions == null) { FillDeployPositionsInfo(); }
+      }catch(Exception e) {
+        Log.TWL(0, e.ToString());
+      }
+      if (deployPositions == null) { }
+      try {
         try {
           TargetingCirclesHelper.ShowCirclesCount(this.NumPositionsLocked);
           for (int index = 0; index < this.NumPositionsLocked; ++index) {
+            if (index >= deployPositions.Count) { continue; }
             if (deployPositions[index].position.HasValue) {
               string text = String.Empty;
               MechDef def = deployPositions[index].unit.PilotableActorDef as MechDef;

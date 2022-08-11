@@ -18,6 +18,8 @@ using IRBTModUtils;
 using Localize;
 using System;
 using System.Collections.Generic;
+using System.Reflection;
+using System.Reflection.Emit;
 using System.Threading;
 using UnityEngine;
 using UnityEngine.EventSystems;
@@ -30,14 +32,17 @@ namespace CustAmmoCategories {
     public bool melee { get; set; }
     public Func<ToHit, AbstractActor, Weapon, ICombatant, Vector3, Vector3, LineOfFireLevel, MeleeAttackType, bool, float> modifier { get; set; }
     public Func<ToHit, AbstractActor, Weapon, ICombatant, Vector3, Vector3, LineOfFireLevel, MeleeAttackType, bool, string> dname { get; set; }
+    public Func<ToHit, AbstractActor, Weapon, ICombatant, Vector3, Vector3, LineOfFireLevel, MeleeAttackType, bool, int, string> dname2 { get; set; }
     public ToHitModifier(string id,string name, bool ranged, bool melee, 
       Func<ToHit, AbstractActor, Weapon, ICombatant, Vector3, Vector3, LineOfFireLevel, MeleeAttackType, bool, float> modifier,
-      Func<ToHit, AbstractActor, Weapon, ICombatant, Vector3, Vector3, LineOfFireLevel, MeleeAttackType, bool, string> dname
+      Func<ToHit, AbstractActor, Weapon, ICombatant, Vector3, Vector3, LineOfFireLevel, MeleeAttackType, bool, string> dname,
+      Func<ToHit, AbstractActor, Weapon, ICombatant, Vector3, Vector3, LineOfFireLevel, MeleeAttackType, bool, int, string> dname2
       ) {
       this.id = id;
       this.name = name;
       this.modifier = modifier;
       this.dname = dname;
+      this.dname2 = dname2;
       this.ranged = ranged;
       this.melee = melee;
     }
@@ -128,8 +133,25 @@ namespace CustAmmoCategories {
         mod.melee = melee;
         mod.modifier = modifier;
         mod.dname = dname;
+        mod.dname2 = null;
       } else {
-        modifiers.Add(id, new ToHitModifier(id, name, ranged, melee, modifier, dname));
+        modifiers.Add(id, new ToHitModifier(id, name, ranged, melee, modifier, dname, null));
+      }
+    }
+    public static void registerModifier2(string id, string name, bool ranged, bool melee,
+      Func<ToHit, AbstractActor, Weapon, ICombatant, Vector3, Vector3, LineOfFireLevel, MeleeAttackType, bool, float> modifier,
+      Func<ToHit, AbstractActor, Weapon, ICombatant, Vector3, Vector3, LineOfFireLevel, MeleeAttackType, bool, int, string> dname2
+      ) {
+      Log.M.TWL(0, "registerModifier:" + id + "/" + name + " r:" + ranged + " m:" + melee, true);
+      if (modifiers.TryGetValue(id, out ToHitModifier mod)) {
+        mod.name = name;
+        mod.ranged = ranged;
+        mod.melee = melee;
+        mod.modifier = modifier;
+        mod.dname = null;
+        mod.dname2 = dname2;
+      } else {
+        modifiers.Add(id, new ToHitModifier(id, name, ranged, melee, modifier, null, dname2));
       }
     }
     public static float GetRangeModifier(ToHit instance, AbstractActor attacker, Weapon weapon, ICombatant target, Vector3 attackPosition, Vector3 targetPosition, LineOfFireLevel lofLevel, MeleeAttackType meleeAttackType, bool isCalledShot) {
@@ -608,6 +630,23 @@ namespace CustAmmoCategories {
   [HarmonyPriority(Priority.Last)]
   [HarmonyPatch(new Type[] { typeof(ICombatant) })]
   public static class CombatHUDWeaponSlot_UpdateTooltipStrings {
+    public delegate void d_AddToolTipDetail(CombatHUDWeaponSlot slot, string description, int modifier);
+    private static d_AddToolTipDetail i_AddToolTipDetail = null;
+    public static bool Prepare() {
+      {
+        MethodInfo method = typeof(CombatHUDWeaponSlot).GetMethod("AddToolTipDetail", BindingFlags.NonPublic | BindingFlags.Instance);
+        var dm = new DynamicMethod("CACAddToolTipDetail", null, new Type[] { typeof(CombatHUDWeaponSlot), typeof(string), typeof(int) });
+        var gen = dm.GetILGenerator();
+        gen.Emit(OpCodes.Ldarg_0);
+        gen.Emit(OpCodes.Ldarg_1);
+        gen.Emit(OpCodes.Ldarg_2);
+        gen.Emit(OpCodes.Call, method);
+        gen.Emit(OpCodes.Ret);
+        i_AddToolTipDetail = (d_AddToolTipDetail)dm.CreateDelegate(typeof(d_AddToolTipDetail));
+      }
+
+      return true;
+    }
     public static void UpdateToolTipsTarget(this CombatHUDWeaponSlot slot, ICombatant target) {
       slot.ToolTipHoverElement.BasicString = new Text("SHOT MODIFIER ", (object[])Array.Empty<object>());
       slot.ToolTipHoverElement.UseModifier = true;
@@ -632,21 +671,7 @@ namespace CustAmmoCategories {
       return activeState != null && activeState.SelectionType == SelectionType.Move && (activeState.PotentialMeleeTarget == target || activeState.TargetedCombatant == target);
     }
     public static void AddToolTipDetail(this CombatHUDWeaponSlot slot, string description, int modifier) {
-      if (modifier < 0) {
-        slot.ToolTipHoverElement.BuffStrings.Add(new Text("{0} {1:+0;-#}", new object[2]
-        {
-          (object) description,
-          (object) modifier
-        }));
-      } else {
-        if (modifier <= 0)
-          return;
-        slot.ToolTipHoverElement.DebuffStrings.Add(new Text("{0} {1:+0;-#}", new object[2]
-        {
-          (object) description,
-          (object) modifier
-        }));
-      }
+      if (i_AddToolTipDetail != null) { i_AddToolTipDetail(slot, description, modifier); }
     }
     public static void UpdateToolTipsMelee(this CombatHUDWeaponSlot slot, ICombatant target) {
       //slot.ToolTipHoverElement.BasicString = new Text(slot.DisplayedWeapon.Name, (object[])Array.Empty<object>());
@@ -668,8 +693,18 @@ namespace CustAmmoCategories {
           HUD.SelectedActor, slot.DisplayedWeapon,
           target,
           HUD.SelectionHandler.ActiveState.PreviewPos, target.TargetPosition, LineOfFireLevel.LOFClear, meleeAttackType, calledShot);
+        }else if(mod.Value.dname2 != null) {
+          name = mod.Value.dname2(Combat.ToHit,
+          HUD.SelectedActor, slot.DisplayedWeapon,
+          target,
+          HUD.SelectionHandler.ActiveState.PreviewPos, target.TargetPosition, LineOfFireLevel.LOFClear, meleeAttackType, calledShot, modifier);
         }
-        if((modifier!=0)&&(string.IsNullOrEmpty(name) == false)) {
+        if (mod.Value.dname2 != null) {
+          if (string.IsNullOrEmpty(name) == false) {
+            slot.AddToolTipDetail(name, modifier);
+          }
+        } else
+        if ((modifier != 0) && (string.IsNullOrEmpty(name) == false)) {
           slot.AddToolTipDetail(name, modifier);
         }
         all_modifiers += modifier;
@@ -724,7 +759,18 @@ namespace CustAmmoCategories {
           HUD.SelectedActor, slot.DisplayedWeapon,
           target,
           HUD.SelectionHandler.ActiveState.PreviewPos, target.TargetPosition, lofLevel, meleeAttackType, calledShot);
+        } else if (mod.Value.dname2 != null) {
+          name = mod.Value.dname2(Combat.ToHit,
+          HUD.SelectedActor, slot.DisplayedWeapon,
+          target,
+          HUD.SelectionHandler.ActiveState.PreviewPos, target.TargetPosition, LineOfFireLevel.LOFClear, meleeAttackType, calledShot, modifier);
         }
+        if(mod.Value.dname2 != null) {
+          //Log.M?.TWL(0, "UpdateToolTipsFiring "+ slot.DisplayedWeapon.defId+" name:"+name+" modifier:"+modifier);
+          if(string.IsNullOrEmpty(name) == false) {
+            slot.AddToolTipDetail(name, modifier);
+          }
+        }else
         if ((modifier != 0) && (string.IsNullOrEmpty(name) == false)) {
           slot.AddToolTipDetail(name, modifier);
         }
@@ -777,7 +823,18 @@ namespace CustAmmoCategories {
           slot.DisplayedWeapon.parent, slot.DisplayedWeapon,
           HUD.SelectedTarget,
           HUD.SelectionHandler.ActiveState.PreviewPos, HUD.SelectedActor.TargetPosition, LineOfFireLevel.LOFClear, meleeAttackType, calledShot);
+        } else if (mod.Value.dname2 != null) {
+          name = mod.Value.dname2(Combat.ToHit,
+          HUD.SelectedActor, slot.DisplayedWeapon,
+          HUD.SelectedTarget,
+          HUD.SelectionHandler.ActiveState.PreviewPos, HUD.SelectedActor.TargetPosition, LineOfFireLevel.LOFClear, meleeAttackType, calledShot, modifier);
         }
+        if (mod.Value.dname2 != null) {
+          //Log.M?.TWL(0, "UpdateToolTipsSelf " + slot.DisplayedWeapon.defId + " name:" + name + " modifier:" + modifier);
+          if (string.IsNullOrEmpty(name) == false) {
+            slot.AddToolTipDetail(name, modifier);
+          }
+        } else
         if ((modifier != 0) && (string.IsNullOrEmpty(name) == false)) {
           slot.AddToolTipDetail(name, modifier);
         }

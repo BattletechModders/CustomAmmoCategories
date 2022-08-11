@@ -630,6 +630,96 @@ namespace CustomDeploy{
       }
     }
   }
+  [HarmonyPatch(typeof(DataManager))]
+  [HarmonyPatch("UpdateRequests")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { })]
+  public static class DataManager_UpdateRequests {
+    public static void Prefix(DataManager __instance) {
+      try {
+        int LightRequestCount = 0;
+        int HeavyRequestCount = 0;
+        for (int index = 0; index < __instance.activeLoadBatches.Count; ++index) {
+          LoadRequest activeLoadBatch = __instance.activeLoadBatches[index];
+          if (activeLoadBatch.CurrentState == LoadRequest.State.Processing) {
+            LightRequestCount += activeLoadBatch.GetActiveLightRequestCount();
+            HeavyRequestCount += activeLoadBatch.GetActiveHeavyRequestCount();
+            if (((BattleTech.Data.DataManager.MaxConcurrentLoadsLight <= 0 ? 0 : (LightRequestCount >= BattleTech.Data.DataManager.MaxConcurrentLoadsLight ? 1 : 0)) | (BattleTech.Data.DataManager.MaxConcurrentLoadsHeavy <= 0 ? (false ? 1 : 0) : (HeavyRequestCount >= BattleTech.Data.DataManager.MaxConcurrentLoadsHeavy ? 1 : 0))) != 0) {
+              break;
+            }
+            for (BattleTech.Data.DataManager.FileLoadRequest fileLoadRequest = activeLoadBatch.PopPendingRequest(); fileLoadRequest != null; fileLoadRequest = activeLoadBatch.PopPendingRequest()) {
+              if (!fileLoadRequest.ManifestEntryValid) {
+                __instance.logger.LogError((object)string.Format("LoadRequest for {0} of type {1} has an invalid manifest entry. Any requests for this object will fail.", (object)fileLoadRequest.ResourceId, (object)fileLoadRequest.ResourceType));
+                fileLoadRequest.NotifyLoadFailed();
+              } else if (!fileLoadRequest.RequestWeight.RequestAllowed) {
+                __instance.logger.LogWarning((object)string.Format("LoadRequest for {0} of type {1} not allowed due to current request weight.", (object)fileLoadRequest.ResourceId, (object)fileLoadRequest.ResourceType));
+                fileLoadRequest.SetLoadComplete();
+              } else {
+                if (fileLoadRequest.IsMemoryRequest) {
+                  __instance.RemoveObjectOfType(fileLoadRequest.ResourceId, fileLoadRequest.ResourceType);
+                }
+                if (fileLoadRequest.RequestWeight.AllowedWeight == 10U) {
+                  ++LightRequestCount;
+                } else {
+                  ++HeavyRequestCount;
+                }
+                try {
+                  fileLoadRequest.Load();
+                }catch(Exception e) {
+                  __instance.logger.LogWarning((object)string.Format("LoadRequest {0} of type {1} load exception\n{2}", (object)fileLoadRequest.ResourceId, (object)fileLoadRequest.ResourceType, (object)e.ToString()));
+                  Log.TWL(0, string.Format("LoadRequest {0} of type {1} load exception", fileLoadRequest.ResourceId, fileLoadRequest.ResourceType));
+                  Log.WL(0, e.ToString(), true);
+                  fileLoadRequest.NotifyLoadFailed();
+                }
+              }
+            }
+          }
+        }
+      } catch (Exception e) {
+        Log.TWL(0, e.ToString());
+      }
+    }
+  }
+  [HarmonyPatch(typeof(PreferExposedAlonePositionalFactor))]
+  [HarmonyPatch("EvaluateInfluenceMapFactorAtPosition")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { typeof(AbstractActor), typeof(Vector3), typeof(float), typeof(MoveType), typeof(PathNode) })]
+  public static class PreferExposedAlonePositionalFactor_EvaluateInfluenceMapFactorAtPosition {
+    public static PilotDef lastPilotAdded { get; set; } = null;
+    public static void Prefix(PreferExposedAlonePositionalFactor __instance, AbstractActor unit, Vector3 position, float angle, MoveType moveType_unused, PathNode pathNode_unused, ref float __result) {
+      __result = 0.0f;
+      try {
+        if (__instance.exposureOK || __instance.exposedTeammateCount > 0) {
+          return;
+        }
+        if(unit == null) {
+          Log.TWL(0, "EXCEPTION: PreferExposedAlonePositionalFactor.EvaluateInfluenceMapFactorAtPosition unit is null", true);
+          return;
+        }
+        if (unit.BehaviorTree == null) {
+          Log.TWL(0, "EXCEPTION: PreferExposedAlonePositionalFactor.EvaluateInfluenceMapFactorAtPosition "+unit.PilotableActorDef.chassisID+ " has null BehaviorTree",true);
+          return;
+        }
+        Quaternion targetRotation = Quaternion.Euler(0.0f, angle, 0.0f);
+        for (int index = 0; index < unit.BehaviorTree.enemyUnits.Count; ++index) {
+          try {
+            AbstractActor enemyUnit = unit.BehaviorTree.enemyUnits[index] as AbstractActor;
+            if (enemyUnit == null) { continue; }
+            if (enemyUnit.IsDead) { continue; }
+            if(false == enemyUnit.HasLOFToTargetUnitAtTargetPosition((ICombatant)unit, __instance.maxRanges[enemyUnit], unit.CurrentPosition, Quaternion.LookRotation(position - unit.CurrentPosition), position, targetRotation, __instance.isIndirectFireCapable[enemyUnit])) {
+              continue;
+            }
+            ++__result;
+          }catch(Exception e) {
+            Log.TWL(0, "I'm just a victim here",true);
+            Log.TWL(0, e.ToString(), true);
+          }
+        }
+      } catch (Exception e) {
+        Log.TWL(0, e.ToString());
+      }
+    }
+  }
 
   [HarmonyPatch(typeof(Utilities))]
   [HarmonyPatch("BuildExtensionMethodCacheForType")]

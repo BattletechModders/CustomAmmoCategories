@@ -490,11 +490,11 @@ namespace CustAmmoCategories {
       return result;
     }
     public static void registerExtWeaponDef(string defId, ExtWeaponDef def) {
-      //if (CustomAmmoCategories.ExtWeaponDef.ContainsKey(defId) == false) {
-      CustomAmmoCategories.ExtWeaponDef.AddOrUpdate(defId, def, (k,v) => { return def; });
-      //} else {
-        //CustomAmmoCategories.ExtWeaponDef[defId] = def;
-      //}
+      if (CustomAmmoCategories.ExtWeaponDef.ContainsKey(defId) == false) {
+        CustomAmmoCategories.ExtWeaponDef.AddOrUpdate(defId, def, (k,v) => { return def; });
+      } else {
+        CustomAmmoCategories.ExtWeaponDef[defId] = def;
+      }
     }
     public static bool isRegistredWeapon(string defId) {
       return CustomAmmoCategories.ExtWeaponDef.ContainsKey(defId);

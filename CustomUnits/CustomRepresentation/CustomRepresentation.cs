@@ -588,6 +588,22 @@ namespace CustomUnits {
   public static class CustomActorRepresentationHelper {
     private static Dictionary<string, CustomActorRepresentationDef> customRepresentations = new Dictionary<string, CustomActorRepresentationDef>();
     private static Dictionary<string, CustomActorRepresentationDef> customSimGameRepresentations = new Dictionary<string, CustomActorRepresentationDef>();
+    public static bool AddEventUnique(this AnimationClip clip, AnimationEvent aevent) {
+      foreach (var existing_event in clip.events) {
+        if(existing_event.time == aevent.time) {
+          if(existing_event.functionName == aevent.functionName) {
+            if((existing_event.stringParameter == aevent.stringParameter)
+              && (existing_event.intParameter == aevent.intParameter)
+              && (existing_event.floatParameter == aevent.floatParameter)
+              ) {
+              return false;
+            }
+          }
+        }
+      }
+      clip.AddEvent(aevent);
+      return true;
+    }
     public static void Register(this CustomActorRepresentationDef customRepDef) {
       if (customRepresentations.ContainsKey(customRepDef.Id)) {
         Log.TWL(0, "Custom" + customRepDef.RepType + "RepresentationDef " + customRepDef.Id + " already registered skipping");
@@ -941,7 +957,7 @@ namespace CustomUnits {
               if (sourceClips.TryGetValue(clip.name, out var overrideClip)) {
                 overrideClips.Add(clip.name, overrideClip);
                 foreach (AnimationEvent aevent in clip.events) {
-                  overrideClip.AddEvent(aevent);
+                  overrideClip.AddEventUnique(aevent);
                 }
               }
             }

@@ -26,6 +26,53 @@ using System.Threading;
 using UnityEngine;
 
 namespace CustomUnits{
+  public static class DLog {
+    private static StringBuilder m_cache = new StringBuilder();
+    public static void LogWrite(int initiation, string line, bool eol = false, bool timestamp = false) {
+      string init = new string(' ', initiation);
+      string prefix = String.Empty;
+      if (timestamp) { prefix = DateTime.Now.ToString("[HH:mm:ss.fff]"); }
+      if (initiation > 0) { prefix += init; };
+      if (eol) {
+        LogWrite(prefix + line + "\n");
+      } else {
+        LogWrite(prefix + line);
+      }
+    }
+    public static void LogWrite(string line) {
+      m_cache.Append(line);
+    }
+    public static void W(string line) {
+      LogWrite(line);
+    }
+    public static void WL(string line) {
+      line += "\n"; W(line);
+    }
+    public static void W(int initiation, string line) {
+      string init = new string(' ', initiation);
+      line = init + line; W(line);
+    }
+    public static void WL(int initiation, string line) {
+      string init = new string(' ', initiation);
+      line = init + line; WL(line);
+    }
+    public static void TW(int initiation, string line) {
+      string init = new string(' ', initiation);
+      line = "[" + DateTime.Now.ToString("HH:mm:ss.fff") + "]" + init + line;
+      W(line);
+    }
+    public static void TWL(int initiation, string line) {
+      string init = new string(' ', initiation);
+      line = "[" + DateTime.Now.ToString("HH:mm:ss.fff") + "]" + init + line;
+      WL(line);
+    }
+    public static void Flush() {
+      if (m_cache.Length > 0) { Log.LogWrite(m_cache.ToString(), false); m_cache.Clear(); }
+    }
+    public static void Skip() {
+      m_cache.Clear();
+    }
+  }
   public static class Log {
     //private static string m_assemblyFile;
     private static string m_logfile;
@@ -70,7 +117,6 @@ namespace CustomUnits{
       }
     }
     public static void LogWrite(string line, bool isCritical = false) {
-      //try {
       if ((Core.Settings.debugLog) || (isCritical)) {
         if (Log.mutex.WaitOne(1000)) {
           m_cache.Append(line);
@@ -80,9 +126,6 @@ namespace CustomUnits{
         if (isCritical) { Log.flush(); };
         if (m_logfile.Length > Log.flushBufferLength) { Log.flush(); };
       }
-      //} catch (Exception) {
-      //i'm sertanly don't know what to do
-      //}
     }
     public static void W(string line, bool isCritical = false) {
       LogWrite(line, isCritical);

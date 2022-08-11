@@ -157,8 +157,7 @@ namespace CustomUnits {
       if (is_floatParameter) { evt.floatParameter = m_floatParameter; }
       if (is_intParameter) { evt.intParameter = m_intParameter; }
       if (is_stringParameter) { evt.stringParameter = m_stringParameter; }
-      Log.WL(2,"AddEvent:"+ clip.name+" function:"+evt.functionName);
-      clip.AddEvent(evt);
+      if (clip.AddEventUnique(evt)) { Log.WL(2, "AddEvent:" + clip.name + " function:" + evt.functionName); };      
     }
   }
   public class CustomActorRepresentationDef {
