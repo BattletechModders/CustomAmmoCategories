@@ -38,6 +38,7 @@ using Log = CustomAmmoCategoriesLog.Log;
 using InControl;
 using System.Reflection.Emit;
 using IRBTModUtils;
+using BattleTech.UI.Tooltips;
 
 namespace CustomAmmoCategoriesPatches {
   [HarmonyPatch(typeof(MechDef))]
@@ -1632,132 +1633,997 @@ namespace CustomAmmoCategoriesPatches {
       definitionOrders = new Dictionary<string, List<string>>();
     }
   }
+  public class AmmoBoxOderDataElementDef {
+    public string ammoBoxDefId { get; set; } = string.Empty;
+    public ChassisLocations mountLocation { get; set; } = ChassisLocations.None;
+    public AmmoBoxOderDataElementDef() { }
+    public AmmoBoxOderDataElementDef(MechComponentRef componentRef) {
+      this.ammoBoxDefId = componentRef.ComponentDefID;
+      this.mountLocation = componentRef.MountedLocation;
+    }
+  }
+  public class WeaponOrderDataElementDef {
+    public string weaponDefId { get; set; } = string.Empty;
+    public ChassisLocations mountLocation { get; set; } = ChassisLocations.None;
+    public string defaultModeId { get; set; } = string.Empty;
+    public string defaultAmmoId { get; set; } = string.Empty;
+    public bool automaticAmmoBoxesOrder { get; set; } = true;
+    public List<AmmoBoxOderDataElementDef> ammoBoxesOrder { get; set; } = new List<AmmoBoxOderDataElementDef>();
+    public WeaponOrderDataElementDef() { }
+    public WeaponOrderDataElementDef(WeaponOrderDataElement element) {
+      this.weaponDefId = element.componentRef.ComponentDefID;
+      this.mountLocation = element.componentRef.MountedLocation;
+      this.defaultModeId = element.defaultModeId;
+      this.defaultAmmoId = element.defaultAmmoId;
+      this.automaticAmmoBoxesOrder = element.automaticAmmoBoxesOrder;
+      this.ammoBoxesOrder = new List<AmmoBoxOderDataElementDef>();
+      foreach(var box in element.ammoBoxesOrder) {
+        this.ammoBoxesOrder.Add(new AmmoBoxOderDataElementDef(box));
+      }
+    }
+  }
+  public class WeaponOrderDataElement {
+    public MechComponentRef componentRef { get; set; } = null;
+    public string defaultModeId { get; set; } = string.Empty;
+    public string defaultAmmoId { get; set; } = string.Empty;
+    public List<MechComponentRef> ammoBoxesOrder { get; set; } = new List<MechComponentRef>();
+    public bool automaticAmmoBoxesOrder { get; set; } = true;
+    public WeaponOrderDataElement(MechComponentRef compRef, MechDef mechDef, WeaponOrderDataElementDef dataDef) {
+      componentRef = compRef;
+      List<MechComponentRef> allammo = new List<MechComponentRef>();
+      HashSet<string> ammoCatIds = new HashSet<string>();
+      WeaponDef weaponDef = componentRef.Def as WeaponDef;
+      Log.M?.TWL(0, "WeaponOrderDataElement "+weaponDef.Description.Id);
+      if (weaponDef != null) {
+        if(weaponDef.exDef().AmmoCategory.BaseCategory.Is_NotSet == false) {
+          Log.M?.WL(1, "ammo cat:"+ weaponDef.exDef().AmmoCategory.Id);
+          ammoCatIds.Add(weaponDef.exDef().AmmoCategory.Id);
+        }
+        foreach(var mode in weaponDef.exDef().Modes) {
+          if (mode.Value.AmmoCategory.BaseCategory.Is_NotSet) { continue; }
+          Log.M?.WL(1, "ammo cat:" + mode.Value.AmmoCategory.Id);
+          ammoCatIds.Add(mode.Value.AmmoCategory.Id);
+        }
+      }
+      if (ammoCatIds.Count > 0) {
+        for (int i = 0; i < mechDef.Inventory.Length; ++i) {
+          MechComponentRef componentRef = mechDef.Inventory[i];
+          if (componentRef.ComponentDefType != ComponentType.AmmunitionBox) { continue; }
+          AmmunitionBoxDef ammunitionBoxDef = componentRef.Def as AmmunitionBoxDef;
+          if (ammunitionBoxDef == null) { continue; }
+          Log.M?.WL(1, "ammunitionBoxDef:" + ammunitionBoxDef.Description.Id);
+          if (ammunitionBoxDef.Ammo == null) { Log.M?.WL(2, "Ammo is null"); continue; }
+          if (ammunitionBoxDef.Ammo.extDef() == null) { Log.M?.WL(2, "extDef is null"); continue; }
+          ExtAmmunitionDef extAmmo = CustomAmmoCategories.findExtAmmo(ammunitionBoxDef.AmmoID);
+          if (extAmmo == CustomAmmoCategories.DefaultAmmo) {
+            Log.M?.WL(2, "can't find extended definition for "+ ammunitionBoxDef.AmmoID);
+          }
+          Log.M?.WL(2, "ammo: "+ ammunitionBoxDef.AmmoID+ " category "+ extAmmo.AmmoCategory.Id+" id:"+extAmmo.Id);
+          if (ammoCatIds.Contains(extAmmo.AmmoCategory.Id) == false) { continue; }
+          allammo.Add(componentRef);
+        }
+      }
+      Log.M?.WL(1, "allammo:" + allammo.Count);
+
+      if (dataDef == null) {
+        this.automaticAmmoBoxesOrder = true;
+        this.defaultAmmoId = string.Empty;
+        this.defaultModeId = string.Empty;
+      } else {
+        this.automaticAmmoBoxesOrder = dataDef.automaticAmmoBoxesOrder;
+        this.defaultAmmoId = dataDef.defaultAmmoId;
+        this.defaultModeId = dataDef.defaultModeId;
+        for(int i=0;i< dataDef.ammoBoxesOrder.Count; ++i) { AmmoBoxOderDataElementDef ammoDataDef = dataDef.ammoBoxesOrder[i];
+          for(int ii = 0; ii < allammo.Count; ++ii) { MechComponentRef componentRef = allammo[ii];
+            if((componentRef.ComponentDefID == ammoDataDef.ammoBoxDefId)&&(componentRef.MountedLocation == ammoDataDef.mountLocation)) {
+              ammoBoxesOrder.Add(componentRef);
+              allammo.RemoveAt(ii);
+              break;
+            }
+          }
+        }
+      }
+      foreach(var ammobox in allammo) {
+        ammoBoxesOrder.Add(ammobox);
+      }
+      Log.M?.WL(1, "ammoBoxesOrder:"+ ammoBoxesOrder.Count);
+    }
+  }
+  public class WeaponOrderDataEx {
+    public Dictionary<string, List<WeaponOrderDataElementDef>> definitionOrders { get; set; } = new Dictionary<string, List<WeaponOrderDataElementDef>>();
+  }
   public static class WeaponOrderSimGameHelper {
-    public static WeaponOrderData ordersData = new WeaponOrderData();
-    public static readonly string WeaponOrderStatisticName = "CACWeaponOrder";
+    public static WeaponOrderData ordersData { get; set; } = new WeaponOrderData();
+    public static WeaponOrderDataEx ordersDataEx { get; set; } = new WeaponOrderDataEx();
+    public static string WeaponOrderStatisticName { get; private set; } = "CACWeaponOrder";
+    public static string WeaponOrderExStatisticName { get; private set; } = "CACWeaponOrderEx";
     public static void InitSimGame(SimGameState sim) {
       Statistic stat = sim.CompanyStats.GetStatistic(WeaponOrderStatisticName);
       if (stat != null) { ordersData = JsonConvert.DeserializeObject<WeaponOrderData>(stat.Value<string>()); } else {
         ordersData = new WeaponOrderData();
       }
+      stat = sim.CompanyStats.GetStatistic(WeaponOrderExStatisticName);
+      if (stat != null) { ordersDataEx = JsonConvert.DeserializeObject<WeaponOrderDataEx>(stat.Value<string>()); } else {
+        ordersDataEx = new WeaponOrderDataEx();
+      }
+    }
+    public static List<WeaponOrderDataElement> unpackWeaponsOrderData(this MechDef mechDef, List<WeaponOrderDataElementDef> weaponOrderData) {
+      List<WeaponOrderDataElement> result = new List<WeaponOrderDataElement>();
+      List<MechComponentRef> allweapons = new List<MechComponentRef>();
+      for (int index = 0; index < mechDef.Inventory.Length; ++index) {
+        if (mechDef.Inventory[index].ComponentDefType == ComponentType.Weapon) { allweapons.Add(mechDef.Inventory[index]); }
+      }
+      for (int i = 0; i < weaponOrderData.Count; ++i) { WeaponOrderDataElementDef dataDef = weaponOrderData[i];
+        for (int ii = 0; ii < allweapons.Count; ++ii) { MechComponentRef componentRef = allweapons[ii];
+          if ((dataDef.weaponDefId == componentRef.ComponentDefID)&&(dataDef.mountLocation == componentRef.MountedLocation)) {
+            result.Add(new WeaponOrderDataElement(componentRef, mechDef, dataDef));
+            allweapons.RemoveAt(ii);
+            break;
+          }
+        }
+      }
+      for (int ii = 0; ii < allweapons.Count; ++ii) { MechComponentRef componentRef = allweapons[ii];
+        result.Add(new WeaponOrderDataElement(componentRef, mechDef, null));
+      }
+      return result;
+    }
+    public static List<WeaponOrderDataElement> unpackWeaponsOrderData(this MechDef mechDef, List<string> weaponOrderData) {
+      List<WeaponOrderDataElement> result = new List<WeaponOrderDataElement>();
+      List<MechComponentRef> allweapons = new List<MechComponentRef>();
+      for (int index = 0; index < mechDef.Inventory.Length; ++index) {
+        if (mechDef.Inventory[index].ComponentDefType == ComponentType.Weapon) { allweapons.Add(mechDef.Inventory[index]); }
+      }
+      for (int i = 0; i < weaponOrderData.Count; ++i) {
+        string dataDefId = weaponOrderData[i];
+        for (int ii = 0; ii < allweapons.Count; ++ii) {
+          MechComponentRef componentRef = allweapons[ii];
+          if (dataDefId == componentRef.ComponentDefID) {
+            result.Add(new WeaponOrderDataElement(componentRef, mechDef, null));
+            allweapons.RemoveAt(ii);
+            break;
+          }
+        }
+      }
+      for (int ii = 0; ii < allweapons.Count; ++ii) {
+        MechComponentRef componentRef = allweapons[ii];
+        result.Add(new WeaponOrderDataElement(componentRef, mechDef, null));
+      }
+      return result;
     }
   }
+  public class ModesOrderControl : MonoBehaviour {
+    public RectTransform listParent { get; set; } = null;
+    public LocalizableText componentCountText { get; set; } = null;
+    public WeaponsOrderPopupSupervisor parent { get; set; } = null;
+    public WeaponsOrderUIItem currentItem { get; set; } = null;
+    public ModesOrderUIItem selectedItem { get; set; } = null;
+    //public List<ModesOrderUIItem> avaibleItems { get; set; } = new List<ModesOrderUIItem>();
+    public List<ModesOrderUIItem> activeItems { get; set; } = new List<ModesOrderUIItem>();
+    public ModesOrderUIItem placeholderItem { get; set; } = null;
+    public void Apply(WeaponsOrderUIItem item) {
+      currentItem = item;
+      WeaponDef weaponDef = item.data.componentRef.Def as WeaponDef;
+      foreach (var mode in weaponDef.exDef().Modes) {
+        AddWeaponUIItem(mode.Value, mode.Value.Id == item.data.defaultModeId);
+      }
+      AddWeaponUIItem(null,false);
+    }
+    public void SelectionChanged(ModesOrderUIItem item) {
+      if(selectedItem != null) {
+        Traverse.Create(selectedItem.ui).Field<UIColorRefTracker>("backgroundColor").Value.SetUIColor(UIColor.EquipmentColor);
+      }
+      selectedItem = item;
+      if (selectedItem != null) {
+        Traverse.Create(selectedItem.ui).Field<UIColorRefTracker>("backgroundColor").Value.SetUIColor(UIColor.Orange);
+      }
+      this.currentItem.data.defaultModeId = selectedItem != null ? selectedItem.data.Id : string.Empty;
+    }
+    public void AddWeaponUIItem(WeaponMode dataElement, bool selected) {
+      GameObject gameObject = this.parent.mechBayPanel.DataManager.PooledInstantiate("uixPrfPanl_LC_ModesOrderItem", BattleTechResourceType.UIModulePrefabs);
+      if (gameObject == null) {
+        gameObject = this.parent.mechBayPanel.DataManager.PooledInstantiate("uixPrfPanl_LC_MechLoadoutItem", BattleTechResourceType.UIModulePrefabs);
+        gameObject.name = "uixPrfPanl_LC_ModesOrderItem(Clone)";
+      }
+      gameObject.transform.localScale = new Vector3(1f, 1f, 1f);
+      ModesOrderUIItem item = gameObject.GetComponent<ModesOrderUIItem>();
+      if (null == item) { item = gameObject.AddComponent<ModesOrderUIItem>(); }
+      item.layoutElement = gameObject.GetComponent<LayoutElement>();
+      if (null == item.layoutElement) { item.layoutElement = gameObject.AddComponent<LayoutElement>(); }
+      item.layoutElement.ignoreLayout = false;
+      item.data = dataElement;
+      item.parent = this;
+      LanceMechEquipmentListItem component = gameObject.GetComponent<LanceMechEquipmentListItem>();
+      item.ui = component;
+      if (dataElement != null) {
+        string text = new Text("{0}", dataElement.UIName).ToString();
+        component.SetData(text, ComponentDamageLevel.Functional, UIColor.White, selected?UIColor.Orange:UIColor.EquipmentColor);
+        Traverse.Create(component).Field<HBSTooltip>("EquipmentTooltip").Value = component.GetComponent<HBSTooltip>();
+        if(Traverse.Create(component).Field<HBSTooltip>("EquipmentTooltip").Value != null) {
+          Traverse.Create(component).Field<HBSTooltip>("EquipmentTooltip").Value.SetDefaultStateData(new BaseDescriptionDef(dataElement.Id, dataElement.UIName, dataElement.Description, string.Empty).GetTooltipStateData());
+        }
+      } else {
+        component.SetData(string.Empty, ComponentDamageLevel.Functional, UIColor.Clear, UIColor.Clear);
+      }
+      gameObject.transform.SetParent(listParent, false);
+      item.index = gameObject.transform.GetSiblingIndex();
+      if (dataElement != null) {
+        item.gameObject.SetActive(true);
+        activeItems.Add(item);
+        if (selected) { selectedItem = item; }
+      } else {
+        item.gameObject.SetActive(false);
+        this.placeholderItem = item;
+      }
+    }
+    public void Clear() {
+      for (int index = this.activeItems.Count - 1; index >= 0; --index) {
+        LanceMechEquipmentListItem labItemSlotElement = this.activeItems[index].ui;
+        labItemSlotElement.gameObject.transform.SetParent((Transform)null, false);
+        ModesOrderUIItem weaponsOrderItem = this.activeItems[index];
+        if (weaponsOrderItem != null) {
+          weaponsOrderItem.parent = null;
+          weaponsOrderItem.data = null;
+        }
+        this.parent.mechBayPanel.DataManager.PoolGameObject("uixPrfPanl_LC_ModesOrderItem", labItemSlotElement.gameObject);
+      }
+      this.activeItems.Clear();
+      selectedItem = null;
+      currentItem = null;
+      if (placeholderItem != null) {
+        placeholderItem.gameObject.transform.SetParent(null, false);
+        placeholderItem.parent = null;
+        this.parent.mechBayPanel.DataManager.PoolGameObject("uixPrfPanl_LC_ModesOrderItem", placeholderItem.gameObject);
+      }
+    }
+  }
+  public class ModesOrderUIItem : MonoBehaviour, IPointerClickHandler {
+    public WeaponMode data { get; set; } = null;
+    public ModesOrderControl parent { get; set; } = null;
+    public LayoutElement layoutElement { get; set; } = null;
+    public LanceMechEquipmentListItem ui { get; set; } = null;
+    public int index { get; set; } = -1;
+    private RectTransform f_rect = null;
+    public RectTransform rect {
+      get {
+        if (f_rect == null) { f_rect = GetComponent<RectTransform>(); }
+        return f_rect;
+      }
+    }
+    public void OnPointerDoubleClick(PointerEventData eventData) {
+      this.parent.SelectionChanged(this);
+    }
+    public void OnPointerClick(PointerEventData eventData) {
+      if (eventData.clickCount == 2 && eventData.button == PointerEventData.InputButton.Left) {
+        eventData.clickCount = 0;
+        this.OnPointerDoubleClick(eventData);
+      }
+    }
+  }
+  public class AmmoOrderControl : MonoBehaviour {
+    public RectTransform listParent { get; set; } = null;
+    public LocalizableText componentCountText { get; set; } = null;
+    public LocalizableText componentLabelText { get; set; } = null;
+    public WeaponsOrderPopupSupervisor parent { get; set; } = null;
+    public WeaponsOrderUIItem currentItem { get; set; } = null;
+    public AmmoOrderUIItem selectedItem { get; set; } = null;
+    //public List<ModesOrderUIItem> avaibleItems { get; set; } = new List<ModesOrderUIItem>();
+    public List<AmmoOrderUIItem> activeItems { get; set; } = new List<AmmoOrderUIItem>();
+    public AmmoOrderUIItem placeholderItem { get; set; } = null;
+    public void Apply(WeaponsOrderUIItem item) {
+      try {
+        Log.M?.TWL(0, "AmmoOrderControl.Apply "+ item.data.componentRef.ComponentDefID+ " defAmmo:"+ item.data.defaultAmmoId);
+        currentItem = item;
+        bool selected = false;
+        foreach (var ammo in item.data.ammoBoxesOrder) {
+          Log.M?.WL(1, "box:" + (ammo.Def as AmmunitionBoxDef).AmmoID);
+          if (selected == false) {
+            if ((ammo.Def as AmmunitionBoxDef).AmmoID == item.data.defaultAmmoId) {
+              AddWeaponUIItem(ammo, true);
+              selected = true;
+            } else {
+              AddWeaponUIItem(ammo, false);
+            }
+          } else {
+            AddWeaponUIItem(ammo, false);
+          }
+        }
+        AddWeaponUIItem(null, false);
+        this.SelectionChanged(this.selectedItem);
+        componentLabelText.SetText(item.data.automaticAmmoBoxesOrder ? "__/CAC.WO.AMMO.AUTOMATIC/__" : "__/CAC.WO.AMMO.MANUAL/__");
+      }catch(Exception e) {
+        Log.M?.TWL(0,e.ToString(),true);
+      }
+    }
+    public void SelectionChanged(AmmoOrderUIItem item) {
+      try {
+        if (selectedItem != null) {
+          Traverse.Create(selectedItem.ui).Field<UIColorRefTracker>("itemTextColor").Value.SetUIColor(UIColor.White);
+          UIColor bgColor = MechComponentRef.GetUIColor(selectedItem.data);
+          if (selectedItem.data.DamageLevel == ComponentDamageLevel.Destroyed) {
+            bgColor = UIColor.Disabled;
+          }
+          Traverse.Create(selectedItem.ui).Field<UIColorRefTracker>("backgroundColor").Value.SetUIColor(bgColor);
+        }
+        selectedItem = item;
+        if (selectedItem != null) {
+          Traverse.Create(selectedItem.ui).Field<UIColorRefTracker>("itemTextColor").Value.SetUIColor(UIColor.Black);
+          Traverse.Create(selectedItem.ui).Field<UIColorRefTracker>("backgroundColor").Value.SetUIColor(UIColor.Orange);
+        }
+        this.currentItem.data.defaultAmmoId = selectedItem != null ? (selectedItem.data.Def as AmmunitionBoxDef).AmmoID : string.Empty;
+      }catch(Exception e) {
+        Log.M?.TWL(0,e.ToString(),true);
+      }
+    }
+    public void AddWeaponUIItem(MechComponentRef dataElement, bool selected) {
+      Log.M?.TWL(0, "AddWeaponUIItem "+ (dataElement==null?"null":dataElement.ComponentDefID)+" selected:"+selected);
+      GameObject gameObject = this.parent.mechBayPanel.DataManager.PooledInstantiate("uixPrfPanl_LC_AmmoOrderItem", BattleTechResourceType.UIModulePrefabs);
+      if (gameObject == null) {
+        gameObject = this.parent.mechBayPanel.DataManager.PooledInstantiate("uixPrfPanl_LC_MechLoadoutItem", BattleTechResourceType.UIModulePrefabs);
+        gameObject.name = "uixPrfPanl_LC_AmmoOrderItem(Clone)";
+      }
+      gameObject.transform.localScale = new Vector3(1f, 1f, 1f);
+      AmmoOrderUIItem item = gameObject.GetComponent<AmmoOrderUIItem>();
+      if (null == item) { item = gameObject.AddComponent<AmmoOrderUIItem>(); }
+      item.layoutElement = gameObject.GetComponent<LayoutElement>();
+      if (null == item.layoutElement) { item.layoutElement = gameObject.AddComponent<LayoutElement>(); }
+      item.layoutElement.ignoreLayout = false;
+      item.data = dataElement;
+      item.parent = this;
+      LanceMechEquipmentListItem component = gameObject.GetComponent<LanceMechEquipmentListItem>();
+      item.ui = component;
+      if (dataElement != null) {
+        UIColor bgColor = MechComponentRef.GetUIColor(dataElement);
+        if (dataElement.DamageLevel == ComponentDamageLevel.Destroyed) {
+          bgColor = UIColor.Disabled;
+        }
+        string text = new Text("{0} {1}", dataElement.Def.Description.UIName, Mech.GetAbbreviatedChassisLocation(dataElement.MountedLocation)).ToString();
+        if (selected) {
+          component.SetData(text, ComponentDamageLevel.Functional, UIColor.Black, UIColor.Orange);
+        } else {
+          component.SetData(text, ComponentDamageLevel.Functional, UIColor.White, bgColor);
+        }
+        component.SetTooltipData(dataElement.Def);
+      } else {
+        component.SetData(string.Empty, ComponentDamageLevel.Functional, UIColor.Clear, UIColor.Clear);
+      }
+      gameObject.transform.SetParent(listParent, false);
+      item.index = gameObject.transform.GetSiblingIndex();
+      if (dataElement != null) {
+        item.gameObject.SetActive(true);
+        activeItems.Add(item);
+        if (selected) { selectedItem = item; }
+      } else {
+        item.gameObject.SetActive(false);
+        this.placeholderItem = item;
+      }
+    }
+    public void Clear() {
+      for (int index = this.activeItems.Count - 1; index >= 0; --index) {
+        LanceMechEquipmentListItem labItemSlotElement = this.activeItems[index].ui;
+        labItemSlotElement.gameObject.transform.SetParent((Transform)null, false);
+        AmmoOrderUIItem weaponsOrderItem = this.activeItems[index];
+        if (weaponsOrderItem != null) {
+          weaponsOrderItem.parent = null;
+          weaponsOrderItem.data = null;
+        }
+        this.parent.mechBayPanel.DataManager.PoolGameObject("uixPrfPanl_LC_AmmoOrderItem", labItemSlotElement.gameObject);
+      }
+      this.activeItems.Clear();
+      selectedItem = null;
+      currentItem = null;
+      if (placeholderItem != null) {
+        placeholderItem.gameObject.transform.SetParent(null, false);
+        placeholderItem.parent = null;
+        this.parent.mechBayPanel.DataManager.PoolGameObject("uixPrfPanl_LC_AmmoOrderItem", placeholderItem.gameObject);
+      }
+    }
+  }
+
+  public class AmmoOrderUIItem : MonoBehaviour, IDragHandler, IBeginDragHandler, IEndDragHandler, IPointerClickHandler {
+    public MechComponentRef data { get; set; } = null;
+    public AmmoOrderControl parent { get; set; } = null;
+    public LayoutElement layoutElement { get; set; } = null;
+    public LanceMechEquipmentListItem ui { get; set; } = null;
+    private RectTransform f_rect = null;
+    public int index { get; set; } = -1;
+
+    public RectTransform rect {
+      get {
+        if (f_rect == null) { f_rect = GetComponent<RectTransform>(); }
+        return f_rect;
+      }
+    }
+    private Vector2 lastMousePosition;
+    public void OnBeginDrag(PointerEventData eventData) {
+      Log.M?.TWL(0, "AmmoOrderUIItem.OnBeginDrag " + data.ComponentDefID);
+      lastMousePosition = eventData.position;
+      layoutElement.ignoreLayout = true;
+      this.parent.placeholderItem.gameObject.SetActive(true);
+      //rect.position += new Vector3(0,0f,0f);
+      int cur_index = this.transform.GetSiblingIndex();
+      this.transform.SetAsLastSibling();
+      this.parent.placeholderItem.transform.SetSiblingIndex(cur_index);
+    }
+
+    public void OnDrag(PointerEventData eventData) {
+      Vector2 currentMousePosition = eventData.position;
+      Vector2 diff = currentMousePosition - lastMousePosition;
+
+      Vector3 newPosition = rect.position + new Vector3(0f, diff.y, 0f);
+      Vector3 oldPos = rect.position;
+      rect.position = newPosition;
+      if (!IsRectTransformInsideSreen(rect)) {
+        rect.position = oldPos;
+      }
+      bool pos_found = false;
+      for (int i = 0; i < this.parent.activeItems.Count; ++i) {
+        if (this.parent.activeItems[i] == this) { continue; }
+        if (this.parent.activeItems[i].transform.position.y < this.transform.position.y) {
+          int cur_index = this.parent.activeItems[i].transform.GetSiblingIndex();
+          pos_found = true;
+          if (this.parent.placeholderItem.transform.GetSiblingIndex() != (cur_index - 1)) {
+            this.parent.placeholderItem.transform.SetSiblingIndex(cur_index - 1);
+          }
+          break;
+        }
+      }
+      if (pos_found == false) {
+        int cur_index = this.transform.GetSiblingIndex();
+        if (this.parent.placeholderItem.transform.GetSiblingIndex() != (cur_index - 1)) {
+          this.parent.placeholderItem.transform.SetSiblingIndex(cur_index - 1);
+        }
+      }
+      lastMousePosition = currentMousePosition;
+    }
+
+    public void OnEndDrag(PointerEventData eventData) {
+      Log.M?.TWL(0, "WeaponsOrderItem.OnEndDrag " + data.ComponentDefID);
+      this.parent.currentItem.data.automaticAmmoBoxesOrder = false;
+      this.parent.componentLabelText.SetText(this.parent.currentItem.data.automaticAmmoBoxesOrder ? "__/CAC.WO.AMMO.AUTOMATIC/__" : "__/CAC.WO.AMMO.MANUAL/__");
+      this.index = this.parent.placeholderItem.transform.GetSiblingIndex();
+      this.transform.SetSiblingIndex(this.parent.placeholderItem.transform.GetSiblingIndex());
+      this.parent.placeholderItem.transform.SetAsLastSibling();
+      this.parent.placeholderItem.gameObject.SetActive(false);
+      layoutElement.ignoreLayout = false;
+      AmmoOrderUIItem[] items = this.transform.parent.gameObject.GetComponentsInChildren<AmmoOrderUIItem>();
+      foreach (var item in items) {
+        item.index = item.transform.GetSiblingIndex();
+        if (item.data == null) { continue; }
+        //this.parent.parent.weapons[item.index] = item.componentRef;
+        this.parent.activeItems[item.index] = item;
+      }
+    }
+    private bool IsRectTransformInsideSreen(RectTransform rectTransform) {
+      //if ((rectTransform.localPosition.y + rectTransform.sizeDelta.y) < 0f) { return false; }
+      return true;
+    }
+    public void OnPointerDoubleClick(PointerEventData eventData) {
+      this.parent.SelectionChanged(this);
+    }
+    public void OnPointerClick(PointerEventData eventData) {
+      if (eventData.clickCount == 2 && eventData.button == PointerEventData.InputButton.Left) {
+        eventData.clickCount = 0;
+        this.OnPointerDoubleClick(eventData);
+      }
+    }
+  }
+
+  public class WeaponsOrderControl: MonoBehaviour {
+    public RectTransform listParent { get; set; } = null;
+    public LocalizableText componentCountText { get; set; } = null;
+    public List<WeaponsOrderUIItem> weaponsList { get; set; } = new List<WeaponsOrderUIItem>();
+    public WeaponsOrderUIItem placeholderItem { get; set; } = null;
+    public WeaponsOrderPopupSupervisor parent { get; set; } = null;
+    public void AddWeaponUIItem(WeaponOrderDataElement dataElement) {
+      GameObject gameObject = this.parent.mechBayPanel.DataManager.PooledInstantiate("uixPrfPanl_LC_WeaponsOrderItem", BattleTechResourceType.UIModulePrefabs);
+      if (gameObject == null) {
+        gameObject = this.parent.mechBayPanel.DataManager.PooledInstantiate("uixPrfPanl_LC_MechLoadoutItem", BattleTechResourceType.UIModulePrefabs);
+        gameObject.name = "uixPrfPanl_LC_WeaponsOrderItem(Clone)";
+      }
+      gameObject.transform.localScale = new Vector3(1.5f, 1.5f, 1f);
+      WeaponsOrderUIItem weaponsOrderItem = gameObject.GetComponent<WeaponsOrderUIItem>();
+      if (null == weaponsOrderItem) { weaponsOrderItem = gameObject.AddComponent<WeaponsOrderUIItem>(); }
+      weaponsOrderItem.layoutElement = gameObject.GetComponent<LayoutElement>();
+      if (null == weaponsOrderItem.layoutElement) { weaponsOrderItem.layoutElement = gameObject.AddComponent<LayoutElement>(); }
+      weaponsOrderItem.layoutElement.ignoreLayout = false;
+      weaponsOrderItem.data = dataElement;
+      weaponsOrderItem.parent = this;
+      LanceMechEquipmentListItem component = gameObject.GetComponent<LanceMechEquipmentListItem>();
+      weaponsOrderItem.ui = component;
+      if (dataElement != null) {
+        UIColor bgColor = MechComponentRef.GetUIColor(dataElement.componentRef);
+        if (dataElement.componentRef.DamageLevel == ComponentDamageLevel.Destroyed) {
+          bgColor = UIColor.Disabled;
+        }
+        string text = new Text("{0} {1}", dataElement.componentRef.Def.Description.UIName, Mech.GetAbbreviatedChassisLocation(dataElement.componentRef.MountedLocation)).ToString();
+        component.SetData(text, dataElement.componentRef.DamageLevel, UIColor.White, bgColor);
+        component.SetTooltipData(dataElement.componentRef.Def);
+      } else {
+        component.SetData(string.Empty, ComponentDamageLevel.Functional, UIColor.Clear, UIColor.Clear);
+      }
+      gameObject.transform.SetParent(listParent, false);
+      weaponsOrderItem.index = gameObject.transform.GetSiblingIndex();
+      if (dataElement != null) {
+        weaponsOrderItem.gameObject.SetActive(true);
+        weaponsList.Add(weaponsOrderItem);
+      } else {
+        weaponsOrderItem.gameObject.SetActive(false);
+        this.placeholderItem = weaponsOrderItem;
+      }
+    }
+    public void Clear() {
+      for (int index = this.weaponsList.Count - 1; index >= 0; --index) {
+        LanceMechEquipmentListItem labItemSlotElement = this.weaponsList[index].ui;
+        labItemSlotElement.gameObject.transform.SetParent((Transform)null, false);
+        WeaponsOrderUIItem weaponsOrderItem = this.weaponsList[index];
+        if (weaponsOrderItem != null) {
+          weaponsOrderItem.parent = null;
+          weaponsOrderItem.data = null;
+        }
+        this.parent.mechBayPanel.DataManager.PoolGameObject("uixPrfPanl_LC_WeaponsOrderItem", labItemSlotElement.gameObject);
+      }
+      this.weaponsList.Clear();
+      if (placeholderItem != null) {
+        placeholderItem.gameObject.transform.SetParent(null, false);
+        placeholderItem.parent = null;
+        this.parent.mechBayPanel.DataManager.PoolGameObject("uixPrfPanl_LC_WeaponsOrderItem", placeholderItem.gameObject);
+      }
+    }
+  }
+  public class WeaponsOrderUIItem : MonoBehaviour, IDragHandler, IBeginDragHandler, IEndDragHandler, IPointerClickHandler {
+    public WeaponOrderDataElement data { get; set; } = null;
+    public WeaponsOrderControl parent { get; set; } = null;
+    public LayoutElement layoutElement { get; set; } = null;
+    public LanceMechEquipmentListItem ui { get; set; } = null;
+    private RectTransform f_rect = null;
+    public RectTransform rect {
+      get {
+        if (f_rect == null) { f_rect = GetComponent<RectTransform>(); }
+        return f_rect;
+      }
+    }
+    private Vector2 lastMousePosition;
+    public int index { get; set; } = -1;
+    public void OnBeginDrag(PointerEventData eventData) {
+      Log.M?.TWL(0, "WeaponsOrderItem.OnBeginDrag "+data.componentRef.ComponentDefID);
+      lastMousePosition = eventData.position;
+      layoutElement.ignoreLayout = true;
+      this.parent.placeholderItem.gameObject.SetActive(true);
+      //rect.position += new Vector3(0,0f,0f);
+      int cur_index = this.transform.GetSiblingIndex();
+      this.transform.SetAsLastSibling();
+      this.parent.placeholderItem.transform.SetSiblingIndex(cur_index);
+    }
+
+    public void OnDrag(PointerEventData eventData) {
+      Vector2 currentMousePosition = eventData.position;
+      Vector2 diff = currentMousePosition - lastMousePosition;
+
+      Vector3 newPosition = rect.position + new Vector3(0f, diff.y, 0f);
+      Vector3 oldPos = rect.position;
+      rect.position = newPosition;
+      if (!IsRectTransformInsideSreen(rect)) {
+        rect.position = oldPos;
+      }
+      bool pos_found = false;
+      for(int i=0; i < this.parent.weaponsList.Count; ++i) {
+        if (this.parent.weaponsList[i] == this) { continue; }
+        if (this.parent.weaponsList[i].transform.position.y < this.transform.position.y) {
+          int cur_index = this.parent.weaponsList[i].transform.GetSiblingIndex();
+          pos_found = true;
+          if (this.parent.placeholderItem.transform.GetSiblingIndex() != (cur_index - 1)) {
+            this.parent.placeholderItem.transform.SetSiblingIndex(cur_index - 1);
+          }
+          break;
+        }
+      }
+      if (pos_found == false) {
+        int cur_index = this.transform.GetSiblingIndex();
+        if (this.parent.placeholderItem.transform.GetSiblingIndex() != (cur_index - 1)) {
+          this.parent.placeholderItem.transform.SetSiblingIndex(cur_index - 1);
+        }
+      }
+      lastMousePosition = currentMousePosition;
+    }
+
+    public void OnEndDrag(PointerEventData eventData) {
+      Log.M?.TWL(0, "WeaponsOrderItem.OnEndDrag " + data.componentRef.ComponentDefID);
+      this.index = this.parent.placeholderItem.transform.GetSiblingIndex();
+      this.transform.SetSiblingIndex(this.parent.placeholderItem.transform.GetSiblingIndex());
+      this.parent.placeholderItem.transform.SetAsLastSibling();
+      this.parent.placeholderItem.gameObject.SetActive(false);
+      layoutElement.ignoreLayout = false;
+      WeaponsOrderUIItem[] items = this.transform.parent.gameObject.GetComponentsInChildren<WeaponsOrderUIItem>();
+      foreach (var item in items) {
+        item.index = item.transform.GetSiblingIndex();
+        if (item.data == null) { continue; }
+        //this.parent.parent.weapons[item.index] = item.componentRef;
+        this.parent.weaponsList[item.index] = item;
+      }
+    }
+    private bool IsRectTransformInsideSreen(RectTransform rectTransform) {
+      //if ((rectTransform.localPosition.y + rectTransform.sizeDelta.y) < 0f) { return false; }
+      return true;
+    }
+    public void OnPointerDoubleClick(PointerEventData eventData) {
+      this.parent.parent.OnWeaponDetails(this);
+    }
+    public void OnPointerClick(PointerEventData eventData) {
+      if (eventData.clickCount == 2 && eventData.button == PointerEventData.InputButton.Left) {
+        eventData.clickCount = 0;
+        this.OnPointerDoubleClick(eventData);
+      }
+    }
+  }
+  public class WeaponsOrderPopupSupervisor: MonoBehaviour {
+    public enum PopupState { Main, Weapon };
+    public GenericPopup popup { get; set; } = null;
+    public PopupState state { get; set; } = PopupState.Main;
+    public WeaponsOrderControl weaponsControl { get; set; } = null;
+    public RectTransform modesAmmoRT { get; set; } = null;
+    public ModesOrderControl modesControl { get; set; } = null;
+    public AmmoOrderControl ammoControl { get; set; } = null;
+    public RectTransform modeAmmoLayout { get; set; } = null;
+    public HBSButton backButton { get; set; } = null;
+    public HBSButton saveButton { get; set; } = null;
+    public MechBayPanel mechBayPanel { get; set; } = null;
+    public void instantine() {
+      if (weaponsControl != null) { return; }
+      try {
+        mechBayPanel = this.gameObject.GetComponent<MechBayPanel>();
+        GameObject uixPrfPanl_ML_main_Widget = LazySingletonBehavior<UIManager>.Instance.dataManager.PooledInstantiate("uixPrfPanl_ML_main-Widget", BattleTechResourceType.UIModulePrefabs);
+        if (uixPrfPanl_ML_main_Widget == null) {
+          Log.M?.TWL(0, "uixPrfPanl_ML_main-Widget not found");
+          return;
+        }
+        Log.M?.TWL(0, "uixPrfPanl_ML_main-Widget found");
+        MechLabDismountWidget dismountWidget = uixPrfPanl_ML_main_Widget.GetComponentInChildren<MechLabDismountWidget>(true);
+        if (dismountWidget == null) {
+          Log.M?.TWL(0, "MechLabDismountWidget not found");
+          return;
+        }
+        Log.M?.TWL(0, "MechLabDismountWidget found");
+
+        {
+          GameObject controlGO = GameObject.Instantiate(dismountWidget.gameObject);
+          controlGO.name = "ui_weaponsOrder";
+          controlGO.transform.localScale = Vector3.one;
+          MechLabDismountWidget localWidget = controlGO.GetComponent<MechLabDismountWidget>();
+          controlGO.FindObject<LocalizableText>("txt_label").SetText("__/CAC.WO.WEAPONS/__");
+          controlGO.FindObject<LocalizableText>("txt_instr").gameObject.SetActive(false);
+          weaponsControl = controlGO.AddComponent<WeaponsOrderControl>();
+          weaponsControl.listParent = Traverse.Create(localWidget).Field<RectTransform>("listParent").Value;
+          weaponsControl.componentCountText = Traverse.Create(localWidget).Field<LocalizableText>("componentCountText").Value;
+          GameObject.Destroy(localWidget);
+          weaponsControl.componentCountText.SetText("__/CAC.WO.HELP/__");
+          HBSTooltip hBSTooltip = weaponsControl.componentCountText.gameObject.AddComponent<HBSTooltip>();
+          hBSTooltip.SetDefaultStateData(new BaseDescriptionDef("WeaponsOrderHelpTooltipID", "__/CAC.WO.USAGE/__", "__/CAC.WO.USAGE.WEAPONS.DETAILS/__", string.Empty).GetTooltipStateData());
+          VerticalLayoutGroup verticalLayoutGroup = weaponsControl.listParent.gameObject.GetComponent<VerticalLayoutGroup>();
+          verticalLayoutGroup.spacing = 22f;
+          weaponsControl.gameObject.SetActive(false);
+          weaponsControl.parent = this;
+          weaponsControl.gameObject.transform.SetParent(this.transform);
+        }
+
+        {
+          GameObject controlGO = GameObject.Instantiate(dismountWidget.gameObject);
+          controlGO.name = "ui_modesOrder";
+          controlGO.transform.localScale = Vector3.one;
+          MechLabDismountWidget localWidget = controlGO.GetComponent<MechLabDismountWidget>();
+          controlGO.FindObject<LocalizableText>("txt_label").SetText("__/CAC.WO.MODES/__");
+          controlGO.FindObject<LocalizableText>("txt_instr").gameObject.SetActive(false);
+          modesControl = controlGO.AddComponent<ModesOrderControl>();
+          modesControl.listParent = Traverse.Create(localWidget).Field<RectTransform>("listParent").Value;
+          modesControl.componentCountText = Traverse.Create(localWidget).Field<LocalizableText>("componentCountText").Value;
+          GameObject.Destroy(localWidget);
+          modesControl.componentCountText.SetText("HELP");
+          HBSTooltip hBSTooltip = modesControl.componentCountText.gameObject.AddComponent<HBSTooltip>();
+          hBSTooltip.SetDefaultStateData(new BaseDescriptionDef("ModesOrderHelpTooltipID", "__/CAC.WO.USAGE/__", "__/CAC.WO.USAGE.MODE.DETAILS/__", string.Empty).GetTooltipStateData());
+          VerticalLayoutGroup verticalLayoutGroup = modesControl.listParent.gameObject.GetComponent<VerticalLayoutGroup>();
+          verticalLayoutGroup.spacing = 2f;
+          modesControl.gameObject.SetActive(false);
+          modesControl.parent = this;
+          modesControl.gameObject.transform.SetParent(this.transform);
+        }
+
+        {
+          GameObject controlGO = GameObject.Instantiate(dismountWidget.gameObject);
+          controlGO.name = "ui_ammoOrder";
+          controlGO.transform.localScale = Vector3.one;
+          MechLabDismountWidget localWidget = controlGO.GetComponent<MechLabDismountWidget>();
+          //controlGO.FindObject<LocalizableText>("txt_label").SetText("AMMO");
+          controlGO.FindObject<LocalizableText>("txt_instr").gameObject.SetActive(false);
+          ammoControl = controlGO.AddComponent<AmmoOrderControl>();
+          ammoControl.componentLabelText = controlGO.FindObject<LocalizableText>("txt_label");
+          ammoControl.listParent = Traverse.Create(localWidget).Field<RectTransform>("listParent").Value;
+          ammoControl.componentCountText = Traverse.Create(localWidget).Field<LocalizableText>("componentCountText").Value;
+          GameObject.Destroy(localWidget);
+          ammoControl.componentCountText.SetText("HELP");
+          HBSTooltip hBSTooltip = ammoControl.componentCountText.gameObject.AddComponent<HBSTooltip>();
+          hBSTooltip.SetDefaultStateData(new BaseDescriptionDef("AmmoOrderHelpTooltipID", "__/CAC.WO.USAGE/__", "__/CAC.WO.USAGE.AMMO.DETAILS/__", string.Empty).GetTooltipStateData());
+          VerticalLayoutGroup verticalLayoutGroup = ammoControl.listParent.gameObject.GetComponent<VerticalLayoutGroup>();
+          verticalLayoutGroup.spacing = 2f;
+          ammoControl.gameObject.SetActive(false);
+          ammoControl.parent = this;
+          ammoControl.gameObject.transform.SetParent(this.transform);
+        }
+
+        LazySingletonBehavior<UIManager>.Instance.dataManager.PoolGameObject("uixPrfPanl_ML_main-Widget", uixPrfPanl_ML_main_Widget);
+      }catch(Exception e) {
+        Log.M?.TWL(0,e.ToString(),true);
+      }
+    }
+    public void OnBack() {
+      if (state == PopupState.Main) { OnClose(); }
+      if (state == PopupState.Weapon) {
+        CloseWeaponDetails();
+      }
+    }
+    public void CloseWeaponDetails() {
+      backButton.SetText("__/CAC.WO.CLOSE/__");
+      saveButton.gameObject.SetActive(true);
+      popup.Title = "__/CAC.WO.WEAPONS.ORDER/__";
+      this.modesControl.Clear();
+      this.ammoControl.Clear();
+      this.weaponsControl.gameObject.SetActive(true);
+      this.modesAmmoRT.gameObject.SetActive(false);
+      state = PopupState.Main;
+    }
+    public void OnWeaponDetails(WeaponsOrderUIItem item) {
+      this.state = PopupState.Weapon;
+      this.modesControl.Apply(item);
+      this.ammoControl.Apply(item);
+      backButton.SetText("__/CAC.WO.BACK/__");
+      saveButton.gameObject.SetActive(false);
+      popup.Title = Traverse.Create(item.ui).Field<LocalizableText>("itemText").Value.text;
+      this.weaponsControl.gameObject.SetActive(false);
+      this.modesAmmoRT.gameObject.SetActive(true);
+      
+    }
+    public void OnWeaponOrderButtonClick() {
+      GenericPopupBuilder builder = GenericPopupBuilder.Create("__/CAC.WO.WEAPONS.ORDER/__", "PLACEHOLDER");
+      builder.AddButton("__/CAC.WO.CLOSE/__", new Action(this.OnBack), false);
+      builder.AddButton("__/CAC.WO.SAVE/__", new Action(this.OnSave), false);
+      popup = builder.CancelOnEscape().Render();
+      backButton = Traverse.Create(popup).Field<List<HBSButton>>("buttons").Value[0];
+      saveButton = Traverse.Create(popup).Field<List<HBSButton>>("buttons").Value[1];
+      this.OnShow();
+    }
+    public void OnSave() {
+      if (this.mechBayPanel == null) { return; }
+      if (state != PopupState.Main) { this.OnBack(); return; }
+      MechBayMechUnitElement selectedMech = Traverse.Create(mechBayPanel).Field<MechBayMechUnitElement>("selectedMech").Value;
+      if (selectedMech == null) { return; }
+      if (WeaponOrderSimGameHelper.ordersDataEx.definitionOrders.TryGetValue(selectedMech.MechDef.GUID, out List<WeaponOrderDataElementDef> weaponsOrder) == false) {
+        weaponsOrder = new List<WeaponOrderDataElementDef>();
+        WeaponOrderSimGameHelper.ordersDataEx.definitionOrders.Add(selectedMech.MechDef.GUID, weaponsOrder);
+      }
+      weaponsOrder.Clear();
+      for(int i = 0; i < this.weaponsControl.weaponsList.Count; ++i) {
+        weaponsOrder.Add(new WeaponOrderDataElementDef(this.weaponsControl.weaponsList[i].data));
+      }
+      Statistic stat = UnityGameInstance.BattleTechGame.Simulation.CompanyStats.GetStatistic(WeaponOrderSimGameHelper.WeaponOrderExStatisticName);
+      if (stat == null) {
+        stat = UnityGameInstance.BattleTechGame.Simulation.CompanyStats.AddStatistic(WeaponOrderSimGameHelper.WeaponOrderExStatisticName, string.Empty);
+      }
+      Log.M?.TWL(0, "WeaponsOrderPopupSupervisor.OnSave");
+      Log.M?.WL(0, JsonConvert.SerializeObject(WeaponOrderSimGameHelper.ordersDataEx,Formatting.Indented));
+      stat.SetValue<string>(JsonConvert.SerializeObject(WeaponOrderSimGameHelper.ordersDataEx));
+      this.OnClose();
+    }
+
+    public void OnClose() {
+      if (weaponsControl != null) {
+        weaponsControl.gameObject.SetActive(false);
+        weaponsControl.gameObject.transform.SetParent(this.transform);
+        weaponsControl.Clear();
+      }
+      if (modesControl != null) {
+        modesControl.gameObject.SetActive(false);
+        modesControl.gameObject.transform.SetParent(this.transform);
+      }
+      if (ammoControl != null) {
+        ammoControl.gameObject.SetActive(false);
+        ammoControl.gameObject.transform.SetParent(this.transform);
+      }
+      if (modesAmmoRT != null) {
+        GameObject.Destroy(modesAmmoRT.gameObject);
+        modesAmmoRT = null;
+      }
+      if(popup != null) {
+        Traverse.Create(popup).Field<LocalizableText>("_contentText").Value.gameObject.SetActive(true);
+        popup.Pool();
+        popup = null;
+      }
+    }
+    public void OnShow() {
+      if ((weaponsControl != null) && (popup != null)) {
+        try {
+          LocalizableText _contentText = Traverse.Create(popup).Field<LocalizableText>("_contentText").Value;
+          _contentText.gameObject.SetActive(false);
+          {
+            RectTransform controlRT = weaponsControl.gameObject.GetComponent<RectTransform>();
+            controlRT.pivot = _contentText.rectTransform.pivot;
+            controlRT.sizeDelta = new Vector2(_contentText.rectTransform.sizeDelta.x, controlRT.sizeDelta.y);
+
+            weaponsControl.gameObject.SetActive(true);
+            weaponsControl.gameObject.transform.SetParent(_contentText.gameObject.transform.parent);
+            weaponsControl.gameObject.transform.SetSiblingIndex(_contentText.transform.GetSiblingIndex() + 1);
+            LayoutElement layoutElement = weaponsControl.gameObject.GetComponent<LayoutElement>();
+            layoutElement.ignoreLayout = false;
+          }
+          GameObject contentTextGO = GameObject.Instantiate(_contentText.gameObject);
+          contentTextGO.SetActive(false);
+          contentTextGO.transform.SetParent(_contentText.gameObject.transform.parent);
+          contentTextGO.transform.SetSiblingIndex(weaponsControl.transform.GetSiblingIndex() + 1);
+          contentTextGO.transform.localScale = Vector3.one;
+          GameObject.Destroy(contentTextGO.GetComponent<LocalizableText>());
+          modesAmmoRT = contentTextGO.GetComponent<RectTransform>();
+          HorizontalLayoutGroup group = contentTextGO.AddComponent<HorizontalLayoutGroup>();
+          group.spacing = 8f;
+          group.padding = new RectOffset(10, 10, 0, 0);
+          group.childAlignment = TextAnchor.UpperCenter;
+          group.childControlHeight = false;
+          group.childControlWidth = false;
+          group.childForceExpandHeight = false;
+          group.childForceExpandWidth = false;
+
+          {
+            RectTransform controlRT = modesControl.gameObject.GetComponent<RectTransform>();
+            //controlRT.pivot = _contentText.rectTransform.pivot;
+            //controlRT.sizeDelta = new Vector2(_contentText.rectTransform.sizeDelta.x, controlRT.sizeDelta.y);
+
+            modesControl.gameObject.SetActive(true);
+            modesControl.gameObject.transform.SetParent(modesAmmoRT);
+            LayoutElement layoutElement = modesControl.gameObject.GetComponent<LayoutElement>();
+            layoutElement.ignoreLayout = false;
+          }
+          {
+            RectTransform controlRT = ammoControl.gameObject.GetComponent<RectTransform>();
+            //controlRT.pivot = _contentText.rectTransform.pivot;
+            //controlRT.sizeDelta = new Vector2(_contentText.rectTransform.sizeDelta.x, controlRT.sizeDelta.y);
+
+            ammoControl.gameObject.SetActive(true);
+            ammoControl.gameObject.transform.SetParent(modesAmmoRT);
+            LayoutElement layoutElement = ammoControl.gameObject.GetComponent<LayoutElement>();
+            layoutElement.ignoreLayout = false;
+          }
+          MechBayMechUnitElement selectedMech = Traverse.Create(mechBayPanel).Field<MechBayMechUnitElement>("selectedMech").Value;
+          if (selectedMech == null) { return; }
+
+          List<MechComponentRef> allweapons = new List<MechComponentRef>();
+          for (int index = 0; index < selectedMech.MechDef.Inventory.Length; ++index) {
+            if (selectedMech.MechDef.Inventory[index].ComponentDefType == ComponentType.Weapon) {
+              allweapons.Add(selectedMech.MechDef.Inventory[index]);
+            }
+          }
+          List<WeaponOrderDataElement> weaponsOrder = new List<WeaponOrderDataElement>();
+          if (WeaponOrderSimGameHelper.ordersDataEx.definitionOrders.TryGetValue(selectedMech.MechDef.GUID, out List<WeaponOrderDataElementDef> weaponsOrderDef)) {
+            weaponsOrder = selectedMech.MechDef.unpackWeaponsOrderData(weaponsOrderDef);
+          }else
+          if (WeaponOrderSimGameHelper.ordersData.definitionOrders.TryGetValue(selectedMech.MechDef.GUID, out List<string> weaponsOrderOld)) {
+            weaponsOrder = selectedMech.MechDef.unpackWeaponsOrderData(weaponsOrderOld);
+          } else {
+            weaponsOrder = selectedMech.MechDef.unpackWeaponsOrderData(new List<string>());
+          }
+          Thread.CurrentThread.pushActorDef(selectedMech.MechDef);
+          for (int index = 0; index < weaponsOrder.Count; ++index) {
+            weaponsControl.AddWeaponUIItem(weaponsOrder[index]);
+          }
+          Thread.CurrentThread.clearActorDef();
+          weaponsControl.AddWeaponUIItem(null);
+        } catch(Exception e) {
+          Log.M?.TWL(0,e.ToString(),true);
+        }
+      }
+    }
+  }
+
   [HarmonyPatch(typeof(MechBayPanel))]
   [HarmonyPatch("OnAddedToHierarchy")]
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] {  })]
   public static class MechBayPanel_ViewBays {
-    private static MechBayPanel mechBayPanel = null;
-    private static GenericPopup popup = null;
-    private static List<MechComponentRef> weapons = new List<MechComponentRef>();
-    private static int selectedWeapon = 0;
-    private static string BuildText() {
-      StringBuilder result = new StringBuilder();
-      for(int index = 0; index < weapons.Count; ++index) {
-        if (index == selectedWeapon) { result.Append("<color=orange>"); }
-        result.Append(weapons[index].Def.Description.UIName);
-        if (index == selectedWeapon) { result.Append("</color>"); }
-        result.AppendLine();
-      }
-      return result.ToString();
-    }
-    private static void Init() {
-      if (mechBayPanel == null) { return; }
-      MechBayMechUnitElement selectedMech = Traverse.Create(mechBayPanel).Field<MechBayMechUnitElement>("selectedMech").Value;
-      if (selectedMech == null) { return; }
-      weapons.Clear();
-      selectedWeapon = 0;
-      List<MechComponentRef> allweapons = new List<MechComponentRef>();
-      for (int index = 0; index < selectedMech.MechDef.Inventory.Length; ++index) {
-        if(selectedMech.MechDef.Inventory[index].ComponentDefType == ComponentType.Weapon) {
-          allweapons.Add(selectedMech.MechDef.Inventory[index]);
-        }
-      }
-      if (WeaponOrderSimGameHelper.ordersData.definitionOrders.TryGetValue(selectedMech.MechDef.GUID, out List<string> weaponsOrder) == false) {
-        weaponsOrder = new List<string>();
-      }
-      int count = allweapons.Count;
-      for (int index = 0; index < count; ++index) {
-        string defid = string.Empty;
-        if (index < weaponsOrder.Count) { defid = weaponsOrder[index]; };
-        if (string.IsNullOrEmpty(defid)) { weapons.Add(null); }
-        bool found = false;
-        for(int i = 0; i < allweapons.Count; ++i) {
-          if (allweapons[i].ComponentDefID == defid) { weapons.Add(allweapons[i]); allweapons.RemoveAt(i); found = true; break; }
-        }
-        if (found == false) { weapons.Add(null); };
-      }
-      for (int index = 0; index < weapons.Count; ++index) {
-        if (weapons[index] != null) { continue; }
-        if (allweapons.Count == 0) { continue; }
-        weapons.Add(allweapons[0]);
-        allweapons.RemoveAt(0);
-      }
-      for (int index = 0; index < weapons.Count;) {
-        if (weapons[index] != null) { ++index; continue; }
-        weapons.RemoveAt(index);
-      }
-    }
-    private static void Clear() {
-      selectedWeapon = 0;
-      weapons.Clear();
-    }
-    private static void Save() {
-      if (mechBayPanel == null) { return; }
-      MechBayMechUnitElement selectedMech = Traverse.Create(mechBayPanel).Field<MechBayMechUnitElement>("selectedMech").Value;
-      if (selectedMech == null) { return; }
-      if (WeaponOrderSimGameHelper.ordersData.definitionOrders.TryGetValue(selectedMech.MechDef.GUID, out List<string> weaponsOrder) == false) {
-        weaponsOrder = new List<string>();
-        WeaponOrderSimGameHelper.ordersData.definitionOrders.Add(selectedMech.MechDef.GUID,weaponsOrder);
-      }
-      weaponsOrder.Clear();
-      for(int index = 0;index < weapons.Count; ++index) {
-        weaponsOrder.Add(weapons[index].ComponentDefID);
-      }
-      Statistic stat = UnityGameInstance.BattleTechGame.Simulation.CompanyStats.GetStatistic(WeaponOrderSimGameHelper.WeaponOrderStatisticName);
-      if (stat == null) {
-        stat = UnityGameInstance.BattleTechGame.Simulation.CompanyStats.AddStatistic(WeaponOrderSimGameHelper.WeaponOrderStatisticName,string.Empty);
-      }
-      stat.SetValue<string>(JsonConvert.SerializeObject(WeaponOrderSimGameHelper.ordersData));
-    }
-    private static void Left() {
-      selectedWeapon = (selectedWeapon + 1) % weapons.Count;
-      popup.TextContent = BuildText();
-    }
-    private static void Right() {
-      selectedWeapon = selectedWeapon - 1;
-      if (selectedWeapon < 0) { selectedWeapon = weapons.Count - 1; }
-      popup.TextContent = BuildText();
-    }
-    private static void Up() {
-      if(selectedWeapon > 0) {
-        MechComponentRef tmp = weapons[selectedWeapon - 1];
-        weapons[selectedWeapon - 1] = weapons[selectedWeapon];
-        weapons[selectedWeapon] = tmp;
-        selectedWeapon -= 1;
-      }
-      popup.TextContent = BuildText();
-    }
-    private static void Down() {
-      if (selectedWeapon < (weapons.Count - 1)) {
-        MechComponentRef tmp = weapons[selectedWeapon + 1];
-        weapons[selectedWeapon + 1] = weapons[selectedWeapon];
-        weapons[selectedWeapon] = tmp;
-        selectedWeapon += 1;
-      }
-      popup.TextContent = BuildText();
-    }
-    public static void OnWeaponOrderButtonClick() {
-      MechBayPanel_ViewBays.Init();
-      GenericPopupBuilder builder = GenericPopupBuilder.Create("Weapons order", MechBayPanel_ViewBays.BuildText());
-      builder.AddButton("X", new Action(MechBayPanel_ViewBays.Clear), true);
-      builder.AddButton("Up", new Action(MechBayPanel_ViewBays.Up), false);
-      builder.AddButton("<-", new Action(MechBayPanel_ViewBays.Right), false);
-      builder.AddButton("Dwn", new Action(MechBayPanel_ViewBays.Down), false);
-      builder.AddButton("->", new Action(MechBayPanel_ViewBays.Left), false);
-      builder.AddButton("Ok", new Action(MechBayPanel_ViewBays.Save), true);
-      popup = builder.CancelOnEscape().Render();
-    }
+    //private static MechBayPanel mechBayPanel = null;
+    //private static GenericPopup popup = null;
+    //private static List<MechComponentRef> weapons = new List<MechComponentRef>();
+    //private static int selectedWeapon = 0;
+    //private static string BuildText() {
+    //  StringBuilder result = new StringBuilder();
+    //  for(int index = 0; index < weapons.Count; ++index) {
+    //    if (index == selectedWeapon) { result.Append("<color=orange>"); }
+    //    result.Append(weapons[index].Def.Description.UIName);
+    //    if (index == selectedWeapon) { result.Append("</color>"); }
+    //    result.AppendLine();
+    //  }
+    //  return result.ToString();
+    //}
+    //private static void Init() {
+    //  if (mechBayPanel == null) { return; }
+    //  MechBayMechUnitElement selectedMech = Traverse.Create(mechBayPanel).Field<MechBayMechUnitElement>("selectedMech").Value;
+    //  if (selectedMech == null) { return; }
+    //  weapons.Clear();
+    //  selectedWeapon = 0;
+    //  List<MechComponentRef> allweapons = new List<MechComponentRef>();
+    //  for (int index = 0; index < selectedMech.MechDef.Inventory.Length; ++index) {
+    //    if(selectedMech.MechDef.Inventory[index].ComponentDefType == ComponentType.Weapon) {
+    //      allweapons.Add(selectedMech.MechDef.Inventory[index]);
+    //    }
+    //  }
+    //  if (WeaponOrderSimGameHelper.ordersData.definitionOrders.TryGetValue(selectedMech.MechDef.GUID, out List<string> weaponsOrder) == false) {
+    //    weaponsOrder = new List<string>();
+    //  }
+    //  int count = allweapons.Count;
+    //  for (int index = 0; index < count; ++index) {
+    //    string defid = string.Empty;
+    //    if (index < weaponsOrder.Count) { defid = weaponsOrder[index]; };
+    //    if (string.IsNullOrEmpty(defid)) { weapons.Add(null); }
+    //    bool found = false;
+    //    for(int i = 0; i < allweapons.Count; ++i) {
+    //      if (allweapons[i].ComponentDefID == defid) { weapons.Add(allweapons[i]); allweapons.RemoveAt(i); found = true; break; }
+    //    }
+    //    if (found == false) { weapons.Add(null); };
+    //  }
+    //  for (int index = 0; index < weapons.Count; ++index) {
+    //    if (weapons[index] != null) { continue; }
+    //    if (allweapons.Count == 0) { continue; }
+    //    weapons.Add(allweapons[0]);
+    //    allweapons.RemoveAt(0);
+    //  }
+    //  for (int index = 0; index < weapons.Count;) {
+    //    if (weapons[index] != null) { ++index; continue; }
+    //    weapons.RemoveAt(index);
+    //  }
+    //}
+    //private static void Clear() {
+    //  selectedWeapon = 0;
+    //  weapons.Clear();
+    //}
+    //private static void Save() {
+    //  if (mechBayPanel == null) { return; }
+    //  MechBayMechUnitElement selectedMech = Traverse.Create(mechBayPanel).Field<MechBayMechUnitElement>("selectedMech").Value;
+    //  if (selectedMech == null) { return; }
+    //  if (WeaponOrderSimGameHelper.ordersData.definitionOrders.TryGetValue(selectedMech.MechDef.GUID, out List<string> weaponsOrder) == false) {
+    //    weaponsOrder = new List<string>();
+    //    WeaponOrderSimGameHelper.ordersData.definitionOrders.Add(selectedMech.MechDef.GUID,weaponsOrder);
+    //  }
+    //  weaponsOrder.Clear();
+    //  for(int index = 0;index < weapons.Count; ++index) {
+    //    weaponsOrder.Add(weapons[index].ComponentDefID);
+    //  }
+    //  Statistic stat = UnityGameInstance.BattleTechGame.Simulation.CompanyStats.GetStatistic(WeaponOrderSimGameHelper.WeaponOrderStatisticName);
+    //  if (stat == null) {
+    //    stat = UnityGameInstance.BattleTechGame.Simulation.CompanyStats.AddStatistic(WeaponOrderSimGameHelper.WeaponOrderStatisticName,string.Empty);
+    //  }
+    //  stat.SetValue<string>(JsonConvert.SerializeObject(WeaponOrderSimGameHelper.ordersData));
+    //}
+    //private static void Left() {
+    //  selectedWeapon = (selectedWeapon + 1) % weapons.Count;
+    //  popup.TextContent = BuildText();
+    //}
+    //private static void Right() {
+    //  selectedWeapon = selectedWeapon - 1;
+    //  if (selectedWeapon < 0) { selectedWeapon = weapons.Count - 1; }
+    //  popup.TextContent = BuildText();
+    //}
+    //private static void Up() {
+    //  if(selectedWeapon > 0) {
+    //    MechComponentRef tmp = weapons[selectedWeapon - 1];
+    //    weapons[selectedWeapon - 1] = weapons[selectedWeapon];
+    //    weapons[selectedWeapon] = tmp;
+    //    selectedWeapon -= 1;
+    //  }
+    //  popup.TextContent = BuildText();
+    //}
+    //private static void Down() {
+    //  if (selectedWeapon < (weapons.Count - 1)) {
+    //    MechComponentRef tmp = weapons[selectedWeapon + 1];
+    //    weapons[selectedWeapon + 1] = weapons[selectedWeapon];
+    //    weapons[selectedWeapon] = tmp;
+    //    selectedWeapon += 1;
+    //  }
+    //  popup.TextContent = BuildText();
+    //}
     public static void Postfix(MechBayPanel __instance) {
       Log.M.TWL(0, "MechBayPanel.OnAddedToHierarchy");
       Transform weaponOrder = __instance.transform.FindRecursive("uixPrfBttn_BASE_iconActionButton-MANAGED-repair");
@@ -1767,16 +2633,21 @@ namespace CustomAmmoCategoriesPatches {
       if (label == null) { return; }
       Log.M.WL(1, "iconBtn_highlightLabel");
       label.gameObject.GetComponent<LocalizableText>().SetText("__/WEAPON ORDER/__");
-      MechBayPanel_ViewBays.mechBayPanel = __instance;
+      //MechBayPanel_ViewBays.mechBayPanel = __instance;
       HBSDOTweenButton button = weaponOrder.gameObject.GetComponent<HBSDOTweenButton>();
-      button.OnClicked.AddListener(new UnityAction(OnWeaponOrderButtonClick));
+      WeaponsOrderPopupSupervisor weaponsOrderPopupSupervisor = __instance.gameObject.GetComponent<WeaponsOrderPopupSupervisor>();
+      if (weaponsOrderPopupSupervisor == null) {
+        weaponsOrderPopupSupervisor = __instance.gameObject.AddComponent<WeaponsOrderPopupSupervisor>();
+        weaponsOrderPopupSupervisor.instantine();
+      }
+      button.OnClicked.AddListener(new UnityAction(weaponsOrderPopupSupervisor.OnWeaponOrderButtonClick));
       weaponOrder.gameObject.SetActive(true);
     }
   }
   [HarmonyPatch(typeof(CombatHUDWeaponPanel))]
   [HarmonyPatch("ResetSortedWeaponList")]
   [HarmonyPatch(MethodType.Normal)]
-  public static class CombatHUDWeaponPanel_CombatHUDWeaponPanel {
+  public static class CombatHUDWeaponPanel_ResetSortedWeaponList {
     private static Dictionary<AbstractActor, List<Weapon>> sortedWeaponsByActor = new Dictionary<AbstractActor, List<Weapon>>();
     public static List<Weapon> sortedUIWeapons(this AbstractActor unit) {
       if (sortedWeaponsByActor.TryGetValue(unit, out List<Weapon> result)) {
@@ -1816,7 +2687,50 @@ namespace CustomAmmoCategoriesPatches {
           return false;
         } else {
           if (string.IsNullOrEmpty(__instance.DisplayedActor.PilotableActorDef.GUID)) { return true; }
-          if(WeaponOrderSimGameHelper.ordersData.definitionOrders.TryGetValue(__instance.DisplayedActor.PilotableActorDef.GUID, out List<string> simGameOrder)) {
+          if (WeaponOrderSimGameHelper.ordersDataEx.definitionOrders.TryGetValue(__instance.DisplayedActor.PilotableActorDef.GUID, out List<WeaponOrderDataElementDef> simGameOrderEx)) {
+            Log.M?.TWL(0, "CombatHUDWeaponPanel.ResetSortedWeaponList "+ __instance.DisplayedActor.PilotableActorDef.ChassisID+" GUID:"+ __instance.DisplayedActor.PilotableActorDef.GUID);
+            List<Weapon> allweapons = new List<Weapon>();
+            List<Weapon> result = new List<Weapon>();
+            allweapons.AddRange(__instance.DisplayedActor.Weapons);
+            int count = allweapons.Count;
+            for (int index = 0; index < count; ++index) {
+              string defid = string.Empty;
+              int location = (int)ChassisLocations.None;
+              WeaponOrderDataElementDef simOrderData = null;
+              if (index < simGameOrderEx.Count) {
+                defid = simGameOrderEx[index].weaponDefId; location = (int)simGameOrderEx[index].mountLocation;
+                simOrderData = simGameOrderEx[index];
+              }
+              if (string.IsNullOrEmpty(defid)) { result.Add(null); continue; }
+              bool found = false;
+              for (int i = 0; i < allweapons.Count; ++i) {
+                if ((allweapons[i].defId == defid)&&(allweapons[i].Location == location)) {
+                  Log.M?.WL(1,"weapon "+ allweapons[i].defId + " found at "+index+". Mode:"+ simOrderData.defaultModeId+" Ammo:"+ simOrderData.defaultAmmoId+" boxes:"+ allweapons[i].ammoBoxes.Count);
+                  if (string.IsNullOrEmpty(simOrderData.defaultModeId) == false) { allweapons[i].forceMode(simOrderData.defaultModeId); }
+                  if (string.IsNullOrEmpty(simOrderData.defaultAmmoId) == false) { allweapons[i].forceAmmo(simOrderData.defaultAmmoId); }
+                  allweapons[i].info().setSorting(simOrderData);
+                  if (simOrderData.automaticAmmoBoxesOrder) {
+                    allweapons[i].FillAmmoBoxesCache();
+                  }
+                  found = true; result.Add(allweapons[i]); allweapons.RemoveAt(i); break;
+                }
+              }
+              if (found == false) { result.Add(null); }
+            }
+            for (int index = 0; index < result.Count; ++index) {
+              if (result[index] != null) { continue; }
+              if (allweapons.Count == 0) { continue; }
+              result[index] = allweapons[0]; allweapons.RemoveAt(0);
+            }
+            for (int index = 0; index < result.Count;) {
+              if (result[index] != null) { ++index; continue; }
+              result.RemoveAt(index);
+            }
+            ___sortedWeaponsList.Clear();
+            ___sortedWeaponsList.AddRange(result);
+            return false;
+          } else
+          if (WeaponOrderSimGameHelper.ordersData.definitionOrders.TryGetValue(__instance.DisplayedActor.PilotableActorDef.GUID, out List<string> simGameOrder)) {
             List<Weapon> allweapons = new List<Weapon>();
             List<Weapon> result = new List<Weapon>();
             allweapons.AddRange(__instance.DisplayedActor.Weapons);

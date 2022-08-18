@@ -50,7 +50,7 @@ namespace CustomAmmoCategoriesPatches {
         Weapon_InternalAmmo.Clear();
         BraceNode_Tick.Clear();
         AreaOfEffectHelper.Clear();
-        CombatHUDWeaponPanel_CombatHUDWeaponPanel.Clear();
+        CombatHUDWeaponPanel_ResetSortedWeaponList.Clear();
         CombatHUDInfoSidePanelHelper.Clear();
         ExplosionAPIHelper.Clear();
         ToHitModifiersHelper.Clear();

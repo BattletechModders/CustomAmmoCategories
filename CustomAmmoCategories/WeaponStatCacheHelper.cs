@@ -172,6 +172,7 @@ namespace CustAmmoCategories {
   //}
   public class WeaponExtendedInfo {
     public Weapon weapon { get; set; }
+    public WeaponOrderDataElementDef sortingDef { get; set; } = null;
     public HashSet<string> restrictedModes { get; set; } = new HashSet<string>();
     public bool isBoxesAssigned { get; set; } = false;
     public WeaponMode mode { get; set; }
@@ -193,6 +194,9 @@ namespace CustAmmoCategories {
       set {
         f_HUDSlot = value;
       }
+    }
+    public void setSorting(WeaponOrderDataElementDef sorting) {
+      this.sortingDef = sorting;
     }
     public bool setMode(string modeId) {
       if(this.modes.TryGetValue(modeId, out var Mode) == false) {
@@ -435,6 +439,33 @@ namespace CustAmmoCategories {
         weapon.Register(new WeaponExtendedInfo(weapon, weapon.weaponDef));
       }
       weapon.ClearInternalAmmoCache();
+    }
+    public static bool isHasMode(this Weapon weapon, string modeId) {
+      return weapon.exDef().Modes.ContainsKey(modeId);
+    }
+    public static void forceMode(this Weapon weapon, string modeId) {
+      WeaponExtendedInfo info = weapon.info();
+      CustomAmmoCategoriesLog.Log.LogWrite("applyWeaponMode(" + weapon.defId + "," + modeId + ")\n");
+      if (info.modes.ContainsKey(modeId)) {
+        if (weapon.StatCollection.ContainsStatistic(CustomAmmoCategories.WeaponModeStatisticName) == false) {
+          weapon.StatCollection.AddStatistic<string>(CustomAmmoCategories.WeaponModeStatisticName, modeId);
+        } else {
+          weapon.StatCollection.Set<string>(CustomAmmoCategories.WeaponModeStatisticName, modeId);
+        }
+      } else {
+        CustomAmmoCategoriesLog.Log.LogWrite("WARNING! " + weapon.defId + " has no mode " + modeId + "\n", true);
+      }
+      weapon.ClearAmmoModeCache();
+    }
+    public static void forceAmmo(this Weapon weapon, string ammoId) {
+      WeaponExtendedInfo info = weapon.info();
+      CustomAmmoCategoriesLog.Log.LogWrite("applyWeaponAmmo(" + weapon.defId + "," + ammoId + ")\n");
+      if (weapon.StatCollection.ContainsStatistic(CustomAmmoCategories.AmmoIdStatName) == false) {
+        weapon.StatCollection.AddStatistic<string>(CustomAmmoCategories.AmmoIdStatName, ammoId);
+      } else {
+        weapon.StatCollection.Set<string>(CustomAmmoCategories.AmmoIdStatName, ammoId);
+      }
+      weapon.ClearAmmoModeCache();
     }
     public static bool isWeaponHasAmmoVariants(this Weapon weapon) {
       if (weaponExtInfo.TryGetValue(weapon, out var info)) {

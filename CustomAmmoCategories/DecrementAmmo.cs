@@ -105,7 +105,31 @@ namespace CustAmmoCategories {
       cachedAmmoBoxes.Clear();
       sortedAmmoBoxes.Clear();
     }
+    public static void FillAmmoBoxesCacheManual(this Weapon weapon) {
+      sortedAmmoBoxes.Remove(weapon);
+      List<AmmunitionBox> allboxes = new List<AmmunitionBox>();
+      List<AmmunitionBox> sortedboxes = new List<AmmunitionBox>();
+      allboxes.AddRange(weapon.ammoBoxes);
+      List<AmmoBoxOderDataElementDef> sortOrder = weapon.info().sortingDef.ammoBoxesOrder;
+      for (int i = 0; i < sortOrder.Count; ++i) {
+        for(int ii=0; ii < allboxes.Count; ++ii) {
+          if((sortOrder[i].ammoBoxDefId == allboxes[ii].defId) && ((int)sortOrder[i].mountLocation == allboxes[ii].Location)) {
+            sortedboxes.Add(allboxes[ii]);
+            allboxes.RemoveAt(ii);
+            break;
+          }
+        }
+      }
+      sortedboxes.AddRange(allboxes);
+      sortedAmmoBoxes.Add(weapon, sortedboxes);
+    }
     public static void FillAmmoBoxesCache(this Weapon weapon) {
+      if (weapon.info().sortingDef != null) {
+        if (weapon.info().sortingDef.automaticAmmoBoxesOrder) {
+          weapon.FillAmmoBoxesCacheManual();
+          return;
+        }
+      }
       sortedAmmoBoxes.Remove(weapon);
       List<AmmunitionBox> boxes = new List<AmmunitionBox>();
       boxes.AddRange(weapon.ammoBoxes);

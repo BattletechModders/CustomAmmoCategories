@@ -219,17 +219,33 @@ namespace CustomUnits {
       try {
         //Log.TWL(0, "Mech.GetAbbreviatedChassisLocation Prefix" + (Thread.CurrentThread.currentActor() == null ? "null" : Thread.CurrentThread.currentActor().Description.Id));
         Mech mech = Thread.CurrentThread.currentMech();
-        if (mech == null) { return; }
-        TrooperSquad squad = mech as TrooperSquad;
-        if (squad != null) {
-          if (BaySquadReadoutAligner.STRUCTURE_TO_SQUAD.TryGetValue(location, out int index)) {
-            __result = new Text("U{0}", index);
-          } else {
-            __result = new Text("U");
+        MechDef mechDef = Thread.CurrentThread.currentMechDef();
+        if ((mech == null)&&(mechDef == null)) { return; }
+        if (mechDef != null) {
+          UnitCustomInfo info = mechDef.GetCustomInfo();
+          if (info == null) { return; }
+          if(info.SquadInfo.Troopers > 1) {
+            if (BaySquadReadoutAligner.STRUCTURE_TO_SQUAD.TryGetValue(location, out int index)) {
+              __result = new Text("U{0}", index);
+            } else {
+              __result = new Text("U");
+            }
+          } else if (mechDef.IsVehicle()) {
+            __result = new Text(ToHitModifiersHelper.GetAbbreviatedChassisLocation(location.toFakeVehicleChassis()));
           }
         } else
-        if (mech.FakeVehicle()) {
-          __result = new Text(ToHitModifiersHelper.GetAbbreviatedChassisLocation(location.toFakeVehicleChassis()));
+        if (mech != null) {
+          TrooperSquad squad = mech as TrooperSquad;
+          if (squad != null) {
+            if (BaySquadReadoutAligner.STRUCTURE_TO_SQUAD.TryGetValue(location, out int index)) {
+              __result = new Text("U{0}", index);
+            } else {
+              __result = new Text("U");
+            }
+          } else
+          if (mech.FakeVehicle()) {
+            __result = new Text(ToHitModifiersHelper.GetAbbreviatedChassisLocation(location.toFakeVehicleChassis()));
+          }
         }
       } catch (Exception e) {
         Log.TWL(0, e.ToString(), true);
