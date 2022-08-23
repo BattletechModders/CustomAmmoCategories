@@ -418,6 +418,17 @@ namespace CustAmmoCategories {
         info.Revalidate();
       }
     }
+    public static void SanitizeModeAmmo(this Weapon weapon) {
+      CustomAmmoCategory effectiveAmmoCategory = weapon.mode().AmmoCategory;
+      if (effectiveAmmoCategory.BaseCategory.Is_NotSet) {
+        effectiveAmmoCategory = weapon.exDef().AmmoCategory;
+      }
+      if (effectiveAmmoCategory.BaseCategory.Is_NotSet) {
+        weapon.forceAmmo(string.Empty);
+      }
+      
+      // weapon.mode().AmmoCategory
+    }
     public static void Register(this Weapon weapon, WeaponExtendedInfo info) {
       weaponExtInfo.Add(weapon, info);
     }

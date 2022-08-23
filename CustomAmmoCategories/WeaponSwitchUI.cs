@@ -2706,8 +2706,9 @@ namespace CustomAmmoCategoriesPatches {
               for (int i = 0; i < allweapons.Count; ++i) {
                 if ((allweapons[i].defId == defid)&&(allweapons[i].Location == location)) {
                   Log.M?.WL(1,"weapon "+ allweapons[i].defId + " found at "+index+". Mode:"+ simOrderData.defaultModeId+" Ammo:"+ simOrderData.defaultAmmoId+" boxes:"+ allweapons[i].ammoBoxes.Count);
-                  if (string.IsNullOrEmpty(simOrderData.defaultModeId) == false) { allweapons[i].forceMode(simOrderData.defaultModeId); }
                   if (string.IsNullOrEmpty(simOrderData.defaultAmmoId) == false) { allweapons[i].forceAmmo(simOrderData.defaultAmmoId); }
+                  if (string.IsNullOrEmpty(simOrderData.defaultModeId) == false) { allweapons[i].info().setMode(simOrderData.defaultModeId); }
+                  allweapons[i].info().Revalidate();
                   allweapons[i].info().setSorting(simOrderData);
                   if (simOrderData.automaticAmmoBoxesOrder) {
                     allweapons[i].FillAmmoBoxesCache();

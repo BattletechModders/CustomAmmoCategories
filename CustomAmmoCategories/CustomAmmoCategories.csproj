@@ -257,6 +257,7 @@
     <Compile Include="PlayProjectile.cs" />
     <Compile Include="SelfDocumentation.cs" />
     <Compile Include="Settings.cs" />
+    <Compile Include="SGEventPanel.cs" />
     <Compile Include="SidePanelMoveInfo.cs" />
     <Compile Include="StackHelper.cs" />
     <Compile Include="Streak.cs" />
