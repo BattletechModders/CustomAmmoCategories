@@ -20,6 +20,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Threading.Tasks;
 using System.Linq;
+using System.Diagnostics;
 
 namespace CustAmmoCategories {
   //[HarmonyPatch]
@@ -159,7 +160,9 @@ namespace CustAmmoCategories {
       }
     }
     /* code for this method is provided by Ashakar */
+    private static Stopwatch GetSampledPathNodes_timer = new Stopwatch();
     public static bool GetSampledPathNodes_Prefix(PathNodeGrid __instance,ref List<PathNode> __result) {
+      GetSampledPathNodes_timer.Start();
       if (CustomAmmoCategories.Settings.AIPathingMultithread == false) { return true; }
       try {
         ConcurrentBag<PathNode> list = new ConcurrentBag<PathNode>();
@@ -187,8 +190,14 @@ namespace CustAmmoCategories {
       }
     }
     public static void GetSampledPathNodes_Postfix(PathNodeGrid __instance, AbstractActor ___owningActor, MoveType ___moveType, CombatGameState ___combat, ref List<PathNode> __result) {
-      try { 
-        Log.P?.TWL(0, "PathNodeGrid.GetSampledPathNodes "+___owningActor.PilotableActorDef.ChassisID + " limit samples:"+ Thread.CurrentThread.isFlagSet(LIMIT_PATHING_SAMPLES) + " moveType:"+___moveType+" result:"+__result.Count,true);
+      try {
+        GetSampledPathNodes_timer.Stop();
+        Log.P?.TWL(0, "PathNodeGrid.GetSampledPathNodes "+___owningActor.PilotableActorDef.ChassisID 
+          + " limit samples:"+ Thread.CurrentThread.isFlagSet(LIMIT_PATHING_SAMPLES) 
+          + " moveType:"+___moveType
+          + " multi-thread:"+CustomAmmoCategories.Settings.AIPathingMultithread
+          + " elapsed:" + GetSampledPathNodes_timer.ElapsedMilliseconds+" ms"
+          + " result:" +__result.Count,true);
         if (Thread.CurrentThread.isFlagSet(LIMIT_PATHING_SAMPLES) == false) {
           //Log.P?.TWL(0, "PathNodeGrid.GetSampledPathNodes NOT AI GENERATION " + ___owningActor.PilotableActorDef.ChassisID + " moveType:" + ___moveType + " result:" + __result.Count, true);
           //Log.P?.WL(0, Environment.StackTrace.ToString());
