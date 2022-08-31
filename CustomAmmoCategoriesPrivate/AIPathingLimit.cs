@@ -196,8 +196,9 @@ namespace CustAmmoCategories {
           + " limit samples:"+ Thread.CurrentThread.isFlagSet(LIMIT_PATHING_SAMPLES) 
           + " moveType:"+___moveType
           + " multi-thread:"+CustomAmmoCategories.Settings.AIPathingMultithread
-          + " elapsed:" + GetSampledPathNodes_timer.ElapsedMilliseconds+" ms"
+          + " elapsed:" + GetSampledPathNodes_timer.Elapsed.TotalMilliseconds+" ms"
           + " result:" +__result.Count,true);
+        GetSampledPathNodes_timer.Reset();
         if (Thread.CurrentThread.isFlagSet(LIMIT_PATHING_SAMPLES) == false) {
           //Log.P?.TWL(0, "PathNodeGrid.GetSampledPathNodes NOT AI GENERATION " + ___owningActor.PilotableActorDef.ChassisID + " moveType:" + ___moveType + " result:" + __result.Count, true);
           //Log.P?.WL(0, Environment.StackTrace.ToString());

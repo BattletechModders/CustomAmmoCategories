@@ -571,6 +571,7 @@ namespace CustomUnits{
       CustomPrewarm.Core.RegisterSerializator("CustomUnits", BattleTechResourceType.VehicleChassisDef, VehicleCustomInfoHelper.GetInfoByChassisId);
       CustomPrewarm.Core.RegisterSerializator("CustomUnits", BattleTechResourceType.HardpointDataDef, CustomHardPointsHelper.CustomHardpoints);
       CustomPrewarm.Core.RegisterSerializator("CustomUnitsChassisTags", BattleTechResourceType.VehicleChassisDef, BattleTech_VehicleChassisDef_fromJSON_Patch.serializeChassisTags);
+      InfluenceMapPositionFactorPatch.PatchAll(Core.HarmonyInstance);
       try {
         foreach(string name in loadOrder) { if (name == "Mission Control") { CustomLanceHelper.MissionControlDetected = true; break; }; }
         foreach (string name in loadOrder) { if (name == "MechEngineer") { Core.Settings.MechEngineerDetected = true; break; }; }
@@ -793,7 +794,7 @@ namespace CustomUnits{
         Log.TWL(0,"Helper assembly "+CUHelperAssembly.FullName);
         HarmonyInstance.PatchAll(Assembly.GetExecutingAssembly());
         PathingInfoHelper.RegisterMaxMoveDeligate(PathingHelper.MaxMoveDistance);
-        WeightedFactorHelper.PatchInfluenceMapPositionFactor(HarmonyInstance);
+        //WeightedFactorHelper.PatchInfluenceMapPositionFactor(HarmonyInstance);
         WeaponRepresentation_PlayWeaponEffect.i_extendedFire = extendedFireHelper.extendedFire;
         //Debug.unityLogger.logEnabled = false;
       } catch (Exception e) {

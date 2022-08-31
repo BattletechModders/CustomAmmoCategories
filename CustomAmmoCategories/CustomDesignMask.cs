@@ -190,6 +190,19 @@ namespace CustAmmoCategoriesPatches {
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { typeof(DesignMaskDef),typeof(int) })]
   public static class AbstractActor_ApplyDesignMaskStickyEffect {
+    public static string GetDesignMaskEffectId(this AbstractActor unit) {
+      return "DesignMask_" + unit.GUID;
+    }
+    public static void RemoveAllDesignMaskEffects(this AbstractActor unit) {
+      List<Effect> defignMaskEffects = unit.Combat.EffectManager.GetAllEffectsWithID(unit.GetDesignMaskEffectId());
+      foreach (Effect effect in defignMaskEffects) {
+        unit.Combat.EffectManager.CancelEffect(effect);
+      }
+      unit.SetOccupiedDesignMask(null, -1, null);
+    }
+    public static void RestoreDesignMaskEffect(this AbstractActor unit) {
+      //unit.Combat.MapMetaData.get
+    }
     private static void Postfix(AbstractActor __instance, DesignMaskDef mask, int stackItemUID) {
       if (mask == null) { return; };
       CustomAmmoCategoriesLog.Log.LogWrite("AbstractActor.ApplyDesignMaskStickyEffect:"+mask.Id+"\n");
@@ -200,7 +213,7 @@ namespace CustAmmoCategoriesPatches {
       foreach (EffectData stickyEffect in CustomAmmoCategories.tempDesignMasksStickyEffects[mask.Id]) {
         if (stickyEffect == null || stickyEffect.effectType == EffectType.NotSet) { continue; }
         CustomAmmoCategoriesLog.Log.LogWrite(" additional sticky effect:"+stickyEffect.Description.Name+"\n");
-        if (__instance.CreateEffect(stickyEffect, (Ability)null, __instance.GUID, stackItemUID, __instance, false)) {
+        if (__instance.CreateEffect(stickyEffect, (Ability)null, __instance.GetDesignMaskEffectId(), stackItemUID, __instance, false)) {
           FloatieMessage.MessageNature nature = stickyEffect.nature != EffectNature.Buff ? FloatieMessage.MessageNature.Debuff : FloatieMessage.MessageNature.Buff;
           __instance.Combat.MessageCenter.PublishMessage((MessageCenterMessage)new FloatieMessage(__instance.GUID, __instance.GUID, stickyEffect.Description.Name, nature));
         }
