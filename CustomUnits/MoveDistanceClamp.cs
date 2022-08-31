@@ -392,7 +392,7 @@ namespace CustomUnits {
     public static void Postfix(PathNodeGrid __instance, ref List<PathNode> __result) {
       try {
         AbstractActor unit = (AbstractActor)f_owningActor.GetValue(__instance);
-        Log.TWL(0,"PathNodeGrid.GetSampledPathNodes " + new Text(unit.DisplayName).ToString());
+        Log.TWL(0,"PathNodeGrid.GetSampledPathNodes " + unit.PilotableActorDef.ChassisID);
         float MoveClamp = unit.MoveClamp();
         if (MoveClamp < Core.Epsilon) {
           Log.WL(1,"no clamp info");

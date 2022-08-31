@@ -1252,6 +1252,8 @@ namespace CustAmmoCategories {
 
 namespace CACMain {
   public static class Core {
+    public static HarmonyInstance harmony { get; set; } = null;
+    public static Type privateAssemblyCore { get; set; } = null;
     public static Dictionary<string, GameObject> AdditinalFXObjects = new Dictionary<string, GameObject>();
     public static Dictionary<string, Mesh> AdditinalMeshes = new Dictionary<string, Mesh>();
     public static Dictionary<string, Texture2D> AdditinalTextures = new Dictionary<string, Texture2D>();
@@ -1297,6 +1299,8 @@ namespace CACMain {
         CustomSettings.ModsLocalSettingsHelper.RegisterLocalSettings("CustomAmmoCategoriesSettings","Custom Ammo Categories", LocalSettingsHelper.ResetSettings, LocalSettingsHelper.ReadSettings);
         CustomPrewarm.Core.RegisterSerializator("CustomAmmoCategories", BattleTechResourceType.WeaponDef, CustomAmmoCategories.getExtWeaponDef);
         CustomPrewarm.Core.RegisterSerializator("CustomAmmoCategories", BattleTechResourceType.AmmunitionDef, CustomAmmoCategories.findExtAmmo);
+        AccessTools.Method(privateAssemblyCore, "FinishedLoading").Invoke(null, new object[] { });
+        //CustomAmmoCategories.ha
         //FixedMechDefHelper.Init(CustomAmmoCategories.Settings.directory);
       } catch (Exception e) {
         Log.M.TWL(0, e.ToString(), true);
@@ -1312,9 +1316,13 @@ namespace CACMain {
       Log.InitLog();
       Log.M.TWL(0,"Initing... " + directory + " version: " + Assembly.GetExecutingAssembly().GetName().Version + " debug:"+ CustomAmmoCategories.Settings.debugLog, true);
       Log.M.TWL(0,"Reading settings");
-      foreach(string arg in Environment.GetCommandLineArgs()) {
-        Log.M.WL(1, arg);
-      }
+      //foreach(string arg in Environment.GetCommandLineArgs()) {
+      //  Log.M.WL(1, arg);
+      //}
+      string privateAssemblyPath = Path.Combine(directory,"CustomAmmoCategoriesPrivate.dll");
+      Assembly privateAssembly = Assembly.LoadFile(privateAssemblyPath);
+      privateAssemblyCore = privateAssembly.GetType("CustomAmmoCategoriesPrivate.Core");
+      AccessTools.Method(privateAssemblyCore, "Init").Invoke(null, new object[] { });
       SelfDocumentationHelper.CreateSelfDocumentation(directory);
       CustomAmmoCategories.Settings = JsonConvert.DeserializeObject<CustAmmoCategories.Settings>(File.ReadAllText(settings_filename));
       CustomAmmoCategories.GlobalSettings = JsonConvert.DeserializeObject<CustAmmoCategories.Settings>(File.ReadAllText(settings_filename));
@@ -1424,7 +1432,7 @@ namespace CACMain {
             Log.M.WL(0,"not exists:" + path);
           }
         }
-        var harmony = HarmonyInstance.Create("io.mission.modrepuation");
+        Core.harmony = HarmonyInstance.Create("io.mission.modrepuation");
         harmony.PatchAll(Assembly.GetExecutingAssembly());
         InternalClassPathes.PatchInternalClasses(harmony);
         Thread thread = new Thread(ThreadWork.DoWork);

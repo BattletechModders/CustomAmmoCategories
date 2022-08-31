@@ -3,6 +3,7 @@ using BattleTech.UI;
 using CustomAmmoCategoriesLog;
 using Harmony;
 using System;
+using System.Reflection;
 using System.Threading;
 using UnityEngine;
 

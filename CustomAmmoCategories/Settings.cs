@@ -282,6 +282,11 @@ namespace CustAmmoCategories {
       }
       return json.ToString(Formatting.Indented);
     }
+    [GameplaySafe]
+    public bool AIPathingOptimization { get; set; } = true;
+    [GameplaySafe]
+    public bool AIPathingMultithread { get; set; } = true;
+    public int AIPathingSamplesLimit { get; set; } = 120;
     public Settings() {
       //directory = string.Empty;
       //debugLog = true;
