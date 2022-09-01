@@ -666,9 +666,9 @@ namespace CustAmmoCategories {
       bool UnaffectedLandmines = unit.UnaffectedLandmines();
       PathingCapabilitiesDef PathingCaps = (PathingCapabilitiesDef)typeof(Pathing).GetProperty("PathingCaps", BindingFlags.Instance | BindingFlags.NonPublic).GetGetMethod(true).Invoke(unit.Pathing, null);
       if (CustomAmmoCategories.Settings.MineFieldPathingMods.ContainsKey(PathingCaps.Description.Id)) {
-        rollMod = CustomAmmoCategories.Settings.MineFieldPathingMods[PathingCaps.Description.Id];
+        rollMod = CustomAmmoCategories.Settings.MineFieldPathingMods[PathingCaps.Description.Id] * unit.MinefieldTriggerMult();
       }
-      Log.F.WL(1, "current pathing:" + PathingCaps.Description.Id +" roll mod:"+rollMod);
+      Log.F.WL(1, "current pathing:" + PathingCaps.Description.Id +" roll mod:"+rollMod+" by unit stats("+ unit.MinefieldTriggerMult() + ")");
       MineFieldDamage mfDamage = new MineFieldDamage();
       bool abortSequce = false;
       for (int index = terrainWaypoints.Count - 1; index >= 0; --index) {

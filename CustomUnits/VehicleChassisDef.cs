@@ -936,29 +936,6 @@ namespace CustomUnits {
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { typeof(DesignMaskDef), typeof(int) })]
   public static class AbstractActor_ApplyDesignMaskStickyEffect {
-    public static bool Prefix(AbstractActor __instance,ref DesignMaskDef mask, int stackItemUID) {
-      Log.LogWrite(0, "AbstractActor.ApplyDesignMaskStickyEffect Prefix " + __instance.DisplayName + ":" + __instance.GUID, true);
-      try {
-        if (__instance.UnaffectedDesignMasks()) {
-          mask = null;
-        }
-        if (mask == null || mask.stickyEffect == null || mask.stickyEffect.effectType == EffectType.NotSet) {
-          return false;
-        }
-        bool ActuallyApplied = false;
-        if (__instance.CreateEffect(mask.stickyEffect, (Ability)null, __instance.GetDesignMaskEffectId(), stackItemUID, __instance, false)) {
-          FloatieMessage.MessageNature nature = mask.stickyEffect.nature == EffectNature.Buff ? FloatieMessage.MessageNature.Buff : FloatieMessage.MessageNature.Debuff;
-          __instance.Combat.MessageCenter.PublishMessage((MessageCenterMessage)new FloatieMessage(__instance.GUID, __instance.GUID, mask.stickyEffect.Description.Name, nature));
-          ActuallyApplied = true;
-        }
-        bool InstabilityMultiplier = mask.stickyEffect.statisticData != null && mask.stickyEffect.statisticData.statName == "ReceivedInstabilityMultiplier";
-        Log.TWL(0,string.Format("[ApplyDesignMaskStickyEffect] Actor {0} applying {1}. Is InstabilityMultiplier? {2} Actually applied? {3}", (object)__instance.GUID, (object)mask.stickyEffect.effectType, (object)InstabilityMultiplier, (object)ActuallyApplied));
-        return false;
-      } catch (Exception e) {
-        Log.TWL(0,e.ToString(), true);
-      }
-      return true;
-    }
   }
   [HarmonyPatch(typeof(AbstractActor))]
   [HarmonyPatch("SetOccupiedDesignMask")]

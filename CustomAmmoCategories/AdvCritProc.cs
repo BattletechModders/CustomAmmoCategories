@@ -44,6 +44,9 @@ namespace CustAmmoCategories {
     }
   }
   public static class AdvancedCriticalProcessor {
+    public static readonly string FLAT_CRIT_CHANCE_STAT_NAME = "CAC_FlatCritChance";
+    public static readonly string BASE_CRIT_CHANCE_STAT_NAME = "CAC_BaseCritChance";
+    public static readonly string AP_CRIT_CHANCE_STAT_NAME = "CAC_APCritChance";
     public static string GetArmorLocationName(this ICombatant combatant, int aLoc) {
       Mech mech = combatant as Mech;
       Vehicle vehicle = combatant as Vehicle;
@@ -144,16 +147,16 @@ namespace CustAmmoCategories {
         if (weapon.isAPCrit()) {
           TAcritMultiplier = weapon.APCriticalChanceMultiplier();
         }
-        float result = baseCritChance * shardsCritChance * TAcritMultiplier * thicknessCritChance;
-        Log.C.WL(1, string.Format("[GetCritChance] base = {0}, shards mod = {1}, thickness mod = {2}, ap mod = {3}, result = {4}!", baseCritChance, shardsCritChance, thicknessCritChance, TAcritMultiplier, result));
+        float result = baseCritChance * shardsCritChance * TAcritMultiplier * thicknessCritChance * unit.FlatCritChance() * unit.APCritChance();
+        Log.C.WL(1, string.Format("[GetCritChance] base = {0}, shards mod = {1}, thickness mod = {2}, ap mod = {3}, flat={4}, ap = {5}, result = {6}!", baseCritChance, shardsCritChance, thicknessCritChance, TAcritMultiplier, unit.FlatCritChance(), unit.APCritChance(), result));
         critInfo.critChance = result;
         return result;
       } else {
         float a = AdvancedCriticalProcessor.GetBaseCritChance(unit, critInfo);
         float num = Mathf.Max(a, unit.Combat.Constants.ResolutionConstants.MinCritChance);
         float critMultiplier = unit.Combat.CritChance.GetCritMultiplier(unit, weapon, true);
-        Log.C.WL(1, string.Format("[GetCritChance] base = {0}, multiplier = {1}!", (object)num, (object)critMultiplier));
-        critInfo.critChance = num * critMultiplier;
+        critInfo.critChance = num * critMultiplier * unit.FlatCritChance() * unit.BaseCritChance();
+        Log.C.WL(1, string.Format("[GetCritChance] base = {0}, multiplier = {1}, flat={2}, basemod={3} result={4}!", num, critMultiplier, unit.FlatCritChance(), unit.BaseCritChance(), critInfo.critChance));
         return num * critMultiplier;
       }
     }

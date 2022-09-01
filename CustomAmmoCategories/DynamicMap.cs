@@ -30,6 +30,7 @@ using CustomAmmoCategoriesLog;
 using CustomAmmoCategoriesPatches;
 using Harmony;
 using HBS.Util;
+using IRBTModUtils;
 using Localize;
 using SVGImporter;
 using TB.ComponentModel;
@@ -1476,6 +1477,7 @@ namespace CustAmmoCategories {
     public ActorMineFieldVFX() { lastVFXPos = Vector3.zero; fXPoolGameObjects = new List<VFXPoolGameObject>(); }
   }*/
   public static partial class DynamicMapHelper {
+    public static readonly string MINEFIELD_TRIGGER_PROBABILITY_STATISTIC_NAME = "CACMinefieldMult";
     public static Dictionary<string, DesignMaskDef> loadedMasksDef = new Dictionary<string, DesignMaskDef>();
     public static Dictionary<Vector3, MapTerrainHexCell> hexGrid = new Dictionary<Vector3, MapTerrainHexCell>();
     //public static MapTerrainHexCell[,] hexGrid = null;
@@ -2062,20 +2064,28 @@ namespace CustomAmmoCategoriesPatches {
   [HarmonyPatch(new Type[] { typeof(MapTerrainDataCell) })]
   public static class MapMetaData_GetPriorityDesignMask {
     private static void Postfix(MapMetaData __instance, MapTerrainDataCell cell, ref DesignMaskDef __result) {
-      MapTerrainDataCellEx excell = cell as MapTerrainDataCellEx;
-      if (excell != null) {
-        if (excell.tempDesignMask != null) {
-          __result = excell.tempDesignMask;
+      try { 
+        if (Thread.CurrentThread.isFlagSet(ActorMovementSequence_UpdateSticky.HIDE_DESIGN_MASK_FLAG)) {
+          __result = null;
           return;
         }
-        if (excell.CustomDesignMask == null) {
-          return;
-        };
-        TerrainMaskFlags terrainMaskFlags = MapMetaData.GetPriorityTerrainMaskFlags(cell);
-        if (SplatMapInfo.IsCustom(terrainMaskFlags) == false) {
-          return;
+        MapTerrainDataCellEx excell = cell as MapTerrainDataCellEx;
+        if (excell != null) {
+          if (excell.tempDesignMask != null) {
+            __result = excell.tempDesignMask;
+            return;
+          }
+          if (excell.CustomDesignMask == null) {
+            return;
+          };
+          TerrainMaskFlags terrainMaskFlags = MapMetaData.GetPriorityTerrainMaskFlags(cell);
+          if (SplatMapInfo.IsCustom(terrainMaskFlags) == false) {
+            return;
+          }
+          __result = excell.CustomDesignMask;
         }
-        __result = excell.CustomDesignMask;
+      } catch (Exception e) {
+        Log.M?.TWL(0, e.ToString(), true);
       }
     }
   }
@@ -2085,18 +2095,22 @@ namespace CustomAmmoCategoriesPatches {
   [HarmonyPatch(new Type[] { })]
   public static class MapTerrainDataCell_GetAudioSurfaceType {
     private static void Postfix(MapTerrainDataCell __instance, ref AudioSwitch_surface_type __result) {
-      MapTerrainDataCellEx excell = __instance as MapTerrainDataCellEx;
-      if (excell != null) {
-        if (excell.tempDesignMask != null) {
+      try {
+        MapTerrainDataCellEx excell = __instance as MapTerrainDataCellEx;
+        if (excell != null) {
+          if (excell.tempDesignMask != null) {
+            __result = excell.GetAudioSurfaceTypeEx();
+            return;
+          }
+          if (excell.CustomDesignMask == null) { return; };
+          TerrainMaskFlags terrainMaskFlags = MapMetaData.GetPriorityTerrainMaskFlags(__instance);
+          if (SplatMapInfo.IsCustom(terrainMaskFlags) == false) {
+            return;
+          }
           __result = excell.GetAudioSurfaceTypeEx();
-          return;
         }
-        if (excell.CustomDesignMask == null) { return; };
-        TerrainMaskFlags terrainMaskFlags = MapMetaData.GetPriorityTerrainMaskFlags(__instance);
-        if (SplatMapInfo.IsCustom(terrainMaskFlags) == false) {
-          return;
-        }
-        __result = excell.GetAudioSurfaceTypeEx();
+      }catch(Exception e) {
+        Log.M?.TWL(0,e.ToString(),true);
       }
     }
   }

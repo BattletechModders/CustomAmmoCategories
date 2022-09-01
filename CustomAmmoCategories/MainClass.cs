@@ -1190,6 +1190,22 @@ namespace CustAmmoCategories {
       if (unit.StatCollection.ContainsStatistic(FireActorStat) == false) { return false; };
       return unit.StatCollection.GetStatistic(FireActorStat).Value<bool>();
     }
+    public static float MinefieldTriggerMult(this ICombatant unit) {
+      if (unit.StatCollection.ContainsStatistic(DynamicMapHelper.MINEFIELD_TRIGGER_PROBABILITY_STATISTIC_NAME) == false) { return 1.0f; };
+      return unit.StatCollection.GetStatistic(DynamicMapHelper.MINEFIELD_TRIGGER_PROBABILITY_STATISTIC_NAME).Value<float>();
+    }
+    public static float FlatCritChance(this ICombatant unit) {
+      if (unit.StatCollection.ContainsStatistic(AdvancedCriticalProcessor.FLAT_CRIT_CHANCE_STAT_NAME) == false) { return 1.0f; };
+      return unit.StatCollection.GetStatistic(AdvancedCriticalProcessor.FLAT_CRIT_CHANCE_STAT_NAME).Value<float>();
+    }
+    public static float BaseCritChance(this ICombatant unit) {
+      if (unit.StatCollection.ContainsStatistic(AdvancedCriticalProcessor.BASE_CRIT_CHANCE_STAT_NAME) == false) { return 1.0f; };
+      return unit.StatCollection.GetStatistic(AdvancedCriticalProcessor.BASE_CRIT_CHANCE_STAT_NAME).Value<float>();
+    }
+    public static float APCritChance(this ICombatant unit) {
+      if (unit.StatCollection.ContainsStatistic(AdvancedCriticalProcessor.AP_CRIT_CHANCE_STAT_NAME) == false) { return 1.0f; };
+      return unit.StatCollection.GetStatistic(AdvancedCriticalProcessor.AP_CRIT_CHANCE_STAT_NAME).Value<float>();
+    }
     public static bool NoMoveAnimation(this ICombatant unit) {
       if (unit.StatCollection.ContainsStatistic(NoMoveAnimationActorStat) == false) { return false; };
       return unit.StatCollection.GetStatistic(NoMoveAnimationActorStat).Value<bool>();

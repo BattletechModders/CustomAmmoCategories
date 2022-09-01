@@ -285,7 +285,7 @@ namespace CustAmmoCategories {
     [GameplaySafe]
     public bool AIPathingOptimization { get; set; } = true;
     [GameplaySafe]
-    public bool AIPathingMultithread { get; set; } = true;
+    public bool AIPathingMultithread { get { return false; } set { } }
     public int AIPathingSamplesLimit { get; set; } = 120;
     public Settings() {
       //directory = string.Empty;
