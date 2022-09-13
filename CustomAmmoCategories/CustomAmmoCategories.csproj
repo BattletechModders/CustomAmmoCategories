@@ -48,7 +48,7 @@
       <HintPath>$(BattleTechGameDir)\Mods\ModTek\0Harmony.dll</HintPath>
     </Reference>
     <Reference Include="Assembly-CSharp">
-      <HintPath>$(BattleTechGameDir)\BattleTech_Data\Managed\Assembly-CSharp.dll</HintPath>
+      <HintPath>..\..\..\BattleTech_Data\Managed\Assembly-CSharp.dll</HintPath>
     </Reference>
     <Reference Include="Assembly-CSharp-firstpass">
       <HintPath>$(BattleTechGameDir)\BattleTech_Data\Managed\Assembly-CSharp-firstpass.dll</HintPath>
@@ -200,6 +200,7 @@
     <Compile Include="CheatHttpServer.cs" />
     <Compile Include="CheatsProtection.cs" />
     <Compile Include="CleverGirlWeaponDamagePrediction.cs" />
+    <Compile Include="CombatStatistic.cs" />
     <Compile Include="LocalSettings.cs" />
     <Compile Include="CombatGameDestroy.cs" />
     <Compile Include="CombatHUDEvasiveBarPips.cs" />
@@ -234,6 +235,8 @@
     <Compile Include="MechHitTable.cs" />
     <Compile Include="MessageBox.cs" />
     <Compile Include="MineFieldsMoveSequence.cs" />
+    <Compile Include="MiniMap.cs" />
+    <Compile Include="MuiltyShotEffects\FakeWeaponEffect.cs" />
     <Compile Include="MuiltyShotEffects\ImproveWeaponEffect.cs" />
     <Compile Include="MuiltyShotEffects\MultiShotBallistic.cs" />
     <Compile Include="MuiltyShotEffects\MultiShotBeamEffect.cs" />
@@ -311,9 +314,9 @@
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
     <PostBuildEvent>
-if exist "$(BattleTechGameDir)\Mods_CBDE\CustomAmmoCategories" (
-  copy /Y "$(TargetPath)" "$(BattleTechGameDir)\Mods_CBDE\CustomAmmoCategories"
-  copy /Y "$(ProjectDir)..\AdditionalFiles\CAC\README.txt" "$(BattleTechGameDir)\Mods_CBDE\CustomAmmoCategories"
+if exist "$(BattleTechGameDir)\Mods_CBDE\Core\CustomAmmoCategories" (
+  copy /Y "$(TargetPath)" "$(BattleTechGameDir)\Mods_CBDE\Core\CustomAmmoCategories"
+  copy /Y "$(ProjectDir)..\AdditionalFiles\CAC\README.txt" "$(BattleTechGameDir)\Mods_CBDE\Core\CustomAmmoCategories"
 )
 if exist "$(BattleTechGameDir)\Mods\Core\CustomAmmoCategories" (
   echo %25BattleTechGameDir%25

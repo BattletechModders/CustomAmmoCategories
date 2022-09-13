@@ -57,6 +57,7 @@ namespace CustAmmoCategories {
     public static MethodInfo BehaviorTreeUpdatePostfix() => AccessTools.Method(typeof(AIPathingLimiter), nameof(BehaviorTree_Update_Postfix));
     //private static List<MoveDestination> original_movementCandidateLocations { get; set; } = new List<MoveDestination>();
     public static HashSet<MoveType> DO_NOT_OPTIMIZE_MOVE_TYPES = new HashSet<MoveType>() { MoveType.Melee, MoveType.None };
+    public static HashSet<MoveType> DO_NOT_OPTIMIZE_MINEFIELD_MOVE_TYPES = new HashSet<MoveType>() { MoveType.Melee, MoveType.Backward, MoveType.Walking, MoveType.Sprinting };
     public class MoveDestOriginalStatistic {
       public float startTime { get; set; } = 0f;
       public HashSet<MoveDestination> moveDestinations { get; set; } = new HashSet<MoveDestination>();
@@ -68,7 +69,7 @@ namespace CustAmmoCategories {
         moveType_statistic.Clear();
         costs.Clear();
       }
-      public void Add(MoveDestination moveDestination) {
+      public void Add(Vector3 curPos, MoveDestination moveDestination) {
         if (moveDestinations.Add(moveDestination)) {
           if (moveType_statistic.ContainsKey(moveDestination.MoveType)) {
             moveType_statistic[moveDestination.MoveType] += 1;
@@ -79,7 +80,7 @@ namespace CustAmmoCategories {
             moveTypeCosts = new Dictionary<int, List<MoveDestination>>();
             costs.Add(moveDestination.MoveType, moveTypeCosts);
           }
-          int cost = Mathf.CeilToInt(moveDestination.PathNode.CostToThisNode);
+          int cost = Mathf.CeilToInt(moveDestination.MoveType == MoveType.Jumping ? Vector3.Distance(curPos, moveDestination.PathNode.Position) : moveDestination.PathNode.CostToThisNode);
           if(moveTypeCosts.TryGetValue(cost, out var costNode) == false) {
             costNode = new List<MoveDestination>();
             moveTypeCosts.Add(cost, costNode);
@@ -110,7 +111,7 @@ namespace CustAmmoCategories {
         if (__result.nodeState != BehaviorNodeState.Running) { goto flush_statistic; }
         return;
       flush_statistic:
-        if (original_movementCandidateLocations.TryGetValue(__instance, out MoveDestOriginalStatistic original)) {
+        if (original_movementCandidateLocations.TryGetValue(__instance, out MoveDestOriginalStatistic original)&&(__instance.movementCandidateLocations != null)) {
           Log.P?.TWL(0, "AI " + __instance.unit.PilotableActorDef.ChassisID + " calculating finished in " + (__instance.unit.Combat.BattleTechGame.Time - original.startTime) + " s. Original movementCandidatesCount:" + original.moveDestinations.Count + " Effective movementCandidatesCount:" + __instance.movementCandidateLocations.Count, true);
         }
       } catch (Exception e) {
@@ -123,19 +124,21 @@ namespace CustAmmoCategories {
           original = new MoveDestOriginalStatistic();
           original_movementCandidateLocations.Add(___tree, original);
         }
+        AIMinefieldHelper.FilterMoveCandidates(___tree.unit,ref ___tree.movementCandidateLocations);
         if (CustomAmmoCategories.Settings.AIPathingOptimization == false) { return; }
         foreach (MoveDestination moveDestination in ___tree.movementCandidateLocations) {
-          original.Add(moveDestination);
+          original.Add(___tree.unit.CurrentPosition ,moveDestination);
         }
         Log.P?.TWL(0, "MoveCandidatesFilter " + ___tree.unit.PilotableActorDef.ChassisID + " movementCandidateLocations:" + ___tree.movementCandidateLocations.Count, true);
-        if (___tree.movementCandidateLocations.Count <= CustomAmmoCategories.Settings.AIPathingSamplesLimit) { return; }
+        if (___tree.movementCandidateLocations.Count <= CustomAmmoCategories.Settings.AIPathingSamplesLimit) { goto print_locations; }
         Dictionary<MoveType, int> moveTypeCounts = new Dictionary<MoveType, int>();
         Log.P?.WL(1, "filter target:");
         foreach (var stat in original.moveType_statistic) {
           int count = stat.Value;
-          if (DO_NOT_OPTIMIZE_MOVE_TYPES.Contains(stat.Key) == false) {
-            count = Mathf.Max((stat.Value * CustomAmmoCategories.Settings.AIPathingSamplesLimit) / original.moveDestinations.Count, 1);
-          }
+          if (DO_NOT_OPTIMIZE_MOVE_TYPES.Contains(stat.Key)) { goto stat_add; }
+          //if (minefields_no_optimize && (DO_NOT_OPTIMIZE_MINEFIELD_MOVE_TYPES.Contains(stat.Key))) { goto stat_add; }
+          count = Mathf.Max((stat.Value * CustomAmmoCategories.Settings.AIPathingSamplesLimit) / original.moveDestinations.Count, 1);
+          stat_add:
           moveTypeCounts.Add(stat.Key, count);
           Log.P?.WL(2, stat.Key + ":" + count);
         }
@@ -154,8 +157,13 @@ namespace CustAmmoCategories {
             ___tree.movementCandidateLocations.AddRange(result);
           }
         }
+        print_locations:
         Log.P?.WL(1, "filter result:" + ___tree.movementCandidateLocations.Count);
-      }catch(Exception e) {
+        //___tree.movementCandidateLocations.Sort((a, b) => { return a.PathNode.CostToThisNode.CompareTo(b.PathNode.CostToThisNode); });
+        //foreach(MoveDestination moveDestination in ___tree.movementCandidateLocations) {
+        //  Log.P?.WL(2,$"{moveDestination.MoveType} {moveDestination.PathNode.Position} {moveDestination.PathNode.CostToThisNode}");
+        //}
+      } catch (Exception e) {
         Log.P?.TWL(0,e.ToString(),true);
       }
     }

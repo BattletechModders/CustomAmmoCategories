@@ -920,7 +920,7 @@ namespace CustomUnits {
       ParticleSystem component = gameObject.GetComponent<ParticleSystem>();
       ParticleSystem.MainModule main = component.main;
       main.scalingMode = ParticleSystemScalingMode.Hierarchy;
-      Log.TWL(0, "GameRepresentation_PlayVFXAt "+this.gameObject.name+ gameObject.name+" "+ main.scalingMode);
+      //Log.TWL(0, "GameRepresentation_PlayVFXAt "+this.gameObject.name+ gameObject.name+" "+ main.scalingMode);
       component.Stop(true); 
       component.Clear(true);
       Transform transform = gameObject.transform;
@@ -948,7 +948,7 @@ namespace CustomUnits {
           transform.localScale = this.customRep.CustomDefinition.vfxScale.vector;
         }
       }
-      Log.WL(1, "transform.localScale " + transform.localScale);
+      //Log.WL(1, "transform.localScale " + transform.localScale);
       if (oneShot) {
         AutoPoolObject autoPoolObject = gameObject.GetComponent<AutoPoolObject>();
         if ((UnityEngine.Object)autoPoolObject == (UnityEngine.Object)null)

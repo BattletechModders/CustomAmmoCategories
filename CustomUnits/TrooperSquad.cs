@@ -38,8 +38,8 @@ namespace CustomUnits {
         if (message.MessageType != MessageCenterMessageType.FloatieMessage) { return; }
         FloatieMessage msg = message as FloatieMessage;
         if (msg == null) { return; }
-        Log.TWL(0, "MessageCenter.PublishMessage " + msg.text+" nature:"+msg.nature+" GUID:"+msg.actingObjectGuid+" GUID:"+msg.affectedObjectGuid);
-        Log.WL(0,Environment.StackTrace);
+        //Log.TWL(0, "MessageCenter.PublishMessage " + msg.text+" nature:"+msg.nature+" GUID:"+msg.actingObjectGuid+" GUID:"+msg.affectedObjectGuid);
+        //Log.WL(0,Environment.StackTrace);
       } catch (Exception e) {
         Log.TWL(0, e.ToString(), true);
       }

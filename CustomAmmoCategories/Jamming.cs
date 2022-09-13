@@ -473,13 +473,26 @@ namespace CustAmmoCategories {
         //        new ShowActorInfoSequence(actor, $"{weapon.Name} Jammed!", FloatieMessage.MessageNature.Debuff,
         //            true)));
       } else {
-        var isDestroying = weapon.DamageLevel != ComponentDamageLevel.Functional;
-        if (destroy == true) { isDestroying = true; };
-        var damageLevel = isDestroying ? ComponentDamageLevel.Destroyed : ComponentDamageLevel.Penalized;
-        var fakeHit = new WeaponHitInfo(-1, -1, -1, -1, string.Empty, string.Empty, -1, null, null, null, null, null, null, null, null, null, null, null);
-        Log.M.WL(1, "DamageComponent:"+ damageLevel);
-        weapon.DamageComponent(fakeHit, damageLevel, true);
-        var message = isDestroying
+        //var isDestroying = weapon.DamageLevel != ComponentDamageLevel.Functional;
+        //if (destroy == true) { isDestroying = true; };
+        //var damageLevel = isDestroying ? ComponentDamageLevel.Destroyed : ComponentDamageLevel.Penalized;
+        WeaponHitInfo fakeHit = new WeaponHitInfo(-1, -1, -1, -1, weapon.parent.GUID, weapon.parent.GUID, 1, null, null, null, null, null, null, null, null, null, null, null);
+        fakeHit.toHitRolls = new float[1] { 1.0f };
+        fakeHit.locationRolls = new float[1] { 1.0f };
+        fakeHit.dodgeRolls = new float[1] { 0.0f };
+        fakeHit.dodgeSuccesses = new bool[1] { false };
+        fakeHit.hitLocations = new int[1] { weapon.Location };
+        fakeHit.hitVariance = new int[1] { 0 };
+        fakeHit.hitQualities = new AttackImpactQuality[1] { AttackImpactQuality.Solid };
+        fakeHit.attackDirections = new AttackDirection[1] { AttackDirection.FromArtillery };
+        fakeHit.hitPositions = new Vector3[1] { weapon.parent.GameRep.GetHitPosition(weapon.Location) };
+        fakeHit.secondaryTargetIds = new string[1] { null };
+        fakeHit.secondaryHitLocations = new int[1] { 0 };
+        Log.M.WL(1, $"CritComponent destroy:{destroy}");
+
+        weapon.CritComponent(ref fakeHit, weapon, destroy);
+        //weapon.DamageComponent(fakeHit, damageLevel, true);
+        var message = weapon.DamageLevel == ComponentDamageLevel.Destroyed
             ? $"{weapon.UIName} __/CAC.misfire/__: __/CAC.Destroyed/__!"
             : $"{weapon.UIName} __/CAC.misfire/__: __/CAC.Damaged/__!";
         CustomAmmoCategories.addJamMessage(actor, message);

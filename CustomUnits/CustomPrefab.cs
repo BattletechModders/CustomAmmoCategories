@@ -104,9 +104,10 @@ namespace CustomUnits {
         if (replacer != null) { return; }
         __result.AddComponent<CustomShaderReplacer>();
         Log.TWL(0, "CustomPrefabHelper.Searching " + id);
+        Renderer[] renderers = null;
         if (CustomPrefabHelper.TryGet(id, out CustomPrefabDef def)) {
           Log.WL(1, "found");
-          Renderer[] renderers = __result.GetComponentsInChildren<Renderer>(true);
+          renderers = __result.GetComponentsInChildren<Renderer>(true);
           Dictionary<string, GameObject> shaderSources = new Dictionary<string, GameObject>();
           Dictionary<string, GameObject> materialSources = new Dictionary<string, GameObject>();
           foreach (Renderer r in renderers) {
@@ -162,6 +163,19 @@ namespace CustomUnits {
           }
           foreach (var matSource in materialSources) {
             __instance.PoolGameObject(matSource.Key, matSource.Value);
+          }
+        }
+        renderers = __result.GetComponentsInChildren<Renderer>(true);
+        foreach (Renderer r in renderers) {
+          Material[] sharedMaterials = r.sharedMaterials;
+          for (int matIndex = 0; matIndex < sharedMaterials.Length; ++matIndex) {
+            if (sharedMaterials[matIndex] == null) { continue; }
+            if(Core.Settings.forceToBuildinShaders.TryGetValue(sharedMaterials[matIndex].shader.name, out var shaderToReplace)) {
+              if(sharedMaterials[matIndex].shader.GetInstanceID() != shaderToReplace.GetInstanceID()) {
+                Log.WL(1,$"replacing shader {sharedMaterials[matIndex].shader.name}:{sharedMaterials[matIndex].shader.GetInstanceID()} -> {shaderToReplace.name}:{shaderToReplace.GetInstanceID()}");
+                sharedMaterials[matIndex].shader = shaderToReplace;
+              }
+            }
           }
         }
       }catch(Exception e) {

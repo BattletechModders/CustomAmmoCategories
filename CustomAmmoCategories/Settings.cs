@@ -287,6 +287,47 @@ namespace CustAmmoCategories {
     [GameplaySafe]
     public bool AIPathingMultithread { get { return false; } set { } }
     public int AIPathingSamplesLimit { get; set; } = 120;
+    public float AIMinefieldDamageTreshold { get; set; } = 0.1f;
+    public float AIMinefieldIgnoreMoveDistance { get; set; } = 36f;
+    public float AIMinefieldIgnorePosDelta { get; set; } = 5f;
+    public bool AIMinefieldAware { get; set; } = true;
+    public bool AIMinefieldAwareAllMines { get; set; } = false;
+    public bool AIMinefieldAwareAllMinesCritical { get; set; } = true;
+    [GameplaySafe]
+    public bool ObjectiveBlackBackgroundOnEnter { get; set; } = true;
+    [GameplaySafe]
+    public bool EnableMinimap { get; set; } = true;
+    [GameplaySafe]
+    public string MinimapBurnigTerrainColor { get; set; } = "#FF9700FF";
+    [GameplaySafe]
+    public string MinimapBurnedTerrainColor { get; set; } = "#FFFFFFFF";
+    [GameplaySafe]
+    public Dictionary<TerrainMaskFlags, string> MinimapTerrainColors { get; set; } = new Dictionary<TerrainMaskFlags, string>() {
+            { TerrainMaskFlags.Water, "#24D3D6FF" },
+            { TerrainMaskFlags.DeepWater, "#2475d6FF" },
+            { TerrainMaskFlags.Forest, "#73a573FF" },
+            { TerrainMaskFlags.Road, "#636363FF" },
+            { TerrainMaskFlags.Rough, "#da8923FF" },
+            { TerrainMaskFlags.Custom, "#6b06a5FF" },
+            { TerrainMaskFlags.Impassable, "#920000FF" },
+            { TerrainMaskFlags.DropshipLandingZone, "#920000FF" },
+            { TerrainMaskFlags.DangerousLocation, "#920000FF" },
+            { TerrainMaskFlags.DropPodLandingZone, "#920000FF" },
+            { TerrainMaskFlags.None, "#877931FF" },
+            { TerrainMaskFlags.DestroyedBuilding, "#877931FF" },
+            { TerrainMaskFlags.UseTerrain, "#877931FF" }
+    };
+    public bool PlayerAlwaysHit { get; set; } = false;
+    [GameplaySafe]
+    public bool StatisticOnResultScreenEnabled { get; set; } = true;
+    [GameplaySafe]
+    public bool StatisticOnResultScreenRealIcons { get; set; } = false;
+    [GameplaySafe]
+    public float StatisticOnResultScreenRealIconsScale { get; set; } = 1.5f;
+    [GameplaySafe]
+    public string StatisticOnResultScreenTurretSprite { get; set; } = "turret_unit_result_stat";
+    [GameplaySafe]
+    public string StatisticOnResultScreenBattleArmorSprite { get; set; } = "battle_armor_unit_result_stat";
     public Settings() {
       //directory = string.Empty;
       //debugLog = true;

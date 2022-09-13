@@ -40,12 +40,12 @@ namespace CustomUnits {
       Ray ray = new Ray(new Vector3(pos.x, 1000f, pos.z), Vector3.down);
       int layerMask = 1 << LayerMask.NameToLayer("Water");
       RaycastHit[] hits = Physics.RaycastAll(ray, 2000f, layerMask, QueryTriggerInteraction.Collide);
-      Log.LogWrite(0, "UpdateWaterHeightRay:" + pos + "\n");
-      Log.LogWrite(1, "hits count:" + hits.Length + "\n");
+      //Log.LogWrite(0, "UpdateWaterHeightRay:" + pos + "\n");
+      //Log.LogWrite(1, "hits count:" + hits.Length + "\n");
       float waterLevel = float.NaN;
       foreach (RaycastHit hit in hits) {
         if (float.IsNaN(waterLevel) || (hit.point.y > waterLevel)) {
-          Log.LogWrite(2, "hit pos:" + hit.point + " " + hit.collider.gameObject.name + " layer:" + LayerMask.LayerToName(hit.collider.gameObject.layer) + "\n");
+          //Log.LogWrite(2, "hit pos:" + hit.point + " " + hit.collider.gameObject.name + " layer:" + LayerMask.LayerToName(hit.collider.gameObject.layer) + "\n");
           waterLevel = hit.point.y;
         }
       }
@@ -55,20 +55,20 @@ namespace CustomUnits {
           ecell.realTerrainHeight = ecell.terrainHeight;
           ecell.terrainHeight = waterLevel;
           ecell.cachedHeight = waterLevel;
-          Log.LogWrite(1, "terrain height:" + ecell.realTerrainHeight + " water surface height:" + ecell.terrainHeight + "\n");
+          //Log.LogWrite(1, "terrain height:" + ecell.realTerrainHeight + " water surface height:" + ecell.terrainHeight + "\n");
         }
         ecell.waterLevelCached = true;
         if (ecell.cachedSteepness > Core.Settings.maxWaterSteepness) {
-          Log.LogWrite(1, "steppiness too high faltering:" + ecell.cachedSteepness + "\n");
+          //Log.LogWrite(1, "steppiness too high faltering:" + ecell.cachedSteepness + "\n");
           if (ecell.cachedSteepness > Core.Settings.deepWaterSteepness) {
-            Log.LogWrite(1, "steppiness too high mark as deep water:" + ecell.cachedSteepness + "\n");
+            //Log.LogWrite(1, "steppiness too high mark as deep water:" + ecell.cachedSteepness + "\n");
             ecell.AddTerrainMask(TerrainMaskFlags.DeepWater);
           }
           ecell.cachedSteepness = Core.Settings.maxWaterSteepness;
           ecell.terrainSteepness = Core.Settings.maxWaterSteepness;
         }
         if (Mathf.Abs(ecell.realTerrainHeight - waterLevel) > Core.Settings.deepWaterDepth) {
-          Log.LogWrite(1, "real depth too high tie to deep water:" + Mathf.Abs(ecell.realTerrainHeight - waterLevel) + "\n");
+          //Log.LogWrite(1, "real depth too high tie to deep water:" + Mathf.Abs(ecell.realTerrainHeight - waterLevel) + "\n");
           ecell.AddTerrainMask(TerrainMaskFlags.DeepWater);
         }
       }

@@ -16,6 +16,7 @@ using BattleTech.Rendering.UI;
 using BattleTech.Rendering.UrbanWarfare;
 using BattleTech.StringInterpolation;
 using BattleTech.UI;
+using CustomAmmoCategoriesPatches;
 using Harmony;
 using HBS;
 using HBS.Collections;
@@ -173,6 +174,66 @@ namespace CustomDeploy{
         }
       }
       __result = __instance.dangerousLocationCellList;
+      return false;
+    }
+  }
+  [HarmonyPatch(typeof(InfluenceMapEvaluator))]
+  [HarmonyPatch("GetEvaluationAtPositionOrientation")]
+  [HarmonyPatch(MethodType.Normal)]
+  public static class UnitSpawnPointGameLogic_GetEvaluationAtPositionOrientation {
+    public static bool Prefix(InfluenceMapEvaluator __instance, Vector3 pos, int rotationIndex, MoveType moveType, PathNode pathNode, ref float __result) {
+      __result = 0.0f;
+      try {
+        if (pathNode == null)
+          throw new ArgumentException(string.Format("missing pathNode in GetEvaluationAtPositionOrientation", (object[])Array.Empty<object>()));
+        if (moveType == MoveType.Walking && __instance.unit.GainsEntrenchedFromNormalMoves)
+          __result += __instance.unit.BehaviorTree.GetBehaviorVariableValue(BehaviorVariableName.Float_SureFootingAbilityWalkBoost).FloatVal;
+        for (int index = 0; index < __instance.positionalFactors.Length; ++index) {
+          InfluenceMapPositionFactor positionalFactor = __instance.positionalFactors[index];
+          BehaviorVariableName name = positionalFactor != null ? positionalFactor.GetRegularMoveWeightBVName() : throw new IndexOutOfRangeException(string.Format("null factor for pos index {0}", (object)index));
+          float floatVal = (__instance.unit.BehaviorTree.GetBehaviorVariableValue(name) ?? throw new ArgumentException(string.Format("missing behavior variable value for {0}", (object)name))).FloatVal;
+          if ((floatVal != 0f)&&(positionalFactor != null)) {
+            try {
+              __result += floatVal * positionalFactor.EvaluateInfluenceMapFactorAtPosition(__instance.unit, pos, (float)rotationIndex, moveType, pathNode);
+            }catch(Exception e) {
+              Log.TWL(0, "I'm just a victim here", true);
+              Log.TWL(0, e.ToString(), true);
+            }
+          }
+        }
+        for (int index = 0; index < __instance.unit.BehaviorTree.enemyUnits.Count; ++index) {
+          if (__instance.unit.BehaviorTree.enemyUnits[index] is AbstractActor enemyUnit)
+            enemyUnit.EvaluateExpectedArmor();
+        }
+        __instance.unit.EvaluateExpectedArmor();
+        for (int index1 = 0; index1 < __instance.hostileFactors.Length; ++index1) {
+          InfluenceMapHostileFactor hostileFactor = __instance.hostileFactors[index1];
+          float floatVal = __instance.unit.BehaviorTree.GetBehaviorVariableValue(hostileFactor.GetRegularMoveWeightBVName()).FloatVal;
+          if ((double)floatVal != 0.0) {
+            for (int index2 = 0; index2 < __instance.unit.BehaviorTree.enemyUnits.Count; ++index2) {
+              ICombatant enemyUnit = __instance.unit.BehaviorTree.enemyUnits[index2];
+              if (!__instance.unit.BehaviorTree.IsTargetIgnored(enemyUnit)) {
+                float num2 = FactorUtil.HostileFactor(__instance.unit, enemyUnit);
+                __result += floatVal * num2 * hostileFactor.EvaluateInfluenceMapFactorAtPositionWithHostile(__instance.unit, pos, (float)rotationIndex, moveType, enemyUnit);
+              }
+            }
+          }
+        }
+        for (int index1 = 0; index1 < __instance.allyFactors.Length; ++index1) {
+          InfluenceMapAllyFactor allyFactor = __instance.allyFactors[index1];
+          float floatVal = __instance.unit.BehaviorTree.GetBehaviorVariableValue(allyFactor.GetRegularMoveWeightBVName()).FloatVal;
+          if ((double)floatVal != 0.0) {
+            for (int index2 = 0; index2 < __instance.unit.BehaviorTree.GetAllyUnits().Count; ++index2) {
+              AbstractActor allyUnit = __instance.unit.BehaviorTree.GetAllyUnits()[index2];
+              __result += floatVal * allyFactor.EvaluateInfluenceMapFactorAtPositionWithAlly(__instance.unit, pos, (float)rotationIndex, (ICombatant)allyUnit);
+            }
+          }
+        }
+        return false;
+      } catch (Exception e) {
+        Log.TWL(0, "I'm just a victim here", true);
+        Log.TWL(0, e.ToString(),true);
+      }
       return false;
     }
   }
@@ -519,6 +580,22 @@ namespace CustomDeploy{
       }
     }
   }
+  [HarmonyPatch(typeof(MainMenu))]
+  [HarmonyPatch("OnAddedToHierarchy")]
+  [HarmonyPatch(MethodType.Normal)]
+  public static class MainMenu_OnAddedToHierarchy {
+    public static void Postfix(MainMenu __instance) {
+      try {
+        Shader[] shaders = UnityEngine.Object.FindObjectsOfType<Shader>();
+        Log.TWL(0, "shaders:" + shaders.Length);
+        foreach (Shader shader in shaders) {
+          Log.WL(1, shader.name + ":" + shader.GetInstanceID());
+        }
+      } catch (Exception e) {
+        Log.TWL(0, e.ToString(), true);
+      }
+    }
+  }
   [HarmonyPatch(typeof(StarSystem))]
   [HarmonyPatch("GetLastPilotAddedToHiringName")]
   [HarmonyPatch(MethodType.Normal)]
@@ -706,7 +783,23 @@ namespace CustomDeploy{
             AbstractActor enemyUnit = unit.BehaviorTree.enemyUnits[index] as AbstractActor;
             if (enemyUnit == null) { continue; }
             if (enemyUnit.IsDead) { continue; }
-            if(false == enemyUnit.HasLOFToTargetUnitAtTargetPosition((ICombatant)unit, __instance.maxRanges[enemyUnit], unit.CurrentPosition, Quaternion.LookRotation(position - unit.CurrentPosition), position, targetRotation, __instance.isIndirectFireCapable[enemyUnit])) {
+            if (__instance.maxRanges == null) {
+              Log.TWL(0, "EXCEPTION:maxRanges is not filled");
+              continue;
+            }
+            if(__instance.isIndirectFireCapable == null) {
+              Log.TWL(0, "EXCEPTION:isIndirectFireCapable is not filled");
+              continue;
+            }
+            if(__instance.maxRanges.ContainsKey(enemyUnit) == false) {
+              Log.TWL(0, $"EXCEPTION:maxRanges does not contains info on {enemyUnit.PilotableActorDef.ChassisID}");
+              continue;
+            }
+            if (__instance.isIndirectFireCapable.ContainsKey(enemyUnit) == false) {
+              Log.TWL(0, $"EXCEPTION:isIndirectFireCapable does not contains info on {enemyUnit.PilotableActorDef.ChassisID}");
+              continue;
+            }
+            if (false == enemyUnit.HasLOFToTargetUnitAtTargetPosition(unit, __instance.maxRanges[enemyUnit], unit.CurrentPosition, Quaternion.LookRotation(position - unit.CurrentPosition), position, targetRotation, __instance.isIndirectFireCapable[enemyUnit])) {
               continue;
             }
             ++__result;
@@ -720,7 +813,40 @@ namespace CustomDeploy{
       }
     }
   }
-
+  [HarmonyPatch(typeof(CombatHUDAttackModeSelector))]
+  [HarmonyPatch("UpdateOverheatWarnings")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { typeof(bool), typeof(bool) })]
+  public static class CombatHUDHeatDisplay_UpdateOverheatWarnings {
+    public static void Prefix(CombatHUDAttackModeSelector __instance, ref bool overHeated, ref bool shutDown) {
+      try {
+        ICombatant unit = __instance.HUD.SelectedActor;
+        if (unit != null) {
+          if (unit.isHasHeat() == false) { overHeated = false; shutDown = false; }
+        }
+      } catch (Exception e) {
+        Log.TWL(0, e.ToString(), true);
+      }
+    }
+  }
+  [HarmonyPatch(typeof(CombatHUDAttackModeSelector))]
+  [HarmonyPatch("ShowFireButton")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { typeof(CombatHUDFireButton.FireMode), typeof(string), typeof(bool) })]
+  public static class CombatHUDHeatDisplayShowFireButton {
+    public static void Postfix(CombatHUDAttackModeSelector __instance, CombatHUDFireButton.FireMode mode, string additionalDetails, bool showHeatWarnings) {
+      try {
+        if (showHeatWarnings) {
+          ICombatant unit = __instance.HUD.SelectedActor;
+          if (unit != null) {
+            if (unit.isHasHeat() == false) { __instance.showHeatWarnings = false; }
+          }
+        }
+      } catch (Exception e) {
+        Log.TWL(0, e.ToString(), true);
+      }
+    }
+  }
   [HarmonyPatch(typeof(Utilities))]
   [HarmonyPatch("BuildExtensionMethodCacheForType")]
   [HarmonyPatch(MethodType.Normal)]

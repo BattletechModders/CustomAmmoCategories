@@ -12,6 +12,7 @@ using BattleTech;
 using CustomAmmoCategoriesLog;
 using CustomAmmoCategoriesPatches;
 using FluffyUnderware.Curvy;
+using Harmony;
 using Localize;
 using OfficeOpenXml;
 using System;
@@ -489,6 +490,7 @@ namespace CustAmmoCategories {
     public float armorOnHit;
     public float structureOnHit;
     public bool isApplied;
+    public bool isSuccess { get; set; } = false;
     public float critChance { get; set; }
     public AbstractActor unit;
     public MechComponent component;
@@ -1036,8 +1038,19 @@ namespace CustAmmoCategories {
     }
     public static void FlushInfo(AttackDirector.AttackSequence sequence) {
       try {
-        if (CustomAmmoCategories.Settings.AttackLogWrite == false) { return; }
         if (sequence == null) { return; }
+        WeaponHitInfo?[][] weaponHitInfo = Traverse.Create(sequence).Field<WeaponHitInfo?[][]>("weaponHitInfo").Value;
+        for (int groupIndex = 0; groupIndex < weaponHitInfo.Length; ++groupIndex) {
+          for (int weaponIndex = 0; weaponIndex < weaponHitInfo[groupIndex].Length; ++weaponIndex) {
+            if (weaponHitInfo[groupIndex][weaponIndex].HasValue == false) {
+              Log.M.TWL(0, "WeaponHitInfo at grp:" + groupIndex + " index:" + weaponIndex + " is null. How?!", true);
+              continue;
+            }
+            AdvWeaponHitInfo advInfo = weaponHitInfo[groupIndex][weaponIndex].Value.advInfo();
+            CombatStatisticHelper.ProcessAttack(advInfo);
+          }
+        }
+        if (CustomAmmoCategories.Settings.AttackLogWrite == false) { return; }
         ExcelWorksheet damageWS = null;
         ExcelWorksheet critWS = null;
         if(attackLog == null) {
@@ -1098,7 +1111,7 @@ namespace CustAmmoCategories {
         }
         if(damageWS == null) { return; }
         string time = DateTime.Now.ToString("HH-mm-ss");
-        WeaponHitInfo?[][] weaponHitInfo = (WeaponHitInfo?[][])typeof(AttackDirector.AttackSequence).GetField("weaponHitInfo", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(sequence);
+          //(WeaponHitInfo?[][])typeof(AttackDirector.AttackSequence).GetField("weaponHitInfo", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(sequence);
         DamageModifiersCache.ClearComulativeDamage();
         Log.M.TWL(0, "flushing info:" + sequence.id);
         for (int groupIndex = 0; groupIndex < weaponHitInfo.Length; ++groupIndex) {

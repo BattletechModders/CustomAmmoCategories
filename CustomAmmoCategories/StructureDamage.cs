@@ -16,16 +16,16 @@ using System.Reflection;
 using UnityEngine;
 
 namespace CustAmmoCategories {
-  [HarmonyPatch(typeof(AbstractActor))]
-  [HarmonyPatch("InitEffectStats")]
-  [HarmonyPatch(MethodType.Normal)]
-  [HarmonyPatch(new Type[] { })]
-  public static class AbstractActor_InitStatsAP {
-    public static void Postfix(AbstractActor __instance) {
-      Log.LogWrite("AbstractActor.InitEffectStats " + __instance.DisplayName + ":" + __instance.GUID + "\n");
-      __instance.InitExDamageStats();
-    }
-  }
+  //[HarmonyPatch(typeof(AbstractActor))]
+  //[HarmonyPatch("InitEffectStats")]
+  //[HarmonyPatch(MethodType.Normal)]
+  //[HarmonyPatch(new Type[] { })]
+  //public static class AbstractActor_InitStatsAP {
+  //  public static void Postfix(AbstractActor __instance) {
+  //    Log.LogWrite("AbstractActor.InitEffectStats " + __instance.DisplayName + ":" + __instance.GUID + "\n");
+  //    __instance.InitExDamageStats();
+  //  }
+  //}
   [HarmonyPatch(typeof(Mech))]
   [HarmonyPatch("DamageLocation")]
   [HarmonyPatch(MethodType.Normal)]

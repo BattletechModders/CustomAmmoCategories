@@ -195,6 +195,8 @@ namespace CustomAmmoCategoriesPatches {
       {
         float corrRolls = (float)typeof(AttackDirector.AttackSequence).GetMethod("GetCorrectedRoll", BindingFlags.NonPublic | BindingFlags.Instance).Invoke(instance, new object[2] { (object)hitInfo.toHitRolls[0], (object)team });
         bool succeeded = (double)corrRolls <= (double)toHitChance;
+        if ((CustomAmmoCategories.Settings.PlayerAlwaysHit) && (team == instance.attacker.Combat.LocalPlayerTeam)) { succeeded = true; }
+        if (weapon.exDef().alwaysMiss) { succeeded = false; }
         bool targetDoggle = false;
         if (target != null) {
           targetDoggle = target.CheckDodge(instance.attacker, weapon, hitInfo, 0, instance.IsBreachingShot);
@@ -305,6 +307,8 @@ namespace CustomAmmoCategoriesPatches {
       Team team = weapon == null || weapon.parent == null || weapon.parent.team == null ? (Team)null : weapon.parent.team;
       for (int index = 0; index < hitInfo.numberOfShots; ++index) {
         bool succeeded = (double)instance.GetCorrectedRoll(hitInfo.toHitRolls[index], team) <= (double)toHitChance;
+        if ((CustomAmmoCategories.Settings.PlayerAlwaysHit)&&(team == instance.attacker.Combat.LocalPlayerTeam)) { succeeded = true; }
+        if (weapon.exDef().alwaysMiss) { succeeded = false; }
         team?.ProcessRandomRoll(toHitChance, succeeded);
         bool flag = false;
         if (chosenTarget != null)
@@ -362,6 +366,8 @@ namespace CustomAmmoCategoriesPatches {
       for (int index = 0; index < hitInfo.numberOfShots; ++index) {
         float correctedRoll = instance.GetCorrectedRoll(hitInfo.toHitRolls[index], team);
         bool succeeded = (double)correctedRoll <= (double)toHitChance;
+        if ((CustomAmmoCategories.Settings.PlayerAlwaysHit) && (team == instance.attacker.Combat.LocalPlayerTeam)) { succeeded = true; }
+        if (weapon.exDef().alwaysMiss) { succeeded = false; }
         team?.ProcessRandomRoll(toHitChance, succeeded);
         bool flag = false;
         if (chosenTarget != null)

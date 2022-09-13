@@ -82,7 +82,7 @@ namespace CustomUnits {
         + " startAngle:" + this.startAngle + " desiredAngle:" + this.desiredAngle
         + " startingRotation:" + this.startingRotation+ " desiredRotation:"+ this.desiredRotation
         );
-      Log.WL(1,Environment.StackTrace);
+      //Log.WL(1,Environment.StackTrace);
     }
 
     private void update() {

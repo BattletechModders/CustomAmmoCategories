@@ -330,6 +330,8 @@ namespace CustomUnits {
       Transform[] srcChilds = src.GetComponentsInChildren<Transform>(true);
       foreach(Transform tr in srcChilds) {
         if (tr.parent != src) { continue; }
+        ComponentRepresentation compRep = tr.gameObject.GetComponent<ComponentRepresentation>();
+        if (compRep != null) { continue; }
         Log.WL(2, "MoveChilds "+tr.name);
         if (bones.Contains(tr)) { Log.WL(3, "is in skeleton"); continue; }
         Vector3 localPos = tr.localPosition;
@@ -370,14 +372,14 @@ namespace CustomUnits {
       this.MoveChilds(oldRep, oldRep.vfxLeftShoulderTransform, curRep.vfxLeftShoulderTransform);
       Log.WL(1, "vfxRightShoulderTransform");
       this.MoveChilds(oldRep, oldRep.vfxRightShoulderTransform, curRep.vfxRightShoulderTransform);
-      oldRep.OnPlayerVisibilityChangedCustom(VisibilityLevel.None);
-      if (this.rootParentRepresentation.BlipDisplayed == false) {
-        curRep.OnPlayerVisibilityChangedCustom(VisibilityLevel.LOSFull);
-      }
       foreach (WeaponRepresentation wRep in this.CurrentRepresentation.weaponReps) {
         if (wRep == null) { continue; }
         if (wRep.weapon == null) { continue; }
         wRep.weapon.componentRep_set(wRep);
+      }
+      oldRep.OnPlayerVisibilityChangedCustom(VisibilityLevel.None);
+      if (this.rootParentRepresentation.BlipDisplayed == false) {
+        curRep.OnPlayerVisibilityChangedCustom(VisibilityLevel.LOSFull);
       }
       this.parentMech.FlyingHeight(this.CurrentRepresentation.altDef.FlyHeight);
       this.custMech.UpdateLOSHeight(this.CurrentRepresentation.altDef.FlyHeight);

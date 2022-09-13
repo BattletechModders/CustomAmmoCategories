@@ -160,6 +160,82 @@ namespace CustAmmoCategories {
         return num * critMultiplier;
       }
     }
+    public static void CritComponent(this MechComponent component, ref WeaponHitInfo hitInfo, Weapon weapon, bool forceDestroy = false) {
+      try {
+        Weapon weaponSelf = component as Weapon;
+        AmmunitionBox ammoBox = component as AmmunitionBox;
+        Jumpjet jumpjet = component as Jumpjet;
+        HeatSinkDef heatSinkDef = component.componentDef as HeatSinkDef;
+        bool isWeapon = weaponSelf != null;
+        AttackDirector.AttackSequence attackSequence = component.parent.Combat.AttackDirector.GetAttackSequence(hitInfo.attackSequenceId);
+        if (attackSequence != null) {
+          attackSequence.FlagAttackScoredCrit(component.parent.GUID, weaponSelf, ammoBox);
+        }
+        ComponentDamageLevel startingDmgLevel = component.DamageLevel;
+        ComponentDamageLevel pendingDmgLevel = ComponentDamageLevel.Destroyed;
+        if (CACMain.Core.MechEngineerDetected) {
+          pendingDmgLevel = ComponentDamageLevel.Penalized;
+        } else {
+          switch (startingDmgLevel) {
+            case ComponentDamageLevel.Functional: {
+              if (isWeapon) {
+                pendingDmgLevel = ComponentDamageLevel.Penalized;
+              } else {
+                pendingDmgLevel = ComponentDamageLevel.Destroyed;
+              }
+            }; break;
+            default: pendingDmgLevel = ComponentDamageLevel.Destroyed; break;
+          }
+        }
+        if (forceDestroy) { pendingDmgLevel = ComponentDamageLevel.Destroyed; };
+        Log.C.TWL(0, $"CritComponent SEQ:{hitInfo.attackSequenceId}: WEAP:{(weapon == null ? "null" : weapon.defId)} Loc:{component.Location} Component {component.defId} curState:{startingDmgLevel} pendingState{pendingDmgLevel} forceDestroy:{forceDestroy}");
+        try {
+          if ((CACMain.Core.MechEngineerDetected) && (forceDestroy)) {
+            for (int t = 0; t < component.inventorySize; ++t) {
+              component.DamageComponent(hitInfo, pendingDmgLevel, true);
+              Log.C.WL(1, $"DamageComponent called state is {component.DamageLevel}");
+              if (component.DamageLevel == ComponentDamageLevel.Destroyed) { break; }
+            }
+          } else {
+            component.DamageComponent(hitInfo, pendingDmgLevel, true);
+            Log.C.WL(1, $"DamageComponent called state is {component.DamageLevel}");
+          }
+        } catch (Exception e) {
+          Log.C?.TWL(0, e.ToString(), true);
+        }
+        if ((component.parent != null) && (component.parent.GameRep != null) && (startingDmgLevel != component.DamageLevel) && (component.DamageLevel >= ComponentDamageLevel.Penalized)) {
+          if ((weapon != null) && (weapon.weaponRep != null) && (weapon.weaponRep.HasWeaponEffect)) {
+            WwiseManager.SetSwitch<AudioSwitch_weapon_type>(weapon.weaponRep.WeaponEffect.weaponImpactType, component.parent.GameRep.audioObject);
+          } else {
+            WwiseManager.SetSwitch<AudioSwitch_weapon_type>(AudioSwitch_weapon_type.laser_medium, component.parent.GameRep.audioObject);
+          }
+          WwiseManager.SetSwitch<AudioSwitch_surface_type>(AudioSwitch_surface_type.mech_critical_hit, component.parent.GameRep.audioObject);
+          int num1 = (int)WwiseManager.PostEvent<AudioEventList_impact>(AudioEventList_impact.impact_weapon, component.parent.GameRep.audioObject, (AkCallbackManager.EventCallback)null, (object)null);
+          int num2 = (int)WwiseManager.PostEvent<AudioEventList_explosion>(AudioEventList_explosion.explosion_small, component.parent.GameRep.audioObject, (AkCallbackManager.EventCallback)null, (object)null);
+          if (component.parent.team.LocalPlayerControlsTeam)
+            AudioEventManager.PlayAudioEvent("audioeventdef_musictriggers_combat", "critical_hit_friendly ", (AkGameObj)null, (AkCallbackManager.EventCallback)null);
+          else if (!component.parent.team.IsFriendly(component.parent.Combat.LocalPlayerTeam))
+            AudioEventManager.PlayAudioEvent("audioeventdef_musictriggers_combat", "critical_hit_enemy", (AkGameObj)null, (AkCallbackManager.EventCallback)null);
+          if (jumpjet == null && heatSinkDef == null && (ammoBox == null && component.DamageLevel > ComponentDamageLevel.Functional)) {
+            if (component.parent.GameRep is MechRepresentation mechRep) { mechRep.PlayComponentCritVFX(component.Location); };
+          }
+          if (ammoBox != null && component.DamageLevel == ComponentDamageLevel.Destroyed) {
+            component.parent.GameRep.PlayVFX(component.Location, component.parent.Combat.Constants.VFXNames.componentDestruction_AmmoExplosion, true, Vector3.zero, true, -1f);
+          }
+        }
+        if ((component.parent != null) && (startingDmgLevel != component.DamageLevel)) {
+          if (!CustomAmmoCategories.Settings.NoCritFloatie()) {
+            component.parent.Combat.MessageCenter.PublishMessage(
+              new AddSequenceToStackMessage(
+                new ShowActorInfoSequence(component.parent,
+                new Text((component.DamageLevel == ComponentDamageLevel.Destroyed ? "__/CAC.DESTROYED/__" : "__/CAC.CRIT/__"), new object[1] { component.UIName })
+            , (component.DamageLevel == ComponentDamageLevel.Destroyed ? FloatieMessage.MessageNature.ComponentDestroyed : FloatieMessage.MessageNature.CriticalHit), true)));
+          }
+        }
+      }catch(Exception e) {
+        Log.C?.TWL(0,e.ToString(),true);
+      }
+    }
     public static void CheckForCrit(this AbstractActor unit, ref WeaponHitInfo hitInfo, AdvCritLocationInfo critInfo, Weapon weapon) {
       int aLoc = critInfo.armorLocation;
       Log.C.TWL(0, "AdvancedCriticalProcessor.CheckForCrit " + unit.DisplayName + ":" + unit.GUID + " loc:" + unit.GetArmorLocationName(aLoc) + " AOH:" + critInfo.armorOnHit + " SOH:" + critInfo.structureOnHit + " weapon:" + weapon.defId);
@@ -190,77 +266,10 @@ namespace CustAmmoCategories {
         MechComponent componentInSlot = critComponents[index];
         if (componentInSlot != null) {
           if (componentInSlot.DamageLevel != ComponentDamageLevel.Destroyed) {
-            Log.C.WL(1, string.Format("SEQ:{0}: WEAP:{1} Loc:{2} Critical Hit! Found {3} in slot {4}", (object)hitInfo.attackSequenceId, (object)hitInfo.attackWeaponIndex, (object)location.ToString(), (object)componentInSlot.Name, (object)index));
-            Weapon weapon1 = componentInSlot as Weapon;
-            AmmunitionBox ammoBox = componentInSlot as AmmunitionBox;
-            Jumpjet jumpjet = componentInSlot as Jumpjet;
-            HeatSinkDef componentDef = componentInSlot.componentDef as HeatSinkDef;
-            bool flag = weapon1 != null;
+            critInfo.isSuccess = true;
             critInfo.component = componentInSlot;
             critInfo.structureLocation = componentInSlot.Location;
-            if ((UnityEngine.Object)unit.GameRep != (UnityEngine.Object)null) {
-              if ((UnityEngine.Object)weapon.weaponRep != (UnityEngine.Object)null && weapon.weaponRep.HasWeaponEffect)
-                WwiseManager.SetSwitch<AudioSwitch_weapon_type>(weapon.weaponRep.WeaponEffect.weaponImpactType, unit.GameRep.audioObject);
-              else
-                WwiseManager.SetSwitch<AudioSwitch_weapon_type>(AudioSwitch_weapon_type.laser_medium, unit.GameRep.audioObject);
-              WwiseManager.SetSwitch<AudioSwitch_surface_type>(AudioSwitch_surface_type.mech_critical_hit, unit.GameRep.audioObject);
-              int num1 = (int)WwiseManager.PostEvent<AudioEventList_impact>(AudioEventList_impact.impact_weapon, unit.GameRep.audioObject, (AkCallbackManager.EventCallback)null, (object)null);
-              int num2 = (int)WwiseManager.PostEvent<AudioEventList_explosion>(AudioEventList_explosion.explosion_small, unit.GameRep.audioObject, (AkCallbackManager.EventCallback)null, (object)null);
-              if (unit.team.LocalPlayerControlsTeam)
-                AudioEventManager.PlayAudioEvent("audioeventdef_musictriggers_combat", "critical_hit_friendly ", (AkGameObj)null, (AkCallbackManager.EventCallback)null);
-              else if (!unit.team.IsFriendly(unit.Combat.LocalPlayerTeam))
-                AudioEventManager.PlayAudioEvent("audioeventdef_musictriggers_combat", "critical_hit_enemy", (AkGameObj)null, (AkCallbackManager.EventCallback)null);
-              if (jumpjet == null && componentDef == null && (ammoBox == null && componentInSlot.DamageLevel > ComponentDamageLevel.Functional)) {
-                if (mech != null) { mech.GameRep.PlayComponentCritVFX((int)location); };
-              }
-              if (ammoBox != null && componentInSlot.DamageLevel > ComponentDamageLevel.Functional) {
-                unit.GameRep.PlayVFX((int)location, (string)unit.Combat.Constants.VFXNames.componentDestruction_AmmoExplosion, true, Vector3.zero, true, -1f);
-              }
-            }
-            AttackDirector.AttackSequence attackSequence = unit.Combat.AttackDirector.GetAttackSequence(hitInfo.attackSequenceId);
-            if (attackSequence != null)
-              attackSequence.FlagAttackScoredCrit(unit.GUID, weapon1, ammoBox);
-            ComponentDamageLevel damageLevel = componentInSlot.DamageLevel;
-            switch (damageLevel) {
-              case ComponentDamageLevel.Functional:
-                if (flag) {
-                  damageLevel = ComponentDamageLevel.Penalized;
-                  if (CustomAmmoCategories.Settings.NoCritFloatie() == false) {
-                    unit.Combat.MessageCenter.PublishMessage((MessageCenterMessage)new AddSequenceToStackMessage((IStackSequence)new ShowActorInfoSequence((ICombatant)unit, new Text("__/CAC.CRIT/__", new object[1]
-                    {
-                    (object) componentInSlot.UIName
-                    }), FloatieMessage.MessageNature.CriticalHit, true)));
-                  }
-                  goto case ComponentDamageLevel.Destroyed;
-                } else {
-                  damageLevel = ComponentDamageLevel.Destroyed;
-                  if (CustomAmmoCategories.Settings.NoCritFloatie() == false) {
-                    unit.Combat.MessageCenter.PublishMessage((MessageCenterMessage)new AddSequenceToStackMessage((IStackSequence)new ShowActorInfoSequence((ICombatant)unit, new Text("__/CAC.DESTROYED/__", new object[1]
-                    {
-                    (object) componentInSlot.UIName
-                    }), FloatieMessage.MessageNature.ComponentDestroyed, true)));
-                  }
-                  goto case ComponentDamageLevel.Destroyed;
-                }
-              case ComponentDamageLevel.Destroyed:
-                Log.C.WL(1, string.Format("SEQ:{0}: WEAP:{1} Loc:{2} Critical: {3} prev damage state: {4}", (object)hitInfo.attackSequenceId, (object)hitInfo.attackWeaponIndex, (object)location.ToString(), (object)componentInSlot.Name, (object)damageLevel));
-                try {
-                  componentInSlot.DamageComponent(hitInfo, damageLevel, true);
-                } catch (Exception e) {
-                  Log.C.TWL(0,e.ToString(),true);
-                }
-                Log.C.WL(1, string.Format("SEQ:{0}: WEAP:{1} Loc:{2} Critical: {3} new damage state: {4}", (object)hitInfo.attackSequenceId, (object)hitInfo.attackWeaponIndex, (object)location.ToString(), (object)componentInSlot.Name, (object)damageLevel));
-                break;
-              default:
-                damageLevel = ComponentDamageLevel.Destroyed;
-                if (CustomAmmoCategories.Settings.NoCritFloatie() == false) {
-                  unit.Combat.MessageCenter.PublishMessage((MessageCenterMessage)new AddSequenceToStackMessage((IStackSequence)new ShowActorInfoSequence((ICombatant)unit, new Text("__/CAC.DESTROYED/__", new object[1]
-                  {
-                    (object) componentInSlot.UIName
-                  }), FloatieMessage.MessageNature.ComponentDestroyed, true)));
-                }
-                goto case ComponentDamageLevel.Destroyed;
-            }
+            componentInSlot.CritComponent(ref hitInfo, weapon);
           } else {
             Log.C.WL(1, string.Format($"SEQ:{0}: WEAP:{1} Loc:{2} Critical Hit! Component already destroyed {3}", (object)hitInfo.attackSequenceId, (object)hitInfo.attackWeaponIndex, (object)location.ToString(), (object)componentInSlot.UIName));
           }

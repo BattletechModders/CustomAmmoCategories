@@ -36,6 +36,8 @@ namespace CustAmmoCategoriesPatches {
       __instance.StatCollection.AddStatistic<float>(AdvancedCriticalProcessor.BASE_CRIT_CHANCE_STAT_NAME, 1.0f);
       __instance.StatCollection.AddStatistic<float>(AdvancedCriticalProcessor.AP_CRIT_CHANCE_STAT_NAME, 1.0f);
       __instance.StatCollection.AddStatistic<float>(CustomAmmoCategories.Settings.MinefieldIFFStatName, 0.0f);
+      __instance.InitExDamageStats();
+      CombatHUDMiniMap.InitMinimapStatistic(__instance);
     }
   }
 }

@@ -103,26 +103,27 @@ namespace CustomAmmoCategoriesPatches {
             if (flag) {
               weapon.weaponRep.PlayWeaponEffect(hitInfo);
             } else {
-              if (DebugBridge.TestToolsEnabled || !DebugBridge.DisableWeaponEffectDrivenAttacks)
-                AttackDirector.attackLogger.LogError((object)("NO WEAPONEFFECT for " + weapon.Description.Name + ", skipping straight to resolving damage."));
-              __instance.Director.Combat.MessageCenter.PublishMessage((MessageCenterMessage)new AttackSequenceWeaponPreFireCompleteMessage(__instance.stackItemUID, __instance.id, groupIdx, weaponIdx));
-              for (int hitIndex = 0; hitIndex < numberOfShots; ++hitIndex) {
-                float hitDamage = weapon.DamagePerShotAdjusted(weapon.parent.occupiedDesignMask);
-                float structureDamage = weapon.StructureDamagePerShotAdjusted(weapon.parent.occupiedDesignMask);
-                __instance.Director.Combat.MessageCenter.PublishMessage((MessageCenterMessage)new AttackSequenceImpactMessage(hitInfo, hitIndex, hitDamage, structureDamage));
-                AdvWeaponHitInfoRec advRec = hitInfo.advRec(hitIndex);
-                if (advRec.isAOEproc) {
-                  Log.LogWrite("OnImpact AOE Hit info found:" + hitIndex + "\n");
-                  for (int aoeHitIndex = 0; aoeHitIndex < advRec.parent.hits.Count; ++aoeHitIndex) {
-                    AdvWeaponHitInfoRec aoeRec = advRec.parent.hits[aoeHitIndex];
-                    if (aoeRec.isAOE == false) { continue; }
-                    Log.LogWrite(" hitIndex = " + aoeHitIndex + " " + aoeRec.target.GUID + " " + aoeRec.Damage + "/" + aoeRec.Heat + "/" + aoeRec.Stability + "\n");
-                    __instance.Director.Combat.MessageCenter.PublishMessage((MessageCenterMessage)new AttackSequenceImpactMessage(hitInfo, aoeHitIndex, aoeRec.Damage, 0f));
-                  }
-                }
-              }
-              __instance.Director.Combat.MessageCenter.PublishMessage((MessageCenterMessage)new AttackSequenceResolveDamageMessage(hitInfo));
-              __instance.Director.Combat.MessageCenter.PublishMessage((MessageCenterMessage)new AttackSequenceWeaponCompleteMessage(__instance.stackItemUID, __instance.id, groupIdx, weaponIdx));
+              Log.M?.TWL(0,$"Exception unit:{weapon.parent.PilotableActorDef.ChassisID} weapon:{weapon.weaponDef.Description.Id} weaponRep:"+(weapon.weaponRep==null?"null": (weapon.weaponRep.name+ " HasWeaponEffect:"+weapon.weaponRep.HasWeaponEffect)));
+            //  if (DebugBridge.TestToolsEnabled || !DebugBridge.DisableWeaponEffectDrivenAttacks)
+            //    AttackDirector.attackLogger.LogError((object)("NO WEAPONEFFECT for " + weapon.Description.Name + ", skipping straight to resolving damage."));
+            //  __instance.Director.Combat.MessageCenter.PublishMessage((MessageCenterMessage)new AttackSequenceWeaponPreFireCompleteMessage(__instance.stackItemUID, __instance.id, groupIdx, weaponIdx));
+            //  for (int hitIndex = 0; hitIndex < numberOfShots; ++hitIndex) {
+            //    float hitDamage = weapon.DamagePerShotAdjusted(weapon.parent.occupiedDesignMask);
+            //    float structureDamage = weapon.StructureDamagePerShotAdjusted(weapon.parent.occupiedDesignMask);
+            //    __instance.Director.Combat.MessageCenter.PublishMessage((MessageCenterMessage)new AttackSequenceImpactMessage(hitInfo, hitIndex, hitDamage, structureDamage));
+            //    AdvWeaponHitInfoRec advRec = hitInfo.advRec(hitIndex);
+            //    if (advRec.isAOEproc) {
+            //      Log.LogWrite("OnImpact AOE Hit info found:" + hitIndex + "\n");
+            //      for (int aoeHitIndex = 0; aoeHitIndex < advRec.parent.hits.Count; ++aoeHitIndex) {
+            //        AdvWeaponHitInfoRec aoeRec = advRec.parent.hits[aoeHitIndex];
+            //        if (aoeRec.isAOE == false) { continue; }
+            //        Log.LogWrite(" hitIndex = " + aoeHitIndex + " " + aoeRec.target.GUID + " " + aoeRec.Damage + "/" + aoeRec.Heat + "/" + aoeRec.Stability + "\n");
+            //        __instance.Director.Combat.MessageCenter.PublishMessage((MessageCenterMessage)new AttackSequenceImpactMessage(hitInfo, aoeHitIndex, aoeRec.Damage, 0f));
+            //      }
+            //    }
+            //  }
+            //  __instance.Director.Combat.MessageCenter.PublishMessage((MessageCenterMessage)new AttackSequenceResolveDamageMessage(hitInfo));
+            //  __instance.Director.Combat.MessageCenter.PublishMessage((MessageCenterMessage)new AttackSequenceWeaponCompleteMessage(__instance.stackItemUID, __instance.id, groupIdx, weaponIdx));
             }
           }
         }

@@ -1311,11 +1311,9 @@ namespace CustomUnits {
     }
     public void Init(CombatHUD HUD) {
       this.HUD = HUD;
-      Transform MechTray_GreebleWedge = HUD.MechTray.gameObject.transform.Find("MechTray_GreebleWedge");
-      if (MechTray_GreebleWedge == null) { Log.TWL(0, "Exception: can't find MechTray_GreebleWedge", true); return; }
-      Transform MechTray_GreebleDots = MechTray_GreebleWedge.Find("MechTray_GreebleDots");
-      if (MechTray_GreebleDots == null) { Log.TWL(0, "Exception: can't find MechTray_GreebleDots", true); return; }
-      image = MechTray_GreebleDots.GetComponent<SVGImage>();
+      Transform MechTray_MechNameBackground = HUD.MechTray.gameObject.transform.Find("MechTray_MechNameBackground");
+      if (MechTray_MechNameBackground == null) { Log.TWL(0, "Exception: can't find MechTray_MechNameBackground", true); return; }
+      image = MechTray_MechNameBackground.GetComponent<SVGImage>();
     }
   }
   public class LanceSwitcher : EventTrigger {
@@ -1523,11 +1521,14 @@ namespace CustomUnits {
   public static class CombatHUDMechTray_Init {
 
     public static void Postfix(CombatHUDMechTray __instance, MessageCenter messageCenter, CombatHUD HUD) {
-      Transform MechTrayBGImage = __instance.gameObject.transform.Find("MechTrayBGImage");
-      if (MechTrayBGImage == null) { Log.TWL(0, "Exception: can't find MechTrayBGImage", true); return; }
-      CombatHUDActorInfoHover hover = MechTrayBGImage.gameObject.GetComponent<CombatHUDActorInfoHover>();
-      if (hover == null) { hover = MechTrayBGImage.gameObject.AddComponent<CombatHUDActorInfoHover>(); }
-      hover.Init(HUD);
+      Transform MechTray_MechNameBackground = __instance.gameObject.transform.Find("MechTray_MechNameBackground");
+      if (MechTray_MechNameBackground != null) {
+        CombatHUDActorInfoHover hover = MechTray_MechNameBackground.gameObject.GetComponent<CombatHUDActorInfoHover>();
+        if (hover == null) { hover = MechTray_MechNameBackground.gameObject.AddComponent<CombatHUDActorInfoHover>(); }
+        hover.Init(HUD);
+      } else {
+        Log.TWL(0, "Exception: can't find MechTray_MechNameBackground", true); 
+      }
       /*CombatHUDActorInfoHover hover = MechTray_GreebleDots.gameObject.GetComponent<CombatHUDActorInfoHover>();
       if (hover == null) { hover = MechTray_GreebleDots.gameObject.AddComponent<CombatHUDActorInfoHover>(); }
       hover.Init(HUD);

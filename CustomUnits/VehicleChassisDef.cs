@@ -33,6 +33,7 @@ using HBS.Collections;
 using System.Collections.Concurrent;
 using MessagePack;
 using CustAmmoCategoriesPatches;
+using IRBTModUtils;
 
 namespace CustomUnits {
   [MessagePackObject]
@@ -995,19 +996,17 @@ namespace CustomUnits {
   [HarmonyPatch(new Type[] { typeof(Vector3), typeof(Quaternion), typeof(int), typeof(bool), typeof(List<DesignMaskDef>), typeof(bool) })]
   public static class AbstractActor_OnPositionUpdate {
     public static bool Prefix(AbstractActor __instance, Vector3 position, Quaternion heading, int stackItemUID,ref bool updateDesignMask, List<DesignMaskDef> approvedMasks, bool skipAbilityLogging) {
-      //Log.LogWrite("Weapon.DamagePerShotPredicted prefix\n");
-      //Log.LogWrite(0, "AbstractActor.OnPositionUpdate prefx " + __instance.DisplayName + ":" + __instance.GUID);
       if (__instance.UnaffectedDesignMasks()) {
-        //Log.LogWrite(1, "unaffected. Tie designMask to null", true);
         updateDesignMask = false;
+        Thread.CurrentThread.SetFlag(ActorMovementSequence_UpdateSticky.HIDE_DESIGN_MASK_FLAG);
       }
       return true;
     }
     public static void Postfix(AbstractActor __instance, Vector3 position, Quaternion heading, int stackItemUID, bool updateDesignMask, List<DesignMaskDef> approvedMasks, bool skipAbilityLogging, ref DesignMaskDef ___opuDesignMask) {
       if (__instance.UnaffectedDesignMasks()) {
-        //Log.LogWrite(1, "unaffected. Tie designMask to null", true);
         Traverse.Create(__instance).Property<DesignMaskDef>("occupiedDesignMask").Value = null;
         ___opuDesignMask = null;
+        Thread.CurrentThread.ClearFlag(ActorMovementSequence_UpdateSticky.HIDE_DESIGN_MASK_FLAG);
       }
     }
   }
@@ -1375,7 +1374,7 @@ namespace CustomUnits {
   [HarmonyPatch("InitEffectStats")]
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { })]
-  public static class AbstractActor_InitStats {
+  public static class AbstractActor_InitEffectStats {
     public static void Postfix(AbstractActor __instance) {
       Log.LogWrite("AbstractActor.InitEffectStats " + __instance.DisplayName + ":" + __instance.GUID + "\n");
       UnitCustomInfo info = __instance.GetCustomInfo();

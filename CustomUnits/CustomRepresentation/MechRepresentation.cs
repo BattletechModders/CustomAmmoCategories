@@ -1283,9 +1283,9 @@ namespace CustomUnits {
     }
     public virtual void SetRandomIdleValue(float value) {
       //CustomTwistAnimation custIdleAnim = this.gameObject.GetComponent<CustomTwistAnimation>();
-      Log.TWL(0, "CustomMechRepresentation.SetRandomIdleValue: " + this.gameObject.name + " " + (this.parentMech == null ? "null" : this.parentMech.MechDef.ChassisID) + " value:" + value + " RotateBody:" + this.RotateBody);
+      //Log.TWL(0, "CustomMechRepresentation.SetRandomIdleValue: " + this.gameObject.name + " " + (this.parentMech == null ? "null" : this.parentMech.MechDef.ChassisID) + " value:" + value + " RotateBody:" + this.RotateBody);
       if (this.RotateBody) {
-        Log.WL(1, "this.thisAnimator.SetFloat(this.idleRandomValueHash, 0.6f)");
+        //Log.WL(1, "this.thisAnimator.SetFloat(this.idleRandomValueHash, 0.6f)");
         this.thisAnimator.SetFloat(this.idleRandomValueHash, 0.6f);
         return;
       }
@@ -1293,16 +1293,16 @@ namespace CustomUnits {
         if (this.customRep.HasTwistAnimators) {
           this.customRep.IdleTwist(value);
           if (this.customRep.CustomDefinition.KeepRandomIdleAnimation) {
-            Log.WL(1, "this.thisAnimator.SetFloat(this.idleRandomValueHash, "+ value + ")");
+            //Log.WL(1, "this.thisAnimator.SetFloat(this.idleRandomValueHash, "+ value + ")");
             this.thisAnimator.SetFloat(this.idleRandomValueHash, value);
           } else {
-            Log.WL(1, "this.thisAnimator.SetFloat(this.idleRandomValueHash, 0.6f)");
+            //Log.WL(1, "this.thisAnimator.SetFloat(this.idleRandomValueHash, 0.6f)");
             this.thisAnimator.SetFloat(this.idleRandomValueHash, 0.6f);
           }
           return;
         }
       }
-      Log.WL(1, "this.thisAnimator.SetFloat(this.idleRandomValueHash, " + value + ")");
+      //Log.WL(1, "this.thisAnimator.SetFloat(this.idleRandomValueHash, " + value + ")");
       this.thisAnimator.SetFloat(this.idleRandomValueHash, value);
     }
     public virtual void _SetIdleAnimState() {
@@ -1866,7 +1866,7 @@ namespace CustomUnits {
         if (strArray.Length < 2) {
           Log.TWL(0, "AnimationEvent OnAudioEvent got an invalid audioEvent name: " + audioEvent, true);
         } else {
-          Log.TWL(0, "MechRepresentation.OnAudioEvent "+this.name + " " + audioEvent, true);
+          //Log.TWL(0, "MechRepresentation.OnAudioEvent "+this.name + " " + audioEvent, true);
           int num = (int)WwiseManager.PostEvent(string.Format("AudioEventList_{0}_{1}", (object)strArray[0], (object)audioEvent), this.rootParentRepresentation.audioObject);
         }
       }

@@ -713,6 +713,13 @@ namespace CustomUnits {
     public virtual bool isSquad { get { return false; } }
     public virtual bool isVehicle { get { return false; } }
     public virtual bool isQuad { get { return false; } }
+    public virtual bool isTurret {
+      get {
+        UnitCustomInfo info = this.GetCustomInfo();
+        if (info == null) { return false; }
+        return info.TurretArmorReadout;
+      }
+    }
     public virtual string UnitTypeName {
       get {
         UnitCustomInfo info = this.GetCustomInfo();

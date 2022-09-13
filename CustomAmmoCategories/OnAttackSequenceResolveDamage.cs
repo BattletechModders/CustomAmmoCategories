@@ -73,25 +73,17 @@ namespace CustomAmmoCategoriesPatches {
       if (hitInfo.attackSequenceId != __instance.id) { Log.M.WL(1, "sequence not mach:"+ hitInfo.attackSequenceId+" != "+__instance.id+" fallback"); return true; };
       AdvWeaponHitInfo advInfo = hitInfo.advInfo();
       if (advInfo == null) { Log.M.WL(1, "no advanced info. fallback"); return true; }
+      Log.M?.WL(1,$"hits:{advInfo.hits.Count}");
+
       advInfo.resolveDamageMessage = resolveDamageMessage;
       advInfo.setVisualState();
       try {
         bool canProcessMessage = advInfo.advHitMessage == null ? false : advInfo.advHitMessage.CanBeApplied();
         if (!canProcessMessage) {
           Log.M.WL(1, "store message");
-          //__instance.messageCoordinator().StoreMessage((MessageCenterMessage)resolveDamageMessage);
           if (advInfo.advHitMessage != null) { advInfo.advHitMessage.TryApplyPending(); };
         } else {
           Log.M.WL(1, "processing message");
-          try {
-            //Log.M.WL(1, "charlesB");
-            //CharlesB.AttackDirector__AttackSequence_OnAttackSequenceResolveDamage_Patch.Prefix(ref message, __instance);
-          } catch (Exception) {
-            //Log.CB.TWL(0, e.ToString(), true);
-          }
-          //ResolveDamageHelper.ResolveWeaponDamageAdv(ref hitInfo);
-          //advInfo.Sequence.messageCoordinator().MessageComplete((MessageCenterMessage)resolveDamageMessage);
-          //advInfo.setApplyState();
           advInfo.advHitMessage.Apply(true);
         }
         AdvWeaponHitInfo.printApplyState(__instance.id);

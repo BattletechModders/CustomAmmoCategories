@@ -640,7 +640,7 @@ namespace CustAmmoCategories {
       if (vehicle.RightSideArmor < dmg) { return true; }
       return false;
     }
-    public static bool calculateAbortPos(AbstractActor unit, List<WayPoint> waypoints, Vector3 finalHeading, out List<WayPoint> result, out Vector3 heading) {
+    public static bool calculateAbortPos(AbstractActor unit, bool forceAIMinesUnaffected, List<WayPoint> waypoints, Vector3 finalHeading, out List<WayPoint> result, out Vector3 heading) {
       Log.F.TWL(0, "calculateAbortPos:" + unit.DisplayName+" waypoints:"+waypoints.Count);
       DynamicMapHelper.PoolDelayedGameObject();
       List<MapTerrainCellWaypoint> terrainWaypoints = DynamicMapHelper.getVisitedWaypoints(unit.Combat, waypoints);
@@ -663,7 +663,7 @@ namespace CustAmmoCategories {
       if (waypoints.Count == 0) { Log.F.WL(1, "waypoints is empty");return false; }
       if (unit.UnaffectedFire() && unit.UnaffectedLandmines()) { Log.F.WL(1, "unaffected fire and landmines");  return false; };
       bool UnaffectedFire = unit.UnaffectedFire();
-      bool UnaffectedLandmines = unit.UnaffectedLandmines();
+      bool UnaffectedLandmines = unit.UnaffectedLandmines() || forceAIMinesUnaffected;
       PathingCapabilitiesDef PathingCaps = (PathingCapabilitiesDef)typeof(Pathing).GetProperty("PathingCaps", BindingFlags.Instance | BindingFlags.NonPublic).GetGetMethod(true).Invoke(unit.Pathing, null);
       if (CustomAmmoCategories.Settings.MineFieldPathingMods.ContainsKey(PathingCaps.Description.Id)) {
         rollMod = CustomAmmoCategories.Settings.MineFieldPathingMods[PathingCaps.Description.Id] * unit.MinefieldTriggerMult();
@@ -795,10 +795,11 @@ namespace CustAmmoCategories {
       Weapon burnWeapon = null;
       bool UnaffectedFire = unit.UnaffectedFire();
       bool UnaffectedLandmines = unit.UnaffectedLandmines();
-      PathingCapabilitiesDef PathingCaps = (PathingCapabilitiesDef)typeof(Pathing).GetProperty("PathingCaps", BindingFlags.Instance | BindingFlags.NonPublic).GetGetMethod(true).Invoke(unit.Pathing, null);
+      PathingCapabilitiesDef PathingCaps = unit.PathingCaps;
+        //(PathingCapabilitiesDef)typeof(Pathing).GetProperty("PathingCaps", BindingFlags.Instance | BindingFlags.NonPublic).GetGetMethod(true).Invoke(unit.Pathing, null);
       Log.F.WL(1, "current pathing:" + PathingCaps.Description.Id);
       if (CustomAmmoCategories.Settings.MineFieldPathingMods.ContainsKey(PathingCaps.Description.Id)) {
-        rollMod = CustomAmmoCategories.Settings.MineFieldPathingMods[PathingCaps.Description.Id];
+        rollMod = CustomAmmoCategories.Settings.MineFieldPathingMods[PathingCaps.Description.Id] * unit.MinefieldTriggerMult();
       }
       MineFieldDamage mfDamage = new MineFieldDamage();
       MapTerrainDataCellEx cell = unit.Combat.MapMetaData.GetCellAt(position) as MapTerrainDataCellEx;
@@ -907,11 +908,13 @@ namespace CustAmmoCategoriesPatches {
   [HarmonyPatch(new Type[] { typeof(List<WayPoint>), typeof(Vector3), typeof(bool), typeof(ICombatant) })]
   public static class ActorMovementSequence_CompleteOrders {
     private static bool Prefix(ActorMovementSequence __instance, ref List<WayPoint> waypoints, ref Vector3 finalHeading, bool sprinting, ref ICombatant meleeTarget) {
-      Log.F.TWL(0, "ActorMovementSequence.SetWaypoints " + __instance.owningActor.DisplayName + ":" + __instance.owningActor.GUID);
+      Vector3 finalPos = waypoints.Count > 0?waypoints[waypoints.Count - 1].Position: __instance.owningActor.CurrentPosition;
+      bool force_no_mines = __instance.owningActor.CheckAISafeMovePositions(finalPos);
+      Log.F.TWL(0, "ActorMovementSequence.SetWaypoints " + __instance.owningActor.PilotableActorDef.ChassisID + ":" + __instance.owningActor.GUID+" finalpos: "+ finalPos + " force no mines:"+ force_no_mines);
       try {
         List<WayPoint> newWaypoints;
         Vector3 newHeading;
-        if (DynamicMapHelper.calculateAbortPos(__instance.owningActor, waypoints, finalHeading, out newWaypoints, out newHeading)) {
+        if (DynamicMapHelper.calculateAbortPos(__instance.owningActor, force_no_mines, waypoints, finalHeading, out newWaypoints, out newHeading)) {
           if (meleeTarget != null) {
             Log.F.WL(1, "melee sequence interrupted. Floatie");
             __instance.owningActor.Combat.MessageCenter.PublishMessage((MessageCenterMessage)new FloatieMessage(__instance.owningActor.GUID, __instance.owningActor.GUID, "__/CAC.MELEEATTACKINTERUPTED/__", FloatieMessage.MessageNature.CriticalHit));
@@ -925,6 +928,7 @@ namespace CustAmmoCategoriesPatches {
           //finalHeading = newHeading;
           Log.F.WL(1,"waypoints updated\n");
         }
+        __instance.owningActor.ClearAISafeMovePositions();
       } catch (Exception e) {
         Log.F.TWL(1, e.ToString(), true);
       }

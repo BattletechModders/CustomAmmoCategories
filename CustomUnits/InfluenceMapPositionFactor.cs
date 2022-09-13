@@ -29,13 +29,22 @@ namespace CustomUnits {
     }
   }
   public static class InfluenceMapPositionFactorPatch {
-    public static void Prefix(InfluenceMapPositionFactor __instance, AbstractActor unit) {
-      Thread.CurrentThread.pushActor(unit);
+    public static void Prefix(AbstractActor unit, ref bool? __state) {
+      try {
+        __state = false;
+        if (unit != null) { Thread.CurrentThread.pushActor(unit); __state = true; }
+      }catch(Exception e) {
+        Log.TWL(0, e.ToString(), true);
+      }
     }
-    public static void Postfix(InfluenceMapPositionFactor __instance, AbstractActor unit) {
-      Thread.CurrentThread.clearActor();
+    public static void Postfix(AbstractActor unit, ref bool? __state) {
+      try { 
+        if((__state.HasValue)&&(__state.Value == true)) Thread.CurrentThread.clearActor();
+      }catch(Exception e) {
+        Log.TWL(0, e.ToString(), true);
+      }
     }
-    public static MethodInfo PrefixMethod() => AccessTools.Method(typeof(InfluenceMapPositionFactorPatch), nameof(Prefix));
+  public static MethodInfo PrefixMethod() => AccessTools.Method(typeof(InfluenceMapPositionFactorPatch), nameof(Prefix));
     public static MethodInfo PostfixMethod() => AccessTools.Method(typeof(InfluenceMapPositionFactorPatch), nameof(Postfix));
     public static void PatchAll(HarmonyInstance harmony) {
       try {

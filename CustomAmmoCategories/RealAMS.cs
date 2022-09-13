@@ -1280,7 +1280,6 @@ namespace CustAmmoCategories {
     public static class AttackSequence_GenerateHitInfoAMS {
       public static void Postfix(AttackDirector.AttackSequence __instance) {
         Log.M.TWL(0, "AttackDirector.AttackSequence.GenerateToHitInfo");
-        Log.M.WL(0,Environment.StackTrace);
         try {
           WeaponHitInfo?[][] weaponHitInfo = (WeaponHitInfo?[][])typeof(AttackDirector.AttackSequence).GetField("weaponHitInfo", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(__instance);
           Log.LogWrite("Main stray generator\n", true);

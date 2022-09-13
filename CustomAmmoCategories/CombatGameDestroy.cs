@@ -58,7 +58,10 @@ namespace CustomAmmoCategoriesPatches {
         CombatHUDWeaponPanel_RefreshDisplayedWeapons.Clear();
         AdvWeaponHitInfo.ClearAttackLog();
         Weapon_ResetWeapon.Clear();
-      } catch(Exception e) {
+        AIMinefieldHelper.Clear();
+        CombatHUDMiniMap.Clear();
+        UnitCombatStatisticHelper.Clear();
+      } catch (Exception e) {
         Log.M.TWL(0, e.ToString());
       }
       return true;

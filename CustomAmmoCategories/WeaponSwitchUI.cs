@@ -39,8 +39,53 @@ using InControl;
 using System.Reflection.Emit;
 using IRBTModUtils;
 using BattleTech.UI.Tooltips;
+using BattleTech.Framework;
 
 namespace CustomAmmoCategoriesPatches {
+  [HarmonyPatch(typeof(CombatHUDObjectiveItem))]
+  [HarmonyPatch("Init")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { typeof(Localize.Text), typeof(bool), typeof(bool) })]
+  public static class CombatHUDObjectiveItem_Init0 {
+    public static void Postfix(CombatHUDObjectiveItem __instance, Localize.Text title, bool isPrimary, bool useOnPointer) {
+      Image background = __instance.GetComponent<Image>();
+      if(background != null)background.color = new Color(0f, 0f, 0f, 0f);
+    }
+  }
+  [HarmonyPatch(typeof(CombatHUDObjectiveItem))]
+  [HarmonyPatch("Init")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { typeof(CombatGameState), typeof(CombatHUD), typeof(CombatHUDObjectivesList), typeof(CombatHUDObjectiveStatusNotify), typeof(ObjectiveGameLogic) })]
+  public static class CombatHUDObjectiveItem_Init1 {
+    public static void Postfix(CombatHUDObjectiveItem __instance, CombatGameState combat, CombatHUD HUD, CombatHUDObjectivesList objectivesList, CombatHUDObjectiveStatusNotify notify, ObjectiveGameLogic objective) {
+      Image background = __instance.GetComponent<Image>();
+      if (background != null) background.color = new Color(0f, 0f, 0f, 0f);
+    }
+  }
+  [HarmonyPatch(typeof(CombatHUDObjectiveItem))]
+  [HarmonyPatch("OnPointerEnter")]
+  [HarmonyPatch(MethodType.Normal)]
+  public static class CombatHUDObjectiveItem_OnPointerEnter {
+    public static void Postfix(CombatHUDObjectiveItem __instance) {
+      if (CustomAmmoCategories.Settings.ObjectiveBlackBackgroundOnEnter == false) { return; }
+      Image background = __instance.GetComponent<Image>();
+      if (background != null) {
+        background.color = new Color(0f, 0f, 0f, 1f);
+      }
+    }
+  }
+  [HarmonyPatch(typeof(CombatHUDObjectiveItem))]
+  [HarmonyPatch("OnPointerExit")]
+  [HarmonyPatch(MethodType.Normal)]
+  public static class CombatHUDObjectiveItem_OnPointerExit {
+    public static void Postfix(CombatHUDObjectiveItem __instance) {
+      if (CustomAmmoCategories.Settings.ObjectiveBlackBackgroundOnEnter == false) { return; }
+      Image background = __instance.GetComponent<Image>();
+      if (background != null) {
+        background.color = new Color(0f, 0f, 0f, 0f);
+      }
+    }
+  }
   [HarmonyPatch(typeof(MechDef))]
   [HarmonyPatch("Refresh")]
   [HarmonyPatch(MethodType.Normal)]
@@ -941,7 +986,7 @@ namespace CustomAmmoCategoriesPatches {
       size.y = slotRt.sizeDelta.y;
       selfRt.sizeDelta = size;
       this.transform.localPosition = Vector3.zero;
-      Log.M.TWL(0, "WeaponModeHover.initUI " + size.x + "x" + size.y);
+      //Log.M.TWL(0, "WeaponModeHover.initUI " + size.x + "x" + size.y);
       //RectTransform selfRt = this.gameObject.GetComponent<RectTransform>();
       //RectTransform parentRt = this.gameObject.transform.parent.gameObject.GetComponent<RectTransform>();
       //RectTransform imgRt = this.background.gameObject.GetComponent<RectTransform>();

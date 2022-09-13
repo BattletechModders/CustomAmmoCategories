@@ -2040,10 +2040,31 @@ namespace CustomUnits {
     }
   }
   public static class MechCustomRepresentationHelper {
-    private static MethodInfo MechComponent_componentRep_set = null;
+    //private static MethodInfo MechComponent_componentRep_set = null;
     public static void componentRep_set(this MechComponent cmp, ComponentRepresentation rep) {
-      if (MechComponent_componentRep_set == null) { MechComponent_componentRep_set = typeof(MechComponent).GetProperty("componentRep").GetSetMethod(true); }
-      MechComponent_componentRep_set.Invoke(cmp, new object[] { rep });
+      Log.TWL(0, $"MechComponent.componentRep set {cmp.parent.PilotableActorDef.ChassisID}:{cmp.baseComponentRef.ComponentDefID} {rep.transform.name}");
+      ComponentRepresentation prevRep = cmp.componentRep;
+      if (prevRep == rep) {
+        Log.WL(1,"no change");
+        return;
+      }
+      Traverse.Create(cmp).Property<ComponentRepresentation>("componentRep").Value = rep;
+      WeaponRepresentation prevWpnRep = prevRep as WeaponRepresentation;
+      WeaponRepresentation wpnRep = rep as WeaponRepresentation;
+      if((prevWpnRep != null)&&(wpnRep != null)) {
+        WeaponEffect[] weaponEffects = prevWpnRep.gameObject.GetComponentsInChildren<WeaponEffect>(true);
+        foreach (WeaponEffect weaponEffect in weaponEffects) {
+          if (weaponEffect.transform.parent != prevWpnRep.transform) { continue; }
+          Log.WL(1, $"move weapon effect {weaponEffect.transform.name}");
+          weaponEffect.gameObject.transform.parent = wpnRep.transform;
+          weaponEffect.gameObject.transform.localPosition = Vector3.zero;
+          weaponEffect.gameObject.transform.rotation = Quaternion.identity;
+          weaponEffect.weaponRep = wpnRep;
+          Traverse.Create(weaponEffect).Field<int>("numberOfEmitters").Value = wpnRep.vfxTransforms.Length;
+        }
+      }
+      //if (MechComponent_componentRep_set == null) { MechComponent_componentRep_set = typeof(MechComponent).GetProperty("componentRep").GetSetMethod(true); }
+      //MechComponent_componentRep_set.Invoke(cmp, new object[] { rep });
     }
     public static GameObject PooledInstantiate_CustomMechRep_MechLab(this DataManager dataManager, string id, ChassisDef chassisDef, bool squadProcess, bool quadProcess) {
       string origId = id;

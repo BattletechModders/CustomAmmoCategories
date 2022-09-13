@@ -331,7 +331,7 @@ namespace CustAmmoCategories {
       //gameState.PilotRoster.ElementAt(0).AddAbility("");
       request.ready(jresp);
     }
-    public  void addpilot(CACHTTPRequestItem request) {
+    public void addpilot(CACHTTPRequestItem request) {
       Log.M.TWL(0, "add pilot request");
       System.Collections.Generic.Dictionary<string, string> jresp = new Dictionary<string, string>();
       BattleTech.GameInstance gameInstance = BattleTech.UnityGameInstance.BattleTechGame;
@@ -367,6 +367,46 @@ namespace CustAmmoCategories {
 
       //gameState.PilotRoster.ElementAt(0).AddAbility("");
       request.ready(jresp);
+    }
+    public void battledump(CACHTTPRequestItem request) {
+      Log.M.TWL(0, "battle dump request");
+      JObject responce = new JObject();
+      BattleTech.GameInstance gameInstance = BattleTech.UnityGameInstance.BattleTechGame;
+      Log.M.WL(1, "Получен gameInstance");
+      if (gameInstance == null) {
+        responce["error"] = new JObject();
+        responce["error"]["str"] = "Can't get game instance";
+        request.ready(responce);
+        return;
+      }
+      if(gameInstance.Combat == null) {
+        responce["error"] = new JObject();
+        responce["error"]["str"] = "Can't get combat";
+        request.ready(responce);
+        return;
+      }
+      JArray AllActors = new JArray();
+      foreach (AbstractActor unit in UnityGameInstance.BattleTechGame.Combat.AllActors) {
+        JObject junit = new JObject();
+        junit["DisplayName"] = unit.DisplayName;
+        junit["GUID"] = unit.GUID;
+        junit["ChassisID"] = unit.PilotableActorDef.ChassisID;
+        junit["DefID"] = unit.PilotableActorDef.Description.Id;
+        junit["DefGUID"] = unit.PilotableActorDef.GUID;
+        junit["OccupiedDesignMaskID"] = unit.OccupiedDesignMaskID;
+        junit["Team"] = unit.team.DisplayName + ":" + unit.TeamId + ":" + (unit.Combat.LocalPlayerTeamGuid == unit.TeamId ? "Player" : "AI");
+        JArray StatCollection = new JArray();
+        List<string> stats = new List<string>();
+        foreach(var stat in unit.StatCollection) {
+          stats.Add(stat.Key+"="+stat.Value.CurrentValue);
+        }
+        stats.Sort();
+        foreach (var stat in stats) { StatCollection.Add(stat); }
+        junit["StatCollection"] = StatCollection;
+        AllActors.Add(junit);
+      };
+      responce["units"] = AllActors;
+      request.ready(responce);
     }
     public void LateUpdate() {
       try {

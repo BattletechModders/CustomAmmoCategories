@@ -43,7 +43,7 @@
       <HintPath>$(BattleTechGameDir)\Mods\ModTek\0Harmony.dll</HintPath>
     </Reference>
     <Reference Include="Assembly-CSharp">
-      <HintPath>$(BattleTechGameDir)\BattleTech_Data\Managed\Assembly-CSharp.dll</HintPath>
+      <HintPath>..\..\..\BattleTech_Data\Managed\Assembly-CSharp.dll</HintPath>
     </Reference>
     <Reference Include="Assembly-CSharp-firstpass">
       <HintPath>$(BattleTechGameDir)\BattleTech_Data\Managed\Assembly-CSharp-firstpass.dll</HintPath>
@@ -109,6 +109,9 @@
     </Reference>
     <Reference Include="UnityEngine.CoreModule">
       <HintPath>$(BattleTechGameDir)\BattleTech_Data\Managed\UnityEngine.CoreModule.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine.ImageConversionModule">
+      <HintPath>..\..\..\BattleTech_Data\Managed\UnityEngine.ImageConversionModule.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.Networking">
       <HintPath>$(BattleTechGameDir)\BattleTech_Data\Managed\UnityEngine.Networking.dll</HintPath>

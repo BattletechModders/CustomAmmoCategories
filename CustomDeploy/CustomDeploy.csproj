@@ -76,6 +76,13 @@
     <Reference Include="UnityEngine.CoreModule">
       <HintPath>$(BattleTechGameDir)\BattleTech_Data\Managed\UnityEngine.CoreModule.dll</HintPath>
     </Reference>
+    <Reference Include="UnityEngine.ImageConversionModule, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\..\BattleTech_Data\Managed\UnityEngine.ImageConversionModule.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine.Networking">
+      <HintPath>..\..\..\BattleTech_Data\Managed\UnityEngine.Networking.dll</HintPath>
+    </Reference>
     <Reference Include="UnityEngine.ParticleSystemModule, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>$(BattleTechGameDir)\BattleTech_Data\Managed\UnityEngine.ParticleSystemModule.dll</HintPath>

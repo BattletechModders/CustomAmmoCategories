@@ -231,23 +231,26 @@ namespace CustomAmmoCategoriesPatches {
     public delegate void d_extendedFire(WeaponEffect weaponEffect, WeaponHitInfo hitInfo, int hitIndex, int emiter);
     public static d_extendedFire i_extendedFire = null;
     public static bool Prefix(WeaponRepresentation __instance, WeaponHitInfo hitInfo) {
-      CustomAmmoCategoriesLog.Log.LogWrite("WeaponRepresentation.PlayWeaponEffect\n");
       try {
+        Log.M?.TWL(0, $"WeaponRepresentation.PlayWeaponEffect {__instance.transform.name} def:{__instance.weapon.defId} parent:{__instance.weapon.parent.PilotableActorDef.ChassisID}");
         if (__instance.weapon == null) { return true; }
         __instance.weapon.clearImpactVFX();
         WeaponEffect currentEffect = CustomAmmoCategories.getWeaponEffect(__instance.weapon);
         if (currentEffect == null) { return true; }
         ExtWeaponDef extWeaponDef = CustomAmmoCategories.getExtWeaponDef(__instance.weapon.Description.Id);
         if (hitInfo.numberOfShots == 0) {
-          Log.LogWrite("  no success hits\n");
-          currentEffect.currentState = WeaponEffect.WeaponEffectState.Complete;
+          Log.M?.WL(1,"no success hits");
+          currentEffect.currentState = WeaponEffect.WeaponEffectState.WaitingForImpact;
           currentEffect.subEffect = false;
           currentEffect.hitInfo = hitInfo;
-          PropertyInfo property = typeof(WeaponEffect).GetProperty("FiringComplete");
-          property.DeclaringType.GetProperty("FiringComplete");
-          property.GetSetMethod(true).Invoke(currentEffect, new object[1] { (object)false });
-          typeof(WeaponEffect).GetMethod("PublishNextWeaponMessage", BindingFlags.NonPublic | BindingFlags.Instance).Invoke(currentEffect, new object[0]);
-          currentEffect.PublishWeaponCompleteMessage();
+          Traverse.Create(currentEffect).Property<bool>("FiringComplete").Value = false;
+          Traverse.Create(currentEffect).Field<float>("t").Value = 1.0f;
+          Traverse.Create(currentEffect).Method("OnComplete").GetValue();
+          //PropertyInfo property = typeof(WeaponEffect).GetProperty("FiringComplete");
+          //property.DeclaringType.GetProperty("FiringComplete");
+          //property.GetSetMethod(true).Invoke(currentEffect, new object[1] { (object)false });
+          //typeof(WeaponEffect).GetMethod("PublishNextWeaponMessage", BindingFlags.NonPublic | BindingFlags.Instance).Invoke(currentEffect, new object[0]);
+          //currentEffect.PublishWeaponCompleteMessage();
         } else {
           if (currentEffect.weapon != null) {
             if (i_extendedFire == null) {
@@ -265,22 +268,28 @@ namespace CustomAmmoCategoriesPatches {
                 i_extendedFire(currentEffect, hitInfo, 0, 0);
               }
             } catch (Exception e) {
-              CustomAmmoCategoriesLog.Log.LogWrite("Exception:" + e.ToString() + "\nfallbak to no fire\n");
-              currentEffect.currentState = WeaponEffect.WeaponEffectState.Complete;
+              Log.M?.TWL(0,"Exception:" + e.ToString() + "\nfallbak to no fire");
+              currentEffect.currentState = WeaponEffect.WeaponEffectState.WaitingForImpact;
               currentEffect.subEffect = false;
               currentEffect.hitInfo = hitInfo;
-              PropertyInfo property = typeof(WeaponEffect).GetProperty("FiringComplete");
-              property.DeclaringType.GetProperty("FiringComplete");
-              property.GetSetMethod(true).Invoke(currentEffect, new object[1] { (object)false });
-              typeof(WeaponEffect).GetMethod("PublishNextWeaponMessage", BindingFlags.NonPublic | BindingFlags.Instance).Invoke(currentEffect, new object[0]);
-              currentEffect.PublishWeaponCompleteMessage();
+              Traverse.Create(currentEffect).Property<bool>("FiringComplete").Value = false;
+              Traverse.Create(currentEffect).Field<float>("t").Value = 1.0f;
+              Traverse.Create(currentEffect).Method("OnComplete").GetValue();
+              //currentEffect.currentState = WeaponEffect.WeaponEffectState.Complete;
+              //currentEffect.subEffect = false;
+              //currentEffect.hitInfo = hitInfo;
+              //PropertyInfo property = typeof(WeaponEffect).GetProperty("FiringComplete");
+              //property.DeclaringType.GetProperty("FiringComplete");
+              //property.GetSetMethod(true).Invoke(currentEffect, new object[1] { (object)false });
+              //typeof(WeaponEffect).GetMethod("PublishNextWeaponMessage", BindingFlags.NonPublic | BindingFlags.Instance).Invoke(currentEffect, new object[0]);
+              //currentEffect.PublishWeaponCompleteMessage();
             }
           }
         }
         CustomAmmoCategoriesLog.Log.LogWrite("  fired\n");
         return false;
       } catch (Exception e) {
-        CustomAmmoCategoriesLog.Log.LogWrite("Exception:" + e.ToString() + "\nfallbak to default\n");
+        Log.M?.TWL(0,e.ToString(),true);
         return true;
       }
     }
@@ -1269,6 +1278,7 @@ namespace CustAmmoCategories {
 namespace CACMain {
   public static class Core {
     public static HarmonyInstance harmony { get; set; } = null;
+    public static bool MechEngineerDetected { get; set; } = false;
     public static Type privateAssemblyCore { get; set; } = null;
     public static Dictionary<string, GameObject> AdditinalFXObjects = new Dictionary<string, GameObject>();
     public static Dictionary<string, Mesh> AdditinalMeshes = new Dictionary<string, Mesh>();
@@ -1307,6 +1317,11 @@ namespace CACMain {
       if (Core.AdditinalFXObjects.ContainsKey(name)) { return Core.AdditinalFXObjects[name]; };
       return null;
     }
+    public static void DetectOtherMods() {
+      foreach(Assembly assembly in AppDomain.CurrentDomain.GetAssemblies()) {
+        if (assembly.FullName.StartsWith("MechEngineer, Version=")) { Core.MechEngineerDetected = true; }
+      }
+    }
     public static void FinishedLoading(List<string> loadOrder) {
       Log.M.TWL(0, "FinishedLoading", true);
       try {
@@ -1316,10 +1331,76 @@ namespace CACMain {
         CustomPrewarm.Core.RegisterSerializator("CustomAmmoCategories", BattleTechResourceType.WeaponDef, CustomAmmoCategories.getExtWeaponDef);
         CustomPrewarm.Core.RegisterSerializator("CustomAmmoCategories", BattleTechResourceType.AmmunitionDef, CustomAmmoCategories.findExtAmmo);
         AccessTools.Method(privateAssemblyCore, "FinishedLoading").Invoke(null, new object[] { });
+        LoadLegacyAssets(Log.BaseDirectory);
+        UnitCombatStatisticHelper.Init();
+        Core.DetectOtherMods();
         //CustomAmmoCategories.ha
         //FixedMechDefHelper.Init(CustomAmmoCategories.Settings.directory);
       } catch (Exception e) {
         Log.M.TWL(0, e.ToString(), true);
+      }
+    }
+    public static void LoadLegacyAssets(string directory) {
+      try {
+        string apath = Path.Combine(directory, "assets");
+        Log.M?.WL("additional assets:" + CustomAmmoCategories.Settings.AdditinalAssets.Count);
+        foreach (string assetName in CustomAmmoCategories.Settings.AdditinalAssets) {
+          string path = Path.Combine(apath, assetName);
+          if (File.Exists(path)) {
+            var assetBundle = AssetBundle.LoadFromFile(path);
+            if (assetBundle != null) {
+              CustomAmmoCategoriesLog.Log.LogWrite("asset " + path + ":" + assetBundle.name + " loaded\n");
+              UnityEngine.GameObject[] objects = assetBundle.LoadAllAssets<GameObject>();
+              CustomAmmoCategoriesLog.Log.LogWrite("FX objects:\n");
+              foreach (var obj in objects) {
+                CustomAmmoCategoriesLog.Log.LogWrite(" " + obj.name + "\n");
+                if (AdditinalFXObjects.ContainsKey(obj.name) == false) AdditinalFXObjects.Add(obj.name, obj);
+              }
+              UnityEngine.Texture2D[] textures = assetBundle.LoadAllAssets<Texture2D>();
+              CustomAmmoCategoriesLog.Log.LogWrite("Textures:\n");
+              foreach (var tex in textures) {
+                CustomAmmoCategoriesLog.Log.LogWrite(" " + tex.name + "\n");
+                if (AdditinalTextures.ContainsKey(tex.name) == false) AdditinalTextures.Add(tex.name, tex);
+              }
+              UnityEngine.Mesh[] meshes = assetBundle.LoadAllAssets<Mesh>();
+              CustomAmmoCategoriesLog.Log.LogWrite("Meshes:\n");
+              foreach (var msh in meshes) {
+                CustomAmmoCategoriesLog.Log.LogWrite(" " + msh.name + "\n");
+                if (AdditinalMeshes.ContainsKey(msh.name) == false) AdditinalMeshes.Add(msh.name, msh);
+              }
+              UnityEngine.Material[] materials = assetBundle.LoadAllAssets<Material>();
+              Log.M.WL(0, "Materials:");
+              foreach (var mat in materials) {
+                Log.M.WL(1, mat.name + "\n");
+                if (AdditinalMaterials.ContainsKey(mat.name) == false) {
+                  if (AdditinalMaterials.ContainsKey(mat.name) == false) AdditinalMaterials.Add(mat.name, mat);
+                }
+              }
+              UnityEngine.Shader[] shaders = assetBundle.LoadAllAssets<Shader>();
+              Log.M.WL(0, "Shaders:");
+              foreach (var shdr in shaders) {
+                CustomAmmoCategoriesLog.Log.LogWrite(" " + shdr.name + "\n");
+                if (AdditinalShaders.ContainsKey(shdr.name) == false) {
+                  if (AdditinalShaders.ContainsKey(shdr.name) == false) AdditinalShaders.Add(shdr.name, shdr);
+                }
+              }
+              UnityEngine.AudioClip[] audio = assetBundle.LoadAllAssets<AudioClip>();
+              Log.M.WL(0, "Audio:");
+              foreach (var au in audio) {
+                Log.M.WL(1, au.name);
+                if (AdditinalAudio.ContainsKey(au.name) == false) {
+                  if (AdditinalAudio.ContainsKey(au.name) == false) AdditinalAudio.Add(au.name, au);
+                }
+              }
+            } else {
+              Log.M.WL(0, "fail to load:" + path);
+            }
+          } else {
+            Log.M.WL(0, "not exists:" + path);
+          }
+        }
+      } catch (Exception e) {
+        Log.M?.TWL(0, e.ToString(), true);
       }
     }
     public static void Init(string directory, string settingsJson) {
@@ -1391,63 +1472,6 @@ namespace CACMain {
         }
       }
       try {
-        string apath = Path.Combine(directory, "assets");
-        CustomAmmoCategoriesLog.Log.LogWrite("additional assets:" + CustomAmmoCategories.Settings.AdditinalAssets.Count + "\n");
-        foreach (string assetName in CustomAmmoCategories.Settings.AdditinalAssets) {
-          string path = Path.Combine(apath, assetName);
-          if (File.Exists(path)) {
-            var assetBundle = AssetBundle.LoadFromFile(path);
-            if (assetBundle != null) {
-              CustomAmmoCategoriesLog.Log.LogWrite("asset " + path + ":" + assetBundle.name + " loaded\n");
-              UnityEngine.GameObject[] objects = assetBundle.LoadAllAssets<GameObject>();
-              CustomAmmoCategoriesLog.Log.LogWrite("FX objects:\n");
-              foreach (var obj in objects) {
-                CustomAmmoCategoriesLog.Log.LogWrite(" " + obj.name + "\n");
-                if(AdditinalFXObjects.ContainsKey(obj.name) == false) AdditinalFXObjects.Add(obj.name, obj);
-              }
-              UnityEngine.Texture2D[] textures = assetBundle.LoadAllAssets<Texture2D>();
-              CustomAmmoCategoriesLog.Log.LogWrite("Textures:\n");
-              foreach (var tex in textures) {
-                CustomAmmoCategoriesLog.Log.LogWrite(" " + tex.name + "\n");
-                if (AdditinalTextures.ContainsKey(tex.name) == false) AdditinalTextures.Add(tex.name, tex);
-              }
-              UnityEngine.Mesh[] meshes = assetBundle.LoadAllAssets<Mesh>();
-              CustomAmmoCategoriesLog.Log.LogWrite("Meshes:\n");
-              foreach (var msh in meshes) {
-                CustomAmmoCategoriesLog.Log.LogWrite(" " + msh.name + "\n");
-                if (AdditinalMeshes.ContainsKey(msh.name) == false) AdditinalMeshes.Add(msh.name, msh);
-              }
-              UnityEngine.Material[] materials = assetBundle.LoadAllAssets<Material>();
-              Log.M.WL(0, "Materials:");
-              foreach (var mat in materials) {
-                Log.M.WL(1,mat.name + "\n");
-                if (AdditinalMaterials.ContainsKey(mat.name) == false) {
-                  if (AdditinalMaterials.ContainsKey(mat.name) == false) AdditinalMaterials.Add(mat.name, mat);
-                }
-              }
-              UnityEngine.Shader[] shaders = assetBundle.LoadAllAssets<Shader>();
-              Log.M.WL(0, "Shaders:");
-              foreach (var shdr in shaders) {
-                CustomAmmoCategoriesLog.Log.LogWrite(" " + shdr.name + "\n");
-                if (AdditinalShaders.ContainsKey(shdr.name) == false) {
-                  if (AdditinalShaders.ContainsKey(shdr.name) == false) AdditinalShaders.Add(shdr.name, shdr);
-                }
-              }
-              UnityEngine.AudioClip[] audio = assetBundle.LoadAllAssets<AudioClip>();
-              Log.M.WL(0, "Audio:");
-              foreach (var au in audio) {
-                Log.M.WL(1, au.name);
-                if (AdditinalAudio.ContainsKey(au.name) == false) {
-                  if (AdditinalAudio.ContainsKey(au.name) == false) AdditinalAudio.Add(au.name, au);
-                }
-              }
-            } else {
-              Log.M.WL(0, "fail to load:" + path);
-            }
-          } else {
-            Log.M.WL(0,"not exists:" + path);
-          }
-        }
         Core.harmony = HarmonyInstance.Create("io.mission.modrepuation");
         harmony.PatchAll(Assembly.GetExecutingAssembly());
         InternalClassPathes.PatchInternalClasses(harmony);

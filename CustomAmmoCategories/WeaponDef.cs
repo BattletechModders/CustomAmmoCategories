@@ -643,6 +643,8 @@ namespace CustAmmoCategories {
     public float AirMechDamageModifier { get; set; } = 1f;
     [Key(102)]
     public TripleBoolean TargetMechLegsOnly { get; set; } = TripleBoolean.NotSet;
+    [Key(103)]
+    public bool alwaysMiss { get; set; } = false;
     public ExtWeaponDef() { }
   }
 }
