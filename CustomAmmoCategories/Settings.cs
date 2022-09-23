@@ -328,6 +328,7 @@ namespace CustAmmoCategories {
     public string StatisticOnResultScreenTurretSprite { get; set; } = "turret_unit_result_stat";
     [GameplaySafe]
     public string StatisticOnResultScreenBattleArmorSprite { get; set; } = "battle_armor_unit_result_stat";
+    public bool SpawnProtectionAffectsAOE { get; set; } = true;
     public Settings() {
       //directory = string.Empty;
       //debugLog = true;

@@ -681,6 +681,18 @@ namespace CustAmmoCategories {
       bool calledShot = HUD.SelectionHandler.ActiveState.SelectionType == SelectionType.FireMorale;
       int all_modifiers = 0;
       Core.AIMShowBaseMeleeChance(slot, target);
+      if (HUD.SelectedActor != null) {
+        if (HUD.SelectedActor.isSpawnProtected()) {
+          slot.AddToolTipDetail("YOU ARE SPAWN PROTECTED", 99);
+          all_modifiers = 99;
+        }
+      }
+      if (target != null) {
+        if (target.isSpawnProtected()) {
+          slot.AddToolTipDetail("TARGET IS SPAWN PROTECTED", 99);
+          all_modifiers = 99;
+        }
+      }
       foreach (var mod in ToHitModifiersHelper.modifiers) {
         if ((mod.Value.melee == false) && (mod.Value.ranged == true)) { continue; }
         int modifier = (int)mod.Value.modifier(Combat.ToHit,
@@ -745,6 +757,18 @@ namespace CustAmmoCategories {
       int all_modifiers = 0;
       Core.AIMShowBaseHitChance(slot,target);
       Core.AIMShowNeutralRange(slot, target);
+      if (HUD.SelectedActor != null) {
+        if (HUD.SelectedActor.isSpawnProtected()) {
+          slot.AddToolTipDetail("YOU ARE SPAWN PROTECTED", 99);
+          all_modifiers = 99;
+        }
+      }
+      if(target != null) {
+        if (target.isSpawnProtected()) {
+          slot.AddToolTipDetail("TARGET IS SPAWN PROTECTED", 99);
+          all_modifiers = 99;
+        }
+      }
       //float baseChance = RollModifier.StepHitChance(Combat.ToHit.GetBaseToHitChance(mech)) * 100;
       //__instance.ToolTipHoverElement.BuffStrings.Add(new Text("{0} {1} = " + BaseChanceFormat, Translate(Pilot.PILOTSTAT_GUNNERY), mech.SkillGunnery, baseChance));
       foreach (var mod in ToHitModifiersHelper.modifiers) {
@@ -809,6 +833,11 @@ namespace CustAmmoCategories {
       CombatHUD HUD = Traverse.Create(slot).Field<CombatHUD>("HUD").Value;
       MeleeAttackType meleeAttackType = MeleeAttackType.NotSet;
       bool calledShot = false;
+      if(HUD.SelectedActor != null) {
+        if (HUD.SelectedActor.isSpawnProtected()) {
+          slot.AddToolTipDetail("YOU ARE SPAWN PROTECTED", 99);
+        }
+      }
       foreach (var mod in ToHitModifiersHelper.modifiers) {
         if ((mod.Value.ranged != false) || (mod.Value.melee != false)) { continue; }
         if (slot.DisplayedWeapon == null) { continue; }

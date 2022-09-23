@@ -16,6 +16,17 @@ using UnityEngine.UI;
 using Log = CustomAmmoCategoriesLog.Log;
 
 namespace CustAmmoCategories {
+  [HarmonyPatch(typeof(Briefing), "InitializeContractComplete")]
+  public static class Briefing_InitializeContractComplete {
+    public static void Prefix(Briefing __instance, MessageCenterMessage message) {
+      Log.M?.TWL(0, $"Briefing.InitializeContractComplete clearing combat statistic");
+      try {
+        CombatStatisticHelper.Clear();
+      } catch (Exception e) {
+        Log.M?.TWL(0, e.ToString(), true);
+      }
+    }
+  }
   [HarmonyPatch(typeof(Contract), "RequestConversations")]
   public static class Contract_RequestConversations {
     public static void Postfix(Contract __instance, LoadRequest loadRequest) {
@@ -151,7 +162,9 @@ namespace CustAmmoCategories {
         foreach(var killed in stat.killedUnits) {
           AddKilled(___dm, ___KillGridParent, killed);
         }
+        Log.M?.WL(1,"clearing killed stat");
         ___UnitData.statClear();
+        Log.M?.WL(1, $"now killed units:{___UnitData.stat().killedUnits}");
       } catch (Exception e) {
         Log.M?.TWL(0, e.ToString(), true);
       }

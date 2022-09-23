@@ -59,6 +59,14 @@ namespace CustomUnits {
     public static bool Prefix(Pilot __instance, InjuryReason reason) {
       try {
         Log.TWL(0, "Pilot.SetNeedsInjury Prefix" + __instance.Description.Id + " mech:" + (Thread.CurrentThread.currentActor() == null?"null": Thread.CurrentThread.currentActor().Description.Id));
+        TrooperSquad squad = __instance.ParentActor as TrooperSquad;
+        if (squad != null) {
+          if (TrooperSquad.SafeSetNeedsInjury == false) {
+            Log.TWL(0, $"!!!Exception!!! Someone tries to InjurePilot squad {squad.PilotableActorDef.ChassisID} illegally should be punished");
+            Log.WL(0, Environment.StackTrace);
+            return false;
+          }
+        }
         if (Thread.CurrentThread.isFlagSet("ApplyArmorStatDamage")) {
           AbstractActor unit = Thread.CurrentThread.currentActor() != null ? Thread.CurrentThread.currentActor() : __instance.ParentActor;
           if (unit == null) { return true; }
@@ -66,7 +74,6 @@ namespace CustomUnits {
             Log.WL(1, "stop propagation");
             return false;
           } else {
-            TrooperSquad squad = unit as TrooperSquad;
             if (squad != null) {
               Log.WL(1, "stop propagation");
               return false;

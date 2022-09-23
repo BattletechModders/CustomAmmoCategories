@@ -137,7 +137,11 @@ namespace CustAmmoCategories {
       if (this.hideOriginal()) {
         result.Add(this.quadTreeData);
       }
-      if (this.isTree && (CustomAmmoCategories.Settings.DontShowBurnedTrees == false)&&(CustomAmmoCategories.Settings.DontShowBurnedTreesTemporary == false)) {
+      if (this.isTree 
+        && (CustomAmmoCategories.Settings.DontShowBurnedTrees == false)
+        &&(CustomAmmoCategories.Settings.DontShowBurnedTreesTemporary == false)
+        && (DynamicTreesHelper.RemoveTrees == false)
+      ) {
         CustomAmmoCategoriesLog.Log.LogWrite(" add tree same position as burned\n");
         if (this.showBurned()) {
           result.Add(this.burnedTreeData);
@@ -155,6 +159,7 @@ namespace CustAmmoCategories {
     }
   }
   public static class DynamicTreesHelper {
+    public static bool RemoveTrees { get; set; } = false;
     public static FieldInfo transformListField = null;
     public static FieldInfo matrixListField = null;
     public static FieldInfo prototypeField = null;
@@ -353,22 +358,12 @@ namespace CustAmmoCategories {
 
 namespace CustAmmoCategoriesPatches {
   [HarmonyPatch(typeof(RenderTrees))]
-  [HarmonyPatch("OnPreCull")]
-  [HarmonyPatch(MethodType.Normal)]
-  [HarmonyPatch(new Type[] { })]
-  public static class RenderTrees_OnPreCull {
-    //public static bool Prefix(RenderTrees __instance) {
-      //Log.M.TWL(0, "RenderTrees.OnPreCull");
-      //return false;
-    //}
-  }
-  [HarmonyPatch(typeof(RenderTrees))]
   [HarmonyPatch("InitQuadTree")]
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { })]
   public static class RenderTrees_InitQuadTree {
     private static void Postfix(RenderTrees __instance) {
-      CustomAmmoCategoriesLog.Log.LogWrite("RenderTrees.InitQuadTree\n");
+      Log.M?.TWL(0,"RenderTrees.InitQuadTree postfix");
       DynamicTreesHelper.NoNeedInsert = true;
       try {
         QuadTreePrototype[] quadTreePrototypes = (QuadTreePrototype[])typeof(RenderTrees).GetField("quadTreePrototypes", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(__instance);

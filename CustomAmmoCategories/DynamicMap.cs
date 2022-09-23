@@ -947,9 +947,11 @@ namespace CustAmmoCategories {
     }
   }
   public class MapTerrainDataCellEx : MapTerrainDataCell {
+    public static bool ApplyPendingMasks { get; set; } = false;
     public int x;
     public int y;
     public float realTerrainHeight;
+    public TerrainMaskFlags pendingMasks;
     //public float RealHeight;
     public bool waterLevelCached;
     public bool wasForest;
@@ -1633,18 +1635,18 @@ namespace CustAmmoCategories {
         DynamicMapHelper.tempMaskCells.Remove(dp);
       }
     }
-    public static void initHexGrid(MapMetaData mapMetaData) {
+    public static void initHexGrid(MapMetaData mapMetaData, HexGrid hexGrid) {
       DynamicMapHelper.mapMetaData = mapMetaData;
       DynamicMapHelper.CurrentBiome = "";
       try {
-        DynamicMapHelper.CurrentBiome = mapMetaData.biomeDesignMask.Description.Id;
+        DynamicMapHelper.CurrentBiome = Traverse.Create(mapMetaData).Field<string>("biomeDesignMaskName").Value;
       } catch (Exception) {
         DynamicMapHelper.CurrentBiome = "NotSet";
       }
       bool noForest = CustomAmmoCategories.Settings.NoForestBiomes.Contains(DynamicMapHelper.CurrentBiome);
-      Log.M.TWL(0,"Map biome:" + DynamicMapHelper.CurrentBiome + " noForest:" + noForest+" hex grid:"+(UnityGameInstance.BattleTechGame.Combat.HexGrid == null?"null":"not null"));
+      Log.M.TWL(0,"Map biome:" + DynamicMapHelper.CurrentBiome + " noForest:" + noForest+" hex grid:"+(hexGrid == null?"null":"not null"));
       //Log.LogWrite(" stack:" + Environment.StackTrace + "\n");
-      HexGrid hexGrid = UnityGameInstance.BattleTechGame.Combat.HexGrid;
+      //HexGrid hexGrid = UnityGameInstance.BattleTechGame.Combat.HexGrid;
       DynamicMapHelper.hexGrid = new Dictionary<Vector3, MapTerrainHexCell>();
       for (int mx = 0; mx < mapMetaData.mapTerrainDataCells.GetLength(0); ++mx) {
         for (int my = 0; my < mapMetaData.mapTerrainDataCells.GetLength(1); ++my) {
@@ -1985,6 +1987,7 @@ namespace CustomAmmoCategoriesPatches {
     private static void Postfix(MapMetaData __instance, MapTerrainDataCell cell, ref DesignMaskDef __result) {
       try {
         MapTerrainDataCellEx excell = cell as MapTerrainDataCellEx;
+        if(excell != null)
         if (Thread.CurrentThread.isFlagSet(ActorMovementSequence_UpdateSticky.HIDE_DESIGN_MASK_FLAG)) {
           //Log.M?.TWL(0, "MapMetaData.GetPriorityDesignMask x:"+ excell?.x+" y:"+excell.y+" mask skipped");
           __result = null;
@@ -2064,13 +2067,21 @@ namespace CustomAmmoCategoriesPatches {
       DynamicMapHelper.LoadDesignMasks(dataManager);
     }
   }
-  [HarmonyPatch(typeof(HexGrid))]
-  [HarmonyPatch(MethodType.Constructor)]
-  [HarmonyPatch(new Type[] { typeof(CombatGameState) })]
-  public static class HexGrid_Constructor {
-    static void Postfix(HexGrid __instance, CombatGameState combat) {
-    }
-  }
+  //[HarmonyPatch(typeof(HexGrid))]
+  //[HarmonyPatch(MethodType.Constructor)]
+  //[HarmonyPatch(new Type[] { typeof(CombatGameState) })]
+  //public static class HexGrid_Constructor {
+  //  public static void Postfix(HexGrid __instance, CombatGameState combat) {
+  //    Log.M.TWL(0, "HexGrid.Constructor combat:"+(combat == null?"null":"not null"));
+  //    try {
+  //      if (combat != null) {
+  //        DynamicMapHelper.initHexGrid(combat.MapMetaData, __instance);
+  //      }
+  //    } catch(Exception e) {
+  //      Log.M?.TWL(0,e.ToString(),true);
+  //    }
+  //  }
+  //}
   [HarmonyPatch(typeof(MapMetaData))]
   [HarmonyPatch("Load")]
   [HarmonyPatch(MethodType.Normal)]
@@ -2100,6 +2111,7 @@ namespace CustomAmmoCategoriesPatches {
       int xmax = __instance.mapTerrainDataCells.GetLength(0);
       int ymax = __instance.mapTerrainDataCells.GetLength(1);
       CustomAmmoCategoriesLog.Log.LogWrite("MapMetaData.Load " + xmax + " X " + ymax + " \n");
+      Log.M?.WL(0,Environment.StackTrace);
       for (int x = 0; x < xmax; ++x) {
         for (int y = 0; y < ymax; ++y) {
           MapTerrainDataCellEx ecell = __instance.mapTerrainDataCells[x, y] as MapTerrainDataCellEx;
@@ -2107,13 +2119,15 @@ namespace CustomAmmoCategoriesPatches {
             ecell.x = x;
             ecell.y = y;
             ecell.realTerrainHeight = ecell.terrainHeight;
+            ecell.pendingMasks = ecell.terrainMask;
           }
         }
       }
+      CACMain.Core.Call_MapMetadata_Load_Postfixes(__instance);
       if (Terrain.activeTerrain == null) {
         CustomAmmoCategoriesLog.Log.LogWrite(" active terrain is null \n");
       } else {
-        DynamicMapHelper.initHexGrid(__instance);
+        DynamicMapHelper.initHexGrid(__instance, UnityGameInstance.BattleTechGame.Combat.HexGrid);
       }
     }
   }

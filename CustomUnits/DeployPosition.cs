@@ -33,6 +33,26 @@ using TMPro;
 using UnityEngine;
 
 namespace CustomUnits {
+  [HarmonyPatch(typeof(TurnDirector))]
+  [HarmonyPatch("StartFirstRound")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { })]
+  public static class TurnDirector_StartFirstRound {
+    public static void Postfix(TurnDirector __instance) {
+      try {
+        if (DeployManualHelper.deployDirector != null) { return; }
+        if (Core.Settings.DeployAutoSpawnProtection) {
+          Log.TWL(0,$"TurnDirector.StartFirstRound add spawn protection");
+          foreach(AbstractActor unit in __instance.Combat.AllActors) {
+            unit.addSpawnProtection();
+          }
+        }
+      } catch (Exception e) {
+        Log.TWL(0, e.ToString(), true);
+      }
+    }
+  }
+
   public class DropShipManager : MonoBehaviour {
     public GameObject DropOffPoint { get; set; }
     private DropshipGameLogic _leopardInstance;
@@ -410,7 +430,17 @@ namespace CustomUnits {
         }
         foreach(AbstractActor unit in HUD.Combat.LocalPlayerTeam.units) {
           if (unit.IsDeployDirector()) { continue; }
-          if (unit.IsAvailableThisPhase) { HUD.Combat.MessageCenter.PublishMessage((MessageCenterMessage)new AddSequenceToStackMessage(unit.DoneWithActor())); }
+          if (unit.IsAvailableThisPhase) {
+            if (Core.Settings.DeployManualSpawnProtection) { unit.addAddSpawnProtection(); }
+            HUD.Combat.MessageCenter.PublishMessage((MessageCenterMessage)new AddSequenceToStackMessage(unit.DoneWithActor()));
+          }
+        }
+        if (Core.Settings.DeployManualSpawnProtection) {
+          foreach (AbstractActor unit in HUD.Combat.AllActors) {
+            if (unit.IsDeployDirector()) { continue; }
+            if (unit.isAddSpawnProtected()) { continue; }
+            unit.addSpawnProtection();
+          }
         }
         //HUD.Combat.TurnDirector.StartFirstRound();
       } catch (Exception e) {
@@ -1688,9 +1718,12 @@ namespace CustomUnits {
       DeployManualHelper.IsInManualSpawnSequence = false;
       if (contract.canManualSpawn() == false) { return true; }
       if (DeployManualHelper.CheckForDeps(__instance, contract, playerGUID) == false) { return false; }
+
       if (Core.Settings.AskForDeployManual) {
+        bool isInvoked = false;
         GenericPopup popup = GenericPopupBuilder.Create("DEPLOY POSITION", "WOULD YOU LIKE TO SET DEPLOY POSITION MANUALY?")
           .AddButton("NO", (Action)(() => {
+            if (isInvoked) { return; }; isInvoked = true;
             SpawnDelayed = false;
             DeployManualHelper.IsInManualSpawnSequence = false;
             originalInvoke = true;
@@ -1704,6 +1737,7 @@ namespace CustomUnits {
             originalInvoke = false;
           }), true, BTInput.Instance.Key_Escape())
           .AddButton("YES", (Action)(() => {
+            if (isInvoked) { return; }; isInvoked = true;
             SpawnDelayed = true;
             DeployManualHelper.IsInManualSpawnSequence = true;
             originalInvoke = true;

@@ -1287,6 +1287,13 @@ namespace CACMain {
     public static Dictionary<string, Shader> AdditinalShaders = new Dictionary<string, Shader>();
     public static Dictionary<string, AudioClip> AdditinalAudio = new Dictionary<string, AudioClip>();
     public static Sheepy.BattleTechMod.AttackImprovementMod.ModSettings AIMModSettings = null;
+    private static HashSet<Action<MapMetaData>> MapMetadata_Load_Postfixes = new HashSet<Action<MapMetaData>>();
+    public static void Add_MapMetadata_Load_Postfix(Action<MapMetaData> postfix) {
+      MapMetadata_Load_Postfixes.Add(postfix);
+    }
+    public static void Call_MapMetadata_Load_Postfixes(MapMetaData metaData) {
+      foreach (Action<MapMetaData> postfix in MapMetadata_Load_Postfixes) { postfix(metaData); }
+    }
     public static void AIMShowBaseHitChance(CombatHUDWeaponSlot instance, ICombatant target) {
       if (Sheepy.BattleTechMod.AttackImprovementMod.APIReference.m_AIMShowBaseHitChance == null) { return; }
       if (AIMModSettings == null) { return; }

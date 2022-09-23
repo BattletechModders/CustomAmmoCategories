@@ -129,6 +129,10 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>$(BattleTechGameDir)\BattleTech_Data\Managed\UnityEngine.CoreModule.dll</HintPath>
     </Reference>
+    <Reference Include="UnityEngine.ImageConversionModule, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\..\BattleTech_Data\Managed\UnityEngine.ImageConversionModule.dll</HintPath>
+    </Reference>
     <Reference Include="UnityEngine.ParticleSystemModule, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>$(BattleTechGameDir)\BattleTech_Data\Managed\UnityEngine.ParticleSystemModule.dll</HintPath>
@@ -262,6 +266,7 @@
     <Compile Include="Settings.cs" />
     <Compile Include="SGEventPanel.cs" />
     <Compile Include="SidePanelMoveInfo.cs" />
+    <Compile Include="SpawnProtection.cs" />
     <Compile Include="StackHelper.cs" />
     <Compile Include="Streak.cs" />
     <Compile Include="ToHitModifiers.cs" />

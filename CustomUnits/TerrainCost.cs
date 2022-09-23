@@ -25,8 +25,8 @@ namespace CustomUnits {
       if (cell.MapEncounterLayerDataCell != null) {
         if (cell.MapEncounterLayerDataCell.HasBuilding) { return false; }
       }
-      TerrainMaskFlags terrainMaskFlags = MapMetaData.GetPriorityTerrainMaskFlags(cell.terrainMask);
-      return SplatMapInfo.IsDeepWater(terrainMaskFlags) || SplatMapInfo.IsWater(terrainMaskFlags);
+      //TerrainMaskFlags terrainMaskFlags = MapMetaData.GetPriorityTerrainMaskFlags(cell);
+      return SplatMapInfo.IsDeepWater(cell.terrainMask) || SplatMapInfo.IsWater(cell.terrainMask);
     }
     public static void UpdateWaterHeightSelf(this MapTerrainDataCell cell) {
       if (cell.HasWater() == false) { return; }

@@ -28,6 +28,63 @@ using UnityEngine;
 using UnityEngine.EventSystems;
 
 namespace CustomUnits {
+  [HarmonyPatch(typeof(Pilot))]
+  [HarmonyPatch("LethalInjurePilot")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { typeof(CombatGameConstants), typeof(string), typeof(int), typeof(bool), typeof(DamageType), typeof(Weapon), typeof(AbstractActor) })]
+  public static class Pilot_LethalInjurePilot {
+    public static bool Prefix(Pilot __instance, CombatGameConstants constants, string sourceID, int stackItemUID, bool isLethal, DamageType damageType, Weapon sourceWeapon, AbstractActor sourceActor) {
+      try {
+        if (__instance.ParentActor is TrooperSquad squad) {
+          if (squad.GetOperationalUnitsCount() > 0) {
+            Log.TWL(0, $"!!!Exception!!! Someone tries to LethalInjurePilot squad {squad.PilotableActorDef.ChassisID} illegally should be punished");
+            Log.WL(0, Environment.StackTrace);
+            return false;
+          }
+        }
+      } catch (Exception e) {
+        Log.TWL(0, e.ToString(), true);
+      }
+      return true;
+    }
+  }
+  [HarmonyPatch(typeof(Pilot))]
+  [HarmonyPatch("MaxInjurePilot")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { typeof(CombatGameConstants), typeof(string), typeof(int), typeof(DamageType), typeof(Weapon), typeof(AbstractActor) })]
+  public static class Pilot_MaxInjurePilot {
+    public static bool Prefix(Pilot __instance, CombatGameConstants constants, string sourceID, int stackItemUID, DamageType damageType, Weapon sourceWeapon, AbstractActor sourceActor) {
+      try {
+        if (__instance.ParentActor is TrooperSquad squad) {
+          if (squad.GetOperationalUnitsCount() > 0) {
+            Log.TWL(0, $"!!!Exception!!! Someone tries to MaxInjurePilot squad {squad.PilotableActorDef.ChassisID} illegally should be punished");
+            Log.WL(0, Environment.StackTrace);
+            return false;
+          }
+        }
+      } catch (Exception e) {
+        Log.TWL(0, e.ToString(), true);
+      }
+      return true;
+    }
+  }
+  [HarmonyPatch(typeof(Pilot))]
+  [HarmonyPatch("InjurePilot")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { typeof(string), typeof(int), typeof(int), typeof(DamageType), typeof(Weapon), typeof(AbstractActor) })]
+  public static class Pilot_InjurePilot {
+    public static void Postfix(Pilot __instance, string sourceID, int stackItemUID, int dmg, DamageType damageType, Weapon sourceWeapon, AbstractActor sourceActor) {
+      try {
+        if (__instance.ParentActor is TrooperSquad squad) {
+          if (TrooperSquad.SafeInjurePilot) { return; }
+          Log.TWL(0, $"!!!Exception!!! Someone tries to InjurePilot squad {squad.PilotableActorDef.ChassisID} illegally should be punished");
+          Log.WL(0, Environment.StackTrace);
+        }
+      } catch (Exception e) {
+        Log.TWL(0, e.ToString(), true);
+      }
+    }
+  }
   [HarmonyPatch(typeof(MessageCenter))]
   [HarmonyPatch("PublishMessage")]
   [HarmonyPatch(MethodType.Normal)]
@@ -369,6 +426,8 @@ namespace CustomUnits {
     }
   }
   public class TrooperSquad: CustomMech, ICustomMech {
+    public static bool SafeInjurePilot { get; set; } = false;
+    public static bool SafeSetNeedsInjury { get; set; } = false;
     public static readonly List<ChassisLocations> locations = new List<ChassisLocations>() { ChassisLocations.Head, ChassisLocations.CenterTorso, ChassisLocations.LeftTorso, ChassisLocations.RightTorso, ChassisLocations.LeftArm, ChassisLocations.RightArm, ChassisLocations.LeftLeg, ChassisLocations.RightLeg };
     public static readonly List<ArmorLocation> armorLocations = new List<ArmorLocation>() { ArmorLocation.Head, ArmorLocation.CenterTorso, ArmorLocation.LeftTorso, ArmorLocation.RightTorso, ArmorLocation.LeftArm, ArmorLocation.RightArm, ArmorLocation.LeftLeg, ArmorLocation.RightLeg };
     public static readonly Dictionary<ChassisLocations, float> positions = new Dictionary<ChassisLocations, float>() {
@@ -382,6 +441,11 @@ namespace CustomUnits {
     //public HashSet<MechRepresentation> MechReps;
     public UnitCustomInfo info;
     public override bool isQuad { get { return false; } }
+    public static void Pilot_IsIncapacitated_Patch(Pilot __instance,ref bool __result) {
+      if (__instance.ParentActor is TrooperSquad squad) { __result = squad.GetOperationalUnitsCount() <= 0; return; }
+    }
+    public static MethodBase Pilot_IsIncapacitated_get() { return AccessTools.Property(typeof(Pilot), "IsIncapacitated").GetGetMethod(); }
+    public static HarmonyMethod Pilot_IsIncapacitated_get_patch() { return new HarmonyMethod(AccessTools.Method(typeof(TrooperSquad), nameof(Pilot_IsIncapacitated_Patch))); }
     public TrooperSquad(MechDef mDef, PilotDef pilotDef, TagSet additionalTags, string UID, CombatGameState combat, string spawnerId, HeraldryDef customHeraldryDef)
                   :base (mDef, pilotDef, additionalTags, UID, combat, spawnerId, customHeraldryDef)
     {
@@ -465,7 +529,9 @@ namespace CustomUnits {
         this.FlagForDeath(reason, deathMethod, damageType, (int)location, hitInfo.stackItemUID, hitInfo.attackerId, false);
       } else {
         Pilot pilot = this.GetPilot();
+        TrooperSquad.SafeSetNeedsInjury = true;
         if (pilot != null) { pilot.SetNeedsInjury(InjuryReason.HeadHit); }
+        TrooperSquad.SafeSetNeedsInjury = false;
       }
       this.GameRep.PlayComponentDestroyedVFX((int)location, attackDirection);
       //if (this.squadReps.TryGetValue(location, out TrooperRepresentation trooperRep)) {
@@ -619,11 +685,23 @@ namespace CustomUnits {
     private static Dictionary<int, Dictionary<ArmorLocation, Dictionary<ArmorLocation, int>>> GetHitTableCluster_cache = new Dictionary<int, Dictionary<ArmorLocation, Dictionary<ArmorLocation, int>>>();
     private int location_index = -1;
     private HashSet<ArmorLocation> avaible_locations = new HashSet<ArmorLocation>();
-    public override Dictionary<ArmorLocation, int> GetHitTable(AttackDirection from) {
-      Log.TWL(0,"TrooperSquad.GetHitTable "+this.MechDef.Description.Id+" location index:" + (this.location_index>=0?Convert.ToString(this.location_index,2).PadLeft(16,'0'):"-1"));
+    public int GetOperationalUnitsCount() {
+      this.RecalculateAvaibleLocations();
+      return this.avaible_locations.Count;
+    }
+    public int GetMaxUnitsCount() {
+      int result = 0;
+      foreach (ChassisLocations location in TrooperSquad.locations) {
+        LocationDef locDef = this.MechDef.Chassis.GetLocationDef(location);
+        if ((locDef.MaxArmor <= 0f) && (locDef.InternalStructure <= 1f)) { continue; }
+        ++result;
+      }
+      return result;
+    }
+    public virtual void RecalculateAvaibleLocations() {
       if (this.location_index == -1) {
         this.location_index = 0;
-        avaible_locations.Clear();
+        this.avaible_locations.Clear();
         bool has_not_destroyed_locations = false;
         foreach (ArmorLocation alocation in TrooperSquad.locations) {
           ChassisLocations location = MechStructureRules.GetChassisLocationFromArmorLocation(alocation);
@@ -633,15 +711,19 @@ namespace CustomUnits {
         foreach (ArmorLocation alocation in TrooperSquad.locations) {
           ChassisLocations location = MechStructureRules.GetChassisLocationFromArmorLocation(alocation);
           LocationDef locDef = this.MechDef.Chassis.GetLocationDef(location);
-          Log.W(1, "location:" + alocation + "()" + location + " max armor:" + locDef.MaxArmor + " structure:"+ locDef.InternalStructure+" is destroyed:"+ this.IsLocationDestroyed(location)+" has not destroyed:"+ has_not_destroyed_locations);
+          Log.W(1, "location:" + alocation + "()" + location + " max armor:" + locDef.MaxArmor + " structure:" + locDef.InternalStructure + " is destroyed:" + this.IsLocationDestroyed(location) + " has not destroyed:" + has_not_destroyed_locations);
           if ((locDef.MaxArmor <= 0f) && (locDef.InternalStructure <= 1f)) { continue; }
-          if (this.IsLocationDestroyed(location)&&(has_not_destroyed_locations == true)) { continue; }
+          if (this.IsLocationDestroyed(location) && (has_not_destroyed_locations == true)) { continue; }
           this.location_index |= (int)alocation;
-          avaible_locations.Add(alocation);
+          this.avaible_locations.Add(alocation);
         }
         Log.WL(1, "recalculated: " + (this.location_index >= 0 ? Convert.ToString(this.location_index, 2).PadLeft(16, '0') : "-1"));
       }
+    }
+    public override Dictionary<ArmorLocation, int> GetHitTable(AttackDirection from) {
+      Log.TWL(0,"TrooperSquad.GetHitTable "+this.MechDef.Description.Id+" location index:" + (this.location_index>=0?Convert.ToString(this.location_index,2).PadLeft(16,'0'):"-1"));
       Dictionary<ArmorLocation, int> result = null;
+      this.RecalculateAvaibleLocations();
       if (GetHitTable_cache.TryGetValue(location_index, out result)) {
         Log.WL(1,"cached:"+result.Count);
         return result;
@@ -918,27 +1000,28 @@ namespace CustomUnits {
       if (!this.IsPilotable)
         return;
       Pilot pilot = this.GetPilot();
-      DamageType damageType = DamageType.Unknown;
+      int currentUnitsCount = this.GetOperationalUnitsCount();
+      if (pilot.IsIncapacitated && (currentUnitsCount > 0)) {
+        Log.TWL(0, $"!!!Exception!!!Something goes wrong Trooper Squad operator can't die while units {currentUnitsCount} operational");
+      }
+      int effectiveHealth = pilot.TotalHealth - pilot.Injuries;
+      int damageCount = 1;
+      if (effectiveHealth == currentUnitsCount) {
+        pilot.ClearNeedsInjury();
+      }else if(effectiveHealth < currentUnitsCount) {
+        int maxUnitsCount = this.GetMaxUnitsCount();
+        pilot.StatCollection.GetOrCreateStatisic<int>("BonusHealth", 0).SetValue<int>(0);
+        pilot.StatCollection.GetOrCreateStatisic<int>("Health", maxUnitsCount).SetValue<int>(maxUnitsCount);
+        pilot.StatCollection.GetOrCreateStatisic<int>("Injuries", 0).SetValue<int>(maxUnitsCount - currentUnitsCount);
+        pilot.ClearNeedsInjury();
+      } else {
+        damageCount = effectiveHealth - currentUnitsCount;
+      }
+      DamageType damageType = DamageType.Combat;
       if (!pilot.IsIncapacitated && pilot.NeedsInjury) {
-        switch (pilot.InjuryReason) {
-          case InjuryReason.HeadHit:
-          damageType = DamageType.HeadShot;
-          break;
-          case InjuryReason.AmmoExplosion:
-          case InjuryReason.ComponentExplosion:
-          damageType = DamageType.AmmoExplosion;
-          break;
-          case InjuryReason.Knockdown:
-          damageType = DamageType.Knockdown;
-          break;
-          case InjuryReason.SideTorsoDestroyed:
-          damageType = DamageType.SideTorso;
-          break;
-          default:
-          damageType = DamageType.Combat;
-          break;
-        }
-        pilot.InjurePilot(sourceID, stackItemID, 1, damageType, (Weapon)null, this.Combat.FindActorByGUID(sourceID));
+        TrooperSquad.SafeInjurePilot = true;
+        pilot.InjurePilot(sourceID, stackItemID, damageCount, damageType, (Weapon)null, this.Combat.FindActorByGUID(sourceID));
+        TrooperSquad.SafeInjurePilot = false;
         if (!pilot.IsIncapacitated) {
           if (this.team.LocalPlayerControlsTeam)
             AudioEventManager.PlayAudioEvent("audioeventdef_musictriggers_combat", "friendly_warrior_injured", (AkGameObj)null, (AkCallbackManager.EventCallback)null);
@@ -948,7 +1031,7 @@ namespace CustomUnits {
           if (pilot.Injuries == 0) {
             sequence = (IStackSequence)new ShowActorInfoSequence((ICombatant)this, Strings.T("{0}: INJURY IGNORED", (object)pilot.InjuryReasonDescription), FloatieMessage.MessageNature.PilotInjury, true);
           } else {
-            sequence = (IStackSequence)new ShowActorInfoSequence((ICombatant)this, Strings.T("{0}: SQUAD INJURED", (object)pilot.InjuryReasonDescription), FloatieMessage.MessageNature.PilotInjury, true);
+            sequence = (IStackSequence)new ShowActorInfoSequence((ICombatant)this, Strings.T("SQUAD UNIT OPERATOR INJURED"), FloatieMessage.MessageNature.PilotInjury, true);
             AudioEventManager.SetPilotVOSwitch<AudioSwitch_dialog_dark_light>(AudioSwitch_dialog_dark_light.dark, this);
             AudioEventManager.PlayPilotVO(VOEvents.Pilot_TakeDamage, this, (AkCallbackManager.EventCallback)null, (object)null, true);
           }

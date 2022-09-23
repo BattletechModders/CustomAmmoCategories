@@ -1024,6 +1024,19 @@ namespace CustomUnits {
       }
     }
   }
+  //[HarmonyPatch(typeof(CombatHUDInWorldElementMgr))]
+  //[HarmonyPatch(MethodType.Normal)]
+  //[HarmonyPatch("ShowAttackDirection")]
+  //[HarmonyPatch(new Type[] { typeof(AbstractActor), typeof(AbstractActor), typeof(AttackDirection), typeof(float), typeof(MeleeAttackType), typeof(int) })]
+  //public static class CombatHUDInWorldElementMgr_ShowAttackDirection {
+  //  public static void Prefix(CombatHUDInWorldElementMgr __instance, AbstractActor attacker, AbstractActor target, AttackDirection direction, float yOffset, MeleeAttackType meleeAttackType, int firingWeapons, CombatHUD ___HUD) {
+  //    try {
+  //      Log.TWL(0, $"CombatHUDInWorldElementMgr.ShowAttackDirection {attacker.PilotableActorDef.ChassisID}->{target.PilotableActorDef.ChassisID} direction:{direction} TargetingComputer:{(___HUD.TargetingComputer.DisplayedCombatant == null?"null": ___HUD.TargetingComputer.DisplayedCombatant.PilotableActorDef.ChassisID)}");
+  //    } catch (Exception e) {
+  //      Log.TWL(0, e.ToString(), true);
+  //    }
+  //  }
+  //}
   [HarmonyPatch(typeof(HUDMechArmorReadout))]
   [HarmonyPatch(MethodType.Setter)]
   [HarmonyPatch("DisplayedMech")]
@@ -1671,11 +1684,11 @@ namespace CustomUnits {
         fakeVehicleArmorReadoutGO.transform.localPosition = __instance.gameObject.transform.localPosition;
         fakeVehicleArmorReadoutGO.transform.localScale = __instance.gameObject.transform.localScale;
         fakeVehicleArmorReadoutGO.transform.localRotation = __instance.gameObject.transform.localRotation;
-        HUDVehicleArmorReadout VehicleArmorReadout = fakeVehicleArmorReadoutGO.GetComponent<HUDVehicleArmorReadout>();
-        if (VehicleArmorReadout != null) { GameObject.Destroy(VehicleArmorReadout); }
         fakeVehicleArmorReadout = fakeVehicleArmorReadoutGO.AddComponent<HUDFakeVehicleArmorReadout>();
         fakeVehicleArmorReadoutGO.SetActive(false);
-        fakeVehicleArmorReadout.Copy(__instance);
+        HUDVehicleArmorReadout VehicleArmorReadout = fakeVehicleArmorReadoutGO.GetComponent<HUDVehicleArmorReadout>();
+        fakeVehicleArmorReadout.Copy(__instance, VehicleArmorReadout);
+        if (VehicleArmorReadout != null) { GameObject.Destroy(VehicleArmorReadout); }
       }
       if (fakeVehicleArmorReadout != null) { fakeVehicleArmorReadout.Init(HUD, usedForCalledShots); }
       if (usedForCalledShots == false) {

@@ -1,5 +1,6 @@
 ﻿using BattleTech;
 using BattleTech.UI;
+using BattleTech.UI.Tooltips;
 using CustAmmoCategories;
 using CustAmmoCategoriesPatches;
 using CustomAmmoCategoriesLog;
@@ -13,15 +14,49 @@ using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
 namespace CustAmmoCategories {
+  [HarmonyPatch(typeof(MainMenu))]
+  [HarmonyPatch("OnAddedToHierarchy")]
+  [HarmonyPatch(MethodType.Normal)]
+  public static class MainMenu_OnAddedToHierarchy {
+    public static T FindObject<T>(this GameObject go, string name, bool toplevel) where T : Component {
+      T[] arr = go.GetComponentsInChildren<T>(true);
+      foreach (T component in arr) {
+        if (toplevel) { if (component.gameObject.transform.parent != go.transform) { continue; } }
+        if (component.gameObject.transform.name == name) { return component; }
+      }
+      return null;
+    }
+    public static void Postfix(MainMenu __instance) {
+      try {
+        HBSDOTweenButton closeButton = __instance.gameObject.FindObject<HBSDOTweenButton>("uixPrfBttn_BASE_cancelButton", false);
+        if (closeButton != null) {
+          Log.M?.TWL(0, "MainMenu.OnAddedToHierarchy minimap close button found");
+          GameObject closeButton_go = GameObject.Instantiate(closeButton.gameObject);
+          closeButton = closeButton_go.GetComponent<HBSDOTweenButton>();
+          HBSTooltip tooltip = closeButton_go.GetComponent<HBSTooltip>();
+          HBSTooltipStateData defaultStateData = new HBSTooltipStateData();
+          defaultStateData.SetString("Close minimap");
+          if (tooltip != null) { tooltip.SetDefaultStateData(defaultStateData); }
+          closeButton.OnClicked = new UnityEngine.Events.UnityEvent();
+          GameObject.DontDestroyOnLoad(closeButton_go);
+          closeButton_go.name = "uixPrfBttn_BASE_minimapClosebutton_source";
+          closeButton_go.SetActive(false);
+          CombatHUDMiniMap.closeButtonSource = closeButton_go;
+        }
+      } catch (Exception e) {
+        Log.M?.TWL(0, e.ToString(), true);
+      }
+    }
+  }
   [HarmonyPatch(typeof(CombatHUDMechTray))]
   [HarmonyPatch("Init")]
   [HarmonyPatch(MethodType.Normal)]
   public static class CombatHUDMechTray_Init {
     public static void Postfix(CombatHUDMechTray __instance, MessageCenter messageCenter, CombatHUD HUD) {
       try {
-        if (CustomAmmoCategories.Settings.EnableMinimap) {
+        //if (CustomAmmoCategories.Settings.EnableMinimap) {
           CombatHUDMiniMap.Create(HUD);
-        }
+        //}
       }catch(Exception e) {
         Log.M?.TWL(0, e.ToString(), true);
       }
@@ -51,9 +86,29 @@ namespace CustAmmoCategories {
       CombatHUDMiniMap.InitMinimap(__instance.Combat);
     }
   }
+  public class CombatHUDMiniMapEnabler: EventTrigger {
+    public CombatHUDMiniMap minimap { get; set; } = null;
+    public override void OnPointerEnter(PointerEventData data) {
+    }
+    public override void OnPointerExit(PointerEventData data) {
+    }
+    public override void OnPointerClick(PointerEventData data) {
+      Log.M?.TWL(0, "CombatHUDMiniMapEnabler.OnPointerClick called." + data.position + " clickCount:" + data.clickCount,true);
+      if (data.button == PointerEventData.InputButton.Left) {
+        if (minimap != null) {
+          this.minimap.gameObject.SetActive(true);
+          this.minimap.MechTray_CompanyLogo?.SetActive(false);
+          this.minimap.MechTray_GreebleWedge?.SetActive(false);
+          this.minimap.transform.SetAsLastSibling();
+          CustomAmmoCategories.Settings.EnableMinimap = true;
+        }
+      }
+    }
+  }
   public class CombatHUDMiniMap : EventTrigger {
     public static readonly string MINIMAP_JAMMED = "MINIMAP_JAMMED";
     public static readonly string MINIMAP_UNITS_JAMMED = "MINIMAP_UNITS_JAMMED";
+    public static GameObject closeButtonSource { get; set; } = null;
     public static void InitMinimapStatistic(AbstractActor unit) {
       unit.StatCollection.AddStatistic<float>(MINIMAP_JAMMED, 0.0f);
       unit.StatCollection.AddStatistic<float>(MINIMAP_UNITS_JAMMED, 0.0f);
@@ -115,6 +170,7 @@ namespace CustAmmoCategories {
 
         CombatHUDMiniMap.minimapContent = new Texture2D(minimapYsize, minimapXsize, TextureFormat.ARGB32, false);
         CombatHUDMiniMap.minimapJammedContent = new Texture2D(minimapYsize, minimapXsize, TextureFormat.ARGB32, false);
+        Texture2D heightMap = new Texture2D(minimapYsize, minimapXsize, TextureFormat.ARGB32, false);
         CombatHUDMiniMap.minimapCameraTexture = new Texture2D(65, 65, TextureFormat.ARGB32, false);
         for (int x = 0; x < 65; ++x) {
           for (int y = 0; y < 65; ++y) {
@@ -171,15 +227,15 @@ namespace CustAmmoCategories {
         marker_1x1.SetActive(false);
         marker_1x1.transform.position = mapPos_1_1_cell;
         marker_1x1.transform.localScale = Vector3.one * 20f;
+        float maxHeight = combat.MapMetaData.mapTerrainDataCells[0, 0].terrainHeight;
+        float minHeight = combat.MapMetaData.mapTerrainDataCells[0, 0].terrainHeight;
         for (int x = 0; x < minimapXsize; ++x) {
           for (int y = 0; y < minimapYsize; ++y) {
-            //Vector3 mapPos = new Vector3(CombatHUDMiniMap.minimapXstart + (x * MapMetaDataExporter.cellSize), 0f, (CombatHUDMiniMap.minimapZstart + (y * MapMetaDataExporter.cellSize)));
-            //if(__instance.Combat.EncounterLayerData.IsInEncounterBounds(mapPos) == false) {
-            //CombatHUDMiniMap.minimapContent.SetPixel(x, y, Color.black); continue;
-            //}
             float jummedColor = UnityEngine.Random.Range(0.1f, 0.7f);
             minimapJammedContent.SetPixel(y, x, new Color(jummedColor, jummedColor, jummedColor, 1f));
             MapTerrainDataCellEx cell = combat.MapMetaData.mapTerrainDataCells[x + startCell.X, y + startCell.Z] as MapTerrainDataCellEx;
+            if (cell.terrainHeight > maxHeight) { maxHeight = cell.terrainHeight; }
+            if (cell.terrainHeight < minHeight) { minHeight = cell.terrainHeight; }
             if (cell == null) { CombatHUDMiniMap.minimapContent.SetPixel(y, x, Color.black); continue; }
             if (CombatHUDMiniMap.terrainColors.TryGetValue(MapMetaData.GetPriorityTerrainMaskFlags(cell), out var color)) {
               CombatHUDMiniMap.minimapContent.SetPixel(y, x, color);
@@ -188,12 +244,20 @@ namespace CustAmmoCategories {
             }
           }
         }
+        //for (int x = 0; x < minimapXsize; ++x) {
+        //  for (int y = 0; y < minimapYsize; ++y) {
+        //    MapTerrainDataCellEx cell = combat.MapMetaData.mapTerrainDataCells[x + startCell.X, y + startCell.Z] as MapTerrainDataCellEx;
+        //    float height = (cell.terrainHeight - minHeight) / (maxHeight - minHeight);
+        //    heightMap.SetPixel(y, x, new Color(height, height, height, 1f));
+        //  }
+        //}
         CombatHUDMiniMap.minimapContent.Apply();
         CombatHUDMiniMap.minimapJammedContent.Apply();
+        //heightMap.Apply();
         //string path = Path.Combine(Log.BaseDirectory, "minimap.png");
-        //byte[] _bytes = CombatHUDMiniMap.minimapContent.EncodeToPNG();
+        //byte[] _bytes = heightMap.EncodeToPNG();
         //System.IO.File.WriteAllBytes(path, _bytes);
-        //Log.WL(1,_bytes.Length / 1024 + "Kb was saved as: " + path);
+        //Log.M?.WL(1,_bytes.Length / 1024 + "Kb was saved as: " + path);
 
       } catch (Exception e) {
         Log.M?.TWL(0, e.ToString());
@@ -315,6 +379,12 @@ namespace CustAmmoCategories {
       if (CameraControl.Instance.CanControl) {
         CameraControl.Instance.SetMovingToGroundPos(newCameraPos);
       }
+    }
+    public void OnClose() {
+      this.gameObject.SetActive(false);
+      this.MechTray_CompanyLogo?.SetActive(true);
+      this.MechTray_GreebleWedge?.SetActive(true);
+      CustomAmmoCategories.Settings.EnableMinimap = false;
     }
     public override void OnPointerClick(PointerEventData data) {
       Log.M?.TWL(0, "CombatHUDMiniMap.OnPointerClick called." + data.position + " clickCount:" + data.clickCount);
@@ -473,6 +543,8 @@ namespace CustAmmoCategories {
     public bool LastUnitsJammedState { get; set; } = false;
     public bool MapJammedState { get; set; } = false;
     public bool UnitsJammedState { get; set; } = false;
+    public GameObject MechTray_GreebleWedge { get; set; } = null;
+    public GameObject MechTray_CompanyLogo { get; set; } = null;
     public void Update() {
       if (HUD.MechTray.logoDisplay.gameObject.activeSelf) { HUD.MechTray.logoDisplay.gameObject.SetActive(false); }
       if (this.minimap == null) {
@@ -577,6 +649,26 @@ namespace CustAmmoCategories {
       }
       minimap = this.gameObject.GetComponent<RawImage>();
       if (minimap != null) { minimap.texture = CombatHUDMiniMap.minimapContent; }
+      if (CustomAmmoCategories.Settings.EnableMinimap) {
+        if (this.MechTray_GreebleWedge != null) { MechTray_GreebleWedge.SetActive(false); }
+        if (this.MechTray_CompanyLogo != null) { MechTray_CompanyLogo.SetActive(false); }
+        this.gameObject.SetActive(true);
+      } else {
+        if (this.MechTray_GreebleWedge != null) { MechTray_GreebleWedge.SetActive(true); }
+        if (this.MechTray_CompanyLogo != null) { MechTray_CompanyLogo.SetActive(true); }
+        this.gameObject.SetActive(false);
+      }
+      if (MechTray_GreebleWedge != null) {
+        CombatHUDMiniMapEnabler enabler = MechTray_GreebleWedge.GetComponent<CombatHUDMiniMapEnabler>();
+        if (enabler == null) {
+          enabler = MechTray_GreebleWedge.AddComponent<CombatHUDMiniMapEnabler>();
+          CanvasGroup canvasGroup = MechTray_GreebleWedge.GetComponent<CanvasGroup>();
+          if(canvasGroup != null) {
+            canvasGroup.blocksRaycasts = true;
+          }          
+        }
+        enabler.minimap = this;
+      }
     }
     public static void Create(CombatHUD HUD) {
       try {
@@ -588,10 +680,6 @@ namespace CustAmmoCategories {
         }
         Transform MechTrayBGImage = HUD.MechTray.gameObject.transform.Find("MechTrayBGImage");
         if (MechTrayBGImage == null) { Log.M?.TWL(0, "can't find MechTrayBGImage"); return; }
-        RectTransform MechTray_GreebleWedge = HUD.MechTray.gameObject.transform.Find("MechTray_GreebleWedge") as RectTransform;
-        if (MechTray_GreebleWedge != null) { MechTray_GreebleWedge.gameObject.SetActive(false); }
-        RectTransform MechTray_CompanyLogo = HUD.MechTray.gameObject.transform.Find("MechTray_CompanyLogo") as RectTransform;
-        if (MechTray_CompanyLogo != null) { MechTray_CompanyLogo.gameObject.SetActive(false); }
         RectTransform MechTray_MechNameBackground = HUD.MechTray.gameObject.transform.Find("MechTray_MechNameBackground") as RectTransform;
 
         GameObject MechTrayBGImage_go = GameObject.Instantiate(MechTrayBGImage.gameObject);
@@ -613,6 +701,21 @@ namespace CustAmmoCategories {
         MechTrayMiniMap.anchorMax = Vector2.zero;
         MechTrayMiniMap.anchoredPosition = new Vector2(MechTray_MechNameBackground.anchoredPosition.x, MechTray_MechNameBackground.sizeDelta.x);
         minimap = MechTrayBGImage_go.AddComponent<CombatHUDMiniMap>();
+        RectTransform MechTray_GreebleWedge = HUD.MechTray.gameObject.transform.Find("MechTray_GreebleWedge") as RectTransform;
+        if (MechTray_GreebleWedge != null) {
+          minimap.MechTray_GreebleWedge = MechTray_GreebleWedge.gameObject;
+        }
+        RectTransform MechTray_CompanyLogo = HUD.MechTray.gameObject.transform.Find("MechTray_CompanyLogo") as RectTransform;
+        if (MechTray_CompanyLogo != null) { minimap.MechTray_CompanyLogo = MechTray_CompanyLogo.gameObject; }
+        if (CombatHUDMiniMap.closeButtonSource != null) {
+          GameObject minimapCloseBtn = GameObject.Instantiate(CombatHUDMiniMap.closeButtonSource);
+          minimapCloseBtn.transform.SetParent(MechTrayBGImage_go.transform);
+          minimapCloseBtn.transform.localScale = Vector3.one * 0.5f;
+          minimapCloseBtn.transform.localPosition = Vector3.zero;
+          minimapCloseBtn.SetActive(true);
+          HBSDOTweenButton closeBtn = minimapCloseBtn.GetComponent<HBSDOTweenButton>();
+          closeBtn.OnClicked.AddListener(new UnityEngine.Events.UnityAction(minimap.OnClose));
+        }
         minimap.Init(HUD);
       } catch (Exception e) {
         Log.M?.TWL(0, e.ToString(), true);

@@ -134,56 +134,70 @@ namespace CustomUnits {
       }
       return result.ToString();
     }
-    public void Copy(HUDVehicleArmorReadout source) {
-      this.ArmorBar = source.ArmorBar;
-      this.StructureBar = source.StructureBar;
-      this.HoverInfoTextArmor = source.HoverInfoTextArmor;
-      this.HoverInfoTextStructure = source.HoverInfoTextStructure;
-      this.VStructure = new SVGImage[source.VStructure.Length];
-      this.VArmor = new SVGImage[source.VArmor.Length];
-      this.VArmorOutline = new SVGImage[source.VArmorOutline.Length];
-      Log.TWL(0, "HUDFakeVehicleArmorReadout.Copy "+source.gameObject.name);
+    public void Copy(HUDVehicleArmorReadout esrc, HUDVehicleArmorReadout csrc) {
+      this.ArmorBar = esrc.ArmorBar;
+      this.StructureBar = esrc.StructureBar;
+      this.HoverInfoTextArmor = esrc.HoverInfoTextArmor;
+      this.HoverInfoTextStructure = esrc.HoverInfoTextStructure;
+      this.VStructure = new SVGImage[csrc.VStructure.Length];
+      this.VArmor = new SVGImage[csrc.VArmor.Length];
+      this.VArmorOutline = new SVGImage[csrc.VArmorOutline.Length];
+      Log.TWL(0, "HUDFakeVehicleArmorReadout.Copy "+ esrc.gameObject.name);
       try {
-        HBSButton[] buttons = this.GetComponentsInChildren<HBSButton>(true);
-        Dictionary<string, HBSButton> btns = new Dictionary<string, HBSButton>();
-        foreach (HBSButton btn in buttons) { string name = this.GetName(btn.transform,this.transform); btns.Add(name, btn); Log.WL(1, name + ":" + btn.name); }
-        if (source.directionalIndicatorFront != null) {
-          if (btns.ContainsKey(source.directionalIndicatorFront.gameObject.name)) { this.directionalIndicatorFront = btns[source.directionalIndicatorFront.gameObject.name]; }
+        //HBSButton[] buttons = this.GetComponentsInChildren<HBSButton>(true);
+        //Dictionary<string, HBSButton> btns = new Dictionary<string, HBSButton>();
+        //foreach (HBSButton btn in buttons) { string name = this.GetName(btn.transform,this.transform); btns.Add(name, btn); Log.WL(1, name + ":" + btn.name); }
+        this.directionalIndicatorFront = csrc.directionalIndicatorFront;
+        this.directionalIndicatorBack = csrc.directionalIndicatorBack;
+        this.directionalIndicatorLeft = csrc.directionalIndicatorLeft;
+        this.directionalIndicatorRight = csrc.directionalIndicatorRight;
+        //if (csrc.directionalIndicatorFront != null) {
+
+        //  //if (btns.ContainsKey(source.directionalIndicatorFront.gameObject.name)) { this.directionalIndicatorFront = btns[source.directionalIndicatorFront.gameObject.name]; }
+        //}
+        //if (csrc.directionalIndicatorBack != null) {
+        //  if (btns.ContainsKey(source.directionalIndicatorBack.gameObject.name)) { this.directionalIndicatorBack = btns[source.directionalIndicatorBack.gameObject.name]; }
+        //}
+        //if (csrc.directionalIndicatorLeft != null) {
+        //  if (btns.ContainsKey(source.directionalIndicatorLeft.gameObject.name)) { this.directionalIndicatorLeft = btns[source.directionalIndicatorLeft.gameObject.name]; }
+        //}
+        //if (csrc.directionalIndicatorRight != null) {
+        //  if (btns.ContainsKey(source.directionalIndicatorRight.gameObject.name)) { this.directionalIndicatorRight = btns[source.directionalIndicatorRight.gameObject.name]; }
+        //}
+        for (int index = 0; index < csrc.VStructure.Length; ++index) {
+          this.VStructure[index] = csrc.VStructure[index];
         }
-        if (source.directionalIndicatorBack != null) {
-          if (btns.ContainsKey(source.directionalIndicatorBack.gameObject.name)) { this.directionalIndicatorBack = btns[source.directionalIndicatorBack.gameObject.name]; }
+        for (int index = 0; index < csrc.VArmor.Length; ++index) {
+          this.VArmor[index] = csrc.VArmor[index];
         }
-        if (source.directionalIndicatorLeft != null) {
-          if (btns.ContainsKey(source.directionalIndicatorLeft.gameObject.name)) { this.directionalIndicatorLeft = btns[source.directionalIndicatorLeft.gameObject.name]; }
-        }
-        if (source.directionalIndicatorRight != null) {
-          if (btns.ContainsKey(source.directionalIndicatorRight.gameObject.name)) { this.directionalIndicatorRight = btns[source.directionalIndicatorRight.gameObject.name]; }
+        for (int index = 0; index < csrc.VArmorOutline.Length; ++index) {
+          this.VArmorOutline[index] = csrc.VArmorOutline[index];
         }
 
-        SVGImage[] simgs = this.GetComponentsInChildren<SVGImage>(true);
-        Dictionary<string, SVGImage> images = new Dictionary<string, SVGImage>();
-        foreach (SVGImage img in simgs) { string name = this.GetName(img.transform,this.transform); images.Add(name, img); Log.WL(1,name+":"+img.name); }
-        Log.WL(1, "VStructure");
-        for (int index = 0; index < source.VStructure.Length; ++index) {
-          if (source.VStructure[index] == null) { this.VStructure[index] = null; continue; }
-          string name = this.GetName(source.VStructure[index].transform, source.transform);
-          Log.WL(2, name+" exists:"+ images.ContainsKey(name));
-          if (images.ContainsKey(name)) { this.VStructure[index] = images[name]; }
-        }
-        Log.WL(1, "VArmor");
-        for (int index = 0; index < source.VArmor.Length; ++index) {
-          if (source.VArmor[index] == null) { this.VArmor[index] = null; continue; }
-          string name = this.GetName(source.VArmor[index].transform, source.transform);
-          Log.WL(2, name + " exists:" + images.ContainsKey(name));
-          if (images.ContainsKey(name)) { this.VArmor[index] = images[name]; }
-        }
-        Log.WL(1, "VArmorOutline");
-        for (int index = 0; index < source.VArmorOutline.Length; ++index) {
-          if (source.VArmorOutline[index] == null) { this.VArmorOutline[index] = null; continue; }
-          string name = this.GetName(source.VArmorOutline[index].transform, source.transform);
-          Log.WL(2, name + " exists:" + images.ContainsKey(name));
-          if (images.ContainsKey(name)) { this.VArmorOutline[index] = images[name]; }
-        }
+        //SVGImage[] simgs = this.GetComponentsInChildren<SVGImage>(true);
+        //Dictionary<string, SVGImage> images = new Dictionary<string, SVGImage>();
+        //foreach (SVGImage img in simgs) { string name = this.GetName(img.transform,this.transform); images.Add(name, img); Log.WL(1,name+":"+img.name); }
+        //Log.WL(1, "VStructure");
+        //for (int index = 0; index < source.VStructure.Length; ++index) {
+        //  if (source.VStructure[index] == null) { this.VStructure[index] = null; continue; }
+        //  string name = this.GetName(source.VStructure[index].transform, source.transform);
+        //  Log.WL(2, name+" exists:"+ images.ContainsKey(name));
+        //  if (images.ContainsKey(name)) { this.VStructure[index] = images[name]; }
+        //}
+        //Log.WL(1, "VArmor");
+        //for (int index = 0; index < source.VArmor.Length; ++index) {
+        //  if (source.VArmor[index] == null) { this.VArmor[index] = null; continue; }
+        //  string name = this.GetName(source.VArmor[index].transform, source.transform);
+        //  Log.WL(2, name + " exists:" + images.ContainsKey(name));
+        //  if (images.ContainsKey(name)) { this.VArmor[index] = images[name]; }
+        //}
+        //Log.WL(1, "VArmorOutline");
+        //for (int index = 0; index < source.VArmorOutline.Length; ++index) {
+        //  if (source.VArmorOutline[index] == null) { this.VArmorOutline[index] = null; continue; }
+        //  string name = this.GetName(source.VArmorOutline[index].transform, source.transform);
+        //  Log.WL(2, name + " exists:" + images.ContainsKey(name));
+        //  if (images.ContainsKey(name)) { this.VArmorOutline[index] = images[name]; }
+        //}
       } catch (Exception e) {
         Log.TWL(0, e.ToString(), true);
       }
@@ -429,7 +443,10 @@ namespace CustomUnits {
 
     public void UpdateVehicleStructureAndArmor(AttackDirection shownAttackDirection) {
       //if (this.UseForCalledShots) { Log.TWL(0, "HUDFakeVehicleArmorReadout.UpdateVehicleStructureAndArmor direction:"+ shownAttackDirection+" hovered:"+ this.HoveredArmor); }
+      //Log.TWL(0, $"UpdateVehicleStructureAndArmor {this.DisplayedVehicle?.PilotableActorDef.ChassisID} {shownAttackDirection}");
+      //Log.WL(0, Environment.StackTrace);
       this.ShowAttackDirection(shownAttackDirection);
+
       Dictionary<VehicleChassisLocations, int> dictionary = (Dictionary<VehicleChassisLocations, int>)null;
       if (shownAttackDirection != AttackDirection.None && this.UseForCalledShots) {
         dictionary = this.HUD.Combat.HitLocation.GetVehicleHitTable(shownAttackDirection, false);
@@ -461,6 +478,7 @@ namespace CustomUnits {
     }
 
     protected void ShowAttackDirection(AttackDirection shownAttackDirection) {
+      //Log.TWL(0, $"HUDFakeVehicleArmorReadout.ShowAttackDirection {shownAttackDirection}");
       switch (shownAttackDirection) {
         case AttackDirection.None:
         this.SetTweens(this.directionalIndicatorFront, ButtonState.Enabled);
@@ -481,9 +499,9 @@ namespace CustomUnits {
         this.SetTweens(this.directionalIndicatorLeft, ButtonState.Highlighted);
         break;
         case AttackDirection.FromRight:
-        this.SetTweens(this.directionalIndicatorFront, ButtonState.Enabled);
-        this.SetTweens(this.directionalIndicatorLeft, ButtonState.Enabled);
-        this.SetTweens(this.directionalIndicatorBack, ButtonState.Enabled);
+        this.SetTweens(this.directionalIndicatorFront, ButtonState.Highlighted);
+        this.SetTweens(this.directionalIndicatorLeft, ButtonState.Highlighted);
+        this.SetTweens(this.directionalIndicatorBack, ButtonState.Highlighted);
         this.SetTweens(this.directionalIndicatorRight, ButtonState.Highlighted);
         break;
         case AttackDirection.FromBack:
@@ -499,6 +517,10 @@ namespace CustomUnits {
         this.SetTweens(this.directionalIndicatorLeft, ButtonState.Highlighted);
         break;
       }
+      //Log.WL(1, $"directionalIndicatorFront:{(this.directionalIndicatorFront == null ? "null" : this.directionalIndicatorFront.State.ToString())}");
+      //Log.WL(1, $"directionalIndicatorRight:{(this.directionalIndicatorRight == null ? "null" : this.directionalIndicatorFront.State.ToString())}");
+      //Log.WL(1, $"directionalIndicatorBack:{(this.directionalIndicatorBack == null ? "null" : this.directionalIndicatorFront.State.ToString())}");
+      //Log.WL(1, $"directionalIndicatorLeft:{(this.directionalIndicatorLeft == null ? "null" : this.directionalIndicatorFront.State.ToString())}");
     }
   }
 }

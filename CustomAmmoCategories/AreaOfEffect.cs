@@ -158,6 +158,10 @@ namespace CustAmmoCategories {
         foreach (ICombatant target in combatants) {
           if (target.IsDead) { continue; };
           if (target.isDropshipNotLanded()) { continue; };
+          if (CustomAmmoCategories.Settings.SpawnProtectionAffectsAOE) {
+            if (target.isSpawnProtected()) { continue; }
+            if (weapon.parent.isSpawnProtected()) { continue; }
+          }
           Vector3 CurrentPosition = target.CurrentPosition;
           if(advRec.isHit == false) { CurrentPosition += Vector3.up* target.FlyingHeight(); } else {
             if (advRec.target.GUID != target.GUID) { CurrentPosition += Vector3.up * target.FlyingHeight(); }

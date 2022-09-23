@@ -314,7 +314,7 @@ namespace CustomAmmoCategoriesPatches {
       foreach (string tag in tags) {
         //Log.M.W(1,tag);
       }
-      Log.M.WL(1, "");
+      //Log.M.WL(1, "");
       if (tags == null) { return 0f; };
       foreach(string tag in tags) {
         if (ammo.TagsAccuracyModifiers.TryGetValue(tag, out float mod)) {

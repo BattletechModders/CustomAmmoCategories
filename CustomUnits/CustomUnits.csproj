@@ -148,6 +148,7 @@
     <Compile Include="BiomeTagsFix.cs" />
     <Compile Include="BossAppearController.cs" />
     <Compile Include="CombatDestroyed.cs" />
+    <Compile Include="ContractIntel.cs" />
     <Compile Include="CustomArmorReadout.cs" />
     <Compile Include="CustomChassisReady.cs" />
     <Compile Include="CustomHangarDef.cs" />
