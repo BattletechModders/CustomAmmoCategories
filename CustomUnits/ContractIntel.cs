@@ -19,6 +19,7 @@ using UnityEngine.UI;
 namespace CustomUnits {
   public class CustomWeatherEffectIntel {
     public string ID { get; set; } = string.Empty;
+    public string FriendlyName { get; set; } = string.Empty;
     public string designMask { get; set; } = string.Empty;
   }
   public static class IntelHelper {
@@ -36,6 +37,7 @@ namespace CustomUnits {
         return result;
       }
       MapMetaData mapMetaData = MapMetaData.LoadMapMetaData(contract, contract.DataManager);
+      
       int minimapXsize = mapMetaData.mapTerrainDataCells.GetLength(0);
       int minimapYsize = mapMetaData.mapTerrainDataCells.GetLength(1);
       Texture2D minimap = new Texture2D(minimapYsize, minimapXsize, TextureFormat.ARGB32, false);
@@ -69,11 +71,12 @@ namespace CustomUnits {
       intelMinimaps.Add(contract.mapName, result);
       return result;
     }
-    public LocalizableText moodDesctiption { get; set; } = null;
+    public LocalizableText moodDescription { get; set; } = null;
     public Image minimapBackground { get; set; } = null;
-    public LanceContractDetailsWidget parent { get; set; } = null;
     public HBSTooltip weatherTooltip { get; set; } = null;
     public HBSTooltipStateData weatherTooltipData { get; set; } = null;
+    public CustomWeatherEffectIntel customMood { get; set; } = null;
+    public bool moodNameIsSet { get; set; } = false;
     private string weatherDesignMask { get; set; } = string.Empty;
     public void Update() {
       if(minimapBackground != null) {
@@ -86,41 +89,63 @@ namespace CustomUnits {
       DesignMaskDef moodMask = UnityGameInstance.BattleTechGame.DataManager.DesignMaskDefs.Get(weatherDesignMask);
       weatherTooltipData = new BaseDescriptionDef(moodMask.Description.Id, moodMask.Description.Name, moodMask.Description.Details, moodMask.Description.Icon).GetTooltipStateData();
       weatherTooltip.SetDefaultStateData(weatherTooltipData);
-      //moodDesctiption.SetText($"Weather: {moodMask.Description.Name}");
+      if (moodNameIsSet == false) {
+        moodDescription.SetText($"Weather: {moodMask.Description.Name}");
+        moodNameIsSet = true;
+      }
     }
-    public void Init(LanceContractDetailsWidget details) {
+    public void Init(LocalizableText ContractDescriptionField, Contract contract) {
       try {
-        parent = details;
-        LocalizableText ContractDescriptionField = Traverse.Create(parent).Field<LocalizableText>("ContractDescriptionField").Value;
-        moodDesctiption = ContractDescriptionField.transform.parent.gameObject.FindComponent<LocalizableText>("txt_mood");
-        if (moodDesctiption == null) {
-          moodDesctiption = GameObject.Instantiate(ContractDescriptionField.gameObject).GetComponent<LocalizableText>();
-          moodDesctiption.gameObject.transform.SetParent(ContractDescriptionField.transform.parent);
-          moodDesctiption.gameObject.transform.localScale = Vector3.one;
-          moodDesctiption.gameObject.name = "txt_mood";
+        //LocalizableText ContractDescriptionField = Traverse.Create(parent).Field<LocalizableText>("ContractDescriptionField").Value;
+        moodDescription = ContractDescriptionField.transform.parent.gameObject.FindComponent<LocalizableText>("txt_mood");
+        if (moodDescription == null) {
+          moodDescription = GameObject.Instantiate(ContractDescriptionField.gameObject).GetComponent<LocalizableText>();
+          moodDescription.gameObject.transform.SetParent(ContractDescriptionField.transform.parent);
+          moodDescription.gameObject.transform.localScale = Vector3.one;
+          moodDescription.gameObject.name = "txt_mood";
         }
-        Mood_MDD mood_MDD = MetadataDatabase.Instance.GetMood(parent.SelectedContract.mapMood);
-        string moodName = parent.SelectedContract.mapMood;
+        Mood_MDD mood_MDD = MetadataDatabase.Instance.GetMood(contract.mapMood);
+        string moodName = contract.mapMood;
         if (mood_MDD != null){ moodName = mood_MDD.FriendlyName; }
-        moodDesctiption.SetText($"Weather: {moodName}");
-        weatherTooltip = moodDesctiption.gameObject.GetComponent<HBSTooltip>();
-        if (weatherTooltip == null) { weatherTooltip = moodDesctiption.gameObject.AddComponent<HBSTooltip>(); }
+        weatherTooltip = moodDescription.gameObject.GetComponent<HBSTooltip>();
+        if (weatherTooltip == null) { weatherTooltip = moodDescription.gameObject.AddComponent<HBSTooltip>(); }
         weatherTooltipData = new HBSTooltipStateData();
         weatherTooltipData.SetString("Nothing special");
-        if (IntelHelper.moods.TryGetValue(parent.SelectedContract.mapMood, out var custMood)) {
-          if (string.IsNullOrEmpty(custMood.designMask) == false) {
-            if (UnityGameInstance.BattleTechGame.DataManager.Exists(BattleTechResourceType.DesignMaskDef, custMood.designMask)) {
-              DesignMaskDef moodMask = UnityGameInstance.BattleTechGame.DataManager.DesignMaskDefs.Get(custMood.designMask);
-              weatherTooltipData = new BaseDescriptionDef(moodMask.Description.Id, moodMask.Description.Name, moodMask.Description.Details, moodMask.Description.Icon).GetTooltipStateData();
-            } else if (UnityGameInstance.BattleTechGame.DataManager.ResourceLocator.EntryByID(custMood.designMask, BattleTechResourceType.DesignMaskDef) != null) {
-              weatherTooltipData.SetString("Loading ...");
-              weatherDesignMask = custMood.designMask;
-              LoadRequest loadRequest = UnityGameInstance.BattleTechGame.DataManager.CreateLoadRequest(new Action<LoadRequest>(this.RequestDesignMaskComplete));
-              loadRequest.AddBlindLoadRequest(BattleTechResourceType.DesignMaskDef, custMood.designMask);
-              loadRequest.ProcessRequests(10U);
+        this.customMood = null;
+        string designMask = Biome.GetDesignMaskNameFromBiomeSkin(contract.ContractBiome);
+        this.moodNameIsSet = false;
+        if (IntelHelper.moods.TryGetValue(contract.mapMood, out var custMood)) {
+          this.customMood = custMood;
+          if (string.IsNullOrEmpty(customMood.FriendlyName) == false) { moodName = customMood.FriendlyName; this.moodNameIsSet = true; }
+          if (string.IsNullOrEmpty(customMood.designMask) == false) {
+            if (UnityGameInstance.BattleTechGame.DataManager.ResourceLocator.EntryByID(customMood.designMask, BattleTechResourceType.DesignMaskDef) != null) {
+              designMask = customMood.designMask;
             }
           }
+        } else {
+          this.moodNameIsSet = true;
         }
+        if (UnityGameInstance.BattleTechGame.DataManager.Exists(BattleTechResourceType.DesignMaskDef, designMask)) {
+          DesignMaskDef moodMask = UnityGameInstance.BattleTechGame.DataManager.DesignMaskDefs.Get(designMask);
+          weatherTooltipData = new BaseDescriptionDef(moodMask.Description.Id, moodMask.Description.Name, moodMask.Description.Details, moodMask.Description.Icon).GetTooltipStateData();
+          if (moodNameIsSet == false) { moodName = moodMask.Description.Name; this.moodNameIsSet = true; }
+        } else {
+          weatherTooltipData.SetString("Loading ...");
+          weatherDesignMask = designMask;
+          LoadRequest loadRequest = UnityGameInstance.BattleTechGame.DataManager.CreateLoadRequest(new Action<LoadRequest>(this.RequestDesignMaskComplete));
+          loadRequest.AddBlindLoadRequest(BattleTechResourceType.DesignMaskDef, customMood.designMask);
+          loadRequest.ProcessRequests(10U);
+        }
+        //  weatherTooltipData = new BaseDescriptionDef(moodMask.Description.Id, moodMask.Description.Name, moodMask.Description.Details, moodMask.Description.Icon).GetTooltipStateData();
+        //} else if (UnityGameInstance.BattleTechGame.DataManager.ResourceLocator.EntryByID(customMood.designMask, BattleTechResourceType.DesignMaskDef) != null) {
+        //  weatherTooltipData.SetString("Loading ...");
+        //  weatherDesignMask = customMood.designMask;
+        //  LoadRequest loadRequest = UnityGameInstance.BattleTechGame.DataManager.CreateLoadRequest(new Action<LoadRequest>(this.RequestDesignMaskComplete));
+        //  loadRequest.AddBlindLoadRequest(BattleTechResourceType.DesignMaskDef, customMood.designMask);
+        //  loadRequest.ProcessRequests(10U);
+        //}
+
+        moodDescription.SetText($"Weather: {moodName}");
         weatherTooltip.SetDefaultStateData(weatherTooltipData);
         minimapBackground = ContractDescriptionField.transform.parent.gameObject.FindComponent<Image>("img_minimap_back");
         if (minimapBackground == null) {
@@ -139,7 +164,8 @@ namespace CustomUnits {
             }
           }
         }
-        minimapBackground.sprite = LanceContractIntelWidget.GetIntelMinimapSprite(parent.SelectedContract);
+        minimapBackground.sprite = LanceContractIntelWidget.GetIntelMinimapSprite(contract);
+        Log.TWL(0, $"Core.Settings.IntelShowMood:{Core.Settings.IntelShowMood} Core.Settings.IntelShowMiniMap:{Core.Settings.IntelShowMiniMap}");
         if (Core.Settings.IntelShowMiniMap == false) {
           if(UnityGameInstance.BattleTechGame.Simulation == null) {
             minimapBackground.gameObject.SetActive(false);
@@ -158,19 +184,19 @@ namespace CustomUnits {
         }
         if (Core.Settings.IntelShowMood == false) {
           if (UnityGameInstance.BattleTechGame.Simulation == null) {
-            moodDesctiption.gameObject.SetActive(false);
+            moodDescription.gameObject.SetActive(false);
           } else {
             Statistic stat = UnityGameInstance.BattleTechGame.Simulation.CompanyStats.GetStatistic(Core.Settings.IntelCompanyStatShowMood);
             if (stat == null) {
-              moodDesctiption.gameObject.SetActive(false);
+              moodDescription.gameObject.SetActive(false);
             } else if (stat.Value<bool>() == false) {
-              moodDesctiption.gameObject.SetActive(false);
+              moodDescription.gameObject.SetActive(false);
             } else {
-              moodDesctiption.gameObject.SetActive(true);
+              moodDescription.gameObject.SetActive(true);
             }
           }
         } else {
-          moodDesctiption.gameObject.SetActive(true);
+          moodDescription.gameObject.SetActive(true);
         }
         //Thread.CurrentThread.SetFlag(Contract_BeginRequestResources_Intel.STOP_Contract_BeginRequestResources);
         //parent.SelectedContract.Resume();
@@ -187,7 +213,7 @@ namespace CustomUnits {
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { typeof(LanceConfiguratorPanel), typeof(Contract) })]
   public static class LanceContractDetailsWidget_PopulateContract {
-    public static void Postfix(LanceContractDetailsWidget __instance, LanceConfiguratorPanel LC, Contract contract, LocalizableText ___ContractDescriptionField) {
+    public static void Postfix(LanceContractDetailsWidget __instance, Contract contract, LocalizableText ___ContractDescriptionField) {
       try {
         LayoutElement layoutElement = ___ContractDescriptionField.gameObject.GetComponent<LayoutElement>();
         if (layoutElement == null) { layoutElement = ___ContractDescriptionField.gameObject.AddComponent<LayoutElement>(); }
@@ -195,7 +221,26 @@ namespace CustomUnits {
         if (intel == null) {
           intel = __instance.gameObject.AddComponent<LanceContractIntelWidget>();
         };
-        intel.Init(__instance);
+        intel.Init(___ContractDescriptionField, contract);
+      } catch (Exception e) {
+        Log.TWL(0, e.ToString(), true);
+      }
+    }
+  }
+  [HarmonyPatch(typeof(SGContractsWidget))]
+  [HarmonyPatch("PopulateContract")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { typeof(Contract), typeof(Action) })]
+  public static class SGContractsWidget_PopulateContract {
+    public static void Postfix(SGContractsWidget __instance, Contract contract, LocalizableText ___ContractDescriptionField) {
+      try {
+        LayoutElement layoutElement = ___ContractDescriptionField.gameObject.GetComponent<LayoutElement>();
+        if (layoutElement == null) { layoutElement = ___ContractDescriptionField.gameObject.AddComponent<LayoutElement>(); }
+        LanceContractIntelWidget intel = __instance.gameObject.GetComponent<LanceContractIntelWidget>();
+        if (intel == null) {
+          intel = __instance.gameObject.AddComponent<LanceContractIntelWidget>();
+        };
+        intel.Init(___ContractDescriptionField, contract);
       } catch (Exception e) {
         Log.TWL(0, e.ToString(), true);
       }
