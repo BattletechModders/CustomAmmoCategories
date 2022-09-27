@@ -90,7 +90,7 @@ namespace CustomUnits {
       weatherTooltipData = new BaseDescriptionDef(moodMask.Description.Id, moodMask.Description.Name, moodMask.Description.Details, moodMask.Description.Icon).GetTooltipStateData();
       weatherTooltip.SetDefaultStateData(weatherTooltipData);
       if (moodNameIsSet == false) {
-        moodDescription.SetText($"Weather: {moodMask.Description.Name}");
+        moodDescription.SetText($"Weather: <color=#{ColorUtility.ToHtmlStringRGBA(UIManager.Instance.UIColorRefs.gold)}>{moodMask.Description.Name}</color>");
         moodNameIsSet = true;
       }
     }
@@ -133,7 +133,7 @@ namespace CustomUnits {
           weatherTooltipData.SetString("Loading ...");
           weatherDesignMask = designMask;
           LoadRequest loadRequest = UnityGameInstance.BattleTechGame.DataManager.CreateLoadRequest(new Action<LoadRequest>(this.RequestDesignMaskComplete));
-          loadRequest.AddBlindLoadRequest(BattleTechResourceType.DesignMaskDef, customMood.designMask);
+          loadRequest.AddBlindLoadRequest(BattleTechResourceType.DesignMaskDef, designMask);
           loadRequest.ProcessRequests(10U);
         }
         //  weatherTooltipData = new BaseDescriptionDef(moodMask.Description.Id, moodMask.Description.Name, moodMask.Description.Details, moodMask.Description.Icon).GetTooltipStateData();
@@ -145,7 +145,7 @@ namespace CustomUnits {
         //  loadRequest.ProcessRequests(10U);
         //}
 
-        moodDescription.SetText($"Weather: {moodName}");
+        moodDescription.SetText($"Weather: <color=#{ColorUtility.ToHtmlStringRGBA(UIManager.Instance.UIColorRefs.gold)}>{moodName}</color>");
         weatherTooltip.SetDefaultStateData(weatherTooltipData);
         minimapBackground = ContractDescriptionField.transform.parent.gameObject.FindComponent<Image>("img_minimap_back");
         if (minimapBackground == null) {
