@@ -108,7 +108,7 @@ namespace CustomUnits {
         try {
           var patched = harmony.Patch(method, null, null, new HarmonyMethod(transpliter));
           if (patched_success == false) harmony.Unpatch(patched, HarmonyPatchType.Transpiler);
-        } catch(Exception e) {
+        } catch(Exception) {
           //Log.TWL(0,e.ToString());
         }
       }

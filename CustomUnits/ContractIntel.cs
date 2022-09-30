@@ -136,15 +136,6 @@ namespace CustomUnits {
           loadRequest.AddBlindLoadRequest(BattleTechResourceType.DesignMaskDef, designMask);
           loadRequest.ProcessRequests(10U);
         }
-        //  weatherTooltipData = new BaseDescriptionDef(moodMask.Description.Id, moodMask.Description.Name, moodMask.Description.Details, moodMask.Description.Icon).GetTooltipStateData();
-        //} else if (UnityGameInstance.BattleTechGame.DataManager.ResourceLocator.EntryByID(customMood.designMask, BattleTechResourceType.DesignMaskDef) != null) {
-        //  weatherTooltipData.SetString("Loading ...");
-        //  weatherDesignMask = customMood.designMask;
-        //  LoadRequest loadRequest = UnityGameInstance.BattleTechGame.DataManager.CreateLoadRequest(new Action<LoadRequest>(this.RequestDesignMaskComplete));
-        //  loadRequest.AddBlindLoadRequest(BattleTechResourceType.DesignMaskDef, customMood.designMask);
-        //  loadRequest.ProcessRequests(10U);
-        //}
-
         moodDescription.SetText($"Weather: <color=#{ColorUtility.ToHtmlStringRGBA(UIManager.Instance.UIColorRefs.gold)}>{moodName}</color>");
         weatherTooltip.SetDefaultStateData(weatherTooltipData);
         minimapBackground = ContractDescriptionField.transform.parent.gameObject.FindComponent<Image>("img_minimap_back");
@@ -198,11 +189,6 @@ namespace CustomUnits {
         } else {
           moodDescription.gameObject.SetActive(true);
         }
-        //Thread.CurrentThread.SetFlag(Contract_BeginRequestResources_Intel.STOP_Contract_BeginRequestResources);
-        //parent.SelectedContract.Resume();
-        //Thread.CurrentThread.ClearFlag(Contract_BeginRequestResources_Intel.STOP_Contract_BeginRequestResources);
-        //parent.SelectedContract.Override.SetupContract(parent.SelectedContract);
-        //parent.SelectedContract.Override.GenerateUnits(UnityGameInstance.BattleTechGame.DataManager, Traverse.Create(parent.SelectedContract).Method("GetSimGameCurrentDate").GetValue<DateTime?>(), Traverse.Create(parent.SelectedContract).Method("GetCompanyTags").GetValue<TagSet>());
       } catch (Exception e) {
         Log.TWL(0,e.ToString(),true);
       }
@@ -246,61 +232,4 @@ namespace CustomUnits {
       }
     }
   }
-  //[HarmonyPatch(typeof(ContractOverride))]
-  //[HarmonyPatch("GenerateTeam")]
-  //[HarmonyPatch(MethodType.Normal)]
-  //[HarmonyPatch(new Type[] { typeof(MetadataDatabase), typeof(TeamOverride), typeof(DateTime?), typeof(TagSet) })]
-  //public static class ContractOverride_GenerateTeam {
-  //  public static void Prefix(ContractOverride __instance, MetadataDatabase mdd, TeamOverride teamOverride, DateTime? currentDate, TagSet companyTags) {
-  //    try {
-  //      Log.TWL(0, $"ContractOverride.GenerateTeam prefix {teamOverride.teamName}:{teamOverride.teamGuid} lanceOverrideList:{teamOverride.lanceOverrideList.Count}");
-  //      foreach (var lanceOverride in teamOverride.lanceOverrideList) {
-  //        LanceDef loadedLanceDef = Traverse.Create(lanceOverride).Field<LanceDef>("loadedLanceDef").Value;
-  //        Log.WL(1,$"{lanceOverride.name}:{lanceOverride.GUID} {lanceOverride.unitSpawnPointOverrideList.Count} lanceDef:{lanceOverride.lanceDefId}:{lanceOverride.selectedLanceDefId}");
-  //        foreach(var unit in lanceOverride.unitSpawnPointOverrideList) {
-  //          Log.WL(2,$"{unit.selectedPilotDefId}:{unit.selectedUnitDefId}:{unit.unitType}");
-  //        }
-  //      }
-  //    } catch (Exception e) {
-  //      Log.TWL(0, e.ToString(), true);
-  //    }
-  //  }
-  //  public static void Postfix(ContractOverride __instance, MetadataDatabase mdd, TeamOverride teamOverride, DateTime? currentDate, TagSet companyTags) {
-  //    try {
-  //      //Log.TWL(0, $"ContractOverride.GenerateTeam postfix {teamOverride.teamName}:{teamOverride.teamGuid} lanceOverrideList:{teamOverride.lanceOverrideList.Count}");
-  //      //foreach (var lanceOverride in teamOverride.lanceOverrideList) {
-  //      //  LanceDef loadedLanceDef = Traverse.Create(lanceOverride).Field<LanceDef>("loadedLanceDef").Value;
-  //      //  Log.WL(1, $"{lanceOverride.name}:{lanceOverride.GUID} {lanceOverride.unitSpawnPointOverrideList.Count} lanceDef:{lanceOverride.lanceDefId}:{lanceOverride.selectedLanceDefId}");
-  //      //  foreach (var unit in lanceOverride.unitSpawnPointOverrideList) {
-  //      //    Log.WL(2, $"{unit.selectedPilotDefId}:{unit.selectedUnitDefId}:{unit.unitType}");
-  //      //  }
-  //      //}
-  //    } catch (Exception e) {
-  //      Log.TWL(0, e.ToString(), true);
-  //    }
-  //  }
-  //}
-  public static class Contract_BeginRequestResources_Intel {
-    public static readonly string STOP_Contract_BeginRequestResources = "STOP_Contract_BeginRequestResources";
-    public static MethodInfo TargetMethod() { return AccessTools.Method(typeof(Contract), "BeginRequestResources"); }
-    public static HarmonyMethod Patch() { return new HarmonyMethod(AccessTools.Method(typeof(Contract_BeginRequestResources_Intel), nameof(Prefix))); }
-    public static bool Prefix(Contract __instance, bool generateUnits) {
-      return Thread.CurrentThread.isFlagSet(STOP_Contract_BeginRequestResources) == false;
-    }
-  }
-  //[HarmonyPatch(typeof(Contract))]
-  //[HarmonyPatch(MethodType.Constructor)]
-  //[HarmonyPatch(new Type[] { typeof(string), typeof(string), typeof(string), typeof(ContractTypeValue), typeof(GameInstance), typeof(ContractOverride), typeof(GameContext), typeof(bool), typeof(int), typeof(int), typeof(int?) })]
-  //public static class Contract_Constructor {
-  //  public static void Postfix(Contract __instance, DataManager ___dataManager) {
-  //    try {
-  //      Log.TWL(0, $"Contract.Constructor");
-  //      //__instance.Override.SetupContract(__instance);
-  //      //__instance.Override.GenerateUnits(___dataManager, Traverse.Create(__instance).Method("GetSimGameCurrentDate").GetValue<DateTime?>(), Traverse.Create(__instance).Method("GetCompanyTags").GetValue<TagSet>());
-  //      //Log.TWL(0, $"generated");
-  //    } catch (Exception e) {
-  //      Log.TWL(0, e.ToString(), true);
-  //    }
-  //  }
-  //}
 }

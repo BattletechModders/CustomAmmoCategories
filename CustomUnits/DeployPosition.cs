@@ -44,11 +44,51 @@ namespace CustomUnits {
         if (Core.Settings.DeployAutoSpawnProtection) {
           Log.TWL(0,$"TurnDirector.StartFirstRound add spawn protection");
           foreach(AbstractActor unit in __instance.Combat.AllActors) {
-            unit.addSpawnProtection();
+            Log.WL(1, $"{unit.PilotableActorDef.ChassisID}");
+            unit.addSpawnProtection("first round");
           }
         }
       } catch (Exception e) {
         Log.TWL(0, e.ToString(), true);
+      }
+    }
+  }
+  [HarmonyPatch(typeof(CombatHUD))]
+  [HarmonyPatch("OnActorSelected")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { typeof(AbstractActor) })]
+  public static class CombatHUD_OnActorSelected {
+    public static void Postfix(CombatHUD __instance, AbstractActor actor) {
+      try {
+        if (DeployManualHelper.NeedSpawnProtection == false) { return; }
+        if (actor.IsDeployDirector()) { return; }
+        if (actor.IsAvailableThisPhase == false) { return; }
+        DeployManualHelper.NeedSpawnProtection = false;
+        foreach (AbstractActor unit in actor.Combat.AllActors) {
+          unit.addSpawnProtection("manual delayed spawn protection");
+        }
+      } catch (Exception e) {
+        Log.TWL(0, e.ToString(), true);
+      }
+    }
+  }
+  [HarmonyPatch(typeof(TimerObjective))]
+  [HarmonyPatch("ContractInitialize")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { })]
+  public static class TimerObjective_ContractInitialize {
+    public static void Postfix(TimerObjective __instance) {
+      try {
+        bool manualSpawn = __instance.Combat.ActiveContract.isManualSpawn() || (DeployManualHelper.deployDirector != null);
+        Log.TWL(0, $"TimerObjective.ContractInitialize GUID:{__instance.GUID} contractType:{__instance.Combat.ActiveContract.ContractTypeValue.Name} ManualDeploy:{manualSpawn}");
+        if (Core.Settings.timerObjectiveChange.TryGetValue(__instance.Combat.ActiveContract.ContractTypeValue.Name, out var change)) {
+          Log.W(1, $"changing duration:{__instance.durationRemaining}/{__instance.durationToCount}");
+          __instance.durationRemaining += manualSpawn ? change.manualDeployAdvice : change.autoDeployAdvice;
+          __instance.durationToCount += manualSpawn ? change.manualDeployAdvice : change.autoDeployAdvice;
+          Log.WL(0, $"->{__instance.durationRemaining}/{__instance.durationToCount}");
+        }
+      } catch (Exception e) {
+        Log.TWL(0, e.ToString());
       }
     }
   }
@@ -195,7 +235,7 @@ namespace CustomUnits {
         this.unit.OnPositionUpdate(spawnPosition, facingNearestEnemy, -1, true, new List<DesignMaskDef>());
         this.unit.GameRep.transform.rotation = facingNearestEnemy;
         if (this.unit.GameRep is CustomMechRepresentation custRep) {
-          custRep.UpdateRotation(this.unit.GameRep.transform, this.unit.GameRep.transform.forward, 9999f);
+          custRep.UpdateRotation(new RaycastHit?(),this.unit.GameRep.transform, this.unit.GameRep.transform.forward, 9999f);
         } else {
           if(this.unit is Vehicle vehicle) {
             ActorMovementSequence.AlignVehicleToGround(unit.GameRep.transform, 9999f);
@@ -307,6 +347,7 @@ namespace CustomUnits {
     public static SpawnUnitMethodType originalSpawnMethod { get; set; } = SpawnUnitMethodType.InstantlyAtSpawnPoint;
     public static AbstractActor deployDirector { get; set; } = null;
     public static void Clean() { deployDirector = null; }
+    public static bool NeedSpawnProtection { get; set; } = false;
     public static void Deploy(CombatHUD HUD, List<DeployPosition> positions) {
       if(originalSpawnMethod == SpawnUnitMethodType.ViaLeopardDropship) {
         DeployDropShip(HUD, positions);
@@ -428,18 +469,21 @@ namespace CustomUnits {
           actorInfo.gameObject.SetActive(true);
           Traverse.Create(actorInfo).Method("RefreshAllInfo").GetValue();
         }
-        foreach(AbstractActor unit in HUD.Combat.LocalPlayerTeam.units) {
+        foreach (AbstractActor unit in HUD.Combat.LocalPlayerTeam.units) {
           if (unit.IsDeployDirector()) { continue; }
           if (unit.IsAvailableThisPhase) {
-            if (Core.Settings.DeployManualSpawnProtection) { unit.addAddSpawnProtection(); }
+            if (Core.Settings.DeployManualSpawnProtection) {
+              unit.addAddSpawnProtection("manual deploy");
+            }
             HUD.Combat.MessageCenter.PublishMessage((MessageCenterMessage)new AddSequenceToStackMessage(unit.DoneWithActor()));
           }
         }
         if (Core.Settings.DeployManualSpawnProtection) {
+          NeedSpawnProtection = true;
           foreach (AbstractActor unit in HUD.Combat.AllActors) {
             if (unit.IsDeployDirector()) { continue; }
             if (unit.isAddSpawnProtected()) { continue; }
-            unit.addSpawnProtection();
+            unit.addSpawnProtection("manual deploy");
           }
         }
         //HUD.Combat.TurnDirector.StartFirstRound();
@@ -469,7 +513,7 @@ namespace CustomUnits {
               dPos.unit.OnPositionUpdate(dPos.position.Value, facingNearestEnemy, -1, true, new List<DesignMaskDef>());
               dPos.unit.GameRep.transform.rotation = facingNearestEnemy;
               if (dPos.unit?.GameRep is CustomMechRepresentation custRep) {
-                custRep.UpdateRotation(dPos.unit.GameRep.transform, dPos.unit.GameRep.transform.forward, 9999f);
+                custRep.UpdateRotation(new RaycastHit?(),dPos.unit.GameRep.transform, dPos.unit.GameRep.transform.forward, 9999f);
               } else {
                 if (dPos.unit is Vehicle) {
                   ActorMovementSequence.AlignVehicleToGround(dPos.unit?.GameRep.transform, 9999f);
@@ -2217,6 +2261,7 @@ namespace CustomUnits {
     }
     public static bool Prefix(PlayerLanceSpawnerGameLogic __instance) {
       Log.TWL(0, "PlayerLanceSpawnerGameLogic.OnEnterActive");
+      DeployManualHelper.NeedSpawnProtection = false;
       try {
         //typeof(HBS.DebugConsole.DebugConsole).GetProperty("DebugCommandsUnlocked", BindingFlags.Static | BindingFlags.Public).GetSetMethod(true).Invoke(null, new object[] { true });
       } catch (Exception e) {

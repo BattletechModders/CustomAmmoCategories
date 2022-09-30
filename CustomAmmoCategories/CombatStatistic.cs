@@ -259,6 +259,20 @@ namespace CustAmmoCategories {
       }
     }
   }
+  [HarmonyPatch(typeof(AbstractActor))]
+  [HarmonyPatch("FlagForDeath")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { typeof(string), typeof(DeathMethod), typeof(BattleTech.DamageType), typeof(int), typeof(int), typeof(string), typeof(bool) })]
+  public static class AbstractActor_FlagForDeath {
+    public static void Postfix(AbstractActor __instance, string reason, DeathMethod deathMethod, DamageType damageType, int location, int stackItemID, string attackerID, bool isSilent) {
+      try {
+        Log.M?.TWL(0, $"AbstractActor.FlagForDeath {__instance.PilotableActorDef.ChassisID}. Attacker:{attackerID}", true);
+        __instance.AddToStatistic(attackerID);
+      } catch (Exception e) {
+        Log.M?.TWL(0, e.ToString(), true);
+      }
+    }
+  }
   [HarmonyPatch(typeof(AAR_UnitStatusWidget))]
   [HarmonyPatch("AddKilledMech")]
   [HarmonyPatch(MethodType.Normal)]

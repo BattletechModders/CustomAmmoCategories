@@ -704,6 +704,10 @@ namespace CustAmmoCategories {
             hit.isStray = true;
           }
         }
+        if (hit.target.isSpawnProtected() || sequence.attacker.isSpawnProtected()) {
+          hit.hitLocation = 0;
+          hit.isStray = false;
+        }
         if (launcher != null) {
           hit.trajectoryInfo.CurveFrequency = launcher.missileCurveFrequency;
           hit.trajectoryInfo.CurveStrength = launcher.missileCurveStrength;
@@ -1307,6 +1311,9 @@ namespace CustAmmoCategories {
         if (hit.target == null) {
           hit.target = this.Sequence.chosenTarget;
           hit.hitLocation = hitInfo.hitLocations[hitIndex];
+        }
+        if (hit.target.isSpawnProtected() || weapon.parent.isSpawnProtected()) {
+          hit.hitLocation = 0;
         }
         Log.M.WL(1, "h:"+hitIndex+" loc:("+hit.hitLocation+")"+hit.hitLocationStr+" trg:"+hit.target);
         hit.trajectoryInfo.type = TrajectoryType.Unguided;

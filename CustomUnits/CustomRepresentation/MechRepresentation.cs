@@ -1480,7 +1480,7 @@ namespace CustomUnits {
         }
         if (this.HasOwnVisuals) {
           Log.WL(1, "before to terrain: " + this.j_Root.eulerAngles);
-          this.AliginToTerrain(9999f);
+          this.AliginToTerrain(new RaycastHit?(),9999f,false);
           Log.WL(1, "after to terrain: " + this.j_Root.eulerAngles);
         }
       }
@@ -1501,7 +1501,7 @@ namespace CustomUnits {
       this._SetMeleeIdleState(false);
       if (this.HasOwnVisuals) {
         Log.WL(1, "before to terrain: " + this.j_Root.eulerAngles);
-        this.AliginToTerrain(9999f);
+        this.AliginToTerrain(new RaycastHit?(),9999f,false);
         Log.WL(1, "after to terrain: " + this.j_Root.eulerAngles);
       }
     }
@@ -2039,6 +2039,23 @@ namespace CustomUnits {
       Traverse.Create(moveSeq).Field<float>("vehicleVFXTimer").Value = 0.0f;
       this.PlayVehicleTerrainImpactVFX(false);
     }
+
+
+    public virtual RaycastHit? UpdateSpline(Vector3 worldPos, ActorMovementSequence sequence, Vector3 Forward, float t, ICombatant meleeTarget) {
+      RaycastHit? raycast = new RaycastHit?();
+      if (this.parentActor.UnaffectedPathing() || (this.parentCombatant.FlyingHeight() > Core.Epsilon)) {
+        raycast = this.GetTerrainRayHit(worldPos, true);
+      }
+      if (raycast.HasValue) {
+        worldPos.y = raycast.Value.point.y;
+      } else {
+        float num = Mathf.Clamp(this.parentActor.Combat.MapMetaData.GetLerpedHeightAt(worldPos) - worldPos.y, -20f, 20f);
+        worldPos.y += num;
+      }
+      this.thisTransform.position = worldPos;
+      this.UpdateSpline(sequence, Forward, t, meleeTarget);
+      return raycast;
+    }
     public virtual void UpdateSpline(ActorMovementSequence sequence, Vector3 Forward, float t, ICombatant meleeTarget) {
       this.updateVehicleMovementVFX(sequence);
       if (meleeTarget != null) {
@@ -2055,8 +2072,48 @@ namespace CustomUnits {
     public virtual void UpdateJumpFlying(MechJumpSequence sequence) {
 
     }
+    public virtual void InitJump(ref Vector3 finalPos) {
+      RaycastHit? raycast = new RaycastHit?();
+      if (this.parentActor.UnaffectedPathing() || (this.parentCombatant.FlyingHeight() > Core.Epsilon)) {
+        raycast = this.GetTerrainRayHit(finalPos, true);
+      }
+      if (raycast.HasValue) {
+        finalPos = raycast.Value.point;
+      }
+    }
     public virtual void CompleteJump(MechJumpSequence sequence) {
-
+      bool aliginToTerrain = false;
+      bool vehicleMovement = this.parentCombatant.NoMoveAnimation() || this.parentCombatant.FakeVehicle();
+      if (vehicleMovement && this.parentCombatant.FlyingHeight() < Core.Settings.MaxHoveringHeightWithWorkingJets) {
+        aliginToTerrain = true;
+      }
+      if (this.parentCombatant.NavalUnit()) {
+        AudioSwitch_surface_type currentSurfaceType = this.rootParentRepresentation._CurrentSurfaceType;
+        if ((currentSurfaceType == AudioSwitch_surface_type.water_deep) || (currentSurfaceType == AudioSwitch_surface_type.water_shallow)) {
+          aliginToTerrain = false;
+          this.AliginToWater(new RaycastHit?(), 100f);
+        }
+      }
+      if (aliginToTerrain) {
+        this.AliginToTerrain(new RaycastHit?(), 100f, false);
+      }
+    }
+    public virtual void CompleteMove(Vector3 finalPos, Vector3 finalHeading, ActorMovementSequence sequence, bool playedMelee, ICombatant meleeTarget) {
+      this.CompleteMove(sequence, playedMelee, meleeTarget);
+      RaycastHit? raycast = new RaycastHit?();
+      if (this.parentActor.UnaffectedPathing() || (this.parentCombatant.FlyingHeight() > Core.Epsilon)) {
+        raycast = this.GetTerrainRayHit(finalPos, true);
+      }
+      if (raycast.HasValue) {
+        this.thisTransform.position = raycast.Value.point;
+        this.thisTransform.rotation = Quaternion.LookRotation(finalHeading, Vector3.up);
+      } else {
+        this.thisTransform.position = finalPos;
+        this.thisTransform.rotation = Quaternion.LookRotation(finalHeading, Vector3.up);
+      }
+      if (this.custMech.isVehicle) {
+        this.AliginToTerrain(raycast, 100f, false);
+      }
     }
     public virtual void CompleteMove(ActorMovementSequence sequence, bool playedMelee, ICombatant meleeTarget) {
       this.lastStateWasVisible = (this.rootParentRepresentation.BlipDisplayed == false);

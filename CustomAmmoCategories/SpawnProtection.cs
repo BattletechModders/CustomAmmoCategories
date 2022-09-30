@@ -11,16 +11,19 @@ namespace CustAmmoCategories {
     public static bool isSpawnProtected(this ICombatant combatant) {
       return combatant.StatCollection.GetOrCreateStatisic<bool>(SPAWN_PROTECTION_STAT_NAME, false).Value<bool>();
     }
-    public static void addSpawnProtection(this AbstractActor unit) {
+    public static void addSpawnProtection(this AbstractActor unit, string reason) {
+      Log.M?.TWL(0, $"SpawnProtection add {unit.PilotableActorDef.ChassisID} round:{unit.Combat.TurnDirector.CurrentRound} phase:{unit.Combat.TurnDirector.CurrentPhase} reason:{reason}");
       unit.StatCollection.GetOrCreateStatisic<bool>(SPAWN_PROTECTION_STAT_NAME, false).SetValue<bool>(true);
     }
     public static void removeSpawnProtection(this AbstractActor unit) {
+      Log.M?.TWL(0, $"SpawnProtection del {unit.PilotableActorDef.ChassisID} round:{unit.Combat.TurnDirector.CurrentRound} phase:{unit.Combat.TurnDirector.CurrentPhase}");
       unit.StatCollection.GetOrCreateStatisic<bool>(SPAWN_PROTECTION_STAT_NAME, false).SetValue<bool>(false);
     }
     public static bool isAddSpawnProtected(this ICombatant combatant) {
       return combatant.StatCollection.GetOrCreateStatisic<bool>(SPAWN_PROTECTION_STAT_NAME_ADD, false).Value<bool>();
     }
-    public static void addAddSpawnProtection(this AbstractActor unit) {
+    public static void addAddSpawnProtection(this AbstractActor unit, string reason) {
+      Log.M?.TWL(0, $"SpawnProtection add delayed {unit.PilotableActorDef.ChassisID} round:{unit.Combat.TurnDirector.CurrentRound} phase:{unit.Combat.TurnDirector.CurrentPhase} reason:{reason}");
       unit.StatCollection.GetOrCreateStatisic<bool>(SPAWN_PROTECTION_STAT_NAME_ADD, false).SetValue<bool>(true);
     }
     public static void removeAddSpawnProtection(this AbstractActor unit) {
@@ -35,12 +38,10 @@ namespace CustAmmoCategories {
     public static void Postfix(AbstractActor __instance, string sourceID, int stackItemID) {
       try {
         if (__instance.isSpawnProtected()) {
-          Log.M?.TWL(0,$"Remove spawn protection from {__instance.PilotableActorDef.ChassisID}");
           __instance.removeSpawnProtection();
         }
         if (__instance.isAddSpawnProtected()) {
-          Log.M?.TWL(0, $"Add spawn protection to {__instance.PilotableActorDef.ChassisID}");
-          __instance.addSpawnProtection();
+          __instance.addSpawnProtection("delayed");
           __instance.removeAddSpawnProtection();
         }
       }catch(Exception e) {

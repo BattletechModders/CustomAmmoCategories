@@ -819,51 +819,88 @@ namespace CustomUnits {
         if (this.thisAnimator != null) { this.thisAnimator.SetFloat("Twist", angle); }
       }
     }
-    public void AliginToWater(float deltaTime) {
+    //public void AliginToWater(float deltaTime) {
+    //  Log.TWL(0, "ActorMovementSequence.AliginToWater " + this.parentMech.MechDef.ChassisID);
+    //  int layerMask = 1 << LayerMask.NameToLayer("Water");
+    //  RaycastHit[] raycastHitArray = Physics.RaycastAll(new Ray(this.parentCombatant.CurrentPosition + Vector3.up * 100f, Vector3.down), 200f, layerMask);
+    //  float waterLevel = float.NaN;
+    //  foreach (RaycastHit hit in raycastHitArray) {
+    //    if (float.IsNaN(waterLevel) || (hit.point.y > waterLevel)) {
+    //      Log.LogWrite(2, "hit pos:" + hit.point + " " + hit.collider.gameObject.name + " layer:" + LayerMask.LayerToName(hit.collider.gameObject.layer) + "\n");
+    //      waterLevel = hit.point.y;
+    //    }
+    //  }
+    //  if (float.IsNaN(waterLevel) == false) {
+    //    //if (waterLevel > this.parentCombatant.CurrentPosition.y) {
+    //    this.HeightController.ForceHeight(waterLevel - this.parentCombatant.CurrentPosition.y - Core.Settings.MaxHoveringHeightWithWorkingJets / 2f);
+    //    //}
+    //  }
+    //}
+    public void AliginToWater(RaycastHit? rayhit, float deltaTime) {
       Log.TWL(0, "ActorMovementSequence.AliginToWater " + this.parentMech.MechDef.ChassisID);
-      int layerMask = 1 << LayerMask.NameToLayer("Water");
-      RaycastHit[] raycastHitArray = Physics.RaycastAll(new Ray(this.parentCombatant.CurrentPosition + Vector3.up * 100f, Vector3.down), 200f, layerMask);
-      float waterLevel = float.NaN;
-      foreach (RaycastHit hit in raycastHitArray) {
-        if (float.IsNaN(waterLevel) || (hit.point.y > waterLevel)) {
-          Log.LogWrite(2, "hit pos:" + hit.point + " " + hit.collider.gameObject.name + " layer:" + LayerMask.LayerToName(hit.collider.gameObject.layer) + "\n");
-          waterLevel = hit.point.y;
-        }
-      }
-      if (float.IsNaN(waterLevel) == false) {
-        //if (waterLevel > this.parentCombatant.CurrentPosition.y) {
-        this.HeightController.ForceHeight(waterLevel - this.parentCombatant.CurrentPosition.y - Core.Settings.MaxHoveringHeightWithWorkingJets / 2f);
-        //}
+      if (rayhit.HasValue) {
+        this.HeightController.ForceHeight(rayhit.Value.point.y - this.parentCombatant.CurrentPosition.y - Core.Settings.MaxHoveringHeightWithWorkingJets / 2f);
       }
     }
-    public void AliginToTerrain(float deltaTime) {
-      Log.TWL(0, "ActorMovementSequence.AliginToTerrain " + this.parentMech.MechDef.ChassisID);
-      if (Traverse.Create(typeof(ActorMovementSequence)).Field<int>("ikLayerMask").Value == 0) {
-        Traverse.Create(typeof(ActorMovementSequence)).Field<int>("ikLayerMask").Value = LayerMask.GetMask("Terrain", "Obstruction");
-      }
-      RaycastHit[] raycastHitArray = Physics.RaycastAll(new Ray(this.j_Root.position + Vector3.up * 20f, Vector3.down), this.j_Root.localPosition.y + 40f, Traverse.Create(typeof(ActorMovementSequence)).Field<int>("ikLayerMask").Value);
-      RaycastHit? nullable = new RaycastHit?();
-      RaycastHit raycastHit;
-      HashSet<Collider> skipColliders = this.rootParentRepresentation.ownColliders;
-      //Log.W(1, "skipColliders:");
-      //foreach (Collider collider in skipColliders) { Log.W(1,collider.transform.name); } ;
-      //Log.WL(0, "");
-      for (int index = 0; index < raycastHitArray.Length; ++index) {
-        if (skipColliders.Contains(raycastHitArray[index].collider) == false) {
-          Log.WL(1, "ray hit:" + raycastHitArray[index].point + " hit collider:" + raycastHitArray[index].collider.transform.name);
-          if (!nullable.HasValue) {
-            nullable = new RaycastHit?(raycastHitArray[index]);
-          } else {
-            raycastHit = nullable.Value;
-            if ((double)raycastHit.point.y < (double)raycastHitArray[index].point.y)
-              nullable = new RaycastHit?(raycastHitArray[index]);
-          }
+    public RaycastHit? GetWaterRayHit(Vector3 position) {
+      int layerMask = LayerMask.GetMask("Water");
+      RaycastHit[] raycastHitArray = Physics.RaycastAll(new Ray(position + Vector3.up * 100f, Vector3.down), 200f, layerMask);
+      RaycastHit? result = new RaycastHit?();
+      foreach (RaycastHit hit in raycastHitArray) {
+        if ((result.HasValue == false) || (hit.point.y > result.Value.point.y)) {
+          Log.WL(2, "hit pos:" + hit.point + " " + hit.collider.gameObject.name + " layer:" + LayerMask.LayerToName(hit.collider.gameObject.layer));
+          result = hit;
         }
       }
-      if (!nullable.HasValue) { return; }
-      raycastHit = nullable.Value;
-      Vector3 normal = raycastHit.normal;
-      Log.WL(1, "ray hit found. Point:" + raycastHit.point + " hit collider:" + raycastHit.collider.transform.name+ " normal:"+ normal);
+      return result;
+    }
+    public RaycastHit? GetTerrainRayHit(Vector3 position, bool water) {
+      int layerMask = LayerMask.GetMask("Terrain", "Obstruction");
+      if (water) { layerMask = LayerMask.GetMask("Terrain", "Obstruction", "Water"); }
+      RaycastHit? result = new RaycastHit?();
+      RaycastHit[] raycastHitArray = Physics.RaycastAll(new Ray(position + Vector3.up * 20f, Vector3.down), 200f+this.HeightController.CurrentHeight, Traverse.Create(typeof(ActorMovementSequence)).Field<int>("ikLayerMask").Value);
+      HashSet<Collider> skipColliders = this.rootParentRepresentation.ownColliders;
+      foreach (RaycastHit hit in raycastHitArray) {
+        if (skipColliders.Contains(hit.collider)) { continue; }
+        if ((result.HasValue == false) || (hit.point.y > result.Value.point.y)) {
+          Log.WL(2, "hit pos:" + hit.point + " " + hit.collider.gameObject.name + " layer:" + LayerMask.LayerToName(hit.collider.gameObject.layer));
+          result = hit;
+        }
+      }
+      return result;
+    }
+    public void AliginToTerrain(RaycastHit? rayhit, float deltaTime, bool water) {
+      Log.TWL(0, "ActorMovementSequence.AliginToTerrain " + this.parentMech.MechDef.ChassisID);
+      //if (Traverse.Create(typeof(ActorMovementSequence)).Field<int>("ikLayerMask").Value == 0) {
+      //  Traverse.Create(typeof(ActorMovementSequence)).Field<int>("ikLayerMask").Value = LayerMask.GetMask("Terrain", "Obstruction");
+      //}
+      //RaycastHit[] raycastHitArray = Physics.RaycastAll(new Ray(this.j_Root.position + Vector3.up * 20f, Vector3.down), this.j_Root.localPosition.y + 40f, Traverse.Create(typeof(ActorMovementSequence)).Field<int>("ikLayerMask").Value);
+      //RaycastHit? nullable = new RaycastHit?();
+      //RaycastHit raycastHit;
+      //HashSet<Collider> skipColliders = this.rootParentRepresentation.ownColliders;
+      ////Log.W(1, "skipColliders:");
+      ////foreach (Collider collider in skipColliders) { Log.W(1,collider.transform.name); } ;
+      ////Log.WL(0, "");
+      //for (int index = 0; index < raycastHitArray.Length; ++index) {
+      //  if (skipColliders.Contains(raycastHitArray[index].collider) == false) {
+      //    Log.WL(1, "ray hit:" + raycastHitArray[index].point + " hit collider:" + raycastHitArray[index].collider.transform.name);
+      //    if (!nullable.HasValue) {
+      //      nullable = new RaycastHit?(raycastHitArray[index]);
+      //    } else {
+      //      raycastHit = nullable.Value;
+      //      if ((double)raycastHit.point.y < (double)raycastHitArray[index].point.y)
+      //        nullable = new RaycastHit?(raycastHitArray[index]);
+      //    }
+      //  }
+      //}
+      if (rayhit.HasValue == false) {
+        rayhit = this.GetTerrainRayHit(this.j_Root.position,water);
+      }
+      if (rayhit.HasValue == false) {
+        return;
+      }
+      Vector3 normal = rayhit.Value.normal;
+      Log.WL(1, "ray hit found. Point:" + rayhit.Value.point + " hit collider:" + rayhit.Value.collider.transform.name+ " normal:"+ normal);
       //Quaternion to = Quaternion.FromToRotation(this.j_Root.up, normal) * Quaternion.Euler(0.0f, this.j_Root.rotation.eulerAngles.y, 0.0f);
       //this.j_Root.rotation = Quaternion.RotateTowards(this.j_Root.rotation, to, 180f * deltaTime);
       Quaternion to = Quaternion.FromToRotation(this.transform.up, normal) * Quaternion.Euler(0.0f, this.transform.rotation.eulerAngles.y, 0.0f);
@@ -874,7 +911,7 @@ namespace CustomUnits {
         this.HeightController.PendingHeight = this.parentCombatant.FlyingHeight();
       }
     }
-    public virtual void UpdateRotation(Transform moveTransform, Vector3 forward, float deltaT) {
+    public virtual void UpdateRotation(RaycastHit? rayhit, Transform moveTransform, Vector3 forward, float deltaT) {
       bool aliginToTerrain = false;
       bool vehicleMovement = this.parentCombatant.NoMoveAnimation() || this.parentCombatant.FakeVehicle();
       if (vehicleMovement && this.parentCombatant.FlyingHeight() < Core.Settings.MaxHoveringHeightWithWorkingJets) {
@@ -884,14 +921,14 @@ namespace CustomUnits {
         AudioSwitch_surface_type currentSurfaceType = this.rootParentRepresentation._CurrentSurfaceType;
         if ((currentSurfaceType == AudioSwitch_surface_type.water_deep) || (currentSurfaceType == AudioSwitch_surface_type.water_shallow)) {
           aliginToTerrain = false;
-          this.AliginToWater(deltaT);
+          this.AliginToWater(rayhit, deltaT);
         }
       }
       if (aliginToTerrain) {
         if (forward.sqrMagnitude > Core.Epsilon) {
           moveTransform.rotation = Quaternion.RotateTowards(moveTransform.rotation, Quaternion.LookRotation(forward), 180f * deltaT);
         }
-        this.AliginToTerrain(deltaT);
+        this.AliginToTerrain(rayhit, deltaT, false);
       } else {
         if (forward.sqrMagnitude > Core.Epsilon) {
           moveTransform.LookAt(moveTransform.position + forward, Vector3.up);

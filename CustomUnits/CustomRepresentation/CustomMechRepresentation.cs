@@ -115,7 +115,7 @@ namespace CustomUnits {
         Log.TWL(0, "UnitSpawnPointGameLogic.SpawnMech " + __result.PilotableActorDef.Description.Id);
         CustomMechRepresentation custRep = __result.GameRep as CustomMechRepresentation;
         if (custRep != null) {
-          custRep.UpdateRotation(custRep.transform, custRep.transform.forward, 9999f);
+          custRep.UpdateRotation(new RaycastHit?(),custRep.transform, custRep.transform.forward, 9999f);
         }
       } catch (Exception e) {
         Log.TWL(0, e.ToString(), true);

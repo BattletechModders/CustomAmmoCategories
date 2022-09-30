@@ -28,83 +28,83 @@ namespace CustomUnits {
       //TerrainMaskFlags terrainMaskFlags = MapMetaData.GetPriorityTerrainMaskFlags(cell);
       return SplatMapInfo.IsDeepWater(cell.terrainMask) || SplatMapInfo.IsWater(cell.terrainMask);
     }
-    public static void UpdateWaterHeightSelf(this MapTerrainDataCell cell) {
-      if (cell.HasWater() == false) { return; }
-      MapTerrainDataCellEx ecell = cell as MapTerrainDataCellEx;
-      if (ecell == null) { return; }
-      if (ecell.waterLevelCached) { return; }
-      ecell.UpdateWaterHeightRay();
-    }
-    public static void UpdateWaterHeightRay(this MapTerrainDataCellEx ecell) {
-      Vector3 pos = ecell.WorldPos();
-      Ray ray = new Ray(new Vector3(pos.x, 1000f, pos.z), Vector3.down);
-      int layerMask = 1 << LayerMask.NameToLayer("Water");
-      RaycastHit[] hits = Physics.RaycastAll(ray, 2000f, layerMask, QueryTriggerInteraction.Collide);
-      //Log.LogWrite(0, "UpdateWaterHeightRay:" + pos + "\n");
-      //Log.LogWrite(1, "hits count:" + hits.Length + "\n");
-      float waterLevel = float.NaN;
-      foreach (RaycastHit hit in hits) {
-        if (float.IsNaN(waterLevel) || (hit.point.y > waterLevel)) {
-          //Log.LogWrite(2, "hit pos:" + hit.point + " " + hit.collider.gameObject.name + " layer:" + LayerMask.LayerToName(hit.collider.gameObject.layer) + "\n");
-          waterLevel = hit.point.y;
-        }
-      }
-      if (float.IsNaN(waterLevel) == false) {
-        waterLevel -= Core.Settings.waterFlatDepth;
-        if (Mathf.Abs(ecell.terrainHeight - waterLevel) > Core.Settings.waterFlatDepth) {
-          ecell.realTerrainHeight = ecell.terrainHeight;
-          ecell.terrainHeight = waterLevel;
-          ecell.cachedHeight = waterLevel;
-          //Log.LogWrite(1, "terrain height:" + ecell.realTerrainHeight + " water surface height:" + ecell.terrainHeight + "\n");
-        }
-        ecell.waterLevelCached = true;
-        if (ecell.cachedSteepness > Core.Settings.maxWaterSteepness) {
-          //Log.LogWrite(1, "steppiness too high faltering:" + ecell.cachedSteepness + "\n");
-          if (ecell.cachedSteepness > Core.Settings.deepWaterSteepness) {
-            //Log.LogWrite(1, "steppiness too high mark as deep water:" + ecell.cachedSteepness + "\n");
-            ecell.AddTerrainMask(TerrainMaskFlags.DeepWater);
-          }
-          ecell.cachedSteepness = Core.Settings.maxWaterSteepness;
-          ecell.terrainSteepness = Core.Settings.maxWaterSteepness;
-        }
-        if (Mathf.Abs(ecell.realTerrainHeight - waterLevel) > Core.Settings.deepWaterDepth) {
-          //Log.LogWrite(1, "real depth too high tie to deep water:" + Mathf.Abs(ecell.realTerrainHeight - waterLevel) + "\n");
-          ecell.AddTerrainMask(TerrainMaskFlags.DeepWater);
-        }
-      }
-    }
-    public static void UpdateWaterHeightParent(this MapTerrainDataCell cell, float waterLevel) {
-      if (cell.HasWater() == false) { return; }
-      MapTerrainDataCellEx ecell = cell as MapTerrainDataCellEx;
-      if (ecell == null) { return; }
-      if (ecell.waterLevelCached) { return; }
-      if (float.IsNaN(waterLevel)) {
-        ecell.terrainHeight = waterLevel;
-        ecell.cachedHeight = waterLevel;
-        ecell.waterLevelCached = true;
-      }
-    }
+    //public static void UpdateWaterHeightSelf(this MapTerrainDataCell cell) {
+    //  if (cell.HasWater() == false) { return; }
+    //  MapTerrainDataCellEx ecell = cell as MapTerrainDataCellEx;
+    //  if (ecell == null) { return; }
+    //  if (ecell.waterLevelCached) { return; }
+    //  ecell.UpdateWaterHeightRay();
+    //}
+    //public static void UpdateWaterHeightRay(this MapTerrainDataCellEx ecell) {
+    //  Vector3 pos = ecell.WorldPos();
+    //  Ray ray = new Ray(new Vector3(pos.x, 1000f, pos.z), Vector3.down);
+    //  int layerMask = 1 << LayerMask.NameToLayer("Water");
+    //  RaycastHit[] hits = Physics.RaycastAll(ray, 2000f, layerMask, QueryTriggerInteraction.Collide);
+    //  //Log.LogWrite(0, "UpdateWaterHeightRay:" + pos + "\n");
+    //  //Log.LogWrite(1, "hits count:" + hits.Length + "\n");
+    //  float waterLevel = float.NaN;
+    //  foreach (RaycastHit hit in hits) {
+    //    if (float.IsNaN(waterLevel) || (hit.point.y > waterLevel)) {
+    //      //Log.LogWrite(2, "hit pos:" + hit.point + " " + hit.collider.gameObject.name + " layer:" + LayerMask.LayerToName(hit.collider.gameObject.layer) + "\n");
+    //      waterLevel = hit.point.y;
+    //    }
+    //  }
+    //  if (float.IsNaN(waterLevel) == false) {
+    //    waterLevel -= Core.Settings.waterFlatDepth;
+    //    if (Mathf.Abs(ecell.terrainHeight - waterLevel) > Core.Settings.waterFlatDepth) {
+    //      ecell.realTerrainHeight = ecell.terrainHeight;
+    //      ecell.terrainHeight = waterLevel;
+    //      ecell.cachedHeight = waterLevel;
+    //      //Log.LogWrite(1, "terrain height:" + ecell.realTerrainHeight + " water surface height:" + ecell.terrainHeight + "\n");
+    //    }
+    //    ecell.waterLevelCached = true;
+    //    if (ecell.cachedSteepness > Core.Settings.maxWaterSteepness) {
+    //      //Log.LogWrite(1, "steppiness too high faltering:" + ecell.cachedSteepness + "\n");
+    //      if (ecell.cachedSteepness > Core.Settings.deepWaterSteepness) {
+    //        //Log.LogWrite(1, "steppiness too high mark as deep water:" + ecell.cachedSteepness + "\n");
+    //        ecell.AddTerrainMask(TerrainMaskFlags.DeepWater);
+    //      }
+    //      ecell.cachedSteepness = Core.Settings.maxWaterSteepness;
+    //      ecell.terrainSteepness = Core.Settings.maxWaterSteepness;
+    //    }
+    //    if (Mathf.Abs(ecell.realTerrainHeight - waterLevel) > Core.Settings.deepWaterDepth) {
+    //      //Log.LogWrite(1, "real depth too high tie to deep water:" + Mathf.Abs(ecell.realTerrainHeight - waterLevel) + "\n");
+    //      ecell.AddTerrainMask(TerrainMaskFlags.DeepWater);
+    //    }
+    //  }
+    //}
+    //public static void UpdateWaterHeightParent(this MapTerrainDataCell cell, float waterLevel) {
+    //  if (cell.HasWater() == false) { return; }
+    //  MapTerrainDataCellEx ecell = cell as MapTerrainDataCellEx;
+    //  if (ecell == null) { return; }
+    //  if (ecell.waterLevelCached) { return; }
+    //  if (float.IsNaN(waterLevel)) {
+    //    ecell.terrainHeight = waterLevel;
+    //    ecell.cachedHeight = waterLevel;
+    //    ecell.waterLevelCached = true;
+    //  }
+    //}
     public static int MAX_LEVEL = 3;
-    public static void UpdateWaterHeight(this MapTerrainDataCell cell, int level = 0) {
-      if (Core.Settings.fixWaterHeight == false) { return; }
-      if (level > MAX_LEVEL) { return; }
-      if (cell.HasWater() == false) { return; }
-      MapTerrainDataCellEx ecell = cell as MapTerrainDataCellEx;
-      if (ecell == null) { return; }
-      if (ecell.waterLevelCached) { return; }
-      ecell.UpdateWaterHeightRay();
-      int x = ecell.x;
-      int y = ecell.y;
-      int mx = ecell.mapMetaData.mapTerrainDataCells.GetLength(0) - 1;
-      int my = ecell.mapMetaData.mapTerrainDataCells.GetLength(1) - 1;
-      if ((x > 0) && (y > 0)) { ecell.mapMetaData.mapTerrainDataCells[x - 1, y - 1].UpdateWaterHeight(level + 1); }
-      if (x > 0) { ecell.mapMetaData.mapTerrainDataCells[x - 1, y].UpdateWaterHeight(level + 1); }
-      if ((x < mx) && (y < my)) { ecell.mapMetaData.mapTerrainDataCells[x + 1, y + 1].UpdateWaterHeight(level + 1); }
-      if (y < my) { ecell.mapMetaData.mapTerrainDataCells[x, y + 1].UpdateWaterHeight(level + 1); }
-      if (x < mx) { ecell.mapMetaData.mapTerrainDataCells[x + 1, y].UpdateWaterHeight(level + 1); }
-      if ((x < mx) && (y > 0)) { ecell.mapMetaData.mapTerrainDataCells[x + 1, y - 1].UpdateWaterHeight(level + 1); }
-      if ((x > 0) && (y < my)) { ecell.mapMetaData.mapTerrainDataCells[x - 1, y + 1].UpdateWaterHeight(level + 1); }
-    }
+    //public static void UpdateWaterHeight(this MapTerrainDataCell cell, int level = 0) {
+    //  if (Core.Settings.fixWaterHeight == false) { return; }
+    //  if (level > MAX_LEVEL) { return; }
+    //  if (cell.HasWater() == false) { return; }
+    //  MapTerrainDataCellEx ecell = cell as MapTerrainDataCellEx;
+    //  if (ecell == null) { return; }
+    //  if (ecell.waterLevelCached) { return; }
+    //  ecell.UpdateWaterHeightRay();
+    //  int x = ecell.x;
+    //  int y = ecell.y;
+    //  int mx = ecell.mapMetaData.mapTerrainDataCells.GetLength(0) - 1;
+    //  int my = ecell.mapMetaData.mapTerrainDataCells.GetLength(1) - 1;
+    //  if ((x > 0) && (y > 0)) { ecell.mapMetaData.mapTerrainDataCells[x - 1, y - 1].UpdateWaterHeight(level + 1); }
+    //  if (x > 0) { ecell.mapMetaData.mapTerrainDataCells[x - 1, y].UpdateWaterHeight(level + 1); }
+    //  if ((x < mx) && (y < my)) { ecell.mapMetaData.mapTerrainDataCells[x + 1, y + 1].UpdateWaterHeight(level + 1); }
+    //  if (y < my) { ecell.mapMetaData.mapTerrainDataCells[x, y + 1].UpdateWaterHeight(level + 1); }
+    //  if (x < mx) { ecell.mapMetaData.mapTerrainDataCells[x + 1, y].UpdateWaterHeight(level + 1); }
+    //  if ((x < mx) && (y > 0)) { ecell.mapMetaData.mapTerrainDataCells[x + 1, y - 1].UpdateWaterHeight(level + 1); }
+    //  if ((x > 0) && (y < my)) { ecell.mapMetaData.mapTerrainDataCells[x - 1, y + 1].UpdateWaterHeight(level + 1); }
+    //}
   }
 
   [HarmonyPatch(typeof(PathNodeGrid))]
@@ -365,7 +365,7 @@ namespace CustomUnits {
             __result = (PathNode)null;
             return false;
           }
-          ___gpnCell.UpdateWaterHeight();
+          //___gpnCell.UpdateWaterHeight();
           posFromIndex.y = ___gpnCell.cachedHeight;
           ___pathNodes[x, z] = new PathNode(from, x, z, posFromIndex, angle, ___gpnCell, collisionTestActors, ___owningActor);
         }
@@ -377,112 +377,112 @@ namespace CustomUnits {
       }
     }
   }
-  [HarmonyPatch(typeof(PathNode))]
-  [HarmonyPatch(MethodType.Constructor)]
-  [HarmonyPatch(new Type[] { typeof(PathNode), typeof(int), typeof(int), typeof(Vector3), typeof(int), typeof(MapTerrainDataCell), typeof(List<AbstractActor>), typeof(AbstractActor) })]
-  public static class PathNode_Constructor {
-    private static MethodInfo FPosition = null;
-    private delegate void PositionSetDelegate(PathNode node, Vector3 pos);
-    private static PositionSetDelegate PositionSetInkover = null;
-    public static bool Prepare() {
-      FPosition = typeof(PathNode).GetProperty("Position", BindingFlags.Instance | BindingFlags.Public).GetSetMethod(true);
-      if (FPosition == null) {
-        Log.LogWrite("Can't find PathNode.Position");
-        return false;
-      }
-      var dm = new DynamicMethod("CUPositionSet", null, new Type[] { typeof(PathNode), typeof(Vector3) }, typeof(PathNode));
-      var gen = dm.GetILGenerator();
-      gen.Emit(OpCodes.Ldarg_0);
-      gen.Emit(OpCodes.Ldarg_1);
-      gen.Emit(OpCodes.Call, FPosition);
-      gen.Emit(OpCodes.Ret);
-      PositionSetInkover = (PositionSetDelegate)dm.CreateDelegate(typeof(PositionSetDelegate));
-      return true;
-    }
-    public static void Position(this PathNode node, Vector3 pos) {
-      if (PositionSetInkover == null) { return; }
-      PositionSetInkover(node, pos);
-    }
-    /*public static void UpdateWaterHeight(this MapTerrainDataCellEx ecell) {
-      if (float.IsNaN(ecell.WaterHeight)) {
-        Vector3 pos = ecell.WorldPos();
-        Ray ray = new Ray(new Vector3(pos.x, 1000f, pos.z), Vector3.down);
-        int layerMask = 1 << LayerMask.NameToLayer("Water");
-        RaycastHit[] hits = Physics.RaycastAll(ray, 2000f, layerMask, QueryTriggerInteraction.Collide);
-        Log.LogWrite(2, "hits count:" + hits.Length + "\n");
-        foreach (RaycastHit hit in hits) {
-          Log.LogWrite(3, "hit pos:" + hit.point + " " + hit.collider.gameObject.name + " layer:" + LayerMask.LayerToName(hit.collider.gameObject.layer) + "\n");
-          ecell.WaterHeight = hit.point.y;
-          return;
-        }
-        ecell.WaterHeight = ecell.cachedHeight;
-      }
-    }*/
-    public static void Postfix(PathNode __instance, PathNode from, int x, int z, Vector3 pos, int angle, MapTerrainDataCell cell, List<AbstractActor> collisionTestActors, AbstractActor owningActor) {
-      //try {
-      //  MapTerrainDataCellEx ecell = cell as MapTerrainDataCellEx;
-      //  if (ecell == null) { return; }
-      //  if ((ecell.cachedHeight - ecell.realTerrainHeight) > 5f) {
-      //    //Log.LogWrite(1, "detected lifted up cell. " + pos + " cell height:" + cell.cachedHeight + "/" + ecell.realTerrainHeight + "\n");
-      //  }
-      //  if (__instance.HasCollision || (__instance.IsValidDestination == false)) {
-      //    //Log.LogWrite(1, "X:" + ecell.x + " Y:" + ecell.y, true);
-      //    //Log.LogWrite(1, "HasCollision:" + __instance.HasCollision, true);
-      //    //Log.LogWrite(1, "IsValidDestination:" + __instance.IsValidDestination, true);
-      //    //Log.LogWrite(1, "Priority Terrain Flag:" + MapMetaData.GetPriorityTerrainMaskFlags(ecell) + "(" + ((int)ecell.terrainMask) + ")", true);
-      //    if (owningActor.UnaffectedPathingF()) {
-      //      if (__instance.HasCollision) {
-      //      } else {
-      //        if (SplatMapInfo.IsMapBoundary(cell.terrainMask) == false) {
-      //          //Log.LogWrite(1, "Unaffected by pathing", true);
-      //          __instance.IsValidDestination = true;
-      //        }
-      //      }
-      //    }
-      //  }
-      //}catch(Exception e) {
-      //  Log.TWL(0, e.ToString(), true);
-      //}
-    }
-  }
-  [HarmonyPatch(typeof(PathNodeGrid))]
-  [HarmonyPatch("GetPathTo")]
-  [HarmonyPatch(MethodType.Normal)]
-  //[HarmonyPatch(new Type[] { typeof(Vector3), typeof(Vector3 lookTarget, typeof(float maxCost, typeof(AbstractActor meleeTarget, out float costLeft, out Vector3 resultPos, out float resultAngle, bool preservePosition, float lockedAngle, float lockedCostLeft, float mouseInfluence, bool calledFromUI, bool overrideAngle) })]
-  public static class PathNodeGrid_GetPathTo {
-    private static FieldInfo FowningActor = null;
-    public static bool Prepare() {
-      try {
-        FowningActor = typeof(PathNodeGrid).GetField("owningActor", BindingFlags.Instance | BindingFlags.NonPublic);
-        if (FowningActor == null) {
-          Log.LogWrite(0, "PathNodeGrid.GetPathTo Can't find owningActor", true);
-          return false;
-        }
-      } catch (Exception e) {
-        Log.LogWrite(0, e.ToString(), true);
-        return false;
-      }
-      return true;
-    }
-    public static void Postfix(PathNodeGrid __instance, Vector3 pos, Vector3 lookTarget, float maxCost, AbstractActor meleeTarget, ref float costLeft, ref Vector3 resultPos, ref float resultAngle, bool preservePosition, float lockedAngle, float lockedCostLeft, float mouseInfluence, bool calledFromUI, bool overrideAngle, ref List<PathNode> __result) {
-      AbstractActor owningActor = (AbstractActor)FowningActor.GetValue(__instance);
-      try {
-        if (__result == null) { return; }
-        //Log.LogWrite("PathNodeGrid.GetPathTo " + pos + " result:" + __result.Count + "\n");
-        for (int index = 0; index < __result.Count; ++index) {
-          //bool water = false;
-          PathNode node = __result[index];
-          //MapTerrainDataCellEx ecell = node.MapTerrainDataCell as MapTerrainDataCellEx;
-          //if (ecell == null) { continue; }
-          if (node.MapTerrainDataCell == null) { return; }
-          node.MapTerrainDataCell.UpdateWaterHeight();
-          //Log.LogWrite(1, node.Position + " cell height:" + node.MapTerrainDataCell.cachedHeight + "/" + (ecell == null ? "null" : ecell.realTerrainHeight.ToString()) + " water:" + water, true);
-        }
-      }catch(Exception e) {
-        Log.TWL(0,e.ToString(),true);
-      }
-    }
-  }
+  //[HarmonyPatch(typeof(PathNode))]
+  //[HarmonyPatch(MethodType.Constructor)]
+  //[HarmonyPatch(new Type[] { typeof(PathNode), typeof(int), typeof(int), typeof(Vector3), typeof(int), typeof(MapTerrainDataCell), typeof(List<AbstractActor>), typeof(AbstractActor) })]
+  //public static class PathNode_Constructor {
+  //  private static MethodInfo FPosition = null;
+  //  private delegate void PositionSetDelegate(PathNode node, Vector3 pos);
+  //  private static PositionSetDelegate PositionSetInkover = null;
+  //  public static bool Prepare() {
+  //    FPosition = typeof(PathNode).GetProperty("Position", BindingFlags.Instance | BindingFlags.Public).GetSetMethod(true);
+  //    if (FPosition == null) {
+  //      Log.LogWrite("Can't find PathNode.Position");
+  //      return false;
+  //    }
+  //    var dm = new DynamicMethod("CUPositionSet", null, new Type[] { typeof(PathNode), typeof(Vector3) }, typeof(PathNode));
+  //    var gen = dm.GetILGenerator();
+  //    gen.Emit(OpCodes.Ldarg_0);
+  //    gen.Emit(OpCodes.Ldarg_1);
+  //    gen.Emit(OpCodes.Call, FPosition);
+  //    gen.Emit(OpCodes.Ret);
+  //    PositionSetInkover = (PositionSetDelegate)dm.CreateDelegate(typeof(PositionSetDelegate));
+  //    return true;
+  //  }
+  //  public static void Position(this PathNode node, Vector3 pos) {
+  //    if (PositionSetInkover == null) { return; }
+  //    PositionSetInkover(node, pos);
+  //  }
+  //  /*public static void UpdateWaterHeight(this MapTerrainDataCellEx ecell) {
+  //    if (float.IsNaN(ecell.WaterHeight)) {
+  //      Vector3 pos = ecell.WorldPos();
+  //      Ray ray = new Ray(new Vector3(pos.x, 1000f, pos.z), Vector3.down);
+  //      int layerMask = 1 << LayerMask.NameToLayer("Water");
+  //      RaycastHit[] hits = Physics.RaycastAll(ray, 2000f, layerMask, QueryTriggerInteraction.Collide);
+  //      Log.LogWrite(2, "hits count:" + hits.Length + "\n");
+  //      foreach (RaycastHit hit in hits) {
+  //        Log.LogWrite(3, "hit pos:" + hit.point + " " + hit.collider.gameObject.name + " layer:" + LayerMask.LayerToName(hit.collider.gameObject.layer) + "\n");
+  //        ecell.WaterHeight = hit.point.y;
+  //        return;
+  //      }
+  //      ecell.WaterHeight = ecell.cachedHeight;
+  //    }
+  //  }*/
+  //  public static void Postfix(PathNode __instance, PathNode from, int x, int z, Vector3 pos, int angle, MapTerrainDataCell cell, List<AbstractActor> collisionTestActors, AbstractActor owningActor) {
+  //    //try {
+  //    //  MapTerrainDataCellEx ecell = cell as MapTerrainDataCellEx;
+  //    //  if (ecell == null) { return; }
+  //    //  if ((ecell.cachedHeight - ecell.realTerrainHeight) > 5f) {
+  //    //    //Log.LogWrite(1, "detected lifted up cell. " + pos + " cell height:" + cell.cachedHeight + "/" + ecell.realTerrainHeight + "\n");
+  //    //  }
+  //    //  if (__instance.HasCollision || (__instance.IsValidDestination == false)) {
+  //    //    //Log.LogWrite(1, "X:" + ecell.x + " Y:" + ecell.y, true);
+  //    //    //Log.LogWrite(1, "HasCollision:" + __instance.HasCollision, true);
+  //    //    //Log.LogWrite(1, "IsValidDestination:" + __instance.IsValidDestination, true);
+  //    //    //Log.LogWrite(1, "Priority Terrain Flag:" + MapMetaData.GetPriorityTerrainMaskFlags(ecell) + "(" + ((int)ecell.terrainMask) + ")", true);
+  //    //    if (owningActor.UnaffectedPathingF()) {
+  //    //      if (__instance.HasCollision) {
+  //    //      } else {
+  //    //        if (SplatMapInfo.IsMapBoundary(cell.terrainMask) == false) {
+  //    //          //Log.LogWrite(1, "Unaffected by pathing", true);
+  //    //          __instance.IsValidDestination = true;
+  //    //        }
+  //    //      }
+  //    //    }
+  //    //  }
+  //    //}catch(Exception e) {
+  //    //  Log.TWL(0, e.ToString(), true);
+  //    //}
+  //  }
+  //}
+  //[HarmonyPatch(typeof(PathNodeGrid))]
+  //[HarmonyPatch("GetPathTo")]
+  //[HarmonyPatch(MethodType.Normal)]
+  ////[HarmonyPatch(new Type[] { typeof(Vector3), typeof(Vector3 lookTarget, typeof(float maxCost, typeof(AbstractActor meleeTarget, out float costLeft, out Vector3 resultPos, out float resultAngle, bool preservePosition, float lockedAngle, float lockedCostLeft, float mouseInfluence, bool calledFromUI, bool overrideAngle) })]
+  //public static class PathNodeGrid_GetPathTo {
+  //  private static FieldInfo FowningActor = null;
+  //  public static bool Prepare() {
+  //    try {
+  //      FowningActor = typeof(PathNodeGrid).GetField("owningActor", BindingFlags.Instance | BindingFlags.NonPublic);
+  //      if (FowningActor == null) {
+  //        Log.LogWrite(0, "PathNodeGrid.GetPathTo Can't find owningActor", true);
+  //        return false;
+  //      }
+  //    } catch (Exception e) {
+  //      Log.LogWrite(0, e.ToString(), true);
+  //      return false;
+  //    }
+  //    return true;
+  //  }
+  //  public static void Postfix(PathNodeGrid __instance, Vector3 pos, Vector3 lookTarget, float maxCost, AbstractActor meleeTarget, ref float costLeft, ref Vector3 resultPos, ref float resultAngle, bool preservePosition, float lockedAngle, float lockedCostLeft, float mouseInfluence, bool calledFromUI, bool overrideAngle, ref List<PathNode> __result) {
+  //    AbstractActor owningActor = (AbstractActor)FowningActor.GetValue(__instance);
+  //    try {
+  //      if (__result == null) { return; }
+  //      //Log.LogWrite("PathNodeGrid.GetPathTo " + pos + " result:" + __result.Count + "\n");
+  //      for (int index = 0; index < __result.Count; ++index) {
+  //        //bool water = false;
+  //        PathNode node = __result[index];
+  //        //MapTerrainDataCellEx ecell = node.MapTerrainDataCell as MapTerrainDataCellEx;
+  //        //if (ecell == null) { continue; }
+  //        if (node.MapTerrainDataCell == null) { return; }
+  //        node.MapTerrainDataCell.UpdateWaterHeight();
+  //        //Log.LogWrite(1, node.Position + " cell height:" + node.MapTerrainDataCell.cachedHeight + "/" + (ecell == null ? "null" : ecell.realTerrainHeight.ToString()) + " water:" + water, true);
+  //      }
+  //    }catch(Exception e) {
+  //      Log.TWL(0,e.ToString(),true);
+  //    }
+  //  }
+  //}
   /*[HarmonyPatch(typeof(JumpPathing))]
   [HarmonyPatch("IsValidLandingSpot")]
   [HarmonyPatch(MethodType.Normal)]
@@ -530,108 +530,108 @@ namespace CustomUnits {
       }
     }
   }*/
-  [HarmonyPatch(typeof(MapMetaData))]
-  [HarmonyPatch("GetLerpedHeightAt")]
-  [HarmonyPatch(MethodType.Normal)]
-  [HarmonyPatch(new Type[] { typeof(Vector3), typeof(bool) })]
-  public static class MapMetaData_GetLerpedHeightAt {
-    public static bool Prefix(MapMetaData __instance, Vector3 worldPos, bool terrainOnly) {
-      try {
-        MapTerrainDataCell cell = __instance.GetCellAt(worldPos);
-        cell.UpdateWaterHeight();
-      } catch (Exception e) { Log.LogWrite(e.ToString() + "\n", true); }
-      return true;
-    }
-  }
-  [HarmonyPatch(typeof(MapMetaData))]
-  [HarmonyPatch("GetCellAt")]
-  [HarmonyPatch(MethodType.Normal)]
-  [HarmonyPatch(new Type[] { typeof(Vector3) })]
-  public static class MapMetaData_GetCellAtVector {
-    public static void Postfix(MapMetaData __instance, ref MapTerrainDataCell __result) {
-      try {
-        __result.UpdateWaterHeight();
-      } catch (Exception e) { Log.LogWrite(e.ToString() + "\n", true); }
-      return;
-    }
-  }
-  [HarmonyPatch(typeof(MapMetaData))]
-  [HarmonyPatch("GetCellAt")]
-  [HarmonyPatch(MethodType.Normal)]
-  [HarmonyPatch(new Type[] { typeof(Point) })]
-  public static class MapMetaData_GetCellAtPoint {
-    public static void Postfix(MapMetaData __instance, ref MapTerrainDataCell __result) {
-      try {
-        __result.UpdateWaterHeight();
-      } catch (Exception e) { Log.LogWrite(e.ToString() + "\n", true); }
-      return;
-    }
-  }
-  [HarmonyPatch(typeof(MapMetaData))]
-  [HarmonyPatch("GetCellAt")]
-  [HarmonyPatch(MethodType.Normal)]
-  [HarmonyPatch(new Type[] { typeof(int),typeof(int) })]
-  public static class MapMetaData_GetCellAtIndex {
-    public static void Postfix(MapMetaData __instance, ref MapTerrainDataCell __result) {
-      try {
-        __result.UpdateWaterHeight();
-      } catch (Exception e) { Log.LogWrite(e.ToString() + "\n", true); }
-      return;
-    }
-  }
-  [HarmonyPatch(typeof(MapMetaData))]
-  [HarmonyPatch("SafeGetCellAt")]
-  [HarmonyPatch(MethodType.Normal)]
-  [HarmonyPatch(new Type[] { typeof(int), typeof(int) })]
-  public static class MapMetaData_SafeGetCellAt {
-    public static void Postfix(MapMetaData __instance, ref MapTerrainDataCell __result) {
-      try {
-        __result.UpdateWaterHeight();
-      } catch (Exception e) { Log.LogWrite(e.ToString() + "\n", true); }
-      return;
-    }
-  }
-  [HarmonyPatch(typeof(ActorMovementSequence))]
-  [HarmonyPatch("UpdateSpline")]
-  [HarmonyPatch(MethodType.Normal)]
-  [HarmonyPatch(new Type[] { })]
-  public static class ActorMovementSequence_UpdateSpline {
-    //private static FieldInfo FowningActor = null;
-    public static bool Prepare() {
-      try {
-        //FowningActor = typeof(OrderSequence).GetField("owningActor", BindingFlags.Instance | BindingFlags.NonPublic);
-        //if (FowningActor == null) {
-          //Log.LogWrite(0, "ActorMovementSequence.UpdateSpline Can't find owningActor", true);
-          //return false;
-        //}
-      } catch (Exception e) {
-        Log.LogWrite(0, e.ToString(), true);
-        return false;
-      }
-      return true;
-    }
-#pragma warning disable CS0252
-    static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) {
-      Log.LogWrite("ToHit.GetAllModifiers transpliter\n", true);
-      List<CodeInstruction> result = instructions.ToList();
-      MethodInfo GetSelfTerrainModifier = AccessTools.Method(typeof(ToHit), "GetSelfTerrainModifier");
-      if (GetSelfTerrainModifier != null) {
-        Log.LogWrite(1, "source method found", true);
-      } else {
-        return result;
-      }
-      MethodInfo replacementMethod = AccessTools.Method(typeof(ActorMovementSequence_UpdateSpline), nameof(GetLerpedHeightAt));
-      if (replacementMethod != null) {
-        Log.LogWrite(1, "target method found", true);
-      } else {
-        return result;
-      }
-      int methodCallIndex = result.FindIndex(instruction => instruction.opcode == OpCodes.Callvirt && instruction.operand == GetSelfTerrainModifier);
-      return result;
-    }
-    public static float GetLerpedHeightAt(Vector3 worldPos, AbstractActor owningActor) {
-      return owningActor.Combat.MapMetaData.GetLerpedHeightAt(worldPos, false);
-    }
-  }
-#pragma warning restore CS0252
+  //[HarmonyPatch(typeof(MapMetaData))]
+  //[HarmonyPatch("GetLerpedHeightAt")]
+  //[HarmonyPatch(MethodType.Normal)]
+  //[HarmonyPatch(new Type[] { typeof(Vector3), typeof(bool) })]
+  //public static class MapMetaData_GetLerpedHeightAt {
+  //  public static bool Prefix(MapMetaData __instance, Vector3 worldPos, bool terrainOnly) {
+  //    try {
+  //      MapTerrainDataCell cell = __instance.GetCellAt(worldPos);
+  //      cell.UpdateWaterHeight();
+  //    } catch (Exception e) { Log.LogWrite(e.ToString() + "\n", true); }
+  //    return true;
+  //  }
+  //}
+  //[HarmonyPatch(typeof(MapMetaData))]
+  //[HarmonyPatch("GetCellAt")]
+  //[HarmonyPatch(MethodType.Normal)]
+  //[HarmonyPatch(new Type[] { typeof(Vector3) })]
+  //public static class MapMetaData_GetCellAtVector {
+  //  public static void Postfix(MapMetaData __instance, ref MapTerrainDataCell __result) {
+  //    try {
+  //      __result.UpdateWaterHeight();
+  //    } catch (Exception e) { Log.LogWrite(e.ToString() + "\n", true); }
+  //    return;
+  //  }
+  //}
+  //[HarmonyPatch(typeof(MapMetaData))]
+  //[HarmonyPatch("GetCellAt")]
+  //[HarmonyPatch(MethodType.Normal)]
+  //[HarmonyPatch(new Type[] { typeof(Point) })]
+  //public static class MapMetaData_GetCellAtPoint {
+  //  public static void Postfix(MapMetaData __instance, ref MapTerrainDataCell __result) {
+  //    try {
+  //      __result.UpdateWaterHeight();
+  //    } catch (Exception e) { Log.LogWrite(e.ToString() + "\n", true); }
+  //    return;
+  //  }
+  //}
+  //[HarmonyPatch(typeof(MapMetaData))]
+  //[HarmonyPatch("GetCellAt")]
+  //[HarmonyPatch(MethodType.Normal)]
+  //[HarmonyPatch(new Type[] { typeof(int),typeof(int) })]
+  //public static class MapMetaData_GetCellAtIndex {
+  //  public static void Postfix(MapMetaData __instance, ref MapTerrainDataCell __result) {
+  //    try {
+  //      __result.UpdateWaterHeight();
+  //    } catch (Exception e) { Log.LogWrite(e.ToString() + "\n", true); }
+  //    return;
+  //  }
+  //}
+  //[HarmonyPatch(typeof(MapMetaData))]
+  //[HarmonyPatch("SafeGetCellAt")]
+  //[HarmonyPatch(MethodType.Normal)]
+  //[HarmonyPatch(new Type[] { typeof(int), typeof(int) })]
+  //public static class MapMetaData_SafeGetCellAt {
+  //  public static void Postfix(MapMetaData __instance, ref MapTerrainDataCell __result) {
+  //    try {
+  //      __result.UpdateWaterHeight();
+  //    } catch (Exception e) { Log.LogWrite(e.ToString() + "\n", true); }
+  //    return;
+  //  }
+  //}
+//  [HarmonyPatch(typeof(ActorMovementSequence))]
+//  [HarmonyPatch("UpdateSpline")]
+//  [HarmonyPatch(MethodType.Normal)]
+//  [HarmonyPatch(new Type[] { })]
+//  public static class ActorMovementSequence_UpdateSpline {
+//    //private static FieldInfo FowningActor = null;
+//    public static bool Prepare() {
+//      try {
+//        //FowningActor = typeof(OrderSequence).GetField("owningActor", BindingFlags.Instance | BindingFlags.NonPublic);
+//        //if (FowningActor == null) {
+//          //Log.LogWrite(0, "ActorMovementSequence.UpdateSpline Can't find owningActor", true);
+//          //return false;
+//        //}
+//      } catch (Exception e) {
+//        Log.LogWrite(0, e.ToString(), true);
+//        return false;
+//      }
+//      return true;
+//    }
+//#pragma warning disable CS0252
+//    static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) {
+//      Log.LogWrite("ActorMovementSequence.UpdateSpline transpliter\n", true);
+//      List<CodeInstruction> result = instructions.ToList();
+//      MethodInfo GetSelfTerrainModifier = AccessTools.Method(typeof(ToHit), "GetSelfTerrainModifier");
+//      if (GetSelfTerrainModifier != null) {
+//        Log.LogWrite(1, "source method found", true);
+//      } else {
+//        return result;
+//      }
+//      MethodInfo replacementMethod = AccessTools.Method(typeof(ActorMovementSequence_UpdateSpline), nameof(GetLerpedHeightAt));
+//      if (replacementMethod != null) {
+//        Log.LogWrite(1, "target method found", true);
+//      } else {
+//        return result;
+//      }
+//      int methodCallIndex = result.FindIndex(instruction => instruction.opcode == OpCodes.Callvirt && instruction.operand == GetSelfTerrainModifier);
+//      return result;
+//    }
+//    public static float GetLerpedHeightAt(Vector3 worldPos, AbstractActor owningActor) {
+//      return owningActor.Combat.MapMetaData.GetLerpedHeightAt(worldPos, false);
+//    }
+//  }
+//#pragma warning restore CS0252
 }

@@ -184,7 +184,26 @@ namespace CustomUnits {
   [HarmonyPatch(new Type[] { typeof(IMechLabDraggableItem), typeof(bool) })]
   public static class LanceLoadoutSlot_OnAddItem {
     public static bool Prefix(LanceLoadoutSlot __instance, IMechLabDraggableItem item, bool validate, bool __result, LanceConfiguratorPanel ___LC) {
-      Log.TWL(0, "LanceLoadoutSlot.OnAddItem " + __instance.GetInstanceID());
+      LanceLoadoutSlot[] loadoutSlots = Traverse.Create(___LC).Field<LanceLoadoutSlot[]>("loadoutSlots").Value;
+      int slotIndex = -1;
+      for(int i = 0; i < loadoutSlots.Length; ++i) { if (loadoutSlots[i] == __instance) { slotIndex = i; break; } }
+
+      Log.TW(0, $"LanceLoadoutSlot.OnAddItem slot:{slotIndex} item:{item.ItemType}");
+      if(item.ItemType == MechLabDraggableItemType.Mech) {
+        LanceLoadoutMechItem lanceLoadoutMechItem = item as LanceLoadoutMechItem;
+        Log.WL(1, $"{lanceLoadoutMechItem.MechDef.ChassisID}({lanceLoadoutMechItem.MechDef.GUID})");
+        for (int i = 0; i < loadoutSlots.Length; ++i) {
+          if (slotIndex == i) { continue; }
+          if (loadoutSlots[i].SelectedMech == null) { continue; }
+          if(loadoutSlots[i].SelectedMech.MechDef.GUID == lanceLoadoutMechItem.MechDef.GUID) {
+            Log.WL(1,$"Duplicate detected in slot {i}");
+            Log.WL(1, Environment.StackTrace);
+          }
+        }
+      }else if(item.ItemType == MechLabDraggableItemType.Pilot) {
+        SGBarracksRosterSlot barracksRosterSlot = item as SGBarracksRosterSlot;
+        Log.WL(1, $"{barracksRosterSlot.Pilot.Description.Id}({barracksRosterSlot.Pilot.Callsign})");
+      }
       try {
         if (Thread.CurrentThread.isFlagSet("LanceLoadoutSlot.LOCKED")) { return true; };
         if ((item.ItemType != MechLabDraggableItemType.Mech) && (item.ItemType != MechLabDraggableItemType.Pilot)) { return true; }
@@ -245,6 +264,13 @@ namespace CustomUnits {
     static void Postfix(LanceConfiguratorPanel __instance, ref LanceConfiguration __result, ref LanceLoadoutSlot[] ___loadoutSlots) {
       try {
         Log.TWL(0, "LanceConfiguratorPanel.CreateLanceConfiguration");
+        for (int i = 0; i < ___loadoutSlots.Length; ++i) {
+          Pilot pilot = null;
+          MechDef mech = null;
+          if (___loadoutSlots[i].SelectedPilot != null) { pilot = ___loadoutSlots[i].SelectedPilot.Pilot; }
+          if (___loadoutSlots[i].SelectedMech != null) { mech = ___loadoutSlots[i].SelectedMech.MechDef; }
+          Log.WL(1, $"[{i}] state:{___loadoutSlots[i].curLockState} pilot:{((pilot != null) ? (pilot.Description.Id + "(" + pilot.Callsign + ")") : "null")}  unit:{((mech != null) ? mech.ChassisID + "(" + mech.GUID + ")" : "null")}");
+        }
         LanceConfiguration lanceConfiguration = new LanceConfiguration();
         CustomLanceHelper.playerLanceLoadout.loadout.Clear();
         CustomLanceHelper.hotdropLayout.Clear();

@@ -61,9 +61,19 @@ namespace CustomUnits {
   [HarmonyPatch("UpdateSpline")]
   [HarmonyPatch(new Type[] { })]
   public static class ActorMovementSequence_UpdateSplineSquad {
-    public static void Postfix(ActorMovementSequence __instance, Vector3 ___Forward, float ___t, ICombatant ___meleeTarget) {
+    public static RaycastHit? UpdateSplineDelegate(AbstractActor unit, Vector3 worldPos, ActorMovementSequence seq, Vector3 forward, float t, ICombatant meleeTarget) {
+      return (unit.GameRep as CustomMechRepresentation).UpdateSpline(worldPos, seq, forward, t, meleeTarget);
+    }
+    public static void UpdateRotationDelegate(AbstractActor unit, RaycastHit? raycast, Transform moveTransform, Vector3 forward, float t) {
+      (unit.GameRep as CustomMechRepresentation).UpdateRotation(raycast, moveTransform, forward, t);
+    }
+    public static bool Prefix(ActorMovementSequence __instance) {
       try {
-        if (__instance.ActorRep is CustomMechRepresentation custRep) { custRep.UpdateSpline(__instance, ___Forward, ___t, ___meleeTarget); }
+        if (__instance.ActorRep is CustomMechRepresentation custRep) {
+          CustomDeploy.ActorMovementSequence_UpdateSpline.Prefix(__instance, UpdateSplineDelegate, UpdateRotationDelegate);
+          return false;
+          //custRep.UpdateSpline(__instance, ___Forward, ___t, ___meleeTarget);
+        }
         //TrooperSquad squad = __instance.owningActor as TrooperSquad;
         //if (squad != null) { squad.UpdateSpline(__instance, ___Forward); }
         //AlternateMechRepresentations altReps = __instance.ActorRep.GetComponent<AlternateMechRepresentations>();
@@ -71,6 +81,7 @@ namespace CustomUnits {
       } catch (Exception e) {
         Log.TWL(0, e.ToString(), true);
       }
+      return true;
     }
   }
   [HarmonyPatch(typeof(ActorMovementSequence))]
@@ -78,15 +89,18 @@ namespace CustomUnits {
   [HarmonyPatch("CompleteMove")]
   [HarmonyPatch(new Type[] { })]
   public static class ActorMovementSequence_CompleteMove {
-    public static void Prefix(ActorMovementSequence __instance, Vector3 ___Forward, float ___t, ref Vehicle __state, bool ___playedMelee, ICombatant ___meleeTarget) {
+    public static void CompleteMoveDelegate(AbstractActor unit, Vector3 finalPos, Vector3 finalHeading, ActorMovementSequence seq, bool playedMelee, ICombatant meleeTarget) {
+      (unit.GameRep as CustomMechRepresentation).CompleteMove(finalPos, finalHeading, seq, playedMelee, meleeTarget);
+    }
+    public static bool Prefix(ActorMovementSequence __instance) {
       try {
-        __state = null;
-        if (__instance.OwningVehicle != null) {
-          if (__instance.OwningVehicle.UnaffectedPathing()) {
-            __state = __instance.OwningVehicle;
-            __instance.OwningVehicle(null);
-          }
-        }
+        //__state = null;
+        //if (__instance.OwningVehicle != null) {
+        //  if (__instance.OwningVehicle.UnaffectedPathing()) {
+        //    __state = __instance.OwningVehicle;
+        //    __instance.OwningVehicle(null);
+        //  }
+        //}
         //TrooperSquad squad = __instance.owningActor as TrooperSquad;
         //if (squad != null) {
         //  foreach (var sRep in squad.squadReps) {
@@ -101,24 +115,29 @@ namespace CustomUnits {
         //    }
         //  }
         //}
-        VTOLBodyAnimation bodyAnimation = __instance.owningActor.VTOLAnimation();
-        if (bodyAnimation != null) {
-          if (bodyAnimation.bodyAnimator != null) {
-            bodyAnimation.bodyAnimator.SetFloat("backward", 0f);
-            bodyAnimation.bodyAnimator.SetFloat("forward", 0f);
-          }
-        }
+        //VTOLBodyAnimation bodyAnimation = __instance.owningActor.VTOLAnimation();
+        //if (bodyAnimation != null) {
+        //  if (bodyAnimation.bodyAnimator != null) {
+        //    bodyAnimation.bodyAnimator.SetFloat("backward", 0f);
+        //    bodyAnimation.bodyAnimator.SetFloat("forward", 0f);
+        //  }
+        //}
         //AlternateMechRepresentations altReps = __instance.ActorRep.GetComponent<AlternateMechRepresentations>();
         //if (altReps != null) { altReps.CompleteMove(__instance, ___playedMelee, ___meleeTarget); }
-        if (__instance.ActorRep is CustomMechRepresentation custRep) { custRep.CompleteMove(__instance, ___playedMelee, ___meleeTarget); }
+        if (__instance.ActorRep is CustomMechRepresentation custRep) {
+          CustomDeploy.ActorMovementSequence_CompleteMove.Prefix(__instance, CompleteMoveDelegate);
+          //custRep.CompleteMove(__instance, ___playedMelee, ___meleeTarget);
+          return false;
+        }
       } catch (Exception e) {
         Log.TWL(0, e.ToString(), true);
       }
+      return true;
     }
-    public static void Postfix(ActorMovementSequence __instance, ref Vehicle __state) {
-      if (__state != null) {
-        __instance.OwningVehicle(__state);
-      }
+    public static void Postfix(ActorMovementSequence __instance) {
+      //if (__state != null) {
+      //  __instance.OwningVehicle(__state);
+      //}
       Log.TWL(0, "ActorMovementSequence.CompleteMove " + __instance.owningActor.GameRep.transform.name);
       foreach (MonoBehaviour component in __instance.owningActor.GameRep.GetComponentsInChildren<MonoBehaviour>(true)) {
         if (component is IEnableOnMove enInited) { enInited.Disable(); }
@@ -130,6 +149,21 @@ namespace CustomUnits {
       //}
     }
   }
+  [HarmonyPatch(typeof(MechJumpSequence))]
+  [HarmonyPatch("Init")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { typeof(Vector3), typeof(Quaternion), typeof(ICombatant) })]
+  public static class MechJumpSequence_Constructor {
+    public static bool Prefix(MechJumpSequence __instance, ref Vector3 finalPos, Quaternion finalHeading, ICombatant dfaTarget) {
+      try {
+        if (__instance.MechRep is CustomMechRepresentation custMechRep) { custMechRep.InitJump(ref finalPos); }
+      } catch (Exception e) {
+        Log.TWL(0, e.ToString(), true);
+      }
+      return true;
+    }
+  }
+
   [HarmonyPatch(typeof(ActorMovementSequence))]
   [HarmonyPatch("TurnParam")]
   [HarmonyPatch(MethodType.Setter)]

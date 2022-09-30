@@ -157,6 +157,12 @@ namespace CustomUnits{
     public Dictionary<string,float> HardpointCandidates { get; set; }
     public ComponentPrefabMap() { PrefabIdentifier = string.Empty; HardpointCandidates = new Dictionary<string, float>(); }
   }
+  public class TimerObjectiveAdvice {
+    public int manualDeployAdvice { get; set; } = 0;
+    public int autoDeployAdvice { get; set; } = 0;
+    public TimerObjectiveAdvice() { }
+    public TimerObjectiveAdvice(int a, int m) { manualDeployAdvice = m; autoDeployAdvice = a; }
+  }
   public class CUSettings {
     public string CanPilotVehicleTag { get; set; }
     public string CannotPilotMechTag { get; set; }
@@ -311,6 +317,7 @@ namespace CustomUnits{
     public string IntelCompanyStatShowMiniMap { get; set; } = "Intel_Show_Minimap";
     public bool IntelShowMood { get; set; } = false;
     public bool IntelShowMiniMap { get; set; } = false;
+    public Dictionary<string, TimerObjectiveAdvice> timerObjectiveChange { get; set; } = new Dictionary<string, TimerObjectiveAdvice>() { { "DefendBase", new TimerObjectiveAdvice(1, 2) } };
     public CUSettings() {
       debugLog = false;
       DeathHeight = 1f;
@@ -784,6 +791,8 @@ namespace CustomUnits{
 
       //PilotingClass.Validate();
       Log.TWL(0,"Initing... " + directory + " version: " + Assembly.GetExecutingAssembly().GetName().Version, true);
+      //Log.WL(1, $"Harmony.FileLog.logPath:{Harmony.FileLog.logPath}");
+      //HarmonyInstance.DEBUG = true;
       LoadBuildinShaders();
       Vector3 pos = new Vector3(-7.6f, 96.5f, 0f);
       Vector3 look = new Vector3(-1.9f, 96.5f, 0f);
@@ -844,6 +853,8 @@ namespace CustomUnits{
         WeaponRepresentation_PlayWeaponEffect.i_extendedFire = extendedFireHelper.extendedFire;
         //Debug.unityLogger.logEnabled = false;
       } catch (Exception e) {
+        //HarmonyInstance.DEBUG = false;
+
         Log.TWL(0,e.ToString(),true);
       }
     }

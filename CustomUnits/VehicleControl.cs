@@ -1288,70 +1288,70 @@ namespace CustomUnits {
   //    };
   //  }
   //}
-  [HarmonyPatch(typeof(ActorMovementSequence))]
-  [HarmonyPatch("UpdateRotation")]
-  [HarmonyPatch(MethodType.Normal)]
-  [HarmonyPatch(new Type[] { })]
-  public static class ActorMovementSequence_UpdateRotation {
-    private static MethodInfo mOwningVehicleSet;
-    private delegate void OwningVehicleSetDelegate(ActorMovementSequence seq, Vehicle v);
-    private static OwningVehicleSetDelegate OwningVehicleSetInvoker = null;
-    public static bool Prepare() {
-      mOwningVehicleSet = null;
-      try {
-        mOwningVehicleSet = typeof(ActorMovementSequence).GetProperty("OwningVehicle", BindingFlags.Instance | BindingFlags.Public).GetSetMethod(true);
-        if (mOwningVehicleSet == null) { return false; }
-      } catch (Exception e) {
-        Log.LogWrite(e.ToString() + "\n");
-        return false;
-      }
-      var dm = new DynamicMethod("CUOwningVehicleSet", null, new Type[] { typeof(ActorMovementSequence), typeof(Vehicle) }, typeof(ActorMovementSequence));
-      var gen = dm.GetILGenerator();
-      gen.Emit(OpCodes.Ldarg_0);
-      gen.Emit(OpCodes.Ldarg_1);
-      gen.Emit(OpCodes.Call, mOwningVehicleSet);
-      gen.Emit(OpCodes.Ret);
-      OwningVehicleSetInvoker = (OwningVehicleSetDelegate)dm.CreateDelegate(typeof(OwningVehicleSetDelegate));
-      return true;
-    }
-    public static void OwningVehicle(this ActorMovementSequence seq, Vehicle v) {
-      OwningVehicleSetInvoker(seq, v);
-    }
-    public static bool Prefix(ActorMovementSequence __instance, ref Vehicle __state, Vector3 ___Forward) {
-      __state = null;
-      CustomMechRepresentation custRep = __instance.ActorRep as CustomMechRepresentation;
-      if (custRep != null) {
-        if (__instance.OrdersAreComplete == false) {
-          Transform MoverTransform = Traverse.Create(__instance).Property<Transform>("MoverTransform").Value;
-          float deltaTime = Traverse.Create(__instance).Property<float>("deltaTime").Value;
-          custRep.UpdateRotation(MoverTransform, ___Forward, deltaTime);
-          return false;
-        }
-      }
-      if (__instance.OwningVehicle != null) {
-        if (__instance.OwningVehicle.UnaffectedPathing() == false) { return true; };
-        __state = __instance.OwningVehicle;
-        __instance.OwningVehicle(null);
-      }
-      return true;
-    }
-    public static void Postfix(ActorMovementSequence __instance, ref Vehicle __state,ref Vector3 ___Forward) {
-      if (__state != null) {
-        __instance.OwningVehicle(__state);
-      }
-      //if (__instance.OwningMech != null) {
-        //UnitCustomInfo info = __instance.OwningMech.GetCustomInfo();
-        //if (info != null) {
-        //  if (info.FakeVehicle) {
-        //    Transform MoverTransform = Traverse.Create(__instance).Property<Transform>("MoverTransform").Value;
-        //    float deltaTime = Traverse.Create(__instance).Property<float>("deltaTime").Value;
-        //    MoverTransform.rotation = Quaternion.RotateTowards(MoverTransform.rotation, Quaternion.LookRotation(___Forward), 180f * deltaTime);
-        //    ActorMovementSequence.AlignVehicleToGround(MoverTransform, deltaTime);
-        //  }
-        //}
-      //}
-    }
-  }
+  //[HarmonyPatch(typeof(ActorMovementSequence))]
+  //[HarmonyPatch("UpdateRotation")]
+  //[HarmonyPatch(MethodType.Normal)]
+  //[HarmonyPatch(new Type[] { })]
+  //public static class ActorMovementSequence_UpdateRotation {
+  //  private static MethodInfo mOwningVehicleSet;
+  //  private delegate void OwningVehicleSetDelegate(ActorMovementSequence seq, Vehicle v);
+  //  private static OwningVehicleSetDelegate OwningVehicleSetInvoker = null;
+  //  public static bool Prepare() {
+  //    mOwningVehicleSet = null;
+  //    try {
+  //      mOwningVehicleSet = typeof(ActorMovementSequence).GetProperty("OwningVehicle", BindingFlags.Instance | BindingFlags.Public).GetSetMethod(true);
+  //      if (mOwningVehicleSet == null) { return false; }
+  //    } catch (Exception e) {
+  //      Log.LogWrite(e.ToString() + "\n");
+  //      return false;
+  //    }
+  //    var dm = new DynamicMethod("CUOwningVehicleSet", null, new Type[] { typeof(ActorMovementSequence), typeof(Vehicle) }, typeof(ActorMovementSequence));
+  //    var gen = dm.GetILGenerator();
+  //    gen.Emit(OpCodes.Ldarg_0);
+  //    gen.Emit(OpCodes.Ldarg_1);
+  //    gen.Emit(OpCodes.Call, mOwningVehicleSet);
+  //    gen.Emit(OpCodes.Ret);
+  //    OwningVehicleSetInvoker = (OwningVehicleSetDelegate)dm.CreateDelegate(typeof(OwningVehicleSetDelegate));
+  //    return true;
+  //  }
+  //  public static void OwningVehicle(this ActorMovementSequence seq, Vehicle v) {
+  //    OwningVehicleSetInvoker(seq, v);
+  //  }
+  //  public static bool Prefix(ActorMovementSequence __instance, ref Vehicle __state, Vector3 ___Forward) {
+  //    __state = null;
+  //    CustomMechRepresentation custRep = __instance.ActorRep as CustomMechRepresentation;
+  //    if (custRep != null) {
+  //      if (__instance.OrdersAreComplete == false) {
+  //        Transform MoverTransform = Traverse.Create(__instance).Property<Transform>("MoverTransform").Value;
+  //        float deltaTime = Traverse.Create(__instance).Property<float>("deltaTime").Value;
+  //        custRep.UpdateRotation(MoverTransform, ___Forward, deltaTime);
+  //        return false;
+  //      }
+  //    }
+  //    if (__instance.OwningVehicle != null) {
+  //      if (__instance.OwningVehicle.UnaffectedPathing() == false) { return true; };
+  //      __state = __instance.OwningVehicle;
+  //      __instance.OwningVehicle(null);
+  //    }
+  //    return true;
+  //  }
+  //  public static void Postfix(ActorMovementSequence __instance, ref Vehicle __state,ref Vector3 ___Forward) {
+  //    if (__state != null) {
+  //      __instance.OwningVehicle(__state);
+  //    }
+  //    //if (__instance.OwningMech != null) {
+  //      //UnitCustomInfo info = __instance.OwningMech.GetCustomInfo();
+  //      //if (info != null) {
+  //      //  if (info.FakeVehicle) {
+  //      //    Transform MoverTransform = Traverse.Create(__instance).Property<Transform>("MoverTransform").Value;
+  //      //    float deltaTime = Traverse.Create(__instance).Property<float>("deltaTime").Value;
+  //      //    MoverTransform.rotation = Quaternion.RotateTowards(MoverTransform.rotation, Quaternion.LookRotation(___Forward), 180f * deltaTime);
+  //      //    ActorMovementSequence.AlignVehicleToGround(MoverTransform, deltaTime);
+  //      //  }
+  //      //}
+  //    //}
+  //  }
+  //}
 
   [HarmonyPatch(typeof(MechDef))]
   [HarmonyPatch("GatherDependencies")]

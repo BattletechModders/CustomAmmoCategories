@@ -237,7 +237,7 @@ namespace CustAmmoCategories {
             if (cell.terrainHeight > maxHeight) { maxHeight = cell.terrainHeight; }
             if (cell.terrainHeight < minHeight) { minHeight = cell.terrainHeight; }
             if (cell == null) { CombatHUDMiniMap.minimapContent.SetPixel(y, x, Color.black); continue; }
-            if (CombatHUDMiniMap.terrainColors.TryGetValue(MapMetaData.GetPriorityTerrainMaskFlags(cell), out var color)) {
+            if (CombatHUDMiniMap.terrainColors.TryGetValue(MapMetaData.GetPriorityTerrainMaskFlags(cell.pendingMasks), out var color)) {
               CombatHUDMiniMap.minimapContent.SetPixel(y, x, color);
             } else {
               CombatHUDMiniMap.minimapContent.SetPixel(y, x, Color.magenta);

@@ -245,6 +245,7 @@
   copy /Y "$(ProjectDir)..\AdditionalFiles\CU\Readme.txt" "$(BattleTechGameDir)\Mods_CBDE\Core\CustomUnits"
 )
 if exist "$(BattleTechGameDir)\Mods\Core\CustomUnits" (
+  echo %25BattleTechGameDir%25
   copy /Y "$(TargetPath)" "$(BattleTechGameDir)\Mods\Core\CustomUnits"
   copy /Y "$(ProjectDir)..\AdditionalFiles\CU\Readme.txt" "$(BattleTechGameDir)\Mods\Core\CustomUnits"
 )

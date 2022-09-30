@@ -1115,48 +1115,67 @@ namespace CustomUnits {
       public SGBarracksRosterSlot pilot;
       public LoadoutContent(IMechLabDraggableItem m, SGBarracksRosterSlot p) { mech = m; pilot = p; }
     }
-    public static bool Prefix(LanceConfiguratorPanel __instance, LanceConfiguration config, LanceLoadoutSlot[] ___loadoutSlots, LanceHeaderWidget ___headerWidget) {
-      Log.TWL(0, "LanceConfiguratorPanel.LoadLanceConfiguration:");
-      ___headerWidget.LanceName = Strings.T(__instance.oldLanceName);
-      SpawnableUnit[] lanceUnits = config.GetLanceUnits("");
-      for (int i = 0; i < lanceUnits.Length; ++i) {
-        Log.WL(1, "[" + i + "] pilot:" + lanceUnits[i].PilotId + " unit:" + lanceUnits[i].UnitId);
-      }
-      List<LoadoutContent> spawnMechList = new List<LoadoutContent>();
-      List<LoadoutContent> spawnVehicleList = new List<LoadoutContent>();
-      int count = Mathf.Min(lanceUnits.Length, ___loadoutSlots.Length);
-      for (int i = 0; i < count; ++i) {
-        SpawnableUnit unit = lanceUnits[i];
-        IMechLabDraggableItem forcedMech = (IMechLabDraggableItem)null;
-        if (unit.Unit != null) { forcedMech = __instance.mechListWidget.GetMechDefByGUID(unit.Unit.GUID); }
-        if (forcedMech == null) { forcedMech = __instance.mechListWidget.GetInventoryItem(unit.UnitId); }
-        if (forcedMech != null && !MechValidationRules.ValidateMechCanBeFielded(__instance.Sim, forcedMech.MechDef)) {
-          forcedMech = (IMechLabDraggableItem)null;
+    private static HashSet<string> MechDefsGUIDsTracker { get; set; } = new HashSet<string>();
+    public static void ClearMechDefGUIDsTracker(this LanceConfiguratorPanel lc) { MechDefsGUIDsTracker.Clear(); }
+    public static bool AddMechDefGUIDsTracker(this LanceConfiguratorPanel lc, string GUID) { return MechDefsGUIDsTracker.Add(GUID); }
+    public static bool Prefix(LanceConfiguratorPanel __instance, LanceConfiguration config,ref LanceLoadoutSlot[] ___loadoutSlots, LanceHeaderWidget ___headerWidget) {
+      Log.TWL(0, "LanceConfiguratorPanel.LoadLanceConfiguration prefix:");
+      __instance.ClearMechDefGUIDsTracker();
+      try {
+        for (int i = 0; i < ___loadoutSlots.Length; ++i) {
+          Pilot pilot = null;
+          MechDef mech = null;
+          if (___loadoutSlots[i].SelectedPilot != null) { pilot = ___loadoutSlots[i].SelectedPilot.Pilot; }
+          if (___loadoutSlots[i].SelectedMech != null) { mech = ___loadoutSlots[i].SelectedMech.MechDef; }
+          Log.WL(1, $"[{i}] state:{___loadoutSlots[i].curLockState} pilot:{((pilot != null) ? (pilot.Description.Id + "(" + pilot.Callsign + ")") : "null")}  unit:{((mech != null) ? mech.ChassisID + "(" + mech.GUID + ")" : "null")}");
         }
-        SGBarracksRosterSlot forcedPilot = null;
-        forcedPilot = __instance.pilotListWidget.GetPilot(unit.PilotId);
-        if (forcedPilot != null) {
-          if (forcedPilot.Pilot.CanPilot == false) {
-            forcedPilot = (SGBarracksRosterSlot)null;
+        ___headerWidget.LanceName = Strings.T(__instance.oldLanceName);
+        SpawnableUnit[] lanceUnits = config.GetLanceUnits("");
+        for (int i = 0; i < lanceUnits.Length; ++i) {
+          Log.WL(1, "[" + i + "] pilot:" + lanceUnits[i].PilotId + " unit:" + lanceUnits[i].UnitId);
+        }
+        List<LoadoutContent> spawnMechList = new List<LoadoutContent>();
+        List<LoadoutContent> spawnVehicleList = new List<LoadoutContent>();
+        int count = Mathf.Min(lanceUnits.Length, ___loadoutSlots.Length);
+        for (int i = 0; i < count; ++i) {
+          SpawnableUnit unit = lanceUnits[i];
+          IMechLabDraggableItem forcedMech = (IMechLabDraggableItem)null;
+          if (unit.Unit != null) { forcedMech = __instance.mechListWidget.GetMechDefByGUID(unit.Unit.GUID); }
+          if (forcedMech == null) { forcedMech = __instance.mechListWidget.GetInventoryItem(unit.UnitId); }
+          if (forcedMech != null && !MechValidationRules.ValidateMechCanBeFielded(__instance.Sim, forcedMech.MechDef)) {
+            forcedMech = (IMechLabDraggableItem)null;
           }
-          //  __instance.pilotListWidget.RemovePilot(__instance.availablePilots.Find((Predicate<Pilot>)(x => x.Description.Id == unit.PilotId)));
+          SGBarracksRosterSlot forcedPilot = null;
+          forcedPilot = __instance.pilotListWidget.GetPilot(unit.PilotId);
+          if (forcedPilot != null) {
+            if (forcedPilot.Pilot.CanPilot == false) {
+              forcedPilot = (SGBarracksRosterSlot)null;
+            }
+          }
+          LanceLoadoutSlot loadoutSlot = ___loadoutSlots[i];
+          if (loadoutSlot.isMechLocked) { forcedMech = null; }
+          if (loadoutSlot.isPilotLocked) { forcedPilot = null; }
+          if (forcedPilot != null) { __instance.pilotListWidget.RemovePilot(__instance.availablePilots.Find((Predicate<Pilot>)(x => x.Description.Id == forcedPilot.Pilot.Description.Id))); }
+          loadoutSlot.SetLockedData(forcedMech, forcedPilot, false);
         }
-        LanceLoadoutSlot loadoutSlot = ___loadoutSlots[i];
-        if (loadoutSlot.isMechLocked) { forcedMech = null; }
-        if (loadoutSlot.isPilotLocked) { forcedPilot = null; }
-        //if (loadoutSlot.isForVehicle()) {
-          //if (forcedMech != null) { if (forcedMech.MechDef.IsVehicle() == false) { forcedMech = null; }; };
-          //if (forcedPilot != null) { if (forcedPilot.Pilot.pilotDef.canPilotVehicle() == false) { forcedPilot = null; }; };
-        //} else {
-          //if ((forcedMech != null) && (forcedPilot != null)) {
-            //if (forcedMech.MechDef.IsVehicle() && (forcedPilot.Pilot.pilotDef.canPilotVehicle() == false)) { forcedPilot = null; }
-            //if ((forcedMech.MechDef.IsVehicle() == false) && (forcedPilot.Pilot.pilotDef.canPilotMech() == false)) { forcedPilot = null; }
-          //}
-        //}
-        if (forcedPilot != null) { __instance.pilotListWidget.RemovePilot(__instance.availablePilots.Find((Predicate<Pilot>)(x => x.Description.Id == forcedPilot.Pilot.Description.Id))); }
-        loadoutSlot.SetLockedData(forcedMech, forcedPilot, false);
+      }catch(Exception e) {
+        Log.TWL(0,e.ToString());
       }
       return false;
+    }
+    public static void Postfix(LanceConfiguratorPanel __instance, LanceConfiguration config, ref LanceLoadoutSlot[] ___loadoutSlots, LanceHeaderWidget ___headerWidget) {
+      Log.TWL(0, "LanceConfiguratorPanel.LoadLanceConfiguration postfix:");
+      try {
+        for (int i = 0; i < ___loadoutSlots.Length; ++i) {
+          Pilot pilot = null;
+          MechDef mech = null;
+          if (___loadoutSlots[i].SelectedPilot != null) { pilot = ___loadoutSlots[i].SelectedPilot.Pilot; }
+          if (___loadoutSlots[i].SelectedMech != null) { mech = ___loadoutSlots[i].SelectedMech.MechDef; }
+          Log.WL(1, $"[{i}] state:{___loadoutSlots[i].curLockState} pilot:{((pilot != null)? (pilot.Description.Id+"("+pilot.Callsign+")"): "null")}  unit:{((mech != null)?mech.ChassisID+"("+mech.GUID+")":"null")}");
+        }
+      } catch (Exception e) {
+        Log.TWL(0, e.ToString());
+      }
     }
   }
   [HarmonyPatch(typeof(LanceConfiguratorPanel), "CreateLanceDef")]
