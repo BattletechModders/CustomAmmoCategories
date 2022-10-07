@@ -184,20 +184,24 @@ namespace CustomUnits {
   [HarmonyPatch(new Type[] { typeof(IMechLabDraggableItem), typeof(bool) })]
   public static class LanceLoadoutSlot_OnAddItem {
     public static bool Prefix(LanceLoadoutSlot __instance, IMechLabDraggableItem item, bool validate, bool __result, LanceConfiguratorPanel ___LC) {
-      LanceLoadoutSlot[] loadoutSlots = Traverse.Create(___LC).Field<LanceLoadoutSlot[]>("loadoutSlots").Value;
       int slotIndex = -1;
-      for(int i = 0; i < loadoutSlots.Length; ++i) { if (loadoutSlots[i] == __instance) { slotIndex = i; break; } }
-
+      LanceLoadoutSlot[] loadoutSlots = null;
+      if (___LC != null) {
+        loadoutSlots = Traverse.Create(___LC).Field<LanceLoadoutSlot[]>("loadoutSlots").Value;
+        for (int i = 0; i < loadoutSlots.Length; ++i) { if (loadoutSlots[i] == __instance) { slotIndex = i; break; } }
+      }
       Log.TW(0, $"LanceLoadoutSlot.OnAddItem slot:{slotIndex} item:{item.ItemType}");
       if(item.ItemType == MechLabDraggableItemType.Mech) {
         LanceLoadoutMechItem lanceLoadoutMechItem = item as LanceLoadoutMechItem;
         Log.WL(1, $"{lanceLoadoutMechItem.MechDef.ChassisID}({lanceLoadoutMechItem.MechDef.GUID})");
-        for (int i = 0; i < loadoutSlots.Length; ++i) {
-          if (slotIndex == i) { continue; }
-          if (loadoutSlots[i].SelectedMech == null) { continue; }
-          if(loadoutSlots[i].SelectedMech.MechDef.GUID == lanceLoadoutMechItem.MechDef.GUID) {
-            Log.WL(1,$"Duplicate detected in slot {i}");
-            Log.WL(1, Environment.StackTrace);
+        if (loadoutSlots != null) {
+          for (int i = 0; i < loadoutSlots.Length; ++i) {
+            if (slotIndex == i) { continue; }
+            if (loadoutSlots[i].SelectedMech == null) { continue; }
+            if (loadoutSlots[i].SelectedMech.MechDef.GUID == lanceLoadoutMechItem.MechDef.GUID) {
+              Log.WL(1, $"Duplicate detected in slot {i}");
+              Log.WL(1, Environment.StackTrace);
+            }
           }
         }
       }else if(item.ItemType == MechLabDraggableItemType.Pilot) {

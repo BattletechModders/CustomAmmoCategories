@@ -256,7 +256,7 @@ namespace CustAmmoCategories {
         return;
       }
       AdvWeaponHitInfo advInfo = hitInfo.advInfo();
-      if (advInfo.weapon.HasShells() == false) {
+      if ((advInfo.weapon.HasShells() == false)||(advInfo.weapon.parent.isSpawnProtected() == true)) {
         Log.LogWrite(" weapon "+advInfo.weapon.defId+" have no shells\n");
         return;
       }
@@ -273,6 +273,7 @@ namespace CustAmmoCategories {
           if (terrainPos != null) { targetPos = terrainPos.pos; };
         }
         Vector3 ePos = CustomAmmoCategories.interpolateSeparationPosition(advRec.trajectorySpline,advRec.startPosition,targetPos,sMin,sMax);
+        if (advRec.target.isSpawnProtected()) { ePos = Vector3.zero; }
         if(ePos != Vector3.zero) {
           Log.LogWrite(" "+hitIndex+" separated\n");
           advRec.fragInfo.separated = true;

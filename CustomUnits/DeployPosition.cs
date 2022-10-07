@@ -65,6 +65,7 @@ namespace CustomUnits {
         if (actor.IsAvailableThisPhase == false) { return; }
         DeployManualHelper.NeedSpawnProtection = false;
         foreach (AbstractActor unit in actor.Combat.AllActors) {
+          if (unit.IsDeployDirector()) { continue; }
           unit.addSpawnProtection("manual delayed spawn protection");
         }
       } catch (Exception e) {
@@ -472,9 +473,9 @@ namespace CustomUnits {
         foreach (AbstractActor unit in HUD.Combat.LocalPlayerTeam.units) {
           if (unit.IsDeployDirector()) { continue; }
           if (unit.IsAvailableThisPhase) {
-            if (Core.Settings.DeployManualSpawnProtection) {
-              unit.addAddSpawnProtection("manual deploy");
-            }
+            //if (Core.Settings.DeployManualSpawnProtection) {
+            //  unit.addAddSpawnProtection("manual deploy");
+            //}
             HUD.Combat.MessageCenter.PublishMessage((MessageCenterMessage)new AddSequenceToStackMessage(unit.DoneWithActor()));
           }
         }
@@ -482,8 +483,8 @@ namespace CustomUnits {
           NeedSpawnProtection = true;
           foreach (AbstractActor unit in HUD.Combat.AllActors) {
             if (unit.IsDeployDirector()) { continue; }
-            if (unit.isAddSpawnProtected()) { continue; }
-            unit.addSpawnProtection("manual deploy");
+            //if (unit.isAddSpawnProtected()) { continue; }
+            unit.addSpawnProtection(2,"manual deploy");
           }
         }
         //HUD.Combat.TurnDirector.StartFirstRound();
@@ -553,6 +554,12 @@ namespace CustomUnits {
       List<Vector3> result = new List<Vector3>();
       foreach (AbstractActor unit in combat.AllEnemies) {
         result.Add(unit.CurrentPosition);
+      }
+      OccupyRegionObjective[] objectives = combat.EncounterLayerData.gameObject.GetComponentsInChildren<OccupyRegionObjective>();
+      foreach (var objective in objectives) {
+        Vector3 pos = objective.transform.position;
+        pos.y = combat.MapMetaData.GetLerpedHeightAt(pos);
+        result.Add(pos);
       }
       return result;
     }

@@ -1719,6 +1719,7 @@ namespace CustAmmoCategories {
       return objectSpawnData;
     }
     public static void applyImpactBurn(Weapon weapon, Vector3 pos) {
+      if (weapon.parent.isSpawnProtected() && CustomAmmoCategories.Settings.SpawnProtectionAffectsBurningTerrain) { return; }
       CustomAmmoCategoriesLog.Log.LogWrite("Applying burn effect:" + weapon.defId + " " + pos + "\n");
       MapTerrainDataCellEx cell = weapon.parent.Combat.MapMetaData.GetCellAt(pos) as MapTerrainDataCellEx;
       if (cell == null) {
@@ -1738,6 +1739,7 @@ namespace CustAmmoCategories {
       }
     }
     public static void applyImpactTempMask(Weapon weapon, Vector3 pos) {
+      if (weapon.parent.isSpawnProtected() && CustomAmmoCategories.Settings.SpawnProtectionAffectsDesignMasks) { return; }
       CustomAmmoCategoriesLog.Log.LogWrite("Applying long effect:" + weapon.defId + " " + pos + "\n");
       MapTerrainDataCellEx cell = weapon.parent.Combat.MapMetaData.GetCellAt(pos) as MapTerrainDataCellEx;
       if (cell == null) {
@@ -1786,7 +1788,11 @@ namespace CustAmmoCategories {
       }
     }
     public static void applyMineField(Weapon weapon, Vector3 pos) {
-      CustomAmmoCategoriesLog.Log.LogWrite("Applying minefield:" + weapon.defId + " " + pos + " neares hex: "+weapon.parent.Combat.HexGrid.GetClosestPointOnGrid(pos)+"\n");
+      if (weapon.parent.isSpawnProtected() && CustomAmmoCategories.Settings.SpawnProtectionAffectsMinelayers) {
+        Log.M.WL(0, "Applying minefield:" + weapon.defId + " " + pos + " neares hex: " + weapon.parent.Combat.HexGrid.GetClosestPointOnGrid(pos)+" but attacker is spawn protected");
+        return;
+      }
+      CustomAmmoCategoriesLog.Log.M.WL(0,"Applying minefield:" + weapon.defId + " " + pos + " neares hex: "+weapon.parent.Combat.HexGrid.GetClosestPointOnGrid(pos));
       MapTerrainDataCellEx cell = weapon.parent.Combat.MapMetaData.GetCellAt(pos) as MapTerrainDataCellEx;
       if (cell == null) {
         CustomAmmoCategoriesLog.Log.LogWrite(" cell is not extended\n");
