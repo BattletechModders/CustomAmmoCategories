@@ -76,23 +76,15 @@ namespace CustAmmoCategories {
       //unit.StatCollection.GetOrCreateStatisic<bool>(SPAWN_PROTECTION_STAT_NAME_ADD, false).SetValue<bool>(false);
     }
   }
-  [HarmonyPatch(typeof(AbstractActor))]
-  [HarmonyPatch("OnActivationEnd")]
-  [HarmonyPatch(MethodType.Normal)]
-  [HarmonyPatch(new Type[] { typeof(string), typeof(int) })]
-  public static class AbstractActor_OnActivationEndSpawnProtection {
-    public static void Postfix(AbstractActor __instance, string sourceID, int stackItemID) {
-      try {
-        //if (__instance.isSpawnProtected()) {
-        //  __instance.removeSpawnProtection();
-        //}
-        //if (__instance.isAddSpawnProtected()) {
-        //  __instance.addSpawnProtection("delayed");
-        //  __instance.removeAddSpawnProtection();
-        //}
-      }catch(Exception e) {
-        Log.M?.TWL(0,e.ToString(),true);
-      }
+  [HarmonyPatch(typeof(Weapon))]
+  [HarmonyPatch("CanFire")]
+  [HarmonyPatch(MethodType.Getter)]
+  [HarmonyPatch(new Type[] {  })]
+  public static class Weapon_CanFire {
+    public static void Postfix(Weapon __instance, ref bool __result) {
+      if (CustomAmmoCategories.Settings.SpawnProtectionAffectsCanFire == false) { return; }
+      if (__instance.parent == null) { return; }
+      if (__instance.parent.isSpawnProtected()) { __result = false; }
     }
   }
   [HarmonyPatch(typeof(TurnDirector))]

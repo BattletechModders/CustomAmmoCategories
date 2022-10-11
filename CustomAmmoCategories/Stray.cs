@@ -20,7 +20,7 @@ namespace CustAmmoCategories {
       if (hitInfo.isAdvanced() == false) { return; };
       AdvWeaponHitInfo advInfo = hitInfo.advInfo();
       Log.LogWrite("MainStray " + advInfo.weapon.defId + "\n");
-      if (advInfo.weapon.StrayRange() < CustomAmmoCategories.Epsilon) {
+      if ((advInfo.weapon.StrayRange() < CustomAmmoCategories.Epsilon) || (advInfo.weapon.parent.isSpawnProtected())) {
         Log.LogWrite(" no stray needed\n");
         return;
       }
@@ -58,6 +58,7 @@ namespace CustAmmoCategories {
       }
       foreach (ICombatant combatant in combatants) {
         if (combatant.IsDead) { continue; };
+        if (combatant.isSpawnProtected()) { continue; }
         Vector3 CurrentPosition = combatant.CurrentPosition + Vector3.up * combatant.FlyingHeight();
         float distance = Vector3.Distance(combatant.CurrentPosition, shootPosition);
         if (distance <= spreadDistance) {

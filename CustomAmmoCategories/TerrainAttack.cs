@@ -1044,8 +1044,8 @@ namespace CustomAmmoCategoriesPatches {
     //return (UILookAndColorConstants)pLookAndColorConstants.GetValue(slot, null);
     //}
     public static bool WillFireToPosition(this Weapon weapon, Vector3 position) {
-      if (weapon.IsDisabled || !weapon.HasAmmo) {
-        Log.M.WL(1, "weapon disabled or have no ammo");
+      if (weapon.CanFire == false) {
+        Log.M.WL(1, "weapon can not fire");
         return false;
       }
       bool result = weapon.Combat().LOFCache.UnitHasLOFToTargetAtTargetPosition(weapon.parent, weapon.parent, weapon.MaxRange,

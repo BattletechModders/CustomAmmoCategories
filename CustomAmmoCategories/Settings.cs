@@ -332,6 +332,7 @@ namespace CustAmmoCategories {
     public bool SpawnProtectionAffectsMinelayers { get; set; } = true;
     public bool SpawnProtectionAffectsDesignMasks { get; set; } = true;
     public bool SpawnProtectionAffectsBurningTerrain { get; set; } = true;
+    public bool SpawnProtectionAffectsCanFire { get; set; } = true;
     public Settings() {
       //directory = string.Empty;
       //debugLog = true;
