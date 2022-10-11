@@ -304,25 +304,25 @@ namespace CustomUnits {
               Log.WL(1, $"Instantiate:{t}");
               //GameObject bayRowGO = GameObject.Instantiate(rows[0].gameObject);
               //"uixPrfPanl_SIM_mechBay_bay-Element";
-              bool needInit = false;
-              //GameObject bayRowGO = BayPanel.DataManager.PooledInstantiate("uixPrfPanl_SIM_mechBay_bay-Element",BattleTechResourceType.UIModulePrefabs);
+              //bool needInit = false;
+              GameObject bayRowGO = BayPanel.DataManager.PooledInstantiate("uixPrfPanl_SIM_mechBay_bay-Element",BattleTechResourceType.UIModulePrefabs);
               //if (bayRowGO != null) {
               //Log.WL(2, $"from data manager");
               //} else {
-              GameObject bayRowGO = GameObject.Instantiate(rows[0].gameObject);
-              needInit = true;
+              //GameObject bayRowGO = GameObject.Instantiate(rows[0].gameObject);
+              //needInit = true;
               //}
               bayRowGO.transform.SetParent(rows[0].gameObject.transform.parent);
               bayRowGO.transform.localPosition = rows[0].gameObject.transform.localPosition;
               bayRowGO.transform.localScale = rows[0].gameObject.transform.localScale;
               bayRowGO.transform.localRotation = rows[0].gameObject.transform.localRotation;
-              if (needInit) {
+              //if (needInit) {
                 UIModule[] modules = bayRowGO.GetComponentsInChildren<UIModule>(true);
                 foreach (UIModule module in modules) {
                   Log.WL(3, $"initing UI module {module.name}:{module.GetType()}");
                   module.Init();
                 }
-              }
+              //}
               rows.Add(bayRowGO.GetComponent<MechBayRowWidget>());
             }
             Traverse.Create(Traverse.Create(this.BayPanel).Field<MechBayRowGroupWidget>("bayGroupWidget").Value).Field<MechBayRowWidget[]>("bays").Value = rows.ToArray();
