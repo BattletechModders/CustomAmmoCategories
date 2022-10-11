@@ -847,22 +847,22 @@ namespace CustomUnits {
       }
     }
   }
-  [HarmonyPatch(typeof(SimGameState))]
-  [HarmonyPatch("GetMaxActiveMechs")]
-  [HarmonyPatch(MethodType.Normal)]
-  [HarmonyPatch(new Type[] { })]
-  public static class SimGameState_GetMaxActiveMechs {
-    //private static bool toggleState = false;
-    public static void Postfix(SimGameState __instance, ref int __result) {
-      __result = 30;
-      //Log.TWL(0, "SimGameState.GetMaxActiveMechs "+__instance.CurDropship);
-      //if(__instance.CurDropship != DropshipType.Leopard) {
-      //if (Core.Settings.BaysCountExternalControl == false) {
-      //__result += Core.Settings.ArgoBaysFix * __instance.Constants.Story.MaxMechsPerPod;
-      //}
-      //}
-    }
-  }
+  //[HarmonyPatch(typeof(SimGameState))]
+  //[HarmonyPatch("GetMaxActiveMechs")]
+  //[HarmonyPatch(MethodType.Normal)]
+  //[HarmonyPatch(new Type[] { })]
+  //public static class SimGameState_GetMaxActiveMechs {
+  //  //private static bool toggleState = false;
+  //  public static void Postfix(SimGameState __instance, ref int __result) {
+  //    __result = 30;
+  //    //Log.TWL(0, "SimGameState.GetMaxActiveMechs "+__instance.CurDropship);
+  //    //if(__instance.CurDropship != DropshipType.Leopard) {
+  //    //if (Core.Settings.BaysCountExternalControl == false) {
+  //    //__result += Core.Settings.ArgoBaysFix * __instance.Constants.Story.MaxMechsPerPod;
+  //    //}
+  //    //}
+  //  }
+  //}
   [HarmonyPatch(typeof(MechBayRowGroupWidget))]
   [HarmonyPatch("SetData")]
   [HarmonyPatch(MethodType.Normal)]
