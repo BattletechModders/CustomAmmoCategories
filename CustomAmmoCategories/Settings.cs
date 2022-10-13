@@ -298,6 +298,10 @@ namespace CustAmmoCategories {
     [GameplaySafe]
     public bool EnableMinimap { get; set; } = true;
     [GameplaySafe]
+    public bool MinimapShowRegions { get; set; } = true;
+    [GameplaySafe]
+    public bool MinimapShowObjectives { get; set; } = true;
+    [GameplaySafe]
     public string MinimapBurnigTerrainColor { get; set; } = "#FF9700FF";
     [GameplaySafe]
     public string MinimapBurnedTerrainColor { get; set; } = "#FFFFFFFF";

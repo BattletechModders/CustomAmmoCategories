@@ -1,4 +1,5 @@
 ﻿using BattleTech;
+using BattleTech.Framework;
 using BattleTech.UI;
 using BattleTech.UI.Tooltips;
 using CustAmmoCategories;
@@ -237,13 +238,48 @@ namespace CustAmmoCategories {
             if (cell.terrainHeight > maxHeight) { maxHeight = cell.terrainHeight; }
             if (cell.terrainHeight < minHeight) { minHeight = cell.terrainHeight; }
             if (cell == null) { CombatHUDMiniMap.minimapContent.SetPixel(y, x, Color.black); continue; }
-            if (CombatHUDMiniMap.terrainColors.TryGetValue(MapMetaData.GetPriorityTerrainMaskFlags(cell.pendingMasks), out var color)) {
+            if (CombatHUDMiniMap.terrainColors.TryGetValue(MapMetaData.GetPriorityTerrainMaskFlags(cell.terrainMask), out var color)) {
               CombatHUDMiniMap.minimapContent.SetPixel(y, x, color);
             } else {
               CombatHUDMiniMap.minimapContent.SetPixel(y, x, Color.magenta);
             }
           }
         }
+        if (CustomAmmoCategories.Settings.MinimapShowRegions) {
+          RegionGameLogic[] regions = combat.EncounterLayerData.gameObject.GetComponentsInChildren<RegionGameLogic>();
+          foreach (RegionGameLogic region in regions) {
+            List<MapEncounterLayerDataCell> mapEncounterLayerDataCellList = Traverse.Create(region).Field<List<MapEncounterLayerDataCell>>("mapEncounterLayerDataCellList").Value;
+            //Log.M?.WL(1, $"minimap region:{region.name}:{region.encounterObjectGuid} cells:{mapEncounterLayerDataCellList.Count}");
+            HashSet<MapTerrainDataCellEx> regionCells = new HashSet<MapTerrainDataCellEx>();
+            foreach (MapEncounterLayerDataCell ecell in mapEncounterLayerDataCellList) {
+              MapTerrainDataCellEx cell = ecell.relatedTerrainCell as MapTerrainDataCellEx;
+              if (cell == null) { continue; }
+              regionCells.Add(cell);
+            }
+            foreach (MapTerrainDataCellEx cell in regionCells) {
+              HashSet<MapTerrainDataCellEx> testCells = new HashSet<MapTerrainDataCellEx>();
+              bool neiborsNotInRegion = false;
+              for (int x = (cell.x - 4); x < (cell.x + 4); ++x) {
+                if (x < 0) { continue; }
+                if (x >= minimapXsize) { break; }
+                for (int y = (cell.y - 4); y < (cell.y + 4); ++y) {
+                  if (y < 0) { continue; }
+                  if (y >= minimapYsize) { break; }
+                  MapTerrainDataCellEx tcell = combat.MapMetaData.mapTerrainDataCells[x, y] as MapTerrainDataCellEx;
+                  if (regionCells.Contains(tcell) == false) { neiborsNotInRegion = true; break; }
+                }
+                if (neiborsNotInRegion) { break; }
+              }
+              //Log.M?.WL(2, $"cell:{cell.x},{cell.y} neiborsNotInRegion:{neiborsNotInRegion}");
+              if (neiborsNotInRegion) {
+                CombatHUDMiniMap.minimapContent.SetPixel(cell.y, cell.x, UIManager.Instance.UIColorRefs.orange);
+              } else {
+                //CombatHUDMiniMap.minimapContent.SetPixel(cell.y, cell.x, UIManager.Instance.UIColorRefs.blue);
+              }
+            }
+          }
+        }
+
         //for (int x = 0; x < minimapXsize; ++x) {
         //  for (int y = 0; y < minimapYsize; ++y) {
         //    MapTerrainDataCellEx cell = combat.MapMetaData.mapTerrainDataCells[x + startCell.X, y + startCell.Z] as MapTerrainDataCellEx;
@@ -343,6 +379,7 @@ namespace CustAmmoCategories {
     public Vector3 cameraRot = Vector3.zero;
     public RectTransform rectTransform { get; set; } = null;
     public Dictionary<AbstractActor, UnitPositionMark> actorsPoints = new Dictionary<AbstractActor, UnitPositionMark>();
+    public Dictionary<ObjectiveGameLogic, UnitPositionMark> objectivePoints = new Dictionary<ObjectiveGameLogic, UnitPositionMark>();
     public bool Hovered { get; private set; } = false;
     public override void OnPointerEnter(PointerEventData data) {
       this.rectTransform.localScale = new Vector3(2f, 2f, 1f);
@@ -545,6 +582,7 @@ namespace CustAmmoCategories {
     public bool UnitsJammedState { get; set; } = false;
     public GameObject MechTray_GreebleWedge { get; set; } = null;
     public GameObject MechTray_CompanyLogo { get; set; } = null;
+    private float objectiveUpdate_t = 0f;
     public void Update() {
       if (HUD.MechTray.logoDisplay.gameObject.activeSelf) { HUD.MechTray.logoDisplay.gameObject.SetActive(false); }
       if (this.minimap == null) {
@@ -568,6 +606,35 @@ namespace CustAmmoCategories {
       }
       try {
         this.minimapTextureUpdate(Time.deltaTime);
+        if (objectiveUpdate_t <= 0f) {
+          objectiveUpdate_t = 1f;
+          Log.M?.TWL(0,$"minimap objectives update");
+          foreach (var objective in objectivePoints) {
+            Log.M?.WL(1, $"state:{objective.Key.CurrentObjectiveStatus} markUnitsWith:{objective.Key.markUnitsWith} useBeacon:{objective.Key.useBeacon}");
+            if (objective.Key.CurrentObjectiveStatus != ObjectiveStatus.Active) {
+              objective.Value.mark.enabled = false; continue;
+            }
+            Vector3? position = new Vector3?();
+            if (objective.Key.markUnitsWith != ObjectiveMark.None) {
+              position = objective.Key.GetAverageUnitPosition(true);
+            } else {
+              if (objective.Key.useBeacon) {
+                position = objective.Key.GetBeaconPosition();
+              }
+            }
+            if (position.HasValue) {
+              objective.Value.position.x = this.toLocalX(position.Value.x);
+              objective.Value.position.y = this.toLocalY(position.Value.z);
+              objective.Value.mark.rectTransform.anchoredPosition = objective.Value.position;
+              objective.Value.mark.color = objective.Value.detectedColor;
+              objective.Value.mark.enabled = true;
+            } else {
+              objective.Value.mark.enabled = false;
+            }
+          }
+        } else {
+          objectiveUpdate_t -= Time.deltaTime;
+        }
         HashSet<AbstractActor> allActors = HUD.Combat.AllActors.ToHashSet();
         foreach (AbstractActor unit in allActors) {
           if (unit.IsDeployDirector()) { continue; }
@@ -668,6 +735,35 @@ namespace CustAmmoCategories {
           }          
         }
         enabler.minimap = this;
+      }
+      foreach (var objective in this.objectivePoints) {
+        GameObject.DestroyImmediate(objective.Value.mark.gameObject);
+      }
+      if (CustomAmmoCategories.Settings.MinimapShowObjectives) {
+        ObjectiveGameLogic[] objectives = HUD.Combat.EncounterLayerData.gameObject.GetComponentsInChildren<ObjectiveGameLogic>();
+        foreach (var objective in objectives) {
+          GameObject mark_go = GameObject.Instantiate(HUD.MechTray.logoDisplay.gameObject);
+          CombatHUDTeamLogoDisplay teamDisplay = mark_go.GetComponent<CombatHUDTeamLogoDisplay>();
+          if (teamDisplay != null) { GameObject.Destroy(teamDisplay); }
+          mark_go.name = objective.name + "_minimapMark";
+          mark_go.transform.SetParent(this.transform);
+          mark_go.transform.localScale = Vector3.one;
+          mark_go.SetActive(true);
+          RawImage mark_img = mark_go.GetComponent<RawImage>();
+          UnitPositionMark mark = new UnitPositionMark(mark_img);
+          RectTransform mark_rt = mark_go.GetComponent<RectTransform>();
+          mark_rt.sizeDelta = new Vector2(3f, 3f);
+          mark_rt.anchorMin = new Vector2(0f, 0f);
+          mark_rt.anchorMax = new Vector2(0f, 0f);
+          mark_img.texture = null;
+          mark_img.color = Color.white;
+          mark.detectedColor = UIManager.Instance.UIColorRefs.orange;
+          mark.isFriendly = true;
+          mark_img.enabled = false;
+          mark_rt.pivot = new Vector2(0.5f, 0.5f);
+          mark_rt.localPosition = Vector3.zero;
+          this.objectivePoints.Add(objective, mark);
+        }
       }
     }
     public static void Create(CombatHUD HUD) {
