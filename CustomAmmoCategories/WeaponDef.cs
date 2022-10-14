@@ -645,6 +645,8 @@ namespace CustAmmoCategories {
     public TripleBoolean TargetMechLegsOnly { get; set; } = TripleBoolean.NotSet;
     [Key(103)]
     public bool alwaysMiss { get; set; } = false;
+    [Key(104)]
+    public string fireSFX { get; set; } = string.Empty;
     public ExtWeaponDef() { }
   }
 }

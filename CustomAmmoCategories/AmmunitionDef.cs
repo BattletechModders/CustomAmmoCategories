@@ -565,6 +565,8 @@ namespace CustAmmoCategories {
     public float AirMechDamageModifier { get; set; } = 1f;
     [Key(130)]
     public float VTOLDamageModifier { get; set; } = 1f;
+    [Key(131)]
+    public string fireSFX { get; set; } = string.Empty;
     public ExtAmmunitionDef() {
       //Id = "NotSet";
       //Name = string.Empty;

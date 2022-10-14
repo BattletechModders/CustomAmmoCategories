@@ -368,6 +368,8 @@ namespace CustAmmoCategories {
     public float TrooperSquadDamageModifier { get; set; } = 1f;
     [Key(118)]
     public float AirMechDamageModifier { get; set; } = 1f;
+    [Key(119)]
+    public string fireSFX { get; set; } = string.Empty;
     [IgnoreMember, JsonIgnore]
     public bool Disabeld { get; set; } = false;
     public WeaponMode() {

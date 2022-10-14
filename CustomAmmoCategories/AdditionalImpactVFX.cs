@@ -79,6 +79,18 @@ namespace CustAmmoCategories {
       ExtWeaponDef extWeapon = weapon.exDef();
       return extWeapon.preFireSFX;
     }
+    public static string fireSFX(this Weapon weapon) {
+      WeaponMode mode = weapon.mode();
+      if (string.IsNullOrEmpty(mode.fireSFX) == false) {
+        return mode.preFireSFX;
+      }
+      ExtAmmunitionDef ammo = weapon.ammo();
+      if (string.IsNullOrEmpty(ammo.fireSFX) == false) {
+        return ammo.preFireSFX;
+      }
+      ExtWeaponDef extWeapon = weapon.exDef();
+      return extWeapon.fireSFX;
+    }
     public static void SpawnAdditionalImpactEffect(this Weapon weapon,Vector3 pos) {
       Vector3 scale;
       string VFXprefab = weapon.AdditionalImpactEffect(out scale);
@@ -107,7 +119,7 @@ namespace CustAmmoCategories {
       if (__instance.weapon == null) { return true; }
       string snd = __instance.weapon.AdditionalImpactSound();
       if(string.IsNullOrEmpty(snd) == false) {
-        AkGameObj projectileAudioObject = (AkGameObj)typeof(WeaponEffect).GetField("projectileAudioObject", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(__instance);
+        //AkGameObj projectileAudioObject = (AkGameObj)typeof(WeaponEffect).GetField("projectileAudioObject", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(__instance);
         Vector3 hitPos = __instance.hitInfo.hitPositions[__instance.hitIndex];
         float distanceToCamera = Vector3.Distance(Camera.main.transform.position, hitPos);
         CustomSoundHelper.SpawnAudioEmitter(snd, hitPos, false);

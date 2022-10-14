@@ -24,7 +24,7 @@ using UnityEngine;
 
 namespace CustAmmoCategories {
   public static class CustomSoundHelper {
-    private static FieldInfo f_activeEventId = typeof(AudioEmitterObject).GetField("activeEventId",BindingFlags.Instance|BindingFlags.NonPublic);
+    private static FieldInfo f_activeEventId = typeof(AudioEmitterObject).GetField("activeEventId", BindingFlags.Instance | BindingFlags.NonPublic);
     private static FieldInfo f_audioObject = typeof(AudioEmitterObject).GetField("audioObject", BindingFlags.Instance | BindingFlags.NonPublic);
     private static FieldInfo f_isPlaying = typeof(AudioEmitterObject).GetField("isPlaying", BindingFlags.Instance | BindingFlags.NonPublic);
     private static FieldInfo f_ActiveShortAudioEmitters = typeof(AudioEventManager).GetField("ActiveShortAudioEmitters", BindingFlags.Static | BindingFlags.NonPublic);
@@ -71,28 +71,43 @@ namespace CustAmmoCategories {
     public static List<AudioEmitterObject> ActiveLongAudioEmitters() {
       return (List<AudioEmitterObject>)f_ActiveLongAudioEmitters.GetValue(null);
     }
-    public static void SpawnAudioEmitter(string eventName, Vector3 worldPos, bool persistentSound){
+    public static void SpawnAudioEmitter(string eventName, Vector3 worldPos, bool persistentSound) {
       CombatGameState combat = UnityGameInstance.BattleTechGame.Combat;
       Log.S.TWL(0, "SpawnAudioEmitter by id:" + eventName);
-      if (!persistentSound && ActiveShortAudioEmitters().Count >= AudioEventManager.AudioConstants.maxShortAudioEmitters)
-        return;
-      AudioEmitterObject audioEmitterObject;
-      if (persistentSound && ActiveLongAudioEmitters().Count >= AudioEventManager.AudioConstants.maxLongAudioEmitters) {
-        audioEmitterObject = ActiveLongAudioEmitters()[0];
-        ActiveLongAudioEmitters().RemoveAt(0);
-        audioEmitterObject.gameObject.transform.position = worldPos;
+      if (CustomVoices.AudioEngine.isInAudioManifest(eventName)) {
+        Log.S.WL(1, $"custom sound at {worldPos}");
+        GameObject emmiter = new GameObject($"{eventName}_emitter");
+        emmiter.transform.position = worldPos;
+        CustomVoices.AudioObject audioEmiter = emmiter.AddComponent<CustomVoices.AudioObject>();
+        if (persistentSound) {
+          audioEmiter.Play(eventName, true);
+        } else {
+          audioEmiter.Play(eventName, false, new List<CustomVoices.AudioEngine.AudioChannelEvent>() { new CustomVoices.AudioEngine.AudioChannelEvent(0.0f, () => {
+            Log.S.TWL(0, $"destroy emitter {emmiter.name}");
+            GameObject.Destroy(emmiter);
+          }) });
+        }
       } else {
-        GameObject gameObject = combat.DataManager.PooledInstantiate(AudioEventManager.AudioConstants.audioEmitterPrefab, BattleTechResourceType.Prefab, new Vector3?(worldPos), new Quaternion?(), (Transform)null);
-        gameObject.transform.position = worldPos;
-        audioEmitterObject = gameObject.GetComponent<AudioEmitterObject>();
+        if (!persistentSound && ActiveShortAudioEmitters().Count >= AudioEventManager.AudioConstants.maxShortAudioEmitters)
+          return;
+        AudioEmitterObject audioEmitterObject;
+        if (persistentSound && ActiveLongAudioEmitters().Count >= AudioEventManager.AudioConstants.maxLongAudioEmitters) {
+          audioEmitterObject = ActiveLongAudioEmitters()[0];
+          ActiveLongAudioEmitters().RemoveAt(0);
+          audioEmitterObject.gameObject.transform.position = worldPos;
+        } else {
+          GameObject gameObject = combat.DataManager.PooledInstantiate(AudioEventManager.AudioConstants.audioEmitterPrefab, BattleTechResourceType.Prefab, new Vector3?(worldPos), new Quaternion?(), (Transform)null);
+          gameObject.transform.position = worldPos;
+          audioEmitterObject = gameObject.GetComponent<AudioEmitterObject>();
+        }
+        if (audioEmitterObject == null)
+          return;
+        if (persistentSound)
+          ActiveLongAudioEmitters().Add(audioEmitterObject);
+        else
+          ActiveShortAudioEmitters().Add(audioEmitterObject);
+        audioEmitterObject.PostEventByName(eventName, worldPos, persistentSound);
       }
-      if ((UnityEngine.Object)audioEmitterObject == (UnityEngine.Object)null)
-        return;
-      if (persistentSound)
-        ActiveLongAudioEmitters().Add(audioEmitterObject);
-      else
-        ActiveShortAudioEmitters().Add(audioEmitterObject);
-      audioEmitterObject.PostEventByName(eventName, worldPos, (object)persistentSound);
     }
   }
 }

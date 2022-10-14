@@ -1,10 +1,12 @@
 ﻿using BattleTech;
 using BattleTech.Rendering;
 using CustomAmmoCategoriesLog;
+using CustomVoices;
 using System;
 using System.Collections.Generic;
 using System.Reflection;
 using UnityEngine;
+using Log = CustomAmmoCategoriesLog.Log;
 using Random = UnityEngine.Random;
 
 namespace CustAmmoCategories {
@@ -216,6 +218,7 @@ namespace CustAmmoCategories {
     public ColorChangeRule colorChangeRule;
     public Color effectiveColor;
     public List<ColorTableJsonEntry> colorsTable;
+    public AudioObject customAudioObject = null;
     public Color getNextColor() {
       Color result = Color.white;
       switch (colorChangeRule) {
@@ -355,6 +358,18 @@ namespace CustAmmoCategories {
       }
       Log.LogWrite(" NeedColorCalc " + this.NeedColorCalc + "\n");
       base.PlayProjectile();
+      string fireSFX = this.weapon.fireSFX();
+      if(string.IsNullOrEmpty(fireSFX) == false) {
+        if (CustomVoices.AudioEngine.isInAudioManifest(fireSFX)) {
+          if (this.customAudioObject == null) {
+            this.customAudioObject = this.weaponRep.gameObject.GetComponent<AudioObject>();
+            if (this.customAudioObject == null) { this.customAudioObject = this.weaponRep.gameObject.AddComponent<AudioObject>(); }
+          }
+          this.customAudioObject.Play(fireSFX, false);
+        } else {
+          int num = (int)WwiseManager.PostEvent(fireSFX, this.parentAudioObject);
+        }
+      }
     }
     public override void InitProjectile() {
       //if(this.projectile != null)
@@ -461,7 +476,7 @@ namespace CustAmmoCategories {
           str1 = "_" + this.impactVFXVariations[UnityEngine.Random.Range(0, this.impactVFXVariations.Length)];
         string str2 = string.Format("{0}{1}", (object)this.impactVFXBase, (object)str1);
         GameObject gameObject = this.weapon.parent.Combat.DataManager.PooledInstantiate(str2, BattleTechResourceType.Prefab, new Vector3?(), new Quaternion?(), (Transform)null);
-        if ((UnityEngine.Object)gameObject == (UnityEngine.Object)null) {
+        if (gameObject == null) {
           Log.LogWrite(this.weapon.Name + " WeaponEffect.PlayImpact had an invalid VFX name: " + str2 + "\n");
         } else {
           this.ScaleWeaponEffect(gameObject);
@@ -489,6 +504,47 @@ namespace CustAmmoCategories {
       if ((UnityEngine.Object)this.projectileLightObject != (UnityEngine.Object)null)
         this.projectileLightObject.SetActive(false);
       this.OnImpact(0.0f);
+    }
+    protected override void PlayPreFire() {
+      if (this.preFireVFXPrefab != null) {
+        GameObject gameObject = this.weapon.parent.Combat.DataManager.PooledInstantiate(this.preFireVFXPrefab.name, BattleTechResourceType.Prefab);
+        ParticleSystem component = gameObject.GetComponent<ParticleSystem>();
+        AutoPoolObject autoPoolObject = gameObject.GetComponent<AutoPoolObject>();
+        if (autoPoolObject == null)
+          autoPoolObject = gameObject.AddComponent<AutoPoolObject>();
+        autoPoolObject.Init(this.weapon.parent.Combat.DataManager, this.preFireVFXPrefab.name, component);
+        component.Stop(true);
+        component.Clear(true);
+        component.transform.parent = (Transform)null;
+        component.transform.position = this.startingTransform.position;
+        component.transform.LookAt(this.endPos);
+        BTCustomRenderer.SetVFXMultiplier(component);
+        component.Play(true);
+        if ((double)this.preFireDuration <= 0.0)
+          this.preFireDuration = component.main.duration;
+      }
+      this.preFireSFX = this.weapon.preFireSFX();
+      if (string.IsNullOrEmpty(this.preFireSFX) == false) {
+        if (CustomVoices.AudioEngine.isInAudioManifest(this.preFireSFX)) {
+          if (this.customAudioObject == null) {
+            this.customAudioObject = this.weaponRep.gameObject.GetComponent<AudioObject>();
+            if (this.customAudioObject == null) { this.customAudioObject = this.weaponRep.gameObject.AddComponent<AudioObject>(); }
+          }
+          this.customAudioObject.Play(this.preFireSFX, false);
+        } else {
+          int num = (int)WwiseManager.PostEvent(this.preFireSFX, this.parentAudioObject);
+        }
+      }
+      this.preFireRate = (double)this.preFireDuration <= 0.0 ? 1000f : 1f / this.preFireDuration;
+      if ((double)this.attackSequenceNextDelayMin <= 0.0 && (double)this.attackSequenceNextDelayMax <= 0.0)
+        this.attackSequenceNextDelayMax = this.preFireDuration;
+      if ((double)this.attackSequenceNextDelayMax <= 0.0)
+        this.attackSequenceNextDelayMax = 0.05f;
+      if ((double)this.attackSequenceNextDelayMin >= (double)this.attackSequenceNextDelayMax)
+        this.attackSequenceNextDelayMin = this.attackSequenceNextDelayMax;
+      this.attackSequenceNextDelayTimer = UnityEngine.Random.Range(this.attackSequenceNextDelayMin, this.attackSequenceNextDelayMax);
+      this.t = 0.0f;
+      this.currentState = WeaponEffect.WeaponEffectState.PreFiring;
     }
 
     //public virtual void RestoreScale() {
