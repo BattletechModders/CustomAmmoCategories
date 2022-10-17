@@ -63,6 +63,7 @@ public class MultiShotMissileEffect : CopyAbleWeaponEffect {
   }
 
   public void FireEx(WeaponHitInfo hitInfo, int hitIndex, int emitterIndex, bool isIndirect) {
+    this.SetupCustomSettings();
     this.Fire(hitInfo, hitIndex, emitterIndex);
     this.isIndirect = isIndirect;
     this.preFireEndPos = this.startingTransform.position;
@@ -81,6 +82,54 @@ public class MultiShotMissileEffect : CopyAbleWeaponEffect {
 
   protected override void PlayMuzzleFlash() {
     base.PlayMuzzleFlash();
+  }
+  public override void SetupCustomSettings() {
+    this.customPrefireSFX = this.preFireSFX;
+    switch (this.playSFX) {
+      case PlaySFXType.First: this.customPrefireSFX = this.parentLauncher.firstPreFireSFX; break;
+      case PlaySFXType.Middle: this.customPrefireSFX = this.parentLauncher.middlePrefireSFX; break;
+      case PlaySFXType.Last: this.customPrefireSFX = this.parentLauncher.lastPreFireSFX; break;
+      case PlaySFXType.None: this.customPrefireSFX = string.Empty; break;
+    }
+    this.fireSFX = string.Empty;
+    switch (this.playSFX) {
+      case PlaySFXType.First: this.fireSFX = this.parentLauncher.firstFireSFX; break;
+      case PlaySFXType.Middle: this.fireSFX = this.parentLauncher.middlefireSFX; break;
+      case PlaySFXType.Last: this.fireSFX = this.parentLauncher.lastFireSFX; break;
+      case PlaySFXType.None: this.fireSFX = string.Empty; break;
+    }
+    if (this.playSFX != PlaySFXType.None) {
+      this.preFireStartSFX = weapon.preFireStartSFX();
+      this.preFireStopSFX = weapon.preFireStopSFX();
+      this.customPulseSFX = weapon.pulseSFX();
+      this.customPulseSFXdelay = weapon.pulseSFXdelay();
+      this.projectileFireSFX = weapon.projectileFireSFX();
+      this.projectilePrefireSFX = weapon.projectilePreFireSFX();
+      this.projectileStopSFX = weapon.projectileStopSFX();
+      if (this.preFireStartSFX == null) { this.preFireStartSFX = string.Empty; }
+      if (this.preFireStopSFX == null) { this.preFireStopSFX = string.Empty; }
+      if (this.customPulseSFX == null) { this.customPulseSFX = string.Empty; }
+      if (this.projectileFireSFX == null) { this.projectileFireSFX = this.isSRM?"AudioEventList_srm_srm_projectile_start": "AudioEventList_lrm_lrm_projectile_start"; }
+      if (this.projectilePrefireSFX == null) { this.projectilePrefireSFX = string.Empty; }
+      if (this.projectileStopSFX == null) { this.projectileStopSFX = this.isSRM ? "AudioEventList_srm_srm_projectile_stop" : "AudioEventList_lrm_lrm_projectile_stop"; }
+      if (customPulseSFXdelay < CustomAmmoCategories.Epsilon) { this.customPulseSFXdelay = -1f; }
+    } else {
+      this.preFireStartSFX = string.Empty;
+      this.preFireStopSFX = string.Empty;
+      this.customPulseSFXdelay = 0f;
+      this.customPulseSFX = string.Empty;
+    }
+    if (weapon.prefireDuration() > CustomAmmoCategories.Epsilon) {
+      this.preFireDuration = weapon.prefireDuration();
+    } else {
+      this.preFireDuration = this.originalPrefireDuration;
+    }
+    if (weapon.ProjectileSpeed() > CustomAmmoCategories.Epsilon) {
+      this.projectileSpeed = weapon.ProjectileSpeed();
+    } else {
+      this.projectileSpeed = this.parentLauncher.projectileSpeed;
+    }
+    this.projectileSpeed *= weapon.ProjectileSpeedMultiplier();
   }
 
   protected override void PlayProjectile() {
@@ -128,19 +177,19 @@ public class MultiShotMissileEffect : CopyAbleWeaponEffect {
     base.PlayProjectile();
     this.startPos = this.preFireEndPos;
     if (this.isSRM) {
-      int num2 = (int)WwiseManager.PostEvent<AudioEventList_srm>(AudioEventList_srm.srm_projectile_start, this.projectileAudioObject, (AkCallbackManager.EventCallback)null, (object)null);
-      if (this.hitIndex >= this.hitInfo.numberOfShots) {
-        int num3 = (int)WwiseManager.PostEvent<AudioEventList_srm>(AudioEventList_srm.srm_missile_launch_last, this.parentAudioObject, (AkCallbackManager.EventCallback)null, (object)null);
-      } else {
-        int num4 = (int)WwiseManager.PostEvent<AudioEventList_srm>(AudioEventList_srm.srm_missile_launch, this.parentAudioObject, (AkCallbackManager.EventCallback)null, (object)null);
-      }
+      //int num2 = (int)WwiseManager.PostEvent<AudioEventList_srm>(AudioEventList_srm.srm_projectile_start, this.projectileAudioObject, (AkCallbackManager.EventCallback)null, (object)null);
+      //if (this.hitIndex >= this.hitInfo.numberOfShots) {
+      //  int num3 = (int)WwiseManager.PostEvent<AudioEventList_srm>(AudioEventList_srm.srm_missile_launch_last, this.parentAudioObject, (AkCallbackManager.EventCallback)null, (object)null);
+      //} else {
+      //  int num4 = (int)WwiseManager.PostEvent<AudioEventList_srm>(AudioEventList_srm.srm_missile_launch, this.parentAudioObject, (AkCallbackManager.EventCallback)null, (object)null);
+      //}
     } else {
-      int num2 = (int)WwiseManager.PostEvent<AudioEventList_lrm>(AudioEventList_lrm.lrm_projectile_start, this.projectileAudioObject, (AkCallbackManager.EventCallback)null, (object)null);
-      if (this.hitIndex >= this.hitInfo.numberOfShots) {
-        int num3 = (int)WwiseManager.PostEvent<AudioEventList_lrm>(AudioEventList_lrm.lrm_missile_launch_last, this.parentAudioObject, (AkCallbackManager.EventCallback)null, (object)null);
-      } else {
-        int num4 = (int)WwiseManager.PostEvent<AudioEventList_lrm>(AudioEventList_lrm.lrm_missile_launch, this.parentAudioObject, (AkCallbackManager.EventCallback)null, (object)null);
-      }
+      //int num2 = (int)WwiseManager.PostEvent<AudioEventList_lrm>(AudioEventList_lrm.lrm_projectile_start, this.projectileAudioObject, (AkCallbackManager.EventCallback)null, (object)null);
+      //if (this.hitIndex >= this.hitInfo.numberOfShots) {
+      //  int num3 = (int)WwiseManager.PostEvent<AudioEventList_lrm>(AudioEventList_lrm.lrm_missile_launch_last, this.parentAudioObject, (AkCallbackManager.EventCallback)null, (object)null);
+      //} else {
+      //  int num4 = (int)WwiseManager.PostEvent<AudioEventList_lrm>(AudioEventList_lrm.lrm_missile_launch, this.parentAudioObject, (AkCallbackManager.EventCallback)null, (object)null);
+      //}
     }
   }
   public override void InitProjectile() {
@@ -153,11 +202,12 @@ public class MultiShotMissileEffect : CopyAbleWeaponEffect {
   }
   protected override void PlayImpact() {
     this.PlayImpactAudio();
-    if (this.isSRM) {
-      int num1 = (int)WwiseManager.PostEvent<AudioEventList_srm>(AudioEventList_srm.srm_projectile_stop, this.projectileAudioObject, (AkCallbackManager.EventCallback)null, (object)null);
-    } else {
-      int num2 = (int)WwiseManager.PostEvent<AudioEventList_lrm>(AudioEventList_lrm.lrm_projectile_stop, this.projectileAudioObject, (AkCallbackManager.EventCallback)null, (object)null);
-    }
+    this.StopAudio();
+    //if (this.isSRM) {
+    //  int num1 = (int)WwiseManager.PostEvent<AudioEventList_srm>(AudioEventList_srm.srm_projectile_stop, this.projectileAudioObject, (AkCallbackManager.EventCallback)null, (object)null);
+    //} else {
+    //  int num2 = (int)WwiseManager.PostEvent<AudioEventList_lrm>(AudioEventList_lrm.lrm_projectile_stop, this.projectileAudioObject, (AkCallbackManager.EventCallback)null, (object)null);
+    //}
     if ((this.hitInfo.DidShotHitAnything(this.hitIndex)||(this.intercepted)) && !string.IsNullOrEmpty(this.impactVFXBase)) {
       string str1 = string.Empty;
       bool flag = false;
@@ -425,13 +475,13 @@ public class MultiShotMissileEffect : CopyAbleWeaponEffect {
   }*/
 
   public override void Reset() {
-    if (this.Active) {
-      if (this.isSRM) {
-        int num1 = (int)WwiseManager.PostEvent<AudioEventList_srm>(AudioEventList_srm.srm_projectile_stop, this.projectileAudioObject, (AkCallbackManager.EventCallback)null, (object)null);
-      } else {
-        int num2 = (int)WwiseManager.PostEvent<AudioEventList_lrm>(AudioEventList_lrm.lrm_projectile_stop, this.projectileAudioObject, (AkCallbackManager.EventCallback)null, (object)null);
-      }
-    }
+    //if (this.Active) {
+    //  if (this.isSRM) {
+    //    int num1 = (int)WwiseManager.PostEvent<AudioEventList_srm>(AudioEventList_srm.srm_projectile_stop, this.projectileAudioObject, (AkCallbackManager.EventCallback)null, (object)null);
+    //  } else {
+    //    int num2 = (int)WwiseManager.PostEvent<AudioEventList_lrm>(AudioEventList_lrm.lrm_projectile_stop, this.projectileAudioObject, (AkCallbackManager.EventCallback)null, (object)null);
+    //  }
+    //}
     base.Reset();
   }
 }

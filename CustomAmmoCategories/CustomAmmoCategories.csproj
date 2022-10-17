@@ -243,6 +243,7 @@
     <Compile Include="MineFieldsMoveSequence.cs" />
     <Compile Include="MiniMap.cs" />
     <Compile Include="MuiltyShotEffects\FakeWeaponEffect.cs" />
+    <Compile Include="MuiltyShotEffects\ImprovedWeaponEffect.cs" />
     <Compile Include="MuiltyShotEffects\ImproveWeaponEffect.cs" />
     <Compile Include="MuiltyShotEffects\MultiShotBallistic.cs" />
     <Compile Include="MuiltyShotEffects\MultiShotBeamEffect.cs" />

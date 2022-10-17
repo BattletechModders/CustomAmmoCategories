@@ -34,10 +34,10 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="0Harmony">
-      <HintPath>$(BattleTechGameDir\Mods\ModTek\AssembliesOverride\0Harmony.dll</HintPath>
+      <HintPath>..\..\..\Mods\ModTek\AssembliesOverride\0Harmony.dll</HintPath>
     </Reference>
     <Reference Include="Assembly-CSharp">
-      <HintPath>$(BattleTechGameDir\Mods\.modtek\AssembliesPublicized\Assembly-CSharp.dll</HintPath>
+      <HintPath>..\..\..\Mods\.modtek\AssembliesPublicized\Assembly-CSharp.dll</HintPath>
     </Reference>
     <Reference Include="IRBTModUtils, Version=1.30.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>

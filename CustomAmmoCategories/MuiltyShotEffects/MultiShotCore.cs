@@ -37,6 +37,7 @@ namespace CustAmmoCategories {
     private BaseHardPointAnimationController baseHardpointAnimator;
     protected int shotIndex;
     private int animationIndex;
+
     public override void Fire(WeaponHitInfo hitInfo, int hitIndex, int emitterIndex) {
       shotIndex = 0;
       animationIndex = 0;
@@ -208,6 +209,7 @@ namespace CustAmmoCategories {
     }
   }
   public abstract class CopyAbleWeaponEffect : WeaponEffect {
+    public enum PlaySFXType { None, First, Middle, Last };
     private static FieldInfo fi_hasSentNextWeaponMessage = null;
     protected bool NeedColorCalc;
     public Color CurrentColor;
@@ -218,7 +220,40 @@ namespace CustAmmoCategories {
     public ColorChangeRule colorChangeRule;
     public Color effectiveColor;
     public List<ColorTableJsonEntry> colorsTable;
-    public AudioObject customAudioObject = null;
+    public AudioObject customParentAudioObject = null;
+    public AudioObject customProjectileAudioObject = null;
+    private bool audioStopped { get; set; } = true;
+    public PlaySFXType playSFX { get; set; } = PlaySFXType.None;
+
+    //public string longPreFireSFX { get; set; } = null;
+
+    public string firstPreFireSFX { get; set; } = null;
+    public string middlePrefireSFX { get; set; } = null;
+    public string lastPreFireSFX { get; set; } = null;
+    public string firstFireSFX { get; set; } = null;
+    public string middlefireSFX { get; set; } = null;
+    public string lastFireSFX { get; set; } = null;
+
+    public string customPrefireSFX { get; set; } = null;
+    public string fireSFX { get; set; } = null;
+
+    public string projectilePrefireSFX { get; set; } = null;
+    public string projectileFireSFX { get; set; } = null;
+    public string projectileStopSFX { get; set; } = null;
+    public string firingStartSFX { get; set; } = null;
+    public string firingStopSFX { get; set; } = null;
+
+    public float originalPrefireDuration { get; set; } = 0f;
+    public float originalProjectileSpeed { get; set; } = 0f;
+    public float shotDelay { get; set; } = 0f;
+
+    public string preFireStartSFX { get; set; } = null;
+    public string preFireStopSFX { get; set; } = null;
+    public string customPulseSFX { get; set; } = null;
+    public float customPulseSFXdelay { get; set; } = 0f;
+
+    protected float pulseTime;
+
     public Color getNextColor() {
       Color result = Color.white;
       switch (colorChangeRule) {
@@ -227,6 +262,10 @@ namespace CustAmmoCategories {
         case ColorChangeRule.RandomOnce: result = colorsTable[Random.Range(0, colorsTable.Count)].Color; break;
       }
       return result;
+    }
+    public override void Fire(WeaponHitInfo hitInfo, int hitIndex = 0, int emitterIndex = 0) {
+      this.audioStopped = false;
+      base.Fire(hitInfo, hitIndex, emitterIndex);
     }
     public void Init(WeaponEffect original) {
       Log.M.TWL(0, "CopyAbleWeaponEffect.Init "+this.GetType().ToString()+" original:"+original.GetType().ToString());
@@ -257,10 +296,12 @@ namespace CustAmmoCategories {
         CustomAmmoCategoriesLog.Log.LogWrite("WARNING! Can't get WeaponEffect.hasSentNextWeaponMessage\n");
       }
       this.preFireDuration = original.preFireDuration;
+      this.originalPrefireDuration = original.preFireDuration;
       this.preFireRate = (float)typeof(WeaponEffect).GetField("preFireRate", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(original);
       this.duration = (float)typeof(WeaponEffect).GetField("duration", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(original);
       this.rate = (float)typeof(WeaponEffect).GetField("rate", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(original);
       this.projectileSpeed = original.projectileSpeed;
+      this.originalProjectileSpeed = this.projectileSpeed;
       this.weaponImpactType = original.weaponImpactType;
       this.preFireVFXPrefab = original.preFireVFXPrefab;
       this.muzzleFlashVFXPrefab = original.muzzleFlashVFXPrefab;
@@ -295,6 +336,16 @@ namespace CustAmmoCategories {
       this.colorChangeRule = ColorChangeRule.None;
       this.colorsTable = new List<ColorTableJsonEntry>();
     }
+    public override void Init(Weapon weapon) {
+      base.Init(weapon);
+      if(this.weapon.parent.GameRep != null) {
+        this.customParentAudioObject = this.weapon.parent.GameRep.gameObject.GetComponent<AudioObject>();
+        if (this.customParentAudioObject == null) { this.customParentAudioObject = this.weapon.parent.GameRep.gameObject.AddComponent<AudioObject>(); }
+        if (this.weapon.parent.GameRep.audioObject != null) {
+          this.parentAudioObject = this.weapon.parent.GameRep.audioObject;
+        }
+      }
+    }
     public virtual void StoreOriginalColor() {
 
     }
@@ -322,6 +373,8 @@ namespace CustAmmoCategories {
 #else
     protected override void PlayProjectile() {
 #endif
+      Log.M?.TWL(0,$"{this.GetType().Name}.PlayProjectile customPulseSFX:{this.customPulseSFX} pulseDelay:{this.customPulseSFXdelay}");
+      Log.M?.WL(1, $"playSFX:{this.playSFX} fireSFX:{this.fireSFX}");
       this.ColorChangeSpeed = this.weapon.ColorSpeedChange();
       this.colorsTable = this.weapon.ColorsTable();
       this.colorChangeRule = this.weapon.colorChangeRule();
@@ -357,30 +410,85 @@ namespace CustAmmoCategories {
         this.NeedColorCalc = false;
       }
       Log.LogWrite(" NeedColorCalc " + this.NeedColorCalc + "\n");
-      base.PlayProjectile();
-      string fireSFX = this.weapon.fireSFX();
-      if(string.IsNullOrEmpty(fireSFX) == false) {
-        if (CustomVoices.AudioEngine.isInAudioManifest(fireSFX)) {
-          if (this.customAudioObject == null) {
-            this.customAudioObject = this.weaponRep.gameObject.GetComponent<AudioObject>();
-            if (this.customAudioObject == null) { this.customAudioObject = this.weaponRep.gameObject.AddComponent<AudioObject>(); }
+      if (string.IsNullOrEmpty(this.customPulseSFX) == false) {
+        if (CustomVoices.AudioEngine.isInAudioManifest(customPulseSFX)) {
+          if (this.customParentAudioObject == null) {
+            this.customParentAudioObject = this.weaponRep.gameObject.GetComponent<AudioObject>();
+            if (this.customParentAudioObject == null) { this.customParentAudioObject = this.weaponRep.gameObject.AddComponent<AudioObject>(); }
           }
-          this.customAudioObject.Play(fireSFX, false);
+          this.customParentAudioObject.Play(customPulseSFX, false);
         } else {
-          int num = (int)WwiseManager.PostEvent(fireSFX, this.parentAudioObject);
+          int num = (int)WwiseManager.PostEvent(customPulseSFX, this.parentAudioObject);
         }
       }
+      if (string.IsNullOrEmpty(this.fireSFX) == false) {
+        if (CustomVoices.AudioEngine.isInAudioManifest(this.fireSFX)) {
+          if (this.customParentAudioObject == null) {
+            this.customParentAudioObject = this.weaponRep.gameObject.GetComponent<AudioObject>();
+            if (this.customParentAudioObject == null) { this.customParentAudioObject = this.weaponRep.gameObject.AddComponent<AudioObject>(); }
+          }
+          this.customParentAudioObject.Play(this.fireSFX, false);
+        } else {
+          int num = (int)WwiseManager.PostEvent(this.fireSFX, this.parentAudioObject);
+        }
+      }
+      if (string.IsNullOrEmpty(this.projectileFireSFX) == false) {
+        if (CustomVoices.AudioEngine.isInAudioManifest(projectileFireSFX)) {
+          this.customProjectileAudioObject?.Play(projectileFireSFX, true);
+        } else {
+          int num = (int)WwiseManager.PostEvent(projectileFireSFX, this.projectileAudioObject);
+        }
+      }
+
+      base.PlayProjectile();
+      //if (this.subEffect == true) {
+      //  if (string.IsNullOrEmpty(this.fireSFX) == false) {
+      //    if (CustomVoices.AudioEngine.isInAudioManifest(fireSFX)) {
+      //      if (this.customAudioObject == null) {
+      //        this.customAudioObject = this.weaponRep.gameObject.GetComponent<AudioObject>();
+      //        if (this.customAudioObject == null) { this.customAudioObject = this.weaponRep.gameObject.AddComponent<AudioObject>(); }
+      //      }
+      //      this.customAudioObject.Play(fireSFX, false);
+      //    } else {
+      //      int num = (int)WwiseManager.PostEvent(fireSFX, this.parentAudioObject);
+      //    }
+      //  }
+      //  if (string.IsNullOrEmpty(this.longFireSFX) == false) {
+      //    if (CustomVoices.AudioEngine.isInAudioManifest(longFireSFX)) {
+      //      if (this.customAudioObject == null) {
+      //        this.customAudioObject = this.weaponRep.gameObject.GetComponent<AudioObject>();
+      //        if (this.customAudioObject == null) { this.customAudioObject = this.weaponRep.gameObject.AddComponent<AudioObject>(); }
+      //      }
+      //      this.customAudioObject.Play(longFireSFX, true);
+      //    }
+      //  }
+      //}
     }
     public override void InitProjectile() {
       //if(this.projectile != null)
-      if ((UnityEngine.Object)this.projectilePrefab != (UnityEngine.Object)null && (UnityEngine.Object)this.projectile != (UnityEngine.Object)null) {
+      if (this.projectilePrefab != null && this.projectile != null) {
         if (this.activeProjectileName == null) { this.activeProjectileName = this.projectilePrefab.name; }
       }
       base.InitProjectile();
+      this.customProjectileAudioObject = this.projectile.GetComponent<AudioObject>();
+      if (this.customProjectileAudioObject == null) { this.projectile.AddComponent<AudioObject>(); }
+      if (this.customParentAudioObject == null) { this.customParentAudioObject = this.customProjectileAudioObject; }
+
       this.ScaleWeaponEffect(this.projectile);
     }
-    public override void Fire(WeaponHitInfo hitInfo, int hitIndex = 0, int emitterIndex = 0) {
-      base.Fire(hitInfo, hitIndex, emitterIndex);
+    public virtual void SetupCustomSettings() {
+      if (weapon.prefireDuration() > Core.Epsilon) {
+        this.preFireDuration = weapon.prefireDuration();
+      }
+      if (weapon.preFireSFX() != null) {
+        this.customPrefireSFX = weapon.preFireSFX();
+      } else {
+        this.customPrefireSFX = this.preFireSFX;
+      }
+      this.firstPreFireSFX = weapon.firstPreFireSFX();
+      this.middlePrefireSFX = weapon.preFireSFX();
+      this.lastPreFireSFX = weapon.lastPreFireSFX();
+      //this.longPreFireSFX = weapon.longPreFireSFX();
     }
 #if PUBLIC_ASSEMBLIES
     public override void Update() {
@@ -388,6 +496,22 @@ namespace CustAmmoCategories {
     protected override void Update() {
 #endif
       base.Update();
+      if(this.currentState == WeaponEffectState.Firing) {
+        if ((this.customPulseSFXdelay > CustomAmmoCategories.Epsilon) && (this.t >= this.pulseTime)) {
+          this.pulseTime += this.customPulseSFXdelay;
+          if (string.IsNullOrEmpty(this.customPulseSFX) == false) {
+            if (CustomVoices.AudioEngine.isInAudioManifest(customPulseSFX)) {
+              if (this.customParentAudioObject == null) {
+                this.customParentAudioObject = this.weaponRep.gameObject.GetComponent<AudioObject>();
+                if (this.customParentAudioObject == null) { this.customParentAudioObject = this.weaponRep.gameObject.AddComponent<AudioObject>(); }
+              }
+              this.customParentAudioObject.Play(customPulseSFX, false);
+            } else {
+              int num = (int)WwiseManager.PostEvent(customPulseSFX, this.parentAudioObject);
+            }
+          }
+        }
+      }
     }
     protected override void PlayTerrainImpactVFX() {
       MapTerrainDataCell cellAt = this.weapon.parent.Combat.MapMetaData.GetCellAt(this.hitInfo.hitPositions[this.hitIndex]);
@@ -506,6 +630,8 @@ namespace CustAmmoCategories {
       this.OnImpact(0.0f);
     }
     protected override void PlayPreFire() {
+      if (this.customPrefireSFX == null) { this.customPrefireSFX = this.preFireSFX; }
+      Log.M.TWL(0, $"{this.GetType().Name}.PlayPreFire {this.name} playSFX:{this.playSFX} prefireSFX:{this.customPrefireSFX} preFireStartSFX:{this.preFireStartSFX} preFireDuration:{this.preFireDuration}");
       if (this.preFireVFXPrefab != null) {
         GameObject gameObject = this.weapon.parent.Combat.DataManager.PooledInstantiate(this.preFireVFXPrefab.name, BattleTechResourceType.Prefab);
         ParticleSystem component = gameObject.GetComponent<ParticleSystem>();
@@ -523,16 +649,33 @@ namespace CustAmmoCategories {
         if ((double)this.preFireDuration <= 0.0)
           this.preFireDuration = component.main.duration;
       }
-      this.preFireSFX = this.weapon.preFireSFX();
-      if (string.IsNullOrEmpty(this.preFireSFX) == false) {
-        if (CustomVoices.AudioEngine.isInAudioManifest(this.preFireSFX)) {
-          if (this.customAudioObject == null) {
-            this.customAudioObject = this.weaponRep.gameObject.GetComponent<AudioObject>();
-            if (this.customAudioObject == null) { this.customAudioObject = this.weaponRep.gameObject.AddComponent<AudioObject>(); }
+      if (string.IsNullOrEmpty(this.customPrefireSFX) == false) {
+        if (CustomVoices.AudioEngine.isInAudioManifest(this.customPrefireSFX)) {
+          if (this.customParentAudioObject == null) {
+            this.customParentAudioObject = this.weaponRep.gameObject.GetComponent<AudioObject>();
+            if (this.customParentAudioObject == null) { this.customParentAudioObject = this.weaponRep.gameObject.AddComponent<AudioObject>(); }
           }
-          this.customAudioObject.Play(this.preFireSFX, false);
+          this.customParentAudioObject.Play(this.customPrefireSFX, false);
         } else {
-          int num = (int)WwiseManager.PostEvent(this.preFireSFX, this.parentAudioObject);
+          int num = (int)WwiseManager.PostEvent(this.customPrefireSFX, this.parentAudioObject);
+        }
+      }
+      if (string.IsNullOrEmpty(this.preFireStartSFX) == false) {
+        if (CustomVoices.AudioEngine.isInAudioManifest(this.preFireStartSFX)) {
+          if (this.customParentAudioObject == null) {
+            this.customParentAudioObject = this.weaponRep.gameObject.GetComponent<AudioObject>();
+            if (this.customParentAudioObject == null) { this.customParentAudioObject = this.weaponRep.gameObject.AddComponent<AudioObject>(); }
+          }
+          this.customParentAudioObject.Play(this.preFireStartSFX, true);
+        } else {
+          int num = (int)WwiseManager.PostEvent(this.preFireStartSFX, this.parentAudioObject);
+        }
+      }
+      if (string.IsNullOrEmpty(this.projectilePrefireSFX) == false) {
+        if (CustomVoices.AudioEngine.isInAudioManifest(projectilePrefireSFX)) {
+          this.customProjectileAudioObject?.Play(projectilePrefireSFX, true);
+        } else {
+          int num = (int)WwiseManager.PostEvent(projectilePrefireSFX, this.projectileAudioObject);
         }
       }
       this.preFireRate = (double)this.preFireDuration <= 0.0 ? 1000f : 1f / this.preFireDuration;
@@ -558,13 +701,49 @@ namespace CustAmmoCategories {
     //  originalParticleScaling.Clear();
     //  scaled = false;
     //}
+    public virtual void StopAudio() {
+      if (audioStopped) { return; }
+      audioStopped = true;
+      if ((string.IsNullOrEmpty(this.preFireStopSFX) == false)
+        && (string.IsNullOrEmpty(this.preFireStartSFX) == false)
+        && CustomVoices.AudioEngine.isInAudioManifest(this.preFireStartSFX) == false) {
+        int num = (int)WwiseManager.PostEvent(this.preFireStopSFX, this.parentAudioObject);
+      } else
+      if (string.IsNullOrEmpty(this.preFireStartSFX) == false) {
+        if (CustomVoices.AudioEngine.isInAudioManifest(this.preFireStartSFX)) {
+          this.customParentAudioObject?.Stop(this.preFireStartSFX);
+        }
+      }
+      if(string.IsNullOrEmpty(this.projectileFireSFX) == false) {
+        if (CustomVoices.AudioEngine.isInAudioManifest(this.projectileFireSFX)) {
+          this.customProjectileAudioObject?.Stop(this.projectileFireSFX);
+        }
+      }
+      if (string.IsNullOrEmpty(this.projectilePrefireSFX) == false) {
+        if (CustomVoices.AudioEngine.isInAudioManifest(this.projectilePrefireSFX)) {
+          this.customProjectileAudioObject?.Stop(this.projectilePrefireSFX);
+        }
+      }
+      if (string.IsNullOrEmpty(this.projectileStopSFX) == false) {
+        int num = (int)WwiseManager.PostEvent(this.projectileStopSFX, this.projectileAudioObject);
+      }
+    }
+    protected override void PlayImpactAudio() {
+      //Log.M?.TWL(0, $"{this.GetType().Name}.PlayImpactAudio {this.playSFX}");
+      //if (this.playSFX != PlaySFXType.None) {
+      base.PlayImpactAudio();
+      //}
+    }
     protected override void OnComplete() {
       //this.RestoreScale();
+      this.StopAudio();
       base.OnComplete();
     }
     public override void Reset() {
+      if (this.Active) { this.StopAudio(); }
       //this.RestoreScale();
       base.Reset();
+
     }
     protected bool hasSentNextWeaponMessage {
       get {

@@ -133,6 +133,12 @@ namespace CustAmmoCategoriesPatches {
         num *= __instance.occupiedDesignMask.heatSinkMultiplier;
       if(__instance.Combat.MapMetaData.biomeDesignMask != null && !Mathf.Approximately(__instance.Combat.MapMetaData.biomeDesignMask.heatSinkMultiplier, 1f))
         num *= __instance.Combat.MapMetaData.biomeDesignMask.heatSinkMultiplier;
+
+      float HeatSinkCapacityMult = __instance.StatCollection.GetOrCreateStatisic<float>(CustomAmmoCategories.HeatSinkCapacityMultActorStat, 1f).Value<float>();
+      if (Mathf.Approximately(HeatSinkCapacityMult, 1f) == false) {
+        num *= __instance.StatCollection.GetOrCreateStatisic<float>(CustomAmmoCategories.HeatSinkCapacityMultActorStat, 1f).Value<float>();
+      }
+
       if (__instance.isUsedHeatSinkReseted()) {
         __result = (int)((double)(__instance.HeatSinkCapacity - __instance.UsedHeatSinksCap()) * (double)(num * __instance.Combat.Constants.Heat.GlobalHeatSinkMultiplier));
       } else {

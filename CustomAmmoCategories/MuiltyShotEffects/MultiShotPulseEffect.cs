@@ -130,12 +130,58 @@ namespace CustAmmoCategories {
       this.parentProjector = parentProjector;
       this.weapon = weapon;
       this.weaponRep = weapon.weaponRep;
-      this.projectileSpeed = parentProjector.projectileSpeed * weapon.ProjectileSpeedMultiplier();
+      //this.projectileSpeed = parentProjector.projectileSpeed * weapon.ProjectileSpeedMultiplier();
       this.subEffect = true;
     }
+    public override void SetupCustomSettings() {
+      this.customPrefireSFX = this.preFireSFX;
+      switch (this.playSFX) {
+        case PlaySFXType.First: this.customPrefireSFX = this.parentProjector.firstPreFireSFX; break;
+        case PlaySFXType.Middle: this.customPrefireSFX = this.parentProjector.middlePrefireSFX; break;
+        case PlaySFXType.Last: this.customPrefireSFX = this.parentProjector.lastPreFireSFX; break;
+        case PlaySFXType.None: this.customPrefireSFX = string.Empty; break;
+      }
+      if (this.playSFX != PlaySFXType.None) {
+        this.preFireStartSFX = weapon.preFireStartSFX();
+        this.preFireStopSFX = weapon.preFireStopSFX();
+        this.customPulseSFX = weapon.pulseSFX();
+        this.customPulseSFXdelay = weapon.pulseSFXdelay();
+        this.projectileFireSFX = weapon.projectileFireSFX();
+        this.projectilePrefireSFX = weapon.projectilePreFireSFX();
+        this.projectileStopSFX = weapon.projectileStopSFX();
+        if (this.preFireStartSFX == null) { this.preFireStartSFX = string.Empty; }
+        if (this.preFireStopSFX == null) { this.preFireStopSFX = string.Empty; }
+        if (this.customPulseSFX == null) { this.customPulseSFX = string.Empty; }
+        if (this.projectileFireSFX == null) { this.projectileFireSFX = string.Empty; }
+        if (this.projectilePrefireSFX == null) { this.projectilePrefireSFX = string.Empty; }
+        if (this.projectileStopSFX == null) { this.projectileStopSFX = string.Empty; }
+        if (customPulseSFXdelay < CustomAmmoCategories.Epsilon) { this.customPulseSFXdelay = -1f; }
+      } else {
+        this.preFireStartSFX = string.Empty;
+        this.preFireStopSFX = string.Empty;
+        this.customPulseSFXdelay = 0f;
+        this.customPulseSFX = string.Empty;
+        this.projectileFireSFX = string.Empty;
+        this.projectilePrefireSFX = string.Empty;
+        this.projectileStopSFX = string.Empty;
+      }
+      if (weapon.prefireDuration() > CustomAmmoCategories.Epsilon) {
+        this.preFireDuration = weapon.prefireDuration();
+      } else {
+        this.preFireDuration = this.originalPrefireDuration;
+      }
+      if (weapon.ProjectileSpeed() > CustomAmmoCategories.Epsilon) {
+        this.projectileSpeed = weapon.ProjectileSpeed();
+      } else {
+        this.projectileSpeed = this.originalProjectileSpeed;
+      }
+      this.projectileSpeed *= weapon.ProjectileSpeedMultiplier();
+    }
+
     public virtual void Fire(WeaponHitInfo hitInfo, int hitIndex = 0, int emitterIndex = 0, bool pb = false) {
       Log.LogWrite("MultiShotPPCEffect.Fire " + hitInfo.attackWeaponIndex + " " + hitIndex + " ep:" + hitInfo.hitPositions[hitIndex] + " prime:" + pb + "\n");
       this.primePulse = pb;
+      this.SetupCustomSettings();
       Vector3 endPos = hitInfo.hitPositions[hitIndex];
       base.Fire(hitInfo, hitIndex, emitterIndex);
       this.endPos = endPos;
@@ -181,9 +227,9 @@ namespace CustAmmoCategories {
     protected override void PlayImpact() {
       this.PlayImpactAudio();
       base.PlayImpact();
-      if (!((UnityEngine.Object)this.projectileParticles != (UnityEngine.Object)null))
-        return;
-      this.projectileParticles.Stop(true);
+      if (this.projectileParticles != null) {
+        this.projectileParticles.Stop(true);
+      }
     }
 #if PUBLIC_ASSEMBLIES
     public override void Update() {

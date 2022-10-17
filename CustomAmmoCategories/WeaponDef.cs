@@ -605,8 +605,6 @@ namespace CustAmmoCategories {
         foreach (var ia in InternalAmmo) { if (ia.Value > 0) { return true; }; }
         return false;
     } }
-    [Key(84)]
-    public string preFireSFX { get; set; } = string.Empty;
     [StatCollectionFloat(), Key(85)]
     public float MinMissRadius { get; set; } = 0f;
     [StatCollectionFloat(), Key(86)]
@@ -646,7 +644,45 @@ namespace CustAmmoCategories {
     [Key(103)]
     public bool alwaysMiss { get; set; } = false;
     [Key(104)]
-    public string fireSFX { get; set; } = string.Empty;
+    public float prefireDuration { get; set; } = 0f;
+    [Key(105)]
+    public string preFireSFX { get; set; } = null;
+    [Key(106)]
+    public string fireSFX { get; set; } = null;
+    //[Key(107)]
+    //public string longPreFireSFX { get; set; } = null;
+    //[Key(108)]
+    //public string longFireSFX { get; set; } = null;
+    [Key(109)]
+    public string firstPreFireSFX { get; set; } = null;
+    [Key(110)]
+    public string lastPreFireSFX { get; set; } = null;
+    [Key(111)]
+    public string preFireStartSFX { get; set; } = null;
+    [Key(112)]
+    public string preFireStopSFX { get; set; } = null;
+    [Key(113)]
+    public float delayedSFXDelay { get; set; } = 0f;
+    [Key(114)]
+    public string delayedSFX { get; set; } = null;
+    [Key(115)]
+    public float ProjectileSpeed { get; set; } = 0f;
+    [Key(116)]
+    public float shotDelay { get; set; } = 0f;
+    [Key(117)]
+    public string projectileFireSFX { get; set; } = null;
+    [Key(118)]
+    public string projectilePreFireSFX { get; set; } = null;
+    [Key(119)]
+    public string projectileStopSFX { get; set; } = null;
+    [Key(120)]
+    public string firingStartSFX { get; set; } = null;
+    [Key(121)]
+    public string firingStopSFX { get; set; } = null;
+    [Key(122)]
+    public string firstFireSFX { get; set; } = null;
+    [Key(123)]
+    public string lastFireSFX { get; set; } = null;
     public ExtWeaponDef() { }
   }
 }
@@ -659,7 +695,7 @@ namespace CustomAmmoCategoriesPatches {
   public static class BattleTech_WeaponDef_fromJSON_Patch {
     public static bool Prefix(WeaponDef __instance, ref string json, ref ExtDefinitionParceInfo __state) {
       CustomAmmoCategories.CustomCategoriesInit();
-      if(__instance.Description != null) {
+      if (__instance.Description != null) {
         ExtWeaponDef extWeaponDef = CustomPrewarm.Core.getDeserializedObject(BattleTechResourceType.WeaponDef, __instance.Description.Id, "CustomAmmoCategories") as ExtWeaponDef;
         if (extWeaponDef != null) {
           __state = new ExtDefinitionParceInfo();
@@ -682,7 +718,7 @@ namespace CustomAmmoCategoriesPatches {
       }
       try {
         string Id = (string)defTemp["Description"]["Id"];
-        Log.LogWrite(Id + "\n");
+        Log.M.TWL(0, $"WeaponDef.FromJSON {Id}");
         ExtWeaponDef extDef = null;
         if (CustomAmmoCategories.isRegistredWeapon(Id)) {
           extDef = CustomAmmoCategories.getExtWeaponDef(Id);
@@ -812,10 +848,11 @@ namespace CustomAmmoCategoriesPatches {
               string ModeJSON = jWeaponMode.ToString();
               if (string.IsNullOrEmpty(ModeJSON)) { continue; };
               WeaponMode mode = new WeaponMode();
+              Log.M.WL(1, $"mode {jWeaponMode["Id"]}");
               mode.fromJSON(ModeJSON);
               if (mode.AmmoCategory == null) { mode.AmmoCategory = extDef.AmmoCategory; }
               //mode.AmmoCategory = extDef.AmmoCategory;
-              CustomAmmoCategoriesLog.Log.LogWrite(" adding mode '" + mode.Id + "'\n");
+              Log.LogWrite(" adding mode '" + mode.Id + "'\n");
               extDef.Modes.Add(mode.Id, mode);
               if (mode.isBaseMode == true) { extDef.baseModeId = mode.Id; }
             }

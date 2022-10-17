@@ -2450,7 +2450,14 @@ namespace CustomUnits {
   [HarmonyPatch(new Type[] { typeof(AbstractActor) })]
   public static class CombatHUDMechwarriorTray_ResetMechwarriorButtons {
     public static void Postfix(CombatHUDMechwarriorTray __instance, AbstractActor actor, CombatGameState ___Combat) {
-      Log.LogWrite("CombatHUDMechwarriorTray.ResetMechwarriorButtons\n");
+      Log.TWL(0,"CombatHUDMechwarriorTray.ResetMechwarriorButtons");
+      if(actor != null) {
+        if(__instance.DoneWithMechButton.IsAvailable == false) {
+          if(actor.IsAvailableThisPhase && ((actor.Combat.StackManager.IsAnyOrderActive == false)||(actor.Combat.TurnDirector.IsInterleaved == false))) {
+            __instance.DoneWithMechButton.ResetButtonIfNotActive(actor);
+          }
+        }
+      }
       CombatHUDMechwarriorTrayEx trayEx = __instance.gameObject.GetComponent<CombatHUDMechwarriorTrayEx>();
       if (trayEx == null) { return; }
       if (actor == null) {

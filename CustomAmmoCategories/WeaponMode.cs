@@ -322,8 +322,6 @@ namespace CustAmmoCategories {
     public float ShotsPerAmmo { get; set; } = 1f;
     [SelfDocumentationDefaultValue("empty"), SelfDocumentationTypeName("DeferredEffectDef structure"), Key(95)]
     public DeferredEffectDef deferredEffect { get; set; } = new DeferredEffectDef();
-    [Key(96)]
-    public string preFireSFX { get; set; } = string.Empty;
     [Key(97)]
     public float MinMissRadius { get; set; } = 0f;
     [Key(98)]
@@ -369,7 +367,45 @@ namespace CustAmmoCategories {
     [Key(118)]
     public float AirMechDamageModifier { get; set; } = 1f;
     [Key(119)]
-    public string fireSFX { get; set; } = string.Empty;
+    public float prefireDuration { get; set; } = 0f;
+    [Key(120)]
+    public string preFireSFX { get; set; } = null;
+    [Key(121)]
+    public string fireSFX { get; set; } = null;
+    [Key(122)]
+    public string longPreFireSFX { get; set; } = null;
+    [Key(123)]
+    public string longFireSFX { get; set; } = null;
+    [Key(124)]
+    public string firstPreFireSFX { get; set; } = null;
+    [Key(125)]
+    public string lastPreFireSFX { get; set; } = null;
+    [Key(126)]
+    public string preFireStartSFX { get; set; } = null;
+    [Key(127)]
+    public string preFireStopSFX { get; set; } = null;
+    [Key(128)]
+    public float delayedSFXDelay { get; set; } = 0f;
+    [Key(129)]
+    public string delayedSFX { get; set; } = null;
+    [Key(130)]
+    public float ProjectileSpeed { get; set; } = 0f;
+    [Key(131)]
+    public float shotDelay { get; set; } = 0f;
+    [Key(132)]
+    public string projectileFireSFX { get; set; } = null;
+    [Key(133)]
+    public string projectilePreFireSFX { get; set; } = null;
+    [Key(134)]
+    public string projectileStopSFX { get; set; } = null;
+    [Key(135)]
+    public string firingStartSFX { get; set; } = null;
+    [Key(136)]
+    public string firingStopSFX { get; set; } = null;
+    [Key(137)]
+    public string firstFireSFX { get; set; } = null;
+    [Key(138)]
+    public string lastFireSFX { get; set; } = null;
     [IgnoreMember, JsonIgnore]
     public bool Disabeld { get; set; } = false;
     public WeaponMode() {
@@ -839,25 +875,35 @@ namespace CustAmmoCategories {
         jWeaponMode.Remove("HitGenerator");
       }
       foreach (PropertyInfo prop in typeof(WeaponMode).GetProperties()) {
+        object[] attrs = prop.GetCustomAttributes(true);
+        bool ignore_property = false;
+        foreach (object attr in attrs) {
+          if ((attr as IgnoreMemberAttribute) != null) { ignore_property = true; break; }
+          if ((attr as JsonIgnoreAttribute) != null) { ignore_property = true; break; }
+        }
+        if (ignore_property) { continue; }
+        //Log.M.WL(3, $"{prop.Name}:{prop.PropertyType.Name}({typeof(string).Name})={(jWeaponMode[prop.Name]==null?"null":"not null")}");
         if (jWeaponMode[prop.Name] == null) { continue; }
-        if (prop.DeclaringType == typeof(float)) {
+        if (prop.PropertyType == typeof(float)) {
           prop.SetValue(this, (float)jWeaponMode[prop.Name]);
-        } else if (prop.DeclaringType == typeof(int)) {
+        } else if (prop.PropertyType == typeof(int)) {
           prop.SetValue(this, (int)jWeaponMode[prop.Name]);
-        } else if (prop.DeclaringType == typeof(string)) {
+        } else if (prop.PropertyType == typeof(string)) {
+          Log.M.WL(3, $"{prop.Name}={(string)jWeaponMode[prop.Name]}");
           prop.SetValue(this, (string)jWeaponMode[prop.Name]);
-        } else if (prop.DeclaringType == typeof(TripleBoolean)) {
+        } else if (prop.PropertyType == typeof(TripleBoolean)) {
           prop.SetValue(this, ((bool)jWeaponMode[prop.Name] == true) ? TripleBoolean.True : TripleBoolean.False);
-        } else if (prop.DeclaringType == typeof(bool)) {
+        } else if (prop.PropertyType == typeof(bool)) {
           prop.SetValue(this, (bool)jWeaponMode[prop.Name]);
-        } else if (prop.DeclaringType == typeof(EvasivePipsMods)) {
+        } else if (prop.PropertyType == typeof(EvasivePipsMods)) {
           prop.SetValue(this, jWeaponMode[prop.Name].ToObject<EvasivePipsMods>());
-        } else if (prop.DeclaringType == typeof(CustomVector)) {
+        } else if (prop.PropertyType == typeof(CustomVector)) {
           prop.SetValue(this, jWeaponMode[prop.Name].ToObject<CustomVector>());
-        } else if (prop.DeclaringType.IsEnum) {
-          prop.SetValue(this, Enum.Parse(prop.DeclaringType, (string)jWeaponMode[prop.Name]));
+        } else if (prop.PropertyType.IsEnum) {
+          prop.SetValue(this, Enum.Parse(prop.PropertyType, (string)jWeaponMode[prop.Name]));
         } else { continue; }
       }
+      //Log.M.WL(2,$"firstPreFireSFX:{this.firstPreFireSFX}");
       if (jWeaponMode["statusEffects"] != null) {
 
         if (jWeaponMode["statusEffects"].Type == JTokenType.Array) {

@@ -154,6 +154,11 @@ namespace CustAmmoCategories {
         return;
       int num = (int)WwiseManager.PostEvent(this.fireCompleteStopEvent, this.projectileAudioObject, (AkCallbackManager.EventCallback)null, (object)null);
     }
+    public void OnDisable() {
+      if (string.IsNullOrEmpty(this.fireCompleteStopEvent) == false) {
+        int num = (int)WwiseManager.PostEvent(this.fireCompleteStopEvent, this.projectileAudioObject, (AkCallbackManager.EventCallback)null, (object)null);
+      }
+    }
     public override void Reset() {
       if (this.Active && !string.IsNullOrEmpty(this.fireCompleteStopEvent)) {
         int num = (int)WwiseManager.PostEvent(this.fireCompleteStopEvent, this.projectileAudioObject, (AkCallbackManager.EventCallback)null, (object)null);

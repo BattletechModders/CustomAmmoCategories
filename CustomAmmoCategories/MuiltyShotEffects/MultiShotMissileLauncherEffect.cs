@@ -144,8 +144,41 @@ public class MultiShotMissileLauncherEffect : CopyAbleWeaponEffect {
     }
     return true;
   }
+  public override void SetupCustomSettings() {
+    this.customPrefireSFX = string.Empty;
+    this.fireSFX = string.Empty;
+    this.firstPreFireSFX = weapon.firstPreFireSFX();
+    this.middlePrefireSFX = weapon.preFireSFX();
+    this.lastPreFireSFX = weapon.lastPreFireSFX();
+    //this.longPreFireSFX = weapon.longPreFireSFX();
+    this.firingStartSFX = weapon.firingStartSFX();
+    this.firingStopSFX = weapon.firingStopSFX();
+    if(string.IsNullOrEmpty(firingStartSFX) == false) {
+      if (CustomVoices.AudioEngine.isInAudioManifest(firingStartSFX)) {
+        this.firingStopSFX = firingStartSFX;
+      }
+    }
+    if (firingStartSFX == null) { firingStartSFX = this.isSRM?"AudioEventList_srm_srm_launcher_start":"AudioEventList_lrm_lrm_launcher_start"; }
+    if (firingStopSFX == null) { firingStopSFX = this.isSRM ? "AudioEventList_srm_srm_launcher_start" : "AudioEventList_lrm_lrm_launcher_start"; }
+    if (this.middlePrefireSFX == null) { this.middlePrefireSFX = this.preFireSFX; }
+    if (this.firstPreFireSFX == null) { this.firstPreFireSFX = this.middlePrefireSFX; }
+    if (this.lastPreFireSFX == null) { this.lastPreFireSFX = this.middlePrefireSFX; }
+
+    this.middlefireSFX = weapon.fireSFX();
+    this.firstFireSFX = weapon.firstFireSFX();
+    this.lastFireSFX = weapon.lastFireSFX();
+    if (this.middlefireSFX == null) { this.middlefireSFX = this.isSRM ? "AudioEventList_srm_srm_missile_launch" : "AudioEventList_lrm_lrm_missile_launch"; }
+    if (this.firstPreFireSFX == null) { this.firstPreFireSFX = this.middlefireSFX; }
+    if (this.lastPreFireSFX == null) { this.lastPreFireSFX = this.isSRM? "AudioEventList_srm_srm_missile_launch_last": "AudioEventList_lrm_lrm_missile_launch_last"; }
+
+    this.preFireStartSFX = string.Empty;
+    this.preFireStopSFX = string.Empty;
+    this.customPulseSFX = string.Empty;
+    this.customPulseSFXdelay = 0f;
+  }
 
   public override void Fire(WeaponHitInfo hitInfo, int hitIndex = 0, int emitterIndex = 0) {
+    this.SetupCustomSettings();
     base.Fire(hitInfo, hitIndex, emitterIndex);
     this.SetupMissiles();
     this.PlayPreFire();
@@ -182,11 +215,22 @@ public class MultiShotMissileLauncherEffect : CopyAbleWeaponEffect {
     if (this.hitIndex < this.hitInfo.numberOfShots && this.missileVolleyIdx < this.VolleySize)
       this.LaunchMissile();
     if (this.hitIndex >= this.hitInfo.numberOfShots) {
-      if (this.isSRM) {
-        int num1 = (int)WwiseManager.PostEvent<AudioEventList_srm>(AudioEventList_srm.srm_launcher_end, this.parentAudioObject, (AkCallbackManager.EventCallback)null, (object)null);
-      } else {
-        int num2 = (int)WwiseManager.PostEvent<AudioEventList_lrm>(AudioEventList_lrm.lrm_launcher_end, this.parentAudioObject, (AkCallbackManager.EventCallback)null, (object)null);
+      if (string.IsNullOrEmpty(this.firingStopSFX) == false) {
+        if (CustomVoices.AudioEngine.isInAudioManifest(firingStopSFX)) {
+          if (this.customParentAudioObject == null) {
+            this.customParentAudioObject = this.weaponRep.gameObject.GetComponent<CustomVoices.AudioObject>();
+            if (this.customParentAudioObject == null) { this.customParentAudioObject = this.weaponRep.gameObject.AddComponent<CustomVoices.AudioObject>(); }
+          }
+          this.customParentAudioObject.Play(firingStopSFX, true);
+        } else {
+          int num = (int)WwiseManager.PostEvent(firingStopSFX, this.parentAudioObject);
+        }
       }
+      //if (this.isSRM) {
+      //  int num1 = (int)WwiseManager.PostEvent<AudioEventList_srm>(AudioEventList_srm.srm_launcher_end, this.parentAudioObject, (AkCallbackManager.EventCallback)null, (object)null);
+      //} else {
+      //  int num2 = (int)WwiseManager.PostEvent<AudioEventList_lrm>(AudioEventList_lrm.lrm_launcher_end, this.parentAudioObject, (AkCallbackManager.EventCallback)null, (object)null);
+      //}
       this.currentState = WeaponEffect.WeaponEffectState.WaitingForImpact;
     } else {
       if (this.missileVolleyIdx >= this.VolleySize) {
@@ -209,13 +253,27 @@ public class MultiShotMissileLauncherEffect : CopyAbleWeaponEffect {
     Log.LogWrite("MultiShotMissileLauncherEffect.LaunchMissile hitIndex:" + this.hitIndex + "/" + this.hitInfo.numberOfShots + " volleyIndex:" + this.missileVolleyIdx + "/" + this.VolleySize + " emmiters: "+ this.emitterIndex + "/" +this.weaponRep.vfxTransforms.Length+ "\n");
     MultiShotMissileEffect missile = this.missiles[this.hitIndex] as MultiShotMissileEffect;
     missile.tubeTransform = this.weaponRep.vfxTransforms[this.emitterIndex];
+    missile.playSFX = PlaySFXType.Middle;
+    if (this.hitIndex == 0) { missile.playSFX = PlaySFXType.First; }
+    if (this.hitIndex == (this.missiles.Count - 1)) { missile.playSFX = PlaySFXType.Last; }
     missile.FireEx(this.hitInfo, this.hitIndex, this.emitterIndex, this.isIndirect);
     if (this.hitIndex == 0) {
-      if (this.isSRM) {
-        int num1 = (int)WwiseManager.PostEvent<AudioEventList_srm>(AudioEventList_srm.srm_launcher_start, this.parentAudioObject, (AkCallbackManager.EventCallback)null, (object)null);
-      } else {
-        int num2 = (int)WwiseManager.PostEvent<AudioEventList_lrm>(AudioEventList_lrm.lrm_launcher_start, this.parentAudioObject, (AkCallbackManager.EventCallback)null, (object)null);
+      if (string.IsNullOrEmpty(this.firingStartSFX) == false) {
+        if (CustomVoices.AudioEngine.isInAudioManifest(firingStartSFX)) {
+          if (this.customParentAudioObject == null) {
+            this.customParentAudioObject = this.weaponRep.gameObject.GetComponent<CustomVoices.AudioObject>();
+            if (this.customParentAudioObject == null) { this.customParentAudioObject = this.weaponRep.gameObject.AddComponent<CustomVoices.AudioObject>(); }
+          }
+          this.customParentAudioObject.Play(firingStartSFX, true);
+        } else {
+          int num = (int)WwiseManager.PostEvent(firingStartSFX, this.parentAudioObject);
+        }
       }
+      //if (this.isSRM) {
+      //  int num1 = (int)WwiseManager.PostEvent<AudioEventList_srm>(AudioEventList_srm.srm_launcher_start, this.parentAudioObject, (AkCallbackManager.EventCallback)null, (object)null);
+      //} else {
+      //  int num2 = (int)WwiseManager.PostEvent<AudioEventList_lrm>(AudioEventList_lrm.lrm_launcher_start, this.parentAudioObject, (AkCallbackManager.EventCallback)null, (object)null);
+      //}
     }
     ++this.hitIndex;
     ++this.missileVolleyIdx;

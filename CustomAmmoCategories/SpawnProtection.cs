@@ -1,4 +1,5 @@
 ﻿using BattleTech;
+using BattleTech.Designed;
 using CustomAmmoCategoriesLog;
 using Harmony;
 using Localize;
@@ -10,6 +11,17 @@ namespace CustAmmoCategories {
     public static readonly string SPAWN_PROTECTION_STAT_NAME = "CAC_SPAWN_PROTECTION";
     public static readonly string SPAWN_PROTECTION_ROUND_STAT_NAME = "CAC_SPAWN_PROTECTION_ROUND";
     public static readonly string SPAWN_PROTECTION_STAT_NAME_ADD = "CAC_SPAWN_PROTECTION_ADD";
+    public static int SPAWN_PROTECTED_ROUND = -1;
+    public static void Clear() {
+      SPAWN_PROTECTED_ROUND = -1;
+    }
+    public static void addSpawnProtection(this CombatGameState combat, int roundOffset, string reason) {
+      Log.M?.TWL(0, $"SpawnProtection add till round {combat.TurnDirector.CurrentRound + roundOffset} round:{combat.TurnDirector.CurrentRound} phase:{combat.TurnDirector.CurrentPhase} reason:{reason}");
+      SPAWN_PROTECTED_ROUND = combat.TurnDirector.CurrentRound + roundOffset;
+    }
+    public static bool IsSpawnProtected(this CombatGameState combat) {
+      return SPAWN_PROTECTED_ROUND >= combat.TurnDirector.CurrentRound;
+    }
     public static bool isSpawnProtected(this ICombatant combatant) {
       try {
         return combatant.StatCollection.GetOrCreateStatisic<int>(SPAWN_PROTECTION_ROUND_STAT_NAME, 0).Value<int>() >= combatant.Combat.TurnDirector.CurrentRound;
@@ -85,6 +97,40 @@ namespace CustAmmoCategories {
       if (CustomAmmoCategories.Settings.SpawnProtectionAffectsCanFire == false) { return; }
       if (__instance.parent == null) { return; }
       if (__instance.parent.isSpawnProtected()) { __result = false; }
+    }
+  }
+  [HarmonyPatch(typeof(DefendXUnitsObjective))]
+  [HarmonyPatch("Tick")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { typeof(MessageCenterMessage) })]
+  public static class DefendXUnitsObjective_Tick {
+    public static bool Prefix(DefendXUnitsObjective __instance, MessageCenterMessage message) {
+      try {
+        if (__instance.Combat.IsSpawnProtected()) {
+          Log.M?.TWL(0, $"DefendXUnitsObjective.Tick round:{__instance.Combat.TurnDirector.CurrentRound} is under spawn protection. Skipping");
+          return false;
+        }
+      }catch(Exception e) {
+        Log.M?.TWL(0, e.ToString(), true);
+      }
+      return true;
+    }
+  }
+  [HarmonyPatch(typeof(TimerObjective))]
+  [HarmonyPatch("AdvanceTimer")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { typeof(MessageCenterMessage) })]
+  public static class TimerObjective_AdvanceTimer {
+    public static bool Prefix(TimerObjective __instance, MessageCenterMessage message) {
+      try {
+        if (__instance.Combat.IsSpawnProtected()) {
+          Log.M?.TWL(0, $"TimerObjective.AdvanceTimer round:{__instance.Combat.TurnDirector.CurrentRound} is under spawn protection. Skipping");
+          return false;
+        }
+      } catch (Exception e) {
+        Log.M?.TWL(0, e.ToString(), true);
+      }
+      return true;
     }
   }
   [HarmonyPatch(typeof(TurnDirector))]

@@ -778,6 +778,7 @@ namespace CustomUnits {
               if ((s_renderer == null) && (m_renderer == null)) { continue; }
               Log.WL(2, "renderer:" + renderer.name);
               for (int mindex = 0; mindex < renderer.sharedMaterials.Length; ++mindex) {
+                if (renderer.sharedMaterials[mindex] == null) { continue; }
                 Log.WL(3, "material:" + renderer.sharedMaterials[mindex].name + " <- " + shaderComponent.sharedMaterial.shader.name);
                 renderer.sharedMaterials[mindex].shader = shaderComponent.sharedMaterial.shader;
                 renderer.sharedMaterials[mindex].shaderKeywords = shaderComponent.sharedMaterial.shaderKeywords;

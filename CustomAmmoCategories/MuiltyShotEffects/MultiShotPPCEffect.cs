@@ -40,6 +40,21 @@ namespace CustAmmoCategories {
     }
     public void Init(PPCEffect original, string prefab) {
       base.Init(original);
+      this.attackSequenceNextDelayMin = 1f;
+      this.attackSequenceNextDelayMax = 1.5f;
+      this.preFireDuration = 1f / 1000f;
+      this.preFireVFXPrefab = null;
+      this.muzzleFlashVFXPrefab = null;
+      this.projectilePrefab = null;
+      this.projectile = new GameObject("DummyProjectile");
+      this.impactVFXBase = "";
+      this.impactVFXVariations = new string[0];
+      this.armorDamageVFXName = string.Empty;
+      this.structureDamageVFXName = string.Empty;
+      this.terrainHitVFXBase = string.Empty;
+      this.buildingHitOverlayVFXName = string.Empty;
+      this.shotsDestroyFlimsyObjects = false;
+      this.preFireSFX = string.Empty;
       CustomAmmoCategoriesLog.Log.LogWrite("MultiShotPPCEffect.Init\n");
       this.PulseEffectPrefab = prefab;
     }
@@ -121,6 +136,7 @@ namespace CustAmmoCategories {
     public override void Fire(WeaponHitInfo hitInfo, int hitIndex = 0, int emitterIndex = 0) {
       Log.LogWrite("MultiShotPPCEffect.Fire " + hitInfo.attackWeaponIndex + " " + hitIndex + " ep:" + hitInfo.hitPositions[hitIndex] + "\n");
       Vector3 endPos = hitInfo.hitPositions[hitIndex];
+      this.SetupCustomSettings();
       base.Fire(hitInfo, hitIndex, emitterIndex);
       this.endPos = endPos;
       hitInfo.hitPositions[hitIndex] = endPos;
@@ -131,11 +147,12 @@ namespace CustAmmoCategories {
     }
     protected override void PlayPreFire() {
       this.preFireRate = 1000f;
-      if ((double)this.attackSequenceNextDelayMin <= 0.0 && (double)this.attackSequenceNextDelayMax <= 0.0)
-        this.attackSequenceNextDelayMax = this.preFireDuration;
-      if ((double)this.attackSequenceNextDelayMax <= 0.0)
-        this.attackSequenceNextDelayMax = 0.05f;
-      if ((double)this.attackSequenceNextDelayMin >= (double)this.attackSequenceNextDelayMax)
+      this.preFireDuration = 1f / 1000f;
+      if (this.attackSequenceNextDelayMin <= 0.0)
+        this.attackSequenceNextDelayMin = 1f;
+      if (this.attackSequenceNextDelayMax <= 0.0)
+        this.attackSequenceNextDelayMax = 1.5f;
+      if (this.attackSequenceNextDelayMin >= this.attackSequenceNextDelayMax)
         this.attackSequenceNextDelayMin = this.attackSequenceNextDelayMax;
       this.attackSequenceNextDelayTimer = UnityEngine.Random.Range(this.attackSequenceNextDelayMin, this.attackSequenceNextDelayMax);
       this.t = 0.0f;
@@ -157,6 +174,42 @@ namespace CustAmmoCategories {
       base.PlayProjectile(false);
       this.t = 1f;
     }
+    public override void SetupCustomSettings() {
+      this.customPrefireSFX = string.Empty;
+      this.firstPreFireSFX = weapon.firstPreFireSFX();
+      this.middlePrefireSFX = weapon.preFireSFX();
+      this.lastPreFireSFX = weapon.lastPreFireSFX();
+      //this.longPreFireSFX = weapon.longPreFireSFX();
+      this.firingStartSFX = weapon.firingStartSFX();
+      this.firingStopSFX = weapon.firingStopSFX();
+      if (string.IsNullOrEmpty(firingStartSFX) == false) {
+        if (CustomVoices.AudioEngine.isInAudioManifest(firingStartSFX)) {
+          this.firingStopSFX = firingStartSFX;
+        }
+      }
+      if (firingStartSFX == null) { firingStartSFX = string.Empty; }
+      if (firingStopSFX == null) { firingStopSFX = string.Empty; }
+      if (this.middlePrefireSFX == null) { this.middlePrefireSFX = this.preFireSFX; }
+      if (this.firstPreFireSFX == null) { this.firstPreFireSFX = this.middlePrefireSFX; }
+      if (this.lastPreFireSFX == null) { this.lastPreFireSFX = this.middlePrefireSFX; }
+      this.fireSFX = string.Empty;
+      this.middlefireSFX = weapon.fireSFX();
+      this.firstFireSFX = weapon.firstFireSFX();
+      this.lastFireSFX = weapon.lastFireSFX();
+      if (this.middlefireSFX == null) { this.middlefireSFX = string.Empty; }
+      if (this.firstPreFireSFX == null) { this.firstPreFireSFX = this.middlefireSFX; }
+      if (this.lastPreFireSFX == null) { this.lastPreFireSFX = this.middlefireSFX; }
+      this.preFireStartSFX = string.Empty;
+      this.preFireStopSFX = string.Empty;
+      this.customPulseSFX = string.Empty;
+      this.customPulseSFXdelay = 0f;
+      this.preFireDuration = 1f / 1000f;
+      if (weapon.shotDelay() > CustomAmmoCategories.Epsilon) {
+        this.shotDelay = weapon.shotDelay();
+      } else {
+        this.shotDelay = 0f;
+      }
+    }
     protected override void FireNextShot() {
       Log.LogWrite("MultiShotPPCEffect.FireNextShot\n");
       if (this.currentPulse < 0 || this.currentPulse >= this.pulses.Count) { return; };
@@ -164,7 +217,30 @@ namespace CustAmmoCategories {
       base.FireNextShot();
       bool dmgPerBullet = this.weapon.DamagePerPallet();
       int beamsPerShot = weapon.ProjectilesPerShot;
-      float longestDistance = 0f;
+      //float longestDistance = 0f;
+      float effective_shotDelay = 0f;
+      if (this.shotDelay <= CustomAmmoCategories.Epsilon) {
+        this.shotDelay = 0.5f * (1f + this.weapon.FireDelayMultiplier());
+        effective_shotDelay = this.shotDelay;
+      } else {
+        effective_shotDelay = this.shotDelay * this.weapon.FireDelayMultiplier();
+      }
+      if (effective_shotDelay < 0.5f) { effective_shotDelay = 0.5f; }
+      this.duration = effective_shotDelay;
+      this.rate = 1f / effective_shotDelay;
+      if (this.currentPulse == 0) {
+        if (string.IsNullOrEmpty(this.firingStartSFX) == false) {
+          if (CustomVoices.AudioEngine.isInAudioManifest(firingStartSFX)) {
+            if (this.customParentAudioObject == null) {
+              this.customParentAudioObject = this.weaponRep.gameObject.GetComponent<CustomVoices.AudioObject>();
+              if (this.customParentAudioObject == null) { this.customParentAudioObject = this.weaponRep.gameObject.AddComponent<CustomVoices.AudioObject>(); }
+            }
+            this.customParentAudioObject.Play(firingStartSFX, true);
+          } else {
+            int num = (int)WwiseManager.PostEvent(firingStartSFX, this.parentAudioObject);
+          }
+        }
+      }
 
       for (int index = 0; index < beamsPerShot; ++index) {
         if (this.currentPulse >= this.pulses.Count) { break; };
@@ -175,26 +251,34 @@ namespace CustAmmoCategories {
         bullet.Fire(this.hitInfo, this.pulseHitIndex, (bullet.pulseIdx%this.numberOfEmitters) , prime);
         ++this.currentPulse;
         float distance = Vector3.Distance(this.startPos, this.hitInfo.hitPositions[this.pulseHitIndex]);
-        if (distance > longestDistance) { longestDistance = distance; };
+        //if (distance > longestDistance) { longestDistance = distance; };
         if (dmgPerBullet == true) { ++this.pulseHitIndex; };
       }
       if (dmgPerBullet == false) { ++this.pulseHitIndex; };
-      if ((double)this.projectileSpeed > 0.0) {
-        this.duration = longestDistance / this.projectileSpeed;
-      } else {
-        this.duration = 1f;
-      }
-      if ((double)this.duration > 4.0) {
-        this.duration = 4f;
-      }
-      float shotDelay = this.duration * (1f + this.weapon.FireDelayMultiplier());
-      if ((double)shotDelay <= 0.1f) { shotDelay = 0.1f; }
-      this.rate = 1f / shotDelay;
-      Log.LogWrite(" projectileSpeed:" + projectileSpeed + " distance:" + longestDistance + " shotDelay:" + shotDelay + " rate:" + this.rate + "\n");
+      //if ((double)this.projectileSpeed > 0.0) {
+      //  this.duration = longestDistance / this.projectileSpeed;
+      //} else {
+      //  this.duration = 1f;
+      //}
+      //if ((double)this.duration > 4.0) {
+      //  this.duration = 4f;
+      //}
+      Log.LogWrite(" projectileSpeed:" + projectileSpeed + " shotDelay:" + shotDelay + " rate:" + this.rate + "\n");
       this.t = 0.0f;
       if (this.currentPulse < this.pulses.Count) {
         this.currentState = WeaponEffect.WeaponEffectState.Firing;
       } else {
+        if (string.IsNullOrEmpty(this.firingStopSFX) == false) {
+          if (CustomVoices.AudioEngine.isInAudioManifest(firingStopSFX)) {
+            if (this.customParentAudioObject == null) {
+              this.customParentAudioObject = this.weaponRep.gameObject.GetComponent<CustomVoices.AudioObject>();
+              if (this.customParentAudioObject == null) { this.customParentAudioObject = this.weaponRep.gameObject.AddComponent<CustomVoices.AudioObject>(); }
+            }
+            this.customParentAudioObject.Play(firingStopSFX, true);
+          } else {
+            int num = (int)WwiseManager.PostEvent(firingStopSFX, this.parentAudioObject);
+          }
+        }
         this.currentState = WeaponEffect.WeaponEffectState.WaitingForImpact;
       }
     }

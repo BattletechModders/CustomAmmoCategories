@@ -521,8 +521,6 @@ namespace CustAmmoCategories {
     public float ShotsPerAmmo { get; set; } = 1f;
     [Key(108),SelfDocumentationDefaultValue("empty"), SelfDocumentationTypeName("DeferredEffectDef structure")]
     public DeferredEffectDef deferredEffect { get; set; } = new DeferredEffectDef();
-    [Key(109)]
-    public string preFireSFX { get; set; } = string.Empty;
     [Key(110)]
     public bool HideIfOnlyVariant { get; set; } = false;
     [Key(111)]
@@ -566,7 +564,45 @@ namespace CustAmmoCategories {
     [Key(130)]
     public float VTOLDamageModifier { get; set; } = 1f;
     [Key(131)]
-    public string fireSFX { get; set; } = string.Empty;
+    public float prefireDuration { get; set; } = 0f;
+    [Key(132)]
+    public string preFireSFX { get; set; } = null;
+    [Key(133)]
+    public string fireSFX { get; set; } = null;
+    [Key(134)]
+    public string longPreFireSFX { get; set; } = null;
+    [Key(135)]
+    public string longFireSFX { get; set; } = null;
+    [Key(136)]
+    public string firstPreFireSFX { get; set; } = null;
+    [Key(137)]
+    public string lastPreFireSFX { get; set; } = null;
+    [Key(138)]
+    public string preFireStartSFX { get; set; } = null;
+    [Key(139)]
+    public string preFireStopSFX { get; set; } = null;
+    [Key(140)]
+    public float delayedSFXDelay { get; set; } = 0f;
+    [Key(141)]
+    public string delayedSFX { get; set; } = null;
+    [Key(142)]
+    public float ProjectileSpeed { get; set; } = 0f;
+    [Key(143)]
+    public float shotDelay { get; set; } = 0f;
+    [Key(144)]
+    public string projectileFireSFX { get; set; } = null;
+    [Key(145)]
+    public string projectilePreFireSFX { get; set; } = null;
+    [Key(146)]
+    public string projectileStopSFX { get; set; } = null;
+    [Key(147)]
+    public string firingStartSFX { get; set; } = null;
+    [Key(148)]
+    public string firingStopSFX { get; set; } = null;
+    [Key(149)]
+    public string firstFireSFX { get; set; } = null;
+    [Key(150)]
+    public string lastFireSFX { get; set; } = null;
     public ExtAmmunitionDef() {
       //Id = "NotSet";
       //Name = string.Empty;

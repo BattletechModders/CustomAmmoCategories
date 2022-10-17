@@ -68,8 +68,17 @@ namespace CustAmmoCategories {
       this.fireCompleteStopEvent = original.fireCompleteStopEvent;
       //this.nextFloatie = 0.0f;
     }
+    public override void SetupCustomSettings() {
+      this.customPrefireSFX = this.preFireSFX;
+      this.preFireStartSFX = string.Empty;
+      this.preFireStopSFX = string.Empty;
+      this.customPulseSFXdelay = 0f;
+      this.customPulseSFX = string.Empty;
+    }
+
     public override void Fire(WeaponHitInfo hitInfo, int hitIndex = 0, int emitterIndex = 0) {
       Log.LogWrite("MultiShotBurstBallisticEffect.Fire " + hitInfo.attackWeaponIndex + " " + hitIndex + " emitter:" + emitterIndex + " ep:" + hitInfo.hitPositions[hitIndex] + "\n");
+      this.SetupCustomSettings();
       if (hitInfo.DidShotHitChosenTarget(hitIndex))
         this.projectilePrefab = this.accurateProjectilePrefab;
       else

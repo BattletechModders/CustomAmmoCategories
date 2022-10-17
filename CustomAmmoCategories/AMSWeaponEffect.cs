@@ -21,6 +21,12 @@ using Random = UnityEngine.Random;
 
 namespace CustAmmoCategories {
   public class AMSWeaponEffect : WeaponEffect {
+    private static HashSet<AMSWeaponEffect> registredAMSEffects = new HashSet<AMSWeaponEffect>();
+    public static void Register(AMSWeaponEffect effect) { registredAMSEffects.Add(effect); }
+    public static void Sanitize() {
+      foreach (var effect in registredAMSEffects) { effect.Reset(); }
+    }
+    public static void Clear() { registredAMSEffects.Clear(); }
     private static FieldInfo fi_hasSentNextWeaponMessage = null;
     public Vector3[] hitPositions;
     protected bool NeedColorCalc;
@@ -49,6 +55,7 @@ namespace CustAmmoCategories {
       return (curPath - missileDistanceToIntecept) / pathLenth;
     }
     public void Init(WeaponEffect original) {
+      AMSWeaponEffect.Register(this);
       this.impactVFXBase = original.impactVFXBase;
       this.preFireSFX = original.preFireSFX;
       this.Combat = (CombatGameState)typeof(WeaponEffect).GetField("Combat", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(original);

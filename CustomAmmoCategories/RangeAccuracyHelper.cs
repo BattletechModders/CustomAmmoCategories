@@ -20,6 +20,7 @@ namespace CustAmmoCategories {
     public static readonly string MediumRangeAccModActorStat = "CACMediumRangeAccuracyMod"; // ShortRange < X < MediumRange
     public static readonly string LongRangeAccModActorStat = "CACLongRangeAccuracyMod"; // MediumRange < X < LongRange
     public static readonly string ExtraLongRangeAccModActorStat = "CACExtraLongRangeAccuracyMod"; // LongRange < X < MaxRange
+    public static readonly string HeatSinkCapacityMultActorStat = "HeatSinkCapacityMult"; 
     public static float MinRangeAccMod(this AbstractActor unit) {
       Statistic value = unit.StatCollection.GetStatistic(MinRangeAccModActorStat);
       if (value == null) { return 0f; }

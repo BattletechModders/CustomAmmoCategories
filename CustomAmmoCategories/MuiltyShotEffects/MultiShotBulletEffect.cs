@@ -91,15 +91,50 @@ namespace CustAmmoCategories {
       this.parentLauncher = parentLauncher;
       this.weapon = weapon;
       this.weaponRep = weapon.weaponRep;
-      this.projectileSpeed = parentLauncher.projectileSpeed * weapon.ProjectileSpeedMultiplier();
       if(this.spline == null) {
         this.spline = this.gameObject.AddComponent<CurvySpline>();
       }
     }
-    public virtual void Fire(WeaponHitInfo hitInfo, int hitIndex = 0, int emitterIndex = 0, bool pb = false) {
-      Log.LogWrite("MultiShotBulletEffect.Fire "+hitInfo.attackWeaponIndex+" "+hitIndex+" emitter:" + emitterIndex + " ep:"+hitInfo.hitPositions[hitIndex]+" prime:"+pb+"\n");
+    public override void SetupCustomSettings() {
+      this.customPrefireSFX = this.preFireSFX;
+      switch (this.playSFX) {
+        case PlaySFXType.First: this.customPrefireSFX = this.parentLauncher.firstPreFireSFX; break;
+        case PlaySFXType.Middle: this.customPrefireSFX = this.parentLauncher.middlePrefireSFX; break;
+        case PlaySFXType.Last: this.customPrefireSFX = this.parentLauncher.lastPreFireSFX; break;
+        case PlaySFXType.None: this.customPrefireSFX = string.Empty; break;
+      }
+      if (this.playSFX != PlaySFXType.None) {
+        this.preFireStartSFX = weapon.preFireStartSFX();
+        this.preFireStopSFX = weapon.preFireStopSFX();
+        this.customPulseSFX = weapon.pulseSFX();
+        this.customPulseSFXdelay = weapon.pulseSFXdelay();
+        if (this.preFireStartSFX == null) { this.preFireStartSFX = string.Empty; }
+        if (this.preFireStopSFX == null) { this.preFireStopSFX = string.Empty; }
+        if (this.customPulseSFX == null) { this.customPulseSFX = string.Empty; }
+        if (customPulseSFXdelay < CustomAmmoCategories.Epsilon) { this.customPulseSFXdelay = -1f; }
+      } else {
+        this.preFireStartSFX = string.Empty;
+        this.preFireStopSFX = string.Empty;
+        this.customPulseSFXdelay = 0f;
+        this.customPulseSFX = string.Empty;
+      }
+      if (weapon.prefireDuration() > CustomAmmoCategories.Epsilon) {
+        this.preFireDuration = weapon.prefireDuration();
+      } else {
+        this.preFireDuration = this.originalPrefireDuration;
+      }
+      if (weapon.ProjectileSpeed() > CustomAmmoCategories.Epsilon) {
+        this.projectileSpeed = weapon.ProjectileSpeed();
+      } else {
+        this.projectileSpeed = parentLauncher.projectileSpeed;
+      }
+      this.projectileSpeed *= weapon.ProjectileSpeedMultiplier();
+    }
+    public virtual void Fire(WeaponHitInfo hitInfo, int hitIndex, int emitterIndex, bool pb) {
+      Log.M?.TWL(0,"MultiShotBulletEffect.Fire "+hitInfo.attackWeaponIndex+" "+hitIndex+" emitter:" + emitterIndex + " ep:"+hitInfo.hitPositions[hitIndex]+" prime:"+pb+"\n");
       this.primeBullet = pb;
       Vector3 endPos = hitInfo.hitPositions[hitIndex];
+      this.SetupCustomSettings();
       base.Fire(hitInfo, hitIndex, emitterIndex);
       this.endPos = endPos;
       hitInfo.hitPositions[hitIndex] = endPos;
@@ -178,27 +213,15 @@ namespace CustAmmoCategories {
     protected override void PlayMuzzleFlash() {
       base.PlayMuzzleFlash();
     }
-#if PUBLIC_ASSEMBLIES
-    public override void PlayProjectile() {
-#else
     protected override void PlayProjectile() {
-#endif
       base.PlayProjectile();
       this.PlayMuzzleFlash();
     }
-#if PUBLIC_ASSEMBLIES
-    public override void PlayImpact() {
-#else
     protected override void PlayImpact() {
-#endif
       this.PlayImpactAudio();
       base.PlayImpact();
     }
-#if PUBLIC_ASSEMBLIES
-    public override void Update() {
-#else
     protected override void Update() {
-#endif
       base.Update();
       if (this.currentState != WeaponEffect.WeaponEffectState.Firing)
         return;
@@ -249,8 +272,7 @@ namespace CustAmmoCategories {
       base.OnComplete();
     }
     public void OnDisable() {
-      if (!((UnityEngine.Object)this.projectileAudioObject != (UnityEngine.Object)null))
-        return;
+      if (this.projectileAudioObject == null){ return; }
       AkSoundEngine.StopAll(this.projectileAudioObject.gameObject);
       int num = (int)AkSoundEngine.UnregisterGameObj(this.projectileAudioObject.gameObject);
     }

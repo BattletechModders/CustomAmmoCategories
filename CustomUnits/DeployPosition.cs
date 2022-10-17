@@ -41,12 +41,13 @@ namespace CustomUnits {
     public static void Postfix(TurnDirector __instance) {
       try {
         if (DeployManualHelper.deployDirector != null) { return; }
-        if (Core.Settings.DeployAutoSpawnProtection) {
+        if (Core.Settings.DeployAutoSpawnProtection && (__instance.Combat.ActiveContract.IsTutorial == false) && (__instance.Combat.ActiveContract.IsStoryContract == false)) {
           Log.TWL(0,$"TurnDirector.StartFirstRound add spawn protection");
           foreach(AbstractActor unit in __instance.Combat.AllActors) {
             Log.WL(1, $"{unit.PilotableActorDef.ChassisID}");
             unit.addSpawnProtection("first round");
           }
+          //__instance.Combat.addSpawnProtection(0, "first round");
         }
       } catch (Exception e) {
         Log.TWL(0, e.ToString(), true);
@@ -68,31 +69,32 @@ namespace CustomUnits {
           if (unit.IsDeployDirector()) { continue; }
           unit.addSpawnProtection("manual delayed spawn protection");
         }
+        __instance.Combat.addSpawnProtection(0, "manual delayed spawn protection");
       } catch (Exception e) {
         Log.TWL(0, e.ToString(), true);
       }
     }
   }
-  [HarmonyPatch(typeof(TimerObjective))]
-  [HarmonyPatch("ContractInitialize")]
-  [HarmonyPatch(MethodType.Normal)]
-  [HarmonyPatch(new Type[] { })]
-  public static class TimerObjective_ContractInitialize {
-    public static void Postfix(TimerObjective __instance) {
-      try {
-        bool manualSpawn = __instance.Combat.ActiveContract.isManualSpawn() || (DeployManualHelper.deployDirector != null);
-        Log.TWL(0, $"TimerObjective.ContractInitialize GUID:{__instance.GUID} contractType:{__instance.Combat.ActiveContract.ContractTypeValue.Name} ManualDeploy:{manualSpawn}");
-        if (Core.Settings.timerObjectiveChange.TryGetValue(__instance.Combat.ActiveContract.ContractTypeValue.Name, out var change)) {
-          Log.W(1, $"changing duration:{__instance.durationRemaining}/{__instance.durationToCount}");
-          __instance.durationRemaining += manualSpawn ? change.manualDeployAdvice : change.autoDeployAdvice;
-          __instance.durationToCount += manualSpawn ? change.manualDeployAdvice : change.autoDeployAdvice;
-          Log.WL(0, $"->{__instance.durationRemaining}/{__instance.durationToCount}");
-        }
-      } catch (Exception e) {
-        Log.TWL(0, e.ToString());
-      }
-    }
-  }
+  //[HarmonyPatch(typeof(TimerObjective))]
+  //[HarmonyPatch("ContractInitialize")]
+  //[HarmonyPatch(MethodType.Normal)]
+  //[HarmonyPatch(new Type[] { })]
+  //public static class TimerObjective_ContractInitialize {
+  //  public static void Postfix(TimerObjective __instance) {
+  //    try {
+  //      bool manualSpawn = __instance.Combat.ActiveContract.isManualSpawn() || (DeployManualHelper.deployDirector != null);
+  //      Log.TWL(0, $"TimerObjective.ContractInitialize GUID:{__instance.GUID} contractType:{__instance.Combat.ActiveContract.ContractTypeValue.Name} ManualDeploy:{manualSpawn}");
+  //      if (Core.Settings.timerObjectiveChange.TryGetValue(__instance.Combat.ActiveContract.ContractTypeValue.Name, out var change)) {
+  //        Log.W(1, $"changing duration:{__instance.durationRemaining}/{__instance.durationToCount}");
+  //        __instance.durationRemaining += manualSpawn ? change.manualDeployAdvice : change.autoDeployAdvice;
+  //        __instance.durationToCount += manualSpawn ? change.manualDeployAdvice : change.autoDeployAdvice;
+  //        Log.WL(0, $"->{__instance.durationRemaining}/{__instance.durationToCount}");
+  //      }
+  //    } catch (Exception e) {
+  //      Log.TWL(0, e.ToString());
+  //    }
+  //  }
+  //}
 
   public class DropShipManager : MonoBehaviour {
     public GameObject DropOffPoint { get; set; }
@@ -486,6 +488,7 @@ namespace CustomUnits {
             //if (unit.isAddSpawnProtected()) { continue; }
             unit.addSpawnProtection(2,"manual deploy");
           }
+          HUD.Combat.addSpawnProtection(2, "manual deploy");
         }
         //HUD.Combat.TurnDirector.StartFirstRound();
       } catch (Exception e) {
@@ -1759,6 +1762,7 @@ namespace CustomUnits {
       if (contract.IsFlashpointContract) { return false; }
       if (contract.IsRestorationContract) { return false; }
       if (contract.IsStoryContract) { return false; }
+      if (contract.IsTutorial) { return false; }
       if (Core.Settings.DeployForbidContractTypes.Contains(contract.ContractTypeValue.Name)) { return false; }
       return true;
     }

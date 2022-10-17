@@ -16,7 +16,7 @@ using Random = UnityEngine.Random;
 
 namespace CustAmmoCategories {
   public enum ColorChangeRule {
-    None,Linear,Random,RandomOnce,t0,t1,t2,t3,t4,t5,t6,t7,t8,t9,t10,t11,t12,t13,t14,t15,t16,t17,t18,t19,t20,t21,t22,t23,t24,t25,t26,t27,t28,t29,t30,t31
+    None, Linear, Random, RandomOnce, t0, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11, t12, t13, t14, t15, t16, t17, t18, t19, t20, t21, t22, t23, t24, t25, t26, t27, t28, t29, t30, t31
   }
   [MessagePackObject]
   public class ColorTableJsonEntry {
@@ -35,20 +35,23 @@ namespace CustAmmoCategories {
     public string C {
       set {
         Color temp;
-        if(ColorUtility.TryParseHtmlString(value,out temp)) {
+        if (ColorUtility.TryParseHtmlString(value, out temp)) {
           FRealColor = temp;
           SyncColor();
         } else {
-          Log.LogWrite("Bad color:"+value+"\n",true);
+          Log.LogWrite("Bad color:" + value + "\n", true);
         }
       }
     }
     [IgnoreMember]
-    public float I { set {
+    public float I {
+      set {
         FI = value; SyncColor();
-    } }
+      }
+    }
     [JsonIgnore, IgnoreMember]
-    public Color Color { get {
+    public Color Color {
+      get {
         return FColor;
       }
     }
@@ -73,7 +76,6 @@ namespace CustAmmoCategories {
     public string beamStopSFX;
     public string pulseSFX;
     public float pulseDelay;
-    protected float pulseTime;
     public AnimationCurve laserAnim;
     protected MaterialPropertyBlock mpb;
     protected LineRenderer beamRenderer;
@@ -104,7 +106,6 @@ namespace CustAmmoCategories {
     }
     public void Init(LaserEffect original) {
       base.Init(original);
-      CustomAmmoCategoriesLog.Log.LogWrite("MultiShotLaserEffect.Init\n");
       this.lightIntensity = original.lightIntensity;
       this.lightRadius = original.lightRadius;
       this.laserColor = (Color[])typeof(LaserEffect).GetField("laserColor", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(original);
@@ -119,9 +120,10 @@ namespace CustAmmoCategories {
       this.laserLight = (BTLight)typeof(LaserEffect).GetField("laserLight", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(original);
       this.impactParticles = (ParticleSystem)typeof(LaserEffect).GetField("impactParticles", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(original);
       this.laserAlpha = (float)typeof(LaserEffect).GetField("laserAlpha", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(original);
-  }
+      Log.M?.TWL(0, $"MultiShotLaserEffect.Init {original.name} pulseSFX:{this.pulseSFX} pulseDelay:{this.pulseDelay} beamStartSFX:{this.beamStartSFX} beamStopSFX:{this.beamStopSFX} preFireSFX:{this.preFireSFX} preFireDuration:{this.preFireDuration}");
+    }
 
-  public void Init(Weapon weapon, MultiShotLaserEffect parentProjector) {
+    public void Init(Weapon weapon, MultiShotLaserEffect parentProjector) {
       Log.LogWrite("MultiShotBeamEffect.Init\n");
       this.Init(weapon);
       this.parentProjector = parentProjector;
@@ -129,10 +131,47 @@ namespace CustAmmoCategories {
       this.weaponRep = weapon.weaponRep;
       this.subEffect = true;
     }
+    public override void SetupCustomSettings() {
+      this.customPrefireSFX = this.preFireSFX;
+      switch (this.playSFX) {
+        case PlaySFXType.First: this.customPrefireSFX = this.parentProjector.firstPreFireSFX; break;
+        case PlaySFXType.Middle: this.customPrefireSFX = this.parentProjector.middlePrefireSFX; break;
+        case PlaySFXType.Last: this.customPrefireSFX = this.parentProjector.lastPreFireSFX; break;
+        case PlaySFXType.None: this.customPrefireSFX = string.Empty; break;
+      }
+      if(this.playSFX != PlaySFXType.None) {
+        this.preFireStartSFX = weapon.preFireStartSFX();
+        this.preFireStopSFX = weapon.preFireStopSFX();
+        this.customPulseSFX = weapon.pulseSFX();
+        this.customPulseSFXdelay = weapon.pulseSFXdelay();
+        if (this.preFireStartSFX == null) { this.preFireStartSFX = this.beamStartSFX; }
+        if (this.preFireStopSFX == null) { this.preFireStopSFX = this.beamStopSFX; }
+        if (this.customPulseSFX == null) { this.customPulseSFX = this.pulseSFX; }
+        if (customPulseSFXdelay < CustomAmmoCategories.Epsilon) { this.customPulseSFXdelay = this.pulseDelay; }
+      } else {
+        this.preFireStartSFX = string.Empty;
+        this.preFireStopSFX = string.Empty;
+        this.customPulseSFXdelay = 0f;
+        this.customPulseSFX = string.Empty;
+      }
+      if (weapon.ProjectileSpeed() > CustomAmmoCategories.Epsilon) {
+        this.projectileSpeed = weapon.ProjectileSpeed();
+      } else {
+        this.projectileSpeed = this.originalProjectileSpeed;
+      }
+      this.projectileSpeed *= weapon.ProjectileSpeedMultiplier();
+      if (weapon.prefireDuration() > CustomAmmoCategories.Epsilon) {
+        this.preFireDuration = weapon.prefireDuration();
+      } else {
+        this.preFireDuration = this.originalPrefireDuration;
+      }
+    }
+
     public virtual void Fire(WeaponHitInfo hitInfo, int hitIndex = 0, int emitterIndex = 0, bool pb = false) {
       Log.LogWrite("MultiShotBeamEffect.Fire " + hitInfo.attackWeaponIndex + " " + hitIndex + " ep:" + hitInfo.hitPositions[hitIndex] + " prime:" + pb + "\n");
       this.primeBeam = pb;
       Vector3 endPos = hitInfo.hitPositions[hitIndex];
+      this.SetupCustomSettings();
       base.Fire(hitInfo, hitIndex, emitterIndex);
       this.endPos = endPos;
       hitInfo.hitPositions[hitIndex] = endPos;
@@ -174,28 +213,28 @@ namespace CustAmmoCategories {
       Component[] components = this.projectile.GetComponentsInChildren<Component>();
       Log.LogWrite("MultiShotBeamEffect.SetupLaser\n");
       foreach (Component component in components) {
-        Log.LogWrite(" "+component.name+":"+component.GetType().ToString()+"\n");
+        Log.LogWrite(" " + component.name + ":" + component.GetType().ToString() + "\n");
       }
       Log.LogWrite("this.beamRenderer.Materials\n");
       foreach (Material material in this.beamRenderer.materials) {
-        Log.LogWrite(" " + material.name + ":" + material.shader.name + " "+ material.GetColor("_ColorBB") + "\n");
+        Log.LogWrite(" " + material.name + ":" + material.shader.name + " " + material.GetColor("_ColorBB") + "\n");
       }
     }
     //public Color originalColor;
     public override void StoreOriginalColor() {
-       this.beamRenderer.material.RegisterRestoreColor();
+      this.beamRenderer.material.RegisterRestoreColor();
     }
     public override void SetColor(Color color) {
-      this.beamRenderer.material.SetColor("_ColorBB",color);
+      this.beamRenderer.material.SetColor("_ColorBB", color);
     }
     public override void RestoreOriginalColor() {
       //this.beamRenderer.material.SetColor("_ColorBB", this.originalColor);
     }
     protected override void PlayPreFire() {
       base.PlayPreFire();
-      if (string.IsNullOrEmpty(this.beamStartSFX))
-        return;
-      int num = (int)WwiseManager.PostEvent(this.beamStartSFX, this.parentAudioObject, (AkCallbackManager.EventCallback)null, (object)null);
+      //if (string.IsNullOrEmpty(this.beamStartSFX) == false) {
+      //  int num = (int)WwiseManager.PostEvent(this.beamStartSFX, this.parentAudioObject, (AkCallbackManager.EventCallback)null, (object)null);
+      //}
     }
     protected override void PlayMuzzleFlash() {
       base.PlayMuzzleFlash();
@@ -203,9 +242,6 @@ namespace CustAmmoCategories {
     protected override void PlayProjectile() {
       this.SetupLaser();
       this.PlayMuzzleFlash();
-      if (!string.IsNullOrEmpty(this.pulseSFX)) {
-        int num = (int)WwiseManager.PostEvent(this.pulseSFX, this.parentAudioObject, (AkCallbackManager.EventCallback)null, (object)null);
-      }
       base.PlayProjectile();
       this.projectileTransform.parent = (Transform)null;
       this.projectileTransform.position = this.endPos;
@@ -269,32 +305,25 @@ namespace CustAmmoCategories {
 #endif
       base.Update();
       if (this.currentState == WeaponEffect.WeaponEffectState.Firing) {
-        if ((double)this.t >= 1.0) { this.OnComplete(); }
+        if (this.t >= 1.0) { this.OnComplete(); }
         this.UpdateColor();
-        //this.beamRenderer.material.SetColor("_ColorBB", this.laserColor[0]);
         if (this.laserAnim != null) {
           this.laserAlpha = this.laserAnim.Evaluate(this.t);
           this.laserColor[0].a = this.laserAlpha;
           this.laserColor[1].a = this.laserAlpha;
           this.beamRenderer.startColor = this.laserColor[0];
           this.beamRenderer.endColor = this.laserColor[1];
-          if ((UnityEngine.Object)this.laserLight != (UnityEngine.Object)null) {
+          if (this.laserLight != null) {
             this.laserLight.intensity = this.laserAlpha * this.lightIntensity;
             this.laserLight.radius = this.lightRadius;
           }
         }
-        if ((double)this.pulseDelay > 0.0 && (double)this.t >= (double)this.pulseTime) {
-          this.pulseTime += this.pulseDelay;
-          if (!string.IsNullOrEmpty(this.pulseSFX)) {
-            int num = (int)WwiseManager.PostEvent(this.pulseSFX, this.parentAudioObject, (AkCallbackManager.EventCallback)null, (object)null);
-          }
-        }
       }
       if (this.currentState != WeaponEffect.WeaponEffectState.WaitingForImpact) { return; };
-      if ((double)this.t <= 1.0) {
+      if (this.t <= 1.0) {
         this.t += this.rate * this.Combat.StackManager.GetProgressiveAttackDeltaTime(this.t);
       }
-      if ((double)this.t < 1.0) { return; };
+      if (this.t < 1.0) { return; };
       base.OnComplete();
     }
     protected override void LateUpdate() {
@@ -311,7 +340,7 @@ namespace CustAmmoCategories {
         Log.LogWrite(" prime. Damage message fired\n");
         float damage = this.weapon.DamagePerShotAdjusted(this.weapon.parent.occupiedDesignMask);
         float apDamage = this.weapon.StructureDamagePerShotAdjusted(this.weapon.parent.occupiedDesignMask);
-        if (this.weapon.DamagePerPallet()&&(this.weapon.DamageNotDivided() == false)) {
+        if (this.weapon.DamagePerPallet() && (this.weapon.DamageNotDivided() == false)) {
           damage /= this.weapon.ProjectilesPerShot;
           apDamage /= this.weapon.ProjectilesPerShot;
         };
@@ -319,36 +348,33 @@ namespace CustAmmoCategories {
       } else {
         Log.LogWrite(" no prime. No damage message fired\n");
       }
-      if (!((UnityEngine.Object)this.projectileParticles != (UnityEngine.Object)null)) { return; };
+      if (this.projectileParticles == null) { return; };
       this.projectileParticles.Stop(true);
     }
     protected override void OnComplete() {
-      if (!string.IsNullOrEmpty(this.beamStopSFX)) {
-        int num = (int)WwiseManager.PostEvent(this.beamStopSFX, this.parentAudioObject, (AkCallbackManager.EventCallback)null, (object)null);
-      }
-      if ((UnityEngine.Object)this.impactParticles != (UnityEngine.Object)null) {
+      this.StopAudio();
+      if (this.impactParticles != null) {
         this.impactParticles.Stop(true);
       }
-      //this.RestoreOriginalColor();
       this.beamRenderer.SetPosition(0, this.startPos);
       this.beamRenderer.SetPosition(1, this.startPos);
       if (VFXRenderer.HasInstance && VFXRenderer.Instance.laserRenderers.Contains((Renderer)this.beamRenderer)) {
         VFXRenderer.Instance.laserRenderers.Remove((Renderer)this.beamRenderer);
         this.beamRenderer.gameObject.layer = LayerMask.NameToLayer("VFXOnly");
       }
-      if ((UnityEngine.Object)this.laserLight != (UnityEngine.Object)null) {
+      if (this.laserLight != null) {
         this.laserLight.intensity = 0.0f;
       }
       this.duration = this.projectileSpeed;
-      if ((double)this.duration <= 0.0) { this.duration = 1f; }
+      if (this.duration <= 0.0f) { this.duration = 1f; }
       this.rate = 1f / this.duration;
       this.t = 0.0f;
       this.currentState = WeaponEffect.WeaponEffectState.WaitingForImpact;
     }
     public override void Reset() {
-      if (this.Active && !string.IsNullOrEmpty(this.beamStopSFX)) {
-        int num = (int)WwiseManager.PostEvent(this.beamStopSFX, this.parentAudioObject, (AkCallbackManager.EventCallback)null, (object)null);
-      }
+      //if (this.Active && !string.IsNullOrEmpty(this.beamStopSFX)) {
+      //  int num = (int)WwiseManager.PostEvent(this.beamStopSFX, this.parentAudioObject, (AkCallbackManager.EventCallback)null, (object)null);
+      //}
       base.Reset();
     }
   }
