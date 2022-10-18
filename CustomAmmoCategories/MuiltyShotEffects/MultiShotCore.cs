@@ -495,22 +495,26 @@ namespace CustAmmoCategories {
 #else
     protected override void Update() {
 #endif
-      base.Update();
-      if(this.currentState == WeaponEffectState.Firing) {
-        if ((this.customPulseSFXdelay > CustomAmmoCategories.Epsilon) && (this.t >= this.pulseTime)) {
-          this.pulseTime += this.customPulseSFXdelay;
-          if (string.IsNullOrEmpty(this.customPulseSFX) == false) {
-            if (CustomVoices.AudioEngine.isInAudioManifest(customPulseSFX)) {
-              if (this.customParentAudioObject == null) {
-                this.customParentAudioObject = this.weaponRep.gameObject.GetComponent<AudioObject>();
-                if (this.customParentAudioObject == null) { this.customParentAudioObject = this.weaponRep.gameObject.AddComponent<AudioObject>(); }
+      try {
+        base.Update();
+        if (this.currentState == WeaponEffectState.Firing) {
+          if ((this.customPulseSFXdelay > CustomAmmoCategories.Epsilon) && (this.t >= this.pulseTime)) {
+            this.pulseTime += this.customPulseSFXdelay;
+            if (string.IsNullOrEmpty(this.customPulseSFX) == false) {
+              if (CustomVoices.AudioEngine.isInAudioManifest(customPulseSFX)) {
+                if (this.customParentAudioObject == null) {
+                  this.customParentAudioObject = this.weaponRep.gameObject.GetComponent<AudioObject>();
+                  if (this.customParentAudioObject == null) { this.customParentAudioObject = this.weaponRep.gameObject.AddComponent<AudioObject>(); }
+                }
+                this.customParentAudioObject.Play(customPulseSFX, false);
+              } else {
+                int num = (int)WwiseManager.PostEvent(customPulseSFX, this.parentAudioObject);
               }
-              this.customParentAudioObject.Play(customPulseSFX, false);
-            } else {
-              int num = (int)WwiseManager.PostEvent(customPulseSFX, this.parentAudioObject);
             }
           }
         }
+      }catch(Exception e) {
+        Log.M.TWL(0, e.ToString());
       }
     }
     protected override void PlayTerrainImpactVFX() {

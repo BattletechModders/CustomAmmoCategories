@@ -7,6 +7,7 @@
 using BattleTech;
 using CustAmmoCategories;
 using CustomAmmoCategoriesLog;
+using System;
 using System.Collections.Generic;
 using System.Reflection;
 using UnityEngine;
@@ -67,7 +68,7 @@ public class MultiShotMissileLauncherEffect : CopyAbleWeaponEffect {
       this.VolleySize = this.numberOfEmitters;
     }
     this.missileVolleyIdx = 0;
-    if (!((Object)this.MissilePrefab != (Object)null))
+    if (!(this.MissilePrefab != null))
       return;
     this.Combat.DataManager.PrecachePrefabAsync(this.MissilePrefab.name, BattleTechResourceType.Prefab, 1);
   }
@@ -202,12 +203,16 @@ public class MultiShotMissileLauncherEffect : CopyAbleWeaponEffect {
   }
 
   protected override void Update() {
-    base.Update();
-    if (this.currentState == WeaponEffect.WeaponEffectState.Firing && (double)this.t >= 1.0)
-      this.FireNextMissile();
-    if (this.currentState != WeaponEffect.WeaponEffectState.WaitingForImpact || !this.AllMissilesComplete())
-      return;
-    this.OnComplete();
+    try {
+      base.Update();
+      if (this.currentState == WeaponEffect.WeaponEffectState.Firing && (double)this.t >= 1.0)
+        this.FireNextMissile();
+      if (this.currentState != WeaponEffect.WeaponEffectState.WaitingForImpact || !this.AllMissilesComplete())
+        return;
+      this.OnComplete();
+    }catch(Exception e) {
+      Log.M?.TWL(0,e.ToString());
+    }
   }
 
   private void FireNextMissile() {

@@ -1176,24 +1176,32 @@ namespace CustomUnits {
     }
 
     public static bool Prefix(WeaponEffect __instance, ref WeaponHitInfo hitInfo, int hitIndex, int emitterIndex) {
-      ExtPrefire extPrefire = __instance.extPrefire();
-      if (extPrefire != null) { return true; }
-      bool indirect = __instance.weapon.parent.Combat.AttackDirector.GetAttackSequence(hitInfo.attackSequenceId).indirectFire;
-      AttachInfo info = null;
-      if (__instance.weapon.AlwaysIndirectVisuals()) { indirect = true; }
-      if (__instance.weapon.weaponRep != null) {
-        WeaponAttachRepresentation weaponAttach = __instance.weapon.weaponRep.GetComponent<WeaponAttachRepresentation>();
-        if (weaponAttach != null) {
-          if (weaponAttach.attachPoint != null) { info = weaponAttach.attachPoint; }
+      try {
+        ExtPrefire extPrefire = __instance.extPrefire();
+        if (extPrefire != null) { return true; }
+        bool indirect = false;
+        AttackDirector.AttackSequence sequence = __instance.weapon.parent.Combat.AttackDirector.GetAttackSequence(hitInfo.attackSequenceId);
+        Log.TWL(0, $"WeaponEffect.Fire {hitInfo.attackSequenceId} indirectFire:{(sequence == null?"null":sequence.indirectFire.ToString())}");
+        if (sequence != null) { indirect = sequence.indirectFire; }
+        //__instance.weapon.parent.Combat.AttackDirector.GetAttackSequence(hitInfo.attackSequenceId).indirectFire;
+        AttachInfo info = null;
+        if (__instance.weapon.AlwaysIndirectVisuals()) { indirect = true; }
+        if (__instance.weapon.weaponRep != null) {
+          WeaponAttachRepresentation weaponAttach = __instance.weapon.weaponRep.GetComponent<WeaponAttachRepresentation>();
+          if (weaponAttach != null) {
+            if (weaponAttach.attachPoint != null) { info = weaponAttach.attachPoint; }
+          }
         }
-      }
-      if(info == null) { info = __instance.weapon.attachInfo(); }
-      if (info != null) {
-        float lowestPrefire = info.LowestPrefireRate;
-        if (lowestPrefire < 10f) {
-          info.Prefire(__instance.weapon, hitInfo.hitPositions[hitIndex], indirect);
-          __instance.extPrefire(new ExtPrefire(lowestPrefire, hitInfo, hitIndex, emitterIndex));
+        if (info == null) { info = __instance.weapon.attachInfo(); }
+        if (info != null) {
+          float lowestPrefire = info.LowestPrefireRate;
+          if (lowestPrefire < 10f) {
+            info.Prefire(__instance.weapon, hitInfo.hitPositions[hitIndex], indirect);
+            __instance.extPrefire(new ExtPrefire(lowestPrefire, hitInfo, hitIndex, emitterIndex));
+          }
         }
+      }catch(Exception e) {
+        Log.TWL(0, e.ToString(), true);
       }
       return true;
     }

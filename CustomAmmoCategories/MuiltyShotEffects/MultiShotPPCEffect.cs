@@ -211,7 +211,7 @@ namespace CustAmmoCategories {
       }
     }
     protected override void FireNextShot() {
-      Log.LogWrite("MultiShotPPCEffect.FireNextShot\n");
+      Log.M.TWL(0,$"MultiShotPPCEffect.FireNextShot {weapon.defId}");
       if (this.currentPulse < 0 || this.currentPulse >= this.pulses.Count) { return; };
       //this.PlayMuzzleFlash();
       base.FireNextShot();
@@ -228,6 +228,7 @@ namespace CustAmmoCategories {
       if (effective_shotDelay < 0.5f) { effective_shotDelay = 0.5f; }
       this.duration = effective_shotDelay;
       this.rate = 1f / effective_shotDelay;
+      Log.M?.WL(1,$"projectileSpeed:{projectileSpeed} shotDelay:{effective_shotDelay} rate:{this.rate} FireDelayMultiplier:{this.weapon.FireDelayMultiplier()}");
       if (this.currentPulse == 0) {
         if (string.IsNullOrEmpty(this.firingStartSFX) == false) {
           if (CustomVoices.AudioEngine.isInAudioManifest(firingStartSFX)) {
@@ -248,22 +249,17 @@ namespace CustAmmoCategories {
         bullet.pulseIdx = this.currentPulse;
         bool prime = index >= (beamsPerShot - 1);
         if (dmgPerBullet == true) { prime = true; };
-        bullet.Fire(this.hitInfo, this.pulseHitIndex, (bullet.pulseIdx%this.numberOfEmitters) , prime);
+        if (index == 0) {
+          if (this.currentPulse == 0) { bullet.playSFX = PlaySFXType.First; } else { bullet.playSFX = PlaySFXType.Middle; }
+          if ((this.currentPulse + beamsPerShot) >= this.pulses.Count) { bullet.playSFX = PlaySFXType.Last; }
+        } else {
+          bullet.playSFX = PlaySFXType.None;
+        }
+        bullet.Fire(this.hitInfo, this.pulseHitIndex, (bullet.pulseIdx%this.numberOfEmitters), prime);
         ++this.currentPulse;
-        float distance = Vector3.Distance(this.startPos, this.hitInfo.hitPositions[this.pulseHitIndex]);
-        //if (distance > longestDistance) { longestDistance = distance; };
         if (dmgPerBullet == true) { ++this.pulseHitIndex; };
       }
       if (dmgPerBullet == false) { ++this.pulseHitIndex; };
-      //if ((double)this.projectileSpeed > 0.0) {
-      //  this.duration = longestDistance / this.projectileSpeed;
-      //} else {
-      //  this.duration = 1f;
-      //}
-      //if ((double)this.duration > 4.0) {
-      //  this.duration = 4f;
-      //}
-      Log.LogWrite(" projectileSpeed:" + projectileSpeed + " shotDelay:" + shotDelay + " rate:" + this.rate + "\n");
       this.t = 0.0f;
       if (this.currentPulse < this.pulses.Count) {
         this.currentState = WeaponEffect.WeaponEffectState.Firing;
@@ -290,15 +286,20 @@ namespace CustAmmoCategories {
 #else
     protected override void Update() {
 #endif
-      base.Update();
-      if (this.currentState != WeaponEffect.WeaponEffectState.WaitingForImpact || !this.AllBeamsComplete())
-        return;
-      this.OnComplete();
+      try {
+        base.Update();
+        if (this.currentState != WeaponEffect.WeaponEffectState.WaitingForImpact || !this.AllBeamsComplete())
+          return;
+        this.OnComplete();
+      }catch(Exception e) {
+        Log.M?.TWL(0, e.ToString());
+      }
     }
     protected override void OnImpact(float hitDamage = 0.0f,float structureDamage = 0f) {
       base.OnImpact(0.0f,0f);
     }
     protected override void OnComplete() {
+      Log.M?.TWL(0, $"MultiShotPPCEffect.OnComplete wi:{this.hitInfo.attackWeaponIndex} hi:{this.hitIndex}");
       this.RestoreOriginalColor();
       base.OnComplete();
       this.ClearBeams();

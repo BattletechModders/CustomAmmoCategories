@@ -303,28 +303,32 @@ namespace CustAmmoCategories {
 #else
     protected override void Update() {
 #endif
-      base.Update();
-      if (this.currentState == WeaponEffect.WeaponEffectState.Firing) {
-        if (this.t >= 1.0) { this.OnComplete(); }
-        this.UpdateColor();
-        if (this.laserAnim != null) {
-          this.laserAlpha = this.laserAnim.Evaluate(this.t);
-          this.laserColor[0].a = this.laserAlpha;
-          this.laserColor[1].a = this.laserAlpha;
-          this.beamRenderer.startColor = this.laserColor[0];
-          this.beamRenderer.endColor = this.laserColor[1];
-          if (this.laserLight != null) {
-            this.laserLight.intensity = this.laserAlpha * this.lightIntensity;
-            this.laserLight.radius = this.lightRadius;
+      try {
+        base.Update();
+        if (this.currentState == WeaponEffect.WeaponEffectState.Firing) {
+          if (this.t >= 1.0) { this.OnComplete(); }
+          this.UpdateColor();
+          if (this.laserAnim != null) {
+            this.laserAlpha = this.laserAnim.Evaluate(this.t);
+            this.laserColor[0].a = this.laserAlpha;
+            this.laserColor[1].a = this.laserAlpha;
+            this.beamRenderer.startColor = this.laserColor[0];
+            this.beamRenderer.endColor = this.laserColor[1];
+            if (this.laserLight != null) {
+              this.laserLight.intensity = this.laserAlpha * this.lightIntensity;
+              this.laserLight.radius = this.lightRadius;
+            }
           }
         }
+        if (this.currentState != WeaponEffect.WeaponEffectState.WaitingForImpact) { return; };
+        if (this.t <= 1.0) {
+          this.t += this.rate * this.Combat.StackManager.GetProgressiveAttackDeltaTime(this.t);
+        }
+        if (this.t < 1.0) { return; };
+        base.OnComplete();
+      }catch(Exception e) {
+        Log.M?.TWL(0,e.ToString());
       }
-      if (this.currentState != WeaponEffect.WeaponEffectState.WaitingForImpact) { return; };
-      if (this.t <= 1.0) {
-        this.t += this.rate * this.Combat.StackManager.GetProgressiveAttackDeltaTime(this.t);
-      }
-      if (this.t < 1.0) { return; };
-      base.OnComplete();
     }
     protected override void LateUpdate() {
       base.LateUpdate();

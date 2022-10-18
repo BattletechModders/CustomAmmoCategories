@@ -276,10 +276,14 @@ namespace CustAmmoCategories {
 #else
     protected override void Update() {
 #endif
-      base.Update();
-      if (this.currentState != WeaponEffect.WeaponEffectState.WaitingForImpact || !this.AllBulletsComplete())
-        return;
-      this.OnComplete();
+      try {
+        base.Update();
+        if (this.currentState != WeaponEffect.WeaponEffectState.WaitingForImpact || !this.AllBulletsComplete())
+          return;
+        this.OnComplete();
+      }catch(Exception e) {
+        Log.M.TWL(0, e.ToString());
+      }
     }
     protected override void OnImpact(float hitDamage = 0.0f, float structureDamage = 0f) {
       base.OnImpact(0.0f, 0f);

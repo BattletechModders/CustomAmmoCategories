@@ -16,11 +16,15 @@ namespace CustAmmoCategories {
       ExtAmmunitionDef ammo = weapon.ammo();
       return Mathf.Abs(extWeapon.ProjectileSpeedMultiplier * mode.ProjectileSpeedMultiplier * ammo.ProjectileSpeedMultiplier);
     }
-    public static float FireDelayMultiplier(this Weapon weapon) {
+    public static float FireDelayMultiplier(this Weapon weapon, bool ballistic = false) {
       ExtWeaponDef extWeapon = weapon.exDef();
       WeaponMode mode = weapon.mode();
       ExtAmmunitionDef ammo = weapon.ammo();
-      return Mathf.Abs(extWeapon.FireDelayMultiplier * mode.FireDelayMultiplier * ammo.FireDelayMultiplier);
+      float FireDelayMultiplier = extWeapon.FireDelayMultiplier;
+      if (FireDelayMultiplier < CustomAmmoCategories.Epsilon) {
+        FireDelayMultiplier = ballistic ? 10f : 1f;
+      }
+      return Mathf.Abs(FireDelayMultiplier * mode.FireDelayMultiplier * ammo.FireDelayMultiplier);
     }
     public static float MissileFiringIntervalMultiplier(this Weapon weapon) {
       ExtWeaponDef extWeapon = weapon.exDef();
@@ -127,7 +131,7 @@ namespace CustAmmoCategories {
       this.currentBullet = 0;
       this.bulletHitIndex = 0;
       if (this.shotDelay <= CustomAmmoCategories.Epsilon) {this.shotDelay = 0.5f;}
-      float effective_shotDelay = this.shotDelay * this.weapon.FireDelayMultiplier();
+      float effective_shotDelay = this.shotDelay * this.weapon.FireDelayMultiplier(true);
       if (effective_shotDelay <= 0.5f) { effective_shotDelay = 0.5f; }
       this.rate = 1f / effective_shotDelay;
       this.ClearBullets();
@@ -348,10 +352,14 @@ namespace CustAmmoCategories {
 #else
     protected override void Update() {
 #endif
-      base.Update();
-      if (this.currentState != WeaponEffect.WeaponEffectState.WaitingForImpact || !this.AllBulletsComplete())
-        return;
-      this.OnComplete();
+      try {
+        base.Update();
+        if (this.currentState != WeaponEffect.WeaponEffectState.WaitingForImpact || !this.AllBulletsComplete())
+          return;
+        this.OnComplete();
+      }catch(Exception e) {
+        Log.M?.TWL(0, e.ToString());
+      }
     }
     protected override void OnPreFireComplete() {
       base.OnPreFireComplete();

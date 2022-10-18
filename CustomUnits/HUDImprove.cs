@@ -536,12 +536,12 @@ namespace CustomUnits {
     public static void HotDrop(List<Vector3> dropPositions, string spawnerGUID) {
       EncounterLayerParent encounterLayerParent = UnityGameInstance.BattleTechGame.Combat.EncounterLayerData.GetComponentInParent<EncounterLayerParent>();
       HotDropManager hotdropManager = encounterLayerParent.GetComponent<HotDropManager>();
-      hotdropManager.HotDrop(dropPositions,spawnerGUID);
+      hotdropManager.HotDrop(dropPositions, spawnerGUID);
     }
     public static void PushDropLayout(string id, List<List<string>> layout, int maxUnits, List<string> names) {
-      Log.TWL(0, "CustomLanceHelper.PushDropLayout id:"+id+ " maxUnits:"+maxUnits+" layout:"+layout.Count+ " names:"+(names == null?"null":"not null"));
-      for(int t = 0; t < layout.Count; ++t) { 
-        foreach(string dropdef in layout[t]) {
+      Log.TWL(0, "CustomLanceHelper.PushDropLayout id:" + id + " maxUnits:" + maxUnits + " layout:" + layout.Count + " names:" + (names == null ? "null" : "not null"));
+      for (int t = 0; t < layout.Count; ++t) {
+        foreach (string dropdef in layout[t]) {
           Log.WL(1, "[" + t + "]:" + dropdef);
         }
       }
@@ -553,13 +553,13 @@ namespace CustomUnits {
       newlayout.Description.Name = id;
       newlayout.Description.Details = id;
       newlayout.OverallUnits = maxUnits;
-      for (int t= 0;t < layout.Count;++t) {
+      for (int t = 0; t < layout.Count; ++t) {
         List<string> lance = layout[t];
         DropLanceDef newLance = new DropLanceDef();
         newLance.Description = new DropDescriptionDef();
         newLance.Description.Id = newlayout.Description.Id + "_lance_" + t;
-        newLance.Description.Name = t < names.Count ? names[t] :"LANCE " + t;
-        Log.WL(1, "newLance["+t+"].Name=" + newLance.description.Name);
+        newLance.Description.Name = t < names.Count ? names[t] : "LANCE " + t;
+        Log.WL(1, "newLance[" + t + "].Name=" + newLance.description.Name);
         newLance.dropSlots = new List<DropSlotDef>();
         newLance.DropSlots = new List<string>();
         foreach (string slotid in lance) {
@@ -567,7 +567,7 @@ namespace CustomUnits {
           newLance.dropSlots.Add(slot);
           newLance.DropSlots.Add(slotid);
         }
-        for(int tt= newLance.dropSlots.Count;tt<4;++tt) {
+        for (int tt = newLance.dropSlots.Count; tt < 4; ++tt) {
           newLance.dropSlots.Add(DropSystemHelper.fallbackDisabledSlot);
         }
         newLance.Register();
@@ -579,7 +579,7 @@ namespace CustomUnits {
         DropLanceDef newLance = new DropLanceDef();
         newLance.Description = new DropDescriptionDef();
         newLance.Description.Id = newlayout.Description.Id + "_lance_" + layout.Count;
-        newLance.Description.Name = "LANCE " +layout.Count;
+        newLance.Description.Name = "LANCE " + layout.Count;
         newLance.dropSlots = new List<DropSlotDef>();
         newLance.DropSlots = new List<string>();
         foreach (string slotid in lance) {
@@ -595,7 +595,7 @@ namespace CustomUnits {
         newlayout.DropLances.Add(newLance.Description.Id);
       }
       newlayout.Register();
-      if(UnityGameInstance.BattleTechGame.Simulation != null) {
+      if (UnityGameInstance.BattleTechGame.Simulation != null) {
         UnityGameInstance.BattleTechGame.Simulation.CompanyStats.GetOrCreateStatisic<string>(DropSystemHelper.CURRENT_DROP_LAYOUT_STAT_NAME, "fallback_layout").SetValue<string>(newlayout.Description.Id);
       }
     }
@@ -615,7 +615,7 @@ namespace CustomUnits {
       return;
     }
     public static void setOverallDeployCount(int value) { return; }
-    public static void playerControl(int mechs, int vehicles) {return;/*f_playerControlMechs = mechs; f_playerControlVehicles = vehicles;*/}
+    public static void playerControl(int mechs, int vehicles) { return;/*f_playerControlMechs = mechs; f_playerControlVehicles = vehicles;*/}
     public static Transform FindRecursive(this Transform transform, string checkName) {
       foreach (Transform t in transform) {
         if (t.name == checkName) return t;
@@ -624,7 +624,7 @@ namespace CustomUnits {
       }
       return null;
     }
-    public static T FindComponent<T>(this GameObject go, string checkName) where T: Component {
+    public static T FindComponent<T>(this GameObject go, string checkName) where T : Component {
       T[] components = go.GetComponentsInChildren<T>(true);
       foreach (T t in components) {
         if (t.transform.name == checkName) return t;
@@ -643,7 +643,7 @@ namespace CustomUnits {
     public static string GetRelativePath(this Transform transform, Transform parent) {
       string result = string.Empty;
       Transform temp = transform;
-      while((temp != parent)&&(temp != null)) {
+      while ((temp != parent) && (temp != null)) {
         result = result + "." + temp.name;
         temp = temp.parent;
       }
@@ -857,8 +857,8 @@ namespace CustomUnits {
   }
   [HarmonyPatch(typeof(LanceConfiguratorPanel), "ValidateLanceTonnage")]
   public static class LanceConfiguratorPanel_ValidateLanceTonnage {
-    public static bool Prefix(LanceConfiguratorPanel __instance, ref bool __result,ref LanceLoadoutSlot[] ___loadoutSlots,ref Localize.Text ___lanceErrorText) {
-      Log.TWL(0, "LanceConfiguratorPanel.ValidateLanceTonnage maxTonnage:"+ __instance.lanceMaxTonnage);
+    public static bool Prefix(LanceConfiguratorPanel __instance, ref bool __result, ref LanceLoadoutSlot[] ___loadoutSlots, ref Localize.Text ___lanceErrorText) {
+      Log.TWL(0, "LanceConfiguratorPanel.ValidateLanceTonnage maxTonnage:" + __instance.lanceMaxTonnage);
       try {
         List<MechDef> mechs = new List<MechDef>();
         bool flag1 = true;
@@ -878,11 +878,11 @@ namespace CustomUnits {
             if (def != null) { if (def.UseMaxUnits == false) { continue; } }
             mechs.Add(loadoutSlot.SelectedMech.MechDef);
           } else if (__instance.slotMinTonnages[index] >= 0.0) {
-              flag1 = false;
-              if ((double)__instance.slotMinTonnages[index] >= 0.0 && (double)__instance.slotMaxTonnages[index] >= 0.0)
-                  ___lanceErrorText.Append("Lance slot {0} requires a 'Mech between {1} and {2} Tons\n", (object)index, (object)__instance.slotMinTonnages[index], (object)__instance.slotMaxTonnages[index]);
-              else if ((double)__instance.slotMinTonnages[index] >= 0.0)
-                  ___lanceErrorText.Append("Lance slot {0} requires a 'Mech over {1} Tons\n", (object)index, (object)__instance.slotMinTonnages[index]);
+            flag1 = false;
+            if ((double)__instance.slotMinTonnages[index] >= 0.0 && (double)__instance.slotMaxTonnages[index] >= 0.0)
+              ___lanceErrorText.Append("Lance slot {0} requires a 'Mech between {1} and {2} Tons\n", (object)index, (object)__instance.slotMinTonnages[index], (object)__instance.slotMaxTonnages[index]);
+            else if ((double)__instance.slotMinTonnages[index] >= 0.0)
+              ___lanceErrorText.Append("Lance slot {0} requires a 'Mech over {1} Tons\n", (object)index, (object)__instance.slotMinTonnages[index]);
           }
         }
         bool flag2 = MechValidationRules.LanceTonnageWithinRange(mechs, __instance.lanceMinTonnage, __instance.lanceMaxTonnage);
@@ -896,8 +896,8 @@ namespace CustomUnits {
         }
         __result = flag1 & flag2;
         return false;
-      }catch(Exception e) {
-        Log.TWL(0,e.ToString(), true);
+      } catch (Exception e) {
+        Log.TWL(0, e.ToString(), true);
         return true;
       }
     }
@@ -905,13 +905,13 @@ namespace CustomUnits {
   [HarmonyPatch(typeof(LanceConfiguratorPanel), "ValidateLance")]
   public static class LanceConfiguratorPanel_ValidateLance {
     public static void RefreshLanceInfo(this LanceHeaderWidget header, bool lanceValid, Localize.Text errorText, List<MechDef> mechs, int currentUnits, int maxUnits) {
-      Log.TWL(0, "RefreshLanceInfo:"+ maxUnits);
+      Log.TWL(0, "RefreshLanceInfo:" + maxUnits);
       header.RefreshLanceInfo(lanceValid, errorText, mechs);
       if (lanceValid) {
         Traverse.Create(header).Field<LocalizableText>("simReadyLanceText").Value.SetText("Lance Ready {0} units of {1}", currentUnits, maxUnits);
       }
     }
-    public static bool Prefix(LanceConfiguratorPanel __instance, ref bool __result, ref LanceLoadoutSlot[] ___loadoutSlots, ref Localize.Text ___lanceErrorText,ref LanceHeaderWidget ___headerWidget) {
+    public static bool Prefix(LanceConfiguratorPanel __instance, ref bool __result, ref LanceLoadoutSlot[] ___loadoutSlots, ref Localize.Text ___lanceErrorText, ref LanceHeaderWidget ___headerWidget) {
       Log.TWL(0, "LanceConfiguratorPanel.ValidateLance");
       try {
         __instance.lanceValid = false;
@@ -925,13 +925,13 @@ namespace CustomUnits {
         //List<UnitResult> unitResultList = new List<UnitResult>();
         bool flag = Traverse.Create(__instance).Method("ValidateLanceTonnage").GetValue<bool>(); //__instance.ValidateLanceTonnage();
         int overallSlotsCount = UnityGameInstance.BattleTechGame.Simulation.currentLayout().OverallUnits;
-        Log.WL(1, "overallSlotsCount:"+ overallSlotsCount);
+        Log.WL(1, "overallSlotsCount:" + overallSlotsCount);
         if (__instance.activeContract != null) {
           if (__instance.activeContract.IsFlashpointCampaignContract || __instance.activeContract.IsFlashpointContract) {
             overallSlotsCount = Mathf.Min(overallSlotsCount, __instance.activeContract.Override.maxNumberOfPlayerUnits);
           } else {
             if ((__instance.activeContract.Override.maxNumberOfPlayerUnits != 4) || (Core.Settings.CountContractMaxUnits4AsUnlimited == false)) {
-              overallSlotsCount = Mathf.Min(overallSlotsCount,__instance.activeContract.Override.maxNumberOfPlayerUnits);
+              overallSlotsCount = Mathf.Min(overallSlotsCount, __instance.activeContract.Override.maxNumberOfPlayerUnits);
             }
           }
         }
@@ -981,7 +981,7 @@ namespace CustomUnits {
           __instance.lanceValid = false;
           ___lanceErrorText.Append("Lance must have at least {0} units in initial drop\n", overallSlotsCount);
         }
-        if(countedSlots > overallSlotsCount) {
+        if (countedSlots > overallSlotsCount) {
           __instance.lanceValid = false;
           ___lanceErrorText.Append("You are not allowed to drop {0} units, only {1}\n", countedSlots, overallSlotsCount);
         }
@@ -1027,7 +1027,7 @@ namespace CustomUnits {
         if (__instance.activeContract.IsFlashpointCampaignContract || __instance.activeContract.IsFlashpointContract) {
           overallSlotsCount = __instance.activeContract.Override.maxNumberOfPlayerUnits;
         } else {
-          if((__instance.activeContract.Override.maxNumberOfPlayerUnits != 4)||(Core.Settings.CountContractMaxUnits4AsUnlimited == false)) {
+          if ((__instance.activeContract.Override.maxNumberOfPlayerUnits != 4) || (Core.Settings.CountContractMaxUnits4AsUnlimited == false)) {
             overallSlotsCount = __instance.activeContract.Override.maxNumberOfPlayerUnits;
           }
         }
@@ -1040,7 +1040,7 @@ namespace CustomUnits {
         if (CustomLanceHelper.MissionControlDetected) {
           if (def.UseMaxUnits == false) { continue; }
         } else {
-          if((def.UseMaxUnits == false)&&(def.HotDrop == true)) { continue; }
+          if ((def.UseMaxUnits == false) && (def.HotDrop == true)) { continue; }
         }
         ++deployCount;
       }
@@ -1118,7 +1118,7 @@ namespace CustomUnits {
     private static HashSet<string> MechDefsGUIDsTracker { get; set; } = new HashSet<string>();
     public static void ClearMechDefGUIDsTracker(this LanceConfiguratorPanel lc) { MechDefsGUIDsTracker.Clear(); }
     public static bool AddMechDefGUIDsTracker(this LanceConfiguratorPanel lc, string GUID) { return MechDefsGUIDsTracker.Add(GUID); }
-    public static bool Prefix(LanceConfiguratorPanel __instance, LanceConfiguration config,ref LanceLoadoutSlot[] ___loadoutSlots, LanceHeaderWidget ___headerWidget) {
+    public static bool Prefix(LanceConfiguratorPanel __instance, LanceConfiguration config, ref LanceLoadoutSlot[] ___loadoutSlots, LanceHeaderWidget ___headerWidget) {
       Log.TWL(0, "LanceConfiguratorPanel.LoadLanceConfiguration prefix:");
       __instance.ClearMechDefGUIDsTracker();
       try {
@@ -1158,8 +1158,8 @@ namespace CustomUnits {
           if (forcedPilot != null) { __instance.pilotListWidget.RemovePilot(__instance.availablePilots.Find((Predicate<Pilot>)(x => x.Description.Id == forcedPilot.Pilot.Description.Id))); }
           loadoutSlot.SetLockedData(forcedMech, forcedPilot, false);
         }
-      }catch(Exception e) {
-        Log.TWL(0,e.ToString());
+      } catch (Exception e) {
+        Log.TWL(0, e.ToString());
       }
       return false;
     }
@@ -1171,7 +1171,7 @@ namespace CustomUnits {
           MechDef mech = null;
           if (___loadoutSlots[i].SelectedPilot != null) { pilot = ___loadoutSlots[i].SelectedPilot.Pilot; }
           if (___loadoutSlots[i].SelectedMech != null) { mech = ___loadoutSlots[i].SelectedMech.MechDef; }
-          Log.WL(1, $"[{i}] state:{___loadoutSlots[i].curLockState} pilot:{((pilot != null)? (pilot.Description.Id+"("+pilot.Callsign+")"): "null")}  unit:{((mech != null)?mech.ChassisID+"("+mech.GUID+")":"null")}");
+          Log.WL(1, $"[{i}] state:{___loadoutSlots[i].curLockState} pilot:{((pilot != null) ? (pilot.Description.Id + "(" + pilot.Callsign + ")") : "null")}  unit:{((mech != null) ? mech.ChassisID + "(" + mech.GUID + ")" : "null")}");
         }
       } catch (Exception e) {
         Log.TWL(0, e.ToString());
@@ -1487,7 +1487,7 @@ namespace CustomUnits {
     }
     public static void Postfix(CombatHUDMechwarriorTray __instance, CombatHUD ___HUD) {
       GameObject btn = __instance.mwCommandButton(___HUD);
-      if(DeployManualHelper.IsInManualSpawnSequence) {
+      if (DeployManualHelper.IsInManualSpawnSequence) {
         btn.SetActive(false); return;
       }
       btn.SetActive(true);
@@ -1546,7 +1546,7 @@ namespace CustomUnits {
         if (hover == null) { hover = MechTray_MechNameBackground.gameObject.AddComponent<CombatHUDActorInfoHover>(); }
         hover.Init(HUD);
       } else {
-        Log.TWL(0, "Exception: can't find MechTray_MechNameBackground", true); 
+        Log.TWL(0, "Exception: can't find MechTray_MechNameBackground", true);
       }
       /*CombatHUDActorInfoHover hover = MechTray_GreebleDots.gameObject.GetComponent<CombatHUDActorInfoHover>();
       if (hover == null) { hover = MechTray_GreebleDots.gameObject.AddComponent<CombatHUDActorInfoHover>(); }
@@ -1633,8 +1633,8 @@ namespace CustomUnits {
       actorLanceIds.Clear();
       fHUD = ___HUD;
       try {
-        Log.WL(1, "Team:" +team.units.Count);
-        foreach(AbstractActor unit in team.units) {
+        Log.WL(1, "Team:" + team.units.Count);
+        foreach (AbstractActor unit in team.units) {
           Log.WL(2, unit.DisplayName + " " + unit.PilotableActorDef.Description.Id + " GUID:" + unit.PilotableActorDef.GUID);
         }
         SimGameState sim = UnityGameInstance.BattleTechGame.Simulation;
@@ -1644,7 +1644,7 @@ namespace CustomUnits {
             foreach (var unit in sim.ActiveMechs) {
               Log.WL(2, unit.Key.ToString() + ":" + unit.Value.Description.Id + " GUID:" + unit.Value.GUID);
             }
-          }catch(Exception e) {
+          } catch (Exception e) {
             Log.TWL(0, e.ToString(), true);
           }
         }
@@ -1658,7 +1658,7 @@ namespace CustomUnits {
         if (DeployManualHelper.IsInManualSpawnSequence) {
           avaibleSlots[0].portrait.DisplayedActor = DeployManualHelper.deployDirector;
           avaibleSlots[0].holder.SetActive(true);
-          for(int index=1;index< avaibleSlots.Count; ++index) {
+          for (int index = 1; index < avaibleSlots.Count; ++index) {
             avaibleSlots[index].holder.SetActive(false);
           }
           //__instance.mwCommandButton(___HUD)?.SetActive(false);
@@ -1834,7 +1834,7 @@ namespace CustomUnits {
     }
     public void ShowActiveAbilities(int rows) {
       AttackModeSelectorPosInited = false;
-      for (int t=0;t< AbilitiesButtonsLayouts.Count; ++t) {
+      for (int t = 0; t < AbilitiesButtonsLayouts.Count; ++t) {
         AbilitiesButtonsLayouts[t].SetActive(t < rows);
       }
       for (int index = 0; index < HOTKEY_BUTTONS_COUNT; ++index) {
@@ -1906,7 +1906,7 @@ namespace CustomUnits {
       locPos.y = portraits.localPosition.y + (portraits.sizeDelta.y / 2f);
       for (int t = 0; t < AbilitiesButtonsLayouts.Count; ++t) {
         RectTransform selfTransform = AbilitiesButtonsLayouts[t].GetComponent<RectTransform>();
-        locPos.y += (((t == 0)? 0f:BUTTONS_SPACING) + selfTransform.sizeDelta.y);
+        locPos.y += (((t == 0) ? 0f : BUTTONS_SPACING) + selfTransform.sizeDelta.y);
         AbilitiesButtonsLayouts[t].transform.localPosition = locPos;
         //PassiveButtonsLayout.transform.localPosition = locPos;
       }
@@ -1924,7 +1924,7 @@ namespace CustomUnits {
       }
       if (HUD != null) {
         if (HUD.SelectedActor == null) {
-          foreach (var buttons in AbilitiesButtonsLayouts) { buttons.SetActive(false); }          
+          foreach (var buttons in AbilitiesButtonsLayouts) { buttons.SetActive(false); }
         } else {
           if (HUD.AttackModeSelector.Visible) {
             if (AttackModeSelectorDownPos == Vector3.zero) {
@@ -1955,9 +1955,9 @@ namespace CustomUnits {
         panelHoverElement.Init(HUD);
         if (index < 9) {
           AbilitiesButtons[index].Init(Combat, HUD, BTInput.Instance.Combat_Abilities()[index], true);
-        } else if(index == 9) {
+        } else if (index == 9) {
           AbilitiesButtons[index].Init(Combat, HUD, BTInput.Instance.Combat_DoneWithMech(), true);
-        } else { 
+        } else {
           AbilitiesButtons[index].Init(Combat, HUD, null, true);
         }
         //ActiveAbilitiesButtons[index].gameObject.transform.parent.gameObject.SetActive(false);
@@ -2012,9 +2012,9 @@ namespace CustomUnits {
         for (int index = 0; index < activeButtons.Length; ++index) {
           CombatHUDActionButton abtn = activeButtons[index];
           //if ((index == 9)&&(row == 0)) {
-            //HideAbilitiesButton = abtn;
+          //HideAbilitiesButton = abtn;
           //} else {
-            AbilitiesButtons.Add(abtn);
+          AbilitiesButtons.Add(abtn);
           //}
           actionButtons.Add(abtn);
         }
@@ -2198,7 +2198,7 @@ namespace CustomUnits {
         trayEx.FirstActiveAbilities.Add(__instance.ActionButtons[4]);
         trayEx.FirstActiveAbilities.Add(__instance.ActionButtons[5]);
         CombatHUDDeployAutoActivator autoActivator = trayEx.FirstActiveAbilities[0].gameObject.GetComponent<CombatHUDDeployAutoActivator>();
-        if(autoActivator == null) {
+        if (autoActivator == null) {
           autoActivator = trayEx.FirstActiveAbilities[0].gameObject.AddComponent<CombatHUDDeployAutoActivator>();
         }
         autoActivator.Init(trayEx.FirstActiveAbilities[0], HUD);
@@ -2305,9 +2305,9 @@ namespace CustomUnits {
           int buttons_in_rows = activeList.Count - 2;
           //trayEx.filledRows = 1;
           //if (buttons_in_rows > (CombatHUDMechwarriorTrayEx.HOTKEY_BUTTONS_COUNT - 1)) {
-            //buttons_in_rows -= (CombatHUDMechwarriorTrayEx.HOTKEY_BUTTONS_COUNT - 1);
-            trayEx.filledRows = (buttons_in_rows / CombatHUDMechwarriorTrayEx.HOTKEY_BUTTONS_COUNT);
-            trayEx.filledRows += (buttons_in_rows % CombatHUDMechwarriorTrayEx.HOTKEY_BUTTONS_COUNT == 0) ? 0 : 1;
+          //buttons_in_rows -= (CombatHUDMechwarriorTrayEx.HOTKEY_BUTTONS_COUNT - 1);
+          trayEx.filledRows = (buttons_in_rows / CombatHUDMechwarriorTrayEx.HOTKEY_BUTTONS_COUNT);
+          trayEx.filledRows += (buttons_in_rows % CombatHUDMechwarriorTrayEx.HOTKEY_BUTTONS_COUNT == 0) ? 0 : 1;
           //}
         }
         Traverse.Create(__instance).Field<CombatHUDActionButton[]>("AbilityButtons").Value = avaibleButtons.ToArray();
@@ -2418,21 +2418,21 @@ namespace CustomUnits {
         __instance.DoneWithMechButton.SetHotKey(null, true);
         for (int index = 0; index < trayEx.AbilitiesButtons.Count; ++index) {
           if (index < 9) {
-            trayEx.AbilitiesButtons[index].SetHotKey(Core.Settings.DisableHotKeys?null:BTInput.Instance.Combat_Abilities()[index], true);
-          } else if(index == 9) {
+            trayEx.AbilitiesButtons[index].SetHotKey(Core.Settings.DisableHotKeys ? null : BTInput.Instance.Combat_Abilities()[index], true);
+          } else if (index == 9) {
             trayEx.AbilitiesButtons[index].SetHotKey(Core.Settings.DisableHotKeys ? null : BTInput.Instance.Combat_DoneWithMech(), true);
           }
         }
         //trayEx.HideAbilitiesButton.SetHotKey(Core.Settings.DisableHotKeys ? null : BTInput.Instance.Combat_DoneWithMech(), true);
-      //} else
-      //if (trayEx.PassiveButtonsLayout.activeSelf) {
-      //  for (int index = 0; index < trayEx.NormalButtons.Count; ++index) {
-      //    if (index < 9) {
-      //      trayEx.NormalButtons[index].SetHotKey(Core.Settings.DisableHotKeys ? null : BTInput.Instance.Combat_Abilities()[index], true);
-      //    }
-      //  }
-      //  __instance.DoneWithMechButton.SetHotKey(null, true);
-      //  trayEx.HidePassiveAbilitiesButton.SetHotKey(Core.Settings.DisableHotKeys ? null : BTInput.Instance.Combat_DoneWithMech(), true);
+        //} else
+        //if (trayEx.PassiveButtonsLayout.activeSelf) {
+        //  for (int index = 0; index < trayEx.NormalButtons.Count; ++index) {
+        //    if (index < 9) {
+        //      trayEx.NormalButtons[index].SetHotKey(Core.Settings.DisableHotKeys ? null : BTInput.Instance.Combat_Abilities()[index], true);
+        //    }
+        //  }
+        //  __instance.DoneWithMechButton.SetHotKey(null, true);
+        //  trayEx.HidePassiveAbilitiesButton.SetHotKey(Core.Settings.DisableHotKeys ? null : BTInput.Instance.Combat_DoneWithMech(), true);
       } else {
         for (int index = 0; index < trayEx.NormalButtons.Count; ++index) {
           if (index < 9) {
@@ -2444,16 +2444,77 @@ namespace CustomUnits {
       return false;
     }
   }
+  [HarmonyPatch(typeof(SelectionState))]
+  [HarmonyPatch("ProcessDoneWithMechButton")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { typeof(string) })]
+  public static class SelectionState_ProcessDoneWithMechButton {
+    public static bool Prefix(SelectionState __instance, string button, ref bool __result) {
+      Log.TWL(0,$"SelectionState.ProcessDoneWithMechButton {button}");
+      try {
+        if ((button != "BTN_DoneWithMech") || __instance.Orders != null) {
+          Log.WL(1, "button is not BTN_DoneWithMech or order is available");
+          return true;
+        }
+        if (__instance.SelectedActor == null) {
+          Log.WL(1, "SelectedActor is null");
+          return true;
+        }
+        Log.WL(1,$"{__instance.SelectedActor.PilotableActorDef.ChassisID} HasFiredThisRound:{__instance.SelectedActor.HasFiredThisRound}");
+        if (__instance.SelectedActor.HasFiredThisRound == false) {
+          Log.WL(1, "actor has not fired this round");
+          return true;
+        }
+        if(__instance.SelectedActor.CanMoveAfterShooting == false) {
+          Log.WL(1, "actor can't move after shooting");
+          return true;
+        }
+        //if (__instance.SelectedActor.HasActivatedThisRound == false) {
+        //  Log.WL(1, "actor has not been activated this round");
+        //  return true;
+        //}
+        if (__instance.SelectedActor.IsAvailableThisPhase == false) {
+          Log.WL(1, "actor has not available this phase");
+          return true;
+        }
+        if (__instance.SelectedActor.Combat.StackManager.IsAnyOrderActive && (__instance.SelectedActor.Combat.TurnDirector.IsInterleaved)) {
+          Log.WL(1, "have active orders in interleaved mode");
+          return true;
+        }
+        CombatHUD HUD = Traverse.Create(__instance).Property<CombatHUD>("HUD").Value;
+        if (HUD.MechWarriorTray.MoveButton.IsAvailable == false) {
+          Log.WL(1, "move button is not available");
+          return true;
+        }
+        if (__instance.SelectedActor.Pathing.ArePathGridsComplete == false) {
+          Log.WL(1, $"{__instance.SelectedActor.PilotableActorDef.ChassisID} ArePathGridsComplete is false");
+          __result = false;
+          GenericPopupBuilder.Create("CAN'T DONE", $"UNIT CAN MOVE, THUS SHOULD MOVE").AddFader().SetAlwaysOnTop().Render();
+          return false;
+        }
+        int moveCandidates = __instance.SelectedActor.Pathing.CurrentGrid.GetSampledPathNodes().Count;
+        Log.WL(1, $"{__instance.SelectedActor.PilotableActorDef.ChassisID} moveCandidates:{moveCandidates}");
+        if (moveCandidates > 0) {
+          __result = false;
+          GenericPopupBuilder.Create("CAN'T DONE", $"UNIT CAN MOVE, THUS SHOULD MOVE").AddFader().SetAlwaysOnTop().Render();
+          return false;
+        }
+      } catch (Exception e) {
+        Log.TWL(0,e.ToString(),true);
+      }
+      return true;
+    }
+  }
   [HarmonyPatch(typeof(CombatHUDMechwarriorTray))]
   [HarmonyPatch("ResetMechwarriorButtons")]
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { typeof(AbstractActor) })]
   public static class CombatHUDMechwarriorTray_ResetMechwarriorButtons {
     public static void Postfix(CombatHUDMechwarriorTray __instance, AbstractActor actor, CombatGameState ___Combat) {
-      Log.TWL(0,"CombatHUDMechwarriorTray.ResetMechwarriorButtons");
-      if(actor != null) {
-        if(__instance.DoneWithMechButton.IsAvailable == false) {
-          if(actor.IsAvailableThisPhase && ((actor.Combat.StackManager.IsAnyOrderActive == false)||(actor.Combat.TurnDirector.IsInterleaved == false))) {
+      Log.TWL(0, "CombatHUDMechwarriorTray.ResetMechwarriorButtons");
+      if (actor != null) {
+        if (__instance.DoneWithMechButton.IsAvailable == false) {
+          if (actor.IsAvailableThisPhase && ((actor.Combat.StackManager.IsAnyOrderActive == false) || (actor.Combat.TurnDirector.IsInterleaved == false))) {
             __instance.DoneWithMechButton.ResetButtonIfNotActive(actor);
           }
         }
@@ -2470,7 +2531,7 @@ namespace CustomUnits {
         trayEx.ShutdownBtn?.DisableButton();
       } else {
         UILookAndColorConstants andColorConstants = LazySingletonBehavior<UIManager>.Instance.UILookAndColorConstants;
-        if(actor.IsShutDown) __instance.DoneWithMechButton.InitButton(SelectionType.DoneWithMech, null, andColorConstants.SprintButtonIcon, "BTN_DoneWithMech", andColorConstants.Tooltip_DoneWithMechNoBrace, actor);
+        if (actor.IsShutDown) __instance.DoneWithMechButton.InitButton(SelectionType.DoneWithMech, null, andColorConstants.SprintButtonIcon, "BTN_DoneWithMech", andColorConstants.Tooltip_DoneWithMechNoBrace, actor);
         Ability shutdownAbility = actor.ShutdownAbility();
         if (shutdownAbility != null) {
           trayEx.ShutdownBtn?.InitButton(CombatHUDMechwarriorTray.GetSelectionTypeFromTargeting(shutdownAbility.Def.Targeting, false), shutdownAbility, shutdownAbility.Def.AbilityIcon, shutdownAbility.Def.Description.Id, shutdownAbility.Def.Description.Name, actor);
@@ -2514,7 +2575,7 @@ namespace CustomUnits {
   [HarmonyPatch(new Type[] { })]
   public static class CombatHUDActionButton_ExecuteClickAbilities {
     public static bool Prefix(CombatHUDActionButton __instance) {
-      Log.LogWrite("CombatHUDActionButton.ExecuteClick "+ __instance.GUID + "\n");
+      Log.LogWrite("CombatHUDActionButton.ExecuteClick " + __instance.GUID + "\n");
       CombatHUD HUD = Traverse.Create(__instance).Property<CombatHUD>("HUD").Value;
       CombatHUDMechwarriorTrayEx trayEx = HUD.MechWarriorTray.gameObject.GetComponent<CombatHUDMechwarriorTrayEx>();
       if (trayEx == null) { return true; };
@@ -2574,8 +2635,8 @@ namespace CustomUnits {
           return y.Def.exDef().Priority.CompareTo(x.Def.exDef().Priority);
         });
         activeList.AddRange(passiveList);
-        Log.WL(1, "activeList:"+ activeList.Count);
-        foreach(Ability ability in activeList) {
+        Log.WL(1, "activeList:" + activeList.Count);
+        foreach (Ability ability in activeList) {
           Log.WL(2, ability.Def.Description.Id + ":" + ability.Def.exDef().Priority);
         }
         if ((actor.IsDead == false) && (actor.IsDeployDirector())) {
@@ -2643,7 +2704,7 @@ namespace CustomUnits {
     public static void Postfix(CombatHUDMechwarriorTray __instance, AbstractActor actor) {
       CombatHUDMechwarriorTrayEx trayEx = __instance.gameObject.GetComponent<CombatHUDMechwarriorTrayEx>();
       if (trayEx != null) {
-        if(trayEx.filledRows > 0)trayEx.ShowAbilitiesButton.ResetButtonIfNotActive(actor);
+        if (trayEx.filledRows > 0) trayEx.ShowAbilitiesButton.ResetButtonIfNotActive(actor);
         //trayEx.ShowPassiveAbilitiesButton.ResetButtonIfNotActive(actor);
         //trayEx.HideAbilitiesButton.ResetButtonIfNotActive(actor);
         //trayEx.HidePassiveAbilitiesButton.ResetButtonIfNotActive(actor);

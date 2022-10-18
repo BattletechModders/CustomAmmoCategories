@@ -222,24 +222,28 @@ namespace CustAmmoCategories {
       base.PlayImpact();
     }
     protected override void Update() {
-      base.Update();
-      if (this.currentState != WeaponEffect.WeaponEffectState.Firing)
-        return;
-      if ((double)this.t < 1.0) {
-        this.UpdateColor();
-        if (this.spline.Count > 0) {
-          this.currentPos = this.spline.InterpolateByDistance(this.spline.Length * this.t);
-          this.projectileTransform.position = this.currentPos;
-          this.projectileTransform.rotation = this.spline.GetOrientationFast(this.t, false);
-        } else {
-          this.currentPos = Vector3.Lerp(this.startPos, this.endPos, this.t);
-          this.projectileTransform.position = this.currentPos;
+      try {
+        base.Update();
+        if (this.currentState != WeaponEffect.WeaponEffectState.Firing)
+          return;
+        if ((double)this.t < 1.0) {
+          this.UpdateColor();
+          if (this.spline.Count > 0) {
+            this.currentPos = this.spline.InterpolateByDistance(this.spline.Length * this.t);
+            this.projectileTransform.position = this.currentPos;
+            this.projectileTransform.rotation = this.spline.GetOrientationFast(this.t, false);
+          } else {
+            this.currentPos = Vector3.Lerp(this.startPos, this.endPos, this.t);
+            this.projectileTransform.position = this.currentPos;
+          }
         }
+        if ((double)this.t < 1.0)
+          return;
+        this.PlayImpact();
+        this.OnComplete();
+      }catch(Exception e) {
+        Log.M.TWL(0,e.ToString(),true);
       }
-      if ((double)this.t < 1.0)
-        return;
-      this.PlayImpact();
-      this.OnComplete();
     }
     protected override void OnPreFireComplete() {
       base.OnPreFireComplete();

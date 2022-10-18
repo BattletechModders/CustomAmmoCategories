@@ -236,18 +236,20 @@ namespace CustAmmoCategories {
 #else
     protected override void Update() {
 #endif
-      base.Update();
-      if (this.currentState != WeaponEffect.WeaponEffectState.Firing)
-        return;
-      if ((double)this.t < 1.0) {
-        this.currentPos = Vector3.Lerp(this.startPos, this.endPos, this.t);
-        this.projectileTransform.position = this.currentPos;
-        this.UpdateColor();
+      try {
+        base.Update();
+        if (this.currentState != WeaponEffect.WeaponEffectState.Firing) { return; }
+        if (this.t < 1.0) {
+          this.currentPos = Vector3.Lerp(this.startPos, this.endPos, this.t);
+          this.projectileTransform.position = this.currentPos;
+          this.UpdateColor();
+        }
+        if (this.t < 1.0) { return; }
+        this.PlayImpact();
+        this.OnComplete();
+      }catch(Exception e) {
+        Log.M?.TWL(0,e.ToString());
       }
-      if ((double)this.t < 1.0)
-        return;
-      this.PlayImpact();
-      this.OnComplete();
     }
     protected override void OnPreFireComplete() {
       base.OnPreFireComplete();
@@ -255,7 +257,7 @@ namespace CustAmmoCategories {
     }
 
     protected override void OnImpact(float hitDamage = 0.0f, float structureDamage = 0f) {
-      Log.LogWrite("MultiShotPulseEffect.OnImpact wi:" + this.hitInfo.attackWeaponIndex + " hi:" + this.hitInfo + " bi:" + this.pulseIdx + " prime:" + this.primePulse + "\n");
+      Log.M?.TWL(0,$"MultiShotPulseEffect.OnImpact wi:{this.hitInfo.attackWeaponIndex} hi:{this.hitIndex} bi:{this.pulseIdx} prime:{this.primePulse}");
       if (this.primePulse) {
         Log.LogWrite(" prime. Damage message fired\n");
         float damage = this.weapon.DamagePerShotAdjusted(this.weapon.parent.occupiedDesignMask);
@@ -274,6 +276,7 @@ namespace CustAmmoCategories {
     }
     protected override void OnComplete() {
       base.OnComplete();
+      Log.M?.TWL(0, $"MultiShotPulseEffect.OnComplete wi:{this.hitInfo.attackWeaponIndex} hi:{this.hitIndex} bi:{this.pulseIdx} prime:{this.primePulse} FiringComplete:{this.FiringComplete}");
     }
     public override void Reset() {
       base.Reset();

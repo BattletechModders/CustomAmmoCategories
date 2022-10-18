@@ -539,7 +539,7 @@ namespace CustAmmoCategories {
     [Key(52)]
     public string AdditionalAudioEffect { get; set; } = string.Empty;
     [Key(53)]
-    public float FireDelayMultiplier { get; set; } = 10f;
+    public float FireDelayMultiplier { get; set; } = 1f;
     [Key(54)]
     public float MissileFiringIntervalMultiplier { get; set; } = 1f;
     [Key(55)]

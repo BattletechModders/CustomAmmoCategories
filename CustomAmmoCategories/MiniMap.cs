@@ -83,6 +83,8 @@ namespace CustAmmoCategories {
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { })]
   public static class EncounterLayerData_GetEncounterBoundaryTexture {
+    public static RegionDisplayType drawRegionDisplayType(this RegionGameLogic region) { return Traverse.Create(region).Field<RegionDisplayType>("drawRegionDisplayType").Value;  }
+    public static bool active(this RegionGameLogic region) { return Traverse.Create(region).Field<bool>("active").Value; }
     public static void Postfix(EncounterLayerData __instance, ref Texture2D __result) {
       CombatHUDMiniMap.InitMinimap(__instance.Combat);
     }
@@ -119,6 +121,45 @@ namespace CustAmmoCategories {
     }
     public static bool isMinimapUnitsJammed(AbstractActor unit) {
       return unit.StatCollection.GetOrCreateStatisic<float>(MINIMAP_UNITS_JAMMED, 0f).Value<float>() > 0f;
+    }
+    public class RegionPoint {
+      public Vector2Int position;
+      public Color mapColor;
+      public Color regionColor;
+      public RegionPoint(int x, int y, Color map, Color region) {
+        this.position.x = x;
+        this.position.y = y;
+        this.mapColor = map;
+        this.regionColor = region;
+      }
+    }
+    public class RegionMinimap {
+      public RegionGameLogic region;
+      public List<RegionPoint> points = new List<RegionPoint>();
+      //public RegionDisplayType drawRegionDisplayType;
+      public bool IsRegionDisplayHidden;
+      private bool needRefresh = true;
+      public RegionMinimap(RegionGameLogic r) {
+        this.region = r;
+        //drawRegionDisplayType = r.drawRegionDisplayType();
+        this.IsRegionDisplayHidden = region.IsRegionDisplayHidden;
+      }
+      public void refreshed() { needRefresh = false; }
+      public bool color() {
+        return region.IsRegionDisplayVisible || (CustomAmmoCategories.Settings.hidableRegionsList.Contains(region.regionDefId) == false);
+      }
+      public bool check() {
+        if (needRefresh) { return true; }
+        if (CustomAmmoCategories.Settings.hidableRegionsList.Contains(region.regionDefId) == false) { return false; }
+        if(IsRegionDisplayHidden != region.IsRegionDisplayHidden) {
+          IsRegionDisplayHidden = region.IsRegionDisplayHidden;
+          needRefresh = true;
+        }
+        return needRefresh;
+      }
+      public void AddPoint(int x, int y, Color map, Color region) {
+        points.Add(new RegionPoint(x, y, map, region));
+      }
     }
     public static void InitMinimap(CombatGameState combat) {
       try {
@@ -248,8 +289,12 @@ namespace CustAmmoCategories {
         if (CustomAmmoCategories.Settings.MinimapShowRegions) {
           RegionGameLogic[] regions = combat.EncounterLayerData.gameObject.GetComponentsInChildren<RegionGameLogic>();
           foreach (RegionGameLogic region in regions) {
+            if(CombatHUDMiniMap.regions.TryGetValue(region, out var minimapRegion) == false) {
+              minimapRegion = new RegionMinimap(region);
+              CombatHUDMiniMap.regions.Add(region, minimapRegion);
+            }
             List<MapEncounterLayerDataCell> mapEncounterLayerDataCellList = Traverse.Create(region).Field<List<MapEncounterLayerDataCell>>("mapEncounterLayerDataCellList").Value;
-            //Log.M?.WL(1, $"minimap region:{region.name}:{region.encounterObjectGuid} cells:{mapEncounterLayerDataCellList.Count}");
+            Log.M?.WL(1, $"minimap region:{region.name}:{region.encounterObjectGuid} cells:{mapEncounterLayerDataCellList.Count} regionDefId:{region.regionDefId} drawRegionDefDisplay:{(region.drawRegionDefDisplay == null?"null":region.drawRegionDefDisplay.Description.Id)}");
             HashSet<MapTerrainDataCellEx> regionCells = new HashSet<MapTerrainDataCellEx>();
             foreach (MapEncounterLayerDataCell ecell in mapEncounterLayerDataCellList) {
               MapTerrainDataCellEx cell = ecell.relatedTerrainCell as MapTerrainDataCellEx;
@@ -272,7 +317,8 @@ namespace CustAmmoCategories {
               }
               //Log.M?.WL(2, $"cell:{cell.x},{cell.y} neiborsNotInRegion:{neiborsNotInRegion}");
               if (neiborsNotInRegion) {
-                CombatHUDMiniMap.minimapContent.SetPixel(cell.y, cell.x, UIManager.Instance.UIColorRefs.orange);
+                minimapRegion.AddPoint(cell.y, cell.x, CombatHUDMiniMap.minimapContent.GetPixel(cell.y, cell.x), UIManager.Instance.UIColorRefs.orange);
+                //CombatHUDMiniMap.minimapContent.SetPixel(cell.y, cell.x, UIManager.Instance.UIColorRefs.orange);
               } else {
                 //CombatHUDMiniMap.minimapContent.SetPixel(cell.y, cell.x, UIManager.Instance.UIColorRefs.blue);
               }
@@ -304,7 +350,10 @@ namespace CustAmmoCategories {
     public CombatHUD HUD;
     public static Dictionary<TerrainMaskFlags, Color> terrainColors = new Dictionary<TerrainMaskFlags, Color>();
     public static CombatHUDMiniMap instance { get; set; } = null;
-    public static void Clear() { if (instance != null) { GameObject.Destroy(instance.gameObject); instance = null; }; minimapContent = null; }
+    public static void Clear() {
+      if (instance != null) { GameObject.Destroy(instance.gameObject); instance = null; }; minimapContent = null;
+      regions.Clear();
+    }
     public static Color minimapBurningTerrainColor { get; set; } = Color.magenta;
     public static Color minimapBurnedTerrainColor { get; set; } = Color.black;
     public static void initColors() {
@@ -362,6 +411,7 @@ namespace CustAmmoCategories {
       //}
     }
     public static Texture2D minimapContent { get; set; } = null;
+    public static Dictionary<RegionGameLogic, RegionMinimap> regions = new Dictionary<RegionGameLogic, RegionMinimap>();
     public static Texture2D minimapJammedContent { get; set; } = null;
     public static Texture2D minimapCameraTexture { get; set; } = null;
     public static float minimapXstart { get; set; } = 0;
@@ -631,6 +681,15 @@ namespace CustAmmoCategories {
             } else {
               objective.Value.mark.enabled = false;
             }
+          }
+          foreach(var region in CombatHUDMiniMap.regions) {
+            if (region.Value.check() == false) { continue; }
+            region.Value.refreshed();
+            Log.M?.TWL(0,$"Minimap region {region.Key.name} color:{region.Value.color()}");
+            foreach (var point in region.Value.points) {
+              CombatHUDMiniMap.minimapContent.SetPixel(point.position.x, point.position.y, region.Value.color() ? point.regionColor : point.mapColor);
+            }
+            CombatHUDMiniMap.minimapContent.Apply();
           }
         } else {
           objectiveUpdate_t -= Time.deltaTime;

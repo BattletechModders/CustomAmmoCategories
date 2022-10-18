@@ -337,6 +337,8 @@ namespace CustAmmoCategories {
     public bool SpawnProtectionAffectsDesignMasks { get; set; } = true;
     public bool SpawnProtectionAffectsBurningTerrain { get; set; } = true;
     public bool SpawnProtectionAffectsCanFire { get; set; } = true;
+    [SelfDocumentationDefaultValue("{\"regionDef_HostileDropZone\"}"), SelfDocumentationTypeName("list of strings")]
+    public HashSet<string> hidableRegionsList { get; set; } = new HashSet<string>() { "regionDef_HostileDropZone" };
     public Settings() {
       //directory = string.Empty;
       //debugLog = true;

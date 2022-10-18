@@ -172,20 +172,24 @@ namespace CustAmmoCategories {
 #else
     protected override void Update() {
 #endif
-      base.Update();
-      if (this.currentState != WeaponEffect.WeaponEffectState.Firing)
-        return;
-      if ((double)this.t < 1.0) {
-        this.UpdateColor();
+      try {
+        base.Update();
+        if (this.currentState != WeaponEffect.WeaponEffectState.Firing)
+          return;
+        if ((double)this.t < 1.0) {
+          this.UpdateColor();
+        }
+        if ((double)this.t < 1.0)
+          return;
+        int baseHitIndex = this.hitIndex;
+        for (int index = 0; index < volleySize; ++index) {
+          this.hitIndex = index + baseHitIndex;
+          this.PlayImpact();
+        }
+        this.OnComplete();
+      }catch(Exception e) {
+        Log.M.TWL(0, e.ToString());
       }
-      if ((double)this.t < 1.0)
-        return;
-      int baseHitIndex = this.hitIndex;
-      for (int index = 0; index < volleySize; ++index) {
-        this.hitIndex = index + baseHitIndex;
-        this.PlayImpact();
-      }
-      this.OnComplete();
     }
     protected override void OnPreFireComplete() {
       base.OnPreFireComplete();
