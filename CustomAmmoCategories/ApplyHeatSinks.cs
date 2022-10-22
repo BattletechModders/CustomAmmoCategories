@@ -136,7 +136,7 @@ namespace CustAmmoCategoriesPatches {
 
       float HeatSinkCapacityMult = __instance.StatCollection.GetOrCreateStatisic<float>(CustomAmmoCategories.HeatSinkCapacityMultActorStat, 1f).Value<float>();
       if (Mathf.Approximately(HeatSinkCapacityMult, 1f) == false) {
-        num *= __instance.StatCollection.GetOrCreateStatisic<float>(CustomAmmoCategories.HeatSinkCapacityMultActorStat, 1f).Value<float>();
+        num *= HeatSinkCapacityMult;
       }
 
       if (__instance.isUsedHeatSinkReseted()) {

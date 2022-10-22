@@ -712,7 +712,7 @@ namespace CustomDeploy{
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { })]
   public static class DataManager_UpdateRequests {
-    public static void Prefix(DataManager __instance) {
+    public static bool Prefix(DataManager __instance) {
       try {
         int LightRequestCount = 0;
         int HeavyRequestCount = 0;
@@ -755,6 +755,7 @@ namespace CustomDeploy{
       } catch (Exception e) {
         Log.TWL(0, e.ToString());
       }
+      return false;
     }
   }
   [HarmonyPatch(typeof(PreferExposedAlonePositionalFactor))]

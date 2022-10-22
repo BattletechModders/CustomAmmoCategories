@@ -29,6 +29,14 @@ namespace CustAmmoCategories {
     public StatCollectionFloatAttribute() {}
   }
   [MessagePackObject]
+  public class VFXOnActorImpact {
+    [Key(0)]
+    public string VFX { get; set; } = string.Empty;
+    [Key(1)]
+    public float duration { get; set; } = 0f;
+
+  }
+  [MessagePackObject]
   public class DeferredEffectDef {
     [Key(0)]
     public string id { get; set; }
@@ -50,7 +58,7 @@ namespace CustAmmoCategories {
     public float VFXtime { get; set; }
     [Key(9)]
     public float damageApplyTime { get; set; }
-    [Key(10)]
+    [Key(10), JsonIgnore]
     public List<EffectData> statusEffects { get; set; }
     [Key(11)]
     public float AOERange { get; set; }
@@ -426,7 +434,7 @@ namespace CustAmmoCategories {
         if (((string)items[t]) != tag) { ++t; } else { items.RemoveAt(t); Log.LogWrite("  removed\n"); };
       }
     }
-    [Key(0)]
+    [Key(0), JsonIgnore]
     public string Id { get; set; } = string.Empty;
     [Key(1)]
     public HitGeneratorType HitGenerator { get; set; } = HitGeneratorType.NotSet;
@@ -472,12 +480,18 @@ namespace CustAmmoCategories {
     public float SpreadRangeMod(Weapon weapon) { return weapon.GetStatisticMod(nameof(SpreadRange)); }
     [Key(20)]
     public TripleBoolean NotUseInMelee { get; set; } = TripleBoolean.NotSet;
-    [SelfDocumentationTypeName("dictionary of string => WeaponMode"), SelfDocumentationDefaultValue("empty"), Key(21)]
+    [SelfDocumentationTypeName("list of WeaponMode objects"), SelfDocumentationDefaultValue("empty"), Key(21), JsonIgnore]
     public Dictionary<string, WeaponMode> Modes { get; set; } = new Dictionary<string, WeaponMode>();
+    [SkipDocumentation, IgnoreMember]
+    public List<WeaponMode> modes { get { return Modes.Values.ToList(); } }
+    //[SelfDocumentationTypeName("dictionary of string => WeaponMode"), SelfDocumentationDefaultValue("empty"), IgnoreMember, JsonIgnore]
+    //public List<WeaponMode> Modes { get; set; } = new List<WeaponMode>();
     [JsonIgnore, SelfDocumentationTypeName("string, id from BattleTech.AmmoCategoryEnumeration or CustomAmmo"), SelfDocumentationDefaultValue("NotSet"), IgnoreMember]
     public CustomAmmoCategory AmmoCategory { get; set; } = new CustomAmmoCategory();
     [Key(22), SkipDocumentation, JsonIgnore]
     public string AmmoCategoryID { get { return AmmoCategory.Id; } set { AmmoCategory = CustomAmmoCategories.find(value); } }
+    [IgnoreMember, SkipDocumentation]
+    public string ammoCategory { get { return AmmoCategory.Id; } set { AmmoCategory = CustomAmmoCategories.find(value); } }
     [Key(23)]
     public TripleBoolean DisableClustering { get; set; } = TripleBoolean.NotSet;
     [Key(24)]
@@ -588,7 +602,7 @@ namespace CustAmmoCategories {
     public EvasivePipsMods evasivePipsMods { get; set; } = new EvasivePipsMods();
     [Key(77)]
     public float ShotsPerAmmo { get; set; } = 1f;
-    [SelfDocumentationDefaultValue("empty"), SelfDocumentationTypeName("DeferredEffectDef structure"), Key(78)]
+    [SelfDocumentationDefaultValue("empty"), SelfDocumentationTypeName("DeferredEffectDef structure"), Key(78), JsonIgnore]
     public DeferredEffectDef deferredEffect { get; set; } = new DeferredEffectDef();
     [SelfDocumentationDefaultValue("empty"), SelfDocumentationTypeName("Dictionary of {\"<ammo id>\":<integer internal ammo amount>}"), Key(79)]
     public Dictionary<string, int> InternalAmmo { get; set; } = new Dictionary<string, int>();
@@ -693,6 +707,24 @@ namespace CustomAmmoCategoriesPatches {
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { typeof(string) })]
   public static class BattleTech_WeaponDef_fromJSON_Patch {
+    public static HashSet<string> WEAPON_DEF_FIELDS = new HashSet<string>();
+    public static HashSet<string> ExtWeaponDef_properties = new HashSet<string>();
+    public static bool Prepare() {
+      WEAPON_DEF_FIELDS.Clear();
+      foreach (PropertyInfo prop in typeof(WeaponDef).GetProperties(BindingFlags.FlattenHierarchy | BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)) {
+        WEAPON_DEF_FIELDS.Add(prop.Name);
+      }
+      foreach(PropertyInfo prop in typeof(ExtWeaponDef).GetProperties(BindingFlags.FlattenHierarchy | BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)) {
+        object[] attrs = prop.GetCustomAttributes(true);
+        bool ignore_property = false;
+        foreach (object attr in attrs) {
+          if ((attr as JsonIgnoreAttribute) != null) { ignore_property = true; break; }
+        }
+        if (ignore_property) { continue; }
+        ExtWeaponDef_properties.Add(prop.Name);
+      }
+      return true;
+    }
     public static bool Prefix(WeaponDef __instance, ref string json, ref ExtDefinitionParceInfo __state) {
       CustomAmmoCategories.CustomCategoriesInit();
       if (__instance.Description != null) {
@@ -748,116 +780,20 @@ namespace CustomAmmoCategoriesPatches {
         }
         CustomAmmoCategory custCat = CustomAmmoCategories.find(AmmoCategory);
         defTemp["ammoCategoryID"] = custCat.BaseCategory.Name;
-        Log.M.WL(1, "ammoCategoryID:" + (string)defTemp["ammoCategoryID"]);
-        //CustomAmmoCategories.RegisterWeapon((string)defTemp["Description"]["Id"], custCat);
-        if (extDef == null) {
-          extDef = new ExtWeaponDef();
-          extDef.Id = Id;
-          extDef.AmmoCategory = custCat;
-        };
-        if (defTemp["Streak"] != null) {
-          extDef.Streak = (bool)defTemp["Streak"];
-          defTemp.Remove("Streak");
-        }
-        if (defTemp["HitGenerator"] != null) {
-          try {
-            extDef.HitGenerator = (HitGeneratorType)Enum.Parse(typeof(HitGeneratorType), (string)defTemp["HitGenerator"], true);
-            CustomAmmoCategoriesLog.Log.LogWrite("HitGenerator is " + extDef.HitGenerator + "\n");
-          } catch (Exception) {
-            extDef.HitGenerator = HitGeneratorType.NotSet;
-            CustomAmmoCategoriesLog.Log.LogWrite("Can't parce " + (string)defTemp["HitGenerator"] + " as HitGenerator\n");
+        defTemp["ammoCategory"] = custCat.Id;
+        if (extDef == null) { extDef = new ExtWeaponDef(); }
+        extDef = defTemp.ToObject<ExtWeaponDef>();
+        Log.M.WL(1, $"ammoCategoryID:{(string)defTemp["ammoCategoryID"]} ammoCategory:{extDef.AmmoCategory.Id}");
+        extDef.Id = Id;
+        if (defTemp[nameof(ExtWeaponDef.Modes)] != null) {
+          foreach (JToken jmode in (defTemp[nameof(ExtWeaponDef.Modes)] as JArray)) {
+            WeaponMode mode = new WeaponMode();
+            mode.fromJSON(jmode);
+            if (mode.AmmoCategory == null) { mode.AmmoCategory = extDef.AmmoCategory; }
+            Log.M?.WL(1, $"adding mode '{mode.Id}'");
+            extDef.Modes.Add(mode.Id, mode);
+            if (mode.isBaseMode == true) { extDef.baseModeId = mode.Id; }
           }
-          defTemp.Remove("HitGenerator");
-        }
-        if (defTemp["APDamage"] != null) {
-          defTemp["StructureDamage"] = (float)defTemp["APDamage"];
-          defTemp.Remove("APDamage");
-        }
-        if (defTemp["ColorsTable"] != null) {
-          extDef.ColorsTable = defTemp["ColorsTable"].ToObject<List<ColorTableJsonEntry>>();
-          defTemp.Remove("ColorsTable");
-        }
-        if (defTemp["ChassisTagsAccuracyModifiers"] != null) {
-          extDef.TagsAccuracyModifiers = JsonConvert.DeserializeObject<Dictionary<string, float>>(defTemp["ChassisTagsAccuracyModifiers"].ToString());
-          Log.LogWrite((string)defTemp["Description"]["Id"] + " ChassisTagsAccuracyModifiers:\n");
-          foreach (var tam in extDef.TagsAccuracyModifiers) {
-            Log.LogWrite(" " + tam.Key + ":" + tam.Key);
-          }
-          defTemp.Remove("ChassisTagsAccuracyModifiers");
-        }
-        if (defTemp["IsAMS"] != null) {
-          extDef.IsAMS = ((bool)defTemp["IsAMS"] == true) ? TripleBoolean.True : TripleBoolean.False;
-          defTemp.Remove("IsAMS");
-        }
-        if (defTemp["IsAAMS"] != null) {
-          extDef.IsAAMS = ((bool)defTemp["IsAAMS"] == true) ? TripleBoolean.True : TripleBoolean.False;
-          if (extDef.IsAAMS == TripleBoolean.True) {
-            extDef.IsAMS = TripleBoolean.True;
-          }
-          defTemp.Remove("IsAAMS");
-        }
-        if (defTemp["ImprovedBallistic"] != null) {
-          extDef.ImprovedBallistic = (bool)defTemp["ImprovedBallistic"];
-          if (extDef.ImprovedBallistic) {
-            ExtWeaponDef.RemoveTag(ref defTemp, "wr-clustered_shots");
-            extDef.DisableClustering = TripleBoolean.True;
-          }
-          defTemp.Remove("ImprovedBallistic");
-        }
-        if (defTemp["InternalAmmo"] != null) {
-          extDef.InternalAmmo = JsonConvert.DeserializeObject<Dictionary<string, int>>(defTemp["InternalAmmo"].ToString());
-          defTemp.Remove("InternalAmmo");
-        }
-        if (defTemp["blockWeaponsInMechLocations"] != null) {
-          extDef.blockWeaponsInMechLocations = JsonConvert.DeserializeObject<List<ChassisLocations>>(defTemp["blockWeaponsInMechLocations"].ToString());
-          defTemp.Remove("blockWeaponsInMechLocations");
-        }
-        if(defTemp["deferredEffect"] != null) {
-          extDef.deferredEffect = JsonConvert.DeserializeObject<DeferredEffectDef>(defTemp["deferredEffect"].ToString());
-          if(defTemp["deferredEffect"]["statusEffects"] != null) {
-            extDef.deferredEffect.ParceEffects(defTemp["deferredEffect"]["statusEffects"].ToString());
-          }
-          defTemp.Remove("deferredEffect");
-        }
-        foreach (PropertyInfo prop in typeof(ExtWeaponDef).GetProperties()) {
-          if (defTemp[prop.Name] == null) { continue; }
-          if (prop.PropertyType == typeof(float)) {
-            prop.SetValue(extDef, (float)defTemp[prop.Name]);
-          } else if (prop.PropertyType == typeof(int)) {
-            prop.SetValue(extDef, (int)defTemp[prop.Name]);
-          } else if (prop.PropertyType == typeof(string)) {
-            prop.SetValue(extDef, (string)defTemp[prop.Name]);
-          } else if (prop.PropertyType == typeof(TripleBoolean)) {
-            prop.SetValue(extDef, ((bool)defTemp[prop.Name] == true) ? TripleBoolean.True : TripleBoolean.False);
-          } else if (prop.PropertyType == typeof(bool)) {
-            prop.SetValue(extDef, (bool)defTemp[prop.Name]);
-          } else if (prop.PropertyType == typeof(EvasivePipsMods)) {
-            prop.SetValue(extDef, defTemp[prop.Name].ToObject<EvasivePipsMods>());
-          } else if (prop.PropertyType == typeof(CustomVector)) {
-            prop.SetValue(extDef, defTemp[prop.Name].ToObject<CustomVector>());
-          } else if (prop.PropertyType.IsEnum) {
-            prop.SetValue(extDef, Enum.Parse(prop.PropertyType, (string)defTemp[prop.Name]));
-          } else { continue; }
-          defTemp.Remove(prop.Name);
-        }
-        if (defTemp["Modes"] != null) {
-          if (defTemp["Modes"].Type == JTokenType.Array) {
-            extDef.Modes.Clear();
-            JToken jWeaponModes = defTemp["Modes"];
-            foreach (JObject jWeaponMode in jWeaponModes) {
-              string ModeJSON = jWeaponMode.ToString();
-              if (string.IsNullOrEmpty(ModeJSON)) { continue; };
-              WeaponMode mode = new WeaponMode();
-              Log.M.WL(1, $"mode {jWeaponMode["Id"]}");
-              mode.fromJSON(ModeJSON);
-              if (mode.AmmoCategory == null) { mode.AmmoCategory = extDef.AmmoCategory; }
-              //mode.AmmoCategory = extDef.AmmoCategory;
-              Log.LogWrite(" adding mode '" + mode.Id + "'\n");
-              extDef.Modes.Add(mode.Id, mode);
-              if (mode.isBaseMode == true) { extDef.baseModeId = mode.Id; }
-            }
-          }
-          defTemp.Remove("Modes");
         }
         if (extDef.baseModeId == WeaponMode.NONE_MODE_NAME) {
           WeaponMode mode = new WeaponMode();
@@ -865,11 +801,137 @@ namespace CustomAmmoCategoriesPatches {
           mode.AmmoCategory = extDef.AmmoCategory;
           extDef.baseModeId = mode.Id;
           extDef.Modes.Add(mode.Id, mode);
-          CustomAmmoCategoriesLog.Log.LogWrite(" adding base only mode '" + mode.Id + "'\n");
+          Log.M?.WL(1,"adding base only mode '" + mode.Id + "'");
         }
-        defTemp["ammoCategoryID"] = custCat.BaseCategory.Name;
-        //CustomAmmoCategoriesLog.Log.LogWrite("\n--------------RESULT----------------\n" + JsonConvert.SerializeObject(extDef,Formatting.Indented) + "\n----------------------------------\n");
-        json = defTemp.ToString();
+        if (defTemp["deferredEffect"] != null) {
+          extDef.deferredEffect = defTemp["deferredEffect"].ToObject<DeferredEffectDef>();
+          if (defTemp["deferredEffect"]["statusEffects"] != null) {
+            extDef.deferredEffect.ParceEffects(defTemp["deferredEffect"]["statusEffects"].ToString());
+          }
+        }
+
+        //Log.M?.WL(0, JsonConvert.SerializeObject(extDef, Formatting.Indented));
+
+        HashSet<string> deleteFields = new HashSet<string>();
+        foreach (var jsonField in defTemp) {
+          if (ExtWeaponDef_properties.Contains(jsonField.Key)) { deleteFields.Add(jsonField.Key); }
+        }
+        foreach (string field in deleteFields) { defTemp.Remove(field); }
+        //if (defTemp["Streak"] != null) {
+          //  extDef.Streak = (bool)defTemp["Streak"];
+          //  defTemp.Remove("Streak");
+          //}
+          //if (defTemp["HitGenerator"] != null) {
+          //  try {
+          //    extDef.HitGenerator = (HitGeneratorType)Enum.Parse(typeof(HitGeneratorType), (string)defTemp["HitGenerator"], true);
+          //    CustomAmmoCategoriesLog.Log.LogWrite("HitGenerator is " + extDef.HitGenerator + "\n");
+          //  } catch (Exception) {
+          //    extDef.HitGenerator = HitGeneratorType.NotSet;
+          //    CustomAmmoCategoriesLog.Log.LogWrite("Can't parce " + (string)defTemp["HitGenerator"] + " as HitGenerator\n");
+          //  }
+          //  defTemp.Remove("HitGenerator");
+          //}
+          //if (defTemp["APDamage"] != null) {
+          //  defTemp["StructureDamage"] = (float)defTemp["APDamage"];
+          //  defTemp.Remove("APDamage");
+          //}
+          //if (defTemp["ColorsTable"] != null) {
+          //  extDef.ColorsTable = defTemp["ColorsTable"].ToObject<List<ColorTableJsonEntry>>();
+          //  defTemp.Remove("ColorsTable");
+          //}
+          //if (defTemp["ChassisTagsAccuracyModifiers"] != null) {
+          //  extDef.TagsAccuracyModifiers = JsonConvert.DeserializeObject<Dictionary<string, float>>(defTemp["ChassisTagsAccuracyModifiers"].ToString());
+          //  Log.LogWrite((string)defTemp["Description"]["Id"] + " ChassisTagsAccuracyModifiers:\n");
+          //  foreach (var tam in extDef.TagsAccuracyModifiers) {
+          //    Log.LogWrite(" " + tam.Key + ":" + tam.Key);
+          //  }
+          //  defTemp.Remove("ChassisTagsAccuracyModifiers");
+          //}
+          //if (defTemp["IsAMS"] != null) {
+          //  extDef.IsAMS = ((bool)defTemp["IsAMS"] == true) ? TripleBoolean.True : TripleBoolean.False;
+          //  defTemp.Remove("IsAMS");
+          //}
+          //if (defTemp["IsAAMS"] != null) {
+          //  extDef.IsAAMS = ((bool)defTemp["IsAAMS"] == true) ? TripleBoolean.True : TripleBoolean.False;
+          //  if (extDef.IsAAMS == TripleBoolean.True) {
+          //    extDef.IsAMS = TripleBoolean.True;
+          //  }
+          //  defTemp.Remove("IsAAMS");
+          //}
+          //if (defTemp["ImprovedBallistic"] != null) {
+          //  extDef.ImprovedBallistic = (bool)defTemp["ImprovedBallistic"];
+          //  if (extDef.ImprovedBallistic) {
+          //    ExtWeaponDef.RemoveTag(ref defTemp, "wr-clustered_shots");
+          //    extDef.DisableClustering = TripleBoolean.True;
+          //  }
+          //  defTemp.Remove("ImprovedBallistic");
+          //}
+          //if (defTemp["InternalAmmo"] != null) {
+          //  extDef.InternalAmmo = JsonConvert.DeserializeObject<Dictionary<string, int>>(defTemp["InternalAmmo"].ToString());
+          //  defTemp.Remove("InternalAmmo");
+          //}
+          //if (defTemp["blockWeaponsInMechLocations"] != null) {
+          //  extDef.blockWeaponsInMechLocations = JsonConvert.DeserializeObject<List<ChassisLocations>>(defTemp["blockWeaponsInMechLocations"].ToString());
+          //  defTemp.Remove("blockWeaponsInMechLocations");
+          //}
+          //if(defTemp["deferredEffect"] != null) {
+          //  extDef.deferredEffect = JsonConvert.DeserializeObject<DeferredEffectDef>(defTemp["deferredEffect"].ToString());
+          //  if(defTemp["deferredEffect"]["statusEffects"] != null) {
+          //    extDef.deferredEffect.ParceEffects(defTemp["deferredEffect"]["statusEffects"].ToString());
+          //  }
+          //  defTemp.Remove("deferredEffect");
+          //}
+          //foreach (PropertyInfo prop in typeof(ExtWeaponDef).GetProperties()) {
+          //  if (defTemp[prop.Name] == null) { continue; }
+          //  if (prop.PropertyType == typeof(float)) {
+          //    prop.SetValue(extDef, (float)defTemp[prop.Name]);
+          //  } else if (prop.PropertyType == typeof(int)) {
+          //    prop.SetValue(extDef, (int)defTemp[prop.Name]);
+          //  } else if (prop.PropertyType == typeof(string)) {
+          //    prop.SetValue(extDef, (string)defTemp[prop.Name]);
+          //  } else if (prop.PropertyType == typeof(TripleBoolean)) {
+          //    prop.SetValue(extDef, ((bool)defTemp[prop.Name] == true) ? TripleBoolean.True : TripleBoolean.False);
+          //  } else if (prop.PropertyType == typeof(bool)) {
+          //    prop.SetValue(extDef, (bool)defTemp[prop.Name]);
+          //  } else if (prop.PropertyType == typeof(EvasivePipsMods)) {
+          //    prop.SetValue(extDef, defTemp[prop.Name].ToObject<EvasivePipsMods>());
+          //  } else if (prop.PropertyType == typeof(CustomVector)) {
+          //    prop.SetValue(extDef, defTemp[prop.Name].ToObject<CustomVector>());
+          //  } else if (prop.PropertyType.IsEnum) {
+          //    prop.SetValue(extDef, Enum.Parse(prop.PropertyType, (string)defTemp[prop.Name]));
+          //  } else { continue; }
+          //  defTemp.Remove(prop.Name);
+          //}
+          //if (defTemp["Modes"] != null) {
+          //  if (defTemp["Modes"].Type == JTokenType.Array) {
+          //    extDef.Modes.Clear();
+          //    JToken jWeaponModes = defTemp["Modes"];
+          //    foreach (JObject jWeaponMode in jWeaponModes) {
+          //      string ModeJSON = jWeaponMode.ToString();
+          //      if (string.IsNullOrEmpty(ModeJSON)) { continue; };
+          //      WeaponMode mode = new WeaponMode();
+          //      Log.M.WL(1, $"mode {jWeaponMode["Id"]}");
+          //      mode.fromJSON(ModeJSON);
+          //      if (mode.AmmoCategory == null) { mode.AmmoCategory = extDef.AmmoCategory; }
+          //      //mode.AmmoCategory = extDef.AmmoCategory;
+          //      Log.LogWrite(" adding mode '" + mode.Id + "'\n");
+          //      extDef.Modes.Add(mode.Id, mode);
+          //      if (mode.isBaseMode == true) { extDef.baseModeId = mode.Id; }
+          //    }
+          //  }
+          //  defTemp.Remove("Modes");
+          //}
+          //if (extDef.baseModeId == WeaponMode.NONE_MODE_NAME) {
+          //  WeaponMode mode = new WeaponMode();
+          //  mode.Id = WeaponMode.BASE_MODE_NAME;
+          //  mode.AmmoCategory = extDef.AmmoCategory;
+          //  extDef.baseModeId = mode.Id;
+          //  extDef.Modes.Add(mode.Id, mode);
+          //  CustomAmmoCategoriesLog.Log.LogWrite(" adding base only mode '" + mode.Id + "'\n");
+          //}
+          defTemp["ammoCategoryID"] = custCat.BaseCategory.Name;
+        json = defTemp.ToString(Formatting.Indented);
+        Log.M?.WL(0,json);
         __state.extDef = extDef;
       }catch(Exception e) {
         __state.errorStr = e.ToString();

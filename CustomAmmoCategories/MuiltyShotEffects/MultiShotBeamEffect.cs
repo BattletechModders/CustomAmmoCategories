@@ -42,11 +42,17 @@ namespace CustAmmoCategories {
           Log.LogWrite("Bad color:" + value + "\n", true);
         }
       }
+      get {
+        return ColorUtility.ToHtmlStringRGBA(FRealColor);
+      }
     }
     [IgnoreMember]
     public float I {
       set {
         FI = value; SyncColor();
+      }
+      get {
+        return FI;
       }
     }
     [JsonIgnore, IgnoreMember]

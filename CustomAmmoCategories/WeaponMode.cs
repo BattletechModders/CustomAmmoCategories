@@ -530,382 +530,383 @@ namespace CustAmmoCategories {
       //AirMechDamageModifier = 1f;
       //VTOLDamageModifier = 1f;
     }
-    public void fromJSON(string json) {
-      JObject jWeaponMode = JObject.Parse(json);
-      if (jWeaponMode["Id"] != null) {
-        this.Id = (string)jWeaponMode["Id"];
-      }
-      if (jWeaponMode["UIName"] != null) {
-        this.UIName = (string)jWeaponMode["UIName"];
-      }
-      if (jWeaponMode["Description"] != null) {
-        this.Description = (string)jWeaponMode["Description"];
-      }
-      if (jWeaponMode["Name"] != null) {
-        this.Name = (string)jWeaponMode["Name"];
-      } else {
-        this.Name = this.UIName;
-      }
-      if (jWeaponMode["AccuracyModifier"] != null) {
-        this.AccuracyModifier = (float)jWeaponMode["AccuracyModifier"];
-      }
-      if (jWeaponMode["DamagePerShot"] != null) {
-        this.DamagePerShot = (float)jWeaponMode["DamagePerShot"];
-      }
-      if (jWeaponMode["ClusteringModifier"] != null) {
-        this.ClusteringModifier = (float)jWeaponMode["ClusteringModifier"];
-      }
-      if (jWeaponMode["HeatDamagePerShot"] != null) {
-        this.HeatDamagePerShot = (float)jWeaponMode["HeatDamagePerShot"];
-      }
-      if (jWeaponMode["HeatGenerated"] != null) {
-        this.HeatGenerated = (int)jWeaponMode["HeatGenerated"];
-      }
-      if (jWeaponMode["ProjectilesPerShot"] != null) {
-        this.ProjectilesPerShot = (int)jWeaponMode["ProjectilesPerShot"];
-      }
-      if (jWeaponMode["ShotsWhenFired"] != null) {
-        this.ShotsWhenFired = (int)jWeaponMode["ShotsWhenFired"];
-      }
-      if (jWeaponMode["ShotsWhenFiredMod"] != null) {
-        this.ShotsWhenFiredMod = (float)jWeaponMode["ShotsWhenFiredMod"];
-      }
-      if (jWeaponMode["CriticalChanceMultiplier"] != null) {
-        this.CriticalChanceMultiplier = (float)jWeaponMode["CriticalChanceMultiplier"];
-      }
-      if (jWeaponMode["FireDelayMultiplier"] != null) {
-        this.FireDelayMultiplier = (float)jWeaponMode["FireDelayMultiplier"];
-      }
-      if (jWeaponMode["HeatGeneratedModifier"] != null) {
-        this.HeatGeneratedModifier = (float)jWeaponMode["HeatGeneratedModifier"];
-      }
-      if (jWeaponMode["ProjectileSpeedMultiplier"] != null) {
-        this.ProjectileSpeedMultiplier = (float)jWeaponMode["ProjectileSpeedMultiplier"];
-      }
-      if (jWeaponMode["AIBattleValue"] != null) {
-        this.AIBattleValue = (int)jWeaponMode["AIBattleValue"];
-      }
-      if (jWeaponMode["FireAnimationSpeedMod"] != null) {
-        this.FireAnimationSpeedMod = (float)jWeaponMode["FireAnimationSpeedMod"];
-      }
-      if (jWeaponMode["PrefireAnimationSpeedMod"] != null) {
-        this.PrefireAnimationSpeedMod = (float)jWeaponMode["PrefireAnimationSpeedMod"];
-      }
-      if (jWeaponMode["MinRange"] != null) {
-        this.MinRange = (float)jWeaponMode["MinRange"];
-      }
-      if (jWeaponMode["ShotsPerAmmo"] != null) {
-        this.ShotsPerAmmo = (float)jWeaponMode["ShotsPerAmmo"];
-      }
-      if (jWeaponMode["Streak"] != null) {
-        this.Streak = ((bool)jWeaponMode["Streak"] == true) ? TripleBoolean.True : TripleBoolean.False;
-      }
-      if (jWeaponMode["IsAMS"] != null) {
-        this.IsAMS = ((bool)jWeaponMode["IsAMS"] == true) ? TripleBoolean.True : TripleBoolean.False;
-      }
-      if (jWeaponMode["AMSImmune"] != null) {
-        this.AMSImmune = ((bool)jWeaponMode["AMSImmune"] == true) ? TripleBoolean.True : TripleBoolean.False;
-      }
-      if (jWeaponMode["AMSDamage"] != null) {
-        this.AMSDamage = (float)jWeaponMode["AMSDamage"];
-      }
-      if (jWeaponMode["MissileHealth"] != null) {
-        this.MissileHealth = (float)jWeaponMode["MissileHealth"];
-      }
-      if (jWeaponMode["IsAAMS"] != null) {
-        this.IsAAMS = ((bool)jWeaponMode["IsAAMS"] == true) ? TripleBoolean.True : TripleBoolean.False;
-        if (this.IsAAMS == TripleBoolean.True) {
-          this.IsAMS = TripleBoolean.True;
-        }
-      }
-      if (jWeaponMode["AMSShootsEveryAttack"] != null) {
-        this.AMSShootsEveryAttack = ((bool)jWeaponMode["AMSShootsEveryAttack"] == true) ? TripleBoolean.True : TripleBoolean.False;
-      }
-      if (jWeaponMode["isDamageVariation"] != null) {
-        this.isDamageVariation = ((bool)jWeaponMode["isDamageVariation"] == true) ? TripleBoolean.True : TripleBoolean.False;
-      }
-      if (jWeaponMode["isHeatVariation"] != null) {
-        this.isHeatVariation = ((bool)jWeaponMode["isHeatVariation"] == true) ? TripleBoolean.True : TripleBoolean.False;
-      }
-      if (jWeaponMode["isStabilityVariation"] != null) {
-        this.isStabilityVariation = ((bool)jWeaponMode["isStabilityVariation"] == true) ? TripleBoolean.True : TripleBoolean.False;
-      }
-      if (jWeaponMode["AOEEffectsFalloff"] != null) {
-        this.AOEEffectsFalloff = ((bool)jWeaponMode["AOEEffectsFalloff"] == true) ? TripleBoolean.True : TripleBoolean.False;
-      }
-      if (jWeaponMode["APDamage"] != null) {
-        this.APDamage = (float)jWeaponMode["APDamage"];
-      }
-      if (jWeaponMode["APDamageMultiplier"] != null) {
-        this.APDamageMultiplier = (float)jWeaponMode["APDamageMultiplier"];
-      }
-      if (jWeaponMode["APCriticalChanceMultiplier"] != null) {
-        this.APCriticalChanceMultiplier = (float)jWeaponMode["APCriticalChanceMultiplier"];
-      }
-      if (jWeaponMode["APArmorShardsMod"] != null) {
-        this.APArmorShardsMod = (float)jWeaponMode["APArmorShardsMod"];
-      }
-      if (jWeaponMode["APMaxArmorThickness"] != null) {
-        this.APMaxArmorThickness = (float)jWeaponMode["APMaxArmorThickness"];
-      }
-      if (jWeaponMode["MinMissRadius"] != null) {
-        this.MinMissRadius = (float)jWeaponMode["MinMissRadius"];
-      }
-      if (jWeaponMode["MaxMissRadius"] != null) {
-        this.MaxMissRadius = (float)jWeaponMode["MaxMissRadius"];
-      }
-      if (jWeaponMode["MaxRange"] != null) {
-        this.MaxRange = (float)jWeaponMode["MaxRange"];
-      }
-      if (jWeaponMode["ShortRange"] != null) {
-        this.ShortRange = (float)jWeaponMode["ShortRange"];
-      }
-      if (jWeaponMode["ForbiddenRange"] != null) {
-        this.ForbiddenRange = (float)jWeaponMode["ForbiddenRange"];
-      }
-      if (jWeaponMode["ProjectileScale"] != null) {
-        this.ProjectileScale = jWeaponMode["ProjectileScale"].ToObject<CustomVector>();
-      }
-      if (jWeaponMode["Lock"] != null) {
-        this.Lock = jWeaponMode["Lock"].ToObject<ModeLockSettings>();
-      }
-      if (jWeaponMode["MissileExplosionScale"] != null) {
-        this.MissileExplosionScale = jWeaponMode["MissileExplosionScale"].ToObject<CustomVector>();
-      }
-      if (jWeaponMode["MediumRange"] != null) {
-        this.MediumRange = (float)jWeaponMode["MediumRange"];
-      }
-      if (jWeaponMode["LongRange"] != null) {
-        this.LongRange = (float)jWeaponMode["LongRange"];
-      }
-      if (jWeaponMode["SpreadRange"] != null) {
-        this.SpreadRange = (float)jWeaponMode["SpreadRange"];
-      }
-      if (jWeaponMode["ArmorDamageModifier"] != null) {
-        this.ArmorDamageModifier = (float)jWeaponMode["ArmorDamageModifier"];
-      }
-      if (jWeaponMode["MissileFiringIntervalMultiplier"] != null) {
-        this.MissileFiringIntervalMultiplier = (float)jWeaponMode["MissileFiringIntervalMultiplier"];
-      }
-      if (jWeaponMode["MissileVolleyIntervalMultiplier"] != null) {
-        this.MissileVolleyIntervalMultiplier = (float)jWeaponMode["MissileVolleyIntervalMultiplier"];
-      }
-      if (jWeaponMode["ISDamageModifier"] != null) {
-        this.ISDamageModifier = (float)jWeaponMode["ISDamageModifier"];
-      }
-      if (jWeaponMode["RefireModifier"] != null) {
-        this.RefireModifier = (int)jWeaponMode["RefireModifier"];
-      }
-      if (jWeaponMode["isBaseMode"] != null) {
-        this.isBaseMode = (bool)jWeaponMode["isBaseMode"];
-      }
-      if (jWeaponMode["Instability"] != null) {
-        this.Instability = (float)jWeaponMode["Instability"];
-      }
-      if (jWeaponMode["IFFDef"] != null) {
-        this.IFFDef = (string)jWeaponMode["IFFDef"];
-      }
-      if (jWeaponMode["AttackRecoil"] != null) {
-        this.AttackRecoil = (int)jWeaponMode["AttackRecoil"];
-      }
-      if (jWeaponMode["AdditionalAudioEffect"] != null) {
-        this.AdditionalAudioEffect = (string)jWeaponMode["AdditionalAudioEffect"];
-      }
-      if (jWeaponMode["preFireSFX"] != null) {
-        this.preFireSFX = (string)jWeaponMode["preFireSFX"];
-      }
-      if (jWeaponMode["WeaponEffectID"] != null) {
-        this.WeaponEffectID = (string)jWeaponMode["WeaponEffectID"];
-      }
-      if (jWeaponMode["MissileVolleySize"] != null) {
-        this.MissileVolleySize = (int)jWeaponMode["MissileVolleySize"];
-      }
-      if (jWeaponMode["AdditionalImpactVFXScaleX"] != null) {
-        this.AdditionalImpactVFXScaleX = (float)jWeaponMode["AdditionalImpactVFXScaleX"];
-      }
-      if (jWeaponMode["BallisticDamagePerPallet"] != null) {
-        this.BallisticDamagePerPallet = ((bool)jWeaponMode["BallisticDamagePerPallet"] == true) ? TripleBoolean.True : TripleBoolean.False;
-      }
-      if (jWeaponMode["AdditionalImpactVFXScaleY"] != null) {
-        this.AdditionalImpactVFXScaleY = (float)jWeaponMode["AdditionalImpactVFXScaleY"];
-      }
-      if (jWeaponMode["AdditionalImpactVFXScaleZ"] != null) {
-        this.AdditionalImpactVFXScaleZ = (float)jWeaponMode["AdditionalImpactVFXScaleZ"];
-      }
-      if (jWeaponMode["EvasivePipsIgnored"] != null) {
-        this.EvasivePipsIgnored = (float)jWeaponMode["EvasivePipsIgnored"];
-      }
-      if (jWeaponMode["IndirectFireCapable"] != null) {
-        this.IndirectFireCapable = ((bool)jWeaponMode["IndirectFireCapable"] == true) ? TripleBoolean.True : TripleBoolean.False;
-      }
-      if (jWeaponMode["ColorSpeedChange"] != null) {
-        this.ColorSpeedChange = (float)jWeaponMode["ColorSpeedChange"];
-      }
-      if (jWeaponMode["ChassisTagsAccuracyModifiers"] != null) {
-        this.TagsAccuracyModifiers = JsonConvert.DeserializeObject<Dictionary<string, float>>(jWeaponMode["ChassisTagsAccuracyModifiers"].ToString());
-        Log.LogWrite((string)jWeaponMode["Id"] + " ChassisTagsAccuracyModifiers:\n");
-        foreach (var tam in this.TagsAccuracyModifiers) {
-          Log.LogWrite(" " + tam.Key + ":" + tam.Key);
-        }
-      }
-      if (jWeaponMode["ColorChangeRule"] != null) {
-        this.ColorChangeRule = (ColorChangeRule)Enum.Parse(typeof(ColorChangeRule), (string)jWeaponMode["ColorChangeRule"]);
-      }
-      if (jWeaponMode["HasShells"] != null) {
-        this.HasShells = ((bool)jWeaponMode["HasShells"] == true) ? TripleBoolean.True : TripleBoolean.False;
-      }
-      if (jWeaponMode["DamageNotDivided"] != null) {
-        this.DamageNotDivided = ((bool)jWeaponMode["DamageNotDivided"] == true) ? TripleBoolean.True : TripleBoolean.False;
-      }
-      if (jWeaponMode["CantHitUnaffecedByPathing"] != null) {
-        this.CantHitUnaffecedByPathing = ((bool)jWeaponMode["CantHitUnaffecedByPathing"] == true) ? TripleBoolean.True : TripleBoolean.False;
-      }
-      if (jWeaponMode["ShellsRadius"] != null) {
-        this.ShellsRadius = (float)jWeaponMode["ShellsRadius"];
-      }
-      if (jWeaponMode["MinShellsDistance"] != null) {
-        this.MinShellsDistance = (float)jWeaponMode["MinShellsDistance"];
-      }
-      if (jWeaponMode["MaxShellsDistance"] != null) {
-        this.MaxShellsDistance = (float)jWeaponMode["MaxShellsDistance"];
-      }
-      if (jWeaponMode["DirectFireModifier"] != null) {
-        this.DirectFireModifier = (float)jWeaponMode["DirectFireModifier"];
-      }
-      if (jWeaponMode["evasivePipsMods"] != null) {
-        this.evasivePipsMods = jWeaponMode["evasivePipsMods"].ToObject<EvasivePipsMods>();
-      }
-      if (jWeaponMode["DistantVariance"] != null) {
-        this.DistantVariance = (float)jWeaponMode["DistantVariance"];
-      }
-      if (jWeaponMode["DamageMultiplier"] != null) {
-        this.DamageMultiplier = (float)jWeaponMode["DamageMultiplier"];
-      }
-      if (jWeaponMode["HeatMultiplier"] != null) {
-        this.HeatMultiplier = (float)jWeaponMode["HeatMultiplier"];
-      }
-      if (jWeaponMode["InstabilityMultiplier"] != null) {
-        this.InstabilityMultiplier = (float)jWeaponMode["InstabilityMultiplier"];
-      }
-      if (jWeaponMode["DistantVarianceReversed"] != null) {
-        this.DistantVarianceReversed = ((bool)jWeaponMode["DistantVarianceReversed"] == true) ? TripleBoolean.True : TripleBoolean.False;
-      }
-      if (jWeaponMode["DamageVariance"] != null) {
-        this.DamageVariance = (float)jWeaponMode["DamageVariance"];
-      }
-      if (jWeaponMode["FlatJammingChance"] != null) {
-        this.FlatJammingChance = (float)jWeaponMode["FlatJammingChance"];
-      }
-      if (jWeaponMode["ClearMineFieldRadius"] != null) {
-        this.ClearMineFieldRadius = (int)jWeaponMode["ClearMineFieldRadius"];
-      }
-      if (jWeaponMode["AMSHitChance"] != null) {
-        this.AMSHitChance = (float)jWeaponMode["AMSHitChance"];
-      }
-      if (jWeaponMode["GunneryJammingBase"] != null) {
-        this.GunneryJammingBase = (float)jWeaponMode["GunneryJammingBase"];
-      }
-      if (jWeaponMode["GunneryJammingMult"] != null) {
-        this.GunneryJammingMult = (float)jWeaponMode["GunneryJammingMult"];
-      }
-      if (jWeaponMode["AIHitChanceCap"] != null) {
-        this.AIHitChanceCap = (float)jWeaponMode["AIHitChanceCap"];
-      }
-      if (jWeaponMode["Cooldown"] != null) {
-        this.Cooldown = (int)jWeaponMode["Cooldown"];
-      }
-      if (jWeaponMode["FireTerrainChance"] != null) {
-        this.FireTerrainChance = (float)jWeaponMode["FireTerrainChance"];
-      }
-      if (jWeaponMode["FireDurationWithoutForest"] != null) {
-        this.FireDurationWithoutForest = (int)jWeaponMode["FireDurationWithoutForest"];
-      }
-      if (jWeaponMode["FireTerrainStrength"] != null) {
-        this.FireTerrainStrength = (int)jWeaponMode["FireTerrainStrength"];
-      }
-      if (jWeaponMode["FireOnSuccessHit"] != null) {
-        this.FireOnSuccessHit = ((bool)jWeaponMode["FireOnSuccessHit"] == true) ? TripleBoolean.True : TripleBoolean.False;
-      }
-      if (jWeaponMode["FireTerrainCellRadius"] != null) {
-        this.FireTerrainCellRadius = (int)jWeaponMode["FireTerrainCellRadius"];
-      }
-      if (jWeaponMode["AdditionalImpactVFX"] != null) {
-        this.AdditionalImpactVFX = (string)jWeaponMode["AdditionalImpactVFX"];
-      }
-      if (jWeaponMode["AmmoCategory"] != null) {
-        this.AmmoCategory = CustomAmmoCategories.find((string)jWeaponMode["AmmoCategory"]);
-      }
-      if (jWeaponMode["DamageOnJamming"] != null) {
-        this.DamageOnJamming = ((bool)jWeaponMode["DamageOnJamming"] == true) ? TripleBoolean.True : TripleBoolean.False;
-      }
-      if (jWeaponMode["DestroyOnJamming"] != null) {
-        this.DestroyOnJamming = ((bool)jWeaponMode["DestroyOnJamming"] == true) ? TripleBoolean.True : TripleBoolean.False;
-      }
-      if (jWeaponMode["RangedDmgFalloffType"] != null) {
-        this.RangedDmgFalloffType = (DamageFalloffType)Enum.Parse(typeof(DamageFalloffType), (string)jWeaponMode["RangedDmgFalloffType"]);
-      }
-      if (jWeaponMode["AoEDmgFalloffType"] != null) {
-        this.AoEDmgFalloffType = (DamageFalloffType)Enum.Parse(typeof(DamageFalloffType), (string)jWeaponMode["AoEDmgFalloffType"]);
-      }
-      if (jWeaponMode["AOECapable"] != null) {
-        this.AOECapable = ((bool)jWeaponMode["AOECapable"] == true) ? TripleBoolean.True : TripleBoolean.False; ;
-      }
-      if (jWeaponMode["AlwaysIndirectVisuals"] != null) {
-        this.AlwaysIndirectVisuals = ((bool)jWeaponMode["AlwaysIndirectVisuals"] == true) ? TripleBoolean.True : TripleBoolean.False;
-      }
-      if (jWeaponMode["Unguided"] != null) {
-        this.Unguided = ((bool)jWeaponMode["Unguided"] == true) ? TripleBoolean.True : TripleBoolean.False;
-        if (this.Unguided == TripleBoolean.True) {
-          //this.AlwaysIndirectVisuals = TripleBoolean.False;
-          //this.IndirectFireCapable = TripleBoolean.False;
-        }
-      }
-      if (jWeaponMode["deferredEffect"] != null) {
-        this.deferredEffect = JsonConvert.DeserializeObject<DeferredEffectDef>(jWeaponMode["deferredEffect"].ToString());
-        if (jWeaponMode["deferredEffect"]["statusEffects"] != null) {
-          this.deferredEffect.ParceEffects(jWeaponMode["deferredEffect"]["statusEffects"].ToString());
-        }
-      }
-      if (jWeaponMode["HitGenerator"] != null) {
-        try {
-          this.HitGenerator = (HitGeneratorType)Enum.Parse(typeof(HitGeneratorType), (string)jWeaponMode["HitGenerator"], true);
-        } catch (Exception) {
-          this.HitGenerator = HitGeneratorType.NotSet;
-        }
-        jWeaponMode.Remove("HitGenerator");
-      }
+    public void fromJSON(JToken jWeaponMode) {
+      //this = jWeaponMode.ToObject<WeaponMode>();
+      //JObject jWeaponMode = JObject.Parse(json);
+      //if (jWeaponMode["Id"] != null) {
+      //  this.Id = (string)jWeaponMode["Id"];
+      //}
+      //if (jWeaponMode["UIName"] != null) {
+      //  this.UIName = (string)jWeaponMode["UIName"];
+      //}
+      //if (jWeaponMode["Description"] != null) {
+      //  this.Description = (string)jWeaponMode["Description"];
+      //}
+      //if (jWeaponMode["Name"] != null) {
+      //  this.Name = (string)jWeaponMode["Name"];
+      //} else {
+      //  this.Name = this.UIName;
+      //}
+      //if (jWeaponMode["AccuracyModifier"] != null) {
+      //  this.AccuracyModifier = (float)jWeaponMode["AccuracyModifier"];
+      //}
+      //if (jWeaponMode["DamagePerShot"] != null) {
+      //  this.DamagePerShot = (float)jWeaponMode["DamagePerShot"];
+      //}
+      //if (jWeaponMode["ClusteringModifier"] != null) {
+      //  this.ClusteringModifier = (float)jWeaponMode["ClusteringModifier"];
+      //}
+      //if (jWeaponMode["HeatDamagePerShot"] != null) {
+      //  this.HeatDamagePerShot = (float)jWeaponMode["HeatDamagePerShot"];
+      //}
+      //if (jWeaponMode["HeatGenerated"] != null) {
+      //  this.HeatGenerated = (int)jWeaponMode["HeatGenerated"];
+      //}
+      //if (jWeaponMode["ProjectilesPerShot"] != null) {
+      //  this.ProjectilesPerShot = (int)jWeaponMode["ProjectilesPerShot"];
+      //}
+      //if (jWeaponMode["ShotsWhenFired"] != null) {
+      //  this.ShotsWhenFired = (int)jWeaponMode["ShotsWhenFired"];
+      //}
+      //if (jWeaponMode["ShotsWhenFiredMod"] != null) {
+      //  this.ShotsWhenFiredMod = (float)jWeaponMode["ShotsWhenFiredMod"];
+      //}
+      //if (jWeaponMode["CriticalChanceMultiplier"] != null) {
+      //  this.CriticalChanceMultiplier = (float)jWeaponMode["CriticalChanceMultiplier"];
+      //}
+      //if (jWeaponMode["FireDelayMultiplier"] != null) {
+      //  this.FireDelayMultiplier = (float)jWeaponMode["FireDelayMultiplier"];
+      //}
+      //if (jWeaponMode["HeatGeneratedModifier"] != null) {
+      //  this.HeatGeneratedModifier = (float)jWeaponMode["HeatGeneratedModifier"];
+      //}
+      //if (jWeaponMode["ProjectileSpeedMultiplier"] != null) {
+      //  this.ProjectileSpeedMultiplier = (float)jWeaponMode["ProjectileSpeedMultiplier"];
+      //}
+      //if (jWeaponMode["AIBattleValue"] != null) {
+      //  this.AIBattleValue = (int)jWeaponMode["AIBattleValue"];
+      //}
+      //if (jWeaponMode["FireAnimationSpeedMod"] != null) {
+      //  this.FireAnimationSpeedMod = (float)jWeaponMode["FireAnimationSpeedMod"];
+      //}
+      //if (jWeaponMode["PrefireAnimationSpeedMod"] != null) {
+      //  this.PrefireAnimationSpeedMod = (float)jWeaponMode["PrefireAnimationSpeedMod"];
+      //}
+      //if (jWeaponMode["MinRange"] != null) {
+      //  this.MinRange = (float)jWeaponMode["MinRange"];
+      //}
+      //if (jWeaponMode["ShotsPerAmmo"] != null) {
+      //  this.ShotsPerAmmo = (float)jWeaponMode["ShotsPerAmmo"];
+      //}
+      //if (jWeaponMode["Streak"] != null) {
+      //  this.Streak = ((bool)jWeaponMode["Streak"] == true) ? TripleBoolean.True : TripleBoolean.False;
+      //}
+      //if (jWeaponMode["IsAMS"] != null) {
+      //  this.IsAMS = ((bool)jWeaponMode["IsAMS"] == true) ? TripleBoolean.True : TripleBoolean.False;
+      //}
+      //if (jWeaponMode["AMSImmune"] != null) {
+      //  this.AMSImmune = ((bool)jWeaponMode["AMSImmune"] == true) ? TripleBoolean.True : TripleBoolean.False;
+      //}
+      //if (jWeaponMode["AMSDamage"] != null) {
+      //  this.AMSDamage = (float)jWeaponMode["AMSDamage"];
+      //}
+      //if (jWeaponMode["MissileHealth"] != null) {
+      //  this.MissileHealth = (float)jWeaponMode["MissileHealth"];
+      //}
+      //if (jWeaponMode["IsAAMS"] != null) {
+      //  this.IsAAMS = ((bool)jWeaponMode["IsAAMS"] == true) ? TripleBoolean.True : TripleBoolean.False;
+      //  if (this.IsAAMS == TripleBoolean.True) {
+      //    this.IsAMS = TripleBoolean.True;
+      //  }
+      //}
+      //if (jWeaponMode["AMSShootsEveryAttack"] != null) {
+      //  this.AMSShootsEveryAttack = ((bool)jWeaponMode["AMSShootsEveryAttack"] == true) ? TripleBoolean.True : TripleBoolean.False;
+      //}
+      //if (jWeaponMode["isDamageVariation"] != null) {
+      //  this.isDamageVariation = ((bool)jWeaponMode["isDamageVariation"] == true) ? TripleBoolean.True : TripleBoolean.False;
+      //}
+      //if (jWeaponMode["isHeatVariation"] != null) {
+      //  this.isHeatVariation = ((bool)jWeaponMode["isHeatVariation"] == true) ? TripleBoolean.True : TripleBoolean.False;
+      //}
+      //if (jWeaponMode["isStabilityVariation"] != null) {
+      //  this.isStabilityVariation = ((bool)jWeaponMode["isStabilityVariation"] == true) ? TripleBoolean.True : TripleBoolean.False;
+      //}
+      //if (jWeaponMode["AOEEffectsFalloff"] != null) {
+      //  this.AOEEffectsFalloff = ((bool)jWeaponMode["AOEEffectsFalloff"] == true) ? TripleBoolean.True : TripleBoolean.False;
+      //}
+      //if (jWeaponMode["APDamage"] != null) {
+      //  this.APDamage = (float)jWeaponMode["APDamage"];
+      //}
+      //if (jWeaponMode["APDamageMultiplier"] != null) {
+      //  this.APDamageMultiplier = (float)jWeaponMode["APDamageMultiplier"];
+      //}
+      //if (jWeaponMode["APCriticalChanceMultiplier"] != null) {
+      //  this.APCriticalChanceMultiplier = (float)jWeaponMode["APCriticalChanceMultiplier"];
+      //}
+      //if (jWeaponMode["APArmorShardsMod"] != null) {
+      //  this.APArmorShardsMod = (float)jWeaponMode["APArmorShardsMod"];
+      //}
+      //if (jWeaponMode["APMaxArmorThickness"] != null) {
+      //  this.APMaxArmorThickness = (float)jWeaponMode["APMaxArmorThickness"];
+      //}
+      //if (jWeaponMode["MinMissRadius"] != null) {
+      //  this.MinMissRadius = (float)jWeaponMode["MinMissRadius"];
+      //}
+      //if (jWeaponMode["MaxMissRadius"] != null) {
+      //  this.MaxMissRadius = (float)jWeaponMode["MaxMissRadius"];
+      //}
+      //if (jWeaponMode["MaxRange"] != null) {
+      //  this.MaxRange = (float)jWeaponMode["MaxRange"];
+      //}
+      //if (jWeaponMode["ShortRange"] != null) {
+      //  this.ShortRange = (float)jWeaponMode["ShortRange"];
+      //}
+      //if (jWeaponMode["ForbiddenRange"] != null) {
+      //  this.ForbiddenRange = (float)jWeaponMode["ForbiddenRange"];
+      //}
+      //if (jWeaponMode["ProjectileScale"] != null) {
+      //  this.ProjectileScale = jWeaponMode["ProjectileScale"].ToObject<CustomVector>();
+      //}
+      //if (jWeaponMode["Lock"] != null) {
+      //  this.Lock = jWeaponMode["Lock"].ToObject<ModeLockSettings>();
+      //}
+      //if (jWeaponMode["MissileExplosionScale"] != null) {
+      //  this.MissileExplosionScale = jWeaponMode["MissileExplosionScale"].ToObject<CustomVector>();
+      //}
+      //if (jWeaponMode["MediumRange"] != null) {
+      //  this.MediumRange = (float)jWeaponMode["MediumRange"];
+      //}
+      //if (jWeaponMode["LongRange"] != null) {
+      //  this.LongRange = (float)jWeaponMode["LongRange"];
+      //}
+      //if (jWeaponMode["SpreadRange"] != null) {
+      //  this.SpreadRange = (float)jWeaponMode["SpreadRange"];
+      //}
+      //if (jWeaponMode["ArmorDamageModifier"] != null) {
+      //  this.ArmorDamageModifier = (float)jWeaponMode["ArmorDamageModifier"];
+      //}
+      //if (jWeaponMode["MissileFiringIntervalMultiplier"] != null) {
+      //  this.MissileFiringIntervalMultiplier = (float)jWeaponMode["MissileFiringIntervalMultiplier"];
+      //}
+      //if (jWeaponMode["MissileVolleyIntervalMultiplier"] != null) {
+      //  this.MissileVolleyIntervalMultiplier = (float)jWeaponMode["MissileVolleyIntervalMultiplier"];
+      //}
+      //if (jWeaponMode["ISDamageModifier"] != null) {
+      //  this.ISDamageModifier = (float)jWeaponMode["ISDamageModifier"];
+      //}
+      //if (jWeaponMode["RefireModifier"] != null) {
+      //  this.RefireModifier = (int)jWeaponMode["RefireModifier"];
+      //}
+      //if (jWeaponMode["isBaseMode"] != null) {
+      //  this.isBaseMode = (bool)jWeaponMode["isBaseMode"];
+      //}
+      //if (jWeaponMode["Instability"] != null) {
+      //  this.Instability = (float)jWeaponMode["Instability"];
+      //}
+      //if (jWeaponMode["IFFDef"] != null) {
+      //  this.IFFDef = (string)jWeaponMode["IFFDef"];
+      //}
+      //if (jWeaponMode["AttackRecoil"] != null) {
+      //  this.AttackRecoil = (int)jWeaponMode["AttackRecoil"];
+      //}
+      //if (jWeaponMode["AdditionalAudioEffect"] != null) {
+      //  this.AdditionalAudioEffect = (string)jWeaponMode["AdditionalAudioEffect"];
+      //}
+      //if (jWeaponMode["preFireSFX"] != null) {
+      //  this.preFireSFX = (string)jWeaponMode["preFireSFX"];
+      //}
+      //if (jWeaponMode["WeaponEffectID"] != null) {
+      //  this.WeaponEffectID = (string)jWeaponMode["WeaponEffectID"];
+      //}
+      //if (jWeaponMode["MissileVolleySize"] != null) {
+      //  this.MissileVolleySize = (int)jWeaponMode["MissileVolleySize"];
+      //}
+      //if (jWeaponMode["AdditionalImpactVFXScaleX"] != null) {
+      //  this.AdditionalImpactVFXScaleX = (float)jWeaponMode["AdditionalImpactVFXScaleX"];
+      //}
+      //if (jWeaponMode["BallisticDamagePerPallet"] != null) {
+      //  this.BallisticDamagePerPallet = ((bool)jWeaponMode["BallisticDamagePerPallet"] == true) ? TripleBoolean.True : TripleBoolean.False;
+      //}
+      //if (jWeaponMode["AdditionalImpactVFXScaleY"] != null) {
+      //  this.AdditionalImpactVFXScaleY = (float)jWeaponMode["AdditionalImpactVFXScaleY"];
+      //}
+      //if (jWeaponMode["AdditionalImpactVFXScaleZ"] != null) {
+      //  this.AdditionalImpactVFXScaleZ = (float)jWeaponMode["AdditionalImpactVFXScaleZ"];
+      //}
+      //if (jWeaponMode["EvasivePipsIgnored"] != null) {
+      //  this.EvasivePipsIgnored = (float)jWeaponMode["EvasivePipsIgnored"];
+      //}
+      //if (jWeaponMode["IndirectFireCapable"] != null) {
+      //  this.IndirectFireCapable = ((bool)jWeaponMode["IndirectFireCapable"] == true) ? TripleBoolean.True : TripleBoolean.False;
+      //}
+      //if (jWeaponMode["ColorSpeedChange"] != null) {
+      //  this.ColorSpeedChange = (float)jWeaponMode["ColorSpeedChange"];
+      //}
+      //if (jWeaponMode["ChassisTagsAccuracyModifiers"] != null) {
+      //  this.TagsAccuracyModifiers = JsonConvert.DeserializeObject<Dictionary<string, float>>(jWeaponMode["ChassisTagsAccuracyModifiers"].ToString());
+      //  Log.LogWrite((string)jWeaponMode["Id"] + " ChassisTagsAccuracyModifiers:\n");
+      //  foreach (var tam in this.TagsAccuracyModifiers) {
+      //    Log.LogWrite(" " + tam.Key + ":" + tam.Key);
+      //  }
+      //}
+      //if (jWeaponMode["ColorChangeRule"] != null) {
+      //  this.ColorChangeRule = (ColorChangeRule)Enum.Parse(typeof(ColorChangeRule), (string)jWeaponMode["ColorChangeRule"]);
+      //}
+      //if (jWeaponMode["HasShells"] != null) {
+      //  this.HasShells = ((bool)jWeaponMode["HasShells"] == true) ? TripleBoolean.True : TripleBoolean.False;
+      //}
+      //if (jWeaponMode["DamageNotDivided"] != null) {
+      //  this.DamageNotDivided = ((bool)jWeaponMode["DamageNotDivided"] == true) ? TripleBoolean.True : TripleBoolean.False;
+      //}
+      //if (jWeaponMode["CantHitUnaffecedByPathing"] != null) {
+      //  this.CantHitUnaffecedByPathing = ((bool)jWeaponMode["CantHitUnaffecedByPathing"] == true) ? TripleBoolean.True : TripleBoolean.False;
+      //}
+      //if (jWeaponMode["ShellsRadius"] != null) {
+      //  this.ShellsRadius = (float)jWeaponMode["ShellsRadius"];
+      //}
+      //if (jWeaponMode["MinShellsDistance"] != null) {
+      //  this.MinShellsDistance = (float)jWeaponMode["MinShellsDistance"];
+      //}
+      //if (jWeaponMode["MaxShellsDistance"] != null) {
+      //  this.MaxShellsDistance = (float)jWeaponMode["MaxShellsDistance"];
+      //}
+      //if (jWeaponMode["DirectFireModifier"] != null) {
+      //  this.DirectFireModifier = (float)jWeaponMode["DirectFireModifier"];
+      //}
+      //if (jWeaponMode["evasivePipsMods"] != null) {
+      //  this.evasivePipsMods = jWeaponMode["evasivePipsMods"].ToObject<EvasivePipsMods>();
+      //}
+      //if (jWeaponMode["DistantVariance"] != null) {
+      //  this.DistantVariance = (float)jWeaponMode["DistantVariance"];
+      //}
+      //if (jWeaponMode["DamageMultiplier"] != null) {
+      //  this.DamageMultiplier = (float)jWeaponMode["DamageMultiplier"];
+      //}
+      //if (jWeaponMode["HeatMultiplier"] != null) {
+      //  this.HeatMultiplier = (float)jWeaponMode["HeatMultiplier"];
+      //}
+      //if (jWeaponMode["InstabilityMultiplier"] != null) {
+      //  this.InstabilityMultiplier = (float)jWeaponMode["InstabilityMultiplier"];
+      //}
+      //if (jWeaponMode["DistantVarianceReversed"] != null) {
+      //  this.DistantVarianceReversed = ((bool)jWeaponMode["DistantVarianceReversed"] == true) ? TripleBoolean.True : TripleBoolean.False;
+      //}
+      //if (jWeaponMode["DamageVariance"] != null) {
+      //  this.DamageVariance = (float)jWeaponMode["DamageVariance"];
+      //}
+      //if (jWeaponMode["FlatJammingChance"] != null) {
+      //  this.FlatJammingChance = (float)jWeaponMode["FlatJammingChance"];
+      //}
+      //if (jWeaponMode["ClearMineFieldRadius"] != null) {
+      //  this.ClearMineFieldRadius = (int)jWeaponMode["ClearMineFieldRadius"];
+      //}
+      //if (jWeaponMode["AMSHitChance"] != null) {
+      //  this.AMSHitChance = (float)jWeaponMode["AMSHitChance"];
+      //}
+      //if (jWeaponMode["GunneryJammingBase"] != null) {
+      //  this.GunneryJammingBase = (float)jWeaponMode["GunneryJammingBase"];
+      //}
+      //if (jWeaponMode["GunneryJammingMult"] != null) {
+      //  this.GunneryJammingMult = (float)jWeaponMode["GunneryJammingMult"];
+      //}
+      //if (jWeaponMode["AIHitChanceCap"] != null) {
+      //  this.AIHitChanceCap = (float)jWeaponMode["AIHitChanceCap"];
+      //}
+      //if (jWeaponMode["Cooldown"] != null) {
+      //  this.Cooldown = (int)jWeaponMode["Cooldown"];
+      //}
+      //if (jWeaponMode["FireTerrainChance"] != null) {
+      //  this.FireTerrainChance = (float)jWeaponMode["FireTerrainChance"];
+      //}
+      //if (jWeaponMode["FireDurationWithoutForest"] != null) {
+      //  this.FireDurationWithoutForest = (int)jWeaponMode["FireDurationWithoutForest"];
+      //}
+      //if (jWeaponMode["FireTerrainStrength"] != null) {
+      //  this.FireTerrainStrength = (int)jWeaponMode["FireTerrainStrength"];
+      //}
+      //if (jWeaponMode["FireOnSuccessHit"] != null) {
+      //  this.FireOnSuccessHit = ((bool)jWeaponMode["FireOnSuccessHit"] == true) ? TripleBoolean.True : TripleBoolean.False;
+      //}
+      //if (jWeaponMode["FireTerrainCellRadius"] != null) {
+      //  this.FireTerrainCellRadius = (int)jWeaponMode["FireTerrainCellRadius"];
+      //}
+      //if (jWeaponMode["AdditionalImpactVFX"] != null) {
+      //  this.AdditionalImpactVFX = (string)jWeaponMode["AdditionalImpactVFX"];
+      //}
+      //if (jWeaponMode["AmmoCategory"] != null) {
+      //  this.AmmoCategory = CustomAmmoCategories.find((string)jWeaponMode["AmmoCategory"]);
+      //}
+      //if (jWeaponMode["DamageOnJamming"] != null) {
+      //  this.DamageOnJamming = ((bool)jWeaponMode["DamageOnJamming"] == true) ? TripleBoolean.True : TripleBoolean.False;
+      //}
+      //if (jWeaponMode["DestroyOnJamming"] != null) {
+      //  this.DestroyOnJamming = ((bool)jWeaponMode["DestroyOnJamming"] == true) ? TripleBoolean.True : TripleBoolean.False;
+      //}
+      //if (jWeaponMode["RangedDmgFalloffType"] != null) {
+      //  this.RangedDmgFalloffType = (DamageFalloffType)Enum.Parse(typeof(DamageFalloffType), (string)jWeaponMode["RangedDmgFalloffType"]);
+      //}
+      //if (jWeaponMode["AoEDmgFalloffType"] != null) {
+      //  this.AoEDmgFalloffType = (DamageFalloffType)Enum.Parse(typeof(DamageFalloffType), (string)jWeaponMode["AoEDmgFalloffType"]);
+      //}
+      //if (jWeaponMode["AOECapable"] != null) {
+      //  this.AOECapable = ((bool)jWeaponMode["AOECapable"] == true) ? TripleBoolean.True : TripleBoolean.False; ;
+      //}
+      //if (jWeaponMode["AlwaysIndirectVisuals"] != null) {
+      //  this.AlwaysIndirectVisuals = ((bool)jWeaponMode["AlwaysIndirectVisuals"] == true) ? TripleBoolean.True : TripleBoolean.False;
+      //}
+      //if (jWeaponMode["Unguided"] != null) {
+      //  this.Unguided = ((bool)jWeaponMode["Unguided"] == true) ? TripleBoolean.True : TripleBoolean.False;
+      //  if (this.Unguided == TripleBoolean.True) {
+      //    //this.AlwaysIndirectVisuals = TripleBoolean.False;
+      //    //this.IndirectFireCapable = TripleBoolean.False;
+      //  }
+      //}
+      //if (jWeaponMode["deferredEffect"] != null) {
+      //  this.deferredEffect = JsonConvert.DeserializeObject<DeferredEffectDef>(jWeaponMode["deferredEffect"].ToString());
+      //  if (jWeaponMode["deferredEffect"]["statusEffects"] != null) {
+      //    this.deferredEffect.ParceEffects(jWeaponMode["deferredEffect"]["statusEffects"].ToString());
+      //  }
+      //}
+      //if (jWeaponMode["HitGenerator"] != null) {
+      //  try {
+      //    this.HitGenerator = (HitGeneratorType)Enum.Parse(typeof(HitGeneratorType), (string)jWeaponMode["HitGenerator"], true);
+      //  } catch (Exception) {
+      //    this.HitGenerator = HitGeneratorType.NotSet;
+      //  }
+      //  jWeaponMode.Remove("HitGenerator");
+      //}
       foreach (PropertyInfo prop in typeof(WeaponMode).GetProperties()) {
         object[] attrs = prop.GetCustomAttributes(true);
         bool ignore_property = false;
         foreach (object attr in attrs) {
-          if ((attr as IgnoreMemberAttribute) != null) { ignore_property = true; break; }
           if ((attr as JsonIgnoreAttribute) != null) { ignore_property = true; break; }
         }
+        if (prop.Name == nameof(WeaponMode.statusEffects)) { continue; }
         if (ignore_property) { continue; }
         //Log.M.WL(3, $"{prop.Name}:{prop.PropertyType.Name}({typeof(string).Name})={(jWeaponMode[prop.Name]==null?"null":"not null")}");
         if (jWeaponMode[prop.Name] == null) { continue; }
-        if (prop.PropertyType == typeof(float)) {
-          prop.SetValue(this, (float)jWeaponMode[prop.Name]);
-        } else if (prop.PropertyType == typeof(int)) {
-          prop.SetValue(this, (int)jWeaponMode[prop.Name]);
-        } else if (prop.PropertyType == typeof(string)) {
-          Log.M.WL(3, $"{prop.Name}={(string)jWeaponMode[prop.Name]}");
-          prop.SetValue(this, (string)jWeaponMode[prop.Name]);
-        } else if (prop.PropertyType == typeof(TripleBoolean)) {
-          prop.SetValue(this, ((bool)jWeaponMode[prop.Name] == true) ? TripleBoolean.True : TripleBoolean.False);
-        } else if (prop.PropertyType == typeof(bool)) {
-          prop.SetValue(this, (bool)jWeaponMode[prop.Name]);
-        } else if (prop.PropertyType == typeof(EvasivePipsMods)) {
-          prop.SetValue(this, jWeaponMode[prop.Name].ToObject<EvasivePipsMods>());
-        } else if (prop.PropertyType == typeof(CustomVector)) {
-          prop.SetValue(this, jWeaponMode[prop.Name].ToObject<CustomVector>());
-        } else if (prop.PropertyType.IsEnum) {
-          prop.SetValue(this, Enum.Parse(prop.PropertyType, (string)jWeaponMode[prop.Name]));
-        } else { continue; }
+        prop.SetValue(this, jWeaponMode[prop.Name].ToObject(prop.PropertyType));
+        //if (prop.PropertyType == typeof(float)) {
+        //  prop.SetValue(this, (float)jWeaponMode[prop.Name]);
+        //} else if (prop.PropertyType == typeof(int)) {
+        //  prop.SetValue(this, (int)jWeaponMode[prop.Name]);
+        //} else if (prop.PropertyType == typeof(string)) {
+        //  Log.M.WL(3, $"{prop.Name}={(string)jWeaponMode[prop.Name]}");
+        //  prop.SetValue(this, (string)jWeaponMode[prop.Name]);
+        //} else if (prop.PropertyType == typeof(TripleBoolean)) {
+        //  prop.SetValue(this, ((bool)jWeaponMode[prop.Name] == true) ? TripleBoolean.True : TripleBoolean.False);
+        //} else if (prop.PropertyType == typeof(bool)) {
+        //  prop.SetValue(this, (bool)jWeaponMode[prop.Name]);
+        //} else if (prop.PropertyType == typeof(EvasivePipsMods)) {
+        //  prop.SetValue(this, jWeaponMode[prop.Name].ToObject<EvasivePipsMods>());
+        //} else if (prop.PropertyType == typeof(CustomVector)) {
+        //  prop.SetValue(this, jWeaponMode[prop.Name].ToObject<CustomVector>());
+        //} else if (prop.PropertyType.IsEnum) {
+        //  prop.SetValue(this, Enum.Parse(prop.PropertyType, (string)jWeaponMode[prop.Name]));
+        //} else { continue; }
       }
       //Log.M.WL(2,$"firstPreFireSFX:{this.firstPreFireSFX}");
       if (jWeaponMode["statusEffects"] != null) {
-
         if (jWeaponMode["statusEffects"].Type == JTokenType.Array) {
           this.statusEffects.Clear();
           JToken statusEffects = jWeaponMode["statusEffects"];
