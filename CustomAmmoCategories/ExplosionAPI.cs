@@ -85,15 +85,19 @@ namespace CustAmmoCategories {
       }
     }
     public static void Clear() {
-      foreach (var ex in explodeVFXdurations) {
-        ex.Key.CleanupSelf();
+      try {
+        foreach (var ex in explodeVFXdurations) {
+          ex.Key?.CleanupSelf();
+        }
+        explodeVFXdurations.Clear();
+        fakeActor = null;
+        combat = null;
+        fakeWeapon = null;
+        Inited = false;
+        exposionWeapon.Clear();
+      }catch(Exception e) {
+        Log.M?.TWL(0,e.ToString(),true);
       }
-      explodeVFXdurations.Clear();
-      fakeActor = null;
-      combat = null;
-      fakeWeapon = null;
-      Inited = false;
-      exposionWeapon.Clear();
     }
     public static void Init(CombatGameState combat) {
       try {

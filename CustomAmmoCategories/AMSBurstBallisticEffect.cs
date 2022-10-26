@@ -135,34 +135,24 @@ namespace CustAmmoCategories {
       base.OnPreFireComplete();
       this.PlayProjectile();
     }
-#if PUBLIC_ASSEMBLIES
-    public override void OnImpact(float hitDamage = 0.0f, float structureDamage = 0.0f) {
-#else
     protected override void OnImpact(float hitDamage = 0.0f, float structureDamage = 0.0f) {
-#endif
       base.OnImpact(hitDamage, structureDamage);
     }
-#if PUBLIC_ASSEMBLIES
-    public override void OnComplete() {
-#else
-    protected override void OnComplete() {
-#endif
-      base.OnComplete();
-      if ((UnityEngine.Object)this.projectileParticles != (UnityEngine.Object)null)
-        this.projectileParticles.Stop(true);
-      if (string.IsNullOrEmpty(this.fireCompleteStopEvent))
-        return;
-      int num = (int)WwiseManager.PostEvent(this.fireCompleteStopEvent, this.projectileAudioObject, (AkCallbackManager.EventCallback)null, (object)null);
-    }
-    public void OnDisable() {
+    public override void AudioStop() {
       if (string.IsNullOrEmpty(this.fireCompleteStopEvent) == false) {
         int num = (int)WwiseManager.PostEvent(this.fireCompleteStopEvent, this.projectileAudioObject, (AkCallbackManager.EventCallback)null, (object)null);
       }
     }
+    protected override void OnComplete() {
+      base.OnComplete();
+      if (this.projectileParticles != null)
+        this.projectileParticles.Stop(true);
+    }
+    public void OnDisable() {
+      this.StopAudio();
+    }
     public override void Reset() {
-      if (this.Active && !string.IsNullOrEmpty(this.fireCompleteStopEvent)) {
-        int num = (int)WwiseManager.PostEvent(this.fireCompleteStopEvent, this.projectileAudioObject, (AkCallbackManager.EventCallback)null, (object)null);
-      }
+      this.StopAudio();
       base.Reset();
     }
   }

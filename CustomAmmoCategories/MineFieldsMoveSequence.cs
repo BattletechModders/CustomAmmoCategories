@@ -604,12 +604,16 @@ namespace CustAmmoCategories {
     public static void PoolDelayedGameObject() {
       if (DynamicMapHelper.Combat == null) { return; }
       Log.F.TWL(0, "DynamicMapHelper.PoolDelayedGameObject:" + delayedPoolList.Count);
-      List<DelayedGameObjectPoolRecord> tmp = new List<DelayedGameObjectPoolRecord>();
-      tmp.AddRange(delayedPoolList);
-      delayedPoolList.Clear();
-      foreach (var dgo in tmp) {
-        Log.F.WL(1, dgo.name + ":" + dgo.obj.GetInstanceID());
-        Combat.DataManager.PoolGameObject(dgo.name, dgo.obj);
+      try {
+        List<DelayedGameObjectPoolRecord> tmp = new List<DelayedGameObjectPoolRecord>();
+        tmp.AddRange(delayedPoolList);
+        delayedPoolList.Clear();
+        foreach (var dgo in tmp) {
+          Log.F.WL(1, dgo.name + ":" + dgo.obj.GetInstanceID());
+          Combat.DataManager.PoolGameObject(dgo.name, dgo.obj);
+        }
+      }catch(Exception e) {
+        Log.M?.TWL(0,e.ToString(),true);
       }
     }
     /*public static bool isNewMoveCell(this ICombatant combatant, MapTerrainDataCellEx cell) {

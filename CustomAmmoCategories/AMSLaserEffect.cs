@@ -10,6 +10,7 @@
 */
 using BattleTech;
 using BattleTech.Rendering;
+using CustomAmmoCategoriesLog;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -214,29 +215,46 @@ namespace CustAmmoCategories {
         ,this.weapon.StructureDamagePerShotAdjusted(this.weapon.parent.occupiedDesignMask)
       );
     }
-    protected override void OnComplete() {
-      if (!string.IsNullOrEmpty(this.beamStopSFX)) {
+    public override void AudioStop() {
+      if (string.IsNullOrEmpty(this.beamStopSFX) == false) {
         int num = (int)WwiseManager.PostEvent(this.beamStopSFX, this.parentAudioObject, (AkCallbackManager.EventCallback)null, (object)null);
       }
-      if ((UnityEngine.Object)this.impactParticles != (UnityEngine.Object)null)
-        this.impactParticles.Stop(true);
+    }
+
+    protected override void OnComplete() {
+      this.StopAudio();
+      if (this.impactParticles != null) { this.impactParticles.Stop(true); }
       this.beamRenderer.SetPosition(0, this.startPos);
       this.beamRenderer.SetPosition(1, this.startPos);
       this.RestoreOriginalColor();
-      if (VFXRenderer.HasInstance && VFXRenderer.Instance.laserRenderers.Contains((Renderer)this.beamRenderer)) {
-        VFXRenderer.Instance.laserRenderers.Remove((Renderer)this.beamRenderer);
+      if (VFXRenderer.HasInstance && VFXRenderer.Instance.laserRenderers.Contains(this.beamRenderer)) {
+        VFXRenderer.Instance.laserRenderers.Remove(this.beamRenderer);
         this.beamRenderer.gameObject.layer = LayerMask.NameToLayer("VFXOnly");
       }
-      if ((UnityEngine.Object)this.laserLight != (UnityEngine.Object)null)
+      if (this.laserLight != null)
         this.laserLight.intensity = 0.0f;
       this.t = 0.0f;
       this.currentState = WeaponEffect.WeaponEffectState.WaitingForImpact;
     }
     public override void Reset() {
-      if (this.Active && !string.IsNullOrEmpty(this.beamStopSFX)) {
-        int num = (int)WwiseManager.PostEvent(this.beamStopSFX, this.parentAudioObject, (AkCallbackManager.EventCallback)null, (object)null);
+      try {
+        this.StopAudio();
+        if (this.impactParticles != null) { this.impactParticles.Stop(true); }
+        if (this.beamRenderer != null) {
+          this.beamRenderer.SetPosition(0, this.startPos);
+          this.beamRenderer.SetPosition(1, this.startPos);
+        }
+        this.RestoreOriginalColor();
+        if (VFXRenderer.HasInstance && VFXRenderer.Instance.laserRenderers.Contains(this.beamRenderer)) {
+          VFXRenderer.Instance.laserRenderers.Remove(this.beamRenderer);
+          this.beamRenderer.gameObject.layer = LayerMask.NameToLayer("VFXOnly");
+        }
+        if (this.laserLight != null)
+          this.laserLight.intensity = 0.0f;
+        base.Reset();
+      }catch(Exception e) {
+        Log.M?.TWL(0,e.ToString(),true);
       }
-      base.Reset();
     }
   }
 }

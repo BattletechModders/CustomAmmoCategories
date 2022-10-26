@@ -326,7 +326,7 @@ namespace CustAmmoCategories {
     public int AIBattleValue { get; set; }
     [Key(11)]
     public int ProjectilesPerShot { get; set; } = 0;
-    [SelfDocumentationTypeName("List of statusEffects"), SelfDocumentationDefaultValue("empty"), Key(12)]
+    [SelfDocumentationTypeName("List of statusEffects"), SelfDocumentationDefaultValue("empty"), Key(12), JsonIgnore]
     public EffectData[] statusEffects { get; set; } = new EffectData[] { };
     [Key(13)]
     public float MinRange { get; set; } = 0f;
@@ -351,9 +351,9 @@ namespace CustAmmoCategories {
     [Key(23)]
     public float EvasivePipsIgnored { get; set; } = 0f;
     [Key(24)]
-    public TripleBoolean IndirectFireCapable { get; set; } = TripleBoolean.NotSet;
+    public TripleBoolean  IndirectFireCapable { get; set; } = TripleBoolean.NotSet;
     [Key(25)]
-    public TripleBoolean AOECapable { get; set; } = TripleBoolean.NotSet;
+    public TripleBoolean  AOECapable { get; set; } = TripleBoolean.NotSet;
     [Key(26)]
     public HitGeneratorType HitGenerator { get; set; } = HitGeneratorType.NotSet;
     [Key(27)]
@@ -430,9 +430,9 @@ namespace CustAmmoCategories {
     public float CanBeExhaustedAt { get; set; } = 0f;
     //public Dictionary<TerrainMaskFlags,string> SurfaceImpactDesignMaskId { get; set; }
     [Key(62)]
-    public TripleBoolean SurfaceBecomeDangerousOnImpact { get; set; } = TripleBoolean.NotSet;
+    public TripleBoolean  SurfaceBecomeDangerousOnImpact { get; set; } = TripleBoolean.NotSet;
     [Key(63)]
-    public TripleBoolean Unguided { get; set; } = TripleBoolean.NotSet;
+    public TripleBoolean  Unguided { get; set; } = TripleBoolean.NotSet;
     [Key(64)]
     public int ClearMineFieldRadius { get; set; } = 0;
     [Key(65)]
@@ -452,13 +452,13 @@ namespace CustAmmoCategories {
     [Key(72)]
     public float AdditionalImpactVFXScaleZ { get; set; } = 1f;
     [Key(73)]
-    public TripleBoolean FireOnSuccessHit { get; set; } = TripleBoolean.NotSet;
+    public TripleBoolean  FireOnSuccessHit { get; set; } = TripleBoolean.NotSet;
     [Key(74)]
-    public TripleBoolean IsAMS { get; set; } = TripleBoolean.NotSet;
+    public TripleBoolean  IsAMS { get; set; } = TripleBoolean.NotSet;
     [Key(75)]
-    public TripleBoolean IsAAMS { get; set; } = TripleBoolean.NotSet;
+    public TripleBoolean  IsAAMS { get; set; } = TripleBoolean.NotSet;
     [Key(76)]
-    public TripleBoolean BallisticDamagePerPallet { get; set; } = TripleBoolean.NotSet;
+    public TripleBoolean  BallisticDamagePerPallet { get; set; } = TripleBoolean.NotSet;
     [Key(77)]
     public string AdditionalAudioEffect { get; set; } = string.Empty;
     [Key(78),SelfDocumentationDefaultValue("empty"), SelfDocumentationTypeName("MineFieldDef structure")]
@@ -466,7 +466,7 @@ namespace CustAmmoCategories {
     [Key(79),SelfDocumentationDefaultValue("empty"), SelfDocumentationTypeName("Dictionary of {\"<tag name>\":<float modifier>}")]
     public Dictionary<string, float> TagsAccuracyModifiers { get; set; } = new Dictionary<string, float>();
     [Key(80)]
-    public TripleBoolean Streak { get; set; } = TripleBoolean.NotSet;
+    public TripleBoolean  Streak { get; set; } = TripleBoolean.NotSet;
     [Key(81)]
     public float FireDelayMultiplier { get; set; } = 1f;
     [Key(82)]
@@ -498,15 +498,15 @@ namespace CustAmmoCategories {
     [Key(95)]
     public float APMaxArmorThickness { get; set; } = 0f;
     [Key(96)]
-    public TripleBoolean DamageNotDivided { get; set; } = TripleBoolean.NotSet;
+    public TripleBoolean  DamageNotDivided { get; set; } = TripleBoolean.NotSet;
     [Key(97),SelfDocumentationDefaultValue("empty"), SelfDocumentationTypeName("array of { \"I\": <float intensivity>, \"C\":\"<html color string>\"}")]
     public List<ColorTableJsonEntry> ColorsTable { get; set; } = new List<ColorTableJsonEntry>();
     [Key(98)]
-    public TripleBoolean isHeatVariation { get; set; } = TripleBoolean.NotSet;
+    public TripleBoolean  isHeatVariation { get; set; } = TripleBoolean.NotSet;
     [Key(99)]
-    public TripleBoolean isStabilityVariation { get; set; } = TripleBoolean.NotSet;
+    public TripleBoolean  isStabilityVariation { get; set; } = TripleBoolean.NotSet;
     [Key(100)]
-    public TripleBoolean isDamageVariation { get; set; } = TripleBoolean.NotSet;
+    public TripleBoolean  isDamageVariation { get; set; } = TripleBoolean.NotSet;
     [Key(101)]
     public float ClusteringModifier { get; set; } = 0f;
     [Key(102)]
@@ -755,6 +755,21 @@ namespace CustomAmmoCategoriesPatches {
       //if (originals.ContainsKey(def.Description.Id)) { originals[def.Description.Id] = json; } else { originals.Add(def.Description.Id, json);
       //}
     }
+    private static HashSet<string> ExtAmmunitionDef_props_names = new HashSet<string>();
+    private static List<PropertyInfo> ExtAmmunitionDef_props = new List<PropertyInfo>();
+    public static bool Prepare() {
+      foreach (PropertyInfo prop in typeof(ExtAmmunitionDef).GetProperties(BindingFlags.FlattenHierarchy | BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)) {
+        object[] attrs = prop.GetCustomAttributes(true);
+        bool ignore_property = false;
+        foreach (object attr in attrs) {
+          if ((attr as JsonIgnoreAttribute) != null) { ignore_property = true; break; }
+        }
+        if (ignore_property) { continue; }
+        ExtAmmunitionDef_props.Add(prop);
+        ExtAmmunitionDef_props_names.Add(prop.Name);
+      }
+      return true;
+    }
     public static bool Prefix(AmmunitionDef __instance, ref string json, ref ExtDefinitionParceInfo __state) {
       CustomAmmoCategories.CustomCategoriesInit();
       __state = new ExtDefinitionParceInfo();
@@ -807,6 +822,7 @@ namespace CustomAmmoCategoriesPatches {
         extAmmoDef.Name = (string)defTemp["Description"]["Name"];
         extAmmoDef.UIName = (string)defTemp["Description"]["UIName"];
         extAmmoDef.AmmoCategory = custCat;
+
         //if (defTemp["AccuracyModifier"] != null) {
         //  extAmmoDef.AccuracyModifier = (float)defTemp["AccuracyModifier"];
         //  defTemp.Remove("AccuracyModifier");
@@ -954,7 +970,7 @@ namespace CustomAmmoCategoriesPatches {
         //  extAmmoDef.ClearMineFieldRadius = (int)defTemp["ClearMineFieldRadius"];
         //  defTemp.Remove("ClearMineFieldRadius");
         //}
-        if(defTemp["ammoOnlyBoxes"] != null) {
+        if (defTemp["ammoOnlyBoxes"] != null) {
           extAmmoDef.ammoOnlyBoxes = new HashSet<string>();
           JArray boxes = defTemp["ammoOnlyBoxes"] as JArray;
           if(boxes != null) {
@@ -1316,29 +1332,6 @@ namespace CustomAmmoCategoriesPatches {
         //  defTemp.Remove("HitGenerator");
         //}
         Log.M.TWL(0, "extAmmoDef:"+ extAmmoDef.Id);
-        foreach (PropertyInfo prop in typeof(ExtAmmunitionDef).GetProperties()) {
-          if (defTemp[prop.Name] == null) { continue; }
-          Log.M.WL(1, "property:" + prop.Name+" "+ prop.PropertyType.ToString());
-          if (prop.PropertyType == typeof(float)) {
-            prop.SetValue(extAmmoDef, (float)defTemp[prop.Name]);
-            Log.M.WL(2, "float:"+prop.GetValue(extAmmoDef)+" "+ defTemp[prop.Name]);
-          } else if (prop.PropertyType == typeof(int)) {
-            prop.SetValue(extAmmoDef, (int)defTemp[prop.Name]);
-          } else if (prop.PropertyType == typeof(string)) {
-            prop.SetValue(extAmmoDef, (string)defTemp[prop.Name]);
-          } else if (prop.PropertyType == typeof(TripleBoolean)) {
-            prop.SetValue(extAmmoDef, ((bool)defTemp[prop.Name] == true) ? TripleBoolean.True : TripleBoolean.False);
-          } else if (prop.PropertyType == typeof(bool)) {
-            prop.SetValue(extAmmoDef, (bool)defTemp[prop.Name]);
-          } else if (prop.PropertyType == typeof(EvasivePipsMods)) {
-            prop.SetValue(extAmmoDef, defTemp[prop.Name].ToObject<EvasivePipsMods>());
-          } else if (prop.PropertyType == typeof(CustomVector)) {
-            prop.SetValue(extAmmoDef, defTemp[prop.Name].ToObject<CustomVector>());
-          } else if (prop.PropertyType.IsEnum) {
-            prop.SetValue(extAmmoDef, Enum.Parse(prop.PropertyType, (string)defTemp[prop.Name]));
-          } else { continue; }
-          defTemp.Remove(prop.Name);
-        }
         if (defTemp["MineField"] != null) {
           extAmmoDef.MineField.fromJSON(defTemp["MineField"]);
           defTemp.Remove("MineField");
@@ -1366,6 +1359,32 @@ namespace CustomAmmoCategoriesPatches {
           //CustomAmmoCategoriesLog.Log.LogWrite(JsonConvert.SerializeObject(extAmmoDef.statusEffects)+"\n");
           defTemp.Remove("statusEffects");
         }
+        foreach (PropertyInfo prop in ExtAmmunitionDef_props) {
+          if (defTemp[prop.Name] == null) { continue; }
+          //Log.M.WL(1, "property:" + prop.Name+" "+ prop.PropertyType.ToString());
+          if (prop.PropertyType == typeof(float)) {
+            prop.SetValue(extAmmoDef, (float)defTemp[prop.Name]);
+            //Log.M.WL(2, "float:"+prop.GetValue(extAmmoDef)+" "+ defTemp[prop.Name]);
+          } else if (prop.PropertyType == typeof(int)) {
+            prop.SetValue(extAmmoDef, (int)defTemp[prop.Name]);
+          } else if (prop.PropertyType == typeof(string)) {
+            prop.SetValue(extAmmoDef, (string)defTemp[prop.Name]);
+          } else if (prop.PropertyType == typeof(TripleBoolean)) {
+            prop.SetValue(extAmmoDef, ((bool)defTemp[prop.Name] == true) ? TripleBoolean.True : TripleBoolean.False);
+          } else if (prop.PropertyType == typeof(bool)) {
+            prop.SetValue(extAmmoDef, (bool)defTemp[prop.Name]);
+          } else if (prop.PropertyType == typeof(EvasivePipsMods)) {
+            prop.SetValue(extAmmoDef, defTemp[prop.Name].ToObject<EvasivePipsMods>());
+          } else if (prop.PropertyType == typeof(CustomVector)) {
+            prop.SetValue(extAmmoDef, defTemp[prop.Name].ToObject<CustomVector>());
+          } else if (prop.PropertyType.IsEnum) {
+            prop.SetValue(extAmmoDef, Enum.Parse(prop.PropertyType, (string)defTemp[prop.Name]));
+          } else {
+            prop.SetValue(extAmmoDef,defTemp[prop.Name].ToObject(prop.PropertyType));
+          }
+          defTemp.Remove(prop.Name);
+        }
+
         //CustomAmmoCategories.RegisterExtAmmoDef((string)defTemp["Description"]["Id"], extAmmoDef);
         json = defTemp.ToString(Formatting.Indented);
         //Log.LogWrite(json + "\n");

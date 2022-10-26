@@ -169,10 +169,14 @@ namespace CustAmmoCategories {
       }
     }
     public static void Clear(bool full = true) {
-      foreach(var ams in AMSWeaponEffectStaticHelper.amsEffects) {
-        ams.Value.Clear();
+      try {
+        foreach (var ams in AMSWeaponEffectStaticHelper.amsEffects) {
+          ams.Value.Clear();
+        }
+        if (full) AMSWeaponEffectStaticHelper.amsEffects.Clear();
+      }catch(Exception e) {
+        Log.M?.TWL(0, e.ToString(), true);
       }
-      if(full)AMSWeaponEffectStaticHelper.amsEffects.Clear();
     }
   }
   public class AMSMainEffect {

@@ -86,21 +86,30 @@ namespace CustAmmoCategories {
     }
     public static void Clear() {
       Log.M.TWL(0, "DeferredEffectHelper.Clear");
-      Log.M.WL(1, "playingEffects:"+ playingEffects.Count);
-      foreach (DeferredEffect effect in playingEffects) {
-        effect.gameObject.SetActive(false);
-        effect.Clear();
-        GameObject.Destroy(effect.gameObject);
+      try {
+        Log.M.WL(1, "playingEffects:" + playingEffects.Count);
+        foreach (DeferredEffect effect in playingEffects) {
+          if (effect == null) { continue; }
+          try {
+            if (effect.gameObject == null) effect.gameObject.SetActive(false);
+            effect.Clear();
+          } catch (Exception e) { Log.M?.TWL(0, e.ToString(), true); }
+          if (effect.gameObject != null) {
+            GameObject.Destroy(effect.gameObject);
+          }
+        }
+        playingEffects.Clear();
+        Log.M.WL(1, "deferredEffects:" + deferredEffects.Count);
+        foreach (DeferredEffect effect in deferredEffects) {
+          if (effect == null) { continue; }
+          if (effect.gameObject != null) { effect.gameObject.SetActive(false); };
+          try { effect.Clear(); } catch (Exception e) { Log.M.TWL(0, e.ToString(), true); };
+        }
+        deferredEffects.Clear();
+        CurrentRound = -1;
+      }catch(Exception e) {
+        Log.M?.TWL(0,e.ToString(),true);
       }
-      playingEffects.Clear();
-      Log.M.WL(1, "deferredEffects:" + deferredEffects.Count);
-      foreach (DeferredEffect effect in deferredEffects) {
-        if (effect == null) { continue; }
-        if (effect.gameObject != null) { effect.gameObject.SetActive(false); };
-        try { effect.Clear(); } catch (Exception e) { Log.M.TWL(0, e.ToString(), true); };
-      }
-      deferredEffects.Clear();
-      CurrentRound = -1;
     }
     public static void CreateDifferedEffect(this Weapon weapon, ICombatant target) {
       Log.M.TWL(0, "CreateDifferedEffect " + weapon.defId + " target:" + new Text(target.DisplayName).ToString());

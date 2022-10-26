@@ -24,7 +24,7 @@ namespace CustAmmoCategories {
     private static HashSet<AMSWeaponEffect> registredAMSEffects = new HashSet<AMSWeaponEffect>();
     public static void Register(AMSWeaponEffect effect) { registredAMSEffects.Add(effect); }
     public static void Sanitize() {
-      foreach (var effect in registredAMSEffects) { effect.Reset(); }
+      foreach (var effect in registredAMSEffects) { effect.Pool(); }
     }
     public static void Clear() { registredAMSEffects.Clear(); }
     private static FieldInfo fi_hasSentNextWeaponMessage = null;
@@ -302,7 +302,8 @@ namespace CustAmmoCategories {
       }
     }
     public virtual void Fire(Vector3[] hitPositions, int hitIndex = 0, int emitterIndex = 0) {
-      CustomAmmoCategoriesLog.Log.LogWrite("AMSWeaponEffect.Fire\n");
+      Log.M?.WL(0,"AMSWeaponEffect.Fire");
+      this.AudioStoped = false;
       this.t = 0.0f;
       this.hitPositions = hitPositions;
       this.hitIndex = hitIndex;
@@ -592,18 +593,17 @@ namespace CustAmmoCategories {
 #else
     protected override void OnComplete() {
 #endif
-      if (this.currentState == WeaponEffect.WeaponEffectState.Complete)
-        return;
+      if (this.currentState == WeaponEffect.WeaponEffectState.Complete) { return; }
+      this.StopAudio();
       this.currentState = WeaponEffect.WeaponEffectState.Complete;
       this.PublishNextWeaponMessageCAC();
       this.PublishWeaponCompleteMessageCAC();
-      if (!((UnityEngine.Object)this.projectilePrefab != (UnityEngine.Object)null))
-        return;
-      AutoPoolObject autoPoolObject = this.projectile.GetComponent<AutoPoolObject>();
-      if ((UnityEngine.Object)autoPoolObject == (UnityEngine.Object)null)
-        autoPoolObject = this.projectile.AddComponent<AutoPoolObject>();
-      autoPoolObject.Init(this.weapon.parent.Combat.DataManager, this.activeProjectileName, 4f);
-      this.projectile = (GameObject)null;
+      if ((this.projectile != null)&&(this.projectilePrefab != null)) {
+        AutoPoolObject autoPoolObject = this.projectile.GetComponent<AutoPoolObject>();
+        if (autoPoolObject == null) { autoPoolObject = this.projectile.AddComponent<AutoPoolObject>(); }
+        autoPoolObject.Init(this.weapon.parent.Combat.DataManager, this.activeProjectileName, 4f);
+        this.projectile = null;
+      }
     }
     protected void PublishNextWeaponMessageCAC() {
       this.attackSequenceNextDelayTimer = -1f;
@@ -612,14 +612,43 @@ namespace CustAmmoCategories {
     public void PublishWeaponCompleteMessageCAC() {
       this.FiringComplete = true;
     }
+    protected bool AudioStoped = false;
+    public virtual void StopAudio() {
+      if (AudioStoped == false) {
+        AudioStoped = true;
+        AudioStop();
+      }
+    }
+    public virtual void AudioStop() {
+
+    }
+    public virtual void Pool() {
+      if ((this.projectile != null) && (this.projectilePrefab != null)) {
+        if (string.IsNullOrEmpty(this.activeProjectileName)) { this.activeProjectileName = this.projectilePrefab.name; }
+        this.RestoreOriginalColor();
+        this.weapon.parent.Combat.DataManager.PoolGameObject(this.activeProjectileName, this.projectile);
+      }
+      if(projectile == null) {
+        this.projectileMeshObject = null;
+        this.projectileLightObject = null;
+      }
+      if (this.projectileMeshObject != null) {
+        this.projectileMeshObject.SetActive(false);
+      }
+      if (this.projectileLightObject != null) {
+        this.projectileLightObject.SetActive(false);
+      }
+    }
     public override void Reset() {
       this.currentState = WeaponEffect.WeaponEffectState.NotStarted;
+      this.StopAudio();
       this.hasSentNextWeaponMessage = false;
-      if ((UnityEngine.Object)this.projectileMeshObject != (UnityEngine.Object)null)
+      if (this.projectileMeshObject != null) {
         this.projectileMeshObject.SetActive(false);
-      if (!((UnityEngine.Object)this.projectileLightObject != (UnityEngine.Object)null))
-        return;
-      this.projectileLightObject.SetActive(false);
+      }
+      if (this.projectileLightObject != null) {
+        this.projectileLightObject.SetActive(false);
+      }
     }
   }
 }

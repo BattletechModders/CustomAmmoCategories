@@ -708,7 +708,8 @@ namespace CustomAmmoCategoriesPatches {
   [HarmonyPatch(new Type[] { typeof(string) })]
   public static class BattleTech_WeaponDef_fromJSON_Patch {
     public static HashSet<string> WEAPON_DEF_FIELDS = new HashSet<string>();
-    public static HashSet<string> ExtWeaponDef_properties = new HashSet<string>();
+    public static HashSet<string> ExtWeaponDef_properties_names = new HashSet<string>();
+    public static List<PropertyInfo> ExtWeaponDef_properties = new List<PropertyInfo>();
     public static bool Prepare() {
       WEAPON_DEF_FIELDS.Clear();
       foreach (PropertyInfo prop in typeof(WeaponDef).GetProperties(BindingFlags.FlattenHierarchy | BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)) {
@@ -721,7 +722,8 @@ namespace CustomAmmoCategoriesPatches {
           if ((attr as JsonIgnoreAttribute) != null) { ignore_property = true; break; }
         }
         if (ignore_property) { continue; }
-        ExtWeaponDef_properties.Add(prop.Name);
+        ExtWeaponDef_properties.Add(prop);
+        ExtWeaponDef_properties_names.Add(prop.Name);
       }
       return true;
     }
@@ -795,6 +797,13 @@ namespace CustomAmmoCategoriesPatches {
             if (mode.isBaseMode == true) { extDef.baseModeId = mode.Id; }
           }
         }
+        foreach (PropertyInfo prop in ExtWeaponDef_properties) {
+          if (defTemp[prop.Name] == null) { continue; }
+          if (prop.PropertyType == typeof(TripleBoolean)) {
+            prop.SetValue(extDef, ((bool)defTemp[prop.Name] == true) ? TripleBoolean.True : TripleBoolean.False);
+          } 
+        }
+
         if (extDef.baseModeId == WeaponMode.NONE_MODE_NAME) {
           WeaponMode mode = new WeaponMode();
           mode.Id = WeaponMode.BASE_MODE_NAME;
@@ -810,11 +819,11 @@ namespace CustomAmmoCategoriesPatches {
           }
         }
 
-        //Log.M?.WL(0, JsonConvert.SerializeObject(extDef, Formatting.Indented));
+        Log.M?.WL(0, JsonConvert.SerializeObject(extDef, Formatting.Indented));
 
         HashSet<string> deleteFields = new HashSet<string>();
         foreach (var jsonField in defTemp) {
-          if (ExtWeaponDef_properties.Contains(jsonField.Key)) { deleteFields.Add(jsonField.Key); }
+          if (ExtWeaponDef_properties_names.Contains(jsonField.Key)) { deleteFields.Add(jsonField.Key); }
         }
         foreach (string field in deleteFields) { defTemp.Remove(field); }
         //if (defTemp["Streak"] != null) {
