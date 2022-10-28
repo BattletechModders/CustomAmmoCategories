@@ -93,7 +93,7 @@ namespace CustomUnits {
   public static class CombatHUDMechTrayArmorHover_setToolTipInfoMech {
     public static void Prefix(CombatHUDMechTrayArmorHover __instance, Mech mech, ArmorLocation location) {
       try {
-        Log.TWL(0, "CombatHUDMechTrayArmorHover.setToolTipInfo prefix " + (mech != null ? mech.Description.Id : "null") + " threadid:" + Thread.CurrentThread.ManagedThreadId);
+        //Log.TWL(0, "CombatHUDMechTrayArmorHover.setToolTipInfo prefix " + (mech != null ? mech.Description.Id : "null") + " threadid:" + Thread.CurrentThread.ManagedThreadId);
         Thread.CurrentThread.pushActor(mech);
         Thread.CurrentThread.SetFlag("CHANGE_MECH_LOCATION_NAME");
       } catch (Exception e) {
@@ -102,7 +102,7 @@ namespace CustomUnits {
     }
     public static void Postfix(CombatHUDMechTrayArmorHover __instance, Mech mech, ArmorLocation location) {
       try {
-        Log.TWL(0, "CombatHUDMechTrayArmorHover.setToolTipInfo postfix" + (mech != null ? mech.Description.Id : "null") + " threadid:" + Thread.CurrentThread.ManagedThreadId);
+        //Log.TWL(0, "CombatHUDMechTrayArmorHover.setToolTipInfo postfix" + (mech != null ? mech.Description.Id : "null") + " threadid:" + Thread.CurrentThread.ManagedThreadId);
         Thread.CurrentThread.clearActor();
         Thread.CurrentThread.ClearFlag("CHANGE_MECH_LOCATION_NAME");
       } catch (Exception e) {
@@ -268,14 +268,39 @@ namespace CustomUnits {
       try {
         HUDMechArmorReadout Readout = Traverse.Create(__instance).Property<HUDMechArmorReadout>("Readout").Value;
         Mech m = Readout.DisplayedMech;
-        Log.TWL(0, "CombatHUDMechTrayArmorHover.OnPointerClick Prefix " + (m != null ? m.Description.Id : "null") + " threadid:" + Thread.CurrentThread.ManagedThreadId);
+        Log.TWL(0, $"CombatHUDMechTrayArmorHover.OnPointerClick Prefix target:{(m != null ? m.PilotableActorDef.ChassisID : "null")} isRearArmor:{__instance.isRearArmor} flipRearDisplay:{Readout.flipRearDisplay} flipFrontDisplay:{Readout.flipFrontDisplay}");
         Thread.CurrentThread.pushActor(m);
-        if (___usedForCalledShots == false) return false;
-        ArmorLocation locationFromIndex = HUDMechArmorReadout.GetArmorLocationFromIndex(__instance.chassisIndex, __instance.isRearArmor, __instance.isRearArmor ? Readout.flipRearDisplay : Readout.flipFrontDisplay);
-        if (!(Readout.HUD.SelectionHandler.ActiveState is SelectionStateFire activeState) || !activeState.NeedsCalledShot || (!Readout.gameObject.activeSelf || locationFromIndex == ArmorLocation.None) || (!(activeState.TargetedCombatant is Mech targetedCombatant) || targetedCombatant.IsLocationDestroyed(MechStructureRules.GetChassisLocationFromArmorLocation(locationFromIndex)))) {
+        if (___usedForCalledShots == false) {
+          Log.WL(1, $"usedForCalledShots:{___usedForCalledShots}");
           return false;
         }
-        Dictionary<ArmorLocation, int> mechHitTable = Readout.HUD.Combat.HitLocation.GetMechHitTableCustom(Readout.HUD.Combat.HitLocation.GetAttackDirection(Readout.HUD.SelectedActor, (ICombatant)Readout.DisplayedMech),m, null, -1, false);
+        ArmorLocation locationFromIndex = HUDMechArmorReadout.GetArmorLocationFromIndex(__instance.chassisIndex, __instance.isRearArmor, __instance.isRearArmor ? Readout.flipRearDisplay : Readout.flipFrontDisplay);
+        Log.WL(1, $"locationFromIndex:{locationFromIndex} chassisIndex:{__instance.chassisIndex}");
+        if (locationFromIndex == ArmorLocation.None) { return false; }
+        if(Readout.HUD.SelectionHandler.ActiveState is SelectionStateFire activeState) {
+          Log.WL(2, $"NeedsCalledShot:{activeState.NeedsCalledShot} Readout.Active:{Readout.gameObject.activeSelf}");
+          if (activeState.NeedsCalledShot == false) { return false; }
+          if (Readout.gameObject.activeSelf == false) { return false; }
+          if(activeState.TargetedCombatant is Mech targetedMech) {
+            ChassisLocations chassisLocation = MechStructureRules.GetChassisLocationFromArmorLocation(locationFromIndex);
+            Log.WL(2, $"chassisLocation:{chassisLocation}");
+            if (targetedMech.IsLocationDestroyed(chassisLocation)) {
+              Log.WL(2, $"location destroyed");
+              return false;
+            }
+          } else {
+            Log.WL(2, $"TargetedCombatant is not mech");
+            return false;
+          }
+        } else {
+          Log.WL(1, $"ActiveState:{(Readout.HUD.SelectionHandler.ActiveState==null?"null": Readout.HUD.SelectionHandler.ActiveState.GetType().ToString())}");
+          return false;
+        }
+        AttackDirection attackDirection = Readout.HUD.Combat.HitLocation.GetAttackDirection(Readout.HUD.SelectedActor, (ICombatant)Readout.DisplayedMech);
+        Log.WL(2,$"attackDirection:{attackDirection}");
+        Dictionary<ArmorLocation, int> mechHitTable = (Readout.DisplayedMech is ICustomMech custMech) ? custMech.GetHitTable(attackDirection) : Readout.HUD.Combat.HitLocation.GetMechHitTable(attackDirection);
+        Log.W(2, "hitTable:");
+        foreach(var hit in mechHitTable) { Log.W(1,$"{hit.Key}:{hit.Value}"); } Log.WL(0,"");
         if (!mechHitTable.ContainsKey(locationFromIndex) || mechHitTable[locationFromIndex] == 0) { return false; }
         activeState.SetCalledShot(locationFromIndex);
         return false;
@@ -287,7 +312,7 @@ namespace CustomUnits {
     public static void Postfix(CombatHUDMechTrayArmorHover __instance) {
       try {
         Mech m = Traverse.Create(__instance).Property<HUDMechArmorReadout>("Readout").Value.DisplayedMech;
-        Log.TWL(0, "CombatHUDMechTrayArmorHover.OnPointerClick Postfix " + (m != null ? m.Description.Id : "null") + " threadid:" + Thread.CurrentThread.ManagedThreadId);
+        Log.TWL(0, "CombatHUDMechTrayArmorHover.OnPointerClick Postfix " + (m != null ? m.PilotableActorDef.ChassisID : "null"));
         Thread.CurrentThread.clearActor();
       } catch (Exception e) {
         Log.TWL(0, e.ToString(), true);

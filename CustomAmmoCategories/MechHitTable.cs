@@ -140,7 +140,7 @@ namespace CustomAmmoCategoriesPatches {
   public static class HitLocation_GetMechHitTableCustom {
     //private static Dictionary<AttackDirection, Dictionary<ArmorLocation, int>> GetMechHitTableCache = new Dictionary<AttackDirection, Dictionary<ArmorLocation, int>>();
     public delegate Dictionary<ArmorLocation, int> d_GetMechHitTable(HitLocation hitLocation, AttackDirection from, Mech target, Weapon w, int attackSequence, bool log);
-    public static d_GetMechHitTable i_GetMechHitTable = null;
+    public static d_GetMechHitTable i_GetMechHitTable { get; set; } = null;
     public delegate Dictionary<ArmorLocation, int> d_GetMechHitTableClustered(HitLocation hitLocation, AttackDirection from, Mech target, ArmorLocation location, Weapon w, int attackSequence, bool log);
     public static d_GetMechHitTableClustered i_GetMechHitTableClustered = null;
     public static Dictionary<ArmorLocation, int> GetMechHitTableCustom(this HitLocation hitLocation, AttackDirection from, Mech target, Weapon w, int attackSequence, bool log = true) {

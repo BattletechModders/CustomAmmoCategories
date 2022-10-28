@@ -34,7 +34,8 @@ namespace CustAmmoCategories {
     public string VFX { get; set; } = string.Empty;
     [Key(1)]
     public float duration { get; set; } = 0f;
-
+    [Key(2)]
+    public float scale { get; set; } = 1f;
   }
   [MessagePackObject]
   public class DeferredEffectDef {

@@ -164,7 +164,7 @@ namespace CustomUnits {
                 }
               }
               float minTonnage = Traverse.Create(slot).Field<float>("minTonnage").Value;
-              float maxTonnage = Traverse.Create(slot).Field<float>("minTonnage").Value;
+              float maxTonnage = Traverse.Create(slot).Field<float>("maxTonnage").Value;
               if ((forcedMech != null)&&(minTonnage > 0f)) {
                 if(forcedMech.MechDef.Chassis.Tonnage < minTonnage) {
                   errors.AppendLine(forcedMech.MechDef.Description.Name + " too low tonnage");

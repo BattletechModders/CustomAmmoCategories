@@ -197,6 +197,7 @@
     <Compile Include="BulletBallistic.cs" />
     <Compile Include="CACUIStrings.cs" />
     <Compile Include="CACWeaponEffect.cs" />
+    <Compile Include="CalledShotDebug.cs" />
     <Compile Include="CharlesB\Calculator.cs" />
     <Compile Include="CharlesB\CharlesB.cs" />
     <Compile Include="CharlesB\Core.cs" />

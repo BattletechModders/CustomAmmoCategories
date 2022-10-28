@@ -339,6 +339,8 @@ namespace CustAmmoCategories {
     public bool SpawnProtectionAffectsCanFire { get; set; } = true;
     [SelfDocumentationDefaultValue("{\"regionDef_HostileDropZone\"}"), SelfDocumentationTypeName("list of strings")]
     public HashSet<string> hidableRegionsList { get; set; } = new HashSet<string>() { "regionDef_HostileDropZone" };
+    public bool PlayerAlwaysCalledShot { get; set; } = false;
+    public AttackDirection PlayerAlwaysCalledShotDirection { get; set; } = AttackDirection.None;
     public Settings() {
       //directory = string.Empty;
       //debugLog = true;
