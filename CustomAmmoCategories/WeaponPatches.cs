@@ -420,15 +420,23 @@ namespace CustAmmoCategoriesPatches {
   [HarmonyPatch(new Type[] { })]
   public static class MechComponent_InitStatsWeapon {
     public static void Postfix(MechComponent __instance) {
+      MechComponent_InitStats.Postfix(__instance);
       Weapon weapon = __instance as Weapon;
       if (weapon == null) { return; }
       Log.M.TWL(0, "Weapon.InitStats");
+      Weapon_InitStatsJamm.Postfix(weapon);
+      Weapon_InitStats.Postfix(weapon);
       ExtWeaponDef def = weapon.exDef();
       bool isPlayerMech = false;
       try {
         if (UnityGameInstance.BattleTechGame.Simulation != null) { isPlayerMech = UnityGameInstance.BattleTechGame.Simulation.isPlayerMech(__instance.parent.PilotableActorDef); }
       }catch(Exception) {
 
+      }
+      foreach(var mode in def.Modes) {
+        if(mode.Value.Lock.StatValueLevel.isSet() && (string.IsNullOrEmpty(mode.Value.Lock.StatValueLevel.Stat) == false)) {
+          __instance.StatCollection.AddStatistic<float>(mode.Value.Lock.StatValueLevel.Stat, 0f);
+        }
       }
       foreach(var ia in def.InternalAmmo) {
         string statName = Weapon_InternalAmmo.InternalAmmoName + ia.Key;

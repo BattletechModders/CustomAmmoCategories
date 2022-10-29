@@ -80,9 +80,12 @@ namespace CustAmmoCategories {
     public float Low { get; set; }
     [Key(1)]
     public float High { get; set; }
+    [Key(2)]
+    public string Stat { get; set; }
     public ModeLockSetting() {
       Low = float.NaN;
       High = float.NaN;
+      Stat = string.Empty;
     }
     public bool isSet() {
       if (float.IsNaN(Low)) { return false; }
@@ -95,29 +98,36 @@ namespace CustAmmoCategories {
   [MessagePackObject]
   public class ModeLockSettings {
     [Key(0)]
-    public ModeLockSetting HeatLevel { get; set; }
+    public ModeLockSetting HeatLevel { get; set; } = new ModeLockSetting();
     [Key(1)]
-    public ModeLockSetting OverheatLevel { get; set; }
+    public ModeLockSetting OverheatLevel { get; set; } = new ModeLockSetting();
     [Key(2)]
-    public ModeLockSetting MaxheatLevel { get; set; }
+    public ModeLockSetting MaxheatLevel { get; set; } = new ModeLockSetting();
+    [Key(3)]
+    public ModeLockSetting StatValueLevel { get; set; } = new ModeLockSetting();
     public ModeLockSettings() {
-      HeatLevel = new ModeLockSetting();
-      OverheatLevel = new ModeLockSetting();
-      MaxheatLevel = new ModeLockSetting();
+      //HeatLevel = new ModeLockSetting();
+      //OverheatLevel = new ModeLockSetting();
+      //MaxheatLevel = new ModeLockSetting();
+      //StatValueLevel = new ModeLockSetting()
     }
     public bool isAvaible(Weapon weapon) {
-      Mech mech = weapon.parent as Mech;
-      if (mech == null) { return true; }
-      if (HeatLevel.isSet()) {
-        if((mech.CurrentHeat < HeatLevel.Low) || (mech.CurrentHeat > HeatLevel.High)){ return false; };
+      if (weapon.parent is Mech mech) {
+        if (HeatLevel.isSet()) {
+          if ((mech.CurrentHeat < HeatLevel.Low) || (mech.CurrentHeat > HeatLevel.High)) { return false; };
+        }
+        if (OverheatLevel.isSet()) {
+          float level = mech.CurrentHeat / mech.OverheatLevel;
+          if ((level < OverheatLevel.Low) || (level > OverheatLevel.High)) { return false; };
+        }
+        if (MaxheatLevel.isSet()) {
+          float level = mech.CurrentHeat / mech.MaxHeat;
+          if ((level < MaxheatLevel.Low) || (level > MaxheatLevel.High)) { return false; };
+        }
       }
-      if (OverheatLevel.isSet()) {
-        float level = mech.CurrentHeat / mech.OverheatLevel;
-        if ((level < OverheatLevel.Low) || (level > OverheatLevel.High)){ return false; };
-      }
-      if (MaxheatLevel.isSet()) {
-        float level = mech.CurrentHeat / mech.MaxHeat;
-        if ((level < MaxheatLevel.Low) || (level > MaxheatLevel.High)) { return false; };
+      if (StatValueLevel.isSet() && (string.IsNullOrEmpty(StatValueLevel.Stat) == false)) {
+        float level = weapon.StatCollection.GetOrCreateStatisic<float>(StatValueLevel.Stat, 0f).Value<float>();
+        if ((level < StatValueLevel.Low) || (level > StatValueLevel.High)) { return false; };
       }
       return true;
     } 

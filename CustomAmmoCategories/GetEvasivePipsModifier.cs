@@ -60,10 +60,10 @@ namespace CustomAmmoCategoriesPatches {
       }
     }
   }
-  [HarmonyPatch(typeof(Weapon))]
-  [HarmonyPatch("InitStats")]
-  [HarmonyPatch(MethodType.Normal)]
-  [HarmonyPatch(new Type[] { })]
+  //[HarmonyPatch(typeof(Weapon))]
+  //[HarmonyPatch("InitStats")]
+  //[HarmonyPatch(MethodType.Normal)]
+  //[HarmonyPatch(new Type[] { })]
   public static class Weapon_InitStats {
     public static readonly string EvasivePipsIgnoredStatName = "EvasivePipsIgnored";
     public static void Postfix(Weapon __instance) {

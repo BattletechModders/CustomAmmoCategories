@@ -377,10 +377,10 @@ namespace CustAmmoCategories {
       }, null, 1500, System.Threading.Timeout.Infinite);
     }
   }
-  [HarmonyPatch(typeof(Weapon))]
-  [HarmonyPatch("InitStats")]
-  [HarmonyPatch(MethodType.Normal)]
-  [HarmonyPatch(new Type[] { })]
+  //[HarmonyPatch(typeof(Weapon))]
+  //[HarmonyPatch("InitStats")]
+  //[HarmonyPatch(MethodType.Normal)]
+  //[HarmonyPatch(new Type[] { })]
   public static class Weapon_InitStatsJamm {
     public static void Postfix(Weapon __instance) {
       Log.LogWrite("Weapon.InitStats " + __instance.defId + ":" + __instance.parent.GUID + "\n");

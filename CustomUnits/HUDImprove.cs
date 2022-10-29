@@ -2486,6 +2486,14 @@ namespace CustomUnits {
           Log.WL(1, "move button is not available");
           return true;
         }
+        if (__instance.SelectedActor.EncounterTags.Contains(Core.Settings.ConvoyDenyMoveTag)) {
+          Log.WL(1, "convoy unit awaiting for an extraction");
+          return true;
+        }
+        if (string.IsNullOrEmpty(__instance.SelectedActor.MoveRestrictedRegionID) == false) {
+          Log.WL(1, "move restricted for actor");
+          return true;
+        }
         if (__instance.SelectedActor.Pathing.ArePathGridsComplete == false) {
           Log.WL(1, $"{__instance.SelectedActor.PilotableActorDef.ChassisID} ArePathGridsComplete is false");
           __result = false;

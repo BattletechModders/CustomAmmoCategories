@@ -32,10 +32,10 @@ namespace CustAmmoCategories {
       return true;
     }
   }
-  [HarmonyPatch(typeof(MechComponent))]
-  [HarmonyPatch("InitStats")]
-  [HarmonyPatch(MethodType.Normal)]
-  [HarmonyPatch(new Type[] { })]
+  //[HarmonyPatch(typeof(MechComponent))]
+  //[HarmonyPatch("InitStats")]
+  //[HarmonyPatch(MethodType.Normal)]
+  //[HarmonyPatch(new Type[] { })]
   public static class MechComponent_InitStats {
     public static void Postfix(MechComponent __instance) {
       if(__instance.StatCollection.ContainsStatistic(CustomAmmoCategories.Settings.RemoveFromCritRollStatName) == false) {
