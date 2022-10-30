@@ -131,6 +131,21 @@ namespace CustAmmoCategories {
       }
     }
   }
+  [HarmonyPatch(typeof(AbstractActor))]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch("InitAbilities")]
+  [HarmonyPatch(new Type[] { typeof(bool) })]
+  public static class CombatHUDWeaponSlot_InitAbilities {
+    public static void Postfix(AbstractActor __instance) {
+      try {
+        foreach(Weapon weapon in __instance.Weapons) {
+          weapon.info().RefreshModeAvaibility();
+        }
+      } catch (Exception e) {
+        Log.M?.TWL(0, e.ToString(), true);
+      }
+    }
+  }
   //DEMO
   //[HarmonyPatch(typeof(Mech))]
   //[HarmonyPatch(MethodType.Normal)]
@@ -325,6 +340,22 @@ namespace CustAmmoCategories {
       needRevalidate = true;
       NoValidAmmo = true;
       HasAmmoVariants = false;
+    }
+    public void RefreshModeAvaibility() {
+      Log.M?.TWL(0, "RefreshModeAvaibility:" + this.weapon.defId);
+      if (this.weapon.mode().Lock.isAvaible(this.weapon) == false) {
+        CustomAmmoCategories.CycleMode(this.weapon, true);
+      }
+      //Statistic modeIdStat = weapon.StatCollection.GetOrCreateStatisic(CustomAmmoCategories.WeaponModeStatisticName, extDef.baseModeId);
+      //if(this.modes.TryGetValue(extDef.baseModeId, out WeaponMode baseMode)) {
+      //  if (baseMode.Lock.isAvaible(this.weapon)) {
+      //    Log.M?.WL(1, $"mode {extDef.baseModeId} is available");
+      //    modeIdStat.SetValue<string>(extDef.baseModeId);
+      //    this.mode = baseMode;
+      //  } else {
+      //    CustomAmmoCategories.CycleMode(this.weapon, true);
+      //  }
+      //}
     }
     public void Revalidate() {
       if (this.weapon.StatCollection == null) { return; }

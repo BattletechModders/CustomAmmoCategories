@@ -798,6 +798,15 @@ namespace CustomAmmoCategoriesPatches {
             if (mode.isBaseMode == true) { extDef.baseModeId = mode.Id; }
           }
         }
+        if ((defTemp["ChassisTagsAccuracyModifiers"] != null) && (defTemp[nameof(ExtWeaponDef.TagsAccuracyModifiers)] == null)) {
+          extDef.TagsAccuracyModifiers = defTemp["ChassisTagsAccuracyModifiers"].ToObject<Dictionary<string, float>>();
+          //JsonConvert.DeserializeObject<Dictionary<string, float>>(jWeaponMode["ChassisTagsAccuracyModifiers"].ToString());
+          Log.LogWrite((string)(string)defTemp["Description"]["Id"] + " ChassisTagsAccuracyModifiers:\n");
+          foreach (var tam in extDef.TagsAccuracyModifiers) {
+            Log.LogWrite(" " + tam.Key + ":" + tam.Key);
+          }
+        }
+
         foreach (PropertyInfo prop in ExtWeaponDef_properties) {
           if (defTemp[prop.Name] == null) { continue; }
           if (prop.PropertyType == typeof(TripleBoolean)) {

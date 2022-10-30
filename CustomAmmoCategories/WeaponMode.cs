@@ -901,6 +901,14 @@ namespace CustAmmoCategories {
         this.AmmoCategory = CustomAmmoCategories.find((string)jWeaponMode["AmmoCategory"]);
       }
       WeaponMode.fill_json_properties();
+      if ((jWeaponMode["ChassisTagsAccuracyModifiers"] != null)&&(jWeaponMode[nameof(TagsAccuracyModifiers)] == null)) {
+        this.TagsAccuracyModifiers = jWeaponMode["ChassisTagsAccuracyModifiers"].ToObject<Dictionary<string,float>>();
+          //JsonConvert.DeserializeObject<Dictionary<string, float>>(jWeaponMode["ChassisTagsAccuracyModifiers"].ToString());
+        Log.LogWrite((string)jWeaponMode["Id"] + " ChassisTagsAccuracyModifiers:\n");
+        foreach (var tam in this.TagsAccuracyModifiers) {
+          Log.LogWrite(" " + tam.Key + ":" + tam.Key);
+        }
+      }
       foreach (PropertyInfo prop in WeaponMode.json_properties) {
         //Log.M.WL(3, $"{prop.Name}:{prop.PropertyType.Name}({typeof(string).Name})={(jWeaponMode[prop.Name]==null?"null":"not null")}");
         if (jWeaponMode[prop.Name] == null) { continue; }
