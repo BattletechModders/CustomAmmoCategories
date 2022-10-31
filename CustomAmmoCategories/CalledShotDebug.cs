@@ -5,6 +5,7 @@ using Harmony;
 using System;
 using System.Threading;
 using IRBTModUtils;
+using System.Collections.Generic;
 
 namespace CustAmmoCategories {
   [HarmonyPatch(typeof(CombatHUD))]
@@ -24,11 +25,16 @@ namespace CustAmmoCategories {
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { typeof(AbstractActor), typeof(ICombatant) })]
   public static class ToHit_GetAttackDirection {
+    private static Dictionary<AbstractActor, AttackDirection> attackDirectionOverride = new Dictionary<AbstractActor, AttackDirection>();
+    public static void Clear() { attackDirectionOverride.Clear(); }
+    public static void SetAttackDirection(this AbstractActor target, AttackDirection adir) { attackDirectionOverride[target] = adir; }
     public static void Postfix(ToHit __instance, AbstractActor attacker, AbstractActor target, ref AttackDirection __result) {
       if (Thread.CurrentThread.isFlagSet("ShowCalledShotPopUp") == false) { return; }
-      if (CustomAmmoCategories.Settings.PlayerAlwaysCalledShotDirection == AttackDirection.None) { return; }
-      Log.M?.TWL(0, $"ShowCalledShotPopUp GetAttackDirection was:{__result} become:{CustomAmmoCategories.Settings.PlayerAlwaysCalledShotDirection}");
-      __result = CustomAmmoCategories.Settings.PlayerAlwaysCalledShotDirection;
+      if ((CustomAmmoCategories.Settings.PlayerAlwaysCalledShotDirection == AttackDirection.None)&&(attackDirectionOverride.ContainsKey(target) == false)) { return; }
+      AttackDirection result = CustomAmmoCategories.Settings.PlayerAlwaysCalledShotDirection;
+      attackDirectionOverride.TryGetValue(target, out result);
+      Log.M?.TWL(0, $"ShowCalledShotPopUp GetAttackDirection was:{__result} become:{result}");
+      __result = result;
     }
   }
   [HarmonyPatch(typeof(SelectionStateFire))]

@@ -174,9 +174,9 @@ namespace CustomUnits {
       GetAdjacentLocations_cache.Add(location, result);
       return result;
     }
-    private Dictionary<ArmorLocation, Dictionary<ArmorLocation, int>> GetClusterTable_cache = new Dictionary<ArmorLocation, Dictionary<ArmorLocation, int>>();
+    //private Dictionary<ArmorLocation, Dictionary<ArmorLocation, int>> GetClusterTable_cache = new Dictionary<ArmorLocation, Dictionary<ArmorLocation, int>>();
     public override Dictionary<ArmorLocation, int> GetClusterTable(ArmorLocation originalLocation, Dictionary<ArmorLocation, int> hitTable) {
-      if (GetClusterTable_cache.TryGetValue(originalLocation, out Dictionary<ArmorLocation, int> result)) { return result; }
+      //if (GetClusterTable_cache.TryGetValue(originalLocation, out Dictionary<ArmorLocation, int> result)) { return result; }
       ArmorLocation adjacentLocations = this.GetAdjacentLocations(originalLocation);
       Dictionary<ArmorLocation, int> dictionary = new Dictionary<ArmorLocation, int>();
       foreach (KeyValuePair<ArmorLocation, int> keyValuePair in hitTable) {
@@ -188,21 +188,29 @@ namespace CustomUnits {
           dictionary.Add(keyValuePair.Key, (int)((double)keyValuePair.Value * (double)this.Combat.Constants.ToHit.ClusterChanceNonadjacentMultiplier));
         }
       }
-      GetClusterTable_cache.Add(originalLocation, dictionary);
+      //GetClusterTable_cache.Add(originalLocation, dictionary);
       return dictionary;
     }
     private Dictionary<AttackDirection, Dictionary<ArmorLocation, Dictionary<ArmorLocation, int>>> GetClusterHitTable_cache = new Dictionary<AttackDirection, Dictionary<ArmorLocation, Dictionary<ArmorLocation, int>>>();
     public override Dictionary<ArmorLocation, int> GetHitTableCluster(AttackDirection from, ArmorLocation originalLocation) {
       if (GetClusterHitTable_cache.TryGetValue(from, out Dictionary<ArmorLocation, Dictionary<ArmorLocation, int>> clusterTables) == false) {
         clusterTables = new Dictionary<ArmorLocation, Dictionary<ArmorLocation, int>>();
-        GetClusterHitTable_cache.Add(from, clusterTables);
+        //GetClusterHitTable_cache.Add(from, clusterTables);
       }
       if (clusterTables.TryGetValue(originalLocation, out Dictionary<ArmorLocation, int> result)) {
         return result;
       }
       Dictionary<ArmorLocation, int> hitTable = this.GetHitTable(from);
+      CustomAmmoCategoriesLog.Log.AIM.TW(0, $"Generating cluster table {from} location:{originalLocation} based on:");
+      foreach (var hit in hitTable) { CustomAmmoCategoriesLog.Log.AIM?.W(1, $"{hit.Key}:{hit.Value}"); }
+      CustomAmmoCategoriesLog.Log.AIM.WL(0, "");
       result = GetClusterTable(originalLocation, hitTable);
       clusterTables.Add(originalLocation, result);
+      if (GetClusterHitTable_cache.ContainsKey(from) == false) {
+        CustomAmmoCategoriesLog.Log.AIM.WL(1, $"adding to cache as {from}");
+        GetClusterHitTable_cache.Add(from, clusterTables);
+      }
+      this.DumpClusterTableCache(CustomAmmoCategoriesLog.Log.AIM);
       return result;
     }
     public override bool isSquad { get { return false; } }

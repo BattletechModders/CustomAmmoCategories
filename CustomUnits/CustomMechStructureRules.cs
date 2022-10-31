@@ -117,7 +117,7 @@ namespace CustomUnits {
   public static class CombatHUDMechTrayArmorHover_setToolTipInfoMechDef {
     public static void Prefix(CombatHUDMechTrayArmorHover __instance, MechDef mech, ArmorLocation location) {
       try {
-        Log.TWL(0, "CombatHUDMechTrayArmorHover.setToolTipInfo prefix " + (mech != null ? mech.Description.Id : "null") + " threadid:" + Thread.CurrentThread.ManagedThreadId);
+        //Log.TWL(0, "CombatHUDMechTrayArmorHover.setToolTipInfo prefix " + (mech != null ? mech.Description.Id : "null") + " threadid:" + Thread.CurrentThread.ManagedThreadId);
         Thread.CurrentThread.pushActorDef(mech);
         Thread.CurrentThread.SetFlag("CHANGE_MECHDEF_LOCATION_NAME");
       } catch (Exception e) {
@@ -126,7 +126,7 @@ namespace CustomUnits {
     }
     public static void Postfix(CombatHUDMechTrayArmorHover __instance, MechDef mech, ArmorLocation location) {
       try {
-        Log.TWL(0, "CombatHUDMechTrayArmorHover.setToolTipInfo postfix" + (mech != null ? mech.Description.Id : "null") + " threadid:" + Thread.CurrentThread.ManagedThreadId);
+        //Log.TWL(0, "CombatHUDMechTrayArmorHover.setToolTipInfo postfix" + (mech != null ? mech.Description.Id : "null") + " threadid:" + Thread.CurrentThread.ManagedThreadId);
         Thread.CurrentThread.clearActorDef();
         Thread.CurrentThread.ClearFlag("CHANGE_MECHDEF_LOCATION_NAME");
       } catch (Exception e) {
@@ -142,7 +142,7 @@ namespace CustomUnits {
     public static void Prefix(CombatHUDAttackModeSelector __instance, ArmorLocation value) {
       try {
         AbstractActor mech = Traverse.Create(__instance).Property<CombatHUD>("HUD").Value.SelectedTarget as AbstractActor;
-        Log.TWL(0, "CombatHUDMechTrayArmorHover.setToolTipInfo prefix " + (mech != null ? mech.Description.Id : "null") + " threadid:" + Thread.CurrentThread.ManagedThreadId);
+        //Log.TWL(0, "CombatHUDMechTrayArmorHover.setToolTipInfo prefix " + (mech != null ? mech.Description.Id : "null") + " threadid:" + Thread.CurrentThread.ManagedThreadId);
         Thread.CurrentThread.pushActor(mech);
         Thread.CurrentThread.SetFlag("CHANGE_MECH_LOCATION_NAME");
       } catch (Exception e) {
@@ -152,7 +152,7 @@ namespace CustomUnits {
     public static void Postfix(CombatHUDMechTrayArmorHover __instance, ArmorLocation value) {
       try {
         AbstractActor mech = Traverse.Create(__instance).Property<CombatHUD>("HUD").Value.SelectedTarget as AbstractActor;
-        Log.TWL(0, "CombatHUDMechTrayArmorHover.setToolTipInfo postfix" + (mech != null ? mech.Description.Id : "null") + " threadid:" + Thread.CurrentThread.ManagedThreadId);
+        //Log.TWL(0, "CombatHUDMechTrayArmorHover.setToolTipInfo postfix" + (mech != null ? mech.Description.Id : "null") + " threadid:" + Thread.CurrentThread.ManagedThreadId);
         Thread.CurrentThread.ClearFlag("CHANGE_MECH_LOCATION_NAME");
         Thread.CurrentThread.clearActor();
       } catch (Exception e) {

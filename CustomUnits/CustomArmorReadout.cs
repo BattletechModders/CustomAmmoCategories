@@ -840,10 +840,15 @@ namespace CustomUnits {
           }
         }
         if (__instance.DisplayedActor.FakeVehicle()) { 
-          Traverse.Create(__instance).Property<Dictionary<VehicleChassisLocations, int>>("currentVHitTable").Value = ___HUD.Combat.HitLocation.GetVehicleHitTable(value, false); ;
+          Traverse.Create(__instance).Property<Dictionary<VehicleChassisLocations, int>>("currentVHitTable").Value = ___HUD.Combat.HitLocation.GetVehicleHitTable(value, false);
           CombatHUDCalledShotPopUpCustom popupCustom = __instance.gameObject.GetComponent<CombatHUDCalledShotPopUpCustom>();
           if (popupCustom != null) { popupCustom.ShownAttackDirection = value; }
         }
+        Log.TWL(0, $"CombatHUDCalledShotPopUp.ShownAttackDirection {value} {__instance.DisplayedActor.PilotableActorDef.ChassisID}");
+        Log.W(2, "hitTable:");
+        var mechHitTable = Traverse.Create(__instance).Property<Dictionary<ArmorLocation, int>>("currentHitTable").Value;
+        foreach (var hit in mechHitTable) { Log.W(1, $"{hit.Key}:{hit.Value}"); }
+        Log.WL(0, "");
       } catch (Exception e) {
         Log.TWL(0, e.ToString(), true);
       }

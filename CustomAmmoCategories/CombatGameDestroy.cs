@@ -62,6 +62,7 @@ namespace CustomAmmoCategoriesPatches {
         CombatHUDMiniMap.Clear();
         UnitCombatStatisticHelper.Clear();
         SpawnProtectionHelper.Clear();
+        ToHit_GetAttackDirection.Clear();
       } catch (Exception e) {
         Log.M.TWL(0, e.ToString());
       }

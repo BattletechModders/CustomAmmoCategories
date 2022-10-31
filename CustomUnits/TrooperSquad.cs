@@ -934,9 +934,9 @@ namespace CustomUnits {
       return Mathf.Round((info.SquadInfo.DeadUnitToHitMod/(info.SquadInfo.Troopers - 1))*deadUnitsCount);
     }
     public static string GetSquadSizeToHitModName(ToHit instance, AbstractActor attacker, Weapon weapon, ICombatant target, Vector3 attackPosition, Vector3 targetPosition, LineOfFireLevel lofLevel, MeleeAttackType meleeAttackType, bool isCalledShot) {
-      Log.TWL(0, "TrooperSquad.GetSquadSizeToHitMod " + target.DisplayName);
       TrooperSquad squad = target as TrooperSquad;
       if (squad == null) { return string.Empty; };
+      Log.TWL(0, "TrooperSquad.GetSquadSizeToHitMod " + target.DisplayName);
       int allUnitsCount = 0;
       int liveUnitsCount = 0;
       foreach (ChassisLocations loc in TrooperSquad.locations) {

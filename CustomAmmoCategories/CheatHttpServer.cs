@@ -368,6 +368,47 @@ namespace CustAmmoCategories {
       //gameState.PilotRoster.ElementAt(0).AddAbility("");
       request.ready(jresp);
     }
+    public void setattackdirection(CACHTTPRequestItem request) {
+      JObject responce = new JObject();
+      BattleTech.GameInstance gameInstance = BattleTech.UnityGameInstance.BattleTechGame;
+      Log.M.WL(1, "Получен gameInstance");
+      if (gameInstance == null) {
+        responce["error"] = new JObject();
+        responce["error"]["str"] = "Can't get game instance";
+        request.ready(responce);
+        return;
+      }
+      if (gameInstance.Combat == null) {
+        responce["error"] = new JObject();
+        responce["error"]["str"] = "Can't get combat";
+        request.ready(responce);
+        return;
+      }
+      JObject json = JObject.Parse(request.input);
+      Log.M.WL(1, $"actor: {(string)json["actor"]} direction: {(string)json["dir"]}");
+      try {
+        //gameState.AddPilotToRoster((string)json["pilotdef"]);
+        AbstractActor actor = gameInstance.Combat.FindActorByGUID((string)json["actor"]);
+        if (actor == null) {
+          responce["error"] = new JObject();
+          responce["error"]["str"] = $"actor {(string)json["actor"]} not found";
+          request.ready(responce);
+          return;
+        }
+        if(Enum.TryParse<AttackDirection>((string)json["dir"], out var attackDirection)) {
+          actor.SetAttackDirection(attackDirection);
+        } else {
+          responce["error"] = new JObject();
+          responce["error"]["str"] = $"wrong attack direction value {(string)json["dir"]}";
+          request.ready(responce);
+          return;
+        }
+        responce["success"] = "yes";
+      } catch (Exception e) {
+        responce["error"] = e.ToString();
+      }
+      request.ready(responce);
+    }
     public void battledump(CACHTTPRequestItem request) {
       Log.M.TWL(0, "battle dump request");
       JObject responce = new JObject();
@@ -547,6 +588,12 @@ namespace CustAmmoCategories {
           using (System.IO.StreamReader reader = new System.IO.StreamReader(request.InputStream, request.ContentEncoding)) {
             data = reader.ReadToEnd();
           }
+        } else {
+          Dictionary<string, string> query = new Dictionary<string, string>();
+          for (int i = 0; i < request.QueryString.Count; i++) {
+            query.Add(request.QueryString.GetKey(i), request.QueryString.Get(i));
+          }
+          data = JsonConvert.SerializeObject(query);
         }
         Log.M.WL(1,"Get data:'" + Path.GetFileName(filename));
         CACHTTPRequestItem cac_request = UnityGameInstance_UpdateCACHTTP.SendCACRequest(Path.GetFileName(filename), data);
