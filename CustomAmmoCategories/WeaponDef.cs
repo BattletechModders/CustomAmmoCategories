@@ -446,7 +446,7 @@ namespace CustAmmoCategories {
     public float DirectFireModifierStat(Weapon weapon) { return weapon.GetStatisticFloat(nameof(DirectFireModifier)); }
     public float DirectFireModifierMod(Weapon weapon) { return weapon.GetStatisticMod(nameof(DirectFireModifier)); }
     [JsonIgnore, SkipDocumentation, Key(4)]
-    public string baseModeId { get; set; } = WeaponMode.BASE_MODE_NAME;
+    public string baseModeId { get; set; } = WeaponMode.NONE_MODE_NAME;
     [Key(5)]
     public float FlatJammingChance { get; set; } = 0f;
     [Key(6)]
@@ -814,7 +814,7 @@ namespace CustomAmmoCategoriesPatches {
           } 
         }
 
-        if (extDef.baseModeId == WeaponMode.NONE_MODE_NAME) {
+        if ((extDef.baseModeId == WeaponMode.NONE_MODE_NAME) || (extDef.Modes.Count == 0) || (extDef.Modes.ContainsKey(extDef.baseModeId) == false)) {
           WeaponMode mode = new WeaponMode();
           mode.Id = WeaponMode.BASE_MODE_NAME;
           mode.AmmoCategory = extDef.AmmoCategory;
@@ -829,7 +829,7 @@ namespace CustomAmmoCategoriesPatches {
           }
         }
 
-        Log.M?.WL(0, JsonConvert.SerializeObject(extDef, Formatting.Indented));
+        //Log.M?.WL(0, JsonConvert.SerializeObject(extDef, Formatting.Indented));
 
         HashSet<string> deleteFields = new HashSet<string>();
         foreach (var jsonField in defTemp) {

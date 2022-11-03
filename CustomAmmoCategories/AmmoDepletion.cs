@@ -734,26 +734,39 @@ namespace CustAmmoCategories {
       if (i_LanceMechEquipmentList_SetLoadout_Patch_MountedLocation != null) { return i_LanceMechEquipmentList_SetLoadout_Patch_MountedLocation(componentRef); }
       return componentRef.MountedLocation;
     }
+    private delegate void d_SetComponentRef(LanceMechEquipmentListItem item, MechComponentRef componentRef, MechDef mechDef);
+    private static d_SetComponentRef i_SetComponentRef = null;
+    public static void SetComponentRef(this LanceMechEquipmentListItem item, MechComponentRef componentRef, MechDef mechDef) {
+      if (i_SetComponentRef == null) { return; }
+      i_SetComponentRef(item, componentRef, mechDef);
+    }
     public static bool Prepare() {
       {
         Type LanceMechEquipmentList_SetLoadout_Patch = typeof(CustomComponents.Validator).Assembly.GetType("CustomComponents.Patches.LanceMechEquipmentList_SetLoadout_Patch");
-        if (LanceMechEquipmentList_SetLoadout_Patch == null) {
-          Log.M.TWL(0, "CustomComponents class CustomComponents.Patches.LanceMechEquipmentList_SetLoadout_Patch not found");
-          return true;
+        if (LanceMechEquipmentList_SetLoadout_Patch != null) {
+          Log.M.TWL(0, "CustomComponents class CustomComponents.Patches.LanceMechEquipmentList_SetLoadout_Patch found");
+          MethodInfo method = LanceMechEquipmentList_SetLoadout_Patch.GetMethod("MountedLocation", BindingFlags.Public | BindingFlags.Static);
+          if (method != null) {
+            Log.M.TWL(0, "CustomComponents method CustomComponents.Patches.LanceMechEquipmentList_SetLoadout_Patch.MountedLocation found");
+            var dm = new DynamicMethod("CACLanceMechEquipmentList_SetLoadout_Patch_MountedLocation", typeof(ChassisLocations), new Type[] { typeof(MechComponentRef) });
+            var gen = dm.GetILGenerator();
+            gen.Emit(OpCodes.Ldarg_0);
+            gen.Emit(OpCodes.Call, method);
+            gen.Emit(OpCodes.Ret);
+            i_LanceMechEquipmentList_SetLoadout_Patch_MountedLocation = (d_LanceMechEquipmentList_SetLoadout_Patch_MountedLocation)dm.CreateDelegate(typeof(d_LanceMechEquipmentList_SetLoadout_Patch_MountedLocation));
+          }
         }
-        Log.M.TWL(0, "CustomComponents class CustomComponents.Patches.LanceMechEquipmentList_SetLoadout_Patch found");
-        MethodInfo method = LanceMechEquipmentList_SetLoadout_Patch.GetMethod("MountedLocation", BindingFlags.Public | BindingFlags.Static);
-        if (method == null) {
-          Log.M.TWL(0, "CustomComponents method CustomComponents.Patches.LanceMechEquipmentList_SetLoadout_Patch.MountedLocation not found");
-          return true;
-        }
-        Log.M.TWL(0, "CustomComponents method CustomComponents.Patches.LanceMechEquipmentList_SetLoadout_Patch.MountedLocation found");
-        var dm = new DynamicMethod("CACLanceMechEquipmentList_SetLoadout_Patch_MountedLocation", typeof(ChassisLocations), new Type[] { typeof(MechComponentRef) });
+      }
+      MethodInfo SetComponentRef = typeof(LanceMechEquipmentListItem).GetMethod("SetComponentRef");
+      if(SetComponentRef != null) {
+        var dm = new DynamicMethod("CAC_SetComponentRef", null, new Type[] { typeof(LanceMechEquipmentListItem) ,typeof(MechComponentRef), typeof(MechDef) });
         var gen = dm.GetILGenerator();
         gen.Emit(OpCodes.Ldarg_0);
-        gen.Emit(OpCodes.Call, method);
+        gen.Emit(OpCodes.Ldarg_1);
+        gen.Emit(OpCodes.Ldarg_2);
+        gen.Emit(OpCodes.Call, SetComponentRef);
         gen.Emit(OpCodes.Ret);
-        i_LanceMechEquipmentList_SetLoadout_Patch_MountedLocation = (d_LanceMechEquipmentList_SetLoadout_Patch_MountedLocation)dm.CreateDelegate(typeof(d_LanceMechEquipmentList_SetLoadout_Patch_MountedLocation));
+        i_SetComponentRef = (d_SetComponentRef)dm.CreateDelegate(typeof(d_SetComponentRef));
       }
       return true;
     }
@@ -817,6 +830,7 @@ namespace CustAmmoCategories {
               }
             }
             if (setDefaultName) { component.SetData(componentRef.Def.Description.UIName, componentRef.DamageLevel, UIColor.White, bgColor); }
+            component.SetComponentRef(componentRef, ___activeMech);
             component.SetTooltipData(componentRef.Def);
             gameObject.transform.SetParent(layoutParent, false);
             ___allComponents.Add(gameObject);

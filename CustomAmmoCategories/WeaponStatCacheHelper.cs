@@ -192,6 +192,7 @@ namespace CustAmmoCategories {
     public bool isBoxesAssigned { get; set; } = false;
     public WeaponMode mode { get; set; }
     public Dictionary<string, WeaponMode> modes { get; set; } = new Dictionary<string, WeaponMode>();
+    public Dictionary<WeaponMode, MechComponent> modesSources { get; set; } = new Dictionary<WeaponMode, MechComponent>();
     public ExtWeaponDef extDef { get; set; }
     public ExtAmmunitionDef ammo { get; set; }
     public bool HasAmmoVariants { get; set; }
@@ -226,26 +227,49 @@ namespace CustAmmoCategories {
       } else {
         modeIdStat.SetValue<string>(modeId);
       }
-      if(mode.AmmoCategory != null) {
-        if (this.ammo.AmmoCategory != mode.AmmoCategory) {
-          this.ammo = this.findBestAmmo(mode.AmmoCategory);
-          Statistic ammoId = weapon.StatCollection.GetStatistic(CustomAmmoCategories.AmmoIdStatName);
-          if (ammoId == null) {
-            ammoId = weapon.StatCollection.AddStatistic(CustomAmmoCategories.AmmoIdStatName, this.ammo.Id);
-          } else {
-            ammoId.SetValue<string>(this.ammo.Id);
-          }
+      if (this.ammo.AmmoCategory != this.effectiveAmmoCategory) {
+        this.ammo = this.findBestAmmo(this.effectiveAmmoCategory);
+        Statistic ammoId = weapon.StatCollection.GetStatistic(CustomAmmoCategories.AmmoIdStatName);
+        if (ammoId == null) {
+          ammoId = weapon.StatCollection.AddStatistic(CustomAmmoCategories.AmmoIdStatName, this.ammo.Id);
+        } else {
+          ammoId.SetValue<string>(this.ammo.Id);
         }
       }
       HUDSlot?.RefreshDisplayedWeapons();
       return true;
     }
     public void AddMode(WeaponMode mode, bool switchTo) {
+      if (mode == null) { return; }
+      if (this.modes.ContainsKey(mode.Id)) { return; }
       this.modes.Add(mode.Id, mode);
       this.setMode(mode.Id);
     }
+    public void AddMode(WeaponMode mode, MechComponent src, bool switchTo) {
+      if (mode == null) { return; }
+      if (this.modes.ContainsKey(mode.Id)) { return; }
+      this.AddMode(mode, switchTo);
+      this.modesSources[mode] = src;
+    }
+    public MechComponent currentModeSource() {
+      if (this.modesSources.TryGetValue(this.mode, out var result)) { return result; }
+      return null;
+    }
     public void RemoveMode(string id) {
-      this.modes.Remove(id);
+      if(this.modes.TryGetValue(id, out var delmode)) {
+        if(delmode != null)this.modesSources.Remove(delmode);
+        this.modes.Remove(id);
+      }      
+    }
+    public bool isModeAvailble(WeaponMode mode) {
+      if(this.modesSources.TryGetValue(mode, out var src)) {
+        if (src.IsFunctional == false) { return false; }
+      }
+      if (this.modes.ContainsKey(mode.Id) == false) { return false; }
+      return mode.Lock.isAvaible(weapon);
+    }
+    public bool isCurrentModeAvailable() {
+      return isModeAvailble(this.mode);
     }
     public void DisableMode(string id) {
       this.restrictedModes.Add(id);
@@ -267,7 +291,7 @@ namespace CustAmmoCategories {
     public List<WeaponMode> avaibleModes() {
       List<WeaponMode> result = new List<WeaponMode>();
       foreach (var mode in this.modes) {
-        if (mode.Value.Lock.isAvaible(weapon) == false) { continue; };
+        if (this.isModeAvailble(mode.Value) == false) { continue; };
         if (this.restrictedModes.Contains(mode.Key)) { continue; }
         result.Add(mode.Value);
       }
@@ -343,7 +367,7 @@ namespace CustAmmoCategories {
     }
     public void RefreshModeAvaibility() {
       Log.M?.TWL(0, "RefreshModeAvaibility:" + this.weapon.defId);
-      if (this.weapon.mode().Lock.isAvaible(this.weapon) == false) {
+      if (this.isCurrentModeAvailable() == false) {
         CustomAmmoCategories.CycleMode(this.weapon, true);
       }
       //Statistic modeIdStat = weapon.StatCollection.GetOrCreateStatisic(CustomAmmoCategories.WeaponModeStatisticName, extDef.baseModeId);

@@ -18,6 +18,7 @@ using Harmony;
 using BattleTech.UI;
 using UnityEngine;
 using CustomAmmoCategoriesLog;
+using CustomAmmoCategoriesPatches;
 
 namespace CustAmmoCategories {
   public static partial class CustomAmmoCategories {
@@ -40,13 +41,15 @@ namespace CustAmmoCategories {
     //  if (weapon.ammoBoxes.Count == 0) { return ""; };
     //  return weapon.ammoBoxes[0].ammoDef.Description.Id;
     //}
-    public static bool isWeaponCanShootNoAmmo(WeaponDef weaponDef) {
-      ExtWeaponDef extWeapon = CustomAmmoCategories.getExtWeaponDef(weaponDef.Description.Id);
+    public static bool isWeaponCanShootNoAmmo(this MechComponentRef weaponRef, List<BaseComponentRef> inventory) {
+      ExtWeaponDef extWeapon = CustomAmmoCategories.getExtWeaponDef(weaponRef.ComponentDefID);
+      WeaponDef weaponDef = weaponRef.Def as WeaponDef;
       if (weaponDef.AmmoCategoryValue.Is_NotSet) { return true; };
-      if (extWeapon.Modes.Count <= 0) { return false; };
-      foreach(var mode in extWeapon.Modes) {
-        if (mode.Value.AmmoCategory == null) { continue; };
-        if (mode.Value.AmmoCategory.BaseCategory.Is_NotSet) { return true; };
+      List<WeaponMode> modes = weaponRef.WeaponModes(inventory);
+      if (modes.Count <= 0) { return false; };
+      foreach(var mode in modes) {
+        if (mode.AmmoCategory == null) { continue; };
+        if (mode.AmmoCategory.BaseCategory.Is_NotSet) { return true; };
       }
       return false;
     }
@@ -66,23 +69,27 @@ namespace CustAmmoCategories {
     //  }
     //  return result;
     //}
-    public static bool isWeaponCanUseAmmo(WeaponDef weaponDef,AmmunitionDef ammoDef) {
-      Log.M.WL("Cheching if weapon "+weaponDef.Description.Id + " can use ammo "+ammoDef.Description.Id+"\n");
+    public static bool isWeaponCanUseAmmo(this BaseComponentRef weaponRef, List<BaseComponentRef> inventory, AmmunitionDef ammoDef) {
+      Log.M.WL(0,"Cheching if weapon "+ weaponRef.ComponentDefID + " can use ammo "+ammoDef.Description.Id);
       ExtAmmunitionDef extAmmo = CustomAmmoCategories.findExtAmmo(ammoDef.Description.Id);
       CustomAmmoCategory ammoCategory = extAmmo.AmmoCategory;
       if (ammoCategory.BaseCategory.Is_NotSet) { ammoCategory = CustomAmmoCategories.find(ammoDef.AmmoCategoryValue.Name); };
-      if (ammoCategory.BaseCategory.Is_NotSet) { return false; };
-      ExtWeaponDef extWeapon = CustomAmmoCategories.getExtWeaponDef(weaponDef.Description.Id);
-      if(extWeapon.AmmoCategory.BaseCategory.Is_NotSet == false) {
+      if (ammoCategory.BaseCategory.Is_NotSet) { Log.M?.WL(1, "ammo have bad category"); return false; };
+      ExtWeaponDef extWeapon = CustomAmmoCategories.getExtWeaponDef(weaponRef.ComponentDefID);
+      WeaponDef weaponDef = weaponRef.Def as WeaponDef;
+      List<WeaponMode> modes = weaponRef.WeaponModes(inventory);
+      if (modes.Count <= 0) { Log.M?.WL(1,"no modes"); return false; };
+      if (extWeapon.AmmoCategory.BaseCategory.Is_NotSet == false) {
+        Log.M?.WL(1, $"weapon:{extWeapon.AmmoCategory.Index} ammo:{ammoCategory.Index}");
         if (extWeapon.AmmoCategory.Index == ammoCategory.Index) { return true; };
       }else
       if(weaponDef.AmmoCategoryValue.Is_NotSet == false) {
         CustomAmmoCategory weaponAmmoCategory = CustomAmmoCategories.find(weaponDef.AmmoCategoryValue.Name);
         if ((weaponAmmoCategory.BaseCategory.Is_NotSet == false) && (weaponAmmoCategory.Index == ammoCategory.Index)) { return true; }
       }
-      foreach (var mode in extWeapon.Modes) {
-        if (mode.Value.AmmoCategory == null) { continue; };
-        if ((mode.Value.AmmoCategory.BaseCategory.Is_NotSet == false) &&(mode.Value.AmmoCategory.Index == ammoCategory.Index)) { return true; };
+      foreach (var mode in modes) {
+        if (mode.AmmoCategory == null) { continue; };
+        if ((mode.AmmoCategory.BaseCategory.Is_NotSet == false) &&(mode.AmmoCategory.Index == ammoCategory.Index)) { return true; };
       }
       return false;
     }

@@ -130,8 +130,12 @@ namespace CustomAmmoCategoriesPatches {
       CustomAmmoCategoriesLog.Log.LogWrite("Weapon SetAmmoBoxes " + __instance.Description.Id + "\n");
       CustomAmmoCategory weaponAmmoCategory = CustomAmmoCategories.getExtWeaponDef(__instance.defId).AmmoCategory;
       List<AmmunitionBox> ammunitionBoxList = new List<AmmunitionBox>();
+      List<BaseComponentRef> inventory = new List<BaseComponentRef>();
+      foreach (var component in __instance.parent.allComponents) {
+        inventory.Add(component.baseComponentRef);
+      }
       foreach (AmmunitionBox ammoBox in ammoBoxes) {
-        if (CustomAmmoCategories.isWeaponCanUseAmmo(__instance.weaponDef, ammoBox.ammoDef)) {
+        if (CustomAmmoCategories.isWeaponCanUseAmmo(__instance.baseComponentRef, inventory, ammoBox.ammoDef)) {
           CustomAmmoCategoriesLog.Log.LogWrite("  Ammunition Box " + ammoBox.ammoDef.Description.Id + "\n");
           ammunitionBoxList.Add(ammoBox);
         }
@@ -146,9 +150,10 @@ namespace CustomAmmoCategoriesPatches {
   [HarmonyPatch(MethodType.Normal)]
   public static class MechValidationRules_ValidateMechHasAppropriateAmmo {
     public static bool Prefix(DataManager dataManager, MechDef mechDef, MechValidationLevel validationLevel, WorkOrderEntry_MechLab baseWorkOrder, ref Dictionary<MechValidationType, List<Text>> errorMessages) {
-      Dictionary<string, WeaponDef> weapons = new Dictionary<string, WeaponDef>();
+      List<MechComponentRef> weapons = new List<MechComponentRef>();
       Dictionary<string, AmmunitionDef> ammos = new Dictionary<string, AmmunitionDef>();
-      CustomAmmoCategoriesLog.Log.LogWrite("Start Mech Validation " + mechDef.Name + "\n");
+      List<BaseComponentRef> inventory = new List<BaseComponentRef>();
+      Log.M?.TWL(0,"Start Mech Validation " + mechDef.ChassisID);
       string testString = "";
       if (Strings.Initialized) {
         Strings.GetTranslationFor("CT DESTROYED", out testString);
@@ -165,8 +170,8 @@ namespace CustomAmmoCategoriesPatches {
         mechComponentRef.RefreshComponentDef();
         if (mechComponentRef.ComponentDefType == ComponentType.Weapon) {
           if (mechComponentRef.DamageLevel == ComponentDamageLevel.Functional || mechComponentRef.DamageLevel == ComponentDamageLevel.NonFunctional || MechValidationRules.MechComponentUnderMaintenance(mechComponentRef, validationLevel, baseWorkOrder)) {
-            WeaponDef def = mechComponentRef.Def as WeaponDef;
-            if (weapons.ContainsKey(def.Description.Id) == false) { weapons.Add(def.Description.Id, def); }
+            //WeaponDef def = mechComponentRef.Def as WeaponDef;
+            weapons.Add(mechComponentRef);
           }
         } else
         if (mechComponentRef.ComponentDefType == ComponentType.AmmunitionBox) {
@@ -176,25 +181,31 @@ namespace CustomAmmoCategoriesPatches {
             if (ammos.ContainsKey(def.Description.Id) == false) { ammos.Add(def.Description.Id, def.Ammo); }
           }
         }
+        if ((mechComponentRef.DamageLevel == ComponentDamageLevel.Functional || MechValidationRules.MechComponentUnderMaintenance(mechComponentRef, validationLevel, baseWorkOrder))) {
+          inventory.Add(mechComponentRef);
+        }
       }
-      foreach (var weaponDef in weapons) {
+      foreach (var weaponRef in weapons) {
         bool weaponHasAmmo = false;
-        if (CustomAmmoCategories.isWeaponCanShootNoAmmo(weaponDef.Value)) { continue; }
-        if (weaponDef.Value.StartingAmmoCapacity > 0) { continue; };
-        ExtWeaponDef extDef = CustomAmmoCategories.getExtWeaponDef(weaponDef.Value.Description.Id);
+        WeaponDef weaponDef = weaponRef.Def as WeaponDef;
+        if (CustomAmmoCategories.isWeaponCanShootNoAmmo(weaponRef, inventory)) { continue; }
+        if (weaponDef.StartingAmmoCapacity > 0) { continue; };
+        ExtWeaponDef extDef = CustomAmmoCategories.getExtWeaponDef(weaponRef.ComponentDefID);
         if (extDef.isHaveInternalAmmo) { continue; }
         foreach (var ammoDef in ammos) {
-          if (CustomAmmoCategories.isWeaponCanUseAmmo(weaponDef.Value, ammoDef.Value)) {
+          if (CustomAmmoCategories.isWeaponCanUseAmmo(weaponRef, inventory, ammoDef.Value)) {
+            Log.M?.WL(1, $"weapon:{weaponRef.ComponentDefID} can use {ammoDef.Key}");
             weaponHasAmmo = true;
             break;
           }
         }
         if (weaponHasAmmo == false) {
+          Log.M?.WL(1, $"weapon:{weaponRef.ComponentDefID} does not have ammo to use");
           var method = typeof(MechValidationRules).GetMethod("AddErrorMessage", BindingFlags.Static | BindingFlags.NonPublic);
           object[] args = new object[3];
           args[0] = errorMessages;
           args[1] = MechValidationType.AmmoMissing;
-          string name = string.IsNullOrEmpty(weaponDef.Value.Description.UIName) ? weaponDef.Value.Description.Name : weaponDef.Value.Description.UIName;
+          string name = string.IsNullOrEmpty(weaponDef.Description.UIName) ? weaponDef.Description.Name : weaponDef.Description.UIName;
           args[2] = new Text("__/CAC.MissingAmmo/__", new object[1] { (object)name });
           method.Invoke(obj: null, parameters: args);
           errorMessages = (Dictionary<MechValidationType, List<Text>>)args[0];
@@ -202,13 +213,15 @@ namespace CustomAmmoCategoriesPatches {
       }
       foreach (var ammoDef in ammos) {
         bool ammoIsUsed = false;
-        foreach (var weaponDef in weapons) {
-          if (CustomAmmoCategories.isWeaponCanUseAmmo(weaponDef.Value, ammoDef.Value)) {
+        foreach (var weaponRef in weapons) {
+          if (CustomAmmoCategories.isWeaponCanUseAmmo(weaponRef, inventory, ammoDef.Value)) {
+            Log.M?.WL(1, $"weapon:{weaponRef.ComponentDefID} can use {ammoDef.Key}");
             ammoIsUsed = true;
             break;
           }
         }
         if (ammoIsUsed == false) {
+          Log.M?.WL(1, $"ammo:{ammoDef.Key} is not used by any weapon");
           var method = typeof(MechValidationRules).GetMethod("AddErrorMessage", BindingFlags.Static | BindingFlags.NonPublic);
           object[] args = new object[3];
           args[0] = errorMessages;

@@ -16,6 +16,7 @@ using BattleTech.Rendering;
 using BattleTech.Rendering.UrbanWarfare;
 using BattleTech.UI;
 using BattleTech.UI.TMProWrapper;
+using BattleTech.UI.Tooltips;
 using CustAmmoCategories;
 using CustomAmmoCategoriesPatches;
 using FogOfWar;
@@ -24,6 +25,7 @@ using HBS;
 using HBS.Collections;
 using InControl;
 using Localize;
+using SVGImporter;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -31,6 +33,7 @@ using System.Reflection;
 using System.Reflection.Emit;
 using TMPro;
 using UnityEngine;
+using UnityEngine.EventSystems;
 
 namespace CustomUnits {
   [HarmonyPatch(typeof(TurnDirector))]
@@ -347,6 +350,7 @@ namespace CustomUnits {
     public static string DeployMechDefID { get { return CACConstants.DeployMechDefID; } }
     private static bool NeedCheckForDependenciesLoaded { get; set; } = true;
     public static bool IsInManualSpawnSequence { get { return CACCombatState.IsInDeployManualState; } set { CACCombatState.IsInDeployManualState = value; } }
+    public static bool LastSelectedDeployWasManual { get; set; } = true;
     public static SpawnUnitMethodType originalSpawnMethod { get; set; } = SpawnUnitMethodType.InstantlyAtSpawnPoint;
     public static AbstractActor deployDirector { get; set; } = null;
     public static void Clean() { deployDirector = null; }
@@ -1747,6 +1751,126 @@ namespace CustomUnits {
   //    }
   //  }
   //}
+
+  public class SetDeploySwitchButton : MonoBehaviour, IEventSystemHandler, IPointerEnterHandler, IPointerExitHandler {
+    public HBSDOTweenButton button { get; set; } = null;
+    //public SetDeployAutoButton autoBtn { get; set; } = null;
+    public Contract contract { get; set; } = null;
+    public LocalizableText title { get; set; } = null;
+    public SVGImage btnColor;
+    public SVGImage borderColor;
+    public bool disabled { get; set; } = false;
+    public void OnPointerEnter(PointerEventData eventData) {
+      if (disabled) { return; }
+      btnColor.color = Color.white;
+      borderColor.color = UIManager.Instance.UIColorRefs.white;
+    }
+    public void OnPointerExit(PointerEventData eventData) {
+      if (disabled) { return; }
+      btnColor.color = UIManager.Instance.UIColorRefs.lightGray;
+      borderColor.color = UIManager.Instance.UIColorRefs.orange;
+    }
+    public void Init(Contract contract) {
+      this.contract = contract;
+      //this.autoBtn = autoBtn;
+      GameObject bttn2_Fill = this.transform.Find("bttn2_Fill").gameObject;
+      btnColor = bttn2_Fill.GetComponent<SVGImage>();
+      btnColor.color = UIManager.Instance.UIColorRefs.lightGray;
+      GameObject bttn2_border = bttn2_Fill.transform.FindRecursive("bttn2_border").gameObject;
+      borderColor = bttn2_border.GetComponent<SVGImage>();
+      borderColor.color = UIManager.Instance.UIColorRefs.orange;
+      this.button = this.gameObject.GetComponent<HBSDOTweenButton>();
+      this.button.OnClicked = new UnityEngine.Events.UnityEvent();
+      this.button.OnClicked.AddListener(new UnityEngine.Events.UnityAction(this.OnClicked));
+      List<GameObject> tweenObjects = Traverse.Create(this.button).Field<List<GameObject>>("tweenObjects").Value;
+      tweenObjects[0] = this.gameObject.FindComponent<Transform>("bttn2_Fill").gameObject;
+      tweenObjects[1] = this.gameObject.FindComponent<Transform>("bttn2_border").gameObject;
+      tweenObjects[2] = this.gameObject.FindComponent<Transform>("bttn2_Text-optional").gameObject;
+      this.title = this.gameObject.GetComponentInChildren<LocalizableText>();
+      HBSTooltip tooltip = this.gameObject.GetComponentInChildren<HBSTooltip>();
+      tooltip.SetDefaultStateData(TooltipUtilities.GetStateDataFromObject((object)"Set deploy type"));
+      if ((Core.Settings.AskForDeployManual)&&(contract.canManualSpawn())) {
+        this.disabled = false;
+        button.SetState(ButtonState.Enabled);
+        title.SetText(DeployManualHelper.LastSelectedDeployWasManual?"MANUAL":"AUTO");
+      } else {
+        this.disabled = true;
+        button.SetState(ButtonState.Disabled);
+        title.SetText(contract.canManualSpawn() ? "MANUAL" : "AUTO");
+      }
+    }
+    public void OnClicked() {
+      if (disabled) { return; }
+      DeployManualHelper.LastSelectedDeployWasManual = !DeployManualHelper.LastSelectedDeployWasManual;
+      title.SetText(DeployManualHelper.LastSelectedDeployWasManual ? "MANUAL" : "AUTO");
+    }
+  }
+  public class SetDeployAutoButton : MonoBehaviour, IEventSystemHandler, IPointerEnterHandler, IPointerExitHandler {
+    public HBSDOTweenButton button { get; set; } = null;
+    public Contract contract { get; set; } = null;
+    //public SetDeployManualButton manualBtn { get; set; } = null;
+    public SVGImage btnColor;
+    public SVGImage borderColor;
+    public bool disabled { get; set; } = false;
+    public void OnPointerEnter(PointerEventData eventData) {
+      if (disabled) { return; }
+      btnColor.color = Color.white;
+      borderColor.color = UIManager.Instance.UIColorRefs.white;
+    }
+    public void UpdateColor() {
+      if (disabled) { return; }
+      bool orange = false;
+      if (Core.Settings.AskForDeployManual) {
+        orange = DeployManualHelper.LastSelectedDeployWasManual;
+      } else {
+        orange = (contract.canManualSpawn() == false);
+      }
+      btnColor.color = orange ? UIManager.Instance.UIColorRefs.orange : UIManager.Instance.UIColorRefs.lightGray;
+    }
+    public void OnPointerExit(PointerEventData eventData) {
+      if (disabled) { return; }
+      this.UpdateColor();
+      borderColor.color = UIManager.Instance.UIColorRefs.orange;
+    }
+    public void Init(Contract contract) {
+      //this.manualBtn = manualBtn;
+      this.contract = contract;
+      GameObject bttn2_Fill = this.transform.Find("bttn2_Fill").gameObject;
+      btnColor = bttn2_Fill.GetComponent<SVGImage>();
+      btnColor.color = UIManager.Instance.UIColorRefs.lightGray;
+      GameObject bttn2_border = bttn2_Fill.transform.FindRecursive("bttn2_border").gameObject;
+      borderColor = bttn2_border.GetComponent<SVGImage>();
+      borderColor.color = UIManager.Instance.UIColorRefs.orange;
+      this.button = this.gameObject.GetComponent<HBSDOTweenButton>();
+      this.button.OnClicked = new UnityEngine.Events.UnityEvent();
+      this.button.OnClicked.AddListener(new UnityEngine.Events.UnityAction(this.OnClicked));
+      List<GameObject> tweenObjects = Traverse.Create(this.button).Field<List<GameObject>>("tweenObjects").Value;
+      tweenObjects[0] = this.gameObject.FindComponent<Transform>("bttn2_Fill").gameObject;
+      tweenObjects[1] = this.gameObject.FindComponent<Transform>("bttn2_border").gameObject;
+      tweenObjects[2] = this.gameObject.FindComponent<Transform>("bttn2_Text-optional").gameObject;
+      LocalizableText title = this.gameObject.GetComponentInChildren<LocalizableText>();
+      title.SetText("AUTO");
+      HBSTooltip tooltip = this.gameObject.GetComponentInChildren<HBSTooltip>();
+      tooltip.SetDefaultStateData(TooltipUtilities.GetStateDataFromObject((object)"Set auto deploy"));
+      if ((contract.canManualSpawn() == false) || (Core.Settings.AskForDeployManual)) {
+        disabled = false;
+        button.SetState(ButtonState.Enabled);
+        this.UpdateColor();
+      } else {
+        disabled = true;
+        button.SetState(ButtonState.Disabled);
+      }
+    }
+    public void OnClicked() {
+      if (disabled) { return; }
+      if ((Core.Settings.AskForDeployManual)&&(contract.canManualSpawn())) {
+        DeployManualHelper.LastSelectedDeployWasManual = false;
+        //manualBtn.UpdateColor();
+      }
+      //btnColor.color = state ? UIManager.Instance.UIColorRefs.orange : UIManager.Instance.UIColorRefs.white;
+    }
+  }
+
   [HarmonyPatch(typeof(GameInstance))]
   [HarmonyPatch("LaunchContract")]
   [HarmonyPatch(MethodType.Normal)]
@@ -1768,6 +1892,9 @@ namespace CustomUnits {
     }
     public static void ClearManualSpawn(this Contract contract) { SpawnDelayed = false; }
     public static bool Prefix(GameInstance __instance, Contract contract, string playerGUID) {
+      Log.TWL(0, "GameInstance.LaunchContract");
+      //Log.WL(0,Environment.StackTrace);
+      //return true;
       if (originalInvoke) { return true; }
       SpawnDelayed = false;
       DeployManualHelper.IsInManualSpawnSequence = false;
@@ -1775,36 +1902,49 @@ namespace CustomUnits {
       if (DeployManualHelper.CheckForDeps(__instance, contract, playerGUID) == false) { return false; }
 
       if (Core.Settings.AskForDeployManual) {
-        bool isInvoked = false;
-        GenericPopup popup = GenericPopupBuilder.Create("DEPLOY POSITION", "WOULD YOU LIKE TO SET DEPLOY POSITION MANUALY?")
-          .AddButton("NO", (Action)(() => {
-            if (isInvoked) { return; }; isInvoked = true;
-            SpawnDelayed = false;
-            DeployManualHelper.IsInManualSpawnSequence = false;
-            originalInvoke = true;
-            if (SceneSingletonBehavior<WwiseManager>.HasInstance) {
-              uint num2 = SceneSingletonBehavior<WwiseManager>.Instance.PostEventById(390458608, WwiseManager.GlobalAudioObject, (AkCallbackManager.EventCallback)null, (object)null);
-              Log.TWL(0, "Playing sound by id:" + num2);
-            } else {
-              Log.TWL(0, "Can't play");
-            }
-            __instance.LaunchContract(contract, playerGUID);
-            originalInvoke = false;
-          }), true, BTInput.Instance.Key_Escape())
-          .AddButton("YES", (Action)(() => {
-            if (isInvoked) { return; }; isInvoked = true;
-            SpawnDelayed = true;
-            DeployManualHelper.IsInManualSpawnSequence = true;
-            originalInvoke = true;
-            if (SceneSingletonBehavior<WwiseManager>.HasInstance) {
-              uint num2 = SceneSingletonBehavior<WwiseManager>.Instance.PostEventById(390458608, WwiseManager.GlobalAudioObject, (AkCallbackManager.EventCallback)null, (object)null);
-              Log.TWL(0, "Playing sound by id:" + num2);
-            } else {
-              Log.TWL(0, "Can't play");
-            }
-            __instance.LaunchContract(contract, playerGUID);
-            originalInvoke = false;
-          }), true, BTInput.Instance.Key_Return()).IsNestedPopupWithBuiltInFader().SetAlwaysOnTop().Render();
+        if (DeployManualHelper.LastSelectedDeployWasManual) {
+          SpawnDelayed = true;
+          DeployManualHelper.IsInManualSpawnSequence = true;
+          originalInvoke = true;
+          __instance.LaunchContract(contract, playerGUID);
+          originalInvoke = false;
+        } else {
+          SpawnDelayed = false;
+          DeployManualHelper.IsInManualSpawnSequence = false;
+          originalInvoke = true;
+          __instance.LaunchContract(contract, playerGUID);
+          originalInvoke = false;
+        }
+        //bool isInvoked = false;
+        //GenericPopup popup = GenericPopupBuilder.Create("DEPLOY POSITION", "WOULD YOU LIKE TO SET DEPLOY POSITION MANUALY?")
+        //  .AddButton("NO", (Action)(() => {
+        //    if (isInvoked) { return; }; isInvoked = true;
+        //    SpawnDelayed = false;
+        //    DeployManualHelper.IsInManualSpawnSequence = false;
+        //    originalInvoke = true;
+        //    if (SceneSingletonBehavior<WwiseManager>.HasInstance) {
+        //      uint num2 = SceneSingletonBehavior<WwiseManager>.Instance.PostEventById(390458608, WwiseManager.GlobalAudioObject, (AkCallbackManager.EventCallback)null, (object)null);
+        //      Log.TWL(0, "Playing sound by id:" + num2);
+        //    } else {
+        //      Log.TWL(0, "Can't play");
+        //    }
+        //    __instance.LaunchContract(contract, playerGUID);
+        //    originalInvoke = false;
+        //  }), true, BTInput.Instance.Key_Escape())
+        //  .AddButton("YES", (Action)(() => {
+        //    if (isInvoked) { return; }; isInvoked = true;
+        //    SpawnDelayed = true;
+        //    DeployManualHelper.IsInManualSpawnSequence = true;
+        //    originalInvoke = true;
+        //    if (SceneSingletonBehavior<WwiseManager>.HasInstance) {
+        //      uint num2 = SceneSingletonBehavior<WwiseManager>.Instance.PostEventById(390458608, WwiseManager.GlobalAudioObject, (AkCallbackManager.EventCallback)null, (object)null);
+        //      Log.TWL(0, "Playing sound by id:" + num2);
+        //    } else {
+        //      Log.TWL(0, "Can't play");
+        //    }
+        //    __instance.LaunchContract(contract, playerGUID);
+        //    originalInvoke = false;
+        //  }), true, BTInput.Instance.Key_Return()).IsNestedPopupWithBuiltInFader().SetAlwaysOnTop().Render();
       } else {
         SpawnDelayed = true;
         DeployManualHelper.IsInManualSpawnSequence = true;

@@ -1707,28 +1707,62 @@ namespace CustomAmmoCategoriesPatches {
       }
     }
   }
+  public static class WeaponDefModesCollectHelper {
+    private static Dictionary<string, Func<BaseComponentRef, List<BaseComponentRef>, List<WeaponMode>>> registry = new Dictionary<string, Func<BaseComponentRef, List<BaseComponentRef>, List<WeaponMode>>>();
+    public static void RegisterCallback(string id, Func<BaseComponentRef, List<BaseComponentRef>, List<WeaponMode>> callback) {
+      registry[id] = callback;
+    }
+    public static List<WeaponMode> WeaponModes(this BaseComponentRef componentRef, List<BaseComponentRef> inventory) {
+      List<WeaponMode> result = new List<WeaponMode>();
+      try {
+        //WeaponDef weaponDef = componentRef.Def as WeaponDef;
+        ExtWeaponDef extWeaponDef = CustomAmmoCategories.getExtWeaponDef(componentRef.ComponentDefID);
+        //if (weaponDef == null) { return result; }
+        foreach (var mode in extWeaponDef.Modes) {
+          result.Add(mode.Value);
+        }
+        foreach (var callback in registry) {
+          result.AddRange(callback.Value(componentRef, inventory));
+        }
+      }catch(Exception e) {
+        Log.M?.TWL(0,e.ToString(),true);
+      }
+      return result;
+    }
+  }
   public class WeaponOrderDataElement {
     public MechComponentRef componentRef { get; set; } = null;
     public string defaultModeId { get; set; } = string.Empty;
     public string defaultAmmoId { get; set; } = string.Empty;
+    public List<BaseComponentRef> inventory { get; set; } = new List<BaseComponentRef>();
+    public List<WeaponMode> modes { get; set; } = new List<WeaponMode>();
     public List<MechComponentRef> ammoBoxesOrder { get; set; } = new List<MechComponentRef>();
     public bool automaticAmmoBoxesOrder { get; set; } = true;
     public WeaponOrderDataElement(MechComponentRef compRef, MechDef mechDef, WeaponOrderDataElementDef dataDef) {
       componentRef = compRef;
       List<MechComponentRef> allammo = new List<MechComponentRef>();
+      inventory = new List<BaseComponentRef>();
+      modes = new List<WeaponMode>();
+      foreach (var inv in mechDef.Inventory) {
+        if (inv == null) { continue; }
+        if (inv.MountedLocation == ChassisLocations.None) { continue; }
+        inventory.Add(inv);
+      }
       HashSet<string> ammoCatIds = new HashSet<string>();
       WeaponDef weaponDef = componentRef.Def as WeaponDef;
       Log.M?.TWL(0, "WeaponOrderDataElement "+weaponDef.Description.Id);
       if (weaponDef != null) {
-        if(weaponDef.exDef().AmmoCategory.BaseCategory.Is_NotSet == false) {
+        modes = componentRef.WeaponModes(inventory);
+        if (weaponDef.exDef().AmmoCategory.BaseCategory.Is_NotSet == false) {
           Log.M?.WL(1, "ammo cat:"+ weaponDef.exDef().AmmoCategory.Id);
           ammoCatIds.Add(weaponDef.exDef().AmmoCategory.Id);
         }
-        foreach(var mode in weaponDef.exDef().Modes) {
-          if (mode.Value.AmmoCategory.BaseCategory.Is_NotSet) { continue; }
-          Log.M?.WL(1, "ammo cat:" + mode.Value.AmmoCategory.Id);
-          ammoCatIds.Add(mode.Value.AmmoCategory.Id);
-        }
+      }
+      foreach (var mode in modes) {
+        if (mode.AmmoCategory == null) { continue; }
+        if (mode.AmmoCategory.BaseCategory.Is_NotSet) { continue; }
+        Log.M?.WL(1, "ammo cat:" + mode.AmmoCategory.Id);
+        ammoCatIds.Add(mode.AmmoCategory.Id);
       }
       if (ammoCatIds.Count > 0) {
         for (int i = 0; i < mechDef.Inventory.Length; ++i) {
@@ -1848,8 +1882,8 @@ namespace CustomAmmoCategoriesPatches {
     public void Apply(WeaponsOrderUIItem item) {
       currentItem = item;
       WeaponDef weaponDef = item.data.componentRef.Def as WeaponDef;
-      foreach (var mode in weaponDef.exDef().Modes) {
-        AddWeaponUIItem(mode.Value, mode.Value.Id == item.data.defaultModeId);
+      foreach (var mode in item.data.modes) {
+        AddWeaponUIItem(mode, mode.Id == item.data.defaultModeId);
       }
       AddWeaponUIItem(null,false);
     }

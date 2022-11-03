@@ -1588,15 +1588,19 @@ namespace CustomUnits {
           }
           JObject mcRef = new JObject();
           mcRef["MountedLocation"] = location.ToString();
-          mcRef["SimGameUID"] = "";
-          mcRef["ComponentDefID"] = vcRef["ComponentDefID"]; ;
-          mcRef["ComponentDefType"] = vcRef["ComponentDefType"];
-          mcRef["HardpointSlot"] = vcRef["HardpointSlot"];
-          mcRef["GUID"] = null;
-          mcRef["DamageLevel"] = vcRef["DamageLevel"];
+          //mcRef["SimGameUID"] = "";
+          //mcRef["ComponentDefID"] = vcRef["ComponentDefID"]; ;
+          //mcRef["ComponentDefType"] = vcRef["ComponentDefType"];
+          //mcRef["HardpointSlot"] = vcRef["HardpointSlot"];
+          //mcRef["GUID"] = null;
+          //mcRef["DamageLevel"] = vcRef["DamageLevel"];
           mcRef["IsFixed"] = true;
-          mcRef["prefabName"] = vcRef["prefabName"];
-          mcRef["hasPrefabName"] = vcRef["hasPrefabName"];
+          foreach(var jfield in vcRef) {
+            if (mcRef[jfield.Key] != null) { continue; }
+            mcRef.Add(jfield.Key, jfield.Value);
+          }
+          //mcRef["prefabName"] = vcRef["prefabName"];
+          //mcRef["hasPrefabName"] = vcRef["hasPrefabName"];
           //MechComponentRef mcRef = new MechComponentRef(vcRef.ComponentDefID, vcRef.SimGameUID, vcRef.ComponentDefType, location, vcRef.HardpointSlot, vcRef.DamageLevel, vcRef.IsFixed);
           mInventory.Add(mcRef);
         }
@@ -1660,7 +1664,7 @@ namespace CustomUnits {
         }
         newdef["Locations"] = mLocations;
         json = newdef.ToString(Newtonsoft.Json.Formatting.Indented);
-        //Log.WL(1, json);
+        Log.WL(1, json);
       } catch (Exception e) {
         Log.LogWrite(json, true);
         Log.LogWrite(e.ToString() + "\n", true);

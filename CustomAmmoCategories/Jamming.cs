@@ -197,7 +197,7 @@ namespace CustAmmoCategories {
       if (weapon.IsCooldown() > 0) { result += "COOLDOWN;"; }
       if (weapon.isAMS() && weapon.isCantAMSFire()) { result += "USED AS WEAPON;"; }
       if ((weapon.isAMS() == false) && weapon.isCantNormalFire()) { result += "USED AS AMS;"; };
-      if (weapon.mode().Lock.isAvaible(weapon) == false) { return "MODE IS LOCKED;"; };
+      if (weapon.info().isCurrentModeAvailable() == false) { return "MODE IS LOCKED;"; };
       if (weapon.mode().Disabeld) { return "MODE IS DISABLED;"; };
       if (weapon.isBlocked()) { return "BLOCKED;"; };
       if ((weapon.ammo().AmmoCategory.BaseCategory.Is_NotSet == false) && (weapon.CurrentAmmo <= 0)) { return "OUT OF AMMO;"; }
@@ -211,7 +211,7 @@ namespace CustAmmoCategories {
       if (__instance.IsCooldown() > 0) { __result = false; }
       if (__instance.isAMS() && __instance.isCantAMSFire()) { __result = false; };
       if ((__instance.isAMS() == false) && __instance.isCantNormalFire()) { __result = false; };
-      if (__instance.mode().Lock.isAvaible(__instance) == false) { __result = false; };
+      if (__instance.info().isCurrentModeAvailable() == false) { __result = false; };
       if (__instance.mode().Disabeld) { __result = false; };
       if (__instance.isBlocked()) { __result = false; };
     }
@@ -489,8 +489,12 @@ namespace CustAmmoCategories {
         fakeHit.secondaryTargetIds = new string[1] { null };
         fakeHit.secondaryHitLocations = new int[1] { 0 };
         Log.M.WL(1, $"CritComponent destroy:{destroy}");
-
-        weapon.CritComponent(ref fakeHit, weapon, destroy);
+        MechComponent sourceComponent = weapon.info().currentModeSource();
+        if (sourceComponent != null) {
+          sourceComponent.CritComponent(ref fakeHit, weapon, destroy);
+        } else {
+          weapon.CritComponent(ref fakeHit, weapon, destroy);
+        }
         //weapon.DamageComponent(fakeHit, damageLevel, true);
         var message = weapon.DamageLevel == ComponentDamageLevel.Destroyed
             ? $"{weapon.UIName} __/CAC.misfire/__: __/CAC.Destroyed/__!"
