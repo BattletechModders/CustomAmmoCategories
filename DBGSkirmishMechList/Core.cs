@@ -292,6 +292,68 @@ namespace DBGSkirmishMechList {
       }
     }
   }
+  [HarmonyPatch(typeof(BattleTechResourceLocator), "RefreshTypedEntries")]
+  public static class BattleTechResourceLocator_RefreshTypedEntries {
+    public static BattleTechResourceLocator battleTechResourceLocator { get; set; } = null;
+    public static void Postfix(BattleTechResourceLocator __instance) {
+      try {
+        battleTechResourceLocator = __instance;
+        VersionManifest manifest = Traverse.Create(__instance).Property<VersionManifest>("manifest").Value;
+        Log.TWL(0, $"BattleTechResourceLocator.RefreshTypedEntries manifest:{manifest.Count}");
+        HashSet<string> mechNames = new HashSet<string>();
+        foreach (string mech in Core.settings.skirmishMeches) { if (mechNames.Contains(mech) == false) { mechNames.Add(mech); }; }
+        Log.WL(1, "searching mods:" + Core.settings.skirmishMechesMods.Count);
+        HashSet<string> foldersToSearch = new HashSet<string>();
+        foreach (string modName in Core.settings.skirmishMechesMods) {
+          Log.WL(1, "searching mod:" + modName);
+          if (ModTek.ModTek.allModDefs.ContainsKey(modName) == false) { Log.WL(2, "not exists"); continue; }
+          var mod = ModTek.ModTek.allModDefs[modName];
+          if (mod.LoadFail == true) { Log.WL(2, "failed to load"); continue; }
+          if (mod.Enabled == false) { Log.WL(2, "disabled"); continue; }
+          foreach (var entry in mod.Manifest) {
+            Log.WL(2, $"entry:{entry.Id}:{entry.Type}:{entry.Path}");
+            if ((entry.Type != "MechDef") && (entry.Type != "VehicleDef")) { Log.WL(3, "wrong type"); continue; }
+            if (entry.IsDirectory) {
+              string folder = Path.Combine(mod.Directory, entry.Path);
+              foldersToSearch.Add(folder);
+              Log.WL(3, $"folder {folder}");
+              continue;
+            }
+            if (mechNames.Contains(entry.Id) == false) {
+              Log.WL(1, "Add mech id from mod " + entry.Id);
+              mechNames.Add(entry.Id);
+            };
+          }
+        }
+        foreach (var entry in __instance.AllEntriesOfResource(BattleTechResourceType.MechDef)) {
+          if (mechNames.Contains(entry.Id)) { continue; }
+          foreach (var folder in foldersToSearch) {
+            if (entry.FilePath.StartsWith(folder)) {
+              Log.WL(2, $"found {entry.Id}:{entry.FilePath}");
+              mechNames.Add(entry.Id);
+            }
+          }
+        }
+        foreach (var entry in __instance.AllEntriesOfResource(BattleTechResourceType.VehicleDef)) {
+          if (mechNames.Contains(entry.Id)) { continue; }
+          foreach (var folder in foldersToSearch) {
+            if (entry.FilePath.StartsWith(folder)) {
+              Log.WL(2, $"found {entry.Id}:{entry.FilePath}");
+              mechNames.Add(entry.Id);
+            }
+          }
+        }
+        Log.flush();
+        Core.settings.skirmishMeches = mechNames.ToList();
+        Log.TWL(0, "skirmishMeches");
+        foreach (string id in Core.settings.skirmishMeches) {
+          Log.WL(1, id);
+        }
+      } catch (Exception e) {
+        Log.TWL(0, e.ToString(), true);
+      }
+    }
+  }
   public static partial class Core {
     public static Settings settings;
     public static HarmonyInstance harmony = null;
@@ -336,30 +398,6 @@ namespace DBGSkirmishMechList {
         }
       } catch (Exception e) {
         Log.TWL(0,e.ToString(),true);
-      }
-      HashSet<string> mechNames = new HashSet<string>();
-      foreach(string mech in Core.settings.skirmishMeches) {if (mechNames.Contains(mech) == false) { mechNames.Add(mech); }; }
-      Log.WL(1, "searching mods:" + Core.settings.skirmishMechesMods.Count);
-      foreach (string modName in Core.settings.skirmishMechesMods) {
-        Log.WL(1, "searching mod:"+modName);
-        if (ModTek.ModTek.allModDefs.ContainsKey(modName) == false) { Log.WL(2, "not exists"); continue; }
-        var mod = ModTek.ModTek.allModDefs[modName];
-        if (mod.LoadFail == true) { Log.WL(2, "failed to load"); continue; }
-        if (mod.Enabled == false) { Log.WL(2, "disabled"); continue; }
-        foreach (var entry in mod.Manifest) {
-          Log.WL(2, "entry:"+entry.Id);
-          if ((entry.Type != "MechDef")&&(entry.Type != "VehicleDef")) { Log.WL(3, "not unit"); continue; }
-          if (mechNames.Contains(entry.Id) == false) {
-            Log.WL(1, "Add mech id from mod " + entry.Id);
-            mechNames.Add(entry.Id);
-          };
-        }
-      }
-      Log.flush();
-      Core.settings.skirmishMeches = mechNames.ToList();
-      Log.TWL(0, "skirmishMeches");
-      foreach (string id in Core.settings.skirmishMeches) {
-        Log.WL(1, id);
       }
     }
   }
