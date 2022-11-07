@@ -698,6 +698,10 @@ namespace CustAmmoCategories {
     public string firstFireSFX { get; set; } = null;
     [Key(123)]
     public string lastFireSFX { get; set; } = null;
+    [Key(124)]
+    public TripleBoolean IgnoreCover { get; set; } = TripleBoolean.NotSet;
+    [Key(125)]
+    public TripleBoolean BreachingShot { get; set; } = TripleBoolean.NotSet;
     public ExtWeaponDef() { }
   }
 }

@@ -153,6 +153,22 @@ namespace CustAmmoCategories {
       result = (float)Math.Round((double)result, 0);
       return result;
     }
+    public static bool IgnoreCover(this Weapon weapon) {
+      ExtAmmunitionDef ammo = weapon.ammo();
+      ExtWeaponDef extWeapon = weapon.exDef();
+      WeaponMode mode = weapon.mode();
+      if (mode.IgnoreCover != TripleBoolean.NotSet) { return mode.IgnoreCover == TripleBoolean.True; }
+      if (ammo.IgnoreCover != TripleBoolean.NotSet) { return ammo.IgnoreCover == TripleBoolean.True; }
+      return extWeapon.IgnoreCover == TripleBoolean.True;
+    }
+    public static bool BreachingShot(this Weapon weapon) {
+      ExtAmmunitionDef ammo = weapon.ammo();
+      ExtWeaponDef extWeapon = weapon.exDef();
+      WeaponMode mode = weapon.mode();
+      if (mode.BreachingShot != TripleBoolean.NotSet) { return mode.BreachingShot == TripleBoolean.True; }
+      if (ammo.BreachingShot != TripleBoolean.NotSet) { return ammo.BreachingShot == TripleBoolean.True; }
+      return extWeapon.BreachingShot == TripleBoolean.True;
+    }
     public static float AOERange(this Weapon weapon) {
       float result = 0f;
       ExtAmmunitionDef ammo = weapon.ammo();

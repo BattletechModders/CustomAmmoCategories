@@ -416,6 +416,10 @@ namespace CustAmmoCategories {
     public string firstFireSFX { get; set; } = null;
     [Key(138)]
     public string lastFireSFX { get; set; } = null;
+    [Key(139)]
+    public TripleBoolean IgnoreCover { get; set; } = TripleBoolean.NotSet;
+    [Key(140)]
+    public TripleBoolean BreachingShot { get; set; } = TripleBoolean.NotSet;
     [IgnoreMember, JsonIgnore]
     public bool Disabeld { get; set; } = false;
     private static List<PropertyInfo> json_properties = null;

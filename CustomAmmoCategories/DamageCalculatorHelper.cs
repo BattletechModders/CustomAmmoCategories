@@ -200,8 +200,8 @@ namespace CustAmmoCategories {
       descr = ds.ToString();
       this.Description = ds.ToString();
     }
-    public DamageModifiers(Weapon weapon, Vector3 attackPosition, ICombatant target, bool IsBreachingShot) {
-      this.IsBreachingShot = IsBreachingShot;
+    public DamageModifiers(Weapon weapon, Vector3 attackPosition, ICombatant target, bool _IsBreachingShot) {
+      this.IsBreachingShot = _IsBreachingShot;
       this.weapon = weapon;
       this.attackPos = attackPosition;
       this.target = target;
@@ -222,7 +222,9 @@ namespace CustAmmoCategories {
         distMod = weapon.DistantVarianceReversed() ? weapon.RevDistanceDamageMod(attackPosition, target) : weapon.DistanceDamageMod(attackPosition, target);
       }
       float overHeatMod = weapon.TargetOverheatModifier(target);
-      AttackImpactQuality attackImpactQuality = weapon.parent.Combat.ToHit.GetBlowQuality(weapon.parent, attackPosition, weapon, target, weapon.WeaponCategoryValue.IsMelee?MeleeAttackType.MeleeWeapon:MeleeAttackType.NotSet, this.IsBreachingShot);
+      if (weapon.BreachingShot()) { this.IsBreachingShot = true; }
+      AttackImpactQuality attackImpactQuality = weapon.IgnoreCover() ? AttackImpactQuality.Solid
+        : weapon.parent.Combat.ToHit.GetBlowQuality(weapon.parent, attackPosition, weapon, target, weapon.WeaponCategoryValue.IsMelee?MeleeAttackType.MeleeWeapon:MeleeAttackType.NotSet, this.IsBreachingShot);
       float qualityMultiplier = weapon.parent.Combat.ToHit.GetBlowQualityMultiplier(attackImpactQuality);
 
       modifiers.Add(new DamageModifier("Distance".UI(), DamageModifierType.Normal, true, false, (weapon.isDamageVariation() ? distMod : 1f), null));
@@ -359,7 +361,7 @@ namespace CustAmmoCategories {
 
       foreach(var dmgMod in DamageModifiersCache.damageModifiers) {
         string name = string.Empty;
-        if (dmgMod.Value.modname != null) { name = dmgMod.Value.modname(weapon,attackPosition,target,IsBreachingShot,(int)ArmorLocation.None,0f,0f,0f,0f); }
+        if (dmgMod.Value.modname != null) { name = dmgMod.Value.modname(weapon,attackPosition,target,this.IsBreachingShot,(int)ArmorLocation.None,0f,0f,0f,0f); }
         if (string.IsNullOrEmpty(name)) { name = dmgMod.Value.modnameStatic; }
         if (string.IsNullOrEmpty(name)) { name = dmgMod.Key; }
         if (dmgMod.Value.isStatic) {
