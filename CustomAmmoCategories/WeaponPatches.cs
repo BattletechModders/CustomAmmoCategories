@@ -158,11 +158,10 @@ namespace CustAmmoCategories {
       ExtAmmunitionDef ammo = weapon.ammo();
       ExtWeaponDef extWeapon = weapon.exDef();
       WeaponMode mode = weapon.mode();
-      if (ammo.AOECapable != TripleBoolean.NotSet) {
-        result = ammo.AOERange;
-      } else {
-        if (extWeapon.AOECapable != TripleBoolean.NotSet) { result = extWeapon.AOERange; }
-      }
+      if (extWeapon.AOECapable != TripleBoolean.NotSet) {
+        result = extWeapon.AOECapable == TripleBoolean.True ? extWeapon.AOERange: 0f;
+      } else if (ammo.AOECapable == TripleBoolean.True) { result = ammo.AOERange; }
+      if (result < CustomAmmoCategories.Epsilon) { return result; }
       if (weapon.parent != null) {
         if ((weapon.parent.EvasivePipsCurrent > 0) && (weapon.parent.HasMovedThisRound)) {
           float evasiveMod = extWeapon.evasivePipsMods.AOERange + ammo.evasivePipsMods.AOERange + mode.evasivePipsMods.AOERange;
@@ -176,11 +175,10 @@ namespace CustAmmoCategories {
       ExtAmmunitionDef ammo = weapon.ammo();
       ExtWeaponDef extWeapon = weapon.exDef();
       WeaponMode mode = weapon.mode();
-      if (ammo.AOECapable != TripleBoolean.NotSet) {
-        result = ammo.AOEDamage;
-      } else {
-        if (extWeapon.AOECapable != TripleBoolean.NotSet) { result = extWeapon.AOEDamage; }
-      }
+      if (extWeapon.AOECapable != TripleBoolean.NotSet) {
+        result = extWeapon.AOECapable == TripleBoolean.True ? extWeapon.AOEDamage : 0f;
+      } else if (ammo.AOECapable == TripleBoolean.True) { result = ammo.AOEDamage; }
+      if (result < CustomAmmoCategories.Epsilon) { return result; }
       if (weapon.parent != null) {
         if ((weapon.parent.EvasivePipsCurrent > 0)&& (weapon.parent.HasMovedThisRound)) {
           float evasiveMod = extWeapon.evasivePipsMods.AOEDamage + ammo.evasivePipsMods.AOEDamage + mode.evasivePipsMods.AOEDamage;
@@ -221,11 +219,9 @@ namespace CustAmmoCategories {
       ExtAmmunitionDef ammo = weapon.ammo();
       ExtWeaponDef extWeapon = weapon.exDef();
       WeaponMode mode = weapon.mode();
-      if (ammo.AOECapable != TripleBoolean.NotSet) {
-        result = ammo.AOEHeatDamage;
-      } else {
-        if (extWeapon.AOECapable != TripleBoolean.NotSet) { result = extWeapon.AOEHeatDamage; }
-      }
+      if (extWeapon.AOECapable != TripleBoolean.NotSet) {
+        result = extWeapon.AOECapable == TripleBoolean.True ? extWeapon.AOEHeatDamage : 0f;
+      } else if (ammo.AOECapable == TripleBoolean.True) { result = ammo.AOEHeatDamage; }
       if (weapon.parent != null) {
         if (weapon.parent.EvasivePipsCurrent > 0) {
           float evasiveMod = extWeapon.evasivePipsMods.AOEHeatDamage + ammo.evasivePipsMods.AOEHeatDamage + mode.evasivePipsMods.AOEHeatDamage;
@@ -239,11 +235,9 @@ namespace CustAmmoCategories {
       ExtAmmunitionDef ammo = weapon.ammo();
       ExtWeaponDef extWeapon = weapon.exDef();
       WeaponMode mode = weapon.mode();
-      if (ammo.AOECapable != TripleBoolean.NotSet) {
-        result = ammo.AOEInstability;
-      } else {
-        if (extWeapon.AOECapable != TripleBoolean.NotSet) { result = extWeapon.AOEInstability; }
-      }
+      if (extWeapon.AOECapable != TripleBoolean.NotSet) {
+        result = extWeapon.AOECapable == TripleBoolean.True ? extWeapon.AOEInstability : 0f;
+      } else if (ammo.AOECapable == TripleBoolean.True) { result = ammo.AOEInstability; }
       if (weapon.parent != null) {
         if (weapon.parent.EvasivePipsCurrent > 0) {
           float evasiveMod = extWeapon.evasivePipsMods.AOEInstability + ammo.evasivePipsMods.AOEInstability + mode.evasivePipsMods.AOEInstability;
