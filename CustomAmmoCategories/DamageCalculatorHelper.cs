@@ -94,13 +94,13 @@ namespace CustAmmoCategories {
       return variantDamage;
     }
     public static float DamageReductionMultiplierAll(Weapon weapon, Vector3 attackPosition, ICombatant target, bool IsBreachingShot, int location, float dmg, float ap, float heat, float stab) {
-      return target.StatCollection.GetValue<float>("DamageReductionMultiplierAll");
+      return target.StatCollection.GetValue<float>("DamageReductionMultiplierAll") * target.DamageReductionMultiplierAll(location);
     }
     public static float DamageReductionMultiplierType(Weapon weapon, Vector3 attackPosition, ICombatant target, bool IsBreachingShot, int location, float dmg, float ap, float heat, float stab) {
       float typeDmgResistanceMod = 1f;
       if (!string.IsNullOrEmpty(weapon.WeaponCategoryValue.DamageReductionMultiplierStat))
         typeDmgResistanceMod = target.StatCollection.GetValue<float>(weapon.WeaponCategoryValue.DamageReductionMultiplierStat);
-      return typeDmgResistanceMod;
+      return typeDmgResistanceMod * target.DamageReductionMultiplier(weapon.WeaponCategoryValue.DamageReductionMultiplierStat, location);
     }
     public static float iHeatMod(Weapon weapon, Vector3 attackPosition, ICombatant target, bool IsBreachingShot, int location, float dmg, float ap, float heat, float stab) {
       return target.IncomingHeatMult();
@@ -114,10 +114,10 @@ namespace CustAmmoCategories {
       return result;
     }
     public static float iAPMod(Weapon weapon, Vector3 attackPosition, ICombatant target, bool IsBreachingShot, int location, float dmg, float ap, float heat, float stab) {
-      return target.APDamageMult();
+      return target.APDamageMult() * target.APDamageMult(location);
     }
     public static float iAPImmune(Weapon weapon, Vector3 attackPosition, ICombatant target, bool IsBreachingShot, int location, float dmg, float ap, float heat, float stab) {
-      return target.isAPProtected() ? 0f : 1f;
+      return (target.isAPProtected() || target.isAPProtected(location)) ? 0f : 1f;
     }
     public static float HeatToNormal(Weapon weapon, Vector3 attackPosition, ICombatant target, bool IsBreachingShot, int location, float dmg, float ap, float heat, float stab) {
       return target.isHasHeat()?0f:heat;

@@ -61,9 +61,31 @@ namespace CustAmmoCategories {
     public static readonly string APDamageMultStatisticName = "CACAPDamageMult";
     public static readonly string IncomingHeatMultStatisticName = "CACIncomingHeatMult";
     public static readonly string IncomingStabilityMultStatisticName = "CACIncomingStabilityMult";
+    public static readonly string CriticalHitChanceReceivedMultiplierStatName = "CriticalHitChanceReceivedMultiplier";
+    public static readonly string DamageReductionMultiplierAllStatName = "DamageReductionMultiplierAll";
+    public static float DamageReductionMultiplier(this ICombatant unit, string statName, int location) {
+      if (unit is Mech) { location = (int)MechStructureRules.GetChassisLocationFromArmorLocation((ArmorLocation)location); }
+      if (unit.StatCollection.ContainsStatistic($"{location}.{statName}") == false) { return 1f; }
+      return unit.StatCollection.GetStatistic($"{location}.{statName}").Value<float>();
+    }
+    public static float DamageReductionMultiplierAll(this ICombatant unit, int location) {
+      if (unit is Mech) { location = (int)MechStructureRules.GetChassisLocationFromArmorLocation((ArmorLocation)location); }
+      if (unit.StatCollection.ContainsStatistic($"{location}.{DamageReductionMultiplierAllStatName}") == false) { return 1f; }
+      return unit.StatCollection.GetStatistic($"{location}.{DamageReductionMultiplierAllStatName}").Value<float>();
+    }
+    public static float CriticalHitChanceReceivedMultiplier(this ICombatant unit, int location) {
+      if (unit is Mech) { location = (int)MechStructureRules.GetChassisLocationFromArmorLocation((ArmorLocation)location); }
+      if (unit.StatCollection.ContainsStatistic($"{location}.{CriticalHitChanceReceivedMultiplierStatName}") == false) { return 1f; }
+      return unit.StatCollection.GetStatistic($"{location}.{CriticalHitChanceReceivedMultiplierStatName}").Value<float>();
+    }
     public static bool isAPProtected(this ICombatant unit) {
       if (unit.StatCollection.ContainsStatistic(APProtectionStatisticName) == false) { return false; }
       return unit.StatCollection.GetStatistic(APProtectionStatisticName).Value<bool>();
+    }
+    public static bool isAPProtected(this ICombatant unit, int location) {
+      if (unit is Mech) { location = (int)MechStructureRules.GetChassisLocationFromArmorLocation((ArmorLocation)location); }
+      if (unit.StatCollection.ContainsStatistic($"{location}.{APProtectionStatisticName}") == false) { return false; }
+      return unit.StatCollection.GetStatistic($"{location}.{APProtectionStatisticName}").Value<bool>();
     }
     public static float AoEDamageMult(this ICombatant unit) {
       if (unit.StatCollection.ContainsStatistic(AoEDamageMultStatisticName) == false) { return 1f; }
@@ -72,6 +94,11 @@ namespace CustAmmoCategories {
     public static float APDamageMult(this ICombatant unit) {
       if (unit.StatCollection.ContainsStatistic(APDamageMultStatisticName) == false) { return 1f; }
       return unit.StatCollection.GetStatistic(APDamageMultStatisticName).Value<float>();
+    }
+    public static float APDamageMult(this ICombatant unit, int location) {
+      if (unit is Mech) { location = (int)MechStructureRules.GetChassisLocationFromArmorLocation((ArmorLocation)location); }
+      if (unit.StatCollection.ContainsStatistic($"{location}.{APDamageMultStatisticName}") == false) { return 1f; }
+      return unit.StatCollection.GetStatistic($"{location}.{APDamageMultStatisticName}").Value<float>();
     }
     public static float IncomingHeatMult(this ICombatant unit) {
       if (unit.StatCollection.ContainsStatistic(IncomingHeatMultStatisticName) == false) { return 1f; }
@@ -85,9 +112,19 @@ namespace CustAmmoCategories {
       if (unit.StatCollection.ContainsStatistic(APShardsStatisticName) == false) { return 1f; }
       return unit.StatCollection.GetStatistic(APShardsStatisticName).Value<float>();
     }
+    public static float APShardsMult(this ICombatant unit, int location) {
+      if (unit is Mech) { location = (int)MechStructureRules.GetChassisLocationFromArmorLocation((ArmorLocation)location); }
+      if (unit.StatCollection.ContainsStatistic($"{location}.{APShardsStatisticName}") == false) { return 1f; }
+      return unit.StatCollection.GetStatistic($"{location}.{APShardsStatisticName}").Value<float>();
+    }
     public static float APMaxArmorThiknessMult(this ICombatant unit) {
       if (unit.StatCollection.ContainsStatistic(APMaxArmorThiknessStatisticName) == false) { return 1f; }
       return unit.StatCollection.GetStatistic(APMaxArmorThiknessStatisticName).Value<float>();
+    }
+    public static float APMaxArmorThiknessMult(this ICombatant unit, int location) {
+      if (unit is Mech) { location = (int)MechStructureRules.GetChassisLocationFromArmorLocation((ArmorLocation)location); }
+      if (unit.StatCollection.ContainsStatistic($"{location}.{APMaxArmorThiknessStatisticName}") == false) { return 1f; }
+      return unit.StatCollection.GetStatistic($"{location}.{APMaxArmorThiknessStatisticName}").Value<float>();
     }
     public static void InitExDamageStats(this ICombatant unit) {
       if (unit.StatCollection.ContainsStatistic(APProtectionStatisticName) == false) {

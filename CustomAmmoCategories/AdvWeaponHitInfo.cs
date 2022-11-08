@@ -341,7 +341,7 @@ namespace CustAmmoCategories {
       if (this.isHit) {
         if (this.isImplemented == true) { return; }
         if (this.impactMessage == null) { return; }
-        Log.M.TWL(0, "Applying damage " +this.parent.weapon.defId+" to "+this.target.DisplayName + " UID:"+this.UID+ " isAPProtected:"+ this.target.isAPProtected());
+        Log.M.TWL(0, $"Applying damage {this.parent.weapon.defId} to {this.target.DisplayName} UID:{this.UID} isAPProtected:{this.target.isAPProtected()}/{this.target.isAPProtected(this.hitLocation)}");
         this.isImplemented = true;
         this.setApplyState();
         //this.ApplyTargetResistance();
@@ -363,7 +363,7 @@ namespace CustAmmoCategories {
             Log.LogWrite("  AoE can't inflict crits due to settings\n");
           }
         } else if (this.isAOE == false) {
-          if (this.target.isAPProtected() == false) {
+          if ((this.target.isAPProtected() == false)&&(this.target.isAPProtected(this.hitLocation) == false)) {
             if ((apdmg > CustomAmmoCategories.Epsilon) || this.parent.weapon.isAPCrit()) {
               Log.LogWrite("  crit to location armor pierce:" + this.hitLocation + "\n");
               this.parent.resolve(this.target).AddCrit(this.hitLocation, this.target);

@@ -1228,6 +1228,21 @@ namespace CustAmmoCategories {
       if (unit.StatCollection.ContainsStatistic(AdvancedCriticalProcessor.AP_CRIT_CHANCE_STAT_NAME) == false) { return 1.0f; };
       return unit.StatCollection.GetStatistic(AdvancedCriticalProcessor.AP_CRIT_CHANCE_STAT_NAME).Value<float>();
     }
+    public static float FlatCritChance(this ICombatant unit, int location) {
+      if (unit is Mech) { location = (int)MechStructureRules.GetChassisLocationFromArmorLocation((ArmorLocation)location); }
+      if (unit.StatCollection.ContainsStatistic($"{location}.{AdvancedCriticalProcessor.FLAT_CRIT_CHANCE_STAT_NAME}") == false) { return 1.0f; };
+      return unit.StatCollection.GetStatistic($"{location}.{AdvancedCriticalProcessor.FLAT_CRIT_CHANCE_STAT_NAME}").Value<float>();
+    }
+    public static float BaseCritChance(this ICombatant unit, int location) {
+      if (unit is Mech) { location = (int)MechStructureRules.GetChassisLocationFromArmorLocation((ArmorLocation)location); }
+      if (unit.StatCollection.ContainsStatistic($"{location}.{AdvancedCriticalProcessor.BASE_CRIT_CHANCE_STAT_NAME}") == false) { return 1.0f; };
+      return unit.StatCollection.GetStatistic($"{location}.{AdvancedCriticalProcessor.BASE_CRIT_CHANCE_STAT_NAME}").Value<float>();
+    }
+    public static float APCritChance(this ICombatant unit, int location) {
+      if (unit is Mech) { location = (int)MechStructureRules.GetChassisLocationFromArmorLocation((ArmorLocation)location); }
+      if (unit.StatCollection.ContainsStatistic($"{location}.{AdvancedCriticalProcessor.AP_CRIT_CHANCE_STAT_NAME}") == false) { return 1.0f; };
+      return unit.StatCollection.GetStatistic($"{location}.{AdvancedCriticalProcessor.AP_CRIT_CHANCE_STAT_NAME}").Value<float>();
+    }
     public static bool NoMoveAnimation(this ICombatant unit) {
       if (unit.StatCollection.ContainsStatistic(NoMoveAnimationActorStat) == false) { return false; };
       return unit.StatCollection.GetStatistic(NoMoveAnimationActorStat).Value<bool>();

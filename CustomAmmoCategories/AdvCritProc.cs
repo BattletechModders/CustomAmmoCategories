@@ -133,11 +133,11 @@ namespace CustAmmoCategories {
       }
       if (armor > CustomAmmoCategories.Epsilon) {
         float baseCritChance = AdvancedCriticalProcessor.GetBaseAPCritChance(unit, critInfo);
-        float shardsCritChance = 1f; float shardsMod = weapon.APArmorShardsMod() * unit.APShardsMult();
+        float shardsCritChance = 1f; float shardsMod = weapon.APArmorShardsMod() * unit.APShardsMult() * unit.APShardsMult(critInfo.armorLocation);
         if (shardsMod > CustomAmmoCategories.Epsilon) {
           shardsCritChance += (1f - armor / unit.MaxArmorForLocation(critInfo.armorLocation)) * shardsMod;
         }
-        float thicknessCritChance = 1f; float maxThickness = weapon.APMaxArmorThickness() * unit.APMaxArmorThiknessMult();
+        float thicknessCritChance = 1f; float maxThickness = weapon.APMaxArmorThickness() * unit.APMaxArmorThiknessMult() * unit.APMaxArmorThiknessMult(critInfo.armorLocation);
         if (maxThickness > CustomAmmoCategories.Epsilon) {
           if (armor >= maxThickness) { thicknessCritChance = 0f; } else {
             thicknessCritChance = (1f - armor / maxThickness);
@@ -147,16 +147,16 @@ namespace CustAmmoCategories {
         if (weapon.isAPCrit()) {
           TAcritMultiplier = weapon.APCriticalChanceMultiplier();
         }
-        float result = baseCritChance * shardsCritChance * TAcritMultiplier * thicknessCritChance * unit.FlatCritChance() * unit.APCritChance();
-        Log.C.WL(1, string.Format("[GetCritChance] base = {0}, shards mod = {1}, thickness mod = {2}, ap mod = {3}, flat={4}, ap = {5}, result = {6}!", baseCritChance, shardsCritChance, thicknessCritChance, TAcritMultiplier, unit.FlatCritChance(), unit.APCritChance(), result));
+        float result = baseCritChance * shardsCritChance * TAcritMultiplier * thicknessCritChance * unit.FlatCritChance() * unit.FlatCritChance(critInfo.armorLocation) * unit.APCritChance() * unit.APCritChance(critInfo.armorLocation);
+        Log.C.WL(1, string.Format("[GetCritChance] base = {0}, shards mod = {1}, thickness mod = {2}, ap mod = {3}, flat={4}, ap = {5}, result = {6}!", baseCritChance, shardsCritChance, thicknessCritChance, TAcritMultiplier, unit.FlatCritChance() * unit.FlatCritChance(critInfo.armorLocation), unit.APCritChance() * unit.APCritChance(critInfo.armorLocation), result));
         critInfo.critChance = result;
         return result;
       } else {
         float a = AdvancedCriticalProcessor.GetBaseCritChance(unit, critInfo);
         float num = Mathf.Max(a, unit.Combat.Constants.ResolutionConstants.MinCritChance);
-        float critMultiplier = unit.Combat.CritChance.GetCritMultiplier(unit, weapon, true);
-        critInfo.critChance = num * critMultiplier * unit.FlatCritChance() * unit.BaseCritChance();
-        Log.C.WL(1, string.Format("[GetCritChance] base = {0}, multiplier = {1}, flat={2}, basemod={3} result={4}!", num, critMultiplier, unit.FlatCritChance(), unit.BaseCritChance(), critInfo.critChance));
+        float critMultiplier = unit.Combat.CritChance.GetCritMultiplier(unit, weapon, true) * unit.CriticalHitChanceReceivedMultiplier(critInfo.armorLocation);
+        critInfo.critChance = num * critMultiplier * unit.FlatCritChance() * unit.FlatCritChance(critInfo.armorLocation) * unit.BaseCritChance() * unit.BaseCritChance(critInfo.armorLocation);
+        Log.C.WL(1, string.Format("[GetCritChance] base = {0}, multiplier = {1}, flat={2}, basemod={3} result={4}!", num, critMultiplier, unit.FlatCritChance() * unit.FlatCritChance(critInfo.armorLocation), unit.BaseCritChance() * unit.BaseCritChance(critInfo.armorLocation), critInfo.critChance));
         return num * critMultiplier;
       }
     }
