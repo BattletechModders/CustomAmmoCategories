@@ -2143,8 +2143,13 @@ namespace CustomAmmoCategoriesPatches {
   [HarmonyPatch(new Type[] { })]
   public static class TurnDirector_EndCurrentRound {
     public static void Postfix(TurnDirector __instance) {
-      DynamicMapHelper.FireTick();
-      DynamicMapHelper.TempTick();
+      try {
+        DynamicMapHelper.FireTick();
+        DynamicMapHelper.TempTick();
+        BlockWeaponsHelpers.EjectAIBlocking(__instance.Combat);
+      } catch(Exception e) {
+        Log.M?.TWL(0,e.ToString(),true);
+      }
     }
   }
   [HarmonyPatch(typeof(TreeContainer))]

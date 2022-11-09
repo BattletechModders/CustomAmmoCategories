@@ -39,6 +39,11 @@ namespace CustAmmoCategories {
       }
       actor.StatCollection.Set<bool>(CustomAmmoCategories.EjectingNowStatName, value);
     }
+    public static void EjectWeaponForce(this Weapon weapon) {
+      if (weapon.IsFunctional == false) { return; }
+      weapon.StatCollection.Set<ComponentDamageLevel>("DamageLevel", ComponentDamageLevel.Destroyed);
+      BlockWeaponsHelpers.RecalculateBlocked(weapon.parent);
+    }
     public static void EjectWeapon(Weapon weapon, CombatHUDWeaponSlot hudSlot) {
       CustomAmmoCategoriesLog.Log.LogWrite("EjectWeapon " + weapon.defId + "\n");
       if (weapon.IsFunctional == false) { return; }

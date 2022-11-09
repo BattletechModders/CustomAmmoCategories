@@ -9,13 +9,16 @@
  *  If not, see <https://www.gnu.org/licenses/>. 
 */
 using BattleTech;
+using CleverGirlAIDamagePrediction;
 using CustomAmmoCategoriesLog;
 using Localize;
+using System;
 using System.Collections.Generic;
 
 namespace CustAmmoCategories {
   public static class BlockWeaponsHelpers {
     private static Dictionary<Weapon, bool> weaponBlockCache = new Dictionary<Weapon, bool>();
+    public static void Clear() { weaponBlockCache.Clear(); }
     public static bool isBlocked(this Weapon weapon) {
       if(weaponBlockCache.TryGetValue(weapon,out bool result)) { return result; };
       RecalculateBlocked(weapon.parent);
@@ -23,6 +26,46 @@ namespace CustAmmoCategories {
       result = false;
       weaponBlockCache.Add(weapon, false);
       return result;
+    }
+    public static bool CanBeEjected(this Weapon weapon) {
+      return weapon.exDef().EjectWeapon;
+    }
+    public static bool isBlocking(this Weapon weapon) {
+      var extDef = weapon.exDef();
+      if (extDef.blockWeaponsInInstalledLocation) { return true; }
+      if (extDef.blockWeaponsInMechLocations.Count > 0) { return true; }
+      return false;
+    }
+    public static void EjectAIBlocking(this CombatGameState combat) {
+      foreach(AbstractActor unit in combat.AllActors) {
+        try {
+          if (unit.IsDead) { continue; }
+          if (unit.IsDeployDirector()) { continue; }
+          if (unit.TeamId == combat.LocalPlayerTeamGuid) { continue; }
+          unit.EjectBlocking();
+        } catch (Exception e) {
+          Log.M?.TWL(0,e.ToString(),true);
+        }
+      }
+    }
+    public static void EjectBlocking(this AbstractActor unit) {
+      foreach(Weapon weapon in unit.Weapons) {
+        try {
+          if (weapon.IsFunctional == false) { continue; }
+          if (weapon.CanBeEjected() == false) { continue; }
+          AmmoModePair curAmmoMode = weapon.getCurrentAmmoMode();
+          List<AmmoModePair> firingmethods = weapon.getAvaibleFiringMethods();
+          bool eject = true;
+          foreach (var ammomode in firingmethods) {
+            weapon.ApplyAmmoMode(ammomode);
+            if (weapon.CanFire) { eject = false; break; }
+          }
+          if (eject) { weapon.EjectWeaponForce(); }
+          weapon.ApplyAmmoMode(curAmmoMode);
+        }catch(Exception e) {
+          Log.M?.TWL(0, e.ToString(), true);
+        }
+      }
     }
     public static void RecalculateBlocked(this AbstractActor actor) {
       Log.M.TWL(0, "RecalculateBlocked:"+new Text(actor.DisplayName));
