@@ -240,16 +240,14 @@ namespace CustAmmoCategories {
       return true;
     }
     public void AddMode(WeaponMode mode, bool switchTo) {
-      if (mode == null) { return; }
-      if (this.modes.ContainsKey(mode.Id)) { return; }
-      this.modes.Add(mode.Id, mode);
-      this.setMode(mode.Id);
+      this.AddMode(mode, null, switchTo);
     }
     public void AddMode(WeaponMode mode, MechComponent src, bool switchTo) {
       if (mode == null) { return; }
       if (this.modes.ContainsKey(mode.Id)) { return; }
-      this.AddMode(mode, switchTo);
-      this.modesSources[mode] = src;
+      this.modes.Add(mode.Id, mode);
+      if (switchTo) this.setMode(mode.Id);
+      if (src != null)this.modesSources[mode] = src;
     }
     public MechComponent currentModeSource() {
       if (this.modesSources.TryGetValue(this.mode, out var result)) { return result; }
