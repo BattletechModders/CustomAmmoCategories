@@ -5,8 +5,64 @@ using System;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Reflection.Emit;
+using IRBTModUtils;
+using System.Threading;
 
 namespace CustAmmoCategories {
+  [HarmonyPatch(typeof(SimGameState))]
+  [HarmonyPatch("ApplyEventAction")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { typeof(SimGameResultAction), typeof(object) })]
+  public static class SimGameState_ApplyEventAction {
+    public static void Prefix(SimGameResultAction action, object additionalObject) {
+      try {
+        Log.M?.TWL(0, $"SimGameState.ApplyEventAction {action.Type} {action.value}");
+        Thread.CurrentThread.pushToStack<SimGameResultAction>("ApplyEventAction", action);
+      } catch (Exception e) {
+        Log.M?.TWL(0, e.ToString(), true);
+      }
+    }
+    public static void Postfix(SimGameResultAction action, object additionalObject) {
+      try {
+        Thread.CurrentThread.popFromStack<SimGameResultAction>("ApplyEventAction");
+      } catch (Exception e) {
+        Log.M?.TWL(0, e.ToString(), true);
+      }
+    }
+  }
+  [HarmonyPatch(typeof(SimGameState))]
+  [HarmonyPatch("SetCurrentSystem")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { typeof(StarSystem), typeof(bool), typeof(bool) })]
+  public static class SimGameState_SetCurrentSystem {
+    public static void Postfix(SimGameState __instance, StarSystem system, bool force, bool timeSkip) {
+      try {
+        SimGameResultAction action = Thread.CurrentThread.peekFromStack<SimGameResultAction>("ApplyEventAction");
+        if (action == null) { return; }
+        if (action.Type != SimGameResultAction.ActionType.Company_TravelTo) { return; }
+        Log.M?.TWL(0, $"SimGameState.ApplyEventAction {action.Type} {system.Name} {__instance.TravelManager.TravelState}");
+        if (__instance.TravelManager.TravelState != SimGameTravelStatus.IN_SYSTEM) {
+          if (__instance.ActiveTravelContract != null) { __instance.OnBreadcrumbCancelledByUser(); };
+          __instance.Starmap.CancelTravelAndMoveToCurrentSystem();
+        }
+      } catch (Exception e) {
+        Log.M?.TWL(0, e.ToString(), true);
+      }
+    }
+  }
+  [HarmonyPatch(typeof(SimGameEventTracker))]
+  [HarmonyPatch("CheckRoll")]
+  [HarmonyPatch(MethodType.Normal)]
+  public static class SimGameEventTracker_CheckRoll {
+    public static void Postfix(SimGameEventTracker __instance, bool incrementOnFailure, float randomRoll, ref bool __result) {
+      try {
+        //if (UnityGameInstance.BattleTechGame.Simulation.TravelState == SimGameTravelStatus.AT_JUMP_POINT) { __result = true; }
+        Log.M?.TWL(0, $"SimGameEventTracker.CheckRoll TravelState:{UnityGameInstance.BattleTechGame.Simulation.TravelState} result:{__result}");
+      } catch (Exception e) {
+        Log.M?.TWL(0, e.ToString(), true);
+      }
+    }
+  }
   [HarmonyPatch(typeof(SimGameState))]
   [HarmonyPatch("InitCompanyStats")]
   [HarmonyPatch(MethodType.Normal)]
