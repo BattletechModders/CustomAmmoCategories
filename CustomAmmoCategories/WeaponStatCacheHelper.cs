@@ -193,6 +193,7 @@ namespace CustAmmoCategories {
     public WeaponMode mode { get; set; }
     public Dictionary<string, WeaponMode> modes { get; set; } = new Dictionary<string, WeaponMode>();
     public Dictionary<WeaponMode, MechComponent> modesSources { get; set; } = new Dictionary<WeaponMode, MechComponent>();
+    public Dictionary<WeaponMode, HashSet<WeaponMode>> overridenModes { get; set; } = new Dictionary<WeaponMode, HashSet<WeaponMode>>();
     public ExtWeaponDef extDef { get; set; }
     public ExtAmmunitionDef ammo { get; set; }
     public bool HasAmmoVariants { get; set; }
@@ -244,7 +245,23 @@ namespace CustAmmoCategories {
     }
     public void AddMode(WeaponMode mode, MechComponent src, bool switchTo) {
       if (mode == null) { return; }
-      if (this.modes.ContainsKey(mode.Id)) { return; }
+      if (this.modes.ContainsKey(mode.Id)) {
+        if (this.mode.Id == mode.Id) { switchTo = true; }
+        WeaponMode oldMode = this.modes[mode.Id];
+        string curid = mode.Id;
+        if (mode.isFromJson) {
+          mode = oldMode.merge(mode);
+          int t = 0;
+          string new_id = string.Format("{0}_{1}", mode.Id, t);
+          while (this.modes.ContainsKey(new_id)) { ++t; new_id = string.Format("{0}_{1}", mode.Id, t); }
+          mode.Id = new_id;
+          if(this.overridenModes.TryGetValue(oldMode, out var ovrmodes) == false) {
+            ovrmodes = new HashSet<WeaponMode>();
+          }
+          ovrmodes.Add(mode);
+          this.overridenModes[oldMode] = ovrmodes;
+        }
+      }
       this.modes.Add(mode.Id, mode);
       if (switchTo) this.setMode(mode.Id);
       if (src != null)this.modesSources[mode] = src;
@@ -264,6 +281,11 @@ namespace CustAmmoCategories {
         if (src.IsFunctional == false) { return false; }
       }
       if (this.modes.ContainsKey(mode.Id) == false) { return false; }
+      if(this.overridenModes.TryGetValue(mode, out var ovrmodes)) {
+        foreach (var ovrmode in ovrmodes) {
+          if (this.isModeAvailble(ovrmode)) { return false; }
+        }
+      }
       return mode.Lock.isAvaible(weapon);
     }
     public bool isCurrentModeAvailable() {
@@ -451,6 +473,14 @@ namespace CustAmmoCategories {
   }
   public static class WeaponStatCacheHelper {
     private static Dictionary<Weapon, WeaponExtendedInfo> weaponExtInfo = new Dictionary<Weapon, WeaponExtendedInfo>();
+    private static Dictionary<StatCollection, Weapon> weaponsStatCollections = new Dictionary<StatCollection, Weapon>();
+    public static void RegisterStatCollection(this Weapon weapon) {
+      weaponsStatCollections[weapon.StatCollection] = weapon;
+    }
+    public static Weapon getWeapon(this StatCollection statCollection) {
+      if (weaponsStatCollections.TryGetValue(statCollection, out var result)) { return result; }
+      return null;
+    }
     public static void RefreshDisplayedWeapons(this CombatHUDWeaponSlot slot) {
       Traverse.Create(slot).Field<CombatHUD>("HUD").Value.WeaponPanel.RefreshDisplayedWeapons();
     }
@@ -494,6 +524,7 @@ namespace CustAmmoCategories {
       //weaponMode.Clear();
       //weaponExte.Clear();
       //weaponHasAmmoVariants.Clear();
+      weaponsStatCollections.Clear();
       weaponExtInfo.Clear();
     }
     public static void ClearAmmoModeCache(this Weapon weapon) {

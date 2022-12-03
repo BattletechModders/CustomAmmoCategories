@@ -427,8 +427,12 @@ namespace CustAmmoCategories {
     }
     public static bool AOECapable(this Weapon weapon) {
       ExtAmmunitionDef ammo = weapon.ammo();
-      if (ammo.AOECapable != TripleBoolean.NotSet) { return ammo.AOECapable == TripleBoolean.True; }
-      return weapon.exDef().AOECapable == TripleBoolean.True;
+      ExtWeaponDef extWeapon = weapon.exDef();
+      WeaponMode mode = weapon.mode();
+      if (mode.AOECapable == TripleBoolean.True) { return true; }
+      if (ammo.AOECapable == TripleBoolean.True) { return true; }
+      if (extWeapon.AOECapable == TripleBoolean.True) { return true; }
+      return false;
     }
     public static string SpesialOfflineIFF = "_IFFOfflne";
     public static string IFFTransponderDef(this Weapon weapon) {
@@ -888,6 +892,7 @@ namespace CustAmmoCategories {
         }
         if (__instance.weapon.AOECapable() == false) { return true; };
         float AOERange = __instance.weapon.AOERange();
+        if (AOERange < CustomAmmoCategories.Epsilon) { return true; };
         Vector3 endPos = (Vector3)typeof(WeaponEffect).GetField("endPos", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(__instance);
         CombatGameState Combat = (CombatGameState)typeof(WeaponEffect).GetField("Combat", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(__instance);
         foreach (Collider collider in Physics.OverlapSphere(endPos, AOERange, -5, QueryTriggerInteraction.Ignore)) {

@@ -17,6 +17,7 @@ using MessagePack;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -52,27 +53,9 @@ using System.Text;
 
 namespace CustAmmoCategories {
   public static partial class CustomAmmoCategories {
-    //public static readonly string NoModeToFireStatisticName = "CACNoModeToFire";
     public static List<WeaponMode> AvaibleModes(this Weapon weapon) {
       return weapon.info().avaibleModes();
-      //List<WeaponMode> result = new List<WeaponMode>();
-      //ExtWeaponDef extWeapon = weapon.exDef();
-      //foreach(var mode in extWeapon.Modes) {
-      //  if (mode.Value.Lock.isAvaible(weapon)) { result.Add(mode.Value); };
-      //}
-      //return result;
     }
-    //public static bool NoModeToFire(this Weapon weapon) {
-    //  Statistic stat = weapon.StatCollection.GetStatistic(NoModeToFireStatisticName);
-    //  if (stat == null) { return false; }
-    //  return stat.Value<bool>();
-    //}
-    //public static void NoModeToFire(this Weapon weapon,bool value) {
-    //  if (weapon.StatCollection.ContainsStatistic(NoModeToFireStatisticName) == false) {
-    //    weapon.StatCollection.AddStatistic<bool>(NoModeToFireStatisticName, false);
-    //  }
-    //  weapon.StatCollection.Set<bool>(NoModeToFireStatisticName, value);
-    //}
   }
   [MessagePackObject]
   public class ModeLockSetting {
@@ -132,6 +115,38 @@ namespace CustAmmoCategories {
       return true;
     } 
   }
+  [System.AttributeUsage(System.AttributeTargets.Property)]
+  public class MergeFloatMultiplicative : System.Attribute {
+    public MergeFloatMultiplicative() { }
+  }
+  [System.AttributeUsage(System.AttributeTargets.Property)]
+  public class MergeFloatAdditive : System.Attribute {
+    public MergeFloatAdditive() { }
+  }
+  public static class WeaponModeHelper {
+    public static bool isJsonIgnore(this PropertyInfo prop) {
+      object[] attrs = prop.GetCustomAttributes(true);
+      foreach (object attr in attrs) {
+        if ((attr as JsonIgnoreAttribute) != null) { return true; }
+      }
+      return false;
+    }
+    public static bool isMergeMultiplicative(this PropertyInfo prop) {
+      object[] attrs = prop.GetCustomAttributes(true);
+      foreach (object attr in attrs) {
+        if ((attr as MergeFloatMultiplicative) != null) { return true; }
+      }
+      return false;
+    }
+    public static bool isMergetAdditive(this PropertyInfo prop) {
+      object[] attrs = prop.GetCustomAttributes(true);
+      foreach (object attr in attrs) {
+        if ((attr as MergeFloatAdditive) != null) { return true; }
+      }
+      return false;
+    }
+  }
+
   [SelfDocumentedClass("Weapons", "Weapons", "WeaponMode"), MessagePackObject]
   public class WeaponMode {
     public static string BASE_MODE_NAME = "B";
@@ -420,8 +435,20 @@ namespace CustAmmoCategories {
     public TripleBoolean IgnoreCover { get; set; } = TripleBoolean.NotSet;
     [Key(140)]
     public TripleBoolean BreachingShot { get; set; } = TripleBoolean.NotSet;
+    [Key(141)]
+    public float AOERange { get; set; } = 0f;
+    [Key(142)]
+    public float AOEDamage { get; set; } = 0f;
+    [Key(143)]
+    public float AOEHeatDamage { get; set; } = 0f;
+    [Key(144)]
+    public float AOEInstability { get; set; } = 0f;
+    [Key(145)][JsonIgnore]
+    protected HashSet<string> SettedProperties { get; set; } = new HashSet<string>();
     [IgnoreMember, JsonIgnore]
     public bool Disabeld { get; set; } = false;
+    [Key(146), JsonIgnore]
+    public bool isFromJson { get; private set; } = false;
     private static List<PropertyInfo> json_properties = null;
     private static void fill_json_properties() {
       if (json_properties != null) { return; }
@@ -436,6 +463,88 @@ namespace CustAmmoCategories {
         if (ignore_property) { continue; }
         json_properties.Add(prop);
       }
+    }
+    private enum PropertyMergeType { Replace, Append, Dictionary, List };
+    private static Dictionary<PropertyInfo, PropertyMergeType> merge_properties = new Dictionary<PropertyInfo, PropertyMergeType>();
+    private static void initMergeProperties() {
+      if (merge_properties.Count() != 0) { return; }
+      foreach (PropertyInfo prop in typeof(WeaponMode).GetProperties()) {
+        object[] attrs = prop.GetCustomAttributes(true);
+        bool ignore_property = false;
+        foreach (object attr in attrs) {
+          if ((attr as JsonIgnoreAttribute) != null) { ignore_property = true; break; }
+        }
+        if (ignore_property) { continue; }
+        PropertyMergeType mtype = PropertyMergeType.Replace;
+        if (prop.PropertyType.IsEnum) { mtype = PropertyMergeType.Replace; } else
+        if (prop.PropertyType.GetInterface(nameof(IDictionary)) != null) { mtype = PropertyMergeType.Dictionary; } else
+        if (prop.PropertyType.GetInterface(nameof(IList)) != null) { mtype = PropertyMergeType.Dictionary; }
+        if (prop.PropertyType == typeof(float)) { mtype = PropertyMergeType.Append; }
+        if (prop.PropertyType == typeof(int)) { mtype = PropertyMergeType.Append; }
+        if (prop.PropertyType == typeof(string)) { mtype = PropertyMergeType.Replace; }
+        merge_properties.Add(prop, mtype);
+      }
+    }
+    public WeaponMode DeepCopy() {
+      WeaponMode result = new WeaponMode();
+      result.AmmoCategory = this.AmmoCategory;
+      foreach (var prop in typeof(WeaponMode).GetProperties()) {
+        if (prop.isJsonIgnore()) { continue; }
+        if (prop.PropertyType.GetInterface(nameof(IDictionary)) != null) {
+          IDictionary dres = prop.GetValue(result) as IDictionary;
+          if (dres == null) { continue; }
+          IDictionary dthis = prop.GetValue(this) as IDictionary;
+          if (dthis == null) { continue; }
+          foreach (IDictionaryEnumerator en in dthis) {
+            dres[en.Key] = en.Value;
+          }
+        } else if (prop.PropertyType.GetInterface(nameof(IList)) != null) {
+          IList lres = prop.GetValue(result) as IList;
+          if (lres == null) { continue; }
+          IList lthis = prop.GetValue(this) as IList;
+          if (lthis == null) { continue; }
+          foreach (var en in lthis) {
+            lres.Add(en);
+          }
+        } else {
+          prop.SetValue(result, prop.GetValue(this));
+        }
+      }
+      return result;
+    }
+    public WeaponMode merge(WeaponMode mode) {
+      WeaponMode result = this.DeepCopy();
+      if (mode.AmmoCategory != null) { result.AmmoCategory = mode.AmmoCategory; };
+      foreach (var prop in typeof(WeaponMode).GetProperties()) {
+        if (prop.Name == nameof(Id)) { continue; }
+        if (mode.SettedProperties.Contains(prop.Name) == false) { continue; }
+        if (prop.isJsonIgnore()) { continue; }
+        if (prop.PropertyType.GetInterface(nameof(IDictionary)) != null) {
+          IDictionary dres = prop.GetValue(result) as IDictionary;
+          if (dres == null) { continue; }
+          IDictionary dthis = prop.GetValue(mode) as IDictionary;
+          if (dthis == null) { continue; }
+          foreach (IDictionaryEnumerator en in dthis) {
+            dres[en.Key] = en.Value;
+          }
+        } else if (prop.PropertyType.GetInterface(nameof(IList)) != null) {
+          IList lres = prop.GetValue(result) as IList;
+          if (lres == null) { continue; }
+          IList lthis = prop.GetValue(mode) as IList;
+          if (lthis == null) { continue; }
+          foreach (IEnumerator en in lthis) {
+            lres.Add(en.Current);
+          }
+        } else if (prop.PropertyType == typeof(int)) {
+          prop.SetValue(result, ((int)prop.GetValue(result)) + ((int)prop.GetValue(mode)));
+        } else if (prop.PropertyType == typeof(float)) {
+          prop.SetValue(result, ((float)prop.GetValue(result)) + ((float)prop.GetValue(mode)));
+        } else { 
+          prop.SetValue(result, prop.GetValue(mode));
+        }
+      }
+      Log.M?.WL(0,$"merge mode result: {this.Id}:"+JsonConvert.SerializeObject(result, Formatting.Indented));
+      return result;
     }
     public WeaponMode() {
       //Id = WeaponMode.NONE_MODE_NAME;
@@ -560,6 +669,7 @@ namespace CustAmmoCategories {
       //VTOLDamageModifier = 1f;
     }
     public void fromJSON(JToken jWeaponMode) {
+      this.isFromJson = true;
       //this = jWeaponMode.ToObject<WeaponMode>();
       //JObject jWeaponMode = JObject.Parse(json);
       //if (jWeaponMode["Id"] != null) {
@@ -903,6 +1013,7 @@ namespace CustAmmoCategories {
       //}
       if (jWeaponMode["AmmoCategory"] != null) {
         this.AmmoCategory = CustomAmmoCategories.find((string)jWeaponMode["AmmoCategory"]);
+        this.SettedProperties.Add(nameof(AmmoCategory));
       }
       WeaponMode.fill_json_properties();
       if ((jWeaponMode["ChassisTagsAccuracyModifiers"] != null)&&(jWeaponMode[nameof(TagsAccuracyModifiers)] == null)) {
@@ -912,6 +1023,7 @@ namespace CustAmmoCategories {
         foreach (var tam in this.TagsAccuracyModifiers) {
           Log.LogWrite(" " + tam.Key + ":" + tam.Key);
         }
+        this.SettedProperties.Add(nameof(TagsAccuracyModifiers));
       }
       foreach (PropertyInfo prop in WeaponMode.json_properties) {
         //Log.M.WL(3, $"{prop.Name}:{prop.PropertyType.Name}({typeof(string).Name})={(jWeaponMode[prop.Name]==null?"null":"not null")}");
@@ -921,6 +1033,7 @@ namespace CustAmmoCategories {
         } else {
           prop.SetValue(this, jWeaponMode[prop.Name].ToObject(prop.PropertyType));
         }
+        this.SettedProperties.Add(prop.Name);
         //if (prop.PropertyType == typeof(float)) {
         //  prop.SetValue(this, (float)jWeaponMode[prop.Name]);
         //} else if (prop.PropertyType == typeof(int)) {
@@ -950,10 +1063,12 @@ namespace CustAmmoCategories {
             JSONSerializationUtility.FromJSON<EffectData>(effect, statusEffect.ToString());
             this.statusEffects.Add(effect);
           }
+          this.SettedProperties.Add(nameof(statusEffects));
         }
       }
       if ((this.Name == WeaponMode.BASE_MODE_NAME) && (this.UIName != WeaponMode.BASE_MODE_NAME) && (string.IsNullOrEmpty(this.UIName) == false)) {
         this.Name = this.UIName;
+        this.SettedProperties.Add(nameof(Name));
       }
     }
   }

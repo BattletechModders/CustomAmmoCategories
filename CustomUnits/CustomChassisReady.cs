@@ -329,6 +329,13 @@ namespace CustomUnits {
       loadout.Name = name;
       SaveLayoutHelper.Save(loadout);
     }
+    public static IEnumerable<ListElementController_BASE_NotListView> BTPerfFixRawInventory() {
+      Type stateCarrier = typeof(BattletechPerformanceFix.Main).Assembly.GetType("BattletechPerformanceFix.MechlabFix.MechLabFixFeature");
+      if(stateCarrier == null) {
+        stateCarrier = typeof(BattletechPerformanceFix.Main).Assembly.GetType("BattletechPerformanceFix.MechlabFix");
+      }
+      return Traverse.Create(AccessTools.Field(stateCarrier, "state").GetValue(null)).Field<List<ListElementController_BASE_NotListView>>("rawInventory").Value;
+    }
     public void RestoreAs(string name,List<SavedInventoryItem> inventory) {
       try {
         Log.TWL(0, "RestoreAs:"+ name);
@@ -365,7 +372,7 @@ namespace CustomUnits {
           //Log.WL(1, "location widget:" +(locationWidget == null?"null":locationWidget.gameObject.name));
           ListElementController_BASE_NotListView foundItem = null;
           //Log.WL(1, "searching:" + this.inventory.Count);
-          foreach (ListElementController_BASE_NotListView invItem in BattletechPerformanceFix.MechlabFix.state.rawInventory) {
+          foreach (ListElementController_BASE_NotListView invItem in BTPerfFixRawInventory()) {
             if (invItem.componentDef == null) { /*Log.WL(2, invItem.GetType().Name + " has no componentDef");*/ continue; }
             //Log.WL(2, invItem.componentDef.Description.Id + ":"+ invItem.quantity);
             if (invItem.quantity <= 0) { continue; }

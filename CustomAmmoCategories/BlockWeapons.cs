@@ -9,13 +9,51 @@
  *  If not, see <https://www.gnu.org/licenses/>. 
 */
 using BattleTech;
+using BattleTech.UI;
 using CleverGirlAIDamagePrediction;
 using CustomAmmoCategoriesLog;
+using Harmony;
 using Localize;
 using System;
 using System.Collections.Generic;
 
 namespace CustAmmoCategories {
+  [HarmonyPatch(typeof(StatCollection))]
+  [HarmonyPatch("AddHistoryEvent")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { typeof(string), typeof(string), typeof(int), typeof(StatCollection.StatOperation), typeof(Variant), typeof(int) })]
+  public static class StatCollection_AddHistoryEvent {
+    public static void Postfix(StatCollection __instance, string statName, string sourceID, int stackItemUID, StatCollection.StatOperation operation, Variant modValue, int modIndex) {
+      try {
+        if (statName != CustomAmmoCategories.BlockedStatisticName) { return; }
+        Weapon weapon = __instance.getWeapon();
+        if (weapon == null) { return; }
+        if (weapon.info().HUDSlot == null) { return; }
+        Traverse.Create(weapon.info().HUDSlot).Field<CombatHUD>("HUD").Value.WeaponPanel.RefreshDisplayedWeapons();
+      } catch (Exception e) {
+        Log.M.TWL(0, e.ToString());
+      }
+    }
+  }
+  [HarmonyPatch(typeof(StatCollection))]
+  [HarmonyPatch("RemoveHistoryEvent")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { typeof(Statistic), typeof(int), typeof(bool) })]
+  public static class StatCollection_RemoveHistoryEvent {
+    public static void Postfix(StatCollection __instance, Statistic stat, int eventUID, bool skipLogging) {
+      try {
+        if (stat == null) { return; }
+        if (stat.name != CustomAmmoCategories.BlockedStatisticName) { return; }
+        Weapon weapon = __instance.getWeapon();
+        if (weapon == null) { return; }
+        if (weapon.info().HUDSlot == null) { return; }
+        Traverse.Create(weapon.info().HUDSlot).Field<CombatHUD>("HUD").Value.WeaponPanel.RefreshDisplayedWeapons();
+      } catch (Exception e) {
+        Log.M.TWL(0, e.ToString());
+      }
+    }
+  }
+
   public static class BlockWeaponsHelpers {
     private static Dictionary<Weapon, bool> weaponBlockCache = new Dictionary<Weapon, bool>();
     public static void Clear() { weaponBlockCache.Clear(); }
@@ -98,6 +136,10 @@ namespace CustAmmoCategories {
         }
         Log.M.WL(1, "weapon " + weapon.defId + " loc:"+weapon.Location+":"+result);
         if (weaponBlockCache.ContainsKey(weapon) == false) { weaponBlockCache.Add(weapon, result); } else { weaponBlockCache[weapon] = result; };
+      }
+      foreach (Weapon weapon in actor.Weapons) {
+        if (weapon.info().HUDSlot == null) { continue; }
+        Traverse.Create(weapon.info().HUDSlot).Field<CombatHUD>("HUD").Value.WeaponPanel.RefreshDisplayedWeapons();
       }
     }
   }

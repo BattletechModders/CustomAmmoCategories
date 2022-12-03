@@ -444,6 +444,23 @@ namespace CustAmmoCategories {
         stats.Sort();
         foreach (var stat in stats) { StatCollection.Add(stat); }
         junit["StatCollection"] = StatCollection;
+        JArray allComponents = new JArray();
+        foreach(var component in unit.allComponents) {
+          JObject jcomp = new JObject();
+          jcomp["defId"] = component.defId;
+          jcomp["location"] = component.Location;
+          jcomp["type"] = component.baseComponentRef.ComponentDefType.ToString();
+          JArray compStatCollection = new JArray();
+          List<string> comp_stats = new List<string>();
+          foreach (var compstat in component.StatCollection) {
+            comp_stats.Add(compstat.Key + "=" + compstat.Value.CurrentValue);
+          }
+          comp_stats.Sort();
+          foreach (var compstat in comp_stats) { compStatCollection.Add(compstat); }
+          jcomp["StatCollection"] = compStatCollection;
+          allComponents.Add(jcomp);
+        }
+        junit["inventory"] = allComponents;
         AllActors.Add(junit);
       };
       responce["units"] = AllActors;

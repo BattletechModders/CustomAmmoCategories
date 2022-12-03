@@ -42,6 +42,7 @@ namespace CustAmmoCategories {
     public static void EjectWeaponForce(this Weapon weapon) {
       if (weapon.IsFunctional == false) { return; }
       weapon.StatCollection.Set<ComponentDamageLevel>("DamageLevel", ComponentDamageLevel.Destroyed);
+      weapon.CancelCreatedEffects();
       BlockWeaponsHelpers.RecalculateBlocked(weapon.parent);
     }
     public static void EjectWeapon(Weapon weapon, CombatHUDWeaponSlot hudSlot) {
@@ -58,6 +59,7 @@ namespace CustAmmoCategories {
         return;
       }
       weapon.StatCollection.Set<ComponentDamageLevel>("DamageLevel", ComponentDamageLevel.Destroyed);
+      weapon.CancelCreatedEffects();
       CustomAmmoCategories.ActorsEjectedAmmo[weapon.parent.GUID] = true;
       weapon.parent.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(new ShowActorInfoSequence(weapon.parent, new Text("WEAPON DROPPED"), FloatieMessage.MessageNature.Buff, false)));
       CombatHUD HUD = (CombatHUD)typeof(CombatHUDWeaponSlot).GetField("HUD", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(hudSlot);

@@ -260,6 +260,7 @@ namespace CustAmmoCategories {
           if (weapon.IsCooldown() > 0) { continue; }
           //if (weapon.NoModeToFire()) { continue; };
           if (weapon.isBlocked()) { continue; };
+          if (weapon.isWeaponBlockedStat()) { continue; }
           if (weapon.isCantNormalFire()) { continue; };
           List<AmmoModePair> FiringMethods = weapon.getAvaibleFiringMethods();
           if (FiringMethods.Count == 0) { continue; }

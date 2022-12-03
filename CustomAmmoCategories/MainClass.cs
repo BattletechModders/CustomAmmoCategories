@@ -128,6 +128,7 @@ namespace CustomAmmoCategoriesPatches {
   public static class Weapon_SetAmmoBoxes {
     public static bool Prefix(Weapon __instance, List<AmmunitionBox> ammoBoxes) {
       CustomAmmoCategoriesLog.Log.LogWrite("Weapon SetAmmoBoxes " + __instance.Description.Id + "\n");
+      WeaponDefModesCollectHelper.flushCache();
       CustomAmmoCategory weaponAmmoCategory = CustomAmmoCategories.getExtWeaponDef(__instance.defId).AmmoCategory;
       List<AmmunitionBox> ammunitionBoxList = new List<AmmunitionBox>();
       List<BaseComponentRef> inventory = new List<BaseComponentRef>();
@@ -142,6 +143,7 @@ namespace CustomAmmoCategoriesPatches {
       }
       __instance.ammoBoxes = ammunitionBoxList;
       //if(__instance.ammoBoxes)
+      WeaponDefModesCollectHelper.flushCache();
       return false;
     }
   }
@@ -154,6 +156,7 @@ namespace CustomAmmoCategoriesPatches {
       Dictionary<string, AmmunitionDef> ammos = new Dictionary<string, AmmunitionDef>();
       List<BaseComponentRef> inventory = new List<BaseComponentRef>();
       Log.M?.TWL(0,"Start Mech Validation " + mechDef.ChassisID);
+      WeaponDefModesCollectHelper.flushCache();
       string testString = "";
       if (Strings.Initialized) {
         Strings.GetTranslationFor("CT DESTROYED", out testString);
@@ -232,6 +235,7 @@ namespace CustomAmmoCategoriesPatches {
           errorMessages = (Dictionary<MechValidationType, List<Text>>)args[0];
         }
       }
+      WeaponDefModesCollectHelper.flushCache();
       return false;
     }
   }

@@ -200,6 +200,7 @@ namespace CustAmmoCategories {
       if (weapon.info().isCurrentModeAvailable() == false) { return "MODE IS LOCKED;"; };
       if (weapon.mode().Disabeld) { return "MODE IS DISABLED;"; };
       if (weapon.isBlocked()) { return "BLOCKED;"; };
+      if (weapon.isWeaponBlockedStat()) { return "BLOCKED;"; };
       if ((weapon.ammo().AmmoCategory.BaseCategory.Is_NotSet == false) && (weapon.CurrentAmmo <= 0)) { return "OUT OF AMMO;"; }
       if (weapon.IsEnabled == false) { return "NOT ENABLED;"; }
       return result;
@@ -214,6 +215,7 @@ namespace CustAmmoCategories {
       if (__instance.info().isCurrentModeAvailable() == false) { __result = false; };
       if (__instance.mode().Disabeld) { __result = false; };
       if (__instance.isBlocked()) { __result = false; };
+      if (__instance.isWeaponBlockedStat()) { __result = false; };
     }
   }
   [HarmonyPatch(typeof(AttackDirector))]
@@ -386,6 +388,8 @@ namespace CustAmmoCategories {
       Log.LogWrite("Weapon.InitStats " + __instance.defId + ":" + __instance.parent.GUID + "\n");
       __instance.FlatJammChanceStat(0f);
       __instance.ModJammChanceStat(1f);
+      __instance.WeaponBlockedStat(false);
+      __instance.RegisterStatCollection();
     }
   }
   public static partial class CustomAmmoCategories {
@@ -395,6 +399,7 @@ namespace CustAmmoCategories {
     public static string NoAMSFireStatisticName = "CAC-AMSFire";
     public static string FlatJammingChanceStatisticName = "CACFlatJammingChance";
     public static string ModJammingChanceStatisticName = "CACModJammingChance";
+    public static string BlockedStatisticName = "CACWeaponBlocked";
     //public static string TemporarilyDisabledStatisticName = "TemporarilyDisabled";
     public static float Epsilon = 0.001f;
     public static float FlatJammChance(this ICombatant unit) {
@@ -425,6 +430,16 @@ namespace CustAmmoCategories {
       } else {
         weapon.StatCollection.Set<float>(FlatJammingChanceStatisticName, val);
       }
+    }
+    public static void WeaponBlockedStat(this Weapon weapon, bool val) {
+      if (weapon.StatCollection.ContainsStatistic(BlockedStatisticName) == false) {
+        weapon.StatCollection.AddStatistic<bool>(BlockedStatisticName, val);
+      } else {
+        weapon.StatCollection.Set<bool>(BlockedStatisticName, val);
+      }
+    }
+    public static bool isWeaponBlockedStat(this Weapon weapon) {
+      return weapon.StatCollection.GetOrCreateStatisic<bool>(BlockedStatisticName, false).Value<bool>();
     }
     public static void ModJammChanceStat(this Weapon weapon, float val) {
       if (weapon.StatCollection.ContainsStatistic(ModJammingChanceStatisticName) == false) {

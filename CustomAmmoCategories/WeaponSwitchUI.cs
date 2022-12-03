@@ -40,6 +40,7 @@ using System.Reflection.Emit;
 using IRBTModUtils;
 using BattleTech.UI.Tooltips;
 using BattleTech.Framework;
+using System.Linq;
 
 namespace CustomAmmoCategoriesPatches {
   [HarmonyPatch(typeof(CombatHUDObjectiveItem))]
@@ -1712,22 +1713,33 @@ namespace CustomAmmoCategoriesPatches {
     public static void RegisterCallback(string id, Func<BaseComponentRef, List<BaseComponentRef>, List<WeaponMode>> callback) {
       registry[id] = callback;
     }
+    private static Dictionary<BaseComponentRef, List<WeaponMode>> weaponModesCache = new Dictionary<BaseComponentRef, List<WeaponMode>>();
+    public static void flushCache() { weaponModesCache.Clear(); }
     public static List<WeaponMode> WeaponModes(this BaseComponentRef componentRef, List<BaseComponentRef> inventory) {
-      List<WeaponMode> result = new List<WeaponMode>();
+      if (weaponModesCache.TryGetValue(componentRef, out var ret)) { return ret; }
+      Dictionary<string, WeaponMode> result = new Dictionary<string, WeaponMode>();
       try {
         //WeaponDef weaponDef = componentRef.Def as WeaponDef;
         ExtWeaponDef extWeaponDef = CustomAmmoCategories.getExtWeaponDef(componentRef.ComponentDefID);
         //if (weaponDef == null) { return result; }
         foreach (var mode in extWeaponDef.Modes) {
-          result.Add(mode.Value);
+          result[mode.Key] = mode.Value;
         }
         foreach (var callback in registry) {
-          result.AddRange(callback.Value(componentRef, inventory));
+          foreach(var mode in callback.Value(componentRef, inventory)) {
+            if (result.ContainsKey(mode.Id) && mode.isFromJson) {
+              result[mode.Id] = result[mode.Id].merge(mode);
+            } else {
+              result[mode.Id] = mode;
+            }
+          }
+          //result.AddRange(callback.Value(componentRef, inventory));
         }
       }catch(Exception e) {
         Log.M?.TWL(0,e.ToString(),true);
       }
-      return result;
+      weaponModesCache.Add(componentRef, result.Values.ToList());
+      return weaponModesCache[componentRef];
     }
   }
   public class WeaponOrderDataElement {
@@ -2492,6 +2504,7 @@ namespace CustomAmmoCategoriesPatches {
     }
 
     public void OnClose() {
+      WeaponDefModesCollectHelper.flushCache();
       if (weaponsControl != null) {
         weaponsControl.gameObject.SetActive(false);
         weaponsControl.gameObject.transform.SetParent(this.transform);
@@ -2518,6 +2531,7 @@ namespace CustomAmmoCategoriesPatches {
     public void OnShow() {
       if ((weaponsControl != null) && (popup != null)) {
         try {
+          WeaponDefModesCollectHelper.flushCache();
           LocalizableText _contentText = Traverse.Create(popup).Field<LocalizableText>("_contentText").Value;
           _contentText.gameObject.SetActive(false);
           {
