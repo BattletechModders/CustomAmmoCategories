@@ -205,6 +205,14 @@ namespace CustAmmoCategories {
     [GameplaySafe]
     public bool InfoPanelDefaultState { get; set; } = false;
     [GameplaySafe]
+    [CustomSettings.LocalSettingName(Strings.Culture.CULTURE_EN_US, "XLSX attack log")]
+    [CustomSettings.LocalSettingName(Strings.Culture.CULTURE_RU_RU, "Логи аттак в XLSX")]
+    [CustomSettings.IsLocalSetting(false)]
+    [CustomSettings.LocalSettingDescription(Strings.Culture.CULTURE_EN_US, "Saves attacks info to XLSX files. Location Mods/Core/CustomAmmoCategories/AttacksLogs/")]
+    [CustomSettings.LocalSettingDescription(Strings.Culture.CULTURE_RU_RU, "Сохраняет информацию об атаках в XLSX файлах. Путь Mods/Core/CustomAmmoCategories/AttacksLogs/")]
+    [CustomSettings.LocalSettingValues(true, false)]
+    [CustomSettings.LocalSettingValuesNames(Strings.Culture.CULTURE_EN_US, "Yes", "No")]
+    [CustomSettings.LocalSettingValuesNames(Strings.Culture.CULTURE_RU_RU, "Да", "Нет")]
     public bool AttackLogWrite { get; set; } = false;
     public bool ShowAttackGroundButton { get; set; } = false;
     public bool ShowWeaponOrderButtons { get; set; } = false;
@@ -220,6 +228,14 @@ namespace CustAmmoCategories {
     [GameplaySafe]
     public bool AmmoNameInSidePanel { get; set; } = true;
     [GameplaySafe]
+    [CustomSettings.LocalSettingName(Strings.Culture.CULTURE_EN_US, "Show apply heatsinks message")]
+    [CustomSettings.LocalSettingName(Strings.Culture.CULTURE_RU_RU, "Показывать сообщение о радиаторах")]
+    [CustomSettings.IsLocalSetting(false)]
+    [CustomSettings.LocalSettingDescription(Strings.Culture.CULTURE_EN_US, "Show apply heatsinks message")]
+    [CustomSettings.LocalSettingDescription(Strings.Culture.CULTURE_RU_RU, "Показывать ли сообщение о применении радиаторов")]
+    [CustomSettings.LocalSettingValues(true, false)]
+    [CustomSettings.LocalSettingValuesNames(Strings.Culture.CULTURE_EN_US, "Yes", "No")]
+    [CustomSettings.LocalSettingValuesNames(Strings.Culture.CULTURE_RU_RU, "Да", "Нет")]
     public bool ShowApplyHeatSinkMessage { get; set; } = true;
     [GameplaySafe]
     public string ApplyHeatSinkMessageTemplate { get; set; } = "APPLY HEAT SINKS:{0}=>{1} HCAP:{1} USED:{2}=>{3}";
@@ -233,8 +249,24 @@ namespace CustAmmoCategories {
     [GameplaySafe]
     public bool AMSCantFireFloatie { get; set; } = false;
     [GameplaySafe]
+    [CustomSettings.LocalSettingName(Strings.Culture.CULTURE_EN_US, "Show jamm chance formula")]
+    [CustomSettings.LocalSettingName(Strings.Culture.CULTURE_RU_RU, "Показывать формулу клина")]
+    [CustomSettings.IsLocalSetting(false)]
+    [CustomSettings.LocalSettingDescription(Strings.Culture.CULTURE_EN_US, "Show jamm chance formula")]
+    [CustomSettings.LocalSettingDescription(Strings.Culture.CULTURE_RU_RU, "Показывать ли точный расчет шанса оружия к заклиниванию")]
+    [CustomSettings.LocalSettingValues(true, false)]
+    [CustomSettings.LocalSettingValuesNames(Strings.Culture.CULTURE_EN_US, "Yes", "No")]
+    [CustomSettings.LocalSettingValuesNames(Strings.Culture.CULTURE_RU_RU, "Да", "Нет")]
     public bool ShowJammChance { get; set; } = true;
     [GameplaySafe]
+    [CustomSettings.LocalSettingName(Strings.Culture.CULTURE_EN_US, "Show evasive as number")]
+    [CustomSettings.LocalSettingName(Strings.Culture.CULTURE_RU_RU, "Уклонение -> число")]
+    [CustomSettings.IsLocalSetting(false)]
+    [CustomSettings.LocalSettingDescription(Strings.Culture.CULTURE_EN_US, "Show evasive as number instead of pips")]
+    [CustomSettings.LocalSettingDescription(Strings.Culture.CULTURE_RU_RU, "Показывать ли токиены уклонения в виде числа, полезно при большом уклонении, что бы не считать иконки")]
+    [CustomSettings.LocalSettingValues(true, false)]
+    [CustomSettings.LocalSettingValuesNames(Strings.Culture.CULTURE_EN_US, "Yes", "No")]
+    [CustomSettings.LocalSettingValuesNames(Strings.Culture.CULTURE_RU_RU, "Да", "Нет")]
     public bool ShowEvasiveAsNumber { get; set; } = true;
     [GameplaySafe]
     public float EvasiveNumberFontSize { get; set; } = 24f;
@@ -251,8 +283,6 @@ namespace CustAmmoCategories {
     public string OnlineServerHost { get; set; } = "192.168.78.162";
     public int OnlineServerServicePort { get; set; } = 143;
     public int OnlineServerDataPort { get; set; } = 443;
-    [GameplaySafe]
-    public bool UseFastPreloading { get; set; } = false;
     public bool AoECanCrit { get; set; } = false;
     public void ApplyLocal(Settings local) {
       PropertyInfo[] props = this.GetType().GetProperties(BindingFlags.Instance | BindingFlags.Public);
@@ -294,12 +324,44 @@ namespace CustAmmoCategories {
     public bool AIMinefieldAwareAllMines { get; set; } = false;
     public bool AIMinefieldAwareAllMinesCritical { get; set; } = true;
     [GameplaySafe]
+    [CustomSettings.LocalSettingName(Strings.Culture.CULTURE_EN_US, "Objectives black background")]
+    [CustomSettings.LocalSettingName(Strings.Culture.CULTURE_RU_RU, "Затемнение фона приказов")]
+    [CustomSettings.IsLocalSetting(false)]
+    [CustomSettings.LocalSettingDescription(Strings.Culture.CULTURE_EN_US, "Makes objectives background black on mouse hover")]
+    [CustomSettings.LocalSettingDescription(Strings.Culture.CULTURE_RU_RU, "В бою затемняет фон приказов при наведении курсора. Послезно при сильном тумане")]
+    [CustomSettings.LocalSettingValues(true, false)]
+    [CustomSettings.LocalSettingValuesNames(Strings.Culture.CULTURE_EN_US, "Yes", "No")]
+    [CustomSettings.LocalSettingValuesNames(Strings.Culture.CULTURE_RU_RU, "Да", "Нет")]
     public bool ObjectiveBlackBackgroundOnEnter { get; set; } = true;
     [GameplaySafe]
+    [CustomSettings.LocalSettingName(Strings.Culture.CULTURE_EN_US, "Enable minimap")]
+    [CustomSettings.LocalSettingName(Strings.Culture.CULTURE_RU_RU, "Миникарта")]
+    [CustomSettings.IsLocalSetting(false)]
+    [CustomSettings.LocalSettingDescription(Strings.Culture.CULTURE_EN_US, "Enable minimap")]
+    [CustomSettings.LocalSettingDescription(Strings.Culture.CULTURE_RU_RU, "Показывает миникарту")]
+    [CustomSettings.LocalSettingValues(true, false)]
+    [CustomSettings.LocalSettingValuesNames(Strings.Culture.CULTURE_EN_US, "Yes", "No")]
+    [CustomSettings.LocalSettingValuesNames(Strings.Culture.CULTURE_RU_RU, "Да", "Нет")]
     public bool EnableMinimap { get; set; } = true;
     [GameplaySafe]
+    [CustomSettings.LocalSettingName(Strings.Culture.CULTURE_EN_US, "Show regions on minimap")]
+    [CustomSettings.LocalSettingName(Strings.Culture.CULTURE_RU_RU, "Показывать регионы на миникарте")]
+    [CustomSettings.IsLocalSetting(false)]
+    [CustomSettings.LocalSettingDescription(Strings.Culture.CULTURE_EN_US, "Show regions on minimap. Evacuate zones, enemies drop zones, events trigger zones etc")]
+    [CustomSettings.LocalSettingDescription(Strings.Culture.CULTURE_RU_RU, "Показывает области на миникарте. Зоны эвакуации, зоны приземления противиников, зоны которые приказано занять и т.д.")]
+    [CustomSettings.LocalSettingValues(true, false)]
+    [CustomSettings.LocalSettingValuesNames(Strings.Culture.CULTURE_EN_US, "Yes", "No")]
+    [CustomSettings.LocalSettingValuesNames(Strings.Culture.CULTURE_RU_RU, "Да", "Нет")]
     public bool MinimapShowRegions { get; set; } = true;
     [GameplaySafe]
+    [CustomSettings.LocalSettingName(Strings.Culture.CULTURE_EN_US, "Show objectives on minimap")]
+    [CustomSettings.LocalSettingName(Strings.Culture.CULTURE_RU_RU, "Показывать цели на миникарте")]
+    [CustomSettings.IsLocalSetting(false)]
+    [CustomSettings.LocalSettingDescription(Strings.Culture.CULTURE_EN_US, "Show objectives on minimap")]
+    [CustomSettings.LocalSettingDescription(Strings.Culture.CULTURE_RU_RU, "Показывать цели на миникарте")]
+    [CustomSettings.LocalSettingValues(true, false)]
+    [CustomSettings.LocalSettingValuesNames(Strings.Culture.CULTURE_EN_US, "Yes", "No")]
+    [CustomSettings.LocalSettingValuesNames(Strings.Culture.CULTURE_RU_RU, "Да", "Нет")]
     public bool MinimapShowObjectives { get; set; } = true;
     [GameplaySafe]
     public string MinimapBurnigTerrainColor { get; set; } = "#FF9700FF";
@@ -323,8 +385,24 @@ namespace CustAmmoCategories {
     };
     public bool PlayerAlwaysHit { get; set; } = false;
     [GameplaySafe]
+    [CustomSettings.LocalSettingName(Strings.Culture.CULTURE_EN_US, "Result screen statistic")]
+    [CustomSettings.LocalSettingName(Strings.Culture.CULTURE_RU_RU, "Доп. статистика боя")]
+    [CustomSettings.IsLocalSetting(false)]
+    [CustomSettings.LocalSettingDescription(Strings.Culture.CULTURE_EN_US, "Show additional battle statistic on result screen. Hover \"Kills\" text")]
+    [CustomSettings.LocalSettingDescription(Strings.Culture.CULTURE_RU_RU, "Показывает дополнительную статистику на экране результатов боя. Статистика показывается при наведении на надпись показывающую кол-во убийств совершенных данной боевой единицой")]
+    [CustomSettings.LocalSettingValues(true, false)]
+    [CustomSettings.LocalSettingValuesNames(Strings.Culture.CULTURE_EN_US, "Yes", "No")]
+    [CustomSettings.LocalSettingValuesNames(Strings.Culture.CULTURE_RU_RU, "Да", "Нет")]
     public bool StatisticOnResultScreenEnabled { get; set; } = true;
     [GameplaySafe]
+    [CustomSettings.LocalSettingName(Strings.Culture.CULTURE_EN_US, "Show real kill icons")]
+    [CustomSettings.LocalSettingName(Strings.Culture.CULTURE_RU_RU, "Показывать реальные иконки убитых")]
+    [CustomSettings.IsLocalSetting(false)]
+    [CustomSettings.LocalSettingDescription(Strings.Culture.CULTURE_EN_US, "Instead of generic icons for killed units on battle result screen their real icons will be shown")]
+    [CustomSettings.LocalSettingDescription(Strings.Culture.CULTURE_RU_RU, "Показывать реальные иконки уничтоженой техники на экране результатов боя")]
+    [CustomSettings.LocalSettingValues(true, false)]
+    [CustomSettings.LocalSettingValuesNames(Strings.Culture.CULTURE_EN_US, "Yes", "No")]
+    [CustomSettings.LocalSettingValuesNames(Strings.Culture.CULTURE_RU_RU, "Да", "Нет")]
     public bool StatisticOnResultScreenRealIcons { get; set; } = false;
     [GameplaySafe]
     public float StatisticOnResultScreenRealIconsScale { get; set; } = 1.5f;

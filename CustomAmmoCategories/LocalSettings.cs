@@ -18,9 +18,11 @@ using CustomAmmoCategoriesPatches;
 using Harmony;
 using HBS;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Reflection;
 using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.EventSystems;
@@ -30,6 +32,28 @@ namespace CustAmmoCategories {
   public class LocalSettingsHelper {
     public static string ResetSettings() {
       return CustomAmmoCategories.GlobalSettings.SerializeLocal();
+    }
+    public static Settings DefaultSettings() {
+      return CustomAmmoCategories.GlobalSettings;
+    }
+    public static Settings CurrentSettings() {
+      return CustomAmmoCategories.Settings;
+    }
+    public static string SaveSettings(object settings) {
+      Settings set = settings as Settings;
+      if (set == null) { set = CustomAmmoCategories.GlobalSettings; }
+      JObject jsettigns = JObject.FromObject(set);
+      PropertyInfo[] props = set.GetType().GetProperties(BindingFlags.Instance | BindingFlags.Public);
+      Log.M.TWL(0, "LocalSettingsHelper.SaveSettings");
+      foreach (PropertyInfo prop in props) {
+        bool skip = true;
+        object[] attrs = prop.GetCustomAttributes(true);
+        foreach (object attr in attrs) { if ((attr as GameplaySafe) != null) { skip = false; break; } };
+        if (skip == false) { continue; }
+        jsettigns.Remove(prop.Name);
+        Log.M.WL(1, "removing:" + prop.Name);
+      }
+      return jsettigns.ToString(Formatting.Indented);
     }
     public static void ReadSettings(string json) {
       try {

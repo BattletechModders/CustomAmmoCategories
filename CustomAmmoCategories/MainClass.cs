@@ -1366,7 +1366,13 @@ namespace CACMain {
       try {
         CustomAmmoCategories.CustomCategoriesInit();
         //CustomTranslation.Core.RegisterResetCache(FixedMechDefHelper.ResetCache);
-        CustomSettings.ModsLocalSettingsHelper.RegisterLocalSettings("CustomAmmoCategoriesSettings","Custom Ammo Categories", LocalSettingsHelper.ResetSettings, LocalSettingsHelper.ReadSettings);
+        CustomSettings.ModsLocalSettingsHelper.RegisterLocalSettings("CustomAmmoCategoriesSettings","Custom Ammo Categories"
+          , LocalSettingsHelper.ResetSettings
+          , LocalSettingsHelper.ReadSettings
+          , LocalSettingsHelper.DefaultSettings
+          , LocalSettingsHelper.CurrentSettings
+          , LocalSettingsHelper.SaveSettings
+          );
         CustomPrewarm.Core.RegisterSerializator("CustomAmmoCategories", BattleTechResourceType.WeaponDef, CustomAmmoCategories.getExtWeaponDef);
         CustomPrewarm.Core.RegisterSerializator("CustomAmmoCategories", BattleTechResourceType.AmmunitionDef, CustomAmmoCategories.findExtAmmo);
         AccessTools.Method(privateAssemblyCore, "FinishedLoading").Invoke(null, new object[] { });
