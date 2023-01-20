@@ -282,6 +282,7 @@ namespace CustAmmoCategories {
           continue;
         }
         weapon.AMSShootsCount(0);
+        weapon.AMSActivationsCount(0);
         weapon.setCantNormalFire(true);
         float flatJammingChance = jammInfo.chance;//weapon.FlatJammingChance(out string descr);
         string descr = jammInfo.description;
@@ -439,7 +440,7 @@ namespace CustAmmoCategories {
       }
     }
     public static bool isWeaponBlockedStat(this Weapon weapon) {
-      return weapon.StatCollection.GetOrCreateStatisic<bool>(BlockedStatisticName, false).Value<bool>();
+      return weapon.info().extDef.CanBeBlocked && weapon.StatCollection.GetOrCreateStatisic<bool>(BlockedStatisticName, false).Value<bool>();
     }
     public static void ModJammChanceStat(this Weapon weapon, float val) {
       if (weapon.StatCollection.ContainsStatistic(ModJammingChanceStatisticName) == false) {

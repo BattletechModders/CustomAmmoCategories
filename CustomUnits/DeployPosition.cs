@@ -241,7 +241,7 @@ namespace CustomUnits {
         this.unit.OnPositionUpdate(spawnPosition, facingNearestEnemy, -1, true, new List<DesignMaskDef>());
         this.unit.GameRep.transform.rotation = facingNearestEnemy;
         if (this.unit.GameRep is CustomMechRepresentation custRep) {
-          custRep.UpdateRotation(new RaycastHit?(),this.unit.GameRep.transform, this.unit.GameRep.transform.forward, 9999f);
+          custRep.UpdateRotation(custRep.createMoveContext(),this.unit.GameRep.transform, this.unit.GameRep.transform.forward, 9999f);
         } else {
           if(this.unit is Vehicle vehicle) {
             ActorMovementSequence.AlignVehicleToGround(unit.GameRep.transform, 9999f);
@@ -521,7 +521,7 @@ namespace CustomUnits {
               dPos.unit.OnPositionUpdate(dPos.position.Value, facingNearestEnemy, -1, true, new List<DesignMaskDef>());
               dPos.unit.GameRep.transform.rotation = facingNearestEnemy;
               if (dPos.unit?.GameRep is CustomMechRepresentation custRep) {
-                custRep.UpdateRotation(new RaycastHit?(),dPos.unit.GameRep.transform, dPos.unit.GameRep.transform.forward, 9999f);
+                custRep.UpdateRotation(custRep.createMoveContext(),dPos.unit.GameRep.transform, dPos.unit.GameRep.transform.forward, 9999f);
               } else {
                 if (dPos.unit is Vehicle) {
                   ActorMovementSequence.AlignVehicleToGround(dPos.unit?.GameRep.transform, 9999f);

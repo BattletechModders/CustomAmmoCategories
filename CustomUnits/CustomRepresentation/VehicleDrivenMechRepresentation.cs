@@ -36,7 +36,7 @@ namespace CustomUnits {
   public class VehicleDrivenMechRepresentation : CustomMechRepresentation {
     public virtual Animator vehicleAnimator { get; set; }
     public virtual Transform vehicleRep { get; set; } = null;
-    public override void Test() { Log.TWL(0,"VehicleDrivenMechRepresentation.Test:"+(vehicleRep.parent == null?"null": vehicleRep.parent.name)); }
+    //public override void Test() { Log.TWL(0,"VehicleDrivenMechRepresentation.Test:"+(vehicleRep.parent == null?"null": vehicleRep.parent.name)); }
     public virtual Dictionary<Material, Material> destructedMaterials { get; set; } = new Dictionary<Material, Material>();
     public void Copy(VehicleRepresentation source) {
       this._parentCombatant = Traverse.Create(source).Field<ICombatant>("_parentCombatant").Value;
@@ -509,7 +509,7 @@ namespace CustomUnits {
       WwiseManager.SetRTPC<AudioRTPCList>(AudioRTPCList.bt_vehicle_speed, 0.0f, this.audioObject);
       this.renderers = new List<Renderer>((IEnumerable<Renderer>)this.VisibleObject.GetComponentsInChildren<MeshRenderer>(true));
       this.InitDestructedMaterials();
-      this.Test();
+      //this.Test();
     }
     public override Vector3 GetMissPosition(Vector3 attackOrigin, Weapon weapon, NetworkRandom random) {
       Vector3 position = this.parentMech.CurrentPosition + Vector3.up * this.HeightController.CurrentHeight;

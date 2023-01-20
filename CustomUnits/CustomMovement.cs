@@ -61,16 +61,19 @@ namespace CustomUnits {
   [HarmonyPatch("UpdateSpline")]
   [HarmonyPatch(new Type[] { })]
   public static class ActorMovementSequence_UpdateSplineSquad {
-    public static RaycastHit? UpdateSplineDelegate(AbstractActor unit, Vector3 worldPos, ActorMovementSequence seq, Vector3 forward, float t, ICombatant meleeTarget) {
+    public static object UpdateSplineDelegate(AbstractActor unit, Vector3 worldPos, ActorMovementSequence seq, Vector3 forward, float t, ICombatant meleeTarget) {
       return (unit.GameRep as CustomMechRepresentation).UpdateSpline(worldPos, seq, forward, t, meleeTarget);
     }
-    public static void UpdateRotationDelegate(AbstractActor unit, RaycastHit? raycast, Transform moveTransform, Vector3 forward, float t) {
+    public static void UpdateRotationDelegate(AbstractActor unit, object raycast, Transform moveTransform, Vector3 forward, float t) {
       (unit.GameRep as CustomMechRepresentation).UpdateRotation(raycast, moveTransform, forward, t);
+    }
+    public static object UpdateRotationDelegate(AbstractActor unit) {
+      return (unit.GameRep as CustomMechRepresentation).createMoveContext();
     }
     public static bool Prefix(ActorMovementSequence __instance) {
       try {
         if (__instance.ActorRep is CustomMechRepresentation custRep) {
-          CustomDeploy.ActorMovementSequence_UpdateSpline.Prefix(__instance, UpdateSplineDelegate, UpdateRotationDelegate);
+          CustomDeploy.ActorMovementSequence_UpdateSpline.Prefix(__instance, UpdateSplineDelegate, UpdateRotationDelegate, UpdateRotationDelegate);
           return false;
           //custRep.UpdateSpline(__instance, ___Forward, ___t, ___meleeTarget);
         }

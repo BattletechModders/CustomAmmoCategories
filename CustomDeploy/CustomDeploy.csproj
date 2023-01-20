@@ -40,7 +40,7 @@
   </ItemGroup>
   <ItemGroup>
     <Reference Include="0Harmony">
-      <HintPath>$(BattleTechGameDir)\BattleTech_Data\Managed\0Harmony.dll</HintPath>
+      <HintPath>..\..\..\BattleTech_Data\Managed\0Harmony.dll</HintPath>
     </Reference>
     <Reference Include="Assembly-CSharp" Publicize="true">
       <HintPath>$(BattleTechGameDir)\Mods\.modtek\AssembliesInjected\Assembly-CSharp.dll</HintPath>

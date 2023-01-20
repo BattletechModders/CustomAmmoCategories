@@ -120,6 +120,14 @@ namespace CustAmmoCategories {
       float AoEHeat = weapon.AOEHeatDamage();
       float AoEStability = weapon.AOEInstability();
       float FullAoEDamage = AoEDamage * advInfo.hits.Count;
+      if (weapon.defId.IndexOf("Nuke", StringComparison.InvariantCultureIgnoreCase) >= 0) {
+        Log.M?.WL(0,$"add nuke damage {FullAoEDamage}");
+        PersistentMapClientHelper.FloatAdd("NukeDamage", FullAoEDamage);
+      }else
+      if (weapon.ammo().Id.IndexOf("Nuke", StringComparison.InvariantCultureIgnoreCase) >= 0) {
+        Log.M?.WL(0, $"add nuke damage {FullAoEDamage}");
+        PersistentMapClientHelper.FloatAdd("NukeDamage", FullAoEDamage);
+      }
       Dictionary<ICombatant, Dictionary<int, float>> targetsHitCache = new Dictionary<ICombatant, Dictionary<int, float>>();
       Dictionary<ICombatant, float> targetsHeatCache = new Dictionary<ICombatant, float>();
       Dictionary<ICombatant, float> targetsStabCache = new Dictionary<ICombatant, float>();

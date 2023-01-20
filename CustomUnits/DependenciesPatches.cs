@@ -347,6 +347,17 @@ namespace CustomUnits {
         Log.LogWrite(1, "additional melee def:" + cm.Key, true);
         dependencyLoad.RequestResource(BattleTechResourceType.WeaponDef, cm.Key);
       }
+      if(info.SquadInfo.Troopers > 1) {
+        if(string.IsNullOrEmpty(info.SquadInfo.armorIcon) == false) {
+          dependencyLoad.RequestResource(BattleTechResourceType.SVGAsset, info.SquadInfo.armorIcon);
+        }
+        if (string.IsNullOrEmpty(info.SquadInfo.outlineIcon) == false) {
+          dependencyLoad.RequestResource(BattleTechResourceType.SVGAsset, info.SquadInfo.outlineIcon);
+        }
+        if (string.IsNullOrEmpty(info.SquadInfo.structureIcon) == false) {
+          dependencyLoad.RequestResource(BattleTechResourceType.SVGAsset, info.SquadInfo.structureIcon);
+        }
+      }
     }
     public static void AddCustomDeps(this ChassisDef chassis, LoadRequest loadRequest) {
       UnitCustomInfo info = chassis.GetCustomInfo();
@@ -508,6 +519,29 @@ namespace CustomUnits {
         Log.LogWrite(1, "additional melee def:" + cm.Key, true);
         if (dataManager.Exists(BattleTechResourceType.WeaponDef, cm.Key) == false) { Log.LogWrite(2, "not exists", true); return false; };
         Log.LogWrite(2, "exists", true);
+      }
+      if (info.SquadInfo.Troopers > 1) {
+        if(string.IsNullOrEmpty(info.SquadInfo.armorIcon) == false) {
+          Log.WL(1, $"armor icon: {info.SquadInfo.armorIcon}");
+          if(dataManager.Exists(BattleTechResourceType.SVGAsset, info.SquadInfo.armorIcon) == false) {
+            Log.WL(1, $"not exists");
+            return false;
+          }
+        }
+        if (string.IsNullOrEmpty(info.SquadInfo.outlineIcon) == false) {
+          Log.WL(1, $"outline icon: {info.SquadInfo.outlineIcon}");
+          if (dataManager.Exists(BattleTechResourceType.SVGAsset, info.SquadInfo.outlineIcon) == false) {
+            Log.WL(1, $"not exists");
+            return false;
+          }
+        }
+        if (string.IsNullOrEmpty(info.SquadInfo.structureIcon) == false) {
+          Log.WL(1, $"structure icon: {info.SquadInfo.structureIcon}");
+          if (dataManager.Exists(BattleTechResourceType.SVGAsset, info.SquadInfo.structureIcon) == false) {
+            Log.WL(1, $"not exists");
+            return false;
+          }
+        }
       }
       return true;
     }

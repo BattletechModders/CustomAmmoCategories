@@ -452,7 +452,7 @@ namespace CustomUnits {
       this.InitDestructable();
     }
     public void AttachHeadlights() {
-      Log.TWL(0, "CustomRepresentation.AttachHeadlights");
+      Log.TWL(0, $"CustomRepresentation.AttachHeadlights {this.gameObject.name}");
       MechRepresentation mechRep = this.GameRepresentation as MechRepresentation;
       if (mechRep == null) { return; }
       List<GameObject> headlightsReps = Traverse.Create(mechRep).Field<List<GameObject>>("headlightReps").Value;
@@ -609,12 +609,14 @@ namespace CustomUnits {
         Log.TWL(0, "Custom" + customRepDef.RepType + "RepresentationDef " + customRepDef.Id + " already registered skipping");
         return;
       }
+      Log.TWL(0, $"Custom{customRepDef.RepType} registered {customRepDef.Id}");
       customRepresentations.Add(customRepDef.Id, customRepDef);
       string simGamePrefabName = string.Format("chrPrfComp_{0}_simgame", customRepDef.PrefabBase);
       if (customSimGameRepresentations.ContainsKey(simGamePrefabName)) {
         Log.TWL(0, "Custom" + customRepDef.RepType + "SimGameRepresentation " + simGamePrefabName + " already registered skipping");
         return;
       }
+      Log.TWL(0, $"Custom{customRepDef.RepType} registered {simGamePrefabName}");
       customSimGameRepresentations.Add(simGamePrefabName, customRepDef);
     }
     public static CustomMechRepresentationDef defaultCustomMechRepDef = new CustomMechRepresentationDef();
@@ -1646,12 +1648,11 @@ namespace CustomUnits {
       CustomRepresentation customRepresentation = result.GetComponent<CustomRepresentation>();
       if (customRepresentation == null) { customRepresentation = result.AddComponent<CustomRepresentation>(); }
       customRepresentation.Init(custMechRep, custRepDef);
-      customRepresentation.InBattle = true;
       custMechRep.customRep = customRepresentation;
       MechFlyHeightController heightController = result.GetComponent<MechFlyHeightController>();
       if (heightController == null) { heightController = result.AddComponent<MechFlyHeightController>(); };
       custMechRep.HeightController = heightController;
-      custMechRep.Test();
+      //custMechRep.Test();
       return result;
     }
     public static GameObject ProcessSimGame(DataManager dataManager, ref GameObject result, CustomActorRepresentationDef custRepDef, ChassisDef chassisDef) {
@@ -1781,7 +1782,17 @@ namespace CustomUnits {
       Log.TWL(0, "ProcessSquadBattle:" + id);
       UnitCustomInfo customInfo = chassisDef.GetCustomInfo();
       MechRepresentation mechRepresentation = result.GetComponent<MechRepresentation>();
-      if (mechRepresentation == null) { return result; }
+      if (mechRepresentation == null) {
+        Log.WL(1, "no MechRepresentation:" + result.name);
+        VehicleRepresentation vehicleRep = result.GetComponent<VehicleRepresentation>();
+        if (vehicleRep == null) {
+          Log.WL(1, "no VehicleRepresentation:" + result.name);
+          return result;
+        }
+        var custMechRep = vehicleRep.InitFromVehicle(dataManager);
+        result = custMechRep.gameObject;
+        mechRepresentation = custMechRep;
+      }
       SquadRepresentation squadMechRepresentation = mechRepresentation as SquadRepresentation;
       if (squadMechRepresentation == null) {
         squadMechRepresentation = result.AddComponent<SquadRepresentation>();
@@ -2072,13 +2083,37 @@ namespace CustomUnits {
       CustomActorRepresentationDef custRepDef = CustomActorRepresentationHelper.FindSimGame(origId);
       Log.TWL(0, "DataManager.PooledInstantiate_CustomMechRep_MechLab " +id + " custRepDef:" + (custRepDef == null?"null":"not null"));
       if (custRepDef == null) {
-        custRepDef = CustomActorRepresentationHelper.defaultCustomMechRepDef;
+        custRepDef = CustomActorRepresentationHelper.defaultCustomMechRepDef;        
       } else {
         //id = custRepDef.SourcePrefabIdentifier;
         id = origId.Replace(custRepDef.PrefabBase, custRepDef.SourcePrefabBase);
       }
       GameObject result = dataManager.PooledInstantiate(id, BattleTechResourceType.Prefab);
       UnitCustomInfo customInfo = chassisDef.GetCustomInfo();
+      if((result == null) && (id == origId)) {
+        GameObject battleGameObject = dataManager.PooledInstantiate(chassisDef.PrefabIdentifier, BattleTechResourceType.Prefab);
+        if(result != null) {
+          VehicleRepresentation battleRep = battleGameObject.GetComponent<VehicleRepresentation>();
+          if(battleRep == null) {
+            dataManager.PoolGameObject(chassisDef.PrefabIdentifier, result);
+            result = null;
+          } else {
+            GameObject bayGameObject = GameObject.Instantiate(battleGameObject);
+            dataManager.PoolGameObject(chassisDef.PrefabIdentifier, result);
+            AkGameObj audio = battleRep.audioObject;
+            battleRep.audioObject = null;
+            battleRep.RegisterChassis(dataManager.VehicleChassisDefs.Get(chassisDef.Description.Id));
+            battleRep.Init(null, null, false);
+            battleRep.audioObject = audio;
+            var bayRepresentation = bayGameObject.AddComponent<MechRepresentationSimGame>();
+            bayRepresentation.InitFromBattleRepresentation(battleRep);
+            bayRepresentation.thisAnimator = null;
+            battleRep.BlipObjectIdentified.SetActive(false);
+            battleRep.BlipObjectUnknown.SetActive(false);
+            result = bayGameObject;
+          }
+        }
+      }
       if (result != null) {
         bool setupAlternates = false;
         bool setupSquad = false;

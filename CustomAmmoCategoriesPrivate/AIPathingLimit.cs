@@ -127,7 +127,7 @@ namespace CustAmmoCategories {
         AIMinefieldHelper.FilterMoveCandidates(___tree.unit,ref ___tree.movementCandidateLocations);
         if (CustomAmmoCategories.Settings.AIPathingOptimization == false) { return; }
         foreach (MoveDestination moveDestination in ___tree.movementCandidateLocations) {
-          original.Add(___tree.unit.CurrentPosition ,moveDestination);
+          original.Add(___tree.unit.CurrentPosition, moveDestination);
         }
         Log.P?.TWL(0, "MoveCandidatesFilter " + ___tree.unit.PilotableActorDef.ChassisID + " movementCandidateLocations:" + ___tree.movementCandidateLocations.Count, true);
         if (___tree.movementCandidateLocations.Count <= CustomAmmoCategories.Settings.AIPathingSamplesLimit) { goto print_locations; }

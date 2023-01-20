@@ -240,7 +240,7 @@ namespace CustAmmoCategories {
       asyncTerrainDesignMaskQueue.Clear();
     }
     public void TryBurnCellAsync(MapTerrainHexCell hex,Weapon weapon, float FireTerrainChance, int FireTerrainStrength, int FireDurationWithoutForest) {
-      burnRequests.Enqueue(new DynMapBurnHexRequest(hex, weapon,FireTerrainChance,FireTerrainStrength,FireDurationWithoutForest));
+      burnRequests.Enqueue(new DynMapBurnHexRequest(hex, weapon, FireTerrainChance, FireTerrainStrength, FireDurationWithoutForest));
     }
     public void addDesignMaskAsync(MapTerrainHexCell hex, DesignMaskDef dm, int counter) {
       if (dm == null) { return; }
@@ -820,9 +820,11 @@ namespace CustAmmoCategories {
         if (SplatMapInfo.IsForest(cell.terrainMask) && (cell.CantHaveForest == false)) {
           if ((count == 0) || (strength == 0)) { continue; }
           cell.burnUpdate(weapon, count, strength);
+          PersistentMapClientHelper.FloatAdd("BurnDamage", count * strength);
         } else {
           if ((countNoForest == 0) || (strengthNoForest == 0)) { continue; }
           cell.burnUpdate(weapon, countNoForest, strengthNoForest);
+          PersistentMapClientHelper.FloatAdd("BurnDamage", countNoForest * strengthNoForest);
         }
       }
     }

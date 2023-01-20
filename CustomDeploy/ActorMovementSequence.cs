@@ -37,16 +37,17 @@ namespace CustomDeploy {
       }
     }
   }
-
   public static class ActorMovementSequence_UpdateSpline {
     public static void Prefix(ActorMovementSequence __instance, 
-      Func<AbstractActor, Vector3, ActorMovementSequence, Vector3, float, ICombatant, RaycastHit?> updateSplineDelegate, 
-      Action<AbstractActor, RaycastHit?, Transform, Vector3, float> updateRotationDelegate) {
+      Func<AbstractActor, Vector3, ActorMovementSequence, Vector3, float, ICombatant, object> updateSplineDelegate, 
+      Action<AbstractActor, object, Transform, Vector3, float> updateRotationDelegate,
+      Func<AbstractActor, object> createMoveContextDelegate
+      ) {
       try {
         if (__instance.OrdersAreComplete)
           return;
         __instance.UpdateSplineWaypoint();
-        RaycastHit? rayhit = new RaycastHit?();
+        object rayhit = createMoveContextDelegate(__instance.OwningActor);
         Vector3 currentWaypointPos = __instance.currentWaypointPos;
         if (__instance.onFinalSegment) {
           if (__instance.atFinalPos) {

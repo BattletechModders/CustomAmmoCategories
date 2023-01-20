@@ -282,6 +282,11 @@ namespace CustAmmoCategories {
       if (mode.AMSShootsEveryAttack != TripleBoolean.NotSet) { return mode.AMSShootsEveryAttack == TripleBoolean.True; }
       return wp.AMSShootsEveryAttack == TripleBoolean.True;
     }
+    public static int AMSActivationsPerTurn(this Weapon weapon) {
+      WeaponMode mode = weapon.mode();
+      ExtWeaponDef wp = weapon.exDef();
+      return wp.AMSActivationsPerTurn + mode.AMSActivationsPerTurn;
+    }
     public static bool AOEEffectsFalloff(this Weapon weapon) {
       ExtAmmunitionDef ammo = weapon.ammo();
       WeaponMode mode = weapon.mode();
@@ -702,6 +707,8 @@ namespace CustAmmoCategories {
     public TripleBoolean IgnoreCover { get; set; } = TripleBoolean.NotSet;
     [Key(125)]
     public TripleBoolean BreachingShot { get; set; } = TripleBoolean.NotSet;
+    [Key(126)]
+    public int AMSActivationsPerTurn { get; set; } = 0;
     public ExtWeaponDef() { }
   }
 }

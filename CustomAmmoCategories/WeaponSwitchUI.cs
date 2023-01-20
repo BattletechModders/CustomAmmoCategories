@@ -41,6 +41,7 @@ using IRBTModUtils;
 using BattleTech.UI.Tooltips;
 using BattleTech.Framework;
 using System.Linq;
+using Harmony;
 
 namespace CustomAmmoCategoriesPatches {
   [HarmonyPatch(typeof(CombatHUDObjectiveItem))]

@@ -370,10 +370,16 @@ namespace CustomUnits {
       foreach (GameObject go in toShow) {
         go.SetActive(true);
       }
+      UnitCustomInfo info = squad.GetCustomInfo();
       HUDMechArmorReadout readout = this.gameObject.GetComponent<HUDMechArmorReadout>();
       for (int index = 0; index < readout.ArmorOutline.Length; ++index) {
         readout.ArmorOutline[index] = SquadArmorOutline[index];
         if (readout.ArmorOutline[index] == null) { continue; }
+        if (string.IsNullOrEmpty(info.SquadInfo.outlineIcon) == false) {
+          readout.ArmorOutline[index].vectorGraphics = CustomSvgCache.get(info.SquadInfo.outlineIcon, squad.Combat.DataManager);
+        } else {
+          readout.ArmorOutline[index].vectorGraphics = CustomSvgCache.get(Core.Settings.SquadArmorOutlineIcon, squad.Combat.DataManager);
+        }
         ChassisLocations loc = HUDMechArmorReadout.GetChassisLocationFromIndex(index, false, true);
         LocationDef locDef = squad.MechDef.Chassis.GetLocationDef(loc);
         if ((locDef.MaxArmor <= 0f) && (locDef.InternalStructure <= 1f)) { readout.ArmorOutline[index].gameObject.SetActive(false); } else { readout.ArmorOutline[index].gameObject.SetActive(true); }
@@ -381,6 +387,11 @@ namespace CustomUnits {
       for (int index = 0; index < readout.Armor.Length; ++index) {
         readout.Armor[index] = SquadArmor[index];
         if (readout.Armor[index] == null) { continue; }
+        if (string.IsNullOrEmpty(info.SquadInfo.armorIcon) == false) {
+          readout.Armor[index].vectorGraphics = CustomSvgCache.get(info.SquadInfo.armorIcon, squad.Combat.DataManager);
+        } else {
+          readout.Armor[index].vectorGraphics = CustomSvgCache.get(Core.Settings.SquadArmorIcon, squad.Combat.DataManager);
+        }
         ChassisLocations loc = HUDMechArmorReadout.GetChassisLocationFromIndex(index, false, true);
         LocationDef locDef = squad.MechDef.Chassis.GetLocationDef(loc);
         if ((locDef.MaxArmor <= 0f) && (locDef.InternalStructure <= 1f)) { readout.Armor[index].gameObject.SetActive(false); } else { readout.Armor[index].gameObject.SetActive(true); }
@@ -388,6 +399,11 @@ namespace CustomUnits {
       for (int index = 0; index < readout.Structure.Length; ++index) {
         readout.Structure[index] = SquadStructure[index];
         if (readout.Structure[index] == null) { continue; }
+        if (string.IsNullOrEmpty(info.SquadInfo.structureIcon) == false) {
+          readout.Structure[index].vectorGraphics = CustomSvgCache.get(info.SquadInfo.structureIcon, squad.Combat.DataManager);
+        } else {
+          readout.Structure[index].vectorGraphics = CustomSvgCache.get(Core.Settings.SquadStructureIcon, squad.Combat.DataManager);
+        }
         ChassisLocations loc = HUDMechArmorReadout.GetChassisLocationFromIndex(index, false, true);
         LocationDef locDef = squad.MechDef.Chassis.GetLocationDef(loc);
         if ((locDef.MaxArmor <= 0f) && (locDef.InternalStructure <= 1f)) { readout.Structure[index].gameObject.SetActive(false); } else { readout.Structure[index].gameObject.SetActive(true); }
@@ -517,9 +533,15 @@ namespace CustomUnits {
         go.SetActive(true);
       }
       HUDMechArmorReadout readout = this.gameObject.GetComponent<HUDMechArmorReadout>();
+      UnitCustomInfo info = squad.GetCustomInfo();
       for (int index = 0; index < readout.ArmorOutline.Length; ++index) {
         readout.ArmorOutline[index] = SquadArmorOutline[index];
         if (readout.ArmorOutline[index] == null) { continue; }
+        if (string.IsNullOrEmpty(info.SquadInfo.outlineIcon) == false) {
+          readout.ArmorOutline[index].vectorGraphics = CustomSvgCache.get(info.SquadInfo.outlineIcon, squad.Combat.DataManager);
+        } else {
+          readout.ArmorOutline[index].vectorGraphics = CustomSvgCache.get(Core.Settings.SquadArmorOutlineIcon, squad.Combat.DataManager);
+        }
         ChassisLocations loc = HUDMechArmorReadout.GetChassisLocationFromIndex(index, false, true);
         LocationDef locDef = squad.MechDef.Chassis.GetLocationDef(loc);
         if ((locDef.MaxArmor <= 0f) && (locDef.InternalStructure <= 1f)) { readout.ArmorOutline[index].gameObject.SetActive(false); } else { readout.ArmorOutline[index].gameObject.SetActive(true); }
@@ -527,6 +549,11 @@ namespace CustomUnits {
       for (int index = 0; index < readout.Armor.Length; ++index) {
         readout.Armor[index] = SquadArmor[index];
         if (readout.Armor[index] == null) { continue; }
+        if (string.IsNullOrEmpty(info.SquadInfo.armorIcon) == false) {
+          readout.Armor[index].vectorGraphics = CustomSvgCache.get(info.SquadInfo.armorIcon, squad.Combat.DataManager);
+        } else {
+          readout.Armor[index].vectorGraphics = CustomSvgCache.get(Core.Settings.SquadArmorIcon, squad.Combat.DataManager);
+        }
         ChassisLocations loc = HUDMechArmorReadout.GetChassisLocationFromIndex(index, false, true);
         LocationDef locDef = squad.MechDef.Chassis.GetLocationDef(loc);
         if ((locDef.MaxArmor <= 0f) && (locDef.InternalStructure <= 1f)) { readout.Armor[index].gameObject.SetActive(false); } else { readout.Armor[index].gameObject.SetActive(true); }
@@ -534,6 +561,11 @@ namespace CustomUnits {
       for (int index = 0; index < readout.Structure.Length; ++index) {
         readout.Structure[index] = SquadStructure[index];
         if (readout.Structure[index] == null) { continue; }
+        if (string.IsNullOrEmpty(info.SquadInfo.structureIcon) == false) {
+          readout.Structure[index].vectorGraphics = CustomSvgCache.get(info.SquadInfo.structureIcon, squad.Combat.DataManager);
+        } else {
+          readout.Structure[index].vectorGraphics = CustomSvgCache.get(Core.Settings.SquadStructureIcon, squad.Combat.DataManager);
+        }
         ChassisLocations loc = HUDMechArmorReadout.GetChassisLocationFromIndex(index, false, true);
         LocationDef locDef = squad.MechDef.Chassis.GetLocationDef(loc);
         if ((locDef.MaxArmor <= 0f) && (locDef.InternalStructure <= 1f)) { readout.Structure[index].gameObject.SetActive(false); } else { readout.Structure[index].gameObject.SetActive(true); }
@@ -601,9 +633,15 @@ namespace CustomUnits {
       foreach (GameObject go in toShowVehicle) { go.SetActive(false); }
       foreach (GameObject go in toShowSquad) { go.SetActive(true); }
       HUDMechArmorReadout readout = this.gameObject.GetComponent<HUDMechArmorReadout>();
+      UnitCustomInfo info = squad.GetCustomInfo();
       for (int index = 0; index < readout.ArmorOutline.Length; ++index) {
         readout.ArmorOutline[index] = SquadArmorOutline[index];
         if (readout.ArmorOutline[index] == null) { continue; }
+        if(string.IsNullOrEmpty(info.SquadInfo.outlineIcon) == false) {
+          readout.ArmorOutline[index].vectorGraphics = CustomSvgCache.get(info.SquadInfo.outlineIcon, squad.Combat.DataManager);
+        } else {
+          readout.ArmorOutline[index].vectorGraphics = CustomSvgCache.get(Core.Settings.SquadArmorOutlineIcon, squad.Combat.DataManager);
+        }
         ChassisLocations loc = HUDMechArmorReadout.GetChassisLocationFromIndex(index, false, true);
         LocationDef locDef = squad.MechDef.Chassis.GetLocationDef(loc);
         if ((locDef.MaxArmor <= 0f) && (locDef.InternalStructure <= 1f)) { readout.ArmorOutline[index].gameObject.SetActive(false); } else { readout.ArmorOutline[index].gameObject.SetActive(true); }
@@ -611,6 +649,11 @@ namespace CustomUnits {
       for (int index = 0; index < readout.Armor.Length; ++index) {
         readout.Armor[index] = SquadArmor[index];
         if (readout.Armor[index] == null) { continue; }
+        if (string.IsNullOrEmpty(info.SquadInfo.armorIcon) == false) {
+          readout.Armor[index].vectorGraphics = CustomSvgCache.get(info.SquadInfo.armorIcon, squad.Combat.DataManager);
+        } else {
+          readout.Armor[index].vectorGraphics = CustomSvgCache.get(Core.Settings.SquadArmorIcon, squad.Combat.DataManager);
+        }
         ChassisLocations loc = HUDMechArmorReadout.GetChassisLocationFromIndex(index, false, true);
         LocationDef locDef = squad.MechDef.Chassis.GetLocationDef(loc);
         if ((locDef.MaxArmor <= 0f) && (locDef.InternalStructure <= 1f)) { readout.Armor[index].gameObject.SetActive(false); } else { readout.Armor[index].gameObject.SetActive(true); }
@@ -618,6 +661,11 @@ namespace CustomUnits {
       for (int index = 0; index < readout.Structure.Length; ++index) {
         readout.Structure[index] = SquadStructure[index];
         if (readout.Structure[index] == null) { continue; }
+        if (string.IsNullOrEmpty(info.SquadInfo.structureIcon) == false) {
+          readout.Structure[index].vectorGraphics = CustomSvgCache.get(info.SquadInfo.structureIcon, squad.Combat.DataManager);
+        } else {
+          readout.Structure[index].vectorGraphics = CustomSvgCache.get(Core.Settings.SquadStructureIcon, squad.Combat.DataManager);
+        }
         ChassisLocations loc = HUDMechArmorReadout.GetChassisLocationFromIndex(index, false, true);
         LocationDef locDef = squad.MechDef.Chassis.GetLocationDef(loc);
         if ((locDef.MaxArmor <= 0f) && (locDef.InternalStructure <= 1f)) { readout.Structure[index].gameObject.SetActive(false); } else { readout.Structure[index].gameObject.SetActive(true); }
@@ -1198,6 +1246,7 @@ namespace CustomUnits {
       if (mech_RearArmor != null) { mech_RearArmor.gameObject.SetActive(false); }
       if (vehicle_FrontArmor != null) { vehicle_FrontArmor.gameObject.SetActive(false); }
       Log.TWL(0, "BayShowSquad");
+      UnitCustomInfo info = def.GetCustomInfo();
       for (int index = 0; index < BaySquadReadoutAligner.READOUT_NAMES.Count; ++index) {
         int squadIndex = BaySquadReadoutAligner.READOUT_INDEX_TO_SQUAD[index];
         string armorName = BaySquadReadoutAligner.ARMOR_PREFIX + BaySquadReadoutAligner.READOUT_NAMES[squadIndex];
@@ -1212,6 +1261,31 @@ namespace CustomUnits {
         if (MechTray_Armor != null) readout.Armor[index] = MechTray_Armor.gameObject.GetComponent<SVGImage>();
         if (MechTray_ArmorOutline != null) readout.ArmorOutline[index] = MechTray_ArmorOutline.gameObject.GetComponent<SVGImage>();
         if (MechTray_Structure != null) readout.Structure[index] = MechTray_Structure.gameObject.GetComponent<SVGImage>();
+        try {
+          if (readout.Armor[index] != null) {
+            if (string.IsNullOrEmpty(info.SquadInfo.armorIcon) == false) {
+              readout.Armor[index].vectorGraphics = CustomSvgCache.get(info.SquadInfo.armorIcon, UnityGameInstance.BattleTechGame.DataManager);
+            } else {
+              readout.Armor[index].vectorGraphics = CustomSvgCache.get(Core.Settings.SquadArmorIcon, UnityGameInstance.BattleTechGame.DataManager);
+            }
+          }
+          if (readout.ArmorOutline[index] != null) {
+            if (string.IsNullOrEmpty(info.SquadInfo.outlineIcon) == false) {
+              readout.ArmorOutline[index].vectorGraphics = CustomSvgCache.get(info.SquadInfo.outlineIcon, UnityGameInstance.BattleTechGame.DataManager);
+            } else {
+              readout.ArmorOutline[index].vectorGraphics = CustomSvgCache.get(Core.Settings.SquadArmorOutlineIcon, UnityGameInstance.BattleTechGame.DataManager);
+            }
+          }
+          if (readout.Structure[index] != null) {
+            if (string.IsNullOrEmpty(info.SquadInfo.structureIcon) == false) {
+              readout.Structure[index].vectorGraphics = CustomSvgCache.get(info.SquadInfo.structureIcon, UnityGameInstance.BattleTechGame.DataManager);
+            } else {
+              readout.Structure[index].vectorGraphics = CustomSvgCache.get(Core.Settings.SquadStructureIcon, UnityGameInstance.BattleTechGame.DataManager);
+            }
+          }
+        } catch (Exception e) {
+          Log.TWL(0, e.ToString(), true);
+        }
         if (def != null) {
           LocationDef locationDef = def.GetLocationDef(MechStructureRules.GetChassisLocationFromArmorLocation(HUDMechArmorReadout.GetArmorLocationFromIndex(index, false, true)));
           float armor = locationDef.MaxArmor;
@@ -1413,7 +1487,13 @@ namespace CustomUnits {
       { 0, 0 }, { 1, 5 }, { 2, 3 }, { 3, 1 }, { 4, 2 }, { 5, 4 }, { 6, 7 }, { 7, 6 } };
     private void SVGInit() {
       try {
-        Log.TWL(0, "SquadReadoutAligner.SVGInit");
+        ChassisDef chassisDef = null;
+        if (this.parent.DisplayedMech != null) { chassisDef = this.parent.DisplayedMech.MechDef.Chassis; } else
+        if (this.parent.DisplayedMechDef != null) { chassisDef = this.parent.DisplayedMechDef.Chassis; } else
+        if (this.parent.DisplayedChassisDef != null) { chassisDef = this.parent.DisplayedChassisDef; }
+        Log.TWL(0, $"SquadReadoutAligner.SVGInit {(chassisDef == null?"null":chassisDef.Description.Id)}");
+        UnitCustomInfo info = null;
+        if (chassisDef != null) { info = chassisDef.GetCustomInfo(); }
         for (int index = 0; index < READOUT_NAMES.Count; ++index) {
           int squadIndex = READOUT_INDEX_TO_SQUAD[index];
           string armorName = ARMOR_PREFIX + READOUT_NAMES[squadIndex];
@@ -1426,17 +1506,29 @@ namespace CustomUnits {
           int row = (int)squadIndex / (int)2;
           Log.WL(1, "row:" + row + " col:" + (squadIndex % 2) + " squadIndex:" + squadIndex + " al:" + HUDMechArmorReadout.GetArmorLocationFromIndex(index, false, false) + " sl:" + HUDMechArmorReadout.GetChassisLocationFromIndex(index, false, false));
           if (MechTray_Armor != null) {
-            MechTray_Armor.gameObject.GetComponent<SVGImage>().vectorGraphics = CustomSvgCache.get(Core.Settings.SquadArmorIcon, UnityGameInstance.BattleTechGame.DataManager);
+            if ((info == null) || (string.IsNullOrEmpty(info.SquadInfo.armorIcon))) {
+              MechTray_Armor.gameObject.GetComponent<SVGImage>().vectorGraphics = CustomSvgCache.get(Core.Settings.SquadArmorIcon, UnityGameInstance.BattleTechGame.DataManager);
+            } else {
+              MechTray_Armor.gameObject.GetComponent<SVGImage>().vectorGraphics = CustomSvgCache.get(info.SquadInfo.armorIcon, UnityGameInstance.BattleTechGame.DataManager);
+            }
             MechTray_Armor.pivot = new Vector2((squadIndex % 2 == 0 ? 0f : -1.1f), 1f + 1.1f * ((float)(row)));
             MechTray_Armor.anchoredPosition = Vector2.zero; MechTray_Armor.sizeDelta = new Vector2(SQUAD_ICON_SIZE, SQUAD_ICON_SIZE); MechTray_Armor.localScale = Vector3.one;
           }
           if (MechTray_ArmorOutline != null) {
-            MechTray_ArmorOutline.gameObject.GetComponent<SVGImage>().vectorGraphics = CustomSvgCache.get(Core.Settings.SquadArmorOutlineIcon, UnityGameInstance.BattleTechGame.DataManager);
+            if ((info == null) || (string.IsNullOrEmpty(info.SquadInfo.outlineIcon))) {
+              MechTray_ArmorOutline.gameObject.GetComponent<SVGImage>().vectorGraphics = CustomSvgCache.get(Core.Settings.SquadArmorOutlineIcon, UnityGameInstance.BattleTechGame.DataManager);
+            } else {
+              MechTray_ArmorOutline.gameObject.GetComponent<SVGImage>().vectorGraphics = CustomSvgCache.get(info.SquadInfo.outlineIcon, UnityGameInstance.BattleTechGame.DataManager);
+            }
             MechTray_ArmorOutline.pivot = new Vector2(0f, 1f);
             MechTray_ArmorOutline.anchoredPosition = Vector2.zero; MechTray_ArmorOutline.sizeDelta = new Vector2(SQUAD_ICON_SIZE, SQUAD_ICON_SIZE);
           }
           if (Mech_TrayInternal != null) {
-            Mech_TrayInternal.gameObject.GetComponent<SVGImage>().vectorGraphics = CustomSvgCache.get(Core.Settings.SquadStructureIcon, UnityGameInstance.BattleTechGame.DataManager);
+            if ((info == null) || (string.IsNullOrEmpty(info.SquadInfo.structureIcon))) {
+              Mech_TrayInternal.gameObject.GetComponent<SVGImage>().vectorGraphics = CustomSvgCache.get(Core.Settings.SquadStructureIcon, UnityGameInstance.BattleTechGame.DataManager);
+            } else {
+              Mech_TrayInternal.gameObject.GetComponent<SVGImage>().vectorGraphics = CustomSvgCache.get(info.SquadInfo.structureIcon, UnityGameInstance.BattleTechGame.DataManager);
+            }
             Mech_TrayInternal.pivot = MechTray_Armor.pivot;
             Mech_TrayInternal.anchoredPosition = Vector2.zero; Mech_TrayInternal.sizeDelta = new Vector2(SQUAD_ICON_SIZE, SQUAD_ICON_SIZE); Mech_TrayInternal.localScale = Vector3.one;
           }

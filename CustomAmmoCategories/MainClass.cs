@@ -37,6 +37,7 @@ using CustomAmmoCategoriesLog;
 using CustAmmoCategoriesPatches;
 using System.Collections.Concurrent;
 using MessagePack;
+using Harmony;
 
 namespace CustomAmmoCategoriesPatches {
 
@@ -1379,6 +1380,7 @@ namespace CACMain {
         LoadLegacyAssets(Log.BaseDirectory);
         UnitCombatStatisticHelper.Init();
         Core.DetectOtherMods();
+        PersistentMapClientHelper.Init();
         //CustomAmmoCategories.ha
         //FixedMechDefHelper.Init(CustomAmmoCategories.Settings.directory);
       } catch (Exception e) {

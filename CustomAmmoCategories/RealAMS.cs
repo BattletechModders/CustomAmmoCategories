@@ -43,12 +43,20 @@ namespace CustAmmoCategories {
       AMSHitChance = weapon.AMSHitChance();
       ShootsRemains = 0;
       ShootsCount = 0;
-      if (weapon.CanFire) {
-        ShootsRemains = weapon.ShotsWhenFired;
-      }
-      int alreadyShooted = weapon.AMSShootsCount();
-      if (weapon.AMSShootsEveryAttack() == false) {
-        ShootsRemains -= alreadyShooted;
+      if (weapon.CanFire == false) {
+        ShootsRemains = 0;
+      } else {
+        if (weapon.AMSActivationsPerTurn() <= 0) {
+          if (weapon.AMSShootsEveryAttack() == false) {
+            ShootsRemains = weapon.ShotsWhenFired - weapon.AMSShootsCount();
+          } else {
+            ShootsRemains = weapon.ShotsWhenFired;
+          }
+        } else  if (weapon.AMSActivationsPerTurn() > weapon.AMSActivationsCount()) {
+          ShootsRemains = weapon.ShotsWhenFired;
+        } else {
+          ShootsRemains = 0;
+        }        
       }
       if (ShootsRemains < 0) { ShootsRemains = 0; };
       Range = weapon.MaxRange;
@@ -171,6 +179,7 @@ namespace CustAmmoCategories {
     public static Dictionary<string, Weapon> amsWeapons = new Dictionary<string, Weapon>();
     //public static Dictionary<int, Dictionary<int, Dictionary<int, Dictionary<int, CachedMissileCurve>>>> MissileCurveCache = null;
     public static string AMSShootsCountStatName = "CAC-AMShootsCount";
+    public static string AMSActivationsCountStatName = "CAC-AMSActivationsCount";
     public static string AMSJammingAttemptStatName = "CAC-AMSJammingAttempt";
     public static bool Unguided(this Weapon weapon) {
       if (weapon.ammo().Unguided == TripleBoolean.True) { return true; }
@@ -186,6 +195,11 @@ namespace CustAmmoCategories {
       if (stat == null) { return 0; }
       return stat.Value<int>();
     }
+    public static int AMSActivationsCount(this Weapon weapon) {
+      Statistic stat = weapon.StatCollection.GetStatistic(CustomAmmoCategories.AMSActivationsCountStatName);
+      if (stat == null) { return 0; }
+      return stat.Value<int>();
+    }
     public static bool AMSJammingAttempt(Weapon weapon) {
       Statistic stat = weapon.StatCollection.GetStatistic(CustomAmmoCategories.AMSJammingAttemptStatName);
       if (stat == null) { return false; }
@@ -196,6 +210,13 @@ namespace CustAmmoCategories {
         weapon.StatCollection.AddStatistic<int>(CustomAmmoCategories.AMSShootsCountStatName, shoots);
       } else {
         weapon.StatCollection.Set<int>(CustomAmmoCategories.AMSShootsCountStatName, shoots);
+      }
+    }
+    public static void AMSActivationsCount(this Weapon weapon, int activations) {
+      if (weapon.StatCollection.ContainsStatistic(CustomAmmoCategories.AMSActivationsCountStatName) == false) {
+        weapon.StatCollection.AddStatistic<int>(CustomAmmoCategories.AMSActivationsCountStatName, activations);
+      } else {
+        weapon.StatCollection.Set<int>(CustomAmmoCategories.AMSActivationsCountStatName, activations);
       }
     }
     public static void AMSJammingAttempt(this Weapon weapon, bool isShooted) {
@@ -612,7 +633,7 @@ namespace CustAmmoCategories {
       Log.M.TWL(0, "FIELD AMS LIST. ROUND:" + combat.TurnDirector.CurrentRound + " PHASE:" + combat.TurnDirector.CurrentPhase + " seqId:" + instance.id);
       if (missiles.Count > 0) {
         foreach (AMSRecord amsrec in ams) {
-          Log.M.WL(2, amsrec.weapon.parent.DisplayName + "." + amsrec.weapon.defId + " ShootsRemains:" + amsrec.ShootsRemains + " CanFire:" + amsrec.weapon.CanFire + " AMSShootsEveryAttack:" + amsrec.weapon.AMSShootsEveryAttack() + " mode:" + amsrec.weapon.mode().Id + " ammo:" + amsrec.weapon.ammo().Id + " AMS:" + amsrec.weapon.isAMS() + " AAMS:" + amsrec.weapon.isAAMS() + " have weaponRep:" + (amsrec.weapon.weaponRep == null ? "false" : "true"));
+          Log.M.WL(2, $"{amsrec.weapon.parent.DisplayName}.{amsrec.weapon.defId} ShootsRemains:{amsrec.ShootsRemains} maxShoots:{amsrec.weapon.ShotsWhenFired} shotsPerformed:{amsrec.weapon.AMSShootsCount()} maxActiv:{amsrec.weapon.AMSActivationsPerTurn()} curActiv:{amsrec.weapon.AMSActivationsCount()} CanFire:{amsrec.weapon.CanFire} AMSShootsEveryAttack:{amsrec.weapon.AMSShootsEveryAttack()} mode:{amsrec.weapon.mode().Id} ammo:{amsrec.weapon.ammo().Id} AMS:{amsrec.weapon.isAMS()} AAMS:{amsrec.weapon.isAAMS()} have weaponRep:{(amsrec.weapon.weaponRep == null ? "false" : "true")}");
           if (amsrec.weapon.CanFire == false) {
             if (CustomAmmoCategories.Settings.AMSCantFireFloatie) {
               combat.MessageCenter.PublishMessage(new FloatieMessage(amsrec.weapon.parent.GUID, amsrec.weapon.parent.GUID, new Text("AMS: {0} CAN'T FIRE {1}", amsrec.weapon.UIName, amsrec.weapon.CantFireReason()), FloatieMessage.MessageNature.Debuff));
@@ -741,6 +762,7 @@ namespace CustAmmoCategories {
             CustomAmmoCategoriesLog.Log.LogWrite("WARNING! missile launcher has no parent. That is very odd\n", true);
           }
           amsrec.weapon.AMSShootsCount(amsrec.weapon.AMSShootsCount() + amsrec.ShootsCount);
+          amsrec.weapon.AMSActivationsCount(amsrec.weapon.AMSActivationsCount() + 1);
         }
       }
       WeaponHitInfo?[][] weaponHitInfo = (WeaponHitInfo?[][])typeof(AttackDirector.AttackSequence).GetField("weaponHitInfo", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(instance);

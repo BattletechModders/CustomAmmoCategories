@@ -449,6 +449,8 @@ namespace CustAmmoCategories {
     public bool Disabeld { get; set; } = false;
     [Key(146), JsonIgnore]
     public bool isFromJson { get; private set; } = false;
+    [Key(147)]
+    public int AMSActivationsPerTurn { get; set; } = 0;
     private static List<PropertyInfo> json_properties = null;
     private static void fill_json_properties() {
       if (json_properties != null) { return; }

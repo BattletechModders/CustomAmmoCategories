@@ -1776,8 +1776,9 @@ namespace CustomUnits {
       }
     }
     public override void OnFootFall(int leftFoot) {
-      Log.TWL(0,"MechRepresentation.OnFootFall "+this.mech.PilotableActorDef.ChassisID+ " leftFoot:" + leftFoot);
-      Log.WL(1, UnityEngine.StackTraceUtility.ExtractStackTrace());
+      Log.TWL(0,$"MechRepresentation.OnFootFall {this.mech.PilotableActorDef.ChassisID} leftFoot:{leftFoot} NoMoveAnimation:{this.parentActor.NoMoveAnimation()}");
+      if (this.parentActor.NoMoveAnimation()) { this.triggerFootVFX = false; }
+      //Log.WL(1, UnityEngine.StackTraceUtility.ExtractStackTrace());
       if (this.triggerFootVFX) { return; }
       this.triggerFootVFX = true;
       this.leftFootVFX = leftFoot;
@@ -1816,7 +1817,8 @@ namespace CustomUnits {
       }
       FootstepManager.Instance.AddFootstep(position, forward, new Vector3(num1, num1, num1));
       string vfxName1 = string.Format("{0}{1}{2}{3}", (object)this.Constants.VFXNames.footfallBase, (object)(this.IsInAnyIdle ? "idle_" : ""), (object)this.rootParentRepresentation.terrainImpactParticleName, (object)this.rootParentRepresentation.vfxNameModifier);
-      Log.TWL(0, "_TriggerFootFall " + this.gameObject.name + " " + vfxName1);
+      Log.TWL(0, $"TriggerCustomFootFall {this.chassisDef.Description.Id} {this.gameObject.name} {vfxName1}");
+      Log.WL(0, Environment.StackTrace);
       this.PlayVFXAt(foot, Vector3.zero, vfxName1, false, lookAtPos, true, -1f);
       if (this.currentSurfaceType == AudioSwitch_surface_type.wood)
         this.PlayVFX(8, "vfxPrfPrtl_envTreeRustle_vHigh", false, Vector3.zero, true, -1f);
@@ -2039,19 +2041,31 @@ namespace CustomUnits {
       Traverse.Create(moveSeq).Field<float>("vehicleVFXTimer").Value = 0.0f;
       this.PlayVehicleTerrainImpactVFX(false);
     }
-
-
-    public virtual RaycastHit? UpdateSpline(Vector3 worldPos, ActorMovementSequence sequence, Vector3 Forward, float t, ICombatant meleeTarget) {
-      RaycastHit? raycast = new RaycastHit?();
-      if (this.parentActor.UnaffectedPathing() || (this.parentCombatant.FlyingHeight() > Core.Epsilon)) {
-        raycast = this.GetTerrainRayHit(worldPos, true);
+    public class MoveContext {
+      public RaycastHit? mainRayHit { get; set; }
+      public MoveContext() {
+        mainRayHit = new RaycastHit?();
       }
-      if (raycast.HasValue) {
-        worldPos.y = raycast.Value.point.y;
+    }
+
+    public virtual MoveContext createMoveContext() {
+      return new MoveContext();
+    }
+    public virtual MoveContext GetMoveContext(ref Vector3 worldPos) {
+      MoveContext raycast = this.createMoveContext();
+      if (this.parentActor.UnaffectedPathing() || (this.parentCombatant.FlyingHeight() > Core.Epsilon)) {
+        raycast.mainRayHit = this.GetTerrainRayHit(worldPos, true);
+      }
+      if (raycast.mainRayHit.HasValue) {
+        worldPos.y = raycast.mainRayHit.Value.point.y;
       } else {
         float num = Mathf.Clamp(this.parentActor.Combat.MapMetaData.GetLerpedHeightAt(worldPos) - worldPos.y, -20f, 20f);
         worldPos.y += num;
       }
+      return raycast;
+    }
+    public virtual object UpdateSpline(Vector3 worldPos, ActorMovementSequence sequence, Vector3 Forward, float t, ICombatant meleeTarget) {
+      MoveContext raycast = this.GetMoveContext(ref worldPos);
       this.thisTransform.position = worldPos;
       this.UpdateSpline(sequence, Forward, t, meleeTarget);
       return raycast;

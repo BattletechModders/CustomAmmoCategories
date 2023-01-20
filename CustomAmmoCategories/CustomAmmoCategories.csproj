@@ -44,7 +44,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="0Harmony">
-      <HintPath>$(BattleTechGameDir)\Mods\ModTek\AssembliesOverride\0Harmony.dll</HintPath>
+      <HintPath>..\..\..\BattleTech_Data\Managed\0Harmony.dll</HintPath>
     </Reference>
     <Reference Include="Assembly-CSharp">
       <HintPath>$(BattleTechGameDir)\Mods\.modtek\AssembliesInjected\\Assembly-CSharp.dll</HintPath>
@@ -135,6 +135,10 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>$(BattleTechGameDir)\BattleTech_Data\Managed\UnityEngine.ImageConversionModule.dll</HintPath>
     </Reference>
+    <Reference Include="UnityEngine.IMGUIModule, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\..\BattleTech_Data\Managed\UnityEngine.IMGUIModule.dll</HintPath>
+    </Reference>
     <Reference Include="UnityEngine.ParticleSystemModule, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>$(BattleTechGameDir)\BattleTech_Data\Managed\UnityEngine.ParticleSystemModule.dll</HintPath>
@@ -146,6 +150,10 @@
     <Reference Include="UnityEngine.TerrainModule, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>$(BattleTechGameDir)\BattleTech_Data\Managed\UnityEngine.TerrainModule.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine.TextCoreModule, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\..\BattleTech_Data\Managed\UnityEngine.TextCoreModule.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.TextRenderingModule, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
@@ -240,6 +248,7 @@
     <Compile Include="IndirectFireCapable.cs" />
     <Compile Include="InternalClassPathes.cs" />
     <Compile Include="Log.cs" />
+    <Compile Include="MapClientHelper.cs" />
     <Compile Include="MechHitTable.cs" />
     <Compile Include="MessageBox.cs" />
     <Compile Include="MineFieldsMoveSequence.cs" />

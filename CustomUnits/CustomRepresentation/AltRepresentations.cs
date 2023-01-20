@@ -911,7 +911,8 @@ namespace CustomUnits {
         this.HeightController.PendingHeight = this.parentCombatant.FlyingHeight();
       }
     }
-    public virtual void UpdateRotation(RaycastHit? rayhit, Transform moveTransform, Vector3 forward, float deltaT) {
+    public virtual void UpdateRotation(object context, Transform moveTransform, Vector3 forward, float deltaT) {
+      MoveContext rayhit = context as MoveContext;
       bool aliginToTerrain = false;
       bool vehicleMovement = this.parentCombatant.NoMoveAnimation() || this.parentCombatant.FakeVehicle();
       if (vehicleMovement && this.parentCombatant.FlyingHeight() < Core.Settings.MaxHoveringHeightWithWorkingJets) {
@@ -921,14 +922,14 @@ namespace CustomUnits {
         AudioSwitch_surface_type currentSurfaceType = this.rootParentRepresentation._CurrentSurfaceType;
         if ((currentSurfaceType == AudioSwitch_surface_type.water_deep) || (currentSurfaceType == AudioSwitch_surface_type.water_shallow)) {
           aliginToTerrain = false;
-          this.AliginToWater(rayhit, deltaT);
+          this.AliginToWater(rayhit.mainRayHit, deltaT);
         }
       }
       if (aliginToTerrain) {
         if (forward.sqrMagnitude > Core.Epsilon) {
           moveTransform.rotation = Quaternion.RotateTowards(moveTransform.rotation, Quaternion.LookRotation(forward), 180f * deltaT);
         }
-        this.AliginToTerrain(rayhit, deltaT, false);
+        this.AliginToTerrain(rayhit.mainRayHit, deltaT, false);
       } else {
         if (forward.sqrMagnitude > Core.Epsilon) {
           moveTransform.LookAt(moveTransform.position + forward, Vector3.up);

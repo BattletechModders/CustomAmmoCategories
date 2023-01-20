@@ -1132,11 +1132,12 @@ namespace CustomUnits {
         ___headerWidget.LanceName = Strings.T(__instance.oldLanceName);
         SpawnableUnit[] lanceUnits = config.GetLanceUnits("");
         for (int i = 0; i < lanceUnits.Length; ++i) {
-          Log.WL(1, "[" + i + "] pilot:" + lanceUnits[i].PilotId + " unit:" + lanceUnits[i].UnitId);
+          Log.WL(1, $"[{i}] pilot:{lanceUnits[i].PilotId} UnitId:{lanceUnits[i].UnitId} Unit:{(lanceUnits[i].Unit==null?"null": lanceUnits[i].Unit.GUID)}");
         }
         List<LoadoutContent> spawnMechList = new List<LoadoutContent>();
         List<LoadoutContent> spawnVehicleList = new List<LoadoutContent>();
         int count = Mathf.Min(lanceUnits.Length, ___loadoutSlots.Length);
+        Log.WL(1, "filling list");
         for (int i = 0; i < count; ++i) {
           SpawnableUnit unit = lanceUnits[i];
           IMechLabDraggableItem forcedMech = (IMechLabDraggableItem)null;
@@ -1145,6 +1146,8 @@ namespace CustomUnits {
           if (forcedMech != null && !MechValidationRules.ValidateMechCanBeFielded(__instance.Sim, forcedMech.MechDef)) {
             forcedMech = (IMechLabDraggableItem)null;
           }
+          Log.WL(2, $"[{i}] pilot:{lanceUnits[i].PilotId} UnitId:{lanceUnits[i].UnitId} Unit:{(lanceUnits[i].Unit == null ? "null" : lanceUnits[i].Unit.GUID)}");
+          Log.WL(3,$"{forcedMech.MechDef.ChassisID}");
           SGBarracksRosterSlot forcedPilot = null;
           forcedPilot = __instance.pilotListWidget.GetPilot(unit.PilotId);
           if (forcedPilot != null) {

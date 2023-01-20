@@ -192,6 +192,7 @@ namespace CustomUnits {
     public List<string> JetStreamsAttaches { get; set; } = new List<string>();
     public CustomVector vfxScale { get; set; } = new CustomVector(true);
     public List<string> Animators { get; set; }
+    public bool InBattleAllAnimators { get; set; } = false;
     public List<CustomParticleSystemDef> Particles { get; set; }
     public List<AttachInfoRecord> WeaponsAttachPoints { get; set; }
     public CustomDestructionDef OnDestroy { get; set; }

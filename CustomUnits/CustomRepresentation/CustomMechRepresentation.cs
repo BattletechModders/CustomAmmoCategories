@@ -115,7 +115,7 @@ namespace CustomUnits {
         Log.TWL(0, "UnitSpawnPointGameLogic.SpawnMech " + __result.PilotableActorDef.Description.Id);
         CustomMechRepresentation custRep = __result.GameRep as CustomMechRepresentation;
         if (custRep != null) {
-          custRep.UpdateRotation(new RaycastHit?(),custRep.transform, custRep.transform.forward, 9999f);
+          custRep.UpdateRotation(custRep.createMoveContext(),custRep.transform, custRep.transform.forward, 9999f);
         }
       } catch (Exception e) {
         Log.TWL(0, e.ToString(), true);
@@ -687,54 +687,65 @@ namespace CustomUnits {
     }
     public virtual void SetupHeadlights() {
       if (this.HasOwnVisuals == false) { return; }
+      Log.TWL(0, $"CustomMechRepresentation.SetupHeadlights {this.custMech.PilotableActorDef.ChassisID}");
       //return;
       //if (this.altDef != null) { if (string.IsNullOrEmpty(this.altDef.PrefabBase) == false) { prefabBase = this.altDef.PrefabBase; } }
-      string id1 = string.Format("chrPrfComp_{0}_centertorso_headlight", (object)this.PrefabBase);
-      string id2 = string.Format("chrPrfComp_{0}_leftshoulder_headlight", (object)this.PrefabBase);
-      string id3 = string.Format("chrPrfComp_{0}_rightshoulder_headlight", (object)this.PrefabBase);
-      string id4 = string.Format("chrPrfComp_{0}_leftleg_headlight", (object)this.PrefabBase);
-      string id5 = string.Format("chrPrfComp_{0}_rightleg_headlight", (object)this.PrefabBase);
+      //string id1 = string.Format("chrPrfComp_{0}_centertorso_headlight", (object)this.PrefabBase);
+      //string id2 = string.Format("chrPrfComp_{0}_leftshoulder_headlight", (object)this.PrefabBase);
+      //string id3 = string.Format("chrPrfComp_{0}_rightshoulder_headlight", (object)this.PrefabBase);
+      //string id4 = string.Format("chrPrfComp_{0}_leftleg_headlight", (object)this.PrefabBase);
+      //string id5 = string.Format("chrPrfComp_{0}_rightleg_headlight", (object)this.PrefabBase);
       this.headlightReps.Clear();
-      GameObject gameObject1 = mech.Combat.DataManager.PooledInstantiate(id1, BattleTechResourceType.Prefab);
-      if (gameObject1 != null) {
-        gameObject1.transform.parent = this.vfxHeadTransform;
-        gameObject1.transform.localPosition = Vector3.zero;
-        gameObject1.transform.localRotation = Quaternion.identity;
-        gameObject1.transform.localScale = Vector3.one;
-        this.headlightReps.Add(gameObject1);
+      List<string> repNames = new List<string>() {
+        string.Format("chrPrfComp_{0}_centertorso_headlight", (object)this.PrefabBase)
+        ,string.Format("chrPrfComp_{0}_leftshoulder_headlight", (object)this.PrefabBase)
+        ,string.Format("chrPrfComp_{0}_rightshoulder_headlight", (object)this.PrefabBase)
+        ,string.Format("chrPrfComp_{0}_leftleg_headlight", (object)this.PrefabBase)
+        ,string.Format("chrPrfComp_{0}_rightleg_headlight", (object)this.PrefabBase)
+      };
+      foreach(string id in repNames) {
+        Log.WL(1, $"headlight:{id}");
+        GameObject gameObject = mech.Combat.DataManager.PooledInstantiate(id, BattleTechResourceType.Prefab);
+        if (gameObject != null) {
+          gameObject.transform.parent = this.vfxHeadTransform;
+          gameObject.transform.localPosition = Vector3.zero;
+          gameObject.transform.localRotation = Quaternion.identity;
+          gameObject.transform.localScale = Vector3.one;
+          this.headlightReps.Add(gameObject);
+        }
       }
-      GameObject gameObject2 = mech.Combat.DataManager.PooledInstantiate(id2, BattleTechResourceType.Prefab);
-      if (gameObject2 != null) {
-        gameObject2.transform.parent = this.vfxLeftShoulderTransform;
-        gameObject2.transform.localPosition = Vector3.zero;
-        gameObject2.transform.localRotation = Quaternion.identity;
-        gameObject2.transform.localScale = Vector3.one;
-        this.headlightReps.Add(gameObject2);
-      }
-      GameObject gameObject3 = mech.Combat.DataManager.PooledInstantiate(id3, BattleTechResourceType.Prefab);
-      if (gameObject3 != null) {
-        gameObject3.transform.parent = this.vfxRightShoulderTransform;
-        gameObject3.transform.localPosition = Vector3.zero;
-        gameObject3.transform.localRotation = Quaternion.identity;
-        gameObject3.transform.localScale = Vector3.one;
-        this.headlightReps.Add(gameObject3);
-      }
-      GameObject gameObject4 = mech.Combat.DataManager.PooledInstantiate(id4, BattleTechResourceType.Prefab);
-      if (gameObject4 != null) {
-        gameObject4.transform.parent = this.vfxLeftLegTransform;
-        gameObject4.transform.localPosition = Vector3.zero;
-        gameObject4.transform.localRotation = Quaternion.identity;
-        gameObject4.transform.localScale = Vector3.one;
-        this.headlightReps.Add(gameObject4);
-      }
-      GameObject gameObject5 = mech.Combat.DataManager.PooledInstantiate(id5, BattleTechResourceType.Prefab);
-      if (gameObject5 != null) {
-        gameObject5.transform.parent = this.vfxRightLegTransform;
-        gameObject5.transform.localPosition = Vector3.zero;
-        gameObject5.transform.localRotation = Quaternion.identity;
-        gameObject5.transform.localScale = Vector3.one;
-        this.headlightReps.Add(gameObject5);
-      }
+      //GameObject gameObject2 = mech.Combat.DataManager.PooledInstantiate(id2, BattleTechResourceType.Prefab);
+      //if (gameObject2 != null) {
+      //  gameObject2.transform.parent = this.vfxLeftShoulderTransform;
+      //  gameObject2.transform.localPosition = Vector3.zero;
+      //  gameObject2.transform.localRotation = Quaternion.identity;
+      //  gameObject2.transform.localScale = Vector3.one;
+      //  this.headlightReps.Add(gameObject2);
+      //}
+      //GameObject gameObject3 = mech.Combat.DataManager.PooledInstantiate(id3, BattleTechResourceType.Prefab);
+      //if (gameObject3 != null) {
+      //  gameObject3.transform.parent = this.vfxRightShoulderTransform;
+      //  gameObject3.transform.localPosition = Vector3.zero;
+      //  gameObject3.transform.localRotation = Quaternion.identity;
+      //  gameObject3.transform.localScale = Vector3.one;
+      //  this.headlightReps.Add(gameObject3);
+      //}
+      //GameObject gameObject4 = mech.Combat.DataManager.PooledInstantiate(id4, BattleTechResourceType.Prefab);
+      //if (gameObject4 != null) {
+      //  gameObject4.transform.parent = this.vfxLeftLegTransform;
+      //  gameObject4.transform.localPosition = Vector3.zero;
+      //  gameObject4.transform.localRotation = Quaternion.identity;
+      //  gameObject4.transform.localScale = Vector3.one;
+      //  this.headlightReps.Add(gameObject4);
+      //}
+      //GameObject gameObject5 = mech.Combat.DataManager.PooledInstantiate(id5, BattleTechResourceType.Prefab);
+      //if (gameObject5 != null) {
+      //  gameObject5.transform.parent = this.vfxRightLegTransform;
+      //  gameObject5.transform.localPosition = Vector3.zero;
+      //  gameObject5.transform.localRotation = Quaternion.identity;
+      //  gameObject5.transform.localScale = Vector3.one;
+      //  this.headlightReps.Add(gameObject5);
+      //}
       if (this.customRep != null) { this.customRep.AttachHeadlights(); }
     }
   }
@@ -776,7 +787,6 @@ namespace CustomUnits {
         return f_j_Root;
       }
     }
-    public virtual void Test() { }
     public virtual CustomMech custMech { get; protected set; }
     public virtual HardpointDataDef HardpointData { get; set; }
     public virtual string PrefabBase { get; set; }

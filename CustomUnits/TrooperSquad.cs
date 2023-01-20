@@ -333,6 +333,12 @@ namespace CustomUnits {
     public WeightClass weightClass { get; set; } = WeightClass.MEDIUM;
     [Key(4)]
     public Dictionary<string, ChassisLocations> Hardpoints { get; set; } = new Dictionary<string, ChassisLocations>();
+    [Key(5)]
+    public string armorIcon { get; set; } = string.Empty;
+    [Key(6)]
+    public string outlineIcon { get; set; } = string.Empty;
+    [Key(7)]
+    public string structureIcon { get; set; } = string.Empty;
     public TrooperSquadDef() {
       //Hardpoints = new Dictionary<string, ChassisLocations>();
       //UnitSize = 1f;
