@@ -1176,7 +1176,7 @@ namespace CustAmmoCategories {
             AdvWeaponHitInfo advInfo = weaponHitInfo[groupIndex][weaponIndex].Value.advInfo();
             foreach (var aCrits in advInfo.resolveInfo) {
               foreach (var advCrit in aCrits.Value.Crits) {
-                critWS.Cells[critLogIndex, 1].Value = advInfo.Sequence;
+                critWS.Cells[critLogIndex, 1].Value = advInfo.Sequence.id;
                 critWS.Cells[critLogIndex, 2].Value = time;
                 critWS.Cells[critLogIndex, 3].Value = new Text(advInfo.Sequence.attacker.DisplayName).ToString();
                 critWS.Cells[critLogIndex, 4].Value = advInfo.weapon.UIName;
