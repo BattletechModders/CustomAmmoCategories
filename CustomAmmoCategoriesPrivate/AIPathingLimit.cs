@@ -118,46 +118,50 @@ namespace CustAmmoCategories {
         Log.P?.TWL(0, e.ToString(), true);
       }
     }
+    public static void FilterFastUnits(MoveDestOriginalStatistic original, LeafBehaviorNode __instance, BehaviorTree ___tree) {
+      if (CustomAmmoCategories.Settings.AIPathingOptimization == false) { return; }
+      foreach (MoveDestination moveDestination in ___tree.movementCandidateLocations) {
+        original.Add(___tree.unit.CurrentPosition, moveDestination);
+      }
+      Log.P?.TWL(0, "MoveCandidatesFilter " + ___tree.unit.PilotableActorDef.ChassisID + " movementCandidateLocations:" + ___tree.movementCandidateLocations.Count, true);
+      if (___tree.movementCandidateLocations.Count <= CustomAmmoCategories.Settings.AIPathingSamplesLimit) { return; }
+      Dictionary<MoveType, int> moveTypeCounts = new Dictionary<MoveType, int>();
+      Log.P?.WL(1, "filter target:");
+      foreach (var stat in original.moveType_statistic) {
+        int count = stat.Value;
+        if (DO_NOT_OPTIMIZE_MOVE_TYPES.Contains(stat.Key)) { goto stat_add; }
+        //if (minefields_no_optimize && (DO_NOT_OPTIMIZE_MINEFIELD_MOVE_TYPES.Contains(stat.Key))) { goto stat_add; }
+        count = Mathf.Max((stat.Value * CustomAmmoCategories.Settings.AIPathingSamplesLimit) / original.moveDestinations.Count, 1);
+      stat_add:
+        moveTypeCounts.Add(stat.Key, count);
+        Log.P?.WL(2, stat.Key + ":" + count);
+      }
+      ___tree.movementCandidateLocations.Clear();
+      foreach (var counts in moveTypeCounts) {
+        if (original.costs.TryGetValue(counts.Key, out var origCounts)) {
+          List<int> costsKeys = new List<int>();
+          costsKeys.AddRange(origCounts.Keys);
+          costsKeys.Sort((a, b) => b.CompareTo(a));
+          List<MoveDestination> result = new List<MoveDestination>();
+          for (int index = 0; index < costsKeys.Count; ++index) {
+            if (result.Count >= counts.Value) { break; }
+            int cost = costsKeys[index];
+            result.AddRange(origCounts[cost]);
+          }
+          ___tree.movementCandidateLocations.AddRange(result);
+        }
+      }
+    }
     public static void MoveCandidatesFilter(LeafBehaviorNode __instance, BehaviorTree ___tree) {
       try {
+        Log.M?.TWL(0,$"MoveCandidatesFilter");
         if (original_movementCandidateLocations.TryGetValue(___tree, out MoveDestOriginalStatistic original) == false) {
           original = new MoveDestOriginalStatistic();
           original_movementCandidateLocations.Add(___tree, original);
         }
         AIMinefieldHelper.FilterMoveCandidates(___tree.unit,ref ___tree.movementCandidateLocations);
-        if (CustomAmmoCategories.Settings.AIPathingOptimization == false) { return; }
-        foreach (MoveDestination moveDestination in ___tree.movementCandidateLocations) {
-          original.Add(___tree.unit.CurrentPosition, moveDestination);
-        }
-        Log.P?.TWL(0, "MoveCandidatesFilter " + ___tree.unit.PilotableActorDef.ChassisID + " movementCandidateLocations:" + ___tree.movementCandidateLocations.Count, true);
-        if (___tree.movementCandidateLocations.Count <= CustomAmmoCategories.Settings.AIPathingSamplesLimit) { goto print_locations; }
-        Dictionary<MoveType, int> moveTypeCounts = new Dictionary<MoveType, int>();
-        Log.P?.WL(1, "filter target:");
-        foreach (var stat in original.moveType_statistic) {
-          int count = stat.Value;
-          if (DO_NOT_OPTIMIZE_MOVE_TYPES.Contains(stat.Key)) { goto stat_add; }
-          //if (minefields_no_optimize && (DO_NOT_OPTIMIZE_MINEFIELD_MOVE_TYPES.Contains(stat.Key))) { goto stat_add; }
-          count = Mathf.Max((stat.Value * CustomAmmoCategories.Settings.AIPathingSamplesLimit) / original.moveDestinations.Count, 1);
-          stat_add:
-          moveTypeCounts.Add(stat.Key, count);
-          Log.P?.WL(2, stat.Key + ":" + count);
-        }
-        ___tree.movementCandidateLocations.Clear();
-        foreach (var counts in moveTypeCounts) {
-          if (original.costs.TryGetValue(counts.Key, out var origCounts)) {
-            List<int> costsKeys = new List<int>();
-            costsKeys.AddRange(origCounts.Keys);
-            costsKeys.Sort((a, b) => b.CompareTo(a));
-            List<MoveDestination> result = new List<MoveDestination>();
-            for (int index = 0; index < costsKeys.Count; ++index) {
-              if (result.Count >= counts.Value) { break; }
-              int cost = costsKeys[index];
-              result.AddRange(origCounts[cost]);
-            }
-            ___tree.movementCandidateLocations.AddRange(result);
-          }
-        }
-        print_locations:
+        FilterFastUnits(original, __instance, ___tree);
+        //AIFleeHelper.FleeCandidatesFilter(___tree.unit, ref ___tree.movementCandidateLocations);
         Log.P?.WL(1, "filter result:" + ___tree.movementCandidateLocations.Count);
         //___tree.movementCandidateLocations.Sort((a, b) => { return a.PathNode.CostToThisNode.CompareTo(b.PathNode.CostToThisNode); });
         //foreach(MoveDestination moveDestination in ___tree.movementCandidateLocations) {

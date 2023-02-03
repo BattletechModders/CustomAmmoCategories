@@ -262,8 +262,12 @@ namespace CustAmmoCategories {
         + (float.IsNaN(wp.APCriticalChanceMultiplier)?0f: wp.APCriticalChanceMultiplier);
       if (weapon.parent != null) {
         if (weapon.parent.EvasivePipsCurrent > 0) {
-          float evasiveMod = weapon.exDef().evasivePipsMods.APDamage + ammo.evasivePipsMods.APDamage + mode.evasivePipsMods.APDamage;
+          float evasiveMod = wp.evasivePipsMods.APDamage + ammo.evasivePipsMods.APDamage + mode.evasivePipsMods.APDamage;
           if (Mathf.Abs(evasiveMod) > CustomAmmoCategories.Epsilon) result = result * Mathf.Pow((float)weapon.parent.EvasivePipsCurrent, evasiveMod);
+        }
+        if (weapon.parent.DistMovedThisRound > CustomAmmoCategories.Settings.HexSizeForMods) {
+          float hexesMod = wp.hexesMovedMod.APDamage + ammo.hexesMovedMod.APDamage + mode.hexesMovedMod.APDamage;
+          if (Mathf.Abs(hexesMod) > CustomAmmoCategories.Epsilon) result = result * Mathf.Pow((float)weapon.parent.MovedHexes(), hexesMod);
         }
       }
       return result;
@@ -709,6 +713,10 @@ namespace CustAmmoCategories {
     public TripleBoolean BreachingShot { get; set; } = TripleBoolean.NotSet;
     [Key(126)]
     public int AMSActivationsPerTurn { get; set; } = 0;
+    [SelfDocumentationDefaultValue("empty"), SelfDocumentationTypeName("EvasivePipsMods structure"), Key(127)]
+    public EvasivePipsMods hexesMovedMod { get; set; } = new EvasivePipsMods();
+    [Key(127)]
+    public float RecoilJammingChance { get; set; } = 0f;
     public ExtWeaponDef() { }
   }
 }
@@ -779,6 +787,11 @@ namespace CustomAmmoCategoriesPatches {
         if (defTemp["AmmoCategory"] != null) {
           defTemp.Remove("AmmoCategory");
         }
+        if (defTemp["APDamage"] != null) {
+          defTemp["StructureDamage"] = (float)defTemp["APDamage"];
+          defTemp.Remove("APDamage");
+        }
+
         if (CustomAmmoCategories.contains(AmmoCategory) == false) {
           Log.M.TWL(0, "Custom Ammo Categories list not contains "+AmmoCategory);
           CustomAmmoCategories.printItems();

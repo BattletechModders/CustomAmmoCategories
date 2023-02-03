@@ -495,6 +495,19 @@ namespace CustomUnits {
     public string UnitTypeName { get; set; } = string.Empty;
     [Key(42)]
     public bool BossAppearAnimation { get; set; } = false;
+    [Key(43)]
+    public bool FrontLegsDestructedOnSideTorso { get; set; } = false;
+    [Key(44)]
+    public string CustomHitTalbe { get; set; } = string.Empty;
+    [IgnoreMember, JsonIgnore]
+    public CustomHitTableDef f_customHitTalbe = null;
+    [IgnoreMember, JsonIgnore]
+    public CustomHitTableDef customHitTalbe {
+      get {
+        if (f_customHitTalbe == null) { f_customHitTalbe = CustomHitTableDef.Search(CustomHitTalbe); }
+        return f_customHitTalbe;
+      }
+    }
     public UnitCustomInfo() {
       //FlyingHeight = 0f;
       //Naval = false;
@@ -1436,8 +1449,8 @@ namespace CustomUnits {
       if (__instance.StatCollection.ContainsStatistic(UnitUnaffectionsActorStats.MoveCostBiomeActorStat) == false) {
         __instance.StatCollection.AddStatistic<bool>(UnitUnaffectionsActorStats.MoveCostBiomeActorStat, info.Unaffected.MoveCostBiome);
       }
-      if (__instance.StatCollection.ContainsStatistic(UnitUnaffectionsActorStats.ArmsCountedAsLegsActorStat) == false) {
-        __instance.StatCollection.AddStatistic<bool>(UnitUnaffectionsActorStats.ArmsCountedAsLegsActorStat, info.ArmsCountedAsLegs);
+      if (__instance.StatCollection.ContainsStatistic(UnitUnaffectionsActorStats.NoDependLocaltionsActorStat) == false) {
+        __instance.StatCollection.AddStatistic<bool>(UnitUnaffectionsActorStats.NoDependLocaltionsActorStat, info.ArmsCountedAsLegs && (info.FrontLegsDestructedOnSideTorso == false));
       }
       if (__instance.StatCollection.ContainsStatistic(UnitUnaffectionsActorStats.NoHeatActorStat) == false) {
         __instance.StatCollection.AddStatistic<bool>(UnitUnaffectionsActorStats.NoHeatActorStat, (info.SquadInfo.Troopers > 1));

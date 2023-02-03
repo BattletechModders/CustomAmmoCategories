@@ -52,6 +52,10 @@ namespace CustAmmoCategories {
           float evasiveMod = extWeapon.evasivePipsMods.Damage + extAmmoDef.evasivePipsMods.Damage + mode.evasivePipsMods.Damage;
           if (Mathf.Abs(evasiveMod) > CustomAmmoCategories.Epsilon) result = result * Mathf.Pow((float)weapon.parent.EvasivePipsCurrent, evasiveMod);
         }
+        if (weapon.parent.DistMovedThisRound > CustomAmmoCategories.Settings.HexSizeForMods) {
+          float hexesMod = extWeapon.hexesMovedMod.Damage + extAmmoDef.hexesMovedMod.Damage + mode.hexesMovedMod.Damage;
+          if (Mathf.Abs(hexesMod) > CustomAmmoCategories.Epsilon) result = result * Mathf.Pow((float)weapon.parent.MovedHexes(), hexesMod);
+        }
       }
       result = (float)Math.Round((double)result, 0);
       return result;
@@ -66,6 +70,10 @@ namespace CustAmmoCategories {
           float evasiveMod = extWeapon.evasivePipsMods.Damage + extAmmoDef.evasivePipsMods.Damage + mode.evasivePipsMods.Damage;
           if (Mathf.Abs(evasiveMod) > CustomAmmoCategories.Epsilon) result = result * Mathf.Pow((float)weapon.parent.EvasivePipsCurrent, evasiveMod);
         }
+        if (weapon.parent.DistMovedThisRound > CustomAmmoCategories.Settings.HexSizeForMods) {
+          float hexesMod = extWeapon.hexesMovedMod.Damage + extAmmoDef.hexesMovedMod.Damage + mode.hexesMovedMod.Damage;
+          if (Mathf.Abs(hexesMod) > CustomAmmoCategories.Epsilon) result = result * Mathf.Pow((float)weapon.parent.MovedHexes(), hexesMod);
+        }
       }
       result = (float)Math.Round((double)result, 0);
       return result;
@@ -78,9 +86,11 @@ namespace CustAmmoCategories {
         if ((weapon.parent.EvasivePipsCurrent > 0) && (weapon.parent.HasMovedThisRound)) {
           float evasiveMod = extWeapon.evasivePipsMods.Heat + extAmmoDef.evasivePipsMods.Heat + mode.evasivePipsMods.Heat;
           if (Mathf.Abs(evasiveMod) > CustomAmmoCategories.Epsilon) result = result * Mathf.Pow((float)weapon.parent.EvasivePipsCurrent, evasiveMod);
-        } else {
         }
-      } else {
+        if (weapon.parent.DistMovedThisRound > CustomAmmoCategories.Settings.HexSizeForMods) {
+          float hexesMod = extWeapon.hexesMovedMod.Heat + extAmmoDef.hexesMovedMod.Heat + mode.hexesMovedMod.Heat;
+          if (Mathf.Abs(hexesMod) > CustomAmmoCategories.Epsilon) result = result * Mathf.Pow((float)weapon.parent.MovedHexes(), hexesMod);
+        }
       }
       result = (float)Math.Round((double)result, 0);
       return result;
@@ -95,6 +105,10 @@ namespace CustAmmoCategories {
           float evasiveMod = extWeapon.evasivePipsMods.Heat + extAmmoDef.evasivePipsMods.Heat + mode.evasivePipsMods.Heat;
           if (Mathf.Abs(evasiveMod) > CustomAmmoCategories.Epsilon) result = result * Mathf.Pow((float)weapon.parent.EvasivePipsCurrent, evasiveMod);
         }
+        if (weapon.parent.DistMovedThisRound > CustomAmmoCategories.Settings.HexSizeForMods) {
+          float hexesMod = extWeapon.hexesMovedMod.Heat + extAmmoDef.hexesMovedMod.Heat + mode.hexesMovedMod.Heat;
+          if (Mathf.Abs(hexesMod) > CustomAmmoCategories.Epsilon) result = result * Mathf.Pow((float)weapon.parent.MovedHexes(), hexesMod);
+        }
       }
       result = (float)Math.Round((double)result, 0);
       return result;
@@ -107,6 +121,10 @@ namespace CustAmmoCategories {
         if ((weapon.parent.EvasivePipsCurrent > 0) && (weapon.parent.HasMovedThisRound)) {
           float evasiveMod = extWeapon.evasivePipsMods.Instablility + extAmmoDef.evasivePipsMods.Instablility + mode.evasivePipsMods.Instablility;
           if (Mathf.Abs(evasiveMod) > CustomAmmoCategories.Epsilon) result = result * Mathf.Pow((float)weapon.parent.EvasivePipsCurrent, evasiveMod);
+        }
+        if (weapon.parent.DistMovedThisRound > CustomAmmoCategories.Settings.HexSizeForMods) {
+          float hexesMod = extWeapon.hexesMovedMod.Instablility + extAmmoDef.hexesMovedMod.Instablility + mode.hexesMovedMod.Instablility;
+          if (Mathf.Abs(hexesMod) > CustomAmmoCategories.Epsilon) result = result * Mathf.Pow((float)weapon.parent.MovedHexes(), hexesMod);
         }
       }
       result = (float)Math.Round((double)result, 0);
@@ -122,6 +140,10 @@ namespace CustAmmoCategories {
           float evasiveMod = extWeapon.evasivePipsMods.Instablility + extAmmoDef.evasivePipsMods.Instablility + mode.evasivePipsMods.Instablility;
           if (Mathf.Abs(evasiveMod) > CustomAmmoCategories.Epsilon) result = result * Mathf.Pow((float)weapon.parent.EvasivePipsCurrent, evasiveMod);
         }
+        if (weapon.parent.DistMovedThisRound > CustomAmmoCategories.Settings.HexSizeForMods) {
+          float hexesMod = extWeapon.hexesMovedMod.Instablility + extAmmoDef.hexesMovedMod.Instablility + mode.hexesMovedMod.Instablility;
+          if (Mathf.Abs(hexesMod) > CustomAmmoCategories.Epsilon) result = result * Mathf.Pow((float)weapon.parent.MovedHexes(), hexesMod);
+        }
       }
       result = (float)Math.Round((double)result, 0);
       return result;
@@ -134,6 +156,10 @@ namespace CustAmmoCategories {
         if ((weapon.parent.EvasivePipsCurrent > 0) && (weapon.parent.HasMovedThisRound)) {
           float evasiveMod = extWeapon.evasivePipsMods.APDamage + extAmmoDef.evasivePipsMods.APDamage + mode.evasivePipsMods.APDamage;
           if (Mathf.Abs(evasiveMod) > CustomAmmoCategories.Epsilon) result = result * Mathf.Pow((float)weapon.parent.EvasivePipsCurrent, evasiveMod);
+        }
+        if (weapon.parent.DistMovedThisRound > CustomAmmoCategories.Settings.HexSizeForMods) {
+          float hexesMod = extWeapon.hexesMovedMod.APDamage + extAmmoDef.hexesMovedMod.APDamage + mode.hexesMovedMod.APDamage;
+          if (Mathf.Abs(hexesMod) > CustomAmmoCategories.Epsilon) result = result * Mathf.Pow((float)weapon.parent.MovedHexes(), hexesMod);
         }
       }
       result = (float)Math.Round((double)result, 0);
@@ -148,6 +174,10 @@ namespace CustAmmoCategories {
         if ((weapon.parent.EvasivePipsCurrent > 0) && (weapon.parent.HasMovedThisRound)) {
           float evasiveMod = extWeapon.evasivePipsMods.APDamage + extAmmoDef.evasivePipsMods.APDamage + mode.evasivePipsMods.APDamage;
           if (Mathf.Abs(evasiveMod) > CustomAmmoCategories.Epsilon) result = result * Mathf.Pow((float)weapon.parent.EvasivePipsCurrent, evasiveMod);
+        }
+        if (weapon.parent.DistMovedThisRound > CustomAmmoCategories.Settings.HexSizeForMods) {
+          float hexesMod = extWeapon.hexesMovedMod.APDamage + extAmmoDef.hexesMovedMod.APDamage + mode.hexesMovedMod.APDamage;
+          if (Mathf.Abs(hexesMod) > CustomAmmoCategories.Epsilon) result = result * Mathf.Pow((float)weapon.parent.MovedHexes(), hexesMod);
         }
       }
       result = (float)Math.Round((double)result, 0);
@@ -183,6 +213,10 @@ namespace CustAmmoCategories {
           float evasiveMod = def.evasivePipsMods.AOERange + ammo.evasivePipsMods.AOERange + mode.evasivePipsMods.AOERange;
           if (Mathf.Abs(evasiveMod) > CustomAmmoCategories.Epsilon) result = result * Mathf.Pow((float)weapon.parent.EvasivePipsCurrent, evasiveMod);
         }
+        if (weapon.parent.DistMovedThisRound > CustomAmmoCategories.Settings.HexSizeForMods) {
+          float hexesMod = def.hexesMovedMod.AOERange + ammo.hexesMovedMod.AOERange + mode.hexesMovedMod.AOERange;
+          if (Mathf.Abs(hexesMod) > CustomAmmoCategories.Epsilon) result = result * Mathf.Pow((float)weapon.parent.MovedHexes(), hexesMod);
+        }
       }
       return result;
     }
@@ -199,6 +233,10 @@ namespace CustAmmoCategories {
         if ((weapon.parent.EvasivePipsCurrent > 0)&& (weapon.parent.HasMovedThisRound)) {
           float evasiveMod = def.evasivePipsMods.AOEDamage + ammo.evasivePipsMods.AOEDamage + mode.evasivePipsMods.AOEDamage;
           if (Mathf.Abs(evasiveMod) > CustomAmmoCategories.Epsilon) result = result * Mathf.Pow((float)weapon.parent.EvasivePipsCurrent, evasiveMod);
+        }
+        if (weapon.parent.DistMovedThisRound > CustomAmmoCategories.Settings.HexSizeForMods) {
+          float hexesMod = def.hexesMovedMod.AOEDamage + ammo.hexesMovedMod.AOEDamage + mode.hexesMovedMod.AOEDamage;
+          if (Mathf.Abs(hexesMod) > CustomAmmoCategories.Epsilon) result = result * Mathf.Pow((float)weapon.parent.MovedHexes(), hexesMod);
         }
       }
       return result;
@@ -244,6 +282,10 @@ namespace CustAmmoCategories {
           float evasiveMod = def.evasivePipsMods.AOEHeatDamage + ammo.evasivePipsMods.AOEHeatDamage + mode.evasivePipsMods.AOEHeatDamage;
           if (Mathf.Abs(evasiveMod) > CustomAmmoCategories.Epsilon) result = result * Mathf.Pow((float)weapon.parent.EvasivePipsCurrent, evasiveMod);
         }
+        if (weapon.parent.DistMovedThisRound > CustomAmmoCategories.Settings.HexSizeForMods) {
+          float hexesMod = def.hexesMovedMod.AOEHeatDamage + ammo.hexesMovedMod.AOEHeatDamage + mode.hexesMovedMod.AOEHeatDamage;
+          if (Mathf.Abs(hexesMod) > CustomAmmoCategories.Epsilon) result = result * Mathf.Pow((float)weapon.parent.MovedHexes(), hexesMod);
+        }
       }
       return result;
     }
@@ -260,6 +302,10 @@ namespace CustAmmoCategories {
         if (weapon.parent.EvasivePipsCurrent > 0) {
           float evasiveMod = def.evasivePipsMods.AOEInstability + ammo.evasivePipsMods.AOEInstability + mode.evasivePipsMods.AOEInstability;
           if (Mathf.Abs(evasiveMod) > CustomAmmoCategories.Epsilon) result = result * Mathf.Pow((float)weapon.parent.EvasivePipsCurrent, evasiveMod);
+        }
+        if (weapon.parent.DistMovedThisRound > CustomAmmoCategories.Settings.HexSizeForMods) {
+          float hexesMod = def.hexesMovedMod.AOEInstability + ammo.hexesMovedMod.AOEInstability + mode.hexesMovedMod.AOEInstability;
+          if (Mathf.Abs(hexesMod) > CustomAmmoCategories.Epsilon) result = result * Mathf.Pow((float)weapon.parent.MovedHexes(), hexesMod);
         }
       }
       return result;
@@ -624,6 +670,10 @@ namespace CustAmmoCategoriesPatches {
           float evasiveMod = __instance.exDef().evasivePipsMods.CriticalChanceMultiplier + ammo.evasivePipsMods.CriticalChanceMultiplier + mode.evasivePipsMods.CriticalChanceMultiplier;
           if (Mathf.Abs(evasiveMod) > CustomAmmoCategories.Epsilon) __result = __result * Mathf.Pow((float)__instance.parent.EvasivePipsCurrent, evasiveMod);
         }
+        if (__instance.parent.DistMovedThisRound > CustomAmmoCategories.Settings.HexSizeForMods) {
+          float hexesMod = __instance.exDef().hexesMovedMod.CriticalChanceMultiplier + ammo.hexesMovedMod.CriticalChanceMultiplier + mode.hexesMovedMod.CriticalChanceMultiplier;
+          if (Mathf.Abs(hexesMod) > CustomAmmoCategories.Epsilon) __result = __result * Mathf.Pow((float)__instance.parent.MovedHexes(), hexesMod);
+        }
       }
     }
   }
@@ -651,6 +701,10 @@ namespace CustAmmoCategoriesPatches {
           float evasiveMod = __instance.exDef().evasivePipsMods.AccuracyModifier + ammo.evasivePipsMods.AccuracyModifier + mode.evasivePipsMods.AccuracyModifier;
           if (Mathf.Abs(evasiveMod) > CustomAmmoCategories.Epsilon) __result = __result * Mathf.Pow((float)__instance.parent.EvasivePipsCurrent, evasiveMod);
         }
+        if (__instance.parent.DistMovedThisRound > CustomAmmoCategories.Settings.HexSizeForMods) {
+          float hexesMod = __instance.exDef().hexesMovedMod.AccuracyModifier + ammo.hexesMovedMod.AccuracyModifier + mode.hexesMovedMod.AccuracyModifier;
+          if (Mathf.Abs(hexesMod) > CustomAmmoCategories.Epsilon) __result = __result * Mathf.Pow((float)__instance.parent.MovedHexes(), hexesMod);
+        }
       }
     }
   }
@@ -668,6 +722,10 @@ namespace CustAmmoCategoriesPatches {
         if (__instance.parent.EvasivePipsCurrent > 0) {
           float evasiveMod = __instance.exDef().evasivePipsMods.MinRange + ammo.evasivePipsMods.MinRange + mode.evasivePipsMods.MinRange;
           if (Mathf.Abs(evasiveMod) > CustomAmmoCategories.Epsilon) __result = __result * Mathf.Pow((float)__instance.parent.EvasivePipsCurrent, evasiveMod);
+        }
+        if (__instance.parent.DistMovedThisRound > CustomAmmoCategories.Settings.HexSizeForMods) {
+          float hexesMod = __instance.exDef().hexesMovedMod.MinRange + ammo.hexesMovedMod.MinRange + mode.hexesMovedMod.MinRange;
+          if (Mathf.Abs(hexesMod) > CustomAmmoCategories.Epsilon) __result = __result * Mathf.Pow((float)__instance.parent.MovedHexes(), hexesMod);
         }
       }
     }
@@ -687,6 +745,10 @@ namespace CustAmmoCategoriesPatches {
           float evasiveMod = __instance.exDef().evasivePipsMods.MaxRange + ammo.evasivePipsMods.MaxRange + mode.evasivePipsMods.MaxRange;
           if (Mathf.Abs(evasiveMod) > CustomAmmoCategories.Epsilon) __result = __result * Mathf.Pow((float)__instance.parent.EvasivePipsCurrent, evasiveMod);
         }
+        if (__instance.parent.DistMovedThisRound > CustomAmmoCategories.Settings.HexSizeForMods) {
+          float hexesMod = __instance.exDef().hexesMovedMod.MaxRange + ammo.hexesMovedMod.MaxRange + mode.hexesMovedMod.MaxRange;
+          if (Mathf.Abs(hexesMod) > CustomAmmoCategories.Epsilon) __result = __result * Mathf.Pow((float)__instance.parent.MovedHexes(), hexesMod);
+        }
       }
     }
   }
@@ -704,6 +766,10 @@ namespace CustAmmoCategoriesPatches {
         if (__instance.parent.EvasivePipsCurrent > 0) {
           float evasiveMod = __instance.exDef().evasivePipsMods.ShortRange + ammo.evasivePipsMods.ShortRange + mode.evasivePipsMods.ShortRange;
           if (Mathf.Abs(evasiveMod) > CustomAmmoCategories.Epsilon) __result = __result * Mathf.Pow((float)__instance.parent.EvasivePipsCurrent, evasiveMod);
+        }
+        if (__instance.parent.DistMovedThisRound > CustomAmmoCategories.Settings.HexSizeForMods) {
+          float hexesMod = __instance.exDef().hexesMovedMod.ShortRange + ammo.hexesMovedMod.ShortRange + mode.hexesMovedMod.ShortRange;
+          if (Mathf.Abs(hexesMod) > CustomAmmoCategories.Epsilon) __result = __result * Mathf.Pow((float)__instance.parent.MovedHexes(), hexesMod);
         }
       }
     }
@@ -725,6 +791,10 @@ namespace CustAmmoCategoriesPatches {
           float evasiveMod = __instance.exDef().evasivePipsMods.MediumRange + ammo.evasivePipsMods.MediumRange + mode.evasivePipsMods.MediumRange;
           if (Mathf.Abs(evasiveMod) > CustomAmmoCategories.Epsilon) __result = __result * Mathf.Pow((float)__instance.parent.EvasivePipsCurrent, evasiveMod);
         }
+        if (__instance.parent.DistMovedThisRound > CustomAmmoCategories.Settings.HexSizeForMods) {
+          float hexesMod = __instance.exDef().hexesMovedMod.MediumRange + ammo.hexesMovedMod.MediumRange + mode.hexesMovedMod.MediumRange;
+          if (Mathf.Abs(hexesMod) > CustomAmmoCategories.Epsilon) __result = __result * Mathf.Pow((float)__instance.parent.MovedHexes(), hexesMod);
+        }
       }
     }
   }
@@ -742,6 +812,10 @@ namespace CustAmmoCategoriesPatches {
         if (__instance.parent.EvasivePipsCurrent > 0) {
           float evasiveMod = __instance.exDef().evasivePipsMods.LongRange + ammo.evasivePipsMods.LongRange + mode.evasivePipsMods.LongRange;
           if (Mathf.Abs(evasiveMod) > CustomAmmoCategories.Epsilon) __result = __result * Mathf.Pow((float)__instance.parent.EvasivePipsCurrent, evasiveMod);
+        }
+        if (__instance.parent.DistMovedThisRound > CustomAmmoCategories.Settings.HexSizeForMods) {
+          float hexesMod = __instance.exDef().hexesMovedMod.LongRange + ammo.hexesMovedMod.LongRange + mode.hexesMovedMod.LongRange;
+          if (Mathf.Abs(hexesMod) > CustomAmmoCategories.Epsilon) __result = __result * Mathf.Pow((float)__instance.parent.MovedHexes(), hexesMod);
         }
       }
     }
@@ -767,6 +841,10 @@ namespace CustAmmoCategoriesPatches {
         float evasiveMod = __instance.exDef().evasivePipsMods.GeneratedHeat + ammoDef.evasivePipsMods.GeneratedHeat + mode.evasivePipsMods.GeneratedHeat;
         if (Mathf.Abs(evasiveMod) > CustomAmmoCategories.Epsilon) __result = __result * Mathf.Pow((float)__instance.parent.EvasivePipsCurrent, evasiveMod);
       }
+      if (__instance.parent.DistMovedThisRound > CustomAmmoCategories.Settings.HexSizeForMods) {
+        float hexesMod = __instance.exDef().hexesMovedMod.GeneratedHeat + ammoDef.hexesMovedMod.GeneratedHeat + mode.hexesMovedMod.GeneratedHeat;
+        if (Mathf.Abs(hexesMod) > CustomAmmoCategories.Epsilon) __result = __result * Mathf.Pow((float)__instance.parent.MovedHexes(), hexesMod);
+      }
       __result *= ammoDef.HeatGeneratedModifier;
       __result *= mode.HeatGeneratedModifier;
     }
@@ -784,6 +862,10 @@ namespace CustAmmoCategoriesPatches {
       if (__instance.parent.EvasivePipsCurrent > 0) {
         float evasiveMod = __instance.exDef().evasivePipsMods.RefireModifier + ammo.evasivePipsMods.RefireModifier + mode.evasivePipsMods.RefireModifier;
         if (Mathf.Abs(evasiveMod) > CustomAmmoCategories.Epsilon) __result = Mathf.RoundToInt((float)__result * Mathf.Pow((float)__instance.parent.EvasivePipsCurrent, evasiveMod));
+      }
+      if (__instance.parent.DistMovedThisRound > CustomAmmoCategories.Settings.HexSizeForMods) {
+        float hexesMod = __instance.exDef().hexesMovedMod.RefireModifier + ammo.hexesMovedMod.RefireModifier + mode.hexesMovedMod.RefireModifier;
+        if (Mathf.Abs(hexesMod) > CustomAmmoCategories.Epsilon) __result = __result = Mathf.RoundToInt((float)__result * Mathf.Pow((float)__instance.parent.MovedHexes(), hexesMod));
       }
     }
   }

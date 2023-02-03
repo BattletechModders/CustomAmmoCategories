@@ -28,6 +28,13 @@ using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
 namespace CustomUnits {
+  [HarmonyPatch(typeof(LanceConfiguratorPanel), "OnLanceConfiguratorClosed")]
+  public static class LanceConfiguratorPanel_OnLanceConfiguratorClosed {
+    public static void Prefix(LanceConfiguratorPanel __instance) {
+      LanceLoadPopupSupervisor.Instance.OnClose();
+    }
+  }
+
   public class LanceLayoutDataElement {
     public SavedLanceLayout lanceLayout { get; set; } = null;
     public BaseDescriptionDef Description { get; set; } = null;
@@ -273,11 +280,12 @@ namespace CustomUnits {
       }
     }
     public void OnBack() {
-      if (state == PopupState.Main) { OnClose(); }
+      OnClose();
     }
     public void OnSelect() {
       try {
-        if (this.layoutsControl.selected == null) { OnClose(); }
+        if (this.layoutsControl.selected == null) { OnClose(); return; }
+        if (this.layoutsControl.selected.data == null) { OnClose(); return; }
         var layout = this.layoutsControl.selected.data.lanceLayout;
         LanceConfiguratorPanel lanceConfPanel = this.parent;
         OnClose();
@@ -386,16 +394,20 @@ namespace CustomUnits {
       this.OnShow();
     }
     public void OnClose() {
-      if (layoutsControl != null) {
-        layoutsControl.gameObject.SetActive(false);
-        layoutsControl.gameObject.transform.SetParent(this.transform);
-        layoutsControl.Clear();
-      }
-      parent = null;
-      if (popup != null) {
-        Traverse.Create(popup).Field<LocalizableText>("_contentText").Value.gameObject.SetActive(true);
-        popup.Pool();
-        popup = null;
+      try {
+        if (layoutsControl != null) {
+          layoutsControl.gameObject.SetActive(false);
+          layoutsControl.gameObject.transform.SetParent(this.transform);
+          layoutsControl.Clear();
+        }
+        parent = null;
+        if (popup != null) {
+          Traverse.Create(popup).Field<LocalizableText>("_contentText").Value.gameObject.SetActive(true);
+          popup.Pool();
+          popup = null;
+        }
+      }catch(Exception e) {
+        Log.TWL(0,e.ToString(), true);
       }
     }
     public void OnShow() {

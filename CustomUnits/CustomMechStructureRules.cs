@@ -426,7 +426,12 @@ namespace CustomUnits {
         if (custMech != null) {
           if (custMech.isSquad) { __result = ChassisLocations.None; } else
           if (custMech.isVehicle) { __result = ChassisLocations.None; } else
-          if (custMech.isQuad) { __result = ChassisLocations.None; }
+          if (custMech.isQuad) {
+            UnitCustomInfo info = mech.GetCustomInfo();
+            if ((info == null) || (info.FrontLegsDestructedOnSideTorso == false)) {
+              __result = ChassisLocations.None;
+            }
+          }
         }
         Log.TWL(0, "MechStructureRules.GetDependentLocation mech:" + (mech == null ? "null" : mech.Description.Id) + " " + location + "=>"+__result);
       } catch (Exception e) {

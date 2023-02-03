@@ -19,6 +19,7 @@ using Random = UnityEngine.Random;
 using UnityEngine;
 using CustomAmmoCategoriesLog;
 using Localize;
+using WeaponRealizer;
 
 
 //This part of code is modified code of original WeaponRealizer by Joel Meador under MIT LICENSE
@@ -194,6 +195,7 @@ namespace CustAmmoCategories {
       if (weapon.StatCollection.GetValue<bool>("TemporarilyDisabled")) { result+="TEMP.DISABLED;"; }
       if (weapon.IsDisabled) { result += "DISABLED;"; }
       if (weapon.IsJammed()) { result += "JAMMED;"; }
+      if (weapon.isWRJammed()) { result += "JAMMED;"; }
       if (weapon.IsCooldown() > 0) { result += "COOLDOWN;"; }
       if (weapon.isAMS() && weapon.isCantAMSFire()) { result += "USED AS WEAPON;"; }
       if ((weapon.isAMS() == false) && weapon.isCantNormalFire()) { result += "USED AS AMS;"; };
@@ -209,6 +211,7 @@ namespace CustAmmoCategories {
     public static void Postfix(Weapon __instance, ref bool __result) {
       if (__result == false) { return; }
       if (__instance.IsJammed()) { __result = false; }
+      if (__instance.isWRJammed()) { __result = false; }
       if (__instance.IsCooldown() > 0) { __result = false; }
       if (__instance.isAMS() && __instance.isCantAMSFire()) { __result = false; };
       if ((__instance.isAMS() == false) && __instance.isCantNormalFire()) { __result = false; };
@@ -543,6 +546,15 @@ namespace CustAmmoCategories {
       var statistic = StatisticHelper.GetOrCreateStatisic<int>(weapon.StatCollection, CooldownWeaponStatisticName, 0);
       return statistic.Value<int>();
     }
+    public static float MovedHexes(this AbstractActor unit) {
+      return Mathf.Ceil(unit.DistMovedThisRound / CustomAmmoCategories.Settings.HexSizeForMods);
+    }
+    public static float GetRefireModifier(this Weapon weapon) {
+      if (weapon.RefireModifier > 0 && weapon.roundsSinceLastFire < 2)
+        return (float)weapon.RefireModifier;
+      return 0.0f;
+    }
+
     public static float FlatJammingChance(this Weapon weapon, out string description) {
       StringBuilder descr = new StringBuilder();
       ExtWeaponDef def = weapon.exDef();
@@ -553,6 +565,7 @@ namespace CustAmmoCategories {
       result += def.FlatJammingChance;
       result += ammo.FlatJammingChance;
       result += mode.FlatJammingChance;
+      result += (def.RecoilJammingChance + ammo.RecoilJammingChance + mode.RecoilJammingChance) * weapon.GetRefireModifier();
       float mult = 0;
       float baseval = 0f;
       mult += ammo.GunneryJammingMult;
@@ -562,38 +575,45 @@ namespace CustAmmoCategories {
       mult += mode.GunneryJammingMult;
       if ((mode.GunneryJammingBase > 0f) && (baseval == 0f)) { baseval = mode.GunneryJammingBase; };
       float evasiveModifier = 1f;
+      float hexesModifier = 1f;
       if (weapon.parent != null) {
         if (weapon.parent.EvasivePipsCurrent > 0) {
           float evasiveMod = def.evasivePipsMods.FlatJammingChance + ammo.evasivePipsMods.FlatJammingChance + mode.evasivePipsMods.FlatJammingChance;
           if (Mathf.Abs(evasiveMod) > CustomAmmoCategories.Epsilon) evasiveModifier = Mathf.Pow((float)weapon.parent.EvasivePipsCurrent, evasiveMod);
         }
+        if(weapon.parent.DistMovedThisRound > CustomAmmoCategories.Settings.HexSizeForMods) {
+          float hexesMod = def.hexesMovedMod.FlatJammingChance + ammo.hexesMovedMod.FlatJammingChance + mode.hexesMovedMod.FlatJammingChance;
+          if (Mathf.Abs(hexesMod) > CustomAmmoCategories.Epsilon) hexesModifier = Mathf.Pow((float)weapon.parent.MovedHexes(), hexesMod);
+        }
       }
       result *= evasiveModifier;
+      result *= hexesModifier;
       if (weapon.parent != null) {
         if (baseval == 0f) { baseval = 5f; }
         result += ((baseval - weapon.parent.SkillGunnery) * mult);
       }
       result *= weapon.ModJammChanceStat();
-      descr.Append("JAMM CHANCE = "+ result+" = ((");
-      descr.Append(def.FlatJammingChance >= 0f ? def.FlatJammingChance.ToString() : ("-" + def.FlatJammingChance));
-      descr.Append("(w)");
-      descr.Append(weapon.FlatJammChanceStat() >= 0f?"+"+weapon.FlatJammChanceStat():("-"+ weapon.FlatJammChanceStat()));
-      descr.Append("(st)");
-      descr.Append(ammo.FlatJammingChance >= 0f ? "+" + ammo.FlatJammingChance : ("-" + ammo.FlatJammingChance));
-      descr.Append("(a)");
-      descr.Append(mode.FlatJammingChance >= 0f ? "+" + mode.FlatJammingChance : ("-" + mode.FlatJammingChance));
-      descr.Append("(m)");
-      descr.Append(weapon.parent.FlatJammChance() >= 0f ? "+" + weapon.parent.FlatJammChance() : ("-" + weapon.parent.FlatJammChance()));
-      descr.Append("(u))x("+ evasiveModifier + "(evasive))+(");
-      descr.Append(baseval >= 0f ? baseval.ToString() : ("-" + baseval));
-      descr.Append(weapon.parent.SkillGunnery >= 0f ? ("-" + weapon.parent.SkillGunnery) : ("+" + weapon.parent.SkillGunnery));
-      descr.Append("(sk))x(");
-      descr.Append(def.GunneryJammingMult >= 0f ? def.GunneryJammingMult.ToString() : ("-" + def.GunneryJammingMult));
-      descr.Append("(w)");
-      descr.Append(ammo.GunneryJammingMult >= 0f ? "+"+ammo.GunneryJammingMult : ("-" + ammo.GunneryJammingMult));
-      descr.Append("(a)");
-      descr.Append(mode.GunneryJammingMult >= 0f ? "+"+mode.GunneryJammingMult : ("-" + mode.GunneryJammingMult));
-      descr.Append("(m))) x ("+weapon.ModJammChanceStat()+") = "+result);
+      //descr.Append("JAMM CHANCE = "+ result+" = ((");
+      //descr.Append(def.FlatJammingChance >= 0f ? def.FlatJammingChance.ToString() : ("-" + def.FlatJammingChance));
+      //descr.Append("(w)");
+      //descr.Append(weapon.FlatJammChanceStat() >= 0f?"+"+weapon.FlatJammChanceStat():("-"+ weapon.FlatJammChanceStat()));
+      //descr.Append("(st)");
+      //descr.Append(ammo.FlatJammingChance >= 0f ? "+" + ammo.FlatJammingChance : ("-" + ammo.FlatJammingChance));
+      //descr.Append("(a)");
+      //descr.Append(mode.FlatJammingChance >= 0f ? "+" + mode.FlatJammingChance : ("-" + mode.FlatJammingChance));
+      //descr.Append("(m)");
+      //descr.Append(weapon.parent.FlatJammChance() >= 0f ? "+" + weapon.parent.FlatJammChance() : ("-" + weapon.parent.FlatJammChance()));
+      //descr.Append("(u))x("+ evasiveModifier + "(evasive)+"+ hexesModifier + "(hexes))+(");
+      //descr.Append(baseval >= 0f ? baseval.ToString() : ("-" + baseval));
+      //descr.Append(weapon.parent.SkillGunnery >= 0f ? ("-" + weapon.parent.SkillGunnery) : ("+" + weapon.parent.SkillGunnery));
+      //descr.Append("(sk))x(");
+      //descr.Append(def.GunneryJammingMult >= 0f ? def.GunneryJammingMult.ToString() : ("-" + def.GunneryJammingMult));
+      //descr.Append("(w)");
+      //descr.Append(ammo.GunneryJammingMult >= 0f ? "+"+ammo.GunneryJammingMult : ("-" + ammo.GunneryJammingMult));
+      //descr.Append("(a)");
+      //descr.Append(mode.GunneryJammingMult >= 0f ? "+"+mode.GunneryJammingMult : ("-" + mode.GunneryJammingMult));
+      //descr.Append("(m))) x ("+weapon.ModJammChanceStat()+") = "+result);
+      descr.Append($"JAMM CHANCE: {Mathf.Round(result*1000f)/10f}%");
       description = descr.ToString();
       return result;
     }

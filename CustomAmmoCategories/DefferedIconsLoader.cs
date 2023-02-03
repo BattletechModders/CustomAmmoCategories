@@ -110,7 +110,12 @@ namespace CustAmmoCategories {
       //dataManager.InjectDependencyLoader(dependencyLoad, 1000U);
     }
     public static SVGAsset get(string id, DataManager dataManager) {
-      Log.M.TWL(0, "CustomSvgCache.get " + id);
+      Log.M.TWL(0, $"CustomSvgCache.get {id}");
+      if (string.IsNullOrEmpty(id)) {
+        Log.M?.WL(0,"Requested icon with empty name");
+        Log.M?.WL(0, Environment.StackTrace);
+        return null;
+      }
       if(CustomSvgCache.cache.TryGetValue(id,out SVGAsset result)) {
         Log.M.WL(1, "found in cache");
         return result;

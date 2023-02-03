@@ -167,7 +167,7 @@ namespace CustomUnits {
       try {
         if (__instance == null) { return; }
         float dist = Vector3.Distance(__instance.ResultDestination, resultDest);
-        bool show = dist > 1f;
+        bool show = (dist > 1f) && (__instance.CurrentPath != null);
         resultDest = __instance.ResultDestination;
         if (show) Log.TWL(0, "Pathing.UpdateMeleePath " + __instance.OwningActor.DisplayName + " " + __instance.OwningActor.CurrentPosition + " origin:" + __instance.CurrentGrid.WorldPosOrigin);
         if (show && (__instance.CurrentPath != null)) foreach (PathNode node in __instance.CurrentPath) { Log.WL(1, node.Position.ToString()); }

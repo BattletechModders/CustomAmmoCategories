@@ -21,6 +21,16 @@ using UnityEngine;
 using Random = UnityEngine.Random;
 
 namespace CustomUnits {
+  [HarmonyPatch(typeof(VehicleRepresentation))]
+  [HarmonyPatch("Update")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { })]
+  public static class VehicleRepresentation_Update {
+    public static bool Prefix(VehicleRepresentation __instance) {
+      return false;
+    }
+  }
+
   public static class BlipFactoryHelper {
     private static GameObject mech_BlipObjectUnknown = null;
     private static GameObject mech_BlipObjectIdentified = null;

@@ -316,7 +316,9 @@ namespace CustomUnits {
         squadSVG.transform.SetParent(svg.transform.parent, false);
         squadSVG.transform.localPosition = svg.transform.localPosition;
         squadSVG.transform.localScale = svg.transform.localScale;
-        squadSVG.GetComponent<SVGImage>().vectorGraphics = CustomSvgCache.get(Core.Settings.SquadStructureIcon, UnityGameInstance.BattleTechGame.DataManager);
+        if (string.IsNullOrEmpty(Core.Settings.SquadStructureIcon) == false) {
+          squadSVG.GetComponent<SVGImage>().vectorGraphics = CustomSvgCache.get(Core.Settings.SquadStructureIcon, UnityGameInstance.BattleTechGame.DataManager);
+        }
         RectTransform squadSVGTR = squadSVG.GetComponent<RectTransform>();
         squadSVGTR.anchoredPosition = Vector2.zero;
         squadSVGTR.sizeDelta = new Vector2(TargetHUDArmorReadout.SQUAD_ICON_SIZE, TargetHUDArmorReadout.SQUAD_ICON_SIZE);
@@ -436,63 +438,67 @@ namespace CustomUnits {
     }
     public void Instantine(HUDMechArmorReadout instance) {
       Log.TWL(0, "CalledHUDSquadArmorReadout.Instantine");
-      Transform Mech_TrayInternaLT = this.gameObject.transform.FindRecursive("Mech_TrayInternaLT");
-      if (Mech_TrayInternaLT != null) { Mech_TrayInternaLT.gameObject.name = "Mech_TrayInternalLT"; };
-      Transform Mech_TrayInternaRT = this.gameObject.transform.FindRecursive("Mech_TrayInternaRT");
-      if (Mech_TrayInternaRT != null) { Mech_TrayInternaRT.gameObject.name = "Mech_TrayInternalRT"; };
-      if (instance.directionalIndicatorLeftFront != null) { toHide.Add(instance.directionalIndicatorLeftFront.gameObject); }
-      if (instance.directionalIndicatorRightFront != null) { toHide.Add(instance.directionalIndicatorRightFront.gameObject); }
-      if (instance.directionalIndicatorLeftRear != null) { toHide.Add(instance.directionalIndicatorLeftRear.gameObject); }
-      if (instance.directionalIndicatorRightRear != null) { toHide.Add(instance.directionalIndicatorRightRear.gameObject); }
-      SVGImage[] svgs = this.gameObject.GetComponentsInChildren<SVGImage>(true);
-      foreach (SVGImage svg in svgs) {
-        if (svg.name.StartsWith("MechTray_Armor") == false) { continue; }
-        if (svg.name.EndsWith("OutlineRear") == false) { continue; }
-        toHide.Add(svg.gameObject);
-      }
-      Transform FrontArmorComponents = this.gameObject.transform.FindRecursive("FrontArmorComponents");
-      Transform RearArmorComponents = this.gameObject.transform.FindRecursive("RearArmorComponents");
-      toHide.Add(FrontArmorComponents.gameObject);
-      toHide.Add(RearArmorComponents.gameObject);
-      GameObject SquadArmorComponents = GameObject.Instantiate(FrontArmorComponents.gameObject);
-      SquadArmorComponents.name = "SquadArmorComponents";
-      SquadArmorComponents.transform.SetParent(FrontArmorComponents.parent);
-      SquadArmorComponents.transform.localPosition = FrontArmorComponents.localPosition;
-      SquadArmorComponents.transform.localScale = FrontArmorComponents.localScale;
-      RectTransform SquadArmorComponentsTR = SquadArmorComponents.GetComponent<RectTransform>();
-      SquadArmorComponentsTR.pivot = new Vector3(0f, 1.15f);
-      toShow.Add(SquadArmorComponents);
-      for (int index = 0; index < instance.Armor.Length; ++index) {
-        int squadIndex = CalledHUDSquadArmorReadout.READOUT_INDEX_TO_SQUAD[index];
-        string armorName = BaySquadReadoutAligner.ARMOR_PREFIX + CalledHUDSquadArmorReadout.READOUT_NAMES[squadIndex];
-        string armorOutlineName = BaySquadReadoutAligner.ARMOR_PREFIX + CalledHUDSquadArmorReadout.READOUT_NAMES[squadIndex] + BaySquadReadoutAligner.OUTLINE_SUFFIX;
-        string structureName = BaySquadReadoutAligner.STRUCTURE_PREFIX + CalledHUDSquadArmorReadout.READOUT_NAMES[squadIndex];
-        RectTransform MechTray_Armor = FrontArmorComponents.transform.FindRecursive(armorName) as RectTransform;
-        RectTransform MechTray_ArmorOutline = FrontArmorComponents.transform.FindRecursive(armorOutlineName) as RectTransform;
-        RectTransform Mech_TrayInternal = FrontArmorComponents.transform.FindRecursive(structureName) as RectTransform;
-        RectTransform SquadTray_Armor = SquadArmorComponents.transform.FindRecursive(armorName) as RectTransform;
-        RectTransform SquadTray_ArmorOutline = SquadArmorComponents.transform.FindRecursive(armorOutlineName) as RectTransform;
-        RectTransform Squad_TrayInternal = SquadArmorComponents.transform.FindRecursive(structureName) as RectTransform;
-        CombatHUDMechTrayArmorHover hover = MechTray_ArmorOutline.GetComponentInChildren<CombatHUDMechTrayArmorHover>(true);
-        Log.WL(1, armorName + " " + armorOutlineName + " " + structureName + " " + index + " " + squadIndex + " hover:" + (hover == null ? "null" : hover.chassisIndex.ToString()));
-        SquadTray_Armor.gameObject.GetComponent<SVGImage>().vectorGraphics = CustomSvgCache.get(Core.Settings.SquadArmorIcon, UnityGameInstance.BattleTechGame.DataManager);
-        SquadTray_ArmorOutline.gameObject.GetComponent<SVGImage>().vectorGraphics = CustomSvgCache.get(Core.Settings.SquadArmorOutlineIcon, UnityGameInstance.BattleTechGame.DataManager);
-        Squad_TrayInternal.gameObject.GetComponent<SVGImage>().vectorGraphics = CustomSvgCache.get(Core.Settings.SquadStructureIcon, UnityGameInstance.BattleTechGame.DataManager);
-        MechArmor.Add(index, MechTray_Armor.gameObject.GetComponent<SVGImage>());
-        MechArmorOutline.Add(index, MechTray_ArmorOutline.gameObject.GetComponent<SVGImage>());
-        MechStructure.Add(index, Mech_TrayInternal.gameObject.GetComponent<SVGImage>());
-        SquadArmor.Add(index, SquadTray_Armor.gameObject.GetComponent<SVGImage>());
-        SquadArmorOutline.Add(index, SquadTray_ArmorOutline.gameObject.GetComponent<SVGImage>());
-        SquadStructure.Add(index, Squad_TrayInternal.gameObject.GetComponent<SVGImage>());
-        SquadTray_Armor.anchoredPosition = Vector2.zero;
-        SquadTray_ArmorOutline.anchoredPosition = Vector2.zero;
-        Squad_TrayInternal.anchoredPosition = Vector2.zero;
-        SquadTray_Armor.sizeDelta = new Vector2(TargetHUDArmorReadout.SQUAD_ICON_SIZE, TargetHUDArmorReadout.SQUAD_ICON_SIZE);
-        SquadTray_ArmorOutline.sizeDelta = new Vector2(TargetHUDArmorReadout.SQUAD_ICON_SIZE, TargetHUDArmorReadout.SQUAD_ICON_SIZE);
-        Squad_TrayInternal.sizeDelta = new Vector2(TargetHUDArmorReadout.SQUAD_ICON_SIZE, TargetHUDArmorReadout.SQUAD_ICON_SIZE);
-        SquadTray_ArmorOutline.pivot = new Vector2((squadIndex % 2 == 1 ? -1.7f : -0.6f), 2.1f + 1.1f * ((float)((int)squadIndex / (int)2)));
-        SquadTray_Armor.pivot = new Vector2(0f, 1f);
-        Squad_TrayInternal.pivot = new Vector2(0f, 1f);
+      try {
+        Transform Mech_TrayInternaLT = this.gameObject.transform.FindRecursive("Mech_TrayInternaLT");
+        if (Mech_TrayInternaLT != null) { Mech_TrayInternaLT.gameObject.name = "Mech_TrayInternalLT"; };
+        Transform Mech_TrayInternaRT = this.gameObject.transform.FindRecursive("Mech_TrayInternaRT");
+        if (Mech_TrayInternaRT != null) { Mech_TrayInternaRT.gameObject.name = "Mech_TrayInternalRT"; };
+        if (instance.directionalIndicatorLeftFront != null) { toHide.Add(instance.directionalIndicatorLeftFront.gameObject); }
+        if (instance.directionalIndicatorRightFront != null) { toHide.Add(instance.directionalIndicatorRightFront.gameObject); }
+        if (instance.directionalIndicatorLeftRear != null) { toHide.Add(instance.directionalIndicatorLeftRear.gameObject); }
+        if (instance.directionalIndicatorRightRear != null) { toHide.Add(instance.directionalIndicatorRightRear.gameObject); }
+        SVGImage[] svgs = this.gameObject.GetComponentsInChildren<SVGImage>(true);
+        foreach (SVGImage svg in svgs) {
+          if (svg.name.StartsWith("MechTray_Armor") == false) { continue; }
+          if (svg.name.EndsWith("OutlineRear") == false) { continue; }
+          toHide.Add(svg.gameObject);
+        }
+        Transform FrontArmorComponents = this.gameObject.transform.FindRecursive("FrontArmorComponents");
+        Transform RearArmorComponents = this.gameObject.transform.FindRecursive("RearArmorComponents");
+        toHide.Add(FrontArmorComponents.gameObject);
+        toHide.Add(RearArmorComponents.gameObject);
+        GameObject SquadArmorComponents = GameObject.Instantiate(FrontArmorComponents.gameObject);
+        SquadArmorComponents.name = "SquadArmorComponents";
+        SquadArmorComponents.transform.SetParent(FrontArmorComponents.parent);
+        SquadArmorComponents.transform.localPosition = FrontArmorComponents.localPosition;
+        SquadArmorComponents.transform.localScale = FrontArmorComponents.localScale;
+        RectTransform SquadArmorComponentsTR = SquadArmorComponents.GetComponent<RectTransform>();
+        SquadArmorComponentsTR.pivot = new Vector3(0f, 1.15f);
+        toShow.Add(SquadArmorComponents);
+        for (int index = 0; index < instance.Armor.Length; ++index) {
+          int squadIndex = CalledHUDSquadArmorReadout.READOUT_INDEX_TO_SQUAD[index];
+          string armorName = BaySquadReadoutAligner.ARMOR_PREFIX + CalledHUDSquadArmorReadout.READOUT_NAMES[squadIndex];
+          string armorOutlineName = BaySquadReadoutAligner.ARMOR_PREFIX + CalledHUDSquadArmorReadout.READOUT_NAMES[squadIndex] + BaySquadReadoutAligner.OUTLINE_SUFFIX;
+          string structureName = BaySquadReadoutAligner.STRUCTURE_PREFIX + CalledHUDSquadArmorReadout.READOUT_NAMES[squadIndex];
+          RectTransform MechTray_Armor = FrontArmorComponents.transform.FindRecursive(armorName) as RectTransform;
+          RectTransform MechTray_ArmorOutline = FrontArmorComponents.transform.FindRecursive(armorOutlineName) as RectTransform;
+          RectTransform Mech_TrayInternal = FrontArmorComponents.transform.FindRecursive(structureName) as RectTransform;
+          RectTransform SquadTray_Armor = SquadArmorComponents.transform.FindRecursive(armorName) as RectTransform;
+          RectTransform SquadTray_ArmorOutline = SquadArmorComponents.transform.FindRecursive(armorOutlineName) as RectTransform;
+          RectTransform Squad_TrayInternal = SquadArmorComponents.transform.FindRecursive(structureName) as RectTransform;
+          CombatHUDMechTrayArmorHover hover = MechTray_ArmorOutline.GetComponentInChildren<CombatHUDMechTrayArmorHover>(true);
+          Log.WL(1, armorName + " " + armorOutlineName + " " + structureName + " " + index + " " + squadIndex + " hover:" + (hover == null ? "null" : hover.chassisIndex.ToString()));
+          SquadTray_Armor.gameObject.GetComponent<SVGImage>().vectorGraphics = CustomSvgCache.get(Core.Settings.SquadArmorIcon, UnityGameInstance.BattleTechGame.DataManager);
+          SquadTray_ArmorOutline.gameObject.GetComponent<SVGImage>().vectorGraphics = CustomSvgCache.get(Core.Settings.SquadArmorOutlineIcon, UnityGameInstance.BattleTechGame.DataManager);
+          Squad_TrayInternal.gameObject.GetComponent<SVGImage>().vectorGraphics = CustomSvgCache.get(Core.Settings.SquadStructureIcon, UnityGameInstance.BattleTechGame.DataManager);
+          MechArmor.Add(index, MechTray_Armor.gameObject.GetComponent<SVGImage>());
+          MechArmorOutline.Add(index, MechTray_ArmorOutline.gameObject.GetComponent<SVGImage>());
+          MechStructure.Add(index, Mech_TrayInternal.gameObject.GetComponent<SVGImage>());
+          SquadArmor.Add(index, SquadTray_Armor.gameObject.GetComponent<SVGImage>());
+          SquadArmorOutline.Add(index, SquadTray_ArmorOutline.gameObject.GetComponent<SVGImage>());
+          SquadStructure.Add(index, Squad_TrayInternal.gameObject.GetComponent<SVGImage>());
+          SquadTray_Armor.anchoredPosition = Vector2.zero;
+          SquadTray_ArmorOutline.anchoredPosition = Vector2.zero;
+          Squad_TrayInternal.anchoredPosition = Vector2.zero;
+          SquadTray_Armor.sizeDelta = new Vector2(TargetHUDArmorReadout.SQUAD_ICON_SIZE, TargetHUDArmorReadout.SQUAD_ICON_SIZE);
+          SquadTray_ArmorOutline.sizeDelta = new Vector2(TargetHUDArmorReadout.SQUAD_ICON_SIZE, TargetHUDArmorReadout.SQUAD_ICON_SIZE);
+          Squad_TrayInternal.sizeDelta = new Vector2(TargetHUDArmorReadout.SQUAD_ICON_SIZE, TargetHUDArmorReadout.SQUAD_ICON_SIZE);
+          SquadTray_ArmorOutline.pivot = new Vector2((squadIndex % 2 == 1 ? -1.7f : -0.6f), 2.1f + 1.1f * ((float)((int)squadIndex / (int)2)));
+          SquadTray_Armor.pivot = new Vector2(0f, 1f);
+          Squad_TrayInternal.pivot = new Vector2(0f, 1f);
+        }
+      }catch(Exception e) {
+        Log.TWL(0,e.ToString(),true);
       }
     }
     public void ShowMech(Mech mech) {
@@ -868,7 +874,8 @@ namespace CustomUnits {
   [HarmonyPatch("ShownAttackDirection")]
   [HarmonyPatch(new Type[] { })]
   public static class CombatHUDCalledShotPopUp_ShownAttackDirection {
-    public static void Prefix(CombatHUDCalledShotPopUp __instance, CombatHUD ___HUD, ref AttackDirection value, ref AttackDirection ___shownAttackDirection, Mech ___displayedMech) {
+    public static void Prefix(CombatHUDCalledShotPopUp __instance, CombatHUD ___HUD, ref AttackDirection value, ref AttackDirection ___shownAttackDirection, Mech ___displayedMech, Vehicle ___displayedVehicle) {
+      Log.TWL(0, $"CombatHUDCalledShotPopUp.ShownAttackDirection:{(___displayedMech == null?"null":___displayedMech.PilotableActorDef.ChassisID)}");
       Thread.CurrentThread.pushActor(___displayedMech);
       TrooperSquad squad = ___displayedMech as TrooperSquad;
       if (squad != null) {
@@ -1121,48 +1128,52 @@ namespace CustomUnits {
   [HarmonyPatch(new Type[] { typeof(CombatHUD), typeof(bool), typeof(bool), typeof(bool) })]
   public static class HUDMechArmorReadout_Init_info {
     public static void Prefix(HUDMechArmorReadout __instance, CombatHUD HUD, bool useHoversForCalledShots, bool hideArmorWhenStructureDamage, bool showArmorAllOrNothing) {
-      if (HUD == null) {
-        Transform vehicle_FrontArmor = __instance.gameObject.transform.FindRecursive("vehicle_FrontArmor");
-        Transform mech_FrontArmor = __instance.gameObject.transform.FindRecursive("mech_FrontArmor");
-        Transform squad_FrontArmor = __instance.gameObject.transform.FindRecursive("squad_FrontArmor");
-        if (vehicle_FrontArmor == null) {
-          if (mech_FrontArmor != null) {
-            vehicle_FrontArmor = GameObject.Instantiate(mech_FrontArmor.gameObject).transform;
-            vehicle_FrontArmor.gameObject.name = "vehicle_FrontArmor";
-            vehicle_FrontArmor.SetParent(mech_FrontArmor.parent, false);
-            vehicle_FrontArmor.localPosition = mech_FrontArmor.localPosition;
-            vehicle_FrontArmor.localScale = mech_FrontArmor.localScale;
-            vehicle_FrontArmor.gameObject.AddComponent<BayVehicleReadoutAligner>().Init(__instance, mech_FrontArmor as RectTransform);
+      try {
+        if (HUD == null) {
+          Transform vehicle_FrontArmor = __instance.gameObject.transform.FindRecursive("vehicle_FrontArmor");
+          Transform mech_FrontArmor = __instance.gameObject.transform.FindRecursive("mech_FrontArmor");
+          Transform squad_FrontArmor = __instance.gameObject.transform.FindRecursive("squad_FrontArmor");
+          if (vehicle_FrontArmor == null) {
+            if (mech_FrontArmor != null) {
+              vehicle_FrontArmor = GameObject.Instantiate(mech_FrontArmor.gameObject).transform;
+              vehicle_FrontArmor.gameObject.name = "vehicle_FrontArmor";
+              vehicle_FrontArmor.SetParent(mech_FrontArmor.parent, false);
+              vehicle_FrontArmor.localPosition = mech_FrontArmor.localPosition;
+              vehicle_FrontArmor.localScale = mech_FrontArmor.localScale;
+              vehicle_FrontArmor.gameObject.AddComponent<BayVehicleReadoutAligner>().Init(__instance, mech_FrontArmor as RectTransform);
+            }
+          }
+          if ((squad_FrontArmor == null) && (mech_FrontArmor != null)) {
+            squad_FrontArmor = GameObject.Instantiate(mech_FrontArmor.gameObject).transform;
+            squad_FrontArmor.gameObject.name = "squad_FrontArmor";
+            squad_FrontArmor.SetParent(mech_FrontArmor.parent, false);
+            squad_FrontArmor.localPosition = mech_FrontArmor.localPosition;
+            squad_FrontArmor.localScale = mech_FrontArmor.localScale;
+            squad_FrontArmor.gameObject.AddComponent<BaySquadReadoutAligner>().Init(__instance, mech_FrontArmor as RectTransform, true);
+          }
+        } else {
+          if (__instance.gameObject.GetComponent<CombatHUDMechTray>() != null) {
+            TrayHUDCustomArmorReadout squadArmorReadout = __instance.gameObject.GetComponent<TrayHUDCustomArmorReadout>();
+            if (squadArmorReadout == null) {
+              squadArmorReadout = __instance.gameObject.AddComponent<TrayHUDCustomArmorReadout>();
+              squadArmorReadout.Instantine(__instance);
+            }
+          } else if (__instance.gameObject.transform.parent.parent.gameObject.GetComponent<CombatHUDTargetingComputer>() != null) {
+            TargetHUDArmorReadout squadArmorReadout = __instance.gameObject.GetComponent<TargetHUDArmorReadout>();
+            if (squadArmorReadout == null) {
+              squadArmorReadout = __instance.gameObject.AddComponent<TargetHUDArmorReadout>();
+              squadArmorReadout.Instantine(__instance);
+            }
+          } else if (__instance.gameObject.transform.parent.parent.parent.gameObject.GetComponent<CombatHUDCalledShotPopUp>() != null) {
+            CalledHUDSquadArmorReadout squadArmorReadout = __instance.gameObject.GetComponent<CalledHUDSquadArmorReadout>();
+            if (squadArmorReadout == null) {
+              squadArmorReadout = __instance.gameObject.AddComponent<CalledHUDSquadArmorReadout>();
+              squadArmorReadout.Instantine(__instance);
+            }
           }
         }
-        if ((squad_FrontArmor == null) && (mech_FrontArmor != null)) {
-          squad_FrontArmor = GameObject.Instantiate(mech_FrontArmor.gameObject).transform;
-          squad_FrontArmor.gameObject.name = "squad_FrontArmor";
-          squad_FrontArmor.SetParent(mech_FrontArmor.parent, false);
-          squad_FrontArmor.localPosition = mech_FrontArmor.localPosition;
-          squad_FrontArmor.localScale = mech_FrontArmor.localScale;
-          squad_FrontArmor.gameObject.AddComponent<BaySquadReadoutAligner>().Init(__instance, mech_FrontArmor as RectTransform, true);
-        }
-      } else {
-        if (__instance.gameObject.GetComponent<CombatHUDMechTray>() != null) {
-          TrayHUDCustomArmorReadout squadArmorReadout = __instance.gameObject.GetComponent<TrayHUDCustomArmorReadout>();
-          if (squadArmorReadout == null) {
-            squadArmorReadout = __instance.gameObject.AddComponent<TrayHUDCustomArmorReadout>();
-            squadArmorReadout.Instantine(__instance);
-          }
-        } else if (__instance.gameObject.transform.parent.parent.gameObject.GetComponent<CombatHUDTargetingComputer>() != null) {
-          TargetHUDArmorReadout squadArmorReadout = __instance.gameObject.GetComponent<TargetHUDArmorReadout>();
-          if (squadArmorReadout == null) {
-            squadArmorReadout = __instance.gameObject.AddComponent<TargetHUDArmorReadout>();
-            squadArmorReadout.Instantine(__instance);
-          }
-        } else if (__instance.gameObject.transform.parent.parent.parent.gameObject.GetComponent<CombatHUDCalledShotPopUp>() != null) {
-          CalledHUDSquadArmorReadout squadArmorReadout = __instance.gameObject.GetComponent<CalledHUDSquadArmorReadout>();
-          if (squadArmorReadout == null) {
-            squadArmorReadout = __instance.gameObject.AddComponent<CalledHUDSquadArmorReadout>();
-            squadArmorReadout.Instantine(__instance);
-          }
-        }
+      }catch(Exception e) {
+        Log.TWL(0,e.ToString(),true);
       }
     }
   }

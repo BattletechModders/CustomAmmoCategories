@@ -1245,13 +1245,13 @@ namespace CustAmmoCategories {
       isResolved = false;
     }
     public void AppendAoEHit(int primeIndex, float fulldamage, float Damage, float Heat, float Stability, ICombatant target, Vector3 position, int location) {
-      Log.LogWrite("AdvInfo.AppendAoEHit:" + primeIndex + "\n");
+      Log.M?.WL(0,"AdvInfo.AppendAoEHit:" + primeIndex + "\n");
       AdvWeaponHitInfoRec hit = new AdvWeaponHitInfoRec(this);
       int hitIndex = this.hits.Count;
-      Log.LogWrite(" hit: " + hitIndex + "\n");
       hit.hitIndex = hitIndex;
       hit.hitPosition = position;
-      hit.Damage = Damage;
+      hit.Damage = Damage * target.AoEDamageMult(location);
+      Log.M?.WL(1, $"hit: {hitIndex} effective damage:{hit.Damage}");
       hit.APDamage = 0f;
       hit.Heat = Heat;
       hit.Stability = Stability;

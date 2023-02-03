@@ -370,29 +370,5 @@ namespace CustAmmoCategories {
       //Log.M?.WL(0,Environment.StackTrace);
     }
   }
-  [HarmonyPatch(typeof(WwiseManager))]
-  [HarmonyPatch("PostEventById")]
-  [HarmonyPatch(MethodType.Normal)]
-  [HarmonyPatch(new Type[] { typeof(uint), typeof(AkGameObj), typeof(AkCallbackManager.EventCallback), typeof(object) })]
-  public static class WwiseManager_PostEventById {
-    public static Dictionary<uint, string> guidIdMap = new Dictionary<uint, string>();
-    public static void RebuildCache(Dictionary<string, uint> ___guidIdMap) {
-      guidIdMap.Clear();
-      foreach (var guid in ___guidIdMap) {
-        guidIdMap[guid.Value] = guid.Key;
-      }
-    }
-    public static void Postfix(WwiseManager __instance, uint eventId, AkGameObj sourceObject, AkCallbackManager.EventCallback callback, object in_pCookie, Dictionary<string, uint> ___guidIdMap) {
-      try {
-        if (guidIdMap.ContainsKey(eventId) == false) {
-          RebuildCache(___guidIdMap);
-        }
-        Log.M.TWL(0, $"WwiseManager.PostEventById {eventId}:{guidIdMap[eventId]}");
-        //Log.M?.WL(0, Environment.StackTrace);
-      }catch(Exception e) {
-        Log.M.TWL(0, e.ToString(), true);
-      }
-    }
-  }
 }
 

@@ -33,43 +33,56 @@ namespace CustomUnits {
   public class LanceContractIntelWidget: MonoBehaviour {
     public static Dictionary<string, Sprite> intelMinimaps = new Dictionary<string, Sprite>();
     public static Sprite GetIntelMinimapSprite(Contract contract) {
-      if(intelMinimaps.TryGetValue(contract.mapName, out Sprite result)) {
-        return result;
-      }
-      MapMetaData mapMetaData = MapMetaData.LoadMapMetaData(contract, contract.DataManager);
-      
-      int minimapXsize = mapMetaData.mapTerrainDataCells.GetLength(0);
-      int minimapYsize = mapMetaData.mapTerrainDataCells.GetLength(1);
-      Texture2D minimap = new Texture2D(minimapYsize, minimapXsize, TextureFormat.ARGB32, false);
-      float maxHeight = mapMetaData.mapTerrainDataCells[0, 0].terrainHeight;
-      float minHeight = mapMetaData.mapTerrainDataCells[0, 0].terrainHeight;
-      for (int x = 0; x < minimapXsize; ++x) {
-        for (int y = 0; y < minimapYsize; ++y) {
-          MapTerrainDataCell cell = mapMetaData.mapTerrainDataCells[x, y];
-          if (cell.terrainHeight > maxHeight) { maxHeight = cell.terrainHeight; }
-          if (cell.terrainHeight < minHeight) { minHeight = cell.terrainHeight; }
+      try {
+        if (intelMinimaps.TryGetValue(contract.mapName, out Sprite result)) {
+          return result;
         }
-      }
-      bool hasForest = Traverse.Create(mapMetaData).Field<string>("forestDesignMaskName").Value.Contains("Forest");
-      for (int x = 0; x < minimapXsize; ++x) {
-        for (int y = 0; y < minimapYsize; ++y) {
-          MapTerrainDataCell cell = mapMetaData.mapTerrainDataCells[x, y];
-          float heightColor = (cell.terrainHeight - minHeight) / (maxHeight - minHeight);
-          heightColor *= 0.8f;
-          heightColor += 0.2f;
-          Color color = new Color(heightColor, heightColor, heightColor, 1f);
-          if (SplatMapInfo.IsWater(cell.terrainMask) || SplatMapInfo.IsDeepWater(cell.terrainMask)) {
-            color.r = 0f; color.g = 0f;
-          } else if(hasForest && SplatMapInfo.IsForest(cell.terrainMask)) {
-            color.r = 0f; color.b = 0f;
+        Log.TWL(0,$"GetIntelMinimapSprite:{contract.mapName}");
+        MapMetaData mapMetaData = MapMetaData.LoadMapMetaData(contract, contract.DataManager);
+
+        int minimapXsize = mapMetaData.mapTerrainDataCells.GetLength(0);
+        int minimapYsize = mapMetaData.mapTerrainDataCells.GetLength(1);
+        Texture2D minimap = new Texture2D(minimapYsize, minimapXsize, TextureFormat.ARGB32, false);
+        float maxHeight = mapMetaData.mapTerrainDataCells[0, 0].terrainHeight;
+        float minHeight = mapMetaData.mapTerrainDataCells[0, 0].terrainHeight;
+        for (int x = 0; x < minimapXsize; ++x) {
+          for (int y = 0; y < minimapYsize; ++y) {
+            MapTerrainDataCell cell = mapMetaData.mapTerrainDataCells[x, y];
+            if (cell.terrainHeight > maxHeight) { maxHeight = cell.terrainHeight; }
+            if (cell.terrainHeight < minHeight) { minHeight = cell.terrainHeight; }
           }
-          minimap.SetPixel(y, x, color);
         }
+        Log.WL(1,$"maxHeight:{maxHeight} minHeight:{minHeight}");
+        bool noheightdiff = false;
+        if ((maxHeight - minHeight) < Core.Epsilon) { noheightdiff = true; }
+        bool hasForest = Traverse.Create(mapMetaData).Field<string>("forestDesignMaskName").Value.Contains("Forest");
+        for (int x = 0; x < minimapXsize; ++x) {
+          for (int y = 0; y < minimapYsize; ++y) {
+            MapTerrainDataCell cell = mapMetaData.mapTerrainDataCells[x, y];
+            float heightColor = 0.7f;
+            if (noheightdiff == false) { heightColor = (cell.terrainHeight - minHeight) / (maxHeight - minHeight); };
+            heightColor *= 0.8f;
+            heightColor += 0.2f;
+            Color color = new Color(heightColor, heightColor, heightColor, 1f);
+            switch (MapMetaData.GetPriorityTerrainMaskFlags(cell.terrainMask)) {
+              case TerrainMaskFlags.Impassable: { color.g = 0f; color.b = 0f; }; break;
+              case TerrainMaskFlags.DeepWater: { color.r = 0f; color.g = 0f; }; break;
+              case TerrainMaskFlags.Water: { color.r = 0f; color.g = 0f; }; break;
+              case TerrainMaskFlags.Road: { color.b = 0f; color.g *= 0.5f; color.r *= 0.5f; }; break;
+              case TerrainMaskFlags.Custom: { color.g = 0f; }; break;
+              case TerrainMaskFlags.Forest: { color.r = 0f; color.b = 0f; }; break;
+            }
+            minimap.SetPixel(y, x, color);
+          }
+        }
+        minimap.Apply();
+        result = Sprite.Create(minimap, new UnityEngine.Rect(0.0f, 0.0f, (float)minimap.width, (float)minimap.height), new Vector2(0.5f, 0.5f), 100f, 0U, SpriteMeshType.FullRect, Vector4.zero);
+        intelMinimaps.Add(contract.mapName, result);
+        return result;
+      } catch (Exception e) {
+        Log.TWL(0, e.ToString(), true);
+        return null;
       }
-      minimap.Apply();
-      result = Sprite.Create(minimap, new UnityEngine.Rect(0.0f, 0.0f, (float)minimap.width, (float)minimap.height), new Vector2(0.5f, 0.5f), 100f, 0U, SpriteMeshType.FullRect, Vector4.zero);
-      intelMinimaps.Add(contract.mapName, result);
-      return result;
     }
     public LocalizableText moodDescription { get; set; } = null;
     public Image minimapBackground { get; set; } = null;

@@ -64,6 +64,7 @@ namespace CustomAmmoCategoriesPatches {
         SpawnProtectionHelper.Clear();
         ToHit_GetAttackDirection.Clear();
         BlockWeaponsHelpers.Clear();
+        AIDistanceFromNearesEnemyCache.Clear();
       } catch (Exception e) {
         Log.M.TWL(0, e.ToString());
       }

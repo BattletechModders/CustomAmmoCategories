@@ -147,6 +147,7 @@
     <Compile Include="AnimatedPartsHelper.cs" />
     <Compile Include="BiomeTagsFix.cs" />
     <Compile Include="BossAppearController.cs" />
+    <Compile Include="CustomHitTable.cs" />
     <Compile Include="CombatDestroyed.cs" />
     <Compile Include="ContractIntel.cs" />
     <Compile Include="CustomArmorReadout.cs" />

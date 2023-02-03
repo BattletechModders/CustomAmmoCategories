@@ -419,6 +419,10 @@ namespace CustAmmoCategories {
     public HashSet<string> hidableRegionsList { get; set; } = new HashSet<string>() { "regionDef_HostileDropZone" };
     public bool PlayerAlwaysCalledShot { get; set; } = false;
     public AttackDirection PlayerAlwaysCalledShotDirection { get; set; } = AttackDirection.None;
+    public float FleeStartTonage { get; set; } = 2f;
+    public float FleeMaxTonage { get; set; } = 3f;
+    public float HexSizeForMods { get; set; } = 30f;
+    public bool RestoreEjectedWeapons { get; set; } = true;
     public Settings() {
       //directory = string.Empty;
       //debugLog = true;

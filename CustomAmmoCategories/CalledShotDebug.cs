@@ -32,7 +32,7 @@ namespace CustAmmoCategories {
       if (Thread.CurrentThread.isFlagSet("ShowCalledShotPopUp") == false) { return; }
       if ((CustomAmmoCategories.Settings.PlayerAlwaysCalledShotDirection == AttackDirection.None)&&(attackDirectionOverride.ContainsKey(target) == false)) { return; }
       AttackDirection result = CustomAmmoCategories.Settings.PlayerAlwaysCalledShotDirection;
-      attackDirectionOverride.TryGetValue(target, out result);
+      if (attackDirectionOverride.TryGetValue(target, out var overrd)) { result = overrd; }
       Log.M?.TWL(0, $"ShowCalledShotPopUp GetAttackDirection was:{__result} become:{result}");
       __result = result;
     }

@@ -1139,27 +1139,31 @@ namespace CustomUnits {
         int count = Mathf.Min(lanceUnits.Length, ___loadoutSlots.Length);
         Log.WL(1, "filling list");
         for (int i = 0; i < count; ++i) {
-          SpawnableUnit unit = lanceUnits[i];
-          IMechLabDraggableItem forcedMech = (IMechLabDraggableItem)null;
-          if (unit.Unit != null) { forcedMech = __instance.mechListWidget.GetMechDefByGUID(unit.Unit.GUID); }
-          if (forcedMech == null) { forcedMech = __instance.mechListWidget.GetInventoryItem(unit.UnitId); }
-          if (forcedMech != null && !MechValidationRules.ValidateMechCanBeFielded(__instance.Sim, forcedMech.MechDef)) {
-            forcedMech = (IMechLabDraggableItem)null;
-          }
-          Log.WL(2, $"[{i}] pilot:{lanceUnits[i].PilotId} UnitId:{lanceUnits[i].UnitId} Unit:{(lanceUnits[i].Unit == null ? "null" : lanceUnits[i].Unit.GUID)}");
-          Log.WL(3,$"{forcedMech.MechDef.ChassisID}");
-          SGBarracksRosterSlot forcedPilot = null;
-          forcedPilot = __instance.pilotListWidget.GetPilot(unit.PilotId);
-          if (forcedPilot != null) {
-            if (forcedPilot.Pilot.CanPilot == false) {
-              forcedPilot = (SGBarracksRosterSlot)null;
+          try {
+            SpawnableUnit unit = lanceUnits[i];
+            IMechLabDraggableItem forcedMech = (IMechLabDraggableItem)null;
+            if (unit.Unit != null) { forcedMech = __instance.mechListWidget.GetMechDefByGUID(unit.Unit.GUID); }
+            if (forcedMech == null) { forcedMech = __instance.mechListWidget.GetInventoryItem(unit.UnitId); }
+            if (forcedMech != null && !MechValidationRules.ValidateMechCanBeFielded(__instance.Sim, forcedMech.MechDef)) {
+              forcedMech = (IMechLabDraggableItem)null;
             }
+            Log.WL(2, $"[{i}] pilot:{unit.PilotId} UnitId:{unit.UnitId} Unit:{(unit.Unit == null ? "null" : unit.Unit.GUID)}");
+            if ((forcedMech != null) && (forcedMech.MechDef != null)) { Log.WL(3, $"{forcedMech.MechDef.ChassisID}"); }
+            SGBarracksRosterSlot forcedPilot = null;
+            forcedPilot = __instance.pilotListWidget.GetPilot(unit.PilotId);
+            if (forcedPilot != null) {
+              if (forcedPilot.Pilot.CanPilot == false) {
+                forcedPilot = (SGBarracksRosterSlot)null;
+              }
+            }
+            LanceLoadoutSlot loadoutSlot = ___loadoutSlots[i];
+            if (loadoutSlot.isMechLocked) { forcedMech = null; }
+            if (loadoutSlot.isPilotLocked) { forcedPilot = null; }
+            if (forcedPilot != null) { __instance.pilotListWidget.RemovePilot(__instance.availablePilots.Find((Predicate<Pilot>)(x => x.Description.Id == forcedPilot.Pilot.Description.Id))); }
+            loadoutSlot.SetLockedData(forcedMech, forcedPilot, false);
+          }catch(Exception e) {
+            Log.TWL(0,e.ToString(),true);
           }
-          LanceLoadoutSlot loadoutSlot = ___loadoutSlots[i];
-          if (loadoutSlot.isMechLocked) { forcedMech = null; }
-          if (loadoutSlot.isPilotLocked) { forcedPilot = null; }
-          if (forcedPilot != null) { __instance.pilotListWidget.RemovePilot(__instance.availablePilots.Find((Predicate<Pilot>)(x => x.Description.Id == forcedPilot.Pilot.Description.Id))); }
-          loadoutSlot.SetLockedData(forcedMech, forcedPilot, false);
         }
       } catch (Exception e) {
         Log.TWL(0, e.ToString());

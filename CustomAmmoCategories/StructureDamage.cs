@@ -73,6 +73,11 @@ namespace CustAmmoCategories {
       if (unit.StatCollection.ContainsStatistic($"{location}.{DamageReductionMultiplierAllStatName}") == false) { return 1f; }
       return unit.StatCollection.GetStatistic($"{location}.{DamageReductionMultiplierAllStatName}").Value<float>();
     }
+    public static float AoEDamageMult(this ICombatant unit, int location) {
+      if (unit is Mech) { location = (int)MechStructureRules.GetChassisLocationFromArmorLocation((ArmorLocation)location); }
+      if (unit.StatCollection.ContainsStatistic($"{location}.{AoEDamageMultStatisticName}") == false) { return 1f; }
+      return unit.StatCollection.GetStatistic($"{location}.{AoEDamageMultStatisticName}").Value<float>();
+    }
     public static float CriticalHitChanceReceivedMultiplier(this ICombatant unit, int location) {
       if (unit is Mech) { location = (int)MechStructureRules.GetChassisLocationFromArmorLocation((ArmorLocation)location); }
       if (unit.StatCollection.ContainsStatistic($"{location}.{CriticalHitChanceReceivedMultiplierStatName}") == false) { return 1f; }

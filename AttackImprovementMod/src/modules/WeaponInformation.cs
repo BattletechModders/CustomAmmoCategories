@@ -281,7 +281,7 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
         TotalSlot = ___WeaponSlots[topIndex];
         TotalSlot.transform.parent.gameObject.SetActive(true);
         TotalSlot.DisplayedWeapon = null;
-        TotalSlot.WeaponText.text = GetTotalLabel();
+        TotalSlot.WeaponText.text = new Text(GetTotalLabel()).ToString();
         TotalSlot.AmmoText.text = "";
         TotalSlot.MainImage.color = Color.clear;
         TotalSlot.ToggleButton.childImage.color = Color.clear;

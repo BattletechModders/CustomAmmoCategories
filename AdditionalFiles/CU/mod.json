@@ -735,7 +735,7 @@
       }
     ]
   },
-  "CustomResourceTypes": [ "CustomMechRepresentationDef" ],
+  "CustomResourceTypes": [ "CustomMechRepresentationDef", "CustomHitTableDef" ],
   "Manifest": [
     {
       "Type": "AssetBundle",

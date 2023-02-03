@@ -451,6 +451,10 @@ namespace CustAmmoCategories {
     public bool isFromJson { get; private set; } = false;
     [Key(147)]
     public int AMSActivationsPerTurn { get; set; } = 0;
+    [SelfDocumentationDefaultValue("empty"), SelfDocumentationTypeName("EvasivePipsMods structure"), Key(148)]
+    public EvasivePipsMods hexesMovedMod { get; set; } = new EvasivePipsMods();
+    [Key(148)]
+    public float RecoilJammingChance { get; set; } = 0f;
     private static List<PropertyInfo> json_properties = null;
     private static void fill_json_properties() {
       if (json_properties != null) { return; }

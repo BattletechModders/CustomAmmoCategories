@@ -2092,14 +2092,15 @@ namespace CustomUnits {
       UnitCustomInfo customInfo = chassisDef.GetCustomInfo();
       if((result == null) && (id == origId)) {
         GameObject battleGameObject = dataManager.PooledInstantiate(chassisDef.PrefabIdentifier, BattleTechResourceType.Prefab);
-        if(result != null) {
+        if(battleGameObject != null) {
           VehicleRepresentation battleRep = battleGameObject.GetComponent<VehicleRepresentation>();
           if(battleRep == null) {
-            dataManager.PoolGameObject(chassisDef.PrefabIdentifier, result);
+            dataManager.PoolGameObject(chassisDef.PrefabIdentifier, battleGameObject);
             result = null;
           } else {
             GameObject bayGameObject = GameObject.Instantiate(battleGameObject);
-            dataManager.PoolGameObject(chassisDef.PrefabIdentifier, result);
+            dataManager.PoolGameObject(chassisDef.PrefabIdentifier, battleGameObject);
+            battleRep = bayGameObject.GetComponent<VehicleRepresentation>();
             AkGameObj audio = battleRep.audioObject;
             battleRep.audioObject = null;
             battleRep.RegisterChassis(dataManager.VehicleChassisDefs.Get(chassisDef.Description.Id));
@@ -2110,6 +2111,8 @@ namespace CustomUnits {
             bayRepresentation.thisAnimator = null;
             battleRep.BlipObjectIdentified.SetActive(false);
             battleRep.BlipObjectUnknown.SetActive(false);
+            GameObject.Destroy(battleRep);
+            result.name = id;
             result = bayGameObject;
           }
         }

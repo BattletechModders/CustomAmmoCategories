@@ -11,7 +11,7 @@ using Random = UnityEngine.Random;
 
 namespace WeaponRealizer {
   internal static class StatisticHelper {
-    internal static Statistic GetOrCreateStatisic<StatisticType>(StatCollection collection, string statName,
+    internal static Statistic GetOrCreateStatisic<StatisticType>(this StatCollection collection, string statName,
         StatisticType defaultValue) {
       Statistic statistic = collection.GetStatistic(statName);
 
@@ -101,7 +101,9 @@ namespace WeaponRealizer {
     private const string DamageableWeaponTag = "wr-damage_when_jam";
     internal const string JammedWeaponStatisticName = "WR-JammedWeapon";
     private const string JammableWeaponTag = "wr-jammable_weapon";
-
+    public static bool isWRJammed(this Weapon weapon) {
+      return weapon.StatCollection.GetOrCreateStatisic<bool>(JammedWeaponStatisticName, false).Value<bool>();
+    }
     private static void AddJam(AbstractActor actor, Weapon weapon) {
       if (!DamagesWhenJams(weapon)) {
         weapon.StatCollection.Set<bool>(JammedWeaponStatisticName, true);
@@ -167,18 +169,18 @@ namespace WeaponRealizer {
     }
   }
 
-  [HarmonyPatch(typeof(MechComponent), "UIName", MethodType.Getter)]
-  static class JammedWeaponDisplayChanger {
-    public static bool Prepare() {
-      return Core.ModSettings.Jamming;
-    }
-    public static void Postfix(MechComponent __instance, ref Text __result) {
-      if (!__instance.IsFunctional) return;
-      if (__instance.GetType() != typeof(Weapon)) return;
-      if (!StatisticHelper
-          .GetOrCreateStatisic<bool>(__instance.StatCollection, JammingEnabler.JammedWeaponStatisticName, false)
-          .Value<bool>()) return;
-      __result.Append(" (JAM)", new object[0]);
-    }
-  }
+  //[HarmonyPatch(typeof(MechComponent), "UIName", MethodType.Getter)]
+  //static class JammedWeaponDisplayChanger {
+  //  public static bool Prepare() {
+  //    return Core.ModSettings.Jamming;
+  //  }
+  //  public static void Postfix(MechComponent __instance, ref Text __result) {
+  //    if (!__instance.IsFunctional) return;
+  //    if (__instance.GetType() != typeof(Weapon)) return;
+  //    if (!StatisticHelper
+  //        .GetOrCreateStatisic<bool>(__instance.StatCollection, JammingEnabler.JammedWeaponStatisticName, false)
+  //        .Value<bool>()) return;
+  //    __result.Append(" (JAM)", new object[0]);
+  //  }
+  //}
 }

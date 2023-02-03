@@ -27,7 +27,8 @@ CACExtraLongRangeAccuracyMod - LongRange <= X < MaxRange
 
 Additional unit statistic
 CACAPProtection - boolean - if true unit is protected from all AP damage including AP crits. If armor is absent crits will be rolled anyway. Can be locational
-CACAoEDamageMult - float - multipicator for all AoE damage to unit including AoE heat and stability if applicable. (Working for weapon attacks, landmines and component explosions)
+CACAoEDamageMult - float - multipicator for all AoE damage to unit including AoE heat and stability if applicable. (Working for weapon attacks, landmines and component explosions).
+						   Can be locational
 CACAPDamageMult - float - multipicator for all AP damage to unit (only pierce through part of damage). Can be locational
 CACIncomingHeatMult - float - multipicator for all incoming heat (weapon attacks, landmines, burning terrain, AoE damage)
 CACIncomingStabilityMult - float - multipicator for all incoming stability (weapon attacks, landmines, burning terrain, AoE damage)
@@ -49,6 +50,8 @@ CriticalHitChanceReceivedMultiplier can be locational
 
 {
 "debugLog":true, - enable debug log 
+"RestoreEjectedWeapons": true, - ejected weapon will not be counted as destroyed at the end of the battle
+"HexSizeForMods": 30 - hex size used for moved hexes modifiers calculations
 "SpawnProtectionAffectsCanFire": true - if true weapon can't fire if its owner under spawn protection
 "SpawnProtectionAffectsBurningTerrain": true, - if true spawn protection also prevent burning terrain of any kind.
 "SpawnProtectionAffectsDesignMasks": true, - if true spawn protection also prevent weapon from changing terrain.
@@ -439,6 +442,33 @@ new fields
       "DamageVariance":0,
       "CriticalChanceMultiplier":0
   },
+  "hexesMovedMod": {  - list of modifiers for values by moved hexes.
+						  moved hexes = (<DistMovedThisRound>/<HexSizeForMods>) rounded to lower integer
+						  Additive per weapon/ammo/mode. 
+                          Overall formula value = [base value] * ([moved hexes]^[mod value]). Example base damage = 35, moved hexes = 7, mod value = -1
+                          damage = 35 * (7^-1) = 35 * 0.142857(142857) = 5.
+                          NOTE: if DistMovedThisRound < HexSizeForMods, value will not been altered. If mod value = 0 same behavior.
+      "Damage":0,
+      "APDamage":0,
+      "Heat":0,
+      "Instablility":0,
+      "GeneratedHeat":0,
+      "FlatJammingChance":0,
+      "MinRange":0,
+      "ShortRange":0,
+      "MediumRange":0,
+      "LongRange":0,
+      "MaxRange":0,
+      "AOERange":0,
+      "AOEDamage":0,
+      "AOEHeatDamage":0,
+      "AOEInstability":0,
+      "RefireModifier":0,
+      "APCriticalChanceMultiplier":0,
+      "AccuracyModifier":0,
+      "DamageVariance":0,
+      "CriticalChanceMultiplier":0
+  },
   "deferredEffect":{                                   - deferred effect !!!CAN!!! be set per mode, ammo, weapon. Mode have priority than ammo and than weapon.
     "id":"LOIC",                                       - id used in logs 
     "rounds":2,                                        - rounds to effects apply
@@ -664,6 +694,9 @@ new fields
   "DestroyOnJamming": true/false, - if true on jamming weapon will be destroyed (need DamageOnJamming to be set true also)
   "FlatJammingChance": 1.0, - Chance of jamming weapon after fire. 1.0 is jamm always. Unjamming logic implemented as in WeaponRealizer
                               NOTE! There FlatJammingChance can be altered via CACFlatJammingChance statistic value per actor's and/or per weapon's statistic collections
+  "RecoilJammingChance": 0.0, - addition to  FlatJammingChance based on recoil. Adds RecoilJammingChance * <RefireModifier> to FlatJammingChance
+                                <RefireModifier> is effective weapon's RefireModifier if roundsSinceLastFire < 2 and 0 otherwise. 
+								Can be set for weapon, ammo and mode. Additive.
   "GunneryJammingBase": 5, - 
   "GunneryJammingMult": 0.05, - this values uses to alter flat jamming chance by pilot skills 
                                   formula effective jamming chance = FlatJammingChance + (GunneryJammingBase - Pilot Gunnery)* GunneryJammingMult

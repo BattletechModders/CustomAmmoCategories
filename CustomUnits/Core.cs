@@ -733,6 +733,10 @@ namespace CustomUnits{
                 Log.WL(0, e.ToString(), true);
               }
             }
+          } else if (customResource.Key == nameof(CustomHitTableDef)) {
+            foreach (var custItem in customResource.Value) {
+              CustomHitTableDef.Register(custItem.Value.FilePath);
+            }
           } else {
             throw new Exception("Unknown resource "+ customResource.Key);
           }

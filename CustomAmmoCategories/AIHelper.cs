@@ -23,6 +23,106 @@ using System.Threading.Tasks;
 using UnityEngine;
 
 namespace CustAmmoCategories {
+  public static class AIFleeHelper {
+    public static readonly string IS_UNIT_IN_FLEE = "CAC-UnitFlee";
+    public static bool isInFlee(this AbstractActor unit) {
+      return unit.StatCollection.GetOrCreateStatisic<bool>(IS_UNIT_IN_FLEE, false).Value<bool>();
+    }
+    public static void SetInFlee(this AbstractActor unit, bool val) {
+      unit.StatCollection.GetOrCreateStatisic<bool>(IS_UNIT_IN_FLEE, false).SetValue<bool>(val);
+    }
+    public static float GetTonnage(this AbstractActor unit) {
+      if (unit.PilotableActorDef is MechDef mechDef) {
+        return mechDef.Chassis.Tonnage;
+      } else if(unit.PilotableActorDef is VehicleDef vehicleDef) {
+        return vehicleDef.Chassis.Tonnage;
+      } else if(unit.PilotableActorDef is TurretDef turretDef) {
+        return turretDef.Chassis.Tonnage;
+      }
+      return 0f;
+    }
+    public static void CheckInFlee(this AbstractActor unit) {
+      if (unit.Combat.TurnDirector.IsInterleaved == false) { return; }
+      if (unit.IsAttacking) { return; }
+      float alliesTonnage = unit.GetTonnage();
+      foreach(AbstractActor ally in unit.Combat.GetAllAlliesOf(unit)) {
+        if (ally.GUID == unit.GUID) { continue; }
+        if (ally.IsDead) { continue; }
+        alliesTonnage += ally.GetTonnage();
+      }
+      float enemiesTonnage = 0f;
+      foreach(AbstractActor enemy in unit.Combat.GetAllEnemiesOf(unit)) {
+        if (enemy.IsDead) { continue; }
+        enemiesTonnage += enemy.GetTonnage();
+      }
+      float chance = ((enemiesTonnage / alliesTonnage) - CustomAmmoCategories.Settings.FleeStartTonage) / (CustomAmmoCategories.Settings.FleeMaxTonage - CustomAmmoCategories.Settings.FleeStartTonage);
+      float roll = UnityEngine.Random.Range(0f, 1f);
+      if (roll < chance) {
+        unit.Combat.MessageCenter.PublishMessage(new FloatieMessage(unit.GUID, unit.GUID, new Text("ABOUT TO FLEE"), FloatieMessage.MessageNature.Debuff));
+        unit.SetInFlee(true);
+      }
+    }
+    public class FleeMoveCandidate {
+      public float distance { get; set; }
+      public MoveDestination destination { get; set; }
+      public FleeMoveCandidate(AbstractActor unit, MoveDestination dest) {
+        this.destination = dest;
+        this.distance = AIDistanceFromNearesEnemyCache.Get(unit, dest.PathNode.Position);
+      }
+    }
+    public static void FleeCandidatesFilter(AbstractActor unit, ref List<MoveDestination> movementCandidateLocations) {
+      if (movementCandidateLocations.Count == 0) { return; }
+      List<FleeMoveCandidate> candidates = new List<FleeMoveCandidate>();
+      foreach(var dest in movementCandidateLocations) {
+        candidates.Add(new FleeMoveCandidate(unit, dest));
+      }
+      candidates.Sort((a, b) => { return b.distance.CompareTo(a.distance); });
+      movementCandidateLocations.Clear();
+      float bareerDist = candidates[0].distance * 0.9f;
+      Log.M?.TWL(0, $"FleeCandidatesFilter:{movementCandidateLocations.Count} limit:{bareerDist}");
+      foreach (var cand in candidates) {
+        if (cand.distance < bareerDist) { break; }
+        movementCandidateLocations.Add(cand.destination);
+        Log.M?.WL(1,$"{cand.destination.PathNode.Position}:{cand.distance}");
+      }
+    }
+  }
+  public static class AIDistanceFromNearesEnemyCache {
+    public static int round { get; private set; } = 0;
+    public static int phase { get; private set; } = 0;
+    private static Dictionary<AbstractActor, Dictionary<Vector3, float>> cache = new Dictionary<AbstractActor, Dictionary<Vector3, float>>();
+    public static float Get(AbstractActor unit, Vector3 position) {
+      if (unit.Combat.TurnDirector.CurrentRound != round) {
+        round = unit.Combat.TurnDirector.CurrentRound;
+        cache.Clear();
+      }
+      if(unit.Combat.TurnDirector.CurrentPhase != phase) {
+        phase = unit.Combat.TurnDirector.CurrentPhase;
+        cache.Clear();
+      }
+      if(cache.TryGetValue(unit, out var distances) == false) {
+        distances = new Dictionary<Vector3, float>();
+        cache.Add(unit,distances);
+      }
+      if(distances.TryGetValue(position, out float distance)) {
+        return distance;
+      }
+      var enemies = unit.Combat.GetAllEnemiesOf(unit);
+      distance = 2f * 2048f * 2048f;
+      //Log.M?.WL(0,$"Get dist from nearest enemy:{unit.PilotableActorDef.ChassisID}:{position}");
+      foreach (var enemy in enemies) {
+        if (enemy.IsDead) { continue; }
+        var cur = Vector3.SqrMagnitude(enemy.CurrentPosition - position);
+        //Log.M?.WL(1,$"{enemy.PilotableActorDef.ChassisID}:{cur}");
+        if (cur < distance) { distance = cur; }
+      }
+      distances.Add(position, distance);
+      return distance;
+    }
+    public static void Clear() {
+      cache.Clear();
+    }
+  }
   public static class AIMinefieldHelper {
     public static readonly string AI_AWARE_ALL_MINES_PILOT_TAG = "pilot_tag_ai_aware_all_mines";
     public static readonly string AI_MINEFIELD_DAMAGE_THRESHOLD_TAG = "pilot_tag_ai_minefield_damage_threshold_";

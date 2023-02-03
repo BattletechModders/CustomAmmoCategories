@@ -1085,7 +1085,7 @@ namespace CustAmmoCategories {
     public static readonly string LandminesActorStat = "CULandminesUnaffected";
     public static readonly string NoMoveAnimationActorStat = "CUNoMoveAnimation";
     public static readonly string NoRandomIdlesActorStat = "CUNoRandomIdleAnimations";
-    public static readonly string ArmsCountedAsLegsActorStat = "CUArmsCountedAsLegs";
+    public static readonly string NoDependLocaltionsActorStat = "CUNoDependLocations";
     public static readonly string NoDeathOnLegsActorStat = "CUNoDeathOnLegs";
     public static readonly string FlyingHeightActorStat = "CUAOEHeight";
     public static readonly string NoHeatActorStat = "CUNoHeat";
@@ -1253,8 +1253,8 @@ namespace CustAmmoCategories {
       return unit.StatCollection.GetStatistic(NoMoveAnimationActorStat).Value<bool>();
     }
     public static bool NoDependentLocations(this ICombatant unit) {
-      if (unit.StatCollection.ContainsStatistic(ArmsCountedAsLegsActorStat) == false) { return false; };
-      return unit.StatCollection.GetStatistic(ArmsCountedAsLegsActorStat).Value<bool>();
+      if (unit.StatCollection.ContainsStatistic(NoDependLocaltionsActorStat) == false) { return false; };
+      return unit.StatCollection.GetStatistic(NoDependLocaltionsActorStat).Value<bool>();
     }
     public static bool UnaffectedLandmines(this ICombatant unit) {
       if (unit.StatCollection.ContainsStatistic(LandminesActorStat) == false) { return false; };

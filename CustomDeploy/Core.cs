@@ -707,6 +707,25 @@ namespace CustomDeploy{
       }
     }
   }
+  [HarmonyPatch(typeof(Pathing))]
+  [HarmonyPatch("UpdateMeleePath")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { typeof(bool) })]
+  public static class Pathing_UpdateMeleePath_Debug {
+    public static bool Prefix(Pathing __instance, bool calledFromUI) {
+      try {
+        List<AbstractActor> allActors = __instance.Combat.AllActors;
+        allActors.Remove(__instance.OwningActor);
+        allActors.Remove(__instance.CurrentMeleeTarget);
+        PathNode endNode;
+        __instance.GetMeleeDestination(__instance.CurrentMeleeTarget, allActors, out endNode, out __instance.ResultDestination, out __instance.ResultAngle);
+        __instance.CurrentPath = __instance.CurrentGrid.BuildPathFromEnd(endNode, __instance.MaxCost, endNode.Position, __instance.CurrentMeleeTarget.CurrentPosition, __instance.CurrentMeleeTarget, out __instance.costLeft, out __instance.ResultDestination, out __instance.ResultAngle);
+      } catch (Exception e) {
+        Log.TWL(0, e.ToString());
+      }
+      return false;
+    }
+  }
   [HarmonyPatch(typeof(DataManager))]
   [HarmonyPatch("UpdateRequests")]
   [HarmonyPatch(MethodType.Normal)]

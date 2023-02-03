@@ -607,6 +607,10 @@ namespace CustAmmoCategories {
     public TripleBoolean IgnoreCover { get; set; } = TripleBoolean.NotSet;
     [Key(152)]
     public TripleBoolean BreachingShot { get; set; } = TripleBoolean.NotSet;
+    [Key(153)]
+    public EvasivePipsMods hexesMovedMod { get; set; } = new EvasivePipsMods();
+    [Key(154)]
+    public float RecoilJammingChance { get; set; } = 0f;
     public ExtAmmunitionDef() {
       //Id = "NotSet";
       //Name = string.Empty;

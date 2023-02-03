@@ -23,11 +23,13 @@ using System.Collections;
 using BattleTech.UI;
 using InControl;
 using Localize;
+using CustomAmmoCategoriesLog;
 
 namespace CustAmmoCategories {
   public static partial class CustomAmmoCategories {
     public static string EjectedThisRoundStatName = "CAC-AmmoEjected";
     public static string EjectingNowStatName = "CAC-AmmoEjecting";
+    public static string EjectingRestoreStatName = "CAC-WeaponRestoreState";
     public static Dictionary<string, bool> ActorsEjectedAmmo = new Dictionary<string, bool>();
     public static bool isAmmoEjecting(this AbstractActor actor) {
       if(actor.StatCollection.ContainsStatistic(CustomAmmoCategories.EjectingNowStatName) == false) { return false; }
@@ -41,6 +43,7 @@ namespace CustAmmoCategories {
     }
     public static void EjectWeaponForce(this Weapon weapon) {
       if (weapon.IsFunctional == false) { return; }
+      weapon.StatCollection.GetOrCreateStatisic<ComponentDamageLevel>(EjectingRestoreStatName, ComponentDamageLevel.Functional).SetValue<ComponentDamageLevel>(weapon.DamageLevel);
       weapon.StatCollection.Set<ComponentDamageLevel>("DamageLevel", ComponentDamageLevel.Destroyed);
       weapon.CancelCreatedEffects();
       BlockWeaponsHelpers.RecalculateBlocked(weapon.parent);
@@ -58,6 +61,7 @@ namespace CustAmmoCategories {
         popup.IsNestedPopupWithBuiltInFader().CancelOnEscape().Render();
         return;
       }
+      weapon.StatCollection.GetOrCreateStatisic<ComponentDamageLevel>(EjectingRestoreStatName, ComponentDamageLevel.Functional).SetValue<ComponentDamageLevel>(weapon.DamageLevel);
       weapon.StatCollection.Set<ComponentDamageLevel>("DamageLevel", ComponentDamageLevel.Destroyed);
       weapon.CancelCreatedEffects();
       CustomAmmoCategories.ActorsEjectedAmmo[weapon.parent.GUID] = true;
@@ -176,6 +180,31 @@ namespace CustAmmoCategoriesPatches {
     public static void Postfix(Mech __instance, ref bool __result) {
       if (CustomAmmoCategories.isEjection(__instance)) {
         __result = false;
+      }
+    }
+  }
+  [HarmonyPatch(typeof(CombatHUD))]
+  [HarmonyPatch("HandleMissionComplete")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { })]
+  public static class CombatHUD_HandleMissionComplete {
+    public static void Prefix(CombatHUD __instance) {
+      try {
+        if (CustomAmmoCategories.Settings.RestoreEjectedWeapons == false) { return; }
+        Log.M?.TWL(0,$"Restoring ejected weapons");
+        foreach(var unit in __instance.Combat.AllActors) {
+          Log.M?.WL(1, $"{unit.PilotableActorDef.ChassisID}:{unit.PilotableActorDef.GUID}");
+          foreach (var weapon in unit.Weapons) {
+            var stat = weapon.StatCollection.GetStatistic(CustomAmmoCategories.EjectingRestoreStatName);
+            if (stat == null) { continue; }
+            Log.M?.WL(2, $"{weapon.defId}:{weapon.DamageLevel}->{stat.Value<ComponentDamageLevel>()}");
+            if (stat.Value<ComponentDamageLevel>() != weapon.DamageLevel) {
+              weapon.StatCollection.Set<ComponentDamageLevel>("DamageLevel", stat.Value<ComponentDamageLevel>());
+            }
+          }
+        }
+      }catch(Exception e) {
+        Log.M?.TWL(0,e.ToString(),true);
       }
     }
   }
