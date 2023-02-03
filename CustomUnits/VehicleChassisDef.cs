@@ -498,14 +498,14 @@ namespace CustomUnits {
     [Key(43)]
     public bool FrontLegsDestructedOnSideTorso { get; set; } = false;
     [Key(44)]
-    public string CustomHitTalbe { get; set; } = string.Empty;
+    public string CustomHitTable { get; set; } = string.Empty;
     [IgnoreMember, JsonIgnore]
-    public CustomHitTableDef f_customHitTalbe = null;
+    public CustomHitTableDef f_customHitTable = null;
     [IgnoreMember, JsonIgnore]
-    public CustomHitTableDef customHitTalbe {
+    public CustomHitTableDef customHitTable {
       get {
-        if (f_customHitTalbe == null) { f_customHitTalbe = CustomHitTableDef.Search(CustomHitTalbe); }
-        return f_customHitTalbe;
+        if (f_customHitTable == null) { f_customHitTable = CustomHitTableDef.Search(CustomHitTable); }
+        return f_customHitTable;
       }
     }
     public UnitCustomInfo() {

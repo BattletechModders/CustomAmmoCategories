@@ -89,9 +89,9 @@ namespace CustomUnits {
       Dictionary<ArmorLocation, int> result = new Dictionary<ArmorLocation, int>();
       Dictionary<ArmorLocation, int> hittable = null;
       if (info == null) { goto call_native; }
-      if (info.customHitTalbe.native) { goto call_native; }
+      if (info.customHitTable.native) { goto call_native; }
       //specialLocation = info.customHitTalbe.ClusterSpecialLocation;
-      if (info.customHitTalbe.HitTable.TryGetValue(from, out hittable) == false) {
+      if (info.customHitTable.HitTable.TryGetValue(from, out hittable) == false) {
         goto call_native;
       }
       if (hittable == null) { goto call_native; }
@@ -122,7 +122,7 @@ namespace CustomUnits {
       Dictionary<ArmorLocation, int> hitTable = this.GetHitTable(this.IsProne ? AttackDirection.ToProne : this.Combat.HitLocation.GetAttackDirection(attackPosition, this));
       ArmorLocation specialLocation = ArmorLocation.None;
       UnitCustomInfo info = this.GetCustomInfo();
-      if ((info != null) && (info.customHitTalbe.native == false)) { specialLocation = info.customHitTalbe.ClusterSpecialLocation; }
+      if ((info != null) && (info.customHitTable.native == false)) { specialLocation = info.customHitTable.ClusterSpecialLocation; }
       if ((this.CanBeHeadShot == false) && (hitTable.ContainsKey(specialLocation))) { hitTable.Remove(specialLocation); }
       Thread.CurrentThread.pushActor(this);
       int result = (int)(hitTable != null ? HitLocation.GetHitLocation<ArmorLocation>(hitTable, hitLocationRoll, (ArmorLocation)calledShotLocation, bonusMultiplier) : ArmorLocation.None);
@@ -197,7 +197,7 @@ namespace CustomUnits {
       //if (GetClusterTable_cache.TryGetValue(originalLocation, out Dictionary<ArmorLocation, int> result)) { return result; }
       ArmorLocation specialLocation = ArmorLocation.None;
       UnitCustomInfo info = this.GetCustomInfo();
-      if ((info != null) && (info.customHitTalbe.native == false)) { specialLocation = info.customHitTalbe.ClusterSpecialLocation; }
+      if ((info != null) && (info.customHitTable.native == false)) { specialLocation = info.customHitTable.ClusterSpecialLocation; }
       ArmorLocation adjacentLocations = this.GetAdjacentLocations(originalLocation);
       Dictionary<ArmorLocation, int> dictionary = new Dictionary<ArmorLocation, int>();
       foreach (KeyValuePair<ArmorLocation, int> keyValuePair in hitTable) {
