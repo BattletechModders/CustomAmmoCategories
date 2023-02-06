@@ -423,6 +423,7 @@ namespace CustAmmoCategories {
     public float FleeMaxTonage { get; set; } = 3f;
     public float HexSizeForMods { get; set; } = 30f;
     public bool RestoreEjectedWeapons { get; set; } = true;
+    public string MapOnlineClientLink { get; set; } = "http://www.roguewar.org/playerlut?cId={0}";
     public Settings() {
       //directory = string.Empty;
       //debugLog = true;

@@ -29,7 +29,7 @@ namespace CustomUnits {
       try {
         if (__instance is FakeVehicleMech vehicle) {
           __result = vehicle.CruiseSpeed;
-          Log.TWL(0, "FakeVehicleMech.WalkSpeed " + __instance.MechDef.Description.Id+" "+__result);
+          //Log.TWL(0, "FakeVehicleMech.WalkSpeed " + __instance.MechDef.Description.Id+" "+__result);
         }
       } catch (Exception e) {
         Log.TWL(0, e.ToString(), true);
@@ -45,7 +45,7 @@ namespace CustomUnits {
       try {
         if (__instance is FakeVehicleMech vehicle) {
           __result = vehicle.FlankSpeed;
-          Log.TWL(0, "FakeVehicleMech.RunSpeed " + __instance.MechDef.Description.Id + " " + __result);
+          //Log.TWL(0, "FakeVehicleMech.RunSpeed " + __instance.MechDef.Description.Id + " " + __result);
         }
       } catch (Exception e) {
         Log.TWL(0, e.ToString(), true);

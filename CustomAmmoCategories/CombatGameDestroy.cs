@@ -33,6 +33,7 @@ namespace CustomAmmoCategoriesPatches {
             try { sp.CleanupSelf(); } finally { };
           }
         }
+        CustomAmmoCategories.ClearJammingInfo();
         CustomAmmoCategories.additinalImpactEffects.Clear();
         AMSWeaponEffectStaticHelper.Clear();
         DynamicMapHelper.ClearTerrain();

@@ -715,7 +715,7 @@ namespace CustAmmoCategories {
     public int AMSActivationsPerTurn { get; set; } = 0;
     [SelfDocumentationDefaultValue("empty"), SelfDocumentationTypeName("EvasivePipsMods structure"), Key(127)]
     public EvasivePipsMods hexesMovedMod { get; set; } = new EvasivePipsMods();
-    [Key(127)]
+    [Key(128)]
     public float RecoilJammingChance { get; set; } = 0f;
     public ExtWeaponDef() { }
   }

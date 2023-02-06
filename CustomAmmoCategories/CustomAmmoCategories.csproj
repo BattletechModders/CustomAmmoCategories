@@ -282,6 +282,7 @@
     <Compile Include="SidePanelMoveInfo.cs" />
     <Compile Include="SpawnProtection.cs" />
     <Compile Include="StackHelper.cs" />
+    <Compile Include="StarMapRenderer.cs" />
     <Compile Include="Streak.cs" />
     <Compile Include="ToHitModifiers.cs" />
     <Compile Include="TurretlessVehicle.cs" />

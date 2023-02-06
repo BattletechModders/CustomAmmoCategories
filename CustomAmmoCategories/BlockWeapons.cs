@@ -80,6 +80,7 @@ namespace CustAmmoCategories {
           if (unit.IsDead) { continue; }
           if (unit.IsDeployDirector()) { continue; }
           if (unit.TeamId == combat.LocalPlayerTeamGuid) { continue; }
+          if (unit.isSpawnProtected()) { continue; }
           unit.EjectBlocking();
         } catch (Exception e) {
           Log.M?.TWL(0,e.ToString(),true);

@@ -59,10 +59,15 @@ namespace CustAmmoCategories {
     }
   }
   public static partial class CustomAmmoCategories {
-    private static Queue<JammMessage> jammQueue = new Queue<JammMessage>();
-    public static Queue<AMSJammInfoMessage> jammAMSQueue = new Queue<AMSJammInfoMessage>();
-    public static Queue<AmmunitionBox> ammoExposionQueue = new Queue<AmmunitionBox>();
+    private static Queue<JammMessage> jammQueue { get; set; } = new Queue<JammMessage>();
+    public static Queue<AMSJammInfoMessage> jammAMSQueue { get; set; } = new Queue<AMSJammInfoMessage>();
+    public static Queue<AmmunitionBox> ammoExposionQueue { get; set; } = new Queue<AmmunitionBox>();
     public static readonly string AmmoBoxGUID = "CACAmmoBoxGUID";
+    public static void ClearJammingInfo() {
+      jammQueue.Clear();
+      jammAMSQueue.Clear();
+      ammoExposionQueue.Clear();
+    }
     public static void AddToExposionCheck(AmmunitionBox box) {
       if (CustomAmmoCategories.Settings.AmmoCanBeExhausted == false) { return; };
       if (box == null) {
@@ -477,51 +482,55 @@ namespace CustAmmoCategories {
     public static void AddJam(AbstractActor actor, Weapon weapon, bool damage, bool destroy) {
       //bool damage = weapon.DamageOnJamming();
       //bool destroy = weapon.DestroyOnJamming();
-      Log.M.TWL(0, "AddJamm " + new Text(actor.DisplayName).ToString() + " weapon:" + weapon.defId + " damage:" + damage + " destroy:" + destroy);
-      if ((damage == false)&&(destroy == false)) {
-        if (weapon.StatCollection.ContainsStatistic(CustomAmmoCategories.JammedWeaponStatisticName) == false) {
-          weapon.StatCollection.AddStatistic<bool>(CustomAmmoCategories.JammedWeaponStatisticName, false);
-        }
-        weapon.StatCollection.Set<bool>(CustomAmmoCategories.JammedWeaponStatisticName, true);
-        //weapon.StatCollection.Set<bool>(CustomAmmoCategories.TemporarilyDisabledStatisticName, true);
-        if (CustomAmmoCategories.Settings.DontShowNotDangerouceJammMessages == false) {
-          CustomAmmoCategories.addJamMessage(actor, $"{weapon.UIName} __/CAC.Jammed/__!");
-        }
-        //actor.Combat.MessageCenter.PublishMessage(
-        //    new AddSequenceToStackMessage(
-        //        new ShowActorInfoSequence(actor, $"{weapon.Name} Jammed!", FloatieMessage.MessageNature.Debuff,
-        //            true)));
-      } else {
-        //var isDestroying = weapon.DamageLevel != ComponentDamageLevel.Functional;
-        //if (destroy == true) { isDestroying = true; };
-        //var damageLevel = isDestroying ? ComponentDamageLevel.Destroyed : ComponentDamageLevel.Penalized;
-        WeaponHitInfo fakeHit = new WeaponHitInfo(-1, -1, -1, -1, weapon.parent.GUID, weapon.parent.GUID, 1, null, null, null, null, null, null, null, null, null, null, null);
-        fakeHit.toHitRolls = new float[1] { 1.0f };
-        fakeHit.locationRolls = new float[1] { 1.0f };
-        fakeHit.dodgeRolls = new float[1] { 0.0f };
-        fakeHit.dodgeSuccesses = new bool[1] { false };
-        fakeHit.hitLocations = new int[1] { weapon.Location };
-        fakeHit.hitVariance = new int[1] { 0 };
-        fakeHit.hitQualities = new AttackImpactQuality[1] { AttackImpactQuality.Solid };
-        fakeHit.attackDirections = new AttackDirection[1] { AttackDirection.FromArtillery };
-        fakeHit.hitPositions = new Vector3[1] { weapon.parent.GameRep.GetHitPosition(weapon.Location) };
-        fakeHit.secondaryTargetIds = new string[1] { null };
-        fakeHit.secondaryHitLocations = new int[1] { 0 };
-        Log.M.WL(1, $"CritComponent destroy:{destroy}");
-        MechComponent sourceComponent = weapon.info().currentModeSource();
-        if (sourceComponent != null) {
-          sourceComponent.CritComponent(ref fakeHit, weapon, destroy);
+      try {
+        Log.M.TWL(0, "AddJamm " + new Text(actor.DisplayName).ToString() + " weapon:" + weapon.defId + " damage:" + damage + " destroy:" + destroy);
+        if ((damage == false) && (destroy == false)) {
+          if (weapon.StatCollection.ContainsStatistic(CustomAmmoCategories.JammedWeaponStatisticName) == false) {
+            weapon.StatCollection.AddStatistic<bool>(CustomAmmoCategories.JammedWeaponStatisticName, false);
+          }
+          weapon.StatCollection.Set<bool>(CustomAmmoCategories.JammedWeaponStatisticName, true);
+          //weapon.StatCollection.Set<bool>(CustomAmmoCategories.TemporarilyDisabledStatisticName, true);
+          if (CustomAmmoCategories.Settings.DontShowNotDangerouceJammMessages == false) {
+            CustomAmmoCategories.addJamMessage(actor, $"{weapon.UIName} __/CAC.Jammed/__!");
+          }
+          //actor.Combat.MessageCenter.PublishMessage(
+          //    new AddSequenceToStackMessage(
+          //        new ShowActorInfoSequence(actor, $"{weapon.Name} Jammed!", FloatieMessage.MessageNature.Debuff,
+          //            true)));
         } else {
-          weapon.CritComponent(ref fakeHit, weapon, destroy);
+          //var isDestroying = weapon.DamageLevel != ComponentDamageLevel.Functional;
+          //if (destroy == true) { isDestroying = true; };
+          //var damageLevel = isDestroying ? ComponentDamageLevel.Destroyed : ComponentDamageLevel.Penalized;
+          WeaponHitInfo fakeHit = new WeaponHitInfo(-1, -1, -1, -1, weapon.parent.GUID, weapon.parent.GUID, 1, null, null, null, null, null, null, null, null, null, null, null);
+          fakeHit.toHitRolls = new float[1] { 1.0f };
+          fakeHit.locationRolls = new float[1] { 1.0f };
+          fakeHit.dodgeRolls = new float[1] { 0.0f };
+          fakeHit.dodgeSuccesses = new bool[1] { false };
+          fakeHit.hitLocations = new int[1] { weapon.Location };
+          fakeHit.hitVariance = new int[1] { 0 };
+          fakeHit.hitQualities = new AttackImpactQuality[1] { AttackImpactQuality.Solid };
+          fakeHit.attackDirections = new AttackDirection[1] { AttackDirection.FromArtillery };
+          fakeHit.hitPositions = new Vector3[1] { weapon.parent.GameRep.GetHitPosition(weapon.Location) };
+          fakeHit.secondaryTargetIds = new string[1] { null };
+          fakeHit.secondaryHitLocations = new int[1] { 0 };
+          Log.M.WL(1, $"CritComponent destroy:{destroy}");
+          MechComponent sourceComponent = weapon.info().currentModeSource();
+          if (sourceComponent != null) {
+            sourceComponent.CritComponent(ref fakeHit, weapon, destroy);
+          } else {
+            weapon.CritComponent(ref fakeHit, weapon, destroy);
+          }
+          //weapon.DamageComponent(fakeHit, damageLevel, true);
+          var message = weapon.DamageLevel == ComponentDamageLevel.Destroyed
+              ? $"{weapon.UIName} __/CAC.misfire/__: __/CAC.Destroyed/__!"
+              : $"{weapon.UIName} __/CAC.misfire/__: __/CAC.Damaged/__!";
+          CustomAmmoCategories.addJamMessage(actor, message);
+          //actor.Combat.MessageCenter.PublishMessage(
+          //    new AddSequenceToStackMessage(
+          //        new ShowActorInfoSequence(actor, message, FloatieMessage.MessageNature.Debuff, true)));
         }
-        //weapon.DamageComponent(fakeHit, damageLevel, true);
-        var message = weapon.DamageLevel == ComponentDamageLevel.Destroyed
-            ? $"{weapon.UIName} __/CAC.misfire/__: __/CAC.Destroyed/__!"
-            : $"{weapon.UIName} __/CAC.misfire/__: __/CAC.Damaged/__!";
-        CustomAmmoCategories.addJamMessage(actor, message);
-        //actor.Combat.MessageCenter.PublishMessage(
-        //    new AddSequenceToStackMessage(
-        //        new ShowActorInfoSequence(actor, message, FloatieMessage.MessageNature.Debuff, true)));
+      }catch(Exception e) {
+        Log.M?.TWL(0,e.ToString(),true);
       }
     }
     public static void Cooldown(this Weapon weapon, int rounds, bool message) {

@@ -30,11 +30,13 @@ namespace CustAmmoCategories {
       FColor.g = FRealColor.g * FI;
       FColor.b = FRealColor.b * FI;
       FColor.a = 1f;
+      //Log.P?.TWL(0, $"ColorTableJsonEntry.SyncColor {FColor}");
     }
-    [IgnoreMember]
+    [Key(0)]
     public string C {
       set {
         Color temp;
+        //Log.P?.TWL(0, $"ColorTableJsonEntry.C {value}");
         if (ColorUtility.TryParseHtmlString(value, out temp)) {
           FRealColor = temp;
           SyncColor();
@@ -43,10 +45,10 @@ namespace CustAmmoCategories {
         }
       }
       get {
-        return ColorUtility.ToHtmlStringRGBA(FRealColor);
+        return "#"+ColorUtility.ToHtmlStringRGBA(FRealColor);
       }
     }
-    [IgnoreMember]
+    [Key(1)]
     public float I {
       set {
         FI = value; SyncColor();
@@ -60,14 +62,16 @@ namespace CustAmmoCategories {
       get {
         return FColor;
       }
+      set {
+        FRealColor = value; SyncColor();
+      }
     }
-    [JsonIgnore, Key(0)]
+    [JsonIgnore, IgnoreMember]
     private Color FColor;
     [JsonIgnore, IgnoreMember]
     private Color FRealColor;
     [JsonIgnore, IgnoreMember]
     private float FI;
-
   }
   public class ColorPair {
     public Color Start;

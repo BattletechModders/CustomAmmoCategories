@@ -2509,7 +2509,7 @@ namespace CustomUnits {
         }
         int moveCandidates = __instance.SelectedActor.Pathing.CurrentGrid.GetSampledPathNodes().Count;
         Log.WL(1, $"{__instance.SelectedActor.PilotableActorDef.ChassisID} moveCandidates:{moveCandidates}");
-        if (moveCandidates > 0) {
+        if (moveCandidates > 1) {
           __result = false;
           GenericPopupBuilder.Create("CAN'T DONE", $"UNIT CAN MOVE, THUS SHOULD MOVE").AddFader().SetAlwaysOnTop().Render();
           return false;

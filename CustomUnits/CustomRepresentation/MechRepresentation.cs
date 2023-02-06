@@ -1818,7 +1818,7 @@ namespace CustomUnits {
       FootstepManager.Instance.AddFootstep(position, forward, new Vector3(num1, num1, num1));
       string vfxName1 = string.Format("{0}{1}{2}{3}", (object)this.Constants.VFXNames.footfallBase, (object)(this.IsInAnyIdle ? "idle_" : ""), (object)this.rootParentRepresentation.terrainImpactParticleName, (object)this.rootParentRepresentation.vfxNameModifier);
       Log.TWL(0, $"TriggerCustomFootFall {this.chassisDef.Description.Id} {this.gameObject.name} {vfxName1}");
-      Log.WL(0, Environment.StackTrace);
+      //Log.WL(0, Environment.StackTrace);
       this.PlayVFXAt(foot, Vector3.zero, vfxName1, false, lookAtPos, true, -1f);
       if (this.currentSurfaceType == AudioSwitch_surface_type.wood)
         this.PlayVFX(8, "vfxPrfPrtl_envTreeRustle_vHigh", false, Vector3.zero, true, -1f);

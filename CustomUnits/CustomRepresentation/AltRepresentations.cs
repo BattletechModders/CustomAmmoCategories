@@ -858,7 +858,7 @@ namespace CustomUnits {
       int layerMask = LayerMask.GetMask("Terrain", "Obstruction");
       if (water) { layerMask = LayerMask.GetMask("Terrain", "Obstruction", "Water"); }
       RaycastHit? result = new RaycastHit?();
-      RaycastHit[] raycastHitArray = Physics.RaycastAll(new Ray(position + Vector3.up * 20f, Vector3.down), 200f+this.HeightController.CurrentHeight, Traverse.Create(typeof(ActorMovementSequence)).Field<int>("ikLayerMask").Value);
+      RaycastHit[] raycastHitArray = Physics.RaycastAll(new Ray(position + Vector3.up * 20f, Vector3.down), 200f+this.HeightController.CurrentHeight, layerMask);
       HashSet<Collider> skipColliders = this.rootParentRepresentation.ownColliders;
       foreach (RaycastHit hit in raycastHitArray) {
         if (skipColliders.Contains(hit.collider)) { continue; }
@@ -870,7 +870,7 @@ namespace CustomUnits {
       return result;
     }
     public void AliginToTerrain(RaycastHit? rayhit, float deltaTime, bool water) {
-      Log.TWL(0, "ActorMovementSequence.AliginToTerrain " + this.parentMech.MechDef.ChassisID);
+      Log.TWL(0, $"ActorMovementSequence.AliginToTerrain {this.parentMech.MechDef.ChassisID} water:{water}");
       //if (Traverse.Create(typeof(ActorMovementSequence)).Field<int>("ikLayerMask").Value == 0) {
       //  Traverse.Create(typeof(ActorMovementSequence)).Field<int>("ikLayerMask").Value = LayerMask.GetMask("Terrain", "Obstruction");
       //}
@@ -918,6 +918,7 @@ namespace CustomUnits {
       if (vehicleMovement && this.parentCombatant.FlyingHeight() < Core.Settings.MaxHoveringHeightWithWorkingJets) {
         aliginToTerrain = true;
       }
+      Log.WL(0, $"CustomMechRepresentation.UpdateRotation vehicleMovement:{vehicleMovement} FlyingHeight:{this.parentCombatant.FlyingHeight()}");
       if (this.parentCombatant.NavalUnit()) {
         AudioSwitch_surface_type currentSurfaceType = this.rootParentRepresentation._CurrentSurfaceType;
         if ((currentSurfaceType == AudioSwitch_surface_type.water_deep) || (currentSurfaceType == AudioSwitch_surface_type.water_shallow)) {
