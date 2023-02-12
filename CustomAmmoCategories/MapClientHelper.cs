@@ -207,6 +207,7 @@ namespace CustAmmoCategories {
   [HarmonyPatch(new Type[] { typeof(string) })]
   public static class SGHeaderWidget_SetCompanyCrest {
     public static void Postfix(SGHeaderWidget __instance, SimGameState ___simState) {
+      if (CustomAmmoCategories.Settings.MapOnlineClientDrawWidget == false) { return; }
       Log.M?.TWL(0, "SGHeaderWidget.SetCompanyCrest");
       OnlineCareerIDWidget careerIDWidget = __instance.gameObject.GetComponentInChildren<OnlineCareerIDWidget>(true);
       if(careerIDWidget == null) {
@@ -221,6 +222,7 @@ namespace CustAmmoCategories {
   [HarmonyPatch(new Type[] { typeof(SimGameState) })]
   public static class SGHeaderWidget_Init {
     public static void Postfix(SGHeaderWidget __instance, SimGameState simGame) {
+      if (CustomAmmoCategories.Settings.MapOnlineClientDrawWidget == false) { return; }
       Log.M?.TWL(0, "SGHeaderWidget.Init");
       OnlineCareerIDWidget careerIDWidget = __instance.gameObject.GetComponentInChildren<OnlineCareerIDWidget>(true);
       if (careerIDWidget == null) {

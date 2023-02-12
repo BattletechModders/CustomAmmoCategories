@@ -918,7 +918,6 @@ namespace CustomUnits {
       if (vehicleMovement && this.parentCombatant.FlyingHeight() < Core.Settings.MaxHoveringHeightWithWorkingJets) {
         aliginToTerrain = true;
       }
-      Log.WL(0, $"CustomMechRepresentation.UpdateRotation vehicleMovement:{vehicleMovement} FlyingHeight:{this.parentCombatant.FlyingHeight()}");
       if (this.parentCombatant.NavalUnit()) {
         AudioSwitch_surface_type currentSurfaceType = this.rootParentRepresentation._CurrentSurfaceType;
         if ((currentSurfaceType == AudioSwitch_surface_type.water_deep) || (currentSurfaceType == AudioSwitch_surface_type.water_shallow)) {
@@ -926,6 +925,7 @@ namespace CustomUnits {
           this.AliginToWater(rayhit.mainRayHit, deltaT);
         }
       }
+      Log.WL(0, $"CustomMechRepresentation.UpdateRotation vehicleMovement:{vehicleMovement} aliginToTerrain:{aliginToTerrain} FlyingHeight:{this.parentCombatant.FlyingHeight()}");
       if (aliginToTerrain) {
         if (forward.sqrMagnitude > Core.Epsilon) {
           moveTransform.rotation = Quaternion.RotateTowards(moveTransform.rotation, Quaternion.LookRotation(forward), 180f * deltaT);
@@ -934,6 +934,7 @@ namespace CustomUnits {
       } else {
         if (forward.sqrMagnitude > Core.Epsilon) {
           moveTransform.LookAt(moveTransform.position + forward, Vector3.up);
+          this.j_Root.localRotation = Quaternion.identity;
         }
       }
     }

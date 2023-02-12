@@ -2115,17 +2115,26 @@ namespace CustomUnits {
     public virtual void CompleteMove(Vector3 finalPos, Vector3 finalHeading, ActorMovementSequence sequence, bool playedMelee, ICombatant meleeTarget) {
       this.CompleteMove(sequence, playedMelee, meleeTarget);
       RaycastHit? raycast = new RaycastHit?();
-      if (this.parentActor.UnaffectedPathing() || (this.parentCombatant.FlyingHeight() > Core.Epsilon)) {
+      bool aliginToTerrain = false;
+      bool vehicleMovement = this.parentCombatant.NoMoveAnimation() || this.parentCombatant.FakeVehicle();
+      if (vehicleMovement && this.parentCombatant.FlyingHeight() < Core.Settings.MaxHoveringHeightWithWorkingJets) {
+        aliginToTerrain = true;
+      }
+      if (this.parentCombatant.NavalUnit() || (this.parentCombatant.FlyingHeight() > Core.Settings.MaxHoveringHeightWithWorkingJets)) {
         raycast = this.GetTerrainRayHit(finalPos, true);
       }
       if (raycast.HasValue) {
-        this.thisTransform.position = raycast.Value.point;
+        if (raycast.Value.point.y > finalPos.y) {
+          this.thisTransform.position = raycast.Value.point;
+        } else {
+          this.thisTransform.position = finalPos;
+        }
         this.thisTransform.rotation = Quaternion.LookRotation(finalHeading, Vector3.up);
       } else {
         this.thisTransform.position = finalPos;
         this.thisTransform.rotation = Quaternion.LookRotation(finalHeading, Vector3.up);
       }
-      if (this.custMech.isVehicle) {
+      if (aliginToTerrain) {
         this.AliginToTerrain(raycast, 100f, false);
       }
     }

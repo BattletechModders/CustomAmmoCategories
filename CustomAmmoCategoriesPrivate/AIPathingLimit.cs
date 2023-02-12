@@ -58,16 +58,27 @@ namespace CustAmmoCategories {
     //private static List<MoveDestination> original_movementCandidateLocations { get; set; } = new List<MoveDestination>();
     public static HashSet<MoveType> DO_NOT_OPTIMIZE_MOVE_TYPES = new HashSet<MoveType>() { MoveType.Melee, MoveType.None };
     public static HashSet<MoveType> DO_NOT_OPTIMIZE_MINEFIELD_MOVE_TYPES = new HashSet<MoveType>() { MoveType.Melee, MoveType.Backward, MoveType.Walking, MoveType.Sprinting };
+    public static Dictionary<float, HexGrid> hexGrids = new Dictionary<float, HexGrid>();
     public class MoveDestOriginalStatistic {
       public float startTime { get; set; } = 0f;
       public HashSet<MoveDestination> moveDestinations { get; set; } = new HashSet<MoveDestination>();
+      public Dictionary<MoveType,List<MoveDestination>> moveTypes { get; set; } = new Dictionary<MoveType, List<MoveDestination>>();
       public Dictionary<MoveType, int> moveType_statistic { get; set; } = new Dictionary<MoveType, int>();
       public Dictionary<MoveType, Dictionary<int, List<MoveDestination>>> costs { get; set; } = new Dictionary<MoveType, Dictionary<int, List<MoveDestination>>>();
       public void Clear() {
         startTime = 0;
         moveDestinations.Clear();
         moveType_statistic.Clear();
+        moveTypes.Clear();
         costs.Clear();
+      }
+      public int GetDestinationsCount() {
+        int result = 0;
+        foreach (var dest in moveTypes) {
+          if (DO_NOT_OPTIMIZE_MOVE_TYPES.Contains(dest.Key)) { continue; }
+          result += dest.Value.Count;
+        }
+        return result;
       }
       public void Add(Vector3 curPos, MoveDestination moveDestination) {
         if (moveDestinations.Add(moveDestination)) {
@@ -80,12 +91,17 @@ namespace CustAmmoCategories {
             moveTypeCosts = new Dictionary<int, List<MoveDestination>>();
             costs.Add(moveDestination.MoveType, moveTypeCosts);
           }
+          if (moveTypes.TryGetValue(moveDestination.MoveType, out var moveTypeDests) == false) {
+            moveTypeDests = new List<MoveDestination>();
+            moveTypes.Add(moveDestination.MoveType, moveTypeDests);
+          }
           int cost = Mathf.CeilToInt(moveDestination.MoveType == MoveType.Jumping ? Vector3.Distance(curPos, moveDestination.PathNode.Position) : moveDestination.PathNode.CostToThisNode);
           if(moveTypeCosts.TryGetValue(cost, out var costNode) == false) {
             costNode = new List<MoveDestination>();
             moveTypeCosts.Add(cost, costNode);
           }
           costNode.Add(moveDestination);
+          moveTypeDests.Add(moveDestination);
         }
       }
     }
@@ -118,39 +134,173 @@ namespace CustAmmoCategories {
         Log.P?.TWL(0, e.ToString(), true);
       }
     }
+    public static HexGrid GetHexGrid(float size) {
+      if (hexGrids.TryGetValue(size, out var result)) { return result; }
+      result = new HexGrid(null);
+      result.HexWidth = size;
+      hexGrids.Add(size, result);
+      return result;
+    }
+    public class OptimizationItem {
+      public Vector3 simplePos = Vector3.zero;
+      public MoveDestination moveDest { get; set; } = null;
+      public int cost { get; set; } = 0;
+      public bool removed { get; set; } = false;
+      public OptimizationItem(Vector3 basepos, MoveDestination dest) {
+        this.simplePos.x = dest.PathNode.Position.x;
+        this.simplePos.z = dest.PathNode.Position.z;
+        moveDest = dest;
+        this.cost = Mathf.CeilToInt(moveDest.MoveType == MoveType.Jumping ? Vector3.Distance(basepos, moveDest.PathNode.Position) : moveDest.PathNode.CostToThisNode);
+      }
+      public static UInt32 GetVectorHash(Vector3 pos) {
+        byte[] x = BitConverter.GetBytes((short)Mathf.RoundToInt(pos.x * 10f));
+        byte[] z = BitConverter.GetBytes((short)Mathf.RoundToInt(pos.z * 10f));
+        byte[] result = new byte[4];
+        result[0] = x[0]; result[1] = x[1]; result[2] = z[0]; result[3] = z[1];
+        return BitConverter.ToUInt32(result, 0);
+      }
+    }
+    public class OptimizationIndex {
+      public AbstractActor unit { get; set; } = null;
+      public List<OptimizationItem> items { get; set; } = new List<OptimizationItem>();
+      public List<OptimizationItem> opt_items { get; set; } = new List<OptimizationItem>();
+      public Dictionary<UInt32, List<OptimizationItem>> posItems { get; set; } = new Dictionary<UInt32, List<OptimizationItem>>();
+      public Dictionary<MoveType, List<OptimizationItem>> typedItems { get; set; } = new Dictionary<MoveType, List<OptimizationItem>>();
+      public OptimizationIndex(AbstractActor unit, List<MoveDestination> moveDestinations) {
+        this.unit = unit;
+        Log.P?.W(1, "optimization index:");
+        foreach (var dest in moveDestinations) {
+          var item = new OptimizationItem(unit.CurrentPosition, dest);
+          items.Add(item);
+          if (DO_NOT_OPTIMIZE_MOVE_TYPES.Contains(dest.MoveType)) { continue; }
+          opt_items.Add(item);
+          if (typedItems.TryGetValue(dest.MoveType, out var titems) == false) {
+            titems = new List<OptimizationItem>();
+            typedItems.Add(dest.MoveType, titems);
+          }
+          titems.Add(item);
+          uint vectorHash = OptimizationItem.GetVectorHash(item.simplePos);
+          if (posItems.TryGetValue(vectorHash, out var pitems) == false) {
+            pitems = new List<OptimizationItem>();
+            posItems.Add(vectorHash, pitems);
+            Log.P.W(1, $"{vectorHash}:{item.simplePos}");
+          }
+          posItems[vectorHash].Add(item);
+        }
+        Log.P?.WL(0,"",true);
+      }
+      public int optimized_nodes() {
+        int result = 0;
+        foreach(var item in opt_items) {
+          if (item.removed) { continue; }
+          ++result;
+        }
+        return result;
+      }
+      public void process(int radius, bool log) {
+        foreach (var titems in typedItems) {
+          if (DO_NOT_OPTIMIZE_MOVE_TYPES.Contains(titems.Key)) { continue; }
+          titems.Value.Sort((a, b) => { return b.cost.CompareTo(a.cost); });
+        }
+        Log.P?.TWL(0,$"optimization:{this.unit.PilotableActorDef.ChassisID} items:{items.Count}");
+        //Log.P?.W(0, "available positions:");
+        //foreach (var pitems in posItems) {
+        //  int positions = 0;
+        //  foreach (var item in pitems.Value) {
+        //    if (item.removed) { continue; }
+        //    ++positions;
+        //  }
+        //  Log.P.W(1,$"{pitems.Key.ToString()}:{positions}");
+        //}
+        //Log.P.WL(0,"");
+        int remove_counter = 0;
+        foreach (var titems in typedItems) {
+          if (DO_NOT_OPTIMIZE_MOVE_TYPES.Contains(titems.Key)) { continue; }
+          foreach (var item in titems.Value) {
+            if (item.removed) { continue; }
+            //if (posItems.TryGetValue(titems.Key, out var pitems) == false) { continue; }
+            var toRemove = unit.Combat.HexGrid.GetGridPointsWithinCartesianDistance(item.simplePos, radius);
+            //Log.P?.WL(1, $"test position:{item.simplePos} {item.moveDest.MoveType} {item.cost} to remove:{toRemove.Count}");
+            foreach (var rem in toRemove) {
+              //Log.P?.W(2,$"{rem}");
+              if (rem == item.simplePos) {
+                //Log.P?.WL(1, "self");
+                continue;
+              }
+              uint remhash = OptimizationItem.GetVectorHash(rem);
+              //Log.P?.W(1, $":{remhash}");
+              if (posItems.TryGetValue(remhash, out var rem_items)) {
+                foreach (var rem_item in rem_items) {
+                  if (rem_item.removed) {
+                    //Log.P?.WL(1, $"already removed");
+                  } else {
+                    //Log.P?.WL(1, $"removed:{rem_item.moveDest.PathNode.Position} {rem_item.simplePos}");
+                    rem_item.removed = true;
+                    ++remove_counter;
+                  }
+                }
+              } else {
+                //Log.P?.WL(1, $"not found {rem}");
+              }
+            }
+          }
+        }
+        Log.P?.WL(1, $"removed:{remove_counter}");
+      }
+    }
     public static void FilterFastUnits(MoveDestOriginalStatistic original, LeafBehaviorNode __instance, BehaviorTree ___tree) {
       if (CustomAmmoCategories.Settings.AIPathingOptimization == false) { return; }
       foreach (MoveDestination moveDestination in ___tree.movementCandidateLocations) {
         original.Add(___tree.unit.CurrentPosition, moveDestination);
       }
-      Log.P?.TWL(0, "MoveCandidatesFilter " + ___tree.unit.PilotableActorDef.ChassisID + " movementCandidateLocations:" + ___tree.movementCandidateLocations.Count, true);
-      if (___tree.movementCandidateLocations.Count <= CustomAmmoCategories.Settings.AIPathingSamplesLimit) { return; }
-      Dictionary<MoveType, int> moveTypeCounts = new Dictionary<MoveType, int>();
-      Log.P?.WL(1, "filter target:");
-      foreach (var stat in original.moveType_statistic) {
-        int count = stat.Value;
-        if (DO_NOT_OPTIMIZE_MOVE_TYPES.Contains(stat.Key)) { goto stat_add; }
-        //if (minefields_no_optimize && (DO_NOT_OPTIMIZE_MINEFIELD_MOVE_TYPES.Contains(stat.Key))) { goto stat_add; }
-        count = Mathf.Max((stat.Value * CustomAmmoCategories.Settings.AIPathingSamplesLimit) / original.moveDestinations.Count, 1);
-      stat_add:
-        moveTypeCounts.Add(stat.Key, count);
-        Log.P?.WL(2, stat.Key + ":" + count);
-      }
+      Log.P?.TWL(0, $"MoveCandidatesFilter {___tree.unit.PilotableActorDef.ChassisID} movementCandidateLocations:{___tree.movementCandidateLocations.Count}", true);
+      if (___tree.movementCandidateLocations.Count <= CustomAmmoCategories.Settings.AIPathingSamplesTreshold) { return; }
+      float optimization_radius = ___tree.unit.Combat.Constants.MoveConstants.ExperimentalGridDistance;
+      //AIEnemyDistanceHelper.WeaponDistCandidatesFilter(___tree.unit, ref ___tree.movementCandidateLocations);
+      //Dictionary<MoveType, int> moveTypeCounts = new Dictionary<MoveType, int>();
+      OptimizationIndex index = new OptimizationIndex(___tree.unit, ___tree.movementCandidateLocations);
+      int opt_res = index.opt_items.Count;
+      int watchdog = 2;
+      do {
+        Log.P?.WL(1, $"optimization radius:{optimization_radius}:{opt_res}");
+        index.process(Mathf.RoundToInt(optimization_radius), false);
+        int new_opt_res = index.optimized_nodes();
+        int removed = opt_res - new_opt_res;
+        opt_res = new_opt_res;
+        Log.P?.WL(1, $"result:{opt_res} removed:{removed}");
+        if (removed <= 0) { --watchdog; };
+        if (watchdog <= 0) { break; }
+        optimization_radius += (0.5f * ___tree.unit.Combat.Constants.MoveConstants.ExperimentalGridDistance);
+      } while (opt_res > CustomAmmoCategories.Settings.AIPathingSamplesLimit);
       ___tree.movementCandidateLocations.Clear();
-      foreach (var counts in moveTypeCounts) {
-        if (original.costs.TryGetValue(counts.Key, out var origCounts)) {
-          List<int> costsKeys = new List<int>();
-          costsKeys.AddRange(origCounts.Keys);
-          costsKeys.Sort((a, b) => b.CompareTo(a));
-          List<MoveDestination> result = new List<MoveDestination>();
-          for (int index = 0; index < costsKeys.Count; ++index) {
-            if (result.Count >= counts.Value) { break; }
-            int cost = costsKeys[index];
-            result.AddRange(origCounts[cost]);
-          }
-          ___tree.movementCandidateLocations.AddRange(result);
-        }
+      foreach(var item in index.items) {
+        if (item.removed) { continue; }
+        ___tree.movementCandidateLocations.Add(item.moveDest);
       }
+      Log.P?.WL(1, $"result:{___tree.movementCandidateLocations.Count}");
+      //foreach (var stat in original.moveType_statistic) {
+      //  int count = stat.Value;
+      //  if (DO_NOT_OPTIMIZE_MOVE_TYPES.Contains(stat.Key)) { goto stat_add; }
+      //  count = Mathf.Max((stat.Value * CustomAmmoCategories.Settings.AIPathingSamplesLimit) / original.moveDestinations.Count, 1);
+      //stat_add:
+      //  moveTypeCounts.Add(stat.Key, count);
+      //  Log.P?.WL(2, stat.Key + ":" + count);
+      //}
+      //___tree.movementCandidateLocations.Clear();
+      //foreach (var counts in moveTypeCounts) {
+      //  if (original.costs.TryGetValue(counts.Key, out var origCounts)) {
+      //    List<int> costsKeys = new List<int>();
+      //    costsKeys.AddRange(origCounts.Keys);
+      //    costsKeys.Sort((a, b) => b.CompareTo(a));
+      //    List<MoveDestination> result = new List<MoveDestination>();
+      //    for (int index = 0; index < costsKeys.Count; ++index) {
+      //      if (result.Count >= counts.Value) { break; }
+      //      int cost = costsKeys[index];
+      //      result.AddRange(origCounts[cost]);
+      //    }
+      //    ___tree.movementCandidateLocations.AddRange(result);
+      //  }
+      //}
     }
     public static void MoveCandidatesFilter(LeafBehaviorNode __instance, BehaviorTree ___tree) {
       try {

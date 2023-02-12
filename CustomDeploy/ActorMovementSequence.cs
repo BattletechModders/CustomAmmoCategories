@@ -6,6 +6,38 @@ using System.Collections.Generic;
 using UnityEngine;
 
 namespace CustomDeploy {
+  [HarmonyPatch(typeof(FollowActorCameraSequence))]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch("CheckForFinished")]
+  [HarmonyPatch(new Type[] { })]
+  public static class FollowActorCameraSequence_CheckForFinished {
+    public static bool Prefix(FollowActorCameraSequence __instance) {
+      if (__instance.timeSinceActorStoppedMoving >= __instance.Combat.Constants.CameraConstants.FollowCamDelayTime)
+        return false;
+      if(__instance.followTarget.MovingToPosition == null) {
+        goto advice_time;
+      }
+      Vector3 curpos = __instance.followTarget.CurrentPosition;
+      curpos.y = 0f;
+      Vector3 trgpos = __instance.followTarget.MovingToPosition.Position;
+      trgpos.y = 0f;
+      float dist = Vector3.Distance(curpos, trgpos);
+      //Log.TWL(0, $"FollowActorCameraSequence.CheckForFinished cur:{curpos} trg:{trgpos} dist:{dist}");
+      if (dist < 0.1f) {
+        goto advice_time;
+      }
+      __instance.timeSinceActorStoppedMoving = 0.0f;
+      goto check_time;
+    advice_time:
+      __instance.timeSinceActorStoppedMoving += Time.deltaTime;
+    check_time:
+      if (__instance.timeSinceActorStoppedMoving <= __instance.Combat.Constants.CameraConstants.FollowCamDelayTime) {
+        return false;
+      }
+      __instance.state = CameraSequence.CamSequenceState.Finished;
+      return false;
+    }
+  }
   public static class ActorMovementSequence_CompleteMove {
 
     public static void Prefix(ActorMovementSequence __instance, Action<AbstractActor, Vector3, Vector3, ActorMovementSequence, bool, ICombatant> completeMoveDelegate) {

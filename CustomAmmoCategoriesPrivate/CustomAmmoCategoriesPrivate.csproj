@@ -63,6 +63,7 @@
     <Compile Include="AIPathingLimit.cs" />
     <Compile Include="Core.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="StackManagment.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\CustomAmmoCategories\CustomAmmoCategories.csproj">

@@ -88,25 +88,29 @@ namespace CustomAmmoCategoriesPrivate{
     public static void Init() {
       Core.harmony = HarmonyInstance.Create("io.mission.customammocategories.private");
       Log.P?.TWL(0, "Initing " + Assembly.GetExecutingAssembly().GetName(), true);
-      harmony.PatchAll(Assembly.GetExecutingAssembly());
     }
     public static void FinishedLoading() {
       Log.P?.TWL(0, "FinishedLoading " + Assembly.GetExecutingAssembly().GetName(), true);
-      Core.harmony.Patch(AIPathingLimiter.BehaviorTreeUpdate(), new HarmonyMethod(AIPathingLimiter.BehaviorTreeUpdatePrefix()), new HarmonyMethod(AIPathingLimiter.BehaviorTreeUpdatePostfix()));
-      Core.harmony.Patch(AIPathingLimiter.GenerateMoveCandidatesNode(), null, new HarmonyMethod(AIPathingLimiter.PostfixFilter()));
-      Core.harmony.Patch(AIPathingLimiter.GenerateSprintMoveCandidatesNode(), null, new HarmonyMethod(AIPathingLimiter.PostfixFilter()));
-      Core.harmony.Patch(AIPathingLimiter.GenerateForwardMoveCandidatesNode(), null, new HarmonyMethod(AIPathingLimiter.PostfixFilter()));
-      Core.harmony.Patch(AIPathingLimiter.GenerateReverseMoveCandidatesNode(), null, new HarmonyMethod(AIPathingLimiter.PostfixFilter()));
-      Core.harmony.Patch(AIPathingLimiter.GenerateJumpMoveCandidatesNode(), null, new HarmonyMethod(AIPathingLimiter.PostfixFilter()));
-      //Core.harmony.Patch(AIPathingLimiter.GenerateMoveCandidatesNode(), new HarmonyMethod(AIPathingLimiter.PrefixMethod()), new HarmonyMethod(AIPathingLimiter.PostfixMethod()));
-      //Core.harmony.Patch(AIPathingLimiter.GenerateSprintMoveCandidatesNode(), new HarmonyMethod(AIPathingLimiter.PrefixMethod()), new HarmonyMethod(AIPathingLimiter.PostfixMethod()));
-      //Core.harmony.Patch(AIPathingLimiter.GenerateForwardMoveCandidatesNode(), new HarmonyMethod(AIPathingLimiter.PrefixMethod()), new HarmonyMethod(AIPathingLimiter.PostfixMethod()));
-      //Core.harmony.Patch(AIPathingLimiter.GenerateReverseMoveCandidatesNode(), new HarmonyMethod(AIPathingLimiter.PrefixMethod()), new HarmonyMethod(AIPathingLimiter.PostfixMethod()));
-      //Core.harmony.Patch(AIPathingLimiter.GenerateJumpMoveCandidatesNode(), new HarmonyMethod(AIPathingLimiter.PrefixMethod()), new HarmonyMethod(AIPathingLimiter.PostfixMethod()));
-      Core.harmony.Patch(AIPathingLimiter.HasDirectLOFToAnyHostileFromReachableLocationsNode(), new HarmonyMethod(AIPathingLimiter.PrefixMethod()), new HarmonyMethod(AIPathingLimiter.PostfixMethod()));
-      Core.harmony.Patch(AIPathingLimiter.HasLOFToAnyHostileFromReachableLocationsNode(), new HarmonyMethod(AIPathingLimiter.PrefixMethod()), new HarmonyMethod(AIPathingLimiter.PostfixMethod()));
-      Core.harmony.Patch(AIPathingLimiter.CalcHighFidelityMaxExpectedDamageToHostile(), new HarmonyMethod(AIPathingLimiter.PrefixMethod()), new HarmonyMethod(AIPathingLimiter.PostfixMethod()));
-      Core.harmony.Patch(AIPathingLimiter.GetSampledPathNodes(), new HarmonyMethod(AIPathingLimiter.GetSampledPathNodesPrefix()), new HarmonyMethod(AIPathingLimiter.GetSampledPathNodesPostfix()));
+      try {
+        harmony.PatchAll(Assembly.GetExecutingAssembly());
+        Core.harmony.Patch(AIPathingLimiter.BehaviorTreeUpdate(), new HarmonyMethod(AIPathingLimiter.BehaviorTreeUpdatePrefix()), new HarmonyMethod(AIPathingLimiter.BehaviorTreeUpdatePostfix()));
+        Core.harmony.Patch(AIPathingLimiter.GenerateMoveCandidatesNode(), null, new HarmonyMethod(AIPathingLimiter.PostfixFilter()));
+        Core.harmony.Patch(AIPathingLimiter.GenerateSprintMoveCandidatesNode(), null, new HarmonyMethod(AIPathingLimiter.PostfixFilter()));
+        Core.harmony.Patch(AIPathingLimiter.GenerateForwardMoveCandidatesNode(), null, new HarmonyMethod(AIPathingLimiter.PostfixFilter()));
+        Core.harmony.Patch(AIPathingLimiter.GenerateReverseMoveCandidatesNode(), null, new HarmonyMethod(AIPathingLimiter.PostfixFilter()));
+        Core.harmony.Patch(AIPathingLimiter.GenerateJumpMoveCandidatesNode(), null, new HarmonyMethod(AIPathingLimiter.PostfixFilter()));
+        //Core.harmony.Patch(AIPathingLimiter.GenerateMoveCandidatesNode(), new HarmonyMethod(AIPathingLimiter.PrefixMethod()), new HarmonyMethod(AIPathingLimiter.PostfixMethod()));
+        //Core.harmony.Patch(AIPathingLimiter.GenerateSprintMoveCandidatesNode(), new HarmonyMethod(AIPathingLimiter.PrefixMethod()), new HarmonyMethod(AIPathingLimiter.PostfixMethod()));
+        //Core.harmony.Patch(AIPathingLimiter.GenerateForwardMoveCandidatesNode(), new HarmonyMethod(AIPathingLimiter.PrefixMethod()), new HarmonyMethod(AIPathingLimiter.PostfixMethod()));
+        //Core.harmony.Patch(AIPathingLimiter.GenerateReverseMoveCandidatesNode(), new HarmonyMethod(AIPathingLimiter.PrefixMethod()), new HarmonyMethod(AIPathingLimiter.PostfixMethod()));
+        //Core.harmony.Patch(AIPathingLimiter.GenerateJumpMoveCandidatesNode(), new HarmonyMethod(AIPathingLimiter.PrefixMethod()), new HarmonyMethod(AIPathingLimiter.PostfixMethod()));
+        Core.harmony.Patch(AIPathingLimiter.HasDirectLOFToAnyHostileFromReachableLocationsNode(), new HarmonyMethod(AIPathingLimiter.PrefixMethod()), new HarmonyMethod(AIPathingLimiter.PostfixMethod()));
+        Core.harmony.Patch(AIPathingLimiter.HasLOFToAnyHostileFromReachableLocationsNode(), new HarmonyMethod(AIPathingLimiter.PrefixMethod()), new HarmonyMethod(AIPathingLimiter.PostfixMethod()));
+        Core.harmony.Patch(AIPathingLimiter.CalcHighFidelityMaxExpectedDamageToHostile(), new HarmonyMethod(AIPathingLimiter.PrefixMethod()), new HarmonyMethod(AIPathingLimiter.PostfixMethod()));
+        Core.harmony.Patch(AIPathingLimiter.GetSampledPathNodes(), new HarmonyMethod(AIPathingLimiter.GetSampledPathNodesPrefix()), new HarmonyMethod(AIPathingLimiter.GetSampledPathNodesPostfix()));
+      }catch(Exception e) {
+        Log.P?.TWL(0, e.ToString(), true);
+      }
     }
   }
 }

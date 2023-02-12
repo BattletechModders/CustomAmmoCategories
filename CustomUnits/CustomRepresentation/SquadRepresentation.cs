@@ -777,6 +777,33 @@ namespace CustomUnits {
     //    unit.Value.transform.position = squadpos;
     //  }
     //}
+    public override void CompleteMove(Vector3 finalPos, Vector3 finalHeading, ActorMovementSequence sequence, bool playedMelee, ICombatant meleeTarget) {
+      this.CompleteMove(sequence, playedMelee, meleeTarget);
+      RaycastHit? raycast = new RaycastHit?();
+      bool aliginToTerrain = false;
+      bool vehicleMovement = this.parentCombatant.NoMoveAnimation() || this.parentCombatant.FakeVehicle();
+      if (vehicleMovement && this.parentCombatant.FlyingHeight() < Core.Settings.MaxHoveringHeightWithWorkingJets) {
+        aliginToTerrain = true;
+      }
+      if (this.parentCombatant.NavalUnit() || (this.parentCombatant.FlyingHeight() > Core.Settings.MaxHoveringHeightWithWorkingJets)) {
+        raycast = this.GetTerrainRayHit(finalPos, true);
+      }
+      if (raycast.HasValue) {
+        this.thisTransform.position = raycast.Value.point;
+        this.thisTransform.rotation = Quaternion.LookRotation(finalHeading, Vector3.up);
+      } else {
+        this.thisTransform.position = finalPos;
+        this.thisTransform.rotation = Quaternion.LookRotation(finalHeading, Vector3.up);
+      }
+      if (aliginToTerrain) {
+        foreach (var unit in this.squad) {
+          LocationDamageLevel dmgLvl = this.parentMech.GetLocationDamageLevel(unit.Key);
+          if ((dmgLvl == LocationDamageLevel.Destroyed) || (dmgLvl == LocationDamageLevel.NonFunctional)) { continue; }
+          unit.Value.AliginToTerrain(new RaycastHit?(), 100f, false);
+        }
+      }
+    }
+
     public override void UpdateRotation(object context, Transform moveTransform, Vector3 forward, float deltaT) {
       if (forward.sqrMagnitude > Core.Epsilon) {
         moveTransform.LookAt(moveTransform.position + forward, Vector3.up);

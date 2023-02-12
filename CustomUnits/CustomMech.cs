@@ -338,8 +338,9 @@ namespace CustomUnits {
           this.custGameRep.gameObject.transform.rotation = this.currentRotation;
         }
         this.InitWeapons();
-        this.custGameRep.customRep.InBattle = true;
-
+        if (this.custGameRep.customRep != null) {
+          this.custGameRep.customRep.InBattle = true;
+        }
         bool flag1 = this.MechDef.MechTags.Contains("PlaceholderUnfinishedMaterial");
         bool flag2 = this.MechDef.MechTags.Contains("PlaceholderImpostorMaterial");
         if (flag1 | flag2) {

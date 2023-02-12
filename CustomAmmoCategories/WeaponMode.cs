@@ -149,7 +149,7 @@ namespace CustAmmoCategories {
 
   [SelfDocumentedClass("Weapons", "Weapons", "WeaponMode"), MessagePackObject]
   public class WeaponMode {
-    public static string BASE_MODE_NAME = "B";
+    public static string BASE_MODE_NAME = "BASE";
     public static string NONE_MODE_NAME = "!NONE!";
     [Key(0)]
     public string UIName { get; set; } = WeaponMode.BASE_MODE_NAME;

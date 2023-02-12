@@ -23,7 +23,7 @@ using System.Threading.Tasks;
 using UnityEngine;
 
 namespace CustAmmoCategories {
-  public static class AIFleeHelper {
+  public static class AIEnemyDistanceHelper {
     public static readonly string IS_UNIT_IN_FLEE = "CAC-UnitFlee";
     public static bool isInFlee(this AbstractActor unit) {
       return unit.StatCollection.GetOrCreateStatisic<bool>(IS_UNIT_IN_FLEE, false).Value<bool>();
@@ -62,19 +62,19 @@ namespace CustAmmoCategories {
         unit.SetInFlee(true);
       }
     }
-    public class FleeMoveCandidate {
+    public class EnemyDistMoveCandidate {
       public float distance { get; set; }
       public MoveDestination destination { get; set; }
-      public FleeMoveCandidate(AbstractActor unit, MoveDestination dest) {
+      public EnemyDistMoveCandidate(AbstractActor unit, MoveDestination dest) {
         this.destination = dest;
         this.distance = AIDistanceFromNearesEnemyCache.Get(unit, dest.PathNode.Position);
       }
     }
     public static void FleeCandidatesFilter(AbstractActor unit, ref List<MoveDestination> movementCandidateLocations) {
       if (movementCandidateLocations.Count == 0) { return; }
-      List<FleeMoveCandidate> candidates = new List<FleeMoveCandidate>();
+      List<EnemyDistMoveCandidate> candidates = new List<EnemyDistMoveCandidate>();
       foreach(var dest in movementCandidateLocations) {
-        candidates.Add(new FleeMoveCandidate(unit, dest));
+        candidates.Add(new EnemyDistMoveCandidate(unit, dest));
       }
       candidates.Sort((a, b) => { return b.distance.CompareTo(a.distance); });
       movementCandidateLocations.Clear();
@@ -86,8 +86,53 @@ namespace CustAmmoCategories {
         Log.M?.WL(1,$"{cand.destination.PathNode.Position}:{cand.distance}");
       }
     }
+    public static void WeaponDistCandidatesFilter(AbstractActor unit, ref List<MoveDestination> movementCandidateLocations) {
+      if (movementCandidateLocations.Count == 0) { return; }
+      List<EnemyDistMoveCandidate> candidates = new List<EnemyDistMoveCandidate>();
+      foreach (var dest in movementCandidateLocations) {
+        candidates.Add(new EnemyDistMoveCandidate(unit, dest));
+      }
+      candidates.Sort((a, b) => { return a.distance.CompareTo(b.distance); });
+      float bareerDist = AIMaxWeaponRangeCache.Get(unit) * 0.8f;
+      if (candidates[0].distance > bareerDist) {
+        bareerDist = candidates[0].distance * 0.8f;
+      }
+      Log.M?.TWL(0, $"WeaponDistCandidatesFilter:{movementCandidateLocations.Count} weapon max:{AIMaxWeaponRangeCache.Get(unit)} nearest:{candidates[0].distance}");
+      movementCandidateLocations.Clear();
+      foreach (var cand in candidates) {
+        if (cand.distance > bareerDist) { break; }
+        movementCandidateLocations.Add(cand.destination);
+        Log.M?.WL(1, $"{cand.destination.PathNode.Position}:{cand.distance}");
+      }
+    }
+  }
+  public static class AIMaxWeaponRangeCache {
+    public static int Round { get; set; } = 0;
+    public static int Phase { get; set; } = 0;
+    private static Dictionary<AbstractActor, float> cache = new Dictionary<AbstractActor, float>();
+    public static void Clear() { cache.Clear(); }
+    public static float Get(AbstractActor unit) {
+      if (Round != unit.Combat.TurnDirector.CurrentRound) { Clear(); }
+      if (Phase != unit.Combat.TurnDirector.CurrentPhase) { Clear(); }
+      if (cache.TryGetValue(unit, out var result)) { return result; }
+      result = 0f;
+      foreach(Weapon weapon in unit.Weapons) {
+        if (weapon.IsFunctional == false) { continue; }
+        var curmode = weapon.getCurrentAmmoMode();
+        var ammomodes = weapon.getAvaibleFiringMethods();
+        foreach (var ammomode in ammomodes) {
+          weapon.ApplyAmmoMode(ammomode);
+          var maxrange = weapon.MaxRange;
+          if (result < maxrange) { result = maxrange; }
+        }
+        weapon.ApplyAmmoMode(curmode);
+      }
+      cache.Add(unit, result);
+      return result;
+    }
   }
   public static class AIDistanceFromNearesEnemyCache {
+    public static readonly float MAX_POSSIBLE_DISTANCE = 3000f;
     public static int round { get; private set; } = 0;
     public static int phase { get; private set; } = 0;
     private static Dictionary<AbstractActor, Dictionary<Vector3, float>> cache = new Dictionary<AbstractActor, Dictionary<Vector3, float>>();
@@ -108,12 +153,10 @@ namespace CustAmmoCategories {
         return distance;
       }
       var enemies = unit.Combat.GetAllEnemiesOf(unit);
-      distance = 2f * 2048f * 2048f;
-      //Log.M?.WL(0,$"Get dist from nearest enemy:{unit.PilotableActorDef.ChassisID}:{position}");
+      distance = MAX_POSSIBLE_DISTANCE;
       foreach (var enemy in enemies) {
         if (enemy.IsDead) { continue; }
-        var cur = Vector3.SqrMagnitude(enemy.CurrentPosition - position);
-        //Log.M?.WL(1,$"{enemy.PilotableActorDef.ChassisID}:{cur}");
+        var cur = Vector3.Distance(enemy.CurrentPosition, position);
         if (cur < distance) { distance = cur; }
       }
       distances.Add(position, distance);

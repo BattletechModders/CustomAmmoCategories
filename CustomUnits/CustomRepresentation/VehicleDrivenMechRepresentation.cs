@@ -27,7 +27,7 @@ namespace CustomUnits {
   [HarmonyPatch(new Type[] { })]
   public static class VehicleRepresentation_Update {
     public static bool Prefix(VehicleRepresentation __instance) {
-      return false;
+      return true;
     }
   }
 

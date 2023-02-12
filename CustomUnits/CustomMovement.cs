@@ -62,13 +62,27 @@ namespace CustomUnits {
   [HarmonyPatch(new Type[] { })]
   public static class ActorMovementSequence_UpdateSplineSquad {
     public static object UpdateSplineDelegate(AbstractActor unit, Vector3 worldPos, ActorMovementSequence seq, Vector3 forward, float t, ICombatant meleeTarget) {
-      return (unit.GameRep as CustomMechRepresentation).UpdateSpline(worldPos, seq, forward, t, meleeTarget);
+      try {
+        return (unit.GameRep as CustomMechRepresentation).UpdateSpline(worldPos, seq, forward, t, meleeTarget);
+      }catch(Exception e) {
+        Log.TWL(0,e.ToString(),true);
+        return null;
+      }
     }
     public static void UpdateRotationDelegate(AbstractActor unit, object raycast, Transform moveTransform, Vector3 forward, float t) {
-      (unit.GameRep as CustomMechRepresentation).UpdateRotation(raycast, moveTransform, forward, t);
+      try {
+        (unit.GameRep as CustomMechRepresentation).UpdateRotation(raycast, moveTransform, forward, t);
+      } catch (Exception e) {
+        Log.TWL(0, e.ToString(), true);
+      }
     }
     public static object UpdateRotationDelegate(AbstractActor unit) {
-      return (unit.GameRep as CustomMechRepresentation).createMoveContext();
+      try {
+        return (unit.GameRep as CustomMechRepresentation).createMoveContext();
+      } catch (Exception e) {
+        Log.TWL(0, e.ToString(), true);
+        return null;
+      }
     }
     public static bool Prefix(ActorMovementSequence __instance) {
       try {
@@ -93,43 +107,16 @@ namespace CustomUnits {
   [HarmonyPatch(new Type[] { })]
   public static class ActorMovementSequence_CompleteMove {
     public static void CompleteMoveDelegate(AbstractActor unit, Vector3 finalPos, Vector3 finalHeading, ActorMovementSequence seq, bool playedMelee, ICombatant meleeTarget) {
-      (unit.GameRep as CustomMechRepresentation).CompleteMove(finalPos, finalHeading, seq, playedMelee, meleeTarget);
+      try {
+        (unit.GameRep as CustomMechRepresentation).CompleteMove(finalPos, finalHeading, seq, playedMelee, meleeTarget);
+      }catch(Exception e) {
+        Log.TWL(0,e.ToString(),true);
+      }
     }
     public static bool Prefix(ActorMovementSequence __instance) {
       try {
-        //__state = null;
-        //if (__instance.OwningVehicle != null) {
-        //  if (__instance.OwningVehicle.UnaffectedPathing()) {
-        //    __state = __instance.OwningVehicle;
-        //    __instance.OwningVehicle(null);
-        //  }
-        //}
-        //TrooperSquad squad = __instance.owningActor as TrooperSquad;
-        //if (squad != null) {
-        //  foreach (var sRep in squad.squadReps) {
-        //    if (squad.IsLocationDestroyed(sRep.Key)) {
-        //      sRep.Value.GameRep.transform.position = sRep.Value.deadLocation;
-        //      sRep.Value.GameRep.transform.rotation = sRep.Value.deadRotation;
-        //    } else {
-        //      Vector3 newPosition = __instance.FinalPos + sRep.Value.delta;
-        //      newPosition.y = __instance.owningActor.Combat.MapMetaData.GetCellAt(newPosition).cachedHeight;
-        //      sRep.Value.GameRep.transform.rotation = Quaternion.LookRotation(__instance.FinalHeading, Vector3.up);
-        //      sRep.Value.GameRep.transform.position = newPosition;
-        //    }
-        //  }
-        //}
-        //VTOLBodyAnimation bodyAnimation = __instance.owningActor.VTOLAnimation();
-        //if (bodyAnimation != null) {
-        //  if (bodyAnimation.bodyAnimator != null) {
-        //    bodyAnimation.bodyAnimator.SetFloat("backward", 0f);
-        //    bodyAnimation.bodyAnimator.SetFloat("forward", 0f);
-        //  }
-        //}
-        //AlternateMechRepresentations altReps = __instance.ActorRep.GetComponent<AlternateMechRepresentations>();
-        //if (altReps != null) { altReps.CompleteMove(__instance, ___playedMelee, ___meleeTarget); }
         if (__instance.ActorRep is CustomMechRepresentation custRep) {
           CustomDeploy.ActorMovementSequence_CompleteMove.Prefix(__instance, CompleteMoveDelegate);
-          //custRep.CompleteMove(__instance, ___playedMelee, ___meleeTarget);
           return false;
         }
       } catch (Exception e) {
@@ -138,18 +125,14 @@ namespace CustomUnits {
       return true;
     }
     public static void Postfix(ActorMovementSequence __instance) {
-      //if (__state != null) {
-      //  __instance.OwningVehicle(__state);
-      //}
       Log.TWL(0, "ActorMovementSequence.CompleteMove " + __instance.owningActor.GameRep.transform.name);
-      foreach (MonoBehaviour component in __instance.owningActor.GameRep.GetComponentsInChildren<MonoBehaviour>(true)) {
-        if (component is IEnableOnMove enInited) { enInited.Disable(); }
+      try {
+        foreach (MonoBehaviour component in __instance.owningActor.GameRep.GetComponentsInChildren<MonoBehaviour>(true)) {
+          if (component is IEnableOnMove enInited) { enInited.Disable(); }
+        }
+      }catch(Exception e) {
+        Log.TWL(0,e.ToString(),true);
       }
-      //CustomQuadLegController[] customMoveAnimators = __instance.owningActor.GameRep.gameObject.GetComponentsInChildren<CustomQuadLegController>();
-      //foreach (CustomQuadLegController customMoveAnimatior in customMoveAnimators) {
-      //  Log.LogWrite(" CustomMoveAnimator:" + customMoveAnimatior.name + "\n");
-      //  customMoveAnimatior.StopAnimation();
-      //}
     }
   }
   [HarmonyPatch(typeof(MechJumpSequence))]
