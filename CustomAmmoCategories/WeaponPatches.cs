@@ -631,6 +631,10 @@ namespace CustAmmoCategoriesPatches {
       __result += ammo.ShotsWhenFired;
       __result += mode.ShotsWhenFired;
       __result = Mathf.RoundToInt(__result * ammo.ShotsWhenFiredMod * mode.ShotsWhenFiredMod);
+      if ((__result < 0)||(__result > 1024)) {
+        Log.M?.TWL(0,$"EXCEPTION weapon:{__instance.defId} mode:{mode.Id} ammo:{ammo.Id} have negative or insane ShotsWhenFired value: {__result}",true);
+        throw new Exception($"weapon:{__instance.defId} mode:{mode.Id} ammo:{ammo.Id} have negative or insane ShotsWhenFired value: {__result}");
+      }
     }
   }
   [HarmonyPatch(typeof(Weapon))]

@@ -113,20 +113,24 @@ namespace CustAmmoCategories {
           if (PmcCore_CLIENT_ID_STAT != null) { Log.M?.WL(1, "PersistentMapClient.PmcCore.CLIENT_ID_STAT found"); }
           if (PmcCore_CAREER_ID_STAT != null) { Log.M?.WL(1, "PersistentMapClient.PmcCore.CAREER_ID_STAT found"); }
         }
-        Type RtoApi_CareerState = assembly.GetType("PersistentMapClient.Features.RtoApi.CareerState");
-        if (RtoApi_CareerState != null) {
-          Log.M?.WL(1, "PersistentMapClient.Features.RtoApi.CareerState found");
-          foreach (object CareerState in Enum.GetValues(RtoApi_CareerState)) {
-            Log.M?.WL(2, $"{CareerState.ToString()}");
-            PersistentMapClient_Features_RtoApi_CareerState.Add(CareerState.ToString(), CareerState);
+        Type RtoApi = assembly.GetType("PersistentMapClient.Features.RtoApi");
+        if (RtoApi != null) {
+          Log.M?.WL(1, "PersistentMapClient.Features.RtoApi found");
+          Type RtoApi_CareerState = RtoApi.GetNestedType("CareerState");
+          if (RtoApi_CareerState != null) {
+            Log.M?.WL(1, "PersistentMapClient.Features.RtoApi.CareerState found");
+            foreach (object CareerState in Enum.GetValues(RtoApi_CareerState)) {
+              Log.M?.WL(2, $"{CareerState.ToString()}");
+              PersistentMapClient_Features_RtoApi_CareerState.Add(CareerState.ToString(), CareerState);
+            }
           }
-        }
-        Type RtoApi_MetaDataOp = assembly.GetType("PersistentMapClient.Features.RtoApi.MetaDataOp");
-        if (RtoApi_MetaDataOp != null) {
-          Log.M?.WL(1, "PersistentMapClient.Features.RtoApi.MetaDataOp found");
-          foreach (object MetaDataOp in Enum.GetValues(RtoApi_MetaDataOp)) {
-            Log.M?.WL(2, $"{MetaDataOp.ToString()}");
-            PersistentMapClient_Features_RtoApi_MetaDataOp.Add(MetaDataOp.ToString(), MetaDataOp);
+          Type RtoApi_MetaDataOp = RtoApi.GetNestedType("MetaDataOp");
+          if (RtoApi_MetaDataOp != null) {
+            Log.M?.WL(1, "PersistentMapClient.Features.RtoApi.MetaDataOp found");
+            foreach (object MetaDataOp in Enum.GetValues(RtoApi_MetaDataOp)) {
+              Log.M?.WL(2, $"{MetaDataOp.ToString()}");
+              PersistentMapClient_Features_RtoApi_MetaDataOp.Add(MetaDataOp.ToString(), MetaDataOp);
+            }
           }
         }
       }

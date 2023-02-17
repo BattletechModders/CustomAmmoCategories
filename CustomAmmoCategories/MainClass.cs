@@ -40,28 +40,18 @@ using MessagePack;
 using Harmony;
 
 namespace CustomAmmoCategoriesPatches {
-
   [HarmonyPatch(typeof(MechLabPanel))]
   [HarmonyPatch("MechCanUseAmmo")]
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { typeof(AmmunitionBoxDef) })]
   public static class MechLabPanel_MechCanUseAmmo {
     public static void Postfix(MechLabPanel __instance, AmmunitionBoxDef ammoBoxDef, ref bool __result) {
-      if (ammoBoxDef.Ammo.AmmoCategoryValue.IsFlamer) { //patch for energy weapon ammo
+      if (ammoBoxDef.Ammo.AmmoCategoryValue.IsFlamer) {
         if (CustomAmmoCategories.findExtAmmo(ammoBoxDef.Ammo.Description.Id).AmmoCategory.Id != "Flamer") {
           MechLabMechInfoWidget mechInfoWidget = (MechLabMechInfoWidget)(typeof(MechLabPanel)).GetField("mechInfoWidget", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(__instance);
           __result = mechInfoWidget.totalEnergyHardpoints > 0;
         }
       }
-    }
-  }
-  [HarmonyPatch(typeof(Weapon))]
-  [HarmonyPatch("WillFire")]
-  [HarmonyPatch(MethodType.Getter)]
-  [HarmonyPatch(new Type[] { })]
-  public static class Weapon_WillFire {
-    public static bool Prefix(Weapon __instance) {
-      return true;
     }
   }
   [HarmonyPatch(typeof(AttackDirector.AttackSequence))]
@@ -129,7 +119,6 @@ namespace CustomAmmoCategoriesPatches {
   public static class Weapon_SetAmmoBoxes {
     public static bool Prefix(Weapon __instance, List<AmmunitionBox> ammoBoxes) {
       CustomAmmoCategoriesLog.Log.LogWrite("Weapon SetAmmoBoxes " + __instance.Description.Id + "\n");
-      WeaponDefModesCollectHelper.flushCache();
       CustomAmmoCategory weaponAmmoCategory = CustomAmmoCategories.getExtWeaponDef(__instance.defId).AmmoCategory;
       List<AmmunitionBox> ammunitionBoxList = new List<AmmunitionBox>();
       List<BaseComponentRef> inventory = new List<BaseComponentRef>();
@@ -143,8 +132,6 @@ namespace CustomAmmoCategoriesPatches {
         }
       }
       __instance.ammoBoxes = ammunitionBoxList;
-      //if(__instance.ammoBoxes)
-      WeaponDefModesCollectHelper.flushCache();
       return false;
     }
   }
@@ -157,24 +144,11 @@ namespace CustomAmmoCategoriesPatches {
       Dictionary<string, AmmunitionDef> ammos = new Dictionary<string, AmmunitionDef>();
       List<BaseComponentRef> inventory = new List<BaseComponentRef>();
       Log.M?.TWL(0,"Start Mech Validation " + mechDef.ChassisID);
-      WeaponDefModesCollectHelper.flushCache();
-      string testString = "";
-      if (Strings.Initialized) {
-        Strings.GetTranslationFor("CT DESTROYED", out testString);
-        CustomAmmoCategoriesLog.Log.LogWrite("Checking ... " + testString + "\n");
-        if (string.IsNullOrEmpty(testString) == false) {
-          if (testString.Contains((string)$"РЕАКТОР")) {
-            throw new Exception("Вы используете несовместимую версию локализации. Если вы хотите использовать Custom Ammo Categories, не используйте Russian translation fix. По вопросам совместимости Custom Ammo Categories вы можете обратиться к автору Russian translation fix");
-          }
-        }
-        CustomAmmoCategoriesLog.Log.LogWrite("Check passed\n");
-      }
       for (int index = 0; index < mechDef.Inventory.Length; ++index) {
         MechComponentRef mechComponentRef = mechDef.Inventory[index];
         mechComponentRef.RefreshComponentDef();
         if (mechComponentRef.ComponentDefType == ComponentType.Weapon) {
           if (mechComponentRef.DamageLevel == ComponentDamageLevel.Functional || mechComponentRef.DamageLevel == ComponentDamageLevel.NonFunctional || MechValidationRules.MechComponentUnderMaintenance(mechComponentRef, validationLevel, baseWorkOrder)) {
-            //WeaponDef def = mechComponentRef.Def as WeaponDef;
             weapons.Add(mechComponentRef);
           }
         } else
@@ -236,7 +210,6 @@ namespace CustomAmmoCategoriesPatches {
           errorMessages = (Dictionary<MechValidationType, List<Text>>)args[0];
         }
       }
-      WeaponDefModesCollectHelper.flushCache();
       return false;
     }
   }
@@ -1381,6 +1354,7 @@ namespace CACMain {
         UnitCombatStatisticHelper.Init();
         Core.DetectOtherMods();
         PersistentMapClientHelper.Init();
+        WeaponDefModesCollectHelper.InitHelper(Core.harmony);
         //CustomAmmoCategories.ha
         //FixedMechDefHelper.Init(CustomAmmoCategories.Settings.directory);
       } catch (Exception e) {

@@ -426,6 +426,31 @@ namespace CustAmmoCategories {
     public bool RestoreEjectedWeapons { get; set; } = true;
     public string MapOnlineClientLink { get; set; } = "http://www.roguewar.org/playerlut?cId={0}";
     public bool MapOnlineClientDrawWidget { get; set; } = true;
+    public string BuildinBurningFX { get; set; } = "vfxPrfPrtl_fireTerrain_lrgLoop";
+    public float BuildinBurningScaleX { get; set; } = 1.2f;
+    public float BuildinBurningScaleY { get; set; } = 1.2f;
+    public float BuildinBurningScaleZ { get; set; } = 1.2f;
+    [GameplaySafe]
+    [CustomSettings.LocalSettingName(Strings.Culture.CULTURE_EN_US, "Remove smoke on fire VFX")]
+    [CustomSettings.LocalSettingName(Strings.Culture.CULTURE_RU_RU, "Удалить дым от подгорания")]
+    [CustomSettings.IsLocalSetting(false)]
+    [CustomSettings.LocalSettingDescription(Strings.Culture.CULTURE_EN_US, "Remove smoke from build-in fire VFX, used only in build-in fire VFX is forced")]
+    [CustomSettings.LocalSettingDescription(Strings.Culture.CULTURE_RU_RU, "Удалить дым с визуального эффекта подгорания. Применяется только при принудительном втроенном эффекте подгорания")]
+    [CustomSettings.LocalSettingValues(true, false)]
+    [CustomSettings.LocalSettingValuesNames(Strings.Culture.CULTURE_EN_US, "Yes", "No")]
+    [CustomSettings.LocalSettingValuesNames(Strings.Culture.CULTURE_RU_RU, "Да", "Нет")]
+    public bool BuildinBurningFXDisableSmoke { get; set; } = false;
+    public HashSet<string> BuildinBurningFXSmokeObjects { get; set; } = new HashSet<string>() { "smoke" };
+    [GameplaySafe]
+    [CustomSettings.LocalSettingName(Strings.Culture.CULTURE_EN_US, "Force build-in fire VFX")]
+    [CustomSettings.LocalSettingName(Strings.Culture.CULTURE_RU_RU, "Принудительно встроенный эффект подгорания")]
+    [CustomSettings.IsLocalSetting(false)]
+    [CustomSettings.LocalSettingDescription(Strings.Culture.CULTURE_EN_US, "Make build-in fire VFX be forced regardles other settings (in launcher)")]
+    [CustomSettings.LocalSettingDescription(Strings.Culture.CULTURE_RU_RU, "Принудительно использовать встроенный визуальный эффект подгорания, вне зависимости от других настроек (например в лаунчере)")]
+    [CustomSettings.LocalSettingValues(true, false)]
+    [CustomSettings.LocalSettingValuesNames(Strings.Culture.CULTURE_EN_US, "Yes", "No")]
+    [CustomSettings.LocalSettingValuesNames(Strings.Culture.CULTURE_RU_RU, "Да", "Нет")]
+    public bool ForceBuildinBurningFX { get; set; } = false;
     public Settings() {
       //directory = string.Empty;
       //debugLog = true;

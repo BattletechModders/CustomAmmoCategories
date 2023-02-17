@@ -1709,40 +1709,6 @@ namespace CustomAmmoCategoriesPatches {
       }
     }
   }
-  public static class WeaponDefModesCollectHelper {
-    private static Dictionary<string, Func<BaseComponentRef, List<BaseComponentRef>, List<WeaponMode>>> registry = new Dictionary<string, Func<BaseComponentRef, List<BaseComponentRef>, List<WeaponMode>>>();
-    public static void RegisterCallback(string id, Func<BaseComponentRef, List<BaseComponentRef>, List<WeaponMode>> callback) {
-      registry[id] = callback;
-    }
-    private static Dictionary<BaseComponentRef, List<WeaponMode>> weaponModesCache = new Dictionary<BaseComponentRef, List<WeaponMode>>();
-    public static void flushCache() { weaponModesCache.Clear(); }
-    public static List<WeaponMode> WeaponModes(this BaseComponentRef componentRef, List<BaseComponentRef> inventory) {
-      if (weaponModesCache.TryGetValue(componentRef, out var ret)) { return ret; }
-      Dictionary<string, WeaponMode> result = new Dictionary<string, WeaponMode>();
-      try {
-        //WeaponDef weaponDef = componentRef.Def as WeaponDef;
-        ExtWeaponDef extWeaponDef = CustomAmmoCategories.getExtWeaponDef(componentRef.ComponentDefID);
-        //if (weaponDef == null) { return result; }
-        foreach (var mode in extWeaponDef.Modes) {
-          result[mode.Key] = mode.Value;
-        }
-        foreach (var callback in registry) {
-          foreach(var mode in callback.Value(componentRef, inventory)) {
-            if (result.ContainsKey(mode.Id) && mode.isFromJson) {
-              result[mode.Id] = result[mode.Id].merge(mode);
-            } else {
-              result[mode.Id] = mode;
-            }
-          }
-          //result.AddRange(callback.Value(componentRef, inventory));
-        }
-      }catch(Exception e) {
-        Log.M?.TWL(0,e.ToString(),true);
-      }
-      weaponModesCache.Add(componentRef, result.Values.ToList());
-      return weaponModesCache[componentRef];
-    }
-  }
   public class WeaponOrderDataElement {
     public MechComponentRef componentRef { get; set; } = null;
     public string defaultModeId { get; set; } = string.Empty;
@@ -2505,7 +2471,6 @@ namespace CustomAmmoCategoriesPatches {
     }
 
     public void OnClose() {
-      WeaponDefModesCollectHelper.flushCache();
       if (weaponsControl != null) {
         weaponsControl.gameObject.SetActive(false);
         weaponsControl.gameObject.transform.SetParent(this.transform);
@@ -2532,7 +2497,6 @@ namespace CustomAmmoCategoriesPatches {
     public void OnShow() {
       if ((weaponsControl != null) && (popup != null)) {
         try {
-          WeaponDefModesCollectHelper.flushCache();
           LocalizableText _contentText = Traverse.Create(popup).Field<LocalizableText>("_contentText").Value;
           _contentText.gameObject.SetActive(false);
           {

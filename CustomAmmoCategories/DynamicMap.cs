@@ -330,6 +330,13 @@ namespace CustAmmoCategories {
       this.scale = scale;
       this.Combat = null;
     }
+    public void DisableObjects(HashSet<string> names) {
+      if (this.spawnedObject == null) { return; }
+      Transform[] trs = this.spawnedObject.GetComponentsInChildren<Transform>(true);
+      foreach(var tr in trs) {
+        if (names.Contains(tr.name)) { tr.gameObject.SetActive(false); }
+      }
+    }
     public void CleanupSelf() {
       if (this == null) {
         CustomAmmoCategoriesLog.Log.LogWrite("Cleaning null?!!!\n", true);
@@ -797,7 +804,14 @@ namespace CustAmmoCategories {
       pos.y += CustomAmmoCategories.Settings.BurningOffsetY;
       pos.z += CustomAmmoCategories.Settings.BurningOffsetZ;
       if (burnEffect != null) { burnEffect.CleanupSelf(); };
-      burnEffect = DynamicMapHelper.SpawnFXObject(Combat, CustomAmmoCategories.Settings.BurningFX, pos, new Vector3(CustomAmmoCategories.Settings.BurningScaleX, CustomAmmoCategories.Settings.BurningScaleY, CustomAmmoCategories.Settings.BurningScaleZ));
+      if (CustomAmmoCategories.Settings.ForceBuildinBurningFX == false) {
+        burnEffect = DynamicMapHelper.SpawnFXObject(Combat, CustomAmmoCategories.Settings.BurningFX, pos, new Vector3(CustomAmmoCategories.Settings.BurningScaleX, CustomAmmoCategories.Settings.BurningScaleY, CustomAmmoCategories.Settings.BurningScaleZ));
+      } else {
+        burnEffect = DynamicMapHelper.SpawnFXObject(Combat, CustomAmmoCategories.Settings.BuildinBurningFX, pos, new Vector3(CustomAmmoCategories.Settings.BuildinBurningScaleX, CustomAmmoCategories.Settings.BuildinBurningScaleY, CustomAmmoCategories.Settings.BuildinBurningScaleZ));
+        if (CustomAmmoCategories.Settings.BuildinBurningFXDisableSmoke) {
+          burnEffect.DisableObjects(CustomAmmoCategories.Settings.BuildinBurningFXSmokeObjects);
+        }
+      }
     }
     public void UpdateCellsBurn(Weapon weapon, int count, int strength) {
       foreach (MapTerrainDataCellEx cell in terrainCells) {

@@ -298,6 +298,7 @@
     <Compile Include="StructureDamage.cs" />
     <Compile Include="TerrainAttack.cs" />
     <Compile Include="WeaponAmmoCategory.cs" />
+    <Compile Include="WeaponComponentRef.cs" />
     <Compile Include="WeaponDef.cs" />
     <Compile Include="WeaponMode.cs" />
     <Compile Include="Jamming.cs" />
