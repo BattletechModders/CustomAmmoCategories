@@ -118,20 +118,41 @@ namespace CustomAmmoCategoriesPatches {
   [HarmonyPatch(new Type[] { typeof(List<AmmunitionBox>) })]
   public static class Weapon_SetAmmoBoxes {
     public static bool Prefix(Weapon __instance, List<AmmunitionBox> ammoBoxes) {
-      CustomAmmoCategoriesLog.Log.LogWrite("Weapon SetAmmoBoxes " + __instance.Description.Id + "\n");
-      CustomAmmoCategory weaponAmmoCategory = CustomAmmoCategories.getExtWeaponDef(__instance.defId).AmmoCategory;
-      List<AmmunitionBox> ammunitionBoxList = new List<AmmunitionBox>();
-      List<BaseComponentRef> inventory = new List<BaseComponentRef>();
-      foreach (var component in __instance.parent.allComponents) {
-        inventory.Add(component.baseComponentRef);
-      }
-      foreach (AmmunitionBox ammoBox in ammoBoxes) {
-        if (CustomAmmoCategories.isWeaponCanUseAmmo(__instance.baseComponentRef, inventory, ammoBox.ammoDef)) {
-          CustomAmmoCategoriesLog.Log.LogWrite("  Ammunition Box " + ammoBox.ammoDef.Description.Id + "\n");
-          ammunitionBoxList.Add(ammoBox);
+      Log.M?.TW(0, $"Weapon SetAmmoBoxes {__instance.Description.Id} can use categories:");
+      try {
+        CustomAmmoCategory weaponAmmoCategory = CustomAmmoCategories.getExtWeaponDef(__instance.defId).AmmoCategory;
+        List<AmmunitionBox> ammunitionBoxList = new List<AmmunitionBox>();
+        List<BaseComponentRef> inventory = new List<BaseComponentRef>();
+        foreach (var component in __instance.parent.allComponents) { inventory.Add(component.baseComponentRef); }
+        ExtWeaponDef extWeapon = CustomAmmoCategories.getExtWeaponDef(__instance.defId);
+        WeaponDef weaponDef = __instance.weaponDef;
+        List<WeaponMode> modes = __instance.info().modes.Values.ToList();
+        HashSet<string> weaponAmmoCategories = new HashSet<string>();
+        foreach (var mode in modes) {
+          if (mode.AmmoCategory == null) { mode.AmmoCategory = extWeapon.AmmoCategory; }
+          CustomAmmoCategory category = mode.AmmoCategory;
+          if (category.BaseCategory.Is_NotSet) { continue; }
+          weaponAmmoCategories.Add(category.Id);
         }
+        foreach (var cat in weaponAmmoCategories) { Log.M?.W(1, $"{cat}"); }
+        Log.M?.WL(0, "");
+        foreach (AmmunitionBox ammoBox in ammoBoxes) {
+          ExtAmmunitionDef extAmmo = CustomAmmoCategories.findExtAmmo(ammoBox.ammoDef.Description.Id);
+          CustomAmmoCategory ammoCategory = extAmmo.AmmoCategory;
+          if (ammoCategory.BaseCategory.Is_NotSet) { ammoCategory = CustomAmmoCategories.find(ammoBox.ammoDef.AmmoCategoryValue.Name); };
+          if (ammoCategory.BaseCategory.Is_NotSet) { Log.M?.WL(1, $"{ammoBox.ammoDef.Description.Id} ammo have bad category"); continue; };
+          if (weaponAmmoCategories.Contains(ammoCategory.Id)) {
+            Log.M?.WL(1, $"add ammunition box {ammoBox.ammoDef.Description.Id} category:{ammoCategory.Id}");
+            ammunitionBoxList.Add(ammoBox);
+          } else {
+            Log.M?.WL(1, $"skip ammunition box {ammoBox.ammoDef.Description.Id} category:{ammoCategory.Id}");
+          }
+        }
+        __instance.ammoBoxes = ammunitionBoxList;
+        Log.M?.WL(1, $"boxes:{__instance.ammoBoxes.Count}");
+      }catch(Exception e) {
+        Log.M?.TWL(0,e.ToString(),true);
       }
-      __instance.ammoBoxes = ammunitionBoxList;
       return false;
     }
   }
@@ -172,13 +193,13 @@ namespace CustomAmmoCategoriesPatches {
         if (extDef.isHaveInternalAmmo) { continue; }
         foreach (var ammoDef in ammos) {
           if (CustomAmmoCategories.isWeaponCanUseAmmo(weaponRef, inventory, ammoDef.Value)) {
-            Log.M?.WL(1, $"weapon:{weaponRef.ComponentDefID} can use {ammoDef.Key}");
+            Log.M?.WL(1, $"weapon:{weaponRef.ComponentDefID} SimGameUID:{weaponRef.SimGameUID} can use {ammoDef.Key}");
             weaponHasAmmo = true;
             break;
           }
         }
         if (weaponHasAmmo == false) {
-          Log.M?.WL(1, $"weapon:{weaponRef.ComponentDefID} does not have ammo to use");
+          Log.M?.WL(1, $"weapon:{weaponRef.ComponentDefID} SimGameUID:{weaponRef.SimGameUID} does not have ammo to use");
           var method = typeof(MechValidationRules).GetMethod("AddErrorMessage", BindingFlags.Static | BindingFlags.NonPublic);
           object[] args = new object[3];
           args[0] = errorMessages;
@@ -193,7 +214,7 @@ namespace CustomAmmoCategoriesPatches {
         bool ammoIsUsed = false;
         foreach (var weaponRef in weapons) {
           if (CustomAmmoCategories.isWeaponCanUseAmmo(weaponRef, inventory, ammoDef.Value)) {
-            Log.M?.WL(1, $"weapon:{weaponRef.ComponentDefID} can use {ammoDef.Key}");
+            Log.M?.WL(1, $"weapon:{weaponRef.ComponentDefID} SimGameUID:{weaponRef.SimGameUID} can use {ammoDef.Key}");
             ammoIsUsed = true;
             break;
           }

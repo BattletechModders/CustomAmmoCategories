@@ -70,7 +70,7 @@ namespace CustAmmoCategories {
     //  return result;
     //}
     public static bool isWeaponCanUseAmmo(this BaseComponentRef weaponRef, List<BaseComponentRef> inventory, AmmunitionDef ammoDef) {
-      Log.M.WL(0,"Cheching if weapon "+ weaponRef.ComponentDefID + " can use ammo "+ammoDef.Description.Id);
+      Log.M.WL(0,$"Cheching if weapon {weaponRef.ComponentDefID} SimGameUID:{weaponRef.SimGameUID} can use ammo {ammoDef.Description.Id}");
       ExtAmmunitionDef extAmmo = CustomAmmoCategories.findExtAmmo(ammoDef.Description.Id);
       CustomAmmoCategory ammoCategory = extAmmo.AmmoCategory;
       if (ammoCategory.BaseCategory.Is_NotSet) { ammoCategory = CustomAmmoCategories.find(ammoDef.AmmoCategoryValue.Name); };
@@ -80,7 +80,6 @@ namespace CustAmmoCategories {
       List<WeaponMode> modes = weaponRef.WeaponModes(inventory);
       if (modes.Count <= 0) { Log.M?.WL(1,"no modes"); return false; };
       if (extWeapon.AmmoCategory.BaseCategory.Is_NotSet == false) {
-        Log.M?.WL(1, $"weapon:{extWeapon.AmmoCategory.Index} ammo:{ammoCategory.Index}");
         if (extWeapon.AmmoCategory.Index == ammoCategory.Index) { return true; };
       }else
       if(weaponDef.AmmoCategoryValue.Is_NotSet == false) {

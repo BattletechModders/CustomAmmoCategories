@@ -14,6 +14,7 @@ using BattleTech.Framework;
 using BattleTech.UI;
 using CustAmmoCategories;
 using Harmony;
+using Localize;
 using System;
 using System.Collections.Generic;
 using System.Reflection;
@@ -127,7 +128,7 @@ namespace CustomUnits {
     public static bool IsValidEscortPosition(this AbstractActor unit, Vector3 worldPos, out string message) {
       message = string.Empty;
       if (unit.EncounterTags.Contains(Core.Settings.ConvoyDenyMoveTag)) {
-        message = "You should wait at this point for extraction";
+        message = Strings.CurrentCulture == Strings.Culture.CULTURE_RU_RU? "Стой на месте и жди эвакуации, падла!" : "You should wait at this point for an extraction";
         return false;
       } else if (unit.EncounterTags.Contains(Core.Settings.PlayerControlConvoyTag)) {
         bool result = true;
@@ -138,22 +139,28 @@ namespace CustomUnits {
         float playerDistnace = unit.Combat.GetNearestPlayerDistance(worldPos);
         float otherDistnace = unit.Combat.GetFarestOtherDistance(worldPos);
         if (routeDistance > routeDistanceLimit) { content.Append("<color=red>"); result = false; } else { content.Append("<color=green>"); };
-        content.AppendLine("Distance from route: " + routeDistance + "/" + routeDistanceLimit + "</color>");
+        content.AppendLine($"{(Strings.CurrentCulture == Strings.Culture.CULTURE_RU_RU ? "Отклонение от маршрута" : "Distnace from convoy route")}:{routeDistance}/{routeDistanceLimit}</color>");
         if (playerDistnace > Core.Settings.ConvoyMaxDistFromPlayer) { content.Append("<color=red>"); result = false; } else { content.Append("<color=green>"); };
-        content.AppendLine("Distance from player: " + playerDistnace + "/" + Core.Settings.ConvoyMaxDistFromPlayer);
+        content.AppendLine($"{(Strings.CurrentCulture == Strings.Culture.CULTURE_RU_RU ? "Расстояние от ваших боевых единиц" : "Distnace from your units")}: {playerDistnace}/{Core.Settings.ConvoyMaxDistFromPlayer}</color>");
         if (otherDistnace > Core.Settings.ConvoyMaxDistFromOther) { content.Append("<color=red>"); result = false; } else { content.Append("<color=green>"); };
-        content.AppendLine("Distance from convoy: " + otherDistnace + "/" + Core.Settings.ConvoyMaxDistFromOther);
+        content.AppendLine($"{(Strings.CurrentCulture == Strings.Culture.CULTURE_RU_RU ? "Расстояние от других машин конвоя" : "Distnace from other convoy units")}: {otherDistnace}/{Core.Settings.ConvoyMaxDistFromOther}</color>");
         message = content.ToString();
         return result;
       }
       return true;
     }
+    public static bool isConvoyUnit(this AbstractActor unit) {
+      return unit.EncounterTags.Contains(Core.Settings.PlayerControlConvoyTag) || unit.EncounterTags.Contains(Core.Settings.ConvoyDenyMoveTag);
+    }
     public static bool Prefix(SelectionStateMove __instance, Vector3 worldPos, ref bool __result) {
-      if (__instance.HasDestination == true) { return true; }
+      if (__instance.SelectedActor == null) { return true; }
+      if (__instance.SelectedActor.isConvoyUnit() == false) { return true; }
       if (__instance.HasTarget) {
         GenericPopupBuilder.Create(GenericPopupType.Warning, "CONVOY UNITS CAN'T MELEE").IsNestedPopupWithBuiltInFader().CancelOnEscape().Render();
+        __result = false;
         return false;
       }
+      if (__instance.HasDestination == true) { return true; }
       if (__instance.SelectedActor.IsValidEscortPosition(__instance.SelectedActor.Pathing.ResultDestination, out string message) == false) {
         GenericPopupBuilder.Create(GenericPopupType.Warning, message).IsNestedPopupWithBuiltInFader().CancelOnEscape().Render();
         __result = false;

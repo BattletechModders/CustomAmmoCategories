@@ -302,8 +302,24 @@ namespace CustomUnits {
         crewArmor = (ArmorLocation)info.MechVehicleCrewLocation;
         crewLocation = info.MechVehicleCrewLocation;
       }
-      this.statCollection.ModifyStat<float>(sourceID, stackItemID, this.GetStringForArmorLocation(crewArmor), StatCollection.StatOperation.Set, 0.0f);
-      this.statCollection.ModifyStat<float>(sourceID, stackItemID, this.GetStringForStructureLocation(crewLocation), StatCollection.StatOperation.Set, 0.0f);
+      try {
+        string statName = this.GetStringForArmorLocation(crewArmor);
+        if (string.IsNullOrEmpty(statName) == false) {
+          Statistic stat = this.statCollection.GetStatistic(statName);
+          if (stat != null) {
+            this.statCollection.ModifyStat<float>(sourceID, stackItemID, statName, StatCollection.StatOperation.Set, 0.0f);
+          }
+        }
+        statName = this.GetStringForStructureLocation(crewLocation);
+        if (string.IsNullOrEmpty(statName) == false) {
+          Statistic stat = this.statCollection.GetStatistic(statName);
+          if (stat != null) {
+            this.statCollection.ModifyStat<float>(sourceID, stackItemID, statName, StatCollection.StatOperation.Set, 0.0f);
+          }
+        }
+      }catch(Exception e) {
+        Log.TWL(0,e.ToString(),true);
+      }
       foreach (MechComponent allComponent in this.allComponents) {
         if (allComponent.Location == (int)crewLocation) {
           allComponent.DamageComponent(hitInfo, ComponentDamageLevel.Destroyed, false);

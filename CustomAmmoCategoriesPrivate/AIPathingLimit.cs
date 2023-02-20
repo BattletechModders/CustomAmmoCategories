@@ -197,11 +197,13 @@ namespace CustAmmoCategories {
         }
         return result;
       }
-      public void process(int radius, bool log) {
+      public void process(int radius, int goal) {
         foreach (var titems in typedItems) {
           if (DO_NOT_OPTIMIZE_MOVE_TYPES.Contains(titems.Key)) { continue; }
           titems.Value.Sort((a, b) => { return b.cost.CompareTo(a.cost); });
         }
+        int current = this.optimized_nodes();
+        if (current <= goal) { return; }
         Log.P?.TWL(0,$"optimization:{this.unit.PilotableActorDef.ChassisID} items:{items.Count}");
         //Log.P?.W(0, "available positions:");
         //foreach (var pitems in posItems) {
@@ -236,7 +238,9 @@ namespace CustAmmoCategories {
                   } else {
                     //Log.P?.WL(1, $"removed:{rem_item.moveDest.PathNode.Position} {rem_item.simplePos}");
                     rem_item.removed = true;
+                    --current;
                     ++remove_counter;
+                    if (current <= goal) { goto exit_optimization; }
                   }
                 }
               } else {
@@ -245,6 +249,7 @@ namespace CustAmmoCategories {
             }
           }
         }
+        exit_optimization:
         Log.P?.WL(1, $"removed:{remove_counter}");
       }
     }
@@ -263,7 +268,7 @@ namespace CustAmmoCategories {
       int watchdog = 2;
       do {
         Log.P?.WL(1, $"optimization radius:{optimization_radius}:{opt_res}");
-        index.process(Mathf.RoundToInt(optimization_radius), false);
+        index.process(Mathf.RoundToInt(optimization_radius), CustomAmmoCategories.Settings.AIPathingSamplesLimit);
         int new_opt_res = index.optimized_nodes();
         int removed = opt_res - new_opt_res;
         opt_res = new_opt_res;
