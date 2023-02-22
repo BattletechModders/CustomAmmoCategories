@@ -386,8 +386,8 @@ namespace CustomUnits {
       if (parent == null) { return; }
       this.parent = parent;
       GenericPopupBuilder builder = GenericPopupBuilder.Create("AVAILABLE LAYOUTS", "PLACEHOLDER");
-      builder.AddButton("CLOSE", new Action(this.OnBack), false);
-      builder.AddButton("LOAD", new Action(this.OnSelect), false);
+      builder.AddButton("CLOSE", new Action(this.OnBack), true);
+      builder.AddButton("LOAD", new Action(this.OnSelect), true);
       popup = builder.CancelOnEscape().Render();
       selectButton = Traverse.Create(popup).Field<List<HBSButton>>("buttons").Value[1];
       backButton = Traverse.Create(popup).Field<List<HBSButton>>("buttons").Value[0];
@@ -665,7 +665,9 @@ namespace CustomUnits {
       }
     }
     public void OnClicked() {
-      LanceLoadPopupSupervisor.Instance.OnLayoutsButtonClick(parent);
+      if (LanceLoadPopupSupervisor.Instance.popup == null) {
+        LanceLoadPopupSupervisor.Instance.OnLayoutsButtonClick(parent);
+      }
       return;
       GenericPopup popup = null;
       var invList = SaveDropLayoutHelper.LoadAll();

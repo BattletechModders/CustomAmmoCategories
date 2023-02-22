@@ -19,10 +19,10 @@ namespace CACAccModDemo {
       return 1f;
     }
     public static string MyCACModifierName(ToHit toHit, AbstractActor attacker, Weapon weapon, ICombatant target, Vector3 attackPos, Vector3 targetPos, LineOfFireLevel lof, MeleeAttackType meleType, bool isCalled) {
-      return "Cust. mod. "+attacker.DisplayName;
+      return "Cust. mod. " + attacker.DisplayName;
     }
     public static float MyDmgCACModifier(Weapon weapon, Vector3 attackPosition, ICombatant target, bool IsBreachingShot, int location, float dmg, float ap, float heat, float stab) {
-      return 1f;
+      return 0f;
     }
     public static string MyDmgCACModifierName(Weapon weapon, Vector3 attackPosition, ICombatant target, bool IsBreachingShot, int location, float dmg, float ap, float heat, float stab) {
       return "Cust. mod. " + target.DisplayName;

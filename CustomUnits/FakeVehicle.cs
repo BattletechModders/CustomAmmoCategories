@@ -16,6 +16,7 @@ using IRBTModUtils;
 using Localize;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using UnityEngine;
 
@@ -74,43 +75,86 @@ namespace CustomUnits {
       }
     }
     public override List<int> GetPossibleHitLocations(AbstractActor attacker) {
-      List<int> result = new List<int>();
-      foreach (ArmorLocation alocation in FakeVehicleMech.locations) {
-        ChassisLocations location = MechStructureRules.GetChassisLocationFromArmorLocation(alocation);
-        LocationDef locDef = this.MechDef.Chassis.GetLocationDef(location);
-        if ((locDef.MaxArmor <= 0f) && (locDef.InternalStructure <= 1f)) { continue; }
-        result.Add((int)alocation);
+      Dictionary<ArmorLocation, int> unitHitTable = this.GetHitTable(this.IsProne ? AttackDirection.ToProne : this.Combat.HitLocation.GetAttackDirection(attacker.CurrentPosition, (ICombatant)this));
+      if (unitHitTable == null)
+        return (List<int>)null;
+      HashSet<int> result = new HashSet<int>();
+      foreach (var loc in unitHitTable) {
+        if (loc.Value > 0)
+          result.Add((int)loc.Key);
       }
-      return result;
+      ArmorLocation specialLocation = ArmorLocation.None;
+      UnitCustomInfo info = this.GetCustomInfo();
+      if ((info != null) && (info.customStructure.is_empty)) { info.customStructure = CustomStructureDef.Search(DefaultStructureDef); }
+      if ((info != null) && (info.customStructure.is_empty == false)) { specialLocation = info.customStructure.ClusterSpecialLocation; }
+      if ((this.CanBeHeadShot == false) && (result.Contains((int)specialLocation))) { result.Remove((int)specialLocation); }
+      return result.ToList();
     }
     public override Dictionary<ArmorLocation, int> GetHitTable(AttackDirection from) {
+      string specialHitTable = Thread.CurrentThread.peekFromStack<string>(CustomAmmoCategories.SPECIAL_HIT_TABLE_NAME);
+      if (string.IsNullOrEmpty(specialHitTable)) { specialHitTable = "default"; }
+      if (GetHitTable_cache.TryGetValue(specialHitTable, out var GetHitTable_cache_sp) == false) {
+        GetHitTable_cache_sp = new Dictionary<AttackDirection, Dictionary<ArmorLocation, int>>();
+        GetHitTable_cache.Add(specialHitTable, GetHitTable_cache_sp);
+      }
+      if (GetHitTable_cache_sp.TryGetValue(from, out var result)) { return result; }
+      Log.TWL(0, $"FakeVehcile.GetHitTable {this.PilotableActorDef.ChassisID} table name:{specialHitTable} attack direction:{from}");
       UnitCustomInfo info = this.GetCustomInfo();
-      //ArmorLocation specialLocation = ArmorLocation.None;
-      Dictionary<ArmorLocation, int> result = new Dictionary<ArmorLocation, int>();
+      result = new Dictionary<ArmorLocation, int>();
       Dictionary<ArmorLocation, int> hittable = null;
       if (info == null) { goto call_native; }
-      if (info.customHitTable.native) { goto call_native; }
-      //specialLocation = info.customHitTalbe.ClusterSpecialLocation;
-      if (info.customHitTable.HitTable.TryGetValue(from, out hittable) == false) {
+      if (info.customStructure.is_empty) { info.customStructure = CustomStructureDef.Search(DefaultStructureDef); }
+      if (info.customStructure.is_empty) { goto call_native; }
+      CustomHitTableDef hittabledef = null;
+      Log.WL(1, $"searching hittable:{specialHitTable} in {info.customStructure.Id}");
+      if (info.customStructure.tables.TryGetValue(specialHitTable, out hittabledef) == false) {
+        hittabledef = null;
+        var fallbackStructure = CustomStructureDef.Search(this.DefaultStructureDef);
+        Log.WL(1, $"searching hittable:{specialHitTable} in {fallbackStructure.Id}");
+        if (fallbackStructure.tables.TryGetValue(specialHitTable, out hittabledef)) {
+          Log.WL(2, "found");
+          goto process_hittable;
+        }
+        Log.WL(1, $"searching hittable:default in {info.customStructure.Id}");
+        if (info.customStructure.tables.TryGetValue("default", out hittabledef) == false) {
+          hittabledef = null;
+          Log.WL(1, $"searching hittable:default in {fallbackStructure.Id}");
+          if (fallbackStructure.tables.TryGetValue("default", out hittabledef) == false) {
+            hittabledef = null;
+            goto call_native;
+          } else {
+            Log.WL(2, "found");
+          }
+        } else {
+          Log.WL(2, "found");
+        }
+      } else {
+        Log.WL(2, "found");
+      }
+    process_hittable:
+      if (hittabledef == null) { goto call_native; }
+      if (hittabledef.HitTable.TryGetValue(from, out hittable) == false) {
         goto call_native;
       }
       if (hittable == null) { goto call_native; }
       goto return_result;
     call_native:
-      if (GetHitTable_cache.TryGetValue(from, out hittable)) { goto return_result; }
       AttackDirection effectiveFrom = from;
       if (from == AttackDirection.ToProne) { effectiveFrom = AttackDirection.FromArtillery; };
+      Log.WL(1, $"fallback");
       Dictionary<VehicleChassisLocations, int> vres = this.Combat.HitLocation.GetVehicleHitTable(effectiveFrom);
       hittable = new Dictionary<ArmorLocation, int>();
       foreach (var vloc in vres) { hittable.Add(vloc.Key.toFakeArmor(), vloc.Value); }
-      GetHitTable_cache.Add(from, hittable);
     return_result:
+      Log.W(1, $"result: ");
       foreach (var loc in hittable) {
         LocationDef locationDef = this.MechDef.Chassis.GetLocationDef(MechStructureRules.GetChassisLocationFromArmorLocation(loc.Key));
         if ((locationDef.MaxArmor <= 0f) && (locationDef.InternalStructure <= 1f)) { continue; }
-        //if ((this.CanBeHeadShot == false) && (loc.Key == specialLocation)) { continue; }
         result.Add(loc.Key, loc.Value);
+        Log.W(1, $"{loc.Key}:{loc.Value}");
       }
+      Log.WL(0, "");
+      GetHitTable_cache_sp.Add(from, result);
       return (result.Count > 0) ? result : null;
     }
     public override int GetHitLocation(AbstractActor attacker, Vector3 attackPosition, float hitLocationRoll, int calledShotLocation, float bonusMultiplier) {
@@ -122,7 +166,8 @@ namespace CustomUnits {
       Dictionary<ArmorLocation, int> hitTable = this.GetHitTable(this.IsProne ? AttackDirection.ToProne : this.Combat.HitLocation.GetAttackDirection(attackPosition, this));
       ArmorLocation specialLocation = ArmorLocation.None;
       UnitCustomInfo info = this.GetCustomInfo();
-      if ((info != null) && (info.customHitTable.native == false)) { specialLocation = info.customHitTable.ClusterSpecialLocation; }
+      if ((info != null) && (info.customStructure.is_empty)) { info.customStructure = CustomStructureDef.Search(DefaultStructureDef); }
+      if ((info != null) && (info.customStructure.is_empty == false)) { specialLocation = info.customStructure.ClusterSpecialLocation; }
       if ((this.CanBeHeadShot == false) && (hitTable.ContainsKey(specialLocation))) { hitTable.Remove(specialLocation); }
       Thread.CurrentThread.pushActor(this);
       int result = (int)(hitTable != null ? HitLocation.GetHitLocation<ArmorLocation>(hitTable, hitLocationRoll, (ArmorLocation)calledShotLocation, bonusMultiplier) : ArmorLocation.None);
@@ -173,7 +218,17 @@ namespace CustomUnits {
     }
     private static Dictionary<ArmorLocation, ArmorLocation> GetAdjacentLocations_cache = new Dictionary<ArmorLocation, ArmorLocation>();
     public override ArmorLocation GetAdjacentLocations(ArmorLocation location) {
-      if (GetAdjacentLocations_cache.TryGetValue(location, out ArmorLocation result)) { return result; }
+      UnitCustomInfo info = this.GetCustomInfo();
+      var result = ArmorLocation.None;
+      if ((info != null) && (info.customStructure.is_empty)) {
+        info.customStructure = CustomStructureDef.Search(DefaultStructureDef);
+      }
+      if ((info != null) && (info.customStructure.is_empty == false)) {
+        if (info.customStructure.AdjacentLocations.TryGetValue(location, out result)) {
+          return result;
+        }
+      }
+      //if (GetAdjacentLocations_cache.TryGetValue(location, out ArmorLocation result)) { return result; }
       switch (location.toFakeVehicleChassis()) {
         case VehicleChassisLocations.Turret:
           result = VehicleChassisLocations.Rear.toFakeArmor() | VehicleChassisLocations.Right.toFakeArmor() | VehicleChassisLocations.Left.toFakeArmor() | VehicleChassisLocations.Front.toFakeArmor();
@@ -189,15 +244,17 @@ namespace CustomUnits {
         default:
         return VehicleChassisLocations.None.toFakeArmor();
       }
-      GetAdjacentLocations_cache.Add(location, result);
+      //GetAdjacentLocations_cache.Add(location, result);
       return result;
     }
     //private Dictionary<ArmorLocation, Dictionary<ArmorLocation, int>> GetClusterTable_cache = new Dictionary<ArmorLocation, Dictionary<ArmorLocation, int>>();
+    public override string DefaultStructureDef { get { return "vehicle"; } }
     public override Dictionary<ArmorLocation, int> GetClusterTable(ArmorLocation originalLocation, Dictionary<ArmorLocation, int> hitTable) {
       //if (GetClusterTable_cache.TryGetValue(originalLocation, out Dictionary<ArmorLocation, int> result)) { return result; }
       ArmorLocation specialLocation = ArmorLocation.None;
       UnitCustomInfo info = this.GetCustomInfo();
-      if ((info != null) && (info.customHitTable.native == false)) { specialLocation = info.customHitTable.ClusterSpecialLocation; }
+      if ((info != null) && (info.customStructure.is_empty)) { info.customStructure = CustomStructureDef.Search(DefaultStructureDef); }
+      if ((info != null) && (info.customStructure.is_empty == false)) { specialLocation = info.customStructure.ClusterSpecialLocation; }
       ArmorLocation adjacentLocations = this.GetAdjacentLocations(originalLocation);
       Dictionary<ArmorLocation, int> dictionary = new Dictionary<ArmorLocation, int>();
       foreach (KeyValuePair<ArmorLocation, int> keyValuePair in hitTable) {
@@ -217,7 +274,13 @@ namespace CustomUnits {
     }
     //private Dictionary<AttackDirection, Dictionary<ArmorLocation, Dictionary<ArmorLocation, int>>> GetClusterHitTable_cache = new Dictionary<AttackDirection, Dictionary<ArmorLocation, Dictionary<ArmorLocation, int>>>();
     public override Dictionary<ArmorLocation, int> GetHitTableCluster(AttackDirection from, ArmorLocation originalLocation) {
-      if (GetClusterHitTable_cache.TryGetValue(from, out Dictionary<ArmorLocation, Dictionary<ArmorLocation, int>> clusterTables) == false) {
+      string specialHitTable = Thread.CurrentThread.peekFromStack<string>(CustomAmmoCategories.SPECIAL_HIT_TABLE_NAME);
+      if (string.IsNullOrEmpty(specialHitTable)) { specialHitTable = "default"; }
+      if (GetClusterHitTable_cache.TryGetValue(specialHitTable, out var GetClusterHitTable_cache_sp) == false) {
+        GetClusterHitTable_cache_sp = new Dictionary<AttackDirection, Dictionary<ArmorLocation, Dictionary<ArmorLocation, int>>>();
+        GetClusterHitTable_cache.Add(specialHitTable, GetClusterHitTable_cache_sp);
+      }
+      if (GetClusterHitTable_cache_sp.TryGetValue(from, out var clusterTables) == false) {
         clusterTables = new Dictionary<ArmorLocation, Dictionary<ArmorLocation, int>>();
         //GetClusterHitTable_cache.Add(from, clusterTables);
       }
@@ -225,14 +288,14 @@ namespace CustomUnits {
         return result;
       }
       Dictionary<ArmorLocation, int> hitTable = this.GetHitTable(from);
-      CustomAmmoCategoriesLog.Log.AIM.TW(0, $"Generating cluster table {from} location:{originalLocation} based on:");
-      foreach (var hit in hitTable) { CustomAmmoCategoriesLog.Log.AIM?.W(1, $"{hit.Key}:{hit.Value}"); }
+      CustomAmmoCategoriesLog.Log.AIM.TW(0, $"Generating cluster {specialHitTable} table {from} location:{originalLocation.toFakeVehicleChassis()} based on:");
+      foreach (var hit in hitTable) { CustomAmmoCategoriesLog.Log.AIM?.W(1, $"{hit.Key.toFakeVehicleChassis()}:{hit.Value}"); }
       CustomAmmoCategoriesLog.Log.AIM.WL(0, "");
       result = GetClusterTable(originalLocation, hitTable);
       clusterTables.Add(originalLocation, result);
-      if (GetClusterHitTable_cache.ContainsKey(from) == false) {
+      if (GetClusterHitTable_cache_sp.ContainsKey(from) == false) {
         CustomAmmoCategoriesLog.Log.AIM.WL(1, $"adding to cache as {from}");
-        GetClusterHitTable_cache.Add(from, clusterTables);
+        GetClusterHitTable_cache_sp.Add(from, clusterTables);
       }
       this.DumpClusterTableCache(CustomAmmoCategoriesLog.Log.AIM);
       return result;

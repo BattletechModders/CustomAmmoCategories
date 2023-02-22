@@ -26,6 +26,7 @@ using IRBTModUtils;
 
 namespace CustAmmoCategories {
   public static partial class CustomAmmoCategories {
+    public static readonly string SPECIAL_HIT_TABLE_NAME = "CAC_SPECIAL_HIT_TABLE";
     public static HitGeneratorType HitGenerator(this Weapon weapon) {
       HitGeneratorType result = HitGeneratorType.NotSet;
       CustomAmmoCategoriesLog.Log.LogWrite("getHitGenerator " + weapon.defId + "\n");
@@ -512,6 +513,7 @@ namespace CustomAmmoCategoriesPatches {
       Thread.CurrentThread.pushActor(target as AbstractActor);
       Thread.CurrentThread.pushWeapon(weapon);
       Thread.CurrentThread.pushAttackSequenceId(instance.id);
+      Thread.CurrentThread.pushToStack<string>(CustomAmmoCategories.SPECIAL_HIT_TABLE_NAME, weapon.SpecialHitTable());
       switch (hitGenType) {
         case HitGeneratorType.Individual:
           instance.GetIndividualHits(ref hitInfo, groupIdx, weaponIdx, weapon, toHitChance, dodgedDamage);
@@ -532,6 +534,7 @@ namespace CustomAmmoCategoriesPatches {
           hitInfo = (WeaponHitInfo)args[0];
           break;
       }
+      Thread.CurrentThread.popFromStack<string>(CustomAmmoCategories.SPECIAL_HIT_TABLE_NAME);
       Thread.CurrentThread.popAttackSequenceId();
       Thread.CurrentThread.clearWeapon();
       Thread.CurrentThread.clearActor();

@@ -18,6 +18,7 @@ using IRBTModUtils;
 using Localize;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
 using System.Text;
@@ -514,9 +515,10 @@ namespace CustomUnits {
     }
     public override int GetHitLocation(AbstractActor attacker, Vector3 attackPosition, float hitLocationRoll, int calledShotLocation, float bonusMultiplier) {
       Dictionary<ArmorLocation, int> hitTable = new Dictionary<ArmorLocation, int>(this.GetHitTable(this.IsProne ? AttackDirection.ToProne : this.Combat.HitLocation.GetAttackDirection(attackPosition, this)));
-      ArmorLocation specialLocation = ArmorLocation.None;
+      ArmorLocation specialLocation = ArmorLocation.Head;
       UnitCustomInfo info = this.GetCustomInfo();
-      if ((info != null) && (info.customHitTable.native == false)) { specialLocation = info.customHitTable.ClusterSpecialLocation; }
+      if ((info != null) && (info.customStructure.is_empty)) { info.customStructure = CustomStructureDef.Search(this.DefaultStructureDef); }
+      if ((info != null) && (info.customStructure.is_empty == false)) { specialLocation = info.customStructure.ClusterSpecialLocation; }
       if ((this.CanBeHeadShot == false) && (hitTable.ContainsKey(specialLocation))) { hitTable.Remove(specialLocation); }
       Thread.CurrentThread.pushActor(this);
       int result = (int)((hitTable.Count > 0) ? HitLocation.GetHitLocation(hitTable, hitLocationRoll, (ArmorLocation)calledShotLocation, bonusMultiplier) : ArmorLocation.None);
@@ -528,10 +530,22 @@ namespace CustomUnits {
       Log.WL(1, "result:" + ((ArmorLocation)result));
       return result;
     }
+    public virtual string DefaultStructureDef { get { return "mech"; } }
     public override List<int> GetPossibleHitLocations(AbstractActor attacker) {
-      List<int> result = this.Combat.HitLocation.GetPossibleHitLocations(attacker, this);
-      if (this.CanBeHeadShot == false) { result.Remove((int)ArmorLocation.Head); }
-      return result;
+      Dictionary<ArmorLocation, int> unitHitTable = this.GetHitTable(this.IsProne ? AttackDirection.ToProne : this.Combat.HitLocation.GetAttackDirection(attacker.CurrentPosition, (ICombatant)this));
+      if (unitHitTable == null)
+        return (List<int>)null;
+      HashSet<int> result = new HashSet<int>();
+      foreach (var loc in unitHitTable) {
+        if (loc.Value > 0)
+          result.Add((int)loc.Key);
+      }
+      ArmorLocation specialLocation = ArmorLocation.Head;
+      UnitCustomInfo info = this.GetCustomInfo();
+      if ((info != null) && (info.customStructure.is_empty)) { info.customStructure = CustomStructureDef.Search(DefaultStructureDef); }
+      if ((info != null) && (info.customStructure.is_empty == false)) { specialLocation = info.customStructure.ClusterSpecialLocation; }
+      if ((this.CanBeHeadShot == false) && (result.Contains((int)specialLocation))) { result.Remove((int)specialLocation); }
+      return result.ToList();
     }
     public override int GetAdjacentHitLocation(Vector3 attackPosition, float randomRoll, int previousHitLocation, float originalMultiplier = 1f, float adjacentMultiplier = 1f) {
       return (int)this.GetAdjacentHitLocation(attackPosition, randomRoll, (ArmorLocation)previousHitLocation, originalMultiplier, adjacentMultiplier, ArmorLocation.None, 0.0f);
@@ -578,15 +592,51 @@ namespace CustomUnits {
           ArmorLocation.RightArm, ArmorLocation.LeftArm, ArmorLocation.LeftLeg, ArmorLocation.RightLeg
       };
     }
-    protected Dictionary<AttackDirection, Dictionary<ArmorLocation, int>> GetHitTable_cache = new Dictionary<AttackDirection, Dictionary<ArmorLocation, int>>();
+    protected Dictionary<string, Dictionary<AttackDirection, Dictionary<ArmorLocation, int>>> GetHitTable_cache = new Dictionary<string, Dictionary<AttackDirection, Dictionary<ArmorLocation, int>>>();
     public virtual Dictionary<ArmorLocation, int> GetHitTable(AttackDirection from) {
-      if (GetHitTable_cache.TryGetValue(from, out var result)) { return result; }
+      string specialHitTable = Thread.CurrentThread.peekFromStack<string>(CustomAmmoCategories.SPECIAL_HIT_TABLE_NAME);
+      if (string.IsNullOrEmpty(specialHitTable)) { specialHitTable = "default"; }
+      if(GetHitTable_cache.TryGetValue(specialHitTable, out var GetHitTable_cache_sp) == false) {
+        GetHitTable_cache_sp = new Dictionary<AttackDirection, Dictionary<ArmorLocation, int>>();
+        GetHitTable_cache.Add(specialHitTable, GetHitTable_cache_sp);
+      }
+      if (GetHitTable_cache_sp.TryGetValue(from, out var result)) { return result; }
+      Log.TWL(0,$"CustomMech.GetHitTable {this.PilotableActorDef.ChassisID} table name:{specialHitTable} attack direction:{from}");
       UnitCustomInfo info = this.GetCustomInfo();
       result = new Dictionary<ArmorLocation, int>();
       Dictionary<ArmorLocation, int> hittable = null;
       if (info == null) { goto call_native; }
-      if (info.customHitTable.native) { goto call_native; }
-      if (info.customHitTable.HitTable.TryGetValue(from, out hittable) == false) {
+      if (info.customStructure.is_empty) { info.customStructure = CustomStructureDef.Search(this.DefaultStructureDef); }
+      if (info.customStructure.is_empty) { goto call_native; }
+      CustomHitTableDef hittabledef = null;
+      Log.WL(1,$"searching hittable:{specialHitTable} in {info.customStructure.Id}");
+      if (info.customStructure.tables.TryGetValue(specialHitTable, out hittabledef) == false) {
+        hittabledef = null;
+        var fallbackStructure = CustomStructureDef.Search(this.DefaultStructureDef);
+        Log.WL(1, $"searching hittable:{specialHitTable} in {fallbackStructure.Id}");
+        if (fallbackStructure.tables.TryGetValue(specialHitTable, out hittabledef)) {
+          Log.WL(2, "found");
+          goto process_hittable;
+        }
+        Log.WL(1, $"searching hittable:default in {info.customStructure.Id}");
+        if (info.customStructure.tables.TryGetValue("default", out hittabledef) == false) {
+          hittabledef = null;
+          Log.WL(1, $"searching hittable:default in {fallbackStructure.Id}");
+          if (fallbackStructure.tables.TryGetValue("default", out hittabledef) == false) {
+            hittabledef = null;
+            goto call_native;
+          } else {
+            Log.WL(2, "found");
+          }
+        } else {
+          Log.WL(2, "found");
+        }
+      } else {
+        Log.WL(2, "found");
+      }
+    process_hittable:
+      if (hittabledef == null) { goto call_native; }
+      if(hittabledef.HitTable.TryGetValue(from, out hittable) == false) {
         goto call_native;
       }
       if (hittable == null) { goto call_native; }
@@ -594,16 +644,20 @@ namespace CustomUnits {
     call_native:      
       Thread.CurrentThread.pushActor(this);
       Thread.CurrentThread.SetFlag("CallOriginal_GetMechHitTable");
+      Log.WL(1, $"fallback");
       hittable = this.Combat.HitLocation.GetMechHitTable(from);
       Thread.CurrentThread.ClearFlag("CallOriginal_GetMechHitTable");
       Thread.CurrentThread.clearActor();
     return_result:
+      Log.W(1, $"result: ");
       foreach (var loc in hittable) {
         LocationDef locationDef = this.MechDef.Chassis.GetLocationDef(MechStructureRules.GetChassisLocationFromArmorLocation(loc.Key));
         if ((locationDef.MaxArmor <= 0f) && (locationDef.InternalStructure <= 1f)) { continue; }
         result.Add(loc.Key, loc.Value);
+        Log.W(1, $"{loc.Key}:{loc.Value}");
       }
-      GetHitTable_cache.Add(from, result);
+      Log.WL(0,"");
+      GetHitTable_cache_sp.Add(from, result);
       return result;
     }
     public static bool DamageLocation_Override(Mech __instance, int originalHitLoc, WeaponHitInfo hitInfo, ArmorLocation aLoc, Weapon weapon, float totalArmorDamage, float directStructureDamage, int hitIndex, AttackImpactQuality impactQuality, DamageType damageType, ref bool __result) {
@@ -717,8 +771,11 @@ namespace CustomUnits {
     }
     public virtual ArmorLocation GetAdjacentLocations(ArmorLocation location) {
       UnitCustomInfo info = this.GetCustomInfo();
-      if ((info != null) && (info.customHitTable.native == false)) {
-        if(info.customHitTable.AdjacentLocations.TryGetValue(location, out var result)) {
+      if ((info != null) && (info.customStructure.is_empty)){
+        info.customStructure = CustomStructureDef.Search(this.DefaultStructureDef);
+      }
+      if ((info != null) && (info.customStructure.is_empty == false)) {
+        if(info.customStructure.AdjacentLocations.TryGetValue(location, out var result)) {
           return result;
         }
       }
@@ -729,7 +786,10 @@ namespace CustomUnits {
       //if (GetClusterTable_cache.TryGetValue(originalLocation, out Dictionary<ArmorLocation, int> result)) { return result; }
       ArmorLocation specialLocation = ArmorLocation.Head;
       UnitCustomInfo info = this.GetCustomInfo();
-      if ((info != null) && (info.customHitTable.native == false)) { specialLocation = info.customHitTable.ClusterSpecialLocation; }
+      if ((info != null) && (info.customStructure.is_empty)) {
+        info.customStructure = CustomStructureDef.Search(this.DefaultStructureDef);
+      }
+      if ((info != null) && (info.customStructure.is_empty == false)) { specialLocation = info.customStructure.ClusterSpecialLocation; }
       ArmorLocation adjacentLocations = this.GetAdjacentLocations(originalLocation);
       Dictionary<ArmorLocation, int> dictionary = new Dictionary<ArmorLocation, int>();
       foreach (KeyValuePair<ArmorLocation, int> keyValuePair in hitTable) {
@@ -747,9 +807,15 @@ namespace CustomUnits {
       //GetClusterTable_cache.Add(originalLocation, dictionary);
       return dictionary;
     }
-    protected Dictionary<AttackDirection, Dictionary<ArmorLocation, Dictionary<ArmorLocation, int>>> GetClusterHitTable_cache = new Dictionary<AttackDirection, Dictionary<ArmorLocation, Dictionary<ArmorLocation, int>>>();
+    protected Dictionary<string, Dictionary<AttackDirection, Dictionary<ArmorLocation, Dictionary<ArmorLocation, int>>>> GetClusterHitTable_cache = new Dictionary<string, Dictionary<AttackDirection, Dictionary<ArmorLocation, Dictionary<ArmorLocation, int>>>>();
     public virtual Dictionary<ArmorLocation, int> GetHitTableCluster(AttackDirection from, ArmorLocation originalLocation) {
-      if (GetClusterHitTable_cache.TryGetValue(from, out Dictionary<ArmorLocation, Dictionary<ArmorLocation, int>> clusterTables) == false) {
+      string specialHitTable = Thread.CurrentThread.peekFromStack<string>(CustomAmmoCategories.SPECIAL_HIT_TABLE_NAME);
+      if (string.IsNullOrEmpty(specialHitTable)) { specialHitTable = "default"; }
+      if (GetClusterHitTable_cache.TryGetValue(specialHitTable, out var GetClusterHitTable_cache_sp) == false) {
+        GetClusterHitTable_cache_sp = new Dictionary<AttackDirection, Dictionary<ArmorLocation, Dictionary<ArmorLocation, int>>>();
+        GetClusterHitTable_cache.Add(specialHitTable, GetClusterHitTable_cache_sp);
+      }
+      if (GetClusterHitTable_cache_sp.TryGetValue(from, out var clusterTables) == false) {
         clusterTables = new Dictionary<ArmorLocation, Dictionary<ArmorLocation, int>>();
         //GetClusterHitTable_cache.Add(from, clusterTables);
       }
@@ -757,14 +823,14 @@ namespace CustomUnits {
         return result;
       }
       Dictionary<ArmorLocation, int> hitTable = this.GetHitTable(from);
-      CustomAmmoCategoriesLog.Log.AIM.TW(0,$"Generating cluster table {from} location:{originalLocation} based on:");
+      CustomAmmoCategoriesLog.Log.AIM.TW(0,$"Generating cluster {specialHitTable} table {from} location:{originalLocation} based on:");
       foreach (var hit in hitTable) { CustomAmmoCategoriesLog.Log.AIM?.W(1, $"{hit.Key}:{hit.Value}"); }
       CustomAmmoCategoriesLog.Log.AIM.WL(0, "");
       result = GetClusterTable(originalLocation, hitTable);
       clusterTables.Add(originalLocation, result);
-      if (GetClusterHitTable_cache.ContainsKey(from) == false) {
+      if (GetClusterHitTable_cache_sp.ContainsKey(from) == false) {
         CustomAmmoCategoriesLog.Log.AIM.WL(1, $"adding to cache as {from}");
-        GetClusterHitTable_cache.Add(from, clusterTables);
+        GetClusterHitTable_cache_sp.Add(from, clusterTables);
       }
       this.DumpClusterTableCache(CustomAmmoCategoriesLog.Log.AIM);
       return result;

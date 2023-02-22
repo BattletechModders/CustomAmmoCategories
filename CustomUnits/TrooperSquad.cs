@@ -447,6 +447,8 @@ namespace CustomUnits {
     //public HashSet<MechRepresentation> MechReps;
     public UnitCustomInfo info;
     public override bool isQuad { get { return false; } }
+    public override string DefaultStructureDef { get { return "squad"; } }
+
     public static void Pilot_IsIncapacitated_Patch(Pilot __instance,ref bool __result) {
       if (__instance.ParentActor is TrooperSquad squad) { __result = squad.GetOperationalUnitsCount() <= 0; return; }
     }

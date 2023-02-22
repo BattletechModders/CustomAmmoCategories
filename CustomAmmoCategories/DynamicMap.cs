@@ -1658,8 +1658,9 @@ namespace CustAmmoCategories {
         DynamicMapHelper.CurrentBiome = Traverse.Create(mapMetaData).Field<string>("biomeDesignMaskName").Value;
       } catch (Exception) {
         DynamicMapHelper.CurrentBiome = "NotSet";
-      }
-      bool noForest = CustomAmmoCategories.Settings.NoForestBiomes.Contains(DynamicMapHelper.CurrentBiome);
+      }      
+      bool noForest = Traverse.Create(mapMetaData).Field<string>("forestDesignMaskName").Value.Contains("Forest") == false;
+      //CustomAmmoCategories.Settings.NoForestBiomes.Contains(DynamicMapHelper.CurrentBiome);
       Log.M.TWL(0,"Map biome:" + DynamicMapHelper.CurrentBiome + " noForest:" + noForest+" hex grid:"+(hexGrid == null?"null":"not null"));
       //Log.LogWrite(" stack:" + Environment.StackTrace + "\n");
       //HexGrid hexGrid = UnityGameInstance.BattleTechGame.Combat.HexGrid;

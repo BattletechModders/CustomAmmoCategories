@@ -733,6 +733,10 @@ namespace CustomUnits{
                 Log.WL(0, e.ToString(), true);
               }
             }
+          } else if (customResource.Key == nameof(CustomStructureDef)) {
+            foreach (var custItem in customResource.Value) {
+              CustomStructureDef.Register(custItem.Value.FilePath);
+            }
           } else if (customResource.Key == nameof(CustomHitTableDef)) {
             foreach (var custItem in customResource.Value) {
               CustomHitTableDef.Register(custItem.Value.FilePath);

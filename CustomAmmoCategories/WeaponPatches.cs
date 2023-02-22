@@ -248,6 +248,15 @@ namespace CustAmmoCategories {
       float result = ammo.ShotsPerAmmo * extWeapon.ShotsPerAmmo * mode.ShotsPerAmmo;
       return result;
     }
+    public static string SpecialHitTable(this Weapon weapon) {
+      ExtAmmunitionDef ammo = weapon.ammo();
+      ExtWeaponDef extWeapon = weapon.exDef();
+      WeaponMode mode = weapon.mode();
+      if (string.IsNullOrEmpty(mode.SpecialHitTable) == false) { return mode.SpecialHitTable; }
+      if (string.IsNullOrEmpty(ammo.SpecialHitTable) == false) { return ammo.SpecialHitTable; }
+      if (string.IsNullOrEmpty(extWeapon.SpecialHitTable) == false) { return extWeapon.SpecialHitTable; }
+      return weapon.StatCollection.GetOrCreateStatisic<string>(CustomAmmoCategories.SPECIAL_HIT_TABLE_NAME, string.Empty).Value<string>();
+    }
     public static float GetStatisticFloat(this Weapon weapon, string name) {
       return weapon.StatCollection.GetStatistic(CustAmmoCategories.ExtWeaponDef.StatisticAttributePrefix + name).Value<float>();
     }

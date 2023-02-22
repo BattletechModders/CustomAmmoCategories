@@ -717,6 +717,8 @@ namespace CustAmmoCategories {
     public EvasivePipsMods hexesMovedMod { get; set; } = new EvasivePipsMods();
     [Key(128)]
     public float RecoilJammingChance { get; set; } = 0f;
+    [Key(129)]
+    public string SpecialHitTable { get; set; } = string.Empty;
     public ExtWeaponDef() { }
   }
 }

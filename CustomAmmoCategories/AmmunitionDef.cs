@@ -611,6 +611,8 @@ namespace CustAmmoCategories {
     public EvasivePipsMods hexesMovedMod { get; set; } = new EvasivePipsMods();
     [Key(154)]
     public float RecoilJammingChance { get; set; } = 0f;
+    [Key(155)]
+    public string SpecialHitTable { get; set; } = string.Empty;
     public ExtAmmunitionDef() {
       //Id = "NotSet";
       //Name = string.Empty;

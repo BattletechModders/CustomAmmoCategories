@@ -455,6 +455,8 @@ namespace CustAmmoCategories {
     public EvasivePipsMods hexesMovedMod { get; set; } = new EvasivePipsMods();
     [Key(149)]
     public float RecoilJammingChance { get; set; } = 0f;
+    [Key(150)]
+    public string SpecialHitTable { get; set; } = string.Empty;
     private static List<PropertyInfo> json_properties = null;
     private static void fill_json_properties() {
       if (json_properties != null) { return; }
