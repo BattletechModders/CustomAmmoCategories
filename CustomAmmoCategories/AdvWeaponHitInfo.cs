@@ -12,7 +12,7 @@ using BattleTech;
 using CustomAmmoCategoriesLog;
 using CustomAmmoCategoriesPatches;
 using FluffyUnderware.Curvy;
-using Harmony;
+using HarmonyLib;
 using Localize;
 using OfficeOpenXml;
 using System;

@@ -12,7 +12,7 @@ using BattleTech;
 using BattleTech.Rendering;
 using BattleTech.Rendering.UrbanWarfare;
 using CustAmmoCategories;
-using Harmony;
+using HarmonyLib;
 using HBS;
 using HBS.Math;
 using Localize;

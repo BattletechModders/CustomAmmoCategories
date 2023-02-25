@@ -1,6 +1,6 @@
 ﻿using BattleTech;
 using CustomAmmoCategoriesLog;
-using Harmony;
+using HarmonyLib;
 using System;
 
 namespace CustomAmmoCategoriesPrivate {

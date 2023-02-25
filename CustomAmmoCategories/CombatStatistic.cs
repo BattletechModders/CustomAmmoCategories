@@ -4,7 +4,7 @@ using BattleTech.UI;
 using BattleTech.UI.TMProWrapper;
 using BattleTech.UI.Tooltips;
 using CustomSettings;
-using Harmony;
+using HarmonyLib;
 using IRBTModUtils;
 using System;
 using System.Collections.Generic;
@@ -199,10 +199,10 @@ namespace CustAmmoCategories {
       }
     }
   }
-  [HarmonyPatch(typeof(Mech))]
+  [HarmonyPatch(typeof(AbstractActor))]
   [HarmonyPatch("FlagForDeath")]
   [HarmonyPatch(MethodType.Normal)]
-  public static class Mech_FlagForDeath {
+  public static class AbstractActor_FlagForDeath {
     public static void AddToStatistic(this AbstractActor __instance, string attackerID) {
       if (UnitCombatStatisticHelper.deadUnits.Contains(__instance)) {
         Log.M?.WL(1, "already flagged for death");
@@ -226,53 +226,53 @@ namespace CustAmmoCategories {
     }
     public static void Postfix(AbstractActor __instance, string reason, DeathMethod deathMethod, DamageType damageType, int location, int stackItemID, string attackerID, bool isSilent) {
       try {
-        Log.M?.TWL(0, $"Mech.FlagForDeath {__instance.PilotableActorDef.ChassisID}. Attacker:{attackerID}",true);
+        Log.M?.TWL(0, $"AbstractActor.FlagForDeath {__instance.PilotableActorDef.ChassisID}. Attacker:{attackerID}",true);
         __instance.AddToStatistic(attackerID);
       } catch (Exception e) {
         Log.M?.TWL(0, e.ToString(), true);
       }
     }
   }
-  [HarmonyPatch(typeof(Vehicle))]
-  [HarmonyPatch("FlagForDeath")]
-  [HarmonyPatch(MethodType.Normal)]
-  public static class Vehicle_FlagForDeath {
-    public static void Postfix(AbstractActor __instance, string reason, DeathMethod deathMethod, DamageType damageType, int location, int stackItemID, string attackerID, bool isSilent) {
-      try {
-        Log.M?.TWL(0, $"Vehicle.FlagForDeath {__instance.PilotableActorDef.ChassisID}. Attacker:{attackerID}", true);
-        __instance.AddToStatistic(attackerID);
-      } catch (Exception e) {
-        Log.M?.TWL(0, e.ToString(), true);
-      }
-    }
-  }
-  [HarmonyPatch(typeof(Turret))]
-  [HarmonyPatch("FlagForDeath")]
-  [HarmonyPatch(MethodType.Normal)]
-  public static class Turret_FlagForDeath {
-    public static void Postfix(AbstractActor __instance, string reason, DeathMethod deathMethod, DamageType damageType, int location, int stackItemID, string attackerID, bool isSilent) {
-      try {
-        Log.M?.TWL(0, $"Turret.FlagForDeath {__instance.PilotableActorDef.ChassisID}. Attacker:{attackerID}", true);
-        __instance.AddToStatistic(attackerID);
-      } catch (Exception e) {
-        Log.M?.TWL(0, e.ToString(), true);
-      }
-    }
-  }
-  [HarmonyPatch(typeof(AbstractActor))]
-  [HarmonyPatch("FlagForDeath")]
-  [HarmonyPatch(MethodType.Normal)]
-  [HarmonyPatch(new Type[] { typeof(string), typeof(DeathMethod), typeof(BattleTech.DamageType), typeof(int), typeof(int), typeof(string), typeof(bool) })]
-  public static class AbstractActor_FlagForDeath {
-    public static void Postfix(AbstractActor __instance, string reason, DeathMethod deathMethod, DamageType damageType, int location, int stackItemID, string attackerID, bool isSilent) {
-      try {
-        Log.M?.TWL(0, $"AbstractActor.FlagForDeath {__instance.PilotableActorDef.ChassisID}. Attacker:{attackerID}", true);
-        __instance.AddToStatistic(attackerID);
-      } catch (Exception e) {
-        Log.M?.TWL(0, e.ToString(), true);
-      }
-    }
-  }
+  //[HarmonyPatch(typeof(Vehicle))]
+  //[HarmonyPatch("FlagForDeath")]
+  //[HarmonyPatch(MethodType.Normal)]
+  //public static class Vehicle_FlagForDeath {
+  //  public static void Postfix(AbstractActor __instance, string reason, DeathMethod deathMethod, DamageType damageType, int location, int stackItemID, string attackerID, bool isSilent) {
+  //    try {
+  //      Log.M?.TWL(0, $"Vehicle.FlagForDeath {__instance.PilotableActorDef.ChassisID}. Attacker:{attackerID}", true);
+  //      __instance.AddToStatistic(attackerID);
+  //    } catch (Exception e) {
+  //      Log.M?.TWL(0, e.ToString(), true);
+  //    }
+  //  }
+  //}
+  //[HarmonyPatch(typeof(Turret))]
+  //[HarmonyPatch("FlagForDeath")]
+  //[HarmonyPatch(MethodType.Normal)]
+  //public static class Turret_FlagForDeath {
+  //  public static void Postfix(AbstractActor __instance, string reason, DeathMethod deathMethod, DamageType damageType, int location, int stackItemID, string attackerID, bool isSilent) {
+  //    try {
+  //      Log.M?.TWL(0, $"Turret.FlagForDeath {__instance.PilotableActorDef.ChassisID}. Attacker:{attackerID}", true);
+  //      __instance.AddToStatistic(attackerID);
+  //    } catch (Exception e) {
+  //      Log.M?.TWL(0, e.ToString(), true);
+  //    }
+  //  }
+  //}
+  //[HarmonyPatch(typeof(AbstractActor))]
+  //[HarmonyPatch("FlagForDeath")]
+  //[HarmonyPatch(MethodType.Normal)]
+  //[HarmonyPatch(new Type[] { typeof(string), typeof(DeathMethod), typeof(BattleTech.DamageType), typeof(int), typeof(int), typeof(string), typeof(bool) })]
+  //public static class AbstractActor_FlagForDeath {
+  //  public static void Postfix(AbstractActor __instance, string reason, DeathMethod deathMethod, DamageType damageType, int location, int stackItemID, string attackerID, bool isSilent) {
+  //    try {
+  //      Log.M?.TWL(0, $"AbstractActor.FlagForDeath {__instance.PilotableActorDef.ChassisID}. Attacker:{attackerID}", true);
+  //      __instance.AddToStatistic(attackerID);
+  //    } catch (Exception e) {
+  //      Log.M?.TWL(0, e.ToString(), true);
+  //    }
+  //  }
+  //}
   [HarmonyPatch(typeof(AAR_UnitStatusWidget))]
   [HarmonyPatch("AddKilledMech")]
   [HarmonyPatch(MethodType.Normal)]

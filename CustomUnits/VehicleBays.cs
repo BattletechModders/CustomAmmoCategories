@@ -17,7 +17,7 @@ using BattleTech.UI.TMProWrapper;
 using BattleTech.UI.Tooltips;
 using CustAmmoCategories;
 using DG.Tweening;
-using Harmony;
+using HarmonyLib;
 using HBS;
 using HBS.Data;
 using InControl;

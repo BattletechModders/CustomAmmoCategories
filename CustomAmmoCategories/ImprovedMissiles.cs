@@ -12,7 +12,7 @@ using BattleTech;
 using BattleTech.Rendering;
 using CustAmmoCategories;
 using CustomAmmoCategoriesLog;
-using Harmony;
+using HarmonyLib;
 using System;
 using System.Collections.Generic;
 using System.Reflection;
@@ -254,7 +254,7 @@ namespace CustAmmoCategoriesPatches {
       return;
     }
   }
-  [HarmonyPatch(typeof(MissileEffect))]
+  [HarmonyPatch(typeof(WeaponEffect))]
   [HarmonyPatch("DestroyFlimsyObjects")]
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { })]

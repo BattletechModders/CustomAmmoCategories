@@ -16,7 +16,7 @@ using System.IO;
 using System.Reflection;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using Harmony;
+using HarmonyLib;
 using HBS.Util;
 using BattleTech;
 using BattleTech.UI;
@@ -37,7 +37,7 @@ using CustomAmmoCategoriesLog;
 using CustAmmoCategoriesPatches;
 using System.Collections.Concurrent;
 using MessagePack;
-using Harmony;
+using HarmonyLib;
 
 namespace CustomAmmoCategoriesPatches {
   [HarmonyPatch(typeof(MechLabPanel))]
@@ -1304,7 +1304,7 @@ namespace CustAmmoCategories {
 
 namespace CACMain {
   public static class Core {
-    public static HarmonyInstance harmony { get; set; } = null;
+    public static Harmony harmony { get; set; } = null;
     public static bool MechEngineerDetected { get; set; } = false;
     public static Type privateAssemblyCore { get; set; } = null;
     public static Dictionary<string, GameObject> AdditinalFXObjects = new Dictionary<string, GameObject>();
@@ -1514,7 +1514,7 @@ namespace CACMain {
         }
       }
       try {
-        Core.harmony = HarmonyInstance.Create("io.mission.modrepuation");
+        Core.harmony = new Harmony("io.mission.modrepuation");
         harmony.PatchAll(Assembly.GetExecutingAssembly());
         InternalClassPathes.PatchInternalClasses(harmony);
         Thread thread = new Thread(ThreadWork.DoWork);

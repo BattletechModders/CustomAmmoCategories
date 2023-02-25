@@ -12,7 +12,7 @@ using BattleTech;
 using BattleTech.Data;
 using BattleTech.UI;
 using CustomAmmoCategoriesLog;
-using Harmony;
+using HarmonyLib;
 using System;
 using System.Collections;
 using System.Collections.Generic;

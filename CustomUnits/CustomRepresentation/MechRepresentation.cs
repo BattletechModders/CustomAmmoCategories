@@ -15,7 +15,7 @@ using BattleTech.Rendering.UI;
 using BattleTech.Rendering.UrbanWarfare;
 using CustAmmoCategories;
 using FogOfWar;
-using Harmony;
+using HarmonyLib;
 using HBS;
 using System;
 using System.Collections;

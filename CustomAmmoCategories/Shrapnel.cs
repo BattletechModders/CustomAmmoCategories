@@ -13,7 +13,7 @@ using BattleTech.Rendering;
 using CustAmmoCategories;
 using CustomAmmoCategoriesLog;
 using FluffyUnderware.Curvy;
-using Harmony;
+using HarmonyLib;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;

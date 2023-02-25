@@ -11,7 +11,7 @@
 using BattleTech;
 using CustAmmoCategories;
 using CustomAmmoCategoriesLog;
-using Harmony;
+using HarmonyLib;
 using HBS.Util;
 using MessagePack;
 using Newtonsoft.Json;

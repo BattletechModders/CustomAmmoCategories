@@ -10,7 +10,7 @@
 */
 using BattleTech;
 using CustomAmmoCategoriesLog;
-using Harmony;
+using HarmonyLib;
 using IRBTModUtils;
 using Localize;
 using System;

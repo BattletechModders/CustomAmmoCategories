@@ -12,7 +12,7 @@ using BattleTech;
 using BattleTech.Data;
 using BattleTech.Rendering;
 using CustAmmoCategories;
-using Harmony;
+using HarmonyLib;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -341,15 +341,48 @@ namespace CustomUnits {
         tr.localRotation = localRot;
       }
     }
+    public virtual void PlayOutAudio() {
+      if (isSlave == false) {
+        Log.TWL(0, "CustomMechRepresentaion.PlayOutAudio " + (this.parentMech == null ? "null" : this.parentMech.MechDef.ChassisID));
+        string event_name = this.CurrentRepresentation.altDef.SwitchOutAudio;
+        if (string.IsNullOrEmpty(event_name) == false) {
+          if (CustomVoices.AudioEngine.isInAudioManifest(event_name)) {
+            Log.WL(1, event_name + " playing custom");
+            this.customAudioObject.Play(event_name, false);
+          } else {
+            int num = (int)WwiseManager.PostEvent(event_name, this.audioObject);
+            Log.WL(1, event_name + ":" + num);
+          }
+        }
+      }      
+    }
+    public virtual void PlayInAudio() {
+      if (isSlave == false) {
+        Log.TWL(0, "CustomMechRepresentaion.PlayInAudio " + (this.parentMech == null ? "null" : this.parentMech.MechDef.ChassisID));
+        string event_name = this.CurrentRepresentation.altDef.SwitchInAudio;
+        if (string.IsNullOrEmpty(event_name) == false) {
+          if (CustomVoices.AudioEngine.isInAudioManifest(event_name)) {
+            Log.WL(1, event_name + " playing custom");
+            this.customAudioObject.Play(event_name, false);
+          } else {
+            int num = (int)WwiseManager.PostEvent(event_name, this.audioObject);
+            Log.WL(1, event_name + ":" + num);
+          }
+        }
+      }
+    }
     public virtual void ChangeVisibility(int index) {
       Log.TWL(0, "AlternatesRepresentation.ChangeVisibility "+index);
       this.StopPersistentAudio();
       this.SetRandomIdleValue(0.6f);
+      this.PlayOutAudio();
       this.CurrentIndex = index;
       CustomMechRepresentation oldRep = this.CurrentRepresentation;
       foreach (Collider collider in oldRep.selfColliders) { collider.enabled = false; }
       this.CurrentRepresentation = this.Alternates[index];
+      this.PlayInAudio();
       this.StartPersistentAudio();
+
       CustomMechRepresentation curRep = this.CurrentRepresentation;
       foreach (Collider collider in oldRep.selfColliders) { collider.enabled = true; }
       Log.WL(1, "vfxCenterTorsoTransform");

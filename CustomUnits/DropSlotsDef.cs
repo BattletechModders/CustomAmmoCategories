@@ -282,6 +282,7 @@ namespace CustomUnits {
       }
     }
     public int OverallUnits { get; set; } = 4;
+    [JsonIgnore]
     public List<DropLanceDef> dropLances { get; set; } = new List<DropLanceDef>();
     public List<string> DropLances { get; set; } = new List<string>();
     [JsonIgnore]

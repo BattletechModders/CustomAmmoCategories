@@ -18,7 +18,7 @@ using UnityEngine;
 using Object = UnityEngine.Object;
 using Random = UnityEngine.Random;
 using System.Reflection;
-using Harmony;
+using HarmonyLib;
 using CustAmmoCategories;
 using FluffyUnderware.Curvy;
 using Localize;

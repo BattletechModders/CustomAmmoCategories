@@ -12,7 +12,7 @@ using BattleTech;
 using BattleTech.AttackDirectorHelpers;
 using CustomAmmoCategoriesLog;
 using CustomAmmoCategoriesPatches;
-using Harmony;
+using HarmonyLib;
 using Localize;
 using System;
 using System.Collections.Generic;

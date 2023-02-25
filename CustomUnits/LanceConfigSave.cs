@@ -15,7 +15,7 @@ using BattleTech.UI.TMProWrapper;
 using BattleTech.UI.Tooltips;
 using CustAmmoCategories;
 using CustomPrewarm;
-using Harmony;
+using HarmonyLib;
 using HBS;
 using Newtonsoft.Json;
 using SVGImporter;

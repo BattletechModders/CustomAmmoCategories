@@ -5,7 +5,8 @@ using IRBTModUtils;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Threading;
-using Harmony;
+using HarmonyLib;
+using HarmonyLib;
 
 namespace CustomUnits {
   [HarmonyPatch(typeof(WeightedFactor))]
@@ -46,7 +47,7 @@ namespace CustomUnits {
     }
   public static MethodInfo PrefixMethod() => AccessTools.Method(typeof(InfluenceMapPositionFactorPatch), nameof(Prefix));
     public static MethodInfo PostfixMethod() => AccessTools.Method(typeof(InfluenceMapPositionFactorPatch), nameof(Postfix));
-    public static void PatchAll(HarmonyInstance harmony) {
+    public static void PatchAll(Harmony harmony) {
       try {
         List<Type> InfluenceMapPositionFactors = new List<Type>();
         foreach (Assembly assembly in AppDomain.CurrentDomain.GetAssemblies()) {

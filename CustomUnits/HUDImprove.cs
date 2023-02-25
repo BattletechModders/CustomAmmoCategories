@@ -21,7 +21,7 @@ using CustAmmoCategories;
 using CustAmmoCategoriesPatches;
 using CustomAmmoCategoriesPatches;
 using DG.Tweening;
-using Harmony;
+using HarmonyLib;
 using HBS;
 using HBS.Collections;
 using Localize;

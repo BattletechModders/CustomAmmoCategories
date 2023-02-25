@@ -15,7 +15,7 @@ using BattleTech.UI;
 using BattleTech.UI.TMProWrapper;
 using CustomAmmoCategoriesLog;
 using CustomAmmoCategoriesPatches;
-using Harmony;
+using HarmonyLib;
 using HBS;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;

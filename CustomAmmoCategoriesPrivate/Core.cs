@@ -12,7 +12,7 @@
 using BattleTech;
 using CustAmmoCategories;
 using CustomAmmoCategoriesLog;
-using Harmony;
+using HarmonyLib;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -84,9 +84,9 @@ namespace CustomAmmoCategoriesPrivate{
   //}
 
   public class Core {
-    public static HarmonyInstance harmony { get; set; } = null;
+    public static Harmony harmony { get; set; } = null;
     public static void Init() {
-      Core.harmony = HarmonyInstance.Create("io.mission.customammocategories.private");
+      Core.harmony = new Harmony("io.mission.customammocategories.private");
       Log.P?.TWL(0, "Initing " + Assembly.GetExecutingAssembly().GetName(), true);
     }
     public static void FinishedLoading() {

@@ -5,7 +5,7 @@ using System.Reflection;
 using BattleTech;
 using BattleTech.UI;
 using CustomUnits;
-using Harmony;
+using HarmonyLib;
 using Newtonsoft.Json;
 using UnityEngine;
 using static SortByTonnage.SortByTonnage;

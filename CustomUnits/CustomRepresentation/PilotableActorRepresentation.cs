@@ -13,7 +13,7 @@ using BattleTech.Rendering;
 using BattleTech.Rendering.UI;
 using BattleTech.Rendering.UrbanWarfare;
 using CustAmmoCategories;
-using Harmony;
+using HarmonyLib;
 using Localize;
 using System;
 using System.Collections;

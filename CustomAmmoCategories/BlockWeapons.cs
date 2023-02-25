@@ -12,7 +12,7 @@ using BattleTech;
 using BattleTech.UI;
 using CleverGirlAIDamagePrediction;
 using CustomAmmoCategoriesLog;
-using Harmony;
+using HarmonyLib;
 using Localize;
 using System;
 using System.Collections.Generic;

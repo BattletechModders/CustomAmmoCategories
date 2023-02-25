@@ -14,7 +14,7 @@ using BattleTech.Serialization;
 using BattleTech.UI;
 using BattleTech.UI.Tooltips;
 using CustAmmoCategories;
-using Harmony;
+using HarmonyLib;
 using HBS.Util;
 using IRBTModUtils;
 using Localize;

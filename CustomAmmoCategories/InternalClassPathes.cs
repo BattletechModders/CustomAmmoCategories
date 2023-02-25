@@ -12,7 +12,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using Harmony;
+using HarmonyLib;
 using BattleTech;
 using System.Reflection;
 using CustomAmmoCategoriesPatches;
@@ -20,7 +20,7 @@ using CustAmmoCategories;
 
 namespace CustomAmmoCategoriesPathes {
   public static class InternalClassPathes {
-    public static void PatchInternalClasses(HarmonyInstance harmony) {
+    public static void PatchInternalClasses(Harmony harmony) {
       var original = typeof(Weapon).Assembly.GetType("DoAnyMovesYieldLOFToAnyHostileNode").GetMethod("Tick", BindingFlags.NonPublic | BindingFlags.Instance);
       var transpliter = typeof(DoAnyMovesYieldLOFToAnyHostileNode_Tick).GetMethod("Transpiler");
       harmony.Patch(original, null,null, new HarmonyMethod(transpliter));

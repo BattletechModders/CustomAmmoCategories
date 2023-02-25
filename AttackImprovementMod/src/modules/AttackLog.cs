@@ -1,5 +1,5 @@
 ﻿using BattleTech;
-using Harmony;
+using HarmonyLib;
 using Sheepy.Logging;
 using System;
 using System.Collections.Generic;

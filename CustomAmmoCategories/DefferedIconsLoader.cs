@@ -11,7 +11,7 @@
 using BattleTech;
 using BattleTech.Data;
 using CustomAmmoCategoriesLog;
-using Harmony;
+using HarmonyLib;
 using SVGImporter;
 using System;
 using System.Collections.Generic;

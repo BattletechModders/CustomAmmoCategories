@@ -13,7 +13,7 @@ using BattleTech.UI;
 using BattleTech.UI.TMProWrapper;
 using CustAmmoCategories;
 using CustomAmmoCategoriesLog;
-using Harmony;
+using HarmonyLib;
 using HBS;
 using Localize;
 using System;

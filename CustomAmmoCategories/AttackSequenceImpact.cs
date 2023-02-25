@@ -14,7 +14,7 @@ using System.Linq;
 using System.Text;
 using CustAmmoCategories;
 using BattleTech;
-using Harmony;
+using HarmonyLib;
 using UnityEngine;
 using System.Reflection;
 using CustomAmmoCategoriesLog;

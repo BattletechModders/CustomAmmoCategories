@@ -230,7 +230,7 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
       } catch (Exception ex) { Error(ex); }
     }
 
-    [Harmony.HarmonyPriority(Harmony.Priority.Low)]
+    [HarmonyLib.HarmonyPriority(HarmonyLib.Priority.Low)]
     public static bool OverrideMultiTargetCanBackout(SelectionStateFireMulti __instance, ref bool __result) {
       try {
         __result = __instance.Orders == null && __instance.AllTargetedCombatantsCount > 0;
@@ -242,7 +242,7 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
     private static MethodInfo RemoveTargetedCombatant, ClearTargetedActor;
     private static readonly object[] RemoveTargetParams = new object[] { null, false };
 
-    [Harmony.HarmonyPriority(Harmony.Priority.Low)]
+    [HarmonyLib.HarmonyPriority(HarmonyLib.Priority.Low)]
     public static bool OverrideMultiTargetBackout(SelectionStateFireMulti __instance, ref ICombatant ___targetedCombatant) {
       try {
         SelectionStateFireMulti me = __instance;
@@ -269,7 +269,7 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
       } catch (Exception ex) { return Error(ex); }
     }
 
-    [Harmony.HarmonyPriority(Harmony.Priority.Low)]
+    [HarmonyLib.HarmonyPriority(HarmonyLib.Priority.Low)]
     public static bool OverrideRemoveTargetedCombatant(SelectionStateFireMulti __instance, ICombatant target, bool clearedForFiring) {
       try {
         List<ICombatant> allTargets = __instance.AllTargetedCombatants;

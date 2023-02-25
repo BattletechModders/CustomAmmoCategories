@@ -1,6 +1,6 @@
 ﻿using BattleTech;
 using BattleTech.UI;
-using Harmony;
+using HarmonyLib;
 using Localize;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -53,7 +53,7 @@ namespace Sheepy.BattleTechMod {
         Log = new Logger(GetLogFile());
       }
     }
-    public HarmonyInstance ModHarmony { get; internal set; }
+    public Harmony ModHarmony { get; internal set; }
 
     // ============ Setup ============
 
@@ -87,7 +87,7 @@ namespace Sheepy.BattleTechMod {
     protected virtual void Setup() {
       Log.Delete();
       Log.Info("{0:yyyy-MM-dd} Loading {1} Version {2} @ {3}", DateTime.Now, Name, Version, BaseDir);
-      Log.Info("Game Version {0}, Harmony Version {1}, Mod Dll Version {2}" + Environment.NewLine, VersionInfo.ProductVersion, typeof(HarmonyInstance).Assembly.GetName().Version, this.GetType().Assembly.GetName().Version);
+      Log.Info("Game Version {0}, Harmony Version {1}, Mod Dll Version {2}" + Environment.NewLine, VersionInfo.ProductVersion, typeof(Harmony).Assembly.GetName().Version, this.GetType().Assembly.GetName().Version);
     }
 
     public static string Idify(string text) { return new Regex("\\W+").Split(text).Concat("", UppercaseFirst); }
@@ -406,7 +406,7 @@ namespace Sheepy.BattleTechMod {
     }
 
     public void Patch(MethodBase patched, MethodInfo prefix, MethodInfo postfix, MethodInfo transpiler = null) {
-      Patch(patched, new HarmonyMethod(prefix), new HarmonyMethod(postfix), new HarmonyMethod(transpiler));
+      Patch(patched, prefix == null? null : new HarmonyMethod(prefix), postfix == null? null : new HarmonyMethod(postfix), transpiler == null? null: new HarmonyMethod(transpiler));
     }
 
     public void Patch(MethodBase patched, HarmonyMethod prefix, HarmonyMethod postfix, HarmonyMethod transpiler = null) {
@@ -416,7 +416,7 @@ namespace Sheepy.BattleTechMod {
         return;
       }
       if (Mod.ModHarmony == null) {
-        Mod.ModHarmony = HarmonyInstance.Create(Id);
+        Mod.ModHarmony = new Harmony(Id);
         Log.Info("Harmony instance \"{0}\"", Id);
       }
       Mod.ModHarmony.Patch(patched, prefix, postfix, transpiler);

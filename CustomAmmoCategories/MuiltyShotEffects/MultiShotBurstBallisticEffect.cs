@@ -3,7 +3,7 @@ using BattleTech.Data;
 using BattleTech.Rendering;
 using CustomAmmoCategoriesLog;
 using FluffyUnderware.Curvy;
-using Harmony;
+using HarmonyLib;
 using System;
 using System.Collections.Generic;
 using System.Linq;

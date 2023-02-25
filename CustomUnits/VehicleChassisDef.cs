@@ -14,7 +14,7 @@ using BattleTech.Rendering;
 using BattleTech.Rendering.UrbanWarfare;
 using BattleTech.UI;
 using CustAmmoCategories;
-using Harmony;
+using HarmonyLib;
 using Localize;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;

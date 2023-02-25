@@ -12,7 +12,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using Harmony;
+using HarmonyLib;
 using System.Reflection;
 using BattleTech;
 using CustAmmoCategories;
@@ -87,7 +87,7 @@ namespace CustomUnits {
       patched_success = true;
       return result;
     }
-    public static void PatchInfluenceMapPositionFactor(HarmonyInstance harmony) {
+    public static void PatchInfluenceMapPositionFactor(Harmony harmony) {
       List<Type> types = FindAllDerivedTypes<InfluenceMapPositionFactor>(typeof(InfluenceMapPositionFactor).Assembly);
       MethodInfo transpliter = typeof(WeightedFactorHelper).GetMethod("Transpiler", BindingFlags.Static | BindingFlags.Public);
       if (transpliter == null) {

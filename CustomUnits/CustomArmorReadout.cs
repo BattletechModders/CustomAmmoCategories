@@ -12,7 +12,7 @@ using BattleTech;
 using BattleTech.UI;
 using BattleTech.UI.TMProWrapper;
 using CustAmmoCategories;
-using Harmony;
+using HarmonyLib;
 using IRBTModUtils;
 using SVGImporter;
 using System;

@@ -1,7 +1,7 @@
 ﻿using BattleTech;
 using BattleTech.UI;
 using CustomAmmoCategoriesLog;
-using Harmony;
+using HarmonyLib;
 using IRBTModUtils;
 using System;
 using System.Collections.Generic;
@@ -357,7 +357,7 @@ namespace CustAmmoCategories {
       registry[id] = callback;
     }
     private static Dictionary<BaseComponentRef, WeaponRefModes> MODES = new Dictionary<BaseComponentRef, WeaponRefModes>();
-    public static void InitHelper(HarmonyInstance harmony) {
+    public static void InitHelper(Harmony harmony) {
       harmony.Patch(CalculateHeatEfficiencyStat_Method(), CalculateHeatEfficiencyStat_Prefix_H(), CalculateHeatEfficiencyStat_Postfix_H());
       harmony.Patch(CalculateRangeStat_Method(), CalculateRangeStat_Prefix_H(), CalculateRangeStat_Postfix_H());
       harmony.Patch(CalculateFirepowerStat_Method(), CalculateFirepowerStat_Prefix_H(), CalculateFirepowerStat_Postfix_H());
@@ -379,12 +379,12 @@ namespace CustAmmoCategories {
     }
     internal static HarmonyMethod CalculateHeatEfficiencyStat_Prefix_H() {
       var result = new HarmonyMethod(AccessTools.Method(typeof(WeaponDefModesCollectHelper), nameof(CalculateHeatEfficiencyStat_Prefix)));
-      result.prioritiy = 1000;
+      result.priority = 1000;
       return result;
     }
     internal static HarmonyMethod CalculateHeatEfficiencyStat_Postfix_H() {
       var result = new HarmonyMethod(AccessTools.Method(typeof(WeaponDefModesCollectHelper), nameof(CalculateHeatEfficiencyStat_Postfix)));
-      result.prioritiy = -400;
+      result.priority = -400;
       return result;
     }
     internal static MethodInfo CalculateRangeStat_Method() {
@@ -398,12 +398,12 @@ namespace CustAmmoCategories {
     }
     internal static HarmonyMethod CalculateRangeStat_Prefix_H() {
       var result = new HarmonyMethod(AccessTools.Method(typeof(WeaponDefModesCollectHelper), nameof(CalculateRangeStat_Prefix)));
-      result.prioritiy = 1000;
+      result.priority = 1000;
       return result;
     }
     internal static HarmonyMethod CalculateRangeStat_Postfix_H() {
       var result = new HarmonyMethod(AccessTools.Method(typeof(WeaponDefModesCollectHelper), nameof(CalculateRangeStat_Postfix)));
-      result.prioritiy = -400;
+      result.priority = -400;
       return result;
     }
     internal static MethodInfo CalculateFirepowerStat_Method() {
@@ -417,12 +417,12 @@ namespace CustAmmoCategories {
     }
     internal static HarmonyMethod CalculateFirepowerStat_Prefix_H() {
       var result = new HarmonyMethod(AccessTools.Method(typeof(WeaponDefModesCollectHelper), nameof(CalculateFirepowerStat_Prefix)));
-      result.prioritiy = 1000;
+      result.priority = 1000;
       return result;
     }
     internal static HarmonyMethod CalculateFirepowerStat_Postfix_H() {
       var result = new HarmonyMethod(AccessTools.Method(typeof(WeaponDefModesCollectHelper), nameof(CalculateFirepowerStat_Postfix)));
-      result.prioritiy = -400;
+      result.priority = -400;
       return result;
     }
     internal static MethodInfo CalculateMeleeStat_Method() {
@@ -436,12 +436,12 @@ namespace CustAmmoCategories {
     }
     internal static HarmonyMethod CalculateMeleeStat_Prefix_H() {
       var result = new HarmonyMethod(AccessTools.Method(typeof(WeaponDefModesCollectHelper), nameof(CalculateMeleeStat_Prefix)));
-      result.prioritiy = 1000;
+      result.priority = 1000;
       return result;
     }
     internal static HarmonyMethod CalculateMeleeStat_Postfix_H() {
       var result = new HarmonyMethod(AccessTools.Method(typeof(WeaponDefModesCollectHelper), nameof(CalculateMeleeStat_Postfix)));
-      result.prioritiy = -400;
+      result.priority = -400;
       return result;
     }
     internal static MethodInfo StatTooltipData_SetData_Method() {
@@ -455,12 +455,12 @@ namespace CustAmmoCategories {
     }
     internal static HarmonyMethod StatTooltipData_SetData_Prefix_H() {
       var result = new HarmonyMethod(AccessTools.Method(typeof(WeaponDefModesCollectHelper), nameof(StatTooltipData_SetData_Prefix)));
-      result.prioritiy = 1000;
+      result.priority = 1000;
       return result;
     }
     internal static HarmonyMethod StatTooltipData_SetData_Postfix_H() {
       var result = new HarmonyMethod(AccessTools.Method(typeof(WeaponDefModesCollectHelper), nameof(StatTooltipData_SetData_Postfix)));
-      result.prioritiy = -400;
+      result.priority = -400;
       return result;
     }
     private static Dictionary<string, WeaponMode> GatherModesDirectly(this BaseComponentRef weaponRef, List<BaseComponentRef> inventory) {

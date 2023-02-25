@@ -1,5 +1,5 @@
 ﻿using BattleTech;
-using Harmony;
+using HarmonyLib;
 using UnityEngine;
 using static MechResizer.MechResizer;
 

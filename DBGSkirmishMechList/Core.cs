@@ -2,7 +2,7 @@
 using BattleTech.Data;
 using BattleTech.Save;
 using BattleTech.UI;
-using Harmony;
+using HarmonyLib;
 using Localize;
 using Newtonsoft.Json;
 using System;
@@ -356,7 +356,7 @@ namespace DBGSkirmishMechList {
   }
   public static partial class Core {
     public static Settings settings;
-    public static HarmonyInstance harmony = null;
+    public static Harmony harmony = null;
     public static void Init(string directory, string settingsJson) {
       Log.BaseDirectory = directory;
       Core.settings = JsonConvert.DeserializeObject<DBGSkirmishMechList.Settings>(settingsJson);
@@ -364,7 +364,7 @@ namespace DBGSkirmishMechList {
       Log.LogWrite("Initing... " + directory + " version: " + Assembly.GetExecutingAssembly().GetName().Version + "\n", true);
       Log.LogWrite("settings:"+JsonConvert.SerializeObject(Core.settings,Formatting.Indented)+"\n", true);
       try {
-        Core.harmony = HarmonyInstance.Create("io.mission.customunits");
+        Core.harmony = new Harmony("io.mission.customunits");
         Core.harmony.PatchAll(Assembly.GetExecutingAssembly());
       } catch (Exception e) {
         Log.LogWrite(e.ToString() + "\n");

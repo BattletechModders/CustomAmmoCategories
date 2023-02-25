@@ -13,7 +13,7 @@ using BattleTech.UI;
 using CustAmmoCategories;
 using CustomAmmoCategoriesLog;
 using CustomAmmoCategoriesPatches;
-using Harmony;
+using HarmonyLib;
 using IRBTModUtils;
 using Localize;
 using System;

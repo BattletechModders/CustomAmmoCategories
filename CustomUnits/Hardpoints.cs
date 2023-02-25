@@ -11,7 +11,7 @@
 using BattleTech;
 using BattleTech.Data;
 using CustAmmoCategories;
-using Harmony;
+using HarmonyLib;
 using Localize;
 using MessagePack;
 using Newtonsoft.Json;

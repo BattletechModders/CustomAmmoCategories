@@ -1,6 +1,6 @@
 ﻿using BattleTech;
 using CustAmmoCategories;
-using Harmony;
+using HarmonyLib;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;

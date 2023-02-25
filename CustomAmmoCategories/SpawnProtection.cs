@@ -1,7 +1,7 @@
 ﻿using BattleTech;
 using BattleTech.Designed;
 using CustomAmmoCategoriesLog;
-using Harmony;
+using HarmonyLib;
 using Localize;
 using System;
 using UnityEngine;

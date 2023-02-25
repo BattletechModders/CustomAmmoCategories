@@ -28,7 +28,7 @@ using CustAmmoCategories;
 using CustAmmoCategoriesPatches;
 using CustomAmmoCategoriesLog;
 using CustomAmmoCategoriesPatches;
-using Harmony;
+using HarmonyLib;
 using HBS.Util;
 using IRBTModUtils;
 using Localize;

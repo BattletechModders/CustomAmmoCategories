@@ -1,4 +1,4 @@
-﻿using Harmony;
+﻿using HarmonyLib;
 
 namespace WeaponRealizer
 {
@@ -6,7 +6,7 @@ namespace WeaponRealizer
     {
         internal static class Patches
         {
-            public static void Apply(HarmonyInstance harmony)
+            public static void Apply(Harmony harmony)
             {
 //                if (ModSettings.BallisticNumberOfShots)
 //                {

@@ -4,7 +4,7 @@ using System.Globalization;
 using System.Linq;
 using System.Text;
 using BattleTech;
-using Harmony;
+using HarmonyLib;
 using Localize;
 using UnityEngine;
 using Random = UnityEngine.Random;

@@ -9,7 +9,7 @@
  *  If not, see <https://www.gnu.org/licenses/>. 
 */
 using BattleTech;
-using Harmony;
+using HarmonyLib;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;

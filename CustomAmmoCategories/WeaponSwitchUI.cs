@@ -13,7 +13,7 @@ using BattleTech.UI;
 using BattleTech.UI.TMProWrapper;
 using CustAmmoCategories;
 using CustomAmmoCategoriesLog;
-using Harmony;
+using HarmonyLib;
 using SVGImporter;
 using System;
 using System.Collections.Generic;
@@ -41,7 +41,7 @@ using IRBTModUtils;
 using BattleTech.UI.Tooltips;
 using BattleTech.Framework;
 using System.Linq;
-using Harmony;
+using HarmonyLib;
 
 namespace CustomAmmoCategoriesPatches {
   [HarmonyPatch(typeof(CombatHUDObjectiveItem))]

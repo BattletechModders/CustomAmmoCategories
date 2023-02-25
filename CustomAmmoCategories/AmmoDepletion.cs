@@ -17,7 +17,7 @@ using CustAmmoCategoriesPatches;
 using CustomAmmoCategoriesLog;
 using CustomAmmoCategoriesPatches;
 using CustomComponents.Patches;
-using Harmony;
+using HarmonyLib;
 using HBS;
 using HBS.Data;
 using IRBTModUtils;

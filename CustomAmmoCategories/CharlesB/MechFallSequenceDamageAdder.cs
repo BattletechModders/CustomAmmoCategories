@@ -4,7 +4,7 @@ using System.Linq;
 using System.Reflection.Emit;
 using BattleTech;
 using CustomAmmoCategoriesLog;
-using Harmony;
+using HarmonyLib;
 using UnityEngine;
 
 /*

@@ -321,7 +321,7 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
       return null;
     }
 
-    [Harmony.HarmonyPriority(Harmony.Priority.VeryHigh)]
+    [HarmonyLib.HarmonyPriority(HarmonyLib.Priority.VeryHigh)]
     public static void SaveRangedToolTipState(CombatHUDWeaponSlot __instance, ICombatant target) {
       try {
         CombatHUDWeaponSlot slot = __instance;
@@ -331,7 +331,7 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
       } catch (Exception ex) { Error(ex); }
     }
 
-    [Harmony.HarmonyPriority(Harmony.Priority.Low)]
+    [HarmonyLib.HarmonyPriority(HarmonyLib.Priority.Low)]
     public static bool OverrideRangedToolTips(CombatHUDWeaponSlot __instance, ICombatant target) {
       try {
         SetToolTips(__instance, RangedModifiers);
@@ -341,7 +341,7 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
       }
     }
 
-    [Harmony.HarmonyPriority(Harmony.Priority.VeryHigh)]
+    [HarmonyLib.HarmonyPriority(HarmonyLib.Priority.VeryHigh)]
     public static void SaveRangedModifierState(ref float __result, AbstractActor attacker, Weapon weapon, ICombatant target, Vector3 attackPosition, Vector3 targetPosition, LineOfFireLevel lofLevel, bool isCalledShot) {
       try {
         LineOfFire = lofLevel;
@@ -350,7 +350,7 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
       } catch (Exception ex) { Error(ex); }
     }
 
-    [Harmony.HarmonyPriority(Harmony.Priority.Low)]
+    [HarmonyLib.HarmonyPriority(HarmonyLib.Priority.Low)]
     public static bool OverrideRangedModifiers(ref float __result, AbstractActor attacker, Weapon weapon, ICombatant target, Vector3 attackPosition, Vector3 targetPosition, LineOfFireLevel lofLevel, bool isCalledShot) {
       try {
         __result = SumModifiers(RangedModifiers);
@@ -421,7 +421,7 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
       return null;
     }
 
-    [Harmony.HarmonyPriority(Harmony.Priority.Low)]
+    [HarmonyLib.HarmonyPriority(HarmonyLib.Priority.Low)]
     public static bool OverrideMeleeToolTips(CombatHUDWeaponSlot __instance, ICombatant target) {
       try {
         CombatHUDWeaponSlot slot = __instance;
@@ -435,7 +435,7 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
       }
     }
 
-    [Harmony.HarmonyPriority(Harmony.Priority.Low)]
+    [HarmonyLib.HarmonyPriority(HarmonyLib.Priority.Low)]
     public static bool OverrideMeleeModifiers(ref float __result, Mech attacker, ICombatant target, Vector3 targetPosition, MeleeAttackType meleeAttackType) {
       try {
         AttackType = meleeAttackType;

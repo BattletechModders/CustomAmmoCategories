@@ -11,7 +11,7 @@
 using BattleTech;
 using CleverGirlAIDamagePrediction;
 using CustomAmmoCategoriesLog;
-using Harmony;
+using HarmonyLib;
 using IRBTModUtils;
 using Localize;
 using System;

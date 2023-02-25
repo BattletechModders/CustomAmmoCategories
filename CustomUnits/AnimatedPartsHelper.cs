@@ -12,7 +12,7 @@ using BattleTech;
 using BattleTech.Data;
 using BattleTech.Rendering;
 using FogOfWar;
-using Harmony;
+using HarmonyLib;
 using HBS;
 using Newtonsoft.Json;
 using System;

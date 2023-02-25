@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 using BattleTech;
 using CustomUnits;
-using Harmony;
+using HarmonyLib;
 using UnityEngine;
 
 namespace MechResizer {

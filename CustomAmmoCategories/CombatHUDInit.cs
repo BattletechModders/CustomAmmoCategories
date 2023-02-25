@@ -12,7 +12,7 @@ using BattleTech;
 using BattleTech.UI;
 using CustAmmoCategoriesPatches;
 using CustomAmmoCategoriesLog;
-using Harmony;
+using HarmonyLib;
 using System;
 
 namespace CustAmmoCategories {

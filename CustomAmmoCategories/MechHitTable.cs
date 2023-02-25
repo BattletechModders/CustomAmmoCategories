@@ -11,7 +11,7 @@
 using BattleTech;
 using CustAmmoCategories;
 using CustomAmmoCategoriesLog;
-using Harmony;
+using HarmonyLib;
 using IRBTModUtils;
 using System;
 using System.Collections.Generic;

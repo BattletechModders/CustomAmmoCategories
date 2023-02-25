@@ -11,7 +11,7 @@
 using BattleTech;
 using BattleTech.UI;
 using CustAmmoCategories;
-using Harmony;
+using HarmonyLib;
 using System;
 using System.Collections.Generic;
 using UnityEngine;
@@ -249,17 +249,19 @@ namespace CustomUnits {
       }
     }
   }
-  [HarmonyPatch(typeof(SelectionStateMoveBase))]
+  [HarmonyPatch(typeof(SelectionState))]
   [HarmonyPatch("OnAddToStack")]
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { })]
   public static class SelectionStateMoveBase_OnAddToStack {
-    public static void Postfix(SelectionStateMoveBase __instance) {
+    public static void Postfix(SelectionState __instance) {
       try {
-        Log.TWL(0, "SelectionStateMoveBase.OnAddToStack " + __instance.SelectedActor.DisplayName + " gridOrigin:" + __instance.SelectedActor.Pathing.CurrentGrid.WorldPosOrigin + " pos:" + __instance.SelectedActor.CurrentPosition);
-        if (__instance.SelectedActor.Pathing.CurrentGrid.WorldPosOrigin != __instance.SelectedActor.CurrentPosition) {
-          __instance.SelectedActor.ClearStoredPathing();
-          __instance.SelectedActor.ResetPathing(__instance.SelectedActor.StoodUpThisRound);
+        if (__instance is SelectionStateMoveBase movebase) {
+          Log.TWL(0, "SelectionStateMoveBase.OnAddToStack " + movebase.SelectedActor.DisplayName + " gridOrigin:" + movebase.SelectedActor.Pathing.CurrentGrid.WorldPosOrigin + " pos:" + movebase.SelectedActor.CurrentPosition);
+          if (movebase.SelectedActor.Pathing.CurrentGrid.WorldPosOrigin != __instance.SelectedActor.CurrentPosition) {
+            movebase.SelectedActor.ClearStoredPathing();
+            movebase.SelectedActor.ResetPathing(__instance.SelectedActor.StoodUpThisRound);
+          }
         }
       } catch (Exception e) {
         Log.TWL(0, e.ToString(), true);

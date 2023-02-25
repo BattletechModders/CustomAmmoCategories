@@ -1,7 +1,7 @@
 ﻿using System;
 using System.IO;
 using CustomAmmoCategoriesLog;
-using Harmony;
+using HarmonyLib;
 
 namespace WeaponRealizer {
   public static class Logger {

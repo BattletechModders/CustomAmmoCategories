@@ -13,7 +13,7 @@ using CustAmmoCategories;
 using CustAmmoCategoriesPatches;
 using CustomAmmoCategoriesLog;
 using CustomAmmoCategoriesPathes;
-using Harmony;
+using HarmonyLib;
 using System;
 using System.Threading;
 

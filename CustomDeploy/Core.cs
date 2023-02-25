@@ -17,7 +17,7 @@ using BattleTech.Rendering.UrbanWarfare;
 using BattleTech.StringInterpolation;
 using BattleTech.UI;
 using CustomAmmoCategoriesPatches;
-using Harmony;
+using HarmonyLib;
 using HBS;
 using HBS.Collections;
 using Newtonsoft.Json;
@@ -1607,7 +1607,7 @@ namespace CustomDeploy{
     }
     public static string BaseDir { get; set; }
     public static bool debugLog { get; set; }
-    public static HarmonyInstance HarmonyInstance = null;
+    public static Harmony HarmonyInstance = null;
     public static void Init(string directory,bool debugLog) {
       Log.BaseDirectory = directory;
       Core.debugLog = debugLog;
@@ -1615,7 +1615,7 @@ namespace CustomDeploy{
       Core.BaseDir = directory;
       Log.TWL(0,"Initing... " + directory + " version: " + Assembly.GetExecutingAssembly().GetName().Version, true);
       try {
-        HarmonyInstance = HarmonyInstance.Create("io.mission.customdeploy");
+        HarmonyInstance = new Harmony("io.mission.customdeploy");
         HarmonyInstance.PatchAll(Assembly.GetExecutingAssembly());
       } catch (Exception e) {
         Log.TWL(0,e.ToString(),true);

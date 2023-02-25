@@ -15,7 +15,7 @@ using CustAmmoCategories;
 using CustomAmmoCategoriesLog;
 using CustomAmmoCategoriesPatches;
 using CustomAmmoCategoriesPathes;
-using Harmony;
+using HarmonyLib;
 using HBS;
 using InControl;
 using Localize;

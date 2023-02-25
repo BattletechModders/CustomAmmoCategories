@@ -11,7 +11,7 @@
 using BattleTech;
 using BattleTech.Data;
 using BattleTech.UI;
-using Harmony;
+using HarmonyLib;
 using HBS.Collections;
 using System;
 using System.Collections.Generic;

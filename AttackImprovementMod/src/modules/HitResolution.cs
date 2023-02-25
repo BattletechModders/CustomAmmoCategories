@@ -145,7 +145,7 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
 
       private static Dictionary<ChassisLocations, int> ByExplosion, ByRisk;
 
-      [ Harmony.HarmonyPriority( Harmony.Priority.Low ) ]
+      [HarmonyLib.HarmonyPriority(HarmonyLib.Priority.Low ) ]
       public static bool OverrideDecrementAmmo ( Weapon __instance, ref int __result, int stackItemUID ) { try {
          Weapon me = __instance;
          if ( me.AmmoCategoryValue.Is_NotSet || ! ( me.parent is Mech mech ) ) return true;

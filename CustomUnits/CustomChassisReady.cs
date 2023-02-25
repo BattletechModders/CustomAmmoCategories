@@ -16,7 +16,7 @@ using BattleTech.UI;
 using BattleTech.UI.TMProWrapper;
 using CustomComponents;
 using CustomSalvage;
-using Harmony;
+using HarmonyLib;
 using IRBTModUtils;
 using Localize;
 using Newtonsoft.Json;

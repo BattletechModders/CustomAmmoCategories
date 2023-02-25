@@ -15,7 +15,7 @@ using InControl;
 using System;
 using System.IO;
 using BattleTech;
-using Harmony;
+using HarmonyLib;
 using System.Reflection;
 using CustAmmoCategories;
 using System.Collections.Generic;

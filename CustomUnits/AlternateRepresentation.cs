@@ -12,7 +12,7 @@ using BattleTech;
 using BattleTech.Data;
 using BattleTech.Rendering;
 using CustAmmoCategories;
-using Harmony;
+using HarmonyLib;
 using Localize;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -72,6 +72,10 @@ namespace CustomUnits {
     public float FlyHeight { get; set; } = 0f;
     [Key(15)]
     public List<AirMechVerticalJetsDef> AirMechVerticalJets { get; set; } = new List<AirMechVerticalJetsDef>();
+    [Key(16)]
+    public string SwitchInAudio { get; set; } = string.Empty;
+    [Key(17)]
+    public string SwitchOutAudio { get; set; } = string.Empty;
     public AlternateRepresentationDef() {
       //AdditionalPrefabs = new List<string>();
       //AirMechVerticalJets = new List<AirMechVerticalJetsDef>();

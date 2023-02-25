@@ -15,7 +15,7 @@ using System.Linq;
 using System.Text;
 using UnityEngine;
 using CustomAmmoCategoriesLog;
-using Harmony;
+using HarmonyLib;
 using CustAmmoCategories;
 
 namespace CustAmmoCategories {

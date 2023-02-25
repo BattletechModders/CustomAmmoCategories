@@ -13,7 +13,7 @@ using BattleTech.Data;
 using BattleTech.Rendering;
 using BattleTech.Rendering.MechCustomization;
 using BattleTech.UI;
-using Harmony;
+using HarmonyLib;
 using Localize;
 using System;
 using System.Collections.Generic;

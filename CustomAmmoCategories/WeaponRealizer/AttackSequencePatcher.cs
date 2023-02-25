@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection.Emit;
 using BattleTech;
-using Harmony;
+using HarmonyLib;
 
 namespace WeaponRealizer
 {

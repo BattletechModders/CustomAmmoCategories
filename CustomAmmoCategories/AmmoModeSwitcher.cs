@@ -13,7 +13,7 @@ using BattleTech.UI;
 using CustAmmoCategories;
 using CustomAmmoCategoriesLog;
 using CustomAmmoCategoriesPathes;
-using Harmony;
+using HarmonyLib;
 using HBS;
 using System;
 using System.Reflection;

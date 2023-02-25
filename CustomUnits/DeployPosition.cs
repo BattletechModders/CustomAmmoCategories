@@ -20,7 +20,7 @@ using BattleTech.UI.Tooltips;
 using CustAmmoCategories;
 using CustomAmmoCategoriesPatches;
 using FogOfWar;
-using Harmony;
+using HarmonyLib;
 using HBS;
 using HBS.Collections;
 using InControl;

@@ -13,7 +13,7 @@ using BattleTech.Data;
 using BattleTech.UI;
 using BattleTech.UI.Tooltips;
 using CustAmmoCategories;
-using Harmony;
+using HarmonyLib;
 using HBS;
 using IRBTModUtils;
 using SVGImporter;

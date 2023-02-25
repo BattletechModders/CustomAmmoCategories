@@ -1,7 +1,7 @@
 ﻿using BattleTech;
 using BattleTech.UI;
 using CustomLog;
-using Harmony;
+using HarmonyLib;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;

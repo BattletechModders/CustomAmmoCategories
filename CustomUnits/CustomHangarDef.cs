@@ -11,7 +11,7 @@
 using BattleTech;
 using BattleTech.UI;
 using BattleTech.UI.TMProWrapper;
-using Harmony;
+using HarmonyLib;
 using HBS.Collections;
 using Newtonsoft.Json;
 using System;

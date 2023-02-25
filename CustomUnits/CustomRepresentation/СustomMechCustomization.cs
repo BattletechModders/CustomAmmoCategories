@@ -11,7 +11,7 @@
 using BattleTech;
 using BattleTech.Rendering;
 using BattleTech.Rendering.MechCustomization;
-using Harmony;
+using HarmonyLib;
 using System;
 using System.Collections.Generic;
 using System.Linq;

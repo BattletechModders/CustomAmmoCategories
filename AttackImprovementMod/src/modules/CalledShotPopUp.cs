@@ -12,6 +12,7 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
   using CustomAmmoCategoriesPatches;
   using CustAmmoCategories;
   using IRBTModUtils;
+  using HarmonyLib;
 
   public class CalledShotPopUp : BattleModModule {
 
@@ -123,7 +124,7 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
       return result;
     }
 
-    [Harmony.HarmonyPriority(Harmony.Priority.Low)]
+    [HarmonyLib.HarmonyPriority(HarmonyLib.Priority.Low)]
     public static bool OverrideHUDMechCalledShotPercent(AttackDirection ___shownAttackDirection, Mech ___displayedMech, ref string __result, ArmorLocation location, ArmorLocation targetedLocation) {
       try {
         //CustomAmmoCategoriesLog.Log.AIM.TWL(0, $"OverrideHUDMechCalledShotPercent {___displayedMech.PilotableActorDef.ChassisID} {___shownAttackDirection} location:{location} targeted:{targetedLocation}");
@@ -152,7 +153,7 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
       } catch (Exception ex) { return Error(ex); }
     }
 
-    [Harmony.HarmonyPriority(Harmony.Priority.Low)]
+    [HarmonyLib.HarmonyPriority(HarmonyLib.Priority.Low)]
     public static bool OverrideHUDVehicleCalledShotPercent(AttackDirection ___shownAttackDirection, ref string __result, VehicleChassisLocations location, VehicleChassisLocations targetedLocation) {
       try {
         Dictionary<VehicleChassisLocations, int> hitTable = Combat.HitLocation.GetVehicleHitTable(___shownAttackDirection);

@@ -12,7 +12,8 @@ using BattleTech;
 using BattleTech.Data;
 using CustAmmoCategories;
 using CustomAmmoCategoriesPatches;
-using Harmony;
+using HarmonyLib;
+using HarmonyLib.Tools;
 using Localize;
 using Newtonsoft.Json;
 using System;
@@ -25,7 +26,27 @@ using System.Text;
 using System.Threading;
 using UnityEngine;
 
-namespace CustomUnits{
+namespace CustomUnits {
+  public static class PatchingDebug {
+    public static MethodInfo GetOriginalMethod_Target() {
+      return AccessTools.Method(typeof(Harmony).Assembly.GetType("HarmonyLib.PatchTools"), "GetOriginalMethod");
+    }
+    public static Exception GetOriginalMethod_Finalizer(Exception __exception, HarmonyMethod attr) {
+      try {
+        if (__exception != null) {
+          Log.TWL(0, $"HarmonyLib.PatchTools.GetOriginalMethod type:{attr.methodType.SafeToString()} {attr.declaringType.Name}{attr.methodName}");
+          Log.WL(0, __exception.ToString(),true);
+        }
+      }catch(Exception e) {
+        Log.TWL(0, e.ToString(), true);
+      }
+      return __exception;
+    }
+    public static HarmonyMethod GetOriginalMethod_Finalizer_H() {
+      var result = new HarmonyMethod(AccessTools.Method(typeof(PatchingDebug), nameof(GetOriginalMethod_Finalizer)));
+      return result;
+    }
+  }
   public static class DLog {
     private static StringBuilder m_cache = new StringBuilder();
     public static void LogWrite(int initiation, string line, bool eol = false, bool timestamp = false) {
@@ -609,35 +630,35 @@ namespace CustomUnits{
           }
         }
         foreach (var customResource in customResources) {
-          Log.TWL(0, "customResource:"+ customResource.Key);
+          Log.TWL(0, $"customResource:{customResource.Key}");
           if (customResource.Key == "CustomMechRepresentationDef") {
-            foreach (var custMechRep in customResource.Value) {
+            foreach (var res in customResource.Value) {
               try {
-                Log.WL(1, "Path:" + custMechRep.Value.FilePath);
-                CustomMechRepresentationDef mechRepDef = JsonConvert.DeserializeObject<CustomMechRepresentationDef>(File.ReadAllText(custMechRep.Value.FilePath));
+                Log.WL(1, $"Path:{res.Value.FilePath}",true);
+                CustomMechRepresentationDef mechRepDef = JsonConvert.DeserializeObject<CustomMechRepresentationDef>(File.ReadAllText(res.Value.FilePath));
                 mechRepDef.Register();
               } catch (Exception e) {
-                Log.TWL(0, custMechRep.Key, true);
+                Log.TWL(0, res.Key, true);
                 Log.WL(0, e.ToString(), true);
               }
             }
           } else if (customResource.Key == "CustomPrefabDef") {
-            foreach (var custMechRep in customResource.Value) {
+            foreach (var res in customResource.Value) {
               try {
-                Log.WL(1, "Path:" + custMechRep.Value.FilePath);
-                CustomPrefabDef mechRepDef = JsonConvert.DeserializeObject<CustomPrefabDef>(File.ReadAllText(custMechRep.Value.FilePath));
+                Log.WL(1, $"Path:{res.Value.FilePath}", true);
+                CustomPrefabDef mechRepDef = JsonConvert.DeserializeObject<CustomPrefabDef>(File.ReadAllText(res.Value.FilePath));
                 mechRepDef.Register();
               } catch (Exception e) {
-                Log.TWL(0, custMechRep.Key, true);
+                Log.TWL(0, res.Key, true);
                 Log.WL(0, e.ToString(), true);
               }
             }
           } else if (customResource.Key == "DropSlotDef") {
             foreach (var custItem in customResource.Value) {
               try {
-                Log.WL(1, "Path:" + custItem.Value.FilePath);
+                Log.WL(1, $"Path:{custItem.Value.FilePath}",true);
                 DropSlotDef def = JsonConvert.DeserializeObject<DropSlotDef>(File.ReadAllText(custItem.Value.FilePath));
-                Log.WL(1, "id:" + def.Description.Id);
+                Log.WL(1, $"id:{def.Description.Id}");
                 Log.WL(1, JsonConvert.SerializeObject(def, Formatting.Indented));
                 def.Register();
               } catch (Exception e) {
@@ -648,9 +669,9 @@ namespace CustomUnits{
           } else if (customResource.Key == "DropLanceDef") {
             foreach (var custItem in customResource.Value) {
               try {
-                Log.WL(1, "Path:" + custItem.Value.FilePath);
+                Log.WL(1, $"Path:{custItem.Value.FilePath}",true);
                 DropLanceDef def = JsonConvert.DeserializeObject<DropLanceDef>(File.ReadAllText(custItem.Value.FilePath));
-                Log.WL(1, "id:" + def.Description.Id);
+                Log.WL(1, $"id:{def.Description.Id}");
                 Log.WL(1, JsonConvert.SerializeObject(def, Formatting.Indented));
                 def.Register();
               } catch (Exception e) {
@@ -661,7 +682,7 @@ namespace CustomUnits{
           } else if (customResource.Key == "DropSlotsDef") {
             foreach (var custItem in customResource.Value) {
               try {
-                Log.WL(1, "Path:" + custItem.Value.FilePath);
+                Log.WL(1, $"Path:{custItem.Value.FilePath}",true);
                 DropSlotsDef def = JsonConvert.DeserializeObject<DropSlotsDef>(File.ReadAllText(custItem.Value.FilePath));
                 Log.WL(1, "id:" + def.Description.Id);
                 Log.WL(1, JsonConvert.SerializeObject(def, Formatting.Indented));
@@ -674,7 +695,7 @@ namespace CustomUnits{
           } else if (customResource.Key == "DropSlotDecorationDef") {
             foreach (var custItem in customResource.Value) {
               try {
-                Log.WL(1, "Path:" + custItem.Value.FilePath);
+                Log.WL(1, $"Path:{custItem.Value.FilePath}", true);
                 DropSlotDecorationDef def = JsonConvert.DeserializeObject<DropSlotDecorationDef>(File.ReadAllText(custItem.Value.FilePath));
                 Log.WL(1, "id:" + def.Description.Id);
                 Log.WL(1, JsonConvert.SerializeObject(def, Formatting.Indented));
@@ -687,7 +708,7 @@ namespace CustomUnits{
           } else if (customResource.Key == "DropClassDef") {
             foreach (var custItem in customResource.Value) {
               try {
-                Log.WL(1, "Path:" + custItem.Value.FilePath);
+                Log.WL(1, $"Path:{custItem.Value.FilePath}", true);
                 DropClassDef def = JsonConvert.DeserializeObject<DropClassDef>(File.ReadAllText(custItem.Value.FilePath));
                 Log.WL(1, "id:" + def.Description.Id);
                 Log.WL(1, JsonConvert.SerializeObject(def, Formatting.Indented));
@@ -700,7 +721,7 @@ namespace CustomUnits{
           } else if (customResource.Key == "PilotingClassDef") {
             foreach (var custItem in customResource.Value) {
               try {
-                Log.WL(1, "Path:" + custItem.Value.FilePath);
+                Log.WL(1, $"Path:{custItem.Value.FilePath}", true);
                 PilotingClassDef def = JsonConvert.DeserializeObject<PilotingClassDef>(File.ReadAllText(custItem.Value.FilePath));
                 Log.WL(1, "id:" + def.Description.Id);
                 Log.WL(1, JsonConvert.SerializeObject(def, Formatting.Indented));
@@ -713,7 +734,7 @@ namespace CustomUnits{
           } else if (customResource.Key == nameof(CustomHangarDef)) {
             foreach (var custItem in customResource.Value) {
               try {
-                Log.WL(1, "Path:" + custItem.Value.FilePath);
+                Log.WL(1, $"Path:{custItem.Value.FilePath}", true);
                 CustomHangarDef def = JsonConvert.DeserializeObject<CustomHangarDef>(File.ReadAllText(custItem.Value.FilePath));
                 Log.WL(1, "id:" + def.Description.Id);
                 Log.WL(1, JsonConvert.SerializeObject(def, Formatting.Indented));
@@ -726,7 +747,7 @@ namespace CustomUnits{
           } else if (customResource.Key == "CustomWeatherEffect") {
             foreach (var custItem in customResource.Value) {
               try {
-                Log.WL(1, "Path:" + custItem.Value.FilePath);
+                Log.WL(1, $"Path:{custItem.Value.FilePath}", true);
                 IntelHelper.AddMood(custItem.Key, custItem.Value);
               } catch (Exception e) {
                 Log.TWL(0, custItem.Key, true);
@@ -753,16 +774,16 @@ namespace CustomUnits{
         //DropClassDef.Validate();
         DropSystemHelper.Validate();
         Core.HarmonyInstance.Patch(typeof(Mech).GetMethod("InitGameRep", BindingFlags.Public | BindingFlags.Instance),new HarmonyMethod(typeof(CustomMech).GetMethod(nameof(CustomMech.InitGameRepStatic), BindingFlags.Static | BindingFlags.Public)));
-        Log.TWL(0, "Harmony log Mech.InitGameRep");
-        Patches patches = Core.HarmonyInstance.GetPatchInfo(typeof(Mech).GetMethod("InitGameRep", BindingFlags.Public | BindingFlags.Instance));
-        Log.WL(1, "Prefixes:");
-        foreach (var patch in patches.Prefixes) {
-          Log.WL(2, patch.owner+" index:"+patch.index+" method:"+patch.patch.Name);
-        }
-        Log.WL(1, "Postfixes:");
-        foreach (var patch in patches.Postfixes) {
-          Log.WL(2, patch.owner + " index:" + patch.index + " method:" + patch.patch.Name);
-        }
+        //Log.TWL(0, "Harmony log Mech.InitGameRep");
+        //Patches patches = Core.HarmonyInstance.GetPatchInfo(typeof(Mech).GetMethod("InitGameRep", BindingFlags.Public | BindingFlags.Instance));
+        //Log.WL(1, "Prefixes:");
+        //foreach (var patch in patches.Prefixes) {
+        //  Log.WL(2, patch.owner+" index:"+patch.index+" method:"+patch.patch.Name);
+        //}
+        //Log.WL(1, "Postfixes:");
+        //foreach (var patch in patches.Postfixes) {
+        //  Log.WL(2, patch.owner + " index:" + patch.index + " method:" + patch.patch.Name);
+        //}
         Core.HarmonyInstance.Patch(typeof(Mech).GetMethod("DamageLocation", BindingFlags.NonPublic | BindingFlags.Instance), new HarmonyMethod(typeof(CustomMech).GetMethod(nameof(CustomMech.DamageLocation_Override), BindingFlags.Static | BindingFlags.Public)));
         Core.HarmonyInstance.Patch(TrooperSquad.Pilot_IsIncapacitated_get(), null, TrooperSquad.Pilot_IsIncapacitated_get_patch());
         //Core.HarmonyInstance.Patch(Contract_BeginRequestResources_Intel.TargetMethod(), Contract_BeginRequestResources_Intel.Patch());
@@ -771,7 +792,7 @@ namespace CustomUnits{
         Log.TWL(0, e.ToString(), true);
       }
     }
-    public static HarmonyInstance HarmonyInstance = null;
+    public static Harmony HarmonyInstance = null;
     public static void LoadBuildinShaders() {
       Log.TWL(0,"Loading buildin shaders");
       foreach (string shaderName in Core.Settings.forceToBuildinShadersList) {
@@ -820,7 +841,7 @@ namespace CustomUnits{
       SortByTonnage.SortByTonnage.Init(directory, Core.Settings.SortBy);
       PilotingClassHelper.CreateDefault();
       try {
-        HarmonyInstance = HarmonyInstance.Create("io.mission.customunits");
+        HarmonyInstance = new Harmony("io.mission.customunits");
         HitLocation_GetMechHitTableCustom.i_GetMechHitTable = HitLocation_GetMechHitTable.Get;
         /*Type AssetBundleTracker = typeof(WeaponEffect).Assembly.GetType("BattleTech.Assetbundles.AssetBundleTracker");
         if (AssetBundleTracker != null) {
@@ -855,6 +876,8 @@ namespace CustomUnits{
         string CUHelperAssemblyPath = Path.Combine(directory, "CustomUnitsHelper.dll");
         Assembly CUHelperAssembly = Assembly.LoadFile(CUHelperAssemblyPath);
         Log.TWL(0,"Helper assembly "+CUHelperAssembly.FullName);
+        HarmonyFileLog.Enabled = true;
+        HarmonyInstance.Patch(PatchingDebug.GetOriginalMethod_Target(), null, null, null, PatchingDebug.GetOriginalMethod_Finalizer_H(), null);
         HarmonyInstance.PatchAll(Assembly.GetExecutingAssembly());
         PathingInfoHelper.RegisterMaxMoveDeligate(PathingHelper.MaxMoveDistance);
         //WeightedFactorHelper.PatchInfluenceMapPositionFactor(HarmonyInstance);

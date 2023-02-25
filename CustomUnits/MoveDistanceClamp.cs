@@ -12,7 +12,7 @@ using BattleTech;
 using BattleTech.UI;
 using CustAmmoCategories;
 using CustAmmoCategoriesPatches;
-using Harmony;
+using HarmonyLib;
 using InControl;
 using Localize;
 using System;

@@ -19,7 +19,7 @@ using BattleTech.AttackDirectorHelpers;
 using BattleTech.Rendering;
 using CustAmmoCategories;
 using CustomAmmoCategoriesLog;
-using Harmony;
+using HarmonyLib;
 using IRBTModUtils;
 using UnityEngine;
 using Random = UnityEngine.Random;

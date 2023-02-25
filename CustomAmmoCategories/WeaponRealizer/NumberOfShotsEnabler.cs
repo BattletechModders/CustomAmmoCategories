@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Reflection.Emit;
-using Harmony;
+using HarmonyLib;
 
 namespace WeaponRealizer {
   [HarmonyPatch(typeof(BallisticEffect), "OnComplete", MethodType.Normal)]

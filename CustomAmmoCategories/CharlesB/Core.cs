@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Reflection;
 using CustomAmmoCategoriesLog;
-using Harmony;
+using HarmonyLib;
 using Newtonsoft.Json;
 /*
 namespace CharlesB {

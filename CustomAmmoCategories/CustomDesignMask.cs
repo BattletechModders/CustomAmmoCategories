@@ -12,7 +12,7 @@ using BattleTech;
 using BattleTech.UI;
 using CustAmmoCategories;
 using CustomAmmoCategoriesLog;
-using Harmony;
+using HarmonyLib;
 using IRBTModUtils;
 using Newtonsoft.Json.Linq;
 using System;

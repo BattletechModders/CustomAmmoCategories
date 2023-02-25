@@ -19,7 +19,7 @@ using Newtonsoft.Json;
 using System.Reflection;
 using BattleTech;
 using CustomAmmoCategoriesLog;
-using Harmony;
+using HarmonyLib;
 using Newtonsoft.Json.Linq;
 using BattleTech.UI;
 using UnityEngine;

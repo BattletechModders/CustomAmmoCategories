@@ -5,7 +5,7 @@ using BattleTech.UI.Tooltips;
 using CustAmmoCategories;
 using CustAmmoCategoriesPatches;
 using CustomAmmoCategoriesLog;
-using Harmony;
+using HarmonyLib;
 using HBS;
 using System;
 using System.Collections.Generic;

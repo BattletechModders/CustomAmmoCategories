@@ -13,7 +13,7 @@ using BattleTech.Designed;
 using BattleTech.Framework;
 using BattleTech.UI;
 using CustAmmoCategories;
-using Harmony;
+using HarmonyLib;
 using Localize;
 using System;
 using System.Collections.Generic;

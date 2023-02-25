@@ -15,7 +15,7 @@ using BattleTech.UI.TMProWrapper;
 using BattleTech.UI.Tooltips;
 using CustAmmoCategories;
 using CustomAmmoCategoriesPatches;
-using Harmony;
+using HarmonyLib;
 using HBS;
 using HBS.Collections;
 using HBS.Data;

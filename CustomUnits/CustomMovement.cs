@@ -13,7 +13,7 @@ using BattleTech.Data;
 using BattleTech.Rendering;
 using BattleTech.UI;
 using CustAmmoCategories;
-using Harmony;
+using HarmonyLib;
 using IRBTModUtils;
 using Localize;
 using System;
@@ -1790,7 +1790,7 @@ namespace CustomUnits {
   //    return;
   //  }
   //}
-  [HarmonyPatch(typeof(Mech))]
+  [HarmonyPatch(typeof(AbstractActor))]
   [HarmonyPatch("WorkingJumpjets")]
   [HarmonyPatch(MethodType.Getter)]
   [HarmonyPatch(new Type[] { })]
@@ -1881,7 +1881,7 @@ namespace CustomUnits {
       }
     }
   }
-  [HarmonyPatch(typeof(Mech))]
+  [HarmonyPatch(typeof(AbstractActor))]
   [HarmonyPatch("GuardLevel")]
   [HarmonyPatch(MethodType.Getter)]
   [HarmonyPatch(new Type[] {  })]

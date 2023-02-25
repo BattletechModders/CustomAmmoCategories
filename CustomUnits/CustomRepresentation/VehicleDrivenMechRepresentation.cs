@@ -13,7 +13,7 @@ using BattleTech.Rendering;
 using BattleTech.Rendering.MechCustomization;
 using BattleTech.Rendering.UI;
 using CustAmmoCategories;
-using Harmony;
+using HarmonyLib;
 using System;
 using System.Collections.Generic;
 using System.Linq;

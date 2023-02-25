@@ -10,7 +10,7 @@
 */
 using BattleTech;
 using BattleTech.Rendering;
-using Harmony;
+using HarmonyLib;
 using HBS.Collections.Generic;
 using System;
 using System.Collections.Generic;

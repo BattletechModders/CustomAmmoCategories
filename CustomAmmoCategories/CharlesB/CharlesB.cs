@@ -4,7 +4,7 @@ using System.Linq;
 using BattleTech;
 using BattleTech.AttackDirectorHelpers;
 using CustomAmmoCategoriesLog;
-using Harmony;
+using HarmonyLib;
 using UnityEngine;
 /*
 namespace CharlesB {
