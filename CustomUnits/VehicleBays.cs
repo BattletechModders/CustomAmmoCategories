@@ -1433,9 +1433,10 @@ namespace CustomUnits {
       }
       return -1;
     }
-    public static bool Prefix(MechBayChassisInfoWidget __instance, ChassisDef ___selectedChassis, MechBayPanel ___mechBay, MechBayChassisUnitElement ___chassisElement) {
+    public static bool Prefix(ref bool __runOriginal, MechBayChassisInfoWidget __instance, ChassisDef ___selectedChassis, MechBayPanel ___mechBay, MechBayChassisUnitElement ___chassisElement) {
       try {
-        Log.TWL(0, "MechBayChassisInfoWidget.OnReadyClicked");
+        Log.TWL(0, $"MechBayChassisInfoWidget.OnReadyClicked runOriginal:{__runOriginal}");
+        if (__runOriginal == false) { return false; }
         if (___selectedChassis == null) { return true; }
         if (___selectedChassis.IsVehicle() == false) { return true; }
         if (___selectedChassis.MechPartCount < ___selectedChassis.MechPartMax) {

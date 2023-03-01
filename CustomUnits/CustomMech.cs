@@ -753,9 +753,12 @@ namespace CustomUnits {
     public virtual Dictionary<int, float> GetAOESpreadArmorLocations() {
       return CustomAmmoCategories.NormMechHitLocations;
     }
-    public override void FlagForDeath(string reason,DeathMethod deathMethod,DamageType damageType,int location,int stackItemID,string attackerID,bool isSilent) {
+    public override void FlagForDeath(string reason, DeathMethod deathMethod,DamageType damageType,int location,int stackItemID,string attackerID,bool isSilent) {
       if (this._flaggedForDeath) { return; }
-      Log.TWL(0, "CustomMech.FlagForDeath " + reason + " method:" + deathMethod + " dmgType:" + damageType + " location:" + location);
+      Log.TWL(0, $"CustomMech.FlagForDeath {this.PilotableActorDef.ChassisID} {reason} method:{deathMethod} dmgType:{damageType} location:{location}");
+      if(deathMethod == DeathMethod.DespawnedEscaped) {
+        Log.WL(0, Environment.StackTrace);
+      }
       Thread.CurrentThread.pushActor(this);
       base.FlagForDeath(reason, deathMethod, damageType, location, stackItemID, attackerID, isSilent);
       Thread.CurrentThread.clearActor();
