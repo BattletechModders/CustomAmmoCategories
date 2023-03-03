@@ -496,7 +496,8 @@ namespace CustomAmmoCategoriesPatches {
       instance.chosenTarget = target;
       WeaponMode mode = weapon.mode();
       ExtAmmunitionDef ammo = weapon.ammo();
-      CustomAmmoCategoriesLog.Log.M.TWL(0,"generateWeaponHitInfo "+weapon.defId+" ammo:"+ammo.Id+" mode:"+mode.Id+" indirect capable:"+weapon.IndirectFireCapable()+" indirect:"+indirectFire+" missInSircle:"+missInCircle);
+      string specialHitTable = weapon.SpecialHitTable();
+      CustomAmmoCategoriesLog.Log.M.TWL(0,$"generateWeaponHitInfo {weapon.defId} ammo:{ammo.Id} mode:{mode.Id} indirect capable:{weapon.IndirectFireCapable()} indirect:{indirectFire} missInSircle:{missInCircle} specialHitTable:{specialHitTable}");
       CustomAmmoCategoriesLog.Log.LogWrite(" altering target:" + originaltarget.GUID + "->" + target.GUID + "\n");
       float toHitChance = instance.Director.Combat.ToHit.GetToHitChance(instance.attacker, weapon, target, instance.attackPosition, target.CurrentPosition, instance.numTargets, instance.meleeAttackType, instance.isMoraleAttack);
       if (indirectFire && (weapon.IndirectFireCapable() == false)) { toHitChance = 0f; };
@@ -513,7 +514,7 @@ namespace CustomAmmoCategoriesPatches {
       Thread.CurrentThread.pushActor(target as AbstractActor);
       Thread.CurrentThread.pushWeapon(weapon);
       Thread.CurrentThread.pushAttackSequenceId(instance.id);
-      Thread.CurrentThread.pushToStack<string>(CustomAmmoCategories.SPECIAL_HIT_TABLE_NAME, weapon.SpecialHitTable());
+      Thread.CurrentThread.pushToStack<string>(CustomAmmoCategories.SPECIAL_HIT_TABLE_NAME, specialHitTable);
       switch (hitGenType) {
         case HitGeneratorType.Individual:
           instance.GetIndividualHits(ref hitInfo, groupIdx, weaponIdx, weapon, toHitChance, dodgedDamage);
