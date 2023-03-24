@@ -489,7 +489,20 @@ namespace CustomUnits {
           try {
             Log.WL(1, "prefab " + weaponRep.weapon.mechComponentRef.prefabName);
             CustomHardpointDef customHardpoint = CustomHardPointsHelper.Find(weaponRep.weapon.mechComponentRef.prefabName);
-            if (customHardpoint == null) { Log.WL(3, "no custom hardpoint"); continue; }
+            if (customHardpoint == null) {
+              Log.WL(3, $"no custom hardpoint. parentTransform:{(weaponRep.parentTransform==null?"null": weaponRep.parentTransform.name)}");
+              if(weaponRep.parentTransform != null) {
+                foreach(var ap in this.WeaponAttachPoints) {
+                  if (ap.Value.attach == null) { continue; }
+                  if (ap.Value.attach == weaponRep.parentTransform) {
+                    Log.WL(3, $"found attach point:{ap.Key}");
+                    ap.Value.weapons.Add(weaponRep.weapon);
+                    break;
+                  }
+                }
+              }
+              continue;
+            }
             Log.WL(2, "attachType:" + customHardpoint.attachType + " attachOverride:" + customHardpoint.attachOverride);
             AttachInfo attachPoint = null;
             if (string.IsNullOrEmpty(customHardpoint.attachOverride) == false) {
@@ -546,7 +559,20 @@ namespace CustomUnits {
             }
             Log.WL(1, "prefab " + prefab);
             CustomHardpointDef customHardpoint = CustomHardPointsHelper.Find(prefab);
-            if (customHardpoint == null) { Log.WL(3, "no custom hardpoint"); continue; }
+            if (customHardpoint == null) {
+              Log.WL(3, $"no custom hardpoint. parentTransform:{(compRep.parentTransform == null ? "null" : compRep.parentTransform.name)}");
+              if (compRep.parentTransform != null) {
+                foreach (var ap in this.WeaponAttachPoints) {
+                  if (ap.Value.attach == null) { continue; }
+                  if (ap.Value.attach == compRep.parentTransform) {
+                    Log.WL(3, $"found attach point:{ap.Key}");
+                    ap.Value.bayComponents.Add(compRep);
+                    break;
+                  }
+                }
+              }
+              continue;
+            }
             Log.WL(2, "attachType:" + customHardpoint.attachType + " attachOverride:" + customHardpoint.attachOverride);
             AttachInfo attachPoint = null;
             if (string.IsNullOrEmpty(customHardpoint.attachOverride) == false) {
@@ -565,6 +591,7 @@ namespace CustomUnits {
                 WeaponAttachRepresentation attachRep = compRep.gameObject.GetComponent<WeaponAttachRepresentation>();
                 if (attachRep == null) { attachRep = compRep.gameObject.AddComponent<WeaponAttachRepresentation>(); }
                 attachRep.Init(compRep, attachPoint);
+                attachPoint.bayComponents.Add(compRep);
 
                 //HACKY FIX: I'm not sure what KMission's intent with weapons was, but as far as I know they don't take paint.
                 //  Because of that, I'm disabling the paint patterns on them here. This prevents the 'corrupted texture' look in the mechbay.
@@ -579,6 +606,11 @@ namespace CustomUnits {
           } catch (Exception e) {
             Log.TWL(0, e.ToString(), true);
           }
+        }
+        foreach (var ap in this.WeaponAttachPoints) {
+          if (ap.Value.hideIfEmpty == false) { continue; }
+          if (ap.Value.main == null) { continue; }
+          if (ap.Value.bayComponents.Count == 0) { ap.Value.main.gameObject.SetActive(false); }
         }
       } catch (Exception e) {
         Log.TWL(0, e.ToString(), true);

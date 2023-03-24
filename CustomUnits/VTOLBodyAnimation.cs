@@ -339,7 +339,7 @@ namespace CustomUnits {
       }
     }
     public HashSet<MechComponent> weapons { get; private set; }
-    public List<ComponentRepresentation> bayComponents { get; private set; }
+    public HashSet<ComponentRepresentation> bayComponents { get; private set; }
     public void Prefire(Weapon weapon,Vector3 target,bool indirect) {
       Log.WL(1, "AttachInfo.Prefire");
       foreach (AttachInfoAnimator anim in this.animators) {
@@ -435,7 +435,7 @@ namespace CustomUnits {
       }
       if (animator != null) { this.animators.Add(new AttachInfoAnimator(animator, 1f)); }
       weapons = new HashSet<MechComponent>();
-      bayComponents = new List<ComponentRepresentation>();
+      bayComponents = new HashSet<ComponentRepresentation>();
       hideIfEmpty = rec.hideIfEmpty;
       noRecoil = rec.noRecoil;
       recoilValue = 0f;
@@ -460,7 +460,7 @@ namespace CustomUnits {
         attach = parent.transform.FindRecursive(rec.attach);
       }
       weapons = new HashSet<MechComponent>();
-      bayComponents = new List<ComponentRepresentation>();
+      bayComponents = new HashSet<ComponentRepresentation>();
       hideIfEmpty = rec.hideIfEmpty;
       noRecoil = rec.noRecoil;
       recoilValue = 0f;

@@ -307,8 +307,8 @@ namespace CustomUnits {
         do {
           this.RecalcGroups(HardpointData, this.usedPrefabs);
           effectiveGroups = this.collectGroupByLocation(locComponents.Key);
-          if (effectiveGroups.Count == 0) { break; }
-          if (effectiveComponents.Count == 0) { break; }
+          if (effectiveGroups.Count == 0) { Log.WL(1, "no effective groups"); break; }
+          if (effectiveComponents.Count == 0) { Log.WL(1, "no effective components"); break; }
           Dictionary<Element, Dictionary<HardpointsGroup, Weight>> componentsWeights = new Dictionary<Element, Dictionary<HardpointsGroup, Weight>>();
           foreach (Element component in effectiveComponents) {
             if (componentsWeights.TryGetValue(component, out Dictionary<HardpointsGroup, Weight> grpWeights) == false) {

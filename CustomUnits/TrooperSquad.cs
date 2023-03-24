@@ -546,6 +546,10 @@ namespace CustomUnits {
         //trooperRep.HandleDeath(DeathMethod.Unknown, (int)ChassisLocations.CenterTorso);
       //}
     }
+    public override void _ApplyArmorStatDamage(ArmorLocation location, float damage, WeaponHitInfo hitInfo) {
+      this.statCollection.ModifyStat<float>(hitInfo.attackerId, hitInfo.stackItemUID, this.GetStringForArmorLocation(location), StatCollection.StatOperation.Float_Subtract, damage);
+      this.OnArmorDamaged((int)location, hitInfo, damage);
+    }
     public Transform GetAttachTransform(MechRepresentation gameRep, ChassisLocations location) {
       if ((UnityEngine.Object)gameRep == (UnityEngine.Object)null)
         throw new ArgumentNullException("GetAttachTransform requires a valid GameRep!");

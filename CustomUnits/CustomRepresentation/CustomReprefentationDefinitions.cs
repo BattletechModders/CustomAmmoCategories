@@ -30,7 +30,10 @@ namespace CustomUnits {
     public List<string> NotSuppressRenderers { get; private set; }
     public List<string> JumpJets { get; private set; }
     public List<string> HeadLights { get; private set; }
-    public List<AttachInfoRecord> WeaponsAttachPoints { get; private set; }
+    [JsonIgnore]
+    private List<AttachInfoRecord> f_WeaponsAttachPoints = new List<AttachInfoRecord>();
+    public List<AttachInfoRecord> WeaponAttachPoints { get { return f_WeaponsAttachPoints; } private set { f_WeaponsAttachPoints = value; } }
+    public List<AttachInfoRecord> WeaponsAttachPoints { get { return f_WeaponsAttachPoints; } private set { f_WeaponsAttachPoints = value; } }
     public List<string> Animators { get; private set; }
     public List<string> TwistAnimators { get; private set; }
     public Dictionary<ChassisLocations, CustomDestructableDef> Destructables { get; private set; }
@@ -194,7 +197,10 @@ namespace CustomUnits {
     public List<string> Animators { get; set; }
     public bool InBattleAllAnimators { get; set; } = false;
     public List<CustomParticleSystemDef> Particles { get; set; }
-    public List<AttachInfoRecord> WeaponsAttachPoints { get; set; }
+    [JsonIgnore]
+    private List<AttachInfoRecord> f_WeaponsAttachPoints = new List<AttachInfoRecord>();
+    public List<AttachInfoRecord> WeaponAttachPoints { get { return f_WeaponsAttachPoints; } private set { f_WeaponsAttachPoints = value; } }
+    public List<AttachInfoRecord> WeaponsAttachPoints { get { return f_WeaponsAttachPoints; } private set { f_WeaponsAttachPoints = value; } }
     public CustomDestructionDef OnDestroy { get; set; }
     public List<string> CustomMouseReceiver { get; set; }
     public string persistentAudioStart { get; set; }

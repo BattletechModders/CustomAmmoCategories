@@ -32,14 +32,19 @@ namespace CustomUnits {
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { typeof(ArmorLocation), typeof(float), typeof(WeaponHitInfo) })]
   public static class Mech_ApplyArmorStatDamage {
-    public static void Prefix(Mech __instance, ArmorLocation location, float damage,ref WeaponHitInfo hitInfo) {
+    public static bool Prefix(Mech __instance, ArmorLocation location, float damage,ref WeaponHitInfo hitInfo) {
       try {
         Log.TWL(0, "Mech.ApplyArmorStatDamage prefix " + (__instance != null ? __instance.Description.Id : "null") + " threadid:" + Thread.CurrentThread.ManagedThreadId);
         Thread.CurrentThread.pushActor(__instance);
         Thread.CurrentThread.SetFlag("ApplyArmorStatDamage");
+        if(__instance is CustomMech custMech) {
+          custMech._ApplyArmorStatDamage(location, damage, hitInfo);
+          return false;
+        }
       } catch (Exception e) {
         Log.TWL(0, e.ToString(), true);
       }
+      return true;
     }
     public static void Postfix(Mech __instance, ArmorLocation location, float damage, ref WeaponHitInfo hitInfo) {
       try {

@@ -14,7 +14,9 @@ using CustAmmoCategories;
 using CustomAmmoCategoriesLog;
 using HarmonyLib;
 using System;
+using System.Collections;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text;
@@ -83,11 +85,96 @@ namespace CustomAmmoCategoriesPrivate{
   //  }
   //}
 
-  public class Core {
+  public static class Core {
     public static Harmony harmony { get; set; } = null;
+    internal static string GetAssemblyName(this MethodBase Method) {
+      Type declaringType = Method.DeclaringType;
+      return (object)declaringType == null ? (string)null : declaringType.Assembly.GetName().Name;
+    }
+    internal static string GetFullName(this MethodBase Method) {
+      Type declaringType = Method.DeclaringType;
+      return ((object)declaringType != null ? declaringType.FullName : (string)null) + "." + Method.Name;
+    }
+    public static FieldInfo TempModTekDirectory { get; set; } = null;
+    internal static void WritePatches(this StreamWriter writer, string title, IList<Patch> patches, bool checkSkip = false) {
+      if (((ICollection<Patch>)patches).Count != 0)
+        writer.WriteLine("\t" + title + ":");
+      using (IEnumerator<Patch> enumerator = ((IEnumerable<Patch>)((IEnumerable<Patch>)patches).OrderBy<Patch, Patch>((Func<Patch, Patch>)(x => x))).GetEnumerator()) {
+        while (((IEnumerator)enumerator).MoveNext()) {
+          Patch current = enumerator.Current;
+          string assemblyName = (current.PatchMethod).GetAssemblyName();
+          string fullName = (current.PatchMethod).GetFullName();
+          writer.WriteLine("\t\t" + assemblyName + " (" + (string)current.owner + ") " + fullName);
+        }
+      }
+    }
+    public static void PrintHarmonySummary_postfix() {
+      try {
+        if (TempModTekDirectory == null) { return; }
+        string tempModTekDirectory = TempModTekDirectory.GetValue(null) as string;
+        Log.P?.TWL(0, $"ModTek.Features.Manifest.Mods.ModDefsDatabase.FinishedLoadingMods path:{tempModTekDirectory}", true);
+        if (string.IsNullOrEmpty(tempModTekDirectory)) { return; }
+        string harmonySummaryPath = Path.Combine(tempModTekDirectory, "harmony_summary_v2.log");
+        using (StreamWriter writer = File.CreateText(harmonySummaryPath)) {
+          writer.WriteLine(string.Format("Harmony2 Patched Methods (after ModTek startup) -- {0}", (object)DateTime.Now));
+          writer.WriteLine("!!!NOTE CptMoore: it is not correct all the time, its dangerous and unhelpful to use");
+          writer.WriteLine("you had been warned");
+          writer.WriteLine();
+          writer.WriteLine("Format as follows:");
+          writer.WriteLine("{assembly name of patched method}");
+          writer.WriteLine("{name of patched method}");
+          writer.WriteLine("\t{Harmony patch type}");
+          writer.WriteLine("\t\t{assembly name of patch} ({Harmony id of patch}) {method name of patch}");
+          writer.WriteLine();
+          writer.WriteLine();
+          foreach (MethodBase Method in (IEnumerable<MethodBase>)Harmony.GetAllPatchedMethods().Where<MethodBase>((Func<MethodBase, bool>)(m => m.DeclaringType != (Type)null)).OrderBy<MethodBase, string>((Func<MethodBase, string>)(m => m.DeclaringType.Assembly.GetName().Name)).ThenBy<MethodBase, string>((Func<MethodBase, string>)(m => m.DeclaringType.FullName)).ThenBy<MethodBase, string>((Func<MethodBase, string>)(m => m.Name))) {
+            var patchInfo = Harmony.GetPatchInfo(Method);
+            if (patchInfo != null) {
+              writer.WriteLine(Method.GetAssemblyName());
+              writer.WriteLine(Method.GetFullName() + ":");
+              writer.WritePatches("Prefixes", (IList<Patch>)patchInfo.Prefixes, true);
+              writer.WritePatches("Transpilers", (IList<Patch>)patchInfo.Transpilers, false);
+              writer.WritePatches("Postfixes", (IList<Patch>)patchInfo.Postfixes, false);
+              writer.WriteLine();
+            }
+          }
+        }
+      } catch (Exception e) {
+        Log.P?.WL(0, e.ToString(), true);
+      }
+    }
     public static void Init() {
       Core.harmony = new Harmony("io.mission.customammocategories.private");
       Log.P?.TWL(0, "Initing " + Assembly.GetExecutingAssembly().GetName(), true);
+      try {
+
+        foreach (Assembly assembly in AppDomain.CurrentDomain.GetAssemblies()) {
+          if (assembly.FullName.StartsWith("ModTek, Version=")) {
+            var ModDefsDatabase = assembly.GetType("ModTek.Features.Manifest.Mods.ModDefsDatabase");
+            var FilePaths = assembly.GetType("ModTek.Misc.FilePaths");
+            if (FilePaths != null) {
+              Log.P?.WL(1, $"ModTek.Misc.FilePaths found");
+              TempModTekDirectory = AccessTools.Field(FilePaths, "TempModTekDirectory");
+            }
+            if (TempModTekDirectory != null) {
+              Log.P?.WL(1, $"ModTek.Misc.FilePaths.TempModTekDirectory {TempModTekDirectory}");
+            } else {
+              continue;
+            }
+            if (ModDefsDatabase != null) {
+              Log.P?.WL(1, $"ModTek.Features.Manifest.Mods.ModDefsDatabase found");
+              var PrintHarmonySummary_original = AccessTools.Method(ModDefsDatabase, "FinishedLoadingMods");
+              if(PrintHarmonySummary_original != null) {
+                Log.P?.WL(1, $"ModTek.Features.Manifest.Mods.ModDefsDatabase.FinishedLoadingMods found");
+                harmony.Patch(PrintHarmonySummary_original, null, new HarmonyMethod(AccessTools.Method(typeof(Core), nameof(PrintHarmonySummary_postfix))), null, null, null);
+              }
+            }
+            break;
+          }
+        }
+      } catch (Exception e) {
+        Log.P?.WL(0, e.ToString(), true);
+      }
     }
     public static void FinishedLoading() {
       Log.P?.TWL(0, "FinishedLoading " + Assembly.GetExecutingAssembly().GetName(), true);

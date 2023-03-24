@@ -424,8 +424,8 @@ namespace CustomUnits {
         Log.TWL(0, e.ToString(),true);
       }
     }
-    private static MethodInfo Mech_InitGameRep = null;
-    private static Patches Mech_InitGameRep_patches = null;
+    //private static MethodInfo Mech_InitGameRep = null;
+    //private static Patches Mech_InitGameRep_patches = null;
     //public virtual void MechInitGameRep_prefixes(Transform parentTransform) {
     //  Log.TWL(0, "Mech.InitGameRep.prefixes");
     //  if (Mech_InitGameRep == null) { Mech_InitGameRep = typeof(Mech).GetMethod("InitGameRep"); }
@@ -486,6 +486,25 @@ namespace CustomUnits {
     //    }
     //  }
     //}
+    public static HashSet<ArmorLocation> GetArmorFromChassisLocation(ChassisLocations location) {
+      switch (location) {
+        case ChassisLocations.LeftTorso: return new HashSet<ArmorLocation>() { ArmorLocation.LeftTorso, ArmorLocation.LeftTorsoRear };
+        case ChassisLocations.CenterTorso: return new HashSet<ArmorLocation>() { ArmorLocation.CenterTorso, ArmorLocation.CenterTorsoRear };
+        case ChassisLocations.RightTorso: return new HashSet<ArmorLocation>() { ArmorLocation.RightTorso, ArmorLocation.RightTorsoRear };
+        default: return new HashSet<ArmorLocation>() { (ArmorLocation)location };
+      }
+    }
+    public virtual void _ApplyArmorStatDamage(ArmorLocation location, float damage, WeaponHitInfo hitInfo) {
+      this.statCollection.ModifyStat<float>(hitInfo.attackerId, hitInfo.stackItemUID, this.GetStringForArmorLocation(location), StatCollection.StatOperation.Float_Subtract, damage);
+      this.OnArmorDamaged((int)location, hitInfo, damage);
+      var specialLocations = new HashSet<ArmorLocation>() { ArmorLocation.Head };
+      UnitCustomInfo info = this.GetCustomInfo();
+      if ((info != null) && (info.customStructure.is_empty)) { info.customStructure = CustomStructureDef.Search(this.DefaultStructureDef); }
+      if ((info != null) && (info.customStructure.is_empty == false)) { specialLocations = new HashSet<ArmorLocation>() { info.customStructure.ClusterSpecialLocation }; }
+      if (specialLocations.Contains(location)) {
+        this.pilot.SetNeedsInjury(InjuryReason.HeadHit);
+      }
+    }
     public static bool InitGameRepStatic(Mech __instance, Transform parentTransform) {
       try {
         Log.TWL(0, "CustomMech.InitGameRepStatic " + __instance.MechDef.Description.Id + " " + __instance.GetType().Name);

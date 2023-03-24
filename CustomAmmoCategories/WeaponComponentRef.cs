@@ -311,6 +311,7 @@ namespace CustAmmoCategories {
       WeaponDef def = weaponRef.Def as WeaponDef;
       ExtWeaponDef exdef = CustomAmmoCategories.getExtWeaponDef(def.Description.Id);
       foreach(var mode in modes) {
+        if (mode.Value.AmmoCategory == null) { mode.Value.AmmoCategory = exdef.AmmoCategory; }
         if (mode.Value.AmmoCategory.BaseCategory.Is_NotSet) {
           ammomodes.Add(new AmmoModePairSortable(def, exdef, mode.Value, CustomAmmoCategories.DefaultAmmo));
           continue;

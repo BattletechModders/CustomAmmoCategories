@@ -1499,6 +1499,14 @@ namespace CustomUnits {
     private void SVGInit() {
       try {
         ChassisDef chassisDef = null;
+        if (this.parent == null) {
+          this.parent = this.gameObject.GetComponentInParent<HUDMechArmorReadout>();
+          if(this.parent == null) {
+            Log.TWL(0, $"BaySquadReadoutAligner.SVGInit can't find parent HUDMechArmorReadout");
+            svg_inited = true;
+            return;
+          }
+        }
         if (this.parent.DisplayedMech != null) { chassisDef = this.parent.DisplayedMech.MechDef.Chassis; } else
         if (this.parent.DisplayedMechDef != null) { chassisDef = this.parent.DisplayedMechDef.Chassis; } else
         if (this.parent.DisplayedChassisDef != null) { chassisDef = this.parent.DisplayedChassisDef; }
@@ -1550,8 +1558,27 @@ namespace CustomUnits {
       svg_inited = true;
     }
     public void UIInit() {
-      this.transform.localPosition = frontArmor.localPosition;
-
+      try {
+        if (this.parent == null) {
+          this.parent = this.gameObject.GetComponentInParent<HUDMechArmorReadout>();
+          if (this.parent == null) {
+            Log.TWL(0, $"BaySquadReadoutAligner.UIInit can't find parent HUDMechArmorReadout");
+            ui_inited = true;
+            return;
+          }
+        }
+        if (this.frontArmor == null) {
+          this.frontArmor = this.parent.gameObject.transform.FindRecursive("mech_FrontArmor") as RectTransform;
+          if (this.frontArmor == null) {
+            Log.TWL(0, $"BaySquadReadoutAligner.UIInit can't find parent mech_FrontArmor");
+            ui_inited = true;
+            return;
+          }
+        }
+        this.transform.localPosition = frontArmor.localPosition;
+      }catch(Exception e) {
+        Log.TWL(0,e.ToString(),true);
+      }
       ui_inited = true;
     }
     public void Update() {

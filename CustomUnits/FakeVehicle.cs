@@ -201,6 +201,16 @@ namespace CustomUnits {
     public override Dictionary<int, float> GetAOESpreadArmorLocations() {
       return CustomAmmoCategories.FakeVehicleLocations;
     }
+    public override void _ApplyArmorStatDamage(ArmorLocation location, float damage, WeaponHitInfo hitInfo) {
+      this.statCollection.ModifyStat<float>(hitInfo.attackerId, hitInfo.stackItemUID, this.GetStringForArmorLocation(location), StatCollection.StatOperation.Float_Subtract, damage);
+      this.OnArmorDamaged((int)location, hitInfo, damage);
+      var specialLocations = new HashSet<ArmorLocation>() { ArmorLocation.None };
+      UnitCustomInfo info = this.GetCustomInfo();
+      if (info != null) { specialLocations = new HashSet<ArmorLocation>() { (ArmorLocation)info.MechVehicleCrewLocation }; }
+      if (specialLocations.Contains(location)) {
+        this.pilot.SetNeedsInjury(InjuryReason.HeadHit);
+      }
+    }
     public override List<int> GetAOEPossibleHitLocations(Vector3 attackPos) {
       Dictionary<ArmorLocation, int> vehicleHitTable = this.GetHitTable(this.Combat.HitLocation.GetAttackDirection(attackPos, (ICombatant)this));
       if (vehicleHitTable == null) return (List<int>)null;

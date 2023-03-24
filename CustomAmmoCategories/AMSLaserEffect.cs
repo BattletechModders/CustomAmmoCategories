@@ -44,6 +44,8 @@ namespace CustAmmoCategories {
       this.beamRenderer.material.SetColor("_ColorBB", color);
     }
     public override void RestoreOriginalColor() {
+      if (this.beamRenderer == null) { return; }
+      if (this.beamRenderer.material == null) { return; }
       this.beamRenderer.material.SetColor("_ColorBB", this.originalColor);
     }
     public override float calculateInterceptCorrection(float curPath, float pathLenth, float distance, float missileProjectileSpeed) {
