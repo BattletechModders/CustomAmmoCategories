@@ -1282,10 +1282,7 @@ namespace CustomUnits {
       }
     }
     public virtual void SetRandomIdleValue(float value) {
-      //CustomTwistAnimation custIdleAnim = this.gameObject.GetComponent<CustomTwistAnimation>();
-      //Log.TWL(0, "CustomMechRepresentation.SetRandomIdleValue: " + this.gameObject.name + " " + (this.parentMech == null ? "null" : this.parentMech.MechDef.ChassisID) + " value:" + value + " RotateBody:" + this.RotateBody);
       if (this.RotateBody) {
-        //Log.WL(1, "this.thisAnimator.SetFloat(this.idleRandomValueHash, 0.6f)");
         this.thisAnimator.SetFloat(this.idleRandomValueHash, 0.6f);
         return;
       }
@@ -1293,16 +1290,13 @@ namespace CustomUnits {
         if (this.customRep.HasTwistAnimators) {
           this.customRep.IdleTwist(value);
           if (this.customRep.CustomDefinition.KeepRandomIdleAnimation) {
-            //Log.WL(1, "this.thisAnimator.SetFloat(this.idleRandomValueHash, "+ value + ")");
             this.thisAnimator.SetFloat(this.idleRandomValueHash, value);
           } else {
-            //Log.WL(1, "this.thisAnimator.SetFloat(this.idleRandomValueHash, 0.6f)");
             this.thisAnimator.SetFloat(this.idleRandomValueHash, 0.6f);
           }
           return;
         }
       }
-      //Log.WL(1, "this.thisAnimator.SetFloat(this.idleRandomValueHash, " + value + ")");
       this.thisAnimator.SetFloat(this.idleRandomValueHash, value);
     }
     public virtual void _SetIdleAnimState() {

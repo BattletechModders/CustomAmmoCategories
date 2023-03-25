@@ -178,6 +178,7 @@ namespace CustomUnits {
     public CustomActorRepresentationDef CustomDefinition { get; protected set; }
     public Dictionary<string, AttachInfo> WeaponAttachPoints { get; protected set; } = new Dictionary<string, AttachInfo>();
     public HashSet<CustomRepresentationAnimatorInfo> animators { get; protected set; } = new HashSet<CustomRepresentationAnimatorInfo>();
+    public HashSet<HardPointAnimationController> hardpointsAnimators { get; protected set; } = new HashSet<HardPointAnimationController>();
     public HashSet<CustomTwistAnimatorInfo> twistAnimators { get; protected set; } = new HashSet<CustomTwistAnimatorInfo>();
     public bool HasTwistAnimators { get { return twistAnimators.Count > 0; } }
     public List<Transform> Headlights { get; protected set; }
@@ -202,7 +203,12 @@ namespace CustomUnits {
         animCompleete?.Invoke();
       }
     }
-    public bool InBattle { set { foreach (CustomRepresentationAnimatorInfo info in animators) { info.InBattle = value; } } }
+    public bool InBattle {
+      set {
+        foreach (CustomRepresentationAnimatorInfo info in animators) { info.InBattle = value; }
+        foreach (HardPointAnimationController info in hardpointsAnimators) { info.InBattle = value; }
+      }
+    }
     public bool InDropOff { set { foreach (CustomRepresentationAnimatorInfo info in animators) { info.DropOff = value; } } }
     public void Charge() { foreach (CustomRepresentationAnimatorInfo info in animators) { info.Charge(); } }
     public float Forward { set { foreach (CustomRepresentationAnimatorInfo info in animators) { info.Forward = value; } } }
@@ -226,6 +232,7 @@ namespace CustomUnits {
         Log.TWL(0, "CustomTwistAnimation.StartRandomIdle: " + value);
         if (value) { if (idleTimeElapsed.IsRunning == false) { idleTimeElapsed.Reset(); idleTimeElapsed.Start(); }; } else { idleTimeElapsed.Reset(); idleTimeElapsed.Stop(); }
         foreach (CustomTwistAnimatorInfo info in twistAnimators) { info.StartRandomIdle = value; }
+        foreach (HardPointAnimationController info in hardpointsAnimators) { info.StartRandomIdle = value; }
       }
     }
     public void Twist(float angle) {
@@ -252,6 +259,7 @@ namespace CustomUnits {
         foreach (CustomTwistAnimatorInfo info in twistAnimators) { info.StartRandomIdle = true; }
         isInIdleRotated = true;
       }
+      foreach (HardPointAnimationController info in hardpointsAnimators) { info.RandomIdle = value; }
       float angle = 0.0f;
       if (value == 0.6f) { angle = 0f; } else
       if (value == 0.7f) { angle = -0.3f; } else
@@ -524,6 +532,12 @@ namespace CustomUnits {
                 if (weaponRep.weapon != null) { attachPoint.weapons.Add(weaponRep.weapon); }
               };
             }
+            HardPointAnimationController animComponent = weaponRep.GetComponent<HardPointAnimationController>();
+            if (animComponent == null) {
+              animComponent = weaponRep.gameObject.AddComponent<HardPointAnimationController>(); animComponent.Init(weaponRep, customHardpoint);
+              animComponent.InBattle = true;
+              hardpointsAnimators.Add(animComponent);
+            }
           } catch (Exception e) {
             Log.TWL(0, e.ToString(), true);
           }
@@ -595,13 +609,21 @@ namespace CustomUnits {
 
                 //HACKY FIX: I'm not sure what KMission's intent with weapons was, but as far as I know they don't take paint.
                 //  Because of that, I'm disabling the paint patterns on them here. This prevents the 'corrupted texture' look in the mechbay.
-                CustomPaintPattern[] paintPatterns = attachRep.gameObject.GetComponentsInChildren<CustomPaintPattern>();
-                foreach (CustomPaintPattern cpp in paintPatterns)
-                {                    
+                CustomPaintPattern[] paintPatterns = attachRep.gameObject.GetComponentsInChildren<CustomPaintPattern>(true);
+                foreach (CustomPaintPattern cpp in paintPatterns) {
+                  if (cpp.is_custom == false) {
                     cpp._paintPatterns.Clear();
                     cpp._currentIndex = -1;
+                  }
                 }
               };
+            }
+            if (compRep is WeaponRepresentation weaponRep) {
+              HardPointAnimationController animComponent = weaponRep.GetComponent<HardPointAnimationController>();
+              if (animComponent == null) {
+                animComponent = weaponRep.gameObject.AddComponent<HardPointAnimationController>(); animComponent.Init(weaponRep, customHardpoint);
+                animComponent.InBattle = false;
+              }
             }
           } catch (Exception e) {
             Log.TWL(0, e.ToString(), true);

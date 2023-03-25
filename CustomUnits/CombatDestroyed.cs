@@ -22,7 +22,7 @@ namespace CustomUnits {
   public static class CombatGameState_OnCombatGameDestroyedMap {
     public static bool Prefix(CombatGameState __instance) {
       try {
-        HardpointAnimatorHelper.Clear();
+        //HardpointAnimatorHelper.Clear();
         UnitsAnimatedPartsHelper.Clear();
         //ActorMovementSequence_InitDistanceClamp.Clear();
         VTOLBodyAnimationHelper.Clear();

@@ -687,6 +687,12 @@ namespace CustomUnits {
     }
     public virtual void RegisterRenderersMainHeraldry(GameObject src) {
       Log.TW(0, "CustomMechRepresentation.RegisterRenderersMainHeraldry: " + this.gameObject.name+" "+src.name);
+      MeshRenderer root_camoholder = src.FindObject<MeshRenderer>("camoholder", true);
+      if(root_camoholder != null) {
+        Log.WL(1, $"found toplevel camoholder");
+        this.RegisterRenderersCustomHeraldry(src, root_camoholder);
+        return;
+      }
       MeshRenderer[] mRenderer = src.GetComponentsInChildren<MeshRenderer>(true);
       SkinnedMeshRenderer[] sRenderer = src.GetComponentsInChildren<SkinnedMeshRenderer>(true);
       Log.WL(1, "MeshRenderers:"+mRenderer.Length+ " SkinnedMeshRenderer:"+ sRenderer.Length);

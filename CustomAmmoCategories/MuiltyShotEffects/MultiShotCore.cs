@@ -20,18 +20,22 @@ namespace CustAmmoCategories {
     public abstract bool isFireAnimCompleete(int index);
   }
   public static class HardpointAnimatorHelper {
-    private static Dictionary<Weapon, BaseHardPointAnimationController> HardpointsAnimators = new Dictionary<Weapon, BaseHardPointAnimationController>();
-    public static void RegisterHardpointAnimator(this Weapon weapon, BaseHardPointAnimationController anim) {
-      Log.M.TWL(0, "HardpointAnimatorHelper.RegisterHardpointAnimator:" + weapon.defId + " anim:" + ((anim == null) ? "null" : "not null"));
-      if (HardpointsAnimators.ContainsKey(weapon) == false) { HardpointsAnimators.Add(weapon, anim); } else { HardpointsAnimators[weapon] = anim; };
-    }
+    //private static Dictionary<Weapon, BaseHardPointAnimationController> HardpointsAnimators = new Dictionary<Weapon, BaseHardPointAnimationController>();
+    //public static void RegisterHardpointAnimator(this Weapon weapon, BaseHardPointAnimationController anim) {
+    //  Log.M.TWL(0, $"HardpointAnimatorHelper.RegisterHardpointAnimator:{weapon.defId} anim:{((anim == null) ? "null" : "not null")}");
+
+    //  //if (HardpointsAnimators.ContainsKey(weapon) == false) { HardpointsAnimators.Add(weapon, anim); } else { HardpointsAnimators[weapon] = anim; };
+    //}
     public static BaseHardPointAnimationController HardpointAnimator(this Weapon weapon) {
-      if (HardpointsAnimators.ContainsKey(weapon) == false) { return null; }
-      return HardpointsAnimators[weapon];
+      //if (HardpointsAnimators.ContainsKey(weapon) == false) { return null; }
+      //return HardpointsAnimators[weapon];
+      if (weapon.weaponRep == null) { return null; }
+      BaseHardPointAnimationController result = weapon.weaponRep.gameObject.GetComponent<BaseHardPointAnimationController>();
+      return result;
     }
-    public static void Clear() {
-      HardpointsAnimators.Clear();
-    }
+    //public static void Clear() {
+    //  HardpointsAnimators.Clear();
+    //}
   }
   public class MuiltShotAnimatedEffect : CopyAbleWeaponEffect {
     private BaseHardPointAnimationController baseHardpointAnimator;

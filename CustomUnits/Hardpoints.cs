@@ -543,15 +543,36 @@ namespace CustomUnits {
     private float PrefireSpeed { get; set; }
     private float FireSpeed { get; set; }
     private bool isIndirect { get; set; }
+    private bool HasPrefireSpeed { get; set; } = false;
+    private int HashPrefireSpeed { get; set; }
+    private bool HasFireSpeed { get; set; } = false;
+    private int HashFireSpeed { get; set; }
+    private bool HasIndirect { get; set; } = false;
+    private int HashIndirect { get; set; }
+    private bool HasVertical { get; set; } = false;
+    private int HashVertical { get; set; }
+    private bool HasToFireNormal { get; set; } = false;
+    private int HashToFireNormal { get; set; }
+    private bool HasPrefireAnimation { get; set; } = false;
+    private int HashPrefireAnimation { get; set; }
+    private bool HasInBattle { get; set; } = false;
+    private int HashInBattle { get; set; }
+    private bool HasStartRandomIdle { get; set; } = false;
+    private int HashStartRandomIdle { get; set; }
+    private bool HasIdle { get; set; } = false;
+    private int HashIdle { get; set; }
+    private Dictionary<string, int> HashFireAnimation { get; set; } = new Dictionary<string, int>();
     public override void PrefireAnimationSpeed(float speed) {
       if (animator == null) { return; }
       PrefireSpeed = speed;
-      animator.SetFloat("prefire_speed", speed);
+      if (HasPrefireSpeed == false) { return; }
+      animator.SetFloat(HashPrefireSpeed, speed);
     }
     public override void FireAnimationSpeed(float speed) {
       if (animator == null) { return; }
       FireSpeed = speed;
-      animator.SetFloat("fire_speed",speed);
+      if (HasFireSpeed == false) { return; }
+      animator.SetFloat(HashFireSpeed,speed);
     }
     public HardPointAnimationController() {
       fireCompleeteCounters = new List<float>();
@@ -560,6 +581,52 @@ namespace CustomUnits {
       PrefireSpeed = 1f;
       //recoil_step = 0f;
       //recoil_value = 0f;
+    }
+    public void SetFireAnimation(string name, bool value) {
+      if (animator == null) { return; }
+      if (HashFireAnimation.TryGetValue(name, out int hash)) { animator.SetBool(hash,value); }
+    }
+    public float Indirect {
+      set {
+        if (animator == null) { return; }
+        if (HasIndirect) { animator.SetFloat(HashIndirect, value); }
+      }
+    }
+    public float ToFireNormal {
+      set {
+        if (animator == null) { return; }
+        if (HasToFireNormal) { animator.SetFloat(HashToFireNormal, value); }
+      }
+    }
+    public float Vertical {
+      set {
+        if (animator == null) { return; }
+        if (HasVertical) { animator.SetFloat(HashVertical, value); }
+      }
+    }
+    public bool SetPrefireAnimation {
+      set {
+        if (animator == null) { return; }
+        if (HasPrefireAnimation) { animator.SetBool(HashPrefireAnimation, value); }
+      }
+    }
+    public bool InBattle {
+      set {
+        if (animator == null) { return; }
+        if (HasInBattle) { animator.SetBool(HashInBattle, value); }
+      }
+    }
+    public bool StartRandomIdle {
+      set {
+        if (animator == null) { return; }
+        if (HasStartRandomIdle) { animator.SetBool(HashStartRandomIdle, value); }
+      }
+    }
+    public float RandomIdle {
+      set {
+        if (animator == null) { return; }
+        if (HasIdle) { animator.SetFloat(HashIdle, value); }
+      }
     }
     public override bool isPrefireAnimCompleete() { return PrefireCompleete; }
     private void fireCompleeteAll(bool state) {
@@ -576,7 +643,7 @@ namespace CustomUnits {
       Log.LogWrite("[" + DateTime.Now.ToString("HH:mm:ss.fff") + "]HardPointAnimationController.FireAnimation(" + index + "/"+realIndex+"):" + customHardpoint.prefab + "\n");
       string animName = customHardpoint.fireEmitterAnimation[realIndex];
       if (string.IsNullOrEmpty(animName) == false) {
-        animator.SetBool(animName,true);
+        SetFireAnimation(animName, true);
         Log.LogWrite(1, "animName("+realIndex+"):" + animName + " true\n");
         fireCompleete[realIndex] = false;
         fireCompleeteCounters[realIndex] = (FireSpeed > 0.01f)?customHardpoint.fireAnimationLength / FireSpeed:0f;
@@ -590,7 +657,7 @@ namespace CustomUnits {
         string tanimName = customHardpoint.fireEmitterAnimation[t];
         if (string.IsNullOrEmpty(tanimName) == false) {
           Log.LogWrite(1, "animName(" + t + "):" + tanimName + " - false\n");
-          animator.SetBool(tanimName, false);
+          SetFireAnimation(tanimName, false);
           fireCompleete[t] = true;
           fireCompleeteCounters[t] = 0f;
         }
@@ -610,16 +677,16 @@ namespace CustomUnits {
       Log.LogWrite("HardPointAnimationController.PrefireAnimation " + weapon.defId + "\n");
       if (customHardpoint.preFireAnimation == "_new_style") {
         if (this.isIndirect) {
-          animator.SetFloat("indirect", 1f);
-          animator.SetFloat("to_fire_normal", 0.98f);
+          this.Indirect = 1f;
+          this.ToFireNormal = 0.98f;
           //animator.SetBool(customHardpoint.preFireAnimation, true);
         } else {
-          animator.SetFloat("indirect", 0.98f);
-          animator.SetFloat("vertical", 0.5f);
-          animator.SetFloat("to_fire_normal", 1f);
+          this.Indirect = 0.98f;
+          this.Vertical = 0.5f;
+          this.ToFireNormal = 1f;
         }
       } else {
-        animator.SetBool(customHardpoint.preFireAnimation, true);
+        SetPrefireAnimation = true;
       }
     }
     public override void PostfireAnimation() {
@@ -628,18 +695,18 @@ namespace CustomUnits {
       if (string.IsNullOrEmpty(customHardpoint.preFireAnimation)) { PrefireCompleete = true; return; }
       PrefireCompleete = true;
       if (customHardpoint.preFireAnimation != "_new_style") {
-        animator.SetBool(customHardpoint.preFireAnimation, false);
+        SetPrefireAnimation = false;
       } else {
         if (this.isIndirect) {
-          animator.SetFloat("indirect", 0.98f);
-          animator.SetFloat("to_fire_normal", 0.98f);
+          this.Indirect = 0.98f;
+          this.ToFireNormal = 0.98f;
         }
       }
       for (int t = 0; t < customHardpoint.fireEmitterAnimation.Count; ++t) {
         string animName = customHardpoint.fireEmitterAnimation[t];
         if (string.IsNullOrEmpty(animName) == false) {
           Log.LogWrite(1, "animName(" + t + "):" + animName + " - false\n");
-          animator.SetBool(animName, false);
+          SetFireAnimation(animName, false);
           fireCompleete[t] = true;
           fireCompleeteCounters[t] = 0f;
         }
@@ -665,12 +732,43 @@ namespace CustomUnits {
     }
     public void Init(WeaponRepresentation weaponRep, CustomHardpointDef hardpointDef) {
       Log.LogWrite(0, "HardPointAnimationController.Init " + weaponRep.name + "\n");
-      weapon = weaponRep.weapon;
+      //weapon = weaponRep.weapon;
       PrefireCompleete = false;
       FireSpeed = 1f;
       PrefireSpeed = 1f;
       animator = weaponRep.gameObject.GetComponentInChildren<Animator>();
       if (animator == null) { PrefireCompleete = true; };
+      if(animator != null) {
+        this.HashPrefireSpeed = Animator.StringToHash("prefire_speed");
+        this.HashFireSpeed = Animator.StringToHash("fire_speed");
+        this.HashIndirect = Animator.StringToHash("indirect");
+        this.HashVertical = Animator.StringToHash("vertical");
+        this.HashToFireNormal = Animator.StringToHash("to_fire_normal");
+        this.HashInBattle = Animator.StringToHash("in_battle");
+        this.HashStartRandomIdle = Animator.StringToHash("start_random_idle");
+        this.HashIdle = Animator.StringToHash("idle_param");
+        this.HashPrefireAnimation = Animator.StringToHash(customHardpoint.preFireAnimation);
+        Dictionary<string, int> animHashes = new Dictionary<string, int>();
+        this.HashFireAnimation.Clear();
+        foreach (var fireAnim in customHardpoint.fireEmitterAnimation) {
+          if (string.IsNullOrEmpty(fireAnim)) { continue; }
+          animHashes[fireAnim] = Animator.StringToHash(fireAnim);
+        }
+        foreach (var param in animator.parameters) {
+          if ((param.name == "prefire_speed")&&(param.type == AnimatorControllerParameterType.Float)) { this.HasPrefireSpeed = true; }
+          if ((param.name == "fire_speed")&& (param.type == AnimatorControllerParameterType.Float)) { this.HasFireSpeed = true; }
+          if ((param.name == "indirect")&& (param.type == AnimatorControllerParameterType.Float)) { this.HasIndirect = true; }
+          if ((param.name == "vertical") && (param.type == AnimatorControllerParameterType.Float)) { this.HasVertical = true; }
+          if ((param.name == "to_fire_normal") && (param.type == AnimatorControllerParameterType.Float)) { this.HasToFireNormal = true; }
+          if ((param.name == "in_battle") && (param.type == AnimatorControllerParameterType.Bool)) { this.HasInBattle = true; }
+          if ((param.name == "start_random_idle") && (param.type == AnimatorControllerParameterType.Bool)) { this.HasStartRandomIdle = true; }
+          if ((param.name == "idle_param") && (param.type == AnimatorControllerParameterType.Float)) { this.HasIdle = true; }
+          if ((param.name == customHardpoint.preFireAnimation) && (param.type == AnimatorControllerParameterType.Bool)) { this.HasPrefireAnimation = true; }
+          if(animHashes.ContainsKey(param.name) && (param.type == AnimatorControllerParameterType.Bool)) {
+            HashFireAnimation[param.name] = animHashes[param.name];
+          }
+        }
+      }
       customHardpoint = hardpointDef;
       Log.LogWrite(1, "customHardpoint: " + ((customHardpoint == null) ? "null" : customHardpoint.prefab) + "\n");
       if (animator != null) {
@@ -687,7 +785,7 @@ namespace CustomUnits {
           fireCompleeteCounters.Add(0f);
         }
       }
-      HardpointAnimatorHelper.RegisterHardpointAnimator(weapon, this);
+      //HardpointAnimatorHelper.RegisterHardpointAnimator(weapon, this);
     }
   }
   public static class CustomHardPointsHelper {
@@ -695,11 +793,11 @@ namespace CustomUnits {
     private static ConcurrentDictionary<string, CustomHardpointsDef> CustomHardpointsDefs = new ConcurrentDictionary<string, CustomHardpointsDef>();
     private static ConcurrentDictionary<string, string> hardPointAliases = new ConcurrentDictionary<string, string>();
     private static ConcurrentDictionary<string, CustomHardpointDef> CustomHardpointDefs = new ConcurrentDictionary<string, CustomHardpointDef>();
-    public static HardPointAnimationController hadrpointAnimator(this WeaponRepresentation weaponRep) {
-      HardPointAnimationController result = weaponRep.gameObject.GetComponent<HardPointAnimationController>();
-      if (result == null) { result = weaponRep.gameObject.AddComponent<HardPointAnimationController>(); result.Init(weaponRep); };
-      return result;
-    }
+    //public static HardPointAnimationController hadrpointAnimator(this WeaponRepresentation weaponRep) {
+    //  HardPointAnimationController result = weaponRep.gameObject.GetComponent<HardPointAnimationController>();
+    //  if (result == null) { result = weaponRep.gameObject.AddComponent<HardPointAnimationController>(); result.Init(weaponRep); };
+    //  return result;
+    //}
     public static void Add(string id, CustomHardpointsDef defs) {
       CustomHardpointsDefs.AddOrUpdate(id, defs, (k,v)=> { return defs; });
       //if (CustomHardpointsDefs.ContainsKey(id) == false) {
@@ -1396,6 +1494,7 @@ namespace CustomUnits {
         HardPointAnimationController animComponent = __instance.weaponRep.GetComponent<HardPointAnimationController>();
         if (animComponent == null) {
           animComponent = __instance.weaponRep.gameObject.AddComponent<HardPointAnimationController>(); animComponent.Init(__instance.weaponRep, customHardpoint);
+          animComponent.InBattle = true;
         }
         ParticleSystem[] pss = prefab.GetComponentsInChildren<ParticleSystem>();
         foreach (ParticleSystem ps in pss) {

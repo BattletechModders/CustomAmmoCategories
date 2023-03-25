@@ -22,6 +22,7 @@ namespace CustomUnits {
   public class CustomPaintPattern: MonoBehaviour {
     public List<Texture2D> _paintPatterns = null;
     public int _currentIndex = -1;
+    public bool is_custom { get; private set; } = false;
     public int currentIndex { get { return _currentIndex; } }
     public List<Texture2D> paintPatterns {
       get {
@@ -34,6 +35,7 @@ namespace CustomUnits {
     //public PropertyBlockManager.PropertySetting paintEmblemProperty { get; set; } = new PropertyBlockManager.PropertySetting("_PaintScheme", Texture2D.blackTexture);
     public void Init(Renderer renderer, MeshRenderer paintSchemeHolder) {
       Log.TWL(0, "CustomPaintPattern.Init custom "+renderer.gameObject.name+" "+(paintSchemeHolder==null?"null": paintSchemeHolder.sharedMaterials.Length.ToString()));
+      this.is_custom = true;
       this.renderer = renderer;
       if (this._paintPatterns == null) { this._paintPatterns = new List<Texture2D>(); }
       if (paintSchemeHolder != null) {
@@ -57,8 +59,9 @@ namespace CustomUnits {
       Log.TWL(0, "CustomPaintPattern.ApplyPaintScheme " + index + " renderer:" + this.renderer.gameObject.name+" texture:"+ paintSchemeProperty.PropertyTexture.name);
       this._currentIndex = index;
     }
-    public void Init(Renderer renderer,CustomMechCustomization customization) {
+    public void Init(Renderer renderer, CustomMechCustomization customization) {
       this.renderer = renderer;
+      this.is_custom = false;
       Log.TWL(0, "CustomPaintPattern.Init default " + renderer.gameObject.name + " " + (customization == null ? "null" : customization.paintPatterns.Length.ToString()));
       if (this._paintPatterns == null) { this._paintPatterns = new List<Texture2D>(); }
       foreach (Texture2D tex in customization.paintPatterns) { if (tex == null) { continue; }; this._paintPatterns.Add(tex); }

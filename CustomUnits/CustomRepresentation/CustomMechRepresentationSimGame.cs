@@ -13,6 +13,7 @@ using BattleTech.Data;
 using BattleTech.Rendering;
 using BattleTech.Rendering.MechCustomization;
 using BattleTech.UI;
+using CustAmmoCategories;
 using HarmonyLib;
 using Localize;
 using System;
@@ -705,11 +706,17 @@ namespace CustomUnits {
     }
     public virtual void RegisterRenderersMainHeraldry(GameObject src) {
       Log.TW(0, "CustomMechRepresentationSimGame.RegisterRenderersMainHeraldry: " + this.gameObject.name + " " + src.name);
+      MeshRenderer root_camoholder = src.FindObject<MeshRenderer>("camoholder", true);
+      if (root_camoholder != null) {
+        Log.WL(1, $"found toplevel camoholder");
+        this.RegisterRenderersCustomHeraldry(src, root_camoholder);
+        return;
+      }
       MeshRenderer[] mRenderer = src.GetComponentsInChildren<MeshRenderer>(true);
       SkinnedMeshRenderer[] sRenderer = src.GetComponentsInChildren<SkinnedMeshRenderer>(true);
       Log.WL(1, "MeshRenderers:" + mRenderer.Length + " SkinnedMeshRenderer:" + sRenderer.Length);
       Dictionary<Renderer, MeshRenderer> customCamoHolders = new Dictionary<Renderer, MeshRenderer>();
-      Transform[] trs = src.GetComponentsInChildren<Transform>();
+      Transform[] trs = src.GetComponentsInChildren<Transform>(true);
       foreach (Transform tr in trs) {
         if (tr.name.StartsWith("camoholder") == false) { continue; }
         MeshRenderer camoholder = tr.gameObject.GetComponent<MeshRenderer>();
@@ -730,20 +737,23 @@ namespace CustomUnits {
         CustomPaintPattern paintPattern = renderer.gameObject.GetComponent<CustomPaintPattern>();
         if (paintPattern == null) { paintPattern = renderer.gameObject.AddComponent<CustomPaintPattern>(); }
         if (customCamoHolders.TryGetValue(renderer, out MeshRenderer localPaintHolder)) {
+          Log.WL(1, $"skinned renderer:{renderer.gameObject.name} local");
           paintPattern.Init(renderer, localPaintHolder);
         } else {
+          Log.WL(1, $"skinned renderer:{renderer.gameObject.name} global");
           paintPattern.Init(renderer, this.defaultMechCustomization);
         }
       }
       foreach (SkinnedMeshRenderer renderer in sRenderer) {
         if (skinnedMeshRenderersCache.ContainsKey(renderer)) { continue; };
         this.skinnedMeshRenderersCache.Add(renderer, true);
-        Log.WL(1, "skinned renderer:" + renderer.gameObject.name + " heraldry:" + true);
         CustomPaintPattern paintPattern = renderer.gameObject.GetComponent<CustomPaintPattern>();
         if (paintPattern == null) { paintPattern = renderer.gameObject.AddComponent<CustomPaintPattern>(); }
         if (customCamoHolders.TryGetValue(renderer, out MeshRenderer localPaintHolder)) {
+          Log.WL(1, $"skinned renderer:{renderer.gameObject.name} local");
           paintPattern.Init(renderer, localPaintHolder);
         } else {
+          Log.WL(1, $"skinned renderer:{renderer.gameObject.name} global");
           paintPattern.Init(renderer, this.defaultMechCustomization);
         }
       }
