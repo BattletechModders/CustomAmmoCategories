@@ -747,7 +747,11 @@ namespace CustomUnits {
         this.HashInBattle = Animator.StringToHash("in_battle");
         this.HashStartRandomIdle = Animator.StringToHash("start_random_idle");
         this.HashIdle = Animator.StringToHash("idle_param");
-        this.HashPrefireAnimation = Animator.StringToHash(customHardpoint.preFireAnimation);
+        if (string.IsNullOrEmpty(customHardpoint.preFireAnimation) == false) {
+          this.HashPrefireAnimation = Animator.StringToHash(customHardpoint.preFireAnimation);
+        } else {
+          this.HashPrefireAnimation = Animator.StringToHash("prefire");
+        }
         Dictionary<string, int> animHashes = new Dictionary<string, int>();
         this.HashFireAnimation.Clear();
         foreach (var fireAnim in customHardpoint.fireEmitterAnimation) {
