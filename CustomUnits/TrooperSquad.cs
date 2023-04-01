@@ -693,7 +693,7 @@ namespace CustomUnits {
       foreach (ArmorLocation alocation in TrooperSquad.locations) { GetAdjacentLocations_cache |= alocation; }
       return GetAdjacentLocations_cache;
     }
-    private static Dictionary<int, Dictionary<ArmorLocation, int>> GetHitTable_cache = new Dictionary<int, Dictionary<ArmorLocation, int>>();
+    private static Dictionary<int, Dictionary<ArmorLocation, int>> GetHitTableSquad_cache = new Dictionary<int, Dictionary<ArmorLocation, int>>();
     private static Dictionary<int, Dictionary<ArmorLocation, Dictionary<ArmorLocation, int>>> GetHitTableCluster_cache = new Dictionary<int, Dictionary<ArmorLocation, Dictionary<ArmorLocation, int>>>();
     private int location_index = -1;
     private HashSet<ArmorLocation> avaible_locations = new HashSet<ArmorLocation>();
@@ -736,7 +736,7 @@ namespace CustomUnits {
       Log.TWL(0,"TrooperSquad.GetHitTable "+this.MechDef.Description.Id+" location index:" + (this.location_index>=0?Convert.ToString(this.location_index,2).PadLeft(16,'0'):"-1"));
       Dictionary<ArmorLocation, int> result = null;
       this.RecalculateAvaibleLocations();
-      if (GetHitTable_cache.TryGetValue(location_index, out result)) {
+      if (GetHitTableSquad_cache.TryGetValue(location_index, out result)) {
         Log.WL(1,"cached:"+result.Count);
         return result;
       }
@@ -746,7 +746,7 @@ namespace CustomUnits {
           result.Add(aloc, ToHitTableSumm / avaible_locations.Count);
         }
       }
-      GetHitTable_cache.Add(location_index, result);
+      GetHitTableSquad_cache.Add(location_index, result);
       return result.Count > 0 ? result : null;
     }
     private static Dictionary<int, Dictionary<ArmorLocation, Dictionary<ArmorLocation, int>>> GetClusterTable_cache = new Dictionary<int, Dictionary<ArmorLocation, Dictionary<ArmorLocation, int>>>();
@@ -779,7 +779,7 @@ namespace CustomUnits {
       squad_tables.Add(originalLocation, dictionary);
       return dictionary;
     }
-    private static Dictionary<int, Dictionary<ArmorLocation, Dictionary<ArmorLocation, int>>> GetClusterHitTable_cache = new Dictionary<int, Dictionary<ArmorLocation, Dictionary<ArmorLocation, int>>>();
+    private static Dictionary<int, Dictionary<ArmorLocation, Dictionary<ArmorLocation, int>>> GetClusterHitTableSquad_cache = new Dictionary<int, Dictionary<ArmorLocation, Dictionary<ArmorLocation, int>>>();
     public override Dictionary<ArmorLocation, int> GetHitTableCluster(AttackDirection from, ArmorLocation originalLocation) {
       if (location_index == -1) {
         location_index = 0;
@@ -792,9 +792,9 @@ namespace CustomUnits {
           //alocations.Add(alocation);
         }
       }
-      if (GetClusterHitTable_cache.TryGetValue(location_index, out Dictionary<ArmorLocation, Dictionary<ArmorLocation, int>> clusterTables) == false) {
+      if (GetClusterHitTableSquad_cache.TryGetValue(location_index, out Dictionary<ArmorLocation, Dictionary<ArmorLocation, int>> clusterTables) == false) {
         clusterTables = new Dictionary<ArmorLocation, Dictionary<ArmorLocation, int>>();
-        GetClusterHitTable_cache.Add(location_index, clusterTables);
+        GetClusterHitTableSquad_cache.Add(location_index, clusterTables);
       }
       if (clusterTables.TryGetValue(originalLocation, out Dictionary<ArmorLocation, int> result)) {
         return result;

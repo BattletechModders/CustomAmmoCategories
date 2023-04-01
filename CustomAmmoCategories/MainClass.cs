@@ -37,7 +37,6 @@ using CustomAmmoCategoriesLog;
 using CustAmmoCategoriesPatches;
 using System.Collections.Concurrent;
 using MessagePack;
-using HarmonyLib;
 
 namespace CustomAmmoCategoriesPatches {
   [HarmonyPatch(typeof(MechLabPanel))]

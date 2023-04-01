@@ -158,6 +158,63 @@ namespace CustomUnits {
     public bool is_empty { get; set; } = true;
     public static CustomStructureDef empty { get; set; } = new CustomStructureDef();
     private static Dictionary<string, CustomStructureDef> rules = new Dictionary<string, CustomStructureDef>();
+    private Dictionary<string, string> StructIcons { get; set; } = new Dictionary<string, string>();
+    [JsonIgnore]
+    private Dictionary<ChassisLocations, string> f_StructureIcons = null;
+    [JsonIgnore]
+    public Dictionary<ChassisLocations, string> SIcons {
+      get {
+        if (f_StructureIcons == null) {
+          f_StructureIcons = new Dictionary<ChassisLocations, string>();
+          foreach (var sicon in StructIcons) {
+            if (Enum.TryParse<ChassisLocations>(sicon.Key, out var loc)) {
+              f_StructureIcons.Add(loc, sicon.Value);
+            } else if (Enum.TryParse<VehicleChassisLocations>(sicon.Key, out var vloc)) {
+              f_StructureIcons.Add(vloc.toFakeChassis(), sicon.Value);
+            }
+          }
+        }
+        return f_StructureIcons;
+      }
+    }
+    private Dictionary<string, string> ArmorIcons { get; set; } = new Dictionary<string, string>();
+    [JsonIgnore]
+    private Dictionary<ChassisLocations, string> f_ArmorIcons = null;
+    [JsonIgnore]
+    public Dictionary<ChassisLocations, string> AIcons {
+      get {
+        if (f_ArmorIcons == null) {
+          f_ArmorIcons = new Dictionary<ChassisLocations, string>();
+          foreach (var sicon in ArmorIcons) {
+            if (Enum.TryParse<ChassisLocations>(sicon.Key, out var loc)) {
+              f_ArmorIcons.Add(loc, sicon.Value);
+            } else if (Enum.TryParse<VehicleChassisLocations>(sicon.Key, out var vloc)) {
+              f_ArmorIcons.Add(vloc.toFakeChassis(), sicon.Value);
+            }
+          }
+        }
+        return f_ArmorIcons;
+      }
+    }
+    private Dictionary<string, string> OutlineIcons { get; set; } = new Dictionary<string, string>();
+    [JsonIgnore]
+    private Dictionary<ChassisLocations, string> f_OutlineIcons = null;
+    [JsonIgnore]
+    public Dictionary<ChassisLocations, string> OIcons {
+      get {
+        if (f_OutlineIcons == null) {
+          f_OutlineIcons = new Dictionary<ChassisLocations, string>();
+          foreach (var sicon in StructIcons) {
+            if (Enum.TryParse<ChassisLocations>(sicon.Key, out var loc)) {
+              f_OutlineIcons.Add(loc, sicon.Value);
+            } else if (Enum.TryParse<VehicleChassisLocations>(sicon.Key, out var vloc)) {
+              f_OutlineIcons.Add(vloc.toFakeChassis(), sicon.Value);
+            }
+          }
+        }
+        return f_OutlineIcons;
+      }
+    }
     [JsonIgnore]
     public Dictionary<string, CustomHitTableDef> tables { get; set; } = new Dictionary<string, CustomHitTableDef>();
     public static readonly string DEFAULT_MECH_STRUCTURE_RULES = "mech";

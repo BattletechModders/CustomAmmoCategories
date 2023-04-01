@@ -84,7 +84,7 @@ namespace CustomUnits {
       return this.CurrentRepresentation.GetVFXTransform(location);
     }
     public override void PlayComponentDestroyedVFX(int location, Vector3 attackDirection) {
-      base.PlayComponentDestroyedVFX(location,attackDirection);
+      base.PlayComponentDestroyedVFX(location, attackDirection);
       this.needsToRefreshCombinedMesh = false;
       foreach (CustomMechRepresentation alt in Alternates) {
         if (alt == this.CurrentRepresentation) { alt.CollapseLocation(location, attackDirection); } else { alt.CollapseLocationNoVisual(location); }
@@ -176,7 +176,7 @@ namespace CustomUnits {
       foreach (CustomMechRepresentation alt in this.Alternates) { alt.PlayJumpLandAnim(isDFA); }
     }
     public override void _StartJumpjetEffect() {
-      if(isSlave == false)this._StartJumpjetAudio();
+      if (isSlave == false) this._StartJumpjetAudio();
       foreach (CustomMechRepresentation alt in this.Alternates) { alt._StartJumpjetEffect(); }
     }
     public override void _StopJumpjetEffect() {
@@ -199,8 +199,8 @@ namespace CustomUnits {
           }
           alt.OnPlayerVisibilityChangedCustom(altLvl);
         }
-      }catch(Exception e) {
-        Log.TWL(0,e.ToString(),true);
+      } catch (Exception e) {
+        Log.TWL(0, e.ToString(), true);
       }
     }
     public override void _ToggleHeadlights(bool headlightsActive) {
@@ -240,8 +240,8 @@ namespace CustomUnits {
       try {
         foreach (CustomMechRepresentation alt in this.Alternates) { alt?.VisibleObjectLight?.SetActive(false); }
         foreach (CustomMechRepresentation alt in this.Alternates) { alt?.thisAnimator?.SetTrigger("Death"); }
-      }catch(Exception e) {
-        Log.TWL(0,e.ToString(),true);
+      } catch (Exception e) {
+        Log.TWL(0, e.ToString(), true);
       }
       if (!this.parentMech.Combat.IsLoadingFromSave) {
         if (isSlave == false) {
@@ -289,9 +289,9 @@ namespace CustomUnits {
         Log.WL(1, alt.gameObject.name);
         alt.InitWeapons(compInfo, parentDisplayName);
       }
-      Log.WL(1, "current representation:"+ this.CurrentRepresentation.gameObject.name);
+      Log.WL(1, "current representation:" + this.CurrentRepresentation.gameObject.name);
       foreach (ComponentRepresentation crep in this.CurrentRepresentation.miscComponentReps) {
-        Log.WL(2, "miscComponent:" + crep.gameObject.name+" mechComponent:"+(crep.mechComponent == null?"null": crep.mechComponent.defId));
+        Log.WL(2, "miscComponent:" + crep.gameObject.name + " mechComponent:" + (crep.mechComponent == null ? "null" : crep.mechComponent.defId));
         if (crep.mechComponent == null) { continue; }
         crep.mechComponent.componentRep_set(crep);
       }
@@ -322,17 +322,17 @@ namespace CustomUnits {
         foreach (CustomMechRepresentation slave in this.Alternates) { slave._allowRandomIdles = value; }
       }
     }
-    public virtual void MoveChilds(CustomMechRepresentation srcRep,Transform src, Transform dest) {
+    public virtual void MoveChilds(CustomMechRepresentation srcRep, Transform src, Transform dest) {
       List<Transform> trList = new List<Transform>();
-      if(srcRep.skeleton.TryGetValue(src, out HashSet<Transform> bones) == false) {
+      if (srcRep.skeleton.TryGetValue(src, out HashSet<Transform> bones) == false) {
         bones = new HashSet<Transform>();
       }
       Transform[] srcChilds = src.GetComponentsInChildren<Transform>(true);
-      foreach(Transform tr in srcChilds) {
+      foreach (Transform tr in srcChilds) {
         if (tr.parent != src) { continue; }
         ComponentRepresentation compRep = tr.gameObject.GetComponent<ComponentRepresentation>();
         if (compRep != null) { continue; }
-        Log.WL(2, "MoveChilds "+tr.name);
+        Log.WL(2, "MoveChilds " + tr.name);
         if (bones.Contains(tr)) { Log.WL(3, "is in skeleton"); continue; }
         Vector3 localPos = tr.localPosition;
         Quaternion localRot = tr.localRotation;
@@ -354,7 +354,7 @@ namespace CustomUnits {
             Log.WL(1, event_name + ":" + num);
           }
         }
-      }      
+      }
     }
     public virtual void PlayInAudio() {
       if (isSlave == false) {
@@ -372,7 +372,7 @@ namespace CustomUnits {
       }
     }
     public virtual void ChangeVisibility(int index) {
-      Log.TWL(0, "AlternatesRepresentation.ChangeVisibility "+index);
+      Log.TWL(0, "AlternatesRepresentation.ChangeVisibility " + index);
       this.StopPersistentAudio();
       this.SetRandomIdleValue(0.6f);
       this.PlayOutAudio();
@@ -440,7 +440,7 @@ namespace CustomUnits {
     protected IEnumerator ChangeCurrentOnHeightCompleete(int index) {
       if (this.CurrentRepresentation == null) { this.ChangeVisibility(index); this.parentMech.BlockComponentsActivation(false); yield break; }
       if (this.CurrentRepresentation.HeightController == null) { this.ChangeVisibility(index); this.parentMech.BlockComponentsActivation(false); yield break; }
-      while(this.CurrentRepresentation.HeightController.isInChangeHeight) {
+      while (this.CurrentRepresentation.HeightController.isInChangeHeight) {
         yield return new WaitForSeconds(0.1f);
       }
       this.ChangeVisibility(index); this.parentMech.BlockComponentsActivation(false);
@@ -527,8 +527,8 @@ namespace CustomUnits {
       if (this.CurrentRepresentation.triggerFootVFX) {
         this.CurrentRepresentation._TriggerFootFall(this.leftFootVFX);
       }
-      if(this.CurrentRepresentation.customFootFalls.Count > 0) {
-        foreach(Transform foot in this.CurrentRepresentation.customFootFalls) {
+      if (this.CurrentRepresentation.customFootFalls.Count > 0) {
+        foreach (Transform foot in this.CurrentRepresentation.customFootFalls) {
           this.CurrentRepresentation.CustomFootFall(foot);
         }
         this.CurrentRepresentation.customFootFalls.Clear();
@@ -572,7 +572,8 @@ namespace CustomUnits {
       get {
         if (this.CurrentRepresentation == null) return FHeightController;
         return this.CurrentRepresentation.HeightController;
-      } set {
+      }
+      set {
         if (this.CurrentRepresentation == null) this.FHeightController = value;
         this.CurrentRepresentation.HeightController = value;
       }
@@ -581,10 +582,10 @@ namespace CustomUnits {
       base.GatherColliders();
       foreach (CustomMechRepresentation slave in this.Alternates) {
         slave.GatherColliders();
-        foreach(Collider collider in slave.ownColliders) { this.ownColliders.Add(collider); }
+        foreach (Collider collider in slave.ownColliders) { this.ownColliders.Add(collider); }
       }
     }
-    public override HashSet<string> presistantAudioStart { get { return this.CurrentRepresentation == null?this.f_presistantAudioStart:this.CurrentRepresentation.presistantAudioStart; } set { if (this.CurrentRepresentation == null) { this.f_presistantAudioStart = value; } else { this.CurrentRepresentation.presistantAudioStart = value; } } }
+    public override HashSet<string> presistantAudioStart { get { return this.CurrentRepresentation == null ? this.f_presistantAudioStart : this.CurrentRepresentation.presistantAudioStart; } set { if (this.CurrentRepresentation == null) { this.f_presistantAudioStart = value; } else { this.CurrentRepresentation.presistantAudioStart = value; } } }
     public override HashSet<string> presistantAudioStop { get { return this.CurrentRepresentation == null ? this.f_presistantAudioStop : this.CurrentRepresentation.presistantAudioStop; } set { if (this.CurrentRepresentation == null) { this.f_presistantAudioStop = value; } else { this.CurrentRepresentation.presistantAudioStop = value; } } }
     public override HashSet<string> moveAudioStart { get { return this.CurrentRepresentation == null ? this.f_moveAudioStop : this.CurrentRepresentation.moveAudioStart; } set { if (this.CurrentRepresentation == null) { this.f_moveAudioStop = value; } else { this.CurrentRepresentation.moveAudioStart = value; } } }
     public override HashSet<string> moveAudioStop { get { return this.CurrentRepresentation == null ? this.f_presistantAudioStop : this.CurrentRepresentation.moveAudioStop; } set { if (this.CurrentRepresentation == null) { this.f_presistantAudioStop = value; } else { this.CurrentRepresentation.moveAudioStop = value; } } }
@@ -645,7 +646,7 @@ namespace CustomUnits {
       this.CurrentRepresentation.PlayVehicleTerrainImpactVFX(forcedSlave);
     }
     public override void ApplyScale(Vector3 sizeMultiplier) {
-      foreach(var altRep in this.Alternates) {
+      foreach (var altRep in this.Alternates) {
         altRep.ApplyScale(sizeMultiplier);
       }
     }
@@ -678,24 +679,24 @@ namespace CustomUnits {
       foreach (Collider collider in selfColliders) { ownColliders.Add(collider); }
     }
     public virtual void RegisterColliders(GameObject src) {
-      Log.TWL(0, "CustomMechRepresentation.RegisterColliders "+src.name);
+      Log.TWL(0, "CustomMechRepresentation.RegisterColliders " + src.name);
       Collider[] colliders = src.GetComponentsInChildren<Collider>(true);
       foreach (Collider collider in colliders) {
-        Log.WL(1,collider.gameObject.name);
+        Log.WL(1, collider.gameObject.name);
         this.selfColliders.Add(collider);
       }
     }
     public virtual void RegisterRenderersMainHeraldry(GameObject src) {
-      Log.TW(0, "CustomMechRepresentation.RegisterRenderersMainHeraldry: " + this.gameObject.name+" "+src.name);
+      Log.TW(0, "CustomMechRepresentation.RegisterRenderersMainHeraldry: " + this.gameObject.name + " " + src.name);
       MeshRenderer root_camoholder = src.FindObject<MeshRenderer>("camoholder", true);
-      if(root_camoholder != null) {
+      if (root_camoholder != null) {
         Log.WL(1, $"found toplevel camoholder");
         this.RegisterRenderersCustomHeraldry(src, root_camoholder);
         return;
       }
       MeshRenderer[] mRenderer = src.GetComponentsInChildren<MeshRenderer>(true);
       SkinnedMeshRenderer[] sRenderer = src.GetComponentsInChildren<SkinnedMeshRenderer>(true);
-      Log.WL(1, "MeshRenderers:"+mRenderer.Length+ " SkinnedMeshRenderer:"+ sRenderer.Length);
+      Log.WL(1, "MeshRenderers:" + mRenderer.Length + " SkinnedMeshRenderer:" + sRenderer.Length);
       Dictionary<Renderer, MeshRenderer> customCamoHolders = new Dictionary<Renderer, MeshRenderer>();
       Transform[] trs = src.GetComponentsInChildren<Transform>();
       foreach (Transform tr in trs) {
@@ -726,7 +727,7 @@ namespace CustomUnits {
       foreach (SkinnedMeshRenderer renderer in sRenderer) {
         if (skinnedMeshRenderersCache.ContainsKey(renderer)) { continue; };
         this.skinnedMeshRenderersCache.Add(renderer, true);
-        Log.WL(1, "skinned renderer:" + renderer.gameObject.name+" heraldry:"+true);
+        Log.WL(1, "skinned renderer:" + renderer.gameObject.name + " heraldry:" + true);
         CustomPaintPattern paintPattern = renderer.gameObject.GetComponent<CustomPaintPattern>();
         if (paintPattern == null) { paintPattern = renderer.gameObject.AddComponent<CustomPaintPattern>(); }
         if (customCamoHolders.TryGetValue(renderer, out MeshRenderer localPaintHolder)) {
@@ -741,14 +742,14 @@ namespace CustomUnits {
       }
     }
     public virtual void RegisterRenderersCustomHeraldry(GameObject src, MeshRenderer paintSchemePlaceholder) {
-      Log.TW(0, "CustomMechRepresentation.RegisterRenderersCustomHeraldry: " + this.gameObject.name + " " + src.name+ " paintSchemePlaceholder:"+(paintSchemePlaceholder == null?"null": paintSchemePlaceholder.gameObject.name));
+      Log.TW(0, "CustomMechRepresentation.RegisterRenderersCustomHeraldry: " + this.gameObject.name + " " + src.name + " paintSchemePlaceholder:" + (paintSchemePlaceholder == null ? "null" : paintSchemePlaceholder.gameObject.name));
       MeshRenderer[] mRenderer = src.GetComponentsInChildren<MeshRenderer>(true);
       SkinnedMeshRenderer[] sRenderer = src.GetComponentsInChildren<SkinnedMeshRenderer>(true);
       Log.WL(1, "MeshRenderers:" + mRenderer.Length + " SkinnedMeshRenderer:" + sRenderer.Length);
       Dictionary<Renderer, MeshRenderer> customCamoHolders = new Dictionary<Renderer, MeshRenderer>();
       Transform[] trs = src.GetComponentsInChildren<Transform>();
       foreach (Transform tr in trs) {
-        if(tr.name.StartsWith("camoholder") == false){ continue; }
+        if (tr.name.StartsWith("camoholder") == false) { continue; }
         MeshRenderer camoholder = tr.gameObject.GetComponent<MeshRenderer>();
         if (camoholder == null) { continue; }
         SkinnedMeshRenderer parentSkinnedRenderer = tr.parent.gameObject.GetComponent<SkinnedMeshRenderer>();
@@ -793,10 +794,10 @@ namespace CustomUnits {
     }
     public virtual void RegisterRenderersComponentRepresentation(ComponentRepresentation src) {
       CustomHardpointDef hardpointDef = null;
-      if(src.mechComponent != null) {
+      if (src.mechComponent != null) {
         hardpointDef = CustomHardPointsHelper.Find(src.mechComponent.mechComponentRef.prefabName);
       }
-      if(hardpointDef == null) {
+      if (hardpointDef == null) {
         RegisterRenderersMainHeraldry(src.gameObject);
       } else {
         Transform[] trs = src.gameObject.GetComponentsInChildren<Transform>(true);
@@ -843,7 +844,7 @@ namespace CustomUnits {
     }
     public virtual void Twist(float angle) {
       this.currentTwistAngle = angle;
-      Log.TWL(0,"CustomMechRepresentation.Twist "+angle+ " HasTwistAnimators:"+(this.customRep == null?"null": this.customRep.HasTwistAnimators.ToString()));
+      Log.TWL(0, "CustomMechRepresentation.Twist " + angle + " HasTwistAnimators:" + (this.customRep == null ? "null" : this.customRep.HasTwistAnimators.ToString()));
       if (this.customRep != null) {
         if (this.customRep.HasTwistAnimators) {
           this.customRep.Twist(angle);
@@ -897,7 +898,7 @@ namespace CustomUnits {
       int layerMask = LayerMask.GetMask("Terrain", "Obstruction");
       if (water) { layerMask = LayerMask.GetMask("Terrain", "Obstruction", "Water"); }
       RaycastHit? result = new RaycastHit?();
-      RaycastHit[] raycastHitArray = Physics.RaycastAll(new Ray(position + Vector3.up * 20f, Vector3.down), 200f+this.HeightController.CurrentHeight, layerMask);
+      RaycastHit[] raycastHitArray = Physics.RaycastAll(new Ray(position + Vector3.up * 20f, Vector3.down), 200f + this.HeightController.CurrentHeight, layerMask);
       HashSet<Collider> skipColliders = this.rootParentRepresentation.ownColliders;
       foreach (RaycastHit hit in raycastHitArray) {
         if (skipColliders.Contains(hit.collider)) { continue; }
@@ -933,20 +934,20 @@ namespace CustomUnits {
       //  }
       //}
       if (rayhit.HasValue == false) {
-        rayhit = this.GetTerrainRayHit(this.j_Root.position,water);
+        rayhit = this.GetTerrainRayHit(this.j_Root.position, water);
       }
       if (rayhit.HasValue == false) {
         return;
       }
       Vector3 normal = rayhit.Value.normal;
-      Log.WL(1, "ray hit found. Point:" + rayhit.Value.point + " hit collider:" + rayhit.Value.collider.transform.name+ " normal:"+ normal);
+      Log.WL(1, "ray hit found. Point:" + rayhit.Value.point + " hit collider:" + rayhit.Value.collider.transform.name + " normal:" + normal);
       //Quaternion to = Quaternion.FromToRotation(this.j_Root.up, normal) * Quaternion.Euler(0.0f, this.j_Root.rotation.eulerAngles.y, 0.0f);
       //this.j_Root.rotation = Quaternion.RotateTowards(this.j_Root.rotation, to, 180f * deltaTime);
       Quaternion to = Quaternion.FromToRotation(this.transform.up, normal) * Quaternion.Euler(0.0f, this.transform.rotation.eulerAngles.y, 0.0f);
       this.j_Root.rotation = Quaternion.RotateTowards(this.transform.rotation, to, 180f * deltaTime);
     }
     public virtual void OnAttackComplete() {
-      if(this.HeightController != null) {
+      if (this.HeightController != null) {
         this.HeightController.PendingHeight = this.parentCombatant.FlyingHeight();
       }
     }
@@ -978,7 +979,7 @@ namespace CustomUnits {
       }
     }
   }
-  public class MechFlyHeightController: MonoBehaviour {
+  public class MechFlyHeightController : MonoBehaviour {
     private static GameObject JumpJetSrcPrefab = null;
     private static Transform JumpJetSrc = null;
     public virtual bool isJumpjetsActive { get; protected set; } = false;
@@ -987,7 +988,11 @@ namespace CustomUnits {
     public virtual float CurrentHeight { get { return this.parent == null ? 0f : this.parent.j_Root.localPosition.y; } }
     public virtual float StartingHeight { get; set; }
     public virtual float PendingHeight { get { return FPendingHeight; } set { StartingHeight = this.CurrentHeight; isInChangeHeight = true; FPendingHeight = value; this.OnHeightChange(); } }
-    public virtual CustomMechRepresentation parent { get; set; } = null;
+    public virtual CustomMechRepresentation parent { get; protected set; } = null;
+    public virtual CapsuleCollider parent_CapsuleCollider { get; protected set; } = null;
+    public virtual SphereCollider parent_SphereCollider { get; protected set; } = null;
+    public virtual BoxCollider parent_BoxCollider { get; protected set; } = null;
+    protected virtual Vector3 parent_ColliderCenter { get; set; } = Vector3.zero;
     public List<JumpjetRepresentation> verticalJets { get; set; } = new List<JumpjetRepresentation>();
     public List<GameObject> verticalJetsObjects { get; set; } = new List<GameObject>();
     public virtual float UpSpeed { get; set; } = 5f;
@@ -997,17 +1002,32 @@ namespace CustomUnits {
     public virtual bool ForceJumpJetsActive { get; set; } = false;
     public virtual bool vfxEveryJet { get; set; } = false;
     public virtual HashSet<Action> heightChangeCompleteAction { get; set; } = new HashSet<Action>();
+    protected virtual void SetHeight(float h) {
+      if (this.parent == null) { return; }
+      var pos = this.parent.j_Root.localPosition;
+      pos.y = h;
+      this.parent.j_Root.localPosition = pos;
+      if (parent_CapsuleCollider != null) {
+        parent_CapsuleCollider.center = parent_ColliderCenter + Vector3.up * h;
+      }
+      if (parent_SphereCollider != null) {
+        parent_SphereCollider.center = parent_ColliderCenter + Vector3.up * h;
+      }
+      if (parent_BoxCollider != null) {
+        parent_BoxCollider.center = parent_ColliderCenter + Vector3.up * h;
+      }
+    }
     public virtual void OnHeightChange() {
       bool VisibleToPlayer = parent.VisibleToPlayer;
-      if (ForceJumpJetsActive || ((CurrentHeight < Core.Settings.MaxHoveringHeightWithWorkingJets)&&(this.PendingHeight > Core.Settings.MaxHoveringHeightWithWorkingJets))) {
-        Log.TWL(0, "MechFlyHeightController.OnHeightChange " + this.parent.gameObject.name+ " VisibleToPlayer:" + VisibleToPlayer);
+      if (ForceJumpJetsActive || ((CurrentHeight < Core.Settings.MaxHoveringHeightWithWorkingJets) && (this.PendingHeight > Core.Settings.MaxHoveringHeightWithWorkingJets))) {
+        Log.TWL(0, "MechFlyHeightController.OnHeightChange " + this.parent.gameObject.name + " VisibleToPlayer:" + VisibleToPlayer);
         this.isJumpjetsActive = true;
         parent.SetMeleeIdleState(false);
         if (VisibleToPlayer && (DeployManualHelper.IsInManualSpawnSequence == false)) {
           foreach (GameObject jet in verticalJetsObjects) { jet.SetActive(true); }
         }
         foreach (JumpjetRepresentation jet in verticalJets) {
-          Log.WL(1, "starting jets "+jet.gameObject.name);
+          Log.WL(1, "starting jets " + jet.gameObject.name);
           jet.SetState(JumpjetRepresentation.JumpjetState.Launching);
         }
         if (VisibleToPlayer && (DeployManualHelper.IsInManualSpawnSequence == false)) {
@@ -1024,7 +1044,7 @@ namespace CustomUnits {
     }
     public bool JumpAudioActive { get; set; } = false;
     public void StartJumpjetAudio() {
-      Log.TWL(0, "MechFlyHeightController.StartJumpjetAudio "+this.parent.parentMech.MechDef.ChassisID);
+      Log.TWL(0, "MechFlyHeightController.StartJumpjetAudio " + this.parent.parentMech.MechDef.ChassisID);
       if (this.JumpAudioActive == false) {
         if (this.parent.parentMech.weightClass == WeightClass.HEAVY || this.parent.parentMech.weightClass == WeightClass.ASSAULT) {
           int num1 = (int)WwiseManager.PostEvent<AudioEventList_mech>(AudioEventList_mech.mech_jumpjets_heavy_start, this.parent.rootParentRepresentation.audioObject);
@@ -1049,7 +1069,7 @@ namespace CustomUnits {
       foreach (GameObject vJet in verticalJetsObjects) { vJet.SetActive(level == VisibilityLevel.LOSFull); }
       if (parent == null) { return; }
       if (isJumpjetsActive) {
-        if(level == VisibilityLevel.LOSFull) {
+        if (level == VisibilityLevel.LOSFull) {
           this.StartJumpjetAudio();
         } else {
           this.StopJumpjetAudio();
@@ -1058,6 +1078,18 @@ namespace CustomUnits {
     }
     public void InitVisuals(CustomMechRepresentation parent, DataManager dataManager) {
       this.parent = parent;
+      this.parent_BoxCollider = parent.gameObject.GetComponent<BoxCollider>();
+      this.parent_SphereCollider = parent.gameObject.GetComponent<SphereCollider>();
+      this.parent_CapsuleCollider = parent.gameObject.GetComponent<CapsuleCollider>();
+      if (this.parent_BoxCollider != null) {
+        this.parent_ColliderCenter = this.parent_BoxCollider.center;
+      }
+      if (this.parent_SphereCollider != null) {
+        this.parent_ColliderCenter = this.parent_SphereCollider.center;
+      }
+      if (this.parent_CapsuleCollider != null) {
+        this.parent_ColliderCenter = this.parent_CapsuleCollider.center;
+      }
       if (string.IsNullOrEmpty(Core.Settings.CustomJumpJetsComponentPrefab) == false) {
         Log.WL(1, "spawning jump jets");
         try {
@@ -1066,7 +1098,7 @@ namespace CustomUnits {
           }
           if (MechFlyHeightController.JumpJetSrcPrefab == null) {
             MechFlyHeightController.JumpJetSrcPrefab = dataManager.PooledInstantiate(Core.Settings.CustomJumpJetsComponentPrefab, BattleTechResourceType.Prefab);
-            if(MechFlyHeightController.JumpJetSrcPrefab == null) {
+            if (MechFlyHeightController.JumpJetSrcPrefab == null) {
               Log.WL(2, "jumpJetSrcPrefab:" + (JumpJetSrcPrefab == null ? "null" : JumpJetSrcPrefab.name));
               return;
             }
@@ -1122,9 +1154,10 @@ namespace CustomUnits {
     }
     public void ForceHeight(float height) {
       if (parent == null) { return; }
-      Vector3 localPos = parent.j_Root.transform.localPosition;
-      localPos.y = height;
-      parent.j_Root.transform.localPosition = localPos;
+      //Vector3 localPos = parent.j_Root.transform.localPosition;
+      //localPos.y = height;
+      //parent.j_Root.transform.localPosition = localPos;
+      this.SetHeight(height);
       isInChangeHeight = false;
       FPendingHeight = height;
       this.StartingHeight = height;
@@ -1137,8 +1170,8 @@ namespace CustomUnits {
         this.StopJumpjetAudio();
         isJumpjetsActive = false;
       }
-      Log.TWL(0, "MechFlyHeightController.FinishChangeHeight "+ this.StartingHeight+"->"+ this.CurrentHeight);
-      if (this.ForceJumpJetsActive ||((this.CurrentHeight <= Core.Settings.MaxHoveringHeightWithWorkingJets) && (this.StartingHeight > Core.Settings.MaxHoveringHeightWithWorkingJets))) {
+      Log.TWL(0, "MechFlyHeightController.FinishChangeHeight " + this.StartingHeight + "->" + this.CurrentHeight);
+      if (this.ForceJumpJetsActive || ((this.CurrentHeight <= Core.Settings.MaxHoveringHeightWithWorkingJets) && (this.StartingHeight > Core.Settings.MaxHoveringHeightWithWorkingJets))) {
         this.parent.OnJumpLand(true);
       }
       this.StartingHeight = this.CurrentHeight;
@@ -1169,27 +1202,28 @@ namespace CustomUnits {
         } else {
           slowdown_factor = 1f / ((0.5f - slowdown_factor) * 8f + 1f);
         }
-        Log.WL(0, "HeightController.LateUpdate current height:" + parent.j_Root.transform.localPosition.y + " delta:"+delta+ " StartingHeight:"+ this.StartingHeight+ " PendingHeight:"+ PendingHeight+ " slowdown_factor:"+slowdown_factor);
-        Vector3 localPos = parent.j_Root.transform.localPosition;
-        float sign = localPos.y < this.PendingHeight ? this.UpSpeed : (this.DownSpeed * slowdown_factor);
+        Log.WL(0, "HeightController.LateUpdate current height:" + parent.j_Root.transform.localPosition.y + " delta:" + delta + " StartingHeight:" + this.StartingHeight + " PendingHeight:" + PendingHeight + " slowdown_factor:" + slowdown_factor);
+        float height = parent.j_Root.transform.localPosition.y;
+        float sign = height < this.PendingHeight ? this.UpSpeed : (this.DownSpeed * slowdown_factor);
         float ndelta = sign * Time.deltaTime;
         //Log.TWL(0,"Change height isInChange:"+this.isInChangeHeight+" cur:"+ localPos.y+" ndelta:"+ndelta+" delta:"+delta);
-        if (Mathf.Abs(ndelta) >= delta) { localPos.y = this.PendingHeight; isInChangeHeight = false; } else { localPos.y += ndelta; }
-        parent.j_Root.transform.localPosition = localPos;
+        if (Mathf.Abs(ndelta) >= delta) { height = this.PendingHeight; isInChangeHeight = false; } else { height += ndelta; }
+        //parent.j_Root.transform.localPosition = localPos;
+        this.SetHeight(height);
         if (this.FakeHeightControl) {
-          this.parent.parentActor.FakeHeightDelta(localPos.y);
-          foreach(var link in this.parent.custMech.linkedActors) {
+          this.parent.parentActor.FakeHeightDelta(height);
+          foreach (var link in this.parent.custMech.linkedActors) {
             if (link.customMech != null) { continue; }
             Vector3 linkPos = link.rootHeightTransform.localPosition;
-            linkPos.y = localPos.y;
+            linkPos.y = height;
             link.rootHeightTransform.localPosition = linkPos;
-            link.actor.FakeHeightDelta(localPos.y);
+            link.actor.FakeHeightDelta(height);
           }
         }
       } else {
         isInChangeHeight = false;
       }
-      if(isInChangeHeight == false) {
+      if (isInChangeHeight == false) {
         this.FinishChangeHeight();
       }
     }

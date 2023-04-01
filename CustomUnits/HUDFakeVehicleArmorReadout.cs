@@ -87,6 +87,9 @@ namespace CustomUnits {
     public SVGImage[] VStructure;
     public SVGImage[] VArmor;
     public SVGImage[] VArmorOutline;
+    public SVGAsset[] default_VStructure;
+    public SVGAsset[] default_VArmor;
+    public SVGAsset[] default_VArmorOutline;
     private Mech displayedVehicle;
     public LocalizableText HoverInfoTextArmor;
     public LocalizableText HoverInfoTextStructure;
@@ -117,6 +120,7 @@ namespace CustomUnits {
         }
         if (this.displayedVehicle == null)
           return;
+        this.RefreshStructureIcons();
         this.RefreshVehicleStructureAndArmor();
         this.RefreshHoverInfo();
       }
@@ -134,7 +138,44 @@ namespace CustomUnits {
       }
       return result.ToString();
     }
-    public void Copy(HUDVehicleArmorReadout esrc, HUDVehicleArmorReadout csrc) {
+    public void RefreshStructureIcons() {
+      if (this.displayedVehicle == null) { return; }
+      UnitCustomInfo info = this.displayedVehicle.GetCustomInfo();
+      if((info == null)||(info.customStructure == null)||(info.customStructure.is_empty)) {
+        for (int i = 0; i < VStructure.Length; ++i) { VStructure[i].vectorGraphics = default_VStructure[i]; }
+        for (int i = 0; i < VArmor.Length; ++i) { VArmor[i].vectorGraphics = default_VArmor[i]; }
+        for (int i = 0; i < VArmorOutline.Length; ++i) { VArmorOutline[i].vectorGraphics = default_VArmorOutline[i]; }
+        return;
+      }
+      for (int index = 0; index < 5; ++index) {
+        ChassisLocations location = HUDVehicleArmorReadout.GetVCLocationFromIndex(index).toFakeChassis();
+        if(info.customStructure.OIcons.TryGetValue(location, out var oicon)){
+          VArmorOutline[index].vectorGraphics = CustomSvgCache.get(oicon, this.displayedVehicle.Combat.DataManager);
+          if (VArmorOutline[index].vectorGraphics == null) {
+            VArmorOutline[index].vectorGraphics = default_VArmorOutline[index];
+          }
+        } else {
+          VArmorOutline[index].vectorGraphics = default_VArmorOutline[index];
+        }
+        if (info.customStructure.SIcons.TryGetValue(location, out var sicon)) {
+          VStructure[index].vectorGraphics = CustomSvgCache.get(sicon, this.displayedVehicle.Combat.DataManager);
+          if (VStructure[index].vectorGraphics == null) {
+            VStructure[index].vectorGraphics = default_VStructure[index];
+          }
+        } else {
+          VStructure[index].vectorGraphics = default_VStructure[index];
+        }
+        if (info.customStructure.AIcons.TryGetValue(location, out var aicon)) {
+          VArmor[index].vectorGraphics = CustomSvgCache.get(aicon, this.displayedVehicle.Combat.DataManager);
+          if (VArmor[index].vectorGraphics == null) {
+            VArmor[index].vectorGraphics = default_VArmor[index];
+          }
+        } else {
+          VArmor[index].vectorGraphics = default_VArmor[index];
+        }
+      }
+    }
+      public void Copy(HUDVehicleArmorReadout esrc, HUDVehicleArmorReadout csrc) {
       this.ArmorBar = esrc.ArmorBar;
       this.StructureBar = esrc.StructureBar;
       this.HoverInfoTextArmor = esrc.HoverInfoTextArmor;
@@ -142,62 +183,28 @@ namespace CustomUnits {
       this.VStructure = new SVGImage[csrc.VStructure.Length];
       this.VArmor = new SVGImage[csrc.VArmor.Length];
       this.VArmorOutline = new SVGImage[csrc.VArmorOutline.Length];
+      this.default_VStructure = new SVGAsset[csrc.VStructure.Length];
+      this.default_VArmor = new SVGAsset[csrc.VArmor.Length];
+      this.default_VArmorOutline = new SVGAsset[csrc.VArmorOutline.Length];
       Log.TWL(0, "HUDFakeVehicleArmorReadout.Copy "+ esrc.gameObject.name);
       try {
-        //HBSButton[] buttons = this.GetComponentsInChildren<HBSButton>(true);
-        //Dictionary<string, HBSButton> btns = new Dictionary<string, HBSButton>();
-        //foreach (HBSButton btn in buttons) { string name = this.GetName(btn.transform,this.transform); btns.Add(name, btn); Log.WL(1, name + ":" + btn.name); }
         this.directionalIndicatorFront = csrc.directionalIndicatorFront;
         this.directionalIndicatorBack = csrc.directionalIndicatorBack;
         this.directionalIndicatorLeft = csrc.directionalIndicatorLeft;
         this.directionalIndicatorRight = csrc.directionalIndicatorRight;
-        //if (csrc.directionalIndicatorFront != null) {
-
-        //  //if (btns.ContainsKey(source.directionalIndicatorFront.gameObject.name)) { this.directionalIndicatorFront = btns[source.directionalIndicatorFront.gameObject.name]; }
-        //}
-        //if (csrc.directionalIndicatorBack != null) {
-        //  if (btns.ContainsKey(source.directionalIndicatorBack.gameObject.name)) { this.directionalIndicatorBack = btns[source.directionalIndicatorBack.gameObject.name]; }
-        //}
-        //if (csrc.directionalIndicatorLeft != null) {
-        //  if (btns.ContainsKey(source.directionalIndicatorLeft.gameObject.name)) { this.directionalIndicatorLeft = btns[source.directionalIndicatorLeft.gameObject.name]; }
-        //}
-        //if (csrc.directionalIndicatorRight != null) {
-        //  if (btns.ContainsKey(source.directionalIndicatorRight.gameObject.name)) { this.directionalIndicatorRight = btns[source.directionalIndicatorRight.gameObject.name]; }
-        //}
         for (int index = 0; index < csrc.VStructure.Length; ++index) {
           this.VStructure[index] = csrc.VStructure[index];
+          this.default_VStructure[index] = csrc.VStructure[index].vectorGraphics;
         }
         for (int index = 0; index < csrc.VArmor.Length; ++index) {
           this.VArmor[index] = csrc.VArmor[index];
+          this.default_VArmor[index] = csrc.VArmor[index].vectorGraphics;
         }
         for (int index = 0; index < csrc.VArmorOutline.Length; ++index) {
           this.VArmorOutline[index] = csrc.VArmorOutline[index];
+          this.default_VArmorOutline[index] = csrc.VArmorOutline[index].vectorGraphics;
         }
 
-        //SVGImage[] simgs = this.GetComponentsInChildren<SVGImage>(true);
-        //Dictionary<string, SVGImage> images = new Dictionary<string, SVGImage>();
-        //foreach (SVGImage img in simgs) { string name = this.GetName(img.transform,this.transform); images.Add(name, img); Log.WL(1,name+":"+img.name); }
-        //Log.WL(1, "VStructure");
-        //for (int index = 0; index < source.VStructure.Length; ++index) {
-        //  if (source.VStructure[index] == null) { this.VStructure[index] = null; continue; }
-        //  string name = this.GetName(source.VStructure[index].transform, source.transform);
-        //  Log.WL(2, name+" exists:"+ images.ContainsKey(name));
-        //  if (images.ContainsKey(name)) { this.VStructure[index] = images[name]; }
-        //}
-        //Log.WL(1, "VArmor");
-        //for (int index = 0; index < source.VArmor.Length; ++index) {
-        //  if (source.VArmor[index] == null) { this.VArmor[index] = null; continue; }
-        //  string name = this.GetName(source.VArmor[index].transform, source.transform);
-        //  Log.WL(2, name + " exists:" + images.ContainsKey(name));
-        //  if (images.ContainsKey(name)) { this.VArmor[index] = images[name]; }
-        //}
-        //Log.WL(1, "VArmorOutline");
-        //for (int index = 0; index < source.VArmorOutline.Length; ++index) {
-        //  if (source.VArmorOutline[index] == null) { this.VArmorOutline[index] = null; continue; }
-        //  string name = this.GetName(source.VArmorOutline[index].transform, source.transform);
-        //  Log.WL(2, name + " exists:" + images.ContainsKey(name));
-        //  if (images.ContainsKey(name)) { this.VArmorOutline[index] = images[name]; }
-        //}
       } catch (Exception e) {
         Log.TWL(0, e.ToString(), true);
       }
