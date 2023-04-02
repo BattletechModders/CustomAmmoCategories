@@ -158,7 +158,7 @@ namespace CustomUnits {
     public bool is_empty { get; set; } = true;
     public static CustomStructureDef empty { get; set; } = new CustomStructureDef();
     private static Dictionary<string, CustomStructureDef> rules = new Dictionary<string, CustomStructureDef>();
-    private Dictionary<string, string> StructIcons { get; set; } = new Dictionary<string, string>();
+    public Dictionary<string, string> StructIcons { get; set; } = new Dictionary<string, string>();
     [JsonIgnore]
     private Dictionary<ChassisLocations, string> f_StructureIcons = null;
     [JsonIgnore]
@@ -177,7 +177,7 @@ namespace CustomUnits {
         return f_StructureIcons;
       }
     }
-    private Dictionary<string, string> ArmorIcons { get; set; } = new Dictionary<string, string>();
+    public Dictionary<string, string> ArmorIcons { get; set; } = new Dictionary<string, string>();
     [JsonIgnore]
     private Dictionary<ChassisLocations, string> f_ArmorIcons = null;
     [JsonIgnore]
@@ -196,7 +196,7 @@ namespace CustomUnits {
         return f_ArmorIcons;
       }
     }
-    private Dictionary<string, string> OutlineIcons { get; set; } = new Dictionary<string, string>();
+    public Dictionary<string, string> OutlineIcons { get; set; } = new Dictionary<string, string>();
     [JsonIgnore]
     private Dictionary<ChassisLocations, string> f_OutlineIcons = null;
     [JsonIgnore]

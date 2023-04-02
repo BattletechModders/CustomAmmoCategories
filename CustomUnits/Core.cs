@@ -756,16 +756,19 @@ namespace CustomUnits {
             }
           } else if (customResource.Key == nameof(CustomStructureDef)) {
             foreach (var custItem in customResource.Value) {
+              Log.WL(1, $"Path:{custItem.Value.FilePath}", true);
               CustomStructureDef.Register(custItem.Value.FilePath);
             }
           } else if (customResource.Key == nameof(CustomHitTableDef)) {
             foreach (var custItem in customResource.Value) {
+              Log.WL(1, $"Path:{custItem.Value.FilePath}", true);
               CustomHitTableDef.Register(custItem.Value.FilePath);
             }
           } else {
             throw new Exception("Unknown resource "+ customResource.Key);
           }
         }
+        CustomHitTableDef.Resolve();
         CustAmmoCategories.ToHitModifiersHelper.registerModifier("SQUAD SIZE", "SQUAD SIZE", true, false, TrooperSquad.GetSquadSizeToHitMod, TrooperSquad.GetSquadSizeToHitModName);
         CustAmmoCategories.DamageModifiersCache.RegisterDamageModifier("SQUAD SIZE", "SQUAD SIZE", true, true, true, true, true, TrooperSquad.SquadSizeDamageMod, TrooperSquad.SquadSizeDamageModName);
         DamageModifiersCache.RegisterDamageModifier("TYPEMOD", "TYPEMOD", false, true, true, true, true, TypeDmgCACModifier, TypeDmgCACModifierName);

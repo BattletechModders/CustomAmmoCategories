@@ -323,30 +323,35 @@ namespace CustomUnits {
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { typeof(DataManager), typeof(DataManager.DependencyLoadRequest), typeof(uint) })]
   public static class VehicleChassisDef_GatherDependencies {
-    public static void AddCustomDeps(this UnitCustomInfo info, DataManager.DependencyLoadRequest dependencyLoad) {
-      foreach (CustomPart part in info.CustomParts) {
-        if (string.IsNullOrEmpty(part.prefab)) { continue; }
-        Log.LogWrite(1, "additional prefab:" + part.prefab, true);
-        dependencyLoad.RequestResource(BattleTechResourceType.Prefab, part.prefab);
-        foreach (var mi in part.MaterialInfo) {
-          if (string.IsNullOrEmpty(mi.Value.shader) == false) {
-            Log.LogWrite(1, "additional shader:" + mi.Value.shader, true);
-            dependencyLoad.RequestResource(BattleTechResourceType.Prefab, mi.Value.shader);
-          }
-          foreach (var ti in mi.Value.materialTextures) {
-            if (string.IsNullOrEmpty(ti.Value) == false) {
-              Log.LogWrite(1, "additional textures:" + ti.Value, true);
-              dependencyLoad.RequestResource(BattleTechResourceType.Texture2D, ti.Value);
+    public static void AddCustomDeps(this UnitCustomInfo info, DataManager.DependencyLoadRequest dependencyLoad, uint weight) {
+      //Log.TWL(0,$"UnitCustomInfo.AddCustomDeps {weight}");
+      if (weight > 10u) {
+        foreach (CustomPart part in info.CustomParts) {
+          if (string.IsNullOrEmpty(part.prefab)) { continue; }
+          Log.LogWrite(1, "additional prefab:" + part.prefab, true);
+          dependencyLoad.RequestResource(BattleTechResourceType.Prefab, part.prefab);
+          foreach (var mi in part.MaterialInfo) {
+            if (string.IsNullOrEmpty(mi.Value.shader) == false) {
+              Log.LogWrite(1, "additional shader:" + mi.Value.shader, true);
+              dependencyLoad.RequestResource(BattleTechResourceType.Prefab, mi.Value.shader);
+            }
+            foreach (var ti in mi.Value.materialTextures) {
+              if (string.IsNullOrEmpty(ti.Value) == false) {
+                Log.LogWrite(1, "additional textures:" + ti.Value, true);
+                dependencyLoad.RequestResource(BattleTechResourceType.Texture2D, ti.Value);
+              }
             }
           }
         }
       }
-      Log.LogWrite(1, "additional melee def:" + info.MeleeWeaponOverride.DefaultWeapon, true);
+      //Log.LogWrite(1, "additional melee def:" + info.MeleeWeaponOverride.DefaultWeapon, true);
       dependencyLoad.RequestResource(BattleTechResourceType.WeaponDef, info.MeleeWeaponOverride.DefaultWeapon);
       foreach (var cm in info.MeleeWeaponOverride.Components) {
-        Log.LogWrite(1, "additional melee def:" + cm.Key, true);
+        //Log.LogWrite(1, "additional melee def:" + cm.Key, true);
         dependencyLoad.RequestResource(BattleTechResourceType.WeaponDef, cm.Key);
       }
+      //Log.WL(1, $"Troopers {info.SquadInfo.Troopers} customStructure:{info.CustomStructure} is_empty:{(info.customStructure == null?"null": info.customStructure.is_empty.ToString())}");
+
       if (info.SquadInfo.Troopers > 1) {
         if (string.IsNullOrEmpty(info.SquadInfo.armorIcon) == false) {
           dependencyLoad.RequestResource(BattleTechResourceType.SVGAsset, info.SquadInfo.armorIcon);
@@ -358,13 +363,19 @@ namespace CustomUnits {
           dependencyLoad.RequestResource(BattleTechResourceType.SVGAsset, info.SquadInfo.structureIcon);
         }
       } else if (info.customStructure != null) {
+        //Log.LogWrite(1, $"info.customStructure.SIcons.Count:{info.customStructure.SIcons.Count}");
+        //Log.LogWrite(1, $"info.customStructure.AIcons.Count:{info.customStructure.AIcons.Count}");
+        //Log.LogWrite(1, $"info.customStructure.OIcons.Count:{info.customStructure.OIcons.Count}", true);
         foreach (var sicon in info.customStructure.SIcons) {
+          Log.LogWrite(1, "additional icon:" + sicon.Value, true);
           dependencyLoad.RequestResource(BattleTechResourceType.SVGAsset, sicon.Value);
         }
         foreach (var aicon in info.customStructure.AIcons) {
+          Log.LogWrite(1, "additional icon:" + aicon.Value, true);
           dependencyLoad.RequestResource(BattleTechResourceType.SVGAsset, aicon.Value);
         }
         foreach (var oicon in info.customStructure.OIcons) {
+          Log.LogWrite(1, "additional icon:" + oicon.Value, true);
           dependencyLoad.RequestResource(BattleTechResourceType.SVGAsset, oicon.Value);
         }
       }
@@ -468,6 +479,7 @@ namespace CustomUnits {
     }
     public static void Postfix(VehicleChassisDef __instance, DataManager dataManager, DataManager.DependencyLoadRequest dependencyLoad, uint activeRequestWeight) {
       try {
+        //Log.LogWrite(0, "VehicleChassisDef.GatherDependencies postfix " + activeRequestWeight + " " + __instance.Description.Id, true);
         if (activeRequestWeight > 10u) {
           if (string.IsNullOrEmpty(Core.Settings.CustomJumpJetsPrefabSrc) == false) {
             dependencyLoad.RequestResource(BattleTechResourceType.Prefab, Core.Settings.CustomJumpJetsPrefabSrc);
@@ -478,14 +490,14 @@ namespace CustomUnits {
           if (string.IsNullOrEmpty(Core.Settings.DefaultMechBattleRepresentationPrefab) == false) {
             dependencyLoad.RequestResource(BattleTechResourceType.Prefab, Core.Settings.DefaultMechBattleRepresentationPrefab);
           }
-          UnitCustomInfo info = __instance.GetCustomInfo();
-          if (info != null) { info.AddCustomDeps(dependencyLoad); }
-          dataManager.RequestDefaultWeaponDefinition(dependencyLoad);
           CustomActorRepresentationDef custRepDef = CustomActorRepresentationHelper.Find(__instance.PrefabIdentifier);
           if (custRepDef != null) {
             custRepDef.RequestDependesies(dependencyLoad);
           }
         }
+        UnitCustomInfo info = __instance.GetCustomInfo();
+        if (info != null) { info.AddCustomDeps(dependencyLoad, activeRequestWeight); }
+        dataManager.RequestDefaultWeaponDefinition(dependencyLoad);
       } catch (Exception e) {
         Log.TWL(0, e.ToString(), true);
       }
@@ -497,32 +509,34 @@ namespace CustomUnits {
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { typeof(uint) })]
   public static class VehicleChassisDef_DependenciesLoaded {
-    public static bool CheckCustomDeps(this UnitCustomInfo info, DataManager dataManager) {
-      foreach (CustomPart part in info.CustomParts) {
-        if (string.IsNullOrEmpty(part.prefab)) { continue; }
-        Log.LogWrite(1, "additional prefab:" + part.prefab, false);
-        if (dataManager.Exists(BattleTechResourceType.Prefab, part.prefab) == false) {
-          Log.LogWrite(1, " not exists", true);
-          return false;
-        }
-        foreach (var mi in part.MaterialInfo) {
-          if (string.IsNullOrEmpty(mi.Value.shader)) { continue; };
-          Log.LogWrite(1, "additional shader:" + mi.Value.shader, false);
-          if (dataManager.Exists(BattleTechResourceType.Prefab, mi.Value.shader) == false) {
-            Log.LogWrite(2, "not exists", true);
+    public static bool CheckCustomDeps(this UnitCustomInfo info, DataManager dataManager, uint weight) {
+      if (weight > 10u) {
+        foreach (CustomPart part in info.CustomParts) {
+          if (string.IsNullOrEmpty(part.prefab)) { continue; }
+          Log.LogWrite(1, "additional prefab:" + part.prefab, false);
+          if (dataManager.Exists(BattleTechResourceType.Prefab, part.prefab) == false) {
+            Log.LogWrite(1, " not exists", true);
             return false;
           }
-          Log.LogWrite(2, "exists", true);
-          foreach (var ti in mi.Value.materialTextures) {
-            if (string.IsNullOrEmpty(ti.Value) == false) {
-              Log.LogWrite(1, "additional texture:" + ti.Value, true);
-              if (dataManager.Exists(BattleTechResourceType.Texture2D, ti.Value) == false) {
-                Log.LogWrite(2, "not exists", true);
-                return false;
+          foreach (var mi in part.MaterialInfo) {
+            if (string.IsNullOrEmpty(mi.Value.shader)) { continue; };
+            Log.LogWrite(1, "additional shader:" + mi.Value.shader, false);
+            if (dataManager.Exists(BattleTechResourceType.Prefab, mi.Value.shader) == false) {
+              Log.LogWrite(2, "not exists", true);
+              return false;
+            }
+            Log.LogWrite(2, "exists", true);
+            foreach (var ti in mi.Value.materialTextures) {
+              if (string.IsNullOrEmpty(ti.Value) == false) {
+                Log.LogWrite(1, "additional texture:" + ti.Value, true);
+                if (dataManager.Exists(BattleTechResourceType.Texture2D, ti.Value) == false) {
+                  Log.LogWrite(2, "not exists", true);
+                  return false;
+                }
               }
             }
+            Log.LogWrite(2, "exists", true);
           }
-          Log.LogWrite(2, "exists", true);
         }
       }
       Log.LogWrite(1, "additional melee def:" + info.MeleeWeaponOverride.DefaultWeapon, false);
@@ -613,12 +627,6 @@ namespace CustomUnits {
           if (__instance.DataManager.IsDefaultWeaponDefinitionLoaded() == false) {
             __result = false;
           }
-          UnitCustomInfo info = __instance.GetCustomInfo();
-          if (info != null) {
-            if (info.CheckCustomDeps(__instance.DataManager) == false) {
-              __result = false;
-            }
-          }
           CustomActorRepresentationDef custRepDef = CustomActorRepresentationHelper.Find(__instance.PrefabIdentifier);
           if (custRepDef != null) {
             if (custRepDef.DependeciesLoaded(__instance.DataManager) == false) {
@@ -626,6 +634,13 @@ namespace CustomUnits {
             }
           }
         }
+        UnitCustomInfo info = __instance.GetCustomInfo();
+        if (info != null) {
+          if (info.CheckCustomDeps(__instance.DataManager, loadWeight) == false) {
+            __result = false;
+          }
+        }
+        
       } catch (Exception e) {
         Log.LogWrite(e.ToString() + "\n", true);
       }
@@ -690,15 +705,16 @@ namespace CustomUnits {
           if (string.IsNullOrEmpty(Core.Settings.DefaultMechBattleRepresentationPrefab) == false) {
             dependencyLoad.RequestResource(BattleTechResourceType.Prefab, Core.Settings.DefaultMechBattleRepresentationPrefab);
           }
-          dataManager.RequestDefaultWeaponDefinition(dependencyLoad);
-          __instance.AddCustomRepDeps(dependencyLoad);
-          UnitCustomInfo info = __instance.GetCustomInfo();
-          if (info != null) {
-            info.AddCustomDeps(dependencyLoad);
-            __instance.AddQuadDeps(dependencyLoad);
-            info.AddAlternateDeps(dependencyLoad);
-          }
         }
+        dataManager.RequestDefaultWeaponDefinition(dependencyLoad);
+        if (activeRequestWeight > 10u) { __instance.AddCustomRepDeps(dependencyLoad); };
+        UnitCustomInfo info = __instance.GetCustomInfo();
+        if (info != null) {
+          info.AddCustomDeps(dependencyLoad, activeRequestWeight);
+          if (activeRequestWeight > 10u) { __instance.AddQuadDeps(dependencyLoad); }
+          if (activeRequestWeight > 10u) { info.AddAlternateDeps(dependencyLoad); }
+        }
+        
       } catch (Exception e) {
         Log.LogWrite(e.ToString() + "\n", true);
       }
@@ -979,16 +995,18 @@ namespace CustomUnits {
               __result = false; goto Exit;
             }
           }
-          if (__instance.DataManager.IsDefaultWeaponDefinitionLoaded() == false) {
-            DLog.WL(1, "default melee/system weapons definitions is not loaded");
+        }
+        if (__instance.DataManager.IsDefaultWeaponDefinitionLoaded() == false) {
+          DLog.WL(1, "default melee/system weapons definitions is not loaded");
+          __result = false; goto Exit;
+        }
+        UnitCustomInfo info = __instance.GetCustomInfo();
+        if (info != null) {
+          if (info.CheckCustomDeps(__instance.DataManager, loadWeight) == false) {
+            DLog.WL(1, "CheckCustomDeps is not loaded");
             __result = false; goto Exit;
           }
-          UnitCustomInfo info = __instance.GetCustomInfo();
-          if (info != null) {
-            if (info.CheckCustomDeps(__instance.DataManager) == false) {
-              DLog.WL(1, "CheckCustomDeps is not loaded");
-              __result = false; goto Exit;
-            }
+          if (loadWeight > 10u) {
             if (__instance.CheckQuadDeps(__instance.DataManager) == false) {
               DLog.WL(1, "CheckQuadDeps is not loaded");
               __result = false; goto Exit;
@@ -999,6 +1017,7 @@ namespace CustomUnits {
             }
           }
         }
+        
       } catch (Exception e) {
         Log.TWL(0, e.ToString(), true);
       }
