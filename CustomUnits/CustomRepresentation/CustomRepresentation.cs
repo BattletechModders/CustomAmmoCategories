@@ -2220,7 +2220,7 @@ namespace CustomUnits {
           return CustomActorRepresentationHelper.ProcessSquadBattle(dataManager, ref result, id, custRepDef, chassisDef);
         } else {
           if (setupAlternates) {
-            return CustomActorRepresentationHelper.ProcessAlternatesBattle(dataManager, ref result, id, custRepDef, chassisDef);
+            return CustomActorRepresentationHelper.ProcessAlternatesBattle(dataManager, ref result, origId, custRepDef, chassisDef);
           } else {
             if (setupQuad) {
               return CustomActorRepresentationHelper.ProcessQuadBattle(dataManager, ref result, id, custRepDef, chassisDef);
