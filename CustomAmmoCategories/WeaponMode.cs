@@ -457,6 +457,10 @@ namespace CustAmmoCategories {
     public float RecoilJammingChance { get; set; } = 0f;
     [Key(150)]
     public string SpecialHitTable { get; set; } = string.Empty;
+    [Key(151)]
+    public float RangeBonusDistance { get; set; } = 0f;
+    [Key(152)]
+    public float RangeBonusAccuracyMod { get; set; } = 0f;
     private static List<PropertyInfo> json_properties = null;
     private static void fill_json_properties() {
       if (json_properties != null) { return; }

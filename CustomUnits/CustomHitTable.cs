@@ -5,6 +5,7 @@ using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using UnityEngine;
 
 namespace CustomUnits {
   [HarmonyPatch(typeof(CombatGameConstants))]
@@ -20,6 +21,16 @@ namespace CustomUnits {
       }
     }
   }
+  public class JsonVector2 {
+    public float x { get; set; }
+    public float y { get; set; }
+    public Vector2 vector { get { return new Vector2(this.x, this.y); } }
+  }
+  public class CustomPaperDollIconDef {
+    public string icon { get; set; } = string.Empty;
+    public JsonVector2 offset { get; set; } = null;
+    public JsonVector2 size { get; set; } = null;
+  };
   public class CustomHitTableDef {
     private static HashSet<string> tables = new HashSet<string>();
     public static void Register(string filename) {
@@ -158,14 +169,14 @@ namespace CustomUnits {
     public bool is_empty { get; set; } = true;
     public static CustomStructureDef empty { get; set; } = new CustomStructureDef();
     private static Dictionary<string, CustomStructureDef> rules = new Dictionary<string, CustomStructureDef>();
-    public Dictionary<string, string> StructIcons { get; set; } = new Dictionary<string, string>();
+    public Dictionary<string, CustomPaperDollIconDef> StructIcons { get; set; } = new Dictionary<string, CustomPaperDollIconDef>();
     [JsonIgnore]
-    private Dictionary<ChassisLocations, string> f_StructureIcons = null;
+    private Dictionary<ChassisLocations, CustomPaperDollIconDef> f_StructureIcons = null;
     [JsonIgnore]
-    public Dictionary<ChassisLocations, string> SIcons {
+    public Dictionary<ChassisLocations, CustomPaperDollIconDef> SIcons {
       get {
         if (f_StructureIcons == null) {
-          f_StructureIcons = new Dictionary<ChassisLocations, string>();
+          f_StructureIcons = new Dictionary<ChassisLocations, CustomPaperDollIconDef>();
           foreach (var sicon in StructIcons) {
             if (Enum.TryParse<ChassisLocations>(sicon.Key, out var loc)) {
               f_StructureIcons.Add(loc, sicon.Value);
@@ -177,14 +188,14 @@ namespace CustomUnits {
         return f_StructureIcons;
       }
     }
-    public Dictionary<string, string> ArmorIcons { get; set; } = new Dictionary<string, string>();
+    public Dictionary<string, CustomPaperDollIconDef> ArmorIcons { get; set; } = new Dictionary<string, CustomPaperDollIconDef>();
     [JsonIgnore]
-    private Dictionary<ChassisLocations, string> f_ArmorIcons = null;
+    private Dictionary<ChassisLocations, CustomPaperDollIconDef> f_ArmorIcons = null;
     [JsonIgnore]
-    public Dictionary<ChassisLocations, string> AIcons {
+    public Dictionary<ChassisLocations, CustomPaperDollIconDef> AIcons {
       get {
         if (f_ArmorIcons == null) {
-          f_ArmorIcons = new Dictionary<ChassisLocations, string>();
+          f_ArmorIcons = new Dictionary<ChassisLocations, CustomPaperDollIconDef>();
           foreach (var sicon in ArmorIcons) {
             if (Enum.TryParse<ChassisLocations>(sicon.Key, out var loc)) {
               f_ArmorIcons.Add(loc, sicon.Value);
@@ -196,14 +207,14 @@ namespace CustomUnits {
         return f_ArmorIcons;
       }
     }
-    public Dictionary<string, string> OutlineIcons { get; set; } = new Dictionary<string, string>();
+    public Dictionary<string, CustomPaperDollIconDef> OutlineIcons { get; set; } = new Dictionary<string, CustomPaperDollIconDef>();
     [JsonIgnore]
-    private Dictionary<ChassisLocations, string> f_OutlineIcons = null;
+    private Dictionary<ChassisLocations, CustomPaperDollIconDef> f_OutlineIcons = null;
     [JsonIgnore]
-    public Dictionary<ChassisLocations, string> OIcons {
+    public Dictionary<ChassisLocations, CustomPaperDollIconDef> OIcons {
       get {
         if (f_OutlineIcons == null) {
-          f_OutlineIcons = new Dictionary<ChassisLocations, string>();
+          f_OutlineIcons = new Dictionary<ChassisLocations, CustomPaperDollIconDef>();
           foreach (var sicon in StructIcons) {
             if (Enum.TryParse<ChassisLocations>(sicon.Key, out var loc)) {
               f_OutlineIcons.Add(loc, sicon.Value);

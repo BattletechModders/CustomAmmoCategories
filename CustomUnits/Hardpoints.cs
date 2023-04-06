@@ -83,7 +83,7 @@ namespace CustomUnits {
       paintSchemePlaceholder = "camoholder";
     }
   };
-  public class CustomHardpointRepresentation: MonoBehaviour {
+  public class CustomHardpointRepresentation : MonoBehaviour {
     public CustomHardpointDef def { get; protected set; }
     public WeaponRepresentation weaponRep { get; protected set; }
     public void Init(WeaponRepresentation weaponRep, CustomHardpointDef def) {
@@ -152,7 +152,7 @@ namespace CustomUnits {
       prefabName = curGroup.GroupPrefabs.First().Value.PrefabName;
       if (curGroup.GroupPrefabs.TryGetValue(prefabId.ToLower(), out HardpointPrefabCandidate candidate)) {
         result = candidate.weight / (result + 1f);
-        debug = "main:"+ candidate.PrefabIdentifier + " weight:" + candidate.weight + debug;
+        debug = "main:" + candidate.PrefabIdentifier + " weight:" + candidate.weight + debug;
         prefabName = candidate.PrefabName;
       } else {
         debug = "main:" + prefabId + " weight:" + 0f + debug;
@@ -162,7 +162,7 @@ namespace CustomUnits {
     }
     public string GetComponentPrefabName(BaseComponentRef componentRef) {
       if (componentRef.Def.PrefabIdentifier.StartsWith("chrPrfWeap", true, CultureInfo.InvariantCulture) || componentRef.Def.PrefabIdentifier.StartsWith("chrPrfComp", true, CultureInfo.InvariantCulture)) { return componentRef.Def.PrefabIdentifier; };
-      Log.TWL(0, "HardpointCalculator.GetComponentPrefabName "+ componentRef.ComponentDefID);
+      Log.TWL(0, "HardpointCalculator.GetComponentPrefabName " + componentRef.ComponentDefID);
       string prefabName = string.Empty;
       if (CalculationResult.TryGetValue(componentRef, out prefabName)) {
         Log.WL(1, "found: " + prefabName);
@@ -188,7 +188,7 @@ namespace CustomUnits {
     }
     public HashSet<HardpointsGroup> collectGroupByLocation(string location) {
       HashSet<HardpointsGroup> result = new HashSet<HardpointsGroup>();
-      if(locationsGroups.TryGetValue(location, out HashSet<HardpointsGroup> groups)) {
+      if (locationsGroups.TryGetValue(location, out HashSet<HardpointsGroup> groups)) {
         foreach (HardpointsGroup group in groups) { result.Add(group); }
       }
       return result;
@@ -198,14 +198,14 @@ namespace CustomUnits {
       return false;
     }
     public void RecalcGroups(HardpointDataDef HardpointData, HashSet<string> usedPrefabs) {
-      Log.TW(0, "HardpointCalculator.RecalcGroups "+ HardpointData.ID);
+      Log.TW(0, "HardpointCalculator.RecalcGroups " + HardpointData.ID);
       foreach (string prefab in usedPrefabs) { Log.W(1, prefab); }
       Log.WL(0, "");
       this.locationsGroups = new Dictionary<string, HashSet<HardpointsGroup>>();
       HashSet<string> conflictPrefabs = new HashSet<string>();
       foreach (string prefab in usedPrefabs) { conflictPrefabs.Add(prefab); }
-      foreach(var locationGroups in HardpointData.HardpointData) {
-        foreach(string[] group in locationGroups.weapons) {
+      foreach (var locationGroups in HardpointData.HardpointData) {
+        foreach (string[] group in locationGroups.weapons) {
           if (isHasUsedPrefabs(group, usedPrefabs)) {
             foreach (string prefab in group) {
               conflictPrefabs.Add(prefab);
@@ -219,7 +219,7 @@ namespace CustomUnits {
           groups = new HashSet<HardpointsGroup>();
           this.locationsGroups.Add(location, groups);
         }
-        for(int group_index = 0; group_index < locationGroups.weapons.Length; ++group_index) {
+        for (int group_index = 0; group_index < locationGroups.weapons.Length; ++group_index) {
           HardpointsGroup group = new HardpointsGroup(group_index);
           //Log.WL(1, "Group:" + group_index);
           foreach (string prefabName in locationGroups.weapons[group_index]) {
@@ -256,7 +256,7 @@ namespace CustomUnits {
               }
             }
           }
-          if(group.GroupPrefabs.Count > 0) { groups.Add(group); }
+          if (group.GroupPrefabs.Count > 0) { groups.Add(group); }
         }
       }
       Log.WL(1, "result:");
@@ -266,7 +266,7 @@ namespace CustomUnits {
           Log.WL(3, "group");
           Dictionary<string, Dictionary<string, float>> weights = new Dictionary<string, Dictionary<string, float>>();
           foreach (var pc in hg.GroupPrefabs) {
-            if(weights.TryGetValue(pc.Value.PrefabName, out Dictionary<string,float> weight) == false) {
+            if (weights.TryGetValue(pc.Value.PrefabName, out Dictionary<string, float> weight) == false) {
               weight = new Dictionary<string, float>();
               weights.Add(pc.Value.PrefabName, weight);
             }
@@ -275,7 +275,7 @@ namespace CustomUnits {
           }
           foreach (var prefab in weights) {
             Log.W(4, prefab.Key);
-            foreach(var prefabId in prefab.Value) {
+            foreach (var prefabId in prefab.Value) {
               Log.W(1, prefabId.Key + ":" + prefabId.Value);
             }
             Log.WL(0, "");
@@ -285,12 +285,12 @@ namespace CustomUnits {
 
     }
     public void Init(List<HardpointCalculator.Element> compInfos, HardpointDataDef HardpointData) {
-      Log.TWL(0, "HardpointCalculator.Init "+ HardpointData.ID);
+      Log.TWL(0, "HardpointCalculator.Init " + HardpointData.ID);
       this.usedPrefabs = new HashSet<string>();
       Dictionary<string, List<HardpointCalculator.Element>> localtions = new Dictionary<string, List<HardpointCalculator.Element>>();
-      foreach(HardpointCalculator.Element compInfo in compInfos) {
+      foreach (HardpointCalculator.Element compInfo in compInfos) {
         string locationName = (HardpointData.isFakeHardpoint() || HardpointData.CustomHardpoints().IsVehicleStyleLocations) ? compInfo.location.toVehicleLocation().ToString().ToLower() : compInfo.location.ToString().ToLower();
-        if(localtions.TryGetValue(locationName, out List<HardpointCalculator.Element> locInfos) == false) {
+        if (localtions.TryGetValue(locationName, out List<HardpointCalculator.Element> locInfos) == false) {
           locInfos = new List<HardpointCalculator.Element>();
           localtions.Add(locationName, locInfos);
         }
@@ -299,7 +299,7 @@ namespace CustomUnits {
       foreach (var locComponents in localtions) {
         HashSet<HardpointsGroup> effectiveGroups = null;
         List<HardpointCalculator.Element> effectiveComponents = new List<HardpointCalculator.Element>();
-        foreach(HardpointCalculator.Element component in locComponents.Value) {
+        foreach (HardpointCalculator.Element component in locComponents.Value) {
           if (string.IsNullOrEmpty(component.componentRef.Def.PrefabIdentifier)) { continue; }
           effectiveComponents.Add(component);
         }
@@ -378,41 +378,109 @@ namespace CustomUnits {
     [Key(2)]
     public Dictionary<string, HadrpointAlias> aliases { get; set; }
     [Key(3), JsonIgnore]
-    public Dictionary<string, HashSet<HardpointsGroup>> hardpointsGroups { get; set; }
+    protected Dictionary<string, HashSet<HardpointsGroup>> f_hardpointsGroups { get; set; } = null;
+    [IgnoreMember, JsonIgnore]
+    public Dictionary<string, HashSet<HardpointsGroup>> hardpointsGroups {
+      get {
+        if (f_hardpointsGroups == null) { this.InitGroups(); }
+        return f_hardpointsGroups;
+      }
+    }
     [Key(4), JsonIgnore]
     public string HardpointDataDefID { get; set; } = string.Empty;
+    [Key(5), JsonIgnore]
+    public bool is_empty { get; private set; }
+    [IgnoreMember, JsonIgnore]
+    public HardpointDataDef parent { get; set; } = null;
     public CustomHardpointsDef() {
       prefabs = new List<CustomHardpointDef>();
       aliases = new Dictionary<string, HadrpointAlias>();
       IsVehicleStyleLocations = false;
-      hardpointsGroups = new Dictionary<string, HashSet<HardpointsGroup>>();
+      is_empty = false;
     }
-    public void InitGroups(HardpointDataDef hardpointData) {
-      if (hardpointData.ID != this.HardpointDataDefID) {
-        this.HardpointDataDefID = hardpointData.ID;
-        hardpointsGroups.Clear();
-      } else {
-        return;
+    public CustomHardpointsDef(bool empty) {
+      prefabs = new List<CustomHardpointDef>();
+      aliases = new Dictionary<string, HadrpointAlias>();
+      IsVehicleStyleLocations = false;
+      is_empty = empty;
+    }
+    public void Apply(HardpointDataDef parent) {
+      this.parent = parent;
+      if (this.HardpointDataDefID != parent.ID) { f_hardpointsGroups = null; }
+      this.HardpointDataDefID = parent.ID;
+      string id = parent.ID;
+      foreach (CustomHardpointDef chd in this.prefabs) {
+        if (string.IsNullOrEmpty(chd.name)) { chd.name = chd.prefab; }
+        if (string.IsNullOrEmpty(chd.name)) { continue; }
+        string custHardpointName = id + "." + chd.name;
+        CustomHardPointsHelper.Add(custHardpointName, chd);
       }
-      //Log.TWL(0, "CustomHardpointsDef.InitGroups " + hardpointData.ID + " ");
-      foreach (var locationData in hardpointData.HardpointData) {
-        //Log.WL(1, "location:" + locationData.location.ToLower());
-        if (hardpointsGroups.TryGetValue(locationData.location.ToLower(), out HashSet<HardpointsGroup> groups) == false) {
-          groups = new HashSet<HardpointsGroup>();
-          hardpointsGroups.Add(locationData.location.ToLower(), groups);
+      foreach (var alias in this.aliases) {
+        alias.Value.name = alias.Key;
+        CustomHardPointsHelper.Add(alias.Value.name, id + "." + alias.Value.prefab);
+      }
+      if (string.IsNullOrEmpty(parent.ID) == false) {
+        CustomHardPointsHelper.Add(parent.ID, this);
+        Log.WL(0, $"Register custom hardpoint {parent.ID} aliaces:{aliases.Count}");
+      }
+      Dictionary<string, int> locationMap = new Dictionary<string, int>();
+      List<HardpointDataDef._WeaponHardpointData> HardpointData = new List<HardpointDataDef._WeaponHardpointData>(parent.HardpointData);
+      for (int i = 0; i < parent.HardpointData.Length; ++i) {
+        locationMap[HardpointData[i].location] = i;
+      }
+      foreach (var alias in this.aliases) {
+        if (locationMap.TryGetValue(alias.Value.location, out var index) == false) {
+          index = HardpointData.Count;
+          HardpointDataDef._WeaponHardpointData locationData = new HardpointDataDef._WeaponHardpointData();
+          locationData.location = alias.Value.location;
+          locationData.mountingPoints = new string[0];
+          locationData.blanks = new string[0];
+          locationData.weapons = new string[0][];
+          HardpointData.Add(locationData);
+          locationMap[alias.Value.location] = index;
         }
-        for (int grp_index = 0; grp_index < locationData.weapons.Length;++grp_index) {
+        int hindex = 0;
+        if (alias.Key.Contains("_blank_")) {
+          HashSet<string> tmp_blank = parent.HardpointData[index].blanks.ToHashSet();
+          tmp_blank.Add(alias.Key);
+          parent.HardpointData[index].blanks = tmp_blank.ToArray();
+          continue;
+        }
+        try {
+          hindex = int.Parse(alias.Key.Substring(alias.Key.Length - 1)) - 1;
+        } catch (Exception e) {
+          Log.TWL(0, e.ToString(), true);
+        }
+        if (hindex < 0) { continue; }
+        if (hindex >= parent.HardpointData[index].weapons.Length) {
+          List<string[]> tmplist = parent.HardpointData[index].weapons.ToList();
+          tmplist.Add(new string[] { });
+          parent.HardpointData[index].weapons = tmplist.ToArray();
+        }
+        HashSet<string> tmp_weapons = parent.HardpointData[index].weapons[hindex].ToHashSet();
+        tmp_weapons.Add(alias.Key);
+        parent.HardpointData[index].weapons[hindex] = tmp_weapons.ToArray();
+      }
+      this.InitGroups();
+    }
+    protected void InitGroups() {
+      if (f_hardpointsGroups != null) { return; }
+      f_hardpointsGroups = new Dictionary<string, HashSet<HardpointsGroup>>();
+      if (parent == null) { return; }
+      foreach (var locationData in parent.HardpointData) {
+        if (f_hardpointsGroups.TryGetValue(locationData.location.ToLower(), out HashSet<HardpointsGroup> groups) == false) {
+          groups = new HashSet<HardpointsGroup>();
+          f_hardpointsGroups.Add(locationData.location.ToLower(), groups);
+        }
+        for (int grp_index = 0; grp_index < locationData.weapons.Length; ++grp_index) {
           string[] prefabGroup = locationData.weapons[grp_index];
-          //Log.WL(2, "group");
           HardpointsGroup group = new HardpointsGroup(grp_index);
           groups.Add(group);
           foreach (string prefabName in prefabGroup) {
-            //Log.WL(3, "prefab:"+prefabName);
             ComponentPrefabName name = new ComponentPrefabName(prefabName);
-            if (name.content.Length != 5) { Log.TWL(0,"!!!WARNING!!! hardpoint data definition "+hardpointData.ID+" contains bad weapon prefab "+prefabName); continue; }
-            //if (group.GroupPrefabs.ContainsKey(name.prefabIdentifier.ToLower())) { Log.TWL(0, "!!!WARNING!!! hardpoint data definition " + hardpointData.ID + " contains duplicates weapon prefab identifiers "+ name.prefabIdentifier.ToLower() + " in one group " + prefabName); continue; }
+            if (name.content.Length != 5) { Log.TWL(0, "!!!WARNING!!! hardpoint data definition " + this.parent.ID + " contains bad weapon prefab " + prefabName); continue; }
             if (group.GroupPrefabs.TryGetValue(name.prefabIdentifier.ToLower(), out HardpointPrefabCandidate base_candidate)) {
-              if (base_candidate.weight >= 1f) { Log.TWL(0, "!!!WARNING!!! hardpoint data definition " + hardpointData.ID + " contains duplicates weapon prefab identifiers " + name.prefabIdentifier.ToLower() + " in one group " + prefabName); continue; }
+              if (base_candidate.weight >= 1f) { Log.TWL(0, "!!!WARNING!!! hardpoint data definition " + parent.ID + " contains duplicates weapon prefab identifiers " + name.prefabIdentifier.ToLower() + " in one group " + prefabName); continue; }
               base_candidate.weight = 1f;
               base_candidate.PrefabName = prefabName;
             } else {
@@ -420,7 +488,7 @@ namespace CustomUnits {
             }
             if (Core.Settings.weaponPrefabMappings == null) { continue; }
             if (Core.Settings.weaponPrefabMappings.TryGetValue(name.prefabIdentifier.ToLower(), out Dictionary<string, float> candidates)) {
-              foreach(var cnd in candidates) {
+              foreach (var cnd in candidates) {
                 float weight = cnd.Value;
                 string prefabIdentifier = cnd.Key.ToLower();
                 if (group.GroupPrefabs.TryGetValue(prefabIdentifier, out HardpointPrefabCandidate candidate)) {
@@ -433,16 +501,6 @@ namespace CustomUnits {
           }
         }
       }
-      ////Log.WL(0, "result:");
-      //foreach (var hglocs in this.hardpointsGroups) {
-      //  //Log.WL(1, "location:"+ hglocs.Key);
-      //  foreach (var hg in hglocs.Value) {
-      //    //Log.WL(2, "group");
-      //    foreach (var pc in hg.GroupPrefabs) {
-      //      //Log.WL(3, pc.Key+": "+pc.Value.PrefabName+" weight:"+pc.Value.weight);
-      //    }
-      //  }
-      //}
     }
   }
   [HarmonyPatch(typeof(HardpointDataDef))]
@@ -454,19 +512,18 @@ namespace CustomUnits {
       try {
         if (string.IsNullOrEmpty(__instance.ID) == false) {
           CustomHardpointsDef extDef = CustomPrewarm.Core.getDeserializedObject(BattleTechResourceType.HardpointDataDef, __instance.ID, "CustomUnits") as CustomHardpointsDef;
-          if(extDef != null) {
+          if (extDef != null) {
             __state = extDef;
             return true;
           }
-          Log.TWL(0, "HardpointDataDef.FromJSON "+ __instance.ID + " has no CustomHardpointsDef");
+          Log.TWL(0, "HardpointDataDef.FromJSON " + __instance.ID + " has no CustomHardpointsDef");
         }
-        __state = new CustomHardpointsDef();
         JObject definition = JObject.Parse(json);
-        string id = (string)definition["ID"];
-        //Log.TWL(0, "HardpointDataDef.FromJSON:" + id);
         if (definition["CustomHardpoints"] != null) {
           __state = definition["CustomHardpoints"].ToObject<CustomHardpointsDef>();
           definition.Remove("CustomHardpoints");
+        } else {
+          __state = new CustomHardpointsDef(true);
         }
         json = definition.ToString();
         return true;
@@ -478,53 +535,11 @@ namespace CustomUnits {
     public static void Postfix(HardpointDataDef __instance, ref CustomHardpointsDef __state) {
       try {
         if (__state == null) { return; }
-        string id = __instance.ID;
-        foreach (CustomHardpointDef chd in __state.prefabs) {
-          if (string.IsNullOrEmpty(chd.name)) { chd.name = chd.prefab; }
-          if (string.IsNullOrEmpty(chd.name)) { continue; }
-          string custHardpointName = id + "." + chd.name;
-          CustomHardPointsHelper.Add(custHardpointName, chd);
-        }
-        foreach (var alias in __state.aliases) {
-          alias.Value.name = alias.Key;
-          CustomHardPointsHelper.Add(alias.Value.name, id + "." + alias.Value.prefab);
-        }
-        if (string.IsNullOrEmpty(__instance.ID) == false) {
-          CustomHardPointsHelper.Add(__instance.ID, __state);
-        }
-        foreach (var alias in __state.aliases) {
-          int index = -1;
-          for (int i = 0; i < __instance.HardpointData.Length; ++i) {
-            if (__instance.HardpointData[i].location == alias.Value.location) { index = i; break; };
-          }
-          if (index == -1) { continue; }
-          int hindex = 0;
-          if (alias.Key.Contains("_blank_")) {
-            HashSet<string> tmp_blank = __instance.HardpointData[index].blanks.ToHashSet();
-            tmp_blank.Add(alias.Key);
-            __instance.HardpointData[index].blanks = tmp_blank.ToArray();
-            continue;
-          }
-          try {
-            hindex = int.Parse(alias.Key.Substring(alias.Key.Length - 1)) - 1;
-          } catch (Exception e) {
-            Log.TWL(0, e.ToString(), true);
-          }
-          if (hindex < 0) { continue; }
-          if (hindex >= __instance.HardpointData[index].weapons.Length) {
-            List<string[]> tmplist = __instance.HardpointData[index].weapons.ToList();
-            tmplist.Add(new string[] { });
-            __instance.HardpointData[index].weapons = tmplist.ToArray();
-          }
-          HashSet<string> tmp_weapons = __instance.HardpointData[index].weapons[hindex].ToHashSet();
-          tmp_weapons.Add(alias.Key);
-          __instance.HardpointData[index].weapons[hindex] = tmp_weapons.ToArray();
-        }
-        __state.InitGroups(__instance);
-        if (__instance.ID == "hardpointdatadef_rotunda") {
-          Log.TWL(0, "HardpointDataDef.Loaded:"+ __instance.ID+ " HardpointData:" + (__instance.HardpointData == null?"null": __instance.HardpointData.Length.ToString()));
-        }
-      }catch(Exception e) {
+        __state.Apply(__instance);
+        //if (__instance.ID == "hardpointdatadef_rotunda") {
+        //  Log.TWL(0, "HardpointDataDef.Loaded:"+ __instance.ID+ " HardpointData:" + (__instance.HardpointData == null?"null": __instance.HardpointData.Length.ToString()));
+        //}
+      } catch (Exception e) {
         Log.TWL(0, e.ToString(), true);
       }
       //Log.TWL(0,JsonConvert.SerializeObject(__instance, Formatting.Indented));
@@ -572,7 +587,7 @@ namespace CustomUnits {
       if (animator == null) { return; }
       FireSpeed = speed;
       if (HasFireSpeed == false) { return; }
-      animator.SetFloat(HashFireSpeed,speed);
+      animator.SetFloat(HashFireSpeed, speed);
     }
     public HardPointAnimationController() {
       fireCompleeteCounters = new List<float>();
@@ -584,7 +599,7 @@ namespace CustomUnits {
     }
     public void SetFireAnimation(string name, bool value) {
       if (animator == null) { return; }
-      if (HashFireAnimation.TryGetValue(name, out int hash)) { animator.SetBool(hash,value); }
+      if (HashFireAnimation.TryGetValue(name, out int hash)) { animator.SetBool(hash, value); }
     }
     public float Indirect {
       set {
@@ -640,13 +655,13 @@ namespace CustomUnits {
       if (customHardpoint == null) { fireCompleeteAll(true); return; }
       if (fireCompleete.Count == 0) { return; };
       int realIndex = index % fireCompleete.Count;
-      Log.LogWrite("[" + DateTime.Now.ToString("HH:mm:ss.fff") + "]HardPointAnimationController.FireAnimation(" + index + "/"+realIndex+"):" + customHardpoint.prefab + "\n");
+      Log.LogWrite("[" + DateTime.Now.ToString("HH:mm:ss.fff") + "]HardPointAnimationController.FireAnimation(" + index + "/" + realIndex + "):" + customHardpoint.prefab + "\n");
       string animName = customHardpoint.fireEmitterAnimation[realIndex];
       if (string.IsNullOrEmpty(animName) == false) {
         SetFireAnimation(animName, true);
-        Log.LogWrite(1, "animName("+realIndex+"):" + animName + " true\n");
+        Log.LogWrite(1, "animName(" + realIndex + "):" + animName + " true\n");
         fireCompleete[realIndex] = false;
-        fireCompleeteCounters[realIndex] = (FireSpeed > 0.01f)?customHardpoint.fireAnimationLength / FireSpeed:0f;
+        fireCompleeteCounters[realIndex] = (FireSpeed > 0.01f) ? customHardpoint.fireAnimationLength / FireSpeed : 0f;
       } else {
         Log.LogWrite(1, "animName(" + realIndex + "):" + animName + " false\n");
         fireCompleete[realIndex] = true;
@@ -716,11 +731,11 @@ namespace CustomUnits {
       if (PrefireCompleete == false) {
         if (PrefireCompleeteCounter > 0f) { PrefireCompleeteCounter -= Time.deltaTime; } else { PrefireCompleete = true; };
       }
-      for(int t = 0; t < fireCompleeteCounters.Count; ++t) {
+      for (int t = 0; t < fireCompleeteCounters.Count; ++t) {
         if (fireCompleete[t] == false) { if (fireCompleeteCounters[t] > 0f) { fireCompleeteCounters[t] -= Time.deltaTime; } else {
             Log.LogWrite("[" + DateTime.Now.ToString("HH:mm:ss.fff") + "] animation " + t + " finished\n");
             fireCompleete[t] = true;
-        }; };
+          }; };
       }
     }
     public void OnPrefireCompleete(int i) {
@@ -800,7 +815,7 @@ namespace CustomUnits {
     }
   }
   public static class CustomHardPointsHelper {
-    public static readonly CustomHardpointsDef EmptyCustomHardpointsDef = new CustomHardpointsDef();
+    public static readonly CustomHardpointsDef EmptyCustomHardpointsDef = new CustomHardpointsDef(true);
     private static ConcurrentDictionary<string, CustomHardpointsDef> CustomHardpointsDefs = new ConcurrentDictionary<string, CustomHardpointsDef>();
     private static ConcurrentDictionary<string, string> hardPointAliases = new ConcurrentDictionary<string, string>();
     private static ConcurrentDictionary<string, CustomHardpointDef> CustomHardpointDefs = new ConcurrentDictionary<string, CustomHardpointDef>();
@@ -810,7 +825,7 @@ namespace CustomUnits {
     //  return result;
     //}
     public static void Add(string id, CustomHardpointsDef defs) {
-      CustomHardpointsDefs.AddOrUpdate(id, defs, (k,v)=> { return defs; });
+      CustomHardpointsDefs.AddOrUpdate(id, defs, (k, v) => { return defs; });
       //if (CustomHardpointsDefs.ContainsKey(id) == false) {
       //  CustomHardpointsDefs.Add(id, defs);
       //} else {
@@ -959,16 +974,40 @@ namespace CustomUnits {
       __result = hardpointDataDef.HardpointData[0].weapons[0][0];
       return false;
     }*/
+    public static void Prefix(ref bool __runOriginal, HardpointDataDef hardpointDataDef, BaseComponentRef componentRef, string prefabBase, string location, ref List<string> usedPrefabNames, ref string __result) {
+      if ((hardpointDataDef.HardpointData.Length == 0) || (hardpointDataDef.HardpointData[0].weapons.Length == 0) || hardpointDataDef.HardpointData[0].weapons[0].Length == 0) {
+        Log.TWL(0, $"MechHardpointRules.GetComponentPrefabName {hardpointDataDef.ID} have empty hardpoints?");
+        CustomHardpointsDef customHardpoint = CustomHardPointsHelper.CustomHardpoints(hardpointDataDef.ID);
+        if (customHardpoint != null) {
+          Log.WL(1, $"custom hardpoints definition found. aliases: {customHardpoint.aliases.Count}");
+        }
+      }
+    }
     public static void Postfix(HardpointDataDef hardpointDataDef, BaseComponentRef componentRef, string prefabBase, string location, ref List<string> usedPrefabNames, ref string __result) {
       //Log.WL(0, "MechHardpointRules.GetComponentPrefabName "+componentRef.ComponentDefID+ " prefabBase:"+ prefabBase + " location:"+ location + " " + __result);
       if (string.IsNullOrEmpty(__result)) {
-        if(componentRef.Def.ComponentType == ComponentType.Weapon) {
+        if (componentRef.Def.ComponentType == ComponentType.Weapon) {
           __result = HardpointCalculator.FakeWeaponPrefab;
         }
         return;
       }
       __result = CustomHardPointsHelper.Alias(__result);
       //Log.WL(1, " custom hardpoint found: prefab replacing:"+__result);
+    }
+  }
+  [HarmonyPatch(typeof(MechHardpointRules))]
+  [HarmonyPatch("GetWeaponPrefabName")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyWrapSafe]
+  public static class MechHardpointRules_GetWeaponPrefabName {
+    public static Exception Finalizer(Exception __exception, ref string __result) {
+      if (__exception != null) {
+        if ((__exception.GetType() == typeof(IndexOutOfRangeException))) {          
+          __result = HardpointCalculator.FakeWeaponPrefab;
+          return null;
+        }
+      }
+      return __exception;
     }
   }
 

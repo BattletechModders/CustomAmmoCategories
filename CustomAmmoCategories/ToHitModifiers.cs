@@ -470,6 +470,24 @@ namespace CustAmmoCategories {
         return "INSPIRED";
       }
     }
+    public static float GetInRangeModifier(ToHit instance, AbstractActor attacker, Weapon weapon, ICombatant target, Vector3 attackPosition, Vector3 targetPosition, LineOfFireLevel lofLevel, MeleeAttackType meleeAttackType, bool isCalledShot) {
+      float rangeBonusDist = weapon.RangeBonusDistance();
+      float rangeBonusMod = weapon.RangeBonusAccuracyMod();
+      if (Mathf.Abs(rangeBonusMod) < CustomAmmoCategories.Epsilon) { return 0f; }
+      if (rangeBonusDist < CustomAmmoCategories.Epsilon) { return 0f; }
+      float distance = Vector3.Distance(attackPosition, targetPosition);
+      if (distance < rangeBonusDist) { return rangeBonusMod; }
+      return 0f;
+    }
+    public static string GetInRangeModifierName(ToHit instance, AbstractActor attacker, Weapon weapon, ICombatant target, Vector3 attackPosition, Vector3 targetPosition, LineOfFireLevel lofLevel, MeleeAttackType meleeAttackType, bool isCalledShot) {
+      float rangeBonusDist = weapon.RangeBonusDistance();
+      float rangeBonusMod = weapon.RangeBonusAccuracyMod();
+      if (Mathf.Abs(rangeBonusMod) < CustomAmmoCategories.Epsilon) { return string.Empty; }
+      if (rangeBonusDist < CustomAmmoCategories.Epsilon) { return string.Empty; }
+      float distance = Vector3.Distance(attackPosition, targetPosition);
+      if (distance < rangeBonusDist) { return $"{Mathf.CeilToInt(distance)}m IN RANGE {Mathf.CeilToInt(rangeBonusDist)}m"; }
+      return string.Empty;
+    }
     public static float GetEnemyEffectModifier(ToHit instance, AbstractActor attacker, Weapon weapon, ICombatant target, Vector3 attackPosition, Vector3 targetPosition, LineOfFireLevel lofLevel, MeleeAttackType meleeAttackType, bool isCalledShot) {
       return instance.GetEnemyEffectModifier(target, weapon);
     }
@@ -586,6 +604,7 @@ namespace CustAmmoCategories {
       HashSet<string> modsToRemove = new HashSet<string>();
       foreach(string modid in CustomAmmoCategories.Settings.RemoveToHitModifiers) { modsToRemove.Add(modid); }
       if(modsToRemove.Contains("RANGE") == false) registerModifier("RANGE", "RANGE", true, false, GetRangeModifier, GetRangeModifierName);
+      if (modsToRemove.Contains("IN RANGE") == false) registerModifier("IN RANGE", "IN RANGE", true, false, GetInRangeModifier, GetInRangeModifierName);
       if (modsToRemove.Contains("OBSTRUCTED") == false) registerModifier("OBSTRUCTED", "OBSTRUCTED", true, false, GetCoverModifier, null);
       if (modsToRemove.Contains("ARM MOUNTED") == false) registerModifier("ARM MOUNTED", "ARM MOUNTED", true, false, GetSelfArmMountedModifier, null);
       if (modsToRemove.Contains("HEIGHT DIFF") == false) registerModifier("HEIGHT DIFF", "HEIGHT DIFF", true, false, GetHeightModifier, null);

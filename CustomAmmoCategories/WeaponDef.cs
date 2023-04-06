@@ -719,6 +719,10 @@ namespace CustAmmoCategories {
     public float RecoilJammingChance { get; set; } = 0f;
     [Key(129)]
     public string SpecialHitTable { get; set; } = string.Empty;
+    [StatCollectionFloat, Key(130)]
+    public float RangeBonusDistance { get; set; } = 0f;
+    [StatCollectionFloat, Key(131)]
+    public float RangeBonusAccuracyMod { get; set; } = 0f;
     public ExtWeaponDef() { }
   }
 }

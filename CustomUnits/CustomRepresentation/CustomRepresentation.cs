@@ -2217,13 +2217,13 @@ namespace CustomUnits {
         Log.WL(1, "setupSquad:" + setupSquad);
         Log.WL(1, "setupQuad:" + setupQuad);
         if (setupSquad) {
-          return CustomActorRepresentationHelper.ProcessSquadBattle(dataManager, ref result, id, custRepDef, chassisDef);
+          return CustomActorRepresentationHelper.ProcessSquadBattle(dataManager, ref result, origId, custRepDef, chassisDef);
         } else {
           if (setupAlternates) {
             return CustomActorRepresentationHelper.ProcessAlternatesBattle(dataManager, ref result, origId, custRepDef, chassisDef);
           } else {
             if (setupQuad) {
-              return CustomActorRepresentationHelper.ProcessQuadBattle(dataManager, ref result, id, custRepDef, chassisDef);
+              return CustomActorRepresentationHelper.ProcessQuadBattle(dataManager, ref result, origId, custRepDef, chassisDef);
             } else {
               return CustomActorRepresentationHelper.ProcessBattle(dataManager, ref result, custRepDef, chassisDef);
             }

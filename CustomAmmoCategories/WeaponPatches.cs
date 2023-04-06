@@ -277,6 +277,24 @@ namespace CustAmmoCategories {
       float result = ammo.MaxMissRadius + mode.MaxMissRadius + weapon.GetStatisticFloat("MaxMissRadius"); //extWeapon.MaxMissRadius;
       return result * weapon.GetStatisticMod("MaxMissRadius");
     }
+    public static float RangeBonusAccuracyMod(this Weapon weapon) {
+      ExtAmmunitionDef ammo = weapon.ammo();
+      ExtWeaponDef extWeapon = weapon.exDef();
+      WeaponMode mode = weapon.mode();
+      float result = ammo.RangeBonusAccuracyMod + mode.RangeBonusAccuracyMod + weapon.GetStatisticFloat("RangeBonusAccuracyMod"); //extWeapon.MaxMissRadius;
+      return result * weapon.GetStatisticMod("RangeBonusAccuracyMod");
+      //Log.M?.WL($"Weapon.RangeBonusAccuracyMod {weapon.defId} result:{result}");
+      //return result;
+    }
+    public static float RangeBonusDistance(this Weapon weapon) {
+      ExtAmmunitionDef ammo = weapon.ammo();
+      ExtWeaponDef extWeapon = weapon.exDef();
+      WeaponMode mode = weapon.mode();
+      float result = ammo.RangeBonusDistance + mode.RangeBonusDistance + weapon.GetStatisticFloat("RangeBonusDistance"); //extWeapon.MaxMissRadius;
+      return result * weapon.GetStatisticMod("RangeBonusDistance");
+      //Log.M?.WL($"Weapon.RangeBonusDistance {weapon.defId} result:{result}");
+      //return result;
+    }
     public static float AOEHeatDamage(this Weapon weapon) {
       float result = 0f;
       ExtAmmunitionDef ammo = weapon.ammo();

@@ -367,16 +367,19 @@ namespace CustomUnits {
         //Log.LogWrite(1, $"info.customStructure.AIcons.Count:{info.customStructure.AIcons.Count}");
         //Log.LogWrite(1, $"info.customStructure.OIcons.Count:{info.customStructure.OIcons.Count}", true);
         foreach (var sicon in info.customStructure.SIcons) {
-          Log.LogWrite(1, "additional icon:" + sicon.Value, true);
-          dependencyLoad.RequestResource(BattleTechResourceType.SVGAsset, sicon.Value);
+          if (string.IsNullOrEmpty(sicon.Value.icon)) { continue; }
+          Log.LogWrite(1, "additional icon:" + sicon.Value.icon, true);
+          dependencyLoad.RequestResource(BattleTechResourceType.SVGAsset, sicon.Value.icon);
         }
         foreach (var aicon in info.customStructure.AIcons) {
-          Log.LogWrite(1, "additional icon:" + aicon.Value, true);
-          dependencyLoad.RequestResource(BattleTechResourceType.SVGAsset, aicon.Value);
+          if (string.IsNullOrEmpty(aicon.Value.icon)) { continue; }
+          Log.LogWrite(1, "additional icon:" + aicon.Value.icon, true);
+          dependencyLoad.RequestResource(BattleTechResourceType.SVGAsset, aicon.Value.icon);
         }
         foreach (var oicon in info.customStructure.OIcons) {
-          Log.LogWrite(1, "additional icon:" + oicon.Value, true);
-          dependencyLoad.RequestResource(BattleTechResourceType.SVGAsset, oicon.Value);
+          if (string.IsNullOrEmpty(oicon.Value.icon)) { continue; }
+          Log.LogWrite(1, "additional icon:" + oicon.Value.icon, true);
+          dependencyLoad.RequestResource(BattleTechResourceType.SVGAsset, oicon.Value.icon);
         }
       }
     }
@@ -571,27 +574,27 @@ namespace CustomUnits {
         }
       } else if (info.customStructure != null) {
         foreach (var sicon in info.customStructure.SIcons) {
-          if (string.IsNullOrEmpty(sicon.Value) == false) {
-            Log.WL(1, $"customStructure icon: {sicon.Value}");
-            if (dataManager.Exists(BattleTechResourceType.SVGAsset, sicon.Value) == false) {
+          if (string.IsNullOrEmpty(sicon.Value.icon) == false) {
+            Log.WL(1, $"customStructure icon: {sicon.Value.icon}");
+            if (dataManager.Exists(BattleTechResourceType.SVGAsset, sicon.Value.icon) == false) {
               Log.WL(1, $"not exists");
               return false;
             }
           }
         }
         foreach (var aicon in info.customStructure.AIcons) {
-          if (string.IsNullOrEmpty(aicon.Value) == false) {
-            Log.WL(1, $"customStructure icon: {aicon.Value}");
-            if (dataManager.Exists(BattleTechResourceType.SVGAsset, aicon.Value) == false) {
+          if (string.IsNullOrEmpty(aicon.Value.icon) == false) {
+            Log.WL(1, $"customStructure icon: {aicon.Value.icon}");
+            if (dataManager.Exists(BattleTechResourceType.SVGAsset, aicon.Value.icon) == false) {
               Log.WL(1, $"not exists");
               return false;
             }
           }
         }
         foreach (var oicon in info.customStructure.OIcons) {
-          if (string.IsNullOrEmpty(oicon.Value) == false) {
-            Log.WL(1, $"customStructure icon: {oicon.Value}");
-            if (dataManager.Exists(BattleTechResourceType.SVGAsset, oicon.Value) == false) {
+          if (string.IsNullOrEmpty(oicon.Value.icon) == false) {
+            Log.WL(1, $"customStructure icon: {oicon.Value.icon}");
+            if (dataManager.Exists(BattleTechResourceType.SVGAsset, oicon.Value.icon) == false) {
               Log.WL(1, $"not exists");
               return false;
             }

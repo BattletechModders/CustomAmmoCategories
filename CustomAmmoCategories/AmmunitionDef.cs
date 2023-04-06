@@ -613,6 +613,10 @@ namespace CustAmmoCategories {
     public float RecoilJammingChance { get; set; } = 0f;
     [Key(155)]
     public string SpecialHitTable { get; set; } = string.Empty;
+    [Key(156)]
+    public float RangeBonusDistance { get; set; } = 0f;
+    [Key(157)]
+    public float RangeBonusAccuracyMod { get; set; } = 0f;
     public ExtAmmunitionDef() {
       //Id = "NotSet";
       //Name = string.Empty;
