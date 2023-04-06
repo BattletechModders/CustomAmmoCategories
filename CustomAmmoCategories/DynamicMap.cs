@@ -2407,16 +2407,7 @@ namespace CustomAmmoCategoriesPatches {
       return true;
     }
   }
-  [HarmonyPatch(typeof(FootstepManager))]
-  [HarmonyPatch("Instance")]
-  [HarmonyPatch(MethodType.Getter)]
-  [HarmonyPatch(new Type[] { })]
-  public static class FootstepManager_Instance {
-    public static bool Prefix(ref FootstepManager __result) {
-      typeof(FootstepManager).GetField("maxDecals", BindingFlags.Static | BindingFlags.Public).SetValue(null, 1023);
-      return true;
-    }
-  }
+
   [HarmonyPatch(typeof(PilotableActorRepresentation))]
   [HarmonyPatch("RefreshSurfaceType")]
   [HarmonyPatch(MethodType.Normal)]

@@ -1516,6 +1516,7 @@ namespace CACMain {
         Core.harmony = new Harmony("io.mission.modrepuation");
         harmony.PatchAll(Assembly.GetExecutingAssembly());
         InternalClassPathes.PatchInternalClasses(harmony);
+        AccessTools.Field(typeof(FootstepManager), "maxDecals").SetValue(null, 1023);
         Thread thread = new Thread(ThreadWork.DoWork);
         thread.Start();
         CustAmmoCategories.Online.OnlineClientHelper.Init();
