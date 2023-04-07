@@ -689,7 +689,7 @@ namespace CustomUnits {
       if (string.IsNullOrEmpty(customHardpoint.preFireAnimation)) { PrefireCompleete = true; return; }
       PrefireCompleeteCounter = (PrefireSpeed > 0.01f) ? customHardpoint.prefireAnimationLength / PrefireSpeed : 0f;
       PrefireCompleete = false;
-      Log.LogWrite("HardPointAnimationController.PrefireAnimation " + weapon.defId + "\n");
+      Log.LogWrite("HardPointAnimationController.PrefireAnimation " + weapon?.defId + "\n");
       if (customHardpoint.preFireAnimation == "_new_style") {
         if (this.isIndirect) {
           this.Indirect = 1f;
@@ -751,6 +751,8 @@ namespace CustomUnits {
       PrefireCompleete = false;
       FireSpeed = 1f;
       PrefireSpeed = 1f;
+      customHardpoint = hardpointDef;
+
       animator = weaponRep.gameObject.GetComponentInChildren<Animator>();
       if (animator == null) { PrefireCompleete = true; };
       if (animator != null) {
@@ -794,7 +796,6 @@ namespace CustomUnits {
         }
       }
 
-      customHardpoint = hardpointDef;
       Log.LogWrite(1, "customHardpoint: " + ((customHardpoint == null) ? "null" : customHardpoint.prefab) + "\n");
       if (animator != null) {
         Log.LogWrite(1, "clips(" + animator.runtimeAnimatorController.animationClips.Length + "):\n");
