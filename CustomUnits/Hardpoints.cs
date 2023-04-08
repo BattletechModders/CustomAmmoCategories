@@ -752,6 +752,8 @@ namespace CustomUnits {
       PrefireCompleete = false;
       FireSpeed = 1f;
       PrefireSpeed = 1f;
+      customHardpoint = hardpointDef;
+
       animator = weaponRep.gameObject.GetComponentInChildren<Animator>();
       if (animator == null) { PrefireCompleete = true; };
       if (animator != null) {
