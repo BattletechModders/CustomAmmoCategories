@@ -376,8 +376,14 @@ namespace CustAmmoCategories {
         } else {
           Log.LogWrite("  AoE can't inflict armor pierce crits:" + this.hitLocation + "\n");
         }
-
+        Statistic overalldamage = this.parent.weapon.StatCollection.GetOrCreateStatisic<float>("CAC_WeaponOverallDamage",0f);
+        overalldamage.SetValue<float>(overalldamage.Value<float>() + (damage + apdmg));
+        Statistic heatdamage = this.parent.weapon.StatCollection.GetOrCreateStatisic<float>("CAC_WeaponHeatDamage", 0f);
+        heatdamage.SetValue<float>(heatdamage.Value<float>() + (this.Heat));
+        Statistic stabilitydamage = this.parent.weapon.StatCollection.GetOrCreateStatisic<float>("CAC_WeaponStabilityDamage", 0f);
+        stabilitydamage.SetValue<float>(stabilitydamage.Value<float>() + (this.Stability));
         Log.LogWrite(" resolve damage. arm: "+ locArmor + " dmg:" + damage + " ap:" + apdmg + "\n");
+        bool flaggedfordeath = this.target.IsFlaggedForDeath;
         this.target.TakeWeaponDamage(impactMessage.hitInfo, this.hitLocation, this.parent.weapon, damage, apdmg, hitIndex, DamageType.Weapon);
         //this.parent.resolve(this.target).AddHit(this.hitLocation, this.EffectsMod, this.isAOE);
         this.parent.resolve(this.target).AddHeat(this.Heat);
@@ -385,6 +391,10 @@ namespace CustAmmoCategories {
         this.parent.resolve(this.target).AddInstability(this.Stability);
         Log.LogWrite(" Added instability:" + this.Stability + " overall: " + this.parent.resolve(this.target).Stability + "\n");
         this.target.HandleDeath(this.parent.Sequence.attacker.GUID);
+        if((flaggedfordeath == false) && (this.target.IsFlaggedForDeath)) {
+          Statistic deathsinflicted = this.parent.weapon.StatCollection.GetOrCreateStatisic<float>("CAC_WeaponDeathsInflicted", 0f);
+          deathsinflicted.SetValue<float>(deathsinflicted.Value<float>() + 1f);
+        }
       }
       this.parent.Sequence.messageCoordinator().MessageComplete((MessageCenterMessage)impactMessage);
     }
