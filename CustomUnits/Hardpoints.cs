@@ -689,7 +689,7 @@ namespace CustomUnits {
       if (string.IsNullOrEmpty(customHardpoint.preFireAnimation)) { PrefireCompleete = true; return; }
       PrefireCompleeteCounter = (PrefireSpeed > 0.01f) ? customHardpoint.prefireAnimationLength / PrefireSpeed : 0f;
       PrefireCompleete = false;
-      Log.LogWrite("HardPointAnimationController.PrefireAnimation " + weapon.defId + "\n");
+      Log.WL(0,$"HardPointAnimationController.PrefireAnimation {(weapon==null?this.gameObject.name:weapon.defId)}");
       if (customHardpoint.preFireAnimation == "_new_style") {
         if (this.isIndirect) {
           this.Indirect = 1f;
@@ -739,15 +739,16 @@ namespace CustomUnits {
       }
     }
     public void OnPrefireCompleete(int i) {
-      Log.LogWrite("HardPointAnimationController.OnPrefireCompleete " + i + "  " + weapon.defId + "\n", true);
+      Log.WL(0,$"HardPointAnimationController.OnPrefireCompleete {i} weapon:{(weapon == null?"null": weapon.defId)}", true);
       PrefireCompleete = true;
     }
-    public void Init(WeaponRepresentation weaponRep) {
-      this.Init(weaponRep, CustomHardPointsHelper.Find(weapon.baseComponentRef.prefabName));
-    }
+    //public void Init(WeaponRepresentation weaponRep) {
+    //  this.Init(weaponRep, CustomHardPointsHelper.Find(weapon.baseComponentRef.prefabName));
+    //}
     public void Init(WeaponRepresentation weaponRep, CustomHardpointDef hardpointDef) {
-      Log.LogWrite(0, "HardPointAnimationController.Init " + weaponRep.name + "\n");
-      //weapon = weaponRep.weapon;
+      Log.WL(0, $"HardPointAnimationController.Init {weaponRep.name}");
+      this.weapon = weaponRep.weapon;
+      this.customHardpoint = hardpointDef;
       PrefireCompleete = false;
       FireSpeed = 1f;
       PrefireSpeed = 1f;
@@ -794,7 +795,6 @@ namespace CustomUnits {
         }
       }
 
-      customHardpoint = hardpointDef;
       Log.LogWrite(1, "customHardpoint: " + ((customHardpoint == null) ? "null" : customHardpoint.prefab) + "\n");
       if (animator != null) {
         Log.LogWrite(1, "clips(" + animator.runtimeAnimatorController.animationClips.Length + "):\n");
