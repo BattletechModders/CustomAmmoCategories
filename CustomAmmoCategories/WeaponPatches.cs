@@ -295,6 +295,20 @@ namespace CustAmmoCategories {
       //Log.M?.WL($"Weapon.RangeBonusDistance {weapon.defId} result:{result}");
       //return result;
     }
+    public static float UnsafeJammChance(this Weapon weapon) {
+      ExtAmmunitionDef ammo = weapon.ammo();
+      ExtWeaponDef extWeapon = weapon.exDef();
+      WeaponMode mode = weapon.mode();
+      float result = ammo.UnsafeJamChance + mode.UnsafeJamChance + weapon.GetStatisticFloat("UnsafeJamChance"); //extWeapon.MaxMissRadius;
+      result *= weapon.GetStatisticMod("UnsafeJamChance");
+      if((weapon.parent == null)||(weapon.parent.team == null)||(weapon.parent.team.IsLocalPlayer == false)) {
+        result *= (ammo.AIUnsafeJamChanceMod + mode.AIUnsafeJamChanceMod + weapon.GetStatisticFloat("AIUnsafeJamChanceMod"));
+        result *= weapon.GetStatisticMod("AIUnsafeJamChanceMod");
+        result *= CustomAmmoCategories.Settings.AIUnsafeJamChance;
+      }
+      //Log.M?.WL($"Weapon.RangeBonusDistance {weapon.defId} result:{result}");
+      return result;
+    }
     public static float AOEHeatDamage(this Weapon weapon) {
       float result = 0f;
       ExtAmmunitionDef ammo = weapon.ammo();

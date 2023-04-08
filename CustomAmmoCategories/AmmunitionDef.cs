@@ -617,6 +617,10 @@ namespace CustAmmoCategories {
     public float RangeBonusDistance { get; set; } = 0f;
     [Key(157)]
     public float RangeBonusAccuracyMod { get; set; } = 0f;
+    [Key(158)]
+    public float UnsafeJamChance { get; set; } = 0f;
+    [Key(159)]
+    public float AIUnsafeJamChanceMod { get; set; } = 0f;
     public ExtAmmunitionDef() {
       //Id = "NotSet";
       //Name = string.Empty;

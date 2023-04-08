@@ -45,13 +45,15 @@ namespace CustAmmoCategories {
   public class AMSJammInfoMessage {
     public Weapon weapon { get; set; } = null;
     public float chance { get; set; } = 0f;
+    public float unsafechance { get; set; } = 0f;
     public string description { get; set; } = string.Empty;
-    public bool damage { get; private set; }
-    public bool destroy { get; private set; }
+    public bool damage { get; set; }
+    public bool destroy { get; set; }
     public int cooldown { get; private set; }
     public AMSJammInfoMessage(Weapon w) {
       this.weapon = w;
       this.chance = weapon.FlatJammingChance(out string descr);
+      this.unsafechance = weapon.UnsafeJammChance();
       this.description = descr;
       this.damage = weapon.DamageOnJamming();
       this.destroy = weapon.DestroyOnJamming();
@@ -301,6 +303,14 @@ namespace CustAmmoCategories {
           Log.M.WL(1, "Jamming chance " + flatJammingChance + " roll " + Roll);
           if (Roll < flatJammingChance) {
             Log.M.WL(1, "Jammed!");
+            if ((jammInfo.unsafechance < 1f)&&((jammInfo.damage == true) || (jammInfo.destroy == true))) {
+              float unsaferoll = Random.Range(0.0f, 1.0f);
+              if (unsaferoll < jammInfo.unsafechance) {
+                Log.M.WL(1, $"safe jamm {unsaferoll} < {jammInfo.unsafechance}");
+                jammInfo.damage = false;
+                jammInfo.destroy = false;
+              }
+            }
             CustomAmmoCategories.AddJam(weapon.parent, weapon, jammInfo.damage, jammInfo.destroy);
           }
         }
@@ -319,6 +329,14 @@ namespace CustAmmoCategories {
         Log.M.WL(2, "Jamming chance " + flatJammingChance + " roll " + Roll);
         if (Roll < flatJammingChance) {
           Log.M.WL(2, "Jammed!");
+          if ((info.unsafechance < 1f) && ((info.damage == true) || (info.destroy == true))) {
+            float unsaferoll = Random.Range(0.0f, 1.0f);
+            if (unsaferoll < info.unsafechance) {
+              Log.M.WL(1, $"safe jamm {unsaferoll} < {info.unsafechance}");
+              info.damage = false;
+              info.destroy = false;
+            }
+          }
           CustomAmmoCategories.AddJam(weapon.parent, weapon, info.damage, info.destroy);
         }
       }
@@ -480,8 +498,6 @@ namespace CustAmmoCategories {
       }
     }
     public static void AddJam(AbstractActor actor, Weapon weapon, bool damage, bool destroy) {
-      //bool damage = weapon.DamageOnJamming();
-      //bool destroy = weapon.DestroyOnJamming();
       try {
         Log.M.TWL(0, "AddJamm " + new Text(actor.DisplayName).ToString() + " weapon:" + weapon.defId + " damage:" + damage + " destroy:" + destroy);
         if ((damage == false) && (destroy == false)) {
@@ -489,18 +505,10 @@ namespace CustAmmoCategories {
             weapon.StatCollection.AddStatistic<bool>(CustomAmmoCategories.JammedWeaponStatisticName, false);
           }
           weapon.StatCollection.Set<bool>(CustomAmmoCategories.JammedWeaponStatisticName, true);
-          //weapon.StatCollection.Set<bool>(CustomAmmoCategories.TemporarilyDisabledStatisticName, true);
           if (CustomAmmoCategories.Settings.DontShowNotDangerouceJammMessages == false) {
             CustomAmmoCategories.addJamMessage(actor, $"{weapon.UIName} __/CAC.Jammed/__!");
           }
-          //actor.Combat.MessageCenter.PublishMessage(
-          //    new AddSequenceToStackMessage(
-          //        new ShowActorInfoSequence(actor, $"{weapon.Name} Jammed!", FloatieMessage.MessageNature.Debuff,
-          //            true)));
         } else {
-          //var isDestroying = weapon.DamageLevel != ComponentDamageLevel.Functional;
-          //if (destroy == true) { isDestroying = true; };
-          //var damageLevel = isDestroying ? ComponentDamageLevel.Destroyed : ComponentDamageLevel.Penalized;
           WeaponHitInfo fakeHit = new WeaponHitInfo(-1, -1, -1, -1, weapon.parent.GUID, weapon.parent.GUID, 1, null, null, null, null, null, null, null, null, null, null, null);
           fakeHit.toHitRolls = new float[1] { 1.0f };
           fakeHit.locationRolls = new float[1] { 1.0f };
@@ -520,14 +528,10 @@ namespace CustAmmoCategories {
           } else {
             weapon.CritComponent(ref fakeHit, weapon, destroy);
           }
-          //weapon.DamageComponent(fakeHit, damageLevel, true);
           var message = weapon.DamageLevel == ComponentDamageLevel.Destroyed
               ? $"{weapon.UIName} __/CAC.misfire/__: __/CAC.Destroyed/__!"
               : $"{weapon.UIName} __/CAC.misfire/__: __/CAC.Damaged/__!";
           CustomAmmoCategories.addJamMessage(actor, message);
-          //actor.Combat.MessageCenter.PublishMessage(
-          //    new AddSequenceToStackMessage(
-          //        new ShowActorInfoSequence(actor, message, FloatieMessage.MessageNature.Debuff, true)));
         }
       }catch(Exception e) {
         Log.M?.TWL(0,e.ToString(),true);

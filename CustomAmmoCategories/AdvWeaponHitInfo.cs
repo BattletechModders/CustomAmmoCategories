@@ -845,12 +845,14 @@ namespace CustAmmoCategories {
   }
   public class JammInfo {
     public float chance { get; set; } = 0f;
+    public float unsafechance { get; set; } = 1f;
     public string description { get; set; } = string.Empty;
-    public bool damage { get; private set; }
-    public bool destroy { get; private set; }
-    public int cooldown { get; private set; }
+    public bool damage { get; set; }
+    public bool destroy { get; set; }
+    public int cooldown { get; set; }
     public JammInfo(Weapon w) {
       this.chance = w.FlatJammingChance(out string descr);
+      this.unsafechance = w.UnsafeJammChance();
       this.description = descr;
       this.damage = w.DamageOnJamming();
       this.destroy = w.DestroyOnJamming();

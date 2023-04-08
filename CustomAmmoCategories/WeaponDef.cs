@@ -723,6 +723,10 @@ namespace CustAmmoCategories {
     public float RangeBonusDistance { get; set; } = 0f;
     [StatCollectionFloat, Key(131)]
     public float RangeBonusAccuracyMod { get; set; } = 0f;
+    [StatCollectionFloat, Key(132)]
+    public float UnsafeJamChance { get; set; } = 1f;
+    [StatCollectionFloat, Key(133)]
+    public float AIUnsafeJamChanceMod { get; set; } = 1f;
     public ExtWeaponDef() { }
   }
 }
