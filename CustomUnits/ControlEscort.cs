@@ -139,11 +139,11 @@ namespace CustomUnits {
         float playerDistnace = unit.Combat.GetNearestPlayerDistance(worldPos);
         float otherDistnace = unit.Combat.GetFarestOtherDistance(worldPos);
         if (routeDistance > routeDistanceLimit) { content.Append("<color=red>"); result = false; } else { content.Append("<color=green>"); };
-        content.AppendLine($"{(Strings.CurrentCulture == Strings.Culture.CULTURE_RU_RU ? "Отклонение от маршрута" : "Distnace from convoy route")}:{routeDistance}/{routeDistanceLimit}</color>");
+        content.AppendLine($"{(Strings.CurrentCulture == Strings.Culture.CULTURE_RU_RU ? "Отклонение от маршрута" : "Distance from convoy route")}:{routeDistance}/{routeDistanceLimit}</color>");
         if (playerDistnace > Core.Settings.ConvoyMaxDistFromPlayer) { content.Append("<color=red>"); result = false; } else { content.Append("<color=green>"); };
-        content.AppendLine($"{(Strings.CurrentCulture == Strings.Culture.CULTURE_RU_RU ? "Расстояние от ваших боевых единиц" : "Distnace from your units")}: {playerDistnace}/{Core.Settings.ConvoyMaxDistFromPlayer}</color>");
+        content.AppendLine($"{(Strings.CurrentCulture == Strings.Culture.CULTURE_RU_RU ? "Расстояние от ваших боевых единиц" : "Distance from your units")}: {playerDistnace}/{Core.Settings.ConvoyMaxDistFromPlayer}</color>");
         if (otherDistnace > Core.Settings.ConvoyMaxDistFromOther) { content.Append("<color=red>"); result = false; } else { content.Append("<color=green>"); };
-        content.AppendLine($"{(Strings.CurrentCulture == Strings.Culture.CULTURE_RU_RU ? "Расстояние от других машин конвоя" : "Distnace from other convoy units")}: {otherDistnace}/{Core.Settings.ConvoyMaxDistFromOther}</color>");
+        content.AppendLine($"{(Strings.CurrentCulture == Strings.Culture.CULTURE_RU_RU ? "Расстояние от других машин конвоя" : "Distance from other convoy units")}: {otherDistnace}/{Core.Settings.ConvoyMaxDistFromOther}</color>");
         message = content.ToString();
         return result;
       }
