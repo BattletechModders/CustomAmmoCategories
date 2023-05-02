@@ -177,7 +177,7 @@ namespace CustomUnits {
           Log.WL(2, "[" + i + "] " + ___LastUsedMechs[i]);
         }
       } catch (Exception e) {
-        Log.TWL(0,e.ToString(),true);
+        Log.TWL(0, e.ToString(), true);
       }
       return false;
     }
@@ -206,6 +206,8 @@ namespace CustomUnits {
               if (loadoutSlots[i].SelectedMech.MechDef.GUID == lanceLoadoutMechItem.MechDef.GUID) {
                 Log.WL(1, $"Duplicate detected in slot {i}");
                 Log.WL(1, Environment.StackTrace);
+                __result = true;
+                return false;
               }
             }
           }
@@ -257,7 +259,7 @@ namespace CustomUnits {
           Log.TWL(0, e.ToString(), true);
           return true;
         }
-      }catch(Exception e) {
+      } catch (Exception e) {
         Log.TWL(0, e.ToString(), true);
         return true;
       }
@@ -319,7 +321,7 @@ namespace CustomUnits {
           }
           if (hotdrop) { teamGUID = "HOTDROP_" + teamGUID; }
           lanceConfiguration.AddUnit(teamGUID, lanceLoadoutSlot.SelectedMech.MechDef, lanceLoadoutSlot.SelectedPilot.Pilot.pilotDef);
-          Log.WL(1, teamGUID+" "+GUID+":"+i);
+          Log.WL(1, teamGUID + " " + GUID + ":" + i);
         }
         __result = lanceConfiguration;
       } catch (Exception e) {
@@ -366,8 +368,8 @@ namespace CustomUnits {
           buttons_tr.Find("uixPrfBttn_BASE_button2-MANAGED-copy (1)").gameObject.GetComponent<LanceConfigLoader>().Init(__instance);
         }
         buttons_tr.gameObject.SetActive(true);
-      }catch(Exception e) {
-        Log.TWL(0,e.ToString(),true);
+      } catch (Exception e) {
+        Log.TWL(0, e.ToString(), true);
       }
     }
     public static void InitDeploySelectButtons(LanceConfiguratorPanel __instance, Contract contract, SimGameState sim) {
@@ -416,11 +418,11 @@ namespace CustomUnits {
           //buttons_tr.Find("uixPrfBttn_BASE_button2-MANAGED-copy (1)").gameObject.GetComponent<LanceConfigLoader>().Init(__instance);
         }
         buttons_tr.gameObject.SetActive((sim != null) && (contract != null));
-      }catch(Exception e) {
-        Log.TWL(0,e.ToString(),true);
+      } catch (Exception e) {
+        Log.TWL(0, e.ToString(), true);
       }
     }
-    public static void Prefix(LanceConfiguratorPanel __instance, SimGameState sim, ref int maxUnits, Contract contract,ref LanceLoadoutSlot[] ___loadoutSlots, ref float[] ___slotMaxTonnages,ref float[] ___slotMinTonnages) {
+    public static void Prefix(LanceConfiguratorPanel __instance, SimGameState sim, ref int maxUnits, Contract contract, ref LanceLoadoutSlot[] ___loadoutSlots, ref float[] ___slotMaxTonnages, ref float[] ___slotMinTonnages) {
       try {
         Log.TWL(0, "LanceConfiguratorPanel.SetData prefix");
         ShuffleLanceSlotsLayout customLanceSlotsLayout = ___loadoutSlots[0].transform.parent.gameObject.GetComponent<ShuffleLanceSlotsLayout>();
@@ -429,7 +431,7 @@ namespace CustomUnits {
         customLanceSlotsLayout.LayoutDef = sim.currentLayout();
         InitLanceSaveButtons(__instance, customLanceSlotsLayout);
         InitDeploySelectButtons(__instance, contract, sim);
-        Log.WL(1, "current layout:"+ customLanceSlotsLayout.LayoutDef.Description.Id);
+        Log.WL(1, "current layout:" + customLanceSlotsLayout.LayoutDef.Description.Id);
         List<float> listMaxTonnages = ___slotMaxTonnages.ToList();
         List<float> listMinTonnages = ___slotMinTonnages.ToList();
         Log.WL(0, "loadoutSlots:" + ___loadoutSlots.Length + "/" + UnityGameInstance.BattleTechGame.Simulation.currentLayout().slotsCount);
@@ -445,8 +447,8 @@ namespace CustomUnits {
           lanceSlotNew.name = "lanceSlot" + (t + 1).ToString();
           slots.Add(lanceSlotNew.GetComponent<LanceLoadoutSlot>());
           Log.WL(0, lanceSlotNew.name + " parent:" + lanceSlotNew.transform.parent.name);
-          listMaxTonnages.Add(listMaxTonnages[0]);
-          listMinTonnages.Add(listMinTonnages[0]);
+          listMaxTonnages.Add(-1f);
+          listMinTonnages.Add(-1f);
         }
         for (int t = 0; t < slots.Count; ++t) {
           slots[t].gameObject.SetActive(false);
@@ -500,13 +502,15 @@ namespace CustomUnits {
           }
         }
         ___loadoutSlots = slots.ToArray();
+        for (int t = 0; t < listMaxTonnages.Count; ++t) { listMaxTonnages[t] = -1f; }
+        for (int t = 0; t < listMinTonnages.Count; ++t) { listMinTonnages[t] = -1f; }
         ___slotMaxTonnages = listMaxTonnages.ToArray();
         ___slotMinTonnages = listMinTonnages.ToArray();
       } catch (Exception e) {
         Log.TWL(0, e.ToString(), true);
       }
     }
-    public static void Postfix(LanceConfiguratorPanel __instance,ref LanceLoadoutSlot[] ___loadoutSlots) {
+    public static void Postfix(LanceConfiguratorPanel __instance, Contract contract, ref LanceLoadoutSlot[] ___loadoutSlots) {
       Log.TWL(0, "LanceConfiguratorPanel.SetData postfix:" + __instance.maxUnits + "/" + ___loadoutSlots.Length);
       try {
         ShuffleLanceSlotsLayout customLanceSlotsLayout = ___loadoutSlots[0].transform.parent.gameObject.GetComponent<ShuffleLanceSlotsLayout>();
@@ -525,13 +529,13 @@ namespace CustomUnits {
         }
         customLanceSlotsLayout.Refresh();
         customLanceSlotsLayout.UpdateSlots();
-      }catch(Exception e) {
-        Log.TWL(0,e.ToString(),true);
+      } catch (Exception e) {
+        Log.TWL(0, e.ToString(), true);
       }
       //updateSlots(customLanceSlotsLayout);
     }
   }
-  public class OrderLanceSlotLayoutGroup: HorizontalLayoutGroup {
+  public class OrderLanceSlotLayoutGroup : HorizontalLayoutGroup {
     protected virtual List<KeyValuePair<RectTransform, CustomLanceSlot>> orderChildren { get; set; } = new List<KeyValuePair<RectTransform, CustomLanceSlot>>();
     public override void CalculateLayoutInputHorizontal() {
       this.rectChildren.Clear();
@@ -543,7 +547,7 @@ namespace CustomUnits {
         if (child != null) { this.orderChildren.Add(new KeyValuePair<RectTransform, CustomLanceSlot>(child, el)); }
       }
       orderChildren.Sort((x, y) => { return x.Value.index - y.Value.index; });
-      foreach(var el in orderChildren) {
+      foreach (var el in orderChildren) {
         rectChildren.Add(el.Key);
       }
       this.m_Tracker.Clear();
@@ -557,9 +561,9 @@ namespace CustomUnits {
     public DropSlotsDef LayoutDef { get; set; }
     public int currentLanceIndex { get; set; } = 0;
     public void UpdateSlots() {
-      Log.TWL(0, "ShuffleLanceSlotsLayout.UpdateSlots:"+ slots.Count);
-      foreach(CustomLanceSlot slot in slots) {
-        Log.WL(1,"slot:"+slot.lanceIndex+"/"+ this.currentLanceIndex);
+      Log.TWL(0, "ShuffleLanceSlotsLayout.UpdateSlots:" + slots.Count);
+      foreach (CustomLanceSlot slot in slots) {
+        Log.WL(1, "slot:" + slot.lanceIndex + "/" + this.currentLanceIndex);
         slot.gameObject.SetActive(slot.lanceIndex == this.currentLanceIndex);
       }
     }
@@ -599,7 +603,7 @@ namespace CustomUnits {
       }
     }
   }
-  public class CustomLanceSlot: MonoBehaviour, IPointerEnterHandler, IPointerExitHandler {
+  public class CustomLanceSlot : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler {
     public int index { get; set; }
     public int weight { get; set; }
     public ShuffleLanceSlotsLayout shuffleLayout { get; set; }
@@ -628,7 +632,7 @@ namespace CustomUnits {
           }
         }
       } catch (Exception e) {
-        Log.TWL(0,e.ToString(),true);
+        Log.TWL(0, e.ToString(), true);
       }
       //if (Mathf.Abs(firstDecoration.localPosition.x) > firstDecoration.sizeDelta.x * 2f) {
       //  HorizontalLayoutGroup group = decorationLayout.gameObject.GetComponent<HorizontalLayoutGroup>();
@@ -637,7 +641,7 @@ namespace CustomUnits {
       //  }
       //}
     }
-    public void ApplyDecoration(bool loadDeps, bool async=true) {
+    public void ApplyDecoration(bool loadDeps, bool async = true) {
       try {
         if (async) { decorationApplied = false; return; };
         if (decorationLayout == null) { return; }
@@ -709,8 +713,8 @@ namespace CustomUnits {
             UnityGameInstance.BattleTechGame.DataManager.InjectDependencyLoader(dependencyLoad, 10U);
           }
         }
-      }catch(Exception e) {
-        Log.TWL(0,e.ToString(),true);
+      } catch (Exception e) {
+        Log.TWL(0, e.ToString(), true);
       }
     }
     public void ApplyDecoration() {
@@ -770,8 +774,8 @@ namespace CustomUnits {
         }
         this.shuffleLayout = this.transform.parent.gameObject.GetComponent<ShuffleLanceSlotsLayout>();
         this.transform.localScale = new Vector3(0.8f, 0.8f, 1.0f);
-      }catch(Exception e) {
-        Log.TWL(0,e.ToString(),true);
+      } catch (Exception e) {
+        Log.TWL(0, e.ToString(), true);
       }
       //Log.WL(1, "decorationLayout.GetInstanceID:" + (decorationLayout==null?"null":decorationLayout.GetInstanceID().ToString()));
     }

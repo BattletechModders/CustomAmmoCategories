@@ -12,6 +12,7 @@ using BattleTech;
 using BattleTech.Data;
 using CustAmmoCategories;
 using HarmonyLib;
+using HBS.Logging;
 using Localize;
 using MessagePack;
 using Newtonsoft.Json;
@@ -1636,50 +1637,27 @@ namespace CustomUnits {
       }
     }
   }
-  //[HarmonyPatch(typeof(DataManager))]
-  //[HarmonyPatch("PooledInstantiate")]
-  //[HarmonyPatch(MethodType.Normal)]
-  //[HarmonyBefore("io.mission.modrepuation")]
-  //[HarmonyPatch(new Type[] { typeof(string), typeof(BattleTechResourceType), typeof(Vector3?), typeof(Quaternion?), typeof(Transform) })]
-  //public static class DataManager_PooledInstantiate {
-  //  public static void Prefix(DataManager __instance,ref string id, BattleTechResourceType resourceType, Vector3? position, Quaternion? rotation, Transform parent, ref string __state) {
-  //    try {
-  //      if (resourceType != BattleTechResourceType.Prefab) { return; }
-  //      __state = string.Empty;
-  //      __state += id;
-  //      CustomHardpointDef customHardpoint = CustomHardPointsHelper.Find(__state);
-  //      if (customHardpoint != null) {
-  //        id = customHardpoint.prefab;
-  //      } else {
-  //        CustomActorRepresentationDef custRepDef = CustomActorRepresentationHelper.FindSimGame(__state);
-  //        if (custRepDef != null) {
-  //          id = custRepDef.SourcePrefabIdentifier;
-  //        } else {
-  //          custRepDef = CustomActorRepresentationHelper.FindSimGame(__state);
-  //          if (custRepDef != null) {
-  //            id = __state.Replace(custRepDef.PrefabBase, custRepDef.SourcePrefabBase);
-  //          }
-  //        }
-  //      }
-  //    } catch (Exception e) {
-  //      Log.TWL(0, e.ToString(), true);
-  //    }
-  //  }
-  //  public static void Postfix(DataManager __instance, string id, BattleTechResourceType resourceType, Vector3? position, Quaternion? rotation, Transform parent, GameObject __result, ref string __state) {
-  //    return;
-  //    if (resourceType != BattleTechResourceType.Prefab) { return; }
-  //    if (id == __state) { return; }
-  //    CustomActorRepresentationDef custRepDef = CustomActorRepresentationHelper.Find(id);
-  //    if (custRepDef != null) {
-  //      CustomActorRepresentationHelper.ProcessBattle(__instance, ref __result, custRepDef);
-  //    } else {
-  //      custRepDef = CustomActorRepresentationHelper.FindSimGame(id);
-  //      if (custRepDef != null) {
-  //        //CustomActorRepresentationHelper.ProcessSimgame(__instance, id, resourceType, position, rotation, parent, __result);
-  //      }
-  //    }
-  //  }
-  //}
+  [HarmonyPatch(typeof(LoadRequest))]
+  [HarmonyPatch("TryCreateAndAddLoadRequest")]
+  [HarmonyPatch(MethodType.Normal)]
+  public static class LoadRequest_TryCreateAndAddLoadRequest {
+    private static ILog logger = HBS.Logging.Logger.GetLogger("Data.DataManager.ContainedLoadRequest");
+    public static void Prefix(LoadRequest __instance, BattleTechResourceType resourceType, ref string resourceId) {
+      try {
+        if (resourceType != BattleTechResourceType.Prefab) { return; }
+        VersionManifestEntry versionManifestEntry = Traverse.Create(__instance).Field<DataManager>("dataManager").Value.ResourceLocator.EntryByID(resourceId, resourceType);
+        if (versionManifestEntry != null) { return; }
+        CustomHardpointDef customHardpoint = CustomHardPointsHelper.Find(resourceId);
+        Log.TWL(0, "LoadRequest.TryCreateAndAddLoadRequest " + resourceId + " -> " + (customHardpoint == null ? "null" : customHardpoint.prefab));
+        if (customHardpoint != null) {
+          logger.LogWarning(string.Format("resourceId been altered from [{0}] to [{1}]", (object)resourceId, (object)customHardpoint.prefab));
+          resourceId = customHardpoint.prefab;
+        }
+      } catch (Exception e) {
+        Log.TWL(0, e.ToString(), true);
+      }
+    }
+  }
   [HarmonyPatch(typeof(DataManager))]
   [HarmonyPatch("PoolGameObject")]
   [HarmonyPatch(MethodType.Normal)]

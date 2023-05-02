@@ -593,9 +593,9 @@ namespace CustomUnits {
       if (isSlave && (forcedSlave == false)) { return; }
       if (this.CurrentRepresentation == null) { base.OnGroundImpact(forcedSlave); } else { this.CurrentRepresentation.OnGroundImpact(true); }
     }
-    public override void OnJumpLand(bool forcedSlave) {
+    public override void OnJumpLandI(bool forcedSlave) {
       if (isSlave && (forcedSlave == false)) { return; }
-      if (this.CurrentRepresentation == null) { base.OnJumpLand(forcedSlave); } else { this.CurrentRepresentation.OnJumpLand(true); }
+      if (this.CurrentRepresentation == null) { base.OnJumpLandI(forcedSlave); } else { this.CurrentRepresentation.OnJumpLandI(true); }
     }
     public override void OnCombatGameDestroyed() {
       base.OnCombatGameDestroyed();
@@ -894,14 +894,29 @@ namespace CustomUnits {
       }
       return result;
     }
+    private static Dictionary<Collider, bool> CombatantsColliders = new Dictionary<Collider, bool>();
+    public static void Clear() {
+      CombatantsColliders.Clear();
+    }
     public RaycastHit? GetTerrainRayHit(Vector3 position, bool water) {
-      int layerMask = LayerMask.GetMask("Terrain", "Obstruction");
-      if (water) { layerMask = LayerMask.GetMask("Terrain", "Obstruction", "Water"); }
+      int layerMask = LayerMask.GetMask("Terrain", "Obstruction", "Combatant");
+      if (water) { layerMask = LayerMask.GetMask("Terrain", "Obstruction", "Combatant", "Water"); }
       RaycastHit? result = new RaycastHit?();
       RaycastHit[] raycastHitArray = Physics.RaycastAll(new Ray(position + Vector3.up * 20f, Vector3.down), 200f + this.HeightController.CurrentHeight, layerMask);
-      HashSet<Collider> skipColliders = this.rootParentRepresentation.ownColliders;
+      //HashSet<Collider> skipColliders = this.rootParentRepresentation.ownColliders;
+      int Combatant_layer = LayerMask.NameToLayer("Combatant");
       foreach (RaycastHit hit in raycastHitArray) {
-        if (skipColliders.Contains(hit.collider)) { continue; }
+        //if (skipColliders.Contains(hit.collider)) { continue; }
+        if (hit.collider.gameObject.layer == Combatant_layer) {
+          if(CombatantsColliders.TryGetValue(hit.collider, out bool is_unit)) {
+            if (is_unit) { continue; }
+            goto test_collider_y;
+          }
+          PilotableActorRepresentation unitRep = hit.collider.GetComponentInParent<PilotableActorRepresentation>();
+          CombatantsColliders.Add(hit.collider, unitRep != null);
+          if (unitRep != null) { continue; }
+        }
+        test_collider_y:
         if ((result.HasValue == false) || (hit.point.y > result.Value.point.y)) {
           Log.WL(2, "hit pos:" + hit.point + " " + hit.collider.gameObject.name + " layer:" + LayerMask.LayerToName(hit.collider.gameObject.layer));
           result = hit;
@@ -1172,7 +1187,7 @@ namespace CustomUnits {
       }
       Log.TWL(0, "MechFlyHeightController.FinishChangeHeight " + this.StartingHeight + "->" + this.CurrentHeight);
       if (this.ForceJumpJetsActive || ((this.CurrentHeight <= Core.Settings.MaxHoveringHeightWithWorkingJets) && (this.StartingHeight > Core.Settings.MaxHoveringHeightWithWorkingJets))) {
-        this.parent.OnJumpLand(true);
+        this.parent.OnJumpLandI(true);
       }
       this.StartingHeight = this.CurrentHeight;
       this.FakeHeightControl = false;

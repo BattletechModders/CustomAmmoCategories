@@ -1902,9 +1902,9 @@ namespace CustomUnits {
     }
 
     public override void OnJumpLand() {
-      this.OnJumpLand(false);
+      this.OnJumpLandI(false);
     }
-    public virtual void OnJumpLand(bool forcedSlave) {
+    public virtual void OnJumpLandI(bool forcedSlave) {
       if (isSlave && (forcedSlave == false)) { return; }
       GameRepresentation_OnJumpLand();
       if (this.rootParentRepresentation.BlipDisplayed || !this.VisibleObject.activeSelf) { return; }
@@ -2091,20 +2091,38 @@ namespace CustomUnits {
     }
     public virtual void CompleteJump(MechJumpSequence sequence) {
       bool aliginToTerrain = false;
+      RaycastHit? raycast = new RaycastHit?();
+      Log.TWL(0,$"MechRepresentation.CompleteJump {this.parentActor.PilotableActorDef.ChassisID} finalPos:{sequence.FinalPos}");
       bool vehicleMovement = this.parentCombatant.NoMoveAnimation() || this.parentCombatant.FakeVehicle();
       if (vehicleMovement && this.parentCombatant.FlyingHeight() < Core.Settings.MaxHoveringHeightWithWorkingJets) {
         aliginToTerrain = true;
+      }
+      if (this.parentCombatant.NavalUnit() || (this.parentCombatant.FlyingHeight() > Core.Settings.MaxHoveringHeightWithWorkingJets)) {
+        raycast = this.GetTerrainRayHit(sequence.FinalPos, true);
       }
       if (this.parentCombatant.NavalUnit()) {
         AudioSwitch_surface_type currentSurfaceType = this.rootParentRepresentation._CurrentSurfaceType;
         if ((currentSurfaceType == AudioSwitch_surface_type.water_deep) || (currentSurfaceType == AudioSwitch_surface_type.water_shallow)) {
           aliginToTerrain = false;
-          this.AliginToWater(new RaycastHit?(), 100f);
+          this.AliginToWater(raycast, 100f);
         }
       }
-      if (aliginToTerrain) {
-        this.AliginToTerrain(new RaycastHit?(), 100f, false);
+      if (raycast.HasValue) {
+        Log.WL(1, $"raycast.y {raycast.Value.point.y}");
+        if (raycast.Value.point.y > sequence.FinalPos.y) {
+          this.thisTransform.position = raycast.Value.point;
+        } else {
+          this.thisTransform.position = sequence.FinalPos;
+        }
+        //this.thisTransform.rotation = Quaternion.LookRotation(sequence.FinalHeading, Vector3.up);
+      } else {
+        this.thisTransform.position = sequence.FinalPos;
+        //this.thisTransform.rotation = Quaternion.LookRotation(finalHeading, Vector3.up);
       }
+      if (aliginToTerrain) {
+        this.AliginToTerrain(raycast, 100f, false);
+      }
+      Log.WL(1, $"j_Root {this.j_Root.position}");
     }
     public virtual void CompleteMove(Vector3 finalPos, Vector3 finalHeading, ActorMovementSequence sequence, bool playedMelee, ICombatant meleeTarget) {
       this.CompleteMove(sequence, playedMelee, meleeTarget);

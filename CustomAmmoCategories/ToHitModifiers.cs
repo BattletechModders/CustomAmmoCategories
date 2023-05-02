@@ -937,20 +937,27 @@ namespace CustAmmoCategories {
     }
     public static void Postfix(ToHit __instance, AbstractActor attacker, Weapon weapon, ICombatant target, Vector3 attackPosition, Vector3 targetPosition, LineOfFireLevel lofLevel, bool isCalledShot, ref float __result) {
       __result = 0f;
+      Log.M?.TWL(0,$"ToHit modifier. attacker:{attacker.PilotableActorDef.ChassisID} target:{(target.PilotableActorDef == null?target.DisplayName: target.PilotableActorDef.ChassisID)} weapon:{weapon.weaponDef.Description.Id}");
       foreach(var mod in ToHitModifiersHelper.modifiers) {
         if ((mod.Value.ranged == false)&&(mod.Value.melee == true)) { continue; }
-        __result += mod.Value.modifier(__instance,attacker,weapon,target,attackPosition,targetPosition,lofLevel,MeleeAttackType.NotSet,isCalledShot);
+        float val = mod.Value.modifier(__instance, attacker, weapon, target, attackPosition, targetPosition, lofLevel, MeleeAttackType.NotSet, isCalledShot);
+        Log.M?.WL(2,$"{mod.Key}:{val}");
+        __result += val;
       }
       foreach (var node in ToHitModifiersHelper.mod_nodes) {
         object state = node.Value.prepare(__instance, attacker, weapon, target, attackPosition, targetPosition, lofLevel, MeleeAttackType.NotSet, isCalledShot);
+        Log.M?.WL(2, $"node:{node.Key}");
         foreach (var mod in node.Value.modifiers) {
           if ((mod.Value.ranged == false) && (mod.Value.melee == true)) { continue; }
-          __result += (int)mod.Value.modifier(state, __instance, attacker, weapon, target, attackPosition, targetPosition, lofLevel, MeleeAttackType.NotSet, isCalledShot);
+          float val = mod.Value.modifier(state, __instance, attacker, weapon, target, attackPosition, targetPosition, lofLevel, MeleeAttackType.NotSet, isCalledShot);
+          Log.M?.WL(3, $"{mod.Key}:{val}");
+          __result += val;
         }
       }
       if ((__result < 0f) && (Traverse.Create(__instance).Field<CombatGameState>("combat").Value.Constants.ResolutionConstants.AllowTotalNegativeModifier == false)) {
         __result = 0f;
       }
+      Log.M?.WL(0,$"result:{__result}");
     }
   }
   [HarmonyPatch(typeof(ToHit))]

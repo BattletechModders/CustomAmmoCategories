@@ -23,19 +23,34 @@ using System.Linq;
 using System.Diagnostics;
 
 namespace CustAmmoCategories {
-  //[HarmonyPatch]
-  //public static class MovementCandidateLocations_Add {
-  //  public static MethodBase TargetMethod() {
-  //    return AccessTools.Method(typeof(List<MoveDestination>), "OnLoadedWithText");
-  //  }
-  //  public static void Prefix(object __instance, object item) {
-  //    if(item is MoveDestination moveDest) {
-  //      Log.P?.TWL(0, "List<MoveDestination>.Add()");
-  //      Log.P?.WL(0, Environment.StackTrace.ToString());
-  //    }
-  //  }
-  //}
-
+  public class FlatPosition {
+    private short x;
+    private short y;
+    public float X { get { return (float)x / 10f; } }
+    public float Y { get { return (float)y / 10f; } }
+    public FlatPosition(Vector3 pos) {
+      this.x = (short)Mathf.RoundToInt(pos.x * 10f);
+      this.y = (short)Mathf.RoundToInt(pos.z * 10f);
+    }
+    public FlatPosition() {
+      this.x = 0;
+      this.y = 0;
+    }
+    public override int GetHashCode() {
+      var xb = BitConverter.GetBytes(this.x);
+      var yb = BitConverter.GetBytes(this.y);
+      byte[] rb = new byte[4];
+      xb.CopyTo(rb, 0);
+      yb.CopyTo(rb, 2);
+      return BitConverter.ToInt32(rb, 0);
+    }
+    public override bool Equals(object obj) {
+      if(obj is FlatPosition b) {
+        return (this.x == b.x) && (this.y == b.y);
+      }
+      return false;
+    }
+  }
   public static class AIPathingLimiter {
     public static string LIMIT_PATHING_SAMPLES = "LIMIT_PATHING_SAMPLES";
     public static MethodBase GetSampledPathNodes() => (MethodBase)AccessTools.Method(typeof(PathNodeGrid), "GetSampledPathNodes");
@@ -283,45 +298,36 @@ namespace CustAmmoCategories {
         ___tree.movementCandidateLocations.Add(item.moveDest);
       }
       Log.P?.WL(1, $"result:{___tree.movementCandidateLocations.Count}");
-      //foreach (var stat in original.moveType_statistic) {
-      //  int count = stat.Value;
-      //  if (DO_NOT_OPTIMIZE_MOVE_TYPES.Contains(stat.Key)) { goto stat_add; }
-      //  count = Mathf.Max((stat.Value * CustomAmmoCategories.Settings.AIPathingSamplesLimit) / original.moveDestinations.Count, 1);
-      //stat_add:
-      //  moveTypeCounts.Add(stat.Key, count);
-      //  Log.P?.WL(2, stat.Key + ":" + count);
-      //}
-      //___tree.movementCandidateLocations.Clear();
-      //foreach (var counts in moveTypeCounts) {
-      //  if (original.costs.TryGetValue(counts.Key, out var origCounts)) {
-      //    List<int> costsKeys = new List<int>();
-      //    costsKeys.AddRange(origCounts.Keys);
-      //    costsKeys.Sort((a, b) => b.CompareTo(a));
-      //    List<MoveDestination> result = new List<MoveDestination>();
-      //    for (int index = 0; index < costsKeys.Count; ++index) {
-      //      if (result.Count >= counts.Value) { break; }
-      //      int cost = costsKeys[index];
-      //      result.AddRange(origCounts[cost]);
-      //    }
-      //    ___tree.movementCandidateLocations.AddRange(result);
-      //  }
-      //}
     }
-    public static void MoveCandidatesFilter(LeafBehaviorNode __instance, BehaviorTree ___tree) {
+    public static void MoveCandidatesFilter(LeafBehaviorNode __instance) {
       try {
-        Log.M?.TWL(0,$"MoveCandidatesFilter");
-        if (original_movementCandidateLocations.TryGetValue(___tree, out MoveDestOriginalStatistic original) == false) {
+        Log.M?.TWL(0,$"MoveCandidatesFilter {__instance.tree.unit.PilotableActorDef.ChassisID} FlyingHeight:{__instance.tree.unit.FlyingHeight()}");
+        if (original_movementCandidateLocations.TryGetValue(__instance.tree, out MoveDestOriginalStatistic original) == false) {
           original = new MoveDestOriginalStatistic();
-          original_movementCandidateLocations.Add(___tree, original);
+          original_movementCandidateLocations.Add(__instance.tree, original);
         }
-        AIMinefieldHelper.FilterMoveCandidates(___tree.unit,ref ___tree.movementCandidateLocations);
-        FilterFastUnits(original, __instance, ___tree);
-        //AIFleeHelper.FleeCandidatesFilter(___tree.unit, ref ___tree.movementCandidateLocations);
-        Log.P?.WL(1, "filter result:" + ___tree.movementCandidateLocations.Count);
-        //___tree.movementCandidateLocations.Sort((a, b) => { return a.PathNode.CostToThisNode.CompareTo(b.PathNode.CostToThisNode); });
-        //foreach(MoveDestination moveDestination in ___tree.movementCandidateLocations) {
-        //  Log.P?.WL(2,$"{moveDestination.MoveType} {moveDestination.PathNode.Position} {moveDestination.PathNode.CostToThisNode}");
+        AIMinefieldHelper.FilterMoveCandidates(__instance.tree.unit,ref __instance.tree.movementCandidateLocations);
+        FilterFastUnits(original, __instance, __instance.tree);
+        Log.P?.WL(1, "filter result:" + __instance.tree.movementCandidateLocations.Count);
+        //if (__instance.tree.unit.FlyingHeight() < 3f) { return; }
+        //Log.P?.WL(1, "searching for non flying teammates");
+        //HashSet<FlatPosition> nonflyingTeammates = new HashSet<FlatPosition>();
+        //HashSet<MoveDestination> nonflyingTeammatesPositions = new HashSet<MoveDestination>();
+        //foreach (var teammate in __instance.tree.unit.team.units) {
+        //  if (__instance.tree.unit == teammate) { continue; }
+        //  if (teammate.IsDead) { continue; }
+        //  if (teammate.FlyingHeight() > 3f) { continue; }
+        //  nonflyingTeammates.Add(new FlatPosition(teammate.CurrentPosition));
         //}
+        //if (nonflyingTeammates.Count == 0) { return; }
+        //foreach (var pos in __instance.tree.movementCandidateLocations) {
+        //  FlatPosition fpos = new FlatPosition(pos.PathNode.Position);
+        //  if (nonflyingTeammates.Contains(fpos)) { nonflyingTeammatesPositions.Add(pos); }
+        //}
+        //if (nonflyingTeammatesPositions.Count > 0) {
+        //  __instance.tree.movementCandidateLocations = nonflyingTeammatesPositions.ToList();
+        //}
+        //Log.P?.WL(1, "non flying filter result:" + __instance.tree.movementCandidateLocations.Count);
       } catch (Exception e) {
         Log.P?.TWL(0,e.ToString(),true);
       }

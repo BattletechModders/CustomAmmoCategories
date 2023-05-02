@@ -497,12 +497,14 @@ namespace CustomAmmoCategoriesPatches {
       WeaponMode mode = weapon.mode();
       ExtAmmunitionDef ammo = weapon.ammo();
       string specialHitTable = weapon.SpecialHitTable();
-      CustomAmmoCategoriesLog.Log.M.TWL(0,$"generateWeaponHitInfo {weapon.defId} ammo:{ammo.Id} mode:{mode.Id} indirect capable:{weapon.IndirectFireCapable()} indirect:{indirectFire} missInSircle:{missInCircle} specialHitTable:{specialHitTable}");
-      CustomAmmoCategoriesLog.Log.LogWrite(" altering target:" + originaltarget.GUID + "->" + target.GUID + "\n");
+      Log.M?.TWL(0,$"generateWeaponHitInfo {weapon.defId} ammo:{ammo.Id} mode:{mode.Id} indirect capable:{weapon.IndirectFireCapable()} indirect:{indirectFire} missInSircle:{missInCircle} specialHitTable:{specialHitTable}");
+      Log.M?.WL(1,$"altering target:{originaltarget.GUID}->{target.GUID}");
+      Thread.CurrentThread.SetFlag("TO_HIT_DEBUG_PRINT");
       float toHitChance = instance.Director.Combat.ToHit.GetToHitChance(instance.attacker, weapon, target, instance.attackPosition, target.CurrentPosition, instance.numTargets, instance.meleeAttackType, instance.isMoraleAttack);
+      Thread.CurrentThread.ClearFlag("TO_HIT_DEBUG_PRINT");
       if (indirectFire && (weapon.IndirectFireCapable() == false)) { toHitChance = 0f; };
       if (weapon.AlwaysIndirectVisuals()) { indirectFire = true; };
-      CustomAmmoCategoriesLog.Log.LogWrite(" filling to hit records " + target.DisplayName + " " + target.GUID + " weapon:" + weapon.defId + " shots:" + hitInfo.numberOfShots + " toHit:" + toHitChance + "\n");
+      CustomAmmoCategoriesLog.Log.M?.WL(1,$"filling to hit records {target.DisplayName} {target.GUID} weapon:{weapon.defId} shots:{hitInfo.numberOfShots} toHit:{toHitChance}");
       if (Mech.TEST_KNOCKDOWN)
         toHitChance = 1f;
       if (AttackDirector.hitLogger.IsLogEnabled)
@@ -554,7 +556,7 @@ namespace CustomAmmoCategoriesPatches {
         Log.LogWrite(" strange behavior. NumberOfShots: " + hitInfo.numberOfShots + " but HitLocations length:" + hitInfo.hitLocations.Length + ". Must be equal\n", true);
         hitInfo.numberOfShots = hitInfo.hitLocations.Length;
       }
-      if (indirectFire && (missInCircle == false)) { missInCircle = true;  };
+      if ((indirectFire && (missInCircle == false))||(weapon.MissInCircle())) { missInCircle = true;  };
       if ((missInCircle)&&(instance.attacker.GUID != target.GUID)) {
         Log.LogWrite(" miss in circle\n");
         for (int hitIndex = 0; hitIndex < numberOfShots; ++hitIndex) {

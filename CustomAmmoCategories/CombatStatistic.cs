@@ -65,6 +65,10 @@ namespace CustAmmoCategories {
   public static class AAR_UnitStatusWidget_InitData {
     public static void Postfix(AAR_UnitStatusWidget __instance, UnitResult result, SimGameState theSimGame, DataManager dataMan, Contract theContract) {
       try {
+        if (theSimGame == null) { return; }
+        if (dataMan == null) { return; }
+        if (theContract == null) { return; }
+        if (result == null) { return; }
         if (result.mech == null) { return; }
         if (CustomAmmoCategories.Settings.StatisticOnResultScreenEnabled == false) { return; }
         Log.M?.TWL(0,$"AAR_UnitStatusWidget.InitData GUID:{result.mech.GUID}");

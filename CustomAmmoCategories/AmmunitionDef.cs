@@ -621,6 +621,8 @@ namespace CustAmmoCategories {
     public float UnsafeJamChance { get; set; } = 0f;
     [Key(159)]
     public float AIUnsafeJamChanceMod { get; set; } = 0f;
+    [Key(160)]
+    public TripleBoolean MissInCircle { get; set; } = TripleBoolean.NotSet;
     public ExtAmmunitionDef() {
       //Id = "NotSet";
       //Name = string.Empty;

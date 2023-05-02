@@ -868,11 +868,11 @@ namespace CustomUnits {
             if (!MechValidationRules.MechTonnageWithinRange(loadoutSlot.SelectedMech.MechDef, __instance.slotMinTonnages[index], __instance.slotMaxTonnages[index])) {
               flag1 = false;
               if ((double)__instance.slotMinTonnages[index] >= 0.0 && (double)__instance.slotMaxTonnages[index] >= 0.0)
-                ___lanceErrorText.Append("Lance slot {0} requires a 'Mech between {1} and {2} Tons\n", (object)index, (object)__instance.slotMinTonnages[index], (object)__instance.slotMaxTonnages[index]);
+                ___lanceErrorText.Append("Lance slot {0} requires a 'Unit between {1} and {2} Tons\n", (object)index, (object)__instance.slotMinTonnages[index], (object)__instance.slotMaxTonnages[index]);
               else if ((double)__instance.slotMinTonnages[index] >= 0.0)
-                ___lanceErrorText.Append("Lance slot {0} requires a 'Mech over {1} Tons\n", (object)index, (object)__instance.slotMinTonnages[index]);
+                ___lanceErrorText.Append("Lance slot {0} requires a 'Unit over {1} Tons\n", (object)index, (object)__instance.slotMinTonnages[index]);
               else if ((double)__instance.slotMaxTonnages[index] >= 0.0)
-                ___lanceErrorText.Append("Lance slot {0} requires a 'Mech under {1} Tons\n", (object)index, (object)__instance.slotMaxTonnages[index]);
+                ___lanceErrorText.Append("Lance slot {0} requires a 'Unit under {1} Tons\n", (object)index, (object)__instance.slotMaxTonnages[index]);
             }
             DropSlotDef def = DropSystemHelper.currentLayout(UnityGameInstance.BattleTechGame.Simulation).GetSlotByIndex(index);
             if (def != null) { if (def.UseMaxUnits == false) { continue; } }
@@ -880,9 +880,9 @@ namespace CustomUnits {
           } else if (__instance.slotMinTonnages[index] >= 0.0) {
             flag1 = false;
             if ((double)__instance.slotMinTonnages[index] >= 0.0 && (double)__instance.slotMaxTonnages[index] >= 0.0)
-              ___lanceErrorText.Append("Lance slot {0} requires a 'Mech between {1} and {2} Tons\n", (object)index, (object)__instance.slotMinTonnages[index], (object)__instance.slotMaxTonnages[index]);
+              ___lanceErrorText.Append("Lance slot {0} requires a 'Unit between {1} and {2} Tons\n", (object)index, (object)__instance.slotMinTonnages[index], (object)__instance.slotMaxTonnages[index]);
             else if ((double)__instance.slotMinTonnages[index] >= 0.0)
-              ___lanceErrorText.Append("Lance slot {0} requires a 'Mech over {1} Tons\n", (object)index, (object)__instance.slotMinTonnages[index]);
+              ___lanceErrorText.Append("Lance slot {0} requires a 'Unit over {1} Tons\n", (object)index, (object)__instance.slotMinTonnages[index]);
           }
         }
         bool flag2 = MechValidationRules.LanceTonnageWithinRange(mechs, __instance.lanceMinTonnage, __instance.lanceMaxTonnage);

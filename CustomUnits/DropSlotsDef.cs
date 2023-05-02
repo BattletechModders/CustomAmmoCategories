@@ -217,13 +217,16 @@ namespace CustomUnits {
         }
       }
     }
-    public static HashSet<DropClassDef> GetDropClass(this ChassisDef chassis, bool exception = true) {
-      if (dropClassesCache.TryGetValue(chassis.Description.Id, out HashSet<DropClassDef> result)) { return result; }
+    public static HashSet<DropClassDef> GetDropClass(this ChassisDef chassis, bool cache = true) {
+      HashSet<DropClassDef> result = null;
+      if (cache) {
+        if (dropClassesCache.TryGetValue(chassis.Description.Id, out result)) { return result; }
+      }
       result = new HashSet<DropClassDef>();
       foreach (var dropClass in dropClasses) {
         if (dropClass.Value.isMyUnitClass(chassis.ChassisTags)) { result.Add(dropClass.Value); }
       }
-      dropClassesCache.TryAdd(chassis.Description.Id, result);
+      if(cache)dropClassesCache.TryAdd(chassis.Description.Id, result);
       return result;
     }
   }

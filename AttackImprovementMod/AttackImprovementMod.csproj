@@ -41,9 +41,13 @@
     <StartupObject />
   </PropertyGroup>
   <ItemGroup>
+    <PackageReference Include="Krafs.Publicizer" Version="2.2.1" />
+		<Publicize Include="Assembly-CSharp;UnityEngine.UI;UnityEngine.CoreModule" />
+  </ItemGroup>
+  <ItemGroup>
     <Reference Include="0Harmony, Version=1.2.0.1, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\..\Mods\ModTek\Harmony12X\0Harmony.dll</HintPath>
+      <HintPath>$(BattleTechGameDir)\Mods\ModTek\Harmony12X\0Harmony.dll</HintPath>
     </Reference>
     <Reference Include="Assembly-CSharp">
       <HintPath>$(BattleTechGameDir)\BattleTech_Data\Managed\Assembly-CSharp.dll</HintPath>

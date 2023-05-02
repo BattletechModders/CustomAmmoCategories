@@ -584,9 +584,9 @@ namespace CustomUnits {
       if (isSlave && (forcedSlave == false)) { return; }
       base.OnGroundImpact(forcedSlave);
     }
-    public override void OnJumpLand(bool forcedSlave) {
+    public override void OnJumpLandI(bool forcedSlave) {
       if (isSlave && (forcedSlave == false)) { return; }
-      base.OnJumpLand(forcedSlave);
+      base.OnJumpLandI(forcedSlave);
     }
     public override void OnCombatGameDestroyed() {
       base.OnCombatGameDestroyed();

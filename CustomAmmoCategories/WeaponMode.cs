@@ -465,6 +465,8 @@ namespace CustAmmoCategories {
     public float UnsafeJamChance { get; set; } = 0f;
     [Key(154)]
     public float AIUnsafeJamChanceMod { get; set; } = 0f;
+    [Key(155)]
+    public TripleBoolean MissInCircle { get; set; } = TripleBoolean.NotSet;
     private static List<PropertyInfo> json_properties = null;
     private static void fill_json_properties() {
       if (json_properties != null) { return; }

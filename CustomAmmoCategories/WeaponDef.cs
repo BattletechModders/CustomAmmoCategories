@@ -727,6 +727,8 @@ namespace CustAmmoCategories {
     public float UnsafeJamChance { get; set; } = 1f;
     [StatCollectionFloat, Key(133)]
     public float AIUnsafeJamChanceMod { get; set; } = 1f;
+    [Key(134)]
+    public TripleBoolean MissInCircle { get; set; } = TripleBoolean.NotSet;
     public ExtWeaponDef() { }
   }
 }

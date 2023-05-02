@@ -83,6 +83,26 @@ namespace CustomUnits {
       return true;
     }
   }
+  [HarmonyPatch(typeof(SelectionState))]
+  [HarmonyPatch("ShowFireButton")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { typeof(CombatHUDFireButton.FireMode), typeof(string) })]
+  public static class SelectionStateMove_ShowFireButton {
+    public static void Prefix(SelectionState __instance, CombatHUDFireButton.FireMode mode, string additionalDetails, ref bool __runOriginal) {
+      if (__runOriginal == false) { return; }
+      if(__instance is SelectionStateMove moveState) {
+        if (__instance.SelectedActor == null) { return; }
+        if (__instance.SelectedActor.isConvoyUnit() == false) { return; }
+        if (__instance.HasTarget) {
+          string message = Strings.CurrentCulture == Strings.Culture.CULTURE_RU_RU ? "Поцарапаешь казенную технику, падла!" : "Employer forbids this!";
+          GenericPopupBuilder.Create(GenericPopupType.Warning, message).IsNestedPopupWithBuiltInFader().CancelOnEscape().Render();
+          __runOriginal = false;
+          return;
+        }
+      }
+    }
+
+  }
   [HarmonyPatch(typeof(SelectionStateMove))]
   [HarmonyPatch("ProcessLeftClick")]
   [HarmonyPatch(MethodType.Normal)]
@@ -152,21 +172,24 @@ namespace CustomUnits {
     public static bool isConvoyUnit(this AbstractActor unit) {
       return unit.EncounterTags.Contains(Core.Settings.PlayerControlConvoyTag) || unit.EncounterTags.Contains(Core.Settings.ConvoyDenyMoveTag);
     }
-    public static bool Prefix(SelectionStateMove __instance, Vector3 worldPos, ref bool __result) {
-      if (__instance.SelectedActor == null) { return true; }
-      if (__instance.SelectedActor.isConvoyUnit() == false) { return true; }
+    public static void Prefix(SelectionStateMove __instance, Vector3 worldPos, ref bool __result, ref bool __runOriginal) {
+      if (__runOriginal == false) { return; }
+      if (__instance.SelectedActor == null) { return; }
+      if (__instance.SelectedActor.isConvoyUnit() == false) { return; }
       if (__instance.HasTarget) {
-        GenericPopupBuilder.Create(GenericPopupType.Warning, "CONVOY UNITS CAN'T MELEE").IsNestedPopupWithBuiltInFader().CancelOnEscape().Render();
+        string msg = Strings.CurrentCulture == Strings.Culture.CULTURE_RU_RU ? "Поцарапаешь казенную технику, падла!" : "Employer forbids this!";
+        GenericPopupBuilder.Create(GenericPopupType.Warning, msg).IsNestedPopupWithBuiltInFader().CancelOnEscape().Render();
         __result = false;
-        return false;
+        __runOriginal = false;
+        return;
       }
-      if (__instance.HasDestination == true) { return true; }
+      if (__instance.HasDestination == true) { return; }
       if (__instance.SelectedActor.IsValidEscortPosition(__instance.SelectedActor.Pathing.ResultDestination, out string message) == false) {
         GenericPopupBuilder.Create(GenericPopupType.Warning, message).IsNestedPopupWithBuiltInFader().CancelOnEscape().Render();
         __result = false;
-        return false;
+        __runOriginal = false;
+        return;
       }
-      return true;
     }
   }
   [HarmonyPatch(typeof(AbstractActor))]

@@ -125,19 +125,18 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
     }
 
     [HarmonyLib.HarmonyPriority(HarmonyLib.Priority.Low)]
-    public static bool OverrideHUDMechCalledShotPercent(AttackDirection ___shownAttackDirection, Mech ___displayedMech, ref string __result, ArmorLocation location, ArmorLocation targetedLocation) {
+    public static bool OverrideHUDMechCalledShotPercent(CombatHUDCalledShotPopUp __instance, ref string __result, ArmorLocation location, ArmorLocation targetedLocation) {
       try {
-        //CustomAmmoCategoriesLog.Log.AIM.TWL(0, $"OverrideHUDMechCalledShotPercent {___displayedMech.PilotableActorDef.ChassisID} {___shownAttackDirection} location:{location} targeted:{targetedLocation}");
-        Dictionary<ArmorLocation, int> hitTable = null;//CustAmmoCategories.HitTableHelper.GetHitTable(___displayedMech, targetedLocation, AttackDirection);
-        ICustomMech custMech = ___displayedMech as ICustomMech;
+        Dictionary<ArmorLocation, int> hitTable = null;
+        ICustomMech custMech = __instance.displayedMech as ICustomMech;
         if (custMech != null) {
           hitTable = (targetedLocation == ArmorLocation.None || !CallShotClustered || !AIMSettings.ShowRealMechCalledShotChance)
-                                                   ? custMech.GetHitTable(___shownAttackDirection)
-                                                   : custMech.GetHitTableCluster(___shownAttackDirection, targetedLocation);
+                                                   ? custMech.GetHitTable(__instance.shownAttackDirection)
+                                                   : custMech.GetHitTableCluster(__instance.shownAttackDirection, targetedLocation);
         } else {
           hitTable = (targetedLocation == ArmorLocation.None || !CallShotClustered || !AIMSettings.ShowRealMechCalledShotChance)
-                                                   ? Combat.HitLocation.GetMechHitTable(___shownAttackDirection)
-                                                   : Combat.Constants.GetMechClusterTable(targetedLocation, ___shownAttackDirection);
+                                                   ? Combat.HitLocation.GetMechHitTable(__instance.shownAttackDirection)
+                                                   : Combat.Constants.GetMechClusterTable(targetedLocation, __instance.shownAttackDirection);
         }
         //CustomAmmoCategoriesLog.Log.AIM.WL(1,"hitTable ");
         //foreach (var hit in hitTable) { CustomAmmoCategoriesLog.Log.AIM.W(1, $"{hit.Key}:{hit.Value}"); }; CustomAmmoCategoriesLog.Log.AIM.WL(0, "");
@@ -154,9 +153,9 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
     }
 
     [HarmonyLib.HarmonyPriority(HarmonyLib.Priority.Low)]
-    public static bool OverrideHUDVehicleCalledShotPercent(AttackDirection ___shownAttackDirection, ref string __result, VehicleChassisLocations location, VehicleChassisLocations targetedLocation) {
+    public static bool OverrideHUDVehicleCalledShotPercent(CombatHUDCalledShotPopUp __instance, ref string __result, VehicleChassisLocations location, VehicleChassisLocations targetedLocation) {
       try {
-        Dictionary<VehicleChassisLocations, int> hitTable = Combat.HitLocation.GetVehicleHitTable(___shownAttackDirection);
+        Dictionary<VehicleChassisLocations, int> hitTable = Combat.HitLocation.GetVehicleHitTable(__instance.shownAttackDirection);
         if (CacheNeedRefresh(hitTable, (int)targetedLocation))
           HitTableTotalWeight = SumWeight(hitTable, targetedLocation, FixMultiplier(targetedLocation, ActorCalledShotBonus), scale);
 

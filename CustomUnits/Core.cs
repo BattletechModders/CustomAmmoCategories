@@ -432,9 +432,10 @@ namespace CustomUnits {
       PilotingIcon = "piloting";
       DefaultSkirmishDropLayout = "default_skirmish_layout";
       DefaultSimgameDropLayout = "default_simgame_layout";
-      vehicleForcedTags = new List<string>() { "unit_drop_type_generic_vehicle", "unit_piloting_type_generic_vehicle", "vehicle_bays" };
-      mechForcedTags = new List<string>() { "unit_drop_type_generic_mech", "unit_piloting_type_generic_mech" };
-      squadForcedTags = new List<string>() { "battle_armor_bays" };
+      vehicleForcedTags = new List<string>() { "vehicle_bays" };
+      //mechForcedTags = new List<string>() { "unit_drop_type_generic_mech", "unit_piloting_type_generic_mech" };
+      mechForcedTags = new List<string>();
+      squadForcedTags = new List<string>();
       navalForcedTags = new List<string>() { "unit_naval" };
       baysWidgetsCount = 4;
       //HardpointFix = new Features.HardpointFix.HardpointFixSettings();

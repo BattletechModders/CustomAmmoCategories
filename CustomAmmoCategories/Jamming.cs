@@ -305,8 +305,8 @@ namespace CustAmmoCategories {
             Log.M.WL(1, "Jammed!");
             if ((jammInfo.unsafechance < 1f)&&((jammInfo.damage == true) || (jammInfo.destroy == true))) {
               float unsaferoll = Random.Range(0.0f, 1.0f);
-              if (unsaferoll < jammInfo.unsafechance) {
-                Log.M.WL(1, $"safe jamm {unsaferoll} < {jammInfo.unsafechance}");
+              if (unsaferoll > jammInfo.unsafechance) {
+                Log.M.WL(1, $"safe jamm {unsaferoll} > {jammInfo.unsafechance}");
                 jammInfo.damage = false;
                 jammInfo.destroy = false;
               }
@@ -331,8 +331,8 @@ namespace CustAmmoCategories {
           Log.M.WL(2, "Jammed!");
           if ((info.unsafechance < 1f) && ((info.damage == true) || (info.destroy == true))) {
             float unsaferoll = Random.Range(0.0f, 1.0f);
-            if (unsaferoll < info.unsafechance) {
-              Log.M.WL(1, $"safe jamm {unsaferoll} < {info.unsafechance}");
+            if (unsaferoll > info.unsafechance) {
+              Log.M.WL(1, $"safe jamm {unsaferoll} > {info.unsafechance}");
               info.damage = false;
               info.destroy = false;
             }

@@ -2166,8 +2166,8 @@ namespace CustomUnits {
             battleRep.BlipObjectIdentified.SetActive(false);
             battleRep.BlipObjectUnknown.SetActive(false);
             GameObject.Destroy(battleRep);
-            result.name = id;
             result = bayGameObject;
+            result.name = id;
           }
         }
       }

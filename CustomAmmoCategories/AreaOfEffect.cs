@@ -194,7 +194,7 @@ namespace CustAmmoCategories {
           if (HeatDamagePerShot < CustomAmmoCategories.Epsilon) { HeatDamagePerShot = weapon.HeatDamagePerShot; };
           float distanceRatio = weapon.AoEDmgFalloffType((AOERange - distance) / AOERange);
           float targetAoEMult = target.AoEDamageMult();
-          float targetHeatMult = target.IncomingHeatMult();
+          float targetHeatMult = target.IncomingHeatMult() * target.ScaleIncomingHeat();
           float targetStabMult = target.IncomingStabilityMult();
           float fullDamage = DamagePerShot * distanceRatio * targetAoEMult;
           float heatDamage = HeatDamagePerShot * distanceRatio * targetAoEMult * targetHeatMult;

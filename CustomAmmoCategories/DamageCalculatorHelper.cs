@@ -327,6 +327,7 @@ namespace CustAmmoCategories {
       modifiers.Add(new DamageModifier("Line Of fire".UI(), DamageModifierType.AP, true, false, lofMod, null));
 
       modifiers.Add(new DamageModifier("Heat resistance".UI(), DamageModifierType.Heat, true, false, float.NaN, iHeatMod));
+      modifiers.Add(new DamageModifier("Heat scale".UI(), DamageModifierType.Heat, true, false, target.ScaleIncomingHeat(), null));
       modifiers.Add(new DamageModifier("Instability resistance".UI(), DamageModifierType.Stability, true, false, float.NaN, iStabMod));
       modifiers.Add(new DamageModifier("AP resistance".UI(), DamageModifierType.AP, true, false, float.NaN, iAPMod));
       modifiers.Add(new DamageModifier("AP immune".UI(), DamageModifierType.AP, true, false, float.NaN, iAPImmune));

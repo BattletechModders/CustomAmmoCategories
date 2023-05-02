@@ -188,6 +188,7 @@ namespace CustAmmoCategories {
       Mech mech = target as Mech;
       Vehicle vehicle = target as Vehicle;
       burnHeat *= target.IncomingHeatMult();
+      burnHeat *= target.ScaleIncomingHeat();
       if (target.isHasHeat()) { this.BurnHeat = burnHeat; return; };
       this.BurnHeat = 0f;
       List<int> hitLocations = new List<int> { 1 };
@@ -241,7 +242,7 @@ namespace CustAmmoCategories {
       foreach (var effect in def.statusEffects) { AddEffect(target, target, effect); };
       if (AoEDamage.ContainsKey(target) == false) { AoEDamage.Add(target, new AoEExplosionRecord(target)); };
       AoEExplosionRecord AoERecord = AoEDamage[target];
-      AoERecord.HeatDamage += def.Heat * target.IncomingHeatMult();
+      AoERecord.HeatDamage += def.Heat * target.IncomingHeatMult() * target.ScaleIncomingHeat();
       AoERecord.StabDamage += def.Instability * target.IncomingStabilityMult();
       float Damage = def.Damage;
       List<int> hitLocations = new List<int> { 1 };
@@ -340,7 +341,7 @@ namespace CustAmmoCategories {
         float distanceRatio = def.mAoEDmgFalloffType((def.AoERange - distance) / def.AoERange);
         float targetAoEMult = target.AoEDamageMult();
         float unitTypeAoEMult = CustomAmmoCategories.Settings.DefaultAoEDamageMult[target.UnitType].Damage;
-        float targetHeatMult = target.IncomingHeatMult();
+        float targetHeatMult = target.IncomingHeatMult()*target.ScaleIncomingHeat();
         float targetStabMult = target.IncomingStabilityMult();
         float HeatDamage = def.AoEHeat * unitTypeAoEMult * tagAoEDamage * distanceRatio * targetAoEMult * targetHeatMult;
         float Damage = def.AoEDamage * unitTypeAoEMult * tagAoEDamage * distanceRatio * targetAoEMult;

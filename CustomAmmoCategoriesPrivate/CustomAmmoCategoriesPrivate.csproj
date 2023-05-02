@@ -75,6 +75,7 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="StackManagment.cs" />
     <Compile Include="WeaponComponentRef.cs" />
+    <Compile Include="WeaponRangeIndicator.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\CustomAmmoCategories\CustomAmmoCategories.csproj">

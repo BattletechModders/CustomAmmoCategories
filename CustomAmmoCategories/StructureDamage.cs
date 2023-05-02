@@ -10,6 +10,7 @@
 */
 using BattleTech;
 using CustomAmmoCategoriesLog;
+using CustomAmmoCategoriesPatches;
 using HarmonyLib;
 using System;
 using System.Reflection;
@@ -108,6 +109,14 @@ namespace CustAmmoCategories {
     public static float IncomingHeatMult(this ICombatant unit) {
       if (unit.StatCollection.ContainsStatistic(IncomingHeatMultStatisticName) == false) { return 1f; }
       return unit.StatCollection.GetStatistic(IncomingHeatMultStatisticName).Value<float>();
+    }
+    public static float ScaleIncomingHeat(this ICombatant target) {
+      if (CustomAmmoCategories.Settings.ScaleIncomingHeat < CustomAmmoCategories.Epsilon) { return 1f; }
+      if (target.isHasHeat() == false) { return 1f; }
+      if (target is Mech mech) {
+        return 1f - (mech.CurrentHeat / CustomAmmoCategories.Settings.ScaleIncomingHeat);
+      }
+      return 1f;
     }
     public static float IncomingStabilityMult(this ICombatant unit) {
       if (unit.StatCollection.ContainsStatistic(IncomingStabilityMultStatisticName) == false) { return 1f; }

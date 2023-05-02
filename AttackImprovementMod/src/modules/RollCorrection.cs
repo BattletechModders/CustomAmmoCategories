@@ -122,10 +122,10 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
     }
 
     [HarmonyPriority(Priority.Low)]
-    public static bool OverrideMissStreakBreaker(Team __instance, float targetValue, bool succeeded, ref float ___streakBreakingValue) {
+    public static bool OverrideMissStreakBreaker(Team __instance, float targetValue, bool succeeded) {
       try {
         if (succeeded) {
-          ___streakBreakingValue = 0f;
+          __instance.streakBreakingValue = 0f;
 
         } else if (targetValue > MissStreakBreakerThreshold) {
           float mod;
@@ -133,7 +133,7 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
             mod = (targetValue - MissStreakBreakerThreshold) / MissStreakBreakerDivider;
           else
             mod = -MissStreakBreakerDivider;
-          ___streakBreakingValue += mod;
+          __instance.streakBreakingValue += mod;
         }
         return false;
       } catch (Exception ex) { return Error(ex); }

@@ -239,6 +239,7 @@ namespace CustAmmoCategories {
         heat = 0f;
       }
       heat *= target.IncomingHeatMult();
+      heat *= target.ScaleIncomingHeat();
       stability *= target.IncomingStabilityMult();
       ap *= target.APDamageMult();
       if (target is AbstractActor actor) {
@@ -956,7 +957,11 @@ namespace CustAmmoCategories {
                   }
                   ++effectsApply;
                   Log.LogWrite($"Applying effectID:{effectID} with effectDescId:{statusEffect?.Description.Id} effectDescName:{statusEffect?.Description.Name}\n");
-                  this.Sequence.Director.Combat.EffectManager.CreateEffect(statusEffect, effectID, this.Sequence.stackItemUID, (ICombatant)this.Sequence.attacker, target, hitInfo, HitLocation.location, false);
+                  try {
+                    this.Sequence.Director.Combat.EffectManager.CreateEffect(statusEffect, effectID, this.Sequence.stackItemUID, (ICombatant)this.Sequence.attacker, target, hitInfo, HitLocation.location, false);
+                  }catch(Exception e) {
+                    ToHit.hitLogger.LogException(e);
+                  }
                   if (effectPerHit == false) { break; }
                 }
                 if (target != null) {
@@ -977,7 +982,11 @@ namespace CustAmmoCategories {
           if (targetActor != null) {
             List<EffectData> effectsForTriggerType = targetActor.GetComponentStatusEffectsForTriggerType(EffectTriggerType.OnDamaged);
             for (int index = 0; index < effectsForTriggerType.Count; ++index) {
-              targetActor.Combat.EffectManager.CreateEffect(effectsForTriggerType[index], string.Format("OnDamagedEffect_{0}_{1}", (object)target.GUID, (object)hitInfo.attackSequenceId), this.Sequence.stackItemUID, target, (ICombatant)this.Sequence.attacker, hitInfo, advRes.hitLocations[0].location, false);
+              try {
+                targetActor.Combat.EffectManager.CreateEffect(effectsForTriggerType[index], string.Format("OnDamagedEffect_{0}_{1}", (object)target.GUID, (object)hitInfo.attackSequenceId), this.Sequence.stackItemUID, target, (ICombatant)this.Sequence.attacker, hitInfo, advRes.hitLocations[0].location, false);
+              }catch(Exception e) {
+                ToHit.hitLogger.LogException(e);
+              }
             }
           }
         }

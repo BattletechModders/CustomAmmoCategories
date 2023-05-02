@@ -199,6 +199,14 @@ namespace CustAmmoCategories {
       if (ammo.BreachingShot != TripleBoolean.NotSet) { return ammo.BreachingShot == TripleBoolean.True; }
       return extWeapon.BreachingShot == TripleBoolean.True;
     }
+    public static bool MissInCircle(this Weapon weapon) {
+      ExtAmmunitionDef ammo = weapon.ammo();
+      ExtWeaponDef extWeapon = weapon.exDef();
+      WeaponMode mode = weapon.mode();
+      if (mode.MissInCircle != TripleBoolean.NotSet) { return mode.MissInCircle == TripleBoolean.True; }
+      if (ammo.MissInCircle != TripleBoolean.NotSet) { return ammo.MissInCircle == TripleBoolean.True; }
+      return extWeapon.MissInCircle == TripleBoolean.True;
+    }
     public static float AOERange(this Weapon weapon) {
       float result = 0f;
       ExtAmmunitionDef ammo = weapon.ammo();

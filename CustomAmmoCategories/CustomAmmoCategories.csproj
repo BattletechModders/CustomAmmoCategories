@@ -80,7 +80,7 @@
       <HintPath>$(BattleTechGameDir)\BattleTech_Data\Managed\InControl.dll</HintPath>
     </Reference>
     <Reference Include="IRBTModUtils">
-      <HintPath>$(BattleTechGameDir)\Mods\Core\IRBTModUtils\IRBTModUtils.dll</HintPath>
+      <HintPath>..\..\..\Mods\Core\IRBTModUtils\IRBTModUtils.dll</HintPath>
     </Reference>
     <Reference Include="MessagePack">
       <HintPath>$(BattleTechGameDir)\Mods\Core\CustomPrewarm\MessagePack.dll</HintPath>

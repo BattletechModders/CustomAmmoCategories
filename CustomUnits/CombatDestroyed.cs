@@ -24,6 +24,7 @@ namespace CustomUnits {
       try {
         //HardpointAnimatorHelper.Clear();
         UnitsAnimatedPartsHelper.Clear();
+        CustomMechRepresentation.Clear();
         //ActorMovementSequence_InitDistanceClamp.Clear();
         VTOLBodyAnimationHelper.Clear();
         CombatHUDMechwarriorTray_RefreshTeam.Clear();

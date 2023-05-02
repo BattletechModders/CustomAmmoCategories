@@ -230,6 +230,8 @@ namespace CustAmmoCategories {
         if (distance > Range) { continue; };
         float HeatDamage = heat * (Range - distance) / Range;
         float Damage = AoEDmg * CustomAmmoCategories.Settings.DefaultAoEDamageMult[target.UnitType].Damage * (Range - distance) / Range;
+        HeatDamage *= target.ScaleIncomingHeat();
+        HeatDamage *= target.IncomingHeatMult();
         float StabDamage = stability * (Range - distance) / Range;
         foreach (EffectData effect in effects) {
           string effectID = string.Format("OnComponentAoEExplosionEffect_{0}_{1}", (object)fakeActor.GUID, (object)SequenceID);

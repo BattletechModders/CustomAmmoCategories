@@ -243,22 +243,22 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
          ( (MoveStatusPreview) StatusPreviewProp?.GetValue( __instance, null ) ).MoveTypeText.text = Translate( action );
       }                 catch ( Exception ex ) { Error( ex ); } }
 
-      public static void ScaleMovementDot ( MovementDotMgr.DotType type, GameObject ___dotObject ) { try {
+      public static void ScaleMovementDot (MovementDotMgr.MovementDot __instance, MovementDotMgr.DotType type) { try {
          float size = (float) ( type == MovementDotMgr.DotType.Normal ? AIMSettings.NormalTerrainDotSize : AIMSettings.SpecialTerrainDotSize );
          if ( size == 1 ) return;
-         Vector3 scale = ___dotObject.transform.localScale;
+         Vector3 scale = __instance.dotObject.transform.localScale;
          scale.x *= size;
          scale.y *= size;
-         ___dotObject.transform.localScale = scale;
+        __instance.dotObject.transform.localScale = scale;
       }                 catch ( Exception ex ) { Error( ex ); } }
 
-      public static void ColourMovementDot ( GameObject ___forestDotTemplate, GameObject ___waterDotTemplate, GameObject ___roughDotTemplate, GameObject ___roadDotTemplate, GameObject ___specialDotTemplate, GameObject ___dangerousDotTemplate ) { try {
-         BrightenGameObject( ___forestDotTemplate );
-         BrightenGameObject( ___waterDotTemplate );
-         BrightenGameObject( ___roughDotTemplate );
-         BrightenGameObject( ___roadDotTemplate );
-         BrightenGameObject( ___specialDotTemplate );
-         BrightenGameObject( ___dangerousDotTemplate );
+      public static void ColourMovementDot (CombatMovementReticle __instance) { try {
+         BrightenGameObject(__instance.forestDotTemplate);
+         BrightenGameObject(__instance.waterDotTemplate );
+         BrightenGameObject(__instance.roughDotTemplate );
+         BrightenGameObject(__instance.roadDotTemplate );
+         BrightenGameObject(__instance.specialDotTemplate );
+         BrightenGameObject(__instance.dangerousDotTemplate );
       }                 catch ( Exception ex ) { Error( ex ); } }
 
       private static void BrightenGameObject ( GameObject obj ) {
