@@ -23,7 +23,7 @@ namespace CustomAmmoCategoriesPatches {
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { typeof(MessageCenterMessage) })]
   public static class AttackDirector_OnAttackSequenceFire {
-    public static void Prefix(ref bool __runOriginal, AttackDirector.AttackSequence __instance,MessageCenterMessage message, List<List<Weapon>> ___sortedWeapons, int[][] ___numberOfShots, WeaponHitInfo?[][] ___weaponHitInfo) {
+    public static void Prefix(ref bool __runOriginal, AttackDirector.AttackSequence __instance,MessageCenterMessage message) {
       if (!__runOriginal) { return; }
       Log.Combat?.TWL(0, "AttackDirector.OnAttackSequenceFire");
       //Log.LogWrite("WeaponHitInfo.ConsolidateInstability\n");
@@ -33,14 +33,14 @@ namespace CustomAmmoCategoriesPatches {
         if (sequenceFireMessage.sequenceId != __instance.id) { __runOriginal = false;  return; }
         int groupIdx = sequenceFireMessage.groupIdx;
         int weaponIdx = sequenceFireMessage.weaponIdx;
-        Weapon weapon = ___sortedWeapons[groupIdx][weaponIdx];
+        Weapon weapon = __instance.sortedWeapons[groupIdx][weaponIdx];
         if (AttackDirector.attackLogger.IsDebugEnabled)
           AttackDirector.attackLogger.LogDebug(("MeleeType = " + __instance.meleeAttackType.ToString()));
         if (AttackDirector.AttackSequence.logger.IsLogEnabled)
           AttackDirector.AttackSequence.logger.Log(string.Format("[OnAttackSequenceFire] ID {0}, Group {1}, Weapon {2}, Weapon Name {3}", __instance.id, groupIdx, weaponIdx, weapon.Name));
         if (AttackDirector.hitminLogger.IsLogEnabled)
           AttackDirector.hitminLogger.Log(string.Format("============================================================= STARTING NEW ATTACK SEQUENCE FOR {0} (ID {1}):", weapon.Name, weaponIdx));
-        int numberOfShots = ___numberOfShots[groupIdx][weaponIdx];
+        int numberOfShots = __instance.numberOfShots[groupIdx][weaponIdx];
         if (numberOfShots == -1) {
           if (weapon.HasPreFired)
             AttackDirector.AttackSequence.logger.LogError(string.Format("[OnAttackSequenceFire] Weapon {0} should not have prefired if it wasn't going to fire!", weapon.Name));
@@ -54,7 +54,7 @@ namespace CustomAmmoCategoriesPatches {
             __instance.Director.Combat.MessageCenter.PublishMessage(new AttackSequenceWeaponPreFireCompleteMessage(__instance.stackItemUID, __instance.id, groupIdx, weaponIdx));
             __instance.Director.Combat.MessageCenter.PublishMessage(new AttackSequenceWeaponCompleteMessage(__instance.stackItemUID, __instance.id, groupIdx, weaponIdx));
           } else {
-            WeaponHitInfo? nullable = ___weaponHitInfo[groupIdx][weaponIdx];
+            WeaponHitInfo? nullable = __instance.weaponHitInfo[groupIdx][weaponIdx];
             WeaponHitInfo hitInfo;
             if (nullable.HasValue) {
               hitInfo = nullable.Value;

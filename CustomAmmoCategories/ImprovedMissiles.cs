@@ -26,11 +26,11 @@ namespace CustAmmoCategoriesPatches {
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { })]
   public static class MissileLauncherEffect_SetupMissiles {
-    public static void Postfix(MissileLauncherEffect __instance, bool ___isIndirect) {
+    public static void Postfix(MissileLauncherEffect __instance) {
       Log.Combat?.WL(0,"MissileLauncherEffect.SetupMissiles " + __instance.weapon.defId);
       if (__instance.weapon.isImprovedBallistic() == false) { return; };
       BaseHardPointAnimationController animation = __instance.weapon.HardpointAnimator();
-      if (animation != null) { animation.PrefireAnimation(__instance.hitInfo.hitPositions[0], ___isIndirect); };
+      if (animation != null) { animation.PrefireAnimation(__instance.hitInfo.hitPositions[0], __instance.isIndirect); };
       float firingIntervalM = __instance.weapon.MissileFiringIntervalMultiplier();
       float volleyIntervalM = __instance.weapon.MissileVolleyIntervalMultiplier();
       if (firingIntervalM > CustomAmmoCategories.Epsilon) {
@@ -169,10 +169,10 @@ namespace CustAmmoCategoriesPatches {
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { })]
   public static class MissileEffect_DestroyFlimsyObjects {
-    public static void Prefix(ref bool __runOriginal, MissileEffect __instance, int ___hitIndex) {
+    public static void Prefix(ref bool __runOriginal, MissileEffect __instance) {
       if (!__runOriginal) { return; }
       Log.Combat?.WL(0, "MissileEffect.DestroyFlimsyObjects " + __instance.weapon.defId);
-      AdvWeaponHitInfoRec cached = __instance.hitInfo.advRec(___hitIndex);
+      AdvWeaponHitInfoRec cached = __instance.hitInfo.advRec(__instance.hitIndex);
       if (cached == null) { return; }
       if (cached.interceptInfo.Intercepted) {
         Log.Combat?.WL(1, "intercepted. not DestroyFlimsyObjects");
@@ -187,9 +187,9 @@ namespace CustAmmoCategoriesPatches {
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { })]
   public static class MissileEffect_PlayImpact {
-    public static void Postfix(MissileEffect __instance, int ___hitIndex) {
+    public static void Postfix(MissileEffect __instance) {
       Log.Combat?.WL(0, "MissileEffect.PlayImpact " + __instance.weapon.defId);
-      AdvWeaponHitInfoRec cached = __instance.hitInfo.advRec(___hitIndex);
+      AdvWeaponHitInfoRec cached = __instance.hitInfo.advRec(__instance.hitIndex);
       if (cached == null) { return; }
       if (cached.interceptInfo.Intercepted) {
         string str1 = "_" + __instance.impactVFXVariations[Random.Range(0, __instance.impactVFXVariations.Length)];
@@ -205,7 +205,7 @@ namespace CustAmmoCategoriesPatches {
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { typeof(string) })]
   public static class MissileEffect_SpawnImpactExplosion {
-    public static bool Prefix(MissileEffect __instance, string explosionName, AkGameObj ___projectileAudioObject,Vector3 ___endPos,Vector3 ___preFireEndPos) {
+    public static bool Prefix(MissileEffect __instance, string explosionName) {
       Log.Combat?.WL(0, "MissileEffect.SpawnImpactExplosion " + __instance.weapon.defId);
       if (__instance.weapon.isImprovedBallistic() == false) { return true; }
       GameObject gameObject = __instance.weapon.parent.Combat.DataManager.PooledInstantiate(explosionName, BattleTechResourceType.Prefab, new Vector3?(), new Quaternion?(), (Transform)null);
@@ -218,8 +218,8 @@ namespace CustAmmoCategoriesPatches {
         BTWindZone componentInChildren2 = gameObject.GetComponentInChildren<BTWindZone>(true);
         component.Stop(true);
         component.Clear(true);
-        component.transform.position = ___endPos;
-        component.transform.LookAt(___preFireEndPos);
+        component.transform.position = __instance.endPos();
+        component.transform.LookAt(__instance.preFireEndPos);
         BTCustomRenderer.SetVFXMultiplier(component);
         component.Play(true);
         if (componentInChildren1 != null) {
@@ -237,9 +237,9 @@ namespace CustAmmoCategoriesPatches {
         autoPoolObject.Init(__instance.weapon.parent.Combat.DataManager, explosionName, component);
         gameObject.transform.rotation = Random.rotationUniform;
         if (__instance.isSRM) {
-          int num1 = (int)WwiseManager.PostEvent<AudioEventList_explosion>(AudioEventList_explosion.explosion_large, ___projectileAudioObject, (AkCallbackManager.EventCallback)null, (object)null);
+          int num1 = (int)WwiseManager.PostEvent<AudioEventList_explosion>(AudioEventList_explosion.explosion_large, __instance.projectileAudioObject(), (AkCallbackManager.EventCallback)null, (object)null);
         } else {
-          int num2 = (int)WwiseManager.PostEvent<AudioEventList_explosion>(AudioEventList_explosion.explosion_medium, ___projectileAudioObject, (AkCallbackManager.EventCallback)null, (object)null);
+          int num2 = (int)WwiseManager.PostEvent<AudioEventList_explosion>(AudioEventList_explosion.explosion_medium, __instance.projectileAudioObject(), (AkCallbackManager.EventCallback)null, (object)null);
         }
         __instance.DestroyFlimsyObjects();
       }
@@ -282,21 +282,21 @@ namespace CustAmmoCategoriesPatches {
         return;
       launcher.FireNextMissile();
     }
-    public static void Prefix(ref bool __runOriginal,MissileLauncherEffect __instance, ref int ___emitterIndex, AkGameObj ___parentAudioObject) {
+    public static void Prefix(ref bool __runOriginal,MissileLauncherEffect __instance) {
       if (!__runOriginal) { return; }
       Log.Combat?.WL(0,"MissileLauncherEffect.FireNextMissile " + __instance.weapon.defId);
       if (__instance.weapon.isImprovedBallistic() == false) { return; }
-      ___emitterIndex = ___emitterIndex % __instance.numberOfEmitters();
-      Log.Combat?.WL(1, "hitIndex: " + __instance.hitIndex + "/"+__instance.hitInfo.numberOfShots+" emmiter: "+___emitterIndex+"/"+ __instance.numberOfEmitters() + " volley: "+__instance.volleyInfo().missileVolleyId+"/"+__instance.volleyInfo().misileVolleySize);
+      __instance.emitterIndex(__instance.emitterIndex() % __instance.numberOfEmitters());
+      Log.Combat?.WL(1, "hitIndex: " + __instance.hitIndex + "/"+__instance.hitInfo.numberOfShots+" emmiter: "+ __instance.emitterIndex() +"/"+ __instance.numberOfEmitters() + " volley: "+__instance.volleyInfo().missileVolleyId+"/"+__instance.volleyInfo().misileVolleySize);
       if (__instance.hitIndex < __instance.hitInfo.numberOfShots && __instance.volleyInfo().missileVolleyId < __instance.volleyInfo().misileVolleySize) {
         __instance.LaunchMissile();
         ++(__instance.volleyInfo().missileVolleyId);
       }
       if (__instance.hitIndex >= __instance.hitInfo.numberOfShots) {
         if (__instance.isSRM) {
-          int num1 = (int)WwiseManager.PostEvent<AudioEventList_srm>(AudioEventList_srm.srm_launcher_end, ___parentAudioObject, (AkCallbackManager.EventCallback)null, (object)null);
+          int num1 = (int)WwiseManager.PostEvent<AudioEventList_srm>(AudioEventList_srm.srm_launcher_end, __instance.parentAudioObject(), (AkCallbackManager.EventCallback)null, (object)null);
         } else {
-          int num2 = (int)WwiseManager.PostEvent<AudioEventList_lrm>(AudioEventList_lrm.lrm_launcher_end, ___parentAudioObject, (AkCallbackManager.EventCallback)null, (object)null);
+          int num2 = (int)WwiseManager.PostEvent<AudioEventList_lrm>(AudioEventList_lrm.lrm_launcher_end, __instance.parentAudioObject(), (AkCallbackManager.EventCallback)null, (object)null);
         }
         __instance.currentState = WeaponEffect.WeaponEffectState.WaitingForImpact;
       } else {

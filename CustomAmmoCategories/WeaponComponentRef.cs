@@ -35,7 +35,7 @@ namespace CustAmmoCategories {
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { typeof(LocationLoadoutDef) })]
   public static class MechLabLocationWidget_SetData {
-    public static void Postfix(MechLabLocationWidget __instance, LocationLoadoutDef loadout, ref List<MechLabItemSlotElement> ___localInventory) {
+    public static void Postfix(MechLabLocationWidget __instance, LocationLoadoutDef loadout) {
       try {
         var mechLabPanel = __instance.GetComponentInParent<MechLabPanel>();
         foreach (var invitem in mechLabPanel.activeMechInventory) {

@@ -37,20 +37,20 @@ namespace WeaponRealizer {
       BallisticEffect_OnImpact = MethodInvoker.GetHandler(mi);
     }
 
-    static bool Prefix(ref int ___hitIndex, BallisticEffect __instance) {
+    static bool Prefix(BallisticEffect __instance) {
       var damage = __instance.weapon.DamagePerShotAdjusted(__instance.weapon.parent.occupiedDesignMask);
       var apDamage = __instance.weapon.StructureDamagePerShotAdjusted(__instance.weapon.parent.occupiedDesignMask);
       BallisticEffect_OnImpact.Invoke(__instance, new object[] { damage
         , apDamage
       });
-      if (___hitIndex >= __instance.hitInfo.numberOfShots - 1) {
+      if (__instance.hitIndex >= __instance.hitInfo.numberOfShots - 1) {
         WeaponEffect_OnComplete(__instance);
         return false;
       }
 
-      ___hitIndex++;
-      if (ShouldFire(__instance, ___hitIndex)) {
-        __instance.Fire(__instance.hitInfo, ___hitIndex, 0);
+      __instance.hitIndex++;
+      if (ShouldFire(__instance, __instance.hitIndex)) {
+        __instance.Fire(__instance.hitInfo, __instance.hitIndex, 0);
       }
       return false;
     }
@@ -79,10 +79,10 @@ namespace WeaponRealizer {
       return Core.ModSettings.LaserNumberOfShots;
     }
 
-    static void Postfix(ref int ___hitIndex, LaserEffect __instance) {
-      if (___hitIndex >= __instance.hitInfo.numberOfShots - 1) return;
-      ___hitIndex++;
-      __instance.Fire(__instance.hitInfo, ___hitIndex);
+    static void Postfix(LaserEffect __instance) {
+      if (__instance.hitIndex >= __instance.hitInfo.numberOfShots - 1) return;
+      __instance.hitIndex++;
+      __instance.Fire(__instance.hitInfo, __instance.hitIndex);
     }
   }
 

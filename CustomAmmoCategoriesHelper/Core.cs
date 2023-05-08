@@ -13,6 +13,7 @@ namespace CustomAmmoCategoriesHelper{
     public static void OnComplete(this WeaponEffect effect) { effect.OnComplete(); }
     public static CombatGameState Combat(this WeaponEffect effect) { return effect.Combat; }
     public static int emitterIndex(this WeaponEffect effect) { return effect.emitterIndex; }
+    public static void emitterIndex(this WeaponEffect effect, int val) { effect.emitterIndex = val; }
     public static int numberOfEmitters(this WeaponEffect effect) { return effect.numberOfEmitters; }
     public static AkGameObj parentAudioObject(this WeaponEffect effect) { return effect.parentAudioObject; }
     public static Transform startingTransform(this WeaponEffect effect) { return effect.startingTransform; }

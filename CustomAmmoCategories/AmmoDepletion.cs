@@ -744,16 +744,16 @@ namespace CustAmmoCategories {
       }
       return true;
     }
-    public static bool Prefix(LanceMechEquipmentList __instance,ref MechDef ___activeMech, ref List<GameObject> ___allComponents, DataManager ___dataManager, LocalizableText headerLabel, UIColorRefTracker headerColor, Transform layoutParent, ChassisLocations location, ref UIColor __state) {
+    public static bool Prefix(LanceMechEquipmentList __instance, LocalizableText headerLabel, UIColorRefTracker headerColor, Transform layoutParent, ChassisLocations location, ref UIColor __state) {
       try {
         if (UnityGameInstance.BattleTechGame.Simulation == null) { return true; }
-        Log.M?.TWL(0, "LanceMechEquipmentList.SetLoadout "+ ___activeMech.Description.Id+" "+location);
-        LocationLoadoutDef locationLoadoutDef = ___activeMech.GetLocationLoadoutDef(location);
+        Log.M?.TWL(0, "LanceMechEquipmentList.SetLoadout "+ __instance.activeMech.Description.Id+" "+location);
+        LocationLoadoutDef locationLoadoutDef = __instance.activeMech.GetLocationLoadoutDef(location);
         float currentArmor = locationLoadoutDef.CurrentArmor;
         float currentRearArmor = locationLoadoutDef.CurrentRearArmor;
         float assignedRearArmor = locationLoadoutDef.AssignedRearArmor;
         float internalStructure1 = locationLoadoutDef.CurrentInternalStructure;
-        float internalStructure2 = ___activeMech.Chassis.GetLocationDef(location).InternalStructure;
+        float internalStructure2 = __instance.activeMech.Chassis.GetLocationDef(location).InternalStructure;
         if ((double)internalStructure1 <= 0.0) {
           headerColor.SetUIColor(UIColor.Red);
         } else if ((double)currentArmor <= 0.0 || (double)assignedRearArmor > 0.0 && (double)currentRearArmor <= 0.0 || (double)internalStructure1 < (double)internalStructure2) {
@@ -761,10 +761,10 @@ namespace CustAmmoCategories {
         } else {
           headerColor.SetUIColor(UIColor.White);
         }
-        for (int index = 0; index < ___activeMech.Inventory.Length; ++index) {
-          MechComponentRef componentRef = ___activeMech.Inventory[index];
+        for (int index = 0; index < __instance.activeMech.Inventory.Length; ++index) {
+          MechComponentRef componentRef = __instance.activeMech.Inventory[index];
           if (componentRef.CC_MountedLocation() == location) {
-            GameObject gameObject = ___dataManager.PooledInstantiate("uixPrfPanl_LC_MechLoadoutItem", BattleTechResourceType.UIModulePrefabs, new Vector3?(), new Quaternion?(), (Transform)null);
+            GameObject gameObject = __instance.dataManager.PooledInstantiate("uixPrfPanl_LC_MechLoadoutItem", BattleTechResourceType.UIModulePrefabs, new Vector3?(), new Quaternion?(), (Transform)null);
             LanceMechEquipmentListItem component = gameObject.GetComponent<LanceMechEquipmentListItem>();
             UIColor bgColor = MechComponentRef.GetUIColor(componentRef);
             if (componentRef.DamageLevel == ComponentDamageLevel.Destroyed) { bgColor = UIColor.Disabled; }
@@ -804,10 +804,10 @@ namespace CustAmmoCategories {
               }
             }
             if (setDefaultName) { component.SetData(componentRef.Def.Description.UIName, componentRef.DamageLevel, UIColor.White, bgColor); }
-            component.SetComponentRef(componentRef, ___activeMech);
+            component.SetComponentRef(componentRef, __instance.activeMech);
             component.SetTooltipData(componentRef.Def);
             gameObject.transform.SetParent(layoutParent, false);
-            ___allComponents.Add(gameObject);
+            __instance.allComponents.Add(gameObject);
           }
         }
         return false;
@@ -860,24 +860,24 @@ namespace CustAmmoCategories {
       }
       return false;
     }
-    public static void Postfix(MechLabItemSlotElement __instance, ref LocalizableText ___nameText) {
+    public static void Postfix(MechLabItemSlotElement __instance) {
       try {
         if (UnityGameInstance.BattleTechGame.Simulation == null) { return; }
         if (__instance.ammoBoxDef != null) {
           if (__instance.ammoBoxDef.getAmmoCapacity(out int ammocount, out int capacity)) {
             if (ammocount >= 0) {
-              ___nameText.SetText("{0} {1}/{2}", (object)__instance.ammoBoxDef.Description.UIName, Math.Min(capacity, ammocount), ammocount);
+              __instance.nameText.SetText("{0} {1}/{2}", (object)__instance.ammoBoxDef.Description.UIName, Math.Min(capacity, ammocount), ammocount);
             } else {
-              ___nameText.SetText("{0} {1}", (object)__instance.ammoBoxDef.Description.UIName, capacity);
+              __instance.nameText.SetText("{0} {1}", (object)__instance.ammoBoxDef.Description.UIName, capacity);
             }
           }
         }else
         if(__instance.weaponDef != null) {
           if (__instance.weaponDef.getAmmoCapacity(out int ammocount, out int capacity)) {
             if (ammocount >= 0) {
-              ___nameText.SetText("{0} {1}/{2}", (object)__instance.weaponDef.Description.UIName, Math.Min(capacity, ammocount), ammocount);
+              __instance.nameText.SetText("{0} {1}/{2}", (object)__instance.weaponDef.Description.UIName, Math.Min(capacity, ammocount), ammocount);
             } else {
-              ___nameText.SetText("{0} {1}", (object)__instance.weaponDef.Description.UIName, capacity);
+              __instance.nameText.SetText("{0} {1}", (object)__instance.weaponDef.Description.UIName, capacity);
             }
           }
         }

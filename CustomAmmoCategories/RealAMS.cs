@@ -709,8 +709,8 @@ namespace CustomAmmoCategoriesPatches {
       __instance.hitInfo.dodgeRolls[hitIndex] = cachedCurve.interceptInfo.getAMSShootT();
       return;
     }
-    public static void Postfix(MissileEffect __instance, int ___hitIndex) {
-      AdvWeaponHitInfoRec cachedCurve = __instance.hitInfo.advRec(___hitIndex);
+    public static void Postfix(MissileEffect __instance) {
+      AdvWeaponHitInfoRec cachedCurve = __instance.hitInfo.advRec(__instance.hitIndex);
       if (cachedCurve == null) {
         if (__instance.weapon.isImprovedBallistic() == false) { return; };
         Log.Combat?.W(0, "Altering missile speed (rate) " + __instance.rate() + " -> ");

@@ -453,7 +453,7 @@ namespace CustomAmmoCategoriesPatches {
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { typeof(bool), typeof(bool) })]
   public static class Pilot_InitAbilities {
-    public static void Postfix(Pilot __instance, bool ModifyStats, bool FromSave, List<AbilityStateInfo> ___SerializedAbilityStates) {
+    public static void Postfix(Pilot __instance, bool ModifyStats, bool FromSave) {
       var log = __instance.Combat == null ? Log.M : Log.Combat;
       try {
         log?.TWL(0, "Pilot.InitAbilities " + __instance.Description.Id);
@@ -463,8 +463,8 @@ namespace CustomAmmoCategoriesPatches {
         Ability ability = new Ability(abilityDef);
         AbilityStateInfo LoadedState = (AbilityStateInfo)null;
         CombatGameState Combat = __instance.Combat;
-        if (___SerializedAbilityStates != null)
-          LoadedState = ___SerializedAbilityStates.FirstOrDefault<AbilityStateInfo>((Func<AbilityStateInfo, bool>)(x => x.AbilityDefID == abilityDef.Id));
+        if (__instance.SerializedAbilityStates != null)
+          LoadedState = __instance.SerializedAbilityStates.FirstOrDefault<AbilityStateInfo>((Func<AbilityStateInfo, bool>)(x => x.AbilityDefID == abilityDef.Id));
         if (FromSave && LoadedState != null)
           ability.InitFromSave(Combat, LoadedState);
         else

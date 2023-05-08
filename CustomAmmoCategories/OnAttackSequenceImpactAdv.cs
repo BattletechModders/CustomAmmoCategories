@@ -20,56 +20,6 @@ using System.Reflection;
 using System.Reflection.Emit;
 using UnityEngine;
 
-namespace CustomAmmoCategoriesPatches {
-  /*[HarmonyPatch(typeof(MessageCoordinator))]
-  [HarmonyPatch("CanProcessMessage")]
-  [HarmonyPatch(MethodType.Normal)]
-  [HarmonyPatch(new Type[] { typeof(AttackSequenceImpactMessage) })]
-  public static class MessageCoordinator_CanProcessMessage {
-    private delegate bool IsImpactMessageAHitDelegate(MessageCoordinator coordinator, AttackSequenceImpactMessage message);
-    private static IsImpactMessageAHitDelegate IsImpactMessageAHitIvoker = null;
-    private delegate bool MessageMatchesNextExpectedMesssageDelegate(MessageCoordinator coordinator, AttackSequenceImpactMessage message);
-    private static IsImpactMessageAHitDelegate MessageMatchesNextExpectedMesssageIvoker = null;
-    private static FieldInfo expectedMessages
-    public static bool Prepare() {
-      {
-        MethodInfo IsImpactMessageAHit = typeof(MessageCoordinator).GetMethod("IsImpactMessageAHit", BindingFlags.Instance | BindingFlags.NonPublic);
-        var dm = new DynamicMethod("CACIsImpactMessageAHit", typeof(bool), new Type[] { typeof(MessageCoordinator), typeof(AttackSequenceImpactMessage) }, typeof(MessageCoordinator));
-        var gen = dm.GetILGenerator();
-        gen.Emit(OpCodes.Ldarg_0);
-        gen.Emit(OpCodes.Ldarg_1);
-        gen.Emit(OpCodes.Call, IsImpactMessageAHit);
-        gen.Emit(OpCodes.Ret);
-        IsImpactMessageAHitIvoker = (IsImpactMessageAHitDelegate)dm.CreateDelegate(typeof(IsImpactMessageAHitDelegate));
-      }
-      return true;
-    }
-    public static bool IsImpactMessageAHit(this MessageCoordinator coordinator, AttackSequenceImpactMessage message) {
-      return IsImpactMessageAHitIvoker(coordinator, message);
-    }
-    public static bool 
-    public static bool Prefix(MessageCoordinator __instance, AttackSequenceImpactMessage impactMessage, List<ExpectedMessage> ___expectedMessages, int ___expectedMessageIndex, ref bool __result) {
-      if (!__instance.IsImpactMessageAHit(impactMessage)) {
-        if (MessageCoordinator.logger.IsDebugEnabled)
-          MessageCoordinator.logger.LogDebug((object)string.Format("{0} is a miss. trigger it now", (object)__instance.MessageToString((MessageCenterMessage)impactMessage)));
-        return true;
-      }
-      bool flag = __instance.MessageMatchesNextExpectedMesssage((MessageCenterMessage)impactMessage);
-      if (MessageCoordinator.logger.IsDebugEnabled) {
-        if (flag)
-          MessageCoordinator.logger.LogDebug((object)string.Format("Message {0} matches next message. trigger it now.", (object)__instance.MessageToString((MessageCenterMessage)impactMessage)));
-        else
-          MessageCoordinator.logger.LogDebug((object)string.Format("Message {0} must be stored.", (object)__instance.MessageToString((MessageCenterMessage)impactMessage)));
-      }
-      if (flag)
-        __instance.GetNextExpectedMessage().ClearForProcessing();
-      return flag;
-
-    }
-  }*/
-
-}
-
 namespace CustAmmoCategories {
   public enum ShowMissBehavior { None,Vanilla,Default,All }
   public static class OnAttackSeuenceImpactHelper {

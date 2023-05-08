@@ -149,7 +149,7 @@ namespace CustAmmoCategoriesPatches {
       }
       fSidePanelNeedToBeRefreshed = false;
     }
-    public static void Prefix(ref bool __runOriginal, CombatHUDInfoSidePanel __instance,ref bool ___shownForSingleFrame) {
+    public static void Prefix(ref bool __runOriginal, CombatHUDInfoSidePanel __instance) {
       if (!__runOriginal) { return; }
       if (BTInput.Instance.DynamicActions.Enabled == false) { return; }
       if (__instance.HUD() == null) { return; }
@@ -158,10 +158,10 @@ namespace CustAmmoCategoriesPatches {
       if (__instance.HUD().SelectedActor.IsDeployDirector()) { return; }
       if (__instance.HUD().SelectionHandler.ActiveState.Orders != null) { return; }
       if (__instance.IsHovered) { fTextNeedToBeRefreshed = true; return; }
-      if (__instance.forceShown || ___shownForSingleFrame || __instance.stayShown) { fTextNeedToBeRefreshed = true; return; }
+      if (__instance.forceShown || __instance.shownForSingleFrame || __instance.stayShown) { fTextNeedToBeRefreshed = true; return; }
       if (fSidePanelNeedToBeRefreshed) { fTextNeedToBeRefreshed = true; __instance.HUD().UpdateInfoText(); }
       if (fTextNeedToBeRefreshed) { __instance.ForceShowSingleFrame(title, description, null, false); fTextNeedToBeRefreshed = false; } else {
-        ___shownForSingleFrame = true;
+        __instance.shownForSingleFrame = true;
       }
     }
   }

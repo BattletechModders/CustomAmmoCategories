@@ -157,18 +157,18 @@ namespace CustAmmoCategories {
         gameObject.transform.localScale = Vector3.one;
       }
     }
-    public static void Postfix(AAR_UnitStatusWidget __instance, UnitResult ___UnitData, DataManager ___dm, RectTransform ___KillGridParent) {
+    public static void Postfix(AAR_UnitStatusWidget __instance) {
       try {
         if (CustomAmmoCategories.Settings.StatisticOnResultScreenEnabled == false) { return; }
-        Log.Combat?.TWL(0, $"AAR_UnitStatusWidget.InitData GUID:{___UnitData.mech.GUID}");
-        UnitCombatStatistic stat = ___UnitData.stat();
+        Log.Combat?.TWL(0, $"AAR_UnitStatusWidget.InitData GUID:{__instance.UnitData.mech.GUID}");
+        UnitCombatStatistic stat = __instance.UnitData.stat();
         if (stat == null) { return; }
         foreach(var killed in stat.killedUnits) {
-          AddKilled(___dm, ___KillGridParent, killed);
+          AddKilled(__instance.dm, __instance.KillGridParent, killed);
         }
         Log.Combat?.WL(1,"clearing killed stat");
-        ___UnitData.statClear();
-        Log.Combat?.WL(1, $"now killed units:{___UnitData.stat().killedUnits}");
+        __instance.UnitData.statClear();
+        Log.Combat?.WL(1, $"now killed units:{__instance.UnitData.stat().killedUnits}");
       } catch (Exception e) {
         Log.Combat?.TWL(0, e.ToString(), true);
         UIManager.logger.LogException(e);
@@ -244,10 +244,10 @@ namespace CustAmmoCategories {
   [HarmonyPatch("AddKilledMech")]
   [HarmonyPatch(MethodType.Normal)]
   public static class AAR_UnitStatusWidget_AddKilledMech {
-    public static bool Prefix(AAR_UnitStatusWidget __instance, UnitResult ___UnitData) {
+    public static bool Prefix(AAR_UnitStatusWidget __instance) {
       try {
         if (CustomAmmoCategories.Settings.StatisticOnResultScreenEnabled == false) { return true; }
-        if (___UnitData.stat() != null) { return false; }
+        if (__instance.UnitData.stat() != null) { return false; }
       } catch (Exception e) {
         Log.M?.TWL(0, e.ToString(), true);
       }
@@ -258,10 +258,10 @@ namespace CustAmmoCategories {
   [HarmonyPatch("AddKilledVehicle")]
   [HarmonyPatch(MethodType.Normal)]
   public static class AAR_UnitStatusWidget_AddKilledVehicle {
-    public static bool Prefix(AAR_UnitStatusWidget __instance, UnitResult ___UnitData) {
+    public static bool Prefix(AAR_UnitStatusWidget __instance) {
       try {
         if (CustomAmmoCategories.Settings.StatisticOnResultScreenEnabled == false) { return true; }
-        if (___UnitData.stat() != null) { return false; }
+        if (__instance.UnitData.stat() != null) { return false; }
       } catch (Exception e) {
         Log.Combat?.TWL(0, e.ToString(), true);
         UIManager.logger.LogException(e);

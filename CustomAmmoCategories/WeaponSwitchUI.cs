@@ -175,27 +175,6 @@ namespace CustomAmmoCategoriesPatches {
       return;
     }
   }
-  //[HarmonyPatch(typeof(ActorMovementSequence))]
-  //[HarmonyPatch("Update")]
-  //[HarmonyPatch(MethodType.Normal)]
-  //[HarmonyPatch(new Type[] { })]
-  //public static class ActorMovementSequence_Update_Debug {
-  //  private static bool originalcall = false;
-  //  public static bool Prefix(ActorMovementSequence __instance, float ___distanceMovedThisFrame) {
-  //    if (originalcall) { return true; }
-  //    originalcall = true;
-  //    try {
-  //      __instance.Update();
-  //      Transform MoverTransform = Traverse.Create(__instance).Property<Transform>("MoverTransform").Value;
-  //      MovementCapabilitiesDef Capabilities = Traverse.Create(__instance).Property<MovementCapabilitiesDef>("Capabilities").Value;
-  //      //Log.M.TWL(0, "ActorMovementSequence.Update " + MoverTransform.name+" pos:"+ MoverTransform.position+ " Velocity:" + __instance.Velocity+" distFrame:"+ ___distanceMovedThisFrame+" capabilities:"+Capabilities.Description.Id+" sprint:"+ Capabilities.SprintVelocity+ " MaxVelAdjusted:"+__instance.MaxVelAdjusted);
-  //    } catch (Exception e) {
-  //      Log.M.TWL(0, e.ToString(), true);
-  //    }
-  //    originalcall = false;
-  //    return false;
-  //  }
-  //}
   [HarmonyPatch(typeof(SelectionStateMove))]
   [HarmonyPatch("OnAddToStack")]
   [HarmonyPatch(MethodType.Normal)]
@@ -2788,12 +2767,12 @@ namespace CustomAmmoCategoriesPatches {
       }
       return true;
     }
-    public static void Postfix(CombatHUDWeaponPanel __instance, ref List<Weapon> ___sortedWeaponsList) {
+    public static void Postfix(CombatHUDWeaponPanel __instance) {
       try {
         if (__instance.DisplayedActor == null) { return; }
         if (sortedWeaponsByActor.ContainsKey(__instance.DisplayedActor) == false) {
           List<Weapon> sorted = new List<Weapon>();
-          sorted.AddRange(___sortedWeaponsList);
+          sorted.AddRange(__instance.sortedWeaponsList);
           sortedWeaponsByActor.Add(__instance.DisplayedActor, sorted);
         }
       } catch (Exception e) {
@@ -2824,7 +2803,7 @@ namespace CustomAmmoCategoriesPatches {
     public static void AddAdditionalInitCalls(Action<CombatHUDWeaponPanel> onInit) {
       additionalInit.Add(onInit);
     }
-    public static void Postfix(CombatHUDWeaponPanel __instance, List<CombatHUDWeaponSlot> ___WeaponSlots, CombatGameState Combat, CombatHUD HUD) {
+    public static void Postfix(CombatHUDWeaponPanel __instance, CombatGameState Combat, CombatHUD HUD) {
       try {
         Log.Combat?.TWL(0, "CombatHUDWeaponPanel.Init");
         //return;
@@ -2930,7 +2909,7 @@ namespace CustomAmmoCategoriesPatches {
       rectTransform.GetWorldCorners(corners);
       return corners[3].x - corners[0].x;
     }
-    public static void Postfix(CombatHUDWeaponPanel __instance, List<CombatHUDWeaponSlot> ___WeaponSlots, bool consideringJump, bool useCOILPathingPreview, CombatHUDWeaponSlot ___meleeSlot, CombatHUDWeaponSlot ___dfaSlot) {
+    public static void Postfix(CombatHUDWeaponPanel __instance, bool consideringJump, bool useCOILPathingPreview) {
       last_consideringJump = consideringJump;
       last_useCOILPathingPreview = useCOILPathingPreview;
       CombatHUDWeaponPanelEx panelEx = __instance.gameObject.GetComponent<CombatHUDWeaponPanelEx>();

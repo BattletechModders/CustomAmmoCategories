@@ -442,7 +442,6 @@ namespace CustAmmoCategories {
         __result.debugOrderString = "CAC improved brace";
         __result.behaviorTrace = "CAC improved brace";
         __instance.unit.BracedWithFireThisRound();
-        //___unit.HasFiredThisRound = true;
         return false;
       }catch(Exception e) {
         Log.M.TWL(0, e.ToString(), true);
