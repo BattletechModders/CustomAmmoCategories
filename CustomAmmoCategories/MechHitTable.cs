@@ -38,22 +38,24 @@ namespace CustomAmmoCategoriesPatches {
     }
     public static bool Prefix(Vector3 attackerPosition, Mech m, Vector3 targetPosition, Quaternion targetRotation, ref Dictionary<ArmorLocation, float> __result) {
       try {
-        Log.M.TWL(0, "AIAttackEvaluator.GetLocationDictionary Prefix " + (m != null ? m.Description.Id : "null") + " threadid:" + Thread.CurrentThread.ManagedThreadId);
+        Log.Combat?.TWL(0, "AIAttackEvaluator.GetLocationDictionary Prefix " + (m != null ? m.Description.Id : "null") + " threadid:" + Thread.CurrentThread.ManagedThreadId);
         Thread.CurrentThread.pushActor(m);
         AttackDirection attackDirection = AIAttackEvaluator_GetLocationDictionary.GetAttackDirection(attackerPosition, (AbstractActor)m, targetPosition, targetRotation);
         __result = AIAttackEvaluator_GetLocationDictionary.HitTableToLocationDirectory<ArmorLocation>(m.Combat.HitLocation.GetMechHitTableCustom(attackDirection, m, Thread.CurrentThread.currentWeapon(), -1));
         return false;
       } catch (Exception e) {
-        Log.M.TWL(0, e.ToString(), true);
+        Log.Combat?.TWL(0, e.ToString(), true);
+        AbstractActor.logger.LogException(e);
         return true;
       }
     }
     public static void Postfix(Vector3 attackerPosition, Mech m, Vector3 targetPosition, Quaternion targetRotation) {
       try {
-        Log.M.TWL(0, "AIAttackEvaluator.GetLocationDictionary Postfix " + (m != null ? m.Description.Id : "null") + " threadid:" + Thread.CurrentThread.ManagedThreadId);
+        Log.Combat?.TWL(0, "AIAttackEvaluator.GetLocationDictionary Postfix " + (m != null ? m.Description.Id : "null") + " threadid:" + Thread.CurrentThread.ManagedThreadId);
         Thread.CurrentThread.clearActor();
       } catch (Exception e) {
-        Log.M.TWL(0, e.ToString(), true);
+        Log.Combat?.TWL(0, e.ToString(), true);
+        AbstractActor.logger.LogException(e);
       }
     }
   }
@@ -65,14 +67,16 @@ namespace CustomAmmoCategoriesPatches {
       try {
         Thread.CurrentThread.pushWeapon(w);
       } catch (Exception e) {
-        Log.M.TWL(0, e.ToString(), true);
+        Log.Combat?.TWL(0, e.ToString(), true);
+        AbstractActor.logger.LogException(e);
       }
     }
     public static void Postfix() {
       try {
         Thread.CurrentThread.clearWeapon();
       } catch (Exception e) {
-        Log.M.TWL(0, e.ToString(), true);
+        Log.Combat?.TWL(0, e.ToString(), true);
+        AbstractActor.logger.LogException(e);
       }
     }
   }
@@ -127,7 +131,8 @@ namespace CustomAmmoCategoriesPatches {
         }
         target.HandleDeath("Artillery");
       } catch (Exception e) {
-        Log.M.TWL(0, e.ToString(), true);
+        Log.Combat?.TWL(0, e.ToString(), true);
+        AbstractActor.damageLogger.LogException(e);
       }
       return false;
     }
@@ -149,7 +154,7 @@ namespace CustomAmmoCategoriesPatches {
     }
     public static Dictionary<ArmorLocation, int> GetMechClusterTableCustom(this HitLocation hitLocation, AttackDirection from, Mech target, ArmorLocation location, Weapon w, int attackSequence, bool log = true) {
       if (i_GetMechHitTableClustered != null) { return i_GetMechHitTableClustered(hitLocation, from, target, location, w, attackSequence, log); }
-      return Traverse.Create(hitLocation).Field<CombatGameState>("combat").Value.Constants.GetMechClusterTable(location, from);
+      return hitLocation.combat.Constants.GetMechClusterTable(location, from);
     }
     public static void Postfix(HitLocation __instance, AttackDirection from, bool log, ref Dictionary<ArmorLocation, int> __result) {
       //throw new Exception("call not allowed");

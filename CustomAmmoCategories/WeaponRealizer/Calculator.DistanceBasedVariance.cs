@@ -12,12 +12,9 @@ namespace WeaponRealizer {
         return Core.ModSettings.DistanceBasedVariance &&
                HasPositiveVarianceMultiplier(weapon);
       }
-
       private const double Pi2 = Math.PI / 2.0;
       private static readonly Dictionary<string, float> VarianceMultipliers = new Dictionary<string, float>();
       public static float Calculate(Vector3 attackPos, ICombatant target, Weapon weapon, float damage, float rawDamage, bool log = true) {
-        //var damagePerShot = weapon.DamagePerShot;
-        //var adjustment = damage / rawDamage;
         float varianceMultiplier;
         var distance = Vector3.Distance(attackPos, target.TargetPosition);
         var distanceDifference = weapon.MaxRange - distance;
@@ -51,13 +48,11 @@ namespace WeaponRealizer {
         }
         return computedDamage;
       }
-
       private static bool HasPositiveVarianceMultiplier(Weapon weapon) {
         if (!VarianceMultipliers.ContainsKey(weapon.defId))
           VarianceMultipliers[weapon.defId] = ParseBaseMultiplier(weapon);
         return VarianceMultipliers[weapon.defId] > Epsilon;
       }
-
       private const string DistanceVarianceTagPrefix = "wr-variance_by_distance";
       private static readonly char[] TagDelimiter = new char[] { '-' };
       private static float ParseBaseMultiplier(Weapon weapon) {

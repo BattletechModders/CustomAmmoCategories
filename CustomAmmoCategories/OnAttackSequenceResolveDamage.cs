@@ -27,17 +27,17 @@ namespace CustAmmoCategories {
       Mech target = combatant as Mech;
       if (target != null) {
         int tempHeat = target.TempHeat;
-        CustomAmmoCategoriesLog.Log.LogWrite("  publish:" + target.DisplayName + " heat:" + tempHeat + "\n");
+        Log.Combat?.WL(2,"publish:" + target.DisplayName + " heat:" + tempHeat);
         if (tempHeat > 0) {
           attacker.Combat.MessageCenter.PublishMessage((MessageCenterMessage)new FloatieMessage(attacker.GUID, target.GUID, new Text("__/CAC.HEAT/__", new object[1]
           {
               (object) tempHeat
           }), FloatieMessage.MessageNature.Debuff));
           if (attacker.GUID != combatant.GUID) {
-            CustomAmmoCategoriesLog.Log.LogWrite("  damaging other target\n");
+            Log.Combat?.WL(2, "damaging other target");
             target.GenerateAndPublishHeatSequence(sequenceId, false, false, attacker.GUID);
           } else {
-            CustomAmmoCategoriesLog.Log.LogWrite("  damaging self. so we need apply heatsinks.\n");
+            Log.Combat?.WL(2, "damaging self. so we need apply heatsinks.");
             target.GenerateAndPublishHeatSequence(sequenceId, true, false, attacker.GUID);
           }
         }
@@ -65,33 +65,35 @@ namespace CustomAmmoCategoriesPatches {
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { typeof(MessageCenterMessage) })]
   public static class AttackSequence_OnAttackSequenceResolveDamage {
-    public static bool Prefix(AttackDirector.AttackSequence __instance, ref MessageCenterMessage message) {
-      Log.M.TWL(0,"AttackDirector.AttackSequence.OnAttackSequenceResolveDamage "+message.messageIndex+":"+message.MessageType);
+    public static void Prefix(ref bool __runOriginal,AttackDirector.AttackSequence __instance, ref MessageCenterMessage message) {
+      if (!__runOriginal) { return; }
+      Log.Combat?.TWL(0,"AttackDirector.AttackSequence.OnAttackSequenceResolveDamage "+message.messageIndex+":"+message.MessageType);
       AttackSequenceResolveDamageMessage resolveDamageMessage = (AttackSequenceResolveDamageMessage)message;
       ref WeaponHitInfo hitInfo = ref resolveDamageMessage.hitInfo;
-      Log.M.WL(1, "grp:" + hitInfo.attackGroupIndex+ " weapon:"+hitInfo.attackWeaponIndex);
-      if (hitInfo.attackSequenceId != __instance.id) { Log.M.WL(1, "sequence not mach:"+ hitInfo.attackSequenceId+" != "+__instance.id+" fallback"); return true; };
+      Log.Combat?.WL(1, "grp:" + hitInfo.attackGroupIndex+ " weapon:"+hitInfo.attackWeaponIndex);
+      if (hitInfo.attackSequenceId != __instance.id) { Log.M.WL(1, "sequence not mach:"+ hitInfo.attackSequenceId+" != "+__instance.id+" fallback"); return; };
       AdvWeaponHitInfo advInfo = hitInfo.advInfo();
-      if (advInfo == null) { Log.M.WL(1, "no advanced info. fallback"); return true; }
-      Log.M?.WL(1,$"hits:{advInfo.hits.Count}");
-
+      if (advInfo == null) { Log.M.WL(1, "no advanced info. fallback"); return; }
+      Log.Combat?.WL(1,$"hits:{advInfo.hits.Count}");
       advInfo.resolveDamageMessage = resolveDamageMessage;
       advInfo.setVisualState();
       try {
         bool canProcessMessage = advInfo.advHitMessage == null ? false : advInfo.advHitMessage.CanBeApplied();
         if (!canProcessMessage) {
-          Log.M.WL(1, "store message");
+          Log.Combat?.WL(1, "store message");
           if (advInfo.advHitMessage != null) { advInfo.advHitMessage.TryApplyPending(); };
         } else {
-          Log.M.WL(1, "processing message");
+          Log.Combat?.WL(1, "processing message");
           advInfo.advHitMessage.Apply(true);
         }
         AdvWeaponHitInfo.printApplyState(__instance.id);
       } catch (Exception e) {
-        Log.M.TWL(0,"Resolve weapon damage fail." + e.ToString() + "\nFallback\n",true);
-        return true;
+        Log.Combat?.TWL(0,"Resolve weapon damage fail." + e.ToString() + "\nFallback\n",true);
+        AttackDirector.AttackSequence.logger.LogException(e);
+        return;
       }
-      return false;
+      __runOriginal = false;
+      return;
     }
   }
 }

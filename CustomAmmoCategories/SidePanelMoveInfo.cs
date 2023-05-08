@@ -96,9 +96,9 @@ namespace CustAmmoCategoriesPatches {
   [HarmonyPatch("RefreshActorInfo")]
   [HarmonyPatch(MethodType.Normal)]
   public static class CombatHUDTargetingComputer_RefreshActorInfo {
-    public static void Postfix(CombatHUDTargetingComputer __instance, CombatHUD ___HUD) {
-      Log.M.TWL(0, "CombatHUDTargetingComputer.RefreshActorInfo " + (__instance.ActivelyShownCombatant == null ? "null" : (new Text(__instance.ActivelyShownCombatant.DisplayName).ToString())));
-      ___HUD.RefreshSidePanelInfo();
+    public static void Postfix(CombatHUDTargetingComputer __instance) {
+      Log.Combat?.TWL(0, "CombatHUDTargetingComputer.RefreshActorInfo " + (__instance.ActivelyShownCombatant == null ? "null" : (new Text(__instance.ActivelyShownCombatant.DisplayName).ToString())));
+      __instance.HUD.RefreshSidePanelInfo();
     }
   }
   [HarmonyPatch(typeof(CombatHUDInfoSidePanel))]
@@ -107,12 +107,8 @@ namespace CustAmmoCategoriesPatches {
   public static class CombatHUDInfoSidePanel_Update {
     private static bool fSidePanelNeedToBeRefreshed = true;
     private static bool fTextNeedToBeRefreshed = true;
-    private static PropertyInfo p_forceShown = typeof(CombatHUDInfoSidePanel).GetProperty("forceShown",BindingFlags.NonPublic|BindingFlags.Instance);
-    private static PropertyInfo p_stayShown = typeof(CombatHUDInfoSidePanel).GetProperty("stayShown", BindingFlags.NonPublic | BindingFlags.Instance);
     private static Text description = new Text();
     private static Text title = new Text();
-    public static bool forceShown(this CombatHUDInfoSidePanel panel) { return (bool)p_forceShown.GetValue(panel); }
-    public static bool stayShown(this CombatHUDInfoSidePanel panel) { return (bool)p_stayShown.GetValue(panel); }
     private static bool m_infoPanelShowState = true;
     public static void SidePanelInit(this CombatHUD HUD) { m_infoPanelShowState = CustomAmmoCategories.Settings.InfoPanelDefaultState; }
     public static void InfoPanelShowState(this CombatHUD HUD, bool state) { m_infoPanelShowState = state; fSidePanelNeedToBeRefreshed = true; }
@@ -153,7 +149,8 @@ namespace CustAmmoCategoriesPatches {
       }
       fSidePanelNeedToBeRefreshed = false;
     }
-    public static void Prefix(CombatHUDInfoSidePanel __instance,ref bool ___shownForSingleFrame) {
+    public static void Prefix(ref bool __runOriginal, CombatHUDInfoSidePanel __instance,ref bool ___shownForSingleFrame) {
+      if (!__runOriginal) { return; }
       if (BTInput.Instance.DynamicActions.Enabled == false) { return; }
       if (__instance.HUD() == null) { return; }
       if (m_infoPanelShowState == false) { return; }
@@ -161,7 +158,7 @@ namespace CustAmmoCategoriesPatches {
       if (__instance.HUD().SelectedActor.IsDeployDirector()) { return; }
       if (__instance.HUD().SelectionHandler.ActiveState.Orders != null) { return; }
       if (__instance.IsHovered) { fTextNeedToBeRefreshed = true; return; }
-      if (__instance.forceShown() || ___shownForSingleFrame || __instance.stayShown()) { fTextNeedToBeRefreshed = true; return; }
+      if (__instance.forceShown || ___shownForSingleFrame || __instance.stayShown) { fTextNeedToBeRefreshed = true; return; }
       if (fSidePanelNeedToBeRefreshed) { fTextNeedToBeRefreshed = true; __instance.HUD().UpdateInfoText(); }
       if (fTextNeedToBeRefreshed) { __instance.ForceShowSingleFrame(title, description, null, false); fTextNeedToBeRefreshed = false; } else {
         ___shownForSingleFrame = true;
@@ -355,18 +352,6 @@ namespace CustAmmoCategoriesPatches {
         burnterrain = string.Empty;
       }
     }
-    private static PropertyInfo pHUD;
-    private static PropertyInfo pSidePanel;
-    private static PropertyInfo pTargetWorldPos;
-    private static FieldInfo fShownForSingleFrame;
-    private static FieldInfo fuiManager;
-    private delegate CombatHUDHeatMeter d_HeatMeter(CombatHUDMechTray tray);
-    private static d_HeatMeter i_HeatMeter = null;
-    public static CombatHUDHeatMeter HeatMeter(this CombatHUDMechTray tray) { return i_HeatMeter(tray); }
-    public static UIManager uiManager(this UIModule module) { return (UIManager)fuiManager.GetValue(module); }
-    private delegate int d_GetProjectedHeat(CombatHUDHeatDisplay heatDisplay,Mech mech);
-    private static d_GetProjectedHeat i_GetProjectedHeat = null;
-    public static int GetProjectedHeat(this CombatHUDHeatDisplay heatDisplay, Mech mech) { return i_GetProjectedHeat(heatDisplay, mech); }
     private static Text FormatPrediction(string label, float from, float to) {
       return new Text("{0} {1:0} >> {2:0;(0)}", label, from, to);
     }
@@ -436,11 +421,11 @@ namespace CustAmmoCategoriesPatches {
           //actor.Pathing.CurrentGrid.GetPathTo(move.PreviewPos, actor.Pathing.CurrentDestination, maxMove, null, out spareMove, out Vector3 ResultDestination, out float lockedAngle, false, 0f, 0f, 0f, true, false);
           spareMove = actor.MoveCostLeft();
           //spareMove = DeduceLockedAngle(spareMove, actor.Pathing, ref maxMove);
-          moveType = move is SelectionStateSprint ? HUD.uiManager().UILookAndColorConstants.Tooltip_Sprint : HUD.uiManager().UILookAndColorConstants.Tooltip_Move;
+          moveType = move is SelectionStateSprint ? HUD.uiManager.UILookAndColorConstants.Tooltip_Sprint : HUD.uiManager.UILookAndColorConstants.Tooltip_Move;
         } else if ((HUD.SelectionHandler.ActiveState is SelectionStateJump jump)&&(mech != null)) {
           maxMove = mech.JumpDistance;
           spareMove = maxMove - Vector3.Distance(jump.PreviewPos, actor.CurrentPosition);
-          moveType = HUD.uiManager().UILookAndColorConstants.Tooltip_Jump;
+          moveType = HUD.uiManager.UILookAndColorConstants.Tooltip_Jump;
         }
       } catch (Exception ex) { Log.M.TWL(0, ex.ToString(), true); }
 
@@ -527,68 +512,6 @@ namespace CustAmmoCategoriesPatches {
       } catch (Exception ex) { Log.M.TWL(0, ex.ToString(), true); }
       return new Text(text.ToString());
     }
-    public static bool Prepare() {
-      {
-        MethodInfo method = typeof(CombatHUDMechTray).GetProperty("HeatMeter", BindingFlags.NonPublic | BindingFlags.Instance).GetMethod;
-        var dm = new DynamicMethod("CUHeatMeter_get", typeof(CombatHUDHeatMeter), new Type[] { typeof(CombatHUDMechTray) }, typeof(CombatHUDMechTray));
-        var gen = dm.GetILGenerator();
-        gen.Emit(OpCodes.Ldarg_0);
-        gen.Emit(OpCodes.Call, method);
-        gen.Emit(OpCodes.Ret);
-        i_HeatMeter = (d_HeatMeter)dm.CreateDelegate(typeof(d_HeatMeter));
-      }
-      {
-        MethodInfo method = typeof(CombatHUDHeatDisplay).GetMethod("GetProjectedHeat", BindingFlags.NonPublic | BindingFlags.Instance);
-        var dm = new DynamicMethod("CUGetProjectedHeat", typeof(int), new Type[] { typeof(CombatHUDHeatDisplay),typeof(Mech) }, typeof(CombatHUDHeatDisplay));
-        var gen = dm.GetILGenerator();
-        gen.Emit(OpCodes.Ldarg_0);
-        gen.Emit(OpCodes.Ldarg_1);
-        gen.Emit(OpCodes.Call, method);
-        gen.Emit(OpCodes.Ret);
-        i_GetProjectedHeat = (d_GetProjectedHeat)dm.CreateDelegate(typeof(d_GetProjectedHeat));
-      }
-      fuiManager = typeof(UIModule).GetField("uiManager", BindingFlags.Instance | BindingFlags.NonPublic);
-      if (fuiManager == null) {
-        Log.M.TWL(0, "Can't find UIModule.uiManager");
-        return false;
-      }
-      pHUD = typeof(MoveStatusPreview).GetProperty("HUD", BindingFlags.Instance | BindingFlags.NonPublic);
-      if (pHUD == null) {
-        Log.M.TWL(0, "Can't find MoveStatusPreview.HUD");
-        return false;
-      }
-      pSidePanel = typeof(MoveStatusPreview).GetProperty("sidePanel", BindingFlags.Instance | BindingFlags.NonPublic);
-      if (pSidePanel == null) {
-        Log.M.TWL(0, "Can't find MoveStatusPreview.sidePanel");
-        return false;
-      }
-      fShownForSingleFrame = typeof(CombatHUDInfoSidePanel).GetField("shownForSingleFrame", BindingFlags.Instance | BindingFlags.NonPublic);
-      if (fShownForSingleFrame == null) {
-        Log.M.TWL(0, "Can't find CombatHUDInfoSidePanel.shownForSingleFrame");
-        return false;
-      }
-      pTargetWorldPos = typeof(MoveStatusPreview).GetProperty("TargetWorldPos", BindingFlags.Instance | BindingFlags.NonPublic);
-      if (pTargetWorldPos == null) {
-        Log.M.TWL(0, "Can't find MoveStatusPreview.TargetWorldPos");
-        return false;
-      }
-      return true;
-    }
-    public static Vector3 TargetWorldPos(this MoveStatusPreview pr) {
-      return (Vector3)pTargetWorldPos.GetValue(pr);
-    }
-    public static void TargetWorldPos(this MoveStatusPreview pr, Vector3 val) {
-      pTargetWorldPos.SetValue(pr, val);
-    }
-    public static CombatHUD HUD(this MoveStatusPreview pr) {
-      return (CombatHUD)pHUD.GetValue(pr, null);
-    }
-    public static CombatHUDInfoSidePanel sidePanel(this MoveStatusPreview pr) {
-      return (CombatHUDInfoSidePanel)pSidePanel.GetValue(pr, null);
-    }
-    public static void shownForSingleFrame(this CombatHUDInfoSidePanel pr, bool val) {
-      fShownForSingleFrame.SetValue(pr, val);
-    }
     public static bool appendTerrainText(this CombatHUD HUD,AbstractActor actor, Vector3 worldPos, MoveType moveType, ref Text title, ref Text description) {
       List<MapEncounterLayerDataCell> cells = new List<MapEncounterLayerDataCell>();
       cells.Add(HUD.Combat.EncounterLayerData.GetCellAt(worldPos));
@@ -671,19 +594,12 @@ namespace CustAmmoCategoriesPatches {
     private static string originalMoveTypeText = string.Empty;
     public static void ClearMoveTypeText(this CombatHUD hud) { externalMoveTypeText = string.Empty; CombatMovementReticle.Instance.StatusPreview.MoveTypeText.SetText(originalMoveTypeText); }
     public static void SetExMoveTypeText(this CombatHUD hud,string info) { externalMoveTypeText = info; CombatMovementReticle.Instance.StatusPreview.MoveTypeText.SetText(externalMoveTypeText); }
-    private static bool Prefix(MoveStatusPreview __instance, AbstractActor actor, Vector3 worldPos, MoveType moveType) {
-      /*if (firstCounter > 0) {
-        __instance.sidePanel().ForceShowSingleFrame(new Text("TITLE"), new Text("DESCRIPTION"), null, false);
-        firstCounter -= 1;
-      } else {
-        __instance.sidePanel().shownForSingleFrame(true);
-      }*/
-      //__instance.sidePanel().ForceShowSingleFrame(new Text("TITLE"), new Text ("DESCRIPTION"), null, false);
-      //return true;
-      __instance.TargetWorldPos(worldPos);
+    private static void Prefix(ref bool __runOriginal, MoveStatusPreview __instance, AbstractActor actor, Vector3 worldPos, MoveType moveType) {
+      if (!__runOriginal) { return; }
+      __instance.TargetWorldPos = (worldPos);
       List<MapEncounterLayerDataCell> cells = new List<MapEncounterLayerDataCell>();
-      CombatHUD HUD = __instance.HUD();
-      CombatHUDInfoSidePanel sidePanel = __instance.sidePanel();
+      CombatHUD HUD = __instance.HUD;
+      CombatHUDInfoSidePanel sidePanel = __instance.sidePanel;
       cells.Add(HUD.Combat.EncounterLayerData.GetCellAt(worldPos));
       MapTerrainDataCell relatedTerrainCell = cells[0].relatedTerrainCell;
       __instance.PreviewStatusPanel.ShowPreviewStatuses(actor, relatedTerrainCell, moveType, worldPos);
@@ -692,17 +608,6 @@ namespace CustAmmoCategoriesPatches {
       Text description = new Text();
       Text title = new Text();
       bool empty = HUD.appendTerrainText(actor,worldPos,moveType,ref title,ref description);
-      /*string addDescr = string.Empty;
-      string addTitle = string.Empty;
-      if (moveType != MoveType.Jumping) {
-        getAdditionalStringMoving(actor, out addTitle, out addDescr);
-        if (string.IsNullOrEmpty(addDescr) == false) {
-          if (empty == false) { description.Append("\n"); };
-          description.Append(addDescr);
-          if (empty) { title.Append(addTitle); };
-          empty = false;
-        }
-      }*/
       if (HUD.InfoPanelShowState()) {
         if (empty) { title.Append("INFO"); } else { description.Append("\n"); };
         if (CustomAmmoCategories.Settings.SidePanelInfoSelfExternal) {
@@ -718,15 +623,9 @@ namespace CustAmmoCategoriesPatches {
       }
       if (empty == false) {
         Text warningText = null;
-#if BT1_8
         sidePanel.ForceShowPersistant(title, description, warningText, false);
-#else
-        sidePanel.ForceShowSingleFrame(title, description, warningText, false);
-#endif
       } else {
-#if BT1_8
-        sidePanel.ForceHide();
-#endif
+      sidePanel.ForceHide();
       }
       switch (moveType) {
         case MoveType.Walking: originalMoveTypeText = HUD.MoveButton.Tooltip.text; break;
@@ -741,7 +640,8 @@ namespace CustAmmoCategoriesPatches {
       } else {
         __instance.MoveTypeText.SetText(externalMoveTypeText, new object[0]);
       }
-      return false;
+      __runOriginal = false;
+      return;
     }
   }
 }

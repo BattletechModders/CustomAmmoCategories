@@ -28,49 +28,51 @@ namespace CustAmmoCategories {
   public static class Weapon_Constructor_Mech {
     public static void Prefix(Mech parent, CombatGameState combat, MechComponentRef mcRef, string UID) {
       try {
-        Log.M?.TWL(0, "Weapon.Constructor "+(parent == null?"null":parent.PilotableActorDef.ChassisID)+" "+ (mcRef == null ? "null" : (mcRef.ComponentDefID+":"+mcRef.ComponentDefType)));
-        Log.M?.WL(1, "incoming ref definition:" + (mcRef.Def == null ? "null" : (mcRef.Def.GetType().Name + ":" + mcRef.Def.Description.Id)));
+        Log.Combat?.TWL(0, "Weapon.Constructor "+(parent == null?"null":parent.PilotableActorDef.ChassisID)+" "+ (mcRef == null ? "null" : (mcRef.ComponentDefID+":"+mcRef.ComponentDefType)));
+        Log.Combat?.WL(1, "incoming ref definition:" + (mcRef.Def == null ? "null" : (mcRef.Def.GetType().Name + ":" + mcRef.Def.Description.Id)));
         if (mcRef.Def == null) {
-          Log.M?.WL(1,"definition is null. Trying to fix");
+          Log.Combat?.WL(1,"definition is null. Trying to fix");
           if (string.IsNullOrEmpty(mcRef.ComponentDefID) == false) {
-            Log.M?.WL(1, "checking in data manager "+ mcRef.ComponentDefID);
+            Log.Combat?.WL(1, "checking in data manager "+ mcRef.ComponentDefID);
             if (combat.DataManager.WeaponDefs.Exists(mcRef.ComponentDefID)) {
-              Log.M?.WL(1, "exists");
+              Log.Combat?.WL(1, "exists");
               mcRef.DataManager = combat.DataManager;
               mcRef.SetComponentDef(combat.DataManager.WeaponDefs.Get(mcRef.ComponentDefID));
               mcRef.RefreshComponentDef();
               if(mcRef.Def != null) {
-                Log.M?.WL(1, "fixed");
+                Log.Combat?.WL(1, "fixed");
               }
             }
           }
         }
       } catch (Exception e) {
-        Log.M?.TWL(0, e.ToString(), true);
+        Log.Combat?.TWL(0, e.ToString(), true);
+        Weapon.logger.LogException(e);
       }
     }
     public static void Postfix(Weapon __instance, Mech parent, CombatGameState combat, MechComponentRef mcRef, string UID) {
       try {
         if (parent == null) {
-          Log.M?.TWL(0,"weapon without parent\n"+Environment.StackTrace);
+          Log.Combat?.TWL(0,"weapon without parent\n"+Environment.StackTrace);
           return;
         }
         if (__instance.weaponDef == null) {
-          Log.M?.TWL(0, "weapon without definition");
-          Log.M?.WL(1, "ref:" + (__instance.baseComponentRef==null?"null":__instance.baseComponentRef.ComponentDefID));
-          Log.M?.WL(1, "incoming ref:" + (mcRef == null ? "null" : mcRef.ComponentDefID));
-          Log.M?.WL(1, "incoming ref definition:" + (mcRef.Def == null ? "null" : (mcRef.Def.GetType().Name + ":" + mcRef.Def.Description.Id)));
-          Log.M?.WL(1, "uid:"+__instance.uid);
+          Log.Combat?.TWL(0, "weapon without definition");
+          Log.Combat?.WL(1, "ref:" + (__instance.baseComponentRef==null?"null":__instance.baseComponentRef.ComponentDefID));
+          Log.Combat?.WL(1, "incoming ref:" + (mcRef == null ? "null" : mcRef.ComponentDefID));
+          Log.Combat?.WL(1, "incoming ref definition:" + (mcRef.Def == null ? "null" : (mcRef.Def.GetType().Name + ":" + mcRef.Def.Description.Id)));
+          Log.Combat?.WL(1, "uid:"+__instance.uid);
           return;
         }
         if (__instance.weaponDef.Description == null) {
-          Log.M?.TWL(0, "weapon without description\n" + Environment.StackTrace);
+          Log.Combat?.TWL(0, "weapon without description\n" + Environment.StackTrace);
           return;
         }
-        Log.M?.TWL(0, "Weapon.Constructor " + parent.PilotableActorDef.Description.Id + " " + __instance.weaponDef.Description.Id);
+        Log.Combat?.TWL(0, "Weapon.Constructor " + parent.PilotableActorDef.Description.Id + " " + __instance.weaponDef.Description.Id);
         __instance.Register(new WeaponExtendedInfo(__instance, __instance.weaponDef));
       }catch(Exception e) {
-        Log.M?.TWL(0, e.ToString(), true);
+        Log.Combat?.TWL(0, e.ToString(), true);
+        Weapon.logger.LogException(e);
       }
     }
   }
@@ -80,10 +82,11 @@ namespace CustAmmoCategories {
   public static class Weapon_Constructor_Vehicle {
     public static void Postfix(Weapon __instance, Vehicle parent, CombatGameState combat, VehicleComponentRef vcRef, string UID) {
       try {
-        Log.M?.TWL(0, "Weapon.Constructor " + parent.PilotableActorDef.Description.Id + " " + __instance.weaponDef.Description.Id);
+        Log.Combat?.TWL(0, "Weapon.Constructor " + parent.PilotableActorDef.Description.Id + " " + __instance.weaponDef.Description.Id);
         __instance.Register(new WeaponExtendedInfo(__instance, __instance.weaponDef));
       } catch (Exception e) {
-        Log.M?.TWL(0, e.ToString(), true);
+        Log.Combat?.TWL(0, e.ToString(), true);
+        Weapon.logger.LogException(e);
       }
     }
   }
@@ -93,10 +96,11 @@ namespace CustAmmoCategories {
   public static class Weapon_Constructor_Turret {
     public static void Postfix(Weapon __instance, Turret parent, CombatGameState combat, TurretComponentRef tcRef, string UID) {
       try {
-        Log.M?.TWL(0, "Weapon.Constructor " + parent.PilotableActorDef.Description.Id + " " + __instance.weaponDef.Description.Id);
+        Log.Combat?.TWL(0, "Weapon.Constructor " + parent.PilotableActorDef.Description.Id + " " + __instance.weaponDef.Description.Id);
         __instance.Register(new WeaponExtendedInfo(__instance, __instance.weaponDef));
       } catch (Exception e) {
-        Log.M?.TWL(0, e.ToString(), true);
+        Log.Combat?.TWL(0, e.ToString(), true);
+        Weapon.logger.LogException(e);
       }
     }
   }
@@ -107,13 +111,14 @@ namespace CustAmmoCategories {
   public static class AbstractActor_AssignAmmoToWeapons {
     public static void Postfix(AbstractActor __instance) {
       try {
-        Log.M?.TWL(0, "AbstractActor.AssignAmmoToWeapons " + __instance.PilotableActorDef.Description.Id);
+        Log.Combat?.TWL(0, "AbstractActor.AssignAmmoToWeapons " + __instance.PilotableActorDef.Description.Id);
         foreach (Weapon weapon in __instance.Weapons) {
           weapon.info().isBoxesAssigned = true;
           weapon.Revalidate();
         }
       } catch (Exception e) {
-        Log.M?.TWL(0, e.ToString(), true);
+        Log.Combat?.TWL(0, e.ToString(), true);
+        Weapon.logger.LogException(e);
       }
     }
   }
@@ -127,7 +132,8 @@ namespace CustAmmoCategories {
         if (value == null) { return; }
         value.info().HUDSlot = __instance;
       } catch (Exception e) {
-        Log.M?.TWL(0, e.ToString(), true);
+        Log.Combat?.TWL(0, e.ToString(), true);
+        UIManager.logger.LogException(e);
       }
     }
   }
@@ -142,7 +148,8 @@ namespace CustAmmoCategories {
           weapon.info().RefreshModeAvaibility();
         }
       } catch (Exception e) {
-        Log.M?.TWL(0, e.ToString(), true);
+        Log.Combat?.TWL(0, e.ToString(), true);
+        UIManager.logger.LogException(e);
       }
     }
   }
@@ -318,7 +325,7 @@ namespace CustAmmoCategories {
       return result;
     }
     public List<ExtAmmunitionDef> getAvaibleAmmo(CustomAmmoCategory category) {
-      Log.M.TWL(0, "getAvaibleAmmo " + weapon.defId + " category:" + category.Id+ " ammoBoxes:" + weapon.ammoBoxes.Count);
+      Log.M?.TWL(0, "getAvaibleAmmo " + weapon.defId + " category:" + category.Id+ " ammoBoxes:" + weapon.ammoBoxes.Count);
       HashSet<ExtAmmunitionDef> result = new HashSet<ExtAmmunitionDef>();
       for (int index = 0; index < weapon.ammoBoxes.Count; ++index) {
         if (weapon.ammoBoxes[index].IsFunctional == false) { continue; };
@@ -353,7 +360,7 @@ namespace CustAmmoCategories {
         this.ammo = CustomAmmoCategories.DefaultAmmo;
         this.extDef = CustomAmmoCategories.DefaultWeapon;
         this.HasAmmoVariants = false;
-        Log.M.TWL(0, "WeaponExtendedInfo parent:"+(weapon.parent == null?"null":weapon.parent.PilotableActorDef.Description.Id)+" has weapon without definition uid:"+weapon.uid + " mechRef:"+(weapon.baseComponentRef != null? weapon.baseComponentRef.ComponentDefID: "null"));
+        Log.Combat?.TWL(0, "WeaponExtendedInfo parent:"+(weapon.parent == null?"null":weapon.parent.PilotableActorDef.Description.Id)+" has weapon without definition uid:"+weapon.uid + " mechRef:"+(weapon.baseComponentRef != null? weapon.baseComponentRef.ComponentDefID: "null"));
         return;
       }
       if (weapon.WeaponCategoryValue.IsMelee) { isBoxesAssigned = true; }
@@ -386,7 +393,7 @@ namespace CustAmmoCategories {
       HasAmmoVariants = false;
     }
     public void RefreshModeAvaibility() {
-      Log.M?.TWL(0, "RefreshModeAvaibility:" + this.weapon.defId);
+      Log.Combat?.TWL(0, "RefreshModeAvaibility:" + this.weapon.defId);
       if (this.isCurrentModeAvailable() == false) {
         CustomAmmoCategories.CycleMode(this.weapon, true);
       }

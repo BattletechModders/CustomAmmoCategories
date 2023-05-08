@@ -23,13 +23,8 @@ namespace CustAmmoCategories {
     public Material PPCspark;
     public Material ppcTrail;
     public Material glowBlue;
-    /*public Color ppcTrail_color;
-    public Color ppcBeamCoil_color;
-    public Color zapArcFlip1_color;
-    public Color PPCspark_color;
-    public Color glowBlue_color;*/
     public override void StoreOriginalColor() {
-      Log.M.TWL(0, "MultiShotPulseEffect.StoreOriginalColor");
+      Log.Combat?.TWL(0, "MultiShotPulseEffect.StoreOriginalColor");
       ParticleSystemRenderer[] renderers = this.projectile.GetComponentsInChildren<ParticleSystemRenderer>();
       ppcTrail = null;
       ppcBeamCoil = null;
@@ -37,9 +32,9 @@ namespace CustAmmoCategories {
       PPCspark = null;
       glowBlue = null;
       foreach (ParticleSystemRenderer renderer in renderers) {
-        Log.LogWrite(" " + renderer.name + ": materials\n");
+        Log.Combat?.WL(1,$"{renderer.name}: materials");
         foreach (Material material in renderer.materials) {
-          Log.LogWrite("  " + material.name + ": " + material.color + " : "+material.ColorBB()+"\n");
+          Log.Combat?.WL(2, $"{material.name}: {material.color} : {material.ColorBB()}");
           if (material.name.StartsWith("vfxMatPrtl_ppcBeamFake_alpha")) {
             this.ppcBeamFake = material; material.RegisterRestoreColor();
           } else
@@ -95,27 +90,13 @@ namespace CustAmmoCategories {
       tempColor.g = (color.g / coeff) * 7.0f + 1.3f;
       tempColor.b = (color.b / coeff) * 7.0f + 1.3f;
       if (ppcTrail != null) ppcTrail.SetColor("_ColorBB", tempColor);
-      //Log.M.WL(1, ppcBeamFake.name+":"+ ppcBeamFake.ColorBB());
-      //Log.M.WL(1, ppcBeamCoil.name + ":" + ppcBeamCoil.ColorBB());
-      //Log.M.WL(1, zapArcFlip1.name + ":" + zapArcFlip1.ColorBB());
-      //Log.M.WL(1, glowBlue.name + ":" + glowBlue.ColorBB());
-      //Log.M.WL(1, PPCspark.name + ":" + PPCspark.ColorBB());
-      //Log.M.WL(1, ppcTrail.name + ":" + ppcTrail.ColorBB());
     }
-#if PUBLIC_ASSEMBLIES
-    public override int ImpactPrecacheCount {
-#else
     protected override int ImpactPrecacheCount {
-#endif
       get {
         return 1;
       }
     }
-#if PUBLIC_ASSEMBLIES
-    public override void Awake() {
-#else
     protected override void Awake() {
-#endif
       base.Awake();
     }
     protected override void Start() {
@@ -123,14 +104,13 @@ namespace CustAmmoCategories {
     }
     public void Init(PPCEffect original) {
       base.Init(original);
-      CustomAmmoCategoriesLog.Log.LogWrite("MultiShotPPCEffect.Init\n");
+      Log.Combat?.TWL(0,"MultiShotPPCEffect.Init");
     }
     public void Init(Weapon weapon, MultiShotPPCEffect parentProjector) {
       this.Init(weapon);
       this.parentProjector = parentProjector;
       this.weapon = weapon;
       this.weaponRep = weapon.weaponRep;
-      //this.projectileSpeed = parentProjector.projectileSpeed * weapon.ProjectileSpeedMultiplier();
       this.subEffect = true;
     }
     public override void SetupCustomSettings() {
@@ -179,14 +159,14 @@ namespace CustAmmoCategories {
     }
 
     public virtual void Fire(WeaponHitInfo hitInfo, int hitIndex = 0, int emitterIndex = 0, bool pb = false) {
-      Log.LogWrite("MultiShotPPCEffect.Fire " + hitInfo.attackWeaponIndex + " " + hitIndex + " ep:" + hitInfo.hitPositions[hitIndex] + " prime:" + pb + "\n");
+      Log.Combat?.TWL(0,$"MultiShotPPCEffect.Fire {hitInfo.attackWeaponIndex} {hitIndex} ep:{hitInfo.hitPositions[hitIndex]} prime:{pb}");
       this.primePulse = pb;
       this.SetupCustomSettings();
       Vector3 endPos = hitInfo.hitPositions[hitIndex];
       base.Fire(hitInfo, hitIndex, emitterIndex);
       this.endPos = endPos;
       hitInfo.hitPositions[hitIndex] = endPos;
-      Log.LogWrite(" endPos restored:" + this.endPos + "\n");
+      Log.Combat?.WL(1,$"endPos restored:{this.endPos}");
       endPos.x += Random.Range(-this.parentProjector.spreadAngle, this.parentProjector.spreadAngle);
       endPos.y += Random.Range(-this.parentProjector.spreadAngle, this.parentProjector.spreadAngle);
       endPos.z += Random.Range(-this.parentProjector.spreadAngle, this.parentProjector.spreadAngle);
@@ -214,10 +194,10 @@ namespace CustAmmoCategories {
     }
     public override void InitProjectile() {
       base.InitProjectile();
-      Log.LogWrite("MultiShotPulseEffect.InitProjectile\n");
+      Log.Combat?.TWL(0,"MultiShotPulseEffect.InitProjectile");
       Component[] components = this.projectile.GetComponentsInChildren<Component>();
       foreach (Component component in components) {
-        Log.LogWrite(" " + component.name + ":" + component.GetType().ToString() + "\n");
+        Log.Combat?.WL(1,$"{component.name}:{component.GetType().ToString()}");
       }
     }
     protected override void PlayProjectile() {
@@ -231,11 +211,7 @@ namespace CustAmmoCategories {
         this.projectileParticles.Stop(true);
       }
     }
-#if PUBLIC_ASSEMBLIES
-    public override void Update() {
-#else
     protected override void Update() {
-#endif
       try {
         base.Update();
         if (this.currentState != WeaponEffect.WeaponEffectState.Firing) { return; }
@@ -255,11 +231,10 @@ namespace CustAmmoCategories {
       base.OnPreFireComplete();
       this.PlayProjectile();
     }
-
     protected override void OnImpact(float hitDamage = 0.0f, float structureDamage = 0f) {
-      Log.M?.TWL(0,$"MultiShotPulseEffect.OnImpact wi:{this.hitInfo.attackWeaponIndex} hi:{this.hitIndex} bi:{this.pulseIdx} prime:{this.primePulse}");
+      Log.Combat?.TWL(0,$"MultiShotPulseEffect.OnImpact wi:{this.hitInfo.attackWeaponIndex} hi:{this.hitIndex} bi:{this.pulseIdx} prime:{this.primePulse}");
       if (this.primePulse) {
-        Log.LogWrite(" prime. Damage message fired\n");
+        Log.Combat?.WL(1,"prime. Damage message fired");
         float damage = this.weapon.DamagePerShotAdjusted(this.weapon.parent.occupiedDesignMask);
         float apDamage = this.weapon.StructureDamagePerShotAdjusted(this.weapon.parent.occupiedDesignMask);
         if (this.weapon.DamagePerPallet()&&(this.weapon.DamageNotDivided() == false)) {
@@ -268,7 +243,7 @@ namespace CustAmmoCategories {
         };
         base.OnImpact(damage, apDamage);
       } else {
-        Log.LogWrite(" no prime. No damage message fired\n");
+        Log.Combat?.WL(1, "no prime. No damage message fired\n");
       }
       this.RestoreOriginalColor();
       if (!((UnityEngine.Object)this.projectileParticles != (UnityEngine.Object)null)) { return; };
@@ -276,7 +251,7 @@ namespace CustAmmoCategories {
     }
     protected override void OnComplete() {
       base.OnComplete();
-      Log.M?.TWL(0, $"MultiShotPulseEffect.OnComplete wi:{this.hitInfo.attackWeaponIndex} hi:{this.hitIndex} bi:{this.pulseIdx} prime:{this.primePulse} FiringComplete:{this.FiringComplete}");
+      Log.Combat?.TWL(0, $"MultiShotPulseEffect.OnComplete wi:{this.hitInfo.attackWeaponIndex} hi:{this.hitIndex} bi:{this.pulseIdx} prime:{this.primePulse} FiringComplete:{this.FiringComplete}");
     }
     public override void Reset() {
       base.Reset();

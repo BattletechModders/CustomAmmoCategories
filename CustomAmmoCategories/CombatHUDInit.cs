@@ -26,18 +26,15 @@ namespace CustAmmoCategories {
     public static CombatHUD HUD() { return m_HUD; }
     public static CombatHUD HUD(this CombatHUDInfoSidePanel panel) { return m_HUD; }
     public static CombatGameState Combat(this CombatHUDInfoSidePanel panel) { return m_Combat; }
-    public static bool Prefix(CombatHUD __instance, CombatGameState Combat) {
-      CustomAmmoCategoriesLog.Log.LogWrite("pre CombatHUD.Init\n");
-      //AttackSequenceWatchDogHelper.StartWatchDogThread();
+    public static void Prefix(CombatHUD __instance, CombatGameState Combat) {
+      Log.Combat?.WL(0,"pre CombatHUD.Init");
       CustomAmmoCategories.ActorsEjectedAmmo.Clear();
-      //CustomAmmoCategories.ClearPlayerWeapons();
       foreach (var unit in Combat.AllActors) {
-        CustomAmmoCategoriesLog.Log.LogWrite("  " + unit.DisplayName + "\n");
+        Log.Combat?.WL(1,unit.DisplayName);
         foreach (var Weapon in unit.Weapons) {
           CustomAmmoCategories.RegisterPlayerWeapon(Weapon);
         }
       }
-      return true;
     }
     public static void Postfix(CombatHUD __instance, CombatGameState Combat) {
       ASWatchdog wd = __instance.gameObject.GetComponent<ASWatchdog>();
@@ -60,7 +57,8 @@ namespace CustAmmoCategories {
         DeferredEffectHelper.Clear();
         PersistentFloatieHelper.Clear();
       } catch (Exception e) {
-        Log.M.TWL(0, e.ToString(), true);
+        Log.Combat?.TWL(0, e.ToString(), true);
+        CombatHUD.uiLogger.LogException(e);
       }
     }
   }

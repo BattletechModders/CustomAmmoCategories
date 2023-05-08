@@ -9,6 +9,7 @@
  *  If not, see <https://www.gnu.org/licenses/>. 
 */
 using BattleTech;
+using CustomAmmoCategoriesLog;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -18,23 +19,14 @@ using Random = UnityEngine.Random;
 
 namespace CustAmmoCategories {
   public class FragBulletEffect : FragWeaponEffect {
-    [HideInInspector]
     public int bulletIdx;
     private FragBallisticEffect parentLauncher;
-#if PUBLIC_ASSEMBLIES
-    public override int ImpactPrecacheCount {
-#else
     protected override int ImpactPrecacheCount {
-#endif
       get {
         return 5;
       }
     }
-#if PUBLIC_ASSEMBLIES
-    public override void Awake() {
-#else
     protected override void Awake() {
-#endif
       base.Awake();
     }
     protected override void Start() {
@@ -42,7 +34,7 @@ namespace CustAmmoCategories {
     }
     public void Init(BulletEffect original) {
       base.Init(original);
-      CustomAmmoCategoriesLog.Log.LogWrite("FragBulletEffect.Init\n");
+      Log.Combat?.WL(0, "FragBulletEffect.Init");
       this.bulletIdx = original.bulletIdx;
     }
     public void Init(Weapon weapon, FragBallisticEffect parentLauncher) {
@@ -53,7 +45,7 @@ namespace CustAmmoCategories {
       this.projectileSpeed = parentLauncher.projectileSpeed;
     }
     public override void Fire(Vector3 sPos,WeaponHitInfo hitInfo, int hitIndex = 0, int emitterIndex = 0) {
-      CustomAmmoCategoriesLog.Log.LogWrite("FragBulletEffect.Fire "+sPos+" wi:"+hitInfo.attackWeaponIndex+" hi:"+hitIndex+"\n");
+      Log.Combat?.WL(0, "FragBulletEffect.Fire " + sPos+" wi:"+hitInfo.attackWeaponIndex+" hi:"+hitIndex);
       base.Fire(sPos,hitInfo, hitIndex, emitterIndex);
       Vector3 endPos = this.endPos;
       endPos.x += Random.Range(-this.parentLauncher.spreadAngle, this.parentLauncher.spreadAngle);
@@ -84,11 +76,7 @@ namespace CustAmmoCategories {
       this.PlayImpactAudio();
       base.PlayImpact();
     }
-#if PUBLIC_ASSEMBLIES
-    public override void Update() {
-#else
     protected override void Update() {
-#endif
       base.Update();
       if (this.currentState != WeaponEffect.WeaponEffectState.Firing)
         return;
@@ -106,7 +94,7 @@ namespace CustAmmoCategories {
       this.PlayProjectile();
     }
     protected override void OnImpact(float hitDamage = 0.0f, float structureDamage = 0f) {
-      CustomAmmoCategoriesLog.Log.LogWrite("FragBulletEffect.OnImpact wi:" + hitInfo.attackWeaponIndex + " hi:" + hitIndex + "\n");
+      Log.Combat?.WL(0, "FragBulletEffect.OnImpact wi:" + hitInfo.attackWeaponIndex + " hi:" + hitIndex);
       base.OnImpact(
         this.weapon.DamagePerShotAdjusted(this.weapon.parent.occupiedDesignMask)/this.weapon.ProjectilesPerShot
         ,this.weapon.StructureDamagePerShotAdjusted(this.weapon.parent.occupiedDesignMask) / this.weapon.ProjectilesPerShot

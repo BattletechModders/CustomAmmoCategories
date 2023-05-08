@@ -34,24 +34,25 @@ namespace CustAmmoCategories {
       return WatchDogInfo.Count > 0;
     }
     public void logTrackedSequences() {
-      Log.M.TWL(0, "ASWatchdog.logTrackedSequences:"+ WatchDogInfo.Count);
+      Log.Combat?.TWL(0, "ASWatchdog.logTrackedSequences:"+ WatchDogInfo.Count);
       try {
         foreach (var seqid in WatchDogInfo) {
-          Log.M.WL(1, seqid.Key + " timer:" + seqid.Value);
+          Log.Combat?.WL(1, seqid.Key + " timer:" + seqid.Value);
           AttackDirector.AttackSequence seq = AttackDirector.GetAttackSequence(seqid.Key);
           if (seq == null) {
-            Log.M.WL(2, "expired. will be removed on update");
+            Log.Combat?.WL(2, "expired. will be removed on update");
             continue;
           }
-          Log.M.WL(2, "attacker:" + seq.attacker.PilotableActorDef.Description.Id);
-          Log.M.WL(2, "main target:" + seq.chosenTarget.Description.Id);
-          Log.M.WL(2, "weapons:" + seq.allSelectedWeapons.Count);
+          Log.Combat?.WL(2, "attacker:" + seq.attacker.PilotableActorDef.Description.Id);
+          Log.Combat?.WL(2, "main target:" + seq.chosenTarget.Description.Id);
+          Log.Combat?.WL(2, "weapons:" + seq.allSelectedWeapons.Count);
           foreach(Weapon weapon in seq.allSelectedWeapons) {
-            Log.M.WL(3,weapon.defId);
+            Log.Combat?.WL(3,weapon.defId);
           }
         }
       }catch(Exception e) {
-        Log.M.TWL(0,e.ToString(),true);
+        Log.Combat?.TWL(0,e.ToString(),true);
+        AttackDirector.logger.LogException(e);
       }
     }
     public void Init(CombatHUD HUD) {
@@ -84,23 +85,22 @@ namespace CustAmmoCategories {
         WatchDogInfo[seqId] += t;
       }
       t = 0f;
-      Log.M.TWL(0, "ASWatchdog.Update", true);
+      Log.Combat?.TWL(0, "ASWatchdog.Update", true);
       foreach (int seqId in seq) {
         Log.M.WL(1, seqId.ToString() + " = "+ WatchDogInfo[seqId]);
         if (WatchDogInfo[seqId] > CustomAmmoCategories.Settings.AttackSequenceTimeout) {
-          Log.M.WL(2, "timeout");
+          Log.Combat?.WL(2, "timeout");
           AttackSequence attackSequence = AttackDirector.GetAttackSequence(seqId);
           if (attackSequence == null) {
-            Log.M.WL(2, "can't find sequence");
+            Log.Combat?.WL(2, "can't find sequence");
           } else {
-            Log.M.WL(2, "end sequence by timeout");
+            Log.Combat?.WL(2, "end sequence by timeout");
             WatchDogInfo.Remove(seqId);
-            MessageCoordinator messageCoordinator = (MessageCoordinator)typeof(AttackSequence).GetField("messageCoordinator", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(attackSequence);
-            typeof(AttackSequence).GetProperty("CoordinatedMesssagesSuccessful", BindingFlags.Instance | BindingFlags.Public).GetSetMethod(true).Invoke(attackSequence, new object[1] { (object)messageCoordinator.VerifyAllMessagesComplete() });
+            attackSequence.CoordinatedMesssagesSuccessful = attackSequence.messageCoordinator.VerifyAllMessagesComplete();
             AttackSequenceEndMessage sequenceEndMessage = new AttackSequenceEndMessage(attackSequence.stackItemUID, attackSequence.id);
             attackSequence.chosenTarget.ResolveAttackSequence(attackSequence.attacker.GUID, attackSequence.id, attackSequence.stackItemUID, attackSequence.Director.Combat.HitLocation.GetAttackDirection(attackSequence.attackPosition, attackSequence.chosenTarget));
             attackSequence.Director.Combat.MessageCenter.PublishMessage((MessageCenterMessage)sequenceEndMessage);
-            messageCoordinator.VerifyAllMessagesComplete();
+            attackSequence.messageCoordinator.VerifyAllMessagesComplete();
             continue;
           }
         }
@@ -118,12 +118,13 @@ namespace CustAmmoCategoriesPatches {
     private static void Postfix(AttackDirector __instance, MessageCenterMessage message) {
       try {
         int sequenceId = ((AttackSequenceBeginMessage)message).sequenceId;
-        Log.M.TWL(0, "AttackDirector.OnAttackSequenceBegin add watchdog " + sequenceId);
+        Log.Combat?.TWL(0, "AttackDirector.OnAttackSequenceBegin add watchdog " + sequenceId);
         if (ASWatchdog.instance != null) {
           ASWatchdog.instance.add(sequenceId);
         }
       }catch(Exception e) {
-        Log.M.TWL(0,e.ToString(),true);
+        Log.Combat?.TWL(0,e.ToString(),true);
+        AttackDirector.logger.LogException(e);
       }
     }
   }
@@ -136,12 +137,13 @@ namespace CustAmmoCategoriesPatches {
       try {
         AttackCompleteMessage attackCompleteMessage = (AttackCompleteMessage)message;
         int sequenceId = attackCompleteMessage.sequenceId;
-        Log.M.TWL(0, "AttackDirector.OnAttackComplete del watchdog " + sequenceId);
+        Log.Combat?.TWL(0, "AttackDirector.OnAttackComplete del watchdog " + sequenceId);
         if (ASWatchdog.instance != null) {
           ASWatchdog.instance.del(sequenceId);
         }
       }catch(Exception e) {
-        Log.M.TWL(0, e.ToString(), true);
+        Log.Combat?.TWL(0, e.ToString(), true);
+        AttackDirector.logger.LogException(e);
       }
     }
   }
@@ -150,11 +152,10 @@ namespace CustAmmoCategoriesPatches {
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { typeof(MessageCenterMessage) })]
   public static class AttackSequence_OnAttackSequenceImpactWD {
-    private static bool Prefix(AttackSequence __instance, MessageCenterMessage message) {
+    private static void Prefix(AttackSequence __instance, MessageCenterMessage message) {
       if (ASWatchdog.instance != null) {
         ASWatchdog.instance.Woof(__instance.id);
       }
-      return true;
     }
   }
 }

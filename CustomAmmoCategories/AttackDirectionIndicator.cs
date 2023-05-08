@@ -30,7 +30,7 @@ namespace CustAmmoCategoriesPatches {
       bool Modifyer = Input.GetKey(KeyCode.RightControl) || Input.GetKey(KeyCode.LeftControl);
       if (Modifyer == false) { return; }
       Enabled = !Enabled;
-      Log.LogWrite("AttackDirectionIndicator visibility changed:"+Enabled+"\n");
+      Log.Combat?.WL(0,"AttackDirectionIndicator visibility changed:"+Enabled);
     }
   }
   [HarmonyPatch(typeof(AttackDirectionIndicator))]

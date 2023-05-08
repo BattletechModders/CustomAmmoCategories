@@ -77,8 +77,9 @@ namespace CustomUnits {
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { typeof(AbstractActor), typeof(Team), typeof(Lance) })]
   public static class UnitSpawnPointGameLogic_initializeActor {
-    public static bool Prefix(UnitSpawnPointGameLogic __instance, AbstractActor actor, Team team, Lance lance) {
+    public static void Prefix(ref bool __runOriginal, UnitSpawnPointGameLogic __instance, AbstractActor actor, Team team, Lance lance) {
       string temp = "!NOT INITED!";
+      if (!__runOriginal) { return; }
       try {
         Log.TWL(0, "UnitSpawnPointGameLogic.initializeActor " + actor.PilotableActorDef.Description.Id);
         temp = actor.PilotableActorDef.Description.Id;
@@ -97,11 +98,25 @@ namespace CustomUnits {
         } else {
           actor.OnPlayerVisibilityChanged(VisibilityLevel.None);
         }
-        return false;
+        __runOriginal = false;
+        return;
       } catch (Exception e) {
         Log.TWL(0, "UnitSpawnPointGameLogic.initializeActor:"+temp);
         Log.TWL(0, e.ToString(), true);
-        return true;
+        UnitSpawnPointGameLogic.logger.LogException(e);
+        return;
+      }
+    }
+    public static void Postfix(UnitSpawnPointGameLogic __instance, AbstractActor actor, Team team, Lance lance) {
+      try {
+        if (DeployManualHelper.deployDirector != null) { return; }
+        if (__instance.Combat.TurnDirector.CurrentRound <= 1) { return; }
+        if (__instance.Combat.IsSpawnProtected()) { return; }
+        if (team == __instance.Combat.LocalPlayerTeam) { return; }
+        if (Core.Settings.OnUnitSpawnProtection == false) { return; }
+        actor.addSpawnProtection("Middle battle spawn protection");
+      }catch(Exception e) {
+        UnitSpawnPointGameLogic.logger.LogException(e);
       }
     }
   }

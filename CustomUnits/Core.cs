@@ -237,6 +237,7 @@ namespace CustomUnits {
     public bool DeployManual { get; set; }
     public bool DeployManualSpawnProtection { get; set; } = true;
     public bool DeployAutoSpawnProtection { get; set; } = true;
+    public bool OnUnitSpawnProtection { get; set; } = true;
     public bool AskForDeployManual { get; set; } = true;
     private HashSet<string> fManualDeployForbidContractTypes { get; set; }
     public List<string> ManualDeployForbidContractTypes {

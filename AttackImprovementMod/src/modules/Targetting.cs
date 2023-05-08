@@ -12,7 +12,7 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
 
   public class Targetting : BattleModModule {
 
-    public override void CombatStartsOnce() {
+    public override void ModStarts() {
       Type MultiTargetType = typeof(SelectionStateFireMulti), HandlerType = typeof(CombatSelectionHandler), PanelType = typeof(CombatHUDWeaponPanel);
 
       if (AIMSettings.AggressiveMultiTargetAssignment) {
@@ -25,22 +25,22 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
       }
 
       if (AIMSettings.FixMultiTargetBackout) {
-        TryRun(Log, () => {
-          weaponTargetIndices = MultiTargetType.GetProperty("weaponTargetIndices", NonPublic | Instance);
-          RemoveTargetedCombatant = MultiTargetType.GetMethod("RemoveTargetedCombatant", NonPublic | Instance);
-          ClearTargetedActor = MultiTargetType.GetMethod("ClearTargetedActor", NonPublic | Instance | FlattenHierarchy);
-        });
+        //TryRun(Log, () => {
+        //  weaponTargetIndices = MultiTargetType.GetProperty("weaponTargetIndices", NonPublic | Instance);
+        //  RemoveTargetedCombatant = MultiTargetType.GetMethod("RemoveTargetedCombatant", NonPublic | Instance);
+        //  ClearTargetedActor = MultiTargetType.GetMethod("ClearTargetedActor", NonPublic | Instance | FlattenHierarchy);
+        //});
 
-        if (ClearTargetedActor == null)
-          Warn("Cannot find SelectionStateFireMulti.ClearTargetedActor. MultiTarget backout may be slightly inconsistent.");
-        if (AnyNull<object>(RemoveTargetedCombatant, weaponTargetIndices))
-          Error("Cannot find RemoveTargetedCombatant or weaponTargetIndices, SelectionStateFireMulti not patched");
-        else {
+        //if (ClearTargetedActor == null)
+          //Warn("Cannot find SelectionStateFireMulti.ClearTargetedActor. MultiTarget backout may be slightly inconsistent.");
+        //if (AnyNull<object>(RemoveTargetedCombatant, weaponTargetIndices))
+          //Error("Cannot find RemoveTargetedCombatant or weaponTargetIndices, SelectionStateFireMulti not patched");
+        //else {
           Patch(HandlerType, "BackOutOneStep", null, "PreventMultiTargetBackout");
           Patch(MultiTargetType, "get_CanBackOut", "OverrideMultiTargetCanBackout", null);
           Patch(MultiTargetType, "BackOut", "OverrideMultiTargetBackout", null);
           Patch(MultiTargetType, "RemoveTargetedCombatant", "OverrideRemoveTargetedCombatant", null);
-        }
+        //}
       }
 
       if (AIMSettings.CtrlClickDisableWeapon)
@@ -56,10 +56,10 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
         }
       }
       if (AIMSettings.CtrlClickDisableWeapon || AIMSettings.ShiftKeyReverseSelection) {
-        WeaponTargetIndicesProp = MultiTargetType.GetProperty("weaponTargetIndices", NonPublic | Instance);
-        if (WeaponTargetIndicesProp == null)
-          Warn("SelectionStateFireMulti.weaponTargetIndices not found.  Multi-Target weapon shift/ctrl click not patched.");
-        else
+        //WeaponTargetIndicesProp = MultiTargetType.GetProperty("weaponTargetIndices", NonPublic | Instance);
+        //if (WeaponTargetIndicesProp == null)
+          //Warn("SelectionStateFireMulti.weaponTargetIndices not found.  Multi-Target weapon shift/ctrl click not patched.");
+        //else
           Patch(MultiTargetType, "CycleWeapon", "OverrideMultiTargetCycle", null);
       }
 
@@ -131,7 +131,7 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
 
     // ============ Reverse / Toggle Multi-Target Selection ============
 
-    private static PropertyInfo WeaponTargetIndicesProp;
+    //private static PropertyInfo WeaponTargetIndicesProp;
     private static Dictionary<Weapon, ICombatant> MultiTargetDisabledWeaponTarget;
 
     public static bool OverrideMultiTargetCycle(SelectionStateFireMulti __instance, ref int __result, Weapon weapon) {
@@ -142,7 +142,7 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
         else if (AIMSettings.ShiftKeyReverseSelection && IsReverseKeyPressed())
           newIndex = FindReverseTargetIndex(__instance, weapon);
         if (newIndex > -2) {
-          ((Dictionary<Weapon, int>)WeaponTargetIndicesProp.GetValue(__instance, null))[weapon] = newIndex;
+          __instance.weaponTargetIndices[weapon] = newIndex;
           __result = newIndex;
           return false;
         }
@@ -182,12 +182,12 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
 
     private static MethodInfo SlotSetTargetIndexMethod;
 
-    public static bool OverrideMultiTargetAssignment(CombatHUDWeaponPanel __instance, List<CombatHUDWeaponSlot> ___WeaponSlots) {
+    public static bool OverrideMultiTargetAssignment(CombatHUDWeaponPanel __instance) {
       try {
         SelectionStateFireMulti multi = ActiveState as SelectionStateFireMulti;
         List<ICombatant> targets = multi?.AllTargetedCombatants;
         if (targets.IsNullOrEmpty()) return true;
-        foreach (CombatHUDWeaponSlot slot in ___WeaponSlots) {
+        foreach (CombatHUDWeaponSlot slot in __instance.WeaponSlots) {
           Weapon w = slot?.DisplayedWeapon;
           int target = FindBestTargetForWeapon(w, targets);
           if (target >= 0)
@@ -199,11 +199,7 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
     }
 
     private static int FindBestTargetForWeapon(Weapon w, List<ICombatant> targets) {
-#if BT1_8
       if (w == null || !w.IsEnabled || w.WeaponCategoryValue.IsMelee || targets.IsNullOrEmpty()) return -1;
-#else
-      if (w == null || !w.IsEnabled || w.Category == WeaponCategory.Melee || targets.IsNullOrEmpty()) return -1;
-#endif
       int result = -1;
       float hitChance = 0;
       for (int i = 0; i < targets.Count; i++) {
@@ -238,12 +234,12 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
       } catch (Exception ex) { return Error(ex); }
     }
 
-    private static PropertyInfo weaponTargetIndices;
-    private static MethodInfo RemoveTargetedCombatant, ClearTargetedActor;
-    private static readonly object[] RemoveTargetParams = new object[] { null, false };
+    //private static PropertyInfo weaponTargetIndices;
+    //private static MethodInfo RemoveTargetedCombatant, ClearTargetedActor;
+    //private static readonly object[] RemoveTargetParams = new object[] { null, false };
 
     [HarmonyLib.HarmonyPriority(HarmonyLib.Priority.Low)]
-    public static bool OverrideMultiTargetBackout(SelectionStateFireMulti __instance, ref ICombatant ___targetedCombatant) {
+    public static bool OverrideMultiTargetBackout(SelectionStateFireMulti __instance) {
       try {
         SelectionStateFireMulti me = __instance;
         List<ICombatant> allTargets = me.AllTargetedCombatants;
@@ -253,14 +249,14 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
           ICombatant newTarget = count > 1 ? allTargets[count - 2] : null;
           HUD.SelectionHandler.TrySelectTarget(newTarget);
           // Try one of the reflection ways to set new target
-          if (newTarget == null && ClearTargetedActor != null)
-            ClearTargetedActor.Invoke(me, null); // Hide fire button
-          else if (___targetedCombatant != null)
-            ___targetedCombatant = newTarget; // Skip soft lock sound
+          if (newTarget == null)
+            __instance.ClearTargetedActor(); // Hide fire button
+          else if (__instance.targetedCombatant != null)
+            __instance.targetedCombatant = newTarget; // Skip soft lock sound
           else
             me.SetTargetedCombatant(newTarget);
           // The only line that is same as old!
-          RemoveTargetedCombatant.Invoke(me, RemoveTargetParams);
+          me.RemoveTargetedCombatant(null, false);
           // Amend selection state later
           ReAddStateData = true;
           return false;
@@ -277,7 +273,7 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
         if (index < 0) return false;
 
         // Fix weaponTargetIndices
-        Dictionary<Weapon, int> indice = (Dictionary<Weapon, int>)weaponTargetIndices.GetValue(__instance, null);
+        Dictionary<Weapon, int> indice = __instance.weaponTargetIndices;
         foreach (Weapon weapon in indice.Keys.ToArray()) {
           if (indice[weapon] > index)
             indice[weapon] -= -1;

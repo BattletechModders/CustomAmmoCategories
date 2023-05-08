@@ -79,11 +79,11 @@ namespace CustAmmoCategories {
       candidates.Sort((a, b) => { return b.distance.CompareTo(a.distance); });
       movementCandidateLocations.Clear();
       float bareerDist = candidates[0].distance * 0.9f;
-      Log.M?.TWL(0, $"FleeCandidatesFilter:{movementCandidateLocations.Count} limit:{bareerDist}");
+      Log.Combat?.TWL(0, $"FleeCandidatesFilter:{movementCandidateLocations.Count} limit:{bareerDist}");
       foreach (var cand in candidates) {
         if (cand.distance < bareerDist) { break; }
         movementCandidateLocations.Add(cand.destination);
-        Log.M?.WL(1,$"{cand.destination.PathNode.Position}:{cand.distance}");
+        Log.Combat?.WL(1,$"{cand.destination.PathNode.Position}:{cand.distance}");
       }
     }
     public static void WeaponDistCandidatesFilter(AbstractActor unit, ref List<MoveDestination> movementCandidateLocations) {
@@ -97,12 +97,12 @@ namespace CustAmmoCategories {
       if (candidates[0].distance > bareerDist) {
         bareerDist = candidates[0].distance * 0.8f;
       }
-      Log.M?.TWL(0, $"WeaponDistCandidatesFilter:{movementCandidateLocations.Count} weapon max:{AIMaxWeaponRangeCache.Get(unit)} nearest:{candidates[0].distance}");
+      Log.Combat?.TWL(0, $"WeaponDistCandidatesFilter:{movementCandidateLocations.Count} weapon max:{AIMaxWeaponRangeCache.Get(unit)} nearest:{candidates[0].distance}");
       movementCandidateLocations.Clear();
       foreach (var cand in candidates) {
         if (cand.distance > bareerDist) { break; }
         movementCandidateLocations.Add(cand.destination);
-        Log.M?.WL(1, $"{cand.destination.PathNode.Position}:{cand.distance}");
+        Log.Combat?.WL(1, $"{cand.destination.PathNode.Position}:{cand.distance}");
       }
     }
   }
@@ -337,7 +337,8 @@ namespace CustAmmoCategories {
         movementCandidateLocations.AddRange(result);
         Log.F?.WL(0, "filtered movementCandidateLocations:" + movementCandidateLocations.Count+" fallback positions:"+unit.CountAISafeMovePositions());
       } catch (Exception e) {
-        Log.M?.TWL(0, e.ToString(), true);
+        Log.Combat?.TWL(0, e.ToString(), true);
+
       }
       return false;
     }
@@ -357,47 +358,47 @@ namespace CustAmmoCategories {
       }
     }
     public static void Clear() { bracedWithFireRound.Clear(); }
-    public static bool Prefix(LeafBehaviorNode __instance,ref string ___name,ref BehaviorTree ___tree, AbstractActor ___unit,ref BehaviorNodeState ___currentState, ref BehaviorTreeResults __result) {
+    public static bool Prefix(LeafBehaviorNode __instance, ref BehaviorTreeResults __result) {
       try {
         if (CustomAmmoCategories.Settings.extendedBraceBehavior == false) { return true; }
-        Log.M.TWL(0, "BraceNode.Tick()");
-        Log.M.WL(1, "name:" + ___name);
-        Log.M.WL(1, "unit:" + new Text(___unit.DisplayName));
-        Log.M.WL(1, "type:" + ___unit.UnitType);
-        Log.M.WL(1, "HasFiredThisRound:" + ___unit.HasFiredThisRound+"/"+___unit.isBracedWithFireThisRound()+"("+___unit.Combat.TurnDirector.CurrentRound+")");
-        if (___unit.isBracedWithFireThisRound()) {
-          ___unit.HasFiredThisRound = true;
+        Log.Combat?.TWL(0, "BraceNode.Tick()");
+        Log.Combat?.WL(1, "name:" + __instance.name);
+        Log.Combat?.WL(1, "unit:" + new Text(__instance.unit.DisplayName));
+        Log.Combat?.WL(1, "type:" + __instance.unit.UnitType);
+        Log.Combat?.WL(1, "HasFiredThisRound:" + __instance.unit.HasFiredThisRound+"/"+ __instance.unit.isBracedWithFireThisRound()+"("+ __instance.unit.Combat.TurnDirector.CurrentRound+")");
+        if (__instance.unit.isBracedWithFireThisRound()) {
+          __instance.unit.HasFiredThisRound = true;
           return true;
         };
-        if (___unit.HasFiredThisRound) { return true; };
-        Mech mech = ___unit as Mech;
+        if (__instance.unit.HasFiredThisRound) { return true; };
+        Mech mech = __instance.unit as Mech;
         if (mech != null) {
-          Log.M.WL(1, "");
+          Log.Combat?.WL(1, "");
           float heatLevelForMech = AIUtil.GetAcceptableHeatLevelForMech(mech);
-          Log.M.WL(1, "heat:" + mech.CurrentHeat + "/" + heatLevelForMech);
+          Log.Combat?.WL(1, "heat:" + mech.CurrentHeat + "/" + heatLevelForMech);
           if (mech.CurrentHeat > heatLevelForMech) { return true; }
-          Log.M.WL(1, "unsteady:" + mech.IsUnsteady);
+          Log.Combat?.WL(1, "unsteady:" + mech.IsUnsteady);
           if (mech.IsUnsteady) { return true; }
         }
-        Log.M.WL(1, "HasAnyContactWithEnemy:" + ___unit.HasAnyContactWithEnemy);
-        if (___unit.HasAnyContactWithEnemy == false) { return true; }
-        List<AbstractActor> VisibleEnemyUnits = ___unit.GetVisibleEnemyUnits();
-        Log.M.WL(1, "VisibleEnemyUnits:" + VisibleEnemyUnits.Count);
+        Log.Combat?.WL(1, "HasAnyContactWithEnemy:" + __instance.unit.HasAnyContactWithEnemy);
+        if (__instance.unit.HasAnyContactWithEnemy == false) { return true; }
+        List<AbstractActor> VisibleEnemyUnits = __instance.unit.GetVisibleEnemyUnits();
+        Log.Combat?.WL(1, "VisibleEnemyUnits:" + VisibleEnemyUnits.Count);
         if (VisibleEnemyUnits.Count > 0) { return true; }
         List<Weapon> AOEweapons = new List<Weapon>();
         List<Weapon> MFweapons = new List<Weapon>();
-        List<AbstractActor> detectedTargets = ___unit.GetDetectedEnemyUnits();
-        Log.M.WL(1, "DetectedEnemyUnits:" + detectedTargets.Count);
+        List<AbstractActor> detectedTargets = __instance.unit.GetDetectedEnemyUnits();
+        Log.Combat?.WL(1, "DetectedEnemyUnits:" + detectedTargets.Count);
         if (detectedTargets.Count == 0) { return true; }
         AbstractActor nearestEnemy = null;
         float nearestDistance = 0f;
         foreach(AbstractActor target in detectedTargets) {
-          float distance = Vector3.Distance(target.CurrentPosition, ___unit.CurrentPosition);
+          float distance = Vector3.Distance(target.CurrentPosition, __instance.unit.CurrentPosition);
           if ((nearestDistance == 0f) || (nearestDistance > distance)) { nearestDistance = distance; nearestEnemy = target; }
         }
         if (nearestEnemy == null) { return true; }
 
-        foreach (Weapon weapon in ___unit.Weapons) {
+        foreach (Weapon weapon in __instance.unit.Weapons) {
           if (weapon.IsFunctional == false) { continue; }
           if (weapon.IsJammed()) { continue; }
           if (weapon.IsCooldown() > 0) { continue; }
@@ -425,32 +426,22 @@ namespace CustAmmoCategories {
         List<Weapon> weaponsList = new List<Weapon>();
         weaponsList.AddRange(AOEweapons);
         weaponsList.AddRange(MFweapons);
-        Log.M.WL(1, "Capable weapons:"+weaponsList.Count);
+        Log.Combat?.WL(1, "Capable weapons:"+weaponsList.Count);
         if (weaponsList.Count == 0) { return true; }
-        AttackOrderInfo orderInfo = new AttackOrderInfo(___unit, false, false);
+        AttackOrderInfo orderInfo = new AttackOrderInfo(__instance.unit, false, false);
         foreach (Weapon weapon in weaponsList) {
           AmmoModePair ammoMode = weapon.getCurrentAmmoMode();
-          Log.M.WL(2, weapon.defId+" mode:"+ ammoMode.modeId+" ammo:"+ammoMode.ammoId);
+          Log.Combat?.WL(2, weapon.defId+" mode:"+ ammoMode.modeId+" ammo:"+ammoMode.ammoId);
           orderInfo.AddWeapon(weapon);
         }
-        //MechRepresentation gameRep = ___unit.GameRep as MechRepresentation;
-        //if ((UnityEngine.Object)gameRep != (UnityEngine.Object)null) {
-        //Log.M.WL(1,"ToggleRandomIdles false");
-        //gameRep.ToggleRandomIdles(false);
-        //}
-        string actorGUID = ___unit.GUID;
-        //int seqId = ___unit.Combat.StackManager.NextStackUID;
-        Log.M.WL(1, "Registering terrain attack to " + actorGUID);
-        CustomAmmoCategories.addTerrainHitPosition(___unit, nearestEnemy.CurrentPosition, true);
-        //AttackDirector.AttackSequence attackSequence = ___unit.Combat.AttackDirector.CreateAttackSequence(seqId, ___unit, ___unit, ___unit.CurrentPosition, ___unit.CurrentRotation, 0, weaponsList, MeleeAttackType.NotSet, 0, false);
-        //attackSequence.indirectFire = true;
-        //Log.M.WL(1, "attackSequence.indirectFire " + attackSequence.indirectFire);
-        //___unit.Combat.AttackDirector.PerformAttack(attackSequence);
+        string actorGUID = __instance.unit.GUID;
+        Log.Combat?.WL(1, "Registering terrain attack to " + actorGUID);
+        CustomAmmoCategories.addTerrainHitPosition(__instance.unit, nearestEnemy.CurrentPosition, true);
         __result = new BehaviorTreeResults(BehaviorNodeState.Success);
         __result.orderInfo = orderInfo;
         __result.debugOrderString = "CAC improved brace";
         __result.behaviorTrace = "CAC improved brace";
-        ___unit.BracedWithFireThisRound();
+        __instance.unit.BracedWithFireThisRound();
         //___unit.HasFiredThisRound = true;
         return false;
       }catch(Exception e) {

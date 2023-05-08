@@ -9,6 +9,7 @@
  *  If not, see <https://www.gnu.org/licenses/>. 
 */
 using BattleTech;
+using CustomAmmoCategoriesLog;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -29,43 +30,32 @@ namespace CustAmmoCategories {
     private float nextFloatie;
     public void Init(BurstBallisticEffect original) {
       base.Init(original);
-      CustomAmmoCategoriesLog.Log.LogWrite("AMSBurstBallisticEffect.Init\n");
+      Log.Combat?.WL(0,"AMSBurstBallisticEffect.Init");
       this.impactTime = original.impactTime;
-      this.bulletsFired = (int)typeof(BurstBallisticEffect).GetField("bulletsFired", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(original);
+      this.bulletsFired = original.bulletsFired;
       this.accurateProjectilePrefab = original.accurateProjectilePrefab;
       this.inaccurateProjectilePrefab = original.inaccurateProjectilePrefab;
       this.preFireSoundEvent = original.preFireSoundEvent;
       this.projectileSoundEvent = original.projectileSoundEvent;
       this.fireCompleteStopEvent = original.fireCompleteStopEvent;
-      this.floatieInterval = (float)typeof(BurstBallisticEffect).GetField("floatieInterval", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(original);
-      this.nextFloatie = (float)typeof(BurstBallisticEffect).GetField("nextFloatie", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(original);
+      this.floatieInterval = original.floatieInterval;
+      this.nextFloatie = original.nextFloatie;
     }
-#if PUBLIC_ASSEMBLIES
-    public override int ImpactPrecacheCount {
-#else
     protected override int ImpactPrecacheCount {
-#endif
       get {
         return 5;
       }
     }
-#if PUBLIC_ASSEMBLIES
-    public override void Awake() {
-#else
     protected override void Awake() {
-#endif
       base.Awake();
     }
-#if PUBLIC_ASSEMBLIES
-    public override void Start() {
-#else
     protected override void Start() {
-# endif
       base.Start();
       this.floatieInterval = 1f / (float)this.weapon.ProjectilesPerShot;
     }
     public override void Fire(WeaponHitInfo hitInfo, int hitIndex = 0, int emitterIndex = 0) {
-      CustomAmmoCategoriesLog.Log.LogWrite("AMS burst ballistic effect can't fire normaly. Something is wrong.\n");
+      Log.Combat?.WL(0, "AMS burst ballistic effect can't fire normaly. Something is wrong.");
+      WeaponEffect.logger.LogError("AMS effect can't fire normaly. Something is wrong.\n" + Environment.StackTrace);
       base.Fire(hitInfo, hitIndex, emitterIndex);
     }
     public override void Fire(Vector3[] hitPositions, int hitIndex = 0, int emitterIndex = 0) {
@@ -79,29 +69,17 @@ namespace CustAmmoCategories {
       this.rate = 1f / this.duration;
       this.PlayPreFire();
     }
-#if PUBLIC_ASSEMBLIES
-    public override void PlayPreFire() {
-#else
     protected override void PlayPreFire() {
-#endif
       base.PlayPreFire();
       this.t = 0.0f;
       if (string.IsNullOrEmpty(this.preFireSoundEvent))
         return;
       int num = (int)WwiseManager.PostEvent(this.preFireSoundEvent, this.projectileAudioObject, (AkCallbackManager.EventCallback)null, (object)null);
     }
-#if PUBLIC_ASSEMBLIES
-    public override void PlayMuzzleFlash() {
-#else
     protected override void PlayMuzzleFlash() {
-#endif
       base.PlayMuzzleFlash();
     }
-#if PUBLIC_ASSEMBLIES
-    public override void PlayProjectile() {
-#else
     protected override void PlayProjectile() {
-#endif
       this.PlayMuzzleFlash();
       this.t = 0.0f;
       if (!string.IsNullOrEmpty(this.projectileSoundEvent)) {
@@ -109,29 +87,17 @@ namespace CustAmmoCategories {
       }
       base.PlayProjectile();
     }
-#if PUBLIC_ASSEMBLIES
-    public override void PlayImpact() {
-#else
     protected override void PlayImpact() {
-#endif
       this.PlayImpactAudio();
       base.PlayImpact();
     }
-#if PUBLIC_ASSEMBLIES
-    public override void Update() {
-#else
     protected override void Update() {
-#endif
       base.Update();
       if (this.currentState != WeaponEffect.WeaponEffectState.Firing) { return; }
       if ((double)this.t < 1.0) { return; };
       this.OnComplete();
     }
-#if PUBLIC_ASSEMBLIES
-    public override void OnPreFireComplete() {
-#else
     protected override void OnPreFireComplete() {
-#endif
       base.OnPreFireComplete();
       this.PlayProjectile();
     }

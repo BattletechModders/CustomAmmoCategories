@@ -42,8 +42,6 @@ namespace CustAmmoCategories {
     private bool currentAuraIsBright;
     private float currentAuraRange;
     public float AuraRange { get; set; }
-    //private bool currentAPIsBright;
-    //private float currentAPRange;
     private CombatHUD HUD;
     private Transform thisTransform;
     private Transform parentTransform;

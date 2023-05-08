@@ -9,7 +9,9 @@
  *  If not, see <https://www.gnu.org/licenses/>. 
 */
 using BattleTech;
+using BattleTech.Data;
 using CustAmmoCategories;
+using CustAmmoCategoriesPatches;
 using CustomAmmoCategoriesLog;
 using HarmonyLib;
 using HBS.Util;
@@ -564,6 +566,57 @@ namespace CustAmmoCategories {
       Log.M?.WL(0,$"merge mode result: {this.Id}:"+JsonConvert.SerializeObject(result, Formatting.Indented));
       return result;
     }
+    public bool DependenciesLoaded(DataManager dataManager, uint loadWeight) {
+      Log.M?.TWL(0, "WeaponMode.DependenciesLoaded(" + loadWeight + ")" + this.Id);
+      if (loadWeight > 10U) {
+        if (dataManager.CheckPrefabLoaded(this.WeaponEffectID) == false) { return false; }
+        if (dataManager.CheckPrefabLoaded(this.AdditionalImpactVFX) == false) { return false; }
+        if (dataManager.CheckPrefabLoaded(this.deferredEffect.VFX) == false) { return false; }
+        if (dataManager.CheckPrefabLoaded(this.deferredEffect.TerrainVFX) == false) { return false; }
+        if (dataManager.CheckPrefabLoaded(this.deferredEffect.waitVFX) == false) { return false; }
+      }
+      foreach (var effect in this.statusEffects) {
+        string icon = effect.Description.Icon;
+        if (string.IsNullOrEmpty(icon)) { continue; }
+        if (dataManager.ResourceLocator.EntryByID(icon, BattleTechResourceType.SVGAsset) == null) { continue; }
+        if (dataManager.Exists(BattleTechResourceType.SVGAsset, icon) == false) { return false; }
+      }
+      foreach (var effect in this.deferredEffect.statusEffects) {
+        string icon = effect.Description.Icon;
+        if (string.IsNullOrEmpty(icon)) { continue; }
+        if (dataManager.ResourceLocator.EntryByID(icon, BattleTechResourceType.SVGAsset) == null) { continue; }
+        if (dataManager.Exists(BattleTechResourceType.SVGAsset, icon) == false) { return false; }
+      }
+      return true;
+    }
+    public bool GatherDependencies(DataManager dataManager, DataManager.DependencyLoadRequest dependencyLoad, uint activeRequestWeight) {
+      Log.M?.TWL(0, "WeaponMode.GatherDependencies(" + activeRequestWeight + ")" + this.Id);
+      bool result = false;
+      if (activeRequestWeight > 10U) {
+        if (dataManager.RequestPrefabDeps(dependencyLoad, this.WeaponEffectID)) { result = true; };
+        if (dataManager.RequestPrefabDeps(dependencyLoad, this.AdditionalImpactVFX)) { result = true; };
+        if (dataManager.RequestPrefabDeps(dependencyLoad, this.deferredEffect.VFX)) { result = true; };
+        if (dataManager.RequestPrefabDeps(dependencyLoad, this.deferredEffect.TerrainVFX)) { result = true; };
+        if (dataManager.RequestPrefabDeps(dependencyLoad, this.deferredEffect.waitVFX)) { result = true; };
+      }
+      foreach (var effect in this.statusEffects) {
+        string icon = effect.Description.Icon;
+        if (string.IsNullOrEmpty(icon)) { continue; }
+        if (dataManager.ResourceLocator.EntryByID(icon, BattleTechResourceType.SVGAsset) == null) { continue; }
+        if (dataManager.Exists(BattleTechResourceType.SVGAsset, icon)) { continue; }
+        dependencyLoad.RequestResource(BattleTechResourceType.SVGAsset, icon);
+        result = true;
+      }
+      foreach (var effect in this.deferredEffect.statusEffects) {
+        string icon = effect.Description.Icon;
+        if (string.IsNullOrEmpty(icon)) { continue; }
+        if (dataManager.ResourceLocator.EntryByID(icon, BattleTechResourceType.SVGAsset) == null) { continue; }
+        if (dataManager.Exists(BattleTechResourceType.SVGAsset, icon)) { continue; }
+        dependencyLoad.RequestResource(BattleTechResourceType.SVGAsset, icon);
+        result = true;
+      }
+      return result;
+    }
     public WeaponMode() {
       //Id = WeaponMode.NONE_MODE_NAME;
       //UIName = WeaponMode.BASE_MODE_NAME;
@@ -1037,9 +1090,9 @@ namespace CustAmmoCategories {
       if ((jWeaponMode["ChassisTagsAccuracyModifiers"] != null)&&(jWeaponMode[nameof(TagsAccuracyModifiers)] == null)) {
         this.TagsAccuracyModifiers = jWeaponMode["ChassisTagsAccuracyModifiers"].ToObject<Dictionary<string,float>>();
           //JsonConvert.DeserializeObject<Dictionary<string, float>>(jWeaponMode["ChassisTagsAccuracyModifiers"].ToString());
-        Log.LogWrite((string)jWeaponMode["Id"] + " ChassisTagsAccuracyModifiers:\n");
+        Log.M?.WL(0,(string)jWeaponMode["Id"] + " ChassisTagsAccuracyModifiers:");
         foreach (var tam in this.TagsAccuracyModifiers) {
-          Log.LogWrite(" " + tam.Key + ":" + tam.Key);
+          Log.M?.WL(1,tam.Key + ":" + tam.Key);
         }
         this.SettedProperties.Add(nameof(TagsAccuracyModifiers));
       }

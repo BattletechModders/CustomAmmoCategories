@@ -25,23 +25,8 @@ using CustomAmmoCategoriesPathes;
 
 namespace CustAmmoCategories {
   public static partial class CustomAmmoCategories {
-    //public Morozov ;)
-    public static int HitIndex(this WeaponEffect we) {
-#if BT1_8
-      return we.hitIndex;
-#else
-      return (int)typeof(WeaponEffect).GetField("hitIndex", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(we);
-#endif
-    }
-    public static void HitIndex(this WeaponEffect we, int hi) {
-#if BT1_8
-      we.hitIndex = hi;
-#else
-      typeof(WeaponEffect).GetField("hitIndex", BindingFlags.NonPublic | BindingFlags.Instance).SetValue(we,hi);
-#endif
-    }
-    public static bool isWRJammed(Weapon weapon) {
-      return (bool)typeof(WeaponRealizer.Core).Assembly.GetType("WeaponRealizer.JammingEnabler").GetMethod("IsJammed", BindingFlags.Static | BindingFlags.NonPublic).Invoke(null, new object[1] { (object)weapon });
+    public static bool isWRJammed(this Weapon weapon) {
+      return WeaponRealizer.JammingEnabler.IsJammed(weapon);
     }
     public static float DamageFormulaOne(Weapon weapon, ExtWeaponDef extWeapon, float baseDamage) {
       ExtAmmunitionDef extAmmoDef = weapon.ammo();
@@ -391,11 +376,7 @@ namespace CustAmmoCategoriesPatches {
   [HarmonyPatch("RefreshDisplayedWeapon")]
   [HarmonyPriority(Priority.Last)]
   [HarmonyPatch(MethodType.Normal)]
-#if BT1_8
   [HarmonyPatch(new Type[] { typeof(ICombatant), typeof(int?), typeof(bool), typeof(bool) })]
-#else
-  [HarmonyPatch(new Type[] { typeof(ICombatant) })]
-#endif
   public static class CombatHUDWeaponSlot_RefreshDisplayedWeapon {
     public static void Postfix(CombatHUDWeaponSlot __instance) {
       if (__instance.DisplayedWeapon == null) { return; }

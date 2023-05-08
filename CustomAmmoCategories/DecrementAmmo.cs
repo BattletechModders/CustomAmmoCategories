@@ -244,7 +244,7 @@ namespace CustAmmoCategories {
     }
     public static bool DecrementOneAmmo(this Weapon weapon) {
       ExtAmmunitionDef ammo = weapon.ammo();
-      Log.M.TWL(0, "Weapon.DecrementOneAmmo "+weapon.defId+" ammo:"+(ammo == null?"null":ammo.Id+" category:"+(ammo.AmmoCategory==null?"null":ammo.AmmoCategory.Id)));
+      Log.Combat?.TWL(0, "Weapon.DecrementOneAmmo "+weapon.defId+" ammo:"+(ammo == null?"null":ammo.Id+" category:"+(ammo.AmmoCategory==null?"null":ammo.AmmoCategory.Id)));
       if (ammo.AmmoCategory.BaseCategory.Is_NotSet) { return true; }
       if (assaultTurretsWeapon.Contains(weapon)) { return true; }
       if (weapon.parent != null) {
@@ -388,11 +388,11 @@ namespace CustAmmoCategories {
       return weapon.exDef().Streak;
     }
     public static void ReturnNoFireHeat(Weapon weapon, int stackItemUID, int numNeedShots, int numSuccesHits) {
-      CustomAmmoCategoriesLog.Log.LogWrite("Returining heat\n");
-      CustomAmmoCategoriesLog.Log.LogWrite(" Needed shots " + numNeedShots + "\n");
-      CustomAmmoCategoriesLog.Log.LogWrite(" Success shots " + numSuccesHits + "\n");
+      Log.Combat?.WL(1, "Returining heat");
+      Log.Combat?.WL(1, "Needed shots " + numNeedShots);
+      Log.Combat?.WL(1, "Success shots " + numSuccesHits);
       float returnHeat = 0.0f - ((float)(numNeedShots - numSuccesHits) * weapon.HeatGenerated) / (float)numNeedShots;
-      CustomAmmoCategoriesLog.Log.LogWrite(" Heat to return " + (int)returnHeat + "\n");
+      Log.Combat?.WL(1, "Heat to return " + (int)returnHeat);
       weapon.parent.AddWeaponHeat(weapon, (int)returnHeat);
     }
     [HarmonyPatch(typeof(Weapon))]
@@ -401,27 +401,23 @@ namespace CustAmmoCategories {
     [HarmonyPatch(new Type[] { typeof(int) })]
     public static class Weapon_DecrementAmmo {
       public static bool Prefix(Weapon __instance, int stackItemUID, ref int __result) {
-        Log.M.TWL(0, "Weapon.DecrementAmmo:" + __instance.defId);
-        //__result = __instance.CountAmmoForShot(stackItemUID);
-        //Log.M.W(1, "shots:" + __result);
-        //__result = __instance.ShotsToHits(__result);
-        //Log.M.WL(1, "hits:" + __result);
+        Log.Combat?.TWL(0, "Weapon.DecrementAmmo:" + __instance.defId);
         if (__instance.CanFire == false) { __result = 0; return false; }
         __result = __instance.ShotsToHits(__instance.ShotsWhenFired);
         return false;
       }
     }
     public static int CountAmmoForShot(this Weapon weapon, int stackItemUID) {
-      Log.M.TWL(0, "Weapon.CountAmmoForShot:" + weapon.defId);
+      Log.Combat?.TWL(0, "Weapon.CountAmmoForShot:" + weapon.defId);
       int ammoWhenFired =  weapon.ShootsToAmmo(weapon.ShotsWhenFired);
-      Log.M.WL(1, "ammoWhenFired:"+ammoWhenFired);
+      Log.Combat?.WL(1, "ammoWhenFired:"+ammoWhenFired);
       ExtAmmunitionDef ammo = weapon.ammo();
       if (ammo.AmmoCategory.BaseCategory.Is_NotSet) { return weapon.AmmoToShoots(ammoWhenFired); };
       if (weapon.parent != null) {
         Turret turret = weapon.parent as Turret;
         if (turret != null) {
           if (turret.TurretDef.Description.Id.Contains("Assault")) {
-            Log.M.WL(1, "hardened turret detected");
+            Log.Combat?.WL(1, "hardened turret detected");
             return weapon.AmmoToShoots(ammoWhenFired); ;
           }
         }
@@ -450,34 +446,32 @@ namespace CustAmmoCategories {
       return weapon.AmmoToShoots(ammoWhenFired - modValue);
     }
     public static void RealDecrementAmmo(this Weapon weapon, int stackItemUID, int realShootsUsed) {
-      Log.M.TWL(0,"RealDecrementAmmo:" + weapon.defId);
+      Log.Combat?.TWL(0,"RealDecrementAmmo:" + weapon.defId);
       int ammoWhenFired = weapon.ShootsToAmmo(realShootsUsed);
       WeaponExtendedInfo info = weapon.info();
       CustomAmmoCategory ammoCategory = info.effectiveAmmoCategory;
-      if (ammoCategory.BaseCategory.Is_NotSet) { Log.M.WL(1, "not using ammo"); return; };
+      if (ammoCategory.BaseCategory.Is_NotSet) { Log.Combat?.WL(1, "not using ammo"); return; };
       ExtAmmunitionDef ammo = weapon.ammo();
       if (ammo.AmmoCategory.Id != ammoCategory.Id) {
         ammo = ammoCategory.defaultAmmo();
       };
-      if(ammo.AmmoCategory.BaseCategory.Is_NotSet) { Log.M.WL(1, "very strange behavior this ammo category have no ammo definitions"); return; };
+      if(ammo.AmmoCategory.BaseCategory.Is_NotSet) { Log.Combat?.WL(1, "very strange behavior this ammo category have no ammo definitions"); return; };
       if (weapon.parent != null) {
         Turret turret = weapon.parent as Turret;
         if (turret != null) {
           if (turret.TurretDef.Description.Id.Contains("Assault")) {
-            Log.M.WL(1,"Hardened turret detected"); return;
+            Log.Combat?.WL(1,"Hardened turret detected"); return;
           }
         }
       }
       int modValue = 0;
       if (weapon.InternalAmmo >= ammoWhenFired) {
         weapon.DecInternalAmmo(stackItemUID, ammoWhenFired);
-        //weapon.StatCollection.ModifyStat<int>(weapon.uid, stackItemUID, "InternalAmmo", StatCollection.StatOperation.Int_Subtract, ammoWhenFired, -1, true);
         weapon.tInternalAmmo(weapon.InternalAmmo);
-        Log.M.WL(1, "new internal ammo:"+ weapon.InternalAmmo);
+        Log.Combat?.WL(1, "new internal ammo:"+ weapon.InternalAmmo);
         return;
       } else {
         weapon.ZeroInternalAmmo(stackItemUID);
-        //weapon.StatCollection.ModifyStat<int>(weapon.uid, stackItemUID, "InternalAmmo", StatCollection.StatOperation.Set, 0, -1, true);
         weapon.tInternalAmmo(0);
         modValue = ammoWhenFired - weapon.InternalAmmo;
       }
@@ -491,117 +485,18 @@ namespace CustAmmoCategories {
           ammoBox.StatCollection.ModifyStat<int>(weapon.uid, stackItemUID, "CurrentAmmo", StatCollection.StatOperation.Int_Subtract, modValue, -1, true);
           ammoBox.tCurrentAmmo(ammoBox.CurrentAmmo);
           modValue = 0;
-          Log.M.WL(1, "new current ammo in "+ammoBox.defId+":" + ammoBox.CurrentAmmo);
+          Log.Combat?.WL(1, "new current ammo in "+ammoBox.defId+":" + ammoBox.CurrentAmmo);
           CustomAmmoCategories.AddToExposionCheck(ammoBox);
           break;
         } else {
           modValue -= ammoBox.CurrentAmmo;
           ammoBox.StatCollection.ModifyStat<int>(weapon.uid, stackItemUID, "CurrentAmmo", StatCollection.StatOperation.Set, 0, -1, true);
-          Log.M.WL(1, "new current ammo in " + ammoBox.defId + ":" + ammoBox.CurrentAmmo);
+          Log.Combat?.WL(1, "new current ammo in " + ammoBox.defId + ":" + ammoBox.CurrentAmmo);
           ammoBox.tCurrentAmmo(0);
           CustomAmmoCategories.AddToExposionCheck(ammoBox);
         }
       }
       return;
     }
-    /*public static int DecrementAmmo(this Weapon instance, int stackItemUID, int StreakHitCount, bool forceStreak = false) {
-      int shotsWhenFired = instance.ShotsWhenFired;
-      if (StreakHitCount != 0) {
-        if (instance.weaponDef.ComponentTags.Contains("wr-clustered_shots") || (CustomAmmoCategories.getWeaponDisabledClustering(instance) == false)) {
-          shotsWhenFired = StreakHitCount / instance.ProjectilesPerShot;
-        } else {
-          shotsWhenFired = StreakHitCount;
-        }
-      }
-      bool streakEffect = instance.isStreak();
-      if (forceStreak) { streakEffect = true; };
-      if ((streakEffect == false) && (StreakHitCount == 0)) {
-        StreakHitCount = shotsWhenFired;
-      }
-      CustomAmmoCategoriesLog.Log.LogWrite("Weapon.DecrementAmmo " + instance.UIName + " real fire count:" + StreakHitCount + "\n");
-      int result = 0;
-      bool noAmmoUsing = false;
-      if (instance.CustomAmmoCategory().Index == CustomAmmoCategories.NotSetCustomAmmoCategoty.Index) { noAmmoUsing = true; };
-      if (instance.parent != null) {
-        if (instance.parent is Turret) {
-          if (instance.parent.DisplayName.Contains("Hardened")) { //TODO: Check localization
-            Log.LogWrite(" Hardened turret detected\n");
-          } else {
-            noAmmoUsing = true;
-          }
-        }
-      }
-      if (noAmmoUsing) {
-        if (instance.weaponDef.ComponentTags.Contains("wr-clustered_shots") || CustomAmmoCategories.getWeaponDisabledClustering(instance)) {
-          result = shotsWhenFired;
-        } else {
-          result = shotsWhenFired * instance.ProjectilesPerShot;
-        }
-        Log.LogWrite("  weapon has no ammo (energy or turret) " + instance.UIName + "\n");
-        return result;
-      }
-      int modValue;
-      if (instance.InternalAmmo >= shotsWhenFired) {
-        if (StreakHitCount != 0) instance.StatCollection.ModifyStat<int>(instance.uid, stackItemUID, "InternalAmmo", StatCollection.StatOperation.Int_Subtract, shotsWhenFired, -1, true);
-        modValue = 0;
-      } else {
-        modValue = shotsWhenFired - instance.InternalAmmo;
-        if (StreakHitCount != 0) instance.StatCollection.ModifyStat<int>(instance.uid, stackItemUID, "InternalAmmo", StatCollection.StatOperation.Set, 0, -1, true);
-      }
-      string CurrentAmmoId = "";
-      if (instance.StatCollection.ContainsStatistic(CustomAmmoCategories.AmmoIdStatName) == true) {
-        CurrentAmmoId = instance.StatCollection.GetStatistic(CustomAmmoCategories.AmmoIdStatName).Value<string>();
-      } else {
-        if (instance.ammoBoxes.Count > 0) {
-          CurrentAmmoId = instance.ammoBoxes[0].ammoDef.Description.Id;
-          CustomAmmoCategoriesLog.Log.LogWrite($"WARNING! strange behavior " + instance.UIName + " has no data in statistics. fallback to default ammo " + CurrentAmmoId + "\n");
-        } else {
-          CustomAmmoCategoriesLog.Log.LogWrite($"WARNING! strange behavior " + instance.UIName + " not energy, parent no turret but no ammo boxes\n");
-          if (instance.weaponDef.ComponentTags.Contains("wr-clustered_shots") || CustomAmmoCategories.getWeaponDisabledClustering(instance)) {
-            result = shotsWhenFired;
-          } else {
-            result = shotsWhenFired * instance.ProjectilesPerShot;
-          }
-          return result;
-        }
-      }
-      //ExtAmmunitionDef extAmmo = CustomAmmoCategories.findExtAmmo(CurrentAmmoId);
-      //ExtWeaponDef extWeapon = CustomAmmoCategories.getExtWeaponDef(__instance.weaponDef.Description.Id);
-      if (modValue == 0) {
-        if (instance.weaponDef.ComponentTags.Contains("wr-clustered_shots") || CustomAmmoCategories.getWeaponDisabledClustering(instance)) {
-          result = shotsWhenFired;
-        } else {
-          result = shotsWhenFired * instance.ProjectilesPerShot;
-        }
-        CustomAmmoCategoriesLog.Log.LogWrite("  fire internal ammo. projectiles:" + result + "\n");
-        return result;
-      }
-      for (int index = 0; index < instance.ammoBoxes.Count; ++index) {
-        AmmunitionBox ammoBox = instance.ammoBoxes[index];
-        if (ammoBox.IsFunctional == false) { continue; }
-        if (ammoBox.CurrentAmmo <= 0) { continue; }
-        if ((string.IsNullOrEmpty(CurrentAmmoId) == false) && (ammoBox.ammoDef.Description.Id != CurrentAmmoId)) { continue; }
-        if (ammoBox.CurrentAmmo >= modValue) {
-          if (StreakHitCount != 0) {
-            ammoBox.StatCollection.ModifyStat<int>(instance.uid, stackItemUID, "CurrentAmmo", StatCollection.StatOperation.Int_Subtract, modValue, -1, true);
-            CustomAmmoCategories.AddToExposionCheck(ammoBox);
-          }
-          modValue = 0;
-        } else {
-          modValue -= ammoBox.CurrentAmmo;
-          if (StreakHitCount != 0) {
-            ammoBox.StatCollection.ModifyStat<int>(instance.uid, stackItemUID, "CurrentAmmo", StatCollection.StatOperation.Set, 0, -1, true);
-            CustomAmmoCategories.AddToExposionCheck(ammoBox);
-          }
-        }
-      }
-      if (instance.weaponDef.ComponentTags.Contains("wr-clustered_shots") || CustomAmmoCategories.getWeaponDisabledClustering(instance)) {
-        result = (instance.ShotsWhenFired - modValue);
-      } else {
-        result = (instance.ShotsWhenFired - modValue) * instance.ProjectilesPerShot;
-      }
-      CustomAmmoCategoriesLog.Log.LogWrite("  fire external ammo. projectiles:" + result + "\n");
-      return result;
-    }*/
   }
 }

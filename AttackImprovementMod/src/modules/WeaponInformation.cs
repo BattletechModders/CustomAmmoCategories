@@ -13,7 +13,7 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
 
   public class WeaponInfo : BattleModModule {
 
-    public override void CombatStartsOnce() {
+    public override void ModStarts() {
       Type SlotType = typeof(CombatHUDWeaponSlot), PanelType = typeof(CombatHUDWeaponPanel);
 
       if (AIMSettings.SaturationOfLoadout != 0 || AIMSettings.ShowDamageInLoadout || AIMSettings.ShowMeleeDamageInLoadout || AIMSettings.ShowAlphaDamageInLoadout != null)

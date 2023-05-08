@@ -45,15 +45,10 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
       base.CombatEnds();
       losColors.Clear();
     }
-    public override void CombatStartsOnce() {
+    public override void ModStarts() {
       if (AIMSettings.FacingMarkerPlayerColors != null || AIMSettings.FacingMarkerEnemyColors != null || AIMSettings.FacingMarkerTargetColors != null) {
-        SetColors = typeof(AttackDirectionIndicator).GetMethod("SetColors", NonPublic | Instance);
-        if (SetColors == null) {
-          Warn("Cannot find AttackDirectionIndicator.SetColors, direction marker colors not patched.");
-        } else {
-          TryRun(ModLog, InitDirectionColors);
-          Patch(typeof(AttackDirectionIndicator), "ShowAttackDirection", "SaveDirectionMarker", "SetDirectionMarker");
-        }
+        TryRun(ModLog, InitDirectionColors);
+        Patch(typeof(AttackDirectionIndicator), "ShowAttackDirection", "SaveDirectionMarker", "SetDirectionMarker");
       }
 
       Type IndicatorType = typeof(WeaponRangeIndicators);
@@ -173,7 +168,6 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
 
     // ============ Marker Colour ============
 
-    private static MethodInfo SetColors;
     private static Color[] OrigDirectionMarkerColors; // [ Active #FFFFFF4B, Inactive #F8441464 ]
     private static Color?[] FacingMarkerPlayerColors, FacingMarkerEnemyColors, FacingMarkerTargetColors;
 
@@ -212,9 +206,9 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
         if (me.Owner == null || me.Owner.IsDead || Combat == null) return;
         Color orig = me.ColorInactive;
         Color?[] activeColors = __instance.Owner?.team?.IsFriendly(Combat?.LocalPlayerTeam) ?? false ? FacingMarkerPlayerColors : FacingMarkerEnemyColors;
-        object[] colors;
+        Color[] colors;
         if (direction != AttackDirection.ToProne && direction != AttackDirection.FromTop) {
-          colors = new object[] { activeColors?[0] ?? orig, activeColors?[1] ?? orig, activeColors?[2] ?? orig, activeColors?[3] ?? orig };
+          colors = new Color[] { activeColors?[0] ?? orig, activeColors?[1] ?? orig, activeColors?[2] ?? orig, activeColors?[3] ?? orig };
           if (direction != AttackDirection.None) {
             int dirIndex = Math.Max(0, Math.Min((int)direction - 1, LOSDirectionCount - 1));
             colors[dirIndex] = FacingMarkerTargetColors?[dirIndex] ?? me.ColorActive;
@@ -224,9 +218,9 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
           if (ActiveState == null) return;
           FiringPreviewManager.PreviewInfo info = ActiveState.FiringPreview.GetPreviewInfo(me.Owner);
           orig = info.HasLOF ? (FacingMarkerTargetColors?[4] ?? me.ColorActive) : (activeColors?[4] ?? me.ColorInactive);
-          colors = new object[] { orig, orig, orig, orig };
+          colors = new Color[] { orig, orig, orig, orig };
         }
-        SetColors.Invoke(__instance, colors);
+        __instance.SetColors(colors[0], colors[1], colors[2], colors[3]);
       } catch (Exception ex) { Error(ex); }
     }
 

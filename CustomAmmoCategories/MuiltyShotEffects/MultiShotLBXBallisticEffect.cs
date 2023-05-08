@@ -18,20 +18,12 @@ namespace CustAmmoCategories {
     public int volleySize;
     public int shotHitIndex;
     public string LBXEffectPrefab;
-#if PUBLIC_ASSEMBLIES
-    public override int ImpactPrecacheCount {
-#else
     protected override int ImpactPrecacheCount {
-#endif
       get {
         return 5;
       }
     }
-#if PUBLIC_ASSEMBLIES
-    public override void Awake() {
-#else
     protected override void Awake() {
-#endif
       base.Awake();
       this.AllowMissSkipping = false;
     }
@@ -55,11 +47,11 @@ namespace CustAmmoCategories {
       this.buildingHitOverlayVFXName = string.Empty;
       this.shotsDestroyFlimsyObjects = false;
       this.preFireSFX = string.Empty;
-      Log.M.TWL(0, "MultiShotLBXBallisticEffect.Init");
+      Log.Combat?.TWL(0, "MultiShotLBXBallisticEffect.Init");
       this.LBXEffectPrefab = prefab;
     }
     public override void Init(Weapon weapon) {
-      Log.M.TWL(0,"MultiShotLBXBallisticEffect.BaseInit");
+      Log.Combat?.TWL(0,"MultiShotLBXBallisticEffect.BaseInit");
       base.Init(weapon);
     }
     public override void SetupCustomSettings() {
@@ -99,7 +91,7 @@ namespace CustAmmoCategories {
       }
     }
     protected void SetupBulets() {
-      Log.M.TWL(0, "MultiShotLBXBallisticEffect.SetupBeams");
+      Log.Combat?.TWL(0, "MultiShotLBXBallisticEffect.SetupBeams");
       this.currentVolley = 0;
       this.shotHitIndex = 0;
       float effective_shotDelay = 0f;
@@ -112,7 +104,7 @@ namespace CustAmmoCategories {
       if (effective_shotDelay <= 0.5f) { effective_shotDelay = 0.5f; }
       this.duration = effective_shotDelay;
       this.rate = 1f / effective_shotDelay;
-      Log.LogWrite(" projectileSpeed:" + projectileSpeed + " duration: " + this.duration + " FireDelayMultiplier: " + this.weapon.FireDelayMultiplier() + " shotDelay:" + shotDelay + " rate:" + this.rate + "\n");
+      Log.Combat?.WL(1,$"projectileSpeed:{projectileSpeed} duration: {this.duration} FireDelayMultiplier: {this.weapon.FireDelayMultiplier()} shotDelay:{shotDelay} rate:{this.rate}");
       this.ClearBullets();
       int volleysCount = this.hitInfo.numberOfShots;
       this.volleySize = 1;
@@ -120,15 +112,15 @@ namespace CustAmmoCategories {
         volleysCount /= weapon.ProjectilesPerShot;
         volleySize = weapon.ProjectilesPerShot;
         if ((volleysCount % weapon.ProjectilesPerShot) != 0) { volleysCount += 1; }
-        Log.M.WL(2, "numberOfShots:" + this.hitInfo.numberOfShots + " ProjectilesPerShot:" + weapon.ProjectilesPerShot + " volleysCount:" + volleysCount);
+        Log.Combat?.WL(2, $"numberOfShots:{this.hitInfo.numberOfShots} ProjectilesPerShot:{weapon.ProjectilesPerShot} volleysCount:{volleysCount}");
       }
       string prefabName = MultiShotLBXBallisticEffect.ImprovedLaserPrefabPrefix + this.LBXEffectPrefab;
-      Log.LogWrite("MultiShotLBXBallisticEffect.SetupBullets getting from pool:" + prefabName + "\n");
+      Log.Combat?.WL(0,$"MultiShotLBXBallisticEffect.SetupBullets getting from pool:{prefabName}");
       for (int index = 0; index < volleysCount; ++index) {
         GameObject MultiShotGameObject = this.Combat.DataManager.PooledInstantiate(prefabName, BattleTechResourceType.Prefab, new Vector3?(), new Quaternion?(), (Transform)null);
         MultiShotLBXBulletEffect msComponent = null;
         if (MultiShotGameObject != null) {
-          Log.LogWrite(" getted from pool: " + MultiShotGameObject.GetInstanceID() + "\n");
+          Log.Combat?.WL(1,$"getted from pool: {MultiShotGameObject.GetInstanceID()}");
           msComponent = MultiShotGameObject.GetComponent<MultiShotLBXBulletEffect>();
           if (msComponent != null) {
             msComponent.Init(this.weapon, this);
@@ -136,9 +128,9 @@ namespace CustAmmoCategories {
           }
         }
         if (msComponent == null) {
-          Log.LogWrite(" not in pool. instansing.\n");
+          Log.Combat?.WL(1,"not in pool. instansing.");
           GameObject gameObject = this.Combat.DataManager.PooledInstantiate(this.LBXEffectPrefab, BattleTechResourceType.Prefab, new Vector3?(), new Quaternion?(), (Transform)null);
-          if ((UnityEngine.Object)gameObject == (UnityEngine.Object)null) {
+          if (gameObject == null) {
             WeaponEffect.logger.LogError((object)("Error instantiating BulletObject " + this.LBXEffectPrefab), (UnityEngine.Object)this);
             break;
           }
@@ -153,8 +145,8 @@ namespace CustAmmoCategories {
           autoPoolObject.Init(this.weapon.parent.Combat.DataManager, this.LBXEffectPrefab, 4f);
           gameObject = null;
           MultiShotGameObject.transform.parent = (Transform)null;
-          LaserEffect component = MultiShotGameObject.GetComponent<LaserEffect>();
-          if ((UnityEngine.Object)component == (UnityEngine.Object)null) {
+          LBXEffect component = MultiShotGameObject.GetComponent<LBXEffect>();
+          if (component == null) {
             WeaponEffect.logger.LogError((object)("Error finding BulletEffect on GO " + this.LBXEffectPrefab), (UnityEngine.Object)this);
             return;
           }
@@ -167,11 +159,11 @@ namespace CustAmmoCategories {
     }
     protected void ClearBullets() {
       string prefabName = MultiShotLBXBallisticEffect.ImprovedLaserPrefabPrefix + this.LBXEffectPrefab;
-      Log.LogWrite("MultiShotLBXBulletEffect.ClearBullets\n");
+      Log.Combat?.WL(0,"MultiShotLBXBulletEffect.ClearBullets");
       for (int index = 0; index < this.bullets.Count; ++index) {
         this.bullets[index].Reset();
         GameObject gameObject = this.bullets[index].gameObject;
-        Log.LogWrite(" returning to pool " + prefabName + " " + gameObject.GetInstanceID() + "\n");
+        Log.Combat?.WL(1,$"returning to pool {prefabName} {gameObject.GetInstanceID()}");
         this.Combat.DataManager.PoolGameObject(prefabName, gameObject);
       }
       this.bullets.Clear();
@@ -186,13 +178,13 @@ namespace CustAmmoCategories {
       return true;
     }
     public override void Fire(WeaponHitInfo hitInfo, int hitIndex = 0, int emitterIndex = 0) {
-      Log.LogWrite("MultiShotLBXBallisticEffect.Fire " + hitInfo.attackWeaponIndex + " " + hitIndex + " ep:" + hitInfo.hitPositions[hitIndex] + "\n");
+      Log.Combat?.TWL(0,$"MultiShotLBXBallisticEffect.Fire {hitInfo.attackWeaponIndex} {hitIndex} ep:{hitInfo.hitPositions[hitIndex]}");
       Vector3 endPos = hitInfo.hitPositions[hitIndex];
       this.SetupCustomSettings();
       base.Fire(hitInfo, hitIndex, emitterIndex);
       this.endPos = endPos;
       hitInfo.hitPositions[hitIndex] = endPos;
-      Log.LogWrite(" endPos restored:" + this.endPos + "\n");
+      Log.Combat?.WL(1,$"endPos restored:{this.endPos}");
       AttackSequence sequence = Combat.AttackDirector.GetAttackSequence(hitInfo.attackSequenceId);
       this.SetupBulets();
       this.PlayPreFire();
@@ -264,18 +256,10 @@ namespace CustAmmoCategories {
       }
       this.currentState = WeaponEffect.WeaponEffectState.WaitingForImpact;
     }
-#if PUBLIC_ASSEMBLIES
-    public override void PlayImpact() {
-#else
     protected override void PlayImpact() {
-#endif
       //base.PlayImpact();
     }
-#if PUBLIC_ASSEMBLIES
-    public override void Update() {
-#else
     protected override void Update() {
-#endif
       try {
         base.Update();
         if (this.currentState != WeaponEffect.WeaponEffectState.WaitingForImpact || !this.AllBulletsComplete())

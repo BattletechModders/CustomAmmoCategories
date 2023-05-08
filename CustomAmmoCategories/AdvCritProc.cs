@@ -23,19 +23,15 @@ namespace CustAmmoCategories {
   [HarmonyPatch("GetRandomNumber")]
   [HarmonyPatch(new Type[] { typeof(int), typeof(int) })]
   public static class AttackSequence_GetRandomNumberCycle {
-    public static bool Prefix(AttackDirector.AttackSequence __instance, int groupIndex, int weaponIndex, ref int[][] ___randomCacheValuesUsed, ref float[][][] ___randomCache) {
+    public static bool Prefix(AttackDirector.AttackSequence __instance, int groupIndex, int weaponIndex) {
       try {
-        if (___randomCacheValuesUsed[groupIndex][weaponIndex] >= ___randomCache[groupIndex][weaponIndex].Length) { ___randomCacheValuesUsed[groupIndex][weaponIndex] = 0; }
+        if (__instance.randomCacheValuesUsed[groupIndex][weaponIndex] >= __instance.randomCache[groupIndex][weaponIndex].Length) { __instance.randomCacheValuesUsed[groupIndex][weaponIndex] = 0; }
       } catch (Exception e) {
-        Log.LogWrite(e.ToString() + "\n", true);
+        Log.Combat?.TWL(0,e.ToString(), true);
       }
       return true;
     }
   }
-  //[HarmonyPatch(typeof(MechComponent))]
-  //[HarmonyPatch("InitStats")]
-  //[HarmonyPatch(MethodType.Normal)]
-  //[HarmonyPatch(new Type[] { })]
   public static class MechComponent_InitStats {
     public static void Postfix(MechComponent __instance) {
       if(__instance.StatCollection.ContainsStatistic(CustomAmmoCategories.Settings.RemoveFromCritRollStatName) == false) {

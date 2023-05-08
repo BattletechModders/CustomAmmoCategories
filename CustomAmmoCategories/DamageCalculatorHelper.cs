@@ -72,7 +72,7 @@ namespace CustAmmoCategories {
       return fullDamage / dmg;
     }
     public float SimpleVariation(Weapon weapon, Vector3 attackPosition, ICombatant target, bool IsBreachingShot, int location, float dmg, float ap, float heat, float stab) {
-      Log.M.TWL(0,"Simple damage variance for weapon " + weapon.UIName + "\n");
+      Log.Combat?.TWL(0,"Simple damage variance for weapon " + weapon.UIName + "\n");
       var damagePerShot = weapon.DamagePerShot;
       var variance = weapon.DamageVariance();
       if (float.IsNaN(simpleVariationRoll)) {
@@ -90,7 +90,7 @@ namespace CustAmmoCategories {
       sb.AppendLine($" damagePerShot: {damagePerShot}");
       sb.AppendLine($" variance: {variance}");
       sb.AppendLine($" result: {variantDamage}");
-      Log.LogWrite(sb.ToString() + "\n");
+      Log.Combat?.WL(0,sb.ToString());
       return variantDamage;
     }
     public static float DamageReductionMultiplierAll(Weapon weapon, Vector3 attackPosition, ICombatant target, bool IsBreachingShot, int location, float dmg, float ap, float heat, float stab) {
@@ -206,17 +206,7 @@ namespace CustAmmoCategories {
       this.attackPos = attackPosition;
       this.target = target;
       isCalculated = false;
-      //StringBuilder descr = new StringBuilder();
       modifiers = new List<DamageModifier>();
-      //Dictionary<string, float> damageMods = new Dictionary<string, float>();
-      //Dictionary<string, float> apMods = new Dictionary<string, float>();
-      //Dictionary<string, float> heatMods = new Dictionary<string, float>();
-      //Dictionary<string, float> stabMods = new Dictionary<string, float>();
-      //descr.AppendLine("Base damage".UI());
-      //descr.AppendLine(" " + "Normal".UI() + ": "+weapon.DamagePerShot);
-      //descr.AppendLine(" " + "AP".UI() + ": " + weapon.StructureDamagePerShot);
-      //descr.AppendLine(" " + "Heat".UI() + ": " + weapon.HeatDamagePerShot);
-      //descr.AppendLine(" " + "Instability".UI() + ": " + weapon.Instability());
       float distMod = 1f;
       if (weapon.DistantVariance() > CustomAmmoCategories.Epsilon) {
         distMod = weapon.DistantVarianceReversed() ? weapon.RevDistanceDamageMod(attackPosition, target) : weapon.DistanceDamageMod(attackPosition, target);
@@ -226,12 +216,10 @@ namespace CustAmmoCategories {
       AttackImpactQuality attackImpactQuality = weapon.IgnoreCover() ? AttackImpactQuality.Solid
         : weapon.parent.Combat.ToHit.GetBlowQuality(weapon.parent, attackPosition, weapon, target, weapon.WeaponCategoryValue.IsMelee?MeleeAttackType.MeleeWeapon:MeleeAttackType.NotSet, this.IsBreachingShot);
       float qualityMultiplier = weapon.parent.Combat.ToHit.GetBlowQualityMultiplier(attackImpactQuality);
-
       modifiers.Add(new DamageModifier("Distance".UI(), DamageModifierType.Normal, true, false, (weapon.isDamageVariation() ? distMod : 1f), null));
       modifiers.Add(new DamageModifier("Distance".UI(), DamageModifierType.AP, true, false, (weapon.isDamageVariation() ? distMod : 1f), null));
       modifiers.Add(new DamageModifier("Distance".UI(), DamageModifierType.Heat, true, false, (weapon.isHeatVariation() ? distMod : 1f), null));
       modifiers.Add(new DamageModifier("Distance".UI(), DamageModifierType.Stability, true, false, (weapon.isStabilityVariation() ? distMod : 1f), null));
-
       if (weapon.DamageVariance() > CustomAmmoCategories.Epsilon) {
         simpleVariationRoll = float.NaN;
         if (weapon.isDamageVariation()) {
@@ -241,7 +229,6 @@ namespace CustAmmoCategories {
         if (weapon.isHeatVariation()) modifiers.Add(new DamageModifier("Variation".UI() + " +-" + weapon.DamageVariance(), DamageModifierType.Heat, false, false, float.NaN, SimpleVariation));
         if (weapon.isStabilityVariation()) modifiers.Add(new DamageModifier("Variation".UI() + " +-" + weapon.DamageVariance(), DamageModifierType.Stability, false, false, float.NaN, SimpleVariation));
       }
-
       foreach(var eMode in DamageModifiersCache.eModesNameDelegates) {
         string name = eMode.Value(weapon);
         if (string.IsNullOrEmpty(name)) { continue; }
@@ -265,23 +252,18 @@ namespace CustAmmoCategories {
             modifiers.Add(new DamageModifier(name, DamageModifierType.Normal, true, false, funcS(weapon), null));
           }
         }
-      }
-      
+      }      
       modifiers.Add(new DamageModifier("Overheat".UI(), DamageModifierType.Normal, true, false, (weapon.isDamageVariation() ? overHeatMod : 1f), null));
       modifiers.Add(new DamageModifier("Overheat".UI(), DamageModifierType.AP, true, false, (weapon.isDamageVariation() ? overHeatMod : 1f), null));
       modifiers.Add(new DamageModifier("Overheat".UI(), DamageModifierType.Heat, true, false, (weapon.isHeatVariation() ? overHeatMod : 1f), null));
       modifiers.Add(new DamageModifier("Overheat".UI(), DamageModifierType.Stability, true, false, (weapon.isStabilityVariation() ? overHeatMod : 1f), null));
-
       modifiers.Add(new DamageModifier("Blow quality".UI(), DamageModifierType.Normal, true, false, qualityMultiplier, null));
       modifiers.Add(new DamageModifier("Blow quality".UI(), DamageModifierType.AP, true, false, qualityMultiplier, null));
       modifiers.Add(new DamageModifier("Blow quality".UI(), DamageModifierType.Heat, true, false, 1f, null));
-
       float globalDmgMod = weapon.parent.Combat.Constants.CombatValueMultipliers.GlobalDamageMultiplier;
       modifiers.Add(new DamageModifier("Has jumped".UI(), DamageModifierType.Normal, true, false, float.NaN, DamageModifiers.JumpingWeaponDamageModifier));
-
       modifiers.Add(new DamageModifier("Global settings".UI(), DamageModifierType.Normal, true, false, globalDmgMod, null));
       modifiers.Add(new DamageModifier("Global settings".UI(), DamageModifierType.AP, true, false, globalDmgMod, null));
-
       DesignMaskDef priorityDesignMaskAtPos = weapon.parent.Combat.MapMetaData.GetPriorityDesignMaskAtPos(attackPosition);
       float dmgFromMod = weapon.GetMaskDamageMultiplier(priorityDesignMaskAtPos);
       float dmgBiomeMod = weapon.GetMaskDamageMultiplier(weapon.parent.Combat.MapMetaData.biomeDesignMask);
@@ -290,7 +272,6 @@ namespace CustAmmoCategories {
         modifiers.Add(new DamageModifier("Biome".UI() + " " + new Text(weapon.parent.Combat.MapMetaData.biomeDesignMask.Description.Name).ToString(), DamageModifierType.AP, true, false, dmgBiomeMod, null));
       }
       if (weapon.parent.UnaffectedDesignMasks()) { priorityDesignMaskAtPos = null; }
-
       if (priorityDesignMaskAtPos != null) {
         modifiers.Add(new DamageModifier("From".UI() + " " + new Text(priorityDesignMaskAtPos.Description.Name).ToString(), DamageModifierType.Normal, true, false, dmgFromMod, null));
         modifiers.Add(new DamageModifier("From".UI() + " " + new Text(priorityDesignMaskAtPos.Description.Name).ToString(), DamageModifierType.AP, true, false, dmgFromMod, null));
@@ -395,22 +376,6 @@ namespace CustAmmoCategories {
       }
       modifiers.Add(new DamageModifier("Heat to damage".UI(), DamageModifierType.Normal, true, true, float.NaN, HeatToNormal));
       modifiers.Add(new DamageModifier("Heat to damage".UI(), DamageModifierType.Heat, true, false, target.isHasHeat()?1f:0f, null));
-      //descr.AppendLine("Normal damage modifiers".UI());
-      //foreach (var dmgMod in damageMods) {
-      //descr.AppendLine(" "+dmgMod.Key+": x"+Math.Round(dmgMod.Value,2));
-      //}
-      //descr.AppendLine("AP damage modifiers".UI());
-      //foreach (var dmgMod in damageMods) {
-      //descr.AppendLine(" " + dmgMod.Key + ": x" + Math.Round(dmgMod.Value, 2));
-      //}
-      //descr.AppendLine("Heat damage modifiers".UI());
-      //foreach (var dmgMod in damageMods) {
-      //descr.AppendLine(" " + dmgMod.Key + ": x" + Math.Round(dmgMod.Value, 2));
-      //}
-      //descr.AppendLine("Stability damage modifiers".UI());
-      //foreach (var dmgMod in damageMods) {
-      //descr.AppendLine(" " + dmgMod.Key + ": x" + Math.Round(dmgMod.Value, 2));
-      //}
     }
   }
   public class DamageModifierDelegate {

@@ -64,20 +64,12 @@ namespace CustAmmoCategories {
       this.spline.Refresh();
     }
 
-#if PUBLIC_ASSEMBLIES
-    public override int ImpactPrecacheCount {
-#else
     protected override int ImpactPrecacheCount {
-#endif
       get {
         return 5;
       }
     }
-#if PUBLIC_ASSEMBLIES
-    public override void Awake() {
-#else
     protected override void Awake() {
-#endif
       base.Awake();
     }
     protected override void Start() {
@@ -131,21 +123,19 @@ namespace CustAmmoCategories {
       this.projectileSpeed *= weapon.ProjectileSpeedMultiplier();
     }
     public virtual void Fire(WeaponHitInfo hitInfo, int hitIndex, int emitterIndex, bool pb) {
-      Log.M?.TWL(0,"MultiShotBulletEffect.Fire "+hitInfo.attackWeaponIndex+" "+hitIndex+" emitter:" + emitterIndex + " ep:"+hitInfo.hitPositions[hitIndex]+" prime:"+pb+"\n");
+      //Log.Combat?.TWL(0,"MultiShotBulletEffect.Fire "+hitInfo.attackWeaponIndex+" "+hitIndex+" emitter:" + emitterIndex + " ep:"+hitInfo.hitPositions[hitIndex]+" prime:"+pb+"\n");
       this.primeBullet = pb;
       Vector3 endPos = hitInfo.hitPositions[hitIndex];
       this.SetupCustomSettings();
       base.Fire(hitInfo, hitIndex, emitterIndex);
       this.endPos = endPos;
       hitInfo.hitPositions[hitIndex] = endPos;
-      Log.LogWrite(" endPos restored:" + this.endPos + "\n");
+      //Log.Combat?.WL(1, $"endPos restored:{this.endPos}");
       AdvWeaponHitInfoRec advRec = this.hitInfo.advRec(hitIndex);
-      //if (pb == false) {
-        endPos.x += Random.Range(-this.parentLauncher.spreadAngle, this.parentLauncher.spreadAngle);
-        endPos.y += Random.Range(-this.parentLauncher.spreadAngle, this.parentLauncher.spreadAngle);
-        endPos.z += Random.Range(-this.parentLauncher.spreadAngle, this.parentLauncher.spreadAngle);
-        this.endPos = endPos;
-      //}
+      endPos.x += Random.Range(-this.parentLauncher.spreadAngle, this.parentLauncher.spreadAngle);
+      endPos.y += Random.Range(-this.parentLauncher.spreadAngle, this.parentLauncher.spreadAngle);
+      endPos.z += Random.Range(-this.parentLauncher.spreadAngle, this.parentLauncher.spreadAngle);
+      this.endPos = endPos;
       float num = Vector3.Distance(this.startingTransform.position, this.endPos);
       if (this.parentLauncher.isIndirect) {
         this.GenerateIndirectMissilePath();
@@ -162,24 +152,14 @@ namespace CustAmmoCategories {
       this.rate = 1f / this.duration;
       this.PlayPreFire();
       if (advRec == null) {
-        Log.LogWrite(" no advanced record.");
+        //Log.Combat?.WL(1, $"no advanced record.");
         return;
       }
       if (advRec.fragInfo.separated && (advRec.fragInfo.fragStartHitIndex >= 0) && (advRec.fragInfo.fragsCount > 0)) {
-        Log.LogWrite(" frag projectile separated.");
+        //Log.Combat?.WL(1, $"frag projectile separated.");
         this.RegisterFragWeaponEffect();
       }
-      /*ShrapnelHitRecord shrapnelHitRecord = CustomAmmoCategories.getShrapnelCache(this.hitInfo, this.hitIndex);
-      if (shrapnelHitRecord != null) {
-        CustomAmmoCategoriesLog.Log.LogWrite(" shrapnel Hit info found:" + shrapnelHitRecord.shellsHitIndex + "\n");
-        if (shrapnelHitRecord.isSeparated == true) {
-          this.RegisterFragWeaponEffect();
-        } else {
-          CustomAmmoCategoriesLog.Log.LogWrite(" not separated\n");
-        }
-      }*/
     }
-    //public Color originalColor;
     public TrailRenderer trailRendered;
     public override void StoreOriginalColor() {
       this.trailRendered = this.projectile.GetComponentInChildren<TrailRenderer>();
@@ -201,10 +181,10 @@ namespace CustAmmoCategories {
     }
     public override void InitProjectile() {
       base.InitProjectile();
-      Log.LogWrite("MultiShotBulletEffect.InitProjectile\n");
+      //Log.Combat?.TWL(0,"MultiShotBulletEffect.InitProjectile");
       Component[] components = this.projectile.GetComponentsInChildren<Component>();
       foreach (Component component in components) {
-        Log.LogWrite(" " + component.name + ":" + component.GetType().ToString() + "\n");
+        //Log.Combat?.WL(1, $"{component.name}:{component.GetType().ToString()}");
       }
     }
     protected override void PlayPreFire() {
@@ -256,9 +236,9 @@ namespace CustAmmoCategories {
           combatantByGuid.GameRep.PlayImpactAnim(this.hitInfo, this.hitIndex, this.weapon, MeleeAttackType.NotSet, 0.0f);
         }
       }*/ // это в принципе не нужно потом что PlayImpactAnim проигрывается на каждый импакт, в оригинальной реализации попадание пули просто не вызывало импакт
-      Log.LogWrite("MultiShotBulletEffect.OnImpact wi:"+this.hitInfo.attackWeaponIndex+" hi:"+this.hitInfo+" bi:"+this.bulletIdx+" prime:"+this.primeBullet+"\n");
+      Log.Combat?.TWL(0,$"MultiShotBulletEffect.OnImpact wi:{this.hitInfo.attackWeaponIndex} hi:{this.hitInfo} bi:{this.bulletIdx} prime:{this.primeBullet}");
       if (this.primeBullet) {
-        Log.LogWrite(" prime. Damage message fired\n");
+        Log.Combat?.WL(1, $"prime. Damage message fired");
         float damage = this.weapon.DamagePerShotAdjusted(this.weapon.parent.occupiedDesignMask);
         float apDamage = this.weapon.StructureDamagePerShotAdjusted(this.weapon.parent.occupiedDesignMask);
         if (this.weapon.DamagePerPallet()&&(this.weapon.DamageNotDivided() == false)) {
@@ -267,9 +247,9 @@ namespace CustAmmoCategories {
         };
         base.OnImpact(damage, apDamage);
       } else {
-        Log.LogWrite(" no prime. No damage message fired\n");
+        Log.Combat?.WL(1, $"no prime. No damage message fired");
       }
-      if (!((UnityEngine.Object)this.projectileParticles != (UnityEngine.Object)null)) { return; };
+      if (this.projectileParticles == null) { return; };
       this.projectileParticles.Stop(true);
     }
     protected override void OnComplete() {

@@ -82,7 +82,7 @@ namespace CustAmmoCategories {
     public static bool DisableInternalWeaponChoose = false;
     public static void applyWeaponAmmoMode(this Weapon weapon, string modeId, string ammoId) {
       WeaponExtendedInfo info = weapon.info();
-      CustomAmmoCategoriesLog.Log.LogWrite("applyWeaponAmmoMode(" + weapon.defId + "," + modeId + "," + ammoId + ")\n");
+      Log.Combat?.WL(0,"applyWeaponAmmoMode(" + weapon.defId + "," + modeId + "," + ammoId + ")");
       if (info.modes.ContainsKey(modeId)) {
         if (weapon.StatCollection.ContainsStatistic(CustomAmmoCategories.WeaponModeStatisticName) == false) {
           weapon.StatCollection.AddStatistic<string>(CustomAmmoCategories.WeaponModeStatisticName, modeId);
@@ -90,7 +90,7 @@ namespace CustAmmoCategories {
           weapon.StatCollection.Set<string>(CustomAmmoCategories.WeaponModeStatisticName, modeId);
         }
       } else {
-        CustomAmmoCategoriesLog.Log.LogWrite("WARNING! " + weapon.defId + " has no mode " + modeId + "\n", true);
+        Log.Combat?.WL(0, "WARNING! " + weapon.defId + " has no mode " + modeId, true);
       }
       if (weapon.StatCollection.ContainsStatistic(CustomAmmoCategories.AmmoIdStatName) == false) {
         weapon.StatCollection.AddStatistic<string>(CustomAmmoCategories.AmmoIdStatName, ammoId);
@@ -105,11 +105,11 @@ namespace CustAmmoCategories {
       WeaponExtendedInfo info = weapon.info();
       //if (extWeapon.AmmoCategory.BaseCategory.ID == weapon.AmmoCategoryValue.ID) { ammoCategory = extWeapon.AmmoCategory; }
       if (info.modes.Count < 1) {
-        CustomAmmoCategoriesLog.Log.LogWrite("WARNING! " + weapon.defId + " has no modes. Even base mode. This means something is very very wrong\n", true);
+        Log.Combat?.WL(0, "WARNING! " + weapon.defId + " has no modes. Even base mode. This means something is very very wrong", true);
         return result;
       }
       if (info.modes.ContainsKey(modeId) == false) {
-        CustomAmmoCategoriesLog.Log.LogWrite("WARNING! " + weapon.defId + " has no mode " + modeId + ".\n", true);
+        Log.Combat?.WL(0, "WARNING! " + weapon.defId + " has no mode " + modeId, true);
         return result;
       }
       WeaponMode weaponMode = info.modes[modeId];
@@ -151,20 +151,20 @@ namespace CustAmmoCategories {
     }
     public static int getWeaponPierceLocations(List<int> hitLocations, ICombatant target, float DamagePerShot) {
       int result = 0;
-      CustomAmmoCategoriesLog.Log.LogWrite("getWeaponPierceLocations " + target.DisplayName + " : " + DamagePerShot + "\n");
+      Log.Combat?.WL(0, "getWeaponPierceLocations " + target.DisplayName + " : " + DamagePerShot);
       foreach (int hitLocation in hitLocations) {
         if (target.ArmorForLocation(hitLocation) <= DamagePerShot) {
-          CustomAmmoCategoriesLog.Log.LogWrite(" location " + hitLocation + " pierced\n");
+          Log.Combat?.WL(1, " location " + hitLocation + " pierced");
           ++result;
         }
       }
       return result;
     }
     public static float getTargetAvarageArmor(List<int> hitLocations, ICombatant target) {
-      CustomAmmoCategoriesLog.Log.LogWrite("getTargetAvarageArmor " + target.DisplayName + "\n");
+      Log.Combat?.WL(0, "getTargetAvarageArmor " + target.DisplayName);
       float result = 0.0f;
       foreach (int hitLocation in hitLocations) {
-        CustomAmmoCategoriesLog.Log.LogWrite(" location " + hitLocation + " : " + target.ArmorForLocation(hitLocation) + "\n");
+        Log.Combat?.WL(1, "location " + hitLocation + " : " + target.ArmorForLocation(hitLocation));
         result += target.ArmorForLocation(hitLocation);
       }
       if (hitLocations.Count > 0) {
@@ -229,25 +229,25 @@ namespace CustAmmoCategories {
     //}
     public static float CalcAMSAIDamageCoeff(this Weapon weapon) {
       if (weapon.parent == null) { return 0f; }
-      CustomAmmoCategoriesLog.Log.LogWrite("CalcAMSAIDamageCoeff " +weapon.UIName+" " + weapon.parent.DisplayName + ":"+weapon.parent.GUID+"\n");
+      Log.Combat?.WL(0, "CalcAMSAIDamageCoeff " + weapon.UIName+" " + weapon.parent.DisplayName + ":"+weapon.parent.GUID);
       float result = 0f;
       int missilesCount = 0;
-      CustomAmmoCategoriesLog.Log.LogWrite(" i've detected so far:\n");
+      Log.Combat?.WL(1, "i've detected so far:");
       foreach (AbstractActor enemy in weapon.parent.GetDetectedEnemyUnits()) {
         CustomAmmoCategoriesLog.Log.LogWrite(" "+enemy.DisplayName+":"+enemy.GUID+"\n");
         foreach(Weapon eweapon in enemy.Weapons) {
           Log.LogWrite("  " + eweapon.UIName);
-          if (eweapon.CanFire == false) { Log.LogWrite(" - can't fire\n"); continue; }
-          if (eweapon.AMSImmune()) { Log.LogWrite(" - AMS imune\n"); continue; }
+          if (eweapon.CanFire == false) { Log.Combat?.WL(1, "- can't fire"); continue; }
+          if (eweapon.AMSImmune()) { Log.Combat?.WL(1, "- AMS imune"); continue; }
           MissileLauncherEffect eweffect = eweapon.getWeaponEffect() as MissileLauncherEffect;
-          if (eweffect == null) { Log.LogWrite(" - not missile launcher\n"); continue; }
+          if (eweffect == null) { Log.Combat?.WL(1, "not missile launcher"); continue; }
           float distance = Vector3.Distance(enemy.CurrentPosition, weapon.parent.CurrentPosition);
-          if(distance > eweapon.MaxRange) { Log.LogWrite(" - out of range\n"); continue; }
+          if(distance > eweapon.MaxRange) { Log.Combat?.WL(1, "- out of range"); continue; }
           float toHit = eweapon.GetToHitFromPosition(weapon.parent, 1, enemy.CurrentPosition, weapon.parent.CurrentPosition, true, weapon.parent.IsEvasive, false);
           float predictDamage = eweapon.ShotsWhenFired * toHit * (eweapon.DamagePerShot + eweapon.HeatDamagePerShot) * (weapon.AMSHitChance() + eweapon.AMSHitChance());
           missilesCount += eweapon.ShotsWhenFired;
           result += predictDamage;
-          Log.LogWrite(" - "+predictDamage+"/"+result+"/"+missilesCount+"\n");
+          Log.Combat?.WL(1, "- " + predictDamage+"/"+result+"/"+missilesCount);
         }
       }
       if (missilesCount == 0) { return 0f; };
@@ -255,7 +255,7 @@ namespace CustAmmoCategories {
         foreach (AbstractActor friend in weapon.parent.Combat.GetAllAlliesOf(weapon.parent)) {
           float distance = Vector3.Distance(friend.CurrentPosition, weapon.parent.CurrentPosition);
           if (distance < weapon.MaxRange) {
-            CustomAmmoCategoriesLog.Log.LogWrite(" ally in AAMS range:"+friend.DisplayName+":"+friend.GUID+"\n");
+            Log.Combat?.WL(1, "ally in AAMS range:" + friend.DisplayName+":"+friend.GUID);
             result *= (1f + CustomAmmoCategories.Settings.AAMSAICoeff);
           };
         }
@@ -265,13 +265,13 @@ namespace CustAmmoCategories {
       return result;
     }
     public static void fillWeaponPredictRecord(ref DamagePredictRecord record, AbstractActor unit, ICombatant target, Weapon weapon, ref List<int> hitLocations, ref float AverageArmor) {
-      CustomAmmoCategoriesLog.Log.LogWrite("fillWeaponPredictRecord " + unit.DisplayName + " target " + target.DisplayName + " weapon " + weapon.defId + "\n");
+      Log.Combat?.WL(0, "fillWeaponPredictRecord " + unit.DisplayName + " target " + target.DisplayName + " weapon " + weapon.defId);
       CustomAmmoCategories.applyWeaponAmmoMode(weapon, record.Id.modeId, record.Id.ammoId);
       AbstractActor targetActor = target as AbstractActor;
       if (hitLocations == null) {
         hitLocations = target.GetPossibleHitLocations(unit);
         foreach (int hitLocation in hitLocations) {
-          CustomAmmoCategoriesLog.Log.LogWrite("Hit Location " + hitLocation + "\n");
+          Log.Combat?.WL(1, "Hit Location " + hitLocation);
         }
       }
       if (float.IsNaN(AverageArmor)) {
@@ -287,12 +287,12 @@ namespace CustAmmoCategories {
       float damageJammCoeff = weapon.DamageOnJamming() ? (1.0f / CustomAmmoCategories.Settings.DamageJamAIAvoid) : 1.0f;
       jammCoeff *= damageJammCoeff;
       if (unit.IsAnyStructureExposed) {
-        CustomAmmoCategoriesLog.Log.LogWrite(" i have exposed locations. I will die soon. No fear of jamming or weapon explosion.\n");
+        Log.Combat?.WL(1, "i have exposed locations. I will die soon. No fear of jamming or weapon explosion.");
         damageJammCoeff = 1.0f;
         jammCoeff = 1.0f;
       }
       if (weapon.isAMS()) {
-        CustomAmmoCategoriesLog.Log.LogWrite(" AMS detected. Altering calculations\n");
+        Log.Combat?.WL(1, "AMS detected. Altering calculations");
         record.HeatDamageCoeff = 0f;
         record.NormDamageCoeff = weapon.CalcAMSAIDamageCoeff() * jammCoeff * coolDownCoeff;
       } else {
@@ -303,19 +303,19 @@ namespace CustAmmoCategories {
           damagePerShot /= (float)weapon.ProjectilesPerShot;
         }
         if (weapon.AOECapable()) {
-          CustomAmmoCategoriesLog.Log.LogWrite(" AOE weapon detected. Altering calculations\n");
+          Log.Combat?.WL(1, "AOE weapon detected. Altering calculations");
           toHit = 1.0f;
           if (target is Mech) {
             int HeadIndex = hitLocations.IndexOf((int)ArmorLocation.Head);
-            CustomAmmoCategoriesLog.Log.LogWrite("  AOE can't hit Mech head:" + HeadIndex + "\n");
+            Log.Combat?.WL(2, "AOE can't hit Mech head:" + HeadIndex);
             if ((HeadIndex >= 0) && (HeadIndex < hitLocations.Count)) { hitLocations.RemoveAt(HeadIndex); };
           }
           damagePerShot *= damageShotsCount;
-          CustomAmmoCategoriesLog.Log.LogWrite("  Full damage " + damagePerShot + "\n");
+          Log.Combat?.WL(2, "Full damage " + damagePerShot);
           damagePerShot /= (float)hitLocations.Count;
-          CustomAmmoCategoriesLog.Log.LogWrite("  but spreaded by locations" + damagePerShot + "\n");
+          Log.Combat?.WL(2, "but spreaded by locations" + damagePerShot);
           damageShotsCount = hitLocations.Count;
-          CustomAmmoCategoriesLog.Log.LogWrite("  hits count " + damageShotsCount + "\n");
+          Log.Combat?.WL(2, "hits count " + damageShotsCount);
         }
         float piercedLocationsCount = (float)CustomAmmoCategories.getWeaponPierceLocations(hitLocations, target, damagePerShot);
         float hitLocationsCount = (hitLocations.Count > 0) ? (float)hitLocations.Count : 1.0f;
@@ -327,21 +327,21 @@ namespace CustAmmoCategories {
         record.NormDamageCoeff = damagePerShot * damageShotsCount * toHit * coolDownCoeff * jammCoeff * clusterCoeff * pierceCoeff;
         record.HeatDamageCoeff = heatPerShot * damageShotsCount * toHit * jammCoeff;
         record.PredictHeatDamage = heatPerShot * damageShotsCount * toHit;
-        CustomAmmoCategoriesLog.Log.LogWrite(" toHit = " + toHit + "\n");
-        CustomAmmoCategoriesLog.Log.LogWrite(" coolDownCoeff = " + coolDownCoeff + "\n");
-        CustomAmmoCategoriesLog.Log.LogWrite(" jammCoeff = " + jammCoeff + "\n");
+        Log.Combat?.WL(1, "toHit = " + toHit);
+        Log.Combat?.WL(1, "coolDownCoeff = " + coolDownCoeff);
+        Log.Combat?.WL(1, "jammCoeff = " + jammCoeff);
         //CustomAmmoCategoriesLog.Log.LogWrite(" damageJammCoeff = " + damageJammCoeff + "\n");
-        CustomAmmoCategoriesLog.Log.LogWrite(" damageShotsCount = " + damageShotsCount + "\n");
-        CustomAmmoCategoriesLog.Log.LogWrite(" damagePerShot = " + damagePerShot + "\n");
-        CustomAmmoCategoriesLog.Log.LogWrite(" heatPerShot = " + heatPerShot + "\n");
-        CustomAmmoCategoriesLog.Log.LogWrite(" piercedLocationsCount = " + piercedLocationsCount + "\n");
-        CustomAmmoCategoriesLog.Log.LogWrite(" hitLocationsCount = " + hitLocationsCount + "\n");
-        CustomAmmoCategoriesLog.Log.LogWrite(" AverageArmor = " + AverageArmor + "\n");
-        CustomAmmoCategoriesLog.Log.LogWrite(" clusterCoeff = " + clusterCoeff + "\n");
-        CustomAmmoCategoriesLog.Log.LogWrite(" pierceCoeff = " + pierceCoeff + "\n");
+        Log.Combat?.WL(1, "damageShotsCount = " + damageShotsCount);
+        Log.Combat?.WL(1, "damagePerShot = " + damagePerShot);
+        Log.Combat?.WL(1, "heatPerShot = " + heatPerShot);
+        Log.Combat?.WL(1, "piercedLocationsCount = " + piercedLocationsCount);
+        Log.Combat?.WL(1, "hitLocationsCount = " + hitLocationsCount);
+        Log.Combat?.WL(1, "AverageArmor = " + AverageArmor);
+        Log.Combat?.WL(1, "clusterCoeff = " + clusterCoeff);
+        Log.Combat?.WL(1, "pierceCoeff = " + pierceCoeff);
       }
-      CustomAmmoCategoriesLog.Log.LogWrite(" NormDamageCoeff = " + record.NormDamageCoeff + "\n");
-      CustomAmmoCategoriesLog.Log.LogWrite(" HeatDamageCoeff = " + record.HeatDamageCoeff + "\n");
+      Log.Combat?.WL(1, "NormDamageCoeff = " + record.NormDamageCoeff);
+      Log.Combat?.WL(1, "HeatDamageCoeff = " + record.HeatDamageCoeff);
     }
     public static void ChooseBestWeaponForTarget(AbstractActor unit, ICombatant target, bool isStationary) {
       Stopwatch stopWatch = new Stopwatch();
@@ -357,23 +357,23 @@ namespace CustAmmoCategories {
         damagePredict.Add(weapon.uid, CustomAmmoCategories.getWeaponDamagePredict(unit, target, weapon));
       }
       foreach (var weapon in weapons) {
-        CustomAmmoCategoriesLog.Log.LogWrite("Weapon " + weapon.Key + " " + weapon.Value.defId + "\n");
+        Log.Combat?.WL(1, "Weapon " + weapon.Key + " " + weapon.Value.defId);
         foreach (var fireType in damagePredict[weapon.Key]) {
-          CustomAmmoCategoriesLog.Log.LogWrite(" mode:" + fireType.Id.modeId + " ammo:" + fireType.Id.ammoId + " heat:" + fireType.HeatDamageCoeff + " dmg:" + fireType.NormDamageCoeff + "\n");
+          Log.Combat?.WL(2, "mode:" + fireType.Id.modeId + " ammo:" + fireType.Id.ammoId + " heat:" + fireType.HeatDamageCoeff + " dmg:" + fireType.NormDamageCoeff);
         }
       }
       Mech targetMech = target as Mech;
       if (targetMech != null) {
-        CustomAmmoCategoriesLog.Log.LogWrite("Try overheat\n");
+        Log.Combat?.WL(0, "Try overheat");
         float overallPredictHeatDamage = 0f;
         Dictionary<string, int> weaponsWithHeatFireMode = new Dictionary<string, int>();
         foreach (var weapon in weapons) {
           if (damagePredict.ContainsKey(weapon.Key) == false) {
-            CustomAmmoCategoriesLog.Log.LogWrite("WARNING! " + weapon.Value.defId + " has no predict damage record something is very very wrong\n", true);
+            Log.Combat?.WL(0, "WARNING! " + weapon.Value.defId + " has no predict damage record something is very very wrong", true);
             continue;
           }
           if (damagePredict[weapon.Key].Count <= 0) {
-            CustomAmmoCategoriesLog.Log.LogWrite("WARNING! " + weapon.Value.defId + " has empty predict damage record something is very very wrong\n", true);
+            Log.Combat?.WL(0, "WARNING! " + weapon.Value.defId + " has empty predict damage record something is very very wrong", true);
             continue;
           }
           float HeatDamageCoeff = damagePredict[weapon.Key][0].HeatDamageCoeff;
@@ -388,32 +388,32 @@ namespace CustAmmoCategories {
             weaponsWithHeatFireMode.Add(weapon.Key, heatDamageIndex);
           }
         }
-        CustomAmmoCategoriesLog.Log.LogWrite(" Current target heat:" + targetMech.CurrentHeat + " predicted:" + overallPredictHeatDamage + "\n");
+        Log.Combat?.WL(1, "Current target heat:" + targetMech.CurrentHeat + " predicted:" + overallPredictHeatDamage);
         if ((targetMech.CurrentHeat + overallPredictHeatDamage) > targetMech.OverheatLevel) {
-          CustomAmmoCategoriesLog.Log.LogWrite(" worth it\n");
+          Log.Combat?.WL(2, "worth it");
           foreach (var weapon in weaponsWithHeatFireMode) {
             CustomAmmoCategories.applyWeaponAmmoMode(weapons[weapon.Key], damagePredict[weapon.Key][weapon.Value].Id.modeId, damagePredict[weapon.Key][weapon.Value].Id.ammoId);
             weapons.Remove(weapon.Key);
             damagePredict.Remove(weapon.Key);
           }
         } else {
-          CustomAmmoCategoriesLog.Log.LogWrite(" not worth it\n");
+          Log.Combat?.WL(2, "not worth it");
         }
       }
-      CustomAmmoCategoriesLog.Log.LogWrite("Normal damage\n");
+      Log.Combat?.WL(0, "Normal damage");
       foreach (var weapon in weapons) {
-        CustomAmmoCategoriesLog.Log.LogWrite("Weapon " + weapon.Key + " " + weapon.Value.defId + "\n");
+        Log.Combat?.WL(0, "Weapon " + weapon.Key + " " + weapon.Value.defId);
         foreach (var fireType in damagePredict[weapon.Key]) {
-          CustomAmmoCategoriesLog.Log.LogWrite(" mode:" + fireType.Id.modeId + " ammo:" + fireType.Id.ammoId + " heat:" + fireType.HeatDamageCoeff + " dmg:" + fireType.NormDamageCoeff + "\n");
+          Log.Combat?.WL(1, "mode:" + fireType.Id.modeId + " ammo:" + fireType.Id.ammoId + " heat:" + fireType.HeatDamageCoeff + " dmg:" + fireType.NormDamageCoeff);
         }
       }
       foreach (var weapon in weapons) {
         if (damagePredict.ContainsKey(weapon.Key) == false) {
-          CustomAmmoCategoriesLog.Log.LogWrite("WARNING! " + weapon.Value.defId + " has no predict damage record something is very very wrong\n", true);
+          Log.Combat?.WL(0, "WARNING! " + weapon.Value.defId + " has no predict damage record something is very very wrong", true);
           continue;
         }
         if (damagePredict[weapon.Key].Count <= 0) {
-          CustomAmmoCategoriesLog.Log.LogWrite("WARNING! " + weapon.Value.defId + " has empty predict damage record something is very very wrong\n", true);
+          Log.Combat?.WL(0, "WARNING! " + weapon.Value.defId + " has empty predict damage record something is very very wrong", true);
           continue;
         }
         float DamageCoeff = damagePredict[weapon.Key][0].NormDamageCoeff;
@@ -729,12 +729,12 @@ namespace CustomAmmoCategoriesPatches {
   public static class AttackEvaluator_MakeAttackOrderForTarget {
     public static bool Prefix(AbstractActor unit, ICombatant target, int enemyUnitIndex, bool isStationary) {
       if (CustomAmmoCategories.DisableInternalWeaponChoose) { return true; }
-      CustomAmmoCategoriesLog.Log.LogWrite(unit.DisplayName + " choosing best weapon for target " + target.DisplayName + "\n");
+      Log.Combat?.WL(0, $"{unit.DisplayName} choosing best weapon for target {target.DisplayName}");
       try {
         CustomAmmoCategories.ChooseBestWeaponForTarget(unit, target, isStationary);
         return true;
       } catch (Exception e) {
-        CustomAmmoCategoriesLog.Log.LogWrite("Exception " + e.ToString() + "\nFallback to default\n");
+        Log.Combat?.WL(0, $"Exception " + e.ToString() + "\nFallback to default");
         return true;
       }
     }
@@ -745,20 +745,20 @@ namespace CustomAmmoCategoriesPatches {
   public static class AttackEvaluator_MakeAttackOrder {
     public static void Postfix(AbstractActor unit, bool isStationary, BehaviorTreeResults __result) {
       if (CustomAmmoCategories.DisableInternalWeaponChoose) { return; }
-      CustomAmmoCategoriesLog.Log.LogWrite("Choose result for " + unit.DisplayName + "\n");
+      Log.Combat?.WL(0, $"Choose result for " + unit.DisplayName);
       try {
         if (__result.nodeState == BehaviorNodeState.Failure) {
-          CustomAmmoCategoriesLog.Log.LogWrite("  AI choosed not attack\n");
+          Log.Combat?.WL(2, $"AI choosed not attack");
         } else
         if (__result.orderInfo is AttackOrderInfo) {
-          CustomAmmoCategoriesLog.Log.LogWrite("  AI choosed to attack " + (__result.orderInfo as AttackOrderInfo).TargetUnit.DisplayName + "\n");
+          Log.Combat?.WL(2, $"AI choosed to attack " + (__result.orderInfo as AttackOrderInfo).TargetUnit.DisplayName);
           CustomAmmoCategories.ChooseBestWeaponForTarget(unit, (__result.orderInfo as AttackOrderInfo).TargetUnit, isStationary);
         } else {
-          CustomAmmoCategoriesLog.Log.LogWrite("  AI choosed something else beside attaking\n");
+          Log.Combat?.WL(2, $"AI choosed something else beside attaking");
         }
         return;
       } catch (Exception e) {
-        CustomAmmoCategoriesLog.Log.LogWrite("Exception " + e.ToString() + "\nFallback to default\n");
+        Log.Combat?.TWL(0, $"Exception " + e.ToString() + "\nFallback to default\n");
         return;
       }
     }

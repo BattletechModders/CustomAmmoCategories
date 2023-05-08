@@ -230,6 +230,10 @@
     <None Include="app.config" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\CustomAmmoCategoriesHelper\CustomAmmoCategoriesHelper.csproj">
+      <Project>{b408488c-4125-4c36-9175-99e8f494526b}</Project>
+      <Name>CustomAmmoCategoriesHelper</Name>
+    </ProjectReference>
     <ProjectReference Include="..\CustomAmmoCategories\CustomAmmoCategories.csproj">
       <Project>{88bb9ff5-da8f-4e02-9554-58595e34378c}</Project>
       <Name>CustomAmmoCategories</Name>

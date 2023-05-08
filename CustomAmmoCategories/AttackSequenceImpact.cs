@@ -100,7 +100,7 @@ namespace CustAmmoCategories {
       }
       var result =  varianceMultiplier;
       if (log) {
-        Log.M.TWL(0, $"defId: {weapon.defId}\n" +
+        Log.Combat?.TWL(0, $"defId: {weapon.defId}\n" +
                      $"baseMultiplier: {baseMultiplier}\n" +
                      $"distance: {distance}\n" +
                      $"start distance: {middleRange}\n" +
@@ -114,7 +114,7 @@ namespace CustAmmoCategories {
       var varianceMultiplier = weapon.DistanceDamageMod(attackPos, target, log);
       var computedDamage = damage * varianceMultiplier;
       if (log) {
-        Log.M.TWL(0, $"varianceMultiplier: {varianceMultiplier}\n" +
+        Log.Combat?.TWL(0, $"varianceMultiplier: {varianceMultiplier}\n" +
                      $"damage: {damage}\n" +
                      $"computedDamage: {computedDamage}\n");
       }
@@ -141,7 +141,7 @@ namespace CustAmmoCategories {
       }
       var result = varianceMultiplier;
       if (log) {
-        Log.M.TWL(0,$"defId: {weapon.defId}\n" +
+        Log.Combat?.TWL(0,$"defId: {weapon.defId}\n" +
                    $"baseMultiplier: {baseMultiplier}\n" +
                    $"distance: {distance}\n" +
                    $"start distance: {minRange}\n" +
@@ -155,7 +155,7 @@ namespace CustAmmoCategories {
       var varianceMultiplier = weapon.RevDistanceDamageMod(attackPos, target, log);
       var computedDamage = damage * varianceMultiplier;
       if (log) {
-        Log.M.TWL(0, $"varianceMultiplier: {varianceMultiplier}\n" +
+        Log.Combat?.TWL(0, $"varianceMultiplier: {varianceMultiplier}\n" +
                      $"damage: {damage}\n" +
                      $"computedDamage: {computedDamage}\n");
       }
@@ -175,7 +175,7 @@ namespace CustAmmoCategories {
         sb.AppendLine($"OverheatedDamageMultiplier: {rawMultiplier}");
         sb.AppendLine(String.Format("effectActor: {0}", rawMultiplier < 0 ? "attacker" : "target"));
         sb.AppendLine($"multiplier: {multiplier}");
-        Log.M.TWL(0,sb.ToString());
+        Log.Combat?.TWL(0,sb.ToString());
       }
       return result;
     }
@@ -186,7 +186,7 @@ namespace CustAmmoCategories {
         var sb = new StringBuilder();
         sb.AppendLine($"rawDamage: {rawDamage}");
         sb.AppendLine($"damage: {damage}");
-        Log.M.TWL(0, sb.ToString());
+        Log.Combat?.TWL(0, sb.ToString());
       }
       return damage;
     }
@@ -209,7 +209,7 @@ namespace CustAmmoCategories {
       sb.AppendLine($" variance: {variance}");
       sb.AppendLine($" adjustment: {adjustment}");
       sb.AppendLine($" result: {variantDamage}");
-      Log.LogWrite(sb.ToString() + "\n");
+      Log.Combat?.TWL(0, sb.ToString());
       return variantDamage;
     }
   }
@@ -221,29 +221,35 @@ namespace CustomAmmoCategoriesPatches {
   [HarmonyPatch(new Type[] { typeof(MessageCenterMessage) })]
   public static class AttackSequence_OnAttackSequenceImpactDBG {
     [HarmonyPriority(Priority.Last)]
-    public static bool Prefix(AttackDirector.AttackSequence __instance, ref MessageCenterMessage message) {
-      AttackSequenceImpactMessage impactMessage = (AttackSequenceImpactMessage)message;
-      if (impactMessage.hitInfo.attackSequenceId != __instance.id) {
-        return true;
+    public static void Prefix(ref bool __runOriginal, AttackDirector.AttackSequence __instance, ref MessageCenterMessage message) {
+      if (!__runOriginal) { return; }
+      try {
+        AttackSequenceImpactMessage impactMessage = (AttackSequenceImpactMessage)message;
+        if (impactMessage.hitInfo.attackSequenceId != __instance.id) {
+          return;
+        }
+        Log.Combat?.WL(0, "Checking hitDamage last time:" + impactMessage.hitDamage);
+        if (float.IsNaN(impactMessage.hitDamage)) {
+          Log.Combat?.WL(1, "NaN - reparing\n");
+          impactMessage.hitDamage = 0.1f;
+        }
+        if (float.IsInfinity(impactMessage.hitDamage)) {
+          Log.Combat?.WL(1, "Infinity - reparing");
+          impactMessage.hitDamage = 0.1f;
+        }
+        float qualityMultiplier = __instance.Director.Combat.ToHit.GetBlowQualityMultiplier(impactMessage.hitInfo.hitQualities[impactMessage.hitIndex]);
+        Log.Combat?.WL(1, "checking blow quality multiplyer " + qualityMultiplier);
+        if (float.IsNaN(qualityMultiplier)) {
+          Log.Combat?.WL(1, "NaN - it can't be repaired, please check ResolutionConstants IneffectiveBlowDamageMultiplier/GlancingBlowDamageMultiplier/NormalBlowDamageMultiplier/SolidBlowDamageMultiplier");
+        }
+        if (float.IsInfinity(qualityMultiplier)) {
+          Log.Combat?.WL(1, "Infinity - it can't be repaired, please check ResolutionConstants IneffectiveBlowDamageMultiplier/GlancingBlowDamageMultiplier/NormalBlowDamageMultiplier/SolidBlowDamageMultiplier");
+        }
+        __runOriginal = false;
+        return;
+      }catch(Exception e) {
+        AttackDirector.logger.LogException(e);
       }
-      CustomAmmoCategoriesLog.Log.LogWrite("Checking hitDamage last time:" + impactMessage.hitDamage + "\n");
-      if (float.IsNaN(impactMessage.hitDamage)) {
-        CustomAmmoCategoriesLog.Log.LogWrite(" NaN - reparing\n");
-        impactMessage.hitDamage = 0.1f;
-      }
-      if (float.IsInfinity(impactMessage.hitDamage)) {
-        CustomAmmoCategoriesLog.Log.LogWrite(" Infinity - reparing\n");
-        impactMessage.hitDamage = 0.1f;
-      }
-      float qualityMultiplier = __instance.Director.Combat.ToHit.GetBlowQualityMultiplier(impactMessage.hitInfo.hitQualities[impactMessage.hitIndex]);
-      CustomAmmoCategoriesLog.Log.LogWrite(" checking blow quality multiplyer " + qualityMultiplier + "\n");
-      if (float.IsNaN(qualityMultiplier)) {
-        CustomAmmoCategoriesLog.Log.LogWrite(" NaN - it can't be repaired, please check ResolutionConstants IneffectiveBlowDamageMultiplier/GlancingBlowDamageMultiplier/NormalBlowDamageMultiplier/SolidBlowDamageMultiplier\n");
-      }
-      if (float.IsInfinity(qualityMultiplier)) {
-        CustomAmmoCategoriesLog.Log.LogWrite(" Infinity - it can't be repaired, please check ResolutionConstants IneffectiveBlowDamageMultiplier/GlancingBlowDamageMultiplier/NormalBlowDamageMultiplier/SolidBlowDamageMultiplier\n");
-      }
-      return true;
     }
   }
 
@@ -255,13 +261,13 @@ namespace CustomAmmoCategoriesPatches {
     public static void Postfix(AbstractActor __instance, float incomingDamage, WeaponCategoryValue weaponCategoryValue, DesignMaskDef designMask, LineOfFireLevel lofLevel, bool doLogging, ref float __result) {
       //CustomAmmoCategoriesLog.Log.LogWrite("Checking GetAdjustedDamage incDmg:" + incomingDamage + "\n");
       if (float.IsNaN(__result)) {
-        CustomAmmoCategoriesLog.Log.LogWrite("Checking GetAdjustedDamage incDmg:" + incomingDamage + "\n");
-        CustomAmmoCategoriesLog.Log.LogWrite(" but outdoing result NaN - reparing\n");
+        Log.Combat?.WL(0, "Checking GetAdjustedDamage incDmg:" + incomingDamage);
+        Log.Combat?.WL(1, "but outdoing result NaN - reparing");
         __result = 0.1f;
       }
       if (float.IsInfinity(__result)) {
-        CustomAmmoCategoriesLog.Log.LogWrite("Checking GetAdjustedDamage incDmg:" + incomingDamage + "\n");
-        CustomAmmoCategoriesLog.Log.LogWrite(" but outdoing result Infinity - reparing\n");
+        Log.Combat?.WL(0, "Checking GetAdjustedDamage incDmg:" + incomingDamage);
+        Log.Combat?.WL(1, "but outdoing result Infinity - reparing");
         __result = 0.1f;
       }
       return;
@@ -272,19 +278,6 @@ namespace CustomAmmoCategoriesPatches {
   [HarmonyPatch("OnAttackSequenceImpact")]
   [HarmonyPatch(new Type[] { typeof(MessageCenterMessage) })]
   public static class AttackSequence_OnAttackSequenceImpact {
-    private static MethodInfo mAttackCompletelyMissed = null;
-    public static bool Prepare() {
-      mAttackCompletelyMissed = typeof(AttackDirector.AttackSequence).GetProperty("attackCompletelyMissed", BindingFlags.Public | BindingFlags.Instance).GetSetMethod(true);
-      if(mAttackCompletelyMissed == null) {
-        Log.M.TWL(0,"WARNING! can't find AttackDirector.AttackSequence.attackCompletelyMissed setter",true);
-        return false;
-      }
-      return true;
-    }
-    public static void attackCompletelyMissed(this AttackDirector.AttackSequence sequence, bool value) {
-      if (mAttackCompletelyMissed == null) { return; }
-      mAttackCompletelyMissed.Invoke(sequence, new object[1] { value });
-    }
     public static bool isHasHeat(this ICombatant combatant) {
       Mech mech = combatant as Mech;
       if (mech == null) { return false; }
@@ -322,146 +315,24 @@ namespace CustomAmmoCategoriesPatches {
         default: return heat;
       }
     }
-    public static bool Prefix(AttackDirector.AttackSequence __instance, ref MessageCenterMessage message) {
+    public static void Prefix(ref bool __runOriginal, AttackDirector.AttackSequence __instance, ref MessageCenterMessage message) {
+      if (!__runOriginal) { return; }
       AttackSequenceImpactMessage impactMessage = (AttackSequenceImpactMessage)message;
-      if (impactMessage.hitInfo.attackSequenceId != __instance.id) { return true; }
+      if (impactMessage.hitInfo.attackSequenceId != __instance.id) { return; }
       int attackGroupIndex = impactMessage.hitInfo.attackGroupIndex;
       int attackWeaponIndex = impactMessage.hitInfo.attackWeaponIndex;
-      //Weapon weapon = __instance.GetWeapon(attackGroupIndex, attackWeaponIndex);
-      //float rawDamage = impactMessage.hitDamage;
-      //float realDamage = rawDamage;
-      //float rawHeat = weapon.HeatDamagePerShot;
-      //int hitLocation = impactMessage.hitInfo.hitLocations[impactMessage.hitIndex];
-      //ICombatant target = __instance.chosenTarget;
       AdvWeaponHitInfoRec advRec = impactMessage.hitInfo.advRec(impactMessage.hitIndex);
-      Log.M.TWL(0, "OnAttackSequenceImpact group:" + attackGroupIndex + " weapon:" + attackWeaponIndex + " shot:" + impactMessage.hitIndex + "/" + impactMessage.hitInfo.numberOfShots + "\n");
+      Log.Combat?.TWL(0, "OnAttackSequenceImpact group:" + attackGroupIndex + " weapon:" + attackWeaponIndex + " shot:" + impactMessage.hitIndex + "/" + impactMessage.hitInfo.numberOfShots + "\n");
       if (advRec != null) {
         advRec.PlayImpact();
         __instance.OnAttackSequenceImpactAdv(message);
-        return false;
+        __runOriginal = false;
+        return;
       } else {
-        Log.M.TWL(0,"No advanced info found. This should not happend!",true);
-        return false;
-        //if((impactMessage.hitInfo.DidShotHitChosenTarget(impactMessage.hitIndex) == false) && (impactMessage.hitInfo.DidShotHitAnything(impactMessage.hitIndex))) {
-        //  target = __instance.Director.Combat.FindCombatantByGUID(impactMessage.hitInfo.secondaryTargetIds[impactMessage.hitIndex]);
-        //  if (target == null) { target = __instance.chosenTarget; } else {
-        //    hitLocation = impactMessage.hitInfo.secondaryHitLocations[impactMessage.hitIndex];
-        //  }
-        //}
+        Log.Combat?.TWL(0,"No advanced info found. This should not happend!",true);
+        __runOriginal = false;
+        return;
       }
-      //CustomAmmoCategoriesLog.Log.LogWrite("  ");
-      //for (int t = 0; t < impactMessage.hitInfo.hitLocations.Length; ++t) {
-      //  CustomAmmoCategoriesLog.Log.LogWrite("H:" + t + " L:" + impactMessage.hitInfo.hitLocations[t] + "/"+impactMessage.hitInfo.secondaryHitLocations[t]+" ");
-      //}
-      //CustomAmmoCategoriesLog.Log.LogWrite("\n");
-      //CustomAmmoCategoriesLog.Log.LogWrite("  attacker = " + __instance.attacker.DisplayName + "\n");
-      //string trgInfo = "error"; if (target.GUID == impactMessage.hitInfo.targetId) { trgInfo = "primary"; } else if (target.GUID == impactMessage.hitInfo.secondaryTargetIds[impactMessage.hitIndex]) { trgInfo = "secondary"; }
-      //CustomAmmoCategoriesLog.Log.LogWrite("  target = " + target.DisplayName + ":"+ trgInfo + "\n");
-      //CustomAmmoCategoriesLog.Log.LogWrite("  location = " + hitLocation + "\n");
-      //CustomAmmoCategoriesLog.Log.LogWrite("  weapon = " + weapon.UIName + "\n");
-      //CustomAmmoCategoriesLog.Log.LogWrite("  damage = " + rawDamage + "/"+realDamage+"\n");
-      //CustomAmmoCategoriesLog.Log.LogWrite("  heat = " + rawHeat + "\n");
-      //CustomAmmoCategoriesLog.Log.LogWrite("  isAOE = " + (isAOE) + "\n");
-      //CustomAmmoCategoriesLog.Log.LogWrite("  isFragMain = " + (isAOE) + "\n");
-      //if ((isAOE == true)||(isFragMain == true)) {
-      //  Log.LogWrite("this is AOE/Frag greanade - no variance/impact processing for them\n");
-      //} else {
-      //  bool intercepted = false;
-      //  if (intercepted == false) {
-      //    weapon.SpawnAdditionalImpactEffect(impactMessage.hitInfo.hitPositions[impactMessage.hitIndex]);
-      //    if (hitLocation == 65536) {
-      //      DynamicMapHelper.applyMineField(weapon, impactMessage.hitInfo.hitPositions[impactMessage.hitIndex]);
-      //      DynamicMapHelper.applyImpactBurn(weapon, impactMessage.hitInfo.hitPositions[impactMessage.hitIndex]);
-      //      DynamicMapHelper.applyImpactTempMask(weapon, impactMessage.hitInfo.hitPositions[impactMessage.hitIndex]);
-      //      DynamicMapHelper.applyCleanMinefield(weapon, impactMessage.hitInfo.hitPositions[impactMessage.hitIndex]);
-      //      weapon.CreateDifferedEffect(impactMessage.hitInfo.hitPositions[impactMessage.hitIndex]);
-      //    } else
-      //    if (hitLocation != 0) {
-      //      if (weapon.FireOnSuccessHit()) { 
-      //        DynamicMapHelper.applyImpactBurn(weapon, target.CurrentPosition);
-      //        DynamicMapHelper.applyImpactTempMask(weapon, target.CurrentPosition);
-      //        DynamicMapHelper.applyCleanMinefield(weapon, target.CurrentPosition);
-      //      }
-      //      weapon.CreateDifferedEffect(target);
-      //    }
-      //  } else {
-      //    Log.LogWrite("Missile intercepted. No additional impact. No minefield.\n");
-      //  }
-      //  if (realDamage >= 1.0f) { 
-      //    if (weapon.DamageVariance() > CustomAmmoCategories.Epsilon) {
-      //      realDamage = CustomAmmoCategories.WeaponDamageSimpleVariance(weapon, rawDamage);
-      //    } else {
-      //      Log.M.WL("no simple variance defined");
-      //    }
-      //    if (weapon.DistantVariance() > CustomAmmoCategories.Epsilon) {
-      //      if (weapon.DistantVarianceReversed() == false) {
-      //        realDamage = CustomAmmoCategories.WeaponDamageDistance(__instance.attacker.TargetPosition, target, weapon, realDamage, rawDamage);
-      //      } else {
-      //        realDamage = CustomAmmoCategories.WeaponDamageRevDistance(__instance.attacker.TargetPosition, target, weapon, realDamage, rawDamage);
-      //      }
-      //    } else {
-      //      Log.M.WL("no distance variance defined");
-      //    }
-      //    if ((hitLocation != 0) && (hitLocation != 65536)) {
-      //      float CurArmor = target.ArmorForLocation(hitLocation);
-      //      CustomAmmoCategoriesLog.Log.LogWrite("  location armor = " + CurArmor + "\n");
-      //      float ArmorDmgMuil = weapon.ArmorDmgMult();
-      //      if (CurArmor / ArmorDmgMuil > realDamage) {
-      //        realDamage *= ArmorDmgMuil;
-      //        CustomAmmoCategoriesLog.Log.LogWrite("  all damage to armor = " + realDamage + "\n");
-      //      } else {
-      //        float ISDdamagePart = (realDamage - CurArmor / ArmorDmgMuil) * weapon.ISDmgMult();
-      //        CustomAmmoCategoriesLog.Log.LogWrite("  damage to armor = " + CurArmor + "\n");
-      //        CustomAmmoCategoriesLog.Log.LogWrite("  part of damage to IS = " + ISDdamagePart + "\n");
-      //        realDamage = CurArmor + ISDdamagePart;
-      //      }
-      //    }
-      //    if (realDamage >= 1.0f) {
-      //      Log.LogWrite("Applying WeaponRealizer variance. Current damage: " + realDamage + "\n");
-      //      realDamage = WeaponRealizer.Calculator.ApplyDamageModifiers(__instance.attacker.TargetPosition, target, weapon, realDamage, true);
-      //      Log.LogWrite("damage after WeaponRealizer variance: " + realDamage + "\n");
-      //    }
-      //  } else {
-      //    CustomAmmoCategoriesLog.Log.LogWrite("WARNING! raw damage is less than 1.0f. Variance calculation is forbidden with this damage value\n", true);
-      //  }
-      //}
-      //if (float.IsNaN(realDamage)) {
-      //  CustomAmmoCategoriesLog.Log.LogWrite("WARNING! real damage is NaN. That is sad. Rounding to 0.1\n", true);
-      //  realDamage = 0.1f;
-      //}
-      //if (float.IsInfinity(realDamage)) {
-      //  CustomAmmoCategoriesLog.Log.LogWrite("WARNING! real damage is positive infinity. That is sad. Rounding to 0.1\n", true);
-      //  realDamage = 0.1f;
-      //}
-      //if (realDamage < CustomAmmoCategories.Epsilon) {
-      //  CustomAmmoCategoriesLog.Log.LogWrite("WARNING! real damage is less than epsilon. May be negative. That is sad. Rounding to 0.1\n", true);
-      //  realDamage = 0.1f;
-      //}
-      //if (impactMessage.hitInfo.dodgeRolls[impactMessage.hitIndex] == -1.0f) {
-      //  Log.LogWrite("AMS - no damage\n");
-      //  realDamage = 0.1f;
-      //  //impactMessage.hitInfo.hitLocations[impactMessage.hitIndex] = 65536;
-      //}
-      //if (weapon.isDamageVariation()) { impactMessage.hitDamage = realDamage; } else {
-      //  Log.LogWrite(" damge variation forbidden by weapon's settings\n");
-      //}
-      //{ 
-      //  Log.LogWrite("  real damage = " + impactMessage.hitDamage + "\n");
-      //  if (weapon.isHeatVariation()) {
-      //    rawHeat *= rawDamage > CustomAmmoCategories.Epsilon ? (realDamage / rawDamage) : 0f;
-      //  } else {
-      //    Log.LogWrite("  heat variation forbidden by weapon's settings\n");
-      //  }
-      //  Log.LogWrite("  real heat = " + rawHeat + "\n");
-      //}
-      //if ((target.isHasHeat() == false) && (rawHeat >= 0.5f)) {
-      //  Log.M.WL("  heat damage exists, but target can't be heated");
-      //  float heatAsNormal = target.HeatDamage(rawHeat);
-      //  Log.M.WL("  heat transfered to normal damage:" + heatAsNormal);
-      //    impactMessage.hitDamage += heatAsNormal;
-      //    Log.LogWrite("  real damage = " + impactMessage.hitDamage + "\n");
-      //}
-      //return true;
     }
   }
 }

@@ -13,7 +13,7 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
 
       private static float BaseHitChanceModifier, MeleeHitChanceModifier, HitChanceStep, MaxFinalHitChance, MinFinalHitChance;
 
-      public override void CombatStartsOnce () {
+      public override void ModStarts () {
          BaseHitChanceModifier = (float) AIMSettings.BaseHitChanceModifier;
          MeleeHitChanceModifier = (float) AIMSettings.MeleeHitChanceModifier;
          HitChanceStep = (float) AIMSettings.HitChanceStep;
@@ -201,10 +201,10 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
          __result = __instance.GetIndirectModifier( attacker );
       }                 catch ( Exception ex ) { Error( ex ); } }
 
-      public static void SmartIndirectFireArc ( MissileLauncherEffect __instance, ref bool ___isIndirect ) { try {
-         if ( ___isIndirect || ! __instance.weapon.IndirectFireCapable() ) return;
+      public static void SmartIndirectFireArc ( MissileLauncherEffect __instance ) { try {
+         if (__instance.isIndirect || ! __instance.weapon.IndirectFireCapable() ) return;
          if ( ! ShouldSmartIndirect( __instance.weapon.parent, Combat.FindCombatantByGUID( __instance.hitInfo.targetId ) ) ) return;
-         ___isIndirect = true;
+        __instance.isIndirect = true;
       }                 catch ( Exception ex ) { Error( ex ); } }
 
       private static bool ShouldSmartIndirect ( AbstractActor attacker, ICombatant target ) {

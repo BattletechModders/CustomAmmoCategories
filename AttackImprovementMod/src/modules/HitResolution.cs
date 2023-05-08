@@ -12,7 +12,7 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
 
    public class HitResolution : BattleModModule {
 
-      public override void CombatStartsOnce () {
+      public override void ModStarts () {
          if ( AIMSettings.KillZeroHpLocation ) {
             Patch( typeof( Mech )   , "DamageLocation", null, "FixZombieMech" );
             Patch( typeof( Vehicle ), "DamageLocation", null, "FixZombieVehicle" );
@@ -28,16 +28,6 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
             Patch( typeof( AttackDirector.AttackSequence ), "OnAttackSequenceImpact", "SetImpact", "ClearImpact" );
             Patch( typeof( FloatieMessage ).GetConstructors().FirstOrDefault( e => e.GetParameters().Length == 8 && e.GetParameters()[2].ParameterType == typeof( Localize.Text ) ), null, "ShowMissChance" );
          }
-
-         /*if ( Settings.BalanceAmmoConsumption || Settings.BalanceEnemyAmmoConsumption ) {
-            nonCenter = new List<ChassisLocations> { ChassisLocations.LeftTorso, ChassisLocations.RightTorso,
-               ChassisLocations.LeftArm, ChassisLocations.RightArm, ChassisLocations.LeftLeg, ChassisLocations.RightLeg };
-            Patch( typeof( Weapon ), "DecrementAmmo", "OverrideDecrementAmmo", null );
-            Patch( typeof( AttackDirector.AttackSequence ), "GenerateNumberOfShots", null, "ClearAmmoSort" );
-         }
-
-         if ( Settings.AutoJettisonAmmo || Settings.AutoJettisonEnemyAmmo )
-            Patch( typeof( MechHeatSequence ), "setState", null, "AutoJettisonAmmo" );*/
       }
 
       private static bool ClusterChanceNeverMultiplyHead = true;

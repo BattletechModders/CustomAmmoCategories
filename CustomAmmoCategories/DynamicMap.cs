@@ -201,7 +201,6 @@ namespace CustAmmoCategories {
   }
   public class DynMapManipulateMineField {
     public MapTerrainHexCell hex { get; private set; }
-    //public MineField mineField { get; private set; }
     public MineFieldDef definition { get; private set; }
     public AbstractActor owner { get; private set; }
     public Weapon weapon { get; private set; }
@@ -231,10 +230,10 @@ namespace CustAmmoCategories {
     }
   }
   public class DyncamicMapAsyncProcessor: MonoBehaviour {
-    private Queue<DynMapBurnHexRequest> burnRequests;
-    private Queue<AsyncDesignMaskApplyRecord> asyncTerrainDesignMaskQueue;
-    private Queue<DynMapVFXRequest> VFXRequests;
-    private Queue<DynMapManipulateMineField> MineFieldRequests;
+    private Queue<DynMapBurnHexRequest> burnRequests = new Queue<DynMapBurnHexRequest>();
+    private Queue<AsyncDesignMaskApplyRecord> asyncTerrainDesignMaskQueue = new Queue<AsyncDesignMaskApplyRecord>();
+    private Queue<DynMapVFXRequest> VFXRequests = new Queue<DynMapVFXRequest>();
+    private Queue<DynMapManipulateMineField> MineFieldRequests = new Queue<DynMapManipulateMineField>();
     public void Init() {
       burnRequests.Clear();
       asyncTerrainDesignMaskQueue.Clear();
@@ -255,12 +254,6 @@ namespace CustAmmoCategories {
     public void clearMineField(MapTerrainHexCell hex, int count, float chance) {
       MineFieldRequests.Enqueue(new DynMapManipulateMineField(hex, null, null, null, count, chance));
     }
-    public DyncamicMapAsyncProcessor() {
-      burnRequests = new Queue<DynMapBurnHexRequest>();
-      asyncTerrainDesignMaskQueue = new Queue<AsyncDesignMaskApplyRecord>();
-      VFXRequests = new Queue<DynMapVFXRequest>();
-      MineFieldRequests = new Queue<DynMapManipulateMineField>();
-    }
     public void Update() {
       if(burnRequests.Count > 0) {
         DynMapBurnHexRequest burnRequest = burnRequests.Dequeue();
@@ -268,7 +261,7 @@ namespace CustAmmoCategories {
       }
       if (asyncTerrainDesignMaskQueue.Count > 0) {
         AsyncDesignMaskApplyRecord arec = asyncTerrainDesignMaskQueue.Dequeue();
-        Log.F.TWL(0, "async add design mask:" + arec.designMask.Id + " to " + arec.hexCell.center);
+        Log.F?.TWL(0, "async add design mask:" + arec.designMask.Id + " to " + arec.hexCell.center);
         arec.hexCell.addTempTerrainMask(arec.designMask, arec.counter);
       }
       if (VFXRequests.Count > 0) {
@@ -317,10 +310,9 @@ namespace CustAmmoCategories {
       if (processor == null) { return; }
       processor.clearMineField(hex, count, chance);
     }
-
   }
   public class ObjectSpawnDataSelf : ObjectSpawnData {
-    public bool keepPrefabRotation;
+    //public new bool keepPrefabRotation;
     public Vector3 scale;
     public string prefabStringName;
     public CombatGameState Combat;
@@ -339,57 +331,57 @@ namespace CustAmmoCategories {
     }
     public void CleanupSelf() {
       if (this == null) {
-        CustomAmmoCategoriesLog.Log.LogWrite("Cleaning null?!!!\n", true);
+        Log.Combat?.WL(0,"Cleaning null?!!!", true);
         return;
       }
-      CustomAmmoCategoriesLog.Log.LogWrite("Cleaning up " + this.prefabName + "\n");
+      Log.Combat?.WL(0, "Cleaning up " + this.prefabName);
       if (Combat == null) {
-        CustomAmmoCategoriesLog.Log.LogWrite("Trying cleanup object " + this.prefabName + " never spawned\n", true);
+        Log.Combat?.WL(0, "Trying cleanup object " + this.prefabName + " never spawned", true);
         return;
       }
       if (this.spawnedObject == null) {
-        CustomAmmoCategoriesLog.Log.LogWrite("Trying cleanup object " + this.prefabName + " already cleaned\n", true);
+        Log.Combat?.WL(0, "Trying cleanup object " + this.prefabName + " already cleaned", true);
         return;
       }
       try {
         GameObject.Destroy(this.spawnedObject);
       } catch (Exception e) {
-        CustomAmmoCategoriesLog.Log.LogWrite("Cleanup exception: " + e.ToString() + "\n", true);
-        CustomAmmoCategoriesLog.Log.LogWrite("nulling spawned object directly\n", true);
+        Log.Combat?.WL(0, "Cleanup exception: " + e.ToString(), true);
+        Log.Combat?.WL(0, "nulling spawned object directly", true);
         this.spawnedObject = null;
       }
       this.spawnedObject = null;
-      CustomAmmoCategoriesLog.Log.LogWrite("Finish cleaning " + this.prefabName + "\n");
+      Log.Combat?.WL(0, "Finish cleaning " + this.prefabName);
     }
     public void SpawnSelf(CombatGameState Combat, Transform parentTransform = null) {
       this.Combat = Combat;
       GameObject gameObject = Combat.DataManager.PooledInstantiate(this.prefabName, BattleTechResourceType.Prefab, new Vector3?(), new Quaternion?(), (Transform)null);
-      if ((UnityEngine.Object)gameObject == (UnityEngine.Object)null) {
-        CustomAmmoCategoriesLog.Log.LogWrite("Can't find " + prefabName + " in in-game prefabs\n");
+      if (gameObject == null) {
+        Log.Combat?.WL(0, "Can't find " + prefabName + " in in-game prefabs");
         if (CACMain.Core.AdditinalFXObjects.ContainsKey(prefabName)) {
-          CustomAmmoCategoriesLog.Log.LogWrite("Found in additional prefabs\n");
+          Log.Combat?.WL(0, "Found in additional prefabs");
           gameObject = GameObject.Instantiate(CACMain.Core.AdditinalFXObjects[prefabName]);
         } else {
-          CustomAmmoCategoriesLog.Log.LogWrite(" can't spawn prefab " + this.prefabName + " it is absent in pool,in-game assets and external assets\n", true);
+          Log.Combat?.WL(1, "can't spawn prefab " + this.prefabName + " it is absent in pool,in-game assets and external assets", true);
           return;
         }
       }
-      Log.LogWrite("SpawnSelf: " + this.prefabName + "\n");
+      Log.Combat?.WL(0, "SpawnSelf: " + this.prefabName);
       Component[] components = gameObject.GetComponentsInChildren<Component>();
       foreach (Component cmp in components) {
         if (cmp == null) { continue; };
-        Log.LogWrite(" " + cmp.name + ":" + cmp.GetType().ToString() + "\n");
+        Log.Combat?.WL(1, cmp.name + ":" + cmp.GetType().ToString());
         ParticleSystem ps = cmp as ParticleSystem;
         if (ps != null) {
           var main = ps.main;
           main.scalingMode = ParticleSystemScalingMode.Hierarchy;
-          Log.LogWrite("  " + ps.main.scalingMode.ToString() + "\n");
+          Log.Combat?.WL(2, ps.main.scalingMode.ToString());
         }
       }
       if (parentTransform != null) { gameObject.transform.SetParent(parentTransform,true); }
       gameObject.transform.position = this.worldPosition;
       gameObject.transform.localScale = new Vector3(this.scale.x, this.scale.y, this.scale.z);
-      Log.LogWrite("scale:"+ gameObject.transform.localScale+"\n");
+      Log.Combat?.WL(0, "scale:" + gameObject.transform.localScale);
       if (!this.keepPrefabRotation)
         gameObject.transform.rotation = this.worldRotation;
       if (this.playFX) {
@@ -411,25 +403,25 @@ namespace CustAmmoCategories {
     public static ParticleSystem playVFXAt(CombatGameState Combat, string prefab, Vector3 pos, Vector3 scale, Vector3 lookAtPos) {
       GameObject gameObject = Combat.DataManager.PooledInstantiate(prefab, BattleTechResourceType.Prefab, new Vector3?(), new Quaternion?(), (Transform)null);
       if ((UnityEngine.Object)gameObject == (UnityEngine.Object)null) {
-        CustomAmmoCategoriesLog.Log.LogWrite("Can't find " + prefab + " in in-game prefabs\n");
+        Log.Combat?.WL(0, "Can't find " + prefab + " in in-game prefabs");
         if (CACMain.Core.AdditinalFXObjects.ContainsKey(prefab)) {
-          CustomAmmoCategoriesLog.Log.LogWrite("Found in additional prefabs\n");
+          Log.Combat?.WL(0, "Found in additional prefabs");
           gameObject = GameObject.Instantiate(CACMain.Core.AdditinalFXObjects[prefab]);
         } else {
-          CustomAmmoCategoriesLog.Log.LogWrite(" can't spawn prefab " + prefab + " it is absent in pool,in-game assets and external assets\n", true);
+          Log.Combat?.WL(1, "can't spawn prefab " + prefab + " it is absent in pool,in-game assets and external assets", true);
           return null;
         }
       }
-      Log.LogWrite("playVFXAt: " + prefab + "\n");
+      Log.Combat?.WL(0, "playVFXAt: " + prefab);
       Component[] components = gameObject.GetComponentsInChildren<Component>();
       foreach (Component cmp in components) {
         if (cmp == null) { continue; };
-        Log.LogWrite(" " + cmp.name + ":" + cmp.GetType().ToString() + "\n");
+        Log.Combat?.WL(1, cmp.name + ":" + cmp.GetType().ToString());
         ParticleSystem ps = cmp as ParticleSystem;
         if (ps != null) {
           var main = ps.main;
           main.scalingMode = ParticleSystemScalingMode.Hierarchy;
-          Log.LogWrite("  " + ps.main.scalingMode.ToString() + "\n");
+          Log.Combat?.WL(2, ps.main.scalingMode.ToString());
         }
       }
       gameObject.transform.position = pos;
@@ -534,7 +526,7 @@ namespace CustAmmoCategories {
           vfx = null;
         }
       } catch (Exception e) {
-        CustomAmmoCategoriesLog.Log.LogWrite("Fail to clean temp terrain effect " + e.ToString() + "\n", true);
+        Log.Combat?.WL(0, "Fail to clean temp terrain effect " + e.ToString(), true);
       }
     }
     public tempTerrainVFXEffect(CombatGameState combat, string vfxPrefab, Vector3 pos, Vector3 scale, int counter) {
@@ -553,14 +545,14 @@ namespace CustAmmoCategories {
     public void OnTriggerEnter(Collider other) {
       MineFieldDetector detector = other.gameObject.GetComponent<MineFieldDetector>();
       if (detector == false) { return; }
-      Log.M.TWL(0, "MineFieldCollider.OnTriggerEnter " + other.name+" detector:"+(detector==null?"false":"true"));
+      Log.Combat?.TWL(0, "MineFieldCollider.OnTriggerEnter " + other.name+" detector:"+(detector==null?"false":"true"));
       hex.AddMineFieldStealthReductor(detector.owner);
       hex.UpdateIndicatorVisibility();
     }
     public void OnTriggerExit(Collider other) {
       MineFieldDetector detector = other.gameObject.GetComponent<MineFieldDetector>();
       if (detector == false) { return; }
-      Log.M.TWL(0, "MineFieldCollider.OnTriggerExit " + other.name + " detector:" + (detector == null ? "false" : "true"));
+      Log.Combat?.TWL(0, "MineFieldCollider.OnTriggerExit " + other.name + " detector:" + (detector == null ? "false" : "true"));
       hex.DelMineFieldStealthReductor(detector.owner);
       hex.UpdateIndicatorVisibility();
     }
@@ -594,35 +586,35 @@ namespace CustAmmoCategories {
     public void UpdateIndicatorVisibility() {
       if (mineFieldVFX == null) { return; }
       bool hasVisibleMineFields = false;
-      Log.M.TWL(0, "UpdateIndicatorVisibility "+this.center);
+      Log.Combat?.TWL(0, "UpdateIndicatorVisibility "+this.center);
       //int reduction = this.mineFieldStealthReduction(Combat.LocalPlayerTeam);
       foreach(MineField mf in MineFields) {
         if (mf.count <= 0) { continue; }
         MineFieldStealthLevel level = mf.stealthLevel(Combat.LocalPlayerTeam);
-        Log.M.WL(1, "stealth level "+level+" IFF:"+mf.IFFLevel);
+        Log.Combat?.WL(1, "stealth level "+level+" IFF:"+mf.IFFLevel);
         if (level != MineFieldStealthLevel.Invisible) { hasVisibleMineFields = true; break; }
       }
       if (hasVisibleMineFields) {
         UIMovementDot dot = mineFieldVFX.GetComponentInChildren<UIMovementDot>(true);
-        Log.M.WL(1, "making cell visible " + (dot==null?"null":"not null"));
+        Log.Combat?.WL(1, "making cell visible " + (dot==null?"null":"not null"));
         if (dot != null) { dot.gameObject.SetActive(true); }
       } else {
         UIMovementDot dot = mineFieldVFX.GetComponentInChildren<UIMovementDot>(true);
-        Log.M.WL(1, "making cell hidden " + (dot == null ? "null" : "not null"));
+        Log.Combat?.WL(1, "making cell hidden " + (dot == null ? "null" : "not null"));
         if (dot != null) { dot.gameObject.SetActive(false); }
       }
     }
     public void AddMineFieldStealthReductor(AbstractActor actor) {
       minefieldStealthReductionCache.Clear();
       minefieldStealthReductors.Add(actor);
-      Log.M.TWL(0, "AddMineFieldStealthReductor "+actor.DisplayName);
-      Log.M.WL(1, "local player reduction: " + this.mineFieldStealthReduction(Combat.LocalPlayerTeam));
+      Log.Combat?.TWL(0, "AddMineFieldStealthReductor "+actor.DisplayName);
+      Log.Combat?.WL(1, "local player reduction: " + this.mineFieldStealthReduction(Combat.LocalPlayerTeam));
     }
     public void DelMineFieldStealthReductor(AbstractActor actor) {
       minefieldStealthReductionCache.Clear();
       minefieldStealthReductors.Remove(actor);
-      Log.M.TWL(0, "DelMineFieldStealthReductor " + actor.DisplayName);
-      Log.M.WL(1, "local player reduction: " + this.mineFieldStealthReduction(Combat.LocalPlayerTeam));
+      Log.Combat?.TWL(0, "DelMineFieldStealthReductor " + actor.DisplayName);
+      Log.Combat?.WL(1, "local player reduction: " + this.mineFieldStealthReduction(Combat.LocalPlayerTeam));
     }
     public int mineFieldStealthReduction(Team team) {
       if (team == null) { return 0; }
@@ -672,12 +664,6 @@ namespace CustAmmoCategories {
         mfCollider.transform.localPosition = new Vector3(0f, -0.1f, 0f);
         mfCollider.AddComponent<MineFieldCollider>();
         mfCollider.GetComponent<MineFieldCollider>().Init(this);
-
-        //GameObject sphere = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-        //sphere.transform.SetParent(mineFieldVFX.transform);
-        //sphere.transform.localPosition = Vector3.zero;
-        //sphere.transform.localScale = Vector3.one * ((float)CustomAmmoCategories.Settings.BurningForestCellRadius*2.0f) * 4.0f;
-
         GameObject indicator = GameObject.Instantiate(CombatMovementReticle.Instance.dangerousDotTemplate);
         indicator.transform.SetParent(mineFieldVFX.transform);
         indicator.transform.localRotation = Quaternion.Euler(90f, 0.0f, 0.0f);
@@ -687,23 +673,19 @@ namespace CustAmmoCategories {
         indicator.transform.localPosition = new Vector3(0f, 3f, 0f);
         mineFieldVFX.SetActive(true);
       } else {
-        //UIMovementDot dot = mineFieldVFX.GetComponentInChildren<UIMovementDot>();
-        //mineFieldVFX.SetActive(true);
       }
       UpdateIndicatorVisibility();
-      //SVGRenderer renderer = mineFieldVFX.GetComponentInChildren<SVGRenderer>();
-      //if (renderer != null) { renderer.vectorGraphics = CustomSvgCache.get(mf.Def.Icon, Combat.DataManager); }
     }
     public void ClearMineFieldSync(int count,float chance) {
       this.MineFields.Clear();
       UpdateIndicatorVisibility();
     }
-    public void deleteTrees(HashSet<object> redrawTreeDatas) {
+    public void deleteTrees(HashSet<QuadTreeData> redrawTreeDatas) {
       foreach (MapTerrainDataCellEx cell in terrainCells) {
-        CustomAmmoCategoriesLog.Log.LogWrite("Deleting trees at cell " + cell.x + ":" + cell.y + " " + cell.mapMetaData.getWorldPos(new Point(cell.y, cell.x)) + " count:" + cell.trees.Count + "\n");
+        Log.Combat?.WL(0, "Deleting trees at cell " + cell.x + ":" + cell.y + " " + cell.mapMetaData.getWorldPos(new Point(cell.y, cell.x)) + " count:" + cell.trees.Count);
         foreach (CACDynamicTree tree in cell.trees) {
-          List<object> redrawList = tree.delTree();
-          foreach (object redrawItem in redrawList) {
+          List<QuadTreeData> redrawList = tree.delTree();
+          foreach (QuadTreeData redrawItem in redrawList) {
             redrawTreeDatas.Add(redrawItem);
           }
         }
@@ -716,7 +698,7 @@ namespace CustAmmoCategories {
       return tempVFXEffects.Count > 0;
     }
     public void tempVFXTick() {
-      CustomAmmoCategoriesLog.Log.LogWrite("tempVFXTick:" + this.center + "\n");
+      Log.Combat?.WL(0, "tempVFXTick:" + this.center);
       HashSet<string> delVFXs = new HashSet<string>();
       foreach (var tvfx in this.tempVFXEffects) {
         tvfx.Value.tick();
@@ -733,15 +715,15 @@ namespace CustAmmoCategories {
             tvfx.Value.vfx.CleanupSelf();
           }
         } catch (Exception e) {
-          CustomAmmoCategoriesLog.Log.LogWrite("Fail to clear vfx:" + tvfx.Key + ":" + e.ToString() + "\n");
+          Log.Combat?.WL(0, "Fail to clear vfx:" + tvfx.Key + ":" + e.ToString());
         }
       }
     }
     public void addTempTerrainVFXSync(CombatGameState combat, string prefabVFX, int counter, Vector3 scale) {
       this.Combat = combat;
-      Log.M.WL(0,"addTempTerrainVFX(" + prefabVFX + "," + counter + ")");
+      Log.Combat?.WL(0,"addTempTerrainVFX(" + prefabVFX + "," + counter + ")");
       if (tempVFXEffects == null) {
-        Log.M.WL(1,"tempVFXEffects is null");
+        Log.Combat?.WL(1,"tempVFXEffects is null");
         return;
       }
       if (string.IsNullOrEmpty(prefabVFX) == false) {
@@ -753,7 +735,7 @@ namespace CustAmmoCategories {
           //p.Z = this.mapX;
           Vector3 pos = this.center;//Combat.MapMetaData.getWorldPos(p);
           pos.y = Combat.MapMetaData.GetLerpedHeightAt(pos);
-          Log.M.WL(1, "position:"+ pos);
+          Log.Combat?.WL(1, "position:"+ pos);
           tempTerrainVFXEffect tmpEffect = new tempTerrainVFXEffect(Combat, prefabVFX, pos, scale, counter);
           tempVFXEffects.Add(prefabVFX, tmpEffect);
           DynamicMapHelper.tempEffectHexes.Add(this);
@@ -762,7 +744,7 @@ namespace CustAmmoCategories {
     }
     public void addTempTerrainMask(DesignMaskDef addMask, int counter) {
       if (addMask != null) {
-        CustomAmmoCategoriesLog.Log.LogWrite("addTempTerrainMask(" + addMask.Description.Id + "," + counter + ")\n");
+        Log.Combat?.WL(0, "addTempTerrainMask(" + addMask.Description.Id + "," + counter + ")");
         foreach (MapTerrainDataCellEx cell in this.terrainCells) {
           if (cell == null) { continue; }
           cell.AddDesignMask(addMask, counter);
@@ -799,7 +781,7 @@ namespace CustAmmoCategories {
       //p.Z = this.mapX;
       Vector3 pos = this.center;//Combat.MapMetaData.getWorldPos(p);
       pos.y = Combat.MapMetaData.GetLerpedHeightAt(pos);
-      CustomAmmoCategoriesLog.Log.LogWrite("Spawning fire at " + pos + "\n");
+      Log.Combat?.WL(0, "Spawning fire at " + pos);
       pos.x += CustomAmmoCategories.Settings.BurningOffsetX;
       pos.y += CustomAmmoCategories.Settings.BurningOffsetY;
       pos.z += CustomAmmoCategories.Settings.BurningOffsetZ;
@@ -830,7 +812,7 @@ namespace CustAmmoCategories {
       }
       this.UpdateIndicatorVisibility();
       foreach (MapTerrainDataCellEx cell in terrainCells) {
-        CustomAmmoCategoriesLog.Log.LogWrite("SetCellsBurn:" + cell.x + ":" + cell.y + ":" + SplatMapInfo.IsForest(cell.terrainMask) + ":" + cell.CantHaveForest + "\n");
+        Log.Combat?.WL(0, "SetCellsBurn:" + cell.x + ":" + cell.y + ":" + SplatMapInfo.IsForest(cell.terrainMask) + ":" + cell.CantHaveForest);
         if (SplatMapInfo.IsForest(cell.terrainMask) && (cell.CantHaveForest == false)) {
           if ((count == 0) || (strength == 0)) { continue; }
           cell.burnUpdate(weapon, count, strength);
@@ -843,24 +825,24 @@ namespace CustAmmoCategories {
       }
     }
     public bool TryBurnCellSync(Weapon weapon, float FireTerrainChance, int FireTerrainStrength, int FireDurationWithoutForest) {
-      CustomAmmoCategoriesLog.Log.LogWrite("Try burn cell " + weapon.Name + " Chance:" + FireTerrainChance + " hasForest:" + isHasForest + "\n");
+      Log.Combat?.WL(0, "Try burn cell " + weapon.Name + " Chance:" + FireTerrainChance + " hasForest:" + isHasForest);
       if (FireTerrainChance > CustomAmmoCategories.Epsilon) {
         if ((FireDurationWithoutForest <= 0) && (this.isHasForest == false)) {
-          CustomAmmoCategoriesLog.Log.LogWrite(" no forest and no self burn\n");
+          Log.Combat?.WL(1, "no forest and no self burn");
           return false;
         }
         float roll = Random.Range(0f, 1f);
         if (roll > FireTerrainChance) {
-          CustomAmmoCategoriesLog.Log.LogWrite(" roll fail:" + roll + "\n");
+          Log.Combat?.WL(1, "roll fail:" + roll);
           return false;
         } else {
-          CustomAmmoCategoriesLog.Log.LogWrite(" roll success:" + roll + "\n");
+          Log.Combat?.WL(1, "roll success:" + roll);
         }
       } else {
         return false;
       }
       if (burnEffectCounter > 0) {
-        CustomAmmoCategoriesLog.Log.LogWrite(" already burning\n");
+        Log.Combat?.WL(1, "already burning");
         if (burnEffectCounter < FireDurationWithoutForest) {
           burnEffectCounter = FireDurationWithoutForest;
           this.UpdateCellsBurn(weapon, burnEffectCounter, FireTerrainStrength);
@@ -884,18 +866,18 @@ namespace CustAmmoCategories {
       return true;
     }
     public bool TryExpand(Weapon weapon) {
-      CustomAmmoCategoriesLog.Log.LogWrite("  test expand:" + this.center + "\n");
+      Log.Combat?.WL(2, "test expand:" + this.center);
       if (isHasForest == false) {
-        CustomAmmoCategoriesLog.Log.LogWrite("  no forest\n");
+        Log.Combat?.WL(2, "no forest");
         return false;
       };
       if (burnEffectCounter > 0) {
-        CustomAmmoCategoriesLog.Log.LogWrite("  burning already\n");
+        Log.Combat?.WL(2, "burning already");
         return false;
       };
       float roll = Random.Range(0f, 1f);
       if (roll > DynamicMapHelper.FireExpandChance()) {
-        CustomAmmoCategoriesLog.Log.LogWrite("  roll fail\n");
+        Log.Combat?.WL(2, "roll fail");
         return false;
       };
       burningWeapon = weapon;
@@ -1107,7 +1089,6 @@ namespace CustAmmoCategories {
         }
       }
     }
-    private static MethodInfo designMaskDefs_Add = null;
     public DesignMaskDef CreateMask(DesignMaskDef baseMask, HashSet<DesignMaskDef> additionalMasks) {
       try {
         StringBuilder id = new StringBuilder();
@@ -1126,65 +1107,59 @@ namespace CustAmmoCategories {
           if (name.Length > 0) { name.Append(" "); }; name.Append(addMask.Description.Name);
           if (details.Length > 0) { details.Append("\n"); }; details.Append(addMask.Description.Details);
         }
-        Log.M.TWL(0, "CreateMask:"+id);
+        Log.Combat?.TWL(0, "CreateMask:"+id);
         if (this.hexCell.Combat.DataManager.DesignMaskDefs.TryGet(id.ToString(), out DesignMaskDef result)) {
-          Log.M.WL(1, "found in data manager");
+          Log.Combat?.WL(1, "found in data manager");
           return result;
         } else {
-          Log.M.WL(1, "DesignMask not found in data manager");
-          Log.M.WL(2, "name:" + name.ToString());
-          Log.M.WL(2, "details:" + details.ToString());
+          Log.Combat?.WL(1, "DesignMask not found in data manager");
+          Log.Combat?.WL(2, "name:" + name.ToString());
+          Log.Combat?.WL(2, "details:" + details.ToString());
         }
         result = new DesignMaskDef();
-        Traverse.Create(result.Description).Property<string>("Id").Value = id.ToString();
-        Traverse.Create(result.Description).Property<string>("Name").Value = name.ToString();
-        Traverse.Create(result.Description).Property<string>("Details").Value = details.ToString();
-        Traverse.Create(result.Description).Property<string>("Icon").Value = icon;
+        result.Description.Id = id.ToString();
+        result.Description.Name = name.ToString();
+        result.Description.Details = details.ToString();
+        result.Description.Icon = icon;
         bool inited = false;
         if(baseMask != null) {
           inited = true;
-          Log.M.WL(1, "setup base mask as "+ baseMask.Id);
+          Log.Combat?.WL(1, "setup base mask as "+ baseMask.Id);
           DesignMaskDeepCopyData(baseMask, result);
         }
         foreach(DesignMaskDef tempMask in additionalMasks) {
           try {
             if (inited == false) {
               inited = true;
-              Log.M.WL(1, "setup base mask as " + tempMask.Id);
+              Log.Combat?.WL(1, "setup base mask as " + tempMask.Id);
               DesignMaskDeepCopyData(tempMask, result);
             } else {
-              Log.M.WL(1, "append mask as " + tempMask.Id);
+              Log.Combat?.WL(1, "append mask as " + tempMask.Id);
               DesignMaskDeepAppendData(tempMask, result);
             }
           }catch(Exception e) {
-            Log.M.TWL(0, e.ToString(), true);
+            Log.Combat?.TWL(0, e.ToString(), true);
           }
         }
-        Log.M.WL(1, "registering in data manager");
-        if (designMaskDefs_Add == null) {
-          designMaskDefs_Add = this.hexCell.Combat.DataManager.DesignMaskDefs.GetType().GetMethod("Add", BindingFlags.Instance | BindingFlags.Public);
-        }
-        if (designMaskDefs_Add == null) {
-          Log.M.WL(0, "!!can't find add method!!",true);
-        } else {
-          designMaskDefs_Add.Invoke(this.hexCell.Combat.DataManager.DesignMaskDefs, new object[] { result.Id, result });
-        }
-        Log.M.WL(0,"Resulting mask:\n"+result.ToJSON());
+        Log.Combat?.WL(1, "registering in data manager");
+        this.hexCell.Combat.DataManager.designMaskDefs.Add(result.Id, result);
+        Log.Combat?.WL(0,"Resulting mask:\n"+result.ToJSON());
         return result;
       } catch (Exception e) {
-        Log.M.TWL(0,e.ToString(),true);
+        Log.Combat?.TWL(0,e.ToString(),true);
+        this.hexCell.Combat.DataManager.logger.LogException(e);
       }
       return null;
     }
     public void AddDesignMask(DesignMaskDef addMask, int counter) {
-      Log.M.TWL(0,"AddDesignMask(" + addMask.Id + "," + counter + "):" + this.x + ":" + this.y);
+      Log.Combat?.TWL(0,"AddDesignMask(" + addMask.Id + "," + counter + "):" + this.x + ":" + this.y);
       if (counter <= 0) { return; }
       if (tempDesignMaskCounters.ContainsKey(addMask) == true) {
         tempDesignMaskCounters[addMask] += counter;
-        Log.M.WL(1,"+time:" + tempDesignMaskCounters[addMask]);
+        Log.Combat?.WL(1,"+time:" + tempDesignMaskCounters[addMask]);
         return;
       }
-      Log.M.WL(1,"new mask");
+      Log.Combat?.WL(1,"new mask");
       this.tempDesignMaskCounters.Add(addMask, counter);
       DesignMaskDef tempMask = this.tempDesignMask;
       this.tempDesignMask = null;
@@ -1196,28 +1171,13 @@ namespace CustAmmoCategories {
         this.tempDesignMask = tempMask;
         this.tempDesignMaskCounters.Remove(addMask);
       }
-      //List<string> maskId = this.tempDesignMaskCounters.Keys.ToList<string>();
-      //CustomAmmoCategoriesLog.Log.LogWrite(" already have masks:" + maskId.Count + "\n");
-      //maskId.Sort();
-      //DesignMaskDef curMask = this.mapMetaData.GetPriorityDesignMask(this);
-      //if (curMask != null) { if (maskId.Count == 0) { maskId.Add(curMask.Id); }; };
-      //CustomAmmoCategoriesLog.Log.LogWrite(" curmask " + ((curMask == null) ? "null" : curMask.Id) + ":" + this.terrainMask + "\n");
-      //tempDesignMask = CustomAmmoCategories.createDesignMask(maskId, curMask, addMask);
-      //CustomAmmoCategoriesLog.Log.LogWrite(" new mask " + ((tempDesignMask == null) ? "null" : tempDesignMask.Id) + "\n");
-      //if (curMask != null) {
-      //  if (curMask.Id != tempDesignMask.Id) {
-      //    this.tempDesignMaskCounters.Add(addMask.Id, counter);
-      //  }
-      //} else {
-      //  this.tempDesignMaskCounters.Add(addMask.Id, counter);
-      //}
       DynamicMapHelper.tempMaskCells.Add(this.mapPoint());
     }
     public void ReconstructTempDesignMask() {
       try {
-        Log.M.TWL(0, "Reconstructing design mask:" + this.x + ":" + this.y);
+        Log.Combat?.TWL(0, "Reconstructing design mask:" + this.x + ":" + this.y);
         if (this.tempDesignMaskCounters.Count == 0) {
-          Log.M.WL(1, "no reconstruction needed. Nullify temp mask");
+          Log.Combat?.WL(1, "no reconstruction needed. Nullify temp mask");
           this.tempDesignMask = null;
           return;
         }
@@ -1231,23 +1191,17 @@ namespace CustAmmoCategories {
           this.tempDesignMask = tempMask;
         }
       } catch (Exception e) {
-        Log.M.TWL(0, e.ToString(), true);
+        Log.Combat?.TWL(0, e.ToString(), true);
+        UnityGameInstance.BattleTechGame.DataManager.logger.LogException(e);
       }
     }
-    //public void RemoveDesignMask(string id) {
-    //  if (tempDesignMaskCounters.ContainsKey(id) == false) { return; }
-    //  tempDesignMaskCounters.Remove(id);
-    //  List<string> maskId = this.tempDesignMaskCounters.Keys.ToList<string>();
-    //  if (maskId.Count == 0) { this.tempDesignMask = null; return; };
-    //  this.ReconstructTempDesignMask();
-    //}
     public void tempMaskTick() {
-      Log.M.TWL(0,"Temp mask tick:" + this.x + ":" + this.y);
+      Log.Combat?.TWL(0,"Temp mask tick:" + this.x + ":" + this.y);
       HashSet<DesignMaskDef> keys = this.tempDesignMaskCounters.Keys.ToHashSet();
       foreach (DesignMaskDef tdm in keys) {
         if (this.tempDesignMaskCounters.ContainsKey(tdm) == false) { continue; };
         int counter = this.tempDesignMaskCounters[tdm];
-        CustomAmmoCategoriesLog.Log.LogWrite(" " + tdm + ":" + counter + "\n");
+        Log.Combat?.WL(1, tdm + ":" + counter + "\n");
         if (counter > 1) { this.tempDesignMaskCounters[tdm] = counter - 1; continue; };
         this.tempDesignMaskCounters[tdm] = 0;
         this.tempDesignMaskCounters.Remove(tdm);
@@ -1312,7 +1266,7 @@ namespace CustAmmoCategories {
       }
     }
     public void burn(Weapon weapon, int counter, int strength) {
-      CustomAmmoCategoriesLog.Log.LogWrite("burn cell " + this.x + ":" + this.y + ": is forest: " + SplatMapInfo.IsForest(this.terrainMask) + " cantforest:" + this.CantHaveForest + " trees count:" + this.trees.Count + "\n");
+      Log.Combat?.WL(0, "burn cell " + this.x + ":" + this.y + ": is forest: " + SplatMapInfo.IsForest(this.terrainMask) + " cantforest:" + this.CantHaveForest + " trees count:" + this.trees.Count);
       if (SplatMapInfo.IsForest(this.terrainMask)) {
         if (this.CantHaveForest) {
           if ((counter > 0) && (strength > 0)) {
@@ -1505,7 +1459,7 @@ namespace CustAmmoCategories {
     public static float BiomeWeaponFireDuration() {
       float result = 1f;
       if (CustomAmmoCategories.Settings.WeaponBurningDurationBiomeMult.ContainsKey(DynamicMapHelper.CurrentBiome)) {
-        Log.LogWrite(" biome mult:" + CustomAmmoCategories.Settings.WeaponBurningDurationBiomeMult[DynamicMapHelper.CurrentBiome] + "\n");
+        Log.Combat?.WL(1,"biome mult:" + CustomAmmoCategories.Settings.WeaponBurningDurationBiomeMult[DynamicMapHelper.CurrentBiome]);
         result = CustomAmmoCategories.Settings.WeaponBurningDurationBiomeMult[DynamicMapHelper.CurrentBiome];
       }
       return result;
@@ -1513,7 +1467,7 @@ namespace CustAmmoCategories {
     public static float BiomeWeaponFireStrength() {
       float result = 1f;
       if (CustomAmmoCategories.Settings.WeaponBurningStrengthBiomeMult.ContainsKey(DynamicMapHelper.CurrentBiome)) {
-        Log.LogWrite(" biome mult:" + CustomAmmoCategories.Settings.WeaponBurningStrengthBiomeMult[DynamicMapHelper.CurrentBiome] + "\n");
+        Log.Combat?.WL(1, "biome mult:" + CustomAmmoCategories.Settings.WeaponBurningStrengthBiomeMult[DynamicMapHelper.CurrentBiome]);
         result = CustomAmmoCategories.Settings.WeaponBurningStrengthBiomeMult[DynamicMapHelper.CurrentBiome];
       }
       return result;
@@ -1521,56 +1475,55 @@ namespace CustAmmoCategories {
     public static float BiomeLitFireChance() {
       float result = 1f;
       if (CustomAmmoCategories.Settings.LitFireChanceBiomeMult.ContainsKey(DynamicMapHelper.CurrentBiome)) {
-        Log.LogWrite(" biome mult:" + CustomAmmoCategories.Settings.LitFireChanceBiomeMult[DynamicMapHelper.CurrentBiome] + "\n");
+        Log.Combat?.WL(1, "biome mult:" + CustomAmmoCategories.Settings.LitFireChanceBiomeMult[DynamicMapHelper.CurrentBiome]);
         result = CustomAmmoCategories.Settings.LitFireChanceBiomeMult[DynamicMapHelper.CurrentBiome];
       }
       return result;
     }
     public static int BurnForestDuration() {
       float result = CustomAmmoCategories.Settings.BurningForestTurns;
-      Log.LogWrite("BurnForestDuration.Base:" + result + "\n");
+      Log.Combat?.WL(0, "BurnForestDuration.Base:" + result);
       if (CustomAmmoCategories.Settings.ForestBurningDurationBiomeMult.ContainsKey(DynamicMapHelper.CurrentBiome)) {
-        Log.LogWrite(" biome mult:" + CustomAmmoCategories.Settings.ForestBurningDurationBiomeMult[DynamicMapHelper.CurrentBiome] + "\n");
+        Log.Combat?.WL(1, "biome mult:" + CustomAmmoCategories.Settings.ForestBurningDurationBiomeMult[DynamicMapHelper.CurrentBiome]);
         result *= CustomAmmoCategories.Settings.ForestBurningDurationBiomeMult[DynamicMapHelper.CurrentBiome];
       }
-      Log.LogWrite(" effective duration:" + Mathf.RoundToInt(result) + "\n");
+      Log.Combat?.WL(1, "effective duration:" + Mathf.RoundToInt(result));
       return Mathf.RoundToInt(result);
     }
     public static int BurnForestStrength() {
       float result = CustomAmmoCategories.Settings.BurningForestStrength;
-      Log.LogWrite("BurnForestStrength.Base:" + result + "\n");
+      Log.Combat?.WL(0, "BurnForestStrength.Base:" + result);
       if (CustomAmmoCategories.Settings.ForestBurningStrengthBiomeMult.ContainsKey(DynamicMapHelper.CurrentBiome)) {
-        Log.LogWrite(" biome mult:" + CustomAmmoCategories.Settings.ForestBurningStrengthBiomeMult[DynamicMapHelper.CurrentBiome] + "\n");
-
+        Log.Combat?.WL(1, "biome mult:" + CustomAmmoCategories.Settings.ForestBurningStrengthBiomeMult[DynamicMapHelper.CurrentBiome]);
         result *= CustomAmmoCategories.Settings.ForestBurningStrengthBiomeMult[DynamicMapHelper.CurrentBiome];
       }
-      Log.LogWrite(" effective strength:" + Mathf.RoundToInt(result) + "\n");
+      Log.Combat?.WL(1, "effective strength:" + Mathf.RoundToInt(result));
       return Mathf.RoundToInt(result);
     }
     public static float FireExpandChance() {
       float result = CustomAmmoCategories.Settings.BurningForestBaseExpandChance;
-      Log.LogWrite("FireExpandChance.Base:" + result + "\n");
+      Log.Combat?.WL(0, "FireExpandChance.Base:" + result);
       if (CustomAmmoCategories.Settings.LitFireChanceBiomeMult.ContainsKey(DynamicMapHelper.CurrentBiome)) {
-        Log.LogWrite(" biome mult:" + CustomAmmoCategories.Settings.LitFireChanceBiomeMult[DynamicMapHelper.CurrentBiome] + "\n");
+        Log.Combat?.WL(1, "biome mult:" + CustomAmmoCategories.Settings.LitFireChanceBiomeMult[DynamicMapHelper.CurrentBiome]);
         result *= CustomAmmoCategories.Settings.LitFireChanceBiomeMult[DynamicMapHelper.CurrentBiome];
       }
-      Log.LogWrite(" effective chance:" + result + "\n");
+      Log.Combat?.WL(1, "effective chance:" + result);
       return result;
     }
     public static void ClearTerrain() {
-      CustomAmmoCategoriesLog.Log.M?.TWL(0,"ClearTerrain");
+      Log.Combat?.TWL(0,"ClearTerrain");
       DynamicMapHelper.burningHexes.Clear();
       DynamicMapHelper.tempEffectHexes.Clear();
       DynamicMapHelper.tempMaskCells.Clear();
       try {
         if (DynamicMapHelper.hexGrid != null) {
-          CustomAmmoCategoriesLog.Log.LogWrite(" size:" + DynamicMapHelper.hexGrid.Count + "\n");
+          Log.Combat?.WL(1, "size:" + DynamicMapHelper.hexGrid.Count);
           {
             foreach(var vhcell in DynamicMapHelper.hexGrid) {
                 try {
                 MapTerrainHexCell hcell = vhcell.Value;//DynamicMapHelper.hexGrid[hx, hy];
                 if (hcell == null) {
-                  CustomAmmoCategoriesLog.Log.LogWrite("  hex cell is null\n");
+                  Log.Combat?.WL(2, "hex cell is null");
                   continue;
                 }
                 hcell.clearTempVFXs();
@@ -1582,19 +1535,20 @@ namespace CustAmmoCategories {
                 }
                 hcell.burnEffect.CleanupSelf();
               } catch (Exception e) {
-                CustomAmmoCategoriesLog.Log.LogWrite("  fail clean hex cell:" + e.ToString() + "\n");
+                Log.Combat?.WL(2, "fail clean hex cell:" + e.ToString());
               }
             }
           }
-          CustomAmmoCategoriesLog.Log.LogWrite("  nulling hex matrix\n");
+          Log.Combat?.WL(2, "nulling hex matrix");
           DynamicMapHelper.hexGrid = null;
         }
       } catch (Exception e) {
-        CustomAmmoCategoriesLog.Log.LogWrite("Fail to clean:" + e.ToString() + "\n");
+        Log.Combat?.WL(0,"Fail to clean:" + e.ToString());
+        EncounterLayerParent.logger.LogException(e);
       }
     }
     public static void FireTick() {
-      CustomAmmoCategoriesLog.Log.LogWrite("FireTick\n");
+      Log.Combat?.WL(0, "FireTick");
       for (int index = 0; index < DynamicMapHelper.burningHexes.Count; ++index) {
         MapTerrainHexCell hex = burningHexes[index];
         hex.FireTick();
@@ -1605,12 +1559,12 @@ namespace CustAmmoCategories {
         if (hex.expandingThisTurn == false) { continue; };
         List<Vector3> hexesNerby = UnityGameInstance.BattleTechGame.Combat.HexGrid.GetGridPointsAroundPointWithinRadius(hex.center,1);
         foreach(Vector3 hexPosNerby in hexesNerby) {
-          CustomAmmoCategoriesLog.Log.LogWrite(" expanding:" + hexPosNerby + "\n");
+          Log.Combat?.WL(1, "expanding:" + hexPosNerby);
           if(DynamicMapHelper.hexGrid.TryGetValue(hexPosNerby,out MapTerrainHexCell hexNear) == false) {
-            CustomAmmoCategoriesLog.Log.LogWrite("  can't find hex\n");
+            Log.Combat?.WL(2, "can't find hex\n");
             continue;
           }
-          CustomAmmoCategoriesLog.Log.LogWrite("  hex found\n");
+          Log.Combat?.WL(2, "hex found\n");
           if (hexNear.TryExpand(hex.burningWeapon)) { DynamicMapHelper.burningHexes.Add(hexNear); }
         }
       }
@@ -1619,7 +1573,7 @@ namespace CustAmmoCategories {
         MapTerrainHexCell hex = burningHexes[index];
         if (hex.burnEffectCounter <= 0) { DynamicMapHelper.burningHexes.RemoveAt(index); cleanTrees.Add(hex); } else { ++index; }
       }
-      HashSet<object> redrawTreeData = new HashSet<object>();
+      HashSet<QuadTreeData> redrawTreeData = new HashSet<QuadTreeData>();
       foreach (MapTerrainHexCell hcell in cleanTrees) {
         hcell.deleteTrees(redrawTreeData);
       }
@@ -1627,7 +1581,7 @@ namespace CustAmmoCategories {
       DynamicTreesHelper.clearTrees();
     }
     public static void TempTick() {
-      CustomAmmoCategoriesLog.Log.LogWrite("TempTick\n");
+      Log.Combat?.WL(0, "TempTick");
       HashSet<MapTerrainHexCell> markDel = new HashSet<MapTerrainHexCell>();
       foreach (var hc in DynamicMapHelper.tempEffectHexes) {
         //if ((hc.x < 0) || (hc.y < 0) || (hc.x >= DynamicMapHelper.hexGrid.GetLength(0)) || (hc.y >= DynamicMapHelper.hexGrid.GetLength(1))) { continue; }
@@ -1655,15 +1609,12 @@ namespace CustAmmoCategories {
       DynamicMapHelper.mapMetaData = mapMetaData;
       DynamicMapHelper.CurrentBiome = "";
       try {
-        DynamicMapHelper.CurrentBiome = Traverse.Create(mapMetaData).Field<string>("biomeDesignMaskName").Value;
+        DynamicMapHelper.CurrentBiome = mapMetaData.biomeDesignMaskName;
       } catch (Exception) {
         DynamicMapHelper.CurrentBiome = "NotSet";
       }      
-      bool noForest = Traverse.Create(mapMetaData).Field<string>("forestDesignMaskName").Value.Contains("Forest") == false;
-      //CustomAmmoCategories.Settings.NoForestBiomes.Contains(DynamicMapHelper.CurrentBiome);
-      Log.M.TWL(0,"Map biome:" + DynamicMapHelper.CurrentBiome + " noForest:" + noForest+" hex grid:"+(hexGrid == null?"null":"not null"));
-      //Log.LogWrite(" stack:" + Environment.StackTrace + "\n");
-      //HexGrid hexGrid = UnityGameInstance.BattleTechGame.Combat.HexGrid;
+      bool noForest = mapMetaData.forestDesignMaskName.Contains("Forest") == false;
+      Log.Combat?.TWL(0,"Map biome:" + DynamicMapHelper.CurrentBiome + " noForest:" + noForest+" hex grid:"+(hexGrid == null?"null":"not null"));
       DynamicMapHelper.hexGrid = new Dictionary<Vector3, MapTerrainHexCell>();
       for (int mx = 0; mx < mapMetaData.mapTerrainDataCells.GetLength(0); ++mx) {
         for (int my = 0; my < mapMetaData.mapTerrainDataCells.GetLength(1); ++my) {
@@ -1692,78 +1643,74 @@ namespace CustAmmoCategories {
         objectSpawnData.SpawnSelf(Combat);
         //objectSpawnData.spawnedObject.transform.localScale += scale;
       } catch (Exception e) {
-        CustomAmmoCategoriesLog.Log.LogWrite("Spawn exception:" + e.ToString() + "\n");
-        CustomAmmoCategoriesLog.Log.LogWrite("investigating\n");
+        EncounterLayerParent.logger.LogException(e);
+        Log.Combat?.WL(0, "Spawn exception:" + e.ToString());
+        Log.Combat?.WL(0, "investigating");
         VersionManifestEntry versionManifestEntry = Combat.DataManager.ResourceLocator.EntryByID(prefabName, BattleTechResourceType.Prefab, false);
         if (versionManifestEntry == null) {
-          CustomAmmoCategoriesLog.Log.LogWrite("Can't load version manifest for '" + prefabName + "'\n");
+          Log.Combat?.WL(0, $"Can't load version manifest for '{prefabName}'");
           var entries = Combat.DataManager.ResourceLocator.AllEntries();
           foreach (var entry in entries) { // not necessary for ModTek v2 as it dumps the manifest under .modtek/Manifest.csv, kept here for ModTek v0.8 support
             CustomAmmoCategoriesLog.Log.LogWrite( $"{entry.Type} {entry.Id}:\n");
           }
         } else {
-          CustomAmmoCategoriesLog.Log.LogWrite("versionManifestEntry.IsResourcesAsset:" + versionManifestEntry.IsResourcesAsset + "\n");
+          Log.Combat?.WL(0, $"versionManifestEntry.IsResourcesAsset:" + versionManifestEntry.IsResourcesAsset);
           PropertyInfo assetsManagerProp = typeof(DataManager).GetProperty("AssetBundleManager", BindingFlags.NonPublic | BindingFlags.Instance);
           if (assetsManagerProp != null) {
             MethodInfo methodInfo = assetsManagerProp.GetGetMethod(true);
             if (methodInfo == null) {
-              CustomAmmoCategoriesLog.Log.LogWrite("can't get methodInfo\n");
+              Log.Combat?.WL(0, $"can't get methodInfo");
             } else {
               AssetBundleManager manager = (AssetBundleManager)methodInfo.Invoke(Combat.DataManager, new object[0] { });
               if (manager != null) {
-                CustomAmmoCategoriesLog.Log.LogWrite("manager tryied to load " + prefabName + "," + versionManifestEntry.AssetBundleName + "\n");
+                Log.Combat?.WL(0, $"manager tryied to load " + prefabName + "," + versionManifestEntry.AssetBundleName);
                 System.Collections.IDictionary loadedBundles = (System.Collections.IDictionary)typeof(AssetBundleManager).GetField("loadedBundles", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(manager);
                 if (loadedBundles != null) {
-                  CustomAmmoCategoriesLog.Log.LogWrite("loadedBundles:" + loadedBundles.GetType().ToString() + ":" + loadedBundles.Count + "\n");
+                  Log.Combat?.WL(0, $"loadedBundles:" + loadedBundles.GetType().ToString() + ":" + loadedBundles.Count);
                   System.Collections.IEnumerator en = loadedBundles.Keys.GetEnumerator();
                   en.Reset();
                   do {
-                    CustomAmmoCategoriesLog.Log.LogWrite(" " + en.Current + "\n");
+                    Log.Combat?.WL(0, $"{en.Current}");
                   } while (en.MoveNext());
                 }
               } else {
-                CustomAmmoCategoriesLog.Log.LogWrite("can't get manager\n");
+                Log.Combat?.WL(0, $"can't get manager");
               }
             }
           } else {
-            CustomAmmoCategoriesLog.Log.LogWrite("can't get property\n");
+            Log.Combat?.WL(0, $"can't get property");
           }
-
-          //.GetGetMethod();
         }
       }
-      //}
       return objectSpawnData;
     }
     public static void applyImpactBurn(Weapon weapon, Vector3 pos) {
       if (weapon.parent.isSpawnProtected() && CustomAmmoCategories.Settings.SpawnProtectionAffectsBurningTerrain) { return; }
-      CustomAmmoCategoriesLog.Log.LogWrite("Applying burn effect:" + weapon.defId + " " + pos + "\n");
+      Log.Combat?.WL(0, $"Applying burn effect:{weapon.defId} {pos}");
       MapTerrainDataCellEx cell = weapon.parent.Combat.MapMetaData.GetCellAt(pos) as MapTerrainDataCellEx;
       if (cell == null) {
-        CustomAmmoCategoriesLog.Log.LogWrite(" cell is not extended\n");
+        Log.Combat?.WL(1, $"cell is not extended");
         return;
       }
-      CustomAmmoCategoriesLog.Log.LogWrite(" impact at " + pos + "\n");
+      Log.Combat?.WL(1, $"impact at {pos}");
       if (weapon.FireTerrainCellRadius() == 0) {
         cell.hexCell.TryBurnCellAsync(weapon);
-        //if (cell.hexCell.TryBurnCell(weapon)) { DynamicMapHelper.burningHexes.Add(cell.hexCell); };
       } else {
         List<MapTerrainHexCell> affectedHexCells = MapTerrainHexCell.listHexCellsByCellRadius(cell, weapon.FireTerrainCellRadius());
         foreach (MapTerrainHexCell hexCell in affectedHexCells) {
           hexCell.TryBurnCellAsync(weapon);
-          //if (hexCell.TryBurnCell(weapon)) { DynamicMapHelper.burningHexes.Add(hexCell); };
         }
       }
     }
     public static void applyImpactTempMask(Weapon weapon, Vector3 pos) {
       if (weapon.parent.isSpawnProtected() && CustomAmmoCategories.Settings.SpawnProtectionAffectsDesignMasks) { return; }
-      CustomAmmoCategoriesLog.Log.LogWrite("Applying long effect:" + weapon.defId + " " + pos + "\n");
+      Log.Combat?.WL(0, $"Applying long effect:{weapon.defId} {pos}");
       MapTerrainDataCellEx cell = weapon.parent.Combat.MapMetaData.GetCellAt(pos) as MapTerrainDataCellEx;
       if (cell == null) {
-        CustomAmmoCategoriesLog.Log.LogWrite(" cell is not extended\n");
+        Log.Combat?.WL(1, $"cell is not extended");
         return;
       }
-      CustomAmmoCategoriesLog.Log.LogWrite(" impact at " + pos + "\n");
+      Log.Combat?.WL(1, $"impact at {pos}");
       int turns = 0;
       string vfx = string.Empty;
       Vector3 scale;
@@ -1806,33 +1753,31 @@ namespace CustAmmoCategories {
     }
     public static void applyMineField(Weapon weapon, Vector3 pos) {
       if (weapon.parent.isSpawnProtected() && CustomAmmoCategories.Settings.SpawnProtectionAffectsMinelayers) {
-        Log.M.WL(0, "Applying minefield:" + weapon.defId + " " + pos + " neares hex: " + weapon.parent.Combat.HexGrid.GetClosestPointOnGrid(pos)+" but attacker is spawn protected");
+        Log.Combat?.WL(0, "Applying minefield:" + weapon.defId + " " + pos + " neares hex: " + weapon.parent.Combat.HexGrid.GetClosestPointOnGrid(pos)+" but attacker is spawn protected");
         return;
       }
-      CustomAmmoCategoriesLog.Log.M.WL(0,"Applying minefield:" + weapon.defId + " " + pos + " neares hex: "+weapon.parent.Combat.HexGrid.GetClosestPointOnGrid(pos));
+      Log.Combat?.WL(0,"Applying minefield:" + weapon.defId + " " + pos + " neares hex: "+weapon.parent.Combat.HexGrid.GetClosestPointOnGrid(pos));
       MapTerrainDataCellEx cell = weapon.parent.Combat.MapMetaData.GetCellAt(pos) as MapTerrainDataCellEx;
       if (cell == null) {
-        CustomAmmoCategoriesLog.Log.LogWrite(" cell is not extended\n");
+        Log.Combat?.WL(1, $"cell is not extended");
         return;
       }
-      CustomAmmoCategoriesLog.Log.LogWrite(" impact at " + pos + "\n");
+      Log.Combat?.WL(1, $"impact at {pos}");
       if (weapon.InstallMineField() == false) { return; }
       MineFieldDef mfd = weapon.MineFieldDef();
       if (mfd.InstallCellRange == 0) {
-        //Log.LogWrite(" affected cell " + cell.hexCell.x + "," + cell.hexCell.y + ":" + mfd.Count + "\n");
-        Log.LogWrite(" affected cell " + cell.hexCell.center +":" + mfd.Count + "\n");
+        Log.Combat?.WL(1, $"affected cell " + cell.hexCell.center +":" + mfd.Count);
         cell.hexCell.addMineField(mfd, weapon.parent, weapon);
       } else {
         List<MapTerrainHexCell> affectedHexCells = MapTerrainHexCell.listHexCellsByCellRadius(cell, mfd.InstallCellRange);
         foreach (MapTerrainHexCell hexCell in affectedHexCells) {
-          //Log.LogWrite(" affected cell " + hexCell.x + "," + hexCell.y + ":" + mfd.Count + "\n");
-          Log.LogWrite(" affected cell " + hexCell.center + ":" + mfd.Count + "\n");
+          Log.Combat?.WL(1, $"affected cell " + hexCell.center + ":" + mfd.Count);
           hexCell.addMineField(mfd, weapon.parent, weapon);
         }
       }
     }
     public static void TrackLoadedMaskDef(string key, DesignMaskDef mask) {
-      CustomAmmoCategoriesLog.Log.LogWrite("Dynamic design mask loaded:" + key + " = " + mask.Description.Name + "\n");
+      Log.Combat?.WL(0, $"Dynamic design mask loaded:" + key + " = " + mask.Description.Name);
       if (DynamicMapHelper.loadedMasksDef.ContainsKey(key)) {
         DynamicMapHelper.loadedMasksDef[key] = mask;
       } else {
@@ -1957,7 +1902,7 @@ namespace CustAmmoCategories {
       return false;
     }
     public static void registerMovingDamageFromPath(AbstractActor __instance, List<WayPoint> waypoints) {
-      Log.LogWrite("registerMovingDamageFromPath to " + __instance.DisplayName + ":" + __instance.GUID + "\n");
+      Log.Combat?.WL(0, $"registerMovingDamageFromPath to " + __instance.DisplayName + ":" + __instance.GUID);
     }
     public static void registerJumpingDamageFrom(Mech __instance, Vector3 finalPosition) {
     }
@@ -1970,15 +1915,16 @@ namespace CustomAmmoCategoriesPatches {
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { typeof(string), typeof(int) })]
   public static class AbstractActor_OnActivationEndFire {
-    private static bool Prefix(AbstractActor __instance, string sourceID, int stackItemID) {
+    private static void Prefix(ref bool __runOriginal,AbstractActor __instance, string sourceID, int stackItemID) {
+      if (__runOriginal == false) { return; }
       MapTerrainDataCellEx cell = __instance.Combat.MapMetaData.GetCellAt(__instance.CurrentPosition) as MapTerrainDataCellEx;
-      if (cell == null) { return true; };
+      if (cell == null) { return; };
       Mech mech = __instance as Mech;
       Vehicle vehicle = __instance as Vehicle;
       if (cell.BurningStrength > 0) {
         if (__instance.HasMovedThisRound == false) {
           AbstractActor actor = cell.BurningWeapon.parent;
-          CustomAmmoCategoriesLog.Log.LogWrite(" heat from standing in fire:" + cell.BurningStrength + "\n");
+          Log.Combat?.WL(1, $"heat from standing in fire:" + cell.BurningStrength);
           if (mech != null) {
             __instance.AddExternalHeat("BurningCell", cell.BurningStrength);
             __instance.Combat.MessageCenter.PublishMessage((MessageCenterMessage)new FloatieMessage(__instance.GUID, __instance.GUID, "+ " + cell.BurningStrength + " __/CAC.HEATFROMSTANDINGINFIRE/__", FloatieMessage.MessageNature.Debuff));
@@ -1999,7 +1945,7 @@ namespace CustomAmmoCategoriesPatches {
           }
         }
       }
-      return true;
+      return;
     }
   }
   [HarmonyPatch(typeof(MapMetaData))]
@@ -2012,7 +1958,6 @@ namespace CustomAmmoCategoriesPatches {
         MapTerrainDataCellEx excell = cell as MapTerrainDataCellEx;
         if(excell != null)
         if (Thread.CurrentThread.isFlagSet(ActorMovementSequence_UpdateSticky.HIDE_DESIGN_MASK_FLAG)) {
-          //Log.M?.TWL(0, "MapMetaData.GetPriorityDesignMask x:"+ excell?.x+" y:"+excell.y+" mask skipped");
           __result = null;
           return;
         }
@@ -2031,7 +1976,8 @@ namespace CustomAmmoCategoriesPatches {
           __result = excell.CustomDesignMask;
         }
       } catch (Exception e) {
-        Log.M?.TWL(0, e.ToString(), true);
+        Log.Combat?.TWL(0, e.ToString(), true);
+        MapMetaData.logger.LogException(e);
       }
     }
   }
@@ -2056,7 +2002,8 @@ namespace CustomAmmoCategoriesPatches {
           __result = excell.GetAudioSurfaceTypeEx();
         }
       }catch(Exception e) {
-        Log.M?.TWL(0,e.ToString(),true);
+        Log.Combat?.TWL(0,e.ToString(),true);
+        MapMetaData.logger.LogException(e);
       }
     }
   }
@@ -2090,21 +2037,6 @@ namespace CustomAmmoCategoriesPatches {
       DynamicMapHelper.LoadDesignMasks(dataManager);
     }
   }
-  //[HarmonyPatch(typeof(HexGrid))]
-  //[HarmonyPatch(MethodType.Constructor)]
-  //[HarmonyPatch(new Type[] { typeof(CombatGameState) })]
-  //public static class HexGrid_Constructor {
-  //  public static void Postfix(HexGrid __instance, CombatGameState combat) {
-  //    Log.M.TWL(0, "HexGrid.Constructor combat:"+(combat == null?"null":"not null"));
-  //    try {
-  //      if (combat != null) {
-  //        DynamicMapHelper.initHexGrid(combat.MapMetaData, __instance);
-  //      }
-  //    } catch(Exception e) {
-  //      Log.M?.TWL(0,e.ToString(),true);
-  //    }
-  //  }
-  //}
   [HarmonyPatch(typeof(MapMetaData))]
   [HarmonyPatch("Load")]
   [HarmonyPatch(MethodType.Normal)]
@@ -2127,14 +2059,13 @@ namespace CustomAmmoCategoriesPatches {
         if (info.IsPublic) { replacConstructor = info; }
       }
       var targetConstructor = AccessTools.Constructor(typeof(MapTerrainDataCell));
-      //replacConstructor = AccessTools.Constructor(typeof(MapTerrainDataCellEx));
       return Transpilers.MethodReplacer(instructions, targetConstructor, replacConstructor);
     }
     static void Postfix(MapMetaData __instance, SerializationStream stream) {
       int xmax = __instance.mapTerrainDataCells.GetLength(0);
       int ymax = __instance.mapTerrainDataCells.GetLength(1);
-      CustomAmmoCategoriesLog.Log.LogWrite("MapMetaData.Load " + xmax + " X " + ymax + " \n");
-      Log.M?.WL(0,Environment.StackTrace);
+      Log.Combat?.TWL(0,"MapMetaData.Load " + xmax + " X " + ymax);
+      Log.Combat?.WL(0,Environment.StackTrace);
       for (int x = 0; x < xmax; ++x) {
         for (int y = 0; y < ymax; ++y) {
           MapTerrainDataCellEx ecell = __instance.mapTerrainDataCells[x, y] as MapTerrainDataCellEx;
@@ -2148,7 +2079,7 @@ namespace CustomAmmoCategoriesPatches {
       }
       CACMain.Core.Call_MapMetadata_Load_Postfixes(__instance);
       if (Terrain.activeTerrain == null) {
-        CustomAmmoCategoriesLog.Log.LogWrite(" active terrain is null \n");
+        Log.Combat?.WL(1, "active terrain is null");
       } else {
         DynamicMapHelper.initHexGrid(__instance, UnityGameInstance.BattleTechGame.Combat.HexGrid);
       }
@@ -2165,7 +2096,8 @@ namespace CustomAmmoCategoriesPatches {
         DynamicMapHelper.TempTick();
         BlockWeaponsHelpers.EjectAIBlocking(__instance.Combat);
       } catch(Exception e) {
-        Log.M?.TWL(0,e.ToString(),true);
+        Log.Combat?.TWL(0,e.ToString(),true);
+        TurnDirector.logger.LogException(e);
       }
     }
   }
@@ -2175,7 +2107,7 @@ namespace CustomAmmoCategoriesPatches {
   [HarmonyPatch(new Type[] { })]
   public static class TreeContainer_GatherTrees {
     public static void Postfix(TreeContainer __instance) {
-      CustomAmmoCategoriesLog.Log.LogWrite("TreeContainer_GatherTrees.Postfix\n");
+      Log.Combat?.WL(0,"TreeContainer_GatherTrees.Postfix");
     }
   }
   [HarmonyPatch(typeof(BTCustomRenderer))]
@@ -2185,13 +2117,6 @@ namespace CustomAmmoCategoriesPatches {
   public static class BTCustomRenderer_DrawDecals {
     public static Material ScorchMaterial = null;
     public static Material BloodMaterial = null;
-    public static FieldInfo deferredDecalsBufferField = null;
-    public static FieldInfo skipDecalsField = null;
-    public static FieldInfo effectsQualityField = null;
-    //public static MethodInfo UseCameraMethod = null;
-    public delegate object d_UseCameraMethod(BTCustomRenderer renderer, Camera camera);
-    public static d_UseCameraMethod i_UseCameraMethod = null;
-    public static object UseCameraMethod(this BTCustomRenderer renderer,Camera camera) { return i_UseCameraMethod(renderer,camera); }
     public static readonly int maxArraySize = 1000;
     public static List<List<Matrix4x4>> Scorches = new List<List<Matrix4x4>>();
     public static List<List<Matrix4x4>> Bloods = new List<List<Matrix4x4>>();
@@ -2225,112 +2150,66 @@ namespace CustomAmmoCategoriesPatches {
       Matrix4x4 trs = Matrix4x4.TRS(position, rotation, scale);
       BTCustomRenderer_DrawDecals.Bloods[BTCustomRenderer_DrawDecals.Bloods.Count - 1].Add(trs);
     }
-    public static bool Prepare() {
-      CustomAmmoCategoriesLog.Log.LogWrite("BTCustomRenderer_DrawDecals prepare\n"); ;
+    public static bool _Prepare() {
+      Log.M?.WL(0,"BTCustomRenderer_DrawDecals prepare"); ;
       BTCustomRenderer_DrawDecals.ScorchMaterial = Resources.Load<Material>("Decals/ScorchMaterial");
       if (BTCustomRenderer_DrawDecals.ScorchMaterial == null) {
-        CustomAmmoCategoriesLog.Log.LogWrite("Fail to load scorch material\n");
+        Log.M?.WL(0, "Fail to load scorch material");
         return false;
       }
-      CustomAmmoCategoriesLog.Log.LogWrite("Scorch material success loaded\n"); ;
+      Log.M?.WL(0, "Scorch material success loaded"); ;
       BTCustomRenderer_DrawDecals.ScorchMaterial = UnityEngine.Object.Instantiate(FootstepManager.Instance.scorchMaterial);
       if (BTCustomRenderer_DrawDecals.ScorchMaterial == null) {
-        CustomAmmoCategoriesLog.Log.LogWrite("Fail to copy scorch material\n");
+        Log.M?.WL(0, "Fail to copy scorch material");
         return false;
       }
-      CustomAmmoCategoriesLog.Log.LogWrite("Scorch material success copied\n"); ;
+      Log.M?.WL(0, "Scorch material success copied"); ;
       BTCustomRenderer_DrawDecals.ScorchMaterial.DisableKeyword("_ALPHABLEND_ON");
-      CustomAmmoCategoriesLog.Log.LogWrite("Alphablend disabled.\n"); ;
+      Log.M?.WL(0, "Alphablend disabled."); ;
       Texture2D terrainTexture = CACMain.Core.findTexture(CustomAmmoCategories.Settings.BurnedTrees.DecalTexture);
-      CustomAmmoCategoriesLog.Log.LogWrite("Testing texture\n"); ;
+      Log.M?.WL(0, "Testing texture"); ;
       if (terrainTexture == null) {
-        CustomAmmoCategoriesLog.Log.LogWrite("Fail to load texture\n");
+        Log.M?.WL(0, "Fail to load texture");
         return false;
       }
-      CustomAmmoCategoriesLog.Log.LogWrite("Success loaded texture\n"); ;
+      Log.M?.WL(0, "Success loaded texture"); ;
       BTCustomRenderer_DrawDecals.ScorchMaterial.SetFloat("_AffectTree", 0f);
       BTCustomRenderer_DrawDecals.ScorchMaterial.SetTexture("_MainTex", terrainTexture);
       BTCustomRenderer_DrawDecals.ScorchMaterial.enableInstancing = true;
-
-
-
-      //BTCustomRenderer_DrawDecals.UseCameraMethod = typeof(BTCustomRenderer).GetMethod("UseCamera", BindingFlags.Instance | BindingFlags.NonPublic);
-      //if (BTCustomRenderer_DrawDecals.UseCameraMethod == null) {
-        //CustomAmmoCategoriesLog.Log.LogWrite("Fail to get UseCamera method\n"); ;
-        //return false;
-      //}
-
-
-      {
-        Type BTCustomRenderer_CustomCommandBuffers = typeof(BTCustomRenderer).GetNestedType("CustomCommandBuffers", BindingFlags.NonPublic);
-        MethodInfo UseCameraMethod = typeof(BTCustomRenderer).GetMethod("UseCamera", BindingFlags.Instance | BindingFlags.NonPublic);
-        var dm = new DynamicMethod("CACUseCameraMethod", BTCustomRenderer_CustomCommandBuffers, new Type[] {typeof(BTCustomRenderer), typeof(Camera) }, typeof(BTCustomRenderer));
-        var gen = dm.GetILGenerator();
-        gen.Emit(OpCodes.Ldarg_0);
-        gen.Emit(OpCodes.Ldarg_1);
-        gen.Emit(OpCodes.Call, UseCameraMethod);
-        gen.Emit(OpCodes.Ret);
-        i_UseCameraMethod = (d_UseCameraMethod)dm.CreateDelegate(typeof(d_UseCameraMethod));
-      }
-
       BTCustomRenderer_DrawDecals.BloodMaterial = UnityEngine.Object.Instantiate(FootstepManager.Instance.scorchMaterial);
       if (BTCustomRenderer_DrawDecals.BloodMaterial == null) {
-        CustomAmmoCategoriesLog.Log.LogWrite("Fail to copy blood material\n");
+        Log.M?.WL(0, "Fail to copy blood material");
         return false;
       }
-      CustomAmmoCategoriesLog.Log.LogWrite("Blood material success copied\n"); ;
+      Log.M?.WL(0, "Blood material success copied"); ;
       BTCustomRenderer_DrawDecals.BloodMaterial.DisableKeyword("_ALPHABLEND_ON");
-      CustomAmmoCategoriesLog.Log.LogWrite("Alphablend disabled.\n"); ;
+      Log.M?.WL(0, "Alphablend disabled."); ;
       Texture2D bloodTexture = CACMain.Core.findTexture(CustomAmmoCategories.Settings.bloodSettings.DecalTexture);
-      CustomAmmoCategoriesLog.Log.LogWrite("Testing texture. " + CustomAmmoCategories.Settings.bloodSettings.DecalTexture + "\n"); ;
+      Log.M?.WL(0, "Testing texture. " + CustomAmmoCategories.Settings.bloodSettings.DecalTexture); ;
       if (bloodTexture == null) {
-        CustomAmmoCategoriesLog.Log.LogWrite("Fail to load texture\n");
+        Log.M?.WL(0, "Fail to load texture");
         return false;
       }
-      CustomAmmoCategoriesLog.Log.LogWrite("Success loaded texture\n"); ;
+      Log.M?.WL(0, "Success loaded texture"); ;
       BTCustomRenderer_DrawDecals.BloodMaterial.SetFloat("_AffectTree", 0f);
       BTCustomRenderer_DrawDecals.BloodMaterial.SetTexture("_MainTex", bloodTexture);
-      //BTCustomRenderer_DrawDecals.BloodMaterial.color = Color.red;
       BTCustomRenderer_DrawDecals.BloodMaterial.enableInstancing = true;
-
-      //BTCustomRenderer_DrawDecals.UseCameraMethod = typeof(BTCustomRenderer).GetMethod("UseCamera", BindingFlags.Instance | BindingFlags.NonPublic);
-      //if (BTCustomRenderer_DrawDecals.UseCameraMethod == null) {
-        //CustomAmmoCategoriesLog.Log.LogWrite("Fail to get UseCamera method\n"); ;
-        //return false;
-      //}
-      //CustomAmmoCategoriesLog.Log.LogWrite("Success get UseCamera method\n");
-      BTCustomRenderer_DrawDecals.deferredDecalsBufferField = typeof(BTCustomRenderer).Assembly.GetType("BattleTech.Rendering.BTCustomRenderer+CustomCommandBuffers").GetField("deferredDecalsBuffer", BindingFlags.Instance | BindingFlags.Public);
-      if (BTCustomRenderer_DrawDecals.deferredDecalsBufferField == null) {
-        CustomAmmoCategoriesLog.Log.LogWrite("Fail to get deferredDecalsBuffer field\n"); ;
-        return false;
-      }
-      BTCustomRenderer_DrawDecals.skipDecalsField = typeof(BTCustomRenderer).GetField("skipDecals", BindingFlags.Instance | BindingFlags.NonPublic);
-      if (BTCustomRenderer_DrawDecals.skipDecalsField == null) {
-        CustomAmmoCategoriesLog.Log.LogWrite("Fail to get skipDecals field\n"); ;
-        return false;
-      }
-      BTCustomRenderer_DrawDecals.effectsQualityField = typeof(BTCustomRenderer).GetField("effectsQuality", BindingFlags.Static | BindingFlags.NonPublic);
-      if (BTCustomRenderer_DrawDecals.effectsQualityField == null) {
-        CustomAmmoCategoriesLog.Log.LogWrite("Fail to get effectsQuality field\n"); ;
-        return false;
-      }
-      CustomAmmoCategoriesLog.Log.LogWrite(" success\n"); ;
+      Log.M?.WL(1, "success"); ;
       return true;
     }
     public static void Postfix(BTCustomRenderer __instance, Camera camera) {
-      object customCommandBuffers = __instance.UseCameraMethod(camera); //BTCustomRenderer_DrawDecals.UseCameraMethod.Invoke(__instance, new object[1] { (object)camera });
+      var customCommandBuffers = __instance.UseCamera(camera);
       if (customCommandBuffers == null)
         return;
-      CommandBuffer deferredDecalsBuffer = (CommandBuffer)BTCustomRenderer_DrawDecals.deferredDecalsBufferField.GetValue(customCommandBuffers);
-      bool skipDecals = (bool)BTCustomRenderer_DrawDecals.skipDecalsField.GetValue(__instance);
-      int effectsQuality = (int)BTCustomRenderer_DrawDecals.effectsQualityField.GetValue(null);
+      CommandBuffer deferredDecalsBuffer = customCommandBuffers.deferredDecalsBuffer;
+      bool skipDecals = __instance.skipDecals;
+      int effectsQuality = BTCustomRenderer.effectsQuality;
       if (!skipDecals) {
         BTDecal.DecalController.ProcessCommandBuffer(deferredDecalsBuffer, camera);
       }
       if (!Application.isPlaying || effectsQuality <= 0)
         return;
       if (BTCustomRenderer_DrawDecals.Scorches.Count > 0) {
-        //CustomAmmoCategoriesLog.Log.LogWrite("draw scorches:"+ BTCustomRenderer_DrawDecals.Scorches.Count+ "\n"); ;
         for (int index1 = 0; index1 < BTCustomRenderer_DrawDecals.Scorches.Count; ++index1) {
           Matrix4x4[] matrices2 = BTCustomRenderer_DrawDecals.Scorches[index1].ToArray();
           int scorches = matrices2.Length;
@@ -2338,7 +2217,6 @@ namespace CustomAmmoCategoriesPatches {
         }
       }
       if (BTCustomRenderer_DrawDecals.Bloods.Count > 0) {
-        //CustomAmmoCategoriesLog.Log.LogWrite("draw scorches:"+ BTCustomRenderer_DrawDecals.Scorches.Count+ "\n"); ;
         for (int index1 = 0; index1 < BTCustomRenderer_DrawDecals.Bloods.Count; ++index1) {
           Matrix4x4[] matrices2 = BTCustomRenderer_DrawDecals.Bloods[index1].ToArray();
           int scorches = matrices2.Length;
@@ -2363,15 +2241,14 @@ namespace CustomAmmoCategoriesPatches {
       isPlaySound.Remove(obj);
     }
     public static void Postfix(DestructibleUrbanFlimsy __instance) {
-      //float scale = CustomAmmoCategories.Settings.bloodSettings.DecalScale[];
-      Log.M.TWL(0, "DestructibleUrbanFlimsy.PlayDestructionVFX");
+      Log.Combat?.TWL(0, "DestructibleUrbanFlimsy.PlayDestructionVFX");
       if (CustomAmmoCategories.Settings.bloodSettings.DecalScales.TryGetValue(__instance.flimsyType, out float scale) == false) {
-        Log.M.WL(1,"Can't find scale for "+ __instance.flimsyType);
+        Log.Combat?.WL(1,"Can't find scale for "+ __instance.flimsyType);
         return;
       }
       float roll = Random.Range(0f, 1f);
       if (roll > CustomAmmoCategories.Settings.bloodSettings.DrawBloodChance) {
-        Log.M.WL(1, "roll fail "+roll +" > "+ CustomAmmoCategories.Settings.bloodSettings.DrawBloodChance);
+        Log.Combat?.WL(1, "roll fail "+roll +" > "+ CustomAmmoCategories.Settings.bloodSettings.DrawBloodChance);
         return;
       }
       switch (__instance.flimsyType) {
@@ -2379,7 +2256,7 @@ namespace CustomAmmoCategoriesPatches {
         case FlimsyDestructType.smallVehicle:
         case FlimsyDestructType.mediumVehicle:
         case FlimsyDestructType.largeVehicle: {
-            Log.M.TWL(0, "Add blood decal " + __instance.transform.position + " scale:" + scale + " name:" + __instance.transform.name);
+            Log.Combat?.TWL(0, "Add blood decal " + __instance.transform.position + " scale:" + scale + " name:" + __instance.transform.name);
             BTCustomRenderer_DrawDecals.AddBlood(__instance.transform.position, new Vector3(1f, 0f, 0f).normalized, new Vector3(scale, scale, scale));
             if (DestructibleUrbanFlimsy.Combat != null) { __instance.markPlayBloodSound(); }
           }; break;
@@ -2392,7 +2269,6 @@ namespace CustomAmmoCategoriesPatches {
   [HarmonyPatch(new Type[] { })]
   public static class DestructibleUrbanFlimsy_PlayDestructionAudio {
     public static bool Prefix(DestructibleUrbanFlimsy __instance) {
-      //float scale = CustomAmmoCategories.Settings.bloodSettings.DecalScale[];
       Log.S.TWL(0, "DestructibleUrbanFlimsy.PlayDestructionAudio");
       if (__instance.isPlayBloodSound()) {
         Log.S.WL(1, "playing blood sound");
@@ -2407,22 +2283,11 @@ namespace CustomAmmoCategoriesPatches {
       return true;
     }
   }
-
-  [HarmonyPatch(typeof(PilotableActorRepresentation))]
-  [HarmonyPatch("RefreshSurfaceType")]
-  [HarmonyPatch(MethodType.Normal)]
-  [HarmonyPatch(new Type[] { typeof(bool) })]
-  public static class PilotableActorRepresentation_RefreshSurfaceType {
-    public static void Postfix(PilotableActorRepresentation __instance) {
-    }
-  }
   [HarmonyPatch(typeof(DataManager))]
   [HarmonyPatch("PooledInstantiate")]
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { typeof(string), typeof(BattleTechResourceType), typeof(Vector3?), typeof(Quaternion?), typeof(Transform) })]
   public static class DataManager_PooledInstantiate {
-    private static PropertyInfo pGameObjectPool = null;
-    private static PropertyInfo pAssetBundleManager = null;
     private static List<Func<BattleTechResourceType, string, string>> IdFilters = new List<Func<BattleTechResourceType, string, string>>();
     private static List<Action<BattleTechResourceType,string, string, GameObject>> PoolPostProcessors = new List<Action<BattleTechResourceType, string, string, GameObject>>();
     public static void RegisterIdFilter(Func<BattleTechResourceType, string, string> filter) {
@@ -2434,63 +2299,35 @@ namespace CustomAmmoCategoriesPatches {
       }
       return id;
     }
-    public static bool Prepare() {
-      pGameObjectPool = typeof(DataManager).GetProperty("GameObjectPool", BindingFlags.Instance | BindingFlags.NonPublic);
-      if (pGameObjectPool == null) {
-        Log.M.TWL(0, "DataManager.PooledInstantiate prepare can't find GameObjectPool", true);
-        return false;
-      }
-      pAssetBundleManager = typeof(DataManager).GetProperty("AssetBundleManager", BindingFlags.Instance | BindingFlags.NonPublic);
-      if (pAssetBundleManager == null) {
-        Log.M.TWL(0, "DataManager.PooledInstantiate prepare can't find AssetBundleManager", true);
-        return false;
-      }
-      return true;
-    }
-    public static PrefabCache GameObjectPool(this DataManager dataManager) {
-      return (PrefabCache)pGameObjectPool.GetValue(dataManager, null);
-    }
-    public static AssetBundleManager AssetBundleManager(this DataManager dataManager) {
-      return (AssetBundleManager)pAssetBundleManager.GetValue(dataManager, null);
-    }
-    public static Dictionary<string, LinkedList<GameObject>> gameObjectPool(this PrefabCache cache) {
-      return Traverse.Create(cache).Field<Dictionary<string, LinkedList<GameObject>>>("gameObjectPool").Value;
-    }
-    public static Dictionary<string, PrefabCache.RST> gameObjectRST(this PrefabCache cache) {
-      return Traverse.Create(cache).Field<Dictionary<string, PrefabCache.RST>>("gameObjectRST").Value;
-    }
-    public static Dictionary<string, UnityEngine.Object> prefabPool(this PrefabCache cache) {
-      return Traverse.Create(cache).Field<Dictionary<string, UnityEngine.Object>>("prefabPool").Value;
-    }
-    public static void CreateObjectRST(this PrefabCache cache,string id, GameObject obj) {
-      if (cache.gameObjectRST().ContainsKey(id)) { return; }
+    public static void CreateObjectRST_i(this PrefabCache cache,string id, GameObject obj) {
+      if (cache.gameObjectRST.ContainsKey(id)) { return; }
       PrefabCache.RST rst = new PrefabCache.RST(obj);
-      cache.gameObjectRST().Add(id, rst);
+      cache.gameObjectRST.Add(id, rst);
     }
     public static GameObject PooledInstantiateEx(this PrefabCache cache,string id, Vector3? position = null, Quaternion? rotation = null, Transform parent = null, bool forceInstantiate = false) {
       if (forceInstantiate == false) {
         GameObject go = null;
-        if(cache.gameObjectPool().TryGetValue(id, out LinkedList<GameObject> linkedList)) {
+        if(cache.gameObjectPool.TryGetValue(id, out LinkedList<GameObject> linkedList)) {
           do {
             if (linkedList.Count == 0) { break; }
             go = linkedList.First.Value;
             linkedList.RemoveFirst();
             if(go == null) {
-              Log.M.TWL(0,"Some moron pooled null as "+id+" rot in hell!!!",true);
+              Log.Combat?.TWL(0,"Some moron pooled null as "+id+" rot in hell!!!",true);
               continue;
             }
             try {
               go.transform.SetParent((Transform)null);
             } catch(Exception e) {
               go = null;
-              Log.M.TWL(0, "Some moron pooled disposed object as " + id + " rot in hell!!!", true);
-              Log.M.TWL(0, e.ToString(), true);
+              Log.Combat?.TWL(0, "Some moron pooled disposed object as " + id + " rot in hell!!!", true);
+              Log.Combat?.TWL(0, e.ToString(), true);
             }
           } while ((go == null)&&(linkedList.Count > 0));
         }
         if (go != null) {
           go.transform.SetParent((Transform)null);
-          cache.gameObjectRST()[id].Apply(go);
+          cache.gameObjectRST[id].Apply(go);
           go.SetActive(true);
           if ((UnityEngine.Object)parent != (UnityEngine.Object)null) {
             Scene scene1 = go.scene;
@@ -2510,14 +2347,14 @@ namespace CustomAmmoCategoriesPatches {
         }
       }
       UnityEngine.Object original;
-      if (!cache.prefabPool().TryGetValue(id, out original)) { return (GameObject)null; };
+      if (!cache.prefabPool.TryGetValue(id, out original)) { return (GameObject)null; };
       GameObject go1;
       if (position.HasValue || rotation.HasValue) {
         Transform transform = (original as GameObject).transform;
         go1 = (GameObject)UnityEngine.Object.Instantiate(original, position.HasValue ? position.Value : transform.position, rotation.HasValue ? rotation.Value : transform.rotation);
       } else
         go1 = (GameObject)UnityEngine.Object.Instantiate(original);
-      cache.CreateObjectRST(id, go1);
+      cache.CreateObjectRST_i(id, go1);
       if ((UnityEngine.Object)parent != (UnityEngine.Object)null) {
         Scene scene1 = go1.scene;
         Scene scene2 = parent.gameObject.scene;
@@ -2530,48 +2367,54 @@ namespace CustomAmmoCategoriesPatches {
       }
       return go1;
     }
-    public static bool Prefix(DataManager __instance, string id, BattleTechResourceType resourceType, Vector3? position, Quaternion? rotation, Transform parent, ref GameObject __result) {
-      Log.LogWrite("DataManager.PooledInstantiate prefix " + id + "\n");
+    public static void Prefix(ref bool __runOriginal, DataManager __instance, string id, BattleTechResourceType resourceType, Vector3? position, Quaternion? rotation, Transform parent, ref GameObject __result) {
+      //Log.Combat?.TWL(0,$"DataManager.PooledInstantiate prefix {id}");
+      if (__runOriginal == false) { return; }
       try {
-        if ((UnityEngine.Object)__instance.GameObjectPool() == (UnityEngine.Object)null) { __result = null; return false; }
-        if (!__instance.GameObjectPool().IsPrefabInPool(id)) {
+        if ((UnityEngine.Object)__instance.GameObjectPool == (UnityEngine.Object)null) { __result = null; __runOriginal = false; return; }
+        if (!__instance.GameObjectPool.IsPrefabInPool(id)) {
           VersionManifestEntry versionManifestEntry = __instance.ResourceLocator.EntryByID(id, resourceType, false);
           if (versionManifestEntry != null) {
             if (versionManifestEntry.IsResourcesAsset)
-              __instance.GameObjectPool().AddPrefabToPool(id, Resources.Load(versionManifestEntry.ResourcesLoadPath));
+              __instance.GameObjectPool.AddPrefabToPool(id, Resources.Load(versionManifestEntry.ResourcesLoadPath));
             else if (versionManifestEntry.IsAssetBundled) {
-              GameObject gameObject = (UnityEngine.Object)__instance.AssetBundleManager() != (UnityEngine.Object)null ? __instance.AssetBundleManager().GetAssetFromBundle<GameObject>(id, versionManifestEntry.AssetBundleName) : (GameObject)null;
+              GameObject gameObject = (UnityEngine.Object)__instance.AssetBundleManager != (UnityEngine.Object)null ? __instance.AssetBundleManager.GetAssetFromBundle<GameObject>(id, versionManifestEntry.AssetBundleName) : (GameObject)null;
               if ((UnityEngine.Object)gameObject != (UnityEngine.Object)null)
-                __instance.GameObjectPool().AddPrefabToPool(id, (UnityEngine.Object)gameObject);
+                __instance.GameObjectPool.AddPrefabToPool(id, (UnityEngine.Object)gameObject);
             }
           }
         }
-        if (!__instance.GameObjectPool().IsPrefabInPool(id)) { __result = null; return false; }
-        __result = __instance.GameObjectPool().PooledInstantiateEx(id, position, rotation, parent, false);
-        return false;
+        if (!__instance.GameObjectPool.IsPrefabInPool(id)) { __result = null; __runOriginal = false; return; }
+        __result = __instance.GameObjectPool.PooledInstantiateEx(id, position, rotation, parent, false);
+        __runOriginal = false; return;
       } catch (Exception e) {
         Log.M.TWL(0, e.ToString());
-        return true;
+        __instance.logger.LogException(e);
+        return;
       }
     }
     public static void Postfix(DataManager __instance, string id, BattleTechResourceType resourceType, ref GameObject __result) {
       try {
         if (resourceType != BattleTechResourceType.Prefab) { return; }
-        Log.LogWrite("DataManager.PooledInstantiate prefab " + id + "\n");
-        if ((UnityEngine.Object)__result == (UnityEngine.Object)null) {
-          CustomAmmoCategoriesLog.Log.LogWrite("Can't find " + id + " in in-game prefabs\n");
+        if (UnityGameInstance.BattleTechGame.Combat == null) { return; }
+        //Log.Combat?.TWL(0, $"DataManager.PooledInstantiate prefab {id}");
+        if (__result == null) {
+          //Log.Combat?.WL(1, $"Can't find " + id + " in in-game prefabs");
           if (CACMain.Core.AdditinalFXObjects.ContainsKey(id)) {
-            CustomAmmoCategoriesLog.Log.LogWrite("Found in additional prefabs\n");
+            //Log.Combat?.WL(1, $"Found in additional prefabs");
             __result = GameObject.Instantiate(CACMain.Core.AdditinalFXObjects[id]);
             __result.RestoreScaleColor();
           } else {
-            CustomAmmoCategoriesLog.Log.LogWrite(" can't spawn prefab " + id + " it is absent in pool,in-game assets and external assets\n", true);
+            //Log.Combat?.WL(3, $"can't spawn prefab " + id + " it is absent in pool,in-game assets and external assets", true);
             return;
           }
         } else {
-          __result.RestoreScaleColor();
+          if (__result != null) { __result.RestoreScaleColor(); }
         }
-      } catch (Exception e) { Log.LogWrite(e.ToString() + "\n", true); }
+      } catch (Exception e) {
+        Log.Combat?.TWL(0, e.ToString(), true);
+        __instance.logger.LogException(e);
+      }
     }
   }
   [HarmonyPatch(typeof(MapMetaDataExporter))]
@@ -2590,7 +2433,7 @@ namespace CustomAmmoCategoriesPatches {
     static void Postfix(MapMetaDataExporter __instance, Terrain terrain, bool force) {
       int xmax = __instance.mapMetaData.mapTerrainDataCells.GetLength(0);
       int ymax = __instance.mapMetaData.mapTerrainDataCells.GetLength(1);
-      CustomAmmoCategoriesLog.Log.LogWrite("MapMetaDataExporter.GenerateTerrainData " + xmax + " X " + ymax + "\n");
+      Log.Combat?.TWL(0,"MapMetaDataExporter.GenerateTerrainData " + xmax + " X " + ymax + "\n");
       for (int x = 0; x < xmax; ++x) {
         for (int y = 0; y < ymax; ++y) {
           if (__instance.mapMetaData.mapTerrainDataCells[x, y] is MapTerrainDataCellEx) {

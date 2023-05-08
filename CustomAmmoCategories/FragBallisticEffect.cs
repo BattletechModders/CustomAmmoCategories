@@ -29,20 +29,12 @@ namespace CustAmmoCategories {
     public string middleShotSFX;
     public string lastShotSFX;
 
-#if PUBLIC_ASSEMBLIES
-    public override int ImpactPrecacheCount {
-#else
     protected override int ImpactPrecacheCount {
-#endif
       get {
         return 5;
       }
     }
-#if PUBLIC_ASSEMBLIES
-    public override void Awake() {
-#else
     protected override void Awake() {
-#endif
       base.Awake();
       this.AllowMissSkipping = false;
     }
@@ -51,7 +43,7 @@ namespace CustAmmoCategories {
     }
     public void Init(BallisticEffect original) {
       base.Init(original);
-      CustomAmmoCategoriesLog.Log.LogWrite("FragBallisticEffect.Init\n");
+      Log.Combat?.WL(1, "FragBallisticEffect.Init");
       this.shotDelay = original.shotDelay;
       this.spreadAngle = original.spreadAngle;
       this.bulletPrefab = original.bulletPrefab;
@@ -72,12 +64,12 @@ namespace CustAmmoCategories {
       this.rate = 1f / this.shotDelay;
       this.ClearBullets();
       string prefabName = FragBallisticEffect.FragPrefabPrefix + this.bulletPrefab.name;
-      Log.LogWrite("FragBallisticEffect.SetupBullets getting from pool:" + prefabName + "\n");
+      Log.Combat?.WL(1, "FragBallisticEffect.SetupBullets getting from pool:" + prefabName);
       for (int index = 0; index < this.weapon.ProjectilesPerShot; ++index) {
         GameObject FraggameObject = this.Combat.DataManager.PooledInstantiate(prefabName, BattleTechResourceType.Prefab, new Vector3?(), new Quaternion?(), (Transform)null);
         FragBulletEffect fragComponent = null;
         if (FraggameObject != null) {
-          Log.LogWrite(" getted from pool: " + FraggameObject.GetInstanceID() + "\n");
+          Log.Combat?.WL(1, "getted from pool: " + FraggameObject.GetInstanceID());
           fragComponent = FraggameObject.GetComponent<FragBulletEffect>();
           if (fragComponent != null) {
             fragComponent.Init(this.weapon, this);
@@ -85,7 +77,7 @@ namespace CustAmmoCategories {
           }
         }
         if (fragComponent == null) {
-          Log.LogWrite(" not in pool. instansing.\n");
+          Log.Combat?.WL(1, "not in pool. instansing.");
           GameObject gameObject = this.Combat.DataManager.PooledInstantiate(this.bulletPrefab.name, BattleTechResourceType.Prefab, new Vector3?(), new Quaternion?(), (Transform)null);
           if ((UnityEngine.Object)gameObject == (UnityEngine.Object)null) {
             WeaponEffect.logger.LogError((object)("Error instantiating BulletObject " + this.bulletPrefab.name), (UnityEngine.Object)this);
@@ -103,7 +95,7 @@ namespace CustAmmoCategories {
           gameObject = null;
           FraggameObject.transform.parent = (Transform)null;
           BulletEffect component = FraggameObject.GetComponent<BulletEffect>();
-          if ((UnityEngine.Object)component == (UnityEngine.Object)null) {
+          if (component == null) {
             WeaponEffect.logger.LogError((object)("Error finding BulletEffect on GO " + this.bulletPrefab.name), (UnityEngine.Object)this);
             return;
           }
@@ -181,17 +173,13 @@ namespace CustAmmoCategories {
     protected override void PlayImpact() {
       base.PlayImpact();
     }
-#if PUBLIC_ASSEMBLIES
-    public override void Update() {
-#else
     protected override void Update() {
-#endif
       base.Update();
       if (this.currentState != WeaponEffect.WeaponEffectState.WaitingForImpact || !this.AllBulletsComplete()) { return; }
       this.OnComplete();
     }
     protected override void OnPreFireComplete() {
-      Log.LogWrite("FragBallisticEffect.OnPreFireComplete " + this.startPos + " wi:" + hitInfo.attackWeaponIndex + " hi:" + hitIndex + "\n");
+      Log.Combat?.WL(0, "FragBallisticEffect.OnPreFireComplete " + this.startPos + " wi:" + hitInfo.attackWeaponIndex + " hi:" + hitIndex);
       base.OnPreFireComplete();
       this.PlayProjectile();
     }
@@ -210,10 +198,10 @@ namespace CustAmmoCategories {
     protected override void OnComplete() {
       //this.OnImpact(this.weapon.DamagePerShotAdjusted(this.weapon.parent.occupiedDesignMask) * (float)this.weapon.ShotsWhenFired);
       base.OnComplete();
-      Log.LogWrite("FragBallisticEffect.Complete\n");
+      Log.Combat?.WL(0, "FragBallisticEffect.Complete");
       if (this.parentWeaponEffect != null) {
-        int hitIndex = this.parentWeaponEffect.HitIndex();
-        Log.LogWrite(" parent weapon found "+this.parentWeaponEffect.hitInfo.attackWeaponIndex+":"+ hitIndex + "\n");
+        int hitIndex = this.parentWeaponEffect.hitIndex;
+        Log.Combat?.WL(1, "parent weapon found " + this.parentWeaponEffect.hitInfo.attackWeaponIndex+":"+ hitIndex);
         this.parentWeaponEffect.PublishWeaponCompleteMessage();
       }
     }

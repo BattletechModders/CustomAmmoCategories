@@ -41,33 +41,18 @@ namespace CustAmmoCategories {
     }
     public void Init(BulletEffect original) {
       base.Init(original);
-      CustomAmmoCategoriesLog.Log.LogWrite("AMSBulletEffect.Init\n");
+      Log.Combat?.WL(0,"AMSBulletEffect.Init");
       this.bulletIdx = original.bulletIdx;
     }
-
-#if PUBLIC_ASSEMBLIES
-    public override int ImpactPrecacheCount {
-#else
     protected override int ImpactPrecacheCount {
-#endif
       get {
         return 5;
       }
     }
-
-#if PUBLIC_ASSEMBLIES
-    public override void Awake() {
-#else
     protected override void Awake() {
-#endif
       base.Awake();
     }
-
-#if PUBLIC_ASSEMBLIES
-    public override void Start() {
-#else
     protected override void Start() {
-# endif
       base.Start();
     }
     public void Init(Weapon weapon, AMSBallisticEffect parentLauncher) {
@@ -78,7 +63,7 @@ namespace CustAmmoCategories {
       this.projectileSpeed = parentLauncher.projectileSpeed;
     }
     public override void Fire(Vector3[] hitPositions, int hitIndex = 0, int emitterIndex = 0) {
-      Log.LogWrite("AMSBulletEffect.Fire\n");
+      Log.Combat?.WL(0, "AMSBulletEffect.Fire");
       base.Fire(hitPositions, hitIndex, emitterIndex);
       Vector3 endPos = this.endPos;
       endPos.x += Random.Range(-this.parentLauncher.spreadAngle, this.parentLauncher.spreadAngle);
@@ -96,45 +81,25 @@ namespace CustAmmoCategories {
       this.PlayPreFire();
     }
     public override void Fire(WeaponHitInfo hitInfo, int hitIndex = 0, int emitterIndex = 0) {
-      CustomAmmoCategoriesLog.Log.LogWrite("AMS ballistic effect can't fire normaly. Something is wrong.\n");
+      CustomAmmoCategoriesLog.Log.LogWrite("AMS ballistic effect can't fire normally. Something is wrong.\n");
+      WeaponEffect.logger.LogError("AMS ballistic effect can't fire normally. Something is wrong.\n" + Environment.StackTrace);
       base.Fire(hitInfo, hitIndex, emitterIndex);
     }
-
-#if PUBLIC_ASSEMBLIES
-    public override void PlayPreFire() {
-#else
     protected override void PlayPreFire() {
-#endif
       base.PlayPreFire();
     }
-#if PUBLIC_ASSEMBLIES
-    public override void PlayMuzzleFlash() {
-#else
     protected override void PlayMuzzleFlash() {
-#endif
       base.PlayMuzzleFlash();
     }
-#if PUBLIC_ASSEMBLIES
-    public override void PlayProjectile() {
-#else
     protected override void PlayProjectile() {
-#endif
       base.PlayProjectile();
       this.PlayMuzzleFlash();
     }
-#if PUBLIC_ASSEMBLIES
-    public override void PlayImpact() {
-#else
     protected override void PlayImpact() {
-#endif
       this.PlayImpactAudio();
       base.PlayImpact();
     }
-#if PUBLIC_ASSEMBLIES
-    public override void Update() {
-#else
     protected override void Update() {
-#endif
       base.Update();
       if (this.currentState != WeaponEffect.WeaponEffectState.Firing)
         return;
@@ -148,33 +113,20 @@ namespace CustAmmoCategories {
       this.PlayImpact();
       this.OnComplete();
     }
-#if PUBLIC_ASSEMBLIES
-    public override void OnPreFireComplete() {
-#else
     protected override void OnPreFireComplete() {
-#endif
       base.OnPreFireComplete();
       this.PlayProjectile();
     }
-#if PUBLIC_ASSEMBLIES
-    public override void OnImpact(float hitDamage = 0.0f, float structureDamage = 0.0f) {
-#else
     protected override void OnImpact(float hitDamage = 0.0f, float structureDamage = 0.0f) {
-#endif
-      //this.parentLauncher.OnBulletImpact(this);
       if (!((UnityEngine.Object)this.projectileParticles != (UnityEngine.Object)null)) { return; }
       this.projectileParticles.Stop(true);
     }
-#if PUBLIC_ASSEMBLIES
-    public override void OnComplete() {
-#else
     protected override void OnComplete() {
-#endif
       this.RestoreOriginalColor();
       base.OnComplete();
     }
     public void OnDisable() {
-      if (!((UnityEngine.Object)this.projectileAudioObject != (UnityEngine.Object)null))
+      if (this.projectileAudioObject == null)
         return;
       AkSoundEngine.StopAll(this.projectileAudioObject.gameObject);
       int num = (int)AkSoundEngine.UnregisterGameObj(this.projectileAudioObject.gameObject);

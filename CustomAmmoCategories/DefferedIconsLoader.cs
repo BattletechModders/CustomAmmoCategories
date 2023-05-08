@@ -10,6 +10,7 @@
 */
 using BattleTech;
 using BattleTech.Data;
+using BattleTech.UI;
 using CustomAmmoCategoriesLog;
 using HarmonyLib;
 using SVGImporter;
@@ -31,7 +32,7 @@ namespace CustAmmoCategories {
   [HarmonyPatch(new Type[] { typeof(LoadRequest) })]
   public static class DataManager_PrewarmComplete {
     public static void Postfix(DataManager __instance, LoadRequest batch) {
-      Log.M.TWL(0, "DataManager.PrewarmComplete");
+      Log.M?.TWL(0, "DataManager.PrewarmComplete");
       CustomSvgCache.flushRegistredSVGs(__instance);
     }
   }
@@ -41,7 +42,7 @@ namespace CustAmmoCategories {
   [HarmonyPatch(new Type[] { })]
   public static class SVGCache_Clear {
     public static bool Prefix(SVGCache __instance) {
-      Log.M.TWL(0, "SVGCache.Clear NoSVGCacheClear:"+ CustomAmmoCategories.Settings.NoSVGCacheClear);
+      Log.M?.TWL(0, "SVGCache.Clear NoSVGCacheClear:"+ CustomAmmoCategories.Settings.NoSVGCacheClear);
       return CustomAmmoCategories.Settings.NoSVGCacheClear == false;
     }
   }
@@ -58,7 +59,7 @@ namespace CustAmmoCategories {
         if (CustomSvgCache.cache.ContainsKey(id)) { continue; }
         SVGAsset icon = dataManager.GetObjectOfType<SVGAsset>(id,BattleTechResourceType.SVGAsset);
         if (icon != null) {
-          Log.M.WL(1, "cache icon:"+id);
+          Log.M?.WL(1, "cache icon:"+id);
           CustomSvgCache.cache.Add(id,icon);
         };
       }
@@ -75,42 +76,31 @@ namespace CustAmmoCategories {
     }
     public static void setIcon(SVGImage img, string id, DataManager dataManager) {
       if (img == null) { return; }
-      Log.M.TWL(0, "CustomSvgCache.setIcon "+id+" img:"+img.gameObject.name);
+      Log.M?.TWL(0, "CustomSvgCache.setIcon "+id+" img:"+img.gameObject.name);
       SVGAsset icon = get(id,dataManager);
       if (icon != null) { img.vectorGraphics = icon; return; }
       try { 
-      //if(defferedRequests.TryGetValue(id, out HashSet<SVGImage> images) == false) {
-      //  images = new HashSet<SVGImage>();
-      //  defferedRequests.Add(id, images);
-      //  return;
-      //}
-      //images.Add(img);
         VersionManifestEntry entry = dataManager.ResourceLocator.EntryByID(id, BattleTechResourceType.SVGAsset);
         if(entry == null) {
-          Log.M.TWL(0, id+" not found in SVG manifest");
+          Log.M?.TWL(0, id+" not found in SVG manifest");
           return;
         }
         SVGAsset svg = SVGAsset.Load(File.ReadAllText(entry.FilePath));
         if(svg != null) {
-          Traverse.Create(dataManager).Property<SVGCache>("SVGCache").Value.AddSVGAsset(id, svg);
+          dataManager.SVGCache.AddSVGAsset(id, svg);
           CustomSvgCache.cache.Add(id, svg);
-          Log.M.TWL(0, "Success load SVG:" + id + " " + entry.FilePath);
+          Log.M?.TWL(0, "Success load SVG:" + id + " " + entry.FilePath);
           img.vectorGraphics = svg;
         } else {
-          Log.M.TWL(0, "Fail to load SVG:"+id+" "+ entry.FilePath);
+          Log.M?.TWL(0, "Fail to load SVG:"+id+" "+ entry.FilePath);
         }
       }catch(Exception e) {
-        Log.M.TWL(0, e.ToString());
+        Log.M?.TWL(0, e.ToString(),true);
+        UIManager.logger.LogException(e);
       }
-      //SVGImageLoadDelegate dl = new SVGImageLoadDelegate();
-      //dl.id = id;
-      //DataManager.InjectedDependencyLoadRequest dependencyLoad = new DataManager.InjectedDependencyLoadRequest(dataManager);
-      //dependencyLoad.RequestResource(BattleTechResourceType.SVGAsset, id);
-      //dependencyLoad.RegisterLoadCompleteCallback(new Action(dl.onLoad));
-      //dataManager.InjectDependencyLoader(dependencyLoad, 1000U);
     }
     public static SVGAsset get(string id, DataManager dataManager) {
-      Log.M.TWL(0, $"CustomSvgCache.get {id}");
+      Log.M?.TWL(0, $"CustomSvgCache.get {id}");
       if (string.IsNullOrEmpty(id)) {
         Log.M?.WL(0,"Requested icon with empty name");
         Log.M?.WL(0, Environment.StackTrace);
@@ -126,7 +116,7 @@ namespace CustAmmoCategories {
       }
       result = dataManager.GetObjectOfType<SVGAsset>(id,BattleTechResourceType.SVGAsset);
       if(result != null) {
-        Log.M.WL(1, "found in data manager");
+        Log.M?.WL(1, "found in data manager");
         cache.Add(id, result);
       }
       return result;

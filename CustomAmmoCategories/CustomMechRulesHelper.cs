@@ -17,22 +17,6 @@ using System.Threading;
 using UnityEngine;
 
 namespace CustAmmoCategories {
-  //public static class HitTableHelper {
-  //private static Dictionary<Type, Func<Mech,bool, ArmorLocation, AttackDirection, Dictionary<ArmorLocation, int>>> GetHitTablesFunctions = new Dictionary<Type, Func<Mech,bool, ArmorLocation, AttackDirection, Dictionary<ArmorLocation, int>>>();
-  //public static void RegisterGetHitTableFunction(Type t, Func<Mech, bool, ArmorLocation, AttackDirection, Dictionary<ArmorLocation, int>> func) {
-  //GetHitTablesFunctions.Add(t, func);
-  //}
-  //public static Dictionary<ArmorLocation, int> GetHitTable(Mech mech, bool isCluster, ArmorLocation aLoc, AttackDirection from) {
-  //  Thread.CurrentThread.pushActor(mech);
-  //  Dictionary<ArmorLocation, int> result = null;
-  //  if (GetHitTablesFunctions.TryGetValue(mech.GetType(), out Func<Mech, bool, ArmorLocation, AttackDirection, Dictionary<ArmorLocation, int>> func)) {
-  //    result = func(mech, isCluster, aLoc, from);
-  //  }
-  //  if (result == null) { result = (aLoc == ArmorLocation.None || !isCluster) ? mech.Combat.HitLocation.GetMechHitTable(from) : mech.Combat.Constants.GetMechClusterTable(aLoc, from); }
-  //  Thread.CurrentThread.clearActor();
-  //  return result;
-  //}
-  //}
   public static class CustomGetHitTableHelper {
     private static Dictionary<string,Func<ICustomMech, Weapon, int, Dictionary<ArmorLocation, int>, Dictionary<ArmorLocation, int>>> GetUnitHitTableFilters = new Dictionary<string,Func<ICustomMech, Weapon, int, Dictionary<ArmorLocation, int>, Dictionary<ArmorLocation, int>>>();
     public static void RegisterFilter(string id, Func<ICustomMech, Weapon, int, Dictionary<ArmorLocation, int>, Dictionary<ArmorLocation, int>> filter) {
@@ -101,7 +85,6 @@ namespace CustAmmoCategories {
     public static VehicleChassisLocations toFakeVehicleChassis(this ChassisLocations location) { return vehicleLocationFromMechLocation(location); }
     public static VehicleChassisLocations toFakeVehicleChassis(this ArmorLocation location) { return vehicleLocationFromArmorLocation(location); }
   }
-
   public static class GetLongArmorLocationHelper {
     public static Text GetLongArmorLocation(this Mech mech, ArmorLocation location) {
       Thread.CurrentThread.pushActor(mech);
@@ -111,30 +94,13 @@ namespace CustAmmoCategories {
     }
   }
   public static class GetDFASelfDamageLocationsHelper {
-    //private static Dictionary<Type, Func<Mech, HashSet<ArmorLocation>>> GetDFASelfDamageLocationsFunctions = new Dictionary<Type, Func<Mech, HashSet<ArmorLocation>>>();
-    //public static void RegisterDFASelfDamageLocationsFunction(Type t, Func<Mech, HashSet<ArmorLocation>> func) {
-    //  GetDFASelfDamageLocationsFunctions.Add(t, func);
-    //}
     public static HashSet<ArmorLocation> GetDFASelfDamageLocations(this Mech mech) {
       ICustomMech customMech = mech as ICustomMech;
       if (customMech != null) { return customMech.GetDFASelfDamageLocations(); }
       return new HashSet<ArmorLocation>() { ArmorLocation.LeftLeg, ArmorLocation.RightLeg };
-      //if (GetDFASelfDamageLocationsFunctions.TryGetValue(mech.GetType(), out Func < Mech, HashSet < ArmorLocation >> func)) {
-      //  HashSet<ArmorLocation> result = func(mech);
-      //  if (result != null) { return result; }
-      //}
-      //if (mech.FakeVehicle()) {
-      //  return new HashSet<ArmorLocation>() { ArmorLocation.RightArm, ArmorLocation.LeftArm, ArmorLocation.LeftLeg, ArmorLocation.RightLeg };
-      //} else {
-      //  return new HashSet<ArmorLocation>() { ArmorLocation.LeftLeg, ArmorLocation.RightLeg };
-      //}
     }
   }
   public static class GetLandmineDamageLocationsHelper {
-    //private static Dictionary<Type, Func<Mech, HashSet<ArmorLocation>>> GetLandmineDamageLocationsFunctions = new Dictionary<Type, Func<Mech, HashSet<ArmorLocation>>>();
-    //public static void RegisterLandmineDamageLocationsFunction(Type t, Func<Mech, HashSet<ArmorLocation>> func) {
-    //  GetLandmineDamageLocationsFunctions.Add(t, func);
-    //}
     public static HashSet<ArmorLocation> GetLandmineDamageArmorLocations(this Mech mech) {
       ICustomMech customMech = mech as ICustomMech;
       if (customMech != null) { return customMech.GetLandmineDamageArmorLocations(); }
@@ -156,10 +122,6 @@ namespace CustAmmoCategories {
     }
   }
   public static class GetAOESpreadLocationsHelper {
-    //private static Dictionary<Type, Func<Mech, Dictionary<int, float>>> GetAOELocationsFunctions = new Dictionary<Type, Func<Mech, Dictionary<int, float>>>();
-    //public static void RegisterAOELocationsFunction(Type t, Func<Mech, Dictionary<int, float>> func) {
-    //  GetAOELocationsFunctions.Add(t, func);
-    //}
     public static Dictionary<int, float> GetAOESpreadArmorLocations(this Mech mech) {
       ICustomMech customMech = mech as ICustomMech;
       if (customMech != null) { return customMech.GetAOESpreadArmorLocations(); }
@@ -167,10 +129,6 @@ namespace CustAmmoCategories {
     }
   }
   public static class GetAOEPossibleHitLocationsHelper {
-    //private static Dictionary<Type, Func<Mech,Vector3, List<int>>> GetAOELocationsFunctions = new Dictionary<Type, Func<Mech, Vector3, List<int>>>();
-    //public static void RegisterAOELocationsFunction(Type t, Func<Mech, Vector3, List<int>> func) {
-    //  GetAOELocationsFunctions.Add(t, func);
-    //}
     public static List<int> GetAOEPossibleHitLocations(this Mech mech, Vector3 attackPos) {
       List<int> result = null;
       ICustomMech customMech = mech as ICustomMech;

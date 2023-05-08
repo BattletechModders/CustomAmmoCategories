@@ -50,57 +50,48 @@ namespace CustAmmoCategories {
     public string buildingHitOverlayVFXName;
     public bool shotsDestroyFlimsyObjects;
     public string preFireSFX = "";
-
     public virtual bool Active => this.currentState != WeaponEffect.WeaponEffectState.NotStarted && this.currentState != WeaponEffect.WeaponEffectState.Complete;
-
     public virtual bool FiringComplete { get; protected set; }
-
     public virtual bool AllowMissSkipping {
       get => false;
       protected set {
       }
     }
-
     protected virtual int ImpactPrecacheCount => 1;
-
     protected virtual void Awake() {
       this.currentState = WeaponEffect.WeaponEffectState.NotStarted;
       this.hasSentNextWeaponMessage = false;
       this.AllowMissSkipping = true;
     }
-
     protected virtual void Start() {
-      if ((double)this.duration <= 0.0)
+      if (this.duration <= CustomAmmoCategories.Epsilon)
         this.duration = 1f;
       this.rate = 1f / this.duration;
     }
-
     protected virtual void OnDestroy() {
-      if (!((UnityEngine.Object)this.projectileAudioObject != (UnityEngine.Object)null))
-        return;
+      if (this.projectileAudioObject == null) { return; }
       AkSoundEngine.StopAll(this.projectileAudioObject.gameObject);
     }
-
     public virtual void Init(Weapon weapon) {
       this.weapon = weapon;
       this.weaponRep = weapon.weaponRep;
       this.Combat = weapon.parent.Combat;
       this.numberOfEmitters = this.weaponRep.vfxTransforms.Length;
-      if ((UnityEngine.Object)this.projectilePrefab != (UnityEngine.Object)null)
+      if (this.projectilePrefab != null)
         this.Combat.DataManager.PrecachePrefabAsync(this.projectilePrefab.name, BattleTechResourceType.Prefab, 1);
-      if ((UnityEngine.Object)this.preFireVFXPrefab != (UnityEngine.Object)null)
+      if (this.preFireVFXPrefab != null)
         this.Combat.DataManager.PrecachePrefabAsync(this.preFireVFXPrefab.name, BattleTechResourceType.Prefab, 1);
-      if ((UnityEngine.Object)this.muzzleFlashVFXPrefab != (UnityEngine.Object)null)
+      if (this.muzzleFlashVFXPrefab != null)
         this.Combat.DataManager.PrecachePrefabAsync(this.muzzleFlashVFXPrefab.name, BattleTechResourceType.Prefab, 1);
-      if (!string.IsNullOrEmpty(this.armorDamageVFXName)) {
+      if (string.IsNullOrEmpty(this.armorDamageVFXName) == false) {
         this.Combat.DataManager.PrecachePrefabAsync(this.armorDamageVFXName + "_sm", BattleTechResourceType.Prefab, 1);
         this.Combat.DataManager.PrecachePrefabAsync(this.armorDamageVFXName + "_lrg", BattleTechResourceType.Prefab, 1);
       }
-      if (!string.IsNullOrEmpty(this.structureDamageVFXName)) {
+      if (string.IsNullOrEmpty(this.structureDamageVFXName) == false) {
         this.Combat.DataManager.PrecachePrefabAsync(this.structureDamageVFXName + "_sm", BattleTechResourceType.Prefab, 1);
         this.Combat.DataManager.PrecachePrefabAsync(this.structureDamageVFXName + "_lrg", BattleTechResourceType.Prefab, 1);
       }
-      if (!string.IsNullOrEmpty(this.buildingHitOverlayVFXName))
+      if (string.IsNullOrEmpty(this.buildingHitOverlayVFXName) == false)
         this.Combat.DataManager.PrecachePrefabAsync(this.buildingHitOverlayVFXName, BattleTechResourceType.Prefab, 1);
       EffectData[] statusEffects = weapon.weaponDef.statusEffects;
       for (int index = 0; index < statusEffects.Length; ++index) {
@@ -109,7 +100,6 @@ namespace CustAmmoCategories {
       }
       this.PreCacheImpacts();
     }
-
     protected virtual void PreCacheImpacts() {
       if (string.IsNullOrEmpty(this.impactVFXBase))
         return;
@@ -121,33 +111,32 @@ namespace CustAmmoCategories {
       for (int index = 0; index < this.impactVFXVariations.Length; ++index)
         this.Combat.DataManager.PrecachePrefabAsync(string.Format("{0}_{1}", (object)this.impactVFXBase, (object)this.impactVFXVariations[index]), BattleTechResourceType.Prefab, this.ImpactPrecacheCount);
     }
-
     public virtual void InitProjectile() {
-      if ((UnityEngine.Object)this.projectilePrefab != (UnityEngine.Object)null && (UnityEngine.Object)this.projectile != (UnityEngine.Object)null)
+      if (this.projectilePrefab != null && this.projectile != null)
         this.weapon.parent.Combat.DataManager.PoolGameObject(this.activeProjectileName, this.projectile);
-      if ((UnityEngine.Object)this.projectilePrefab != (UnityEngine.Object)null) {
+      if (this.projectilePrefab != null) {
         this.activeProjectileName = this.projectilePrefab.name;
         this.projectile = this.Combat.DataManager.PooledInstantiate(this.activeProjectileName, BattleTechResourceType.Prefab);
       }
       this.projectileParticles = this.projectile.GetComponent<ParticleSystem>();
       this.projectileTransform = this.projectile.transform;
       MeshRenderer componentInChildren1 = this.projectile.GetComponentInChildren<MeshRenderer>(true);
-      if ((UnityEngine.Object)componentInChildren1 != (UnityEngine.Object)null) {
+      if (componentInChildren1 != null) {
         this.projectileMeshObject = componentInChildren1.gameObject;
         this.projectileMeshObject.SetActive(false);
       }
       BTLight componentInChildren2 = this.projectile.GetComponentInChildren<BTLight>(true);
-      if ((UnityEngine.Object)componentInChildren2 != (UnityEngine.Object)null) {
+      if (componentInChildren2 != null) {
         this.projectileLightObject = componentInChildren2.gameObject;
         this.projectileLightObject.SetActive(false);
       }
       this.projectileAudioObject = this.projectile.GetComponent<AkGameObj>();
-      if ((UnityEngine.Object)this.projectileAudioObject == (UnityEngine.Object)null)
+      if (this.projectileAudioObject == null)
         this.projectileAudioObject = this.projectile.AddComponent<AkGameObj>();
       this.projectileAudioObject.listenerMask = 0;
       this.projectileAudioObject.isEnvironmentAware = false;
       WwiseManager.SetSwitch<AudioSwitch_weapon_type>(this.weaponImpactType, this.projectileAudioObject);
-      this.parentAudioObject = !((UnityEngine.Object)this.weapon.parent.GameRep != (UnityEngine.Object)null) || !((UnityEngine.Object)this.weapon.parent.GameRep.audioObject != (UnityEngine.Object)null) ? this.projectileAudioObject : this.weapon.parent.GameRep.audioObject;
+      this.parentAudioObject = !(this.weapon.parent.GameRep != null) || !(this.weapon.parent.GameRep.audioObject != null) ? this.projectileAudioObject : this.weapon.parent.GameRep.audioObject;
       WwiseManager.SetSwitch<AudioSwitch_weapon_type>(this.weaponImpactType, this.parentAudioObject);
       if (this.hitInfo.ShotHitLocation(this.hitIndex) != 0 && this.hitInfo.ShotHitLocation(this.hitIndex) != 65536) {
         WwiseManager.SetSwitch<AudioSwitch_mech_hit_or_miss>(AudioSwitch_mech_hit_or_miss.mech_hit, this.parentAudioObject);
@@ -175,7 +164,6 @@ namespace CustAmmoCategories {
       }
       WwiseManager.SetSwitch<AudioSwitch_mech_weight_type>(switchEnumValue, this.projectileAudioObject);
     }
-
     public virtual void Fire(WeaponHitInfo hitInfo, int hitIndex = 0, int emitterIndex = 0) {
       this.t = 0.0f;
       this.hitIndex = hitIndex;
@@ -197,13 +185,12 @@ namespace CustAmmoCategories {
       this.InitProjectile();
       this.currentState = WeaponEffect.WeaponEffectState.PreFiring;
     }
-
     protected virtual void PlayPreFire() {
-      if ((UnityEngine.Object)this.preFireVFXPrefab != (UnityEngine.Object)null) {
+      if (this.preFireVFXPrefab != null) {
         GameObject gameObject = this.weapon.parent.Combat.DataManager.PooledInstantiate(this.preFireVFXPrefab.name, BattleTechResourceType.Prefab);
         ParticleSystem component = gameObject.GetComponent<ParticleSystem>();
         AutoPoolObject autoPoolObject = gameObject.GetComponent<AutoPoolObject>();
-        if ((UnityEngine.Object)autoPoolObject == (UnityEngine.Object)null)
+        if (autoPoolObject == null)
           autoPoolObject = gameObject.AddComponent<AutoPoolObject>();
         autoPoolObject.Init(this.weapon.parent.Combat.DataManager, this.preFireVFXPrefab.name, component);
         component.Stop(true);
@@ -232,12 +219,12 @@ namespace CustAmmoCategories {
     }
 
     protected virtual void PlayMuzzleFlash() {
-      if (!((UnityEngine.Object)this.muzzleFlashVFXPrefab != (UnityEngine.Object)null))
+      if (this.muzzleFlashVFXPrefab == null)
         return;
       GameObject gameObject = this.weapon.parent.Combat.DataManager.PooledInstantiate(this.muzzleFlashVFXPrefab.name, BattleTechResourceType.Prefab);
       ParticleSystem component = gameObject.GetComponent<ParticleSystem>();
       AutoPoolObject autoPoolObject = gameObject.GetComponent<AutoPoolObject>();
-      if ((UnityEngine.Object)autoPoolObject == (UnityEngine.Object)null)
+      if (autoPoolObject == null)
         autoPoolObject = gameObject.AddComponent<AutoPoolObject>();
       autoPoolObject.Init(this.weapon.parent.Combat.DataManager, this.muzzleFlashVFXPrefab.name, component);
       component.Stop(true);
@@ -248,16 +235,15 @@ namespace CustAmmoCategories {
       BTCustomRenderer.SetVFXMultiplier(component);
       component.Play(true);
       BTLightAnimator componentInChildren = gameObject.GetComponentInChildren<BTLightAnimator>(true);
-      if (!((UnityEngine.Object)componentInChildren != (UnityEngine.Object)null))
+      if (componentInChildren == null)
         return;
       componentInChildren.StopAnimation();
       componentInChildren.PlayAnimation();
     }
-
     protected virtual void PlayProjectile() {
       this.t = 0.0f;
       this.currentState = WeaponEffect.WeaponEffectState.Firing;
-      if ((UnityEngine.Object)this.projectileMeshObject != (UnityEngine.Object)null)
+      if (this.projectileMeshObject != null)
         this.projectileMeshObject.SetActive(true);
       if ((UnityEngine.Object)this.projectileLightObject != (UnityEngine.Object)null)
         this.projectileLightObject.SetActive(true);

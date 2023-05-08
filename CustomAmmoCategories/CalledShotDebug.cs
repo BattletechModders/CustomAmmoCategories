@@ -33,7 +33,7 @@ namespace CustAmmoCategories {
       if ((CustomAmmoCategories.Settings.PlayerAlwaysCalledShotDirection == AttackDirection.None)&&(attackDirectionOverride.ContainsKey(target) == false)) { return; }
       AttackDirection result = CustomAmmoCategories.Settings.PlayerAlwaysCalledShotDirection;
       if (attackDirectionOverride.TryGetValue(target, out var overrd)) { result = overrd; }
-      Log.M?.TWL(0, $"ShowCalledShotPopUp GetAttackDirection was:{__result} become:{result}");
+      Log.Combat?.TWL(0, $"ShowCalledShotPopUp GetAttackDirection was:{__result} become:{result}");
       __result = result;
     }
   }

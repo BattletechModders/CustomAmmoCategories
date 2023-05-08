@@ -30,18 +30,16 @@ namespace CustAmmoCategories {
       FColor.g = FRealColor.g * FI;
       FColor.b = FRealColor.b * FI;
       FColor.a = 1f;
-      //Log.P?.TWL(0, $"ColorTableJsonEntry.SyncColor {FColor}");
     }
     [Key(0)]
     public string C {
       set {
         Color temp;
-        //Log.P?.TWL(0, $"ColorTableJsonEntry.C {value}");
         if (ColorUtility.TryParseHtmlString(value, out temp)) {
           FRealColor = temp;
           SyncColor();
         } else {
-          Log.LogWrite("Bad color:" + value + "\n", true);
+          Log.M?.WL(0,$"Bad color:{value}", true);
         }
       }
       get {
@@ -95,20 +93,12 @@ namespace CustAmmoCategories {
     public MultiShotLaserEffect parentProjector;
     public int beamIdx;
     public bool primeBeam;
-#if PUBLIC_ASSEMBLIES
-    public override int ImpactPrecacheCount {
-#else
     protected override int ImpactPrecacheCount {
-#endif
       get {
         return 1;
       }
     }
-#if PUBLIC_ASSEMBLIES
-    public override void Awake() {
-#else
     protected override void Awake() {
-#endif
       base.Awake();
     }
     protected override void Start() {
@@ -118,23 +108,22 @@ namespace CustAmmoCategories {
       base.Init(original);
       this.lightIntensity = original.lightIntensity;
       this.lightRadius = original.lightRadius;
-      this.laserColor = (Color[])typeof(LaserEffect).GetField("laserColor", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(original);
+      this.laserColor = original.laserColor;
       this.beamStartSFX = original.beamStartSFX;
       this.beamStopSFX = original.beamStopSFX;
       this.pulseSFX = original.pulseSFX;
       this.pulseDelay = original.pulseDelay;
-      this.pulseTime = (float)typeof(LaserEffect).GetField("pulseTime", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(original);
+      this.pulseTime = original.pulseTime;
       this.laserAnim = original.laserAnim;
-      this.mpb = (MaterialPropertyBlock)typeof(LaserEffect).GetField("mpb", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(original);
-      this.beamRenderer = (LineRenderer)typeof(LaserEffect).GetField("beamRenderer", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(original);
-      this.laserLight = (BTLight)typeof(LaserEffect).GetField("laserLight", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(original);
-      this.impactParticles = (ParticleSystem)typeof(LaserEffect).GetField("impactParticles", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(original);
-      this.laserAlpha = (float)typeof(LaserEffect).GetField("laserAlpha", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(original);
-      Log.M?.TWL(0, $"MultiShotLaserEffect.Init {original.name} pulseSFX:{this.pulseSFX} pulseDelay:{this.pulseDelay} beamStartSFX:{this.beamStartSFX} beamStopSFX:{this.beamStopSFX} preFireSFX:{this.preFireSFX} preFireDuration:{this.preFireDuration}");
+      this.mpb = original.mpb;
+      this.beamRenderer = original.beamRenderer;
+      this.laserLight = original.laserLight;
+      this.impactParticles = original.impactParticles;
+      this.laserAlpha = original.laserAlpha;
+      Log.Combat?.TWL(0, $"MultiShotLaserEffect.Init {original.name} pulseSFX:{this.pulseSFX} pulseDelay:{this.pulseDelay} beamStartSFX:{this.beamStartSFX} beamStopSFX:{this.beamStopSFX} preFireSFX:{this.preFireSFX} preFireDuration:{this.preFireDuration}");
     }
-
     public void Init(Weapon weapon, MultiShotLaserEffect parentProjector) {
-      Log.LogWrite("MultiShotBeamEffect.Init\n");
+      //Log.Combat?.WL("MultiShotBeamEffect.Init");
       this.Init(weapon);
       this.parentProjector = parentProjector;
       this.weapon = weapon;
@@ -178,14 +167,14 @@ namespace CustAmmoCategories {
     }
 
     public virtual void Fire(WeaponHitInfo hitInfo, int hitIndex = 0, int emitterIndex = 0, bool pb = false) {
-      Log.LogWrite("MultiShotBeamEffect.Fire " + hitInfo.attackWeaponIndex + " " + hitIndex + " ep:" + hitInfo.hitPositions[hitIndex] + " prime:" + pb + "\n");
+      Log.Combat?.TWL(0, $"MultiShotBeamEffect.Fire {hitInfo.attackWeaponIndex} {hitIndex} ep:{hitInfo.hitPositions[hitIndex]} prime:{pb}");
       this.primeBeam = pb;
       Vector3 endPos = hitInfo.hitPositions[hitIndex];
       this.SetupCustomSettings();
       base.Fire(hitInfo, hitIndex, emitterIndex);
       this.endPos = endPos;
       hitInfo.hitPositions[hitIndex] = endPos;
-      Log.LogWrite(" endPos restored:" + this.endPos + "\n");
+      Log.Combat?.WL(1, $"endPos restored:{this.endPos}");
       endPos.x += Random.Range(-this.parentProjector.spreadAngle, this.parentProjector.spreadAngle);
       endPos.y += Random.Range(-this.parentProjector.spreadAngle, this.parentProjector.spreadAngle);
       endPos.z += Random.Range(-this.parentProjector.spreadAngle, this.parentProjector.spreadAngle);
@@ -206,7 +195,7 @@ namespace CustAmmoCategories {
         this.beamRenderer.gameObject.layer = LayerMask.NameToLayer("Reflector");
       }
       this.laserLight = this.beamRenderer.GetComponentInChildren<BTLight>(true);
-      if ((UnityEngine.Object)this.laserLight != (UnityEngine.Object)null) {
+      if (this.laserLight != null) {
         if (!this.laserLight.gameObject.activeSelf)
           this.laserLight.gameObject.SetActive(true);
         if (!this.laserLight.enabled)
@@ -221,16 +210,15 @@ namespace CustAmmoCategories {
       this.projectileTransform.localRotation = Quaternion.identity;
       this.pulseTime = this.pulseDelay;
       Component[] components = this.projectile.GetComponentsInChildren<Component>();
-      Log.LogWrite("MultiShotBeamEffect.SetupLaser\n");
+      Log.Combat?.WL(0, $"MultiShotBeamEffect.SetupLaser");
       foreach (Component component in components) {
-        Log.LogWrite(" " + component.name + ":" + component.GetType().ToString() + "\n");
+        Log.Combat?.WL(1, $"{component.name}:{component.GetType().ToString()}");
       }
-      Log.LogWrite("this.beamRenderer.Materials\n");
+      Log.Combat?.WL(0, $"this.beamRenderer.Materials");
       foreach (Material material in this.beamRenderer.materials) {
-        Log.LogWrite(" " + material.name + ":" + material.shader.name + " " + material.GetColor("_ColorBB") + "\n");
+        Log.Combat?.WL(1, $"{material.name}:{material.shader.name} {material.GetColor("_ColorBB")}");
       }
     }
-    //public Color originalColor;
     public override void StoreOriginalColor() {
       this.beamRenderer.material.RegisterRestoreColor();
     }
@@ -242,9 +230,6 @@ namespace CustAmmoCategories {
     }
     protected override void PlayPreFire() {
       base.PlayPreFire();
-      //if (string.IsNullOrEmpty(this.beamStartSFX) == false) {
-      //  int num = (int)WwiseManager.PostEvent(this.beamStartSFX, this.parentAudioObject, (AkCallbackManager.EventCallback)null, (object)null);
-      //}
     }
     protected override void PlayMuzzleFlash() {
       base.PlayMuzzleFlash();
@@ -260,7 +245,7 @@ namespace CustAmmoCategories {
     protected override void PlayImpact() {
       this.PlayImpactAudio();
       if (this.hitInfo.DidShotHitAnything(this.hitIndex) && !string.IsNullOrEmpty(this.impactVFXBase)) {
-        if ((UnityEngine.Object)this.impactParticles != (UnityEngine.Object)null)
+        if (this.impactParticles != null)
           this.impactParticles.Stop(true);
         string str1 = string.Empty;
         AbstractActor actorByGuid = this.Combat.FindActorByGUID(this.hitInfo.ShotTargetId(this.hitIndex));
@@ -270,7 +255,7 @@ namespace CustAmmoCategories {
           str1 = "_" + this.impactVFXVariations[Random.Range(0, this.impactVFXVariations.Length)];
         string str2 = string.Format("{0}{1}", (object)this.impactVFXBase, (object)str1);
         GameObject gameObject = this.weapon.parent.Combat.DataManager.PooledInstantiate(str2, BattleTechResourceType.Prefab, new Vector3?(), new Quaternion?(), (Transform)null);
-        if ((UnityEngine.Object)gameObject == (UnityEngine.Object)null) {
+        if (gameObject == null) {
           WeaponEffect.logger.LogError((object)("WeaponEffect.PlayImpact had an invalid VFX name: " + str2));
         } else {
           this.impactParticles = gameObject.GetComponent<ParticleSystem>();
@@ -300,19 +285,15 @@ namespace CustAmmoCategories {
         RaycastHit raycastHit = raycastHitArray[index];
         DestructibleObject component1 = raycastHit.collider.gameObject.GetComponent<DestructibleObject>();
         DestructibleUrbanFlimsy component2 = raycastHit.collider.gameObject.GetComponent<DestructibleUrbanFlimsy>();
-        if ((UnityEngine.Object)component1 != (UnityEngine.Object)null && component1.isFlimsy) {
+        if (component1 != null && component1.isFlimsy) {
           component1.TakeDamage(raycastHit.point, normalized, num);
           component1.Collapse(normalized, num);
         }
-        if ((UnityEngine.Object)component2 != (UnityEngine.Object)null)
+        if (component2 != null)
           component2.PlayDestruction(normalized, num);
       }
     }
-#if PUBLIC_ASSEMBLIES
-    public override void Update() {
-#else
     protected override void Update() {
-#endif
       try {
         base.Update();
         if (this.currentState == WeaponEffect.WeaponEffectState.Firing) {

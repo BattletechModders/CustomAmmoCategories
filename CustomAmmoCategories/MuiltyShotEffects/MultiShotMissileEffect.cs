@@ -20,24 +20,20 @@ public class MultiShotMissileEffect : CopyAbleWeaponEffect {
   public bool primeMissile;
   public int missileIdx;
   public bool intercepted;
-
   protected override int ImpactPrecacheCount {
     get {
       return 14;
     }
   }
-
   protected override void Awake() {
     base.Awake();
   }
-
   protected override void Start() {
     base.Start();
   }
-
   public void Init(MissileEffect original) {
     this.Init(original);
-    CustomAmmoCategoriesLog.Log.LogWrite("MultiShotMissileEffect.Init\n");
+    Log.Combat?.TWL(0,"MultiShotMissileEffect.Init");
     this.impactLightIntensity = original.impactLightIntensity;
     this.parentLauncher = null;
     this.tubeTransform = original.tubeTransform;
@@ -50,7 +46,6 @@ public class MultiShotMissileEffect : CopyAbleWeaponEffect {
     this.missileIdx = 0;
     this.intercepted = false;
   }
-
   public void Init(Weapon weapon, MultiShotMissileLauncherEffect parentLauncher) {
     this.weaponImpactType = parentLauncher.weaponImpactType;
     this.Init(weapon);
@@ -63,7 +58,6 @@ public class MultiShotMissileEffect : CopyAbleWeaponEffect {
       return;
     this.spline = this.gameObject.AddComponent<CurvySpline>();
   }
-
   public void FireEx(WeaponHitInfo hitInfo, int hitIndex, int emitterIndex, bool isIndirect) {
     this.SetupCustomSettings();
     this.Fire(hitInfo, hitIndex, emitterIndex);
@@ -77,11 +71,9 @@ public class MultiShotMissileEffect : CopyAbleWeaponEffect {
     }
     this.PlayPreFire();
   }
-
   protected override void PlayPreFire() {
     base.PlayPreFire();
   }
-
   protected override void PlayMuzzleFlash() {
     base.PlayMuzzleFlash();
   }
@@ -133,17 +125,16 @@ public class MultiShotMissileEffect : CopyAbleWeaponEffect {
     }
     this.projectileSpeed *= weapon.ProjectileSpeedMultiplier();
   }
-
   protected override void PlayProjectile() {
     this.PlayMuzzleFlash();
     AdvWeaponHitInfoRec cachedCurve = this.hitInfo.advRec(hitIndex);
     if (cachedCurve != null) {
-      CustomAmmoCategoriesLog.Log.LogWrite("Cached missile path found " + this.weapon.defId + " " + this.hitInfo.attackSequenceId + " " + this.hitInfo.attackWeaponIndex + " " + hitIndex + "\n");
-      CustomAmmoCategoriesLog.Log.LogWrite("Altering start/end pos and projectile speed\n");
+      Log.Combat?.TWL(0,$"Cached missile path found {this.weapon.defId} {this.hitInfo.attackSequenceId} {this.hitInfo.attackWeaponIndex} {hitIndex}");
+      Log.Combat?.WL("Altering start/end pos and projectile speed");
       this.startPos = cachedCurve.startPosition;
       this.preFireEndPos = cachedCurve.startPosition;
       this.endPos = cachedCurve.hitPosition;
-      CustomAmmoCategoriesLog.Log.LogWrite("Intercept " + this.hitInfo.attackWeaponIndex + " " + hitIndex + " T:" + cachedCurve.interceptInfo.getAMSShootT() + " " + cachedCurve.interceptInfo.AMSShootIndex + "/" + cachedCurve.interceptInfo.AMSShoots.Count + "\n");
+      Log.Combat?.WL(0,$"Intercept {this.hitInfo.attackWeaponIndex} {hitIndex} T:{cachedCurve.interceptInfo.getAMSShootT()} {cachedCurve.interceptInfo.AMSShootIndex}/{cachedCurve.interceptInfo.AMSShoots.Count}");
       this.hitInfo.dodgeRolls[hitIndex] = cachedCurve.interceptInfo.getAMSShootT();
       this.projectileSpeed = cachedCurve.projectileSpeed;
       float num1 = Vector3.Distance(this.startPos, this.endPos);
@@ -154,7 +145,7 @@ public class MultiShotMissileEffect : CopyAbleWeaponEffect {
       }
       if ((double)this.duration > 4.0) { this.duration = 4f; }
       this.rate = 1f / this.duration;
-      CustomAmmoCategoriesLog.Log.LogWrite("Altering trajectory\n");
+      Log.Combat?.WL(0,"Altering trajectory");
       this.spline.Interpolation = CurvyInterpolation.Bezier;
       this.spline.Clear();
       this.spline.Closed = false;
@@ -179,37 +170,20 @@ public class MultiShotMissileEffect : CopyAbleWeaponEffect {
     base.PlayProjectile();
     this.startPos = this.preFireEndPos;
     if (this.isSRM) {
-      //int num2 = (int)WwiseManager.PostEvent<AudioEventList_srm>(AudioEventList_srm.srm_projectile_start, this.projectileAudioObject, (AkCallbackManager.EventCallback)null, null);
-      //if (this.hitIndex >= this.hitInfo.numberOfShots) {
-      //  int num3 = (int)WwiseManager.PostEvent<AudioEventList_srm>(AudioEventList_srm.srm_missile_launch_last, this.parentAudioObject, (AkCallbackManager.EventCallback)null, null);
-      //} else {
-      //  int num4 = (int)WwiseManager.PostEvent<AudioEventList_srm>(AudioEventList_srm.srm_missile_launch, this.parentAudioObject, (AkCallbackManager.EventCallback)null, null);
-      //}
     } else {
-      //int num2 = (int)WwiseManager.PostEvent<AudioEventList_lrm>(AudioEventList_lrm.lrm_projectile_start, this.projectileAudioObject, (AkCallbackManager.EventCallback)null, null);
-      //if (this.hitIndex >= this.hitInfo.numberOfShots) {
-      //  int num3 = (int)WwiseManager.PostEvent<AudioEventList_lrm>(AudioEventList_lrm.lrm_missile_launch_last, this.parentAudioObject, (AkCallbackManager.EventCallback)null, null);
-      //} else {
-      //  int num4 = (int)WwiseManager.PostEvent<AudioEventList_lrm>(AudioEventList_lrm.lrm_missile_launch, this.parentAudioObject, (AkCallbackManager.EventCallback)null, null);
-      //}
     }
   }
   public override void InitProjectile() {
     base.InitProjectile();
     CustomVector scale = this.weapon.ProjectileScale();
     if (scale.set) {
-      Log.LogWrite("ImprovedWeaponEffect.InitProjectile set scale " + scale.ToString() + "\n");
+      Log.Combat?.WL(0, $"ImprovedWeaponEffect.InitProjectile set scale {scale.ToString()}");
       this.projectileTransform.localScale = scale.vector;
     }
   }
   protected override void PlayImpact() {
     this.PlayImpactAudio();
     this.StopAudio();
-    //if (this.isSRM) {
-    //  int num1 = (int)WwiseManager.PostEvent<AudioEventList_srm>(AudioEventList_srm.srm_projectile_stop, this.projectileAudioObject, (AkCallbackManager.EventCallback)null, null);
-    //} else {
-    //  int num2 = (int)WwiseManager.PostEvent<AudioEventList_lrm>(AudioEventList_lrm.lrm_projectile_stop, this.projectileAudioObject, (AkCallbackManager.EventCallback)null, null);
-    //}
     if ((this.hitInfo.DidShotHitAnything(this.hitIndex)||(this.intercepted)) && !string.IsNullOrEmpty(this.impactVFXBase)) {
       string str1 = string.Empty;
       bool flag = false;
@@ -258,10 +232,10 @@ public class MultiShotMissileEffect : CopyAbleWeaponEffect {
   }
 
   private void SpawnImpactExplosion(string explosionName) {
-    Log.LogWrite("MultiShotMissileEffect.SpawnImpactExplosion "+explosionName+"\n");
+    Log.Combat?.TWL(0,$"MultiShotMissileEffect.SpawnImpactExplosion {explosionName}");
     GameObject gameObject = this.weapon.parent.Combat.DataManager.PooledInstantiate(explosionName, BattleTechResourceType.Prefab, new Vector3?(), new Quaternion?(), (Transform)null);
     if (gameObject == null) {
-      Log.LogWrite(" no such explosion\n");
+      Log.Combat?.WL(1,"no such explosion");
       WeaponEffect.logger.LogError(("Missile impact had an invalid explosion prefab : " + explosionName));
     } else {
       ParticleSystem component = gameObject.GetComponent<ParticleSystem>();
@@ -293,10 +267,10 @@ public class MultiShotMissileEffect : CopyAbleWeaponEffect {
         int num2 = (int)WwiseManager.PostEvent<AudioEventList_explosion>(AudioEventList_explosion.explosion_medium, this.projectileAudioObject, (AkCallbackManager.EventCallback)null, null);
       }
       if (this.intercepted == false) {
-        Log.LogWrite(" missile not intercepted. DestroyFlimsyObjects\n");
+        //Log.Combat?.WL(1,"missile not intercepted. DestroyFlimsyObjects");
         this.DestroyFlimsyObjects();
       } else {
-        Log.LogWrite(" missile intercepted. No DestroyFlimsyObjects\n");
+        //Log.Combat?.WL(1,"missile intercepted. No DestroyFlimsyObjects");
       }
     }
   }
@@ -334,9 +308,8 @@ public class MultiShotMissileEffect : CopyAbleWeaponEffect {
         if (this.hitInfo.dodgeRolls[hitIndex] <= -2.0f) {
           float AMSShootT = (0.0f - this.hitInfo.dodgeRolls[hitIndex]) - 2.0f;
           if (this.t >= AMSShootT) {
-            Log.LogWrite(" Update missile " + this.hitInfo.attackWeaponIndex + ":" + hitIndex + " t:" + t + " " + AMSShootT + "\n");
+            Log.Combat?.WL(1,$"Update missile {this.hitInfo.attackWeaponIndex}:{hitIndex} t:{t} {AMSShootT}");
             AdvWeaponHitInfoRec cachedCurve = hitInfo.advRec(hitIndex);
-            //CachedMissileCurve cachedCurve = CustomAmmoCategories.getCachedMissileCurve(this.hitInfo, hitIndex);
             this.hitInfo.dodgeRolls[hitIndex] = 0f;
             if (cachedCurve != null) {
               this.intercepted = cachedCurve.interceptInfo.Intercepted;
@@ -347,7 +320,7 @@ public class MultiShotMissileEffect : CopyAbleWeaponEffect {
               if (amsShoot.AMS == null) {
                 this.hitInfo.dodgeRolls[hitIndex] = cachedCurve.interceptInfo.Intercepted ? -1.0f : 0f;
               } else {
-                Log.LogWrite(" firing AMS " + amsShoot.AMS.UIName + " sootIdx:" + amsShoot.shootIdx + "\n");
+                Log.Combat?.WL(1,$"firing AMS {amsShoot.AMS.UIName} sootIdx:{amsShoot.shootIdx}");
                 amsShoot.AMS.AMS().Fire(amsShoot.shootIdx);
                 cachedCurve.interceptInfo.nextAMSShoot();
                 amsShoot = cachedCurve.interceptInfo.getAMSShoot();
@@ -366,13 +339,12 @@ public class MultiShotMissileEffect : CopyAbleWeaponEffect {
       this.PlayImpact();
       this.OnComplete();
     }catch(Exception e) {
-      Log.M.TWL(0, e.ToString(), true);
+      Log.Combat?.TWL(0, e.ToString(), true);
+      WeaponEffect.logger.LogException(e);
     }
   }
-
   private void ApplyDoppler(GameObject audioListener) {
   }
-
   private void GenerateMissilePath() {
     float max = this.parentLauncher.missileCurveStrength;
     int index1 = Random.Range(2, this.parentLauncher.missileCurveFrequency);
@@ -409,7 +381,6 @@ public class MultiShotMissileEffect : CopyAbleWeaponEffect {
     this.spline.Closed = false;
     this.spline.Add(vector3Array);
   }
-
   private void GenerateIndirectMissilePath() {
     float max = this.parentLauncher.missileCurveStrength;
     int num1 = Random.Range(2, this.parentLauncher.missileCurveFrequency);
@@ -452,7 +423,6 @@ public class MultiShotMissileEffect : CopyAbleWeaponEffect {
     vector3Array[length - 1] = this.endPos;
     this.spline.Add(vector3Array);
   }
-
   protected override void OnPreFireComplete() {
     base.OnPreFireComplete();
     this.PlayProjectile();
@@ -468,26 +438,10 @@ public class MultiShotMissileEffect : CopyAbleWeaponEffect {
       return;
     this.doppler.enabled = false;
   }
-
   protected override void OnComplete() {
     base.OnComplete();
   }
-
-  /*public void OnDisable() {
-    if (!(this.projectileAudioObject != null))
-      return;
-    AkSoundEngine.StopAll(this.projectileAudioObject.gameObject);
-    int num = (int)AkSoundEngine.UnregisterGameObj(this.projectileAudioObject.gameObject);
-  }*/
-
   public override void Reset() {
-    //if (this.Active) {
-    //  if (this.isSRM) {
-    //    int num1 = (int)WwiseManager.PostEvent<AudioEventList_srm>(AudioEventList_srm.srm_projectile_stop, this.projectileAudioObject, (AkCallbackManager.EventCallback)null, null);
-    //  } else {
-    //    int num2 = (int)WwiseManager.PostEvent<AudioEventList_lrm>(AudioEventList_lrm.lrm_projectile_stop, this.projectileAudioObject, (AkCallbackManager.EventCallback)null, null);
-    //  }
-    //}
     base.Reset();
   }
 }

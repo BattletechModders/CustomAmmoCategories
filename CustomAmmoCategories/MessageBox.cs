@@ -19,28 +19,29 @@ using HarmonyLib;
 using System.Reflection;
 using CustAmmoCategories;
 using System.Collections.Generic;
+using CustomAmmoCategoriesLog;
 
 namespace CustAmmoCategoriesPatches {
-  [HarmonyPatch(typeof(CombatHUD))]
-  [HarmonyPatch("OnActorSelected")]
-  [HarmonyPatch(MethodType.Normal)]
-  [HarmonyPatch(new Type[] { typeof(AbstractActor) })]
-  public static class CombatHUDActionButton_ExecuteClick {
+  //[HarmonyPatch(typeof(CombatHUD))]
+  //[HarmonyPatch("OnActorSelected")]
+  //[HarmonyPatch(MethodType.Normal)]
+  //[HarmonyPatch(new Type[] { typeof(AbstractActor) })]
+  //public static class CombatHUDActionButton_ExecuteClick {
 
-    public static void Postfix(CombatHUD __instance, AbstractActor actor) {
-      CustomAmmoCategoriesLog.Log.LogWrite("CombatHUD.OnActorSelected\n");
-      if (actor is Mech) {
-        CustomAmmoCategoriesLog.Log.LogWrite(" is mech\n");
-        if (actor.team.GUID == __instance.Combat.LocalPlayerTeamGuid) {
-          CustomAmmoCategoriesLog.Log.LogWrite(" is player\n");
-          if (JokeMessageBox.Test(actor as Mech)) {
-            CustomAmmoCategoriesLog.Log.LogWrite(" show message\n");
-            JokeMessageBox.ShowMessage();
-          }
-        }
-      }
-    }
-  }
+  //  public static void Postfix(CombatHUD __instance, AbstractActor actor) {
+  //    Log.Combat?.WL(0,"CombatHUD.OnActorSelected");
+  //    if (actor is Mech) {
+  //      Log.Combat?.WL(1, "is mech");
+  //      if (actor.team.GUID == __instance.Combat.LocalPlayerTeamGuid) {
+  //        Log.Combat?.WL(1, "is player");
+  //        if (JokeMessageBox.Test(actor as Mech)) {
+  //          Log.Combat?.WL(1, "show message");
+  //          JokeMessageBox.ShowMessage();
+  //        }
+  //      }
+  //    }
+  //  }
+  //}
 
 }
 
@@ -52,37 +53,7 @@ namespace CustAmmoCategories {
       System.Diagnostics.Process.Start("https://roguetech.gamepedia.com/Rogue_Coins");
     }
     public static bool Test(Mech mech) {
-      return false;/*
-      string TSTPath = System.IO.Directory.GetParent(CustomAmmoCategoriesLog.Log.BaseDirectory).FullName;
-      TSTPath = System.IO.Path.Combine(TSTPath, "RogueModuleTech");
-      TSTPath = System.IO.Path.Combine(TSTPath, "mod.json");
-      CustomAmmoCategoriesLog.Log.LogWrite("  path:"+TSTPath+" exists:"+ File.Exists(TSTPath) + "\n");
-      if (File.Exists(TSTPath) == false) { return false; }
-      TSTPath = System.IO.Path.Combine(CustomAmmoCategoriesLog.Log.BaseDirectory, "104.dat");
-      CustomAmmoCategoriesLog.Log.LogWrite("  path:" + TSTPath + " exists:" + File.Exists(TSTPath) + "\n");
-      if (File.Exists(TSTPath) == true) { return false; };
-      DateTime localDate = DateTime.Now;
-      if ((localDate.Month != 4)||(localDate.Day != 1)) {
-        if(CustomAmmoCategories.Settings.Joke == true) {
-          CustomAmmoCategoriesLog.Log.LogWrite("  not a 1st April. But Joke is true\n");
-        } else {
-          CustomAmmoCategoriesLog.Log.LogWrite("  not a 1st April.\n");
-          return false;
-        }
-      };
-      Dictionary<string, float> curCount = new Dictionary<string, float>();
-      Dictionary<string, float> fullCount = new Dictionary<string, float>();
-      foreach (var box in mech.ammoBoxes) {
-        if (curCount.ContainsKey(box.ammoDef.Description.Id) == false) { curCount[box.ammoDef.Description.Id] = (float)box.CurrentAmmo; } else { curCount[box.ammoDef.Description.Id] += (float)box.CurrentAmmo; }
-        if (fullCount.ContainsKey(box.ammoDef.Description.Id) == false) { fullCount[box.ammoDef.Description.Id] = (float)box.AmmoCapacity; } else { fullCount[box.ammoDef.Description.Id] += (float)box.AmmoCapacity; }
-      }
-      foreach (var ammo in fullCount) {
-        float curAmmo = 0f;
-        if (curCount.ContainsKey(ammo.Key)) { curAmmo = curCount[ammo.Key]; };
-        float curLevel = curAmmo / ammo.Value;
-        if (curLevel < 0.1f) { return true; };
-      }
-      return false;*/
+      return false;
     }
     public static void ShowMessage() {
       /*GenericPopupBuilder popup = GenericPopupBuilder.Create(GenericPopupType.Info, "RogueTech and CustomAmmoCategories presents:\nOut of Ammo? Tired of emenies overwhelming you?\nRogueTech and CustomAmmoCategories are starting special project just for you!\nDo you wish to know more?");

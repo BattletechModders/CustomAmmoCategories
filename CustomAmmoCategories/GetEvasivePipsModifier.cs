@@ -40,8 +40,9 @@ namespace CustomAmmoCategoriesPatches {
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { typeof(int), typeof(Weapon) })]
   public static class ToHit_GetEvasivePipsModifier {
-    public static bool Prefix(ToHit __instance, int evasivePips, Weapon weapon, ref float __result) {
+    public static void Prefix(ref bool __runOriginal,ToHit __instance, int evasivePips, Weapon weapon, ref float __result) {
       //CustomAmmoCategoriesLog.Log.LogWrite("ToHit.GetEvasivePipsModifier");
+      if (!__runOriginal) { return; }
       try {
         float num = 0.0f;
         CombatGameState combat = (CombatGameState)typeof(ToHit).GetField("combat", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(__instance);
@@ -53,24 +54,23 @@ namespace CustomAmmoCategoriesPatches {
           }
         }
         __result = num;
-        return false;
+        __runOriginal = false;
+        return;
       } catch (Exception e) {
-        CustomAmmoCategoriesLog.Log.LogWrite("Exception " + e.ToString() + "\nFallback to default\n");
-        return true;
+        Log.Combat?.WL(0,"Exception " + e.ToString() + "\nFallback to default");
+        ToHit.hitLogger.LogException(e);
+        return;
       }
     }
   }
-  //[HarmonyPatch(typeof(Weapon))]
-  //[HarmonyPatch("InitStats")]
-  //[HarmonyPatch(MethodType.Normal)]
-  //[HarmonyPatch(new Type[] { })]
   public static class Weapon_InitStats {
     public static readonly string EvasivePipsIgnoredStatName = "EvasivePipsIgnored";
     public static void Postfix(Weapon __instance) {
       try {
         __instance.StatCollection.AddStatistic<float>(EvasivePipsIgnoredStatName, __instance.weaponDef.EvasivePipsIgnored);
       } catch (Exception e) {
-        Log.LogWrite(e.ToString()+"\n",true);
+        Log.Combat?.WL(0,e.ToString(),true);
+        Weapon.logger.LogException(e);
       }
     }
   }

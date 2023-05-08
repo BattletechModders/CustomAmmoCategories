@@ -20,7 +20,7 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
 
       private static float MechCalledShotMultiplier, VehicleCalledShotMultiplier;
 
-      public override void CombatStartsOnce () {
+      public override void ModStarts () {
          scale = AIMSettings.FixHitDistribution ? SCALE : 1;
          CallShotClustered = AIMSettings.CalledShotUseClustering;
          MechCalledShotMultiplier = (float) AIMSettings.MechCalledShotMultiplier;

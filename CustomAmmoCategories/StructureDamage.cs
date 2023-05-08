@@ -32,26 +32,27 @@ namespace CustAmmoCategories {
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { typeof(int), typeof(WeaponHitInfo), typeof(ArmorLocation), typeof(Weapon), typeof(float), typeof(float), typeof(int), typeof(AttackImpactQuality), typeof(DamageType) })]
   public static class Mech_DamageLocation {
-    public static bool Prefix(Mech __instance, int originalHitLoc, WeaponHitInfo hitInfo, ArmorLocation aLoc, Weapon weapon, ref float totalArmorDamage, ref float directStructureDamage, int hitIndex, AttackImpactQuality impactQuality, DamageType damageType) {
+    public static void Prefix(ref bool __runOriginal,Mech __instance, int originalHitLoc, WeaponHitInfo hitInfo, ArmorLocation aLoc, Weapon weapon, ref float totalArmorDamage, ref float directStructureDamage, int hitIndex, AttackImpactQuality impactQuality, DamageType damageType) {
+      if (!__runOriginal) { return; }
       ArmorLocation oaLoc = (ArmorLocation)originalHitLoc;
-      Log.M.TWL(0,"Mech.DamageLocation " + __instance.MechDef.ChassisID + " origHitLoc:" + oaLoc + " dmgLoc:"+aLoc);
-      if ((aLoc == ArmorLocation.Invalid) || (aLoc == ArmorLocation.None)) { return true; }
+      Log.Combat?.TWL(0,"Mech.DamageLocation " + __instance.MechDef.ChassisID + " origHitLoc:" + oaLoc + " dmgLoc:"+aLoc);
+      if ((aLoc == ArmorLocation.Invalid) || (aLoc == ArmorLocation.None)) { return; }
       if(oaLoc != aLoc) {
-        Log.M.WL(1,"pass through location detected");
+        Log.Combat?.WL(1,"pass through location detected");
         if (CustomAmmoCategories.Settings.NullifyDestoryedLocationDamage) {
-          Log.M.WL(2, "nullify damage");
+          Log.Combat?.WL(2, "nullify damage");
           totalArmorDamage = 0f;
           directStructureDamage = 0f;
-          return false;
+          __runOriginal = false;
+          return;
         }
         if (CustomAmmoCategories.Settings.DestoryedLocationDamageTransferStructure) {
-          Log.M.W(2, "transfer all damage direct to structure a:"+totalArmorDamage+" s:"+directStructureDamage);
+          Log.Combat?.W(2, "transfer all damage direct to structure a:"+totalArmorDamage+" s:"+directStructureDamage);
           directStructureDamage += totalArmorDamage;
           totalArmorDamage = 0f;
-          Log.M.WL(0, "->a:"+totalArmorDamage+" s:"+directStructureDamage);
+          Log.Combat?.WL(0, "->a:"+totalArmorDamage+" s:"+directStructureDamage);
         }
       }
-      return true;
     }
   }
   public static class ExDamageHelper {
@@ -111,10 +112,10 @@ namespace CustAmmoCategories {
       return unit.StatCollection.GetStatistic(IncomingHeatMultStatisticName).Value<float>();
     }
     public static float ScaleIncomingHeat(this ICombatant target) {
-      if (CustomAmmoCategories.Settings.ScaleIncomingHeat < CustomAmmoCategories.Epsilon) { return 1f; }
+      if (CustomAmmoCategories.Settings.ScaleWeaponHeat < CustomAmmoCategories.Epsilon) { return 1f; }
       if (target.isHasHeat() == false) { return 1f; }
       if (target is Mech mech) {
-        return 1f - (mech.CurrentHeat / CustomAmmoCategories.Settings.ScaleIncomingHeat);
+        return 1f - (mech.CurrentHeat / CustomAmmoCategories.Settings.ScaleWeaponHeat);
       }
       return 1f;
     }
@@ -163,17 +164,6 @@ namespace CustAmmoCategories {
         unit.StatCollection.AddStatistic<float>(IncomingStabilityMultStatisticName, 1f);
       }
     }
-    public static void ShowFloatie(this Mech mech,string sourceGuid, ArmorLocation location, FloatieMessage.MessageNature nature, string dmgText, float fontSize) {
-      typeof(Mech).GetMethod("ShowFloatie", BindingFlags.NonPublic | BindingFlags.Instance).Invoke(mech, new object[5]{
-        sourceGuid,location,nature,dmgText,fontSize
-      });
-    }
-    public static void applyStructureStatDamage(this Vehicle vehicle,VehicleChassisLocations location, float damage, WeaponHitInfo hitInfo) {
-      typeof(Vehicle).GetMethod("applyStructureStatDamage", BindingFlags.NonPublic | BindingFlags.Instance).Invoke(vehicle, new object[3]{ location,damage,hitInfo });
-    }
-    public static void ApplyStructureStatDamage(this Turret turret, BuildingLocation location, float damage, WeaponHitInfo hitInfo) {
-      typeof(Turret).GetMethod("ApplyStructureStatDamage", BindingFlags.NonPublic | BindingFlags.Instance).Invoke(turret, new object[3] { location, damage, hitInfo });
-    }
     public static void CACTakeWeaponDamage(this ICombatant combatant, WeaponHitInfo hitInfo, int hitLocation, Weapon weapon, float totalDamage, float structureDamage, int hitIndex, DamageType damageType) {
       AttackImpactQuality hitQuality = hitInfo.hitQualities[hitIndex];
       Mech mech = combatant as Mech;
@@ -206,7 +196,7 @@ namespace CustAmmoCategories {
       }else if(turret != null) { 
         turret.DamageLocationStructure(hitLocation, hitInfo, (BuildingLocation)hitLocation, weapon, damageAmount, hitIndex, hitQuality, damageType);
       } else {
-        Log.LogWrite("Combatant "+combatant.DisplayName+":"+combatant.GUID+" can't receive trough armor damage\n",true);
+        Log.Combat?.WL(0,"Combatant "+combatant.DisplayName+":"+combatant.GUID+" can't receive trough armor damage",true);
       }
     }
     public static bool DamageLocationStructure(this Turret turret, int originalHitLoc, WeaponHitInfo hitInfo, BuildingLocation bLoc, Weapon weapon, float totalDamage, int hitIndex, AttackImpactQuality impactQuality, DamageType damageType) {

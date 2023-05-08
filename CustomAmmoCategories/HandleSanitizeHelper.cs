@@ -18,18 +18,18 @@ namespace CustAmmoCategories {
   public static class HandleSanitiseHelper {
     public static void HandleSanitize(this CombatGameState combat, bool checkForStability = false, bool checkForPilot = false){
       List<AbstractActor> allActors = combat.AllActors;
-      Log.M.TWL(0, "HandleSanitize:"+allActors.Count);
+      Log.Combat?.TWL(0, "HandleSanitize:"+allActors.Count);
       foreach(AbstractActor actor in allActors) {
-        Log.M.WL(1, actor.DisplayName+":"+actor.GUID+ " IsDead:"+actor.IsDead+ " HasHandledDeath:"+ actor.HasHandledDeath+ " isHasStability:"+actor.isHasStability());
+        Log.Combat?.WL(1, actor.DisplayName+":"+actor.GUID+ " IsDead:"+actor.IsDead+ " HasHandledDeath:"+ actor.HasHandledDeath+ " isHasStability:"+actor.isHasStability());
         if ((actor.HasHandledDeath == false)&&(actor.IsDead == true)) {
           
           if(actor is Mech mech) {
-            Log.M.WL(2, "pilot.IsIncapacitated:"+ mech.pilot.IsIncapacitated);
-            Log.M.WL(2, "pilot.HasEjected:" + mech.pilot.HasEjected);
-            Log.M.WL(2, "HeadStructure:" + mech.HeadStructure);
-            Log.M.WL(2, "CenterTorsoStructure:" + mech.CenterTorsoStructure);
-            Log.M.WL(2, "LeftLegStructure:" + mech.LeftLegStructure);
-            Log.M.WL(2, "RightLegStructure:" + mech.RightLegStructure);
+            Log.Combat?.WL(2, "pilot.IsIncapacitated:"+ mech.pilot.IsIncapacitated);
+            Log.Combat?.WL(2, "pilot.HasEjected:" + mech.pilot.HasEjected);
+            Log.Combat?.WL(2, "HeadStructure:" + mech.HeadStructure);
+            Log.Combat?.WL(2, "CenterTorsoStructure:" + mech.CenterTorsoStructure);
+            Log.Combat?.WL(2, "LeftLegStructure:" + mech.LeftLegStructure);
+            Log.Combat?.WL(2, "RightLegStructure:" + mech.RightLegStructure);
           }
           int deathLocation = 0;
           switch (actor.UnitType) {

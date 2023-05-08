@@ -17,32 +17,32 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
 
   public class UserInterfacePanels : BattleModModule {
 
-    public override void GameStartsOnce() {
+    public override void ModStarts() {
       // Done on game load to be effective in campaign mech bay
       Type ReadoutType = typeof(HUDMechArmorReadout);
-      if (AIMSettings.ShowUnderArmourDamage || AIMSettings.FixPaperDollRearStructure)
-        TryRun(Log, () => {
-          outlineProp = ReadoutType.GetProperty("armorOutlineCached", NonPublic | Instance);
-          armorProp = ReadoutType.GetProperty("armorCached", NonPublic | Instance);
-          structureProp = ReadoutType.GetProperty("structureCached", NonPublic | Instance);
-          outlineRearProp = ReadoutType.GetProperty("armorOutlineRearCached", NonPublic | Instance);
-          armorRearProp = ReadoutType.GetProperty("armorRearCached", NonPublic | Instance);
-          structureRearProp = ReadoutType.GetProperty("structureRearCached", NonPublic | Instance);
-          timeSinceStructureDamagedProp = typeof(HUDMechArmorReadout).GetProperty("timeSinceStructureDamaged", NonPublic | Instance);
-        });
+      //if (AIMSettings.ShowUnderArmourDamage || AIMSettings.FixPaperDollRearStructure)
+      //  TryRun(Log, () => {
+      //    outlineProp = ReadoutType.GetProperty("armorOutlineCached", NonPublic | Instance);
+      //    armorProp = ReadoutType.GetProperty("armorCached", NonPublic | Instance);
+      //    structureProp = ReadoutType.GetProperty("structureCached", NonPublic | Instance);
+      //    outlineRearProp = ReadoutType.GetProperty("armorOutlineRearCached", NonPublic | Instance);
+      //    armorRearProp = ReadoutType.GetProperty("armorRearCached", NonPublic | Instance);
+      //    structureRearProp = ReadoutType.GetProperty("structureRearCached", NonPublic | Instance);
+      //    timeSinceStructureDamagedProp = typeof(HUDMechArmorReadout).GetProperty("timeSinceStructureDamaged", NonPublic | Instance);
+      //  });
       if (AIMSettings.ShowUnderArmourDamage) {
-        if (AnyNull(outlineProp, armorProp, structureProp, outlineRearProp, armorRearProp, structureRearProp))
-          Error("Cannot find outline, armour, and/or structure colour cache of HUDMechArmorReadout.  Cannot make paper dolls divulge under skin damage.");
-        else {
+        //if (AnyNull(outlineProp, armorProp, structureProp, outlineRearProp, armorRearProp, structureRearProp))
+          //Error("Cannot find outline, armour, and/or structure colour cache of HUDMechArmorReadout.  Cannot make paper dolls divulge under skin damage.");
+        //else {
           if (!AIMSettings.FixPaperDollRearStructure)
             Warn("PaperDollDivulgeUnderskinDamage does not imply FixPaperDollRearStructure. Readout may still be bugged.");
           Patch(ReadoutType, "RefreshMechStructureAndArmor", null, "ShowStructureDamageThroughArmour");
-        }
+        //}
       }
       if (AIMSettings.FixPaperDollRearStructure) {
-        if (structureRearProp == null || timeSinceStructureDamagedProp == null)
-          Error("Cannot find HUDMechArmorReadout.structureRearCached, and/or HUDMechArmorReadout.timeSinceStructureDamaged, paper doll rear structures not fixed.");
-        else
+        //if (structureRearProp == null || timeSinceStructureDamagedProp == null)
+          //Error("Cannot find HUDMechArmorReadout.structureRearCached, and/or HUDMechArmorReadout.timeSinceStructureDamaged, paper doll rear structures not fixed.");
+        //else
           Patch(typeof(HUDMechArmorReadout), "UpdateMechStructureAndArmor", null, "FixRearStructureDisplay");
       }
       // Must be placed here to have effect
@@ -67,11 +67,7 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
         Patch(typeof(Mech), "get_AdjustedHeatsinkCapacity", null, "CorrectProjectedHeat");
 
       if (AIMSettings.ShowAmmoInTooltip || AIMSettings.ShowEnemyAmmoInTooltip) {
-        MechTrayArmorHoverToolTipProp = typeof(CombatHUDMechTrayArmorHover).GetProperty("ToolTip", NonPublic | Instance);
-        if (MechTrayArmorHoverToolTipProp == null)
-          Warn("Cannot access CombatHUDMechTrayArmorHover.ToolTip, ammo not displayed in paperdoll tooltip.");
-        else
-          Patch(typeof(CombatHUDMechTrayArmorHover), "setToolTipInfo", new Type[] { typeof(Mech), typeof(ArmorLocation) }, "OverridePaperDollTooltip", null);
+        Patch(typeof(CombatHUDMechTrayArmorHover), "setToolTipInfo", new Type[] { typeof(Mech), typeof(ArmorLocation) }, "OverridePaperDollTooltip", null);
       }
 
       if (AIMSettings.ShortPilotHint != null) {
@@ -106,7 +102,6 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
 
     // ============ Paper Doll ============
 
-    private static PropertyInfo outlineProp, armorProp, structureProp, outlineRearProp, armorRearProp, structureRearProp, timeSinceStructureDamagedProp;
     private static readonly ChassisLocations[] Normal = new ChassisLocations[] { Head, LeftArm, LeftTorso, CenterTorso, RightTorso, RightArm, LeftLeg, RightLeg };
     private static readonly ChassisLocations[] Flipped = new ChassisLocations[] { Head, RightArm, RightTorso, CenterTorso, LeftTorso, LeftArm, RightLeg, LeftLeg };
 
@@ -134,8 +129,8 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
         ChassisLocations[] location = me.flipFrontDisplay ? Flipped : Normal;
         int[] back = me.flipFrontDisplay != me.flipRearDisplay ? new int[] { 0, 0, 4, 3, 2 } : new int[] { 0, 0, 2, 3, 4 };
         Color clear = Color.clear;
-        Color[] armor = (Color[])armorProp.GetValue(me, null);
-        Color[] armorRear = (Color[])armorRearProp.GetValue(me, null);
+        Color[] armor = me.armorCached;
+        Color[] armorRear = me.armorRearCached;
         Color[] outline = null, outlineRear = null, structure = null, structureRear = null;
 
         for (int i = 0; i < 8; i++) {
@@ -144,8 +139,8 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
           if (armor[i] != clear) { // Skip check on armour-less locations
             if (IsStructureDamaged(ref percent, mech, mechDef, location[i])) {
               if (structure == null) { // Lazy reflection access
-                structure = (Color[])structureProp.GetValue(me, null);
-                outline = (Color[])outlineProp.GetValue(me, null);
+                structure = me.structureCached;
+                outline = me.armorOutlineCached;
               }
               outline[i] = structure[i] = armor[i];
               if (me.UseForCalledShots)
@@ -160,8 +155,8 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
           if (armorRear[j] != clear) {
             if (IsStructureDamaged(ref percent, mech, mechDef, location[i])) { // i is not typo. We want to check same chassis location as front.
               if (structureRear == null) {
-                structureRear = (Color[])structureRearProp.GetValue(me, null);
-                outlineRear = (Color[])outlineRearProp.GetValue(me, null);
+                structureRear = me.structureRearCached;
+                outlineRear = me.armorOutlineRearCached;
               }
               outlineRear[j] = structureRear[j] = armorRear[j];
               armorRear[j] = clear;
@@ -176,8 +171,8 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
     public static void FixRearStructureDisplay(HUDMechArmorReadout __instance, AttackDirection shownAttackDirection) {
       try {
         HUDMechArmorReadout me = __instance;
-        float[] timeSinceStructureDamaged = (float[])timeSinceStructureDamagedProp.GetValue(me, null);
-        Color[] structureRear = (Color[])structureRearProp.GetValue(me, null);
+        float[] timeSinceStructureDamaged = me.timeSinceArmorDamaged;
+        Color[] structureRear = me.structureRearCached;
 
         float flashPeriod = 0f;
         Color flashColour = Color.black;

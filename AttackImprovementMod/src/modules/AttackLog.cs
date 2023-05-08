@@ -27,33 +27,32 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
 
     private static string thisCombatId = "";
 
-#pragma warning disable CS0162 // Disable "unreachable code" warnings due to DebugLog flag
-    public override void CombatStartsOnce() {
+    public override void ModStarts() {
       if (AIMSettings.AttackLogLevel == null) return;
+      try {
+        Type MechType = typeof(Mech);
+        Type VehiType = typeof(Vehicle);
+        Type TurtType = typeof(Turret);
+        Type BuldType = typeof(BattleTech.Building);
 
-      Type MechType = typeof(Mech);
-      Type VehiType = typeof(Vehicle);
-      Type TurtType = typeof(Turret);
-      Type BuldType = typeof(BattleTech.Building);
-
-      switch (AIMSettings.AttackLogFormat.Trim().ToLower()) {
-        default:
+        switch (AIMSettings.AttackLogFormat.Trim().ToLower()) {
+          default:
           Warn("Unknown AttackLogFormat " + AIMSettings.AttackLogFormat);
           AIMSettings.AttackLogFormat = "csv";
           goto case "csv";
-        case "csv":
+          case "csv":
           Separator = ",";
           break;
-        case "tsv":
-        case "txt":
+          case "tsv":
+          case "txt":
           Separator = "\t";
           break;
-      }
+        }
 
-      // Patch prefix early to increase chance of successful capture in face of other mods.
-      switch (AIMSettings.AttackLogLevel.Trim().ToLower()) {
-        case "all":
-        case "critical":
+        // Patch prefix early to increase chance of successful capture in face of other mods.
+        switch (AIMSettings.AttackLogLevel.Trim().ToLower()) {
+          case "all":
+          case "critical":
           LogCritical = true;
           CritDummy = FillBlanks(10);
           Type CritRulesType = typeof(CritChanceRules);
@@ -67,7 +66,7 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
           Patch(MechType, "CheckForCrit", null, "LogCritResult");
           goto case "damage";
 
-        case "damage":
+          case "damage":
           DamageDummy = FillBlanks(6);
           Patch(MechType, "DamageLocation", "RecordMechDamage", "LogMechDamage");
           Patch(VehiType, "DamageLocation", "RecordVehicleDamage", "LogVehicleDamage");
@@ -76,7 +75,7 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
           LogDamage = true;
           goto case "location";
 
-        case "location":
+          case "location":
           LogLocation = true;
           Patch(GetHitLocation(typeof(ArmorLocation)), null, "LogMechHit");
           Patch(GetHitLocation(typeof(VehicleChassisLocations)), null, "LogVehicleHit");
@@ -86,7 +85,7 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
           Patch(BuldType, "GetAdjacentHitLocation", null, "LogBuildingClusterHit");
           goto case "shot";
 
-        case "shot":
+          case "shot":
           LogShot = true;
           Patch(AttackType, "GetIndividualHits", "RecordSequenceWeapon", null);
           Patch(AttackType, "GetClusteredHits", "RecordSequenceWeapon", null);
@@ -95,20 +94,26 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
           Patch(MechType, "ApplyHeatDamage", "RecordOverheat", "LogOverheat");
           goto case "attack";
 
-        case "attack":
+          case "attack":
           Patch(ArtilleyAttackType, "PerformAttack", "RecordArtilleryAttack", null);
           Patch(AttackType, "GenerateToHitInfo", "RecordAttack", "LogSelfAttack");
           Patch(typeof(AttackDirector), "OnAttackComplete", null, "WriteRollLog");
           TryRun(ModLog, InitLog);
           break;
 
-        default:
+          default:
           Warn("Unknown AttackLogLevel " + AIMSettings.AttackLogLevel);
           goto case "none";
-        case null:
-        case "none":
+          case null:
+          case "none":
           break;
+        }
+      } catch (Exception e) {
+        Error(e.ToString());
       }
+    }
+#pragma warning disable CS0162 // Disable "unreachable code" warnings due to DebugLog flag
+    public override void CombatStartsOnce() {
     }
 
     public override void CombatEnds() {
@@ -560,7 +565,7 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
     public static void RecordVehicleDamage(Vehicle __instance, VehicleChassisLocations vLoc, float totalArmorDamage) {
       try {
         if (vLoc == VehicleChassisLocations.None || vLoc == VehicleChassisLocations.Invalid) return;
-      RecordUnitDamage(vLoc.ToString(), totalArmorDamage, __instance.GetCurrentArmor(vLoc), __instance.GetCurrentStructure(vLoc));
+        RecordUnitDamage(vLoc.ToString(), totalArmorDamage, __instance.GetCurrentArmor(vLoc), __instance.GetCurrentStructure(vLoc));
       } catch (Exception e) { CustomAmmoCategoriesLog.Log.LogWrite("AIM exception:" + e.ToString() + "\n", true); }
     }
 
@@ -568,7 +573,7 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
     public static void RecordTurretDamage(Turret __instance, BuildingLocation bLoc, float totalArmorDamage) {
       try {
         if (bLoc == BuildingLocation.None || bLoc == BuildingLocation.Invalid) return;
-      RecordUnitDamage(bLoc.ToString(), totalArmorDamage, __instance.GetCurrentArmor(bLoc), __instance.GetCurrentStructure(bLoc));
+        RecordUnitDamage(bLoc.ToString(), totalArmorDamage, __instance.GetCurrentArmor(bLoc), __instance.GetCurrentStructure(bLoc));
       } catch (Exception e) { CustomAmmoCategoriesLog.Log.LogWrite("AIM exception:" + e.ToString() + "\n", true); }
     }
 
@@ -627,7 +632,7 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
         case DamageType.OverheatSelf:
         case DamageType.DFA:
         case DamageType.DFASelf:
-          return true;
+        return true;
       }
       return false;
     }

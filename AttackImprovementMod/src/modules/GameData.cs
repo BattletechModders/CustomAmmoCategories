@@ -8,7 +8,7 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
 
    public class GameData : BattleModModule {
 
-      public override void GameStarts () {
+      public override void ModStarts () {
          if ( ! AIMSettings.FixWeaponStats ) return;
          weaponDefs = new Dictionary<string, WeaponDef>();
          weaponsToFix = new HashSet<string>( new string[]{ 

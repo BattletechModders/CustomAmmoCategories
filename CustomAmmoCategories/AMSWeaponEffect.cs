@@ -10,7 +10,9 @@
 */
 using BattleTech;
 using BattleTech.Rendering;
+using CustomAmmoCategoriesHelper;
 using CustomAmmoCategoriesLog;
+using HarmonyLib;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -27,7 +29,6 @@ namespace CustAmmoCategories {
       foreach (var effect in registredAMSEffects) { effect.Pool(); }
     }
     public static void Clear() { registredAMSEffects.Clear(); }
-    private static FieldInfo fi_hasSentNextWeaponMessage = null;
     public Vector3[] hitPositions;
     protected bool NeedColorCalc;
     public Color CurrentColor;
@@ -58,45 +59,40 @@ namespace CustAmmoCategories {
       AMSWeaponEffect.Register(this);
       this.impactVFXBase = original.impactVFXBase;
       this.preFireSFX = original.preFireSFX;
-      this.Combat = (CombatGameState)typeof(WeaponEffect).GetField("Combat", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(original);
-      this.hitIndex = original.HitIndex();
-      this.emitterIndex = (int)typeof(WeaponEffect).GetField("emitterIndex", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(original);
-      this.numberOfEmitters = (int)typeof(WeaponEffect).GetField("numberOfEmitters", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(original);
+      this.Combat = original.Combat();
+      this.hitIndex = original.hitIndex;
+      this.emitterIndex = original.emitterIndex();
+      this.numberOfEmitters = original.numberOfEmitters();
       this.subEffect = original.subEffect;
       this.currentState = original.currentState;
       this.weaponRep = original.weaponRep;
       this.weapon = original.weapon;
-      this.parentAudioObject = (AkGameObj)typeof(WeaponEffect).GetField("parentAudioObject", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(original);
-      this.startingTransform = (Transform)typeof(WeaponEffect).GetField("startingTransform", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(original);
-      this.startPos = (Vector3)typeof(WeaponEffect).GetField("startPos", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(original);
-      this.endPos = (Vector3)typeof(WeaponEffect).GetField("endPos", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(original);
-      this.currentPos = (Vector3)typeof(WeaponEffect).GetField("currentPos", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(original);
-      this.t = (float)typeof(WeaponEffect).GetField("t", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(original);
+      this.parentAudioObject = original.parentAudioObject();
+      this.startingTransform = original.startingTransform();
+      this.startPos = original.startPos();
+      this.endPos = original.endPos();
+      this.currentPos = original.currentPos();
+      this.t = original.t();
       this.attackSequenceNextDelayMin = original.attackSequenceNextDelayMin;
       this.attackSequenceNextDelayMax = original.attackSequenceNextDelayMax;
-      this.attackSequenceNextDelayTimer = (float)typeof(WeaponEffect).GetField("attackSequenceNextDelayTimer", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(original);
-      if (fi_hasSentNextWeaponMessage == null) { fi_hasSentNextWeaponMessage = typeof(WeaponEffect).GetField("hasSentNextWeaponMessage", BindingFlags.Instance | BindingFlags.NonPublic); }
-      if (fi_hasSentNextWeaponMessage != null) {
-        this.hasSentNextWeaponMessage = (bool)fi_hasSentNextWeaponMessage.GetValue(original);
-      } else {
-        CustomAmmoCategoriesLog.Log.LogWrite("WARNING! Can't get WeaponEffect.hasSentNextWeaponMessage\n");
-      }
+      this.attackSequenceNextDelayTimer = original.attackSequenceNextDelayTimer();
+      this.hasSentNextWeaponMessage(original.hasSentNextWeaponMessage());
       this.preFireDuration = original.preFireDuration;
-      this.preFireRate = (float)typeof(WeaponEffect).GetField("preFireRate", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(original);
-      this.duration = (float)typeof(WeaponEffect).GetField("duration", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(original);
-      this.rate = (float)typeof(WeaponEffect).GetField("rate", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(original);
+      this.preFireRate = original.preFireRate();
+      this.duration = original.duration();
+      this.rate = original.rate();
       this.projectileSpeed = original.projectileSpeed;
       this.weaponImpactType = original.weaponImpactType;
       this.preFireVFXPrefab = original.preFireVFXPrefab;
       this.muzzleFlashVFXPrefab = original.muzzleFlashVFXPrefab;
       this.projectilePrefab = original.projectilePrefab;
       this.projectile = original.projectile;
-      this.activeProjectileName = (string)typeof(WeaponEffect).GetField("activeProjectileName", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(original);
-      this.projectileTransform = (Transform)typeof(WeaponEffect).GetField("projectileTransform", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(original);
-      this.projectileParticles = (ParticleSystem)typeof(WeaponEffect).GetField("projectileParticles", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(original);
-      this.projectileAudioObject = (AkGameObj)typeof(WeaponEffect).GetField("projectileAudioObject", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(original);
-      this.projectileMeshObject = (GameObject)typeof(WeaponEffect).GetField("projectileMeshObject", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(original);
-      this.projectileLightObject = (GameObject)typeof(WeaponEffect).GetField("projectileLightObject", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(original);
+      this.activeProjectileName = original.activeProjectileName();
+      this.projectileTransform = original.projectileTransform();
+      this.projectileParticles = original.projectileParticles();
+      this.projectileAudioObject = original.projectileAudioObject();
+      this.projectileMeshObject = original.projectileMeshObject();
+      this.projectileLightObject = original.projectileLightObject();
       this.impactVFXVariations = original.impactVFXVariations;
       this.armorDamageVFXName = original.armorDamageVFXName;
       this.structureDamageVFXName = original.structureDamageVFXName;
@@ -105,75 +101,32 @@ namespace CustAmmoCategories {
       this.AllowMissSkipping = original.AllowMissSkipping;
       this.hitPositions = new Vector3[0] { };
     }
-#if PUBLIC_ASSEMBLIES
-    public override int ImpactPrecacheCount {
-#else
     protected override int ImpactPrecacheCount {
-#endif
       get {
         return 1;
       }
     }
-#if PUBLIC_ASSEMBLIES
-    public new bool hasSentNextWeaponMessage {
-#else
-    protected bool hasSentNextWeaponMessage {
-#endif
-      get {
-        if (fi_hasSentNextWeaponMessage == null) { fi_hasSentNextWeaponMessage = typeof(WeaponEffect).GetField("hasSentNextWeaponMessage", BindingFlags.Instance | BindingFlags.NonPublic); }
-        if (fi_hasSentNextWeaponMessage != null) {
-          return (bool)fi_hasSentNextWeaponMessage.GetValue(this);
-        } else {
-          CustomAmmoCategoriesLog.Log.LogWrite("WARNING! Can't get WeaponEffect.hasSentNextWeaponMessage\n");
-          return false;
-        }
-      }
-      set {
-        if (fi_hasSentNextWeaponMessage == null) { fi_hasSentNextWeaponMessage = typeof(WeaponEffect).GetField("hasSentNextWeaponMessage", BindingFlags.Instance | BindingFlags.NonPublic); }
-        if (fi_hasSentNextWeaponMessage != null) {
-          fi_hasSentNextWeaponMessage.SetValue(this, value);
-        } else {
-          CustomAmmoCategoriesLog.Log.LogWrite("WARNING! Can't set WeaponEffect.hasSentNextWeaponMessage\n");
-        }
-      }
-    }
-
-#if PUBLIC_ASSEMBLIES
-    public override void Awake() {
-#else
     protected override void Awake() {
-#endif
       this.currentState = WeaponEffect.WeaponEffectState.NotStarted;
-      this.hasSentNextWeaponMessage = false;
+      this.hasSentNextWeaponMessage(false);
       this.AllowMissSkipping = true;
     }
-
-#if PUBLIC_ASSEMBLIES
-    public override void Start() {
-#else
     protected override void Start() {
-# endif
       if ((double)this.duration <= 0.0)
         this.duration = 1f;
       this.rate = 1f / this.duration;
     }
-
-#if PUBLIC_ASSEMBLIES
-    public override void OnDestroy() {
-#else
     protected override void OnDestroy() {
-# endif
-      if (!((UnityEngine.Object)this.projectileAudioObject != (UnityEngine.Object)null))
-        return;
+      if (this.projectileAudioObject == null) { return; }
       AkSoundEngine.StopAll(this.projectileAudioObject.gameObject);
     }
     public override void Init(Weapon weapon) {
-      CustomAmmoCategoriesLog.Log.LogWrite("CACWeaponEffect.Init\n");
+      Log.Combat?.WL(0,"CACWeaponEffect.Init");
       this.weapon = weapon;
       this.weaponRep = weapon.weaponRep;
       this.Combat = weapon.parent.Combat;
       if (this.weaponRep == null) {
-        Log.M.TWL(0, "!!!I will not fire weapon without representation!!!Under no circumstances", true);
+        Log.Combat?.WL(0, "!!!I will not fire weapon without representation!!!Under no circumstances", true);
         this.numberOfEmitters = 1;
       } else {
         this.numberOfEmitters = this.weaponRep.vfxTransforms.Length;
@@ -224,12 +177,7 @@ namespace CustAmmoCategories {
         this.colorT += this.rate * this.Combat.StackManager.GetProgressiveAttackDeltaTime(this.colorT) * this.ColorChangeSpeed;
       }
     }
-
-#if PUBLIC_ASSEMBLIES
-    public new void PreCacheImpacts() {
-#else
     private void PreCacheImpacts() {
-#endif
       if (string.IsNullOrEmpty(this.impactVFXBase))
         return;
       this.Combat.DataManager.PrecachePrefabAsync(string.Format("{0}_crit", (object)this.impactVFXBase), BattleTechResourceType.Prefab, this.ImpactPrecacheCount);
@@ -239,9 +187,9 @@ namespace CustAmmoCategories {
         this.Combat.DataManager.PrecachePrefabAsync(string.Format("{0}_{1}", (object)this.impactVFXBase, (object)this.impactVFXVariations[index]), BattleTechResourceType.Prefab, this.ImpactPrecacheCount);
     }
     public override void InitProjectile() {
-      Log.LogWrite("AMSWeaponEffect.InitProjectile: "+this.GetType().ToString()+"\n");
-      Log.LogWrite(" projectilePrefab '"+(projectilePrefab==null?"null": (projectilePrefab.name+":"+projectilePrefab.GetInstanceID())) +"'\n");
-      Log.LogWrite(" projectile '" + (projectile == null ? "null" : (projectile.name + ":" + projectile.GetInstanceID())) + "'\n");
+      Log.Combat?.WL(0,"AMSWeaponEffect.InitProjectile: "+this.GetType().ToString());
+      Log.Combat?.WL(1, "projectilePrefab '"+(projectilePrefab==null?"null": (projectilePrefab.name+":"+projectilePrefab.GetInstanceID())));
+      Log.Combat?.WL(1, "projectile '" + (projectile == null ? "null" : (projectile.name + ":" + projectile.GetInstanceID())));
       try {
         if ((UnityEngine.Object)this.projectilePrefab != (UnityEngine.Object)null && (UnityEngine.Object)this.projectile != (UnityEngine.Object)null) {
           this.weapon.parent.Combat.DataManager.PoolGameObject(this.activeProjectileName, this.projectile);
@@ -251,10 +199,10 @@ namespace CustAmmoCategories {
           this.projectile = this.Combat.DataManager.PooledInstantiate(this.activeProjectileName, BattleTechResourceType.Prefab, new Vector3?(), new Quaternion?(), (Transform)null);
         };
         if(this.projectile == null) {
-          Log.LogWrite(" fail to get from pool '" + this.activeProjectileName + "'\n");
+          Log.Combat?.WL(1, "fail to get from pool '" + this.activeProjectileName + "'");
           return;
         } else {
-          Log.LogWrite(" success instantine '" + this.activeProjectileName + "'\n");
+          Log.Combat?.WL(1, "success instantine '" + this.activeProjectileName + "'");
         }
         this.projectileParticles = this.projectile.GetComponent<ParticleSystem>();
         this.projectileTransform = this.projectile.transform;
@@ -298,11 +246,12 @@ namespace CustAmmoCategories {
         }
         WwiseManager.SetSwitch<AudioSwitch_mech_weight_type>(switchEnumValue, this.projectileAudioObject);
       }catch(Exception e) {
-        Log.LogWrite(e.ToString()+"\n");
+        Log.Combat?.TWL(0,e.ToString());
+        WeaponEffect.logger.LogException(e);
       }
     }
     public virtual void Fire(Vector3[] hitPositions, int hitIndex = 0, int emitterIndex = 0) {
-      Log.M?.WL(0,"AMSWeaponEffect.Fire");
+      Log.Combat?.WL(0,"AMSWeaponEffect.Fire");
       this.AudioStoped = false;
       this.t = 0.0f;
       this.hitPositions = hitPositions;
@@ -321,17 +270,13 @@ namespace CustAmmoCategories {
       this.currentState = WeaponEffect.WeaponEffectState.PreFiring;
     }
     public override void Fire(WeaponHitInfo hitInfo, int hitIndex = 0, int emitterIndex = 0) {
-      CustomAmmoCategoriesLog.Log.LogWrite("AMS effect can't fire normaly. Something is wrong.\n");
+      Log.Combat?.WL(0,"AMS effect can't fire normaly. Something is wrong.");
       this.hitInfo = hitInfo;
       this.hitIndex = hitIndex;
       this.currentState = WeaponEffect.WeaponEffectState.Complete;
       base.OnComplete();
     }
-#if PUBLIC_ASSEMBLIES
-    public override void PlayPreFire() {
-#else
     protected override void PlayPreFire() {
-#endif
       if ((UnityEngine.Object)this.preFireVFXPrefab != (UnityEngine.Object)null) {
         GameObject gameObject = this.weapon.parent.Combat.DataManager.PooledInstantiate(this.preFireVFXPrefab.name, BattleTechResourceType.Prefab, new Vector3?(), new Quaternion?(), (Transform)null);
         ParticleSystem component = gameObject.GetComponent<ParticleSystem>();
@@ -363,11 +308,7 @@ namespace CustAmmoCategories {
       this.t = 0.0f;
       this.currentState = WeaponEffect.WeaponEffectState.PreFiring;
     }
-#if PUBLIC_ASSEMBLIES
-    public override void PlayMuzzleFlash() {
-#else
     protected override void PlayMuzzleFlash() {
-#endif
       if (!((UnityEngine.Object)this.muzzleFlashVFXPrefab != (UnityEngine.Object)null))
         return;
       GameObject gameObject = this.weapon.parent.Combat.DataManager.PooledInstantiate(this.muzzleFlashVFXPrefab.name, BattleTechResourceType.Prefab, new Vector3?(), new Quaternion?(), (Transform)null);
@@ -389,12 +330,7 @@ namespace CustAmmoCategories {
       componentInChildren.StopAnimation();
       componentInChildren.PlayAnimation();
     }
-
-#if PUBLIC_ASSEMBLIES
-    public override void PlayProjectile() {
-#else
     protected override void PlayProjectile() {
-#endif
       this.ColorChangeSpeed = this.weapon.ColorSpeedChange();
       this.colorsTable = this.weapon.ColorsTable();
       this.colorChangeRule = this.weapon.colorChangeRule();
@@ -402,9 +338,9 @@ namespace CustAmmoCategories {
       this.ColorIndex = 0;
       this.StoreOriginalColor();
       //this.originalColor = this.beamRenderer.material.GetColor("_ColorBB");
-      Log.LogWrite(" ColorChangeSpeed " + this.ColorChangeSpeed + "\n");
-      Log.LogWrite(" colorsTable.Count " + this.colorsTable.Count + "\n");
-      Log.LogWrite(" colorChangeRule " + this.colorChangeRule + "\n");
+      Log.Combat?.WL(1,"ColorChangeSpeed " + this.ColorChangeSpeed);
+      Log.Combat?.WL(1, "colorsTable.Count " + this.colorsTable.Count);
+      Log.Combat?.WL(1, "colorChangeRule " + this.colorChangeRule);
       this.NeedColorCalc = (this.ColorChangeSpeed > CustomAmmoCategories.Epsilon);
       if (this.colorsTable.Count <= 1) { this.NeedColorCalc = false; };
       if ((this.colorChangeRule != ColorChangeRule.None)&&(this.colorsTable.Count > 0)) {
@@ -429,7 +365,7 @@ namespace CustAmmoCategories {
       } else {
         this.NeedColorCalc = false;
       }
-      Log.LogWrite(" NeedColorCalc " + this.NeedColorCalc + "\n");
+      Log.Combat?.WL(1, "NeedColorCalc " + this.NeedColorCalc);
       this.t = 0.0f;
       this.currentState = WeaponEffect.WeaponEffectState.Firing;
       if ((UnityEngine.Object)this.projectileMeshObject != (UnityEngine.Object)null)
@@ -468,11 +404,7 @@ namespace CustAmmoCategories {
         this.weapon.parent.GameRep.PlayFireAnim((AttackSourceLimb)num, this.weapon.weaponDef.AttackRecoil);
       }
     }
-#if PUBLIC_ASSEMBLIES
-    public override void PlayImpact() {
-#else
     protected override void PlayImpact() {
-#endif
       if (!string.IsNullOrEmpty(this.impactVFXBase)) {
         string str1 = string.Empty;
         if (this.impactVFXVariations != null && this.impactVFXVariations.Length > 0) {
@@ -508,32 +440,16 @@ namespace CustAmmoCategories {
         this.projectileLightObject.SetActive(false);
       this.OnImpact(0.0f);
     }
-#if PUBLIC_ASSEMBLIES
-    public override void PlayTerrainImpactVFX() {
-#else
     protected override void PlayTerrainImpactVFX() {
-#endif
     }
 
-#if PUBLIC_ASSEMBLIES
-    public override void PlayImpactDamageOverlay() {
-#else
     protected override void PlayImpactDamageOverlay() {
-#endif
     }
 
-#if PUBLIC_ASSEMBLIES
-    public override void PlayImpactAudio() {
-#else
     protected override void PlayImpactAudio() {
-#endif
     }
 
-#if PUBLIC_ASSEMBLIES
-    public override void DestroyFlimsyObjects() {
-#else
     protected override void DestroyFlimsyObjects() {
-#endif
       /*if (!this.shotsDestroyFlimsyObjects)
         return;
       foreach (Collider collider in Physics.OverlapSphere(this.endPos, 15f, -5, QueryTriggerInteraction.Ignore)) {
@@ -547,11 +463,7 @@ namespace CustAmmoCategories {
       }*/
     }
 
-#if PUBLIC_ASSEMBLIES
-    public override void Update() {
-#else
     protected override void Update() {
-#endif
       if (this.currentState == WeaponEffect.WeaponEffectState.PreFiring) {
         if ((double)this.t <= 1.0)
           this.t += this.preFireRate * this.Combat.StackManager.GetProgressiveAttackDeltaTime(this.t);
@@ -568,31 +480,15 @@ namespace CustAmmoCategories {
       this.PublishNextWeaponMessageCAC();
     }
 
-#if PUBLIC_ASSEMBLIES
-    public override void LateUpdate() {
-#else
     protected override void LateUpdate() {
-#endif
     }
 
-#if PUBLIC_ASSEMBLIES
-    public override void OnPreFireComplete() {
-#else
     protected override void OnPreFireComplete() {
-#endif
     }
 
-#if PUBLIC_ASSEMBLIES
-    public override void OnImpact(float hitDamage = 0.0f, float structureDamage = 0.0f) {
-#else
     protected override void OnImpact(float hitDamage = 0.0f, float structureDamage = 0.0f) {
-#endif
     }
-#if PUBLIC_ASSEMBLIES
-    public override void OnComplete() {
-#else
     protected override void OnComplete() {
-#endif
       if (this.currentState == WeaponEffect.WeaponEffectState.Complete) { return; }
       this.StopAudio();
       this.currentState = WeaponEffect.WeaponEffectState.Complete;
@@ -607,7 +503,7 @@ namespace CustAmmoCategories {
     }
     protected void PublishNextWeaponMessageCAC() {
       this.attackSequenceNextDelayTimer = -1f;
-      this.hasSentNextWeaponMessage = true;
+      this.hasSentNextWeaponMessage(true);
     }
     public void PublishWeaponCompleteMessageCAC() {
       this.FiringComplete = true;
@@ -642,7 +538,7 @@ namespace CustAmmoCategories {
     public override void Reset() {
       this.currentState = WeaponEffect.WeaponEffectState.NotStarted;
       this.StopAudio();
-      this.hasSentNextWeaponMessage = false;
+      this.hasSentNextWeaponMessage(false);
       if (this.projectileMeshObject != null) {
         this.projectileMeshObject.SetActive(false);
       }

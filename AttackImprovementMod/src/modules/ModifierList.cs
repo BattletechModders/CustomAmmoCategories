@@ -15,41 +15,6 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
   public class ModifierList : BattleModModule {
 
     public override void CombatStartsOnce() {
-      //if (HasMod("io.github.guetler.CBTMovement")) // Don't log to BTML unless we're sure CBTMovement is nonzero
-        //Warn("CBTMovement detected.  Both jump modifier will apply; please make sure either is zero. (AIM modfiier is factored in preview; CBT Movement does not.)");
-
-      /*if (Settings.RangedAccuracyFactors != null || Settings.MeleeAccuracyFactors != null || Settings.SmartIndirectFire)
-        Patch(typeof(ToHit), "GetToHitChance", "RecordAttackPosition", null);
-
-      if (Settings.RangedAccuracyFactors != null) {
-        InitRangedModifiers(Settings.RangedAccuracyFactors.Split(','));
-        if (HasRangedModifier()) {
-          Patch(typeof(ToHit), "GetAllModifiers", new Type[] { typeof(AbstractActor), typeof(Weapon), typeof(ICombatant), typeof(Vector3), typeof(Vector3), typeof(LineOfFireLevel), typeof(bool) }, "OverrideRangedModifiers", null);
-          Patch(typeof(CombatHUDWeaponSlot), "UpdateToolTipsFiring", typeof(ICombatant), "OverrideRangedToolTips", null);
-        }
-      }
-      if (HasRangedModifier() || Settings.SmartIndirectFire) {
-        Patch(typeof(ToHit), "GetAllModifiers", new Type[] { typeof(AbstractActor), typeof(Weapon), typeof(ICombatant), typeof(Vector3), typeof(Vector3), typeof(LineOfFireLevel), typeof(bool) }, "SaveRangedModifierState", null);
-        Patch(typeof(CombatHUDWeaponSlot), "UpdateToolTipsFiring", typeof(ICombatant), "SaveRangedToolTipState", null);
-      }
-      if (Settings.MeleeAccuracyFactors != null) {
-        InitMeleeModifiers(Settings.MeleeAccuracyFactors.Split(','));
-        if (HasMeleeModifier()) {
-          contemplatingDFA = typeof(CombatHUDWeaponSlot).GetMethod("contemplatingDFA", NonPublic | Instance);
-          if (contemplatingDFA == null) Warn("CombatHUDWeaponSlot.contemplatingDFA not found, DFA will be regarded as normal melee.");
-          Patch(typeof(ToHit), "GetAllMeleeModifiers", new Type[] { typeof(Mech), typeof(ICombatant), typeof(Vector3), typeof(MeleeAttackType) }, "OverrideMeleeModifiers", null);
-          Patch(typeof(CombatHUDWeaponSlot), "UpdateToolTipsMelee", typeof(ICombatant), "OverrideMeleeToolTips", null);
-        }
-      }
-      if (Settings.ReverseInCombatModifier) {
-        if (!HasRangedModifier()) {
-          Patch(typeof(CombatHUDWeaponSlot), "UpdateToolTipsFiring", null, "ReverseModifiersSign");
-          Patch(typeof(CombatHUDWeaponSlot), "UpdateToolTipsSelf", null, "ReverseModifiersSign");
-        }
-        if (!HasMeleeModifier())
-          Patch(typeof(CombatHUDWeaponSlot), "UpdateToolTipsMelee", null, "ReverseModifiersSign");
-        Patch(typeof(CombatHUDToolTipGeneric), "SetNewToolTipHovering", null, "ReverseNetModifierColour");
-      }*/
     }
 
     private static float HalfMaxMeleeVerticalOffset = 4f;

@@ -49,13 +49,13 @@ namespace CustAmmoCategories {
       BlockWeaponsHelpers.RecalculateBlocked(weapon.parent);
     }
     public static void EjectWeapon(Weapon weapon, CombatHUDWeaponSlot hudSlot) {
-      CustomAmmoCategoriesLog.Log.LogWrite("EjectWeapon " + weapon.defId + "\n");
+      Log.Combat?.WL(0,"EjectWeapon " + weapon.defId);
       if (weapon.IsFunctional == false) { return; }
-      CustomAmmoCategoriesLog.Log.LogWrite(" HasActivatedThisRound " + weapon.parent.HasActivatedThisRound + "\n");
-      CustomAmmoCategoriesLog.Log.LogWrite(" HasFiredThisRound " + weapon.parent.HasFiredThisRound + "\n");
-      CustomAmmoCategoriesLog.Log.LogWrite(" HasMovedThisRound " + weapon.parent.HasMovedThisRound + "\n");
+      Log.Combat?.WL(1, "HasActivatedThisRound " + weapon.parent.HasActivatedThisRound);
+      Log.Combat?.WL(1, "HasFiredThisRound " + weapon.parent.HasFiredThisRound);
+      Log.Combat?.WL(1, "HasMovedThisRound " + weapon.parent.HasMovedThisRound);
       if (weapon.parent.HasFiredThisRound || weapon.parent.HasMovedThisRound) {
-        CustomAmmoCategoriesLog.Log.LogWrite(" moved or fired this round " + weapon.parent.DistMovedThisRound + "\n");
+        Log.Combat?.WL(1, "moved or fired this round " + weapon.parent.DistMovedThisRound);
         GenericPopupBuilder popup = GenericPopupBuilder.Create("__/CAC.AMMOEJECTIONERROR/__", "You can't drop weapon after moving or firing this round");
         popup.AddButton("OK", (Action)null, true, (PlayerAction)null);
         popup.IsNestedPopupWithBuiltInFader().CancelOnEscape().Render();
@@ -66,15 +66,11 @@ namespace CustAmmoCategories {
       weapon.CancelCreatedEffects();
       CustomAmmoCategories.ActorsEjectedAmmo[weapon.parent.GUID] = true;
       weapon.parent.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(new ShowActorInfoSequence(weapon.parent, new Text("WEAPON DROPPED"), FloatieMessage.MessageNature.Buff, false)));
-      CombatHUD HUD = (CombatHUD)typeof(CombatHUDWeaponSlot).GetField("HUD", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(hudSlot);
-      if ((HUD.MechWarriorTray.SprintButton.IsActive) || (HUD.MechWarriorTray.JumpButton.IsActive)) {
-        //weapon.parent.isAmmoEjecting(true);
-        typeof(CombatHUDActionButton).GetMethod("ExecuteClick", BindingFlags.Instance | BindingFlags.NonPublic).Invoke(HUD.MechWarriorTray.MoveButton, new object[0] { });
-        //HUD.MechWarriorTray.MoveButton.ExecuteClick();
-        //weapon.parent.isAmmoEjecting(false);
+      if ((hudSlot.HUD.MechWarriorTray.SprintButton.IsActive) || (hudSlot.HUD.MechWarriorTray.JumpButton.IsActive)) {
+        hudSlot.HUD.MechWarriorTray.MoveButton.ExecuteClick();
       }
-      HUD.MechWarriorTray.SprintButton.DisableButton();
-      HUD.MechWarriorTray.JumpButton.DisableButton();
+      hudSlot.HUD.MechWarriorTray.SprintButton.DisableButton();
+      hudSlot.HUD.MechWarriorTray.JumpButton.DisableButton();
       if (weapon.parent.StatCollection.ContainsStatistic(CustomAmmoCategories.EjectedThisRoundStatName) == false) {
         weapon.parent.StatCollection.AddStatistic<bool>(CustomAmmoCategories.EjectedThisRoundStatName, true);
       } else {
@@ -83,30 +79,30 @@ namespace CustAmmoCategories {
       BlockWeaponsHelpers.RecalculateBlocked(weapon.parent);
     }
     public static void EjectAmmo(Weapon weapon, CombatHUDWeaponSlot hudSlot) {
-      CustomAmmoCategoriesLog.Log.LogWrite("EjectAmmo "+weapon.defId+"\n");
+      Log.Combat?.WL(0, "EjectAmmo " + weapon.defId);
       string ammoId = "";
       if (weapon.StatCollection.ContainsStatistic(CustomAmmoCategories.AmmoIdStatName) == false) {
-        CustomAmmoCategoriesLog.Log.LogWrite(" no "+ CustomAmmoCategories.AmmoIdStatName + " in stat collection\n");
+        Log.Combat?.WL(1, "no " + CustomAmmoCategories.AmmoIdStatName + " in stat collection");
         return;
       }
       ammoId = weapon.StatCollection.GetStatistic(CustomAmmoCategories.AmmoIdStatName).Value<string>();
       ExtAmmunitionDef extAmmo = CustomAmmoCategories.findExtAmmo(ammoId);
       if (extAmmo.AmmoCategory.Index == CustomAmmoCategories.NotSetCustomAmmoCategoty.Index) {
-        CustomAmmoCategoriesLog.Log.LogWrite(" has no ammo in stat collection\n");
+        Log.Combat?.WL(1, "has no ammo in stat collection");
         GenericPopupBuilder popup = GenericPopupBuilder.Create("__/CAC.AMMOEJECTIONERROR/__", "__/CAC.AMMOEJECTIONERRORNOAMMO/__");
         popup.AddButton("OK", (Action)null, true, (PlayerAction)null);
         popup.IsNestedPopupWithBuiltInFader().CancelOnEscape().Render();
         return;
       }
       if (weapon.parent == null) {
-        CustomAmmoCategoriesLog.Log.LogWrite(" no parent\n");
+        Log.Combat?.WL(1, "no parent");
         return;
       }
-      CustomAmmoCategoriesLog.Log.LogWrite(" HasActivatedThisRound " + weapon.parent.HasActivatedThisRound + "\n");
-      CustomAmmoCategoriesLog.Log.LogWrite(" HasFiredThisRound " + weapon.parent.HasFiredThisRound + "\n");
-      CustomAmmoCategoriesLog.Log.LogWrite(" HasMovedThisRound " + weapon.parent.HasMovedThisRound + "\n");
+      Log.Combat?.WL(1, "HasActivatedThisRound " + weapon.parent.HasActivatedThisRound);
+      Log.Combat?.WL(1, "HasFiredThisRound " + weapon.parent.HasFiredThisRound);
+      Log.Combat?.WL(1, "HasMovedThisRound " + weapon.parent.HasMovedThisRound);
       if (weapon.parent.HasFiredThisRound || weapon.parent.HasMovedThisRound) {
-        CustomAmmoCategoriesLog.Log.LogWrite(" moved or fired this round "+ weapon.parent.DistMovedThisRound + "\n");
+        Log.Combat?.WL(1, "moved or fired this round " + weapon.parent.DistMovedThisRound);
         GenericPopupBuilder popup = GenericPopupBuilder.Create("__/CAC.AMMOEJECTIONERROR/__", "You can't eject ammo after moving or firing this round");
         popup.AddButton("OK", (Action)null, true, (PlayerAction)null);
         popup.IsNestedPopupWithBuiltInFader().CancelOnEscape().Render();
@@ -114,13 +110,13 @@ namespace CustAmmoCategories {
       }
       int ejectedCount = 0;
       string AmmoUIName = "";
-      CustomAmmoCategoriesLog.Log.LogWrite(" ejecting\n");
+      Log.Combat?.WL(1, "ejecting");
       foreach (AmmunitionBox box in weapon.ammoBoxes) {
         if (box.ammoDef.Description.Id == ammoId) {
           ejectedCount = box.CurrentAmmo;
           box.StatCollection.Set<int>("CurrentAmmo",0);
           AmmoUIName = extAmmo.AmmoCategory.Id+"(" +box.ammoDef.Description.UIName+")";
-          CustomAmmoCategoriesLog.Log.LogWrite(" add to exposion check "+box.defId+"\n");
+          Log.Combat?.WL(1, "add to exposion check " + box.defId);
           CustomAmmoCategories.AddToExposionCheck(box);
         }
       }
@@ -129,10 +125,7 @@ namespace CustAmmoCategories {
         weapon.parent.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(new ShowActorInfoSequence(weapon.parent,new Text("__/CAC.AMMOJETTISONED/__", AmmoUIName), FloatieMessage.MessageNature.Buff, false)));
         CombatHUD HUD = (CombatHUD)typeof(CombatHUDWeaponSlot).GetField("HUD", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(hudSlot);
         if ((HUD.MechWarriorTray.SprintButton.IsActive) || (HUD.MechWarriorTray.JumpButton.IsActive)) {
-          //weapon.parent.isAmmoEjecting(true);
-          typeof(CombatHUDActionButton).GetMethod("ExecuteClick", BindingFlags.Instance | BindingFlags.NonPublic).Invoke(HUD.MechWarriorTray.MoveButton, new object[0] { });
-          //HUD.MechWarriorTray.MoveButton.ExecuteClick();
-          //weapon.parent.isAmmoEjecting(false);
+          hudSlot.HUD.MechWarriorTray.MoveButton.ExecuteClick();
         }
         HUD.MechWarriorTray.SprintButton.DisableButton();
         HUD.MechWarriorTray.JumpButton.DisableButton();
@@ -191,20 +184,21 @@ namespace CustAmmoCategoriesPatches {
     public static void Prefix(CombatHUD __instance) {
       try {
         if (CustomAmmoCategories.Settings.RestoreEjectedWeapons == false) { return; }
-        Log.M?.TWL(0,$"Restoring ejected weapons");
+        Log.Combat?.TWL(0,$"Restoring ejected weapons");
         foreach(var unit in __instance.Combat.AllActors) {
-          Log.M?.WL(1, $"{unit.PilotableActorDef.ChassisID}:{unit.PilotableActorDef.GUID}");
+          Log.Combat?.WL(1, $"{unit.PilotableActorDef.ChassisID}:{unit.PilotableActorDef.GUID}");
           foreach (var weapon in unit.Weapons) {
             var stat = weapon.StatCollection.GetStatistic(CustomAmmoCategories.EjectingRestoreStatName);
             if (stat == null) { continue; }
-            Log.M?.WL(2, $"{weapon.defId}:{weapon.DamageLevel}->{stat.Value<ComponentDamageLevel>()}");
+            Log.Combat?.WL(2, $"{weapon.defId}:{weapon.DamageLevel}->{stat.Value<ComponentDamageLevel>()}");
             if (stat.Value<ComponentDamageLevel>() != weapon.DamageLevel) {
               weapon.StatCollection.Set<ComponentDamageLevel>("DamageLevel", stat.Value<ComponentDamageLevel>());
             }
           }
         }
       }catch(Exception e) {
-        Log.M?.TWL(0,e.ToString(),true);
+        Log.Combat?.TWL(0,e.ToString(),true);
+        CombatHUD.uiLogger.LogException(e);
       }
     }
   }

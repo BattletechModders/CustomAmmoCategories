@@ -1,7 +1,9 @@
 ﻿using BattleTech;
 using BattleTech.Rendering;
+using CustomAmmoCategoriesHelper;
 using CustomAmmoCategoriesLog;
 using CustomVoices;
+using HarmonyLib;
 using System;
 using System.Collections.Generic;
 using System.Reflection;
@@ -20,28 +22,16 @@ namespace CustAmmoCategories {
     public abstract bool isFireAnimCompleete(int index);
   }
   public static class HardpointAnimatorHelper {
-    //private static Dictionary<Weapon, BaseHardPointAnimationController> HardpointsAnimators = new Dictionary<Weapon, BaseHardPointAnimationController>();
-    //public static void RegisterHardpointAnimator(this Weapon weapon, BaseHardPointAnimationController anim) {
-    //  Log.M.TWL(0, $"HardpointAnimatorHelper.RegisterHardpointAnimator:{weapon.defId} anim:{((anim == null) ? "null" : "not null")}");
-
-    //  //if (HardpointsAnimators.ContainsKey(weapon) == false) { HardpointsAnimators.Add(weapon, anim); } else { HardpointsAnimators[weapon] = anim; };
-    //}
     public static BaseHardPointAnimationController HardpointAnimator(this Weapon weapon) {
-      //if (HardpointsAnimators.ContainsKey(weapon) == false) { return null; }
-      //return HardpointsAnimators[weapon];
       if (weapon.weaponRep == null) { return null; }
       BaseHardPointAnimationController result = weapon.weaponRep.gameObject.GetComponent<BaseHardPointAnimationController>();
       return result;
     }
-    //public static void Clear() {
-    //  HardpointsAnimators.Clear();
-    //}
   }
   public class MuiltShotAnimatedEffect : CopyAbleWeaponEffect {
     private BaseHardPointAnimationController baseHardpointAnimator;
     protected int shotIndex;
     private int animationIndex;
-
     public override void Fire(WeaponHitInfo hitInfo, int hitIndex, int emitterIndex) {
       shotIndex = 0;
       animationIndex = 0;
@@ -51,7 +41,7 @@ namespace CustAmmoCategories {
           baseHardpointAnimator.PrefireAnimationSpeed(weapon.PrefireAnimationSpeedMod());
           baseHardpointAnimator.FireAnimationSpeed(weapon.FireAnimationSpeedMod());
         }
-        Log.LogWrite("baseHardpointAnimator: " + ((baseHardpointAnimator == null) ? "null" : "not null") + "\n");
+        Log.Combat?.WL(0,$"baseHardpointAnimator: {((baseHardpointAnimator == null) ? "null" : "not null")}");
       }
       if (this.baseHardpointAnimator != null) { this.baseHardpointAnimator.PrefireAnimation(hitInfo.hitPositions[hitIndex], false); }
       base.Fire(hitInfo, hitIndex, emitterIndex);
@@ -66,11 +56,7 @@ namespace CustAmmoCategories {
       }
       if (callbase) { base.PlayProjectile(); }
     }
-#if PUBLIC_ASSEMBLIES
-    public override void Update() {
-#else
     protected override void Update() {
-#endif
       if (this.currentState == WeaponEffectState.PreFiring) {
         if (baseHardpointAnimator != null) {
           if (baseHardpointAnimator.isPrefireAnimCompleete() == false) { return; }
@@ -106,37 +92,36 @@ namespace CustAmmoCategories {
       go.ScaleEffect(scale);
     }
     public static void ScaleEffect(this GameObject go, CustomVector scale) {
-      //CustomVector scale = effect.weapon.ProjectileScale();
       if (scale.set && (go != null)) {
-        Log.LogWrite("ImprovedWeaponEffect.ScaleWeaponEffect " + go.name + " -> " + scale + "\n");
+        //Log.Combat?.WL(0,$"ImprovedWeaponEffect.ScaleWeaponEffect {go.name} -> {scale}");
         ParticleSystem[] psyss = go.GetComponentsInChildren<ParticleSystem>();
         foreach (ParticleSystem psys in psyss) {
           psys.RegisterRestoreScale();
           var main = psys.main;
           main.scalingMode = ParticleSystemScalingMode.Hierarchy;
-          Log.LogWrite(" " + psys.name + ":" + psys.main.scalingMode + "\n");
+          //Log.Combat?.WL(1,$"{psys.name}:{psys.main.scalingMode}");
         }
         ParticleSystemRenderer[] renderers = go.GetComponentsInChildren<ParticleSystemRenderer>();
         foreach (ParticleSystemRenderer renderer in renderers) {
-          Log.LogWrite(" " + renderer.name + ": materials\n");
+          //Log.Combat?.WL(1, $"{renderer.name}: materials");
           foreach (Material material in renderer.materials) {
-            Log.LogWrite("  " + material.name + ": " + material.shader + "\n");
+            //Log.Combat?.WL(2, $"{material.name}: {material.shader}");
           }
         }
         go.RegisterRestoreScale();
         go.transform.localScale = scale.vector;
         Component[] components = go.GetComponentsInChildren<Component>();
         foreach (Component component in components) {
-          Log.LogWrite(" " + component.name + ":" + component.GetType().ToString() + "\n");
+          //Log.Combat?.WL(1, $"{component.name}:{component.GetType().ToString()}");
         }
         TrailRenderer[] trails = go.GetComponentsInChildren<TrailRenderer>();
         foreach (TrailRenderer trail in trails) {
           trail.RegisterRestoreScale();
           trail.widthMultiplier = scale.x;
           trail.time *= scale.y;
-          Log.LogWrite(" " + trail.name + ": materials\n");
+          //Log.Combat?.WL(1, $"{trail.name}: materials");
           foreach (Material material in trail.materials) {
-            Log.LogWrite("  " + material.name + ": " + material.shader + "\n");
+            //Log.Combat?.WL(2, $"{material.name}: {material.shader}");
           }
         }
       }
@@ -168,12 +153,12 @@ namespace CustAmmoCategories {
       };
     }
     public static void RestoreScaleColor(this GameObject go) {
-      Log.LogWrite("RestoreScaleColor " + go.name + "\n");
+      //Log.Combat?.WL(0, "RestoreScaleColor {go.name}");
       try {
         int id = go.GetInstanceID();
         if (restoreScale.ContainsKey(id)) {
           go.transform.localScale = restoreScale[id];
-          Log.LogWrite(" " + go.name + " restoring scale " + go.transform.localScale + "\n");
+          //Log.Combat?.WL(1,$"{go.name} restoring scale {go.transform.localScale}");
           restoreScale.Remove(id);
         }
         ParticleSystem[] pss = go.GetComponentsInChildren<ParticleSystem>();
@@ -182,7 +167,7 @@ namespace CustAmmoCategories {
           if (restoreParticleScale.ContainsKey(id)) {
             var main = ps.main;
             main.scalingMode = restoreParticleScale[id];
-            Log.LogWrite(" " + ps.name + " restoring scale mode " + main.scalingMode + "\n");
+            //Log.Combat?.WL(1, $"{ps.name} restoring scale mode {main.scalingMode}");
             restoreParticleScale.Remove(id);
           }
         }
@@ -193,7 +178,7 @@ namespace CustAmmoCategories {
             Vector3 scale = restoreTrailScale[id];
             trail.widthMultiplier = scale.x;
             trail.time = scale.z;
-            Log.LogWrite(" " + trail.name + " restoring scale " + scale + "\n");
+            //Log.Combat?.WL(1, $"{trail.name} restoring scale {scale}");
             restoreTrailScale.Remove(id);
           }
         }
@@ -204,17 +189,19 @@ namespace CustAmmoCategories {
             if (restoreMaterialColor.ContainsKey(id)) {
               Color color = restoreMaterialColor[id];
               material.SetColor("_ColorBB", restoreMaterialColor[id]);
-              Log.LogWrite(" " + material.name + " restoring color " + color + "\n");
+              //Log.Combat?.WL(1, $"{material.name} restoring color {color}");
               restoreMaterialColor.Remove(id);
             }
           }
         }
-      } catch (Exception e) { Log.LogWrite(e.ToString() + "\n", true); }
+      } catch (Exception e) {
+        Log.Combat?.TWL(0,e.ToString(), true);
+        CustomAmmoCategories.AttackSequence_logger.LogException(e);
+      }
     }
   }
   public abstract class CopyAbleWeaponEffect : WeaponEffect {
     public enum PlaySFXType { None, First, Middle, Last };
-    private static FieldInfo fi_hasSentNextWeaponMessage = null;
     protected bool NeedColorCalc;
     public Color CurrentColor;
     public Color NextColor;
@@ -228,36 +215,27 @@ namespace CustAmmoCategories {
     public AudioObject customProjectileAudioObject = null;
     private bool audioStopped { get; set; } = true;
     public PlaySFXType playSFX { get; set; } = PlaySFXType.None;
-
-    //public string longPreFireSFX { get; set; } = null;
-
     public string firstPreFireSFX { get; set; } = null;
     public string middlePrefireSFX { get; set; } = null;
     public string lastPreFireSFX { get; set; } = null;
     public string firstFireSFX { get; set; } = null;
     public string middlefireSFX { get; set; } = null;
     public string lastFireSFX { get; set; } = null;
-
     public string customPrefireSFX { get; set; } = null;
     public string fireSFX { get; set; } = null;
-
     public string projectilePrefireSFX { get; set; } = null;
     public string projectileFireSFX { get; set; } = null;
     public string projectileStopSFX { get; set; } = null;
     public string firingStartSFX { get; set; } = null;
     public string firingStopSFX { get; set; } = null;
-
     public float originalPrefireDuration { get; set; } = 0f;
     public float originalProjectileSpeed { get; set; } = 0f;
     public float shotDelay { get; set; } = 0f;
-
     public string preFireStartSFX { get; set; } = null;
     public string preFireStopSFX { get; set; } = null;
     public string customPulseSFX { get; set; } = null;
     public float customPulseSFXdelay { get; set; } = 0f;
-
     protected float pulseTime;
-
     public Color getNextColor() {
       Color result = Color.white;
       switch (colorChangeRule) {
@@ -272,73 +250,73 @@ namespace CustAmmoCategories {
       base.Fire(hitInfo, hitIndex, emitterIndex);
     }
     public void Init(WeaponEffect original) {
-      Log.M.TWL(0, "CopyAbleWeaponEffect.Init "+this.GetType().ToString()+" original:"+original.GetType().ToString());
-      this.impactVFXBase = original.impactVFXBase;
-      this.preFireSFX = original.preFireSFX;
-      this.Combat = (CombatGameState)typeof(WeaponEffect).GetField("Combat", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(original);
-      this.hitInfo = original.hitInfo;
-      this.hitIndex = original.HitIndex();
-      this.emitterIndex = (int)typeof(WeaponEffect).GetField("emitterIndex", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(original);
-      this.numberOfEmitters = (int)typeof(WeaponEffect).GetField("numberOfEmitters", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(original);
-      this.subEffect = original.subEffect;
-      this.currentState = original.currentState;
-      this.weaponRep = original.weaponRep;
-      this.weapon = original.weapon;
-      this.parentAudioObject = (AkGameObj)typeof(WeaponEffect).GetField("parentAudioObject", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(original);
-      this.startingTransform = (Transform)typeof(WeaponEffect).GetField("startingTransform", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(original);
-      this.startPos = (Vector3)typeof(WeaponEffect).GetField("startPos", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(original);
-      this.endPos = (Vector3)typeof(WeaponEffect).GetField("endPos", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(original);
-      this.currentPos = (Vector3)typeof(WeaponEffect).GetField("currentPos", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(original);
-      this.t = (float)typeof(WeaponEffect).GetField("t", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(original);
-      this.attackSequenceNextDelayMin = original.attackSequenceNextDelayMin;
-      this.attackSequenceNextDelayMax = original.attackSequenceNextDelayMax;
-      this.attackSequenceNextDelayTimer = (float)typeof(WeaponEffect).GetField("attackSequenceNextDelayTimer", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(original);
-      if (fi_hasSentNextWeaponMessage == null) { fi_hasSentNextWeaponMessage = typeof(WeaponEffect).GetField("hasSentNextWeaponMessage", BindingFlags.Instance | BindingFlags.NonPublic); }
-      if (fi_hasSentNextWeaponMessage != null) {
-        this.hasSentNextWeaponMessage = (bool)fi_hasSentNextWeaponMessage.GetValue(original);
-      } else {
-        CustomAmmoCategoriesLog.Log.LogWrite("WARNING! Can't get WeaponEffect.hasSentNextWeaponMessage\n");
-      }
-      this.preFireDuration = original.preFireDuration;
-      this.originalPrefireDuration = original.preFireDuration;
-      this.preFireRate = (float)typeof(WeaponEffect).GetField("preFireRate", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(original);
-      this.duration = (float)typeof(WeaponEffect).GetField("duration", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(original);
-      this.rate = (float)typeof(WeaponEffect).GetField("rate", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(original);
-      this.projectileSpeed = original.projectileSpeed;
-      this.originalProjectileSpeed = this.projectileSpeed;
-      this.weaponImpactType = original.weaponImpactType;
-      this.preFireVFXPrefab = original.preFireVFXPrefab;
-      this.muzzleFlashVFXPrefab = original.muzzleFlashVFXPrefab;
-      this.projectilePrefab = original.projectilePrefab;
-      this.projectile = original.projectile;
-      this.activeProjectileName = (string)typeof(WeaponEffect).GetField("activeProjectileName", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(original);
-      this.projectileTransform = (Transform)typeof(WeaponEffect).GetField("projectileTransform", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(original);
-      this.projectileParticles = (ParticleSystem)typeof(WeaponEffect).GetField("projectileParticles", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(original);
-      this.projectileAudioObject = (AkGameObj)typeof(WeaponEffect).GetField("projectileAudioObject", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(original);
-      this.projectileMeshObject = (GameObject)typeof(WeaponEffect).GetField("projectileMeshObject", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(original);
-      this.projectileLightObject = (GameObject)typeof(WeaponEffect).GetField("projectileLightObject", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(original);
-      Log.M.WL(1, "projectile:"+(projectile==null?"null":projectile.name));
-      Log.M.WL(1, "projectilePrefab:" + (projectilePrefab == null ? "null" : projectilePrefab.name));
-      Log.M.WL(1, "activeProjectileName:" + activeProjectileName);
-      if (projectilePrefab != null) {
-        if (string.IsNullOrEmpty(this.activeProjectileName)) {
-          this.activeProjectileName = projectilePrefab.name;
+      Log.Combat?.TWL(0, $"CopyAbleWeaponEffect.Init {this.GetType().ToString()} original:{original.GetType().ToString()}");
+      try {
+        this.impactVFXBase = original.impactVFXBase;
+        this.preFireSFX = original.preFireSFX;
+        this.Combat = original.Combat();
+        this.hitInfo = original.hitInfo;
+        this.hitIndex = original.hitIndex;
+        this.emitterIndex = original.emitterIndex();
+        this.numberOfEmitters = original.numberOfEmitters();
+        this.subEffect = original.subEffect;
+        this.currentState = original.currentState;
+        this.weaponRep = original.weaponRep;
+        this.weapon = original.weapon;
+        this.parentAudioObject = original.parentAudioObject();
+        this.startingTransform = original.startingTransform();
+        this.startPos = original.startPos();
+        this.endPos = original.endPos();
+        this.currentPos = original.currentPos();
+        this.t = original.t();
+        this.attackSequenceNextDelayMin = original.attackSequenceNextDelayMin;
+        this.attackSequenceNextDelayMax = original.attackSequenceNextDelayMax;
+        this.attackSequenceNextDelayTimer = original.attackSequenceNextDelayTimer();
+        this.hasSentNextWeaponMessage(original.hasSentNextWeaponMessage());
+        this.preFireDuration = original.preFireDuration;
+        this.originalPrefireDuration = original.preFireDuration;
+        this.preFireRate = original.preFireRate();
+        this.duration = original.duration();
+        this.rate = original.rate();
+        this.projectileSpeed = original.projectileSpeed;
+        this.originalProjectileSpeed = this.projectileSpeed;
+        this.weaponImpactType = original.weaponImpactType;
+        this.preFireVFXPrefab = original.preFireVFXPrefab;
+        this.muzzleFlashVFXPrefab = original.muzzleFlashVFXPrefab;
+        this.projectilePrefab = original.projectilePrefab;
+        this.projectile = original.projectile;
+        this.activeProjectileName = original.activeProjectileName();
+        this.projectileTransform = original.projectileTransform();
+        this.projectileParticles = original.projectileParticles();
+        this.projectileAudioObject = original.projectileAudioObject();
+        this.projectileMeshObject = original.projectileMeshObject();
+        this.projectileLightObject = original.projectileLightObject();
+        Log.Combat?.WL(1, $"projectile:{(projectile == null ? "null" : projectile.name)}");
+        Log.Combat?.WL(1, $"projectilePrefab:{(projectilePrefab == null ? "null" : projectilePrefab.name)}");
+        Log.Combat?.WL(1, $"activeProjectileName:{activeProjectileName}");
+        if (projectilePrefab != null) {
+          if (string.IsNullOrEmpty(this.activeProjectileName)) {
+            this.activeProjectileName = projectilePrefab.name;
+          }
         }
+        this.impactVFXVariations = original.impactVFXVariations;
+        this.armorDamageVFXName = original.armorDamageVFXName;
+        this.structureDamageVFXName = original.structureDamageVFXName;
+        this.shotsDestroyFlimsyObjects = original.shotsDestroyFlimsyObjects;
+        this.FiringComplete = original.FiringComplete;
+        this.AllowMissSkipping = original.AllowMissSkipping;
+        this.NeedColorCalc = false;
+        this.CurrentColor = Color.white;
+        this.NextColor = Color.white;
+        this.colorT = 0f;
+        this.ColorChangeSpeed = 0f;
+        this.ColorIndex = 0;
+        this.colorChangeRule = ColorChangeRule.None;
+        this.colorsTable = new List<ColorTableJsonEntry>();
+      }catch(Exception e) {
+        Log.Combat?.TWL(0,e.ToString(),true);
+        WeaponEffect.logger.LogException(e);
       }
-      this.impactVFXVariations = original.impactVFXVariations;
-      this.armorDamageVFXName = original.armorDamageVFXName;
-      this.structureDamageVFXName = original.structureDamageVFXName;
-      this.shotsDestroyFlimsyObjects = original.shotsDestroyFlimsyObjects;
-      this.FiringComplete = original.FiringComplete;
-      this.AllowMissSkipping = original.AllowMissSkipping;
-      this.NeedColorCalc = false;
-      this.CurrentColor = Color.white;
-      this.NextColor = Color.white;
-      this.colorT = 0f;
-      this.ColorChangeSpeed = 0f;
-      this.ColorIndex = 0;
-      this.colorChangeRule = ColorChangeRule.None;
-      this.colorsTable = new List<ColorTableJsonEntry>();
     }
     public override void Init(Weapon weapon) {
       base.Init(weapon);
@@ -367,106 +345,82 @@ namespace CustAmmoCategories {
           this.NextColor = this.getNextColor();
         }
         Color effectiveColor = Color.Lerp(this.CurrentColor, this.NextColor, this.colorT);
-        //Log.LogWrite("MultiShotBeamEffect.Update effectiveColor:" + effectiveColor + "\n");
         this.SetColor(effectiveColor);
         this.colorT += this.rate * this.Combat.StackManager.GetProgressiveAttackDeltaTime(this.colorT) * this.ColorChangeSpeed;
       }
     }
-#if PUBLIC_ASSEMBLIES
-    public override void PlayProjectile() {
-#else
     protected override void PlayProjectile() {
-#endif
-      Log.M?.TWL(0,$"{this.GetType().Name}.PlayProjectile customPulseSFX:{this.customPulseSFX} pulseDelay:{this.customPulseSFXdelay}");
-      Log.M?.WL(1, $"playSFX:{this.playSFX} fireSFX:{this.fireSFX}");
-      this.ColorChangeSpeed = this.weapon.ColorSpeedChange();
-      this.colorsTable = this.weapon.ColorsTable();
-      this.colorChangeRule = this.weapon.colorChangeRule();
-      this.colorT = 0f;
-      this.ColorIndex = 0;
-      this.StoreOriginalColor();
-      //this.originalColor = this.beamRenderer.material.GetColor("_ColorBB");
-      Log.LogWrite(" ColorChangeSpeed " + this.ColorChangeSpeed + "\n");
-      Log.LogWrite(" colorsTable.Count " + this.colorsTable.Count + "\n");
-      Log.LogWrite(" colorChangeRule " + this.colorChangeRule + "\n");
-      this.NeedColorCalc = (this.ColorChangeSpeed > CustomAmmoCategories.Epsilon);
-      if (this.colorsTable.Count <= 1) { this.NeedColorCalc = false; };
-      if ((this.colorChangeRule != ColorChangeRule.None) && (this.colorsTable.Count > 0)) {
-        if (this.colorsTable.Count == 1) {
-          this.CurrentColor = this.colorsTable[0].Color;
-          this.SetColor(this.CurrentColor);
-          this.NeedColorCalc = false;
-        } else if (this.colorChangeRule == ColorChangeRule.RandomOnce) {
-          this.NeedColorCalc = false;
-          this.CurrentColor = this.getNextColor();
-          this.SetColor(this.CurrentColor);
-        } else if (this.colorChangeRule >= ColorChangeRule.t0) {
-          this.NeedColorCalc = false;
-          this.ColorIndex = ((int)this.colorChangeRule - (int)ColorChangeRule.t0) % this.colorsTable.Count;
-          this.CurrentColor = this.colorsTable[this.ColorIndex].Color;
-          this.SetColor(this.CurrentColor);
-        } else {
-          this.CurrentColor = this.getNextColor();
-          this.NextColor = this.getNextColor();
-          this.SetColor(this.CurrentColor);
-        }
-      } else {
-        this.NeedColorCalc = false;
-      }
-      Log.LogWrite(" NeedColorCalc " + this.NeedColorCalc + "\n");
-      if (string.IsNullOrEmpty(this.customPulseSFX) == false) {
-        if (CustomVoices.AudioEngine.isInAudioManifest(customPulseSFX)) {
-          if (this.customParentAudioObject == null) {
-            this.customParentAudioObject = this.weaponRep.gameObject.GetComponent<AudioObject>();
-            if (this.customParentAudioObject == null) { this.customParentAudioObject = this.weaponRep.gameObject.AddComponent<AudioObject>(); }
+      Log.Combat?.TWL(0,$"{this.GetType().Name}.PlayProjectile customPulseSFX:{this.customPulseSFX} pulseDelay:{this.customPulseSFXdelay}");
+      Log.Combat?.WL(1, $"playSFX:{this.playSFX} fireSFX:{this.fireSFX}");
+      try {
+        this.ColorChangeSpeed = this.weapon.ColorSpeedChange();
+        this.colorsTable = this.weapon.ColorsTable();
+        this.colorChangeRule = this.weapon.colorChangeRule();
+        this.colorT = 0f;
+        this.ColorIndex = 0;
+        this.StoreOriginalColor();
+        Log.Combat?.WL(1, $"ColorChangeSpeed {this.ColorChangeSpeed}");
+        Log.Combat?.WL(1, $"colorsTable.Count {this.colorsTable.Count}");
+        Log.Combat?.WL(1, $"colorChangeRule {this.colorChangeRule}");
+        this.NeedColorCalc = (this.ColorChangeSpeed > CustomAmmoCategories.Epsilon);
+        if (this.colorsTable.Count <= 1) { this.NeedColorCalc = false; };
+        if ((this.colorChangeRule != ColorChangeRule.None) && (this.colorsTable.Count > 0)) {
+          if (this.colorsTable.Count == 1) {
+            this.CurrentColor = this.colorsTable[0].Color;
+            this.SetColor(this.CurrentColor);
+            this.NeedColorCalc = false;
+          } else if (this.colorChangeRule == ColorChangeRule.RandomOnce) {
+            this.NeedColorCalc = false;
+            this.CurrentColor = this.getNextColor();
+            this.SetColor(this.CurrentColor);
+          } else if (this.colorChangeRule >= ColorChangeRule.t0) {
+            this.NeedColorCalc = false;
+            this.ColorIndex = ((int)this.colorChangeRule - (int)ColorChangeRule.t0) % this.colorsTable.Count;
+            this.CurrentColor = this.colorsTable[this.ColorIndex].Color;
+            this.SetColor(this.CurrentColor);
+          } else {
+            this.CurrentColor = this.getNextColor();
+            this.NextColor = this.getNextColor();
+            this.SetColor(this.CurrentColor);
           }
-          this.customParentAudioObject.Play(customPulseSFX, false);
         } else {
-          int num = (int)WwiseManager.PostEvent(customPulseSFX, this.parentAudioObject);
+          this.NeedColorCalc = false;
         }
-      }
-      if (string.IsNullOrEmpty(this.fireSFX) == false) {
-        if (CustomVoices.AudioEngine.isInAudioManifest(this.fireSFX)) {
-          if (this.customParentAudioObject == null) {
-            this.customParentAudioObject = this.weaponRep.gameObject.GetComponent<AudioObject>();
-            if (this.customParentAudioObject == null) { this.customParentAudioObject = this.weaponRep.gameObject.AddComponent<AudioObject>(); }
+        Log.Combat?.WL(1, $"NeedColorCalc {this.NeedColorCalc}");
+        if (string.IsNullOrEmpty(this.customPulseSFX) == false) {
+          if (CustomVoices.AudioEngine.isInAudioManifest(customPulseSFX)) {
+            if (this.customParentAudioObject == null) {
+              this.customParentAudioObject = this.weaponRep.gameObject.GetComponent<AudioObject>();
+              if (this.customParentAudioObject == null) { this.customParentAudioObject = this.weaponRep.gameObject.AddComponent<AudioObject>(); }
+            }
+            this.customParentAudioObject.Play(customPulseSFX, false);
+          } else {
+            int num = (int)WwiseManager.PostEvent(customPulseSFX, this.parentAudioObject);
           }
-          this.customParentAudioObject.Play(this.fireSFX, false);
-        } else {
-          int num = (int)WwiseManager.PostEvent(this.fireSFX, this.parentAudioObject);
         }
-      }
-      if (string.IsNullOrEmpty(this.projectileFireSFX) == false) {
-        if (CustomVoices.AudioEngine.isInAudioManifest(projectileFireSFX)) {
-          this.customProjectileAudioObject?.Play(projectileFireSFX, true);
-        } else {
-          int num = (int)WwiseManager.PostEvent(projectileFireSFX, this.projectileAudioObject);
+        if (string.IsNullOrEmpty(this.fireSFX) == false) {
+          if (CustomVoices.AudioEngine.isInAudioManifest(this.fireSFX)) {
+            if (this.customParentAudioObject == null) {
+              this.customParentAudioObject = this.weaponRep.gameObject.GetComponent<AudioObject>();
+              if (this.customParentAudioObject == null) { this.customParentAudioObject = this.weaponRep.gameObject.AddComponent<AudioObject>(); }
+            }
+            this.customParentAudioObject.Play(this.fireSFX, false);
+          } else {
+            int num = (int)WwiseManager.PostEvent(this.fireSFX, this.parentAudioObject);
+          }
         }
+        if (string.IsNullOrEmpty(this.projectileFireSFX) == false) {
+          if (CustomVoices.AudioEngine.isInAudioManifest(projectileFireSFX)) {
+            this.customProjectileAudioObject?.Play(projectileFireSFX, true);
+          } else {
+            int num = (int)WwiseManager.PostEvent(projectileFireSFX, this.projectileAudioObject);
+          }
+        }
+        base.PlayProjectile();
+      }catch(Exception e) {
+        Log.Combat?.TWL(0,e.ToString(),true);
+        WeaponEffect.logger.LogException(e);
       }
-
-      base.PlayProjectile();
-      //if (this.subEffect == true) {
-      //  if (string.IsNullOrEmpty(this.fireSFX) == false) {
-      //    if (CustomVoices.AudioEngine.isInAudioManifest(fireSFX)) {
-      //      if (this.customAudioObject == null) {
-      //        this.customAudioObject = this.weaponRep.gameObject.GetComponent<AudioObject>();
-      //        if (this.customAudioObject == null) { this.customAudioObject = this.weaponRep.gameObject.AddComponent<AudioObject>(); }
-      //      }
-      //      this.customAudioObject.Play(fireSFX, false);
-      //    } else {
-      //      int num = (int)WwiseManager.PostEvent(fireSFX, this.parentAudioObject);
-      //    }
-      //  }
-      //  if (string.IsNullOrEmpty(this.longFireSFX) == false) {
-      //    if (CustomVoices.AudioEngine.isInAudioManifest(longFireSFX)) {
-      //      if (this.customAudioObject == null) {
-      //        this.customAudioObject = this.weaponRep.gameObject.GetComponent<AudioObject>();
-      //        if (this.customAudioObject == null) { this.customAudioObject = this.weaponRep.gameObject.AddComponent<AudioObject>(); }
-      //      }
-      //      this.customAudioObject.Play(longFireSFX, true);
-      //    }
-      //  }
-      //}
     }
     public override void InitProjectile() {
       //if(this.projectile != null)
@@ -481,7 +435,7 @@ namespace CustAmmoCategories {
       this.ScaleWeaponEffect(this.projectile);
     }
     public virtual void SetupCustomSettings() {
-      if (weapon.prefireDuration() > Core.Epsilon) {
+      if (weapon.prefireDuration() > CustomAmmoCategories.Epsilon) {
         this.preFireDuration = weapon.prefireDuration();
       }
       if (weapon.preFireSFX() != null) {
@@ -492,13 +446,8 @@ namespace CustAmmoCategories {
       this.firstPreFireSFX = weapon.firstPreFireSFX();
       this.middlePrefireSFX = weapon.preFireSFX();
       this.lastPreFireSFX = weapon.lastPreFireSFX();
-      //this.longPreFireSFX = weapon.longPreFireSFX();
     }
-#if PUBLIC_ASSEMBLIES
-    public override void Update() {
-#else
     protected override void Update() {
-#endif
       try {
         base.Update();
         if (this.currentState == WeaponEffectState.Firing) {
@@ -518,7 +467,8 @@ namespace CustAmmoCategories {
           }
         }
       }catch(Exception e) {
-        Log.M.TWL(0, e.ToString());
+        Log.Combat?.TWL(0, e.ToString());
+        WeaponEffect.logger.LogException(e);
       }
     }
     protected override void PlayTerrainImpactVFX() {
@@ -574,7 +524,7 @@ namespace CustAmmoCategories {
         }
         string str2 = string.Format("{0}_{1}", (object)this.terrainHitVFXBase, (object)str1);
         GameObject gameObject = this.weapon.parent.Combat.DataManager.PooledInstantiate(str2, BattleTechResourceType.Prefab, new Vector3?(), new Quaternion?(), (Transform)null);
-        if ((UnityEngine.Object)gameObject == (UnityEngine.Object)null) {
+        if (gameObject == null) {
           WeaponEffect.logger.LogError((object)(this.weapon.Name + " WeaponEffect.PlayTerrainImpactVFX had an invalid VFX name: " + str2));
         } else {
           this.ScaleWeaponEffect(gameObject);
@@ -586,129 +536,124 @@ namespace CustAmmoCategories {
           BTCustomRenderer.SetVFXMultiplier(component);
           component.Play(true);
           AutoPoolObject autoPoolObject = gameObject.GetComponent<AutoPoolObject>();
-          if ((UnityEngine.Object)autoPoolObject == (UnityEngine.Object)null)
+          if (autoPoolObject == null)
             autoPoolObject = gameObject.AddComponent<AutoPoolObject>();
           autoPoolObject.Init(this.weapon.parent.Combat.DataManager, str2, component);
         }
       }catch(Exception e) {
-        Log.M.TWL(0, e.ToString(), true);
+        Log.Combat?.TWL(0, e.ToString(), true);
+        WeaponEffect.logger.LogException(e);
       }
     }
-#if PUBLIC_ASSEMBLIES
-    public override void PlayImpact() {
-#else
     protected override void PlayImpact() {
-#endif
-      if (this.hitInfo.DidShotHitAnything(this.hitIndex) && !string.IsNullOrEmpty(this.impactVFXBase)) {
-        string str1 = string.Empty;
-        AbstractActor actorByGuid = this.Combat.FindActorByGUID(this.hitInfo.ShotTargetId(this.hitIndex));
-        if (actorByGuid != null && this.hitInfo.ShotHitLocation(this.hitIndex) != 65536 && (double)this.weapon.DamagePerShotAdjusted(this.weapon.parent.occupiedDesignMask) > (double)actorByGuid.ArmorForLocation(this.hitInfo.ShotHitLocation(this.hitIndex)))
-          str1 = "_crit";
-        else if (this.impactVFXVariations != null && this.impactVFXVariations.Length > 0)
-          str1 = "_" + this.impactVFXVariations[UnityEngine.Random.Range(0, this.impactVFXVariations.Length)];
-        string str2 = string.Format("{0}{1}", (object)this.impactVFXBase, (object)str1);
-        GameObject gameObject = this.weapon.parent.Combat.DataManager.PooledInstantiate(str2, BattleTechResourceType.Prefab, new Vector3?(), new Quaternion?(), (Transform)null);
-        if (gameObject == null) {
-          Log.LogWrite(this.weapon.Name + " WeaponEffect.PlayImpact had an invalid VFX name: " + str2 + "\n");
-        } else {
-          this.ScaleWeaponEffect(gameObject);
-          ParticleSystem component = gameObject.GetComponent<ParticleSystem>();
-          component.Stop(true);
-          component.Clear(true);
-          component.transform.position = this.endPos;
-          component.transform.LookAt(this.startingTransform.position);
-          BTCustomRenderer.SetVFXMultiplier(component);
-          component.Play(true);
-          BTLightAnimator componentInChildren = gameObject.GetComponentInChildren<BTLightAnimator>(true);
-          if ((UnityEngine.Object)componentInChildren != (UnityEngine.Object)null) {
-            componentInChildren.StopAnimation();
-            componentInChildren.PlayAnimation();
+      try {
+        if (this.hitInfo.DidShotHitAnything(this.hitIndex) && !string.IsNullOrEmpty(this.impactVFXBase)) {
+          string str1 = string.Empty;
+          AbstractActor actorByGuid = this.Combat.FindActorByGUID(this.hitInfo.ShotTargetId(this.hitIndex));
+          if (actorByGuid != null && this.hitInfo.ShotHitLocation(this.hitIndex) != 65536 && (double)this.weapon.DamagePerShotAdjusted(this.weapon.parent.occupiedDesignMask) > (double)actorByGuid.ArmorForLocation(this.hitInfo.ShotHitLocation(this.hitIndex)))
+            str1 = "_crit";
+          else if (this.impactVFXVariations != null && this.impactVFXVariations.Length > 0)
+            str1 = "_" + this.impactVFXVariations[UnityEngine.Random.Range(0, this.impactVFXVariations.Length)];
+          string str2 = string.Format("{0}{1}", (object)this.impactVFXBase, (object)str1);
+          GameObject gameObject = this.weapon.parent.Combat.DataManager.PooledInstantiate(str2, BattleTechResourceType.Prefab, new Vector3?(), new Quaternion?(), (Transform)null);
+          if (gameObject == null) {
+            Log.LogWrite(this.weapon.Name + " WeaponEffect.PlayImpact had an invalid VFX name: " + str2 + "\n");
+          } else {
+            this.ScaleWeaponEffect(gameObject);
+            ParticleSystem component = gameObject.GetComponent<ParticleSystem>();
+            component.Stop(true);
+            component.Clear(true);
+            component.transform.position = this.endPos;
+            component.transform.LookAt(this.startingTransform.position);
+            BTCustomRenderer.SetVFXMultiplier(component);
+            component.Play(true);
+            BTLightAnimator componentInChildren = gameObject.GetComponentInChildren<BTLightAnimator>(true);
+            if ((UnityEngine.Object)componentInChildren != (UnityEngine.Object)null) {
+              componentInChildren.StopAnimation();
+              componentInChildren.PlayAnimation();
+            }
+            AutoPoolObject autoPoolObject = gameObject.GetComponent<AutoPoolObject>();
+            if ((UnityEngine.Object)autoPoolObject == (UnityEngine.Object)null)
+              autoPoolObject = gameObject.AddComponent<AutoPoolObject>();
+            autoPoolObject.Init(this.weapon.parent.Combat.DataManager, str2, component);
           }
-          AutoPoolObject autoPoolObject = gameObject.GetComponent<AutoPoolObject>();
-          if ((UnityEngine.Object)autoPoolObject == (UnityEngine.Object)null)
-            autoPoolObject = gameObject.AddComponent<AutoPoolObject>();
-          autoPoolObject.Init(this.weapon.parent.Combat.DataManager, str2, component);
         }
+        this.PlayImpactDamageOverlay();
+        if (this.projectileMeshObject != null)
+          this.projectileMeshObject.SetActive(false);
+        if (this.projectileLightObject != null)
+          this.projectileLightObject.SetActive(false);
+        this.OnImpact(0.0f);
+      }catch(Exception e) {
+        Log.Combat?.TWL(0,e.ToString(),true);
+        WeaponEffect.logger.LogException(e);
       }
-      this.PlayImpactDamageOverlay();
-      if ((UnityEngine.Object)this.projectileMeshObject != (UnityEngine.Object)null)
-        this.projectileMeshObject.SetActive(false);
-      if ((UnityEngine.Object)this.projectileLightObject != (UnityEngine.Object)null)
-        this.projectileLightObject.SetActive(false);
-      this.OnImpact(0.0f);
     }
     protected override void PlayPreFire() {
-      if (this.customPrefireSFX == null) { this.customPrefireSFX = this.preFireSFX; }
-      Log.M.TWL(0, $"{this.GetType().Name}.PlayPreFire {this.name} playSFX:{this.playSFX} prefireSFX:{this.customPrefireSFX} preFireStartSFX:{this.preFireStartSFX} preFireDuration:{this.preFireDuration}");
-      if (this.preFireVFXPrefab != null) {
-        GameObject gameObject = this.weapon.parent.Combat.DataManager.PooledInstantiate(this.preFireVFXPrefab.name, BattleTechResourceType.Prefab);
-        ParticleSystem component = gameObject.GetComponent<ParticleSystem>();
-        AutoPoolObject autoPoolObject = gameObject.GetComponent<AutoPoolObject>();
-        if (autoPoolObject == null)
-          autoPoolObject = gameObject.AddComponent<AutoPoolObject>();
-        autoPoolObject.Init(this.weapon.parent.Combat.DataManager, this.preFireVFXPrefab.name, component);
-        component.Stop(true);
-        component.Clear(true);
-        component.transform.parent = (Transform)null;
-        component.transform.position = this.startingTransform.position;
-        component.transform.LookAt(this.endPos);
-        BTCustomRenderer.SetVFXMultiplier(component);
-        component.Play(true);
-        if ((double)this.preFireDuration <= 0.0)
-          this.preFireDuration = component.main.duration;
-      }
-      if (string.IsNullOrEmpty(this.customPrefireSFX) == false) {
-        if (CustomVoices.AudioEngine.isInAudioManifest(this.customPrefireSFX)) {
-          if (this.customParentAudioObject == null) {
-            this.customParentAudioObject = this.weaponRep.gameObject.GetComponent<AudioObject>();
-            if (this.customParentAudioObject == null) { this.customParentAudioObject = this.weaponRep.gameObject.AddComponent<AudioObject>(); }
+      try {
+        if (this.customPrefireSFX == null) { this.customPrefireSFX = this.preFireSFX; }
+        Log.Combat?.TWL(0, $"{this.GetType().Name}.PlayPreFire {this.name} playSFX:{this.playSFX} prefireSFX:{this.customPrefireSFX} preFireStartSFX:{this.preFireStartSFX} preFireDuration:{this.preFireDuration}");
+        if (this.preFireVFXPrefab != null) {
+          GameObject gameObject = this.weapon.parent.Combat.DataManager.PooledInstantiate(this.preFireVFXPrefab.name, BattleTechResourceType.Prefab);
+          ParticleSystem component = gameObject.GetComponent<ParticleSystem>();
+          AutoPoolObject autoPoolObject = gameObject.GetComponent<AutoPoolObject>();
+          if (autoPoolObject == null)
+            autoPoolObject = gameObject.AddComponent<AutoPoolObject>();
+          autoPoolObject.Init(this.weapon.parent.Combat.DataManager, this.preFireVFXPrefab.name, component);
+          component.Stop(true);
+          component.Clear(true);
+          component.transform.parent = (Transform)null;
+          component.transform.position = this.startingTransform.position;
+          component.transform.LookAt(this.endPos);
+          BTCustomRenderer.SetVFXMultiplier(component);
+          component.Play(true);
+          if ((double)this.preFireDuration <= 0.0)
+            this.preFireDuration = component.main.duration;
+        }
+        if (string.IsNullOrEmpty(this.customPrefireSFX) == false) {
+          if (CustomVoices.AudioEngine.isInAudioManifest(this.customPrefireSFX)) {
+            if (this.customParentAudioObject == null) {
+              this.customParentAudioObject = this.weaponRep.gameObject.GetComponent<AudioObject>();
+              if (this.customParentAudioObject == null) { this.customParentAudioObject = this.weaponRep.gameObject.AddComponent<AudioObject>(); }
+            }
+            this.customParentAudioObject.Play(this.customPrefireSFX, false);
+          } else {
+            int num = (int)WwiseManager.PostEvent(this.customPrefireSFX, this.parentAudioObject);
           }
-          this.customParentAudioObject.Play(this.customPrefireSFX, false);
-        } else {
-          int num = (int)WwiseManager.PostEvent(this.customPrefireSFX, this.parentAudioObject);
         }
-      }
-      if (string.IsNullOrEmpty(this.preFireStartSFX) == false) {
-        if (CustomVoices.AudioEngine.isInAudioManifest(this.preFireStartSFX)) {
-          if (this.customParentAudioObject == null) {
-            this.customParentAudioObject = this.weaponRep.gameObject.GetComponent<AudioObject>();
-            if (this.customParentAudioObject == null) { this.customParentAudioObject = this.weaponRep.gameObject.AddComponent<AudioObject>(); }
+        if (string.IsNullOrEmpty(this.preFireStartSFX) == false) {
+          if (CustomVoices.AudioEngine.isInAudioManifest(this.preFireStartSFX)) {
+            if (this.customParentAudioObject == null) {
+              this.customParentAudioObject = this.weaponRep.gameObject.GetComponent<AudioObject>();
+              if (this.customParentAudioObject == null) { this.customParentAudioObject = this.weaponRep.gameObject.AddComponent<AudioObject>(); }
+            }
+            this.customParentAudioObject.Play(this.preFireStartSFX, true);
+          } else {
+            int num = (int)WwiseManager.PostEvent(this.preFireStartSFX, this.parentAudioObject);
           }
-          this.customParentAudioObject.Play(this.preFireStartSFX, true);
-        } else {
-          int num = (int)WwiseManager.PostEvent(this.preFireStartSFX, this.parentAudioObject);
         }
-      }
-      if (string.IsNullOrEmpty(this.projectilePrefireSFX) == false) {
-        if (CustomVoices.AudioEngine.isInAudioManifest(projectilePrefireSFX)) {
-          this.customProjectileAudioObject?.Play(projectilePrefireSFX, true);
-        } else {
-          int num = (int)WwiseManager.PostEvent(projectilePrefireSFX, this.projectileAudioObject);
+        if (string.IsNullOrEmpty(this.projectilePrefireSFX) == false) {
+          if (CustomVoices.AudioEngine.isInAudioManifest(projectilePrefireSFX)) {
+            this.customProjectileAudioObject?.Play(projectilePrefireSFX, true);
+          } else {
+            int num = (int)WwiseManager.PostEvent(projectilePrefireSFX, this.projectileAudioObject);
+          }
         }
+        this.preFireRate = (double)this.preFireDuration <= 0.0 ? 1000f : 1f / this.preFireDuration;
+        if ((double)this.attackSequenceNextDelayMin <= 0.0 && (double)this.attackSequenceNextDelayMax <= 0.0)
+          this.attackSequenceNextDelayMax = this.preFireDuration;
+        if ((double)this.attackSequenceNextDelayMax <= 0.0)
+          this.attackSequenceNextDelayMax = 0.05f;
+        if ((double)this.attackSequenceNextDelayMin >= (double)this.attackSequenceNextDelayMax)
+          this.attackSequenceNextDelayMin = this.attackSequenceNextDelayMax;
+        this.attackSequenceNextDelayTimer = UnityEngine.Random.Range(this.attackSequenceNextDelayMin, this.attackSequenceNextDelayMax);
+        this.t = 0.0f;
+        this.currentState = WeaponEffect.WeaponEffectState.PreFiring;
+      }catch(Exception e) {
+        Log.Combat?.TWL(0,e.ToString(),true);
+        WeaponEffect.logger.LogException(e);
       }
-      this.preFireRate = (double)this.preFireDuration <= 0.0 ? 1000f : 1f / this.preFireDuration;
-      if ((double)this.attackSequenceNextDelayMin <= 0.0 && (double)this.attackSequenceNextDelayMax <= 0.0)
-        this.attackSequenceNextDelayMax = this.preFireDuration;
-      if ((double)this.attackSequenceNextDelayMax <= 0.0)
-        this.attackSequenceNextDelayMax = 0.05f;
-      if ((double)this.attackSequenceNextDelayMin >= (double)this.attackSequenceNextDelayMax)
-        this.attackSequenceNextDelayMin = this.attackSequenceNextDelayMax;
-      this.attackSequenceNextDelayTimer = UnityEngine.Random.Range(this.attackSequenceNextDelayMin, this.attackSequenceNextDelayMax);
-      this.t = 0.0f;
-      this.currentState = WeaponEffect.WeaponEffectState.PreFiring;
     }
-
-    //public virtual void RestoreScale() {
-    //  if (scaled == false) { return; }
-    //  if (this.projectileTransform != null) { this.projectileTransform.localScale = this.originalProjectileScale; };
-    //  if (this.projectileLightObject != null) { this.projectileLightObject.transform.localScale = this.originalLightScale; }
-    //  foreach(var ps in originalParticleScaling) {
-    //    var main = ps.Key.main;
-    //    main.scalingMode = ps.Value;
-    //  }
-    //  originalParticleScaling.Clear();
-    //  scaled = false;
-    //}
     public virtual void StopAudio() {
       if (audioStopped) { return; }
       audioStopped = true;
@@ -737,13 +682,9 @@ namespace CustAmmoCategories {
       }
     }
     protected override void PlayImpactAudio() {
-      //Log.M?.TWL(0, $"{this.GetType().Name}.PlayImpactAudio {this.playSFX}");
-      //if (this.playSFX != PlaySFXType.None) {
       base.PlayImpactAudio();
-      //}
     }
     protected override void OnComplete() {
-      //this.RestoreScale();
       this.StopAudio();
       base.OnComplete();
     }
@@ -752,25 +693,6 @@ namespace CustAmmoCategories {
       //this.RestoreScale();
       base.Reset();
 
-    }
-    protected bool hasSentNextWeaponMessage {
-      get {
-        if (fi_hasSentNextWeaponMessage == null) { fi_hasSentNextWeaponMessage = typeof(WeaponEffect).GetField("hasSentNextWeaponMessage", BindingFlags.Instance | BindingFlags.NonPublic); }
-        if (fi_hasSentNextWeaponMessage != null) {
-          return (bool)fi_hasSentNextWeaponMessage.GetValue(this);
-        } else {
-          CustomAmmoCategoriesLog.Log.LogWrite("WARNING! Can't get WeaponEffect.hasSentNextWeaponMessage\n");
-          return false;
-        }
-      }
-      set {
-        if (fi_hasSentNextWeaponMessage == null) { fi_hasSentNextWeaponMessage = typeof(WeaponEffect).GetField("hasSentNextWeaponMessage", BindingFlags.Instance | BindingFlags.NonPublic); }
-        if (fi_hasSentNextWeaponMessage != null) {
-          fi_hasSentNextWeaponMessage.SetValue(this, value);
-        } else {
-          CustomAmmoCategoriesLog.Log.LogWrite("WARNING! Can't set WeaponEffect.hasSentNextWeaponMessage\n");
-        }
-      }
     }
   }
 }

@@ -27,67 +27,14 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
 
 #pragma warning disable CS0162 // Disable "unreachable code" warnings due to DebugLog flag
     public override void CombatStartsOnce() {
-      Type[] ResolveParams = new Type[] { typeof(WeaponHitInfo), typeof(Weapon), typeof(MeleeAttackType) };
-      MethodInfo ResolveWeaponDamage = MechType.GetMethod("ResolveWeaponDamage", ResolveParams);
       TryRun(ModLog, InitCritChance);
-
-      switch (AIMSettings.SkipBeatingDeadMech?.Trim().ToLower()) {
-        case "damage":
-          //Patch(MechType, "TakeWeaponDamage", "SkipBeatingDeadMech", null);
-          goto case "critical";
-        case "critical":
-          SkipCritingDeadMech = true;
-          //Patch(ResolveWeaponDamage, "SkipBeatingDeadMech", null);
-          break;
-        case "":
-        case null:
-          break;
-        default:
-          Warn("Unknown SkipBeatingDeadMech: {0}", AIMSettings.SkipBeatingDeadMech);
-          break;
-      }
-
-      if (MultiplierEnemy != 0.2f || MultiplierAlly != 0.2f) {
-        //Patch(typeof(CritChanceRules), "GetCritMultiplier", "SetNPCCritMultiplier", null);
-      }
-
-      if (AIMSettings.CritChanceVsTurret > 0 || AIMSettings.CriChanceVsVehicle > 0) {
-        //if (Settings.CritChanceVsTurret > 0)
-          //Patch(typeof(Turret), "ResolveWeaponDamage", typeof(WeaponHitInfo), null, "EnableNonMechCrit");
-        //if (Settings.CriChanceVsVehicle > 0)
-          //Patch(typeof(Vehicle), "ResolveWeaponDamage", typeof(WeaponHitInfo), null, "EnableNonMechCrit");
-      }
-
-      if (ThroughArmorCritEnabled = AIMSettings.CritChanceZeroArmor > 0) {
-        //Patch(ResolveWeaponDamage, "ReplaceCritHandling", null);
-        //Patch(typeof(WeaponHitInfo), "ConsolidateCriticalHitInfo", "Skip_ConsolidateCriticalHitInfo", null);
-        //TryRun(ModLog, InitThroughArmourCrit);
-
-      } else {
-        //if (Settings.FixFullStructureCrit) {
-        //  Patch(ResolveWeaponDamage, "RecordCritMech", "ClearCritMech");
-        //  Patch(typeof(WeaponHitInfo), "ConsolidateCriticalHitInfo", null, "RemoveFullStructureLocationsFromCritList");
-        //}
-        // The settings below are built-in to generic crit system and only need to be patched when the system is not used for mech.
-        //if (Settings.CritIgnoreDestroyedComponent || Settings.CritIgnoreEmptySlots || Settings.CritLocationTransfer || Settings.MultipleCrits)
-          //Patch(MechType, "CheckForCrit", "Override_CheckForCrit", null);
-        //if (CritChanceBase != 0 || CritChanceVar != 1)
-          //Patch(typeof(CritChanceRules), "GetBaseCritChance", new Type[] { MechType, typeof(ChassisLocations), typeof(bool) }, "Override_BaseCritChance", null);
-        //if (CritChanceMax < 1)
-          //Patch(typeof(CritChanceRules), "GetBaseCritChance", new Type[] { MechType, typeof(ChassisLocations), typeof(bool) }, null, "CapBaseCritChance");
-      }
-
-      //if (Settings.CritFollowDamageTransfer) {
-        //Patch(MechType, "TakeWeaponDamage", "RecordHitInfo", "ClearHitInfo");
-        //Patch(MechType, "DamageLocation", "UpdateCritLocation", null);
-      //}
     }
 
     public override void CombatStarts() {
       CombatResolutionConstantsDef con = CombatConstants.ResolutionConstants;
       if (CritChanceMin != con.MinCritChance) {
         con.MinCritChance = CritChanceMin;
-        typeof(CombatGameConstants).GetProperty("ResolutionConstants").SetValue(CombatConstants, con, null);
+        CombatConstants.ResolutionConstants = con;
       }
     }
 
@@ -152,11 +99,7 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
       float damage = weapon.parent == null ? weapon.DamagePerShot : weapon.DamagePerShotAdjusted(weapon.parent.occupiedDesignMask);
       AbstractActor attacker = Combat.FindActorByGUID(hitInfo.attackerId);
       LineOfFireLevel lineOfFireLevel = attacker.VisibilityCache.VisibilityToTarget(target).LineOfFireLevel;
-#if BT1_8
       return target.GetAdjustedDamage(damage, weapon.WeaponCategoryValue, target.occupiedDesignMask, lineOfFireLevel, false);
-#else
-      return target.GetAdjustedDamage(damage, weapon.Category, target.occupiedDesignMask, lineOfFireLevel, false);
-#endif
     }
 
     private static AttackDirector.AttackSequence GetAttackSequence(WeaponHitInfo hitInfo) {

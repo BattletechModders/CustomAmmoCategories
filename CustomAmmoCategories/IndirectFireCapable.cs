@@ -290,7 +290,7 @@ namespace CustomAmmoCategoriesPatches {
       return Transpilers.MethodReplacer(instructions, targetPropertyGetter, replacementMethod);
     }
     private static bool IndirectFireCapable(Weapon weapon) {
-      CustomAmmoCategoriesLog.Log.LogWrite("get ToHit_GetAllModifiers IndirectFireCapable\n");
+      Log.Combat?.WL(0,"get ToHit_GetAllModifiers IndirectFireCapable");
       return weapon.IndirectFireCapable();
     }
     public static HBS.Collections.TagSet Tags(this ICombatant target) {
@@ -496,7 +496,7 @@ namespace CustomAmmoCategoriesPatches {
       return Transpilers.MethodReplacer(instructions, targetPropertyGetter, replacementMethod);
     }
     private static bool IndirectFireCapable(Weapon weapon) {
-      CustomAmmoCategoriesLog.Log.LogWrite("get DoAnyMovesYieldLOFToAnyHostileNode_Tick IndirectFireCapable\n");
+      //Log.Combat?.WL(0,"get DoAnyMovesYieldLOFToAnyHostileNode_Tick IndirectFireCapable");
       return weapon.IndirectFireCapable();
     }
   }
@@ -508,7 +508,7 @@ namespace CustomAmmoCategoriesPatches {
       return Transpilers.MethodReplacer(instructions, targetPropertyGetter, replacementMethod);
     }
     private static bool IndirectFireCapable(Weapon weapon) {
-      CustomAmmoCategoriesLog.Log.LogWrite("get HighestPriorityMoveCandidateIsAttackNode_Tick IndirectFireCapable\n");
+      //Log.Combat?.WL(0, "get HighestPriorityMoveCandidateIsAttackNode_Tick IndirectFireCapable");
       return weapon.IndirectFireCapable();
     }
   }

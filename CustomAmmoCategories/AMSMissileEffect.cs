@@ -29,27 +29,18 @@ namespace CustAmmoCategories {
     public DopplerEffect doppler;
     public void Init(MissileEffect original) {
       base.Init(original);
-      CustomAmmoCategoriesLog.Log.LogWrite("AMSMissileEffect.Init\n");
+      Log.Combat?.WL(0, "AMSMissileEffect.Init");
       this.impactLightIntensity = original.impactLightIntensity;
       this.tubeTransform = original.tubeTransform;
       this.isSRM = true;
       this.doppler = original.doppler;
     }
-
-#if PUBLIC_ASSEMBLIES
-    public override int ImpactPrecacheCount {
-#else
     protected override int ImpactPrecacheCount {
-#endif
       get {
         return 14;
       }
     }
-#if PUBLIC_ASSEMBLIES
-    public override void Awake() {
-#else
     protected override void Awake() {
-#endif
       base.Awake();
     }
     protected override void Start() {
@@ -65,7 +56,7 @@ namespace CustAmmoCategories {
       this.projectileSpeed += Random.Range(-max, max);
     }
     public override void Fire(Vector3[] hitPositions, int hitIndex = 0, int emitterIndex = 0) {
-      Log.LogWrite("AMSMissileEffect.Fire\n");
+      Log.Combat?.WL(0, "AMSMissileEffect.Fire");
       base.Fire(hitPositions, hitIndex, emitterIndex);
       this.preFireEndPos = this.startingTransform.position;
       if ((UnityEngine.Object)this.weapon.parent.GameRep != (UnityEngine.Object)null) {
@@ -77,7 +68,8 @@ namespace CustAmmoCategories {
       this.PlayPreFire();
     }
     public void Fire(WeaponHitInfo hitInfo, int hitIndex, int emitterIndex, bool isIndirect) {
-      CustomAmmoCategoriesLog.Log.LogWrite("AMSmissile effect can't fire normaly. Something is wrong.\n");
+      Log.Combat?.WL(0, "AMS missile effect can't fire normally. Something is wrong.");
+      WeaponEffect.logger.LogError("AMS missile effect can't fire normally. Something is wrong.\n" + Environment.StackTrace);
       base.Fire(hitInfo, hitIndex, emitterIndex);
     }
     protected override void PlayPreFire() {
@@ -152,13 +144,10 @@ namespace CustAmmoCategories {
     }
     private void ApplyDoppler(GameObject audioListener) {
     }
-
-
     protected override void OnPreFireComplete() {
       base.OnPreFireComplete();
       this.PlayProjectile();
     }
-
     protected override void OnImpact(float hitDamage = 0.0f, float structureDamage = 0f) {
       base.OnImpact(this.weapon.DamagePerShotAdjusted(this.weapon.parent.occupiedDesignMask)
         ,this.weapon.StructureDamagePerShotAdjusted(this.weapon.parent.occupiedDesignMask)

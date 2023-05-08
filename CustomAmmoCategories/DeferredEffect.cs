@@ -64,10 +64,10 @@ namespace CustAmmoCategories {
     public static void UpdateDefferedEffects(int round) {
       if (CurrentRound == round) { return; }
       CurrentRound = round;
-      Log.M.WL(1, "DeferredEffectHelper.UpdateDefferedEffects "+CurrentRound);
+      Log.Combat?.WL(1, "DeferredEffectHelper.UpdateDefferedEffects "+CurrentRound);
       HashSet<DeferredEffect> transferEffects = new HashSet<DeferredEffect>();
       foreach (DeferredEffect effect in deferredEffects) {
-        Log.M.WL(1, effect.definition.id+" remain:"+ effect.RoundsRemain(round));
+        Log.Combat?.WL(1, effect.definition.id+" remain:"+ effect.RoundsRemain(round));
         if (effect.RoundsRemain(round) <= 0) { transferEffects.Add(effect); effect.PlayEffect(); effect.gameObject.SetActive(true); } else {
           effect.UpdateText(CurrentRound);
         }
@@ -85,25 +85,25 @@ namespace CustAmmoCategories {
       return false;
     }
     public static void Clear() {
-      Log.M.TWL(0, "DeferredEffectHelper.Clear");
+      Log.Combat?.TWL(0, "DeferredEffectHelper.Clear");
       try {
-        Log.M.WL(1, "playingEffects:" + playingEffects.Count);
+        Log.Combat?.WL(1, "playingEffects:" + playingEffects.Count);
         foreach (DeferredEffect effect in playingEffects) {
           if (effect == null) { continue; }
           try {
             if (effect.gameObject == null) effect.gameObject.SetActive(false);
             effect.Clear();
-          } catch (Exception e) { Log.M?.TWL(0, e.ToString(), true); }
+          } catch (Exception e) { Log.Combat?.TWL(0, e.ToString(), true); }
           if (effect.gameObject != null) {
             GameObject.Destroy(effect.gameObject);
           }
         }
         playingEffects.Clear();
-        Log.M.WL(1, "deferredEffects:" + deferredEffects.Count);
+        Log.Combat?.WL(1, "deferredEffects:" + deferredEffects.Count);
         foreach (DeferredEffect effect in deferredEffects) {
           if (effect == null) { continue; }
           if (effect.gameObject != null) { effect.gameObject.SetActive(false); };
-          try { effect.Clear(); } catch (Exception e) { Log.M.TWL(0, e.ToString(), true); };
+          try { effect.Clear(); } catch (Exception e) { Log.Combat?.TWL(0, e.ToString(), true); };
         }
         deferredEffects.Clear();
         CurrentRound = -1;
@@ -112,9 +112,9 @@ namespace CustAmmoCategories {
       }
     }
     public static void CreateDifferedEffect(this Weapon weapon, ICombatant target) {
-      Log.M.TWL(0, "CreateDifferedEffect " + weapon.defId + " target:" + new Text(target.DisplayName).ToString());
+      Log.Combat?.TWL(0, "CreateDifferedEffect " + weapon.defId + " target:" + new Text(target.DisplayName).ToString());
       DeferredEffectDef def = weapon.DeferredEffect();
-      Log.M.WL(1, "rounds:"+def.rounds + " current round:" + weapon.parent.Combat.TurnDirector.CurrentRound);
+      Log.Combat?.WL(1, "rounds:"+def.rounds + " current round:" + weapon.parent.Combat.TurnDirector.CurrentRound);
       if (def.rounds == 0) { return; };
       GameObject obj = new GameObject();
       obj.SetActive(false);
@@ -123,9 +123,9 @@ namespace CustAmmoCategories {
       deferredEffects.Add(effect);
     }
     public static void CreateDifferedEffect(this Weapon weapon, Vector3 worldPos) {
-      Log.M.TWL(0, "CreateDifferedEffect " + weapon.defId + " pos:" + worldPos);
+      Log.Combat?.TWL(0, "CreateDifferedEffect " + weapon.defId + " pos:" + worldPos);
       DeferredEffectDef def = weapon.DeferredEffect();
-      Log.M.WL(1, "rounds:" + def.rounds+" current round:"+ weapon.parent.Combat.TurnDirector.CurrentRound);
+      Log.Combat?.WL(1, "rounds:" + def.rounds+" current round:"+ weapon.parent.Combat.TurnDirector.CurrentRound);
       if (def.rounds == 0) { return; };
       GameObject obj = new GameObject();
       obj.SetActive(false);
@@ -169,13 +169,13 @@ namespace CustAmmoCategories {
     public void applyTempMask() {
       Vector3 worldPos = offset;
       if (ancor != null) { worldPos += ancor.position; };
-      Log.M.TWL(0,"DeferredEffect.applyTempMask:" + definition.id + " pos:"+worldPos+"\n");
+      Log.Combat?.TWL(0,"DeferredEffect.applyTempMask:" + definition.id + " pos:"+worldPos);
       MapTerrainDataCellEx cell = weapon.parent.Combat.MapMetaData.GetCellAt(worldPos) as MapTerrainDataCellEx;
       if (cell == null) {
-        Log.LogWrite(" cell is not extended\n");
+        Log.Combat?.WL(1, "cell is not extended");
         return;
       }
-      Log.LogWrite(" impact at " + worldPos + "\n");
+      Log.Combat?.WL(1, "impact at " + worldPos);
       int turns = definition.tempDesignMaskTurns;
       string vfx = definition.TerrainVFX;
       Vector3 scale = definition.VFXscale.vector;
@@ -193,7 +193,7 @@ namespace CustAmmoCategories {
       }
     }
     public void ApplyBurn() {
-      Log.M.TWL(0, "DeferredEffect.ApplyBurnEffect:" + definition.id + "\n");
+      Log.Combat?.TWL(0, "DeferredEffect.ApplyBurnEffect:" + definition.id);
       Vector3 worldPos = offset;
       if (ancor != null) { worldPos += ancor.position; };
       MapTerrainDataCellEx cell = weapon.parent.Combat.MapMetaData.GetCellAt(worldPos) as MapTerrainDataCellEx;
@@ -201,41 +201,34 @@ namespace CustAmmoCategories {
         CustomAmmoCategoriesLog.Log.LogWrite(" cell is not extended\n");
         return;
       }
-      Log.LogWrite(" fire at " + worldPos + "\n");
+      Log.Combat?.WL(1, "fire at " + worldPos);
       if (definition.FireTerrainCellRadius == 0) {
         cell.hexCell.TryBurnCellAsync(weapon, definition.FireTerrainChance, definition.FireTerrainStrength, definition.FireDurationWithoutForest);
-        //if (cell.hexCell.TryBurnCell(weapon, definition.FireTerrainChance, definition.FireTerrainStrength, definition.FireDurationWithoutForest)) {
-          //DynamicMapHelper.burningHexes.Add(cell.hexCell);
-        //};
       } else {
         List<MapTerrainHexCell> affectedHexCells = MapTerrainHexCell.listHexCellsByCellRadius(cell, definition.FireTerrainCellRadius);
         foreach (MapTerrainHexCell hexCell in affectedHexCells) {
           hexCell.TryBurnCellAsync(weapon, definition.FireTerrainChance, definition.FireTerrainStrength, definition.FireDurationWithoutForest);
-          //if (hexCell.TryBurnCell(weapon, definition.FireTerrainChance, definition.FireTerrainStrength, definition.FireDurationWithoutForest)) {
-            //DynamicMapHelper.burningHexes.Add(hexCell);
-          //};
         }
       }
 
     }
-    //public Spaw
     public void Awake() { t = 0f; DamageApplyied = false; }
     public void Clear() {
-      Log.M.WL(2, "DeferredEffect.Clear "+this.definition.id);
+      Log.Combat?.WL(2, "DeferredEffect.Clear "+this.definition.id);
       if (vfx != null) {
-        Log.M.WL(3, "vfx");
+        Log.Combat?.WL(3, "vfx");
         vfx.CleanupSelf(); vfx = null;
       }
       if (wVfx != null) {
-        Log.M.WL(3, "wVfx");
+        Log.Combat?.WL(3, "wVfx");
         wVfx.CleanupSelf(); wVfx = null;
       }
       if (CountDownFloatie != null) {
-        Log.M.WL(3, "CountDownFloatie");
+        Log.Combat?.WL(3, "CountDownFloatie");
         PersistentFloatieHelper.PoolFloatie(CountDownFloatie); CountDownFloatie = null;
       };
       if (this.reticle != null) {
-        Log.M.WL(3, "reticle");
+        Log.Combat?.WL(3, "reticle");
         weapon.parent.Combat.DataManager.PoolGameObject(CombatCustomReticle.CustomPrefabName, this.reticle.gameObject); this.reticle = null;
       }
     }
@@ -245,7 +238,7 @@ namespace CustAmmoCategories {
       Playing = true;
       Vector3 pos = offset;
       if (ancor != null) { pos += ancor.position; };
-      Log.M.TWL(0, "DeferredEffect.PlayEffect vfx:"+definition.VFX+" sfx:"+ definition.SFX);
+      Log.Combat?.TWL(0, "DeferredEffect.PlayEffect vfx:"+definition.VFX+" sfx:"+ definition.SFX);
       applyCallbacks();
       if (string.IsNullOrEmpty(definition.VFX) == false) {
         vfx = new ObjectSpawnDataSelf(definition.VFX, pos, Quaternion.identity, definition.VFXscale.vector, true, false);
@@ -267,7 +260,7 @@ namespace CustAmmoCategories {
       if (definition == null) { Playing = false; return; }
       t += Time.deltaTime;
       if (t > definition.VFXtime) {
-        Log.M.TWL(0, "DeferredEffect.LateUpdate effect finished");
+        Log.Combat?.TWL(0, "DeferredEffect.LateUpdate effect finished");
         if (vfx != null) { vfx.CleanupSelf(); vfx = null; }
         Playing = false;
         DeferredEffectHelper.addToClear(this);
@@ -321,9 +314,9 @@ namespace CustAmmoCategories {
         if (ancor != null) { pos += ancor.position; };
         wVfx = new ObjectSpawnDataSelf(definition.waitVFX, pos, Quaternion.identity, definition.waitVFXscale.vector, true, false);
         wVfx.SpawnSelf(weapon.parent.Combat);
-        Log.M.WL(1, "wVfx:" + wVfx.spawnedObject.name + ":" + wVfx.spawnedObject.transform.position);
+        Log.Combat?.WL(1, "wVfx:" + wVfx.spawnedObject.name + ":" + wVfx.spawnedObject.transform.position);
         if (ancor != null) {
-          Log.M.WL(2, "ancor:"+ancor.name);
+          Log.Combat?.WL(2, "ancor:"+ancor.name);
           DeferredEffectAncor defAncor = wVfx.spawnedObject.AddComponent<DeferredEffectAncor>();
           defAncor.ancor = ancor;
           defAncor.offset = offset;
@@ -333,10 +326,10 @@ namespace CustAmmoCategories {
       }
     }
     public void Init(Weapon weapon, DeferredEffectDef def, int currentRound, ICombatant ancor) {
-      Log.M.WL(1, "DeferredEffect.Init");
+      Log.Combat?.WL(1, "DeferredEffect.Init");
       this.Init(weapon, def, currentRound);
       if (definition.sticky) {
-        Log.M.WL(2, "effect is sticky: "+ ancor.GameRep.transform.name);
+        Log.Combat?.WL(2, "effect is sticky: "+ ancor.GameRep.transform.name);
         this.ancor = ancor.GameRep.transform;
         this.offset = Vector3.zero;
       } else {
@@ -348,7 +341,7 @@ namespace CustAmmoCategories {
       InitReticle();
     }
     public void Init(Weapon weapon, DeferredEffectDef def, int currentRound, Vector3 worldPos) {
-      Log.M.WL(1, "DeferredEffect.Init");
+      Log.Combat?.WL(1, "DeferredEffect.Init");
       this.Init(weapon, def, currentRound);
       this.ancor = null;
       this.offset = worldPos;
@@ -358,13 +351,13 @@ namespace CustAmmoCategories {
       InitReticle();
     }
     public void addEffect(ICombatant target, EffectData effect, float distance) {
-      Log.M.WL(1, $"Applying effectID:{effect.Description.Id} with effectDescId:{effect?.Description.Id} effectDescName:{effect?.Description.Name}");
+      Log.Combat?.WL(1, $"Applying effectID:{effect.Description.Id} with effectDescId:{effect?.Description.Id} effectDescName:{effect?.Description.Name}");
       if (definition.statusEffectsRangeFalloff) {
         float chance = (definition.AOERange - distance) / definition.AOERange;
         float roll = Random.Range(0f,1f);
-        if (roll > chance) { Log.M.WL(2, "falloff roll fail"); return; }
+        if (roll > chance) { Log.Combat?.WL(2, "falloff roll fail"); return; }
       }
-      Log.M.WL(2, "falloff roll success");
+      Log.Combat?.WL(2, "falloff roll success");
       string effectID = string.Format("OnDeferredHitEffect_{0}_{1}", (object)weapon.parent.GUID, (object)this.SequenceId);
       weapon.parent.Combat.EffectManager.CreateEffect(effect, effectID, this.SequenceId, weapon.parent, target, new WeaponHitInfo(), 0, false);
     }
@@ -383,8 +376,8 @@ namespace CustAmmoCategories {
       float AoEDmg = definition.AOEDamage;
       if (AoEDmg <= CustomAmmoCategories.Epsilon) { return; }
       if (Range <= CustomAmmoCategories.Epsilon) { return; }
-      Log.M.TWL(0,"AoE explosion " + definition.id);
-      Log.M.WL(1, " Range:" + Range + " Damage:" + AoEDmg);
+      Log.Combat?.TWL(0,"AoE explosion " + definition.id);
+      Log.Combat?.WL(1, "Range:" + Range + " Damage:" + AoEDmg);
       Vector3 pos = this.offset;
       if (ancor != null) { pos += ancor.position; }
       pos.y = weapon.parent.Combat.MapMetaData.GetLerpedHeightAt(pos);
@@ -394,7 +387,7 @@ namespace CustAmmoCategories {
         if (target.isDropshipNotLanded()) { continue; };
         Vector3 CurrentPosition = target.CurrentPosition + Vector3.up * target.FlyingHeight();
         float distance = Vector3.Distance(CurrentPosition, pos);
-        Log.LogWrite(" " + new Text(target.DisplayName).ToString() + ":" + target.GUID + " " + distance + "(" + CustomAmmoCategories.Settings.DefaultAoEDamageMult[target.UnitType].Range + ")\n");
+        Log.Combat?.WL(1, new Text(target.DisplayName).ToString() + ":" + target.GUID + " " + distance + "(" + CustomAmmoCategories.Settings.DefaultAoEDamageMult[target.UnitType].Range + ")");
         if (CustomAmmoCategories.Settings.DefaultAoEDamageMult[target.UnitType].Range < CustomAmmoCategories.Epsilon) { CustomAmmoCategories.Settings.DefaultAoEDamageMult[target.UnitType].Range = 1f; }
         distance /= CustomAmmoCategories.Settings.DefaultAoEDamageMult[target.UnitType].Range;
         target.TagAoEModifiers(out float tagAoEModRange, out float tagAoEDamage);
@@ -439,7 +432,7 @@ namespace CustAmmoCategories {
           if (reachableLocations.Contains(sLoc.Key)) { locationsCoeff += sLoc.Value; }
         }
         Dictionary<int, float> AOELocationDamage = new Dictionary<int, float>();
-        Log.M.W(2, "Location spread:");
+        Log.Combat?.W(2, "Location spread:");
         foreach (var sLoc in SpreadLocations) {
           if (reachableLocations.Contains(sLoc.Key) == false) { continue; }
           if (sLoc.Value < CustomAmmoCategories.Epsilon) { continue; }
@@ -448,9 +441,9 @@ namespace CustAmmoCategories {
           if (mech != null) { lname = ((ArmorLocation)sLoc.Key).ToString(); } else
           if (vehicle != null) { lname = ((VehicleChassisLocations)sLoc.Key).ToString(); } else
             lname = ((BuildingLocation)sLoc.Key).ToString();
-          Log.M.W(1, lname + ":" + sLoc.Value / locationsCoeff);
+          Log.Combat?.W(1, lname + ":" + sLoc.Value / locationsCoeff);
         }
-        Log.M.WL(0, "");
+        Log.Combat?.WL(0, "");
         if (AoEDamage.ContainsKey(target) == false) { AoEDamage.Add(target, new AoEExplosionRecord(target)); };
         AoEExplosionRecord AoERecord = AoEDamage[target];
         AoERecord.HeatDamage += HeatDamage;
@@ -473,59 +466,57 @@ namespace CustAmmoCategories {
             , new AttackImpactQuality[1] { AttackImpactQuality.Solid }
             , new AttackDirection[1] { AttackDirection.FromArtillery }
             , new Vector3[1] { pos }, null, null);
-      Log.M.WL(1, "Applying deferred damage");
+      Log.Combat?.WL(1, "Applying deferred damage");
       foreach (var mfdmgs in AoEDamage) {
         fakeHit.targetId = mfdmgs.Value.target.GUID;
         ICombatant target = mfdmgs.Key;
         foreach (var mfdmg in mfdmgs.Value.hitRecords) {
           float LocArmor = target.ArmorForLocation(mfdmg.Key);
           if ((double)LocArmor < (double)mfdmg.Value.Damage) {
-            Log.M.WL(2, "floatie message structure "+ mfdmg.Value.Damage);
+            Log.Combat?.WL(2, "floatie message structure "+ mfdmg.Value.Damage);
             weapon.parent.Combat.MessageCenter.PublishMessage((MessageCenterMessage)new FloatieMessage(this.weapon.parent.GUID, target.GUID, new Text("{0}", new object[1]
             {
                       (object) (int) Mathf.Max(1f, mfdmg.Value.Damage)
             }), weapon.parent.Combat.Constants.CombatUIConstants.floatieSizeMedium, FloatieMessage.MessageNature.StructureDamage, mfdmg.Value.hitPosition.x, mfdmg.Value.hitPosition.y, mfdmg.Value.hitPosition.z));
           } else {
-            Log.M.WL(2, "floatie message armor " + mfdmg.Value.Damage);
+            Log.Combat?.WL(2, "floatie message armor " + mfdmg.Value.Damage);
             weapon.parent.Combat.MessageCenter.PublishMessage((MessageCenterMessage)new FloatieMessage(this.weapon.parent.GUID, target.GUID, new Text("{0}", new object[1]
             {
                       (object) (int) Mathf.Max(1f, mfdmg.Value.Damage)
             }), weapon.parent.Combat.Constants.CombatUIConstants.floatieSizeMedium, FloatieMessage.MessageNature.ArmorDamage, mfdmg.Value.hitPosition.x, mfdmg.Value.hitPosition.y, mfdmg.Value.hitPosition.z));
           }
-          Log.M.WL(2, "take weapon damage "+mfdmg.Value.Damage);
+          Log.Combat?.WL(2, "take weapon damage "+mfdmg.Value.Damage);
           target.TakeWeaponDamage(fakeHit, mfdmg.Key, this.weapon, mfdmg.Value.Damage, 0f, 0, DamageType.AmmoExplosion);
         }
         if (mfdmgs.Value.hitRecords.Count > 0) {
-          Log.M.WL(2, "floatie message explosion");
+          Log.Combat?.WL(2, "floatie message explosion");
           deathSequence.Add(mfdmgs.Value.target);
         }
         Mech trgmech = mfdmgs.Value.target as Mech;
         if (trgmech != null) {
           if (mfdmgs.Value.HeatDamage > CustomAmmoCategories.Epsilon) {
-            Log.M.WL(2, "AddExternalHeat "+ mfdmgs.Value.HeatDamage);
+            Log.Combat?.WL(2, "AddExternalHeat "+ mfdmgs.Value.HeatDamage);
             trgmech.AddExternalHeat("DefferedEffectHeat", Mathf.RoundToInt(mfdmgs.Value.HeatDamage));
-            //trgmech.Combat.MessageCenter.PublishMessage((MessageCenterMessage)new FloatieMessage(this.weapon.parent.GUID, weapon.parent.GUID, new Text("__/CAC.HEATFROMLANDMINES/__", Mathf.RoundToInt(mfdmgs.Value.HeatDamage)), FloatieMessage.MessageNature.Debuff));
             heatSequence.Add(trgmech);
           }
           if (mfdmgs.Value.StabDamage > CustomAmmoCategories.Epsilon) {
-            Log.M.WL(2, "AddAbsoluteInstability " + mfdmgs.Value.StabDamage);
+            Log.Combat?.WL(2, "AddAbsoluteInstability " + mfdmgs.Value.StabDamage);
             trgmech.AddAbsoluteInstability(mfdmgs.Value.StabDamage, StabilityChangeSource.Moving, this.weapon.parent.GUID);
-            //trgmech.Combat.MessageCenter.PublishMessage((MessageCenterMessage)new FloatieMessage(this.weapon.parent.GUID, target.GUID, new Text("__/CAC.INSTABILITYFROMLANDMINES/__", mfdmgs.Value.StabDamage), FloatieMessage.MessageNature.Debuff));
             instabilitySequence.Add(trgmech);
           }
         }
       }
-      Log.M.WL(1, "Applying handling procedures");
+      Log.Combat?.WL(1, "Applying handling procedures");
       foreach (Mech trgmech in heatSequence) {
-        Log.M.WL(2, "GenerateAndPublishHeatSequence");
+        Log.Combat?.WL(2, "GenerateAndPublishHeatSequence");
         trgmech.GenerateAndPublishHeatSequence(this.SequenceId, true, false, this.weapon.parent.GUID);
       }
       foreach (Mech trgmech in instabilitySequence) {
-        Log.M.WL(2, "HandleKnockdown");
+        Log.Combat?.WL(2, "HandleKnockdown");
         trgmech.HandleKnockdown(-1, "DEFFERED", this.weapon.parent.CurrentPosition, null);
       }
       foreach (ICombatant trg in deathSequence) {
-        Log.M.WL(2, "HandleDeath");
+        Log.Combat?.WL(2, "HandleDeath");
         trg.HandleDeath(this.weapon.parent.GUID);
       }
     }
@@ -538,17 +529,18 @@ namespace CustAmmoCategoriesPatches {
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { })]
   public static class TurnDirector_Update {
-    public static bool Prefix(TurnDirector __instance, bool ___needsToEndRound) {
+    public static void Prefix(ref bool __runOriginal,TurnDirector __instance) {
       try {
-        if (__instance.IsMissionOver) { return true; }
+        if (!__runOriginal) { return; }
+        if (__instance.IsMissionOver) { return; }
         DeferredEffectHelper.ClearEffectsClear();
-        if (___needsToEndRound) {
+        if (__instance.needsToEndRound) {
           DeferredEffectHelper.UpdateDefferedEffects(__instance.CurrentRound+1);
         }
       }catch(Exception e) {
-        Log.M.TWL(0,e.ToString(),true);
+        Log.Combat?.TWL(0,e.ToString(),true);
+        TurnDirector.logger.LogException(e);
       }
-      return true;
     }
   }
   [HarmonyPatch(typeof(TurnDirector))]
@@ -561,7 +553,8 @@ namespace CustAmmoCategoriesPatches {
       try {
         if (DeferredEffectHelper.HasUnApplyedEffects()) { __result = false; }
       }catch(Exception e) {
-        Log.M.TWL(0, e.ToString(), true);
+        Log.Combat?.TWL(0, e.ToString(), true);
+        TurnDirector.logger.LogException(e);
       }
     }
   }

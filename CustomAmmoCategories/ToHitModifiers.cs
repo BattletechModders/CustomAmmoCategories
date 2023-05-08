@@ -81,7 +81,7 @@ namespace CustAmmoCategories {
       Func<object, ToHit, AbstractActor, Weapon, ICombatant, Vector3, Vector3, LineOfFireLevel, MeleeAttackType, bool, float> modifier,
       Func<object, ToHit, AbstractActor, Weapon, ICombatant, Vector3, Vector3, LineOfFireLevel, MeleeAttackType, bool, string> dname
       ) {
-      Log.M.TWL(0, "registerModifier:" + id + "/" + name + " r:" + ranged + " m:" + melee, true);
+      Log.M?.TWL(0, "registerModifier:" + id + "/" + name + " r:" + ranged + " m:" + melee, true);
       if (modifiers.TryGetValue(id, out ToHitNodeModifier mod)) {
         mod.name = name;
         mod.ranged = ranged;
@@ -104,7 +104,7 @@ namespace CustAmmoCategories {
       HUD = null;
     }
     public static void registerNode(string id, Func<ToHit, AbstractActor, Weapon, ICombatant, Vector3, Vector3, LineOfFireLevel, MeleeAttackType, bool, object> prepare) {
-      Log.M.TWL(0, "registerNode:" + id, true);
+      Log.M?.TWL(0, "registerNode:" + id, true);
       if(mod_nodes.TryGetValue(id, out ToHitModifierNode node)) {
         node.prepare = prepare;
       } else {
@@ -115,18 +115,18 @@ namespace CustAmmoCategories {
       Func<object, ToHit, AbstractActor, Weapon, ICombatant, Vector3, Vector3, LineOfFireLevel, MeleeAttackType, bool, float> modifier,
       Func<object, ToHit, AbstractActor, Weapon, ICombatant, Vector3, Vector3, LineOfFireLevel, MeleeAttackType, bool, string> dname
       ) {
-      Log.M.TWL(0, "registerNodeModifier: node:" + nodeId + " id:"  + id + "/" + name + " r:" + ranged + " m:" + melee, true);
+      Log.M?.TWL(0, "registerNodeModifier: node:" + nodeId + " id:"  + id + "/" + name + " r:" + ranged + " m:" + melee, true);
       if (mod_nodes.TryGetValue(nodeId, out ToHitModifierNode node)) {
         node.registerModifier(id,name,ranged,melee, modifier, dname);
       } else {
-        Log.M.WL(1,"!Can't find node id:"+nodeId, true);
+        Log.M?.WL(1,"!Can't find node id:"+nodeId, true);
       }
     }
     public static void registerModifier(string id, string name, bool ranged, bool melee,
       Func<ToHit, AbstractActor, Weapon, ICombatant, Vector3, Vector3, LineOfFireLevel, MeleeAttackType, bool, float> modifier,
       Func<ToHit, AbstractActor, Weapon, ICombatant, Vector3, Vector3, LineOfFireLevel, MeleeAttackType, bool, string> dname
       ) {
-      Log.M.TWL(0, "registerModifier:" + id + "/" + name + " r:" + ranged + " m:" + melee, true);
+      Log.M?.TWL(0, "registerModifier:" + id + "/" + name + " r:" + ranged + " m:" + melee, true);
       if (modifiers.TryGetValue(id, out ToHitModifier mod)) {
         mod.name = name;
         mod.ranged = ranged;
@@ -142,7 +142,7 @@ namespace CustAmmoCategories {
       Func<ToHit, AbstractActor, Weapon, ICombatant, Vector3, Vector3, LineOfFireLevel, MeleeAttackType, bool, float> modifier,
       Func<ToHit, AbstractActor, Weapon, ICombatant, Vector3, Vector3, LineOfFireLevel, MeleeAttackType, bool, int, string> dname2
       ) {
-      Log.M.TWL(0, "registerModifier:" + id + "/" + name + " r:" + ranged + " m:" + melee, true);
+      Log.M?.TWL(0, "registerModifier:" + id + "/" + name + " r:" + ranged + " m:" + melee, true);
       if (modifiers.TryGetValue(id, out ToHitModifier mod)) {
         mod.name = name;
         mod.ranged = ranged;
@@ -649,32 +649,15 @@ namespace CustAmmoCategories {
   [HarmonyPriority(Priority.Last)]
   [HarmonyPatch(new Type[] { typeof(ICombatant) })]
   public static class CombatHUDWeaponSlot_UpdateTooltipStrings {
-    public delegate void d_AddToolTipDetail(CombatHUDWeaponSlot slot, string description, int modifier);
-    private static d_AddToolTipDetail i_AddToolTipDetail = null;
-    public static bool Prepare() {
-      {
-        MethodInfo method = typeof(CombatHUDWeaponSlot).GetMethod("AddToolTipDetail", BindingFlags.NonPublic | BindingFlags.Instance);
-        var dm = new DynamicMethod("CACAddToolTipDetail", null, new Type[] { typeof(CombatHUDWeaponSlot), typeof(string), typeof(int) });
-        var gen = dm.GetILGenerator();
-        gen.Emit(OpCodes.Ldarg_0);
-        gen.Emit(OpCodes.Ldarg_1);
-        gen.Emit(OpCodes.Ldarg_2);
-        gen.Emit(OpCodes.Call, method);
-        gen.Emit(OpCodes.Ret);
-        i_AddToolTipDetail = (d_AddToolTipDetail)dm.CreateDelegate(typeof(d_AddToolTipDetail));
-      }
-
-      return true;
-    }
-    public static void UpdateToolTipsTarget(this CombatHUDWeaponSlot slot, ICombatant target) {
+    public static void UpdateToolTipsTarget_I(this CombatHUDWeaponSlot slot, ICombatant target) {
       slot.ToolTipHoverElement.BasicString = new Text("SHOT MODIFIER ", (object[])Array.Empty<object>());
       slot.ToolTipHoverElement.UseModifier = true;
       if (slot.DisplayedWeapon.Type == WeaponType.Melee) {
-        slot.UpdateToolTipsMelee(target);
+        slot.UpdateToolTipsMelee_I(target);
       } else if (slot.DisplayedWeapon.WillFireAtTargetFromPosition(target, Traverse.Create(slot).Field<CombatHUD>("HUD").Value.SelectionHandler.ActiveState.PreviewPos)) {
-        slot.UpdateToolTipsFiring(target);
+        slot.UpdateToolTipsFiring_I(target);
       } else {
-        slot.UpdateToolTipsSelf();
+        slot.UpdateToolTipsSelf_I();
       }
     }
     public static bool contemplatingDFA(this CombatHUDWeaponSlot slot,ICombatant target) {
@@ -689,10 +672,7 @@ namespace CustAmmoCategories {
       SelectionState activeState = Traverse.Create(slot).Field<CombatHUD>("HUD").Value.SelectionHandler.ActiveState;
       return activeState != null && activeState.SelectionType == SelectionType.Move && (activeState.PotentialMeleeTarget == target || activeState.TargetedCombatant == target);
     }
-    public static void AddToolTipDetail(this CombatHUDWeaponSlot slot, string description, int modifier) {
-      if (i_AddToolTipDetail != null) { i_AddToolTipDetail(slot, description, modifier); }
-    }
-    public static void UpdateToolTipsMelee(this CombatHUDWeaponSlot slot, ICombatant target) {
+    public static void UpdateToolTipsMelee_I(this CombatHUDWeaponSlot slot, ICombatant target) {
       //slot.ToolTipHoverElement.BasicString = new Text(slot.DisplayedWeapon.Name, (object[])Array.Empty<object>());
       CombatGameState Combat = Traverse.Create(slot).Field<CombatGameState>("Combat").Value;
       CombatHUD HUD = Traverse.Create(slot).Field<CombatHUD>("HUD").Value;
@@ -767,7 +747,7 @@ namespace CustAmmoCategories {
       if ((all_modifiers < 0) && (Combat.Constants.ResolutionConstants.AllowTotalNegativeModifier == false)) { all_modifiers = 0; };
       slot.ToolTipHoverElement.BasicModifierInt = all_modifiers;
     }
-    public static void UpdateToolTipsFiring(this CombatHUDWeaponSlot slot, ICombatant target) {
+    public static void UpdateToolTipsFiring_I(this CombatHUDWeaponSlot slot, ICombatant target) {
       CombatGameState Combat = Traverse.Create(slot).Field<CombatGameState>("Combat").Value;
       CombatHUD HUD = Traverse.Create(slot).Field<CombatHUD>("HUD").Value;
       MeleeAttackType meleeAttackType = MeleeAttackType.NotSet;
@@ -846,7 +826,7 @@ namespace CustAmmoCategories {
       if ((all_modifiers < 0) && (Combat.Constants.ResolutionConstants.AllowTotalNegativeModifier == false)) { all_modifiers = 0; };
       slot.ToolTipHoverElement.BasicModifierInt = all_modifiers;
     }
-    public static void UpdateToolTipsSelf(this CombatHUDWeaponSlot slot) {
+    public static void UpdateToolTipsSelf_I(this CombatHUDWeaponSlot slot) {
       slot.ToolTipHoverElement.BasicString = new Text(slot.DisplayedWeapon.Name, (object[])Array.Empty<object>());
       CombatGameState Combat = Traverse.Create(slot).Field<CombatGameState>("Combat").Value;
       CombatHUD HUD = Traverse.Create(slot).Field<CombatHUD>("HUD").Value;
@@ -919,9 +899,9 @@ namespace CustAmmoCategories {
       __instance.ToolTipHoverElement.BuffStrings.Clear();
       __instance.ToolTipHoverElement.DebuffStrings.Clear();
       if (target != null) {
-        __instance.UpdateToolTipsTarget(target);
+        __instance.UpdateToolTipsTarget_I(target);
       } else {
-        __instance.UpdateToolTipsSelf();
+        __instance.UpdateToolTipsSelf_I();
       }
       return false;
     }
@@ -937,27 +917,27 @@ namespace CustAmmoCategories {
     }
     public static void Postfix(ToHit __instance, AbstractActor attacker, Weapon weapon, ICombatant target, Vector3 attackPosition, Vector3 targetPosition, LineOfFireLevel lofLevel, bool isCalledShot, ref float __result) {
       __result = 0f;
-      Log.M?.TWL(0,$"ToHit modifier. attacker:{attacker.PilotableActorDef.ChassisID} target:{(target.PilotableActorDef == null?target.DisplayName: target.PilotableActorDef.ChassisID)} weapon:{weapon.weaponDef.Description.Id}");
+      if(Thread.CurrentThread.isFlagSet("TO_HIT_DEBUG_PRINT")) Log.M?.TWL(0,$"ToHit modifier. attacker:{attacker.PilotableActorDef.ChassisID} target:{(target.PilotableActorDef == null?target.DisplayName: target.PilotableActorDef.ChassisID)} weapon:{weapon.weaponDef.Description.Id}");
       foreach(var mod in ToHitModifiersHelper.modifiers) {
         if ((mod.Value.ranged == false)&&(mod.Value.melee == true)) { continue; }
         float val = mod.Value.modifier(__instance, attacker, weapon, target, attackPosition, targetPosition, lofLevel, MeleeAttackType.NotSet, isCalledShot);
-        Log.M?.WL(2,$"{mod.Key}:{val}");
+        if (Thread.CurrentThread.isFlagSet("TO_HIT_DEBUG_PRINT")) Log.M?.WL(2,$"{mod.Key}:{val}");
         __result += val;
       }
       foreach (var node in ToHitModifiersHelper.mod_nodes) {
         object state = node.Value.prepare(__instance, attacker, weapon, target, attackPosition, targetPosition, lofLevel, MeleeAttackType.NotSet, isCalledShot);
-        Log.M?.WL(2, $"node:{node.Key}");
+        if (Thread.CurrentThread.isFlagSet("TO_HIT_DEBUG_PRINT")) Log.M?.WL(2, $"node:{node.Key}");
         foreach (var mod in node.Value.modifiers) {
           if ((mod.Value.ranged == false) && (mod.Value.melee == true)) { continue; }
           float val = mod.Value.modifier(state, __instance, attacker, weapon, target, attackPosition, targetPosition, lofLevel, MeleeAttackType.NotSet, isCalledShot);
-          Log.M?.WL(3, $"{mod.Key}:{val}");
+          if (Thread.CurrentThread.isFlagSet("TO_HIT_DEBUG_PRINT")) Log.M?.WL(3, $"{mod.Key}:{val}");
           __result += val;
         }
       }
       if ((__result < 0f) && (Traverse.Create(__instance).Field<CombatGameState>("combat").Value.Constants.ResolutionConstants.AllowTotalNegativeModifier == false)) {
         __result = 0f;
       }
-      Log.M?.WL(0,$"result:{__result}");
+      if (Thread.CurrentThread.isFlagSet("TO_HIT_DEBUG_PRINT")) Log.M?.WL(0,$"result:{__result}");
     }
   }
   [HarmonyPatch(typeof(ToHit))]
@@ -982,7 +962,7 @@ namespace CustAmmoCategories {
           __result += (int)mod.Value.modifier(state, __instance, attacker, attacker.MeleeWeapon, target, targetPosition, targetPosition, LineOfFireLevel.LOFClear, MeleeAttackType.NotSet, false);
         }
       }
-      if ((__result < 0f) && (Traverse.Create(__instance).Field<CombatGameState>("combat").Value.Constants.ResolutionConstants.AllowTotalNegativeModifier == false)) {
+      if ((__result < 0f) && (__instance.combat.Constants.ResolutionConstants.AllowTotalNegativeModifier == false)) {
         __result = 0f;
       }
     }

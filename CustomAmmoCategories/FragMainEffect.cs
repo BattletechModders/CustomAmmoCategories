@@ -26,15 +26,15 @@ namespace CustAmmoCategoriesPatches {
   [HarmonyPatch(new Type[] { typeof(WeaponHitInfo), typeof(int), typeof(int), typeof(bool) })]
   public static class MissileEffect_FireShells {
     public static void Postfix(MissileEffect __instance, ref WeaponHitInfo hitInfo, int hitIndex, int emitterIndex, bool isIndirect) {
-      int thishitIndex = __instance.HitIndex();
-      Log.LogWrite("MissileEffect.Fire "+ hitInfo.attackWeaponIndex + "-"+ thishitIndex + "\n");
+      int thishitIndex = __instance.hitIndex;
+      Log.Combat?.WL(0, "MissileEffect.Fire " + hitInfo.attackWeaponIndex + "-"+ thishitIndex);
       AdvWeaponHitInfoRec advRec = __instance.hitInfo.advRec(hitIndex);
       if (advRec == null) {
-        Log.LogWrite(" no advanced record.");
+        Log.Combat?.WL(1, "no advanced record.");
         return;
       }
       if (advRec.fragInfo.separated && (advRec.fragInfo.fragStartHitIndex >= 0) && (advRec.fragInfo.fragsCount > 0)) {
-        Log.LogWrite(" frag projectile separated.");
+        Log.Combat?.WL(1, "frag projectile separated.");
         __instance.RegisterFragWeaponEffect();
       }
       return;
@@ -45,22 +45,23 @@ namespace CustAmmoCategoriesPatches {
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { })]
   public static class WeaponEffect_PublishWeaponCompleteMessage {
-    public static bool Prefix(WeaponEffect __instance) {
-      int hitIndex = __instance.HitIndex();
+    public static void Prefix(ref bool __runOriginal,WeaponEffect __instance) {
+      if (!__runOriginal) { return; }
+      int hitIndex = __instance.hitIndex;
       FragWeaponEffect fWe = __instance.fragEffect();
       if (fWe != null) {
-        Log.LogWrite("WeaponEffect.PublishWeaponCompleteMessage " + __instance.hitInfo.attackWeaponIndex + ":" + hitIndex + " has frag sub effect. Complete:" + fWe.FiringComplete+"\n");
-        return fWe.FiringComplete;
+        Log.Combat?.WL(0, "WeaponEffect.PublishWeaponCompleteMessage " + __instance.hitInfo.attackWeaponIndex + ":" + hitIndex + " has frag sub effect. Complete:" + fWe.FiringComplete);
+        __runOriginal = fWe.FiringComplete; return;
       }
-      return true;
+      return;
     }
     public static void Postfix(WeaponEffect __instance) {
-      int hitIndex = __instance.HitIndex();
+      int hitIndex = __instance.hitIndex;
       FragWeaponEffect fWe = __instance.fragEffect();
       if (fWe != null) {
-        Log.LogWrite("WeaponEffect.PublishWeaponCompleteMessage " + __instance.hitInfo.attackWeaponIndex + ":" + hitIndex + " has frag sub effect. Complete:" + fWe.FiringComplete + "\n");
+        Log.Combat?.WL(0, "WeaponEffect.PublishWeaponCompleteMessage " + __instance.hitInfo.attackWeaponIndex + ":" + hitIndex + " has frag sub effect. Complete:" + fWe.FiringComplete);
         if(fWe.FiringComplete == true) {
-          Log.LogWrite(" unregistring frag effect\n");
+          Log.Combat?.WL(1, "unregistring frag effect");
           __instance.unregisterFragEffect();
         }
       }
@@ -75,12 +76,12 @@ namespace CustAmmoCategories {
     public static readonly string FragPrefabMainPrefab = "WeaponEffect-Weapon_AC2";
     public static void RegisterFragWeaponEffect(this WeaponEffect we) {
       string prefabName = CustomAmmoCategories.FragPrefabMainPrefabPrefix + CustomAmmoCategories.FragPrefabMainPrefab;
-      Log.LogWrite("RegisterFragWeaponEffect for "+we.gameObject.name+" "+ prefabName + "\n");
+      Log.Combat?.WL(0, "RegisterFragWeaponEffect for "+we.gameObject.name+" "+ prefabName);
       if (CustomAmmoCategories.fragWeaponEffects.ContainsKey(we)) { return; }
       GameObject gameObject = we.weapon.parent.Combat.DataManager.PooledInstantiate(prefabName, BattleTechResourceType.Prefab, new Vector3?(), new Quaternion?(), (Transform)null);
       FragBallisticEffect fbWE = null;
       if (gameObject != null) {
-        Log.LogWrite(" getted from pool: " + gameObject.GetInstanceID() + "\n");
+        Log.Combat?.WL(1, "getted from pool: " + gameObject.GetInstanceID());
         fbWE = gameObject.GetComponent<FragBallisticEffect>();
         if (fbWE != null) {
           fbWE.parentWeaponEffect = we;
@@ -89,10 +90,10 @@ namespace CustAmmoCategories {
         }
       }
       if (fbWE == null) {
-        Log.LogWrite(" not in pool. instansing.\n");
+        Log.Combat?.WL(1, "not in pool. instansing.");
         GameObject ogameObject = we.weapon.parent.Combat.DataManager.PooledInstantiate("WeaponEffect-Weapon_AC2", BattleTechResourceType.Prefab, new Vector3?(), new Quaternion?(), (Transform)null);
-        if ((UnityEngine.Object)ogameObject == (UnityEngine.Object)null) {
-          CustomAmmoCategoriesLog.Log.LogWrite(string.Format("Error instantiating WeaponEffect [{0}], Weapon [{1}]]\n", (object)"WeaponEffect-Weapon_AC2", (object)we.weapon.Name));
+        if (ogameObject == null) {
+          Log.Combat?.WL(0, string.Format("Error instantiating WeaponEffect [{0}], Weapon [{1}]]", (object)"WeaponEffect-Weapon_AC2", (object)we.weapon.Name));
         } else {
           gameObject = GameObject.Instantiate(ogameObject);
           GameObject.Destroy(ogameObject);
@@ -100,12 +101,12 @@ namespace CustAmmoCategories {
           gameObject.transform.localPosition = Vector3.zero;
           gameObject.transform.rotation = Quaternion.identity;
           WeaponEffect result = gameObject.GetComponent<WeaponEffect>();
-          if ((UnityEngine.Object)result == (UnityEngine.Object)null) {
-            Log.LogWrite(string.Format("Error finding WeaponEffect on GO [{0}], Weapon [{1}]\n", (object)"WeaponEffect-Weapon_AC2", (object)we.weapon.Name));
+          if (result == null) {
+            Log.Combat?.WL(0, string.Format("Error finding WeaponEffect on GO [{0}], Weapon [{1}]\n", (object)"WeaponEffect-Weapon_AC2", (object)we.weapon.Name));
           } else {
             BallisticEffect bWE = result as BallisticEffect;
             if (bWE != null) {
-              Log.LogWrite("Found ballistic " + "WeaponEffect-Weapon_AC2" + "/" + we.weapon.Name + "\n");
+              Log.Combat?.WL(0, "Found ballistic " + "WeaponEffect-Weapon_AC2" + "/" + we.weapon.Name);
               bWE.Init(we.weapon);
               fbWE = gameObject.AddComponent<FragBallisticEffect>();
               fbWE.Init(bWE);
@@ -131,7 +132,7 @@ namespace CustAmmoCategories {
         CustomAmmoCategories.fragWeaponEffects.Remove(we);
         string prefabName = CustomAmmoCategories.FragPrefabMainPrefabPrefix + CustomAmmoCategories.FragPrefabMainPrefab;
         fWe.Reset();
-        Log.LogWrite("unregisterFragEffect. Returning to pool: "+prefabName+" "+fWe.gameObject+"\n");
+        Log.Combat?.WL(0, "unregisterFragEffect. Returning to pool: " + prefabName+" "+fWe.gameObject);
         we.weapon.parent.Combat.DataManager.PoolGameObject(prefabName, fWe.gameObject);
         //GameObject.Destroy(fWe.gameObject);
       }

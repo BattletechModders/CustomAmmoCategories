@@ -9,6 +9,7 @@
  *  If not, see <https://www.gnu.org/licenses/>. 
 */
 using BattleTech.Rendering.Trees;
+using BattleTech.UI;
 using CustAmmoCategories;
 using CustomAmmoCategoriesLog;
 using HarmonyLib;
@@ -22,11 +23,41 @@ using UnityEngine;
 using Random = UnityEngine.Random;
 
 namespace CustAmmoCategories {
+  [HarmonyPatch(typeof(QuadTreeData)), HarmonyPatch("Insert")]
+  public static class QuadTreeData_Insert {
+    public static void Postfix(QuadTreeData __instance, ref Matrix4x4 trs, ref Vector3 pos, Quaternion rot, ref Vector3 scale) {
+      DynamicTreesHelper.OnInsert(__instance, ref trs, ref pos, rot, ref scale);
+    }
+  }
+  [HarmonyPatch(typeof(QuadTreeData)), HarmonyPatch("SetupFullArray")]
+  public static class QuadTreeData_SetupFullArray {
+    public static void Prefix(QuadTreeData __instance) {
+      DynamicTreesHelper.SetupFullArray();
+    }
+  }
+  [HarmonyPatch(typeof(QuadTreeData)), HarmonyPatch("SetupComputeBuffer")]
+  public static class QuadTreeData_SetupComputeBuffer {
+    public static void Prefix(QuadTreeData __instance) {
+      DynamicTreesHelper.SetupComputeBuffer();
+    }
+  }
+  [HarmonyPatch(typeof(QuadTreeData)), HarmonyPatch("GenerateCombinedMesh")]
+  public static class QuadTreeData_GenerateCombinedMesh {
+    public static void Prefix(QuadTreeData __instance) {
+      DynamicTreesHelper.GenerateCombinedMesh();
+    }
+  }
+  [HarmonyPatch(typeof(QuadTreeData)), HarmonyPatch("GenerateMesh")]
+  public static class QuadTreeData_GenerateMesh {
+    public static void Prefix(QuadTreeData __instance) {
+      DynamicTreesHelper.GenerateMesh();
+    }
+  }
   public class CACDynamicTree {
     public static CACDynamicTree currentBurningIniting = null;
     public static List<CACDynamicTree> allCACTrees = new List<CACDynamicTree>();
-    public object quadTreeData;
-    public object burnedTreeData;
+    public QuadTreeData quadTreeData;
+    public QuadTreeData burnedTreeData { get; set; }
     public bool deleted;
     public int burnedTransformIndex;
     public int burnedMatrixIndex1;
@@ -36,7 +67,7 @@ namespace CustAmmoCategories {
     public int matrixIndex2;
     public QuadTreeTransform transform;
     public bool isTree;
-    public CACDynamicTree(object qd,int ti,int mi1,int mi2, QuadTreeTransform tr,bool tree) {
+    public CACDynamicTree(QuadTreeData qd,int ti,int mi1,int mi2, QuadTreeTransform tr,bool tree) {
       this.quadTreeData = qd;
       this.transformIndex = ti;
       this.matrixIndex1 = mi1;
@@ -50,26 +81,26 @@ namespace CustAmmoCategories {
       this.burnedMatrixIndex2 = -1;
       CACDynamicTree.allCACTrees.Add(this);
     }
-    public void InitBurned(object qd, int ti, int mi1, int mi2) {
+    public void InitBurned(QuadTreeData qd, int ti, int mi1, int mi2) {
       this.burnedTreeData = qd;
       this.burnedTransformIndex = ti;
       this.burnedMatrixIndex1 = mi1;
       this.burnedMatrixIndex2 = mi2;
     }
     public bool hideOriginal() {
-      List<QuadTreeTransform> transforms = (List<QuadTreeTransform>)DynamicTreesHelper.transformListField.GetValue(this.quadTreeData);
-      IList matrixLists = (IList)DynamicTreesHelper.matrixListField.GetValue(this.quadTreeData);
+      List<QuadTreeTransform> transforms = this.quadTreeData.transformList;
+      var matrixLists = this.quadTreeData.matrixList;
       if (this.transformIndex >= transforms.Count) {
-        CustomAmmoCategoriesLog.Log.LogWrite(" warning transform out of bounds\n");
+        Log.Combat?.WL(1,"warning transform out of bounds");
         return false;
       }
       if (this.matrixIndex1 >= matrixLists.Count) {
-        CustomAmmoCategoriesLog.Log.LogWrite(" warning matrixIndex1 out of bounds\n");
+        Log.Combat?.WL(1, "warning matrixIndex1 out of bounds");
         return false;
       }
-      List<Matrix4x4> matrixList = (List<Matrix4x4>)DynamicTreesHelper.trsListPropertyGet.Invoke(matrixLists[this.matrixIndex1], new object[0] { });
+      List<Matrix4x4> matrixList = matrixLists[this.matrixIndex1].trsList;
       if (this.matrixIndex2 >= matrixList.Count) {
-        CustomAmmoCategoriesLog.Log.LogWrite(" warning matrixIndex2 out of bounds " + this.matrixIndex2 + " /" + matrixList.Count + "\n");
+        Log.Combat?.WL(1, "warning matrixIndex2 out of bounds " + this.matrixIndex2 + " /" + matrixList.Count);
         return false;
       }
       transforms[this.transformIndex].scale.Set(0f, 0f, 0f);
@@ -78,22 +109,22 @@ namespace CustAmmoCategories {
     }
     public bool hideBurned() {
       if((this.burnedTreeData == null)||(this.burnedTransformIndex < 0)||(this.burnedMatrixIndex1 < 0)||(this.burnedMatrixIndex2 < 0)) {
-        CustomAmmoCategoriesLog.Log.LogWrite(" burned not inited\n");
+        Log.Combat?.WL(1, "burned not inited");
         return false;
       }
-      List<QuadTreeTransform> transforms = (List<QuadTreeTransform>)DynamicTreesHelper.transformListField.GetValue(this.burnedTreeData);
-      IList matrixLists = (IList)DynamicTreesHelper.matrixListField.GetValue(this.burnedTreeData);
+      List<QuadTreeTransform> transforms = this.burnedTreeData.transformList;
+      var matrixLists = this.burnedTreeData.matrixList;
       if (this.burnedTransformIndex >= transforms.Count) {
-        CustomAmmoCategoriesLog.Log.LogWrite(" warning burnedTransform out of bounds\n");
+        Log.Combat?.WL(1, "warning burnedTransform out of bounds");
         return false;
       }
       if (this.burnedMatrixIndex1 >= matrixLists.Count) {
-        CustomAmmoCategoriesLog.Log.LogWrite(" warning burnedMatrixIndex1 out of bounds\n");
+        Log.Combat?.WL(1, "warning burnedMatrixIndex1 out of bounds");
         return false;
       }
-      List<Matrix4x4> matrixList = (List<Matrix4x4>)DynamicTreesHelper.trsListPropertyGet.Invoke(matrixLists[this.burnedMatrixIndex1], new object[0] { });
+      List<Matrix4x4> matrixList = matrixLists[this.burnedMatrixIndex1].trsList;
       if (this.burnedMatrixIndex2 >= matrixList.Count) {
-        CustomAmmoCategoriesLog.Log.LogWrite(" warning burnedMatrixIndex2 out of bounds " + this.burnedMatrixIndex2 + " /" + matrixList.Count + "\n");
+        Log.Combat?.WL(1, "warning burnedMatrixIndex2 out of bounds " + this.burnedMatrixIndex2 + " /" + matrixList.Count);
         return false;
       }
       transforms[this.burnedTransformIndex].scale.Set(0f, 0f, 0f);
@@ -102,22 +133,22 @@ namespace CustAmmoCategories {
     }
     public bool showBurned() {
       if ((this.burnedTreeData == null) || (this.burnedTransformIndex < 0) || (this.burnedMatrixIndex1 < 0) || (this.burnedMatrixIndex2 < 0)) {
-        CustomAmmoCategoriesLog.Log.LogWrite(" burned not inited\n");
+        Log.Combat?.WL(1, "burned not inited\n");
         return false;
       }
-      List<QuadTreeTransform> transforms = (List<QuadTreeTransform>)DynamicTreesHelper.transformListField.GetValue(this.burnedTreeData);
-      IList matrixLists = (IList)DynamicTreesHelper.matrixListField.GetValue(this.burnedTreeData);
+      List<QuadTreeTransform> transforms = this.burnedTreeData.transformList;
+      var matrixLists = this.burnedTreeData.matrixList;
       if (this.burnedTransformIndex >= transforms.Count) {
-        CustomAmmoCategoriesLog.Log.LogWrite(" warning burnedTransform out of bounds\n");
+        Log.Combat?.WL(1, "warning burnedTransform out of bounds");
         return false;
       }
       if (this.burnedMatrixIndex1 >= matrixLists.Count) {
-        CustomAmmoCategoriesLog.Log.LogWrite(" warning burnedMatrixIndex1 out of bounds\n");
+        Log.Combat?.WL(1, "warning burnedMatrixIndex1 out of bounds");
         return false;
       }
-      List<Matrix4x4> matrixList = (List<Matrix4x4>)DynamicTreesHelper.trsListPropertyGet.Invoke(matrixLists[this.burnedMatrixIndex1], new object[0] { });
+      List<Matrix4x4> matrixList = matrixLists[this.burnedMatrixIndex1].trsList;
       if (this.burnedMatrixIndex2 >= matrixList.Count) {
-        CustomAmmoCategoriesLog.Log.LogWrite(" warning burnedMatrixIndex2 out of bounds " + this.burnedMatrixIndex2 + " /" + matrixList.Count + "\n");
+        Log.Combat?.WL(1, "warning burnedMatrixIndex2 out of bounds " + this.burnedMatrixIndex2 + " /" + matrixList.Count);
         return false;
       }
       float scaleFactor = CustomAmmoCategories.Settings.BurnedTrees.BurnedTreeScale;
@@ -126,14 +157,14 @@ namespace CustAmmoCategories {
       matrixList[burnedMatrixIndex2] = Matrix4x4.TRS(transforms[this.burnedTransformIndex].position, transforms[this.burnedTransformIndex].rotation, transforms[this.burnedTransformIndex].scale);
       return true;
     }
-    public List<object> delTree() {
-      List<object> result = new List<object>();
+    public List<QuadTreeData> delTree() {
+      List<QuadTreeData> result = new List<QuadTreeData>();
       if (this.deleted) { return result; }
-      QuadTreePrototype prototype = (QuadTreePrototype)DynamicTreesHelper.prototypeField.GetValue(this.quadTreeData);
+      QuadTreePrototype prototype = this.quadTreeData.prototype;
       if ((prototype.name.Contains("Tree") == false) && (prototype.name.Contains("Bush") == false)) { return result; };
-      List<QuadTreeTransform> transforms = (List<QuadTreeTransform>)DynamicTreesHelper.transformListField.GetValue(this.quadTreeData);
-      IList matrixLists = (IList)DynamicTreesHelper.matrixListField.GetValue(this.quadTreeData);
-      CustomAmmoCategoriesLog.Log.LogWrite("Removing tree " + prototype.name + " from ti:" + this.transformIndex + "/" + transforms.Count + " mi:" + this.matrixIndex1 + "/"+ matrixLists .Count+ " mi2:" + this.matrixIndex2 + "\n");
+      List<QuadTreeTransform> transforms = this.quadTreeData.transformList;
+      var matrixLists = this.quadTreeData.matrixList;
+      Log.Combat?.WL(1, "Removing tree " + prototype.name + " from ti:" + this.transformIndex + "/" + transforms.Count + " mi:" + this.matrixIndex1 + "/"+ matrixLists .Count+ " mi2:" + this.matrixIndex2);
       if (this.hideOriginal()) {
         result.Add(this.quadTreeData);
       }
@@ -142,7 +173,7 @@ namespace CustAmmoCategories {
         &&(CustomAmmoCategories.Settings.DontShowBurnedTreesTemporary == false)
         && (DynamicTreesHelper.RemoveTrees == false)
       ) {
-        CustomAmmoCategoriesLog.Log.LogWrite(" add tree same position as burned\n");
+        Log.Combat?.WL(1, "add tree same position as burned");
         if (this.showBurned()) {
           result.Add(this.burnedTreeData);
         }
@@ -150,23 +181,23 @@ namespace CustAmmoCategories {
       this.deleted = true;
       return result;
     }
-    public static void redrawTrees(HashSet<object> TreeDataHolders) {
-      foreach(object quadTreeData in TreeDataHolders) {
-        QuadTreePrototype prototype = (QuadTreePrototype)DynamicTreesHelper.prototypeField.GetValue(quadTreeData);
-        CustomAmmoCategoriesLog.Log.LogWrite("Redrawing tree data for:"+prototype.name+"\n");
-        DynamicTreesHelper.quadTreeDataCleanup.Invoke(quadTreeData, new object[0] { });
+    public static void redrawTrees(HashSet<QuadTreeData> TreeDataHolders) {
+      foreach(QuadTreeData quadTreeData in TreeDataHolders) {
+        QuadTreePrototype prototype = quadTreeData.prototype;
+        Log.Combat?.WL(0, "Redrawing tree data for:" + prototype.name);
+        quadTreeData.Cleanup();
       }
     }
   }
   public static class DynamicTreesHelper {
     public static bool RemoveTrees { get; set; } = false;
-    public static FieldInfo transformListField = null;
-    public static FieldInfo matrixListField = null;
-    public static FieldInfo prototypeField = null;
-    public static MethodInfo matrixCountProperty = null;
-    public static MethodInfo trsListPropertyGet = null;
-    public static MethodInfo trsListPropertySet = null;
-    public static MethodInfo quadTreeDataCleanup = null;
+    //public static FieldInfo transformListField = null;
+    //public static FieldInfo matrixListField = null;
+    //public static FieldInfo prototypeField = null;
+    //public static MethodInfo matrixCountProperty = null;
+    //public static MethodInfo trsListPropertyGet = null;
+    //public static MethodInfo trsListPropertySet = null;
+    //public static MethodInfo quadTreeDataCleanup = null;
     public static int counter = 0;
     public static readonly int maxCount = 1023;
     public static QuadTree _quadTree = null;
@@ -181,140 +212,82 @@ namespace CustAmmoCategories {
       DynamicTreesHelper.burnedTreePrefab = null;
       DynamicTreesHelper.burnedTreePrototypes.Clear();
     }
-    public static bool SetupFullArray() {
-      CustomAmmoCategoriesLog.Log.LogWrite("QuadTreeData.SetupFullArray\n");
-      return true;
+    public static void SetupFullArray() {
+      Log.Combat?.WL(0,"QuadTreeData.SetupFullArray");
     }
-    public static bool SetupComputeBuffer() {
-      CustomAmmoCategoriesLog.Log.LogWrite("QuadTreeData.SetupComputeBuffer\n");
-      return true;
+    public static void SetupComputeBuffer() {
+      Log.Combat?.WL(0, "QuadTreeData.SetupComputeBuffer");
     }
-    public static bool GenerateCombinedMesh() {
-      CustomAmmoCategoriesLog.Log.LogWrite("QuadTreeData.GenerateCombinedMesh\n");
-      return true;
+    public static void GenerateCombinedMesh() {
+      Log.Combat?.WL(0, "QuadTreeData.GenerateCombinedMesh");
     }
-    public static bool GenerateMesh() {
-      CustomAmmoCategoriesLog.Log.LogWrite("QuadTreeData.GenerateMesh\n");
-      return true;
+    public static void GenerateMesh() {
+      Log.Combat?.WL(0, "QuadTreeData.GenerateMesh");
     }
     public static void clearTrees() {
-      CustomAmmoCategoriesLog.Log.LogWrite("DynamicTreesHelper.clearTrees\n");
+      Log.Combat?.WL(0, "DynamicTreesHelper.clearTrees");
       if (DynamicTreesHelper._quadTree == null) {
-        CustomAmmoCategoriesLog.Log.LogWrite(" _quadTree is null\n");
+        Log.Combat?.WL(1, "_quadTree is null");
         return;
       }
-      IList quadTreeNodes = (IList)typeof(QuadTree).GetField("quadTreeNodes", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(DynamicTreesHelper._quadTree);
-      CustomAmmoCategoriesLog.Log.LogWrite(" quadTreeNodes.Count = " + quadTreeNodes.Count + "\n");
-      Type QuadTreeNode = quadTreeNodes[0].GetType();
-      FieldInfo childrenField = QuadTreeNode.GetField("children", BindingFlags.Instance | BindingFlags.NonPublic);
-      FieldInfo dataDictionaryField = QuadTreeNode.GetField("dataDictionary", BindingFlags.Instance | BindingFlags.NonPublic);
+      var quadTreeNodes = DynamicTreesHelper._quadTree.quadTreeNodes;
+      Log.Combat?.WL(1, "quadTreeNodes.Count = " + quadTreeNodes.Count);
       //int treesCount = 0;
       for (int t = 0; t < quadTreeNodes.Count; ++t) {
         if (quadTreeNodes[t] == null) { continue; }
-        CustomAmmoCategoriesLog.Log.LogWrite("  [" + t + "]=" + quadTreeNodes[t].GetType().ToString() + "\n");
-        IList children = (IList)childrenField.GetValue(quadTreeNodes[t]);
-        IDictionary dataDictionary = (IDictionary)dataDictionaryField.GetValue(quadTreeNodes[t]);
-        CustomAmmoCategoriesLog.Log.LogWrite("   children = " + ((children == null) ? "null" : children.Count.ToString()) + "\n");
-        CustomAmmoCategoriesLog.Log.LogWrite("   dataDictionary = " + ((dataDictionary == null) ? "null" : dataDictionary.Count.ToString()) + "\n");
+        var children = quadTreeNodes[t].children;
+        var dataDictionary = quadTreeNodes[t].dataDictionary;
+        Log.Combat?.WL(3, "children = " + ((children == null) ? "null" : children.Length.ToString()));
+        Log.Combat?.WL(3, "dataDictionary = " + ((dataDictionary == null) ? "null" : dataDictionary.Count.ToString()));
         if (dataDictionary == null) { continue; }
         if (children == null) { continue; }
         if (dataDictionary.Count > 0) {
-          IDictionaryEnumerator idataDictionary = dataDictionary.GetEnumerator();
-          while(idataDictionary.MoveNext()) {
-            QuadTreePrototype prototype = (QuadTreePrototype)idataDictionary.Key;
-            object quadTreeData = idataDictionary.Value;
+          foreach(var idataDictionary in dataDictionary) {
+            var prototype = idataDictionary.Key;
+            var quadTreeData = idataDictionary.Value;
             if (prototype == null) { continue; }
             if (quadTreeData == null) { continue; }
-            List<QuadTreeTransform> transformList = (List<QuadTreeTransform>)transformListField.GetValue(quadTreeData);
-            CustomAmmoCategoriesLog.Log.LogWrite("    " + prototype.name + ":" + transformList.Count + "\n");
-            IList matrixLists = (IList)matrixListField.GetValue(quadTreeData);
-            CustomAmmoCategoriesLog.Log.LogWrite("     matrix arrays:" + matrixLists.Count + "\n");
+            List<QuadTreeTransform> transformList = quadTreeData.transformList;
+            Log.Combat?.WL(4, prototype.name + ":" + transformList.Count);
+            var matrixLists = quadTreeData.matrixList;
+            Log.Combat?.WL(5, "matrix arrays:" + matrixLists.Count);
             for (int mi = 0; mi < matrixLists.Count; ++mi) {
-              List<Matrix4x4> matrixList = (List<Matrix4x4>)trsListPropertyGet.Invoke(matrixLists[mi], new object[0] { });
-              CustomAmmoCategoriesLog.Log.LogWrite("      matrix array[" + mi + "]:" + matrixList.Count + "\n");
+              List<Matrix4x4> matrixList = matrixLists[mi].trsList;;
+              Log.Combat?.WL(6, "matrix array[" + mi + "]:" + matrixList.Count);
             }
           };
         }
       }
     }
-    public static void OnInsert(object __instance,ref Matrix4x4 trs, ref Vector3 pos, Quaternion rot, ref Vector3 scale) {
+    public static void OnInsert(QuadTreeData __instance,ref Matrix4x4 trs, ref Vector3 pos, Quaternion rot, ref Vector3 scale) {
       if (DynamicMapHelper.mapMetaData == null) { return; }
       ++counter;
-      if (DynamicTreesHelper.transformListField == null) {
-        CustomAmmoCategoriesLog.Log.LogWrite("getting field info\n");
-        DynamicTreesHelper.transformListField = typeof(QuadTreeTransform).Assembly.GetType("BattleTech.Rendering.Trees.QuadTreeData").GetField("transformList", BindingFlags.NonPublic | BindingFlags.Instance);
-        if (DynamicTreesHelper.transformListField == null) {
-          CustomAmmoCategoriesLog.Log.LogWrite("can't get field info\n");
-        };
-      }
-      if (DynamicTreesHelper.matrixListField == null) {
-        CustomAmmoCategoriesLog.Log.LogWrite("getting matrixList\n");
-        DynamicTreesHelper.matrixListField = typeof(QuadTreeTransform).Assembly.GetType("BattleTech.Rendering.Trees.QuadTreeData").GetField("matrixList", BindingFlags.NonPublic | BindingFlags.Instance);
-        if (DynamicTreesHelper.matrixListField == null) {
-          CustomAmmoCategoriesLog.Log.LogWrite("can't get field info\n");
-        };
-      }
-      if (DynamicTreesHelper.matrixCountProperty == null) {
-        CustomAmmoCategoriesLog.Log.LogWrite("getting matrixCountProperty\n");
-        DynamicTreesHelper.matrixCountProperty = typeof(QuadTreeTransform).Assembly.GetType("BattleTech.Rendering.Trees.QuadTreeArray").GetProperty("count", BindingFlags.NonPublic | BindingFlags.Instance).GetGetMethod(true);
-        if (DynamicTreesHelper.matrixCountProperty == null) {
-          CustomAmmoCategoriesLog.Log.LogWrite("can't get field info\n");
-        };
-      }
-      if (DynamicTreesHelper.trsListPropertyGet == null) {
-        CustomAmmoCategoriesLog.Log.LogWrite("getting trsListPropertyGet\n");
-        DynamicTreesHelper.trsListPropertyGet = typeof(QuadTreeTransform).Assembly.GetType("BattleTech.Rendering.Trees.QuadTreeArray").GetProperty("trsList", BindingFlags.NonPublic | BindingFlags.Instance).GetGetMethod(true);
-        if (DynamicTreesHelper.trsListPropertyGet == null) {
-          CustomAmmoCategoriesLog.Log.LogWrite("can't get field info\n");
-        };
-      }
-      if (DynamicTreesHelper.trsListPropertySet == null) {
-        CustomAmmoCategoriesLog.Log.LogWrite("getting trsListPropertySet\n");
-        DynamicTreesHelper.trsListPropertySet = typeof(QuadTreeTransform).Assembly.GetType("BattleTech.Rendering.Trees.QuadTreeArray").GetProperty("trsList", BindingFlags.NonPublic | BindingFlags.Instance).GetSetMethod(true);
-        if (DynamicTreesHelper.trsListPropertySet == null) {
-          CustomAmmoCategoriesLog.Log.LogWrite("can't get field info\n");
-        };
-      }
-      if (DynamicTreesHelper.quadTreeDataCleanup == null) {
-        CustomAmmoCategoriesLog.Log.LogWrite("getting quadTreeDataCleanup\n");
-        DynamicTreesHelper.quadTreeDataCleanup = typeof(QuadTreeTransform).Assembly.GetType("BattleTech.Rendering.Trees.QuadTreeData").GetMethod("Cleanup", BindingFlags.Public | BindingFlags.Instance);
-        if (DynamicTreesHelper.quadTreeDataCleanup == null) {
-          CustomAmmoCategoriesLog.Log.LogWrite("can't get field info\n");
-        };
-      }
-      if (DynamicTreesHelper.prototypeField == null) {
-        CustomAmmoCategoriesLog.Log.LogWrite("getting prototypeField\n");
-        DynamicTreesHelper.prototypeField = typeof(QuadTreeTransform).Assembly.GetType("BattleTech.Rendering.Trees.QuadTreeData").GetField("prototype", BindingFlags.NonPublic | BindingFlags.Instance);
-        if (DynamicTreesHelper.prototypeField == null) {
-          CustomAmmoCategoriesLog.Log.LogWrite("can't get field info\n");
-        };
-      }
       List<QuadTreeTransform> transformList = null;
-      IList matrixList = null;
+      List<QuadTreeArray> matrixList = null;
       int ti = -1;
       int mi1 = -1;
       int mi2 = -1;
       if (DynamicTreesHelper.NoNeedInsert == true) {
         if(CACDynamicTree.currentBurningIniting != null) {
-          transformList = (List<QuadTreeTransform>)DynamicTreesHelper.transformListField.GetValue(__instance);
+          transformList = __instance.transformList;
           if (transformList == null) {
-            CustomAmmoCategoriesLog.Log.LogWrite("can't get transform list\n");
+            Log.Combat?.WL(0, "can't get transform list");
           }
           ti = transformList.Count - 1;
-          matrixList = (IList)DynamicTreesHelper.matrixListField.GetValue(__instance);
+          matrixList = __instance.matrixList;
           mi1 = matrixList.Count - 1;
           if (mi1 < 0) {
-            CustomAmmoCategoriesLog.Log.LogWrite("QuadTreeData.OnInsert mi(" + mi1 + ") < 0\n");
+            Log.Combat?.WL(0, "QuadTreeData.OnInsert mi(" + mi1 + ") < 0");
             return;
           }
-          mi2 = (int)DynamicTreesHelper.matrixCountProperty.Invoke(matrixList[mi1], new object[0] { }) - 1;
+          mi2 = matrixList[mi1].count - 1;
           CACDynamicTree.currentBurningIniting.InitBurned(__instance, ti, mi1, mi2);
           CACDynamicTree.currentBurningIniting = null;
           return;
         }
         return;
       };
-      QuadTreePrototype prototype = (QuadTreePrototype)DynamicTreesHelper.prototypeField.GetValue(__instance);
+      QuadTreePrototype prototype = __instance.prototype;
       bool isTree = prototype.name.Contains("Tree");
       if ((isTree == false) && (prototype.name.Contains("Bush") == false)) { return; };
       int x = DynamicMapHelper.mapMetaData.GetXIndex(pos.x);
@@ -322,36 +295,22 @@ namespace CustAmmoCategories {
       if ((x < 0) || (x >= DynamicMapHelper.mapMetaData.GetXLimit()) || (z < 0) || (z >= DynamicMapHelper.mapMetaData.GetZLimit())) {
         return;
       }
-      //CustomAmmoCategoriesLog.Log.LogWrite(prototype.name+":"+z+","+x+"\n");
       MapTerrainDataCellEx cell = DynamicMapHelper.mapMetaData.mapTerrainDataCells[z, x] as MapTerrainDataCellEx;
       if (cell == null) { return; }
-      transformList = (List<QuadTreeTransform>)DynamicTreesHelper.transformListField.GetValue(__instance);
+      transformList = __instance.transformList;
       if (transformList == null) {
-        CustomAmmoCategoriesLog.Log.LogWrite("can't get transform list\n");
+        Log.Combat?.WL(0, "can't get transform list");
       }
       ti = transformList.Count - 1;
-      matrixList = (IList)DynamicTreesHelper.matrixListField.GetValue(__instance);
+      matrixList = __instance.matrixList;
       mi1 = matrixList.Count - 1;
       if (mi1 < 0) {
-        CustomAmmoCategoriesLog.Log.LogWrite("QuadTreeData.OnInsert mi("+mi1+") < 0\n");
+        Log.Combat?.WL(0, "QuadTreeData.OnInsert mi(" + mi1+") < 0");
         return;
       }
-      mi2 = (int)DynamicTreesHelper.matrixCountProperty.Invoke(matrixList[mi1],new object[0] { }) - 1;
+      mi2 = matrixList[mi1].count - 1;
       cell.trees.Add(new CACDynamicTree(__instance,ti,mi1,mi2, transformList[ti], isTree));
-      //};
       return;
-      //MapTerrainDataCellEx cell = DynamicMapHelper.mapMetaData.GetCellAt(pos) as MapTerrainDataCellEx;
-      //if (cell == null) {
-        //int xindex = DynamicMapHelper.mapMetaData.GetXIndex(pos.x);
-        //int zindex = DynamicMapHelper.mapMetaData.GetZIndex(pos.z);
-        //CustomAmmoCategoriesLog.Log.LogWrite("cell "+xindex+":"+zindex+"\n");
-        /*return;
-      //}
-      List<QuadTreeTransform> transformList = (List<QuadTreeTransform>)DynamicTreesHelper.transformListField.GetValue(__instance);
-      if (transformList == null) {
-        CustomAmmoCategoriesLog.Log.LogWrite("can't get transform list\n");
-      }
-      cell.trees.Add(new CACDynamicTree(__instance, transformList.Last()));*/
     }
   }
 }
@@ -363,18 +322,18 @@ namespace CustAmmoCategoriesPatches {
   [HarmonyPatch(new Type[] { })]
   public static class RenderTrees_InitQuadTree {
     private static void Postfix(RenderTrees __instance) {
-      Log.M?.TWL(0,"RenderTrees.InitQuadTree postfix");
+      Log.Combat?.TWL(0,"RenderTrees.InitQuadTree postfix");
       DynamicTreesHelper.NoNeedInsert = true;
       try {
-        QuadTreePrototype[] quadTreePrototypes = (QuadTreePrototype[])typeof(RenderTrees).GetField("quadTreePrototypes", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(__instance);
+        QuadTreePrototype[] quadTreePrototypes = __instance.quadTreePrototypes;
         DynamicTreesHelper.burnedTreePrefab = CACMain.Core.findPrefab(CustomAmmoCategories.Settings.BurnedTrees.Mesh);
         if (DynamicTreesHelper.burnedTreePrefab == null) {
-          CustomAmmoCategoriesLog.Log.LogWrite(" " + CustomAmmoCategories.Settings.BurnedTrees.Mesh + " - fail\n");
+          Log.Combat?.WL(1, CustomAmmoCategories.Settings.BurnedTrees.Mesh + " - fail");
           DynamicTreesHelper.burnedTreePrototypes.Clear();
         } else {
-          CustomAmmoCategoriesLog.Log.LogWrite(" " + CustomAmmoCategories.Settings.BurnedTrees.Mesh + " components:\n");
+          Log.Combat?.WL(1, CustomAmmoCategories.Settings.BurnedTrees.Mesh + " components:");
           foreach (var component in DynamicTreesHelper.burnedTreePrefab.GetComponents(typeof(Component))) {
-            CustomAmmoCategoriesLog.Log.LogWrite("  " + component.GetType().ToString() + "\n");
+            Log.Combat?.WL(2, component.GetType().ToString());
           }
           MeshFilter meshFilter = DynamicTreesHelper.burnedTreePrefab.GetComponentInChildren<MeshFilter>();
           Texture2D _BumpMap = CACMain.Core.findTexture(CustomAmmoCategories.Settings.BurnedTrees.BumpMap);
@@ -384,21 +343,21 @@ namespace CustAmmoCategoriesPatches {
           Texture2D _MetallicGlossMap = CACMain.Core.findTexture(CustomAmmoCategories.Settings.BurnedTrees.MetallicGlossMap);
 
           if (meshFilter == null) {
-            CustomAmmoCategoriesLog.Log.LogWrite(" meshFilter is null\n");
+            Log.Combat?.WL(1,"meshFilter is null");
           } else {
-            CustomAmmoCategoriesLog.Log.LogWrite(" meshFilter is not null " + meshFilter.name + ":" + meshFilter.sharedMesh.name + "\n");
+            Log.Combat?.WL(1, "meshFilter is not null " + meshFilter.name + ":" + meshFilter.sharedMesh.name);
             TreePrototype prototypeToCopy = null;
-            CustomAmmoCategoriesLog.Log.LogWrite(" active terrain unity tree prototypes:\n");
+            Log.Combat?.WL(1, "active terrain unity tree prototypes:");
             foreach (TreePrototype prototype in Terrain.activeTerrain.terrainData.treePrototypes) {
-              CustomAmmoCategoriesLog.Log.LogWrite("  " + prototype.prefab.name + "\n");
+              Log.Combat?.WL(2, prototype.prefab.name);
               if (prototype.prefab.name.Contains("Tree") == false) { continue; }
               prototypeToCopy = prototype; break;
             }
             if (prototypeToCopy != null) {
               QuadTreePrototype newPrototype = new QuadTreePrototype(prototypeToCopy);
               string protName = prototypeToCopy.prefab.name + "_burned";
-              typeof(QuadTreePrototype).GetProperty("name", BindingFlags.Instance | BindingFlags.Public).GetSetMethod(true).Invoke(newPrototype, new object[1] { (object)protName });
-              CustomAmmoCategoriesLog.Log.LogWrite(" " + protName + " lods count: " + newPrototype.meshes.Length + "\n");
+              newPrototype.name = protName;
+              Log.Combat?.WL(2, newPrototype.name + " lods count: " + newPrototype.meshes.Length);
               for (int lod = 0; lod < newPrototype.meshes.Length; ++lod) {
                 newPrototype.meshes[lod] = meshFilter.sharedMesh;
                 newPrototype.materials[lod] = UnityEngine.Object.Instantiate(newPrototype.materials[lod]);
@@ -414,7 +373,7 @@ namespace CustAmmoCategoriesPatches {
                 newPrototype.combinedMaterial[lod].color = Color.black;
               }
               DynamicTreesHelper.burnedTreePrototype = newPrototype;
-              CustomAmmoCategoriesLog.Log.LogWrite(" initing burned success\n");
+              Log.Combat?.WL(1, "initing burned success");
               foreach (QuadTreePrototype prototype in quadTreePrototypes) {
                 if (DynamicTreesHelper.burnedTreePrototypes.ContainsKey(prototype) == false) { 
                   DynamicTreesHelper.burnedTreePrototypes.Add(prototype, newPrototype);
@@ -425,22 +384,22 @@ namespace CustAmmoCategoriesPatches {
               QuadTreePrototype[] newTreePrototypes = new QuadTreePrototype[quadTreePrototypes.Length + 1];
               quadTreePrototypes.CopyTo(newTreePrototypes, 0);
               newTreePrototypes[newTreePrototypes.Length - 1] = newPrototype;
-              typeof(RenderTrees).GetField("quadTreePrototypes", BindingFlags.Instance | BindingFlags.NonPublic).SetValue(__instance, newTreePrototypes);
+              __instance.quadTreePrototypes = newTreePrototypes;
             } else {
-              CustomAmmoCategoriesLog.Log.LogWrite(" no trees on terrain\n");
+              Log.Combat?.WL(1, "no trees on terrain");
             }
           }
         }
-        QuadTree quadTree = (QuadTree)typeof(RenderTrees).GetField("_quadTree", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(__instance);
+        QuadTree quadTree = __instance._quadTree;
         DynamicTreesHelper._quadTree = quadTree;
-        quadTreePrototypes = (QuadTreePrototype[])typeof(RenderTrees).GetField("quadTreePrototypes", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(__instance);
+        quadTreePrototypes = __instance.quadTreePrototypes;
         if (quadTreePrototypes != null) {
-          CustomAmmoCategoriesLog.Log.LogWrite("avaible tree prototypes (" + quadTreePrototypes.Length + "):\n");
+          Log.Combat?.WL(0, "avaible tree prototypes (" + quadTreePrototypes.Length + "):");
           foreach (QuadTreePrototype prototype in quadTreePrototypes) {
-            CustomAmmoCategoriesLog.Log.LogWrite(" " + prototype.name + "\n");
+            Log.Combat?.WL(1, prototype.name);
           }
           if ((DynamicTreesHelper.burnedTreePrototype != null) && (CustomAmmoCategories.Settings.DontShowBurnedTrees == false) && (CustomAmmoCategories.Settings.DontShowBurnedTreesTemporary == false)) {
-            CustomAmmoCategoriesLog.Log.LogWrite("Installing burned trees. All trees-like objects count: (" + CACDynamicTree.allCACTrees.Count + "):\n");
+            Log.Combat?.WL(0, "Installing burned trees. All trees-like objects count: (" + CACDynamicTree.allCACTrees.Count + "):");
             int counter = 0;
             foreach (CACDynamicTree cacTree in CACDynamicTree.allCACTrees) {
               if (cacTree.isTree == false) { continue; };
@@ -452,47 +411,43 @@ namespace CustAmmoCategoriesPatches {
               cacTree.hideBurned();
               ++counter;
             }
-            CustomAmmoCategoriesLog.Log.LogWrite("All trees count:" + counter + "\n");
+            Log.Combat?.WL(0, "All trees count:" + counter);
           }
         } else {
-          CustomAmmoCategoriesLog.Log.LogWrite("quadTreePrototypes array is null\n");
+          Log.Combat?.WL(0, "quadTreePrototypes array is null");
         }
         if (quadTree != null) {
-          IList quadTreeNodes = (IList)typeof(QuadTree).GetField("quadTreeNodes", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(quadTree);
-          CustomAmmoCategoriesLog.Log.LogWrite(" quadTreeNodes.Count = " + quadTreeNodes.Count + "\n");
-          Type QuadTreeNode = quadTreeNodes[0].GetType();
-          FieldInfo childrenField = QuadTreeNode.GetField("children", BindingFlags.Instance | BindingFlags.NonPublic);
-          FieldInfo dataDictionaryField = QuadTreeNode.GetField("dataDictionary", BindingFlags.Instance | BindingFlags.NonPublic);
+          var quadTreeNodes = quadTree.quadTreeNodes;
+          Log.Combat?.WL(1, "quadTreeNodes.Count = " + quadTreeNodes.Count);
           //int treesCount = 0;
           for (int t = 0; t < quadTreeNodes.Count; ++t) {
-            CustomAmmoCategoriesLog.Log.LogWrite("  [" + t + "]=" + quadTreeNodes[t].GetType().ToString() + "\n");
-            IList children = (IList)childrenField.GetValue(quadTreeNodes[t]);
-            IDictionary dataDictionary = (IDictionary)dataDictionaryField.GetValue(quadTreeNodes[t]);
-            CustomAmmoCategoriesLog.Log.LogWrite("   children = " + ((children == null) ? "null" : children.Count.ToString()) + "\n");
-            CustomAmmoCategoriesLog.Log.LogWrite("   dataDictionary = " + ((dataDictionary == null) ? "null" : dataDictionary.Count.ToString()) + "\n");
+            var children = quadTreeNodes[t].children;
+            var dataDictionary = quadTreeNodes[t].dataDictionary;
+            Log.Combat?.WL(3, "children = " + ((children == null) ? "null" : children.Length.ToString()));
+            Log.Combat?.WL(3, "dataDictionary = " + ((dataDictionary == null) ? "null" : dataDictionary.Count.ToString()));
             if (dataDictionary == null) { continue; }
             if (children == null) { continue; }
             if (dataDictionary.Count > 0) {
-              IDictionaryEnumerator idataDictionary = dataDictionary.GetEnumerator();
-              while (idataDictionary.MoveNext()) {
-                QuadTreePrototype prototype = (QuadTreePrototype)idataDictionary.Key;
-                object quadTreeData = idataDictionary.Value;
-                List<QuadTreeTransform> transformList = (List<QuadTreeTransform>)DynamicTreesHelper.transformListField.GetValue(quadTreeData);
-                CustomAmmoCategoriesLog.Log.LogWrite("    " + prototype.name + ":" + transformList.Count + "\n");
-                IList matrixLists = (IList)DynamicTreesHelper.matrixListField.GetValue(quadTreeData);
-                CustomAmmoCategoriesLog.Log.LogWrite("     matrix arrays:" + matrixLists.Count + "\n");
+              foreach (var idataDictionary in dataDictionary) {
+                var prototype = idataDictionary.Key;
+                var quadTreeData = idataDictionary.Value;
+                List<QuadTreeTransform> transformList = quadTreeData.transformList;
+                Log.Combat?.WL(4, prototype.name + ":" + transformList.Count);
+                var matrixLists = quadTreeData.matrixList;
+                Log.Combat?.WL(5, "matrix arrays:" + matrixLists.Count);
                 for (int mi = 0; mi < matrixLists.Count; ++mi) {
-                  List<Matrix4x4> matrixList = (List<Matrix4x4>)DynamicTreesHelper.trsListPropertyGet.Invoke(matrixLists[mi], new object[0] { });
-                  CustomAmmoCategoriesLog.Log.LogWrite("      matrix array[" + mi + "]:" + matrixList.Count + "\n");
+                  List<Matrix4x4> matrixList = matrixLists[mi].trsList;
+                  Log.Combat?.WL(6, "matrix array[" + mi + "]:" + matrixList.Count);
                 }
               };
             }
           }
         } else {
-          CustomAmmoCategoriesLog.Log.LogWrite("quadTree is null\n");
+          Log.Combat?.WL(0, "quadTree is null");
         }
       } catch (Exception e) {
-        Log.LogWrite("Fail to setup burned trees. Burned trees will not be shown: "+e.ToString()+"\n",true);
+        Log.Combat?.WL(0, "Fail to setup burned trees. Burned trees will not be shown: " + e.ToString(),true);
+        UIManager.logger.LogException(e);
         CustomAmmoCategories.Settings.DontShowBurnedTreesTemporary = true;
       }
     }

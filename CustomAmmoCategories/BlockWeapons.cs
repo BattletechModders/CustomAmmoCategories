@@ -29,9 +29,10 @@ namespace CustAmmoCategories {
         Weapon weapon = __instance.getWeapon();
         if (weapon == null) { return; }
         if (weapon.info().HUDSlot == null) { return; }
-        Traverse.Create(weapon.info().HUDSlot).Field<CombatHUD>("HUD").Value.WeaponPanel.RefreshDisplayedWeapons();
+        weapon.info().HUDSlot.HUD.WeaponPanel.RefreshDisplayedWeapons();
       } catch (Exception e) {
-        Log.M.TWL(0, e.ToString());
+        Log.Combat?.TWL(0, e.ToString());
+        Weapon.logger.LogException(e);
       }
     }
   }
@@ -47,9 +48,10 @@ namespace CustAmmoCategories {
         Weapon weapon = __instance.getWeapon();
         if (weapon == null) { return; }
         if (weapon.info().HUDSlot == null) { return; }
-        Traverse.Create(weapon.info().HUDSlot).Field<CombatHUD>("HUD").Value.WeaponPanel.RefreshDisplayedWeapons();
+        weapon.info().HUDSlot.HUD.WeaponPanel.RefreshDisplayedWeapons();
       } catch (Exception e) {
         Log.M.TWL(0, e.ToString());
+        Weapon.logger.LogException(e);
       }
     }
   }
@@ -102,12 +104,13 @@ namespace CustAmmoCategories {
           if (eject) { weapon.EjectWeaponForce(); }
           weapon.ApplyAmmoMode(curAmmoMode);
         }catch(Exception e) {
-          Log.M?.TWL(0, e.ToString(), true);
+          Log.Combat?.TWL(0, e.ToString(), true);
+          Weapon.logger.LogException(e);
         }
       }
     }
     public static void RecalculateBlocked(this AbstractActor actor) {
-      Log.M.TWL(0, "RecalculateBlocked:"+new Text(actor.DisplayName));
+      Log.Combat?.TWL(0, "RecalculateBlocked:"+new Text(actor.DisplayName));
       HashSet<int> blockedLocations = new HashSet<int>();
       if(actor.UnitType != UnitType.Mech) {
         foreach (Weapon weapon in actor.Weapons) {
@@ -124,23 +127,23 @@ namespace CustAmmoCategories {
           blockedLocations.Add((int)location);
         }
       }
-      Log.M.WL(1, "blockedLocations:" + blockedLocations.Count+" {");
+      Log.Combat?.WL(1, "blockedLocations:" + blockedLocations.Count+" {");
       foreach (int location in blockedLocations) {
-        Log.M.W(1, location.ToString());
+        Log.Combat?.W(1, location.ToString());
       }
-      Log.M.WL(0, "}");
+      Log.Combat?.WL(0, "}");
       foreach (Weapon weapon in actor.Weapons) {
         ExtWeaponDef def = weapon.exDef();
         bool result = true;
         if (def.CanBeBlocked == false) { result = false; } else {
           result = blockedLocations.Contains(weapon.Location);
         }
-        Log.M.WL(1, "weapon " + weapon.defId + " loc:"+weapon.Location+":"+result);
+        Log.Combat?.WL(1, "weapon " + weapon.defId + " loc:"+weapon.Location+":"+result);
         if (weaponBlockCache.ContainsKey(weapon) == false) { weaponBlockCache.Add(weapon, result); } else { weaponBlockCache[weapon] = result; };
       }
       foreach (Weapon weapon in actor.Weapons) {
         if (weapon.info().HUDSlot == null) { continue; }
-        Traverse.Create(weapon.info().HUDSlot).Field<CombatHUD>("HUD").Value.WeaponPanel.RefreshDisplayedWeapons();
+        weapon.info().HUDSlot.HUD.WeaponPanel.RefreshDisplayedWeapons();
       }
     }
   }

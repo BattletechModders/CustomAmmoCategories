@@ -19,12 +19,12 @@ namespace CustAmmoCategories {
     public static void MainStray(ref WeaponHitInfo hitInfo) {
       if (hitInfo.isAdvanced() == false) { return; };
       AdvWeaponHitInfo advInfo = hitInfo.advInfo();
-      Log.LogWrite("MainStray " + advInfo.weapon.defId + "\n");
+      Log.Combat?.WL(0,"MainStray " + advInfo.weapon.defId);
       if ((advInfo.weapon.StrayRange() < CustomAmmoCategories.Epsilon) || (advInfo.weapon.parent.isSpawnProtected())) {
-        Log.LogWrite(" no stray needed\n");
+        Log.Combat?.WL(1, "no stray needed");
         return;
       }
-      Log.LogWrite(" stray range:"+ advInfo.weapon.StrayRange() + "\n");
+      Log.Combat?.WL(1, "stray range:" + advInfo.weapon.StrayRange());
       List<ICombatant> combatants = new List<ICombatant>();
       List<ICombatant> allCombatants = advInfo.Combat.GetAllCombatants();
       string IFFDef = advInfo.weapon.IFFTransponderDef();
@@ -69,7 +69,7 @@ namespace CustAmmoCategories {
         };
       }
       if (spreadCombatants.Count == 0) {
-        Log.LogWrite("No combatants in range? Strange. No stray needed.\n");
+        Log.Combat?.WL(0, "No combatants in range? Strange. No stray needed.");
         return;
       }
       for (int hitIndex = 0; hitIndex < advInfo.hits.Count; ++hitIndex) {
@@ -83,7 +83,7 @@ namespace CustAmmoCategories {
         }
         spreadCounts[spreadCombatants[combatantIndex].GUID] += 1;
       }
-      Log.LogWrite(" spread result\n");
+      Log.Combat?.WL(1, "spread result");
       int spreadSumm = 0;
       List<WeaponHitInfo> result = new List<WeaponHitInfo>();
       advInfo.Sequence.ResetUsedRandomCache(hitInfo.attackGroupIndex, hitInfo.attackWeaponIndex);
@@ -91,7 +91,7 @@ namespace CustAmmoCategories {
         ICombatant combatant = advInfo.Combat.FindCombatantByGUID(spreadCount.Key);
         if (combatant == null) { continue; }
         if (spreadCount.Value == 0) { continue; };
-        Log.LogWrite(" " + combatant.DisplayName + " " + combatant.GUID + " " + spreadCount.Value + "\n");
+        Log.Combat?.WL(1, combatant.DisplayName + " " + combatant.GUID + " " + spreadCount.Value);
         spreadSumm += spreadCount.Value;
         WeaponHitInfo newHitInfo = new WeaponHitInfo();
         newHitInfo.numberOfShots = spreadCount.Value;
@@ -169,17 +169,17 @@ namespace CustAmmoCategories {
           ++hitIndex;
         }
       }
-      Log.LogWrite("stray result:\n");
+      Log.Combat?.WL(0, "stray result:");
       for(int hitIndex = 0;hitIndex < hitInfo.numberOfShots; ++hitIndex) {
-        Log.LogWrite(" " + hitIndex + " loc: pr " + hitInfo.hitLocations[hitIndex] + " sec " + hitInfo.secondaryHitLocations[hitIndex] + " adv " + advInfo.hits[hitIndex].hitLocation + " trg:");
+        Log.Combat?.W(1, hitIndex + " loc: pr " + hitInfo.hitLocations[hitIndex] + " sec " + hitInfo.secondaryHitLocations[hitIndex] + " adv " + advInfo.hits[hitIndex].hitLocation + " trg:");
         if (string.IsNullOrEmpty(hitInfo.secondaryTargetIds[hitIndex])) {
-          Log.LogWrite("primary "+advInfo.hits[hitIndex].target.DisplayName + (advInfo.hits[hitIndex].target.GUID == hitInfo.targetId?" ok":" error")+"\n");
+          Log.Combat?.WL(0, "primary " + advInfo.hits[hitIndex].target.DisplayName + (advInfo.hits[hitIndex].target.GUID == hitInfo.targetId?" ok":" error"));
         } else {
-          Log.LogWrite("secondary " + advInfo.hits[hitIndex].target.DisplayName + (advInfo.hits[hitIndex].target.GUID == hitInfo.secondaryTargetIds[hitIndex] ? " ok" : " error") + "\n");
+          Log.Combat?.WL(0, "secondary " + advInfo.hits[hitIndex].target.DisplayName + (advInfo.hits[hitIndex].target.GUID == hitInfo.secondaryTargetIds[hitIndex] ? " ok" : " error"));
         }
       }
       if (spreadSumm != advInfo.hits.Count) {
-        Log.LogWrite("WARNING! Spreaded count:" + spreadSumm + " not equal numbaer of shots:" + advInfo.hits.Count + "\n", true);
+        Log.Combat?.WL(0, "WARNING! Spreaded count:" + spreadSumm + " not equal numbaer of shots:" + advInfo.hits.Count, true);
       }
     }
   }

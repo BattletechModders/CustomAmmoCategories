@@ -10,21 +10,21 @@ namespace WeaponRealizer {
       //using (var writer = new StreamWriter(LogFilePath, true))
       //{
       //writer.WriteLine($"Message: {ex.Message}");
-      Log.M.WL($"Message: {ex.Message}");
-      Log.M.WL($"StackTrace: {ex.StackTrace}");
+      Log.Combat?.WL($"Message: {ex.Message}");
+      Log.Combat?.WL($"StackTrace: {ex.StackTrace}");
       //writer.WriteLine($"StackTrace: {ex.StackTrace}");
       WriteLogFooter();
     }
     public static void Debug(String line) {
       //if (!Core.ModSettings.debug) return;
       //using (var writer = new StreamWriter(LogFilePath, true)) {
-      Log.M.WL(line);
+      Log.Combat?.WL(line);
       WriteLogFooter();
       //}
     }
     private static void WriteLogFooter() {
-      Log.M.WL($"Date: {DateTime.Now}");
-      Log.M.WL(new string(c: '-', count: 80));
+      Log.Combat?.WL($"Date: {DateTime.Now}");
+      Log.Combat?.WL(new string(c: '-', count: 80));
     }
   }
 }

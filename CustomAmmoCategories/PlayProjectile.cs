@@ -19,6 +19,8 @@ using System.Reflection;
 using CustAmmoCategories;
 using UnityEngine;
 using BattleTech.Rendering;
+using CustomAmmoCategoriesLog;
+using CustomAmmoCategoriesHelper;
 
 namespace CustAmmoCategories {
   public static partial class CustomAmmoCategories {
@@ -34,61 +36,58 @@ namespace CustAmmoCategories {
     }
   }
 }
-
-
 namespace CustomAmmoCategoriesPatches {
   [HarmonyPatch(typeof(MissileEffect))]
   [HarmonyPatch("PlayProjectile")]
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { })]
   public static class MissileEffect_PlayProjectile {
-    public static bool Prefix(MissileEffect __instance) {
+    public static void Prefix(MissileEffect __instance) {
       bool isIndirect = (bool)typeof(MissileEffect).GetField("isIndirect", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(__instance);
-      CustomAmmoCategoriesLog.Log.LogWrite("MissileEffect.PlayProjectile "+__instance.weapon.UIName+" real isIndirect = " + isIndirect+"\n");
+      Log.Combat?.WL(0,"MissileEffect.PlayProjectile "+__instance.weapon.UIName+" real isIndirect = " + isIndirect);
       if (__instance.weapon.AlwaysIndirectVisuals() == true) {
-        CustomAmmoCategoriesLog.Log.LogWrite(" always indirect\n");
-        typeof(MissileEffect).GetField("isIndirect", BindingFlags.Instance | BindingFlags.NonPublic).SetValue(__instance, (object)true);
+        Log.Combat?.WL(1, "always indirect");
+        __instance.isIndirect = true;
       }
-      return true;
     }
   }
   public static class WeaponEffect_PlayProjectile {
-    public static bool Prefix(WeaponEffect __instance) {
-      CustomAmmoCategoriesLog.Log.LogWrite("WeaponEffect.PlayProjectile recoil\n");
+    public static void Prefix(ref bool __runOriginal, WeaponEffect __instance) {
+      if (!__runOriginal) { return; }
+      Log.Combat?.WL(0, "WeaponEffect.PlayProjectile recoil");
       try {
-        //__instance.t = 0.0f;
-        typeof(WeaponEffect).GetField("t", BindingFlags.NonPublic | BindingFlags.Instance).SetValue(__instance, 0.0f);
+        //__instance.t = 0.0f;\
+        __instance.t(0f);
         __instance.currentState = WeaponEffect.WeaponEffectState.Firing;
-        GameObject projectileMeshObject = (GameObject)typeof(WeaponEffect).GetField("projectileMeshObject", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(__instance);
-        if ((UnityEngine.Object)projectileMeshObject != (UnityEngine.Object)null) {
+        GameObject projectileMeshObject = __instance.projectileMeshObject();
+        if (projectileMeshObject != null) {
           projectileMeshObject.SetActive(true);
         }
-        GameObject projectileLightObject = (GameObject)typeof(WeaponEffect).GetField("projectileLightObject", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(__instance);
-        if ((UnityEngine.Object)projectileLightObject != (UnityEngine.Object)null) {
+        GameObject projectileLightObject = __instance.projectileLightObject();
+        if (projectileLightObject != null) {
           projectileLightObject.SetActive(true);
         }
-        ParticleSystem projectileParticles = (ParticleSystem)typeof(WeaponEffect).GetField("projectileParticles", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(__instance);
-        if ((UnityEngine.Object)projectileParticles != (UnityEngine.Object)null) {
+        ParticleSystem projectileParticles = __instance.projectileParticles();
+        if (projectileParticles != null) {
           projectileParticles.Stop(true);
           projectileParticles.Clear(true);
         }
-        Transform projectileTransform = (Transform)typeof(WeaponEffect).GetField("projectileTransform", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(__instance);
-        Transform startingTransform = (Transform)typeof(WeaponEffect).GetField("startingTransform", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(__instance);
+        Transform projectileTransform = __instance.projectileTransform();
+        Transform startingTransform = __instance.startingTransform();
         projectileTransform.position = startingTransform.position;
-        Vector3 endPos = (Vector3)typeof(WeaponEffect).GetField("endPos", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(__instance);
+        Vector3 endPos = __instance.endPos();
         projectileTransform.LookAt(endPos);
-        typeof(WeaponEffect).GetField("startPos", BindingFlags.NonPublic | BindingFlags.Instance).SetValue(__instance, startingTransform.position);
-        //__instance.startPos = __instance.startingTransform.position;
-        if ((UnityEngine.Object)projectileParticles != (UnityEngine.Object)null) {
+        __instance.startPos(startingTransform.position);
+        if (projectileParticles != null) {
           BTCustomRenderer.SetVFXMultiplier(projectileParticles);
           projectileParticles.Play(true);
           BTLightAnimator componentInChildren = projectileParticles.GetComponentInChildren<BTLightAnimator>(true);
-          if ((UnityEngine.Object)componentInChildren != (UnityEngine.Object)null) {
+          if (componentInChildren != null) {
             componentInChildren.StopAnimation();
             componentInChildren.PlayAnimation();
           }
         }
-        if ((UnityEngine.Object)__instance.weapon.parent.GameRep != (UnityEngine.Object)null) {
+        if (__instance.weapon.parent.GameRep != null) {
           int num;
           switch ((ChassisLocations)__instance.weapon.Location) {
             case ChassisLocations.LeftArm:
@@ -103,18 +102,18 @@ namespace CustomAmmoCategoriesPatches {
           }
           __instance.weapon.parent.GameRep.PlayFireAnim((AttackSourceLimb)num, __instance.weapon.AttackRecoil());
         }
-        int hitIndex = __instance.HitIndex();
+        int hitIndex = __instance.hitIndex;
         if (hitIndex >= 0) {
           if (!__instance.AllowMissSkipping || __instance.hitInfo.hitLocations[hitIndex] != 0 && __instance.hitInfo.hitLocations[hitIndex] != 65536) {
-            return false;
+            __runOriginal = false; return;
           }
         }
         __instance.PublishWeaponCompleteMessage();
       } catch (Exception e) {
-        CustomAmmoCategoriesLog.Log.LogWrite("Exception " + e.ToString() + "\nFallback to default\n");
-        return true;
+        Log.Combat?.TWL(0,"Exception " + e.ToString() + "\nFallback to default");
+        Weapon.logger.LogException(e);
       }
-      return false;
+      __runOriginal = false; return;
     }
   }
 }

@@ -18,30 +18,30 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
 
     private static string CalledShotHitChanceFormat = "{0:0}%";
 
-    public override void CombatStartsOnce() {
-      Type CalledShot = typeof(CombatHUDCalledShotPopUp);
-      if (AIMSettings.ShowLocationInfoInCalledShot)
-        Patch(CalledShot, "UpdateMechDisplay", null, "ShowCalledLocationHP");
+    public override void ModStarts() {
+      try {
+        Type CalledShot = typeof(CombatHUDCalledShotPopUp);
+        if (AIMSettings.ShowLocationInfoInCalledShot)
+          Patch(CalledShot, "UpdateMechDisplay", null, "ShowCalledLocationHP");
 
-      if (AIMSettings.CalledChanceFormat != null)
-        CalledShotHitChanceFormat = AIMSettings.CalledChanceFormat;
+        if (AIMSettings.CalledChanceFormat != null)
+          CalledShotHitChanceFormat = AIMSettings.CalledChanceFormat;
 
-      if (AIMSettings.FixBossHeadCalledShotDisplay) {
-        currentHitTableProp = typeof(CombatHUDCalledShotPopUp).GetProperty("currentHitTable", NonPublic | Instance);
-        if (currentHitTableProp == null)
-          Error("Cannot find CombatHUDCalledShotPopUp.currentHitTable, boss head called shot display not fixed. Boss should still be immune from headshot.");
-        else
+        if (AIMSettings.FixBossHeadCalledShotDisplay) {
           Patch(CalledShot, "UpdateMechDisplay", "FixBossHead", "CleanupBossHead");
-      }
+        }
 
-      if (AIMSettings.ShowRealMechCalledShotChance || AIMSettings.ShowRealVehicleCalledShotChance || AIMSettings.CalledChanceFormat != null) {
-        Patch(CalledShot, "set_ShownAttackDirection", typeof(AttackDirection), null, "RecordAttackDirection");
+        if (AIMSettings.ShowRealMechCalledShotChance || AIMSettings.ShowRealVehicleCalledShotChance || AIMSettings.CalledChanceFormat != null) {
+          Patch(CalledShot, "set_ShownAttackDirection", typeof(AttackDirection), null, "RecordAttackDirection");
 
-        if (AIMSettings.ShowRealMechCalledShotChance || AIMSettings.CalledChanceFormat != null)
-          Patch(CalledShot, "GetHitPercent", new Type[] { typeof(ArmorLocation), typeof(ArmorLocation) }, "OverrideHUDMechCalledShotPercent", null);
+          if (AIMSettings.ShowRealMechCalledShotChance || AIMSettings.CalledChanceFormat != null)
+            Patch(CalledShot, "GetHitPercent", new Type[] { typeof(ArmorLocation), typeof(ArmorLocation) }, "OverrideHUDMechCalledShotPercent", null);
 
-        if (AIMSettings.ShowRealVehicleCalledShotChance || AIMSettings.CalledChanceFormat != null)
-          Patch(CalledShot, "GetHitPercent", new Type[] { typeof(VehicleChassisLocations), typeof(VehicleChassisLocations) }, "OverrideHUDVehicleCalledShotPercent", null);
+          if (AIMSettings.ShowRealVehicleCalledShotChance || AIMSettings.CalledChanceFormat != null)
+            Patch(CalledShot, "GetHitPercent", new Type[] { typeof(VehicleChassisLocations), typeof(VehicleChassisLocations) }, "OverrideHUDVehicleCalledShotPercent", null);
+        }
+      }catch(Exception e) {
+        Error(e.ToString());
       }
     }
 
@@ -92,19 +92,18 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
 
     // ============ Boss heads ============
 
-    private static PropertyInfo currentHitTableProp;
     private static int head;
 
     public static void FixBossHead(CombatHUDCalledShotPopUp __instance) {
       if (__instance.DisplayedActor?.CanBeHeadShot ?? true) return;
-      Dictionary<ArmorLocation, int> currentHitTable = (Dictionary<ArmorLocation, int>)currentHitTableProp.GetValue(__instance, null);
+      Dictionary<ArmorLocation, int> currentHitTable = __instance.currentHitTable;
       if (currentHitTable == null || !currentHitTable.TryGetValue(ArmorLocation.Head, out head)) return;
       currentHitTable[ArmorLocation.Head] = 0;
     }
 
     public static void CleanupBossHead(CombatHUDCalledShotPopUp __instance) {
       if (head <= 0) return;
-      Dictionary<ArmorLocation, int> currentHitTable = (Dictionary<ArmorLocation, int>)currentHitTableProp.GetValue(__instance, null);
+      Dictionary<ArmorLocation, int> currentHitTable = __instance.currentHitTable;
       currentHitTable[ArmorLocation.Head] = head;
       head = 0;
     }

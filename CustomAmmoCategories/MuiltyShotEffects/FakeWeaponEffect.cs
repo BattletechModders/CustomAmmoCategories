@@ -67,6 +67,5 @@ namespace CustAmmoCategories {
       this.t = 0.0f;
       this.currentState = WeaponEffect.WeaponEffectState.Firing;
     }
-
   }
 }

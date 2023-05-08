@@ -19,6 +19,7 @@ using BattleTech.UI.TMProWrapper;
 using BattleTech.UI.Tooltips;
 using CustAmmoCategories;
 using CustAmmoCategoriesPatches;
+using CustomAmmoCategoriesHelper;
 using CustomAmmoCategoriesPatches;
 using DG.Tweening;
 using HarmonyLib;
@@ -2671,10 +2672,10 @@ namespace CustomUnits {
             if (activeList[t].Def.Description.Id == CustomAmmoCategoriesPatches.CombatHUDMechwarriorTray_InitAbilityButtons.AbilityName) {
               __instance.ResetAttackGroundButton(actor, activeList[t], avaibleButtons[t], forceInactive);
             } else {
-              __instance.ResetAbilityButton(actor, avaibleButtons[t], activeList[t], forceInactive);
+              __instance.ResetAbilityButton_public(actor, avaibleButtons[t], activeList[t], forceInactive);
             }
           } else {
-            __instance.ResetAbilityButton(actor, avaibleButtons[t], (Ability)null, false);
+            __instance.ResetAbilityButton_public(actor, avaibleButtons[t], (Ability)null, false);
           }
         }
 
@@ -2706,9 +2707,9 @@ namespace CustomUnits {
         //}
 
         if (actor.team.CommandAbilities.Count > 0) {
-          __instance.ResetAbilityButton(actor, __instance.CommandButton, actor.team.CommandAbilities[0], forceInactive);
+          __instance.ResetAbilityButton_public(actor, __instance.CommandButton, actor.team.CommandAbilities[0], forceInactive);
         } else {
-          __instance.ResetAbilityButton(actor, __instance.CommandButton, (Ability)null, false);
+          __instance.ResetAbilityButton_public(actor, __instance.CommandButton, (Ability)null, false);
         }
         return false;
       } catch (Exception e) {

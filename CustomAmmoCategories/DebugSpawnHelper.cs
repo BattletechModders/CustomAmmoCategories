@@ -19,10 +19,6 @@ using System.Text;
 using UnityEngine;
 using Random = UnityEngine.Random;
 
-namespace CustAmmoCategoriesPatches {
-
-}
-
 namespace CustAmmoCategories {
   public class VehicleSpawnerRecord {
     public VehicleDef vDef;
@@ -36,16 +32,16 @@ namespace CustAmmoCategories {
       this.vDef = def; this.pilot = pilot; this.spawnerGUID = sg; this.team = t; this.lance = l;this.count = c;this.pos = bp;
     }
     public void OnDepLoaded() {
-      Log.LogWrite("Dependencies for "+vDef.Description.Id+" loaded. Spawning:"+count+" of "+vDef.Description.Id+"\n");
+      Log.Combat?.WL(0,"Dependencies for "+vDef.Description.Id+" loaded. Spawning:"+count+" of "+vDef.Description.Id);
       for (int t = 0; t < count; ++t) {
         Vector3 spawnPos = SpawnVehicleDialogHelper.GetSpawnPosition(pos);
         if (spawnPos == Vector3.zero) {
           break;
         }
         Vehicle vehicle = ActorFactory.CreateVehicle(vDef, pilot, team.EncounterTags, SpawnVehicleDialogHelper.Dialog.Combat, Guid.NewGuid().ToString(), spawnerGUID, team.HeraldryDef);
-        Log.LogWrite(" vehicle created:" + vehicle.DisplayName + ":" + vehicle.GUID + "\n");
+        Log.Combat?.WL(1, "vehicle created:" + vehicle.DisplayName + ":" + vehicle.GUID);
         vehicle.Init(spawnPos, 0f, true);
-        Log.LogWrite(" vehicle inited. Initing gameRep\n");
+        Log.Combat?.WL(1, "vehicle inited. Initing gameRep");
         try {
           vehicle.InitGameRep((Transform)null);
           team.SupportTeam.AddUnit(vehicle);
@@ -56,9 +52,9 @@ namespace CustAmmoCategories {
           vehicle.OnPositionUpdate(spawnPos, Quaternion.identity, -1, true, (List<DesignMaskDef>)null, false);
           vehicle.BehaviorTree = BehaviorTreeFactory.MakeBehaviorTree(SpawnVehicleDialogHelper.Dialog.Combat.BattleTechGame, vehicle, BehaviorTreeIDEnum.CoreAITree);
           SpawnVehicleDialogHelper.Dialog.Combat.MessageCenter.PublishMessage((MessageCenterMessage)new UnitSpawnedMessage("DEBUG_SPAWNER", vehicle.GUID));
-          Log.LogWrite(" spawn success:" + vehicle.DisplayName + ":" + vehicle.GUID + "\n");
+          Log.Combat?.WL(0, "spawn success:" + vehicle.DisplayName + ":" + vehicle.GUID);
         } catch (Exception e) {
-          Log.LogWrite(e.ToString() + "\n");
+          Log.Combat?.WL(0, e.ToString());
           break;
         };
       }
@@ -86,52 +82,52 @@ namespace CustAmmoCategories {
       Vector3 pos = SpawnVehicleDialogHelper.lastTerrainHitPosition;
       SpawnVehicleDialogHelper.lastTerrainHitPosition = Vector3.zero;
       if (Dialog.vehiclesCount.Count == 0) { return; };
-      Log.LogWrite("SpawnVehicleDialogHelper.SpawnSelected\n");
+      Log.Combat?.WL(0, "SpawnVehicleDialogHelper.SpawnSelected");
       string spawnerGUID = string.Empty;
       PilotDef pilot = null;
       foreach (Team team in Dialog.Combat.Teams) {
-        Log.LogWrite(" team " + team.GUID + ":" + team.HeraldryDef.Description.Name + ":" + team.HeraldryDef.Description.Id+"\n");
+        Log.Combat?.WL(1, "team " + team.GUID + ":" + team.HeraldryDef.Description.Name + ":" + team.HeraldryDef.Description.Id);
         if (team.LocalPlayerControlsTeam == true) {
-          Log.LogWrite("  palyer\n");
+          Log.Combat?.WL(2, "palyer\n");
           continue;
         };
         if (team.unitCount == 0) {
-          Log.LogWrite("  no units\n");
+          Log.Combat?.WL(2, "no units");
           continue;
         };
-        Log.LogWrite("  units:\n");
+        Log.Combat?.WL(2, "units:");
         bool NoPilotable = true;
         foreach (AbstractActor unit in team.units) {
-          Log.LogWrite("   "+unit.DisplayName+":"+unit.GUID+":"+unit.spawnerGUID+" pilotable:"+unit.IsPilotable+"\n");
+          Log.Combat?.WL(3, unit.DisplayName+":"+unit.GUID+":"+unit.spawnerGUID+" pilotable:"+unit.IsPilotable);
           if (unit.IsPilotable == false) {continue;}
           spawnerGUID = unit.spawnerGUID;
           pilot = unit.GetPilot().pilotDef;
-          Log.LogWrite("   pilot:"+(pilot == null?"null":pilot.Description.Id)+"\n");
+          Log.Combat?.WL(3, "pilot:" + (pilot == null?"null":pilot.Description.Id));
           if (pilot != null) { NoPilotable = false; break; };
         }
         if (NoPilotable == false) {
           spawnTeam = team;
           break;
         } else {
-          Log.LogWrite("  team not contains pilotable units\n");
+          Log.Combat?.WL(2, "team not contains pilotable units");
         }
       }
       if (spawnTeam == null) { Log.LogWrite(" can't find team to spawn\n"); Dialog.vehiclesCount.Clear(); return; }
-      Log.LogWrite(" spawn team found "+spawnTeam.GUID+":"+spawnTeam.HeraldryDef.Description.Name+":"+ spawnTeam.HeraldryDef.Description.Id + " lances:"+ spawnTeam.lances.Count + "\n");
+      Log.Combat?.WL(1, "spawn team found " + spawnTeam.GUID+":"+spawnTeam.HeraldryDef.Description.Name+":"+ spawnTeam.HeraldryDef.Description.Id + " lances:"+ spawnTeam.lances.Count);
       Lance spawnLance = null;
       foreach (Lance lance in spawnTeam.lances) {
         spawnLance = lance;
         break;
       }
-      if (spawnLance == null) { Log.LogWrite(" can't find lance to spawn\n"); Dialog.vehiclesCount.Clear(); return; }
-      Log.LogWrite(" spawn lance found " + spawnLance.GUID + ":" + spawnLance.DisplayName + ":" + spawnLance.Type + "\n");
+      if (spawnLance == null) { Log.Combat?.WL(1, "can't find lance to spawn"); Dialog.vehiclesCount.Clear(); return; }
+      Log.Combat?.WL(1, "spawn lance found " + spawnLance.GUID + ":" + spawnLance.DisplayName + ":" + spawnLance.Type);
       if (string.IsNullOrEmpty(spawnerGUID)) { Log.LogWrite(" can't find spawner GUID\n"); Dialog.vehiclesCount.Clear(); return; }
-      Log.LogWrite(" spawner GUID " + spawnerGUID + "\n");
-      if (pilot == null) { Log.LogWrite(" can't find spawn pilot\n"); Dialog.vehiclesCount.Clear(); return; }
-      Log.LogWrite(" spawn pilot " + pilot.Description.Id + "\n");
+      Log.Combat?.WL(1, "spawner GUID " + spawnerGUID);
+      if (pilot == null) { Log.Combat?.WL(1, "can't find spawn pilot"); Dialog.vehiclesCount.Clear(); return; }
+      Log.Combat?.WL(1, "spawn pilot " + pilot.Description.Id);
       foreach (var spawnCount in Dialog.vehiclesCount) {
         if (spawnCount.Value == 0) { continue; }
-        Log.LogWrite(" spawn position:"+pos+"\n");
+        Log.Combat?.WL(1, "spawn position:" + pos);
         VehicleDef vDef = spawnCount.Key;
         if (vDef.DependenciesLoaded(1000U) == false) {
           DataManager.InjectedDependencyLoadRequest dependencyLoad = new DataManager.InjectedDependencyLoadRequest(SpawnVehicleDialogHelper.Dialog.Combat.DataManager);

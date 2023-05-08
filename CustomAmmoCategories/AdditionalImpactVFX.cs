@@ -319,20 +319,16 @@ namespace CustAmmoCategories {
   [HarmonyPatch(new Type[] { })]
   public static class WeaponEffect_PlayImpactAudio{
     public static bool Prefix(WeaponEffect __instance) {
-      Log.LogWrite("WeaponEffect_PlayImpactAudio.Postfix\n");
+      Log.Combat?.WL(0,"WeaponEffect_PlayImpactAudio.Postfix");
       if (__instance.weapon == null) { return true; }
       string snd = __instance.weapon.AdditionalImpactSound();
       if(string.IsNullOrEmpty(snd) == false) {
-        //AkGameObj projectileAudioObject = (AkGameObj)typeof(WeaponEffect).GetField("projectileAudioObject", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(__instance);
         Vector3 hitPos = __instance.hitInfo.hitPositions[__instance.hitIndex];
         float distanceToCamera = Vector3.Distance(Camera.main.transform.position, hitPos);
         CustomSoundHelper.SpawnAudioEmitter(snd, hitPos, false);
-        Log.LogWrite(" additional sound found. Playing ... " + snd + ":"+distanceToCamera+"\n");
-
-        //uint num = WwiseManager.PostEvent(snd, projectileAudioObject, null, null);
-        //Log.LogWrite(" played "+num+"\n");
+        Log.Combat?.WL(1, "additional sound found. Playing ... " + snd + ":"+distanceToCamera);
       } else {
-        Log.LogWrite(" no additional impact sound\n");
+        Log.Combat?.WL(1, "no additional impact sound\n");
       }
       return true;
     }
@@ -343,20 +339,20 @@ namespace CustAmmoCategories {
   [HarmonyPatch(new Type[] { })]
   public static class WeaponEffect_PlayPrefireSound {
     public static bool Prefix(WeaponEffect __instance, ref string __state) {
-      Log.M.TWL(0,"WeaponEffect_PlayPrefireSound.Prefix");
+      Log.Combat?.TWL(0,"WeaponEffect_PlayPrefireSound.Prefix");
       if (__instance.weapon == null) { return true; }
       string snd = __instance.weapon.preFireSFX();
       __state = __instance.preFireSFX;
-      Log.M.WL(1, "current sound:"+ __state);
+      Log.Combat?.WL(1, "current sound:"+ __state);
       if (string.IsNullOrEmpty(snd) == false) {
-        Log.M.WL(1, "replacing:" + snd);
+        Log.Combat?.WL(1, "replacing:" + snd);
         __instance.preFireSFX = snd;
       }
       return true;
     }
     public static void Postfix(WeaponEffect __instance, ref string __state) {
-      Log.M.TWL(0, "WeaponEffect_PlayPrefireSound.Postfix");
-      Log.M.WL(1, "current sound:" + __instance.preFireSFX + "->"+__state);
+      Log.Combat?.TWL(0, "WeaponEffect_PlayPrefireSound.Postfix");
+      Log.Combat?.WL(1, "current sound:" + __instance.preFireSFX + "->"+__state);
       __instance.preFireSFX = __state;
     }
   }

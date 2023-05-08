@@ -37,8 +37,8 @@ namespace CustAmmoCategories {
     }
     public void debugLog(int i) {
       string init = new string(' ', i);
-      Log.LogWrite(init + "moveCost:"+moveCost+"\n");
-      Log.LogWrite(init + "SprintMultiplier:" + SprintMultiplier + "\n");
+      Log.M?.WL(0,init + "moveCost:"+moveCost);
+      Log.M?.WL(0,init + "SprintMultiplier:" + SprintMultiplier);
     }
   }
   public class CustomDesignMaskInfo {
@@ -73,9 +73,9 @@ namespace CustAmmoCategories {
     }
     public void debugLog(int i) {
       string init = new string(' ', i);
-      Log.LogWrite(init + "CustomMoveCost:\n");
+      Log.M?.WL(0,init + "CustomMoveCost:");
       foreach(var ci in CustomMoveCost) {
-        Log.LogWrite(init + " "+ci.Key+":\n");
+        Log.M?.WL(init + " "+ci.Key+":");
         ci.Value.debugLog(i + 2);
       }
     }
@@ -177,11 +177,6 @@ namespace CustAmmoCategories {
       new_customDesignMaskInfo.Merge(newMask.GetCustomDesignMaskInfo());
       CustomAmmoCategories.tempDesignMasksDefs.Add(newDesignMaskId, result);
       customDesignMaskInfo.AddOrUpdate(result.Description.Id, new_customDesignMaskInfo, (k, v) => { return new_customDesignMaskInfo; });
-      //if (customDesignMaskInfo.ContainsKey(result.Description.Id)) {
-      //  customDesignMaskInfo[result.Description.Id] = new_customDesignMaskInfo;
-      //} else {
-      //  customDesignMaskInfo.TryAdd(result.Description.Id, new_customDesignMaskInfo);
-      //}
       return result;
     }
   }
@@ -195,7 +190,7 @@ namespace CustAmmoCategoriesPatches {
     public static string HIDE_DESIGN_MASK_FLAG = "HIDE_DESIGN_MASK";
     public static void Prefix(ActorMovementSequence __instance) {
       if (__instance.owningActor.UnaffectedDesignMasks()) {
-        Log.M.TWL(0, "ActorMovementSequence.UpdateSticky "+ __instance.owningActor.PilotableActorDef.ChassisID+" is unaffected by design mask");
+        Log.Combat?.TWL(0, "ActorMovementSequence.UpdateSticky "+ __instance.owningActor.PilotableActorDef.ChassisID+" is unaffected by design mask");
         Thread.CurrentThread.SetFlag(HIDE_DESIGN_MASK_FLAG);
       }
     }
@@ -218,7 +213,7 @@ namespace CustAmmoCategoriesPatches {
   public static class ActorMovementSequence_ResetPathing {
     public static void Prefix(AbstractActor __instance) {
       if (Thread.CurrentThread.isFlagSet(ActorMovementSequence_Init.NO_APPLY_DESIGN_MASK_AT_INIT)) {
-        Log.M?.TWL(0, "Late ReapplyDesignMasks " + __instance.PilotableActorDef.ChassisID);
+        Log.Combat?.TWL(0, "Late ReapplyDesignMasks " + __instance.PilotableActorDef.ChassisID);
         Thread.CurrentThread.ClearFlag(ActorMovementSequence_Init.NO_APPLY_DESIGN_MASK_AT_INIT);
         __instance.ReapplyDesignMasks();
       };
@@ -230,7 +225,7 @@ namespace CustAmmoCategoriesPatches {
   public static class Turret_InitStats {
     public static void Prefix(Turret __instance) {
       if (Thread.CurrentThread.isFlagSet(ActorMovementSequence_Init.NO_APPLY_DESIGN_MASK_AT_INIT)) {
-        Log.M?.TWL(0, "Late ReapplyDesignMasks "+__instance.PilotableActorDef.ChassisID);
+        Log.Combat?.TWL(0, "Late ReapplyDesignMasks "+__instance.PilotableActorDef.ChassisID);
         Thread.CurrentThread.ClearFlag(ActorMovementSequence_Init.NO_APPLY_DESIGN_MASK_AT_INIT);
         __instance.ReapplyDesignMasks();
       };
@@ -241,8 +236,9 @@ namespace CustAmmoCategoriesPatches {
   [HarmonyPatch(MethodType.Normal)]
   public static class ActorMovementSequence_ReapplyDesignMasks {
     public static string NO_APPLY_DESIGN_MASK_AT_INIT = "NO_APPLY_DESIGN_MASK_AT_INIT";
-    public static bool Prefix(AbstractActor __instance) {
-      return (Thread.CurrentThread.isFlagSet(NO_APPLY_DESIGN_MASK_AT_INIT) == false);
+    public static void Prefix(ref bool __runOriginal,AbstractActor __instance) {
+      if (Thread.CurrentThread.isFlagSet(NO_APPLY_DESIGN_MASK_AT_INIT) == false) { return; }
+      __runOriginal = false;
     }
   }
   [HarmonyPatch(typeof(CombatHUDStatusPanel))]
@@ -251,7 +247,6 @@ namespace CustAmmoCategoriesPatches {
   public static class CombatHUDStatusPanel_ShowPreviewMoveIndicators {
     public static void Prefix(CombatHUDStatusPanel __instance, AbstractActor actor, MoveType moveType) {
       if (actor.UnaffectedDesignMasks()) {
-        //Log.M.TWL(0, "CombatHUDStatusPanel.ShowPreviewMoveIndicators " + actor.PilotableActorDef.ChassisID + " is unaffected by design mask");
         Thread.CurrentThread.SetFlag(ActorMovementSequence_UpdateSticky.HIDE_DESIGN_MASK_FLAG);
       }
     }
@@ -267,7 +262,6 @@ namespace CustAmmoCategoriesPatches {
   public static class CombatHUDStatusPanel_ShowPreviewStatuses {
     public static void Prefix(CombatHUDStatusPanel __instance, AbstractActor actor, MoveType moveType) {
       if (actor.UnaffectedDesignMasks()) {
-        //Log.M.TWL(0, "CombatHUDStatusPanel.ShowPreviewStatuses " + actor.PilotableActorDef.ChassisID + " is unaffected by design mask");
         Thread.CurrentThread.SetFlag(ActorMovementSequence_UpdateSticky.HIDE_DESIGN_MASK_FLAG);
       }
     }
@@ -277,7 +271,6 @@ namespace CustAmmoCategoriesPatches {
       }
     }
   }
-
   [HarmonyPatch(typeof(StatisticEffect))]
   [HarmonyPatch("OnEffectBegin")]
   [HarmonyPatch(MethodType.Normal)]
@@ -285,27 +278,27 @@ namespace CustAmmoCategoriesPatches {
   public static class StatisticEffect_OnEffectBegin {
     public static void Prefix(StatisticEffect __instance, ref bool __state) {
       try {
-        //Log.M?.TWL(0, "StatisticEffect.OnEffectBegin Prefix target:" + __instance.Target.PilotableActorDef.ChassisID+" ID:"+__instance.EffectData.Description.Id+ " UnaffectedDesignMasks:"+ __instance.Target.UnaffectedDesignMasks());
         __state = __instance.Target.UnaffectedDesignMasks();
       } catch (Exception e) {
-        Log.M?.TWL(0, e.ToString(), true);
+        Log.Combat?.TWL(0, e.ToString(), true);
+        StatisticEffect.logger.LogException(e);
       }
     }
     public static void Postfix(StatisticEffect __instance, ref bool __state) {
       try {
-        //Log.M?.TWL(0, "StatisticEffect.OnEffectBegin Postfix target:" + __instance.Target.PilotableActorDef.ChassisID + " ID:" + __instance.EffectData.Description.Id + " UnaffectedDesignMasks:" + __instance.Target.UnaffectedDesignMasks());
         bool cur_state = __instance.Target.UnaffectedDesignMasks();
         if (__state != cur_state) {
           if (cur_state) {
-            Log.M?.TWL(0,"Removing all design masks from "+ __instance.Target.PilotableActorDef.ChassisID);
+            Log.Combat?.TWL(0,"Removing all design masks from "+ __instance.Target.PilotableActorDef.ChassisID);
             __instance.Target.RemoveAllDesignMaskEffects();
           } else {
-            Log.M?.TWL(0, "Applying design mask to " + __instance.Target.PilotableActorDef.ChassisID);
+            Log.Combat?.TWL(0, "Applying design mask to " + __instance.Target.PilotableActorDef.ChassisID);
             __instance.Target.RestoreDesignMaskEffect();
           }
         }
       } catch (Exception e) {
-        Log.M?.TWL(0, e.ToString(), true);
+        Log.Combat?.TWL(0, e.ToString(), true);
+        StatisticEffect.logger.LogException(e);
       }
     }
   }
@@ -318,7 +311,8 @@ namespace CustAmmoCategoriesPatches {
       try {
         __state = __instance.Target.UnaffectedDesignMasks();
       } catch (Exception e) {
-        Log.M?.TWL(0, e.ToString(), true);
+        Log.Combat?.TWL(0, e.ToString(), true);
+        StatisticEffect.logger.LogException(e);
       }
     }
     public static void Postfix(StatisticEffect __instance, ref bool __state) {
@@ -326,15 +320,16 @@ namespace CustAmmoCategoriesPatches {
         bool cur_state = __instance.Target.UnaffectedDesignMasks();
         if (__state != cur_state) {
           if (cur_state) {
-            Log.M?.TWL(0, "Removing all design masks from " + __instance.Target.PilotableActorDef.ChassisID);
+            Log.Combat?.TWL(0, "Removing all design masks from " + __instance.Target.PilotableActorDef.ChassisID);
             __instance.Target.RemoveAllDesignMaskEffects();
           } else {
-            Log.M?.TWL(0, "Applying design mask to " + __instance.Target.PilotableActorDef.ChassisID);
+            Log.Combat?.TWL(0, "Applying design mask to " + __instance.Target.PilotableActorDef.ChassisID);
             __instance.Target.RestoreDesignMaskEffect();
           }
         }
       } catch (Exception e) {
-        Log.M?.TWL(0, e.ToString(), true);
+        Log.Combat?.TWL(0, e.ToString(), true);
+        StatisticEffect.logger.LogException(e);
       }
     }
   }
@@ -347,7 +342,8 @@ namespace CustAmmoCategoriesPatches {
       try {
         __state = __instance.Target.UnaffectedDesignMasks();
       } catch (Exception e) {
-        Log.M?.TWL(0, e.ToString(), true);
+        Log.Combat?.TWL(0, e.ToString(), true);
+        StatisticEffect.logger.LogException(e);
       }
     }
     public static void Postfix(StatisticEffect __instance, ref bool __state) {
@@ -355,15 +351,16 @@ namespace CustAmmoCategoriesPatches {
         bool cur_state = __instance.Target.UnaffectedDesignMasks();
         if (__state != cur_state) {
           if (cur_state) {
-            Log.M?.TWL(0, "Removing all design masks from " + __instance.Target.PilotableActorDef.ChassisID);
+            Log.Combat?.TWL(0, "Removing all design masks from " + __instance.Target.PilotableActorDef.ChassisID);
             __instance.Target.RemoveAllDesignMaskEffects();
           } else {
-            Log.M?.TWL(0, "Applying design mask to " + __instance.Target.PilotableActorDef.ChassisID);
+            Log.Combat?.TWL(0, "Applying design mask to " + __instance.Target.PilotableActorDef.ChassisID);
             __instance.Target.RestoreDesignMaskEffect();
           }
         }
       } catch (Exception e) {
-        Log.M?.TWL(0, e.ToString(), true);
+        Log.Combat?.TWL(0, e.ToString(), true);
+        StatisticEffect.logger.LogException(e);
       }
     }
   }
@@ -376,7 +373,8 @@ namespace CustAmmoCategoriesPatches {
       try {
         __state = __instance.Target.UnaffectedDesignMasks();
       } catch (Exception e) {
-        Log.M?.TWL(0, e.ToString(), true);
+        Log.Combat?.TWL(0, e.ToString(), true);
+        StatisticEffect.logger.LogException(e);
       }
     }
     public static void Postfix(StatisticEffect __instance, ref bool __state) {
@@ -384,15 +382,16 @@ namespace CustAmmoCategoriesPatches {
         bool cur_state = __instance.Target.UnaffectedDesignMasks();
         if (__state != cur_state) {
           if (cur_state) {
-            Log.M?.TWL(0, "Removing all design masks from " + __instance.Target.PilotableActorDef.ChassisID);
+            Log.Combat?.TWL(0, "Removing all design masks from " + __instance.Target.PilotableActorDef.ChassisID);
             __instance.Target.RemoveAllDesignMaskEffects();
           } else {
-            Log.M?.TWL(0, "Applying design mask to " + __instance.Target.PilotableActorDef.ChassisID);
+            Log.Combat?.TWL(0, "Applying design mask to " + __instance.Target.PilotableActorDef.ChassisID);
             __instance.Target.RestoreDesignMaskEffect();
           }
         }
       } catch (Exception e) {
-        Log.M?.TWL(0, e.ToString(), true);
+        Log.Combat?.TWL(0, e.ToString(), true);
+        StatisticEffect.logger.LogException(e);
       }
     }
   }
@@ -405,7 +404,8 @@ namespace CustAmmoCategoriesPatches {
       try {
         __state = __instance.Target.UnaffectedDesignMasks();
       } catch (Exception e) {
-        Log.M?.TWL(0, e.ToString(), true);
+        Log.Combat?.TWL(0, e.ToString(), true);
+        StatisticEffect.logger.LogException(e);
       }
     }
     public static void Postfix(StatisticEffect __instance, ref bool __state) {
@@ -413,15 +413,16 @@ namespace CustAmmoCategoriesPatches {
         bool cur_state = __instance.Target.UnaffectedDesignMasks();
         if (__state != cur_state) {
           if (cur_state) {
-            Log.M?.TWL(0, "Removing all design masks from " + __instance.Target.PilotableActorDef.ChassisID);
+            Log.Combat?.TWL(0, "Removing all design masks from " + __instance.Target.PilotableActorDef.ChassisID);
             __instance.Target.RemoveAllDesignMaskEffects();
           } else {
-            Log.M?.TWL(0, "Applying design mask to " + __instance.Target.PilotableActorDef.ChassisID);
+            Log.Combat?.TWL(0, "Applying design mask to " + __instance.Target.PilotableActorDef.ChassisID);
             __instance.Target.RestoreDesignMaskEffect();
           }
         }
       } catch (Exception e) {
-        Log.M?.TWL(0, e.ToString(), true);
+        Log.Combat?.TWL(0, e.ToString(), true);
+        StatisticEffect.logger.LogException(e);
       }
     }
   }
@@ -444,11 +445,10 @@ namespace CustAmmoCategoriesPatches {
           if(CombatHUD_Init.HUD().MechTray.DisplayedActor == unit) {
             CombatHUD_Init.HUD().MechTray.DisplayedActor = unit;
           }
-          //CombatHUD_Init.HUD().InWorldMgr.GetNumFlagForCombatant(unit)?.ActorInfo.
         }
-        //CombatHUDInWorldElementMgr.GEt
       } catch (Exception e) {
-        Log.M?.TWL(0, e.ToString(), true);
+        Log.Combat?.TWL(0, e.ToString(), true);
+        AbstractActor.logger.LogException(e);
       }
     }
     public static void RestoreDesignMaskEffect(this AbstractActor unit) {
@@ -458,18 +458,20 @@ namespace CustAmmoCategoriesPatches {
           unit.SetOccupiedDesignMask(designMask, -1, null);
         }
       }catch(Exception e) {
-        Log.M?.TWL(0,e.ToString(),true);
+        Log.Combat?.TWL(0,e.ToString(),true);
+        AbstractActor.logger.LogException(e);
       }
     }
-    public static bool Prefix(AbstractActor __instance, ref DesignMaskDef mask, int stackItemUID) {
-      Log.M?.TWL(0, "AbstractActor.ApplyDesignMaskStickyEffect Prefix " + __instance.DisplayName + ":" + __instance.GUID + " UnaffectedDesignMasks:"+ __instance.UnaffectedDesignMasks(), true);
-      Log.M?.WL(0,Environment.StackTrace);
+    public static void Prefix(ref bool __runOriginal,AbstractActor __instance, ref DesignMaskDef mask, int stackItemUID) {
+      if (__runOriginal == false) { return; }
+      Log.Combat?.TWL(0, "AbstractActor.ApplyDesignMaskStickyEffect Prefix " + __instance.DisplayName + ":" + __instance.GUID + " UnaffectedDesignMasks:"+ __instance.UnaffectedDesignMasks(), true);
+      //Log.M?.WL(0,Environment.StackTrace);
       try {
         if (__instance.UnaffectedDesignMasks()) {
           mask = null;
         }
         if (mask == null || mask.stickyEffect == null || mask.stickyEffect.effectType == EffectType.NotSet) {
-          return false;
+          __runOriginal = false; return;
         }
         bool ActuallyApplied = false;
         if (__instance.CreateEffect(mask.stickyEffect, (Ability)null, __instance.GetDesignMaskEffectId(), stackItemUID, __instance, false)) {
@@ -478,23 +480,24 @@ namespace CustAmmoCategoriesPatches {
           ActuallyApplied = true;
         }
         bool InstabilityMultiplier = mask.stickyEffect.statisticData != null && mask.stickyEffect.statisticData.statName == "ReceivedInstabilityMultiplier";
-        Log.M?.TWL(0, string.Format("[ApplyDesignMaskStickyEffect] Actor {0} applying {1}. Is InstabilityMultiplier? {2} Actually applied? {3}", (object)__instance.GUID, (object)mask.stickyEffect.effectType, (object)InstabilityMultiplier, (object)ActuallyApplied));
-        return false;
+        Log.Combat?.TWL(0, string.Format("[ApplyDesignMaskStickyEffect] Actor {0} applying {1}. Is InstabilityMultiplier? {2} Actually applied? {3}", (object)__instance.GUID, (object)mask.stickyEffect.effectType, (object)InstabilityMultiplier, (object)ActuallyApplied));
+        __runOriginal = false; return;
       } catch (Exception e) {
-        Log.M?.TWL(0, e.ToString(), true);
+        Log.Combat?.TWL(0, e.ToString(), true);
+        AbstractActor.logger.LogException(e);
       }
-      return true;
+      return;
     }
     private static void Postfix(AbstractActor __instance, DesignMaskDef mask, int stackItemUID) {
       if (mask == null) { return; };
-      CustomAmmoCategoriesLog.Log.LogWrite("AbstractActor.ApplyDesignMaskStickyEffect:"+mask.Id+"\n");
+      Log.Combat?.WL(0, "AbstractActor.ApplyDesignMaskStickyEffect:"+mask.Id);
       if (CustomAmmoCategories.tempDesignMasksStickyEffects.ContainsKey(mask.Id) == false) {
-        CustomAmmoCategoriesLog.Log.LogWrite(" no additional sticky effects\n");
+        Log.Combat?.WL(1, "no additional sticky effects\n");
         return;
       }
       foreach (EffectData stickyEffect in CustomAmmoCategories.tempDesignMasksStickyEffects[mask.Id]) {
         if (stickyEffect == null || stickyEffect.effectType == EffectType.NotSet) { continue; }
-        CustomAmmoCategoriesLog.Log.LogWrite(" additional sticky effect:"+stickyEffect.Description.Name+"\n");
+        Log.Combat?.WL(1, "additional sticky effect:" + stickyEffect.Description.Name);
         if (__instance.CreateEffect(stickyEffect, (Ability)null, __instance.GetDesignMaskEffectId(), stackItemUID, __instance, false)) {
           FloatieMessage.MessageNature nature = stickyEffect.nature != EffectNature.Buff ? FloatieMessage.MessageNature.Debuff : FloatieMessage.MessageNature.Buff;
           __instance.Combat.MessageCenter.PublishMessage((MessageCenterMessage)new FloatieMessage(__instance.GUID, __instance.GUID, stickyEffect.Description.Name, nature));
@@ -507,12 +510,13 @@ namespace CustAmmoCategoriesPatches {
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { typeof(string) })]
   public static class DesignMaskDef_fromJSON {
-    public static bool Prefix(VehicleChassisDef __instance, ref string json) {
-      Log.LogWrite("DesignMaskDef.FromJSON\n");
+    public static void Prefix(ref bool __runOriginal,VehicleChassisDef __instance, ref string json) {
+      if (!__runOriginal) { return; }
+      Log.M?.WL(0,"DesignMaskDef.FromJSON");
       try {
         JObject definition = JObject.Parse(json);
         string id = (string)definition["Description"]["Id"];
-        Log.LogWrite(id + "\n");
+        Log.M?.WL(id);
         if (definition["Custom"] != null) {
           CustomDesignMaskInfo info = definition["Custom"].ToObject<CustomDesignMaskInfo>();
           info.AppendDefault();
@@ -522,10 +526,9 @@ namespace CustAmmoCategoriesPatches {
         }
         json = definition.ToString();
       } catch (Exception e) {
-        Log.LogWrite(e.ToString() + "\n", true);
+        Log.M?.TWL(0,e.ToString(), true);
+        UnityGameInstance.BattleTechGame.DataManager.logger.LogException(e);
       }
-      return true;
     }
   }
-
 }

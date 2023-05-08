@@ -45,24 +45,24 @@ namespace CustomAmmoCategoriesPathes {
       if (original == null) {
         CustomAmmoCategoriesLog.Log.LogWrite("Can't find ShotsWhenFiredRandomizerOverider in " + enabler.FullName+"\n");
       }
-      original = typeof(Weapon).Assembly.GetType("BattleTech.Rendering.Trees.QuadTreeData").GetMethod("Insert", BindingFlags.NonPublic | BindingFlags.Instance);
-      var postfix = typeof(DynamicTreesHelper).GetMethod("OnInsert");
-      harmony.Patch(original, null, new HarmonyMethod(postfix));
-      original = typeof(Weapon).Assembly.GetType("BattleTech.Rendering.Trees.QuadTreeData").GetMethod("SetupFullArray", BindingFlags.NonPublic | BindingFlags.Instance);
-      var prefix = typeof(DynamicTreesHelper).GetMethod("SetupFullArray");
-      harmony.Patch(original, new HarmonyMethod(prefix));
-      original = typeof(Weapon).Assembly.GetType("BattleTech.Rendering.Trees.QuadTreeData").GetMethod("SetupComputeBuffer", BindingFlags.NonPublic | BindingFlags.Instance);
-      prefix = typeof(DynamicTreesHelper).GetMethod("SetupComputeBuffer");
-      harmony.Patch(original, new HarmonyMethod(prefix));
-      original = typeof(Weapon).Assembly.GetType("BattleTech.Rendering.Trees.QuadTreeData").GetMethod("GenerateCombinedMesh", BindingFlags.NonPublic | BindingFlags.Instance);
-      prefix = typeof(DynamicTreesHelper).GetMethod("GenerateCombinedMesh");
-      harmony.Patch(original, new HarmonyMethod(prefix));
-      original = typeof(Weapon).Assembly.GetType("BattleTech.Rendering.Trees.QuadTreeData").GetMethod("GenerateMesh", BindingFlags.NonPublic | BindingFlags.Instance);
-      prefix = typeof(DynamicTreesHelper).GetMethod("GenerateMesh");
-      harmony.Patch(original, new HarmonyMethod(prefix));
+      //original = typeof(Weapon).Assembly.GetType("BattleTech.Rendering.Trees.QuadTreeData").GetMethod("Insert", BindingFlags.NonPublic | BindingFlags.Instance);
+      //var postfix = typeof(DynamicTreesHelper).GetMethod("OnInsert");
+      //harmony.Patch(original, null, new HarmonyMethod(postfix));
+      //original = typeof(Weapon).Assembly.GetType("BattleTech.Rendering.Trees.QuadTreeData").GetMethod("SetupFullArray", BindingFlags.NonPublic | BindingFlags.Instance);
+      //var prefix = typeof(DynamicTreesHelper).GetMethod("SetupFullArray");
+      //harmony.Patch(original, new HarmonyMethod(prefix));
+      //original = typeof(Weapon).Assembly.GetType("BattleTech.Rendering.Trees.QuadTreeData").GetMethod("SetupComputeBuffer", BindingFlags.NonPublic | BindingFlags.Instance);
+      //prefix = typeof(DynamicTreesHelper).GetMethod("SetupComputeBuffer");
+      //harmony.Patch(original, new HarmonyMethod(prefix));
+      //original = typeof(Weapon).Assembly.GetType("BattleTech.Rendering.Trees.QuadTreeData").GetMethod("GenerateCombinedMesh", BindingFlags.NonPublic | BindingFlags.Instance);
+      //prefix = typeof(DynamicTreesHelper).GetMethod("GenerateCombinedMesh");
+      //harmony.Patch(original, new HarmonyMethod(prefix));
+      //original = typeof(Weapon).Assembly.GetType("BattleTech.Rendering.Trees.QuadTreeData").GetMethod("GenerateMesh", BindingFlags.NonPublic | BindingFlags.Instance);
+      //prefix = typeof(DynamicTreesHelper).GetMethod("GenerateMesh");
+      //harmony.Patch(original, new HarmonyMethod(prefix));
 
       original = typeof(Weapon).Assembly.GetType("BraceNode").GetMethod("Tick", BindingFlags.NonPublic | BindingFlags.Instance);
-      prefix = typeof(BraceNode_Tick).GetMethod("Prefix");
+      var prefix = typeof(BraceNode_Tick).GetMethod("Prefix");
       harmony.Patch(original, new HarmonyMethod(prefix));
       //var enemyHarmony = HarmonyInstance.Create("com.joelmeador.WeaponRealizer");
       //var enemyPatchedMethods = enemyHarmony.GetPatchedMethods();

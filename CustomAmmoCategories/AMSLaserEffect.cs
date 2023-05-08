@@ -51,55 +51,44 @@ namespace CustAmmoCategories {
     public override float calculateInterceptCorrection(float curPath, float pathLenth, float distance, float missileProjectileSpeed) {
       return curPath / pathLenth;
     }
-#if PUBLIC_ASSEMBLIES
-    public override int ImpactPrecacheCount {
-#else
     protected override int ImpactPrecacheCount {
-#endif
       get {
         return 1;
       }
     }
-#if PUBLIC_ASSEMBLIES
-    public override void Awake() {
-#else
     protected override void Awake() {
-#endif
       base.Awake();
     }
-#if PUBLIC_ASSEMBLIES
-    public override void Start() {
-#else
     protected override void Start() {
-# endif
       base.Start();
     }
     public virtual void Init(LaserEffect original) {
       base.Init(original);
       this.lightIntensity = original.lightIntensity;
       this.lightRadius = original.lightRadius;
-      this.laserColor = (Color[])typeof(LaserEffect).GetField("laserColor", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(original);
+      this.laserColor = original.laserColor;
       this.beamStartSFX = original.beamStartSFX;
       this.beamStopSFX = original.beamStopSFX;
       this.pulseSFX = original.pulseSFX;
       this.pulseDelay = original.pulseDelay;
-      this.pulseTime = (float)typeof(LaserEffect).GetField("pulseTime", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(original);
+      this.pulseTime = original.pulseTime;
       this.laserAnim = original.laserAnim;
       this.preFireDuration = 0.001f;
-      this.mpb = (MaterialPropertyBlock)typeof(LaserEffect).GetField("mpb", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(original);
-      this.beamRenderer = (LineRenderer)typeof(LaserEffect).GetField("beamRenderer", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(original);
-      this.laserLight = (BTLight)typeof(LaserEffect).GetField("laserLight", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(original);
-      this.impactParticles = (ParticleSystem)typeof(LaserEffect).GetField("impactParticles", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(original);
-      this.laserAlpha = (float)typeof(LaserEffect).GetField("laserAlpha", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(original);
+      this.mpb = original.mpb;
+      this.beamRenderer = original.beamRenderer;
+      this.laserLight = original.laserLight;
+      this.impactParticles = original.impactParticles;
+      this.laserAlpha = original.laserAlpha;
     }
     public override void Fire(WeaponHitInfo hitInfo, int hitIndex = 0, int emitterIndex = 0) {
-      CustomAmmoCategoriesLog.Log.LogWrite("AMS laser effect can't fire normaly. Something is wrong.\n");
+      CustomAmmoCategoriesLog.Log.LogWrite("AMS laser effect can't fire normally. Something is wrong.\n");
+      WeaponEffect.logger.LogError("AMS laser effect can't fire normally. Something is wrong.\n" + Environment.StackTrace);
       base.Fire(hitInfo, hitIndex, emitterIndex);
     }
     public override void Fire(Vector3[] hitPositions, int hitIndex = 0, int emitterIndex = 0) {
       base.Fire(hitPositions, hitIndex, emitterIndex);
       this.duration = this.projectileSpeed;
-      if ((double)this.duration <= 0.0)
+      if (this.duration <= CustomAmmoCategories.Epsilon)
         this.duration = 1f;
       this.rate = 1f / this.duration;
       this.PlayPreFire();
@@ -130,28 +119,16 @@ namespace CustAmmoCategories {
       this.projectileTransform.localRotation = Quaternion.identity;
       this.pulseTime = this.pulseDelay;
     }
-#if PUBLIC_ASSEMBLIES
-    public override void PlayPreFire() {
-#else
     protected override void PlayPreFire() {
-#endif
       base.PlayPreFire();
       if (string.IsNullOrEmpty(this.beamStartSFX))
         return;
       int num = (int)WwiseManager.PostEvent(this.beamStartSFX, this.parentAudioObject, (AkCallbackManager.EventCallback)null, (object)null);
     }
-#if PUBLIC_ASSEMBLIES
-    public override void PlayMuzzleFlash() {
-#else
     protected override void PlayMuzzleFlash() {
-#endif
       base.PlayMuzzleFlash();
     }
-#if PUBLIC_ASSEMBLIES
-    public override void PlayProjectile() {
-#else
     protected override void PlayProjectile() {
-#endif
       this.SetupLaser();
       this.PlayMuzzleFlash();
       if (!string.IsNullOrEmpty(this.pulseSFX)) {
@@ -162,11 +139,7 @@ namespace CustAmmoCategories {
       this.projectileTransform.position = this.endPos;
       this.PlayImpact();
     }
-#if PUBLIC_ASSEMBLIES
-    public override void PlayImpact() {
-#else
     protected override void PlayImpact() {
-#endif
       this.PlayImpactAudio();
       this.OnImpact(0.0f);
     }
@@ -222,7 +195,6 @@ namespace CustAmmoCategories {
         int num = (int)WwiseManager.PostEvent(this.beamStopSFX, this.parentAudioObject, (AkCallbackManager.EventCallback)null, (object)null);
       }
     }
-
     protected override void OnComplete() {
       this.StopAudio();
       if (this.impactParticles != null) { this.impactParticles.Stop(true); }

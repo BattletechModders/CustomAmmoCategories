@@ -6,7 +6,7 @@ using UnityEngine;
 
 namespace WeaponRealizer {
   [HarmonyPatch(typeof(AttackDirector.AttackSequence), "GenerateRandomCache")]
-  static class ClusteredShotRandomCacheEnabler {
+  public static class ClusteredShotRandomCacheEnabler {
     static bool Prepare() {
       return Core.ModSettings.ClusteredBallistics;
     }
@@ -21,7 +21,7 @@ namespace WeaponRealizer {
       if (!IsClustered(weapon)) return weapon.ShotsWhenFired;
       return weapon.ShotsWhenFired * weapon.ProjectilesPerShot;
     }
-    private static readonly Dictionary<string, bool> _isClustered = new Dictionary<string, bool>();
+    public static readonly Dictionary<string, bool> _isClustered = new Dictionary<string, bool>();
     private static bool IsClustered(Weapon weapon) {
       var weaponId = weapon.defId;
       if (!_isClustered.ContainsKey(weaponId)) {

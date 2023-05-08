@@ -57,78 +57,28 @@ namespace CustAmmoCategories {
         lEl.minHeight = CustomAmmoCategories.Settings.EvasiveNumberHeight;
         lEl.preferredWidth = CustomAmmoCategories.Settings.EvasiveNumberWidth;
         lEl.preferredHeight = CustomAmmoCategories.Settings.EvasiveNumberHeight;
-        List<Graphic> Pips = Traverse.Create(bar).Property<List<Graphic>>("Pips").Value;
+        List<Graphic> Pips = bar.Pips;
         textGO.transform.SetSiblingIndex(Pips[0].transform.GetSiblingIndex());
       }
       text.SetText("0");
       text.fontSize = CustomAmmoCategories.Settings.EvasiveNumberFontSize;
     }
   }
-  //[HarmonyPatch(typeof(EncounterLayerData))]
-  //[HarmonyPatch("GetEncounterBoundaryTexture")]
-  //[HarmonyPatch(MethodType.Normal)]
-  //[HarmonyPatch(new Type[] { })]
-  //public static class EncounterLayerData_GetEncounterBoundaryTexture {
-  //  private static bool Prefix(EncounterLayerData __instance, ref Texture2D __result,ref Texture2D ___encounterBoundaryTexture) {
-  //    Log.M.TWL(0, "EncounterLayerData.GetEncounterBoundaryTexture");
-  //    try {
-  //      if ((UnityEngine.Object)___encounterBoundaryTexture == (UnityEngine.Object)null) {
-  //        int mapBoundaryWidth = SplatMapInfo.mapBoundaryWidth;
-  //        int num1 = 2048 - SplatMapInfo.mapBoundaryWidth;
-  //        __instance.CalculateEncounterBoundary();
-  //        if ((UnityEngine.Object)__instance.encounterBoundaryChunk != (UnityEngine.Object)null && __instance.encounterBoundaryChunk.encounterBoundaryRectList.Count > 0) {
-  //          ___encounterBoundaryTexture = new Texture2D(512, 512, TextureFormat.ARGB32, false);
-  //          Color[] pixels = ___encounterBoundaryTexture.GetPixels();
-  //          for (int index = 0; index < pixels.Length; ++index)
-  //            pixels[index] = Color.black;
-  //          ___encounterBoundaryTexture.SetPixels(pixels);
-  //          for (int index1 = 0; index1 < __instance.encounterBoundaryChunk.encounterBoundaryRectList.Count; ++index1) {
-  //            Rect rect = __instance.encounterBoundaryChunk.encounterBoundaryRectList[index1].rect;
-  //            int x = (int)rect.x;
-  //            int y = (int)rect.y;
-  //            for (int index2 = 0; (double)index2 < (double)rect.height; ++index2) {
-  //              for (int index3 = 0; (double)index3 < (double)rect.width; ++index3) {
-  //                int num2 = index3 + 1024 + x;
-  //                int num3 = index2 + 1024 + y;
-  //                if (mapBoundaryWidth < num2 && num2 < num1 && (mapBoundaryWidth < num3 && num3 < num1))
-  //                  ___encounterBoundaryTexture.SetPixel(num2 / 4, num3 / 4, Color.white);
-  //              }
-  //            }
-  //          }
-  //          ___encounterBoundaryTexture.Apply();
-  //          Material mat = new Material(Shader.Find("Hidden/BT-ConvertToSDF"));
-  //          mat.color = Color.magenta;
-  //          mat.SetColor("_ColorBB", Color.magenta);
-  //          RenderTexture temporary = RenderTexture.GetTemporary(___encounterBoundaryTexture.width, ___encounterBoundaryTexture.height, 0, RenderTextureFormat.ARGB32, RenderTextureReadWrite.Linear);
-  //          Graphics.Blit((Texture)___encounterBoundaryTexture, temporary, mat, 0);
-  //          RenderTexture.active = temporary;
-  //          ___encounterBoundaryTexture.ReadPixels(new Rect(0.0f, 0.0f, (float)___encounterBoundaryTexture.width, (float)___encounterBoundaryTexture.height), 0, 0);
-  //          ___encounterBoundaryTexture.Apply(true, false);
-  //          RenderTexture.active = (RenderTexture)null;
-  //        }
-  //      }
-  //      __result = ___encounterBoundaryTexture;
-  //    } catch (Exception e) {
-  //      Log.M.TWL(0, e.ToString(), true);
-  //      return true;
-  //    }
-  //    return false;
-  //  }
-  //}
   [HarmonyPatch(typeof(CombatHUDEvasiveBarPips))]
   [HarmonyPatch("Init")]
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { typeof(CombatHUD) })]
   public static class CombatHUDEvasiveBarPips_Init {
     private static void Postfix(CombatHUDEvasiveBarPips __instance, CombatHUD HUD) {
-      Log.M.TWL(0, "CombatHUDEvasiveBarPips.Init Postfix");
+      Log.Combat?.TWL(0, "CombatHUDEvasiveBarPips.Init Postfix");
       try {
         if (CustomAmmoCategories.Settings.ShowEvasiveAsNumber) {
           CombatHUDEvasivePipsText pipsText = __instance.gameObject.GetComponent<CombatHUDEvasivePipsText>();
           if (pipsText == null) { pipsText = __instance.gameObject.AddComponent<CombatHUDEvasivePipsText>(); pipsText.Init(__instance, HUD); }
         }
       }catch(Exception e) {
-        Log.M.TWL(0, e.ToString(), true);
+        Log.Combat.TWL(0, e.ToString(), true);
+        CombatHUD.uiLogger.LogException(e);
       }
     }
   }

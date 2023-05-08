@@ -20,7 +20,7 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
 
     private static float RollCorrectionStrength, MissStreakBreakerThreshold, MissStreakBreakerDivider;
 
-    public override void CombatStartsOnce() {
+    public override void ModStarts() {
       if (HasMod("Battletech.realitymachina.NoCorrections", "NoCorrectedRoll.InitClass")) {
         BattleMod.BTML_LOG.Warn(Mod.Name + " detected realitymachina's True RNG (NoCorrections) mod, roll correction and streak breaker disabled.");
         TrueRNG = true;
@@ -61,23 +61,15 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
 
       bool HitChanceFormatChanged = AIMSettings.HitChanceFormat != null || (AIMSettings.HitChanceStep == 0 && AIMSettings.HitChanceFormat != "{0:0}%");
       if (HitChanceFormatChanged || AIMSettings.ShowCorrectedHitChance || AIMSettings.MinFinalHitChance < 0.05m || AIMSettings.MaxFinalHitChance > 0.95m) {
-        HitChance = typeof(CombatHUDWeaponSlot).GetMethod("set_HitChance", Instance | NonPublic);
-        Refresh = typeof(CombatHUDWeaponSlot).GetMethod("RefreshNonHighlighted", Instance | NonPublic);
         Patch(typeof(CombatHUDWeaponSlot), "SetHitChance", typeof(float), "OverrideDisplayedHitChance", null);
       }
 
-      if (NoRollCorrection)
-        UseWeightedHitNumbersProp = typeof(AttackDirector.AttackSequence).GetField("UseWeightedHitNumbers", Static | NonPublic);
     }
 
-    FieldInfo UseWeightedHitNumbersProp;
 
     public override void CombatStarts() {
       if (NoRollCorrection) {
-        if (UseWeightedHitNumbersProp != null)
-          UseWeightedHitNumbersProp.SetValue(null, false);
-        else
-          Warn("Cannot find AttackDirector.AttackSequence.UseWeightedHitNumbers. Roll correction not disabled.");
+        AttackDirector.AttackSequence.UseWeightedHitNumbers = false;
       } else if (correctionCache != null)
         Info("Combat starts with {0} reverse roll correction cached from previous battles.", correctionCache.Count);
     }
@@ -150,15 +142,14 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
       } catch (Exception ex) { Error(ex); }
     }
 
-    private static MethodInfo HitChance, Refresh;
 
     // Override the original code to remove accuracy cap on display, since correction or other settings can push it above 95%.
     [HarmonyPriority(Priority.HigherThanNormal)] // Above alexanderabramov's Real Hit Chance mod
     public static bool OverrideDisplayedHitChance(CombatHUDWeaponSlot __instance, float chance) {
       try {
-        HitChance.Invoke(__instance, new object[] { chance });
+        __instance.HitChance = chance;
         __instance.HitChanceText.text = string.Format(WeaponHitChanceFormat, Mathf.Clamp(chance * 100f, 0f, 100f));
-        Refresh.Invoke(__instance, null);
+        __instance.RefreshNonHighlighted();
         return false;
       } catch (Exception ex) { return Error(ex); }
     }

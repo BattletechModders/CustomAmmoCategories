@@ -15,6 +15,7 @@ using UnityEngine;
 using CustAmmoCategories;
 using Localize;
 using System.Collections;
+using CustomAmmoCategoriesLog;
 
 namespace CustomAmmoCategoriesPatches {
   [HarmonyPatch(typeof(Mech))]
@@ -22,17 +23,18 @@ namespace CustomAmmoCategoriesPatches {
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { typeof(WeaponHitInfo), typeof(int), typeof(ChassisLocations), typeof(Vector3), typeof(DamageType) })]
   public static class Mech_NukeStructureLocationZombie {
-    private static bool Prefix(Mech __instance, WeaponHitInfo hitInfo, int hitLoc, ChassisLocations location, Vector3 attackDirection, DamageType damageType) {
-      CustomAmmoCategoriesLog.Log.LogWrite("Mech.NukeStructureLocation("+__instance.DisplayName+":"+__instance.GUID+":"+ __instance.GetStringForStructureLocation(location)+"\n");
+    private static void Prefix(ref bool __runOriginal,Mech __instance, WeaponHitInfo hitInfo, int hitLoc, ChassisLocations location, Vector3 attackDirection, DamageType damageType) {
+      if (!__runOriginal) { return; }
+      Log.Combat?.WL(0,"Mech.NukeStructureLocation("+__instance.DisplayName+":"+__instance.GUID+":"+ __instance.GetStringForStructureLocation(location));
       if (__instance.pilot == null) {
-        CustomAmmoCategoriesLog.Log.LogWrite(" no pilot\n");
-        return true;
+        Log.Combat?.WL(1, "no pilot");
+        return;
       }
       if (__instance.pilot.pilotDef.PilotTags.Contains("pilot_zombie") == false) {
-        CustomAmmoCategoriesLog.Log.LogWrite(" pilot is not zombie\n");
-        return true;
+        Log.Combat?.WL(1, "pilot is not zombie");
+        return;
       }
-      CustomAmmoCategoriesLog.Log.LogWrite(" pilot is zombie\n");
+      Log.Combat?.WL(1, "pilot is zombie");
       __instance.StatCollection.Set<float>(__instance.GetStringForStructureLocation(location), 1f);
       if(location == ChassisLocations.CenterTorso) {
         AttackDirector.AttackSequence attackSequence = __instance.Combat.AttackDirector.GetAttackSequence(hitInfo.attackSequenceId);
@@ -42,7 +44,7 @@ namespace CustomAmmoCategoriesPatches {
         }
         if (__instance.pilot.Injuries < __instance.pilot.Health) {
           __instance.Combat.MessageCenter.PublishMessage((MessageCenterMessage)new AddSequenceToStackMessage((IStackSequence)new ShowActorInfoSequence((ICombatant)__instance, new Text("EMERGENCY REPAIRS COMMENCING"), FloatieMessage.MessageNature.LocationDestroyed, true)));
-          CustomAmmoCategoriesLog.Log.LogWrite(" zombie regeneration\n");
+          Log.Combat?.WL(1, "zombie regeneration");
           float maxVal = 0f; ArmorLocation aloc = ArmorLocation.None;
           aloc = ArmorLocation.Head; maxVal = __instance.GetMaxArmor(aloc); if (maxVal > CustomAmmoCategories.Epsilon) { __instance.StatCollection.Set<float>(__instance.GetStringForArmorLocation(aloc), maxVal); }
           aloc = ArmorLocation.CenterTorso; maxVal = __instance.GetMaxArmor(aloc); if (maxVal > CustomAmmoCategories.Epsilon) { __instance.StatCollection.Set<float>(__instance.GetStringForArmorLocation(aloc), maxVal); }
@@ -66,7 +68,7 @@ namespace CustomAmmoCategoriesPatches {
           cloc = ChassisLocations.LeftLeg; maxVal = __instance.GetMaxStructure(cloc); if (maxVal > CustomAmmoCategories.Epsilon) { __instance.StatCollection.Set<float>(__instance.GetStringForStructureLocation(cloc), maxVal); }
           foreach (MechComponent component in __instance.allComponents) {
             if (component.IsFunctional == false) {
-              CustomAmmoCategoriesLog.Log.LogWrite(" regenerating component:" + component.Description.Id + "\n");
+              Log.Combat?.WL(1, "regenerating component:" + component.Description.Id);
               component.StatCollection.Set<ComponentDamageLevel>("DamageLevel", ComponentDamageLevel.Functional);
               component.InitPassiveSelfEffects();
             }
@@ -76,7 +78,8 @@ namespace CustomAmmoCategoriesPatches {
           __instance.FlagForDeath("Core destroyed", DeathMethod.PilotKilled, damageType, (int)location, hitInfo.stackItemUID, hitInfo.attackerId, false);
         }
       }
-      return false;
+      __runOriginal = false;
+      return;
     }
   }
 }

@@ -257,37 +257,37 @@ namespace CustAmmoCategories {
       if (VarianceApplyied) { return; }
       VarianceApplyied = true;
       try {
-        Log.M.TWL(0, "Damage variance: " + hitIndex + "/" + parent.hits.Count +" UID:"+this.UID);
-        Log.M.WL(1, "attacker = " + parent.Sequence.attacker.DisplayName);
-        Log.M.WL(1, "target = " + new Text(target.DisplayName).ToString());
-        Log.M.WL(1, "location = (" + hitLocation + ")" + hitLocationStr);
-        Log.M.WL(1, "weapon = " + new Text(parent.weapon.UIName).ToString());
-        Log.M.WL(1, "damage = " + this.Damage + "/" + this.APDamage);
-        Log.M.WL(1, "heat = " + this.Heat);
-        Log.M.WL(1, "stability = " + this.Stability);
-        Log.M.WL(1, "isAOE = " + (isAOE));
-        Log.M.WL(1, "isFragMain = " + (isFragMain));
+        Log.Combat?.TWL(0, "Damage variance: " + hitIndex + "/" + parent.hits.Count +" UID:"+this.UID);
+        Log.Combat?.WL(1, "attacker = " + parent.Sequence.attacker.DisplayName);
+        Log.Combat?.WL(1, "target = " + new Text(target.DisplayName).ToString());
+        Log.Combat?.WL(1, "location = (" + hitLocation + ")" + hitLocationStr);
+        Log.Combat?.WL(1, "weapon = " + new Text(parent.weapon.UIName).ToString());
+        Log.Combat?.WL(1, "damage = " + this.Damage + "/" + this.APDamage);
+        Log.Combat?.WL(1, "heat = " + this.Heat);
+        Log.Combat?.WL(1, "stability = " + this.Stability);
+        Log.Combat?.WL(1, "isAOE = " + (isAOE));
+        Log.Combat?.WL(1, "isFragMain = " + (isFragMain));
         if (isAOE == true) {
-          Log.M.WL(1, "this is AOE - no variance");
+          Log.Combat?.WL(1, "this is AOE - no variance");
           return;
         }
         if (this.interceptInfo.Intercepted) {
-          Log.M.WL(1, "intercepted");
+          Log.Combat?.WL(1, "intercepted");
           return;
         }
         if ((hitLocation == 0) || (hitLocation == 65536)) {
-          Log.M.WL(1, "no hit");
+          Log.Combat?.WL(1, "no hit");
           return;
         }
         DamageModifiers mods = this.parent.weapon.GetDamageModifiers(this.parent.Sequence.attackPosition, this.target, this.parent.Sequence.IsBreachingShot?TripleBoolean.True:TripleBoolean.False);
         string description = string.Empty;
         mods.Calculate(this.hitLocation, ref this.Damage, ref this.APDamage, ref this.Heat, ref this.Stability, ref description, true, false);
-        Log.M.TWL(0, description);
+        Log.Combat?.TWL(0, description);
         this.target.AddComulativeDamage(this.hitLocation, this.Damage);
-        Log.LogWrite("  real damage = " + this.Damage + "\n");
-        Log.LogWrite("  real APdamage = " + this.APDamage + "\n");
-        Log.LogWrite("  real heat = " + this.Heat + "\n");
-        Log.LogWrite("  real stability = " + this.Stability + "\n");
+        Log.Combat?.WL(2, "real damage = " + this.Damage);
+        Log.Combat?.WL(2, "real APdamage = " + this.APDamage);
+        Log.Combat?.WL(2, "real heat = " + this.Heat);
+        Log.Combat?.WL(2, "real stability = " + this.Stability);
       } catch (Exception e) {
         Log.M.TWL(0, e.ToString(), true);
       }
@@ -297,26 +297,26 @@ namespace CustAmmoCategories {
       if (ImpactPlayed) { return; }
       ImpactPlayed = true;
       try {
-        Log.M.TWL(0, "Play impact: " + parent.weapon.defId + " " + this.hitIndex + "/"+this.parent.hits.Count);
+        Log.Combat?.TWL(0, "Play impact: " + parent.weapon.defId + " " + this.hitIndex + "/"+this.parent.hits.Count);
         if (isAOE == true) {
-          Log.M.WL(1, "this is AOE impact processing for them");
+          Log.Combat?.WL(1, "this is AOE impact processing for them");
           return;
         }
         if (isFragMain) {
           if (fragInfo.separated) {
-            Log.M.WL(1, "frag grenade separated. No impact processing");
+            Log.Combat?.WL(1, "frag grenade separated. No impact processing");
             this.hitLocation = 0;
             return;
           }
         }
         if (interceptInfo.Intercepted) {
-          Log.M.WL(1, "Projectile intercepted. No additional impact. No minefield");
+          Log.Combat?.WL(1, "Projectile intercepted. No additional impact. No minefield");
           this.hitLocation = 0;
           return;
         };
         if (this.hitLocation == 0) {
           this.hitLocation = 65536;
-          Log.M.WL(1, "Tie location to ground");
+          Log.Combat?.WL(1, "Tie location to ground");
         }
         parent.weapon.SpawnAdditionalImpactEffect(hitPosition);
         if (hitLocation == 65536) {
@@ -335,14 +335,15 @@ namespace CustAmmoCategories {
           parent.weapon.CreateDifferedEffect(target);
         }
       } catch (Exception e) {
-        Log.M.TWL(0, e.ToString(), true);
+        Log.Combat?.TWL(0, e.ToString(), true);
+        CustomAmmoCategories.AttackSequence_logger.LogException(e);
       }
     }
     public void Apply() {
       if (this.isHit) {
         if (this.isImplemented == true) { return; }
         if (this.impactMessage == null) { return; }
-        Log.M.TWL(0, $"Applying damage {this.parent.weapon.defId} to {this.target.DisplayName} UID:{this.UID} isAPProtected:{this.target.isAPProtected()}/{this.target.isAPProtected(this.hitLocation)}");
+        Log.Combat?.TWL(0, $"Applying damage {this.parent.weapon.defId} to {this.target.DisplayName} UID:{this.UID} isAPProtected:{this.target.isAPProtected()}/{this.target.isAPProtected(this.hitLocation)}");
         this.isImplemented = true;
         this.setApplyState();
         //this.ApplyTargetResistance();
@@ -351,31 +352,31 @@ namespace CustAmmoCategories {
         float locArmor = this.target.ArmorForLocation(this.hitLocation);
         float locStructure = this.target.StructureForLocation(this.hitLocation);
         this.parent.Sequence.FlagAttackDidDamage(this.target.GUID);
-        this.parent.Sequence.attackCompletelyMissed(false);
+        this.parent.Sequence.attackCompletelyMissed = (false);
         this.parent.Sequence.cumulativeDamage += (damage + apdmg);
         this.parent.resolve(this.target).cumulativeDamage += (damage + apdmg);
         float critAPchance = this.parent.weapon.isAPCrit() ? this.parent.weapon.APCriticalChanceMultiplier() : float.NaN;
-        Log.M.WL(1,"crit testing - damage:" + damage + " armor:" + locArmor +" structure:" + locStructure + " ap dmg:" + apdmg + " ap crit chance:" + critAPchance);
+        Log.Combat?.WL(1,"crit testing - damage:" + damage + " armor:" + locArmor +" structure:" + locStructure + " ap dmg:" + apdmg + " ap crit chance:" + critAPchance);
         if (damage > locArmor) {
           if ((this.isAOE == false)||(CustomAmmoCategories.Settings.AoECanCrit == true)) {
-            Log.LogWrite("  crit to location armor breach:" + this.hitLocation + "\n");
+            Log.Combat?.WL(2, "crit to location armor breach:" + this.hitLocation);
             this.parent.resolve(this.target).AddCrit(this.hitLocation, this.target);
           } else {
-            Log.LogWrite("  AoE can't inflict crits due to settings\n");
+            Log.Combat?.WL(2, "AoE can't inflict crits due to settings");
           }
         } else if (this.isAOE == false) {
           if ((this.target.isAPProtected() == false)&&(this.target.isAPProtected(this.hitLocation) == false)) {
             if ((apdmg > CustomAmmoCategories.Epsilon) || this.parent.weapon.isAPCrit()) {
-              Log.LogWrite("  crit to location armor pierce:" + this.hitLocation + "\n");
+              Log.Combat?.WL(2, "crit to location armor pierce:" + this.hitLocation);
               this.parent.resolve(this.target).AddCrit(this.hitLocation, this.target);
             } else {
-              Log.LogWrite("  ap damage is zero and weapon not cause AP crits:" + this.hitLocation + "\n");
+              Log.Combat?.WL(2, "ap damage is zero and weapon not cause AP crits:" + this.hitLocation);
             }
           } else {
-            Log.LogWrite("  target is AP crit protected:" + this.hitLocation + "\n");
+            Log.Combat?.WL(2, "target is AP crit protected:" + this.hitLocation);
           }
         } else {
-          Log.LogWrite("  AoE can't inflict armor pierce crits:" + this.hitLocation + "\n");
+          Log.Combat?.WL(2, "AoE can't inflict armor pierce crits:" + this.hitLocation);
         }
         Statistic overalldamage = this.parent.weapon.StatCollection.GetOrCreateStatisic<float>("CAC_WeaponOverallDamage",0f);
         overalldamage.SetValue<float>(overalldamage.Value<float>() + (damage + apdmg));
@@ -383,21 +384,21 @@ namespace CustAmmoCategories {
         heatdamage.SetValue<float>(heatdamage.Value<float>() + (this.Heat));
         Statistic stabilitydamage = this.parent.weapon.StatCollection.GetOrCreateStatisic<float>("CAC_WeaponStabilityDamage", 0f);
         stabilitydamage.SetValue<float>(stabilitydamage.Value<float>() + (this.Stability));
-        Log.LogWrite(" resolve damage. arm: "+ locArmor + " dmg:" + damage + " ap:" + apdmg + "\n");
+        Log.Combat?.WL(1, "resolve damage. arm: " + locArmor + " dmg:" + damage + " ap:" + apdmg);
         bool flaggedfordeath = this.target.IsFlaggedForDeath;
         this.target.TakeWeaponDamage(impactMessage.hitInfo, this.hitLocation, this.parent.weapon, damage, apdmg, hitIndex, DamageType.Weapon);
         //this.parent.resolve(this.target).AddHit(this.hitLocation, this.EffectsMod, this.isAOE);
         this.parent.resolve(this.target).AddHeat(this.Heat);
-        Log.LogWrite(" Added heat:" + this.Heat + " overall: " + this.parent.resolve(this.target).Heat + "\n");
+        Log.Combat?.WL(1, "Added heat:" + this.Heat + " overall: " + this.parent.resolve(this.target).Heat);
         this.parent.resolve(this.target).AddInstability(this.Stability);
-        Log.LogWrite(" Added instability:" + this.Stability + " overall: " + this.parent.resolve(this.target).Stability + "\n");
+        Log.Combat?.WL(1, "Added instability:" + this.Stability + " overall: " + this.parent.resolve(this.target).Stability);
         this.target.HandleDeath(this.parent.Sequence.attacker.GUID);
         if((flaggedfordeath == false) && (this.target.IsFlaggedForDeath)) {
           Statistic deathsinflicted = this.parent.weapon.StatCollection.GetOrCreateStatisic<float>("CAC_WeaponDeathsInflicted", 0f);
           deathsinflicted.SetValue<float>(deathsinflicted.Value<float>() + 1f);
         }
       }
-      this.parent.Sequence.messageCoordinator().MessageComplete((MessageCenterMessage)impactMessage);
+      this.parent.Sequence.messageCoordinator.MessageComplete((MessageCenterMessage)impactMessage);
     }
     public AdvWeaponHitInfoRec(AdvWeaponHitInfo parent) {
       this.parent = parent;
@@ -436,11 +437,13 @@ namespace CustAmmoCategories {
             if (this.parent.weapon.weaponRep.vfxTransforms.Length != 0) {
               this.GenerateTrajectory(this.parent.weapon.weaponRep.vfxTransforms[hitIndex % this.parent.weapon.weaponRep.vfxTransforms.Length].position);
             } else {
-              Log.M.TWL(0, "WARNING! vfxTransforms has 0 elements. Fixing", true);
+              Log.Combat?.TWL(0, "WARNING! vfxTransforms has 0 elements. Fixing", true);
+              CustomAmmoCategories.AttackSequence_logger.LogError("Exception! vfxTransforms has 0 elements");
               this.parent.weapon.weaponRep.vfxTransforms = new Transform[1] { this.parent.weapon.weaponRep.gameObject.transform };
             }
           } else {
-            Log.M.TWL(0, "WARNING! vfxTransforms is null. Fixing", true);
+            Log.Combat?.TWL(0, "WARNING! vfxTransforms is null. Fixing", true);
+            CustomAmmoCategories.AttackSequence_logger.LogError("Exception! vfxTransforms is null");
             this.parent.weapon.weaponRep.vfxTransforms = new Transform[1] { this.parent.weapon.weaponRep.gameObject.transform };
           }
         } catch (Exception e) {
@@ -525,7 +528,7 @@ namespace CustAmmoCategories {
     }
   }
   public class AdvWeaponResolveInfo {
-    public float Heat;
+    public float Heat { get; set; }
     public float Stability;
     public int hitsCount;
     public List<AdvCritLocationInfo> Crits;
@@ -574,10 +577,10 @@ namespace CustAmmoCategories {
       return advInfo.hits[hitIndex];
     }
     public static List<AdvWeaponHitInfoRec> Interceptables(this AttackDirector.AttackSequence sequence) {
-      Log.LogWrite("AttackSequence.Interceptables:" + sequence.id + "\n");
+      Log.Combat?.WL(0,"AttackSequence.Interceptables:" + sequence.id);
       List<AdvWeaponHitInfoRec> result = new List<AdvWeaponHitInfoRec>();
       if (AdvWeaponHitInfo.advancedWeaponHitInfo.ContainsKey(sequence.id) == false) {
-        Log.LogWrite(" not adv info for sequence\n");
+        Log.Combat?.WL(1,"not adv info for sequence");
         return result;
       }
       foreach (var group in AdvWeaponHitInfo.advancedWeaponHitInfo[sequence.id]) {
@@ -593,19 +596,20 @@ namespace CustAmmoCategories {
       if (grpIdx < 0) { return; }
       if (weaponIdx < 0) { return; }
       try {
-        int[][] randomCacheValuesUsed = (int[][])typeof(AttackDirector.AttackSequence).GetField("randomCacheValuesUsed", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(sequence);
+        int[][] randomCacheValuesUsed = sequence.randomCacheValuesUsed;
         if (grpIdx >= randomCacheValuesUsed.Length) { return; }
         if (weaponIdx >= randomCacheValuesUsed[grpIdx].Length) { return; }
         randomCacheValuesUsed[grpIdx][weaponIdx] = randomUsed;
-        typeof(AttackDirector.AttackSequence).GetField("randomCacheValuesUsed", BindingFlags.Instance | BindingFlags.NonPublic).SetValue(sequence, randomCacheValuesUsed);
+        sequence.randomCacheValuesUsed = randomCacheValuesUsed;
 
-        int[][] varianceCacheValuesUsed = (int[][])typeof(AttackDirector.AttackSequence).GetField("varianceCacheValuesUsed", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(sequence);
+        int[][] varianceCacheValuesUsed = sequence.varianceCacheValuesUsed;
         if (grpIdx >= varianceCacheValuesUsed.Length) { return; }
         if (weaponIdx >= varianceCacheValuesUsed[grpIdx].Length) { return; }
         varianceCacheValuesUsed[grpIdx][weaponIdx] = varianceUsed;
-        typeof(AttackDirector.AttackSequence).GetField("varianceCacheValuesUsed", BindingFlags.Instance | BindingFlags.NonPublic).SetValue(sequence, varianceCacheValuesUsed);
+        sequence.varianceCacheValuesUsed = varianceCacheValuesUsed;
       } catch (Exception e) {
-        Log.LogWrite(e.ToString() + "\n", true);
+        Log.Combat?.TWL(0,e.ToString(), true);
+        CustomAmmoCategories.AttackSequence_logger.LogException(e);
       }
     }
     public static void GetUsedRandomCache(this AttackDirector.AttackSequence sequence, int grpIdx, int weaponIdx, out int randomUsed, out int varianceUsed) {
@@ -613,16 +617,18 @@ namespace CustAmmoCategories {
       if (grpIdx < 0) { return; }
       if (weaponIdx < 0) { return; }
       try {
-        int[][] randomCacheValuesUsed = (int[][])typeof(AttackDirector.AttackSequence).GetField("randomCacheValuesUsed", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(sequence);
+        int[][] randomCacheValuesUsed = sequence.randomCacheValuesUsed;
         if (grpIdx >= randomCacheValuesUsed.Length) { return; }
         if (weaponIdx >= randomCacheValuesUsed[grpIdx].Length) { return; }
         randomUsed = randomCacheValuesUsed[grpIdx][weaponIdx];
-        int[][] varianceCacheValuesUsed = (int[][])typeof(AttackDirector.AttackSequence).GetField("varianceCacheValuesUsed", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(sequence);
+
+        int[][] varianceCacheValuesUsed = sequence.varianceCacheValuesUsed;
         if (grpIdx >= varianceCacheValuesUsed.Length) { return; }
         if (weaponIdx >= varianceCacheValuesUsed[grpIdx].Length) { return; }
         varianceUsed = varianceCacheValuesUsed[grpIdx][weaponIdx];
       } catch (Exception e) {
-        Log.LogWrite(e.ToString() + "\n", true);
+        Log.Combat?.TWL(0, e.ToString(), true);
+        CustomAmmoCategories.AttackSequence_logger.LogException(e);
       }
     }
     public static WeaponHitInfo CreateWeaponHitInfo(this AttackDirector.AttackSequence sequence, ICombatant target, Weapon weapon, int numberOfShots, int groupIdx, int weaponIdx) {
@@ -648,26 +654,26 @@ namespace CustAmmoCategories {
       return hitInfo;
     }
     public static AdvWeaponHitInfo initGenericAdvInfo(this WeaponHitInfo hitInfo, float hitChance, AttackDirector.AttackSequence sequence, CombatGameState combat, bool indirectFire) {
-      Log.LogWrite("initGenericAdvInfo: " + hitInfo.numberOfShots + "\n");
+      Log.Combat?.WL(0,"initGenericAdvInfo: " + hitInfo.numberOfShots);
       if (hitInfo.isAdvanced() == true) {
-        Log.LogWrite(" already exists\n");
+        Log.Combat?.WL(1, "already exists");
         return hitInfo.advInfo();
       }
       AdvWeaponHitInfo result = new AdvWeaponHitInfo(combat, hitInfo, hitChance);
       AdvWeaponHitInfoRec.Combat = combat;
       //AttackDirector.AttackSequence sequence = combat.AttackDirector.GetAttackSequence(hitInfo.attackSequenceId);
       if (sequence == null) {
-        Log.LogWrite(" sequence is null\n");
+        Log.Combat?.WL(1, "sequence is null");
         return null;
       };
       Weapon weapon = sequence.GetWeapon(hitInfo.attackGroupIndex, hitInfo.attackWeaponIndex);
       if (weapon == null) {
-        Log.LogWrite(" weapon is null\n");
+        Log.Combat?.WL(1, "weapon is null");
         return null;
       }
       WeaponEffect effect = weapon.getWeaponEffect();
       if (effect == null) {
-        Log.LogWrite(" effect is null\n");
+        Log.Combat?.WL(1, "effect is null");
         //return null;
       }
       result.weapon = weapon;
@@ -685,7 +691,7 @@ namespace CustAmmoCategories {
       bool damagePerNotDiv = weapon.DamageNotDivided();
       for (int hitIndex = 0; hitIndex < hitInfo.numberOfShots; ++hitIndex) {
         AdvWeaponHitInfoRec hit = new AdvWeaponHitInfoRec(result);
-        Log.LogWrite(" hit: " + hitIndex + "\n");
+        Log.Combat?.WL(1, "hit: " + hitIndex);
         hit.hitIndex = hitIndex;
         hit.hitPosition = hitInfo.hitPositions[hitIndex];
         hit.hitRoll = hitInfo.toHitRolls[hitIndex];
@@ -704,7 +710,7 @@ namespace CustAmmoCategories {
           hit.Stability /= (float)weapon.ProjectilesPerShot;
           hit.APDamage /= (float)weapon.ProjectilesPerShot;
         }
-        Log.M.WL(2, "dmg:" + hit.Damage + " heat:" + hit.Heat + " stab:" + hit.Stability + " ap:" + hit.APDamage);
+        Log.Combat?.WL(2, "dmg:" + hit.Damage + " heat:" + hit.Heat + " stab:" + hit.Stability + " ap:" + hit.APDamage);
         hit.target = sequence.chosenTarget;
         hit.hitLocation = hitInfo.hitLocations[hitIndex];
         if (string.IsNullOrEmpty(hitInfo.secondaryTargetIds[hitIndex]) == false) {
@@ -758,9 +764,9 @@ namespace CustAmmoCategories {
           hit.interceptInfo.AMSImunne = weapon.AMSImmune();
           hit.interceptInfo.missileHealth = weapon.MissileHealth();
           hit.interceptInfo.AMSHitChance = weapon.AMSHitChance();
-          Log.LogWrite(" missile launcher. AMS imunne:" + hit.interceptInfo.AMSImunne + " health:" + hit.interceptInfo.missileHealth + "\n");
+          Log.Combat?.WL(1, "missile launcher. AMS imunne:" + hit.interceptInfo.AMSImunne + " health:" + hit.interceptInfo.missileHealth);
         } else {
-          Log.LogWrite(" not missile launcher\n");
+          Log.Combat?.WL(1, "not missile launcher");
         }
         hit.GenerateTrajectory();
         if (effect == null) {
@@ -784,7 +790,7 @@ namespace CustAmmoCategories {
       if (AdvWeaponHitInfo.advancedWeaponHitInfo.ContainsKey(hitInfo.attackSequenceId) == false) { AdvWeaponHitInfo.advancedWeaponHitInfo.Add(hitInfo.attackSequenceId, new Dictionary<int, Dictionary<int, AdvWeaponHitInfo>>()); }
       if (AdvWeaponHitInfo.advancedWeaponHitInfo[hitInfo.attackSequenceId].ContainsKey(hitInfo.attackGroupIndex) == false) { AdvWeaponHitInfo.advancedWeaponHitInfo[hitInfo.attackSequenceId].Add(hitInfo.attackGroupIndex, new Dictionary<int, AdvWeaponHitInfo>()); }
       AdvWeaponHitInfo.advancedWeaponHitInfo[hitInfo.attackSequenceId][hitInfo.attackGroupIndex].Add(hitInfo.attackWeaponIndex, result);
-      Log.LogWrite("initGenericAdvInfo: " + hitInfo.attackSequenceId + "\n");
+      Log.Combat?.WL(0, "initGenericAdvInfo: " + hitInfo.attackSequenceId);
       return result;
     }
   }
@@ -930,7 +936,7 @@ namespace CustAmmoCategories {
       }
       Statistic stat = this.weapon.StatCollection.GetOrCreateStatisic<int>(CustomAmmoCategories.Settings.OverrallShootsCountWeaponStat,0);
       stat.SetValue<int>(stat.Value<int>() + realshots);
-      Log.M.TWL(0, "ApplyMantanceStats "+this.attackSequenceId+":" + this.weapon.defId + " => " + stat.Value<int>());
+      Log.Combat?.TWL(0, "ApplyMantanceStats "+this.attackSequenceId+":" + this.weapon.defId + " => " + stat.Value<int>());
     }
     public void ApplyHitEffects() {
       foreach (var trg in this.resolveInfo) {
@@ -946,17 +952,18 @@ namespace CustAmmoCategories {
             if (statusEffect.targetingData.effectTriggerType == EffectTriggerType.OnHit) {
               string effectID = string.Format("OnHitEffect_{0}_{1}", (object)this.Sequence.attacker.GUID, (object)this.attackSequenceId);
               if (statusEffect.Description == null || statusEffect.Description.Id == null || statusEffect.Description.Name == null) {
-                CustomAmmoCategoriesLog.Log.LogWrite($"WARNING: EffectID:{effectID} has broken effectDescId:{statusEffect?.Description.Id} effectDescName:{statusEffect?.Description.Name}! SKIPPING\n", true);
+                Log.Combat?.TWL(0,$"WARNING: EffectID:{effectID} has broken effectDescId:{statusEffect?.Description.Id} effectDescName:{statusEffect?.Description.Name}! SKIPPING", true);
+                CustomAmmoCategories.AttackSequence_logger.LogError($"WARNING: EffectID:{effectID} has broken effectDescId:{statusEffect?.Description.Id} effectDescName:{statusEffect?.Description.Name}! SKIPPING");
               } else {
                 int effectsApply = 0;
                 foreach (EffectsLocaltion HitLocation in advRes.hitLocations) {
                   float roll = Random.Range(0f, 1f);
                   if (roll > HitLocation.effectsMod) {
-                    Log.LogWrite($"Roll fail\n");
+                    Log.Combat?.WL(0,$"Roll fail");
                     continue;
                   }
                   ++effectsApply;
-                  Log.LogWrite($"Applying effectID:{effectID} with effectDescId:{statusEffect?.Description.Id} effectDescName:{statusEffect?.Description.Name}\n");
+                  Log.Combat?.WL(0, $"Applying effectID:{effectID} with effectDescId:{statusEffect?.Description.Id} effectDescName:{statusEffect?.Description.Name}\n");
                   try {
                     this.Sequence.Director.Combat.EffectManager.CreateEffect(statusEffect, effectID, this.Sequence.stackItemUID, (ICombatant)this.Sequence.attacker, target, hitInfo, HitLocation.location, false);
                   }catch(Exception e) {
@@ -995,28 +1002,28 @@ namespace CustAmmoCategories {
     public void Apply() {
       if (resolveDamageMessage == null) { return; }
       WeaponHitInfo weaponHitInfo = this.fakeHitInfo.Value;
-      Log.M.TWL(0, "Resolve weapon damage "+this.weapon.defId);
+      Log.Combat?.TWL(0, "Resolve weapon damage "+this.weapon.defId);
       ResolveDamageHelper.ResolveWeaponDamageAdv(ref weaponHitInfo);
-      this.Sequence.messageCoordinator().MessageComplete((MessageCenterMessage)resolveDamageMessage);
+      this.Sequence.messageCoordinator.MessageComplete((MessageCenterMessage)resolveDamageMessage);
       this.setApplyState();
     }
     public static void printExpectedMessages(int sequenceId) {
-      Log.M.TWL(0, "printExpectedMessages "+sequenceId);
+      Log.Combat?.TWL(0, "printExpectedMessages "+sequenceId);
       if (AdvWeaponHitInfo.advHitMessages.TryGetValue(sequenceId, out List<AdvHitMessage> expList)) {
         for (int index = 0; index < expList.Count; ++index) {
           AdvHitMessage aMessage = expList[index];
-          Log.M.W(1, "["+ aMessage.Index()+ "] R:"+aMessage.isResolve);
+          Log.Combat?.W(1, "["+ aMessage.Index()+ "] R:"+aMessage.isResolve);
           if (aMessage.advInfo != null) {
-            Log.M.W(" advInfo " + aMessage.advInfo.weapon.defId+"/"+aMessage.advInfo.weapon.ammo().Id+"/"+aMessage.advInfo.weapon.mode().Id);
+            Log.Combat?.W(" advInfo " + aMessage.advInfo.weapon.defId+"/"+aMessage.advInfo.weapon.ammo().Id+"/"+aMessage.advInfo.weapon.mode().Id);
           } else {
-            Log.M.W(" advInfo:null ");
+            Log.Combat?.W(" advInfo:null ");
           }
           if (aMessage.advRec != null) {
-            Log.M.W(" advRec loc:"+aMessage.advRec.hitLocationStr+" aoe:"+aMessage.advRec.isAOE+" fragMain:"+aMessage.advRec.isFragMain+" fragPallet:"+aMessage.advRec.fragInfo.isFragPallet);
+            Log.Combat?.W(" advRec loc:"+aMessage.advRec.hitLocationStr+" aoe:"+aMessage.advRec.isAOE+" fragMain:"+aMessage.advRec.isFragMain+" fragPallet:"+aMessage.advRec.fragInfo.isFragPallet);
           } else {
-            Log.M.W(" advRec:null");
+            Log.Combat?.W(" advRec:null");
           }
-          Log.M.WL("");
+          Log.Combat?.WL("");
         }
       }
     }
@@ -1029,7 +1036,7 @@ namespace CustAmmoCategories {
           result += (aMessage.isApplied ? "A" : "_");
         }
       }
-      Log.M.TWL(0, "printApplyState "+sequenceId+" "+result);
+      Log.Combat?.TWL(0, "printApplyState "+sequenceId+" "+result);
     }
     public static void AddToExpected(AdvWeaponHitInfo advInfo) {
       if(AdvWeaponHitInfo.advHitMessages.TryGetValue(advInfo.attackSequenceId, out var expList) == false) {
@@ -1064,11 +1071,11 @@ namespace CustAmmoCategories {
     public static void FlushInfo(AttackDirector.AttackSequence sequence) {
       try {
         if (sequence == null) { return; }
-        WeaponHitInfo?[][] weaponHitInfo = Traverse.Create(sequence).Field<WeaponHitInfo?[][]>("weaponHitInfo").Value;
+        WeaponHitInfo?[][] weaponHitInfo = sequence.weaponHitInfo;
         for (int groupIndex = 0; groupIndex < weaponHitInfo.Length; ++groupIndex) {
           for (int weaponIndex = 0; weaponIndex < weaponHitInfo[groupIndex].Length; ++weaponIndex) {
             if (weaponHitInfo[groupIndex][weaponIndex].HasValue == false) {
-              Log.M.TWL(0, "WeaponHitInfo at grp:" + groupIndex + " index:" + weaponIndex + " is null. How?!", true);
+              Log.Combat?.TWL(0, "WeaponHitInfo at grp:" + groupIndex + " index:" + weaponIndex + " is null. How?!", true);
               continue;
             }
             AdvWeaponHitInfo advInfo = weaponHitInfo[groupIndex][weaponIndex].Value.advInfo();
@@ -1136,7 +1143,6 @@ namespace CustAmmoCategories {
         }
         if(damageWS == null) { return; }
         string time = DateTime.Now.ToString("HH-mm-ss");
-          //(WeaponHitInfo?[][])typeof(AttackDirector.AttackSequence).GetField("weaponHitInfo", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(sequence);
         DamageModifiersCache.ClearComulativeDamage();
         Log.M.TWL(0, "flushing info:" + sequence.id);
         for (int groupIndex = 0; groupIndex < weaponHitInfo.Length; ++groupIndex) {
@@ -1266,15 +1272,16 @@ namespace CustAmmoCategories {
       isResolved = false;
     }
     public void AppendAoEHit(int primeIndex, float fulldamage, float Damage, float Heat, float Stability, ICombatant target, Vector3 position, int location) {
-      Log.M?.WL(0,"AdvInfo.AppendAoEHit:" + primeIndex + "\n");
+      Log.Combat?.WL(0,"AdvInfo.AppendAoEHit:" + primeIndex);
       AdvWeaponHitInfoRec hit = new AdvWeaponHitInfoRec(this);
       int hitIndex = this.hits.Count;
       hit.hitIndex = hitIndex;
       hit.hitPosition = position;
       hit.Damage = Damage * target.AoEDamageMult(location);
-      Log.M?.WL(1, $"hit: {hitIndex} effective damage:{hit.Damage}");
+      if (hit.Damage < 1f) { hit.Damage = 0f; }
+      Log.Combat?.WL(1, $"hit: {hitIndex} effective damage:{hit.Damage}");
       hit.APDamage = 0f;
-      hit.Heat = Heat;
+      hit.Heat = Heat >= 1f?Heat:0f;
       hit.Stability = Stability;
       hit.target = target;
       hit.hitLocation = location;
@@ -1294,7 +1301,7 @@ namespace CustAmmoCategories {
       this.hits.Add(hit);
     }
     public void AppendFrags(int fragHitIndex, WeaponHitInfo hitInfo) {
-      Log.LogWrite("AdvInfo.AppendFrags:" + hitInfo.numberOfShots + "\n");
+      Log.Combat?.WL("AdvInfo.AppendFrags:" + hitInfo.numberOfShots);
       AdvWeaponHitInfoRec advRec = this.hits[fragHitIndex];
       advRec.fragInfo.fragStartHitIndex = this.hits.Count;
       advRec.fragInfo.fragsCount = hitInfo.numberOfShots;
@@ -1336,7 +1343,7 @@ namespace CustAmmoCategories {
         if (hit.target.isSpawnProtected() || weapon.parent.isSpawnProtected()) {
           hit.hitLocation = 0;
         }
-        Log.M.WL(1, "h:"+hitIndex+" loc:("+hit.hitLocation+")"+hit.hitLocationStr+" trg:"+hit.target);
+        Log.Combat?.WL(1, "h:"+hitIndex+" loc:("+hit.hitLocation+")"+hit.hitLocationStr+" trg:"+hit.target);
         hit.trajectoryInfo.type = TrajectoryType.Unguided;
         hit.GenerateTrajectory(advRec.hitPosition);
         hit.projectileSpeed = 0f;

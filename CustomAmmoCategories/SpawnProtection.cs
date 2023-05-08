@@ -16,7 +16,7 @@ namespace CustAmmoCategories {
       SPAWN_PROTECTED_ROUND = -1;
     }
     public static void addSpawnProtection(this CombatGameState combat, int roundOffset, string reason) {
-      Log.M?.TWL(0, $"SpawnProtection add till round {combat.TurnDirector.CurrentRound + roundOffset} round:{combat.TurnDirector.CurrentRound} phase:{combat.TurnDirector.CurrentPhase} reason:{reason}");
+      Log.Combat?.TWL(0, $"SpawnProtection add till round {combat.TurnDirector.CurrentRound + roundOffset} round:{combat.TurnDirector.CurrentRound} phase:{combat.TurnDirector.CurrentPhase} reason:{reason}");
       SPAWN_PROTECTED_ROUND = combat.TurnDirector.CurrentRound + roundOffset;
     }
     public static bool IsSpawnProtected(this CombatGameState combat) {
@@ -26,7 +26,8 @@ namespace CustAmmoCategories {
       try {
         return combatant.StatCollection.GetOrCreateStatisic<int>(SPAWN_PROTECTION_ROUND_STAT_NAME, 0).Value<int>() >= combatant.Combat.TurnDirector.CurrentRound;
       } catch(Exception e) {
-        Log.M.TWL(0, e.ToString(), true);
+        Log.Combat?.TWL(0, e.ToString(), true);
+        AbstractActor.logger.LogException(e);
       }
       return false;
       //return combatant.StatCollection.GetOrCreateStatisic<bool>(SPAWN_PROTECTION_STAT_NAME, false).Value<bool>();
@@ -36,7 +37,8 @@ namespace CustAmmoCategories {
         if (combatant.Combat.TurnDirector.CurrentRound == 1) { return false; }
         return combatant.StatCollection.GetOrCreateStatisic<int>(SPAWN_PROTECTION_ROUND_STAT_NAME, 0).Value<int>() >= (combatant.Combat.TurnDirector.CurrentRound - 1);
       } catch (Exception e) {
-        Log.M.TWL(0, e.ToString(), true);
+        Log.Combat?.TWL(0, e.ToString(), true);
+        AbstractActor.logger.LogException(e);
       }
       return false;
       //return combatant.StatCollection.GetOrCreateStatisic<bool>(SPAWN_PROTECTION_STAT_NAME, false).Value<bool>();
@@ -45,34 +47,38 @@ namespace CustAmmoCategories {
       try {
         return combatant.StatCollection.GetOrCreateStatisic<int>(SPAWN_PROTECTION_ROUND_STAT_NAME, 0).Value<int>();
       } catch (Exception e) {
-        Log.M.TWL(0, e.ToString(), true);
+        Log.Combat?.TWL(0, e.ToString(), true);
+        AbstractActor.logger.LogException(e);
       }
       return -1;
     }
     public static void addSpawnProtection(this AbstractActor unit, string reason) {
-      Log.M?.TWL(0, $"SpawnProtection add current round {unit.PilotableActorDef.ChassisID} team:{(unit.team == null ? "null" : unit.team.Name)} round:{unit.Combat.TurnDirector.CurrentRound} phase:{unit.Combat.TurnDirector.CurrentPhase} reason:{reason}");
+      Log.Combat?.TWL(0, $"SpawnProtection add current round {unit.PilotableActorDef.ChassisID} team:{(unit.team == null ? "null" : unit.team.Name)} round:{unit.Combat.TurnDirector.CurrentRound} phase:{unit.Combat.TurnDirector.CurrentPhase} reason:{reason}");
       try {
         unit.Combat.MessageCenter.PublishMessage(new FloatieMessage(unit.GUID, unit.GUID, new Text($"ADDED SPAWN PROTECTION FOR ROUND {unit.Combat.TurnDirector.CurrentRound}"), FloatieMessage.MessageNature.Buff));
         unit.StatCollection.GetOrCreateStatisic<int>(SPAWN_PROTECTION_ROUND_STAT_NAME, 0).SetValue<int>(unit.Combat.TurnDirector.CurrentRound);
       } catch (Exception e) {
-        Log.M.TWL(0, e.ToString(), true);
+        Log.Combat?.TWL(0, e.ToString(), true);
+        AbstractActor.logger.LogException(e);
       }
     }
     public static void addSpawnProtection(this AbstractActor unit, int roundOffset, string reason) {
-      Log.M?.TWL(0, $"SpawnProtection add till round {unit.Combat.TurnDirector.CurrentRound + roundOffset} {unit.PilotableActorDef.ChassisID} team:{(unit.team == null ? "null" : unit.team.Name)} round:{unit.Combat.TurnDirector.CurrentRound} phase:{unit.Combat.TurnDirector.CurrentPhase} reason:{reason}");
+      Log.Combat?.TWL(0, $"SpawnProtection add till round {unit.Combat.TurnDirector.CurrentRound + roundOffset} {unit.PilotableActorDef.ChassisID} team:{(unit.team == null ? "null" : unit.team.Name)} round:{unit.Combat.TurnDirector.CurrentRound} phase:{unit.Combat.TurnDirector.CurrentPhase} reason:{reason}");
       try {
         unit.Combat.MessageCenter.PublishMessage(new FloatieMessage(unit.GUID, unit.GUID, new Text($"ADDED SPAWN PROTECTION FOR ROUND {unit.Combat.TurnDirector.CurrentRound + roundOffset}"), FloatieMessage.MessageNature.Buff));
         unit.StatCollection.GetOrCreateStatisic<int>(SPAWN_PROTECTION_ROUND_STAT_NAME, 0).SetValue<int>(unit.Combat.TurnDirector.CurrentRound + roundOffset);
       } catch (Exception e) {
-        Log.M.TWL(0, e.ToString(), true);
+        Log.Combat?.TWL(0, e.ToString(), true);
+        AbstractActor.logger.LogException(e);
       }
     }
     public static void removeSpawnProtection(this AbstractActor unit) {
-      Log.M?.TWL(0, $"SpawnProtection del {unit.PilotableActorDef.ChassisID} team:{(unit.team == null ? "null" : unit.team.Name)} round:{unit.Combat.TurnDirector.CurrentRound} phase:{unit.Combat.TurnDirector.CurrentPhase}");
+      Log.Combat?.TWL(0, $"SpawnProtection del {unit.PilotableActorDef.ChassisID} team:{(unit.team == null ? "null" : unit.team.Name)} round:{unit.Combat.TurnDirector.CurrentRound} phase:{unit.Combat.TurnDirector.CurrentPhase}");
       try {
         unit.StatCollection.GetOrCreateStatisic<int>(SPAWN_PROTECTION_ROUND_STAT_NAME, 0).SetValue<int>(0);
       } catch (Exception e) {
-        Log.M.TWL(0, e.ToString(), true);
+        Log.Combat?.TWL(0, e.ToString(), true);
+        AbstractActor.logger.LogException(e);
       }
       //unit.StatCollection.GetOrCreateStatisic<bool>(SPAWN_PROTECTION_STAT_NAME, false).SetValue<bool>(false);
     }
@@ -104,16 +110,17 @@ namespace CustAmmoCategories {
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { typeof(MessageCenterMessage) })]
   public static class DefendXUnitsObjective_Tick {
-    public static bool Prefix(DefendXUnitsObjective __instance, MessageCenterMessage message) {
+    public static void Prefix(ref bool __runOriginal, DefendXUnitsObjective __instance, MessageCenterMessage message) {
+      if (!__runOriginal) { return; }
       try {
         if (__instance.Combat.IsSpawnProtected()) {
-          Log.M?.TWL(0, $"DefendXUnitsObjective.Tick round:{__instance.Combat.TurnDirector.CurrentRound} is under spawn protection. Skipping");
-          return false;
+          Log.Combat?.TWL(0, $"DefendXUnitsObjective.Tick round:{__instance.Combat.TurnDirector.CurrentRound} is under spawn protection. Skipping");
+          __runOriginal = false; return;
         }
       }catch(Exception e) {
-        Log.M?.TWL(0, e.ToString(), true);
+        Log.Combat?.TWL(0, e.ToString(), true);
+        EncounterLayerData.logger.LogException(e);
       }
-      return true;
     }
   }
   [HarmonyPatch(typeof(TimerObjective))]
@@ -121,16 +128,17 @@ namespace CustAmmoCategories {
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { typeof(MessageCenterMessage) })]
   public static class TimerObjective_AdvanceTimer {
-    public static bool Prefix(TimerObjective __instance, MessageCenterMessage message) {
+    public static void Prefix(ref bool __runOriginal, TimerObjective __instance, MessageCenterMessage message) {
       try {
         if (__instance.Combat.IsSpawnProtected()) {
-          Log.M?.TWL(0, $"TimerObjective.AdvanceTimer round:{__instance.Combat.TurnDirector.CurrentRound} is under spawn protection. Skipping");
-          return false;
+          Log.Combat?.TWL(0, $"TimerObjective.AdvanceTimer round:{__instance.Combat.TurnDirector.CurrentRound} is under spawn protection. Skipping");
+          __runOriginal = false; return;
         }
       } catch (Exception e) {
-        Log.M?.TWL(0, e.ToString(), true);
+        Log.Combat?.TWL(0, e.ToString(), true);
+        EncounterLayerData.logger.LogException(e);
       }
-      return true;
+      return;
     }
   }
   [HarmonyPatch(typeof(TurnDirector))]
@@ -140,17 +148,18 @@ namespace CustAmmoCategories {
   public static class TurnDirector_FinishBeginRound {
     public static void Postfix(TurnDirector __instance) {
       try {
-        Log.M.TWL(0, $"SpawnProtection report. Round:{__instance.CurrentRound}");
+        Log.Combat?.TWL(0, $"SpawnProtection report. Round:{__instance.CurrentRound}");
         foreach (AbstractActor unit in __instance.Combat.AllActors) {
           if(unit.isSpawnProtected() == false) {
             if (unit.wasSpawnProtectedPrevRound()) {
               unit.Combat.MessageCenter.PublishMessage(new FloatieMessage(unit.GUID, unit.GUID, new Text($"SPAWN PROTECTION REMOVED"), FloatieMessage.MessageNature.Debuff));
             }
           }
-          Log.M.WL(1, $"{unit.PilotableActorDef.ChassisID} team:{(unit.team == null ? "null" : unit.team.Name)} is spawn protected:{unit.isSpawnProtected()} was spawn protected at round:{unit.SpawnProtectedRound()}");
+          Log.Combat?.WL(1, $"{unit.PilotableActorDef.ChassisID} team:{(unit.team == null ? "null" : unit.team.Name)} is spawn protected:{unit.isSpawnProtected()} was spawn protected at round:{unit.SpawnProtectedRound()}");
         }
       } catch (Exception e) {
-        Log.M?.TWL(0, e.ToString(), true);
+        Log.Combat?.TWL(0, e.ToString(), true);
+        TurnDirector.logger.LogException(e);
       }
     }
   }

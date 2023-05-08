@@ -15,5 +15,4 @@ namespace CustAmmoCategories {
       return false;
     }
   }
-
 }

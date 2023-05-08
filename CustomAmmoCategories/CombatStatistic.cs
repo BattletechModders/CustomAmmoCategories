@@ -19,7 +19,7 @@ namespace CustAmmoCategories {
   [HarmonyPatch(typeof(Briefing), "InitializeContractComplete")]
   public static class Briefing_InitializeContractComplete {
     public static void Prefix(Briefing __instance, MessageCenterMessage message) {
-      Log.M?.TWL(0, $"Briefing.InitializeContractComplete clearing combat statistic");
+      Log.Combat?.TWL(0, $"Briefing.InitializeContractComplete clearing combat statistic");
       try {
         CombatStatisticHelper.Clear();
       } catch (Exception e) {
@@ -30,31 +30,31 @@ namespace CustAmmoCategories {
   [HarmonyPatch(typeof(Contract), "RequestConversations")]
   public static class Contract_RequestConversations {
     public static void Postfix(Contract __instance, LoadRequest loadRequest) {
-      Log.M?.TWL(0,$"Contract.RequestConversations");
+      Log.Combat?.TWL(0,$"Contract.RequestConversations");
       if (string.IsNullOrEmpty(CustomAmmoCategories.Settings.StatisticOnResultScreenTurretSprite) == false) {
-        Log.M?.WL(1, $"sprite:{CustomAmmoCategories.Settings.StatisticOnResultScreenTurretSprite}");
+        Log.Combat?.WL(1, $"sprite:{CustomAmmoCategories.Settings.StatisticOnResultScreenTurretSprite}");
         if (__instance.DataManager.Exists(BattleTechResourceType.Sprite, CustomAmmoCategories.Settings.StatisticOnResultScreenTurretSprite) == false) {
           if (__instance.DataManager.ResourceLocator.EntryByID(CustomAmmoCategories.Settings.StatisticOnResultScreenTurretSprite, BattleTechResourceType.Sprite) != null) {
-            Log.M?.WL(2, $"exist in manifest but not loaded");
+            Log.Combat?.WL(2, $"exist in manifest but not loaded");
             loadRequest.AddBlindLoadRequest(BattleTechResourceType.Sprite, CustomAmmoCategories.Settings.StatisticOnResultScreenTurretSprite);
           } else {
-            Log.M?.WL(2, $"not exist in manifest");
+            Log.Combat?.WL(2, $"not exist in manifest");
           }
         } else {
-          Log.M?.WL(2, $"already loaded");
+          Log.Combat?.WL(2, $"already loaded");
         }
       }
       if (string.IsNullOrEmpty(CustomAmmoCategories.Settings.StatisticOnResultScreenBattleArmorSprite) == false) {
-        Log.M?.WL(1, $"sprite:{CustomAmmoCategories.Settings.StatisticOnResultScreenBattleArmorSprite}");
+        Log.Combat?.WL(1, $"sprite:{CustomAmmoCategories.Settings.StatisticOnResultScreenBattleArmorSprite}");
         if (__instance.DataManager.Exists(BattleTechResourceType.Sprite, CustomAmmoCategories.Settings.StatisticOnResultScreenBattleArmorSprite) == false) {
           if (__instance.DataManager.ResourceLocator.EntryByID(CustomAmmoCategories.Settings.StatisticOnResultScreenBattleArmorSprite, BattleTechResourceType.Sprite) != null) {
-            Log.M?.WL(2, $"exist in manifest but not loaded");
+            Log.Combat?.WL(2, $"exist in manifest but not loaded");
             loadRequest.AddBlindLoadRequest(BattleTechResourceType.Sprite, CustomAmmoCategories.Settings.StatisticOnResultScreenBattleArmorSprite);
           } else {
-            Log.M?.WL(2, $"not exist in manifest");
+            Log.Combat?.WL(2, $"not exist in manifest");
           }
         } else {
-          Log.M?.WL(2, $"already loaded");
+          Log.Combat?.WL(2, $"already loaded");
         }
       }
     }
@@ -71,7 +71,7 @@ namespace CustAmmoCategories {
         if (result == null) { return; }
         if (result.mech == null) { return; }
         if (CustomAmmoCategories.Settings.StatisticOnResultScreenEnabled == false) { return; }
-        Log.M?.TWL(0,$"AAR_UnitStatusWidget.InitData GUID:{result.mech.GUID}");
+        Log.Combat?.TWL(0,$"AAR_UnitStatusWidget.InitData GUID:{result.mech.GUID}");
         UnitCombatStatistic stat = result.stat();
         if (stat == null) { return; }
         LocalizableText killText = __instance.gameObject.FindObject<LocalizableText>("killsLabel_text");
@@ -160,17 +160,18 @@ namespace CustAmmoCategories {
     public static void Postfix(AAR_UnitStatusWidget __instance, UnitResult ___UnitData, DataManager ___dm, RectTransform ___KillGridParent) {
       try {
         if (CustomAmmoCategories.Settings.StatisticOnResultScreenEnabled == false) { return; }
-        Log.M?.TWL(0, $"AAR_UnitStatusWidget.InitData GUID:{___UnitData.mech.GUID}");
+        Log.Combat?.TWL(0, $"AAR_UnitStatusWidget.InitData GUID:{___UnitData.mech.GUID}");
         UnitCombatStatistic stat = ___UnitData.stat();
         if (stat == null) { return; }
         foreach(var killed in stat.killedUnits) {
           AddKilled(___dm, ___KillGridParent, killed);
         }
-        Log.M?.WL(1,"clearing killed stat");
+        Log.Combat?.WL(1,"clearing killed stat");
         ___UnitData.statClear();
-        Log.M?.WL(1, $"now killed units:{___UnitData.stat().killedUnits}");
+        Log.Combat?.WL(1, $"now killed units:{___UnitData.stat().killedUnits}");
       } catch (Exception e) {
-        Log.M?.TWL(0, e.ToString(), true);
+        Log.Combat?.TWL(0, e.ToString(), true);
+        UIManager.logger.LogException(e);
       }
     }
   }
@@ -182,24 +183,25 @@ namespace CustAmmoCategories {
       try {
         AbstractActor attacker = Thread.CurrentThread.peekFromStack<AbstractActor>(UnitCombatStatisticHelper.IN_ProcessBatchedTurnDamage_ATTACKER);
         if(attacker != null) {
-          Log.M?.TWL(0, $"AbstractActor.EjectPilot {__instance.PilotableActorDef.ChassisID} by PanicSystem. Attacker:{attacker.PilotableActorDef.ChassisID}");
+          Log.Combat?.TWL(0, $"AbstractActor.EjectPilot {__instance.PilotableActorDef.ChassisID} by PanicSystem. Attacker:{attacker.PilotableActorDef.ChassisID}");
           if(__instance.Combat.LocalPlayerTeamGuid == __instance.TeamId) {
-            Log.M?.WL(1, $"player unit ejected. not count");
+            Log.Combat?.WL(1, $"player unit ejected. not count");
             return;
           }
           if (attacker.TeamId == __instance.TeamId) {
-            Log.M?.WL(1, $"friendly fire. not count");
+            Log.Combat?.WL(1, $"friendly fire. not count");
             return;
           }
           if (UnitCombatStatisticHelper.ejectedUnits.Contains(__instance)) {
-            Log.M?.WL(1, $"already ejected. not count");
+            Log.Combat?.WL(1, $"already ejected. not count");
             return;
           }
           UnitCombatStatisticHelper.ejectedUnits.Add(__instance);
           attacker.stat()?.AddKilled(__instance, true);
         }
       } catch (Exception e) {
-        Log.M?.TWL(0, e.ToString(), true);
+        Log.Combat?.TWL(0, e.ToString(), true);
+        AbstractActor.logger.LogException(e);
       }
     }
   }
@@ -209,74 +211,35 @@ namespace CustAmmoCategories {
   public static class AbstractActor_FlagForDeath {
     public static void AddToStatistic(this AbstractActor __instance, string attackerID) {
       if (UnitCombatStatisticHelper.deadUnits.Contains(__instance)) {
-        Log.M?.WL(1, "already flagged for death");
+        Log.Combat?.WL(1, "already flagged for death");
         return;
       }
       UnitCombatStatisticHelper.deadUnits.Add(__instance);
       AbstractActor attacker = __instance.Combat.FindActorByGUID(attackerID);
       if (attacker == null) {
-        Log.M?.WL(1, "can't find attacker");
+        Log.Combat?.WL(1, "can't find attacker");
         return;
       }
       if (attacker == __instance) {
-        Log.M?.WL(1, "suicide. not count");
+        Log.Combat?.WL(1, "suicide. not count");
         return;
       }
       if (attacker.TeamId == __instance.TeamId) {
-        Log.M?.WL(1, $"same team attacker:{attacker.TeamId} unit:{__instance.TeamId}");
+        Log.Combat?.WL(1, $"same team attacker:{attacker.TeamId} unit:{__instance.TeamId}");
         return;
       }
       attacker.stat()?.AddKilled(__instance, false);
     }
     public static void Postfix(AbstractActor __instance, string reason, DeathMethod deathMethod, DamageType damageType, int location, int stackItemID, string attackerID, bool isSilent) {
       try {
-        Log.M?.TWL(0, $"AbstractActor.FlagForDeath {__instance.PilotableActorDef.ChassisID}. Attacker:{attackerID}",true);
+        Log.Combat?.TWL(0, $"AbstractActor.FlagForDeath {__instance.PilotableActorDef.ChassisID}. Attacker:{attackerID}",true);
         __instance.AddToStatistic(attackerID);
       } catch (Exception e) {
-        Log.M?.TWL(0, e.ToString(), true);
+        Log.Combat?.TWL(0, e.ToString(), true);
+        AbstractActor.logger.LogException(e);
       }
     }
   }
-  //[HarmonyPatch(typeof(Vehicle))]
-  //[HarmonyPatch("FlagForDeath")]
-  //[HarmonyPatch(MethodType.Normal)]
-  //public static class Vehicle_FlagForDeath {
-  //  public static void Postfix(AbstractActor __instance, string reason, DeathMethod deathMethod, DamageType damageType, int location, int stackItemID, string attackerID, bool isSilent) {
-  //    try {
-  //      Log.M?.TWL(0, $"Vehicle.FlagForDeath {__instance.PilotableActorDef.ChassisID}. Attacker:{attackerID}", true);
-  //      __instance.AddToStatistic(attackerID);
-  //    } catch (Exception e) {
-  //      Log.M?.TWL(0, e.ToString(), true);
-  //    }
-  //  }
-  //}
-  //[HarmonyPatch(typeof(Turret))]
-  //[HarmonyPatch("FlagForDeath")]
-  //[HarmonyPatch(MethodType.Normal)]
-  //public static class Turret_FlagForDeath {
-  //  public static void Postfix(AbstractActor __instance, string reason, DeathMethod deathMethod, DamageType damageType, int location, int stackItemID, string attackerID, bool isSilent) {
-  //    try {
-  //      Log.M?.TWL(0, $"Turret.FlagForDeath {__instance.PilotableActorDef.ChassisID}. Attacker:{attackerID}", true);
-  //      __instance.AddToStatistic(attackerID);
-  //    } catch (Exception e) {
-  //      Log.M?.TWL(0, e.ToString(), true);
-  //    }
-  //  }
-  //}
-  //[HarmonyPatch(typeof(AbstractActor))]
-  //[HarmonyPatch("FlagForDeath")]
-  //[HarmonyPatch(MethodType.Normal)]
-  //[HarmonyPatch(new Type[] { typeof(string), typeof(DeathMethod), typeof(BattleTech.DamageType), typeof(int), typeof(int), typeof(string), typeof(bool) })]
-  //public static class AbstractActor_FlagForDeath {
-  //  public static void Postfix(AbstractActor __instance, string reason, DeathMethod deathMethod, DamageType damageType, int location, int stackItemID, string attackerID, bool isSilent) {
-  //    try {
-  //      Log.M?.TWL(0, $"AbstractActor.FlagForDeath {__instance.PilotableActorDef.ChassisID}. Attacker:{attackerID}", true);
-  //      __instance.AddToStatistic(attackerID);
-  //    } catch (Exception e) {
-  //      Log.M?.TWL(0, e.ToString(), true);
-  //    }
-  //  }
-  //}
   [HarmonyPatch(typeof(AAR_UnitStatusWidget))]
   [HarmonyPatch("AddKilledMech")]
   [HarmonyPatch(MethodType.Normal)]
@@ -300,7 +263,8 @@ namespace CustAmmoCategories {
         if (CustomAmmoCategories.Settings.StatisticOnResultScreenEnabled == false) { return true; }
         if (___UnitData.stat() != null) { return false; }
       } catch (Exception e) {
-        Log.M?.TWL(0, e.ToString(), true);
+        Log.Combat?.TWL(0, e.ToString(), true);
+        UIManager.logger.LogException(e);
       }
       return true;
     }
@@ -333,7 +297,8 @@ namespace CustAmmoCategories {
           __state = true;
         }
       }catch(Exception e) {
-        Log.M?.TWL(0,e.ToString(),true);
+        Log.Combat?.TWL(0,e.ToString(),true);
+        AbstractActor.logger.LogException(e);
       }
     }
     public static void DamageHandler_ProcessBatchedTurnDamage_Postfix(AbstractActor actor, ref bool __state) {
@@ -342,7 +307,8 @@ namespace CustAmmoCategories {
           Thread.CurrentThread.popFromStack<AbstractActor>(IN_ProcessBatchedTurnDamage_ATTACKER);
         }
       } catch (Exception e) {
-        Log.M?.TWL(0, e.ToString(), true);
+        Log.Combat?.TWL(0, e.ToString(), true);
+        AbstractActor.logger.LogException(e);
       }
     }
     public static bool AARIcons_AddEjectedMech_Prefix() { return CustomAmmoCategories.Settings.StatisticOnResultScreenEnabled == false; }
@@ -449,7 +415,7 @@ namespace CustAmmoCategories {
         if (unit.Combat.DataManager.TurretDefs.Exists(unit.PilotableActorDef.Description.Id)) {
           TurretDefId = unit.PilotableActorDef.Description.Id;
         }
-        Log.M?.TWL(0,$"add unit to kill list {unit.PilotableActorDef.ChassisID} Icon:{Icon} ejected:{isEjected}");
+        Log.Combat?.TWL(0,$"add unit to kill list {unit.PilotableActorDef.ChassisID} Icon:{Icon} ejected:{isEjected}");
       }
     }
     public List<KilledUnit> killedUnits { get; set; } = new List<KilledUnit>();

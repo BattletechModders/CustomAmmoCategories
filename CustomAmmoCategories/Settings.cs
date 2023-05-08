@@ -452,7 +452,8 @@ namespace CustAmmoCategories {
     [CustomSettings.LocalSettingValuesNames(Strings.Culture.CULTURE_RU_RU, "Да", "Нет")]
     public bool ForceBuildinBurningFX { get; set; } = false;
     public float AIUnsafeJamChance { get; set; } = 1f;
-    public float ScaleIncomingHeat { get; set; } = 150f;
+    public float ScaleWeaponHeat { get; set; } = 150f;
+    public int ExternalHeatLimit { get; set; } = 149;
     public Settings() {
       //directory = string.Empty;
       //debugLog = true;

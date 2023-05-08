@@ -18,6 +18,7 @@ using BattleTech.UI;
 using BattleTech.UI.TMProWrapper;
 using BattleTech.UI.Tooltips;
 using CustAmmoCategories;
+using CustomAmmoCategoriesHelper;
 using CustomAmmoCategoriesPatches;
 using FogOfWar;
 using HarmonyLib;
@@ -2370,21 +2371,21 @@ namespace CustomUnits {
     //public static DeployDirectorLoadRequest deployLoadRequest { get; set; } = null;
     //public static void Clear() { deployLoadRequest = null; }
     public static void ResetDeployButton(this CombatHUDMechwarriorTray tray, AbstractActor actor, Ability ability, CombatHUDActionButton button, bool forceInactive) {
-      CustomAmmoCategoriesLog.Log.LogWrite("ResetDeployButton:" + actor.DisplayName + "\n");
-      CustomAmmoCategoriesLog.Log.LogWrite(" actor.HasActivatedThisRound:" + actor.HasActivatedThisRound + "\n");
-      CustomAmmoCategoriesLog.Log.LogWrite(" actor.MovingToPosition:" + (actor.MovingToPosition != null) + "\n");
-      CustomAmmoCategoriesLog.Log.LogWrite(" actor.Combat.StackManager.IsAnyOrderActive:" + actor.Combat.StackManager.IsAnyOrderActive + "\n");
-      CustomAmmoCategoriesLog.Log.LogWrite(" actor.Combat.TurnDirector.IsInterleaved:" + actor.Combat.TurnDirector.IsInterleaved + "\n");
-      CustomAmmoCategoriesLog.Log.LogWrite(" forceInactive:" + forceInactive + "\n");
-      tray.ResetAbilityButton(actor, button, ability, forceInactive);
+      Log.TWL(0,"ResetDeployButton:" + actor.DisplayName);
+      Log.WL(1,"actor.HasActivatedThisRound:" + actor.HasActivatedThisRound);
+      Log.WL(1, "actor.MovingToPosition:" + (actor.MovingToPosition != null));
+      Log.WL(1, "actor.Combat.StackManager.IsAnyOrderActive:" + actor.Combat.StackManager.IsAnyOrderActive);
+      Log.WL(1, "actor.Combat.TurnDirector.IsInterleaved:" + actor.Combat.TurnDirector.IsInterleaved);
+      Log.WL(1, "forceInactive:" + forceInactive);
+      tray.ResetAbilityButton_public(actor, button, ability, forceInactive);
       if (forceInactive) { button.DisableButton(); };
       if (actor.Combat.TurnDirector.IsInterleaved == false) {
         if (actor.HasFiredThisRound == false) {
           if (ability.IsActive == false) {
             if (ability.IsAvailable == true) {
               if (actor.IsShutDown == false) {
-                CustomAmmoCategoriesLog.Log.LogWrite(" ResetButtonIfNotActive:\n");
-                CustomAmmoCategoriesLog.Log.LogWrite(" IsAbilityActivated:" + button.IsAbilityActivated + "\n");
+                Log.WL(1, "ResetButtonIfNotActive:");
+                Log.WL(1, "IsAbilityActivated:" + button.IsAbilityActivated);
                 if (actor.MovingToPosition == null) { button.ResetButtonIfNotActive(actor); };
               }
             }

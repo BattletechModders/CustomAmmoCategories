@@ -22,31 +22,17 @@ namespace CustAmmoCategories {
     public string fireCompleteStopEvent;
     public int volleySize;
     public int bulletIdx;
-    /*public Color ppcTrail_color;
-    public Color ppcBeamCoil_color;
-    public Color zapArcFlip1_color;
-    public Color PPCspark_color;
-    public Color glowBlue_color;*/
     public override void StoreOriginalColor() {
-      Log.M.TWL(0, "MultiShotLBXBulletEffect.StoreOriginalColor");
+      Log.Combat?.TWL(0, "MultiShotLBXBulletEffect.StoreOriginalColor");
     }
     public override void SetColor(Color color) {
     }
-
-#if PUBLIC_ASSEMBLIES
-    public override int ImpactPrecacheCount {
-#else
     protected override int ImpactPrecacheCount {
-#endif
       get {
         return 5;
       }
     }
-#if PUBLIC_ASSEMBLIES
-    public override void Awake() {
-#else
     protected override void Awake() {
-#endif
       base.Awake();
     }
     protected override void Start() {
@@ -59,7 +45,7 @@ namespace CustAmmoCategories {
       this.preFireSoundEvent = original.preFireSoundEvent;
       this.projectileSoundEvent = original.projectileSoundEvent;
       this.fireCompleteStopEvent = original.fireCompleteStopEvent;
-      CustomAmmoCategoriesLog.Log.LogWrite("MultiShotLBXBulletEffect.Init\n");
+      Log.Combat?.TWL(0,"MultiShotLBXBulletEffect.Init");
     }
     public void Init(Weapon weapon, MultiShotLBXBallisticEffect parentProjector) {
       this.Init(weapon);
@@ -109,9 +95,8 @@ namespace CustAmmoCategories {
       }
       this.projectileSpeed *= weapon.ProjectileSpeedMultiplier();
     }
-
     public virtual void Fire(WeaponHitInfo hitInfo, int hitIndex = 0, int emitterIndex = 0, int volleySize = 1) {
-      Log.LogWrite("MultiShotLBXBulletEffect.Fire " + hitInfo.attackWeaponIndex + " " + hitIndex + " ep:" + hitInfo.hitPositions[hitIndex] + " volleySize:" + volleySize + "\n");
+      Log.Combat?.TWL(0,$"MultiShotLBXBulletEffect.Fire {hitInfo.attackWeaponIndex} {hitIndex} ep:{hitInfo.hitPositions[hitIndex]} volleySize:{volleySize}");
       this.volleySize = volleySize;
       if (hitInfo.DidShotHitChosenTarget(hitIndex)) {
         this.projectilePrefab = this.accurateProjectilePrefab;
@@ -123,7 +108,7 @@ namespace CustAmmoCategories {
       base.Fire(hitInfo, hitIndex, emitterIndex);
       this.endPos = endPos;
       hitInfo.hitPositions[hitIndex] = endPos;
-      Log.LogWrite(" endPos restored:" + this.endPos + "\n");
+      Log.Combat?.WL(1,$"endPos restored:{this.endPos}");
       float num = Vector3.Distance(this.startingTransform.position, this.endPos);
       if (this.projectileSpeed > CustomAmmoCategories.Epsilon) {
         this.duration = num / this.projectileSpeed;
@@ -138,19 +123,9 @@ namespace CustAmmoCategories {
     protected override void PlayPreFire() {
       base.PlayPreFire();
       this.t = 0.0f;
-      //if (string.IsNullOrEmpty(this.preFireSFX)) {
-      //  if (string.IsNullOrEmpty(this.preFireSoundEvent) == false) {
-      //    int num = (int)WwiseManager.PostEvent(this.preFireSoundEvent, this.projectileAudioObject, (AkCallbackManager.EventCallback)null, (object)null);
-      //  }
-      //}
     }
     public override void InitProjectile() {
       base.InitProjectile();
-      //Log.LogWrite("MultiShotPulseEffect.InitProjectile\n");
-      //Component[] components = this.projectile.GetComponentsInChildren<Component>();
-      //foreach (Component component in components) {
-      //  Log.LogWrite(" " + component.name + ":" + component.GetType().ToString() + "\n");
-      //}
     }
     protected override void PlayMuzzleFlash() {
       base.PlayMuzzleFlash();
@@ -158,20 +133,13 @@ namespace CustAmmoCategories {
     protected override void PlayProjectile() {
       this.PlayMuzzleFlash();
       this.t = 0.0f;
-      //if (string.IsNullOrEmpty(this.projectileSoundEvent) == false) {
-      //  int num = (int)WwiseManager.PostEvent(this.projectileSoundEvent, this.projectileAudioObject, (AkCallbackManager.EventCallback)null, (object)null);
-      //}
       base.PlayProjectile();
     }
     protected override void PlayImpact() {
       this.PlayImpactAudio();
       base.PlayImpact();
     }
-#if PUBLIC_ASSEMBLIES
-    public override void Update() {
-#else
     protected override void Update() {
-#endif
       try {
         base.Update();
         if (this.currentState != WeaponEffect.WeaponEffectState.Firing)
@@ -196,7 +164,7 @@ namespace CustAmmoCategories {
       this.PlayProjectile();
     }
     protected override void OnImpact(float hitDamage = 0.0f, float structureDamage = 0f) {
-      Log.LogWrite("MultiShotLBXBulletEffect.OnImpact wi:" + this.hitInfo.attackWeaponIndex + " hi:" + this.hitInfo + " bi:" + this.bulletIdx + " volleySize:" + this.volleySize + "\n");
+      Log.Combat?.TWL(0,$"MultiShotLBXBulletEffect.OnImpact wi:{this.hitInfo.attackWeaponIndex} hi:{this.hitInfo} bi:{this.bulletIdx} volleySize:{this.volleySize}");
       float damage = this.weapon.DamagePerShotAdjusted(this.weapon.parent.occupiedDesignMask);
       float apDamage = this.weapon.StructureDamagePerShotAdjusted(this.weapon.parent.occupiedDesignMask);
       if (this.weapon.DamagePerPallet() && (this.weapon.DamageNotDivided() == false)) {
@@ -208,14 +176,8 @@ namespace CustAmmoCategories {
     protected override void OnComplete() {
       base.OnComplete();
       if (this.projectileParticles != null) { this.projectileParticles.Stop(true); }
-      //if (string.IsNullOrEmpty(this.fireCompleteStopEvent) == false) {
-      //  int num = (int)WwiseManager.PostEvent(this.fireCompleteStopEvent, this.projectileAudioObject, (AkCallbackManager.EventCallback)null, (object)null);
-      //}
     }
     public override void Reset() {
-      //if (this.Active && !string.IsNullOrEmpty(this.fireCompleteStopEvent)) {
-      //  int num = (int)WwiseManager.PostEvent(this.fireCompleteStopEvent, this.projectileAudioObject, (AkCallbackManager.EventCallback)null, (object)null);
-      //}
       base.Reset();
     }
   }

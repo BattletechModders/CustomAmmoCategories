@@ -101,7 +101,7 @@ namespace CustAmmoCategories {
     }
     public static void Init(CombatGameState combat) {
       try {
-        Log.M.TWL(0, "ExplosionAPIHelper.Init");
+        Log.Combat?.TWL(0, "ExplosionAPIHelper.Init");
         GUID = "FAKE_" + Guid.NewGuid().ToString();
         ExplosionAPIHelper.combat = combat;
         AbstractActor srcActor = null;
@@ -119,9 +119,8 @@ namespace CustAmmoCategories {
           MechComponentRef cmpRef = new MechComponentRef("Weapon_Laser_AI_Imaginary", "", ComponentType.Weapon, ChassisLocations.CenterTorso);
           cmpRef.DataManager = fakeActor.Combat.DataManager;
           cmpRef.RefreshComponentDef();
-          //cmpRef.ComponentDefID = srcMech.Weapons[0].defId;
           fakeWeapon = new Weapon(fakeActor as Mech, combat, cmpRef, GUID + ".Explosion");
-          typeof(MechComponent).GetProperty("componentDef", BindingFlags.Instance | BindingFlags.Public).GetSetMethod(true).Invoke(fakeWeapon, new object[1] { (object)srcMech.Weapons[0].componentDef });
+          fakeWeapon.componentDef = srcMech.Weapons[0].componentDef;
         }
         if (srcVehicle != null) {
           fakeActor = new Vehicle(srcVehicle.VehicleDef, srcVehicle.pilot.pilotDef, new HBS.Collections.TagSet(), GUID, combat, srcVehicle.spawnerGUID, srcVehicle.CustomHeraldryDef);
@@ -129,16 +128,16 @@ namespace CustAmmoCategories {
           VehicleComponentRef cmpRef = new VehicleComponentRef("Weapon_Laser_AI_Imaginary", "", ComponentType.Weapon, VehicleChassisLocations.Front);
           cmpRef.DataManager = fakeActor.Combat.DataManager;
           cmpRef.RefreshComponentDef();
-          //cmpRef.ComponentDefID = srcVehicle.Weapons[0].defId;
           fakeWeapon = new Weapon(fakeActor as Vehicle, combat, cmpRef, GUID + ".Explosion");
-          typeof(MechComponent).GetProperty("componentDef", BindingFlags.Instance | BindingFlags.Public).GetSetMethod(true).Invoke(fakeWeapon, new object[1] { (object)srcVehicle.Weapons[0].componentDef });
+          fakeWeapon.componentDef = srcVehicle.Weapons[0].componentDef;
         }
         if ((fakeActor == null) || (fakeWeapon == null)) { return; }
-        typeof(AbstractActor).GetField("_team", BindingFlags.NonPublic | BindingFlags.Instance).SetValue(fakeActor, combat.LocalPlayerTeam);
-        typeof(AbstractActor).GetField("_teamId", BindingFlags.NonPublic | BindingFlags.Instance).SetValue(fakeActor, combat.LocalPlayerTeamGuid);
+        fakeActor._team = combat.LocalPlayerTeam;
+        fakeActor._teamId = combat.LocalPlayerTeamGuid;
         Inited = true;
       }catch(Exception e) {
-        Log.M.TWL(0,e.ToString(),true);
+        Log.Combat?.TWL(0,e.ToString(),true);
+        CombatGameState.gameInfoLogger.LogException(e);
       }
     }
     public static DesignMaskDef TempDesignMask(string name) {
@@ -147,56 +146,43 @@ namespace CustAmmoCategories {
       return DynamicMapHelper.loadedMasksDef[name];
     }
     public static void applyExplodeBurn(Weapon fakeWeapon,Vector3 pos, int fireRadius, int fireStrength, float fireChance, int fireDurationNoForest) {
-      Log.LogWrite("Applying burn effect:"+pos + "\n");
+      Log.Combat?.WL(0,"Applying burn effect:"+pos);
       MapTerrainDataCellEx cell = combat.MapMetaData.GetCellAt(pos) as MapTerrainDataCellEx;
       if (cell == null) {
-        CustomAmmoCategoriesLog.Log.LogWrite(" cell is not extended\n");
+        Log.Combat?.WL(1, "cell is not extended");
         return;
       }
-      Log.LogWrite(" fire at " + pos + "\n");
+      Log.Combat?.WL(1, "fire at " + pos);
       fireDurationNoForest = Mathf.RoundToInt((float)fireDurationNoForest * DynamicMapHelper.BiomeWeaponFireDuration());
       fireStrength = Mathf.RoundToInt((float)fireStrength * DynamicMapHelper.BiomeWeaponFireStrength());
       fireChance *= DynamicMapHelper.BiomeLitFireChance();
 
       if (fireRadius == 0) {
         cell.hexCell.TryBurnCellAsync(fakeWeapon, fireChance, fireStrength, fireDurationNoForest);
-        //if (cell.hexCell.TryBurnCell(fakeWeapon, fireChance, fireStrength, fireDurationNoForest)) {
-          //DynamicMapHelper.burningHexes.Add(cell.hexCell);
-        //};
       } else {
         List<MapTerrainHexCell> affectedHexCells = MapTerrainHexCell.listHexCellsByCellRadius(cell, fireRadius);
         foreach (MapTerrainHexCell hexCell in affectedHexCells) {
           hexCell.TryBurnCellAsync(fakeWeapon, fireChance, fireStrength, fireDurationNoForest);
-          //if (hexCell.TryBurnCell(fakeWeapon, fireChance, fireStrength, fireDurationNoForest)) {
-          //DynamicMapHelper.burningHexes.Add(hexCell);
-          //};
         }
       }
     }
     public static void applyImpactTempMask(Vector3 pos, string LongVFX, Vector3 scale, string designMask, int radius, int turns) {
-      Log.M.TWL(0, "Applying explode long effect:" + LongVFX + "/" + designMask + "/" + pos);
+      Log.Combat?.TWL(0, "Applying explode long effect:" + LongVFX + "/" + designMask + "/" + pos);
       DesignMaskDef mask = TempDesignMask(designMask);
       MapTerrainDataCellEx cell = combat.MapMetaData.GetCellAt(pos) as MapTerrainDataCellEx;
       if (cell == null) {
-        CustomAmmoCategoriesLog.Log.LogWrite(" cell is not extended\n");
+        Log.Combat?.WL(1, "cell is not extended");
         return;
       }
-      //if (mask == null) { return; };
       if (radius == 0) {
         cell.hexCell.addTempTerrainVFX(combat, LongVFX, turns, scale);
         cell.hexCell.addDesignMaskAsync(mask, turns);
-        //AsyncDesignMaskUpdater admu = new AsyncDesignMaskUpdater(cell.hexCell, mask, turns);
-        //Thread designMaskApplyer = new Thread(new ThreadStart(admu.asyncAddMask));
-        //designMaskApplyer.Start();
       } else {
         List<MapTerrainHexCell> affectedHexCells = MapTerrainHexCell.listHexCellsByCellRadius(cell, radius);
         foreach (MapTerrainHexCell hexCell in affectedHexCells) {
           hexCell.addTempTerrainVFX(combat, LongVFX, turns, scale);
           hexCell.addDesignMaskAsync(mask, turns);
         }
-        //AsyncDesignMaskUpdater admu = new AsyncDesignMaskUpdater(affectedHexCells, mask, turns);
-        //Thread designMaskApplyer = new Thread(new ThreadStart(admu.asyncAddMask));
-        //designMaskApplyer.Start();
       }
     }
     public static void AoEPlayExplodeVFX(string VFX, Vector3 vfxScale, string SFX, Vector3 pos, float duration) {
@@ -215,8 +201,8 @@ namespace CustAmmoCategories {
       float AoEDmg = damage;
       if (AoEDmg <= CustomAmmoCategories.Epsilon) { return; }
       if (Range <= CustomAmmoCategories.Epsilon) { return; }
-      Log.M.TWL(0,"Spawning explode VFX");
-      Log.LogWrite(" Range:" + Range + " Damage:" + AoEDmg + "\n");
+      Log.Combat?.TWL(0,"Spawning explode VFX");
+      Log.Combat?.WL(1, "Range:" + Range + " Damage:" + AoEDmg);
       List<AoEExplosionRecord> AoEDamage = new List<AoEExplosionRecord>();
       //List<EffectData> effects = component.AoEExplosionEffects();
       int SequenceID = combat.StackManager.NextStackUID;
@@ -274,9 +260,9 @@ namespace CustAmmoCategories {
           if (mech != null) { lname = ((ArmorLocation)sLoc.Key).ToString(); } else
           if (vehicle != null) { lname = ((VehicleChassisLocations)sLoc.Key).ToString(); } else
             lname = ((BuildingLocation)sLoc.Key).ToString();
-          Log.M.W(1, lname + ":" + sLoc.Value / locationsCoeff);
+          Log.Combat?.W(1, lname + ":" + sLoc.Value / locationsCoeff);
         }
-        Log.M.WL(0, "");
+        Log.Combat?.WL(0, "");
         AoEExplosionRecord AoERecord = new AoEExplosionRecord(target);
         AoERecord.HeatDamage = HeatDamage;
         AoERecord.StabDamage = StabDamage;
@@ -288,11 +274,11 @@ namespace CustAmmoCategories {
             Vector3 hitpos = target.getImpactPositionSimple(pos, hitLocation.Key);
             AoERecord.hitRecords.Add(hitLocation.Key,new AoEExplosionHitRecord(hitpos, CurrentLocationDamage));
           }
-          Log.LogWrite("  location " + hitLocation + " damage " + AoERecord.hitRecords[hitLocation.Key].Damage + "\n");
+          Log.Combat?.W(2, "location " + hitLocation + " damage " + AoERecord.hitRecords[hitLocation.Key].Damage);
         }
         AoEDamage.Add(AoERecord);
       }
-      Log.LogWrite("AoE Damage result:\n");
+      Log.Combat?.WL(0, "AoE Damage result:");
       applyExplodeBurn(fakeWeapon, pos, fireRadius,fireStrength, fireChance, fireDurationNoForest);
       applyImpactTempMask(pos, LongVFX, longVFXScale, designMask, dmRadius, turns);
       AoEPlayExplodeVFX(VFX, vfxScale, SFX, pos, vfxDuration);
@@ -301,12 +287,12 @@ namespace CustAmmoCategories {
         , new AttackDirection[1] { AttackDirection.FromArtillery }
         , new Vector3[1] { Vector3.zero }, null, null);
       for (int index = 0; index < AoEDamage.Count; ++index) {
-        Log.LogWrite(" " + AoEDamage[index].target.DisplayName + ":" + AoEDamage[index].target.GUID + "\n");
-        Log.LogWrite(" Heat:" + AoEDamage[index].HeatDamage + "\n");
-        Log.LogWrite(" Instability:" + AoEDamage[index].StabDamage + "\n");
+        Log.Combat?.WL(1, AoEDamage[index].target.DisplayName + ":" + AoEDamage[index].target.GUID);
+        Log.Combat?.WL(1, "Heat: " + AoEDamage[index].HeatDamage);
+        Log.Combat?.WL(1, "Instability:" + AoEDamage[index].StabDamage);
         fakeHit.targetId = AoEDamage[index].target.GUID;
         foreach (var AOEHitRecord in AoEDamage[index].hitRecords) {
-          Log.LogWrite("  location:" + AOEHitRecord.Key + " pos:" + AOEHitRecord.Value.hitPosition + " dmg:" + AOEHitRecord.Value.Damage + "\n");
+          Log.Combat?.WL(2, "location:" + AOEHitRecord.Key + " pos:" + AOEHitRecord.Value.hitPosition + " dmg:" + AOEHitRecord.Value.Damage + "\n");
           float LocArmor = AoEDamage[index].target.ArmorForLocation(AOEHitRecord.Key);
           if ((double)LocArmor < (double)AOEHitRecord.Value.Damage) {
             combat.MessageCenter.PublishMessage((MessageCenterMessage)new FloatieMessage(fakeActor.GUID, AoEDamage[index].target.GUID, new Text("{0}", new object[1]
@@ -337,24 +323,24 @@ namespace CustAmmoCategories {
       }
     }
     public static void LayMineField(MineFieldDef def, Vector3 pos) {
-      CustomAmmoCategoriesLog.Log.LogWrite("Applying minefield:" + pos + "\n");
+      Log.Combat?.WL(0, "Applying minefield:" + pos);
       if ((fakeWeapon == null) || (fakeActor == null)) { return; }
       MapTerrainDataCellEx cell = combat.MapMetaData.GetCellAt(pos) as MapTerrainDataCellEx;
       if (cell == null) {
-        CustomAmmoCategoriesLog.Log.LogWrite(" cell is not extended\n");
+        Log.Combat?.WL(1, "cell is not extended");
         return;
       }
-      CustomAmmoCategoriesLog.Log.LogWrite(" impact at " + pos + "\n");
+      Log.Combat?.WL(1, "impact at " + pos);
       MineFieldDef mfd = def;
       if (mfd.InstallCellRange == 0) {
         //Log.LogWrite(" affected cell " + cell.hexCell.x + "," + cell.hexCell.y + ":" + mfd.Count + "\n");
-        Log.LogWrite(" affected cell " + cell.hexCell.center + ":" + mfd.Count + "\n");
+        Log.Combat?.WL(1, "affected cell " + cell.hexCell.center + ":" + mfd.Count);
         cell.hexCell.addMineField(mfd, fakeActor, fakeWeapon);
       } else {
         List<MapTerrainHexCell> affectedHexCells = MapTerrainHexCell.listHexCellsByCellRadius(cell, mfd.InstallCellRange);
         foreach (MapTerrainHexCell hexCell in affectedHexCells) {
           //Log.LogWrite(" affected cell " + hexCell.x + "," + hexCell.y + ":" + mfd.Count + "\n");
-          Log.LogWrite(" affected cell " + hexCell.center + ":" + mfd.Count + "\n");
+          Log.Combat?.WL(1, "affected cell " + hexCell.center + ":" + mfd.Count);
           hexCell.addMineField(mfd, fakeActor, fakeWeapon);
         }
       }

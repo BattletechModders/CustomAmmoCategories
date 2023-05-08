@@ -22,29 +22,9 @@ namespace CustAmmoCategories {
   public static class FragWeaponHelper {
     public static bool strayFrags(ref WeaponHitInfo hitInfo,AttackDirector.AttackSequence sequence,Weapon weapon,ICombatant target) {
       float spreadDistance = weapon.ShellsRadius();
-      Log.LogWrite("FragWeaponHelper.strayFrags:" + spreadDistance + "\n");
+      Log.Combat?.WL(0, "FragWeaponHelper.strayFrags:" + spreadDistance);
       if (spreadDistance < CustomAmmoCategories.Epsilon) { return false; }
-      //List<ICombatant> combatants = new List<ICombatant>();
       List<ICombatant> combatants = weapon.parent.Combat.GetAllCombatants();
-      //string IFFDef = CustomAmmoCategories.getWeaponIFFTransponderDef(advInfo.weapon);
-      /*if (string.IsNullOrEmpty(IFFDef)) { combatants.AddRange(allCombatants); } else {
-        HashSet<string> combatantsGuids = new HashSet<string>();
-        List<AbstractActor> enemies = advInfo.Combat.GetAllEnemiesOf(advInfo.weapon.parent);
-        foreach (ICombatant combatant in enemies) {
-          if (combatantsGuids.Contains(combatant.GUID) == false) {
-            combatants.Add(combatant);
-            combatantsGuids.Add(combatant.GUID);
-          }
-        }
-        foreach (ICombatant combatant in allCombatants) {
-          if (combatant.GUID == advInfo.weapon.parent.GUID) { continue; }
-          if (combatantsGuids.Contains(combatant.GUID) == true) { continue; }
-          if (CustomAmmoCategories.isCombatantHaveIFFTransponder(combatant, IFFDef) == false) {
-            combatants.Add(combatant);
-            combatantsGuids.Add(combatant.GUID);
-          }
-        }
-      }*/
       float spreadRNDMax = 0f;
       List<float> spreadBorders = new List<float>();
       List<ICombatant> spreadCombatants = new List<ICombatant>();
@@ -67,7 +47,7 @@ namespace CustAmmoCategories {
         };
       }
       if (spreadCombatants.Count == 0) {
-        Log.LogWrite("No combatants in range? Strange. No stray needed.\n");
+        Log.Combat?.WL(0, "No combatants in range? Strange. No stray needed.");
         return false;
       }
       for (int hitIndex = 0; hitIndex < hitInfo.numberOfShots; ++hitIndex) {
@@ -81,14 +61,14 @@ namespace CustAmmoCategories {
         }
         spreadCounts[spreadCombatants[combatantIndex].GUID] += 1;
       }
-      Log.LogWrite(" spread result\n");
+      Log.Combat?.WL(1, "spread result");
       int spreadSumm = 0;
       List<WeaponHitInfo> result = new List<WeaponHitInfo>();
       foreach (var spreadCount in spreadCounts) {
         ICombatant combatant = target.Combat.FindCombatantByGUID(spreadCount.Key);
         if (combatant == null) { continue; }
         if (spreadCount.Value == 0) { continue; };
-        Log.LogWrite(" " + combatant.DisplayName + " " + combatant.GUID + " " + spreadCount.Value + "\n");
+        Log.Combat?.WL(1, combatant.DisplayName + " " + combatant.GUID + " " + spreadCount.Value);
         spreadSumm += spreadCount.Value;
         WeaponHitInfo newHitInfo = new WeaponHitInfo();
         newHitInfo.numberOfShots = spreadCount.Value;
@@ -162,17 +142,17 @@ namespace CustAmmoCategories {
           ++hitIndex;
         }
       }
-      Log.LogWrite("stray result:\n");
+      Log.Combat?.WL(0, "stray result:");
       for (int hitIndex = 0; hitIndex < hitInfo.numberOfShots; ++hitIndex) {
-        Log.LogWrite(" " + hitIndex + " loc: pr " + hitInfo.hitLocations[hitIndex] + " sec " + hitInfo.secondaryHitLocations[hitIndex] + " trg:");
+        Log.Combat?.WL(1, hitIndex + " loc: pr " + hitInfo.hitLocations[hitIndex] + " sec " + hitInfo.secondaryHitLocations[hitIndex] + " trg:");
         if (string.IsNullOrEmpty(hitInfo.secondaryTargetIds[hitIndex])) {
-          Log.LogWrite("primary " + hitInfo.targetId + "\n");
+          Log.Combat?.WL(0, "primary " + hitInfo.targetId);
         } else {
-          Log.LogWrite("secondary " + hitInfo.secondaryTargetIds[hitIndex] + "\n");
+          Log.Combat?.WL(0, "secondary " + hitInfo.secondaryTargetIds[hitIndex]);
         }
       }
       if (spreadSumm != hitInfo.numberOfShots) {
-        Log.LogWrite("WARNING! Spreaded count:" + spreadSumm + " not equal number of shots:" + hitInfo.numberOfShots + "\n", true);
+        Log.Combat?.WL(0, "WARNING! Spreaded count:" + spreadSumm + " not equal number of shots:" + hitInfo.numberOfShots, true);
       }
       return true;
     }
@@ -212,7 +192,7 @@ namespace CustAmmoCategories {
       nHitInfo.attackDirections.CopyTo(hitInfo.attackDirections, index);
     }
     public static WeaponHitInfo prepareFragHitInfo(AdvWeaponHitInfoRec advRec,ICombatant target, Weapon weapon,int numberOfShots,int groupIdx, int weaponIdx) {
-      Log.LogWrite("prepareFragHitInfo "+weapon.defId+" "+target.DisplayName+":" +target.GUID+" "+numberOfShots+"\n");
+      Log.Combat?.WL(0, "prepareFragHitInfo " + weapon.defId+" "+target.DisplayName+":" +target.GUID+" "+numberOfShots);
       WeaponHitInfo hitInfo = new WeaponHitInfo();
       hitInfo.attackerId = advRec.parent.Sequence.attacker.GUID;
       hitInfo.targetId = target.GUID;
@@ -237,27 +217,27 @@ namespace CustAmmoCategories {
       int randomUsedA = 0;
       int varianceUsedA = 0;
       advRec.parent.Sequence.GetUsedRandomCache(groupIdx, weaponIdx, out randomUsed, out varianceUsed);
-      Log.LogWrite(" used random cache: rnd:"+randomUsed+" var:"+varianceUsed+"\n");
+      Log.Combat?.WL(1, "used random cache: rnd:" + randomUsed+" var:"+varianceUsed);
       AttackSequence_GenerateHitInfo.generateWeaponHitInfo(advRec.parent.Sequence, target, weapon, groupIdx, weaponIdx, numberOfShots, false, 0f, ref hitInfo, true, true);
       advRec.parent.Sequence.GetUsedRandomCache(groupIdx, weaponIdx, out randomUsedA, out varianceUsedA);
-      Log.LogWrite(" used random cache: rnd:" + randomUsedA + " var:" + varianceUsedA + "\n");
+      Log.Combat?.WL(1, "used random cache: rnd:" + randomUsedA + " var:" + varianceUsedA);
       advRec.parent.Sequence.ResetUsedRandomCache(groupIdx, weaponIdx, randomUsed, varianceUsed);
       bool ret = strayFrags(ref hitInfo, advRec.parent.Sequence, weapon, target);
-      Log.LogWrite(" stray generation result:"+ret+"\n");
+      Log.Combat?.WL(1, "stray generation result:" + ret);
       if (ret == false) {
         advRec.parent.Sequence.ResetUsedRandomCache(groupIdx, weaponIdx, randomUsedA, varianceUsedA);
       }
       return hitInfo;
     }
     public static void FragSeparation(ref WeaponHitInfo hitInfo) {
-      Log.LogWrite("FragWeaponHelper.FragSeparation\n");
+      Log.Combat?.WL(0, "FragWeaponHelper.FragSeparation");
       if (hitInfo.isAdvanced() == false) {
-        Log.LogWrite(" not advanced\n");
+        Log.Combat?.WL(1, "not advanced");
         return;
       }
       AdvWeaponHitInfo advInfo = hitInfo.advInfo();
       if ((advInfo.weapon.HasShells() == false)||(advInfo.weapon.parent.isSpawnProtected() == true)) {
-        Log.LogWrite(" weapon "+advInfo.weapon.defId+" have no shells\n");
+        Log.Combat?.WL(1, "weapon " + advInfo.weapon.defId+" have no shells");
         return;
       }
       float sMin = advInfo.weapon.MinShellsDistance();
@@ -275,7 +255,7 @@ namespace CustAmmoCategories {
         Vector3 ePos = CustomAmmoCategories.interpolateSeparationPosition(advRec.trajectorySpline,advRec.startPosition,targetPos,sMin,sMax);
         if (advRec.target.isSpawnProtected()) { ePos = Vector3.zero; }
         if(ePos != Vector3.zero) {
-          Log.LogWrite(" "+hitIndex+" separated\n");
+          Log.Combat?.WL(1, hitIndex+" separated");
           advRec.fragInfo.separated = true;
           hitInfo.hitPositions[hitIndex] = ePos;
           hitInfo.hitLocations[hitIndex] = 65536;
@@ -286,7 +266,7 @@ namespace CustAmmoCategories {
           advRec.GenerateTrajectory();
           separatedFrags.Add(hitIndex, prepareFragHitInfo(advRec,advRec.target, advInfo.weapon, advInfo.weapon.ProjectilesPerShot,advInfo.groupIdx,advInfo.weaponIdx));
         } else {
-          Log.LogWrite(" " + hitIndex + " not separated\n");
+          Log.Combat?.WL(1, hitIndex + " not separated");
           advRec.Damage *= unsepDmbMod;
           advRec.APDamage *= unsepDmbMod;
           advRec.Heat *= unsepDmbMod;
@@ -297,7 +277,7 @@ namespace CustAmmoCategories {
       foreach (var fragInfo in separatedFrags) {
         fullFragCount += fragInfo.Value.numberOfShots;
       }
-      Log.LogWrite("Extending hitInfo " + hitInfo.hitLocations.Length);
+      Log.Combat?.WL(1, "Extending hitInfo " + hitInfo.hitLocations.Length);
       FragWeaponHelper.Resize(ref hitInfo, fullFragCount);
       Log.LogWrite(" -> " + hitInfo.hitLocations.Length + "\n");
       int curFragIndex = hitInfo.numberOfShots;

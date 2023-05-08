@@ -70,7 +70,7 @@ namespace CustAmmoCategories {
     //  return result;
     //}
     public static bool isWeaponCanUseAmmo(this BaseComponentRef weaponRef, List<BaseComponentRef> inventory, AmmunitionDef ammoDef) {
-      Log.M.WL(0,$"Cheching if weapon {weaponRef.ComponentDefID} SimGameUID:{weaponRef.SimGameUID} can use ammo {ammoDef.Description.Id}");
+      Log.M?.WL(0,$"Cheching if weapon {weaponRef.ComponentDefID} SimGameUID:{weaponRef.SimGameUID} can use ammo {ammoDef.Description.Id}");
       ExtAmmunitionDef extAmmo = CustomAmmoCategories.findExtAmmo(ammoDef.Description.Id);
       CustomAmmoCategory ammoCategory = extAmmo.AmmoCategory;
       if (ammoCategory.BaseCategory.Is_NotSet) { ammoCategory = CustomAmmoCategories.find(ammoDef.AmmoCategoryValue.Name); };
@@ -115,16 +115,16 @@ namespace CustomAmmoCategoriesPatches {
   [HarmonyPatch(new Type[] { })]
   public static class AbstractActor_CalcAlphaStrikesRem_Patch {
     public static bool Prefix(AbstractActor __instance) {
-      CustomAmmoCategoriesLog.Log.LogWrite("CalcAndSetAlphaStrikesRemaining "+__instance.DisplayName+"\n");
+      Log.M?.WL(0,"CalcAndSetAlphaStrikesRemaining "+__instance.DisplayName);
       if (__instance.ammoBoxes.Count < 1) {
-        CustomAmmoCategoriesLog.Log.LogWrite(" no ammo boxes\n");
+        Log.M?.WL(1, "no ammo boxes");
         return true;
       };
       Dictionary<string, int> ammoUsed = new Dictionary<string, int>();
       for (int index1 = 0; index1 < __instance.Weapons.Count; ++index1) {
-        CustomAmmoCategoriesLog.Log.LogWrite(" weapon "+ __instance.Weapons[index1].defId+ "\n");
+        Log.M?.WL(1, "weapon " + __instance.Weapons[index1].defId);
         string ammoId = __instance.Weapons[index1].info().ammo.Id;//CustomAmmoCategories.getWeaponAmmoId(__instance.Weapons[index1]);
-        CustomAmmoCategoriesLog.Log.LogWrite("  ammoId " + ammoId + "\n");
+        Log.M?.WL(2, "ammoId " + ammoId);
         if (string.IsNullOrEmpty(ammoId)) { continue; };
         if (ammoId == CustomAmmoCategories.DefaultAmmo.Id) { continue; };
         if (ammoUsed.ContainsKey(ammoId)) {
@@ -132,24 +132,24 @@ namespace CustomAmmoCategoriesPatches {
         } else {
           ammoUsed[ammoId] = __instance.Weapons[index1].ShotsWhenFired;
         }
-        CustomAmmoCategoriesLog.Log.LogWrite("  ammoUsed[" + ammoId + "] = "+ ammoUsed[ammoId] + "\n");
+        Log.M?.WL(3, "ammoUsed[" + ammoId + "] = "+ ammoUsed[ammoId]);
       }
       Dictionary<string, int> ammoAvaible = new Dictionary<string, int>();
       for (int index1 = 0; index1 < __instance.ammoBoxes.Count; ++index1) {
-        CustomAmmoCategoriesLog.Log.LogWrite(" ammo box  " + __instance.ammoBoxes[index1].defId + "\n");
+        Log.M?.WL(1, "ammo box  " + __instance.ammoBoxes[index1].defId);
         string ammoId = __instance.ammoBoxes[index1].ammoDef.Description.Id;
-        CustomAmmoCategoriesLog.Log.LogWrite("  ammoId " + ammoId + "\n");
+        Log.M?.WL(2, "ammoId " + ammoId);
         if (ammoAvaible.ContainsKey(ammoId)) {
           ammoAvaible[ammoId] += __instance.ammoBoxes[index1].CurrentAmmo;
         } else {
           ammoAvaible[ammoId] = __instance.ammoBoxes[index1].CurrentAmmo;
         }
-        CustomAmmoCategoriesLog.Log.LogWrite("  ammoAvaible[" + ammoId + "] = " + ammoAvaible[ammoId] + "\n");
+        Log.M?.WL(2, "ammoAvaible[" + ammoId + "] = " + ammoAvaible[ammoId]);
       }
       for (int index = 0; index < __instance.Weapons.Count; ++index) {
-        CustomAmmoCategoriesLog.Log.LogWrite(" weapon " + __instance.Weapons[index].defId + "\n");
+        Log.M?.WL(1, "weapon " + __instance.Weapons[index].defId);
         string ammoId = __instance.Weapons[index].info().ammo.Id;
-        CustomAmmoCategoriesLog.Log.LogWrite("  ammoId " + ammoId + "\n");
+        Log.M?.WL(2, "ammoId " + ammoId);
         if (string.IsNullOrEmpty(ammoId)) { continue; };
         if (ammoId == CustomAmmoCategories.DefaultAmmo.Id) { continue; };
         int ammoCountAvaible = 0;
@@ -159,7 +159,7 @@ namespace CustomAmmoCategoriesPatches {
         if (ammoCountUsed == 0) { continue; };
         __instance.Weapons[index].AlphaStrikesRemaining = (float)ammoCountAvaible/(float)ammoCountUsed + (float)__instance.Weapons[index].InternalAmmo/(float)__instance.Weapons[index].ShotsWhenFired;
       }
-      CustomAmmoCategoriesLog.Log.LogWrite(" done\n");
+      Log.M?.WL(1, "done");
       return false;
     }
   }
@@ -218,11 +218,7 @@ namespace CustomAmmoCategoriesPatches {
   [HarmonyPatch(typeof(CombatHUDWeaponSlot))]
   [HarmonyPatch("RefreshDisplayedWeapon")]
   [HarmonyPatch(MethodType.Normal)]
-#if BT1_8
   [HarmonyPatch(new Type[] { typeof(ICombatant), typeof(int?), typeof(bool), typeof(bool) })]
-#else
-  [HarmonyPatch(new Type[] { typeof(ICombatant) })]
-#endif
   public static class CombatHUDWeaponSlot_RefreshDisplayedWeapon1 {
     static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) {
       var targetPropertyGetter = AccessTools.Property(typeof(Weapon), "ShotsWhenFired").GetGetMethod();
@@ -242,11 +238,7 @@ namespace CustomAmmoCategoriesPatches {
   [HarmonyPatch(typeof(CombatHUDWeaponSlot))]
   [HarmonyPatch("RefreshDisplayedWeapon")]
   [HarmonyPatch(MethodType.Normal)]
-#if BT1_8
   [HarmonyPatch(new Type[] { typeof(ICombatant), typeof(int?), typeof(bool), typeof(bool) })]
-#else
-  [HarmonyPatch(new Type[] { typeof(ICombatant) })]
-#endif
   public static class CombatHUDWeaponSlot_RefreshDisplayedWeapon2 {
     static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) {
       var targetPropertyGetter = AccessTools.Property(typeof(Weapon), "AmmoCategoryValue").GetGetMethod();
@@ -260,11 +252,7 @@ namespace CustomAmmoCategoriesPatches {
   }
   [HarmonyPatch(typeof(CombatHUDWeaponSlot))]
   [HarmonyPatch("ShowTextColor")]
-#if BT1_8
   [HarmonyPatch(new Type[] { typeof(Color), typeof(Color), typeof(Color), typeof(bool) })]
-#else
-  [HarmonyPatch(new Type[] { typeof(Color), typeof(Color), typeof(bool) })]
-#endif
   public static class CombatHUDWeaponSlot_ShowTextColor {
     static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) {
       var targetPropertyGetter = AccessTools.Property(typeof(Weapon), "AmmoCategoryValue").GetGetMethod();

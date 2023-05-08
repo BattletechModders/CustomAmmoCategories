@@ -22,21 +22,12 @@ namespace CustAmmoCategories {
     public string projectileSoundEvent;
     public string fireCompleteStopEvent;
     private float floatieInterval;
-    //private float nextFloatie;
-#if PUBLIC_ASSEMBLIES
-    public override int ImpactPrecacheCount {
-#else
     protected override int ImpactPrecacheCount {
-#endif
       get {
         return 5;
       }
     }
-#if PUBLIC_ASSEMBLIES
-    public override void Awake() {
-#else
     protected override void Awake() {
-#endif
       base.Awake();
     }
     protected override void Start() {
@@ -50,15 +41,7 @@ namespace CustAmmoCategories {
     }
     public void Init(BurstBallisticEffect original) {
       base.Init(original);
-      CustomAmmoCategoriesLog.Log.LogWrite("MultiShotBurstBallisticEffect.Init\n");
-    //private int bulletsFired;
-    //public GameObject accurateProjectilePrefab;
-    //public GameObject inaccurateProjectilePrefab;
-    //public string preFireSoundEvent;
-    //public string projectileSoundEvent;
-    //public string fireCompleteStopEvent;
-    //private float floatieInterval;
-    //private float nextFloatie;
+      Log.Combat?.TWL(0,$"MultiShotBurstBallisticEffect.Init");
       this.impactTime = original.impactTime;
       this.bulletsFired = 0;
       this.accurateProjectilePrefab = original.accurateProjectilePrefab;
@@ -66,7 +49,6 @@ namespace CustAmmoCategories {
       this.preFireSoundEvent = original.preFireSoundEvent;
       this.projectileSoundEvent = original.projectileSoundEvent;
       this.fireCompleteStopEvent = original.fireCompleteStopEvent;
-      //this.nextFloatie = 0.0f;
     }
     public override void SetupCustomSettings() {
       this.customPrefireSFX = this.preFireSFX;
@@ -75,9 +57,8 @@ namespace CustAmmoCategories {
       this.customPulseSFXdelay = 0f;
       this.customPulseSFX = string.Empty;
     }
-
     public override void Fire(WeaponHitInfo hitInfo, int hitIndex = 0, int emitterIndex = 0) {
-      Log.LogWrite("MultiShotBurstBallisticEffect.Fire " + hitInfo.attackWeaponIndex + " " + hitIndex + " emitter:" + emitterIndex + " ep:" + hitInfo.hitPositions[hitIndex] + "\n");
+      Log.Combat?.TWL(0,$"MultiShotBurstBallisticEffect.Fire {hitInfo.attackWeaponIndex} {hitIndex} emitter:{emitterIndex} ep:{hitInfo.hitPositions[hitIndex]}");
       this.SetupCustomSettings();
       if (hitInfo.DidShotHitChosenTarget(hitIndex))
         this.projectilePrefab = this.accurateProjectilePrefab;
@@ -88,8 +69,7 @@ namespace CustAmmoCategories {
       base.Fire(hitInfo, hitIndex, emitterIndex);
       this.endPos = endPos;
       hitInfo.hitPositions[hitIndex] = endPos;
-      Log.LogWrite(" endPos restored:" + this.endPos + "\n");
-      //this.nextFloatie = 0.0f;
+      Log.Combat?.WL(1,$"endPos restored:{this.endPos}");
       this.impactTime = Mathf.Clamp01(this.impactTime);
       this.duration = this.projectileSpeed;
       if ((double)this.duration > 4.0)
@@ -99,10 +79,10 @@ namespace CustAmmoCategories {
     }
     public override void InitProjectile() {
       base.InitProjectile();
-      Log.LogWrite("MultiShotBurstBallisticEffect.InitProjectile\n");
+      Log.Combat?.TWL(0, $"MultiShotBurstBallisticEffect.InitProjectile");
       Component[] components = this.projectile.GetComponentsInChildren<Component>();
       foreach (Component component in components) {
-        Log.LogWrite(" " + component.name + ":" + component.GetType().ToString() + "\n");
+        Log.Combat?.WL(1, $"{component.name}:{component.GetType().ToString()}");
       }
     }
     protected override void PlayPreFire() {
@@ -115,11 +95,7 @@ namespace CustAmmoCategories {
     protected override void PlayMuzzleFlash() {
       base.PlayMuzzleFlash();
     }
-#if PUBLIC_ASSEMBLIES
-    public override void PlayProjectile() {
-#else
     protected override void PlayProjectile() {
-#endif
       this.PlayMuzzleFlash();
       this.t = 0.0f;
       if (!string.IsNullOrEmpty(this.projectileSoundEvent)) {
@@ -127,20 +103,12 @@ namespace CustAmmoCategories {
       }
       base.PlayProjectile();
     }
-#if PUBLIC_ASSEMBLIES
-    public override void PlayImpact() {
-#else
     protected override void PlayImpact() {
-#endif
       ++this.bulletsFired;
       this.PlayImpactAudio();
       base.PlayImpact();
     }
-#if PUBLIC_ASSEMBLIES
-    public override void Update() {
-#else
     protected override void Update() {
-#endif
       try {
         base.Update();
         if (this.currentState != WeaponEffect.WeaponEffectState.Firing || (double)this.t < 1.0)
@@ -161,21 +129,21 @@ namespace CustAmmoCategories {
     protected override void OnImpact(float hitDamage = 0.0f, float structureDamage = 0f) {
       float hitDamage1 = this.weapon.DamagePerShotAdjusted(this.weapon.parent.occupiedDesignMask);
       float structureDamage1 = this.weapon.StructureDamagePerShotAdjusted(this.weapon.parent.occupiedDesignMask);
-      if ((double)this.t >= 1.0)
+      if (this.t >= 1f)
         base.OnImpact(hitDamage1, structureDamage1);
       else
         base.OnImpact(hitDamage, structureDamage);
     }
     protected override void OnComplete() {
       base.OnComplete();
-      if ((UnityEngine.Object)this.projectileParticles != (UnityEngine.Object)null)
+      if (this.projectileParticles != null)
         this.projectileParticles.Stop(true);
       if (string.IsNullOrEmpty(this.fireCompleteStopEvent))
         return;
       int num = (int)WwiseManager.PostEvent(this.fireCompleteStopEvent, this.projectileAudioObject, (AkCallbackManager.EventCallback)null, (object)null);
     }
     public void OnDisable() {
-      if (!((UnityEngine.Object)this.projectileAudioObject != (UnityEngine.Object)null))
+      if (this.projectileAudioObject == null)
         return;
       AkSoundEngine.StopAll(this.projectileAudioObject.gameObject);
       int num = (int)AkSoundEngine.UnregisterGameObj(this.projectileAudioObject.gameObject);

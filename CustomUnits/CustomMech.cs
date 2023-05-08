@@ -182,6 +182,12 @@ namespace CustomUnits {
       : base(mDef, pilotDef, additionalTags, UID, combat, spawnerId, customHeraldryDef) {
 
     }
+    public void ShowFloatie(string sourceGuid, ArmorLocation location, FloatieMessage.MessageNature nature, string dmgText, float fontSize) {
+      if (this.GameRep == null) { return; }
+      Vector3 vector3 = this.GameRep.GetHitPosition((int)location) + UnityEngine.Random.insideUnitSphere * 5f;
+      this.Combat.MessageCenter.PublishMessage(new FloatieMessage(sourceGuid, this.GUID, dmgText, fontSize, nature, vector3.x, vector3.y, vector3.z));
+    }
+
     protected override void InitStats() {
       custLosData = new CustomLOSData(this);
       custLosData.ApplyScale(MechResizer.SizeMultiplier.Get(this.MechDef));

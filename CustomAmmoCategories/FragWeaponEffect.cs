@@ -20,11 +20,12 @@ using System.Reflection;
 using UnityEngine;
 using Random = UnityEngine.Random;
 using CustomAmmoCategoriesLog;
+using HarmonyLib;
+using CustomAmmoCategoriesHelper;
 
 namespace CustAmmoCategories {
 
   public class FragWeaponEffect : WeaponEffect {
-    private static FieldInfo fi_hasSentNextWeaponMessage = null;
     public WeaponEffect parentWeaponEffect;
     public GameObject startingTransformObject;
     public FragWeaponEffect() {
@@ -33,49 +34,44 @@ namespace CustAmmoCategories {
     public void Init(WeaponEffect original) {
       this.impactVFXBase = original.impactVFXBase;
       this.preFireSFX = original.preFireSFX;
-      this.Combat = (CombatGameState)typeof(WeaponEffect).GetField("Combat", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(original);
+      this.Combat = original.Combat();
       this.hitInfo = original.hitInfo;
-      this.hitIndex = original.HitIndex();
-      this.emitterIndex = (int)typeof(WeaponEffect).GetField("emitterIndex", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(original);
-      this.numberOfEmitters = (int)typeof(WeaponEffect).GetField("numberOfEmitters", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(original);
+      this.hitIndex = original.hitIndex;
+      this.emitterIndex = original.emitterIndex();
+      this.numberOfEmitters = original.numberOfEmitters();
       this.subEffect = original.subEffect;
       this.currentState = original.currentState;
       this.weaponRep = original.weaponRep;
       this.weapon = original.weapon;
-      this.parentAudioObject = (AkGameObj)typeof(WeaponEffect).GetField("parentAudioObject", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(original);
-      this.startingTransform = (Transform)typeof(WeaponEffect).GetField("startingTransform", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(original);
-      this.startPos = (Vector3)typeof(WeaponEffect).GetField("startPos", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(original);
-      this.endPos = (Vector3)typeof(WeaponEffect).GetField("endPos", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(original);
-      this.currentPos = (Vector3)typeof(WeaponEffect).GetField("currentPos", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(original);
-      this.t = (float)typeof(WeaponEffect).GetField("t", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(original);
+      this.parentAudioObject = original.parentAudioObject();
+      this.startingTransform = original.startingTransform();
+      this.startPos = original.startPos();
+      this.endPos = original.endPos();
+      this.currentPos = original.currentPos();
+      this.t = original.t();
       this.attackSequenceNextDelayMin = original.attackSequenceNextDelayMin;
       this.attackSequenceNextDelayMax = original.attackSequenceNextDelayMax;
-      this.attackSequenceNextDelayTimer = (float)typeof(WeaponEffect).GetField("attackSequenceNextDelayTimer", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(original);
-      if (fi_hasSentNextWeaponMessage == null) { fi_hasSentNextWeaponMessage = typeof(WeaponEffect).GetField("hasSentNextWeaponMessage", BindingFlags.Instance | BindingFlags.NonPublic); }
-      if (fi_hasSentNextWeaponMessage != null) {
-        this.hasSentNextWeaponMessage = (bool)fi_hasSentNextWeaponMessage.GetValue(original);
-      } else {
-        CustomAmmoCategoriesLog.Log.LogWrite("WARNING! Can't get WeaponEffect.hasSentNextWeaponMessage\n");
-      }
+      this.attackSequenceNextDelayTimer = original.attackSequenceNextDelayTimer();
+      this.hasSentNextWeaponMessage(original.hasSentNextWeaponMessage());
       this.preFireDuration = original.preFireDuration;
-      this.preFireRate = (float)typeof(WeaponEffect).GetField("preFireRate", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(original);
-      this.duration = (float)typeof(WeaponEffect).GetField("duration", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(original);
-      this.rate = (float)typeof(WeaponEffect).GetField("rate", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(original);
+      this.preFireRate = original.preFireRate();
+      this.duration = original.duration();
+      this.rate = original.rate();
       this.projectileSpeed = original.projectileSpeed;
       this.weaponImpactType = original.weaponImpactType;
       this.preFireVFXPrefab = original.preFireVFXPrefab;
       this.muzzleFlashVFXPrefab = original.muzzleFlashVFXPrefab;
       this.projectilePrefab = original.projectilePrefab;
       this.projectile = original.projectile;
-      this.activeProjectileName = (string)typeof(WeaponEffect).GetField("activeProjectileName", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(original);
-      this.projectileTransform = (Transform)typeof(WeaponEffect).GetField("projectileTransform", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(original);
-      this.projectileParticles = (ParticleSystem)typeof(WeaponEffect).GetField("projectileParticles", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(original);
-      this.projectileAudioObject = (AkGameObj)typeof(WeaponEffect).GetField("projectileAudioObject", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(original);
-      this.projectileMeshObject = (GameObject)typeof(WeaponEffect).GetField("projectileMeshObject", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(original);
-      this.projectileLightObject = (GameObject)typeof(WeaponEffect).GetField("projectileLightObject", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(original);
-      Log.M.WL(1, "projectile:" + (projectile == null ? "null" : projectile.name));
-      Log.M.WL(1, "projectilePrefab:" + (projectilePrefab == null ? "null" : projectilePrefab.name));
-      Log.M.WL(1, "activeProjectileName:" + activeProjectileName);
+      this.activeProjectileName = original.activeProjectileName();
+      this.projectileTransform = original.projectileTransform();
+      this.projectileParticles = original.projectileParticles();
+      this.projectileAudioObject = original.projectileAudioObject();
+      this.projectileMeshObject = original.projectileMeshObject();
+      this.projectileLightObject = original.projectileLightObject();
+      Log.Combat?.WL(1, "projectile:" + (projectile == null ? "null" : projectile.name));
+      Log.Combat?.WL(1, "projectilePrefab:" + (projectilePrefab == null ? "null" : projectilePrefab.name));
+      Log.Combat?.WL(1, "activeProjectileName:" + activeProjectileName);
       if (projectilePrefab != null) {
         if (string.IsNullOrEmpty(this.activeProjectileName)) {
           this.activeProjectileName = projectilePrefab.name;
@@ -89,27 +85,8 @@ namespace CustAmmoCategories {
       this.AllowMissSkipping = original.AllowMissSkipping;
       this.parentWeaponEffect = null;
     }
-    protected bool hasSentNextWeaponMessage {
-      get {
-        if (fi_hasSentNextWeaponMessage == null) { fi_hasSentNextWeaponMessage = typeof(WeaponEffect).GetField("hasSentNextWeaponMessage", BindingFlags.Instance | BindingFlags.NonPublic); }
-        if (fi_hasSentNextWeaponMessage != null) {
-          return (bool)fi_hasSentNextWeaponMessage.GetValue(this);
-        } else {
-          CustomAmmoCategoriesLog.Log.LogWrite("WARNING! Can't get WeaponEffect.hasSentNextWeaponMessage\n");
-          return false;
-        }
-      }
-      set {
-        if (fi_hasSentNextWeaponMessage == null) { fi_hasSentNextWeaponMessage = typeof(WeaponEffect).GetField("hasSentNextWeaponMessage", BindingFlags.Instance | BindingFlags.NonPublic); }
-        if (fi_hasSentNextWeaponMessage != null) {
-          fi_hasSentNextWeaponMessage.SetValue(this, value);
-        } else {
-          CustomAmmoCategoriesLog.Log.LogWrite("WARNING! Can't set WeaponEffect.hasSentNextWeaponMessage\n");
-        }
-      }
-    }
     public virtual void Fire(Vector3 sPos,WeaponHitInfo hitInfo, int hitIndex = 0, int emitterIndex = 0) {
-      CustomAmmoCategoriesLog.Log.LogWrite("FragWeaponEffect.Fire " + sPos + " wi:" + hitInfo.attackWeaponIndex + " hi:" + hitIndex + "\n");
+      Log.Combat?.WL(0, "FragWeaponEffect.Fire " + sPos + " wi:" + hitInfo.attackWeaponIndex + " hi:" + hitIndex);
       this.t = 0.0f;
       this.hitIndex = hitIndex;
       this.emitterIndex = emitterIndex;
@@ -128,11 +105,11 @@ namespace CustAmmoCategories {
       this.currentState = WeaponEffect.WeaponEffectState.PreFiring;
     }
     protected override void PlayPreFire() {
-      if ((UnityEngine.Object)this.preFireVFXPrefab != (UnityEngine.Object)null) {
+      if (this.preFireVFXPrefab != null) {
         GameObject gameObject = this.weapon.parent.Combat.DataManager.PooledInstantiate(this.preFireVFXPrefab.name, BattleTechResourceType.Prefab, new Vector3?(), new Quaternion?(), (Transform)null);
         ParticleSystem component = gameObject.GetComponent<ParticleSystem>();
         AutoPoolObject autoPoolObject = gameObject.GetComponent<AutoPoolObject>();
-        if ((UnityEngine.Object)autoPoolObject == (UnityEngine.Object)null)
+        if (autoPoolObject == null)
           autoPoolObject = gameObject.AddComponent<AutoPoolObject>();
         autoPoolObject.Init(this.weapon.parent.Combat.DataManager, this.preFireVFXPrefab.name, component);
         component.Stop(true);
@@ -160,12 +137,12 @@ namespace CustAmmoCategories {
       this.currentState = WeaponEffect.WeaponEffectState.PreFiring;
     }
     protected override void PlayMuzzleFlash() {
-      if (!((UnityEngine.Object)this.muzzleFlashVFXPrefab != (UnityEngine.Object)null))
+      if (this.muzzleFlashVFXPrefab == null)
         return;
       GameObject gameObject = this.weapon.parent.Combat.DataManager.PooledInstantiate(this.muzzleFlashVFXPrefab.name, BattleTechResourceType.Prefab, new Vector3?(), new Quaternion?(), (Transform)null);
       ParticleSystem component = gameObject.GetComponent<ParticleSystem>();
       AutoPoolObject autoPoolObject = gameObject.GetComponent<AutoPoolObject>();
-      if ((UnityEngine.Object)autoPoolObject == (UnityEngine.Object)null)
+      if (autoPoolObject ==null)
         autoPoolObject = gameObject.AddComponent<AutoPoolObject>();
       autoPoolObject.Init(this.weapon.parent.Combat.DataManager, this.muzzleFlashVFXPrefab.name, component);
       component.Stop(true);
@@ -176,7 +153,7 @@ namespace CustAmmoCategories {
       BTCustomRenderer.SetVFXMultiplier(component);
       component.Play(true);
       BTLightAnimator componentInChildren = gameObject.GetComponentInChildren<BTLightAnimator>(true);
-      if (!((UnityEngine.Object)componentInChildren != (UnityEngine.Object)null))
+      if (componentInChildren == null)
         return;
       componentInChildren.StopAnimation();
       componentInChildren.PlayAnimation();
@@ -184,27 +161,27 @@ namespace CustAmmoCategories {
     protected override void PlayProjectile() {
       this.t = 0.0f;
       this.currentState = WeaponEffect.WeaponEffectState.Firing;
-      if ((UnityEngine.Object)this.projectileMeshObject != (UnityEngine.Object)null)
+      if (this.projectileMeshObject != null)
         this.projectileMeshObject.SetActive(true);
-      if ((UnityEngine.Object)this.projectileLightObject != (UnityEngine.Object)null)
+      if (this.projectileLightObject != null)
         this.projectileLightObject.SetActive(true);
-      if ((UnityEngine.Object)this.projectileParticles != (UnityEngine.Object)null) {
+      if (this.projectileParticles != null) {
         this.projectileParticles.Stop(true);
         this.projectileParticles.Clear(true);
       }
       this.projectileTransform.position = this.startPos;
       this.projectileTransform.LookAt(this.endPos);
       //this.startPos = this.startingTransform.position;
-      if ((UnityEngine.Object)this.projectileParticles != (UnityEngine.Object)null) {
+      if (this.projectileParticles != null) {
         BTCustomRenderer.SetVFXMultiplier(this.projectileParticles);
         this.projectileParticles.Play(true);
         BTLightAnimator componentInChildren = this.projectileParticles.GetComponentInChildren<BTLightAnimator>(true);
-        if ((UnityEngine.Object)componentInChildren != (UnityEngine.Object)null) {
+        if (componentInChildren != null) {
           componentInChildren.StopAnimation();
           componentInChildren.PlayAnimation();
         }
       }
-      if ((UnityEngine.Object)this.weapon.parent.GameRep != (UnityEngine.Object)null) {
+      if (this.weapon.parent.GameRep != null) {
         int num;
         switch ((ChassisLocations)this.weapon.Location) {
           case ChassisLocations.LeftArm:
@@ -233,7 +210,7 @@ namespace CustAmmoCategories {
           str1 = "_" + this.impactVFXVariations[UnityEngine.Random.Range(0, this.impactVFXVariations.Length)];
         string str2 = string.Format("{0}{1}", (object)this.impactVFXBase, (object)str1);
         GameObject gameObject = this.weapon.parent.Combat.DataManager.PooledInstantiate(str2, BattleTechResourceType.Prefab, new Vector3?(), new Quaternion?(), (Transform)null);
-        if ((UnityEngine.Object)gameObject == (UnityEngine.Object)null) {
+        if (gameObject == null) {
           WeaponEffect.logger.LogError((object)(this.weapon.Name + " WeaponEffect.PlayImpact had an invalid VFX name: " + str2));
         } else {
           ParticleSystem component = gameObject.GetComponent<ParticleSystem>();
@@ -244,12 +221,12 @@ namespace CustAmmoCategories {
           BTCustomRenderer.SetVFXMultiplier(component);
           component.Play(true);
           BTLightAnimator componentInChildren = gameObject.GetComponentInChildren<BTLightAnimator>(true);
-          if ((UnityEngine.Object)componentInChildren != (UnityEngine.Object)null) {
+          if (componentInChildren != null) {
             componentInChildren.StopAnimation();
             componentInChildren.PlayAnimation();
           }
           AutoPoolObject autoPoolObject = gameObject.GetComponent<AutoPoolObject>();
-          if ((UnityEngine.Object)autoPoolObject == (UnityEngine.Object)null)
+          if (autoPoolObject == null)
             autoPoolObject = gameObject.AddComponent<AutoPoolObject>();
           autoPoolObject.Init(this.weapon.parent.Combat.DataManager, str2, component);
         }
@@ -259,9 +236,9 @@ namespace CustAmmoCategories {
         this.PlayTerrainImpactVFX();
         this.DestroyFlimsyObjects();
       }
-      if ((UnityEngine.Object)this.projectileMeshObject != (UnityEngine.Object)null)
+      if (this.projectileMeshObject != null)
         this.projectileMeshObject.SetActive(false);
-      if ((UnityEngine.Object)this.projectileLightObject != (UnityEngine.Object)null)
+      if (this.projectileLightObject != null)
         this.projectileLightObject.SetActive(false);
       this.OnImpact(0.0f);
     }

@@ -134,7 +134,7 @@ namespace WeaponRealizer {
               new ShowActorInfoSequence(actor, $"{weapon.UIName} __/CAC.Unjammed/__!", FloatieMessage.MessageNature.Buff,
                   true)));
     }
-    private static bool IsJammed(Weapon weapon) {
+    public static bool IsJammed(Weapon weapon) {
       var statistic =
           StatisticHelper.GetOrCreateStatisic<bool>(weapon.StatCollection, JammedWeaponStatisticName, false);
       return statistic.Value<bool>();

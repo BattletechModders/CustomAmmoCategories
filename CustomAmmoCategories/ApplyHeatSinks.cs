@@ -37,13 +37,6 @@ namespace CustAmmoCategories {
         return mech.StatCollection.GetStatistic(CustomAmmoCategories.UsesHeatSinkCap).Value<int>();
       }
     }
-    public static void CurrentHeat(this Mech mech,int heat) {
-      if (mech.StatCollection.ContainsStatistic("CurrentHeat") == false) {
-        mech.StatCollection.AddStatistic<int>("CurrentHeat", heat);
-      } else {
-        mech.StatCollection.Set<int>("CurrentHeat",heat);
-      }
-    }
     public static void UsedHeatSinksCap(this Mech mech, int heatSinksCap) {
       if (mech.StatCollection.ContainsStatistic(CustomAmmoCategories.UsesHeatSinkCap) == false) {
         mech.StatCollection.AddStatistic<int>(CustomAmmoCategories.UsesHeatSinkCap, 0);
@@ -70,10 +63,11 @@ namespace CustAmmoCategoriesPatches {
   public static class Mech_ApplyHeatSinks {
     public static void AddSinkedHeat(this Mech mech,float value) {
       Statistic heat = mech.StatCollection.GetOrCreateStatisic<float>(CustomAmmoCategories.Settings.ApplyHeatSinkActorStat, 0f);
-      Log.M.TWL(0, "overrall sinked heat "+mech.DisplayName+" "+ heat.Value<float>()+"->"+ (heat.Value<float>() + value));
+      Log.Combat?.TWL(0, "overrall sinked heat "+mech.DisplayName+" "+ heat.Value<float>()+"->"+ (heat.Value<float>() + value));
       heat.SetValue<float>(heat.Value<float>() + value);
     }
-    public static bool Prefix(Mech __instance, int stackID) {
+    public static void Prefix(ref bool __runOriginal, Mech __instance, int stackID) {
+      if (__runOriginal == false) { return; }
       Log.HS.TWL(0,"Mech.ApplyHeatSinks round:"+ __instance.Combat.TurnDirector.CurrentRound + " phase: "+ __instance.Combat.TurnDirector.CurrentPhase + " " + __instance.DisplayName + ":" + __instance.GUID);
       if (__instance.isHasHeat() == false) {
         typeof(Mech).GetProperty("_heat", BindingFlags.Instance | BindingFlags.NonPublic).GetSetMethod(true).Invoke(__instance, new object[1] { (object)0 });
@@ -118,7 +112,7 @@ namespace CustAmmoCategoriesPatches {
         __instance.ReconcileHeat(stackID, __instance.GUID);
         Log.HS.WL(1, "new usedHeatSinks = " + __instance.UsedHeatSinksCap() + "\n");
       }
-      return false;
+      __runOriginal = false;
     }
   }
   [HarmonyPatch(typeof(Mech))]
@@ -190,9 +184,9 @@ namespace CustAmmoCategoriesPatches {
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { typeof(Weapon), typeof(int) })]
   public static class Mech_AddWeaponHeat {
-    public static bool Prefix(Mech __instance) {
-      if (__instance.isHasHeat() == false) { return false; }
-      return true;
+    public static void Prefix(ref bool __runOriginal, Mech __instance) {
+      if (__instance.isHasHeat() == false) { __runOriginal = false;  return; }
+      return;
     }
   }
   [HarmonyPatch(typeof(Mech))]
@@ -200,9 +194,44 @@ namespace CustAmmoCategoriesPatches {
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { typeof(string), typeof(int) })]
   public static class Mech_AddExternalHeat {
-    public static bool Prefix(Mech __instance) {
-      if (__instance.isHasHeat() == false) { return false; }
-      return true;
+    private static Dictionary<Mech, int> extHeat = new Dictionary<Mech, int>();
+    public static void Clear() { extHeat.Clear(); }
+    public static void AddExtHeatCustom(this Mech mech, int amount) {
+      if (extHeat.ContainsKey(mech)) { extHeat[mech] += amount; } else { extHeat[mech] = amount; }
+    }
+    public static int GetExtHeatCustom(this Mech mech) {
+      if (extHeat.TryGetValue(mech, out int heat)) {
+        extHeat[mech] = 0;
+        return heat;
+      }
+      return 0;
+    }
+    public static void Prefix(ref bool __runOriginal, Mech __instance, string reason, int amt) {
+      __runOriginal = false;
+      if (__instance.isHasHeat() == false) { return; }
+      if (Mech.heatLogger.IsLogEnabled)
+        Mech.heatLogger.Log(string.Format("Mech {0} gains {1} heat. Reason: {2}", __instance.LogDisplayName, amt, reason));
+      __instance.AddExtHeatCustom(amt);
+    }
+  }
+  [HarmonyPatch(typeof(Mech))]
+  [HarmonyPatch("AddTempHeat")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { })]
+  public static class Mech_AddTempHeat {
+    public static void Prefix(ref bool __runOriginal, Mech __instance) {
+      if (__instance.isHasHeat() == false) { return; }
+      int extHeat = __instance.GetExtHeatCustom();
+      if (extHeat == 0) { return; }
+      if(CustomAmmoCategories.Settings.ExternalHeatLimit > 0) {
+        int projectedHeat = extHeat + __instance._heat - __instance.AdjustedHeatsinkCapacity;
+        if (projectedHeat > CustomAmmoCategories.Settings.ExternalHeatLimit) {
+          extHeat = CustomAmmoCategories.Settings.ExternalHeatLimit - (__instance._heat - __instance.AdjustedHeatsinkCapacity);
+        }
+        if (extHeat < 0) { extHeat = 0; }
+        Log.Combat?.TWL(0,$"Limit external heat {__instance.PilotableActorDef.ChassisID} extheat:{extHeat}");
+      }
+      __instance._heat += extHeat;
     }
   }
   [HarmonyPatch(typeof(Mech))]

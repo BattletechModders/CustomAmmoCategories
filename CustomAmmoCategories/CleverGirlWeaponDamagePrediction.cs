@@ -19,33 +19,6 @@ using System.Text;
 using UnityEngine;
 
 namespace CleverGirlAIDamagePrediction {
-  [HarmonyPatch(typeof(AbstractActor))]
-  [HarmonyPatch("OnPhaseBegin")]
-  [HarmonyPatch(MethodType.Normal)]
-  [HarmonyPatch(new Type[] { typeof(int), typeof(int) })]
-  public static class MechMeleeSequence_CompleteOrders {
-
-    public static void Postfix(AbstractActor __instance) {
-      /*Dictionary<ICombatant, Dictionary<Weapon, Dictionary<AmmoModePair, WeaponFirePredictedEffect>>> result = new Dictionary<ICombatant, Dictionary<Weapon, Dictionary<AmmoModePair, WeaponFirePredictedEffect>>>();
-      foreach (ICombatant target in __instance.Combat.GetAllEnemiesOf(__instance)) {
-        result.Add(target, new Dictionary<Weapon, Dictionary<AmmoModePair, WeaponFirePredictedEffect>>());
-        foreach(Weapon weapon in __instance.Weapons) {
-          result[target].Add(weapon, weapon.gatherDamagePrediction(__instance.CurrentPosition, target));
-        }
-      }
-      Log.M.TWL(0, "AbstractActor.OnPhaseBegin");
-      foreach (var trg in result) {
-        Log.M.WL(1, "target:" + trg.Key.DisplayName + ":" + trg.Key.GUID);
-        foreach (var wp in trg.Value) {
-          Log.M.WL(2, "weapon:" + wp.Key.UIName);
-          foreach (var dmg in wp.Value) {
-            Log.M.WL(3, dmg.Key.ToString());
-            Log.M.WL(0, dmg.Value.ToString(4));
-          }
-        }
-      }*/
-    }
-  }
   public class DamagePredictionRecord {
     public float Normal { get; set; }
     public float AP { get; set; }
@@ -118,7 +91,7 @@ namespace CleverGirlAIDamagePrediction {
       predictDamage = new List<DamagePredictionRecord>();
     }
     public void NormalDamageProc(Vector3 attackPos, ICombatant target) {
-      Log.M.TWL(0, "WeaponFirePredictedEffect.NormalDamageProc "+this.weapon.defId+" trg:"+target.DisplayName);
+      Log.Combat?.TWL(0, "WeaponFirePredictedEffect.NormalDamageProc "+this.weapon.defId+" trg:"+target.DisplayName);
       DamagePredictionRecord inital = new DamagePredictionRecord();
       inital.Target = target;
       bool damagePerPallet = weapon.DamagePerPallet();
@@ -142,31 +115,13 @@ namespace CleverGirlAIDamagePrediction {
           inital.ApplyEffects.Add(statusEffect);
         }
       }
-      Log.M.WL(0, inital.ToString(1));
+      Log.Combat?.WL(0, inital.ToString(1));
       this.predictDamage.Add(inital);
-      /*if (HasShells) {
-        float sMin = CustomAmmoCategories.getWeaponMinShellsDistance(this.weapon);
-        float distance = Vector3.Distance(attackPos, target.CurrentPosition);
-        bool HasShells = weapon.HasShells();
-        bool FragSeparated = distance >= sMin;
-        if (FragSeparated) {
-          inital.Normal /= (float)weapon.ProjectilesPerShot;
-          inital.Heat /= (float)weapon.ProjectilesPerShot;
-          inital.Instability /= (float)weapon.ProjectilesPerShot;
-          inital.AP /= (float)weapon.ProjectilesPerShot;
-        } else {
-          float unsepDmbMod = CustomAmmoCategories.getWeaponUnseparatedDamageMult(this.weapon);
-          inital.Normal *= unsepDmbMod;
-          inital.Heat *= unsepDmbMod;
-          inital.Instability *= unsepDmbMod;
-          inital.AP *= unsepDmbMod;
-        }
-      }*/
     }
     public void StrayProc(DamagePredictionRecord inital, Vector3 attackPos) {
-      Log.M.TWL(0, "WeaponFirePredictedEffect.NormalDamageProc " + this.weapon.defId + " trg:" + inital.Target.DisplayName);
+      Log.Combat?.TWL(0, "WeaponFirePredictedEffect.NormalDamageProc " + this.weapon.defId + " trg:" + inital.Target.DisplayName);
       float SpreadRange = this.weapon.StrayRange();
-      if (SpreadRange <= CustomAmmoCategories.Epsilon) { Log.M.WL("No stray"); return; }
+      if (SpreadRange <= CustomAmmoCategories.Epsilon) { Log.Combat?.WL("No stray"); return; }
       float divider = SpreadRange;
       Dictionary<ICombatant, float> possibleTargets = new Dictionary<ICombatant, float>();
       foreach (ICombatant target in this.weapon.parent.Combat.GetAllCombatants()) {
@@ -202,7 +157,7 @@ namespace CleverGirlAIDamagePrediction {
       }
     }
     public void ShellsProc(Vector3 attackPos) {
-      Log.M.TWL(0, "WeaponFirePredictedEffect.ShellsProc " + this.weapon.defId + "/"+this.weapon.UIName);
+      Log.Combat?.TWL(0, "WeaponFirePredictedEffect.ShellsProc " + this.weapon.defId + "/"+this.weapon.UIName);
       if (weapon.HasShells() == false) { Log.M.WL(0, "No shells"); return; }
       List<DamagePredictionRecord> rec = new List<DamagePredictionRecord>();
       rec.AddRange(this.predictDamage);
@@ -211,7 +166,7 @@ namespace CleverGirlAIDamagePrediction {
       }
     }
     public void AoEProc(Vector3 attackPos) {
-      Log.M.TWL(0, "WeaponFirePredictedEffect.AoEProc " + this.weapon.defId + "/" + this.weapon.UIName);
+      Log.Combat?.TWL(0, "WeaponFirePredictedEffect.AoEProc " + this.weapon.defId + "/" + this.weapon.UIName);
       if (this.weapon.AOECapable() == false) { return; }
       if (this.weapon.AOERange() <= CustomAmmoCategories.Epsilon) { return; }
       List<DamagePredictionRecord> rec = new List<DamagePredictionRecord>();
@@ -249,7 +204,7 @@ namespace CleverGirlAIDamagePrediction {
       }
     }
     public void ShellsProc(DamagePredictionRecord inital,Vector3 attackPos) {
-      Log.M.TWL(0, "WeaponFirePredictedEffect.ShellsProc " + this.weapon.defId + " trg:" + inital.Target.DisplayName);
+      Log.Combat?.TWL(0, "WeaponFirePredictedEffect.ShellsProc " + this.weapon.defId + " trg:" + inital.Target.DisplayName);
       float sMin = this.weapon.MinShellsDistance();
       float sep_distance = Vector3.Distance(attackPos, inital.Target.CurrentPosition);
       bool FragSeparated = sep_distance >= sMin;
@@ -309,81 +264,6 @@ namespace CleverGirlAIDamagePrediction {
       if (weapon.StructureDamagePerShot > CustomAmmoCategories.Epsilon) { inital.AP = (ap / this.weapon.StructureDamagePerShot) * inital.AP; }
       if (weapon.HeatDamagePerShot > CustomAmmoCategories.Epsilon) { inital.Heat = (heat / this.weapon.HeatDamagePerShot) * inital.Heat; }
       if (weapon.Instability() > CustomAmmoCategories.Epsilon) { inital.Instability = (stability / this.weapon.Instability()) * inital.Instability; }
-      /*float rawDamage = inital.Normal;
-      float realDamage = rawDamage;
-      float rawHeat = inital.Heat;
-      if (realDamage >= 1.0f) {
-        if (weapon.DistantVariance() > CustomAmmoCategories.Epsilon) {
-          if (weapon.DistantVarianceReversed() == false) {
-            realDamage = CustomAmmoCategories.WeaponDamageDistance(attackPos, inital.Target, weapon, realDamage, rawDamage);
-          } else {
-            realDamage = CustomAmmoCategories.WeaponDamageRevDistance(attackPos, inital.Target, weapon, realDamage, rawDamage);
-          }
-        } else {
-          //Log.M.WL("no distance variance defined");
-        }
-        if (realDamage >= 1.0f) {
-          //Log.LogWrite("Applying WeaponRealizer variance. Current damage: " + realDamage + "\n");
-          realDamage = WeaponRealizer.Calculator.ApplyDamageModifiers(attackPos, inital.Target, weapon, realDamage, true);
-          //Log.LogWrite("damage after WeaponRealizer variance: " + realDamage + "\n");
-        }
-      } else {
-        CustomAmmoCategoriesLog.Log.LogWrite("WARNING! raw damage is less than 1.0f. Variance calculation is forbidden with this damage value\n", true);
-      }
-      if (float.IsNaN(realDamage)) {
-        CustomAmmoCategoriesLog.Log.LogWrite("WARNING! real damage is NaN. That is sad. Rounding to 0.1\n", true);
-        realDamage = 0.1f;
-      }
-      if (float.IsInfinity(realDamage)) {
-        CustomAmmoCategoriesLog.Log.LogWrite("WARNING! real damage is positive infinity. That is sad. Rounding to 0.1\n", true);
-        realDamage = 0.1f;
-      }
-      if (realDamage < CustomAmmoCategories.Epsilon) {
-        CustomAmmoCategoriesLog.Log.LogWrite("WARNING! real damage is less than epsilon. May be negative. That is sad. Rounding to 0.1\n", true);
-        realDamage = 0.1f;
-      }
-      if (weapon.isHeatVariation()) {
-        inital.Heat *= inital.Normal > CustomAmmoCategories.Epsilon ? (realDamage / inital.Normal) : 0f;
-        rawHeat = inital.Heat;
-      } else {
-        //Log.LogWrite(" heat variation forbidden by weapon's settings\n");
-      }
-      if (weapon.isStabilityVariation()) {
-        inital.Instability *= inital.Normal > CustomAmmoCategories.Epsilon ? realDamage / inital.Normal : 0f;
-      } else {
-        //Log.LogWrite(" stability variation forbidden by weapon's settings\n");
-      }
-      if (weapon.isDamageVariation()) {
-        inital.AP *= inital.Normal > CustomAmmoCategories.Epsilon ? (realDamage / inital.Normal) : 0f;
-        inital.Normal = realDamage;
-      } else {
-        //Log.LogWrite(" damage variation forbidden by weapon's settings\n");
-      }
-      //Log.LogWrite("  real damage = " + inital.Normal + "\n");
-      //Log.LogWrite("  real heat = " + inital.Heat + "\n");
-      //Log.LogWrite("  real stability = " + inital.Instability + "\n");
-      if ((inital.Target.isHasHeat() == false) && (rawHeat >= 0.5f)) {
-        Log.M.WL("  heat damage exists, but target can't be heated");
-        float heatAsNormal = inital.Target.HeatDamage(rawHeat);
-        //Log.M.WL("  heat transfered to normal damage:" + heatAsNormal);
-        inital.Normal += heatAsNormal;
-        inital.Heat = 0f;
-        //Log.LogWrite("  real damage = " + inital.Normal + "\n");
-        //Log.LogWrite("  real heat = " + inital.Heat + "\n");
-      }
-      AbstractActor actorTarget = inital.Target as AbstractActor;
-      if (actorTarget != null) {
-        LineOfFireLevel lineOfFireLevel = weapon.parent.VisibilityCache.VisibilityToTarget((ICombatant)actorTarget).LineOfFireLevel;
-#if BT1_8
-        float adjustedDamage = actorTarget.GetAdjustedDamage(inital.Normal, weapon.WeaponCategoryValue, actorTarget.occupiedDesignMask, lineOfFireLevel, true);
-        realDamage = actorTarget.GetAdjustedDamageForMelee(adjustedDamage, weapon.WeaponCategoryValue);
-#else
-        float adjustedDamage = actorTarget.GetAdjustedDamage(inital.Normal, weapon.Category, actorTarget.occupiedDesignMask, lineOfFireLevel, true);
-        realDamage = actorTarget.GetAdjustedDamageForMelee(adjustedDamage, weapon.Category);
-#endif
-        inital.AP = inital.AP * (realDamage / inital.Normal);
-        inital.Normal = realDamage;
-      }*/
     }
     public void DamageVarianceProc(Vector3 attackPos) {
       foreach (DamagePredictionRecord dmg in this.predictDamage) {
@@ -419,7 +299,6 @@ namespace CleverGirlAIDamagePrediction {
       WeaponExtendedInfo info = weapon.info();
       List<WeaponMode> modes = weapon.AvaibleModes();
       if (info.modes.Count < 1) {
-        //Log.LogWrite("WARNING! " + weapon.defId + " has no modes. Even base mode. This means something is very very wrong\n", true);
         return result;
       }
       foreach (WeaponMode mode in modes) {
@@ -437,18 +316,14 @@ namespace CleverGirlAIDamagePrediction {
         result.Add(ammoMode, weapon.CalcPredictedEffect(attackPos, target));
       }
       weapon.ApplyAmmoMode(curAmmoMode);
-      Log.M.TWL(0, "gatherDamagePrediction");
+      Log.Combat?.TWL(0, "gatherDamagePrediction");
       foreach (var r in result) {
-        Log.M.WL(0, r.Key.ToString());
-        Log.M.WL(0, r.Value.ToString(1));
+        Log.Combat?.WL(0, r.Key.ToString());
+        Log.Combat?.WL(0, r.Value.ToString(1));
       }
       weapon.ResetTempAmmo();
       return result;
     }
-    //private static Dictionary<AbstractActor, Dictionary<string, List<AmmunitionBox>>> ammoBoxesCache = new Dictionary<AbstractActor, Dictionary<string, List<AmmunitionBox>>>();
-    //public static void ClearAmmunitionBoxesCache() {
-      //ammoBoxesCache.Clear();
-    //}
     public static WeaponFirePredictedEffect CalcPredictedEffect(this Weapon weapon, Vector3 attackPos, ICombatant target) {
       WeaponFirePredictedEffect result = new WeaponFirePredictedEffect();
       try {
@@ -474,7 +349,8 @@ namespace CleverGirlAIDamagePrediction {
         result.DamageVarianceProc(attackPos);
         result.AoEProc(attackPos);
       } catch (Exception e) {
-        Log.M.TWL(0, e.ToString(), true);
+        Log.Combat?.TWL(0, e.ToString(), true);
+        AttackDirector.damageLogger.LogException(e);
       }
       return result;
     }
