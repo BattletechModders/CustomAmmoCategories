@@ -36,23 +36,23 @@ namespace CustomUnits {
       //return 0f;
     //}
     public static void Postfix(ActorMovementSequence __instance, AbstractActor actor, Transform xform) {
-      Log.TWL(0,"ActorMovementSequence.Init "+new Text(actor.DisplayName).ToString());
+      Log.Combat?.TWL(0,"ActorMovementSequence.Init "+new Text(actor.DisplayName).ToString());
       try {
-        Log.WL(1, "Pathing.HasPath:"+(actor.Pathing==null?"null":actor.Pathing.HasPath.ToString()));
+        Log.Combat?.WL(1, "Pathing.HasPath:"+(actor.Pathing==null?"null":actor.Pathing.HasPath.ToString()));
         if (actor.Pathing == null) { return; }
         if (actor.Pathing.HasPath == false) { return; }
         float costUsed = actor.Pathing.MaxCost - actor.Pathing.CostLeft;
-        Log.LogWrite(" path:" + actor.Pathing.CurrentPath.Count + " max:"+ actor.Pathing.MaxCost + " left:"+actor.Pathing.CostLeft+" used:"+costUsed+"\n");
+        Log.Combat?.WL(1, "path:" + actor.Pathing.CurrentPath.Count + " max:"+ actor.Pathing.MaxCost + " left:"+actor.Pathing.CostLeft+" used:"+costUsed);
         foreach (PathNode pn in actor.Pathing.CurrentPath) {
-          Log.LogWrite("  " + pn.Position + " "+pn.CostToThisNode+"\n");
+          Log.Combat?.WL(2, pn.Position + " "+pn.CostToThisNode);
         }
         PathNode node = actor.Pathing.CurrentPath[actor.Pathing.CurrentPath.Count - 1];
         float distance = node.CostToThisNode;
         if(distance < Core.Epsilon) {
           distance = Vector3.Distance(actor.Pathing.ResultDestination,actor.CurrentPosition);
-          Log.LogWrite("  overriding distance\n");
+          Log.Combat?.WL(2, "overriding distance");
         }
-        Log.LogWrite(" distance:"+ distance + "\n");
+        Log.Combat?.WL(1, "distance:" + distance);
         actor.LastMoveDistance(costUsed);
         //if (lastMoveDistance.ContainsKey(actor) == false){
         //  lastMoveDistance.Add(actor, costUsed);
@@ -60,7 +60,8 @@ namespace CustomUnits {
         //  lastMoveDistance[actor] = costUsed;
         //}
       } catch (Exception e) {
-        Log.LogWrite(e.ToString() + "\n", true);
+        Log.Combat?.TWL(0,e.ToString(), true);
+        ActorMovementSequence.logger.LogException(e);
       }
     }
   }
@@ -101,7 +102,8 @@ namespace CustomUnits {
           __instance.HUD().SetExMoveTypeText(text);
         }
       } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
+        Log.Combat?.TWL(0, e.ToString(), true);
+        UIManager.logger.LogException(e);
       }
     }
   }
@@ -110,13 +112,14 @@ namespace CustomUnits {
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { typeof(Vector3) })]
   public static class SelectionStateMove_ProcessLeftClickClamp {
-    public static bool Prefix(SelectionStateMove __instance, ref Vector3 worldPos, ref bool __result) {
+    public static void Prefix(ref bool __runOriginal, SelectionStateMove __instance, ref Vector3 worldPos, ref bool __result) {
       try {
+        if (!__runOriginal) { return; }
         __instance.SelectedActor.Pathing.Update(worldPos, true);
         string text = __instance.SelectedActor.MoveTypeTextPathing();
         if (string.IsNullOrEmpty(text)) {
           __instance.HUD().ClearMoveTypeText();
-          return true;
+          return;
         } else {
           __instance.HUD().SetExMoveTypeText(text);
           __result = false;
@@ -125,19 +128,15 @@ namespace CustomUnits {
           GenericPopupBuilder popup = GenericPopupBuilder.Create(GenericPopupType.Info, "Message: "+text+"\n"+"MoveType: "+moveType+"\nRealMaxDistance:"+distance+"\nClamp:"+ __instance.SelectedActor.MoveClamp()+"\nLastMoveDist:"+ __instance.SelectedActor.LastMoveDistance());
           popup.AddButton("Ok", (Action)null, true, (PlayerAction)null);
           popup.IsNestedPopupWithBuiltInFader().CancelOnEscape().Render();
-
-          return false;
+          __runOriginal = false; return;
         }
       } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
-        return false;
+        Log.Combat?.TWL(0, e.ToString(), true);
+        UIManager.logger.LogException(e);
+        return;
       }
     }
     public static void Postfix(SelectionStateMove __instance, ref Vector3 worldPos) {
-      try {
-      } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
-      }
     }
   }
   [HarmonyPatch(typeof(SelectionStateMoveBase))]
@@ -149,7 +148,8 @@ namespace CustomUnits {
       try {
         __instance.HUD().ClearMoveTypeText();
       } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
+        Log.Combat?.TWL(0, e.ToString(), true);
+        UIManager.logger.LogException(e);
       }
     }
   }
@@ -181,7 +181,7 @@ namespace CustomUnits {
             return mech.RunSpeed;
           } else {
             if (IRBTModUtils.Mod.Config.Features.EnableMovementModifiers == false) {
-              return mech.RunSpeed * Traverse.Create(mech).Property<float>("MoveMultiplier").Value;
+              return mech.RunSpeed * mech.MoveMultiplier();
             } else {
               return IRBTModUtils.Extension.MechExtensions.ModifiedRunDistanceExt(mech, false, "CustomUnits");
             }
@@ -191,7 +191,7 @@ namespace CustomUnits {
         }
       }
       Vehicle vehicle = unit as Vehicle;
-      if (vehicle != null) { return vehicle.FlankSpeed * Traverse.Create(vehicle).Property<float>("MoveMultiplier").Value; }
+      if (vehicle != null) { return vehicle.FlankSpeed * vehicle.MoveMultiplier; }
       return 0f;
     }
     public static float MaxWalkDistanceInital(this AbstractActor unit) {
@@ -203,7 +203,7 @@ namespace CustomUnits {
             return mech.WalkSpeed;
           } else {
             if (IRBTModUtils.Mod.Config.Features.EnableMovementModifiers == false) {
-              return mech.WalkSpeed * Traverse.Create(mech).Property<float>("MoveMultiplier").Value;
+              return mech.WalkSpeed * mech.MoveMultiplier();
             } else {
               return IRBTModUtils.Extension.MechExtensions.ModifiedWalkDistanceExt(mech, false, "CustomUnits");
             }
@@ -213,7 +213,7 @@ namespace CustomUnits {
         }
       }
       Vehicle vehicle = unit as Vehicle;
-      if (vehicle != null) { return vehicle.CruiseSpeed * Traverse.Create(vehicle).Property<float>("MoveMultiplier").Value; }
+      if (vehicle != null) { return vehicle.CruiseSpeed * vehicle.MoveMultiplier; }
       return 0f;
     }
     public static float MaxSprintDistanceMod(Mech mech, float value) {
@@ -270,7 +270,8 @@ namespace CustomUnits {
           __result = __result * __instance.RestPathingModifier();
         }
       } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
+        Log.Combat?.TWL(0, e.ToString(), true);
+        AbstractActor.logger.LogException(e);
       }
     }
   }
@@ -282,16 +283,17 @@ namespace CustomUnits {
     public static void Postfix(Mech __instance, ref float __result) {
       try {
         if (IRBTModUtils.Mod.Config.Features.EnableMovementModifiers) { return; }
-        Log.TW(0, "Mech.MaxSprintDistance " + __instance.Description.Id + " inital:" + __result + " clamp:" + __instance.MoveClamp()+ " RestPathingModifier:" + __instance.RestPathingModifier());
+        Log.Combat?.TW(0, "Mech.MaxSprintDistance " + __instance.Description.Id + " inital:" + __result + " clamp:" + __instance.MoveClamp()+ " RestPathingModifier:" + __instance.RestPathingModifier());
         if (__instance.MoveClamp() > Core.Epsilon) {
           __instance.MoveClamp(__result, out float min, out float max);
           __result = max;
         } else {
           __result = __result * __instance.RestPathingModifier();
         }
-        Log.WL(1, "result:" + __result);
+        Log.Combat?.WL(1, "result:" + __result);
       } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
+        Log.Combat?.TWL(0, e.ToString(), true);
+        AbstractActor.logger.LogException(e);
       }
     }
   }
@@ -309,7 +311,8 @@ namespace CustomUnits {
           __result = __result * __instance.RestPathingModifier();
         }
       } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
+        Log.Combat?.TWL(0, e.ToString(), true);
+        AbstractActor.logger.LogException(e);
       }
     }
   }
@@ -327,7 +330,8 @@ namespace CustomUnits {
           __result = __result * __instance.RestPathingModifier();
         }
       } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
+        Log.Combat?.TWL(0, e.ToString(), true);
+        AbstractActor.logger.LogException(e);
       }
     }
   }
@@ -339,15 +343,16 @@ namespace CustomUnits {
     public static void Postfix(JumpPathing __instance, Vector3 worldPos, List<AbstractActor> allActors, ref bool __result) {
       try {
         if(__result == true) {
-          float distance = Vector3.Distance(worldPos, Traverse.Create(__instance).Property<Mech>("Mech").Value.CurrentPosition);
-          float maxjump = Traverse.Create(__instance).Property<Mech>("Mech").Value.JumpDistance;
-          float minJump = Traverse.Create(__instance).Property<Mech>("Mech").Value.MinJumpDistance();
+          float distance = Vector3.Distance(worldPos, __instance.Mech.CurrentPosition);
+          float maxjump = __instance.Mech.JumpDistance;
+          float minJump = __instance.Mech.MinJumpDistance();
           if (minJump <= 0f) { return; }
           if (minJump >= 1f) { return; }
           __result = distance >= maxjump * minJump;
         }
       } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
+        Log.Combat?.TWL(0, e.ToString(), true);
+        AbstractActor.logger.LogException(e);
       }
     }
   }
@@ -387,23 +392,21 @@ namespace CustomUnits {
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { })]
   public static class PathNodeGrid_GetSampledPathNodes {
-    private static FieldInfo f_owningActor = typeof(PathNodeGrid).GetField("owningActor", BindingFlags.Instance|BindingFlags.NonPublic);
-    private static FieldInfo f_moveType = typeof(PathNodeGrid).GetField("moveType", BindingFlags.Instance | BindingFlags.NonPublic);
     public static void Postfix(PathNodeGrid __instance, ref List<PathNode> __result) {
       try {
-        AbstractActor unit = (AbstractActor)f_owningActor.GetValue(__instance);
-        Log.TWL(0,"PathNodeGrid.GetSampledPathNodes " + unit.PilotableActorDef.ChassisID);
+        AbstractActor unit = __instance.owningActor;
+        Log.Combat?.TWL(0,"PathNodeGrid.GetSampledPathNodes " + unit.PilotableActorDef.ChassisID);
         float MoveClamp = unit.MoveClamp();
         if (MoveClamp < Core.Epsilon) {
-          Log.WL(1,"no clamp info");
+          Log.Combat?.WL(1,"no clamp info");
           return;
         }
-        MoveType moveType = (MoveType)f_moveType.GetValue(__instance);
+        MoveType moveType = __instance.moveType;
         if (moveType != MoveType.Jumping) {
           float distance = (moveType == MoveType.Sprinting ? unit.MaxSprintDistanceInital() : unit.MaxWalkDistanceInital());
           unit.MoveClamp(distance,out float min, out float max);
           List<PathNode> result = new List<PathNode>();
-          Log.WL(1,"checking nodes:" + __result.Count + " last distance: " + unit.LastMoveDistance() + " speed:" + distance + " clamp:" + MoveClamp + " min:" + min + " max:" + max);
+          Log.Combat?.WL(1,"checking nodes:" + __result.Count + " last distance: " + unit.LastMoveDistance() + " speed:" + distance + " clamp:" + MoveClamp + " min:" + min + " max:" + max);
           int less = 0;
           int greater = 0;
           foreach (PathNode node in __result) {
@@ -413,7 +416,7 @@ namespace CustomUnits {
             result.Add(node);
           }
           __result = result;
-          Log.WL(1,"after filtering:" + __result.Count + " less:" + less + " greater:" + greater);
+          Log.Combat?.WL(1,"after filtering:" + __result.Count + " less:" + less + " greater:" + greater);
         }
         if (unit.UnaffectedPathing()) {
           SortedDictionary<float, List<PathNode>> result = new SortedDictionary<float, List<PathNode>>();
@@ -428,7 +431,7 @@ namespace CustomUnits {
           }
           float distanceDiff = (distances.Max - distances.Min) / 10f;
           float distanceDelta = (distances.Max - distances.Min) / 40f;
-          Log.WL(1,"distance diff:" + distanceDiff);
+          Log.Combat?.WL(1,"distance diff:" + distanceDiff);
           float lastUsedDistance = distances.Min;
           __result.Clear();
           foreach (float distance in distances) {
@@ -437,10 +440,11 @@ namespace CustomUnits {
             if (diff >= distanceDiff) { lastUsedDistance = distance; __result.AddRange(result[distance]); continue; }
             if (Math.Abs(distance - distances.Min) < Core.Epsilon){ lastUsedDistance = distance; __result.AddRange(result[distance]); break; }
           }
-          Log.WL(1,"after filtering:" + __result.Count);
+          Log.Combat?.WL(1,"after filtering:" + __result.Count);
         }
       } catch (Exception e) {
-        Log.LogWrite(e.ToString() + "\n", true);
+        Log.Combat?.LogWrite(e.ToString(), true);
+        AbstractActor.logger.LogException(e);
       }
     }
   }

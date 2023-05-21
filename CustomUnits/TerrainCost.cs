@@ -112,38 +112,6 @@ namespace CustomUnits {
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { typeof(MapTerrainDataCell), typeof(AbstractActor), typeof(MoveType) })]
   public static class PathNodeGrid_GetTerrainCost {
-    private static FieldInfo FgtcScratchGrid = null;
-    private static FieldInfo FgtcScratchMask = null;
-    private static FieldInfo FgtcMovingVehicle = null;
-    private static FieldInfo FgtcMovingMech = null;
-    public static bool Prepare() {
-      try {
-        FgtcScratchGrid = typeof(PathNodeGrid).GetField("gtcScratchGrid", BindingFlags.Static | BindingFlags.NonPublic);
-        if (FgtcScratchGrid == null) {
-          Log.LogWrite(0, "Can't find gtcScratchGrid", true);
-          return false;
-        }
-        FgtcScratchMask = typeof(PathNodeGrid).GetField("gtcScratchMask", BindingFlags.Static | BindingFlags.NonPublic);
-        if (FgtcScratchGrid == null) {
-          Log.LogWrite(0, "Can't find gtcScratchMask", true);
-          return false;
-        }
-        FgtcMovingMech = typeof(PathNodeGrid).GetField("gtcMovingMech", BindingFlags.Static | BindingFlags.NonPublic);
-        if (FgtcScratchGrid == null) {
-          Log.LogWrite(0, "Can't find gtcMovingMech", true);
-          return false;
-        }
-        FgtcMovingVehicle = typeof(PathNodeGrid).GetField("gtcMovingVehicle", BindingFlags.Static | BindingFlags.NonPublic);
-        if (FgtcScratchGrid == null) {
-          Log.LogWrite(0, "Can't find gtcMovingVehicle", true);
-          return false;
-        }
-      } catch (Exception e) {
-        Log.LogWrite(0, e.ToString(), true);
-        return false;
-      }
-      return true;
-    }
     public static float MoveCostModPerBiome(this AbstractActor unit) {
       UnitCustomInfo info = unit.GetCustomInfo();
       if (info == null) {
@@ -279,7 +247,7 @@ namespace CustomUnits {
       //PathNodeGrid.gtcScratchGrid = unit.Pathing.getGrid(moveType);
       PathNodeGrid gtcScratchGrid = unit.Pathing.getGrid(moveType);
       float num = gtcScratchGrid.Capabilities.MoveCostNormal;
-      FgtcScratchGrid.SetValue(null, gtcScratchGrid);
+      PathNodeGrid.gtcScratchGrid = gtcScratchGrid;
       if (cell == null) { return num * unit.MoveCostModPerBiome(); };
       if (unit.NavalUnit()) {
         if (cell.HasWater() == false) { return 99999.9f; }
@@ -288,10 +256,10 @@ namespace CustomUnits {
       if (UnaffectedPathing) { return num * unit.MoveCostModPerBiome(); }
       if (SplatMapInfo.IsImpassable(cell.terrainMask) && (UnaffectedPathing == false)) { return 99999.9f; };
       if (SplatMapInfo.IsMapBoundary(cell.terrainMask)) { return 99999.9f; };
-      DesignMaskDef gtcScratchMask = unit.Combat.MapMetaData.GetPriorityDesignMask(cell); FgtcScratchMask.SetValue(null, gtcScratchMask); //PathNodeGrid.gtcScratchMask = unit.Combat.MapMetaData.GetPriorityDesignMask(cell);
+      DesignMaskDef gtcScratchMask = unit.Combat.MapMetaData.GetPriorityDesignMask(cell); PathNodeGrid.gtcScratchMask=gtcScratchMask; //PathNodeGrid.gtcScratchMask = unit.Combat.MapMetaData.GetPriorityDesignMask(cell);
       if (gtcScratchMask == null) { return num * unit.MoveCostModPerBiome(); };
-      Mech gtcMovingMech = unit as Mech; FgtcMovingMech.SetValue(null, gtcMovingMech); //PathNodeGrid.gtcMovingMech = unit as Mech;
-      Vehicle gtcMovingVehicle = unit as Vehicle; FgtcMovingVehicle.SetValue(null, gtcMovingVehicle); //PathNodeGrid.gtcMovingVehicle = unit as Vehicle;
+      Mech gtcMovingMech = unit as Mech; PathNodeGrid.gtcMovingMech = gtcMovingMech; //PathNodeGrid.gtcMovingMech = unit as Mech;
+      Vehicle gtcMovingVehicle = unit as Vehicle; PathNodeGrid.gtcMovingVehicle=gtcMovingVehicle; //PathNodeGrid.gtcMovingVehicle = unit as Vehicle;
       DesignMaskMoveCostInfo designMaskMoveCostInfo = unit.MoveCostByTerrain(gtcScratchMask, num);
       if (designMaskMoveCostInfo == null) { return num * unit.MoveCostModPerBiome(); }
       if (moveType == MoveType.Sprinting) {
@@ -318,7 +286,8 @@ namespace CustomUnits {
           }
         }
       }catch(Exception e) {
-        Log.TWL(0, e.ToString(), true);
+        Log.ECombat?.TWL(0, e.ToString(), true);
+        CombatGameState.gameInfoLogger.LogException(e);
         return true;
       }
       return false;
@@ -329,50 +298,28 @@ namespace CustomUnits {
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { typeof(int), typeof(int), typeof(int), typeof(PathNode), typeof(List<AbstractActor>) })]
   public static class PathNodeGrid_GetPathNode {
-    public static MethodInfo mIsOutOfGrid = null;
-    private delegate bool IsOutOfGridDelegate(PathNodeGrid node, int x, int z);
-    private static IsOutOfGridDelegate IsOutOfGridInkover = null;
-    public static bool Prepare() {
-      mIsOutOfGrid = typeof(PathNodeGrid).GetMethod("IsOutOfGrid", BindingFlags.NonPublic | BindingFlags.Instance, null, new Type[2] { typeof(int), typeof(int) }, null);
-      if (mIsOutOfGrid == null) {
-        Log.LogWrite("Can't find PathNodeGrid.IsOutOfGrid\n");
-        return false;
-      }
-      var dm = new DynamicMethod("CUIsOutOfGrid", typeof(bool), new Type[] { typeof(PathNodeGrid),typeof(int),typeof(int) }, typeof(PathNodeGrid));
-      var gen = dm.GetILGenerator();
-      gen.Emit(OpCodes.Ldarg_0);
-      gen.Emit(OpCodes.Ldarg_1);
-      gen.Emit(OpCodes.Ldarg_2);
-      gen.Emit(OpCodes.Call, mIsOutOfGrid);
-      gen.Emit(OpCodes.Ret);
-      IsOutOfGridInkover = (IsOutOfGridDelegate)dm.CreateDelegate(typeof(IsOutOfGridDelegate));
-      return true;
-    }
-    public static bool IsOutOfGrid(this PathNodeGrid node, int x, int z) {
-      if (IsOutOfGridInkover == null) { return false; }
-      return IsOutOfGridInkover(node,x,z);
-    }
-    public static bool Prefix(PathNodeGrid __instance, int x, int z, int angle, PathNode from, List<AbstractActor> collisionTestActors, ref PathNode __result, ref PathNode[,] ___pathNodes, ref MapTerrainDataCell ___gpnCell, ref CombatGameState ___combat, ref AbstractActor ___owningActor) {
+    public static bool Prefix(PathNodeGrid __instance, int x, int z, int angle, PathNode from, List<AbstractActor> collisionTestActors, ref PathNode __result) {
       try {
         if (__instance.IsOutOfGrid(x, z)) {
           __result = null;
           return false;
         }
-        if (___pathNodes[x, z] == null) {
+        if (__instance.pathNodes[x, z] == null) {
           Vector3 posFromIndex = __instance.GetPosFromIndex(x, z);
-          ___gpnCell = ___combat.MapMetaData.GetCellAt(posFromIndex);
-          if (___gpnCell == null) {
+          __instance.gpnCell = __instance.combat.MapMetaData.GetCellAt(posFromIndex);
+          if (__instance.gpnCell == null) {
             __result = (PathNode)null;
             return false;
           }
           //___gpnCell.UpdateWaterHeight();
-          posFromIndex.y = ___gpnCell.cachedHeight;
-          ___pathNodes[x, z] = new PathNode(from, x, z, posFromIndex, angle, ___gpnCell, collisionTestActors, ___owningActor);
+          posFromIndex.y = __instance.gpnCell.cachedHeight;
+          __instance.pathNodes[x, z] = new PathNode(from, x, z, posFromIndex, angle, __instance.gpnCell, collisionTestActors, __instance.owningActor);
         }
-        __result = ___pathNodes[x, z];
+        __result = __instance.pathNodes[x, z];
         return false;
       } catch (Exception e) {
-        Log.TWL(0,e.ToString());
+        Log.ECombat?.TWL(0,e.ToString());
+        CombatGameState.gameInfoLogger.LogException(e);
         return true;
       }
     }

@@ -13,6 +13,7 @@ using BattleTech.Data;
 using BattleTech.Rendering;
 using BattleTech.Rendering.UI;
 using BattleTech.Rendering.UrbanWarfare;
+using BattleTech.UI;
 using CustAmmoCategories;
 using FogOfWar;
 using HarmonyLib;
@@ -37,8 +38,9 @@ namespace CustomUnits {
       int num2 = flag1 ? 1 : 0;
       return (num1 | num2 | (flag2 ? 1 : 0)) != 0;
     }
-    public static bool Prefix(UICreep __instance,ref Bounds ___creepBounds) {
+    public static void Prefix(ref bool __runOriginal,UICreep __instance) {
       try {
+        if (!__runOriginal) { return; }
         __instance.renderCache.Clear();
         if (__instance.useBakedRenderers && __instance.bakedMeshRenderers.Length != 0) {
           foreach (MeshRenderer bakedMeshRenderer in __instance.bakedMeshRenderers) {
@@ -56,12 +58,12 @@ namespace CustomUnits {
               if (componentsInChild.sharedMesh != null) {
                 if (componentsInChild.sharedMesh.bounds != null) {
                   __instance.renderCache.Add(new UICreep.RenderCacheObject((Renderer)componentsInChild, pass));
-                  ___creepBounds.Encapsulate(componentsInChild.sharedMesh.bounds);
+                  __instance.creepBounds.Encapsulate(componentsInChild.sharedMesh.bounds);
                 } else {
-                  Log.TWL(0, "UICreep.RefreshCache "+ componentsInChild.name+" have null sharedMesh.bounds");
+                  Log.Combat?.TWL(0, "UICreep.RefreshCache "+ componentsInChild.name+" have null sharedMesh.bounds");
                 }
               } else {
-                Log.TWL(0, "UICreep.RefreshCache " + componentsInChild.name + " have null sharedMesh");
+                Log.Combat?.TWL(0, "UICreep.RefreshCache " + componentsInChild.name + " have null sharedMesh");
               }
             }
           }
@@ -81,7 +83,7 @@ namespace CustomUnits {
                       MeshFilter component2 = renderer.GetComponent<MeshFilter>();
                       if (!((UnityEngine.Object)component2 == (UnityEngine.Object)null) && !((UnityEngine.Object)component2.sharedMesh == (UnityEngine.Object)null)) {
                         __instance.renderCache.Add(new UICreep.RenderCacheObject(renderer, pass));
-                        ___creepBounds.Encapsulate(component2.sharedMesh.bounds);
+                        __instance.creepBounds.Encapsulate(component2.sharedMesh.bounds);
                       }
                     }
                   }
@@ -98,7 +100,7 @@ namespace CustomUnits {
                   MeshFilter component2 = componentsInChild.GetComponent<MeshFilter>();
                   if (!((UnityEngine.Object)component2 == (UnityEngine.Object)null) && !((UnityEngine.Object)component2.sharedMesh == (UnityEngine.Object)null)) {
                     __instance.renderCache.Add(new UICreep.RenderCacheObject(componentsInChild, pass));
-                    ___creepBounds.Encapsulate(component2.sharedMesh.bounds);
+                    __instance.creepBounds.Encapsulate(component2.sharedMesh.bounds);
                   }
                 }
               }
@@ -115,10 +117,12 @@ namespace CustomUnits {
             }
           }
         }
-        return false;
+        __runOriginal = false;
+        return;
       } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
-        return true;
+        Log.Combat?.TWL(0, e.ToString(), true);
+        UIManager.logger.LogException(e);
+        return;
       }
     }
   }
@@ -127,17 +131,20 @@ namespace CustomUnits {
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] {  })]
   public static class MechRepresentation_SetLoadAnimation {
-    public static bool Prefix(MechRepresentation __instance) {
+    public static void Prefix(ref bool __runOriginal, MechRepresentation __instance) {
       try {
+        if (!__runOriginal) { return; }
         CustomMechRepresentation custMechRep = __instance as CustomMechRepresentation;
         if (custMechRep != null) {
           custMechRep._SetLoadAnimation();
-          return false;
+          __runOriginal = false;
+          return;
         }
-        return true;
+        return;
       } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
-        return true;
+        Log.Combat?.TWL(0, e.ToString(), true);
+        AbstractActor.logger.LogException(e);
+        return;
       }
     }
   }
@@ -146,17 +153,20 @@ namespace CustomUnits {
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { })]
   public static class MechRepresentation_UpdateHeatSetting {
-    public static bool Prefix(MechRepresentation __instance) {
+    public static void Prefix(ref bool __runOriginal, MechRepresentation __instance) {
       try {
+        if (!__runOriginal) { return; }
         CustomMechRepresentation custMechRep = __instance as CustomMechRepresentation;
         if (custMechRep != null) {
           custMechRep._UpdateHeatSetting();
-          return false;
+          __runOriginal = false;
+          return;
         }
-        return true;
+        return;
       } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
-        return true;
+        Log.Combat?.TWL(0, e.ToString(), true);
+        AbstractActor.logger.LogException(e);
+        return;
       }
     }
   }
@@ -165,17 +175,20 @@ namespace CustomUnits {
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { typeof(LocationDamageLevel), typeof(LocationDamageLevel) })]
   public static class MechRepresentation_UpdateLegDamageAnimFlags {
-    public static bool Prefix(MechRepresentation __instance, LocationDamageLevel leftLegDamage, LocationDamageLevel rightLegDamage) {
+    public static void Prefix(ref bool __runOriginal, MechRepresentation __instance, LocationDamageLevel leftLegDamage, LocationDamageLevel rightLegDamage) {
       try {
+        if (!__runOriginal) { return; }
         CustomMechRepresentation custMechRep = __instance as CustomMechRepresentation;
         if (custMechRep != null) {
           custMechRep._UpdateLegDamageAnimFlags(leftLegDamage, rightLegDamage);
-          return false;
+          __runOriginal = false;
+          return;
         }
-        return true;
+        return;
       } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
-        return true;
+        Log.Combat?.TWL(0, e.ToString(), true);
+        AbstractActor.logger.LogException(e);
+        return;
       }
     }
   }
@@ -184,17 +197,20 @@ namespace CustomUnits {
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { typeof(bool) })]
   public static class MechRepresentation_TriggerMeleeTransition {
-    public static bool Prefix(MechRepresentation __instance, bool meleeIn) {
+    public static void Prefix(ref bool __runOriginal, MechRepresentation __instance, bool meleeIn) {
       try {
+        if (!__runOriginal) { return; }
         CustomMechRepresentation custMechRep = __instance as CustomMechRepresentation;
         if (custMechRep != null) {
           custMechRep._TriggerMeleeTransition(meleeIn);
-          return false;
+          __runOriginal = false;
+          return;
         }
-        return true;
+        return;
       } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
-        return true;
+        Log.Combat?.TWL(0, e.ToString(), true);
+        AbstractActor.logger.LogException(e);
+        return;
       }
     }
   }
@@ -203,17 +219,20 @@ namespace CustomUnits {
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { })]
   public static class MechRepresentation_ClearLoadState {
-    public static bool Prefix(MechRepresentation __instance) {
+    public static void Prefix(ref bool __runOriginal, MechRepresentation __instance) {
       try {
+        if (!__runOriginal) { return; }
         CustomMechRepresentation custMechRep = __instance as CustomMechRepresentation;
         if (custMechRep != null) {
           custMechRep._ClearLoadState();
-          return false;
+          __runOriginal = false;
+          return;
         }
-        return true;
+        return;
       } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
-        return true;
+        Log.Combat?.TWL(0, e.ToString(), true);
+        AbstractActor.logger.LogException(e);
+        return;
       }
     }
   }
@@ -222,17 +241,20 @@ namespace CustomUnits {
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { typeof(int) })]
   public static class MechRepresentation_PlayComponentCritVFX {
-    public static bool Prefix(MechRepresentation __instance, int location) {
+    public static void Prefix(ref bool __runOriginal, MechRepresentation __instance, int location) {
       try {
+        if (!__runOriginal) { return; }
         CustomMechRepresentation custMechRep = __instance as CustomMechRepresentation;
         if (custMechRep != null) {
           custMechRep._PlayComponentCritVFX(location);
-          return false;
+          __runOriginal = false;
+          return;
         }
-        return true;
+        return;
       } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
-        return true;
+        Log.Combat?.TWL(0, e.ToString(), true);
+        AbstractActor.logger.LogException(e);
+        return;
       }
     }
   }
@@ -241,17 +263,20 @@ namespace CustomUnits {
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { typeof(DeathMethod) })]
   public static class MechRepresentation_PlayDeathFloatie {
-    public static bool Prefix(MechRepresentation __instance, DeathMethod deathMethod) {
+    public static void Prefix(ref bool __runOriginal, MechRepresentation __instance, DeathMethod deathMethod) {
       try {
+        if (!__runOriginal) { return; }
         CustomMechRepresentation custMechRep = __instance as CustomMechRepresentation;
         if (custMechRep != null) {
           custMechRep._PlayDeathFloatie(deathMethod);
-          return false;
+          __runOriginal = false;
+          return;
         }
-        return true;
+        return;
       } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
-        return true;
+        Log.Combat?.TWL(0, e.ToString(), true);
+        AbstractActor.logger.LogException(e);
+        return;
       }
     }
   }
@@ -260,17 +285,20 @@ namespace CustomUnits {
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { typeof(bool) })]
   public static class MechRepresentation_SetMeleeIdleState {
-    public static bool Prefix(MechRepresentation __instance, bool isMelee) {
+    public static void Prefix(ref bool __runOriginal, MechRepresentation __instance, bool isMelee) {
       try {
+        if (!__runOriginal) { return; }
         CustomMechRepresentation custMechRep = __instance as CustomMechRepresentation;
         if (custMechRep != null) {
           custMechRep._SetMeleeIdleState(isMelee);
-          return false;
+          __runOriginal = false;
+          return;
         }
-        return true;
+        return;
       } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
-        return true;
+        Log.Combat?.TWL(0, e.ToString(), true);
+        AbstractActor.logger.LogException(e);
+        return;
       }
     }
   }
@@ -279,17 +307,20 @@ namespace CustomUnits {
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { typeof(bool) })]
   public static class MechRepresentation_ToggleRandomIdles {
-    public static bool Prefix(MechRepresentation __instance, bool shouldIdle) {
+    public static void Prefix(ref bool __runOriginal, MechRepresentation __instance, bool shouldIdle) {
       try {
+        if (!__runOriginal) { return; }
         CustomMechRepresentation custMechRep = __instance as CustomMechRepresentation;
         if (custMechRep != null) {
           custMechRep._ToggleRandomIdles(shouldIdle);
-          return false;
+          __runOriginal = false;
+          return;
         }
-        return true;
+        return;
       } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
-        return true;
+        Log.Combat?.TWL(0, e.ToString(), true);
+        AbstractActor.logger.LogException(e);
+        return;
       }
     }
   }
@@ -298,17 +329,20 @@ namespace CustomUnits {
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { })]
   public static class MechRepresentation_SetIdleAnimState {
-    public static bool Prefix(MechRepresentation __instance) {
+    public static void Prefix(ref bool __runOriginal, MechRepresentation __instance) {
       try {
+        if (!__runOriginal) { return; }
         CustomMechRepresentation custMechRep = __instance as CustomMechRepresentation;
         if (custMechRep != null) {
           custMechRep._SetIdleAnimState();
-          return false;
+          __runOriginal = false;
+          return;
         }
-        return true;
+        return;
       } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
-        return true;
+        Log.Combat?.TWL(0, e.ToString(), true);
+        AbstractActor.logger.LogException(e);
+        return;
       }
     }
   }
@@ -317,17 +351,20 @@ namespace CustomUnits {
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { typeof(AttackDirection), typeof(float) })]
   public static class MechRepresentation_PlayImpactAnimSimple {
-    public static bool Prefix(MechRepresentation __instance, AttackDirection attackDirection, float totalDamage) {
+    public static void Prefix(ref bool __runOriginal, MechRepresentation __instance, AttackDirection attackDirection, float totalDamage) {
       try {
+        if (!__runOriginal) { return; }
         CustomMechRepresentation custMechRep = __instance as CustomMechRepresentation;
         if (custMechRep != null) {
           custMechRep._PlayImpactAnimSimple(attackDirection, totalDamage);
-          return false;
+          __runOriginal = false;
+          return;
         }
-        return true;
+        return;
       } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
-        return true;
+        Log.Combat?.TWL(0, e.ToString(), true);
+        AbstractActor.logger.LogException(e);
+        return;
       }
     }
   }
@@ -336,17 +373,20 @@ namespace CustomUnits {
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { typeof(bool) })]
   public static class MechRepresentation_SetUnsteadyAnim {
-    public static bool Prefix(MechRepresentation __instance, bool isUnsteady) {
+    public static void Prefix(ref bool __runOriginal, MechRepresentation __instance, bool isUnsteady) {
       try {
+        if (!__runOriginal) { return; }
         CustomMechRepresentation custMechRep = __instance as CustomMechRepresentation;
         if (custMechRep != null) {
           custMechRep._SetUnsteadyAnim(isUnsteady);
-          return false;
+          __runOriginal = false;
+          return;
         }
-        return true;
+        return;
       } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
-        return true;
+        Log.Combat?.TWL(0, e.ToString(), true);
+        AbstractActor.logger.LogException(e);
+        return;
       }
     }
   }
@@ -355,17 +395,20 @@ namespace CustomUnits {
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { typeof(Vector2) })]
   public static class MechRepresentation_ForceKnockdown {
-    public static bool Prefix(MechRepresentation __instance, Vector2 attackDirection) {
+    public static void Prefix(ref bool __runOriginal, MechRepresentation __instance, Vector2 attackDirection) {
       try {
+        if (!__runOriginal) { return; }
         CustomMechRepresentation custMechRep = __instance as CustomMechRepresentation;
         if (custMechRep != null) {
           custMechRep._ForceKnockdown(attackDirection);
-          return false;
+          __runOriginal = false;
+          return;
         }
-        return true;
+        return;
       } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
-        return true;
+        Log.Combat?.TWL(0, e.ToString(), true);
+        AbstractActor.logger.LogException(e);
+        return;
       }
     }
   }
@@ -374,17 +417,20 @@ namespace CustomUnits {
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { })]
   public static class MechRepresentation_StartJumpjetAudio {
-    public static bool Prefix(MechRepresentation __instance) {
+    public static void Prefix(ref bool __runOriginal, MechRepresentation __instance) {
       try {
+        if (!__runOriginal) { return; }
         CustomMechRepresentation custMechRep = __instance as CustomMechRepresentation;
         if (custMechRep != null) {
           custMechRep._StartJumpjetAudio();
-          return false;
+          __runOriginal = false;
+          return;
         }
-        return true;
+        return;
       } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
-        return true;
+        Log.Combat?.TWL(0, e.ToString(), true);
+        AbstractActor.logger.LogException(e);
+        return;
       }
     }
   }
@@ -393,17 +439,20 @@ namespace CustomUnits {
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { })]
   public static class MechRepresentation_StopJumpjetAudio {
-    public static bool Prefix(MechRepresentation __instance) {
+    public static void Prefix(ref bool __runOriginal, MechRepresentation __instance) {
       try {
+        if (!__runOriginal) { return; }
         CustomMechRepresentation custMechRep = __instance as CustomMechRepresentation;
         if (custMechRep != null) {
           custMechRep._StopJumpjetAudio();
-          return false;
+          __runOriginal = false;
+          return;
         }
-        return true;
+        return;
       } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
-        return true;
+        Log.Combat?.TWL(0, e.ToString(), true);
+        AbstractActor.logger.LogException(e);
+        return;
       }
     }
   }
@@ -412,17 +461,20 @@ namespace CustomUnits {
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { })]
   public static class MechRepresentation_StartJumpjetEffect {
-    public static bool Prefix(MechRepresentation __instance) {
+    public static void Prefix(ref bool __runOriginal, MechRepresentation __instance) {
       try {
+        if (!__runOriginal) { return; }
         CustomMechRepresentation custMechRep = __instance as CustomMechRepresentation;
         if (custMechRep != null) {
           custMechRep._StartJumpjetEffect();
-          return false;
+          __runOriginal = false;
+          return;
         }
-        return true;
+        return;
       } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
-        return true;
+        Log.Combat?.TWL(0, e.ToString(), true);
+        AbstractActor.logger.LogException(e);
+        return;
       }
     }
   }
@@ -431,17 +483,20 @@ namespace CustomUnits {
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { })]
   public static class MechRepresentation_StopJumpjetEffect {
-    public static bool Prefix(MechRepresentation __instance) {
+    public static void Prefix(ref bool __runOriginal, MechRepresentation __instance) {
       try {
+        if (!__runOriginal) { return; }
         CustomMechRepresentation custMechRep = __instance as CustomMechRepresentation;
         if (custMechRep != null) {
           custMechRep._StopJumpjetEffect();
-          return false;
+          __runOriginal = false;
+          return;
         }
-        return true;
+        return;
       } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
-        return true;
+        Log.Combat?.TWL(0, e.ToString(), true);
+        AbstractActor.logger.LogException(e);
+        return;
       }
     }
   }
@@ -450,17 +505,20 @@ namespace CustomUnits {
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { typeof(bool) })]
   public static class MechRepresentation_ToggleHeadlights {
-    public static bool Prefix(MechRepresentation __instance, bool headlightsActive) {
+    public static void Prefix(ref bool __runOriginal, MechRepresentation __instance, bool headlightsActive) {
       try {
+        if (!__runOriginal) { return; }
         CustomMechRepresentation custMechRep = __instance as CustomMechRepresentation;
         if (custMechRep != null) {
           custMechRep._ToggleHeadlights(headlightsActive);
-          return false;
+          __runOriginal = false;
+          return;
         }
-        return true;
+        return;
       } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
-        return true;
+        Log.Combat?.TWL(0, e.ToString(), true);
+        AbstractActor.logger.LogException(e);
+        return;
       }
     }
   }
@@ -469,17 +527,20 @@ namespace CustomUnits {
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { typeof(DeathMethod), typeof(int) })]
   public static class MechRepresentation_HandleDeathOnLoad {
-    public static bool Prefix(MechRepresentation __instance, DeathMethod deathMethod, int location) {
+    public static void Prefix(ref bool __runOriginal, MechRepresentation __instance, DeathMethod deathMethod, int location) {
       try {
+        if (!__runOriginal) { return; }
         CustomMechRepresentation custMechRep = __instance as CustomMechRepresentation;
         if (custMechRep != null) {
           custMechRep._HandleDeathOnLoad(deathMethod, location);
-          return false;
+          __runOriginal = false;
+          return;
         }
-        return true;
+        return;
       } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
-        return true;
+        Log.Combat?.TWL(0, e.ToString(), true);
+        AbstractActor.logger.LogException(e);
+        return;
       }
     }
   }
@@ -488,17 +549,20 @@ namespace CustomUnits {
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { })]
   public static class MechRepresentation_PlayAlliesReportDeathVO {
-    public static bool Prefix(MechRepresentation __instance) {
+    public static void Prefix(ref bool __runOriginal, MechRepresentation __instance) {
       try {
+        if (!__runOriginal) { return; }
         CustomMechRepresentation custMechRep = __instance as CustomMechRepresentation;
         if (custMechRep != null) {
           custMechRep._PlayAlliesReportDeathVO();
-          return false;
+          __runOriginal = false;
+          return;
         }
-        return true;
+        return;
       } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
-        return true;
+        Log.Combat?.TWL(0, e.ToString(), true);
+        AbstractActor.logger.LogException(e);
+        return;
       }
     }
   }
@@ -507,17 +571,20 @@ namespace CustomUnits {
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { typeof(int) })]
   public static class MechRepresentation_TriggerFootFall {
-    public static bool Prefix(MechRepresentation __instance, int leftFoot) {
+    public static void Prefix(ref bool __runOriginal, MechRepresentation __instance, int leftFoot) {
       try {
+        if (!__runOriginal) { return; }
         CustomMechRepresentation custMechRep = __instance as CustomMechRepresentation;
         if (custMechRep != null) {
           custMechRep._TriggerFootFall(leftFoot);
-          return false;
+          __runOriginal = false;
+          return;
         }
-        return true;
+        return;
       } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
-        return true;
+        Log.Combat?.TWL(0, e.ToString(), true);
+        AbstractActor.logger.LogException(e);
+        return;
       }
     }
   }
@@ -526,27 +593,29 @@ namespace CustomUnits {
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { })]
   public static class ActorMovementSequence_PlayMeleeAnim {
-    public static void Prefix(ActorMovementSequence __instance, ref bool __state, bool ___playedMelee) {
+    public static void Prefix(ActorMovementSequence __instance, ref bool __state) {
       try {
-        __state = ___playedMelee;
+        __state = __instance.playedMelee;
       } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
+        Log.Combat?.TWL(0, e.ToString(), true);
+        ActorMovementSequence.logger.LogException(e);
       }
     }
-    public static void Postfix(ActorMovementSequence __instance, ref bool __state, bool ___playedMelee, ICombatant ___meleeTarget) {
+    public static void Postfix(ActorMovementSequence __instance, ref bool __state) {
       try {
-        if (___meleeTarget != null) {
-          if((___playedMelee == true)&&(__state == false)) {
+        if (__instance.meleeTarget != null) {
+          if((__instance.playedMelee == true)&&(__state == false)) {
             CustomMechRepresentation custRep = __instance.owningActor.GameRep as CustomMechRepresentation;
             if (custRep != null) {
               if (custRep.parentActor != null) {
-                custRep.PlayMeleeAnim(custRep.parentActor.Combat.MeleeRules.GetMeleeHeightFromAttackType(__instance.meleeType), ___meleeTarget);
+                custRep.PlayMeleeAnim(custRep.parentActor.Combat.MeleeRules.GetMeleeHeightFromAttackType(__instance.meleeType), __instance.meleeTarget);
               }
             }
           }
         }
       } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
+        Log.Combat?.TWL(0, e.ToString(), true);
+        AbstractActor.logger.LogException(e);
       }
     }
   }
@@ -633,7 +702,7 @@ namespace CustomUnits {
     }
     public virtual void SetupJumpJets() {
       this.jumpjetReps.Clear();
-      Log.TWL(0, "CustomMechRepresentation.SetupJumpJets " + this.PrefabBase);
+      Log.Combat?.TWL(0, "CustomMechRepresentation.SetupJumpJets " + this.PrefabBase);
       if (this.HasOwnVisuals == false) { return; }
       string id1 = string.Format("chrPrfComp_{0}_centertorso_jumpjet", (object)this.PrefabBase);
       string id2 = string.Format("chrPrfComp_{0}_leftleg_jumpjet", (object)this.PrefabBase);
@@ -667,11 +736,11 @@ namespace CustomUnits {
       if (jumpJetSrcPrefab != null) {
         Transform jumpJetSrc = jumpJetSrcPrefab.transform.FindRecursive(Core.Settings.CustomJumpJetsPrefabSrcObjectName);
         if (jumpJetSrc != null) {
-          Log.WL(1, "JetStreamsAttaches:"+ this.customRep.CustomDefinition.JetStreamsAttaches.Count);
+          Log.Combat?.WL(1, "JetStreamsAttaches:"+ this.customRep.CustomDefinition.JetStreamsAttaches.Count);
           foreach (string jumpjetAttachName in this.customRep.CustomDefinition.JetStreamsAttaches) {
             if (string.IsNullOrEmpty(jumpjetAttachName)) { continue; }
             Transform jumpJetAttach = this.gameObject.transform.FindRecursive(jumpjetAttachName);
-            Log.WL(2, "custom jet attach:"+ jumpjetAttachName+" transform found: "+(jumpJetAttach == null?"false":"true"));
+            Log.Combat?.WL(2, "custom jet attach:"+ jumpjetAttachName+" transform found: "+(jumpJetAttach == null?"false":"true"));
             if (jumpJetAttach == null) { continue; }
             GameObject jumpJetBase = new GameObject("jumpJet");
             jumpJetBase.transform.SetParent(jumpJetAttach);
@@ -725,26 +794,26 @@ namespace CustomUnits {
     public override void StartPersistentAudio() {
       //GameRepresentation_StartPersistentAudio();
       if (isSlave == false) {
-        Log.TWL(0, "CustomMechRepresentaion.StartPersistentAudio " + (this.parentMech == null ? "null" : this.parentMech.MechDef.ChassisID));
+        Log.Combat?.TWL(0, "CustomMechRepresentaion.StartPersistentAudio " + (this.parentMech == null ? "null" : this.parentMech.MechDef.ChassisID));
         foreach (string event_name in this.presistantAudioStart) {
           if (CustomVoices.AudioEngine.isInAudioManifest(event_name)) {
-            Log.WL(1, event_name + " playing custom");
+            Log.Combat?.WL(1, event_name + " playing custom");
             this.customAudioObject.Play(event_name, true);
             continue;
           }
           //int num = (int)WwiseManager.PostEvent<AudioEventList_mech>(AudioEventList_mech.mech_engine_start, this.audioObject);
           int num = (int)WwiseManager.PostEvent(event_name, this.audioObject);
-          Log.WL(1, event_name + ":" + num);
+          Log.Combat?.WL(1, event_name + ":" + num);
         }
       }
     }
     public override void StopPersistentAudio() {
       //base.StopPersistentAudio();
       if (isSlave == false) {
-        Log.TWL(0, "CustomMechRepresentaion.StopPersistentAudio " + (this.parentMech == null ? "null" : this.parentMech.MechDef.ChassisID));
+        Log.Combat?.TWL(0, "CustomMechRepresentaion.StopPersistentAudio " + (this.parentMech == null ? "null" : this.parentMech.MechDef.ChassisID));
         foreach (string event_name in this.presistantAudioStart) {
           if (CustomVoices.AudioEngine.isInAudioManifest(event_name)) {
-            Log.WL(1, event_name + " stopping custom");
+            Log.Combat?.WL(1, event_name + " stopping custom");
             this.customAudioObject.Stop(event_name);
             continue;
           }
@@ -752,7 +821,7 @@ namespace CustomUnits {
         foreach (string event_name in this.presistantAudioStop) {
           //int num = (int)WwiseManager.PostEvent<AudioEventList_mech>(AudioEventList_mech.mech_engine_stop, this.audioObject);
           int num = (int)WwiseManager.PostEvent(event_name, this.audioObject);
-          Log.WL(1, event_name + ":" + num);
+          Log.Combat?.WL(1, event_name + ":" + num);
         }
       }
     }
@@ -765,22 +834,22 @@ namespace CustomUnits {
     public virtual void PlayMovementStartAudio(bool forcedSlave) {
       //GameRepresentation_StartPersistentAudio();
       if (isSlave == false || (forcedSlave)) {
-        Log.TWL(0, "CustomMechRepresentaion.PlayMovementStartAudio " + (this.parentMech == null ? "null" : this.parentMech.MechDef.ChassisID));
+        Log.Combat?.TWL(0, "CustomMechRepresentaion.PlayMovementStartAudio " + (this.parentMech == null ? "null" : this.parentMech.MechDef.ChassisID));
         foreach (string event_name in this.moveAudioStart) {
           //int num = (int)WwiseManager.PostEvent<AudioEventList_mech>(AudioEventList_mech.mech_engine_start, this.audioObject);
           int num = (int)WwiseManager.PostEvent(event_name, this.rootParentRepresentation.audioObject);
-          Log.WL(1, event_name + ":" + num);
+          Log.Combat?.WL(1, event_name + ":" + num);
         }
       }
     }
     public virtual void PlayMovementStopAudio(bool forcedSlave) {
       //base.StopPersistentAudio();
       if (isSlave == false || (forcedSlave)) {
-        Log.TWL(0, "CustomMechRepresentaion.PlayMovementStopAudio " + (this.parentMech == null ? "null" : this.parentMech.MechDef.ChassisID));
+        Log.Combat?.TWL(0, "CustomMechRepresentaion.PlayMovementStopAudio " + (this.parentMech == null ? "null" : this.parentMech.MechDef.ChassisID));
         foreach (string event_name in this.moveAudioStop) {
           //int num = (int)WwiseManager.PostEvent<AudioEventList_mech>(AudioEventList_mech.mech_engine_stop, this.audioObject);
           int num = (int)WwiseManager.PostEvent(event_name, this.rootParentRepresentation.audioObject);
-          Log.WL(1, event_name + ":" + num);
+          Log.Combat?.WL(1, event_name + ":" + num);
         }
       }
     }
@@ -1054,7 +1123,7 @@ namespace CustomUnits {
       if (this.customRep != null) { this.StopCustomParticlesInLocation((ChassisLocations)location); }
     }
     public virtual void PlayDeathVFXVehicle(DeathMethod deathMethod, int location) {
-      Log.TWL(0, "MechRepresentation.PlayDeathVFXVehicle deathMethod:" + deathMethod);
+      Log.Combat?.TWL(0, "MechRepresentation.PlayDeathVFXVehicle deathMethod:" + deathMethod);
       string vehicleDeathA = (string)this.parentCombatant.Combat.Constants.VFXNames.vehicleDeath_A;
       string vfxName;
       AudioEventList_vehicle eventEnumValue;
@@ -1071,7 +1140,7 @@ namespace CustomUnits {
       if (this.parentActor.Combat.IsLoadingFromSave) { return; }
       if (isSlave == false) {
         int num = (int)WwiseManager.PostEvent<AudioEventList_vehicle>(eventEnumValue, this.audioObject);
-        Log.WL(1, "WwiseManager.PostEvent:" + eventEnumValue + " result:" + num);
+        Log.Combat?.WL(1, "WwiseManager.PostEvent:" + eventEnumValue + " result:" + num);
       }
     }
 
@@ -1271,7 +1340,7 @@ namespace CustomUnits {
         shouldIdle = false;
       }
       this._allowRandomIdles = shouldIdle;
-      Log.TWL(0, "CustomMechRepresentation._ToggleRandomIdles " + shouldIdle + " " + this.parentMech.MechDef.ChassisID);
+      Log.Combat?.TWL(0, "CustomMechRepresentation._ToggleRandomIdles " + shouldIdle + " " + this.parentMech.MechDef.ChassisID);
       if (this._allowRandomIdles) { return; }
       if (this.IsInMeleeIdle) {
         this.thisAnimator.CrossFadeInFixedTime(this.idleStateMeleeEntryHash, 0.15f);
@@ -1448,9 +1517,9 @@ namespace CustomUnits {
     }
     public override void PlayKnockdownAnim(Vector2 attackDirection) {
       if (this.parentMech.IsProne || this.parentMech.IsDead) {
-        Log.TWL(0, string.Format("{0} PlayKnockdownAnim failed: IsProne: {1}, IsBecomingProne: {2}, IsDead {3}", (object)this.parentMech.DisplayName, (object)this.parentMech.IsProne, (object)this.parentMech.IsBecomingProne, (object)this.parentMech.IsDead));
+        Log.Combat?.TWL(0, string.Format("{0} PlayKnockdownAnim failed: IsProne: {1}, IsBecomingProne: {2}, IsDead {3}", (object)this.parentMech.DisplayName, (object)this.parentMech.IsProne, (object)this.parentMech.IsBecomingProne, (object)this.parentMech.IsDead));
       } else {
-        Log.TWL(0, "CustomMechRepresentation.PlayKnockdownAnim " + this.gameObject.name);
+        Log.Combat?.TWL(0, "CustomMechRepresentation.PlayKnockdownAnim " + this.gameObject.name);
         this._SetMeleeIdleState(false);
         GameRepresentation_PlayKnockdownAnim(attackDirection);
         this._ResetHitReactFlags();
@@ -1461,7 +1530,7 @@ namespace CustomUnits {
         this.thisAnimator.SetFloat("HitDirection_Y", attackDirection.y);
         this.thisAnimator.SetTrigger("Hit_React");
         if ((double)this.thisAnimator.speed < 0.990000009536743) {
-          Log.TWL(0, "Animator speed is less than 0.99f - resetting to full speed!");
+          Log.Combat?.TWL(0, "Animator speed is less than 0.99f - resetting to full speed!");
           this.thisAnimator.speed = 1f;
         }
         if (isSlave == false) AudioEventManager.PlayPilotVO(VOEvents.Mech_Instability_Fall, (AbstractActor)this.parentMech);
@@ -1473,9 +1542,9 @@ namespace CustomUnits {
           if (isSlave == false) AudioEventManager.PlayAudioEvent("audioeventdef_musictriggers_combat", "enemy_mech_falling");
         }
         if (this.HasOwnVisuals) {
-          Log.WL(1, "before to terrain: " + this.j_Root.eulerAngles);
+          Log.Combat?.WL(1, "before to terrain: " + this.j_Root.eulerAngles);
           this.AliginToTerrain(new RaycastHit?(),9999f,false);
-          Log.WL(1, "after to terrain: " + this.j_Root.eulerAngles);
+          Log.Combat?.WL(1, "after to terrain: " + this.j_Root.eulerAngles);
         }
       }
     }
@@ -1489,14 +1558,14 @@ namespace CustomUnits {
       this.thisAnimator.SetFloat("HitDirection_Y", attackDirection.y);
       this.thisAnimator.SetTrigger("Hit_React");
       if ((double)this.thisAnimator.speed < 0.990000009536743) {
-        Log.TWL(0, "Animator speed is less than 0.99f - resetting to full speed!");
+        Log.Combat?.TWL(0, "Animator speed is less than 0.99f - resetting to full speed!");
         this.thisAnimator.speed = 1f;
       }
       this._SetMeleeIdleState(false);
       if (this.HasOwnVisuals) {
-        Log.WL(1, "before to terrain: " + this.j_Root.eulerAngles);
+        Log.Combat?.WL(1, "before to terrain: " + this.j_Root.eulerAngles);
         this.AliginToTerrain(new RaycastHit?(),9999f,false);
-        Log.WL(1, "after to terrain: " + this.j_Root.eulerAngles);
+        Log.Combat?.WL(1, "after to terrain: " + this.j_Root.eulerAngles);
       }
     }
     public virtual void _ResetHitReactFlags() {
@@ -1546,7 +1615,7 @@ namespace CustomUnits {
       if (!this.VisibleToPlayer || this.isPlayingJumpSound)
         return;
       this.isPlayingJumpSound = true;
-      Log.TWL(0, "CustomMechRepresentation._StartJumpjetAudio "+this.parentMech.MechDef.ChassisID);
+      Log.Combat?.TWL(0, "CustomMechRepresentation._StartJumpjetAudio "+this.parentMech.MechDef.ChassisID);
       if (this.parentMech.weightClass == WeightClass.HEAVY || this.parentMech.weightClass == WeightClass.ASSAULT) {
         int num1 = (int)WwiseManager.PostEvent<AudioEventList_mech>(AudioEventList_mech.mech_jumpjets_heavy_start, this.parentCombatant.GameRep.audioObject);
       } else {
@@ -1558,7 +1627,7 @@ namespace CustomUnits {
       if (!this.isPlayingJumpSound)
         return;
       this.isPlayingJumpSound = false;
-      Log.TWL(0, "CustomMechRepresentation._StopJumpjetAudio " + this.parentMech.MechDef.ChassisID);
+      Log.Combat?.TWL(0, "CustomMechRepresentation._StopJumpjetAudio " + this.parentMech.MechDef.ChassisID);
       if (this.parentMech.weightClass == WeightClass.HEAVY || this.parentMech.weightClass == WeightClass.ASSAULT) {
         int num1 = (int)WwiseManager.PostEvent<AudioEventList_mech>(AudioEventList_mech.mech_jumpjets_heavy_stop, this.parentCombatant.GameRep.audioObject);
       } else {
@@ -1627,7 +1696,7 @@ namespace CustomUnits {
         if ((newLevel >= VisibilityLevel.Blip1Type) && (FirstSeenByPlayer_stat.Value<bool>() == false)) {
           FirstSeenByPlayer_stat.SetValue<bool>(true);
           if (this.parentActor.GetCustomInfo().BossAppearAnimation) {
-            Log.TWL(0, "BossAppearAnimation:"+this.parentActor.PilotableActorDef.ChassisID);
+            Log.Combat?.TWL(0, "BossAppearAnimation:"+this.parentActor.PilotableActorDef.ChassisID);
             //Vector3 currentPosition = this.parentActor.CurrentPosition;
             //float cameraDistance1 = this.GetCameraDistance(DialogCameraDistance.Far);
             //float cameraHeight1 = this.GetCameraHeight(DialogCameraHeight.High, cameraDistance1);
@@ -1654,7 +1723,8 @@ namespace CustomUnits {
         if (this.customRep != null) { this.ShowCustomParticles(newLevel); }
         if (this.HeightController != null) { this.HeightController.OnVisibilityChange(newLevel); }
       }catch(Exception e) {
-        Log.TWL(0, e.ToString(), true);
+        Log.Combat?.TWL(0, e.ToString(), true);
+        AbstractActor.logger.LogException(e);
       }
     }
     public virtual void _ToggleHeadlights(bool headlightsActive) {
@@ -1689,7 +1759,7 @@ namespace CustomUnits {
           AudioEventManager.PlayComputerVO(ComputerVOEvents.Mech_Powerup_Enemy);
       }
       this.thisAnimator.SetTrigger("PowerOn");
-      Log.TWL(0, "PlayStartupAnim:"+this.parentCombatant.PilotableActorDef.ChassisID);
+      Log.Combat?.TWL(0, "PlayStartupAnim:"+this.parentCombatant.PilotableActorDef.ChassisID);
       this.parentCombatant.FlyingHeight(this.altDef.FlyHeight);
       this.HeightController.PendingHeight = this.parentCombatant.FlyingHeight();
       this.custMech.UpdateLOSHeight(this.parentCombatant.FlyingHeight());
@@ -1717,7 +1787,7 @@ namespace CustomUnits {
       if (this.customRep != null) { this.customRep.InBattle = false; }
       List<string> stringList = new List<string>((IEnumerable<string>)this.persistentVFXParticles.Keys);
       for (int index = stringList.Count - 1; index >= 0; --index) { this.StopManualPersistentVFX(stringList[index]); }
-      this.__IsDead = true;
+      this._IsDead = true;
       if (deathMethod != DeathMethod.PilotKilled && !this.parentActor.WasEjected) {
         string vfxName;
         switch (UnityEngine.Random.Range(0, 4)) {
@@ -1770,7 +1840,7 @@ namespace CustomUnits {
       }
     }
     public override void OnFootFall(int leftFoot) {
-      Log.TWL(0,$"MechRepresentation.OnFootFall {this.mech.PilotableActorDef.ChassisID} leftFoot:{leftFoot} NoMoveAnimation:{this.parentActor.NoMoveAnimation()}");
+      Log.Combat?.TWL(0,$"MechRepresentation.OnFootFall {this.mech.PilotableActorDef.ChassisID} leftFoot:{leftFoot} NoMoveAnimation:{this.parentActor.NoMoveAnimation()}");
       if (this.parentActor.NoMoveAnimation()) { this.triggerFootVFX = false; }
       //Log.WL(1, UnityEngine.StackTraceUtility.ExtractStackTrace());
       if (this.triggerFootVFX) { return; }
@@ -1785,7 +1855,8 @@ namespace CustomUnits {
           TriggerCustomFootFall(foot);
         }
       }catch(Exception e) {
-        Log.TWL(0, e.ToString(), true);
+        Log.Combat?.TWL(0, e.ToString(), true);
+        AbstractActor.logger.LogException(e);
       }
     }
     public virtual void TriggerCustomFootFall(Transform foot) {
@@ -1811,7 +1882,7 @@ namespace CustomUnits {
       }
       FootstepManager.Instance.AddFootstep(position, forward, new Vector3(num1, num1, num1));
       string vfxName1 = string.Format("{0}{1}{2}{3}", (object)this.Constants.VFXNames.footfallBase, (object)(this.IsInAnyIdle ? "idle_" : ""), (object)this.rootParentRepresentation.terrainImpactParticleName, (object)this.rootParentRepresentation.vfxNameModifier);
-      Log.TWL(0, $"TriggerCustomFootFall {this.chassisDef.Description.Id} {this.gameObject.name} {vfxName1}");
+      Log.Combat?.TWL(0, $"TriggerCustomFootFall {this.chassisDef.Description.Id} {this.gameObject.name} {vfxName1}");
       //Log.WL(0, Environment.StackTrace);
       this.PlayVFXAt(foot, Vector3.zero, vfxName1, false, lookAtPos, true, -1f);
       if (this.currentSurfaceType == AudioSwitch_surface_type.wood)
@@ -1847,7 +1918,8 @@ namespace CustomUnits {
           return;
         this.triggerFootVFX = false;
       }catch(Exception e) {
-        Log.TWL(0,e.ToString(),true);
+        Log.Combat?.TWL(0,e.ToString(),true);
+        AbstractActor.logger.LogException(e);
       }
     }
     public override void OnAudioEvent(string audioEvent) {
@@ -1855,12 +1927,12 @@ namespace CustomUnits {
       if (isSlave) { return; }
       if (this.BlipDisplayed || !this.VisibleObject.activeSelf || !this.parentActor.Combat.TurnDirector.GameHasBegun) { return; }
       if (string.IsNullOrEmpty(audioEvent)) {
-        Log.TWL(0, "AnimationEvent OnAudioEvent got an invalid audioEvent name: null", true);
+        Log.Combat?.TWL(0, "AnimationEvent OnAudioEvent got an invalid audioEvent name: null", true);
       } else {
         audioEvent = audioEvent.ToLowerInvariant();
         string[] strArray = audioEvent.Split('_');
         if (strArray.Length < 2) {
-          Log.TWL(0, "AnimationEvent OnAudioEvent got an invalid audioEvent name: " + audioEvent, true);
+          Log.Combat?.TWL(0, "AnimationEvent OnAudioEvent got an invalid audioEvent name: " + audioEvent, true);
         } else {
           //Log.TWL(0, "MechRepresentation.OnAudioEvent "+this.name + " " + audioEvent, true);
           int num = (int)WwiseManager.PostEvent(string.Format("AudioEventList_{0}_{1}", (object)strArray[0], (object)audioEvent), this.rootParentRepresentation.audioObject);
@@ -1874,7 +1946,7 @@ namespace CustomUnits {
     }
 
     public override void OnDeath() {
-      Log.TWL(0, "MechRepresentation.OnDeath " + this.name);
+      Log.Combat?.TWL(0, "MechRepresentation.OnDeath " + this.name);
       PilotableRepresentation_OnDeath();
       int num1 = (int)WwiseManager.PostEvent<AudioEventList_mech>(AudioEventList_mech.mech_engine_powerdown_death, this.rootParentRepresentation.audioObject);
       int num2 = (int)WwiseManager.PostEvent<AudioEventList_mech>(AudioEventList_mech.mech_damage_burning_electrical_stop, this.rootParentRepresentation.audioObject);
@@ -1883,7 +1955,7 @@ namespace CustomUnits {
     }
 
     public override void OnGroundImpact() {
-      Log.TWL(0, "MechRepresentation.OnGroundImpact "+this.name);
+      Log.Combat?.TWL(0, "MechRepresentation.OnGroundImpact "+this.name);
       this.OnGroundImpact(false);
     }
     public virtual void OnGroundImpact(bool forcedSlave) {
@@ -2003,7 +2075,7 @@ namespace CustomUnits {
     public virtual bool lastStateWasVisible { get; set; }
     public virtual void PlayVehicleTerrainImpactVFX(bool forcedSlave = false) {
       bool vehicleStyleMove = this.parentCombatant.NoMoveAnimation() || this.parentCombatant.FakeVehicle();
-      Log.TWL(0, "CustomMechRepresentation.PlayVehicleTerrainImpactVFX (NoMoveAnimation || FakeVehicle):" + vehicleStyleMove + " FlyingHeight:" + this.parentMech.FlyingHeight()+ " lastStateWasVisible:"+this.lastStateWasVisible);
+      Log.Combat?.TWL(0, "CustomMechRepresentation.PlayVehicleTerrainImpactVFX (NoMoveAnimation || FakeVehicle):" + vehicleStyleMove + " FlyingHeight:" + this.parentMech.FlyingHeight()+ " lastStateWasVisible:"+this.lastStateWasVisible);
       if ((this.rootParentRepresentation.BlipDisplayed)||(this.VisibleObject.activeInHierarchy == false)) {
         if (this.lastStateWasVisible == false) { return; }
         this.lastStateWasVisible = false;
@@ -2030,9 +2102,9 @@ namespace CustomUnits {
     }
 
     public virtual void updateVehicleMovementVFX(ActorMovementSequence moveSeq) {
-      Traverse.Create(moveSeq).Field<float>("vehicleVFXTimer").Value += Traverse.Create(moveSeq).Property<float>("deltaTime").Value;
-      if (Traverse.Create(moveSeq).Field<float>("vehicleVFXTimer").Value < 0.100000001490116) { return; }
-      Traverse.Create(moveSeq).Field<float>("vehicleVFXTimer").Value = 0.0f;
+      moveSeq.vehicleVFXTimer += moveSeq.deltaTime;
+      if (moveSeq.vehicleVFXTimer < 0.1f) { return; }
+      moveSeq.vehicleVFXTimer = 0.0f;
       this.PlayVehicleTerrainImpactVFX(false);
     }
     public class MoveContext {
@@ -2092,7 +2164,7 @@ namespace CustomUnits {
     public virtual void CompleteJump(MechJumpSequence sequence) {
       bool aliginToTerrain = false;
       RaycastHit? raycast = new RaycastHit?();
-      Log.TWL(0,$"MechRepresentation.CompleteJump {this.parentActor.PilotableActorDef.ChassisID} finalPos:{sequence.FinalPos}");
+      Log.Combat?.TWL(0,$"MechRepresentation.CompleteJump {this.parentActor.PilotableActorDef.ChassisID} finalPos:{sequence.FinalPos}");
       bool vehicleMovement = this.parentCombatant.NoMoveAnimation() || this.parentCombatant.FakeVehicle();
       if (vehicleMovement && this.parentCombatant.FlyingHeight() < Core.Settings.MaxHoveringHeightWithWorkingJets) {
         aliginToTerrain = true;
@@ -2108,7 +2180,7 @@ namespace CustomUnits {
         }
       }
       if (raycast.HasValue) {
-        Log.WL(1, $"raycast.y {raycast.Value.point.y}");
+        Log.Combat?.WL(1, $"raycast.y {raycast.Value.point.y}");
         if (raycast.Value.point.y > sequence.FinalPos.y) {
           this.thisTransform.position = raycast.Value.point;
         } else {
@@ -2122,7 +2194,7 @@ namespace CustomUnits {
       if (aliginToTerrain) {
         this.AliginToTerrain(raycast, 100f, false);
       }
-      Log.WL(1, $"j_Root {this.j_Root.position}");
+      Log.Combat?.WL(1, $"j_Root {this.j_Root.position}");
     }
     public virtual void CompleteMove(Vector3 finalPos, Vector3 finalHeading, ActorMovementSequence sequence, bool playedMelee, ICombatant meleeTarget) {
       this.CompleteMove(sequence, playedMelee, meleeTarget);

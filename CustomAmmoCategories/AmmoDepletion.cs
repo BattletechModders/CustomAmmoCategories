@@ -612,8 +612,6 @@ namespace CustAmmoCategories {
   }
   [HarmonyPatch(typeof(LanceConfiguratorPanel), "OnConfirmClicked")]
   public static class LanceConfiguratorPanel_OnConfirmClicked {
-    private static FieldInfo f_interruptQueue = typeof(SimGameState).GetField("interruptQueue", BindingFlags.Instance | BindingFlags.NonPublic);
-    public static SimGameInterruptManager interruptQueue(this SimGameState sim) { return (SimGameInterruptManager)f_interruptQueue.GetValue(sim); }
     private static bool AmmoUsageShown = false;
     private static Dictionary<string, int> deployAmmoReserve = new Dictionary<string, int>();
     private static Dictionary<string, int> deployAmmoReserved = new Dictionary<string, int>();
@@ -650,62 +648,67 @@ namespace CustAmmoCategories {
     public static void AddInt(this Dictionary<string,int> dict, string key, int value) {
       if (dict.ContainsKey(key)) { dict[key] += value; } else { dict.Add(key, value); };
     }
-    static bool Prefix(LanceConfiguratorPanel __instance) {
-      Log.M.TWL(0, "LanceConfiguratorPanel.OnConfirmClicked");
-      if (__instance.sim == null) { return true; }
-      if (__instance.activeContract == null) { return true; }
-      if (AmmoUsageShown) { return true; }
-      HashSet<MechDef> decrementAmmoUnits = new HashSet<MechDef>();
-      foreach(LanceLoadoutSlot slot in __instance.loadoutSlots) {
-        if (slot.SelectedMech == null) { continue; }
-        foreach(var playerMechs in __instance.sim.ActiveMechs) {
-          if(slot.SelectedMech.MechDef.GUID == playerMechs.Value.GUID) {
-            decrementAmmoUnits.Add(slot.SelectedMech.MechDef);
-          }
-        }
-      }
-      Dictionary<string, int> deployAmmoUsage = new Dictionary<string, int>();
-      foreach(MechDef mechDef in decrementAmmoUnits) {
-        foreach(MechComponentRef componentRef in mechDef.Inventory) {
-          AmmunitionBoxDef ammunitionBox = componentRef.Def as AmmunitionBoxDef;
-          WeaponDef weaponDef = componentRef.Def as WeaponDef;
-          if (ammunitionBox != null) {
-            if (ammunitionBox.Ammo.extDef().AutoRefill == AutoRefilType.Automatic) { continue; }
-            deployAmmoUsage.AddInt(ammunitionBox.AmmoID, ammunitionBox.Capacity);
-          } else if(weaponDef != null) {
-            ExtWeaponDef extWeapon = weaponDef.exDef();
-            foreach(var iammo in extWeapon.InternalAmmo) {
-              AmmunitionDef ammoDef = __instance.dataManager.AmmoDefs.Get(iammo.Key);
-              if (ammoDef == null) { continue; }
-              if (ammoDef.extDef().AutoRefill == AutoRefilType.Automatic) { continue; }
-              deployAmmoUsage.AddInt(iammo.Key, iammo.Value);
+    static void Prefix(ref bool __runOriginal, LanceConfiguratorPanel __instance) {
+      Log.M.TWL(0, $"LanceConfiguratorPanel.OnConfirmClicked original:{__runOriginal}");
+      try {
+        if (__instance.sim == null) { return; }
+        if (__instance.activeContract == null) { return; }
+        if (AmmoUsageShown) { return; }
+        HashSet<MechDef> decrementAmmoUnits = new HashSet<MechDef>();
+        foreach (LanceLoadoutSlot slot in __instance.loadoutSlots) {
+          if (slot.SelectedMech == null) { continue; }
+          foreach (var playerMechs in __instance.sim.ActiveMechs) {
+            if (slot.SelectedMech.MechDef.GUID == playerMechs.Value.GUID) {
+              decrementAmmoUnits.Add(slot.SelectedMech.MechDef);
             }
           }
         }
+        Dictionary<string, int> deployAmmoUsage = new Dictionary<string, int>();
+        foreach (MechDef mechDef in decrementAmmoUnits) {
+          foreach (MechComponentRef componentRef in mechDef.Inventory) {
+            AmmunitionBoxDef ammunitionBox = componentRef.Def as AmmunitionBoxDef;
+            WeaponDef weaponDef = componentRef.Def as WeaponDef;
+            if (ammunitionBox != null) {
+              if (ammunitionBox.Ammo.extDef().AutoRefill == AutoRefilType.Automatic) { continue; }
+              deployAmmoUsage.AddInt(ammunitionBox.AmmoID, ammunitionBox.Capacity);
+            } else if (weaponDef != null) {
+              ExtWeaponDef extWeapon = weaponDef.exDef();
+              foreach (var iammo in extWeapon.InternalAmmo) {
+                AmmunitionDef ammoDef = __instance.dataManager.AmmoDefs.Get(iammo.Key);
+                if (ammoDef == null) { continue; }
+                if (ammoDef.extDef().AutoRefill == AutoRefilType.Automatic) { continue; }
+                deployAmmoUsage.AddInt(iammo.Key, iammo.Value);
+              }
+            }
+          }
+        }
+        StringBuilder content = new StringBuilder();
+        deployAmmoReserve.Clear();
+        foreach (var depAmmo in deployAmmoUsage) {
+          AmmunitionDef ammoDef = __instance.sim.DataManager.AmmoDefs.Get(depAmmo.Key);
+          if (ammoDef == null) { continue; }
+          if (ammoDef.extDef().AutoRefill == AutoRefilType.Automatic) { continue; }
+          int ammocount = __instance.sim.GetAmmoCount(depAmmo.Key);
+          if (ammocount < depAmmo.Value) { content.Append("<color=red>"); } else { content.Append("<color=green>"); };
+          content.AppendLine(ammoDef.Description.Name + " " + depAmmo.Value + " of " + ammocount + "</color>");
+          deployAmmoReserve.Add(depAmmo.Key, Math.Min(depAmmo.Value, ammocount));
+        }
+        if (deployAmmoReserve.Count == 0) { return; }
+        GenericPopupBuilder.Create("DEPLOY AMMO USAGE", content.ToString())
+        .AddButton("OK", (Action)(() => {
+          AmmoUsageShown = true;
+          __instance.OnConfirmClicked();
+          AmmoUsageShown = false;
+        }), true)
+        .AddButton("CANCEL", (Action)(() => {
+          AmmoUsageShown = false;
+        }), true)
+        .AddFader(new UIColorRef?(LazySingletonBehavior<UIManager>.Instance.UILookAndColorConstants.PopupBackfill), 0.0f, true).Render();
+        __runOriginal = false; return;
+      } catch (Exception e) {
+        Log.M?.TWL(0,e.ToString(),true);
+        UIManager.logger.LogException(e);
       }
-      StringBuilder content = new StringBuilder();
-      deployAmmoReserve.Clear();
-      foreach (var depAmmo in deployAmmoUsage) {
-        AmmunitionDef ammoDef = __instance.sim.DataManager.AmmoDefs.Get(depAmmo.Key);
-        if (ammoDef == null) { continue; }
-        if (ammoDef.extDef().AutoRefill == AutoRefilType.Automatic) { continue; }
-        int ammocount = __instance.sim.GetAmmoCount(depAmmo.Key);
-        if (ammocount < depAmmo.Value) { content.Append("<color=red>"); } else { content.Append("<color=green>"); };
-        content.AppendLine(ammoDef.Description.Name+" "+depAmmo.Value+" of "+ammocount+"</color>");
-        deployAmmoReserve.Add(depAmmo.Key, Math.Min(depAmmo.Value, ammocount));
-      }
-      if (deployAmmoReserve.Count == 0) { return true; }
-      GenericPopupBuilder.Create("DEPLOY AMMO USAGE", content.ToString())
-      .AddButton("OK",(Action)(() => {
-        AmmoUsageShown = true;
-        __instance.OnConfirmClicked();
-        AmmoUsageShown = false;
-      }), true)
-      .AddButton("CANCEL", (Action)(() => {
-        AmmoUsageShown = false;
-      }), true)
-      .AddFader(new UIColorRef?(LazySingletonBehavior<UIManager>.Instance.UILookAndColorConstants.PopupBackfill), 0.0f, true).Render();
-      return false;
     }
   }
   [HarmonyPatch(typeof(LanceMechEquipmentList))]

@@ -33,7 +33,8 @@ namespace CustomUnits {
           BossAppearManager.TestBossBeacons(__instance.Combat);
         }
       } catch (Exception e) {
-        Log.TWL(0,e.ToString(),true);
+        Log.Combat?.TWL(0,e.ToString(),true);
+        TurnDirector.logger.LogException(e);
       }
     }
   }
@@ -48,7 +49,8 @@ namespace CustomUnits {
         if(__instance.anchorPosition == CombatHUDInWorldScalingActorInfo.AnchorPosition.Feet) { return; }
         __result += Vector3.up * __instance.DisplayedActor.FakeHeightDelta();
       } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
+        Log.Combat?.TWL(0, e.ToString(), true);
+        UIManager.logger.LogException(e);
       }
     }
   }
@@ -101,22 +103,22 @@ namespace CustomUnits {
     public static string dropOffDustEffectName = "exhaust1_outward (2)";
     public static string dropOffEngineEffectName = "vfxPrfPrtl_dropshipHoverThrust_down";
     public static void TestBossBeacons(CombatGameState combat) {
-      Log.TWL(0, "BossAppearManager.TestBossBeacons");
+      Log.Combat?.TWL(0, "BossAppearManager.TestBossBeacons");
       foreach (BossAppearBeacon beacon in bossBeacons) {
         if (beacon.triggered) { continue; }
         bool beaconActivated = false;
-        Log.WL(1, beacon.gameObject.name);
+        Log.Combat?.WL(1, beacon.gameObject.name);
         foreach (AbstractActor unit in combat.LocalPlayerTeam.units) {
           if (unit.IsDead) { continue; }
           float distance = Vector3.Distance(beacon.transform.position, unit.CurrentPosition);
-          Log.WL(2, unit.PilotableActorDef.ChassisID+" distance:"+distance);
+          Log.Combat?.WL(2, unit.PilotableActorDef.ChassisID+" distance:"+distance);
           if (distance < 500.0f) {
             beaconActivated = true;
             break;
           }
         }
         if (beaconActivated) {
-          Log.WL(1, beacon.parent.PilotableActorDef.ChassisID+" activated "+ beacon.transform.position);
+          Log.Combat?.WL(1, beacon.parent.PilotableActorDef.ChassisID+" activated "+ beacon.transform.position);
           beacon.parent.CanBeBossSeen = true;
           beacon.triggered = true;
           beacon.parent.TeleportActor(beacon.transform.position);
@@ -144,9 +146,9 @@ namespace CustomUnits {
       if (heightController.parent.customRep != null) {
         if (heightController.parent.customRep.CustomDefinition != null) {
           foreach (string jetAttach in heightController.parent.customRep.CustomDefinition.JetStreamsAttaches) {
-            Log.WL(3, "attach:" + jetAttach);
+            Log.Combat?.WL(3, "attach:" + jetAttach);
             Transform attach = heightController.transform.FindRecursive(jetAttach);
-            if (attach == null) { Log.WL(4, "attach is null"); continue; }
+            if (attach == null) { Log.Combat?.WL(4, "attach is null"); continue; }
             GameObject jumpJetBase = new GameObject("bossJet");
             jumpJetBase.transform.SetParent(attach);
             jumpJetBase.transform.localPosition = Vector3.zero;
@@ -155,7 +157,7 @@ namespace CustomUnits {
             jumpJet.SetActive(true);
             ParticleSystem[] psystems = jumpJet.GetComponentsInChildren<ParticleSystem>(true);
             foreach (ParticleSystem pssys in psystems) {
-              Log.WL(1, "ParticleSystem:" + pssys.gameObject.name);
+              Log.Combat?.WL(1, "ParticleSystem:" + pssys.gameObject.name);
               var main = pssys.main;
               main.loop = false;
               main.playOnAwake = false;
@@ -183,7 +185,7 @@ namespace CustomUnits {
           dustEffect.SetActive(true);
           ParticleSystem[] psystems = dustEffect.GetComponentsInChildren<ParticleSystem>(true);
           foreach (ParticleSystem pssys in psystems) {
-            Log.WL(1, "ParticleSystem:" + pssys.gameObject.name);
+            Log.Combat?.WL(1, "ParticleSystem:" + pssys.gameObject.name);
             var main = pssys.main;
             main.loop = false;
             main.playOnAwake = false;
@@ -210,7 +212,7 @@ namespace CustomUnits {
           windEffect.SetActive(true);
           ParticleSystem[] psystems = windEffect.GetComponentsInChildren<ParticleSystem>(true);
           foreach (ParticleSystem pssys in psystems) {
-            Log.WL(1, "ParticleSystem:" + pssys.gameObject.name);
+            Log.Combat?.WL(1, "ParticleSystem:" + pssys.gameObject.name);
             var main = pssys.main;
             main.loop = false;
             main.playOnAwake = false;
@@ -251,7 +253,7 @@ namespace CustomUnits {
           dropOffEngineEffect = GameObject.Instantiate(leopard.transform.FindRecursive(dropOffEngineEffectName).gameObject);
           ParticleSystem[] psystems = landedEffect.GetComponentsInChildren<ParticleSystem>(true);
           foreach (ParticleSystem pssys in psystems) {
-            Log.WL(1, "ParticleSystem:" + pssys.gameObject.name);
+            Log.Combat?.WL(1, "ParticleSystem:" + pssys.gameObject.name);
             var main = pssys.main;
             main.loop = true;
             main.playOnAwake = true;
@@ -262,7 +264,7 @@ namespace CustomUnits {
           }
           psystems = dropOffDustEffect.GetComponentsInChildren<ParticleSystem>(true);
           foreach (ParticleSystem pssys in psystems) {
-            Log.WL(1, "ParticleSystem:" + pssys.gameObject.name);
+            Log.Combat?.WL(1, "ParticleSystem:" + pssys.gameObject.name);
             var main = pssys.main;
             main.loop = true;
             main.playOnAwake = true;
@@ -273,7 +275,7 @@ namespace CustomUnits {
           }
           psystems = dropOffEngineEffect.GetComponentsInChildren<ParticleSystem>(true);
           foreach (ParticleSystem pssys in psystems) {
-            Log.WL(1, "ParticleSystem:" + pssys.gameObject.name);
+            Log.Combat?.WL(1, "ParticleSystem:" + pssys.gameObject.name);
             var main = pssys.main;
             main.loop = true;
             main.playOnAwake = true;
@@ -297,127 +299,128 @@ namespace CustomUnits {
           if(leopard != null)GameObject.Destroy(leopard);
         }
       } catch(Exception e) {
-        Log.TWL(0,e.ToString(),true);
+        Log.Combat?.TWL(0,e.ToString(),true);
+        AbstractActor.logger.LogException(e);
       }
     }
     public static string SafeToString(this object obj) {
       if (obj == null) { return "(null)"; } else { return obj.ToString(); }
     }
     public static void MinMaxCurveDump(this ParticleSystem.MinMaxCurve curve, int initiation) {
-      Log.WL(initiation, "mode:" + curve.mode);
-      Log.WL(initiation, "constant:" + curve.constant);
-      Log.WL(initiation, "constantMax:" + curve.constantMax);
-      Log.WL(initiation, "constantMin:" + curve.constantMin);
-      Log.WL(initiation, "curveMultiplier:" + curve.curveMultiplier);
-      Log.WL(initiation, "curve");
+      Log.Combat?.WL(initiation, "mode:" + curve.mode);
+      Log.Combat?.WL(initiation, "constant:" + curve.constant);
+      Log.Combat?.WL(initiation, "constantMax:" + curve.constantMax);
+      Log.Combat?.WL(initiation, "constantMin:" + curve.constantMin);
+      Log.Combat?.WL(initiation, "curveMultiplier:" + curve.curveMultiplier);
+      Log.Combat?.WL(initiation, "curve");
       curve.curve.AnimationCurveDump(initiation+1);
-      Log.WL(initiation, "curveMax");
+      Log.Combat?.WL(initiation, "curveMax");
       curve.curveMax.AnimationCurveDump(initiation + 1);
-      Log.WL(initiation, "curveMin");
+      Log.Combat?.WL(initiation, "curveMin");
       curve.curveMin.AnimationCurveDump(initiation + 1);
     }
     public static void AnimationCurveDump(this AnimationCurve curve, int initiation) {
       if (curve == null) {
-        Log.WL(initiation, "(null)");
+        Log.Combat?.WL(initiation, "(null)");
         return;
       }
-      Log.W(initiation, "keys:" + curve.keys.Length);
+      Log.Combat?.W(initiation, "keys:" + curve.keys.Length);
       foreach(var key in curve.keys) {
-        Log.W(1, "{" + key.time + ":" + key.value + "}");
+        Log.Combat?.W(1, "{" + key.time + ":" + key.value + "}");
       }
-      Log.WL(0,"");
+      Log.Combat?.WL(0,"");
     }
     public static void ParticleSystemDump(this ParticleSystem particleSystem, int initiation) {
-      Log.WL(initiation, "main.cullingMode:" + particleSystem.main.cullingMode);
-      Log.WL(initiation, "main.customSimulationSpace:" + particleSystem.main.customSimulationSpace.SafeToString());
-      Log.WL(initiation, "main.duration:" + particleSystem.main.duration);
-      Log.WL(initiation, "main.emitterVelocityMode:" + particleSystem.main.emitterVelocityMode);
-      Log.WL(initiation, "main.flipRotation:" + particleSystem.main.flipRotation);
-      Log.WL(initiation, "main.gravityModifier");
+      Log.Combat?.WL(initiation, "main.cullingMode:" + particleSystem.main.cullingMode);
+      Log.Combat?.WL(initiation, "main.customSimulationSpace:" + particleSystem.main.customSimulationSpace.SafeToString());
+      Log.Combat?.WL(initiation, "main.duration:" + particleSystem.main.duration);
+      Log.Combat?.WL(initiation, "main.emitterVelocityMode:" + particleSystem.main.emitterVelocityMode);
+      Log.Combat?.WL(initiation, "main.flipRotation:" + particleSystem.main.flipRotation);
+      Log.Combat?.WL(initiation, "main.gravityModifier");
       particleSystem.main.gravityModifier.MinMaxCurveDump(initiation + 1);
-      Log.WL(initiation, "main.gravityModifierMultiplier:" + particleSystem.main.gravityModifierMultiplier);
-      Log.WL(initiation, "main.loop:" + particleSystem.main.loop);
-      Log.WL(initiation, "main.maxParticles:" + particleSystem.main.maxParticles);
-      Log.WL(initiation, "main.playOnAwake:" + particleSystem.main.playOnAwake);
-      Log.WL(initiation, "main.prewarm:" + particleSystem.main.prewarm);
-      Log.WL(initiation, "main.ringBufferLoopRange:" + particleSystem.main.ringBufferLoopRange);
-      Log.WL(initiation, "main.ringBufferMode:" + particleSystem.main.ringBufferMode);
-      Log.WL(initiation, "main.scalingMode:" + particleSystem.main.scalingMode);
-      Log.WL(initiation, "main.simulationSpace:" + particleSystem.main.simulationSpace);
-      Log.WL(initiation, "main.simulationSpeed:" + particleSystem.main.simulationSpeed);
-      Log.WL(initiation, "main.startColor:" + particleSystem.main.startColor);
-      Log.WL(initiation, "main.startDelay");
+      Log.Combat?.WL(initiation, "main.gravityModifierMultiplier:" + particleSystem.main.gravityModifierMultiplier);
+      Log.Combat?.WL(initiation, "main.loop:" + particleSystem.main.loop);
+      Log.Combat?.WL(initiation, "main.maxParticles:" + particleSystem.main.maxParticles);
+      Log.Combat?.WL(initiation, "main.playOnAwake:" + particleSystem.main.playOnAwake);
+      Log.Combat?.WL(initiation, "main.prewarm:" + particleSystem.main.prewarm);
+      Log.Combat?.WL(initiation, "main.ringBufferLoopRange:" + particleSystem.main.ringBufferLoopRange);
+      Log.Combat?.WL(initiation, "main.ringBufferMode:" + particleSystem.main.ringBufferMode);
+      Log.Combat?.WL(initiation, "main.scalingMode:" + particleSystem.main.scalingMode);
+      Log.Combat?.WL(initiation, "main.simulationSpace:" + particleSystem.main.simulationSpace);
+      Log.Combat?.WL(initiation, "main.simulationSpeed:" + particleSystem.main.simulationSpeed);
+      Log.Combat?.WL(initiation, "main.startColor:" + particleSystem.main.startColor);
+      Log.Combat?.WL(initiation, "main.startDelay");
       particleSystem.main.startDelay.MinMaxCurveDump(initiation + 1);
-      Log.WL(initiation, "main.startDelayMultiplier:" + particleSystem.main.startDelayMultiplier);
-      Log.WL(initiation, "main.startLifetime");
+      Log.Combat?.WL(initiation, "main.startDelayMultiplier:" + particleSystem.main.startDelayMultiplier);
+      Log.Combat?.WL(initiation, "main.startLifetime");
       particleSystem.main.startLifetime.MinMaxCurveDump(initiation + 1);
-      Log.WL(initiation, "main.startLifetimeMultiplier:" + particleSystem.main.startLifetimeMultiplier);
-      Log.WL(initiation, "main.startRotation");
+      Log.Combat?.WL(initiation, "main.startLifetimeMultiplier:" + particleSystem.main.startLifetimeMultiplier);
+      Log.Combat?.WL(initiation, "main.startRotation");
       particleSystem.main.startRotation.MinMaxCurveDump(initiation + 1);
-      Log.WL(initiation, "main.startRotation3D:" + particleSystem.main.startRotation3D);
-      Log.WL(initiation, "main.startRotationMultiplier:" + particleSystem.main.startRotationMultiplier);
-      Log.WL(initiation, "main.startRotationX");
+      Log.Combat?.WL(initiation, "main.startRotation3D:" + particleSystem.main.startRotation3D);
+      Log.Combat?.WL(initiation, "main.startRotationMultiplier:" + particleSystem.main.startRotationMultiplier);
+      Log.Combat?.WL(initiation, "main.startRotationX");
       particleSystem.main.startRotationX.MinMaxCurveDump(initiation + 1);
-      Log.WL(initiation, "main.startRotationXMultiplier:" + particleSystem.main.startRotationXMultiplier);
-      Log.WL(initiation, "particleSystem.main.startRotationY");
+      Log.Combat?.WL(initiation, "main.startRotationXMultiplier:" + particleSystem.main.startRotationXMultiplier);
+      Log.Combat?.WL(initiation, "particleSystem.main.startRotationY");
       particleSystem.main.startRotationY.MinMaxCurveDump(initiation + 1);
-      Log.WL(initiation, "main.startRotationYMultiplier:" + particleSystem.main.startRotationYMultiplier);
-      Log.WL(initiation, "main.startRotationZ");
+      Log.Combat?.WL(initiation, "main.startRotationYMultiplier:" + particleSystem.main.startRotationYMultiplier);
+      Log.Combat?.WL(initiation, "main.startRotationZ");
       particleSystem.main.startRotationZ.MinMaxCurveDump(initiation + 1);
-      Log.WL(initiation, "main.startRotationZMultiplier:" + particleSystem.main.startRotationZMultiplier);
-      Log.WL(initiation, "main.startSize");
+      Log.Combat?.WL(initiation, "main.startRotationZMultiplier:" + particleSystem.main.startRotationZMultiplier);
+      Log.Combat?.WL(initiation, "main.startSize");
       particleSystem.main.startSize.MinMaxCurveDump(initiation + 1);
-      Log.WL(initiation, "main.startSize3D:" + particleSystem.main.startSize3D);
-      Log.WL(initiation, "main.startSizeMultiplier:" + particleSystem.main.startSizeMultiplier);
-      Log.WL(initiation, "particleSystem.main.startSizeX");
+      Log.Combat?.WL(initiation, "main.startSize3D:" + particleSystem.main.startSize3D);
+      Log.Combat?.WL(initiation, "main.startSizeMultiplier:" + particleSystem.main.startSizeMultiplier);
+      Log.Combat?.WL(initiation, "particleSystem.main.startSizeX");
       particleSystem.main.startSizeX.MinMaxCurveDump(initiation + 1);
-      Log.WL(initiation, "main.startSizeXMultiplier:" + particleSystem.main.startSizeXMultiplier);
-      Log.WL(initiation, "particleSystem.main.startSizeY");
+      Log.Combat?.WL(initiation, "main.startSizeXMultiplier:" + particleSystem.main.startSizeXMultiplier);
+      Log.Combat?.WL(initiation, "particleSystem.main.startSizeY");
       particleSystem.main.startSizeY.MinMaxCurveDump(initiation + 1);
-      Log.WL(initiation, "main.startSizeYMultiplier:" + particleSystem.main.startSizeYMultiplier);
-      Log.WL(initiation, "main.startSizeZ");
+      Log.Combat?.WL(initiation, "main.startSizeYMultiplier:" + particleSystem.main.startSizeYMultiplier);
+      Log.Combat?.WL(initiation, "main.startSizeZ");
       particleSystem.main.startSizeZ.MinMaxCurveDump(initiation + 1);
-      Log.WL(initiation, "main.startSizeZMultiplier:" + particleSystem.main.startSizeZMultiplier);
-      Log.WL(initiation, "main.stopAction:" + particleSystem.main.stopAction);
-      Log.WL(initiation, "main.useUnscaledTime:" + particleSystem.main.useUnscaledTime);
+      Log.Combat?.WL(initiation, "main.startSizeZMultiplier:" + particleSystem.main.startSizeZMultiplier);
+      Log.Combat?.WL(initiation, "main.stopAction:" + particleSystem.main.stopAction);
+      Log.Combat?.WL(initiation, "main.useUnscaledTime:" + particleSystem.main.useUnscaledTime);
 
-      Log.WL(initiation, "emission.enabled:" + particleSystem.emission.enabled);
-      Log.WL(initiation, "emission.burstCount:" + particleSystem.emission.burstCount);
-      Log.WL(initiation, "particleSystem.emission.rateOverDistance");
+      Log.Combat?.WL(initiation, "emission.enabled:" + particleSystem.emission.enabled);
+      Log.Combat?.WL(initiation, "emission.burstCount:" + particleSystem.emission.burstCount);
+      Log.Combat?.WL(initiation, "particleSystem.emission.rateOverDistance");
       particleSystem.emission.rateOverDistance.MinMaxCurveDump(initiation + 1);
-      Log.WL(initiation, "emission.rateOverDistanceMultiplier:" + particleSystem.emission.rateOverDistanceMultiplier);
-      Log.WL(initiation, "emission.rateOverTime");
+      Log.Combat?.WL(initiation, "emission.rateOverDistanceMultiplier:" + particleSystem.emission.rateOverDistanceMultiplier);
+      Log.Combat?.WL(initiation, "emission.rateOverTime");
       particleSystem.emission.rateOverTime.MinMaxCurveDump(initiation + 1);
-      Log.WL(initiation, "emission.rateOverTimeMultiplier:" + particleSystem.emission.rateOverTimeMultiplier);
-      Log.WL(initiation, "collision.enabled:" + particleSystem.collision.enabled);
-      Log.WL(initiation, "colorOverLifetime.enabled:" + particleSystem.colorOverLifetime.enabled);
-      Log.WL(initiation, "colorBySpeed.enabled:" + particleSystem.colorBySpeed.enabled);
-      Log.WL(initiation, "customData.enabled:" + particleSystem.customData.enabled);
-      Log.WL(initiation, "externalForces.enabled:" + particleSystem.externalForces.enabled);
-      Log.WL(initiation, "forceOverLifetime.enabled:" + particleSystem.forceOverLifetime.enabled);
-      Log.WL(initiation, "inheritVelocity.enabled:" + particleSystem.inheritVelocity.enabled);
-      Log.WL(initiation, "lights.enabled:" + particleSystem.lights.enabled);
-      Log.WL(initiation, "limitVelocityOverLifetime.enabled:" + particleSystem.limitVelocityOverLifetime.enabled);
-      Log.WL(initiation, "noise.enabled:" + particleSystem.noise.enabled);
-      Log.WL(initiation, "rotationBySpeed.enabled:" + particleSystem.rotationBySpeed.enabled);
-      Log.WL(initiation, "rotationOverLifetime.enabled:" + particleSystem.rotationOverLifetime.enabled);
-      Log.WL(initiation, "sizeBySpeed.enabled:" + particleSystem.sizeBySpeed.enabled);
-      Log.WL(initiation, "sizeOverLifetime.enabled:" + particleSystem.sizeOverLifetime.enabled);
-      Log.WL(initiation, "sizeOverLifetime.separateAxes:" + particleSystem.sizeOverLifetime.separateAxes);
-      Log.WL(initiation, "sizeOverLifetime.size");
+      Log.Combat?.WL(initiation, "emission.rateOverTimeMultiplier:" + particleSystem.emission.rateOverTimeMultiplier);
+      Log.Combat?.WL(initiation, "collision.enabled:" + particleSystem.collision.enabled);
+      Log.Combat?.WL(initiation, "colorOverLifetime.enabled:" + particleSystem.colorOverLifetime.enabled);
+      Log.Combat?.WL(initiation, "colorBySpeed.enabled:" + particleSystem.colorBySpeed.enabled);
+      Log.Combat?.WL(initiation, "customData.enabled:" + particleSystem.customData.enabled);
+      Log.Combat?.WL(initiation, "externalForces.enabled:" + particleSystem.externalForces.enabled);
+      Log.Combat?.WL(initiation, "forceOverLifetime.enabled:" + particleSystem.forceOverLifetime.enabled);
+      Log.Combat?.WL(initiation, "inheritVelocity.enabled:" + particleSystem.inheritVelocity.enabled);
+      Log.Combat?.WL(initiation, "lights.enabled:" + particleSystem.lights.enabled);
+      Log.Combat?.WL(initiation, "limitVelocityOverLifetime.enabled:" + particleSystem.limitVelocityOverLifetime.enabled);
+      Log.Combat?.WL(initiation, "noise.enabled:" + particleSystem.noise.enabled);
+      Log.Combat?.WL(initiation, "rotationBySpeed.enabled:" + particleSystem.rotationBySpeed.enabled);
+      Log.Combat?.WL(initiation, "rotationOverLifetime.enabled:" + particleSystem.rotationOverLifetime.enabled);
+      Log.Combat?.WL(initiation, "sizeBySpeed.enabled:" + particleSystem.sizeBySpeed.enabled);
+      Log.Combat?.WL(initiation, "sizeOverLifetime.enabled:" + particleSystem.sizeOverLifetime.enabled);
+      Log.Combat?.WL(initiation, "sizeOverLifetime.separateAxes:" + particleSystem.sizeOverLifetime.separateAxes);
+      Log.Combat?.WL(initiation, "sizeOverLifetime.size");
       particleSystem.sizeOverLifetime.size.MinMaxCurveDump(initiation + 1);
-      Log.WL(initiation, "sizeOverLifetime.sizeMultiplier:" + particleSystem.sizeOverLifetime.sizeMultiplier);
-      Log.WL(initiation, "sizeOverLifetime.x");
+      Log.Combat?.WL(initiation, "sizeOverLifetime.sizeMultiplier:" + particleSystem.sizeOverLifetime.sizeMultiplier);
+      Log.Combat?.WL(initiation, "sizeOverLifetime.x");
       particleSystem.sizeOverLifetime.x.MinMaxCurveDump(initiation + 1);
-      Log.WL(initiation, "sizeOverLifetime.xMultiplier:" + particleSystem.sizeOverLifetime.xMultiplier);
-      Log.WL(initiation, "sizeOverLifetime.y");
+      Log.Combat?.WL(initiation, "sizeOverLifetime.xMultiplier:" + particleSystem.sizeOverLifetime.xMultiplier);
+      Log.Combat?.WL(initiation, "sizeOverLifetime.y");
       particleSystem.sizeOverLifetime.y.MinMaxCurveDump(initiation + 1);
-      Log.WL(initiation, "sizeOverLifetime.yMultiplier:" + particleSystem.sizeOverLifetime.yMultiplier);
-      Log.WL(initiation, "sizeOverLifetime.z");
+      Log.Combat?.WL(initiation, "sizeOverLifetime.yMultiplier:" + particleSystem.sizeOverLifetime.yMultiplier);
+      Log.Combat?.WL(initiation, "sizeOverLifetime.z");
       particleSystem.sizeOverLifetime.z.MinMaxCurveDump(initiation + 1);
-      Log.WL(initiation, "sizeOverLifetime.zMultiplier:" + particleSystem.sizeOverLifetime.zMultiplier);
-      Log.WL(initiation, "subEmitters.enabled:" + particleSystem.subEmitters.enabled);
-      Log.WL(initiation, "textureSheetAnimation.enabled:" + particleSystem.textureSheetAnimation.enabled);
+      Log.Combat?.WL(initiation, "sizeOverLifetime.zMultiplier:" + particleSystem.sizeOverLifetime.zMultiplier);
+      Log.Combat?.WL(initiation, "subEmitters.enabled:" + particleSystem.subEmitters.enabled);
+      Log.Combat?.WL(initiation, "textureSheetAnimation.enabled:" + particleSystem.textureSheetAnimation.enabled);
     }
     public static void CreateBossBeacon(this CustomMech parent, Vector3 position) {
       GameObject beaconObj = new GameObject("BossBeacon_"+parent.GUID);
@@ -483,7 +486,8 @@ namespace CustomUnits {
         //  leopard2.transform.localPosition = Vector3.up * 70f;
         //}
       }catch(Exception e) {
-        Log.TWL(0,e.ToString(),true);
+        Log.Combat?.TWL(0,e.ToString(),true);
+        AbstractActor.logger.LogException(e);
       }
     }
   }

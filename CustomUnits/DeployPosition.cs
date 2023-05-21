@@ -46,15 +46,16 @@ namespace CustomUnits {
       try {
         if (DeployManualHelper.deployDirector != null) { return; }
         if (Core.Settings.DeployAutoSpawnProtection && (__instance.Combat.ActiveContract.IsTutorial == false) && (__instance.Combat.ActiveContract.IsStoryContract == false)) {
-          Log.TWL(0,$"TurnDirector.StartFirstRound add spawn protection");
+          Log.Combat?.TWL(0,$"TurnDirector.StartFirstRound add spawn protection");
           foreach(AbstractActor unit in __instance.Combat.AllActors) {
-            Log.WL(1, $"{unit.PilotableActorDef.ChassisID}");
+            Log.Combat?.WL(1, $"{unit.PilotableActorDef.ChassisID}");
             unit.addSpawnProtection("first round");
           }
           //__instance.Combat.addSpawnProtection(0, "first round");
         }
       } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
+        Log.Combat?.TWL(0, e.ToString(), true);
+        TurnDirector.logger.LogException(e);
       }
     }
   }
@@ -75,31 +76,11 @@ namespace CustomUnits {
         }
         __instance.Combat.addSpawnProtection(0, "manual delayed spawn protection");
       } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
+        Log.ECombat?.TWL(0, e.ToString(), true);
+        UIManager.logger.LogException(e);
       }
     }
   }
-  //[HarmonyPatch(typeof(TimerObjective))]
-  //[HarmonyPatch("ContractInitialize")]
-  //[HarmonyPatch(MethodType.Normal)]
-  //[HarmonyPatch(new Type[] { })]
-  //public static class TimerObjective_ContractInitialize {
-  //  public static void Postfix(TimerObjective __instance) {
-  //    try {
-  //      bool manualSpawn = __instance.Combat.ActiveContract.isManualSpawn() || (DeployManualHelper.deployDirector != null);
-  //      Log.TWL(0, $"TimerObjective.ContractInitialize GUID:{__instance.GUID} contractType:{__instance.Combat.ActiveContract.ContractTypeValue.Name} ManualDeploy:{manualSpawn}");
-  //      if (Core.Settings.timerObjectiveChange.TryGetValue(__instance.Combat.ActiveContract.ContractTypeValue.Name, out var change)) {
-  //        Log.W(1, $"changing duration:{__instance.durationRemaining}/{__instance.durationToCount}");
-  //        __instance.durationRemaining += manualSpawn ? change.manualDeployAdvice : change.autoDeployAdvice;
-  //        __instance.durationToCount += manualSpawn ? change.manualDeployAdvice : change.autoDeployAdvice;
-  //        Log.WL(0, $"->{__instance.durationRemaining}/{__instance.durationToCount}");
-  //      }
-  //    } catch (Exception e) {
-  //      Log.TWL(0, e.ToString());
-  //    }
-  //  }
-  //}
-
   public class DropShipManager : MonoBehaviour {
     public GameObject DropOffPoint { get; set; }
     private DropshipGameLogic _leopardInstance;
@@ -110,7 +91,7 @@ namespace CustomUnits {
     public Action DropOffCompleete { get; set; }
     private bool DropAnimationCompleete { get; set; } = true;
     public void OnDropshipAnimationComplete(MessageCenterMessage message) {
-      Log.TWL(0, "DropShipManager.OnDropshipAnimationComplete is already called:"+ DropAnimationCompleete);
+      Log.Combat?.TWL(0, "DropShipManager.OnDropshipAnimationComplete is already called:"+ DropAnimationCompleete);
       if (DropAnimationCompleete == true) { return; }
       DropAnimationCompleete = true;
       MessageCenter messageCenter = this.Combat.MessageCenter;
@@ -154,14 +135,15 @@ namespace CustomUnits {
         MessageCenter messageCenter = this.Combat.MessageCenter;
         messageCenter.Subscribe(MessageCenterMessageType.OnDropshipAnimationComplete, new ReceiveMessageCenterMessage(this.OnDropshipAnimationComplete), true);
         EnsureLeopardDropship();
-        Log.TWL(0, "LeopardInstance.StartDropoff");
+        Log.Combat?.TWL(0, "LeopardInstance.StartDropoff");
         LeopardInstance.transform.SetParent(this.DropOffPoint.transform);
         LeopardInstance.transform.localPosition = Vector3.zero;
         LeopardInstance.transform.localRotation = Quaternion.identity;
         LeopardInstance.transform.localScale = Vector3.one;
         LeopardInstance.StartDropoff();
       }catch(Exception e) {
-        Log.TWL(0, e.ToString(), true);
+        Log.Combat?.TWL(0, e.ToString(), true);
+        EncounterObjectGameLogic.logger.LogException(e);
         callback?.Invoke();
       }
     }
@@ -215,7 +197,7 @@ namespace CustomUnits {
         this.dropPodVfxPrefab.Simulate(0.0f);
         this.dropPodVfxPrefab.Play();
       } else {
-        Log.TWL(0, "Null drop pod animation for this biome.");
+        Log.Combat?.TWL(0, "Null drop pod animation for this biome.");
       }
       yield return (object)new WaitForSeconds(1f);
       int num2 = (int)WwiseManager.PostEvent<AudioEventList_play>(AudioEventList_play.play_dropPod_impact, WwiseManager.GlobalAudioObject);
@@ -407,7 +389,7 @@ namespace CustomUnits {
     }
     public static void RestoreVisiblityState(CombatHUD HUD) {
       try {
-        Log.TWL(0, "RestoreVisiblityState");
+        Log.Combat?.TWL(0, "RestoreVisiblityState");
         HUD.Combat.MessageCenter.PublishMessage((MessageCenterMessage)new AddSequenceToStackMessage(deployDirector.DoneWithActor()));
         FogOfWarSystem_WipeToValue.NormalFoW();
         LazySingletonBehavior<FogOfWarView>.Instance.FowSystem.WipeToValue(HUD.Combat.EncounterLayerData.startingFogOfWarVisibility);
@@ -423,35 +405,19 @@ namespace CustomUnits {
         foreach (AbstractActor actor in actors) {
           try {
             if (actor == deployDirector) { continue; }
-            Log.WL(1,actor.PilotableActorDef.ChassisID);
+            Log.Combat?.WL(1,actor.PilotableActorDef.ChassisID);
             CustomMechMeshMerge[] custMerges = actor.GameRep.gameObject.GetComponentsInChildren<CustomMechMeshMerge>(true);
-            //MechMeshMerge[] merges = actor.GameRep.gameObject.GetComponentsInChildren<MechMeshMerge>(true);
-            Log.WL(1, "CustomMechMeshMerge:"+ custMerges.Length);
-            //Log.WL(1, "MechMeshMerge:" + merges.Length);
-            //if ((custMerges.Length != 0)||(merges.Length != 0)) {
-            //  actor.OnPlayerVisibilityChanged(VisibilityLevel.LOSFull);
-            //}
+            Log.Combat?.WL(1, "CustomMechMeshMerge:"+ custMerges.Length);
             if (custMerges.Length != 0) {
               foreach (CustomMechMeshMerge merge in custMerges) {
-                Log.WL(3, "CustomMechMeshMerge.RefreshCombinedMesh:" + merge.gameObject.name);
+                Log.Combat?.WL(3, "CustomMechMeshMerge.RefreshCombinedMesh:" + merge.gameObject.name);
                 merge.RefreshCombinedMesh(true);
               }
             }
-            //if (merges.Length != 0) {
-            //  foreach (MechMeshMerge merge in merges) {
-            //    Log.WL(3, "MechMeshMerge.RefreshCombinedMesh:" + merge.gameObject.name);
-            //    merge.RefreshCombinedMesh(true);
-            //  }
-            //}
-            //if (actor.team == null) { actor.OnPlayerVisibilityChanged(VisibilityLevel.LOSFull); continue; }
-            //if (actor.team.IsFriendly(HUD.Combat.LocalPlayerTeam)) {
-            //  actor.OnPlayerVisibilityChanged(VisibilityLevel.LOSFull);
-            //} else {
-            //  actor.OnPlayerVisibilityChanged(VisibilityLevel.None);
-            //}
             actor.VisibilityCache.RebuildCache(allLivingCombatants);
           } catch (Exception e) {
-            Log.TWL(0, e.ToString(), true);
+            Log.Combat?.TWL(0, e.ToString(), true);
+            CombatGameState.gameInfoLogger.LogException(e);
           }
         }
         List<Team> teams = HUD.Combat.Teams;
@@ -459,13 +425,13 @@ namespace CustomUnits {
           try {
             team.VisibilityCache.RebuildCache(allLivingCombatants);
           } catch (Exception e) {
-            Log.TWL(0, e.ToString(), true);
+            Log.Combat?.TWL(0, e.ToString(), true);
           }
         }
         Dictionary<ICombatant, VisibilityLevel> visibility = HUD.Combat.GetHighestPlayerVisibilityLevel();
-        Log.TWL(0, "Refresh visibility "+ visibility.Count);
+        Log.Combat?.TWL(0, "Refresh visibility "+ visibility.Count);
         foreach (var visLevel in visibility) {
-          Log.WL(1, "Refresh visibility " + (visLevel.Key.PilotableActorDef == null ? visLevel.Key.DisplayName : visLevel.Key.PilotableActorDef.ChassisID) + " " + visLevel.Value);
+          Log.Combat?.WL(1, "Refresh visibility " + (visLevel.Key.PilotableActorDef == null ? visLevel.Key.DisplayName : visLevel.Key.PilotableActorDef.ChassisID) + " " + visLevel.Value);
           if (visLevel.Key is AbstractActor actor) {
             actor.OnPlayerVisibilityChanged(visLevel.Value);
           }else if (visLevel.Key.GameRep != null) { visLevel.Key.GameRep.OnPlayerVisibilityChanged(visLevel.Value); }
@@ -475,14 +441,11 @@ namespace CustomUnits {
           if (actorInfo.gameObject.activeSelf) { continue; }
           if (actorInfo.DisplayedCombatant == deployDirector) { continue; }
           actorInfo.gameObject.SetActive(true);
-          Traverse.Create(actorInfo).Method("RefreshAllInfo").GetValue();
+          actorInfo.RefreshAllInfo();
         }
         foreach (AbstractActor unit in HUD.Combat.LocalPlayerTeam.units) {
           if (unit.IsDeployDirector()) { continue; }
           if (unit.IsAvailableThisPhase) {
-            //if (Core.Settings.DeployManualSpawnProtection) {
-            //  unit.addAddSpawnProtection("manual deploy");
-            //}
             HUD.Combat.MessageCenter.PublishMessage((MessageCenterMessage)new AddSequenceToStackMessage(unit.DoneWithActor()));
           }
         }
@@ -490,35 +453,33 @@ namespace CustomUnits {
           NeedSpawnProtection = true;
           foreach (AbstractActor unit in HUD.Combat.AllActors) {
             if (unit.IsDeployDirector()) { continue; }
-            //if (unit.isAddSpawnProtected()) { continue; }
             unit.addSpawnProtection(2,"manual deploy");
           }
           HUD.Combat.addSpawnProtection(2, "manual deploy");
         }
-        //HUD.Combat.TurnDirector.StartFirstRound();
       } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
+        Log.ECombat?.TWL(0, e.ToString(), true);
+        EncounterObjectGameLogic.logger.LogException(e);
       }
-
     }
 
     public static void TeleportToPositions(CombatHUD HUD, List<DeployPosition> positions) {
       try {
         IsInManualSpawnSequence = false;
         List<Vector3> enemiesPositions = HUD.Combat.enemiesPositions();
-        Log.TWL(0, "DeployManualHelper.TeleportToPositions enemies:"+ enemiesPositions.Count);
+        Log.Combat?.TWL(0, "DeployManualHelper.TeleportToPositions enemies:"+ enemiesPositions.Count);
         foreach (DeployPosition dPos in positions) {
           if (dPos.position.HasValue) {
             if (dPos.unit == null) { continue; }
             dPos.unit?.TeleportActor(dPos.position.Value);
             Vector3 nearestEnemy = DeployManualDropPodManager.nearestEnemy(enemiesPositions, dPos.position.Value);
-            Log.WL(1, "position:"+ dPos.position.Value+" nearest enemy:"+ nearestEnemy);
+            Log.Combat?.WL(1, "position:"+ dPos.position.Value+" nearest enemy:"+ nearestEnemy);
             if (nearestEnemy != Vector3.zero) {
               Vector3 forwardNearestEnemy = (nearestEnemy - dPos.position.Value).normalized;
               Quaternion facingNearestEnemy = Quaternion.LookRotation(forwardNearestEnemy);
-              Log.WL(2, "forward to enemy:" + forwardNearestEnemy);
+              Log.Combat?.WL(2, "forward to enemy:" + forwardNearestEnemy);
               facingNearestEnemy = Quaternion.Euler(0f, facingNearestEnemy.eulerAngles.y, 0f);
-              Log.WL(2, "facing to enemy:"+ facingNearestEnemy.eulerAngles+" facing original:"+dPos.unit.CurrentRotation.eulerAngles);
+              Log.Combat?.WL(2, "facing to enemy:"+ facingNearestEnemy.eulerAngles+" facing original:"+dPos.unit.CurrentRotation.eulerAngles);
               dPos.unit.OnPositionUpdate(dPos.position.Value, facingNearestEnemy, -1, true, new List<DesignMaskDef>());
               dPos.unit.GameRep.transform.rotation = facingNearestEnemy;
               if (dPos.unit?.GameRep is CustomMechRepresentation custRep) {
@@ -541,7 +502,8 @@ namespace CustomUnits {
         };
         RestoreVisiblityState(HUD);
       } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
+        Log.Combat?.TWL(0, e.ToString(), true);
+        EncounterObjectGameLogic.logger.LogException(e);
       }
     }
     public static void RebuildAllVisChaches(this CombatGameState combat) {
@@ -589,41 +551,42 @@ namespace CustomUnits {
         deployDirector.OnPositionUpdate(__instance.Position, Quaternion.identity, -1, true, (List<DesignMaskDef>)null, false);
         deployDirector.BehaviorTree = BehaviorTreeFactory.MakeBehaviorTree(deployDirector.Combat.BattleTechGame, deployDirector, BehaviorTreeIDEnum.DoNothingTree);
         UnityGameInstance.BattleTechGame.Combat.MessageCenter.PublishMessage((MessageCenterMessage)new UnitSpawnedMessage("DEPLOY_DIRECTOR_SPAWNER", deployDirector.GUID));
-        Log.WL(1, "DeployManualHelper.SpawnDeployDirector:" + deployDirector.PilotableActorDef.Description.Id + ":" + deployDirector.GetPilot().Description.Id + " " + deployDirector.CurrentPosition);
+        Log.Combat?.WL(1, "DeployManualHelper.SpawnDeployDirector:" + deployDirector.PilotableActorDef.Description.Id + ":" + deployDirector.GetPilot().Description.Id + " " + deployDirector.CurrentPosition);
         __instance.Combat.ItemRegistry.AddItem(deployDirector);
         __instance.Combat.RebuildAllLists();
         DeployManualHelper.deployDirector = deployDirector;
         CombatHUD HUD = UIManager.Instance.gameObject.GetComponentInChildren<CombatHUD>(true);
         HUD?.MechWarriorTray.RefreshTeam(__instance.Combat.LocalPlayerTeam);
       } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
+        Log.ECombat?.TWL(0, e.ToString(), true);
+        PlayerLanceSpawnerGameLogic.logger.LogException(e);
       }
     }
     public static bool CheckDefinitiosDeps(GameInstance __instance, Contract contract, string playerGUID) {
       try {
         DataManager.InjectedDependencyLoadRequest dependencyLoad = new DataManager.InjectedDependencyLoadRequest(contract.DataManager);
-        Log.TWL(0, "DeployManualHelper.CheckDefinitiosDeps");
+        Log.Combat?.TWL(0, "DeployManualHelper.CheckDefinitiosDeps");
         if (contract.DataManager.MechDefs.TryGet(DeployManualHelper.DeployMechDefID, out MechDef mechDef)) {
           if (mechDef.DependenciesLoaded(1000u) == false) {
-            Log.WL(1, "mechdef deps");
+            Log.Combat?.WL(1, "mechdef deps");
             mechDef.GatherDependencies(contract.DataManager, (DataManager.DependencyLoadRequest)dependencyLoad, 1000U);
           }
         }
         if (contract.DataManager.AbilityDefs.TryGet(DeployManualHelper.DeployAbilityDefID, out AbilityDef abilityDef)) {
           if (abilityDef.DependenciesLoaded(1000u) == false) {
-            Log.WL(1, "ability deps");
+            Log.Combat?.WL(1, "ability deps");
             abilityDef.GatherDependencies(contract.DataManager, (DataManager.DependencyLoadRequest)dependencyLoad, 1000U);
           }
         }
         if (contract.DataManager.PilotDefs.TryGet(DeployManualHelper.DeployPilotDefID, out PilotDef pilotDef)) {
           if (pilotDef.DependenciesLoaded(1000u) == false) {
-            Log.WL(1, "pilot deps");
+            Log.Combat?.WL(1, "pilot deps");
             pilotDef.GatherDependencies(contract.DataManager, (DataManager.DependencyLoadRequest)dependencyLoad, 1000U);
           }
         }
         if (dependencyLoad.DependencyCount() > 0) {
           dependencyLoad.RegisterLoadCompleteCallback((Action)(() => {
-            Log.WL(1, "DeployManualHelper.LoadCompleteCallback", true);
+            Log.Combat?.WL(1, "DeployManualHelper.LoadCompleteCallback", true);
             DeployManualHelper.NeedCheckForDependenciesLoaded = false;
             __instance.LaunchContract(contract, playerGUID);
           }));
@@ -631,35 +594,36 @@ namespace CustomUnits {
           return false;
         }
       } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
+        Log.Combat?.TWL(0, e.ToString(), true);
+        PlayerLanceSpawnerGameLogic.logger.LogException(e);
       }
       return true;
     }
     public static bool CheckForDeps(GameInstance __instance, Contract contract, string playerGUID) {
       bool needLoadRequest = false;
-      Log.TWL(0, "DeployManualHelper.CheckForDeps");
+      Log.Combat?.TWL(0, "DeployManualHelper.CheckForDeps");
       if (DeployManualHelper.NeedCheckForDependenciesLoaded == false) {
         DeployManualHelper.NeedCheckForDependenciesLoaded = true;
         return true;
       }
       try {
         LoadRequest request = contract.DataManager.CreateLoadRequest((Action<LoadRequest>)((LoadRequest loadRequest) => {
-          Log.TWL(0, "DeployManualHelper.CheckForDeps base definitions loaded");
+          Log.Combat?.TWL(0, "DeployManualHelper.CheckForDeps base definitions loaded");
           CheckDefinitiosDeps(__instance, contract, playerGUID);
         }), false);
         if (contract.DataManager.PilotDefs.Exists(DeployManualHelper.DeployPilotDefID) == false) {
           request.AddLoadRequest<PilotDef>(BattleTechResourceType.PilotDef, DeployManualHelper.DeployPilotDefID, null);
-          Log.WL(1, "request:" + DeployManualHelper.DeployPilotDefID);
+          Log.Combat?.WL(1, "request:" + DeployManualHelper.DeployPilotDefID);
           needLoadRequest = true;
         }
         if (contract.DataManager.AbilityDefs.Exists(DeployManualHelper.DeployAbilityDefID) == false) {
           request.AddLoadRequest<PilotDef>(BattleTechResourceType.AbilityDef, DeployManualHelper.DeployAbilityDefID, null);
-          Log.WL(1, "request:" + DeployManualHelper.DeployAbilityDefID);
+          Log.Combat?.WL(1, "request:" + DeployManualHelper.DeployAbilityDefID);
           needLoadRequest = true;
         }
         if (contract.DataManager.MechDefs.Exists(DeployManualHelper.DeployMechDefID) == false) {
           request.AddLoadRequest<PilotDef>(BattleTechResourceType.MechDef, DeployManualHelper.DeployMechDefID, null);
-          Log.WL(1, "request:" + DeployManualHelper.DeployMechDefID);
+          Log.Combat?.WL(1, "request:" + DeployManualHelper.DeployMechDefID);
           needLoadRequest = true;
         }
         //{
@@ -674,7 +638,8 @@ namespace CustomUnits {
           return false;
         }
       } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
+        Log.Combat?.TWL(0, e.ToString(), true);
+        PlayerLanceSpawnerGameLogic.logger.LogException(e);
       }
       return CheckDefinitiosDeps(__instance, contract, playerGUID);
     }
@@ -699,19 +664,19 @@ namespace CustomUnits {
       if (this.deployDirector.IsDead) { return; }
       if (this.deployDirector.IsFlaggedForDeath) { return; }
       try {
-        Log.TWL(0, "Deploy director is ready for testing for despawn. IsAvailableThisPhase:" + this.deployDirector.IsAvailableThisPhase);
+        Log.Combat?.TWL(0, "Deploy director is ready for testing for despawn. IsAvailableThisPhase:" + this.deployDirector.IsAvailableThisPhase);
         if (this.HUD.SelectedActor != this.deployDirector) {
           this.HUD.SelectionHandler.DeselectActor(this.HUD.SelectedActor);
         }
         if (this.deployDirector.IsAvailableThisPhase) {
           this.combat.MessageCenter.PublishMessage((MessageCenterMessage)new AddSequenceToStackMessage(this.deployDirector.DoneWithActor()));
-          Log.WL(1, "Done with actor");
+          Log.Combat?.WL(1, "Done with actor");
         }
         EncounterLayerParent.EnqueueLoadAwareMessage((MessageCenterMessage)new DespawnActorMessage(this.deployDirector.spawnerGUID, this.deployDirector.GUID, DeathMethod.DespawnedNoMessage));
-        Log.WL(1, "Despawn");
+        Log.Combat?.WL(1, "Despawn");
         this.deployDirector = null;
       } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
+        Log.Combat?.TWL(0, e.ToString(), true);
       }
     }
   }
@@ -860,7 +825,7 @@ namespace CustomUnits {
       }
       List<AbstractActor> units = new List<AbstractActor>(this.Combat.LocalPlayerTeam.units);
       units.Remove(DeployManualHelper.deployDirector);
-      Log.TWL(0, "FillDeployPositionsInfo");
+      Log.Combat?.TWL(0, "FillDeployPositionsInfo");
       Dictionary<int, DeployPosition> positions = new Dictionary<int, DeployPosition>();
       Dictionary<int, DeployPosition> avaibleSlots = new Dictionary<int, DeployPosition>();
       {
@@ -882,12 +847,12 @@ namespace CustomUnits {
         string defGUID = string.Empty;
         if (unit.IsDeployDirector()) { continue; }
         defGUID = unit.PilotableActorDef.GUID + "_" + unit.PilotableActorDef.Description.Id + "_" + unit.GetPilot().Description.Id;
-        Log.WL(1, unit.PilotableActorDef.ChassisID + " tags:" + unit.EncounterTags.ContentToString() + " defGUID:" + defGUID);
+        Log.Combat?.WL(1, unit.PilotableActorDef.ChassisID + " tags:" + unit.EncounterTags.ContentToString() + " defGUID:" + defGUID);
         if (string.IsNullOrEmpty(defGUID) == false) {
           if (CustomLanceHelper.playerLanceLoadout.loadout.TryGetValue(defGUID, out int slotIndex)) {
-            Log.WL(2, "found slot in layout:" + slotIndex);
+            Log.Combat?.WL(2, "found slot in layout:" + slotIndex);
             if (avaibleSlots.TryGetValue(slotIndex, out DeployPosition slot)) {
-              Log.WL(3, "found slot in available:" + slotIndex);
+              Log.Combat?.WL(3, "found slot in available:" + slotIndex);
               slot.unit = unit;
               avaibleSlots.Remove(slotIndex);
               units.Remove(unit);
@@ -902,11 +867,11 @@ namespace CustomUnits {
         units.RemoveAt(0);
       }
       deployPositions = new List<DeployPosition>();
-      Log.TWL(0, "fill deploy positions:");
+      Log.Combat?.TWL(0, "fill deploy positions:");
       for (int t = 0; t < UnityGameInstance.BattleTechGame.Simulation.currentLayout().slotsCount; ++t) {
         if (positions.TryGetValue(t, out DeployPosition pos) == false) { continue; }
         if ((pos.unit == null)) { continue; }
-        Log.WL(1, t + ":" + (pos.unit == null ? "null" : pos.unit.PilotableActorDef.ChassisID) + " lance:" + pos.lanceid + " pos:" + pos.posid);
+        Log.Combat?.WL(1, t + ":" + (pos.unit == null ? "null" : pos.unit.PilotableActorDef.ChassisID) + " lance:" + pos.lanceid + " pos:" + pos.posid);
         deployPositions.Add(pos);
       }
       NeedPositionsCount = deployPositions.Count;
@@ -925,12 +890,12 @@ namespace CustomUnits {
       TargetingCirclesHelper.ShowRoot();
       TargetingCirclesHelper.ShowCirclesCount(0);
       this.ResetCache();
-      Log.TWL(0, "SelectionStateCommandDeploy OnAddToStack:" + NeedPositionsCount);
+      Log.Combat?.TWL(0, "SelectionStateCommandDeploy OnAddToStack:" + NeedPositionsCount);
       this.FillDeployPositionsInfo();
       base.OnAddToStack();
     }
     public override void OnInactivate() {
-      Log.TWL(0, "SelectionStateCommandDeploy.OnInactivate HasActivated: " + HasActivated);
+      Log.Combat?.TWL(0, "SelectionStateCommandDeploy.OnInactivate HasActivated: " + HasActivated);
       TargetingCirclesHelper.HideRoot();
       TargetingCirclesHelper.ShowCirclesCount(0);
       NumPositionsLocked = 0;
@@ -972,7 +937,7 @@ namespace CustomUnits {
         TargetingCirclesHelper.ShowRoot();
         TargetingCirclesHelper.ShowCirclesCount(this.NumPositionsLocked);
         this.ResetCache();
-        Log.TWL(0, "SelectionStateCommandDeploy.BackOut:" + this.NumPositionsLocked);
+        Log.Combat?.TWL(0, "SelectionStateCommandDeploy.BackOut:" + this.NumPositionsLocked);
       } else {
         Debug.LogError((object)"Tried to back out of 1-point command state while backout unavailable");
       }
@@ -1009,7 +974,7 @@ namespace CustomUnits {
             if (depPos.position.HasValue == false) { continue; }
             float dist = Vector3.Distance(depPos.position.Value, rndPos); if (nearest > dist) { nearest = dist; };
           };
-          Log.WL(1, rndPos.ToString() + " distance:" + Vector3.Distance(rndPos, worldPos) + " nearest:" + nearest + " rejected:" + (nearest < Core.Settings.DeploySpawnRadius / 4f), true);
+          Log.Combat?.WL(1, rndPos.ToString() + " distance:" + Vector3.Distance(rndPos, worldPos) + " nearest:" + nearest + " rejected:" + (nearest < Core.Settings.DeploySpawnRadius / 4f), true);
         } while (nearest < Core.Settings.DeploySpawnRadius / 4f);
         this.deployPositions[this.NumPositionsLocked + t].position = rndPos;
       }
@@ -1077,7 +1042,7 @@ namespace CustomUnits {
         return result.result;
       }
       result = new PositionInfo(string.Empty, true);
-      Log.TWL(0, "SelectionStateCommandDeploy.CheckPosition " + worldPos);
+      Log.Combat?.TWL(0, "SelectionStateCommandDeploy.CheckPosition " + worldPos);
       Vector3 f = worldPos + Vector3.forward * Core.Settings.DeploySpawnRadius;
       Vector3 b = worldPos + Vector3.back * Core.Settings.DeploySpawnRadius;
       Vector3 l = worldPos + Vector3.left * Core.Settings.DeploySpawnRadius;
@@ -1087,12 +1052,12 @@ namespace CustomUnits {
       if (HUD.Combat.EncounterLayerData.IsInEncounterBounds(l) == false) { result.result = false; } else
       if (HUD.Combat.EncounterLayerData.IsInEncounterBounds(r) == false) { result.result = false; };
       if (result.result == false) {
-        Log.WL(1, "out of bounds");
+        Log.Combat?.WL(1, "out of bounds");
         result.info = "out of encounter bounds\n<color=red>DEPLOY FORBIDDEN</color>";
         positionsCache.Add(worldPos, result); return false;
       }
       float originalDist = Vector3.Distance(worldPos, this.HUD.SelectedActor.CurrentPosition);
-      Log.WL(1, "original dist:" + originalDist + "/" + Core.Settings.DeployMaxDistanceFromOriginal);
+      Log.Combat?.WL(1, "original dist:" + originalDist + "/" + Core.Settings.DeployMaxDistanceFromOriginal);
       result.info = "distance from suggested deploy position " + Mathf.Round(originalDist) + " max allowed " + Core.Settings.DeployMaxDistanceFromOriginal;
       bool checkLancematesDistance = DeployManualHelper.originalSpawnMethod == SpawnUnitMethodType.ViaLeopardDropship;
       if ((this.NumPositionsLocked == 0) || (checkLancematesDistance == false)) {
@@ -1103,12 +1068,12 @@ namespace CustomUnits {
         }
       }
       if (checkLancematesDistance && this.NumPositionsLocked > 0) {
-        Log.WL(1, "checking lancemates");
+        Log.Combat?.WL(1, "checking lancemates");
         Vector3? centerPoint = null;
         int count = 0;
         foreach (DeployPosition pos in deployPositions) {
           if (pos.position.HasValue == false) { continue; }
-          Log.WL(2, "mate:" + pos.position.Value);
+          Log.Combat?.WL(2, "mate:" + pos.position.Value);
           if (centerPoint == null) { centerPoint = pos.position.Value; count = 1; continue; }
           Vector3 tmp = centerPoint.Value;
           tmp.x += pos.position.Value.x;
@@ -1121,7 +1086,7 @@ namespace CustomUnits {
           tmp.x = tmp.x / count;
           tmp.z = tmp.z / count;
           tmp = HUD.Combat.HexGrid.GetClosestPointOnGrid(tmp);
-          Log.WL(1, "center point:" + tmp);
+          Log.Combat?.WL(1, "center point:" + tmp);
           float matesDistance = Vector3.Distance(tmp, worldPos);
           //Log.WL(1, worldPos + " centerPoint:" + tmp+" distance:"+matesDistance);
           if (matesDistance > Core.Settings.DeployMaxDistanceFromMates) {
@@ -1129,7 +1094,7 @@ namespace CustomUnits {
             result.info += "\ndistance from your lance mates " + Mathf.Round(matesDistance) + " max allowed " + Core.Settings.DeployMaxDistanceFromMates;
             result.info += "\n<color=red>DEPLOY FORBIDDEN</color>";
             positionsCache.Add(worldPos, result);
-            Log.WL(1, "too far from mates:" + matesDistance + ">" + Core.Settings.DeployMaxDistanceFromMates);
+            Log.Combat?.WL(1, "too far from mates:" + matesDistance + ">" + Core.Settings.DeployMaxDistanceFromMates);
             return result.result;
           }
         }
@@ -1146,7 +1111,7 @@ namespace CustomUnits {
         if ((nearesEnemyDist == 9999f) || (dist < nearesEnemyDist)) { nearesEnemyDist = dist; }
       }
       result.result = nearesEnemyDist > Core.Settings.DeployMinDistanceFromEnemy;
-      Log.WL(1, "nearest enemy:" + nearesEnemyDist + " setting:" + Core.Settings.DeployMinDistanceFromEnemy + " result:" + result);
+      Log.Combat?.WL(1, "nearest enemy:" + nearesEnemyDist + " setting:" + Core.Settings.DeployMinDistanceFromEnemy + " result:" + result);
       result.info += "\ndistance from known enemy position " + Mathf.Round(nearesEnemyDist) + " min allowed " + Core.Settings.DeployMinDistanceFromEnemy;
       if (result.result == false) {
         result.info += "\n<color=red>DEPLOY FORBIDDEN</color>";
@@ -1171,7 +1136,7 @@ namespace CustomUnits {
       try {
         if (deployPositions == null) { FillDeployPositionsInfo(); }
       }catch(Exception e) {
-        Log.TWL(0, e.ToString());
+        Log.Combat?.TWL(0, e.ToString());
       }
       if (deployPositions == null) { }
       try {
@@ -1189,7 +1154,8 @@ namespace CustomUnits {
             }
           }
         } catch (Exception e) {
-          Log.TWL(0, e.ToString(), true);
+          Log.ECombat?.TWL(0, e.ToString(), true);
+          UIManager.logger.LogException(e);
         }
         if (this.NumPositionsLocked < deployPositions.Count) {
           worldPos = HUD.Combat.HexGrid.GetClosestPointOnGrid(worldPos);
@@ -1201,7 +1167,8 @@ namespace CustomUnits {
         }
         this.SelectionState_ProcessMousePos(SelectedActor.CurrentPosition);
       } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
+        Log.ECombat?.TWL(0, e.ToString(), true);
+        UIManager.logger.LogException(e);
       }
     }
     public override int ProjectedHeatForState { get { return 0; } }
@@ -1211,58 +1178,36 @@ namespace CustomUnits {
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { typeof(MessageCenterMessage) })]
   public static class MessageCenter_PublishMessage_SuppressFloaties {
-    public static bool Prefix(MessageCenter __instance, MessageCenterMessage message) {
-      if (DeployManualHelper.IsInManualSpawnSequence == false) { return true; }
-      if (message == null) { return true; }
+    public static void Prefix(ref bool __runOriginal, MessageCenter __instance, MessageCenterMessage message) {
+      if (!__runOriginal) { return; }
+      if (DeployManualHelper.IsInManualSpawnSequence == false) { return; }
+      if (message == null) { return; }
       if (message?.MessageType != MessageCenterMessageType.FloatieMessage) {
-        return true;
+        return;
       }
-      Log.TWL(0, "MessageCenter.PublishMessage " + message.MessageType + " suppress");
-      return false;
+      Log.ECombat?.TWL(0, "MessageCenter.PublishMessage " + message.MessageType + " suppress");
+      __runOriginal = false; return;
     }
   }
-  //[HarmonyPatch(typeof(TurnDirector))]
-  //[HarmonyPatch("BeginNewPhase")]
-  //[HarmonyPatch(MethodType.Normal)]
-  //[HarmonyPatch(new Type[] { typeof(int) })]
-  //public static class TurnDirector_BeginNewPhase {
-  //  public static void Postfix(TurnDirector __instance, int newPhase) {
-  //    try {
-  //      if (DeployManualHelper.IsInManualSpawnSequence) { return; }
-  //      if (DeployManualHelper.deployDirector == null) { return; }
-  //      if (DeployManualHelper.deployDirector.IsDead) { return; }
-  //      if (DeployManualHelper.deployDirector.IsFlaggedForDeath) { return; }
-  //      CombatHUD HUD = UIManager.Instance.UIRoot.gameObject.GetComponentInChildren<CombatHUD>(true);
-  //      DeployDirectorDespawner despawner = HUD.gameObject.GetComponent<DeployDirectorDespawner>();
-  //      if (despawner == null) {
-  //        despawner = HUD.gameObject.AddComponent<DeployDirectorDespawner>();
-  //        despawner.Init(HUD.Combat, HUD);
-  //      };
-  //      despawner.deployDirector = DeployManualHelper.deployDirector;
-  //    } catch (Exception e) {
-  //      Log.TWL(0, e.ToString(), true);
-  //    }
-  //  }
-  //}
   [HarmonyPatch(typeof(SelectionState))]
   [HarmonyPatch("GetNewSelectionStateByType")]
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { typeof(SelectionType), typeof(CombatGameState), typeof(CombatHUD), typeof(CombatHUDActionButton), typeof(AbstractActor) })]
   public static class SelectionState_GetNewSelectionStateByType {
     public static bool SelectionForbidden = false;
-    public static bool Prefix(SelectionType type, CombatGameState Combat, CombatHUD HUD, CombatHUDActionButton FromButton, AbstractActor actor, ref SelectionState __result) {
-      Log.TWL(0, "SelectionState.GetNewSelectionStateByType " + type + ":" + FromButton.GUID);
+    public static void Prefix(ref bool __runOriginal, SelectionType type, CombatGameState Combat, CombatHUD HUD, CombatHUDActionButton FromButton, AbstractActor actor, ref SelectionState __result) {
+      Log.Combat?.TWL(0, "SelectionState.GetNewSelectionStateByType " + type + ":" + FromButton.GUID);
       if ((type == SelectionType.CommandTargetSinglePoint) && (FromButton.GUID == DeployManualHelper.DeployAbilityDefID)) {
-        Log.WL(1, "creating own selection state");
+        Log.Combat?.WL(1, "creating own selection state");
         __result = new SelectionStateCommandDeploy(Combat, HUD, FromButton, actor);
-        return false;
+        __runOriginal = false; return;
       } else
       if ((type == SelectionType.CommandTargetSinglePoint) && (FromButton.GUID == SpawnHelper.SpawnAbilityDefID)) {
-        Log.WL(1, "creating own selection state");
+        Log.Combat?.WL(1, "creating own selection state");
         __result = new SelectionStateCommandSpawnUnit(Combat, HUD, FromButton, actor);
-        return false;
+        __runOriginal = false; return;
       }
-      return true;
+      return;
     }
   }
   [HarmonyPatch(typeof(AbstractActor))]
@@ -1272,7 +1217,7 @@ namespace CustomUnits {
   public static class AbstractActor_OnPlayerVisibilityChanged {
     public static void Prefix(AbstractActor __instance, ref VisibilityLevel newLevel) {
       if (DeployManualHelper.IsInManualSpawnSequence) {
-        Log.TWL(0, "AbstractActor.OnPlayerVisibilityChanged "+__instance.PilotableActorDef.ChassisID+" IsInManualSpawnSequence");
+        Log.Combat?.TWL(0, "AbstractActor.OnPlayerVisibilityChanged "+__instance.PilotableActorDef.ChassisID+" IsInManualSpawnSequence");
         newLevel = VisibilityLevel.None;
       }
     }
@@ -1302,59 +1247,14 @@ namespace CustomUnits {
   public static class Pathing_ResetPathGridIfTouching {
     public static bool SelectionForbidden = false;
     public static bool Prefix(Pathing __instance, List<Rect> Rectangles, Vector3 origin, float beginAngle, AbstractActor actor) {
-      PathingCapabilitiesDef PathingCaps = Traverse.Create(__instance).Property<PathingCapabilitiesDef>("PathingCaps").Value;
+      PathingCapabilitiesDef PathingCaps = __instance.PathingCaps;
       if ((PathingCaps == null) && (actor.PathingCaps != null)) {
-        Traverse.Create(__instance).Property<PathingCapabilitiesDef>("PathingCaps").Value = actor.PathingCaps;
+        __instance.PathingCaps = actor.PathingCaps;
       }
-      Log.TWL(0, "Pathing.ResetPathGridIfTouching " + actor.DisplayName + " caps:" + (actor.PathingCaps == null ? "null" : actor.PathingCaps.Description.Id) + " pathing:" + (PathingCaps == null ? "null" : PathingCaps.Description.Id));
+      Log.Combat?.TWL(0, "Pathing.ResetPathGridIfTouching " + actor.DisplayName + " caps:" + (actor.PathingCaps == null ? "null" : actor.PathingCaps.Description.Id) + " pathing:" + (PathingCaps == null ? "null" : PathingCaps.Description.Id));
       return true;
     }
   }
-  //[HarmonyPatch(typeof(LanceSpawnerGameLogic))]
-  //[HarmonyPatch("SpawnUnits")]
-  //[HarmonyPatch(MethodType.Normal)]
-  //[HarmonyPatch(new Type[] { typeof(bool) })]
-  //public static class LanceSpawnerGameLogic_SpawnUnits {
-  //  private class OnUnitSpawnComplete_delegate {
-  //    public LanceSpawnerGameLogic __instance { get; set; }
-  //    public void OnUnitSpawnComplete() {
-  //      Log.TWL(0, "LanceSpawnerGameLogic.OnUnitSpawnComplete " + __instance.Name);
-  //      Traverse.Create(__instance).Method("OnUnitSpawnComplete").GetValue();
-  //    }
-  //    public OnUnitSpawnComplete_delegate(LanceSpawnerGameLogic __instance) { this.__instance = __instance; }
-  //  }
-  //  public static bool Prefix(LanceSpawnerGameLogic __instance, bool offScreen) {
-  //    try {
-  //      Log.TWL(0, "LanceSpawnerGameLogic.SpawnUnits " + __instance.Name);
-  //      UnitSpawnPointGameLogic[] pointGameLogicList = __instance.unitSpawnPointGameLogicList;
-  //      for (int index = 0; index < pointGameLogicList.Length; ++index)
-  //        pointGameLogicList[index].MarkUnitSpawnInProgress();
-  //      for (int index = 0; index < pointGameLogicList.Length; ++index)
-  //        pointGameLogicList[index].SpawnUnit(offScreen, new Action(new OnUnitSpawnComplete_delegate(__instance).OnUnitSpawnComplete));
-  //    } catch (Exception e) {
-  //      Log.TWL(0, e.ToString(), true);
-  //    }
-  //    return false;
-  //  }
-  //}
-  //[HarmonyPatch(typeof(UnitSpawnPointGameLogic))]
-  //[HarmonyPatch("SpawnUnit")]
-  //[HarmonyPatch(MethodType.Normal)]
-  //[HarmonyPatch(new Type[] { typeof(bool), typeof(Action) })]
-  //public static class UnitSpawnPointGameLogic_SpawnUnit {
-  //  public static void Prefix(UnitSpawnPointGameLogic __instance, bool spawnOffScreen, Action onComplete) {
-  //    Log.TWL(0, "UnitSpawnPointGameLogic.SpawnUnit "+ __instance.UnitDefId+":"+__instance.unitType+ " UnitIsLoaded:" + Traverse.Create(__instance).Method("UnitIsLoaded").GetValue<bool>());
-  //  }
-  //}
-  //[HarmonyPatch(typeof(UnitSpawnPointGameLogic))]
-  //[HarmonyPatch("CompleteSpawnUnit")]
-  //[HarmonyPatch(MethodType.Normal)]
-  //[HarmonyPatch(new Type[] { })]
-  //public static class UnitSpawnPointGameLogic_CompleteSpawnUnit {
-  //  public static void Prefix(UnitSpawnPointGameLogic __instance) {
-  //    Log.TWL(0, "UnitSpawnPointGameLogic.CompleteSpawnUnit " + __instance.UnitDefId + ":" + __instance.unitType);
-  //  }
-  //}
   [HarmonyPatch(typeof(AbstractActor))]
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch("VisibilityToTargetUnit")]
@@ -1379,7 +1279,8 @@ namespace CustomUnits {
           return false;
         }
       } catch (Exception e) {
-        Log.TWL(0, e.ToString());
+        Log.ECombat?.TWL(0, e.ToString());
+        CombatGameState.gameInfoLogger.LogException(e);
       }
       return true;
     }
@@ -1392,13 +1293,14 @@ namespace CustomUnits {
     public static bool Prefix(VisibilityCache __instance, ref List<ICombatant> allLivingCombatants) {
       try {
         if (DeployManualHelper.IsInManualSpawnSequence) {
-          Traverse.Create(__instance).Field<Dictionary<string, VisibilityLevelAndAttribution>>("VisLevelCache").Value.Clear();
+          __instance.VisLevelCache.Clear();
           __instance.previouslyDetectedEnemyUnits.Clear();
           __instance.previouslyDetectedEnemyLocations.Clear();
           return false;
         }
       } catch (Exception e) {
-        Log.TWL(0, e.ToString());
+        Log.ECombat?.TWL(0, e.ToString());
+        CombatGameState.gameInfoLogger.LogException(e);
       }
       return true;
     }
@@ -1417,7 +1319,8 @@ namespace CustomUnits {
           return false;
         }
       } catch (Exception e) {
-        Log.TWL(0, e.ToString());
+        Log.ECombat?.TWL(0, e.ToString());
+        CombatGameState.gameInfoLogger.LogException(e);
       }
       return true;
     }
@@ -1434,7 +1337,8 @@ namespace CustomUnits {
           return false;
         }
       } catch (Exception e) {
-        Log.TWL(0, e.ToString());
+        Log.ECombat?.TWL(0, e.ToString());
+        CombatGameState.gameInfoLogger.LogException(e);
       }
       return true;
     }
@@ -1451,7 +1355,8 @@ namespace CustomUnits {
           return false;
         }
       } catch (Exception e) {
-        Log.TWL(0, e.ToString());
+        Log.ECombat?.TWL(0, e.ToString());
+        CombatGameState.gameInfoLogger.LogException(e);
       }
       return true;
     }
@@ -1468,7 +1373,8 @@ namespace CustomUnits {
           return false;
         }
       } catch (Exception e) {
-        Log.TWL(0, e.ToString());
+        Log.ECombat?.TWL(0, e.ToString());
+        CombatGameState.gameInfoLogger.LogException(e);
       }
       return true;
     }
@@ -1512,112 +1418,6 @@ namespace CustomUnits {
       return true;
     }
   }
-  //[HarmonyPatch(typeof(TurnDirector))]
-  //[HarmonyPatch(MethodType.Normal)]
-  //[HarmonyPatch("OnDropshipAnimationComplete")]
-  //[HarmonyPatch(new Type[] { typeof(MessageCenterMessage) })]
-  //public static class TurnDirector_OnDropshipAnimationComplete {
-  //  public static void Postfix(TurnDirector __instance, MessageCenterMessage message) {
-  //    Mech deployDirector = null;
-  //    Log.TWL(0, "TurnDirector.OnDropshipAnimationComplete");
-  //    foreach(AbstractActor unit in __instance.Combat.LocalPlayerTeam.units) {
-  //      if (unit.IsDead) { continue; }
-  //      if (unit.IsDeployDirector() == false) { continue; }
-  //      deployDirector = unit as Mech;
-  //      break;
-  //    }
-  //    if(deployDirector != null) {
-  //      Log.WL(1, "deployDirector:"+ deployDirector.PilotableActorDef.ChassisID);
-  //      if (__instance.Combat.LocalPlayerTeam.unitCount > 1) {
-  //        deployDirector.HasActivatedThisRound = false;
-  //        CombatHUD HUD = UIManager.Instance.UIRoot.gameObject.GetComponentInChildren<CombatHUD>(true);
-  //        if (HUD != null) {
-  //          Log.WL(1, "SelectedActor:" + (HUD.SelectedActor == null ? "null" : HUD.SelectedActor.PilotableActorDef.ChassisID));
-  //          do {
-  //            Traverse.Create(HUD.SelectionHandler).Method("BackOutOneStep", false).GetValue();
-  //          } while (HUD.SelectedActor != null);
-  //          Log.WL(1, "SelectedActor:" + (HUD.SelectedActor == null ? "null" : HUD.SelectedActor.PilotableActorDef.ChassisID));
-  //          DeployDirectorDespawner despawner = HUD.gameObject.GetComponent<DeployDirectorDespawner>();
-  //          if (despawner == null) {
-  //            despawner = HUD.gameObject.AddComponent<DeployDirectorDespawner>();
-  //            despawner.Init(deployDirector.Combat, HUD);
-  //          }
-  //          //deployDirector.HUD().SelectionHandler.DeselectActor(deployDirector);
-  //          HUD.MechWarriorTray.RefreshTeam(__instance.Combat.LocalPlayerTeam);
-  //          despawner.deployDirector = deployDirector;
-  //        }
-  //        __instance.Combat.StackManager.DEBUG_SequenceStack.Clear();
-  //        typeof(TurnDirector).GetMethod("QueuePilotChatter", BindingFlags.Instance | BindingFlags.NonPublic).Invoke(__instance, new object[] { });
-  //        List<AbstractActor> allActors = __instance.Combat.TurnDirector.Combat.AllActors;
-  //        List<ICombatant> livingCombatants = __instance.Combat.TurnDirector.Combat.GetAllLivingCombatants();
-  //        int num = 1;
-  //        AuraCache.UpdateAllAuras(allActors, num != 0);
-  //        for (int index = 0; index < __instance.Combat.TurnDirector.NumTurnActors; ++index) {
-  //          Team turnActor = __instance.Combat.TurnDirector.TurnActors[index] as Team;
-  //          if (turnActor != null)
-  //            turnActor.RebuildVisibilityCacheAllUnits(livingCombatants);
-  //        }
-  //        __instance.Combat.TurnDirector.Combat.AllActors[0].UpdateVisibilityCache(livingCombatants);
-  //        __instance.Combat.TurnDirector.StartFirstRound();
-  //        //__instance.Combat.MessageCenter.PublishMessage((MessageCenterMessage)new DialogComplete(DialogueGameLogic.missionStartDialogueGuid));
-  //        //EncounterLayerParent.EnqueueLoadAwareMessage((MessageCenterMessage)new DespawnActorMessage(PlayerLanceSpawnerGameLogic_OnEnterActive.deployLoadRequest.playerLanceSpawner.encounterObjectGuid, deployDirector.GUID, DeathMethod.DespawnedNoMessage));
-  //      }
-  //    }
-  //  }
-  //}
-  //[HarmonyPatch(typeof(AbstractActor))]
-  //[HarmonyPatch("DespawnActor")]
-  //[HarmonyPatch(MethodType.Normal)]
-  //[HarmonyPatch(new Type[] { typeof(MessageCenterMessage) })]
-  //public static class AbstractActor_DespawnActor {
-  //  public static void Postfix(AbstractActor __instance, MessageCenterMessage message, ref string ____teamId, ref Team ____team) {
-  //    try {
-  //      DespawnActorMessage despawnActorMessage = message as DespawnActorMessage;
-  //      if (despawnActorMessage == null) { return; }
-  //      if (!(despawnActorMessage.affectedObjectGuid == __instance.GUID)) { return; }
-  //      Log.TWL(0, "AbstractActor.DespawnActor " + __instance.DisplayName + ":" + despawnActorMessage.deathMethod);
-  //      if (__instance.TeamId != __instance.Combat.LocalPlayerTeamGuid) { return; };
-  //      if (__instance.IsDeployDirector() == false) { return; }
-  //      __instance.HUD().SelectionHandler.DeselectActor(__instance);
-  //      __instance.Combat.TurnDirector.StartFirstRound();
-  //    } catch (Exception e) {
-  //      Log.TWL(0, e.ToString(), true);
-  //    }
-  //  }
-  //}
-  //[HarmonyPatch(typeof(CombatSelectionHandler))]
-  //[HarmonyPatch("TrySelectActor")]
-  //[HarmonyPatch(MethodType.Normal)]
-  //[HarmonyPatch(new Type[] { typeof(AbstractActor), typeof(bool) })]
-  //public static class AbstractActor_TrySelectActor {
-  //  public static void Postfix(CombatSelectionHandler __instance, AbstractActor actor, bool manualSelection) {
-  //    if (actor == null) { return; }
-  //    //if(actor.Combat.LocalPlayerTeam.unitCount == 1) {
-  //    //  if (actor.Combat.LocalPlayerTeam.units[0].IsDeployDirector()) {
-  //    //    return;
-  //    //  }
-  //    //}
-  //    //try {
-  //    //  Mech deployDirector = null;
-  //    //  foreach (AbstractActor unit in actor.Combat.LocalPlayerTeam.units) {
-  //    //    if (unit.IsDead) { continue; }
-  //    //    if (unit.IsDeployDirector() == false) { continue; }
-  //    //    deployDirector = unit as Mech;
-  //    //    break;
-  //    //  }
-  //    //  if (deployDirector != null) {
-  //    //    Log.TWL(0, "CombatSelectionHandler.TrySelectActor phase:" + deployDirector.Combat.TurnDirector.CurrentPhase + " is avaible:" + deployDirector.IsAvailableThisPhase);
-  //    //    if (deployDirector.IsAvailableThisPhase) {
-  //    //      deployDirector.Combat.MessageCenter.PublishMessage((MessageCenterMessage)new AddSequenceToStackMessage(deployDirector.DoneWithActor()));
-  //    //    } else {
-  //    //      EncounterLayerParent.EnqueueLoadAwareMessage((MessageCenterMessage)new DespawnActorMessage(PlayerLanceSpawnerGameLogic_OnEnterActive.deployLoadRequest.playerLanceSpawner.encounterObjectGuid, deployDirector.GUID, DeathMethod.DespawnedNoMessage));
-  //    //    }
-  //    //  }
-  //    //} catch (Exception e) {
-  //      //Log.TWL(0, e.ToString(), true);
-  //    //}
-  //  }
-  //}
   [HarmonyPatch(typeof(Mech))]
   [HarmonyPatch("InitStats")]
   [HarmonyPatch(MethodType.Normal)]
@@ -1630,7 +1430,8 @@ namespace CustomUnits {
           __instance.StatCollection.Set<int>("BaseInitiative", 0);
         }
       } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
+        Log.ECombat?.TWL(0, e.ToString(), true);
+        AbstractActor.initLogger.LogException(e);
       }
     }
   }
@@ -1641,34 +1442,35 @@ namespace CustomUnits {
   public static class FogOfWarSystem_OnUnitSpawn {
     public static bool Prefix(FogOfWarSystem __instance, MessageCenterMessage message, List<AbstractActor> ___viewers) {
       try {
-        Log.TWL(0, "FogOfWarSystem.OnUnitSpawn");
-        Log.WL(1, "viewers:");
+        Log.Combat?.TWL(0, "FogOfWarSystem.OnUnitSpawn");
+        Log.Combat?.WL(1, "viewers:");
         foreach (AbstractActor viewer in ___viewers) {
-          Log.WL(2, viewer.DisplayName + ":" + viewer.GUID);
+          Log.ECombat?.WL(2, viewer.DisplayName + ":" + viewer.GUID);
         }
         ITaggedItem itemByGuid = __instance.Combat.ItemRegistry.GetItemByGUID((message as UnitSpawnedMessage).affectedObjectGuid);
         if (itemByGuid == null) { return true; }
         AbstractActor unit = itemByGuid as AbstractActor;
         if (unit == null) { return true; };
-        Log.WL(1, "unit:" + unit.DisplayName + " " + unit.GUID + " IsDeployDirector:" + unit.IsDeployDirector());
+        Log.Combat?.WL(1, "unit:" + unit.DisplayName + " " + unit.GUID + " IsDeployDirector:" + unit.IsDeployDirector());
         if (unit.IsDeployDirector()) {
           return false;
         }
         return true;
       } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
+        Log.ECombat?.TWL(0, e.ToString(), true);
+        AbstractActor.initLogger.LogException(e);
         return true;
       }
     }
     public static void Postfix(FogOfWarSystem __instance, MessageCenterMessage message, List<AbstractActor> ___viewers, List<FogOfWarRevealatron> ___revealatrons) {
-      Log.TWL(0, "FogOfWarSystem.OnUnitSpawn");
-      Log.WL(1, "viewers:");
+      Log.ECombat?.TWL(0, "FogOfWarSystem.OnUnitSpawn");
+      Log.ECombat?.WL(1, "viewers:");
       foreach (AbstractActor viewer in ___viewers) {
-        Log.WL(2, viewer.DisplayName + ":" + viewer.GUID);
+        Log.ECombat?.WL(2, viewer.DisplayName + ":" + viewer.GUID);
       }
-      Log.WL(1, "revealatrons:");
+      Log.ECombat?.WL(1, "revealatrons:");
       foreach (FogOfWarRevealatron revealatron in ___revealatrons) {
-        Log.WL(2, revealatron.name + ":" + revealatron.GUID);
+        Log.ECombat?.WL(2, revealatron.name + ":" + revealatron.GUID);
       }
     }
   }
@@ -1679,10 +1481,10 @@ namespace CustomUnits {
   public static class FogOfWarSystem_AddViewer {
     public static bool Prefix(FogOfWarSystem __instance, AbstractActor unit, List<AbstractActor> ___viewers) {
       try {
-        Log.TWL(0, "FogOfWarSystem.AddViewer " + unit.DisplayName + ":" + unit.GUID + " IsDeployDirector:" + unit.IsDeployDirector());
-        Log.WL(1, "viewers:");
+        Log.Combat?.TWL(0, "FogOfWarSystem.AddViewer " + unit.DisplayName + ":" + unit.GUID + " IsDeployDirector:" + unit.IsDeployDirector());
+        Log.Combat?.WL(1, "viewers:");
         foreach (AbstractActor viewer in ___viewers) {
-          Log.WL(2, viewer.DisplayName + ":" + viewer.GUID);
+          Log.Combat?.WL(2, viewer.DisplayName + ":" + viewer.GUID);
         }
         if (unit.IsDeployDirector()) {
           //__instance.WipeToValue(FogOfWarState.Revealed);
@@ -1690,19 +1492,19 @@ namespace CustomUnits {
         }
         return true;
       } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
+        Log.ECombat?.TWL(0, e.ToString(), true);
         return true;
       }
     }
     public static void Postfix(FogOfWarSystem __instance, List<AbstractActor> ___viewers, List<FogOfWarRevealatron> ___revealatrons) {
-      Log.TWL(0, "FogOfWarSystem.AddViewer");
-      Log.WL(1, "viewers:");
+      Log.Combat?.TWL(0, "FogOfWarSystem.AddViewer");
+      Log.Combat?.WL(1, "viewers:");
       foreach (AbstractActor viewer in ___viewers) {
-        Log.WL(2, viewer.DisplayName + ":" + viewer.GUID);
+        Log.Combat?.WL(2, viewer.DisplayName + ":" + viewer.GUID);
       }
-      Log.WL(1, "revealatrons:");
+      Log.Combat?.WL(1, "revealatrons:");
       foreach (FogOfWarRevealatron revealatron in ___revealatrons) {
-        Log.WL(2, revealatron.name + ":" + revealatron.GUID);
+        Log.Combat?.WL(2, revealatron.name + ":" + revealatron.GUID);
       }
     }
   }
@@ -1733,26 +1535,6 @@ namespace CustomUnits {
       return true;
     }
   }
-  //[HarmonyPatch(typeof(EncounterChunkGameLogic))]
-  //[HarmonyPatch(MethodType.Normal)]
-  //[HarmonyPatch("EncounterStart")]
-  //[HarmonyPatch(new Type[] {  })]
-  //public static class EncounterChunkGameLogic_EncounterStart {
-  //  public static void Postfix(EncounterChunkGameLogic __instance) {
-  //    try {
-  //      if(__instance is AmbushChunkGameLogic ambush) {
-  //        Log.TWL(0, "AmbushChunkGameLogic.EncounterStart");
-  //        if (ambush.ambushTriggerRegion.encounterObject != null) {
-  //          Log.WL(1, "Trigger region is not null");
-
-  //        }
-  //      }
-  //    }catch(Exception e) {
-  //      Log.TWL(0, e.ToString(),true);
-  //    }
-  //  }
-  //}
-
   public class SetDeploySwitchButton : MonoBehaviour, IEventSystemHandler, IPointerEnterHandler, IPointerExitHandler {
     public HBSDOTweenButton button { get; set; } = null;
     //public SetDeployAutoButton autoBtn { get; set; } = null;
@@ -1866,12 +1648,9 @@ namespace CustomUnits {
       if (disabled) { return; }
       if ((Core.Settings.AskForDeployManual)&&(contract.canManualSpawn())) {
         DeployManualHelper.LastSelectedDeployWasManual = false;
-        //manualBtn.UpdateColor();
       }
-      //btnColor.color = state ? UIManager.Instance.UIColorRefs.orange : UIManager.Instance.UIColorRefs.white;
     }
   }
-
   [HarmonyPatch(typeof(GameInstance))]
   [HarmonyPatch("LaunchContract")]
   [HarmonyPatch(MethodType.Normal)]
@@ -1893,15 +1672,12 @@ namespace CustomUnits {
     }
     public static void ClearManualSpawn(this Contract contract) { SpawnDelayed = false; }
     public static bool Prefix(GameInstance __instance, Contract contract, string playerGUID) {
-      Log.TWL(0, "GameInstance.LaunchContract");
-      //Log.WL(0,Environment.StackTrace);
-      //return true;
+      Log.Combat?.TWL(0, "GameInstance.LaunchContract");
       if (originalInvoke) { return true; }
       SpawnDelayed = false;
       DeployManualHelper.IsInManualSpawnSequence = false;
       if (contract.canManualSpawn() == false) { return true; }
       if (DeployManualHelper.CheckForDeps(__instance, contract, playerGUID) == false) { return false; }
-
       if (Core.Settings.AskForDeployManual) {
         if (DeployManualHelper.LastSelectedDeployWasManual) {
           SpawnDelayed = true;
@@ -1916,36 +1692,6 @@ namespace CustomUnits {
           __instance.LaunchContract(contract, playerGUID);
           originalInvoke = false;
         }
-        //bool isInvoked = false;
-        //GenericPopup popup = GenericPopupBuilder.Create("DEPLOY POSITION", "WOULD YOU LIKE TO SET DEPLOY POSITION MANUALY?")
-        //  .AddButton("NO", (Action)(() => {
-        //    if (isInvoked) { return; }; isInvoked = true;
-        //    SpawnDelayed = false;
-        //    DeployManualHelper.IsInManualSpawnSequence = false;
-        //    originalInvoke = true;
-        //    if (SceneSingletonBehavior<WwiseManager>.HasInstance) {
-        //      uint num2 = SceneSingletonBehavior<WwiseManager>.Instance.PostEventById(390458608, WwiseManager.GlobalAudioObject, (AkCallbackManager.EventCallback)null, (object)null);
-        //      Log.TWL(0, "Playing sound by id:" + num2);
-        //    } else {
-        //      Log.TWL(0, "Can't play");
-        //    }
-        //    __instance.LaunchContract(contract, playerGUID);
-        //    originalInvoke = false;
-        //  }), true, BTInput.Instance.Key_Escape())
-        //  .AddButton("YES", (Action)(() => {
-        //    if (isInvoked) { return; }; isInvoked = true;
-        //    SpawnDelayed = true;
-        //    DeployManualHelper.IsInManualSpawnSequence = true;
-        //    originalInvoke = true;
-        //    if (SceneSingletonBehavior<WwiseManager>.HasInstance) {
-        //      uint num2 = SceneSingletonBehavior<WwiseManager>.Instance.PostEventById(390458608, WwiseManager.GlobalAudioObject, (AkCallbackManager.EventCallback)null, (object)null);
-        //      Log.TWL(0, "Playing sound by id:" + num2);
-        //    } else {
-        //      Log.TWL(0, "Can't play");
-        //    }
-        //    __instance.LaunchContract(contract, playerGUID);
-        //    originalInvoke = false;
-        //  }), true, BTInput.Instance.Key_Return()).IsNestedPopupWithBuiltInFader().SetAlwaysOnTop().Render();
       } else {
         SpawnDelayed = true;
         DeployManualHelper.IsInManualSpawnSequence = true;
@@ -1954,119 +1700,11 @@ namespace CustomUnits {
       return false;
     }
   }
-  //[HarmonyPatch(typeof(LanceSpawnerGameLogic))]
-  //[HarmonyPatch("OnEnterActive")]
-  //[HarmonyPatch(MethodType.Normal)]
-  //[HarmonyPatch(new Type[] { })]
   public static class LanceSpawnerGameLogic_OnEnterActive {
-    //public static HashSet<LanceSpawnerGameLogic> delayedSpawners = new HashSet<LanceSpawnerGameLogic>();
-    //public static List<Vector3> delayedEnemySpawnPositions(this Contract contract) {
-    //  List<Vector3> result = new List<Vector3>();
-    //  foreach (LanceSpawnerGameLogic spawner in delayedSpawners) {
-    //    try {
-    //      if (spawner == null) { continue; }
-    //      Team team = spawner.Combat.TurnDirector.GetTurnActorByUniqueId(spawner.teamDefinitionGuid) as Team;
-    //      if (team == null) { continue; }
-    //      if (team.IsEnemy(spawner.Combat.LocalPlayerTeam) == false) { continue; }
-    //      foreach (UnitSpawnPointGameLogic spawnPoint in spawner.unitSpawnPointGameLogicList) {
-    //        if (spawnPoint.unitType == UnitType.UNDEFINED) { continue; }
-    //        result.Add(spawnPoint.Position);
-    //      }
-    //    } catch (Exception e) {
-    //      Log.TWL(0, e.ToString(), true);
-    //    }
-    //  }
-    //  return result;
-    //}
-    //public static void SetSpawnerReady(this LanceSpawnerGameLogic spawner) {
-    //  if (delayedSpawners.Contains(spawner)) {
-    //    delayedSpawners.Remove(spawner);
-    //    Log.TWL(0, "Delayed spawner ready: " + spawner.DisplayName + " objectives ready state:" + spawner.Combat.ActiveContract.isObjectivesReady());
-    //  }
-    //}
-    //public static void ActivateDelayed(this Contract contract) {
-    //  HashSet<LanceSpawnerGameLogic> spawners = new HashSet<LanceSpawnerGameLogic>();
-    //  foreach (LanceSpawnerGameLogic sp in delayedSpawners) { spawners.Add(sp); }
-    //  foreach (LanceSpawnerGameLogic sp in spawners) { sp.OnEnterActive(); }
-    //}
     public static bool isObjectivesReady(this Contract contract) {
       return DeployManualHelper.IsInManualSpawnSequence == false;
     }
-    //public static bool Prefix(LanceSpawnerGameLogic __instance) {
-    //  Log.TW(0, "LanceSpawnerGameLogic.OnEnterActive " + __instance.Name + " HasUnitToSpawn:" + __instance.HasUnitToSpawn());
-    //  foreach (UnitSpawnPointGameLogic unit in __instance.unitSpawnPointGameLogicList) { Log.W(1, unit.UnitDefId); }
-    //  if (__instance.Combat.ActiveContract == null) { Log.WL(1, "ActiveContract is null"); return true; }
-    //  if (__instance.Combat.ActiveContract.isManualSpawn() == false) { Log.WL(1, "not manual spawn"); return true; }
-    //  if (__instance.unitSpawnPointGameLogicList.Length == 0) { Log.WL(1, "empty lance"); return true; }
-    //  if (__instance.unitSpawnPointGameLogicList[0].mechDefId == CACConstants.DeployMechDefID) { Log.WL(1, "deploy director"); return true; }
-    //  Log.WL(1, "delayed");
-    //  delayedSpawners.Add(__instance);
-    //  return false;
-    //}
   }
-  //[HarmonyPatch(typeof(LanceSpawnerGameLogic))]
-  //[HarmonyPatch("OnUnitSpawnComplete")]
-  //[HarmonyPatch(MethodType.Normal)]
-  //[HarmonyPatch(new Type[] { })]
-  //public static class LanceSpawnerGameLogic_OnUnitSpawnCompleteManual {
-  //  public static void Postfix(LanceSpawnerGameLogic __instance) {
-  //    if(__instance.Combat.ActiveContract.isManualSpawn() == false) {
-  //      __instance.SetSpawnerReady();
-  //    }
-  //  }
-  //}
-  //[HarmonyPatch(typeof(ContractObjectiveGameLogic))]
-  //[HarmonyPatch("Update")]
-  //[HarmonyPatch(MethodType.Normal)]
-  //[HarmonyPatch(new Type[] { })]
-  //public static class ContractObjectiveGameLogic_Update {
-  //  private static Dictionary<ContractObjectiveGameLogic, float> logInterval = new Dictionary<ContractObjectiveGameLogic, float>();
-  //  public static void Clear() {
-  //    ContractObjectiveGameLogic_Update.logInterval.Clear();
-  //  }
-  //  public static bool Prefix(ContractObjectiveGameLogic __instance) {
-  //    if (__instance.Combat == null) { return true; }
-  //    if (__instance.Combat.ActiveContract == null) { return true; }
-  //    bool isObjectivesReady = __instance.Combat.ActiveContract.isObjectivesReady();
-  //    if(logInterval.TryGetValue(__instance, out float t) == false) {
-  //      t = 0f;
-  //      logInterval.Add(__instance, t);
-  //    }
-  //    t += Time.deltaTime;
-  //    if (t >= 1f) {
-  //      t = 0f;
-  //      Log.TWL(0, "ContractObjectiveGameLogic.Update "+__instance.title+" ready:"+ isObjectivesReady + " isManualSpawn:"+ __instance.Combat.ActiveContract.isManualSpawn()+" deplayedSpawns:"+ LanceSpawnerGameLogic_OnEnterActive.delayedSpawners.Count);
-  //    }
-  //    logInterval[__instance] = t;
-  //    return isObjectivesReady;
-  //  }
-  //}
-  //[HarmonyPatch(typeof(ObjectiveGameLogic))]
-  //[HarmonyPatch("Update")]
-  //[HarmonyPatch(MethodType.Normal)]
-  //[HarmonyPatch(new Type[] { })]
-  //public static class ObjectiveGameLogic_Update {
-  //  private static Dictionary<ObjectiveGameLogic, float> logInterval = new Dictionary<ObjectiveGameLogic, float>();
-  //  public static void Clear() {
-  //    ObjectiveGameLogic_Update.logInterval.Clear();
-  //  }
-  //  public static bool Prefix(ObjectiveGameLogic __instance) {
-  //    if (__instance.Combat == null) { return true; }
-  //    if (__instance.Combat.ActiveContract == null) { return true; }
-  //    bool isObjectivesReady = __instance.Combat.ActiveContract.isObjectivesReady();
-  //    if (logInterval.TryGetValue(__instance, out float t) == false) {
-  //      t = 0f;
-  //      logInterval.Add(__instance, t);
-  //    }
-  //    t += Time.deltaTime;
-  //    if (t >= 1f) {
-  //      t = 0f;
-  //      Log.TWL(0, "ObjectiveGameLogic.Update " + __instance.title + " ready:" + isObjectivesReady);
-  //    }
-  //    logInterval[__instance] = t;
-  //    return isObjectivesReady;
-  //  }
-  //}
   [HarmonyPatch(typeof(ObjectiveGameLogic))]
   [HarmonyPatch("GetTaggedCombatants")]
   [HarmonyPatch(MethodType.Normal)]
@@ -2098,7 +1736,7 @@ namespace CustomUnits {
       try {
         if (__instance.IsDeployDirector()) { aLoc = ArmorLocation.None; }
       } catch (Exception e) {
-        Log.TWL(0, e.ToString());
+        Log.ECombat?.TWL(0, e.ToString());
       }
     }
   }
@@ -2110,19 +1748,19 @@ namespace CustomUnits {
     public static bool Prefix(AITeam __instance, AbstractActor ___currentUnit, ref InvocationMessage __result) {
       try {
         if (DeployManualHelper.IsInManualSpawnSequence == false) { return true; }
-        Log.TWL(0, "AITeam.getInvocationForCurrentUnit deploy director still alive bracing");
+        Log.Combat?.TWL(0, "AITeam.getInvocationForCurrentUnit deploy director still alive bracing");
         __result = (InvocationMessage)new ReserveActorInvocation(___currentUnit, ReserveActorAction.DONE, __instance.Combat.TurnDirector.CurrentRound);
         return false;
       } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
+        Log.Combat?.TWL(0, e.ToString(), true);
         return true;
       }
     }
     public static void Postfix(AITeam __instance, AbstractActor ___currentUnit, ref InvocationMessage __result) {
       try {
-        Log.TWL(0, "AITeam.getInvocationForCurrentUnit "+(__result==null?"null": __result.GetType().Name));
+        Log.Combat?.TWL(0, "AITeam.getInvocationForCurrentUnit "+(__result==null?"null": __result.GetType().Name));
       } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
+        Log.ECombat?.TWL(0, e.ToString(), true);
       }
     }
   }
@@ -2137,7 +1775,7 @@ namespace CustomUnits {
         CustomDeploy.Core.HideAll(__instance);
         return false;
       } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
+        Log.Combat?.TWL(0, e.ToString(), true);
         return true;
       }
     }
@@ -2164,13 +1802,13 @@ namespace CustomUnits {
       foreach (var origUnitType in originalUnitTypes) {
         origUnitType.Key.unitType = origUnitType.Value;
       }
-      Traverse.Create(spawnPoint).Field<PilotDef>("pilotDefOverride").Value = originalPilotDef;
+      spawnPoint.pilotDefOverride = originalPilotDef;
       spawnPoint.pilotDefId = originalPilotDef.Description.Id;
       if (spawnPoint.unitType == UnitType.Mech) {
-        Traverse.Create(spawnPoint).Field<MechDef>("mechDefOverride").Value = originalMechDef;
+        spawnPoint.mechDefOverride = originalMechDef;
         spawnPoint.mechDefId = originalMechDef.Description.Id;
       } else {
-        Traverse.Create(spawnPoint).Field<MechDef>("mechDefOverride").Value = null;
+        spawnPoint.mechDefOverride = null;
         spawnPoint.mechDefId = string.Empty;
       }
       spawnPoint.LocalPosition = originalLocalPos;
@@ -2178,7 +1816,7 @@ namespace CustomUnits {
       float centerX = 0f;
       float centerZ = 0f;
       HashSet<Vector3> deployPositions = new HashSet<Vector3>();
-      Log.TWL(0, "DeployDirectorLoadRequest.RestoreAndSpawn start pos generation", true);
+      Log.Combat?.TWL(0, "DeployDirectorLoadRequest.RestoreAndSpawn start pos generation", true);
       for (int index = 0; index < positions.Count; ++index) {
         centerX += positions[index].position.Value.x;
         centerZ += positions[index].position.Value.z;
@@ -2186,35 +1824,6 @@ namespace CustomUnits {
       Vector3 pos = new Vector3(centerX / positions.Count, 0f, centerZ / positions.Count);
       pos.y = HUD.Combat.MapMetaData.GetLerpedHeightAt(pos);
       playerLanceSpawner.Position = pos;
-      //for (int index = 0; index < positions.Count; ++index) {
-      //  if (index > playerLanceSpawner.unitSpawnPointGameLogicList.Length) { break; }
-      //  centerX += positions[index].x;
-      //  centerZ += positions[index].z;
-      //  playerLanceSpawner.unitSpawnPointGameLogicList[index].Position = positions[index];
-      //}
-      //for (int index = 0; index < positions.Count; ++index) {
-      //  positions[index].spawnPoint.Position = positions[index].position.Value;
-      //}
-      /*foreach(UnitSpawnPointGameLogic sp in playerLanceSpawner.unitSpawnPointGameLogicList) {
-        Vector3 rndPos = pos;
-        float nearest = 9999f;
-        do {
-          rndPos = pos;
-          float radius = UnityEngine.Random.Range(0.5f * Core.Settings.DeploySpawnRadius, Core.Settings.DeploySpawnRadius);
-          float direction = Mathf.Deg2Rad * UnityEngine.Random.Range(0f, 360f);
-          //radius *= UnityEngine.Random.Range(targetRep.parentCombatant.Combat.Constants.ResolutionConstants.MissOffsetHorizontalMin, targetRep.parentCombatant.Combat.Constants.ResolutionConstants.MissOffsetHorizontalMax);
-          //Vector2 vector2 = UnityEngine.Random.insideUnitCircle.normalized * radius;
-          rndPos.x += Mathf.Sin(direction) * radius;
-          rndPos.z += Mathf.Cos(direction) * radius;
-          rndPos.y = HUD.Combat.MapMetaData.GetLerpedHeightAt(rndPos);
-          rndPos = HUD.Combat.HexGrid.GetClosestPointOnGrid(rndPos);
-          nearest = 9999f;
-          foreach (Vector3 depPos in deployPositions) { float dist = Vector3.Distance(depPos, rndPos); if (nearest > dist) { nearest = dist; }; };
-          Log.WL(1, rndPos.ToString() + " distance:" + Vector3.Distance(rndPos, pos) + " nearest:"+nearest+" rejected:"+(nearest < Core.Settings.DeploySpawnRadius / 4f), true);
-        } while (nearest < Core.Settings.DeploySpawnRadius/4f);
-        deployPositions.Add(rndPos);
-        sp.Position = rndPos;
-      }*/
       playerLanceSpawner.spawnUnitsOnActivation = true;
       playerLanceSpawner.spawnMethod = originalSpawnMethod;
       this.playerLanceSpawner.Combat.ActiveContract.ClearManualSpawn();
@@ -2222,18 +1831,18 @@ namespace CustomUnits {
       //this.playerLanceSpawner.Combat.ActiveContract.ActivateDelayed();
     }
     public void MechDependenciesLoaded() {
-      Log.TWL(0, "DeployDirectorLoadRequest.MechDependenciesLoaded");
+      Log.Combat?.TWL(0, "DeployDirectorLoadRequest.MechDependenciesLoaded");
       playerLanceSpawner.LanceSpawnerGameLogic_OnEnterActive();
     }
     public void PilotDependenciesLoaded() {
-      Log.TWL(0, "DeployDirectorLoadRequest.PilotDependenciesLoaded");
+      Log.Combat?.TWL(0, "DeployDirectorLoadRequest.PilotDependenciesLoaded");
       MechDef mechDef = playerLanceSpawner.Combat.DataManager.GetObjectOfType<MechDef>(CACConstants.DeployMechDefID, BattleTechResourceType.MechDef);
       if (mechDef != null) {
-        Log.WL(0, "mechDef present");
+        Log.Combat?.WL(0, "mechDef present");
         spawnPoint.mechDefId = mechDef.Description.Id;
         Traverse.Create(spawnPoint).Field<MechDef>("mechDefOverride").Value = mechDef;
         if (mechDef.DependenciesLoaded(1000u) == false) {
-          Log.WL(0, "mechDef do not have all dependencies");
+          Log.Combat?.WL(0, "mechDef do not have all dependencies");
           DataManager.InjectedDependencyLoadRequest dependencyLoad = new DataManager.InjectedDependencyLoadRequest(playerLanceSpawner.Combat.DataManager);
           mechDef.GatherDependencies(playerLanceSpawner.Combat.DataManager, (DataManager.DependencyLoadRequest)dependencyLoad, 1000U);
           dependencyLoad.RegisterLoadCompleteCallback(new Action(this.MechDependenciesLoaded));
@@ -2241,7 +1850,7 @@ namespace CustomUnits {
           return;
         }
       } else {
-        Log.WL(0, "mechDef not present");
+        Log.Combat?.WL(0, "mechDef not present");
         LoadRequest request = playerLanceSpawner.Combat.DataManager.CreateLoadRequest(null, false);
         request.AddLoadRequest<MechDef>(BattleTechResourceType.MechDef, CACConstants.DeployMechDefID, this.DirectorMechDefLoaded);
         request.ProcessRequests(1000u);
@@ -2250,11 +1859,11 @@ namespace CustomUnits {
       playerLanceSpawner.LanceSpawnerGameLogic_OnEnterActive();
     }
     public void DirectorPilotDefLoaded(string id, PilotDef pilotDef) {
-      Log.TWL(0, "DeployDirectorLoadRequest.DirectorPilotDefLoaded " + id);
+      Log.Combat?.TWL(0, "DeployDirectorLoadRequest.DirectorPilotDefLoaded " + id);
       spawnPoint.pilotDefId = pilotDef.Description.Id;
       Traverse.Create(spawnPoint).Field<PilotDef>("pilotDefOverride").Value = pilotDef;
       if (pilotDef.DependenciesLoaded(1000u) == false) {
-        Log.WL(0, "not all dependencies loaded. Injecting loading");
+        Log.Combat?.WL(0, "not all dependencies loaded. Injecting loading");
         DataManager.InjectedDependencyLoadRequest dependencyLoad = new DataManager.InjectedDependencyLoadRequest(playerLanceSpawner.Combat.DataManager);
         pilotDef.GatherDependencies(playerLanceSpawner.Combat.DataManager, (DataManager.DependencyLoadRequest)dependencyLoad, 1000U);
         dependencyLoad.RegisterLoadCompleteCallback(new Action(this.PilotDependenciesLoaded));
@@ -2263,11 +1872,11 @@ namespace CustomUnits {
       }
       MechDef mechDef = playerLanceSpawner.Combat.DataManager.GetObjectOfType<MechDef>(CACConstants.DeployMechDefID, BattleTechResourceType.MechDef);
       if (mechDef != null) {
-        Log.WL(0, "mechDef present");
+        Log.Combat?.WL(0, "mechDef present");
         spawnPoint.mechDefId = mechDef.Description.Id;
         Traverse.Create(spawnPoint).Field<MechDef>("mechDefOverride").Value = mechDef;
         if (mechDef.DependenciesLoaded(1000u) == false) {
-          Log.WL(0, "mechDef do not have all dependencies");
+          Log.Combat?.WL(0, "mechDef do not have all dependencies");
           DataManager.InjectedDependencyLoadRequest dependencyLoad = new DataManager.InjectedDependencyLoadRequest(playerLanceSpawner.Combat.DataManager);
           mechDef.GatherDependencies(playerLanceSpawner.Combat.DataManager, (DataManager.DependencyLoadRequest)dependencyLoad, 1000U);
           dependencyLoad.RegisterLoadCompleteCallback(new Action(this.MechDependenciesLoaded));
@@ -2275,7 +1884,7 @@ namespace CustomUnits {
           return;
         }
       } else {
-        Log.WL(0, "mechDef not present");
+        Log.Combat?.WL(0, "mechDef not present");
         LoadRequest request = playerLanceSpawner.Combat.DataManager.CreateLoadRequest(null, false);
         request.AddLoadRequest<MechDef>(BattleTechResourceType.MechDef, CACConstants.DeployMechDefID, this.DirectorMechDefLoaded);
         request.ProcessRequests(1000u);
@@ -2284,21 +1893,21 @@ namespace CustomUnits {
       playerLanceSpawner.LanceSpawnerGameLogic_OnEnterActive();
     }
     public void DirectorMechDefLoaded(string id, MechDef def) {
-      Log.TWL(0, "DeployDirectorLoadRequest.DirectorMechDefLoaded " + id);
+      Log.Combat?.TWL(0, "DeployDirectorLoadRequest.DirectorMechDefLoaded " + id);
       Traverse.Create(spawnPoint).Field<MechDef>("mechDefOverride").Value = def;
       if (def.DependenciesLoaded(1000u) == false) {
-        Log.WL(0, "not all dependencies loaded. Injecting loading");
+        Log.Combat?.WL(0, "not all dependencies loaded. Injecting loading");
         DataManager.InjectedDependencyLoadRequest dependencyLoad = new DataManager.InjectedDependencyLoadRequest(playerLanceSpawner.Combat.DataManager);
         def.GatherDependencies(playerLanceSpawner.Combat.DataManager, (DataManager.DependencyLoadRequest)dependencyLoad, 1000U);
         dependencyLoad.RegisterLoadCompleteCallback(new Action(this.MechDependenciesLoaded));
         playerLanceSpawner.Combat.DataManager.InjectDependencyLoader(dependencyLoad, 1000U);
       } else {
-        Log.WL(0, "dependencies loaded. Processing.");
+        Log.Combat?.WL(0, "dependencies loaded. Processing.");
         playerLanceSpawner.LanceSpawnerGameLogic_OnEnterActive();
       }
     }
     public DeployDirectorLoadRequest(PlayerLanceSpawnerGameLogic playerLanceSpawner) {
-      Log.TWL(0, "DeployDirectorLoadRequest.DeployDirectorLoadRequest");
+      Log.Combat?.TWL(0, "DeployDirectorLoadRequest.DeployDirectorLoadRequest");
       isSpawned = false;
       FogOfWarSystem_WipeToValue.RevealFoW();
       UnitSpawnPointGameLogic[] pointGameLogicList = playerLanceSpawner.unitSpawnPointGameLogicList;
@@ -2312,17 +1921,17 @@ namespace CustomUnits {
         originalUnitTypes.Add(pointGameLogicList[index], pointGameLogicList[index].unitType);
         pointGameLogicList[index].unitType = UnitType.UNDEFINED;
       }
-      this.originalMechDef = Traverse.Create(spawnPoint).Field<MechDef>("mechDefOverride").Value;
-      this.originalPilotDef = Traverse.Create(spawnPoint).Field<PilotDef>("pilotDefOverride").Value;
+      this.originalMechDef = spawnPoint.mechDefOverride;
+      this.originalPilotDef = spawnPoint.pilotDefOverride;
       playerLanceSpawner.spawnMethod = SpawnUnitMethodType.InstantlyAtSpawnPoint;
       spawnPoint.unitType = UnitType.Mech;
       PilotDef pilotDef = playerLanceSpawner.Combat.DataManager.GetObjectOfType<PilotDef>(DeployManualHelper.DeployPilotDefID, BattleTechResourceType.PilotDef);
       if (pilotDef != null) {
-        Log.WL(0, "pilotDef present");
+        Log.Combat?.WL(0, "pilotDef present");
         spawnPoint.pilotDefId = pilotDef.Description.Id;
-        Traverse.Create(spawnPoint).Field<PilotDef>("pilotDefOverride").Value = pilotDef;
+        spawnPoint.pilotDefOverride = pilotDef;
         if (pilotDef.DependenciesLoaded(1000u) == false) {
-          Log.WL(0, "not all dependencies loaded. Injecting loading");
+          Log.Combat?.WL(0, "not all dependencies loaded. Injecting loading");
           DataManager.InjectedDependencyLoadRequest dependencyLoad = new DataManager.InjectedDependencyLoadRequest(playerLanceSpawner.Combat.DataManager);
           pilotDef.GatherDependencies(playerLanceSpawner.Combat.DataManager, (DataManager.DependencyLoadRequest)dependencyLoad, 1000U);
           dependencyLoad.RegisterLoadCompleteCallback(new Action(this.PilotDependenciesLoaded));
@@ -2330,7 +1939,7 @@ namespace CustomUnits {
           return;
         }
       } else {
-        Log.WL(0, "pilotDef not present");
+        Log.Combat?.WL(0, "pilotDef not present");
         LoadRequest request = playerLanceSpawner.Combat.DataManager.CreateLoadRequest(null, false);
         request.AddLoadRequest<PilotDef>(BattleTechResourceType.PilotDef, DeployManualHelper.DeployPilotDefID, this.DirectorPilotDefLoaded);
         request.ProcessRequests(1000u);
@@ -2338,11 +1947,11 @@ namespace CustomUnits {
       }
       MechDef mechDef = playerLanceSpawner.Combat.DataManager.GetObjectOfType<MechDef>(CACConstants.DeployMechDefID, BattleTechResourceType.MechDef);
       if (mechDef != null) {
-        Log.WL(0, "mechDef present");
+        Log.Combat?.WL(0, "mechDef present");
         spawnPoint.mechDefId = mechDef.Description.Id;
-        Traverse.Create(spawnPoint).Field<MechDef>("mechDefOverride").Value = mechDef;
+        spawnPoint.mechDefOverride = mechDef;
         if (mechDef.DependenciesLoaded(1000u) == false) {
-          Log.WL(0, "not all dependencies loaded. Injecting loading");
+          Log.Combat?.WL(0, "not all dependencies loaded. Injecting loading");
           DataManager.InjectedDependencyLoadRequest dependencyLoad = new DataManager.InjectedDependencyLoadRequest(playerLanceSpawner.Combat.DataManager);
           mechDef.GatherDependencies(playerLanceSpawner.Combat.DataManager, (DataManager.DependencyLoadRequest)dependencyLoad, 1000U);
           dependencyLoad.RegisterLoadCompleteCallback(new Action(this.MechDependenciesLoaded));
@@ -2350,13 +1959,13 @@ namespace CustomUnits {
           return;
         }
       } else {
-        Log.WL(0, "mechDef not present");
+        Log.Combat?.WL(0, "mechDef not present");
         LoadRequest request = playerLanceSpawner.Combat.DataManager.CreateLoadRequest(null, false);
         request.AddLoadRequest<MechDef>(BattleTechResourceType.MechDef, CACConstants.DeployMechDefID, this.DirectorMechDefLoaded);
         request.ProcessRequests(1000u);
         return;
       }
-      Log.WL(0, "LanceSpawnerGameLogic_OnEnterActive()");
+      Log.Combat?.WL(0, "LanceSpawnerGameLogic_OnEnterActive()");
       playerLanceSpawner.LanceSpawnerGameLogic_OnEnterActive();
     }
   }
@@ -2371,12 +1980,12 @@ namespace CustomUnits {
     //public static DeployDirectorLoadRequest deployLoadRequest { get; set; } = null;
     //public static void Clear() { deployLoadRequest = null; }
     public static void ResetDeployButton(this CombatHUDMechwarriorTray tray, AbstractActor actor, Ability ability, CombatHUDActionButton button, bool forceInactive) {
-      Log.TWL(0,"ResetDeployButton:" + actor.DisplayName);
-      Log.WL(1,"actor.HasActivatedThisRound:" + actor.HasActivatedThisRound);
-      Log.WL(1, "actor.MovingToPosition:" + (actor.MovingToPosition != null));
-      Log.WL(1, "actor.Combat.StackManager.IsAnyOrderActive:" + actor.Combat.StackManager.IsAnyOrderActive);
-      Log.WL(1, "actor.Combat.TurnDirector.IsInterleaved:" + actor.Combat.TurnDirector.IsInterleaved);
-      Log.WL(1, "forceInactive:" + forceInactive);
+      Log.Combat?.TWL(0,"ResetDeployButton:" + actor.DisplayName);
+      Log.Combat?.WL(1,"actor.HasActivatedThisRound:" + actor.HasActivatedThisRound);
+      Log.Combat?.WL(1, "actor.MovingToPosition:" + (actor.MovingToPosition != null));
+      Log.Combat?.WL(1, "actor.Combat.StackManager.IsAnyOrderActive:" + actor.Combat.StackManager.IsAnyOrderActive);
+      Log.Combat?.WL(1, "actor.Combat.TurnDirector.IsInterleaved:" + actor.Combat.TurnDirector.IsInterleaved);
+      Log.Combat?.WL(1, "forceInactive:" + forceInactive);
       tray.ResetAbilityButton_public(actor, button, ability, forceInactive);
       if (forceInactive) { button.DisableButton(); };
       if (actor.Combat.TurnDirector.IsInterleaved == false) {
@@ -2384,8 +1993,8 @@ namespace CustomUnits {
           if (ability.IsActive == false) {
             if (ability.IsAvailable == true) {
               if (actor.IsShutDown == false) {
-                Log.WL(1, "ResetButtonIfNotActive:");
-                Log.WL(1, "IsAbilityActivated:" + button.IsAbilityActivated);
+                Log.Combat?.WL(1, "ResetButtonIfNotActive:");
+                Log.Combat?.WL(1, "IsAbilityActivated:" + button.IsAbilityActivated);
                 if (actor.MovingToPosition == null) { button.ResetButtonIfNotActive(actor); };
               }
             }
@@ -2396,7 +2005,7 @@ namespace CustomUnits {
       }
     }
     public static bool Prepare() {
-      Log.TWL(0, "PlayerLanceSpawnerGameLogic.OnEnterActive.Prepare");
+      Log.Combat?.TWL(0, "PlayerLanceSpawnerGameLogic.OnEnterActive.Prepare");
       {
         MethodInfo OnEnterActive = typeof(LanceSpawnerGameLogic).GetMethod("OnEnterActive", BindingFlags.Instance | BindingFlags.Public);
         var dm = new DynamicMethod("CACOnEnterActive", null, new Type[] { typeof(LanceSpawnerGameLogic) }, typeof(LanceSpawnerGameLogic));
@@ -2412,13 +2021,8 @@ namespace CustomUnits {
       i_LanceSpawnerGameLogic_OnEnterActive(spawner);
     }
     public static bool Prefix(PlayerLanceSpawnerGameLogic __instance) {
-      Log.TWL(0, "PlayerLanceSpawnerGameLogic.OnEnterActive");
+      Log.Combat?.TWL(0, "PlayerLanceSpawnerGameLogic.OnEnterActive");
       DeployManualHelper.NeedSpawnProtection = false;
-      try {
-        //typeof(HBS.DebugConsole.DebugConsole).GetProperty("DebugCommandsUnlocked", BindingFlags.Static | BindingFlags.Public).GetSetMethod(true).Invoke(null, new object[] { true });
-      } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
-      }
       //DeployManualHelper.IsInManualSpawnSequence = false;
       if (__instance.teamDefinitionGuid != __instance.Combat.LocalPlayerTeamGuid) { return true; }
       if (__instance.Combat.ActiveContract.isManualSpawn() == false) { return true; }

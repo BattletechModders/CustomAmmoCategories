@@ -22,10 +22,10 @@ namespace CustomUnits {
   [HarmonyPatch(MethodType.Constructor)]
   [HarmonyPatch(new Type[] { typeof(AbstractActor), typeof(Vector3), typeof(bool), typeof(bool), typeof(float), typeof(int), typeof(int), typeof(GameRepresentation.RotationCompleteDelegate) })]
   public static class ActorTwistSequence_Constructor {
-    public static void Prefix(ref Animator ___actorAnim, ref PilotableActorRepresentation ___actorRep, ref float ___desiredAngle, ActorTwistSequence __instance, AbstractActor actor, Vector3 lookAt, bool isLookVector, bool isBodyRotation, float twistDuration, int stackItemUID, int sequenceId, GameRepresentation.RotationCompleteDelegate completeDelegate) {
-      Log.TWL(0, "ActorTwistSequence.Constructor isBodyRotation:" + isBodyRotation);
+    public static void Prefix(ActorTwistSequence __instance, AbstractActor actor, Vector3 lookAt, bool isLookVector, bool isBodyRotation, float twistDuration, int stackItemUID, int sequenceId, GameRepresentation.RotationCompleteDelegate completeDelegate) {
+      Log.Combat?.TWL(0, "ActorTwistSequence.Constructor isBodyRotation:" + isBodyRotation);
     }
-    public static void Postfix(ref Animator ___actorAnim,ref PilotableActorRepresentation ___actorRep,ref float ___desiredAngle, ActorTwistSequence __instance, AbstractActor actor, Vector3 lookAt, bool isLookVector, bool isBodyRotation, float twistDuration, int stackItemUID, int sequenceId, GameRepresentation.RotationCompleteDelegate completeDelegate) {
+    public static void Postfix(ActorTwistSequence __instance, AbstractActor actor, Vector3 lookAt, bool isLookVector, bool isBodyRotation, float twistDuration, int stackItemUID, int sequenceId, GameRepresentation.RotationCompleteDelegate completeDelegate) {
       //CustomTwistAnimation custAnimator = ___actorRep.GetComponent<CustomTwistAnimation>();
       //if (custAnimator == null) { return; }
       //if (custAnimator.mechTurret == null) { return; }
@@ -63,7 +63,7 @@ namespace CustomUnits {
     public int HashIdleTwistL { get; protected set; }
     public bool StartRandomIdle {
       set {
-        Log.TWL(0, "CustomTwistAnimatorInfo.StartRandomIdle " + (this.animator == null ? "null" : this.animator.gameObject.name) + " HasStartRandomIdle:" + this.HasStartRandomIdle + " value:" + value);
+        Log.Combat?.TWL(0, "CustomTwistAnimatorInfo.StartRandomIdle " + (this.animator == null ? "null" : this.animator.gameObject.name) + " HasStartRandomIdle:" + this.HasStartRandomIdle + " value:" + value);
         if (this.animator == null) { return; }
         if (this.HasStartRandomIdle == false) { return; }
         this.animator.SetBool(HashStartRandomIdle, value);
@@ -71,7 +71,7 @@ namespace CustomUnits {
     }
     public float TwistR {
       set {
-        Log.TWL(0, "CustomTwistAnimatorInfo.TwistR "+(this.animator == null?"null":this.animator.gameObject.name)+ " HasTwistR:"+this.HasTwistR + " value:" + value);
+        Log.Combat?.TWL(0, "CustomTwistAnimatorInfo.TwistR "+(this.animator == null?"null":this.animator.gameObject.name)+ " HasTwistR:"+this.HasTwistR + " value:" + value);
         if (this.animator == null) { return; }
         if (this.HasTwistR == false) { return; }
         this.animator.SetFloat(HashTwistR, value);
@@ -79,7 +79,7 @@ namespace CustomUnits {
     }
     public float TwistL {
       set {
-        Log.TWL(0, "CustomTwistAnimatorInfo.TwistL " + (this.animator == null ? "null" : this.animator.gameObject.name) + " HasTwistL:" + this.HasTwistL+" value:"+value);
+        Log.Combat?.TWL(0, "CustomTwistAnimatorInfo.TwistL " + (this.animator == null ? "null" : this.animator.gameObject.name) + " HasTwistL:" + this.HasTwistL+" value:"+value);
         if (this.animator == null) { return; }
         if (this.HasTwistL == false) { return; }
         this.animator.SetFloat(HashTwistL, value);
@@ -141,21 +141,21 @@ namespace CustomUnits {
     }
     public void ReturnToIdleNeturalFacing() {
       inRandomAnimation = false;
-      Log.TWL(0, "CustomRandomIdleAnimation.ReturnToIdleNeturalFacing");
+      Log.Combat?.TWL(0, "CustomRandomIdleAnimation.ReturnToIdleNeturalFacing");
       this.StartRandomIdle = false;
     }
     public void twist(float value) {
       inRandomAnimation = false;
       this.StartRandomIdle = false;
       value *= (90f / 180f);
-      Log.TWL(0, "CustomTwistAnimation.twist " + value);
+      Log.Combat?.TWL(0, "CustomTwistAnimation.twist " + value);
       if (value >= 0f) { this.TwistL=0f; this.TwistR = value; } else
       if (value <= 0f) { this.TwistL = Mathf.Abs(value); this.TwistR= 0f; }
     }
     public void SetIdleRotation(float rnd) {
       inRandomAnimation = true;
       this.StartRandomIdle = false;
-      Log.TWL(0, "CustomRandomIdleAnimation.SetIdleRotation " + ownerRep.name + " rnd:" + rnd);
+      Log.Combat?.TWL(0, "CustomRandomIdleAnimation.SetIdleRotation " + ownerRep.name + " rnd:" + rnd);
       if (rnd < 0f) {
         this.IdleTwistR = 0f;
         this.IdleTwistL = Mathf.Abs(rnd);
@@ -177,7 +177,7 @@ namespace CustomUnits {
     }
     public void noRandomIdlesChanged(Statistic value) {
       allowRandomIdles = !value.Value<bool>();
-      Log.TWL(0, "CustomTwistAnimation.noRandomIdlesChanged allowRandomIdles:"+ allowRandomIdles);
+      Log.Combat?.TWL(0, "CustomTwistAnimation.noRandomIdlesChanged allowRandomIdles:"+ allowRandomIdles);
       if(allowRandomIdles == false) {
         this.ReturnToIdleNeturalFacing();
       }
@@ -202,17 +202,17 @@ namespace CustomUnits {
       noRandomIdles.AddValueChangeListener(UnitUnaffectionsActorStats.NoRandomIdlesActorStat,new Action<Statistic>(this.noRandomIdlesChanged));
       allowRandomIdles = !noRandomIdles.Value<bool>();
       inRandomAnimation = false;
-      Log.TWL(0, "CustomTwistAnimation.Init allowRandomIdles:" + allowRandomIdles);
+      Log.Combat?.TWL(0, "CustomTwistAnimation.Init allowRandomIdles:" + allowRandomIdles);
       CustomRepresentation customRepresentation = this.gameObject.GetComponent<CustomRepresentation>();
       if (customRepresentation != null) {
-        Log.WL(1, "CustomRepresentation exists");
+        Log.Combat?.WL(1, "CustomRepresentation exists");
         if (customRepresentation.CustomDefinition != null) {
           foreach (string twistAnimatorName in customRepresentation.CustomDefinition.TwistAnimators) {
             Transform twistAnimatorTR = this.gameObject.transform.FindRecursive(twistAnimatorName);
             if (twistAnimatorTR == null) { continue; }
             Animator twistAnimator = twistAnimatorTR.gameObject.GetComponent<Animator>();
             if (twistAnimator == null) { continue; }
-            Log.WL(2, "custom twist animator:"+ twistAnimatorTR.name+" animator:"+ twistAnimator.name);
+            Log.Combat?.WL(2, "custom twist animator:"+ twistAnimatorTR.name+" animator:"+ twistAnimator.name);
             this.animators.Add(new CustomTwistAnimatorInfo(twistAnimator));
           }
         }

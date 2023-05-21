@@ -13,6 +13,7 @@ using BattleTech.Data;
 using BattleTech.Rendering;
 using BattleTech.Rendering.MechCustomization;
 using BattleTech.Rendering.UI;
+using BattleTech.UI;
 using CustAmmoCategories;
 using HarmonyLib;
 using Newtonsoft.Json;
@@ -229,7 +230,7 @@ namespace CustomUnits {
     }
     public bool StartRandomIdle {
       set {
-        Log.TWL(0, "CustomTwistAnimation.StartRandomIdle: " + value);
+        Log.Combat?.TWL(0, "CustomTwistAnimation.StartRandomIdle: " + value);
         if (value) { if (idleTimeElapsed.IsRunning == false) { idleTimeElapsed.Reset(); idleTimeElapsed.Start(); }; } else { idleTimeElapsed.Reset(); idleTimeElapsed.Stop(); }
         foreach (CustomTwistAnimatorInfo info in twistAnimators) { info.StartRandomIdle = value; }
         foreach (HardPointAnimationController info in hardpointsAnimators) { info.StartRandomIdle = value; }
@@ -238,14 +239,14 @@ namespace CustomUnits {
     public void Twist(float angle) {
       //StartRandomIdle = false;
       angle *= (90f / 180f);
-      Log.TWL(0, "CustomTwistAnimation.Twist " + angle);
+      Log.Combat?.TWL(0, "CustomTwistAnimation.Twist " + angle);
       if (angle >= 0f) { this.TwistL = 0f; this.TwistR = angle; } else
       if (angle <= 0f) { this.TwistL = Mathf.Abs(angle); this.TwistR = 0f; }
     }
     private Stopwatch idleTimeElapsed = new Stopwatch();
     private bool isInIdleRotated = false;
     public void IdleTwist(float value) {
-      Log.TWL(0, "CustomRepresentation.IdleTwist value:" + value + " IsRunning:" + idleTimeElapsed.IsRunning + " ElapsedMilliseconds:" + idleTimeElapsed.ElapsedMilliseconds + " isInIdleRotated:" + isInIdleRotated);
+      Log.Combat?.TWL(0, "CustomRepresentation.IdleTwist value:" + value + " IsRunning:" + idleTimeElapsed.IsRunning + " ElapsedMilliseconds:" + idleTimeElapsed.ElapsedMilliseconds + " isInIdleRotated:" + isInIdleRotated);
       //StartRandomIdle = true;
       if (idleTimeElapsed.IsRunning == false) { return; }
       if (idleTimeElapsed.ElapsedMilliseconds < 5000) { return; }
@@ -265,12 +266,12 @@ namespace CustomUnits {
       if (value == 0.7f) { angle = -0.3f; } else
       if (value == 0.8f) { angle = 0.5f; } else
       if (value == 0.9f) { angle = -0.5f; }
-      Log.TWL(0, "CustomTwistAnimation.IdleTwist " + angle);
+      Log.Combat?.TWL(0, "CustomTwistAnimation.IdleTwist " + angle);
       if (angle >= 0f) { this.IdleTwistL = 0f; this.IdleTwistR = angle; } else
       if (angle <= 0f) { this.IdleTwistL = Mathf.Abs(angle); this.IdleTwistR = 0f; }
     }
     private void InitDestructable() {
-      Log.TWL(0, "CustomRepresentation.InitDestructable");
+      Log.Combat?.TWL(0, "CustomRepresentation.InitDestructable");
       if (GameRepresentation == null) { return; }
       foreach (var ddef in CustomDefinition.destructibles) {
         if (string.IsNullOrEmpty(ddef.Value.Name)) { continue; }
@@ -278,13 +279,13 @@ namespace CustomUnits {
         Transform[] transforms = GameRepresentation.gameObject.GetComponentsInChildren<Transform>(true);
         foreach (Transform tr in transforms) { if (tr.name == ddef.Value.Name) { destructableTR = tr; break; }; }
         if (destructableTR == null) { continue; }
-        Log.WL(1, ddef.Value.Name + " found");
+        Log.Combat?.WL(1, ddef.Value.Name + " found");
         MechDestructibleObject destr = destructableTR.gameObject.GetComponent<MechDestructibleObject>();
         if (destr == null) { destr = destructableTR.gameObject.AddComponent<MechDestructibleObject>(); }
         if (string.IsNullOrEmpty(ddef.Value.destroyedObj) == false) {
           Transform destroyedObjTR = null;
           foreach (Transform tr in transforms) { if (tr.name == ddef.Value.destroyedObj) { destroyedObjTR = tr; break; }; }
-          Log.WL(2, ddef.Value.destroyedObj + " found");
+          Log.Combat?.WL(2, ddef.Value.destroyedObj + " found");
           destr.destroyedObj = destroyedObjTR.gameObject;
         } else {
           destr.destroyedObj = null;
@@ -292,7 +293,7 @@ namespace CustomUnits {
         if (string.IsNullOrEmpty(ddef.Value.wholeObj) == false) {
           Transform wholeObjTR = null;
           foreach (Transform tr in transforms) { if (tr.name == ddef.Value.wholeObj) { wholeObjTR = tr; break; }; }
-          Log.WL(2, ddef.Value.wholeObj + " found");
+          Log.Combat?.WL(2, ddef.Value.wholeObj + " found");
           destr.wholeObj = wholeObjTR.gameObject;
         } else {
           destr.wholeObj = null;
@@ -324,7 +325,7 @@ namespace CustomUnits {
       }
     }
     public void OnUnitDestroy() {
-      Log.TWL(0, "CustomRepresentation.OnDestroy");
+      Log.Combat?.TWL(0, "CustomRepresentation.OnDestroy");
       this.InBattle = false;
       this.idleTimeElapsed.Stop();
       foreach (CustomTwistAnimatorInfo info in twistAnimators) { info.StartRandomIdle = false; }
@@ -343,7 +344,7 @@ namespace CustomUnits {
             GameObject newMeshRoot1 = Traverse.Create(mechMerge).Field<GameObject>("newMeshRoot1").Value;
             if (newMeshRoot0 != null) { newMeshRoot0.SetActive(false); }
             if (newMeshRoot1 != null) { newMeshRoot1.SetActive(false); }
-            Log.WL(1, "combined mesh suppressed");
+            Log.Combat?.WL(1, "combined mesh suppressed");
           }
         }
       }
@@ -357,7 +358,7 @@ namespace CustomUnits {
       if (CustomDefinition.OnDestroy.CollapseAllDestructables) {
         MechDestructibleObject[] destructables = this.GameRepresentation.gameObject.GetComponentsInChildren<MechDestructibleObject>(true);
         foreach (MechDestructibleObject destructable in destructables) {
-          Traverse.Create(destructable).Field<Rigidbody[]>("destroyedRigidbodies").Value = null;
+          destructable.destroyedRigidbodies = null;
           Rigidbody[] rigs = destructable.GetComponentsInChildren<Rigidbody>(true);
           foreach (Rigidbody rig in rigs) { rig.gameObject.layer = LayerMask.NameToLayer("VFXPhysicsActive"); }
           destructable.gameObject.SetActive(true);
@@ -365,9 +366,9 @@ namespace CustomUnits {
           bool left = UnityEngine.Random.Range(0, 1f) > 0.5f;
           Vector3 explosionVec = new Vector3((left ? 1f : -1f) * UnityEngine.Random.Range(0.5f, 1f), 1f, (forward ? 1f : -1f) * UnityEngine.Random.Range(0.5f, 1f));
           explosionVec.Normalize();
-          Log.WL(1, "destructable: " + destructable.transform.name + " Vector:" + explosionVec);
+          Log.Combat?.WL(1, "destructable: " + destructable.transform.name + " Vector:" + explosionVec);
           destructable.Collapse(explosionVec, 15f);
-          Log.WL(1, "collapse:" + destructable.transform.name);
+          Log.Combat?.WL(1, "collapse:" + destructable.transform.name);
         }
       }
     }
@@ -391,15 +392,15 @@ namespace CustomUnits {
       WeaponAttachPoints.Add(wAttach.Name, new AttachInfo(parent, wAttach));
     }
     public void Init(PilotableActorRepresentation rep, CustomActorRepresentationDef def) {
-      Log.TWL(0, "CustomRepresentation.Init "+rep.name+" def:"+def.Id);
+      Log.Combat?.TWL(0, "CustomRepresentation.Init "+rep.name+" def:"+def.Id);
       GameRepresentation = rep;
       SimGameRepresentation = null;
       CustomDefinition = def;
       WeaponAttachPoints = new Dictionary<string, AttachInfo>();
       this.animators = new HashSet<CustomRepresentationAnimatorInfo>();
-      Log.WL(1, "WeaponsAttachPoints:" + def.WeaponsAttachPoints.Count);
+      Log.Combat?.WL(1, "WeaponsAttachPoints:" + def.WeaponsAttachPoints.Count);
       foreach (AttachInfoRecord wAttach in def.WeaponsAttachPoints) {
-        Log.WL(2, wAttach.Name);
+        Log.Combat?.WL(2, wAttach.Name);
         WeaponAttachPoints.Add(wAttach.Name, new AttachInfo(rep.gameObject, wAttach));
       }
       foreach (string animName in def.Animators) {
@@ -460,16 +461,16 @@ namespace CustomUnits {
       this.InitDestructable();
     }
     public void AttachHeadlights() {
-      Log.TWL(0, $"CustomRepresentation.AttachHeadlights {this.gameObject.name}");
+      Log.Combat?.TWL(0, $"CustomRepresentation.AttachHeadlights {this.gameObject.name}");
       MechRepresentation mechRep = this.GameRepresentation as MechRepresentation;
       if (mechRep == null) { return; }
-      List<GameObject> headlightsReps = Traverse.Create(mechRep).Field<List<GameObject>>("headlightReps").Value;
+      List<GameObject> headlightsReps = mechRep.headlightReps();
       GameObject headlightSrcPrefab = mechRep.parentActor.Combat.DataManager.PooledInstantiate(Core.Settings.CustomHeadlightComponentPrefab, BattleTechResourceType.Prefab);
-      Log.WL(1, "headlightSrcPrefab:" + (headlightSrcPrefab == null ? "null" : headlightSrcPrefab.name));
+      Log.Combat?.WL(1, "headlightSrcPrefab:" + (headlightSrcPrefab == null ? "null" : headlightSrcPrefab.name));
       if (headlightSrcPrefab != null) {
         //jumpJetSrcPrefab.printComponents(1);
         Transform headlightSrc = headlightSrcPrefab.transform.FindRecursive(Core.Settings.CustomHeadlightPrefabSrcObjectName);
-        Log.WL(1, "headlightSrc:" + (headlightSrc == null ? "null" : headlightSrc.name));
+        Log.Combat?.WL(1, "headlightSrc:" + (headlightSrc == null ? "null" : headlightSrc.name));
         if (headlightSrc != null) {
           foreach (Transform headlightAttach in this.Headlights) {
             GameObject headlightBase = new GameObject("headlight");
@@ -485,25 +486,25 @@ namespace CustomUnits {
         }
         mechRep.parentActor.Combat.DataManager.PoolGameObject(Core.Settings.CustomHeadlightComponentPrefab, headlightSrcPrefab);
       }
-      Traverse.Create(mechRep).Field<List<GameObject>>("headlightReps").Value = headlightsReps;
+      mechRep.headlightReps(headlightsReps);
     }
     public void AttachWeapons() {
-      Log.TWL(0, "CustomRepresentation.AttachWeapons");
+      Log.Combat?.TWL(0, "CustomRepresentation.AttachWeapons");
       try {
         if (this.GameRepresentation == null) { return; }
         foreach (WeaponRepresentation weaponRep in this.GameRepresentation.weaponReps) {
           if (weaponRep == null) { continue; }
           if (weaponRep.weapon == null) { continue; }
           try {
-            Log.WL(1, "prefab " + weaponRep.weapon.mechComponentRef.prefabName);
+            Log.Combat?.WL(1, "prefab " + weaponRep.weapon.mechComponentRef.prefabName);
             CustomHardpointDef customHardpoint = CustomHardPointsHelper.Find(weaponRep.weapon.mechComponentRef.prefabName);
             if (customHardpoint == null) {
-              Log.WL(3, $"no custom hardpoint. parentTransform:{(weaponRep.parentTransform==null?"null": weaponRep.parentTransform.name)}");
+              Log.Combat?.WL(3, $"no custom hardpoint. parentTransform:{(weaponRep.parentTransform==null?"null": weaponRep.parentTransform.name)}");
               if(weaponRep.parentTransform != null) {
                 foreach(var ap in this.WeaponAttachPoints) {
                   if (ap.Value.attach == null) { continue; }
                   if (ap.Value.attach == weaponRep.parentTransform) {
-                    Log.WL(3, $"found attach point:{ap.Key}");
+                    Log.Combat?.WL(3, $"found attach point:{ap.Key}");
                     ap.Value.weapons.Add(weaponRep.weapon);
                     break;
                   }
@@ -511,14 +512,14 @@ namespace CustomUnits {
               }
               continue;
             }
-            Log.WL(2, "attachType:" + customHardpoint.attachType + " attachOverride:" + customHardpoint.attachOverride);
+            Log.Combat?.WL(2, "attachType:" + customHardpoint.attachType + " attachOverride:" + customHardpoint.attachOverride);
             AttachInfo attachPoint = null;
             if (string.IsNullOrEmpty(customHardpoint.attachOverride) == false) {
               if (this.WeaponAttachPoints.ContainsKey(customHardpoint.attachOverride)) {
                 attachPoint = this.WeaponAttachPoints[customHardpoint.attachOverride];
               };
             }
-            Log.WL(2, "attachPoint:" + (attachPoint == null ? "null" : attachPoint.attach.name));
+            Log.Combat?.WL(2, "attachPoint:" + (attachPoint == null ? "null" : attachPoint.attach.name));
             if (attachPoint != null) {
               if (weaponRep.parentTransform != null) { weaponRep.parentTransform = attachPoint.attach; }
               if (weaponRep.thisTransform != null) {
@@ -539,7 +540,8 @@ namespace CustomUnits {
               hardpointsAnimators.Add(animComponent);
             }
           } catch (Exception e) {
-            Log.TWL(0, e.ToString(), true);
+            Log.Combat?.TWL(0, e.ToString(), true);
+            AbstractActor.logger.LogException(e);
           }
         }
         foreach (var ap in this.WeaponAttachPoints) {
@@ -548,11 +550,12 @@ namespace CustomUnits {
           if (ap.Value.weapons.Count == 0) { ap.Value.main.gameObject.SetActive(false); }
         }
       } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
+        Log.Combat?.TWL(0, e.ToString(), true);
+        AbstractActor.logger.LogException(e);
       }
     }
     public void AttachWeaponsSimGame() {
-      Log.TWL(0, "CustomRepresentation.AttachWeaponsSimGame " + (this.SimGameRepresentation == null ? "null" : this.SimGameRepresentation.gameObject.name));
+      Log.Combat?.TWL(0, "CustomRepresentation.AttachWeaponsSimGame " + (this.SimGameRepresentation == null ? "null" : this.SimGameRepresentation.gameObject.name));
       try {
         if (this.SimGameRepresentation == null) { return; }
         List<ComponentRepresentation> componentReps = this.SimGameRepresentation.componentReps;
@@ -571,15 +574,15 @@ namespace CustomUnits {
             if (simgameRep != null) {
               prefab = simgameRep.OriginalPrefabId;
             }
-            Log.WL(1, "prefab " + prefab);
+            Log.Combat?.WL(1, "prefab " + prefab);
             CustomHardpointDef customHardpoint = CustomHardPointsHelper.Find(prefab);
             if (customHardpoint == null) {
-              Log.WL(3, $"no custom hardpoint. parentTransform:{(compRep.parentTransform == null ? "null" : compRep.parentTransform.name)}");
+              Log.Combat?.WL(3, $"no custom hardpoint. parentTransform:{(compRep.parentTransform == null ? "null" : compRep.parentTransform.name)}");
               if (compRep.parentTransform != null) {
                 foreach (var ap in this.WeaponAttachPoints) {
                   if (ap.Value.attach == null) { continue; }
                   if (ap.Value.attach == compRep.parentTransform) {
-                    Log.WL(3, $"found attach point:{ap.Key}");
+                    Log.Combat?.WL(3, $"found attach point:{ap.Key}");
                     ap.Value.bayComponents.Add(compRep);
                     break;
                   }
@@ -587,14 +590,14 @@ namespace CustomUnits {
               }
               continue;
             }
-            Log.WL(2, "attachType:" + customHardpoint.attachType + " attachOverride:" + customHardpoint.attachOverride);
+            Log.Combat?.WL(2, "attachType:" + customHardpoint.attachType + " attachOverride:" + customHardpoint.attachOverride);
             AttachInfo attachPoint = null;
             if (string.IsNullOrEmpty(customHardpoint.attachOverride) == false) {
               if (this.WeaponAttachPoints.ContainsKey(customHardpoint.attachOverride)) {
                 attachPoint = this.WeaponAttachPoints[customHardpoint.attachOverride];
               };
             }
-            Log.WL(2, "attachPoint:" + (attachPoint == null ? "null" : attachPoint.attach.name));
+            Log.Combat?.WL(2, "attachPoint:" + (attachPoint == null ? "null" : attachPoint.attach.name));
             if (attachPoint != null) {
               if (compRep.parentTransform != null) { compRep.parentTransform = attachPoint.attach; }
               if (compRep.thisTransform != null) {
@@ -626,7 +629,7 @@ namespace CustomUnits {
               }
             }
           } catch (Exception e) {
-            Log.TWL(0, e.ToString(), true);
+            Log.Combat?.TWL(0, e.ToString(), true);
           }
         }
         foreach (var ap in this.WeaponAttachPoints) {
@@ -635,7 +638,7 @@ namespace CustomUnits {
           if (ap.Value.bayComponents.Count == 0) { ap.Value.main.gameObject.SetActive(false); }
         }
       } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
+        Log.Combat?.TWL(0, e.ToString(), true);
       }
     }
   }
@@ -660,17 +663,17 @@ namespace CustomUnits {
     }
     public static void Register(this CustomActorRepresentationDef customRepDef) {
       if (customRepresentations.ContainsKey(customRepDef.Id)) {
-        Log.TWL(0, "Custom" + customRepDef.RepType + "RepresentationDef " + customRepDef.Id + " already registered skipping");
+        Log.Combat?.TWL(0, "Custom" + customRepDef.RepType + "RepresentationDef " + customRepDef.Id + " already registered skipping");
         return;
       }
-      Log.TWL(0, $"Custom{customRepDef.RepType} registered {customRepDef.Id}");
+      Log.Combat?.TWL(0, $"Custom{customRepDef.RepType} registered {customRepDef.Id}");
       customRepresentations.Add(customRepDef.Id, customRepDef);
       string simGamePrefabName = string.Format("chrPrfComp_{0}_simgame", customRepDef.PrefabBase);
       if (customSimGameRepresentations.ContainsKey(simGamePrefabName)) {
-        Log.TWL(0, "Custom" + customRepDef.RepType + "SimGameRepresentation " + simGamePrefabName + " already registered skipping");
+        Log.Combat?.TWL(0, "Custom" + customRepDef.RepType + "SimGameRepresentation " + simGamePrefabName + " already registered skipping");
         return;
       }
-      Log.TWL(0, $"Custom{customRepDef.RepType} registered {simGamePrefabName}");
+      Log.Combat?.TWL(0, $"Custom{customRepDef.RepType} registered {simGamePrefabName}");
       customSimGameRepresentations.Add(simGamePrefabName, customRepDef);
     }
     public static CustomMechRepresentationDef defaultCustomMechRepDef = new CustomMechRepresentationDef();
@@ -694,7 +697,7 @@ namespace CustomUnits {
 
     //}
     public static void CopyModel(this MechRepresentation mechRep, GameObject meshSource, DataManager dataManager) {
-      Log.TWL(0, "CustomActorRepresentationHelper.CopyMechRep " + mechRep.name + " meshSrc:" + meshSource.name);
+      Log.Combat?.TWL(0, "CustomActorRepresentationHelper.CopyMechRep " + mechRep.name + " meshSrc:" + meshSource.name);
       try {
         SkinnedMeshRenderer[] recvRenderers = mechRep.GetComponentsInChildren<SkinnedMeshRenderer>(true);
         SkinnedMeshRenderer[] srcRenderers = meshSource.GetComponentsInChildren<SkinnedMeshRenderer>(true);
@@ -711,15 +714,15 @@ namespace CustomUnits {
             if (srcAddMat == null) srcAddMat = renderer.sharedMaterial;
           }
         }
-        Log.WL(1, "base source material:" + (srcBaseMat == null ? "null" : srcBaseMat.name));
-        Log.WL(1, "additional source material:" + (srcAddMat == null ? "null" : srcAddMat.name));
+        Log.Combat?.WL(1, "base source material:" + (srcBaseMat == null ? "null" : srcBaseMat.name));
+        Log.Combat?.WL(1, "additional source material:" + (srcAddMat == null ? "null" : srcAddMat.name));
         Material trgBaseMat = null;
         Material trgAddMat = null;
         foreach (SkinnedMeshRenderer renderer in recvRenderers) {
           if (renderer.sharedMaterial.name.Contains("base")) {
             if ((trgBaseMat == null) && (srcBaseMat != null)) {
               trgBaseMat = UnityEngine.Object.Instantiate(renderer.sharedMaterial);
-              Log.WL(1, "altering base material:" + renderer.sharedMaterial.name);
+              Log.Combat?.WL(1, "altering base material:" + renderer.sharedMaterial.name);
               trgBaseMat.SetTexture("_MainTex", srcBaseMat.GetTexture("_MainTex"));
               trgBaseMat.SetTextureOffset("_MainTex", srcBaseMat.GetTextureOffset("_MainTex"));
               trgBaseMat.SetTextureScale("_MainTex", srcBaseMat.GetTextureScale("_MainTex"));
@@ -739,7 +742,7 @@ namespace CustomUnits {
           } else {
             if ((trgAddMat == null) && (srcAddMat != null)) {
               trgAddMat = UnityEngine.Object.Instantiate(renderer.sharedMaterial);
-              Log.WL(1, "altering base material:" + renderer.sharedMaterial.name);
+              Log.Combat?.WL(1, "altering base material:" + renderer.sharedMaterial.name);
               trgAddMat.SetTexture("_MainTex", srcAddMat.GetTexture("_MainTex"));
               trgAddMat.SetTextureOffset("_MainTex", srcAddMat.GetTextureOffset("_MainTex"));
               trgAddMat.SetTextureScale("_MainTex", srcAddMat.GetTextureScale("_MainTex"));
@@ -758,13 +761,13 @@ namespace CustomUnits {
             }
           }
         }
-        Log.WL(1, "base target material:" + (trgBaseMat == null ? "null" : trgBaseMat.name));
-        Log.WL(1, "additional target material:" + (trgAddMat == null ? "null" : trgAddMat.name));
+        Log.Combat?.WL(1, "base target material:" + (trgBaseMat == null ? "null" : trgBaseMat.name));
+        Log.Combat?.WL(1, "additional target material:" + (trgAddMat == null ? "null" : trgAddMat.name));
         GameObject emptyGo = new GameObject("emptyMesh");
         emptyGo.AddComponent<MeshRenderer>();
         emptyGo.AddComponent<MeshFilter>();
         Mesh emptyMesh = emptyGo.GetComponent<MeshFilter>().mesh;
-        Log.WL(1, "emptyMesh:" + (emptyMesh == null ? "null" : emptyMesh.name));
+        Log.Combat?.WL(1, "emptyMesh:" + (emptyMesh == null ? "null" : emptyMesh.name));
         foreach (SkinnedMeshRenderer renderer in recvRenderers) {
           if (renderer.sharedMaterials.Length > 1) { continue; }
           if (renderer.sharedMesh == null) { continue; }
@@ -786,38 +789,39 @@ namespace CustomUnits {
             if (renderer.gameObject.activeInHierarchy == false) {
               continue;
             }
-            Log.WL(3, "destroying:" + renderer.name);
+            Log.Combat?.WL(3, "destroying:" + renderer.name);
             renderer.sharedMesh = emptyMesh;
           }
         }
         Transform[] transforms = meshSource.GetComponentsInChildren<Transform>(true);
-        Log.WL(1, "searching paint schemes holder");
+        Log.Combat?.WL(1, "searching paint schemes holder");
         MechCustomization mechCustomization = mechRep.GetComponentInChildren<MechCustomization>(true);
         if (mechCustomization != null) {
-          Log.WL(2, "MechCustomization found");
+          Log.Combat?.WL(2, "MechCustomization found");
           foreach (Transform tr in transforms) {
             if (tr.name.Contains("camoholder")) {
-              Log.WL(2, "camoholder found");
+              Log.Combat?.WL(2, "camoholder found");
               MeshRenderer camosource = tr.gameObject.GetComponent<MeshRenderer>();
-              if (camosource == null) { Log.WL(3, "no mesh renderer"); continue; }
-              if (camosource.materials.Length == 0) { Log.WL(3, "no materials"); continue; }
+              if (camosource == null) { Log.Combat?.WL(3, "no mesh renderer"); continue; }
+              if (camosource.materials.Length == 0) { Log.Combat?.WL(3, "no materials"); continue; }
               for (int i = 0; i < Math.Min(camosource.materials.Length, mechCustomization.paintPatterns.Length); ++i) {
-                Log.WL(3, "material:" + camosource.materials[i].name);
+                Log.Combat?.WL(3, "material:" + camosource.materials[i].name);
                 mechCustomization.paintPatterns[i] = camosource.materials[i].GetTexture("_MainTex") as Texture2D;
-                Log.WL(4, "found paint scheme:" + (mechCustomization.paintPatterns[i] == null ? "null" : mechCustomization.paintPatterns[i].name));
+                Log.Combat?.WL(4, "found paint scheme:" + (mechCustomization.paintPatterns[i] == null ? "null" : mechCustomization.paintPatterns[i].name));
               }
             };
           }
         }
       } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
+        Log.Combat?.TWL(0, e.ToString(), true);
+        AbstractActor.logger.LogException(e);
       }
     }
     public static void CopyShader(this GameObject meshSource, DataManager dataManager, CustomActorRepresentationDef custRepDef) {
       if (string.IsNullOrEmpty(custRepDef.ShaderSource) == false) {
         GameObject shaderSource = dataManager.PooledInstantiate(custRepDef.ShaderSource, BattleTechResourceType.Prefab);
         if (shaderSource != null) {
-          Log.WL(1, "shader prefab found");
+          Log.Combat?.WL(1, "shader prefab found");
           Renderer shaderComponent = null;
           Renderer[] shaderComponents = shaderSource.GetComponentsInChildren<Renderer>(true);
           foreach(Renderer shaderCmp in shaderComponents) {
@@ -826,16 +830,16 @@ namespace CustomUnits {
             break;
           }
           if (shaderComponent != null) {
-            Log.WL(1, "shader renderer found");
+            Log.Combat?.WL(1, "shader renderer found");
             Renderer[] shaderTargets = meshSource.GetComponentsInChildren<Renderer>(true);
             foreach (Renderer renderer in shaderTargets) {
               SkinnedMeshRenderer s_renderer = renderer as SkinnedMeshRenderer;
               MeshRenderer m_renderer = renderer as MeshRenderer;
               if ((s_renderer == null) && (m_renderer == null)) { continue; }
-              Log.WL(2, "renderer:" + renderer.name);
+              Log.Combat?.WL(2, "renderer:" + renderer.name);
               for (int mindex = 0; mindex < renderer.sharedMaterials.Length; ++mindex) {
                 if (renderer.sharedMaterials[mindex] == null) { continue; }
-                Log.WL(3, "material:" + renderer.sharedMaterials[mindex].name + " <- " + shaderComponent.sharedMaterial.shader.name);
+                Log.Combat?.WL(3, "material:" + renderer.sharedMaterials[mindex].name + " <- " + shaderComponent.sharedMaterial.shader.name);
                 renderer.sharedMaterials[mindex].shader = shaderComponent.sharedMaterial.shader;
                 renderer.sharedMaterials[mindex].shaderKeywords = shaderComponent.sharedMaterial.shaderKeywords;
               }
@@ -925,18 +929,18 @@ namespace CustomUnits {
       foreach (Transform tr in j_Root.GetComponentsInChildren<Transform>(true)) {
         if (tr == j_Root) { continue; }; resultTransforms.Add(tr.RelativeName(j_Root.parent), tr);
       }
-      Log.TWL(0, "MoveBonesAndRenderers from " + meshSource.name + " to " + mechRep.name);
-      foreach (var rt in resultTransforms) { Log.WL(1, rt.Key); };
+      Log.Combat?.TWL(0, "MoveBonesAndRenderers from " + meshSource.name + " to " + mechRep.name);
+      foreach (var rt in resultTransforms) { Log.M?.WL(1, rt.Key); };
       Transform bones = meshSource.transform.FindRecursive("bones");
       if (bones != null) {
-        Log.WL(1, "merging");
+        Log.Combat?.WL(1, "merging");
         foreach (Transform tr in bones.GetComponentsInChildren<Transform>(true)) {
           if (tr == bones) { continue; }
           string tr_name = tr.RelativeName(bones);
-          Log.WL(2, "name: " + tr_name);
+          Log.Combat?.WL(2, "name: " + tr_name);
           if (resultTransforms.TryGetValue(tr_name, out Transform resultTransform)) {
             if (custRepDef.MoveSkeletalBones) {
-              Log.WL(3, "pos:" + resultTransform.localPosition + "=>" + tr.localPosition + " rot:" + resultTransform.localRotation.eulerAngles + "=>" + tr.localRotation + " scale:" + resultTransform.localScale + "=>" + tr.localScale);
+              Log.Combat?.WL(3, "pos:" + resultTransform.localPosition + "=>" + tr.localPosition + " rot:" + resultTransform.localRotation.eulerAngles + "=>" + tr.localRotation + " scale:" + resultTransform.localScale + "=>" + tr.localScale);
               resultTransform.localPosition = tr.localPosition;
               resultTransform.localRotation = tr.localRotation;
               resultTransform.localScale = tr.localScale;
@@ -945,9 +949,9 @@ namespace CustomUnits {
           }
           if (tr.parent == null) { continue; }
           string parent_name = tr.parent.RelativeName(bones);
-          Log.WL(2, "parent name: " + parent_name);
+          Log.Combat?.WL(2, "parent name: " + parent_name);
           if (resultTransforms.ContainsKey(parent_name) == false) { continue; }
-          Log.WL(2, "moving");
+          Log.Combat?.WL(2, "moving");
           Transform parent = resultTransforms[parent_name];
           Vector3 pos = tr.localPosition;
           Quaternion rot = tr.localRotation;
@@ -957,24 +961,24 @@ namespace CustomUnits {
           tr.localRotation = rot;
           tr.localScale = scale;
           resultTransforms.Add(tr_name, tr);
-          Log.WL(2, "adding");
+          Log.Combat?.WL(2, "adding");
           foreach (Transform subTR in tr.GetComponentsInChildren<Transform>()) {
             if (subTR == tr) { continue; }
             string str_name = subTR.RelativeName(j_Root.parent);
-            Log.WL(3, "str_name:" + str_name);
+            Log.Combat?.WL(3, "str_name:" + str_name);
             resultTransforms.Add(str_name, subTR);
           }
         }
         if (meshesTrg != null) {
-          Log.WL(1, "skinned renderers:");
+          Log.Combat?.WL(1, "skinned renderers:");
           foreach (SkinnedMeshRenderer r in meshesTrg.GetComponentsInChildren<SkinnedMeshRenderer>(true)) {
-            Log.WL(2, r.name);
+            Log.Combat?.WL(2, r.name);
             if (r.rootBone != null) {
               if (resultTransforms.ContainsValue(r.rootBone) == false) {
                 string tr_name = r.rootBone.RelativeName(bones);
                 if (resultTransforms.ContainsKey(tr_name)) {
                   r.rootBone = resultTransforms[tr_name];
-                  Log.WL(3, "rootBone:" + tr_name + " moved to");
+                  Log.Combat?.WL(3, "rootBone:" + tr_name + " moved to");
                 }
               }
             }
@@ -990,27 +994,27 @@ namespace CustomUnits {
             }
             r.bones = r_bones.ToArray();
             for (int i = 0; i < r.bones.Length; ++i) {
-              Log.WL(3, "bones[" + i + "] -> " + (r.bones[i] == null ? "null" : r.bones[i].RelativeName(j_Root)));
+              Log.Combat?.WL(3, "bones[" + i + "] -> " + (r.bones[i] == null ? "null" : r.bones[i].RelativeName(j_Root)));
             }
           }
         }
         if (custRepDef.MoveAnimations) {
           Animator sourceAnimator = bones.gameObject.GetComponent<Animator>();
           Animator targetAnimator = mechRep.GetComponent<Animator>();
-          Log.WL(1, "source animator:" + (sourceAnimator == null ? "null" : "not null"));
-          Log.WL(1, "target animator:" + (targetAnimator == null ? "null" : "not null"));
+          Log.Combat?.WL(1, "source animator:" + (sourceAnimator == null ? "null" : "not null"));
+          Log.Combat?.WL(1, "target animator:" + (targetAnimator == null ? "null" : "not null"));
           if (sourceAnimator != null && targetAnimator != null) {
-            Log.WL(1, "Moving animator");
+            Log.Combat?.WL(1, "Moving animator");
             //Log.WL(2, "source animator");
             Dictionary<string, AnimationClip> sourceClips = new Dictionary<string, AnimationClip>();
             foreach (AnimationClip clip in sourceAnimator.runtimeAnimatorController.animationClips) {
               sourceClips.Add(clip.name, clip);
             }
-            Log.WL(2, "target animator");
+            Log.Combat?.WL(2, "target animator");
             AnimatorOverrideController animatorOverrideController = new AnimatorOverrideController(targetAnimator.runtimeAnimatorController);
             Dictionary<string, AnimationClip> overrideClips = new Dictionary<string, AnimationClip>();
             foreach (AnimationClip clip in sourceAnimator.runtimeAnimatorController.animationClips) {
-              Log.WL(3, clip.name);
+              Log.Combat?.WL(3, clip.name);
               if (sourceClips.TryGetValue(clip.name, out var overrideClip)) {
                 overrideClips.Add(clip.name, overrideClip);
                 foreach (AnimationEvent aevent in clip.events) {
@@ -1023,25 +1027,25 @@ namespace CustomUnits {
               custRepDef.ApplyAnimationEvent(overrideClip.Value);
             }
             targetAnimator.runtimeAnimatorController = animatorOverrideController;
-            Log.WL(2, "resulting clips");
+            Log.Combat?.WL(2, "resulting clips");
             foreach (var clip in targetAnimator.runtimeAnimatorController.animationClips) {
               if (clip.events.Length > 0) {
-                Log.WL(3, "\"" + clip.name + "\":[");
+                Log.Combat?.WL(3, "\"" + clip.name + "\":[");
                 bool first = true;
                 foreach (var cevent in clip.events) {
-                  if (first) { first = false; Log.W(3, " "); } else { Log.W(4, ","); }
-                  Log.W(0, "{ \"time\": " + cevent.time + ",\"functionName\": \"" + cevent.functionName + "\"");
+                  if (first) { first = false; Log.Combat?.W(3, " "); } else { Log.Combat?.W(4, ","); }
+                  Log.Combat?.W(0, "{ \"time\": " + cevent.time + ",\"functionName\": \"" + cevent.functionName + "\"");
                   if (string.IsNullOrEmpty(cevent.stringParameter) == false) {
-                    Log.W(1, ",\"stringParameter\":\"" + cevent.stringParameter + "\"");
+                    Log.Combat?.W(1, ",\"stringParameter\":\"" + cevent.stringParameter + "\"");
                   }
                   if(cevent.functionName == "OnFootFall") {
-                    Log.W(1, ",\"intParameter\":" + cevent.intParameter);
+                    Log.Combat?.W(1, ",\"intParameter\":" + cevent.intParameter);
                   }
-                  Log.WL(1, "}");
+                  Log.Combat?.WL(1, "}");
                 }
-                Log.WL(3, "],");
+                Log.Combat?.WL(3, "],");
               } else {
-                Log.WL(3, "\"" + clip.name + "\":[],");
+                Log.Combat?.WL(3, "\"" + clip.name + "\":[],");
               }
             }
           }
@@ -1054,7 +1058,7 @@ namespace CustomUnits {
       //custRepDef.ApplySolvers(mechRep);
     }
     public static void MoveBonesAndRenderersSimGame(this CustomMechRepresentationSimGame mechRep, GameObject source) {
-      Log.TWL(0, "MoveBonesAndRenderersSimGame:" + source.name);
+      Log.Combat?.TWL(0, "MoveBonesAndRenderersSimGame:" + source.name);
       Transform meshesTrg = mechRep.transform.FindRecursive("mesh");
       Transform meshesSrc = source.transform.FindRecursive("meshes");
       if (meshesSrc == null) {
@@ -1091,58 +1095,12 @@ namespace CustomUnits {
         if (r.rootBone == null) { continue; }
         if (targetTransforms.Contains(r.rootBone)) { continue; }
         string rootBoneName = r.rootBone.RelativeName(source_j_Root);
-        Log.WL(1, r.transform.name + " rootBone:" + rootBoneName);
+        Log.Combat?.WL(1, r.transform.name + " rootBone:" + rootBoneName);
         if (targetTransformsDict.TryGetValue(rootBoneName, out Transform newRootBone)) {
-          Log.WL(2, "found");
+          Log.Combat?.WL(2, "found");
           r.rootBone = newRootBone;
         }
       }
-
-      //Log.TWL(0, "MoveBonesAndRenderers from " + meshSource.name + " to " + mechRep.name);
-      //foreach (var rt in resultTransforms) { Log.WL(1, rt.Key); };
-      //Transform bones = meshSource.transform.FindRecursive("bones");
-      //if (bones != null) {
-      //  Log.WL(1, "merging");
-      //  foreach (Transform tr in bones.GetComponentsInChildren<Transform>(true)) {
-      //    if (tr == bones) { continue; }
-      //    string tr_name = tr.RelativeName(bones);
-      //    Log.WL(2, "name: " + tr_name);
-      //    if (resultTransforms.ContainsKey(tr_name)) { continue; }
-      //    if (tr.parent == null) { continue; }
-      //    string parent_name = tr.parent.RelativeName(bones);
-      //    Log.WL(2, "parent name: " + parent_name);
-      //    if (resultTransforms.ContainsKey(parent_name) == false) { continue; }
-      //    Log.WL(2, "moving");
-      //    Transform parent = resultTransforms[parent_name];
-      //    Vector3 pos = tr.localPosition;
-      //    Quaternion rot = tr.localRotation;
-      //    Vector3 scale = tr.localScale;
-      //    tr.SetParent(parent, false);
-      //    tr.localPosition = pos;
-      //    tr.localRotation = rot;
-      //    tr.localScale = scale;
-      //    resultTransforms.Add(tr_name, tr);
-      //    Log.WL(2, "adding");
-      //    foreach (Transform subTR in tr.GetComponentsInChildren<Transform>()) {
-      //      if (subTR == tr) { continue; }
-      //      string str_name = subTR.RelativeName(j_Root.parent);
-      //      Log.WL(3, "str_name:" + str_name);
-      //      resultTransforms.Add(str_name, subTR);
-      //    }
-      //  }
-      //  if (meshesTrg != null) {
-      //    Log.WL(1, "skinned renderers:");
-      //    foreach (SkinnedMeshRenderer r in meshesTrg.GetComponentsInChildren<SkinnedMeshRenderer>(true)) {
-      //      Log.W(2, r.name);
-      //      if (r.rootBone == null) { Log.WL(1, "no root bone"); continue; }
-      //      if (resultTransforms.ContainsValue(r.rootBone)) { Log.WL(1, "already moved"); continue; }
-      //      string tr_name = r.rootBone.RelativeName(bones);
-      //      if (resultTransforms.ContainsKey(tr_name) == false) { Log.WL(1, tr_name + " not exists"); continue; }
-      //      r.rootBone = resultTransforms[tr_name];
-      //      Log.WL(1, tr_name + " moved to");
-      //    }
-      //  }
-      //}
     }
     public static void MoveVFXTransforms(this MechRepresentationSimGame mechRep, GameObject meshSource, CustomActorRepresentationDef custRepDef) {
       CustomMechRepresentationDef custMechDef = custRepDef as CustomMechRepresentationDef;
@@ -1211,7 +1169,7 @@ namespace CustomUnits {
     }
     public static void MoveVFXTransforms(this MechRepresentation mechRep, CustomActorRepresentationDef custRepDef) {
       CustomMechRepresentationDef custMechDef = custRepDef as CustomMechRepresentationDef;
-      Log.TWL(0, "");
+      Log.Combat?.TWL(0, "");
       if (custMechDef != null) {
         if (string.IsNullOrEmpty(custMechDef.TorsoAttach) == false) {
           Transform attach = mechRep.transform.FindRecursive(custMechDef.TorsoAttach);
@@ -1276,7 +1234,7 @@ namespace CustomUnits {
       }
     }
     public static void MoveBlips(this MechRepresentation mechRep, DataManager dataManager, CustomActorRepresentationDef custRepDef) {
-      Log.TWL(0,"MoveBlips:"+ custRepDef.Id + " "+ mechRep.gameObject.name);
+      Log.Combat?.TWL(0,"MoveBlips:"+ custRepDef.Id + " "+ mechRep.gameObject.name);
       if (string.IsNullOrEmpty(custRepDef.BlipSource) == false) {
         GameObject blipSource = dataManager.PooledInstantiate(custRepDef.BlipSource, BattleTechResourceType.Prefab);
         if (blipSource != null) {
@@ -1311,26 +1269,26 @@ namespace CustomUnits {
         }
       }
       if (string.IsNullOrEmpty(custRepDef.BlipMeshSource) == false) {
-        Log.WL(1, "BlipMeshSource:" + custRepDef.BlipMeshSource);
+        Log.Combat?.WL(1, "BlipMeshSource:" + custRepDef.BlipMeshSource);
         GameObject blipSource = dataManager.PooledInstantiate(custRepDef.BlipMeshSource, BattleTechResourceType.Prefab);
         if (blipSource != null) {
-          Log.WL(1, "blipSource:" + blipSource.gameObject.name);
+          Log.Combat?.WL(1, "blipSource:" + blipSource.gameObject.name);
           Dictionary<string, MeshFilter> sourceRenderers = new Dictionary<string, MeshFilter>();
           foreach(MeshFilter renderer in blipSource.GetComponentsInChildren<MeshFilter>(true)) {
             sourceRenderers.Add(renderer.gameObject.transform.name, renderer);
-            Log.WL(2, renderer.gameObject.transform.name+ " mesh:" + renderer.mesh.name+ " sharedMesh:" + renderer.sharedMesh.name);
+            Log.Combat?.WL(2, renderer.gameObject.transform.name+ " mesh:" + renderer.mesh.name+ " sharedMesh:" + renderer.sharedMesh.name);
           }
           if(mechRep.BlipObjectUnknown != null) {
             foreach (MeshFilter renderer in mechRep.BlipObjectUnknown.GetComponentsInChildren<MeshFilter>(true)) {
-              Log.WL(2, "BlipObjectUnknown:"+ renderer.gameObject.transform.name);
+              Log.Combat?.WL(2, "BlipObjectUnknown:"+ renderer.gameObject.transform.name);
               if (sourceRenderers.TryGetValue(renderer.gameObject.transform.name, out var sourceRenderer)) {
-                Log.WL(3, "found");
-                Log.WL(3, renderer.gameObject.transform.name + ".sharedMesh = " + renderer.sharedMesh.name);
-                Log.WL(3, renderer.gameObject.transform.name + ".mesh = " + renderer.mesh.name);
+                Log.Combat?.WL(3, "found");
+                Log.Combat?.WL(3, renderer.gameObject.transform.name + ".sharedMesh = " + renderer.sharedMesh.name);
+                Log.Combat?.WL(3, renderer.gameObject.transform.name + ".mesh = " + renderer.mesh.name);
                 renderer.sharedMesh = sourceRenderer.sharedMesh;
                 renderer.mesh = sourceRenderer.mesh;
-                Log.WL(3, renderer.gameObject.transform.name+ ".sharedMesh = "+ renderer.sharedMesh.name);
-                Log.WL(3, renderer.gameObject.transform.name + ".mesh = " + renderer.mesh.name);
+                Log.Combat?.WL(3, renderer.gameObject.transform.name+ ".sharedMesh = "+ renderer.sharedMesh.name);
+                Log.Combat?.WL(3, renderer.gameObject.transform.name + ".mesh = " + renderer.mesh.name);
                 renderer.transform.localPosition = sourceRenderer.transform.localPosition;
                 renderer.transform.localRotation = sourceRenderer.transform.localRotation;
                 renderer.transform.localScale = sourceRenderer.transform.localScale;
@@ -1339,15 +1297,15 @@ namespace CustomUnits {
           }
           if (mechRep.BlipObjectIdentified != null) {
             foreach (MeshFilter renderer in mechRep.BlipObjectIdentified.GetComponentsInChildren<MeshFilter>(true)) {
-              Log.WL(2, "BlipObjectIdentified:" + renderer.gameObject.transform.name);
+              Log.Combat?.WL(2, "BlipObjectIdentified:" + renderer.gameObject.transform.name);
               if (sourceRenderers.TryGetValue(renderer.gameObject.transform.name, out var sourceRenderer)) {
-                Log.WL(3, "found");
-                Log.WL(3, renderer.gameObject.transform.name + ".sharedMesh = " + renderer.sharedMesh.name);
-                Log.WL(3, renderer.gameObject.transform.name + ".mesh = " + renderer.mesh.name);
+                Log.Combat?.WL(3, "found");
+                Log.Combat?.WL(3, renderer.gameObject.transform.name + ".sharedMesh = " + renderer.sharedMesh.name);
+                Log.Combat?.WL(3, renderer.gameObject.transform.name + ".mesh = " + renderer.mesh.name);
                 renderer.sharedMesh = sourceRenderer.sharedMesh;
                 renderer.mesh = sourceRenderer.mesh;
-                Log.WL(3, renderer.gameObject.transform.name + ".sharedMesh = " + renderer.sharedMesh.name);
-                Log.WL(3, renderer.gameObject.transform.name + ".mesh = " + renderer.mesh.name);
+                Log.Combat?.WL(3, renderer.gameObject.transform.name + ".sharedMesh = " + renderer.sharedMesh.name);
+                Log.Combat?.WL(3, renderer.gameObject.transform.name + ".mesh = " + renderer.mesh.name);
                 renderer.transform.localPosition = sourceRenderer.transform.localPosition;
                 renderer.transform.localRotation = sourceRenderer.transform.localRotation;
                 renderer.transform.localScale = sourceRenderer.transform.localScale;
@@ -1408,7 +1366,7 @@ namespace CustomUnits {
       mechRep.MoveBlips(dataManager, custRepDef);
     }
     public static void InitCamoflage(this CustomMechRepresentationSimGame mechRep, GameObject source) {
-      Log.TWL(0, "CustomMechRepresentation.InitCamoflage " + mechRep.name);
+      Log.Combat?.TWL(0, "CustomMechRepresentation.InitCamoflage " + mechRep.name);
       Transform camoholder = null;
       Transform[] transforms = source.GetComponentsInChildren<Transform>(true);
       foreach (Transform tr in transforms) {
@@ -1417,18 +1375,18 @@ namespace CustomUnits {
         camoholder = tr;
         break;
       }
-      if (camoholder == null) { Log.WL(1, "camoholder not found"); return; }
+      if (camoholder == null) { Log.Combat?.WL(1, "camoholder not found"); return; }
       MeshRenderer renderer = camoholder.GetComponent<MeshRenderer>();
-      if (renderer == null) { Log.WL(1, "camoholder has no meshRenderer"); return; }
+      if (renderer == null) { Log.Combat?.WL(1, "camoholder has no meshRenderer"); return; }
       for (int index = 0; index < renderer.materials.Length; ++index) {
         if (index >= mechRep.defaultMechCustomization.paintPatterns.Length) { break; }
         mechRep.defaultMechCustomization.paintPatterns[index] = renderer.materials[index].GetTexture("_MainTex") as Texture2D;
-        Log.WL(1, "material:" + renderer.materials[index].name);
-        Log.WL(1, "found paint scheme:" + (mechRep.defaultMechCustomization.paintPatterns[index] == null ? "null" : mechRep.defaultMechCustomization.paintPatterns[index].name));
+        Log.Combat?.WL(1, "material:" + renderer.materials[index].name);
+        Log.Combat?.WL(1, "found paint scheme:" + (mechRep.defaultMechCustomization.paintPatterns[index] == null ? "null" : mechRep.defaultMechCustomization.paintPatterns[index].name));
       }
     }
     public static void InitCamoflage(this CustomMechRepresentation mechRep, GameObject source) {
-      Log.TWL(0, "CustomMechRepresentationSimGame.InitCamoflage " + mechRep.name);
+      Log.Combat?.TWL(0, "CustomMechRepresentationSimGame.InitCamoflage " + mechRep.name);
       Transform camoholder = null;
       Transform[] transforms = source.GetComponentsInChildren<Transform>(true);
       foreach (Transform tr in transforms) {
@@ -1437,20 +1395,20 @@ namespace CustomUnits {
         camoholder = tr;
         break;
       }
-      if (camoholder == null) { Log.WL(1, "camoholder not found"); return; }
+      if (camoholder == null) { Log.Combat?.WL(1, "camoholder not found"); return; }
       MeshRenderer renderer = camoholder.GetComponent<MeshRenderer>();
-      if (renderer == null) { Log.WL(1, "camoholder has no meshRenderer"); return; }
+      if (renderer == null) { Log.Combat?.WL(1, "camoholder has no meshRenderer"); return; }
       for (int index = 0; index < renderer.materials.Length; ++index) {
         if (index >= mechRep.defaultMechCustomization.paintPatterns.Length) { break; }
         mechRep.defaultMechCustomization.paintPatterns[index] = renderer.materials[index].GetTexture("_MainTex") as Texture2D;
-        Log.WL(1, "material:" + renderer.materials[index].name);
-        Log.WL(1, "found paint scheme:" + (mechRep.defaultMechCustomization.paintPatterns[index] == null ? "null" : mechRep.defaultMechCustomization.paintPatterns[index].name));
+        Log.Combat?.WL(1, "material:" + renderer.materials[index].name);
+        Log.Combat?.WL(1, "found paint scheme:" + (mechRep.defaultMechCustomization.paintPatterns[index] == null ? "null" : mechRep.defaultMechCustomization.paintPatterns[index].name));
       }
     }
     public static void CopyModel(this MechRepresentationSimGame mechRep, CustomActorRepresentationDef custRepDef, DataManager dataManager) {
       GameObject meshSource = null;
       if (string.IsNullOrEmpty(custRepDef.Id) == false) { meshSource = dataManager.PooledInstantiate(custRepDef.Id, BattleTechResourceType.Prefab); }
-      Log.TWL(0, "CustomActorRepresentationHelper.CopyMechRep " + mechRep.name + " meshSrc:" + meshSource.name);
+      Log.Combat?.TWL(0, "CustomActorRepresentationHelper.CopyMechRep " + mechRep.name + " meshSrc:" + meshSource.name);
       try {
         SkinnedMeshRenderer[] recvRenderers = mechRep.GetComponentsInChildren<SkinnedMeshRenderer>(true);
         SkinnedMeshRenderer[] srcRenderers = meshSource.GetComponentsInChildren<SkinnedMeshRenderer>(true);
@@ -1467,15 +1425,15 @@ namespace CustomUnits {
             if (srcAddMat == null) srcAddMat = renderer.sharedMaterial;
           }
         }
-        Log.WL(1, "base source material:" + (srcBaseMat == null ? "null" : srcBaseMat.name));
-        Log.WL(1, "additional source material:" + (srcAddMat == null ? "null" : srcAddMat.name));
+        Log.Combat?.WL(1, "base source material:" + (srcBaseMat == null ? "null" : srcBaseMat.name));
+        Log.Combat?.WL(1, "additional source material:" + (srcAddMat == null ? "null" : srcAddMat.name));
         Material trgBaseMat = null;
         Material trgAddMat = null;
         foreach (SkinnedMeshRenderer renderer in recvRenderers) {
           if (renderer.sharedMaterial.name.Contains("base")) {
             if ((trgBaseMat == null) && (srcBaseMat != null)) {
               trgBaseMat = UnityEngine.Object.Instantiate(renderer.sharedMaterial);
-              Log.WL(1, "altering base material:" + renderer.sharedMaterial.name);
+              Log.Combat?.WL(1, "altering base material:" + renderer.sharedMaterial.name);
               trgBaseMat.SetTexture("_MainTex", srcBaseMat.GetTexture("_MainTex"));
               trgBaseMat.SetTextureOffset("_MainTex", srcBaseMat.GetTextureOffset("_MainTex"));
               trgBaseMat.SetTextureScale("_MainTex", srcBaseMat.GetTextureScale("_MainTex"));
@@ -1495,7 +1453,7 @@ namespace CustomUnits {
           } else {
             if ((trgAddMat == null) && (srcAddMat != null)) {
               trgAddMat = UnityEngine.Object.Instantiate(renderer.sharedMaterial);
-              Log.WL(1, "altering base material:" + renderer.sharedMaterial.name);
+              Log.Combat?.WL(1, "altering base material:" + renderer.sharedMaterial.name);
               trgAddMat.SetTexture("_MainTex", srcAddMat.GetTexture("_MainTex"));
               trgAddMat.SetTextureOffset("_MainTex", srcAddMat.GetTextureOffset("_MainTex"));
               trgAddMat.SetTextureScale("_MainTex", srcAddMat.GetTextureScale("_MainTex"));
@@ -1514,13 +1472,13 @@ namespace CustomUnits {
             }
           }
         }
-        Log.WL(1, "base target material:" + (trgBaseMat == null ? "null" : trgBaseMat.name));
-        Log.WL(1, "additional target material:" + (trgAddMat == null ? "null" : trgAddMat.name));
+        Log.Combat?.WL(1, "base target material:" + (trgBaseMat == null ? "null" : trgBaseMat.name));
+        Log.Combat?.WL(1, "additional target material:" + (trgAddMat == null ? "null" : trgAddMat.name));
         GameObject emptyGo = new GameObject("emptyMesh");
         emptyGo.AddComponent<MeshRenderer>();
         emptyGo.AddComponent<MeshFilter>();
         Mesh emptyMesh = emptyGo.GetComponent<MeshFilter>().mesh;
-        Log.WL(1, "emptyMesh:" + (emptyMesh == null ? "null" : emptyMesh.name));
+        Log.Combat?.WL(1, "emptyMesh:" + (emptyMesh == null ? "null" : emptyMesh.name));
         foreach (SkinnedMeshRenderer renderer in recvRenderers) {
           if (renderer.sharedMaterials.Length > 1) { continue; }
           if (renderer.sharedMesh == null) { continue; }
@@ -1542,32 +1500,32 @@ namespace CustomUnits {
             if (renderer.gameObject.activeInHierarchy == false) {
               continue;
             }
-            Log.WL(3, "destroying:" + renderer.name);
+            Log.Combat?.WL(3, "destroying:" + renderer.name);
             renderer.sharedMesh = emptyMesh;
           }
         }
         GameObject.Destroy(emptyGo);
         Transform[] transforms = meshSource.GetComponentsInChildren<Transform>(true);
-        Log.WL(1, "searching paint schemes holder");
+        Log.Combat?.WL(1, "searching paint schemes holder");
         MechCustomization mechCustomization = mechRep.GetComponentInChildren<MechCustomization>(true);
         if (mechCustomization != null) {
-          Log.WL(2, "MechCustomization found");
+          Log.Combat?.WL(2, "MechCustomization found");
           foreach (Transform tr in transforms) {
             if (tr.name.Contains("camoholder")) {
-              Log.WL(2, "camoholder found");
+              Log.Combat?.WL(2, "camoholder found");
               MeshRenderer camosource = tr.gameObject.GetComponent<MeshRenderer>();
-              if (camosource == null) { Log.WL(3, "no mesh renderer"); continue; }
-              if (camosource.materials.Length == 0) { Log.WL(3, "no materials"); continue; }
+              if (camosource == null) { Log.Combat?.WL(3, "no mesh renderer"); continue; }
+              if (camosource.materials.Length == 0) { Log.Combat?.WL(3, "no materials"); continue; }
               for (int i = 0; i < Math.Min(camosource.materials.Length, mechCustomization.paintPatterns.Length); ++i) {
-                Log.WL(3, "material:" + camosource.materials[i].name);
+                Log.Combat?.WL(3, "material:" + camosource.materials[i].name);
                 mechCustomization.paintPatterns[i] = camosource.materials[i].GetTexture("_MainTex") as Texture2D;
-                Log.WL(4, "found paint scheme:" + (mechCustomization.paintPatterns[i] == null ? "null" : mechCustomization.paintPatterns[i].name));
+                Log.Combat?.WL(4, "found paint scheme:" + (mechCustomization.paintPatterns[i] == null ? "null" : mechCustomization.paintPatterns[i].name));
               }
             };
           }
         }
       } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
+        Log.Combat?.TWL(0, e.ToString(), true);
       }
     }
     public static HashSet<Renderer> GetMeshRenderers(this GameObject go) {
@@ -1606,11 +1564,11 @@ namespace CustomUnits {
       custMechRep.Copy(vRep);
       MechCustomization vehicleCust = vRep.gameObject.GetComponentInChildren<MechCustomization>(true);
       if (vehicleCust != null) { GameObject.DestroyImmediate(vehicleCust); }
-      Log.TWL(0, "CustomMechRepresentation.InitFromVehicle");
+      Log.Combat?.TWL(0, "CustomMechRepresentation.InitFromVehicle");
       foreach(var blipName in BlipObjectNames) {
         Transform BlipObjectM = defaultMechRepGO.transform.FindRecursive(blipName.Key);
         Transform BlipObjectV = vRep.transform.FindRecursive(blipName.Key);
-        Log.WL(1, "blip:" + blipName.Key + ":" + blipName.Value+" mech found "+(BlipObjectM!=null)+" vehcile found "+ (BlipObjectV!=null));
+        Log.Combat?.WL(1, "blip:" + blipName.Key + ":" + blipName.Value+" mech found "+(BlipObjectM!=null)+" vehcile found "+ (BlipObjectV!=null));
         Transform parent = defaultMechRepGO.transform;
         if (BlipObjectM != null) { parent = BlipObjectM.parent; }
         if ((BlipObjectM != null)&&(BlipObjectV != null)) {
@@ -1645,18 +1603,18 @@ namespace CustomUnits {
       vRepGO.transform.localScale = Vector3.one;
       vRepGO.transform.localRotation = Quaternion.identity;
       custMechRep.vehicleRep = vRepGO.transform;
-      Log.WL(1, "vRep now parent: "+ (custMechRep.vehicleRep.parent == null?"null": custMechRep.vehicleRep.name));
+      Log.Combat?.WL(1, "vRep now parent: "+ (custMechRep.vehicleRep.parent == null?"null": custMechRep.vehicleRep.name));
       return custMechRep;
     }
     public static GameObject ProcessBattle(DataManager dataManager,ref GameObject result, CustomActorRepresentationDef custRepDef, ChassisDef chassisDef) {
-      Log.TWL(0, "CustomActorRepresentationHelper.ProcessBattle custom representation found:" + custRepDef.Id);
+      Log.Combat?.TWL(0, "CustomActorRepresentationHelper.ProcessBattle custom representation found:" + custRepDef.Id);
       MechRepresentation mechRep = result.GetComponent<MechRepresentation>();
       CustomMechRepresentation custMechRep = null;
       if (mechRep == null) {
-        Log.WL(1, "no MechRepresentation:" + result.name);
+        Log.Combat?.WL(1, "no MechRepresentation:" + result.name);
         VehicleRepresentation vehicleRep = result.GetComponent<VehicleRepresentation>();
         if (vehicleRep == null) {
-          Log.WL(1, "no VehicleRepresentation:" + result.name);
+          Log.Combat?.WL(1, "no VehicleRepresentation:" + result.name);
           return result;
         }
         custMechRep = vehicleRep.InitFromVehicle(dataManager);
@@ -1679,7 +1637,7 @@ namespace CustomUnits {
           GameObject.DestroyImmediate(propertyBlock);
           propertyBlock = null;
           custMechRep._propertyBlock = custPropertyBlock;
-          Log.WL(0, "customPropertyBlock " + (custMechRep.customPropertyBlock == null ? "null" : custMechRep.customPropertyBlock.gameObject.name));
+          Log.Combat?.WL(0, "customPropertyBlock " + (custMechRep.customPropertyBlock == null ? "null" : custMechRep.customPropertyBlock.gameObject.name));
         }
       }
       if (mechCust != null) {
@@ -1710,11 +1668,11 @@ namespace CustomUnits {
       return result;
     }
     public static GameObject ProcessSimGame(DataManager dataManager, ref GameObject result, CustomActorRepresentationDef custRepDef, ChassisDef chassisDef) {
-      Log.TWL(0, "CustomActorRepresentationHelper.ProcessSimGame custom representation found:" + custRepDef.Id);
+      Log.Combat?.TWL(0, "CustomActorRepresentationHelper.ProcessSimGame custom representation found:" + custRepDef.Id);
       try {
         MechRepresentationSimGame mechRep = result.gameObject.GetComponent<MechRepresentationSimGame>();
         if (mechRep == null) {
-          Log.WL(1, "no MechRepresentationSimGame:" + result.name);
+          Log.Combat?.WL(1, "no MechRepresentationSimGame:" + result.name);
         } else {
           CustomMechRepresentationSimGame custMechRep = result.gameObject.GetComponent<CustomMechRepresentationSimGame>();
           if (custMechRep == null) {
@@ -1736,7 +1694,7 @@ namespace CustomUnits {
               GameObject.DestroyImmediate(propertyBlock);
               propertyBlock = null;
               custMechRep.propertyBlock = custPropertyBlock;
-              Log.WL(0, "customPropertyBlock " + (custMechRep.customPropertyBlock == null ? "null" : custMechRep.customPropertyBlock.gameObject.name));
+              Log.Combat?.WL(0, "customPropertyBlock " + (custMechRep.customPropertyBlock == null ? "null" : custMechRep.customPropertyBlock.gameObject.name));
             }
           }
           if (mechCust != null) {
@@ -1758,12 +1716,13 @@ namespace CustomUnits {
           custMechRep.customRep = customRepresentation;
         }
       } catch (Exception e) {
-        Log.TWL(0,e.ToString(),true);
+        Log.Combat?.TWL(0,e.ToString(),true);
+        MechLabPanel.logger.LogException(e);
       }
       return result;
     }
     public static GameObject ProcessAlternatesBattle(DataManager dataManager, ref GameObject result, string id, CustomActorRepresentationDef custRepDef, ChassisDef chassisDef) {
-      Log.TWL(0, "ProsessAlternatesBattle:"+id);
+      Log.Combat?.TWL(0, "ProsessAlternatesBattle:"+id);
       UnitCustomInfo customInfo = chassisDef.GetCustomInfo();
       MechRepresentation mechRepresentation = result.GetComponent<MechRepresentation>();
       if (mechRepresentation == null) { return result; }
@@ -1782,7 +1741,7 @@ namespace CustomUnits {
             GameObject.DestroyImmediate(propertyBlock);
             propertyBlock = null;
             altMechRepresentation._propertyBlock = custPropertyBlock;
-            Log.WL(0, "customPropertyBlock " + (altMechRepresentation.customPropertyBlock == null ? "null" : altMechRepresentation.customPropertyBlock.gameObject.name));
+            Log.Combat?.WL(0, "customPropertyBlock " + (altMechRepresentation.customPropertyBlock == null ? "null" : altMechRepresentation.customPropertyBlock.gameObject.name));
           }
         }
       }
@@ -1796,7 +1755,7 @@ namespace CustomUnits {
       MechCustomization mechCust = altMechRepresentation.GetComponentInChildren<MechCustomization>(true);
       if (mechCust != null) { GameObject.DestroyImmediate(mechCust); mechCust = null; }
       Transform j_Root = altMechRepresentation.transform.FindRecursive("j_Root");
-      Log.WL(1, "j_Root:"+(j_Root == null?"null": j_Root.parent.name));
+      Log.Combat?.WL(1, "j_Root:"+(j_Root == null?"null": j_Root.parent.name));
       //if (j_Root != null) { foreach (Transform child in j_Root) { objectsToDestroy.Add(child.gameObject); } }
       foreach (GameObject toDestroy in objectsToDestroy) { GameObject.DestroyImmediate(toDestroy); };
       objectsToDestroy.Clear();
@@ -1833,14 +1792,14 @@ namespace CustomUnits {
       return result;
     }
     public static GameObject ProcessSquadBattle(DataManager dataManager, ref GameObject result, string id, CustomActorRepresentationDef custRepDef, ChassisDef chassisDef) {
-      Log.TWL(0, "ProcessSquadBattle:" + id);
+      Log.Combat?.TWL(0, "ProcessSquadBattle:" + id);
       UnitCustomInfo customInfo = chassisDef.GetCustomInfo();
       MechRepresentation mechRepresentation = result.GetComponent<MechRepresentation>();
       if (mechRepresentation == null) {
-        Log.WL(1, "no MechRepresentation:" + result.name);
+        Log.Combat?.WL(1, "no MechRepresentation:" + result.name);
         VehicleRepresentation vehicleRep = result.GetComponent<VehicleRepresentation>();
         if (vehicleRep == null) {
-          Log.WL(1, "no VehicleRepresentation:" + result.name);
+          Log.Combat?.WL(1, "no VehicleRepresentation:" + result.name);
           return result;
         }
         var custMechRep = vehicleRep.InitFromVehicle(dataManager);
@@ -1862,7 +1821,7 @@ namespace CustomUnits {
             GameObject.DestroyImmediate(propertyBlock);
             propertyBlock = null;
             squadMechRepresentation._propertyBlock = custPropertyBlock;
-            Log.WL(0, "customPropertyBlock " + (squadMechRepresentation.customPropertyBlock == null ? "null" : squadMechRepresentation.customPropertyBlock.gameObject.name));
+            Log.Combat?.WL(0, "customPropertyBlock " + (squadMechRepresentation.customPropertyBlock == null ? "null" : squadMechRepresentation.customPropertyBlock.gameObject.name));
           }
         }
       }
@@ -1876,7 +1835,7 @@ namespace CustomUnits {
       MechCustomization mechCust = squadMechRepresentation.GetComponentInChildren<MechCustomization>(true);
       if (mechCust != null) { GameObject.DestroyImmediate(mechCust); mechCust = null; }
       Transform j_Root = squadMechRepresentation.transform.FindRecursive("j_Root");
-      Log.WL(1, "j_Root:" + (j_Root == null ? "null" : j_Root.parent.name));
+      Log.Combat?.WL(1, "j_Root:" + (j_Root == null ? "null" : j_Root.parent.name));
       //if (j_Root != null) { foreach (Transform child in j_Root) { objectsToDestroy.Add(child.gameObject); } }
       foreach (GameObject toDestroy in objectsToDestroy) { GameObject.DestroyImmediate(toDestroy); };
       objectsToDestroy.Clear();
@@ -1905,7 +1864,7 @@ namespace CustomUnits {
       return result;
     }
     public static GameObject ProcessSquadSimGame(DataManager dataManager, ref GameObject result, string id, CustomActorRepresentationDef custRepDef, ChassisDef chassisDef) {
-      Log.TWL(0, "ProcessSquadSimGame:" + id);
+      Log.Combat?.TWL(0, "ProcessSquadSimGame:" + id);
       UnitCustomInfo customInfo = chassisDef.GetCustomInfo();
       MechRepresentationSimGame mechRepresentation = result.GetComponent<MechRepresentationSimGame>();
       if (mechRepresentation == null) { return result; }
@@ -1924,7 +1883,7 @@ namespace CustomUnits {
           GameObject.DestroyImmediate(propertyBlock);
           propertyBlock = null;
           squadMechRepresentation.propertyBlock = custPropertyBlock;
-          Log.WL(0, "customPropertyBlock " + (squadMechRepresentation.customPropertyBlock == null ? "null" : squadMechRepresentation.customPropertyBlock.gameObject.name));
+          Log.Combat?.WL(0, "customPropertyBlock " + (squadMechRepresentation.customPropertyBlock == null ? "null" : squadMechRepresentation.customPropertyBlock.gameObject.name));
         }
       }
       squadMechRepresentation.UnregisterRenderers(squadMechRepresentation.VisibleObject);
@@ -1936,7 +1895,7 @@ namespace CustomUnits {
       MechCustomization mechCust = squadMechRepresentation.GetComponentInChildren<MechCustomization>(true);
       if (mechCust != null) { GameObject.DestroyImmediate(mechCust); mechCust = null; }
       Transform j_Root = squadMechRepresentation.transform.FindRecursive("j_Root");
-      Log.WL(1, "j_Root:" + (j_Root == null ? "null" : j_Root.parent.name));
+      Log.Combat?.WL(1, "j_Root:" + (j_Root == null ? "null" : j_Root.parent.name));
       //if (j_Root != null) { foreach (Transform child in j_Root) { objectsToDestroy.Add(child.gameObject); } }
       foreach (GameObject toDestroy in objectsToDestroy) { GameObject.DestroyImmediate(toDestroy); };
       objectsToDestroy.Clear();
@@ -1964,7 +1923,7 @@ namespace CustomUnits {
       return result;
     }
     public static GameObject ProcessQuadBattle(DataManager dataManager, ref GameObject result, string id, CustomActorRepresentationDef custRepDef, ChassisDef chassisDef) {
-      Log.TWL(0, "ProcessQuadBattle:" + id);
+      Log.Combat?.TWL(0, "ProcessQuadBattle:" + id);
       result = CustomActorRepresentationHelper.ProcessBattle(dataManager, ref result, custRepDef, chassisDef);
       UnitCustomInfo customInfo = chassisDef.GetCustomInfo();
       CustomMechRepresentation custMechRepresentation = result.GetComponent<CustomMechRepresentation>();
@@ -1996,7 +1955,7 @@ namespace CustomUnits {
         CustomMechMeshMerge merge = quadMechRepresentation.GetComponent<CustomMechMeshMerge>();
         if (merge != null) { GameObject.DestroyImmediate(merge); merge = null; }
         Transform j_Root = quadMechRepresentation.transform.FindRecursive("j_Root");
-        Log.WL(1, "j_Root:" + (j_Root == null ? "null" : j_Root.parent.name));
+        Log.Combat?.WL(1, "j_Root:" + (j_Root == null ? "null" : j_Root.parent.name));
         foreach (GameObject toDestroy in objectsToDestroy) { GameObject.DestroyImmediate(toDestroy); };
         objectsToDestroy.Clear();
         GameObject bodyGO = dataManager.PooledInstantiate(custRepDef.quadVisualInfo.BodyPrefab, BattleTechResourceType.Prefab);
@@ -2023,7 +1982,7 @@ namespace CustomUnits {
       return result;
     }
     public static GameObject ProcessQuadSimGame(DataManager dataManager, ref GameObject result, string id, CustomActorRepresentationDef custRepDef, ChassisDef chassisDef) {
-      Log.TWL(0, "ProcessQuadSimGame:" + id);
+      Log.Combat?.TWL(0, "ProcessQuadSimGame:" + id);
       result = CustomActorRepresentationHelper.ProcessSimGame(dataManager, ref result, custRepDef, chassisDef);
       UnitCustomInfo customInfo = chassisDef.GetCustomInfo();
       CustomMechRepresentationSimGame custMechRepresentation = result.GetComponent<CustomMechRepresentationSimGame>();
@@ -2052,7 +2011,7 @@ namespace CustomUnits {
           objectsToDestroy.Add(child.gameObject);
         }
         Transform j_Root = quadMechRepresentation.transform.FindRecursive("j_Root");
-        Log.WL(1, "j_Root:" + (j_Root == null ? "null" : j_Root.parent.name));
+        Log.Combat?.WL(1, "j_Root:" + (j_Root == null ? "null" : j_Root.parent.name));
         foreach (GameObject toDestroy in objectsToDestroy) { GameObject.DestroyImmediate(toDestroy); };
         objectsToDestroy.Clear();
         GameObject bodyGO = dataManager.PooledInstantiate(custRepDef.quadVisualInfo.BodyPrefab, BattleTechResourceType.Prefab);
@@ -2088,30 +2047,32 @@ namespace CustomUnits {
   [HarmonyPatch(MethodType.Getter)]
   [HarmonyPatch(new Type[] {  })]
   public static class MechMeshMerge_childrenRenderers {
-    public static bool Prefix(MechMeshMerge __instance, ref bool __state, ref SkinnedMeshRenderer[] ____childrenRenderers,ref GameObject ___visibleObject, ref SkinnedMeshRenderer[] __result) {
-      if (____childrenRenderers != null) {
-        __result = ____childrenRenderers; return false;
+    public static void Prefix(ref bool __runOriginal, MechMeshMerge __instance, ref bool __state, ref SkinnedMeshRenderer[] __result) {
+      if (!__runOriginal) { return; }
+      __runOriginal = false;
+      if (__instance._childrenRenderers != null) {
+        __result = __instance._childrenRenderers; return;
       }
       List<SkinnedMeshRenderer> result = new List<SkinnedMeshRenderer>();
-      SkinnedMeshRenderer[] list = ___visibleObject.GetComponentsInChildren<SkinnedMeshRenderer>(true);
-      Log.TWL(0, "MechMeshMerge.childrenRenderers populating");
+      SkinnedMeshRenderer[] list = __instance.visibleObject.GetComponentsInChildren<SkinnedMeshRenderer>(true);
+      Log.Combat?.TWL(0, "MechMeshMerge.childrenRenderers populating");
       foreach(SkinnedMeshRenderer renderer in list) {
         if (renderer.name.StartsWith("DESTROYING_")) { continue; }
         result.Add(renderer);
-        Log.WL(1, renderer.name);
+        Log.Combat?.WL(1, renderer.name);
       }
-      ____childrenRenderers = result.ToArray();
-      __result = ____childrenRenderers;
-      return false;
+      __instance._childrenRenderers = result.ToArray();
+      __result = __instance._childrenRenderers;
+      return;
     }
   }
   public static class MechCustomRepresentationHelper {
     //private static MethodInfo MechComponent_componentRep_set = null;
     public static void componentRep_set(this MechComponent cmp, ComponentRepresentation rep) {
-      Log.TWL(0, $"MechComponent.componentRep set {cmp.parent.PilotableActorDef.ChassisID}:{cmp.baseComponentRef.ComponentDefID} {rep.transform.name}");
+      Log.Combat?.TWL(0, $"MechComponent.componentRep set {cmp.parent.PilotableActorDef.ChassisID}:{cmp.baseComponentRef.ComponentDefID} {rep.transform.name}");
       ComponentRepresentation prevRep = cmp.componentRep;
       if (prevRep == rep) {
-        Log.WL(1,"no change");
+        Log.Combat?.WL(1,"no change");
         return;
       }
       Traverse.Create(cmp).Property<ComponentRepresentation>("componentRep").Value = rep;
@@ -2121,7 +2082,7 @@ namespace CustomUnits {
         WeaponEffect[] weaponEffects = prevWpnRep.gameObject.GetComponentsInChildren<WeaponEffect>(true);
         foreach (WeaponEffect weaponEffect in weaponEffects) {
           if (weaponEffect.transform.parent != prevWpnRep.transform) { continue; }
-          Log.WL(1, $"move weapon effect {weaponEffect.transform.name}");
+          Log.Combat?.WL(1, $"move weapon effect {weaponEffect.transform.name}");
           weaponEffect.gameObject.transform.parent = wpnRep.transform;
           weaponEffect.gameObject.transform.localPosition = Vector3.zero;
           weaponEffect.gameObject.transform.rotation = Quaternion.identity;
@@ -2135,7 +2096,7 @@ namespace CustomUnits {
     public static GameObject PooledInstantiate_CustomMechRep_MechLab(this DataManager dataManager, string id, ChassisDef chassisDef, bool squadProcess, bool quadProcess) {
       string origId = id;
       CustomActorRepresentationDef custRepDef = CustomActorRepresentationHelper.FindSimGame(origId);
-      Log.TWL(0, "DataManager.PooledInstantiate_CustomMechRep_MechLab " +id + " custRepDef:" + (custRepDef == null?"null":"not null"));
+      Log.Combat?.TWL(0, "DataManager.PooledInstantiate_CustomMechRep_MechLab " +id + " custRepDef:" + (custRepDef == null?"null":"not null"));
       if (custRepDef == null) {
         custRepDef = CustomActorRepresentationHelper.defaultCustomMechRepDef;        
       } else {
@@ -2177,9 +2138,9 @@ namespace CustomUnits {
         bool setupQuad = false;
         if (squadProcess) if (customInfo != null) { if (customInfo.SquadInfo.Troopers > 1) { setupSquad = true; } }
         if (quadProcess) if (customInfo != null) { if (custRepDef.quadVisualInfo.UseQuadVisuals) { setupQuad = true; } }
-        Log.WL(1, "setupAlternates:" + setupAlternates);
-        Log.WL(1, "setupSquad:" + setupSquad);
-        Log.WL(1, "setupQuad:" + setupQuad);
+        Log.Combat?.WL(1, "setupAlternates:" + setupAlternates);
+        Log.Combat?.WL(1, "setupSquad:" + setupSquad);
+        Log.Combat?.WL(1, "setupQuad:" + setupQuad);
         if (setupSquad) {
           return CustomActorRepresentationHelper.ProcessSquadSimGame(dataManager, ref result, id, custRepDef, chassisDef);
           //return CustomActorRepresentationHelper.ProcessSimGame(dataManager, ref result, custRepDef, chassisDef);
@@ -2202,7 +2163,7 @@ namespace CustomUnits {
       } else {
         id = custRepDef.SourcePrefabIdentifier;
       }
-      Log.TWL(0, "DataManager.PooledInstantiateCustomRep " + origId+"->"+id);
+      Log.Combat?.TWL(0, "DataManager.PooledInstantiateCustomRep " + origId+"->"+id);
       GameObject result = dataManager.PooledInstantiate(id, BattleTechResourceType.Prefab);
       UnitCustomInfo customInfo = chassisDef.GetCustomInfo();
       if (result != null) {
@@ -2213,9 +2174,9 @@ namespace CustomUnits {
         if(altProcess) if (customInfo != null) { if (customInfo.AlternateRepresentations.Count > 0) { setupAlternates = true; } }
         if (squadProcess) if (customInfo != null) { if (customInfo.SquadInfo.Troopers > 1) { setupSquad = true; } }
         if (quadProcess) if (customInfo != null) { if (custRepDef.quadVisualInfo.UseQuadVisuals) { setupQuad = true; } }
-        Log.WL(1, "setupAlternates:"+ setupAlternates);
-        Log.WL(1, "setupSquad:" + setupSquad);
-        Log.WL(1, "setupQuad:" + setupQuad);
+        Log.Combat?.WL(1, "setupAlternates:"+ setupAlternates);
+        Log.Combat?.WL(1, "setupSquad:" + setupSquad);
+        Log.Combat?.WL(1, "setupQuad:" + setupQuad);
         if (setupSquad) {
           return CustomActorRepresentationHelper.ProcessSquadBattle(dataManager, ref result, origId, custRepDef, chassisDef);
         } else {
@@ -2233,7 +2194,7 @@ namespace CustomUnits {
       return result;
     }
     public static void TestMissingMaterials(this GameObject prefab, string id, DataManager dataManager) {
-      Log.TWL(0, "TestMissingMaterials:"+id);
+      Log.Combat?.TWL(0, "TestMissingMaterials:"+id);
       HashSet<Renderer> renderers = new HashSet<Renderer>();
       foreach(SkinnedMeshRenderer renderer in prefab.GetComponentsInChildren<SkinnedMeshRenderer>(true)) {
         renderers.Add(renderer);
@@ -2244,7 +2205,7 @@ namespace CustomUnits {
       }
       foreach (Renderer renderer in renderers) {
         if (renderer.sharedMaterial == null) {
-          Log.WL(1, renderer.gameObject.name+" has missing material");
+          Log.Combat?.WL(1, renderer.gameObject.name+" has missing material");
         }
       }
     }
@@ -2257,10 +2218,10 @@ namespace CustomUnits {
     public static void Prefix(Renderer __instance, Material value) {
       try {
         if (value == null) {
-          Log.TWL(0, "Renderer.sharedMaterial set null "+ __instance.gameObject.name);
+          Log.Combat?.TWL(0, "Renderer.sharedMaterial set null "+ __instance.gameObject.name);
         }
       } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
+        Log.Combat?.TWL(0, e.ToString(), true);
       }
     }
   }

@@ -78,13 +78,13 @@ namespace CustomUnits {
       };
     }
     public virtual void AddForwardLegs(CustomMechRepresentation flegs) {
-      Log.TWL(0, "QuadRepresentation.AddForwardLegs " + this.gameObject.name + " " + (flegs == null ? "null" : flegs.name));
+      Log.Combat?.TWL(0, "QuadRepresentation.AddForwardLegs " + this.gameObject.name + " " + (flegs == null ? "null" : flegs.name));
       this.ForwardLegs = flegs;
       flegs.transform.SetParent(j_Root);
       //frontLegs.HardpointData = dataManager.GetObjectOfType<HardpointDataDef>(customInfo.quadVisualInfo.);
       flegs.VisibleObject.name = "front_legs";
       flegs.VisibleObject.transform.SetParent(this.VisibleObject.transform);
-      Log.WL(1, "SuppressVisuals " + (flegs.VisibleObject == null ? "null" : flegs.VisibleObject.name) + " quadVisualInfo:" + (quadVisualInfo == null ? "null" : "not null"));
+      Log.Combat?.WL(1, "SuppressVisuals " + (flegs.VisibleObject == null ? "null" : flegs.VisibleObject.name) + " quadVisualInfo:" + (quadVisualInfo == null ? "null" : "not null"));
       QuadRepresentation.SuppressVisuals(flegs, flegs.VisibleObject, quadVisualInfo.SuppressRenderers, quadVisualInfo.NotSuppressRenderers);
       this.VisualObjects.Add(flegs.VisibleObject);
       this.slaveRepresentations.Add(flegs);
@@ -157,20 +157,20 @@ namespace CustomUnits {
       rep.headlightReps.Clear();
     }
     public virtual void InitDestructable(Transform bodyRoot) {
-      Log.TWL(0, "QuadRepresentation.InitDestructable quadVisualInfo:"+(this.quadVisualInfo==null?"null":"not null"));
+      Log.Combat?.TWL(0, "QuadRepresentation.InitDestructable quadVisualInfo:"+(this.quadVisualInfo==null?"null":"not null"));
       if (this.quadVisualInfo == null) { return; }
       foreach(var destr in this.quadVisualInfo.Destructables) {
-        Log.WL(1, "searching obj:" + destr.Value.Name + " whole:" + destr.Value.wholeObj + " destroyedObj:" + destr.Value.destroyedObj);
+        Log.Combat?.WL(1, "searching obj:" + destr.Value.Name + " whole:" + destr.Value.wholeObj + " destroyedObj:" + destr.Value.destroyedObj);
         Transform obj = bodyRoot.FindRecursive(destr.Value.Name);
         Transform wholeObj = bodyRoot.FindRecursive(destr.Value.wholeObj);
         Transform destroyedObj = bodyRoot.FindRecursive(destr.Value.destroyedObj);
-        if (obj == null) { Log.WL(1, "obj not found"); continue; }
-        if (wholeObj == null) { Log.WL(1, "wholeObj not found"); continue; }
-        if (destroyedObj == null) { Log.WL(1, "destroyedObj not found"); continue; }
+        if (obj == null) { Log.Combat?.WL(1, "obj not found"); continue; }
+        if (wholeObj == null) { Log.Combat?.WL(1, "wholeObj not found"); continue; }
+        if (destroyedObj == null) { Log.Combat?.WL(1, "destroyedObj not found"); continue; }
         MechDestructibleObject dObj = obj.gameObject.AddComponent<MechDestructibleObject>();
         dObj.destroyedObj = destroyedObj.gameObject;
         dObj.wholeObj = wholeObj.gameObject;
-        Log.WL(2, "updating destructible:" + destr.Key);
+        Log.Combat?.WL(2, "updating destructible:" + destr.Key);
         switch (destr.Key) {
           case ChassisLocations.Head: this.headDestructible = dObj; break;
           case ChassisLocations.CenterTorso: this.centerTorsoDestructible = dObj; break;
@@ -189,7 +189,7 @@ namespace CustomUnits {
         camoholder = camoholderGo.gameObject.GetComponent<MeshRenderer>();
         camoholderGo.transform.SetParent(this.VisibleObject.transform);
       }
-      Log.TWL(0, "QuadRepresentation.AddBody: camoholder:" + (camoholder==null?"null":camoholder.name));
+      Log.Combat?.TWL(0, "QuadRepresentation.AddBody: camoholder:" + (camoholder==null?"null":camoholder.name));
       if (bodyRoot != null) {
         bodyRoot.name = "j_QuadSkeleton";
         bodyRoot.SetParent(this.j_Root);
@@ -207,14 +207,14 @@ namespace CustomUnits {
         if (string.IsNullOrEmpty(quadVisualInfo.BodyShaderSource) == false) {
           GameObject shaderSource = dataManager.PooledInstantiate(quadVisualInfo.BodyShaderSource, BattleTechResourceType.Prefab);
           if (shaderSource != null) {
-            Log.WL(1, "shader prefab found");
+            Log.Combat?.WL(1, "shader prefab found");
             Renderer shaderComponent = shaderSource.GetComponentInChildren<Renderer>();
             Renderer[] shaderTargets = bodyMesh.GetComponentsInChildren<Renderer>(true);
             foreach (Renderer renderer in shaderTargets) {
               if (renderer.gameObject.name.StartsWith("camoholder")) { continue; }
-              Log.WL(2, "renderer:" + renderer.name);
+              Log.Combat?.WL(2, "renderer:" + renderer.name);
               for (int mindex = 0; mindex < renderer.materials.Length; ++mindex) {
-                Log.WL(3, "material:" + renderer.materials[mindex].name + " <- " + shaderComponent.material.shader.name);
+                Log.Combat?.WL(3, "material:" + renderer.materials[mindex].name + " <- " + shaderComponent.material.shader.name);
                 renderer.materials[mindex].shader = shaderComponent.material.shader;
                 renderer.materials[mindex].shaderKeywords = shaderComponent.material.shaderKeywords;
               }
@@ -409,7 +409,8 @@ namespace CustomUnits {
         this.ForwardLegs.OnPlayerVisibilityChangedCustom(legsLevel);
         this.RearLegs.OnPlayerVisibilityChangedCustom(legsLevel);
       }catch(Exception e) {
-        Log.TWL(0, e.ToString(),true);
+        Log.Combat?.TWL(0, e.ToString(),true);
+        AbstractActor.logger.LogException(e);
       }
     }
     public override void PlayShutdownAnim() {
@@ -445,7 +446,7 @@ namespace CustomUnits {
       if (!this.parentActor.WasEjected) { this.PlayDeathVFX(deathMethod, location); }
       List<string> stringList = new List<string>((IEnumerable<string>)this.persistentVFXParticles.Keys);
       for (int index = stringList.Count - 1; index >= 0; --index) { this.StopManualPersistentVFX(stringList[index]); }
-      this.__IsDead = true;
+      this._IsDead = true;
       if (deathMethod != DeathMethod.PilotKilled && !this.parentActor.WasEjected) {
         string vfxName;
         switch (UnityEngine.Random.Range(0, 4)) {
@@ -511,11 +512,11 @@ namespace CustomUnits {
       this.headlightReps.Clear();
       if (string.IsNullOrEmpty(Core.Settings.CustomHeadlightComponentPrefab)) { return; }
       GameObject headlightSrcPrefab = this._Combat.DataManager.PooledInstantiate(Core.Settings.CustomHeadlightComponentPrefab, BattleTechResourceType.Prefab);
-      Log.WL(0, "headlightSrcPrefab:" + (headlightSrcPrefab == null ? "null" : headlightSrcPrefab.name));
+      Log.Combat?.WL(0, "headlightSrcPrefab:" + (headlightSrcPrefab == null ? "null" : headlightSrcPrefab.name));
       if (headlightSrcPrefab != null) {
         //jumpJetSrcPrefab.printComponents(1);
         Transform headlightSrc = headlightSrcPrefab.transform.FindRecursive(Core.Settings.CustomHeadlightPrefabSrcObjectName);
-        Log.WL(0, "headlightSrc:" + (headlightSrc == null ? "null" : headlightSrc.name));
+        Log.Combat?.WL(0, "headlightSrc:" + (headlightSrc == null ? "null" : headlightSrc.name));
         if (headlightSrc != null) {
           foreach (string headlightAttachName in this.quadVisualInfo.HeadLights) {
             if (string.IsNullOrEmpty(headlightAttachName)) { continue; }
@@ -568,7 +569,7 @@ namespace CustomUnits {
     public override void _ToggleRandomIdles(bool shouldIdle) {
       if (this.parentMech.IsOrWillBeProne || !this.parentMech.IsOperational || this.parentMech.IsDead) { return; }
       base._allowRandomIdles = shouldIdle;
-      Log.TWL(0, "QuadRepresentation._ToggleRandomIdles " + shouldIdle + " " + this.parentMech.MechDef.ChassisID);
+      Log.Combat?.TWL(0, "QuadRepresentation._ToggleRandomIdles " + shouldIdle + " " + this.parentMech.MechDef.ChassisID);
       if (this._allowRandomIdles) { return; }
       if (this.IsInMeleeIdle) {
         this.thisAnimator.CrossFadeInFixedTime(this.idleStateMeleeEntryHash, 0.15f);

@@ -28,34 +28,34 @@ namespace CustomUnits {
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { })]
   public static class MechMeshMerge_GenerateCache {
-    public static bool Prefix(MechMeshMerge __instance) { return false; }
+    public static void Prefix(ref bool __runOriginal, MechMeshMerge __instance) { __runOriginal = false; return; }
   }
   [HarmonyPatch(typeof(MechMeshMerge))]
   [HarmonyPatch("OnDestroy")]
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { })]
   public static class MechMeshMerge_OnDestroy {
-    public static bool Prefix(MechMeshMerge __instance) { return false; }
+    public static void Prefix(ref bool __runOriginal, MechMeshMerge __instance) { __runOriginal = false; return; }
   }
   [HarmonyPatch(typeof(MechMeshMerge))]
   [HarmonyPatch("BuildCombinedMesh")]
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { })]
   public static class MechMeshMerge_BuildCombinedMesh {
-    public static bool Prefix(MechMeshMerge __instance) { return false; }
+    public static void Prefix(ref bool __runOriginal, MechMeshMerge __instance) { __runOriginal = false; return; }
   }
   [HarmonyPatch(typeof(MechMeshMerge))]
   [HarmonyPatch("RefreshCombinedMesh")]
   [HarmonyPatch(MethodType.Normal)]
   public static class MechMeshMerge_RefreshCombinedMesh {
-    public static bool Prefix(MechMeshMerge __instance) { return false; }
+    public static void Prefix(ref bool __runOriginal, MechMeshMerge __instance) { __runOriginal = false; return; }
   }
   [HarmonyPatch(typeof(MechMeshMerge))]
   [HarmonyPatch("OnEnable")]
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { })]
   public static class MechMeshMerge_OnEnable {
-    public static bool Prefix(MechMeshMerge __instance) { return false; }
+    public static void Prefix(ref bool __runOriginal, MechMeshMerge __instance) { __runOriginal = false; return; }
   }
   public class CustomMechMeshMerge : MonoBehaviour {
     private Dictionary<SkinnedMeshRenderer, CustomMechMeshMerge.CombineInfo> meshBoneDict;
@@ -106,12 +106,12 @@ namespace CustomUnits {
           nomerge.Add(nomerge_renderer);
         }
         SkinnedMeshRenderer[] skinnedRenderers = this.visibleObject.GetComponentsInChildren<SkinnedMeshRenderer>(true);
-        Log.TWL(0, "CustomMechMeshMerge.childrenRenderers");
+        Log.Combat?.TWL(0, "CustomMechMeshMerge.childrenRenderers");
         foreach (SkinnedMeshRenderer renderer in skinnedRenderers) {
           if (renderer.gameObject.name.Contains("camoholder")) { continue; }
           if (nomerge.Contains(renderer)) { continue; };
           if (renderer.gameObject.GetComponent<Rigidbody>() != null) { continue; }
-          Log.WL(0, renderer.gameObject.name);
+          Log.Combat?.WL(0, renderer.gameObject.name);
           this._childrenRenderers.Add(renderer);
         }
         return this._childrenRenderers;
@@ -120,7 +120,7 @@ namespace CustomUnits {
 
     public static Texture2D damageAlbedo {
       get {
-        if ((Object)CustomMechMeshMerge._damageAlbedo == (Object)null)
+        if (CustomMechMeshMerge._damageAlbedo == null)
           CustomMechMeshMerge._damageAlbedo = Resources.Load<Texture2D>("Textures/mech_tiling_dmg_alb");
         return CustomMechMeshMerge._damageAlbedo;
       }
@@ -128,7 +128,7 @@ namespace CustomUnits {
 
     public static Texture2D damageNormal {
       get {
-        if ((Object)CustomMechMeshMerge._damageNormal == (Object)null)
+        if (CustomMechMeshMerge._damageNormal == null)
           CustomMechMeshMerge._damageNormal = Resources.Load<Texture2D>("Textures/mech_tiling_dmg_nrm");
         return CustomMechMeshMerge._damageNormal;
       }
@@ -141,16 +141,16 @@ namespace CustomUnits {
       Matrix4x4 worldToLocalMatrix = this.visibleObject.transform.worldToLocalMatrix;
       this.meshList = new List<Mesh>();
       this.bindPoses = new List<Matrix4x4>();
-      Log.TWL(0, "CustomMechMerge.GenerateCache "+this.parentRepresentation.gameObject.name);
+      Log.Combat?.TWL(0, "CustomMechMerge.GenerateCache "+this.parentRepresentation.gameObject.name);
       for (int index1 = 0; index1 < this.childrenRenderers.Count; ++index1) {
-        Log.WL(1, this.childrenRenderers[index1].gameObject.name+ " sharedMaterials:"+ this.childrenRenderers[index1].sharedMaterials.Length+ " sharedMesh:"+ (this.childrenRenderers[index1].sharedMesh==null?"null": this.childrenRenderers[index1].sharedMesh.name));
-        if (this.childrenRenderers[index1].sharedMaterials.Length <= 1 && !((Object)this.childrenRenderers[index1].sharedMesh == (Object)null)) {
+        Log.Combat?.WL(1, this.childrenRenderers[index1].gameObject.name+ " sharedMaterials:"+ this.childrenRenderers[index1].sharedMaterials.Length+ " sharedMesh:"+ (this.childrenRenderers[index1].sharedMesh==null?"null": this.childrenRenderers[index1].sharedMesh.name));
+        if (this.childrenRenderers[index1].sharedMaterials.Length <= 1 && !(this.childrenRenderers[index1].sharedMesh == null)) {
           Material sharedMaterial = this.childrenRenderers[index1].sharedMaterial;
-          if (!((Object)sharedMaterial == (Object)null) && !sharedMaterial.name.Contains("weapons")) {
+          if (!(sharedMaterial == null) && !sharedMaterial.name.Contains("weapons")) {
             int matIndex = sharedMaterial.name.Contains("base") ? 0 : 1;
             this.materialCount = Mathf.Max(this.materialCount, matIndex + 1);
-            if (!((Object)this.childrenRenderers[index1].transform.parent.GetComponent<Rigidbody>() != (Object)null)) {
-              if ((Object)this.mechMaterial[matIndex] == (Object)null) {
+            if (!(this.childrenRenderers[index1].transform.parent.GetComponent<Rigidbody>() != null)) {
+              if (this.mechMaterial[matIndex] == null) {
                 this.mechMaterial[matIndex] = Object.Instantiate<Material>(sharedMaterial);
                 this.mechMaterial[matIndex].SetTexture(MechMeshMerge.Uniforms._DamageAlbedoMap, (Texture)MechMeshMerge.damageAlbedo);
                 this.mechMaterial[matIndex].SetTextureScale("_DamageAlbedoMap", new Vector2(6f, 6f));
@@ -163,7 +163,7 @@ namespace CustomUnits {
                 this.boneList.Add(transform);
                 boneIndex = this.boneList.IndexOf(transform);
                 if(this.childrenRenderers[index1].bones == null || this.childrenRenderers[index1].bones.Length == 0) {
-                  Log.WL(1, this.childrenRenderers[index1].gameObject.name+" does not have bones");
+                  Log.Combat?.WL(1, this.childrenRenderers[index1].gameObject.name+" does not have bones");
                   Transform[] bones = new Transform[1] { transform };
                   this.childrenRenderers[index1].bones = bones;
                   //BoneWeight[] weights = new BoneWeight[1];
@@ -171,17 +171,17 @@ namespace CustomUnits {
                   //weights[0].weight0 = 1;
                   //this.childrenRenderers[index1].sharedMesh.boneWeights = weights;
                 } else {
-                  Log.WL(1, this.childrenRenderers[index1].gameObject.name + " have bones "+ this.childrenRenderers[index1].bones.Length);
+                  Log.Combat?.WL(1, this.childrenRenderers[index1].gameObject.name + " have bones "+ this.childrenRenderers[index1].bones.Length);
                 }
                 if(this.childrenRenderers[index1].sharedMesh.bindposes == null || this.childrenRenderers[index1].sharedMesh.bindposes.Length == 0) {
-                  Log.WL(1, this.childrenRenderers[index1].gameObject.name + " does not have bindposes. Bones count:"+ this.childrenRenderers[index1].bones.Length);
+                  Log.Combat?.WL(1, this.childrenRenderers[index1].gameObject.name + " does not have bindposes. Bones count:"+ this.childrenRenderers[index1].bones.Length);
                   Matrix4x4[] bindposes = new Matrix4x4[this.childrenRenderers[index1].bones.Length];
                   for(int bindposeIndex = 0; bindposeIndex < bindposes.Length; ++bindposeIndex) {
                     bindposes[bindposeIndex] = this.childrenRenderers[index1].bones[bindposeIndex].worldToLocalMatrix * transform.localToWorldMatrix;
                   }
                   this.childrenRenderers[index1].sharedMesh.bindposes = bindposes;
                 } else {
-                  Log.WL(1, this.childrenRenderers[index1].gameObject.name + " have bindposes " + this.childrenRenderers[index1].sharedMesh.bindposes.Length);
+                  Log.Combat?.WL(1, this.childrenRenderers[index1].gameObject.name + " have bindposes " + this.childrenRenderers[index1].sharedMesh.bindposes.Length);
                 }
                 this.bindPoses.Add(this.childrenRenderers[index1].sharedMesh.bindposes[0] * this.childrenRenderers[index1].transform.worldToLocalMatrix);
               }
@@ -194,7 +194,7 @@ namespace CustomUnits {
         }
       }
       for (int index = 0; index < this.mechMaterial.Length; ++index) {
-        if ((Object)this.mechMaterial[index] != (Object)null) {
+        if (this.mechMaterial[index] != null) {
           this.explodeMechMaterial[index] = Object.Instantiate<Material>(this.mechMaterial[index]);
           this.explodeMechMaterial[index].EnableKeyword("_DAMAGED");
           this.explodeMechMaterial[index].EnableKeyword("_DAMAGEDFULL");
@@ -212,7 +212,7 @@ namespace CustomUnits {
       foreach (MeshRenderer componentsInChild in this.visibleObject.GetComponentsInChildren<MeshRenderer>(true)) {
         if (componentsInChild.name.Contains("camoholder")) { continue; }
         if (nomerge.Contains(componentsInChild)) { continue; }
-        Log.WL(0, "componentsInChild.name:" + componentsInChild.name);
+        Log.Combat?.WL(0, "componentsInChild.name:" + componentsInChild.name);
         Material[] sharedMaterials = componentsInChild.sharedMaterials;
         Material[] materialArray = new Material[sharedMaterials.Length];
         for (int index1 = 0; index1 < materialArray.Length; ++index1) {
@@ -266,8 +266,8 @@ namespace CustomUnits {
           num1 += combineInfo.newMesh.vertexCount;
         }
       }
-      if ((Object)this.combinedMesh0 != (Object)null) {
-        Object.DestroyImmediate((Object)this.combinedMesh0);
+      if (this.combinedMesh0 != null) {
+        Object.DestroyImmediate(this.combinedMesh0);
         this.combinedMesh0 = (Mesh)null;
       }
       if (CustomMechMeshMerge.combineVerts.Count > 0) {
@@ -312,8 +312,8 @@ namespace CustomUnits {
           num2 += combineInfo.newMesh.vertexCount;
         }
       }
-      if ((Object)this.combinedMesh1 != (Object)null) {
-        Object.DestroyImmediate((Object)this.combinedMesh1);
+      if (this.combinedMesh1 != null) {
+        Object.DestroyImmediate(this.combinedMesh1);
         this.combinedMesh1 = (Mesh)null;
       }
       if (CustomMechMeshMerge.combineVerts.Count != 0) {
@@ -332,7 +332,7 @@ namespace CustomUnits {
       }
       if ((double)this.bottom < 0.0 && (double)this.size < 0.0) {
         Bounds bounds = this.combinedMesh0.bounds;
-        if ((Object)this.combinedMesh1 != (Object)null)
+        if (this.combinedMesh1 != null)
           bounds.Encapsulate(this.combinedMesh1.bounds);
         this.bottom = bounds.center.y - bounds.extents.y;
         this.size = bounds.size.y;
@@ -348,7 +348,7 @@ namespace CustomUnits {
         }
         this.combinedMesh0.SetColors(CustomMechMeshMerge.combineColors);
         this.combinedMesh0.UploadMeshData(true);
-        if ((Object)this.combinedMesh1 != (Object)null) {
+        if (this.combinedMesh1 != null) {
           this.combinedMesh1.GetVertices(CustomMechMeshMerge.combineVerts);
           this.combinedMesh1.GetColors(CustomMechMeshMerge.combineColors);
           for (int index2 = 0; index2 < CustomMechMeshMerge.combineVerts.Count; ++index2) {
@@ -376,16 +376,16 @@ namespace CustomUnits {
 
     private void BuildCombinedMeshSingle() {
       if (this.visibleObject == null) { return; }
-      Log.TWL(0, "CustomMechMeshMerge.BuildCombinedMesh "+this.gameObject.transform.parent.name);
+      Log.Combat?.TWL(0, "CustomMechMeshMerge.BuildCombinedMesh "+this.gameObject.transform.parent.name);
       if (this.meshBoneDict == null || this.meshBoneDict.Count == 0) { this.GenerateCache(); }
       int num1 = 0;
-      Log.WL(1, "childrenRenderers:"+childrenRenderers.Count);
+      Log.Combat?.WL(1, "childrenRenderers:"+childrenRenderers.Count);
       foreach (SkinnedMeshRenderer rnd in childrenRenderers) {
-        Log.WL(2, rnd.transform.name+":"+rnd.gameObject.activeInHierarchy);
+        Log.Combat?.WL(2, rnd.transform.name+":"+rnd.gameObject.activeInHierarchy);
       }
-      Log.WL(1, "meshBoneDict:" + meshBoneDict.Count);
+      Log.Combat?.WL(1, "meshBoneDict:" + meshBoneDict.Count);
       foreach (var bone in meshBoneDict) {
-        Log.WL(2, bone.Key.transform.name+" triangles:"+bone.Value.triangles.Length);
+        Log.Combat?.WL(2, bone.Key.transform.name+" triangles:"+bone.Value.triangles.Length);
       }
       CustomMechMeshMerge.combineVerts.Clear();
       CustomMechMeshMerge.combineNormals.Clear();
@@ -440,48 +440,10 @@ namespace CustomUnits {
       CustomMechMeshMerge.combineIndicies.Clear();
       CustomMechMeshMerge.combineIndicies1.Clear();
       CustomMechMeshMerge.combineColors.Clear();
-      //int num2 = 0;
-      //for (; index1 < this.childrenRenderers.Count; ++index1) {
-      //  CustomMechMeshMerge.CombineInfo combineInfo;
-      //  if (this.childrenRenderers[index1].gameObject.activeInHierarchy && this.meshBoneDict.TryGetValue(this.childrenRenderers[index1], out combineInfo)) {
-      //    CustomMechMeshMerge.combineVerts.AddRange((IEnumerable<Vector3>)combineInfo.verts);
-      //    CustomMechMeshMerge.combineNormals.AddRange((IEnumerable<Vector3>)combineInfo.normals);
-      //    CustomMechMeshMerge.combineTangents.AddRange((IEnumerable<Vector4>)combineInfo.tangents);
-      //    CustomMechMeshMerge.combineUVs.AddRange((IEnumerable<Vector2>)combineInfo.uvs);
-      //    CustomMechMeshMerge.combineWeights.AddRange((IEnumerable<BoneWeight>)combineInfo.boneWeights);
-      //    CustomMechMeshMerge.combineColors.AddRange((IEnumerable<Color>)combineInfo.colors);
-      //    if (combineInfo.materialIndex == 0) {
-      //      for (int index2 = 0; index2 < combineInfo.triangles.Length; ++index2)
-      //        CustomMechMeshMerge.combineIndicies.Add(combineInfo.triangles[index2] + num2);
-      //    } else {
-      //      for (int index2 = 0; index2 < combineInfo.triangles.Length; ++index2)
-      //        CustomMechMeshMerge.combineIndicies1.Add(combineInfo.triangles[index2] + num2);
-      //    }
-      //    num2 += combineInfo.newMesh.vertexCount;
-      //  }
-      //}
-      //if ((Object)this.combinedMesh1 != (Object)null) {
-      //  Object.DestroyImmediate((Object)this.combinedMesh1);
-      //  this.combinedMesh1 = (Mesh)null;
-      //}
-      //if (CustomMechMeshMerge.combineVerts.Count != 0) {
-      //  this.combinedMesh1 = new Mesh();
-      //  this.combinedMesh1.subMeshCount = this.materialCount;
-      //  this.combinedMesh1.SetVertices(CustomMechMeshMerge.combineVerts);
-      //  this.combinedMesh1.SetTangents(CustomMechMeshMerge.combineTangents);
-      //  this.combinedMesh1.SetUVs(0, CustomMechMeshMerge.combineUVs);
-      //  this.combinedMesh1.boneWeights = CustomMechMeshMerge.combineWeights.ToArray();
-      //  this.combinedMesh1.SetTriangles(CustomMechMeshMerge.combineIndicies, 0, true);
-      //  if (CustomMechMeshMerge.combineIndicies1.Count > 0)
-      //    this.combinedMesh1.SetTriangles(CustomMechMeshMerge.combineIndicies1, 1, true);
-      //  this.combinedMesh1.SetNormals(CustomMechMeshMerge.combineNormals);
-      //  this.combinedMesh1.SetColors(CustomMechMeshMerge.combineColors);
-      //  this.combinedMesh1.bindposes = this.bindPoses.ToArray();
-      //}
       if (this.combinedMesh0 != null) {
         if ((double)this.bottom < 0.0 && (double)this.size < 0.0) {
           Bounds bounds = this.combinedMesh0.bounds;
-          //if ((Object)this.combinedMesh1 != (Object)null) bounds.Encapsulate(this.combinedMesh1.bounds);
+          //if (this.combinedMesh1 != null) bounds.Encapsulate(this.combinedMesh1.bounds);
           this.bottom = bounds.center.y - bounds.extents.y;
           this.size = bounds.size.y;
           foreach (KeyValuePair<SkinnedMeshRenderer, CustomMechMeshMerge.CombineInfo> keyValuePair in this.meshBoneDict)
@@ -496,33 +458,11 @@ namespace CustomUnits {
           }
           this.combinedMesh0.SetColors(CustomMechMeshMerge.combineColors);
           this.combinedMesh0.UploadMeshData(true);
-          //if ((Object)this.combinedMesh1 != (Object)null) {
-          //  this.combinedMesh1.GetVertices(CustomMechMeshMerge.combineVerts);
-          //  this.combinedMesh1.GetColors(CustomMechMeshMerge.combineColors);
-          //  for (int index2 = 0; index2 < CustomMechMeshMerge.combineVerts.Count; ++index2) {
-          //    float num3 = (CustomMechMeshMerge.combineVerts[index2].y - this.bottom) / this.size;
-          //    Color combineColor = CustomMechMeshMerge.combineColors[index2];
-          //    combineColor.g = num3;
-          //    CustomMechMeshMerge.combineColors[index2] = combineColor;
-          //  }
-          //  this.combinedMesh1.SetColors(CustomMechMeshMerge.combineColors);
-          //  this.combinedMesh1.UploadMeshData(true);
-          //}
         } else {
           this.combinedMesh0.UploadMeshData(true);
-          //this.combinedMesh1.UploadMeshData(true);
         }
       }
-      //CustomMechMeshMerge.combineVerts.Clear();
-      //CustomMechMeshMerge.combineNormals.Clear();
-      //CustomMechMeshMerge.combineTangents.Clear();
-      //CustomMechMeshMerge.combineUVs.Clear();
-      //CustomMechMeshMerge.combineWeights.Clear();
-      //CustomMechMeshMerge.combineIndicies.Clear();
-      //CustomMechMeshMerge.combineIndicies1.Clear();
-      //CustomMechMeshMerge.combineColors.Clear();
     }
-
     private void BuildCombinedMesh() {
       if (this.SingleMesh) { this.BuildCombinedMeshSingle(); } else { this.BuildCombinedMeshClassic(); }
     }
@@ -545,7 +485,7 @@ namespace CustomUnits {
         this.mainSkinRenderer0.enabled = false;
       }
       if (this.SingleMesh == false) {
-        if ((Object)this.combinedMesh1 != (Object)null) {
+        if (this.combinedMesh1 != null) {
           this.mainSkinRenderer1.sharedMesh = this.combinedMesh1;
           this.mainSkinRenderer1.enabled = true;
           this.mainSkinRenderer1.bones = this.boneList.ToArray();
@@ -554,7 +494,7 @@ namespace CustomUnits {
         }
       }
       for (int index = 0; index < this.mechMaterial.Length; ++index) {
-        if ((Object)this.mechMaterial[index] != (Object)null) {
+        if (this.mechMaterial[index] != null) {
           this.mechMaterial[index].SetTexture(MechMeshMerge.Uniforms._DamageAlbedoMap, (Texture)MechMeshMerge.damageAlbedo);
           this.mechMaterial[index].SetTextureScale("_DamageAlbedoMap", new Vector2(6f, 6f));
           this.mechMaterial[index].SetTexture(MechMeshMerge.Uniforms._DamageNormalMap, (Texture)MechMeshMerge.damageNormal);
@@ -564,21 +504,10 @@ namespace CustomUnits {
       if (this.blockManager != null) { this.blockManager.UpdateCache(); }
       if (!damaged) { return; }
       for (int index = 0; index < this.mechMaterial.Length; ++index) {
-        if ((Object)this.mechMaterial[index] != (Object)null)
+        if (this.mechMaterial[index] != null)
           this.mechMaterial[index].EnableKeyword("_DAMAGED");
       }
     }
-
-    //public void ForceEnable() => this.OnEnable();
-
-    //public void Init(GameObject visibleObject, UICreep uiCreep, PropertyBlockManager blockManager) {
-    //  Log.TWL(0, "CustomMechMeshMerge.Init " + this.name);
-    //  this.visibleObject = visibleObject;
-    //  this.uiCreep = uiCreep;
-    //  this.blockManager = blockManager;
-    //  if (OnEnableCalled) { this.OnEnable(); }
-    //}
-    //private bool OnEnableCalled = false;
     public void Init(CustomMechRepresentation parent, GameObject visibleObject, UICreep uiCreep, PropertyBlockManager blockManager,string prefix = null, MeshRenderer customHeraldry = null) {
       this.visibleObject = visibleObject;
       this.SingleMesh = this.childrenRenderers.Count < 10;
@@ -586,14 +515,14 @@ namespace CustomUnits {
       this.parentRepresentation = parent;
       this.uiCreep = uiCreep;
       this.blockManager = blockManager;
-      Log.TWL(0, "CustomMechMeshMerge.Init " + this.name + " visibleObject:"+(visibleObject == null?"null": visibleObject.name)+" uiCreep:"+(uiCreep == null?"null":uiCreep.name)+ " blockManager:"+(blockManager == null?"null": blockManager.name)+ " childrenRenderers.Count:"+ childrenRenderers.Count+" SingleMesh:"+this.SingleMesh);
+      Log.Combat?.TWL(0, "CustomMechMeshMerge.Init " + this.name + " visibleObject:"+(visibleObject == null?"null": visibleObject.name)+" uiCreep:"+(uiCreep == null?"null":uiCreep.name)+ " blockManager:"+(blockManager == null?"null": blockManager.name)+ " childrenRenderers.Count:"+ childrenRenderers.Count+" SingleMesh:"+this.SingleMesh);
       //OnEnableCalled = true;
       if (visibleObject == null) { return; }
       if (uiCreep == null) { return; }
       if (blockManager == null) { return; }
       //MechRepresentation component = this.GetComponent<MechRepresentation>();
       this.BuildCombinedMesh();
-      if ((Object)this.newMeshRoot0 == (Object)null) {
+      if (this.newMeshRoot0 == null) {
         this.newMeshRoot0 = new GameObject();
         this.newMeshRoot0.name = (prefix == null?"":prefix) + "mesh_combined_0";
         this.newMeshRoot0.transform.parent = this.visibleObject.transform;
@@ -603,13 +532,13 @@ namespace CustomUnits {
           this.mainSkinRenderer0.sharedMaterial = this.mechMaterial[0];
         else
           this.mainSkinRenderer0.sharedMaterials = this.mechMaterial;
-        if ((Object)this.combinedMesh0 != (Object)null)
+        if (this.combinedMesh0 != null)
           this.mainSkinRenderer0.sharedMesh = this.combinedMesh0;
         else
           this.mainSkinRenderer0.enabled = false;
       }
       if (this.SingleMesh == false) {
-        if ((Object)this.newMeshRoot1 == (Object)null) {
+        if (this.newMeshRoot1 == null) {
           this.newMeshRoot1 = new GameObject();
           this.newMeshRoot1.name = (prefix == null ? "" : prefix) + "mesh_combined_1";
           this.newMeshRoot1.transform.parent = this.visibleObject.transform;
@@ -619,7 +548,7 @@ namespace CustomUnits {
             this.mainSkinRenderer1.sharedMaterial = this.mechMaterial[0];
           else
             this.mainSkinRenderer1.sharedMaterials = this.mechMaterial;
-          if ((Object)this.combinedMesh1 != (Object)null)
+          if (this.combinedMesh1 != null)
             this.mainSkinRenderer1.sharedMesh = this.combinedMesh1;
           else
             this.mainSkinRenderer1.enabled = false;
@@ -632,45 +561,45 @@ namespace CustomUnits {
         this.parentRepresentation.RegisterRenderersCustomHeraldry(this.newMeshRoot0, customHeraldry);
         if (this.SingleMesh == false) this.parentRepresentation.RegisterRenderersCustomHeraldry(this.newMeshRoot1, customHeraldry);
       }
-      if ((Object)this.uiCreep != (Object)null)
+      if (this.uiCreep != null)
         this.uiCreep.RefreshCache();
-      if (!((Object)this.blockManager != (Object)null))
+      if (!(this.blockManager != null))
         return;
       this.blockManager.UpdateCache();
     }
 
     private void OnDestroy() {
-      if ((Object)this.combinedMesh0 != (Object)null) {
-        Object.DestroyImmediate((Object)this.combinedMesh0);
+      if (this.combinedMesh0 != null) {
+        Object.DestroyImmediate(this.combinedMesh0);
         this.combinedMesh0 = (Mesh)null;
       }
       if (this.SingleMesh == false) { 
-        if ((Object)this.combinedMesh1 != (Object)null) {
-          Object.DestroyImmediate((Object)this.combinedMesh1);
+        if (this.combinedMesh1 != null) {
+          Object.DestroyImmediate(this.combinedMesh1);
           this.combinedMesh1 = (Mesh)null;
         }
       }
       if (this.meshBoneDict != null) {
         foreach (KeyValuePair<SkinnedMeshRenderer, CustomMechMeshMerge.CombineInfo> keyValuePair in this.meshBoneDict) {
           keyValuePair.Value.originalMesh = (Mesh)null;
-          Object.DestroyImmediate((Object)keyValuePair.Value.newMesh);
+          Object.DestroyImmediate(keyValuePair.Value.newMesh);
         }
         this.meshBoneDict.Clear();
       }
       for (int index = 0; index < this.mechMaterial.Length; ++index) {
         if (this.mechMaterial != null) {
-          Object.DestroyImmediate((Object)this.mechMaterial[index]);
+          Object.DestroyImmediate(this.mechMaterial[index]);
           this.mechMaterial[index] = (Material)null;
         }
       }
       for (int index = 0; index < this.explodeMechMaterial.Length; ++index) {
         if (this.explodeMechMaterial != null) {
-          Object.DestroyImmediate((Object)this.explodeMechMaterial[index]);
+          Object.DestroyImmediate(this.explodeMechMaterial[index]);
           this.explodeMechMaterial[index] = (Material)null;
         }
       }
-      if ((Object)this.explodeWeaponMaterial != (Object)null) {
-        Object.DestroyImmediate((Object)this.explodeWeaponMaterial);
+      if (this.explodeWeaponMaterial != null) {
+        Object.DestroyImmediate(this.explodeWeaponMaterial);
         this.explodeWeaponMaterial = (Material)null;
       }
       this.newMeshRoot0 = (GameObject)null;

@@ -116,6 +116,7 @@ namespace CustAmmoCategoriesPatches {
     }
     public static void Prefix(ref bool __runOriginal,WeaponDef __instance, uint loadWeight, ref bool __result) {
       if (!__runOriginal) { return; }
+      Log.M?.flush();
       Log.M?.TWL(0, "WeaponDef.DependenciesLoaded(" + loadWeight + ")" + __instance.Description.Id);
       try {
         if (MechComponentDef_DependenciesLoaded(__instance, loadWeight) == false) { __result = false; goto result; }
@@ -199,6 +200,7 @@ namespace CustAmmoCategoriesPatches {
     }
     public static void Prefix(ref bool __runOriginal, WeaponDef __instance, DataManager dataManager, DataManager.DependencyLoadRequest dependencyLoad, uint activeRequestWeight) {
       if (!__runOriginal) { return; }
+      Log.M?.flush();
       Log.M?.TW(0, "WeaponDef.GatherDependencies(" + activeRequestWeight + ")" + __instance.Description.Id);
       __instance.dataManager = dataManager;
       bool something_requested = false;

@@ -161,7 +161,7 @@ namespace CustomUnits {
       if (is_floatParameter) { evt.floatParameter = m_floatParameter; }
       if (is_intParameter) { evt.intParameter = m_intParameter; }
       if (is_stringParameter) { evt.stringParameter = m_stringParameter; }
-      if (clip.AddEventUnique(evt)) { Log.WL(2, "AddEvent:" + clip.name + " function:" + evt.functionName); };      
+      if (clip.AddEventUnique(evt)) { Log.M?.WL(2, "AddEvent:" + clip.name + " function:" + evt.functionName); };      
     }
   }
   public class CustomActorRepresentationDef {
@@ -236,15 +236,15 @@ namespace CustomUnits {
       }
     }
     public virtual void RequestDependesies(LoadRequest loadRequest) {
-      Log.TWL(0, $"CustomActorRepresentationDef.RequestDependesies {this.Id}");
+      Log.M?.TWL(0, $"CustomActorRepresentationDef.RequestDependesies {this.Id}");
       foreach(var nested in this.NestedPrefabs) {
         if (string.IsNullOrEmpty(nested)) { continue; }
-        Log.WL(1, $"{nested}");
+        Log.M?.WL(1, $"{nested}");
         loadRequest.AddBlindLoadRequest(BattleTechResourceType.Prefab, nested ,false);
       }
       foreach (var hardpoint in this.hardpoints) {
         if (string.IsNullOrEmpty(hardpoint.prefab)) { continue; }
-        Log.WL(1, $"{hardpoint.prefab}");
+        Log.M?.WL(1, $"{hardpoint.prefab}");
         loadRequest.AddBlindLoadRequest(BattleTechResourceType.Prefab, hardpoint.prefab, false);
       }
     }
@@ -274,39 +274,39 @@ namespace CustomUnits {
       bool result = true;
       if (string.IsNullOrEmpty(this.SourcePrefabIdentifier) == false) {
         if (dataManager.Exists(BattleTechResourceType.Prefab, this.SourcePrefabIdentifier) == false) {
-          DLog.WL(2, "Prefab " + this.SourcePrefabIdentifier + " is not loaded");
+          Log.M?.WL(2, "Prefab " + this.SourcePrefabIdentifier + " is not loaded");
           return false;
         }
       }
       if (string.IsNullOrEmpty(this.ShaderSource) == false) {
         if (dataManager.Exists(BattleTechResourceType.Prefab, this.ShaderSource) == false) {
-          DLog.WL(2, "Prefab " + this.ShaderSource + " is not loaded");
+          Log.M?.WL(2, "Prefab " + this.ShaderSource + " is not loaded");
           return false;
         }
       }
       if (string.IsNullOrEmpty(this.BlipSource) == false) {
         if (dataManager.Exists(BattleTechResourceType.Prefab, this.BlipSource) == false) {
-          DLog.WL(2, "Prefab " + this.BlipSource + " is not loaded");
+          Log.M?.WL(2, "Prefab " + this.BlipSource + " is not loaded");
           return false;
         }
       }
       if (string.IsNullOrEmpty(this.BlipMeshSource) == false) {
         if (dataManager.Exists(BattleTechResourceType.Prefab, this.BlipMeshSource) == false) {
-          DLog.WL(2, "Prefab " + this.BlipMeshSource + " is not loaded");
+          Log.M?.WL(2, "Prefab " + this.BlipMeshSource + " is not loaded");
           return false;
         }
       }
       foreach (var nested in this.NestedPrefabs) {
         if (string.IsNullOrEmpty(nested)) { continue; }
         if (dataManager.Exists(BattleTechResourceType.Prefab, nested) == false) {
-          DLog.WL(2, "Prefab " + nested + " is not loaded");
+          Log.M?.WL(2, "Prefab " + nested + " is not loaded");
           return false;
         }
       }
       foreach (var hardpoint in this.hardpoints) {
         if (string.IsNullOrEmpty(hardpoint.prefab)) { continue; }
         if (dataManager.Exists(BattleTechResourceType.Prefab, hardpoint.prefab) == false) {
-          DLog.WL(2, "Prefab " + hardpoint.prefab + " is not loaded");
+          Log.M?.WL(2, "Prefab " + hardpoint.prefab + " is not loaded");
           return false;
         }
       }

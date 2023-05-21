@@ -31,7 +31,7 @@ namespace MechResizer {
         foo.AppendLine(
             $"{i} orig: [{originalSourcePositions[i].x},{originalSourcePositions[i].y},{originalSourcePositions[i].z}] | scaled: [{newSourcePositions[i].x},{newSourcePositions[i].y},{newSourcePositions[i].z}]");
       }
-      Log.LogWrite(foo.ToString());
+      Log.Combat?.WL(0,foo.ToString());
       losSourcePositions[identifier] = newSourcePositions;
       return losSourcePositions[identifier];
     }
@@ -49,7 +49,7 @@ namespace MechResizer {
         foo.AppendLine(
             $"{i} orig: [{originalTargetPositions[i].x},{originalTargetPositions[i].y},{originalTargetPositions[i].z}] | scaled: [{newTargetPositions[i].x},{newTargetPositions[i].y},{newTargetPositions[i].z}]");
       }
-      Log.LogWrite(foo.ToString());
+      Log.Combat?.WL(0, foo.ToString());
       losTargetPositions[identifier] = newTargetPositions;
       return losTargetPositions[identifier];
     }

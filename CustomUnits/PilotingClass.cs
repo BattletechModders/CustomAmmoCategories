@@ -57,7 +57,7 @@ namespace CustomUnits {
       DEFAULT_VEHICLE_PILOTING_CLASS = GenericVehicleClass;
     }
     public static void Validate() {
-      Log.TWL(0, "PilotingClassHelper.Validate");
+      Log.M?.TWL(0, "PilotingClassHelper.Validate");
       if (pilotingClasses.TryGetValue(PilotingClassDef.DEFAULT_MECH_PILOTING_NAME, out PilotingClassDef GenericMechClass) == false) {
         GenericMechClass = new PilotingClassDef();
         GenericMechClass.expertiseGenerationChance = Core.Settings.CanPilotAlsoMechProbability;
@@ -94,8 +94,8 @@ namespace CustomUnits {
           }
         }
       }
-      Log.WL(1, "default mech class:"+ PilotingClassHelper.DEFAULT_MECH_PILOTING_CLASS==null?"null": PilotingClassHelper.DEFAULT_MECH_PILOTING_CLASS.Description.Id);
-      Log.WL(1, "default vehicle class:" + PilotingClassHelper.DEFAULT_VEHICLE_PILOTING_CLASS == null ? "null" : PilotingClassHelper.DEFAULT_VEHICLE_PILOTING_CLASS.Description.Id);
+      Log.M?.WL(1, "default mech class:"+ PilotingClassHelper.DEFAULT_MECH_PILOTING_CLASS==null?"null": PilotingClassHelper.DEFAULT_MECH_PILOTING_CLASS.Description.Id);
+      Log.M?.WL(1, "default vehicle class:" + PilotingClassHelper.DEFAULT_VEHICLE_PILOTING_CLASS == null ? "null" : PilotingClassHelper.DEFAULT_VEHICLE_PILOTING_CLASS.Description.Id);
 
     }
 
@@ -199,25 +199,25 @@ namespace CustomUnits {
       return result;
     }
     public static void GeneratePilotingExpertisesStart(this SimGameState simgame) {
-      Log.TWL(0, "GeneratePilotingExpertisesStart");
+      Log.M?.TWL(0, "GeneratePilotingExpertisesStart");
       HashSet<MechDef> activeMechs = new HashSet<MechDef>();
       HashSet<PilotDef> activePilots = new HashSet<PilotDef>();
       foreach(var mech in simgame.ActiveMechs) {
         activeMechs.Add(mech.Value);
-        Log.WL(1, "mech:" + mech.Value.ChassisID);
+        Log.M?.WL(1, "mech:" + mech.Value.ChassisID);
       }
       activePilots.Add(simgame.Commander.pilotDef);
       foreach (var pilot in simgame.PilotRoster) {
         activePilots.Add(pilot.pilotDef);
       }
       foreach (PilotDef pilot in activePilots) {
-        Log.WL(1, "pilot:" + pilot.Description.Id+"/"+pilot.Description.Callsign);
+        Log.M?.WL(1, "pilot:" + pilot.Description.Id+"/"+pilot.Description.Callsign);
       }
       foreach (MechDef mech in activeMechs) {
         HashSet<PilotingClassDef> unit_classes = mech.Chassis.GetPilotingClass();
-        Log.W(1, "mech:"+mech.ChassisID);
-        foreach (PilotingClassDef pcl in unit_classes) { Log.W(1,pcl.Description.Id); }
-        Log.WL(0, "");
+        Log.M?.W(1, "mech:"+mech.ChassisID);
+        foreach (PilotingClassDef pcl in unit_classes) { Log.M?.W(1,pcl.Description.Id); }
+        Log.M?.WL(0, "");
         List<PilotDef> pilots = gatherPilotCanApplyVehicleDriving(activePilots, unit_classes);
         if (pilots.Count == 0) { continue; }
         PilotDef pilot = pilots[UnityEngine.Random.Range(0, pilots.Count)];
@@ -237,9 +237,9 @@ namespace CustomUnits {
         activePilots.Add(pilot.pilotDef);
       }
       foreach (PilotDef pilot in activePilots) {
-        Log.W(1, "pilot:" + pilot.Description.Id + "/" + pilot.Description.Callsign);
-        foreach (string tag in pilot.PilotTags) { Log.W(1, tag); }
-        Log.WL(0, "");
+        Log.M?.W(1, "pilot:" + pilot.Description.Id + "/" + pilot.Description.Callsign);
+        foreach (string tag in pilot.PilotTags) { Log.M?.W(1, tag); }
+        Log.M?.WL(0, "");
       }
     }
     public static List<PilotDef> gatherPilotCanApplyVehicleDriving(HashSet<PilotDef> activePilots, HashSet<PilotingClassDef> unit_classes) {
@@ -335,7 +335,8 @@ namespace CustomUnits {
         }
         //Log.W(1, "finall tags:"); foreach (string tag in __instance.PilotTags) { Log.W(1, tag); }; Log.WL(0, "");
       } catch (Exception e) {
-        Log.TWL(0,e.ToString());
+        Log.M?.TWL(0,e.ToString());
+        UnityGameInstance.BattleTechGame.DataManager?.logger.LogException(e);
       }
     }
     public static void Postfix(PilotDef __instance) {
@@ -357,19 +358,20 @@ namespace CustomUnits {
   [HarmonyPatch(MethodType.Normal)]
   public static class SGCharacterCreationWidget_CreatePilot {
     public static void Postfix(SGCharacterCreationWidget __instance,ref Pilot __result) {
-      Log.TWL(0, "SGCharacterCreationWidget.CreatePilot " + __result.pilotDef.Description.Callsign);
+      Log.M?.TWL(0, "SGCharacterCreationWidget.CreatePilot " + __result.pilotDef.Description.Callsign);
       try {
-        Log.WL(1, "tags before:");
+        Log.M?.WL(1, "tags before:");
         foreach (string tag in __result.pilotDef.PilotTags) {
-          Log.WL(2, tag);
+          Log.M?.WL(2, tag);
         }
         __result.pilotDef.fallbackPiloting();
-        Log.WL(1, "tags after:");
+        Log.M?.WL(1, "tags after:");
         foreach (string tag in __result.pilotDef.PilotTags) {
-          Log.WL(2, tag);
+          Log.M?.WL(2, tag);
         }
       }catch(Exception e) {
-        Log.TWL(0, e.ToString(), true);
+        Log.M?.TWL(0, e.ToString(), true);
+        UIManager.logger.LogException(e);
       }
     }
   }
@@ -399,7 +401,7 @@ namespace CustomUnits {
   [HarmonyPatch(MethodType.Normal)]
   public static class PilotGenerator_GeneratePilots {
     public static void Postfix(PilotGenerator __instance, ref List<PilotDef> __result) {
-      Log.TWL(0, "PilotGenerator.GeneratePilots");
+      Log.M?.TWL(0, "PilotGenerator.GeneratePilots");
       if (__result == null) { return; }
       if (__result.Count == 0) { return; }
       if (PilotingClassHelper.isInStartingPilotsGen()) { return; }

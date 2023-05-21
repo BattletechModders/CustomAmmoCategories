@@ -37,7 +37,8 @@ namespace SortByTonnage {
         //ModSettings = JsonConvert.DeserializeObject<Settings>(settingsJSON);
         ModSettings = settings;
       } catch (Exception ex) {
-        Log.TWL(0,ex.ToString(),true);
+        Log.E?.TWL(0,ex.ToString(),true);
+        UnityGameInstance.logger.LogException(ex);
         ModSettings = new Settings();
       }
     }
@@ -77,9 +78,9 @@ namespace SortByTonnage {
 
     private static List<IMechLabDraggableItem> SortMechDefs(List<IMechLabDraggableItem> mechs) {
       try {
-        Log.TWL(0, $"pre-sort count: {mechs.Count}");
+        Log.M?.TWL(0, $"pre-sort count: {mechs.Count}");
         if (ModSettings.isAnySortingEnabled == false) {
-          Log.TWL(0, "sorting disabled");
+          Log.M?.TWL(0, "sorting disabled");
           return mechs;
         }
         HashSet<IMechLabDraggableItem> sortable = new HashSet<IMechLabDraggableItem>();
@@ -87,7 +88,7 @@ namespace SortByTonnage {
         foreach (IMechLabDraggableItem item in mechs) {
           if (item.MechDef == null) { unsortable.Add(item); continue; }
           if (item.MechDef.Chassis == null) {
-            Log.WL(1,"");
+            Log.M?.WL(1,"");
             unsortable.Add(item); continue;
           }
         }
@@ -117,7 +118,8 @@ namespace SortByTonnage {
                 .ThenByDescending(mech => mech.MechDef.Name)
                 .ToList();
       } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
+        Log.E?.TWL(0, e.ToString(), true);
+        UIManager.logger.LogException(e);
         return mechs;
       }
 
@@ -125,9 +127,9 @@ namespace SortByTonnage {
 
     private static List<IMechLabDraggableItem> SortChassisDefs(List<IMechLabDraggableItem> chassis) {
       try {
-        Log.TWL(0, $"pre-sort chassis count: {chassis.Count}");
+        Log.M?.TWL(0, $"pre-sort chassis count: {chassis.Count}");
         if (ModSettings.isAnySortingEnabled == false) {
-          Log.TWL(0, "sorting disabled");
+          Log.M?.TWL(0, "sorting disabled");
           return chassis;
         }
         if (ModSettings.OrderByNickname) {
@@ -156,28 +158,29 @@ namespace SortByTonnage {
                 .ThenByDescending(ch => ch.ChassisDef.Description.Name)
                 .ToList();
       } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
+        Log.M?.TWL(0, e.ToString(), true);
+        UIManager.logger.LogException(e);
         return chassis;
       }
 
     }
     private static List<Tuple<MechState, MechDef>> SortMechDefs(Dictionary<int, Tuple<MechState, MechDef>> mechs) {
       try {
-        Log.TWL(0, $"pre-sort count: {mechs.Count}");
+        Log.M?.TWL(0, $"pre-sort count: {mechs.Count}");
 
         for (var i = 0; i < mechs.Count; i++) {
           if (mechs.ContainsKey(i)) {
             if (mechs[i].Item1 == MechState.Active) {
-              Log.WL(1, $"found active {i} : {mechs[i].Item2.Name}");
+              Log.M?.WL(1, $"found active {i} : {mechs[i].Item2.Name}");
             } else if (mechs[i].Item1 == MechState.Readying) {
-              Log.WL(1, $"found readying {i} : {mechs[i].Item2.Name}");
+              Log.M?.WL(1, $"found readying {i} : {mechs[i].Item2.Name}");
             }
           } else {
-            Log.WL(1, $"key {i} not found");
+            Log.M?.WL(1, $"key {i} not found");
           }
         }
         if (ModSettings.isAnySortingEnabled == false) {
-          Log.TWL(0, "sorting disabled");
+          Log.M?.TWL(0, "sorting disabled");
           return mechs.Values.ToList();
         }
 
@@ -210,7 +213,8 @@ namespace SortByTonnage {
                 .ThenBy(mech => mech.Item2.Name)
                 .ToList();
       } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
+        Log.E?.TWL(0, e.ToString(), true);
+        UIManager.logger.LogException(e);
         return mechs.Values.ToList();
       }
     }
@@ -219,24 +223,24 @@ namespace SortByTonnage {
       var combined = new Dictionary<int, Tuple<MechState, MechDef>>();
       for (var i = 0; i <= mechSlots; i++) {
         if (active.ContainsKey(i)) {
-          Log.WL(0, $"found active {i}");
+          Log.M?.WL(0, $"found active {i}");
           combined[i] = new Tuple<MechState, MechDef>(MechState.Active, active[i]);
         } else if (readying.ContainsKey(i)) {
-          Log.WL(0, $"found readying {i}");
+          Log.M?.WL(0, $"found readying {i}");
           combined[i] = new Tuple<MechState, MechDef>(MechState.Readying, readying[i]);
         }
       }
-      Log.WL(0, $"combined size: {combined.Count}");
+      Log.M?.WL(0, $"combined size: {combined.Count}");
       return combined;
     }
 
     public static List<IMechLabDraggableItem> SortStorageWidgetMechs(List<IMechLabDraggableItem> chassis) {
       if (!_isSortEnabled) {
-        Log.TWL(0, "sorting disabled");
+        Log.M?.TWL(0, "sorting disabled");
         return chassis;
       }
       if(ModSettings.isAnySortingEnabled == false) {
-        Log.TWL(0, "sorting disabled");
+        Log.M?.TWL(0, "sorting disabled");
         return chassis;
       }
       return SortChassisDefs(chassis);
@@ -244,18 +248,18 @@ namespace SortByTonnage {
 
     public static void SortMechLabMechs(int mechSlots, Dictionary<int, MechDef> activeMechs, Dictionary<int, MechDef> readyingMechs) {
       if (!_isSortEnabled) {
-        Log.TWL(0, "sorting disabled");
+        Log.M?.TWL(0, "sorting disabled");
         return;
       }
       if (ModSettings.isAnySortingEnabled == false) {
-        Log.TWL(0, "sorting disabled");
+        Log.M?.TWL(0, "sorting disabled");
         return;
       }
 
       var sortedMechs = SortMechDefs(CombinedSlots(mechSlots, activeMechs, readyingMechs));
-      Log.TWL(0, $"sortedMechs #: {sortedMechs.Count}");
+      Log.M?.TWL(0, $"sortedMechs #: {sortedMechs.Count}");
       for (var ii = 0; ii < sortedMechs.Count; ii++) {
-        Log.WL(1, $"mech: {sortedMechs[ii].Item2.Name} / {sortedMechs[ii].Item2.Chassis.VariantName}\nreadying? {sortedMechs[ii].Item1 == MechState.Readying}\nactive? {sortedMechs[ii].Item1 == MechState.Active}");
+        Log.M?.WL(1, $"mech: {sortedMechs[ii].Item2.Name} / {sortedMechs[ii].Item2.Chassis.VariantName}\nreadying? {sortedMechs[ii].Item1 == MechState.Readying}\nactive? {sortedMechs[ii].Item1 == MechState.Active}");
       }
 
       for (var i = 0; i <= mechSlots; i++) {
@@ -288,11 +292,11 @@ namespace SortByTonnage {
   public static class MechBayMechStorageWidget_SetSorting_Patch {
     static bool Prefix(MechBayMechStorageWidget __instance) {
       if (ModSettings.isAnySortingEnabled == false) {
-        Log.TWL(0, "sorting disabled");
+        Log.M?.TWL(0, "sorting disabled");
         return true;
       }
       __instance.inventory = SortStorageWidgetMechs(__instance.inventory);
-      Traverse.Create(__instance).Method("ApplySort").GetValue();
+      __instance.ApplySort();
       return false;
     }
   }
@@ -301,11 +305,11 @@ namespace SortByTonnage {
   [HarmonyPatch(typeof(SimGameState), "_OnDefsLoadComplete")]
   public static class SimGameState__OnDefsLoadComplete_Patch {
     static void Prefix() {
-      Log.TWL(0, "_OnDefsLoadComplete Prefix Patch Installed");
+      Log.M?.TWL(0, "_OnDefsLoadComplete Prefix Patch Installed");
       DisableSort();
     }
     static void Postfix(SimGameState __instance) {
-      Log.TWL(0, "_OnDefsLoadComplete Postfix Patch Installed");
+      Log.M?.TWL(0, "_OnDefsLoadComplete Postfix Patch Installed");
       EnableSort();
       SortMechLabMechs(__instance.GetMaxActiveMechs(), __instance.ActiveMechs, __instance.ReadyingMechs);
     }
@@ -344,7 +348,7 @@ namespace SortByTonnage {
     //}
 
     static void Postfix(int idx, MechDef mech, bool active, bool forcePlacement, bool displayMechPopup, string mechAddedHeader, SimGameState __instance) {
-      Log.TWL(0, "AddMech Postfix Patch Installed");
+      Log.M?.TWL(0, "AddMech Postfix Patch Installed");
       SortMechLabMechs(__instance.GetMaxActiveMechs(), __instance.ActiveMechs, __instance.ReadyingMechs);
     }
   }
@@ -353,11 +357,11 @@ namespace SortByTonnage {
   [HarmonyPatch(typeof(SimGameState), "ReadyMech")]
   public static class SimGameState_ReadyMech_Patch {
     static void Prefix() {
-      Log.TWL(0, "ReadyMech Prefix Patch Installed");
+      Log.M?.TWL(0, "ReadyMech Prefix Patch Installed");
       DisableSort();
     }
     static void Postfix(int baySlot, string id, SimGameState __instance) {
-      Log.TWL(0, "ReadyMech Postfix Patch Installed");
+      Log.M?.TWL(0, "ReadyMech Postfix Patch Installed");
       EnableSort();
       SortMechLabMechs(__instance.GetMaxActiveMechs(), __instance.ActiveMechs, __instance.ReadyingMechs);
     }
@@ -368,7 +372,7 @@ namespace SortByTonnage {
   [HarmonyPatch(typeof(SimGameState), "RemoveMech")]
   public static class SimGameState_RemoveMech_Patch {
     static void Postfix(int idx, MechDef mech, bool active, SimGameState __instance) {
-      Log.TWL(0, "RemoveMech Patch Installed");
+      Log.M?.TWL(0, "RemoveMech Patch Installed");
       SortMechLabMechs(__instance.GetMaxActiveMechs(), __instance.ActiveMechs, __instance.ReadyingMechs);
     }
   }
@@ -378,7 +382,7 @@ namespace SortByTonnage {
   [HarmonyPatch(typeof(SimGameState), "ScrapActiveMech")]
   public static class SimGameState_ScrapActiveMech_Patch {
     static void Postfix(int baySlot, MechDef def, SimGameState __instance) {
-      Log.TWL(0, "ScrapActiveMech Patch Installed");
+      Log.M?.TWL(0, "ScrapActiveMech Patch Installed");
       SortMechLabMechs(__instance.GetMaxActiveMechs(), __instance.ActiveMechs, __instance.ReadyingMechs);
     }
   }
@@ -389,7 +393,7 @@ namespace SortByTonnage {
   [HarmonyPatch(typeof(SimGameState), "ScrapInactiveMech")]
   public static class SimGameState_ScrapInativeMech_Patch {
     static void Postfix(string id, bool pay, SimGameState __instance) {
-      Log.TWL(0, "ScrapInactiveMech Patch Installed");
+      Log.M?.TWL(0, "ScrapInactiveMech Patch Installed");
       SortMechLabMechs(__instance.GetMaxActiveMechs(), __instance.ActiveMechs, __instance.ReadyingMechs);
     }
   }
@@ -398,7 +402,7 @@ namespace SortByTonnage {
   [HarmonyPatch(typeof(SimGameState), "StripMech")]
   public static class SimGameState_StripMech_Patch {
     static void Postfix(int baySlot, MechDef def, SimGameState __instance) {
-      Log.TWL(0, "StripMech Patch Installed");
+      Log.M?.TWL(0, "StripMech Patch Installed");
       SortMechLabMechs(__instance.GetMaxActiveMechs(), __instance.ActiveMechs, __instance.ReadyingMechs);
     }
   }
@@ -408,7 +412,7 @@ namespace SortByTonnage {
   [HarmonyPatch(typeof(SimGameState), "UnreadyMech")]
   public static class SimGameState_UnreadyMech_Patch {
     static void Postfix(int baySlot, MechDef def, SimGameState __instance) {
-      Log.TWL(0, "UnreadyMech Patch Installed");
+      Log.M?.TWL(0, "UnreadyMech Patch Installed");
       SortMechLabMechs(__instance.GetMaxActiveMechs(), __instance.ActiveMechs, __instance.ReadyingMechs);
     }
   }
@@ -418,7 +422,7 @@ namespace SortByTonnage {
   [HarmonyPatch(typeof(SimGameState), "ML_ReadyMech")]
   public static class SimGamestate_ML_ReadyMech_Patch {
     static bool Prefix(WorkOrderEntry_ReadyMech order, SimGameState __instance) {
-      Log.TWL(0, "ML_ReadyMech Patch Installed");
+      Log.M?.TWL(0, "ML_ReadyMech Patch Installed");
       if (order.IsMechLabComplete) {
         return false;
       }
@@ -438,15 +442,15 @@ namespace SortByTonnage {
   [HarmonyPatch(typeof(SimGameState), "Cancel_ML_ReadyMech", new Type[] { typeof(WorkOrderEntry_ReadyMech) })]
   public static class SimGamestate_Cancel_ML_ReadyMech_Patch {
     static bool Prefix(WorkOrderEntry_ReadyMech order, SimGameState __instance) {
-      Log.TWL(0, "ML_Cancel_ReadyMech Patch Installed");
+      Log.M?.TWL(0, "ML_Cancel_ReadyMech Patch Installed");
       if (order.IsMechLabComplete) {
-        Log.TWL(0, "wtf is happening how");
+        Log.M?.TWL(0, "wtf is happening how");
         return false;
       }
 
       var item = __instance.ReadyingMechs.First(readying => readying.Value == order.Mech);
       var index = item.Key;
-      Log.TWL(0, $"cancel index: {index}\nmech? {item.Value.GUID} : {order.Mech.GUID} : {order.Mech.Chassis.VariantName}");
+      Log.M?.TWL(0, $"cancel index: {index}\nmech? {item.Value.GUID} : {order.Mech.GUID} : {order.Mech.Chassis.VariantName}");
       __instance.UnreadyMech(index, order.Mech);
       __instance.ReadyingMechs.Remove(index);
       SortMechLabMechs(__instance.GetMaxActiveMechs(), __instance.ActiveMechs, __instance.ReadyingMechs);
@@ -458,7 +462,7 @@ namespace SortByTonnage {
   [HarmonyPatch(typeof(MechBayPanel), "OnMechLabClosed")]
   public static class MechBayPanel_OnMechLabClosed_Patch {
     static void Prefix(MechBayPanel __instance) {
-      Log.TWL(0, "OnMechLabClosed Patch Installed");
+      Log.M?.TWL(0, "OnMechLabClosed Patch Installed");
       if (!__instance.IsSimGame) {
         return;
       }

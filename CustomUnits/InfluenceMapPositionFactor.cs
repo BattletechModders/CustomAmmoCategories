@@ -14,19 +14,21 @@ namespace CustomUnits {
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { typeof(CombatGameState), typeof(MapTerrainDataCell), typeof(PathNode) })]
   public static class WeightedFactor_CollectMasksForCellAndPathNode {
-    public static bool Prefix(WeightedFactor __instance, CombatGameState combat, MapTerrainDataCell cell, PathNode pathNode, ref List<DesignMaskDef> __result) {
+    public static void Prefix(ref bool __runOriginal,WeightedFactor __instance, CombatGameState combat, MapTerrainDataCell cell, PathNode pathNode, ref List<DesignMaskDef> __result) {
       try {
+        if (!__runOriginal) { return; }
         AbstractActor unit = Thread.CurrentThread.currentActor();
         if (unit == null) {
-          Log.TWL(0, "!WARNING! CollectMasksForCellAndPathNode without unit. Result might be wrong");
-          return true;
+          Log.Combat?.TWL(0, "!WARNING! CollectMasksForCellAndPathNode without unit. Result might be wrong");
+          return;
         }
         __result = unit.CollectMasksForCellAndPathNode(combat, cell, pathNode);
-        return false;
+        __runOriginal = false; return;
       } catch (Exception e) {
-        Log.TWL(0,e.ToString(),true);
+        Log.Combat?.TWL(0,e.ToString(),true);
+        CombatGameState.gameInfoLogger.LogException(e);
       }
-      return true;
+      return;
     }
   }
   public static class InfluenceMapPositionFactorPatch {
@@ -35,14 +37,14 @@ namespace CustomUnits {
         __state = false;
         if (unit != null) { Thread.CurrentThread.pushActor(unit); __state = true; }
       }catch(Exception e) {
-        Log.TWL(0, e.ToString(), true);
+        Log.Combat?.TWL(0, e.ToString(), true);
       }
     }
     public static void Postfix(AbstractActor unit, ref bool? __state) {
       try { 
         if((__state != null)&&(__state.HasValue)&&(__state.Value == true)) Thread.CurrentThread.clearActor();
       }catch(Exception e) {
-        Log.TWL(0, e.ToString(), true);
+        Log.Combat?.TWL(0, e.ToString(), true);
       }
     }
     public static void Prefix_Unused(AbstractActor unit_unused, ref bool? __state) {
@@ -50,14 +52,14 @@ namespace CustomUnits {
         __state = false;
         if (unit_unused != null) { Thread.CurrentThread.pushActor(unit_unused); __state = true; }
       } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
+        Log.Combat?.TWL(0, e.ToString(), true);
       }
     }
     public static void Postfix_Unused(AbstractActor unit_unused, ref bool? __state) {
       try {
         if ((__state != null) && (__state.HasValue) && (__state.Value == true)) Thread.CurrentThread.clearActor();
       } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
+        Log.Combat?.TWL(0, e.ToString(), true);
       }
     }
     public static MethodInfo PrefixMethod() => AccessTools.Method(typeof(InfluenceMapPositionFactorPatch), nameof(Prefix));
@@ -77,14 +79,14 @@ namespace CustomUnits {
                 if (typeof(InfluenceMapPositionFactor).IsAssignableFrom(type) == false) { continue; }
                 InfluenceMapPositionFactors.Add(type);
               } catch (Exception e) {
-                Log.TWL(0, assembly.FullName);
-                Log.WL(1, type.FullName);
-                Log.WL(0, e.ToString(), true);
+                Log.M?.TWL(0, assembly.FullName);
+                Log.M?.WL(1, type.FullName);
+                Log.M?.WL(0, e.ToString(), true);
               }
             }
           } catch (Exception e) {
-            Log.TWL(0, assembly.FullName);
-            Log.WL(0, e.ToString(), true);
+            Log.M?.TWL(0, assembly.FullName);
+            Log.M?.WL(0, e.ToString(), true);
           }
         }
         foreach (Type influenceMapPositionFactor in InfluenceMapPositionFactors) {
@@ -96,20 +98,21 @@ namespace CustomUnits {
               if (param.Name == "unit_unused") { is_unit_unused = true; }
             }
             if (is_unit_unused) {
-              Log.WL(0,$"Patching {influenceMapPositionFactor.Name}.{EvaluateInfluenceMapFactorAtPosition.Name} with unit_unused param");
+              Log.M?.WL(0,$"Patching {influenceMapPositionFactor.Name}.{EvaluateInfluenceMapFactorAtPosition.Name} with unit_unused param");
               harmony.Patch(EvaluateInfluenceMapFactorAtPosition, new HarmonyMethod(PrefixMethod_Unused()), new HarmonyMethod(PostfixMethod_Unused()));
             } else {
-              Log.WL(0, $"Patching {influenceMapPositionFactor.Name}.{EvaluateInfluenceMapFactorAtPosition.Name} with unit param");
+              Log.M?.WL(0, $"Patching {influenceMapPositionFactor.Name}.{EvaluateInfluenceMapFactorAtPosition.Name} with unit param");
               harmony.Patch(EvaluateInfluenceMapFactorAtPosition, new HarmonyMethod(PrefixMethod()), new HarmonyMethod(PostfixMethod()));
             }
           }catch(Exception e) {
             //if(e.ToString().Contains("System.Exception: Parameter \"unit\" not found in method") == false) {
-              Log.TWL(0,e.ToString(),true);
+              Log.Combat?.TWL(0,e.ToString(),true);
             //}
           }
         }
       }catch(Exception e) {
-        Log.TWL(0,e.ToString(),true);
+        Log.M?.TWL(0,e.ToString(),true);
+        UnityGameInstance.gameInfoLogger.LogException(e);
       }
     }
   }

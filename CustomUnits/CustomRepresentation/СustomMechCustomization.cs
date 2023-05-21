@@ -34,35 +34,35 @@ namespace CustomUnits {
     public PropertyBlockManager.PropertySetting paintSchemeProperty { get; set; } = new PropertyBlockManager.PropertySetting("_PaintScheme", Texture2D.blackTexture);
     //public PropertyBlockManager.PropertySetting paintEmblemProperty { get; set; } = new PropertyBlockManager.PropertySetting("_PaintScheme", Texture2D.blackTexture);
     public void Init(Renderer renderer, MeshRenderer paintSchemeHolder) {
-      Log.TWL(0, "CustomPaintPattern.Init custom "+renderer.gameObject.name+" "+(paintSchemeHolder==null?"null": paintSchemeHolder.sharedMaterials.Length.ToString()));
+      Log.Combat?.TWL(0, "CustomPaintPattern.Init custom "+renderer.gameObject.name+" "+(paintSchemeHolder==null?"null": paintSchemeHolder.sharedMaterials.Length.ToString()));
       this.is_custom = true;
       this.renderer = renderer;
       if (this._paintPatterns == null) { this._paintPatterns = new List<Texture2D>(); }
       if (paintSchemeHolder != null) {
         foreach (Material mat in paintSchemeHolder.sharedMaterials) {
           this._paintPatterns.Add(mat.mainTexture as Texture2D);
-          Log.WL(1, "add texture:" + (mat.mainTexture as Texture2D).name+":"+ this._paintPatterns.Count);
+          Log.Combat?.WL(1, "add texture:" + (mat.mainTexture as Texture2D).name+":"+ this._paintPatterns.Count);
         }
       }
       if (this._paintPatterns.Count == 0) {
         this._paintPatterns.Add(Texture2D.blackTexture);
       }
-      Log.WL(1, "paintPatterns:" + this._paintPatterns.Count);
+      Log.Combat?.WL(1, "paintPatterns:" + this._paintPatterns.Count);
       foreach(Texture2D tex in this._paintPatterns) {
-        Log.WL(2,tex.name);
+        Log.Combat?.WL(2,tex.name);
       }
     }
     public void ApplyPaintScheme(int index) {
       if (index < 0) { index = 0; }
       if (paintPatterns.Count == 0) return;
       paintSchemeProperty.PropertyTexture = this.paintPatterns[index % paintPatterns.Count];
-      Log.TWL(0, "CustomPaintPattern.ApplyPaintScheme " + index + " renderer:" + this.renderer.gameObject.name+" texture:"+ paintSchemeProperty.PropertyTexture.name);
+      Log.Combat?.TWL(0, "CustomPaintPattern.ApplyPaintScheme " + index + " renderer:" + this.renderer.gameObject.name+" texture:"+ paintSchemeProperty.PropertyTexture.name);
       this._currentIndex = index;
     }
     public void Init(Renderer renderer, CustomMechCustomization customization) {
       this.renderer = renderer;
       this.is_custom = false;
-      Log.TWL(0, "CustomPaintPattern.Init default " + renderer.gameObject.name + " " + (customization == null ? "null" : customization.paintPatterns.Length.ToString()));
+      Log.Combat?.TWL(0, "CustomPaintPattern.Init default " + renderer.gameObject.name + " " + (customization == null ? "null" : customization.paintPatterns.Length.ToString()));
       if (this._paintPatterns == null) { this._paintPatterns = new List<Texture2D>(); }
       foreach (Texture2D tex in customization.paintPatterns) { if (tex == null) { continue; }; this._paintPatterns.Add(tex); }
     }
@@ -391,23 +391,23 @@ namespace CustomUnits {
     }
         public void ApplyHeraldry(HeraldryDef heraldryDef, string paintTextureId = null)
         {
-            Log.TWL(0, "CustomMechCustomization.ApplyHeraldry gameObject: " + this.gameObject.name + 
+            Log.Combat?.TWL(0, "CustomMechCustomization.ApplyHeraldry gameObject: " + this.gameObject.name + 
                 "  heraldryDef.Desc.Id:" + (heraldryDef == null ? "null" : heraldryDef.Description.Id) + 
                 "  paintTextureId:" + (paintTextureId == null ? "null" : paintTextureId));
             
             if (heraldryDef == null)
             {
-                Log.TWL(0, "Tried to apply null heraldry to " + this.name);
+                Log.Combat?.TWL(0, "Tried to apply null heraldry to " + this.name);
                 return;
             }
             if (this.paintPatterns == null)
             {
-                Log.TWL(0, "This unit has null paintPatterns " + this.name);
+                Log.Combat?.TWL(0, "This unit has null paintPatterns " + this.name);
                 return;
             }
             if (this.paintPatterns.Length == 0)
             {
-                Log.TWL(0, "This unit has a 0 length paintPatterns array " + this.name);
+                Log.Combat?.TWL(0, "This unit has a 0 length paintPatterns array " + this.name);
                 return;
             }
 
@@ -418,18 +418,18 @@ namespace CustomUnits {
                 Texture2D paintPattern = this.paintPatterns[i];
                 if (paintPattern == null) 
                 { 
-                    Log.TWL(0, "Texture2d was null in paintPatterns for " + this.name); 
+                    Log.Combat?.TWL(0, "Texture2d was null in paintPatterns for " + this.name); 
                 }
                 else if (paintPattern.name == paintTextureId)
                 {
-                    Log.TWL(0, $"Matched paintPattern: {paintPattern.name} to paintTextureId: {paintTextureId}");
+                    Log.Combat?.TWL(0, $"Matched paintPattern: {paintPattern.name} to paintTextureId: {paintTextureId}");
                     camoMaskTexture = paintPattern;
                     this.patternIndex = i;
                     break;
                 }
                 else
                 {
-                    Log.TWL(0, $"PaintPattern: {paintPattern.name} did not match target: {paintTextureId}, skipping.");
+                    Log.Combat?.TWL(0, $"PaintPattern: {paintPattern.name} did not match target: {paintTextureId}, skipping.");
                 }
             }
 
@@ -443,12 +443,12 @@ namespace CustomUnits {
                     if (!String.IsNullOrEmpty(paintTextureIdDigits))
                     {
                         targetPatternId = int.Parse(paintTextureIdDigits) - 1; // String is human natural, need an index val
-                        Log.TWL(0, $"Matched patternId {targetPatternId} from string.");
+                        Log.Combat?.TWL(0, $"Matched patternId {targetPatternId} from string.");
                     }
                 }
                 catch (Exception)
                 {
-                    Log.TWL(0, $"Failed to match by targetPatternId, falling back to random selection.");
+                    Log.Combat?.TWL(0, $"Failed to match by targetPatternId, falling back to random selection.");
                 }
 
                 if (this.paintPatterns != null && this.paintPatterns.Length != 0)
@@ -457,33 +457,33 @@ namespace CustomUnits {
                     {
                         camoMaskTexture = this.paintPatterns[targetPatternId];
                         this.patternIndex = targetPatternId;
-                        Log.TWL(0, $"camoMask was null, matched on string index: {camoMaskTexture}");
+                        Log.Combat?.TWL(0, $"camoMask was null, matched on string index: {camoMaskTexture}");
                     }
                     else
                     {
                         this.patternIndex = UnityEngine.Random.Range(0, this.paintPatterns.Length);
                         camoMaskTexture = this.paintPatterns[this.patternIndex];
-                        Log.TWL(0, "camoMask was null, created new one randomly. patternIndex: " + this.patternIndex);
+                        Log.Combat?.TWL(0, "camoMask was null, created new one randomly. patternIndex: " + this.patternIndex);
                     }
                 }
                 else
                 {
-                    Log.TWL(0, "Eck :) didn't think this could happen. Defaulting to paint tex that exists on prefab. I'm keeping original error message");
+                    Log.Combat?.TWL(0, "Eck :) didn't think this could happen. Defaulting to paint tex that exists on prefab. I'm keeping original error message");
                     if (this.paintScheme != null && this.paintScheme.paintSchemeTex != null)
                         camoMaskTexture = this.paintScheme.paintSchemeTex;
                     else
-                        Log.TWL(0, "No paint scheme on prefab.");
+                        Log.Combat?.TWL(0, "No paint scheme on prefab.");
                 }
 
                 if (camoMaskTexture == null)
                 {
-                    Log.TWL(0, "Could not find a paint pattern, defaulting to a black texture.");
+                    Log.Combat?.TWL(0, "Could not find a paint pattern, defaulting to a black texture.");
                     camoMaskTexture = Texture2D.blackTexture;
                     this.patternIndex = 0;
                 }
             }
 
-            Log.WL(1, "  camo mask texture.name:" + camoMaskTexture.name);
+            Log.Combat?.WL(1, "  camo mask texture.name:" + camoMaskTexture.name);
             this.paintScheme = new MechPaintScheme(camoMaskTexture, heraldryDef.PrimaryMechColor, heraldryDef.SecondaryMechColor, heraldryDef.TertiaryMechColor);
             this.emblemScheme = new MechEmblemScheme(heraldryDef.TextureLogo, MechEmblemScheme.EmblemSetting.first);
         }
@@ -491,7 +491,7 @@ namespace CustomUnits {
     public void Init(CustomMechRepresentation parent) {
       this.parent = parent;
       this._propertyBlock = parent.customPropertyBlock;
-      Log.TWL(0, "CustomMechCustomization.Init propertyBlock:"+(this.propertyBlock == null?"null":this.propertyBlock.gameObject.name));
+      Log.Combat?.TWL(0, "CustomMechCustomization.Init propertyBlock:"+(this.propertyBlock == null?"null":this.propertyBlock.gameObject.name));
       if (Application.isPlaying) {
         if ((bool)(UnityEngine.Object)this.decal0)
           this.decal0.gameObject.SetActive(false);
@@ -516,7 +516,7 @@ namespace CustomUnits {
     public void Init(CustomMechRepresentationSimGame parent) {
       this.parent = parent;
       this._propertyBlock = parent.customPropertyBlock;
-      Log.TWL(0, "CustomMechCustomization.Init propertyBlock:" + (this.propertyBlock == null ? "null" : this.propertyBlock.gameObject.name));
+      Log.Combat?.TWL(0, "CustomMechCustomization.Init propertyBlock:" + (this.propertyBlock == null ? "null" : this.propertyBlock.gameObject.name));
       if (Application.isPlaying) {
         if ((bool)(UnityEngine.Object)this.decal0)
           this.decal0.gameObject.SetActive(false);

@@ -70,28 +70,28 @@ namespace CustomUnits {
       if (dropLayouts.TryGetValue(name, out DropSlotsDef result)) {
         return result;
       }
-      Log.TWL(0,"Can't find drop layout definition "+name,true);
+      Log.M?.TWL(0,"Can't find drop layout definition "+name,true);
       return fallbackLayout;
     }
     public static DropLanceDef getLance(string name) {
       if (dropLances.TryGetValue(name, out DropLanceDef result)) {
         return result;
       }
-      Log.TWL(0, "Can't find drop lance definition " + name,true);
+      Log.M?.TWL(0, "Can't find drop lance definition " + name,true);
       return fallbackLance;
     }
     public static DropSlotDef getSlot(string name) {
       if (dropSlots.TryGetValue(name, out DropSlotDef result)) {
         return result;
       }
-      Log.TWL(0, "Can't find drop slot definition " + name,true);
+      Log.M?.TWL(0, "Can't find drop slot definition " + name,true);
       return fallbackSlot;
     }
     public static DropSlotDecorationDef getDecoration(string name) {
       if (dropDecoration.TryGetValue(name, out DropSlotDecorationDef result)) {
         return result;
       }
-      Log.TWL(0, "Can't find drop decoration definition " + name, true);
+      Log.M?.TWL(0, "Can't find drop decoration definition " + name, true);
       return null;
     }
     public static void Validate() {
@@ -179,9 +179,9 @@ namespace CustomUnits {
       HashSet<DropClassDef> chassis_dclasses = chassis.GetDropClass();
       bool result = true;
       StringBuilder fail_classes = new StringBuilder();
-      Log.TWL(0, "CanBeDropedInto:" +chassis.Description.Id+" slot:"+slot.Description.Id);
+      Log.M?.TWL(0, "CanBeDropedInto:" +chassis.Description.Id+" slot:"+slot.Description.Id);
       foreach (DropClassDef dclass in chassis_dclasses) {
-        Log.WL(1, "chassis class:" + dclass.Description.Id);
+        Log.M?.WL(1, "chassis class:" + dclass.Description.Id);
         if (dclass.isMySlotClass(slot.tags) == false) {
           if (result == false) { fail_classes.Append(", "); }
           fail_classes.Append(dclass.Description.Name);

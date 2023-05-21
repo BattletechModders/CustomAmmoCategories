@@ -766,7 +766,7 @@ namespace CustAmmoCategories {
     }
     public static string findBestAmmo(Weapon weapon) {
       CustomAmmoCategory weaponAmmoCategory = CustomAmmoCategories.find(weapon.AmmoCategoryValue.Name);
-      WeaponMode mode = weapon.mode();
+      WeaponMode mode = weapon.info().mode;
       ExtWeaponDef extWeapon = CustomAmmoCategories.getExtWeaponDef(weapon.defId);
       if (mode.AmmoCategory != null) { weaponAmmoCategory = mode.AmmoCategory; } else
       if (extWeapon.AmmoCategory != CustomAmmoCategories.NotSetCustomAmmoCategoty) { weaponAmmoCategory = extWeapon.AmmoCategory; };

@@ -34,143 +34,18 @@ namespace CustomUnits {
     public static Exception GetOriginalMethod_Finalizer(Exception __exception, HarmonyMethod attr) {
       try {
         if (__exception != null) {
-          Log.TWL(0, $"HarmonyLib.PatchTools.GetOriginalMethod type:{attr.methodType.SafeToString()} {attr.declaringType.Name}{attr.methodName}");
-          Log.WL(0, __exception.ToString(),true);
+          Log.M?.TWL(0, $"HarmonyLib.PatchTools.GetOriginalMethod type:{attr.methodType.SafeToString()} {attr.declaringType.Name}{attr.methodName}");
+          Log.M?.WL(0, __exception.ToString(),true);
         }
       }catch(Exception e) {
-        Log.TWL(0, e.ToString(), true);
+        Log.M?.TWL(0, e.ToString(), true);
+        UnityGameInstance.logger.LogException(e);
       }
       return __exception;
     }
     public static HarmonyMethod GetOriginalMethod_Finalizer_H() {
       var result = new HarmonyMethod(AccessTools.Method(typeof(PatchingDebug), nameof(GetOriginalMethod_Finalizer)));
       return result;
-    }
-  }
-  public static class DLog {
-    private static StringBuilder m_cache = new StringBuilder();
-    public static void LogWrite(int initiation, string line, bool eol = false, bool timestamp = false) {
-      string init = new string(' ', initiation);
-      string prefix = String.Empty;
-      if (timestamp) { prefix = DateTime.Now.ToString("[HH:mm:ss.fff]"); }
-      if (initiation > 0) { prefix += init; };
-      if (eol) {
-        LogWrite(prefix + line + "\n");
-      } else {
-        LogWrite(prefix + line);
-      }
-    }
-    public static void LogWrite(string line) {
-      m_cache.Append(line);
-    }
-    public static void W(string line) {
-      LogWrite(line);
-    }
-    public static void WL(string line) {
-      line += "\n"; W(line);
-    }
-    public static void W(int initiation, string line) {
-      string init = new string(' ', initiation);
-      line = init + line; W(line);
-    }
-    public static void WL(int initiation, string line) {
-      string init = new string(' ', initiation);
-      line = init + line; WL(line);
-    }
-    public static void TW(int initiation, string line) {
-      string init = new string(' ', initiation);
-      line = "[" + DateTime.Now.ToString("HH:mm:ss.fff") + "]" + init + line;
-      W(line);
-    }
-    public static void TWL(int initiation, string line) {
-      string init = new string(' ', initiation);
-      line = "[" + DateTime.Now.ToString("HH:mm:ss.fff") + "]" + init + line;
-      WL(line);
-    }
-    public static void Flush() {
-      if (m_cache.Length > 0) { Log.LogWrite(m_cache.ToString(), false); m_cache.Clear(); }
-    }
-    public static void Skip() {
-      m_cache.Clear();
-    }
-  }
-  public static class Log {
-    //private static string m_assemblyFile;
-    private static string m_logfile;
-    private static readonly Mutex mutex = new Mutex();
-    public static string BaseDirectory;
-    private static StringBuilder m_cache = new StringBuilder();
-    private static StreamWriter m_fs = null;
-    private static readonly int flushBufferLength = 16 * 1024;
-    public static bool flushThreadActive = true;
-    public static Thread flushThread = new Thread(flushThreadProc);
-    public static void flushThreadProc() {
-      while (Log.flushThreadActive == true) {
-        Thread.Sleep(10 * 1000);
-        Log.LogWrite("flush\n");
-        Log.flush();
-      }
-    }
-    public static void InitLog() {
-      Log.m_logfile = Path.Combine(BaseDirectory, "CustomUnits.log");
-      File.Delete(Log.m_logfile);
-      Log.m_fs = new StreamWriter(Log.m_logfile);
-      Log.m_fs.AutoFlush = true;
-      Log.flushThread.Start();
-    }
-    public static void flush() {
-      if (Log.mutex.WaitOne(1000)) {
-        Log.m_fs.Write(Log.m_cache.ToString());
-        Log.m_fs.Flush();
-        Log.m_cache.Length = 0;
-        Log.mutex.ReleaseMutex();
-      }
-    }
-    public static void LogWrite(int initiation,string line, bool eol = false, bool timestamp = false, bool isCritical = false) {
-      string init = new string(' ', initiation);
-      string prefix = String.Empty;
-      if (timestamp) { prefix = DateTime.Now.ToString("[HH:mm:ss.fff]"); }
-      if (initiation > 0) { prefix += init; };
-      if (eol) {
-        LogWrite(prefix + line + "\n", isCritical);
-      } else {
-        LogWrite(prefix + line, isCritical);
-      }
-    }
-    public static void LogWrite(string line, bool isCritical = false) {
-      if ((Core.Settings.debugLog) || (isCritical)) {
-        if (Log.mutex.WaitOne(1000)) {
-          m_cache.Append(line);
-          //File.AppendAllText(Log.m_logfile, line);
-          Log.mutex.ReleaseMutex();
-        }
-        if (isCritical) { Log.flush(); };
-        if (m_logfile.Length > Log.flushBufferLength) { Log.flush(); };
-      }
-    }
-    public static void W(string line, bool isCritical = false) {
-      LogWrite(line, isCritical);
-    }
-    public static void WL(string line, bool isCritical = false) {
-      line += "\n"; W(line, isCritical);
-    }
-    public static void W(int initiation, string line, bool isCritical = false) {
-      string init = new string(' ', initiation);
-      line = init + line; W(line, isCritical);
-    }
-    public static void WL(int initiation, string line, bool isCritical = false) {
-      string init = new string(' ', initiation);
-      line = init + line; WL(line, isCritical);
-    }
-    public static void TW(int initiation, string line, bool isCritical = false) {
-      string init = new string(' ', initiation);
-      line = "[" + DateTime.Now.ToString("HH:mm:ss.fff") + "]" + init + line;
-      W(line, isCritical);
-    }
-    public static void TWL(int initiation, string line, bool isCritical = false) {
-      string init = new string(' ', initiation);
-      line = "[" + DateTime.Now.ToString("HH:mm:ss.fff") + "]" + init + line;
-      WL(line, isCritical);
     }
   }
   public class ComponentPrefabMap {
@@ -605,7 +480,7 @@ namespace CustomUnits {
       //return "Target type (x" + Math.Round(TypeDmgCACModifier(weapon, attackPosition, target, IsBreachingShot, location, dmg, ap, heat, stab), 1) + ")"; ;
     }
     public static void FinishedLoading(List<string> loadOrder, Dictionary<string, Dictionary<string, VersionManifestEntry>> customResources) {
-      Log.TWL(0, "FinishedLoading", true);
+      Log.M?.TWL(0, "FinishedLoading", true);
       IRBTModUtils.Feature.MovementFeature.RegisterMoveDistanceModifier("CustomUnits", 10, Mech_MaxWalkDistance.MaxWalkDistanceMod, Mech_MaxWalkDistance.MaxSprintDistanceMod);
       CustomPrewarm.Core.RegisterSerializator("CustomUnits", BattleTechResourceType.ChassisDef, VehicleCustomInfoHelper.GetInfoByChassisId);
       CustomPrewarm.Core.RegisterSerializator("CustomUnits", BattleTechResourceType.VehicleChassisDef, VehicleCustomInfoHelper.GetInfoByChassisId);
@@ -617,153 +492,153 @@ namespace CustomUnits {
         foreach (string name in loadOrder) { if (name == "MechEngineer") { Core.Settings.MechEngineerDetected = true; break; }; }
         foreach (string name in loadOrder) { if (name == "LowVisibility") { LowVisibilityAPIHelper.Init(); break; }; }
         foreach (Assembly assembly in AppDomain.CurrentDomain.GetAssemblies()) {
-          Log.WL(1, "Assembly:"+ assembly.FullName);
+          Log.M?.WL(1, "Assembly:"+ assembly.FullName);
           if (assembly.FullName.StartsWith("MechEngineer")) { Core.MechEngineerAssembly = assembly; }
         }
         if(Core.MechEngineerAssembly != null) {
           Type meStatHelper = Core.MechEngineerAssembly.GetType("MechEngineer.Features.OverrideStatTooltips.Helper.MechDefMovementStatistics");
           if(meStatHelper != null) {
-            Log.WL(1, "MechEngineer.Features.OverrideStatTooltips.Helper.MechDefMovementStatistics found " + meStatHelper.Name);
+            Log.M?.WL(1, "MechEngineer.Features.OverrideStatTooltips.Helper.MechDefMovementStatistics found " + meStatHelper.Name);
             MethodInfo meStatHelper_GetJumpCapacity = meStatHelper.GetMethod("GetJumpCapacity", BindingFlags.NonPublic | BindingFlags.Instance);
             if(meStatHelper_GetJumpCapacity != null) {
-              Log.WL(2, "MechEngineer.Features.OverrideStatTooltips.Helper.MechDefMovementStatistics GetJumpCapacity found");
+              Log.M?.WL(2, "MechEngineer.Features.OverrideStatTooltips.Helper.MechDefMovementStatistics GetJumpCapacity found");
               Core.HarmonyInstance.Patch(meStatHelper_GetJumpCapacity, null, new HarmonyMethod(typeof(Core).GetMethod(nameof(MechDefMovementStatistics_GetJumpCapacity))));
             }
           }
         }
         foreach (var customResource in customResources) {
-          Log.TWL(0, $"customResource:{customResource.Key}");
+          Log.M?.TWL(0, $"customResource:{customResource.Key}");
           if (customResource.Key == "CustomMechRepresentationDef") {
             foreach (var res in customResource.Value) {
               try {
-                Log.WL(1, $"Path:{res.Value.FilePath}",true);
+                Log.M?.WL(1, $"Path:{res.Value.FilePath}",true);
                 CustomMechRepresentationDef mechRepDef = JsonConvert.DeserializeObject<CustomMechRepresentationDef>(File.ReadAllText(res.Value.FilePath));
                 mechRepDef.Register();
               } catch (Exception e) {
-                Log.TWL(0, res.Key, true);
-                Log.WL(0, e.ToString(), true);
+                Log.E?.TWL(0, res.Key, true);
+                Log.E?.WL(0, e.ToString(), true);
               }
             }
           } else if (customResource.Key == "CustomPrefabDef") {
             foreach (var res in customResource.Value) {
               try {
-                Log.WL(1, $"Path:{res.Value.FilePath}", true);
+                Log.M?.WL(1, $"Path:{res.Value.FilePath}", true);
                 CustomPrefabDef mechRepDef = JsonConvert.DeserializeObject<CustomPrefabDef>(File.ReadAllText(res.Value.FilePath));
                 mechRepDef.Register();
               } catch (Exception e) {
-                Log.TWL(0, res.Key, true);
-                Log.WL(0, e.ToString(), true);
+                Log.E?.TWL(0, res.Key, true);
+                Log.E?.WL(0, e.ToString(), true);
               }
             }
           } else if (customResource.Key == "DropSlotDef") {
             foreach (var custItem in customResource.Value) {
               try {
-                Log.WL(1, $"Path:{custItem.Value.FilePath}",true);
+                Log.M?.WL(1, $"Path:{custItem.Value.FilePath}",true);
                 DropSlotDef def = JsonConvert.DeserializeObject<DropSlotDef>(File.ReadAllText(custItem.Value.FilePath));
-                Log.WL(1, $"id:{def.Description.Id}");
-                Log.WL(1, JsonConvert.SerializeObject(def, Formatting.Indented));
+                Log.M?.WL(1, $"id:{def.Description.Id}");
+                Log.M?.WL(1, JsonConvert.SerializeObject(def, Formatting.Indented));
                 def.Register();
               } catch (Exception e) {
-                Log.TWL(0, custItem.Key, true);
-                Log.WL(0, e.ToString(), true);
+                Log.E?.TWL(0, custItem.Key, true);
+                Log.E?.WL(0, e.ToString(), true);
               }
             }
           } else if (customResource.Key == "DropLanceDef") {
             foreach (var custItem in customResource.Value) {
               try {
-                Log.WL(1, $"Path:{custItem.Value.FilePath}",true);
+                Log.M?.WL(1, $"Path:{custItem.Value.FilePath}",true);
                 DropLanceDef def = JsonConvert.DeserializeObject<DropLanceDef>(File.ReadAllText(custItem.Value.FilePath));
-                Log.WL(1, $"id:{def.Description.Id}");
-                Log.WL(1, JsonConvert.SerializeObject(def, Formatting.Indented));
+                Log.M?.WL(1, $"id:{def.Description.Id}");
+                Log.M?.WL(1, JsonConvert.SerializeObject(def, Formatting.Indented));
                 def.Register();
               } catch (Exception e) {
-                Log.TWL(0, custItem.Key, true);
-                Log.WL(0, e.ToString(), true);
+                Log.E?.TWL(0, custItem.Key, true);
+                Log.E?.WL(0, e.ToString(), true);
               }
             }
           } else if (customResource.Key == "DropSlotsDef") {
             foreach (var custItem in customResource.Value) {
               try {
-                Log.WL(1, $"Path:{custItem.Value.FilePath}",true);
+                Log.M?.WL(1, $"Path:{custItem.Value.FilePath}",true);
                 DropSlotsDef def = JsonConvert.DeserializeObject<DropSlotsDef>(File.ReadAllText(custItem.Value.FilePath));
-                Log.WL(1, "id:" + def.Description.Id);
-                Log.WL(1, JsonConvert.SerializeObject(def, Formatting.Indented));
+                Log.M?.WL(1, "id:" + def.Description.Id);
+                Log.M?.WL(1, JsonConvert.SerializeObject(def, Formatting.Indented));
                 def.Register();
               } catch (Exception e) {
-                Log.TWL(0, custItem.Key, true);
-                Log.WL(0, e.ToString(), true);
+                Log.E?.TWL(0, custItem.Key, true);
+                Log.E?.WL(0, e.ToString(), true);
               }
             }
           } else if (customResource.Key == "DropSlotDecorationDef") {
             foreach (var custItem in customResource.Value) {
               try {
-                Log.WL(1, $"Path:{custItem.Value.FilePath}", true);
+                Log.M?.WL(1, $"Path:{custItem.Value.FilePath}", true);
                 DropSlotDecorationDef def = JsonConvert.DeserializeObject<DropSlotDecorationDef>(File.ReadAllText(custItem.Value.FilePath));
-                Log.WL(1, "id:" + def.Description.Id);
-                Log.WL(1, JsonConvert.SerializeObject(def, Formatting.Indented));
+                Log.M?.WL(1, "id:" + def.Description.Id);
+                Log.M?.WL(1, JsonConvert.SerializeObject(def, Formatting.Indented));
                 def.Register();
               } catch (Exception e) {
-                Log.TWL(0, custItem.Key, true);
-                Log.WL(0, e.ToString(), true);
+                Log.E?.TWL(0, custItem.Key, true);
+                Log.E?.WL(0, e.ToString(), true);
               }
             }
           } else if (customResource.Key == "DropClassDef") {
             foreach (var custItem in customResource.Value) {
               try {
-                Log.WL(1, $"Path:{custItem.Value.FilePath}", true);
+                Log.M?.WL(1, $"Path:{custItem.Value.FilePath}", true);
                 DropClassDef def = JsonConvert.DeserializeObject<DropClassDef>(File.ReadAllText(custItem.Value.FilePath));
-                Log.WL(1, "id:" + def.Description.Id);
-                Log.WL(1, JsonConvert.SerializeObject(def, Formatting.Indented));
+                Log.M?.WL(1, "id:" + def.Description.Id);
+                Log.M?.WL(1, JsonConvert.SerializeObject(def, Formatting.Indented));
                 def.Register();
               } catch (Exception e) {
-                Log.TWL(0, custItem.Key, true);
-                Log.WL(0, e.ToString(), true);
+                Log.E?.TWL(0, custItem.Key, true);
+                Log.E?.WL(0, e.ToString(), true);
               }
             }
           } else if (customResource.Key == "PilotingClassDef") {
             foreach (var custItem in customResource.Value) {
               try {
-                Log.WL(1, $"Path:{custItem.Value.FilePath}", true);
+                Log.M?.WL(1, $"Path:{custItem.Value.FilePath}", true);
                 PilotingClassDef def = JsonConvert.DeserializeObject<PilotingClassDef>(File.ReadAllText(custItem.Value.FilePath));
-                Log.WL(1, "id:" + def.Description.Id);
-                Log.WL(1, JsonConvert.SerializeObject(def, Formatting.Indented));
+                Log.M?.WL(1, "id:" + def.Description.Id);
+                Log.M?.WL(1, JsonConvert.SerializeObject(def, Formatting.Indented));
                 def.Register();
               } catch (Exception e) {
-                Log.TWL(0, custItem.Key, true);
-                Log.WL(0, e.ToString(), true);
+                Log.E?.TWL(0, custItem.Key, true);
+                Log.E?.WL(0, e.ToString(), true);
               }
             }
           } else if (customResource.Key == nameof(CustomHangarDef)) {
             foreach (var custItem in customResource.Value) {
               try {
-                Log.WL(1, $"Path:{custItem.Value.FilePath}", true);
+                Log.M?.WL(1, $"Path:{custItem.Value.FilePath}", true);
                 CustomHangarDef def = JsonConvert.DeserializeObject<CustomHangarDef>(File.ReadAllText(custItem.Value.FilePath));
-                Log.WL(1, "id:" + def.Description.Id);
-                Log.WL(1, JsonConvert.SerializeObject(def, Formatting.Indented));
+                Log.M?.WL(1, "id:" + def.Description.Id);
+                Log.M?.WL(1, JsonConvert.SerializeObject(def, Formatting.Indented));
                 def.Register();
               } catch (Exception e) {
-                Log.TWL(0, custItem.Key, true);
-                Log.WL(0, e.ToString(), true);
+                Log.E?.TWL(0, custItem.Key, true);
+                Log.E?.WL(0, e.ToString(), true);
               }
             }
           } else if (customResource.Key == "CustomWeatherEffect") {
             foreach (var custItem in customResource.Value) {
               try {
-                Log.WL(1, $"Path:{custItem.Value.FilePath}", true);
+                Log.M?.WL(1, $"Path:{custItem.Value.FilePath}", true);
                 IntelHelper.AddMood(custItem.Key, custItem.Value);
               } catch (Exception e) {
-                Log.TWL(0, custItem.Key, true);
-                Log.WL(0, e.ToString(), true);
+                Log.E?.TWL(0, custItem.Key, true);
+                Log.E?.WL(0, e.ToString(), true);
               }
             }
           } else if (customResource.Key == nameof(CustomStructureDef)) {
             foreach (var custItem in customResource.Value) {
-              Log.WL(1, $"Path:{custItem.Value.FilePath}", true);
+              Log.M?.WL(1, $"Path:{custItem.Value.FilePath}", true);
               CustomStructureDef.Register(custItem.Value.FilePath);
             }
           } else if (customResource.Key == nameof(CustomHitTableDef)) {
             foreach (var custItem in customResource.Value) {
-              Log.WL(1, $"Path:{custItem.Value.FilePath}", true);
+              Log.M?.WL(1, $"Path:{custItem.Value.FilePath}", true);
               CustomHitTableDef.Register(custItem.Value.FilePath);
             }
           } else {
@@ -794,25 +669,25 @@ namespace CustomUnits {
         //Core.HarmonyInstance.Patch(Contract_BeginRequestResources_Intel.TargetMethod(), Contract_BeginRequestResources_Intel.Patch());
         CustomDeploy.Core.FinishLoading();
       } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
+        Log.E?.TWL(0, e.ToString(), true);
       }
     }
     public static Harmony HarmonyInstance = null;
     public static void LoadBuildinShaders() {
-      Log.TWL(0,"Loading buildin shaders");
+      Log.M?.TWL(0,"Loading buildin shaders");
       foreach (string shaderName in Core.Settings.forceToBuildinShadersList) {
         Shader shader = Shader.Find(shaderName);
         if (shader != null) {
           Core.Settings.forceToBuildinShaders.Add(shaderName, shader);
-          Log.WL(1, $"shader found {shader.name}:{shader.GetInstanceID()}");
+          Log.M?.WL(1, $"shader found {shader.name}:{shader.GetInstanceID()}");
         } else {
-          Log.WL(1, $"shader not found {shaderName}");
+          Log.M?.WL(1, $"shader not found {shaderName}");
         }
       }
       foreach(var repShader in Core.Settings.shadersReplacementList) {
         if (Core.Settings.forceToBuildinShaders.ContainsKey(repShader.Key)) { continue; }
         if(Core.Settings.forceToBuildinShaders.TryGetValue(repShader.Value,out var shader)) {
-          Log.WL(1, $"shader replaced {repShader.Key} -> {shader.name}:{shader.GetInstanceID()}");
+          Log.M?.WL(1, $"shader replaced {repShader.Key} -> {shader.name}:{shader.GetInstanceID()}");
           Core.Settings.forceToBuildinShaders.Add(repShader.Key, shader);
         }
       }
@@ -824,21 +699,21 @@ namespace CustomUnits {
       Core.Settings = JsonConvert.DeserializeObject<CustomUnits.CUSettings>(settingsJson);
 
       //PilotingClass.Validate();
-      Log.TWL(0,"Initing... " + directory + " version: " + Assembly.GetExecutingAssembly().GetName().Version, true);
+      Log.M?.TWL(0,"Initing... " + directory + " version: " + Assembly.GetExecutingAssembly().GetName().Version, true);
       //Log.WL(1, $"Harmony.FileLog.logPath:{Harmony.FileLog.logPath}");
       //HarmonyInstance.DEBUG = true;
       LoadBuildinShaders();
       Vector3 pos = new Vector3(-7.6f, 96.5f, 0f);
       Vector3 look = new Vector3(-1.9f, 96.5f, 0f);
       Vector3 diff = look - pos;
-      Log.WL(1,$"look:{look} pos:{pos} forward:{diff} backrot:{Quaternion.LookRotation(diff,Vector3.back).eulerAngles} fwdrot:{Quaternion.LookRotation(diff, Vector3.forward).eulerAngles} uprot:{Quaternion.LookRotation(diff, Vector3.up).eulerAngles} downrot:{Quaternion.LookRotation(diff, Vector3.down).eulerAngles}");
-      Log.WL(1,"Core.Settings.weaponPrefabMappings");
+      Log.M?.WL(1,$"look:{look} pos:{pos} forward:{diff} backrot:{Quaternion.LookRotation(diff,Vector3.back).eulerAngles} fwdrot:{Quaternion.LookRotation(diff, Vector3.forward).eulerAngles} uprot:{Quaternion.LookRotation(diff, Vector3.up).eulerAngles} downrot:{Quaternion.LookRotation(diff, Vector3.down).eulerAngles}");
+      Log.M?.WL(1,"Core.Settings.weaponPrefabMappings");
       foreach (var mapping in Core.Settings.weaponPrefabMappings) {
-        Log.W(2, mapping.Key);
+        Log.M?.W(2, mapping.Key);
         foreach (var candidate in mapping.Value) {
-          Log.W(1, candidate.Key + ":" + candidate.Value);
+          Log.M?.W(1, candidate.Key + ":" + candidate.Value);
         };
-        Log.WL(0, "");
+        Log.M?.WL(0, "");
       }
       //InitLancesLoadoutDefault();
       //CustomLanceHelper.BaysCount(3+(Core.Settings.BaysCountExternalControl?0:Core.Settings.ArgoBaysFix));
@@ -880,7 +755,7 @@ namespace CustomUnits {
 
         string CUHelperAssemblyPath = Path.Combine(directory, "CustomUnitsHelper.dll");
         Assembly CUHelperAssembly = Assembly.LoadFile(CUHelperAssemblyPath);
-        Log.TWL(0,"Helper assembly "+CUHelperAssembly.FullName);
+        Log.M?.TWL(0,"Helper assembly "+CUHelperAssembly.FullName);
         HarmonyFileLog.Enabled = true;
         HarmonyInstance.Patch(PatchingDebug.GetOriginalMethod_Target(), null, null, null, PatchingDebug.GetOriginalMethod_Finalizer_H(), null);
         HarmonyInstance.PatchAll(Assembly.GetExecutingAssembly());
@@ -891,7 +766,7 @@ namespace CustomUnits {
       } catch (Exception e) {
         //HarmonyInstance.DEBUG = false;
 
-        Log.TWL(0,e.ToString(),true);
+        Log.E?.TWL(0,e.ToString(),true);
       }
     }
   }

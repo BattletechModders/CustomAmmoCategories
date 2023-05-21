@@ -563,6 +563,14 @@ namespace CustAmmoCategories {
     public float AIUnsafeJamChanceMod { get; set; } = 0f;
     [Key(160)]
     public TripleBoolean MissInCircle { get; set; } = TripleBoolean.NotSet;
+    [Key(161)]
+    public float AMSAttractiveness { get; set; } = 0f;
+    [Key(162)]
+    public float AMSHitChanceMod { get; set; } = 1f;
+    [Key(163)]
+    public float AMSHitChanceMult { get; set; } = 0f;
+    [Key(164)]
+    public int AMSInterceptedTrace { get; set; } = 0;
     public ExtAmmunitionDef() { }
   }
 }

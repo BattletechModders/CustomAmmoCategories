@@ -37,7 +37,7 @@ namespace CustomUnits {
         }
       }
       if (flag) { return; }
-      Log.TWL(0, "LanceSpawnerGameLogic.OnUnitSpawnComplete " + __instance.Name);
+      Log.Combat?.TWL(0, "LanceSpawnerGameLogic.OnUnitSpawnComplete " + __instance.Name);
       CombatHUD HUD = __instance.HUD();
       if (HUD == null) { return; }
       HUD.MechWarriorTray.RefreshTeam(HUD.Combat.LocalPlayerTeam);
@@ -49,11 +49,11 @@ namespace CustomUnits {
   [HarmonyPatch(new Type[] { typeof(TeamController) })]
   public static class LanceSpawnerGameLogic_GetRealMissionObjectiveResults {
     public static void Postfix(Contract __instance, TeamController teamController, ref List<MissionObjectiveResult> __result) {
-      Log.TWL(0, "Contract.GetRealMissionObjectiveResults");
+      Log.Combat?.TWL(0, "Contract.GetRealMissionObjectiveResults");
       foreach (MissionObjectiveResult result in __result) {
-        Log.WL(1, result.guid);
-        Log.WL(2, result.title);
-        Log.WL(2, result.status.ToString());
+        Log.Combat?.WL(1, result.guid);
+        Log.Combat?.WL(2, result.title);
+        Log.Combat?.WL(2, result.status.ToString());
       }
     }
   }
@@ -62,10 +62,11 @@ namespace CustomUnits {
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { typeof(Team), typeof(Team) })]
   public static class HostilityMatrix_IsFriendly {
-    public static bool Prefix(HostilityMatrix __instance, BattleTech.Team teamOne, BattleTech.Team teamTwo, ref bool __result) {
-      if (teamOne == null) { __result = false; return false; }
-      if (teamTwo == null) { __result = false; return false; }
-      return true;
+    public static void Prefix(ref bool __runOriginal, HostilityMatrix __instance, BattleTech.Team teamOne, BattleTech.Team teamTwo, ref bool __result) {
+      if (!__runOriginal) { return; }
+      if (teamOne == null) { __result = false; __runOriginal = false; return; }
+      if (teamTwo == null) { __result = false; __runOriginal = false; return; }
+      return;
     }
   }
   [HarmonyPatch(typeof(SelectionStateJump))]
@@ -73,14 +74,16 @@ namespace CustomUnits {
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { typeof(Vector3) })]
   public static class SelectionStateJump_ProcessLeftClick {
-    public static bool Prefix(SelectionStateMove __instance, Vector3 worldPos, ref bool __result) {
-      if (__instance.HasDestination == true) { return true; }
+    public static void Prefix(ref bool __runOriginal, SelectionStateMove __instance, Vector3 worldPos, ref bool __result) {
+      if (!__runOriginal) { return; }
+      if (__instance.HasDestination == true) { return; }
       if (__instance.SelectedActor.IsValidEscortPosition(worldPos, out string message) == false) {
         GenericPopupBuilder.Create(GenericPopupType.Warning, message).IsNestedPopupWithBuiltInFader().CancelOnEscape().Render();
         __result = false;
-        return false;
+        __runOriginal = false;
+        return;
       }
-      return true;
+      return;
     }
   }
   [HarmonyPatch(typeof(SelectionState))]
@@ -197,12 +200,12 @@ namespace CustomUnits {
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { typeof(MessageCenterMessage) })]
   public static class AbstractActor_FlagForDeath {
-    public static void Postfix(AbstractActor __instance, MessageCenterMessage message, ref string ____teamId, ref Team ____team) {
+    public static void Postfix(AbstractActor __instance, MessageCenterMessage message) {
       try {
         DespawnActorMessage despawnActorMessage = message as DespawnActorMessage;
         if (despawnActorMessage == null) { return; }
         if (!(despawnActorMessage.affectedObjectGuid == __instance.GUID)) { return; }
-        Log.TWL(0, "AbstractActor.DespawnActor " + __instance.DisplayName + ":" + despawnActorMessage.deathMethod);
+        Log.Combat?.TWL(0, "AbstractActor.DespawnActor " + __instance.DisplayName + ":" + despawnActorMessage.deathMethod);
         if (__instance.TeamId != __instance.Combat.LocalPlayerTeamGuid) { return; };
         string transferTeamId = string.Empty;
         foreach (string tag in __instance.EncounterTags) {
@@ -216,11 +219,12 @@ namespace CustomUnits {
         if (transferTeam == null) { return; }
         __instance.Combat.LocalPlayerTeam.RemoveUnit(__instance);
         transferTeam.AddUnit(__instance);
-        ____teamId = transferTeamId;
-        ____team = transferTeam;
+        __instance._teamId = transferTeamId;
+        __instance._team = transferTeam;
         __instance.HUD().MechWarriorTray.RefreshTeam(__instance.Combat.LocalPlayerTeam);
       } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
+        Log.Combat?.TWL(0, e.ToString(), true);
+        AbstractActor.logger.LogException(e);
       }
     }
   }
@@ -241,12 +245,12 @@ namespace CustomUnits {
       }
       if (flag) { lance.team = team; }
     }
-    public static void Postfix(Mech __instance, string attackerGUID, ref string ____teamId, ref Team ____team) {
+    public static void Postfix(Mech __instance, string attackerGUID) {
       try {
         if (__instance.IsDead == false) { return; }
         if (__instance.WasDespawned) { return; }
         if (__instance.TeamId != __instance.Combat.LocalPlayerTeamGuid) { return; };
-        Log.TWL(0, "Mech.HandleDeath " + __instance.DisplayName + ":" + attackerGUID);
+        Log.Combat?.TWL(0, "Mech.HandleDeath " + __instance.DisplayName + ":" + attackerGUID);
         string transferTeamId = string.Empty;
         foreach (string tag in __instance.EncounterTags) {
           if (tag.StartsWith(Core.Settings.TransferTeamOnDeathPrefixTag)) {
@@ -259,12 +263,13 @@ namespace CustomUnits {
         if (transferTeam == null) { return; }
         __instance.Combat.LocalPlayerTeam.RemoveUnit(__instance);
         transferTeam.AddUnit(__instance);
-        ____teamId = transferTeamId;
-        ____team = transferTeam;
+        __instance._teamId = transferTeamId;
+        __instance._team = transferTeam;
         __instance.Combat.TransferLance(__instance.lance, transferTeam);
         __instance.HUD().MechWarriorTray.RefreshTeam(__instance.Combat.LocalPlayerTeam);
       } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
+        Log.Combat?.TWL(0, e.ToString(), true);
+        AbstractActor.logger.LogException(e);
       }
     }
   }
@@ -273,12 +278,12 @@ namespace CustomUnits {
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { typeof(string) })]
   public static class Vehicle_HandleDeath {
-    public static void Postfix(Vehicle __instance, string attackerGUID, ref string ____teamId, ref Team ____team) {
+    public static void Postfix(Vehicle __instance, string attackerGUID) {
       try {
         if (__instance.IsDead == false) { return; }
         if (__instance.WasDespawned) { return; }
         if (__instance.TeamId != __instance.Combat.LocalPlayerTeamGuid) { return; };
-        Log.TWL(0, "Vehicle.HandleDeath " + __instance.DisplayName + ":" + attackerGUID);
+        Log.Combat?.TWL(0, "Vehicle.HandleDeath " + __instance.DisplayName + ":" + attackerGUID);
         string transferTeamId = string.Empty;
         foreach (string tag in __instance.EncounterTags) {
           if (tag.StartsWith(Core.Settings.TransferTeamOnDeathPrefixTag)) {
@@ -291,12 +296,13 @@ namespace CustomUnits {
         if (transferTeam == null) { return; }
         __instance.Combat.LocalPlayerTeam.RemoveUnit(__instance);
         transferTeam.AddUnit(__instance);
-        ____teamId = transferTeamId;
-        ____team = transferTeam;
+        __instance._teamId = transferTeamId;
+        __instance._team = transferTeam;
         __instance.Combat.TransferLance(__instance.lance, transferTeam);
         __instance.HUD().MechWarriorTray.RefreshTeam(__instance.Combat.LocalPlayerTeam);
       } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
+        Log.Combat?.TWL(0, e.ToString(), true);
+        AbstractActor.logger.LogException(e);
       }
     }
   }
@@ -322,7 +328,8 @@ namespace CustomUnits {
           }
         }
       } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
+        Log.Combat?.TWL(0, e.ToString(), true);
+        ObjectiveGameLogic.logger.LogException(e);
       }
     }
   }
@@ -334,25 +341,22 @@ namespace CustomUnits {
     private static string escortTargetRegion = string.Empty;
     public static void Prefix(ObjectiveGameLogic __instance) {
       try {
-        Log.TWL(0, "ObjectiveGameLogic.ActivateObjective "+ __instance.GetType().ToString()+ " IsComplete:" + __instance.IsComplete);
+        Log.Combat?.TWL(0, "ObjectiveGameLogic.ActivateObjective "+ __instance.GetType().ToString()+ " IsComplete:" + __instance.IsComplete);
         if (__instance.IsComplete) { return; }
         EscortXUnitsObjective escortXUnitsObjective = __instance as EscortXUnitsObjective;
         if (escortXUnitsObjective == null) { return; }
         __instance.Combat.FillRoutePoints();
         List<ConvoyRoutePoint> route = __instance.Combat.getConvoyRoutePoints();
-        Log.WL(1, "route:" + route.Count);
+        Log.Combat?.WL(1, "route:" + route.Count);
         foreach (ConvoyRoutePoint point in route) {
           MapTerrainDataCellEx cell = escortXUnitsObjective.Combat.MapMetaData.GetCellAt(point.point) as MapTerrainDataCellEx;
-          Log.WL(2, "point:" + point.point+" cell:"+(cell==null?"null":"not null"));
-          //GameObject sphere = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-          //sphere.transform.SetParent(null);
-          //sphere.transform.position = point.point;
-          //sphere.transform.localScale = Vector3.one * 10f;
+          Log.Combat?.WL(2, "point:" + point.point+" cell:"+(cell==null?"null":"not null"));
           if (cell == null) { continue; }
           cell.hexCell.addTempTerrainVFX(escortXUnitsObjective.Combat, Core.Settings.ConvoyRouteBeaconVFX, 999, Core.Settings.ConvoyRouteBeaconVFXScale.vector);
         }
       } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
+        Log.Combat?.TWL(0, e.ToString(), true);
+        ObjectiveGameLogic.logger.LogException(e);
       }
     }
   }
@@ -426,7 +430,7 @@ namespace CustomUnits {
           if (dist > result) { result = dist; FarestOther = other; }
         }
         distanceFormOthersCache.Add(pos, result);
-        Log.TWL(0, "getDistanceFromOthers round:" + round + " pos:" + pos + " farest:" + FarestOther.DisplayName + " result:" + result + "/" + Core.Settings.ConvoyMaxDistFromOther);
+        Log.Combat?.TWL(0, "getDistanceFromOthers round:" + round + " pos:" + pos + " farest:" + FarestOther.DisplayName + " result:" + result + "/" + Core.Settings.ConvoyMaxDistFromOther);
       }
       return result;
     }
@@ -439,7 +443,7 @@ namespace CustomUnits {
           if ((dist < result) || (result == 0f)) { result = dist; NearestPlayer = other; }
         }
         distanceFormPlayerCache.Add(pos, result);
-        Log.TWL(0, "getDistanceFromPlayer round:" + round + " pos:" + pos + " nearest:" + NearestPlayer.DisplayName + " result:" + result + "/" + Core.Settings.ConvoyMaxDistFromPlayer);
+        Log.Combat?.TWL(0, "getDistanceFromPlayer round:" + round + " pos:" + pos + " nearest:" + NearestPlayer.DisplayName + " result:" + result + "/" + Core.Settings.ConvoyMaxDistFromPlayer);
       }
       return result;
     }
@@ -493,7 +497,7 @@ namespace CustomUnits {
       routePoints.Clear();
       EscortChunkGameLogic escortLogic = combat.EncounterLayerData.gameObject.GetComponentInChildren<EscortChunkGameLogic>(true);
       if(escortLogic == null) {
-        Log.TWL(0, "!Exception!: no EscortChunkGameLogic in EncounterLayerData");
+        Log.Combat?.TWL(0, "!Exception!: no EscortChunkGameLogic in EncounterLayerData");
         return;
       }
       RegionPointGameLogic[] regions = escortLogic.GetComponentsInChildren<RegionPointGameLogic>();
@@ -540,7 +544,7 @@ namespace CustomUnits {
       }
       routePoints.Add(new ConvoyRoutePoint(endPos, endPos));
       //routePoints.Sort((a, b) => a.distToEnd.CompareTo(b.distToEnd));
-      Log.TWL(0, "FillRoutePoints:" + routePoints.Count);
+      Log.Combat?.TWL(0, "FillRoutePoints:" + routePoints.Count);
       for (int t = 0; t < routePoints.Count; ++t) {
         //Log.WL(1,"point:"+ routePoints[t].point+" end dist:"+ routePoints[t].distToEnd);
         if (t < (routePoints.Count - 1)) { routePoints[t].next = routePoints[t + 1]; }
@@ -692,59 +696,58 @@ namespace CustomUnits {
         InitializeContractMessage initializeContractMessage = message as InitializeContractMessage;
         CombatGameState combat = initializeContractMessage.combat;
         Contract activeContract = combat.ActiveContract;
-        Log.TWL(0, "LanceSpawnerList:" + Traverse.Create(combat.EncounterLayerData).Property("LanceSpawnerList").GetValue<LanceSpawnerGameLogic[]>().Length);
+        Log.Combat?.TWL(0, "LanceSpawnerList:" + Traverse.Create(combat.EncounterLayerData).Property("LanceSpawnerList").GetValue<LanceSpawnerGameLogic[]>().Length);
         foreach (LanceSpawnerGameLogic lanceSpawner in Traverse.Create(combat.EncounterLayerData).Property("LanceSpawnerList").GetValue<LanceSpawnerGameLogic[]>()) {
-          Log.WL(1, "Name:" + lanceSpawner.Name + "/" + lanceSpawner.DisplayName);
-          Log.WL(2, "Lance:" + lanceSpawner.LanceGuid + "/" + lanceSpawner.spawnEffectTags.ContentToString());
-          Log.WL(2, "encounterObjectName:" + lanceSpawner.encounterObjectName);
+          Log.Combat?.WL(1, "Name:" + lanceSpawner.Name + "/" + lanceSpawner.DisplayName);
+          Log.Combat?.WL(2, "Lance:" + lanceSpawner.LanceGuid + "/" + lanceSpawner.spawnEffectTags.ContentToString());
+          Log.Combat?.WL(2, "encounterObjectName:" + lanceSpawner.encounterObjectName);
           Team oldTeam = combat.TurnDirector.GetTurnActorByUniqueId(lanceSpawner.teamDefinitionGuid) as Team;
           Team playerTeam = combat.LocalPlayerTeam;
           Lance lance = null;
           if (lanceSpawner.spawnEffectTags.Contains(Core.Settings.PlayerControlConvoyTag) == false) {
-            Log.WL(2, "spawnEffectTags not contains:" + Core.Settings.PlayerControlConvoyTag);
+            Log.Combat?.WL(2, "spawnEffectTags not contains:" + Core.Settings.PlayerControlConvoyTag);
             continue;
           };
           lanceSpawner.spawnEffectTags.Remove(Core.Settings.PlayerControlConvoyTag);
           if ((oldTeam == null) || (playerTeam == null)) {
-            Log.WL(2, "oldTeam:" + (oldTeam == null ? "null" : oldTeam.DisplayName) + " new team:" + (playerTeam == null ? "null" : playerTeam.DisplayName));
+            Log.Combat?.WL(2, "oldTeam:" + (oldTeam == null ? "null" : oldTeam.DisplayName) + " new team:" + (playerTeam == null ? "null" : playerTeam.DisplayName));
             continue;
           }
           if (!string.IsNullOrEmpty(lanceSpawner.LanceGuid)) {
             lance = combat.ItemRegistry.GetItemByGUID<Lance>(lanceSpawner.LanceGuid);
           }
           if (lance == null) {
-            Log.WL(2, "lance is null");
+            Log.Combat?.WL(2, "lance is null");
             continue;
           }
           lanceSpawner.teamDefinitionGuid = combat.LocalPlayerTeamGuid;
           lance.team = playerTeam;
-          typeof(Lance).GetMethod("InitVisibilityCache", BindingFlags.Instance | BindingFlags.NonPublic).Invoke(lance, new object[] { });
+          lance.InitVisibilityCache();
           oldTeam.lances.Remove(lance);
           playerTeam.lances.Add(lance);
-          //lanceSpawner.EncounterTags.Remove(oldTeam.Name);
-          //lanceSpawner.EncounterTags.Add(playerTeam.Name);
-          Log.WL(2, "EncounterTags:" + lanceSpawner.EncounterTags.ContentToString());
-          Log.WL(2, "Position:" + lanceSpawner.Position);
-          Log.WL(2, "Team:" + lanceSpawner.teamDefinitionGuid);
-          Log.WL(2, "unitSpawnPointGameLogicList:" + lanceSpawner.unitSpawnPointGameLogicList.Length);
+          Log.Combat?.WL(2, "EncounterTags:" + lanceSpawner.EncounterTags.ContentToString());
+          Log.Combat?.WL(2, "Position:" + lanceSpawner.Position);
+          Log.Combat?.WL(2, "Team:" + lanceSpawner.teamDefinitionGuid);
+          Log.Combat?.WL(2, "unitSpawnPointGameLogicList:" + lanceSpawner.unitSpawnPointGameLogicList.Length);
           foreach (UnitSpawnPointGameLogic unitSpawner in lanceSpawner.unitSpawnPointGameLogicList) {
-            Log.WL(3, "Name:" + unitSpawner.Name + "/" + unitSpawner.DisplayName);
+            Log.Combat?.WL(3, "Name:" + unitSpawner.Name + "/" + unitSpawner.DisplayName);
             unitSpawner.SetTeamDefinitionGuid(combat.LocalPlayerTeamGuid);
             unitSpawner.spawnEffectTags.Remove(Core.Settings.PlayerControlConvoyTag);
             unitSpawner.EncounterTags.Remove(oldTeam.Name);
             unitSpawner.EncounterTags.Add(playerTeam.Name);
             unitSpawner.EncounterTags.Add(Core.Settings.PlayerControlConvoyTag);
             unitSpawner.EncounterTags.Add(Core.Settings.TransferTeamOnDeathPrefixTag + oldTeam.GUID);
-            Log.WL(4, "unitTagSet:" + unitSpawner.unitTagSet.ContentToString());
-            Log.WL(4, "UnitDefId:" + unitSpawner.UnitDefId);
-            Log.WL(4, "encounterObjectName:" + unitSpawner.encounterObjectName);
-            Log.WL(4, "EncounterTags:" + unitSpawner.EncounterTags.ContentToString());
-            Log.WL(4, "Position:" + unitSpawner.Position);
-            Log.WL(4, "Team:" + unitSpawner.team);
+            Log.Combat?.WL(4, "unitTagSet:" + unitSpawner.unitTagSet.ContentToString());
+            Log.Combat?.WL(4, "UnitDefId:" + unitSpawner.UnitDefId);
+            Log.Combat?.WL(4, "encounterObjectName:" + unitSpawner.encounterObjectName);
+            Log.Combat?.WL(4, "EncounterTags:" + unitSpawner.EncounterTags.ContentToString());
+            Log.Combat?.WL(4, "Position:" + unitSpawner.Position);
+            Log.Combat?.WL(4, "Team:" + unitSpawner.team);
           }
         }
       } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
+        Log.Combat?.TWL(0, e.ToString(), true);
+        EncounterLayerParent.logger.LogException(e);
       }
     }
   }

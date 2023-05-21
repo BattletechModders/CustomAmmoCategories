@@ -86,18 +86,18 @@ namespace CustAmmoCategories {
     }
     public static AMSWeaponEffect InitAMSWeaponEffect(this Weapon weapon) {
       string prefabName = AMSMultiShotWeaponEffect.AMSPrefabPrefix + weapon.getWeaponEffectID();
-      Log.Combat?.WL(0,"AMSWeaponEffect.InitAMSWeaponEffect getting from pool:" + prefabName);
+      //Log.Combat?.WL(0,"AMSWeaponEffect.InitAMSWeaponEffect getting from pool:" + prefabName);
       GameObject AMSgameObject = weapon.parent.Combat.DataManager.PooledInstantiate(prefabName, BattleTechResourceType.Prefab, new Vector3?(), new Quaternion?(), (Transform)null);
       AMSWeaponEffect amsComponent = null;
       if (AMSgameObject != null) {
-        Log.Combat?.WL(1, "getted from pool: " + AMSgameObject.GetInstanceID());
+        //Log.Combat?.WL(1, "getted from pool: " + AMSgameObject.GetInstanceID());
         amsComponent = AMSgameObject.GetComponent<AMSWeaponEffect>();
         if (amsComponent != null) {
           amsComponent.Init(weapon);
           return amsComponent;
         }
       }
-      Log.Combat?.WL(1, "not in pool. instansing.");
+      //Log.Combat?.WL(1, "not in pool. instansing.");
       if (weapon.weaponRep == null) {
         Log.Combat?.WL(0, "WARNING! Has no weapon representation no AMS effects!");
         return null;
@@ -126,7 +126,7 @@ namespace CustAmmoCategories {
       LaserEffect lWE = we as LaserEffect;
       MissileLauncherEffect mlWE = we as MissileLauncherEffect;
       if (bbWE != null) {
-        Log.Combat?.WL(0, "AMS burst ballistic");
+        //Log.Combat?.WL(0, "AMS burst ballistic");
         AMSBurstBallisticEffect AMSbbWE = gameObject.AddComponent<AMSBurstBallisticEffect>();
         AMSbbWE.Init(bbWE);
         AMSbbWE.Init(weapon);
@@ -134,7 +134,7 @@ namespace CustAmmoCategories {
         return AMSbbWE;
       } else
       if (bWE != null) {
-        Log.Combat?.WL(0, "AMS ballistic");
+        //Log.Combat?.WL(0, "AMS ballistic");
         AMSBallisticEffect AMSbWE = gameObject.AddComponent<AMSBallisticEffect>();
         AMSbWE.Init(bWE);
         AMSbWE.Init(weapon);
@@ -142,7 +142,7 @@ namespace CustAmmoCategories {
         return AMSbWE;
       } else 
       if(lWE != null) {
-        Log.Combat?.WL(0, "AMS laser");
+        //Log.Combat?.WL(0, "AMS laser");
         AMSLaserEffect AMSlWE = gameObject.AddComponent<AMSLaserEffect>();
         AMSlWE.Init(lWE);
         AMSlWE.Init(weapon);
@@ -150,7 +150,7 @@ namespace CustAmmoCategories {
         return AMSlWE;
       } else
       if (mlWE != null) {
-        Log.Combat?.WL(0, "AMS missile launcher");
+        //Log.Combat?.WL(0, "AMS missile launcher");
         AMSMissileLauncherEffect AMSmlWE = gameObject.AddComponent<AMSMissileLauncherEffect>();
         AMSmlWE.Init(mlWE);
         AMSmlWE.Init(weapon);
@@ -194,20 +194,20 @@ namespace CustAmmoCategories {
       this.weapon = w;
     }
     public int AddHitPosition(Vector3 pos) {
-      Log.Combat?.WL(0, "AMSMainEffect.AddHitPosition");
+      //Log.Combat?.WL(0, "AMSMainEffect.AddHitPosition");
       this.hitPositions.Add(pos);
       if(this.multyShotEffect == null) {
         AMSWeaponEffect AMSwe = this.weapon.InitAMSWeaponEffect();
         AMSMultiShotWeaponEffect AMSmwe = AMSwe as AMSMultiShotWeaponEffect;
         if (AMSmwe == null) {
-          Log.Combat?.WL(1, "single shot " + ((AMSwe==null)?"fail":"success"));
+          //Log.Combat?.WL(1, "single shot " + ((AMSwe==null)?"fail":"success"));
           this.singleShotsEffects.Add(AMSwe);
         } else {
           this.multyShotEffect = AMSmwe;
         }
       }
       if(this.multyShotEffect != null) {
-        Log.Combat?.WL(1, "multishot");
+        //Log.Combat?.WL(1, "multishot");
         this.multyShotEffect.AddBullet();
       }
       return this.hitPositions.Count - 1;

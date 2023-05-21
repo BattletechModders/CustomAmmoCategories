@@ -41,7 +41,7 @@ namespace CustomUnits {
           return false;
         }
       } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
+        Log.Combat?.TWL(0, e.ToString(), true);
       }
       return true;
     }
@@ -74,7 +74,7 @@ namespace CustomUnits {
           return false;
         }
       } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
+        Log.Combat?.TWL(0, e.ToString(), true);
       }
       return true;
     }
@@ -90,7 +90,7 @@ namespace CustomUnits {
           return false;
         }
       } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
+        Log.Combat?.TWL(0, e.ToString(), true);
       }
       return true;
     }
@@ -113,16 +113,16 @@ namespace CustomUnits {
       this._UpdateCache();
     }
     public void _UpdateProperties() {
-      if(DEBUG_LOG) Log.TWL(0, "CustomPropertyBlockManager._UpdateProperties " + this.gameObject.name);
+      if(DEBUG_LOG) Log.Combat?.TWL(0, "CustomPropertyBlockManager._UpdateProperties " + this.gameObject.name);
       foreach (var mblock in materialBlocks) { if (mblock.Key == null) { continue; }; mblock.Value.Clear(); }
       foreach (PropertyBlockManager.PropertySetting property in this.main_properties) {
         this.AddPropertyToBlock(property);
-        if (DEBUG_LOG) Log.WL(1, property.PropertyName+":"+property.PropertyType+" common");
+        if (DEBUG_LOG) Log.Combat?.WL(1, property.PropertyName+":"+property.PropertyType+" common");
       }
       foreach (var paintTexture in this.paintSchemes) {
         if (paintTexture.Key == null) { continue; }
         if (materialBlocks.TryGetValue(paintTexture.Key, out MaterialPropertyBlock block)) {
-          if (DEBUG_LOG) Log.WL(1, paintTexture.Value.PropertyName+":" + paintTexture.Value.PropertyType+" renderer:"+ paintTexture.Key.gameObject.name+" texture:"+paintTexture.Value.PropertyTexture.name);
+          if (DEBUG_LOG) Log.Combat?.WL(1, paintTexture.Value.PropertyName+":" + paintTexture.Value.PropertyType+" renderer:"+ paintTexture.Key.gameObject.name+" texture:"+paintTexture.Value.PropertyTexture.name);
           this.AddPropertyToBlock(block, paintTexture.Value);
         }
       }
@@ -157,7 +157,7 @@ namespace CustomUnits {
     //  if (this.main_properties.Contains(oldProperty)) { this.main_properties.RemoveFast(oldProperty); }
     //  this._UpdateProperties();
     //}
-    private void AddPropertyToBlock(PropertyBlockManager.PropertySetting property) {
+    private new void AddPropertyToBlock(PropertyBlockManager.PropertySetting property) {
       switch (property.PropertyType) {
         case PropertyBlockManager.PropertySetting.PropertyTypes.Color:
         foreach (var mblock in this.materialBlocks) { mblock.Value.SetColor(property.PropertyName, property.PropertyColor); }
@@ -207,7 +207,7 @@ namespace CustomUnits {
       ICustomizationTarget custRep = this.rootObject.GetComponent<CustomMechRepresentation>() as ICustomizationTarget;
       if (custRep == null) { custRep = this.rootObject.GetComponent<CustomMechRepresentationSimGame>() as ICustomizationTarget; }
       if (custRep != null) {
-        if (DEBUG_LOG) Log.TWL(0, "PropertyBlockManager.UpdateCache " + custRep._gameObject.name + " chassis:" + (custRep.chassisDef == null ? "null" : custRep.chassisDef.Description.Id));
+        if (DEBUG_LOG) Log.Combat?.TWL(0, "PropertyBlockManager.UpdateCache " + custRep._gameObject.name + " chassis:" + (custRep.chassisDef == null ? "null" : custRep.chassisDef.Description.Id));
         //this._skinnedRendererCache = 
         //this._meshRendererCache = 
         this._skinnedRendererCache = custRep.skinnedMeshRenderersCache.Keys.ToArray();
@@ -217,14 +217,14 @@ namespace CustomUnits {
         foreach (SkinnedMeshRenderer renderer in _skinnedRendererCache) {
           CustomPaintPattern pattern = renderer.gameObject.GetComponent<CustomPaintPattern>();
           if (pattern == null) { continue; }
-          if (DEBUG_LOG) Log.WL(0,"renderer:"+ renderer.name+" "+ pattern.paintSchemeProperty.PropertyName);
+          if (DEBUG_LOG) Log.Combat?.WL(0,"renderer:"+ renderer.name+" "+ pattern.paintSchemeProperty.PropertyName);
           this.paintSchemes.Add(renderer, pattern.paintSchemeProperty);
           this.materialBlocks.Add(renderer, new MaterialPropertyBlock());
         }
         foreach (MeshRenderer renderer in _meshRendererCache) {
           CustomPaintPattern pattern = renderer.gameObject.GetComponent<CustomPaintPattern>();
           if (pattern == null) { continue; }
-          if (DEBUG_LOG) Log.WL(0, "renderer:" + renderer.name + " " + pattern.paintSchemeProperty.PropertyName);
+          if (DEBUG_LOG) Log.Combat?.WL(0, "renderer:" + renderer.name + " " + pattern.paintSchemeProperty.PropertyName);
           this.paintSchemes.Add(renderer, pattern.paintSchemeProperty);
           this.materialBlocks.Add(renderer, new MaterialPropertyBlock());
         }
@@ -233,11 +233,11 @@ namespace CustomUnits {
       }
       this._UpdateProperties();
     }
-    private void OnEnable() {
+    private new void OnEnable() {
       if (this.rootObject == null) { this.rootObject = this.gameObject; }
       this.UpdateCache();
     }
-    private void OnDisable() {
+    private new void OnDisable() {
       if (this._skinnedRendererCache != null) {
         foreach (SkinnedMeshRenderer skinnedMeshRenderer in this._skinnedRendererCache) {
           if (skinnedMeshRenderer != null) { skinnedMeshRenderer.SetPropertyBlock(null); }

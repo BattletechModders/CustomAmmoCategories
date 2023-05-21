@@ -43,12 +43,12 @@ namespace CustomUnits {
     private VTOLBodyAnimation vtolAnim;
     private CustomTwistAnimation customTwistAnim;
     public CustomTwistSequence(AbstractActor actor, Vector3 lookAt, bool isLookVector, bool isBodyRotation, float twistDuration, int stackItemUID, int sequenceId, GameRepresentation.RotationCompleteDelegate completeDelegate) : base(actor.Combat) {
-      Log.TWL(0, "CustomTwistSequence " + actor.DisplayName + " isBodyRotation:" + isBodyRotation + " lookAt:" + lookAt);
+      Log.Combat?.TWL(0, "CustomTwistSequence " + actor.DisplayName + " isBodyRotation:" + isBodyRotation + " lookAt:" + lookAt);
       this.isUpdateRotation = isBodyRotation;
       this.owningActor = actor;
       this.actorRep = actor.GameRep as PilotableActorRepresentation;
       this.customRep = actor.GameRep as CustomMechRepresentation;
-      Log.WL(1, "current representation:"+ this.actorRep.name);
+      Log.Combat?.WL(1, "current representation:"+ this.actorRep.name);
       this.defaultAnim = this.actorRep.thisAnimator;
       CustomTwistAnimation custAnimator = this.actorRep.GetComponent<CustomTwistAnimation>();
       if (custAnimator != null) {
@@ -76,7 +76,7 @@ namespace CustomUnits {
       }
       if ((double)this.twistTime <= 0.0) { this.twistTime = 1f; }
       this.twistRate = 1f / this.twistTime;
-      Log.WL(1, "isBodyRotation:" + this.isBodyRotation 
+      Log.Combat?.WL(1, "isBodyRotation:" + this.isBodyRotation 
         + " isUpdateRotation:" + this.isUpdateRotation 
         + " skipTwist:" + this.skipTwist+ " twistRate:"+ this.twistRate
         + " startAngle:" + this.startAngle + " desiredAngle:" + this.desiredAngle

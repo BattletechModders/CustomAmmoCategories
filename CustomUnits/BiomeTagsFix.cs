@@ -25,7 +25,7 @@ namespace CustomUnits {
   public static class SimGameState_StartContract {
     public static Contract CurrentContract = null;
     public static void Postfix(SimGameState __instance, Contract contract) {
-      Log.LogWrite("SimGameState.StartContract postfix\n");
+      Log.Combat?.WL(0,"SimGameState.StartContract postfix");
       SimGameState_StartContract.CurrentContract = contract;
       return;
     }
@@ -36,20 +36,19 @@ namespace CustomUnits {
   [HarmonyPatch(new Type[] { typeof(MetadataDatabase), typeof(TagSet), typeof(TagSet), typeof(bool), typeof(DateTime?), typeof(TagSet) })]
   public static class TagSetQueryExtensions_GetMatchingUnitDefs {
     public static MethodInfo FOwner;
-    public static bool Prefix(this MetadataDatabase mdd, ref TagSet requiredTags, ref TagSet excludedTags, bool checkOwnership, DateTime? currentDate, TagSet companyTags) {
-      Log.LogWrite("TagSetQueryExtensions.GetMatchingUnitDefs prefix\n");
+    public static void Prefix(this MetadataDatabase mdd, ref TagSet requiredTags, ref TagSet excludedTags, bool checkOwnership, DateTime? currentDate, TagSet companyTags) {
+      Log.Combat?.WL(0, "TagSetQueryExtensions.GetMatchingUnitDefs prefix");
       if (SimGameState_StartContract.CurrentContract != null) {
-        Log.LogWrite(" biome:" + SimGameState_StartContract.CurrentContract.ContractBiome + "\n");
+        Log.Combat?.WL(1, "biome:" + SimGameState_StartContract.CurrentContract.ContractBiome);
         excludedTags.Add("NoBiome_" + SimGameState_StartContract.CurrentContract.ContractBiome);
       } else {
-        Log.LogWrite(" biome:" + "null" + "\n");
+        Log.Combat?.WL(1, "biome: null");
       }
       //Log.LogWrite(" stack:" + Environment.StackTrace + "\n");
-      Log.LogWrite(" requiredTags:\n");
-      foreach (string tag in requiredTags) { Log.LogWrite("  " + tag + "\n"); };
-      Log.LogWrite(" excludedTags:\n");
-      foreach (string tag in excludedTags) { Log.LogWrite("  " + tag + "\n"); };
-      return true;
+      Log.Combat?.WL(1, "requiredTags:");
+      foreach (string tag in requiredTags) { Log.Combat?.WL(2,tag); };
+      Log.Combat?.WL(1, "excludedTags:");
+      foreach (string tag in excludedTags) { Log.Combat?.WL(2, tag); };
     }
   }
 }

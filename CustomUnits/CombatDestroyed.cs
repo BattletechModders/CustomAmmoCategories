@@ -20,7 +20,7 @@ namespace CustomUnits {
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { })]
   public static class CombatGameState_OnCombatGameDestroyedMap {
-    public static bool Prefix(CombatGameState __instance) {
+    public static void Prefix(CombatGameState __instance) {
       try {
         //HardpointAnimatorHelper.Clear();
         UnitsAnimatedPartsHelper.Clear();
@@ -42,9 +42,9 @@ namespace CustomUnits {
         CustomDeploy.Core.ClearFallbackTracked();
         //StackDataHelper.Clear();
       } catch (Exception e) {
-        Log.LogWrite(e.ToString() + "\n");
+        Log.Combat?.TWL(0,e.ToString());
+        CombatGameState.gameInfoLogger.LogException(e);
       }
-      return true;
     }
   }
 }

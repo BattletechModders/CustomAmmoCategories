@@ -458,7 +458,7 @@ namespace CustAmmoCategories {
     public string baseModeId { get; set; } = WeaponMode.NONE_MODE_NAME;
     [Key(5)]
     public float FlatJammingChance { get; set; } = 0f;
-    [Key(6)]
+    [StatCollectionFloat, Key(6)]
     public float AMSHitChance { get; set; } = 0f;
     [Key(7)]
     public float GunneryJammingBase { get; set; } = 0f;
@@ -635,9 +635,9 @@ namespace CustAmmoCategories {
     public float MaxMissRadius { get; set; } = 0f;
     [SelfDocumentationDefaultValue("empty"), SelfDocumentationTypeName("Dictionary of {\"<tag name>\":<float modifier>}"), Key(87)]
     public Dictionary<string, float> TagsAccuracyModifiers { get; set; } = new Dictionary<string, float>();
-    [StatCollectionFloat, Key(88)]
+    [StatCollectionFloat(), Key(88)]
     public float AMSDamage { get; set; } = 1f;
-    [StatCollectionFloat, Key(89)]
+    [StatCollectionFloat(), Key(89)]
     public float MissileHealth { get; set; } = 1f;
     [SelfDocumentationDefaultValue("Linear"), Key(90)]
     public DamageFalloffType RangedDmgFalloffType { get; set; } = DamageFalloffType.NotSet;
@@ -729,6 +729,12 @@ namespace CustAmmoCategories {
     public float AIUnsafeJamChanceMod { get; set; } = 1f;
     [Key(134)]
     public TripleBoolean MissInCircle { get; set; } = TripleBoolean.NotSet;
+    [Key(135), StatCollectionFloat]
+    public float AMSAttractiveness { get; set; } = 0f;
+    [Key(136), StatCollectionFloat]
+    public float AMSHitChanceMult { get; set; } = 1f;
+    [Key(137)]
+    public int AMSInterceptedTrace { get; set; } = -1;
     public ExtWeaponDef() { }
   }
 }

@@ -33,11 +33,11 @@ namespace CustomUnits {
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { typeof(Vector3) })]
   public static class ActorMovementSequence_MoveTowardWaypoint {
-    public static void Postfix(ActorMovementSequence __instance, MoveType ___moveType) {
+    public static void Postfix(ActorMovementSequence __instance) {
       VTOLBodyAnimation bodyAnimation = __instance.owningActor.VTOLAnimation();
       if (bodyAnimation == null) { return; }
       if (bodyAnimation.bodyAnimator == null) { return; }
-      if (___moveType == MoveType.Backward) {
+      if (__instance.moveType == MoveType.Backward) {
         bodyAnimation.bodyAnimator.SetFloat("forward", 0f);
         bodyAnimation.bodyAnimator.SetFloat("backward", 1f);
       } else {
@@ -48,23 +48,18 @@ namespace CustomUnits {
   }
   [HarmonyPatch(typeof(ActorTwistSequence), "update")]
   public static class ActorTwistSequence_update {
-    public static object TwistState_RangedTwisting = Enum.Parse(typeof(ActorTwistSequence).GetField("state", BindingFlags.Instance | BindingFlags.NonPublic).FieldType, "RangedTwisting");
-    public static object TwistState_Finished = Enum.Parse(typeof(ActorTwistSequence).GetField("state", BindingFlags.Instance | BindingFlags.NonPublic).FieldType, "Finished");
-    public static object TwistState_MeleeFacing = Enum.Parse(typeof(ActorTwistSequence).GetField("state", BindingFlags.Instance | BindingFlags.NonPublic).FieldType, "MeleeFacing");
-    private static FieldInfo f_state = typeof(ActorTwistSequence).GetField("state", BindingFlags.Instance | BindingFlags.NonPublic);
-    public static object state(this ActorTwistSequence seq) { return f_state.GetValue(seq); }
-    static void Prefix(ActorTwistSequence __instance, ref object __state) {
-      __state = __instance.state();
+    static void Prefix(ActorTwistSequence __instance, ref ActorTwistSequence.TwistState __state) {
+      __state = __instance.state;
     }
-    static void Postfix(ActorTwistSequence __instance, float ___t, ref object __state, PilotableActorRepresentation ___actorRep) {
-      if (__state.ToString() != TwistState_RangedTwisting.ToString()) { return; }
+    static void Postfix(ActorTwistSequence __instance, ref ActorTwistSequence.TwistState __state) {
+      if (__state != ActorTwistSequence.TwistState.RangedTwisting) { return; }
       VTOLBodyAnimation vtolAnim = __instance.owningActor.VTOLAnimation();
       if (vtolAnim != null) {
-        vtolAnim.twist(___actorRep.currentTwistAngle);
+        vtolAnim.twist(__instance.actorRep.currentTwistAngle);
       }
-      CustomTwistAnimation customTwist = ___actorRep.gameObject.GetComponent<CustomTwistAnimation>();
+      CustomTwistAnimation customTwist = __instance.actorRep.gameObject.GetComponent<CustomTwistAnimation>();
       if(customTwist != null) {
-        customTwist.twist(___actorRep.currentTwistAngle);
+        customTwist.twist(__instance.actorRep.currentTwistAngle);
       }
       //Log.TWL(0, "ActorTwistSequence.update " + ___actorRep.currentTwistAngle);
       
@@ -157,10 +152,10 @@ namespace CustomUnits {
       }
     }
     private void SpawnDestroyExplosion(string explosionName) {
-      Log.TWL(0, "VTOLFallStoper.SpawnDestroyExplosion " + explosionName);
+      Log.Combat?.TWL(0, "VTOLFallStoper.SpawnDestroyExplosion " + explosionName);
       GameObject gameObject = parent.parent.Combat.DataManager.PooledInstantiate(explosionName, BattleTechResourceType.Prefab, new Vector3?(), new Quaternion?(), (Transform)null);
       if (gameObject == null) {
-        Log.TWL(0,"Exploded vehicle have wrong explosion VFX: " + explosionName);
+        Log.Combat?.TWL(0,"Exploded vehicle have wrong explosion VFX: " + explosionName);
       } else {
         gameObject.ScaleEffect(new CustAmmoCategories.CustomVector(5f,5f,5f));
         ParticleSystem component = gameObject.GetComponent<ParticleSystem>();
@@ -193,7 +188,7 @@ namespace CustomUnits {
     }
     private void OnTriggerEnter(Collider other) {
       if (other.gameObject.layer != LayerMask.NameToLayer("Terrain")) { return; }
-      Log.TWL(0, "VTOLFallStoper reach ground");
+      Log.Combat?.TWL(0, "VTOLFallStoper reach ground");
       bodyAnimator.SetBool("fall", false);
       this.spawnExplosion();
       engineAnimator.SetFloat("rotate", 0.0f);
@@ -201,9 +196,9 @@ namespace CustomUnits {
       if (string.IsNullOrEmpty(AudioEventExplode) == false) {
         if (SceneSingletonBehavior<WwiseManager>.HasInstance) {
           uint soundid = SceneSingletonBehavior<WwiseManager>.Instance.PostEventByName(AudioEventExplode, this.parent.parent.GameRep.audioObject, (AkCallbackManager.EventCallback)null, (object)null);
-          Log.TWL(0, "Explode playing sound by id (" + AudioEventExplode + "):" + soundid);
+          Log.Combat?.TWL(0, "Explode playing sound by id (" + AudioEventExplode + "):" + soundid);
         } else {
-          Log.TWL(0, "Can't play (" + AudioEventExplode + ")");
+          Log.Combat?.TWL(0, "Can't play (" + AudioEventExplode + ")");
         }
       }
     }
@@ -235,7 +230,7 @@ namespace CustomUnits {
         if (this.animator == null) { return; }
         if (this.HasNormal == false) { return; }
         animator.SetFloat(NormalHash, value);
-        Log.TWL(0, animator.gameObject.name + " NormalHash" + value);
+        Log.Combat?.TWL(0, animator.gameObject.name + " NormalHash" + value);
       }
     }
     public float Indirect {
@@ -250,7 +245,7 @@ namespace CustomUnits {
         if (this.animator == null) { return; }
         if (this.HasVertical == false) { return; }
         animator.SetFloat(VerticalHash, value);
-        Log.TWL(0,animator.gameObject.name+ " VerticalHash"+value);
+        Log.Combat?.TWL(0,animator.gameObject.name+ " VerticalHash"+value);
       }
     }
     public float VerticalUp {
@@ -321,30 +316,31 @@ namespace CustomUnits {
       recoilValue += recoilDelta * t;
       if (recoilValue < 0f) {
         recoilValue = 0f; recoilDelta = 0f;
-        Log.TWL(0, "AttachInfo.Recoiled "+main.name+" up");
+        Log.Combat?.TWL(0, "AttachInfo.Recoiled "+main.name+" up");
       };
       if (recoilValue > 1f) {
         recoilValue = 1f; recoilDelta = -1f;
-        Log.TWL(0, "AttachInfo.Recoiled " + main.name + " down");
+        Log.Combat?.TWL(0, "AttachInfo.Recoiled " + main.name + " down");
       };
       this.RecoilValue = recoilValue;
       //animator.SetFloat("recoil",recoilValue);
     }
     public void Recoil() {
       try {
-        Log.TWL(0, "AttachInfo.Recoil:" + main.name + " no recoil:" + noRecoil);
+        Log.Combat?.TWL(0, "AttachInfo.Recoil:" + main.name + " no recoil:" + noRecoil);
         if (noRecoil == false) { recoilDelta = 10f; }
       }catch(Exception e) {
-        Log.TWL(0, "AttachInfo.Recoil "+this.Name+" exception:"+e.ToString(), true);
+        Log.ECombat?.TWL(0, "AttachInfo.Recoil "+this.Name+" exception:"+e.ToString(), true);
+        AbstractActor.logger.LogException(e);
       }
     }
     public HashSet<MechComponent> weapons { get; private set; }
     public HashSet<ComponentRepresentation> bayComponents { get; private set; }
     public void Prefire(Weapon weapon,Vector3 target,bool indirect) {
-      Log.WL(1, "AttachInfo.Prefire");
+      Log.Combat?.WL(1, "AttachInfo.Prefire");
       foreach (AttachInfoAnimator anim in this.animators) {
         if (anim.animator == null) { continue; }
-        Log.WL(2, "animator:"+anim.animator.name);
+        Log.Combat?.WL(2, "animator:"+anim.animator.name);
         bool inPos = AnimatorsInPosition.Contains(anim.animator);
         if (inPos) { continue; }
         if (indirect) {
@@ -360,9 +356,9 @@ namespace CustomUnits {
             float heightDiff = target.y - firePosition.y;
             float angle = (heightDiff > 0f?1f:-1f)* Mathf.Acos(Mathf.Abs(heightDiff)/distance) * Mathf.Rad2Deg;
             //float angle = NvMath.AngleSigned(attach.forward, desiredLookDirection.normalized, Vector3.right);
-            Log.WL(3, "angle:" + angle);
+            Log.Combat?.WL(3, "angle:" + angle);
             angle /= 90f;
-            Log.WL(3, "vertical anim:" + angle);
+            Log.Combat?.WL(3, "vertical anim:" + angle);
             //if (angle < 0f) { angle = 0f; }
             if (angle < 0f) {
               anim.VerticalUp = angle;
@@ -380,10 +376,10 @@ namespace CustomUnits {
       }
     }
     public void Postfire() {
-      Log.WL(1, "AttachInfo.Postfire animator");
+      Log.Combat?.WL(1, "AttachInfo.Postfire animator");
       foreach (AttachInfoAnimator anim in this.animators) {
         if (anim.animator == null) { continue; }
-        Log.WL(2, "animator:" + anim.animator.name);
+        Log.Combat?.WL(2, "animator:" + anim.animator.name);
         anim.ToFireNormal = 0.98f;
         anim.Indirect = 0.98f;
         AnimatorsInPosition.Remove(anim.animator);
@@ -566,12 +562,12 @@ namespace CustomUnits {
       return findParentSimGameRep(parent.parent);
     }
     public void ResolveAttachPoints() {
-      Log.TWL(0, "VTOLBodyAnimation.ResolveAttachPoints "+this.transform.name);
+      Log.Combat?.TWL(0, "VTOLBodyAnimation.ResolveAttachPoints "+this.transform.name);
       Dictionary<Transform, HashSet<AttachInfo>> infos = new Dictionary<Transform, HashSet<AttachInfo>>();
       foreach(var attaches in attachInfo) {
-        Log.WL(1, "location:" + attaches.Key);
+        Log.Combat?.WL(1, "location:" + attaches.Key);
         foreach (var info in attaches.Value) {
-          Log.WL(2, "type:" + info.Key.ToString()+" weapons:"+ info.Value.weapons.Count+"/"+ info.Value.bayComponents.Count);
+          Log.Combat?.WL(2, "type:" + info.Key.ToString()+" weapons:"+ info.Value.weapons.Count+"/"+ info.Value.bayComponents.Count);
           if (info.Value.main == null) { continue; }
           if (infos.ContainsKey(info.Value.main) == false) { infos.Add(info.Value.main, new HashSet<AttachInfo>()); }
           infos[info.Value.main].Add(info.Value);
@@ -587,21 +583,21 @@ namespace CustomUnits {
         bool isEmpty = true;
         foreach (var attach in info.Value) {
           if (attach.hideIfEmpty == false) { hideIfEmpty = false; }
-          Log.WL(2, "main:" + info.Key.name + " attach:"+ attach.main.name+ "/"+attach.type+" weapons:" + attach.weapons.Count + "/" + attach.bayComponents.Count);
+          Log.Combat?.WL(2, "main:" + info.Key.name + " attach:"+ attach.main.name+ "/"+attach.type+" weapons:" + attach.weapons.Count + "/" + attach.bayComponents.Count);
           if ((attach.weapons.Count > 0) || (attach.bayComponents.Count > 0)) { isEmpty = false; }
         }
-        Log.WL(1, "main:" + info.Key.name+" hideIfEmpty:"+hideIfEmpty+" isEmpty:"+isEmpty);
+        Log.Combat?.WL(1, "main:" + info.Key.name+" hideIfEmpty:"+hideIfEmpty+" isEmpty:"+isEmpty);
         if (hideIfEmpty == false) { info.Key.gameObject.SetActive(true); } else {
           info.Key.gameObject.SetActive(!isEmpty);
         }
       }
     }
     public void RealiginLights() {
-      Log.TWL(0, "VTOLBodyAnimation.RealiginLights "+this.lights.Count);
+      Log.Combat?.TWL(0, "VTOLBodyAnimation.RealiginLights "+this.lights.Count);
       if(this.parent != null) {
-        Log.WL(1, "in battle");
+        Log.Combat?.WL(1, "in battle");
         BTLight[] btlights = this.parent.GameRep.GetComponentsInChildren<BTLight>();
-        Log.WL(1, "BTLights:" + btlights.Length);
+        Log.Combat?.WL(1, "BTLights:" + btlights.Length);
         int count = Mathf.Min(btlights.Length, this.lights.Count);
         for (int index = 0; index < count; ++index) {
           BTLight btlight = btlights[index];
@@ -610,13 +606,13 @@ namespace CustomUnits {
           btlight.transform.localPosition = Vector3.zero;
         }
       } else {
-        Log.WL(1,"in bay");
+        Log.Combat?.WL(1,"in bay");
         MechRepresentationSimGame simParent = this.findParentSimGameRep(this.transform);
         if (simParent == null) {
-          Log.WL(1, "MechRepresentationSimGame not found"); return;
+          Log.Combat?.WL(1, "MechRepresentationSimGame not found"); return;
         }
         BTLight[] btlights = simParent.GetComponentsInChildren<BTLight>();
-        Log.WL(1, "BTLights:"+btlights.Length);
+        Log.Combat?.WL(1, "BTLights:"+btlights.Length);
         int count = Mathf.Min(btlights.Length,this.lights.Count);
         for (int index = 0; index < count; ++index) {
           BTLight btlight = btlights[index];
@@ -683,14 +679,14 @@ namespace CustomUnits {
           engineAnimator.SetFloat("rotate", 0f);
         }
       };
-      Log.WL(1, "VTOLBodyAnimation.Init " + this.gameObject.name + " engineAnimator:" + (engineAnimator != null ? " rotating:" + engineAnimator.GetFloat("rotate") : "null"));
+      Log.Combat?.WL(1, "VTOLBodyAnimation.Init " + this.gameObject.name + " engineAnimator:" + (engineAnimator != null ? " rotating:" + engineAnimator.GetFloat("rotate") : "null"));
       this.attachInfo = new Dictionary<string, Dictionary<HardpointAttachType, AttachInfo>>();
-      Log.WL(1, "srdata.attachInfo:" + srdata.attachInfo.Count);
+      Log.Combat?.WL(1, "srdata.attachInfo:" + srdata.attachInfo.Count);
       foreach (var att_infs in srdata.attachInfo) {
         this.attachInfo.Add(att_infs.Key,new Dictionary<HardpointAttachType, AttachInfo>());
-        Log.WL(2, "location:" + att_infs.Key);
+        Log.Combat?.WL(2, "location:" + att_infs.Key);
         foreach (var att_inf in att_infs.Value) {
-          Log.WL(3, "type:" + att_inf.Key.ToString()+" "+ att_inf.Value.visuals);
+          Log.Combat?.WL(3, "type:" + att_inf.Key.ToString()+" "+ att_inf.Value.visuals);
           AttachInfo info = new AttachInfo(this, att_infs.Key, att_inf.Key, att_inf.Value);
           this.recoilState.Add(info);
           this.attachInfo[att_infs.Key].Add(att_inf.Key, info);
@@ -706,17 +702,17 @@ namespace CustomUnits {
     }
 
     public void OnPointerClick(PointerEventData eventData) {
-      Log.TWL(0, "VTOLBodyAnimation.OnPointerClick");
+      Log.Combat?.TWL(0, "VTOLBodyAnimation.OnPointerClick");
       this.parent.GameRep.OnPointerClick(eventData);
     }
 
     public void OnPointerEnter(PointerEventData eventData) {
-      Log.TWL(0, "VTOLBodyAnimation.OnPointerEnter");
+      Log.Combat?.TWL(0, "VTOLBodyAnimation.OnPointerEnter");
       this.parent.GameRep.OnPointerEnter(eventData);
     }
 
     public void OnPointerExit(PointerEventData eventData) {
-      Log.TWL(0, "VTOLBodyAnimation.OnPointerExit");
+      Log.Combat?.TWL(0, "VTOLBodyAnimation.OnPointerExit");
       this.parent.GameRep.OnPointerExit(eventData);
     }
   }

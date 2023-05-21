@@ -128,13 +128,13 @@ namespace CustomUnits {
     public List<object> args;
     public MethodInfo method;
     public void Invoke() {
-      Log.TW(0, "AltRepInvokeDelegate.Invoke " + obj.GetType().ToString() + "." + method.Name + " args:" + args.Count);
-      foreach (object arg in args) { Log.W(1, arg.GetType().ToString() + ":" + arg.ToString()); }
-      Log.WL(0, "");
+      Log.Combat?.TW(0, "AltRepInvokeDelegate.Invoke " + obj.GetType().ToString() + "." + method.Name + " args:" + args.Count);
+      foreach (object arg in args) { Log.Combat?.W(1, arg.GetType().ToString() + ":" + arg.ToString()); }
+      Log.Combat?.WL(0, "");
       try {
         method.Invoke(obj, args.ToArray());
       } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
+        Log.Combat?.TWL(0, e.ToString(), true);
       }
     }
     public AltRepInvokeDelegate(object trg, MethodInfo m, object[] a) {
@@ -182,18 +182,18 @@ namespace CustomUnits {
     public bool isBasic { get; set; }
     public bool IsPlayingJumpSound {
       get {
-        return Traverse.Create(this.mechRep).Field<bool>("isPlayingJumpSound").Value;
+        return this.mechRep.isPlayingJumpSound();
       }
       set {
-        Traverse.Create(this.mechRep).Field<bool>("isPlayingJumpSound").Value = value;
+        this.mechRep.isPlayingJumpSound(value);
       }
     }
     public bool isJumping {
       get {
-        return Traverse.Create(this.mechRep).Field<bool>("isJumping").Value;
+        return this.mechRep.isJumping();
       }
       set {
-        Traverse.Create(this.mechRep).Field<bool>("isJumping").Value = value;
+        this.mechRep.isJumping(value);
       }
     }
     public bool isRepEnabled {
@@ -210,25 +210,25 @@ namespace CustomUnits {
     }
     private bool isJumpjetsActive;
     public void StartMovement() {
-      Log.TWL(0, "AlternateMechRepresentation.StartMovement " + this.gameObject.name);
+      Log.Combat?.TWL(0, "AlternateMechRepresentation.StartMovement " + this.gameObject.name);
       isMoving = true;
       if (string.IsNullOrEmpty(this.def.MoveStartSound) == false) {
         uint soundid = SceneSingletonBehavior<WwiseManager>.Instance.PostEventByName(this.def.MoveStartSound, this.parent.parentMech.GameRep.audioObject, (AkCallbackManager.EventCallback)null, (object)null);
-        Log.TWL(0, "StartMovement by id (" + def.MoveStartSound + "):" + soundid);
+        Log.Combat?.TWL(0, "StartMovement by id (" + def.MoveStartSound + "):" + soundid);
       }
     }
     public void EndMovement() {
-      Log.TWL(0, "AlternateMechRepresentation.EndMovement "+this.gameObject.name);
+      Log.Combat?.TWL(0, "AlternateMechRepresentation.EndMovement "+this.gameObject.name);
       isMoving = false;
       if (string.IsNullOrEmpty(this.def.MoveStopSound) == false) {
         uint soundid = SceneSingletonBehavior<WwiseManager>.Instance.PostEventByName(this.def.MoveStopSound, this.parent.parentMech.GameRep.audioObject, (AkCallbackManager.EventCallback)null, (object)null);
-        Log.TWL(0, "EndMovement by id (" + def.MoveStopSound + "):" + soundid);
+        Log.Combat?.TWL(0, "EndMovement by id (" + def.MoveStopSound + "):" + soundid);
       }
     }
     public void PlayTransformSound() {
       if (string.IsNullOrEmpty(this.def.TransformationSound) == false) {
         uint soundid = SceneSingletonBehavior<WwiseManager>.Instance.PostEventByName(this.def.TransformationSound, this.parent.parentMech.GameRep.audioObject, (AkCallbackManager.EventCallback)null, (object)null);
-        Log.TWL(0, "PlayTransformSound by id (" + def.TransformationSound + "):" + soundid);
+        Log.Combat?.TWL(0, "PlayTransformSound by id (" + def.TransformationSound + "):" + soundid);
       }
     }
     public void UpdateFlyingAnim(Vector3 forward) {
@@ -248,9 +248,9 @@ namespace CustomUnits {
       if (string.IsNullOrEmpty(def.HoveringSoundStart) == false) {
         if (SceneSingletonBehavior<WwiseManager>.HasInstance) {
           uint soundid = SceneSingletonBehavior<WwiseManager>.Instance.PostEventByName(def.HoveringSoundStart, this.parent.parentMech.GameRep.audioObject, (AkCallbackManager.EventCallback)null, (object)null);
-          Log.TWL(0, "StartHoverAudio by id (" + def.HoveringSoundStart + "):" + soundid);
+          Log.Combat?.TWL(0, "StartHoverAudio by id (" + def.HoveringSoundStart + "):" + soundid);
         } else {
-          Log.TWL(0, "StartHoverAudio Can't play");
+          Log.Combat?.TWL(0, "StartHoverAudio Can't play");
         }
       }
 
@@ -259,16 +259,16 @@ namespace CustomUnits {
       if (string.IsNullOrEmpty(def.HoveringSoundEnd) == false) {
         if (SceneSingletonBehavior<WwiseManager>.HasInstance) {
           uint soundid = SceneSingletonBehavior<WwiseManager>.Instance.PostEventByName(def.HoveringSoundEnd, this.parent.parentMech.GameRep.audioObject, (AkCallbackManager.EventCallback)null, (object)null);
-          Log.TWL(0, "StopHoverAudio by id (" + def.HoveringSoundEnd + "):" + soundid);
+          Log.Combat?.TWL(0, "StopHoverAudio by id (" + def.HoveringSoundEnd + "):" + soundid);
         } else {
-          Log.TWL(0, "StopHoverAudio Can't play");
+          Log.Combat?.TWL(0, "StopHoverAudio Can't play");
         }
       }
 
     }
 
     public void PlayStartAnimation() {
-      Log.TWL(0, "AlternateMechRepresentation.PlayStartAnimation " + this.gameObject.name);
+      Log.Combat?.TWL(0, "AlternateMechRepresentation.PlayStartAnimation " + this.gameObject.name);
       HeightChangeState();
       if (DefaultFlyHeight > Core.Settings.MaxHoveringHeightWithWorkingJets) {
         mechRep.SetMeleeIdleState(false);
@@ -372,14 +372,14 @@ namespace CustomUnits {
       meleeT = 0f;
       meleeRate = 1f;
       meleeState = AltRepMeleeState.ToHeight;
-      Log.TWL(0, "AlternateMechRepresentation.initTargetHeight "+this.name+" height:"+ targetHeight);
+      Log.Combat?.TWL(0, "AlternateMechRepresentation.initTargetHeight "+this.name+" height:"+ targetHeight);
     }
     public void meleeAnim() {
       j_Root.localPosition = Vector3.up * targetHeight;
       meleeT = 0f;
       meleeRate = 0.25f;
       meleeState = AltRepMeleeState.MeleeAnim;
-      Log.TWL(0, "AlternateMechRepresentation.meleeAnim " + this.name + " height:" + targetHeight);
+      Log.Combat?.TWL(0, "AlternateMechRepresentation.meleeAnim " + this.name + " height:" + targetHeight);
     }
     public void Update() {
       if (j_Root == null) { return; }
@@ -439,7 +439,7 @@ namespace CustomUnits {
       try {
         if (Inited) { return; }
         Inited = true;
-        Log.TWL(0, "AlternateMechRepresentation.InitGameRep " + mech.DisplayName + " prefab:" + def.PrefabBase + " hardpoints:" + def.HardpointDataDef + " GameRep:" + mech.GameRep.name);
+        Log.Combat?.TWL(0, "AlternateMechRepresentation.InitGameRep " + mech.DisplayName + " prefab:" + def.PrefabBase + " hardpoints:" + def.HardpointDataDef + " GameRep:" + mech.GameRep.name);
         if ((UnityEngine.Object)parentTransform == (UnityEngine.Object)null) {
           gameObject.transform.position = mech.CurrentPosition;
           gameObject.transform.rotation = mech.CurrentRotation;
@@ -451,7 +451,7 @@ namespace CustomUnits {
           if (allComponent.componentType != ComponentType.Weapon) {
             allComponent.baseComponentRef.prefabName = MechHardpointRules.GetComponentPrefabName(hardpointDataDef, allComponent.baseComponentRef, def.PrefabBase, allComponent.mechComponentRef.MountedLocation.ToString().ToLower(), ref usedPrefabNames);
             allComponent.baseComponentRef.hasPrefabName = true;
-            Log.WL(1, "allComponent.baseComponentRef.prefabName:" + allComponent.baseComponentRef.prefabName);
+            Log.Combat?.WL(1, "allComponent.baseComponentRef.prefabName:" + allComponent.baseComponentRef.prefabName);
             if (!string.IsNullOrEmpty(allComponent.baseComponentRef.prefabName)) {
               Transform attachTransform = mech.GetAttachTransform(allComponent.mechComponentRef.MountedLocation);
               allComponent.InitGameRep(allComponent.baseComponentRef.prefabName, attachTransform, mech.LogDisplayName);
@@ -462,7 +462,7 @@ namespace CustomUnits {
         foreach (Weapon weapon in mech.Weapons) {
           weapon.baseComponentRef.prefabName = MechHardpointRules.GetComponentPrefabName(hardpointDataDef, weapon.baseComponentRef, def.PrefabBase, weapon.mechComponentRef.MountedLocation.ToString().ToLower(), ref usedPrefabNames);
           weapon.baseComponentRef.hasPrefabName = true;
-          Log.WL(1, "weapon.baseComponentRef.prefabName:" + weapon.baseComponentRef.prefabName);
+          Log.Combat?.WL(1, "weapon.baseComponentRef.prefabName:" + weapon.baseComponentRef.prefabName);
           if (!string.IsNullOrEmpty(weapon.baseComponentRef.prefabName)) {
             Transform attachTransform = mech.GetAttachTransform(weapon.mechComponentRef.MountedLocation);
             weapon.InitGameRep(weapon.baseComponentRef.prefabName, attachTransform, mech.LogDisplayName);
@@ -480,7 +480,7 @@ namespace CustomUnits {
           if (weapon != null) {
             weapon.baseComponentRef.prefabName = MechHardpointRules.GetComponentPrefabName(hardpointDataDef, weapon.baseComponentRef, def.PrefabBase, weapon.mechComponentRef.MountedLocation.ToString().ToLower(), ref usedPrefabNames);
             weapon.baseComponentRef.hasPrefabName = true;
-            Log.WL(1, "supportComponent.baseComponentRef.prefabName:" + weapon.baseComponentRef.prefabName);
+            Log.Combat?.WL(1, "supportComponent.baseComponentRef.prefabName:" + weapon.baseComponentRef.prefabName);
             if (!string.IsNullOrEmpty(weapon.baseComponentRef.prefabName)) {
               Transform attachTransform = mech.GetAttachTransform(weapon.mechComponentRef.MountedLocation);
               weapon.InitGameRep(weapon.baseComponentRef.prefabName, attachTransform, mech.LogDisplayName);
@@ -488,12 +488,12 @@ namespace CustomUnits {
             }
           }
         }
-        mech.CreateBlankPrefabs(usedPrefabNames, ChassisLocations.CenterTorso);
-        mech.CreateBlankPrefabs(usedPrefabNames, ChassisLocations.LeftTorso);
-        mech.CreateBlankPrefabs(usedPrefabNames, ChassisLocations.RightTorso);
-        mech.CreateBlankPrefabs(usedPrefabNames, ChassisLocations.LeftArm);
-        mech.CreateBlankPrefabs(usedPrefabNames, ChassisLocations.RightArm);
-        mech.CreateBlankPrefabs(usedPrefabNames, ChassisLocations.Head);
+        mech._CreateBlankPrefabs(usedPrefabNames, ChassisLocations.CenterTorso);
+        mech._CreateBlankPrefabs(usedPrefabNames, ChassisLocations.LeftTorso);
+        mech._CreateBlankPrefabs(usedPrefabNames, ChassisLocations.RightTorso);
+        mech._CreateBlankPrefabs(usedPrefabNames, ChassisLocations.LeftArm);
+        mech._CreateBlankPrefabs(usedPrefabNames, ChassisLocations.RightArm);
+        mech._CreateBlankPrefabs(usedPrefabNames, ChassisLocations.Head);
         if (!mech.MeleeWeapon.baseComponentRef.hasPrefabName) {
           mech.MeleeWeapon.baseComponentRef.prefabName = "chrPrfWeap_generic_melee";
           mech.MeleeWeapon.baseComponentRef.hasPrefabName = true;
@@ -516,31 +516,31 @@ namespace CustomUnits {
           }
         }
         if (string.IsNullOrEmpty(Core.Settings.CustomJumpJetsComponentPrefab) == false) {
-          Log.WL(1, "spawning jump jets");
+          Log.Combat?.WL(1, "spawning jump jets");
           try {
             if (AlternateMechRepresentation.JumpJetSrcPrefab == null) {
               AlternateMechRepresentation.JumpJetSrcPrefab = mech.Combat.DataManager.PooledInstantiate(Core.Settings.CustomJumpJetsComponentPrefab, BattleTechResourceType.Prefab);
               AlternateMechRepresentation.JumpJetSrcPrefab.SetActive(false);
             }
             //mech.Combat.DataManager.PooledInstantiate(Core.Settings.CustomJumpJetsComponentPrefab, BattleTechResourceType.Prefab);
-            Log.WL(2, "jumpJetSrcPrefab:" + (JumpJetSrcPrefab == null ? "null" : JumpJetSrcPrefab.name));
+            Log.Combat?.WL(2, "jumpJetSrcPrefab:" + (JumpJetSrcPrefab == null ? "null" : JumpJetSrcPrefab.name));
             if (JumpJetSrcPrefab != null) {
               JumpJetSrc = JumpJetSrcPrefab.transform.FindRecursive(Core.Settings.CustomJumpJetsPrefabSrcObjectName);
-              Log.WL(2, "jumpJetSrc:" + (JumpJetSrc == null ? "null" : JumpJetSrc.name));
+              Log.Combat?.WL(2, "jumpJetSrc:" + (JumpJetSrc == null ? "null" : JumpJetSrc.name));
             }
             this.DefaultFlyHeight = 0f;
             foreach (AirMechVerticalJetsDef vJet in def.AirMechVerticalJets) {
-              Log.WL(3,"attach:"+vJet.Attach+" prefab:"+vJet.Prefab+ " JetsAttachPoints:"+vJet.JetsAttachPoints.Count);
+              Log.Combat?.WL(3,"attach:"+vJet.Attach+" prefab:"+vJet.Prefab+ " JetsAttachPoints:"+vJet.JetsAttachPoints.Count);
               Transform attach = this.transform.FindRecursive(vJet.Attach);
-              if (attach == null) { Log.WL(4,"attach is null"); continue; }
+              if (attach == null) { Log.Combat?.WL(4,"attach is null"); continue; }
               GameObject vJetGO = mech.Combat.DataManager.PooledInstantiate(vJet.Prefab, BattleTechResourceType.Prefab);
-              if (vJetGO == null) { Log.WL(4, "prefab is null"); continue; }
+              if (vJetGO == null) { Log.Combat?.WL(4, "prefab is null"); continue; }
               vJetGO.transform.SetParent(attach, false);
-              if (JumpJetSrc == null) { Log.WL(4, "JumpJetSrc is null"); continue; }
+              if (JumpJetSrc == null) { Log.Combat?.WL(4, "JumpJetSrc is null"); continue; }
               foreach (string jetSpwanPoint in vJet.JetsAttachPoints) {
-                Log.WL(4, "jetSpwanPoint:"+ jetSpwanPoint);
+                Log.Combat?.WL(4, "jetSpwanPoint:"+ jetSpwanPoint);
                 Transform spawnJetPoint = vJetGO.transform.FindRecursive(jetSpwanPoint);
-                if (spawnJetPoint == null) { Log.WL(5, "spawnJetPoint is null"); continue; }
+                if (spawnJetPoint == null) { Log.Combat?.WL(5, "spawnJetPoint is null"); continue; }
                 this.DefaultFlyHeight = def.FlyHeight;
                 GameObject jumpJetBase = new GameObject("jumpJet");
                 jumpJetBase.transform.SetParent(spawnJetPoint);
@@ -559,7 +559,7 @@ namespace CustomUnits {
                   var main = psys.main;
                   main.scalingMode = ParticleSystemScalingMode.Hierarchy;
                   //main.loop = true;
-                  Log.WL(3, psys.name + ":" + psys.main.scalingMode);
+                  Log.Combat?.WL(3, psys.name + ":" + psys.main.scalingMode);
                 }
                 verticalJets.Add(jRep);
               }
@@ -567,7 +567,7 @@ namespace CustomUnits {
               vJetGO.SetActive(false);
             }
           } catch(Exception e) {
-            Log.TWL(0, e.ToString(), true);
+            Log.Combat?.TWL(0, e.ToString(), true);
           }
         }
         mech.GameRep.RefreshEdgeCache();
@@ -590,7 +590,7 @@ namespace CustomUnits {
           }
         }
       } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
+        Log.Combat?.TWL(0, e.ToString(), true);
       }
     }
     public void Reset(Mech mech, Dictionary<BaseComponentRef, HasPrefabData> baseData) {
@@ -710,12 +710,12 @@ namespace CustomUnits {
     }
     public List<JumpjetRepresentation> jumpjetReps {
       get {
-        return Traverse.Create(this.mechRep).Field<List<JumpjetRepresentation>>("jumpjetReps").Value;
+        return this.mechRep.jumpjetReps();
       }
     }
     public CapsuleCollider mainCollider {
       get {
-        return Traverse.Create(this.mechRep).Field<CapsuleCollider>("mainCollider").Value;
+        return this.mechRep.mainCollider();
       }
     }
     public void SetVisible(bool isVisible, bool isGhost) {
@@ -787,13 +787,13 @@ namespace CustomUnits {
     }
     private bool isMoving;
     public void FacePoint() {
-      Log.TWL(0, "AlternateRepresentation.FacePoint type:"+this.def.Type+" state:"+this.state+" isMoving:"+isMoving);
+      Log.Combat?.TWL(0, "AlternateRepresentation.FacePoint type:"+this.def.Type+" state:"+this.state+" isMoving:"+isMoving);
       if (isMoving) { return; }
       if (this.def.Type == AlternateRepType.Normal) { return; }
       if (this.state != AltRepState.Flying) { return; }
     }
     public void ReturnToNeturalFacing() {
-      Log.TWL(0, "AlternateRepresentation.ReturnToNeturalFacing type:" + this.def.Type + " state:" + this.state + " isMoving:" + isMoving);
+      Log.Combat?.TWL(0, "AlternateRepresentation.ReturnToNeturalFacing type:" + this.def.Type + " state:" + this.state + " isMoving:" + isMoving);
       if (isMoving) { return; }
       if (this.def.Type == AlternateRepType.Normal) { return; }
       if (this.state != AltRepState.Flying) { return; }
@@ -902,11 +902,11 @@ namespace CustomUnits {
       }
     }
     public void FacePoint() {
-      Log.TWL(0, "AlternateMechRepresentations.FacePoint " + CurrentRep + " count:" + mechReps.Count);
+      Log.Combat?.TWL(0, "AlternateMechRepresentations.FacePoint " + CurrentRep + " count:" + mechReps.Count);
       mechReps[CurrentRep].FacePoint();
     }
     public void ReturnToNeturalFacing() {
-      Log.TWL(0, "AlternateMechRepresentations.ReturnToNeturalFacing " + CurrentRep + " count:" + mechReps.Count);
+      Log.Combat?.TWL(0, "AlternateMechRepresentations.ReturnToNeturalFacing " + CurrentRep + " count:" + mechReps.Count);
       if ((CurrentRep < 0) && (CurrentRep >= mechReps.Count)) { return; }
       mechReps[CurrentRep].ReturnToNeturalFacing();
     }
@@ -970,13 +970,13 @@ namespace CustomUnits {
       } else if (altRep.state == AltRepState.Grounded) {
         return;
       } else {
-        Log.TWL(0, "AlternateRepresentations.DelayedHandleDeath:"+this.parentMech.DisplayName);
+        Log.Combat?.TWL(0, "AlternateRepresentations.DelayedHandleDeath:"+this.parentMech.DisplayName);
         altRep.Landing();
         altRep.pushQueue(this, AccessTools.Method(typeof(AlternateMechRepresentations), "HandleDeath"), new object[] { deathMethod, location });
       }
     }
     public void HandleDeath(DeathMethod deathMethod, int location) {
-      Log.TWL(0, "AlternateRepresentations.HandleDeath:" + this.parentMech.DisplayName);
+      Log.Combat?.TWL(0, "AlternateRepresentations.HandleDeath:" + this.parentMech.DisplayName);
       MechRepresentation mechRep = this.parentMech.GameRep;
       if ((UnityEngine.Object)mechRep.VisibleObjectLight != (UnityEngine.Object)null) {
         mechRep.VisibleObjectLight.SetActive(false);
@@ -1122,14 +1122,14 @@ namespace CustomUnits {
       }
     }
     public void UpdateSpline(ActorMovementSequence __instance, Vector3 ___Forward, float ___t) {
-      Transform MoverTransform = Traverse.Create(__instance).Property<Transform>("MoverTransform").Value;
+      Transform MoverTransform = __instance.MoverTransform;
       Vector3 newPosition = MoverTransform.position;
       foreach (AlternateMechRepresentation altRep in this.mechReps) {
         altRep.mechRep.transform.localRotation = Quaternion.Euler(0f, 0f, 0f);
         altRep.mechRep.transform.localPosition = Vector3.zero;
       }
       mechReps[CurrentRep].UpdateFlyingAnim(___Forward);
-      ICombatant meleeTarget = Traverse.Create(__instance).Field<ICombatant>("meleeTarget").Value;
+      ICombatant meleeTarget = __instance.meleeTarget;
       if (meleeTarget != null) {
         mechReps[CurrentRep].updateMeleeT(___t);
       } else {
@@ -1246,18 +1246,18 @@ namespace CustomUnits {
       //Transform j_Root = mechRep.transform.FindRecursive("j_Root");
       //if (j_Root != null) { j_Root.localPosition += Vector3.down * 1000f; };
       //j_Root.localScale = new Vector3(0.001f, 0.001f, 0.001f);
-      List<JumpjetRepresentation> jumpJets = new List<JumpjetRepresentation>(Traverse.Create(mechRep).Field<List<JumpjetRepresentation>>("jumpjetReps").Value);
-      Traverse.Create(mechRep).Field<List<JumpjetRepresentation>>("jumpjetReps").Value.Clear();
+      List<JumpjetRepresentation> jumpJets = new List<JumpjetRepresentation>(mechRep.jumpjetReps());
+      mechRep.jumpjetReps().Clear();
       foreach (JumpjetRepresentation jRep in jumpJets) {
         jRep.gameObject.SetActive(false);
         GameObject.Destroy(jRep);
       }
       mechRep.VisibleLights = new BTLight[] { };
-      List<GameObject> headLights = new List<GameObject>(Traverse.Create(mechRep).Field<List<GameObject>>("headlightReps").Value);
+      List<GameObject> headLights = new List<GameObject>(mechRep.headlightReps());
       foreach (GameObject headlight in headLights) {
         headlight.SetActive(false);
       }
-      Traverse.Create(mechRep).Field<List<GameObject>>("headlightReps").Value.Clear();
+      mechRep.headlightReps().Clear();
       BTLight[] lights = mechRep.GetComponentsInChildren<BTLight>(true);
       foreach (BTLight light in lights) {
         light.enabled = false;
@@ -1271,7 +1271,7 @@ namespace CustomUnits {
         if (cRep != null) {
           WeaponRepresentation wRep = cRep as WeaponRepresentation; if (wRep != null) if (wReps.Contains(wRep)) { wReps.Remove(wRep); }
           GameObject.Destroy(cRep.gameObject);
-          Traverse.Create(allComponent).Property<ComponentRepresentation>("componentRep").Value = null;
+          allComponent.componentRep = null;
         }
       }
       foreach (Weapon weapon in mechRep.parentMech.Weapons) {
@@ -1279,7 +1279,7 @@ namespace CustomUnits {
         if (cRep != null) {
           WeaponRepresentation wRep = cRep as WeaponRepresentation; if (wRep != null) if (wReps.Contains(wRep)) { wReps.Remove(wRep); }
           GameObject.Destroy(cRep.gameObject);
-          Traverse.Create(weapon).Property<ComponentRepresentation>("componentRep").Value = null;
+          weapon.componentRep = null;
         }
       }
       foreach (MechComponent supportComponent in mechRep.parentMech.supportComponents) {
@@ -1289,7 +1289,7 @@ namespace CustomUnits {
         if (cRep != null) {
           WeaponRepresentation wRep = cRep as WeaponRepresentation; if (wRep != null) if (wReps.Contains(wRep)) { wReps.Remove(wRep); }
           GameObject.Destroy(cRep.gameObject);
-          Traverse.Create(weapon).Property<ComponentRepresentation>("componentRep").Value = null;
+          weapon.componentRep = null;
         }
       }
       mechRep.miscComponentReps.Clear();
@@ -1299,7 +1299,7 @@ namespace CustomUnits {
     public void noRandomIdlesChanged(Statistic value) {
       noRandomIdlesStat = value;
       allowRandomIdles = !noRandomIdlesStat.Value<bool>();
-      Log.TWL(0, "AlternateMechRepresentations.noRandomIdlesChanged allowRandomIdles:" + allowRandomIdles);
+      Log.Combat?.TWL(0, "AlternateMechRepresentations.noRandomIdlesChanged allowRandomIdles:" + allowRandomIdles);
       foreach (var altRep in mechReps) {
         if (allowRandomIdles == false) {
           altRep.mechRep.ReturnToNeutralFacing(true, 0.5f, -1, -1, (GameRepresentation.RotationCompleteDelegate)null);
@@ -1390,10 +1390,10 @@ namespace CustomUnits {
       if (Mathf.RoundToInt(CurrentRepStat.Value<float>()) == pendingRepIndex) { return; }
       pendingRepIndex = Mathf.RoundToInt(CurrentRepStat.Value<float>());
       int newRepIndex = pendingRepIndex;
-      Log.TWL(0, "AlternateMechRepresentations.CurrentRepChanged CurrentRep:" + CurrentRep + " newRepIndex:" + newRepIndex);
+      Log.Combat?.TWL(0, "AlternateMechRepresentations.CurrentRepChanged CurrentRep:" + CurrentRep + " newRepIndex:" + newRepIndex);
       if (newRepIndex < 0) { return; }
       if (newRepIndex >= mechReps.Count) { return; }
-      Log.WL(0, "curType:" + mechReps[CurrentRep].def.Type + " newType:" + mechReps[newRepIndex].def.Type + " curState:" + mechReps[CurrentRep].state + " newState:" + mechReps[newRepIndex].state);
+      Log.Combat?.WL(0, "curType:" + mechReps[CurrentRep].def.Type + " newType:" + mechReps[newRepIndex].def.Type + " curState:" + mechReps[CurrentRep].state + " newState:" + mechReps[newRepIndex].state);
       if ((mechReps[CurrentRep].def.Type == AlternateRepType.AirMech)
         && (mechReps[newRepIndex].def.Type == AlternateRepType.Normal)
         && (mechReps[CurrentRep].state != AltRepState.Grounded)
@@ -1416,7 +1416,7 @@ namespace CustomUnits {
       UnitCustomInfo info = mech.GetCustomInfo();
       if (info == null) { return; }
       GameObject gameObject = mech.Combat.DataManager.PooledInstantiate(mech.MechDef.Chassis.PrefabIdentifier, BattleTechResourceType.Prefab, new Vector3?(), new Quaternion?(), (Transform)null);
-      Log.WL(2, "PooledInstantiate:" + (gameObject == null ? "null" : gameObject.name));
+      Log.Combat?.WL(2, "PooledInstantiate:" + (gameObject == null ? "null" : gameObject.name));
       if (gameObject != null) {
         MechRepresentation mechRep = gameObject.GetComponent<MechRepresentation>();
         if (mechRep == null) { GameObject.Destroy(gameObject); } else {
@@ -1439,7 +1439,7 @@ namespace CustomUnits {
       }
       foreach (var altRep in info.AlternateRepresentations) {
         gameObject = mech.Combat.DataManager.PooledInstantiate(altRep.PrefabIdentifier, BattleTechResourceType.Prefab, new Vector3?(), new Quaternion?(), (Transform)null);
-        Log.WL(2, "PooledInstantiate:" + (gameObject == null ? "null" : gameObject.name));
+        Log.Combat?.WL(2, "PooledInstantiate:" + (gameObject == null ? "null" : gameObject.name));
         if (gameObject == null) { continue; }
         MechRepresentation mechRep = gameObject.GetComponent<MechRepresentation>();
         if (mechRep == null) { GameObject.Destroy(gameObject); continue; };
@@ -1453,14 +1453,14 @@ namespace CustomUnits {
         alternateRepresentation.parent = this;
         alternateRepresentation.state = AltRepState.Grounded;
         string prefabBase = mech.MechDef.Chassis.PrefabBase;
-        Traverse.Create(mech.MechDef.Chassis).Property<string>("PrefabBase").Value = altRep.PrefabBase;
+        mech.MechDef.Chassis.PrefabBase = altRep.PrefabBase;
         alternateRepresentation.mechRep.Init(mech, parentTransform, false);
-        Traverse.Create(mech.MechDef.Chassis).Property<string>("PrefabBase").Value = prefabBase;
+        mech.MechDef.Chassis.PrefabBase = prefabBase;
         this.mechReps.Add(alternateRepresentation);
         alternateRepresentation.mechRep.transform.SetParent(mech.GameRep.transform);
         Transform j_Root = alternateRepresentation.mechRep.transform.FindRecursive("j_Root");
         //if (j_Root != null) { j_Root.localPosition += Vector3.up * 15f; }
-        Traverse.Create(alternateRepresentation.mechRep).Field<CapsuleCollider>("mainCollider").Value.center += Vector3.up * 15f;
+        alternateRepresentation.mechRep.mainCollider().center += Vector3.up * 15f;
         alternateRepresentation.mechRep.ToggleRandomIdles(alternateRepresentation.def.Type == AlternateRepType.Normal);
       }
     }
@@ -1479,197 +1479,17 @@ namespace CustomUnits {
   }
   public static class MechRepresentation_InitAlternate {
     public static TextureManager TextureManager(this DataManager dataManager) {
-      return Traverse.Create(dataManager).Property<TextureManager>("TextureManager").Value;
+      return dataManager.TextureManager;
     }
     public static void Prefix(MechRepresentation __instance, Mech mech, Transform parentTransform, bool isParented, UnitCustomInfo info) {
       if (info.AlternateRepresentations.Count > 0) {
-        Log.TWL(0, "MechRepresentation.Init Alternate " + mech.DisplayName + " " + __instance.name);
-        Log.WL(1, "info.AlternateRepresentations.Count:" + info.AlternateRepresentations.Count);
+        Log.Combat?.TWL(0, "MechRepresentation.Init Alternate " + mech.DisplayName + " " + __instance.name);
+        Log.Combat?.WL(1, "info.AlternateRepresentations.Count:" + info.AlternateRepresentations.Count);
         AlternateMechRepresentation altRep = __instance.GetComponent<AlternateMechRepresentation>();
         if (altRep != null) { return; };
         AlternateMechRepresentations alternateRepresentations = __instance.GetComponent<AlternateMechRepresentations>();
         if (alternateRepresentations == null) { alternateRepresentations = __instance.gameObject.AddComponent<AlternateMechRepresentations>(); }
       }
     }
-    public static void Postfix(MechRepresentation __instance, Mech mech, Transform parentTransform, bool isParented, UnitCustomInfo info) {
-    }
-  }
-  [HarmonyPatch(typeof(Mech))]
-  [HarmonyPatch("InitGameRep")]
-  [HarmonyPatch(MethodType.Normal)]
-  [HarmonyPatch(new Type[] { typeof(Transform) })]
-  public static class Mech_InitGameRep {
-    private static MethodInfo m_CreateBlankPrefabs = typeof(Mech).GetMethod("CreateBlankPrefabs", BindingFlags.Instance | BindingFlags.NonPublic);
-    public static void CreateBlankPrefabs(this Mech mech, List<string> usedPrefabNames, ChassisLocations location) {
-      m_CreateBlankPrefabs.Invoke(mech, new object[] { usedPrefabNames, location });
-    }
-    //public static void Prefix(Mech __instance, Transform parentTransform, ref Dictionary<BaseComponentRef, HasPrefabData> __state) {
-    //  Log.TWL(0, "Mech.InitGameRep prefix " + __instance.DisplayName);
-    //  try {
-    //    //if (__instance.GameRep.GetComponent<AlternateMechRepresentation>() != null) { return; }
-    //    __state = new Dictionary<BaseComponentRef, HasPrefabData>();
-    //    foreach (MechComponent allComponent in __instance.allComponents) {
-    //      if (__state.ContainsKey(allComponent.baseComponentRef)) { continue; }
-    //      __state.Add(allComponent.baseComponentRef, new HasPrefabData(allComponent.baseComponentRef.prefabName, allComponent.baseComponentRef.hasPrefabName));
-    //    }
-    //    foreach (Weapon weapon in __instance.Weapons) {
-    //      if (__state.ContainsKey(weapon.baseComponentRef)) { continue; }
-    //      __state.Add(weapon.baseComponentRef, new HasPrefabData(weapon.baseComponentRef.prefabName, weapon.baseComponentRef.hasPrefabName));
-    //    }
-    //    foreach (MechComponent supportComponent in __instance.supportComponents) {
-    //      if (__state.ContainsKey(supportComponent.baseComponentRef)) { continue; }
-    //      __state.Add(supportComponent.baseComponentRef, new HasPrefabData(supportComponent.baseComponentRef.prefabName, supportComponent.baseComponentRef.hasPrefabName));
-    //    }
-    //  } catch (Exception e) {
-    //    Log.TWL(0, e.ToString(), true);
-    //  }
-    //}
-    //public static void Postfix(Mech __instance, Transform parentTransform, ref Dictionary<BaseComponentRef, HasPrefabData> __state) {
-    //  Log.TWL(0, "Mech.InitGameRep posftix " + __instance.DisplayName + " " + __instance.GameRep.name);
-    //  try {
-    //    Mech_InitGameRepTurret.Postfix(__instance, parentTransform);
-    //    AlternateMechRepresentations alternateRepresentations = __instance.GameRep.GetComponent<AlternateMechRepresentations>();
-    //    if (alternateRepresentations == null) { Log.WL(1, "no AlternateMechRepresentations"); return; }
-    //    if (__state == null) { Log.WL(1, "no state"); return; }
-    //    AlternateMechRepresentations.ClearVisuals(__instance.GameRep);
-    //    AlternateMechRepresentations.ClearComponents(__instance.GameRep);
-    //    alternateRepresentations.InitRepresentations(__instance, parentTransform);
-    //    MechRepresentation mainRep = __instance.GameRep;
-    //    foreach (var altRep in alternateRepresentations.mechReps) {
-    //      Log.WL(1, "alternate representation: " + altRep.def.PrefabBase);
-    //      altRep.Reset(__instance, __state);
-    //      Traverse.Create(__instance).Field<GameRepresentation>("_gameRep").Value = altRep.mechRep;
-    //      altRep.InitGameRep(__instance, parentTransform);
-    //      Mech_InitGameRepTurret.Postfix(__instance, parentTransform);
-    //      altRep.StoreComponents(__instance);
-    //      Traverse.Create(__instance).Field<GameRepresentation>("_gameRep").Value = mainRep;
-    //    }
-    //    alternateRepresentations.mechReps[0].RestorePrefabs(__instance);
-    //    alternateRepresentations.Init(__instance);
-
-    //  } catch (Exception e) {
-    //    Log.TWL(0, e.ToString(), true);
-    //  }
-    //}
-    //public static bool Prefix(Mech __instance, Transform parentTransform) {
-    //  Log.TWL(0, "Mech.InitGameRep prefix:" + new Text(__instance.DisplayName).ToString());
-    //  try {
-    //    string prefabIdentifier = __instance.MechDef.Chassis.PrefabIdentifier;
-    //    if (AbstractActor.initLogger.IsLogEnabled)
-    //      AbstractActor.initLogger.Log((object)("InitGameRep Loading this -" + prefabIdentifier));
-    //    GameObject gameObject = __instance.Combat.DataManager.PooledInstantiate(prefabIdentifier, BattleTechResourceType.Prefab, new Vector3?(), new Quaternion?(), (Transform)null);
-    //    Traverse.Create(__instance).Field<GameRepresentation>("_gameRep").Value = (GameRepresentation)gameObject.GetComponent<MechRepresentation>();
-    //    //__instance._gameRep = (GameRepresentation)gameObject.GetComponent<MechRepresentation>();
-    //    gameObject.GetComponent<Animator>().enabled = true;
-    //    __instance.GameRep.Init(__instance, parentTransform, false);
-    //    if ((UnityEngine.Object)parentTransform == (UnityEngine.Object)null) {
-    //      //gameObject.transform.position = __instance.currentPosition;
-    //      //gameObject.transform.rotation = __instance.currentRotation;
-    //      gameObject.transform.position = Traverse.Create(__instance).Field<Vector3>("currentPosition").Value;
-    //      gameObject.transform.rotation = Traverse.Create(__instance).Field<Quaternion>("currentRotation").Value;
-    //    }
-    //    List<string> usedPrefabNames = new List<string>();
-    //    foreach (MechComponent allComponent in __instance.allComponents) {
-    //      if (allComponent.componentType != ComponentType.Weapon) {
-    //        allComponent.baseComponentRef.prefabName = MechHardpointRules.GetComponentPrefabName(__instance.MechDef.Chassis.HardpointDataDef, allComponent.baseComponentRef, __instance.MechDef.Chassis.PrefabBase, allComponent.mechComponentRef.MountedLocation.ToString().ToLower(), ref usedPrefabNames);
-    //        allComponent.baseComponentRef.hasPrefabName = true;
-    //        if (!string.IsNullOrEmpty(allComponent.baseComponentRef.prefabName)) {
-    //          Transform attachTransform = __instance.GetAttachTransform(allComponent.mechComponentRef.MountedLocation);
-    //          allComponent.InitGameRep(allComponent.baseComponentRef.prefabName, attachTransform, __instance.LogDisplayName);
-    //          __instance.GameRep.miscComponentReps.Add(allComponent.componentRep);
-    //        }
-    //      }
-    //    }
-    //    foreach (Weapon weapon in __instance.Weapons) {
-    //      weapon.baseComponentRef.prefabName = MechHardpointRules.GetComponentPrefabName(__instance.MechDef.Chassis.HardpointDataDef, weapon.baseComponentRef, __instance.MechDef.Chassis.PrefabBase, weapon.mechComponentRef.MountedLocation.ToString().ToLower(), ref usedPrefabNames);
-    //      weapon.baseComponentRef.hasPrefabName = true;
-    //      if (!string.IsNullOrEmpty(weapon.baseComponentRef.prefabName)) {
-    //        Transform attachTransform = __instance.GetAttachTransform(weapon.mechComponentRef.MountedLocation);
-    //        MechTurretAnimation MechTurret = __instance.GameRep.GetComponentInChildren<MechTurretAnimation>(true);
-    //        if (MechTurret != null) {
-    //          Log.WL(1, "MechTurret found");
-    //          if (MechTurret.attachPoints.TryGetValue(weapon.mechComponentRef.MountedLocation, out MechTurretAttachPoint turretAttachPoint)) {
-    //            Log.WL(2, "attach transform for location: " + weapon.mechComponentRef.MountedLocation + " found:" + turretAttachPoint.attachTransform);
-    //            attachTransform = turretAttachPoint.attachTransform;
-    //          } else {
-    //            Log.WL(2, "attach transform for location: " + weapon.mechComponentRef.MountedLocation + " not found");
-    //          }
-    //        } else {
-    //          Log.WL(1, "MechTurret not found");
-    //        }
-    //        weapon.InitGameRep(weapon.baseComponentRef.prefabName, attachTransform, __instance.LogDisplayName);
-    //        __instance.GameRep.weaponReps.Add(weapon.weaponRep);
-    //        string mountingPointPrefabName = MechHardpointRules.GetComponentMountingPointPrefabName(__instance.MechDef, weapon.mechComponentRef);
-    //        if (!string.IsNullOrEmpty(mountingPointPrefabName)) {
-    //          WeaponRepresentation component = __instance.Combat.DataManager.PooledInstantiate(mountingPointPrefabName, BattleTechResourceType.Prefab, new Vector3?(), new Quaternion?(), (Transform)null).GetComponent<WeaponRepresentation>();
-    //          component.Init((ICombatant)__instance, attachTransform, true, __instance.LogDisplayName, weapon.Location);
-    //          __instance.GameRep.weaponReps.Add(component);
-    //        }
-    //      }
-    //    }
-    //    foreach (MechComponent supportComponent in __instance.supportComponents) {
-    //      Weapon weapon = supportComponent as Weapon;
-    //      if (weapon != null) {
-    //        weapon.baseComponentRef.prefabName = MechHardpointRules.GetComponentPrefabName(__instance.MechDef.Chassis.HardpointDataDef, weapon.baseComponentRef, __instance.MechDef.Chassis.PrefabBase, weapon.mechComponentRef.MountedLocation.ToString().ToLower(), ref usedPrefabNames);
-    //        weapon.baseComponentRef.hasPrefabName = true;
-    //        if (!string.IsNullOrEmpty(weapon.baseComponentRef.prefabName)) {
-    //          Transform attachTransform = __instance.GetAttachTransform(weapon.mechComponentRef.MountedLocation);
-    //          weapon.InitGameRep(weapon.baseComponentRef.prefabName, attachTransform, __instance.LogDisplayName);
-    //          __instance.GameRep.miscComponentReps.Add((ComponentRepresentation)weapon.weaponRep);
-    //        }
-    //      }
-    //    }
-    //    __instance.CreateBlankPrefabs(usedPrefabNames, ChassisLocations.CenterTorso);
-    //    __instance.CreateBlankPrefabs(usedPrefabNames, ChassisLocations.LeftTorso);
-    //    __instance.CreateBlankPrefabs(usedPrefabNames, ChassisLocations.RightTorso);
-    //    __instance.CreateBlankPrefabs(usedPrefabNames, ChassisLocations.LeftArm);
-    //    __instance.CreateBlankPrefabs(usedPrefabNames, ChassisLocations.RightArm);
-    //    __instance.CreateBlankPrefabs(usedPrefabNames, ChassisLocations.Head);
-    //    if (!__instance.MeleeWeapon.baseComponentRef.hasPrefabName) {
-    //      __instance.MeleeWeapon.baseComponentRef.prefabName = "chrPrfWeap_generic_melee";
-    //      __instance.MeleeWeapon.baseComponentRef.hasPrefabName = true;
-    //    }
-    //    __instance.MeleeWeapon.InitGameRep(__instance.MeleeWeapon.baseComponentRef.prefabName, __instance.GetAttachTransform(__instance.MeleeWeapon.mechComponentRef.MountedLocation), __instance.LogDisplayName);
-    //    if (!__instance.DFAWeapon.mechComponentRef.hasPrefabName) {
-    //      __instance.DFAWeapon.mechComponentRef.prefabName = "chrPrfWeap_generic_melee";
-    //      __instance.DFAWeapon.mechComponentRef.hasPrefabName = true;
-    //    }
-    //    __instance.DFAWeapon.InitGameRep(__instance.DFAWeapon.mechComponentRef.prefabName, __instance.GetAttachTransform(__instance.DFAWeapon.mechComponentRef.MountedLocation), __instance.LogDisplayName);
-    //    bool flag1 = __instance.MechDef.MechTags.Contains("PlaceholderUnfinishedMaterial");
-    //    bool flag2 = __instance.MechDef.MechTags.Contains("PlaceholderImpostorMaterial");
-    //    if (flag1 | flag2) {
-    //      SkinnedMeshRenderer[] componentsInChildren = __instance.GameRep.GetComponentsInChildren<SkinnedMeshRenderer>(true);
-    //      for (int index = 0; index < componentsInChildren.Length; ++index) {
-    //        if (flag1)
-    //          componentsInChildren[index].sharedMaterial = Traverse.Create(__instance.Combat.DataManager).Property<TextureManager>("TextureManager").Value.PlaceholderUnfinishedMaterial;
-    //        if (flag2)
-    //          componentsInChildren[index].sharedMaterial = Traverse.Create(__instance.Combat.DataManager).Property<TextureManager>("TextureManager").Value.PlaceholderImpostorMaterial;
-    //      }
-    //    }
-    //    __instance.GameRep.RefreshEdgeCache();
-    //    __instance.GameRep.FadeIn(1f);
-    //    if (__instance.IsDead || !__instance.Combat.IsLoadingFromSave)
-    //      return false;
-    //    if (__instance.AuraComponents != null) {
-    //      foreach (MechComponent auraComponent in __instance.AuraComponents) {
-    //        for (int index = 0; index < auraComponent.componentDef.statusEffects.Length; ++index) {
-    //          if (auraComponent.componentDef.statusEffects[index].targetingData.auraEffectType == AuraEffectType.ECM_GHOST) {
-    //            __instance.GameRep.PlayVFXAt(__instance.GameRep.thisTransform, Vector3.zero, "vfxPrfPrtl_ECM_loop", true, Vector3.zero, false, -1f);
-    //            __instance.GameRep.PlayVFXAt(__instance.GameRep.thisTransform, Vector3.zero, "vfxPrfPrtl_ECMcarrierAura_loop", true, Vector3.zero, false, -1f);
-    //            return false;
-    //          }
-    //        }
-    //      }
-    //    }
-    //    if (__instance.VFXDataFromLoad == null)
-    //      return false;
-    //    foreach (VFXEffect.StoredVFXEffectData storedVfxEffectData in __instance.VFXDataFromLoad)
-    //      __instance.GameRep.PlayVFXAt(__instance.GameRep.GetVFXTransform(storedVfxEffectData.hitLocation), storedVfxEffectData.hitPos, storedVfxEffectData.vfxName, storedVfxEffectData.isAttached, storedVfxEffectData.lookatPos, storedVfxEffectData.isOneShot, storedVfxEffectData.duration);
-    //  } catch (Exception e) {
-    //    Log.TWL(0, e.ToString(), true);
-    //    return true;
-    //  }
-    //  return false;
-    //}
   }
 }

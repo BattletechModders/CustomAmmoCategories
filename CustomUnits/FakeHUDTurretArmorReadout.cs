@@ -49,11 +49,11 @@ namespace CustomUnits {
           GameObject.DestroyImmediate(old);
         }
       } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
+        Log.Combat?.TWL(0, e.ToString(), true);
+        UIManager.logger.LogException(e);
       }
     }
   }
-
   [HarmonyPatch(typeof(HUDTurretArmorReadout))]
   [HarmonyPatch("DisplayedTurret")]
   [HarmonyPatch(MethodType.Setter)]
@@ -64,7 +64,7 @@ namespace CustomUnits {
         if (__instance is FakeHUDTurretArmorReadout fakeTurretReadout) {
           if (Thread.CurrentThread.isFlagSet("RefreshActorInfo")) {
             AbstractActor actor = Thread.CurrentThread.currentActor();
-            Log.TWL(0, "HUDTurretArmorReadout.DisplayedTurret real actor is "+ (actor == null?"null": actor.PilotableActorDef.ChassisID));
+            Log.Combat?.TWL(0, "HUDTurretArmorReadout.DisplayedTurret real actor is "+ (actor == null?"null": actor.PilotableActorDef.ChassisID));
             fakeTurretReadout._DisplayedTurret = Thread.CurrentThread.currentActor();
           } else {
             fakeTurretReadout._DisplayedTurret = value;
@@ -72,7 +72,8 @@ namespace CustomUnits {
           return false;
         }
       } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
+        Log.Combat?.TWL(0, e.ToString(), true);
+        UIManager.logger.LogException(e);
       }
       return true;
     }
@@ -89,7 +90,8 @@ namespace CustomUnits {
           return false;
         }
       } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
+        Log.Combat?.TWL(0, e.ToString(), true);
+        UIManager.logger.LogException(e);
       }
       return true;
     }
@@ -106,7 +108,8 @@ namespace CustomUnits {
           return false;
         }
       } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
+        Log.Combat?.TWL(0, e.ToString(), true);
+        UIManager.logger.LogException(e);
       }
       return true;
     }
@@ -119,11 +122,12 @@ namespace CustomUnits {
     public static bool Prefix(HUDTurretArmorReadout __instance, CombatHUD HUD) {
       try {
         if (__instance is FakeHUDTurretArmorReadout fakeTurretReadout) {
-          fakeTurretReadout._Init(HUD);
+          fakeTurretReadout.Init(HUD);
           return false;
         }
       } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
+        Log.Combat?.TWL(0, e.ToString(), true);
+        UIManager.logger.LogException(e);
       }
       return true;
     }
@@ -142,7 +146,8 @@ namespace CustomUnits {
           }
         }
       } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
+        Log.Combat?.TWL(0, e.ToString(), true);
+        UIManager.logger.LogException(e);
       }
     }
   }
@@ -156,7 +161,8 @@ namespace CustomUnits {
         Thread.CurrentThread.SetFlag("RefreshActorInfo");
         Thread.CurrentThread.pushActor(__instance.ActivelyShownCombatant as AbstractActor);
       } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
+        Log.Combat?.TWL(0, e.ToString(), true);
+        UIManager.logger.LogException(e);
       }
     }
     public static void Posftix(CombatHUDTargetingComputer __instance) {
@@ -164,24 +170,14 @@ namespace CustomUnits {
         Thread.CurrentThread.ClearFlag("RefreshActorInfo");
         Thread.CurrentThread.clearActor();
       } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
+        Log.Combat?.TWL(0, e.ToString(), true);
+        UIManager.logger.LogException(e);
       }
     }
   }
 
   public class FakeHUDTurretArmorReadout : HUDTurretArmorReadout {
-    private AbstractActor displayedTurret;
-
-    private CombatHUD HUD { get; set; }
-
-    private Color TurretArmorCached { get; set; }
-
-    private Color TurretStructureCached { get; set; }
-
-    private float timeSinceArmorDamaged { get; set; }
-
-    private float timeSinceStructureDamaged { get; set; }
-
+    public new AbstractActor displayedTurret { get; set; } = null;
     public AbstractActor _DisplayedTurret {
       get => this.displayedTurret;
       set {
@@ -196,15 +192,7 @@ namespace CustomUnits {
         this.RefreshTurretStructureAndArmor();
       }
     }
-
-    public void _Init(CombatHUD HUD) => this.HUD = HUD;
-
-    private void ResetDamageTimes() {
-      this.timeSinceArmorDamaged = 99.9f;
-      this.timeSinceStructureDamaged = 99.9f;
-    }
-
-    private void ResetArmorStructureBars() {
+    public new void ResetArmorStructureBars() {
       //Log.TWL(0, "FakeHUDTurretArmorReadout.ResetArmorStructureBars");
       try {
         if (this.displayedTurret == null)
@@ -227,11 +215,12 @@ namespace CustomUnits {
         //Log.WL(1, "FakeHUDTurretArmorReadout armor " + summaryArmorCurrent+"/"+ summaryArmorMax);
         //Log.WL(1, "FakeHUDTurretArmorReadout structure " + structureCurrent + "/" + summaryStructureMax);
       } catch (Exception e) {
-        Log.TWL(0,e.ToString(), true);
+        Log.ECombat?.TWL(0,e.ToString(), true);
+        UIManager.logger.LogException(e);
       }
     }
 
-    private void UpdateArmorStructureBars() {
+    public new void UpdateArmorStructureBars() {
       //Log.TWL(0, "FakeHUDTurretArmorReadout.UpdateArmorStructureBars");
       try {
         if (this.displayedTurret == null)
@@ -254,11 +243,11 @@ namespace CustomUnits {
         //Log.WL(1, "FakeHUDTurretArmorReadout armor " + summaryArmorCurrent + "/" + summaryArmorMax);
         //Log.WL(1, "FakeHUDTurretArmorReadout structure " + structureCurrent + "/" + summaryStructureMax);
       } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
+        Log.ECombat?.TWL(0, e.ToString(), true);
+        UIManager.logger.LogException(e);
       }
     }
-
-    private void RefreshTurretStructureAndArmor() {
+    public new void RefreshTurretStructureAndArmor() {
       if (this.displayedTurret == null)
         return;
       float turretStructure = this.displayedTurret.SummaryStructureCurrent;

@@ -23,18 +23,20 @@ namespace CustomUnits {
   [HarmonyPatch(MethodType.Getter)]
   [HarmonyPatch(new Type[] { })]
   public static class GameRepresentation_propertyBlock {
-    public static bool Prefix(GameRepresentation __instance, ref PropertyBlockManager __result) {
+    public static void Prefix(ref bool __runOriginal, GameRepresentation __instance, ref PropertyBlockManager __result) {
       try {
-        //Log.TWL(0, "PilotableActorRepresentation.InitPaintScheme :" + __instance.GetType().ToString());
+        if (!__runOriginal) { return; }
         CustomMechRepresentation custMechRep = __instance as CustomMechRepresentation;
         if (custMechRep != null) {
           __result = custMechRep.__propertyBlock;
-          return false;
+          __runOriginal = false;
+          return;
         }
-        return true;
+        return;
       } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
-        return true;
+        Log.Combat?.TWL(0, e.ToString(), true);
+        AbstractActor.logger.LogException(e);
+        return;
       }
     }
   }
@@ -43,17 +45,20 @@ namespace CustomUnits {
   [HarmonyPatch(MethodType.Getter)]
   [HarmonyPatch(new Type[] { })]
   public static class GameRepresentation_IsTargetable_get {
-    public static bool Prefix(GameRepresentation __instance, ref bool __result) {
+    public static void Prefix(ref bool __runOriginal, GameRepresentation __instance, ref bool __result) {
       try {
+        if (!__runOriginal) { return; }
         CustomMechRepresentation custMechRep = __instance as CustomMechRepresentation;
         if (custMechRep != null) {
-          __result = custMechRep.__IsTargetable;
-          return false;
+          __result = custMechRep._IsTargetable;
+          __runOriginal = false;
+          return;
         }
-        return true;
+        return;
       } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
-        return true;
+        Log.Combat?.TWL(0, e.ToString(), true);
+        AbstractActor.logger.LogException(e);
+        return;
       }
     }
   }
@@ -62,17 +67,20 @@ namespace CustomUnits {
   [HarmonyPatch(MethodType.Setter)]
   [HarmonyPatch(new Type[] { })]
   public static class GameRepresentation_IsTargetable_set {
-    public static bool Prefix(GameRepresentation __instance, bool value) {
+    public static void Prefix(ref bool __runOriginal, GameRepresentation __instance, bool value) {
       try {
+        if (!__runOriginal) { return; }
         CustomMechRepresentation custMechRep = __instance as CustomMechRepresentation;
         if (custMechRep != null) {
-          custMechRep.__IsTargetable = value;
-          return false;
+          custMechRep._IsTargetable = value;
+          __runOriginal = false;
+          return;
         }
-        return true;
+        return;
       } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
-        return true;
+        Log.Combat?.TWL(0, e.ToString(), true);
+        AbstractActor.logger.LogException(e);
+        return;
       }
     }
   }
@@ -81,17 +89,20 @@ namespace CustomUnits {
   [HarmonyPatch(MethodType.Getter)]
   [HarmonyPatch(new Type[] { })]
   public static class GameRepresentation_IsTargeted_get {
-    public static bool Prefix(GameRepresentation __instance, ref bool __result) {
+    public static void Prefix(ref bool __runOriginal, GameRepresentation __instance, ref bool __result) {
       try {
+        if (!__runOriginal) { return; }
         CustomMechRepresentation custMechRep = __instance as CustomMechRepresentation;
         if (custMechRep != null) {
-          __result = custMechRep.__IsTargeted;
-          return false;
+          __result = custMechRep._IsTargeted;
+          __runOriginal = false;
+          return;
         }
-        return true;
+        return;
       } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
-        return true;
+        Log.Combat?.TWL(0, e.ToString(), true);
+        AbstractActor.logger.LogException(e);
+        return;
       }
     }
   }
@@ -100,17 +111,20 @@ namespace CustomUnits {
   [HarmonyPatch(MethodType.Setter)]
   [HarmonyPatch(new Type[] { })]
   public static class GameRepresentation_IsTargeted_set {
-    public static bool Prefix(GameRepresentation __instance, bool value) {
+    public static void Prefix(ref bool __runOriginal, GameRepresentation __instance, bool value) {
       try {
+        if (!__runOriginal) { return; }
         CustomMechRepresentation custMechRep = __instance as CustomMechRepresentation;
         if (custMechRep != null) {
-          custMechRep.__IsTargeted = value;
-          return false;
+          custMechRep._IsTargeted = value;
+          __runOriginal = false;
+          return;
         }
-        return true;
+        return;
       } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
-        return true;
+        Log.Combat?.TWL(0, e.ToString(), true);
+        AbstractActor.logger.LogException(e);
+        return;
       }
     }
   }
@@ -119,17 +133,20 @@ namespace CustomUnits {
   [HarmonyPatch(MethodType.Getter)]
   [HarmonyPatch(new Type[] { })]
   public static class GameRepresentation_IsAvailable_get {
-    public static bool Prefix(GameRepresentation __instance, ref bool __result) {
+    public static void Prefix(ref bool __runOriginal, GameRepresentation __instance, ref bool __result) {
       try {
+        if (!__runOriginal) { return; }
         CustomMechRepresentation custMechRep = __instance as CustomMechRepresentation;
         if (custMechRep != null) {
-          __result = custMechRep.__IsAvailable;
-          return false;
+          __result = custMechRep._IsAvailable;
+          __runOriginal = false;
+          return;
         }
-        return true;
+        return;
       } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
-        return true;
+        Log.Combat?.TWL(0, e.ToString(), true);
+        AbstractActor.logger.LogException(e);
+        return;
       }
     }
   }
@@ -138,17 +155,20 @@ namespace CustomUnits {
   [HarmonyPatch(MethodType.Setter)]
   [HarmonyPatch(new Type[] { })]
   public static class GameRepresentation_IsAvailable_set {
-    public static bool Prefix(GameRepresentation __instance, bool value) {
+    public static void Prefix(ref bool __runOriginal, GameRepresentation __instance, bool value) {
       try {
+        if (!__runOriginal) { return; }
         CustomMechRepresentation custMechRep = __instance as CustomMechRepresentation;
         if (custMechRep != null) {
-          custMechRep.__IsAvailable = value;
-          return false;
+          custMechRep._IsAvailable = value;
+          __runOriginal = false;
+          return;
         }
-        return true;
+        return;
       } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
-        return true;
+        Log.Combat?.TWL(0, e.ToString(), true);
+        AbstractActor.logger.LogException(e);
+        return;
       }
     }
   }
@@ -157,17 +177,20 @@ namespace CustomUnits {
   [HarmonyPatch(MethodType.Getter)]
   [HarmonyPatch(new Type[] { })]
   public static class GameRepresentation_IsSelected_get {
-    public static bool Prefix(GameRepresentation __instance, ref bool __result) {
+    public static void Prefix(ref bool __runOriginal, GameRepresentation __instance, ref bool __result) {
       try {
+        if (!__runOriginal) { return; }
         CustomMechRepresentation custMechRep = __instance as CustomMechRepresentation;
         if (custMechRep != null) {
-          __result = custMechRep.__IsSelected;
-          return false;
+          __result = custMechRep._IsSelected;
+          __runOriginal = false;
+          return;
         }
-        return true;
+        return;
       } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
-        return true;
+        Log.Combat?.TWL(0, e.ToString(), true);
+        AbstractActor.logger.LogException(e);
+        return;
       }
     }
   }
@@ -176,17 +199,20 @@ namespace CustomUnits {
   [HarmonyPatch(MethodType.Setter)]
   [HarmonyPatch(new Type[] { })]
   public static class GameRepresentation_IsSelected_set {
-    public static bool Prefix(GameRepresentation __instance, bool value) {
+    public static void Prefix(ref bool __runOriginal, GameRepresentation __instance, bool value) {
       try {
+        if (!__runOriginal) { return; }
         CustomMechRepresentation custMechRep = __instance as CustomMechRepresentation;
         if (custMechRep != null) {
-          custMechRep.__IsSelected = value;
-          return false;
+          custMechRep._IsSelected = value;
+          __runOriginal = false;
+          return;
         }
-        return true;
+        return;
       } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
-        return true;
+        Log.Combat?.TWL(0, e.ToString(), true);
+        AbstractActor.logger.LogException(e);
+        return;
       }
     }
   }
@@ -195,17 +221,20 @@ namespace CustomUnits {
   [HarmonyPatch(MethodType.Getter)]
   [HarmonyPatch(new Type[] { })]
   public static class GameRepresentation_IsHovered_get {
-    public static bool Prefix(GameRepresentation __instance, ref bool __result) {
+    public static void Prefix(ref bool __runOriginal, GameRepresentation __instance, ref bool __result) {
       try {
+        if (!__runOriginal) { return; }
         CustomMechRepresentation custMechRep = __instance as CustomMechRepresentation;
         if (custMechRep != null) {
-          __result = custMechRep.__IsHovered;
-          return false;
+          __result = custMechRep._IsHovered;
+          __runOriginal = false;
+          return;
         }
-        return true;
+        return;
       } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
-        return true;
+        Log.Combat?.TWL(0, e.ToString(), true);
+        AbstractActor.logger.LogException(e);
+        return;
       }
     }
   }
@@ -214,17 +243,20 @@ namespace CustomUnits {
   [HarmonyPatch(MethodType.Setter)]
   [HarmonyPatch(new Type[] { })]
   public static class GameRepresentation_IsHovered_set {
-    public static bool Prefix(GameRepresentation __instance, bool value) {
+    public static void Prefix(ref bool __runOriginal, GameRepresentation __instance, bool value) {
       try {
+        if (!__runOriginal) { return; }
         CustomMechRepresentation custMechRep = __instance as CustomMechRepresentation;
         if (custMechRep != null) {
-          custMechRep.__IsHovered = value;
-          return false;
+          custMechRep._IsHovered = value;
+          __runOriginal = false;
+          return;
         }
-        return true;
+        return;
       } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
-        return true;
+        Log.Combat?.TWL(0, e.ToString(), true);
+        AbstractActor.logger.LogException(e);
+        return;
       }
     }
   }
@@ -233,17 +265,20 @@ namespace CustomUnits {
   [HarmonyPatch(MethodType.Getter)]
   [HarmonyPatch(new Type[] { })]
   public static class GameRepresentation_IsDead_get {
-    public static bool Prefix(GameRepresentation __instance, ref bool __result) {
+    public static void Prefix(ref bool __runOriginal, GameRepresentation __instance, ref bool __result) {
       try {
+        if (!__runOriginal) { return; }
         CustomMechRepresentation custMechRep = __instance as CustomMechRepresentation;
         if (custMechRep != null) {
-          __result = custMechRep.__IsDead;
-          return false;
+          __result = custMechRep._IsDead;
+          __runOriginal = false;
+          return;
         }
-        return true;
+        return;
       } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
-        return true;
+        Log.Combat?.TWL(0, e.ToString(), true);
+        AbstractActor.logger.LogException(e);
+        return;
       }
     }
   }
@@ -252,17 +287,20 @@ namespace CustomUnits {
   [HarmonyPatch(MethodType.Setter)]
   [HarmonyPatch(new Type[] { })]
   public static class GameRepresentation_IsDead_set {
-    public static bool Prefix(GameRepresentation __instance, bool value) {
+    public static void Prefix(ref bool __runOriginal, GameRepresentation __instance, bool value) {
       try {
+        if (!__runOriginal) { return; }
         CustomMechRepresentation custMechRep = __instance as CustomMechRepresentation;
         if (custMechRep != null) {
-          custMechRep.__IsDead = value;
-          return false;
+          custMechRep._IsDead = value;
+          __runOriginal = false;
+          return;
         }
-        return true;
+        return;
       } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
-        return true;
+        Log.Combat?.TWL(0, e.ToString(), true);
+        AbstractActor.logger.LogException(e);
+        return;
       }
     }
   }
@@ -271,21 +309,24 @@ namespace CustomUnits {
   [HarmonyPatch(MethodType.Getter)]
   [HarmonyPatch(new Type[] { })]
   public static class GameRepresentation_VisibleToPlayer {
-    public static bool Prefix(GameRepresentation __instance, ref bool __result) {
+    public static void Prefix(ref bool __runOriginal, GameRepresentation __instance, ref bool __result) {
       try {
+        if (!__runOriginal) { return; }
         //Log.TWL(0, "PilotableActorRepresentation.InitPaintScheme :" + __instance.GetType().ToString());
         CustomMechRepresentation custMechRep = __instance as CustomMechRepresentation;
         if (custMechRep != null) {
           __result = custMechRep._VisibleToPlayer;
-          return false;
+          __runOriginal = false;
+          return;
         }
         if (__instance.parentCombatant is CustomMech custMech) {
-          if (custMech.ForcedVisible) { __result = true; return false; }
+          if (custMech.ForcedVisible) { __result = true; __runOriginal = false; return; }
         }
-        return true;
+        return;
       } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
-        return true;
+        Log.Combat?.TWL(0, e.ToString(), true);
+        AbstractActor.logger.LogException(e);
+        return;
       }
     }
   }
@@ -294,18 +335,21 @@ namespace CustomUnits {
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { })]
   public static class GameRepresentation_Awake {
-    public static bool Prefix(GameRepresentation __instance) {
+    public static void Prefix(ref bool __runOriginal, GameRepresentation __instance) {
       try {
+        if (!__runOriginal) { return; }
         //Log.TWL(0, "PilotableActorRepresentation.InitPaintScheme :" + __instance.GetType().ToString());
         CustomMechRepresentation custMechRep = __instance as CustomMechRepresentation;
         if (custMechRep != null) {
           custMechRep._Awake();
-          return false;
+          __runOriginal = false;
+          return;
         }
-        return true;
+        return;
       } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
-        return true;
+        Log.Combat?.TWL(0, e.ToString(), true);
+        AbstractActor.logger.LogException(e);
+        return;
       }
     }
   }
@@ -314,18 +358,21 @@ namespace CustomUnits {
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { })]
   public static class GameRepresentation_OnDestroy {
-    public static bool Prefix(GameRepresentation __instance) {
+    public static void Prefix(ref bool __runOriginal, GameRepresentation __instance) {
       try {
+        if (!__runOriginal) { return; }
         //Log.TWL(0, "PilotableActorRepresentation.InitPaintScheme :" + __instance.GetType().ToString());
         CustomMechRepresentation custMechRep = __instance as CustomMechRepresentation;
         if (custMechRep != null) {
           custMechRep._OnDestroy();
-          return false;
+          __runOriginal = false;
+          return;
         }
-        return true;
+        return;
       } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
-        return true;
+        Log.Combat?.TWL(0, e.ToString(), true);
+        AbstractActor.logger.LogException(e);
+        return;
       }
     }
   }
@@ -334,17 +381,20 @@ namespace CustomUnits {
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { })]
   public static class GameRepresentation_InitHighlighting {
-    public static bool Prefix(GameRepresentation __instance) {
+    public static void Prefix(ref bool __runOriginal, GameRepresentation __instance) {
       try {
+        if (!__runOriginal) { return; }
         CustomMechRepresentation custMechRep = __instance as CustomMechRepresentation;
         if (custMechRep != null) {
           custMechRep._InitHighlighting();
-          return false;
+          __runOriginal = false;
+          return;
         }
-        return true;
+        return;
       } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
-        return true;
+        Log.Combat?.TWL(0, e.ToString(), true);
+        AbstractActor.logger.LogException(e);
+        return;
       }
     }
   }
@@ -353,17 +403,20 @@ namespace CustomUnits {
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { typeof(CombatGameState), typeof(Team) })]
   public static class GameRepresentation_SetHighlightColor {
-    public static bool Prefix(GameRepresentation __instance, CombatGameState combat, Team team) {
+    public static void Prefix(ref bool __runOriginal, GameRepresentation __instance, CombatGameState combat, Team team) {
       try {
+        if (!__runOriginal) { return; }
         CustomMechRepresentation custMechRep = __instance as CustomMechRepresentation;
         if (custMechRep != null) {
           custMechRep._SetHighlightColor(combat, team);
-          return false;
+          __runOriginal = false;
+          return;
         }
-        return true;
+        return;
       } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
-        return true;
+        Log.Combat?.TWL(0, e.ToString(), true);
+        AbstractActor.logger.LogException(e);
+        return;
       }
     }
   }
@@ -372,17 +425,20 @@ namespace CustomUnits {
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { typeof(float) })]
   public static class GameRepresentation_FadeIn {
-    public static bool Prefix(GameRepresentation __instance, float length) {
+    public static void Prefix(ref bool __runOriginal, GameRepresentation __instance, float length) {
       try {
+        if (!__runOriginal) { return; }
         CustomMechRepresentation custMechRep = __instance as CustomMechRepresentation;
         if (custMechRep != null) {
           custMechRep._FadeIn(length);
-          return false;
+          __runOriginal = false;
+          return;
         }
-        return true;
+        return;
       } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
-        return true;
+        Log.Combat?.TWL(0, e.ToString(), true);
+        AbstractActor.logger.LogException(e);
+        return;
       }
     }
   }
@@ -391,17 +447,20 @@ namespace CustomUnits {
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { typeof(float) })]
   public static class GameRepresentation_FadeOut {
-    public static bool Prefix(GameRepresentation __instance, float length) {
+    public static void Prefix(ref bool __runOriginal, GameRepresentation __instance, float length) {
       try {
+        if (!__runOriginal) { return; }
         CustomMechRepresentation custMechRep = __instance as CustomMechRepresentation;
         if (custMechRep != null) {
           custMechRep._FadeOut(length);
-          return false;
+          __runOriginal = false;
+          return;
         }
-        return true;
+        return;
       } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
-        return true;
+        Log.Combat?.TWL(0, e.ToString(), true);
+        AbstractActor.logger.LogException(e);
+        return;
       }
     }
   }
@@ -410,17 +469,20 @@ namespace CustomUnits {
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { typeof(string) })]
   public static class GameRepresentation_StopManualPersistentVFX {
-    public static bool Prefix(GameRepresentation __instance, string vfxName) {
+    public static void Prefix(ref bool __runOriginal, GameRepresentation __instance, string vfxName) {
       try {
+        if (!__runOriginal) { return; }
         CustomMechRepresentation custMechRep = __instance as CustomMechRepresentation;
         if (custMechRep != null) {
           custMechRep._StopManualPersistentVFX(vfxName);
-          return false;
+          __runOriginal = false;
+          return;
         }
-        return true;
+        return;
       } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
-        return true;
+        Log.Combat?.TWL(0, e.ToString(), true);
+        AbstractActor.logger.LogException(e);
+        return;
       }
     }
   }
@@ -429,17 +491,20 @@ namespace CustomUnits {
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { })]
   public static class GameRepresentation_PauseAllPersistentVFX {
-    public static bool Prefix(GameRepresentation __instance) {
+    public static void Prefix(ref bool __runOriginal, GameRepresentation __instance) {
       try {
+        if (!__runOriginal) { return; }
         CustomMechRepresentation custMechRep = __instance as CustomMechRepresentation;
         if (custMechRep != null) {
           custMechRep._PauseAllPersistentVFX();
-          return false;
+          __runOriginal = false;
+          return;
         }
-        return true;
+        return;
       } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
-        return true;
+        Log.Combat?.TWL(0, e.ToString(), true);
+        AbstractActor.logger.LogException(e);
+        return;
       }
     }
   }
@@ -448,17 +513,20 @@ namespace CustomUnits {
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { })]
   public static class GameRepresentation_ResumeAllPersistentVFX {
-    public static bool Prefix(GameRepresentation __instance) {
+    public static void Prefix(ref bool __runOriginal, GameRepresentation __instance) {
       try {
+        if (!__runOriginal) { return; }
         CustomMechRepresentation custMechRep = __instance as CustomMechRepresentation;
         if (custMechRep != null) {
           custMechRep._ResumeAllPersistentVFX();
-          return false;
+          __runOriginal = false;
+          return;
         }
-        return true;
+        return;
       } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
-        return true;
+        Log.Combat?.TWL(0, e.ToString(), true);
+        AbstractActor.logger.LogException(e);
+        return;
       }
     }
   }
@@ -467,25 +535,24 @@ namespace CustomUnits {
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { typeof(int) })]
   public static class GameRepresentation_StopAllPersistentVFXAttachedToLocation {
-    public static bool Prefix(GameRepresentation __instance, int location) {
+    public static void Prefix(ref bool __runOriginal, GameRepresentation __instance, int location) {
       try {
+        if (!__runOriginal) { return; }
         CustomMechRepresentation custMechRep = __instance as CustomMechRepresentation;
         if (custMechRep != null) {
           custMechRep._StopAllPersistentVFXAttachedToLocation(location);
-          return false;
+          __runOriginal = false;
+          return;
         }
-        return true;
+        return;
       } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
-        return true;
+        Log.Combat?.TWL(0, e.ToString(), true);
+        AbstractActor.logger.LogException(e);
+        return;
       }
     }
   }
   public partial class CustomMechRepresentation {
-    private static readonly float hightlightDeadIntensity = -1f;
-    private static readonly float highlightOffIntensity = 0.0f;
-    private static readonly float highlightDefaultIntensity = 0.5f;
-    private static readonly float highlightSelectedIntensity = 1f;
     public virtual Collider[] GameRepresentation_AllRaycastColliders {
       get {
         if (this._allRaycastColliders == null)
@@ -495,7 +562,7 @@ namespace CustomUnits {
     }
     public virtual CustomPropertyBlockManager __propertyBlock {
       get {
-        if ((UnityEngine.Object)this._propertyBlock == (UnityEngine.Object)null)
+        if (this._propertyBlock == null)
           this._propertyBlock = this.GetComponentInChildren<CustomPropertyBlockManager>();
         return this._propertyBlock as CustomPropertyBlockManager;
       }
@@ -592,62 +659,62 @@ namespace CustomUnits {
     }
     public virtual void GameRepresentation_SetVFXColliderEnabled(bool isEnabled) {
     }
-    public bool _isTargetable { get { return Traverse.Create(this).Property<bool>("isTargetable").Value; } set { Traverse.Create(this).Property<bool>("isTargetable").Value = value; } }
-    public bool _isTargeted { get { return Traverse.Create(this).Property<bool>("isTargeted").Value; } set { Traverse.Create(this).Property<bool>("isTargeted").Value = value; } }
-    public bool _isAvailable { get { return Traverse.Create(this).Property<bool>("isAvailable").Value; } set { Traverse.Create(this).Property<bool>("isAvailable").Value = value; } }
-    public bool _isSelected { get { return Traverse.Create(this).Property<bool>("isSelected").Value; } set { Traverse.Create(this).Property<bool>("isSelected").Value = value; } }
-    public bool _isHovered { get { return Traverse.Create(this).Property<bool>("isHovered").Value; } set { Traverse.Create(this).Property<bool>("isHovered").Value = value; } }
-    public bool _isDead { get { return Traverse.Create(this).Property<bool>("isDead").Value; } set { Traverse.Create(this).Property<bool>("isDead").Value = value; } }
-    public virtual bool __IsTargetable {
-      get => this._isTargetable;
+    //public bool isTargetable { get { return Traverse.Create(this).Property<bool>("isTargetable").Value; } set { Traverse.Create(this).Property<bool>("isTargetable").Value = value; } }
+    //public bool _isTargeted { get { return Traverse.Create(this).Property<bool>("isTargeted").Value; } set { Traverse.Create(this).Property<bool>("isTargeted").Value = value; } }
+    //public bool _isAvailable { get { return Traverse.Create(this).Property<bool>("isAvailable").Value; } set { Traverse.Create(this).Property<bool>("isAvailable").Value = value; } }
+    //public bool _isSelected { get { return Traverse.Create(this).Property<bool>("isSelected").Value; } set { Traverse.Create(this).Property<bool>("isSelected").Value = value; } }
+    //public bool _isHovered { get { return Traverse.Create(this).Property<bool>("isHovered").Value; } set { Traverse.Create(this).Property<bool>("isHovered").Value = value; } }
+    //public bool _isDead { get { return Traverse.Create(this).Property<bool>("isDead").Value; } set { Traverse.Create(this).Property<bool>("isDead").Value = value; } }
+    public virtual bool _IsTargetable {
+      get => this.isTargetable;
       set {
-        this._isTargetable = value;
-        foreach (CustomMechRepresentation slave in slaveRepresentations) { slave.__IsTargetable = value; }
+        this.isTargetable = value;
+        foreach (CustomMechRepresentation slave in slaveRepresentations) { slave._IsTargetable = value; }
         this._refreshHighlight();
       }
     }
-    public virtual bool __IsTargeted {
-      get => this._isTargeted;
+    public virtual bool _IsTargeted {
+      get => this.isTargeted;
       set {
-        this._isTargeted = value;
+        this.isTargeted = value;
         this._refreshHighlight();
-        foreach (CustomMechRepresentation slave in slaveRepresentations) { slave.__IsTargeted = value; }
+        foreach (CustomMechRepresentation slave in slaveRepresentations) { slave._IsTargeted = value; }
       }
     }
-    public virtual bool __IsAvailable {
-      get => this._isAvailable;
+    public virtual bool _IsAvailable {
+      get => this.isAvailable;
       set {
-        this._isAvailable = value;
-        foreach (CustomMechRepresentation slave in slaveRepresentations) { slave.__IsAvailable = value; }
+        this.isAvailable = value;
+        foreach (CustomMechRepresentation slave in slaveRepresentations) { slave._IsAvailable = value; }
         this._refreshHighlight();
       }
     }
-    public virtual bool __IsSelected {
-      get => this._isSelected;
+    public virtual bool _IsSelected {
+      get => this.isSelected;
       set {
-        this._isSelected = value;
-        foreach (CustomMechRepresentation slave in slaveRepresentations) { slave.__IsSelected = value; }
+        this.isSelected = value;
+        foreach (CustomMechRepresentation slave in slaveRepresentations) { slave._IsSelected = value; }
         this.refreshHighlight();
       }
     }
-    public virtual bool __IsHovered {
-      get => this._isHovered;
+    public virtual bool _IsHovered {
+      get => this.isHovered;
       set {
-        this._isHovered = value;
-        foreach (CustomMechRepresentation slave in slaveRepresentations) { slave.__IsHovered = value; }
+        this.isHovered = value;
+        foreach (CustomMechRepresentation slave in slaveRepresentations) { slave._IsHovered = value; }
         this._refreshHighlight();
       }
     }
-    public virtual bool __IsDead {
-      get => this._isDead;
+    public virtual bool _IsDead {
+      get => this.isDead;
       set {
-        this._isDead = value;
-        foreach (CustomMechRepresentation slave in slaveRepresentations) { slave.__IsDead = value; }
+        this.isDead = value;
+        foreach (CustomMechRepresentation slave in slaveRepresentations) { slave._IsDead = value; }
         this._refreshHighlight();
       }
     }
     public virtual void _InitHighlighting() {
-      Log.TWL(0, "CustomMechRepresentation._InitHighlighting "+this.gameObject.name+" "+(this.customPropertyBlock == null?"null": this.customPropertyBlock.gameObject.name));
+      Log.Combat?.TWL(0, "CustomMechRepresentation._InitHighlighting "+this.gameObject.name+" "+(this.customPropertyBlock == null?"null": this.customPropertyBlock.gameObject.name));
       this.edgeHighlight = this.GetComponent<MechEdgeSelection>();
       if (this.edgeHighlight != null) { Traverse.Create(this.edgeHighlight).Field<PropertyBlockManager>("propertyManager").Value = this.customPropertyBlock; }
       foreach (CustomMechRepresentation slave in slaveRepresentations) {
@@ -682,10 +749,10 @@ namespace CustomUnits {
     }
     public virtual void _FadeIn(float length) {
       if (this.__propertyBlock != null) {
-        Log.TWL(0, "GameRepresentation._FadeIn");
+        Log.Combat?.TWL(0, "GameRepresentation._FadeIn");
         bool MeshRendererCache_hasNulls = false;
         foreach (MeshRenderer renderer in this.__propertyBlock.MeshRendererCache) {
-          Log.WL(1, "MeshRenderer:" + (renderer == null ? "null" : renderer.gameObject.name));
+          Log.Combat?.WL(1, "MeshRenderer:" + (renderer == null ? "null" : renderer.gameObject.name));
           if (renderer == null) { MeshRendererCache_hasNulls = true;  break; }
         }
         if (MeshRendererCache_hasNulls) {
@@ -697,7 +764,7 @@ namespace CustomUnits {
         }
         bool SkinnedRendererCache_hasNulls = false;
         foreach (SkinnedMeshRenderer renderer in this.__propertyBlock.SkinnedRendererCache) {
-          Log.WL(1, "SkinnedMeshRenderer:" + (renderer == null ? "null" : renderer.gameObject.name));
+          Log.Combat?.WL(1, "SkinnedMeshRenderer:" + (renderer == null ? "null" : renderer.gameObject.name));
           if (renderer == null) { SkinnedRendererCache_hasNulls = true; break; }
         }
         if (SkinnedRendererCache_hasNulls) {
@@ -718,23 +785,23 @@ namespace CustomUnits {
       this.StartCoroutine(this.TurnOffWhenFaded(length));
       foreach (CustomMechRepresentation slave in slaveRepresentations) { slave._FadeOut(length); }
     }
-    private IEnumerator TurnOffWhenFaded(float seconds) {
+    private new IEnumerator TurnOffWhenFaded(float seconds) {
       yield return new WaitForSeconds(seconds);
       this.gameObject.SetActive(false);
       yield break;
     }
     public virtual void _refreshHighlight() {
-      if (this._isDead)
+      if (this.isDead)
         this._SetHighlightIntensity(GameRepresentation.HighlightType.Dead);
-      else if (this._isSelected)
+      else if (this.isSelected)
         this._SetHighlightIntensity(GameRepresentation.HighlightType.Selected);
-      else if (this._isTargeted)
+      else if (this.isTargeted)
         this._SetHighlightIntensity(GameRepresentation.HighlightType.Targeted);
-      else if (this._isHovered)
+      else if (this.isHovered)
         this._SetHighlightIntensity(GameRepresentation.HighlightType.Hovered);
-      else if (this._isTargetable)
+      else if (this.isTargetable)
         this._SetHighlightIntensity(GameRepresentation.HighlightType.AvailableTarget);
-      else if (this._isAvailable)
+      else if (this.isAvailable)
         this._SetHighlightIntensity(GameRepresentation.HighlightType.AvailableSelection);
       else
         this._SetHighlightIntensity(GameRepresentation.HighlightType.Default);
@@ -790,7 +857,7 @@ namespace CustomUnits {
       this.StartCoroutine(this.BlendWind(0.0f, 2f));
     }
 
-    private IEnumerator BlendWind(float target, float duration) {
+    private new IEnumerator BlendWind(float target, float duration) {
       float currentWind = this.windZone.windMain;
       float t = 0.0f;
       while ((double)t < (double)duration) {
@@ -866,7 +933,7 @@ namespace CustomUnits {
       this.gameObject.layer = LayerMask.NameToLayer("UI_IgnoreMouseEvents");
       if (deathMethod == DeathMethod.DespawnedNoMessage || deathMethod == DeathMethod.DespawnedEscaped)
         this.FadeOut(1f);
-      this.__IsDead = true;
+      this._IsDead = true;
     }
 
     public virtual void GameRepresentation_OnFootFall(int leftFoot) {

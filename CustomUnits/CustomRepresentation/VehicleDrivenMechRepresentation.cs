@@ -49,70 +49,70 @@ namespace CustomUnits {
     //public override void Test() { Log.TWL(0,"VehicleDrivenMechRepresentation.Test:"+(vehicleRep.parent == null?"null": vehicleRep.parent.name)); }
     public virtual Dictionary<Material, Material> destructedMaterials { get; set; } = new Dictionary<Material, Material>();
     public void Copy(VehicleRepresentation source) {
-      this._parentCombatant = Traverse.Create(source).Field<ICombatant>("_parentCombatant").Value;
-      this._parentActor = Traverse.Create(source).Field<AbstractActor>("_parentActor").Value;
-      this.thisCharacterController = Traverse.Create(source).Field<CharacterController>("thisCharacterController").Value;
-      this.thisIKController = Traverse.Create(source).Field<InverseKinematic>("thisIKController").Value;
-      this.audioObject = Traverse.Create(source).Field<AkGameObj>("audioObject").Value;
-      this.pilotRep = Traverse.Create(source).Field<PilotRepresentation>("pilotRep").Value;
-      this.vfxTransforms = Traverse.Create(source).Field<Transform[]>("vfxTransforms").Value;
-      this._allRaycastColliders = Traverse.Create(source).Field<Collider[]>("_allRaycastColliders").Value;
-      this.persistentVFXParticles = Traverse.Create(source).Field<Dictionary<string, List<ParticleSystem>>>("persistentVFXParticles").Value;
-      this.persistentDmgList = Traverse.Create(source).Field<List<string>>("persistentDmgList").Value;
-      this._propertyBlock = Traverse.Create(source).Field<PropertyBlockManager>("_propertyBlock").Value;
-      this.timePlacedOffScreen = Traverse.Create(source).Field<float>("timePlacedOffScreen").Value;
-      this.windZone = Traverse.Create(source).Field<WindZone>("windZone").Value;
-      this.baseWindIntensity = Traverse.Create(source).Field<float>("baseWindIntensity").Value;
-      this.edgeHighlight = Traverse.Create(source).Property<MechEdgeSelection>("edgeHighlight").Value;
-      this.currentHighlight = Traverse.Create(source).Property<GameRepresentation.HighlightType>("currentHighlight").Value;
-      this._isTargetable = Traverse.Create(source).Property<bool>("isTargetable").Value;
-      this._isTargeted = Traverse.Create(source).Property<bool>("isTargeted").Value;
-      this._isAvailable = Traverse.Create(source).Property<bool>("isAvailable").Value;
-      this._isSelected = Traverse.Create(source).Property<bool>("isSelected").Value;
-      this._isHovered = Traverse.Create(source).Property<bool>("isHovered").Value;
-      this._isDead = Traverse.Create(source).Property<bool>("isDead").Value;
+      this._parentCombatant = (source._parentCombatant);
+      this._parentActor = source._parentActor;
+      this.thisCharacterController = source.thisCharacterController;
+      this.thisIKController = source.thisIKController;
+      this.audioObject = source.audioObject;
+      this.pilotRep = source.pilotRep;
+      this.vfxTransforms = source.vfxTransforms;
+      this._allRaycastColliders = source._allRaycastColliders;
+      this.persistentVFXParticles = source.persistentVFXParticles;
+      this.persistentDmgList = source.persistentDmgList;
+      this._propertyBlock = source._propertyBlock;
+      this.timePlacedOffScreen = source.timePlacedOffScreen;
+      this.windZone = source.windZone;
+      this.baseWindIntensity = source.baseWindIntensity;
+      this.edgeHighlight = source.edgeHighlight;
+      this.currentHighlight = source.currentHighlight;
+      this.isTargetable = source.isTargetable;
+      this.isTargeted = source.isTargeted;
+      this.isAvailable = source.isAvailable;
+      this.isSelected = source.isSelected;
+      this.isHovered = source.isHovered;
+      this.isDead = source.isDead;
       // ---------------------- PilotableActorRepresentation -----------------------
       this.VisibleObjectLight = source.VisibleObjectLight;
       this.VisibleLights = source.VisibleLights;
       this.AuraReticle = source.AuraReticle;
-      this.blipPendingPosition = Traverse.Create(source).Field<Vector3>("blipPendingPosition").Value;
-      this.blipPendingRotation = Traverse.Create(source).Field<Quaternion>("blipPendingRotation").Value;
-      this.blipHasPendingPositionRotation = Traverse.Create(source).Field<bool>("blipHasPendingPositionRotation").Value;
-      this.blipLastUpdateTime = Traverse.Create(source).Field<float>("blipLastUpdateTime").Value;
+      this.blipPendingPosition = source.blipPendingPosition();
+      this.blipPendingRotation = source.blipPendingRotation();
+      this.blipHasPendingPositionRotation = source.blipHasPendingPositionRotation();
+      this.blipLastUpdateTime = source.blipLastUpdateTime();
       this.VFXCollider = source.VFXCollider;
-      this.currentSurfaceType = Traverse.Create(source).Field<AudioSwitch_surface_type>("currentSurfaceType").Value;
-      this.terrainImpactParticleName = Traverse.Create(source).Field<string>("terrainImpactParticleName").Value;
+      this.currentSurfaceType = source.currentSurfaceType();
+      this.terrainImpactParticleName = source.terrainImpactParticleName();
       this.twistTransform = source.twistTransform;
       this.currentTwistAngle = source.currentTwistAngle;
       this.miscComponentReps = source.miscComponentReps;
       this.weaponReps = source.weaponReps;
-      this.mainCollider = Traverse.Create(source).Field<CapsuleCollider>("mainCollider").Value;
-      this.paintSchemeInitialized = Traverse.Create(source).Field<bool>("paintSchemeInitialized").Value;
-      this.pooledPrefab = Traverse.Create(source).Field<PilotableActorRepresentation>("pooledPrefab").Value;
-      this.mech = Traverse.Create(source).Field<Mech>("mech").Value;
-      this.vehicle = Traverse.Create(source).Field<Vehicle>("vehicle").Value;
-      this.turret = Traverse.Create(source).Field<Turret>("turret").Value;
-      this.prefabId = Traverse.Create(source).Field<string>("prefabId").Value;
-      this.testGO = Traverse.Create(source).Field<GameObject>("testGO").Value;
-      this.framesCounted = Traverse.Create(source).Field<int>("framesCounted").Value;
-      this.framesToSkip = Traverse.Create(source).Field<int>("framesToSkip").Value;
-      this.rendererList = Traverse.Create(source).Field<List<Renderer>>("rendererList").Value;
-      this.localRenderer = Traverse.Create(source).Field<Renderer>("localRenderer").Value;
-      this.pooledPrefabRenderer = Traverse.Create(source).Field<Renderer>("pooledPrefabRenderer").Value;
-      this.sharedMaterialsSource = Traverse.Create(source).Field<Material[]>("sharedMaterialsSource").Value;
-      this.sharedMaterialsCopy = Traverse.Create(source).Field<Material[]>("sharedMaterialsCopy").Value;
-      this.defaultMaterial = Traverse.Create(source).Field<Material>("defaultMaterial").Value;
-      this.wasEvasiveLastFrame = Traverse.Create(source).Field<bool>("wasEvasiveLastFrame").Value;
-      this.guardedLastFrame = Traverse.Create(source).Field<bool>("guardedLastFrame").Value;
-      this.coverLastFrame = Traverse.Create(source).Field<bool>("coverLastFrame").Value;
-      this.wasUnsteadyLastFrame = Traverse.Create(source).Field<bool>("wasUnsteadyLastFrame").Value;
-      this.wasEntrenchedLastFrame = Traverse.Create(source).Field<bool>("wasEntrenchedLastFrame").Value;
+      this.mainCollider = source.mainCollider();
+      this.paintSchemeInitialized = source.paintSchemeInitialized();
+      this.pooledPrefab = source.pooledPrefab();
+      this.mech = source.mech();
+      this.vehicle = source.vehicle();
+      this.turret = source.turret();
+      this.prefabId = source.prefabId();
+      this.testGO = source.testGO();
+      this.framesCounted = source.framesCounted();
+      this.framesToSkip = source.framesToSkip();
+      this.rendererList = source.rendererList();
+      this.localRenderer = source.localRenderer();
+      this.pooledPrefabRenderer = source.pooledPrefabRenderer();
+      this.sharedMaterialsSource = source.sharedMaterialsSource();
+      this.sharedMaterialsCopy = source.sharedMaterialsCopy();
+      this.defaultMaterial = source.defaultMaterial();
+      this.wasEvasiveLastFrame = source.wasEvasiveLastFrame();
+      this.guardedLastFrame = source.guardedLastFrame();
+      this.coverLastFrame = source.coverLastFrame();
+      this.wasUnsteadyLastFrame = source.wasUnsteadyLastFrame();
+      this.wasEntrenchedLastFrame = source.wasEntrenchedLastFrame();
       this.forcedPlayerVisibilityLevel = source.forcedPlayerVisibilityLevel;
-      this.vfxNameModifier = Traverse.Create(source).Field<string>("vfxNameModifier").Value;
-      this.timeNow = Traverse.Create(source).Field<float>("timeNow").Value;
-      this.elapsedTime = Traverse.Create(source).Field<float>("elapsedTime").Value;
-      this.blipAlpha = Traverse.Create(source).Field<float>("blipAlpha").Value;
-      this.timeFromEnd = Traverse.Create(source).Field<float>("timeFromEnd").Value;
+      this.vfxNameModifier = source.vfxNameModifier();
+      this.timeNow = source.timeNow();
+      this.elapsedTime = source.elapsedTime();
+      this.blipAlpha = source.blipAlpha();
+      this.timeFromEnd = source.timeFromEnd();
 
       this.LeftArmAttach = source.BodyAttach;
       this.RightArmAttach = source.BodyAttach;
@@ -405,7 +405,7 @@ namespace CustomUnits {
       if (this.customRep != null) { this.customRep.InBattle = false; }
       List<string> stringList = new List<string>((IEnumerable<string>)this.persistentVFXParticles.Keys);
       for (int index = stringList.Count - 1; index >= 0; --index) { this.StopManualPersistentVFX(stringList[index]); }
-      this.__IsDead = true;
+      this._IsDead = true;
       if (deathMethod != DeathMethod.PilotKilled && !this.parentActor.WasEjected) {
         string vfxName;
         switch (Random.Range(0, 4)) {
@@ -427,7 +427,7 @@ namespace CustomUnits {
       this._ToggleHeadlights(false);
     }
     public override void PlayDeathVFX(DeathMethod deathMethod, int location) {
-      Log.TWL(0, "VehicleDrivenMechRepresentation.PlayDeathVFX deathMethod:" +deathMethod);
+      Log.Combat?.TWL(0, "VehicleDrivenMechRepresentation.PlayDeathVFX deathMethod:" +deathMethod);
       string vehicleDeathA = (string)this.parentCombatant.Combat.Constants.VFXNames.vehicleDeath_A;
       string vfxName;
       AudioEventList_vehicle eventEnumValue;
@@ -462,7 +462,7 @@ namespace CustomUnits {
         if (this.parentActor.Combat.IsLoadingFromSave) { return; }
         if (isSlave == false) {
           int num = (int)WwiseManager.PostEvent<AudioEventList_vehicle>(eventEnumValue, this.audioObject);
-          Log.WL(1, "WwiseManager.PostEvent:" + eventEnumValue+" result:"+num);
+          Log.Combat?.WL(1, "WwiseManager.PostEvent:" + eventEnumValue+" result:"+num);
         }
       }
     }
@@ -470,23 +470,23 @@ namespace CustomUnits {
       this.jumpjetReps.Clear();
       if (this.HasOwnVisuals == false) { return; }
       if (string.IsNullOrEmpty(Core.Settings.CustomJumpJetsComponentPrefab) == false) {
-        Log.WL(1, "VehicleDrivenMechRepresentation.SetupJumpJets");
+        Log.Combat?.WL(1, "VehicleDrivenMechRepresentation.SetupJumpJets");
         GameObject JumpJetSrcPrefab = null;
         try {
           JumpJetSrcPrefab = this.parentCombatant.Combat.DataManager.PooledInstantiate(Core.Settings.CustomJumpJetsComponentPrefab, BattleTechResourceType.Prefab);
           if (JumpJetSrcPrefab == null) {
-            Log.WL(2, "jumpJetSrcPrefab:" + (JumpJetSrcPrefab == null ? "null" : JumpJetSrcPrefab.name));
+            Log.Combat?.WL(2, "jumpJetSrcPrefab:" + (JumpJetSrcPrefab == null ? "null" : JumpJetSrcPrefab.name));
             return;
           }
           Transform JumpJetSrc = null;
           if (JumpJetSrcPrefab != null) {
             JumpJetSrc = JumpJetSrcPrefab.transform.FindRecursive(Core.Settings.CustomJumpJetsPrefabSrcObjectName);
-            Log.WL(2, "jumpJetSrc:" + (JumpJetSrc == null ? "null" : JumpJetSrc.name));
+            Log.Combat?.WL(2, "jumpJetSrc:" + (JumpJetSrc == null ? "null" : JumpJetSrc.name));
             if (JumpJetSrc == null) { return; }
           }
           List<Transform> jumpAttachs = new List<Transform>() { this.vfxLeftLegTransform, this.vfxRightLegTransform };
           foreach (Transform spawnJetPoint in jumpAttachs) {
-            if (spawnJetPoint == null) { Log.WL(5, "spawnJetPoint is null"); continue; }
+            if (spawnJetPoint == null) { Log.Combat?.WL(5, "spawnJetPoint is null"); continue; }
             GameObject jumpJetBase = new GameObject("jumpJet");
             jumpJetBase.transform.SetParent(spawnJetPoint);
             jumpJetBase.transform.localPosition = Vector3.zero;
@@ -503,13 +503,14 @@ namespace CustomUnits {
               psys.RegisterRestoreScale();
               var main = psys.main;
               main.scalingMode = ParticleSystemScalingMode.Hierarchy;
-              Log.WL(3, psys.name + ":" + psys.main.scalingMode);
+              Log.Combat?.WL(3, psys.name + ":" + psys.main.scalingMode);
             }
             this.jumpjetReps.Add(jRep);
             this.RegisterRenderersCustomHeraldry(jRep.gameObject, null);
           }
         } catch (Exception e) {
-          Log.TWL(0, e.ToString(), true);
+          Log.Combat?.TWL(0, e.ToString(), true);
+          AbstractActor.logger.LogException(e);
         }
         if (JumpJetSrcPrefab != null) { this.parentCombatant.Combat.DataManager.PoolGameObject(Core.Settings.CustomJumpJetsComponentPrefab, JumpJetSrcPrefab); }
       }
@@ -555,6 +556,5 @@ namespace CustomUnits {
       vector3.y += num2;
       return vector3;
     }
-
   }
 }

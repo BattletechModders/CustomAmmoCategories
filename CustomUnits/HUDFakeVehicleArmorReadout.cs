@@ -155,8 +155,8 @@ namespace CustomUnits {
     public void RefreshStructureIcons() {
       if (this.displayedVehicle == null) { return; }
       UnitCustomInfo info = this.displayedVehicle.GetCustomInfo();
-      Log.TWL(0, $"HUDFakeVehicleArmorReadout.RefreshStructureIcons {this.displayedVehicle.PilotableActorDef.ChassisID} structure:{(info.CustomStructure)}");
-      Log.WL(1, $"is_empty:{(info.customStructure == null?"null": info.customStructure.is_empty.ToString())}");
+      Log.M?.TWL(0, $"HUDFakeVehicleArmorReadout.RefreshStructureIcons {this.displayedVehicle.PilotableActorDef.ChassisID} structure:{(info.CustomStructure)}");
+      Log.M?.WL(1, $"is_empty:{(info.customStructure == null?"null": info.customStructure.is_empty.ToString())}");
       if ((info == null)||(info.customStructure == null)||(info.customStructure.is_empty)) {
         for (int i = 0; i < VStructure.Length; ++i) { if (VStructure[i] != null) {
             VStructure[i].vectorGraphics = default_VStructure[i].svg; } }
@@ -166,10 +166,10 @@ namespace CustomUnits {
       }
       for (int index = 0; index < 5; ++index) {
         ChassisLocations location = HUDVehicleArmorReadout.GetVCLocationFromIndex(index).toFakeChassis();
-        Log.WL(1, $"location:{location}");
+        Log.M?.WL(1, $"location:{location}");
         if (VArmorOutline[index] != null) {
           if (info.customStructure.OIcons.TryGetValue(location, out var oicon)) {
-            Log.WL(2, $"icon:{oicon.icon}");
+            Log.Combat?.WL(2, $"icon:{oicon.icon}");
             VArmorOutline[index].vectorGraphics = CustomSvgCache.get(oicon.icon, this.displayedVehicle.Combat.DataManager);
             if (VArmorOutline[index].vectorGraphics == null) {
               VArmorOutline[index].vectorGraphics = default_VArmorOutline[index].svg;
@@ -180,7 +180,7 @@ namespace CustomUnits {
         }
         if (VStructure[index] != null) {
           if (info.customStructure.SIcons.TryGetValue(location, out var sicon)) {
-            Log.WL(2, $"icon:{sicon}");
+            Log.M?.WL(2, $"icon:{sicon}");
             VStructure[index].vectorGraphics = CustomSvgCache.get(sicon.icon, this.displayedVehicle.Combat.DataManager);
             if (VStructure[index].vectorGraphics == null) {
               VStructure[index].vectorGraphics = default_VStructure[index].svg;
@@ -191,7 +191,7 @@ namespace CustomUnits {
         }
         if (VArmor[index] != null) {
           if (info.customStructure.AIcons.TryGetValue(location, out var aicon)) {
-            Log.WL(2, $"icon:{aicon}");
+            Log.M?.WL(2, $"icon:{aicon}");
             VArmor[index].vectorGraphics = CustomSvgCache.get(aicon.icon, this.displayedVehicle.Combat.DataManager);
             if (VArmor[index].vectorGraphics == null) {
               VArmor[index].vectorGraphics = default_VArmor[index].svg;
@@ -213,7 +213,7 @@ namespace CustomUnits {
       this.default_VStructure = new PaperDollIcon[csrc.VStructure.Length];
       this.default_VArmor = new PaperDollIcon[csrc.VArmor.Length];
       this.default_VArmorOutline = new PaperDollIcon[csrc.VArmorOutline.Length];
-      Log.TWL(0, "HUDFakeVehicleArmorReadout.Copy "+ esrc.gameObject.name);
+      Log.M?.TWL(0, "HUDFakeVehicleArmorReadout.Copy "+ esrc.gameObject.name);
       try {
         this.directionalIndicatorFront = csrc.directionalIndicatorFront;
         this.directionalIndicatorBack = csrc.directionalIndicatorBack;
@@ -245,7 +245,8 @@ namespace CustomUnits {
         }
 
       } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
+        Log.M?.TWL(0, e.ToString(), true);
+        UIManager.logger.LogException(e);
       }
     }
     public void Init(CombatHUD HUD, bool usedForCalledShots) {
@@ -287,7 +288,7 @@ namespace CustomUnits {
     private void RefreshHoverInfo() {
       if (!((Object)this.HoverInfoTextArmor != (Object)null) || !((Object)this.HoverInfoTextStructure != (Object)null) || (!((Object)this.ArmorBar != (Object)null) || !((Object)this.StructureBar != (Object)null)))
         return;
-      Log.TWL(0, "HUDFakeVehicleArmorReadout.RefreshHoverInfo "+ this.HoveredArmor);
+      Log.M?.TWL(0, "HUDFakeVehicleArmorReadout.RefreshHoverInfo "+ this.HoveredArmor);
       if (this.HoveredArmor == ChassisLocations.None) {
         float input1 = this.displayedVehicle.GetCurrentArmor(VehicleChassisLocations.Front.toFakeArmor()) 
           + this.displayedVehicle.GetCurrentArmor(VehicleChassisLocations.Turret.toFakeArmor()) 
@@ -324,7 +325,7 @@ namespace CustomUnits {
       }
       if (this.displayedVehicle != null && this.HoverInfoTextArmor != null && this.HoverInfoTextStructure != null) {
         if (!this.displayedVehicle.Combat.HostilityMatrix.IsLocalPlayerFriendly(this.displayedVehicle.TeamId)) {
-          Log.TWL(0,$"Hiding armor and structure on target: {(this.displayedVehicle.DisplayName)}");
+          Log.M?.TWL(0,$"Hiding armor and structure on target: {(this.displayedVehicle.DisplayName)}");
           LowVisibilityAPIHelper.ObfuscateArmorAndStructText(this.displayedVehicle, this.HoverInfoTextArmor, this.HoverInfoTextStructure);
         }
       }

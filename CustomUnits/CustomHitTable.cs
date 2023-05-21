@@ -17,7 +17,8 @@ namespace CustomUnits {
       try {
         CustomStructureDef.AddDefaults(__instance);
       } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
+        Log.E?.TWL(0, e.ToString(), true);
+        UnityGameInstance.logger.LogException(e);
       }
     }
   }
@@ -55,8 +56,9 @@ namespace CustomUnits {
             }
           }
         } catch(Exception e) {
-          Log.TWL(0,filename);
-          Log.WL(0, e.ToString(), true);
+          Log.M?.TWL(0,filename);
+          Log.M?.WL(0, e.ToString(), true);
+          UnityGameInstance.logger.LogException(e);
         }
       }
     }
@@ -231,7 +233,7 @@ namespace CustomUnits {
     public static readonly string DEFAULT_MECH_STRUCTURE_RULES = "mech";
     public static readonly string DEFAULT_VEHICLE_STRUCTURE_RULES = "vehicle";
     public static void AddDefaults(CombatGameConstants constants) {
-      Log.TWL(0,$"CustomStructureDef.AddDefaults");
+      Log.M?.TWL(0,$"CustomStructureDef.AddDefaults");
       if (rules.TryGetValue(DEFAULT_MECH_STRUCTURE_RULES, out var default_mech_rules) == false) {
         default_mech_rules = new CustomStructureDef();
         default_mech_rules.is_empty = false;
@@ -280,8 +282,9 @@ namespace CustomUnits {
         def.is_empty = false;
         rules[def.Id] = def;
       } catch(Exception e) {
-        Log.TWL(0,filepath);
-        Log.TWL(0,e.ToString(),true);
+        Log.M?.TWL(0,filepath);
+        Log.M?.TWL(0,e.ToString(),true);
+        UnityGameInstance.logger.LogException(e);
       }
     }
     public static CustomStructureDef Search(string id) {

@@ -36,10 +36,11 @@ namespace CustomUnits {
   [HarmonyPatch("TurnParam")]
   [HarmonyPatch(new Type[] { typeof(float) })]
   public static class ActorMovementSequence_TurnParam {
-    public static bool Prefix(ActorMovementSequence __instance, float value) {
-      if (__instance.owningActor.NoMoveAnimation() == false) { return true; }
-      Log.TWL(0, "ActorMovementSequence.TurnParam " + __instance.OwningActor.DisplayName + " TurnParam:"+value);
-      return false;
+    public static void Prefix(ref bool __runOriginal, ActorMovementSequence __instance, float value) {
+      if (!__runOriginal) { return; }
+      if (__instance.owningActor.NoMoveAnimation() == false) { return; }
+      Log.Combat?.TWL(0, "ActorMovementSequence.TurnParam " + __instance.OwningActor.DisplayName + " TurnParam:"+value);
+      __runOriginal = false; return;
     }
   }
   [HarmonyPatch(typeof(ActorMovementSequence))]
@@ -47,10 +48,11 @@ namespace CustomUnits {
   [HarmonyPatch("ForwardParam")]
   [HarmonyPatch(new Type[] { typeof(float) })]
   public static class ActorMovementSequence_ForwardParam {
-    public static bool Prefix(ActorMovementSequence __instance, float value) {
-      if (__instance.owningActor.NoMoveAnimation() == false) { return true; }
-      Log.TWL(0, "ActorMovementSequence.ForwardParam " + __instance.OwningActor.DisplayName + " ForwardParam:" + value);
-      return false;
+    public static void Prefix(ref bool __runOriginal, ActorMovementSequence __instance, float value) {
+      if (!__runOriginal) { return; }
+      if (__instance.owningActor.NoMoveAnimation() == false) { return; }
+      Log.Combat?.TWL(0, "ActorMovementSequence.ForwardParam " + __instance.OwningActor.DisplayName + " ForwardParam:" + value);
+      __runOriginal = false; return;
     }
   }
   [HarmonyPatch(typeof(ActorMovementSequence))]
@@ -58,10 +60,11 @@ namespace CustomUnits {
   [HarmonyPatch("IsMovingParam")]
   [HarmonyPatch(new Type[] { typeof(bool) })]
   public static class ActorMovementSequence_IsMovingParam {
-    public static bool Prefix(ActorMovementSequence __instance, bool value) {
-      if (__instance.owningActor.NoMoveAnimation() == false) { return true; }
-      Log.TWL(0, "ActorMovementSequence.IsMovingParam " + __instance.OwningActor.DisplayName + " IsMovingParam:" + value);
-      return false;
+    public static void Prefix(ref bool __runOriginal, ActorMovementSequence __instance, bool value) {
+      if (!__runOriginal) { return; }
+      if (__instance.owningActor.NoMoveAnimation() == false) { return; }
+      Log.Combat?.TWL(0, "ActorMovementSequence.IsMovingParam " + __instance.OwningActor.DisplayName + " IsMovingParam:" + value);
+      __runOriginal = false; return;
     }
   }
   [HarmonyPatch(typeof(ActorMovementSequence))]
@@ -69,10 +72,11 @@ namespace CustomUnits {
   [HarmonyPatch("BeginMovementParam")]
   [HarmonyPatch(new Type[] { typeof(bool) })]
   public static class ActorMovementSequence_BeginMovementParam {
-    public static bool Prefix(ActorMovementSequence __instance, bool value) {
-      if (__instance.owningActor.NoMoveAnimation() == false) { return true; }
-      Log.TWL(0, "ActorMovementSequence.BeginMovementParam " + __instance.OwningActor.DisplayName + " BeginMovementParam:" + value);
-      return false;
+    public static void Prefix(ref bool __runOriginal, ActorMovementSequence __instance, bool value) {
+      if (!__runOriginal) { return; }
+      if (__instance.owningActor.NoMoveAnimation() == false) { return; }
+      Log.Combat?.TWL(0, "ActorMovementSequence.BeginMovementParam " + __instance.OwningActor.DisplayName + " BeginMovementParam:" + value);
+      __runOriginal = false; return;
     }
   }
 }

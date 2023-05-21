@@ -12,18 +12,18 @@ namespace MechResizer {
         Transform parentTransform,
         bool isParented,
         VehicleRepresentation __instance) {
-      Log.TWL(0, "vehicle size initialization ");
+      Log.Combat?.TWL(0, "vehicle size initialization ");
       if (vehicle == null) { return; }
       var identifier = vehicle.VehicleDef.ChassisID;
       var sizeMultiplier = SizeMultiplier.Get(vehicle.VehicleDef);
-      Log.TWL(0, $"{identifier}: {sizeMultiplier}");
-      var originalLOSSourcePositions = Traverse.Create(vehicle).Field("originalLOSSourcePositions").GetValue<Vector3[]>();
-      var originalLOSTargetPositions = Traverse.Create(vehicle).Field("originalLOSTargetPositions").GetValue<Vector3[]>();
+      Log.Combat?.TWL(0, $"{identifier}: {sizeMultiplier}");
+      var originalLOSSourcePositions = vehicle.originalLOSSourcePositions;
+      var originalLOSTargetPositions = vehicle.originalLOSTargetPositions;
       var newSourcePositions = ModSettings.LOSSourcePositions(identifier, originalLOSSourcePositions, sizeMultiplier);
       var newTargetPositions = ModSettings.LOSTargetPositions(identifier, originalLOSTargetPositions, sizeMultiplier);
-      Traverse.Create(vehicle).Field("originalLOSSourcePositions").SetValue(newSourcePositions);
-      Traverse.Create(vehicle).Field("originalLOSTargetPositions").SetValue(newTargetPositions);
-      Traverse.Create(__instance.thisTransform).Property("localScale").SetValue(sizeMultiplier);
+      vehicle.originalLOSSourcePositions=(newSourcePositions);
+      vehicle.originalLOSTargetPositions=(newTargetPositions);
+      __instance.thisTransform.localScale=(sizeMultiplier);
     }
   }
 }

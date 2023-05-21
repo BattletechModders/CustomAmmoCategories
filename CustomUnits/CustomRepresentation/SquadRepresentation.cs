@@ -57,7 +57,7 @@ namespace CustomUnits {
         slave.Value.Init(this.custMech, this.j_Root, true);
         slave.Value.ApplyScale(unitScale);
       }
-      Log.TWL(0, "SquadRepresentaion.InitSlaves");
+      Log.Combat?.TWL(0, "SquadRepresentaion.InitSlaves");
       foreach (var slave in this.squad) {
         float xd = 0f;
         float yd = 0f;
@@ -66,7 +66,7 @@ namespace CustomUnits {
           yd = Mathf.Sin(Mathf.Deg2Rad * TrooperSquad.positions[slave.Key]) * TrooperSquad.SquadRadius;
         }
         Vector3 unitPos = new Vector3(xd, 0f, yd);
-        Log.WL(1, slave.Key.ToString() + ":" + unitPos);
+        Log.Combat?.WL(1, slave.Key.ToString() + ":" + unitPos);
         slave.Value.transform.localPosition = unitPos;
       }
     }
@@ -232,7 +232,7 @@ namespace CustomUnits {
         this._PlayUnitDeathFloatie(DeathMethod.CenterTorsoDestruction);
         if (this.currentLiveUnit == unit) {
           foreach (var liveunit in squad) {
-            if (liveunit.Value.__IsDead) { continue; }
+            if (liveunit.Value._IsDead) { continue; }
             this.currentLiveUnit = liveunit.Value; break;
           }
         }
@@ -410,7 +410,8 @@ namespace CustomUnits {
           unit.Value.OnPlayerVisibilityChangedCustom(newLevel);
         }
       } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
+        Log.Combat?.TWL(0, e.ToString(), true);
+        AbstractActor.logger.LogException(e);
       }
     }
     public override void _ToggleHeadlights(bool headlightsActive) {
@@ -551,21 +552,21 @@ namespace CustomUnits {
       if (!this.parentActor.WasEjected) {
         this.PlayDeathVFX(deathMethod, location);
         foreach (var unit in this.squad) {
-          if (unit.Value.__IsDead) { return; }
+          if (unit.Value._IsDead) { return; }
           unit.Value.PlayDeathVFX(deathMethod, location);
         }
       }
       List<string> stringList = new List<string>((IEnumerable<string>)this.persistentVFXParticles.Keys);
       for (int index = stringList.Count - 1; index >= 0; --index) { this.StopManualPersistentVFX(stringList[index]); }
-      this.__IsDead = true;
+      this._IsDead = true;
       foreach (var unit in this.squad) {
         stringList = new List<string>((IEnumerable<string>)unit.Value.persistentVFXParticles.Keys);
         for (int index = stringList.Count - 1; index >= 0; --index) { unit.Value.StopManualPersistentVFX(stringList[index]); }
-        if (unit.Value.__IsDead == false) { unit.Value.__IsDead = true; }
+        if (unit.Value._IsDead == false) { unit.Value._IsDead = true; }
       }
       if (deathMethod != DeathMethod.PilotKilled && !this.parentActor.WasEjected) {
         foreach (var unit in this.squad) {
-          if (unit.Value.__IsDead) { continue; }
+          if (unit.Value._IsDead) { continue; }
           string vfxName;
           switch (UnityEngine.Random.Range(0, 4)) {
             case 0:
@@ -607,7 +608,7 @@ namespace CustomUnits {
       return destructibleObject;
     }
     public override void InitWeapons(List<ComponentRepresentationInfo> compInfo, string parentDisplayName) {
-      Log.TWL(0, "SquadRepresentation.InitWeapons");
+      Log.Combat?.TWL(0, "SquadRepresentation.InitWeapons");
       Dictionary<ChassisLocations, List<ComponentRepresentationInfo>> squadComponents = new Dictionary<ChassisLocations, List<ComponentRepresentationInfo>>();
       UnitCustomInfo info = this.mech.MechDef.GetCustomInfo();
       foreach (ComponentRepresentationInfo winfo in compInfo) {
@@ -625,11 +626,11 @@ namespace CustomUnits {
         unitComponents.Add(unitCompInfo);
       }
       foreach (var unit in this.squad) {
-        Log.WL(1, unit.Key.ToString() + " " + unit.Value.gameObject.name);
+        Log.Combat?.WL(1, unit.Key.ToString() + " " + unit.Value.gameObject.name);
         if (squadComponents.TryGetValue(unit.Key, out List<ComponentRepresentationInfo> unitComponents)) {
           unit.Value.InitWeapons(unitComponents, parentDisplayName);
           foreach (ComponentRepresentationInfo comp in unitComponents) {
-            Log.WL(2, comp.attachLocation + ":" + comp.component.defId + ":" + comp.component.baseComponentRef.prefabName);
+            Log.Combat?.WL(2, comp.attachLocation + ":" + comp.component.defId + ":" + comp.component.baseComponentRef.prefabName);
           }
         }
       }
@@ -657,15 +658,18 @@ namespace CustomUnits {
       }
     }
     public override void CompleteJump(MechJumpSequence sequence) {
+      Vector3 finalpos = sequence.FinalPos;
       foreach (var unit in this.squad) {
         LocationDamageLevel dmgLvl = this.parentMech.GetLocationDamageLevel(unit.Key);
         if ((dmgLvl == LocationDamageLevel.Destroyed) || (dmgLvl == LocationDamageLevel.NonFunctional)) {
           unit.Value.transform.position = getDeathPosition(unit.Value);
           unit.Value.transform.rotation = getDeathRotation(unit.Value);
         } else {
+          sequence.FinalPos = finalpos + (unit.Value.j_Root.position - this.j_Root.position);
           unit.Value.CompleteJump(sequence);
         }
       }
+      sequence.FinalPos = finalpos;
     }
 
     public override void Twist(float angle) {
@@ -679,7 +683,7 @@ namespace CustomUnits {
     public override void _ToggleRandomIdles(bool shouldIdle) {
       if (this.parentMech.IsOrWillBeProne || !this.parentMech.IsOperational || this.parentMech.IsDead) { return; }
       base._allowRandomIdles = shouldIdle;
-      Log.TWL(0, "SquadRepresentation._ToggleRandomIdles " + shouldIdle + " " + this.parentMech.MechDef.ChassisID);
+      Log.Combat?.TWL(0, "SquadRepresentation._ToggleRandomIdles " + shouldIdle + " " + this.parentMech.MechDef.ChassisID);
       if (this._allowRandomIdles) { return; }
       if (this.IsInMeleeIdle) {
         this.thisAnimator.CrossFadeInFixedTime(this.idleStateMeleeEntryHash, 0.15f);
@@ -809,14 +813,14 @@ namespace CustomUnits {
         moveTransform.LookAt(moveTransform.position + forward, Vector3.up);
       }
       MoveSquadContext rayhit = context as MoveSquadContext;
-      Log.TWL(0,$"SquadRepresentation.UpdateRotation {this.chassisDef.Description.Id} pos:{this.transform.position}");
+      Log.Combat?.TWL(0,$"SquadRepresentation.UpdateRotation {this.chassisDef.Description.Id} pos:{this.transform.position}");
       foreach (var unit in this.squad) {
         LocationDamageLevel dmgLvl = this.parentMech.GetLocationDamageLevel(unit.Key);
         if ((dmgLvl == LocationDamageLevel.Destroyed) || (dmgLvl == LocationDamageLevel.NonFunctional)) { continue; }
         Vector3 squadpos = unit.Value.transform.position;
         MoveContext squadContext = unit.Value.GetMoveContext(ref squadpos);
         squadpos.y = unit.Value.transform.parent.position.y + (squadpos.y - this.transform.position.y);
-        Log.WL(1,$"{unit.Value.transform.position} -> {squadpos} raycast:{squadContext.mainRayHit.HasValue}");
+        Log.Combat?.WL(1,$"{unit.Value.transform.position} -> {squadpos} raycast:{squadContext.mainRayHit.HasValue}");
         unit.Value.transform.position = squadpos;
         unit.Value.UpdateRotation(squadContext, unit.Value.transform, forward, deltaT);
       }
@@ -828,7 +832,7 @@ namespace CustomUnits {
     //  return result;
     //}
     public override void PlayVehicleTerrainImpactVFX(bool forcedSlave = false) {
-      Log.TWL(0, "SquadRepresentation.PlayVehicleTerrainImpactVFX NoMoveAnimation:" + this.parentMech.NoMoveAnimation() + " FlyingHeight:" + this.parentMech.FlyingHeight() + " lastStateWasVisible:" + this.lastStateWasVisible);
+      Log.Combat?.TWL(0, "SquadRepresentation.PlayVehicleTerrainImpactVFX NoMoveAnimation:" + this.parentMech.NoMoveAnimation() + " FlyingHeight:" + this.parentMech.FlyingHeight() + " lastStateWasVisible:" + this.lastStateWasVisible);
       if ((this.rootParentRepresentation.BlipDisplayed) || (this.VisibleObject.activeInHierarchy == false)) {
         if (this.lastStateWasVisible == false) { return; }
         this.lastStateWasVisible = false;
@@ -846,7 +850,7 @@ namespace CustomUnits {
       }
     }
     public override void ApplyScale(Vector3 sizeMultiplier) {
-      Log.TWL(0, "SQUADS DOES NOT SUPPORT SCALING");
+      Log.Combat?.TWL(0, "SQUADS DOES NOT SUPPORT SCALING");
       return;
     }
   }

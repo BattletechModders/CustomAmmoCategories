@@ -29,39 +29,18 @@ namespace CustomUnits {
   [HarmonyPatch("GeneratePotentialContracts")]
   [HarmonyPatch(MethodType.Normal)]
   public static class SimGameState_GeneratePotentialContracts {
-    public static bool HasValidMaps(this SimGameState sim, StarSystem system, WeightedList<MapAndEncounters> playableMaps) {
-      return Traverse.Create(sim).Method("HasValidMaps", system, playableMaps).GetValue<bool>();
-    }
-    public static bool HasValidContracts(this SimGameState sim, object difficultyRange, Dictionary<int, List<ContractOverride>> potentialContracts) {
-      return (bool)sim.GetType().GetMethod("HasValidContracts", BindingFlags.Instance | BindingFlags.NonPublic).Invoke(sim, new object[] { difficultyRange, potentialContracts });
-    }
-    public static bool HasValidParticipants(this SimGameState sim, StarSystem system, object validParticipants) {
-      return (bool)sim.GetType().GetMethod("HasValidParticipants", BindingFlags.Instance | BindingFlags.NonPublic).Invoke(sim, new object[] { system, validParticipants });
-    }
-    private static bool HasContracts(this object MapEncounterContractData) {
-      return (bool)MapEncounterContractData.GetType().GetProperty("HasContracts", BindingFlags.Instance | BindingFlags.Public).GetGetMethod(false).Invoke(MapEncounterContractData, new object[] { });
-    }
-    private static HashSet<int> Contracts(this object MapEncounterContractData) {
-      return (HashSet<int>)MapEncounterContractData.GetType().GetField("Contracts", BindingFlags.Instance | BindingFlags.Public).GetValue(MapEncounterContractData);
-    }
-    public static object FillMapEncounterContractData(this SimGameState sim, StarSystem system, object diffRange, Dictionary<int, List<ContractOverride>> potentialContracts, object validTargets, MapAndEncounters level) {
-      return sim.GetType().GetMethod("FillMapEncounterContractData", BindingFlags.Instance | BindingFlags.NonPublic).Invoke(sim, new object[] { system, diffRange, potentialContracts, validTargets, level });
-    }
-    public static Contract CreateProceduralContract(this SimGameState sim, StarSystem system, bool usingBreadcrumbs, MapAndEncounters level, object MapEncounterContractData, GameContext gameContext) {
-      return (Contract)sim.GetType().GetMethod("CreateProceduralContract", BindingFlags.Instance | BindingFlags.NonPublic).Invoke(sim, new object[] { system, usingBreadcrumbs, level, MapEncounterContractData, gameContext });
-    }
     private static IEnumerator StartGeneratePotentialContractsRoutine(this SimGameState sim, bool clearExistingContracts, Action onContractGenComplete, StarSystem systemOverride, bool useWait) {
-      Log.TWL(0, "SimGameState.StartGeneratePotentialContractsRoutine");
+      Log.M?.TWL(0, "SimGameState.StartGeneratePotentialContractsRoutine");
       int debugCount = 0;
       bool usingBreadcrumbs = systemOverride != null;
       if (useWait) { yield return (object)new WaitForSeconds(0.2f); }
       StarSystem system = null;
       List<Contract> contractList = null;
-      object difficultyRange = null;
+      SimGameState.ContractDifficultyRange difficultyRange = null;
       WeightedList<MapAndEncounters> playableMaps = null;
       int maxContracts = 0;
       Dictionary<int, List<ContractOverride>> potentialContracts = null;
-      object validParticipants = null;
+      Dictionary<string, WeightedList<SimGameState.ContractParticipants>> validParticipants = null;
       try {
         if (usingBreadcrumbs) {
           system = systemOverride;
@@ -73,43 +52,46 @@ namespace CustomUnits {
           maxContracts = Mathf.CeilToInt(system.CurMaxContracts);
         }
         if (clearExistingContracts) { contractList.Clear(); }
-        difficultyRange = Traverse.Create(sim).Method("GetContractRangeDifficultyRange", system, sim.SimGameMode, sim.GlobalDifficulty).GetValue();// .GetContractRangeDifficultyRange(system, sim.SimGameMode, sim.GlobalDifficulty);
-        potentialContracts = Traverse.Create(sim).Method("GetSinglePlayerProceduralContractOverrides", difficultyRange).GetValue<Dictionary<int, List<ContractOverride>>>();
+        difficultyRange = sim.GetContractRangeDifficultyRange(system, sim.SimGameMode, sim.GlobalDifficulty);// .GetContractRangeDifficultyRange(system, sim.SimGameMode, sim.GlobalDifficulty);
+        potentialContracts = sim.GetSinglePlayerProceduralContractOverrides(difficultyRange);
         playableMaps = MetadataDatabase.Instance.GetReleasedMapsAndEncountersBySinglePlayerProceduralContractTypeAndTags(system.Def.MapRequiredTags, system.Def.MapExcludedTags, system.Def.SupportedBiomes, true).ToWeightedList<MapAndEncounters>(WeightedListType.SimpleRandom);
-        validParticipants = Traverse.Create(sim).Method("GetContractRangeDifficultyRange", system).GetValue();
+        validParticipants = sim.GetValidParticipants(system);
       } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
+        Log.M?.TWL(0, e.ToString(), true);
+        SimGameState.logger.LogException(e);
       }
       bool genComplete = true;
       try {
         genComplete = !sim.HasValidMaps(system, playableMaps) || !sim.HasValidContracts(difficultyRange, potentialContracts) || !sim.HasValidParticipants(system, validParticipants);
       } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
+        Log.M?.TWL(0, e.ToString(), true);
+        SimGameState.logger.LogException(e);
       }
       if (genComplete) {
         if (onContractGenComplete != null)
           onContractGenComplete();
       } else {
         try {
-          Traverse.Create(sim).Method("ClearUsedBiomeFromDiscardPile", playableMaps).GetValue();
+          sim.ClearUsedBiomeFromDiscardPile(playableMaps);
         } catch (Exception e) {
-          Log.TWL(0, e.ToString(), true);
+          Log.M?.TWL(0, e.ToString(), true);
+          SimGameState.logger.LogException(e);
         }
         while (contractList.Count < maxContracts && debugCount < 1000) {
           try {
             ++debugCount;
             IEnumerable<int> source = playableMaps.Select<MapAndEncounters, int>((Func<MapAndEncounters, int>)(map => map.Map.Weight));
             WeightedList<MapAndEncounters> activeMaps = new WeightedList<MapAndEncounters>(WeightedListType.WeightedRandom, playableMaps.ToList(), source.ToList<int>());
-            Traverse.Create(sim).Method("FilterActiveMaps", activeMaps, contractList).GetValue();
+            sim.FilterActiveMaps(activeMaps, contractList);
             activeMaps.Reset();
             MapAndEncounters next = activeMaps.GetNext(false);
-            object MapEncounterContractData;
-            for (MapEncounterContractData = sim.FillMapEncounterContractData(system, difficultyRange, potentialContracts, validParticipants, next); !MapEncounterContractData.HasContracts() && activeMaps.ActiveListCount > 0; MapEncounterContractData = sim.FillMapEncounterContractData(system, difficultyRange, potentialContracts, validParticipants, next))
+            SimGameState.MapEncounterContractData MapEncounterContractData;
+            for (MapEncounterContractData = sim.FillMapEncounterContractData(system, difficultyRange, potentialContracts, validParticipants, next); !MapEncounterContractData.HasContracts && activeMaps.ActiveListCount > 0; MapEncounterContractData = sim.FillMapEncounterContractData(system, difficultyRange, potentialContracts, validParticipants, next))
               next = activeMaps.GetNext(false);
             system.SetCurrentContractFactions();
-            if (MapEncounterContractData == null || MapEncounterContractData.Contracts().Count == 0) {
-              if (Traverse.Create(sim).Field<List<string>>("mapDiscardPile").Value.Count > 0) {
-                Traverse.Create(sim).Field<List<string>>("mapDiscardPile").Value.Clear();
+            if (MapEncounterContractData == null || MapEncounterContractData.Contracts.Count == 0) {
+              if (sim.mapDiscardPile.Count > 0) {
+                sim.mapDiscardPile.Clear();
               } else {
                 debugCount = 1000;
                 SimGameState.logger.LogError((object)string.Format("[CONTRACT] Unable to find any valid contracts for available map pool. Alert designers.", (object[])Array.Empty<object>()));
@@ -119,7 +101,8 @@ namespace CustomUnits {
             gameContext.SetObject(GameContextObjectTagEnum.TargetStarSystem, (object)system);
             contractList.Add(sim.CreateProceduralContract(system, usingBreadcrumbs, next, MapEncounterContractData, gameContext));
           } catch (Exception e) {
-            Log.TWL(0, e.ToString(), true);
+            Log.M?.TWL(0, e.ToString(), true);
+            SimGameState.logger.LogException(e);
           }
           if (useWait) { yield return (object)new WaitForSeconds(0.2f); }
         }
@@ -155,12 +138,12 @@ namespace CustomUnits {
   [HarmonyPatch(new Type[] { typeof(AbstractActor) })]
   public static class CombatHUDMechwarriorTray_ResetMechwarriorButtons_dbg {
     public static void Prefix(CombatHUDMechwarriorTray __instance, AbstractActor actor) {
-      Log.TWL(0, "CombatHUDMechwarriorTray.ResetMechwarriorButtons debug:" + (actor == null ? "null" : actor.DisplayName));
+      Log.Combat?.TWL(0, "CombatHUDMechwarriorTray.ResetMechwarriorButtons debug:" + (actor == null ? "null" : actor.DisplayName));
       if (actor != null) {
-        Log.WL(1, "actor.HasActivatedThisRound:" + actor.HasActivatedThisRound);
-        Log.WL(1, "actor.IsAvailableThisPhase:" + actor.IsAvailableThisPhase);
-        Log.WL(1, "Combat.StackManager.IsAnyOrderActive:" + actor.Combat.StackManager.IsAnyOrderActive);
-        Log.WL(1, "TurnDirector.IsInterleaved:" + actor.Combat.TurnDirector.IsInterleaved);
+        Log.Combat?.WL(1, "actor.HasActivatedThisRound:" + actor.HasActivatedThisRound);
+        Log.Combat?.WL(1, "actor.IsAvailableThisPhase:" + actor.IsAvailableThisPhase);
+        Log.Combat?.WL(1, "Combat.StackManager.IsAnyOrderActive:" + actor.Combat.StackManager.IsAnyOrderActive);
+        Log.Combat?.WL(1, "TurnDirector.IsInterleaved:" + actor.Combat.TurnDirector.IsInterleaved);
       }
     }
   }
@@ -298,7 +281,7 @@ namespace CustomUnits {
               if (popup != null) popup.TextContent = text.ToString();
             }
           } catch (Exception e) {
-            Log.TWL(0, e.ToString(), true);
+            Log.Combat?.TWL(0, e.ToString(), true);
           }
         }), false)
         .AddButton("<-", (Action)(() => {
@@ -316,7 +299,7 @@ namespace CustomUnits {
               if (popup != null) popup.TextContent = text.ToString();
             }
           } catch (Exception e) {
-            Log.TWL(0, e.ToString(), true);
+            Log.Combat?.TWL(0, e.ToString(), true);
           }
         }), false).AddButton("DROP", (Action)(() => {
           hotdropManager.HotDrop(invList[curIndex].Key, pos, parent.GUID);
@@ -329,7 +312,7 @@ namespace CustomUnits {
       if (this.Combat == null) { return; }
       if (string.IsNullOrEmpty(spawnGUID)) { throw new Exception("spawnGUID should not be empty"); }
       this.UpdateDropped();
-      Log.TWL(0, "HotDropManager.HotDrop " + index);
+      Log.Combat?.TWL(0, "HotDropManager.HotDrop " + index);
       if ((index < 0) || (index >= dropPoints.Count)) { return; }
       if (dropPoints[index].dropDef == null) { return; }
       if (dropPoints[index].unit != null) { return; }
@@ -341,10 +324,10 @@ namespace CustomUnits {
       if (this.Combat == null) { return; }
       if (string.IsNullOrEmpty(spawnGUID)) { throw new Exception("spawnGUID should not be empty"); }
       this.UpdateDropped();
-      Log.TWL(0, "HotDropManager.HotDrop");
+      Log.Combat?.TWL(0, "HotDropManager.HotDrop");
       foreach (Vector3 pos in positions) {
         foreach (HotDropPoint dropPoint in this.dropPoints) {
-          Log.WL(1, "dropDef:" + (dropPoint.dropDef == null ? "null" : dropPoint.dropDef.mechDef.Description.Id) + " unit:" + (dropPoint.unit == null ? "null" : dropPoint.unit.DisplayName) + " InDroping:" + dropPoint.InDroping);
+          Log.Combat?.WL(1, "dropDef:" + (dropPoint.dropDef == null ? "null" : dropPoint.dropDef.mechDef.Description.Id) + " unit:" + (dropPoint.unit == null ? "null" : dropPoint.unit.DisplayName) + " InDroping:" + dropPoint.InDroping);
           if (dropPoint.dropDef == null) { continue; }
           if (dropPoint.unit != null) { continue; }
           if (dropPoint.InDroping) { continue; }
@@ -387,7 +370,7 @@ namespace CustomUnits {
       mech.OnPositionUpdate(this.transform.position, Quaternion.identity, -1, true, (List<DesignMaskDef>)null, false);
       mech.BehaviorTree = BehaviorTreeFactory.MakeBehaviorTree(mech.Combat.BattleTechGame, mech, BehaviorTreeIDEnum.DoNothingTree); ;
       UnityGameInstance.BattleTechGame.Combat.MessageCenter.PublishMessage((MessageCenterMessage)new UnitSpawnedMessage("HOTDROP_SPAWNER", mech.GUID));
-      Log.WL(1, "spawned:" + mech.PilotableActorDef.Description.Id + ":" + mech.pilot.Description.Id + " " + mech.CurrentPosition);
+      Log.Combat?.WL(1, "spawned:" + mech.PilotableActorDef.Description.Id + ":" + mech.pilot.Description.Id + " " + mech.CurrentPosition);
       this.unit = mech;
       unit.PlaceFarAwayFromMap();
       this.parent.Combat.ItemRegistry.AddItem(unit);
@@ -401,7 +384,7 @@ namespace CustomUnits {
       this.spawnGUID = sGUID;
       this.onDropCompleete = onDropEnd;
       this.gameObject.transform.position = pos;
-      Log.TWL(0, "HotDropPoint.HotDrop:" + pos + " " + this.dropDef.mechDef.Description.Id + ":deps - " + this.dropDef.mechDef.DependenciesLoaded(1000u) + " pilot:" + this.dropDef.pilot.pilotDef.Description.Id + " deps - " + this.dropDef.pilot.pilotDef.DependenciesLoaded(1000u));
+      Log.Combat?.TWL(0, "HotDropPoint.HotDrop:" + pos + " " + this.dropDef.mechDef.Description.Id + ":deps - " + this.dropDef.mechDef.DependenciesLoaded(1000u) + " pilot:" + this.dropDef.pilot.pilotDef.Description.Id + " deps - " + this.dropDef.pilot.pilotDef.DependenciesLoaded(1000u));
       if (
         (this.dropDef.mechDef.DependenciesLoaded(1000u) == false)
         || (this.dropDef.pilot.pilotDef.DependenciesLoaded(1000u) == false)
@@ -440,7 +423,7 @@ namespace CustomUnits {
         this.dropPodVfxPrefab.Simulate(0.0f);
         this.dropPodVfxPrefab.Play();
       } else {
-        Log.TWL(0, "Null drop pod animation for this biome.");
+        Log.Combat?.TWL(0, "Null drop pod animation for this biome.");
       }
       yield return (object)new WaitForSeconds(1f);
       int num2 = (int)WwiseManager.PostEvent<AudioEventList_play>(AudioEventList_play.play_dropPod_impact, WwiseManager.GlobalAudioObject);

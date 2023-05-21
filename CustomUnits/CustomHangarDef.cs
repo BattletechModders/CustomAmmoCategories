@@ -107,8 +107,8 @@ namespace CustomUnits {
       if (BayPanel == null) { return; }
       if (SimGame.mechBayPanel() == null) { return; }
       try {
-        Transform layout_storageScroller = Traverse.Create(this.BayPanel).Field<MechBayMechStorageWidget>("storageWidget").Value.gameObject.transform.FindRecursive("layout_storageScroller");
-        Transform layout_bays = Traverse.Create(this.parent).Field<MechBayRowGroupWidget>("rowGroupWidget").Value.gameObject.transform.FindRecursive("layout_bays");
+        Transform layout_storageScroller = this.BayPanel.storageWidget.gameObject.transform.FindRecursive("layout_storageScroller");
+        Transform layout_bays = this.parent.rowGroupWidget.gameObject.transform.FindRecursive("layout_bays");
         if ((layout_storageScroller != null) && (layout_bays != null)) {
           GameObject layout_baysScroller = GameObject.Instantiate(layout_storageScroller.gameObject);
           layout_baysScroller.transform.SetParent(layout_bays.parent);
@@ -133,25 +133,25 @@ namespace CustomUnits {
           vertical.spacing = old_vertical.spacing;
           vertical.padding = old_vertical.padding;
           HashSet<Transform> old_childs = new HashSet<Transform>();
-          Log.TWL(0, "CustomBaysPopupUICaster.Spawn grid already contains:"+ gridGO.transform.childCount);
+          Log.M?.TWL(0, "CustomBaysPopupUICaster.Spawn grid already contains:"+ gridGO.transform.childCount);
           for(int t=0;t < gridGO.transform.childCount; ++t) {
             old_childs.Add(gridGO.transform.GetChild(t));
           }
           foreach (Transform child in old_childs) {
-            Log.WL(1,"removing:"+child.name, true);
+            Log.M?.WL(1,"removing:"+child.name, true);
             GameObject.DestroyImmediate(child.gameObject);
           }
           HashSet<Transform> childs = new HashSet<Transform>();
-          List<MechBayRowWidget> rows = new List<MechBayRowWidget>(Traverse.Create(this.parent).Field<MechBayRowGroupWidget>("rowGroupWidget").Value.Bays);
+          List<MechBayRowWidget> rows = new List<MechBayRowWidget>(this.parent.rowGroupWidget.Bays);
           Transform rowsParent = rows[0].gameObject.transform.parent;
-          Log.TWL(0, "CustomBaysPopupUICaster.Spawn rowsParent:"+ rowsParent.name);
+          Log.M?.TWL(0, "CustomBaysPopupUICaster.Spawn rowsParent:"+ rowsParent.name);
           for (int t = 0; t < rows[0].gameObject.transform.parent.childCount; ++t) {
             Transform child = rows[0].gameObject.transform.parent.GetChild(t); childs.Add(child);
-            Log.WL(1, child.name);
+            Log.M?.WL(1, child.name);
           }
           foreach (Transform child in childs) {
             child.SetParent(gridGO.transform);
-            Log.WL(1, child.name+".parent => "+ child.parent.transform.name);
+            Log.M?.WL(1, child.name+".parent => "+ child.parent.transform.name);
           }
           layout_bays.gameObject.SetActive(false);
           //foreach (MechBayRowWidget row in Traverse.Create(this.parent).Field<MechBayRowGroupWidget>("rowGroupWidget").Value.Bays) {
@@ -169,12 +169,12 @@ namespace CustomUnits {
             bayRowGO.transform.SetSiblingIndex(t);
             rows.Add(bayRowGO.GetComponent<MechBayRowWidget>());
           }
-          Traverse.Create(Traverse.Create(this.parent).Field<MechBayRowGroupWidget>("rowGroupWidget").Value).Field<MechBayRowWidget[]>("bays").Value = rows.ToArray();
-          Traverse.Create(this.parent).Field<MechBayRowGroupWidget>("rowGroupWidget").Value.SetData(this.parent, this.SimGame);
+          this.parent.rowGroupWidget.bays = rows.ToArray();
+          this.parent.rowGroupWidget.SetData(this.parent, this.SimGame);
         }
         UIInited = true;
       }catch(Exception e) {
-        Log.TWL(0,e.ToString(),true);
+        Log.E?.TWL(0,e.ToString(),true);
       }
     }
   }
@@ -253,14 +253,14 @@ namespace CustomUnits {
             if (btn_ctrl == null) { btn_ctrl = this.gameObject.AddComponent<CustomBaysButtonsController>(); }
             this.currentBay = this.mainBay;
             btn_ctrl.parent = this;
-            currentHangarInfo = Traverse.Create(this.BayPanel).Field<MechBayRowGroupWidget>("bayGroupWidget").Value.gameObject.GetComponent<CustomHangarInfo>();
+            currentHangarInfo = this.BayPanel.bayGroupWidget.gameObject.GetComponent<CustomHangarInfo>();
             if (currentHangarInfo == null) {
-              currentHangarInfo = Traverse.Create(this.BayPanel).Field<MechBayRowGroupWidget>("bayGroupWidget").Value.gameObject.AddComponent<CustomHangarInfo>();
+              currentHangarInfo = this.BayPanel.bayGroupWidget.gameObject.AddComponent<CustomHangarInfo>();
             }
             currentHangarInfo.definition = null;
           }
-          Transform layout_storageScroller = Traverse.Create(this.BayPanel).Field<MechBayMechStorageWidget>("storageWidget").Value.gameObject.transform.FindRecursive("layout_storageScroller");
-          Transform layout_bays = Traverse.Create(this.BayPanel).Field<MechBayRowGroupWidget>("bayGroupWidget").Value.gameObject.transform.FindRecursive("layout_bays");
+          Transform layout_storageScroller = this.BayPanel.storageWidget.gameObject.transform.FindRecursive("layout_storageScroller");
+          Transform layout_bays = this.BayPanel.bayGroupWidget.gameObject.transform.FindRecursive("layout_bays");
           if ((layout_storageScroller != null)&&(layout_bays != null)) {
             GameObject layout_baysScroller = GameObject.Instantiate(layout_storageScroller.gameObject);
             layout_baysScroller.transform.SetParent(layout_bays.parent);
@@ -284,12 +284,12 @@ namespace CustomUnits {
             vertical.spacing = old_vertical.spacing;
             vertical.padding = old_vertical.padding;
             HashSet<Transform> old_childs = new HashSet<Transform>();
-            Log.TWL(0, "CustomBaysUICaster.Spawn grid already contains:" + gridGO.transform.childCount);
+            Log.M?.TWL(0, "CustomBaysUICaster.Spawn grid already contains:" + gridGO.transform.childCount);
             for (int t = 0; t < gridGO.transform.childCount; ++t) {
               old_childs.Add(gridGO.transform.GetChild(t));
             }
             foreach (Transform child in old_childs) {
-              Log.WL(1, "removing:" + child.name, true);
+              Log.M?.WL(1, "removing:" + child.name, true);
               GameObject.DestroyImmediate(child.gameObject);
             }
             layout_bays.gameObject.SetActive(false);
@@ -301,7 +301,7 @@ namespace CustomUnits {
             List<MechBayRowWidget> rows = new List<MechBayRowWidget>(Traverse.Create(this.BayPanel).Field<MechBayRowGroupWidget>("bayGroupWidget").Value.Bays);
             int baysCount = Core.Settings.baysWidgetsCount > rows.Count? Core.Settings.baysWidgetsCount : rows.Count;
             for (int t = rows.Count; t < baysCount; ++t) {
-              Log.WL(1, $"Instantiate:{t}");
+              Log.M?.WL(1, $"Instantiate:{t}");
               //GameObject bayRowGO = GameObject.Instantiate(rows[0].gameObject);
               //"uixPrfPanl_SIM_mechBay_bay-Element";
               //bool needInit = false;
@@ -319,18 +319,19 @@ namespace CustomUnits {
               //if (needInit) {
                 UIModule[] modules = bayRowGO.GetComponentsInChildren<UIModule>(true);
                 foreach (UIModule module in modules) {
-                  Log.WL(3, $"initing UI module {module.name}:{module.GetType()}");
+                  Log.M?.WL(3, $"initing UI module {module.name}:{module.GetType()}");
                   module.Init();
                 }
               //}
               rows.Add(bayRowGO.GetComponent<MechBayRowWidget>());
             }
-            Traverse.Create(Traverse.Create(this.BayPanel).Field<MechBayRowGroupWidget>("bayGroupWidget").Value).Field<MechBayRowWidget[]>("bays").Value = rows.ToArray();
+            this.BayPanel.bayGroupWidget.bays = rows.ToArray();
             BayPanel.ViewBays();
           }
         }
       } catch(Exception e) {
-        Log.TWL(0,e.ToString(),true);
+        Log.E?.TWL(0,e.ToString(),true);
+        UIManager.logger.LogException(e);
       }
     }
   }
@@ -340,15 +341,16 @@ namespace CustomUnits {
   [HarmonyPatch(new Type[] { typeof(int) })]
   public static class MechBayPanel_GetBayRowFromSlot {
     public static void Prefix(MechBayPanel __instance,ref int slot) {
-      Log.TWL(0, "MechBayPanel.GetBayRowFromSlot "+slot);
+      Log.M?.TWL(0, "MechBayPanel.GetBayRowFromSlot "+slot);
       try {
         CustomHangarInfo hangar = __instance.GetComponentInChildren<CustomHangarInfo>();
         if (hangar == null) { return; }
         if (hangar.definition == null) { return; }
         slot -= hangar.definition.PositionShift;
-        Log.WL(1, "hangar:"+hangar.definition.Description.Id+" slot:"+slot);
+        Log.M?.WL(1, "hangar:"+hangar.definition.Description.Id+" slot:"+slot);
       } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
+        Log.E?.TWL(0, e.ToString(), true);
+        MechBayPanel.logger.LogException(e);
       }
     }
   }
@@ -358,7 +360,7 @@ namespace CustomUnits {
   [HarmonyPatch(new Type[] { })]
   public static class MechBayPanel_ViewMechStorage {
     public static void Postfix(MechBayPanel __instance, MechBayRowGroupWidget ___bayGroupWidget, SimGameState ___sim) {
-      Log.TWL(0, "MechBayPanel.ViewMechStorage ");
+      Log.M?.TWL(0, "MechBayPanel.ViewMechStorage ");
       try {
         CustomHangarInfo hangar = ___bayGroupWidget.GetComponentInChildren<CustomHangarInfo>();
         if (hangar == null) { return; }
@@ -371,7 +373,8 @@ namespace CustomUnits {
           baysUI.mainBay.gameObject.GetComponentInChildren<LocalizableText>(true).SetText("Mech Bays");
         }
       } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
+        Log.E?.TWL(0, e.ToString(), true);
+        MechBayPanel.logger.LogException(e);
       }
     }
   }
@@ -384,7 +387,7 @@ namespace CustomUnits {
     public static MechBayPanel mechBayPanel(this SimGameState sim) { return f_mechBayPanel; }
     public static void Prefix(MechBayPanel __instance, SimGameState sim) {
       try {
-        Log.TWL(0, "MechBayPanel.Init");
+        Log.M?.TWL(0, "MechBayPanel.Init");
         f_mechBayPanel = __instance;
         Transform layout_tabs = __instance.gameObject.transform.FindRecursive("layout_tabs");
         if (layout_tabs != null) {
@@ -394,9 +397,10 @@ namespace CustomUnits {
         }
 
       } catch(Exception e) {
-        Log.TWL(0,e.ToString(), true);
+        Log.E?.TWL(0,e.ToString(), true);
+        MechBayPanel.logger.LogException(e);
       }
-      Log.TWL(0, "MechBayPanel.Inited");
+      Log.M?.TWL(0, "MechBayPanel.Inited");
     }
   }
   public static class CustomHangarHelper {

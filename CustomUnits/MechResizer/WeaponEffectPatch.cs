@@ -1,4 +1,5 @@
 ﻿using BattleTech;
+using CustomUnits;
 using HarmonyLib;
 using UnityEngine;
 using static MechResizer.MechResizer;
@@ -11,9 +12,9 @@ namespace MechResizer
         static bool Prefix(WeaponEffect __instance)
         {
             var multiplier = SizeMultiplier.Get(__instance.weapon.weaponDef);
-            var ogTransform = Traverse.Create(__instance).Field("projectileTransform").GetValue<Transform>();
+            var ogTransform = __instance.projectileTransform();
             ogTransform.localScale = multiplier;
-            Traverse.Create(__instance).Field("projectileTransform").SetValue(ogTransform);
+            __instance.projectileTransform(ogTransform);
             return true;
         }
     }

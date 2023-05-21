@@ -454,6 +454,8 @@ namespace CustAmmoCategories {
     public float AIUnsafeJamChance { get; set; } = 1f;
     public float ScaleWeaponHeat { get; set; } = 150f;
     public int ExternalHeatLimit { get; set; } = 149;
+    public bool AMSUseAttractiveness { get; set; } = true;
+    public int AMSDefaultInterceptedTrace { get; set; } = 2;
     public Settings() {
       //directory = string.Empty;
       //debugLog = true;

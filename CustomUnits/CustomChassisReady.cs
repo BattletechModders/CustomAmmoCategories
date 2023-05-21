@@ -40,7 +40,8 @@ namespace CustomUnits {
         string path = Path.Combine(BaseDirectory, layout.ChassisId + "_" + layout.Name + ".json");
         File.WriteAllText(path, JsonConvert.SerializeObject(layout, Formatting.Indented));
       }catch(Exception e) {
-        Log.TWL(0,e.ToString(),true);
+        Log.M?.TWL(0,e.ToString(),true);
+        UnityGameInstance.logger.LogException(e);
       }
     }
     public static List<SavedLoadout> Load(string ChassisId) {
@@ -51,11 +52,12 @@ namespace CustomUnits {
           try {
             result.Add(JsonConvert.DeserializeObject<SavedLoadout>(File.ReadAllText(f)));
           } catch (Exception e) {
-            Log.TWL(0, e.ToString(), true);
+            Log.M?.TWL(0, e.ToString(), true);
           }
         }
       }catch(Exception e) {
-        Log.TWL(0, e.ToString(), true);
+        Log.E?.TWL(0, e.ToString(), true);
+        UIManager.logger.LogException(e);
       }
       return result;
     }
@@ -149,7 +151,7 @@ namespace CustomUnits {
           default: return null;
         }
       } catch(Exception e) {
-        Log.TWL(0, e.ToString(), true);
+        Log.Combat?.TWL(0, e.ToString(), true);
       }
       return null;
     }
@@ -187,7 +189,7 @@ namespace CustomUnits {
     }
     public bool CheckWidgetNonStripped(MechLabLocationWidget widget, string name) {
       try {
-        List<MechLabItemSlotElement> localInventory = Traverse.Create(widget).Field<List<MechLabItemSlotElement>>("localInventory").Value;
+        List<MechLabItemSlotElement> localInventory = widget.localInventory;
         foreach (MechLabItemSlotElement item in localInventory) {
           if (item.ComponentRef.IsFixed == false) {
             return false;
@@ -195,7 +197,7 @@ namespace CustomUnits {
         }
         return true;
       }catch(Exception e) {
-        Log.TWL(0,e.ToString(),true);
+        Log.Combat?.TWL(0,e.ToString(),true);
       }
       return false;
     }
@@ -212,7 +214,7 @@ namespace CustomUnits {
         if (this.CheckWidgetNonStripped(this.mechLabPanel.rightLegWidget, "RL") == false) { return false; }
         return true;
       } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
+        Log.M?.TWL(0, e.ToString(), true);
       }
       return false;
     }
@@ -261,19 +263,19 @@ namespace CustomUnits {
     }
     public Localize.Text DropToLocation(ListElementController_BASE_NotListView item, MechLabLocationWidget locationWidget) {
       //this.mechLabPanel.OnItemGrab(item.ItemWidget, null);
-      Log.TWL(0, "DropToLocation "+(item.componentDef!=null?item.componentDef.Description.Id:"null")+" location:"+locationWidget.loadout.Location);
+      Log.M?.TWL(0, "DropToLocation "+(item.componentDef!=null?item.componentDef.Description.Id:"null")+" location:"+locationWidget.loadout.Location);
       Localize.Text result = null;
       if (item.componentDef == null) {
-        Log.WL(1, "definition is null");
+        Log.Combat?.WL(1, "definition is null");
         return result;
       }
-      Log.WL(1, "widget:" + item.ItemWidget == null ? "null" : item.ItemWidget.ComponentRef.ComponentDefID);
+      Log.M?.WL(1, "widget:" + item.ItemWidget == null ? "null" : item.ItemWidget.ComponentRef.ComponentDefID);
       //bool widgetControllerNormal = false;
       if ((item.ItemWidget != null) && (item.ItemWidget.controller == item)) {
-        Log.WL(2, "widget controller is normal");
+        Log.Combat?.WL(2, "widget controller is normal");
         //widgetControllerNormal = true;
       } else {
-        Log.WL(2, "widget controller is bad");
+        Log.M?.WL(2, "widget controller is bad");
         return result;
       }
       MechLabItemSlotElement old_dragItem = Traverse.Create(this.mechLabPanel).Field<MechLabItemSlotElement>("dragItem").Value;
@@ -284,19 +286,19 @@ namespace CustomUnits {
       if (item is ListElementController_InventoryGear_NotListView gearItem) {
         componentRef = gearItem.componentRef;
       }
-      Log.WL(1, "componentRef:"+ componentRef.ComponentDefID+" location:"+ componentRef.MountedLocation);
+      Log.Combat?.WL(1, "componentRef:"+ componentRef.ComponentDefID+" location:"+ componentRef.MountedLocation);
       MechLabPanel_ShowDropErrorMessage.errorMessage = null;
-      MechLabInventoryWidget inventoryWidget = Traverse.Create(this.mechLabPanel).Field<MechLabInventoryWidget>("inventoryWidget").Value;
-      Traverse.Create(this.mechLabPanel).Field<MechLabItemSlotElement>("dragItem").Value = this.mechLabPanel.CreateMechComponentItem(item.ItemWidget.ComponentRef, true, item.ItemWidget.ComponentRef.MountedLocation, item.ItemWidget.DropParent, item.ItemWidget);
+      MechLabInventoryWidget inventoryWidget = this.mechLabPanel.inventoryWidget;
+      this.mechLabPanel.dragItem = this.mechLabPanel.CreateMechComponentItem(item.ItemWidget.ComponentRef, true, item.ItemWidget.ComponentRef.MountedLocation, item.ItemWidget.DropParent, item.ItemWidget);
       locationWidget.OnMechLabDrop(null, MechLabDropTargetType.NOT_SET);
-      Traverse.Create(this.mechLabPanel).Field<MechLabItemSlotElement>("dragItem").Value = old_dragItem;
+      this.mechLabPanel.dragItem = old_dragItem;
       if (MechLabPanel_ShowDropErrorMessage.errorMessage == null) {
       } else {
         result = MechLabPanel_ShowDropErrorMessage.errorMessage;
         MechLabPanel_ShowDropErrorMessage.errorMessage = null;
       }
       inventoryWidget.OnRemoveItem(item.ItemWidget, true);
-      Log.WL(1, "quantity:" + item.quantity);
+      Log.M?.WL(1, "quantity:" + item.quantity);
       return result;
     }
     public static int ComponentRefWeight(MechComponentRef componentRef) {
@@ -313,7 +315,7 @@ namespace CustomUnits {
       return 1000;
     }
     public void SaveLoadoutName(string name) {
-      Log.TWL(0,"SaveLoadoutName:"+name,true);
+      Log.M?.TWL(0,"SaveLoadoutName:"+name,true);
       List<SavedInventoryItem> inventory = new List<SavedInventoryItem>();
       foreach (MechComponentRef componentRef in this.mechLabPanel.activeMechInventory) {
         if (componentRef == null) { continue; }
@@ -321,7 +323,7 @@ namespace CustomUnits {
         if (componentRef.Def == null) { continue; }
         if (componentRef.DamageLevel < ComponentDamageLevel.Functional) { continue; }
         inventory.Add(new SavedInventoryItem(componentRef.ComponentDefID, componentRef.ComponentDefType, componentRef.MountedLocation));
-        Log.WL(1, componentRef.ComponentDefID+":"+componentRef.ComponentDefType+":"+componentRef.MountedLocation);
+        Log.M?.WL(1, componentRef.ComponentDefID+":"+componentRef.ComponentDefType+":"+componentRef.MountedLocation);
       }
       SavedLoadout loadout = new SavedLoadout();
       loadout.ChassisId = this.mechLabPanel.originalMechDef.ChassisID;
@@ -330,19 +332,20 @@ namespace CustomUnits {
       SaveLayoutHelper.Save(loadout);
     }
     public static IEnumerable<ListElementController_BASE_NotListView> BTPerfFixRawInventory() {
-      Type stateCarrier = typeof(BattletechPerformanceFix.Main).Assembly.GetType("BattletechPerformanceFix.MechlabFix.MechLabFixFeature");
-      if(stateCarrier == null) {
-        stateCarrier = typeof(BattletechPerformanceFix.Main).Assembly.GetType("BattletechPerformanceFix.MechlabFix");
-      }
-      return Traverse.Create(AccessTools.Field(stateCarrier, "state").GetValue(null)).Field<List<ListElementController_BASE_NotListView>>("rawInventory").Value;
+      return BattletechPerformanceFix.MechLabFix.MechLabFixPublic.RawInventory;
+      //Type stateCarrier = typeof(BattletechPerformanceFix.Main).Assembly.GetType("BattletechPerformanceFix.MechlabFix.MechLabFixPublic");
+      //if(stateCarrier == null) {
+      //  stateCarrier = typeof(BattletechPerformanceFix.Main).Assembly.GetType("BattletechPerformanceFix.MechlabFix.MechLabFixFeature");
+      //}
+      //return Traverse.Create(AccessTools.Field(stateCarrier, "state").GetValue(null)).Field<List<ListElementController_BASE_NotListView>>("rawInventory").Value;
     }
     public void RestoreAs(string name,List<SavedInventoryItem> inventory) {
       try {
-        Log.TWL(0, "RestoreAs:"+ name);
+        Log.Combat?.TWL(0, "RestoreAs:"+ name);
         StringBuilder missingItems = new StringBuilder();
-        Log.WL(1, "inventory:" + this.inventory.Count);
+        Log.Combat?.WL(1, "inventory:" + this.inventory.Count);
         foreach (ListElementController_BASE_NotListView invItem in this.inventory) {
-          Log.WL(2, (invItem.componentDef!=null?invItem.componentDef.Description.Id:"null") + ":" + invItem.quantity + " widget:"+ (invItem.ItemWidget == null ? "null" : invItem.ItemWidget.gameObject.name));
+          Log.Combat?.WL(2, (invItem.componentDef!=null?invItem.componentDef.Description.Id:"null") + ":" + invItem.quantity + " widget:"+ (invItem.ItemWidget == null ? "null" : invItem.ItemWidget.gameObject.name));
         }
         List<MechComponentRef> components = new List<MechComponentRef>();
         foreach (SavedInventoryItem item in inventory) {
@@ -360,9 +363,9 @@ namespace CustomUnits {
         //  if (a_weight != b_weight) { return a_weight.CompareTo(b_weight); }
         //  return 0;
         //});
-        Log.WL(1, "equipment:" + components.Count);
+        Log.Combat?.WL(1, "equipment:" + components.Count);
         foreach (MechComponentRef componentRef in components) {
-          Log.WL(2, componentRef.ComponentDefID+":"+ componentRef.MountedLocation);
+          Log.Combat?.WL(2, componentRef.ComponentDefID+":"+ componentRef.MountedLocation);
         }
 
         foreach (MechComponentRef componentRef in components) {
@@ -385,22 +388,23 @@ namespace CustomUnits {
             missingItems.AppendLine(componentName +" absent in storage");
             continue;
           }
-          Log.WL(1, "found:" + componentRef.Def.Description.Id+":"+ componentRef.MountedLocation + " count:"+ foundItem.quantity);
+          Log.Combat?.WL(1, "found:" + componentRef.Def.Description.Id+":"+ componentRef.MountedLocation + " count:"+ foundItem.quantity);
           if(foundItem.ItemWidget != null) {
-            Log.WL(2, "widget controller:" + (foundItem.ItemWidget.controller == null ? "null" : foundItem.ItemWidget.controller.componentDef.Description.Id));
+            Log.Combat?.WL(2, "widget controller:" + (foundItem.ItemWidget.controller == null ? "null" : foundItem.ItemWidget.controller.componentDef.Description.Id));
           }
           ValidateWidget(foundItem);
           Localize.Text msg = DropToLocation(foundItem, locationWidget);
           if(msg != null) {
             missingItems.AppendLine(componentName+":"+msg.ToString());
           }
-          Log.WL(1,"Drop finished");
+          Log.Combat?.WL(1,"Drop finished");
         }
         if(missingItems.Length > 0) {
           GenericPopup popup = GenericPopupBuilder.Create("MISSING ITEMS", new Localize.Text(missingItems.ToString()).ToString()).IsNestedPopupWithBuiltInFader().SetAlwaysOnTop().Render();
         }
       } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
+        Log.Combat?.TWL(0, e.ToString(), true);
+        UIManager.logger.LogException(e);
       }
     }
     public bool CheckDismout() {
@@ -454,7 +458,8 @@ namespace CustomUnits {
                 if (popup != null) popup.TextContent = text.ToString();
               }
             }catch(Exception e) {
-              Log.TWL(0,e.ToString(),true);
+              Log.E?.TWL(0,e.ToString(),true);
+              UIManager.logger.LogException(e);
             }
           }), false)
           .AddButton("<-", (Action)(() => {
@@ -472,13 +477,15 @@ namespace CustomUnits {
                 if (popup != null) popup.TextContent = text.ToString();
               }
             }catch(Exception e) {
-              Log.TWL(0,e.ToString(),true);
+              Log.E?.TWL(0,e.ToString(),true);
+              UIManager.logger.LogException(e);
             }
           }), false).AddButton("R", (Action)(() => {
             this.RestoreAs(invList[curIndex].Key, invList[curIndex].Value);
           }), true).IsNestedPopupWithBuiltInFader().SetAlwaysOnTop().Render();
       }catch(Exception e) {
-        Log.TWL(0, e.ToString(), true);
+        Log.E?.TWL(0, e.ToString(), true);
+        UIManager.logger.LogException(e);
       }
     }
     public void OnSaveAs() {
@@ -494,7 +501,7 @@ namespace CustomUnits {
         //}
         popup = GenericPopupBuilder.Create("SAVE CURRENT LAYOUT AS", "Input name for layout").AddInput("name",this.SaveLoadoutName).IsNestedPopupWithBuiltInFader().SetAlwaysOnTop().Render();
       } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
+        Log.E?.TWL(0, e.ToString(), true);
       }
     }
     public void Awake() {
@@ -533,7 +540,8 @@ namespace CustomUnits {
         restoreButtonObj?.SetActive(mechLabPanel.IsSimGame);
         saveButtonObj?.SetActive(mechLabPanel.IsSimGame);
       } catch (Exception e) {
-        Log.TWL(0,e.ToString(),true);
+        Log.E?.TWL(0,e.ToString(),true);
+        UIManager.logger.LogException(e);
       }
     }
   }
@@ -542,7 +550,7 @@ namespace CustomUnits {
   [HarmonyPatch(new Type[] { typeof(MessageCenter) })]
   public static class SaveManager_Constructor {
     public static void Postfix(SaveManager __instance) {
-      Log.TWL(0, "SaveManager:" + Traverse.Create(Traverse.Create(Traverse.Create(__instance).Field<SaveSystem>("saveSystem").Value).Field<WriteLocation>("localWriteLocation").Value).Field<string>("rootPath").Value);
+      Log.M?.TWL(0, "SaveManager:" + Traverse.Create(Traverse.Create(Traverse.Create(__instance).Field<SaveSystem>("saveSystem").Value).Field<WriteLocation>("localWriteLocation").Value).Field<string>("rootPath").Value);
       //FixedMechDefHelper.Init(Path.GetDirectoryName(Traverse.Create(Traverse.Create(Traverse.Create(__instance).Field<SaveSystem>("saveSystem").Value).Field<WriteLocation>("localWriteLocation").Value).Field<string>("rootPath").Value));
       SaveLayoutHelper.Init(Path.GetDirectoryName(Traverse.Create(Traverse.Create(Traverse.Create(__instance).Field<SaveSystem>("saveSystem").Value).Field<WriteLocation>("localWriteLocation").Value).Field<string>("rootPath").Value));
       SaveDropLayoutHelper.Init(Path.GetDirectoryName(Traverse.Create(Traverse.Create(Traverse.Create(__instance).Field<SaveSystem>("saveSystem").Value).Field<WriteLocation>("localWriteLocation").Value).Field<string>("rootPath").Value));
@@ -556,11 +564,12 @@ namespace CustomUnits {
   public static class MechLabPanel_InitWidgets {
     public static void Postfix(MechLabPanel __instance) {
       try {
-        Log.TWL(0, "MechLabPanel.InitWidgets");
+        Log.M?.TWL(0, "MechLabPanel.InitWidgets");
         MechLabPanelFillAs.Instance = __instance.gameObject.GetComponent<MechLabPanelFillAs>();
         if (MechLabPanelFillAs.Instance == null) { MechLabPanelFillAs.Instance = __instance.gameObject.AddComponent<MechLabPanelFillAs>(); } 
       } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
+        Log.E?.TWL(0, e.ToString(), true);
+        MechLabPanel.logger.LogException(e);
       }
     }
   }
@@ -571,22 +580,24 @@ namespace CustomUnits {
   public static class MechLabPanel_OnRequestResourcesComplete {
     public static void Prefix(MechLabPanel __instance, LoadRequest request) {
       try {
-        Log.TWL(0, "MechLabPanel.OnRequestResourcesComplete prefix");
+        Log.M?.TWL(0, "MechLabPanel.OnRequestResourcesComplete prefix");
         if (__instance.IsSimGame && (MechLabPanelFillAs.Instance != null)) {
           Thread.CurrentThread.SetFlag(MechLabPanelFillAs.INVENTORY_POPULATE_FLAG);
         }
       } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
+        Log.E?.TWL(0, e.ToString(), true);
+        MechLabPanel.logger.LogException(e);
       }
     }
     public static void Postfix(MechLabPanel __instance, LoadRequest request) {
       try {
-        Log.TWL(0, "MechLabPanel.OnRequestResourcesComplete postfix");
+        Log.M?.TWL(0, "MechLabPanel.OnRequestResourcesComplete postfix");
         if (__instance.IsSimGame && (MechLabPanelFillAs.Instance != null)) {
           Thread.CurrentThread.ClearFlag(MechLabPanelFillAs.INVENTORY_POPULATE_FLAG);
         }
       } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
+        Log.E?.TWL(0, e.ToString(), true);
+        MechLabPanel.logger.LogException(e);
       }
     }
   }
@@ -597,22 +608,24 @@ namespace CustomUnits {
   public static class MechLabPanel_ConfirmRevertMech {
     public static void Prefix(MechLabPanel __instance) {
       try {
-        Log.TWL(0, "MechLabPanel.ConfirmRevertMech prefix");
+        Log.M?.TWL(0, "MechLabPanel.ConfirmRevertMech prefix");
         if (__instance.IsSimGame && (MechLabPanelFillAs.Instance != null)) {
           Thread.CurrentThread.SetFlag(MechLabPanelFillAs.INVENTORY_POPULATE_FLAG);
         }
       } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
+        Log.E?.TWL(0, e.ToString(), true);
+        MechLabPanel.logger.LogException(e);
       }
     }
     public static void Postfix(MechLabPanel __instance) {
       try {
-        Log.TWL(0, "MechLabPanel.ConfirmRevertMech postfix");
+        Log.M?.TWL(0, "MechLabPanel.ConfirmRevertMech postfix");
         if (__instance.IsSimGame && (MechLabPanelFillAs.Instance != null)) {
           Thread.CurrentThread.ClearFlag(MechLabPanelFillAs.INVENTORY_POPULATE_FLAG);
         }
       } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
+        Log.E?.TWL(0, e.ToString(), true);
+        MechLabPanel.logger.LogException(e);
       }
     }
   }
@@ -623,12 +636,13 @@ namespace CustomUnits {
   public static class MechLabPanel_ExitMechLab {
     public static void Postfix(MechLabPanel __instance) {
       try {
-        Log.TWL(0, "MechLabPanel.ExitMechLab postfix");
+        Log.M?.TWL(0, "MechLabPanel.ExitMechLab postfix");
         if (MechLabPanelFillAs.Instance != null) {
           MechLabPanelFillAs.Instance.Clear();
         }
       } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
+        Log.E?.TWL(0, e.ToString(), true);
+        MechLabPanel.logger.LogException(e);
       }
     }
   }
@@ -639,11 +653,12 @@ namespace CustomUnits {
     public static void Postfix(ListElementController_InventoryWeapon_NotListView __instance) {
       try {
         if (Thread.CurrentThread.isFlagSet(MechLabPanelFillAs.INVENTORY_POPULATE_FLAG) && (MechLabPanelFillAs.Instance != null)) {
-          Log.TWL(0, "ListElementController_InventoryWeapon_NotListView constructor");
+          Log.M?.TWL(0, "ListElementController_InventoryWeapon_NotListView constructor");
           MechLabPanelFillAs.Instance.inventory.Add(__instance);
         }
       } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
+        Log.E?.TWL(0, e.ToString(), true);
+        MechLabPanel.logger.LogException(e);
       }
     }
   }
@@ -654,11 +669,12 @@ namespace CustomUnits {
     public static void Postfix(ListElementController_InventoryGear_NotListView __instance) {
       try {
         if (Thread.CurrentThread.isFlagSet(MechLabPanelFillAs.INVENTORY_POPULATE_FLAG) && (MechLabPanelFillAs.Instance != null)) {
-          Log.TWL(0, "ListElementController_InventoryGear_NotListView constructor");
+          Log.M?.TWL(0, "ListElementController_InventoryGear_NotListView constructor");
           MechLabPanelFillAs.Instance.inventory.Add(__instance);
         }
       } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
+        Log.E?.TWL(0, e.ToString(), true);
+        MechLabPanel.logger.LogException(e);
       }
     }
   }
@@ -670,12 +686,12 @@ namespace CustomUnits {
     public static Localize.Text errorMessage = null;
     public static void Postfix(MechLabPanel __instance, Localize.Text msg) {
       try {
-        Log.TWL(0, "ShowDropErrorMessage:"+msg.ToString());
+        Log.M?.TWL(0, "ShowDropErrorMessage:"+msg.ToString());
         errorMessage = msg;
       } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
+        Log.E?.TWL(0, e.ToString(), true);
+        MechLabPanel.logger.LogException(e);
       }
     }
   }
-
 }

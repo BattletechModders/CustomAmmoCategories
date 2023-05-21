@@ -66,9 +66,10 @@ namespace CustomUnits {
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { typeof(AbstractActor), typeof(CombatHUDActionButton), typeof(Ability), typeof(bool) })]
   public static class CombatHUDMechwarriorTray_ResetAbilityButton {
-    public static bool Prefix(CombatHUDMechTray __instance, CombatGameState ___Combat, AbstractActor actor, CombatHUDActionButton button, Ability ability, bool forceInactive) {
+    public static void Prefix(ref bool __runOriginal, CombatHUDMechwarriorTray __instance, AbstractActor actor, CombatHUDActionButton button, Ability ability, bool forceInactive) {
       try {
-        if (ability == null) { return false; }
+        if (!__runOriginal) { return; }
+        if (ability == null) { __runOriginal = false; return; }
         if (forceInactive) { button.DisableButton(); } else if (button.IsAbilityActivated) {
           button.ResetButtonIfNotActive(actor);
         } else if (ability.IsAvailable == false) {
@@ -77,21 +78,22 @@ namespace CustomUnits {
           bool canBeActivatedInShutdown = false;
           AbilityDefEx abilityDefEx = ability.Def.exDef();
           if (abilityDefEx != null) { if (abilityDefEx.CanBeUsedInShutdown) { canBeActivatedInShutdown = true; } }
-          if (actor.HasActivatedThisRound) { button.DisableButton(); return false; }
-          if (actor.IsAvailableThisPhase == false) { button.DisableButton(); return false; }
-          if (actor.MovingToPosition != null) { button.DisableButton(); return false; }
-          if (___Combat.StackManager.IsAnyOrderActive && ___Combat.TurnDirector.IsInterleaved) { button.DisableButton(); return false; }
-          if (actor.IsShutDown && (canBeActivatedInShutdown == false)) { button.DisableButton(); return false; }
-          if(actor.IsProne) { button.DisableButton(); return false; }
-          if (actor.HasFiredThisRound && (ability.Def.ActivationTime == AbilityDef.ActivationTiming.ConsumedByFiring)) { button.DisableButton(); return false; }
-          if (actor.HasMovedThisRound && (ability.Def.ActivationTime == AbilityDef.ActivationTiming.ConsumedByMovement)) { button.DisableButton(); return false; }
+          if (actor.HasActivatedThisRound) { button.DisableButton(); __runOriginal = false; return; }
+          if (actor.IsAvailableThisPhase == false) { button.DisableButton(); __runOriginal = false; return; }
+          if (actor.MovingToPosition != null) { button.DisableButton(); __runOriginal = false; return; }
+          if (__instance.Combat.StackManager.IsAnyOrderActive && __instance.Combat.TurnDirector.IsInterleaved) { button.DisableButton(); __runOriginal = false; return; }
+          if (actor.IsShutDown && (canBeActivatedInShutdown == false)) { button.DisableButton(); __runOriginal = false; return; }
+          if(actor.IsProne) { button.DisableButton(); __runOriginal = false; return; }
+          if (actor.HasFiredThisRound && (ability.Def.ActivationTime == AbilityDef.ActivationTiming.ConsumedByFiring)) { button.DisableButton(); __runOriginal = false; return; }
+          if (actor.HasMovedThisRound && (ability.Def.ActivationTime == AbilityDef.ActivationTiming.ConsumedByMovement)) { button.DisableButton(); __runOriginal = false; return; }
           button.ResetButtonIfNotActive(actor);
         }
-        return false;
+        __runOriginal = false; return;
       } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
+        Log.ECombat?.TWL(0, e.ToString(), true);
+        UIManager.logger.LogException(e);
       }
-      return true;
+      return;
     }
   }
   [HarmonyPatch(typeof(AbstractActor))]
@@ -106,7 +108,8 @@ namespace CustomUnits {
           __result = false;
         }
       } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
+        Log.ECombat?.TWL(0, e.ToString(), true);
+        AbstractActor.logger.LogException(e);
       }
     }
   }
@@ -174,11 +177,11 @@ namespace CustomUnits {
           }
         break;
         case UnitShutdownSequence.ShutdownState.Finished:
-          Log.TWL(0,("Unit " + this.OwningActor.PilotableActorDef.Description.Id + " shuts down from pilot command"));
+          Log.M?.TWL(0,("Unit " + this.OwningActor.PilotableActorDef.Description.Id + " shuts down from pilot command"));
           this.OwningActor.IsShutDown = true;
           this.OwningActor.DumpAllEvasivePips();
           this.Combat.MessageCenter.PublishMessage((MessageCenterMessage)new AddSequenceToStackMessage(this.OwningActor.DoneWithActor()));
-          Log.WL(1, "Done with actor");
+          Log.M?.WL(1, "Done with actor");
         break;
       }
     }
@@ -255,7 +258,7 @@ namespace CustomUnits {
     public override bool Invoke(CombatGameState combatGameState) {
       AbstractActor actorByGuid = combatGameState.FindActorByGUID(this.SourceGUID);
       if (actorByGuid == null) {
-        Log.TWL(0,string.Format("ShutdownInvocation.Invoke failed! Source AbstractActor with GUID {0} not found!", (object)this.SourceGUID));
+        Log.Combat?.TWL(0,string.Format("ShutdownInvocation.Invoke failed! Source AbstractActor with GUID {0} not found!", (object)this.SourceGUID));
         return false;
       }
       UnitShutdownSequence shutdownSequence = new UnitShutdownSequence(actorByGuid);
@@ -293,7 +296,7 @@ namespace CustomUnits {
         this.Combat.MessageCenter.RemoveSubscriber(MessageCenterMessageType.AddSequenceToStackMessage, subscriber);
         return true;
       }
-      Log.TWL(0,"no selectedActor?");
+      Log.Combat?.TWL(0,"no selectedActor?");
       return false;
     }
 
@@ -308,14 +311,16 @@ namespace CustomUnits {
   [HarmonyPatch(new Type[] { typeof(SelectionType), typeof(CombatGameState), typeof(CombatHUD), typeof(CombatHUDActionButton), typeof(AbstractActor) })]
   public static class SelectionState_GetNewSelectionStateByTypeShutdown {
     public static bool SelectionForbidden = false;
-    public static bool Prefix(SelectionType type, CombatGameState Combat, CombatHUD HUD, CombatHUDActionButton FromButton, AbstractActor actor, ref SelectionState __result) {
-      Log.TWL(0, "SelectionState.GetNewSelectionStateByType shutdown:" + type + ":" + FromButton.GUID);
+    public static void Prefix(ref bool __runOriginal, SelectionType type, CombatGameState Combat, CombatHUD HUD, CombatHUDActionButton FromButton, AbstractActor actor, ref SelectionState __result) {
+      if (!__runOriginal) { return; }
+      Log.Combat?.TWL(0, "SelectionState.GetNewSelectionStateByType shutdown:" + type + ":" + FromButton.GUID);
       if ((type == SelectionType.VentCoolant) && (FromButton.GUID == CombatHUDMechwarriorTrayEx.ShutdownAbilityId)) {
-        Log.WL(1, "creating own selection state");
+        Log.Combat?.WL(1, "creating own selection state");
         __result = new SelectionStateShutdown(Combat, HUD, FromButton, actor);
-        return false;
+        __runOriginal = false;
+        return;
       }
-      return true;
+      return;
     }
   }
   [HarmonyPatch(typeof(CombatHUDActionButton))]
@@ -325,9 +330,10 @@ namespace CustomUnits {
   public static class CombatHUDActionButton_ToggleAbilityState {
     public static void Prefix(CombatHUDActionButton __instance) {
       try {
-        Log.TWL(0, "CombatHUDActionButton.ToggleAbilityState " + __instance.GUID + " ability:" + (__instance.Ability == null ? "null" : __instance.Ability.Def.Id)+" state:"+ Traverse.Create(__instance).Property("state").GetValue());
+        Log.Combat?.TWL(0, "CombatHUDActionButton.ToggleAbilityState " + __instance.GUID + " ability:" + (__instance.Ability == null ? "null" : __instance.Ability.Def.Id)+" state:"+ Traverse.Create(__instance).Property("state").GetValue());
       } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
+        Log.ECombat?.TWL(0, e.ToString(), true);
+        UIManager.logger.LogException(e);
       }
     }
   }
@@ -338,9 +344,10 @@ namespace CustomUnits {
   public static class CombatHUDActionButton_ActivateAbility {
     public static void Prefix(CombatHUDActionButton __instance) {
       try {
-        Log.TWL(0, "CombatHUDActionButton.ActivateAbility " + __instance.GUID + " ability:" + (__instance.Ability == null?"null":__instance.Ability.Def.Id));
+        Log.Combat?.TWL(0, "CombatHUDActionButton.ActivateAbility " + __instance.GUID + " ability:" + (__instance.Ability == null?"null":__instance.Ability.Def.Id));
       } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
+        Log.ECombat?.TWL(0, e.ToString(), true);
+        UIManager.logger.LogException(e);
       }
     }
   }
@@ -351,7 +358,7 @@ namespace CustomUnits {
   public static class PilotDef_DependenciesLoaded {
     public static void Postfix(PilotDef __instance, uint loadWeight, ref bool __result) {
       try {
-        Log.TWL(0, "PilotDef.DependenciesLoaded " + __instance.Description.Id);
+        Log.Combat?.TWL(0, "PilotDef.DependenciesLoaded " + __instance.Description.Id);
         if (__result == false) { return; }
         if (__instance.DataManager.AbilityDefs.TryGet(CombatHUDMechwarriorTrayEx.ShutdownAbilityId, out AbilityDef aDef) == false) {
           __result = false;
@@ -360,7 +367,8 @@ namespace CustomUnits {
           __result = false;
         }
       } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
+        Log.E?.TWL(0, e.ToString(), true);
+        UnityGameInstance.BattleTechGame.DataManager?.logger.LogException(e);
       }
     }
   }
@@ -379,7 +387,8 @@ namespace CustomUnits {
           dependencyLoad.RequestResource(BattleTechResourceType.AbilityDef, SpawnHelper.SpawnAbilityDefID);
         }
       } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
+        Log.E?.TWL(0, e.ToString(), true);
+        UnityGameInstance.BattleTechGame.DataManager?.logger.LogException(e);
       }
     }
   }
@@ -409,12 +418,12 @@ namespace CustomUnits {
         ShutdownButton.sizeDelta = EjectButton.sizeDelta;
         ShutdownButton.localPosition = pos;
       } catch (Exception e) {
-        Log.TWL(0,e.ToString(), true);
+        Log.Combat?.TWL(0,e.ToString(), true);
       }
     } 
     public void InstantineShutdownButton(CombatHUD HUD) {
       try {
-        Log.TWL(0, "CombatHUDMechwarriorTrayEx.InstantineShutdownButton");
+        Log.Combat?.TWL(0, "CombatHUDMechwarriorTrayEx.InstantineShutdownButton");
         this.EjectButton = HUD.MechTray.gameObject.transform.FindRecursive("EjectButton") as RectTransform;
         if (this.EjectButton == null) { return; }
         GameObject ShutDownGO = GameObject.Instantiate(this.EjectButton.gameObject);
@@ -424,14 +433,15 @@ namespace CustomUnits {
         ShutDownGO.name = "ShutdownButton";
         Transform shutdownButton_Holder = ShutDownGO.transform.FindRecursive("ejectButton_Holder");
         HBSTooltip tooltip = ShutDownGO.GetComponentInChildren<HBSTooltip>(true);
-        Traverse.Create(tooltip).Field<HBSTooltipStateData>("defaultStateData").Value.SetString("SHUTDOWN");
+        tooltip.defaultStateData.SetString("SHUTDOWN");
         shutdownButton_Holder.gameObject.name = "shutdownButton_Holder";
         List<GameObject> ActionButtonHolders = new List<GameObject>();
         ActionButtonHolders.AddRange(HUD.MechWarriorTray.ActionButtonHolders);
         ActionButtonHolders.Add(shutdownButton_Holder.gameObject);
         HUD.MechWarriorTray.ActionButtonHolders = ActionButtonHolders.ToArray();
       } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
+        Log.ECombat?.TWL(0, e.ToString(), true);
+        CombatHUD.uiLogger.LogException(e);
       }
     }
   }

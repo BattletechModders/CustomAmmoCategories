@@ -39,7 +39,7 @@ namespace CustomUnits {
       return pathingStorage.ContainsKey(unit);
     }
     public static void ClearStoredPathing(this AbstractActor unit) {
-      Log.TWL(0, "PathingHelper.ClearStoredPathing "+unit.DisplayName);
+      Log.Combat?.TWL(0, "PathingHelper.ClearStoredPathing "+unit.DisplayName);
       unit.PartialMovementSpent(0f);
       pathingStorage.Remove(unit);
     }
@@ -79,12 +79,12 @@ namespace CustomUnits {
         spath.owner = unit;
         pathingStorage.Add(unit, spath);
       };
-      Log.TWL(0, "PathingHelper.UpdateWaypoint "+unit.DisplayName + " " + unit.CurrentPosition);
+      Log.Combat?.TWL(0, "PathingHelper.UpdateWaypoint "+unit.DisplayName + " " + unit.CurrentPosition);
       spath.Path.Clear();
       if(unit.Pathing.CurrentPath != null) spath.Path.AddRange(unit.Pathing.CurrentPath);
       unit.PartialMovementSpent(unit.PartialMovementSpent() + (unit.Pathing.MaxCost - unit.Pathing.CostLeft));
-      foreach (PathNode node in spath.Path) { Log.WL(1,node.Position.ToString()); }
-      Log.WL(1,"rest path: "+unit.RestPathingModifier()+ " MaxCost:" + unit.Pathing.MaxCost+ " CostLeft:"+ unit.Pathing.CostLeft+ " PartialMovementSpent:" + unit.PartialMovementSpent());
+      foreach (PathNode node in spath.Path) { Log.Combat?.WL(1,node.Position.ToString()); }
+      Log.Combat?.WL(1,"rest path: "+unit.RestPathingModifier()+ " MaxCost:" + unit.Pathing.MaxCost+ " CostLeft:"+ unit.Pathing.CostLeft+ " PartialMovementSpent:" + unit.PartialMovementSpent());
       unit.Pathing.ResetPathGrid(unit.Pathing.ResultDestination, unit.Pathing.ResultAngle, unit, justStoodUp);
       unit.Combat.PathingManager.AddPathing(unit.Pathing);
     }
@@ -104,7 +104,7 @@ namespace CustomUnits {
   [HarmonyPatch(new Type[] { typeof(bool) })]
   public static class Pathing_ResetPathGrid {
     public static void Prefix(AbstractActor __instance, bool justStoodUp) {
-      Log.TWL(0, "AbstractActor.ResetPathing " + __instance.DisplayName);
+      Log.Combat?.TWL(0, "AbstractActor.ResetPathing " + __instance.DisplayName);
       __instance.ClearStoredPathing();
     }
   }
@@ -125,10 +125,11 @@ namespace CustomUnits {
     public static void Prefix(Pathing __instance, AbstractActor actor) {
       if (actor == null) { return; }
       try {
-        Log.TWL(0, "Pathing.ResetPathGridIfTouching " + actor.DisplayName);
+        Log.Combat?.TWL(0, "Pathing.ResetPathGridIfTouching " + actor.DisplayName);
         actor.ClearStoredPathing();
       }catch(Exception e) {
-        Log.TWL(0, e.ToString(), true);
+        Log.Combat?.TWL(0, e.ToString(), true);
+        AbstractActor.logger.LogException(e);
       }
     }
   }
@@ -144,16 +145,17 @@ namespace CustomUnits {
         float dist = Vector3.Distance(__instance.ResultDestination, resultDest);
         bool show = false;//dist > 1f;
         resultDest = __instance.ResultDestination;
-        if (show) Log.TWL(0, "Pathing.UpdateCurrentPath " + __instance.OwningActor.DisplayName + " " + __instance.OwningActor.CurrentPosition + " origin:" + __instance.CurrentGrid.WorldPosOrigin);
-        if (show && (__instance.CurrentPath != null)) foreach (PathNode node in __instance.CurrentPath) { Log.WL(1, node.Position.ToString()); }
-        if (show) Log.WL(1, "dest:" + __instance.ResultDestination);
+        if (show) Log.Combat?.TWL(0, "Pathing.UpdateCurrentPath " + __instance.OwningActor.DisplayName + " " + __instance.OwningActor.CurrentPosition + " origin:" + __instance.CurrentGrid.WorldPosOrigin);
+        if (show && (__instance.CurrentPath != null)) foreach (PathNode node in __instance.CurrentPath) { Log.Combat?.WL(1, node.Position.ToString()); }
+        if (show) Log.Combat?.WL(1, "dest:" + __instance.ResultDestination);
         __instance.PrependStoredPath(ref __instance.CurrentPath);
         if (show) {
-          Log.WL(1, "fullpath:");
-          if (__instance.CurrentPath != null) foreach (PathNode node in __instance.CurrentPath) { Log.WL(2, node.Position.ToString()); }
+          Log.Combat?.WL(1, "fullpath:");
+          if (__instance.CurrentPath != null) foreach (PathNode node in __instance.CurrentPath) { Log.Combat?.WL(2, node.Position.ToString()); }
         }
       } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
+        Log.Combat?.TWL(0, e.ToString(), true);
+        AbstractActor.logger.LogException(e);
       }
     }
   }
@@ -169,16 +171,17 @@ namespace CustomUnits {
         float dist = Vector3.Distance(__instance.ResultDestination, resultDest);
         bool show = (dist > 1f) && (__instance.CurrentPath != null);
         resultDest = __instance.ResultDestination;
-        if (show) Log.TWL(0, "Pathing.UpdateMeleePath " + __instance.OwningActor.DisplayName + " " + __instance.OwningActor.CurrentPosition + " origin:" + __instance.CurrentGrid.WorldPosOrigin);
-        if (show && (__instance.CurrentPath != null)) foreach (PathNode node in __instance.CurrentPath) { Log.WL(1, node.Position.ToString()); }
-        if (show) Log.WL(1, "dest:"+__instance.ResultDestination.ToString());
+        if (show) Log.Combat?.TWL(0, "Pathing.UpdateMeleePath " + __instance.OwningActor.DisplayName + " " + __instance.OwningActor.CurrentPosition + " origin:" + __instance.CurrentGrid.WorldPosOrigin);
+        if (show && (__instance.CurrentPath != null)) foreach (PathNode node in __instance.CurrentPath) { Log.Combat?.WL(1, node.Position.ToString()); }
+        if (show) Log.Combat?.WL(1, "dest:"+__instance.ResultDestination.ToString());
         __instance.PrependStoredPath(ref __instance.CurrentPath);
         if (show) {
-          Log.WL(1, "fullpath:");
-          foreach (PathNode node in __instance.CurrentPath) { Log.WL(2,node.Position.ToString()); }
+          Log.Combat?.WL(1, "fullpath:");
+          foreach (PathNode node in __instance.CurrentPath) { Log.Combat?.WL(2,node.Position.ToString()); }
         }
       } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
+        Log.Combat?.TWL(0, e.ToString(), true);
+        AbstractActor.logger.LogException(e);
       }
     }
   }
@@ -207,25 +210,27 @@ namespace CustomUnits {
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { typeof(Vector3) })]
   public static class SelectionStateMove_ProcessLeftClickPosPartial {
-    public static bool Prefix(SelectionStateMove __instance, ref Vector3 worldPos, ref bool __result) {
+    public static void Prefix(ref bool __runOriginal, SelectionStateMove __instance, ref Vector3 worldPos, ref bool __result) {
       try {
-        if (__instance.HasDestination) { return true; }
-        if (__instance.HasTarget) { return true; }
-        if (__instance.Orders != null || !__instance.SelectedActor.Pathing.ArePathGridsComplete || __instance.SelectedActor.HasFiredThisRound && !__instance.SelectedActor.CanMoveAfterShooting) { return true; }
-        if (Input.GetKey(KeyCode.LeftShift) == false) { return true; }
-        if(Core.Settings.AllowPartialMove == false) { __result = false; return false; }
-        if (__instance.SelectedActor.AllowPartialMovement() == false) { __result = false; return false; }
-        if (__instance.SelectedActor.MoveClamp() > Core.Epsilon) { __result = false; return false; }
+        if (!__runOriginal) { return; }
+        if (__instance.HasDestination) { return; }
+        if (__instance.HasTarget) { return; }
+        if (__instance.Orders != null || !__instance.SelectedActor.Pathing.ArePathGridsComplete || __instance.SelectedActor.HasFiredThisRound && !__instance.SelectedActor.CanMoveAfterShooting) { return; }
+        if (Input.GetKey(KeyCode.LeftShift) == false) { return; }
+        if(Core.Settings.AllowPartialMove == false) { __result = false; __runOriginal = false; return; }
+        if (__instance.SelectedActor.AllowPartialMovement() == false) { __result = false; __runOriginal = false; return; }
+        if (__instance.SelectedActor.MoveClamp() > Core.Epsilon) { __result = false; __runOriginal = false; return; }
         if (__instance.SelectedActor.Pathing.MoveType == MoveType.Sprinting) {
-          if (Core.Settings.AllowPartialSprint == false) { __result = false; return false; }
-          if (__instance.SelectedActor.AllowPartialSprint() == false) { __result = false; return false; }
+          if (Core.Settings.AllowPartialSprint == false) { __result = false; __runOriginal = false; return; }
+          if (__instance.SelectedActor.AllowPartialSprint() == false) { __result = false; __runOriginal = false; return; }
         }
         __instance.SelectedActor.UpdateWaypoint(__instance.SelectedActor.StoodUpThisRound);
         __result = false;
-        return false;
+        __runOriginal = false; return;
       } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
-        return false;
+        Log.Combat?.TWL(0, e.ToString(), true);
+        UIManager.logger.LogException(e);
+        __runOriginal = false; return;
       }
     }
   }
@@ -234,18 +239,20 @@ namespace CustomUnits {
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { typeof(bool) })]
   public static class Pathing_LockToRotateInPlace {
-    public static bool Prefix(Pathing __instance, bool calledFromUI) {
+    public static void Prefix(ref bool __runOriginal, Pathing __instance, bool calledFromUI) {
       try {
-        Traverse.Create(__instance).Property<AbstractActor>("CurrentMeleeTarget").Value = (AbstractActor)null;
+        if (!__runOriginal) { return; }
+        __instance.CurrentMeleeTarget = (AbstractActor)null;
         __instance.UnlockPosition();
-        Traverse.Create(__instance).Field<MoveType>("moveType").Value = MoveType.Walking;
+        __instance.moveType = MoveType.Walking;
         __instance.CurrentDestination = __instance.CurrentGrid.WorldPosOrigin;
         __instance.UpdateCurrentPath(calledFromUI);
         __instance.LockPosition();
-        return false;
+        __runOriginal = false; return;
       } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
-        return false;
+        Log.Combat?.TWL(0, e.ToString(), true);
+        AbstractActor.logger.LogException(e);
+        __runOriginal = false; return;
       }
     }
   }
@@ -257,14 +264,15 @@ namespace CustomUnits {
     public static void Postfix(SelectionState __instance) {
       try {
         if (__instance is SelectionStateMoveBase movebase) {
-          Log.TWL(0, "SelectionStateMoveBase.OnAddToStack " + movebase.SelectedActor.DisplayName + " gridOrigin:" + movebase.SelectedActor.Pathing.CurrentGrid.WorldPosOrigin + " pos:" + movebase.SelectedActor.CurrentPosition);
+          Log.Combat?.TWL(0, "SelectionStateMoveBase.OnAddToStack " + movebase.SelectedActor.DisplayName + " gridOrigin:" + movebase.SelectedActor.Pathing.CurrentGrid.WorldPosOrigin + " pos:" + movebase.SelectedActor.CurrentPosition);
           if (movebase.SelectedActor.Pathing.CurrentGrid.WorldPosOrigin != __instance.SelectedActor.CurrentPosition) {
             movebase.SelectedActor.ClearStoredPathing();
             movebase.SelectedActor.ResetPathing(__instance.SelectedActor.StoodUpThisRound);
           }
         }
       } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
+        Log.Combat?.TWL(0, e.ToString(), true);
+        UIManager.logger.LogException(e);
       }
     }
   }
@@ -278,7 +286,8 @@ namespace CustomUnits {
         if (__result == true) { return; }
         if (__instance.SelectedActor.HasStoredPathing()) { __result = true; }
       } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
+        Log.Combat?.TWL(0, e.ToString(), true);
+        UIManager.logger.LogException(e);
       }
     }
   }
@@ -289,18 +298,20 @@ namespace CustomUnits {
   public static class JumpPathing_UpdateCurrentPath {
     public static void Prefix(JumpPathing __instance, ref float __state) {
       try {
-        if (Traverse.Create(__instance).Property<Mech>("Mech").Value.AllowRotateWhileJump()) { return; }
+        if (__instance.Mech.AllowRotateWhileJump()) { return; }
         if (__instance.IsLockedToDest) { __state = __instance.ResultAngle; }
       } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
+        Log.Combat?.TWL(0, e.ToString(), true);
+        AbstractActor.logger.LogException(e);
       }
     }
     public static void Postfix(JumpPathing __instance, ref float __state) {
       try {
-        if (Traverse.Create(__instance).Property<Mech>("Mech").Value.AllowRotateWhileJump()) { return; }
+        if (__instance.Mech.AllowRotateWhileJump()) { return; }
         if (__instance.IsLockedToDest) { __instance.ResultAngle = __state; }
       } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
+        Log.Combat?.TWL(0, e.ToString(), true);
+        AbstractActor.logger.LogException(e);
       }
     }
   }
@@ -311,13 +322,14 @@ namespace CustomUnits {
   public static class SelectionStateMoveBase_BackOut {
     public static void Postfix(SelectionStateMoveBase __instance) {
       try {
-        Log.TWL(0, "SelectionStateMoveBase.BackOut "+__instance.SelectedActor.DisplayName+" gridOrigin:"+ __instance.SelectedActor.Pathing.CurrentGrid.WorldPosOrigin+" pos:"+ __instance.SelectedActor.CurrentPosition);
+        Log.Combat?.TWL(0, "SelectionStateMoveBase.BackOut "+__instance.SelectedActor.DisplayName+" gridOrigin:"+ __instance.SelectedActor.Pathing.CurrentGrid.WorldPosOrigin+" pos:"+ __instance.SelectedActor.CurrentPosition);
         if(__instance.SelectedActor.Pathing.CurrentGrid.WorldPosOrigin != __instance.SelectedActor.CurrentPosition) {
           __instance.SelectedActor.ClearStoredPathing();
           __instance.SelectedActor.ResetPathing(__instance.SelectedActor.StoodUpThisRound);
         }
       } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
+        Log.Combat?.TWL(0, e.ToString(), true);
+        UIManager.logger.LogException(e);
       }
     }
   }

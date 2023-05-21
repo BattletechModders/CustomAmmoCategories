@@ -53,33 +53,33 @@ namespace MechResizer {
 
     private static Vector3 Get(string identifier, TagSet primary_tags, TagSet secondary_tags, Type type, string prefab = null) {
       if (Cache.Get(identifier, out var mVector)) {
-        Log.TWL(0, $"{type.FullName}: Found Cached '{identifier}'");
+        Log.Combat?.TWL(0, $"{type.FullName}: Found Cached '{identifier}'");
         return mVector;
       }
       Vector3 returnValue;
       if (TagUnderstander.ReadSizeFromTags(primary_tags, out var tSize, out string rawTag)) {
-        Log.TWL(0, $"{type.FullName}: Found By Tag '{rawTag}'");
+        Log.Combat?.TWL(0, $"{type.FullName}: Found By Tag '{rawTag}'");
         returnValue = Cache.Set(identifier, tSize.Value);
         return returnValue;
       }
       if (secondary_tags != null) {
         if(TagUnderstander.ReadSizeFromTags(secondary_tags, out var tsSize, out string rawsTag)) {
-          Log.TWL(0, $"{type.FullName}: Found By Tag '{rawsTag}'");
+          Log.Combat?.TWL(0, $"{type.FullName}: Found By Tag '{rawsTag}'");
           returnValue = Cache.Set(identifier, tsSize.Value);
           return returnValue;
         }
       }
       if (Cache.Get(identifier, out mVector, simple: true)) {
-        Log.TWL(0, $"{type.FullName}: Found Simple '{identifier}");
+        Log.Combat?.TWL(0, $"{type.FullName}: Found Simple '{identifier}");
         returnValue = Cache.Set(identifier, mVector);
         return returnValue;
       }
       if (Cache.Get(identifier, out mVector, prefab: prefab)) {
-        Log.TWL(0, $"{type.FullName}: Found prefab '{identifier}' w/ prefab '{prefab}'");
+        Log.Combat?.TWL(0, $"{type.FullName}: Found prefab '{identifier}' w/ prefab '{prefab}'");
         returnValue = Cache.Set(identifier, mVector);
         return returnValue;
       }
-      Log.TWL(0, $"{type.FullName}: Using Default Size for '{identifier}'");
+      Log.Combat?.TWL(0, $"{type.FullName}: Using Default Size for '{identifier}'");
       returnValue = Cache.SetDefault(identifier, type);
 
       return returnValue;
@@ -133,7 +133,7 @@ namespace MechResizer {
       }
 
       public static Vector3 Set(string identifier, Vector3 value) {
-        Log.TWL(0, $"Setting Cache: {identifier}: [{value.x},{value.y},{value.z}]");
+        Log.Combat?.TWL(0, $"Setting Cache: {identifier}: [{value.x},{value.y},{value.z}]");
         VectorMultipliers.Add(identifier, value);
         return value;
       }

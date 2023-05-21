@@ -95,9 +95,11 @@ namespace CustomAmmoCategoriesLog {
     }
     public void flush() {
       if (this.mutex.WaitOne(1000)) {
-        this.m_fs.Write(this.m_cache.ToString());
-        this.m_fs.Flush();
-        m_cache.Clear();
+        if (m_cache.Length > 0) {
+          this.m_fs.Write(this.m_cache.ToString());
+          this.m_fs.Flush();
+          m_cache.Clear();
+        }
         this.mutex.ReleaseMutex();
       }
     }

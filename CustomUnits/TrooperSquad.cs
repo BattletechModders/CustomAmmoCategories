@@ -33,19 +33,21 @@ namespace CustomUnits {
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { typeof(CombatGameConstants), typeof(string), typeof(int), typeof(bool), typeof(DamageType), typeof(Weapon), typeof(AbstractActor) })]
   public static class Pilot_LethalInjurePilot {
-    public static bool Prefix(Pilot __instance, CombatGameConstants constants, string sourceID, int stackItemUID, bool isLethal, DamageType damageType, Weapon sourceWeapon, AbstractActor sourceActor) {
+    public static void Prefix(ref bool __runOriginal, Pilot __instance, CombatGameConstants constants, string sourceID, int stackItemUID, bool isLethal, DamageType damageType, Weapon sourceWeapon, AbstractActor sourceActor) {
       try {
+        if (!__runOriginal) { return; }
         if (__instance.ParentActor is TrooperSquad squad) {
           if (squad.GetOperationalUnitsCount() > 0) {
-            Log.TWL(0, $"!!!Exception!!! Someone tries to LethalInjurePilot squad {squad.PilotableActorDef.ChassisID} illegally should be punished");
-            Log.WL(0, Environment.StackTrace);
-            return false;
+            Log.Combat?.TWL(0, $"!!!Exception!!! Someone tries to LethalInjurePilot squad {squad.PilotableActorDef.ChassisID} illegally should be punished");
+            Log.Combat?.WL(0, Environment.StackTrace);
+            __runOriginal = false; return;
           }
         }
       } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
+        Log.ECombat?.TWL(0, e.ToString(), true);
+        CombatGameState.gameInfoLogger.LogException(e);
       }
-      return true;
+      return;
     }
   }
   [HarmonyPatch(typeof(Pilot))]
@@ -53,19 +55,21 @@ namespace CustomUnits {
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { typeof(CombatGameConstants), typeof(string), typeof(int), typeof(DamageType), typeof(Weapon), typeof(AbstractActor) })]
   public static class Pilot_MaxInjurePilot {
-    public static bool Prefix(Pilot __instance, CombatGameConstants constants, string sourceID, int stackItemUID, DamageType damageType, Weapon sourceWeapon, AbstractActor sourceActor) {
+    public static void Prefix(ref bool __runOriginal, Pilot __instance, CombatGameConstants constants, string sourceID, int stackItemUID, DamageType damageType, Weapon sourceWeapon, AbstractActor sourceActor) {
       try {
+        if (!__runOriginal) { return; }
         if (__instance.ParentActor is TrooperSquad squad) {
           if (squad.GetOperationalUnitsCount() > 0) {
-            Log.TWL(0, $"!!!Exception!!! Someone tries to MaxInjurePilot squad {squad.PilotableActorDef.ChassisID} illegally should be punished");
-            Log.WL(0, Environment.StackTrace);
-            return false;
+            Log.Combat?.TWL(0, $"!!!Exception!!! Someone tries to MaxInjurePilot squad {squad.PilotableActorDef.ChassisID} illegally should be punished");
+            Log.Combat?.WL(0, Environment.StackTrace);
+            __runOriginal = false; return;
           }
         }
       } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
+        Log.Combat?.TWL(0, e.ToString(), true);
+        CombatGameState.gameInfoLogger.LogException(e);
       }
-      return true;
+      return;
     }
   }
   [HarmonyPatch(typeof(Pilot))]
@@ -77,11 +81,12 @@ namespace CustomUnits {
       try {
         if (__instance.ParentActor is TrooperSquad squad) {
           if (TrooperSquad.SafeInjurePilot) { return; }
-          Log.TWL(0, $"!!!Exception!!! Someone tries to InjurePilot squad {squad.PilotableActorDef.ChassisID} illegally should be punished");
-          Log.WL(0, Environment.StackTrace);
+          Log.Combat?.TWL(0, $"!!!Exception!!! Someone tries to InjurePilot squad {squad.PilotableActorDef.ChassisID} illegally should be punished");
+          Log.Combat?.WL(0, Environment.StackTrace);
         }
       } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
+        Log.Combat?.TWL(0, e.ToString(), true);
+        CombatGameState.gameInfoLogger.LogException(e);
       }
     }
   }
@@ -98,7 +103,8 @@ namespace CustomUnits {
         //Log.TWL(0, "MessageCenter.PublishMessage " + msg.text+" nature:"+msg.nature+" GUID:"+msg.actingObjectGuid+" GUID:"+msg.affectedObjectGuid);
         //Log.WL(0,Environment.StackTrace);
       } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
+        Log.Combat?.TWL(0, e.ToString(), true);
+        CombatGameState.gameInfoLogger.LogException(e);
       }
     }
   }
@@ -109,14 +115,15 @@ namespace CustomUnits {
   public static class MechComponent_DamageComponent {
     public static void Postfix(MechComponent __instance, WeaponHitInfo hitInfo, ComponentDamageLevel damageLevel, bool applyEffects) {
       try {
-        Log.TWL(0, "MechComponent.DamageComponent Postfix " + __instance.defId + " DamageLevel:" + __instance.DamageLevel + "/" + damageLevel);
+        Log.Combat?.TWL(0, "MechComponent.DamageComponent Postfix " + __instance.defId + " DamageLevel:" + __instance.DamageLevel + "/" + damageLevel);
         if ((__instance.DamageLevel >= ComponentDamageLevel.Destroyed) || (damageLevel >= ComponentDamageLevel.Destroyed)) {
           if(__instance.parent is TrooperSquad squad) {
             squad.ResetJumpjetlocationsCache();
           }
         }
       } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
+        Log.ECombat?.TWL(0, e.ToString(), true);
+        AbstractActor.damageLogger.LogException(e);
       }
     }
   }
@@ -125,17 +132,18 @@ namespace CustomUnits {
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { typeof(CombatGameConstants), typeof(string), typeof(int), typeof(DamageType), typeof(Weapon), typeof(AbstractActor) })]
   public static class Pilot_KillPilot {
-    public static bool Prefix(Pilot __instance, CombatGameConstants constants, string sourceID, int stackItemUID, DamageType damageType, Weapon sourceWeapon, AbstractActor sourceActor) {
+    public static void Prefix(ref bool __runOriginal, Pilot __instance, CombatGameConstants constants, string sourceID, int stackItemUID, DamageType damageType, Weapon sourceWeapon, AbstractActor sourceActor) {
       try {
-        Log.TWL(0, "Pilot.KillPilot "+__instance.Callsign+" "+(__instance.ParentActor == null?"null":__instance.ParentActor.PilotableActorDef.ChassisID));
+        Log.Combat?.TWL(0, "Pilot.KillPilot "+__instance.Callsign+" "+(__instance.ParentActor == null?"null":__instance.ParentActor.PilotableActorDef.ChassisID));
         if(__instance.ParentActor is TrooperSquad squad){
-          Log.WL(1,"squad can't be killed that way");
-          return false;
+          Log.Combat?.WL(1,"squad can't be killed that way");
+          __runOriginal = false; return;
         }
-        return true;
+        return;
       } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
-        return true;
+        Log.ECombat?.TWL(0, e.ToString(), true);
+        AbstractActor.damageLogger.LogException(e);
+        return;
       }
     }
   }
@@ -301,7 +309,8 @@ namespace CustomUnits {
         LocationDef locDef = __instance.MechDef.Chassis.GetLocationDef(location);
         if ((locDef.MaxArmor <= 0f) && (locDef.InternalStructure <= 1f)) { __result = 0f; };
       } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
+        Log.ECombat?.TWL(0, e.ToString(), true);
+        AbstractActor.attackLogger.LogException(e);
       }
     }
   }
@@ -317,7 +326,8 @@ namespace CustomUnits {
         if (squad == null) { return; }
         __result = "UNIT DESTROYED";
       } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
+        Log.ECombat?.TWL(0, e.ToString(), true);
+        AbstractActor.attackLogger.LogException(e);
       }
     }
   }
@@ -466,28 +476,28 @@ namespace CustomUnits {
     }
     public override void FlagForDeath(string reason, DeathMethod deathMethod, DamageType damageType, int location, int stackItemID, string attackerID, bool isSilent) {
       if (this._flaggedForDeath) { return; }
-      Log.TWL(0, "TrooperSquad.FlagForDeath " + reason + " method:" + deathMethod + " dmgType:" + damageType + " location:" + location);
+      Log.Combat?.TWL(0, "TrooperSquad.FlagForDeath " + reason + " method:" + deathMethod + " dmgType:" + damageType + " location:" + location);
       bool hasNonDestroyedLocations = false;
-      Log.WL(1, "testing locations");
+      Log.Combat?.WL(1, "testing locations");
       foreach (ChassisLocations loc in TrooperSquad.locations) {
         LocationDef locDef = this.MechDef.Chassis.GetLocationDef(loc);
-        Log.W(2, loc.ToString());
+        Log.Combat?.W(2, loc.ToString());
         if ((locDef.MaxArmor <= 0f) && (locDef.InternalStructure <= 1f)) {
-          Log.WL(1, "not exists MaxArmor:" + locDef.MaxArmor + " InternalStructure:" + locDef.InternalStructure);
+          Log.Combat?.WL(1, "not exists MaxArmor:" + locDef.MaxArmor + " InternalStructure:" + locDef.InternalStructure);
           continue;
         }
-        Log.WL(1, "IsLocationDestroyed:" + this.IsLocationDestroyed(loc));
+        Log.Combat?.WL(1, "IsLocationDestroyed:" + this.IsLocationDestroyed(loc));
         if (this.IsLocationDestroyed(loc) == false) { hasNonDestroyedLocations = true; break; }
       }
       if (hasNonDestroyedLocations) {
-        Log.WL(1, "refuse to death cause have non destroyed locations");
-        Log.WL(0, Environment.StackTrace);
+        Log.Combat?.WL(1, "refuse to death cause have non destroyed locations");
+        Log.Combat?.WL(0, Environment.StackTrace);
         return;
       }
       base.FlagForDeath(reason, deathMethod, damageType, location, stackItemID, attackerID, isSilent);
     }
     public void OnLocationDestroyedSquad(ChassisLocations location, Vector3 attackDirection, WeaponHitInfo hitInfo, DamageType damageType) {
-      Log.TWL(0, "TrooperSquad.OnLocationDestroyedSquad "+this.MechDef.ChassisID+" "+location);
+      Log.Combat?.TWL(0, "TrooperSquad.OnLocationDestroyedSquad "+this.MechDef.ChassisID+" "+location);
       this.location_index = -1;
       this.ResetJumpjetlocationsCache();
       this.Combat.MessageCenter.PublishMessage((MessageCenterMessage)new AddSequenceToStackMessage((IStackSequence)new ShowActorInfoSequence((ICombatant)this, new Text("UNIT DESTROYED"), FloatieMessage.MessageNature.LocationDestroyed, true)));
@@ -508,21 +518,21 @@ namespace CustomUnits {
         }
       }
       bool hasNotDestroyedLocations = false;
-      Log.WL(1,"testing locations");
+      Log.Combat?.WL(1,"testing locations");
       foreach(ChassisLocations loc in TrooperSquad.locations) {
         LocationDef locDef = this.MechDef.Chassis.GetLocationDef(loc);
-        Log.W(2, loc.ToString());
+        Log.Combat?.W(2, loc.ToString());
         if ((locDef.MaxArmor <= 0f) && (locDef.InternalStructure <= 1f)) {
-          Log.WL(1, "not exists MaxArmor:" + locDef.MaxArmor + " InternalStructure:" + locDef.InternalStructure);
+          Log.Combat?.WL(1, "not exists MaxArmor:" + locDef.MaxArmor + " InternalStructure:" + locDef.InternalStructure);
           continue;
         }
-        Log.WL(1, "IsLocationDestroyed:" + this.IsLocationDestroyed(loc));
+        Log.Combat?.WL(1, "IsLocationDestroyed:" + this.IsLocationDestroyed(loc));
         if (this.IsLocationDestroyed(loc) == false) { hasNotDestroyedLocations = true; break; }
       }
       DeathMethod deathMethod = DeathMethod.NOT_SET;
       string reason = "";
       if (hasNotDestroyedLocations == false) {
-        Log.WL(1, "all trooper squad locations destroyed");
+        Log.Combat?.WL(1, "all trooper squad locations destroyed");
         deathMethod = DeathMethod.HeadDestruction;
         reason = "Squad destroyed";
         if (damageType == DamageType.AmmoExplosion) {
@@ -638,11 +648,7 @@ namespace CustomUnits {
     }
     public override bool IsProne {
       get { return false; }
-#if BT_PUBLIC_ASSEMBLY
-#else
-      protected
-#endif
-      set { return; }
+      protected set { return; }
     }
     private HashSet<ChassisLocations> workingJumpsLocations_cache = null;
     public void ResetJumpjetlocationsCache() {
@@ -650,7 +656,7 @@ namespace CustomUnits {
     }
     public HashSet<ChassisLocations> workingJumpsLocations() {
       if (workingJumpsLocations_cache != null) { return workingJumpsLocations_cache; }
-      Log.TWL(0, "TrooperSquad.workingJumpsLocations "+this.PilotableActorDef.ChassisID);
+      Log.Combat?.TWL(0, "TrooperSquad.workingJumpsLocations "+this.PilotableActorDef.ChassisID);
       workingJumpsLocations_cache = new HashSet<ChassisLocations>();
       foreach (Jumpjet component in jumpjets) {
         if (component.IsFunctional == false) { continue; }
@@ -658,7 +664,7 @@ namespace CustomUnits {
         if ((locDef.MaxArmor <= 0f) && (locDef.InternalStructure <= 1f)) { continue; }
         if (this.IsLocationDestroyed(component.mechComponentRef.MountedLocation)) { continue; }
         if (workingJumpsLocations_cache.Contains(component.mechComponentRef.MountedLocation) == false) {
-          Log.WL(1, component.mechComponentRef.MountedLocation+" has working jumpjets");
+          Log.Combat?.WL(1, component.mechComponentRef.MountedLocation+" has working jumpjets");
         }
         workingJumpsLocations_cache.Add(component.mechComponentRef.MountedLocation);
       }
@@ -668,7 +674,7 @@ namespace CustomUnits {
         if ((locDef.MaxArmor <= 0f) && (locDef.InternalStructure <= 1f)) { continue; }
         if (this.IsLocationDestroyed(loc)) { continue; }
         if (workingJumpsLocations_cache.Contains(loc) == false) {
-          Log.WL(1, loc + " has no working jumpjets");
+          Log.Combat?.WL(1, loc + " has no working jumpjets");
           notAllLocations = true; break;
         }
       }
@@ -723,21 +729,21 @@ namespace CustomUnits {
         foreach (ArmorLocation alocation in TrooperSquad.locations) {
           ChassisLocations location = MechStructureRules.GetChassisLocationFromArmorLocation(alocation);
           LocationDef locDef = this.MechDef.Chassis.GetLocationDef(location);
-          Log.W(1, "location:" + alocation + "()" + location + " max armor:" + locDef.MaxArmor + " structure:" + locDef.InternalStructure + " is destroyed:" + this.IsLocationDestroyed(location) + " has not destroyed:" + has_not_destroyed_locations);
+          Log.Combat?.W(1, "location:" + alocation + "()" + location + " max armor:" + locDef.MaxArmor + " structure:" + locDef.InternalStructure + " is destroyed:" + this.IsLocationDestroyed(location) + " has not destroyed:" + has_not_destroyed_locations);
           if ((locDef.MaxArmor <= 0f) && (locDef.InternalStructure <= 1f)) { continue; }
           if (this.IsLocationDestroyed(location) && (has_not_destroyed_locations == true)) { continue; }
           this.location_index |= (int)alocation;
           this.avaible_locations.Add(alocation);
         }
-        Log.WL(1, "recalculated: " + (this.location_index >= 0 ? Convert.ToString(this.location_index, 2).PadLeft(16, '0') : "-1"));
+        Log.Combat?.WL(1, "recalculated: " + (this.location_index >= 0 ? Convert.ToString(this.location_index, 2).PadLeft(16, '0') : "-1"));
       }
     }
     public override Dictionary<ArmorLocation, int> GetHitTable(AttackDirection from) {
-      Log.TWL(0,"TrooperSquad.GetHitTable "+this.MechDef.Description.Id+" location index:" + (this.location_index>=0?Convert.ToString(this.location_index,2).PadLeft(16,'0'):"-1"));
+      Log.Combat?.TWL(0,"TrooperSquad.GetHitTable "+this.MechDef.Description.Id+" location index:" + (this.location_index>=0?Convert.ToString(this.location_index,2).PadLeft(16,'0'):"-1"));
       Dictionary<ArmorLocation, int> result = null;
       this.RecalculateAvaibleLocations();
       if (GetHitTableSquad_cache.TryGetValue(location_index, out result)) {
-        Log.WL(1,"cached:"+result.Count);
+        Log.Combat?.WL(1,"cached:"+result.Count);
         return result;
       }
       result = new Dictionary<ArmorLocation, int>();
@@ -812,20 +818,20 @@ namespace CustomUnits {
     //}
     public override int GetHitLocation(AbstractActor attacker, Vector3 attackPosition, float hitLocationRoll, int calledShotLocation, float bonusMultiplier) {
       try {
-        Log.TWL(0, "TrooperSquad.GetHitLocation " + this.MechDef.Description.Id);
+        Log.Combat?.TWL(0, "TrooperSquad.GetHitLocation " + this.MechDef.Description.Id);
         Dictionary<ArmorLocation, int> hitTable = this.GetHitTable(AttackDirection.FromFront);
-        Log.WL(1, "hitTable:" + (hitTable == null ? "null" : "not null"));
+        Log.Combat?.WL(1, "hitTable:" + (hitTable == null ? "null" : "not null"));
         int result = (int)HitLocation.GetHitLocation(hitTable, hitLocationRoll, (ArmorLocation)calledShotLocation, bonusMultiplier);
         if ((result == 0) || (result == 65535)) {
-          Log.WL(1, "Exception. something went wrong. location is bad:"+result);
+          Log.Combat?.WL(1, "Exception. something went wrong. location is bad:"+result);
           foreach (var ht in hitTable) {
-            Log.W(1, ht.Key.ToString() + ":" + ht.Value);
+            Log.Combat?.W(1, ht.Key.ToString() + ":" + ht.Value);
           }
-          Log.WL(1, "result:"+(ArmorLocation)result);
+          Log.Combat?.WL(1, "result:"+(ArmorLocation)result);
         }
         return result;
       } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
+        Log.Combat?.TWL(0, e.ToString(), true);
         return 0;
       }
     }
@@ -948,7 +954,7 @@ namespace CustomUnits {
     public static string GetSquadSizeToHitModName(ToHit instance, AbstractActor attacker, Weapon weapon, ICombatant target, Vector3 attackPosition, Vector3 targetPosition, LineOfFireLevel lofLevel, MeleeAttackType meleeAttackType, bool isCalledShot) {
       TrooperSquad squad = target as TrooperSquad;
       if (squad == null) { return string.Empty; };
-      Log.TWL(0, "TrooperSquad.GetSquadSizeToHitMod " + target.DisplayName);
+      Log.Combat?.TWL(0, "TrooperSquad.GetSquadSizeToHitMod " + target.DisplayName);
       int allUnitsCount = 0;
       int liveUnitsCount = 0;
       foreach (ChassisLocations loc in TrooperSquad.locations) {
@@ -1014,7 +1020,7 @@ namespace CustomUnits {
       Pilot pilot = this.GetPilot();
       int currentUnitsCount = this.GetOperationalUnitsCount();
       if (pilot.IsIncapacitated && (currentUnitsCount > 0)) {
-        Log.TWL(0, $"!!!Exception!!!Something goes wrong Trooper Squad operator can't die while units {currentUnitsCount} operational");
+        Log.Combat?.TWL(0, $"!!!Exception!!!Something goes wrong Trooper Squad operator can't die while units {currentUnitsCount} operational");
       }
       int effectiveHealth = pilot.TotalHealth - pilot.Injuries;
       int damageCount = 1;

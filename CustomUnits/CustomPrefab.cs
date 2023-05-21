@@ -103,10 +103,10 @@ namespace CustomUnits {
         CustomShaderReplacer replacer = __result.GetComponent<CustomShaderReplacer>();
         if (replacer != null) { return; }
         __result.AddComponent<CustomShaderReplacer>();
-        Log.TWL(0, "CustomPrefabHelper.Searching " + id);
+        Log.Combat?.TWL(0, "CustomPrefabHelper.Searching " + id);
         Renderer[] renderers = null;
         if (CustomPrefabHelper.TryGet(id, out CustomPrefabDef def)) {
-          Log.WL(1, "found");
+          Log.Combat?.WL(1, "found");
           renderers = __result.GetComponentsInChildren<Renderer>(true);
           Dictionary<string, GameObject> shaderSources = new Dictionary<string, GameObject>();
           Dictionary<string, GameObject> materialSources = new Dictionary<string, GameObject>();
@@ -114,7 +114,7 @@ namespace CustomUnits {
             Material[] sharedMaterials = r.sharedMaterials;
             for (int matIndex = 0; matIndex < sharedMaterials.Length; ++matIndex) {
               if (sharedMaterials[matIndex] == null) { continue; }
-              Log.WL(2, "material:" + sharedMaterials[matIndex].name);
+              Log.Combat?.WL(2, "material:" + sharedMaterials[matIndex].name);
               foreach (var mn in def.MaterialShaderReplacement) {
                 if (sharedMaterials[matIndex].name.StartsWith(mn.Key)) {
                   if (string.IsNullOrEmpty(mn.Value.prefab) == false) {
@@ -133,7 +133,7 @@ namespace CustomUnits {
               }
               foreach (var mn in def.MaterialReplacement) {
                 if (sharedMaterials[matIndex].name.StartsWith(mn.Key)) {
-                  Log.WL(3, "replacement:" + mn.Value.prefab + "." + mn.Value.material + " direct:" + mn.Value.direct);
+                  Log.Combat?.WL(3, "replacement:" + mn.Value.prefab + "." + mn.Value.material + " direct:" + mn.Value.direct);
                   if (string.IsNullOrEmpty(mn.Value.prefab) == false) {
                     if (materialSources.TryGetValue(mn.Value.prefab, out GameObject materialSource) == false) {
                       materialSource = __instance.PooledInstantiate(mn.Value.prefab, BattleTechResourceType.Prefab);
@@ -147,7 +147,7 @@ namespace CustomUnits {
                     foreach (Material mat in mats) {
                       if (mat.name.StartsWith(mn.Value.direct)) {
                         sharedMaterials[matIndex] = mat;
-                        Log.WL(4, "target material found " + r.name + ".sharedMaterials[" + matIndex + "] = " + sharedMaterials[matIndex].name + "/" + mat.name);
+                        Log.Combat?.WL(4, "target material found " + r.name + ".sharedMaterials[" + matIndex + "] = " + sharedMaterials[matIndex].name + "/" + mat.name);
                         break;
                       }
                     }
@@ -172,14 +172,15 @@ namespace CustomUnits {
             if (sharedMaterials[matIndex] == null) { continue; }
             if(Core.Settings.forceToBuildinShaders.TryGetValue(sharedMaterials[matIndex].shader.name, out var shaderToReplace)) {
               if(sharedMaterials[matIndex].shader.GetInstanceID() != shaderToReplace.GetInstanceID()) {
-                Log.WL(1,$"replacing shader {sharedMaterials[matIndex].shader.name}:{sharedMaterials[matIndex].shader.GetInstanceID()} -> {shaderToReplace.name}:{shaderToReplace.GetInstanceID()}");
+                Log.Combat?.WL(1,$"replacing shader {sharedMaterials[matIndex].shader.name}:{sharedMaterials[matIndex].shader.GetInstanceID()} -> {shaderToReplace.name}:{shaderToReplace.GetInstanceID()}");
                 sharedMaterials[matIndex].shader = shaderToReplace;
               }
             }
           }
         }
       }catch(Exception e) {
-        Log.TWL(0, e.ToString(), true);
+        Log.Combat?.TWL(0, e.ToString(), true);
+        __instance.logger.LogException(e);
       }
     }
     public static void Postfix(DataManager __instance, string id, BattleTechResourceType resourceType, ref GameObject __result) {
@@ -189,7 +190,7 @@ namespace CustomUnits {
         ReplaceShaders(__instance, id, ref __result);
         //VehicleRepresentation vehicleRep = __result.GetComponent<VehicleRepresentation>();
         //if (vehicleRep != null) {  }
-      } catch (Exception e) { Log.TWL(0, e.ToString(), true); }
+      } catch (Exception e) { Log.Combat?.TWL(0, e.ToString(), true); }
     }
   }
 }

@@ -15,7 +15,7 @@ namespace MechSpin.Patches {
   [HarmonyPatch(typeof(MechRepresentationSimGame), "Init")]
   public static class MechRepresentationSimGame_Init_Patch {
     public static void Postfix(MechRepresentationSimGame __instance) {
-      CustomUnits.Log.TWL(0, "Main.SetupSpin "+__instance.transform.name);
+      CustomUnits.Log.M?.TWL(0, "Main.SetupSpin "+__instance.transform.name);
       Main.SetupSpin(__instance.gameObject);
     }
   }

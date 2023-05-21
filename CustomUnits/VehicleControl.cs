@@ -131,15 +131,16 @@ namespace CustomUnits {
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { typeof(MechDef) })]
   public static class StatTooltipData_SetHeatData {
-    public static bool Prefix(StatTooltipData __instance, MechDef def) {
-      if (def == null) { return true; }
-      if (def.IsVehicle() == false) { return true; }
-      Log.TWL(0, "StatTooltipData.SetHeatData " + def.ChassisID);
+    public static void Prefix(ref bool __runOriginal, StatTooltipData __instance, MechDef def) {
+      if (!__runOriginal) { return; }
+      if (def == null) { return; }
+      if (def.IsVehicle() == false) { return; }
+      Log.M?.TWL(0, "StatTooltipData.SetHeatData " + def.ChassisID);
       __instance.dataList.Add(Strings.T("Heat Sinking"), Strings.T("N/A"));
       __instance.dataList.Add(Strings.T("Alpha Strike"), Strings.T("N/A"));
       __instance.dataList.Add(Strings.T("Avg. Jump Heat"), Strings.T("N/A"));
       __instance.dataList.Add(Strings.T("Shutdown"), Strings.T("N/A"));
-      return false;
+      __runOriginal = false;
     }
   }
   [HarmonyPatch(typeof(TooltipPrefab_Mech))]
@@ -147,14 +148,14 @@ namespace CustomUnits {
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { typeof(object) })]
   public static class TooltipPrefab_Mech_SetData {
-    public static void Postfix(TooltipPrefab_Mech __instance, object data,ref LanceStatGraphic ___MeleeBar,ref LanceStatGraphic ___HeatEffBar) {
-      ___MeleeBar.gameObject.SetActive(true);
-      ___HeatEffBar.gameObject.SetActive(true);
+    public static void Postfix(TooltipPrefab_Mech __instance, object data) {
+      __instance.MeleeBar.gameObject.SetActive(true);
+      __instance.HeatEffBar.gameObject.SetActive(true);
       MechDef mechDef = data as MechDef;
       if (mechDef == null) { return; };
       if (mechDef.IsVehicle() == false) { return; }
-      ___MeleeBar.gameObject.SetActive(false);
-      ___HeatEffBar.gameObject.SetActive(false);
+      __instance.MeleeBar.gameObject.SetActive(false);
+      __instance.HeatEffBar.gameObject.SetActive(false);
     }
   }
   [HarmonyPatch(typeof(SG_Shop_FullMechDetailPanel))]
@@ -162,16 +163,16 @@ namespace CustomUnits {
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { typeof(MechDef) })]
   public static class SG_Shop_FullMechDetailPanel_FillInFullMech {
-    public static void Postfix(SG_Shop_FullMechDetailPanel __instance, MechDef theMech, ref LanceStat ___Stat4, ref LanceStat ___Stat6) {
-      VerticalLayoutGroup layout = ___Stat4.transform.parent.gameObject.GetComponent<VerticalLayoutGroup>();
+    public static void Postfix(SG_Shop_FullMechDetailPanel __instance, MechDef theMech) {
+      VerticalLayoutGroup layout = __instance.Stat4.transform.parent.gameObject.GetComponent<VerticalLayoutGroup>();
       if (theMech.IsVehicle() == false) {
         layout.childControlHeight = true;
-        ___Stat4.gameObject.SetActive(true);
-        ___Stat6.gameObject.SetActive(true);
+        __instance.Stat4.gameObject.SetActive(true);
+        __instance.Stat6.gameObject.SetActive(true);
       } else {
         layout.childControlHeight = false;
-        ___Stat4.gameObject.SetActive(false);
-        ___Stat6.gameObject.SetActive(false);
+        __instance.Stat4.gameObject.SetActive(false);
+        __instance.Stat6.gameObject.SetActive(false);
       }
     }
   }
@@ -198,16 +199,18 @@ namespace CustomUnits {
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { typeof(MechDef) })]
   public static class StatTooltipData_SetMeleeData {
-    public static bool Prefix(StatTooltipData __instance, MechDef def) {
-      if (def == null) { return true; }
-      if (def.IsVehicle() == false) { return true; }
-      Log.TWL(0, "StatTooltipData.SetHeatData " + def.ChassisID);
+    public static void Prefix(ref bool __runOriginal, StatTooltipData __instance, MechDef def) {
+      if (!__runOriginal) { return; }
+      if (def == null) { return; }
+      if (def.IsVehicle() == false) { return; }
+      Log.M?.TWL(0, "StatTooltipData.SetHeatData " + def.ChassisID);
       __instance.dataList.Add(Strings.T("Base Dmg"), Strings.T("N/A"));
       __instance.dataList.Add(Strings.T("Chassis Quirk"), Strings.T("N/A"));
       __instance.dataList.Add(Strings.T("Total Dmg"), Strings.T("N/A"));
       __instance.dataList.Add(Strings.T("Stability Dmg"), Strings.T("N/A"));
       __instance.dataList.Add(Strings.T("DFA Dmg"), Strings.T("N/A"));
-      return false;
+      __runOriginal = false;
+      return;
     }
   }
   [HarmonyPatch(typeof(HUDMechArmorReadout))]
@@ -241,7 +244,7 @@ namespace CustomUnits {
     public static void Postfix(MechDef curMech, ArmorLocation location, ref float __result) {
       if (curMech == null) { return; }
       if (curMech.Chassis == null) { return; }
-      Log.TWL(0, "HUDMechArmorReadout.GetCurrentStructureForLocation " + curMech.ChassisID + " location:" + location);
+      Log.M?.TWL(0, "HUDMechArmorReadout.GetCurrentStructureForLocation " + curMech.ChassisID + " location:" + location);
       LocationDef locDef = curMech.Chassis.GetLocationDef(MechStructureRules.GetChassisLocationFromArmorLocation(location));
       if ((locDef.InternalStructure <= 1.0f) && (locDef.MaxArmor <= 0f)) { __result = 0f; }
       return;
@@ -254,7 +257,7 @@ namespace CustomUnits {
   public static class HUDMechArmorReadout_GetCurrentStructureForLocationChassisDef {
     public static void Postfix(ChassisDef chassis, ArmorLocation location, ref float __result) {
       if (chassis == null) { return; }
-      Log.TWL(0, "HUDMechArmorReadout.GetCurrentStructureForLocation " + chassis.Description.Id + " location:" + location);
+      Log.M?.TWL(0, "HUDMechArmorReadout.GetCurrentStructureForLocation " + chassis.Description.Id + " location:" + location);
       LocationDef locDef = chassis.GetLocationDef(MechStructureRules.GetChassisLocationFromArmorLocation(location));
       if ((locDef.InternalStructure <= 1.0f) && (locDef.MaxArmor <= 0f)) { __result = 0f; }
       return;
@@ -383,15 +386,16 @@ namespace CustomUnits {
       if ((def.Chassis.RightTorso.MaxArmor > 0f) && (def.Chassis.RightTorso.InternalStructure > 1f)) { if ((def.RightTorso.CurrentArmor <= 0.0f) || (def.RightTorso.CurrentRearArmor <= 0f)) { return true; } }
       return false;
     }
-    public static bool Prefix(HUDMechArmorReadout __instance) {
-      if (__instance.DisplayedMech != null) { return true; }
+    public static void Prefix(ref bool __runOriginal, HUDMechArmorReadout __instance) {
+      if (!__runOriginal) { return; }
+      if (__instance.DisplayedMech != null) { return; }
       float current1 = 0.0f;
       float max1 = 1f;
       float current2 = 0.0f;
       float max2 = 1f;
       bool exposed = true;
       if (__instance.DisplayedMechDef != null) {
-        Log.TWL(0, "HUDMechArmorReadout.ResetArmorStructureBars " + __instance.DisplayedMechDef.ChassisID);
+        Log.M?.TWL(0, "HUDMechArmorReadout.ResetArmorStructureBars " + __instance.DisplayedMechDef.ChassisID);
         current1 = __instance.DisplayedMechDef.GetMechDefCurrentArmor();
         max1 = __instance.DisplayedMechDef.GetMechDefMaxArmor();
         current2 = __instance.DisplayedMechDef.GetMechDefCurrentStructure();
@@ -402,15 +406,15 @@ namespace CustomUnits {
         current2 = max2;
         exposed = true;
       } else {
-        return false;
+        __runOriginal = false; return;
       }
       if (((UnityEngine.Object)__instance.ArmorBar == (UnityEngine.Object)null) || ((UnityEngine.Object)__instance.StructureBar == (UnityEngine.Object)null)){
-        return false;
+        __runOriginal = false; return;
       }
-      Log.WL(1,"structure "+ current2+"/"+max2);
+      Log.M?.WL(1,"structure "+ current2+"/"+max2);
       __instance.ArmorBar.ShowNewSummary(current1, max1, false);
       __instance.StructureBar.ShowNewSummary(current2, max2, exposed);
-      return false;
+      __runOriginal = false; return;
     }
   }
   [HarmonyPatch(typeof(HUDMechArmorReadout))]
@@ -418,28 +422,29 @@ namespace CustomUnits {
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { })]
   public static class HUDMechArmorReadout_UpdateArmorStructureBars {
-    public static bool Prefix(HUDMechArmorReadout __instance) {
-      if (__instance.DisplayedMech != null) { return true; }
+    public static void Prefix(ref bool __runOriginal, HUDMechArmorReadout __instance) {
+      if (!__runOriginal) { return; }
+      if (__instance.DisplayedMech != null) { return; }
       float current1 = 0.0f;
       float current2 = 0.0f;
       bool exposed = true;
       if (__instance.DisplayedMechDef != null) {
-        Log.TWL(0, "HUDMechArmorReadout.UpdateArmorStructureBars " + __instance.DisplayedMechDef.ChassisID);
+        Log.M?.TWL(0, "HUDMechArmorReadout.UpdateArmorStructureBars " + __instance.DisplayedMechDef.ChassisID);
         current1 = __instance.DisplayedMechDef.GetMechDefCurrentArmor();
         current2 = __instance.DisplayedMechDef.GetMechDefCurrentStructure();
         exposed = __instance.DisplayedMechDef.GetMechDefExposed();
       } else if (__instance.DisplayedChassisDef != null) {
         exposed = true;
       } else {
-        return false;
+        __runOriginal = false; return;
       }
       if (((UnityEngine.Object)__instance.ArmorBar == (UnityEngine.Object)null) || ((UnityEngine.Object)__instance.StructureBar == (UnityEngine.Object)null)) {
-        return false;
+        __runOriginal = false; return;
       }
-      Log.WL(1, "structure " + current2);
+      Log.M?.WL(1, "structure " + current2);
       __instance.ArmorBar.UpdateSummary(current1, false);
       __instance.StructureBar.UpdateSummary(current2, exposed);
-      return false;
+      __runOriginal = false; return;
     }
   }
   [HarmonyPatch(typeof(MechDetails))]
@@ -447,17 +452,17 @@ namespace CustomUnits {
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { })]
   public static class MechDetails_SetStats {
-    public static void Postfix(LanceMechEquipmentList __instance, List<LanceStat> ___statList, MechDef ___activeMech) {
-      Log.TWL(0, "MechDetails.SetStats " + ___activeMech.ChassisID);
-      VerticalLayoutGroup layout = ___statList[1].transform.parent.gameObject.GetComponent<VerticalLayoutGroup>();
-      if (___activeMech.IsVehicle() == false) {
+    public static void Postfix(MechDetails __instance) {
+      Log.M?.TWL(0, "MechDetails.SetStats " + __instance.activeMech.ChassisID);
+      VerticalLayoutGroup layout = __instance.statList[1].transform.parent.gameObject.GetComponent<VerticalLayoutGroup>();
+      if (__instance.activeMech.IsVehicle() == false) {
         layout.childControlHeight = true;
-        ___statList[1].gameObject.SetActive(true);
-        ___statList[7].gameObject.SetActive(true);
+        __instance.statList[1].gameObject.SetActive(true);
+        __instance.statList[7].gameObject.SetActive(true);
       } else {
         layout.childControlHeight = false;
-        ___statList[1].gameObject.SetActive(false);
-        ___statList[7].gameObject.SetActive(false);
+        __instance.statList[1].gameObject.SetActive(false);
+        __instance.statList[7].gameObject.SetActive(false);
       }
     }
   }
@@ -466,12 +471,13 @@ namespace CustomUnits {
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { })]
   public static class MechBayMechInfoWidget_OnMechLabClicked {
-    public static bool Prefix(MechBayMechInfoWidget __instance,ref MechDef ___selectedMech) {
-      if (___selectedMech == null) { return true; }
-      if (___selectedMech.IsVehicle() == false) { return true; }
-      if (Core.Settings.AllowVehiclesEdit == true) { return true; }
+    public static void Prefix(ref bool __runOriginal, MechBayMechInfoWidget __instance) {
+      if (!__runOriginal) { return; }
+      if (__instance.selectedMech == null) { return; }
+      if (__instance.selectedMech.IsVehicle() == false) { return; }
+      if (Core.Settings.AllowVehiclesEdit == true) { return; }
       GenericPopupBuilder.Create("Cannot Refit vehicle", Strings.T("Vehicles can't be refited")).AddFader(new UIColorRef?(LazySingletonBehavior<UIManager>.Instance.UILookAndColorConstants.PopupBackfill), 0.0f, true).Render();
-      return false;
+      __runOriginal = false; return;
     }
   }
   [HarmonyPatch(typeof(MechBayMechInfoWidget))]
@@ -479,12 +485,13 @@ namespace CustomUnits {
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { })]
   public static class MechBayMechInfoWidget_OnUnreadyClicked {
-    public static bool Prefix(MechBayMechInfoWidget __instance, ref MechDef ___selectedMech) {
-      if (___selectedMech == null) { return true; }
-      if (___selectedMech.IsVehicle() == false) { return true; }
-      if (Core.Settings.AllowVehiclesEdit == true) { return true; }
+    public static void Prefix(ref bool __runOriginal, MechBayMechInfoWidget __instance) {
+      if (!__runOriginal) { return; }
+      if (__instance.selectedMech == null) { return; }
+      if (__instance.selectedMech.IsVehicle() == false) { return; }
+      if (Core.Settings.AllowVehiclesEdit == true) { return; }
       GenericPopupBuilder.Create("Cannot store vehicle", Strings.T("Vehicles can't be stored")).AddFader(new UIColorRef?(LazySingletonBehavior<UIManager>.Instance.UILookAndColorConstants.PopupBackfill), 0.0f, true).Render();
-      return false;
+      __runOriginal = false; return;
     }
   }
   [HarmonyPatch(typeof(AbstractActor))]
@@ -492,24 +499,25 @@ namespace CustomUnits {
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { typeof(ICombatant) })]
   public static class AbstractActor_IsFriendly {
-    public static bool Prefix(AbstractActor __instance, ICombatant target, ref bool __result) {
-      if(__instance.team == null) {
+    public static void Prefix(ref bool __runOriginal, AbstractActor __instance, ICombatant target, ref bool __result) {
+      if (!__runOriginal) { return; }
+      if (__instance.team == null) {
         //Log.TWL(0, "AbstractActor.IsFriendly "+new Localize.Text(__instance.DisplayName).ToString() +" without team:"+__instance.TeamId);
         if (target.team == null) {
           //Log.WL(1, "target have no team too " + new Localize.Text(target.DisplayName).ToString());
           __result = false;
-          return false;
+          __runOriginal = false; return;
         } else {
           __result = __instance.TeamId == target.team.GUID;
-          return false;
+          __runOriginal = false; return;
         }
       }
       if(target.team == null) {
         //Log.TWL(0, "AbstractActor.IsFriendly target:" + new Localize.Text(target.DisplayName).ToString());
         __result = false;
-        return false;
+        __runOriginal = false; return;
       }
-      return true;
+      return;
     }
   }
   [HarmonyPatch(typeof(MechBayMechInfoWidget))]
@@ -517,14 +525,15 @@ namespace CustomUnits {
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { })]
   public static class MechBayMechInfoWidget_OnRepairClicked {
-    public static bool Prefix(MechBayMechInfoWidget __instance, ref MechDef ___selectedMech,ref MechBayMechUnitElement ___selectedMechElement) {
-      if (___selectedMech == null) { return true; }
-      if (___selectedMech.IsVehicle() == false) { return true; }
-      if (___selectedMechElement.inMaintenance) {
+    public static void Prefix(ref bool __runOriginal, MechBayMechInfoWidget __instance) {
+      if (!__runOriginal) { return; }
+      if (__instance.selectedMech == null) { return; }
+      if (__instance.selectedMech.IsVehicle() == false) { return; }
+      if (__instance.selectedMechElement.inMaintenance) {
         GenericPopupBuilder.Create("Cannot Repair Vehicle", Strings.T("This 'Vehicle is already under maintenance. You must first cancel the existing task in order to begin repairs on this 'Vehicle.")).AddFader(new UIColorRef?(LazySingletonBehavior<UIManager>.Instance.UILookAndColorConstants.PopupBackfill), 0.0f, true).Render();
-        return false;
+        __runOriginal = false; return;
       }
-      return true;
+      return;
     }
   }
   [HarmonyPatch(typeof(MechBayMechInfoWidget))]
@@ -532,22 +541,16 @@ namespace CustomUnits {
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { })]
   public static class MechBayMechInfoWidget_OnScrapClicked {
-    internal class d_MechBayMechInfoWidget {
-      public MechBayMechInfoWidget widget { get; set; }
-      public void ConfirmScrapClicked() {
-        typeof(MechBayMechInfoWidget).GetMethod("ConfirmScrapClicked", BindingFlags.Instance | BindingFlags.NonPublic).Invoke(widget, new object[] { });
-      }
-      public d_MechBayMechInfoWidget(MechBayMechInfoWidget i) { widget = i; }
-    }
-    public static bool Prefix(MechBayMechInfoWidget __instance, ref MechDef ___selectedMech, ref MechBayMechUnitElement ___selectedMechElement) {
-      if (___selectedMech == null) { return true; }
-      if (___selectedMech.IsVehicle() == false) { return true; }
-      if (___selectedMechElement.inMaintenance) {
+    public static void Prefix(ref bool __runOriginal, MechBayMechInfoWidget __instance) {
+      if (!__runOriginal) { return; }
+      if (__instance.selectedMech == null) { return; }
+      if (__instance.selectedMech.IsVehicle() == false) { return; }
+      if (__instance.selectedMechElement.inMaintenance) {
         GenericPopupBuilder.Create("Cannot Scrap Vehicle", Strings.T("This 'Vehicle is already under maintenance. You must first cancel the existing task in order to scrap this 'Vehicle.")).AddFader(new UIColorRef?(LazySingletonBehavior<UIManager>.Instance.UILookAndColorConstants.PopupBackfill), 0.0f, true).Render();
       } else {
-        GenericPopupBuilder.Create(Strings.T("Scrap 'Vehicle - {0}", (object)___selectedMech.Description.Name), Strings.T("Are you sure you want to scrap this 'Vehicle?\n\nThis 'Vehicle's components will be stored and its chassis removed permanently from your inventory.\n\nSCRAP VALUE: <color=#F79B26FF>{0}</color>", (object)SimGameState.GetCBillString(Mathf.RoundToInt((float)___selectedMech.Chassis.Description.Cost * __instance.sim.Constants.Finances.MechScrapModifier)))).AddButton("Cancel", (Action)null, true, (PlayerAction)null).AddButton("Scrap", new Action(new d_MechBayMechInfoWidget(__instance).ConfirmScrapClicked), true, (PlayerAction)null).CancelOnEscape().AddFader(new UIColorRef?(LazySingletonBehavior<UIManager>.Instance.UILookAndColorConstants.PopupBackfill), 0.0f, true).Render();
+        GenericPopupBuilder.Create(Strings.T("Scrap 'Vehicle - {0}", (object)__instance.selectedMech.Description.Name), Strings.T("Are you sure you want to scrap this 'Vehicle?\n\nThis 'Vehicle's components will be stored and its chassis removed permanently from your inventory.\n\nSCRAP VALUE: <color=#F79B26FF>{0}</color>", (object)SimGameState.GetCBillString(Mathf.RoundToInt((float)__instance.selectedMech.Chassis.Description.Cost * __instance.sim.Constants.Finances.MechScrapModifier)))).AddButton("Cancel", (Action)null, true, (PlayerAction)null).AddButton("Scrap", new Action(__instance.ConfirmScrapClicked), true, (PlayerAction)null).CancelOnEscape().AddFader(new UIColorRef?(LazySingletonBehavior<UIManager>.Instance.UILookAndColorConstants.PopupBackfill), 0.0f, true).Render();
       }
-      return false;
+      __runOriginal = false; return;
     }
   }
   [HarmonyPatch(typeof(CombatHUDHeatDisplay))]
@@ -559,7 +562,8 @@ namespace CustomUnits {
       try {
         if (mech.isHasHeat() == false) { __result = 0; }
       } catch(Exception e) {
-        Log.TWL(0,e.ToString(),true);
+        Log.ECombat?.TWL(0,e.ToString(),true);
+        UIManager.logger.LogException(e);
       }
     }
   }
@@ -568,14 +572,15 @@ namespace CustomUnits {
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { })]
   public static class CombatHUDHeatDisplay_GetPredictedLevel {
-    public static bool Prefix(CombatHUDHeatDisplay __instance, ref float __result) {
+    public static void Prefix(ref bool __runOriginal, CombatHUDHeatDisplay __instance, ref float __result) {
       try {
-        if (__instance.DisplayedActor == null) { return true; }
-        if (__instance.DisplayedActor.isHasHeat() == false) { __result = 0f; return false; }
+        if (!__runOriginal) { return; }
+        if (__instance.DisplayedActor == null) { return; }
+        if (__instance.DisplayedActor.isHasHeat() == false) { __result = 0f; __runOriginal = false; return; }
       } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
+        Log.Combat?.TWL(0, e.ToString(), true);
+        UIManager.logger.LogException(e);
       }
-      return true;
     }
   }
   [HarmonyPatch(typeof(CombatHUDStabilityDisplay))]
@@ -583,14 +588,16 @@ namespace CustomUnits {
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] {  })]
   public static class CombatHUDStabilityDisplay_GetPredictedLevel {
-    public static bool Prefix(CombatHUDHeatDisplay __instance, ref float __result) {
+    public static void Prefix(ref bool __runOriginal, CombatHUDHeatDisplay __instance, ref float __result) {
       try {
-        if (__instance.DisplayedActor == null) { return true; }
-        if (__instance.DisplayedActor.isHasStability() == false) { __result = 0f; return false; }
+        if (!__runOriginal) { return; }
+        if (__instance.DisplayedActor == null) { return; }
+        if (__instance.DisplayedActor.isHasStability() == false) { __result = 0f; __runOriginal = false; return; }
       } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
+        Log.Combat?.TWL(0, e.ToString(), true);
+        UIManager.logger.LogException(e);
       }
-      return true;
+      return;
     }
   }
   [HarmonyPatch(typeof(Mech))]
@@ -602,7 +609,8 @@ namespace CustomUnits {
       try {
         if (__instance.isHasHeat() == false) { __result = 0; }
       } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
+        Log.Combat?.TWL(0, e.ToString(), true);
+        AbstractActor.logger.LogException(e);
       }
     }
   }
@@ -615,7 +623,8 @@ namespace CustomUnits {
       try {
         if (__instance.isHasHeat() == false) { value = 0; }
       } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
+        Log.Combat?.TWL(0, e.ToString(), true);
+        AbstractActor.logger.LogException(e);
       }
     }
   }
@@ -624,11 +633,12 @@ namespace CustomUnits {
   [HarmonyPatch(MethodType.Getter)]
   [HarmonyPatch(new Type[] { })]
   public static class Mech_TempHeat_get {
-    public static void Postfix(Mech __instance, ref int __result,ref int ____tempHeat) {
+    public static void Postfix(Mech __instance, ref int __result) {
       try {
-        if (__instance.isHasHeat() == false) { __result = 0; ____tempHeat = 0; }
+        if (__instance.isHasHeat() == false) { __result = 0; __instance._tempHeat(0); }
       } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
+        Log.Combat?.TWL(0, e.ToString(), true);
+        AbstractActor.logger.LogException(e);
       }
     }
   }
@@ -637,11 +647,12 @@ namespace CustomUnits {
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { })]
   public static class Mech_AddEngineDamageHeat {
-    public static void Postfix(Mech __instance, ref int ____tempHeat) {
+    public static void Postfix(Mech __instance) {
       try {
-        if (__instance.isHasHeat() == false) { ____tempHeat = 0; }
+        if (__instance.isHasHeat() == false) { __instance._tempHeat(0); }
       } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
+        Log.Combat?.TWL(0, e.ToString(), true);
+        AbstractActor.logger.LogException(e);
       }
     }
   }
@@ -650,11 +661,12 @@ namespace CustomUnits {
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { typeof(string), typeof(int) })]
   public static class Mech_AddExternalHeat {
-    public static void Postfix(Mech __instance, ref int ____tempHeat, string reason, int amt) {
+    public static void Postfix(Mech __instance, string reason, int amt) {
       try {
-        if (__instance.isHasHeat() == false) { ____tempHeat = 0; }
+        if (__instance.isHasHeat() == false) { __instance._tempHeat(0); }
       } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
+        Log.Combat?.TWL(0, e.ToString(), true);
+        AbstractActor.logger.LogException(e);
       }
     }
   }
@@ -663,11 +675,12 @@ namespace CustomUnits {
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { typeof(float) })]
   public static class Mech_AddJumpHeat {
-    public static void Postfix(Mech __instance, ref int ____tempHeat) {
+    public static void Postfix(Mech __instance) {
       try {
-        if (__instance.isHasHeat() == false) { ____tempHeat = 0; }
+        if (__instance.isHasHeat() == false) { __instance._tempHeat(0); }
       } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
+        Log.Combat?.TWL(0, e.ToString(), true);
+        AbstractActor.logger.LogException(e);
       }
     }
   }
@@ -676,11 +689,12 @@ namespace CustomUnits {
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { })]
   public static class Mech_AddWalkHeat {
-    public static void Postfix(Mech __instance, ref int ____tempHeat) {
+    public static void Postfix(Mech __instance) {
       try {
-        if (__instance.isHasHeat() == false) { ____tempHeat = 0; }
+        if (__instance.isHasHeat() == false) { __instance._tempHeat(0); }
       } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
+        Log.ECombat?.TWL(0, e.ToString(), true);
+        AbstractActor.logger.LogException(e);
       }
     }
   }
@@ -689,11 +703,12 @@ namespace CustomUnits {
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { })]
   public static class Mech_AddSprintHeat {
-    public static void Postfix(Mech __instance, ref int ____tempHeat) {
+    public static void Postfix(Mech __instance) {
       try {
-        if (__instance.isHasHeat() == false) { ____tempHeat = 0; Traverse.Create(__instance).Property<int>("_heat").Value = 0; }
+        if (__instance.isHasHeat() == false) { __instance._tempHeat(0); __instance._heat(0); }
       } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
+        Log.ECombat?.TWL(0, e.ToString(), true);
+        AbstractActor.logger.LogException(e);
       }
     }
   }
@@ -702,11 +717,12 @@ namespace CustomUnits {
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { typeof(Weapon), typeof(int) })]
   public static class Mech_AddWeaponHeat {
-    public static void Postfix(Mech __instance, ref int ____tempHeat) {
+    public static void Postfix(Mech __instance) {
       try {
-        if (__instance.isHasHeat() == false) { ____tempHeat = 0; }
+        if (__instance.isHasHeat() == false) { __instance._tempHeat(0); }
       } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
+        Log.ECombat?.TWL(0, e.ToString(), true);
+        AbstractActor.logger.LogException(e);
       }
     }
   }
@@ -715,69 +731,17 @@ namespace CustomUnits {
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { typeof(MissionResult), typeof(bool) })]
   public static class Contract_CompleteContract {
-    private static MethodInfo m_pilot = typeof(Mech).GetProperty("pilot").GetSetMethod(true);
-    public static void pilot(this Mech mech, Pilot pilot) { m_pilot.Invoke(mech, new object[1] { pilot }); }
-
-    private static MethodInfo m_ComponentDefType = typeof(BaseComponentRef).GetProperty("ComponentDefType").GetSetMethod(true);
-    public static void ComponentDefType(this BaseComponentRef def, ComponentType type) { m_ComponentDefType.Invoke(def, new object[1] { type }); }
-
-    private static MethodInfo m_HardpointSlot = typeof(BaseComponentRef).GetProperty("HardpointSlot").GetSetMethod(true);
-    public static void HardpointSlot(this BaseComponentRef def, int slot) { m_HardpointSlot.Invoke(def, new object[1] { slot }); }
-
-    private static MethodInfo m_IsFixed = typeof(BaseComponentRef).GetProperty("IsFixed").GetSetMethod(true);
-    public static void IsFixed(this BaseComponentRef def, bool value) { m_IsFixed.Invoke(def, new object[1] { value }); }
-
-    private static MethodInfo m_MountedLocation = typeof(MechComponentRef).GetProperty("MountedLocation").GetSetMethod(true);
-    public static void MountedLocation(this MechComponentRef def, ChassisLocations loc) { m_MountedLocation.Invoke(def, new object[1] { loc }); }
-
-    private static MethodInfo m_setDescription = typeof(ActorDef).GetProperty("Description").GetSetMethod(true);
-    public static void Description(this ActorDef def, DescriptionDef descr) { m_setDescription.Invoke(def, new object[1] { descr }); }
-
-    private static FieldInfo f_chassisID = typeof(PilotableActorDef).GetField("chassisID", BindingFlags.Instance | BindingFlags.NonPublic);
-    public static void chassisID(this PilotableActorDef def, string chassisID) { f_chassisID.SetValue(def, chassisID); }
-
-    //private static FieldInfo f_heraldryID = typeof(PilotableActorDef).GetField("heraldryID", BindingFlags.Instance | BindingFlags.NonPublic);
-    //public static void heraldryID(this PilotableActorDef def, string heraldryID) { f_heraldryID.SetValue(def, heraldryID); }
-    private static MethodInfo m_MechTags = typeof(MechDef).GetProperty("MechTags").GetSetMethod(true);
-    public static void MechTags_set(this MechDef vDef, TagSet value) { m_MechTags.Invoke(vDef, new object[1] { value }); }
-
-    private static FieldInfo f_simGameMechPartCost = typeof(MechDef).GetField("simGameMechPartCost", BindingFlags.Instance | BindingFlags.NonPublic);
-    public static void simGameMechPartCost(this MechDef def, int value) { f_simGameMechPartCost.SetValue(def, value); }
-
-    private static FieldInfo f_inventory = typeof(MechDef).GetField("inventory", BindingFlags.Instance | BindingFlags.NonPublic);
-    public static void inventory(this MechDef def, MechComponentRef[] value) { f_inventory.SetValue(def, value); }
-    public static MechComponentRef[] inventory(this MechDef def) { return (MechComponentRef[])f_inventory.GetValue(def); }
-
-    private static FieldInfo f_Locations = typeof(MechDef).GetField("Locations", BindingFlags.Instance | BindingFlags.NonPublic);
-    public static void Locations(this MechDef def, LocationLoadoutDef[] value) { f_Locations.SetValue(def, value); }
-    public static LocationLoadoutDef[] Locations(this MechDef def) { return (LocationLoadoutDef[])f_Locations.GetValue(def); }
-
-    private static MethodInfo m_CreateMeleeWeaponRefs = typeof(MechDef).GetMethod("CreateMeleeWeaponRefs", BindingFlags.Instance | BindingFlags.NonPublic);
-    public static void CreateMeleeWeaponRefs(this MechDef def) { m_CreateMeleeWeaponRefs.Invoke(def, new object[] { }); }
-    private static MethodInfo m_InsertFixedEquipmentIntoInventory = typeof(MechDef).GetMethod("InsertFixedEquipmentIntoInventory", BindingFlags.Instance | BindingFlags.NonPublic);
-    public static void InsertFixedEquipmentIntoInventory(this MechDef def) { m_InsertFixedEquipmentIntoInventory.Invoke(def, new object[] { }); }
-    private static MethodInfo m_RefreshLocationReferences = typeof(MechDef).GetMethod("RefreshLocationReferences", BindingFlags.Instance | BindingFlags.NonPublic);
-    public static void RefreshLocationReferences(this MechDef def) { m_RefreshLocationReferences.Invoke(def, new object[] { }); }
-
-    private static FieldInfo f_hasHandledDeath = typeof(AbstractActor).GetField("_hasHandledDeath", BindingFlags.Instance | BindingFlags.NonPublic);
-    public static void _hasHandledDeath(this AbstractActor def, bool value) { f_hasHandledDeath.SetValue(def, value); }
-
-    private static FieldInfo f_team = typeof(AbstractActor).GetField("_team", BindingFlags.Instance | BindingFlags.NonPublic);
-    public static void _team(this AbstractActor def, Team value) { f_team.SetValue(def, value); }
-
-    private static FieldInfo f_teamId = typeof(AbstractActor).GetField("_teamId", BindingFlags.Instance | BindingFlags.NonPublic);
-    public static void _teamId(this AbstractActor def, string value) { f_teamId.SetValue(def, value); }
     public static Mech ToMech(this Vehicle src) {
       MechComponentRef[] inventory = new MechComponentRef[src.allComponents.Count];
       for (int index = 0; index < src.allComponents.Count; ++index) {
         inventory[index] = new MechComponentRef();
         inventory[index].DataManager = src.allComponents[index].vehicleComponentRef.DataManager;
-        inventory[index].ComponentDefType(src.allComponents[index].vehicleComponentRef.ComponentDefType);
-        inventory[index].HardpointSlot(src.allComponents[index].vehicleComponentRef.HardpointSlot);
+        inventory[index].ComponentDefType=(src.allComponents[index].vehicleComponentRef.ComponentDefType);
+        inventory[index].HardpointSlot=(src.allComponents[index].vehicleComponentRef.HardpointSlot);
         inventory[index].DamageLevel = (src.allComponents[index].DamageLevel == ComponentDamageLevel.Destroyed?ComponentDamageLevel.Penalized:src.allComponents[index].DamageLevel);
         inventory[index].prefabName = src.allComponents[index].vehicleComponentRef.prefabName;
         inventory[index].hasPrefabName = src.allComponents[index].vehicleComponentRef.hasPrefabName;
-        inventory[index].IsFixed(true);
+        inventory[index].IsFixed=(true);
         inventory[index].ComponentDefID = src.allComponents[index].vehicleComponentRef.ComponentDefID;
         inventory[index].SimGameUID = src.allComponents[index].vehicleComponentRef.SimGameUID;
         ChassisLocations loc = ChassisLocations.Head;
@@ -788,21 +752,21 @@ namespace CustomUnits {
           case VehicleChassisLocations.Front: loc = ChassisLocations.LeftArm; break;
           case VehicleChassisLocations.Rear: loc = ChassisLocations.RightArm; break;
         }
-        inventory[index].MountedLocation(loc);
+        inventory[index].MountedLocation=(loc);
         inventory[index].RefreshComponentDef();
       }
       MechDef dest = new MechDef(src.VehicleDef.Description, src.VehicleDef.ChassisID, inventory, src.VehicleDef.DataManager);
       dest.DataManager = src.VehicleDef.DataManager;
-      dest.Description(src.VehicleDef.Description);
-      dest.chassisID(src.VehicleDef.ChassisID);
+      dest.Description=(src.VehicleDef.Description);
+      dest.chassisID=(src.VehicleDef.ChassisID);
       dest.Chassis = src.VehicleDef.DataManager.ChassisDefs.Get(src.VehicleDef.ChassisID);
       dest.prefabOverride = string.Empty;
-      dest.paintTextureID(src.VehicleDef.PaintTextureID);
-      dest.heraldryID(src.VehicleDef.HeraldryID);
-      dest.heraldryDef(src.VehicleDef.HeraldryDef);
-      dest.MechTags_set(new TagSet(src.VehicleDef.VehicleTags));
+      dest.paintTextureID=(src.VehicleDef.PaintTextureID);
+      dest.heraldryID=(src.VehicleDef.HeraldryID);
+      dest.heraldryDef=(src.VehicleDef.HeraldryDef);
+      dest.MechTags=(new TagSet(src.VehicleDef.VehicleTags));
       //dest.MechTags.Add();
-      dest.simGameMechPartCost(src.VehicleDef.Description.Cost);
+      dest.simGameMechPartCost=(src.VehicleDef.Description.Cost);
       LocationLoadoutDef[] locations = new LocationLoadoutDef[8];
       if (src.VehicleDef.Chassis.HasTurret) {
         locations[0] = new LocationLoadoutDef(ChassisLocations.Head, src.VehicleDef.Turret.CurrentArmor * src.Combat.Constants.CombatValueMultipliers.ArmorMultiplierVehicle, -1f, src.VehicleDef.Turret.CurrentInternalStructure, src.VehicleDef.Turret.AssignedArmor * src.Combat.Constants.CombatValueMultipliers.ArmorMultiplierVehicle, -1f, src.VehicleDef.Turret.DamageLevel);
@@ -831,14 +795,14 @@ namespace CustomUnits {
       Mech result = new Mech(dest, src.pilot.pilotDef, src.EncounterTags, src.GUID, src.Combat, src.spawnerGUID, src.CustomHeraldryDef);
       result.pilot(src.pilot);
       result.Init(src.CurrentPosition, 0f, false);
-      result._hasHandledDeath(src.IsDead);
+      result._hasHandledDeath=(src.IsDead);
       //if (src.IsDead) {
       //  result.StatCollection.Set<float>(result.GetStringForStructureLocation(ChassisLocations.CenterTorso), 0f);
       //  result.StatCollection.Set<LocationDamageLevel>(result.GetStringForStructureDamageLevel(ChassisLocations.CenterTorso), LocationDamageLevel.Destroyed);
       //  result.pilot.StatCollection.Set("LethalInjury",true);
       //}
-      result._team(src.team);
-      result._teamId(src.TeamId);
+      result._team=(src.team);
+      result._teamId=(src.TeamId);
       if (src.VehicleDef.Chassis.HasTurret) {
         result.StatCollection.Set<float>(result.GetStringForArmorLocation(ArmorLocation.Head), Mathf.Round(src.TurretArmor));
         result.StatCollection.Set<float>(result.GetStringForStructureLocation(ChassisLocations.Head), Mathf.Round(src.TurretStructure));
@@ -872,11 +836,11 @@ namespace CustomUnits {
         result.StatCollection.Set<float>(result.GetStringForStructureLocation(ChassisLocations.LeftTorso), 0f);
         result.StatCollection.Set<LocationDamageLevel>(result.GetStringForStructureDamageLevel(ChassisLocations.LeftTorso), LocationDamageLevel.Destroyed);
       }
-      Log.TWL(0, "Vehicle.ToMech:" + result.Description.Id+" GUID:"+result.MechDef.GUID+" isDead:"+src.IsDead+"/"+result.IsDead+" isDestroyed:"+result.ToMechDef().IsDestroyed);
-      Log.WL(1, "Head def: aa:"+result.MechDef.Head.AssignedArmor+" ca:"+result.MechDef.Head.CurrentArmor+" is:"+result.MechDef.Head.CurrentInternalStructure+" mech: a:"+result.HeadArmor+" is:"+result.HeadStructure);
-      Log.WL(1, "CenterTorso def: aa:" + result.MechDef.CenterTorso.AssignedArmor + " ca:" + result.MechDef.CenterTorso.CurrentArmor + " is:" + result.MechDef.CenterTorso.CurrentInternalStructure + " mech: a:" + result.CenterTorsoFrontArmor + " is:" + result.CenterTorsoStructure);
+      Log.Combat?.TWL(0, "Vehicle.ToMech:" + result.Description.Id+" GUID:"+result.MechDef.GUID+" isDead:"+src.IsDead+"/"+result.IsDead+" isDestroyed:"+result.ToMechDef().IsDestroyed);
+      Log.Combat?.WL(1, "Head def: aa:"+result.MechDef.Head.AssignedArmor+" ca:"+result.MechDef.Head.CurrentArmor+" is:"+result.MechDef.Head.CurrentInternalStructure+" mech: a:"+result.HeadArmor+" is:"+result.HeadStructure);
+      Log.Combat?.WL(1, "CenterTorso def: aa:" + result.MechDef.CenterTorso.AssignedArmor + " ca:" + result.MechDef.CenterTorso.CurrentArmor + " is:" + result.MechDef.CenterTorso.CurrentInternalStructure + " mech: a:" + result.CenterTorsoFrontArmor + " is:" + result.CenterTorsoStructure);
       MechDef createdDef = result.ToMechDef();
-      Log.WL(1, "created def CenterTorso def: aa:" + createdDef.CenterTorso.AssignedArmor + " ca:" + createdDef.CenterTorso.CurrentArmor + " is:" + createdDef.CenterTorso.CurrentInternalStructure + "/" +createdDef.IsLocationDestroyed(ChassisLocations.CenterTorso)+" mech: a:" + result.CenterTorsoFrontArmor + " is:" + result.CenterTorsoStructure);
+      Log.Combat?.WL(1, "created def CenterTorso def: aa:" + createdDef.CenterTorso.AssignedArmor + " ca:" + createdDef.CenterTorso.CurrentArmor + " is:" + createdDef.CenterTorso.CurrentInternalStructure + "/" +createdDef.IsLocationDestroyed(ChassisLocations.CenterTorso)+" mech: a:" + result.CenterTorsoFrontArmor + " is:" + result.CenterTorsoStructure);
       return result;
     }
     public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) {
@@ -889,7 +853,7 @@ namespace CustomUnits {
     }
 
     public static List<Mech> AllMechs(CombatGameState combat) {
-      Log.TWL(0, "Contract.CompleteContract AllMechs");
+      Log.Combat?.TWL(0, "Contract.CompleteContract AllMechs");
       List<Mech> allMechs = combat.AllMechs;
       List<Vehicle> playerVehicle = new List<Vehicle>();
       List<AbstractActor> allActors = combat.AllActors;
@@ -903,23 +867,23 @@ namespace CustomUnits {
           if (actor.IsDeployDirector()) { continue; }
           if(actor.UnitType == UnitType.Mech) {
             Mech mech = actor as Mech;
-            Log.WL(1, "MechDef GUID:"+ mech.MechDef.GUID);
+            Log.Combat?.WL(1, "MechDef GUID:"+ mech.MechDef.GUID);
             if (playerDefGuids.Contains(mech.MechDef.GUID)) {
-              Log.WL(2,"team:" + mech.TeamId+"->"+ combat.LocalPlayerTeamGuid);
+              Log.Combat?.WL(2,"team:" + mech.TeamId+"->"+ combat.LocalPlayerTeamGuid);
               if (mech.TeamId != combat.LocalPlayerTeamGuid) {
-                mech._teamId(combat.LocalPlayerTeamGuid);
-                mech._team(combat.LocalPlayerTeam);
+                mech._teamId=(combat.LocalPlayerTeamGuid);
+                mech._team=(combat.LocalPlayerTeam);
               }
             }
           }
           if (actor.UnitType == UnitType.Vehicle) {
             Vehicle vehicle = actor as Vehicle;
-            Log.WL(1, "VehicleDef GUID:" + vehicle.VehicleDef.GUID);
+            Log.Combat?.WL(1, "VehicleDef GUID:" + vehicle.VehicleDef.GUID);
             if (playerDefGuids.Contains(vehicle.VehicleDef.GUID)) {
-              Log.WL(2, "team:" + vehicle.TeamId + "->" + combat.LocalPlayerTeamGuid);
+              Log.Combat?.WL(2, "team:" + vehicle.TeamId + "->" + combat.LocalPlayerTeamGuid);
               if (vehicle.TeamId != combat.LocalPlayerTeamGuid) {
-                vehicle._teamId(combat.LocalPlayerTeamGuid);
-                vehicle._team(combat.LocalPlayerTeam);
+                vehicle._teamId=(combat.LocalPlayerTeamGuid);
+                vehicle._team=(combat.LocalPlayerTeam);
               }
             }
           }
@@ -929,7 +893,8 @@ namespace CustomUnits {
             if (vehicle != null) { allMechs.Add(vehicle.ToMech()); }
           }
         } catch (Exception e) {
-          Log.TWL(0, e.ToString(), true);
+          Log.ECombat?.TWL(0, e.ToString(), true);
+          CombatGameState.gameInfoLogger.LogException(e);
         };
       }
       return allMechs;
@@ -974,13 +939,14 @@ namespace CustomUnits {
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPriority(Priority.Last)]
   public static class SelectionStateMove_CreateMeleeOrders {
-    public static bool Prefix(SelectionStateMove __instance) {
-      if (__instance.SelectedActor == null) { return true; }
+    public static void Prefix(ref bool __runOriginal, SelectionStateMove __instance) {
+      if (!__runOriginal) { return; }
+      if (__instance.SelectedActor == null) { return; }
       if(__instance.SelectedActor.UnitType == UnitType.Vehicle) {
         GenericPopupBuilder.Create("Can not perform melee", Strings.T("We are very-very sorry, but vehicles can not in melee")).AddFader(new UIColorRef?(LazySingletonBehavior<UIManager>.Instance.UILookAndColorConstants.PopupBackfill), 0.0f, true).Render();
-        return false;
+        __runOriginal = false; return;
       } else {
-        return true;
+        return;
       }
     }
   }
@@ -988,13 +954,14 @@ namespace CustomUnits {
   [HarmonyPatch("CalculateMeleeStat")]
   [HarmonyPatch(MethodType.Normal)]
   public static class MechStatisticsRules_CalculateMeleeStat {
-    public static bool Prefix(MechDef mechDef, ref float currentValue, ref float maxValue) {
+    public static void Prefix(ref bool __runOriginal, MechDef mechDef, ref float currentValue, ref float maxValue) {
+      if (!__runOriginal) { return; }
       if (mechDef.IsVehicle()) {
         currentValue = 0f;
         maxValue = 10f;
-        return false;
+        __runOriginal = false; return;
       }
-      return true;
+      return;
     }
   }
   [HarmonyPatch(typeof(MechBayMechInfoWidget))]
@@ -1002,17 +969,18 @@ namespace CustomUnits {
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { })]
   public static class MechBayMechInfoWidget_SetStats {
-    public static void Postfix(LanceMechEquipmentList __instance, LanceStat[] ___mechStats, MechDef ___selectedMech) {
-      if (___selectedMech == null) { return; }
-      VerticalLayoutGroup layout = ___mechStats[3].transform.parent.gameObject.GetComponent<VerticalLayoutGroup>();
-      if (___selectedMech.IsVehicle() == false) {
+    public static void Postfix(ref bool __runOriginal, MechBayMechInfoWidget __instance) {
+      if (!__runOriginal) { return; }
+      if (__instance.selectedMech == null) { return; }
+      VerticalLayoutGroup layout = __instance.mechStats[3].transform.parent.gameObject.GetComponent<VerticalLayoutGroup>();
+      if (__instance.selectedMech.IsVehicle() == false) {
         layout.childControlHeight = true;
-        ___mechStats[3].gameObject.SetActive(true);
-        ___mechStats[5].gameObject.SetActive(true);
+        __instance.mechStats[3].gameObject.SetActive(true);
+        __instance.mechStats[5].gameObject.SetActive(true);
       } else {
         layout.childControlHeight = false;
-        ___mechStats[3].gameObject.SetActive(false);
-        ___mechStats[5].gameObject.SetActive(false);
+        __instance.mechStats[3].gameObject.SetActive(false);
+        __instance.mechStats[5].gameObject.SetActive(false);
       }
     }
   }
@@ -1021,54 +989,44 @@ namespace CustomUnits {
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { })]
   public static class LanceMechEquipmentList_SetLoadout {
-    public static void Postfix(LanceMechEquipmentList __instance,
-        LocalizableText ___headLabel,
-        LocalizableText ___centerTorsoLabel,
-        LocalizableText ___leftTorsoLabel,
-        LocalizableText ___rightTorsoLabel,
-        LocalizableText ___leftArmLabel,
-        LocalizableText ___rightArmLabel,
-        LocalizableText ___leftLegLabel,
-        LocalizableText ___rightLegLabel,
-        MechDef ___activeMech
-    ) {
+    public static void Postfix(LanceMechEquipmentList __instance) {
       bool isVehicle = false;
       bool isTrooper = false;
       int troopersCount = 0;
-      if (___activeMech.IsVehicle()) { isVehicle = true; }
-      UnitCustomInfo info = ___activeMech.GetCustomInfo();
+      if (__instance.activeMech.IsVehicle()) { isVehicle = true; }
+      UnitCustomInfo info = __instance.activeMech.GetCustomInfo();
       if(info != null) {
         troopersCount = info.SquadInfo.Troopers;
         if (troopersCount > 1) { isTrooper = true; }
       }
       if (isTrooper) {
-        ___headLabel.SetText("U0");
-        ___centerTorsoLabel.SetText("U1"); ___centerTorsoLabel.gameObject.transform.parent.gameObject.SetActive(true);
-        ___leftTorsoLabel.SetText("U2"); ___leftTorsoLabel.gameObject.transform.parent.gameObject.SetActive(troopersCount >= 3);
-        ___rightTorsoLabel.SetText("U3"); ___rightTorsoLabel.gameObject.transform.parent.gameObject.SetActive(troopersCount >= 4);
-        ___leftArmLabel.SetText("U4"); ___leftArmLabel.gameObject.transform.parent.gameObject.SetActive(troopersCount >= 5);
-        ___rightArmLabel.SetText("U5"); ___rightArmLabel.gameObject.transform.parent.gameObject.SetActive(troopersCount >= 6);
-        ___leftLegLabel.SetText("U6"); ___leftLegLabel.gameObject.transform.parent.gameObject.SetActive(troopersCount >= 7);
-        ___rightLegLabel.SetText("U7"); ___rightLegLabel.gameObject.transform.parent.gameObject.SetActive(troopersCount >= 8);
+        __instance.headLabel.SetText("U0");
+        __instance.centerTorsoLabel.SetText("U1"); __instance.centerTorsoLabel.gameObject.transform.parent.gameObject.SetActive(true);
+        __instance.leftTorsoLabel.SetText("U2"); __instance.leftTorsoLabel.gameObject.transform.parent.gameObject.SetActive(troopersCount >= 3);
+        __instance.rightTorsoLabel.SetText("U3"); __instance.rightTorsoLabel.gameObject.transform.parent.gameObject.SetActive(troopersCount >= 4);
+        __instance.leftArmLabel.SetText("U4"); __instance.leftArmLabel.gameObject.transform.parent.gameObject.SetActive(troopersCount >= 5);
+        __instance.rightArmLabel.SetText("U5"); __instance.rightArmLabel.gameObject.transform.parent.gameObject.SetActive(troopersCount >= 6);
+        __instance.leftLegLabel.SetText("U6"); __instance.leftLegLabel.gameObject.transform.parent.gameObject.SetActive(troopersCount >= 7);
+        __instance.rightLegLabel.SetText("U7"); __instance.rightLegLabel.gameObject.transform.parent.gameObject.SetActive(troopersCount >= 8);
       }else
       if (isVehicle) {
-        ___headLabel.SetText("T");
-        ___centerTorsoLabel.SetText("CT"); ___centerTorsoLabel.gameObject.transform.parent.gameObject.SetActive(false);
-        ___leftTorsoLabel.SetText("LT"); ___leftTorsoLabel.gameObject.transform.parent.gameObject.SetActive(false);
-        ___rightTorsoLabel.SetText("RT"); ___rightTorsoLabel.gameObject.transform.parent.gameObject.SetActive(false);
-        ___leftArmLabel.SetText("F");
-        ___rightArmLabel.SetText("R");
-        ___leftLegLabel.SetText("L");
-        ___rightLegLabel.SetText("R");
+        __instance.headLabel.SetText("T");
+        __instance.centerTorsoLabel.SetText("CT"); __instance.centerTorsoLabel.gameObject.transform.parent.gameObject.SetActive(false);
+        __instance.leftTorsoLabel.SetText("LT"); __instance.leftTorsoLabel.gameObject.transform.parent.gameObject.SetActive(false);
+        __instance.rightTorsoLabel.SetText("RT"); __instance.rightTorsoLabel.gameObject.transform.parent.gameObject.SetActive(false);
+        __instance.leftArmLabel.SetText("F");
+        __instance.rightArmLabel.SetText("R");
+        __instance.leftLegLabel.SetText("L");
+        __instance.rightLegLabel.SetText("R");
       } else {
-        ___headLabel.SetText("H");
-        ___centerTorsoLabel.SetText("CT"); ___centerTorsoLabel.gameObject.transform.parent.gameObject.SetActive(true);
-        ___leftTorsoLabel.SetText("LT"); ___leftTorsoLabel.gameObject.transform.parent.gameObject.SetActive(true);
-        ___rightTorsoLabel.SetText("RT"); ___rightTorsoLabel.gameObject.transform.parent.gameObject.SetActive(true);
-        ___leftArmLabel.SetText("LA"); ___leftArmLabel.gameObject.transform.parent.gameObject.SetActive(true);
-        ___rightArmLabel.SetText("RA"); ___rightArmLabel.gameObject.transform.parent.gameObject.SetActive(true);
-        ___leftLegLabel.SetText("LL"); ___leftLegLabel.gameObject.transform.parent.gameObject.SetActive(true);
-        ___rightLegLabel.SetText("RL"); ___rightLegLabel.gameObject.transform.parent.gameObject.SetActive(true);
+        __instance.headLabel.SetText("H");
+        __instance.centerTorsoLabel.SetText("CT"); __instance.centerTorsoLabel.gameObject.transform.parent.gameObject.SetActive(true);
+        __instance.leftTorsoLabel.SetText("LT"); __instance.leftTorsoLabel.gameObject.transform.parent.gameObject.SetActive(true);
+        __instance.rightTorsoLabel.SetText("RT"); __instance.rightTorsoLabel.gameObject.transform.parent.gameObject.SetActive(true);
+        __instance.leftArmLabel.SetText("LA"); __instance.leftArmLabel.gameObject.transform.parent.gameObject.SetActive(true);
+        __instance.rightArmLabel.SetText("RA"); __instance.rightArmLabel.gameObject.transform.parent.gameObject.SetActive(true);
+        __instance.leftLegLabel.SetText("LL"); __instance.leftLegLabel.gameObject.transform.parent.gameObject.SetActive(true);
+        __instance.rightLegLabel.SetText("RL"); __instance.rightLegLabel.gameObject.transform.parent.gameObject.SetActive(true);
       }
     }
   }
@@ -1077,8 +1035,7 @@ namespace CustomUnits {
   [HarmonyPatch(new Type[] { typeof(AttackDirection) })]
   [HarmonyPatch(MethodType.Normal)]
   public static class HUDMechArmorReadout_UpdateMechStructureAndArmor_info {
-    public static bool Prefix(HUDMechArmorReadout __instance) {
-      return true;
+    public static void Prefix(HUDMechArmorReadout __instance) {
     }
     public static void Postfix(HUDMechArmorReadout __instance) {
     }
@@ -1088,33 +1045,6 @@ namespace CustomUnits {
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { typeof(bool) })]
   public static class UnitSpawnPointGameLogic_Spawn {
-    private static MethodInfo m_Description = typeof(ActorDef).GetProperty("Description").GetSetMethod(true);
-    public static void Description_set(this ActorDef aDef, DescriptionDef descr) { m_Description.Invoke(aDef, new object[1] { descr }); }
-    private static MethodInfo m_ChassisID = typeof(PilotableActorDef).GetProperty("ChassisID").GetSetMethod(true);
-    public static void ChassisID_set(this PilotableActorDef aDef, string id) { m_ChassisID.Invoke(aDef, new object[1] { id }); }
-    private static MethodInfo m_ComponentDefType = typeof(BaseComponentRef).GetProperty("ComponentDefType").GetSetMethod(true);
-    public static void ComponentDefType_set(this BaseComponentRef cRef, ComponentType type) { m_ComponentDefType.Invoke(cRef, new object[1] { type }); }
-    private static MethodInfo m_HardpointSlot = typeof(BaseComponentRef).GetProperty("HardpointSlot").GetSetMethod(true);
-    public static void HardpointSlot_set(this BaseComponentRef cRef, int slot) { m_HardpointSlot.Invoke(cRef, new object[1] { slot }); }
-    private static MethodInfo m_IsFixed = typeof(BaseComponentRef).GetProperty("IsFixed").GetSetMethod(true);
-    public static void IsFixed_set(this BaseComponentRef cRef, bool isFixed) { m_IsFixed.Invoke(cRef, new object[1] { isFixed }); }
-    private static MethodInfo m_MountedLocation = typeof(VehicleComponentRef).GetProperty("MountedLocation").GetSetMethod(true);
-    public static void MountedLocation_set(this VehicleComponentRef cRef, VehicleChassisLocations loc) { m_MountedLocation.Invoke(cRef, new object[1] { loc }); }
-    private static FieldInfo f_paintTextureID = typeof(PilotableActorDef).GetField("paintTextureID", BindingFlags.Instance | BindingFlags.NonPublic);
-    public static void paintTextureID(this PilotableActorDef pDef, string value) { f_paintTextureID.SetValue(pDef, value); }
-    public static string paintTextureID(this PilotableActorDef pDef) { return (string)f_paintTextureID.GetValue(pDef); }
-    private static FieldInfo f_heraldryID = typeof(PilotableActorDef).GetField("heraldryID", BindingFlags.Instance | BindingFlags.NonPublic);
-    public static void heraldryID(this PilotableActorDef pDef, string value) { f_heraldryID.SetValue(pDef, value); }
-    private static FieldInfo f_heraldryDef = typeof(PilotableActorDef).GetField("heraldryDef", BindingFlags.Instance | BindingFlags.NonPublic);
-    public static void heraldryDef(this PilotableActorDef pDef, HeraldryDef value) { f_heraldryID.SetValue(pDef, value); }
-    private static MethodInfo m_VehicleTags = typeof(VehicleDef).GetProperty("VehicleTags").GetSetMethod(true);
-    public static void VehicleTags_set(this VehicleDef vDef, TagSet value) { m_VehicleTags.Invoke(vDef, new object[1] { value }); }
-    private static FieldInfo f_vLocaltions = typeof(VehicleDef).GetField("Locations", BindingFlags.Instance | BindingFlags.NonPublic);
-    public static void Localtions(this VehicleDef vDef, VehicleLocationLoadoutDef[] value) { f_vLocaltions.SetValue(vDef, value); }
-    private static FieldInfo f_inventory = typeof(VehicleDef).GetField("inventory", BindingFlags.Instance | BindingFlags.NonPublic);
-    public static void inventory(this VehicleDef vDef, VehicleComponentRef[] value) { f_inventory.SetValue(vDef, value); }
-    private static FieldInfo f_mLocaltions = typeof(MechDef).GetField("Locations", BindingFlags.Instance | BindingFlags.NonPublic);
-    public static LocationLoadoutDef[] Localtions(this MechDef mDef) { return (LocationLoadoutDef[])f_mLocaltions.GetValue(mDef); }
     public static VehicleDef toVehicleDef(this MechDef mDef, DataManager dataManager) {
       List<VehicleComponentRef> inventory = new List<VehicleComponentRef>();
       foreach (MechComponentRef mRef in mDef.Inventory) {
@@ -1132,30 +1062,30 @@ namespace CustomUnits {
         }
         VehicleComponentRef vRef = new VehicleComponentRef();
         vRef.DataManager = dataManager;
-        vRef.ComponentDefType_set(mRef.ComponentDefType);
-        vRef.HardpointSlot_set(mRef.HardpointSlot);
+        vRef.ComponentDefType=(mRef.ComponentDefType);
+        vRef.HardpointSlot=(mRef.HardpointSlot);
         vRef.DamageLevel = mRef.DamageLevel;
         vRef.prefabName = mRef.prefabName;
         vRef.hasPrefabName = mRef.hasPrefabName;
-        vRef.IsFixed_set(true);
+        vRef.IsFixed=(true);
         vRef.ComponentDefID = mRef.ComponentDefID;
         vRef.SimGameUID = mRef.SimGameUID;
-        vRef.MountedLocation_set(location);
+        vRef.MountedLocation=(location);
         inventory.Add(vRef);
       }
       VehicleDef result = new VehicleDef();
       result.DataManager = dataManager;
-      result.Description_set(mDef.Description);
-      result.ChassisID_set(mDef.ChassisID);
-      result.inventory(inventory.ToArray());
+      result.Description=(mDef.Description);
+      result.ChassisID=(mDef.ChassisID);
+      result.inventory=(inventory.ToArray());
       //result.prefabOverride = def.prefabOverride;
-      result.paintTextureID(mDef.paintTextureID());
-      result.heraldryID(mDef.HeraldryID);
-      result.heraldryDef(mDef.HeraldryDef);
-      result.VehicleTags_set(new TagSet(mDef.MechTags));
-      List<VehicleLocationLoadoutDef> localtions = new List<VehicleLocationLoadoutDef>();
+      result.paintTextureID=mDef.paintTextureID;
+      result.heraldryID=(mDef.HeraldryID);
+      result.heraldryDef=(mDef.HeraldryDef);
+      result.VehicleTags=(new TagSet(mDef.MechTags));
+      List<VehicleLocationLoadoutDef> locations = new List<VehicleLocationLoadoutDef>();
       Dictionary<int, VehicleLocationLoadoutDef> dLoc = new Dictionary<int, VehicleLocationLoadoutDef>();
-      foreach (LocationLoadoutDef lDef in mDef.Localtions()) {
+      foreach (LocationLoadoutDef lDef in mDef.Locations) {
         if ((lDef.CurrentInternalStructure == 0f) && (lDef.AssignedArmor == 0f)) { continue; }
         VehicleChassisLocations location = VehicleChassisLocations.Turret;
         int id = -1;
@@ -1175,33 +1105,33 @@ namespace CustomUnits {
       }
       for (int t = 0; t < 5; ++t) {
         if (dLoc.TryGetValue(t, out VehicleLocationLoadoutDef vlDef)) {
-          localtions.Add(vlDef);
+          locations.Add(vlDef);
         } else {
-          localtions.Add(new VehicleLocationLoadoutDef());
+          locations.Add(new VehicleLocationLoadoutDef());
         }
       }
-      result.Localtions(localtions.ToArray());
+      result.Locations=(locations.ToArray());
       result.SetGuid(mDef.GUID);
       result.DataManager = dataManager;
-      Log.TWL(0, "MechDef.toVehicleDef "+result.Description.Id+" GUID:"+result.GUID);
+      Log.M?.TWL(0, "MechDef.toVehicleDef "+result.Description.Id+" GUID:"+result.GUID);
       result.Refresh();
       return result;
     }
     public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) {
-      Log.TWL(0, "UnitSpawnPointGameLogic.Spawn Transpiler");
+      Log.M?.TWL(0, "UnitSpawnPointGameLogic.Spawn Transpiler");
       CustomDeploy.Core.SpawnMech_internal = SpawnMech;
       MethodInfo targetMethod = typeof(UnitSpawnPointGameLogic).GetMethod("SpawnMech", BindingFlags.Instance | BindingFlags.Public);
       var replacementMethod = AccessTools.Method(typeof(UnitSpawnPointGameLogic_Spawn), nameof(SpawnMech));
       return Transpilers.MethodReplacer(instructions, targetMethod, replacementMethod);
     }
     public static AbstractActor SpawnMech(UnitSpawnPointGameLogic instance, MechDef mDef, PilotDef pilot, Team team, Lance lance, HeraldryDef customHeraldryDef) {
-      Log.TWL(0, "UnitSpawnPointGameLogic.Spawn SpawnMech " + mDef.Description.Id + " chassis:" + (mDef.Chassis == null?"null":mDef.Chassis.Description.Id));
+      Log.Combat?.TWL(0, "UnitSpawnPointGameLogic.Spawn SpawnMech " + mDef.Description.Id + " chassis:" + (mDef.Chassis == null?"null":mDef.Chassis.Description.Id));
       if (mDef.Chassis == null) { return null; }
       DataManager dataManager = mDef.DataManager;
       if (dataManager == null) { dataManager = mDef.Chassis.DataManager; }
       if (dataManager == null) { dataManager = instance.Combat.DataManager; }
       if (dataManager == null) { dataManager = mDef.DataManager(); }
-      Log.WL(1, "dataManager:" + (dataManager == null ? "null" : "not null"));
+      Log.Combat?.WL(1, "dataManager:" + (dataManager == null ? "null" : "not null"));
       AbstractActor result = null;
       try {
         bool spawnAsVehicle = false;
@@ -1213,18 +1143,18 @@ namespace CustomUnits {
           spawnAsVehicle = mDef.Chassis.ChassisInfo().SpawnAs == SpawnType.AsVehicle;
         }
         if (spawnAsVehicle == false) {
-          Log.WL(1, "spawning mech");
+          Log.Combat?.WL(1, "spawning mech");
           result = instance.SpawnMech(mDef, pilot, team, lance, customHeraldryDef);
         } else {
-          Log.WL(1, "spawning vehicle");
+          Log.Combat?.WL(1, "spawning vehicle");
           VehicleDef def = mDef.toVehicleDef(dataManager);
-          Log.WL(1, def.ToJSON());
+          Log.Combat?.WL(1, def.ToJSON());
           result = instance.SpawnVehicle(def, pilot, team, lance, customHeraldryDef);
         }
-        Log.WL(1, "success");
+        Log.Combat?.WL(1, "success");
         return result;
       } catch (Exception e) {
-        Log.WL(1, e.ToString());
+        Log.Combat?.WL(1, e.ToString());
         return null;
       }
     }
@@ -1234,17 +1164,17 @@ namespace CustomUnits {
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { typeof(Transform), typeof(float) })]
   public static class ActorMovementSequence_AlignVehicleToGround {
-    public static bool Prefix(Transform vehicleTransform, float deltaTime) {
-
+    public static void Prefix(ref bool __runOriginal, Transform vehicleTransform, float deltaTime) {
+      if (!__runOriginal) { return; }
       PilotableActorRepresentation rep = vehicleTransform.gameObject.GetComponent<PilotableActorRepresentation>();
       if (rep != null) {
         if (rep.parentActor != null) {
-          if (rep.parentActor.UnaffectedPathing()) { return false; }
+          if (rep.parentActor.UnaffectedPathing()) { __runOriginal = false; return; }
         }
       }
       //Log.TWL(0, "ActorMovementSequence.AlignVehicleToGround "+ vehicleTransform.name);
-      if (Traverse.Create(typeof(ActorMovementSequence)).Field<int>("ikLayerMask").Value == 0) {
-        Traverse.Create(typeof(ActorMovementSequence)).Field<int>("ikLayerMask").Value = LayerMask.GetMask("Terrain", "Obstruction", "Combatant");
+      if (ActorMovementSequence.ikLayerMask == 0) {
+        ActorMovementSequence.ikLayerMask = LayerMask.GetMask("Terrain", "Obstruction", "Combatant");
       }
       RaycastHit[] raycastHitArray = Physics.RaycastAll(new Ray(vehicleTransform.position + Vector3.up * 20f, Vector3.down), 40f, Traverse.Create(typeof(ActorMovementSequence)).Field<int>("ikLayerMask").Value);
       RaycastHit? nullable = new RaycastHit?();
@@ -1262,13 +1192,13 @@ namespace CustomUnits {
           }
         }
       }
-      if (!nullable.HasValue) { return false; }
+      if (!nullable.HasValue) { __runOriginal = false; return; }
       raycastHit = nullable.Value;
       Vector3 normal = raycastHit.normal;
       //Log.WL(1, "ray hit found. Point:" + raycastHit.point + " hit collider:" + raycastHit.collider.transform.name);
       Quaternion to = Quaternion.FromToRotation(vehicleTransform.up, normal) * Quaternion.Euler(0.0f, vehicleTransform.rotation.eulerAngles.y, 0.0f);
       vehicleTransform.rotation = Quaternion.RotateTowards(vehicleTransform.rotation, to, 180f * deltaTime);
-      return false;
+      __runOriginal = false; return;
     }
   }
   //[HarmonyPatch(typeof(UnitSpawnPointGameLogic))]
@@ -1362,7 +1292,7 @@ namespace CustomUnits {
       if (__instance.Description.Id.IsInFakeDef() == false) { return; }
       UnitCustomInfo info = __instance.GetCustomInfo();
       if (info != null) { if (info.FakeVehicle) { return; } }
-      Log.TWL(0, "MechDef.GatherDependencies fake " + __instance.Description.Id);
+      Log.M?.TWL(0, "MechDef.GatherDependencies fake " + __instance.Description.Id);
       dependencyLoad.RequestResource(BattleTechResourceType.VehicleDef, __instance.Description.Id);
       dependencyLoad.RequestResource(BattleTechResourceType.VehicleChassisDef, __instance.ChassisID);
       if (dataManager.VehicleDefs.TryGet(__instance.Description.Id, out VehicleDef vdef)) {
@@ -1382,7 +1312,7 @@ namespace CustomUnits {
     public static void Postfix(ChassisDef __instance, DataManager dataManager, DataManager.DependencyLoadRequest dependencyLoad, uint activeRequestWeight) {
       ChassisDef_GatherDependencies_fake.dataManager = dataManager;
       if (__instance.Description.Id.IsInFakeChassis() == false) { return; }
-      Log.TWL(0, "ChassisDef.GatherDependencies fake " + __instance.Description.Id);
+      Log.M?.TWL(0, "ChassisDef.GatherDependencies fake " + __instance.Description.Id);
       if (dataManager.VehicleChassisDefs.TryGet(__instance.Description.Id, out VehicleChassisDef vchassis)) {
         //vchassis.GatherDependencies(dataManager, dependencyLoad, activeRequestWeight);
       } else {
@@ -1396,11 +1326,11 @@ namespace CustomUnits {
   [HarmonyPatch(MethodType.Normal)]
   public static class VehicleChassisDef_RefreshChassis {
     public static void Postfix(VehicleDef __instance) {
-      Log.TWL(0, "VehicleChassisDef.RefreshChassis " + __instance.ChassisID + " chassis:" + (__instance.Chassis == null ? "null" : "not null"));
+      Log.M?.TWL(0, "VehicleChassisDef.RefreshChassis " + __instance.ChassisID + " chassis:" + (__instance.Chassis == null ? "null" : "not null"));
       if (__instance.Chassis == null) {
-        Log.WL(1, "DataManager:" + (__instance.DataManager == null ? "null" : "not null"));
+        Log.M?.WL(1, "DataManager:" + (__instance.DataManager == null ? "null" : "not null"));
         if (__instance.DataManager != null) {
-          Log.WL(1, "VehicleChassis:" + (__instance.DataManager.VehicleChassisDefs.Exists(__instance.ChassisID)));
+          Log.M?.WL(1, "VehicleChassis:" + (__instance.DataManager.VehicleChassisDefs.Exists(__instance.ChassisID)));
         }
       }
     }
@@ -1429,7 +1359,7 @@ namespace CustomUnits {
       if (mechDef.IsVehicle()) { return; };
       __result = ((double)mechDef.LeftArm.CurrentInternalStructure >= 1.0) && ((double)mechDef.RightArm.CurrentInternalStructure >= 1.0) && ((double)mechDef.LeftLeg.CurrentInternalStructure >= 1.0) && ((double)mechDef.RightLeg.CurrentInternalStructure >= 1.0);
       if (mechDef.Chassis.Head.InternalStructure > 0f) { __result = __result && (mechDef.Head.CurrentInternalStructure >= 1f); };
-      Log.TWL(0, "MechValidationRules.ValidateMechStructureSimple " + mechDef.Chassis.Description.Id + " isVehicle:" + mechDef.IsVehicle() + " result:" + __result);
+      Log.M?.TWL(0, "MechValidationRules.ValidateMechStructureSimple " + mechDef.Chassis.Description.Id + " isVehicle:" + mechDef.IsVehicle() + " result:" + __result);
     }
   }
   [HarmonyPatch(typeof(Contract))]
@@ -1437,9 +1367,9 @@ namespace CustomUnits {
   [HarmonyPatch(MethodType.Normal)]
   public static class Contract_GenerateSalvage {
     public static void Postfix(List<UnitResult> lostUnits) {
-      Log.TWL(0, "Contract.GenerateSalvage");
+      Log.Combat?.TWL(0, "Contract.GenerateSalvage");
       foreach(UnitResult unit in lostUnits) {
-        Log.WL(1, "lost:" + unit.mech.ChassisID + " is realy lost:" + unit.mechLost);
+        Log.Combat?.WL(1, "lost:" + unit.mech.ChassisID + " is realy lost:" + unit.mechLost);
       }
     }
   }
@@ -1450,23 +1380,24 @@ namespace CustomUnits {
     public static void Postfix(SimGameState sim, MechDef mechDef, ref bool __result) {
       if (__result == true) { return; }
       try {
-        Log.TW(0, "MechValidationRules.ValidateMechCanBeFielded");
-        if (mechDef == null) { Log.WL(1, "mechDef is null"); return; };
-        Log.W(1, mechDef.Description.Id);
+        Log.M?.TW(0, "MechValidationRules.ValidateMechCanBeFielded");
+        if (mechDef == null) { Log.Combat?.WL(1, "mechDef is null"); return; };
+        Log.M?.W(1, mechDef.Description.Id);
         bool isFake = mechDef.IsVehicle();
-        Log.W(1, mechDef.ChassisID + " fake:" + isFake + " result:" + __result);
+        Log.M?.W(1, mechDef.ChassisID + " fake:" + isFake + " result:" + __result);
         //if (isFake == false) { return; };
 
         bool inMaintaince = MechValidationRules.ValidateSimGameMechNotInMaintenance(sim, mechDef) == false;
-        Log.WL(1, "inMaintaince = " + inMaintaince);
+        Log.M?.WL(1, "inMaintaince = " + inMaintaince);
         bool badStructure = MechValidationRules.ValidateMechStructureSimple(mechDef);
-        Log.WL(1, "badStructure = " + badStructure);
+        Log.M?.WL(1, "badStructure = " + badStructure);
         bool badWeapon = MechValidationRules.ValidateMechPosessesWeaponsSimple(mechDef);
-        Log.WL(1, "badWeapon = " + badWeapon);
+        Log.M?.WL(1, "badWeapon = " + badWeapon);
         __result = (inMaintaince || badStructure || badWeapon) == false;
-        Log.WL(1, "CanBeFielded:" + __result);
+        Log.M?.WL(1, "CanBeFielded:" + __result);
       } catch (Exception e) {
-        Log.TWL(0, e.ToString());
+        Log.E?.TWL(0, e.ToString());
+        UnityGameInstance.logger.LogException(e);
       }
     }
   }
@@ -1477,7 +1408,7 @@ namespace CustomUnits {
     public static void Postfix(MechDef mechDef, ref bool __result) {
       if (__result == true) { return; }
       if (mechDef.IsVehicle() == false) { return; };
-      Log.TWL(0, "MechValidationRules.ValidateMechPosessesWeaponsSimple " + mechDef.Chassis.Description.Id + " is vehicle:" + mechDef.IsVehicle() + " result:" + __result);
+      Log.M?.TWL(0, "MechValidationRules.ValidateMechPosessesWeaponsSimple " + mechDef.Chassis.Description.Id + " is vehicle:" + mechDef.IsVehicle() + " result:" + __result);
     }
   }
 
@@ -1530,11 +1461,12 @@ namespace CustomUnits {
     //    return null;
     //  }
     //}
-    public static bool Prefix(MechDef __instance, ref string json) {
+    public static void Prefix(ref bool __runOriginal, MechDef __instance, ref string json) {
+      if (!__runOriginal) { return; }
       //Log.TWL(0, "MechDef.FromJSON fake "+(__instance.Description == null?"null": __instance.Description.Id));
       if (__instance.Description != null) {
         //Log.TWL(0, "MechDef.FromJSON fake already preloaded:"+__instance.Description.Id);
-        return true;
+        return;
       }
       try {
         JObject olddef = JObject.Parse(json);
@@ -1542,9 +1474,9 @@ namespace CustomUnits {
         string chassisId = (string)olddef["ChassisID"];
         bool isFake = chassisId.IsInFakeChassis();
         //Log.WL(1,id+" chassis:"+chassisId+" isFake:"+isFake);
-        if (isFake == false) { return true; }
+        if (isFake == false) { return; }
         JObject newdef = new JObject();
-        if (olddef["Chassis"] != null) { return true; };
+        if (olddef["Chassis"] != null) { return; };
         float ArmorMultiplierVehicle = 1f;
         float StructureMultiplierVehicle = 1f;
         if (CombatValueMultipliers.HasValue == false) {
@@ -1664,12 +1596,13 @@ namespace CustomUnits {
         }
         newdef["Locations"] = mLocations;
         json = newdef.ToString(Newtonsoft.Json.Formatting.Indented);
-        Log.WL(1, json);
+        Log.M?.WL(1, json);
       } catch (Exception e) {
-        Log.LogWrite(json, true);
-        Log.LogWrite(e.ToString() + "\n", true);
+        Log.E?.WL(0, json);
+        Log.E?.WL(0, e.ToString(), true);
+        UnityGameInstance.BattleTechGame.DataManager?.logger.LogException(e);
       }
-      return true;
+      return;
     }
   }
   public static class ChassisDef_FromJSON_fake {
@@ -1806,8 +1739,9 @@ namespace CustomUnits {
         result = newdef.ToString(Newtonsoft.Json.Formatting.Indented);
         //Log.WL(1, result);
       } catch (Exception e) {
-        Log.TWL(0,json, true);
-        Log.TWL(0,e.ToString(), true);
+        Log.E?.TWL(0,json, true);
+        Log.E?.TWL(0,e.ToString(), true);
+        UnityGameInstance.BattleTechGame.DataManager?.logger.LogException(e);
       }
       return result;
     }
@@ -1819,7 +1753,7 @@ namespace CustomUnits {
     {
       try
       {
-        Log.TWL(0, "ContentPackIndex.TryFinalizeDataLoad");
+        Log.M?.TWL(0, "ContentPackIndex.TryFinalizeDataLoad");
         // called every time content packs defs are fully loaded from default manifest
         // and dlc ownership changes are detected (e.g. after paradox login and backer unlock)
         if (__instance.AllContentPacksLoaded())
@@ -1829,7 +1763,8 @@ namespace CustomUnits {
       }
       catch (Exception e)
       {
-        Log.WL(0, $"Exception: {e}");
+        Log.E?.WL(0, e.ToString(), true);
+        UnityGameInstance.logger.LogException(e);
       }
     }
   }
@@ -1886,7 +1821,7 @@ namespace CustomUnits {
       {
         fakemechDefs.Clear();
         foreach (var vehicle in ResourceLocator.AllEntriesOfResource(BattleTechResourceType.VehicleDef)) {
-          Log.WL(1, "adding MechDef " + vehicle.Id + " " + vehicle.GetRawPath());
+          Log.M?.WL(1, "adding MechDef " + vehicle.Id + " " + vehicle.GetRawPath());
           fakemechDefs.Add(vehicle.Id);
           FakeEntries.Add(new VersionManifestEntry(vehicle.Id
             , vehicle.GetRawPath()
@@ -1902,7 +1837,7 @@ namespace CustomUnits {
       {
         fakeChassisDef.Clear();
         foreach (var vchassi in ResourceLocator.AllEntriesOfResource(BattleTechResourceType.VehicleChassisDef)) {
-          Log.WL(1, "adding ChassisDef " + vchassi.Id + " " + vchassi.GetRawPath());
+          Log.M?.WL(1, "adding ChassisDef " + vchassi.Id + " " + vchassi.GetRawPath());
           fakeChassisDef.Add(vchassi.Id);
           FakeEntries.Add(new VersionManifestEntry(vchassi.Id
             , vchassi.GetRawPath()
@@ -1921,24 +1856,10 @@ namespace CustomUnits {
   [HarmonyPatch("OnActorTakeDamage")]
   [HarmonyPatch(MethodType.Normal)]
   public static class CombatHUDMechTray_OnActorTakeDamage {
-    private delegate void d_refreshMechInfo(CombatHUDMechTray tray);
-    private static d_refreshMechInfo i_refreshMechInfo = null;
-    public static bool Prepare() {
-      {
-        MethodInfo method = typeof(CombatHUDMechTray).GetMethod("refreshMechInfo", BindingFlags.NonPublic | BindingFlags.Instance);
-        var dm = new DynamicMethod("CUrefreshMechInfo", null, new Type[] { typeof(CombatHUDMechTray) }, typeof(CombatHUDMechTray));
-        var gen = dm.GetILGenerator();
-        gen.Emit(OpCodes.Ldarg_0);
-        gen.Emit(OpCodes.Call, method);
-        gen.Emit(OpCodes.Ret);
-        i_refreshMechInfo = (d_refreshMechInfo)dm.CreateDelegate(typeof(d_refreshMechInfo));
-      }
-      return true;
-    }
-    public static void refreshMechInfo(this CombatHUDMechTray tray) { i_refreshMechInfo(tray); }
-    public static bool Prefix(CombatHUDMechTray __instance, MessageCenterMessage message) {
+    public static void Prefix(ref bool __runOriginal, CombatHUDMechTray __instance, MessageCenterMessage message) {
+      if (!__runOriginal) { return; }
       TakeDamageMessage takeDamageMessage = message as TakeDamageMessage;
-      if (__instance.DisplayedActor == null || !(takeDamageMessage.affectedObjectGuid == __instance.DisplayedActor.GUID)) { return false; }
+      if (__instance.DisplayedActor == null || !(takeDamageMessage.affectedObjectGuid == __instance.DisplayedActor.GUID)) { __runOriginal = false; return; }
       if (__instance.DisplayedActor.UnitType == UnitType.Mech) {
         UnitCustomInfo info = __instance.DisplayedActor.GetCustomInfo();
         bool FakeVehicle = false;
@@ -1953,71 +1874,19 @@ namespace CustomUnits {
         __instance.VehicleArmorDisplay().OnActorTakeDamage((MessageCenterMessage)takeDamageMessage);
       }
       __instance.refreshMechInfo();
-      return false;
+      __runOriginal = false; return;
     }
   }
   [HarmonyPatch(typeof(CombatHUDMechTray))]
   [HarmonyPatch("Update")]
   [HarmonyPatch(MethodType.Normal)]
   public static class CombatHUDMechTray_Update {
-    private delegate float d_timeSinceLastPosChange_get(CombatHUDMechTray tray);
-    private static d_timeSinceLastPosChange_get i_timeSinceLastPosChange_get = null;
-    private delegate Vector3 d_targetTrayPos_get(CombatHUDMechTray tray);
-    private static d_targetTrayPos_get i_targetTrayPos_get = null;
-    private delegate Vector3 d_lastTrayPos_get(CombatHUDMechTray tray);
-    private static d_lastTrayPos_get i_lastTrayPos_get = null;
-    private delegate void d_timeSinceLastPosChange_set(CombatHUDMechTray tray, float value);
-    private static d_timeSinceLastPosChange_set i_timeSinceLastPosChange_set = null;
-    public static bool Prepare() {
-      {
-        MethodInfo method = typeof(CombatHUDMechTray).GetProperty("timeSinceLastPosChange", BindingFlags.NonPublic | BindingFlags.Instance).GetMethod;
-        var dm = new DynamicMethod("CUtimeSinceLastPosChange_get", typeof(float), new Type[] { typeof(CombatHUDMechTray) }, typeof(CombatHUDMechTray));
-        var gen = dm.GetILGenerator();
-        gen.Emit(OpCodes.Ldarg_0);
-        gen.Emit(OpCodes.Call, method);
-        gen.Emit(OpCodes.Ret);
-        i_timeSinceLastPosChange_get = (d_timeSinceLastPosChange_get)dm.CreateDelegate(typeof(d_timeSinceLastPosChange_get));
-      }
-      {
-        MethodInfo method = typeof(CombatHUDMechTray).GetProperty("targetTrayPos", BindingFlags.NonPublic | BindingFlags.Instance).GetMethod;
-        var dm = new DynamicMethod("CUtargetTrayPos_get", typeof(Vector3), new Type[] { typeof(CombatHUDMechTray) }, typeof(CombatHUDMechTray));
-        var gen = dm.GetILGenerator();
-        gen.Emit(OpCodes.Ldarg_0);
-        gen.Emit(OpCodes.Call, method);
-        gen.Emit(OpCodes.Ret);
-        i_targetTrayPos_get = (d_targetTrayPos_get)dm.CreateDelegate(typeof(d_targetTrayPos_get));
-      }
-      {
-        MethodInfo method = typeof(CombatHUDMechTray).GetProperty("lastTrayPos", BindingFlags.NonPublic | BindingFlags.Instance).GetMethod;
-        var dm = new DynamicMethod("CUlastTrayPos_get", typeof(Vector3), new Type[] { typeof(CombatHUDMechTray) }, typeof(CombatHUDMechTray));
-        var gen = dm.GetILGenerator();
-        gen.Emit(OpCodes.Ldarg_0);
-        gen.Emit(OpCodes.Call, method);
-        gen.Emit(OpCodes.Ret);
-        i_lastTrayPos_get = (d_lastTrayPos_get)dm.CreateDelegate(typeof(d_lastTrayPos_get));
-      }
-      {
-        MethodInfo method = typeof(CombatHUDMechTray).GetProperty("timeSinceLastPosChange", BindingFlags.NonPublic | BindingFlags.Instance).SetMethod;
-        var dm = new DynamicMethod("CUtimeSinceLastPosChange_set", null, new Type[] { typeof(CombatHUDMechTray), typeof(float) }, typeof(CombatHUDMechTray));
-        var gen = dm.GetILGenerator();
-        gen.Emit(OpCodes.Ldarg_0);
-        gen.Emit(OpCodes.Ldarg_1);
-        gen.Emit(OpCodes.Call, method);
-        gen.Emit(OpCodes.Ret);
-        i_timeSinceLastPosChange_set = (d_timeSinceLastPosChange_set)dm.CreateDelegate(typeof(d_timeSinceLastPosChange_set));
-      }
-      return true;
-    }
-    public static float timeSinceLastPosChange(this CombatHUDMechTray tray) { return i_timeSinceLastPosChange_get(tray); }
-    public static Vector3 targetTrayPos(this CombatHUDMechTray tray) { return i_targetTrayPos_get(tray); }
-    public static Vector3 lastTrayPos(this CombatHUDMechTray tray) { return i_lastTrayPos_get(tray); }
-    public static void timeSinceLastPosChange(this CombatHUDMechTray tray, float value) { i_timeSinceLastPosChange_set(tray, value); }
-    public static void Postfix(CombatHUDMechTray __instance, AbstractActor ___displayedActor) {
-      if (___displayedActor == null) { return; }
-      if (___displayedActor.UnitType == UnitType.Vehicle) {
+    public static void Postfix(CombatHUDMechTray __instance) {
+      if (__instance.displayedActor == null) { return; }
+      if (__instance.displayedActor.UnitType == UnitType.Vehicle) {
         __instance.VehicleArmorDisplay().UpdateVehicleStructureAndArmor(__instance.shownAttackDirection);
-      }else if(___displayedActor.UnitType == UnitType.Mech) {
-        UnitCustomInfo info = ___displayedActor.GetCustomInfo();
+      }else if(__instance.displayedActor.UnitType == UnitType.Mech) {
+        UnitCustomInfo info = __instance.displayedActor.GetCustomInfo();
         if (info != null) {
           if (info.FakeVehicle) {
             __instance.FakeVehicleArmorDisplay().UpdateVehicleStructureAndArmor(__instance.shownAttackDirection);
@@ -2030,92 +1899,45 @@ namespace CustomUnits {
   [HarmonyPatch("UpdateMechStructureAndArmor")]
   [HarmonyPatch(MethodType.Normal)]
   public static class HUDMechArmorReadout_UpdateMechStructureAndArmor {
-    public static bool Prefix(HUDMechArmorReadout __instance) {
-      if ((__instance.DisplayedMech == null)&&(__instance.DisplayedMechDef == null)&&(__instance.DisplayedChassisDef == null)) { return false; }
-      return true;
+    public static void Prefix(ref bool __runOriginal, HUDMechArmorReadout __instance) {
+      if (!__runOriginal) { return; }
+      if ((__instance.DisplayedMech == null)&&(__instance.DisplayedMechDef == null)&&(__instance.DisplayedChassisDef == null)) { __runOriginal = false; return; }
+      return;
     }
   }
   [HarmonyPatch(typeof(VehicleDef))]
   [HarmonyPatch("Refresh")]
   [HarmonyPatch(MethodType.Normal)]
   public static class VehicleDef_Refresh {
-    public static bool Prefix(VehicleDef __instance, ref VehicleLocationLoadoutDef[] ___Locations) {
-      return true;
+    public static void Prefix(VehicleDef __instance) {
     }
   }
   [HarmonyPatch(typeof(VehicleChassisDef))]
   [HarmonyPatch("Refresh")]
   [HarmonyPatch(MethodType.Normal)]
   public static class VehicleChassisDef_Refresh {
-    public static bool Prefix(VehicleChassisDef __instance, ref VehicleLocationLoadoutDef[] ___Locations) {
-      return true;
+    public static void Prefix(VehicleChassisDef __instance) {
     }
   }
   [HarmonyPatch(typeof(CombatHUDMechTray))]
   [HarmonyPatch("refreshMechInfo")]
   [HarmonyPatch(MethodType.Normal)]
   public static class CombatHUDMechTray_refreshMechInfo {
-    private static object CombatHUDMechTray_MWTrayState_Down = null;
-    private static object CombatHUDMechTray_MWTrayState_Up = null;
-    private static MethodInfo mi_SetTrayState = null;
-    private delegate void d_SetTrayState(CombatHUDMechTray tray, object newState);
-    private delegate CombatHUDHeatMeter d_HeatMeter(CombatHUDMechTray tray);
-    private static d_HeatMeter i_HeatMeter = null;
-    private delegate void d_RefreshStabilityInfo(CombatHUDMechTray tray);
-    private static d_RefreshStabilityInfo i_RefreshStabilityInfo = null;
-    private static Type MWTrayState = null;
-    public static bool Prepare() {
-      MWTrayState = typeof(CombatHUDMechTray).GetNestedType("MWTrayState", BindingFlags.NonPublic);
-      Log.TWL(0, "MWTrayState:" + MWTrayState.Name);
-      CombatHUDMechTray_MWTrayState_Down = Enum.Parse(MWTrayState, "Down");
-      CombatHUDMechTray_MWTrayState_Up = Enum.Parse(MWTrayState, "Up");
-      mi_SetTrayState = typeof(CombatHUDMechTray).GetMethod("SetTrayState", BindingFlags.NonPublic | BindingFlags.Instance);
-      {
-        MethodInfo method = typeof(CombatHUDMechTray).GetProperty("HeatMeter", BindingFlags.NonPublic | BindingFlags.Instance).GetMethod;
-        var dm = new DynamicMethod("CUHeatMeter_get", typeof(CombatHUDHeatMeter), new Type[] { typeof(CombatHUDMechTray) }, typeof(CombatHUDMechTray));
-        var gen = dm.GetILGenerator();
-        gen.Emit(OpCodes.Ldarg_0);
-        gen.Emit(OpCodes.Call, method);
-        gen.Emit(OpCodes.Ret);
-        i_HeatMeter = (d_HeatMeter)dm.CreateDelegate(typeof(d_HeatMeter));
-      }
-      {
-        MethodInfo method = typeof(CombatHUDMechTray).GetMethod("RefreshStabilityInfo", BindingFlags.NonPublic | BindingFlags.Instance);
-        var dm = new DynamicMethod("CURefreshStabilityInfo", null, new Type[] { typeof(CombatHUDMechTray) }, typeof(CombatHUDMechTray));
-        var gen = dm.GetILGenerator();
-        gen.Emit(OpCodes.Ldarg_0);
-        gen.Emit(OpCodes.Call, method);
-        gen.Emit(OpCodes.Ret);
-        i_RefreshStabilityInfo = (d_RefreshStabilityInfo)dm.CreateDelegate(typeof(d_RefreshStabilityInfo));
-      }
-      return true;
-    }
-    public static object Up(this CombatHUDMechTray tray) { return CombatHUDMechTray_MWTrayState_Up; }
-    public static object Down(this CombatHUDMechTray tray) { return CombatHUDMechTray_MWTrayState_Down; }
-    public static void SetTrayState(this CombatHUDMechTray tray, object state) {
-      mi_SetTrayState.Invoke(tray, new object[1] { state });
-      //if (state == 0) {
-      //i_SetTrayState(tray, state);
-      //} else {
-      //i_SetTrayState(tray, CombatHUDMechTray_MWTrayState_Up);
-      //}
-    }
-    public static CombatHUDHeatMeter HeatMeter(this CombatHUDMechTray tray) { return i_HeatMeter(tray); }
-    public static void RefreshStabilityInfo(this CombatHUDMechTray tray) { i_RefreshStabilityInfo(tray); }
-    public static bool Prefix(CombatHUDMechTray __instance, CombatHUDStatusPanel ___StatusPanel, AbstractActor ___displayedActor) {
-      ___StatusPanel.DisplayedCombatant = (ICombatant)___displayedActor;
-      if (___displayedActor == null) {
-        __instance.SetTrayState(CombatHUDMechTray_MWTrayState_Down);
+    public static void Prefix(ref bool __runOriginal, CombatHUDMechTray __instance) {
+      if (!__runOriginal) { return; }
+      __instance.StatusPanel.DisplayedCombatant = __instance.displayedActor;
+      if (__instance.displayedActor == null) {
+        __instance.SetTrayState(CombatHUDMechTray.MWTrayState.Down);
       } else {
-        __instance.SetTrayState(CombatHUDMechTray_MWTrayState_Up);
-        __instance.MechNameText.SetText(___displayedActor.DisplayName, (object[])Array.Empty<object>());
-        Mech mech = ___displayedActor as Mech;
-        Vehicle vehicle = ___displayedActor as Vehicle;
-        __instance.HeatMeter().DisplayedActor = mech;
+        __instance.SetTrayState(CombatHUDMechTray.MWTrayState.Up);
+        __instance.MechNameText.SetText(__instance.displayedActor.DisplayName, (object[])Array.Empty<object>());
+        Mech mech = __instance.displayedActor as Mech;
+        Vehicle vehicle = __instance.displayedActor as Vehicle;
+        __instance.HeatMeter.DisplayedActor = mech;
         if ((mech == null) && (vehicle == null)) {
           Debug.LogWarning((object)"Trying to use MechTray to show a non-mech non-vehicle actor");
         } else {
-          Pilot pilot = ___displayedActor.GetPilot();
+          Pilot pilot = __instance.displayedActor.GetPilot();
           if (pilot == null) {
             __instance.WarriorNameText.SetText("No pilot info", (object[])Array.Empty<object>());
           } else {
@@ -2152,7 +1974,7 @@ namespace CustomUnits {
           }
         }
       }
-      return false;
+      __runOriginal = false; return;
     }
   }
   [HarmonyPatch(typeof(SkirmishSettings_Beta))]
@@ -2161,7 +1983,7 @@ namespace CustomUnits {
   [HarmonyPatch(new Type[] { })]
   public static class SkirmishSettings_Beta_FinalizeLances {
     public static void Postfix(SkirmishSettings_Beta __instance, ref LanceConfiguration __result, LancePreviewPanel ___playerLancePreview, UIManager ___uiManager) {
-      Log.TWL(0, "SkirmishSettings_Beta.FinalizeLances units:" + __result.Lances[___playerLancePreview.playerGUID].Count);
+      Log.M?.TWL(0, "SkirmishSettings_Beta.FinalizeLances units:" + __result.Lances[___playerLancePreview.playerGUID].Count);
     }
   }
   [HarmonyPatch(typeof(SkirmishSettings_Beta))]
@@ -2170,7 +1992,7 @@ namespace CustomUnits {
   [HarmonyPatch(new Type[] { })]
   public static class SkirmishSettings_Beta_OnAddedToHierarchy {
     public static void Prefix(SkirmishSettings_Beta __instance) {
-      Log.TWL(0, "SkirmishSettings_Beta.OnAddedToHierarchy");
+      Log.M?.TWL(0, "SkirmishSettings_Beta.OnAddedToHierarchy");
       //Core.InitLancesLoadoutDefault();
     }
   }
@@ -2179,25 +2001,16 @@ namespace CustomUnits {
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { })]
   public static class CombatHUDHeatMeter_RefreshHeatInfo {
-    public static bool Prefix(CombatHUDHeatMeter __instance, float ___underlyingHeatTarget, float ___underlyingHeatDisplayed, float ___underlyingPredictionTarget, float ___underlyingPredictionDisplayed) {
+    public static void Prefix(ref bool __runOriginal, CombatHUDHeatMeter __instance) {
+      if (!__runOriginal) { return; }
       if (__instance.DisplayedActor == null) {
-        ___underlyingHeatTarget = 0f;
-        ___underlyingHeatDisplayed = 0f;
-        ___underlyingPredictionTarget = 0f;
-        ___underlyingPredictionDisplayed = 0f;
-        return false;
+        __instance.underlyingHeatTarget = 0f;
+        __instance.underlyingHeatDisplayed = 0f;
+        __instance.underlyingPredictionTarget = 0f;
+        __instance.underlyingPredictionDisplayed = 0f;
+        __runOriginal = false; return;
       }
-      return true;
-    }
-  }
-  [HarmonyPatch(typeof(CombatHUDWeaponSlot))]
-  [HarmonyPatch("UpdateToolTipsFiring")]
-  [HarmonyPatch(MethodType.Normal)]
-  [HarmonyPatch(new Type[] { typeof(ICombatant) })]
-  public static class CombatHUDWeaponSlot_UpdateToolTipsFiring {
-    public static bool Prepare() { return false; }
-    public static bool Prefix(CombatHUDWeaponSlot __instance, ICombatant target, CombatHUD ___HUD, Weapon ___displayedWeapon, ref int ___modifier, CombatGameState ___Combat) {
-      return true;
+      return;
     }
   }
   [HarmonyPatch(typeof(SelectionStateMoveBase))]
@@ -2205,53 +2018,11 @@ namespace CustomUnits {
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { typeof(bool) })]
   public static class SelectionStateMoveBase_CreateMoveOrders {
-    private delegate CombatHUD getHUDDelegate(SelectionState state);
-    private static getHUDDelegate getHUDInvoker = null;
-    private delegate CombatGameState getCombatDelegate(SelectionState panel);
-    private static getCombatDelegate getCombatInvoker = null;
-    private delegate void d_PublishInvocation(SelectionState state, MessageCenter messageCenter, MessageCenterMessage invocation);
-    private static d_PublishInvocation i_PublishInvocation = null;
-    public static bool Prepare() {
-      {
-        MethodInfo method = typeof(SelectionState).GetProperty("HUD", BindingFlags.NonPublic | BindingFlags.Instance).GetMethod;
-        var dm = new DynamicMethod("CUHUDget", typeof(CombatHUD), new Type[] { typeof(SelectionState) }, typeof(SelectionState));
-        var gen = dm.GetILGenerator();
-        gen.Emit(OpCodes.Ldarg_0);
-        gen.Emit(OpCodes.Call, method);
-        gen.Emit(OpCodes.Ret);
-        getHUDInvoker = (getHUDDelegate)dm.CreateDelegate(typeof(getHUDDelegate));
-      }
-      {
-        MethodInfo method = typeof(SelectionState).GetProperty("Combat", BindingFlags.NonPublic | BindingFlags.Instance).GetMethod;
-        var dm = new DynamicMethod("CUCombatget", typeof(CombatGameState), new Type[] { typeof(SelectionState) }, typeof(SelectionState));
-        var gen = dm.GetILGenerator();
-        gen.Emit(OpCodes.Ldarg_0);
-        gen.Emit(OpCodes.Call, method);
-        gen.Emit(OpCodes.Ret);
-        getCombatInvoker = (getCombatDelegate)dm.CreateDelegate(typeof(getCombatDelegate));
-      }
-      {
-        MethodInfo method = typeof(SelectionState).GetMethod("PublishInvocation", BindingFlags.NonPublic | BindingFlags.Instance);
-        var dm = new DynamicMethod("CUPublishInvocation", null, new Type[] { typeof(SelectionState), typeof(MessageCenter), typeof(MessageCenterMessage) }, typeof(SelectionState));
-        var gen = dm.GetILGenerator();
-        gen.Emit(OpCodes.Ldarg_0);
-        gen.Emit(OpCodes.Ldarg_1);
-        gen.Emit(OpCodes.Ldarg_2);
-        gen.Emit(OpCodes.Call, method);
-        gen.Emit(OpCodes.Ret);
-        i_PublishInvocation = (d_PublishInvocation)dm.CreateDelegate(typeof(d_PublishInvocation));
-      }
-      return true;
-    }
-    public static CombatHUD HUD(this SelectionState state) { return getHUDInvoker(state); }
-    public static CombatGameState Combat(this SelectionState state) { return getCombatInvoker(state); }
-    public static void PublishInvocation(this SelectionState state, MessageCenter messageCenter, MessageCenterMessage invocation) {
-      i_PublishInvocation(state, messageCenter, invocation);
-    }
-    public static bool Prefix(SelectionStateMoveBase __instance, bool isJump, ref bool __result) {
+    public static void Prefix(ref bool __runOriginal, SelectionStateMoveBase __instance, bool isJump, ref bool __result) {
+      if (!__runOriginal) { return; }
       Mech mech = __instance.SelectedActor as Mech;
       Vehicle vehicle = __instance.SelectedActor as Vehicle;
-      if ((mech == null) && (vehicle == null)) { __result = false; return false; }
+      if ((mech == null) && (vehicle == null)) { __result = false; __runOriginal = false; return; }
       bool abilityConsumesFiring = __instance.HUD().MechWarriorTray.ConfirmAbilities(AbilityDef.ActivationTiming.ConsumedByMovement);
       if (!abilityConsumesFiring && __instance.HUD().MechWarriorTray.DoneWithMechButton.IsTutorialSuppressed) {
         __instance.FiringPreview.Recalc(__instance.SelectedActor, __instance.PreviewPos, __instance.PreviewRot, false, false);
@@ -2259,9 +2030,9 @@ namespace CustomUnits {
           abilityConsumesFiring = true;
       }
       if (mech != null) {
-        __instance.PublishInvocation(__instance.Combat().MessageCenter, !isJump ? (MessageCenterMessage)new MechMovementInvocation(mech, abilityConsumesFiring) : (MessageCenterMessage)new MechJumpInvocation(mech, (ICombatant)null, abilityConsumesFiring));
+        __instance._PublishInvocation(__instance.Combat().MessageCenter, isJump==false?new MechMovementInvocation(mech, abilityConsumesFiring) : (MessageCenterMessage)new MechJumpInvocation(mech, null, abilityConsumesFiring));
       } else if (vehicle != null) {
-        __instance.PublishInvocation(__instance.Combat().MessageCenter, (MessageCenterMessage)new AbstractActorMovementInvocation(vehicle, abilityConsumesFiring));
+        __instance._PublishInvocation(__instance.Combat().MessageCenter, new AbstractActorMovementInvocation(vehicle, abilityConsumesFiring));
       }
       __instance.OnInactivate();
       __instance.HUD().PlayAudioEvent(AudioEventList_ui.ui_mech_move);
@@ -2270,7 +2041,7 @@ namespace CustomUnits {
       }
       __instance.HUD().SidePanel.ForceHide();
       __result = true;
-      return false;
+      __runOriginal = false; return;
     }
   }
   [HarmonyPatch(typeof(CombatHUDWeaponSlot))]
@@ -2278,55 +2049,36 @@ namespace CustomUnits {
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { })]
   public static class CombatHUDWeaponSlot_UpdateToolTipsSelf {
-    private delegate void d_AddToolTipDetail(CombatHUDWeaponSlot slot, string description, int modifier);
-    private static d_AddToolTipDetail i_AddToolTipDetail = null;
-    public static bool Prepare() {
-      {
-        MethodInfo method = typeof(CombatHUDWeaponSlot).GetMethod("AddToolTipDetail", BindingFlags.NonPublic | BindingFlags.Instance);
-        var dm = new DynamicMethod("CUAddToolTipDetail", null, new Type[] { typeof(CombatHUDWeaponSlot), typeof(string), typeof(int) }, typeof(CombatHUDWeaponSlot));
-        var gen = dm.GetILGenerator();
-        gen.Emit(OpCodes.Ldarg_0);
-        gen.Emit(OpCodes.Ldarg_1);
-        gen.Emit(OpCodes.Ldarg_2);
-        gen.Emit(OpCodes.Call, method);
-        gen.Emit(OpCodes.Ret);
-        i_AddToolTipDetail = (d_AddToolTipDetail)dm.CreateDelegate(typeof(d_AddToolTipDetail));
-      }
-      return false;
-    }
-    public static void AddToolTipDetail(this CombatHUDWeaponSlot slot, string description, int modifier) {
-      i_AddToolTipDetail(slot, description, modifier);
-    }
-
     public static float GetToHitModifierWeaponDamage(AbstractActor attacker, Weapon weapon) {
       if (weapon.DamageLevel == ComponentDamageLevel.Misaligned || weapon.DamageLevel == ComponentDamageLevel.Penalized)
         return attacker.Combat.Constants.ToHit.ToHitSelfWeaponDamaged;
       return 0.0f;
     }
-    public static bool Prefix(CombatHUDWeaponSlot __instance, Weapon ___displayedWeapon, ref int ___modifier, CombatGameState ___Combat) {
-      __instance.ToolTipHoverElement.BasicString = new Localize.Text(___displayedWeapon.Name, (object[])Array.Empty<object>());
-      ___modifier = (int)___Combat.ToHit.GetSelfSpeedModifier(___displayedWeapon.parent);
-      __instance.AddToolTipDetail("MOVED SELF", ___modifier);
-      ___modifier = (int)___Combat.ToHit.GetSelfSprintedModifier(___displayedWeapon.parent);
-      __instance.AddToolTipDetail("SPRINTED", ___modifier);
-      ___modifier = (int)___Combat.ToHit.GetStoodUpModifier(___displayedWeapon.parent);
-      __instance.AddToolTipDetail("STOOD UP", ___modifier);
-      ___modifier = (int)___Combat.ToHit.GetHeatModifier(___displayedWeapon.parent);
-      __instance.AddToolTipDetail("HEAT", ___modifier);
+    public static void Prefix(CombatHUDWeaponSlot __instance) {
+      return;
+      __instance.ToolTipHoverElement.BasicString = new Localize.Text(__instance.displayedWeapon.Name, (object[])Array.Empty<object>());
+      __instance.modifier = (int)__instance.Combat.ToHit.GetSelfSpeedModifier(__instance.displayedWeapon.parent);
+      __instance.AddToolTipDetail("MOVED SELF", __instance.modifier);
+      __instance.modifier = (int)__instance.Combat.ToHit.GetSelfSprintedModifier(__instance.displayedWeapon.parent);
+      __instance.AddToolTipDetail("SPRINTED", __instance.modifier);
+      __instance.modifier = (int)__instance.Combat.ToHit.GetStoodUpModifier(__instance.displayedWeapon.parent);
+      __instance.AddToolTipDetail("STOOD UP", __instance.modifier);
+      __instance.modifier = (int)__instance.Combat.ToHit.GetHeatModifier(__instance.displayedWeapon.parent);
+      __instance.AddToolTipDetail("HEAT", __instance.modifier);
 
-      Mech mech = ___displayedWeapon.parent as Mech;
+      Mech mech = __instance.displayedWeapon.parent as Mech;
       if (mech != null) {
         Thread.CurrentThread.pushActor(mech);
-        ___modifier = (int)MechStructureRules.GetToHitModifierLocationDamage(mech, ___displayedWeapon);
-        __instance.AddToolTipDetail(Strings.T("{0} DAMAGED", (object)Mech.GetAbbreviatedChassisLocation((ChassisLocations)___displayedWeapon.Location)), ___modifier);
+        __instance.modifier = (int)MechStructureRules.GetToHitModifierLocationDamage(mech, __instance.displayedWeapon);
+        __instance.AddToolTipDetail(Strings.T("{0} DAMAGED", (object)Mech.GetAbbreviatedChassisLocation((ChassisLocations)__instance.displayedWeapon.Location)), __instance.modifier);
         Thread.CurrentThread.clearActor();
       }
-      ___modifier = (int)CombatHUDWeaponSlot_UpdateToolTipsSelf.GetToHitModifierWeaponDamage(___displayedWeapon.parent, ___displayedWeapon);
-      __instance.AddToolTipDetail("WEAPON DAMAGED", ___modifier);
-      ___modifier = (int)___Combat.ToHit.GetRefireModifier(___displayedWeapon);
-      __instance.AddToolTipDetail("REFIRE", ___modifier);
+      __instance.modifier = (int)CombatHUDWeaponSlot_UpdateToolTipsSelf.GetToHitModifierWeaponDamage(__instance.displayedWeapon.parent, __instance.displayedWeapon);
+      __instance.AddToolTipDetail("WEAPON DAMAGED", __instance.modifier);
+      __instance.modifier = (int)__instance.Combat.ToHit.GetRefireModifier(__instance.displayedWeapon);
+      __instance.AddToolTipDetail("REFIRE", __instance.modifier);
       __instance.ToolTipHoverElement.UseModifier = false;
-      return false;
+      return;
     }
   }
   [HarmonyPatch(typeof(CombatHUDWeaponPanel))]
@@ -2334,81 +2086,43 @@ namespace CustomUnits {
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { typeof(bool), typeof(bool) })]
   public static class CombatHUDWeaponPanel_RefreshDisplayedWeapons {
-    private delegate CombatHUD getHUDDelegate(CombatHUDWeaponPanel panel);
-    private delegate ICombatant getCombatantDelegate(CombatHUDWeaponPanel panel);
-    private static getHUDDelegate getHUDInvoker = null;
-    private static getCombatantDelegate get_target = null;
-    private static getCombatantDelegate get_hoveredTarget = null;
-    public static bool Prepare() {
-      {
-        MethodInfo method = typeof(CombatHUDWeaponPanel).GetProperty("HUD", BindingFlags.NonPublic | BindingFlags.Instance).GetMethod;
-        var dm = new DynamicMethod("CUHUDget", typeof(CombatHUD), new Type[] { typeof(CombatHUDWeaponPanel) }, typeof(CombatHUDWeaponPanel));
-        var gen = dm.GetILGenerator();
-        gen.Emit(OpCodes.Ldarg_0);
-        gen.Emit(OpCodes.Call, method);
-        gen.Emit(OpCodes.Ret);
-        getHUDInvoker = (getHUDDelegate)dm.CreateDelegate(typeof(getHUDDelegate));
-      }
-      {
-        MethodInfo method = typeof(CombatHUDWeaponPanel).GetProperty("target", BindingFlags.NonPublic | BindingFlags.Instance).GetMethod;
-        var dm = new DynamicMethod("CUget_target", typeof(ICombatant), new Type[] { typeof(CombatHUDWeaponPanel) }, typeof(CombatHUDWeaponPanel));
-        var gen = dm.GetILGenerator();
-        gen.Emit(OpCodes.Ldarg_0);
-        gen.Emit(OpCodes.Call, method);
-        gen.Emit(OpCodes.Ret);
-        get_target = (getCombatantDelegate)dm.CreateDelegate(typeof(getCombatantDelegate));
-      }
-      {
-        MethodInfo method = typeof(CombatHUDWeaponPanel).GetProperty("hoveredTarget", BindingFlags.NonPublic | BindingFlags.Instance).GetMethod;
-        var dm = new DynamicMethod("CUget_hoveredTarget", typeof(ICombatant), new Type[] { typeof(CombatHUDWeaponPanel) }, typeof(CombatHUDWeaponPanel));
-        var gen = dm.GetILGenerator();
-        gen.Emit(OpCodes.Ldarg_0);
-        gen.Emit(OpCodes.Call, method);
-        gen.Emit(OpCodes.Ret);
-        get_hoveredTarget = (getCombatantDelegate)dm.CreateDelegate(typeof(getCombatantDelegate));
-      }
-      return true;
-    }
-    public static CombatHUD HUD(this CombatHUDWeaponPanel panel) { return getHUDInvoker(panel); }
-    public static ICombatant target(this CombatHUDWeaponPanel panel) { return get_target(panel); }
-    public static ICombatant hoveredTarget(this CombatHUDWeaponPanel panel) { return get_hoveredTarget(panel); }
-    public static bool Prefix(CombatHUDWeaponPanel __instance, bool consideringJump, bool useCOILPathingPreview, AbstractActor ___displayedActor, CombatHUDWeaponSlot ___meleeSlot, CombatHUDWeaponSlot ___dfaSlot, List<CombatHUDWeaponSlot> ___WeaponSlots) {
+    public static void Prefix(ref bool __runOriginal, CombatHUDWeaponPanel __instance, bool consideringJump, bool useCOILPathingPreview) {
+      if (!__runOriginal) { return; }
       SelectionState activeState1 = __instance.HUD().SelectionHandler.ActiveState;
-      ICombatant target = activeState1 == null || !(activeState1 is SelectionStateMove) ? __instance.target() ?? __instance.hoveredTarget() : __instance.hoveredTarget() ?? __instance.target();
+      ICombatant target = activeState1 == null || !(activeState1 is SelectionStateMove) ? __instance.target ?? __instance.hoveredTarget : __instance.hoveredTarget ?? __instance.target;
       bool sprinting = false;
       bool vehicle = false;
-      if (___displayedActor != null) {
-        Mech mech = ___displayedActor as Mech;
+      if (__instance.displayedActor != null) {
+        Mech mech = __instance.displayedActor as Mech;
         if (mech != null) {
-          ___meleeSlot.DisplayedWeapon = mech.MeleeWeapon;
-          ___dfaSlot.DisplayedWeapon = mech.DFAWeapon;
+          __instance.meleeSlot.DisplayedWeapon = mech.MeleeWeapon;
+          __instance.dfaSlot.DisplayedWeapon = mech.DFAWeapon;
         } else {
-          ___meleeSlot.DisplayedWeapon = null;
-          ___dfaSlot.DisplayedWeapon = null;
+          __instance.meleeSlot.DisplayedWeapon = null;
+          __instance.dfaSlot.DisplayedWeapon = null;
           vehicle = true;
         }
-        sprinting = ___displayedActor.HasSprintedThisRound;
+        sprinting = __instance.displayedActor.HasSprintedThisRound;
       }
       SelectionStateFireMulti activeState2 = __instance.HUD().SelectionHandler.ActiveState as SelectionStateFireMulti; ;
       int? evasivePipOverride = new int?();
-      for (int index = 0; index < ___WeaponSlots.Count; ++index) {
-        CombatHUDWeaponSlot weaponSlot = ___WeaponSlots[index];
+      for (int index = 0; index < __instance.WeaponSlots.Count; ++index) {
+        CombatHUDWeaponSlot weaponSlot = __instance.WeaponSlots[index];
         if (activeState2 != null && weaponSlot.DisplayedWeapon != null && weaponSlot.DisplayedWeapon.Type != WeaponType.Melee)
-          target = activeState2.GetSelectedTarget(weaponSlot.DisplayedWeapon) ?? __instance.target() ?? __instance.hoveredTarget();
-        if (weaponSlot.DisplayedWeapon != null && weaponSlot.DisplayedWeapon.Type == WeaponType.COIL && (!evasivePipOverride.HasValue && ___displayedActor != null) && !___displayedActor.HasMovedThisRound && (useCOILPathingPreview || activeState1 != null && activeState1.SelectionType == SelectionType.Move))
-          evasivePipOverride = !consideringJump ? new int?(___displayedActor.GetEvasivePipsResult(WayPoint.GetDistFromWaypointList(___displayedActor.CurrentPosition, ActorMovementSequence.ExtractWaypointsFromPath(___displayedActor, ___displayedActor.Pathing.CurrentPath, ___displayedActor.Pathing.ResultDestination, (ICombatant)null, ___displayedActor.Pathing.MoveType)), false, ___displayedActor.Pathing.MoveType == MoveType.Sprinting, ___displayedActor.Pathing.MoveType == MoveType.Melee)) : new int?(___displayedActor.GetEvasivePipsResult(Vector3.Distance(___displayedActor.CurrentPosition, ___displayedActor.JumpPathing.ResultDestination), true, false, false));
+          target = activeState2.GetSelectedTarget(weaponSlot.DisplayedWeapon) ?? __instance.target ?? __instance.hoveredTarget;
+        if (weaponSlot.DisplayedWeapon != null && weaponSlot.DisplayedWeapon.Type == WeaponType.COIL && (!evasivePipOverride.HasValue && __instance.displayedActor != null) && !__instance.displayedActor.HasMovedThisRound && (useCOILPathingPreview || activeState1 != null && activeState1.SelectionType == SelectionType.Move))
+          evasivePipOverride = !consideringJump ? new int?(__instance.displayedActor.GetEvasivePipsResult(WayPoint.GetDistFromWaypointList(__instance.displayedActor.CurrentPosition, ActorMovementSequence.ExtractWaypointsFromPath(__instance.displayedActor, __instance.displayedActor.Pathing.CurrentPath, __instance.displayedActor.Pathing.ResultDestination, null, __instance.displayedActor.Pathing.MoveType)), false, __instance.displayedActor.Pathing.MoveType == MoveType.Sprinting, __instance.displayedActor.Pathing.MoveType == MoveType.Melee)) : new int?(__instance.displayedActor.GetEvasivePipsResult(Vector3.Distance(__instance.displayedActor.CurrentPosition, __instance.displayedActor.JumpPathing.ResultDestination), true, false, false));
         weaponSlot.RefreshDisplayedWeapon(target, evasivePipOverride, consideringJump, sprinting);
       }
       if (vehicle == false) {
-        ___meleeSlot.gameObject.SetActive(true);
-        ___meleeSlot.RefreshDisplayedWeapon(target, new int?(), false, false);
+        __instance.meleeSlot.gameObject.SetActive(true);
+        __instance.meleeSlot.RefreshDisplayedWeapon(target, new int?(), false, false);
       } else {
-        ___meleeSlot.gameObject.SetActive(false);
+        __instance.meleeSlot.gameObject.SetActive(false);
       }
-      if (___displayedActor == null || ___displayedActor.WorkingJumpjets <= 0) { return false; }
-      ___dfaSlot.RefreshDisplayedWeapon(target, new int?(), false, false);
-      return false;
+      if (__instance.displayedActor == null || __instance.displayedActor.WorkingJumpjets <= 0) { __runOriginal = false; return; }
+      __instance.dfaSlot.RefreshDisplayedWeapon(target, new int?(), false, false);
+      __runOriginal = false; return;
     }
   }
-
 }

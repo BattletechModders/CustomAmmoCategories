@@ -55,15 +55,19 @@ namespace CustAmmoCategories {
     public float InterceptedT;
     public List<AMSShoot> AMSShoots;
     public float AMSHitChance;
+    public float AMSHitChanceMult;
     public int AMSShootIndex;
     public Weapon InterceptedAMS;
     public bool AMSImunne;
     public float missileHealth;
+    public float AMSAttractiveness;
     public InterceptableInfo() {
       Intercepted = false;
       InterceptedT = 2.0f;
       AMSShootIndex = 0;
       AMSHitChance = 0f;
+      AMSHitChanceMult = 1f;
+      AMSAttractiveness = 0f;
       AMSShoots = new List<AMSShoot>();
       AMSImunne = true;
       missileHealth = 0f;
@@ -689,6 +693,12 @@ namespace CustAmmoCategories {
       float projectileSpeedMult = weapon.ProjectileSpeedMultiplier();
       bool damagePerPallet = weapon.DamagePerPallet();
       bool damagePerNotDiv = weapon.DamageNotDivided();
+      bool indirect = (sequence.indirectFire && weapon.IndirectFireCapable()) || CustomAmmoCategories.AlwaysIndirectVisuals(weapon);
+      bool AMSImunne = weapon.AMSImmune();
+      float missileHealth = weapon.MissileHealth();
+      float AMSHitChance = weapon.AMSHitChance();
+      float AMSHitChanceMult = weapon.AMSHitChanceMult();
+      float AMSAttractiveness = weapon.AMSAttractiveness();
       for (int hitIndex = 0; hitIndex < hitInfo.numberOfShots; ++hitIndex) {
         AdvWeaponHitInfoRec hit = new AdvWeaponHitInfoRec(result);
         Log.Combat?.WL(1, "hit: " + hitIndex);
@@ -732,7 +742,7 @@ namespace CustAmmoCategories {
           if (weapon.Unguided()) {
             hit.trajectoryInfo.type = TrajectoryType.Unguided;
           } else {
-            if ((sequence.indirectFire && weapon.IndirectFireCapable()) || CustomAmmoCategories.AlwaysIndirectVisuals(weapon)) {
+            if (indirect) {
               hit.trajectoryInfo.type = TrajectoryType.Indirect;
             } else {
               hit.trajectoryInfo.type = TrajectoryType.Direct;
@@ -746,7 +756,7 @@ namespace CustAmmoCategories {
           if (weapon.Unguided()) {
             hit.trajectoryInfo.type = TrajectoryType.Unguided;
           } else {
-            if ((sequence.indirectFire && weapon.IndirectFireCapable()) || CustomAmmoCategories.AlwaysIndirectVisuals(weapon)) {
+            if (indirect) {
               hit.trajectoryInfo.type = TrajectoryType.Indirect;
             } else {
               hit.trajectoryInfo.type = TrajectoryType.Direct;
@@ -754,17 +764,19 @@ namespace CustAmmoCategories {
           }
         } else
         if (msBallistic != null) {
-          if ((sequence.indirectFire && weapon.IndirectFireCapable()) || CustomAmmoCategories.AlwaysIndirectVisuals(weapon)) {
+          if (indirect) {
             hit.trajectoryInfo.type = TrajectoryType.Indirect;
           } else {
             hit.trajectoryInfo.type = TrajectoryType.Unguided;
           }
         }
         if ((launcher != null) || (msLauncher != null)) {
-          hit.interceptInfo.AMSImunne = weapon.AMSImmune();
-          hit.interceptInfo.missileHealth = weapon.MissileHealth();
-          hit.interceptInfo.AMSHitChance = weapon.AMSHitChance();
-          Log.Combat?.WL(1, "missile launcher. AMS imunne:" + hit.interceptInfo.AMSImunne + " health:" + hit.interceptInfo.missileHealth);
+          hit.interceptInfo.AMSImunne = AMSImunne;
+          hit.interceptInfo.missileHealth = missileHealth;
+          hit.interceptInfo.AMSHitChance = AMSHitChance;
+          hit.interceptInfo.AMSHitChanceMult = AMSHitChanceMult;
+          hit.interceptInfo.AMSAttractiveness = AMSAttractiveness;
+          Log.Combat?.WL(1, $"missile launcher. AMS imunne:{hit.interceptInfo.AMSImunne} health:{hit.interceptInfo.missileHealth} attractiveness:{hit.interceptInfo.AMSAttractiveness} AMSHitChance:{AMSHitChance} AMSHitChanceMult:{AMSHitChanceMult}");
         } else {
           Log.Combat?.WL(1, "not missile launcher");
         }

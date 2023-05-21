@@ -60,19 +60,19 @@ namespace CustomUnits {
       List<CodeInstruction> result = instructions.ToList();
       MethodInfo CollectMasks = typeof(WeightedFactor).GetMethod("CollectMasksForCellAndPathNode");
       if(CollectMasks == null) {
-        Log.LogWrite("can't find WeightedFactor.CollectMasksForCellAndPathNode\n", true);
+        Log.M?.WL(0,"can't find WeightedFactor.CollectMasksForCellAndPathNode");
         throw new Exception("fail");
         //return result;
       }
       MethodInfo tCollectMasks = typeof(WeightedFactorHelper).GetMethod("CollectMasksForCellAndPathNode");
       if (CollectMasks == null) {
-        Log.LogWrite("can't find WeightedFactorHelper.CollectMasksForCellAndPathNode\n", true);
+        Log.M?.WL(0, "can't find WeightedFactorHelper.CollectMasksForCellAndPathNode");
         throw new Exception("fail");
         //return result;
       }
       int methodIndex = result.FindIndex(instruction => instruction.opcode == OpCodes.Call && instruction.operand == CollectMasks);
       if (methodIndex < 0) {
-        Log.LogWrite("can't find WeightedFactorHelper.CollectMasksForCellAndPathNode call\n", true);
+        Log.M?.WL(0, "can't find WeightedFactorHelper.CollectMasksForCellAndPathNode call");
         throw new Exception("fail");
         //return result;
       }
@@ -91,17 +91,17 @@ namespace CustomUnits {
       List<Type> types = FindAllDerivedTypes<InfluenceMapPositionFactor>(typeof(InfluenceMapPositionFactor).Assembly);
       MethodInfo transpliter = typeof(WeightedFactorHelper).GetMethod("Transpiler", BindingFlags.Static | BindingFlags.Public);
       if (transpliter == null) {
-        Log.LogWrite(1, "can't find Transpiler method", true);
+        Log.M?.WL(1, "can't find Transpiler method");
         return;
       }
       foreach (Type tp in types) {
         MethodInfo method = tp.GetMethod("EvaluateInfluenceMapFactorAtPosition");
         if (method == null) {
-          Log.LogWrite(1, "can't find EvaluateInfluenceMapFactorAtPosition method", true);
+          Log.M?.WL(1, "can't find EvaluateInfluenceMapFactorAtPosition method");
           continue;
         }
         if (method.IsAbstract) {
-          Log.LogWrite(1, "EvaluateInfluenceMapFactorAtPosition method is abstract", true);
+          Log.M?.WL(1, "EvaluateInfluenceMapFactorAtPosition method is abstract");
           continue;
         }
         patched_success = false;

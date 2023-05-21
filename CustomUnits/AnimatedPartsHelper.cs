@@ -39,18 +39,14 @@ namespace CustomUnits {
   [HarmonyPatch("CompleteLoadTracker")]
   [HarmonyPatch(MethodType.Normal)]
   public static class LoadRequest_CompleteLoadTracker {
-    private static FieldInfo f_path = typeof(VersionManifestEntry).GetField("path",BindingFlags.Instance|BindingFlags.NonPublic);
-    public static string path(this VersionManifestEntry entry) {
-      return (string)f_path.GetValue(entry);
-    }
-    public static void Postfix(LoadRequest __instance, object tracker, bool loadSuccess) {
+    public static void Postfix(LoadRequest __instance, LoadTracker tracker, bool loadSuccess) {
       try {
         if (loadSuccess == true) { return; }
-        Log.LogWrite("LoadRequest.CompleteLoadTracker tracker: " + tracker + " loadSuccess " + loadSuccess + "\n");
-        VersionManifestEntry manifest = (VersionManifestEntry)tracker.GetType().GetField("resourceManifestEntry").GetValue(tracker);
-        Log.WL(1, manifest.Type + " streamingAssetsPath:" + Application.streamingAssetsPath + " path:" + manifest.path());
+        Log.Combat?.WL(0,"LoadRequest.CompleteLoadTracker tracker: " + tracker + " loadSuccess " + loadSuccess);
+        VersionManifestEntry manifest = tracker.resourceManifestEntry;
+        Log.Combat?.WL(1, manifest.Type + " streamingAssetsPath:" + Application.streamingAssetsPath + " path:" + manifest.path);
       }catch(Exception e) {
-        Log.TWL(0, e.ToString(), true);
+        Log.Combat?.TWL(0, e.ToString(), true);
       }
     }
   }
@@ -59,28 +55,29 @@ namespace CustomUnits {
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { typeof(AttackDirector.AttackSequence) })]
   public static class AttackDirector_PerformAttack {
-    public static bool Prefix(AttackDirector __instance, AttackDirector.AttackSequence sequence) {
+    public static void Prefix(AttackDirector __instance, AttackDirector.AttackSequence sequence) {
       try {
-        Log.LogWrite("AttackDirector.PerformAttack from " + sequence.attacker.DisplayName + " to " + sequence.chosenTarget.DisplayName + "\n");
+        Log.Combat?.WL(0, "AttackDirector.PerformAttack from " + sequence.attacker.DisplayName + " to " + sequence.chosenTarget.DisplayName);
         TurretAnimator turret = sequence.attacker.GetCustomTurret();
         if (turret == null) {
-          Log.LogWrite(" no turret at attaker\n");
-          return true;
+          Log.Combat?.WL(1, "no turret at attaker");
+          return;
         }
         if (sequence.chosenTarget == null) {
-          Log.LogWrite(" choosen target is null\n");
-          return true;
+          Log.Combat?.WL(1, "choosen target is null");
+          return;
         };
         if (sequence.chosenTarget.GameRep == null) {
-          Log.LogWrite(" choosen target has no game rep\n");
-          return true;
+          Log.Combat?.WL(1, "choosen target has no game rep");
+          return;
         }
         turret.target = sequence.chosenTarget;
-        Log.LogWrite(" turret target set\n");
+        Log.Combat?.WL(1, "turret target set");
       } catch (Exception e) {
-        Log.LogWrite(e.ToString() + "\n", true);
+        Log.Combat?.WL(0, e.ToString(), true);
+        AttackDirector.attackLogger.LogException(e);
       }
-      return true;
+      return;
     }
   }
   [HarmonyPatch(typeof(VehicleRepresentation))]
@@ -88,9 +85,8 @@ namespace CustomUnits {
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { typeof(string) })]
   public static class VehicleRepresentation_OnAudioEvent {
-    public static bool Prefix(VehicleRepresentation __instance, string audioEvent) {
-      Log.LogWrite("VehicleRepresentation.OnAudioEvent " + __instance.name + " audioEvent:" + audioEvent + "\n");
-      return true;
+    public static void Prefix(VehicleRepresentation __instance, string audioEvent) {
+      Log.Combat?.WL(0, "VehicleRepresentation.OnAudioEvent " + __instance.name + " audioEvent:" + audioEvent);
     }
   }
   //[HarmonyPatch(typeof(MechRepresentation))]
@@ -123,9 +119,9 @@ namespace CustomUnits {
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { })]
   public static class VehicleRepresentation_PlayEngineStartAudio {
-    public static bool Prefix(VehicleRepresentation __instance) {
-      Log.LogWrite("VehicleRepresentation.PlayEngineStartAudio " + __instance.name + "\n");
-      return true;
+    public static void Prefix(VehicleRepresentation __instance) {
+      Log.Combat?.WL(0, "VehicleRepresentation.PlayEngineStartAudio " + __instance.name);
+      return;
     }
   }
   [HarmonyPatch(typeof(VehicleRepresentation))]
@@ -133,9 +129,8 @@ namespace CustomUnits {
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { })]
   public static class VehicleRepresentation_PlayEngineStopAudio {
-    public static bool Prefix(VehicleRepresentation __instance) {
-      Log.LogWrite("VehicleRepresentation.PlayEngineStopAudio " + __instance.name + "\n");
-      return true;
+    public static void Prefix(VehicleRepresentation __instance) {
+      Log.Combat?.WL(0, "VehicleRepresentation.PlayEngineStopAudio " + __instance.name);
     }
   }
   [HarmonyPatch(typeof(PilotableActorRepresentation))]
@@ -144,9 +139,9 @@ namespace CustomUnits {
   [HarmonyPatch(new Type[] { typeof(VisibilityLevel) })]
   public static class PilotableActorRepresentation_OnPlayerVisibilityChanged {
     public static void Postfix(PilotableActorRepresentation __instance, VisibilityLevel newLevel) {
-      Log.LogWrite("PilotableActorRepresentation.OnPlayerVisibilityChanged " + __instance.parentCombatant.DisplayName + "\n");
+      Log.Combat?.WL(0, "PilotableActorRepresentation.OnPlayerVisibilityChanged " + __instance.parentCombatant.DisplayName);
       if (UnitsAnimatedPartsHelper.animatedParts.ContainsKey(__instance.parentCombatant) == false) {
-        Log.LogWrite(" no animated parts\n");
+        Log.Combat?.WL(1, "no animated parts");
         return;
       };
       try {
@@ -157,18 +152,21 @@ namespace CustomUnits {
             GenericAnimatedComponent[] aps = apGameObject.GetComponents<GenericAnimatedComponent>();
             foreach (GenericAnimatedComponent ap in aps) {
               try {
-                Log.LogWrite(" AnimatedPart:" + ap.GetType() + ":" + newLevel + "\n");
+                Log.Combat?.WL(1, "AnimatedPart:" + ap.GetType() + ":" + newLevel);
                 ap.OnPlayerVisibilityChanged(__instance.parentCombatant, newLevel);
               }catch(Exception e) {
-                Log.TWL(0, e.ToString(), true);
+                Log.Combat?.TWL(0, e.ToString(), true);
+                AbstractActor.logger.LogException(e);
               }
             }
           }catch(Exception e) {
-            Log.TWL(0, e.ToString(), true);
+            Log.Combat?.TWL(0, e.ToString(), true);
+            AbstractActor.logger.LogException(e);
           }
         }
       }catch(Exception e) {
-        Log.TWL(0, e.ToString(), true);
+        Log.Combat?.TWL(0, e.ToString(), true);
+        AbstractActor.logger.LogException(e);
       }
     }
   }
@@ -177,48 +175,46 @@ namespace CustomUnits {
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { typeof(VehicleChassisLocations) })]
   public static class Vehicle_GetAttachTransform {
-    public static bool Prefix(Vehicle __instance, VehicleChassisLocations location, ref Transform __result) {
-      Log.LogWrite("Vehicle.GetAttachTransform " + __instance.DisplayName + "\n");
+    public static void Prefix(ref bool __runOriginal, Vehicle __instance, VehicleChassisLocations location, ref Transform __result) {
+      if (!__runOriginal) { return; }
+      Log.Combat?.WL(0, "Vehicle.GetAttachTransform " + __instance.DisplayName);
       if (UnitsAnimatedPartsHelper.animatedParts.ContainsKey(__instance) == false) {
-        Log.LogWrite(" no animated parts\n");
-        return true;
+        Log.Combat?.WL(1, "no animated parts");
+        return;
       };
       TurretAnimator turret = __instance.GetCustomTurret(location);
       if (turret != null) {
         if (turret.barrels.Count > 0) {
           __result = turret.barrels[0].transform;
-          Log.LogWrite(" found barrel:" + __result.name + " parent:" + __result.parent.name + " offset:" + __result.localPosition + " rotation:" + __result.localRotation.eulerAngles + " scale:" + __result.localScale + "\n");
-          return false;
+          Log.Combat?.WL(1, "found barrel:" + __result.name + " parent:" + __result.parent.name + " offset:" + __result.localPosition + " rotation:" + __result.localRotation.eulerAngles + " scale:" + __result.localScale);
+          __runOriginal = false;
+          return;
         } else {
-          Log.LogWrite(" no barrels\n");
+          Log.Combat?.WL(1, "no barrels");
         }
       } else {
-        Log.LogWrite(" no turrets in location:" + location + "\n");
+        Log.Combat?.WL(1, "no turrets in location:" + location);
       }
       WeaponMountPoint mp = __instance.GetCustomMountPoint(location);
       if (mp != null) {
         if (mp.barrels.Count > 0) {
           __result = mp.barrels[0].transform;
-          Log.LogWrite(" found mount point:" + __result.name + " parent:" + __result.parent.name + " offset:" + __result.localPosition + " rotation:" + __result.localRotation.eulerAngles + " scale:" + __result.localScale + "\n");
-          return false;
+          Log.Combat?.WL(1, "found mount point:" + __result.name + " parent:" + __result.parent.name + " offset:" + __result.localPosition + " rotation:" + __result.localRotation.eulerAngles + " scale:" + __result.localScale);
+          __runOriginal = false;
+          return;
         } else {
-          Log.LogWrite(" no barrels\n");
+          Log.Combat?.WL(1, "no barrels");
         }
       } else {
-        Log.LogWrite(" no mount points in location:" + location + "\n");
+        Log.Combat?.WL(1, "no mount points in location:" + location);
       }
       if (location != VehicleChassisLocations.Turret) {
         VTOLBodyAnimation bodyAnimation = __instance.VTOLAnimation();
         if (bodyAnimation != null) {
-          Log.WL(1, "found VTOL body animation");
-          /*if (bodyAnimation.bodyAttach != null) {
-            Log.TWL(2, " found body attach transform");
-            __result = bodyAnimation.bodyAttach;
-            return false;
-          }*/
+          Log.Combat?.WL(1, "found VTOL body animation");
         }
       }
-      return true;
+      return;
     }
   }
   [HarmonyPatch(typeof(Vehicle))]
@@ -226,20 +222,22 @@ namespace CustomUnits {
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { typeof(ICombatant), typeof(Vector3), typeof(Quaternion), typeof(Vector3) })]
   public static class Vehicle_IsTargetPositionInFiringArc {
-    public static bool Prefix(Vehicle __instance, ICombatant targetUnit, Vector3 attackPosition, Quaternion attackRotation, Vector3 targetPosition, ref bool __result) {
+    public static void Prefix(ref bool __runOriginal, Vehicle __instance, ICombatant targetUnit, Vector3 attackPosition, Quaternion attackRotation, Vector3 targetPosition, ref bool __result) {
+      if (!__runOriginal) { return; }
       //Log.LogWrite("Vehicle.IsTargetPositionInFiringArc " + __instance.DisplayName+" -> "+targetUnit.DisplayName+"\n");
       UnitCustomInfo info = __instance.GetCustomInfo();
       if (info == null) {
         //Log.LogWrite(" no custom info\n");
-        return true;
+        return;
       }
-      if (__instance.FiringArc() <= 10f) { return true; }
+      if (__instance.FiringArc() <= 10f) { return; }
       Vector3 forward = targetPosition - attackPosition;
       forward.y = 0.0f;
       Quaternion b = Quaternion.LookRotation(forward);
       __result = (double)Quaternion.Angle(attackRotation, b) < (double)__instance.FiringArc();
       //Log.LogWrite(" rotation to target: " + Quaternion.Angle(attackRotation, b) + " firingArc:" + info.FiringArc + " result: " + __result + "\n");
-      return false;
+      __runOriginal = false;
+      return;
     }
   }
   [HarmonyPatch(typeof(Mech))]
@@ -247,16 +245,17 @@ namespace CustomUnits {
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { typeof(ICombatant), typeof(Vector3), typeof(Quaternion), typeof(Vector3) })]
   public static class Mech_IsTargetPositionInFiringArc {
-    public static bool Prefix(Mech __instance, ICombatant targetUnit, Vector3 attackPosition, Quaternion attackRotation, Vector3 targetPosition, ref bool __result) {
+    public static void Prefix(ref bool __runOriginal, Mech __instance, ICombatant targetUnit, Vector3 attackPosition, Quaternion attackRotation, Vector3 targetPosition, ref bool __result) {
+      if (!__runOriginal) { return; }
       UnitCustomInfo info = __instance.GetCustomInfo();
       //Log.TWL(0, "Mech.IsTargetPositionInFiringArc " + __instance.MechDef.Description.Id);
       if (info == null) {
         //Log.WL(1, "no custom info");
-        return true;
+        return;
       }
       if (__instance.FiringArc() <= 10f) {
         //Log.WL(1, "too low arc value");
-        return true;
+        return;
       }
       Vector3 forward = targetPosition - attackPosition;
       forward.y = 0.0f;
@@ -264,7 +263,7 @@ namespace CustomUnits {
         BattleTech.Building building = targetUnit as BattleTech.Building;
         if (building != null && !string.IsNullOrEmpty(__instance.standingOnBuildingGuid)) {
           string str = __instance.standingOnBuildingGuid + ".Building";
-          if (__instance.standingOnBuildingGuid == building.GUID || str == building.GUID) { __result = true; return false; }
+          if (__instance.standingOnBuildingGuid == building.GUID || str == building.GUID) { __result = true; __runOriginal = false;  return; }
         }
       }
       if (forward.sqrMagnitude > Core.Epsilon) {
@@ -273,8 +272,9 @@ namespace CustomUnits {
       } else {
         __result = true;
       }
+      __runOriginal = false;
       //Log.WL(1, Quaternion.Angle(attackRotation, b) + " and " + __instance.FiringArc() + " : " + __result);
-      return false;
+      return;
     }
   }
   /*[HarmonyPatch(typeof(FiringPreviewManager))]
@@ -363,9 +363,9 @@ namespace CustomUnits {
       if (string.IsNullOrEmpty(AudioEventNameStop) == false) {
         if (SceneSingletonBehavior<WwiseManager>.HasInstance) {
           uint soundid = SceneSingletonBehavior<WwiseManager>.Instance.PostEventByName(AudioEventNameStop, this.parent.GameRep.audioObject, (AkCallbackManager.EventCallback)null, (object)null);
-          Log.TWL(0, "Stop playing sound by id (" + AudioEventNameStop + "):" + soundid);
+          Log.Combat?.TWL(0, "Stop playing sound by id (" + AudioEventNameStop + "):" + soundid);
         } else {
-          Log.TWL(0, "Can't play");
+          Log.Combat?.TWL(0, "Can't play");
         }
       }
     }
@@ -380,7 +380,7 @@ namespace CustomUnits {
       GenericAnimatedData jdata = JsonConvert.DeserializeObject<GenericAnimatedData>(data);
       AudioEventNameStart = jdata.sound_start_event;
       AudioEventNameStop = jdata.sound_stop_event;
-      Log.LogWrite("GenericAnimatedComponent.Init parent:" + (a == null?"null":new Text(a.DisplayName).ToString()) +" " + this.gameObject.name + " AudioEventNameStart: " + this.AudioEventNameStart + " AudioEventNameStop:"+ AudioEventNameStop + "\n");
+      Log.Combat?.WL(0, "GenericAnimatedComponent.Init parent:" + (a == null?"null":new Text(a.DisplayName).ToString()) +" " + this.gameObject.name + " AudioEventNameStart: " + this.AudioEventNameStart + " AudioEventNameStop:"+ AudioEventNameStop);
       parent = a;
       Location = loc;
       if (this.renderers != null) {
@@ -402,9 +402,9 @@ namespace CustomUnits {
           if (string.IsNullOrEmpty(AudioEventNameStart) == false) {
             if (SceneSingletonBehavior<WwiseManager>.HasInstance) {
               uint soundid = SceneSingletonBehavior<WwiseManager>.Instance.PostEventByName(AudioEventNameStart, this.parent.GameRep.audioObject, (AkCallbackManager.EventCallback)null, (object)null);
-              Log.TWL(0, "Playing sound by id (" + AudioEventNameStart + "):" + soundid);
+              Log.Combat?.TWL(0, "Playing sound by id (" + AudioEventNameStart + "):" + soundid);
             } else {
-              Log.TWL(0, "Can't play");
+              Log.Combat?.TWL(0, "Can't play");
             }
           }
         } else {
@@ -414,25 +414,26 @@ namespace CustomUnits {
           if (string.IsNullOrEmpty(AudioEventNameStop) == false) {
             if (SceneSingletonBehavior<WwiseManager>.HasInstance) {
               uint soundid = SceneSingletonBehavior<WwiseManager>.Instance.PostEventByName(AudioEventNameStop, this.parent.GameRep.audioObject, (AkCallbackManager.EventCallback)null, (object)null);
-              Log.TWL(0, "Stop playing sound by id (" + AudioEventNameStop + "):" + soundid);
+              Log.Combat?.TWL(0, "Stop playing sound by id (" + AudioEventNameStop + "):" + soundid);
             } else {
-              Log.TWL(0, "Can't play");
+              Log.Combat?.TWL(0, "Can't play");
             }
           }
         }
       } catch (Exception e) {
-        Log.TWL(0,e.ToString(),true);
+        Log.Combat?.TWL(0,e.ToString(),true);
+        AbstractActor.logger.LogException(e);
       }
     }
     public virtual void Clear() {
-      Log.TWL(0, "GenericAnimatedComponent.Clear: stop:"+ AudioEventNameStop+" parent:"+(this.parent==null?"null":"not null"));
+      Log.Combat?.TWL(0, "GenericAnimatedComponent.Clear: stop:"+ AudioEventNameStop+" parent:"+(this.parent==null?"null":"not null"));
       if (this.parent == null) { return; }
       if (string.IsNullOrEmpty(AudioEventNameStop) == false) {
         if (SceneSingletonBehavior<WwiseManager>.HasInstance) {
           uint soundid = SceneSingletonBehavior<WwiseManager>.Instance.PostEventByName(AudioEventNameStop, this.parent.GameRep.audioObject, (AkCallbackManager.EventCallback)null, (object)null);
-          Log.TWL(0, "Stop playing sound by id (" + AudioEventNameStop + "):" + soundid);
+          Log.Combat?.TWL(0, "Stop playing sound by id (" + AudioEventNameStop + "):" + soundid);
         } else {
-          Log.TWL(0, "Can't play (" + AudioEventNameStop + ")");
+          Log.Combat?.TWL(0, "Can't play (" + AudioEventNameStop + ")");
         }
       }
     }
@@ -448,7 +449,7 @@ namespace CustomUnits {
       rotateBone = null;
     }
     public void Awake() {
-      Log.LogWrite("Awake " + this.gameObject.name + "\n");
+      Log.Combat?.WL(0,"Awake " + this.gameObject.name);
       //this.rotateAngle = 0.0f;
     }
     protected virtual void Update() {
@@ -470,19 +471,19 @@ namespace CustomUnits {
       } else if (srdata.axis == "z") {
         this.axis = 2;
       }
-      Log.LogWrite("SimpleRotator.Init " + this.gameObject.name + " axis: " + this.axis + "\n");
+      Log.Combat?.WL(0, "SimpleRotator.Init " + this.gameObject.name + " axis: " + this.axis);
       if (string.IsNullOrEmpty(srdata.rotateBone)) { this.rotateBone = this.gameObject.transform; } else {
         Transform[] bones = this.gameObject.GetComponentsInChildren<Transform>();
         foreach (Transform bone in bones) {
-          Log.LogWrite(1, "Bone:" + bone.name + "/" + srdata.rotateBone, true);
+          Log.Combat?.WL(1, "Bone:" + bone.name + "/" + srdata.rotateBone, true);
           if (bone.name == srdata.rotateBone) {
-            Log.LogWrite(2, "found!", true);
+            Log.Combat?.WL(2, "found!", true);
             this.rotateBone = bone; break;
           }
         }
       }
       if (this.rotateBone == null) { this.rotateBone = this.gameObject.transform; }
-      Log.LogWrite(1, "found rotation bone:" + this.rotateBone.name, true);
+      Log.Combat?.WL(1, "found rotation bone:" + this.rotateBone.name, true);
     }
   }
   public class CustomMoveAnimator : GenericAnimatedComponent {
@@ -490,17 +491,17 @@ namespace CustomUnits {
     public CustomMoveAnimator() {
     }
     public void Awake() {
-      Log.LogWrite("Awake " + this.gameObject.name + "\n");
+      Log.Combat?.WL(0, "Awake " + this.gameObject.name);
     }
     public override void Init(ICombatant a, int loc, string data, string prefabName) {
       base.Init(a, loc, data, prefabName);
       Component[] components = this.gameObject.GetComponentsInChildren<Component>();
       this.animator = this.gameObject.GetComponentInChildren<Animator>();
       //if (this.animator != null) { this.animator.speed = 0; }
-      Log.LogWrite("CustomMoveAnimator.Init\n");
+      Log.Combat?.WL(0, "CustomMoveAnimator.Init");
       foreach (Component component in components) {
         if (component == null) { continue; }
-        Log.LogWrite(" " + component.name + ":" + component.GetType().ToString() + "\n");
+        Log.Combat?.WL(1, component.name + ":" + component.GetType().ToString());
       }
     }
   }
@@ -541,7 +542,7 @@ namespace CustomUnits {
     }
     public void StartAnimation() {
       t = 0f;
-      Log.LogWrite("CustomQuadLegController.StartAnimation\n");
+      Log.Combat?.WL(0, "CustomQuadLegController.StartAnimation");
       this.ForwardAnimation();
       /*if (this.LFAnimator != null) {
         this.LBAnimator.speed = 1f;
@@ -571,19 +572,19 @@ namespace CustomUnits {
     public override void Init(ICombatant a, int loc, string data, string prefabName) {
       base.Init(a, loc, data, prefabName);
       Animator[] animators = this.parent.GameRep.gameObject.GetComponentsInChildren<Animator>();
-      Log.LogWrite("CustomQuadLegController.Init\n");
+      Log.Combat?.WL(0, "CustomQuadLegController.Init");
       foreach (Animator animator in animators) {
         if (animator.gameObject.name.StartsWith("lf_limb")) {
-          Log.LogWrite(" left front animatior found\n");
+          Log.Combat?.WL(1, "left front animatior found");
           LFAnimator = animator;
         } else if (animator.gameObject.name.StartsWith("lr_limb")) {
-          Log.LogWrite(" left rear animatior found\n");
+          Log.Combat?.WL(1, "left rear animatior found");
           LBAnimator = animator;
         } else if (animator.gameObject.name.StartsWith("rf_limb")) {
-          Log.LogWrite(" right front animatior found\n");
+          Log.Combat?.WL(1, "right front animatior found");
           RFAnimator = animator;
         } else if (animator.gameObject.name.StartsWith("rr_limb")) {
-          Log.LogWrite(" right rear animatior found\n");
+          Log.Combat?.WL(1, "right rear animatior found");
           RBAnimator = animator;
         }
       }
@@ -780,7 +781,7 @@ namespace CustomUnits {
       bool wasDespawned = false;
       AbstractActor actor = unit as AbstractActor;
       if (actor != null) { wasDespawned = actor.WasDespawned; }
-      Log.TWL(0, "UnitsAnimatedPartsHelper.Clear "+unit.DisplayName+ " combatEnd:"+ combatEnd+ " animatedParts:" + animatedParts[unit].Count);
+      Log.Combat?.TWL(0, "UnitsAnimatedPartsHelper.Clear "+unit.DisplayName+ " combatEnd:"+ combatEnd+ " animatedParts:" + animatedParts[unit].Count);
       for (int t = 0; t < animatedParts[unit].Count; ++t) {
         if (animatedParts[unit][t] != null) {
           GenericAnimatedComponent[] components = animatedParts[unit][t].GetComponents<GenericAnimatedComponent>();
@@ -794,7 +795,7 @@ namespace CustomUnits {
               component.Clear();
               GameObject.Destroy(component);
             }
-            Log.WL(0, animatedParts[unit][t].name + " keep:"+ keepObject);
+            Log.Combat?.WL(0, animatedParts[unit][t].name + " keep:"+ keepObject);
             if (keepObject == false) {
               GameObject.Destroy(animatedParts[unit][t]);
               animatedParts[unit][t] = null;
@@ -822,7 +823,7 @@ namespace CustomUnits {
           }
         };
       }
-      Log.LogWrite(0, "DestroyAnimation count:" + toDestroy.Count, true);
+      Log.Combat?.WL(0, "DestroyAnimation count:" + toDestroy.Count, true);
       foreach (GameObject go in toDestroy) {
         GenericAnimatedComponent[] components = go.GetComponents<GenericAnimatedComponent>();
         if (components != null) {
@@ -869,23 +870,23 @@ namespace CustomUnits {
     public static void SpawnAnimatedPart(MechDef def,MechRepresentationSimGame rep, CustomPart spawnPart, int Location) {
       if (def == null) { return; }
       if (rep == null) { return; }
-      Log.LogWrite("SpawnAnimatedPart " + def.Description.Id + " " + spawnPart.prefab + " " + spawnPart.AnimationType + " " + spawnPart.Data + " " + Location + " " + spawnPart.prefabTransform.offset + " " + spawnPart.prefabTransform.scale + " " + spawnPart.prefabTransform.rotate + "\n");
+      Log.Combat?.WL(0, "SpawnAnimatedPart " + def.Description.Id + " " + spawnPart.prefab + " " + spawnPart.AnimationType + " " + spawnPart.Data + " " + Location + " " + spawnPart.prefabTransform.offset + " " + spawnPart.prefabTransform.scale + " " + spawnPart.prefabTransform.rotate);
       Renderer actorRenderer = rep.gameObject.GetComponentInChildren<Renderer>();
       GameObject gameObject = null;
       if (string.IsNullOrEmpty(spawnPart.prefab) == false) {
         gameObject = def.DataManager.PooledInstantiate(spawnPart.prefab, BattleTechResourceType.Prefab, new Vector3?(), new Quaternion?(), (Transform)null);
         if ((UnityEngine.Object)gameObject == (UnityEngine.Object)null) {
-          Log.LogWrite("Can't find " + spawnPart.prefab + " in in-game prefabs\n");
+          Log.Combat?.WL(0, "Can't find " + spawnPart.prefab + " in in-game prefabs");
           if (CACMain.Core.AdditinalFXObjects.ContainsKey(spawnPart.prefab)) {
-            Log.LogWrite("Found in additional prefabs\n");
+            Log.Combat?.WL(0, "Found in additional prefabs");
             gameObject = GameObject.Instantiate(CACMain.Core.AdditinalFXObjects[spawnPart.prefab]);
           } else {
-            Log.LogWrite(" can't spawn prefab " + spawnPart.prefab + " it is absent in pool,in-game assets and external assets\n", true);
+            Log.Combat?.WL(1, "can't spawn prefab " + spawnPart.prefab + " it is absent in pool,in-game assets and external assets", true);
             return;
           }
         }
       } else {
-        Log.LogWrite(" creating empty object\n");
+        Log.Combat?.WL(1, "creating empty object");
         gameObject = new GameObject();
       }
       Transform parentTransform = null;
@@ -893,7 +894,7 @@ namespace CustomUnits {
         Transform[] transforms = rep.gameObject.GetComponentsInChildren<Transform>();
         foreach (Transform bone in transforms) {
           if (bone.name == spawnPart.boneName) {
-            Log.LogWrite(" parent bone found\n");
+            Log.Combat?.WL(1, "parent bone found");
             parentTransform = bone;
             break;
           }
@@ -913,12 +914,12 @@ namespace CustomUnits {
       Component[] components = gameObject.GetComponents<Component>();
       foreach (Component cmp in components) {
         if (cmp == null) { continue; }
-        Log.LogWrite(0, "Component:" + cmp.GetType() + " " + cmp.name + " id:" + cmp.GetInstanceID() + " owner:" + cmp.gameObject.GetInstanceID(), true);
+        Log.Combat?.WL(0, "Component:" + cmp.GetType() + " " + cmp.name + " id:" + cmp.GetInstanceID() + " owner:" + cmp.gameObject.GetInstanceID());
       }
       components = gameObject.GetComponentsInChildren<Component>();
       foreach (Component cmp in components) {
         if (cmp == null) { continue; }
-        Log.LogWrite(0, "Child component:" + cmp.GetType() + " " + cmp.name + " id:" + cmp.GetInstanceID() + " owner:" + cmp.gameObject.GetInstanceID(), true);
+        Log.Combat?.WL(0, "Child component:" + cmp.GetType() + " " + cmp.name + " id:" + cmp.GetInstanceID() + " owner:" + cmp.gameObject.GetInstanceID());
       }
       /*components = unit.GameRep.gameObject.GetComponentsInChildren<Component>();
       foreach (Component cmp in components) {
@@ -932,10 +933,10 @@ namespace CustomUnits {
       Renderer[] spawnRenderers = gameObject.GetComponentsInChildren<Renderer>(true);
       foreach (Renderer renderer in spawnRenderers) {
         foreach (Material material in renderer.materials) {
-          Log.LogWrite(0, "Renderer:" + renderer.GetType() + ":" + renderer.name + " material:" + material.name, true);
+          Log.Combat?.WL(0, "Renderer:" + renderer.GetType() + ":" + renderer.name + " material:" + material.name);
           CustomMaterialInfo mInfo = spawnPart.findMaterialInfo(material.name);
           if (mInfo != null) {
-            Log.LogWrite(1, "need custom processing", true);
+            Log.Combat?.WL(1, "need custom processing");
             if (string.IsNullOrEmpty(mInfo.shader) == false) {
               GameObject shaderGo = null;
               if (mInfo.shader != def.Chassis.PrefabIdentifier) {
@@ -947,24 +948,24 @@ namespace CustomUnits {
                 Renderer shaderRenderer = shaderGo.GetComponentInChildren<Renderer>();
                 if (shaderRenderer != null) {
                   Shader shader = shaderRenderer.material.shader;
-                  Log.LogWrite(2, "shader real name:" + shader.name);
+                  Log.Combat?.WL(2, "shader real name:" + shader.name);
                   material.shader = shader;
                 } else {
-                  Log.LogWrite(2, "can't found renderer in shader carrier " + mInfo.shader, true);
+                  Log.Combat?.WL(2, "can't found renderer in shader carrier " + mInfo.shader);
                 }
                 if (mInfo.shader != def.Chassis.PrefabIdentifier) {
                   def.DataManager.PoolGameObject(mInfo.shader, shaderGo);
                 }
               } else {
-                Log.LogWrite(2, "can't found shader carrier " + mInfo.shader, true);
+                Log.Combat?.WL(2, "can't found shader carrier " + mInfo.shader);
               }
             }
             if (mInfo.shaderKeyWords.Count > 0) {
               material.shaderKeywords = mInfo.shaderKeyWords.ToArray();
-              Log.LogWrite(2, "shaders keywords updated " + material.shaderKeywords, true);
+              Log.Combat?.WL(2, "shaders keywords updated " + material.shaderKeywords);
             }
           } else {
-            Log.LogWrite(1, "no additional custom processing", true);
+            Log.Combat?.WL(1, "no additional custom processing");
           }
         }
       }
@@ -1018,7 +1019,7 @@ namespace CustomUnits {
       }*/
       ParticleSystem component = gameObject.GetComponent<ParticleSystem>();
       if (component != null) {
-        Log.LogWrite("ParticleSystem for " + spawnPart.prefab + " found\n");
+        Log.Combat?.WL(0, "ParticleSystem for " + spawnPart.prefab + " found");
         //component.transform.localScale.Set(scale.x, scale.y, scale.z);
         component.transform.parent = def.IsVehicle() ? rep.getAttachVehicle(Location) : rep.getAttachMech(Location);
         component.transform.localPosition = spawnPart.prefabTransform.offset.vector;
@@ -1029,7 +1030,7 @@ namespace CustomUnits {
         BTCustomRenderer.SetVFXMultiplier(component);
         component.Play(true);
       } else {
-        Log.LogWrite("no particle system for " + spawnPart.prefab + "\n");
+        Log.Combat?.WL(0, "no particle system for " + spawnPart.prefab);
       }
       GenericAnimatedComponent acomponent = null;
       try {
@@ -1063,7 +1064,8 @@ namespace CustomUnits {
           acomponent.Init(null, Location, spawnPart.Data, spawnPart.prefab);
         }
       } catch (Exception e) {
-        Log.LogWrite(e.ToString() + "\n", true);
+        Log.Combat?.TWL(0, e.ToString(), true);
+        AbstractActor.logger.LogException(e);
       }
       gameObject.SetActive(true);
       //if (animatedParts.ContainsKey(unit) == false) {
@@ -1080,23 +1082,23 @@ namespace CustomUnits {
       if (unit.GameRep.gameObject == null) {
         return;
       }
-      Log.LogWrite("SpawnAnimatedPart " + unit.DisplayName + " " + spawnPart.prefab + " " + spawnPart.AnimationType + " " + spawnPart.Data + " " + Location + " " + spawnPart.prefabTransform.offset + " " + spawnPart.prefabTransform.scale + " " + spawnPart.prefabTransform.rotate + "\n");
+      Log.Combat?.WL(0, "SpawnAnimatedPart " + unit.DisplayName + " " + spawnPart.prefab + " " + spawnPart.AnimationType + " " + spawnPart.Data + " " + Location + " " + spawnPart.prefabTransform.offset + " " + spawnPart.prefabTransform.scale + " " + spawnPart.prefabTransform.rotate);
       Renderer actorRenderer = unit.GameRep.gameObject.GetComponentInChildren<Renderer>();
       GameObject gameObject = null;
       if (string.IsNullOrEmpty(spawnPart.prefab) == false) {
         gameObject = unit.Combat.DataManager.PooledInstantiate(spawnPart.prefab, BattleTechResourceType.Prefab, new Vector3?(), new Quaternion?(), (Transform)null);
         if ((UnityEngine.Object)gameObject == (UnityEngine.Object)null) {
-          Log.LogWrite("Can't find " + spawnPart.prefab + " in in-game prefabs\n");
+          Log.Combat?.WL(0, "Can't find " + spawnPart.prefab + " in in-game prefabs");
           if (CACMain.Core.AdditinalFXObjects.ContainsKey(spawnPart.prefab)) {
-            Log.LogWrite("Found in additional prefabs\n");
+            Log.Combat?.WL(0, "Found in additional prefabs");
             gameObject = GameObject.Instantiate(CACMain.Core.AdditinalFXObjects[spawnPart.prefab]);
           } else {
-            Log.LogWrite(" can't spawn prefab " + spawnPart.prefab + " it is absent in pool,in-game assets and external assets\n", true);
+            Log.Combat?.WL(1, "can't spawn prefab " + spawnPart.prefab + " it is absent in pool,in-game assets and external assets", true);
             return;
           }
         }
       } else {
-        Log.LogWrite(" creating empty object\n");
+        Log.Combat?.WL(1, "creating empty object");
         gameObject = new GameObject();
       }
       Transform parentTransform = null;
@@ -1104,7 +1106,7 @@ namespace CustomUnits {
         Transform[] transforms = unit.GameRep.gameObject.GetComponentsInChildren<Transform>();
         foreach (Transform bone in transforms) {
           if (bone.name == spawnPart.boneName) {
-            Log.LogWrite(" parent bone found\n");
+            Log.Combat?.WL(1, "parent bone found");
             parentTransform = bone;
             break;
           }
@@ -1124,12 +1126,12 @@ namespace CustomUnits {
       Component[] components = gameObject.GetComponents<Component>();
       foreach (Component cmp in components) {
         if (cmp == null) { continue; }
-        Log.LogWrite(0, "Component:" + cmp.GetType() + " " + cmp.name + " id:" + cmp.GetInstanceID() + " owner:" + cmp.gameObject.GetInstanceID(), true);
+        Log.Combat?.WL(0, "Component:" + cmp.GetType() + " " + cmp.name + " id:" + cmp.GetInstanceID() + " owner:" + cmp.gameObject.GetInstanceID());
       }
       components = gameObject.GetComponentsInChildren<Component>();
       foreach (Component cmp in components) {
         if (cmp == null) { continue; }
-        Log.LogWrite(0, "Child component:" + cmp.GetType() + " " + cmp.name + " id:" + cmp.GetInstanceID() + " owner:" + cmp.gameObject.GetInstanceID(), true);
+        Log.Combat?.WL(0, "Child component:" + cmp.GetType() + " " + cmp.name + " id:" + cmp.GetInstanceID() + " owner:" + cmp.gameObject.GetInstanceID());
       }
       /*components = unit.GameRep.gameObject.GetComponentsInChildren<Component>();
       foreach (Component cmp in components) {
@@ -1143,10 +1145,10 @@ namespace CustomUnits {
       Renderer[] spawnRenderers = gameObject.GetComponentsInChildren<Renderer>(true);
       foreach (Renderer renderer in spawnRenderers) {
         foreach (Material material in renderer.materials) {
-          Log.LogWrite(0, "Renderer:" + renderer.GetType() + ":" + renderer.name + " material:" + material.name, true);
+          Log.Combat?.WL(0, "Renderer:" + renderer.GetType() + ":" + renderer.name + " material:" + material.name);
           CustomMaterialInfo mInfo = spawnPart.findMaterialInfo(material.name);
           if (mInfo != null) {
-            Log.LogWrite(1, "need custom processing", true);
+            Log.Combat?.WL(1, "need custom processing");
             if (string.IsNullOrEmpty(mInfo.shader) == false) {
               GameObject shaderGo = null;
               bool noPoolShader = false;
@@ -1170,22 +1172,22 @@ namespace CustomUnits {
                 Renderer shaderRenderer = shaderGo.GetComponentInChildren<Renderer>();
                 if (shaderRenderer != null) {
                   Shader shader = shaderRenderer.material.shader;
-                  Log.LogWrite(2, "shader real name:" + shader.name);
+                  Log.Combat?.WL(2, "shader real name:" + shader.name);
                   material.shader = shader;
                 } else {
-                  Log.LogWrite(2, "can't found renderer in shader carrier " + mInfo.shader, true);
+                  Log.Combat?.WL(2, "can't found renderer in shader carrier " + mInfo.shader);
                 }
                 if(noPoolShader == false) unit.Combat.DataManager.PoolGameObject(mInfo.shader, shaderGo);
               } else {
-                Log.LogWrite(2, "can't found shader carrier " + mInfo.shader, true);
+                Log.Combat?.WL(2, "can't found shader carrier " + mInfo.shader);
               }
             }
             if (mInfo.shaderKeyWords.Count > 0) {
               material.shaderKeywords = mInfo.shaderKeyWords.ToArray();
-              Log.LogWrite(2, "shaders keywords updated " + material.shaderKeywords, true);
+              Log.Combat?.WL(2, "shaders keywords updated " + material.shaderKeywords);
             }
           } else {
-            Log.LogWrite(1, "no additional custom processing", true);
+            Log.Combat?.WL(1, "no additional custom processing");
           }
         }
       }
@@ -1239,7 +1241,7 @@ namespace CustomUnits {
       }*/
       ParticleSystem component = gameObject.GetComponent<ParticleSystem>();
       if (component != null) {
-        Log.LogWrite("ParticleSystem for " + spawnPart.prefab + " found\n");
+        Log.Combat?.WL(0, "ParticleSystem for " + spawnPart.prefab + " found");
         //component.transform.localScale.Set(scale.x, scale.y, scale.z);
         component.transform.parent = unit.GameRep.GetVFXTransform(Location);
         component.transform.localPosition = spawnPart.prefabTransform.offset.vector;
@@ -1250,7 +1252,7 @@ namespace CustomUnits {
         BTCustomRenderer.SetVFXMultiplier(component);
         component.Play(true);
       } else {
-        Log.LogWrite("no particle system for " + spawnPart.prefab + "\n");
+        Log.Combat?.WL(0, "no particle system for " + spawnPart.prefab);
       }
       GenericAnimatedComponent acomponent = null;
       try {
@@ -1284,15 +1286,16 @@ namespace CustomUnits {
           acomponent.Init(unit, Location, spawnPart.Data, spawnPart.prefab);
         }
       } catch (Exception e) {
-        Log.LogWrite(e.ToString() + "\n", true);
+        Log.Combat?.WL(0, e.ToString(), true);
+        AbstractActor.logger.LogException(e);
       }
       gameObject.SetActive(true);
       if (animatedParts.ContainsKey(unit) == false) {
-        Log.LogWrite("new list\n");
+        Log.Combat?.WL(0, "new list");
         animatedParts.Add(unit, new List<GameObject>());
       };
       animatedParts[unit].Add(gameObject);
-      Log.LogWrite("animatedParts.Count = " + animatedParts[unit].Count + "\n");
+      Log.Combat?.WL(0, "animatedParts.Count = " + animatedParts[unit].Count);
     }
   }
   [HarmonyPatch(typeof(AbstractActor))]
@@ -1301,27 +1304,27 @@ namespace CustomUnits {
   [HarmonyPatch(new Type[] { typeof(string) })]
   public static class AbstractActor_HandleDeath {
     public static void TieToGround(Transform transform, string tname, MapMetaData meta) {
-      Log.LogWrite(" " + tname + ":" + transform.position + " rot:" + transform.rotation.eulerAngles);
+      Log.Combat?.W(1, tname + ":" + transform.position + " rot:" + transform.rotation.eulerAngles);
       float y = meta.GetLerpedHeightAt(transform.position) + Core.Settings.DeathHeight - transform.position.y;
-      Log.LogWrite(" ->  down " + y);
+      Log.Combat?.W(1,"->  down " + y);
       transform.Translate(Vector3.up * y, Space.World);
       //transform.position.Set(transform.position.x, y, transform.position.z);
-      Log.LogWrite(" -> " + transform.position + " rot: " + transform.rotation.eulerAngles + "\n");
+      Log.Combat?.W(1,"-> " + transform.position + " rot: " + transform.rotation.eulerAngles);
     }
     public static void Postfix(AbstractActor __instance) {
       try {
         if (__instance.IsDead) {
-          Log.LogWrite("AbstractActor.HandleDeath " + __instance.DisplayName + ":" + __instance.GUID + "\n");
+          Log.Combat?.WL(0,"AbstractActor.HandleDeath " + __instance.DisplayName + ":" + __instance.GUID);
           UnitsAnimatedPartsHelper.Clear(__instance, false);
           Vehicle vehicle = __instance as Vehicle;
           if (vehicle == null) {
-            Log.LogWrite(" not a vehicle\n");
+            Log.Combat?.WL(1, "not a vehicle");
             return;
           }
           VehicleRepresentation vRep = vehicle.GameRep;
           UnitCustomInfo info = vehicle.GetCustomInfo();
           if (info == null) {
-            Log.LogWrite(" no custom info\n");
+            Log.Combat?.WL(1, "no custom info");
             return;
           }
           if (info.TieToGroundOnDeath) {
@@ -1340,7 +1343,8 @@ namespace CustomUnits {
           __instance.OnDeathAnimation();
         }
       } catch (Exception e) {
-        Log.LogWrite(e.ToString() + "\n");
+        Log.Combat?.TWL(0, e.ToString());
+        AbstractActor.logger.LogException(e);
       }
     }
   }
@@ -1351,10 +1355,11 @@ namespace CustomUnits {
   public static class Mech_OnLocationDestroyed {
     public static void Postfix(Mech __instance, ChassisLocations location, Vector3 attackDirection, WeaponHitInfo hitInfo, DamageType damageType) {
       try {
-        Log.LogWrite("Mech.OnLocationDestroyed " + __instance.DisplayName + ":" + __instance.GUID + "\n");
+        Log.Combat?.WL(0,"Mech.OnLocationDestroyed " + __instance.DisplayName + ":" + __instance.GUID);
         __instance.DestroyAnimation((int)location);
       } catch (Exception e) {
-        Log.LogWrite(e.ToString() + "\n");
+        Log.Combat?.TWL(0, e.ToString());
+        AbstractActor.logger.LogException(e);
       }
     }
   }

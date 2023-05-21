@@ -12,6 +12,7 @@ using BattleTech;
 using BattleTech.Assetbundles;
 using BattleTech.Data;
 using BattleTech.ModSupport.Utils;
+using BattleTech.Rendering;
 using BattleTech.Rendering.UI;
 using BattleTech.Rendering.UrbanWarfare;
 using BattleTech.StringInterpolation;
@@ -45,6 +46,177 @@ namespace CustomUnits {
         return false;
       }
     }
+  }
+  public static class MechRepresentationHelper {
+    public static List<JumpjetRepresentation> jumpjetReps(this MechRepresentation mechRepresentation) { return mechRepresentation.jumpjetReps; }
+    public static void jumpjetReps(this MechRepresentation mechRepresentation, List<JumpjetRepresentation> val) { mechRepresentation.jumpjetReps = val; }
+    public static List<GameObject> headlightReps(this MechRepresentation mechRepresentation) { return mechRepresentation.headlightReps; }
+    public static void headlightReps(this MechRepresentation mechRepresentation, List<GameObject> val) { mechRepresentation.headlightReps = val; }
+    public static AnimatorTransitionInfo previousAnimTransition(this MechRepresentation mechRepresentation) { return mechRepresentation.previousAnimTransition; }
+    public static void previousAnimTransition(this MechRepresentation mechRepresentation, AnimatorTransitionInfo val) { mechRepresentation.previousAnimTransition = val; }
+    public static AnimatorStateInfo previousAnimState(this MechRepresentation mechRepresentation) { return mechRepresentation.previousAnimState; }
+    public static void previousAnimState(this MechRepresentation mechRepresentation, AnimatorStateInfo val) { mechRepresentation.previousAnimState = val; }
+    public static AnimatorTransitionInfo currentAnimTransition(this MechRepresentation mechRepresentation) { return mechRepresentation.currentAnimTransition; }
+    public static void currentAnimTransition(this MechRepresentation mechRepresentation, AnimatorTransitionInfo val) { mechRepresentation.currentAnimTransition = val; }
+    public static AnimatorStateInfo currentAnimState(this MechRepresentation mechRepresentation) { return mechRepresentation.currentAnimState; }
+    public static void currentAnimState(this MechRepresentation mechRepresentation, AnimatorStateInfo val) { mechRepresentation.currentAnimState = val; }
+    public static int currentAnimStateHash(this MechRepresentation mechRepresentation) { return mechRepresentation.currentAnimStateHash; }
+    public static void currentAnimStateHash(this MechRepresentation mechRepresentation, int val) { mechRepresentation.currentAnimStateHash = val; }
+    public static int previousTransitionHash(this MechRepresentation mechRepresentation) { return mechRepresentation.previousTransitionHash; }
+    public static void previousTransitionHash(this MechRepresentation mechRepresentation, int val) { mechRepresentation.previousTransitionHash = val; }
+    public static int previousAnimStateHash(this MechRepresentation mechRepresentation) { return mechRepresentation.previousAnimStateHash; }
+    public static void previousAnimStateHash(this MechRepresentation mechRepresentation, int val) { mechRepresentation.previousAnimStateHash = val; }
+    public static bool isPlayingJumpSound(this MechRepresentation mechRepresentation) { return mechRepresentation.isPlayingJumpSound; }
+    public static void isPlayingJumpSound(this MechRepresentation mechRepresentation, bool val) { mechRepresentation.isPlayingJumpSound = val; }
+    public static bool isJumping(this MechRepresentation mechRepresentation) { return mechRepresentation.isJumping; }
+    public static void isJumping(this MechRepresentation mechRepresentation, bool val) { mechRepresentation.isJumping = val; }
+    public static PropertyBlockManager.PropertySetting heatAmount(this MechRepresentation mechRepresentation) { return mechRepresentation.heatAmount; }
+    public static void heatAmount(this MechRepresentation mechRepresentation, PropertyBlockManager.PropertySetting val) { mechRepresentation.heatAmount = val; }
+    public static bool isFakeOverheated(this MechRepresentation mechRepresentation) { return mechRepresentation.isFakeOverheated; }
+    public static void isFakeOverheated(this MechRepresentation mechRepresentation, bool val) { mechRepresentation.isFakeOverheated = val; }
+    public static bool triggerFootVFX(this MechRepresentation mechRepresentation) { return mechRepresentation.triggerFootVFX; }
+    public static void triggerFootVFX(this MechRepresentation mechRepresentation, bool val) { mechRepresentation.triggerFootVFX = val; }
+    public static int leftFootVFX(this MechRepresentation mechRepresentation) { return mechRepresentation.leftFootVFX; }
+    public static void leftFootVFX(this MechRepresentation mechRepresentation, int val) { mechRepresentation.leftFootVFX = val; }
+    public static List<string> persistentCritList(this MechRepresentation mechRepresentation) { return mechRepresentation.persistentCritList; }
+    public static void persistentCritList(this MechRepresentation mechRepresentation, List<string> val) { mechRepresentation.persistentCritList = val; }
+    public static Vector3 blipPendingPosition(this PilotableActorRepresentation mechRepresentation) { return mechRepresentation.blipPendingPosition; }
+    public static void blipPendingPosition(this PilotableActorRepresentation mechRepresentation, Vector3 val) { mechRepresentation.blipPendingPosition = val; }
+    public static Quaternion blipPendingRotation(this PilotableActorRepresentation mechRepresentation) { return mechRepresentation.blipPendingRotation; }
+    public static void blipPendingRotation(this PilotableActorRepresentation mechRepresentation, Quaternion val) { mechRepresentation.blipPendingRotation = val; }
+    public static bool blipHasPendingPositionRotation(this PilotableActorRepresentation mechRepresentation) { return mechRepresentation.blipHasPendingPositionRotation; }
+    public static void blipHasPendingPositionRotation(this PilotableActorRepresentation mechRepresentation, bool val) { mechRepresentation.blipHasPendingPositionRotation = val; }
+    public static float blipLastUpdateTime(this PilotableActorRepresentation mechRepresentation) { return mechRepresentation.blipLastUpdateTime; }
+    public static void blipLastUpdateTime(this PilotableActorRepresentation mechRepresentation, float val) { mechRepresentation.blipLastUpdateTime = val; }
+    public static CapsuleCollider mainCollider(this PilotableActorRepresentation mechRepresentation) { return mechRepresentation.mainCollider; }
+    public static void mainCollider(this PilotableActorRepresentation mechRepresentation, CapsuleCollider val) { mechRepresentation.mainCollider = val; }
+    public static bool paintSchemeInitialized(this PilotableActorRepresentation mechRepresentation) { return mechRepresentation.paintSchemeInitialized; }
+    public static void paintSchemeInitialized(this PilotableActorRepresentation mechRepresentation, bool val) { mechRepresentation.paintSchemeInitialized = val; }
+    public static PilotableActorRepresentation pooledPrefab(this PilotableActorRepresentation mechRepresentation) { return mechRepresentation.pooledPrefab; }
+    public static void pooledPrefab(this PilotableActorRepresentation mechRepresentation, PilotableActorRepresentation val) { mechRepresentation.pooledPrefab = val; }
+    public static Mech mech(this PilotableActorRepresentation mechRepresentation) { return mechRepresentation.mech; }
+    public static void mech(this PilotableActorRepresentation mechRepresentation, Mech val) { mechRepresentation.mech = val; }
+    public static Vehicle vehicle(this PilotableActorRepresentation mechRepresentation) { return mechRepresentation.vehicle; }
+    public static void vehicle(this PilotableActorRepresentation mechRepresentation, Vehicle val) { mechRepresentation.vehicle = val; }
+    public static Turret turret(this PilotableActorRepresentation mechRepresentation) { return mechRepresentation.turret; }
+    public static void turret(this PilotableActorRepresentation mechRepresentation, Turret val) { mechRepresentation.turret = val; }
+    public static string prefabId(this PilotableActorRepresentation mechRepresentation) { return mechRepresentation.prefabId; }
+    public static void prefabId(this PilotableActorRepresentation mechRepresentation, string val) { mechRepresentation.prefabId = val; }
+    public static GameObject testGO(this PilotableActorRepresentation mechRepresentation) { return mechRepresentation.testGO; }
+    public static void testGO(this PilotableActorRepresentation mechRepresentation, GameObject val) { mechRepresentation.testGO = val; }
+    public static int framesCounted(this PilotableActorRepresentation mechRepresentation) { return mechRepresentation.framesCounted; }
+    public static void framesCounted(this PilotableActorRepresentation mechRepresentation, int val) { mechRepresentation.framesCounted = val; }
+    public static int framesToSkip(this PilotableActorRepresentation mechRepresentation) { return mechRepresentation.framesToSkip; }
+    public static void framesToSkip(this PilotableActorRepresentation mechRepresentation, int val) { mechRepresentation.framesToSkip = val; }
+    public static List<Renderer> rendererList(this PilotableActorRepresentation mechRepresentation) { return mechRepresentation.rendererList; }
+    public static void rendererList(this PilotableActorRepresentation mechRepresentation, List<Renderer> val) { mechRepresentation.rendererList = val; }
+    public static Renderer localRenderer(this PilotableActorRepresentation mechRepresentation) { return mechRepresentation.localRenderer; }
+    public static void localRenderer(this PilotableActorRepresentation mechRepresentation, Renderer val) { mechRepresentation.localRenderer = val; }
+    public static Renderer pooledPrefabRenderer(this PilotableActorRepresentation mechRepresentation) { return mechRepresentation.pooledPrefabRenderer; }
+    public static void pooledPrefabRenderer(this PilotableActorRepresentation mechRepresentation, Renderer val) { mechRepresentation.pooledPrefabRenderer = val; }
+    public static Material[] sharedMaterialsSource(this PilotableActorRepresentation mechRepresentation) { return mechRepresentation.sharedMaterialsSource; }
+    public static void sharedMaterialsSource(this PilotableActorRepresentation mechRepresentation, Material[] val) { mechRepresentation.sharedMaterialsSource = val; }
+    public static Material[] sharedMaterialsCopy(this PilotableActorRepresentation mechRepresentation) { return mechRepresentation.sharedMaterialsCopy; }
+    public static void sharedMaterialsCopy(this PilotableActorRepresentation mechRepresentation, Material[] val) { mechRepresentation.sharedMaterialsCopy = val; }
+    public static Material defaultMaterial(this PilotableActorRepresentation mechRepresentation) { return mechRepresentation.defaultMaterial; }
+    public static void defaultMaterial(this PilotableActorRepresentation mechRepresentation, Material val) { mechRepresentation.defaultMaterial = val; }
+    public static bool wasEvasiveLastFrame(this PilotableActorRepresentation mechRepresentation) { return mechRepresentation.wasEvasiveLastFrame; }
+    public static void wasEvasiveLastFrame(this PilotableActorRepresentation mechRepresentation, bool val) { mechRepresentation.wasEvasiveLastFrame = val; }
+    public static bool guardedLastFrame(this PilotableActorRepresentation mechRepresentation) { return mechRepresentation.guardedLastFrame; }
+    public static void guardedLastFrame(this PilotableActorRepresentation mechRepresentation, bool val) { mechRepresentation.guardedLastFrame = val; }
+    public static bool coverLastFrame(this PilotableActorRepresentation mechRepresentation) { return mechRepresentation.coverLastFrame; }
+    public static void coverLastFrame(this PilotableActorRepresentation mechRepresentation, bool val) { mechRepresentation.coverLastFrame = val; }
+    public static bool wasUnsteadyLastFrame(this PilotableActorRepresentation mechRepresentation) { return mechRepresentation.wasUnsteadyLastFrame; }
+    public static void wasUnsteadyLastFrame(this PilotableActorRepresentation mechRepresentation, bool val) { mechRepresentation.wasUnsteadyLastFrame = val; }
+    public static bool wasEntrenchedLastFrame(this PilotableActorRepresentation mechRepresentation) { return mechRepresentation.wasEntrenchedLastFrame; }
+    public static void wasEntrenchedLastFrame(this PilotableActorRepresentation mechRepresentation, bool val) { mechRepresentation.wasEntrenchedLastFrame = val; }
+    public static float timeNow(this PilotableActorRepresentation mechRepresentation) { return mechRepresentation.timeNow; }
+    public static void timeNow(this PilotableActorRepresentation mechRepresentation, float val) { mechRepresentation.timeNow = val; }
+    public static float elapsedTime(this PilotableActorRepresentation mechRepresentation) { return mechRepresentation.elapsedTime; }
+    public static void elapsedTime(this PilotableActorRepresentation mechRepresentation, float val) { mechRepresentation.elapsedTime = val; }
+    public static float blipAlpha(this PilotableActorRepresentation mechRepresentation) { return mechRepresentation.blipAlpha; }
+    public static void blipAlpha(this PilotableActorRepresentation mechRepresentation, float val) { mechRepresentation.blipAlpha = val; }
+    public static float timeFromEnd(this PilotableActorRepresentation mechRepresentation) { return mechRepresentation.timeFromEnd; }
+    public static void timeFromEnd(this PilotableActorRepresentation mechRepresentation, float val) { mechRepresentation.timeFromEnd = val; }
+    public static BattleTech.Rendering.MechCustomization.MechCustomization mechCustomization(this PilotableActorRepresentation mechRepresentation) { return mechRepresentation.mechCustomization; }
+    public static void mechCustomization(this PilotableActorRepresentation mechRepresentation, BattleTech.Rendering.MechCustomization.MechCustomization val) { mechRepresentation.mechCustomization = val; }
+    public static AudioSwitch_surface_type currentSurfaceType(this PilotableActorRepresentation mechRepresentation) { return mechRepresentation.currentSurfaceType; }
+    public static void currentSurfaceType(this PilotableActorRepresentation mechRepresentation, AudioSwitch_surface_type val) { mechRepresentation.currentSurfaceType = val; }
+    public static string terrainImpactParticleName(this PilotableActorRepresentation mechRepresentation) { return mechRepresentation.terrainImpactParticleName; }
+    public static void terrainImpactParticleName(this PilotableActorRepresentation mechRepresentation, string val) { mechRepresentation.terrainImpactParticleName = val; }
+    public static string vfxNameModifier(this PilotableActorRepresentation mechRepresentation) { return mechRepresentation.vfxNameModifier; }
+    public static void vfxNameModifier(this PilotableActorRepresentation mechRepresentation, string val) { mechRepresentation.vfxNameModifier = val; }
+    public static int idleStateEntryHash(this MechRepresentation mechRepresentation) { return mechRepresentation.idleStateEntryHash; }
+    public static void idleStateEntryHash(this MechRepresentation mechRepresentation, int val) { mechRepresentation.idleStateEntryHash = val; }
+    public static int idleStateFlavorsHash(this MechRepresentation mechRepresentation) { return mechRepresentation.idleStateFlavorsHash; }
+    public static void idleStateFlavorsHash(this MechRepresentation mechRepresentation, int val) { mechRepresentation.idleStateFlavorsHash = val; }
+    public static int idleStateUnsteadyHash(this MechRepresentation mechRepresentation) { return mechRepresentation.idleStateUnsteadyHash; }
+    public static void idleStateUnsteadyHash(this MechRepresentation mechRepresentation, int val) { mechRepresentation.idleStateUnsteadyHash = val; }
+    public static int idleStateMeleeBaseHash(this MechRepresentation mechRepresentation) { return mechRepresentation.idleStateMeleeBaseHash; }
+    public static void idleStateMeleeBaseHash(this MechRepresentation mechRepresentation, int val) { mechRepresentation.idleStateMeleeBaseHash = val; }
+    public static int idleStateMeleeEntryHash(this MechRepresentation mechRepresentation) { return mechRepresentation.idleStateMeleeEntryHash; }
+    public static void idleStateMeleeEntryHash(this MechRepresentation mechRepresentation, int val) { mechRepresentation.idleStateMeleeEntryHash = val; }
+    public static int idleStateMeleeHash(this MechRepresentation mechRepresentation) { return mechRepresentation.idleStateMeleeHash; }
+    public static void idleStateMeleeHash(this MechRepresentation mechRepresentation, int val) { mechRepresentation.idleStateMeleeHash = val; }
+    public static int idleStateMeleeUnsteadyHash(this MechRepresentation mechRepresentation) { return mechRepresentation.idleStateMeleeUnsteadyHash; }
+    public static void idleStateMeleeUnsteadyHash(this MechRepresentation mechRepresentation, int val) { mechRepresentation.idleStateMeleeUnsteadyHash = val; }
+    public static int TEMPIdleStateMeleeIdleHash(this MechRepresentation mechRepresentation) { return mechRepresentation.TEMPIdleStateMeleeIdleHash; }
+    public static void TEMPIdleStateMeleeIdleHash(this MechRepresentation mechRepresentation, int val) { mechRepresentation.TEMPIdleStateMeleeIdleHash = val; }
+    public static int idleRandomValueHash(this MechRepresentation mechRepresentation) { return mechRepresentation.idleRandomValueHash; }
+    public static void idleRandomValueHash(this MechRepresentation mechRepresentation, int val) { mechRepresentation.idleRandomValueHash = val; }
+    public static int standingHash(this MechRepresentation mechRepresentation) { return mechRepresentation.standingHash; }
+    public static void standingHash(this MechRepresentation mechRepresentation, int val) { mechRepresentation.standingHash = val; }
+    public static int groundDeathIdleHash(this MechRepresentation mechRepresentation) { return mechRepresentation.groundDeathIdleHash; }
+    public static void groundDeathIdleHash(this MechRepresentation mechRepresentation, int val) { mechRepresentation.groundDeathIdleHash = val; }
+    public static int randomDeathIdleA(this MechRepresentation mechRepresentation) { return mechRepresentation.randomDeathIdleA; }
+    public static void randomDeathIdleA(this MechRepresentation mechRepresentation, int val) { mechRepresentation.randomDeathIdleA = val; }
+    public static int randomDeathIdleB(this MechRepresentation mechRepresentation) { return mechRepresentation.randomDeathIdleB; }
+    public static void randomDeathIdleB(this MechRepresentation mechRepresentation, int val) { mechRepresentation.randomDeathIdleB = val; }
+    public static int randomDeathIdleC(this MechRepresentation mechRepresentation) { return mechRepresentation.randomDeathIdleC; }
+    public static void randomDeathIdleC(this MechRepresentation mechRepresentation, int val) { mechRepresentation.randomDeathIdleC = val; }
+    public static int randomDeathIdleBase(this MechRepresentation mechRepresentation) { return mechRepresentation.randomDeathIdleBase; }
+    public static void randomDeathIdleBase(this MechRepresentation mechRepresentation, int val) { mechRepresentation.randomDeathIdleBase = val; }
+    public static int randomDeathIdleRandomizer(this MechRepresentation mechRepresentation) { return mechRepresentation.randomDeathIdleRandomizer; }
+    public static void randomDeathIdleRandomizer(this MechRepresentation mechRepresentation, int val) { mechRepresentation.randomDeathIdleRandomizer = val; }
+    public static int hitReactLightHash(this MechRepresentation mechRepresentation) { return mechRepresentation.hitReactLightHash; }
+    public static void hitReactLightHash(this MechRepresentation mechRepresentation, int val) { mechRepresentation.hitReactLightHash = val; }
+    public static int hitReactHeavyHash(this MechRepresentation mechRepresentation) { return mechRepresentation.hitReactHeavyHash; }
+    public static void hitReactHeavyHash(this MechRepresentation mechRepresentation, int val) { mechRepresentation.hitReactHeavyHash = val; }
+    public static int hitReactMeleeHash(this MechRepresentation mechRepresentation) { return mechRepresentation.hitReactMeleeHash; }
+    public static void hitReactMeleeHash(this MechRepresentation mechRepresentation, int val) { mechRepresentation.hitReactMeleeHash = val; }
+    public static int hitReactDodgeHash(this MechRepresentation mechRepresentation) { return mechRepresentation.hitReactDodgeHash; }
+    public static void hitReactDodgeHash(this MechRepresentation mechRepresentation, int val) { mechRepresentation.hitReactDodgeHash = val; }
+    public static int hitReactDFAHash(this MechRepresentation mechRepresentation) { return mechRepresentation.hitReactDFAHash; }
+    public static void hitReactDFAHash(this MechRepresentation mechRepresentation, int val) { mechRepresentation.hitReactDFAHash = val; }
+    public static CombatGameConstants Constants(this MechRepresentation mechRepresentation) { return mechRepresentation.Constants; }
+    public static void Constants(this MechRepresentation mechRepresentation, CombatGameConstants val) { mechRepresentation.Constants = val; }
+    public static Transform projectileTransform(this WeaponEffect weffect) { return weffect.projectileTransform; }
+    public static void projectileTransform(this WeaponEffect weffect, Transform val) { weffect.projectileTransform = val; }
+    public static float t(this WeaponEffect weffect) { return weffect.t; }
+    public static void t(this WeaponEffect weffect, float val) { weffect.t = val; }
+    public static CombatGameState Combat(this WeaponEffect weffect) { return weffect.Combat; }
+    public static void Combat(this WeaponEffect weffect, CombatGameState val) { weffect.Combat = val; }
+    public static float _stability(this Mech mech) { return mech._stability; }
+    public static void _stability(this Mech mech, float val) { mech._stability = val; }
+    public static float _tempHeat(this Mech mech) { return mech._tempHeat; }
+    public static void _tempHeat(this Mech mech, int val) { mech._tempHeat = val; }
+    public static float _heat(this Mech mech) { return mech._heat; }
+    public static void _heat(this Mech mech, int val) { mech._heat = val; }
+    public static void pilot(this Mech mech, Pilot val) { mech.pilot = val; }
+    public static float MoveMultiplier(this Mech mech) { return mech.MoveMultiplier; }
+    public static CombatHUD HUD(this SelectionStateMoveBase state) { return state.HUD; }
+    public static CombatGameState Combat(this SelectionStateMoveBase state) { return state.Combat; }
+    public static void _PublishInvocation(this SelectionState state, MessageCenter messageCenter, MessageCenterMessage invocation) {
+      state.PublishInvocation(messageCenter, invocation);
+    }
+    public static void _CreateBlankPrefabs(this Mech mech, List<string> usedPrefabNames, ChassisLocations location) {
+      mech.CreateBlankPrefabs(usedPrefabNames, location);
+    }
+    public static void init_heatAmount(this MechRepresentation mechRepresentation) {
+      mechRepresentation.heatAmount = new PropertyBlockManager.PropertySetting("_Heat", 0.0f);
+      mechRepresentation.propertyBlock.AddProperty(ref mechRepresentation.heatAmount);
+    }
+    public static void parentActor(this PilotableActorRepresentation rep, AbstractActor val) { rep.parentActor = val; }
   }
 }
 

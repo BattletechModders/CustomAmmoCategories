@@ -30,10 +30,10 @@ namespace CustomUnits {
       try {
         if (__instance is FakeVehicleMech vehicle) {
           __result = vehicle.CruiseSpeed;
-          //Log.TWL(0, "FakeVehicleMech.WalkSpeed " + __instance.MechDef.Description.Id+" "+__result);
         }
       } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
+        Log.ECombat?.TWL(0, e.ToString(), true);
+        AbstractActor.logger.LogException(e);
       }
     }
   }
@@ -46,10 +46,10 @@ namespace CustomUnits {
       try {
         if (__instance is FakeVehicleMech vehicle) {
           __result = vehicle.FlankSpeed;
-          //Log.TWL(0, "FakeVehicleMech.RunSpeed " + __instance.MechDef.Description.Id + " " + __result);
         }
       } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
+        Log.ECombat?.TWL(0, e.ToString(), true);
+        AbstractActor.logger.LogException(e);
       }
     }
   }
@@ -98,7 +98,7 @@ namespace CustomUnits {
         GetHitTable_cache.Add(specialHitTable, GetHitTable_cache_sp);
       }
       if (GetHitTable_cache_sp.TryGetValue(from, out var result)) { return result; }
-      Log.TWL(0, $"FakeVehcile.GetHitTable {this.PilotableActorDef.ChassisID} table name:{specialHitTable} attack direction:{from}");
+      Log.Combat?.TWL(0, $"FakeVehcile.GetHitTable {this.PilotableActorDef.ChassisID} table name:{specialHitTable} attack direction:{from}");
       UnitCustomInfo info = this.GetCustomInfo();
       result = new Dictionary<ArmorLocation, int>();
       Dictionary<ArmorLocation, int> hittable = null;
@@ -106,30 +106,30 @@ namespace CustomUnits {
       if (info.customStructure.is_empty) { info.customStructure = CustomStructureDef.Search(DefaultStructureDef); }
       if (info.customStructure.is_empty) { goto call_native; }
       CustomHitTableDef hittabledef = null;
-      Log.WL(1, $"searching hittable:{specialHitTable} in {info.customStructure.Id}");
+      Log.Combat?.WL(1, $"searching hittable:{specialHitTable} in {info.customStructure.Id}");
       if (info.customStructure.tables.TryGetValue(specialHitTable, out hittabledef) == false) {
         hittabledef = null;
         var fallbackStructure = CustomStructureDef.Search(this.DefaultStructureDef);
-        Log.WL(1, $"searching hittable:{specialHitTable} in {fallbackStructure.Id}");
+        Log.Combat?.WL(1, $"searching hittable:{specialHitTable} in {fallbackStructure.Id}");
         if (fallbackStructure.tables.TryGetValue(specialHitTable, out hittabledef)) {
-          Log.WL(2, "found");
+          Log.Combat?.WL(2, "found");
           goto process_hittable;
         }
-        Log.WL(1, $"searching hittable:default in {info.customStructure.Id}");
+        Log.Combat?.WL(1, $"searching hittable:default in {info.customStructure.Id}");
         if (info.customStructure.tables.TryGetValue("default", out hittabledef) == false) {
           hittabledef = null;
-          Log.WL(1, $"searching hittable:default in {fallbackStructure.Id}");
+          Log.Combat?.WL(1, $"searching hittable:default in {fallbackStructure.Id}");
           if (fallbackStructure.tables.TryGetValue("default", out hittabledef) == false) {
             hittabledef = null;
             goto call_native;
           } else {
-            Log.WL(2, "found");
+            Log.Combat?.WL(2, "found");
           }
         } else {
-          Log.WL(2, "found");
+          Log.Combat?.WL(2, "found");
         }
       } else {
-        Log.WL(2, "found");
+        Log.Combat?.WL(2, "found");
       }
     process_hittable:
       if (hittabledef == null) { goto call_native; }
@@ -141,19 +141,19 @@ namespace CustomUnits {
     call_native:
       AttackDirection effectiveFrom = from;
       if (from == AttackDirection.ToProne) { effectiveFrom = AttackDirection.FromArtillery; };
-      Log.WL(1, $"fallback");
+      Log.Combat?.WL(1, $"fallback");
       Dictionary<VehicleChassisLocations, int> vres = this.Combat.HitLocation.GetVehicleHitTable(effectiveFrom);
       hittable = new Dictionary<ArmorLocation, int>();
       foreach (var vloc in vres) { hittable.Add(vloc.Key.toFakeArmor(), vloc.Value); }
     return_result:
-      Log.W(1, $"result: ");
+      Log.Combat?.W(1, $"result: ");
       foreach (var loc in hittable) {
         LocationDef locationDef = this.MechDef.Chassis.GetLocationDef(MechStructureRules.GetChassisLocationFromArmorLocation(loc.Key));
         if ((locationDef.MaxArmor <= 0f) && (locationDef.InternalStructure <= 1f)) { continue; }
         result.Add(loc.Key, loc.Value);
-        Log.W(1, $"{loc.Key}:{loc.Value}");
+        Log.Combat?.W(1, $"{loc.Key}:{loc.Value}");
       }
-      Log.WL(0, "");
+      Log.Combat?.WL(0, "");
       GetHitTable_cache_sp.Add(from, result);
       return (result.Count > 0) ? result : null;
     }
@@ -172,11 +172,11 @@ namespace CustomUnits {
       Thread.CurrentThread.pushActor(this);
       int result = (int)(hitTable != null ? HitLocation.GetHitLocation<ArmorLocation>(hitTable, hitLocationRoll, (ArmorLocation)calledShotLocation, bonusMultiplier) : ArmorLocation.None);
       Thread.CurrentThread.clearActor();
-      Log.TW(0, "FakeVehicleMech.GetHitLocation "+this.PilotableActorDef.ChassisID+" attacker:"+attacker.PilotableActorDef.ChassisID+" hitTable:");
+      Log.Combat?.TW(0, "FakeVehicleMech.GetHitLocation "+this.PilotableActorDef.ChassisID+" attacker:"+attacker.PilotableActorDef.ChassisID+" hitTable:");
       foreach(var ht in hitTable) {
-        Log.W(1,ht.Key+"="+ht.Value);
+        Log.Combat?.W(1,ht.Key+"="+ht.Value);
       }
-      Log.WL(1,"result:"+((ArmorLocation)result));
+      Log.Combat?.WL(1,"result:"+((ArmorLocation)result));
       return result;
       //return (int)this.Combat.HitLocation.GetHitLocation(attackPosition, this, hitLocationRoll, ((ArmorLocation)calledShotLocation), bonusMultiplier).toFakeArmor();
     }
@@ -298,13 +298,13 @@ namespace CustomUnits {
         return result;
       }
       Dictionary<ArmorLocation, int> hitTable = this.GetHitTable(from);
-      CustomAmmoCategoriesLog.Log.AIM.TW(0, $"Generating cluster {specialHitTable} table {from} location:{originalLocation.toFakeVehicleChassis()} based on:");
+      CustomAmmoCategoriesLog.Log.AIM?.TW(0, $"Generating cluster {specialHitTable} table {from} location:{originalLocation.toFakeVehicleChassis()} based on:");
       foreach (var hit in hitTable) { CustomAmmoCategoriesLog.Log.AIM?.W(1, $"{hit.Key.toFakeVehicleChassis()}:{hit.Value}"); }
-      CustomAmmoCategoriesLog.Log.AIM.WL(0, "");
+      CustomAmmoCategoriesLog.Log.AIM?.WL(0, "");
       result = GetClusterTable(originalLocation, hitTable);
       clusterTables.Add(originalLocation, result);
       if (GetClusterHitTable_cache_sp.ContainsKey(from) == false) {
-        CustomAmmoCategoriesLog.Log.AIM.WL(1, $"adding to cache as {from}");
+        CustomAmmoCategoriesLog.Log.AIM?.WL(1, $"adding to cache as {from}");
         GetClusterHitTable_cache_sp.Add(from, clusterTables);
       }
       this.DumpClusterTableCache(CustomAmmoCategoriesLog.Log.AIM);
@@ -319,7 +319,7 @@ namespace CustomUnits {
     public override string UnitTypeNameDefault { get { return "VEHICLE"; } }
 
     protected override void InitStats() {
-      Log.TWL(0, "FakeVehicleMech.InitStats");
+      Log.Combat?.TWL(0, "FakeVehicleMech.InitStats");
       this.statCollection.AddStatistic<float>("CruiseSpeed", this.MovementCaps.MaxWalkDistance);
       this.statCollection.AddStatistic<float>("FlankSpeed", this.MovementCaps.MaxSprintDistance);
       base.InitStats();

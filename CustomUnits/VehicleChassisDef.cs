@@ -51,9 +51,9 @@ namespace CustomUnits {
     }
     public void debugLog(int initiation) {
       string init = new String(' ', initiation);
-      Log.LogWrite(init + "offset:" + offset + "\n");
-      Log.LogWrite(init + "scale:" + scale + "\n");
-      Log.LogWrite(init + "rotate:" + rotate + "\n");
+      Log.M?.WL(0,init + "offset:" + offset);
+      Log.M?.WL(0, init + "scale:" + scale);
+      Log.M?.WL(0, init + "rotate:" + rotate);
     }
   }
   [MessagePackObject]
@@ -71,11 +71,11 @@ namespace CustomUnits {
     }
     public void debugLog(int initiation) {
       string init = new String(' ', initiation);
-      Log.LogWrite(init + "shader:" + shader + "\n");
-      Log.LogWrite(init + "shaderKeyWords:"); foreach (string shaderKeyword in shaderKeyWords) { Log.LogWrite("'" + shaderKeyword + "' "); }; Log.LogWrite("\n");
-      Log.LogWrite(init + "materialTextures:\n");
+      Log.Combat?.WL(0, init + "shader:" + shader + "\n");
+      Log.Combat?.WL(0, init + "shaderKeyWords:"); foreach (string shaderKeyword in shaderKeyWords) { Log.Combat?.W(0, "'" + shaderKeyword + "' "); }; Log.Combat?.WL(0,"");
+      Log.Combat?.WL(0, init + "materialTextures:\n");
       foreach (var materialTexture in materialTextures) {
-        Log.LogWrite(init + " " + materialTexture.Key + ":" + materialTexture.Value + "\n");
+        Log.Combat?.WL(0, init + " " + materialTexture.Key + ":" + materialTexture.Value);
       };
     }
   }
@@ -102,13 +102,13 @@ namespace CustomUnits {
     public bool Test(MechComponent component) {
       if(string.IsNullOrEmpty(DefId) == false) {
         if (component.defId != DefId) {
-          Log.WL(5,"bad defId " + component.defId + " != " + DefId);
+          Log.M?.WL(5,"bad defId " + component.defId + " != " + DefId);
           return false;
         }
       }
       if(SearchLocations.Count != 0) {
         if (SearchLocations.Contains(component.Location) == false) {
-          Log.WL(5,"bad location");
+          Log.M?.WL(5,"bad location");
           return false;
         }
       }
@@ -122,13 +122,13 @@ namespace CustomUnits {
     public bool Test(MechComponentRef component) {
       if (string.IsNullOrEmpty(DefId) == false) {
         if (component.ComponentDefID != DefId) {
-          Log.WL(5, "bad defId " + component.ComponentDefID + " != " + DefId);
+          Log.M?.WL(5, "bad defId " + component.ComponentDefID + " != " + DefId);
           return false;
         }
       }
       if (SearchLocations.Count != 0) {
         if (SearchLocations.Contains((int)component.MountedLocation) == false) {
-          Log.WL(5, "bad location");
+          Log.M?.WL(5, "bad location");
           return false;
         }
       }
@@ -142,13 +142,13 @@ namespace CustomUnits {
     public bool Test(VehicleComponentRef component) {
       if (string.IsNullOrEmpty(DefId) == false) {
         if (component.ComponentDefID != DefId) {
-          Log.WL(5, "bad defId " + component.ComponentDefID + " != " + DefId);
+          Log.M?.WL(5, "bad defId " + component.ComponentDefID + " != " + DefId);
           return false;
         }
       }
       if (SearchLocations.Count != 0) {
         if (SearchLocations.Contains((int)component.MountedLocation) == false) {
-          Log.WL(5, "bad location");
+          Log.M?.WL(5, "bad location");
           return false;
         }
       }
@@ -209,18 +209,18 @@ namespace CustomUnits {
     }
     public void debugLog(int initiation) {
       string init = new String(' ', initiation);
-      Log.LogWrite(init + "prefab:" + prefab + "\n");
-      Log.LogWrite(init + "MaterialInfo:\n");
+      Log.M?.WL(0,init + "prefab:" + prefab);
+      Log.M?.WL(0, init + "MaterialInfo:");
       foreach (var mi in MaterialInfo) {
-        Log.LogWrite(init + " " + mi.Key + ":\n");
+        Log.M?.WL(0, init + " " + mi.Key + ":");
         mi.Value.debugLog(initiation + 2);
       }
-      Log.LogWrite(init + "VehicleChassisLocation:" + VehicleChassisLocation + "\n");
-      Log.LogWrite(init + "MechChassisLocation:" + MechChassisLocation + "\n");
-      Log.LogWrite(init + "prefabTransform:\n");
+      Log.M?.WL(0, init + "VehicleChassisLocation:" + VehicleChassisLocation);
+      Log.M?.WL(0, init + "MechChassisLocation:" + MechChassisLocation);
+      Log.M?.WL(0, init + "prefabTransform:");
       prefabTransform.debugLog(initiation + 1);
-      Log.LogWrite(init + "AnimationType:" + AnimationType + "\n");
-      Log.LogWrite(init + "AnimationData:" + Data + "\n");
+      Log.M?.WL(0, init + "AnimationType:" + AnimationType);
+      Log.M?.WL(0, init + "AnimationData:" + Data);
     }
     public CustomMaterialInfo findMaterialInfo(string materialName) {
       foreach (var mi in this.MaterialInfo) {
@@ -278,11 +278,11 @@ namespace CustomUnits {
       AllowRotateWhileJump = Core.Settings.AllowRotateWhileJumpByDefault;
     }
     public void debugLog(int initiation) {
-      Log.LogWrite(initiation, "DesignMasks:" + DesignMasks, true);
-      Log.LogWrite(initiation, "Pathing:" + Pathing, true);
-      Log.LogWrite(initiation, "Fire:" + Fire, true);
-      Log.LogWrite(initiation, "Landmines:" + Landmines, true);
-      Log.LogWrite(initiation, "MoveCostBiome:" + MoveCostBiome, true);
+      Log.M?.WL(initiation, "DesignMasks:" + DesignMasks);
+      Log.M?.WL(initiation, "Pathing:" + Pathing);
+      Log.M?.WL(initiation, "Fire:" + Fire);
+      Log.M?.WL(initiation, "Landmines:" + Landmines);
+      Log.M?.WL(initiation, "MoveCostBiome:" + MoveCostBiome);
     }
   }
   [MessagePackObject]
@@ -555,42 +555,42 @@ namespace CustomUnits {
     }
     public void debugLog(int initiation) {
       string init = new String(' ', initiation);
-      Log.LogWrite(init + "AOEHeight: " + AOEHeight.ToString() + "\n");
-      Log.LogWrite(init + "heightFix: " + HighestLOSPosition.ToString() + "\n");
-      Log.LogWrite(init + "FiringArc: " + FiringArc.ToString() + "\n");
-      Log.LogWrite(init + "MoveCost: " + MoveCost + "\n");
-      Log.LogWrite(init + "MoveCostModPerBiome:\n");
+      Log.M?.WL(0, init + "AOEHeight: " + AOEHeight.ToString());
+      Log.M?.WL(0, init + "heightFix: " + HighestLOSPosition.ToString());
+      Log.M?.WL(0, init + "FiringArc: " + FiringArc.ToString());
+      Log.M?.WL(0, init + "MoveCost: " + MoveCost);
+      Log.M?.WL(0, init + "MoveCostModPerBiome:");
       foreach (var mc in MoveCostModPerBiome) {
-        Log.LogWrite(init + " " + mc.Key + ":" + mc.Value + "\n");
+        Log.M?.WL(0, init + " " + mc.Key + ":" + mc.Value);
       }
-      Log.LogWrite(init + "Unaffected:\n");
+      Log.M?.WL(0, init + "Unaffected:");
       Unaffected.debugLog(initiation + 1);
-      Log.LogWrite(init + "TurretAttach:\n");
+      Log.M?.WL(0, init + "TurretAttach:");
       TurretAttach.debugLog(initiation + 1);
-      Log.LogWrite(init + "BodyAttach:\n");
+      Log.M?.WL(0, init + "BodyAttach:");
       BodyAttach.debugLog(initiation + 1);
-      Log.LogWrite(init + "TurretLOS:\n");
+      Log.M?.WL(0, init + "TurretLOS:");
       TurretLOS.debugLog(initiation + 1);
-      Log.LogWrite(init + "LeftSideLOS:\n");
+      Log.M?.WL(0, init + "LeftSideLOS:");
       LeftSideLOS.debugLog(initiation + 1);
-      Log.LogWrite(init + "RightSideLOS:\n");
+      Log.M?.WL(0, init + "RightSideLOS:");
       RightSideLOS.debugLog(initiation + 1);
-      Log.LogWrite(init + "leftVFXTransform:\n");
+      Log.M?.WL(0, init + "leftVFXTransform:");
       leftVFXTransform.debugLog(initiation + 1);
-      Log.LogWrite(init + "rightVFXTransform:\n");
+      Log.M?.WL(0, init + "rightVFXTransform:");
       rightVFXTransform.debugLog(initiation + 1);
-      Log.LogWrite(init + "rearVFXTransform:\n");
+      Log.M?.WL(0, init + "rearVFXTransform:");
       rearVFXTransform.debugLog(initiation + 1);
-      Log.LogWrite(init + "thisTransform:\n");
+      Log.M?.WL(0, init + "thisTransform:");
       thisTransform.debugLog(initiation + 1);
-      Log.LogWrite(init + "lightsTransforms:\n");
+      Log.M?.WL(0, init + "lightsTransforms:");
       for (int t = 0; t < lightsTransforms.Count; ++t) {
-        Log.LogWrite(init + " [" + t + "]:\n");
+        Log.M?.WL(0, init + " [" + t + "]:");
         lightsTransforms[t].debugLog(initiation + 2);
       }
-      Log.LogWrite(init + "CustomParts: " + CustomParts.Count + "\n");
+      Log.M?.WL(0, init + "CustomParts: " + CustomParts.Count);
       for (int t = 0; t < CustomParts.Count; ++t) {
-        Log.LogWrite(init + " [" + t + "]:\n");
+        Log.M?.WL(0, init + " [" + t + "]:");
         CustomParts[t].debugLog(initiation + 2);
       }
     }
@@ -672,11 +672,11 @@ namespace CustomUnits {
             }
             return true;
           }
-          Log.TWL(0, "ChassisDef:" + __instance.Description.Id + " has no deserialized UnitCustomInfo or ChassisTags. Should not happend");
+          Log.M?.TWL(0, "ChassisDef:" + __instance.Description.Id + " has no deserialized UnitCustomInfo or ChassisTags. Should not happend");
         }
         JObject definition = JObject.Parse(json);
         string id = (string)definition["Description"]["Id"];
-        Log.WL(1,id);
+        Log.M?.WL(1,id);
         if (definition["CustomParts"] != null) {
           info = definition["CustomParts"].ToObject<UnitCustomInfo>();
           definition.Remove("CustomParts");
@@ -715,7 +715,8 @@ namespace CustomUnits {
         //info.debugLog(1);
         json = definition.ToString();
       } catch (Exception e) {
-        Log.TWL(0,e.ToString(), true);
+        Log.M?.TWL(0,e.ToString(), true);
+        UnityGameInstance.BattleTechGame.DataManager?.logger.LogException(e);
       }
       return true;
     }
@@ -759,22 +760,23 @@ namespace CustomUnits {
       if (info == null) { return false; }
       return info.FakeVehicle;
     }
-    public static bool Prefix(ChassisDef __instance, ref string json) {
+    public static void Prefix(ref bool __runOriginal, ChassisDef __instance, ref string json) {
       //Log.TW(0,"ChassisDef.FromJSON");
       try {
+        //if (!__runOriginal) { return; }
         if (__instance.Description != null) {
           UnitCustomInfo dinfo = CustomPrewarm.Core.getDeserializedObject(BattleTechResourceType.ChassisDef, __instance.Description.Id, "CustomUnits") as UnitCustomInfo;
           if (dinfo != null) {
             VehicleCustomInfoHelper.vehicleChasissInfosDb.AddOrUpdate(__instance.Description.Id, dinfo, (k, v) => { return dinfo; });
-            return true;
+            return;
           }
-          Log.TWL(0,"ChassisDef:"+ __instance.Description.Id+" has no deserialized UnitCustomInfo. Should not happend");
+          Log.M?.TWL(0,"ChassisDef:"+ __instance.Description.Id+" has no deserialized UnitCustomInfo. Should not happend");
         }
         JObject definition = JObject.Parse(json);
         string id = (string)definition["Description"]["Id"];
-        Log.W(1,id);
+        Log.M?.W(1,id);
         bool isFake = id.IsInFakeChassis();
-        Log.WL(1, " isFake:" + isFake);
+        Log.M?.WL(1, " isFake:" + isFake);
         UnitCustomInfo info = null;
         if (definition["CustomParts"] != null) {
           info = definition["CustomParts"].ToObject<UnitCustomInfo>();
@@ -800,10 +802,12 @@ namespace CustomUnits {
         }
         //info.debugLog(1);
       } catch (Exception e) {
-        Log.TWL(0, json, true);
-        Log.TWL(0,e.ToString(), true);
+        Log.M?.TWL(0, json, true);
+        Log.M?.TWL(0,e.ToString(), true);
+        UnityGameInstance.BattleTechGame.DataManager?.logger.LogError(json);
+        UnityGameInstance.BattleTechGame.DataManager?.logger.LogException(e);
       }
-      return true;
+      return;
     }
     public static void Postfix(ChassisDef __instance) {
       UnitCustomInfo info = __instance.GetCustomInfo();
@@ -863,30 +867,30 @@ namespace CustomUnits {
   [HarmonyPatch(new Type[] { typeof(AbstractActor), typeof(Weapon), typeof(ICombatant), typeof(Vector3), typeof(Vector3), typeof(LineOfFireLevel), typeof(bool) })]
   public static class ToHit_GetSelfTerrainModifier {
     static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) {
-      Log.LogWrite("ToHit.GetAllModifiers transpliter\n", true);
+      Log.M?.WL(0,"ToHit.GetAllModifiers transpliter");
       List<CodeInstruction> result = instructions.ToList();
       MethodInfo GetSelfTerrainModifier = AccessTools.Method(typeof(ToHit), "GetSelfTerrainModifier");
       if (GetSelfTerrainModifier != null) {
-        Log.LogWrite(1, "source method found", true);
+        Log.M?.WL(1, "source method found");
       } else {
         return result;
       }
       MethodInfo replacementMethod = AccessTools.Method(typeof(ToHit_GetSelfTerrainModifier), nameof(GetSelfTerrainModifier));
       if (replacementMethod != null) {
-        Log.LogWrite(1, "target method found", true);
+        Log.M?.WL(1, "target method found");
       } else {
         return result;
       }
       int methodCallIndex = result.FindIndex(instruction => instruction.opcode == OpCodes.Call && instruction.operand == GetSelfTerrainModifier);
       if (methodCallIndex >= 0) {
-        Log.LogWrite(1, "methodCallIndex found " + methodCallIndex, true);
+        Log.M?.WL(1, "methodCallIndex found " + methodCallIndex);
       }
       result[methodCallIndex].operand = replacementMethod;
       for (int thisIndex = methodCallIndex - 1; thisIndex > 0; --thisIndex) {
-        Log.LogWrite(1, " result[" + thisIndex + "].opcode = " + result[thisIndex].opcode, true);
+        Log.M?.WL(1, " result[" + thisIndex + "].opcode = " + result[thisIndex].opcode);
         if (result[thisIndex].opcode == OpCodes.Ldarg_0) {
           result[thisIndex].opcode = OpCodes.Ldarg_1;
-          Log.LogWrite(1, "this opcode found changing to attacker", true);
+          Log.M?.WL(1, "this opcode found changing to attacker");
           break;
         }
       }
@@ -914,33 +918,33 @@ namespace CustomUnits {
   [HarmonyPatch(new Type[] { typeof(AbstractActor), typeof(Weapon), typeof(ICombatant), typeof(Vector3), typeof(Vector3), typeof(LineOfFireLevel), typeof(bool) })]
   public static class ToHit_GetAllModifiersDescription {
     static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) {
-      Log.LogWrite("ToHit.GetAllModifiers transpliter\n", true);
+      Log.M?.WL(0,"ToHit.GetAllModifiers transpliter");
       List<CodeInstruction> result = instructions.ToList();
       MethodInfo GetSelfTerrainModifier = AccessTools.Method(typeof(ToHit), "GetSelfTerrainModifier");
       if (GetSelfTerrainModifier != null) {
-        Log.LogWrite(1, "source method found", true);
+        Log.M?.WL(1, "source method found");
       } else {
         return result;
       }
       MethodInfo replacementMethod = AccessTools.Method(typeof(ToHit_GetSelfTerrainModifier), nameof(GetSelfTerrainModifier));
       if (replacementMethod != null) {
-        Log.LogWrite(1, "target method found", true);
+        Log.M?.WL(1, "target method found");
       } else {
         return result;
       }
       int methodCallIndex = result.FindIndex(instruction => instruction.opcode == OpCodes.Call && instruction.operand == GetSelfTerrainModifier);
       if (methodCallIndex >= 0) {
-        Log.LogWrite(1, "methodCallIndex found " + methodCallIndex, true);
+        Log.M?.WL(1, "methodCallIndex found " + methodCallIndex);
       } else {
-        Log.LogWrite(1, "methodCallIndex not found ", true);
+        Log.M?.WL(1, "methodCallIndex not found ");
         return result;
       }
       result[methodCallIndex].operand = replacementMethod;
       for (int thisIndex = methodCallIndex - 1; thisIndex > 0; --thisIndex) {
-        Log.LogWrite(1, " result[" + thisIndex + "].opcode = " + result[thisIndex].opcode, true);
+        Log.M?.WL(1, " result[" + thisIndex + "].opcode = " + result[thisIndex].opcode);
         if (result[thisIndex].opcode == OpCodes.Ldarg_0) {
           result[thisIndex].opcode = OpCodes.Ldarg_1;
-          Log.LogWrite(1, "this opcode found changing to attacker", true);
+          Log.M?.WL(1, "this opcode found changing to attacker");
           break;
         }
       }
@@ -959,51 +963,24 @@ namespace CustomUnits {
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { typeof(DesignMaskDef), typeof(int), typeof(List<DesignMaskDef>) })]
   public static class AbstractActor_SetOccupiedDesignMask {
-    private static MethodInfo occupiedDesignMaskSet = null;
-    private static FieldInfo opuDesignMask = null;
-    private delegate void occupiedDesignMaskSetDelegate(AbstractActor actor, DesignMaskDef mask);
-    private static occupiedDesignMaskSetDelegate occupiedDesignMaskSetInkover = null;
-    public static bool Prepare() {
-      try {
-        occupiedDesignMaskSet = typeof(AbstractActor).GetProperty("occupiedDesignMask", BindingFlags.Instance | BindingFlags.Public).GetSetMethod(true);
-        opuDesignMask = typeof(AbstractActor).GetField("opuDesignMask", BindingFlags.Instance | BindingFlags.NonPublic);
-        if (opuDesignMask == null) {
-          Log.LogWrite(0, "Can't find opuDesignMask", true);
-          return false;
-        }
-        if (occupiedDesignMaskSet == null) {
-          Log.LogWrite(0, "Can't find occupiedDesignMaskSet", true);
-          return false;
-        }
-      } catch (Exception e) {
-        Log.LogWrite(0, e.ToString(), true);
-        return false;
-      }
-      var dm = new DynamicMethod("CUoccupiedDesignMaskSet", null, new Type[] { typeof(AbstractActor), typeof(DesignMaskDef) }, typeof(AbstractActor));
-      var gen = dm.GetILGenerator();
-      gen.Emit(OpCodes.Ldarg_0);
-      gen.Emit(OpCodes.Ldarg_1);
-      gen.Emit(OpCodes.Call, occupiedDesignMaskSet);
-      gen.Emit(OpCodes.Ret);
-      occupiedDesignMaskSetInkover = (occupiedDesignMaskSetDelegate)dm.CreateDelegate(typeof(occupiedDesignMaskSetDelegate));
-      return true;
-    }
-    public static bool Prefix(AbstractActor __instance,ref DesignMaskDef mask, int stackItemUID, ref List<DesignMaskDef> approvedMasks) {
-      Log.TWL(0, "AbstractActor.SetOccupiedDesignMask prefx " + __instance.DisplayName + ":" + __instance.GUID);
+    public static void Prefix(ref bool __runOriginal, AbstractActor __instance,ref DesignMaskDef mask, int stackItemUID, ref List<DesignMaskDef> approvedMasks) {
+      if (!__runOriginal) { return; }
+      Log.Combat?.TWL(0, "AbstractActor.SetOccupiedDesignMask prefx " + __instance.DisplayName + ":" + __instance.GUID);
       try {
         if (__instance.UnaffectedDesignMasks()) {
-          Log.LogWrite(1, "unaffected", true);
+          Log.Combat?.WL(1, "unaffected");
           mask = null;
           //__instance.occupiedDesignMask = null;
           //occupiedDesignMaskSetInkover(__instance, mask);
           //opuDesignMask.SetValue(__instance, null);
           if (approvedMasks != null) { approvedMasks.Clear(); };
-          return true;
+          return;
         }
       } catch (Exception e) {
-        Log.LogWrite(e.ToString() + "\n", true);
+        Log.Combat?.TWL(0,e.ToString(), true);
+        AbstractActor.logger.LogException(e);
       }
-      return true;
+      return;
     }
   }
   [HarmonyPatch(typeof(AbstractActor))]
@@ -1011,17 +988,16 @@ namespace CustomUnits {
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { typeof(Vector3), typeof(Quaternion), typeof(int), typeof(bool), typeof(List<DesignMaskDef>), typeof(bool) })]
   public static class AbstractActor_OnPositionUpdate {
-    public static bool Prefix(AbstractActor __instance, Vector3 position, Quaternion heading, int stackItemUID,ref bool updateDesignMask, List<DesignMaskDef> approvedMasks, bool skipAbilityLogging) {
+    public static void Prefix(AbstractActor __instance, Vector3 position, Quaternion heading, int stackItemUID,ref bool updateDesignMask, List<DesignMaskDef> approvedMasks, bool skipAbilityLogging) {
       if (__instance.UnaffectedDesignMasks()) {
         updateDesignMask = false;
         Thread.CurrentThread.SetFlag(ActorMovementSequence_UpdateSticky.HIDE_DESIGN_MASK_FLAG);
       }
-      return true;
     }
-    public static void Postfix(AbstractActor __instance, Vector3 position, Quaternion heading, int stackItemUID, bool updateDesignMask, List<DesignMaskDef> approvedMasks, bool skipAbilityLogging, ref DesignMaskDef ___opuDesignMask) {
+    public static void Postfix(AbstractActor __instance, Vector3 position, Quaternion heading, int stackItemUID, bool updateDesignMask, List<DesignMaskDef> approvedMasks, bool skipAbilityLogging) {
       if (__instance.UnaffectedDesignMasks()) {
-        Traverse.Create(__instance).Property<DesignMaskDef>("occupiedDesignMask").Value = null;
-        ___opuDesignMask = null;
+        __instance.occupiedDesignMask = null;
+        __instance.opuDesignMask = null;
         Thread.CurrentThread.ClearFlag(ActorMovementSequence_UpdateSticky.HIDE_DESIGN_MASK_FLAG);
       }
     }
@@ -1031,13 +1007,13 @@ namespace CustomUnits {
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { typeof(DesignMaskDef), typeof(AttackImpactQuality), typeof(ICombatant), typeof(LineOfFireLevel) })]
   public static class Weapon_DamagePerShotFromPosition {
-    public static bool Prefix(Weapon __instance, ref DesignMaskDef designMask, AttackImpactQuality blowQuality, ICombatant target, LineOfFireLevel lofLevel) {
+    public static void Prefix(Weapon __instance, ref DesignMaskDef designMask, AttackImpactQuality blowQuality, ICombatant target, LineOfFireLevel lofLevel) {
       //Log.LogWrite("Weapon.DamagePerShotPredicted prefix\n");
       if (__instance.parent.UnaffectedDesignMasks()) {
         //Log.LogWrite(1, "unaffected. Tie designMask to null", true);
         designMask = null;
       }
-      return true;
+      return;
     }
   }
   [HarmonyPatch(typeof(PathNodeGrid))]
@@ -1045,28 +1021,15 @@ namespace CustomUnits {
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { typeof(Vector3), typeof(Vector3) })]
   public static class PathNodeGrid_FindBlockerBetween {
-    private static FieldInfo FowningActor = null;
-    public static bool Prepare() {
-      try {
-        FowningActor = typeof(PathNodeGrid).GetField("owningActor", BindingFlags.Instance | BindingFlags.NonPublic);
-        if (FowningActor == null) {
-          Log.LogWrite(0, "PathNodeGrid.FindBlockerBetween Can't find owningActor", true);
-          return false;
-        }
-      } catch (Exception e) {
-        Log.LogWrite(0, e.ToString(), true);
-        return false;
-      }
-      return true;
-    }
     public static void Postfix(PathNodeGrid __instance, Vector3 from, Vector3 to, ref bool __result) {
       try {
-        AbstractActor owningActor = (AbstractActor)FowningActor.GetValue(__instance);
+        AbstractActor owningActor = __instance.owningActor;
         if (owningActor.UnaffectedPathing()) {
           __result = false;
         }
       }catch(Exception e) {
-        Log.TWL(0, e.ToString(), true);
+        Log.Combat?.TWL(0, e.ToString(), true);
+        AbstractActor.logger.LogException(e);
       }
     }
   }
@@ -1089,21 +1052,22 @@ namespace CustomUnits {
     //  }
     //  return true;
     //}
-    public static bool Prefix(PathNodeGrid __instance, AbstractActor ___owningActor, Vector3 from, Vector3 to, ref bool __result) {
+    public static void Prefix(ref bool __runOriginal, PathNodeGrid __instance, Vector3 from, Vector3 to, ref bool __result) {
       try {
-        if (__instance.FindBlockerBetween(from, to) == true) { __result = true; return false; };
-        if (__instance.FindBlockerBetween(to, from) == true) { __result = true; return false; };
+        if (__instance.FindBlockerBetween(from, to) == true) { __result = true; __runOriginal = false; return; };
+        if (__instance.FindBlockerBetween(to, from) == true) { __result = true; __runOriginal = false; return; };
         __result = false;
       } 
       catch (System.IndexOutOfRangeException) {
         __result = true;
       }
       catch(Exception e){
-        Log.TWL(0, "Actor:" + (___owningActor==null?"null": ___owningActor.PilotableActorDef.Description.Id)+" from:"+from+" to:"+to, true);
-        Log.TWL(0, e.ToString(), true);
+        Log.ECombat?.TWL(0, "Actor:" + (__instance.owningActor == null?"null": __instance.owningActor.PilotableActorDef.Description.Id)+" from:"+from+" to:"+to, true);
+        Log.ECombat?.TWL(0, e.ToString(), true);
+        AbstractActor.logger.LogException(e);
         __result = true;
       }
-      return false;
+      __runOriginal = false; return;
     }
   }
   /*[HarmonyPatch(typeof(PilotableActorRepresentation))]
@@ -1135,7 +1099,7 @@ namespace CustomUnits {
         if (info == null) { return; }
         if (info.NullifyBodyMesh) { __result = null; }
       } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
+        Log.ECombat?.TWL(0, e.ToString(), true);
       }
     }
   }
@@ -1158,36 +1122,36 @@ namespace CustomUnits {
       return null;
     }
     public static void MovePosition(Transform transform, string name, CustomVector pos, CustomVector rotation) {
-      Log.LogWrite(" " + name + " pos:" + transform.position + " rot:" + transform.rotation.eulerAngles);
+      Log.Combat?.W(1, name + " pos:" + transform.position + " rot:" + transform.rotation.eulerAngles);
       if (rotation.set) transform.rotation = Quaternion.Euler(rotation.vector);
       if (pos.set) transform.position = pos.vector;
-      Log.LogWrite(" -> " + transform.position + " rot: " + transform.rotation.eulerAngles + "\n");
+      Log.Combat?.WL(1,"-> " + transform.position + " rot: " + transform.rotation.eulerAngles);
     }
-    public static bool Prefix(PilotableActorRepresentation __instance, AbstractActor unit, Transform parentTransform, bool isParented) {
-      Log.LogWrite("PilotableActorRepresentation.Init prefix "+__instance.gameObject.name);
+    public static void Prefix(PilotableActorRepresentation __instance, AbstractActor unit, Transform parentTransform, bool isParented) {
+      Log.Combat?.WL(0, "PilotableActorRepresentation.Init prefix " +__instance.gameObject.name);
       if (unit != null) {
-        Log.WL(1,new Text(unit.DisplayName).ToString());
+        Log.Combat?.WL(1,new Text(unit.DisplayName).ToString());
       } else if(__instance.RegistredChassis() != null) {
-        Log.WL(1, __instance.RegistredChassis().Description.Id);
+        Log.Combat?.WL(1, __instance.RegistredChassis().Description.Id);
       } else {
-        Log.WL("representation have no unit and chassiss");
-        return true;
+        Log.Combat?.WL("representation have no unit and chassiss");
+        return;
       }
       //__instance.gameObject.printComponents(1);
       try {
         VehicleRepresentation vRep = __instance as VehicleRepresentation;
         Vehicle vehicle = unit as Vehicle;
         if (vRep == null) {
-          Log.LogWrite(" not a vehicle\n");
-          return true;
+          Log.Combat?.WL(1,"not a vehicle");
+          return;
         }
         UnitCustomInfo info = null;
         if (vehicle != null) { info = vehicle.GetCustomInfo(); } else if(__instance.RegistredChassis() != null) {
           info = __instance.RegistredChassis().GetCustomInfo();
         }
         if (info == null) {
-          Log.LogWrite(" no custom info\n");
-          return true;
+          Log.Combat?.WL(1, "no custom info");
+          return;
         }
         if (info.NullifyBodyMesh) {
           //Transform j_Root = vRep.transform.FindRecursive("j_Root");
@@ -1238,15 +1202,16 @@ namespace CustomUnits {
             lights[t].lastPosition = lights[t].lightTransform.position;
             lights[t].lastRotation = lights[t].lightTransform.rotation;
             lights[t].RefreshLightSettings(true);
-            Log.LogWrite("  light[" + t + "] - " + lights[t].gameObject.name + ":" + lights[t].gameObject.GetInstanceID()
+            Log.Combat?.WL(3, "light[" + t + "] - " + lights[t].gameObject.name + ":" + lights[t].gameObject.GetInstanceID()
               + " pos:" + lights[t].lastPosition
-              + " rot:" + lights[t].lastRotation.eulerAngles + "\n");
+              + " rot:" + lights[t].lastRotation.eulerAngles);
           }
         }
       } catch (Exception e) {
-        Log.LogWrite(e.ToString() + "\n", true);
+        Log.ECombat?.TWL(0,e.ToString(), true);
+        AbstractActor.initLogger.LogException(e);
       }
-      return true;
+      return;
     }
     public static VehicleChassisLocations toVehicleLocation(this ChassisLocations loc) {
       switch (loc) {
@@ -1262,10 +1227,10 @@ namespace CustomUnits {
     }
 
     public static void SpawnCustomParts(this MechDef mechDef, MechRepresentationSimGame rep) {
-      Log.TWL(0, "mechDef.SpawnCustomParts " + mechDef.ChassisID);
+      Log.Combat?.TWL(0, "mechDef.SpawnCustomParts " + mechDef.ChassisID);
       UnitCustomInfo info = mechDef.Chassis.GetCustomInfo();
       if (info == null) {
-        Log.WL(1, "no custom info");
+        Log.Combat?.WL(1, "no custom info");
         return;
       }
       try {
@@ -1276,19 +1241,19 @@ namespace CustomUnits {
         //rep.gameObject.AddComponent<CustomPartsDirector>();
         foreach (var AnimPart in info.CustomParts) {
           int location = 1;
-          Log.WL(1, AnimPart.prefab + " req components: " + AnimPart.RequiredComponents.Count);
+          Log.Combat?.WL(1, AnimPart.prefab + " req components: " + AnimPart.RequiredComponents.Count);
           if (AnimPart.RequiredComponents.Count > 0) {
             bool suitable_component_found = false;
             foreach (RequiredComponent rcomp in AnimPart.RequiredComponents) {
               suitable_component_found = false;
-              Log.WL(2, "condition def:" + rcomp.DefId + " cat:" + rcomp.CategoryId);
+              Log.Combat?.WL(2, "condition def:" + rcomp.DefId + " cat:" + rcomp.CategoryId);
               foreach (MechComponentRef component in mechDef.Inventory) {
-                Log.WL(3, "component " + component.ComponentDefID + " loc:" + component.MountedLocation);
+                Log.Combat?.WL(3, "component " + component.ComponentDefID + " loc:" + component.MountedLocation);
                 if (rcomp.Test(component)) {
-                  Log.WL(4, "success");
+                  Log.Combat?.WL(4, "success");
                   suitable_component_found = true; break;
                 } else {
-                  Log.WL(4, "fail");
+                  Log.Combat?.WL(4, "fail");
                 }
               }
               if (suitable_component_found) { break; }
@@ -1313,12 +1278,13 @@ namespace CustomUnits {
           UnitsAnimatedPartsHelper.SpawnAnimatedPart(mechDef,rep,AnimPart,location);
         }
       } catch (Exception e) {
-        Log.LogWrite(e.ToString() + "\n");
+        Log.Combat?.TWL(0,e.ToString());
+        AbstractActor.initLogger.LogException(e);
       }
     }
     public static void Postfix(PilotableActorRepresentation __instance, AbstractActor unit, Transform parentTransform, bool isParented) {
       if (unit == null) { return; };
-      Log.TWL(0, "PilotableActorRepresentation.Init postfix " + new Text(unit.DisplayName).ToString() + ":" + unit.GUID);
+      Log.Combat?.TWL(0, "PilotableActorRepresentation.Init postfix " + new Text(unit.DisplayName).ToString() + ":" + unit.GUID);
       try {
         QuadLegsRepresentation quadLegs = __instance.gameObject.GetComponent<QuadLegsRepresentation>();
         if (quadLegs != null) { return; }
@@ -1332,26 +1298,26 @@ namespace CustomUnits {
         }
         UnitCustomInfo info = unit.GetCustomInfo();
         if (info == null) {
-          Log.WL(1,"no custom info");
+          Log.Combat?.WL(1,"no custom info");
           return;
         }
         Vehicle vehicle = unit as Vehicle;
         Mech mech = unit as Mech;
         foreach (var AnimPart in info.CustomParts) {
           int location = 1;
-          Log.WL(1,AnimPart.prefab+" req components: "+ AnimPart.RequiredComponents.Count);
+          Log.Combat?.WL(1,AnimPart.prefab+" req components: "+ AnimPart.RequiredComponents.Count);
           if (AnimPart.RequiredComponents.Count > 0) {
             bool suitable_component_found = false;
             foreach (RequiredComponent rcomp in AnimPart.RequiredComponents) {
               suitable_component_found = false;
-              Log.WL(2,"condition def:" + rcomp.DefId + " cat:" + rcomp.CategoryId);
+              Log.Combat?.WL(2,"condition def:" + rcomp.DefId + " cat:" + rcomp.CategoryId);
               foreach (MechComponent component in unit.allComponents) {
-                Log.WL(3,"component "+component.defId+" loc:"+component.Location);
+                Log.Combat?.WL(3,"component "+component.defId+" loc:"+component.Location);
                 if (rcomp.Test(component)) {
-                  Log.WL(4,"success");
+                  Log.Combat?.WL(4,"success");
                   suitable_component_found = true; break;
                 } else {
-                  Log.WL(4,"fail");
+                  Log.Combat?.WL(4,"fail");
                 }
               }
               if (suitable_component_found) { break; }
@@ -1382,7 +1348,7 @@ namespace CustomUnits {
           UnitsAnimatedPartsHelper.SpawnAnimatedPart(unit, AnimPart, location);
         }
       } catch (Exception e) {
-        Log.LogWrite(e.ToString() + "\n");
+        Log.Combat?.TWL(0,e.ToString(),true);
       }
     }
   }
@@ -1392,10 +1358,10 @@ namespace CustomUnits {
   [HarmonyPatch(new Type[] { })]
   public static class AbstractActor_InitEffectStats {
     public static void Postfix(AbstractActor __instance) {
-      Log.LogWrite("AbstractActor.InitEffectStats " + __instance.DisplayName + ":" + __instance.GUID + "\n");
+      Log.Combat?.WL(0,"AbstractActor.InitEffectStats " + __instance.DisplayName + ":" + __instance.GUID);
       UnitCustomInfo info = __instance.GetCustomInfo();
       if (info == null) {
-        Log.LogWrite(" no custom info\n");
+        Log.Combat?.WL(1, "no custom info");
         if (__instance.StatCollection.ContainsStatistic(UnitUnaffectionsActorStats.AllowPartialMovementActorStat) == false) {
           __instance.StatCollection.AddStatistic<bool>(UnitUnaffectionsActorStats.AllowPartialMovementActorStat, true);
         }
@@ -1489,14 +1455,14 @@ namespace CustomUnits {
       if (__instance.StatCollection.ContainsStatistic(UnitUnaffectionsActorStats.NavalUnitActorStat) == false) {
         __instance.StatCollection.AddStatistic<bool>(UnitUnaffectionsActorStats.NavalUnitActorStat, (info.Naval));
       }
-      Log.LogWrite(1, "UnaffectedDesignMasks " + __instance.UnaffectedDesignMasks(), true);
-      Log.LogWrite(1, "UnaffectedPathing " + __instance.UnaffectedPathing(), true);
-      Log.LogWrite(1, "UnaffectedFire " + __instance.UnaffectedFire(), true);
-      Log.LogWrite(1, "UnaffectedLandmines " + __instance.UnaffectedLandmines(), true);
-      Log.LogWrite(1, "UnaffectedMoveCostBiome " + __instance.UnaffectedMoveCostBiome(), true);
-      Log.LogWrite(1, "AoEHeightFix " + __instance.FlyingHeight(), true);
-      Log.LogWrite(1, "MoveCost " + __instance.CustomMoveCostKey(), true);
-      Log.LogWrite(1, "FakeVehicle " + __instance.FakeVehicle(), true);
+      Log.Combat?.WL(1, "UnaffectedDesignMasks " + __instance.UnaffectedDesignMasks());
+      Log.Combat?.WL(1, "UnaffectedPathing " + __instance.UnaffectedPathing());
+      Log.Combat?.WL(1, "UnaffectedFire " + __instance.UnaffectedFire());
+      Log.Combat?.WL(1, "UnaffectedLandmines " + __instance.UnaffectedLandmines());
+      Log.Combat?.WL(1, "UnaffectedMoveCostBiome " + __instance.UnaffectedMoveCostBiome());
+      Log.Combat?.WL(1, "AoEHeightFix " + __instance.FlyingHeight());
+      Log.Combat?.WL(1, "MoveCost " + __instance.CustomMoveCostKey());
+      Log.Combat?.WL(1, "FakeVehicle " + __instance.FakeVehicle());
     }
   }
   [HarmonyPatch(typeof(ToHit))]
@@ -1515,20 +1481,21 @@ namespace CustomUnits {
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { typeof(Collider) })]
   public static class DestructibleUrbanFlimsy_OnTriggerEnter {
-    public static bool Prefix(DestructibleUrbanFlimsy __instance, Collider other) {
+    public static void Prefix(ref bool __runOriginal, DestructibleUrbanFlimsy __instance, Collider other) {
+      if (!__runOriginal) { return; }
       int instanceId = other.gameObject.GetInstanceID();
-      Log.LogWrite("DestructibleUrbanFlimsy.OnTriggerEnter Prefix " + other.gameObject.name + ":" + instanceId + "\n");
+      Log.Combat?.WL("DestructibleUrbanFlimsy.OnTriggerEnter Prefix " + other.gameObject.name + ":" + instanceId);
       if (VehicleCustomInfoHelper.unityInstanceIdActor.ContainsKey(instanceId)) {
         AbstractActor actor = VehicleCustomInfoHelper.unityInstanceIdActor[instanceId];
-        Log.LogWrite(1, "actor found:" + actor.DisplayName + ":" + actor.GUID, true);
+        Log.Combat?.WL(1, "actor found:" + actor.DisplayName + ":" + actor.GUID);
         if (actor.UnaffectedPathing()) {
-          Log.LogWrite(1, "ignore pathing", true);
-          return false;
+          Log.Combat?.WL(1, "ignore pathing");
+          __runOriginal = false; return;
         }
       } else {
-        Log.LogWrite(1, "actor not found", true);
+        Log.Combat?.WL(1, "actor not found");
       }
-      return true;
+      return;
     }
   }
   [HarmonyPatch(typeof(DestructibleUrbanFlimsy))]
@@ -1536,10 +1503,10 @@ namespace CustomUnits {
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { typeof(Collision) })]
   public static class DestructibleUrbanFlimsy_OnCollisionEnter {
-    public static bool Prefix(DestructibleUrbanFlimsy __instance, Collision other) {
+    public static void Prefix(DestructibleUrbanFlimsy __instance, Collision other) {
       //Log.LogWrite("DestructibleUrbanFlimsy.OnCollisionEnter Prefix " + other.collider.gameObject.name + ":" + other.collider.gameObject.GetInstanceID() + "\n");
       //return false;
-      return true;
+      return;
     }
   }
   [HarmonyPatch(typeof(DestructibleUrbanFlimsy))]
@@ -1547,9 +1514,9 @@ namespace CustomUnits {
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { typeof(GameObject) })]
   public static class DestructibleUrbanFlimsy_OnParticleCollision {
-    public static bool Prefix(DestructibleUrbanFlimsy __instance, GameObject other) {
+    public static void Prefix(DestructibleUrbanFlimsy __instance, GameObject other) {
       //Log.LogWrite("DestructibleUrbanFlimsy.OnParticleCollision Prefix  " + other.name + ":" + other.GetInstanceID() + "\n");
-      return true;
+      return;
     }
   }
   [HarmonyPatch(typeof(Vehicle))]
@@ -1558,15 +1525,15 @@ namespace CustomUnits {
   [HarmonyPatch(new Type[] { typeof(Vector3), typeof(float), typeof(bool) })]
   public static class Vehicle_Init {
     public static void Postfix(Vehicle __instance, Vector3 position, float facing, bool checkEncounterCells) {
-      Log.LogWrite("Vehicle.Init " + __instance.DisplayName + ":" + __instance.GUID + "\n");
+      Log.Combat?.WL(0,"Vehicle.Init " + __instance.DisplayName + ":" + __instance.GUID);
       UnitCustomInfo info = __instance.GetCustomInfo();
       if (info == null) {
-        Log.LogWrite(" no custom info\n");
+        Log.Combat?.WL(1, "no custom info");
         return;
       }
-      Log.LogWrite(" Vehicle.HighestLOSPosition " + __instance.HighestLOSPosition);
+      Log.Combat?.W(1, "Vehicle.HighestLOSPosition " + __instance.HighestLOSPosition);
       if (info.HighestLOSPosition.set) { __instance.HighestLOSPosition = info.HighestLOSPosition.vector; };
-      Log.LogWrite(" -> " + __instance.HighestLOSPosition + "\n");
+      Log.Combat?.WL(1, "-> " + __instance.HighestLOSPosition);
     }
   }
   [HarmonyPatch(typeof(PathingUtil))]
@@ -1574,11 +1541,12 @@ namespace CustomUnits {
   [HarmonyPatch(MethodType.Normal)]
   //[HarmonyPatch(new Type[] { typeof(AbstractActor), typeof(List<AbstractActor>), typeof(Vector3), typeof(Vector3), typeof(AbstractActor), typeof(float) })]
   public static class PathingUtil_DoesMovementLineCollide {
-    public static bool Prefix(AbstractActor thisActor, ref List<AbstractActor> actors) {
+    public static void Prefix(ref bool __runOriginal, AbstractActor thisActor, ref List<AbstractActor> actors) {
       try {
+        if (!__runOriginal) { return; }
         int index = 0;
-        if (actors == null) { return true; }
-        if (thisActor == null) { return true; }
+        if (actors == null) { return; }
+        if (thisActor == null) { return; }
         bool mePathingUnaffected = thisActor.UnaffectedPathing();
         if (mePathingUnaffected == false) {
           while (index < actors.Count) {
@@ -1598,9 +1566,10 @@ namespace CustomUnits {
           }
         }
       }catch(Exception e) {
-        Log.TWL(0, e.ToString(), true);
+        Log.ECombat?.TWL(0, e.ToString(), true);
+        AbstractActor.logger.LogException(e);
       }
-      return true;
+      return;
     }
     public static void Postfix(AbstractActor thisActor, ref AbstractActor collision, ref bool __result) {
       /*if (thisActor.UnaffectedPathing()) {
@@ -1614,12 +1583,13 @@ namespace CustomUnits {
   [HarmonyPatch(MethodType.Normal)]
   //[HarmonyPatch(new Type[] { typeof(Vector3), typeof(AbstractActor), typeof(List<AbstractActor>),  })]
   public static class PathNode_HasCollisionAt {
-    public static bool Prefix(AbstractActor unit, ref List<AbstractActor> allActors) {
+    public static void Prefix(ref bool __runOriginal, AbstractActor unit, ref List<AbstractActor> allActors) {
       try {
+        if (!__runOriginal) { return; }
         int index = 0;
         //occupyingActor = (AbstractActor)null;
-        if (allActors == null) { return true; }
-        if (unit == null) { return true; }
+        if (allActors == null) { return; }
+        if (unit == null) { return; }
         bool mePathingUnaffected = unit.UnaffectedPathing();
         if (mePathingUnaffected == false) {
           while (index < allActors.Count) {
@@ -1639,9 +1609,10 @@ namespace CustomUnits {
           }
         }
       }catch(Exception e) {
-        Log.TWL(0, e.ToString(), true);
+        Log.ECombat?.TWL(0, e.ToString(), true);
+        AbstractActor.logger.LogException(e);
       }
-      return true;
+      return;
     }
     public static void Postfix(AbstractActor unit, ref bool __result) {
       //if (unit.UnaffectedPathing()) {
@@ -1654,8 +1625,8 @@ namespace CustomUnits {
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { typeof(float) })]
   public static class PathNodeGrid_GetGradeModifier {
-    public static void Postfix(PathNodeGrid __instance, float grade, AbstractActor ___owningActor, ref float __result) {
-      if (___owningActor.UnaffectedPathing()) {
+    public static void Postfix(PathNodeGrid __instance, float grade, ref float __result) {
+      if (__instance.owningActor.UnaffectedPathing()) {
         __result = 1f;
       }
     }
@@ -1665,9 +1636,9 @@ namespace CustomUnits {
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { typeof(float), typeof(float) })]
   public static class PathNodeGrid_GetSteepnessMultiplier {
-    public static void Postfix(PathNodeGrid __instance, float steepness, float grade, AbstractActor ___owningActor, ref float __result) {
+    public static void Postfix(PathNodeGrid __instance, float steepness, float grade, ref float __result) {
       //Log.LogWrite("PathNodeGrid.GetSteepnessMultiplier postfix " + ___owningActor.DisplayName + ":" + ___owningActor.GUID + " "+steepness+"," + grade + "-> " + __result + "\n");
-      if (___owningActor.UnaffectedPathing()) {
+      if (__instance.owningActor.UnaffectedPathing()) {
         __result = 1f;
       }
     }
@@ -1702,7 +1673,8 @@ namespace CustomUnits {
           }
         }
       }catch(Exception e) {
-        Log.TWL(0,e.ToString());
+        Log.ECombat?.TWL(0,e.ToString());
+        Weapon.logger.LogException(e);
       }
     }
   }
@@ -1712,10 +1684,10 @@ namespace CustomUnits {
   [HarmonyPatch(new Type[] { })]
   public static class CombatHUDFireButton_OnClick {
     public static bool Prefix(CombatHUDFireButton __instance) {
-      CombatHUD HUD = (CombatHUD)typeof(CombatHUDFireButton).GetProperty("HUD", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(__instance, null);
-      CombatHUDFireButton.FireMode fireMode = (CombatHUDFireButton.FireMode)typeof(CombatHUDFireButton).GetField("currentFireMode", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(__instance);
+      CombatHUD HUD = __instance.HUD;
+      CombatHUDFireButton.FireMode fireMode = __instance.currentFireMode;
       if ((fireMode == CombatHUDFireButton.FireMode.Engage)|| (fireMode == CombatHUDFireButton.FireMode.DFA)) {
-        Log.LogWrite("CombatHUDFireButton.OnClick: " + HUD.SelectedActor.DisplayName + " fire mode:" + fireMode + "\n");
+        Log.Combat?.WL(0,"CombatHUDFireButton.OnClick: " + HUD.SelectedActor.DisplayName + " fire mode:" + fireMode);
         if (HUD.SelectedTarget.UnaffectedPathing()) {
           if (HUD.SelectedActor.UnaffectedPathing() == false) {
             GenericPopupBuilder popupBuilder = GenericPopupBuilder.Create("FORBIDEN", "You can't select this unit as melee target");
@@ -1728,7 +1700,7 @@ namespace CustomUnits {
         if (HUD.SelectedTarget.UnaffectedPathing()) {
           HashSet<Weapon> forbiddenWeapon = new HashSet<Weapon>();
           foreach (Weapon weapon in HUD.SelectedActor.Weapons) {
-            Log.LogWrite(" weapon:" + weapon.defId + " enabled:" + weapon.IsEnabled + "\n");
+            Log.Combat?.WL(1, "weapon:" + weapon.defId + " enabled:" + weapon.IsEnabled);
             if (weapon.IsEnabled == false) { continue; }
 #if BT1_8
             //if (weapon.isWeaponUseInMelee().CanUseInMelee == false) { continue; }
@@ -1836,9 +1808,10 @@ namespace CustomUnits {
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { typeof(float), typeof(StabilityChangeSource), typeof(string) })]
   public static class Mech_AddInstability {
-    public static bool Prefix(Mech __instance, float amt, StabilityChangeSource source, string sourceGuid) {
-      if (__instance.isHasStability() == false) { return false; }
-      return true;
+    public static void Prefix(ref bool __runOriginal, Mech __instance, float amt, StabilityChangeSource source, string sourceGuid) {
+      if (!__runOriginal) { return; }
+      if (__instance.isHasStability() == false) { __runOriginal = false; return; }
+      return;
     }
   }
   [HarmonyPatch(typeof(MechDef))]

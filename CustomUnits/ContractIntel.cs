@@ -26,7 +26,7 @@ namespace CustomUnits {
     public static Dictionary<string, CustomWeatherEffectIntel> moods { get; set; } = new Dictionary<string, CustomWeatherEffectIntel>();
     public static void AddMood(string id,VersionManifestEntry entry) {
       CustomWeatherEffectIntel def = JsonConvert.DeserializeObject<CustomWeatherEffectIntel>(File.ReadAllText(entry.FilePath));
-      Log.WL(1, "id:" + def.ID);
+      Log.Combat?.WL(1, "id:" + def.ID);
       if (moods.ContainsKey(def.ID)) { moods[def.ID] = def; } else { moods.Add(def.ID, def); }
     }
   }
@@ -37,7 +37,7 @@ namespace CustomUnits {
         if (intelMinimaps.TryGetValue(contract.mapName, out Sprite result)) {
           return result;
         }
-        Log.TWL(0,$"GetIntelMinimapSprite:{contract.mapName}");
+        Log.M?.TWL(0,$"GetIntelMinimapSprite:{contract.mapName}");
         MapMetaData mapMetaData = MapMetaData.LoadMapMetaData(contract, contract.DataManager);
 
         int minimapXsize = mapMetaData.mapTerrainDataCells.GetLength(0);
@@ -52,10 +52,10 @@ namespace CustomUnits {
             if (cell.terrainHeight < minHeight) { minHeight = cell.terrainHeight; }
           }
         }
-        Log.WL(1,$"maxHeight:{maxHeight} minHeight:{minHeight}");
+        Log.Combat?.WL(1,$"maxHeight:{maxHeight} minHeight:{minHeight}");
         bool noheightdiff = false;
         if ((maxHeight - minHeight) < Core.Epsilon) { noheightdiff = true; }
-        bool hasForest = Traverse.Create(mapMetaData).Field<string>("forestDesignMaskName").Value.Contains("Forest");
+        bool hasForest = mapMetaData.forestDesignMaskName.Contains("Forest");
         for (int x = 0; x < minimapXsize; ++x) {
           for (int y = 0; y < minimapYsize; ++y) {
             MapTerrainDataCell cell = mapMetaData.mapTerrainDataCells[x, y];
@@ -80,7 +80,8 @@ namespace CustomUnits {
         intelMinimaps.Add(contract.mapName, result);
         return result;
       } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
+        Log.E?.TWL(0, e.ToString(), true);
+        SimGameState.logger.LogException(e);
         return null;
       }
     }
@@ -169,7 +170,7 @@ namespace CustomUnits {
           }
         }
         minimapBackground.sprite = LanceContractIntelWidget.GetIntelMinimapSprite(contract);
-        Log.TWL(0, $"Core.Settings.IntelShowMood:{Core.Settings.IntelShowMood} Core.Settings.IntelShowMiniMap:{Core.Settings.IntelShowMiniMap}");
+        Log.Combat?.TWL(0, $"Core.Settings.IntelShowMood:{Core.Settings.IntelShowMood} Core.Settings.IntelShowMiniMap:{Core.Settings.IntelShowMiniMap}");
         if (Core.Settings.IntelShowMiniMap == false) {
           if(UnityGameInstance.BattleTechGame.Simulation == null) {
             minimapBackground.gameObject.SetActive(false);
@@ -203,7 +204,8 @@ namespace CustomUnits {
           moodDescription.gameObject.SetActive(true);
         }
       } catch (Exception e) {
-        Log.TWL(0,e.ToString(),true);
+        Log.Combat?.TWL(0,e.ToString(),true);
+        UIManager.logger.LogException(e);
       }
     }
   }
@@ -212,17 +214,18 @@ namespace CustomUnits {
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { typeof(LanceConfiguratorPanel), typeof(Contract) })]
   public static class LanceContractDetailsWidget_PopulateContract {
-    public static void Postfix(LanceContractDetailsWidget __instance, Contract contract, LocalizableText ___ContractDescriptionField) {
+    public static void Postfix(LanceContractDetailsWidget __instance, Contract contract) {
       try {
-        LayoutElement layoutElement = ___ContractDescriptionField.gameObject.GetComponent<LayoutElement>();
-        if (layoutElement == null) { layoutElement = ___ContractDescriptionField.gameObject.AddComponent<LayoutElement>(); }
+        LayoutElement layoutElement = __instance.ContractDescriptionField.gameObject.GetComponent<LayoutElement>();
+        if (layoutElement == null) { layoutElement = __instance.ContractDescriptionField.gameObject.AddComponent<LayoutElement>(); }
         LanceContractIntelWidget intel = __instance.gameObject.GetComponent<LanceContractIntelWidget>();
         if (intel == null) {
           intel = __instance.gameObject.AddComponent<LanceContractIntelWidget>();
         };
-        intel.Init(___ContractDescriptionField, contract);
+        intel.Init(__instance.ContractDescriptionField, contract);
       } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
+        Log.Combat?.TWL(0, e.ToString(), true);
+        UIManager.logger.LogException(e);
       }
     }
   }
@@ -231,17 +234,18 @@ namespace CustomUnits {
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { typeof(Contract), typeof(Action) })]
   public static class SGContractsWidget_PopulateContract {
-    public static void Postfix(SGContractsWidget __instance, Contract contract, LocalizableText ___ContractDescriptionField) {
+    public static void Postfix(SGContractsWidget __instance, Contract contract) {
       try {
-        LayoutElement layoutElement = ___ContractDescriptionField.gameObject.GetComponent<LayoutElement>();
-        if (layoutElement == null) { layoutElement = ___ContractDescriptionField.gameObject.AddComponent<LayoutElement>(); }
+        LayoutElement layoutElement = __instance.ContractDescriptionField.gameObject.GetComponent<LayoutElement>();
+        if (layoutElement == null) { layoutElement = __instance.ContractDescriptionField.gameObject.AddComponent<LayoutElement>(); }
         LanceContractIntelWidget intel = __instance.gameObject.GetComponent<LanceContractIntelWidget>();
         if (intel == null) {
           intel = __instance.gameObject.AddComponent<LanceContractIntelWidget>();
         };
-        intel.Init(___ContractDescriptionField, contract);
+        intel.Init(__instance.ContractDescriptionField, contract);
       } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
+        Log.Combat?.TWL(0, e.ToString(), true);
+        UIManager.logger.LogException(e);
       }
     }
   }

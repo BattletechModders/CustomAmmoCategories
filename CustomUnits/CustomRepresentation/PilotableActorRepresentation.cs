@@ -28,18 +28,21 @@ namespace CustomUnits {
   [HarmonyPatch(MethodType.Getter)]
   [HarmonyPatch(new Type[] { })]
   public static class PilotableActorRepresentation_CurrentSurfaceType {
-    public static bool Prefix(PilotableActorRepresentation __instance, ref AudioSwitch_surface_type __result) {
+    public static void Prefix(ref bool __runOriginal, PilotableActorRepresentation __instance, ref AudioSwitch_surface_type __result) {
       try {
+        if (!__runOriginal) { return; }
         //Log.TWL(0, "PilotableActorRepresentation.InitPaintScheme :" + __instance.GetType().ToString());
         CustomMechRepresentation custMechRep = __instance as CustomMechRepresentation;
         if (custMechRep != null) {
           __result = custMechRep._CurrentSurfaceType;
-          return false;
+          __runOriginal = false;
+          return;
         }
-        return true;
+        return;
       } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
-        return true;
+        Log.Combat?.TWL(0, e.ToString(), true);
+        AbstractActor.logger.LogException(e);
+        return;
       }
     }
   }
@@ -48,18 +51,21 @@ namespace CustomUnits {
   [HarmonyPatch(MethodType.Getter)]
   [HarmonyPatch(new Type[] { })]
   public static class PilotableActorRepresentation_BlipDisplayed {
-    public static bool Prefix(PilotableActorRepresentation __instance, ref bool __result) {
+    public static void Prefix(ref bool __runOriginal, PilotableActorRepresentation __instance, ref bool __result) {
       try {
+        if (!__runOriginal) { return; }
         //Log.TWL(0, "PilotableActorRepresentation.InitPaintScheme :" + __instance.GetType().ToString());
         CustomMechRepresentation custMechRep = __instance as CustomMechRepresentation;
         if (custMechRep != null) {
           __result = custMechRep._BlipDisplayed;
-          return false;
+          __runOriginal = false;
+          return;
         }
-        return true;
+        return;
       } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
-        return true;
+        Log.Combat?.TWL(0, e.ToString(), true);
+        AbstractActor.logger.LogException(e);
+        return;
       }
     }
   }
@@ -68,18 +74,21 @@ namespace CustomUnits {
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { typeof(AbstractActor), typeof(Transform), typeof(bool) })]
   public static class PilotableActorRepresentation_Init {
-    public static bool Prefix(PilotableActorRepresentation __instance, AbstractActor unit, Transform parentTransform, bool isParented) {
+    public static void Prefix(ref bool __runOriginal, PilotableActorRepresentation __instance, AbstractActor unit, Transform parentTransform, bool isParented) {
       try {
+        if (!__runOriginal) { return; }
         PilotableActorRepresentation_Init_vehicle.Prefix(__instance, unit, parentTransform, isParented);
         CustomMechRepresentation custMechRep = __instance as CustomMechRepresentation;
         if (custMechRep != null) {
           custMechRep._Init(unit, parentTransform, isParented);
-          return false;
+          __runOriginal = false;
+          return;
         }
-        return true;
+        return;
       } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
-        return true;
+        Log.Combat?.TWL(0, e.ToString(), true);
+        AbstractActor.logger.LogException(e);
+        return;
       }
     }
   }
@@ -88,18 +97,21 @@ namespace CustomUnits {
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { typeof(HeraldryDef), typeof(string) })]
   public static class PilotableActorRepresentation_InitPaintScheme {
-    public static bool Prefix(PilotableActorRepresentation __instance, HeraldryDef heraldryDef, string teamGUID) {
+    public static void Prefix(ref bool __runOriginal, PilotableActorRepresentation __instance, HeraldryDef heraldryDef, string teamGUID) {
       try {
-        Log.TWL(0, "PilotableActorRepresentation.InitPaintScheme :" + __instance.GetType().ToString());
+        if (!__runOriginal) { return; }
+        Log.Combat?.TWL(0, "PilotableActorRepresentation.InitPaintScheme :" + __instance.GetType().ToString());
         CustomMechRepresentation custMechRep = __instance as CustomMechRepresentation;
         if (custMechRep != null) {
           custMechRep._InitPaintScheme(heraldryDef, teamGUID);
-          return false;
+          __runOriginal = false;
+          return;
         }
-        return true;
+        return;
       } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
-        return true;
+        Log.Combat?.TWL(0, e.ToString(), true);
+        AbstractActor.logger.LogException(e);
+        return;
       }
     }
   }
@@ -108,18 +120,21 @@ namespace CustomUnits {
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { typeof(VisibilityLevel), typeof(bool) })]
   public static class PilotableActorRepresentation_SetForcedPlayerVisibilityLevel {
-    public static bool Prefix(PilotableActorRepresentation __instance, VisibilityLevel newVisibility, bool showUI) {
+    public static void Prefix(ref bool __runOriginal, PilotableActorRepresentation __instance, VisibilityLevel newVisibility, bool showUI) {
       try {
-        Log.TWL(0, "PilotableActorRepresentation.SetForcedPlayerVisibilityLevel :" + __instance.GetType().ToString());
+        if (!__runOriginal) { return; }
+        Log.Combat?.TWL(0, "PilotableActorRepresentation.SetForcedPlayerVisibilityLevel :" + __instance.GetType().ToString());
         CustomMechRepresentation custMechRep = __instance as CustomMechRepresentation;
         if (custMechRep != null) {
           custMechRep._SetForcedPlayerVisibilityLevel(newVisibility, showUI);
-          return false;
+          __runOriginal = false;
+          return;
         }
-        return true;
+        return;
       } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
-        return true;
+        Log.Combat?.TWL(0, e.ToString(), true);
+        AbstractActor.logger.LogException(e);
+        return;
       }
     }
   }
@@ -128,18 +143,21 @@ namespace CustomUnits {
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { typeof(List<ICombatant>) })]
   public static class PilotableActorRepresentation_ClearForcedPlayerVisibilityLevel {
-    public static bool Prefix(PilotableActorRepresentation __instance, List<ICombatant> allCombatants) {
+    public static void Prefix(ref bool __runOriginal, PilotableActorRepresentation __instance, List<ICombatant> allCombatants) {
       try {
-        Log.TWL(0, "PilotableActorRepresentation.ClearForcedPlayerVisibilityLevel :" + __instance.GetType().ToString());
+        if (!__runOriginal) { return; }
+        Log.Combat?.TWL(0, "PilotableActorRepresentation.ClearForcedPlayerVisibilityLevel :" + __instance.GetType().ToString());
         CustomMechRepresentation custMechRep = __instance as CustomMechRepresentation;
         if (custMechRep != null) {
           custMechRep._ClearForcedPlayerVisibilityLevel(allCombatants);
-          return false;
+          __runOriginal = false;
+          return;
         }
-        return true;
+        return;
       } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
-        return true;
+        Log.Combat?.TWL(0, e.ToString(), true);
+        AbstractActor.logger.LogException(e);
+        return;
       }
     }
   }
@@ -148,18 +166,21 @@ namespace CustomUnits {
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] {  })]
   public static class PilotableActorRepresentation_PlayEjectFX {
-    public static bool Prefix(PilotableActorRepresentation __instance) {
+    public static void Prefix(ref bool __runOriginal, PilotableActorRepresentation __instance) {
       try {
-        Log.TWL(0, "PilotableActorRepresentation.PlayEjectFX :" + __instance.GetType().ToString());
+        if (!__runOriginal) { return; }
+        Log.Combat?.TWL(0, "PilotableActorRepresentation.PlayEjectFX :" + __instance.GetType().ToString());
         CustomMechRepresentation custMechRep = __instance as CustomMechRepresentation;
         if (custMechRep != null) {
           custMechRep._PlayEjectFX();
-          return false;
+          __runOriginal = false;
+          return;
         }
-        return true;
+        return;
       } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
-        return true;
+        Log.Combat?.TWL(0, e.ToString(), true);
+        AbstractActor.logger.LogException(e);
+        return;
       }
     }
   }
@@ -168,23 +189,25 @@ namespace CustomUnits {
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { typeof(Vector3), typeof(Quaternion) })]
   public static class PilotableActorRepresentation_SetBlipPositionRotation {
-    public static bool Prefix(PilotableActorRepresentation __instance, Vector3 position, Quaternion rotation) {
+    public static void Prefix(ref bool __runOriginal, PilotableActorRepresentation __instance, Vector3 position, Quaternion rotation) {
       try {
+        if (!__runOriginal) { return; }
         CustomMechRepresentation custMechRep = __instance as CustomMechRepresentation;
         if (custMechRep != null) {
           custMechRep._SetBlipPositionRotation(position, rotation);
-          return false;
+          __runOriginal = false;
+          return;
         }
-        return true;
+        return;
       } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
-        return true;
+        Log.Combat?.TWL(0, e.ToString(), true);
+        AbstractActor.logger.LogException(e);
+        return;
       }
     }
   }
   public partial class CustomMechRepresentation {
-    private static MethodInfo set_parentActor = typeof(PilotableActorRepresentation).GetProperty("parentActor").GetSetMethod(true);
-    public AbstractActor __parentActor { get { return this.parentActor; } set { set_parentActor.Invoke(this, new object[] { value }); } }
+    public AbstractActor __parentActor { get { return this.parentActor; } set { this.parentActor(value); } }
 
     public override Collider[] AllRaycastColliders {
       get {
@@ -200,7 +223,7 @@ namespace CustomUnits {
 
     public virtual AudioSwitch_surface_type _CurrentSurfaceType { get { return this.currentSurfaceType; } }
 
-    private BattleTech.Rendering.MechCustomization.MechCustomization mechCustomization { get; set; }
+    //private BattleTech.Rendering.MechCustomization.MechCustomization mechCustomization { get; set; }
 
     public virtual void _Init(AbstractActor unit, Transform parentTransform, bool isParented) {
       this.Init((ICombatant)unit, parentTransform, isParented, false, this.name);
@@ -223,13 +246,13 @@ namespace CustomUnits {
         }
       }
       this.SetVFXColliderEnabled(false);
-      this._mechCustomization = null;
+      this.mechCustomization = null;
       CustomMechCustomization[] customizations = this.VisibleObject.GetComponentsInChildren<CustomMechCustomization>(true);
       this.mechCustomizations = new List<CustomMechCustomization>();
     }
         public virtual void _InitPaintScheme(HeraldryDef heraldryDef, string teamGUID)
         {
-            Log.TWL(0, "CustomMechRepresentation._InitPaintScheme " + this.mech.MechDef.ChassisID + " ");
+            Log.Combat?.TWL(0, "CustomMechRepresentation._InitPaintScheme " + this.mech.MechDef.ChassisID + " ");
             if (this.paintSchemeInitialized) { return; }
 
             this.paintSchemeInitialized = true;
@@ -248,18 +271,18 @@ namespace CustomUnits {
                     {
                         heraldryDef = this.parentCombatant.Combat.DataManager.Heraldries.Get("heraldrydef_player");
                         heraldryDef.Refresh();
-                        Log.TWL(0, $"  heraldryDef is player. Colors: {heraldryDef.primaryMechColorID} / {heraldryDef.secondaryMechColorID} / {heraldryDef.tertiaryMechColorID}  logo: {heraldryDef.textureLogoID}");
+                        Log.Combat?.TWL(0, $"  heraldryDef is player. Colors: {heraldryDef.primaryMechColorID} / {heraldryDef.secondaryMechColorID} / {heraldryDef.tertiaryMechColorID}  logo: {heraldryDef.textureLogoID}");
                     }
                     else
                     {
                         heraldryDef = this.parentCombatant.Combat.DataManager.Heraldries.Get("heraldrydef_enemy");
                         heraldryDef.Refresh();
-                        Log.TWL(0, $"  heraldryDef is enemy. Colors: {heraldryDef.primaryMechColorID} / {heraldryDef.secondaryMechColorID} / {heraldryDef.tertiaryMechColorID}  logo: {heraldryDef.textureLogoID}");
+                        Log.Combat?.TWL(0, $"  heraldryDef is enemy. Colors: {heraldryDef.primaryMechColorID} / {heraldryDef.secondaryMechColorID} / {heraldryDef.tertiaryMechColorID}  logo: {heraldryDef.textureLogoID}");
                     }
                 }
                 else
                 {
-                    Log.TWL(0, $"  heraldryDef already set. Colors: {heraldryDef.primaryMechColorID} / {heraldryDef.secondaryMechColorID} / {heraldryDef.tertiaryMechColorID}  logo: {heraldryDef.textureLogoID}");
+                    Log.Combat?.TWL(0, $"  heraldryDef already set. Colors: {heraldryDef.primaryMechColorID} / {heraldryDef.secondaryMechColorID} / {heraldryDef.tertiaryMechColorID}  logo: {heraldryDef.textureLogoID}");
                 }
 
                 string camoMaskTextureId = (string)null;
@@ -267,7 +290,7 @@ namespace CustomUnits {
                 if (this.parentActor.team.IsLocalPlayer)
                 {
                     camoMaskTextureId = this.parentActor.PilotableActorDef.PaintTextureID;
-                    Log.TWL(0, $"  localPlayer parentActorDef.paintTextureId: {this.parentActor.PilotableActorDef.PaintTextureID}");
+                    Log.Combat?.TWL(0, $"  localPlayer parentActorDef.paintTextureId: {this.parentActor.PilotableActorDef.PaintTextureID}");
 
                     SimGameState simulation = UnityGameInstance.BattleTechGame.Simulation;
                     if (simulation != null)
@@ -295,7 +318,7 @@ namespace CustomUnits {
                                 texture_id = stringList2[camoMaskTextureId];
                                 discardList.Add(camoMaskTextureId);
                             }
-                            Log.TWL(0, $"  Local player but not mask, randomized camoMask: {camoMaskTextureId}  new texture_id: {texture_id}");
+                            Log.Combat?.TWL(0, $"  Local player but not mask, randomized camoMask: {camoMaskTextureId}  new texture_id: {texture_id}");
                         }
                         else
                         {
@@ -306,20 +329,20 @@ namespace CustomUnits {
                                 stringList2.Add(this.mechCustomizations[0].paintPatterns[i].name, i);
                             }
                             texture_id = stringList2[camoMaskTextureId];
-                            Log.TWL(0, $"  Local player retaining: {camoMaskTextureId}  new texture_id: {texture_id}");
+                            Log.Combat?.TWL(0, $"  Local player retaining: {camoMaskTextureId}  new texture_id: {texture_id}");
                         }
                     }
                     else
                     {
                         // Skirmish, randomize the player's skins
                         texture_id = UnityEngine.Random.Range(0, this.mechCustomizations[0].paintPatterns.Length);
-                        Log.TWL(0, $"  Local player but skirmish, parentActorDef.paintTextureId: {this.parentActor.PilotableActorDef.PaintTextureID}  new texture_id: {texture_id}");
+                        Log.Combat?.TWL(0, $"  Local player but skirmish, parentActorDef.paintTextureId: {this.parentActor.PilotableActorDef.PaintTextureID}  new texture_id: {texture_id}");
                     }                    
                 }
                 else
                 {
                     texture_id = UnityEngine.Random.Range(0, this.mechCustomizations[0].paintPatterns.Length);
-                    Log.TWL(0, $"  Not local player, parentActorDef.paintTextureId: {this.parentActor.PilotableActorDef.PaintTextureID}  new texture_id: {texture_id}");                    
+                    Log.Combat?.TWL(0, $"  Not local player, parentActorDef.paintTextureId: {this.parentActor.PilotableActorDef.PaintTextureID}  new texture_id: {texture_id}");                    
                 }
 
                 // Set the texture on every mech customization
@@ -327,7 +350,7 @@ namespace CustomUnits {
                 {
                     if (mechCustomization.paintPatterns.Length == 0) { continue; }
                     camoMaskTextureId = mechCustomization.paintPatterns[texture_id % mechCustomization.paintPatterns.Length].name;
-                    Log.WL(2, "object: " + mechCustomization.gameObject.name + " apply texture:" + camoMaskTextureId);
+                    Log.Combat?.WL(2, "object: " + mechCustomization.gameObject.name + " apply texture:" + camoMaskTextureId);
                     mechCustomization.ApplyHeraldry(heraldryDef, camoMaskTextureId);
                 }
             }
@@ -565,7 +588,7 @@ namespace CustomUnits {
           if (this.BlipObjectGhostWeak != null) this.BlipObjectGhostWeak.SetActive(false);
           if (this.BlipObjectGhostStrong != null) this.BlipObjectGhostStrong.SetActive(false);
         }
-        if (!this.__IsDead) {
+        if (!this._IsDead) {
           this.StartPersistentAudio();
           if (this.VisibleLights != null) {
             foreach (Behaviour visibleLight in this.VisibleLights)
@@ -574,7 +597,7 @@ namespace CustomUnits {
         }
         this._ResumeAllPersistentVFX();
       } else if (newLevel > VisibilityLevel.None) {
-        if (!this.__IsDead) {
+        if (!this._IsDead) {
           this.VisibleObject.SetActive(false);
           this._PauseAllPersistentVFX();
           this.StopPersistentAudio();
@@ -618,7 +641,7 @@ namespace CustomUnits {
           }
         }
       } else {
-        if (!this.__IsDead) {
+        if (!this._IsDead) {
           this.VisibleObject.SetActive(false);
           this.PauseAllPersistentVFX();
           this.StopPersistentAudio();
@@ -635,15 +658,15 @@ namespace CustomUnits {
         if (this.BlipObjectGhostStrong != null) this.BlipObjectGhostStrong.SetActive(false);
         this.mainCollider.enabled = false;
       }
-      if (this.__IsDead) {
+      if (this._IsDead) {
         if (this.BlipObjectGhostWeak != null) this.BlipObjectGhostWeak.SetActive(false);
         if (this.BlipObjectUnknown != null) this.BlipObjectUnknown.SetActive(false);
         if (this.BlipObjectIdentified != null) this.BlipObjectIdentified.SetActive(false);
         if (this.BlipObjectGhostStrong != null) this.BlipObjectGhostWeak.SetActive(false);
       }
-      if (this.__IsDead == false) {
+      if (this._IsDead == false) {
         if (this.weaponReps != null) {
-          Log.TWL(0, "CustomMechRepresentation.OnPlayerVisibilityChanged "+this.gameObject.name+" "+this.parentActor.PilotableActorDef.Description.Id+" team:"+this.parentActor.TeamId+" vislevel:"+newLevel+" weaponRepsCount:"+ this.weaponReps.Count);
+          Log.Combat?.TWL(0, "CustomMechRepresentation.OnPlayerVisibilityChanged "+this.gameObject.name+" "+this.parentActor.PilotableActorDef.Description.Id+" team:"+this.parentActor.TeamId+" vislevel:"+newLevel+" weaponRepsCount:"+ this.weaponReps.Count);
           for (int index = 0; index < this.weaponReps.Count; ++index) {
             if (this.weaponReps[index] != null) {
               int mountedLocation = this.weaponReps[index].mountedLocation;
@@ -651,9 +674,9 @@ namespace CustomUnits {
               bool isWeaponForceHide = false;
               if (isWeaponForceHide) {
                 this.weaponReps[index].OnPlayerVisibilityChanged(VisibilityLevel.None);
-                Log.WL(1, this.weaponReps[index].name + ":" + VisibilityLevel.None);
+                Log.Combat?.WL(1, this.weaponReps[index].name + ":" + VisibilityLevel.None);
               } else {
-                Log.WL(1, this.weaponReps[index].name+":"+newLevel);
+                Log.Combat?.WL(1, this.weaponReps[index].name+":"+newLevel);
                 this.weaponReps[index].OnPlayerVisibilityChanged(newLevel);
               }
             }
@@ -862,7 +885,7 @@ namespace CustomUnits {
       if (target.GUID == this.parentCombatant.GUID) {
         TerrainHitInfo terrainPos = CustomAmmoCategories.getTerrinHitPosition(this.parentCombatant.GUID);
         if (terrainPos != null) {
-          Log.TWL(0, "terrain attack detected " + terrainPos.pos);
+          Log.Combat?.TWL(0, "terrain attack detected " + terrainPos.pos);
           position = terrainPos.pos;
         }
       }

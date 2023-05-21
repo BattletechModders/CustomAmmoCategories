@@ -36,17 +36,18 @@ namespace CustomUnits {
     public static void Prefix(Mech __instance,ref Vector3 position, float facing, bool checkEncounterCells) {
       try {
         UnitCustomInfo info = __instance.MechDef.Chassis.GetCustomInfo();
-        Log.TWL(0, "Mech.Init Naval:" + __instance.Description.Id + " info:" + (info == null?"null": info.Naval.ToString()));
+        Log.Combat?.TWL(0, "Mech.Init Naval:" + __instance.Description.Id + " info:" + (info == null?"null": info.Naval.ToString()));
         if (info == null) { return; }
         if (info.Naval == false) { return; }
         MapTerrainHexCell hex = __instance.Combat.findNearestWaterHex(position);
         if(hex != null) {
           position = hex.center;
           position.y = __instance.Combat.MapMetaData.GetLerpedHeightAt(position);
-          Log.WL(1, "water hex found:" + position);
+          Log.Combat?.WL(1, "water hex found:" + position);
         }
       } catch(Exception e) {
-        Log.TWL(0, e.ToString(), true);
+        Log.Combat?.TWL(0, e.ToString(), true);
+        AbstractActor.logger.LogException(e);
       }
     }
   }

@@ -68,15 +68,15 @@ namespace CustomUnits {
     public Image img { get; set; } = null;
     public LanceLayoutUIItem parent { get; set; } = null;
     public override void OnPointerEnter(PointerEventData eventData) {
-      Log.TWL(0, "LanceLayoutDeleteItemButton.OnPointerEnter " + parent.data.Description.Name);
+      Log.M?.TWL(0, "LanceLayoutDeleteItemButton.OnPointerEnter " + parent.data.Description.Name);
       svg.color = UIManager.Instance.UIColorRefs.orange;
     }
     public override void OnPointerExit(PointerEventData eventData) {
-      Log.TWL(0, "LanceLayoutDeleteItemButton.OnPointerExit " + parent.data.Description.Name);
+      Log.M?.TWL(0, "LanceLayoutDeleteItemButton.OnPointerExit " + parent.data.Description.Name);
       svg.color = UIManager.Instance.UIColorRefs.white;
     }
     public override void OnPointerClick(PointerEventData eventData) {
-      Log.TWL(0, "LanceLayoutDeleteItemButton.OnPointerClick " + parent.data.Description.Name);
+      Log.M?.TWL(0, "LanceLayoutDeleteItemButton.OnPointerClick " + parent.data.Description.Name);
       parent.parent.DeleteItem(parent);
     }
   }
@@ -135,7 +135,7 @@ namespace CustomUnits {
       this.uiInited = false;
     }
     public void OnPointerClick(PointerEventData eventData) {
-      Log.TWL(0, "LanceLayoutUIItem.OnPointerClick");
+      Log.M?.TWL(0, "LanceLayoutUIItem.OnPointerClick");
       parent.selected = this;
       parent.UpdateColors();
     }
@@ -174,12 +174,12 @@ namespace CustomUnits {
         UIColor bgColor = LazySingletonBehavior<UIManager>.Instance.UILookAndColorConstants.Equipment.UIColor;
         string text = dataElement.Description.Name;
         component.SetData(text, ComponentDamageLevel.Functional, textColor, bgColor);
-        Traverse.Create(component).Field<UIColorRefTracker>("itemTextColor").Value.SetUIColor(textColor);
-        if(Traverse.Create(component).Field<HBSTooltip>("EquipmentTooltip").Value == null) {
-          Traverse.Create(component).Field<HBSTooltip>("EquipmentTooltip").Value = component.GetComponent<HBSTooltip>();
+        component.itemTextColor.SetUIColor(textColor);
+        if(component.EquipmentTooltip == null) {
+          component.EquipmentTooltip = component.GetComponent<HBSTooltip>();
         }
-        if (Traverse.Create(component).Field<HBSTooltip>("EquipmentTooltip").Value != null) {
-          Traverse.Create(component).Field<HBSTooltip>("EquipmentTooltip").Value.SetDefaultStateData(dataElement.Description.GetTooltipStateData());
+        if (component.EquipmentTooltip != null) {
+          component.EquipmentTooltip.SetDefaultStateData(dataElement.Description.GetTooltipStateData());
         }
       }
       targetItem.Init();
@@ -189,12 +189,12 @@ namespace CustomUnits {
     public void UpdateColors() {
       foreach (LanceLayoutUIItem item in layoutsList) {
         UIColor textColor = this.selected == item?UIColor.Gold:UIColor.White;
-        Traverse.Create(item.ui).Field<UIColorRefTracker>("itemTextColor").Value.SetUIColor(textColor);
+        item.ui.itemTextColor.SetUIColor(textColor);
       }
     }
     public void Clear() {
       try {
-        Log.TWL(0, "LanceLayoutControl.Clear");
+        Log.M?.TWL(0, "LanceLayoutControl.Clear");
         for (int index = this.layoutsList.Count - 1; index >= 0; --index) {
           LanceMechEquipmentListItem labItemSlotElement = this.layoutsList[index].ui;
           labItemSlotElement.gameObject.transform.SetParent((Transform)null, false);
@@ -207,12 +207,11 @@ namespace CustomUnits {
         }
         this.layoutsList.Clear();
       }catch(Exception e) {
-        Log.TWL(0,e.ToString(),true);
+        Log.M?.TWL(0,e.ToString(),true);
+        UIManager.logger.LogException(e);
       }
     }
-
   }
-
   public class LanceLoadPopupSupervisor : MonoBehaviour {
     public enum PopupState { Main };
     public GenericPopup popup { get; set; } = null;
@@ -242,16 +241,16 @@ namespace CustomUnits {
       try {
         GameObject uixPrfPanl_ML_main_Widget = LazySingletonBehavior<UIManager>.Instance.dataManager.PooledInstantiate("uixPrfPanl_ML_main-Widget", BattleTechResourceType.UIModulePrefabs);
         if (uixPrfPanl_ML_main_Widget == null) {
-          Log.TWL(0, "uixPrfPanl_ML_main-Widget not found");
+          Log.M?.TWL(0, "uixPrfPanl_ML_main-Widget not found");
           return;
         }
-        Log.TWL(0, "uixPrfPanl_ML_main-Widget found");
+        Log.M?.TWL(0, "uixPrfPanl_ML_main-Widget found");
         MechLabDismountWidget dismountWidget = uixPrfPanl_ML_main_Widget.GetComponentInChildren<MechLabDismountWidget>(true);
         if (dismountWidget == null) {
-          Log.TWL(0, "MechLabDismountWidget not found");
+          Log.M?.TWL(0, "MechLabDismountWidget not found");
           return;
         }
-        Log.TWL(0, "MechLabDismountWidget found");
+        Log.M?.TWL(0, "MechLabDismountWidget found");
 
         {
           GameObject controlGO = GameObject.Instantiate(dismountWidget.gameObject);
@@ -276,7 +275,8 @@ namespace CustomUnits {
 
         LazySingletonBehavior<UIManager>.Instance.dataManager.PoolGameObject("uixPrfPanl_ML_main-Widget", uixPrfPanl_ML_main_Widget);
       } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
+        Log.M?.TWL(0, e.ToString(), true);
+        UIManager.logger.LogException(e);
       }
     }
     public void OnBack() {
@@ -291,11 +291,12 @@ namespace CustomUnits {
         OnClose();
         LanceLoadPopupSupervisor.RestoreAs(layout, lanceConfPanel);
       }catch(Exception e) {
-        Log.TWL(0,e.ToString(),true);
+        Log.M?.TWL(0,e.ToString(),true);
+        UIManager.logger.LogException(e);
       }
     }
     public static void RestoreAs(SavedLanceLayout layout, LanceConfiguratorPanel lanceConfPanel) {
-      LanceLoadoutSlot[] loadoutSlots = Traverse.Create(lanceConfPanel).Field<LanceLoadoutSlot[]>("loadoutSlots").Value;
+      LanceLoadoutSlot[] loadoutSlots = lanceConfPanel.loadoutSlots;
       StringBuilder errors = new StringBuilder();
       if (layout.clear) {
         for (int t = 0; t < loadoutSlots.Length; ++t) {
@@ -327,8 +328,8 @@ namespace CustomUnits {
                   forcedMech = null;
                 }
               }
-              float minTonnage = Traverse.Create(slot).Field<float>("minTonnage").Value;
-              float maxTonnage = Traverse.Create(slot).Field<float>("maxTonnage").Value;
+              float minTonnage = slot.minTonnage;
+              float maxTonnage = slot.maxTonnage;
               if ((forcedMech != null) && (minTonnage > 0f)) {
                 if (forcedMech.MechDef.Chassis.Tonnage < minTonnage) {
                   errors.AppendLine(forcedMech.MechDef.Description.Name + " too low tonnage");
@@ -389,8 +390,8 @@ namespace CustomUnits {
       builder.AddButton("CLOSE", new Action(this.OnBack), true);
       builder.AddButton("LOAD", new Action(this.OnSelect), true);
       popup = builder.CancelOnEscape().Render();
-      selectButton = Traverse.Create(popup).Field<List<HBSButton>>("buttons").Value[1];
-      backButton = Traverse.Create(popup).Field<List<HBSButton>>("buttons").Value[0];
+      selectButton = popup.buttons[1];
+      backButton = popup.buttons[0];
       this.OnShow();
     }
     public void OnClose() {
@@ -402,19 +403,20 @@ namespace CustomUnits {
         }
         parent = null;
         if (popup != null) {
-          Traverse.Create(popup).Field<LocalizableText>("_contentText").Value.gameObject.SetActive(true);
+          popup._contentText.gameObject.SetActive(true);
           popup.Pool();
           popup = null;
         }
       }catch(Exception e) {
-        Log.TWL(0,e.ToString(), true);
+        Log.M?.TWL(0,e.ToString(), true);
+        UIManager.logger.LogException(e);
       }
     }
     public void OnShow() {
       if ((layoutsControl != null) && (popup != null)) {
         try {
           layoutsControl.Clear();
-          LocalizableText _contentText = Traverse.Create(popup).Field<LocalizableText>("_contentText").Value;
+          LocalizableText _contentText = popup._contentText;
           _contentText.gameObject.SetActive(false);
           {
             RectTransform controlRT = layoutsControl.gameObject.GetComponent<RectTransform>();
@@ -451,7 +453,8 @@ namespace CustomUnits {
             layoutsControl.AddUIItem(new LanceLayoutDataElement(item, this.parent));
           }
         } catch (Exception e) {
-          Log.TWL(0, e.ToString(), true);
+          Log.M?.TWL(0, e.ToString(), true);
+          UIManager.logger.LogException(e);
         }
       }
     }
@@ -467,7 +470,8 @@ namespace CustomUnits {
         string path = Path.Combine(BaseDirectory, layout.name + ".json");
         File.WriteAllText(path, JsonConvert.SerializeObject(layout, Formatting.Indented));
       } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
+        Log.M?.TWL(0, e.ToString(), true);
+        UIManager.logger.LogException(e);
       }
     }
     public static void Delete(SavedLanceLayout layout) {
@@ -475,7 +479,8 @@ namespace CustomUnits {
         string path = Path.Combine(BaseDirectory, layout.name + ".json");
         if (File.Exists(path)) { File.Delete(path); }
       } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
+        Log.M?.TWL(0, e.ToString(), true);
+        UIManager.logger.LogException(e);
       }
     }
     public static List<SavedLanceLayout> LoadAll() {
@@ -486,11 +491,13 @@ namespace CustomUnits {
           try {
             result.Add(JsonConvert.DeserializeObject<SavedLanceLayout>(File.ReadAllText(f)));
           } catch (Exception e) {
-            Log.TWL(0, e.ToString(), true);
+            Log.M?.TWL(0, e.ToString(), true);
+            UIManager.logger.LogException(e);
           }
         }
       } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
+        Log.M?.TWL(0, e.ToString(), true);
+        UIManager.logger.LogException(e);
       }
       return result;
     }
@@ -515,7 +522,7 @@ namespace CustomUnits {
       this.button = this.gameObject.GetComponent<HBSDOTweenButton>();
       this.button.OnClicked = new UnityEngine.Events.UnityEvent();
       this.button.OnClicked.AddListener(new UnityEngine.Events.UnityAction(this.OnClicked));
-      List<GameObject> tweenObjects = Traverse.Create(this.button).Field<List<GameObject>>("tweenObjects").Value;
+      List<GameObject> tweenObjects = this.button.tweenObjects;
       tweenObjects[0] = this.gameObject.FindComponent<Transform>("bttn2_Fill").gameObject;
       tweenObjects[1] = this.gameObject.FindComponent<Transform>("bttn2_border").gameObject;
       tweenObjects[2] = this.gameObject.FindComponent<Transform>("bttn2_Text-optional").gameObject;
@@ -528,8 +535,8 @@ namespace CustomUnits {
       if (string.IsNullOrEmpty(name)) { return; }
       name = name.Replace('\\', '_');
       name = name.Replace(':', '_');
-      Log.TWL(0, "LanceConfigSaver.SaveLoadoutName " + name);
-      LanceLoadoutSlot[] loadoutSlots = Traverse.Create(this.parent).Field<LanceLoadoutSlot[]>("loadoutSlots").Value;
+      Log.M?.TWL(0, "LanceConfigSaver.SaveLoadoutName " + name);
+      LanceLoadoutSlot[] loadoutSlots = this.parent.loadoutSlots;
       SavedLanceLayout savedLanceLayout = new SavedLanceLayout();
       savedLanceLayout.name = name;
       for (int t = 0; t < loadoutSlots.Length; ++t) {
@@ -551,7 +558,7 @@ namespace CustomUnits {
         slot.pilot = pilot == null ? string.Empty : pilot.Description.Id;
         slot.pilotCallsign = pilot == null ? string.Empty : pilot.Callsign;
         savedLanceLayout.items.Add(slot);
-        Log.WL(1, "["+t+"] mech:"+(mechDef == null?"null":mechDef.Description.Id)+" pilot:"+(pilot==null?"null":pilot.Description.Id)+" isMechLocked:"+ loadoutSlots[t].isMechLocked+" isPilotLocked:"+loadoutSlots[t].isPilotLocked);
+        Log.M?.WL(1, "["+t+"] mech:"+(mechDef == null?"null":mechDef.Description.Id)+" pilot:"+(pilot==null?"null":pilot.Description.Id)+" isMechLocked:"+ loadoutSlots[t].isMechLocked+" isPilotLocked:"+loadoutSlots[t].isPilotLocked);
       }
       SaveDropLayoutHelper.Save(savedLanceLayout);
     }
@@ -568,7 +575,7 @@ namespace CustomUnits {
       this.button = this.gameObject.GetComponent<HBSDOTweenButton>();
       this.button.OnClicked = new UnityEngine.Events.UnityEvent();
       this.button.OnClicked.AddListener(new UnityEngine.Events.UnityAction(this.OnClicked));
-      List<GameObject> tweenObjects = Traverse.Create(this.button).Field<List<GameObject>>("tweenObjects").Value;
+      List<GameObject> tweenObjects = this.button.tweenObjects;
       tweenObjects[0] = this.gameObject.FindComponent<Transform>("bttn2_Fill").gameObject;
       tweenObjects[1] = this.gameObject.FindComponent<Transform>("bttn2_border").gameObject;
       tweenObjects[2] = this.gameObject.FindComponent<Transform>("bttn2_Text-optional").gameObject;
@@ -578,7 +585,7 @@ namespace CustomUnits {
       tooltip.SetDefaultStateData(TooltipUtilities.GetStateDataFromObject((object)"Save current drop layout"));
     }
     public void RestoreAs(SavedLanceLayout layout) {
-      LanceLoadoutSlot[] loadoutSlots = Traverse.Create(this.parent).Field<LanceLoadoutSlot[]>("loadoutSlots").Value;
+      LanceLoadoutSlot[] loadoutSlots = this.parent.loadoutSlots;
       StringBuilder errors = new StringBuilder();
       if (layout.clear) {
         for (int t = 0; t < loadoutSlots.Length; ++t) {
@@ -610,8 +617,8 @@ namespace CustomUnits {
                   forcedMech = null;
                 }
               }
-              float minTonnage = Traverse.Create(slot).Field<float>("minTonnage").Value;
-              float maxTonnage = Traverse.Create(slot).Field<float>("maxTonnage").Value;
+              float minTonnage = slot.minTonnage;
+              float maxTonnage = slot.maxTonnage;
               if ((forcedMech != null)&&(minTonnage > 0f)) {
                 if(forcedMech.MechDef.Chassis.Tonnage < minTonnage) {
                   errors.AppendLine(forcedMech.MechDef.Description.Name + " too low tonnage");
@@ -707,7 +714,7 @@ namespace CustomUnits {
               if (popup != null) popup.TextContent = text.ToString();
             }
           } catch (Exception e) {
-            Log.TWL(0, e.ToString(), true);
+            Log.E?.TWL(0, e.ToString(), true);
           }
         }), false)
         .AddButton("<-", (Action)(() => {
@@ -725,7 +732,7 @@ namespace CustomUnits {
               if (popup != null) popup.TextContent = text.ToString();
             }
           } catch (Exception e) {
-            Log.TWL(0, e.ToString(), true);
+            Log.E?.TWL(0, e.ToString(), true);
           }
         }), false).AddButton("APPLY", (Action)(() => {
           this.RestoreAs(invList[curIndex]);

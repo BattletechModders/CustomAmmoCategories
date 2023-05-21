@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Globalization;
+using BattleTech;
 using CustomUnits;
 using HBS.Collections;
 using UnityEngine;
@@ -19,7 +20,7 @@ namespace MechResizer {
         if (parts.Length == 3) {
           var resizeNumber = float.Parse(parts[2], CultureInfo.InvariantCulture);
           size = new Vector3(resizeNumber, resizeNumber, resizeNumber);
-          Log.TWL(0, $"size from singular tag: [{size.Value.x},{size.Value.y},{size.Value.z}]");
+          Log.Combat?.TWL(0, $"size from singular tag: [{size.Value.x},{size.Value.y},{size.Value.z}]");
           return true;
         }
 
@@ -29,11 +30,12 @@ namespace MechResizer {
           var resizeY = float.Parse(parts[3], CultureInfo.InvariantCulture);
           var resizeZ = float.Parse(parts[4], CultureInfo.InvariantCulture);
           size = new Vector3(resizeX, resizeY, resizeZ);
-          Log.TWL(0, $"size from multi-tag: [{size.Value.x},{size.Value.y},{size.Value.z}]");
+          Log.Combat?.TWL(0, $"size from multi-tag: [{size.Value.x},{size.Value.y},{size.Value.z}]");
           return true;
         }
       } catch (Exception e) {
-        Log.TWL(0, e.ToString(), true);
+        Log.Combat?.TWL(0, e.ToString(), true);
+        AbstractActor.logger.LogException(e);
       }
 
       return false;
@@ -41,15 +43,15 @@ namespace MechResizer {
 
     private static string FindSizeTag(TagSet tags) {
       if (tags == null || tags.Count == 0) {
-        Log.TWL(0, "Found no tags");
+        Log.Combat?.TWL(0, "Found no tags");
         return null;
       }
       foreach (var t in tags) {
         if (!t.StartsWith("MR-Resize-", ignoreCase: true, culture: CultureInfo.InvariantCulture)) {
-          Log.WL(1," tag "+t+" is not starting from MR-Resize-");
+          Log.Combat?.WL(1," tag "+t+" is not starting from MR-Resize-");
           continue;
         }
-        Log.TWL(0, $"found a tag in for loop: {t}");
+        Log.Combat?.TWL(0, $"found a tag in for loop: {t}");
         return t;
       }
 
