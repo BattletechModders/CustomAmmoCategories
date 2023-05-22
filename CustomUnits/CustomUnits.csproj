@@ -195,6 +195,7 @@
     <Compile Include="HUDImprove.cs" />
     <Compile Include="InfluenceMapPositionFactor.cs" />
     <Compile Include="LanceConfigSave.cs" />
+    <Compile Include="LineOfSight.cs" />
     <Compile Include="Log.cs" />
     <Compile Include="LowVisibility.cs" />
     <Compile Include="MechResizer\MechRepresentationPatch.cs" />
