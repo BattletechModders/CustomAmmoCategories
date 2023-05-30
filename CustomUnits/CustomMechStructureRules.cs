@@ -874,7 +874,7 @@ namespace CustomUnits {
       }
       if (deathMethod == DeathMethod.NOT_SET) {
         if(location == info.MechVehicleCrewLocation) {
-          deathMethod = DeathMethod.HeadDestruction;
+          deathMethod = info.MechVehicleCrewLocation == ChassisLocations.Head?DeathMethod.HeadDestruction:DeathMethod.CockpitDestroyed;
           reason = "Location Destroyed: " + location.ToString();
         } else
         switch (location) {
