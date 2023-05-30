@@ -637,6 +637,11 @@ namespace CustomUnits {
       }
       return info;
     }
+    public static bool IsSquad(this MechDef mechDef) {
+      UnitCustomInfo info = mechDef.GetCustomInfo();
+      if (info == null) { return false; }
+      return info.SquadInfo.Troopers > 1;
+    }
   }
   [HarmonyPatch(typeof(VehicleChassisDef))]
   [HarmonyPatch("FromJSON")]

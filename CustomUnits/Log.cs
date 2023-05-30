@@ -22,10 +22,16 @@ namespace CustomUnits {
     }
     public void flush() {
       lock(this.m_fs) {
-        if (this.m_cache.Length > 0) {
-          this.m_fs.Write(this.m_cache.ToString());
-          this.m_fs.Flush();
-          this.m_cache.Clear();
+        lock (this.m_cache) {
+          try {
+            if (this.m_cache.Length > 0) {
+              this.m_fs.Write(this.m_cache.ToString());
+              this.m_fs.Flush();
+              this.m_cache.Clear();
+            }
+          } catch (Exception) {
+
+          }
         }
       }
     }

@@ -1769,7 +1769,7 @@ namespace CustomUnits {
     }
   }
 
-  internal static class FakeDatabase {
+  public static class FakeDatabase {
     private static HashSet<string> fakemechDefs = new HashSet<string>();
     private static HashSet<string> fakeChassisDef = new HashSet<string>();
     private static Dictionary<string, HashSet<string>> chassisMechsRegistry = new Dictionary<string, HashSet<string>>();

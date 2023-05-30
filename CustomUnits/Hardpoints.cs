@@ -21,6 +21,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
@@ -1480,9 +1481,29 @@ namespace CustomUnits {
         if(entry != null) {
           if (entry.IsAssetBundled) {
             if (__instance.AssetBundleManager.IsBundleLoaded(entry.AssetBundleName)) {
-              Log.Combat?.TWL(0, $"{id} not exists in {entry.AssetBundleName}. fallback", true);
-              __instance.logger.LogError($"{id} not exists in {entry.AssetBundleName}. fallback to empty object");
-              __result = true;
+              var bundle = __instance.AssetBundleManager.GetLoadedAssetBundle(entry.AssetBundleName);
+              if(bundle == null) {
+                Log.Combat?.TWL(0, $"{entry.AssetBundleName} reported as loaded but it is not", true);
+                __instance.logger.LogError($"{entry.AssetBundleName} reported as loaded but it is not");
+                return;
+              }
+              var names = bundle.GetAllAssetNames();
+              bool found = false;
+              foreach(var name in names) {
+                string bundle_id = Path.GetFileNameWithoutExtension(name);
+                if (String.Compare(id, bundle_id, true, CultureInfo.InvariantCulture) == 0) {
+                  //__instance.logger.LogError($"{id} found in {entry.AssetBundleName} as {name}");
+                  found = true;
+                  break;
+                }
+              }
+              if (found == false) {
+                Log.Combat?.TWL(0, $"{id} not exists in {entry.AssetBundleName}. fallback", true);
+                __instance.logger.LogError($"{id} not exists in {entry.AssetBundleName}. fallback to empty object");
+                __result = true;
+              } else {
+                __result = true;
+              }
             }
           }
         }

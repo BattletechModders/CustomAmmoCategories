@@ -873,10 +873,12 @@ namespace CustomUnits {
         }
       }
       if (deathMethod == DeathMethod.NOT_SET) {
-        switch (location) {
-          case ChassisLocations.Head:
+        if(location == info.MechVehicleCrewLocation) {
           deathMethod = DeathMethod.HeadDestruction;
           reason = "Location Destroyed: " + location.ToString();
+        } else
+        switch (location) {
+          case ChassisLocations.Head:
           break;
           case ChassisLocations.CenterTorso:
           deathMethod = DeathMethod.CenterTorsoDestruction;
@@ -896,10 +898,10 @@ namespace CustomUnits {
           break;
         }
       }
-      if (damageType == DamageType.AmmoExplosion && (location == ChassisLocations.CenterTorso || location == ChassisLocations.Head)) {
+      if (damageType == DamageType.AmmoExplosion && (location == ChassisLocations.CenterTorso || location == info.MechVehicleCrewLocation)) {
         deathMethod = DeathMethod.AmmoExplosion;
         reason = "Ammo Explosion: " + location.ToString();
-      } else if (damageType == DamageType.ComponentExplosion && (location == ChassisLocations.CenterTorso || location == ChassisLocations.Head)) {
+      } else if (damageType == DamageType.ComponentExplosion && (location == ChassisLocations.CenterTorso || location == info.MechVehicleCrewLocation)) {
         deathMethod = DeathMethod.ComponentExplosion;
         reason = "Component Explosion: " + location.ToString();
       }
