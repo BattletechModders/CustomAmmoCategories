@@ -702,10 +702,11 @@ namespace CustomUnits {
     private static Dictionary<int, Dictionary<ArmorLocation, int>> GetHitTableSquad_cache = new Dictionary<int, Dictionary<ArmorLocation, int>>();
     private static Dictionary<int, Dictionary<ArmorLocation, Dictionary<ArmorLocation, int>>> GetHitTableCluster_cache = new Dictionary<int, Dictionary<ArmorLocation, Dictionary<ArmorLocation, int>>>();
     private int location_index = -1;
+    private bool has_not_destroyed_locations = false;
     private HashSet<ArmorLocation> avaible_locations = new HashSet<ArmorLocation>();
     public int GetOperationalUnitsCount() {
       this.RecalculateAvaibleLocations();
-      return this.avaible_locations.Count;
+      return this.has_not_destroyed_locations?this.avaible_locations.Count:0;
     }
     public int GetMaxUnitsCount() {
       int result = 0;
@@ -720,16 +721,16 @@ namespace CustomUnits {
       if (this.location_index == -1) {
         this.location_index = 0;
         this.avaible_locations.Clear();
-        bool has_not_destroyed_locations = false;
+        this.has_not_destroyed_locations = false;
         foreach (ArmorLocation alocation in TrooperSquad.locations) {
           ChassisLocations location = MechStructureRules.GetChassisLocationFromArmorLocation(alocation);
           if (this.IsLocationDestroyed(location)) { continue; }
-          has_not_destroyed_locations = true; break;
+          this.has_not_destroyed_locations = true; break;
         }
         foreach (ArmorLocation alocation in TrooperSquad.locations) {
           ChassisLocations location = MechStructureRules.GetChassisLocationFromArmorLocation(alocation);
           LocationDef locDef = this.MechDef.Chassis.GetLocationDef(location);
-          Log.Combat?.W(1, "location:" + alocation + "()" + location + " max armor:" + locDef.MaxArmor + " structure:" + locDef.InternalStructure + " is destroyed:" + this.IsLocationDestroyed(location) + " has not destroyed:" + has_not_destroyed_locations);
+          Log.Combat?.WL(1, "location:" + alocation + "()" + location + " max armor:" + locDef.MaxArmor + " structure:" + locDef.InternalStructure + " is destroyed:" + this.IsLocationDestroyed(location) + " has not destroyed:" + has_not_destroyed_locations);
           if ((locDef.MaxArmor <= 0f) && (locDef.InternalStructure <= 1f)) { continue; }
           if (this.IsLocationDestroyed(location) && (has_not_destroyed_locations == true)) { continue; }
           this.location_index |= (int)alocation;

@@ -64,7 +64,7 @@ namespace CustAmmoCategories {
       foreach (MechComponentDef item in inventory) {
         AmmunitionBoxDef ammunitionBox = item as AmmunitionBoxDef;
         WeaponDef weapon = item as WeaponDef;
-        if(ammunitionBox != null) {
+        if((ammunitionBox != null)&&(ammunitionBox.Ammo != null)) {
           ExtAmmunitionDef extAmmo = ammunitionBox.Ammo.extDef();
           if (extAmmo.AutoRefill == AutoRefilType.Automatic) { continue; }
           if (extAmmo.AutoRefill == AutoRefilType.Manual) { continue; }
@@ -86,7 +86,7 @@ namespace CustAmmoCategories {
           if (item.DamageLevel == ComponentDamageLevel.NonFunctional) { continue; }
           AmmunitionBoxDef ammunitionBox = item.Def as AmmunitionBoxDef;
           WeaponDef weapon = item.Def as WeaponDef;
-          if (ammunitionBox != null) {
+          if ((ammunitionBox != null) && (ammunitionBox.Ammo != null)) {
             ExtAmmunitionDef extAmmo = ammunitionBox.Ammo.extDef();
             if (extAmmo.AutoRefill == AutoRefilType.Automatic) { continue; }
             if (extAmmo.AutoRefill == AutoRefilType.Manual) { continue; }
@@ -109,7 +109,7 @@ namespace CustAmmoCategories {
           if (item.DamageLevel == ComponentDamageLevel.NonFunctional) { continue; }
           AmmunitionBoxDef ammunitionBox = item.Def as AmmunitionBoxDef;
           WeaponDef weapon = item.Def as WeaponDef;
-          if (ammunitionBox != null) {
+          if ((ammunitionBox != null)&&(ammunitionBox.Ammo != null)) {
             ExtAmmunitionDef extAmmo = ammunitionBox.Ammo.extDef();
             if (extAmmo.AutoRefill == AutoRefilType.Automatic) { continue; }
             if (extAmmo.AutoRefill == AutoRefilType.Manual) { continue; }

@@ -68,49 +68,54 @@ namespace CustAmmoCategoriesPatches {
     }
     public static void Prefix(ref bool __runOriginal, Mech __instance, int stackID) {
       if (__runOriginal == false) { return; }
-      Log.HS.TWL(0,"Mech.ApplyHeatSinks round:"+ __instance.Combat.TurnDirector.CurrentRound + " phase: "+ __instance.Combat.TurnDirector.CurrentPhase + " " + __instance.DisplayName + ":" + __instance.GUID);
-      if (__instance.isHasHeat() == false) {
-        typeof(Mech).GetProperty("_heat", BindingFlags.Instance | BindingFlags.NonPublic).GetSetMethod(true).Invoke(__instance, new object[1] { (object)0 });
-        CustomAmmoCategoriesLog.Log.LogWrite(" new HeatValue = " + __instance.CurrentHeat + "\n");
-        typeof(Mech).GetProperty("HasAppliedHeatSinks", BindingFlags.Instance | BindingFlags.Public).GetSetMethod(true).Invoke(__instance, new object[1] { (object)false });
-        __instance.ReconcileHeat(stackID, __instance.GUID);
-      } else {
-        float mod = 1f;
-        if (__instance.occupiedDesignMask != null && !Mathf.Approximately(__instance.occupiedDesignMask.heatSinkMultiplier, 1f)) {
-          mod *= __instance.occupiedDesignMask.heatSinkMultiplier;
-        }
-        if (__instance.Combat.MapMetaData.biomeDesignMask != null && !Mathf.Approximately(__instance.Combat.MapMetaData.biomeDesignMask.heatSinkMultiplier, 1f)) {
-          mod *= __instance.Combat.MapMetaData.biomeDesignMask.heatSinkMultiplier;
-        }
-        mod *= __instance.Combat.Constants.Heat.GlobalHeatSinkMultiplier;
+      try {
+        Log.HS?.TWL(0, "Mech.ApplyHeatSinks round:" + __instance.Combat.TurnDirector.CurrentRound + " phase: " + __instance.Combat.TurnDirector.CurrentPhase + " " + __instance.DisplayName + ":" + __instance.GUID);
+        if (__instance.isHasHeat() == false) {
+          __instance._heat = 0;
+          Log.HS?.WL(1, "new HeatValue = " + __instance.CurrentHeat);
+          __instance.HasAppliedHeatSinks = false;
+          __instance.ReconcileHeat(stackID, __instance.GUID);
+        } else {
+          float mod = 1f;
+          if (__instance.occupiedDesignMask != null && !Mathf.Approximately(__instance.occupiedDesignMask.heatSinkMultiplier, 1f)) {
+            mod *= __instance.occupiedDesignMask.heatSinkMultiplier;
+          }
+          if (__instance.Combat.MapMetaData.biomeDesignMask != null && !Mathf.Approximately(__instance.Combat.MapMetaData.biomeDesignMask.heatSinkMultiplier, 1f)) {
+            mod *= __instance.Combat.MapMetaData.biomeDesignMask.heatSinkMultiplier;
+          }
+          mod *= __instance.Combat.Constants.Heat.GlobalHeatSinkMultiplier;
 
-        int heatsinkCapacity = Mathf.RoundToInt(((float)__instance.HeatSinkCapacity - (float)__instance.UsedHeatSinksCap()) * mod);
-        if (heatsinkCapacity < 0) { heatsinkCapacity = 0; }
-        int currentHeat = __instance.CurrentHeat - heatsinkCapacity;
-        float usedHeatSinkCap = __instance.UsedHeatSinksCap();
-        Log.HS.WL(1, "effective heatsinkCapacity = " + heatsinkCapacity + "\n");
-        Log.HS.WL(1, "usedHeatSinkCap = " + (usedHeatSinkCap * mod) + "\n");
-        Log.HS.WL(1, "heat to sink = " + __instance.CurrentHeat + "\n");
+          int heatsinkCapacity = Mathf.RoundToInt(((float)__instance.HeatSinkCapacity - (float)__instance.UsedHeatSinksCap()) * mod);
+          if (heatsinkCapacity < 0) { heatsinkCapacity = 0; }
+          int currentHeat = __instance.CurrentHeat - heatsinkCapacity;
+          float usedHeatSinkCap = __instance.UsedHeatSinksCap();
+          Log.HS.WL(1, "effective heatsinkCapacity = " + heatsinkCapacity);
+          Log.HS.WL(1, "usedHeatSinkCap = " + (usedHeatSinkCap * mod));
+          Log.HS.WL(1, "heat to sink = " + __instance.CurrentHeat);
 
-        if (currentHeat >= 0) {
-          __instance.AddSinkedHeat(heatsinkCapacity);
-          __instance.UsedHeatSinksCap(Mathf.RoundToInt((float)__instance.UsedHeatSinksCap() + (float)heatsinkCapacity / mod));
-        };
-        if (currentHeat < 0) {
-          __instance.AddSinkedHeat(__instance.CurrentHeat);
-          __instance.UsedHeatSinksCap(__instance.UsedHeatSinksCap() + Mathf.RoundToInt((float)__instance.CurrentHeat / mod));
-          currentHeat = 0;
+          if (currentHeat >= 0) {
+            __instance.AddSinkedHeat(heatsinkCapacity);
+            __instance.UsedHeatSinksCap(Mathf.RoundToInt((float)__instance.UsedHeatSinksCap() + (float)heatsinkCapacity / mod));
+          };
+          if (currentHeat < 0) {
+            __instance.AddSinkedHeat(__instance.CurrentHeat);
+            __instance.UsedHeatSinksCap(__instance.UsedHeatSinksCap() + Mathf.RoundToInt((float)__instance.CurrentHeat / mod));
+            currentHeat = 0;
+          }
+          Log.HS.WL(1, "result heat = " + currentHeat);
+          if (CustomAmmoCategories.Settings.ShowApplyHeatSinkMessage) {
+            Text message = new Text(CustomAmmoCategories.Settings.ApplyHeatSinkMessageTemplate, __instance.CurrentHeat, currentHeat, Mathf.RoundToInt(usedHeatSinkCap * mod), Mathf.RoundToInt((float)__instance.UsedHeatSinksCap() * mod), Mathf.RoundToInt((float)__instance.UsedHeatSinksCap() * mod));
+            __instance.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage((IStackSequence)new ShowActorInfoSequence((ICombatant)__instance, message, FloatieMessage.MessageNature.Buff, false)));
+          }
+          __instance._heat = currentHeat;
+          Log.HS?.WL(1,"new HeatValue = " + __instance.CurrentHeat);
+          __instance.HasAppliedHeatSinks = false;
+          __instance.ReconcileHeat(stackID, __instance.GUID);
+          Log.HS?.WL(1, "new usedHeatSinks = " + __instance.UsedHeatSinksCap());
         }
-        Log.HS.WL(1, "result heat = " + currentHeat + "\n");
-        if (CustomAmmoCategories.Settings.ShowApplyHeatSinkMessage) {
-          Text message = new Text(CustomAmmoCategories.Settings.ApplyHeatSinkMessageTemplate, __instance.CurrentHeat, currentHeat, Mathf.RoundToInt(usedHeatSinkCap * mod), Mathf.RoundToInt((float)__instance.UsedHeatSinksCap() * mod), Mathf.RoundToInt((float)__instance.UsedHeatSinksCap() * mod));
-          __instance.Combat.MessageCenter.PublishMessage((MessageCenterMessage)new AddSequenceToStackMessage((IStackSequence)new ShowActorInfoSequence((ICombatant)__instance, message, FloatieMessage.MessageNature.Buff, false)));
-        }
-        typeof(Mech).GetProperty("_heat", BindingFlags.Instance | BindingFlags.NonPublic).GetSetMethod(true).Invoke(__instance, new object[1] { (object)currentHeat });
-        CustomAmmoCategoriesLog.Log.LogWrite(" new HeatValue = " + __instance.CurrentHeat + "\n");
-        typeof(Mech).GetProperty("HasAppliedHeatSinks", BindingFlags.Instance | BindingFlags.Public).GetSetMethod(true).Invoke(__instance, new object[1] { (object)false });
-        __instance.ReconcileHeat(stackID, __instance.GUID);
-        Log.HS.WL(1, "new usedHeatSinks = " + __instance.UsedHeatSinksCap() + "\n");
+      }catch(Exception e) {
+        Log.Combat?.TWL(0, e.ToString(), true);
+        CombatGameState.gameInfoLogger.LogException(e);
       }
       __runOriginal = false;
     }
@@ -151,7 +156,7 @@ namespace CustAmmoCategoriesPatches {
     public static void ClearUsedHeatSinkReseted(this Mech mech) { heatSinksReseted.Remove(mech); }
     public static bool isUsedHeatSinkReseted(this Mech mech) { return heatSinksReseted.Contains(mech); }
     public static void Prefix(AbstractActor __instance, string sourceID, int stackItemID) {
-      Log.HS.TWL(0, "AbstractActor.OnActivationBegin round:" + __instance.Combat.TurnDirector.CurrentRound + " phase: " + __instance.Combat.TurnDirector.CurrentPhase + " " + __instance.DisplayName + ":" + __instance.GUID + " HasBegunActivation:" + __instance.HasBegunActivation);
+      Log.HS?.TWL(0, "AbstractActor.OnActivationBegin round:" + __instance.Combat.TurnDirector.CurrentRound + " phase: " + __instance.Combat.TurnDirector.CurrentPhase + " " + __instance.DisplayName + ":" + __instance.GUID + " HasBegunActivation:" + __instance.HasBegunActivation);
       if(__instance.HasBegunActivation == false) {
         Mech mech = __instance as Mech;
         if (mech != null) {
@@ -210,8 +215,9 @@ namespace CustAmmoCategoriesPatches {
       __runOriginal = false;
       if (__instance.isHasHeat() == false) { return; }
       if (Mech.heatLogger.IsLogEnabled)
-        Mech.heatLogger.Log(string.Format("Mech {0} gains {1} heat. Reason: {2}", __instance.LogDisplayName, amt, reason));
       __instance.AddExtHeatCustom(amt);
+      __instance._tempHeat += amt;
+      Mech.heatLogger.Log($"Mech {__instance.MechDef.ChassisID} gains {amt} heat. Reason: {reason}. Temp heat:{__instance._tempHeat} ExternalHeat:{__instance.GetExtHeatCustom()}");
     }
   }
   [HarmonyPatch(typeof(Mech))]
@@ -222,6 +228,8 @@ namespace CustAmmoCategoriesPatches {
     public static void Prefix(ref bool __runOriginal, Mech __instance) {
       if (__instance.isHasHeat() == false) { return; }
       int extHeat = __instance.GetExtHeatCustom();
+      __instance._tempHeat -= extHeat;
+      Log.HS?.TWL(0, $"Mech.AddTempHeat {__instance.PilotableActorDef.ChassisID} external heat:{extHeat} internal heat:{__instance._tempHeat}");
       if (extHeat == 0) { return; }
       if(CustomAmmoCategories.Settings.ExternalHeatLimit > 0) {
         int projectedHeat = extHeat + __instance._heat - __instance.AdjustedHeatsinkCapacity;
@@ -229,7 +237,7 @@ namespace CustAmmoCategoriesPatches {
           extHeat = CustomAmmoCategories.Settings.ExternalHeatLimit - (__instance._heat - __instance.AdjustedHeatsinkCapacity);
         }
         if (extHeat < 0) { extHeat = 0; }
-        Log.Combat?.TWL(0,$"Limit external heat {__instance.PilotableActorDef.ChassisID} extheat:{extHeat}");
+        Log.HS?.TWL(0,$"Limit external heat {__instance.PilotableActorDef.ChassisID} extheat:{extHeat}");
       }
       __instance._heat += extHeat;
     }

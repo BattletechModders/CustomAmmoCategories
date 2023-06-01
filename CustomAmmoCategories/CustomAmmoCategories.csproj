@@ -180,6 +180,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AbstractActorInitEffectStats.cs" />
+    <Compile Include="ActorStatCache.cs" />
     <Compile Include="AdditionalImpactVFX.cs" />
     <Compile Include="AdvCritProc.cs" />
     <Compile Include="AdvWeaponHitInfo.cs" />

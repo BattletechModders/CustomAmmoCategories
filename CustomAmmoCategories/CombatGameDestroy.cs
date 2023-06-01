@@ -69,6 +69,7 @@ namespace CustomAmmoCategoriesPatches {
         AIDistanceFromNearesEnemyCache.Clear();
         Mech_AddExternalHeat.Clear();
         CombatHUD_Init.Clear();
+        UnitUnaffectionsActorStats.Clear();
       } catch (Exception e) {
         Log.Combat?.TWL(0, e.ToString());
         AttackDirector.logger.LogException(e);

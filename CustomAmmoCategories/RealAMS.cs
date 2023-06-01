@@ -485,12 +485,6 @@ namespace CustAmmoCategories {
               ++amsrec.ShootsCount;
               int AMSShootIdx = amsrec.weapon.AMS().AddHitPosition(pos);
               AMSShoot amsShoot = null;
-              if ((missile.interceptInfo.Intercepted)&&(amsrec.InterceptedTrace > 0)) {
-                Log.Combat?.WL(4, "shoot intercepted. rest trace " + amsrec.InterceptedTrace);
-                amsShoot = new AMSShoot(AMSShootIdx, missile.interceptInfo.InterceptedT, amsrec.weapon);
-                --amsrec.InterceptedTrace;
-                goto add_ams_shoot;
-              }
               float interceptRoll = Random.Range(0f, 1f);
               float effectiveHitChance = (amsrec.AMSHitChance + missile.interceptInfo.AMSHitChance) * missile.interceptInfo.AMSHitChanceMult;
               Log.Combat?.WL(4, $"roll:{interceptRoll} chance:{effectiveHitChance} AMS.HitChance:{amsrec.AMSHitChance} Missile.HitChance:{missile.interceptInfo.AMSHitChance} Missile.Mod:{missile.interceptInfo.AMSHitChanceMult}");
@@ -518,12 +512,12 @@ namespace CustAmmoCategories {
                 Log.Combat?.WL(3, "still flying " + t);
                 amsShoot = new AMSShoot(AMSShootIdx, t, amsrec.weapon);
               }
-            add_ams_shoot:
+            //add_ams_shoot:
               if (amsShoot != null) {
                 Log.Combat?.WL(0, "Add AMShoot " + missile.parent.weaponIdx + " " + missile.hitIndex + " t:" + amsShoot.t);
                 missile.interceptInfo.AMSShoots.Add(amsShoot);
               }
-              //if (missile.interceptInfo.Intercepted) { break; }
+              if (missile.interceptInfo.Intercepted) { break; }
             }
             if (AMSInCharge == false) { Log.Combat?.WL(2, "no AMS or all of them reach shooting limit"); break; }
             if (missile.interceptInfo.Intercepted) {

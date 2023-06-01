@@ -307,22 +307,20 @@ namespace CustomUnits {
       {
         AttackDirection.FromFront
       }, (Vector3[])null, (string[])null, (int[])null);
-      ArmorLocation crewArmor = ArmorLocation.Head;
-      ChassisLocations crewLocation = ChassisLocations.Head;
-      UnitCustomInfo info = this.GetCustomInfo();
-      if (info != null) {
-        crewArmor = (ArmorLocation)info.MechVehicleCrewLocation;
-        crewLocation = info.MechVehicleCrewLocation;
-      }
+      if (this.NukeCrewLocationOnEject() == false) { return; }
+      var crewArmors = this.CrewLocationArmor();
+      ChassisLocations crewLocation = this.CrewLocationChassis();
       try {
-        string statName = this.GetStringForArmorLocation(crewArmor);
-        if (string.IsNullOrEmpty(statName) == false) {
-          Statistic stat = this.statCollection.GetStatistic(statName);
-          if (stat != null) {
-            this.statCollection.ModifyStat<float>(sourceID, stackItemID, statName, StatCollection.StatOperation.Set, 0.0f);
+        foreach (var crewArmor in crewArmors) {
+          string armorStatName = this.GetStringForArmorLocation(crewArmor);
+          if (string.IsNullOrEmpty(armorStatName) == false) {
+            Statistic stat = this.statCollection.GetStatistic(armorStatName);
+            if (stat != null) {
+              this.statCollection.ModifyStat<float>(sourceID, stackItemID, armorStatName, StatCollection.StatOperation.Set, 0.0f);
+            }
           }
         }
-        statName = this.GetStringForStructureLocation(crewLocation);
+        string statName = this.GetStringForStructureLocation(crewLocation);
         if (string.IsNullOrEmpty(statName) == false) {
           Statistic stat = this.statCollection.GetStatistic(statName);
           if (stat != null) {
@@ -511,12 +509,12 @@ namespace CustomUnits {
     public virtual void _ApplyArmorStatDamage(ArmorLocation location, float damage, WeaponHitInfo hitInfo) {
       this.statCollection.ModifyStat<float>(hitInfo.attackerId, hitInfo.stackItemUID, this.GetStringForArmorLocation(location), StatCollection.StatOperation.Float_Subtract, damage);
       this.OnArmorDamaged((int)location, hitInfo, damage);
-      var specialLocations = new HashSet<ArmorLocation>() { ArmorLocation.Head };
+      var specialLocations = this.CrewLocationArmor();
       UnitCustomInfo info = this.GetCustomInfo();
       if ((info != null) && (info.customStructure.is_empty)) { info.customStructure = CustomStructureDef.Search(this.DefaultStructureDef); }
-      if ((info != null) && (info.customStructure.is_empty == false)) { specialLocations = new HashSet<ArmorLocation>() { info.customStructure.ClusterSpecialLocation }; }
+      //if ((info != null) && (info.customStructure.is_empty == false)) { specialLocations = new HashSet<ArmorLocation>() { info.customStructure.ClusterSpecialLocation }; }
       if (specialLocations.Contains(location)) {
-        this.pilot.SetNeedsInjury(InjuryReason.HeadHit);
+        if(this.InjurePilotOnCrewLocationHit()) this.pilot.SetNeedsInjury(InjuryReason.HeadHit);
       }
     }
     public static bool InitGameRepStatic(Mech __instance, Transform parentTransform) {

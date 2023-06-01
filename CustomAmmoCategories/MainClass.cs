@@ -901,6 +901,9 @@ namespace CustAmmoCategories {
     public static readonly string FakeVehicleActorStat = "CUFakeVehicle";
     public static readonly string TrooperSquadActorStat = "CUTrooperSquad";
     public static readonly string NavalUnitActorStat = "CUNavalUnit";
+    public static readonly string CrewLocationActorStat = "CUCrewLocation";
+    public static readonly string InjurePilotOnCrewLocationHitActorStat = "CUInjurePilotOnCrewLocationHit";
+    public static readonly string NukeCrewLocationOnEjectActorStat = "CUNukeCrewLocationOnEject";
     public static readonly string PartialMovementSpentActorStat = "CUPartialMovementSpent";
     public static readonly string LastMoveDistanceActorStat = "CULastMoveDistance";
     public static float LastMoveDistance(this ICombatant unit) {
@@ -1089,6 +1092,61 @@ namespace CustAmmoCategories {
     public static bool AllowRotateWhileJump(this ICombatant unit) {
       if (unit.StatCollection.ContainsStatistic(AllowRotateWhileJumpActorStat) == false) { return false; };
       return unit.StatCollection.GetStatistic(AllowRotateWhileJumpActorStat).Value<bool>();
+    }
+    public static bool InjurePilotOnCrewLocationHit(this ICombatant unit) {
+      if (unit.StatCollection.ContainsStatistic(InjurePilotOnCrewLocationHitActorStat) == false) { return true; };
+      return unit.StatCollection.GetStatistic(InjurePilotOnCrewLocationHitActorStat).Value<bool>();
+    }
+    public static bool NukeCrewLocationOnEject(this ICombatant unit) {
+      if (unit.StatCollection.ContainsStatistic(NukeCrewLocationOnEjectActorStat) == false) { return true; };
+      return unit.StatCollection.GetStatistic(NukeCrewLocationOnEjectActorStat).Value<bool>();
+    }
+    public class CrewLocationRecord {
+      private ChassisLocations Chassis = ChassisLocations.Head;
+      public HashSet<ArmorLocation> armor { get; set; } = new HashSet<ArmorLocation>();
+      public ChassisLocations chassis { get { return this.Chassis; } }
+      public void Set(string location) {
+        if(Enum.TryParse<ChassisLocations>(location, out this.Chassis) == false) {
+          if(Enum.TryParse<VehicleChassisLocations>(location, out var vchassis)) {
+            Chassis = vchassis.toFakeChassis();
+          } else {
+            this.Chassis = ChassisLocations.Head;
+          }
+        }
+        switch (this.Chassis) {
+          case ChassisLocations.LeftTorso: this.armor = new HashSet<ArmorLocation>() { ArmorLocation.LeftTorso, ArmorLocation.LeftTorsoRear }; break;
+          case ChassisLocations.RightTorso: this.armor = new HashSet<ArmorLocation>() { ArmorLocation.RightTorso, ArmorLocation.RightTorsoRear }; break;
+          case ChassisLocations.CenterTorso: this.armor = new HashSet<ArmorLocation>() { ArmorLocation.CenterTorso, ArmorLocation.CenterTorsoRear }; break;
+          default: this.armor = new HashSet<ArmorLocation>() { (ArmorLocation)this.Chassis }; break;
+        }
+      }
+    }
+    private static Dictionary<StatCollection, CrewLocationRecord> crewLocation_cache = new Dictionary<StatCollection, CrewLocationRecord>();
+    public static void Clear() {
+      crewLocation_cache.Clear();
+    }
+    public static void ResetCrewLocationCache(StatCollection unit) {
+      crewLocation_cache.Remove(unit);
+    }
+    public static ChassisLocations CrewLocationChassis(this ICombatant unit) {
+      if(crewLocation_cache.TryGetValue(unit.StatCollection, out var cache)) {
+        return cache.chassis;
+      }
+      string val = unit.StatCollection.GetOrCreateStatisic<string>(CrewLocationActorStat, "Head").Value<string>();
+      cache = new CrewLocationRecord();
+      cache.Set(val);
+      crewLocation_cache.Add(unit.StatCollection, cache);
+      return cache.chassis;
+    }
+    public static HashSet<ArmorLocation> CrewLocationArmor(this ICombatant unit) {
+      if (crewLocation_cache.TryGetValue(unit.StatCollection, out var cache)) {
+        return cache.armor;
+      }
+      string val = unit.StatCollection.GetOrCreateStatisic<string>(CrewLocationActorStat, "Head").Value<string>();
+      cache = new CrewLocationRecord();
+      cache.Set(val);
+      crewLocation_cache.Add(unit.StatCollection, cache);
+      return cache.armor;
     }
   }
   [SelfDocumentedClass("Settings", "AoEModifiers", "AoEModifiers")]

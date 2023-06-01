@@ -44,6 +44,7 @@ namespace CustAmmoCategories {
     public static void Postfix(StatCollection __instance, Statistic stat, int eventUID, bool skipLogging) {
       try {
         if (stat == null) { return; }
+        StatCollection_RemoveHistoryEvent_Crew.Postfix(__instance, stat, eventUID, skipLogging);
         if (stat.name != CustomAmmoCategories.BlockedStatisticName) { return; }
         Weapon weapon = __instance.getWeapon();
         if (weapon == null) { return; }

@@ -873,8 +873,8 @@ namespace CustomUnits {
         }
       }
       if (deathMethod == DeathMethod.NOT_SET) {
-        if(location == info.MechVehicleCrewLocation) {
-          deathMethod = info.MechVehicleCrewLocation == ChassisLocations.Head?DeathMethod.HeadDestruction:DeathMethod.CockpitDestroyed;
+        if(location == instance.CrewLocationChassis()) {
+          deathMethod = instance.CrewLocationChassis() == ChassisLocations.Head?DeathMethod.HeadDestruction:DeathMethod.CockpitDestroyed;
           reason = "Location Destroyed: " + location.ToString();
         } else
         switch (location) {
@@ -898,10 +898,10 @@ namespace CustomUnits {
           break;
         }
       }
-      if (damageType == DamageType.AmmoExplosion && (location == ChassisLocations.CenterTorso || location == info.MechVehicleCrewLocation)) {
+      if (damageType == DamageType.AmmoExplosion && (location == ChassisLocations.CenterTorso || location == instance.CrewLocationChassis())) {
         deathMethod = DeathMethod.AmmoExplosion;
         reason = "Ammo Explosion: " + location.ToString();
-      } else if (damageType == DamageType.ComponentExplosion && (location == ChassisLocations.CenterTorso || location == info.MechVehicleCrewLocation)) {
+      } else if (damageType == DamageType.ComponentExplosion && (location == ChassisLocations.CenterTorso || location == instance.CrewLocationChassis())) {
         deathMethod = DeathMethod.ComponentExplosion;
         reason = "Component Explosion: " + location.ToString();
       }
@@ -1121,8 +1121,8 @@ namespace CustomUnits {
         if (__instance.FakeVehicle() == false) { return; }
         UnitCustomInfo info = __instance.GetCustomInfo();
         if (info == null) { return; }
-        if (info.FakeVehicle == false) { return; }
-        if (info.MechVehicleCrewLocation != location) { return; }
+        if (__instance.CrewLocationChassis() != location) { return; }
+        if (__instance.InjurePilotOnCrewLocationHit() == false) { return; }
         __instance.pilot.SetNeedsInjury(InjuryReason.HeadHit);
         LocationDamageLevel locationDamageLevel = __instance.GetLocationDamageLevel(location);
         if (locationDamageLevel == __state.Value || locationDamageLevel != LocationDamageLevel.Destroyed) { return; }

@@ -463,32 +463,8 @@ namespace CustomUnits {
     public VehicleMovementType FakeVehicleMovementType { get; set; } = VehicleMovementType.Tracked;
     [Key(38)]
     public DesignMaskMoveCostInfo defaultMoveCost { get; set; } = new DesignMaskMoveCostInfo();
-    [IgnoreMember, JsonIgnore]
-    public ChassisLocations MechVehicleCrewLocation {
-      get {
-        return f_FakeVehicleCrewLocation;
-      }
-      set {
-        f_FakeVehicleCrewLocation = value;
-      }
-    }
-    [IgnoreMember,JsonIgnore]
-    private ChassisLocations f_FakeVehicleCrewLocation = ChassisLocations.Head;
     [Key(39)]
-    public string CrewLocation {
-      get {
-        return f_FakeVehicleCrewLocation.ToString();
-      }
-      set {
-        if(Enum.TryParse<ChassisLocations>(value, out ChassisLocations mloc)) {
-          f_FakeVehicleCrewLocation = mloc;
-        } else if (Enum.TryParse<VehicleChassisLocations>(value, out VehicleChassisLocations vloc)) {
-          f_FakeVehicleCrewLocation = vloc.toFakeChassis();
-        } else {
-          throw new Exception(value + " is not valid mech or vehicle location");
-        }
-      }
-    }
+    public string CrewLocation { get; set; } = "Head";
     [Key(40)]
     public bool TurretArmorReadout { get; set; } = false;
     [Key(41)]
@@ -511,6 +487,10 @@ namespace CustomUnits {
         f_customStructure = value;
       }
     }
+    [Key(45)]
+    public bool InjurePilotOnCrewLocationHit { get; set; } = true;
+    [Key(46)]
+    public bool NukeCrewLocationOnEject { get; set; } = true;
     public UnitCustomInfo() {
       //FlyingHeight = 0f;
       //Naval = false;
@@ -1459,6 +1439,27 @@ namespace CustomUnits {
       }
       if (__instance.StatCollection.ContainsStatistic(UnitUnaffectionsActorStats.NavalUnitActorStat) == false) {
         __instance.StatCollection.AddStatistic<bool>(UnitUnaffectionsActorStats.NavalUnitActorStat, (info.Naval));
+      }
+      if (info.SquadInfo.Troopers <= 1) {
+        if (__instance.StatCollection.ContainsStatistic(UnitUnaffectionsActorStats.CrewLocationActorStat) == false) {
+          __instance.StatCollection.AddStatistic<string>(UnitUnaffectionsActorStats.CrewLocationActorStat, (info.CrewLocation));
+        }
+        if (__instance.StatCollection.ContainsStatistic(UnitUnaffectionsActorStats.InjurePilotOnCrewLocationHitActorStat) == false) {
+          __instance.StatCollection.AddStatistic<bool>(UnitUnaffectionsActorStats.InjurePilotOnCrewLocationHitActorStat, (info.InjurePilotOnCrewLocationHit));
+        }
+        if (__instance.StatCollection.ContainsStatistic(UnitUnaffectionsActorStats.NukeCrewLocationOnEjectActorStat) == false) {
+          __instance.StatCollection.AddStatistic<bool>(UnitUnaffectionsActorStats.NukeCrewLocationOnEjectActorStat, (info.NukeCrewLocationOnEject));
+        }
+      } else {
+        if (__instance.StatCollection.ContainsStatistic(UnitUnaffectionsActorStats.CrewLocationActorStat) == false) {
+          __instance.StatCollection.AddStatistic<string>(UnitUnaffectionsActorStats.CrewLocationActorStat, "None");
+        }
+        if (__instance.StatCollection.ContainsStatistic(UnitUnaffectionsActorStats.InjurePilotOnCrewLocationHitActorStat) == false) {
+          __instance.StatCollection.AddStatistic<bool>(UnitUnaffectionsActorStats.InjurePilotOnCrewLocationHitActorStat, false);
+        }
+        if (__instance.StatCollection.ContainsStatistic(UnitUnaffectionsActorStats.NukeCrewLocationOnEjectActorStat) == false) {
+          __instance.StatCollection.AddStatistic<bool>(UnitUnaffectionsActorStats.NukeCrewLocationOnEjectActorStat, false);
+        }
       }
       Log.Combat?.WL(1, "UnaffectedDesignMasks " + __instance.UnaffectedDesignMasks());
       Log.Combat?.WL(1, "UnaffectedPathing " + __instance.UnaffectedPathing());
