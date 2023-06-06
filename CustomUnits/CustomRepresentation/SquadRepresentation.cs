@@ -818,9 +818,9 @@ namespace CustomUnits {
         LocationDamageLevel dmgLvl = this.parentMech.GetLocationDamageLevel(unit.Key);
         if ((dmgLvl == LocationDamageLevel.Destroyed) || (dmgLvl == LocationDamageLevel.NonFunctional)) { continue; }
         Vector3 squadpos = unit.Value.transform.position;
-        MoveContext squadContext = unit.Value.GetMoveContext(ref squadpos);
+        MoveContext squadContext = unit.Value.GetMoveContext(ref squadpos, true);
         squadpos.y = unit.Value.transform.parent.position.y + (squadpos.y - this.transform.position.y);
-        Log.Combat?.WL(1,$"{unit.Value.transform.position} -> {squadpos} raycast:{squadContext.mainRayHit.HasValue}");
+        Log.Combat?.WL(1,$"{unit.Value.transform.position} -> {squadpos} raycast:{(squadContext.mainRayHit.HasValue==false?"no raycast": squadContext.mainRayHit.Value.point.ToString())}");
         unit.Value.transform.position = squadpos;
         unit.Value.UpdateRotation(squadContext, unit.Value.transform, forward, deltaT);
       }

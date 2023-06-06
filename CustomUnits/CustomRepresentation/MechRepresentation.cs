@@ -2117,9 +2117,9 @@ namespace CustomUnits {
     public virtual MoveContext createMoveContext() {
       return new MoveContext();
     }
-    public virtual MoveContext GetMoveContext(ref Vector3 worldPos) {
+    public virtual MoveContext GetMoveContext(ref Vector3 worldPos, bool forceraycast) {
       MoveContext raycast = this.createMoveContext();
-      if (this.parentActor.UnaffectedPathing() || (this.parentCombatant.FlyingHeight() > Core.Epsilon)) {
+      if (this.parentActor.UnaffectedPathing() || (this.parentCombatant.FlyingHeight() > Core.Epsilon) || forceraycast) {
         raycast.mainRayHit = this.GetTerrainRayHit(worldPos, true);
       }
       if (raycast.mainRayHit.HasValue) {
@@ -2131,7 +2131,7 @@ namespace CustomUnits {
       return raycast;
     }
     public virtual object UpdateSpline(Vector3 worldPos, ActorMovementSequence sequence, Vector3 Forward, float t, ICombatant meleeTarget) {
-      MoveContext raycast = this.GetMoveContext(ref worldPos);
+      MoveContext raycast = this.GetMoveContext(ref worldPos, false);
       this.thisTransform.position = worldPos;
       this.UpdateSpline(sequence, Forward, t, meleeTarget);
       return raycast;

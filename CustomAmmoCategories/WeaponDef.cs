@@ -735,6 +735,20 @@ namespace CustAmmoCategories {
     public float AMSHitChanceMult { get; set; } = 1f;
     [Key(137)]
     public int AMSInterceptedTrace { get; set; } = -1;
+    [Key(138)]
+    public List<string> RestrictedAmmo { get; set; } = new List<string>();
+    [IgnoreMember, JsonIgnore]
+    private HashSet<string> f_restrictedAmmo = null;
+    [IgnoreMember, JsonIgnore]
+    public HashSet<string> restrictedAmmo {
+      get {
+        if (f_restrictedAmmo == null) {
+          f_restrictedAmmo = new HashSet<string>();
+          foreach (string v in RestrictedAmmo) { f_restrictedAmmo.Add(v); }
+        }
+        return f_restrictedAmmo;
+      }
+    }
     public ExtWeaponDef() { }
   }
 }

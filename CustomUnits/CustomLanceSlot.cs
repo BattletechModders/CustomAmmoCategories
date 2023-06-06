@@ -192,6 +192,54 @@ namespace CustomUnits {
       return;
     }
   }
+  [HarmonyPatch(typeof(LanceConfiguratorPanel))]
+  [HarmonyPatch("LoadOverrideLance")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { typeof(LanceConfiguration) })]
+  public static class LanceConfiguratorPanel_LoadOverrideLance {
+    public static void Prefix(ref bool __runOriginal, LanceConfiguratorPanel __instance, LanceConfiguration lance) {
+      if (!__runOriginal) { return; }
+      try {
+        __instance.mechwarriorLoadNotification.SetActive(true);
+        __instance.mechwarriorLoadNotification.SetActive(false);
+        Log.M?.TWL(0, "LanceConfiguratorPanel.LoadOverrideLance");
+        SpawnableUnit[] includeEmptySlots = lance.GetLanceUnitsIncludeEmptySlots();
+        for (int index = 0; index < includeEmptySlots.Length; ++index) {
+          Log.M?.WL(1, $"slot[{index}] Unit.GUID:{(includeEmptySlots[index].Unit==null?"null": (includeEmptySlots[index].Unit.GUID))} UnitId:{includeEmptySlots[index].UnitId}");
+          SpawnableUnit unit = includeEmptySlots[index];
+          if (unit.unitType != UnitType.UNDEFINED && index < __instance.loadoutSlots.Length) {
+            LanceLoadoutSlot loadoutSlot = __instance.loadoutSlots[index];
+            IMechLabDraggableItem labDraggableItem = null;
+            if (includeEmptySlots[index].Unit != null) 
+              labDraggableItem = __instance.mechListWidget.GetMechDefByGUID(includeEmptySlots[index].Unit.GUID);
+            if (labDraggableItem == null) {
+              Log.M?.WL(2, "unit is not found by GUID. Searching by UnitId");
+              labDraggableItem = __instance.mechListWidget.GetInventoryItem(includeEmptySlots[index].UnitId);
+            } else {
+              Log.M?.WL(2, "unit is found by GUID.");
+            }
+            if (labDraggableItem == null && unit.Unit != null) {
+              Log.M?.WL(2, "new lance item");
+              labDraggableItem = __instance.mechListWidget.CreateLanceItem(new MechDef(unit.Unit, __instance.Sim.GenerateSimGameUID()));
+            }
+            IMechLabDraggableItem pilot = __instance.pilotListWidget.GetPilot(unit.PilotId);
+            if (pilot == null && unit.Pilot != null) {
+              __instance.pilotListWidget.AddPilot(new Pilot((PilotDef)null, string.Format("Override_{0}", (object)unit.PilotId), false), null, false);
+              pilot = __instance.pilotListWidget.GetPilot(unit.PilotId);
+              __instance.pilotListWidget.RemovePilot(__instance.availablePilots.Find((Predicate<Pilot>)(x => x.Description.Id == unit.PilotId)));
+            }
+            IMechLabDraggableItem forcedMech = labDraggableItem;
+            IMechLabDraggableItem forcedPilot = pilot;
+            loadoutSlot.SetLockedData(forcedMech, forcedPilot, true);
+          }
+        }
+        __runOriginal = false;
+      } catch (Exception e) {
+        Log.E?.TWL(0, e.ToString(), true);
+      }
+    }
+  }
+
   [HarmonyPatch(typeof(LanceLoadoutSlot))]
   [HarmonyPatch("OnAddItem")]
   [HarmonyPatch(MethodType.Normal)]

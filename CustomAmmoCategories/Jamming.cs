@@ -207,6 +207,7 @@ namespace CustAmmoCategories {
       if (weapon.isAMS() && weapon.isCantAMSFire()) { result += "USED AS WEAPON;"; }
       if ((weapon.isAMS() == false) && weapon.isCantNormalFire()) { result += "USED AS AMS;"; };
       if (weapon.info().isCurrentModeAvailable() == false) { return "MODE IS LOCKED;"; };
+      if (weapon.info().isCurrentAmmoRestricted()) { return "AMMO IS RESTRICTED;"; };
       if (weapon.mode().Disabeld) { return "MODE IS DISABLED;"; };
       if (weapon.isBlocked()) { return "BLOCKED;"; };
       if (weapon.isWeaponBlockedStat()) { return "BLOCKED;"; };
@@ -223,6 +224,7 @@ namespace CustAmmoCategories {
       if (__instance.isAMS() && __instance.isCantAMSFire()) { __result = false; };
       if ((__instance.isAMS() == false) && __instance.isCantNormalFire()) { __result = false; };
       if (__instance.info().isCurrentModeAvailable() == false) { __result = false; };
+      if (__instance.info().isCurrentAmmoRestricted()) { __result = false; };
       if (__instance.mode().Disabeld) { __result = false; };
       if (__instance.isBlocked()) { __result = false; };
       if (__instance.isWeaponBlockedStat()) { __result = false; };

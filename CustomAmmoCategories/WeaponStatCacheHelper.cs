@@ -237,7 +237,7 @@ namespace CustAmmoCategories {
       }
       if (this.ammo.AmmoCategory != this.effectiveAmmoCategory) {
         if (this.isBoxesAssigned) {
-          this.ammo = this.findBestAmmo(this.effectiveAmmoCategory);
+          this.ammo = this.findBestAmmo(mode);
           Statistic ammoId = weapon.StatCollection.GetStatistic(CustomAmmoCategories.AmmoIdStatName);
           if (ammoId == null) {
             ammoId = weapon.StatCollection.AddStatistic(CustomAmmoCategories.AmmoIdStatName, this.ammo.Id);
@@ -302,6 +302,12 @@ namespace CustAmmoCategories {
     public bool isCurrentModeAvailable() {
       return isModeAvailble(this.mode);
     }
+    public bool isAmmoRestricted(ExtAmmunitionDef ammo) {
+      return this.extDef.restrictedAmmo.Contains(ammo.Id) || this.mode.restrictedAmmo.Contains(ammo.Id);
+    }
+    public bool isCurrentAmmoRestricted() {
+      return isAmmoRestricted(this.ammo);
+    }
     public void DisableMode(string id) {
       this.restrictedModes.Add(id);
       if (this.restrictedModes.Contains(id)) {
@@ -328,7 +334,9 @@ namespace CustAmmoCategories {
       }
       return result;
     }
-    public List<ExtAmmunitionDef> getAvaibleAmmo(CustomAmmoCategory category) {
+    public List<ExtAmmunitionDef> getAvaibleAmmo(WeaponMode mode) {
+      CustomAmmoCategory category = this.extDef.AmmoCategory;
+      if (mode.AmmoCategory != null) { category = mode.AmmoCategory; };
       Log.Combat?.TWL(0, "getAvaibleAmmo " + weapon.defId + " category:" + category.Id+ " ammoBoxes:" + weapon.ammoBoxes.Count);
       HashSet<ExtAmmunitionDef> result = new HashSet<ExtAmmunitionDef>();
       for (int index = 0; index < weapon.ammoBoxes.Count; ++index) {
@@ -336,12 +344,16 @@ namespace CustAmmoCategories {
         if (weapon.ammoBoxes[index].CurrentAmmo <= 0) { continue; };
         ExtAmmunitionDef ammo = CustomAmmoCategories.findExtAmmo(weapon.ammoBoxes[index].ammoDef.Description.Id);
         if (ammo.AmmoCategory.Id != category.Id) { continue; };
+        if (this.extDef.restrictedAmmo.Contains(ammo.Id)) { continue; }
+        if (mode.restrictedAmmo.Contains(ammo.Id)) { continue; }
         result.Add(ammo);
       }
       ExtWeaponDef def = this.extDef;
       foreach (var intAmmo in def.InternalAmmo) {
         ExtAmmunitionDef ammo = CustomAmmoCategories.findExtAmmo(intAmmo.Key);
         if (ammo.AmmoCategory.Id != category.Id) { continue; };
+        if (this.extDef.restrictedAmmo.Contains(ammo.Id)) { continue; }
+        if (mode.restrictedAmmo.Contains(ammo.Id)) { continue; }
         result.Add(ammo);
       }
       if (result.Count == 0) { result.Add(category.defaultAmmo()); }
@@ -350,9 +362,11 @@ namespace CustAmmoCategories {
       }
       return result.ToList();
     }
-    public ExtAmmunitionDef findBestAmmo(CustomAmmoCategory effectiveCategory) {
+    public ExtAmmunitionDef findBestAmmo(WeaponMode mode) {
+      CustomAmmoCategory effectiveCategory = this.extDef.AmmoCategory;
+      if (mode.AmmoCategory != null) { effectiveCategory = mode.AmmoCategory; };
       if (this.isBoxesAssigned == false) { return CustomAmmoCategories.DefaultAmmo; }
-      List<ExtAmmunitionDef> avaibleAmmo = this.getAvaibleAmmo(effectiveCategory);
+      List<ExtAmmunitionDef> avaibleAmmo = this.getAvaibleAmmo(mode);
       if (avaibleAmmo.Count > 0) { this.NoValidAmmo = false; return avaibleAmmo[0]; }
       NoValidAmmo = true;
       return effectiveCategory.defaultAmmo();
@@ -463,7 +477,7 @@ namespace CustAmmoCategories {
             this.ammo = CustomAmmoCategories.DefaultAmmo;
             this.NoValidAmmo = false;
           } else {
-            this.ammo = this.findBestAmmo(effectiveCategory);
+            this.ammo = this.findBestAmmo(mode);
           }
         } else {
           this.NoValidAmmo = false;
@@ -483,7 +497,7 @@ namespace CustAmmoCategories {
       CustomAmmoCategory ammoCategory = extDef.AmmoCategory;
       if (this.mode.AmmoCategory != null) { ammoCategory = this.mode.AmmoCategory; }
       if (ammoCategory.BaseCategory.Is_NotSet) { return false; }
-      List<ExtAmmunitionDef> ammos = this.getAvaibleAmmo(ammoCategory);
+      List<ExtAmmunitionDef> ammos = this.getAvaibleAmmo(mode);
       return ammos.Count > 1;
     }
 

@@ -131,12 +131,12 @@ namespace CustomAmmoCategoriesLog {
     }
     public void TW(int initiation, string line, bool isCritical = false) {
       string init = new string(' ', initiation);
-      line = "[" + DateTime.Now.ToString("HH:mm:ss.fff") + "]" + init + line;
+      line = "[" + DateTime.UtcNow.ToString("HH:mm:ss.fff") + "]" + init + line;
       this.W(line, isCritical);
     }
     public void TWL(int initiation, string line, bool isCritical = false) {
       string init = new string(' ', initiation);
-      line = "[" + DateTime.Now.ToString("HH:mm:ss.fff") + "]" + init + line;
+      line = "[" + DateTime.UtcNow.ToString("HH:mm:ss.fff") + "]" + init + line;
       this.WL(line, isCritical);
     }
   }

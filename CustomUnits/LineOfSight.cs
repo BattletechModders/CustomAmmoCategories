@@ -13,7 +13,7 @@ namespace CustomUnits {
   public static class LineOfSight_GetLineOfFireUncached {
     public static readonly string IN_LineOfSight_FLAG = "IN_LineOfSight";
     public static void Prefix(ref bool __runOriginal, LineOfSight __instance, AbstractActor source, Vector3 sourcePosition, ICombatant target, Vector3 targetPosition, Quaternion targetRotation, ref Vector3 collisionWorldPos, ref LineOfFireLevel __result) {
-      Log.Combat?.TWL(0, $"LineOfSight.GetLineOfFireUncached prefix original:{__runOriginal}");
+      //Log.Combat?.TWL(0, $"LineOfSight.GetLineOfFireUncached prefix original:{__runOriginal}");
       try {
         Thread.CurrentThread.SetFlag(IN_LineOfSight_FLAG);
       }catch(Exception e) {
@@ -21,7 +21,7 @@ namespace CustomUnits {
       }
     }
     public static void Postfix(bool __runOriginal, LineOfSight __instance, AbstractActor source, Vector3 sourcePosition, ICombatant target, Vector3 targetPosition, Quaternion targetRotation, ref Vector3 collisionWorldPos, ref LineOfFireLevel __result) {
-      Log.Combat?.TWL(0, $"LineOfSight.GetLineOfFireUncached postfix original:{__runOriginal}");
+      //Log.Combat?.TWL(0, $"LineOfSight.GetLineOfFireUncached postfix original:{__runOriginal}");
       try {
         Thread.CurrentThread.ClearFlag(IN_LineOfSight_FLAG);
       } catch (Exception e) {

@@ -375,6 +375,7 @@ namespace CustAmmoCategoriesPatches {
               DynamicTreesHelper.burnedTreePrototype = newPrototype;
               Log.Combat?.WL(1, "initing burned success");
               foreach (QuadTreePrototype prototype in quadTreePrototypes) {
+                if (prototype == null) { continue; }
                 if (DynamicTreesHelper.burnedTreePrototypes.ContainsKey(prototype) == false) { 
                   DynamicTreesHelper.burnedTreePrototypes.Add(prototype, newPrototype);
                 } else {

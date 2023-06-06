@@ -116,7 +116,7 @@ namespace CustAmmoCategories {
       CustomAmmoCategory effectiveAmmoCategory = info.extDef.AmmoCategory;
       if (weaponMode.AmmoCategory != null) { effectiveAmmoCategory = weaponMode.AmmoCategory; };
       if (effectiveAmmoCategory.BaseCategory.Is_NotSet) { result.Add(""); return result; };
-      List<ExtAmmunitionDef> allAmmo = info.getAvaibleAmmo(effectiveAmmoCategory);
+      List<ExtAmmunitionDef> allAmmo = info.getAvaibleAmmo(weaponMode);
       foreach(ExtAmmunitionDef ammo in allAmmo) {
         result.Add(ammo.Id);
       }
