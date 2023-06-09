@@ -652,6 +652,11 @@ namespace CustomUnits {
         altRep.ApplyScale(sizeMultiplier);
       }
     }
+    public override void ForcePositionToTerrain(Vector3 finalPos) {
+      foreach (var altRep in this.Alternates) {
+        altRep.ForcePositionToTerrain(finalPos);
+      }
+    }
   }
   public partial class CustomMechRepresentation {
     protected MechFlyHeightController FHeightController = null;
@@ -661,6 +666,7 @@ namespace CustomUnits {
     public virtual bool RotateBody { get; set; } = false;
     public virtual bool SkipLateUpdate { get; set; } = false;
     public virtual bool HasOwnVisuals { get { return true; } }
+    public virtual bool ControlOwnHeight { get; set; } = true;
     protected HashSet<string> f_presistantAudioStart = new HashSet<string>();
     protected HashSet<string> f_presistantAudioStop = new HashSet<string>();
     protected HashSet<string> f_moveAudioStart = new HashSet<string>();
@@ -687,6 +693,21 @@ namespace CustomUnits {
         Log.Combat?.WL(1, collider.gameObject.name);
         this.selfColliders.Add(collider);
       }
+    }
+    public virtual void SetVisualHeight(float height) {
+      this.HeightController?.ForceHeight(height);
+    }
+    public virtual void PendVisualHeight(float height) {
+      this.HeightController.PendingHeight = (height);
+    }
+    public virtual float GetVisualHeight() {
+      return this.HeightController.CurrentHeight;
+    }
+    public virtual void RegisterHeightChangeCompleteEvent(Action e) {
+      this.HeightController.heightChangeCompleteAction.Add(e);
+    }
+    public virtual void ClearHeightChangeCompleteEvent() {
+      this.HeightController.heightChangeCompleteAction.Clear();
     }
     public virtual void RegisterRenderersMainHeraldry(GameObject src) {
       Log.Combat?.TW(0, "CustomMechRepresentation.RegisterRenderersMainHeraldry: " + this.gameObject.name + " " + src.name);

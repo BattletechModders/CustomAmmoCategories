@@ -301,6 +301,11 @@ namespace CustomUnits {
     public CombatGameState _Combat { get { return this.Combat; } set { this.Combat = value; } }
     public CustomMechCustomization defaultMechCustomization { get; set; } = null;
     public List<CustomMechCustomization> mechCustomizations { get; set; } = new List<CustomMechCustomization>();
+    public virtual void CreateHeightController() {
+      MechFlyHeightController heightController = this.gameObject.GetComponent<MechFlyHeightController>();
+      if (heightController == null) { heightController = this.gameObject.AddComponent<MechFlyHeightController>(); };
+      this.FHeightController = heightController;
+    }
     public virtual bool _allowRandomIdles { get { return this.allowRandomIdles; }
       set {
         if (this.customRep != null) { this.customRep.StartRandomIdle = value; }

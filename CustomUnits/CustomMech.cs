@@ -217,7 +217,7 @@ namespace CustomUnits {
           this.FlyingHeight(0f);
           UpdateLOSHeight(this.FlyingHeight());
           if (this.custGameRep != null) {
-            this.custGameRep.HeightController?.ForceHeight(0f);
+            this.custGameRep.SetVisualHeight(0f);
             if (this.custGameRep.customRep != null) {
               this.custGameRep.customRep.InBattle = false;
             }
@@ -540,7 +540,7 @@ namespace CustomUnits {
         foreach(MonoBehaviour component in this.GameRep.gameObject.GetComponentsInChildren<MonoBehaviour>(true)) {
           if (component is IOnRepresentationInit onRepInit) { onRepInit.Init(this.GameRep.gameObject); }
         }
-        this.custGameRep.HeightController.ForceHeight(this.FlyingHeight());
+        this.custGameRep.SetVisualHeight(this.FlyingHeight());
       }catch(Exception e) {
         Log.Combat?.TWL(0,e.ToString(),true);
         AbstractActor.initLogger.LogException(e);
@@ -1039,11 +1039,11 @@ namespace CustomUnits {
       }
       public void OnAnimationCompleete() {
         this.OnLand?.Invoke();
-        this.parent.custGameRep.HeightController.heightChangeCompleteAction.Add(this.OnRestoreInt);
-        this.parent.custGameRep.HeightController.PendingHeight = this.height;
+        this.parent.custGameRep.RegisterHeightChangeCompleteEvent(this.OnRestoreInt);
+        this.parent.custGameRep.PendVisualHeight(this.height);
       }
       public void OnLandInt() {
-        this.parent.custGameRep.HeightController.heightChangeCompleteAction.Clear();
+        this.parent.custGameRep.ClearHeightChangeCompleteEvent();
         if(this.parent.custGameRep.customRep != null) {
           this.parent.custGameRep.customRep.DropOffAnimation(this.OnAnimationCompleete);
         } else {
@@ -1055,14 +1055,14 @@ namespace CustomUnits {
       }
     }
     public virtual void DropOffAnimation(Action OnLand = null, Action OnRestoreHeight = null) {
-      float current_height = this.custGameRep.HeightController.CurrentHeight;
+      float current_height = this.custGameRep.GetVisualHeight();
       if (current_height < Core.Epsilon) {
         OnLand?.Invoke(); OnRestoreHeight?.Invoke();
         return;
       }
-      this.custGameRep.HeightController.heightChangeCompleteAction.Clear();
-      this.custGameRep.HeightController.heightChangeCompleteAction.Add(new DropOffDelegate(this, current_height, OnLand, OnRestoreHeight).OnLandInt);
-      this.custGameRep.HeightController.PendingHeight = 0f;
+      this.custGameRep.ClearHeightChangeCompleteEvent();
+      this.custGameRep.RegisterHeightChangeCompleteEvent(new DropOffDelegate(this, current_height, OnLand, OnRestoreHeight).OnLandInt);
+      this.custGameRep.PendVisualHeight(0f);
     }
   }
   public static class AttachExampleHelper {

@@ -1661,9 +1661,7 @@ namespace CustomUnits {
       if (customRepresentation == null) { customRepresentation = result.AddComponent<CustomRepresentation>(); }
       customRepresentation.Init(custMechRep, custRepDef);
       custMechRep.customRep = customRepresentation;
-      MechFlyHeightController heightController = result.GetComponent<MechFlyHeightController>();
-      if (heightController == null) { heightController = result.AddComponent<MechFlyHeightController>(); };
-      custMechRep.HeightController = heightController;
+      custMechRep.CreateHeightController();
       //custMechRep.Test();
       return result;
     }

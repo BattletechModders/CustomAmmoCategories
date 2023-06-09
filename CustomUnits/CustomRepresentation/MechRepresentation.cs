@@ -2161,66 +2161,114 @@ namespace CustomUnits {
         finalPos = raycast.Value.point;
       }
     }
-    public virtual void CompleteJump(MechJumpSequence sequence) {
+    public virtual void ForcePositionToTerrain(Vector3 finalPos) {
       bool aliginToTerrain = false;
       RaycastHit? raycast = new RaycastHit?();
-      Log.Combat?.TWL(0,$"MechRepresentation.CompleteJump {this.parentActor.PilotableActorDef.ChassisID} finalPos:{sequence.FinalPos}");
+      Log.Combat?.TWL(0, $"MechRepresentation.ForcePositionToTerrain {this.parentActor.PilotableActorDef.ChassisID}:{this.thisTransform.name} finalPos:{finalPos}");
       bool vehicleMovement = this.parentCombatant.NoMoveAnimation() || this.parentCombatant.FakeVehicle();
       if (vehicleMovement && this.parentCombatant.FlyingHeight() < Core.Settings.MaxHoveringHeightWithWorkingJets) {
         aliginToTerrain = true;
       }
-      if (this.parentCombatant.NavalUnit() || (this.parentCombatant.FlyingHeight() > Core.Settings.MaxHoveringHeightWithWorkingJets)) {
-        raycast = this.GetTerrainRayHit(sequence.FinalPos, true);
+      if (this.parentCombatant.NavalUnit() || (this.parentCombatant.FlyingHeight() > Core.Epsilon)) {
+        raycast = this.GetTerrainRayHit(finalPos, true);
+      } else {
+        raycast = this.GetTerrainRayHit(finalPos, false);
       }
       if (this.parentCombatant.NavalUnit()) {
         AudioSwitch_surface_type currentSurfaceType = this.rootParentRepresentation._CurrentSurfaceType;
         if ((currentSurfaceType == AudioSwitch_surface_type.water_deep) || (currentSurfaceType == AudioSwitch_surface_type.water_shallow)) {
           aliginToTerrain = false;
-          this.AliginToWater(raycast, 100f);
+          this.HeightController.ForceHeight(raycast.Value.point.y - finalPos.y - Core.Settings.MaxHoveringHeightWithWorkingJets / 2f);
         }
       }
       if (raycast.HasValue) {
         Log.Combat?.WL(1, $"raycast.y {raycast.Value.point.y}");
-        if (raycast.Value.point.y > sequence.FinalPos.y) {
-          this.thisTransform.position = raycast.Value.point;
-        } else {
-          this.thisTransform.position = sequence.FinalPos;
-        }
-        //this.thisTransform.rotation = Quaternion.LookRotation(sequence.FinalHeading, Vector3.up);
-      } else {
-        this.thisTransform.position = sequence.FinalPos;
-        //this.thisTransform.rotation = Quaternion.LookRotation(finalHeading, Vector3.up);
-      }
-      if (aliginToTerrain) {
-        this.AliginToTerrain(raycast, 100f, false);
-      }
-      Log.Combat?.WL(1, $"j_Root {this.j_Root.position}");
-    }
-    public virtual void CompleteMove(Vector3 finalPos, Vector3 finalHeading, ActorMovementSequence sequence, bool playedMelee, ICombatant meleeTarget) {
-      this.CompleteMove(sequence, playedMelee, meleeTarget);
-      RaycastHit? raycast = new RaycastHit?();
-      bool aliginToTerrain = false;
-      bool vehicleMovement = this.parentCombatant.NoMoveAnimation() || this.parentCombatant.FakeVehicle();
-      if (vehicleMovement && this.parentCombatant.FlyingHeight() < Core.Settings.MaxHoveringHeightWithWorkingJets) {
-        aliginToTerrain = true;
-      }
-      if (this.parentCombatant.NavalUnit() || (this.parentCombatant.FlyingHeight() > Core.Settings.MaxHoveringHeightWithWorkingJets)) {
-        raycast = this.GetTerrainRayHit(finalPos, true);
-      }
-      if (raycast.HasValue) {
         if (raycast.Value.point.y > finalPos.y) {
           this.thisTransform.position = raycast.Value.point;
         } else {
           this.thisTransform.position = finalPos;
         }
-        this.thisTransform.rotation = Quaternion.LookRotation(finalHeading, Vector3.up);
+        //this.thisTransform.rotation = Quaternion.LookRotation(sequence.FinalHeading, Vector3.up);
       } else {
+        finalPos.y = this.parentCombatant.Combat.MapMetaData.GetLerpedHeightAt(finalPos);
         this.thisTransform.position = finalPos;
-        this.thisTransform.rotation = Quaternion.LookRotation(finalHeading, Vector3.up);
+        //this.thisTransform.rotation = Quaternion.LookRotation(finalHeading, Vector3.up);
       }
       if (aliginToTerrain) {
-        this.AliginToTerrain(raycast, 100f, false);
+        if (raycast.HasValue == false) { raycast = this.GetTerrainRayHit(finalPos, this.parentCombatant.FlyingHeight() > Core.Epsilon); }
+        Vector3 normal = raycast.Value.normal;
+        Quaternion to = Quaternion.FromToRotation(this.thisTransform.up, normal) * Quaternion.Euler(0.0f, this.thisTransform.rotation.eulerAngles.y, 0.0f);
+        this.j_Root.rotation = Quaternion.RotateTowards(this.thisTransform.rotation, to, 18000f);
+        //this.AliginToTerrain(raycast, 100f, false);
+      } else {
+        this.j_Root.localRotation = Quaternion.identity;
       }
+      Log.Combat?.WL(1, $"j_Root position:{this.j_Root.position} rotation:{this.j_Root.localRotation.eulerAngles}");
+
+    }
+    public virtual void CompleteJump(MechJumpSequence sequence) {
+      //bool aliginToTerrain = false;
+      //RaycastHit? raycast = new RaycastHit?();
+      Log.Combat?.TWL(0,$"MechRepresentation.CompleteJump {this.parentActor.PilotableActorDef.ChassisID} finalPos:{sequence.FinalPos}");
+      //bool vehicleMovement = this.parentCombatant.NoMoveAnimation() || this.parentCombatant.FakeVehicle();
+      //if (vehicleMovement && this.parentCombatant.FlyingHeight() < Core.Settings.MaxHoveringHeightWithWorkingJets) {
+      //  aliginToTerrain = true;
+      //}
+      //if (this.parentCombatant.NavalUnit() || (this.parentCombatant.FlyingHeight() > Core.Settings.MaxHoveringHeightWithWorkingJets)) {
+      //  raycast = this.GetTerrainRayHit(sequence.FinalPos, true);
+      //}
+      //if (this.parentCombatant.NavalUnit()) {
+      //  AudioSwitch_surface_type currentSurfaceType = this.rootParentRepresentation._CurrentSurfaceType;
+      //  if ((currentSurfaceType == AudioSwitch_surface_type.water_deep) || (currentSurfaceType == AudioSwitch_surface_type.water_shallow)) {
+      //    aliginToTerrain = false;
+      //    this.AliginToWater(raycast, 100f);
+      //  }
+      //}
+      //if (raycast.HasValue) {
+      //  Log.Combat?.WL(1, $"raycast.y {raycast.Value.point.y}");
+      //  if (raycast.Value.point.y > sequence.FinalPos.y) {
+      //    this.thisTransform.position = raycast.Value.point;
+      //  } else {
+      //    this.thisTransform.position = sequence.FinalPos;
+      //  }
+      //  //this.thisTransform.rotation = Quaternion.LookRotation(sequence.FinalHeading, Vector3.up);
+      //} else {
+      //  this.thisTransform.position = sequence.FinalPos;
+      //  //this.thisTransform.rotation = Quaternion.LookRotation(finalHeading, Vector3.up);
+      //}
+      //if (aliginToTerrain) {
+      //  this.AliginToTerrain(raycast, 100f, false);
+      //}
+      this.ForcePositionToTerrain(sequence.FinalPos);
+      //Log.Combat?.WL(1, $"j_Root {this.j_Root.position}");
+    }
+    public virtual void CompleteMove(Vector3 finalPos, Vector3 finalHeading, ActorMovementSequence sequence, bool playedMelee, ICombatant meleeTarget) {
+      this.CompleteMove(sequence, playedMelee, meleeTarget);
+      this.thisTransform.rotation = Quaternion.LookRotation(finalHeading, Vector3.up);
+      this.ForcePositionToTerrain(finalPos);
+      //RaycastHit? raycast = new RaycastHit?();
+      //bool aliginToTerrain = false;
+      //bool vehicleMovement = this.parentCombatant.NoMoveAnimation() || this.parentCombatant.FakeVehicle();
+      //if (vehicleMovement && this.parentCombatant.FlyingHeight() < Core.Settings.MaxHoveringHeightWithWorkingJets) {
+      //  aliginToTerrain = true;
+      //}
+      //if (this.parentCombatant.NavalUnit() || (this.parentCombatant.FlyingHeight() > Core.Settings.MaxHoveringHeightWithWorkingJets)) {
+      //  raycast = this.GetTerrainRayHit(finalPos, true);
+      //}
+      //if (raycast.HasValue) {
+      //  if (raycast.Value.point.y > finalPos.y) {
+      //    this.thisTransform.position = raycast.Value.point;
+      //  } else {
+      //    this.thisTransform.position = finalPos;
+      //  }
+      //  this.thisTransform.rotation = Quaternion.LookRotation(finalHeading, Vector3.up);
+      //} else {
+      //  this.thisTransform.position = finalPos;
+      //  this.thisTransform.rotation = Quaternion.LookRotation(finalHeading, Vector3.up);
+      //}
+      //if (aliginToTerrain) {
+      //  this.AliginToTerrain(raycast, 100f, false);
+      //}
     }
     public virtual void CompleteMove(ActorMovementSequence sequence, bool playedMelee, ICombatant meleeTarget) {
       this.lastStateWasVisible = (this.rootParentRepresentation.BlipDisplayed == false);
