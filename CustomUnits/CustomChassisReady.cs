@@ -368,6 +368,11 @@ namespace CustomUnits {
           Log.Combat?.WL(2, componentRef.ComponentDefID+":"+ componentRef.MountedLocation);
         }
 
+        var lab_inventory = BTPerfFixRawInventory();
+        if(lab_inventory == null) {
+          GenericPopup popup = GenericPopupBuilder.Create("ERROR", "BattletechPerformanceFix.MechLabFix.MechLabFixPublic.RawInventory is null.\nBlame CptMoore and his changes to BattletechPerformanceFix for it.").IsNestedPopupWithBuiltInFader().SetAlwaysOnTop().Render();
+          return;
+        }
         foreach (MechComponentRef componentRef in components) {
           //Log.WL(1, "searching:" + componentRef.Def.Description.Id);
           MechLabLocationWidget locationWidget = this.getLocationWidget(componentRef.MountedLocation);
@@ -375,7 +380,7 @@ namespace CustomUnits {
           //Log.WL(1, "location widget:" +(locationWidget == null?"null":locationWidget.gameObject.name));
           ListElementController_BASE_NotListView foundItem = null;
           //Log.WL(1, "searching:" + this.inventory.Count);
-          foreach (ListElementController_BASE_NotListView invItem in BTPerfFixRawInventory()) {
+          foreach (ListElementController_BASE_NotListView invItem in lab_inventory) {
             if (invItem.componentDef == null) { /*Log.WL(2, invItem.GetType().Name + " has no componentDef");*/ continue; }
             //Log.WL(2, invItem.componentDef.Description.Id + ":"+ invItem.quantity);
             if (invItem.quantity <= 0) { continue; }

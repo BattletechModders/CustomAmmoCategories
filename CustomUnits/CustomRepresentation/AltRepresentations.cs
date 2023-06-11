@@ -867,7 +867,7 @@ namespace CustomUnits {
     }
     public virtual void Twist(float angle) {
       this.currentTwistAngle = angle;
-      Log.Combat?.TWL(0, "CustomMechRepresentation.Twist " + angle + " HasTwistAnimators:" + (this.customRep == null ? "null" : this.customRep.HasTwistAnimators.ToString()));
+      //Log.Combat?.TWL(0, "CustomMechRepresentation.Twist " + angle + " HasTwistAnimators:" + (this.customRep == null ? "null" : this.customRep.HasTwistAnimators.ToString()));
       if (this.customRep != null) {
         if (this.customRep.HasTwistAnimators) {
           this.customRep.Twist(angle);

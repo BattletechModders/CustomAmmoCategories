@@ -778,6 +778,9 @@ namespace CustomUnits {
           AbstractActor.attackLogger.Log((object)string.Format("SEQ:{0}: WEAP:{1} HITLOC: {2} ({3}) Passing {4} damage through to {5}", (object)hitInfo.attackSequenceId, (object)hitInfo.attackWeaponIndex, (object)originalHitLoc, (object)fromArmorLocation.ToString(), (object)num1, (object)passthroughLocation.ToString()));
         if (AbstractActor.damageLogger.IsLogEnabled)
           AbstractActor.damageLogger.Log((object)string.Format("==== {0} Armor Destroyed: {1} Damage applied to {2}", (object)fromArmorLocation.ToString(), (object)num1, (object)passthroughLocation.ToString()));
+        if(passthroughLocation == ArmorLocation.None || passthroughLocation == ArmorLocation.Invalid) {
+          return false;
+        }
         return this.DamageLocation_private(originalHitLoc, hitInfo, passthroughLocation, weapon, num1, num2, hitIndex, impactQuality, damageType);
       }catch(Exception e) {
         Log.Combat?.TWL(0,e.ToString(),true);

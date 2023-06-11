@@ -704,16 +704,16 @@ namespace CustomDeploy{
   public static class MechStatisticsRules_CalculateCBillValues {
     public static bool Prefix(MechDef mechDef, ref float currentValue,ref float maxValue) {
       try {
-        Log.TWL(0, "MechStatisticsRules.CalculateCBillValue "+ (mechDef.chassisID));
+        //Log.TWL(0, "MechStatisticsRules.CalculateCBillValue "+ (mechDef.chassisID));
         if (mechDef.DataManager == null) {
-          Log.WL(1, "no data manager. Fixing. UnityGameInstance.BattleTechGame.DataManager: "+(UnityGameInstance.BattleTechGame.DataManager == null?"null":"not null"));
+          //Log.WL(1, "no data manager. Fixing. UnityGameInstance.BattleTechGame.DataManager: "+(UnityGameInstance.BattleTechGame.DataManager == null?"null":"not null"));
           mechDef.DataManager = UnityGameInstance.BattleTechGame.DataManager;
           mechDef.Refresh();
         }
         if(mechDef.Chassis == null) {
-          Log.WL(1, "no chassis manager. Fixing "+mechDef.ChassisID);
+          //Log.WL(1, "no chassis manager. Fixing "+mechDef.ChassisID);
           if (mechDef.DataManager.ChassisDefs.Exists(mechDef.ChassisID)) {
-            Log.WL(2, "found in data manager");
+            //Log.WL(2, "found in data manager");
             mechDef.Chassis = mechDef.DataManager.ChassisDefs.Get(mechDef.ChassisID);
           }
         }
@@ -741,6 +741,7 @@ namespace CustomDeploy{
     public static void Postfix(LoadRequest __instance, BattleTechResourceType resourceType, string resourceId, bool __result) {
       try {
         if (__result == true) { return; }
+        if (resourceId == "pilotDef_InheritLance") { return; }
         Log.TWL(0, "LoadRequest.TryCreateAndAddLoadRequest failed " + resourceId+" "+resourceType);
         VersionManifestEntry versionManifestEntry = __instance.dataManager.ResourceLocator.EntryByID(resourceId, resourceType);
         if (versionManifestEntry == null) {

@@ -149,25 +149,30 @@ namespace CustomAmmoCategoriesPrivate{
       try {
 
         foreach (Assembly assembly in AppDomain.CurrentDomain.GetAssemblies()) {
-          if (assembly.FullName.StartsWith("ModTek, Version=")) {
-            var ModDefsDatabase = assembly.GetType("ModTek.Features.Manifest.Mods.ModDefsDatabase");
-            var FilePaths = assembly.GetType("ModTek.Misc.FilePaths");
+          if (assembly.FullName.StartsWith("ModTek.Common, Version=")) {
+            var FilePaths = assembly.GetType("ModTek.Common.Globals.CommonPaths");
             if (FilePaths != null) {
               Log.P?.WL(1, $"ModTek.Misc.FilePaths found");
-              TempModTekDirectory = AccessTools.Field(FilePaths, "TempModTekDirectory");
+              TempModTekDirectory = AccessTools.Field(FilePaths, "DotModTekDirectory");
             }
             if (TempModTekDirectory != null) {
-              Log.P?.WL(1, $"ModTek.Misc.FilePaths.TempModTekDirectory {TempModTekDirectory}");
+              Log.P?.WL(1, $"ModTek.Common.Globals.CommonPaths.DotModTekDirectory {TempModTekDirectory}", true);
             } else {
+              Log.P?.WL(1, $"ModTek.Common.Globals.CommonPaths.DotModTekDirectory not found", true);
               continue;
             }
+          }
+          if (assembly.FullName.StartsWith("ModTek, Version=")) { 
+            var ModDefsDatabase = assembly.GetType("ModTek.Features.Manifest.Mods.ModDefsDatabase");
             if (ModDefsDatabase != null) {
-              Log.P?.WL(1, $"ModTek.Features.Manifest.Mods.ModDefsDatabase found");
+              Log.P?.WL(1, $"ModTek.Features.Manifest.Mods.ModDefsDatabase found",true);
               var PrintHarmonySummary_original = AccessTools.Method(ModDefsDatabase, "FinishedLoadingMods");
               if(PrintHarmonySummary_original != null) {
-                Log.P?.WL(1, $"ModTek.Features.Manifest.Mods.ModDefsDatabase.FinishedLoadingMods found");
+                Log.P?.WL(1, $"ModTek.Features.Manifest.Mods.ModDefsDatabase.FinishedLoadingMods found",true);
                 harmony.Patch(PrintHarmonySummary_original, null, new HarmonyMethod(AccessTools.Method(typeof(Core), nameof(PrintHarmonySummary_postfix))), null, null, null);
               }
+            } else {
+              Log.P?.WL(1, $"ModTek.Features.Manifest.Mods.ModDefsDatabase not found",true);
             }
             break;
           }

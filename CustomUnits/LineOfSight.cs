@@ -38,27 +38,27 @@ namespace CustomUnits {
   public static class CombatGameState_AllActors {
     public static void Postfix(ref List<AbstractActor> __result) {
       if (Thread.CurrentThread.isFlagSet(LineOfSight_GetLineOfFireUncached.IN_LineOfSight_FLAG) == false) { return; }
-      Log.Combat?.W(0, $"LineOfSight.GetLineOfFireUncached.AllActors {__result.Count}->");
+      //Log.Combat?.W(0, $"LineOfSight.GetLineOfFireUncached.AllActors {__result.Count}->");
       for (int t = 0; t < __result.Count;) {
         AbstractActor unit = __result[t];
         if (unit.IsDead) { __result.RemoveAt(t); continue; }
         if (unit.FlyingHeight() > Core.Settings.MaxHoveringHeightWithWorkingJets) { __result.RemoveAt(t); continue; }
         ++t;
       }
-      Log.Combat?.WL(0,$"{__result.Count}");
+      //Log.Combat?.WL(0,$"{__result.Count}");
     }
   }
   [HarmonyPatch(typeof(CombatGameState), "GetAllLivingActors")]
   public static class CombatGameState_GetAllLivingActors {
     public static void Postfix(ref List<AbstractActor> __result) {
       if (Thread.CurrentThread.isFlagSet(LineOfSight_GetLineOfFireUncached.IN_LineOfSight_FLAG) == false) { return; }
-      Log.Combat?.W(0, $"LineOfSight.GetLineOfFireUncached.GetAllLivingActors {__result.Count}->");
+      //Log.Combat?.W(0, $"LineOfSight.GetLineOfFireUncached.GetAllLivingActors {__result.Count}->");
       for (int t = 0; t < __result.Count;) {
         AbstractActor unit = __result[t];
         if (unit.FlyingHeight() > Core.Settings.MaxHoveringHeightWithWorkingJets) { __result.RemoveAt(t); continue; }
         ++t;
       }
-      Log.Combat?.WL(0, $"{__result.Count}");
+      //Log.Combat?.WL(0, $"{__result.Count}");
     }
   }
 }

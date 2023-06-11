@@ -742,6 +742,7 @@ namespace CustAmmoCategories {
     [IgnoreMember, JsonIgnore]
     public HashSet<string> restrictedAmmo {
       get {
+        if (this.RestrictedAmmo == null) { this.RestrictedAmmo = new List<string>(); }
         if (f_restrictedAmmo == null) {
           f_restrictedAmmo = new HashSet<string>();
           foreach (string v in RestrictedAmmo) { f_restrictedAmmo.Add(v); }

@@ -11,20 +11,34 @@ namespace CustomDeploy {
   [HarmonyPatch("CheckForFinished")]
   [HarmonyPatch(new Type[] { })]
   public static class FollowActorCameraSequence_CheckForFinished {
+    private static Vector3 prev_CurrentPosition = Vector3.zero;
+    private static int Sequence_hash = -1;
     public static bool Prefix(FollowActorCameraSequence __instance) {
-      if (__instance.timeSinceActorStoppedMoving >= __instance.Combat.Constants.CameraConstants.FollowCamDelayTime)
+      Vector3 curpos = __instance.followTarget.CurrentPosition;
+      curpos.y = 0f;
+      if (Sequence_hash != __instance.GetHashCode()) {
+        prev_CurrentPosition = curpos;
+        Sequence_hash = __instance.GetHashCode();
+      }
+      if (__instance.timeSinceActorStoppedMoving >= __instance.Combat.Constants.CameraConstants.FollowCamDelayTime) {
         return false;
+      }        
       if(__instance.followTarget.MovingToPosition == null) {
         goto advice_time;
       }
-      Vector3 curpos = __instance.followTarget.CurrentPosition;
-      curpos.y = 0f;
       Vector3 trgpos = __instance.followTarget.MovingToPosition.Position;
       trgpos.y = 0f;
       float dist = Vector3.Distance(curpos, trgpos);
-      //Log.TWL(0, $"FollowActorCameraSequence.CheckForFinished cur:{curpos} trg:{trgpos} dist:{dist}");
+      float movedist = Vector3.Distance(curpos, prev_CurrentPosition);
+      prev_CurrentPosition = curpos;
       if (dist < 0.1f) {
         goto advice_time;
+      }
+      if (dist < 0.5f) {
+        Log.TWL(0, $"FollowActorCameraSequence.CheckForFinished {__instance.followTarget.PilotableActorDef.ChassisID} cur:{curpos} trg:{trgpos} dist delta:{dist} move dist:{movedist}");
+        if (movedist < 0.001f) {
+          goto advice_time;
+        }
       }
       __instance.timeSinceActorStoppedMoving = 0.0f;
       goto check_time;
