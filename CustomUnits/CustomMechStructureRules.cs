@@ -431,10 +431,13 @@ namespace CustomUnits {
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { typeof(WeaponHitInfo), typeof(int), typeof(ChassisLocations), typeof(Vector3), typeof(DamageType) })]
   public static class Mech_NukeStructureLocation {
-    public static void Prefix(Mech __instance, WeaponHitInfo hitInfo, int hitLoc, ChassisLocations location, Vector3 attackDirection, DamageType damageType) {
+    public static void Prefix(bool __runOriginal, Mech __instance, WeaponHitInfo hitInfo, int hitLoc, ChassisLocations location, Vector3 attackDirection, DamageType damageType) {
       try {
         Log.Combat?.TWL(0, "Mech.NukeStructureLocation prefix " + __instance.Description.Id + " threadid:" + Thread.CurrentThread.ManagedThreadId);
         Thread.CurrentThread.pushActor(__instance);
+        if (__instance is CustomMech custMech) { __runOriginal = false;
+          custMech._NukeStructureLocation(hitInfo, hitLoc, location, attackDirection, damageType);
+        }
       } catch (Exception e) {
         Log.Combat?.TWL(0, e.ToString(), true);
         AbstractActor.damageLogger.LogException(e);
@@ -947,7 +950,7 @@ namespace CustomUnits {
   [HarmonyPatch(new Type[] { typeof(AttackDirection) })]
   public static class Mech_EvaluateExpectedArmorFromAttackDirection {
     public static void Prefix(ref bool __runOriginal, Mech __instance, AttackDirection attackDirection, ref float __result) {
-      Log.Combat?.TWL(0, "Mech.EvaluateExpectedArmorFromAttackDirection " + __instance.DisplayName + " attackDirection:" + attackDirection);
+      //Log.Combat?.TWL(0, "Mech.EvaluateExpectedArmorFromAttackDirection " + __instance.DisplayName + " attackDirection:" + attackDirection);
       Thread.CurrentThread.pushActor(__instance);
       if (!__runOriginal) { return; }
       try {

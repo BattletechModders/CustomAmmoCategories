@@ -436,6 +436,35 @@ namespace CustomUnits {
         AbstractActor.initLogger.LogException(e);
       }
     }
+    public virtual void _NukeStructureLocation(WeaponHitInfo hitInfo, int hitLoc, ChassisLocations location, Vector3 attackDirection, DamageType damageType) {
+      Log.Combat?.WL(0, $"CustomMech.NukeStructureLocation {this.PilotableActorDef.ChassisID} location:{location} hitLoc:{(ArmorLocation)hitLoc}");
+      try {
+        if (AbstractActor.attackLogger.IsLogEnabled)
+          AbstractActor.attackLogger.Log($"{this.PilotableActorDef.ChassisID} SEQ:{hitInfo.stackItemUID}: WEAP:{hitInfo.attackWeaponIndex} HITLOC: {hitLoc} ({location}) Location destroyed!");
+        if (AbstractActor.damageLogger.IsLogEnabled)
+          AbstractActor.damageLogger.Log($"==== Location Destroyed: {this.PilotableActorDef.ChassisID} {location}");
+        this.ApplyStructureStatDamage(location, this.GetCurrentStructure(location), hitInfo);
+        try {
+          this.OnLocationDestroyed_private(location, attackDirection, hitInfo, damageType);
+        }catch(Exception e) {
+          Log.ECombat?.TWL(0, e.ToString(), true);
+          AbstractActor.damageLogger.LogException(e);
+        }
+        ArmorLocation fromChassisLocation = MechStructureRules.GetArmorFromChassisLocation(location);
+        foreach (ArmorLocation location1 in Enum.GetValues(typeof(ArmorLocation))) {
+          if (location1 > ArmorLocation.None && location1 < ArmorLocation.Invalid && (location1 & fromChassisLocation) != ArmorLocation.None)
+            this.ApplyArmorStatDamage(location1, this.GetCurrentArmor(location1), hitInfo);
+        }
+        ChassisLocations dependentLocation = MechStructureRules.GetDependentLocation(location);
+        Log.Combat?.WL(1, $"dependentLocation:{dependentLocation} isDestroyed:{(dependentLocation == ChassisLocations.None?"None":this.IsLocationDestroyed(dependentLocation).ToString())}");
+        if (dependentLocation == ChassisLocations.None || this.IsLocationDestroyed(dependentLocation))
+          return;
+        this.NukeStructureLocation(hitInfo, 0, dependentLocation, Vector3.one, damageType);
+      } catch (Exception e) {
+        Log.ECombat?.TWL(0,e.ToString(),true);
+        AbstractActor.damageLogger.LogException(e);
+      }
+    }
     //private static MethodInfo Mech_InitGameRep = null;
     //private static Patches Mech_InitGameRep_patches = null;
     //public virtual void MechInitGameRep_prefixes(Transform parentTransform) {
@@ -740,7 +769,7 @@ namespace CustomUnits {
         }
         ChassisLocations fromArmorLocation = MechStructureRules.GetChassisLocationFromArmorLocation(aLoc);
         Vector3 attackDirection = Vector3.one;
-        if ((UnityEngine.Object)this.GameRep != (UnityEngine.Object)null && (UnityEngine.Object)weapon.weaponRep != (UnityEngine.Object)null) {
+        if (this.GameRep != null && weapon.weaponRep != null) {
           Vector3 position = weapon.weaponRep.vfxTransforms[0].position;
           Vector3 vector3 = this.GameRep.GetVFXTransform((int)fromArmorLocation).position - position;
           vector3.Normalize();

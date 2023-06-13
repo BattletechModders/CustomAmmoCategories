@@ -1582,7 +1582,7 @@ namespace CustomUnits {
         if (!__runOriginal) { return; }
         if (gameObj == null) { __runOriginal = false; return; }
         CustomHardpointDef customHardpoint = CustomHardPointsHelper.Find(id);
-        Log.M?.TWL(0, "DataManager.PoolGameObject " + id + "("+gameObj.name+") -> " + (customHardpoint == null ? "null" : customHardpoint.prefab));
+        //Log.M?.TWL(0, "DataManager.PoolGameObject " + id + "("+gameObj.name+") -> " + (customHardpoint == null ? "null" : customHardpoint.prefab));
         //if (id == "chrPrfMech_atlasBase-001") { Log.WL(1,Environment.StackTrace); }
         if (customHardpoint != null) { id = customHardpoint.prefab; }
         return;

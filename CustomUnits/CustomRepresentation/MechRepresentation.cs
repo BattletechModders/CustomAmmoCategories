@@ -1840,7 +1840,7 @@ namespace CustomUnits {
       }
     }
     public override void OnFootFall(int leftFoot) {
-      Log.Combat?.TWL(0,$"MechRepresentation.OnFootFall {this.mech.PilotableActorDef.ChassisID} leftFoot:{leftFoot} NoMoveAnimation:{this.parentActor.NoMoveAnimation()}");
+      //Log.Combat?.TWL(0,$"MechRepresentation.OnFootFall {this.mech.PilotableActorDef.ChassisID} leftFoot:{leftFoot} NoMoveAnimation:{this.parentActor.NoMoveAnimation()}");
       if (this.parentActor.NoMoveAnimation()) { this.triggerFootVFX = false; }
       //Log.WL(1, UnityEngine.StackTraceUtility.ExtractStackTrace());
       if (this.triggerFootVFX) { return; }
@@ -1882,7 +1882,7 @@ namespace CustomUnits {
       }
       FootstepManager.Instance.AddFootstep(position, forward, new Vector3(num1, num1, num1));
       string vfxName1 = string.Format("{0}{1}{2}{3}", (object)this.Constants.VFXNames.footfallBase, (object)(this.IsInAnyIdle ? "idle_" : ""), (object)this.rootParentRepresentation.terrainImpactParticleName, (object)this.rootParentRepresentation.vfxNameModifier);
-      Log.Combat?.TWL(0, $"TriggerCustomFootFall {this.chassisDef.Description.Id} {this.gameObject.name} {vfxName1}");
+      //Log.Combat?.TWL(0, $"TriggerCustomFootFall {this.chassisDef.Description.Id} {this.gameObject.name} {vfxName1}");
       //Log.WL(0, Environment.StackTrace);
       this.PlayVFXAt(foot, Vector3.zero, vfxName1, false, lookAtPos, true, -1f);
       if (this.currentSurfaceType == AudioSwitch_surface_type.wood)

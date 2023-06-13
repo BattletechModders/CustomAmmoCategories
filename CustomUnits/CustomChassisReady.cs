@@ -23,6 +23,7 @@ using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Reflection;
 using System.Text;
 using System.Threading;
 using UnityEngine;
@@ -108,6 +109,41 @@ namespace CustomUnits {
     public GameObject saveButtonObj { get; set; } = null;
     public HBSDOTweenButton restoreButton { get; set; } = null;
     public HBSDOTweenButton saveButton { get; set; } = null;
+    private static MethodInfo get_RawInventoryPerfFix;
+    private static MethodInfo get_GetRawInventoryCustomFilter;
+    public static void InitMechLabInventoryAccess() {
+      foreach(var assembly in AppDomain.CurrentDomain.GetAssemblies()) {
+        if(assembly.FullName.StartsWith("BattletechPerformanceFix, Version=")) {
+          Type MechLabFixPublic = assembly.GetType("BattletechPerformanceFix.MechlabFix.MechLabFixPublic");
+          if (MechLabFixPublic != null) {
+            Log.M?.TWL(0, $"{MechLabFixPublic.FullName} found");
+            PropertyInfo prop = AccessTools.Property(MechLabFixPublic, "RawInventory");
+            if(prop != null) {
+              Log.M?.WL(1, $"{prop.Name} found");
+              get_RawInventoryPerfFix = prop.GetMethod;
+            } else {
+              Log.M?.WL(1, $"BattletechPerformanceFix.MechlabFix.MechLabFixPublic.RawInventory not found");
+            }
+          } else {
+            Log.M?.TWL(0, $"BattletechPerformanceFix.MechlabFix.MechLabFixPublic not found");
+          }
+        }
+        if(assembly.FullName.StartsWith("CustomFilters, Version=")) {
+          Type MechLabFixPublic = assembly.GetType("CustomFilters.MechLabScrolling.MechLabFixPublic");
+          if (MechLabFixPublic != null) {
+            Log.M?.TWL(0, $"{MechLabFixPublic.FullName} found");
+            get_GetRawInventoryCustomFilter = AccessTools.Method(MechLabFixPublic, "GetRawInventory");
+            if (get_GetRawInventoryCustomFilter != null) {
+              Log.M?.WL(1, $"{get_GetRawInventoryCustomFilter.Name} found");
+            } else {
+              Log.M?.WL(1, $"CustomFilters.MechLabScrolling.MechLabFixPublic.GetRawInventory not found");
+            }
+          } else {
+            Log.M?.TWL(0, $"CustomFilters.MechLabScrolling.MechLabFixPublic not found");
+          }
+        }
+      }
+    }
     public HashSet<ListElementController_BASE_NotListView> inventory { get; set; } = new HashSet<ListElementController_BASE_NotListView>();
     public void Clear() {
       inventory.Clear();
@@ -331,8 +367,14 @@ namespace CustomUnits {
       loadout.Name = name;
       SaveLayoutHelper.Save(loadout);
     }
-    public static IEnumerable<ListElementController_BASE_NotListView> BTPerfFixRawInventory() {
-      return BattletechPerformanceFix.MechLabFix.MechLabFixPublic.RawInventory;
+    public static IEnumerable<ListElementController_BASE_NotListView> BTPerfFixRawInventory(MechLabPanel panel) {
+      IEnumerable<ListElementController_BASE_NotListView> result = null;
+      if (get_GetRawInventoryCustomFilter != null) { result = (IEnumerable<ListElementController_BASE_NotListView>)get_GetRawInventoryCustomFilter.Invoke(null, new object[] { panel.inventoryWidget }); };
+      if (result != null) { return result; }
+      if (get_RawInventoryPerfFix != null) { result = (IEnumerable<ListElementController_BASE_NotListView>)get_RawInventoryPerfFix.Invoke(null, new object[] { }); }
+      if (result != null) { return result; }
+      result = panel.inventoryWidget.localInventory as IEnumerable<ListElementController_BASE_NotListView>;
+      return result;
       //Type stateCarrier = typeof(BattletechPerformanceFix.Main).Assembly.GetType("BattletechPerformanceFix.MechlabFix.MechLabFixPublic");
       //if(stateCarrier == null) {
       //  stateCarrier = typeof(BattletechPerformanceFix.Main).Assembly.GetType("BattletechPerformanceFix.MechlabFix.MechLabFixFeature");
@@ -341,11 +383,11 @@ namespace CustomUnits {
     }
     public void RestoreAs(string name,List<SavedInventoryItem> inventory) {
       try {
-        Log.Combat?.TWL(0, "RestoreAs:"+ name);
+        Log.M?.TWL(0, "RestoreAs:"+ name);
         StringBuilder missingItems = new StringBuilder();
-        Log.Combat?.WL(1, "inventory:" + this.inventory.Count);
+        Log.M?.WL(1, "inventory:" + this.inventory.Count);
         foreach (ListElementController_BASE_NotListView invItem in this.inventory) {
-          Log.Combat?.WL(2, (invItem.componentDef!=null?invItem.componentDef.Description.Id:"null") + ":" + invItem.quantity + " widget:"+ (invItem.ItemWidget == null ? "null" : invItem.ItemWidget.gameObject.name));
+          Log.M?.WL(2, (invItem.componentDef!=null?invItem.componentDef.Description.Id:"null") + ":" + invItem.quantity + " widget:"+ (invItem.ItemWidget == null ? "null" : invItem.ItemWidget.gameObject.name));
         }
         List<MechComponentRef> components = new List<MechComponentRef>();
         foreach (SavedInventoryItem item in inventory) {
@@ -363,14 +405,14 @@ namespace CustomUnits {
         //  if (a_weight != b_weight) { return a_weight.CompareTo(b_weight); }
         //  return 0;
         //});
-        Log.Combat?.WL(1, "equipment:" + components.Count);
+        Log.M?.WL(1, "equipment:" + components.Count);
         foreach (MechComponentRef componentRef in components) {
           Log.Combat?.WL(2, componentRef.ComponentDefID+":"+ componentRef.MountedLocation);
         }
 
-        var lab_inventory = BTPerfFixRawInventory();
+        var lab_inventory = BTPerfFixRawInventory(this.mechLabPanel);
         if(lab_inventory == null) {
-          GenericPopup popup = GenericPopupBuilder.Create("ERROR", "BattletechPerformanceFix.MechLabFix.MechLabFixPublic.RawInventory is null.\nBlame CptMoore and his changes to BattletechPerformanceFix for it.").IsNestedPopupWithBuiltInFader().SetAlwaysOnTop().Render();
+          GenericPopup popup = GenericPopupBuilder.Create("ERROR", "Can't find inventory").IsNestedPopupWithBuiltInFader().SetAlwaysOnTop().Render();
           return;
         }
         foreach (MechComponentRef componentRef in components) {
@@ -393,22 +435,22 @@ namespace CustomUnits {
             missingItems.AppendLine(componentName +" absent in storage");
             continue;
           }
-          Log.Combat?.WL(1, "found:" + componentRef.Def.Description.Id+":"+ componentRef.MountedLocation + " count:"+ foundItem.quantity);
+          Log.M?.WL(1, "found:" + componentRef.Def.Description.Id+":"+ componentRef.MountedLocation + " count:"+ foundItem.quantity);
           if(foundItem.ItemWidget != null) {
-            Log.Combat?.WL(2, "widget controller:" + (foundItem.ItemWidget.controller == null ? "null" : foundItem.ItemWidget.controller.componentDef.Description.Id));
+            Log.M?.WL(2, "widget controller:" + (foundItem.ItemWidget.controller == null ? "null" : foundItem.ItemWidget.controller.componentDef.Description.Id));
           }
           ValidateWidget(foundItem);
           Localize.Text msg = DropToLocation(foundItem, locationWidget);
           if(msg != null) {
             missingItems.AppendLine(componentName+":"+msg.ToString());
           }
-          Log.Combat?.WL(1,"Drop finished");
+          Log.M?.WL(1,"Drop finished");
         }
         if(missingItems.Length > 0) {
           GenericPopup popup = GenericPopupBuilder.Create("MISSING ITEMS", new Localize.Text(missingItems.ToString()).ToString()).IsNestedPopupWithBuiltInFader().SetAlwaysOnTop().Render();
         }
       } catch (Exception e) {
-        Log.Combat?.TWL(0, e.ToString(), true);
+        Log.E?.TWL(0, e.ToString(), true);
         UIManager.logger.LogException(e);
       }
     }

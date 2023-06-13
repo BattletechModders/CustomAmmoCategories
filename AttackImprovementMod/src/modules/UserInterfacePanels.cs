@@ -201,14 +201,13 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
       } catch (Exception ex) { Error(ex); }
     }
 
-    private static PropertyInfo MechTrayArmorHoverToolTipProp;
 
     [HarmonyPriority(Priority.Low)]
-    public static bool OverridePaperDollTooltip(CombatHUDMechTrayArmorHover __instance, Mech mech, ArmorLocation location) {
+    public static void OverridePaperDollTooltip(bool __runOriginal, CombatHUDMechTrayArmorHover __instance, Mech mech, ArmorLocation location) {
       try {
-        if (!FriendOrFoe(mech, AIMSettings.ShowAmmoInTooltip, AIMSettings.ShowEnemyAmmoInTooltip)) return true;
-        CombatHUDMechTrayArmorHover me = __instance;
-        CombatHUDTooltipHoverElement ToolTip = (CombatHUDTooltipHoverElement)MechTrayArmorHoverToolTipProp.GetValue(me, null);
+        if (!FriendOrFoe(mech, AIMSettings.ShowAmmoInTooltip, AIMSettings.ShowEnemyAmmoInTooltip)) { return; }
+        //CombatHUDMechTrayArmorHover me = __instance;
+        CombatHUDTooltipHoverElement ToolTip = __instance.ToolTip;
         ToolTip.BuffStrings.Clear();
         ToolTip.DebuffStrings.Clear();
         ToolTip.BasicString = CustAmmoCategories.GetLongArmorLocationHelper.GetLongArmorLocation(mech,location);
@@ -227,8 +226,9 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
           else
             ToolTip.BuffStrings.Add(new Text(componentName));
         }
-        return false;
-      } catch (Exception ex) { return Error(ex); }
+        __runOriginal = false;
+        return;
+      } catch (Exception ex) { Error(ex); return; }
     }
 
     public static void AddPaperDollSideLabel(HUDMechArmorReadout __instance) {

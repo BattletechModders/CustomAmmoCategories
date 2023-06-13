@@ -164,7 +164,7 @@ namespace CustomUnits {
   [HarmonyPatch(typeof(PilotableActorRepresentation))]
   [HarmonyPatch("PlayEjectFX")]
   [HarmonyPatch(MethodType.Normal)]
-  [HarmonyPatch(new Type[] {  })]
+  [HarmonyPatch(new Type[] { })]
   public static class PilotableActorRepresentation_PlayEjectFX {
     public static void Prefix(ref bool __runOriginal, PilotableActorRepresentation __instance) {
       try {
@@ -231,7 +231,7 @@ namespace CustomUnits {
       this.mainCollider = this.gameObject.GetComponent<CapsuleCollider>();
       this.currentTwistAngle = 0.0f;
       BlipManager instance = BlipManager.Instance;
-      if(this.BlipObjectUnknown != null) this.BlipObjectUnknown.transform.localScale = Vector3.one;
+      if (this.BlipObjectUnknown != null) this.BlipObjectUnknown.transform.localScale = Vector3.one;
       if (this.BlipObjectIdentified != null) this.BlipObjectIdentified.transform.localScale = Vector3.one;
       if (this.BlipObjectUnknown != null) this.BlipObjectUnknown.transform.SetParent(instance.gameObject.transform);
       if (this.BlipObjectIdentified != null) this.BlipObjectIdentified.transform.SetParent(instance.gameObject.transform);
@@ -250,113 +250,91 @@ namespace CustomUnits {
       CustomMechCustomization[] customizations = this.VisibleObject.GetComponentsInChildren<CustomMechCustomization>(true);
       this.mechCustomizations = new List<CustomMechCustomization>();
     }
-        public virtual void _InitPaintScheme(HeraldryDef heraldryDef, string teamGUID)
-        {
-            Log.Combat?.TWL(0, "CustomMechRepresentation._InitPaintScheme " + this.mech.MechDef.ChassisID + " ");
-            if (this.paintSchemeInitialized) { return; }
+    public virtual void _InitPaintScheme(HeraldryDef heraldryDef, string teamGUID) {
+      Log.Combat?.TWL(0, "CustomMechRepresentation._InitPaintScheme " + this.mech.MechDef.ChassisID + " ");
+      if (this.paintSchemeInitialized) { return; }
 
-            this.paintSchemeInitialized = true;
-            CustomMechCustomization[] customizations = this.VisibleObject.GetComponentsInChildren<CustomMechCustomization>(true);
-            this.mechCustomizations = new List<CustomMechCustomization>(customizations);
-            if (this.mechCustomizations.Count == 0)
-            {
-                this.LogPaintSchemeError("mechCustomization is null");
-            }
-            else
-            {
-                if (heraldryDef == null)
-                {
-                    this.LogPaintSchemeError("HeraldryDef is null");
-                    if (teamGUID == "bf40fd39-ccf9-47c4-94a6-061809681140")
-                    {
-                        heraldryDef = this.parentCombatant.Combat.DataManager.Heraldries.Get("heraldrydef_player");
-                        heraldryDef.Refresh();
-                        Log.Combat?.TWL(0, $"  heraldryDef is player. Colors: {heraldryDef.primaryMechColorID} / {heraldryDef.secondaryMechColorID} / {heraldryDef.tertiaryMechColorID}  logo: {heraldryDef.textureLogoID}");
-                    }
-                    else
-                    {
-                        heraldryDef = this.parentCombatant.Combat.DataManager.Heraldries.Get("heraldrydef_enemy");
-                        heraldryDef.Refresh();
-                        Log.Combat?.TWL(0, $"  heraldryDef is enemy. Colors: {heraldryDef.primaryMechColorID} / {heraldryDef.secondaryMechColorID} / {heraldryDef.tertiaryMechColorID}  logo: {heraldryDef.textureLogoID}");
-                    }
-                }
-                else
-                {
-                    Log.Combat?.TWL(0, $"  heraldryDef already set. Colors: {heraldryDef.primaryMechColorID} / {heraldryDef.secondaryMechColorID} / {heraldryDef.tertiaryMechColorID}  logo: {heraldryDef.textureLogoID}");
-                }
-
-                string camoMaskTextureId = (string)null;
-                int texture_id = -1;
-                if (this.parentActor.team.IsLocalPlayer)
-                {
-                    camoMaskTextureId = this.parentActor.PilotableActorDef.PaintTextureID;
-                    Log.Combat?.TWL(0, $"  localPlayer parentActorDef.paintTextureId: {this.parentActor.PilotableActorDef.PaintTextureID}");
-
-                    SimGameState simulation = UnityGameInstance.BattleTechGame.Simulation;
-                    if (simulation != null)
-                    {
-                        if (string.IsNullOrEmpty(camoMaskTextureId))
-                        {
-                            // No camo texture specified, build one using discard logic
-                            if (!simulation.pilotableActorPaintDiscardPile.ContainsKey(this.parentActor.PilotableActorDef.Description.Id))
-                                simulation.pilotableActorPaintDiscardPile.Add(this.parentActor.PilotableActorDef.Description.Id, new List<string>());
-
-                            List<string> discardList = simulation.pilotableActorPaintDiscardPile[this.parentActor.PilotableActorDef.Description.Id];
-                            Dictionary<string, int> stringList2 = new Dictionary<string, int>();
-                            for (int i = 0; i < this.mechCustomizations[0].paintPatterns.Length; ++i)
-                            {
-                                if (!discardList.Contains(this.mechCustomizations[0].paintPatterns[i].name))
-                                    stringList2.Add(this.mechCustomizations[0].paintPatterns[i].name, i);
-                            }
-
-                            if (discardList.Count >= stringList2.Count) { discardList.Clear(); }
-                            if (stringList2.Count > 0)
-                            {
-                                List<string> textures = new List<string>(stringList2.Keys);
-                                camoMaskTextureId = textures[UnityEngine.Random.Range(0, stringList2.Count - 1)];
-                                this.parentActor.PilotableActorDef.UpdatePaintTextureId(camoMaskTextureId);
-                                texture_id = stringList2[camoMaskTextureId];
-                                discardList.Add(camoMaskTextureId);
-                            }
-                            Log.Combat?.TWL(0, $"  Local player but not mask, randomized camoMask: {camoMaskTextureId}  new texture_id: {texture_id}");
-                        }
-                        else
-                        {
-                            // Camo texture specified, so go with player's choice
-                            Dictionary<string, int> stringList2 = new Dictionary<string, int>();
-                            for (int i = 0; i < this.mechCustomizations[0].paintPatterns.Length; ++i)
-                            {
-                                stringList2.Add(this.mechCustomizations[0].paintPatterns[i].name, i);
-                            }
-                            texture_id = stringList2[camoMaskTextureId];
-                            Log.Combat?.TWL(0, $"  Local player retaining: {camoMaskTextureId}  new texture_id: {texture_id}");
-                        }
-                    }
-                    else
-                    {
-                        // Skirmish, randomize the player's skins
-                        texture_id = UnityEngine.Random.Range(0, this.mechCustomizations[0].paintPatterns.Length);
-                        Log.Combat?.TWL(0, $"  Local player but skirmish, parentActorDef.paintTextureId: {this.parentActor.PilotableActorDef.PaintTextureID}  new texture_id: {texture_id}");
-                    }                    
-                }
-                else
-                {
-                    texture_id = UnityEngine.Random.Range(0, this.mechCustomizations[0].paintPatterns.Length);
-                    Log.Combat?.TWL(0, $"  Not local player, parentActorDef.paintTextureId: {this.parentActor.PilotableActorDef.PaintTextureID}  new texture_id: {texture_id}");                    
-                }
-
-                // Set the texture on every mech customization
-                foreach (CustomMechCustomization mechCustomization in mechCustomizations)
-                {
-                    if (mechCustomization.paintPatterns.Length == 0) { continue; }
-                    camoMaskTextureId = mechCustomization.paintPatterns[texture_id % mechCustomization.paintPatterns.Length].name;
-                    Log.Combat?.WL(2, "object: " + mechCustomization.gameObject.name + " apply texture:" + camoMaskTextureId);
-                    mechCustomization.ApplyHeraldry(heraldryDef, camoMaskTextureId);
-                }
-            }
+      this.paintSchemeInitialized = true;
+      CustomMechCustomization[] customizations = this.VisibleObject.GetComponentsInChildren<CustomMechCustomization>(true);
+      this.mechCustomizations = new List<CustomMechCustomization>(customizations);
+      if (this.mechCustomizations.Count == 0) {
+        this.LogPaintSchemeError("mechCustomization is null");
+      } else {
+        if (heraldryDef == null) {
+          this.LogPaintSchemeError("HeraldryDef is null");
+          if (teamGUID == "bf40fd39-ccf9-47c4-94a6-061809681140") {
+            heraldryDef = this.parentCombatant.Combat.DataManager.Heraldries.Get("heraldrydef_player");
+            heraldryDef.Refresh();
+            Log.Combat?.TWL(0, $"  heraldryDef is player. Colors: {heraldryDef.primaryMechColorID} / {heraldryDef.secondaryMechColorID} / {heraldryDef.tertiaryMechColorID}  logo: {heraldryDef.textureLogoID}");
+          } else {
+            heraldryDef = this.parentCombatant.Combat.DataManager.Heraldries.Get("heraldrydef_enemy");
+            heraldryDef.Refresh();
+            Log.Combat?.TWL(0, $"  heraldryDef is enemy. Colors: {heraldryDef.primaryMechColorID} / {heraldryDef.secondaryMechColorID} / {heraldryDef.tertiaryMechColorID}  logo: {heraldryDef.textureLogoID}");
+          }
+        } else {
+          Log.Combat?.TWL(0, $"  heraldryDef already set. Colors: {heraldryDef.primaryMechColorID} / {heraldryDef.secondaryMechColorID} / {heraldryDef.tertiaryMechColorID}  logo: {heraldryDef.textureLogoID}");
         }
 
-        protected virtual void PilotableActorRepresentation_Update() {
+        string camoMaskTextureId = (string)null;
+        int texture_id = -1;
+        if (this.parentActor.team.IsLocalPlayer) {
+          camoMaskTextureId = this.parentActor.PilotableActorDef.PaintTextureID;
+          Log.Combat?.TWL(0, $"  localPlayer parentActorDef.paintTextureId: {this.parentActor.PilotableActorDef.PaintTextureID}");
+
+          SimGameState simulation = UnityGameInstance.BattleTechGame.Simulation;
+          if (simulation != null) {
+            if (string.IsNullOrEmpty(camoMaskTextureId)) {
+              // No camo texture specified, build one using discard logic
+              if (!simulation.pilotableActorPaintDiscardPile.ContainsKey(this.parentActor.PilotableActorDef.Description.Id))
+                simulation.pilotableActorPaintDiscardPile.Add(this.parentActor.PilotableActorDef.Description.Id, new List<string>());
+
+              List<string> discardList = simulation.pilotableActorPaintDiscardPile[this.parentActor.PilotableActorDef.Description.Id];
+              Dictionary<string, int> stringList2 = new Dictionary<string, int>();
+              for (int i = 0; i < this.mechCustomizations[0].paintPatterns.Length; ++i) {
+                if (!discardList.Contains(this.mechCustomizations[0].paintPatterns[i].name))
+                  stringList2[this.mechCustomizations[0].paintPatterns[i].name] = i;
+              }
+
+              if (discardList.Count >= stringList2.Count) { discardList.Clear(); }
+              if (stringList2.Count > 0) {
+                List<string> textures = new List<string>(stringList2.Keys);
+                camoMaskTextureId = textures[UnityEngine.Random.Range(0, stringList2.Count - 1)];
+                this.parentActor.PilotableActorDef.UpdatePaintTextureId(camoMaskTextureId);
+                texture_id = stringList2[camoMaskTextureId];
+                discardList.Add(camoMaskTextureId);
+              }
+              Log.Combat?.TWL(0, $"  Local player but not mask, randomized camoMask: {camoMaskTextureId}  new texture_id: {texture_id}");
+            } else {
+              // Camo texture specified, so go with player's choice
+              Dictionary<string, int> stringList2 = new Dictionary<string, int>();
+              for (int i = 0; i < this.mechCustomizations[0].paintPatterns.Length; ++i) {
+                stringList2[this.mechCustomizations[0].paintPatterns[i].name] = i;
+              }
+              texture_id = 0;
+              if (stringList2.ContainsKey(camoMaskTextureId)) { texture_id = stringList2[camoMaskTextureId];  }
+              Log.Combat?.TWL(0, $"  Local player retaining: {camoMaskTextureId}  new texture_id: {texture_id}");
+            }
+          } else {
+            // Skirmish, randomize the player's skins
+            texture_id = UnityEngine.Random.Range(0, this.mechCustomizations[0].paintPatterns.Length);
+            Log.Combat?.TWL(0, $"  Local player but skirmish, parentActorDef.paintTextureId: {this.parentActor.PilotableActorDef.PaintTextureID}  new texture_id: {texture_id}");
+          }
+        } else {
+          texture_id = UnityEngine.Random.Range(0, this.mechCustomizations[0].paintPatterns.Length);
+          Log.Combat?.TWL(0, $"  Not local player, parentActorDef.paintTextureId: {this.parentActor.PilotableActorDef.PaintTextureID}  new texture_id: {texture_id}");
+        }
+
+        // Set the texture on every mech customization
+        foreach (CustomMechCustomization mechCustomization in mechCustomizations) {
+          if (mechCustomization.paintPatterns.Length == 0) { continue; }
+          camoMaskTextureId = mechCustomization.paintPatterns[texture_id % mechCustomization.paintPatterns.Length].name;
+          Log.Combat?.WL(2, "object: " + mechCustomization.gameObject.name + " apply texture:" + camoMaskTextureId);
+          mechCustomization.ApplyHeraldry(heraldryDef, camoMaskTextureId);
+        }
+      }
+    }
+
+    protected virtual void PilotableActorRepresentation_Update() {
       if (DebugBridge.UseExperimentalPinkMechFix) {
         try {
           this.ReconnectMissingMaterial();
@@ -578,7 +556,7 @@ namespace CustomUnits {
       if (this.forcedPlayerVisibilityLevel.HasValue) { newLevel = this.forcedPlayerVisibilityLevel.Value; }
       if (newLevel == VisibilityLevel.LOSFull || newLevel == VisibilityLevel.BlipGhost) {
         this.VisibleObject.SetActive(true);
-        if(this.BlipObjectUnknown != null) this.BlipObjectUnknown.SetActive(false);
+        if (this.BlipObjectUnknown != null) this.BlipObjectUnknown.SetActive(false);
         if (this.BlipObjectIdentified != null) this.BlipObjectIdentified.SetActive(false);
         this.mainCollider.enabled = true;
         if (this.parentActor.IsGhosted) {
@@ -622,7 +600,7 @@ namespace CustomUnits {
             if (this.BlipObjectIdentified != null) this.BlipObjectIdentified.SetActive(false);
             if (this.BlipObjectGhostWeak != null) this.BlipObjectGhostWeak.SetActive(false);
             if (this.BlipObjectGhostStrong != null) this.BlipObjectGhostStrong.SetActive(false);
-            flag = this.BlipObjectUnknown == null? false : this.BlipObjectUnknown.activeSelf;
+            flag = this.BlipObjectUnknown == null ? false : this.BlipObjectUnknown.activeSelf;
             break;
             case VisibilityLevel.Blip1Type:
             case VisibilityLevel.Blip4Maximum:
@@ -666,7 +644,7 @@ namespace CustomUnits {
       }
       if (this._IsDead == false) {
         if (this.weaponReps != null) {
-          Log.Combat?.TWL(0, "CustomMechRepresentation.OnPlayerVisibilityChanged "+this.gameObject.name+" "+this.parentActor.PilotableActorDef.Description.Id+" team:"+this.parentActor.TeamId+" vislevel:"+newLevel+" weaponRepsCount:"+ this.weaponReps.Count);
+          Log.Combat?.TWL(0, "CustomMechRepresentation.OnPlayerVisibilityChanged " + this.gameObject.name + " " + this.parentActor.PilotableActorDef.Description.Id + " team:" + this.parentActor.TeamId + " vislevel:" + newLevel + " weaponRepsCount:" + this.weaponReps.Count);
           for (int index = 0; index < this.weaponReps.Count; ++index) {
             if (this.weaponReps[index] != null) {
               int mountedLocation = this.weaponReps[index].mountedLocation;
@@ -676,7 +654,7 @@ namespace CustomUnits {
                 this.weaponReps[index].OnPlayerVisibilityChanged(VisibilityLevel.None);
                 Log.Combat?.WL(1, this.weaponReps[index].name + ":" + VisibilityLevel.None);
               } else {
-                Log.Combat?.WL(1, this.weaponReps[index].name+":"+newLevel);
+                Log.Combat?.WL(1, this.weaponReps[index].name + ":" + newLevel);
                 this.weaponReps[index].OnPlayerVisibilityChanged(newLevel);
               }
             }
@@ -793,12 +771,12 @@ namespace CustomUnits {
 
     public virtual void PilotableRepresentation_HandleDeath(DeathMethod deathMethod, int location) {
       GameRepresentation_HandleDeath(deathMethod, location);
-      if(this.BlipObjectUnknown != null) this.BlipObjectUnknown.SetActive(false);
+      if (this.BlipObjectUnknown != null) this.BlipObjectUnknown.SetActive(false);
       if (this.BlipObjectIdentified != null) this.BlipObjectIdentified.SetActive(false);
       if (this.BlipObjectGhostWeak != null) this.BlipObjectGhostWeak.SetActive(false);
       if (this.BlipObjectGhostStrong != null) this.BlipObjectGhostStrong.SetActive(false);
       //if (this.parentActor.UnitType != UnitType.Mech) {
-      if(this.parentActor.IsDead || this.parentActor.IsFlaggedForDeath) this.StopPersistentAudio();
+      if (this.parentActor.IsDead || this.parentActor.IsFlaggedForDeath) this.StopPersistentAudio();
       this._DestroyNearbyFlimsiesOnDeath();
       //}
       if (isSlave == false) {
@@ -854,7 +832,7 @@ namespace CustomUnits {
       this.sharedMaterialsCopy = (Material[])null;
     }
 
-    public virtual ParticleSystem PilotableRepresentation_PlayVFXAt(Transform parentTransform,Vector3 offset,string vfxName,bool attached,Vector3 lookAtPos,bool oneShot,float duration) {
+    public virtual ParticleSystem PilotableRepresentation_PlayVFXAt(Transform parentTransform, Vector3 offset, string vfxName, bool attached, Vector3 lookAtPos, bool oneShot, float duration) {
       return GameRepresentation_PlayVFXAt(parentTransform, offset, vfxName, attached, lookAtPos, oneShot, duration);
     }
 
@@ -864,7 +842,7 @@ namespace CustomUnits {
       this.StartCoroutine(this.FadeThrottleCoroutine(startValue, endValue, duration));
     }
 
-    protected override IEnumerator FadeThrottleCoroutine(float startValue,float endValue,float duration) {
+    protected override IEnumerator FadeThrottleCoroutine(float startValue, float endValue, float duration) {
       PilotableActorRepresentation actorRepresentation = this;
       if ((double)duration <= 0.0) {
         WwiseManager.SetRTPC<AudioRTPCList>(AudioRTPCList.bt_vehicle_speed, endValue, actorRepresentation.audioObject);
@@ -879,7 +857,7 @@ namespace CustomUnits {
       }
     }
 
-    public override void FaceTarget(bool isParellelSequence,ICombatant target,float twistTime,int stackItemUID,int sequenceId,bool isMelee, GameRepresentation.RotationCompleteDelegate completeDelegate) {
+    public override void FaceTarget(bool isParellelSequence, ICombatant target, float twistTime, int stackItemUID, int sequenceId, bool isMelee, GameRepresentation.RotationCompleteDelegate completeDelegate) {
       GameRepresentation_FaceTarget(isParellelSequence, target, twistTime, stackItemUID, sequenceId, isMelee, completeDelegate);
       Vector3 position = target.CurrentPosition;
       if (target.GUID == this.parentCombatant.GUID) {
@@ -892,7 +870,7 @@ namespace CustomUnits {
       this.FacePoint(isParellelSequence, position, false, twistTime, stackItemUID, sequenceId, isMelee, completeDelegate);
     }
 
-    public override void FacePoint(bool isParellelSequence,Vector3 lookAt,bool isLookVector,float twistTime,int stackItemUID,int sequenceId,bool isMelee,GameRepresentation.RotationCompleteDelegate completeDelegate) {
+    public override void FacePoint(bool isParellelSequence, Vector3 lookAt, bool isLookVector, float twistTime, int stackItemUID, int sequenceId, bool isMelee, GameRepresentation.RotationCompleteDelegate completeDelegate) {
       GameRepresentation_FacePoint(isParellelSequence, lookAt, isLookVector, twistTime, stackItemUID, sequenceId, isMelee, completeDelegate);
       CustomTwistSequence actorTwistSequence = new CustomTwistSequence(this.parentActor, lookAt, isLookVector, isMelee, twistTime, stackItemUID, sequenceId, completeDelegate);
       if (isParellelSequence)
@@ -900,7 +878,7 @@ namespace CustomUnits {
       else
         this.parentCombatant.Combat.MessageCenter.PublishMessage((MessageCenterMessage)new AddSequenceToStackMessage((IStackSequence)actorTwistSequence));
     }
-    public override void ReturnToNeutralFacing(bool isParellelSequence,float twistTime,int stackItemUID,int sequenceId,GameRepresentation.RotationCompleteDelegate completeDelegate) {
+    public override void ReturnToNeutralFacing(bool isParellelSequence, float twistTime, int stackItemUID, int sequenceId, GameRepresentation.RotationCompleteDelegate completeDelegate) {
       GameRepresentation_ReturnToNeutralFacing(isParellelSequence, twistTime, stackItemUID, sequenceId, completeDelegate);
       this.FacePoint(isParellelSequence, this.thisTransform.forward, true, twistTime, stackItemUID, sequenceId, false, completeDelegate);
     }
@@ -910,7 +888,7 @@ namespace CustomUnits {
       this.blipHasPendingPositionRotation = true;
     }
     public virtual void _SetBlipAlpha(float alpha) { this._SetHighlightAlpha(alpha); }
-    public virtual bool _BlipDisplayed { get { return (this.BlipObjectUnknown != null?this.BlipObjectUnknown.activeSelf:false) || (this.BlipObjectIdentified != null?this.BlipObjectIdentified.activeSelf:false); } }
+    public virtual bool _BlipDisplayed { get { return (this.BlipObjectUnknown != null ? this.BlipObjectUnknown.activeSelf : false) || (this.BlipObjectIdentified != null ? this.BlipObjectIdentified.activeSelf : false); } }
     protected virtual void _updateBlips() {
       this.timeNow = Time.time;
       if (this.BlipObjectUnknown.activeSelf && this.VisibleObject.activeSelf && !this.BlipObjectIdentified.activeSelf) {
@@ -922,7 +900,7 @@ namespace CustomUnits {
       if ((double)this.timeNow - (double)this.blipLastUpdateTime > 1.0) {
         if (this.blipHasPendingPositionRotation) {
           this.BlipMoving = (double)(this.BlipObjectUnknown.transform.position - this.blipPendingPosition).magnitude > 0.100000001490116;
-          if(this.BlipObjectUnknown != null) this.BlipObjectUnknown.transform.position = this.blipPendingPosition;
+          if (this.BlipObjectUnknown != null) this.BlipObjectUnknown.transform.position = this.blipPendingPosition;
           if (this.BlipObjectUnknown != null) this.BlipObjectUnknown.transform.rotation = this.blipPendingRotation;
           if (this.BlipObjectIdentified != null) this.BlipObjectIdentified.transform.position = this.blipPendingPosition;
           if (this.BlipObjectIdentified != null) this.BlipObjectIdentified.transform.rotation = this.blipPendingRotation;

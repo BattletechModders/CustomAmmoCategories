@@ -54,9 +54,6 @@
     <Reference Include="Assembly-CSharp-firstpass">
       <HintPath>$(BattleTechGameDir)\BattleTech_Data\Managed\Assembly-CSharp-firstpass.dll</HintPath>
     </Reference>
-    <Reference Include="BattletechPerformanceFix">
-      <HintPath>$(BattleTechGameDir)\Mods\Core\BattletechPerformanceFix\BattletechPerformanceFix.dll</HintPath>
-    </Reference>
     <Reference Include="CustomComponents">
       <HintPath>$(BattleTechGameDir)\Mods\Core\CustomComponents\CustomComponents.dll</HintPath>
     </Reference>

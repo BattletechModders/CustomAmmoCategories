@@ -488,7 +488,8 @@ namespace CustomUnits {
       CustomPrewarm.Core.RegisterSerializator("CustomUnitsChassisTags", BattleTechResourceType.VehicleChassisDef, BattleTech_VehicleChassisDef_fromJSON_Patch.serializeChassisTags);
       InfluenceMapPositionFactorPatch.PatchAll(Core.HarmonyInstance);
       try {
-        foreach(string name in loadOrder) { if (name == "Mission Control") { CustomLanceHelper.MissionControlDetected = true; break; }; }
+        MechLabPanelFillAs.InitMechLabInventoryAccess();
+        foreach (string name in loadOrder) { if (name == "Mission Control") { CustomLanceHelper.MissionControlDetected = true; break; }; }
         foreach (string name in loadOrder) { if (name == "MechEngineer") { Core.Settings.MechEngineerDetected = true; break; }; }
         foreach (string name in loadOrder) { if (name == "LowVisibility") { LowVisibilityAPIHelper.Init(); break; }; }
         foreach (Assembly assembly in AppDomain.CurrentDomain.GetAssemblies()) {

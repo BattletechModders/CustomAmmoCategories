@@ -40,10 +40,20 @@ namespace CustomUnits {
   public static class DamageLocationHelper {
     public static bool DamageLocation_private(this Mech mech,int originalHitLoc,WeaponHitInfo hitInfo,ArmorLocation aLoc,Weapon weapon,float totalArmorDamage,float directStructureDamage,int hitIndex,AttackImpactQuality impactQuality,DamageType damageType) {
       try {
+        if ((aLoc == ArmorLocation.None) || (aLoc == ArmorLocation.Invalid)) { return false; }
         return mech.DamageLocation(originalHitLoc, hitInfo, aLoc, weapon, totalArmorDamage, directStructureDamage, hitIndex, impactQuality, damageType);
       }catch(Exception e) {
         CustomDeploy.Log.TWL(0,e.ToString(),true);
+        AbstractActor.damageLogger.LogException(e);
         return false;
+      }
+    }
+    public static void OnLocationDestroyed_private(this Mech mech, ChassisLocations location, Vector3 attackDirection, WeaponHitInfo hitInfo, DamageType damageType) {
+      try {
+        mech.OnLocationDestroyed(location, attackDirection, hitInfo, damageType);
+      } catch (Exception e) {
+        CustomDeploy.Log.TWL(0, e.ToString(), true);
+        AbstractActor.damageLogger.LogException(e);
       }
     }
   }
@@ -234,7 +244,7 @@ namespace CustomDeploy{
     public static void flushThreadProc() {
       while (Log.flushThreadActive == true) {
         Thread.Sleep(10 * 1000);
-        Log.LogWrite("flush\n");
+        //Log.LogWrite("flush\n");
         Log.flush();
       }
     }

@@ -653,6 +653,7 @@ namespace CustomUnits {
       }
     }
     public override void ForcePositionToTerrain(Vector3 finalPos) {
+      this.thisTransform.position = finalPos;
       foreach (var altRep in this.Alternates) {
         altRep.ForcePositionToTerrain(finalPos);
       }
@@ -1241,7 +1242,7 @@ namespace CustomUnits {
         } else {
           slowdown_factor = 1f / ((0.5f - slowdown_factor) * 8f + 1f);
         }
-        Log.Combat?.WL(0, "HeightController.LateUpdate current height:" + parent.j_Root.transform.localPosition.y + " delta:" + delta + " StartingHeight:" + this.StartingHeight + " PendingHeight:" + PendingHeight + " slowdown_factor:" + slowdown_factor);
+        //Log.Combat?.WL(0, "HeightController.LateUpdate current height:" + parent.j_Root.transform.localPosition.y + " delta:" + delta + " StartingHeight:" + this.StartingHeight + " PendingHeight:" + PendingHeight + " slowdown_factor:" + slowdown_factor);
         float height = parent.j_Root.transform.localPosition.y;
         float sign = height < this.PendingHeight ? this.UpSpeed : (this.DownSpeed * slowdown_factor);
         float ndelta = sign * Time.deltaTime;

@@ -12,44 +12,95 @@ namespace CustomDeploy {
   [HarmonyPatch(new Type[] { })]
   public static class FollowActorCameraSequence_CheckForFinished {
     private static Vector3 prev_CurrentPosition = Vector3.zero;
+    private static Vector3 prev_CurrentRotation = Vector3.zero;
     private static int Sequence_hash = -1;
-    public static bool Prefix(FollowActorCameraSequence __instance) {
-      Vector3 curpos = __instance.followTarget.CurrentPosition;
-      curpos.y = 0f;
-      if (Sequence_hash != __instance.GetHashCode()) {
-        prev_CurrentPosition = curpos;
-        Sequence_hash = __instance.GetHashCode();
-      }
-      if (__instance.timeSinceActorStoppedMoving >= __instance.Combat.Constants.CameraConstants.FollowCamDelayTime) {
-        return false;
-      }        
-      if(__instance.followTarget.MovingToPosition == null) {
-        goto advice_time;
-      }
-      Vector3 trgpos = __instance.followTarget.MovingToPosition.Position;
-      trgpos.y = 0f;
-      float dist = Vector3.Distance(curpos, trgpos);
-      float movedist = Vector3.Distance(curpos, prev_CurrentPosition);
-      prev_CurrentPosition = curpos;
-      if (dist < 0.1f) {
-        goto advice_time;
-      }
-      if (dist < 0.5f) {
-        Log.TWL(0, $"FollowActorCameraSequence.CheckForFinished {__instance.followTarget.PilotableActorDef.ChassisID} cur:{curpos} trg:{trgpos} dist delta:{dist} move dist:{movedist}");
-        if (movedist < 0.001f) {
+    private static bool move_started = false;
+    public static void Prefix(bool __runOriginal, FollowActorCameraSequence __instance) {
+      try {
+        //__runOriginal = false; return;
+        Vector3 curpos = Vector3.zero;
+        Vector3 trgpos = Vector3.zero;
+        float dist = 0f;
+        float movedist = 0f;
+        float rotspeed = 0f;
+        if (__instance.timeSinceActorStoppedMoving >= __instance.Combat.Constants.CameraConstants.FollowCamDelayTime) {
+          __runOriginal = false; return;
+        }
+        if (__instance.followTarget.MovingToPosition == null) {
           goto advice_time;
         }
+        curpos = __instance.followTarget.CurrentPosition;
+        Vector3 currot = __instance.followTarget.CurrentRotation.eulerAngles;
+        curpos.y = 0f;
+        trgpos = __instance.followTarget.MovingToPosition.Position;
+        trgpos.y = 0f;
+        if (Sequence_hash != __instance.GetHashCode()) {
+          Log.TWL(0, $"FollowActorCameraSequence.CheckForFinished start {__instance.followTarget.PilotableActorDef.ChassisID} cur:{curpos} trg:{trgpos}");
+          prev_CurrentPosition = curpos;
+          prev_CurrentRotation = currot;
+          move_started = false;
+          Sequence_hash = __instance.GetHashCode();
+        }
+        dist = Vector3.Distance(curpos, trgpos);
+        movedist = Vector3.Distance(curpos, prev_CurrentPosition);
+        rotspeed = Vector3.Distance(currot, prev_CurrentRotation);
+        prev_CurrentRotation = currot;
+        prev_CurrentPosition = curpos;
+        if ((move_started == false) && ((movedist > 0.001f) || (rotspeed > 0.001f))) {
+          Log.TWL(0, $"FollowActorCameraSequence.CheckForFinished move started {__instance.followTarget.PilotableActorDef.ChassisID} cur:{curpos} trg:{trgpos} dist:{dist} move dist:{movedist} rotspeed:{rotspeed}");
+          move_started = true;
+        }
+        if (dist < 0.1f) {
+          goto advice_time;
+        }
+        if ((dist < (__instance.Combat.HexGrid.HexWidth / 2f)) || (move_started)) {
+          if ((movedist < 0.001f) && (rotspeed < 0.001f)) {
+            Log.TWL(0, $"FollowActorCameraSequence.CheckForFinished {__instance.followTarget.PilotableActorDef.ChassisID} cur:{curpos} trg:{trgpos} dist:{dist} move dist:{movedist} rotspeed:{rotspeed}");
+            goto advice_time;
+          }
+        }
+        __instance.timeSinceActorStoppedMoving = 0.0f;
+        goto check_time;
+      advice_time:
+        __instance.timeSinceActorStoppedMoving += Time.deltaTime;
+      check_time:
+        if (__instance.timeSinceActorStoppedMoving <= __instance.Combat.Constants.CameraConstants.FollowCamDelayTime) {
+          __runOriginal = false; return;
+        }
+        Log.TWL(0, $"FollowActorCameraSequence.CheckForFinished end {__instance.followTarget.PilotableActorDef.ChassisID} cur:{curpos} trg:{trgpos} dist:{dist} move dist:{movedist}");
+        __instance.state = CameraSequence.CamSequenceState.Finished;
+        __runOriginal = false; return;
+      }catch(Exception e) {
+        Log.TWL(0, e.ToString(), true);
+        ActorMovementSequence.logger.LogException(e);
+        __instance.state = CameraSequence.CamSequenceState.Finished;
+        __runOriginal = false; return;
       }
-      __instance.timeSinceActorStoppedMoving = 0.0f;
-      goto check_time;
-    advice_time:
-      __instance.timeSinceActorStoppedMoving += Time.deltaTime;
-    check_time:
-      if (__instance.timeSinceActorStoppedMoving <= __instance.Combat.Constants.CameraConstants.FollowCamDelayTime) {
-        return false;
+    }
+  }
+  [HarmonyPatch(typeof(FollowActorCameraSequence))]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch("Update")]
+  [HarmonyPatch(new Type[] { })]
+  public static class FollowActorCameraSequence_Update {
+    public static void Finalizer(FollowActorCameraSequence __instance, Exception __exception) {
+      if (__exception != null) {
+        __exception = null;
+        __instance.state = CameraSequence.CamSequenceState.Finished;
       }
-      __instance.state = CameraSequence.CamSequenceState.Finished;
-      return false;
+    }
+  }
+  [HarmonyPatch(typeof(ActorMovementSequence))]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch("OnAdded")]
+  [HarmonyPatch(new Type[] { })]
+  public static class ActorMovementSequence_OnAdded {
+    public static void Finalizer(ActorMovementSequence __instance, Exception __exception) {
+      if (__exception != null) {
+        Log.TWL(0, $"ActorMovementSequence.OnAdded {__instance.SequenceGUID} owner:{__instance.owningActor.PilotableActorDef.ChassisID}");
+        Log.TWL(0,__exception.ToString(),true);
+        ActorMovementSequence.logger.LogException(__exception);
+      }
     }
   }
   public static class ActorMovementSequence_CompleteMove {
@@ -61,6 +112,7 @@ namespace CustomDeploy {
         } else {
           ActorMovementSequence.logger.Log((object)("MovementSequence completeMove: Current Position pre-Snap:  x: " + (object)__instance.MoverTransform.position.x + ", y: " + (object)__instance.MoverTransform.position.y + ", z: " + (object)__instance.MoverTransform.position.z + ", Current Heading:  x: " + (object)__instance.MoverTransform.forward.x + ", y: " + (object)__instance.MoverTransform.forward.y + ", z: " + (object)__instance.MoverTransform.forward.z + ", Current Rotation: " + (object)__instance.MoverTransform.rotation.eulerAngles.y));
           ActorMovementSequence.logger.Log((object)("MovementSequence completeMove will snap to: Final Position:  x: " + (object)__instance.FinalPos.x + ", y: " + (object)__instance.FinalPos.y + ", z: " + (object)__instance.FinalPos.z + ", Final Heading:  x: " + (object)__instance.FinalHeading.x + ", y: " + (object)__instance.FinalHeading.y + ", z: " + (object)__instance.FinalHeading.z + ", Final Rotation: " + (object)Quaternion.LookRotation(__instance.FinalHeading).eulerAngles.y));
+          Log.TWL(0, $"ActorMovementSequence.CompleteMove {__instance.SequenceGUID} owner:{__instance.owningActor.PilotableActorDef.ChassisID}");
           //__instance.MoverTransform.position = __instance.FinalPos;
           //__instance.MoverTransform.transform.rotation = Quaternion.LookRotation(__instance.FinalHeading, Vector3.up);
           //if (__instance.isVehicle)
@@ -80,6 +132,7 @@ namespace CustomDeploy {
         }
       }catch(Exception e) {
         Log.TWL(0, e.ToString(), true);
+        ActorMovementSequence.logger.LogException(e);
       }
     }
   }
@@ -151,6 +204,7 @@ namespace CustomDeploy {
         __instance.CompleteMove();
       } catch (Exception e) {
         Log.TWL(0, e.ToString(), true);
+        ActorMovementSequence.logger.LogException(e);
       }
     }
   }
