@@ -479,6 +479,16 @@ namespace CustAmmoCategories {
     public int AMSInterceptedTrace { get; set; } = 0;
     [Key(160)]
     public List<string> RestrictedAmmo { get; set; } = new List<string>();
+    [Key(161)]
+    public float MinRangeClusterMod { get; set; } = 0f;
+    [Key(162)]
+    public float ShortRangeClusterMod { get; set; } = 0f;
+    [Key(163)]
+    public float MediumRangeClusterMod { get; set; } = 0f;
+    [Key(164)]
+    public float LongRangeClusterMod { get; set; } = 0f;
+    [Key(165)]
+    public float MaxRangeClusterMod { get; set; } = 0f;
     [IgnoreMember, JsonIgnore]
     private HashSet<string> f_restrictedAmmo = null;
     [IgnoreMember, JsonIgnore]

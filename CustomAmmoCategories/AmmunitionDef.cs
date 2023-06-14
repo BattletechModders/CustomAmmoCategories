@@ -571,6 +571,16 @@ namespace CustAmmoCategories {
     public float AMSHitChanceMult { get; set; } = 0f;
     [Key(164)]
     public int AMSInterceptedTrace { get; set; } = 0;
+    [Key(165)]
+    public float MinRangeClusterMod { get; set; } = 0f;
+    [Key(166)]
+    public float ShortRangeClusterMod { get; set; } = 0f;
+    [Key(167)]
+    public float MediumRangeClusterMod { get; set; } = 0f;
+    [Key(168)]
+    public float LongRangeClusterMod { get; set; } = 0f;
+    [Key(169)]
+    public float MaxRangeClusterMod { get; set; } = 0f;
     public ExtAmmunitionDef() { }
   }
 }

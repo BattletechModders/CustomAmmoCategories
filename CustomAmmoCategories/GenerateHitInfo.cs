@@ -42,20 +42,28 @@ namespace CustAmmoCategories {
         return result;
       }
       result = HitGeneratorType.NotSet;
+      string hitGenerator = weapon.statCollection.GetOrCreateStatisic<string>("HitGenerator", "").Value<string>();
+      if (string.IsNullOrEmpty(hitGenerator) == false) {
+        if (Enum.TryParse<HitGeneratorType>(hitGenerator, out result) == false) { result = HitGeneratorType.NotSet; } else {
+          Log.Combat?.WL(1, "per statistic hit generator " + result.ToString());
+        }
+      }
       WeaponMode mode = weapon.mode();
-      if (mode.HitGenerator != HitGeneratorType.NotSet) {
-        Log.Combat?.WL(1, "per mode hit generator " + mode.HitGenerator.ToString());
-        result = mode.HitGenerator;
-      } else {
-        ExtAmmunitionDef ammo = weapon.ammo();
-        if (ammo.HitGenerator != HitGeneratorType.NotSet) {
-          result = ammo.HitGenerator;
-          Log.Combat?.WL(1, "per ammo hit generator " + result.ToString());
+      if (result == HitGeneratorType.NotSet) {
+        if (mode.HitGenerator != HitGeneratorType.NotSet) {
+          Log.Combat?.WL(1, "per mode hit generator " + mode.HitGenerator.ToString());
+          result = mode.HitGenerator;
         } else {
-          ExtWeaponDef def = weapon.exDef();
-          if(def.HitGenerator != HitGeneratorType.NotSet) {
-            result = def.HitGenerator;
-            Log.Combat?.WL(1, "per weapon def hit generator " + result.ToString());
+          ExtAmmunitionDef ammo = weapon.ammo();
+          if (ammo.HitGenerator != HitGeneratorType.NotSet) {
+            result = ammo.HitGenerator;
+            Log.Combat?.WL(1, "per ammo hit generator " + result.ToString());
+          } else {
+            ExtWeaponDef def = weapon.exDef();
+            if (def.HitGenerator != HitGeneratorType.NotSet) {
+              result = def.HitGenerator;
+              Log.Combat?.WL(1, "per weapon def hit generator " + result.ToString());
+            }
           }
         }
       }
@@ -151,9 +159,9 @@ namespace CustomAmmoCategoriesPatches {
       Log.Combat?.WL(1, "radius:" + radius + " realdistance:" + Vector3.Distance(centerPosition, position));
       return position;
     }
-    public static void GetStreakHits(this AttackDirector.AttackSequence instance, ref WeaponHitInfo hitInfo, int groupIdx, int weaponIdx, Weapon weapon, float toHitChance, float prevDodgedDamage) {
-      Log.Combat?.TWL(0, "GetStreakHits "+weapon.defId+" mode:"+weapon.mode().UIName+" ammo:"+weapon.ammo().Id+" clustering:"+ weapon.ClusteringModifier+" choosenTarget type:" + instance.chosenTarget.GetType().Name);
+    public static void GetStreakHits(this AttackDirector.AttackSequence instance, ref WeaponHitInfo hitInfo, int groupIdx, int weaponIdx, Weapon weapon, float toHitChance, float clusterMod, float prevDodgedDamage) {
       if (hitInfo.numberOfShots == 0) { return; };
+      Log.Combat?.TWL(0, $"GetStreakHits {weapon.defId} mode:{weapon.mode().UIName} ammo:{weapon.ammo().Id} clustering:{weapon.ClusteringModifier+clusterMod} choosenTarget type:{instance.chosenTarget.GetType().Name}");
       if (AttackDirector.hitLogger.IsLogEnabled)
         AttackDirector.hitLogger.Log((object)string.Format("???????? RANDOM HIT ROLLS (GetStreakHits): Weapon Group: {0} // Weapon: {1}", (object)groupIdx, (object)weaponIdx));
       hitInfo.toHitRolls = instance.GetRandomNumbers(groupIdx, weaponIdx, hitInfo.numberOfShots);
@@ -165,7 +173,7 @@ namespace CustomAmmoCategoriesPatches {
       hitInfo.dodgeRolls = instance.GetRandomNumbers(groupIdx, weaponIdx, hitInfo.numberOfShots);
       hitInfo.hitVariance = instance.GetVarianceSums(groupIdx, weaponIdx, hitInfo.numberOfShots, weapon);
       int primeHitLocation = 0;
-      float originalMultiplier = 1f + weapon.ClusteringModifier;
+      float originalMultiplier = 1f + weapon.ClusteringModifier+clusterMod;
       float adjacentMultiplier = 1f;
       AbstractActor target = instance.chosenTarget as AbstractActor;
       Team team = weapon == null || weapon.parent == null || weapon.parent.team == null ? (Team)null : weapon.parent.team;
@@ -174,7 +182,7 @@ namespace CustomAmmoCategoriesPatches {
       bool primeSuccess = false;
       {
         float corrRolls = instance.GetCorrectedRoll(hitInfo.toHitRolls[0], team);
-        bool succeeded = (double)corrRolls <= (double)toHitChance;
+        bool succeeded = (double)corrRolls <= toHitChance;
         if ((CustomAmmoCategories.Settings.PlayerAlwaysHit) && (team == instance.attacker.Combat.LocalPlayerTeam)) { succeeded = true; }
         if (weapon.exDef().alwaysMiss) { succeeded = false; }
         bool targetDoggle = false;
@@ -266,8 +274,8 @@ namespace CustomAmmoCategoriesPatches {
       ICombatant combatantByGuid = instance.Director.Combat.FindCombatantByGUID(hitInfo.secondaryTargetIds[hitIdx]);
       hitInfo.hitQualities[hitIdx] = instance.Director.Combat.ToHit.GetBlowQuality(instance.attacker, instance.attackPosition, weapon, combatantByGuid, instance.meleeAttackType, instance.IsBreachingShot);
     }
-    public static void GetClusteredHits_I(this AttackDirector.AttackSequence instance, ref WeaponHitInfo hitInfo, int groupIdx, int weaponIdx, Weapon weapon, float toHitChance, float prevDodgedDamage) {
-      Log.Combat?.TWL(0, "GetClusteredHits " + weapon.defId + " mode:" + weapon.mode().UIName + " ammo:" + weapon.ammo().Id + " clustering:" + weapon.ClusteringModifier + " choosenTarget type:" + instance.chosenTarget.GetType().Name);
+    public static void GetClusteredHits_I(this AttackDirector.AttackSequence instance, ref WeaponHitInfo hitInfo, int groupIdx, int weaponIdx, Weapon weapon, float toHitChance, float clusterMod, float prevDodgedDamage) {
+      Log.Combat?.TWL(0, "GetClusteredHits " + weapon.defId + " mode:" + weapon.mode().UIName + " ammo:" + weapon.ammo().Id + " clustering:" + (weapon.ClusteringModifier+clusterMod) + " choosenTarget type:" + instance.chosenTarget.GetType().Name);
       if (hitInfo.numberOfShots == 0) { return; };
       if (AttackDirector.hitLogger.IsLogEnabled)
         AttackDirector.hitLogger.Log((object)string.Format("???????? RANDOM HIT ROLLS (GetClusteredHits): Weapon Group: {0} // Weapon: {1}", (object)groupIdx, (object)weaponIdx));
@@ -280,7 +288,7 @@ namespace CustomAmmoCategoriesPatches {
       hitInfo.dodgeRolls = instance.GetRandomNumbers(groupIdx, weaponIdx, hitInfo.numberOfShots);
       hitInfo.hitVariance = instance.GetVarianceSums(groupIdx, weaponIdx, hitInfo.numberOfShots, weapon);
       int previousHitLocation = 0;
-      float originalMultiplier = 1f + weapon.ClusteringModifier;
+      float originalMultiplier = 1f + weapon.ClusteringModifier + clusterMod;
       float adjacentMultiplier = 1f;
       AbstractActor chosenTarget = instance.chosenTarget as AbstractActor;
       Team team = weapon == null || weapon.parent == null || weapon.parent.team == null ? (Team)null : weapon.parent.team;
@@ -326,7 +334,7 @@ namespace CustomAmmoCategoriesPatches {
         instance.RefreshHitQualitiesForSecondaryTargets(ref hitInfo, weapon, index);
       }
     }
-    public static void GetIndividualHits_I(this AttackDirector.AttackSequence instance, ref WeaponHitInfo hitInfo, int groupIdx, int weaponIdx, Weapon weapon, float toHitChance, float prevDodgedDamage) {
+    public static void GetIndividualHits_I(this AttackDirector.AttackSequence instance, ref WeaponHitInfo hitInfo, int groupIdx, int weaponIdx, Weapon weapon, float toHitChance, float clusterMod, float prevDodgedDamage) {
       Log.Combat?.TWL(0, "GetIndividualHits " + weapon.defId + " mode:" + weapon.mode().UIName + " ammo:" + weapon.ammo().Id + " clustering:" + weapon.ClusteringModifier+" choosenTarget type:"+ instance.chosenTarget.GetType().Name);
       if (hitInfo.numberOfShots == 0) { return; };
       if (AttackDirector.hitLogger.IsLogEnabled)
@@ -396,7 +404,7 @@ namespace CustomAmmoCategoriesPatches {
       }
       return aloc;
     }
-    private static void GetAOEHits(AttackDirector.AttackSequence instance, ref WeaponHitInfo hitInfo, int groupIdx, int weaponIdx, Weapon weapon, float toHitChance, float prevDodgedDamage) {
+    private static void GetAOEHits(AttackDirector.AttackSequence instance, ref WeaponHitInfo hitInfo, int groupIdx, int weaponIdx, Weapon weapon, float toHitChance, float clusterMod, float prevDodgedDamage) {
       Log.Combat?.WL(0, "GetAOEHits");
       if (hitInfo.numberOfShots == 0) { return; };
       if (AttackDirector.hitLogger.IsLogEnabled)
@@ -480,6 +488,7 @@ namespace CustomAmmoCategoriesPatches {
       Thread.CurrentThread.SetFlag("TO_HIT_DEBUG_PRINT");
       float toHitChance = instance.Director.Combat.ToHit.GetToHitChance(instance.attacker, weapon, target, instance.attackPosition, target.CurrentPosition, instance.numTargets, instance.meleeAttackType, instance.isMoraleAttack);
       Thread.CurrentThread.ClearFlag("TO_HIT_DEBUG_PRINT");
+      float clusterMod = weapon.RangeClusterMod(Vector3.Distance(target.CurrentPosition, instance.attacker.CurrentPosition));
       if (indirectFire && (weapon.IndirectFireCapable() == false)) { toHitChance = 0f; };
       if (weapon.AlwaysIndirectVisuals()) { indirectFire = true; };
       Log.Combat?.WL(1,$"filling to hit records {target.DisplayName} {target.GUID} weapon:{weapon.defId} shots:{hitInfo.numberOfShots} toHit:{toHitChance}");
@@ -497,20 +506,20 @@ namespace CustomAmmoCategoriesPatches {
       Thread.CurrentThread.pushToStack<string>(CustomAmmoCategories.SPECIAL_HIT_TABLE_NAME, specialHitTable);
       switch (hitGenType) {
         case HitGeneratorType.Individual:
-          instance.GetIndividualHits_I(ref hitInfo, groupIdx, weaponIdx, weapon, toHitChance, dodgedDamage);
+          instance.GetIndividualHits_I(ref hitInfo, groupIdx, weaponIdx, weapon, toHitChance, clusterMod, dodgedDamage);
           break;
         case HitGeneratorType.Cluster:
-          instance.GetClusteredHits_I(ref hitInfo, groupIdx, weaponIdx, weapon, toHitChance, dodgedDamage);
+          instance.GetClusteredHits_I(ref hitInfo, groupIdx, weaponIdx, weapon, toHitChance, clusterMod, dodgedDamage);
           break;
         case HitGeneratorType.Streak:
-          AttackSequence_GenerateHitInfo.GetStreakHits(instance, ref hitInfo, groupIdx, weaponIdx, weapon, toHitChance, dodgedDamage);
+          AttackSequence_GenerateHitInfo.GetStreakHits(instance, ref hitInfo, groupIdx, weaponIdx, weapon, toHitChance, clusterMod, dodgedDamage);
           break;
         case HitGeneratorType.AOE:
-          AttackSequence_GenerateHitInfo.GetAOEHits(instance, ref hitInfo, groupIdx, weaponIdx, weapon, toHitChance, dodgedDamage);
+          AttackSequence_GenerateHitInfo.GetAOEHits(instance, ref hitInfo, groupIdx, weaponIdx, weapon, toHitChance, clusterMod, dodgedDamage);
           break;
         default:
           AttackDirector.attackLogger.LogError((object)string.Format("GenerateHitInfo found invalid weapon type: {0}, using basic hit info", (object)hitGenType));
-          instance.GetIndividualHits_I(ref hitInfo, groupIdx, weaponIdx, weapon, toHitChance, dodgedDamage);
+          instance.GetIndividualHits_I(ref hitInfo, groupIdx, weaponIdx, weapon, toHitChance, clusterMod, dodgedDamage);
           break;
       }
       Thread.CurrentThread.popFromStack<string>(CustomAmmoCategories.SPECIAL_HIT_TABLE_NAME);

@@ -119,17 +119,16 @@ namespace CustomUnits {
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { typeof(CombatHUD) })]
   public static class HUDTurretArmorReadout_Init {
-    public static bool Prefix(HUDTurretArmorReadout __instance, CombatHUD HUD) {
+    public static void Prefix(ref bool __runOriginal, HUDTurretArmorReadout __instance, CombatHUD HUD) {
       try {
         if (__instance is FakeHUDTurretArmorReadout fakeTurretReadout) {
-          fakeTurretReadout.Init(HUD);
-          return false;
+          fakeTurretReadout._Init(HUD);
+          __runOriginal = false; return;
         }
       } catch (Exception e) {
         Log.Combat?.TWL(0, e.ToString(), true);
         UIManager.logger.LogException(e);
       }
-      return true;
     }
   }
   [HarmonyPatch(typeof(SelectionStateMoraleAttack))]
@@ -191,6 +190,9 @@ namespace CustomUnits {
           return;
         this.RefreshTurretStructureAndArmor();
       }
+    }
+    public void _Init(CombatHUD iHUD) {
+      this.HUD = iHUD;
     }
     public new void ResetArmorStructureBars() {
       //Log.TWL(0, "FakeHUDTurretArmorReadout.ResetArmorStructureBars");

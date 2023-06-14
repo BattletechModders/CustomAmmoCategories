@@ -323,6 +323,17 @@ namespace CustAmmoCategories {
       }
       return result;
     }
+    public static float RangeClusterMod(this Weapon weapon, float distance) {
+      ExtAmmunitionDef ammo = weapon.ammo();
+      ExtWeaponDef def = weapon.exDef();
+      WeaponMode mode = weapon.mode();
+      if (distance < weapon.MinRange) { return (ammo.MinRangeClusterMod + mode.MinRangeClusterMod + weapon.GetStatisticFloat("MinRangeClusterMod"))*weapon.GetStatisticMod("MinRangeClusterMod"); }
+      if (distance < weapon.ShortRange) { return (ammo.ShortRangeClusterMod + mode.ShortRangeClusterMod + weapon.GetStatisticFloat("ShortRangeClusterMod")) * weapon.GetStatisticMod("ShortRangeClusterMod"); }
+      if (distance < weapon.MediumRange) { return (ammo.MediumRangeClusterMod + mode.MediumRangeClusterMod + weapon.GetStatisticFloat("MediumRangeClusterMod")) * weapon.GetStatisticMod("MediumRangeClusterMod"); }
+      if (distance < weapon.LongRange) { return (ammo.LongRangeClusterMod + mode.LongRangeClusterMod + weapon.GetStatisticFloat("LongRangeClusterMod")) * weapon.GetStatisticMod("LongRangeClusterMod"); }
+      if (distance < weapon.MaxRange) { return (ammo.MaxRangeClusterMod + mode.MaxRangeClusterMod + weapon.GetStatisticFloat("MaxRangeClusterMod")) * weapon.GetStatisticMod("MaxRangeClusterMod"); }
+      return 0f;
+    }
     public static float AOEInstability(this Weapon weapon) {
       float result = 0f;
       ExtAmmunitionDef ammo = weapon.ammo();
@@ -548,7 +559,8 @@ namespace CustAmmoCategoriesPatches {
         Log.M.WL(1,statName+":"+ia.Key);
       }
       PropertyInfo[] props = typeof(ExtWeaponDef).GetProperties(BindingFlags.Instance | BindingFlags.Public);
-      foreach(PropertyInfo prop in props) {
+      weapon.StatCollection.AddStatistic<string>("HitGenerator", "");
+      foreach (PropertyInfo prop in props) {
         object[] attrs = prop.GetCustomAttributes(true);
         foreach(object attr in attrs) {
           StatCollectionFloatAttribute fattr = attr as StatCollectionFloatAttribute;
