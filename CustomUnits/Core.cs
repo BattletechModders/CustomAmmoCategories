@@ -214,6 +214,7 @@ namespace CustomUnits {
     public string IntelCompanyStatShowMiniMap { get; set; } = "Intel_Show_Minimap";
     public bool IntelShowMood { get; set; } = false;
     public bool IntelShowMiniMap { get; set; } = false;
+    public bool VehicleEquipmentIsFixed { get; set; } = true;
     public Dictionary<string, TimerObjectiveAdvice> timerObjectiveChange { get; set; } = new Dictionary<string, TimerObjectiveAdvice>() { { "DefendBase", new TimerObjectiveAdvice(1, 2) } };
     public CUSettings() {
       debugLog = false;

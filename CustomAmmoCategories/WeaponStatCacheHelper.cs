@@ -96,8 +96,12 @@ namespace CustAmmoCategories {
   public static class Weapon_Constructor_Turret {
     public static void Postfix(Weapon __instance, Turret parent, CombatGameState combat, TurretComponentRef tcRef, string UID) {
       try {
-        Log.Combat?.TWL(0, "Weapon.Constructor " + parent.PilotableActorDef.Description.Id + " " + __instance.weaponDef.Description.Id);
-        __instance.Register(new WeaponExtendedInfo(__instance, __instance.weaponDef));
+        Log.Combat?.TWL(0, $"Weapon.Constructor {parent.PilotableActorDef.Description.Id} {(__instance.weaponDef==null?"null":__instance.weaponDef.Description.Id)}");
+        if (__instance.weaponDef != null) {
+          __instance.Register(new WeaponExtendedInfo(__instance, __instance.weaponDef));
+        } else {
+          __instance.Register(new WeaponExtendedInfo(__instance, null));
+        }
       } catch (Exception e) {
         Log.Combat?.TWL(0, e.ToString(), true);
         Weapon.logger.LogException(e);

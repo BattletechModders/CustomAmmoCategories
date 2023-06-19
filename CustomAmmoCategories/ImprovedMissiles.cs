@@ -282,29 +282,34 @@ namespace CustAmmoCategoriesPatches {
         return;
       launcher.FireNextMissile();
     }
-    public static void Prefix(ref bool __runOriginal,MissileLauncherEffect __instance) {
+    public static void Prefix(ref bool __runOriginal, MissileLauncherEffect __instance) {
       if (!__runOriginal) { return; }
       Log.Combat?.WL(0,"MissileLauncherEffect.FireNextMissile " + __instance.weapon.defId);
-      if (__instance.weapon.isImprovedBallistic() == false) { return; }
-      __instance.emitterIndex(__instance.emitterIndex() % __instance.numberOfEmitters());
-      Log.Combat?.WL(1, "hitIndex: " + __instance.hitIndex + "/"+__instance.hitInfo.numberOfShots+" emmiter: "+ __instance.emitterIndex() +"/"+ __instance.numberOfEmitters() + " volley: "+__instance.volleyInfo().missileVolleyId+"/"+__instance.volleyInfo().misileVolleySize);
-      if (__instance.hitIndex < __instance.hitInfo.numberOfShots && __instance.volleyInfo().missileVolleyId < __instance.volleyInfo().misileVolleySize) {
-        __instance.LaunchMissile();
-        ++(__instance.volleyInfo().missileVolleyId);
-      }
-      if (__instance.hitIndex >= __instance.hitInfo.numberOfShots) {
-        if (__instance.isSRM) {
-          int num1 = (int)WwiseManager.PostEvent<AudioEventList_srm>(AudioEventList_srm.srm_launcher_end, __instance.parentAudioObject(), (AkCallbackManager.EventCallback)null, (object)null);
+      try {
+        if (__instance.weapon.isImprovedBallistic() == false) { return; }
+        __instance.emitterIndex(__instance.emitterIndex() % __instance.numberOfEmitters());
+        Log.Combat?.WL(1, "hitIndex: " + __instance.hitIndex + "/" + __instance.hitInfo.numberOfShots + " emmiter: " + __instance.emitterIndex() + "/" + __instance.numberOfEmitters() + " volley: " + __instance.volleyInfo().missileVolleyId + "/" + __instance.volleyInfo().misileVolleySize);
+        if (__instance.hitIndex < __instance.hitInfo.numberOfShots && __instance.volleyInfo().missileVolleyId < __instance.volleyInfo().misileVolleySize) {
+          __instance.LaunchMissile();
+          ++(__instance.volleyInfo().missileVolleyId);
+        }
+        if (__instance.hitIndex >= __instance.hitInfo.numberOfShots) {
+          if (__instance.isSRM) {
+            int num1 = (int)WwiseManager.PostEvent<AudioEventList_srm>(AudioEventList_srm.srm_launcher_end, __instance.parentAudioObject(), (AkCallbackManager.EventCallback)null, (object)null);
+          } else {
+            int num2 = (int)WwiseManager.PostEvent<AudioEventList_lrm>(AudioEventList_lrm.lrm_launcher_end, __instance.parentAudioObject(), (AkCallbackManager.EventCallback)null, (object)null);
+          }
+          __instance.currentState = WeaponEffect.WeaponEffectState.WaitingForImpact;
         } else {
-          int num2 = (int)WwiseManager.PostEvent<AudioEventList_lrm>(AudioEventList_lrm.lrm_launcher_end, __instance.parentAudioObject(), (AkCallbackManager.EventCallback)null, (object)null);
+          if (__instance.volleyInfo().missileVolleyId >= __instance.volleyInfo().misileVolleySize) {
+            __instance.FireNextVolley_I();
+          }
         }
-        __instance.currentState = WeaponEffect.WeaponEffectState.WaitingForImpact;
-      } else {
-        if (__instance.volleyInfo().missileVolleyId >= __instance.volleyInfo().misileVolleySize) {
-          __instance.FireNextVolley_I();
-        }
+        __runOriginal = false; return;
+      }catch(Exception e) {
+        Log.Combat?.TWL(0, e.ToString(), true);
+        CombatGameState.gameInfoLogger.LogException(e);
       }
-      __runOriginal = false; return;
     }
   }
 }

@@ -1493,7 +1493,7 @@ namespace CustomUnits {
         //Log.WL(1, "StructureMultiplierVehicle:" + StructureMultiplierVehicle);
         newdef["Description"] = olddef["Description"];
         newdef["ChassisID"] = olddef["ChassisID"];
-        newdef["simGameMechPartCost"] = 0;
+        newdef["simGameMechPartCost"] = olddef["simGameMechPartCost"] == null? olddef["Description"]["Cost"] : olddef["simGameMechPartCost"];
         newdef["MechTags"] = olddef["VehicleTags"];
         TagSet MechTags = null;
         if (olddef["VehicleTags"] != null) {
@@ -1519,18 +1519,18 @@ namespace CustomUnits {
             case VehicleChassisLocations.Turret: location = ChassisLocations.Head; break;
           }
           JObject mcRef = new JObject();
-          mcRef["MountedLocation"] = location.ToString();
           //mcRef["SimGameUID"] = "";
           //mcRef["ComponentDefID"] = vcRef["ComponentDefID"]; ;
           //mcRef["ComponentDefType"] = vcRef["ComponentDefType"];
           //mcRef["HardpointSlot"] = vcRef["HardpointSlot"];
           //mcRef["GUID"] = null;
           //mcRef["DamageLevel"] = vcRef["DamageLevel"];
-          mcRef["IsFixed"] = true;
           foreach(var jfield in vcRef) {
             if (mcRef[jfield.Key] != null) { continue; }
             mcRef.Add(jfield.Key, jfield.Value);
           }
+          mcRef["MountedLocation"] = location.ToString();
+          mcRef["IsFixed"] = Core.Settings.VehicleEquipmentIsFixed ? true : (vcRef["IsFixed"] == null ? false: vcRef["IsFixed"]);
           //mcRef["prefabName"] = vcRef["prefabName"];
           //mcRef["hasPrefabName"] = vcRef["hasPrefabName"];
           //MechComponentRef mcRef = new MechComponentRef(vcRef.ComponentDefID, vcRef.SimGameUID, vcRef.ComponentDefType, location, vcRef.HardpointSlot, vcRef.DamageLevel, vcRef.IsFixed);
@@ -1642,17 +1642,20 @@ namespace CustomUnits {
         fakeHardpoints.TryAdd((string)olddef["HardpointDataDefID"],1);
         newdef["PrefabIdentifier"] = olddef["PrefabIdentifier"];
         newdef["PrefabBase"] = olddef["PrefabBase"];
-        newdef["VariantName"] = olddef["Description"]["Name"];
-        newdef["StockRole"] = "VEHICLE";
-        newdef["YangsThoughts"] = olddef["Description"]["Details"];
+        if (olddef["FixedEquipment"] != null) {
+          newdef["FixedEquipment"] = olddef["FixedEquipment"];
+        }
+        newdef["VariantName"] = olddef["VariantName"] == null? olddef["Description"]["Name"] : olddef["VariantName"];
+        newdef["StockRole"] = olddef["StockRole"]==null?"VEHICLE": olddef["StockRole"];
+        newdef["YangsThoughts"] = olddef["YangsThoughts"] == null ? olddef["Description"]["Details"] : olddef["YangsThoughts"];
         newdef["Tonnage"] = olddef["Tonnage"];
-        newdef["InitialTonnage"] = 0;
+        newdef["InitialTonnage"] = olddef["InitialTonnage"] == null ? 0 : olddef["InitialTonnage"];
         newdef["weightClass"] = olddef["weightClass"];
-        newdef["Heatsinks"] = 0;
+        newdef["Heatsinks"] = olddef["Heatsinks"] == null ? 0 : olddef["Heatsinks"];
         newdef["TopSpeed"] = olddef["TopSpeed"];
         newdef["TurnRadius"] = olddef["TopSpeed"];
-        newdef["MaxJumpjets"] = 0;
-        newdef["Stability"] = 100;
+        newdef["MaxJumpjets"] = olddef["MaxJumpjets"] == null ? 0 : olddef["MaxJumpjets"];
+        newdef["Stability"] = olddef["Stability"] == null ? 100 : olddef["Stability"];
         newdef["StabilityDefenses"] = JArray.Parse("[ 0, 0, 0, 0, 0, 0 ]");
         newdef["LOSSourcePositions"] = olddef["LOSSourcePositions"];
         newdef["LOSTargetPositions"] = olddef["LOSTargetPositions"];

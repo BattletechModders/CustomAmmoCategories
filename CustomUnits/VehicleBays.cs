@@ -293,10 +293,15 @@ namespace CustomUnits {
       if (string.IsNullOrEmpty(Core.Settings.DefaultMechSimgameRepresentationPrefab) == false) {
         loadRequest.AddBlindLoadRequest(BattleTechResourceType.Prefab, Core.Settings.DefaultMechSimgameRepresentationPrefab, new bool?(false));
       }
-      CustomActorRepresentationDef custRepDef = CustomActorRepresentationHelper.FindSimGame(mechPrefabName);
+      CustomActorRepresentationDef custRepDef = null;
+      if (string.IsNullOrEmpty(mechDef.Chassis.PrefabIdentifier) == false) {
+        custRepDef = CustomActorRepresentationHelper.Find(mechDef.Chassis.PrefabIdentifier);
+        if (custRepDef == null) {
+          Log.M?.TWL(0, "TransitionMech requesting battle game representation " + mechDef.ChassisID + " " + mechDef.Chassis.PrefabIdentifier);
+          loadRequest.AddBlindLoadRequest(BattleTechResourceType.Prefab, mechDef.Chassis.PrefabIdentifier, new bool?(false));
+        }
+      }
       if ((mechDef.Description.Id.IsInFakeDef() || mechDef.ChassisID.IsInFakeChassis()) && (custRepDef == null)) {
-        Log.M?.TWL(0, "TransitionMech requesting battle game representation " + mechDef.ChassisID + " " + mechDef.Chassis.PrefabIdentifier);
-        loadRequest.AddBlindLoadRequest(BattleTechResourceType.Prefab, mechDef.Chassis.PrefabIdentifier, new bool?(false));
         VehicleChassisDef vchassis = mechbay.simState.DataManager.VehicleChassisDefs.Get(mechDef.ChassisID);
         if (vchassis != null) { vchassis.AddCustomDeps(loadRequest); }
         vchassis.Refresh();
@@ -396,32 +401,37 @@ namespace CustomUnits {
             Log.M?.TWL(0, "TransitionMech spawning battle game representation " + mechDef.ChassisID + " " + mechDef.Chassis.PrefabIdentifier);
             GameObject battleGameObject = mechbay.simState.DataManager.PooledInstantiate(mechDef.Chassis.PrefabIdentifier, BattleTechResourceType.Prefab, null, null, null);
             //Vehicle vehicle = ActorFactory.CreateVehicle(vDef, pilot, team.EncounterTags, null, Guid.NewGuid().ToString(), spawnerGUID, team.HeraldryDef);
-            GameObject bayGameObject = GameObject.Instantiate(battleGameObject);
-            //GameObject bayGameObject = battleGameObject;
-            mechbay.simState.DataManager.PoolGameObject(mechDef.Chassis.PrefabIdentifier, battleGameObject);
-            VehicleRepresentation battleRep = bayGameObject.GetComponent<VehicleRepresentation>();
-            if (battleRep != null) {
-              AkGameObj audio = battleRep.audioObject;
-              battleRep.audioObject = null;
-              battleRep.RegisterChassis(mechbay.simState.DataManager.VehicleChassisDefs.Get(mechDef.ChassisID));
-              battleRep.Init(null, mechbay.simState.CameraController.MechAnchor, true);
-              battleRep.audioObject = audio;
-              bayRepresentation = bayGameObject.AddComponent<MechRepresentationSimGame>();
-              bayRepresentation.InitFromBattleRepresentation(battleRep);
-              bayRepresentation.thisAnimator = null;
-              battleRep.BlipObjectIdentified.SetActive(false);
-              battleRep.BlipObjectUnknown.SetActive(false);
-              //mechbay.simState.DataManager.PoolGameObject(mechPrefabName, bayGameObject);
-              gameObject = bayGameObject;
-              Log.M?.WL(1, "pooling MechRepresentationSimGame as " + mechPrefabName);
-              //GameObject.Destroy(battleRep);
+            if (battleGameObject != null) {
+              GameObject bayGameObject = GameObject.Instantiate(battleGameObject);
+              //GameObject bayGameObject = battleGameObject;
+              mechbay.simState.DataManager.PoolGameObject(mechDef.Chassis.PrefabIdentifier, battleGameObject);
+              VehicleRepresentation battleRep = bayGameObject.GetComponent<VehicleRepresentation>();
+              if (battleRep != null) {
+                AkGameObj audio = battleRep.audioObject;
+                battleRep.audioObject = null;
+                battleRep.RegisterChassis(mechbay.simState.DataManager.VehicleChassisDefs.Get(mechDef.ChassisID));
+                battleRep.Init(null, mechbay.simState.CameraController.MechAnchor, true);
+                battleRep.audioObject = audio;
+                bayRepresentation = bayGameObject.AddComponent<MechRepresentationSimGame>();
+                bayRepresentation.InitFromBattleRepresentation(battleRep);
+                bayRepresentation.thisAnimator = null;
+                battleRep.BlipObjectIdentified.SetActive(false);
+                battleRep.BlipObjectUnknown.SetActive(false);
+                //mechbay.simState.DataManager.PoolGameObject(mechPrefabName, bayGameObject);
+                gameObject = bayGameObject;
+                Log.M?.WL(1, "pooling MechRepresentationSimGame as " + mechPrefabName);
+                //GameObject.Destroy(battleRep);
+              } else {
+                Log.M?.WL(1, "no VehicleRepresentation");
+                SimGameState.logger.LogError($"{mechDef.Chassis.PrefabIdentifier} have no VehicleRepresentation");
+                GameObject.Destroy(bayGameObject);
+              }
+              //gameObject = mechbay.simState.DataManager.PooledInstantiate(mechPrefabName, BattleTechResourceType.Prefab, null, null, null);
+              Log.M?.WL(1, "requested from pool " + mechPrefabName + " result:" + (gameObject == null ? "null" : "not null"));
+              //}
             } else {
-              Log.M?.WL(1, "no VehicleRepresentation");
-              GameObject.Destroy(bayGameObject);
+              SimGameState.logger.LogError($"{mechDef.ChassisID}:{mechDef.Chassis.PrefabIdentifier} is not in DataManager");
             }
-            //gameObject = mechbay.simState.DataManager.PooledInstantiate(mechPrefabName, BattleTechResourceType.Prefab, null, null, null);
-            Log.M?.WL(1, "requested from pool " + mechPrefabName + " result:" + (gameObject == null ? "null" : "not null"));
-            //}
           }
           if (gameObject != null) {
             bayRepresentation = gameObject.GetComponent<MechRepresentationSimGame>();
