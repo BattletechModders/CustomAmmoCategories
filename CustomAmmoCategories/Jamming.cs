@@ -183,7 +183,7 @@ namespace CustAmmoCategories {
 
       foreach (Weapon weapon in actor.Weapons) {
         if (weapon.roundsSinceLastFire <= 0) { continue; };
-        if (CustomAmmoCategories.IsJammed(weapon)) {
+        if (CustomAmmoCategories.IsJammed(weapon) && !weapon.JammingPersistent()) {
           var removedJam = CustomAmmoCategories.AttemptToRemoveJam(actor, weapon);
           Log.Combat?.WL(0, $"Removed Jam? {removedJam}");
         }
@@ -528,6 +528,10 @@ namespace CustAmmoCategories {
     }
     public static int Cooldown(this Weapon weapon) {
       return weapon.exDef().Cooldown + weapon.mode().Cooldown;
+    }
+    public static bool JammingPersistent(this Weapon weapon)
+    {
+       return weapon.exDef().PersistentJamming;
     }
     public static bool AttemptToRemoveJam(AbstractActor actor, Weapon weapon) {
       var skill = actor.SkillGunnery;
