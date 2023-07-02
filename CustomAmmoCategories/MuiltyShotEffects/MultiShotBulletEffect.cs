@@ -121,9 +121,14 @@ namespace CustAmmoCategories {
         this.projectileSpeed = parentLauncher.projectileSpeed;
       }
       this.projectileSpeed *= weapon.ProjectileSpeedMultiplier();
+      Log.Combat?.TWL(0, $"MultiShotBulletEffect.SetupCustomSettings playSFX:{this.playSFX}");
+      Log.Combat?.WL(1, $"customPrefireSFX:{this.customPrefireSFX}");
+      Log.Combat?.WL(1, $"firstPreFireSFX:{this.parentLauncher.firstPreFireSFX}");
+      Log.Combat?.WL(1, $"middlePrefireSFX:{this.parentLauncher.middlePrefireSFX}");
+      Log.Combat?.WL(1, $"lastPreFireSFX:{this.parentLauncher.lastPreFireSFX}");
     }
     public virtual void Fire(WeaponHitInfo hitInfo, int hitIndex, int emitterIndex, bool pb) {
-      //Log.Combat?.TWL(0,"MultiShotBulletEffect.Fire "+hitInfo.attackWeaponIndex+" "+hitIndex+" emitter:" + emitterIndex + " ep:"+hitInfo.hitPositions[hitIndex]+" prime:"+pb+"\n");
+      Log.Combat?.TWL(0,$"MultiShotBulletEffect.Fire {hitInfo.attackWeaponIndex} {hitIndex} emitter:{emitterIndex} ep:{hitInfo.hitPositions[hitIndex]} prime:{pb}");
       this.primeBullet = pb;
       Vector3 endPos = hitInfo.hitPositions[hitIndex];
       this.SetupCustomSettings();

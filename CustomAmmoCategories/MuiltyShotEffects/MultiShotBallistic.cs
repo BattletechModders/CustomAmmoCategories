@@ -224,6 +224,11 @@ namespace CustAmmoCategories {
       } else {
         this.shotDelay = this.originalShotDelay;
       }
+      Log.Combat?.TWL(0, $"MultiShotBallisticEffect.SetupCustomSettings playSFX:{this.playSFX}");
+      Log.Combat?.WL(1, $"customPrefireSFX:{this.customPrefireSFX}");
+      Log.Combat?.WL(1, $"firstPreFireSFX:{this.firstPreFireSFX}");
+      Log.Combat?.WL(1, $"middlePrefireSFX:{this.middlePrefireSFX}");
+      Log.Combat?.WL(1, $"lastPreFireSFX:{this.lastPreFireSFX}");
     }
     public override void Fire(WeaponHitInfo hitInfo, int hitIndex = 0, int emitterIndex = 0) {
       Log.Combat?.TWL(0, $"MultiShotBallisticEffect.Fire {hitInfo.attackWeaponIndex} {hitIndex} ep:{hitInfo.hitPositions[hitIndex]}");
