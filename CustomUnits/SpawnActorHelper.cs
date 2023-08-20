@@ -63,6 +63,7 @@ namespace CustomUnits {
     public virtual bool NeedsCalledShot { get { return false; } }
     public override bool CanActorUseThisState(AbstractActor actor) { return true; }
     public override bool CanDeselect { get { return true; } }
+    private List<Vector3> hotDropPositions = new List<Vector3>();
     public override void OnAddToStack() {
       NumPositionsLocked = 0;
       Log.Combat?.TWL(0, "SelectionStateCommandSpawnUnit OnAddToStack");
@@ -88,7 +89,12 @@ namespace CustomUnits {
         ReceiveMessageCenterMessage messageCenterMessage = (ReceiveMessageCenterMessage)(message => { });
         this.Combat.MessageCenter.AddSubscriber(MessageCenterMessageType.AddSequenceToStackMessage, new ReceiveMessageCenterMessage(this.HandleAddSequenceToOrders));
         Log.Combat?.WL(1,"SpawnAtPos");
-        HotDropManager.DefferedHotDrop(this.SelectedActor, this.targetPosition);
+        if (hotDropPositions.Count > 0) {
+          HotDropManager.DeferredHotDrop(SelectedActor, hotDropPositions);
+        }
+        else {
+          HotDropManager.DeferredHotDrop(SelectedActor, targetPosition);
+        }
         this.HasActivated = true;
         this.OnInactivate();
       }catch(Exception e) {
@@ -111,7 +117,32 @@ namespace CustomUnits {
       if (this.NumPositionsLocked != 0) { return false; }
       float minDist = (float)this.FromButton.Ability.Def.IntParam1;
       float maxDist = (float)this.FromButton.Ability.Def.IntParam2;
-      this.targetPosition = this.GetVaidSpawnPos(worldPos, minDist, maxDist);
+      this.targetPosition = this.GetValidSpawnPos(worldPos, minDist, maxDist);
+      hotDropPositions.Clear();
+      if (Input.GetKey(KeyCode.LeftAlt)) {
+        // Calculate drop pos for all hot drops
+        int reqPosCount = CustomLanceHelper.hotdropLayout.Count;
+        for (int posCount = 0; posCount < reqPosCount; ++posCount) {
+          float nearest;
+          Vector3 rndPos;
+          do {
+            rndPos = worldPos;
+            float radius = UnityEngine.Random.Range(0.5f * Core.Settings.DeploySpawnRadius, Core.Settings.DeploySpawnRadius);
+            float direction = Mathf.Deg2Rad * UnityEngine.Random.Range(0f, 360f);
+            rndPos.x += Mathf.Sin(direction) * radius;
+            rndPos.z += Mathf.Cos(direction) * radius;
+            rndPos.y = HUD.Combat.MapMetaData.GetLerpedHeightAt(rndPos);
+            rndPos = HUD.Combat.HexGrid.GetClosestPointOnGrid(rndPos);
+            nearest = 9999f;
+            foreach (Vector3 vec in hotDropPositions) {
+              float dist = Vector3.Distance(vec, rndPos);
+              if (nearest > dist) { nearest = dist; };
+            };
+            Log.Combat?.WL(1, rndPos.ToString() + " distance:" + Vector3.Distance(rndPos, worldPos) + " nearest:" + nearest + " rejected:" + (nearest < Core.Settings.DeploySpawnRadius / 4f), true);
+          } while (nearest < Core.Settings.DeploySpawnRadius / 4f);
+          hotDropPositions.Add(rndPos);
+        }
+      }
       this.NumPositionsLocked = 1;
       this.ShowFireButton(CombatHUDFireButton.FireMode.Confirm, Ability.ProcessDetailString(this.FromButton.Ability).ToString(true));
       return true;
@@ -121,7 +152,7 @@ namespace CustomUnits {
         return this.SelectedActor.CurrentPosition;
       }
     }
-    public Vector3 GetVaidSpawnPos(Vector3 worldPos, float min, float max) {
+    public Vector3 GetValidSpawnPos(Vector3 worldPos, float min, float max) {
       Vector3 result = new Vector3(worldPos.x, worldPos.y, worldPos.z);
       float dist = Vector3.Distance(this.SelectedActor.CurrentPosition, worldPos);
       if ((double)dist < (double)min)
@@ -136,7 +167,7 @@ namespace CustomUnits {
       float floatParam1 = this.FromButton.Ability.Def.FloatParam1;
       float minDist = (float)this.FromButton.Ability.Def.IntParam1;
       float maxDist = (float)this.FromButton.Ability.Def.IntParam2;
-      worldPos = this.GetVaidSpawnPos(worldPos, minDist, maxDist);
+      worldPos = this.GetValidSpawnPos(worldPos, minDist, maxDist);
       switch (this.NumPositionsLocked) {
         case 0:
           CombatTargetingReticle.Instance.UpdateReticle(worldPos, floatParam1, false);

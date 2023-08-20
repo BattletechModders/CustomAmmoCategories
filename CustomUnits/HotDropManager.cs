@@ -219,7 +219,7 @@ namespace CustomUnits {
         }
       }
     }
-    public void OnDropCompleete() {
+    public void OnDropComplete() {
       this.Combat.RebuildAllLists();
       if (refreshHUDCheck == false) { return; }
       bool refreshTeam = true;
@@ -232,12 +232,21 @@ namespace CustomUnits {
       }
     }
     private bool refreshHUDCheck = false;
-    public static void DefferedHotDrop(Weapon weapon, Vector3 pos) {
+    public static void DeferredHotDrop(Weapon weapon, Vector3 pos) {
       EncounterLayerParent encounterLayerParent = weapon.parent.Combat.EncounterLayerData.GetComponentInParent<EncounterLayerParent>();
       HotDropManager hotdropManager = encounterLayerParent.GetComponent<HotDropManager>();
       hotdropManager.HotDrop(new List<Vector3>() { pos }, weapon.parent.GUID);
     }
-    public static bool DefferedHotDrop(AbstractActor parent, Vector3 pos) {
+
+    public static bool DeferredHotDrop(AbstractActor parent, List<Vector3> positions) {
+      EncounterLayerParent encounterLayerParent = parent.Combat.EncounterLayerData.GetComponentInParent<EncounterLayerParent>();
+      HotDropManager hotDropManager = encounterLayerParent.GetComponent<HotDropManager>();
+
+      hotDropManager.HotDrop(positions, parent.GUID);
+      return true;
+    }
+
+    public static bool DeferredHotDrop(AbstractActor parent, Vector3 pos) {
       EncounterLayerParent encounterLayerParent = parent.Combat.EncounterLayerData.GetComponentInParent<EncounterLayerParent>();
       HotDropManager hotdropManager = encounterLayerParent.GetComponent<HotDropManager>();
       GenericPopup popup = null;
@@ -318,7 +327,7 @@ namespace CustomUnits {
       if (dropPoints[index].unit != null) { return; }
       if (dropPoints[index].InDroping) { return; }
       if (dropPoints[index].dropDef.TeamGUID == this.Combat.LocalPlayerTeamGuid) { refreshHUDCheck = true; }
-      dropPoints[index].HotDrop(pos, OnDropCompleete, spawnGUID);
+      dropPoints[index].HotDrop(pos, OnDropComplete, spawnGUID);
     }
     public void HotDrop(List<Vector3> positions, string spawnGUID) {
       if (this.Combat == null) { return; }
@@ -332,7 +341,7 @@ namespace CustomUnits {
           if (dropPoint.unit != null) { continue; }
           if (dropPoint.InDroping) { continue; }
           if (dropPoint.dropDef.TeamGUID == this.Combat.LocalPlayerTeamGuid) { refreshHUDCheck = true; }
-          dropPoint.HotDrop(pos, OnDropCompleete, spawnGUID);
+          dropPoint.HotDrop(pos, OnDropComplete, spawnGUID);
           break;
         }
       }
