@@ -651,7 +651,7 @@ namespace CustomUnits {
         CustAmmoCategories.ToHitModifiersHelper.registerModifier("SQUAD SIZE", "SQUAD SIZE", true, false, TrooperSquad.GetSquadSizeToHitMod, TrooperSquad.GetSquadSizeToHitModName);
         CustAmmoCategories.DamageModifiersCache.RegisterDamageModifier("SQUAD SIZE", "SQUAD SIZE", true, true, true, true, true, TrooperSquad.SquadSizeDamageMod, TrooperSquad.SquadSizeDamageModName);
         DamageModifiersCache.RegisterDamageModifier("TYPEMOD", "TYPEMOD", false, true, true, true, true, TypeDmgCACModifier, TypeDmgCACModifierName);
-        CustAmmoCategories.DeferredEffectHelper.RegisterCallback("HOTDROP",HotDropManager.DefferedHotDrop);
+        CustAmmoCategories.DeferredEffectHelper.RegisterCallback("HOTDROP",HotDropManager.DeferredHotDrop);
         PilotingClassHelper.Validate();
         //DropClassDef.Validate();
         DropSystemHelper.Validate();
