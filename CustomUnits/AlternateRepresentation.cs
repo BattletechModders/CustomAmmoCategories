@@ -49,9 +49,9 @@ namespace CustomUnits {
     [Key(3)]
     public string PrefabBase { get; set; } = string.Empty;
     [Key(4)]
-    public string HoveringSoundStart { get; set; } = "jet_start";
+    public string HoveringSoundStart { get; set; } = string.Empty;
     [Key(5)]
-    public string HoveringSoundEnd { get; set; } = "jet_end";
+    public string HoveringSoundEnd { get; set; } = string.Empty;
     [Key(6)]
     public string TransformationSound { get; set; } = string.Empty;
     [Key(7)]

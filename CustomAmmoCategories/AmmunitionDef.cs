@@ -581,6 +581,8 @@ namespace CustAmmoCategories {
     public float LongRangeClusterMod { get; set; } = 0f;
     [Key(169)]
     public float MaxRangeClusterMod { get; set; } = 0f;
+    [Key(170)]
+    public string parentPreFireSFX { get; set; } = null;
     public ExtAmmunitionDef() { }
   }
 }

@@ -489,6 +489,8 @@ namespace CustAmmoCategories {
     public float LongRangeClusterMod { get; set; } = 0f;
     [Key(165)]
     public float MaxRangeClusterMod { get; set; } = 0f;
+    [Key(166)]
+    public string parentPreFireSFX { get; set; } = null;
     [IgnoreMember, JsonIgnore]
     private HashSet<string> f_restrictedAmmo = null;
     [IgnoreMember, JsonIgnore]

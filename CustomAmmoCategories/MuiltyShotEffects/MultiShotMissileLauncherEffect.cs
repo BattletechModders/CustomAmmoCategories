@@ -139,7 +139,8 @@ public class MultiShotMissileLauncherEffect : CopyAbleWeaponEffect {
     return true;
   }
   public override void SetupCustomSettings() {
-    this.customPrefireSFX = string.Empty;
+    this.customPrefireSFX = weapon.parentPreFireSFX();
+    if (this.customPrefireSFX == null) { this.customPrefireSFX = string.Empty; }
     this.fireSFX = string.Empty;
     this.firstPreFireSFX = weapon.firstPreFireSFX();
     this.middlePrefireSFX = weapon.preFireSFX();

@@ -168,7 +168,8 @@ namespace CustAmmoCategories {
       this.t = 1f;
     }
     public override void SetupCustomSettings() {
-      this.customPrefireSFX = string.Empty;
+      this.customPrefireSFX = weapon.parentPreFireSFX();
+      if (this.customPrefireSFX == null) { this.customPrefireSFX = string.Empty; }
       this.firstPreFireSFX = weapon.firstPreFireSFX();
       this.middlePrefireSFX = weapon.preFireSFX();
       this.lastPreFireSFX = weapon.lastPreFireSFX();

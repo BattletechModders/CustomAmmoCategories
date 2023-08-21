@@ -512,7 +512,7 @@ namespace CustAmmoCategories {
         result += ((baseval - weapon.parent.SkillGunnery) * mult);
       }
       result *= weapon.ModJammChanceStat();
-      descr.Append($"JAMM CHANCE: {Mathf.Round(result*1000f)/10f}%");
+      descr.Append($"JAM CHANCE: {Mathf.Round(result*1000f)/10f}%");
       description = descr.ToString();
       return result;
     }

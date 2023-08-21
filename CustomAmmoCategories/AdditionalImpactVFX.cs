@@ -79,6 +79,18 @@ namespace CustAmmoCategories {
       ExtWeaponDef extWeapon = weapon.exDef();
       return extWeapon.preFireSFX;
     }
+    public static string parentPreFireSFX(this Weapon weapon) {
+      WeaponMode mode = weapon.mode();
+      if (mode.parentPreFireSFX != null) {
+        return mode.parentPreFireSFX;
+      }
+      ExtAmmunitionDef ammo = weapon.ammo();
+      if (ammo.parentPreFireSFX != null) {
+        return ammo.parentPreFireSFX;
+      }
+      ExtWeaponDef extWeapon = weapon.exDef();
+      return extWeapon.parentPreFireSFX;
+    }
     public static string fireSFX(this Weapon weapon) {
       WeaponMode mode = weapon.mode();
       if (mode.fireSFX != null) {
