@@ -672,10 +672,14 @@ namespace CustAmmoCategories {
       SelectionState activeState = Traverse.Create(slot).Field<CombatHUD>("HUD").Value.SelectionHandler.ActiveState;
       return activeState != null && activeState.SelectionType == SelectionType.Move && (activeState.PotentialMeleeTarget == target || activeState.TargetedCombatant == target);
     }
+    public static void AddToolTipDetailBuff(this CombatHUDWeaponSlot slot, string description) {
+      slot.ToolTipHoverElement.BuffStrings.Add(new Localize.Text("{0}", new object[1] { (object) description }));
+    }
+
     public static void UpdateToolTipsMelee_I(this CombatHUDWeaponSlot slot, ICombatant target) {
       //slot.ToolTipHoverElement.BasicString = new Text(slot.DisplayedWeapon.Name, (object[])Array.Empty<object>());
-      CombatGameState Combat = Traverse.Create(slot).Field<CombatGameState>("Combat").Value;
-      CombatHUD HUD = Traverse.Create(slot).Field<CombatHUD>("HUD").Value;
+      CombatGameState Combat = slot.Combat;
+      CombatHUD HUD = slot.HUD;
       MeleeAttackType meleeAttackType = slot.contemplatingDFA(target) ? MeleeAttackType.DFA : MeleeAttackType.Punch;
       bool calledShot = HUD.SelectionHandler.ActiveState.SelectionType == SelectionType.FireMorale;
       int all_modifiers = 0;
@@ -712,7 +716,7 @@ namespace CustAmmoCategories {
         }
         if (mod.Value.dname2 != null) {
           if (string.IsNullOrEmpty(name) == false) {
-            slot.AddToolTipDetail(name, modifier);
+            if(modifier != 0) { slot.AddToolTipDetail(name, modifier); } else { slot.AddToolTipDetailBuff(name); }
           }
         } else
         if ((modifier != 0) && (string.IsNullOrEmpty(name) == false)) {
@@ -791,9 +795,9 @@ namespace CustAmmoCategories {
         if(mod.Value.dname2 != null) {
           //Log.M?.TWL(0, "UpdateToolTipsFiring "+ slot.DisplayedWeapon.defId+" name:"+name+" modifier:"+modifier);
           if(string.IsNullOrEmpty(name) == false) {
-            slot.AddToolTipDetail(name, modifier);
+            if(modifier != 0) { slot.AddToolTipDetail(name, modifier); } else { slot.AddToolTipDetailBuff(name); }
           }
-        }else
+        } else
         if ((modifier != 0) && (string.IsNullOrEmpty(name) == false)) {
           slot.AddToolTipDetail(name, modifier);
         }
@@ -860,7 +864,7 @@ namespace CustAmmoCategories {
         if (mod.Value.dname2 != null) {
           //Log.M?.TWL(0, "UpdateToolTipsSelf " + slot.DisplayedWeapon.defId + " name:" + name + " modifier:" + modifier);
           if (string.IsNullOrEmpty(name) == false) {
-            slot.AddToolTipDetail(name, modifier);
+            if(modifier != 0) { slot.AddToolTipDetail(name, modifier); } else { slot.AddToolTipDetailBuff(name); }
           }
         } else
         if ((modifier != 0) && (string.IsNullOrEmpty(name) == false)) {

@@ -146,14 +146,15 @@ namespace CustAmmoCategories {
         float result = baseCritChance * shardsCritChance * TAcritMultiplier * thicknessCritChance * unit.FlatCritChance() * unit.FlatCritChance(critInfo.armorLocation) * unit.APCritChance() * unit.APCritChance(critInfo.armorLocation);
         Log.C.WL(1, string.Format("[GetCritChance] base = {0}, shards mod = {1}, thickness mod = {2}, ap mod = {3}, flat={4}, ap = {5}, result = {6}!", baseCritChance, shardsCritChance, thicknessCritChance, TAcritMultiplier, unit.FlatCritChance() * unit.FlatCritChance(critInfo.armorLocation), unit.APCritChance() * unit.APCritChance(critInfo.armorLocation), result));
         critInfo.critChance = result;
-        return result;
+        return critInfo.critChance;
       } else {
         float a = AdvancedCriticalProcessor.GetBaseCritChance(unit, critInfo);
         float num = Mathf.Max(a, unit.Combat.Constants.ResolutionConstants.MinCritChance);
         float critMultiplier = unit.Combat.CritChance.GetCritMultiplier(unit, weapon, true) * unit.CriticalHitChanceReceivedMultiplier(critInfo.armorLocation);
         critInfo.critChance = num * critMultiplier * unit.FlatCritChance() * unit.FlatCritChance(critInfo.armorLocation) * unit.BaseCritChance() * unit.BaseCritChance(critInfo.armorLocation);
         Log.C.WL(1, string.Format("[GetCritChance] base = {0}, multiplier = {1}, flat={2}, basemod={3} result={4}!", num, critMultiplier, unit.FlatCritChance() * unit.FlatCritChance(critInfo.armorLocation), unit.BaseCritChance() * unit.BaseCritChance(critInfo.armorLocation), critInfo.critChance));
-        return num * critMultiplier;
+        return critInfo.critChance;
+        //return num * critMultiplier;
       }
     }
     public static void CritComponent(this MechComponent component, ref WeaponHitInfo hitInfo, Weapon weapon, bool forceDestroy = false) {
@@ -249,6 +250,7 @@ namespace CustAmmoCategories {
       //AbstractActor.attackLogger.Log((object)string.Format("SEQ:{0}: WEAP:{1} Loc:{2} Base crit chance: {3:P2}", (object)hitInfo.attackSequenceId, (object)hitInfo.attackWeaponIndex, (object)location.ToString(), (object)mech.Combat.CritChance.GetBaseCritChance(mech, location, true)));
       //AbstractActor.attackLogger.Log((object)string.Format("SEQ:{0}: WEAP:{1} Loc:{2} Modifiers : {3}", (object)hitInfo.attackSequenceId, (object)hitInfo.attackWeaponIndex, (object)location.ToString(), (object)mech.Combat.CritChance.GetCritMultiplierDescription((ICombatant)mech, weapon)));
       float critChance = AdvancedCriticalProcessor.GetCritChance(unit, critInfo, weapon);
+      //critInfo
       float[] randomFromCache = unit.Combat.AttackDirector.GetRandomFromCache(hitInfo, 2);
       Log.C.WL(1, string.Format("SEQ:{0}: WEAP:{1} Loc:{2} Final crit chance: {3:P2}", (object)hitInfo.attackSequenceId, (object)hitInfo.attackWeaponIndex, (object)location.ToString(), (object)critChance));
       Log.C.WL(1, string.Format("SEQ:{0}: WEAP:{1} Loc:{2} Crit roll: {3:P2}", (object)hitInfo.attackSequenceId, (object)hitInfo.attackWeaponIndex, (object)location.ToString(), (object)randomFromCache[0]));
