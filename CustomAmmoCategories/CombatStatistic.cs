@@ -197,7 +197,7 @@ namespace CustAmmoCategories {
             return;
           }
           UnitCombatStatisticHelper.ejectedUnits.Add(__instance);
-          attacker.stat()?.AddKilled(__instance, true);
+          attacker.AddKilled(__instance, true);
         }
       } catch (Exception e) {
         Log.Combat?.TWL(0, e.ToString(), true);
@@ -228,7 +228,7 @@ namespace CustAmmoCategories {
         Log.Combat?.WL(1, $"same team attacker:{attacker.TeamId} unit:{__instance.TeamId}");
         return;
       }
-      attacker.stat()?.AddKilled(__instance, false);
+      attacker.AddKilled(__instance, false);
     }
     public static void Postfix(AbstractActor __instance, string reason, DeathMethod deathMethod, DamageType damageType, int location, int stackItemID, string attackerID, bool isSilent) {
       try {
@@ -310,6 +310,9 @@ namespace CustAmmoCategories {
         Log.Combat?.TWL(0, e.ToString(), true);
         AbstractActor.logger.LogException(e);
       }
+    }
+    public static void AddKilled(this AbstractActor attacker, AbstractActor victim, bool ejected) {
+      attacker.stat().AddKilled(victim, ejected);
     }
     public static bool AARIcons_AddEjectedMech_Prefix() { return CustomAmmoCategories.Settings.StatisticOnResultScreenEnabled == false; }
     public static bool AARIcons_AddEjectedVehicle_Prefix() { return CustomAmmoCategories.Settings.StatisticOnResultScreenEnabled == false; }

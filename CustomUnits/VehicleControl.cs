@@ -836,10 +836,10 @@ namespace CustomUnits {
         result.StatCollection.Set<float>(result.GetStringForStructureLocation(ChassisLocations.LeftTorso), 0f);
         result.StatCollection.Set<LocationDamageLevel>(result.GetStringForStructureDamageLevel(ChassisLocations.LeftTorso), LocationDamageLevel.Destroyed);
       }
-      Log.Combat?.TWL(0, "Vehicle.ToMech:" + result.Description.Id+" GUID:"+result.MechDef.GUID+" isDead:"+src.IsDead+"/"+result.IsDead+" isDestroyed:"+result.ToMechDef().IsDestroyed);
+      MechDef createdDef = result.ToMechDef();
+      Log.Combat?.TWL(0, "Vehicle.ToMech:" + result.Description.Id+" GUID:"+result.MechDef.GUID+" isDead:"+src.IsDead+"/"+result.IsDead+" isDestroyed:"+ createdDef.IsDestroyed);
       Log.Combat?.WL(1, "Head def: aa:"+result.MechDef.Head.AssignedArmor+" ca:"+result.MechDef.Head.CurrentArmor+" is:"+result.MechDef.Head.CurrentInternalStructure+" mech: a:"+result.HeadArmor+" is:"+result.HeadStructure);
       Log.Combat?.WL(1, "CenterTorso def: aa:" + result.MechDef.CenterTorso.AssignedArmor + " ca:" + result.MechDef.CenterTorso.CurrentArmor + " is:" + result.MechDef.CenterTorso.CurrentInternalStructure + " mech: a:" + result.CenterTorsoFrontArmor + " is:" + result.CenterTorsoStructure);
-      MechDef createdDef = result.ToMechDef();
       Log.Combat?.WL(1, "created def CenterTorso def: aa:" + createdDef.CenterTorso.AssignedArmor + " ca:" + createdDef.CenterTorso.CurrentArmor + " is:" + createdDef.CenterTorso.CurrentInternalStructure + "/" +createdDef.IsLocationDestroyed(ChassisLocations.CenterTorso)+" mech: a:" + result.CenterTorsoFrontArmor + " is:" + result.CenterTorsoStructure);
       return result;
     }
