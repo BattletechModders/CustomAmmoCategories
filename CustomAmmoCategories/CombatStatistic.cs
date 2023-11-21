@@ -6,6 +6,7 @@ using BattleTech.UI.Tooltips;
 using CustomSettings;
 using HarmonyLib;
 using IRBTModUtils;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Reflection;
@@ -159,8 +160,12 @@ namespace CustAmmoCategories {
     }
     public static void Postfix(AAR_UnitStatusWidget __instance) {
       try {
-        if (CustomAmmoCategories.Settings.StatisticOnResultScreenEnabled == false) { return; }
         Log.Combat?.TWL(0, $"AAR_UnitStatusWidget.InitData GUID:{__instance.UnitData.mech.GUID}");
+        if(CustomAmmoCategories.Settings.StatisticOnResultScreenEnabled == false) {
+          Log.Combat?.WL(1, "clearing killed stat");
+          __instance.UnitData.statClear();
+          return;
+        }
         UnitCombatStatistic stat = __instance.UnitData.stat();
         if (stat == null) { return; }
         foreach(var killed in stat.killedUnits) {
@@ -367,10 +372,12 @@ namespace CustAmmoCategories {
     }
   }
   public class UnitCombatStatistic {
+    [JsonIgnore]
     public string DefinitionGUID { get; set; } = string.Empty;
+    [JsonIgnore]
     public HashSet<int> attacksIds { get; set; } = new HashSet<int>();
     public float overallCombatDamage { get; set; } = 0f;
-    public int attacksCount { get { return attacksIds.Count; } }
+    public int attacksCount { get; set; } = 0;
     public float shootsCount { get; set; } = 0f;
     public float successHitsCount { get; set; } = 0f;
     public float criticalHitsCount { get; set; } = 0f;
@@ -379,6 +386,32 @@ namespace CustAmmoCategories {
     public float incomingHitsCount { get; set; } = 0f;
     public float incomingCriticalsCount { get; set; } = 0f;
     public float incomingCritSuccessCount { get; set; } = 0f;
+    public void MergeStatistic(UnitCombatStatistic add) {
+      this.overallCombatDamage += add.overallCombatDamage;
+      this.attacksCount += add.attacksCount;
+      this.shootsCount += add.shootsCount;
+      this.successHitsCount += add.successHitsCount;
+      this.criticalHitsCount += add.criticalHitsCount;
+      this.criticalSuccessCount += add.criticalSuccessCount;
+      this.incomingShootsCount += add.incomingShootsCount;
+      this.incomingHitsCount += add.incomingHitsCount;
+      this.incomingCriticalsCount += add.incomingCriticalsCount;
+      this.incomingCritSuccessCount += add.incomingCritSuccessCount;
+    }
+    public UnitCombatStatistic Copy() {
+      var result = new UnitCombatStatistic();
+      result.overallCombatDamage = this.overallCombatDamage;
+      result.attacksCount = this.attacksCount;
+      result.shootsCount = this.shootsCount;
+      result.successHitsCount = this.successHitsCount;
+      result.criticalHitsCount = this.criticalHitsCount;
+      result.criticalSuccessCount = this.criticalSuccessCount;
+      result.incomingShootsCount = this.incomingShootsCount;
+      result.incomingHitsCount = this.incomingHitsCount;
+      result.incomingCriticalsCount = this.incomingCriticalsCount;
+      result.incomingCritSuccessCount = this.incomingCritSuccessCount;
+      return result;
+    }
     public enum KilledUnitIconType { Mech, Vehicle, Turret, Squad };
     public class KilledUnit {
       public string DisplayName { get; set; } = "Unknown";
@@ -496,7 +529,10 @@ namespace CustAmmoCategories {
     }
     public static void ProcessAttack(AdvWeaponHitInfo advInfo) {
       UnitCombatStatistic attacker = advInfo.weapon.parent.stat();
-      attacker?.attacksIds.Add(advInfo.attackSequenceId);
+      if(attacker != null) {
+        attacker.attacksIds.Add(advInfo.attackSequenceId);
+        attacker.attacksCount = attacker.attacksCount + 1;
+      }
       foreach (AdvWeaponHitInfoRec advRec in advInfo.hits) {
         attacker?.ProcessShoot(advRec);
         if(advRec.target is AbstractActor trg) {
