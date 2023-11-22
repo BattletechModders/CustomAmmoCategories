@@ -203,6 +203,7 @@
     <Compile Include="AMSWeaponEffect.cs" />
     <Compile Include="ApplyHeatSinks.cs" />
     <Compile Include="AreaOfEffect.cs" />
+    <Compile Include="ArmorRepairHelper.cs" />
     <Compile Include="AttackDirectionIndicator.cs" />
     <Compile Include="AttackLog.cs" />
     <Compile Include="AttackSequenceImpact.cs" />

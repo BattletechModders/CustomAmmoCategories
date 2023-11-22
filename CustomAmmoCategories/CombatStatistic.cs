@@ -410,6 +410,7 @@ namespace CustAmmoCategories {
       result.incomingHitsCount = this.incomingHitsCount;
       result.incomingCriticalsCount = this.incomingCriticalsCount;
       result.incomingCritSuccessCount = this.incomingCritSuccessCount;
+      result.killedUnits.AddRange(this.killedUnits);
       return result;
     }
     public enum KilledUnitIconType { Mech, Vehicle, Turret, Squad };

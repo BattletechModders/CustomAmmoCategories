@@ -1230,6 +1230,7 @@ namespace CACMain {
         Core.DetectOtherMods();
         PersistentMapClientHelper.Init();
         WeaponDefModesCollectHelper.InitHelper(Core.harmony);
+        SimGameState_RestoreMechPostCombat.Init();
       } catch (Exception e) {
         Log.M.TWL(0, e.ToString(), true);
       }
