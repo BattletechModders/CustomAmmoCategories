@@ -583,6 +583,8 @@ namespace CustAmmoCategories {
     public float MaxRangeClusterMod { get; set; } = 0f;
     [Key(170)]
     public string parentPreFireSFX { get; set; } = null;
+    [Key(171)]
+    public TripleBoolean OnlyDefferEffect { get; set; } = TripleBoolean.NotSet;
     public ExtAmmunitionDef() { }
   }
 }

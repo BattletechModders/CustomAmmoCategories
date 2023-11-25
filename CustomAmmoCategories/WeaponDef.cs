@@ -99,6 +99,75 @@ namespace CustAmmoCategories {
     public float MaxMissRadius { get; set; }
     [Key(29)]
     public List<string> callMethod { get; set; }
+    [Key(30)]
+    public bool getFromWeapon { get; set; } = false;
+    public DeferredEffectDef(DeferredEffectDef src) {
+      this.id = src.id;
+      this.rounds = src.rounds;
+      this.text = src.text;
+      this.VFX = src.VFX;
+      this.waitVFX = src.waitVFX;
+      this.VFXscale = src.VFXscale;
+      this.waitVFXscale = src.waitVFXscale;
+      this.SFX = src.SFX;
+      this.VFXtime = src.VFXtime;
+      this.damageApplyTime = src.damageApplyTime;
+      this.statusEffects = new List<EffectData>(this.statusEffects);
+      this.AOERange = src.AOERange;
+      this.AOEDamage = src.AOEDamage;
+      this.AOEHeatDamage = src.AOEHeatDamage;
+      this.AOEInstability = src.AOEInstability;
+      this.RangeColor = this.RangeColor;
+      this.FireTerrainChance = src.FireTerrainChance;
+      this.FireDurationWithoutForest = src.FireDurationWithoutForest;
+      this.FireTerrainStrength = src.FireTerrainStrength;
+      this.FireTerrainCellRadius = src.FireTerrainCellRadius;
+      this.TerrainVFX = src.TerrainVFX;
+      this.tempDesignMask = src.tempDesignMask;
+      this.tempDesignMaskTurns = src.tempDesignMaskTurns;
+      this.tempDesignMaskCellRadius = src.tempDesignMaskCellRadius;
+      this.TerrainVFXScale = src.TerrainVFXScale;
+      this.statusEffectsRangeFalloff = src.statusEffectsRangeFalloff;
+      this.sticky = src.sticky;
+      this.MinMissRadius = src.MinMissRadius;
+      this.MaxMissRadius = src.MaxMissRadius;
+      this.callMethod = new List<string>(this.callMethod);
+      this.getFromWeapon = src.getFromWeapon;
+    }
+    public DeferredEffectDef(DeferredEffectDef src, Weapon weapon) {
+      this.id = src.id;
+      this.rounds = src.rounds;
+      this.text = src.text;
+      this.VFX = src.VFX;
+      this.waitVFX = src.waitVFX;
+      this.VFXscale = src.VFXscale;
+      this.waitVFXscale = src.waitVFXscale;
+      this.SFX = src.SFX;
+      this.VFXtime = src.VFXtime;
+      this.damageApplyTime = src.damageApplyTime;
+      this.statusEffects = new List<EffectData>(weapon.StatusEffects());
+      this.AOERange = weapon.AOERange();
+      this.AOEDamage = weapon.AOEDamage();
+      this.AOEHeatDamage = weapon.AOEHeatDamage();
+      this.AOEInstability = weapon.AOEInstability();
+      this.RangeColor = this.RangeColor;
+      this.FireTerrainChance = weapon.FireTerrainChance();
+      this.FireDurationWithoutForest = weapon.FireDurationWithoutForest();
+      this.FireTerrainStrength = weapon.FireTerrainStrength();
+      this.FireTerrainCellRadius = weapon.FireTerrainCellRadius();
+      var mask = weapon.tempDesignMask(out var turns, out var vfx, out var scale, out var radius);
+      this.TerrainVFX = vfx;
+      this.tempDesignMask = mask == null?string.Empty:mask.Id;
+      this.tempDesignMaskTurns = turns;
+      this.tempDesignMaskCellRadius = radius;
+      this.TerrainVFXScale = new CustomVector(scale.x,scale.y,scale.z);
+      this.statusEffectsRangeFalloff = weapon.AOEEffectsFalloff();
+      this.sticky = src.sticky;
+      this.MinMissRadius = src.MinMissRadius;
+      this.MaxMissRadius = src.MaxMissRadius;
+      this.callMethod = new List<string>(this.callMethod);
+      this.getFromWeapon = src.getFromWeapon;
+    }
     public DeferredEffectDef() {
       id = "id";
       rounds = 0;
@@ -306,6 +375,14 @@ namespace CustAmmoCategories {
       if (mode.isDamageVariation != TripleBoolean.NotSet) { return mode.isDamageVariation == TripleBoolean.True; }
       if (ammo.isDamageVariation != TripleBoolean.NotSet) { return ammo.isDamageVariation == TripleBoolean.True; }
       return wp.isDamageVariation == TripleBoolean.True;
+    }
+    public static bool isOnlyDefferEffect(this Weapon weapon) {
+      ExtAmmunitionDef ammo = weapon.ammo();
+      WeaponMode mode = weapon.mode();
+      ExtWeaponDef wp = weapon.exDef();
+      if(mode.OnlyDefferEffect != TripleBoolean.NotSet) { return mode.OnlyDefferEffect == TripleBoolean.True; }
+      if(ammo.OnlyDefferEffect != TripleBoolean.NotSet) { return ammo.OnlyDefferEffect == TripleBoolean.True; }
+      return wp.OnlyDefferEffect == TripleBoolean.True;
     }
     public static bool isHeatVariation(this Weapon weapon) {
       ExtAmmunitionDef ammo = weapon.ammo();
@@ -751,6 +828,8 @@ namespace CustAmmoCategories {
     public bool PersistentJamming { get; set; } = false;
     [Key(145)]
     public string parentPreFireSFX { get; set; } = null;
+    [Key(146)]
+    public TripleBoolean OnlyDefferEffect { get; set; } = TripleBoolean.NotSet;
     [IgnoreMember, JsonIgnore]
     private HashSet<string> f_restrictedAmmo = null;
     [IgnoreMember, JsonIgnore]

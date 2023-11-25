@@ -106,6 +106,7 @@ namespace CustAmmoCategories {
       Weapon weapon = advInfo.weapon;
       if (weapon.AOECapable() == false) { return; }
       float AOERange = weapon.AOERange();
+      if(weapon.isOnlyDefferEffect()) { AOERange = 0f; }
       if (AOERange < CustomAmmoCategories.Epsilon) { return; };
       Log.Combat?.TWL(0,"AOE generation started " + advInfo.Sequence.attacker.DisplayName + " " + weapon.defId + " grp:" + hitInfo.attackGroupIndex + " index:" + hitInfo.attackWeaponIndex + " shots:" + advInfo.hits.Count);
       if (advInfo.hits.Count == 0) { return; };

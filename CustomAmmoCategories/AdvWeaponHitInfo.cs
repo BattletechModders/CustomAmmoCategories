@@ -286,6 +286,12 @@ namespace CustAmmoCategories {
         DamageModifiers mods = this.parent.weapon.GetDamageModifiers(this.parent.Sequence.attackPosition, this.target, this.parent.Sequence.IsBreachingShot?TripleBoolean.True:TripleBoolean.False);
         string description = string.Empty;
         mods.Calculate(this.hitLocation, ref this.Damage, ref this.APDamage, ref this.Heat, ref this.Stability, ref description, true, false);
+        if(this.parent.weapon.isOnlyDefferEffect()) {
+          this.Damage = 0f;
+          this.APDamage = 0f;
+          this.Heat = 0f;
+          this.Stability = 0f;
+        }
         Log.Combat?.TWL(0, description);
         this.target.AddComulativeDamage(this.hitLocation, this.Damage);
         Log.Combat?.WL(2, "real damage = " + this.Damage);
@@ -324,17 +330,21 @@ namespace CustAmmoCategories {
         }
         parent.weapon.SpawnAdditionalImpactEffect(hitPosition);
         if (hitLocation == 65536) {
-          DynamicMapHelper.applyMineField(parent.weapon, hitPosition);
-          DynamicMapHelper.applyImpactBurn(parent.weapon, hitPosition);
-          DynamicMapHelper.applyImpactTempMask(parent.weapon, hitPosition);
-          DynamicMapHelper.applyCleanMinefield(parent.weapon, hitPosition);
+          if(parent.weapon.isOnlyDefferEffect() == false) {
+            DynamicMapHelper.applyMineField(parent.weapon, hitPosition);
+            DynamicMapHelper.applyImpactBurn(parent.weapon, hitPosition);
+            DynamicMapHelper.applyImpactTempMask(parent.weapon, hitPosition);
+            DynamicMapHelper.applyCleanMinefield(parent.weapon, hitPosition);
+          }
           parent.weapon.CreateDifferedEffect(hitPosition);
         } else
         if (hitLocation != 0) {
           if (parent.weapon.FireOnSuccessHit()) {
-            DynamicMapHelper.applyImpactBurn(parent.weapon, target.CurrentPosition);
-            DynamicMapHelper.applyImpactTempMask(parent.weapon, target.CurrentPosition);
-            DynamicMapHelper.applyCleanMinefield(parent.weapon, target.CurrentPosition);
+            if(parent.weapon.isOnlyDefferEffect() == false) {
+              DynamicMapHelper.applyImpactBurn(parent.weapon, target.CurrentPosition);
+              DynamicMapHelper.applyImpactTempMask(parent.weapon, target.CurrentPosition);
+              DynamicMapHelper.applyCleanMinefield(parent.weapon, target.CurrentPosition);
+            }
           }
           parent.weapon.CreateDifferedEffect(target);
         }
@@ -956,6 +966,7 @@ namespace CustAmmoCategories {
         ICombatant target = trg.Key;
         Weapon weapon = this.weapon;
         WeaponHitInfo hitInfo = this.fakeHitInfo.Value;
+        if(weapon.isOnlyDefferEffect()) { continue; };
         bool effectPerHit = weapon.StatusEffectsPerHit();
         Log.M.TWL(0, "ApplyHitEffects:" + this.weapon.defId + " " + target.DisplayName);
         if ((advRes.hitLocations.Count > 0) && (!target.IsDead) && (target != null)) {

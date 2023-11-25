@@ -491,6 +491,8 @@ namespace CustAmmoCategories {
     public float MaxRangeClusterMod { get; set; } = 0f;
     [Key(166)]
     public string parentPreFireSFX { get; set; } = null;
+    [Key(167)]
+    public TripleBoolean OnlyDefferEffect { get; set; } = TripleBoolean.NotSet;
     [IgnoreMember, JsonIgnore]
     private HashSet<string> f_restrictedAmmo = null;
     [IgnoreMember, JsonIgnore]

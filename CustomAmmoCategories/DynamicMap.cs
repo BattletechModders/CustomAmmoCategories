@@ -1729,21 +1729,24 @@ namespace CustAmmoCategories {
       }
     }
     public static void applyCleanMinefield(Weapon weapon, Vector3 pos) {
-      CustomAmmoCategoriesLog.Log.LogWrite("Applying minefield clear:" + weapon.defId + " " + pos + "\n");
-      MapTerrainDataCellEx cell = weapon.parent.Combat.MapMetaData.GetCellAt(pos) as MapTerrainDataCellEx;
-      if (cell == null) {
-        CustomAmmoCategoriesLog.Log.LogWrite(" cell is not extended\n");
+      CustomAmmoCategoriesLog.Log.Combat?.WL(0,$"Applying minefield clear:{weapon.defId} {pos}");
+      applyCleanMinefield(weapon.parent.Combat, weapon.ClearMineFieldRadius(), pos);
+    }
+    public static void applyCleanMinefield(CombatGameState combat, int radius, Vector3 pos) {
+      MapTerrainDataCellEx cell = combat.MapMetaData.GetCellAt(pos) as MapTerrainDataCellEx;
+      if(cell == null) {
+        CustomAmmoCategoriesLog.Log.Combat?.WL(1, "cell is not extended");
         return;
       }
-      if (weapon.ClearMineFieldRadius() == 0) { return; };
-      if (weapon.ClearMineFieldRadius() == 1) {
+      if(radius == 0) { return; };
+      if(radius == 1) {
         //Log.LogWrite(" affected cell " + cell.hexCell.x + "," + cell.hexCell.y + "\n");
         Log.LogWrite(" affected cell " + cell.hexCell.center + "\n");
         cell.hexCell.clearMineField(1, 0f);
-          //MineField.Clear();
+        //MineField.Clear();
       } else {
-        List<MapTerrainHexCell> affectedHexCells = MapTerrainHexCell.listHexCellsByCellRadius(cell, weapon.ClearMineFieldRadius());
-        foreach (MapTerrainHexCell hexCell in affectedHexCells) {
+        List<MapTerrainHexCell> affectedHexCells = MapTerrainHexCell.listHexCellsByCellRadius(cell, radius);
+        foreach(MapTerrainHexCell hexCell in affectedHexCells) {
           //Log.LogWrite(" affected cell " + hexCell.x + "," + hexCell.y + "\n");
           Log.LogWrite(" affected cell " + hexCell.center + "\n");
           hexCell.clearMineField(1, 0f);
