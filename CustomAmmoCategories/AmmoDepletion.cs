@@ -134,7 +134,10 @@ namespace CustAmmoCategories {
     }
     public static void Prefix(Contract __instance) {
       Log.Combat?.TWL(0, "Contract.CompleteContract " + __instance.State);
-      if (UnityGameInstance.BattleTechGame.Simulation == null) { Log.M.WL(1,"Simulation is null"); return; }
+      DeferredEffectHelper.Clear();
+      PersistentFloatieHelper.Clear();
+      WeaponArtilleryHelper.Clear();
+      if(UnityGameInstance.BattleTechGame.Simulation == null) { Log.M.WL(1,"Simulation is null"); return; }
       try {
         if (__instance.State != Contract.ContractState.InProgress) { return; };
         UnityGameInstance.BattleTechGame.Simulation.FlushReserve();

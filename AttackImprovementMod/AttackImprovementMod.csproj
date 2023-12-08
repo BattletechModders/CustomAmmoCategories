@@ -42,7 +42,10 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Krafs.Publicizer" Version="2.2.1" />
-		<Publicize Include="Assembly-CSharp;UnityEngine.UI;UnityEngine.CoreModule" />
+    <PackageReference Include="NetSpell">
+      <Version>2.1.7</Version>
+    </PackageReference>
+    <Publicize Include="Assembly-CSharp;UnityEngine.UI;UnityEngine.CoreModule" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="0Harmony, Version=1.2.0.1, Culture=neutral, processorArchitecture=MSIL">

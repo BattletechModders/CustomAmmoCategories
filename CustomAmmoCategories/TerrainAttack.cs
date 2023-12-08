@@ -17,6 +17,7 @@ using CustomAmmoCategoriesPatches;
 using CustomAmmoCategoriesPathes;
 using HarmonyLib;
 using HBS;
+using HBS.Collections;
 using InControl;
 using Localize;
 using SVGImporter;
@@ -174,36 +175,53 @@ namespace CustAmmoCategories {
         popup.IsNestedPopupWithBuiltInFader().CancelOnEscape().Render();
         return false;
       }
-      Vector3 collisionWorldPos;
-      LineOfFireLevel LOFLevel = LineOfFireLevel.LOFBlocked;
-      if (target != null) {
-        LOFLevel = actor.Combat.LOFCache.GetLineOfFire(actor, actor.CurrentPosition, target, target.CurrentPosition, target.CurrentRotation, out collisionWorldPos);
+      bool is_artillery_strike = false;
+      Vector3 position = groundPos;
+      if(target != null) { position = target.CurrentPosition; }
+      foreach(var weapon in weaponsList) {
+        bool is_art = weapon.IsArtillery();
+        Log.Combat?.WL(1, $"weapon:{weapon.defId} IsArtillery:{is_art}");
+        if(is_art) {
+          Log.Combat?.WL(2, $"artillery strike:{position}");
+          is_artillery_strike = true; weapon.AddArtilleryStrike(position);
+        }
+      }
+      MessageCenterMessage invocation = null;
+      if(is_artillery_strike) {
+        actor.ToArtilleryMode();
+        invocation = new ReserveActorInvocation(actor, ReserveActorAction.DONE, this.Combat.TurnDirector.CurrentRound);
       } else {
-        LOFLevel = actor.Combat.LOFCache.GetLineOfFire(actor, actor.CurrentPosition, actor, groundPos, actor.CurrentRotation, out collisionWorldPos);
-      }
-      MechRepresentation gameRep = actor.GameRep as MechRepresentation;
-      if (gameRep != null) {
-        Log.Combat?.WL(1, "ToggleRandomIdles false");
-        gameRep.ToggleRandomIdles(false);
-      }
-      if (target == null) { target = actor; };
-      if (actor.GUID == target.GUID) {
-        Log.Combat?.WL(1, "Registering terrain attack to " + actor.GUID);
-        CustomAmmoCategories.addTerrainHitPosition(actor, groundPos, LOFLevel < LineOfFireLevel.LOFObstructed);
-      } else {
-        Log.Combat?.WL(1, "Registering friendly attack to " + new Text(target.DisplayName));
-      }
-      AttackInvocation invocation = new AttackInvocation(this.SelectedActor, target, weaponsList);
-      if (invocation == null) {
-        Log.Combat?.WL(1, "No invocation created");
-        return false;
+        Vector3 collisionWorldPos;
+        LineOfFireLevel LOFLevel = LineOfFireLevel.LOFBlocked;
+        if(target != null) {
+          LOFLevel = actor.Combat.LOFCache.GetLineOfFire(actor, actor.CurrentPosition, target, target.CurrentPosition, target.CurrentRotation, out collisionWorldPos);
+        } else {
+          LOFLevel = actor.Combat.LOFCache.GetLineOfFire(actor, actor.CurrentPosition, actor, groundPos, actor.CurrentRotation, out collisionWorldPos);
+        }
+        MechRepresentation gameRep = actor.GameRep as MechRepresentation;
+        if(gameRep != null) {
+          Log.Combat?.WL(1, "ToggleRandomIdles false");
+          gameRep.ToggleRandomIdles(false);
+        }
+        if(target == null) { target = actor; };
+        if(actor.GUID == target.GUID) {
+          Log.Combat?.WL(1, "Registering terrain attack to " + actor.GUID);
+          CustomAmmoCategories.addTerrainHitPosition(actor, groundPos, LOFLevel < LineOfFireLevel.LOFObstructed);
+        } else {
+          Log.Combat?.WL(1, "Registering friendly attack to " + new Text(target.DisplayName));
+        }
+        invocation = new AttackInvocation(this.SelectedActor, target, weaponsList);
+        if(invocation == null) {
+          Log.Combat?.WL(1, "No invocation created");
+          return false;
+        }
+        CombatSelectionHandler_TrySelectActor.SelectionForbidden = true;
+        this.Combat.AttackDirector.isSequenceIsTerrainAttack(true);
       }
       this.HUD.MechWarriorTray.ConfirmAbilities(AbilityDef.ActivationTiming.ConsumedByMovement);
       this.HUD.MechWarriorTray.ConfirmAbilities(AbilityDef.ActivationTiming.ConsumedByFiring);
       ReceiveMessageCenterMessage subscriber = (ReceiveMessageCenterMessage)(message => this.Orders = (message as AddSequenceToStackMessage).sequence);
       this.Combat.MessageCenter.AddSubscriber(MessageCenterMessageType.AddSequenceToStackMessage, subscriber);
-      CombatSelectionHandler_TrySelectActor.SelectionForbidden = true;
-      this.Combat.AttackDirector.isSequenceIsTerrainAttack(true);
       this.Combat.MessageCenter.PublishMessage(invocation);
       this.Combat.MessageCenter.RemoveSubscriber(MessageCenterMessageType.AddSequenceToStackMessage, subscriber);
       WeaponRangeIndicators.Instance.HideTargetingLines(this.Combat);
@@ -323,19 +341,19 @@ namespace CustAmmoCategories {
         case 0:
           if(this.UpdateWeapons(worldPos,out range)) {
             this.CircleRange = range;
-            Log.Combat?.TWL(0, "SelectionStateCommandAttackGround.UpdateWeapons "+ NumPositionsLocked + " true range:"+range+" trg:"+(target==null?"null":(new Text(target.DisplayName).ToString())));
+            //Log.Combat?.TWL(0, "SelectionStateCommandAttackGround.UpdateWeapons "+ NumPositionsLocked + " true range:"+range+" trg:"+(target==null?"null":(new Text(target.DisplayName).ToString())));
           }
           CombatTargetingReticle.Instance.UpdateReticle(worldPos, CircleRange, false);
           break;
         case 1:
           if (this.UpdateWeapons(targetPosition, out range)) {
             this.CircleRange = range;
-            Log.Combat?.TWL(0, "SelectionStateCommandAttackGround.UpdateWeapons " + NumPositionsLocked + " true range:" + range + " trg:" + (target == null ? "null" : (new Text(target.DisplayName).ToString())));
+            //Log.Combat?.TWL(0, "SelectionStateCommandAttackGround.UpdateWeapons " + NumPositionsLocked + " true range:" + range + " trg:" + (target == null ? "null" : (new Text(target.DisplayName).ToString())));
           }
           CombatTargetingReticle.Instance.UpdateReticle(this.targetPosition, CircleRange, false);
           break;
       }
-      Log.Combat?.TWL(0, "SelectionState_ProcessMousePos");
+      //Log.Combat?.TWL(0, "SelectionState_ProcessMousePos");
       if (this.TargetedCombatant == null) {
         this.HUD.SelectionHandler.ActiveState.FiringPreview.ClearAllInfo();
       } else {
@@ -380,11 +398,92 @@ namespace CustAmmoCategories {
       }
     }
   };
+  public class VirtualCombatant :ICombatant {
+    public AbstractActor parent { get; set; }
+    public TaggedObjectType Type { get { return parent.Type; } }
+    public string DisplayName { get { return parent.DisplayName; } }
+    public TagSet EncounterTags { get; set; }
+    public VirtualCombatant(AbstractActor p) { this.parent = p; this.StatCollection = new StatCollection(); EncounterTags = new TagSet(); }
+    public CombatGameState Combat { get { return parent.Combat; } }
+    public GameRepresentation GameRep { get { return parent.GameRep; } }
+    public PilotableActorDef PilotableActorDef { get { return parent.PilotableActorDef; } }
+    public bool IsTabTarget { get { return parent.IsTabTarget; } }
+    public bool NeedsWorldActorElements { get { return parent.NeedsWorldActorElements; } }
+    public bool IsForcedVisible { get; set; }
+    public Vector3 CurrentPosition { get; set; }
+    public Vector3 TargetPosition { get { return this.CurrentPosition; } }
+    public Quaternion CurrentRotation { get; set; }
+    public Vector3[] LOSTargetPositions { get { return this.parent.LOSSourcePositions; } }
+    public Vector3[] GetLOSTargetPositions(Vector3 position, Quaternion rotation) { return new Vector3[] { position }; }
+    public Team team { get { return this.parent.team; } }
+    public void AddToTeam(Team team) { }
+    public void RemoveFromTeam() { }
+    public string uid { get { return parent.uid; } }
+    public string LogDisplayName { get { return parent.LogDisplayName; } }
+    public DescriptionDef Description { get { return parent.Description; } }
+    public UnitType UnitType { get { return parent.UnitType; } }
+    public bool IsPilotable { get { return false; } }
+    public Pilot GetPilot() { return parent.GetPilot(); }
+    public int LastTargetedPhaseNumber { get; set; }
+    public Dictionary<string, int> LastTargetedPhaseNumberByAttackerGUID { get; set; }
+    public StatCollection StatCollection { get; set; }
+    public List<VFXEffect.StoredVFXEffectData> VFXDataFromLoad { get; set; }
+    public bool CreateEffect(EffectData effect, Ability fromAbility, string sourceID, int stackItemUID, AbstractActor creator, bool skipLogging = false) { return false; }
+    public bool CreateEffect(EffectData effect, Ability fromAbility, string sourceID, int stackItemUID, Team creator, bool skipLogging = false) { return false; }
+    public void CancelEffect(Effect effect, bool skipLogging = false) { }
+    public void OnEffectEnd(Effect effect) { }
+    public bool IsInRegion(string regionGuid) { return false; }
+    public float ArmorForLocation(int loc) { return 0f; }
+    public float MaxArmorForLocation(int loc) { return 0f; }
+    public float StructureForLocation(int loc) { return 0f; }
+    public float MaxStructureForLocation(int loc) { return 0f; }
+    public float StartingArmor { get { return 0f; } }
+    public float CurrentArmor { get { return 0f; } }
+    public float SummaryArmorMax { get { return 0f; } }
+    public float SummaryArmorCurrent { get { return 0f; } }
+    public float StartingStructure { get { return 0f; } }
+    public float SummaryStructureMax { get { return 0f; } }
+    public float SummaryStructureCurrent { get { return 0f; } }
+    public bool IsAnyStructureExposed { get { return false; } }
+    public float HealthAsRatio { get { return 1f; } }
+    public bool IsDead { get { return false; } }
+    public bool IsOperational { get { return true; } }
+    public bool IsShutDown { get { return false; } }
+    public bool IsProne { get { return false; } }
+    public bool CanMove { get { return false; } }
+    public float DodgeChance(AbstractActor attacker, Weapon weapon) { return 1f; }
+    public void TakeWeaponDamage(WeaponHitInfo hitInfo, int hitLocation, Weapon weapon, float damageAmount, float directStructureDamage, int hitIndex, DamageType damageType) {
+    }
+    public void ResolveWeaponDamage(WeaponHitInfo hitInfo) {
+    }
+    public void ResolveWeaponDamage(WeaponHitInfo hitInfo, Weapon weapon, MeleeAttackType meleeAttackType) { }
+    public void ResolveAttackSequence(string sourceID, int sequenceID, int stackItemID, AttackDirection attackDirection) { }
+    public int GetHitLocation(AbstractActor attacker, float hitLocationRoll, int calledShotLocation, float bonusMultiplier) { return 0; }
+    public int GetHitLocation(AbstractActor attacker, Vector3 attackPosition, float hitLocationRoll, int calledShotLocation, float bonusMultiplier) { return 0; }
+    public List<int> GetPossibleHitLocations(AbstractActor attacker) { return new List<int>(); }
+    public int GetAdjacentHitLocation(Vector3 attackPosition, float randomRoll, int previousHitLocation, float originalMultiplier, float adjacentMultiplier) { return 0; }
+    public Vector3 GetImpactPosition(AbstractActor attacker, Vector3 attackPosition, Weapon weapon, ref int hitLocation, ref AttackDirection attackDirection, ref string secondaryTargetId, ref int secondaryHitLocation) { return this.CurrentPosition; }
+    public bool IsFlaggedForDeath { get { return false; } }
+    public string GUID { get { return parent.GUID; } }
+    public void FlagForDeath(string reason, DeathMethod deathMethod, DamageType damageType, int location, int stackItemID, string attackerID, bool isSilent) { }
+    public void HandleDeath(string attackerGUID) { }
+    public void HandleKnockdown(int previousStackID, string sourceID, Vector2 attackDirection, SequenceFinished fallSequenceCompletedCallback) { }
+    public void SetGuid(string newGuid) {
+    }
+  }
+
   public class TerrainHitInfo {
     public Vector3 pos;
     public bool indirect;
-    public TerrainHitInfo(Vector3 pos, bool indirect) {
+    public VirtualCombatant virtualCombatant;
+    public TerrainHitInfo(AbstractActor owner, Vector3 pos, bool indirect) {
       this.pos = pos;
+      this.indirect = indirect;
+      virtualCombatant = new VirtualCombatant(owner);
+      virtualCombatant.CurrentPosition = pos;
+    }
+    public void Update(Vector3 pos, bool indirect) {
+      virtualCombatant.CurrentPosition = pos;
       this.indirect = indirect;
     }
   }
@@ -393,9 +492,9 @@ namespace CustAmmoCategories {
     public static void addTerrainHitPosition(this AbstractActor unit, Vector3 pos, bool indirect) {
       SpawnVehicleDialogHelper.lastTerrainHitPosition = pos;
       if (CustomAmmoCategories.terrainHitPositions.ContainsKey(unit.GUID) == false) {
-        CustomAmmoCategories.terrainHitPositions.Add(unit.GUID, new TerrainHitInfo(pos, indirect));
+        CustomAmmoCategories.terrainHitPositions.Add(unit.GUID, new TerrainHitInfo(unit, pos, indirect));
       } else {
-        CustomAmmoCategories.terrainHitPositions[unit.GUID] = new TerrainHitInfo(pos, indirect);
+        CustomAmmoCategories.terrainHitPositions[unit.GUID].Update(pos, indirect);
       }
     }
     public static TerrainHitInfo getTerrinHitPosition(string GUID) {
@@ -403,6 +502,9 @@ namespace CustAmmoCategories {
         return null;
       }
       return CustomAmmoCategories.terrainHitPositions[GUID];
+    }
+    public static void ClearTerrainPositions() {
+      terrainHitPositions.Clear();
     }
   }
 }
@@ -427,6 +529,29 @@ namespace CustomAmmoCategoriesPatches {
       } catch (Exception e) {
         Log.Combat?.TWL(0, e.ToString(), true);
         AttackDirector.attackLogger.LogException(e);
+      }
+    }
+  }
+  [HarmonyPatch(typeof(CameraControl))]
+  [HarmonyPatch("ShowAttackCam")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { typeof(ICombatant),typeof(ICombatant), typeof(Vector3), typeof(Vector3), typeof(CameraMovementType), typeof(int), typeof(int), typeof(bool), typeof(bool) })]
+  public static class CameraControl_ShowAttackCam {
+    public static void Prefix(ref bool __runOriginal, CameraControl __instance, ICombatant attacker, ref ICombatant target, Vector3 attackerPos,ref Vector3 targetPos,CameraMovementType moveType,int shotsFired,int shotsHit,bool isMelee,bool isMultiAttack, ref CameraSequence __result) {
+      try {
+        if(__runOriginal == false) { return; }
+        if(isMelee) { return; }
+        if(attacker != target) { return; }
+        if(attacker == null) { return; }
+        var pos = CustomAmmoCategories.getTerrinHitPosition(attacker.GUID);
+        if(pos == null) { return; }
+        target = pos.virtualCombatant;
+        targetPos = pos.pos;
+        return;
+      } catch(Exception e) {
+        Log.Combat?.TWL(0, e.ToString(), true);
+        CameraControl.cameraLogger.LogException(e);
+        __runOriginal = true;
       }
     }
   }
@@ -643,9 +768,10 @@ namespace CustomAmmoCategoriesPatches {
   [HarmonyPatch(new Type[] { typeof(AbstractActor), typeof(bool) })]
   public static class CombatSelectionHandler_TrySelectActor {
     public static bool SelectionForbidden = false;
-    public static void Prefix(ref bool __runOriginal, CombatSelectionHandler __instance, AbstractActor actor, bool manualSelection) {
+    public static void Prefix(ref bool __runOriginal, CombatSelectionHandler __instance, AbstractActor actor, bool manualSelection, ref bool __result) {
       if (!__runOriginal) { return; }
-      if (CombatSelectionHandler_TrySelectActor.SelectionForbidden) { __runOriginal = false; return; }
+      if (CombatSelectionHandler_TrySelectActor.SelectionForbidden) { __runOriginal = false; __result = false; return; }
+      if(WeaponArtilleryHelper.TrySelectPrefix(__instance, actor, manualSelection)) { __runOriginal = false; __result = true; return; }
     }
   }
   [HarmonyPatch(typeof(CombatHUD))]
@@ -804,7 +930,6 @@ namespace CustomAmmoCategoriesPatches {
         }
         __state.HasFiredThisRound = true;
         if (__state.HasMovedThisRound || (__state.team.IsLocalPlayer == false) || ((__state.Combat.TurnDirector.IsInterleaved == true) && (__state.CanMoveAfterShooting == false))) {
-          //__instance.Combat.MessageCenter.PublishMessage((MessageCenterMessage)new AddSequenceToStackMessage(attackSequence.attacker.DoneWithActor()));
           Log.Combat?.WL(1, "done with:" + __state.DisplayName + ":" + __state.GUID);
           __instance.Combat.MessageCenter.PublishMessage((MessageCenterMessage)new AddSequenceToStackMessage(__state.DoneWithActor()));
           CombatHUD_OnAttackEnd.needSelect = null;

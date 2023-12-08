@@ -830,6 +830,14 @@ namespace CustAmmoCategories {
     public string parentPreFireSFX { get; set; } = null;
     [Key(146)]
     public TripleBoolean OnlyDefferEffect { get; set; } = TripleBoolean.NotSet;
+    [Key(147)]
+    public TripleBoolean IsArtillery { get; set; } = TripleBoolean.NotSet;
+    [Key(148)]
+    public ColorTableJsonEntry ArtilleryReticleColor { get; set; } = new ColorTableJsonEntry();
+    [Key(149)]
+    public float ArtilleryReticleRadius { get; set; } = 0f;
+    [Key(150)]
+    public string ArtilleryReticleText { get; set; } = "Artillery";
     [IgnoreMember, JsonIgnore]
     private HashSet<string> f_restrictedAmmo = null;
     [IgnoreMember, JsonIgnore]

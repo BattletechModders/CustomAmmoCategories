@@ -113,16 +113,21 @@ namespace CustAmmoCategories {
     }
     public static void Clear() {
       Log.Combat?.TWL(0, "PersistentFloatieHelper.Clear:"+ allFloaties.Count);
-      foreach(PersistentFloatieMessage msg in allFloaties) {
-        try {
-          Log.Combat?.WL(1, "message:" + msg.Text.text);
-          GameObject.Destroy(msg.gameObject);
-        }catch(Exception e) {
-          Log.Combat?.TWL(0, e.ToString(),true);
-          CombatHUD.uiLogger.LogException(e);
+      try {
+        foreach(PersistentFloatieMessage msg in allFloaties) {
+          try {
+            Log.Combat?.WL(1, "message:" + msg.Text.text);
+            GameObject.Destroy(msg.gameObject);
+          } catch(Exception e) {
+            Log.Combat?.TWL(0, e.ToString(), true);
+            CombatHUD.uiLogger.LogException(e);
+          }
         }
+        allFloaties.Clear();
+      }catch(Exception e) {
+        Log.Combat?.TWL(0,e.ToString());
+        CombatHUD.uiLogger.LogException(e);
       }
-      allFloaties.Clear();
     }
     public static void PoolFloatie(PersistentFloatieMessage msg) {
       Log.Combat?.TWL(0, "PersistentFloatieHelper.PoolFloatie");

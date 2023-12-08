@@ -48,6 +48,7 @@ namespace CustomAmmoCategoriesPatches {
         CombatHUDMechwarriorTray_InitAbilityButtons.attackGroundAbilities.Clear();
         CustomAmmoCategories.terrainHitPositions.Clear();
         DeferredEffectHelper.Clear();
+        WeaponArtilleryHelper.Clear();
         PersistentFloatieHelper.Clear();
         Weapon_InternalAmmo.Clear();
         BraceNode_Tick.Clear();
@@ -70,6 +71,7 @@ namespace CustomAmmoCategoriesPatches {
         Mech_AddExternalHeat.Clear();
         CombatHUD_Init.Clear();
         UnitUnaffectionsActorStats.Clear();
+        CustomAmmoCategories.ClearTerrainPositions();
       } catch (Exception e) {
         Log.Combat?.TWL(0, e.ToString());
         AttackDirector.logger.LogException(e);

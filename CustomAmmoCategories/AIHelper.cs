@@ -166,7 +166,105 @@ namespace CustAmmoCategories {
       cache.Clear();
     }
   }
-  public static class AIMinefieldHelper {
+  public class FlatPosition {
+    private short x;
+    private short y;
+    public float X { get { return (float)x / 10f; } }
+    public float Y { get { return (float)y / 10f; } }
+    public FlatPosition(Vector3 pos) {
+      this.x = (short)Mathf.RoundToInt(pos.x * 10f);
+      this.y = (short)Mathf.RoundToInt(pos.z * 10f);
+    }
+    public FlatPosition() {
+      this.x = 0;
+      this.y = 0;
+    }
+    public override int GetHashCode() {
+      var xb = BitConverter.GetBytes(this.x);
+      var yb = BitConverter.GetBytes(this.y);
+      byte[] rb = new byte[4];
+      xb.CopyTo(rb, 0);
+      yb.CopyTo(rb, 2);
+      return BitConverter.ToInt32(rb, 0);
+    }
+    public override bool Equals(object obj) {
+      if(obj is FlatPosition b) {
+        return (this.x == b.x) && (this.y == b.y);
+      }
+      return false;
+    }
+  }
+
+  public static class AIArtilleryStrikeHelper {
+    public static UInt32 GetVectorHash(this Vector3 pos) {
+      short x = (short)Mathf.RoundToInt(pos.x * 10f);
+      short y = (short)Mathf.RoundToInt(pos.z * 10f);
+      var xb = BitConverter.GetBytes(x);
+      var yb = BitConverter.GetBytes(y);
+      byte[] rb = new byte[4];
+      xb.CopyTo(rb, 0);
+      yb.CopyTo(rb, 2);
+      return BitConverter.ToUInt32(rb, 0);
+    }
+    private static Dictionary<UInt32, float> artStrikeDistanceCache = new Dictionary<uint, float>();
+    private static int artStrikeDistanceCacheRound = 0;
+    private static int artStrikeDistanceCachePhase = 0;
+    private class MoveDestinationElement {
+      public MoveDestination dest;
+      public float strikeDist;
+      public MoveDestinationElement(MoveDestination d) {
+        this.dest = d;
+        var hash = d.PathNode.Position.GetVectorHash();
+        if(artStrikeDistanceCache.TryGetValue(hash, out var dist)) {
+          this.strikeDist = dist;
+        } else {
+          this.strikeDist = WeaponArtilleryHelper.GetDistFromArtStrikeUncached(d.PathNode.Position);
+          artStrikeDistanceCache.Add(hash, this.strikeDist);
+        }
+      }
+    }
+    public static bool FilterMoveCandidates(AbstractActor unit, ref List<MoveDestination> movementCandidateLocations) {
+      try {
+        if((artStrikeDistanceCacheRound != unit.Combat.TurnDirector.CurrentRound) || (artStrikeDistanceCachePhase != unit.Combat.TurnDirector.CurrentPhase)) {
+          artStrikeDistanceCacheRound = unit.Combat.TurnDirector.CurrentRound;
+          artStrikeDistanceCachePhase = unit.Combat.TurnDirector.CurrentPhase;
+          artStrikeDistanceCache.Clear();
+        }
+        List<MoveDestinationElement> moveElements = new List<MoveDestinationElement>();
+        foreach(var md in movementCandidateLocations) {
+          moveElements.Add(new MoveDestinationElement(md));
+        }
+        moveElements.Sort((a, b) => { return b.strikeDist.CompareTo(a.strikeDist); });
+        Log.P?.TWL(0, $"AIArtilleryStrikeHelper.FilterMoveCandidates {unit.PilotableActorDef.ChassisID}:{unit.GUID} moveCandidates:{movementCandidateLocations.Count}");
+        HashSet<MoveDestination> result = new HashSet<MoveDestination>();
+        bool hasOutOfStrikeElements = false;
+        Log.P?.WL(1, $"distances:");
+        foreach(var md in moveElements) {
+          Log.P?.WL(2, $"{md.dest.MoveType} {md.dest.PathNode.Position} dist:{md.strikeDist}");
+          if(md.dest.MoveType == MoveType.None) { result.Add(md.dest); continue; }
+          if(float.IsPositiveInfinity(md.strikeDist)) { result.Add(md.dest); hasOutOfStrikeElements = true; }
+        }
+        if(hasOutOfStrikeElements == false) {
+          if(moveElements.Count > 0) {
+            float farest = moveElements[0].strikeDist * 0.9f;
+            foreach(var md in moveElements) {
+              if(md.strikeDist > farest) { result.Add(md.dest); }
+            }
+          }
+        }
+        Log.P?.WL(1, $"result({result.Count}):");
+        foreach(var md in result) {
+          Log.P?.WL(2, $"{md.MoveType} {md.PathNode.Position}");
+        }
+        movementCandidateLocations.Clear();
+        movementCandidateLocations.AddRange(result);
+      }catch(Exception e) {
+        Log.P?.TWL(0, e.ToString(), true);
+      }
+      return true;
+    }
+  }
+    public static class AIMinefieldHelper {
     public static readonly string AI_AWARE_ALL_MINES_PILOT_TAG = "pilot_tag_ai_aware_all_mines";
     public static readonly string AI_MINEFIELD_DAMAGE_THRESHOLD_TAG = "pilot_tag_ai_minefield_damage_threshold_";
     public class MinefieldProjectedDamage {
@@ -340,7 +438,7 @@ namespace CustAmmoCategories {
         Log.Combat?.TWL(0, e.ToString(), true);
 
       }
-      return false;
+      return true;
     }
   }
   public static class BraceNode_Tick {

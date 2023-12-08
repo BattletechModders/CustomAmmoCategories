@@ -99,6 +99,7 @@ namespace CustAmmoCategories {
     private static FieldInfo PmcCore_CAREER_ID_STAT = null;
     private static Assembly assembly = null;
     public static void Init() {
+     // UnityGameInstance.BattleTechGame.Combat.AllActors[0].GameRep.gameObject.FindObject<>();
       Log.M?.TWL(0, "PersistentMapClientHelper init");
       foreach (Assembly assembly in AppDomain.CurrentDomain.GetAssemblies()) {
         if (assembly.FullName.StartsWith("PersistentMapClient, Version=")) { PersistentMapClientHelper.assembly = assembly; break; }
@@ -134,105 +135,6 @@ namespace CustAmmoCategories {
           }
         }
       }
-    }
-  }
-  public class OnlineCareerIDWidget: MonoBehaviour {
-    public SGHeaderWidget parent = null;
-    public HBSTooltip tooltip = null;
-    public LocalizableText text = null;
-    public HBSDOTweenButton button = null;
-    public RectTransform source = null;
-    public RectTransform rect = null;
-    public static OnlineCareerIDWidget Instantine(SGHeaderWidget __instance) {
-      GameObject careerModeArea = Traverse.Create(__instance).Field<GameObject>("careerModeArea").Value;
-      GameObject careerIdArea = GameObject.Instantiate(careerModeArea);
-      careerIdArea.transform.SetParent(careerModeArea.transform.parent);
-      careerIdArea.transform.localScale = Vector3.one;
-      RectTransform careerModeAreaRT = careerModeArea.GetComponent<RectTransform>();
-      RectTransform careerIdAreaRT = careerIdArea.GetComponent<RectTransform>();
-      careerIdAreaRT.pivot = new Vector2(0f, 1.1f);
-      OnlineCareerIDWidget widget = careerIdArea.AddComponent<OnlineCareerIDWidget>();
-      widget.parent = __instance;
-      careerIdArea.FindObject<RectTransform>("warningState", false).gameObject.SetActive(false);
-      careerIdArea.FindObject<RectTransform>("completedState", false).gameObject.SetActive(false);
-      careerIdArea.FindObject<RectTransform>("normalState", false).gameObject.SetActive(true);
-      widget.tooltip = careerIdArea.FindObject<HBSTooltip>("OBJ_CareerButton2", false);
-      widget.text = careerIdArea.FindObject<LocalizableText>("daysLeftText", false);
-      widget.button = careerIdArea.FindObject<HBSDOTweenButton>("OBJ_CareerButton2", false);
-      widget.button.OnClicked = new UnityEngine.Events.UnityEvent();
-      widget.button.OnClicked.AddListener(new UnityAction(widget.OnClicked));
-      widget.rect = careerIdAreaRT;
-      widget.source = careerModeAreaRT;
-      return widget;
-    }
-    public void Update() {
-      if ((this.rect != null) && (this.source != null)) {
-        this.rect.position = this.source.position;
-      }
-    }
-    public void OnClicked() {
-      Log.M?.TWL(0, "OnlineCareerIDWidget.OnClicked");
-      GenericPopup popup = GenericPopupBuilder.Create("ONLINE ID CLIPBOARD", $"What would you like to copy to clipboard?\nCAREER ID:{this.simGame.CAREER_ID()}\nCAREER LINK:{(string.Format(CustomAmmoCategories.Settings.MapOnlineClientLink, this.simGame.CAREER_ID()))}")
-        .AddButton("CLOSE", (Action)(() => {
-        }), true, BTInput.Instance.Key_Escape())
-        .AddButton("CAREER ID", (Action)(() => {
-          GUIUtility.systemCopyBuffer = this.simGame.CAREER_ID();
-          Log.M?.TWL(0, $"OnlineCareerIDWidget.OnClicked CAREER_ID:{GUIUtility.systemCopyBuffer}");
-        }), true, BTInput.Instance.Key_Return())
-        .AddButton("CAREER LINK", (Action)(() => {
-          GUIUtility.systemCopyBuffer = string.Format(CustomAmmoCategories.Settings.MapOnlineClientLink, this.simGame.CAREER_ID());
-          Log.M?.TWL(0, $"OnlineCareerIDWidget.OnClicked CLIENT_ID:{GUIUtility.systemCopyBuffer}");
-        }), true, BTInput.Instance.Key_None())
-        .IsNestedPopupWithBuiltInFader().SetAlwaysOnTop().Render();
-    }
-    public SimGameState simGame;
-    public void Init(SimGameState simGame) {
-      this.simGame = simGame;
-      this.gameObject.SetActive(PersistentMapClientHelper.HasOnlineAPI);
-      if (this.source.gameObject.activeSelf) {
-        this.rect.pivot = new Vector2(0f, 1.1f);
-      } else {
-        this.rect.pivot = new Vector2(0f, 0f);
-      }
-      StringBuilder lines = new StringBuilder();
-      lines.AppendLine($"ONLINE STATE:{PersistentMapClientHelper.RegistrationState}");
-      lines.AppendLine($"CLIENT ID:{simGame.CLIENT_ID()}");
-      lines.AppendLine($"CAREER ID:{simGame.CAREER_ID()}");
-      lines.AppendLine($"Click to copy to clipboard");
-      this.tooltip.SetDefaultStateData(new BaseDescriptionDef("CAREER_ID","ONLINE ID", lines.ToString(), string.Empty).GetTooltipStateData());
-      //string shortId = simGame.CAREER_ID();// "82b93e31-4cab-4d97-af78-c926105dc2dd"
-      this.text.SetText($"ONLINE STATE:{PersistentMapClientHelper.RegistrationState}");
-    }
-  }
-
-  [HarmonyPatch(typeof(SGHeaderWidget))]
-  [HarmonyPatch("SetCompanyCrest")]
-  [HarmonyPatch(MethodType.Normal)]
-  [HarmonyPatch(new Type[] { typeof(string) })]
-  public static class SGHeaderWidget_SetCompanyCrest {
-    public static void Postfix(SGHeaderWidget __instance) {
-      if (CustomAmmoCategories.Settings.MapOnlineClientDrawWidget == false) { return; }
-      Log.M?.TWL(0, "SGHeaderWidget.SetCompanyCrest");
-      OnlineCareerIDWidget careerIDWidget = __instance.gameObject.GetComponentInChildren<OnlineCareerIDWidget>(true);
-      if(careerIDWidget == null) {
-        careerIDWidget = OnlineCareerIDWidget.Instantine(__instance);
-      }
-      careerIDWidget.Init(__instance.simState);
-    }
-  }
-  [HarmonyPatch(typeof(SGHeaderWidget))]
-  [HarmonyPatch("Init")]
-  [HarmonyPatch(MethodType.Normal)]
-  [HarmonyPatch(new Type[] { typeof(SimGameState) })]
-  public static class SGHeaderWidget_Init {
-    public static void Postfix(SGHeaderWidget __instance, SimGameState simGame) {
-      if (CustomAmmoCategories.Settings.MapOnlineClientDrawWidget == false) { return; }
-      Log.M?.TWL(0, "SGHeaderWidget.Init");
-      OnlineCareerIDWidget careerIDWidget = __instance.gameObject.GetComponentInChildren<OnlineCareerIDWidget>(true);
-      if (careerIDWidget == null) {
-        careerIDWidget = OnlineCareerIDWidget.Instantine(__instance);
-      }
-      careerIDWidget.Init(simGame);
     }
   }
 

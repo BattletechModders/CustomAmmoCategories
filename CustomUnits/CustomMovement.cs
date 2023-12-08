@@ -225,7 +225,8 @@ namespace CustomUnits {
   public static class Mech_JumpDistance {
     public static void Postfix(Mech __instance, ref float __result) {
       try {
-        if (__instance is TrooperSquad squad) {
+        if(__instance.GetTags().Contains("irbtmu_immobile_unit")) { __result = 0f; return; }
+        if(__instance is TrooperSquad squad) {
           int workingJumpjetLocaltions = squad.workingJumpsLocations().Count;
           __result = workingJumpjetLocaltions > 0 ? (__result / (float)workingJumpjetLocaltions) : 0f;
         }
@@ -550,6 +551,7 @@ namespace CustomUnits {
   public static class Mech_WorkingJumpjets {
     public static void Postfix(Mech __instance, ref int __result) {
       try {
+        if(__instance.GetTags().Contains("irbtmu_immobile_unit")) { __result = 0; return; }
         TrooperSquad squad = __instance as TrooperSquad;
         if (squad != null) {
           __result = squad.workingJumpsLocations().Count;

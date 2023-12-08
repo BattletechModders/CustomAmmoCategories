@@ -23,34 +23,6 @@ using System.Linq;
 using System.Diagnostics;
 
 namespace CustAmmoCategories {
-  public class FlatPosition {
-    private short x;
-    private short y;
-    public float X { get { return (float)x / 10f; } }
-    public float Y { get { return (float)y / 10f; } }
-    public FlatPosition(Vector3 pos) {
-      this.x = (short)Mathf.RoundToInt(pos.x * 10f);
-      this.y = (short)Mathf.RoundToInt(pos.z * 10f);
-    }
-    public FlatPosition() {
-      this.x = 0;
-      this.y = 0;
-    }
-    public override int GetHashCode() {
-      var xb = BitConverter.GetBytes(this.x);
-      var yb = BitConverter.GetBytes(this.y);
-      byte[] rb = new byte[4];
-      xb.CopyTo(rb, 0);
-      yb.CopyTo(rb, 2);
-      return BitConverter.ToInt32(rb, 0);
-    }
-    public override bool Equals(object obj) {
-      if(obj is FlatPosition b) {
-        return (this.x == b.x) && (this.y == b.y);
-      }
-      return false;
-    }
-  }
   public static class AIPathingLimiter {
     public static string LIMIT_PATHING_SAMPLES = "LIMIT_PATHING_SAMPLES";
     public static MethodBase GetSampledPathNodes() => (MethodBase)AccessTools.Method(typeof(PathNodeGrid), "GetSampledPathNodes");
@@ -307,6 +279,7 @@ namespace CustAmmoCategories {
           original_movementCandidateLocations.Add(__instance.tree, original);
         }
         AIMinefieldHelper.FilterMoveCandidates(__instance.tree.unit,ref __instance.tree.movementCandidateLocations);
+        AIArtilleryStrikeHelper.FilterMoveCandidates(__instance.tree.unit, ref __instance.tree.movementCandidateLocations);
         FilterFastUnits(original, __instance, __instance.tree);
         Log.P?.WL(1, "filter result:" + __instance.tree.movementCandidateLocations.Count);
         //if (__instance.tree.unit.FlyingHeight() < 3f) { return; }
@@ -358,7 +331,7 @@ namespace CustAmmoCategories {
         __result = list.ToList<PathNode>();
         return false;
       } catch (Exception e) {
-        Log.P.TWL(0, e.ToString(), true);
+        Log.P?.TWL(0, e.ToString(), true);
         return true;
       }
     }

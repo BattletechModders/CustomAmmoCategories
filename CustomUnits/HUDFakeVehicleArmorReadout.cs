@@ -54,7 +54,9 @@ namespace CustomUnits {
       this.ToolTip.BasicString = new Localize.Text(Vehicle.GetLongChassisLocation(location.toVehicleLocation()), (object[])Array.Empty<object>());
       for (int index = 0; index < vehicle.allComponents.Count; ++index) {
         MechComponent allComponent = vehicle.allComponents[index];
-        if ((ChassisLocations)allComponent.Location == location) {
+        if(allComponent.componentDef == null) { continue; }
+        if(allComponent.componentDef.ComponentTags.Contains("hide_combat")) { continue; }
+        if((ChassisLocations)allComponent.Location == location) {
           Weapon weapon = allComponent as Weapon;
           if (allComponent.DamageLevel < ComponentDamageLevel.NonFunctional && (weapon == null || weapon.HasAmmo))
             this.ToolTip.BuffStrings.Add(allComponent.UIName);
@@ -67,7 +69,7 @@ namespace CustomUnits {
     public void OnPointerEnter(PointerEventData data) {
       if (this.Readout.DisplayedVehicle == null)
         return;
-      if ((UnityEngine.Object)this.ToolTip != (UnityEngine.Object)null)
+      if (this.ToolTip != null)
         this.setToolTipInfo(this.Readout.DisplayedVehicle, this.ArmorLocation);
       this.Readout.SetHoveredArmor(this.ArmorLocation);
     }

@@ -55,6 +55,7 @@ namespace CustAmmoCategories {
         PersistentFloatieHelper.Init(__instance);
         DeferredEffectHelper.Clear();
         PersistentFloatieHelper.Clear();
+        WeaponArtilleryHelper.Clear();
       } catch (Exception e) {
         Log.Combat?.TWL(0, e.ToString(), true);
         CombatHUD.uiLogger.LogException(e);

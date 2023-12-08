@@ -212,6 +212,8 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
         ToolTip.DebuffStrings.Clear();
         ToolTip.BasicString = CustAmmoCategories.GetLongArmorLocationHelper.GetLongArmorLocation(mech,location);
         foreach (MechComponent mechComponent in mech.GetComponentsForLocation(MechStructureRules.GetChassisLocationFromArmorLocation(location), ComponentType.NotSet)) {
+          if(mechComponent.componentDef == null) { continue; }
+          if(mechComponent.componentDef.ComponentTags.Contains("hide_combat")) { continue; }
           string componentName = mechComponent.UIName.ToString();
           int allAmmo = 1;
           if (mechComponent is Weapon weaponComp && (weaponComp.AmmoCategoryValue.Is_NotSet == false))

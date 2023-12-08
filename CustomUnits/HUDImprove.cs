@@ -2507,6 +2507,20 @@ namespace CustomUnits {
         }
       }
       CombatHUDMechwarriorTrayEx trayEx = __instance.gameObject.GetComponent<CombatHUDMechwarriorTrayEx>();
+      if((actor != null) && (actor.IsInArtilleryMode())) {
+        __instance.MoveButton.DisableButton();
+        __instance.SprintButton.DisableButton();
+        __instance.JumpButton.DisableButton();
+        __instance.MoraleButtons[0].DisableButton();
+        __instance.MoraleButtons[1].DisableButton();
+        for(int index = 0; index < __instance.AbilityButtons.Length; ++index) { 
+          __instance.AbilityButtons[index].DisableButton();
+        }
+        trayEx?.ShowAbilitiesButton.DisableButton();
+        trayEx?.HideAbilities();
+        trayEx?.ShutdownBtn?.DisableButton();
+        return;
+      }
       if (trayEx == null) { return; }
       if (actor == null) {
         trayEx.ShowAbilitiesButton.DisableButton();

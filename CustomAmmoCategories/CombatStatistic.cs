@@ -239,6 +239,7 @@ namespace CustAmmoCategories {
       try {
         Log.Combat?.TWL(0, $"AbstractActor.FlagForDeath {__instance.PilotableActorDef.ChassisID}. Attacker:{attackerID}",true);
         __instance.AddToStatistic(attackerID);
+        AbstractActor_FlagForDeath_Atrillery.Postfix(__instance);
       } catch (Exception e) {
         Log.Combat?.TWL(0, e.ToString(), true);
         AbstractActor.logger.LogException(e);
@@ -317,7 +318,7 @@ namespace CustAmmoCategories {
       }
     }
     public static void AddKilled(this AbstractActor attacker, AbstractActor victim, bool ejected) {
-      attacker.stat().AddKilled(victim, ejected);
+      attacker.stat()?.AddKilled(victim, ejected);
     }
     public static bool AARIcons_AddEjectedMech_Prefix() { return CustomAmmoCategories.Settings.StatisticOnResultScreenEnabled == false; }
     public static bool AARIcons_AddEjectedVehicle_Prefix() { return CustomAmmoCategories.Settings.StatisticOnResultScreenEnabled == false; }

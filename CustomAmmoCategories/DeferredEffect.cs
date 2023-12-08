@@ -112,6 +112,7 @@ namespace CustAmmoCategories {
         CurrentRound = -1;
       }catch(Exception e) {
         Log.M?.TWL(0,e.ToString(),true);
+        CombatGameState.gameInfoLogger.LogException(e);
       }
     }
     public static void CreateDifferedEffect(this Weapon weapon, ICombatant target) {

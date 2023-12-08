@@ -1745,18 +1745,21 @@ namespace CustomUnits {
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { })]
   public static class AITeam_getInvocationForCurrentUnit {
-    public static bool Prefix(AITeam __instance, AbstractActor ___currentUnit, ref InvocationMessage __result) {
+    public static void Prefix(ref bool __runOriginal, AITeam __instance, ref InvocationMessage __result) {
       try {
-        if (DeployManualHelper.IsInManualSpawnSequence == false) { return true; }
+        if(__runOriginal == false) { return; }
+        if (DeployManualHelper.IsInManualSpawnSequence == false) { return; }
         Log.Combat?.TWL(0, "AITeam.getInvocationForCurrentUnit deploy director still alive bracing");
-        __result = (InvocationMessage)new ReserveActorInvocation(___currentUnit, ReserveActorAction.DONE, __instance.Combat.TurnDirector.CurrentRound);
-        return false;
+        __result = (InvocationMessage)new ReserveActorInvocation(__instance.currentUnit, ReserveActorAction.DONE, __instance.Combat.TurnDirector.CurrentRound);
+        __runOriginal = false;
+        return;
       } catch (Exception e) {
         Log.Combat?.TWL(0, e.ToString(), true);
-        return true;
+        AITeam.activationLogger.LogException(e);
+        __runOriginal = true;
       }
     }
-    public static void Postfix(AITeam __instance, AbstractActor ___currentUnit, ref InvocationMessage __result) {
+    public static void Postfix(AITeam __instance, ref InvocationMessage __result) {
       try {
         Log.Combat?.TWL(0, "AITeam.getInvocationForCurrentUnit "+(__result==null?"null": __result.GetType().Name));
       } catch (Exception e) {
