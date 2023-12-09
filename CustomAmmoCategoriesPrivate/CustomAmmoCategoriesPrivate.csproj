@@ -34,9 +34,6 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="BepInEx.AssemblyPublicizer.MSBuild" Version="0.3.0" />
-    <PackageReference Include="NetSpell">
-      <Version>2.1.7</Version>
-    </PackageReference>
   </ItemGroup>
   <ItemGroup>
     <Reference Include="0Harmony, Version=1.2.0.1, Culture=neutral, processorArchitecture=MSIL">

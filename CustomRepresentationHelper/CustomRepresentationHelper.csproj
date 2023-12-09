@@ -16,10 +16,6 @@
   </Target>
 
   <ItemGroup>
-    <PackageReference Include="NetSpell" Version="2.1.7" />
-  </ItemGroup>
-
-  <ItemGroup>
     <Reference Include="Assembly-CSharp">
       <HintPath>$(BattleTechGameDir)\BattleTech_Data\Managed\Assembly-CSharp.dll</HintPath>
     </Reference>

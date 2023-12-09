@@ -40,9 +40,6 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Krafs.Publicizer" Version="2.2.1" />
-    <PackageReference Include="NetSpell">
-      <Version>2.1.7</Version>
-    </PackageReference>
     <Publicize Include="Assembly-CSharp;UnityEngine.UI;UnityEngine.CoreModule;InControl" />
     <DoNotPublicize Include="Assembly-CSharp:BattleTech.MechRepresentation;Assembly-CSharp:BattleTech.Mech;Assembly-CSharp:BattleTech.PilotableActorRepresentation;Assembly-CSharp:BattleTech.UI.SelectionState;Assembly-CSharp:WeaponEffect;Assembly-CSharp:BattleTech.UI.SelectionStateCommand;Assembly-CSharp:BattleTech.UI.SelectionStateConfirm" />
   </ItemGroup>
