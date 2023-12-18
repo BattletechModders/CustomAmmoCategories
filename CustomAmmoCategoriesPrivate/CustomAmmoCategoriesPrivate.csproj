@@ -46,7 +46,7 @@
     </Reference>
     <Reference Include="CustomAmmoCategories, Version=0.0.1.280, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\..\Mods\Core\CustomAmmoCategories\CustomAmmoCategories.dll</HintPath>
+      <HintPath>$(BattleTechGameDir)\Mods\Core\CustomAmmoCategories\CustomAmmoCategories.dll</HintPath>
     </Reference>
     <Reference Include="IRBTModUtils, Version=1.30.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>

@@ -215,6 +215,7 @@ namespace CustomUnits {
     public bool IntelShowMood { get; set; } = false;
     public bool IntelShowMiniMap { get; set; } = false;
     public bool VehicleEquipmentIsFixed { get; set; } = true;
+    public HashSet<string> globalGameRepresenationAudioEventsSupress = new HashSet<string>();
     public Dictionary<string, TimerObjectiveAdvice> timerObjectiveChange { get; set; } = new Dictionary<string, TimerObjectiveAdvice>() { { "DefendBase", new TimerObjectiveAdvice(1, 2) } };
     public CUSettings() {
       debugLog = false;
@@ -719,6 +720,7 @@ namespace CustomUnits {
       }
       //InitLancesLoadoutDefault();
       //CustomLanceHelper.BaysCount(3+(Core.Settings.BaysCountExternalControl?0:Core.Settings.ArgoBaysFix));
+      CustomComponents.Registry.RegisterSimpleCustomComponents(Assembly.GetExecutingAssembly());
       MechResizer.MechResizer.Init(directory, settingsJson);
       SortByTonnage.SortByTonnage.Init(directory, Core.Settings.SortBy);
       PilotingClassHelper.CreateDefault();

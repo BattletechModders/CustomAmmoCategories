@@ -25,6 +25,7 @@ using MechResizer;
 using Localize;
 using System.Threading;
 using IRBTModUtils;
+using CustomComponents;
 
 namespace CustomUnits {
   [HarmonyPatch(typeof(UnitSpawnPointGameLogic))]
@@ -768,6 +769,26 @@ namespace CustomUnits {
       }
     }
     //public CustomRepresentation customRepresentation { get; set; }
+    public virtual void ReplaceAnimationIfNeeded() {
+      foreach(var component in this.parentActor.allComponents) {
+        if(component.IsFunctional == false) { continue; }
+        if(component.componentDef == null) { continue; }
+        if(component.componentDef.Description == null) { continue; }
+        if(string.IsNullOrEmpty(component.componentDef.Description.Id)) { continue; }
+        AnimatorReplacer animReplacer = component.componentDef.GetComponent<AnimatorReplacer>();
+        if(animReplacer == null) { continue; }
+        if(this.parentActor.Combat.DataManager.Exists(BattleTechResourceType.Prefab, animReplacer.AnimationSource) == false) { continue; }
+        GameObject animSrcGO = this.parentActor.Combat.DataManager.PooledInstantiate(animReplacer.AnimationSource, BattleTechResourceType.Prefab);
+        if(animSrcGO == null) { continue; }
+        Animator animatorSrc = animSrcGO.GetComponent<Animator>();
+        if(animatorSrc == null) { this.parentActor.Combat.DataManager.PoolGameObject(animReplacer.AnimationSource, animSrcGO); continue; }
+        Log.Combat?.TWL(0,$"CustomMechRepresenation.ReplaceAnimationIfNeeded:{this.parentActor.PilotableActorDef.Description.Id} - {animSrcGO.name}");
+        //this.customRep.CustomDefinition.MoveAnimations
+        this.thisAnimator.runtimeAnimatorController = animatorSrc.runtimeAnimatorController;
+        this.parentActor.Combat.DataManager.PoolGameObject(animReplacer.AnimationSource, animSrcGO);
+        break;
+      }
+    }
     public virtual void _Init(Mech mech, Transform parentTransform, bool isParented) {
       Log.Combat?.TWL(0,this.GetType().ToString()+"._Init "+mech.MechDef.ChassisID);
       //this.j_Root = this.transform.FindRecursive("j_Root");
@@ -779,6 +800,7 @@ namespace CustomUnits {
       this.mech = this.parentCombatant as Mech;
       this.vehicle = this.parentCombatant as Vehicle;
       this.turret = this.parentCombatant as Turret;
+      this.ReplaceAnimationIfNeeded();
       this.Constants(mech.Combat.Constants);
       bool flag = false;
       if (this.altDef == null) { this.altDef = new AlternateRepresentationDef(mech.MechDef.Chassis); }

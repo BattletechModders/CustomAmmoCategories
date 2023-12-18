@@ -148,6 +148,7 @@
   <ItemGroup>
     <Compile Include="AlternateRepresentation.cs" />
     <Compile Include="AnimatedPartsHelper.cs" />
+    <Compile Include="AnimatorReplacer.cs" />
     <Compile Include="BiomeTagsFix.cs" />
     <Compile Include="BossAppearController.cs" />
     <Compile Include="CustomHitTable.cs" />

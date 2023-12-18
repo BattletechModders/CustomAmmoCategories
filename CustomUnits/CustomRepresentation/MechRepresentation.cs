@@ -1934,8 +1934,12 @@ namespace CustomUnits {
         if (strArray.Length < 2) {
           Log.Combat?.TWL(0, "AnimationEvent OnAudioEvent got an invalid audioEvent name: " + audioEvent, true);
         } else {
-          //Log.TWL(0, "MechRepresentation.OnAudioEvent "+this.name + " " + audioEvent, true);
-          int num = (int)WwiseManager.PostEvent(string.Format("AudioEventList_{0}_{1}", (object)strArray[0], (object)audioEvent), this.rootParentRepresentation.audioObject);
+          if(Core.Settings.globalGameRepresenationAudioEventsSupress.Contains(audioEvent)) {
+            Log.Combat?.TWL(0, $"MechRepresentation.OnAudioEvent {this.name} {audioEvent} suppressed", true);
+          } else {
+            Log.Combat?.TWL(0, $"MechRepresentation.OnAudioEvent {this.name} {audioEvent}", true);
+            int num = (int)WwiseManager.PostEvent(string.Format("AudioEventList_{0}_{1}", (object)strArray[0], (object)audioEvent), this.rootParentRepresentation.audioObject);
+          }
         }
       }
     }
