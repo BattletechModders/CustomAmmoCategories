@@ -360,8 +360,19 @@ namespace CustAmmoCategories {
               if(is_art) {
                 ICombatant target = __instance.Combat.FindCombatantByGUID(subattack.targetGUID);
                 if(target != null) {
-                  Log.Combat?.WL(3, $"artillery strike:{target.CurrentPosition}");
-                  is_artillery_strike = true; weapon.AddArtilleryStrike(target.CurrentPosition);
+                  if(target == unit) {
+                    var info = CustomAmmoCategories.getTerrinHitPosition(unit.GUID);
+                    if(info == null) {
+                      Log.Combat?.WL(3, $"ground position not found. Brace instead");
+                      __result = new ReserveActorInvocation(unit, ReserveActorAction.DONE, __instance.Combat.TurnDirector.CurrentRound);
+                      return;
+                    }
+                    Log.Combat?.WL(3, $"artillery strike ground {info.pos}");
+                    is_artillery_strike = true; weapon.AddArtilleryStrike(info.pos);
+                  } else {
+                    Log.Combat?.WL(3, $"artillery strike:{target.CurrentPosition}");
+                    is_artillery_strike = true; weapon.AddArtilleryStrike(target.CurrentPosition);
+                  }
                 }
               }
             }

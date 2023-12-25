@@ -322,8 +322,10 @@ namespace CustAmmoCategories {
     public void AddLandMineExplosion(AbstractActor unit, MineFieldDef def, Vector3 pos) {
       Log.F?.TWL(0, "AddLandMineExplosion " + def.AoERange + "/" + def.AoEDamage + "/" + def.AoEHeat);
       if (def.AoERange < CustomAmmoCategories.Epsilon) { return; };
-      
-      foreach (ICombatant target in unit.Combat.GetAllLivingCombatants()) {
+      int PhysicsAoELayers = LayerMask.GetMask("Terrain", "Obstruction", "Combatant", "NoCollision");
+      int Combatant_layer = LayerMask.NameToLayer("Combatant");
+      int NoCollision_layer = LayerMask.NameToLayer("NoCollision");
+      foreach(ICombatant target in unit.Combat.GetAllLivingCombatants()) {
         if (target.GUID == unit.GUID) { continue; };
         if (target.IsDead) { continue; };
         if (target.isDropshipNotLanded()) { continue; };
@@ -337,6 +339,23 @@ namespace CustAmmoCategories {
         if (tagAoEDamage < CustomAmmoCategories.Epsilon) { tagAoEDamage = 1f; }
         distance /= tagAoEModRange;
         if (distance > def.AoERange) { continue; };
+        if(CustomAmmoCategories.Settings.PhysicsAoE_Minefield && def.PhysicsAoE) {
+          Vector3 raycastStart = pos + Vector3.up * def.PhysicsAoE_Height;
+          Vector3 raycastEnd = target.TargetPosition;
+          if(Physics.Raycast(raycastStart, (raycastEnd - raycastStart).normalized, out RaycastHit phy_hit, def.AoERange, PhysicsAoELayers, QueryTriggerInteraction.Ignore)) {
+            Log.F?.WL(2, $"raycast result {phy_hit.collider.gameObject.transform.name} layer:{LayerMask.LayerToName(phy_hit.collider.gameObject.layer)}");
+            if((phy_hit.collider.gameObject.layer != Combatant_layer) && (phy_hit.collider.gameObject.layer != NoCollision_layer)) { continue; }
+            PilotableActorRepresentation unitRep = phy_hit.collider.GetComponentInParent<PilotableActorRepresentation>();
+            if(unitRep != null) {
+              if(unitRep.parentActor != target) {
+                Log.F?.WL(3, $"other unit:{(unitRep.parentActor == null ? "null" : unitRep.parentActor.PilotableActorDef.ChassisID)}");
+                continue;
+              } else {
+                Log.F?.WL(3, $"target unit reached - AoE process normal");
+              }
+            }
+          };
+        }
         foreach (var effect in def.statusEffects) { AddEffect(unit, target, effect); };
         float distanceRatio = def.mAoEDmgFalloffType((def.AoERange - distance) / def.AoERange);
         float targetAoEMult = target.AoEDamageMult();

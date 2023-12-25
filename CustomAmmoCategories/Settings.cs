@@ -456,6 +456,14 @@ namespace CustAmmoCategories {
     public int ExternalHeatLimit { get; set; } = 149;
     public bool AMSUseAttractiveness { get; set; } = true;
     public int AMSDefaultInterceptedTrace { get; set; } = 2;
+    public bool PhysicsAoE_Weapons { get; set; } = true;
+    public bool PhysicsAoE_Deffered { get; set; } = true;
+    public bool PhysicsAoE_Minefield { get; set; } = true;
+    public bool PhysicsAoE_API { get; set; } = true;
+    public float PhysicsAoE_API_Height { get; set; } = 10f;
+    public bool AIAwareArtillery { get; set; } = true;
+    public bool AIAwareMinefields { get; set; } = true;
+    public bool AIFastUnitsOptimization { get; set; } = true;
     public Settings() {
       //directory = string.Empty;
       //debugLog = true;

@@ -278,9 +278,9 @@ namespace CustAmmoCategories {
           original = new MoveDestOriginalStatistic();
           original_movementCandidateLocations.Add(__instance.tree, original);
         }
-        AIMinefieldHelper.FilterMoveCandidates(__instance.tree.unit,ref __instance.tree.movementCandidateLocations);
-        AIArtilleryStrikeHelper.FilterMoveCandidates(__instance.tree.unit, ref __instance.tree.movementCandidateLocations);
-        FilterFastUnits(original, __instance, __instance.tree);
+        if(CustomAmmoCategories.Settings.AIAwareMinefields)AIMinefieldHelper.FilterMoveCandidates(__instance.tree.unit,ref __instance.tree.movementCandidateLocations);
+        if(CustomAmmoCategories.Settings.AIAwareArtillery) AIArtilleryStrikeHelper.FilterMoveCandidates(__instance.tree.unit, ref __instance.tree.movementCandidateLocations);
+        if(CustomAmmoCategories.Settings.AIFastUnitsOptimization) FilterFastUnits(original, __instance, __instance.tree);
         Log.P?.WL(1, "filter result:" + __instance.tree.movementCandidateLocations.Count);
         //if (__instance.tree.unit.FlyingHeight() < 3f) { return; }
         //Log.P?.WL(1, "searching for non flying teammates");

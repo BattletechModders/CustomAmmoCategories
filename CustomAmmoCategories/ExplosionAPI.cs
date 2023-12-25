@@ -192,9 +192,21 @@ namespace CustAmmoCategories {
       explodeObject.SpawnSelf(combat);
       explodeVFXdurations.Add(explodeObject, duration);
     }
-    public static void AoEExplode(string VFX,Vector3 vfxScale, float vfxDuration, string SFX, Vector3 pos, 
-      float radius, float damage, float heat, float stability, List<EffectData> effects, bool effectsFalloff, int fireRadius, int fireStrength, float fireChance, int fireDurationNoForest, 
+    public static void AoEExplode(string VFX, Vector3 vfxScale, float vfxDuration, string SFX, Vector3 pos,
+      float radius, float damage, float heat, float stability, List<EffectData> effects, bool effectsFalloff, 
+      int fireRadius, int fireStrength, float fireChance, int fireDurationNoForest,
       string LongVFX, Vector3 longVFXScale, string designMask, int dmRadius, int turns
+    ) {
+      AoEExplode(VFX, vfxScale, vfxDuration, SFX, pos,
+        radius, damage, heat, stability, effects, effectsFalloff,
+        fireRadius, fireStrength, fireChance, fireDurationNoForest,
+        LongVFX, longVFXScale, designMask, dmRadius, turns,
+        CustomAmmoCategories.Settings.PhysicsAoE_API, CustomAmmoCategories.Settings.PhysicsAoE_API_Height);
+    }
+    public static void AoEExplode(string VFX,Vector3 vfxScale, float vfxDuration, string SFX, Vector3 pos, 
+      float radius, float damage, float heat, float stability, List<EffectData> effects, bool effectsFalloff, 
+      int fireRadius, int fireStrength, float fireChance, int fireDurationNoForest, 
+      string LongVFX, Vector3 longVFXScale, string designMask, int dmRadius, int turns, bool PhysicsAoE, float PhysicsAoE_Height
     ) {
       if (Inited == false) { return; };
       float Range = radius;
@@ -206,7 +218,10 @@ namespace CustAmmoCategories {
       List<AoEExplosionRecord> AoEDamage = new List<AoEExplosionRecord>();
       //List<EffectData> effects = component.AoEExplosionEffects();
       int SequenceID = combat.StackManager.NextStackUID;
-      foreach (ICombatant target in combat.GetAllLivingCombatants()) {
+      int PhysicsAoELayers = LayerMask.GetMask("Terrain", "Obstruction", "Combatant", "NoCollision");
+      int Combatant_layer = LayerMask.NameToLayer("Combatant");
+      int NoCollision_layer = LayerMask.NameToLayer("NoCollision");
+      foreach(ICombatant target in combat.GetAllLivingCombatants()) {
         if (target.IsDead) { continue; };
         if (target.isDropshipNotLanded()) { continue; };
         Vector3 CurrentPosition = target.CurrentPosition + Vector3.up * target.FlyingHeight();
@@ -214,6 +229,21 @@ namespace CustAmmoCategories {
         if (CustomAmmoCategories.Settings.DefaultAoEDamageMult[target.UnitType].Range < CustomAmmoCategories.Epsilon) { CustomAmmoCategories.Settings.DefaultAoEDamageMult[target.UnitType].Range = 1f; }
         distance /= CustomAmmoCategories.Settings.DefaultAoEDamageMult[target.UnitType].Range;
         if (distance > Range) { continue; };
+        if(CustomAmmoCategories.Settings.PhysicsAoE_API && PhysicsAoE) {
+          Vector3 raycastStart = pos + Vector3.up * PhysicsAoE_Height;
+          Vector3 raycastEnd = target.TargetPosition;
+          if(Physics.Raycast(raycastStart, (raycastEnd - raycastStart).normalized, out RaycastHit phy_hit, distance, PhysicsAoELayers, QueryTriggerInteraction.Ignore)) {
+            Log.F?.WL(2, $"raycast result {phy_hit.collider.gameObject.transform.name}");
+            if((phy_hit.collider.gameObject.layer != Combatant_layer) && (phy_hit.collider.gameObject.layer != NoCollision_layer)) { continue; }
+            PilotableActorRepresentation unitRep = phy_hit.collider.GetComponentInParent<PilotableActorRepresentation>();
+            if(unitRep != null) {
+              if(unitRep.parentActor != target) {
+                Log.F?.WL(3, $"other unit:{(unitRep.parentActor == null ? "null" : unitRep.parentActor.PilotableActorDef.ChassisID)}");
+                continue;
+              }
+            }
+          };
+        }
         float HeatDamage = heat * (Range - distance) / Range;
         float Damage = AoEDmg * CustomAmmoCategories.Settings.DefaultAoEDamageMult[target.UnitType].Damage * (Range - distance) / Range;
         HeatDamage *= target.ScaleIncomingHeat();
@@ -221,7 +251,7 @@ namespace CustAmmoCategories {
         float StabDamage = stability * (Range - distance) / Range;
         foreach (EffectData effect in effects) {
           string effectID = string.Format("OnComponentAoEExplosionEffect_{0}_{1}", (object)fakeActor.GUID, (object)SequenceID);
-          Log.LogWrite($"  Applying effectID:{effect.Description.Id} with effectDescId:{effect?.Description.Id} effectDescName:{effect?.Description.Name}\n");
+          Log.Combat?.WL(2,$"Applying effectID:{effect.Description.Id} with effectDescId:{effect?.Description.Id} effectDescName:{effect?.Description.Name}");
           combat.EffectManager.CreateEffect(effect, effectID, -1, fakeActor, target, new WeaponHitInfo(), 0, false);
         }
         Mech mech = target as Mech;

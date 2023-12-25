@@ -197,6 +197,37 @@ namespace CustomUnits {
       custLosData.ApplyScale(MechResizer.SizeMultiplier.Get(this.MechDef));
       base.InitStats();
       UpdateLOSHeight(this.FlyingHeight());
+      InitArtilleryCollider();
+    }
+    public virtual float ArtilleryProtectionRadius { get { return this.Radius; } }
+    public virtual void InitArtilleryCollider() {
+      var sourceCollider = this.custGameRep.j_Root.gameObject.FindComponent<CapsuleCollider>("ArtilleryProtectionCollider");
+      if(sourceCollider == null) {
+        var src_colliders = this.custGameRep.j_Root.gameObject.GetComponentsInChildren<CapsuleCollider>(true);
+        if((src_colliders != null) && (src_colliders.Length > 0)) { sourceCollider = src_colliders[0]; };
+      }
+      GameObject artColliderGO = new GameObject("artillery_protection_collider");
+      artColliderGO.transform.SetParent(this.custGameRep.j_Root);
+      artColliderGO.layer = LayerMask.NameToLayer("NoCollision");
+      var artCollider = artColliderGO.AddComponent<CapsuleCollider>();
+      if(sourceCollider != null) {
+        artColliderGO.transform.position = sourceCollider.gameObject.transform.position;
+        artColliderGO.transform.rotation = sourceCollider.gameObject.transform.rotation;
+        artCollider.center = sourceCollider.center;
+        artCollider.height = sourceCollider.height;
+        artCollider.radius = sourceCollider.radius;
+        artCollider.direction = sourceCollider.direction;
+      } else {
+        artCollider.radius = this.ArtilleryProtectionRadius;
+        var highestLos = this.MechDef.Chassis.LOSSourcePositions[0];
+        var lowestLos = this.MechDef.Chassis.LOSSourcePositions[0];
+        foreach(var los in this.MechDef.Chassis.LOSSourcePositions) {
+          if(highestLos.y < los.y) { highestLos = los; }
+          if(lowestLos.y > los.y) { lowestLos = los; }
+        }
+        artCollider.center = new Vector3(0f, (highestLos.y - lowestLos.y)/2f, 0f);
+        artCollider.height = highestLos.y - lowestLos.y;
+      }
     }
     public override void AddToTeam(Team team) {
       try {

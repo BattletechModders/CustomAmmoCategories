@@ -101,6 +101,10 @@ namespace CustAmmoCategories {
     public List<string> callMethod { get; set; }
     [Key(30)]
     public bool getFromWeapon { get; set; } = false;
+    [Key(31)]
+    public bool PhysicsAoE { get; set; } = true;
+    [Key(32)]
+    public float PhysicsAoE_Height { get; set; } = 10f;
     public DeferredEffectDef(DeferredEffectDef src) {
       this.id = src.id;
       this.rounds = src.rounds;
@@ -838,6 +842,10 @@ namespace CustAmmoCategories {
     public float ArtilleryReticleRadius { get; set; } = 0f;
     [Key(150)]
     public string ArtilleryReticleText { get; set; } = "Artillery";
+    [Key(151)]
+    public TripleBoolean PhysicsAoE { get; set; } = TripleBoolean.True;
+    [Key(152)]
+    public float PhysicsAoE_Height { get; set; } = 10f;
     [IgnoreMember, JsonIgnore]
     private HashSet<string> f_restrictedAmmo = null;
     [IgnoreMember, JsonIgnore]

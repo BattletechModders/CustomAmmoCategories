@@ -1018,6 +1018,10 @@ namespace CustomUnits {
       this.pilot.StatCollection.GetStatistic("Health").SetValue<int>(info.SquadInfo.Troopers);
       squadStatsInited = true;
     }
+    public override void InitArtilleryCollider() {
+      //squads are too small to have artillery protection collider
+    }
+
     public override void CheckPilotStatusFromAttack(string sourceID, int sequenceID, int stackItemID) {
       if (!this.IsPilotable)
         return;

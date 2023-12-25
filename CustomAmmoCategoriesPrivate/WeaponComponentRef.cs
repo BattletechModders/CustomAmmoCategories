@@ -9,6 +9,29 @@ using System.Collections.Generic;
 using UnityEngine;
 
 namespace CustAmmoCategories {
+  [HarmonyPatch(typeof(LanceMechEquipmentListItem))]
+  [HarmonyPatch("SetTooltipData")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { typeof(MechComponentDef) })]
+  public static class LanceMechEquipmentListItem_SetTooltipData {
+    public static void Prefix(ref bool __runOriginal, LanceMechEquipmentListItem __instance, MechComponentDef MechDef) {
+      try {
+        if(__runOriginal == false) { return; }
+        if(__instance.componentRef == null) { return; }
+        __runOriginal = false;
+        if(__instance.EquipmentTooltip == null) { __instance.EquipmentTooltip = __instance.GetComponent<HBSTooltip>(); }
+        if((__instance.EquipmentTooltip == null) || (MechDef == null)) { return; }
+        if(__instance.componentRef.ComponentDefType == ComponentType.Weapon) {
+          __instance.EquipmentTooltip.SetDefaultStateData(__instance.componentRef.GetTooltipStateData());
+        } else {
+          __instance.EquipmentTooltip.SetDefaultStateData(TooltipUtilities.GetStateDataFromObject(TooltipUtilities.MechComponentDefHandlerForTooltip(MechDef)));
+        }
+      } catch(Exception e) {
+        Log.M?.TWL(0, e.ToString(), true);
+        UIManager.logger.LogException(e);
+      }
+    }
+  }
   [HarmonyPatch(typeof(TooltipPrefab_Weapon))]
   [HarmonyPatch("SetData")]
   [HarmonyPatch(MethodType.Normal)]
@@ -55,30 +78,30 @@ namespace CustAmmoCategories {
         if (ShotsWhenFired > 1) {
           if (ProjectilesPerShot > 1) {
             if (APDamage > 0f) {
-              __instance.damage.SetText($"(({Damage}, {APDamage} AP)x{ProjectilesPerShot})x{ShotsWhenFired}");
+              __instance.damage.SetText($"{Damage},{APDamage}APx{ProjectilesPerShot}x{ShotsWhenFired}={Damage * ProjectilesPerShot * ShotsWhenFired},{APDamage * ProjectilesPerShot * ShotsWhenFired}AP");
             } else {
-              __instance.damage.SetText($"(({Damage})x{ProjectilesPerShot})x{ShotsWhenFired}");
+              __instance.damage.SetText($"{Damage}x{ProjectilesPerShot}x{ShotsWhenFired}={Damage * ProjectilesPerShot * ShotsWhenFired}");
             }
-            __instance.stability.SetText($"(({StabDamage})x{ProjectilesPerShot})x{ShotsWhenFired}");
+            __instance.stability.SetText($"{StabDamage}x{ProjectilesPerShot}x{ShotsWhenFired}={StabDamage * ProjectilesPerShot * ShotsWhenFired}");
           } else {
             if (APDamage > 0f) {
-              __instance.damage.SetText($"({Damage}, {APDamage} AP)x{ShotsWhenFired}");
+              __instance.damage.SetText($"{Damage},{APDamage}APx{ShotsWhenFired}={Damage * ShotsWhenFired},{APDamage * ShotsWhenFired}AP");
             } else {
-              __instance.damage.SetText($"({Damage})x{ShotsWhenFired}");
+              __instance.damage.SetText($"{Damage}x{ShotsWhenFired}={Damage * ShotsWhenFired}");
             }
-            __instance.stability.SetText($"({StabDamage})x{ShotsWhenFired}");
+            __instance.stability.SetText($"{StabDamage}x{ShotsWhenFired}={StabDamage * ShotsWhenFired}");
           }
         } else {
           if (ProjectilesPerShot > 1) {
             if (APDamage > 0f) {
-              __instance.damage.SetText($"({Damage}, {APDamage} AP)x{ProjectilesPerShot}");
+              __instance.damage.SetText($"{Damage},{APDamage}APx{ProjectilesPerShot}={Damage * ProjectilesPerShot},{APDamage * ProjectilesPerShot}AP");
             } else {
-              __instance.damage.SetText($"({Damage})x{ProjectilesPerShot}");
+              __instance.damage.SetText($"{Damage}x{ProjectilesPerShot}={Damage * ProjectilesPerShot}");
             }
-            __instance.stability.SetText($"({StabDamage})x{ProjectilesPerShot}");
+            __instance.stability.SetText($"{StabDamage}x{ProjectilesPerShot}={StabDamage * ProjectilesPerShot}");
           } else {
             if (APDamage > 0f) {
-              __instance.damage.SetText($"{Damage}, {APDamage} AP");
+              __instance.damage.SetText($"{Damage},{APDamage}AP");
             } else {
               __instance.damage.SetText($"{Damage}");
             }
@@ -88,15 +111,15 @@ namespace CustAmmoCategories {
         if (HeatDamage > 0f) {
           if (ShotsWhenFired > 1) {
             if (ProjectilesPerShot > 1) {
-              __instance.heatDamage.SetText($"(({HeatDamage} AP)x{ProjectilesPerShot})x{ShotsWhenFired}");
+              __instance.heatDamage.SetText($"{HeatDamage}Hx{ProjectilesPerShot}x{ShotsWhenFired}");
             } else {
-              __instance.damage.SetText($"({HeatDamage} AP)x{ShotsWhenFired}");
+              __instance.heatDamage.SetText($"{HeatDamage}Hx{ShotsWhenFired}");
             }
           } else {
             if (ProjectilesPerShot > 1) {
-              __instance.damage.SetText($"({HeatDamage} AP)x{ProjectilesPerShot}");
+              __instance.heatDamage.SetText($"{HeatDamage}Hx{ProjectilesPerShot}");
             } else {
-              __instance.stability.SetText($"{HeatDamage}");
+              __instance.heatDamage.SetText($"{HeatDamage}");
             }
           }
         } else {

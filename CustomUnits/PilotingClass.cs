@@ -93,6 +93,11 @@ namespace CustomUnits {
             pilotingClass0.Value.excludeClasses.Add(exclude);
           }
         }
+        foreach(string id in pilotingClass0.Value.AdditionalClasses) {
+          if(pilotingClasses.TryGetValue(id, out PilotingClassDef additional)) {
+            pilotingClass0.Value.additionalClasses.Add(additional);
+          }
+        }
       }
       Log.M?.WL(1, "default mech class:"+ PilotingClassHelper.DEFAULT_MECH_PILOTING_CLASS==null?"null": PilotingClassHelper.DEFAULT_MECH_PILOTING_CLASS.Description.Id);
       Log.M?.WL(1, "default vehicle class:" + PilotingClassHelper.DEFAULT_VEHICLE_PILOTING_CLASS == null ? "null" : PilotingClassHelper.DEFAULT_VEHICLE_PILOTING_CLASS.Description.Id);
@@ -255,6 +260,44 @@ namespace CustomUnits {
       }
       return result;
     }
+    public static void GenerateAdditionalExpertises(PilotDef pilot, PilotingClassDef mainClass, HashSet<PilotingClassDef> classes) {
+      HashSet<PilotingClassDef> additionalClasses = new HashSet<PilotingClassDef>();
+      List<PilotingClassDef> avaibleClasses = new List<PilotingClassDef>();
+      float roll_border = 0f;
+      foreach(var addclass in mainClass.additionalClasses) {
+        if(classes.Contains(addclass)) { continue; }
+        if(CanHaveExpertise(classes, addclass) == false) { continue; }
+        avaibleClasses.Add(addclass);
+        roll_border += addclass.expertiseGenerationChance;
+      }
+      avaibleClasses.Sort((a,b)=> { return a.expertiseGenerationChance.CompareTo(b.expertiseGenerationChance); });
+      if(avaibleClasses.Count <= mainClass.additionalExpertisesCount) {
+        foreach(var addclass in avaibleClasses) {
+          if(CanHaveExpertise(classes, addclass) == false) { continue; }
+          classes.Add(addclass);
+          pilot.AddPilotingClass(addclass);
+        }
+        return;
+      }
+      for(int roll_index = 0; roll_index < mainClass.additionalExpertisesCount; ++roll_index) {
+        float roll = UnityEngine.Random.Range(0f, roll_border);
+        foreach(var addclass in avaibleClasses) {
+          roll -= addclass.expertiseGenerationChance;
+          if(roll > 0f) { continue; }
+          classes.Add(addclass);
+          pilot.AddPilotingClass(addclass);
+          break;
+        }
+        avaibleClasses.Clear();
+        roll_border = 0f;
+        foreach(var addclass in mainClass.additionalClasses) {
+          if(classes.Contains(addclass)) { continue; }
+          if(CanHaveExpertise(classes, addclass) == false) { continue; }
+          avaibleClasses.Add(addclass);
+          roll_border += addclass.expertiseGenerationChance;
+        }
+      }
+    }
     public static void GeneratePilotingExpertises(ref List<PilotDef> pilots, bool minCount = true) {
       foreach(PilotDef pilot in pilots) {
         HashSet<PilotingClassDef> classes = pilot.GetPilotingClass();
@@ -265,6 +308,9 @@ namespace CustomUnits {
           if (roll < pilotClass.Value.expertiseGenerationChance) {
             pilot.AddPilotingClass(pilotClass.Value);
             classes.Add(pilotClass.Value);
+            if(pilotClass.Value.additionalExpertisesCount > 0) {
+
+            }
           }
         }
       }
@@ -434,9 +480,13 @@ namespace CustomUnits {
     }
     public float expertiseGenerationChance { get; set; }
     public int expertiseGenerationMinCount { get; set; }
+    public int additionalExpertisesCount { get; set; }
     [JsonIgnore]
     public HashSet<PilotingClassDef> excludeClasses { get; private set; } = new HashSet<PilotingClassDef>();
     public List<string> ExcludeClasses { get; set; } = new List<string>();
+    [JsonIgnore]
+    public HashSet<PilotingClassDef> additionalClasses { get; private set; } = new HashSet<PilotingClassDef>();
+    public List<string> AdditionalClasses { get; set; } = new List<string>();
     public bool isMyUnitClass(TagSet tags) { return tags.ContainsAll(this.unitTags); }
     public bool isMyPilotClass(TagSet tags) { return tags.ContainsAll(this.pilotTags); }
   }

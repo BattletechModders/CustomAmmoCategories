@@ -386,7 +386,10 @@ namespace CustAmmoCategories {
       if (ancor != null) { pos += ancor.position; }
       pos.y = weapon.parent.Combat.MapMetaData.GetLerpedHeightAt(pos);
       Dictionary<ICombatant, AoEExplosionRecord> AoEDamage = new Dictionary<ICombatant, AoEExplosionRecord>();
-      foreach (ICombatant target in weapon.parent.Combat.GetAllLivingCombatants()) {
+      int PhysicsAoELayers = LayerMask.GetMask("Terrain", "Obstruction", "Combatant", "NoCollision");
+      int Combatant_layer = LayerMask.NameToLayer("Combatant");
+      int NoCollision_layer = LayerMask.NameToLayer("NoCollision");
+      foreach(ICombatant target in weapon.parent.Combat.GetAllLivingCombatants()) {
         if (target.IsDead) { continue; };
         if (target.isDropshipNotLanded()) { continue; };
         Vector3 CurrentPosition = target.CurrentPosition + Vector3.up * target.FlyingHeight();
@@ -399,7 +402,24 @@ namespace CustAmmoCategories {
         if (tagAoEDamage < CustomAmmoCategories.Epsilon) { tagAoEDamage = 1f; }
         distance /= tagAoEDamage;
         if (distance > definition.AOERange) { continue; };
-        foreach (var effect in definition.statusEffects) { addEffect(target, effect, distance); };
+        if(CustomAmmoCategories.Settings.PhysicsAoE_Deffered && definition.PhysicsAoE) {
+          Vector3 raycastStart = pos + Vector3.up * definition.PhysicsAoE_Height;
+          Vector3 raycastEnd = target.TargetPosition;
+          if(Physics.Raycast(raycastStart, (raycastEnd - raycastStart).normalized, out RaycastHit phy_hit, definition.AOERange, PhysicsAoELayers, QueryTriggerInteraction.Ignore)) {
+            Log.F?.WL(2, $"raycast result {phy_hit.collider.gameObject.transform.name} layer:{LayerMask.LayerToName(phy_hit.collider.gameObject.layer)}");
+            if((phy_hit.collider.gameObject.layer != Combatant_layer) && (phy_hit.collider.gameObject.layer != NoCollision_layer)) { continue; }
+            PilotableActorRepresentation unitRep = phy_hit.collider.GetComponentInParent<PilotableActorRepresentation>();
+            if(unitRep != null) {
+              if(unitRep.parentActor != target) {
+                Log.F?.WL(3, $"other unit:{(unitRep.parentActor == null ? "null" : unitRep.parentActor.PilotableActorDef.ChassisID)}");
+                continue;
+              } else {
+                Log.F?.WL(3, $"target unit reached - AoE process normal");
+              }
+            }
+          };
+        }
+        foreach(var effect in definition.statusEffects) { addEffect(target, effect, distance); };
         float HeatDamage = definition.AOEHeatDamage * CustomAmmoCategories.Settings.DefaultAoEDamageMult[target.UnitType].Damage * tagAoEDamage * (definition.AOERange - distance) / definition.AOERange;
         float Damage = definition.AOEDamage * CustomAmmoCategories.Settings.DefaultAoEDamageMult[target.UnitType].Damage * tagAoEDamage * (definition.AOERange - distance) / definition.AOERange;
         float StabDamage = definition.AOEInstability * CustomAmmoCategories.Settings.DefaultAoEDamageMult[target.UnitType].Damage * tagAoEDamage * (definition.AOERange - distance) / definition.AOERange;

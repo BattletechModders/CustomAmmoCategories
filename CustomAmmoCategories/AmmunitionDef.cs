@@ -165,7 +165,10 @@ namespace CustAmmoCategories {
     public bool ShouldAddToExistingFields { get; set; } = false;
     [Key(44)]
     public DamageFalloffType AoEDmgFalloffType { get; set; } = DamageFalloffType.Linear;
-
+    [Key(45)]
+    public bool PhysicsAoE { get; set; } = true;
+    [Key(46)]
+    public float PhysicsAoE_Height { get; set; } = 10f;
     public float mAoEDmgFalloffType(float value) {
       switch (this.AoEDmgFalloffType) {
         case DamageFalloffType.Quadratic: return value * value;
@@ -593,6 +596,10 @@ namespace CustAmmoCategories {
     public float ArtilleryReticleRadius { get; set; } = 0f;
     [Key(175)]
     public string ArtilleryReticleText { get; set; } = "Artillery";
+    [Key(176)]
+    public TripleBoolean PhysicsAoE { get; set; } = TripleBoolean.NotSet;
+    [Key(177)]
+    public float PhysicsAoE_Height { get; set; } = 10f;
     public ExtAmmunitionDef() { }
   }
 }

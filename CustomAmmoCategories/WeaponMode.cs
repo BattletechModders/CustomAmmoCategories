@@ -501,6 +501,10 @@ namespace CustAmmoCategories {
     public float ArtilleryReticleRadius { get; set; } = 0f;
     [Key(171)]
     public string ArtilleryReticleText { get; set; } = "Artillery";
+    [Key(172)]
+    public TripleBoolean PhysicsAoE { get; set; } = TripleBoolean.NotSet;
+    [Key(173)]
+    public float PhysicsAoE_Height { get; set; } = 10f;
     [IgnoreMember, JsonIgnore]
     private HashSet<string> f_restrictedAmmo = null;
     [IgnoreMember, JsonIgnore]

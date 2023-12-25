@@ -1982,6 +1982,7 @@ namespace CustomAmmoCategoriesPatches {
         } else {
           component.SetData(text, ComponentDamageLevel.Functional, UIColor.White, bgColor);
         }
+        component.SetComponentRef(dataElement, this.parent.weaponsControl.parentMech);
         component.SetTooltipData(dataElement.Def);
       } else {
         component.SetData(string.Empty, ComponentDamageLevel.Functional, UIColor.Clear, UIColor.Clear);
@@ -2114,6 +2115,7 @@ namespace CustomAmmoCategoriesPatches {
     public List<WeaponsOrderUIItem> weaponsList { get; set; } = new List<WeaponsOrderUIItem>();
     public WeaponsOrderUIItem placeholderItem { get; set; } = null;
     public WeaponsOrderPopupSupervisor parent { get; set; } = null;
+    public MechDef parentMech { get; set; } = null;
     public void AddWeaponUIItem(WeaponOrderDataElement dataElement) {
       GameObject gameObject = this.parent.mechBayPanel.DataManager.PooledInstantiate("uixPrfPanl_LC_WeaponsOrderItem", BattleTechResourceType.UIModulePrefabs);
       if (gameObject == null) {
@@ -2137,6 +2139,7 @@ namespace CustomAmmoCategoriesPatches {
         }
         string text = new Text("{0} {1}", dataElement.componentRef.Def.Description.UIName, Mech.GetAbbreviatedChassisLocation(dataElement.componentRef.MountedLocation)).ToString();
         component.SetData(text, dataElement.componentRef.DamageLevel, UIColor.White, bgColor);
+        component.SetComponentRef(dataElement.componentRef, this.parentMech);
         component.SetTooltipData(dataElement.componentRef.Def);
       } else {
         component.SetData(string.Empty, ComponentDamageLevel.Functional, UIColor.Clear, UIColor.Clear);
@@ -2507,6 +2510,7 @@ namespace CustomAmmoCategoriesPatches {
             weaponsOrder = selectedMech.MechDef.unpackWeaponsOrderData(new List<string>());
           }
           Thread.CurrentThread.pushActorDef(selectedMech.MechDef);
+          weaponsControl.parentMech = selectedMech.MechDef;
           for (int index = 0; index < weaponsOrder.Count; ++index) {
             weaponsControl.AddWeaponUIItem(weaponsOrder[index]);
           }
