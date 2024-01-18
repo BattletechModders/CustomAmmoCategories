@@ -296,6 +296,7 @@
     <Compile Include="Streak.cs" />
     <Compile Include="ToHitModifiers.cs" />
     <Compile Include="TurretlessVehicle.cs" />
+    <Compile Include="UnitTypesAPI.cs" />
     <Compile Include="WeaponAmmoLoadFixer.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="RangeAccuracyHelper.cs" />

@@ -230,6 +230,7 @@ namespace CustAmmoCategories {
       if(this.modes.TryGetValue(modeId, out var Mode) == false) {
         return false;
       }
+      //if(this.overridenModes)
       if (this.restrictedModes.Contains(modeId)) { return false; }
       this.mode = Mode;
       this.needRevalidate = true;
@@ -260,24 +261,30 @@ namespace CustAmmoCategories {
     }
     public void AddMode(WeaponMode mode, MechComponent src, bool switchTo) {
       if (mode == null) { return; }
+      Log.Combat?.TWL(0,$"AddMode {this.weapon.defId} {mode.Id}:{mode.UIName} switchTo:{switchTo}");
       if (this.modes.ContainsKey(mode.Id)) {
         if (this.mode.Id == mode.Id) { switchTo = true; }
+        Log.Combat?.WL(1, $"need to merge");
         WeaponMode oldMode = this.modes[mode.Id];
         string curid = mode.Id;
         if (mode.isFromJson) {
           mode = oldMode.merge(mode);
           int t = 0;
-          string new_id = string.Format("{0}_{1}", mode.Id, t);
-          while (this.modes.ContainsKey(new_id)) { ++t; new_id = string.Format("{0}_{1}", mode.Id, t); }
-          mode.Id = new_id;
+          string prev_new_id = string.Format("{0}_prev_{1}", oldMode.Id, t);
+          while (this.modes.ContainsKey(prev_new_id)) { ++t; prev_new_id = string.Format("{0}_prev_{1}", oldMode.Id, t); }
+          oldMode.Id = prev_new_id;
+          this.modes.Add(oldMode.Id, oldMode);
+          this.modes[mode.Id] = mode;
           if(this.overridenModes.TryGetValue(oldMode, out var ovrmodes) == false) {
             ovrmodes = new HashSet<WeaponMode>();
           }
           ovrmodes.Add(mode);
           this.overridenModes[oldMode] = ovrmodes;
         }
+      } else {
+        this.modes.Add(mode.Id, mode);
       }
-      this.modes.Add(mode.Id, mode);
+      Log.Combat?.WL(1, $"adding to mode list:{mode.Id} switchTo:{switchTo}");
       if (switchTo) this.setMode(mode.Id);
       if (src != null)this.modesSources[mode] = src;
     }
@@ -378,7 +385,7 @@ namespace CustAmmoCategories {
     public WeaponExtendedInfo(Weapon weapon, WeaponDef def) {
       this.weapon = weapon;
       if(weapon.weaponDef == null) {
-        this.mode = CustomAmmoCategories.DefaultWeaponMode;
+        this.mode = CustomAmmoCategories.DefaultWeaponMode.DeepCopy();
         this.needRevalidate = false;
         this.ammo = CustomAmmoCategories.DefaultAmmo;
         this.extDef = CustomAmmoCategories.DefaultWeapon;
@@ -388,16 +395,25 @@ namespace CustAmmoCategories {
       }
       if (weapon.WeaponCategoryValue.IsMelee) { isBoxesAssigned = true; }
       this.extDef = def.exDef();
-      foreach (var defMode in this.extDef.Modes) { this.modes.Add(defMode.Key, defMode.Value); }
+      foreach (var defMode in this.extDef.Modes) {
+        try {
+          this.modes.Add(defMode.Key, defMode.Value.DeepCopy());
+        }catch(Exception e) {
+          Log.Combat?.TWL(0,$"fail to deep copy mode {defMode.Key} for weapon {(weapon.weaponDef == null?"null": weapon.weaponDef.Description.Id)}");
+          Log.Combat?.WL(0, e.ToString());
+          UnityGameInstance.logger.LogError($"fail to deep copy mode {defMode.Key} for weapon {(weapon.weaponDef == null ? "null" : weapon.weaponDef.Description.Id)}");
+          UnityGameInstance.logger.LogException(e);
+        }
+      }
       string modeId = extDef.baseModeId;
       if (this.modes.Count == 0) {
         modeId = CustomAmmoCategories.DefaultWeaponMode.Id;
-        this.modes.Add(modeId, CustomAmmoCategories.DefaultWeaponMode);
+        this.modes.Add(modeId, CustomAmmoCategories.DefaultWeaponMode.DeepCopy());
       }
       if(this.modes.TryGetValue(modeId, out var Mode)) {
         this.mode = Mode;
       } else {
-        this.modes.Add(modeId, CustomAmmoCategories.DefaultWeaponMode);
+        this.modes.Add(modeId, CustomAmmoCategories.DefaultWeaponMode.DeepCopy());
         this.mode = CustomAmmoCategories.DefaultWeaponMode;
       }
       Statistic modeIdStat = weapon.StatCollection.GetStatistic(CustomAmmoCategories.WeaponModeStatisticName);

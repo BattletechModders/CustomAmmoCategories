@@ -197,17 +197,33 @@ namespace CustomUnits {
       custLosData.ApplyScale(MechResizer.SizeMultiplier.Get(this.MechDef));
       base.InitStats();
       UpdateLOSHeight(this.FlyingHeight());
-      InitArtilleryCollider();
     }
     public virtual float ArtilleryProtectionRadius { get { return this.Radius; } }
     public virtual void InitArtilleryCollider() {
-      var sourceCollider = this.custGameRep.j_Root.gameObject.FindComponent<CapsuleCollider>("ArtilleryProtectionCollider");
+      Log.Combat?.TWL(0,$"InitArtilleryCollider:{(this.PilotableActorDef != null ? this.PilotableActorDef.chassisID : this.DisplayName)}");
+      if(this.IsDeployDirector()) {
+        Log.Combat?.WL(1, $"deploy director does not need artillery collider");
+        return;
+      }
+      CapsuleCollider sourceCollider = null;
+      Transform j_Root = null;
+      if(this.custGameRep != null) {
+        if(this.custGameRep.j_Root != null) { j_Root = this.custGameRep.j_Root; } else { j_Root = this.custGameRep.gameObject.FindComponent<Transform>("j_Root"); }
+      } else {
+        if(this.GameRep != null) {
+          j_Root = this.GameRep.gameObject.FindComponent<Transform>("j_Root");
+        }
+      }
+      if(j_Root == null) {
+        throw new Exception($"{(this.PilotableActorDef != null? this.PilotableActorDef.chassisID: this.DisplayName)} representation:{(this.GameRep != null?this.GameRep.name:"null")} have no j_Root bone. I refuse to continue.");
+      }
+      sourceCollider = j_Root.gameObject.FindComponent<CapsuleCollider>("ArtilleryProtectionCollider");
       if(sourceCollider == null) {
         var src_colliders = this.custGameRep.j_Root.gameObject.GetComponentsInChildren<CapsuleCollider>(true);
         if((src_colliders != null) && (src_colliders.Length > 0)) { sourceCollider = src_colliders[0]; };
       }
       GameObject artColliderGO = new GameObject("artillery_protection_collider");
-      artColliderGO.transform.SetParent(this.custGameRep.j_Root);
+      artColliderGO.transform.SetParent(j_Root);
       artColliderGO.layer = LayerMask.NameToLayer("NoCollision");
       var artCollider = artColliderGO.AddComponent<CapsuleCollider>();
       if(sourceCollider != null) {
@@ -412,6 +428,7 @@ namespace CustomUnits {
         }
         this.custGameRep.GatherColliders();
         //this.custGameRep.CustomPostInit();
+        this.InitArtilleryCollider();
         this.GameRep.RefreshEdgeCache();
         this.GameRep.FadeIn(1f);
         if (this.IsDead || !this.Combat.IsLoadingFromSave) { return; }

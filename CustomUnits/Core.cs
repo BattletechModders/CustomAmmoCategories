@@ -483,6 +483,14 @@ namespace CustomUnits {
     }
     public static void FinishedLoading(List<string> loadOrder, Dictionary<string, Dictionary<string, VersionManifestEntry>> customResources) {
       Log.M?.TWL(0, "FinishedLoading", true);
+      CustAmmoCategories.UnitDefTypesAPI.Register_isVehcileDelegateMechDef(FakeDatabase.IsVehicle);
+      CustAmmoCategories.UnitDefTypesAPI.Register_isVehcileDelegateChassisDef(FakeDatabase.IsVehicle);
+      CustAmmoCategories.UnitDefTypesAPI.Register_isQuadDelegateMechDef(FakeDatabase.IsQuad_Delegate);
+      CustAmmoCategories.UnitDefTypesAPI.Register_isQuadDelegateChassisDef(FakeDatabase.IsQuad_Delegate);
+      CustAmmoCategories.UnitDefTypesAPI.Register_isSquadDelegateMechDef(VehicleCustomInfoHelper.IsSquad);
+      CustAmmoCategories.UnitDefTypesAPI.Register_isSquadDelegateChassisDef(FakeDatabase.IsSquad_Delegate);
+      CustAmmoCategories.UnitDefTypesAPI.Register_isDestroyedDelegate(FakeDatabase.IsDestroyed_Delegate);
+      CustAmmoCategories.UnitDefTypesAPI.Register_GetAbbreviatedChassisLocationDelegate(VehicleCustomInfoHelper.GetAbbreviatedChassisLocationDelegate);
       IRBTModUtils.Feature.MovementFeature.RegisterMoveDistanceModifier("CustomUnits", 10, Mech_MaxWalkDistance.MaxWalkDistanceMod, Mech_MaxWalkDistance.MaxSprintDistanceMod);
       CustomPrewarm.Core.RegisterSerializator("CustomUnits", BattleTechResourceType.ChassisDef, VehicleCustomInfoHelper.GetInfoByChassisId);
       CustomPrewarm.Core.RegisterSerializator("CustomUnits", BattleTechResourceType.VehicleChassisDef, VehicleCustomInfoHelper.GetInfoByChassisId);

@@ -483,6 +483,7 @@ namespace CustAmmoCategories {
       virtualCombatant.CurrentPosition = pos;
     }
     public void Update(Vector3 pos, bool indirect) {
+      this.pos = pos;
       virtualCombatant.CurrentPosition = pos;
       this.indirect = indirect;
     }

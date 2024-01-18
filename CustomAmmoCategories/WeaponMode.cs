@@ -557,27 +557,45 @@ namespace CustAmmoCategories {
     public WeaponMode DeepCopy() {
       WeaponMode result = new WeaponMode();
       result.AmmoCategory = this.AmmoCategory;
-      foreach (var prop in typeof(WeaponMode).GetProperties()) {
-        if (prop.isJsonIgnore()) { continue; }
-        if (prop.PropertyType.GetInterface(nameof(IDictionary)) != null) {
-          IDictionary dres = prop.GetValue(result) as IDictionary;
-          if (dres == null) { continue; }
-          IDictionary dthis = prop.GetValue(this) as IDictionary;
-          if (dthis == null) { continue; }
-          foreach (IDictionaryEnumerator en in dthis) {
-            dres[en.Key] = en.Value;
+      //string debug = string.Empty;
+      try {
+        foreach(var prop in typeof(WeaponMode).GetProperties()) {
+          if(prop.isJsonIgnore()) { continue; }
+          try {
+            if(prop.PropertyType.GetInterface(nameof(IDictionary)) != null) {
+              IDictionary dres = prop.GetValue(result) as IDictionary;
+              if(dres == null) { continue; }
+              IDictionary dthis = prop.GetValue(this) as IDictionary;
+              if(dthis == null) { continue; }
+              var en = dthis.GetEnumerator();
+              //debug = en.GetType().ToString();
+              while(en.MoveNext()) {
+                dres[en.Key] = en.Value;
+              };
+            } else if(prop.PropertyType.GetInterface(nameof(IList)) != null) {
+              IList lres = prop.GetValue(result) as IList;
+              if(lres == null) { continue; }
+              IList lthis = prop.GetValue(this) as IList;
+              if(lthis == null) { continue; }
+              foreach(var en in lthis) {
+                lres.Add(en);
+              }
+            } else {
+              prop.SetValue(result, prop.GetValue(this));
+            }
+          }catch(Exception e) {
+            Log.Combat?.TWL(0, $"DeepCopy of mode property {this.Id}.{prop.Name} fail");
+            UnityGameInstance.logger.LogError($"DeepCopy of mode property {this.Id}.{prop.Name} fail");
+            Log.Combat?.WL(0, e.ToString());
+            throw;
           }
-        } else if (prop.PropertyType.GetInterface(nameof(IList)) != null) {
-          IList lres = prop.GetValue(result) as IList;
-          if (lres == null) { continue; }
-          IList lthis = prop.GetValue(this) as IList;
-          if (lthis == null) { continue; }
-          foreach (var en in lthis) {
-            lres.Add(en);
-          }
-        } else {
-          prop.SetValue(result, prop.GetValue(this));
         }
+      }catch(Exception) {
+        Log.Combat?.TWL(0,$"DeepCopy of mode {this.Id} fail");
+        //Log.Combat?.WL(0,e.ToString());
+        UnityGameInstance.logger.LogError($"DeepCopy of mode {this.Id} fail");
+        //UnityGameInstance.logger.LogException(e);
+        throw;
       }
       return result;
     }
@@ -612,6 +630,7 @@ namespace CustAmmoCategories {
           prop.SetValue(result, prop.GetValue(mode));
         }
       }
+      if(this.isBaseMode) { result.isBaseMode = true; }
       Log.M?.WL(0,$"merge mode result: {this.Id}:"+JsonConvert.SerializeObject(result, Formatting.Indented));
       return result;
     }

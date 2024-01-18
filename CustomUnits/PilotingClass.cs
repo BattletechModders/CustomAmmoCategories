@@ -227,7 +227,14 @@ namespace CustomUnits {
         if (pilots.Count == 0) { continue; }
         PilotDef pilot = pilots[UnityEngine.Random.Range(0, pilots.Count)];
         activePilots.Remove(pilot);
-        foreach (PilotingClassDef unitClass in unit_classes) { pilot.AddPilotingClass(unitClass); }
+        foreach (PilotingClassDef unitClass in unit_classes) {
+          HashSet<PilotingClassDef> classes = pilot.GetPilotingClass();
+          if(classes.Contains(unitClass)) { continue; }
+          pilot.AddPilotingClass(unitClass);
+          if(unitClass.additionalExpertisesCount > 0) {
+            GenerateAdditionalExpertises(pilot, unitClass, classes, null);
+          }
+        }
       }
       List<PilotDef> rest_pilots = new List<PilotDef>();
       foreach (PilotDef pilot in activePilots) { rest_pilots.Add(pilot); }
@@ -260,7 +267,7 @@ namespace CustomUnits {
       }
       return result;
     }
-    public static void GenerateAdditionalExpertises(PilotDef pilot, PilotingClassDef mainClass, HashSet<PilotingClassDef> classes) {
+    public static void GenerateAdditionalExpertises(PilotDef pilot, PilotingClassDef mainClass, HashSet<PilotingClassDef> classes, Dictionary<PilotingClassDef, int> classes_count) {
       HashSet<PilotingClassDef> additionalClasses = new HashSet<PilotingClassDef>();
       List<PilotingClassDef> avaibleClasses = new List<PilotingClassDef>();
       float roll_border = 0f;
@@ -276,6 +283,11 @@ namespace CustomUnits {
           if(CanHaveExpertise(classes, addclass) == false) { continue; }
           classes.Add(addclass);
           pilot.AddPilotingClass(addclass);
+          if(classes_count != null) {
+            if(addclass.expertiseGenerationMinCount > 0) {
+              if(classes_count.ContainsKey(addclass)) { classes_count[addclass] += 1; } else { classes_count[addclass] = 1; }
+            }
+          }
         }
         return;
       }
@@ -286,6 +298,11 @@ namespace CustomUnits {
           if(roll > 0f) { continue; }
           classes.Add(addclass);
           pilot.AddPilotingClass(addclass);
+          if(classes_count != null) {
+            if(addclass.expertiseGenerationMinCount > 0) {
+              if(classes_count.ContainsKey(addclass)) { classes_count[addclass] += 1; } else { classes_count[addclass] = 1; }
+            }
+          }
           break;
         }
         avaibleClasses.Clear();
@@ -309,7 +326,7 @@ namespace CustomUnits {
             pilot.AddPilotingClass(pilotClass.Value);
             classes.Add(pilotClass.Value);
             if(pilotClass.Value.additionalExpertisesCount > 0) {
-
+              GenerateAdditionalExpertises(pilot, pilotClass.Value, classes, null);
             }
           }
         }
@@ -336,6 +353,10 @@ namespace CustomUnits {
           if (readypilots.Count == 0) { classes_count[pclass] = pclass.expertiseGenerationMinCount; continue; }
           int index = UnityEngine.Random.Range(0, readypilots.Count);
           readypilots[index].AddPilotingClass(pclass);
+          HashSet<PilotingClassDef> classes = readypilots[index].GetPilotingClass();
+          if(pclass.additionalExpertisesCount > 0) {
+            GenerateAdditionalExpertises(readypilots[index], pclass, classes, classes_count);
+          }
           classes_count[pclass] += 1;
         }
         RemoveReadyClasses(ref classes_count);
@@ -437,7 +458,7 @@ namespace CustomUnits {
   [HarmonyPatch("OnCareerModeCharacterCreationComplete")]
   [HarmonyPatch(MethodType.Normal)]
   public static class SimGameState_OnCareerModeCharacterCreationComplete {
-    public static void Prefix(SimGameState __instance,ref Pilot p) {
+    public static void Prefix(SimGameState __instance, ref Pilot p) {
       HashSet<PilotingClassDef> pilotingClasses = __instance.Commander.pilotDef.GetPilotingClass();
       foreach (PilotingClassDef pilotingClass in pilotingClasses) { p.pilotDef.AddPilotingClass(pilotingClass); }
     }

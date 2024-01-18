@@ -14,6 +14,7 @@ using UnityEngine.UI;
 namespace CustAmmoCategories {
   public static class HBSTooltipHelper {
     private static bool tooltipIsPinned = false;
+    public static bool tooltipLMB_lock = false;
     public static bool IsPinned() { return tooltipIsPinned; }
     public static void PinTooltip(this TooltipManager manager) {
       tooltipIsPinned = true;
@@ -32,6 +33,7 @@ namespace CustAmmoCategories {
     }
     public static void UnPinTooltip(this TooltipManager manager) {
       tooltipIsPinned = false;
+      tooltipLMB_lock = false;
       if(manager.activeTooltip != null) {
         CanvasGroup canvasGroup = manager.activeTooltip.gameObject.GetComponent<CanvasGroup>();
         if(canvasGroup != null) {
@@ -71,7 +73,7 @@ namespace CustAmmoCategories {
           if(BTInput.Instance.Mouse_RightButton().WasPressed) {
             if(HBSTooltipHelper.IsPinned() == false) { __instance.PinTooltip(); } else { __instance.ClearTooltip(); }
           }
-          if(BTInput.Instance.Key_Escape().WasPressed || BTInput.Instance.Mouse_LeftButton().WasPressed){
+          if(BTInput.Instance.Key_Escape().WasPressed || (BTInput.Instance.Mouse_LeftButton().WasPressed && (HBSTooltipHelper.tooltipLMB_lock == false))){
             __instance.ClearTooltip();
           }
         }
@@ -142,13 +144,13 @@ namespace CustAmmoCategories {
     }
   }
 
-  public class TooltipScroll :MonoBehaviour {
+  public class TooltipScroll :MonoBehaviour, IEventSystemHandler, IPointerEnterHandler, IPointerExitHandler {
     public LocalizableText body;
     public GameObject bodyContainer;
     public TooltipPrefab_Weapon parent;
     public LocalizableText pinHelpTxt;
     public ScrollRect scroll;
-    public static float MAX_SIZE_TO_SCROLL = 400f;
+    public static float MAX_SIZE_TO_SCROLL = 600f;
     public void Hide() {
       bodyContainer?.SetActive(false);
     }
@@ -206,6 +208,16 @@ namespace CustAmmoCategories {
 exit:
       UIManager.Instance.dataManager.PoolGameObject("uixPrfPanl_SIM_mwDetails-Widget", mwdetails);
       return result;
+    }
+
+    public void OnPointerEnter(PointerEventData eventData) {
+      //Log.M?.TWL(0, "TooltipScroll.OnPointerEnter");
+      HBSTooltipHelper.tooltipLMB_lock = true;
+    }
+
+    public void OnPointerExit(PointerEventData eventData) {
+      //Log.M?.TWL(0, "TooltipScroll.OnPointerExit");
+      HBSTooltipHelper.tooltipLMB_lock = false;
     }
   }
 

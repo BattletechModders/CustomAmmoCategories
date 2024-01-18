@@ -622,6 +622,47 @@ namespace CustomUnits {
       if (info == null) { return false; }
       return info.SquadInfo.Troopers > 1;
     }
+    public static string GetAbbreviatedChassisLocationDelegate(this ChassisDef def, ChassisLocations location) {
+      if(def.IsSquad()) {
+        int size = def.GetCustomInfo().SquadInfo.Troopers;
+        switch(location) {
+          case ChassisLocations.Head: return "U0";
+          case ChassisLocations.CenterTorso: return (size > 1)?"U1":string.Empty;
+          case ChassisLocations.LeftTorso: return (size > 2) ? "U2" : string.Empty;
+          case ChassisLocations.RightTorso: return (size > 3) ? "U3" : string.Empty;
+          case ChassisLocations.LeftArm: return (size > 4) ? "U4" : string.Empty;
+          case ChassisLocations.RightArm: return (size > 5) ? "U5" : string.Empty;
+          case ChassisLocations.LeftLeg: return (size > 6) ? "U6" : string.Empty;
+          case ChassisLocations.RightLeg: return (size > 7) ? "U7" : string.Empty;
+          default: return "U";
+        }
+      }else if(def.IsQuad()) {
+        switch(location) {
+          case ChassisLocations.Head: return "H";
+          case ChassisLocations.CenterTorso: return "CT";
+          case ChassisLocations.LeftTorso: return "LT";
+          case ChassisLocations.RightTorso: return "RT";
+          case ChassisLocations.LeftArm: return "FLL";
+          case ChassisLocations.RightArm: return "FRL";
+          case ChassisLocations.LeftLeg: return "RLL";
+          case ChassisLocations.RightLeg: return "RRL";
+          default: return string.Empty;
+        }
+      } else if(def.IsVehicle()) {
+        switch(location) {
+          case ChassisLocations.Head: return "T";
+          case ChassisLocations.CenterTorso: return string.Empty;
+          case ChassisLocations.LeftTorso: return string.Empty;
+          case ChassisLocations.RightTorso: return string.Empty;
+          case ChassisLocations.LeftArm: return "F";
+          case ChassisLocations.RightArm: return "R";
+          case ChassisLocations.LeftLeg: return "L";
+          case ChassisLocations.RightLeg: return "R";
+          default: return string.Empty;
+        }
+      }
+      return Mech.GetAbbreviatedChassisLocation(location).ToString();
+    }
   }
   [HarmonyPatch(typeof(VehicleChassisDef))]
   [HarmonyPatch("FromJSON")]

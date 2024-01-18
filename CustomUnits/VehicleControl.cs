@@ -1797,7 +1797,6 @@ namespace CustomUnits {
     }
     public static bool IsVehicle(this ChassisDef chassisDef) {
       if (chassisDef == null) { return false; }
-      //Log.TWL(0, "ChassisDef.IsVehicle");
       ChassisDef chassis = Thread.CurrentThread.peekFromStack<ChassisDef>("OnReadyMech_chassis");
       if (chassis != null) {
         return chassis.GetHangarShift() > 0;
@@ -1805,6 +1804,71 @@ namespace CustomUnits {
       UnitCustomInfo info = chassisDef.GetCustomInfo();
       if (info == null) { return false; }
       return info.FakeVehicle;
+    }
+    public static bool IsQuad_Delegate(this MechDef def) {
+      if(def == null) { return false; }
+      if(string.IsNullOrEmpty(def.ChassisID)) { return false; }
+      UnitCustomInfo info = def.GetCustomInfo();
+      if(info != null) { if(info.ArmsCountedAsLegs) { return true; } }
+      return false;
+    }
+    public static bool IsQuad_Delegate(this ChassisDef def) {
+      if(def == null) { return false; }
+      if(def.Description == null) { return false; }
+      if(string.IsNullOrEmpty(def.Description.Id)) { return false; }
+      UnitCustomInfo info = def.GetCustomInfo();
+      if(info != null) { if(info.ArmsCountedAsLegs) { return true; } }
+      return false;
+    }
+    public static bool IsDestroyed_Delegate(this MechDef def) {
+      if(def.IsVehicle() && (def.Chassis != null)) {
+        foreach(var location in def.Locations) {
+          var chassisLoc = def.Chassis.GetLocationDef(location.Location);
+          if((chassisLoc.InternalStructure <= 1f) && (chassisLoc.MaxArmor == 0f)) { continue; }
+          if((location.CurrentInternalStructure <= 0f)||(location.DamageLevel == LocationDamageLevel.Destroyed)) { return true; }
+        }
+        return false;
+      }
+      if(def.IsSquad() && (def.Chassis != null)) {
+        foreach(var location in def.Locations) {
+          var chassisLoc = def.Chassis.GetLocationDef(location.Location);
+          if((chassisLoc.InternalStructure <= 1f) && (chassisLoc.MaxArmor == 0f)) { continue; }
+          if(location.CurrentInternalStructure > 0f) { return false; }
+        }
+        return true;
+      }
+      if(def.IsQuad_Delegate() && (def.Chassis != null)) {
+        int legsAvaible = 0;
+        int legsDestroyed = 0;
+        foreach(var location in def.Locations) {
+          var chassisLoc = def.Chassis.GetLocationDef(location.Location);
+          if((chassisLoc.InternalStructure <= 1f) && (chassisLoc.MaxArmor == 0f)) { continue; }
+          switch(location.Location) {
+            case ChassisLocations.LeftArm:
+            case ChassisLocations.RightArm:
+            case ChassisLocations.LeftLeg:
+            case ChassisLocations.RightLeg:
+            ++legsAvaible;
+            if((location.CurrentInternalStructure <= 0f) || (location.DamageLevel == LocationDamageLevel.Destroyed)) { ++legsDestroyed; }
+            break;
+            default:
+            break;
+          }
+          if((location.CurrentInternalStructure <= 0f)&&(location.Location == ChassisLocations.CenterTorso)) { return true; }
+          if((location.CurrentInternalStructure <= 0f) && (location.Location == ChassisLocations.Head)) { return true; }
+        }
+        if(legsDestroyed == legsAvaible) { return true; }
+        return false;
+      }
+      return def.IsDestroyed;
+    }
+    public static bool IsSquad_Delegate(this ChassisDef def) {
+      if(def == null) { return false; }
+      if(def.Description == null) { return false; }
+      if(string.IsNullOrEmpty(def.Description.Id)) { return false; }
+      UnitCustomInfo info = def.GetCustomInfo();
+      if(info != null) { if(info.SquadInfo.Troopers > 1) { return true; } }
+      return false;
     }
     public static bool IsVehicle(this MechDef mechDef) {
       if (fakeChassisDef.Contains(mechDef.ChassisID)) { return true; }
