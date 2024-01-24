@@ -476,7 +476,7 @@ namespace CustomUnits {
       if (__instance.selectedMech == null) { return; }
       if (__instance.selectedMech.IsVehicle() == false) { return; }
       if (Core.Settings.AllowVehiclesEdit == true) { return; }
-      GenericPopupBuilder.Create("Cannot Refit vehicle", Strings.T("Vehicles can't be refited")).AddFader(new UIColorRef?(LazySingletonBehavior<UIManager>.Instance.UILookAndColorConstants.PopupBackfill), 0.0f, true).Render();
+      GenericPopupBuilder.Create("Can't Refit vehicle", Strings.T("Vehicles can't be refited")).AddFader(new UIColorRef?(LazySingletonBehavior<UIManager>.Instance.UILookAndColorConstants.PopupBackfill), 0.0f, true).Render();
       __runOriginal = false; return;
     }
   }
@@ -918,9 +918,9 @@ namespace CustomUnits {
   [HarmonyPriority(Priority.Last)]
   public static class MechStatisticsRules_CalculateTonnage {
     public static void Postfix(MechDef mechDef, ref float currentValue, ref float maxValue) {
-      if (mechDef.IsVehicle()) {
-        currentValue = mechDef.Chassis.Tonnage;
-      }
+      //if (mechDef.IsVehicle()) {
+        //currentValue = mechDef.Chassis.Tonnage;
+      //}
     }
   }
   [HarmonyPatch(typeof(MechStatisticsRules))]
@@ -929,9 +929,9 @@ namespace CustomUnits {
   [HarmonyPriority(Priority.Last)]
   public static class MechStatisticsRules_CalculateCBillValue {
     public static void Postfix(MechDef mechDef, ref float currentValue, ref float maxValue) {
-      if (mechDef.IsVehicle()) {
-        currentValue = mechDef.Description.Cost;
-      }
+      //if (mechDef.IsVehicle()) {
+        //currentValue = mechDef.Description.Cost;
+      //}
     }
   }
   [HarmonyPatch(typeof(SelectionStateMove))]

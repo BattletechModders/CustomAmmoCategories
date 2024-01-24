@@ -700,7 +700,7 @@ namespace CustomUnits {
     public static void Postfix(ListElementController_InventoryWeapon_NotListView __instance) {
       try {
         if (Thread.CurrentThread.isFlagSet(MechLabPanelFillAs.INVENTORY_POPULATE_FLAG) && (MechLabPanelFillAs.Instance != null)) {
-          Log.M?.TWL(0, "ListElementController_InventoryWeapon_NotListView constructor");
+          //Log.M?.TWL(0, "ListElementController_InventoryWeapon_NotListView constructor");
           MechLabPanelFillAs.Instance.inventory.Add(__instance);
         }
       } catch (Exception e) {
@@ -716,7 +716,7 @@ namespace CustomUnits {
     public static void Postfix(ListElementController_InventoryGear_NotListView __instance) {
       try {
         if (Thread.CurrentThread.isFlagSet(MechLabPanelFillAs.INVENTORY_POPULATE_FLAG) && (MechLabPanelFillAs.Instance != null)) {
-          Log.M?.TWL(0, "ListElementController_InventoryGear_NotListView constructor");
+          //Log.M?.TWL(0, "ListElementController_InventoryGear_NotListView constructor");
           MechLabPanelFillAs.Instance.inventory.Add(__instance);
         }
       } catch (Exception e) {

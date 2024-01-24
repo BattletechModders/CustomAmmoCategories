@@ -14,6 +14,7 @@ using CustAmmoCategoriesPatches;
 using CustomAmmoCategoriesLog;
 using CustomAmmoCategoriesPatches;
 using HarmonyLib;
+using IRBTModUtils;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -124,6 +125,74 @@ namespace CustAmmoCategories {
         Log.Combat?.TWL(0, e.ToString(), true);
         Weapon.logger.LogException(e);
       }
+    }
+  }
+  [HarmonyPatch(typeof(Weapon))]
+  [HarmonyPatch("SetAmmoBoxes")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { typeof(List<AmmunitionBox>) })]
+  public static class Weapon_SetAmmoBoxes {
+    public static void Prefix(ref bool __runOriginal, Weapon __instance, List<AmmunitionBox> ammoBoxes) {
+      Log.Combat?.TW(0, $"Weapon SetAmmoBoxes {__instance.Description.Id} can use categories:");
+      try {
+        if(__runOriginal == false) { return; }
+        bool same_location = false;
+        bool adjacent_location = false;
+        if(__instance.parent is Mech mech) {
+          if(string.IsNullOrEmpty(CustomAmmoCategories.Settings.WeaponUseAmmoInstalledLocationTag) == false) {
+            if(mech.MechDef.Chassis.ChassisTags.Contains(CustomAmmoCategories.Settings.WeaponUseAmmoInstalledLocationTag)) {
+              same_location = true;
+            }
+          }
+          if(string.IsNullOrEmpty(CustomAmmoCategories.Settings.WeaponUseAmmoAdjacentLocationTag) == false) {
+            if(mech.MechDef.Chassis.ChassisTags.Contains(CustomAmmoCategories.Settings.WeaponUseAmmoAdjacentLocationTag)) {
+              adjacent_location = true;
+            }
+          }
+        }
+        CustomAmmoCategory weaponAmmoCategory = CustomAmmoCategories.getExtWeaponDef(__instance.defId).AmmoCategory;
+        List<AmmunitionBox> ammunitionBoxList = new List<AmmunitionBox>();
+        List<BaseComponentRef> inventory = new List<BaseComponentRef>();
+        foreach(var component in __instance.parent.allComponents) { inventory.Add(component.baseComponentRef); }
+        ExtWeaponDef extWeapon = CustomAmmoCategories.getExtWeaponDef(__instance.defId);
+        WeaponDef weaponDef = __instance.weaponDef;
+        List<WeaponMode> modes = __instance.info().modes.Values.ToList();
+        HashSet<string> weaponAmmoCategories = new HashSet<string>();
+        foreach(var mode in modes) {
+          if(mode.AmmoCategory == null) { mode.AmmoCategory = extWeapon.AmmoCategory; }
+          CustomAmmoCategory category = mode.AmmoCategory;
+          if(category.BaseCategory.Is_NotSet) { continue; }
+          weaponAmmoCategories.Add(category.Id);
+        }
+        foreach(var cat in weaponAmmoCategories) { Log.Combat?.W(1, $"{cat}"); }
+        Log.Combat?.WL(0, "");
+        foreach(AmmunitionBox ammoBox in ammoBoxes) {
+          if(same_location && (ammoBox.Location != __instance.location)) { continue; }
+          if(adjacent_location) {
+            if(ammoBox.Location != __instance.location) {
+              if(__instance.parent is ICustomMech custMech) {
+                if(CustomAmmoCategories.ConvertArmorToChassisLocations(custMech.GetAdjacentLocations((ArmorLocation)__instance.Location)).Contains((ChassisLocations)ammoBox.Location) == false) { continue; }
+              }
+            }
+          }
+          ExtAmmunitionDef extAmmo = CustomAmmoCategories.findExtAmmo(ammoBox.ammoDef.Description.Id);
+          CustomAmmoCategory ammoCategory = extAmmo.AmmoCategory;
+          if(ammoCategory.BaseCategory.Is_NotSet) { ammoCategory = CustomAmmoCategories.find(ammoBox.ammoDef.AmmoCategoryValue.Name); };
+          if(ammoCategory.BaseCategory.Is_NotSet) { Log.Combat?.WL(1, $"{ammoBox.ammoDef.Description.Id} ammo have bad category"); continue; };
+          if(weaponAmmoCategories.Contains(ammoCategory.Id)) {
+            Log.Combat?.WL(1, $"add ammunition box {ammoBox.ammoDef.Description.Id} category:{ammoCategory.Id}");
+            ammunitionBoxList.Add(ammoBox);
+          } else {
+            Log.Combat?.WL(1, $"skip ammunition box {ammoBox.ammoDef.Description.Id} category:{ammoCategory.Id}");
+          }
+        }
+        __instance.ammoBoxes = ammunitionBoxList;
+        Log.Combat?.WL(1, $"boxes:{__instance.ammoBoxes.Count}");
+      } catch(Exception e) {
+        Log.Combat?.TWL(0, e.ToString(), true);
+        Weapon.logger.LogException(e);
+      }
+      __runOriginal = false;
     }
   }
   [HarmonyPatch(typeof(CombatHUDWeaponSlot))]

@@ -64,6 +64,11 @@ namespace CustAmmoCategories {
   }
 
   public static class WeaponRefDataHelper {
+    public static float Tonnage(this BaseComponentRef weaponRef) {
+      if(weaponRef == null) { return 0f; }
+      if(weaponRef.Def == null) { return 0f; }
+      return weaponRef.Def.Tonnage;
+    }
     public static float Damage(this BaseComponentRef weaponRef) {
       if (weaponRef == null) { return 0f; }
       if (weaponRef.Def is WeaponDef weaponDef) {
@@ -287,10 +292,11 @@ namespace CustAmmoCategories {
     }
   }
   internal class AmmoModePairSortable {
+    public enum SortType { Damage, Heat };
     public ExtAmmunitionDef ammo { get; set; } = null;
     public WeaponMode mode { get; set; } = null;
     public float sortFactor { get; set; } = 0f;
-    public AmmoModePairSortable(WeaponDef def, ExtWeaponDef exdef, WeaponMode mode, ExtAmmunitionDef ammo) {
+    public AmmoModePairSortable(WeaponDef def, ExtWeaponDef exdef, WeaponMode mode, ExtAmmunitionDef ammo, AmmoModePairSortable.SortType sortType = SortType.Damage) {
       this.mode = mode;
       this.ammo = ammo;
       float shoots = (def.ShotsWhenFired + mode.ShotsWhenFired + ammo.ShotsWhenFired) * mode.ShotsWhenFiredMod * ammo.ShotsWhenFiredMod;
@@ -300,11 +306,13 @@ namespace CustAmmoCategories {
   }
   public static class WeaponDefModesCollectHelper {
     private static Dictionary<string, Func<BaseComponentRef, List<BaseComponentRef>, List<WeaponMode>>> registry = new Dictionary<string, Func<BaseComponentRef, List<BaseComponentRef>, List<WeaponMode>>>();
-    private static Dictionary<BaseComponentRef, AmmoModePairSortable> currentAmmoMode = new Dictionary<BaseComponentRef, AmmoModePairSortable>();
+    private static Dictionary<BaseComponentRef, AmmoModePairSortable> currentAmmoModeDamage = new Dictionary<BaseComponentRef, AmmoModePairSortable>();
+    private static Dictionary<BaseComponentRef, AmmoModePairSortable> currentAmmoModeHeat = new Dictionary<BaseComponentRef, AmmoModePairSortable>();
     public static void ClearAmmoModeCache() {
-      currentAmmoMode.Clear();
+      currentAmmoModeDamage.Clear();
+      currentAmmoModeHeat.Clear();
     }
-    private static AmmoModePairSortable GetCurrentAmmoModeNoCache(this BaseComponentRef weaponRef, List<BaseComponentRef> inventory) {
+    private static AmmoModePairSortable GetCurrentAmmoModeNoCacheDamage(this BaseComponentRef weaponRef, List<BaseComponentRef> inventory) {
       List<AmmoModePairSortable> ammomodes = new List<AmmoModePairSortable>();
       var modes = weaponRef.WeaponModesDict(inventory);
       HashSet<string> ammoCategories = new HashSet<string>();
@@ -343,16 +351,16 @@ namespace CustAmmoCategories {
       return ammomodes[0];
     }
     internal static AmmoModePairSortable GetCurrentAmmoMode(this BaseComponentRef weaponRef, MechComponentRef[] inventory) {
-      if (currentAmmoMode.TryGetValue(weaponRef, out var result)) {
+      if (currentAmmoModeDamage.TryGetValue(weaponRef, out var result)) {
         return result;
       }
-      result = GetCurrentAmmoModeNoCache(weaponRef, inventory.ToList<BaseComponentRef>());
-      currentAmmoMode.Add(weaponRef, result);
+      result = GetCurrentAmmoModeNoCacheDamage(weaponRef, inventory.ToList<BaseComponentRef>());
+      currentAmmoModeDamage.Add(weaponRef, result);
       return result;
     }
     public static void ClearAmmoModeCache(this BaseComponentRef weaponRef) {
       if (weaponRef == null) { return; }
-      currentAmmoMode.Remove(weaponRef);
+      currentAmmoModeDamage.Remove(weaponRef);
     }
     public static void RegisterCallback(string id, Func<BaseComponentRef, List<BaseComponentRef>, List<WeaponMode>> callback) {
       registry[id] = callback;

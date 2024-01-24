@@ -22,6 +22,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Reflection.Emit;
 using System.Text;
 using System.Threading;
 using UnityEngine;
@@ -217,6 +218,7 @@ namespace CustomUnits {
     public bool VehicleEquipmentIsFixed { get; set; } = true;
     public HashSet<string> globalGameRepresenationAudioEventsSupress = new HashSet<string>();
     public Dictionary<string, TimerObjectiveAdvice> timerObjectiveChange { get; set; } = new Dictionary<string, TimerObjectiveAdvice>() { { "DefendBase", new TimerObjectiveAdvice(1, 2) } };
+    public bool RemoveVehicleHeatSinks { get; set; } = true;
     public CUSettings() {
       debugLog = false;
       DeathHeight = 1f;
@@ -323,6 +325,90 @@ namespace CustomUnits {
     public static readonly float Epsilon = 0.001f;
     public static CUSettings Settings;
     public static Assembly MechEngineerAssembly = null;
+    private static Type EngineHeatSinkDef = null;
+    private static Type CoolingDef = null;
+    private static Type EngineCoreDef = null;
+    private static Type EngineHeatBlockDef = null;
+    public delegate bool d_CustomComponents_Is(MechComponentDef def);
+    private static MethodInfo is_EngineHeatSinkDef = null;
+    private static MethodInfo is_CoolingDef = null;
+    private static MethodInfo is_EngineCoreDef = null;
+    private static MethodInfo is_EngineHeatBlockDef = null;
+    private static d_CustomComponents_Is i_is_EngineHeatSinkDef = null;
+    private static d_CustomComponents_Is i_is_CoolingDef = null;
+    private static d_CustomComponents_Is i_is_EngineCoreDef = null;
+    private static d_CustomComponents_Is i_is_EngineHeatBlockDef = null;
+    public static bool Is_EngineHeatSinkDef(this MechComponentDef component) {
+      if(i_is_EngineHeatSinkDef == null) { return false; }
+      return i_is_EngineHeatSinkDef(component);
+    }
+    public static bool Is_CoolingDef(this MechComponentDef component) {
+      if(i_is_CoolingDef == null) { return false; }
+      return i_is_CoolingDef(component);
+    }
+    public static bool Is_EngineCoreDef(this MechComponentDef component) {
+      if(i_is_EngineCoreDef == null) { return false; }
+      return i_is_EngineCoreDef(component);
+    }
+    public static bool Is_EngineHeatBlockDef(this MechComponentDef component) {
+      if(i_is_EngineHeatBlockDef == null) { return false; }
+      return i_is_EngineHeatBlockDef(component);
+    }
+    public static void InitMechEngineer_API() {
+      Log.M?.TWL(0, "Core.InitMechEngineer_API");
+      try {
+        Core.EngineHeatSinkDef = Core.MechEngineerAssembly.GetType("MechEngineer.Features.Engines.EngineHeatSinkDef");
+        if(Core.EngineHeatSinkDef == null) { Log.M?.WL(1, $"can't find MechEngineer.Features.Engines.EngineHeatSinkDef"); return; }
+        Core.CoolingDef = Core.MechEngineerAssembly.GetType("MechEngineer.Features.Engines.CoolingDef");
+        if(Core.CoolingDef == null) { Log.M?.WL(1, $"can't find MechEngineer.Features.Engines.CoolingDef"); return; }
+        Core.EngineCoreDef = Core.MechEngineerAssembly.GetType("MechEngineer.Features.Engines.EngineCoreDef");
+        if(Core.EngineCoreDef == null) { Log.M?.WL(1, $"can't find MechEngineer.Features.Engines.EngineCoreDef"); return; }
+        Core.EngineHeatBlockDef = Core.MechEngineerAssembly.GetType("MechEngineer.Features.Engines.EngineHeatBlockDef");
+        if(Core.EngineHeatBlockDef == null) { Log.M?.WL(1, $"can't find MechEngineer.Features.Engines.EngineHeatBlockDef"); return; }
+        MethodInfo MechComponentDefExtensions_Is = typeof(CustomComponents.MechComponentDefExtensions).GetMethod("Is", BindingFlags.Public | BindingFlags.Static, null, new Type[] { typeof(MechComponentDef) }, null);
+        if(MechComponentDefExtensions_Is == null) { Log.M?.WL(1, $"can't find CustomComponents.MechComponentDefExtensions.Is"); return; }
+        Core.is_EngineHeatSinkDef = MechComponentDefExtensions_Is.MakeGenericMethod(new Type[] { Core.EngineHeatSinkDef });
+        Core.is_CoolingDef = MechComponentDefExtensions_Is.MakeGenericMethod(new Type[] { Core.CoolingDef });
+        Core.is_EngineCoreDef = MechComponentDefExtensions_Is.MakeGenericMethod(new Type[] { Core.EngineCoreDef });
+        Core.is_EngineHeatBlockDef = MechComponentDefExtensions_Is.MakeGenericMethod(new Type[] { Core.EngineHeatBlockDef });
+        {
+          var dm = new DynamicMethod("is_EngineHeatSinkDef", typeof(bool), new Type[] { typeof(MechComponentDef) });
+          var gen = dm.GetILGenerator();
+          gen.Emit(OpCodes.Ldarg_0);
+          gen.Emit(OpCodes.Call, is_EngineHeatSinkDef);
+          gen.Emit(OpCodes.Ret);
+          i_is_EngineHeatSinkDef = (d_CustomComponents_Is)dm.CreateDelegate(typeof(d_CustomComponents_Is));
+        }
+        {
+          var dm = new DynamicMethod("is_CoolingDef", typeof(bool), new Type[] { typeof(MechComponentDef) });
+          var gen = dm.GetILGenerator();
+          gen.Emit(OpCodes.Ldarg_0);
+          gen.Emit(OpCodes.Call, is_CoolingDef);
+          gen.Emit(OpCodes.Ret);
+          i_is_CoolingDef = (d_CustomComponents_Is)dm.CreateDelegate(typeof(d_CustomComponents_Is));
+        }
+        {
+          var dm = new DynamicMethod("is_EngineCoreDef", typeof(bool), new Type[] { typeof(MechComponentDef) });
+          var gen = dm.GetILGenerator();
+          gen.Emit(OpCodes.Ldarg_0);
+          gen.Emit(OpCodes.Call, is_EngineCoreDef);
+          gen.Emit(OpCodes.Ret);
+          i_is_EngineCoreDef = (d_CustomComponents_Is)dm.CreateDelegate(typeof(d_CustomComponents_Is));
+        }
+        {
+          var dm = new DynamicMethod("is_EngineHeatBlockDef", typeof(bool), new Type[] { typeof(MechComponentDef) });
+          var gen = dm.GetILGenerator();
+          gen.Emit(OpCodes.Ldarg_0);
+          gen.Emit(OpCodes.Call, is_EngineHeatBlockDef);
+          gen.Emit(OpCodes.Ret);
+          i_is_EngineHeatBlockDef = (d_CustomComponents_Is)dm.CreateDelegate(typeof(d_CustomComponents_Is));
+        }
+      } catch(Exception e) {
+        Log.M?.TWL(0, e.ToString());
+        UnityGameInstance.logger.LogException(e);
+      }
+      //.MakeGenericMethod(new Type[] { Core.EngineHeatSinkDef } );
+    }
     public static void MechDefMovementStatistics_GetJumpCapacity(object __instance,ref MechDef ___mechDef, ref float __result) {
       //Log.TWL(0, "MechEngineer.Features.OverrideStatTooltips.Helper.MechDefMovementStatistics.GetJumpCapacity " + ___mechDef.Description.Id, true);
       UnitCustomInfo info = ___mechDef.GetCustomInfo();
@@ -510,6 +596,7 @@ namespace CustomUnits {
           Type meStatHelper = Core.MechEngineerAssembly.GetType("MechEngineer.Features.OverrideStatTooltips.Helper.MechDefMovementStatistics");
           if(meStatHelper != null) {
             Log.M?.WL(1, "MechEngineer.Features.OverrideStatTooltips.Helper.MechDefMovementStatistics found " + meStatHelper.Name);
+            InitMechEngineer_API();
             MethodInfo meStatHelper_GetJumpCapacity = meStatHelper.GetMethod("GetJumpCapacity", BindingFlags.NonPublic | BindingFlags.Instance);
             if(meStatHelper_GetJumpCapacity != null) {
               Log.M?.WL(2, "MechEngineer.Features.OverrideStatTooltips.Helper.MechDefMovementStatistics GetJumpCapacity found");

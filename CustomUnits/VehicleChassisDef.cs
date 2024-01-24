@@ -34,6 +34,7 @@ using System.Collections.Concurrent;
 using MessagePack;
 using CustAmmoCategoriesPatches;
 using IRBTModUtils;
+using static BattleTech.Data.DataManager;
 
 namespace CustomUnits {
   [MessagePackObject]
@@ -1889,6 +1890,226 @@ namespace CustomUnits {
         __instance.meleeWeaponRef = new MechComponentRef(meleeDef, "", ComponentType.Weapon, ChassisLocations.CenterTorso, -1, ComponentDamageLevel.Functional, false);
       } catch (Exception) {
         //Log.TWL(0, e.ToString(), true);
+      }
+    }
+  }
+  //[HarmonyPatch(typeof(MechDef))]
+  //[HarmonyPatch("Refresh")]
+  //[HarmonyPatch(MethodType.Normal)]
+  //[HarmonyPatch(new Type[] { })]
+  //public static class MechDef_Refresh_InventorySlots {
+  //  public static readonly string VEHICLES_AUTOFIX_TAG = "CU_VEHICLES_AUTOFIX";
+  //  public static void RemoveHeatSinks(this MechDef instance) {
+  //    if(instance.MechTags == null) { return; }
+  //    if(instance.MechTags.Contains(VEHICLES_AUTOFIX_TAG)) { return; }
+  //    bool has_heatsiks = false;
+  //    //Log.M?.TWL(0,$"MechDef.Refresh {instance.Description.Id}");
+  //    try {
+  //      foreach(var component in instance.inventory) {
+  //        if(component.Def == null) { continue; }
+  //        if(component.Def.ComponentType != ComponentType.HeatSink) { continue; }
+  //        if(component.Def.ComponentTags.Contains("EnginePart")) { continue; }
+  //        has_heatsiks = true;
+  //        break;
+  //      }
+  //      if(has_heatsiks) {
+  //        List<MechComponentRef> inventory = new List<MechComponentRef>();
+  //        foreach(var component in instance.inventory) {
+  //          if(component.Def == null) { inventory.Add(component); continue; }
+  //          if(component.Def.ComponentType != ComponentType.HeatSink) { inventory.Add(component); continue; }
+  //          if(component.Def.ComponentTags.Contains("EnginePart")) { inventory.Add(component); continue; }
+  //          if(component.Def.Is_CoolingDef()) { inventory.Add(component); continue; }
+  //          //if(component.Def.Is_EngineHeatSinkDef()) { inventory.Add(component); Log.M?.WL(1, $"{component.ComponentDefID} is EngineHeatSinkDef"); continue; }
+  //          if(component.Def.Is_EngineCoreDef()) { inventory.Add(component); continue; }
+  //          if(component.Def.Is_EngineHeatBlockDef()) { inventory.Add(component); continue; }
+  //        }
+  //        instance.inventory = inventory.ToArray();
+  //        instance.MechTags.Add(VEHICLES_AUTOFIX_TAG);
+  //      }
+  //    }catch(Exception e) {
+  //      Log.M?.TWL(0, e.ToString());
+  //    }
+  //  }
+  //  public static void Postfix(MechDef __instance) {
+  //    try {
+  //      Log.M?.TWL(0, $"MechDef.Refresh {__instance.Description.Id} chassis:{__instance.ChassisID}");
+  //      if(__instance.Chassis == null) { return; }
+  //      if(__instance.dataManager == null) { return; }
+  //      if(__instance.Description == null) { return; }
+  //      if(__instance.dataManager.mechDefs.TryGet(__instance.Description.Id, out var def)) {
+  //        if(def != __instance) { return; }
+  //        bool need_refresh = false;
+  //        if(__instance.Chassis.IsVehicle()) { __instance.RemoveHeatSinks(); }
+  //        Dictionary<ChassisLocations, List<MechComponentRef>> inventory = new Dictionary<ChassisLocations, List<MechComponentRef>>();
+  //        foreach(var component in __instance.inventory) {
+  //          if(inventory.ContainsKey(component.MountedLocation) == false) { inventory[component.MountedLocation] = new List<MechComponentRef>(); }
+  //          inventory[component.MountedLocation].Add(component);
+  //        }
+  //        for(int t=0; t < __instance.Chassis.Locations.Length; ++t) {
+  //          var location = __instance.Chassis.Locations[t];
+  //          if(location.InventorySlots != 0) { continue; }
+  //          int InventorySlots = 0;
+  //          if(inventory.TryGetValue(location.Location, out var locInv)) {
+  //            foreach(var component in locInv) {
+  //              if(component == null) { continue; }
+  //              if(component.Def == null) { continue; }
+  //              //if(component.Def.Is<>())
+  //              InventorySlots += component.Def.InventorySize;
+  //            }
+  //          }
+  //          if(InventorySlots != 0) {
+  //            __instance.Chassis.Locations[t] = new LocationDef(location.Hardpoints, location.Location
+  //              , location.Tonnage, InventorySlots
+  //              , location.MaxArmor, location.MaxRearArmor, location.InternalStructure);
+  //            location = __instance.Chassis.Locations[t];
+  //            need_refresh = true;
+  //            //Traverse.Create(location).Field<int>("InventorySlots").Value = InventorySlots;
+  //            Log.M?.WL(1,$"{location.Location} InventorySlots:{InventorySlots}/{location.InventorySlots}");
+  //          }
+  //        }
+  //        if(need_refresh) {
+  //          __instance.Chassis.refreshLocationReferences();
+  //        }
+  //      }
+  //    } catch(Exception) {
+  //    }
+  //  }
+  //}
+  [CustomComponent("WeaponRepairKit")]
+  public class WeaponRepairKit: SimpleCustomComponent {
+    public string weaponId { get; set; }
+    public string repairKitId { get; set; }
+    public WeaponRepairKit() { }
+    public WeaponRepairKit(string weaponId, string repairKitId) { this.weaponId = weaponId; this.repairKitId = repairKitId; }
+  }
+  [HarmonyPatch(typeof(WeaponDefLoadRequest))]
+  [HarmonyPatch("StoreData")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { })]
+  public static class WeaponDefLoadRequest_StoreData {
+    public static void AddWeaponRepairKit(this DataManager dataManager, WeaponDef weaponDef) {
+      if(weaponDef == null) { return; }
+      if(weaponDef.Description == null) { return; }
+      string repairKitId = $"repairkit_{weaponDef.Description.Id}";
+      if(weaponDef.Is<WeaponRepairKit>() == false) {
+        CustomComponents.Database.AddCustom(weaponDef.Description.Id, new WeaponRepairKit(weaponDef.Description.Id, repairKitId));
+      }
+      if(dataManager.upgradeDefs.Exists(repairKitId)) { return; }
+      Log.M?.TWL(0, $"AddWeaponRepairKit {weaponDef.Description.Id}");
+      UpgradeDef repairKitDef = new UpgradeDef(
+        new DescriptionDef(repairKitId
+          , weaponDef.Description.Name
+          , weaponDef.Description.Details
+          , weaponDef.Description.Icon
+          , weaponDef.Description.Cost
+          , weaponDef.Description.Rarity
+          , weaponDef.Description.Purchasable
+          , weaponDef.Description.Manufacturer
+          , weaponDef.Description.Model
+          , weaponDef.Description.UIName)
+        , weaponDef.BonusValueA
+        , weaponDef.BonusValueB
+        , weaponDef.InventorySize
+        , weaponDef.Tonnage
+        , weaponDef.AllowedLocations
+        , weaponDef.DisallowedLocations
+        , ChassisLocations.None
+        , MechComponentType.Weapon
+        , 0f, 0f, new EffectData[0], weaponDef.ComponentTags 
+      );
+      dataManager.upgradeDefs.Add(repairKitDef.Description.Id, repairKitDef);
+      repairKitDef.AddComponent(new WeaponRepairKit(weaponDef.Description.Id, repairKitId));
+    }
+    public static void Postfix(WeaponDefLoadRequest __instance) {
+      try {
+        __instance.dataManager.AddWeaponRepairKit(__instance.resource);
+      } catch(Exception e) {
+        Log.M?.TWL(0, e.ToString());
+        __instance.dataManager.logger.LogException(e);
+      }
+    }
+  }
+  [HarmonyPatch(typeof(CustomPrewarm.MainMenu_ShowRefreshingSaves))]
+  [HarmonyPatch("AddToDataManager")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { typeof(DataManager), typeof(BattleTechResourceType), typeof(string), typeof(HBS.Util.IJsonTemplated) })]
+  public static class MainMenu_ShowRefreshingSaves_AddToDataManager {
+    public static void Postfix(DataManager dataManager, BattleTechResourceType resType, string id, HBS.Util.IJsonTemplated data) {
+      try {
+        if(resType != BattleTechResourceType.WeaponDef) { return; }
+        dataManager.AddWeaponRepairKit(data as WeaponDef);
+      } catch(Exception e) {
+        Log.M?.TWL(0, e.ToString());
+        dataManager.logger.LogException(e);
+      }
+    }
+  }
+  [HarmonyPatch(typeof(MechLabPanel))]
+  [HarmonyPatch("ToggleLayout")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { })]
+  public static class MechLabPanel_ToggleLayout {
+    public class CUMechLabPanelExt: MonoBehaviour {
+      public Transform headWidget_parent;
+      public int headWidget_index;
+      public Transform centerTorsoWidget_parent;
+      public int centerTorsoWidget_index;
+      public Transform leftTorsoWidget_parent;
+      public int leftTorsoWidget_index;
+      public Transform rightTorsoWidget_parent;
+      public int rightTorsoWidget_index;
+      public Transform leftArmWidget_parent;
+      public int leftArmWidget_index;
+      public Transform rightArmWidget_parent;
+      public int rightArmWidget_index;
+      public Transform leftLegWidget_parent;
+      public int leftLegWidget_index;
+      public Transform rightLegWidget_parent;
+      public int rightLegWidget_index;
+      public MechLabPanel parent;
+      public void Init(MechLabPanel parent) {
+        this.parent = parent;
+        this.headWidget_parent = parent.headWidget.transform.parent;
+        this.headWidget_index = parent.headWidget.transform.GetSiblingIndex();
+        this.centerTorsoWidget_parent = parent.centerTorsoWidget.transform.parent;
+        this.leftTorsoWidget_parent = parent.leftTorsoWidget.transform.parent;
+        this.rightTorsoWidget_parent = parent.rightTorsoWidget.transform.parent;
+        this.leftArmWidget_parent = parent.leftArmWidget.transform.parent;
+        this.rightArmWidget_parent = parent.rightArmWidget.transform.parent;
+        this.leftLegWidget_parent = parent.leftLegWidget.transform.parent;
+        this.rightLegWidget_parent = parent.rightLegWidget.transform.parent;
+
+        this.centerTorsoWidget_index = parent.centerTorsoWidget.transform.GetSiblingIndex();
+        this.leftTorsoWidget_index = parent.leftTorsoWidget.transform.GetSiblingIndex();
+        this.rightTorsoWidget_index = parent.rightTorsoWidget.transform.GetSiblingIndex();
+        this.leftArmWidget_index = parent.leftArmWidget.transform.GetSiblingIndex();
+        this.rightArmWidget_index = parent.rightArmWidget.transform.GetSiblingIndex();
+        this.leftLegWidget_index = parent.leftLegWidget.transform.GetSiblingIndex();
+        this.rightLegWidget_index = parent.rightLegWidget.transform.GetSiblingIndex();
+      }
+      public void Restore() {
+        parent.leftArmWidget.transform.SetParent(this.leftArmWidget_parent);
+        parent.leftArmWidget.transform.SetSiblingIndex(this.leftArmWidget_index);
+        parent.rightArmWidget.transform.SetParent(this.rightArmWidget_parent);
+        parent.rightArmWidget.transform.SetSiblingIndex(this.rightArmWidget_index);
+      }
+      public void Swap() {
+        parent.leftArmWidget.transform.SetParent(this.leftTorsoWidget_parent);
+        parent.leftArmWidget.transform.SetSiblingIndex(this.leftTorsoWidget_index);
+        parent.rightArmWidget.transform.SetParent(this.rightTorsoWidget_parent);
+        parent.rightArmWidget.transform.SetSiblingIndex(this.rightTorsoWidget_index);
+      }
+    }
+    public static void Postfix(MechLabPanel __instance) {
+      try {
+        CUMechLabPanelExt ext = __instance.gameObject.GetComponent<CUMechLabPanelExt>();
+        if(ext == null) { ext = __instance.gameObject.AddComponent<CUMechLabPanelExt>(); ext.Init(__instance); }
+        if(__instance.originalMechDef == null) { ext.Restore(); }
+        if(__instance.originalMechDef.Chassis == null) { ext.Restore(); }
+        if(__instance.originalMechDef.Chassis.IsVehicle()) { ext.Swap(); } else { ext.Restore(); }
+      } catch(Exception e) {
+        Log.M?.TWL(0, e.ToString());
+        UIManager.logger.LogException(e);
       }
     }
   }

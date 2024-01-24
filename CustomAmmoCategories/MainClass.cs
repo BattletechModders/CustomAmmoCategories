@@ -88,61 +88,32 @@ namespace CustomAmmoCategoriesPatches {
       }
     }
   }
-  [HarmonyPatch(typeof(Weapon))]
-  [HarmonyPatch("SetAmmoBoxes")]
-  [HarmonyPatch(MethodType.Normal)]
-  [HarmonyPatch(new Type[] { typeof(List<AmmunitionBox>) })]
-  public static class Weapon_SetAmmoBoxes {
-    public static bool Prefix(Weapon __instance, List<AmmunitionBox> ammoBoxes) {
-      Log.Combat?.TW(0, $"Weapon SetAmmoBoxes {__instance.Description.Id} can use categories:");
-      try {
-        CustomAmmoCategory weaponAmmoCategory = CustomAmmoCategories.getExtWeaponDef(__instance.defId).AmmoCategory;
-        List<AmmunitionBox> ammunitionBoxList = new List<AmmunitionBox>();
-        List<BaseComponentRef> inventory = new List<BaseComponentRef>();
-        foreach (var component in __instance.parent.allComponents) { inventory.Add(component.baseComponentRef); }
-        ExtWeaponDef extWeapon = CustomAmmoCategories.getExtWeaponDef(__instance.defId);
-        WeaponDef weaponDef = __instance.weaponDef;
-        List<WeaponMode> modes = __instance.info().modes.Values.ToList();
-        HashSet<string> weaponAmmoCategories = new HashSet<string>();
-        foreach (var mode in modes) {
-          if (mode.AmmoCategory == null) { mode.AmmoCategory = extWeapon.AmmoCategory; }
-          CustomAmmoCategory category = mode.AmmoCategory;
-          if (category.BaseCategory.Is_NotSet) { continue; }
-          weaponAmmoCategories.Add(category.Id);
-        }
-        foreach (var cat in weaponAmmoCategories) { Log.Combat?.W(1, $"{cat}"); }
-        Log.Combat?.WL(0, "");
-        foreach (AmmunitionBox ammoBox in ammoBoxes) {
-          ExtAmmunitionDef extAmmo = CustomAmmoCategories.findExtAmmo(ammoBox.ammoDef.Description.Id);
-          CustomAmmoCategory ammoCategory = extAmmo.AmmoCategory;
-          if (ammoCategory.BaseCategory.Is_NotSet) { ammoCategory = CustomAmmoCategories.find(ammoBox.ammoDef.AmmoCategoryValue.Name); };
-          if (ammoCategory.BaseCategory.Is_NotSet) { Log.Combat?.WL(1, $"{ammoBox.ammoDef.Description.Id} ammo have bad category"); continue; };
-          if (weaponAmmoCategories.Contains(ammoCategory.Id)) {
-            Log.Combat?.WL(1, $"add ammunition box {ammoBox.ammoDef.Description.Id} category:{ammoCategory.Id}");
-            ammunitionBoxList.Add(ammoBox);
-          } else {
-            Log.Combat?.WL(1, $"skip ammunition box {ammoBox.ammoDef.Description.Id} category:{ammoCategory.Id}");
-          }
-        }
-        __instance.ammoBoxes = ammunitionBoxList;
-        Log.Combat?.WL(1, $"boxes:{__instance.ammoBoxes.Count}");
-      }catch(Exception e) {
-        Log.Combat?.TWL(0,e.ToString(),true);
-        Weapon.logger.LogException(e);
-      }
-      return false;
-    }
-  }
   [HarmonyPatch(typeof(MechValidationRules))]
   [HarmonyPatch("ValidateMechHasAppropriateAmmo")]
   [HarmonyPatch(MethodType.Normal)]
   public static class MechValidationRules_ValidateMechHasAppropriateAmmo {
+    public static bool isSameLocation(this MechComponentDef weapon) {
+      if(string.IsNullOrEmpty(CustomAmmoCategories.Settings.WeaponUseAmmoInstalledLocationTag)) { return false; }
+      return weapon.ComponentTags.Contains(CustomAmmoCategories.Settings.WeaponUseAmmoInstalledLocationTag);
+    }
     public static bool Prefix(DataManager dataManager, MechDef mechDef, MechValidationLevel validationLevel, WorkOrderEntry_MechLab baseWorkOrder, ref Dictionary<MechValidationType, List<Text>> errorMessages) {
       List<MechComponentRef> weapons = new List<MechComponentRef>();
-      Dictionary<string, AmmunitionDef> ammos = new Dictionary<string, AmmunitionDef>();
+      Dictionary<ChassisLocations, Dictionary<string, AmmunitionDef>> ammos = new Dictionary<ChassisLocations, Dictionary<string, AmmunitionDef>>();
       List<BaseComponentRef> inventory = new List<BaseComponentRef>();
       Log.M?.TWL(0,"Start Mech Validation " + mechDef.ChassisID);
-      for (int index = 0; index < mechDef.Inventory.Length; ++index) {
+      bool same_location = false;
+      bool adjacent_location = false;
+      if(string.IsNullOrEmpty(CustomAmmoCategories.Settings.WeaponUseAmmoInstalledLocationTag) == false) {
+        if(mechDef.Chassis.ChassisTags.Contains(CustomAmmoCategories.Settings.WeaponUseAmmoInstalledLocationTag)) {
+          same_location = true;
+        }
+      }
+      if(string.IsNullOrEmpty(CustomAmmoCategories.Settings.WeaponUseAmmoAdjacentLocationTag) == false) {
+        if(mechDef.Chassis.ChassisTags.Contains(CustomAmmoCategories.Settings.WeaponUseAmmoAdjacentLocationTag)) {
+          adjacent_location = true;
+        }
+      }
+      for(int index = 0; index < mechDef.Inventory.Length; ++index) {
         MechComponentRef mechComponentRef = mechDef.Inventory[index];
         mechComponentRef.RefreshComponentDef();
         if (mechComponentRef.ComponentDefType == ComponentType.Weapon) {
@@ -154,7 +125,8 @@ namespace CustomAmmoCategoriesPatches {
           if ((mechComponentRef.DamageLevel == ComponentDamageLevel.Functional || MechValidationRules.MechComponentUnderMaintenance(mechComponentRef, validationLevel, baseWorkOrder))) {
             AmmunitionBoxDef def = mechComponentRef.Def as AmmunitionBoxDef;
             def.refreshAmmo(dataManager);
-            if (ammos.ContainsKey(def.Description.Id) == false) { ammos.Add(def.Description.Id, def.Ammo); }
+            if(ammos.ContainsKey(mechComponentRef.MountedLocation) == false) { ammos[mechComponentRef.MountedLocation] = new Dictionary<string, AmmunitionDef>(); }
+            if (ammos[mechComponentRef.MountedLocation].ContainsKey(def.Description.Id) == false) { ammos[mechComponentRef.MountedLocation][def.Description.Id] = def.Ammo; }
           }
         }
         if ((mechComponentRef.DamageLevel == ComponentDamageLevel.Functional || MechValidationRules.MechComponentUnderMaintenance(mechComponentRef, validationLevel, baseWorkOrder))) {
@@ -168,12 +140,17 @@ namespace CustomAmmoCategoriesPatches {
         if (weaponDef.StartingAmmoCapacity > 0) { continue; };
         ExtWeaponDef extDef = CustomAmmoCategories.getExtWeaponDef(weaponRef.ComponentDefID);
         if (extDef.isHaveInternalAmmo) { continue; }
-        foreach (var ammoDef in ammos) {
-          if (CustomAmmoCategories.isWeaponCanUseAmmo(weaponRef, inventory, ammoDef.Value)) {
-            Log.M?.WL(1, $"weapon:{weaponRef.ComponentDefID} SimGameUID:{weaponRef.SimGameUID} can use {ammoDef.Key}");
-            weaponHasAmmo = true;
-            break;
+        foreach (var ammoLocation in ammos) {
+          if(same_location) { if(ammoLocation.Key != weaponRef.MountedLocation) { continue; } }
+          if(weaponDef.isSameLocation()) { if(ammoLocation.Key != weaponRef.MountedLocation) { continue; } }
+          foreach(var ammoDef in ammoLocation.Value) {
+            if(CustomAmmoCategories.isWeaponCanUseAmmo(weaponRef, inventory, ammoDef.Value)) {
+              Log.M?.WL(1, $"weapon:{weaponRef.ComponentDefID} SimGameUID:{weaponRef.SimGameUID} can use {ammoDef.Key}");
+              weaponHasAmmo = true;
+              break;
+            }
           }
+          if(weaponHasAmmo) { break; }
         }
         if (weaponHasAmmo == false) {
           Log.M?.WL(1, $"weapon:{weaponRef.ComponentDefID} SimGameUID:{weaponRef.SimGameUID} does not have ammo to use");
@@ -181,19 +158,23 @@ namespace CustomAmmoCategoriesPatches {
           MechValidationRules.AddErrorMessage(ref errorMessages, MechValidationType.AmmoMissing, new Text("__/CAC.MissingAmmo/__", new object[1] { (object)name }));
         }
       }
-      foreach (var ammoDef in ammos) {
+      foreach (var ammoLocation in ammos) {
         bool ammoIsUsed = false;
-        foreach (var weaponRef in weapons) {
-          if (CustomAmmoCategories.isWeaponCanUseAmmo(weaponRef, inventory, ammoDef.Value)) {
-            Log.M?.WL(1, $"weapon:{weaponRef.ComponentDefID} SimGameUID:{weaponRef.SimGameUID} can use {ammoDef.Key}");
-            ammoIsUsed = true;
-            break;
+        foreach(var ammoDef in ammoLocation.Value) {
+          foreach(var weaponRef in weapons) {
+            if(same_location) { if(ammoLocation.Key != weaponRef.MountedLocation) { continue; } }
+            if(weaponRef.Def.isSameLocation()) { if(ammoLocation.Key != weaponRef.MountedLocation) { continue; } }
+            if(CustomAmmoCategories.isWeaponCanUseAmmo(weaponRef, inventory, ammoDef.Value)) {
+              Log.M?.WL(1, $"weapon:{weaponRef.ComponentDefID} SimGameUID:{weaponRef.SimGameUID} can use {ammoDef.Key}");
+              ammoIsUsed = true;
+              break;
+            }
           }
-        }
-        if (ammoIsUsed == false) {
-          Log.M?.WL(1, $"ammo:{ammoDef.Key} is not used by any weapon");
-          string name = string.IsNullOrEmpty(ammoDef.Value.Description.UIName) ? ammoDef.Value.Description.Name : ammoDef.Value.Description.UIName;
-          MechValidationRules.AddErrorMessage(ref errorMessages, MechValidationType.AmmoUnneeded, new Text("__/CAC.ExtraAmmo/__", new object[1] { (object)name }));
+          if(ammoIsUsed == false) {
+            Log.M?.WL(1, $"ammo:{ammoDef.Key} is not used by any weapon");
+            string name = string.IsNullOrEmpty(ammoDef.Value.Description.UIName) ? ammoDef.Value.Description.Name : ammoDef.Value.Description.UIName;
+            MechValidationRules.AddErrorMessage(ref errorMessages, MechValidationType.AmmoUnneeded, new Text("__/CAC.ExtraAmmo/__", new object[1] { (object)name }));
+          }
         }
       }
       return false;
@@ -417,6 +398,46 @@ namespace CustAmmoCategories {
     public static Settings Settings;
     public static Settings GlobalSettings;
     public static Settings LocalSettings;
+    private static HashSet<ArmorLocation> trueArmorLocations = new HashSet<ArmorLocation>();
+    private static Dictionary<ArmorLocation, ChassisLocations> armorLocationToChassis = new Dictionary<ArmorLocation, ChassisLocations>();
+    public static void InitLocationsSubsystem() {
+      foreach(var aloc in Enum.GetValues(typeof(ArmorLocation)).Cast<ArmorLocation>()) {
+        if(((int)aloc == 1)
+          || ((int)aloc == 2)
+          || ((int)aloc == 4)
+          || ((int)aloc == 8)
+          || ((int)aloc == 16)
+          || ((int)aloc == 32)
+          || ((int)aloc == 64)
+          || ((int)aloc == 128)
+          || ((int)aloc == 256)
+          || ((int)aloc == 512)
+          || ((int)aloc == 1024)
+          || ((int)aloc == 2048)
+          || ((int)aloc == 4096)
+          || ((int)aloc == 8192)
+        ) {
+          trueArmorLocations.Add(aloc);
+        }
+      }
+      foreach(var aloc in trueArmorLocations) {
+        string name = aloc.ToString();
+        name = name.Replace("Rear", "");
+        if(Enum.TryParse<ChassisLocations>(name, out var chloc)) {
+          armorLocationToChassis[aloc] = chloc;
+        } else {
+          throw new Exception($"Can't find ChassisLocation for ArmorLocation {aloc}");
+        }
+      }
+    }
+    public static HashSet<ChassisLocations> ConvertArmorToChassisLocations(ArmorLocation aloc) {
+      HashSet<ChassisLocations> result = new HashSet<ChassisLocations>();
+      foreach(var taloc in trueArmorLocations) {
+        if((aloc & taloc) == 0) { continue; }
+        if(armorLocationToChassis.TryGetValue(taloc, out var chloc)) { result.Add(chloc); }
+      }
+      return result;
+    }
     public static WeaponHitInfo getSuccessOnly(WeaponHitInfo hitInfo) {
       int successShots = 0;
       for (int index = 0; index < hitInfo.numberOfShots; ++index) {
@@ -1316,6 +1337,7 @@ namespace CACMain {
       }
       ToHitModifiersHelper.Init();
       CustomAmmoCategories.InitHitLocationsAOE();
+      CustomAmmoCategories.InitLocationsSubsystem();
       //try {
       //  Dictionary<string, uint> audioEvents = SceneSingletonBehavior<WwiseManager>.Instance.guidIdMap;
       //  Log.M?.WL(0,"audioEvents:", true);
