@@ -150,6 +150,16 @@ namespace CustAmmoCategories {
             }
           }
         }
+        if(string.IsNullOrEmpty(CustomAmmoCategories.Settings.WeaponUseAmmoInstalledLocationTag) == false) {
+          if(__instance.componentDef.ComponentTags.Contains(CustomAmmoCategories.Settings.WeaponUseAmmoInstalledLocationTag)) {
+            same_location = true;
+          }
+        }
+        if(string.IsNullOrEmpty(CustomAmmoCategories.Settings.WeaponUseAmmoAdjacentLocationTag) == false) {
+          if(__instance.componentDef.ComponentTags.Contains(CustomAmmoCategories.Settings.WeaponUseAmmoAdjacentLocationTag)) {
+            adjacent_location = true;
+          }
+        }
         CustomAmmoCategory weaponAmmoCategory = CustomAmmoCategories.getExtWeaponDef(__instance.defId).AmmoCategory;
         List<AmmunitionBox> ammunitionBoxList = new List<AmmunitionBox>();
         List<BaseComponentRef> inventory = new List<BaseComponentRef>();
