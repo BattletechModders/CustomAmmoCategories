@@ -483,6 +483,7 @@ namespace CustAmmoCategories {
         ReceiveMessageCenterMessage subscriber = (ReceiveMessageCenterMessage)(message => __instance.AttackOrdersSet(message));
         __instance.Combat().MessageCenter.AddSubscriber(MessageCenterMessageType.AddSequenceToStackMessage, subscriber);
         __instance.Combat().MessageCenter.PublishMessage(reserveInvokation);
+        __instance.SelectedActor.ToArtilleryMode();
         __instance.Combat().MessageCenter.RemoveSubscriber(MessageCenterMessageType.AddSequenceToStackMessage, subscriber);
         WeaponRangeIndicators.Instance.HideTargetingLines(__instance.Combat());
         __result = true;
