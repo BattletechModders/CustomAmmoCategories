@@ -81,6 +81,7 @@ namespace CustomUnits {
     public int MaxVehicleRandomPilots { get; set; }
     public string CanPilotVehicleDescription { get; set; }
     public string CanPilotBothDescription { get; set; }
+    public bool GenerateExtraPilotingClassesForRonin { get; set; }
     public bool ShowVehicleBays { get; set; }
     public int ArgoBaysFix { get; set; }
     public bool BaysCountExternalControl { get; set; }
@@ -240,6 +241,7 @@ namespace CustomUnits {
       CanPilotAlsoMechProbability = 0.0f;
       CanPilotVehicleDescription = String.Format(HumanDescriptionDef.PilotGenDetailFormatting, "Piloting", "Can pilot only vehicles");
       CanPilotBothDescription = String.Format(HumanDescriptionDef.PilotGenDetailFormatting, "Piloting", "Can pilot both mechs and vehicles"); ;
+      GenerateExtraPilotingClassesForRonin = true;
       EMPLOYER_LANCE_GUID = "ecc8d4f2-74b4-465d-adf6-84445e5dfc230";
       CountContractMaxUnits4AsUnlimited = false;
       PlayerControlConvoyTag = "convoy_player_control";

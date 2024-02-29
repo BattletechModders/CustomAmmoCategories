@@ -20,6 +20,7 @@ using SVGImporter;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Threading;
@@ -199,6 +200,7 @@ namespace CustomUnits {
     private static List<PilotDef> gatherPilotsCanHaveClass(ref List<PilotDef> pilots, PilotingClassDef pclass) {
       List<PilotDef> result = new List<PilotDef>();
       foreach(PilotDef pilot in pilots) {
+        if (pilot.IsRonin && !Core.Settings.GenerateExtraPilotingClassesForRonin) continue;
         if (CanHaveExpertise(pilot.GetPilotingClass(), pclass)) { result.Add(pilot); }
       }
       return result;
@@ -231,7 +233,8 @@ namespace CustomUnits {
           HashSet<PilotingClassDef> classes = pilot.GetPilotingClass();
           if(classes.Contains(unitClass)) { continue; }
           pilot.AddPilotingClass(unitClass);
-          if(unitClass.additionalExpertisesCount > 0) {
+          Log.M?.WL($"{pilot.Description.Id} -> Adding new piloting class {unitClass.Description.Id}");
+          if(unitClass.additionalExpertisesCount > 0 && (!pilot.IsRonin || Core.Settings.GenerateExtraPilotingClassesForRonin)) {
             GenerateAdditionalExpertises(pilot, unitClass, classes, null);
           }
         }
@@ -248,9 +251,10 @@ namespace CustomUnits {
       foreach (var pilot in simgame.PilotRoster) {
         activePilots.Add(pilot.pilotDef);
       }
-      foreach (PilotDef pilot in activePilots) {
+      Log.M?.WL("After generation:");
+      foreach (PilotDef pilot in activePilots.OrderBy(pilotDef => pilotDef.Description.Callsign)) {
         Log.M?.W(1, "pilot:" + pilot.Description.Id + "/" + pilot.Description.Callsign);
-        foreach (string tag in pilot.PilotTags) { Log.M?.W(1, tag); }
+        foreach (string tag in pilot.PilotTags.OrderBy(t => t)) { Log.M?.W(1, tag); }
         Log.M?.WL(0, "");
       }
     }
@@ -283,6 +287,7 @@ namespace CustomUnits {
           if(CanHaveExpertise(classes, addclass) == false) { continue; }
           classes.Add(addclass);
           pilot.AddPilotingClass(addclass);
+          Log.M?.WL($"{pilot.Description.Id} -> Adding additional piloting class {addclass.Description.Id}");
           if(classes_count != null) {
             if(addclass.expertiseGenerationMinCount > 0) {
               if(classes_count.ContainsKey(addclass)) { classes_count[addclass] += 1; } else { classes_count[addclass] = 1; }
@@ -298,6 +303,7 @@ namespace CustomUnits {
           if(roll > 0f) { continue; }
           classes.Add(addclass);
           pilot.AddPilotingClass(addclass);
+          Log.M?.WL($"{pilot.Description.Id} -> Adding additional piloting class {addclass.Description.Id}");
           if(classes_count != null) {
             if(addclass.expertiseGenerationMinCount > 0) {
               if(classes_count.ContainsKey(addclass)) { classes_count[addclass] += 1; } else { classes_count[addclass] = 1; }
@@ -317,6 +323,10 @@ namespace CustomUnits {
     }
     public static void GeneratePilotingExpertises(ref List<PilotDef> pilots, bool minCount = true) {
       foreach(PilotDef pilot in pilots) {
+        if (pilot.IsRonin && !Core.Settings.GenerateExtraPilotingClassesForRonin)
+        {
+          continue;
+        }
         HashSet<PilotingClassDef> classes = pilot.GetPilotingClass();
         foreach (var pilotClass in pilotingClasses) {
           if (classes.Contains(pilotClass.Value)) { continue; }
@@ -324,6 +334,7 @@ namespace CustomUnits {
           float roll = UnityEngine.Random.Range(0f, 1f);
           if (roll < pilotClass.Value.expertiseGenerationChance) {
             pilot.AddPilotingClass(pilotClass.Value);
+            Log.M?.WL($"{pilot.Description.Id} -> Adding new piloting class {pilotClass.Value.Description.Id}");
             classes.Add(pilotClass.Value);
             if(pilotClass.Value.additionalExpertisesCount > 0) {
               GenerateAdditionalExpertises(pilot, pilotClass.Value, classes, null);
@@ -353,6 +364,7 @@ namespace CustomUnits {
           if (readypilots.Count == 0) { classes_count[pclass] = pclass.expertiseGenerationMinCount; continue; }
           int index = UnityEngine.Random.Range(0, readypilots.Count);
           readypilots[index].AddPilotingClass(pclass);
+          Log.M?.WL($"{readypilots[index].Description.Id} -> Adding piloting class {pclass.Description.Id} due to below minimum count {pclass.expertiseGenerationMinCount}");
           HashSet<PilotingClassDef> classes = readypilots[index].GetPilotingClass();
           if(pclass.additionalExpertisesCount > 0) {
             GenerateAdditionalExpertises(readypilots[index], pclass, classes, classes_count);
