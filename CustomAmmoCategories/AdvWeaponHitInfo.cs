@@ -542,7 +542,7 @@ namespace CustAmmoCategories {
     }
   }
   public class AdvWeaponResolveInfo {
-    public float Heat { get; set; }
+    public float Heat;
     public float Stability;
     public int hitsCount;
     public List<AdvCritLocationInfo> Crits;
