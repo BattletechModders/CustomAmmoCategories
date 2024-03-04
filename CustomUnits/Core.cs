@@ -89,6 +89,7 @@ namespace CustomUnits {
     public string PlayerControlConvoyTag { get; set; }
     public string ConvoyRouteTag { get; set; }
     public int ConvoyUnitsCount { get; set; }
+    public int PreferedLanceSize { get; set; } = 6;
     public string TransferTeamOnDeathPrefixTag { get; set; }
     public string ConvoyDenyMoveTag { get; set; }
     public float ConvoyMaxDistFromOther { get; set; }
@@ -248,6 +249,7 @@ namespace CustomUnits {
       TransferTeamOnDeathPrefixTag = "transfer-on-death:";
       ConvoyDenyMoveTag = "convoy_palyer_control_deny_move";
       ConvoyUnitsCount = 4;
+      PreferedLanceSize = 6;
       ConvoyMaxDistFromOther = 200f;
       ConvoyMaxDistFromPlayer = 300f;
       ConvoyMaxDistFromRoute = 30f;

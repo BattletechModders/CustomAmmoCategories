@@ -28,9 +28,9 @@ using Object = UnityEngine.Object;
 namespace CustomUnits {
   public class CombatHUDFakeVehicleArmorHover : MonoBehaviour, IPointerEnterHandler, IEventSystemHandler, IPointerExitHandler, IPointerClickHandler {
     public ChassisLocations ArmorLocation;
-    private bool usedForCalledShots;
-    private HUDFakeVehicleArmorReadout Readout { get; set; }
-    private CombatHUDTooltipHoverElement ToolTip { get; set; }
+    public bool usedForCalledShots;
+    public HUDFakeVehicleArmorReadout Readout { get; set; }
+    public CombatHUDTooltipHoverElement ToolTip { get; set; }
     public void Copy(CombatHUDVehicleArmorHover src) {
       switch (src.ArmorLocation) {
         case VehicleChassisLocations.Turret: this.ArmorLocation = ChassisLocations.Head; break;

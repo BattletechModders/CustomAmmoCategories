@@ -1061,7 +1061,7 @@ namespace CustomUnits {
           Log.M?.WL(1, $"[{i}] state:{__instance.loadoutSlots[i].curLockState} pilot:{((pilot != null) ? (pilot.Description.Id + "(" + pilot.Callsign + ")") : "null")}  unit:{((mech != null) ? mech.ChassisID + "(" + mech.GUID + ")" : "null")}");
         }
         __instance.headerWidget.LanceName = Strings.T(__instance.oldLanceName);
-        SpawnableUnit[] lanceUnits = config.GetLanceUnits("");
+        SpawnableUnit[] lanceUnits = config.GetLanceUnits(__instance.playerGUID);
         for (int i = 0; i < lanceUnits.Length; ++i) {
           Log.M?.WL(1, $"[{i}] pilot:{lanceUnits[i].PilotId} UnitId:{lanceUnits[i].UnitId} Unit:{(lanceUnits[i].Unit==null?"null": lanceUnits[i].Unit.GUID)}");
         }
@@ -1262,6 +1262,7 @@ namespace CustomUnits {
         slots.AddRange(__instance.loadoutSlots);
         for (int t = __instance.loadoutSlots.Length; t < maxUnits; ++t) {
           GameObject newSlot = GameObject.Instantiate(srcSlot, srcSlot.transform.parent);
+          newSlot.name = $"lanceSlot1 ({t})";
           slots.Add(newSlot.GetComponent<LanceLoadoutSlot>());
         }
         __instance.loadoutSlots = slots.ToArray();
@@ -2126,6 +2127,28 @@ namespace CustomUnits {
         }
       }
     }
+    public static int GetCargoPlayerUnitsCount(this CombatGameState Combat) {
+      Log.Combat?.TWL(0, "GetCargoPlayerUnitsCount");
+      foreach(var lance in Combat.ActiveContract.Lances.lanceConfigurations) {
+        Log.Combat?.WL(1, $"{lance.Key}");
+        for(int t = 0; t < lance.Value.Count; ++t) {
+          Log.Combat?.WL(2, $"[{t}]{lance.Value[t].UnitId}:{lance.Value[t].PilotId}");
+        }
+      }
+      var playerUnits = Combat.ActiveContract.Lances.GetLanceUnits(Combat.LocalPlayerTeamGuid);
+      int result = 0;
+      foreach(var unit in playerUnits) {
+        if ((unit.Unit == null)||(unit.Pilot == null)) { continue; }
+        var cargoUnits = Combat.ActiveContract.Lances.GetLanceUnits(unit.GetSlotGUID());
+        Log.Combat?.WL(1, $"unit:{unit.GetSlotGUID()}");
+        foreach (var cargoUnit in cargoUnits) {
+          if ((cargoUnit.Unit == null) || (cargoUnit.Pilot == null)) { continue; }
+          Log.Combat?.WL(2, $"{cargoUnit.UnitId}:{cargoUnit.PilotId}");
+          ++result;
+        }
+      }
+      return result;
+    }
     public static void InitAdditinalPortraits(CombatHUDMechwarriorTray __instance, CombatGameState Combat, CombatHUD HUD) {
       List<GameObject> holders = new List<GameObject>();
       holders.AddRange(__instance.PortraitHolders);
@@ -2135,7 +2158,7 @@ namespace CustomUnits {
       GameObject srcTween = tweensHolders[0].gameObject;
       HorizontalLayoutGroup layout = srcHolder.transform.parent.gameObject.GetComponent<HorizontalLayoutGroup>();
       layout.childAlignment = TextAnchor.MiddleLeft;
-      int all_lances_size = UnityGameInstance.BattleTechGame.Simulation.currentLayout().slotsCount + Core.Settings.ConvoyUnitsCount;
+      int all_lances_size = UnityGameInstance.BattleTechGame.Simulation.currentLayout().slotsCount + Core.Settings.ConvoyUnitsCount + Combat.GetCargoPlayerUnitsCount();
       for (int t = __instance.PortraitHolders.Length; t < all_lances_size; ++t) {
         GameObject newHolder = GameObject.Instantiate(srcHolder);
         newHolder.name = "mwPortraitHolder" + (t + 1).ToString();
@@ -2279,7 +2302,9 @@ namespace CustomUnits {
           lance_index = 0;
         }
         //bool lanceVehicle = lance_id < CustomLanceHelper.lancesCount() ? CustomLanceHelper.lanceVehicle(lance_id) : true;
-        int lanceSize = lance_id < layout.dropLances.Count ? layout.dropLances[lance_id].dropSlots.Count : Core.Settings.ConvoyUnitsCount;
+        int lanceSize = Core.Settings.PreferedLanceSize;
+        if (lance_id < layout.dropLances.Count) { lanceSize = layout.dropLances[lance_id].dropSlots.Count; } else
+          if (lance_id == layout.dropLances.Count) { lanceSize = Core.Settings.ConvoyUnitsCount; }
         lance.Add(new CustomLanceInstance(holder, portrait, index, lance_index == 0, lance_id, lance_index, lance_id >= layout.dropLances.Count));
         ++lance_index;
         if (lance_index >= lanceSize) { ++lance_id; };

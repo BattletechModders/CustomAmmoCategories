@@ -29,6 +29,25 @@ using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
 namespace CustomUnits {
+  public static class CustomLanceSlotHelper {
+    public static string GetSlotGUID(this LanceLoadoutSlot lanceLoadoutSlot) {
+      return lanceLoadoutSlot.SelectedMech.MechDef.GUID + "_" + lanceLoadoutSlot.SelectedMech.MechDef.Description.Id + "_" + lanceLoadoutSlot.SelectedPilot.Pilot.Description.Id;
+    }
+    public static string GetSlotGUID(this SpawnableUnit slot) {
+      string result = string.Empty;
+      if (slot.Unit != null) { result = slot.Unit.GUID; } else
+      if (slot.VUnit != null) { result = slot.VUnit.GUID; } else
+      if (slot.TUnit != null) { result = slot.TUnit.GUID; }
+      return result + "_" + slot.UnitId + "_" + slot.PilotId;
+    }
+    public static string GetSlotGUID(this UnitSpawnPointGameLogic slot) {
+      string result = string.Empty;
+      if (slot.mechDefOverride != null) { result = slot.mechDefOverride.GUID; } else
+      if (slot.vehicleDefOverride != null) { result = slot.vehicleDefOverride.GUID; } else
+      if (slot.turretDefOverride != null) { result = slot.turretDefOverride.GUID; }
+      return result + "_" + slot.mechDefId + "_" + slot.pilotDefId;
+    }
+  }
   [HarmonyPatch(typeof(CombatHUDActionButton))]
   [HarmonyPatch("ExecuteClick")]
   [HarmonyPatch(MethodType.Normal)]
@@ -416,12 +435,12 @@ namespace CustomUnits {
           }
           string teamGUID = __instance.playerGUID;
           if (isPlayer == false) { teamGUID = Core.Settings.EMPLOYER_LANCE_GUID; };
-          string GUID = lanceLoadoutSlot.SelectedMech.MechDef.GUID + "_" + lanceLoadoutSlot.SelectedMech.MechDef.Description.Id + "_" + lanceLoadoutSlot.SelectedPilot.Pilot.Description.Id;
+          string GUID = lanceLoadoutSlot.GetSlotGUID();
           int index = 0;
           while (CustomLanceHelper.playerLanceLoadout.loadout.ContainsKey(GUID)) {
             ++index;
             lanceLoadoutSlot.SelectedMech.MechDef.SetGuid(lanceLoadoutSlot.SelectedMech.MechDef.GUID + "_" + index.ToString());
-            GUID = lanceLoadoutSlot.SelectedMech.MechDef.GUID + "_" + lanceLoadoutSlot.SelectedMech.MechDef.Description.Id + "_" + lanceLoadoutSlot.SelectedPilot.Pilot.Description.Id;
+            GUID = lanceLoadoutSlot.GetSlotGUID();
           }
           CustomLanceHelper.playerLanceLoadout.loadout.Add(GUID, i);
           if (hotdrop) {
@@ -904,6 +923,7 @@ namespace CustomUnits {
     public void Awake() {
       Log.M?.TWL(0, "CustomLanceSlot.Awake " + this.gameObject.name);
       try {
+        if (this.transform.parent == null) { return; }
         rectTransform = this.gameObject.GetComponent<RectTransform>();
         Transform mainBackground = this.transform.FindRecursive("mainBackground");
         Transform mainBorder = this.transform.FindRecursive("mainBorder");
