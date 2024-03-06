@@ -25,6 +25,9 @@ namespace CustAmmoCategories {
     public static void Prefix(GameInstanceSave __instance) {
       try {
         if(__instance.SaveReason == BattleTech.Save.SaveGameStructure.SaveReason.SIM_GAME_COMPLETED_CONTRACT) {
+          if (__instance.SimGameSave == null) { return; }
+          if (__instance.SimGameSave.simGameState == null) { return; }
+          if (__instance.SimGameSave.simGameState.CompanyStats == null) { return; }
           Statistic stat = __instance.SimGameSave.simGameState.CompanyStats.GetStatistic("RETRIGGER_RestoreMechPostCombat");
           if(stat == null) {
             stat = __instance.SimGameSave.simGameState.CompanyStats.AddStatistic("RETRIGGER_RestoreMechPostCombat", JsonConvert.SerializeObject(__instance.SimGameSave.simGameState.getSkipped()));

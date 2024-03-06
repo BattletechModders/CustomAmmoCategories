@@ -329,6 +329,11 @@ namespace CustomUnits {
               if (slotIndex == i) { continue; }
               if (loadoutSlots[i].SelectedMech == null) { continue; }
               if (loadoutSlots[i].SelectedMech.MechDef.GUID == lanceLoadoutMechItem.MechDef.GUID) {
+                if(lanceLoadoutMechItem.DropParent != null) {
+                  if(lanceLoadoutMechItem.DropParent.dropTargetType == MechLabDropTargetType.LanceSlot) {
+                    if ((lanceLoadoutMechItem.DropParent as LanceLoadoutSlot) == loadoutSlots[i]){ continue; }
+                  }
+                }
                 Log.M?.WL(1, $"Duplicate detected in slot {i}");
                 Log.M?.WL(1, Environment.StackTrace);
                 __result = true;
@@ -382,6 +387,12 @@ namespace CustomUnits {
                 return;
               }
             }
+          }
+          if (item.ItemType == MechLabDraggableItemType.Mech) {
+            LanceLoadoutMechItem lanceLoadoutMechItem = item as LanceLoadoutMechItem;
+            Log.M?.WL(1, $"selectedMech:{(__instance.selectedMech == null ? "null" : __instance.selectedMech.MechDef.ChassisID + ":" + __instance.selectedMech.MechDef.GUID)}");
+            Log.M?.WL(1, $"LC:{(__instance.LC == null ? "null" : "not null")}");
+            Log.M?.WL(1, $"LC:{(__instance.LC == null ? "null" : "not null")}");
           }
           return;
         } catch (Exception e) {

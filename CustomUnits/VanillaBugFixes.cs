@@ -8,7 +8,7 @@ namespace CustomUnits {
   [HarmonyPatch(typeof(SimGameCameraController))]
   [HarmonyPatch("GetMechBounds")]
   [HarmonyPatch(MethodType.Normal)]
-  [HarmonyPatch(new Type[] { typeof(AbstractActor) })]
+  [HarmonyPatch(new Type[] { typeof(GameObject) })]
   public static class SimGameCameraController_GetMechBounds {
     static void Prefix(SimGameCameraController __instance, ref GameObject mech) {
       try {

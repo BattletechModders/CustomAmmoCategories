@@ -405,21 +405,29 @@ namespace CustAmmoCategories {
         if(CustomAmmoCategories.Settings.PhysicsAoE_Deffered && definition.PhysicsAoE) {
           Vector3 raycastStart = pos + Vector3.up * definition.PhysicsAoE_Height;
           Vector3 raycastEnd = target.TargetPosition;
-          if(Physics.Raycast(raycastStart, (raycastEnd - raycastStart).normalized, out RaycastHit phy_hit, definition.AOERange, PhysicsAoELayers, QueryTriggerInteraction.Ignore)) {
-            Log.F?.WL(2, $"raycast result {phy_hit.collider.gameObject.transform.name} layer:{LayerMask.LayerToName(phy_hit.collider.gameObject.layer)}");
-            if((phy_hit.collider.gameObject.layer != Combatant_layer) && (phy_hit.collider.gameObject.layer != NoCollision_layer)) { continue; }
-            PilotableActorRepresentation unitRep = phy_hit.collider.GetComponentInParent<PilotableActorRepresentation>();
-            if(unitRep != null) {
-              if(unitRep.parentActor != target) {
-                Log.F?.WL(3, $"other unit:{(unitRep.parentActor == null ? "null" : unitRep.parentActor.PilotableActorDef.ChassisID)}");
-                continue;
-              } else {
-                Log.F?.WL(3, $"target unit reached - AoE process normal");
-              }
-            }
-          };
+          AreaOfEffectHelper.pseudoLOSActor.Combat = target.Combat;
+          AreaOfEffectHelper.pseudoLOSActor.SpotterDistance = Vector3.Distance(raycastStart, raycastEnd) + 100f;
+          AreaOfEffectHelper.pseudoLOSActor.pseudo_losSourcePositions[0] = raycastStart;
+          AreaOfEffectHelper.pseudoLOSActor._team = target.Combat.LocalPlayerTeam;
+          AreaOfEffectHelper.pseudoLOSActor._teamId = target.Combat.LocalPlayerTeamGuid;
+          var lof = target.Combat.LOS.GetLineOfFire(AreaOfEffectHelper.pseudoLOSActor, raycastStart, target, target.CurrentPosition, target.CurrentRotation, out var collisionWorldPos);
+          Log.Combat?.WL(2, $"{raycastStart}->{target.DisplayName} LoF:{lof}");
+          if (lof == LineOfFireLevel.LOFBlocked) { continue; }
+          //if(Physics.Raycast(raycastStart, (raycastEnd - raycastStart).normalized, out RaycastHit phy_hit, definition.AOERange, PhysicsAoELayers, QueryTriggerInteraction.Ignore)) {
+          //  Log.F?.WL(2, $"raycast result {phy_hit.collider.gameObject.transform.name} layer:{LayerMask.LayerToName(phy_hit.collider.gameObject.layer)}");
+          //  if((phy_hit.collider.gameObject.layer != Combatant_layer) && (phy_hit.collider.gameObject.layer != NoCollision_layer)) { continue; }
+          //  PilotableActorRepresentation unitRep = phy_hit.collider.GetComponentInParent<PilotableActorRepresentation>();
+          //  if(unitRep != null) {
+          //    if(unitRep.parentActor != target) {
+          //      Log.F?.WL(3, $"other unit:{(unitRep.parentActor == null ? "null" : unitRep.parentActor.PilotableActorDef.ChassisID)}");
+          //      continue;
+          //    } else {
+          //      Log.F?.WL(3, $"target unit reached - AoE process normal");
+          //    }
+          //  }
+          //};
         }
-        foreach(var effect in definition.statusEffects) { addEffect(target, effect, distance); };
+        foreach (var effect in definition.statusEffects) { addEffect(target, effect, distance); };
         float HeatDamage = definition.AOEHeatDamage * CustomAmmoCategories.Settings.DefaultAoEDamageMult[target.UnitType].Damage * tagAoEDamage * (definition.AOERange - distance) / definition.AOERange;
         float Damage = definition.AOEDamage * CustomAmmoCategories.Settings.DefaultAoEDamageMult[target.UnitType].Damage * tagAoEDamage * (definition.AOERange - distance) / definition.AOERange;
         float StabDamage = definition.AOEInstability * CustomAmmoCategories.Settings.DefaultAoEDamageMult[target.UnitType].Damage * tagAoEDamage * (definition.AOERange - distance) / definition.AOERange;

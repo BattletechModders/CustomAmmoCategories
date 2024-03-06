@@ -225,6 +225,7 @@
     <Compile Include="TerrainCost.cs" />
     <Compile Include="TerrainMaskPatch.cs" />
     <Compile Include="TrooperSquad.cs" />
+    <Compile Include="VanillaBugFixes.cs" />
     <Compile Include="VehicleBays.cs" />
     <Compile Include="VehicleChassisDef.cs" />
     <Compile Include="VehicleControl.cs" />

@@ -12,6 +12,8 @@ using BattleTech;
 using BattleTech.UI;
 using CustomAmmoCategoriesLog;
 using CustomAmmoCategoriesPatches;
+using HarmonyLib;
+using HBS.Collections;
 using IRBTModUtils;
 using Localize;
 using System;
@@ -20,7 +22,112 @@ using UnityEngine;
 using Building = BattleTech.Building;
 
 namespace CustAmmoCategories {
+  public class LOSPseudoActor : AbstractActor {
+    public float SpotterDistance = 0f;
+    public Vector3[] pseudo_losSourcePositions = new Vector3[1] { Vector3.zero };
+    public override PathingCapabilitiesDef PathingCaps => throw new NotImplementedException();
+    public override float MaxWalkDistance => 0.0f;
+    public override float MaxSprintDistance => 0.0f;
+    public override bool CanSprint => throw new NotImplementedException();
+    public override float MaxBackwardDistance => throw new NotImplementedException();
+    public override float MaxMeleeEngageRangeDistance => throw new NotImplementedException();
+    public override MovementCapabilitiesDef MovementCaps => throw new NotImplementedException();
+    public override HardpointDataDef HardpointData => throw new NotImplementedException();
+    public override float Radius => throw new NotImplementedException();
+    public override DescriptionDef Description => throw new NotImplementedException();
+    public override int SkillGunnery => throw new NotImplementedException();
+    public override int SkillGuts => throw new NotImplementedException();
+    public override int SkillPiloting => throw new NotImplementedException();
+    public override int SkillTactics => throw new NotImplementedException();
+    public override UnitRole StaticUnitRole => throw new NotImplementedException();
+    public override float SensorSignatureFromDef => throw new NotImplementedException();
+    public override float CurrentArmor => throw new NotImplementedException();
+    public override float SummaryArmorMax => throw new NotImplementedException();
+    public override float SummaryArmorCurrent => throw new NotImplementedException();
+    public override float SummaryStructureMax => throw new NotImplementedException();
+    public override float SummaryStructureCurrent => throw new NotImplementedException();
+    public override float HealthAsRatio => throw new NotImplementedException();
+    public override bool IsDead => throw new NotImplementedException();
+    public override UnitType UnitType => throw new NotImplementedException();
+    public override string UnitName => throw new NotImplementedException();
+    public override string VariantName => throw new NotImplementedException();
+    public override string Nickname => throw new NotImplementedException();
+    public override Text GetActorInfoFromVisLevel(VisibilityLevel visLevel) {
+      throw new NotImplementedException();
+    }
+    public override int GetAdjacentHitLocation(Vector3 attackPosition, float randomRoll, int previousHitLocation, float originalMultiplier = 1, float adjacentMultiplier = 1) {
+      throw new NotImplementedException();
+    }
+    public override int GetHitLocation(AbstractActor attacker, Vector3 attackPosition, float hitLocationRoll, int calledShotLocation, float bonusMultiplier) {
+      throw new NotImplementedException();
+    }
+    public override Vector3 GetImpactPosition(AbstractActor attacker, Vector3 attackPosition, Weapon weapon, ref int hitLocation, ref AttackDirection attackDirection, ref string secondaryTargetId, ref int secondaryHitLocation) {
+      throw new NotImplementedException();
+    }
+    public override List<int> GetPossibleHitLocations(AbstractActor attacker) {
+      throw new NotImplementedException();
+    }
+    public override TagSet GetStaticUnitTags() {
+      throw new NotImplementedException();
+    }
+    public override List<Text> GetWeaponNameStrings() {
+      throw new NotImplementedException();
+    }
+    public override void InitGameRep(Transform parentTransform) {
+      throw new NotImplementedException();
+    }
+    public override bool IsTargetPositionInFiringArc(ICombatant targetUnit, Vector3 attackPosition, Quaternion attackRotation, Vector3 targetPosition) {
+      throw new NotImplementedException();
+    }
+    public override void ResolveWeaponDamage(WeaponHitInfo hitInfo) {
+      throw new NotImplementedException();
+    }
+    public override void ResolveWeaponDamage(WeaponHitInfo hitInfo, Weapon weapon, MeleeAttackType meleeAttackType) {
+      throw new NotImplementedException();
+    }
+    public override void TakeWeaponDamage(WeaponHitInfo hitInfo, int hitLocation, Weapon weapon, float damageAmount, float directStructureDamage, int hitIndex, DamageType damageType) {
+      throw new NotImplementedException();
+    }
+  }
+  [HarmonyPatch(typeof(LineOfSight), "GetAdjustedSpotterRange")]
+  [HarmonyPatch(new Type[] { typeof(AbstractActor), typeof(ICombatant) })]
+  public static class LineOfSight_GetAdjustedSpotterRange {
+    public static void Prefix(ref bool __runOriginal, ref float __result, LineOfSight __instance, ref AbstractActor source, ref ICombatant target) {
+      if (source is LOSPseudoActor pseudo) { __result = pseudo.SpotterDistance; __runOriginal = false; source = null; target = null; }
+    }
+  }
+  [HarmonyPatch(typeof(LineOfSight), "GetAdjustedSensorRange")]
+  [HarmonyPatch(new Type[] { typeof(AbstractActor), typeof(AbstractActor) })]
+  public static class LineOfSight_GetAdjustedSensorRange {
+    public static void Prefix(ref bool __runOriginal, ref float __result, LineOfSight __instance, ref AbstractActor source, ref AbstractActor target) {
+      if (source is LOSPseudoActor pseudo) { __result = pseudo.SpotterDistance; __runOriginal = false; source = null; target = null; }
+    }
+  }
+  [HarmonyPatch(typeof(AbstractActor), "GetLongestRangeWeapon")]
+  [HarmonyPatch(new Type[] { typeof(bool), typeof(bool) })]
+  public static class AbstractActor_GetLongestRangeWeapon {
+    public static void Prefix(ref bool __runOriginal, ref Weapon __result, AbstractActor __instance, bool enabledWeaponsOnly, bool indirectFireOnly) {
+      if (__instance is LOSPseudoActor pseudo) { __result = null; __runOriginal = false; }
+    }
+  }
+  [HarmonyPatch(typeof(AbstractActor), "GetLOSSourcePositions")]
+  [HarmonyPatch(new Type[] { typeof(Vector3), typeof(Quaternion) })]
+  public static class AbstractActor_GetLOSSourcePositions {
+    public static void Prefix(ref bool __runOriginal, ref Vector3[] __result, AbstractActor __instance, Vector3 position, Quaternion rotation) {
+      if (__instance is LOSPseudoActor pseudo) { __result = pseudo.pseudo_losSourcePositions; __runOriginal = false; }
+    }
+  }
   public static class AreaOfEffectHelper {
+    private static LOSPseudoActor f_pseudoLoSActor = null;
+    public static LOSPseudoActor pseudoLOSActor {
+      get {
+        if (f_pseudoLoSActor == null) {
+          f_pseudoLoSActor = new LOSPseudoActor();
+          f_pseudoLoSActor.GUID = Guid.NewGuid().ToString();
+        }
+        return f_pseudoLoSActor;
+      }
+    }
     private static Dictionary<ICombatant, bool> isDropshipCache = new Dictionary<ICombatant, bool>();
     public static void Clear() { isDropshipCache.Clear(); }
     public static void TagAoEModifiers(this ICombatant target, out float range, out float damage) {
@@ -199,6 +306,14 @@ namespace CustAmmoCategories {
           if(PhysicsAoE) {
             Vector3 raycastStart = hitPosition + Vector3.up * PhysicsAoEHeight;
             Vector3 raycastEnd = target.TargetPosition;
+            AreaOfEffectHelper.pseudoLOSActor.Combat = target.Combat;
+            AreaOfEffectHelper.pseudoLOSActor.SpotterDistance = Vector3.Distance(raycastStart, raycastEnd) + 100f;
+            AreaOfEffectHelper.pseudoLOSActor.pseudo_losSourcePositions[0] = raycastStart;
+            AreaOfEffectHelper.pseudoLOSActor._team = target.Combat.LocalPlayerTeam;
+            AreaOfEffectHelper.pseudoLOSActor._teamId = target.Combat.LocalPlayerTeamGuid;
+            var lof = target.Combat.LOS.GetLineOfFire(AreaOfEffectHelper.pseudoLOSActor, raycastStart, target, target.CurrentPosition, target.CurrentRotation, out var collisionWorldPos);
+            Log.Combat?.WL(2,$"{raycastStart}->{target.DisplayName} LoF:{lof}");
+            if (lof == LineOfFireLevel.LOFBlocked) { continue; }
             //var raycast = Physics.RaycastAll(new Ray(raycastStart, (raycastEnd - raycastStart).normalized), AOERange, Physics.AllLayers, QueryTriggerInteraction.Ignore);
             //RaycastHit? phy_hit = new RaycastHit?();
             //float dist = float.PositiveInfinity;
@@ -208,33 +323,35 @@ namespace CustAmmoCategories {
             //  if(phy_hit.HasValue == false) { phy_hit = rhit; dist = temp; continue; }
             //  if(temp < dist) { phy_hit = rhit; dist = temp; }
             //}
-            if(Physics.Raycast(new Ray(raycastStart, (raycastEnd - raycastStart).normalized),out var phy_hit, AOERange, PhysicsAoELayers, QueryTriggerInteraction.Ignore)) {
-              Log.Combat?.WL(2, $"raycast result {phy_hit.collider.gameObject.transform.name} layer:{LayerMask.LayerToName(phy_hit.collider.gameObject.layer)}");
-              //GameObject debugLineGO = GameObject.Instantiate(WeaponRangeIndicators.Instance.LineTemplate.gameObject);
-              //debugLineGO.transform.SetParent(WeaponRangeIndicators.Instance.transform);
-              //debugLineGO.name = $"debugRaycast{weapon.parent.GUID}{target.GUID}";
-              //debugLineGO.SetActive(true);
-              //LineRenderer debugLine = debugLineGO.GetComponentInChildren<LineRenderer>(true);
-              //debugLine.startWidth = 2.0f;
-              //debugLine.endWidth = 2.0f;
-              //debugLine.positionCount = 2;
-              //debugLine.material = WeaponRangeIndicators.Instance.MaterialInRange;
-              //debugLine.startColor = WeaponRangeIndicators.Instance.FinalLOSUnlockedTarget.color;
-              //debugLine.endColor = WeaponRangeIndicators.Instance.FinalLOSUnlockedTarget.color;
-              //debugLine.SetPosition(0, raycastStart);
-              //debugLine.SetPosition(1, phy_hit.point);
-              if((phy_hit.collider.gameObject.layer != Combatant_layer) && (phy_hit.collider.gameObject.layer != NoCollision_layer)) { continue; }
-              PilotableActorRepresentation unitRep = phy_hit.collider.GetComponentInParent<PilotableActorRepresentation>();
-              Log.Combat?.WL(3, $"unit:{(unitRep == null ? "null" : unitRep.parentActor.PilotableActorDef.ChassisID)}");
-              if(unitRep != null) {
-                if(unitRep.parentActor != target) {
-                  Log.Combat?.WL(4, $"other unit blocks raycast");
-                  continue;
-                } else {
-                  Log.Combat?.WL(4, $"target unit reached - AoE process normal");
-                }
-              }
-            };
+            //Vector3 direction = raycastEnd - raycastStart;
+            //var ray = new Ray(raycastStart, direction);
+            //GameObject debugLineGO = GameObject.Instantiate(WeaponRangeIndicators.Instance.LineTemplate.gameObject);
+            //debugLineGO.transform.SetParent(WeaponRangeIndicators.Instance.transform);
+            //debugLineGO.name = $"debugRaycast{weapon.parent.GUID}{target.GUID}";
+            //debugLineGO.SetActive(true);
+            //LineRenderer debugLine = debugLineGO.GetComponentInChildren<LineRenderer>(true);
+            //debugLine.startWidth = 2.0f;
+            //debugLine.endWidth = 2.0f;
+            //debugLine.positionCount = 2;
+            //debugLine.material = WeaponRangeIndicators.Instance.MaterialInRange;
+            //debugLine.startColor = Color.red;
+            //debugLine.endColor = Color.red;
+            //debugLine.SetPosition(0, raycastStart);
+            //debugLine.SetPosition(1, (ray.direction * direction.magnitude) + raycastStart);
+            //if (Physics.Raycast(new Ray(raycastStart, raycastEnd - raycastStart),out var phy_hit, direction.magnitude, PhysicsAoELayers, QueryTriggerInteraction.Ignore)) {
+            //  Log.Combat?.WL(2, $"raycast result start:{raycastStart} end:{(ray.direction * direction.magnitude)+raycastStart}/{raycastEnd} hit point:{phy_hit.point} distance:{phy_hit.distance} {phy_hit.collider.gameObject.transform.name} layer:{LayerMask.LayerToName(phy_hit.collider.gameObject.layer)}");
+            //  if((phy_hit.collider.gameObject.layer != Combatant_layer) && (phy_hit.collider.gameObject.layer != NoCollision_layer)) { continue; }
+            //  PilotableActorRepresentation unitRep = phy_hit.collider.GetComponentInParent<PilotableActorRepresentation>();
+            //  Log.Combat?.WL(3, $"unit:{(unitRep == null ? "null" : unitRep.parentActor.PilotableActorDef.ChassisID)}");
+            //  if(unitRep != null) {
+            //    if(unitRep.parentActor != target) {
+            //      Log.Combat?.WL(4, $"other unit blocks raycast");
+            //      continue;
+            //    } else {
+            //      Log.Combat?.WL(4, $"target unit reached - AoE process normal");
+            //    }
+            //  }
+            //};
           }
           if (targetsHitCache.ContainsKey(target) == false) { targetsHitCache.Add(target, new Dictionary<int, float>()); }
           if (targetsHeatCache.ContainsKey(target) == false) { targetsHeatCache.Add(target, 0f); }
