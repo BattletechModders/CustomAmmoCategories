@@ -466,6 +466,16 @@ namespace CustAmmoCategories {
     public bool AIFastUnitsOptimization { get; set; } = true;
     public string WeaponUseAmmoInstalledLocationTag { get; set; } = "ammo_installed_location_only";
     public string WeaponUseAmmoAdjacentLocationTag { get; set; } = "ammo_adjacent_location_only";
+    [GameplaySafe]
+    [CustomSettings.LocalSettingName(Strings.Culture.CULTURE_EN_US, "Eject out-of-ammo handhelded weapon")]
+    [CustomSettings.LocalSettingName(Strings.Culture.CULTURE_RU_RU, "Автоматически сбрасывать оружие")]
+    [CustomSettings.IsLocalSetting(false)]
+    [CustomSettings.LocalSettingDescription(Strings.Culture.CULTURE_EN_US, "Drop hendhelded weapon if out of ammo at end of attack")]
+    [CustomSettings.LocalSettingDescription(Strings.Culture.CULTURE_RU_RU, "Сбрасывать оружие из рук по в конце аттаки, если закончились боеприпасы")]
+    [CustomSettings.LocalSettingValues(true, false)]
+    [CustomSettings.LocalSettingValuesNames(Strings.Culture.CULTURE_EN_US, "Yes", "No")]
+    [CustomSettings.LocalSettingValuesNames(Strings.Culture.CULTURE_RU_RU, "Да", "Нет")]
+    public bool EjectOutOfAmmoWeaponAtEndOfAttack { get; set; } = false;
     public Settings() {
       //directory = string.Empty;
       //debugLog = true;

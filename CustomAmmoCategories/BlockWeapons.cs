@@ -90,6 +90,12 @@ namespace CustAmmoCategories {
         }
       }
     }
+    public static void AutoEjectPlayer(this AbstractActor unit) {
+      if (CustomAmmoCategories.Settings.EjectOutOfAmmoWeaponAtEndOfAttack == false) { return; }
+      if (unit.team != unit.Combat.LocalPlayerTeam) { return; }
+      unit.EjectBlocking();
+    }
+
     public static void EjectBlocking(this AbstractActor unit) {
       foreach(Weapon weapon in unit.Weapons) {
         try {

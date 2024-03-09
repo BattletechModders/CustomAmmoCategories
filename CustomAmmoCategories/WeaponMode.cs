@@ -25,6 +25,8 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 
+
+
 //namespace CustAmmoCategoriesPatches {
 //  [HarmonyPatch(typeof(Mech))]
 //  [HarmonyPatch("ApplyHeatSinks")]
@@ -148,13 +150,21 @@ namespace CustAmmoCategories {
       return false;
     }
   }
-
   [SelfDocumentedClass("Weapons", "Weapons", "WeaponMode"), MessagePackObject]
   public class WeaponMode {
     public static string BASE_MODE_NAME = "BASE";
     public static string NONE_MODE_NAME = "!NONE!";
+    [JsonIgnore, IgnoreMember]
+    public List<WeaponMode> modeModifiers { get; set; } = new List<WeaponMode>();
     [Key(0)]
     public string UIName { get; set; } = WeaponMode.BASE_MODE_NAME;
+    [JsonIgnore, IgnoreMember]
+    public string _UIName {
+      get {
+        foreach (var modifier in modeModifiers) { if (modifier.SettedProperties.Contains(nameof(UIName))) { return modifier.UIName; }; };
+        return this.UIName;
+      }
+    }
     [Key(1)]
     public string Id { get; set; } = WeaponMode.NONE_MODE_NAME;
     [Key(2)]

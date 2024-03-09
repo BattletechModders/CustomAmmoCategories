@@ -367,6 +367,12 @@ if exist "$(RogueTechRepo)\Core\CustomAmmoCategories" (
 )
 		</PostBuildEvent>
   </PropertyGroup>
+  <Target Name="BeforeBuild" Inputs="@(Preprocess)" Outputs="@(Preprocess->'%(Filename)_P.cs')">
+    <Exec Command="..\Bin\cpp.exe @(Preprocess) -P -o %(RelativeDir)%(Filename)_P.cs" />
+    <CreateItem Include="@(Preprocess->'%(RelativeDir)%(Filename)_P.cs')">
+      <Output TaskParameter="Include" ItemName="Compile" />
+    </CreateItem>
+  </Target>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
   <Target Name="BeforeBuild">

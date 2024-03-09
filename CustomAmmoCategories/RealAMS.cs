@@ -1128,6 +1128,7 @@ namespace CustomAmmoCategoriesPatches {
         if (attackSequence == null) {
           return;
         }
+        if (attackSequence.attacker != null) { attackSequence.attacker.AutoEjectPlayer(); }
         AdvWeaponHitInfoHelper.ResolveAMSprocessing(sequenceId);
         AdvWeaponHitInfo.Sanitize(sequenceId);
         AdvWeaponHitInfo.FlushInfo(attackSequence);

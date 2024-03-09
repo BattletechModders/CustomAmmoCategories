@@ -28,21 +28,30 @@ namespace CustAmmoCategories {
     public static bool isWRJammed(this Weapon weapon) {
       return WeaponRealizer.JammingEnabler.IsJammed(weapon);
     }
+    public static bool DAMAGE_DEBUG_INFO = false;
     public static float DamageFormulaOne(Weapon weapon, ExtWeaponDef extWeapon, float baseDamage) {
       ExtAmmunitionDef extAmmoDef = weapon.ammo();
       WeaponMode mode = weapon.mode();
       float result = (baseDamage + extAmmoDef.DamagePerShot + mode.DamagePerShot) * extAmmoDef.DamageMultiplier * mode.DamageMultiplier;
+      if (DAMAGE_DEBUG_INFO) { Log.Combat?.W(0, $"DamageFormulaOne: {weapon.defId} base:{baseDamage} ammo:{extAmmoDef.DamagePerShot} mode:{mode.DamagePerShot} ammo.mult:{extAmmoDef.DamageMultiplier} mode.mult:{mode.DamageMultiplier}"); }
       if (weapon.parent != null) {
         if ((weapon.parent.EvasivePipsCurrent > 0)&&(weapon.parent.HasMovedThisRound)) {
           float evasiveMod = extWeapon.evasivePipsMods.Damage + extAmmoDef.evasivePipsMods.Damage + mode.evasivePipsMods.Damage;
-          if (Mathf.Abs(evasiveMod) > CustomAmmoCategories.Epsilon) result = result * Mathf.Pow((float)weapon.parent.EvasivePipsCurrent, evasiveMod);
+          if (Mathf.Abs(evasiveMod) > CustomAmmoCategories.Epsilon) {
+            result = result * Mathf.Pow((float)weapon.parent.EvasivePipsCurrent, evasiveMod);
+            if (DAMAGE_DEBUG_INFO) Log.Combat?.W(1,$"evasive:{weapon.parent.EvasivePipsCurrent}^{evasiveMod}");
+          }
         }
         if (weapon.parent.DistMovedThisRound > CustomAmmoCategories.Settings.HexSizeForMods) {
           float hexesMod = extWeapon.hexesMovedMod.Damage + extAmmoDef.hexesMovedMod.Damage + mode.hexesMovedMod.Damage;
-          if (Mathf.Abs(hexesMod) > CustomAmmoCategories.Epsilon) result = result * Mathf.Pow((float)weapon.parent.MovedHexes(), hexesMod);
+          if (Mathf.Abs(hexesMod) > CustomAmmoCategories.Epsilon) {
+            result = result * Mathf.Pow((float)weapon.parent.MovedHexes(), hexesMod);
+            if (DAMAGE_DEBUG_INFO) Log.Combat?.W(1, $"moved:{weapon.parent.MovedHexes()}^{hexesMod}");
+          }
         }
       }
       result = (float)Math.Round((double)result, 0);
+      if (DAMAGE_DEBUG_INFO) Log.Combat?.WL(1, $"result:{result}");
       return result;
     }
     public static float DamageFormulaTwo(Weapon weapon, ExtWeaponDef extWeapon, float baseDamage) {
@@ -50,17 +59,25 @@ namespace CustAmmoCategories {
       ExtAmmunitionDef extAmmoDef = weapon.ammo();
       WeaponMode mode = weapon.mode();
       float result = (weapon.weaponDef.Damage + extAmmoDef.DamagePerShot + mode.DamagePerShot) * extAmmoDef.DamageMultiplier * mode.DamageMultiplier * baseDamage / weapon.weaponDef.Damage;
+      if (DAMAGE_DEBUG_INFO) { Log.Combat?.W(0, $"DamageFormulaTwo: {weapon.defId} def:{weapon.weaponDef.Damage} ammo:{extAmmoDef.DamagePerShot} mode:{mode.DamagePerShot} ammo.mult:{extAmmoDef.DamageMultiplier} mode.mult:{mode.DamageMultiplier}"); }
       if (weapon.parent != null) {
         if ((weapon.parent.EvasivePipsCurrent > 0) && (weapon.parent.HasMovedThisRound)) {
           float evasiveMod = extWeapon.evasivePipsMods.Damage + extAmmoDef.evasivePipsMods.Damage + mode.evasivePipsMods.Damage;
-          if (Mathf.Abs(evasiveMod) > CustomAmmoCategories.Epsilon) result = result * Mathf.Pow((float)weapon.parent.EvasivePipsCurrent, evasiveMod);
+          if (Mathf.Abs(evasiveMod) > CustomAmmoCategories.Epsilon) {
+            result = result * Mathf.Pow((float)weapon.parent.EvasivePipsCurrent, evasiveMod);
+            if (DAMAGE_DEBUG_INFO) Log.Combat?.W(1, $"evasive:{weapon.parent.EvasivePipsCurrent}^{evasiveMod}");
+          }
         }
         if (weapon.parent.DistMovedThisRound > CustomAmmoCategories.Settings.HexSizeForMods) {
           float hexesMod = extWeapon.hexesMovedMod.Damage + extAmmoDef.hexesMovedMod.Damage + mode.hexesMovedMod.Damage;
-          if (Mathf.Abs(hexesMod) > CustomAmmoCategories.Epsilon) result = result * Mathf.Pow((float)weapon.parent.MovedHexes(), hexesMod);
+          if (Mathf.Abs(hexesMod) > CustomAmmoCategories.Epsilon) {
+            result = result * Mathf.Pow((float)weapon.parent.MovedHexes(), hexesMod);
+            if (DAMAGE_DEBUG_INFO) Log.Combat?.W(1, $"moved:{weapon.parent.MovedHexes()}^{hexesMod}");
+          }
         }
       }
       result = (float)Math.Round((double)result, 0);
+      if (DAMAGE_DEBUG_INFO) Log.Combat?.WL(1, $"result:{result}");
       return result;
     }
     public static float HeatFormulaOne(Weapon weapon, ExtWeaponDef extWeapon, float baseDamage) {

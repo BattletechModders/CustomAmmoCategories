@@ -716,7 +716,9 @@ namespace CustAmmoCategories {
         hit.hitPosition = hitInfo.hitPositions[hitIndex];
         hit.hitRoll = hitInfo.toHitRolls[hitIndex];
         hit.correctedRoll = sequence.GetCorrectedRoll(hit.hitRoll, sequence.attacker.team);
+        CustomAmmoCategories.DAMAGE_DEBUG_INFO = true;
         hit.Damage = weapon.DamagePerShot;
+        CustomAmmoCategories.DAMAGE_DEBUG_INFO = false;
         hit.APDamage = weapon.StructureDamagePerShot;
         hit.Heat = weapon.HeatDamagePerShot;
         hit.Stability = weapon.Instability();

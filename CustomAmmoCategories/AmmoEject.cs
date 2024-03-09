@@ -48,18 +48,20 @@ namespace CustAmmoCategories {
       weapon.CancelCreatedEffects();
       BlockWeaponsHelpers.RecalculateBlocked(weapon.parent);
     }
-    public static void EjectWeapon(Weapon weapon, CombatHUDWeaponSlot hudSlot) {
+    public static void EjectWeapon(Weapon weapon, CombatHUDWeaponSlot hudSlot, bool forced = false) {
       Log.Combat?.WL(0,"EjectWeapon " + weapon.defId);
       if (weapon.IsFunctional == false) { return; }
       Log.Combat?.WL(1, "HasActivatedThisRound " + weapon.parent.HasActivatedThisRound);
       Log.Combat?.WL(1, "HasFiredThisRound " + weapon.parent.HasFiredThisRound);
       Log.Combat?.WL(1, "HasMovedThisRound " + weapon.parent.HasMovedThisRound);
-      if (weapon.parent.HasFiredThisRound || weapon.parent.HasMovedThisRound) {
-        Log.Combat?.WL(1, "moved or fired this round " + weapon.parent.DistMovedThisRound);
-        GenericPopupBuilder popup = GenericPopupBuilder.Create("__/CAC.AMMOEJECTIONERROR/__", "You can't drop weapon after moving or firing this round");
-        popup.AddButton("OK", (Action)null, true, (PlayerAction)null);
-        popup.IsNestedPopupWithBuiltInFader().CancelOnEscape().Render();
-        return;
+      if (forced == false) {
+        if (weapon.parent.HasFiredThisRound || weapon.parent.HasMovedThisRound) {
+          Log.Combat?.WL(1, "moved or fired this round " + weapon.parent.DistMovedThisRound);
+          GenericPopupBuilder popup = GenericPopupBuilder.Create("__/CAC.AMMOEJECTIONERROR/__", "You can't drop weapon after moving or firing this round");
+          popup.AddButton("OK", (Action)null, true, (PlayerAction)null);
+          popup.IsNestedPopupWithBuiltInFader().CancelOnEscape().Render();
+          return;
+        }
       }
       weapon.StatCollection.GetOrCreateStatisic<ComponentDamageLevel>(EjectingRestoreStatName, ComponentDamageLevel.Functional).SetValue<ComponentDamageLevel>(weapon.DamageLevel);
       weapon.StatCollection.Set<ComponentDamageLevel>("DamageLevel", ComponentDamageLevel.Destroyed);

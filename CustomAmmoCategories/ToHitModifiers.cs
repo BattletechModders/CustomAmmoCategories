@@ -663,13 +663,13 @@ namespace CustAmmoCategories {
     public static bool contemplatingDFA(this CombatHUDWeaponSlot slot,ICombatant target) {
       if (target == null)
         return false;
-      SelectionState activeState = Traverse.Create(slot).Field<CombatHUD>("HUD").Value.SelectionHandler.ActiveState;
+      SelectionState activeState = slot.HUD.SelectionHandler.ActiveState;
       return activeState != null && activeState.SelectionType == SelectionType.Jump && (activeState.PotentialMeleeTarget == target || activeState.TargetedCombatant == target);
     }
     public static bool contemplatingMelee(this CombatHUDWeaponSlot slot,ICombatant target) {
       if (target == null)
         return false;
-      SelectionState activeState = Traverse.Create(slot).Field<CombatHUD>("HUD").Value.SelectionHandler.ActiveState;
+      SelectionState activeState = slot.HUD.SelectionHandler.ActiveState;
       return activeState != null && activeState.SelectionType == SelectionType.Move && (activeState.PotentialMeleeTarget == target || activeState.TargetedCombatant == target);
     }
     public static void AddToolTipDetailBuff(this CombatHUDWeaponSlot slot, string description) {
@@ -832,8 +832,8 @@ namespace CustAmmoCategories {
     }
     public static void UpdateToolTipsSelf_I(this CombatHUDWeaponSlot slot) {
       slot.ToolTipHoverElement.BasicString = new Text(slot.DisplayedWeapon.Name, (object[])Array.Empty<object>());
-      CombatGameState Combat = Traverse.Create(slot).Field<CombatGameState>("Combat").Value;
-      CombatHUD HUD = Traverse.Create(slot).Field<CombatHUD>("HUD").Value;
+      CombatGameState Combat = slot.Combat;
+      CombatHUD HUD = slot.HUD;
       MeleeAttackType meleeAttackType = MeleeAttackType.NotSet;
       bool calledShot = false;
       if(HUD.SelectedActor != null) {
@@ -841,6 +841,7 @@ namespace CustAmmoCategories {
           slot.AddToolTipDetail("YOU ARE SPAWN PROTECTED", 99);
         }
       }
+      slot.AddToolTipDetailBuff(slot.DisplayedWeapon.CantFireReason());
       foreach (var mod in ToHitModifiersHelper.modifiers) {
         if ((mod.Value.ranged != false) || (mod.Value.melee != false)) { continue; }
         if (slot.DisplayedWeapon == null) { continue; }
@@ -898,7 +899,8 @@ namespace CustAmmoCategories {
       }
       slot.ToolTipHoverElement.UseModifier = false;
     }
-    public static bool Prefix(CombatHUDWeaponSlot __instance, ICombatant target) {
+    public static void Prefix(ref bool __runOriginal, CombatHUDWeaponSlot __instance, ICombatant target) {
+      __runOriginal = false;
       __instance.ToolTipHoverElement.OnPointerExit((PointerEventData)null);
       __instance.ToolTipHoverElement.BuffStrings.Clear();
       __instance.ToolTipHoverElement.DebuffStrings.Clear();
@@ -907,7 +909,7 @@ namespace CustAmmoCategories {
       } else {
         __instance.UpdateToolTipsSelf_I();
       }
-      return false;
+      //return false;
     }
   }
   [HarmonyPatch(typeof(ToHit))]

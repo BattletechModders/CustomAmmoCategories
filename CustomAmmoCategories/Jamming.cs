@@ -207,14 +207,14 @@ namespace CustAmmoCategories {
       if (weapon.IsCooldown() > 0) { result += "COOLDOWN;"; }
       if (weapon.isAMS() && weapon.isCantAMSFire()) { result += "USED AS WEAPON;"; }
       if ((weapon.isAMS() == false) && weapon.isCantNormalFire()) { result += "USED AS AMS;"; };
-      if (weapon.info().isCurrentModeAvailable() == false) { return "MODE IS LOCKED;"; };
+      if (weapon.info().isCurrentModeAvailable(out var reason) == false) { return $"{reason};"; };
       if (weapon.info().isCurrentAmmoRestricted()) { return "AMMO IS RESTRICTED;"; };
       if (weapon.mode().Disabeld) { return "MODE IS DISABLED;"; };
       if (weapon.isBlocked()) { return "BLOCKED;"; };
       if (weapon.isWeaponBlockedStat()) { return "BLOCKED;"; };
       if ((weapon.ammo().AmmoCategory.BaseCategory.Is_NotSet == false) && (weapon.CurrentAmmo <= 0)) { return "OUT OF AMMO;"; }
       if (weapon.IsEnabled == false) { return "NOT ENABLED;"; }
-      return result;
+      return string.IsNullOrEmpty(result)?"OPERATIONAL":result;
       //return "UNKNOWN";
     }
     public static void Postfix(Weapon __instance, ref bool __result) {
@@ -225,7 +225,7 @@ namespace CustAmmoCategories {
       if (__instance.IsCooldown() > 0) { __result = false; }
       if (__instance.isAMS() && __instance.isCantAMSFire()) { __result = false; };
       if ((__instance.isAMS() == false) && __instance.isCantNormalFire()) { __result = false; };
-      if (__instance.info().isCurrentModeAvailable() == false) { __result = false; };
+      if (__instance.info().isCurrentModeAvailable(out var reason) == false) { __result = false; };
       if (__instance.info().isCurrentAmmoRestricted()) { __result = false; };
       if (__instance.mode().Disabeld) { __result = false; };
       if (__instance.isBlocked()) { __result = false; };

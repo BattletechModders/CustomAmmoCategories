@@ -282,6 +282,7 @@ namespace CustAmmoCategories {
     public bool isBoxesAssigned { get; set; } = false;
     public WeaponMode mode { get; set; }
     public Dictionary<string, WeaponMode> modes { get; set; } = new Dictionary<string, WeaponMode>();
+    public HashSet<string> externalModesIds { get; set; } = new HashSet<string>();
     public Dictionary<WeaponMode, MechComponent> modesSources { get; set; } = new Dictionary<WeaponMode, MechComponent>();
     public Dictionary<WeaponMode, HashSet<WeaponMode>> overridenModes { get; set; } = new Dictionary<WeaponMode, HashSet<WeaponMode>>();
     public ExtWeaponDef extDef { get; set; }
@@ -340,10 +341,14 @@ namespace CustAmmoCategories {
     }
     public void AddMode(WeaponMode mode, MechComponent src, bool switchTo) {
       if (mode == null) { return; }
-      Log.Combat?.TWL(0,$"AddMode {this.weapon.defId} {mode.Id}:{mode.UIName} switchTo:{switchTo}");
+      Log.Combat?.TWL(0,$"AddMode {this.weapon.defId} {mode.Id}:{mode.UIName} src:{(src==null?"null":src.defId)} switchTo:{switchTo}");
       if (this.modes.ContainsKey(mode.Id)) {
         if (this.mode.Id == mode.Id) { switchTo = true; }
-        Log.Combat?.WL(1, $"need to merge");
+        if (this.externalModesIds.Contains(mode.Id)) {
+          Log.Combat?.WL(1, $"mode:{mode.Id} already been added as external");
+          if (switchTo) this.setMode(mode.Id);
+          return;
+        }
         WeaponMode oldMode = this.modes[mode.Id];
         string curid = mode.Id;
         if (mode.isFromJson) {
@@ -364,6 +369,7 @@ namespace CustAmmoCategories {
         this.modes.Add(mode.Id, mode);
       }
       Log.Combat?.WL(1, $"adding to mode list:{mode.Id} switchTo:{switchTo}");
+      externalModesIds.Add(mode.Id);
       if (switchTo) this.setMode(mode.Id);
       if (src != null)this.modesSources[mode] = src;
     }
@@ -377,20 +383,29 @@ namespace CustAmmoCategories {
         this.modes.Remove(id);
       }      
     }
-    public bool isModeAvailble(WeaponMode mode) {
-      if(this.modesSources.TryGetValue(mode, out var src)) {
-        if (src.IsFunctional == false) { return false; }
+    public bool isModeAvailble(WeaponMode mode, out string reason) {
+      reason = "OPERATIONAL";
+      if (this.modesSources.TryGetValue(mode, out var src)) {
+        if (src.IsFunctional == false) { reason = $"{src.Name} NOT FUNCTIONAL"; return false; }
       }
-      if (this.modes.ContainsKey(mode.Id) == false) { return false; }
+      if (this.modes.ContainsKey(mode.Id) == false) {
+        Log.C?.TWL(0,$"{this.weapon.defId} does not have mode {mode.Name}:{mode.Id}");
+        reason = $"{mode.Name} NOT AVAILABLE";
+        return false;
+      }
       if(this.overridenModes.TryGetValue(mode, out var ovrmodes)) {
         foreach (var ovrmode in ovrmodes) {
-          if (this.isModeAvailble(ovrmode)) { return false; }
+          if (this.isModeAvailble(ovrmode, out var r)) { reason = $"{ovrmode.Name} IS AVAILABLE"; return false; }
         }
       }
-      return mode.Lock.isAvaible(weapon);
+      if (mode.Lock.isAvaible(weapon) == false) { reason = $"{mode.UIName} IS LOCKED"; return false; }
+      return true;
+    }
+    public bool isCurrentModeAvailable(out string reason) {
+      return isModeAvailble(this.mode, out reason);
     }
     public bool isCurrentModeAvailable() {
-      return isModeAvailble(this.mode);
+      return isModeAvailble(this.mode, out var reason);
     }
     public bool isAmmoRestricted(ExtAmmunitionDef ammo) {
       return this.extDef.restrictedAmmo.Contains(ammo.Id) || this.mode.restrictedAmmo.Contains(ammo.Id);
@@ -418,7 +433,7 @@ namespace CustAmmoCategories {
     public List<WeaponMode> avaibleModes() {
       List<WeaponMode> result = new List<WeaponMode>();
       foreach (var mode in this.modes) {
-        if (this.isModeAvailble(mode.Value) == false) { continue; };
+        if (this.isModeAvailble(mode.Value, out var reason) == false) { continue; };
         if (this.restrictedModes.Contains(mode.Key)) { continue; }
         result.Add(mode.Value);
       }
@@ -512,7 +527,7 @@ namespace CustAmmoCategories {
     }
     public void RefreshModeAvaibility() {
       Log.Combat?.TWL(0, "RefreshModeAvaibility:" + this.weapon.defId);
-      if (this.isCurrentModeAvailable() == false) {
+      if (this.isCurrentModeAvailable(out var reason) == false) {
         CustomAmmoCategories.CycleMode(this.weapon, true);
       }
       //Statistic modeIdStat = weapon.StatCollection.GetOrCreateStatisic(CustomAmmoCategories.WeaponModeStatisticName, extDef.baseModeId);
