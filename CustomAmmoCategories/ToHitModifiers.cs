@@ -642,6 +642,60 @@ namespace CustAmmoCategories {
       if (modsToRemove.Contains("MELEE RECOIL") == false) registerModifier("MELEE RECOIL", "RE ATTACK", false, true, GetRefireModifier, null);
       if (modsToRemove.Contains("MELEE TARGET MOVED") == false) registerModifier("MELEE TARGET MOVED", "TARGET MOVED", false, true, GetMeleeEvesionMod, null);
     }
+    public class ModifierUIInfo {
+      public string name;
+      public string key;
+      public float value;
+      public bool showZero;
+      public ModifierUIInfo(string n, string k, float v, bool z) {
+        this.name = n;
+        this.key = k;
+        this.value = v;
+        this.showZero = z;
+      }
+    }
+    public static float GatherModifiers(ToHit toHit, AbstractActor attacker, Weapon weapon, ICombatant target, Vector3 attackPosition, Vector3 targetPosition, LineOfFireLevel lofLevel, bool isCalledShot, MeleeAttackType meleeAttackType, List<ModifierUIInfo> info) {
+      float result = 0f;
+      foreach (var mod in ToHitModifiersHelper.modifiers) {
+        if (target != null) {
+          if (meleeAttackType != MeleeAttackType.NotSet) {
+            if ((mod.Value.melee == false) && (mod.Value.ranged == true)) { continue; }
+          } else {
+            if ((mod.Value.melee == true) && (mod.Value.ranged == false)) { continue; }
+          }
+        } else {
+          if ((mod.Value.ranged != false) || (mod.Value.melee != false)) { continue; }
+        }
+        float modifier = (int)mod.Value.modifier(toHit, attacker, weapon, target, attackPosition, targetPosition, lofLevel, meleeAttackType, isCalledShot);
+        string name = mod.Value.name;
+        if (mod.Value.dname != null) {
+          name = mod.Value.dname(toHit, attacker, weapon, target, attackPosition, targetPosition, lofLevel, meleeAttackType, isCalledShot);
+        } else if (mod.Value.dname2 != null) {
+          name = mod.Value.dname2(toHit, attacker, weapon, target, attackPosition, targetPosition, lofLevel, meleeAttackType, isCalledShot, (int)modifier);
+        }
+        if (mod.Value.dname2 != null) {
+          if (info != null) { info.Add(new ModifierUIInfo(name, mod.Key, modifier, true)); }
+        } else {
+          if (info != null) { info.Add(new ModifierUIInfo(name, mod.Key, modifier, false)); }
+        }
+        result += modifier;
+      }
+      foreach (var node in ToHitModifiersHelper.mod_nodes) {
+        object state = node.Value.prepare(toHit, attacker, weapon, target, attackPosition, targetPosition, lofLevel, meleeAttackType, isCalledShot);
+        foreach (var mod in node.Value.modifiers) {
+          if ((mod.Value.melee == false) && (mod.Value.ranged == true)) { continue; }
+          float modifier = mod.Value.modifier(state, toHit, attacker, weapon, target, attackPosition, targetPosition, lofLevel, meleeAttackType, isCalledShot);
+          string name = mod.Value.name;
+          if (mod.Value.dname != null) {
+            name = mod.Value.dname(state, toHit, attacker, weapon, target, attackPosition, targetPosition, lofLevel, meleeAttackType, isCalledShot);
+          }
+          if (info != null) { info.Add(new ModifierUIInfo(name, mod.Key, modifier, false)); }
+          result += modifier;
+        }
+      }
+      if ((result < 0) && (toHit.combat.Constants.ResolutionConstants.AllowTotalNegativeModifier == false)) { result = 0f; };
+      return result;
+    }
   }
   [HarmonyPatch(typeof(CombatHUDWeaponSlot))]
   [HarmonyPatch("UpdateTooltipStrings")]
@@ -675,7 +729,6 @@ namespace CustAmmoCategories {
     public static void AddToolTipDetailBuff(this CombatHUDWeaponSlot slot, string description) {
       slot.ToolTipHoverElement.BuffStrings.Add(new Localize.Text("{0}", new object[1] { (object) description }));
     }
-
     public static void UpdateToolTipsMelee_I(this CombatHUDWeaponSlot slot, ICombatant target) {
       //slot.ToolTipHoverElement.BasicString = new Text(slot.DisplayedWeapon.Name, (object[])Array.Empty<object>());
       CombatGameState Combat = slot.Combat;
@@ -696,69 +749,83 @@ namespace CustAmmoCategories {
           all_modifiers = 99;
         }
       }
-      foreach (var mod in ToHitModifiersHelper.modifiers) {
-        if ((mod.Value.melee == false) && (mod.Value.ranged == true)) { continue; }
-        int modifier = (int)mod.Value.modifier(Combat.ToHit,
-          HUD.SelectedActor,slot.DisplayedWeapon,
-          target, 
-          HUD.SelectionHandler.ActiveState.PreviewPos, target.TargetPosition,LineOfFireLevel.LOFClear,meleeAttackType, calledShot);
-        string name = mod.Value.name;
-        if(mod.Value.dname != null) {
-          name = mod.Value.dname(Combat.ToHit,
-          HUD.SelectedActor, slot.DisplayedWeapon,
-          target,
-          HUD.SelectionHandler.ActiveState.PreviewPos, target.TargetPosition, LineOfFireLevel.LOFClear, meleeAttackType, calledShot);
-        }else if(mod.Value.dname2 != null) {
-          name = mod.Value.dname2(Combat.ToHit,
-          HUD.SelectedActor, slot.DisplayedWeapon,
-          target,
-          HUD.SelectionHandler.ActiveState.PreviewPos, target.TargetPosition, LineOfFireLevel.LOFClear, meleeAttackType, calledShot, modifier);
-        }
-        if (mod.Value.dname2 != null) {
-          if (string.IsNullOrEmpty(name) == false) {
-            if(modifier != 0) { slot.AddToolTipDetail(name, modifier); } else { slot.AddToolTipDetailBuff(name); }
+      List<ToHitModifiersHelper.ModifierUIInfo> info = new List<ToHitModifiersHelper.ModifierUIInfo>();
+      all_modifiers += (int)ToHitModifiersHelper.GatherModifiers(Combat.ToHit, HUD.SelectedActor, slot.DisplayedWeapon, target, HUD.SelectionHandler.ActiveState.PreviewPos, target.TargetPosition, LineOfFireLevel.LOFClear, calledShot, meleeAttackType, info);
+      foreach (var mod in info) {
+        string name = mod.name;
+        int value = (int)mod.value;
+        if ((value != 0) && string.IsNullOrEmpty(name)) { name = mod.key; }
+        if (mod.showZero || (value != 0)) {
+          if (value != 0) {
+            slot.AddToolTipDetail(name, value);
+          } else if (string.IsNullOrEmpty(name) == false) {
+            slot.AddToolTipDetailBuff(name);
           }
-        } else
-        if ((modifier != 0) && (string.IsNullOrEmpty(name) == false)) {
-          slot.AddToolTipDetail(name, modifier);
-        }
-        all_modifiers += modifier;
-      }
-      foreach(var node in ToHitModifiersHelper.mod_nodes) {
-        object state = node.Value.prepare(Combat.ToHit,
-          HUD.SelectedActor, slot.DisplayedWeapon,
-          target,
-          HUD.SelectionHandler.ActiveState.PreviewPos, target.TargetPosition, LineOfFireLevel.LOFClear, meleeAttackType, calledShot);
-        foreach(var mod in node.Value.modifiers) {
-          if ((mod.Value.melee == false) && (mod.Value.ranged == true)) { continue; }
-          int modifier = (int)mod.Value.modifier(state,Combat.ToHit,
-            HUD.SelectedActor, slot.DisplayedWeapon,
-            target,
-            HUD.SelectionHandler.ActiveState.PreviewPos, target.TargetPosition, LineOfFireLevel.LOFClear, meleeAttackType, calledShot);
-          string name = mod.Value.name;
-          if (mod.Value.dname != null) {
-            name = mod.Value.dname(state,Combat.ToHit,
-            HUD.SelectedActor, slot.DisplayedWeapon,
-            target,
-            HUD.SelectionHandler.ActiveState.PreviewPos, target.TargetPosition, LineOfFireLevel.LOFClear, meleeAttackType, calledShot);
-          }
-          if ((modifier != 0) && (string.IsNullOrEmpty(name) == false)) {
-            slot.AddToolTipDetail(name, modifier);
-          }
-          all_modifiers += modifier;
         }
       }
-      if ((all_modifiers < 0) && (Combat.Constants.ResolutionConstants.AllowTotalNegativeModifier == false)) { all_modifiers = 0; };
+      //foreach (var mod in ToHitModifiersHelper.modifiers) {
+      //  if ((mod.Value.melee == false) && (mod.Value.ranged == true)) { continue; }
+      //  int modifier = (int)mod.Value.modifier(Combat.ToHit,
+      //    HUD.SelectedActor,slot.DisplayedWeapon,
+      //    target, 
+      //    HUD.SelectionHandler.ActiveState.PreviewPos, target.TargetPosition,LineOfFireLevel.LOFClear,meleeAttackType, calledShot);
+      //  string name = mod.Value.name;
+      //  if(mod.Value.dname != null) {
+      //    name = mod.Value.dname(Combat.ToHit,
+      //    HUD.SelectedActor, slot.DisplayedWeapon,
+      //    target,
+      //    HUD.SelectionHandler.ActiveState.PreviewPos, target.TargetPosition, LineOfFireLevel.LOFClear, meleeAttackType, calledShot);
+      //  }else if(mod.Value.dname2 != null) {
+      //    name = mod.Value.dname2(Combat.ToHit,
+      //    HUD.SelectedActor, slot.DisplayedWeapon,
+      //    target,
+      //    HUD.SelectionHandler.ActiveState.PreviewPos, target.TargetPosition, LineOfFireLevel.LOFClear, meleeAttackType, calledShot, modifier);
+      //  }
+      //  if (mod.Value.dname2 != null) {
+      //    if (string.IsNullOrEmpty(name) == false) {
+      //      if(modifier != 0) { slot.AddToolTipDetail(name, modifier); } else { slot.AddToolTipDetailBuff(name); }
+      //    }
+      //  } else
+      //  if ((modifier != 0) && (string.IsNullOrEmpty(name) == false)) {
+      //    slot.AddToolTipDetail(name, modifier);
+      //  }
+      //  all_modifiers += modifier;
+      //}
+      //foreach(var node in ToHitModifiersHelper.mod_nodes) {
+      //  object state = node.Value.prepare(Combat.ToHit,
+      //    HUD.SelectedActor, slot.DisplayedWeapon,
+      //    target,
+      //    HUD.SelectionHandler.ActiveState.PreviewPos, target.TargetPosition, LineOfFireLevel.LOFClear, meleeAttackType, calledShot);
+      //  foreach(var mod in node.Value.modifiers) {
+      //    if ((mod.Value.melee == false) && (mod.Value.ranged == true)) { continue; }
+      //    int modifier = (int)mod.Value.modifier(state,Combat.ToHit,
+      //      HUD.SelectedActor, slot.DisplayedWeapon,
+      //      target,
+      //      HUD.SelectionHandler.ActiveState.PreviewPos, target.TargetPosition, LineOfFireLevel.LOFClear, meleeAttackType, calledShot);
+      //    string name = mod.Value.name;
+      //    if (mod.Value.dname != null) {
+      //      name = mod.Value.dname(state,Combat.ToHit,
+      //      HUD.SelectedActor, slot.DisplayedWeapon,
+      //      target,
+      //      HUD.SelectionHandler.ActiveState.PreviewPos, target.TargetPosition, LineOfFireLevel.LOFClear, meleeAttackType, calledShot);
+      //    }
+      //    if ((modifier != 0) && (string.IsNullOrEmpty(name) == false)) {
+      //      slot.AddToolTipDetail(name, modifier);
+      //    }
+      //    all_modifiers += modifier;
+      //  }
+      //}
+      //if ((all_modifiers < 0) && (Combat.Constants.ResolutionConstants.AllowTotalNegativeModifier == false)) { all_modifiers = 0; };
       slot.ToolTipHoverElement.BasicModifierInt = all_modifiers;
     }
     public static void UpdateToolTipsFiring_I(this CombatHUDWeaponSlot slot, ICombatant target) {
-      CombatGameState Combat = Traverse.Create(slot).Field<CombatGameState>("Combat").Value;
-      CombatHUD HUD = Traverse.Create(slot).Field<CombatHUD>("HUD").Value;
+      CombatGameState Combat = slot.Combat;
+      CombatHUD HUD = slot.HUD;
       MeleeAttackType meleeAttackType = MeleeAttackType.NotSet;
       LineOfFireLevel lofLevel = HUD.SelectionHandler.ActiveState.FiringPreview.GetPreviewInfo(target).LOFLevel;
       bool calledShot = HUD.SelectionHandler.ActiveState.SelectionType == SelectionType.FireMorale;
       int all_modifiers = 0;
-      Core.AIMShowBaseHitChance(slot,target);
+      Core.AIMShowBaseHitChance(slot, target);
       Core.AIMShowNeutralRange(slot, target);
       if (HUD.SelectedActor != null) {
         if (HUD.SelectedActor.isSpawnProtected()) {
@@ -772,62 +839,76 @@ namespace CustAmmoCategories {
           all_modifiers = 99;
         }
       }
+      List<ToHitModifiersHelper.ModifierUIInfo> info = new List<ToHitModifiersHelper.ModifierUIInfo>();
+      all_modifiers += (int)ToHitModifiersHelper.GatherModifiers(Combat.ToHit, HUD.SelectedActor, slot.DisplayedWeapon, target, HUD.SelectionHandler.ActiveState.PreviewPos, target.TargetPosition, lofLevel, calledShot, meleeAttackType, info);
+      foreach (var mod in info) {
+        string name = mod.name;
+        int value = (int)mod.value;
+        if ((value != 0) && string.IsNullOrEmpty(name)) { name = mod.key; }
+        if (mod.showZero || (value != 0)) {
+          if (value != 0) {
+            slot.AddToolTipDetail(name, value);
+          } else if (string.IsNullOrEmpty(name) == false) { 
+            slot.AddToolTipDetailBuff(name);
+          }
+        }
+      }
       //float baseChance = RollModifier.StepHitChance(Combat.ToHit.GetBaseToHitChance(mech)) * 100;
       //__instance.ToolTipHoverElement.BuffStrings.Add(new Text("{0} {1} = " + BaseChanceFormat, Translate(Pilot.PILOTSTAT_GUNNERY), mech.SkillGunnery, baseChance));
-      foreach (var mod in ToHitModifiersHelper.modifiers) {
-        if ((mod.Value.melee == true) && (mod.Value.ranged == false)) { continue; }
-        int modifier = (int)mod.Value.modifier(Combat.ToHit,
-          HUD.SelectedActor, slot.DisplayedWeapon,
-          target,
-          HUD.SelectionHandler.ActiveState.PreviewPos, target.TargetPosition, lofLevel, meleeAttackType, calledShot);
-        string name = mod.Value.name;
-        if (mod.Value.dname != null) {
-          name = mod.Value.dname(Combat.ToHit,
-          HUD.SelectedActor, slot.DisplayedWeapon,
-          target,
-          HUD.SelectionHandler.ActiveState.PreviewPos, target.TargetPosition, lofLevel, meleeAttackType, calledShot);
-        } else if (mod.Value.dname2 != null) {
-          name = mod.Value.dname2(Combat.ToHit,
-          HUD.SelectedActor, slot.DisplayedWeapon,
-          target,
-          HUD.SelectionHandler.ActiveState.PreviewPos, target.TargetPosition, LineOfFireLevel.LOFClear, meleeAttackType, calledShot, modifier);
-        }
-        if(mod.Value.dname2 != null) {
-          //Log.M?.TWL(0, "UpdateToolTipsFiring "+ slot.DisplayedWeapon.defId+" name:"+name+" modifier:"+modifier);
-          if(string.IsNullOrEmpty(name) == false) {
-            if(modifier != 0) { slot.AddToolTipDetail(name, modifier); } else { slot.AddToolTipDetailBuff(name); }
-          }
-        } else
-        if ((modifier != 0) && (string.IsNullOrEmpty(name) == false)) {
-          slot.AddToolTipDetail(name, modifier);
-        }
-        all_modifiers += modifier;
-      }
-      foreach (var node in ToHitModifiersHelper.mod_nodes) {
-        object state = node.Value.prepare(Combat.ToHit,
-          HUD.SelectedActor, slot.DisplayedWeapon,
-          target,
-          HUD.SelectionHandler.ActiveState.PreviewPos, target.TargetPosition, LineOfFireLevel.LOFClear, meleeAttackType, calledShot);
-        foreach (var mod in node.Value.modifiers) {
-          if ((mod.Value.melee == true) && (mod.Value.ranged == false)) { continue; }
-          int modifier = (int)mod.Value.modifier(state, Combat.ToHit,
-            HUD.SelectedActor, slot.DisplayedWeapon,
-            target,
-            HUD.SelectionHandler.ActiveState.PreviewPos, target.TargetPosition, LineOfFireLevel.LOFClear, meleeAttackType, calledShot);
-          string name = mod.Value.name;
-          if (mod.Value.dname != null) {
-            name = mod.Value.dname(state, Combat.ToHit,
-            HUD.SelectedActor, slot.DisplayedWeapon,
-            target,
-            HUD.SelectionHandler.ActiveState.PreviewPos, target.TargetPosition, LineOfFireLevel.LOFClear, meleeAttackType, calledShot);
-          }
-          if ((modifier != 0) && (string.IsNullOrEmpty(name) == false)) {
-            slot.AddToolTipDetail(name, modifier);
-          }
-          all_modifiers += modifier;
-        }
-      }
-      if ((all_modifiers < 0) && (Combat.Constants.ResolutionConstants.AllowTotalNegativeModifier == false)) { all_modifiers = 0; };
+      //foreach (var mod in ToHitModifiersHelper.modifiers) {
+      //  if ((mod.Value.melee == true) && (mod.Value.ranged == false)) { continue; }
+      //  int modifier = (int)mod.Value.modifier(Combat.ToHit,
+      //    HUD.SelectedActor, slot.DisplayedWeapon,
+      //    target,
+      //    HUD.SelectionHandler.ActiveState.PreviewPos, target.TargetPosition, lofLevel, meleeAttackType, calledShot);
+      //  string name = mod.Value.name;
+      //  if (mod.Value.dname != null) {
+      //    name = mod.Value.dname(Combat.ToHit,
+      //    HUD.SelectedActor, slot.DisplayedWeapon,
+      //    target,
+      //    HUD.SelectionHandler.ActiveState.PreviewPos, target.TargetPosition, lofLevel, meleeAttackType, calledShot);
+      //  } else if (mod.Value.dname2 != null) {
+      //    name = mod.Value.dname2(Combat.ToHit,
+      //    HUD.SelectedActor, slot.DisplayedWeapon,
+      //    target,
+      //    HUD.SelectionHandler.ActiveState.PreviewPos, target.TargetPosition, LineOfFireLevel.LOFClear, meleeAttackType, calledShot, modifier);
+      //  }
+      //  if(mod.Value.dname2 != null) {
+      //    //Log.M?.TWL(0, "UpdateToolTipsFiring "+ slot.DisplayedWeapon.defId+" name:"+name+" modifier:"+modifier);
+      //    if(string.IsNullOrEmpty(name) == false) {
+      //      if(modifier != 0) { slot.AddToolTipDetail(name, modifier); } else { slot.AddToolTipDetailBuff(name); }
+      //    }
+      //  } else
+      //  if ((modifier != 0) && (string.IsNullOrEmpty(name) == false)) {
+      //    slot.AddToolTipDetail(name, modifier);
+      //  }
+      //  all_modifiers += modifier;
+      //}
+      //foreach (var node in ToHitModifiersHelper.mod_nodes) {
+      //  object state = node.Value.prepare(Combat.ToHit,
+      //    HUD.SelectedActor, slot.DisplayedWeapon,
+      //    target,
+      //    HUD.SelectionHandler.ActiveState.PreviewPos, target.TargetPosition, LineOfFireLevel.LOFClear, meleeAttackType, calledShot);
+      //  foreach (var mod in node.Value.modifiers) {
+      //    if ((mod.Value.melee == true) && (mod.Value.ranged == false)) { continue; }
+      //    int modifier = (int)mod.Value.modifier(state, Combat.ToHit,
+      //      HUD.SelectedActor, slot.DisplayedWeapon,
+      //      target,
+      //      HUD.SelectionHandler.ActiveState.PreviewPos, target.TargetPosition, LineOfFireLevel.LOFClear, meleeAttackType, calledShot);
+      //    string name = mod.Value.name;
+      //    if (mod.Value.dname != null) {
+      //      name = mod.Value.dname(state, Combat.ToHit,
+      //      HUD.SelectedActor, slot.DisplayedWeapon,
+      //      target,
+      //      HUD.SelectionHandler.ActiveState.PreviewPos, target.TargetPosition, LineOfFireLevel.LOFClear, meleeAttackType, calledShot);
+      //    }
+      //    if ((modifier != 0) && (string.IsNullOrEmpty(name) == false)) {
+      //      slot.AddToolTipDetail(name, modifier);
+      //    }
+      //    all_modifiers += modifier;
+      //  }
+      //}
+      //if ((all_modifiers < 0) && (Combat.Constants.ResolutionConstants.AllowTotalNegativeModifier == false)) { all_modifiers = 0; };
       slot.ToolTipHoverElement.BasicModifierInt = all_modifiers;
     }
     public static void UpdateToolTipsSelf_I(this CombatHUDWeaponSlot slot) {
@@ -842,61 +923,75 @@ namespace CustAmmoCategories {
         }
       }
       slot.AddToolTipDetailBuff(slot.DisplayedWeapon.CantFireReason());
-      foreach (var mod in ToHitModifiersHelper.modifiers) {
-        if ((mod.Value.ranged != false) || (mod.Value.melee != false)) { continue; }
-        if (slot.DisplayedWeapon == null) { continue; }
-        if (HUD.SelectedActor == null) { continue; }
-        int modifier = (int)mod.Value.modifier(Combat.ToHit,
-          slot.DisplayedWeapon.parent, slot.DisplayedWeapon,
-          HUD.SelectedTarget,
-          HUD.SelectionHandler.ActiveState.PreviewPos, HUD.SelectedActor.TargetPosition, LineOfFireLevel.LOFClear, meleeAttackType, calledShot);
-        string name = mod.Value.name;
-        if (mod.Value.dname != null) {
-          name = mod.Value.dname(Combat.ToHit,
-          slot.DisplayedWeapon.parent, slot.DisplayedWeapon,
-          HUD.SelectedTarget,
-          HUD.SelectionHandler.ActiveState.PreviewPos, HUD.SelectedActor.TargetPosition, LineOfFireLevel.LOFClear, meleeAttackType, calledShot);
-        } else if (mod.Value.dname2 != null) {
-          name = mod.Value.dname2(Combat.ToHit,
-          HUD.SelectedActor, slot.DisplayedWeapon,
-          HUD.SelectedTarget,
-          HUD.SelectionHandler.ActiveState.PreviewPos, HUD.SelectedActor.TargetPosition, LineOfFireLevel.LOFClear, meleeAttackType, calledShot, modifier);
-        }
-        if (mod.Value.dname2 != null) {
-          //Log.M?.TWL(0, "UpdateToolTipsSelf " + slot.DisplayedWeapon.defId + " name:" + name + " modifier:" + modifier);
-          if (string.IsNullOrEmpty(name) == false) {
-            if(modifier != 0) { slot.AddToolTipDetail(name, modifier); } else { slot.AddToolTipDetailBuff(name); }
-          }
-        } else
-        if ((modifier != 0) && (string.IsNullOrEmpty(name) == false)) {
-          slot.AddToolTipDetail(name, modifier);
-        }
-      }
-      foreach (var node in ToHitModifiersHelper.mod_nodes) {
-        if (slot.DisplayedWeapon == null) { continue; }
-        if (HUD.SelectedActor == null) { continue; }
-        object state = node.Value.prepare(Combat.ToHit,
-          HUD.SelectedActor, slot.DisplayedWeapon,
-          HUD.SelectedTarget,
-          HUD.SelectionHandler.ActiveState.PreviewPos, HUD.SelectedActor.TargetPosition, LineOfFireLevel.LOFClear, meleeAttackType, calledShot);
-        foreach (var mod in node.Value.modifiers) {
-          if ((mod.Value.ranged != false) || (mod.Value.melee != false)) { continue; }
-          int modifier = (int)mod.Value.modifier(state, Combat.ToHit,
-            HUD.SelectedActor, slot.DisplayedWeapon,
-            HUD.SelectedTarget,
-            HUD.SelectionHandler.ActiveState.PreviewPos, HUD.SelectedActor.TargetPosition, LineOfFireLevel.LOFClear, meleeAttackType, calledShot);
-          string name = mod.Value.name;
-          if (mod.Value.dname != null) {
-            name = mod.Value.dname(state, Combat.ToHit,
-            HUD.SelectedActor, slot.DisplayedWeapon,
-            HUD.SelectedTarget,
-            HUD.SelectionHandler.ActiveState.PreviewPos, HUD.SelectedActor.TargetPosition, LineOfFireLevel.LOFClear, meleeAttackType, calledShot);
-          }
-          if ((modifier != 0) && (string.IsNullOrEmpty(name) == false)) {
-            slot.AddToolTipDetail(name, modifier);
+      List<ToHitModifiersHelper.ModifierUIInfo> info = new List<ToHitModifiersHelper.ModifierUIInfo>();
+      int all_modifiers = (int)ToHitModifiersHelper.GatherModifiers(Combat.ToHit, HUD.SelectedActor, slot.DisplayedWeapon, null, HUD.SelectionHandler.ActiveState.PreviewPos, HUD.SelectedActor.TargetPosition, LineOfFireLevel.LOFClear, calledShot, meleeAttackType, info);
+      foreach (var mod in info) {
+        string name = mod.name;
+        int value = (int)mod.value;
+        if ((value != 0) && string.IsNullOrEmpty(name)) { name = mod.key; }
+        if (mod.showZero || (value != 0)) {
+          if (value != 0) {
+            slot.AddToolTipDetail(name, value);
+          } else if (string.IsNullOrEmpty(name) == false) {
+            slot.AddToolTipDetailBuff(name);
           }
         }
       }
+      //foreach (var mod in ToHitModifiersHelper.modifiers) {
+      //  if ((mod.Value.ranged != false) || (mod.Value.melee != false)) { continue; }
+      //  if (slot.DisplayedWeapon == null) { continue; }
+      //  if (HUD.SelectedActor == null) { continue; }
+      //  int modifier = (int)mod.Value.modifier(Combat.ToHit,
+      //    slot.DisplayedWeapon.parent, slot.DisplayedWeapon,
+      //    HUD.SelectedTarget,
+      //    HUD.SelectionHandler.ActiveState.PreviewPos, HUD.SelectedActor.TargetPosition, LineOfFireLevel.LOFClear, meleeAttackType, calledShot);
+      //  string name = mod.Value.name;
+      //  if (mod.Value.dname != null) {
+      //    name = mod.Value.dname(Combat.ToHit,
+      //    slot.DisplayedWeapon.parent, slot.DisplayedWeapon,
+      //    HUD.SelectedTarget,
+      //    HUD.SelectionHandler.ActiveState.PreviewPos, HUD.SelectedActor.TargetPosition, LineOfFireLevel.LOFClear, meleeAttackType, calledShot);
+      //  } else if (mod.Value.dname2 != null) {
+      //    name = mod.Value.dname2(Combat.ToHit,
+      //    HUD.SelectedActor, slot.DisplayedWeapon,
+      //    HUD.SelectedTarget,
+      //    HUD.SelectionHandler.ActiveState.PreviewPos, HUD.SelectedActor.TargetPosition, LineOfFireLevel.LOFClear, meleeAttackType, calledShot, modifier);
+      //  }
+      //  if (mod.Value.dname2 != null) {
+      //    //Log.M?.TWL(0, "UpdateToolTipsSelf " + slot.DisplayedWeapon.defId + " name:" + name + " modifier:" + modifier);
+      //    if (string.IsNullOrEmpty(name) == false) {
+      //      if(modifier != 0) { slot.AddToolTipDetail(name, modifier); } else { slot.AddToolTipDetailBuff(name); }
+      //    }
+      //  } else
+      //  if ((modifier != 0) && (string.IsNullOrEmpty(name) == false)) {
+      //    slot.AddToolTipDetail(name, modifier);
+      //  }
+      //}
+      //foreach (var node in ToHitModifiersHelper.mod_nodes) {
+      //  if (slot.DisplayedWeapon == null) { continue; }
+      //  if (HUD.SelectedActor == null) { continue; }
+      //  object state = node.Value.prepare(Combat.ToHit,
+      //    HUD.SelectedActor, slot.DisplayedWeapon,
+      //    HUD.SelectedTarget,
+      //    HUD.SelectionHandler.ActiveState.PreviewPos, HUD.SelectedActor.TargetPosition, LineOfFireLevel.LOFClear, meleeAttackType, calledShot);
+      //  foreach (var mod in node.Value.modifiers) {
+      //    if ((mod.Value.ranged != false) || (mod.Value.melee != false)) { continue; }
+      //    int modifier = (int)mod.Value.modifier(state, Combat.ToHit,
+      //      HUD.SelectedActor, slot.DisplayedWeapon,
+      //      HUD.SelectedTarget,
+      //      HUD.SelectionHandler.ActiveState.PreviewPos, HUD.SelectedActor.TargetPosition, LineOfFireLevel.LOFClear, meleeAttackType, calledShot);
+      //    string name = mod.Value.name;
+      //    if (mod.Value.dname != null) {
+      //      name = mod.Value.dname(state, Combat.ToHit,
+      //      HUD.SelectedActor, slot.DisplayedWeapon,
+      //      HUD.SelectedTarget,
+      //      HUD.SelectionHandler.ActiveState.PreviewPos, HUD.SelectedActor.TargetPosition, LineOfFireLevel.LOFClear, meleeAttackType, calledShot);
+      //    }
+      //    if ((modifier != 0) && (string.IsNullOrEmpty(name) == false)) {
+      //      slot.AddToolTipDetail(name, modifier);
+      //    }
+      //  }
+      //}
       slot.ToolTipHoverElement.UseModifier = false;
     }
     public static void Prefix(ref bool __runOriginal, CombatHUDWeaponSlot __instance, ICombatant target) {
@@ -923,28 +1018,35 @@ namespace CustAmmoCategories {
     }
     public static void Postfix(ToHit __instance, AbstractActor attacker, Weapon weapon, ICombatant target, Vector3 attackPosition, Vector3 targetPosition, LineOfFireLevel lofLevel, bool isCalledShot, ref float __result) {
       __result = 0f;
-      if(Thread.CurrentThread.isFlagSet("TO_HIT_DEBUG_PRINT")) Log.M?.TWL(0,$"ToHit modifier. attacker:{attacker.PilotableActorDef.ChassisID} target:{(target.PilotableActorDef == null?target.DisplayName: target.PilotableActorDef.ChassisID)} weapon:{weapon.weaponDef.Description.Id}");
-      foreach(var mod in ToHitModifiersHelper.modifiers) {
-        if ((mod.Value.ranged == false)&&(mod.Value.melee == true)) { continue; }
-        float val = mod.Value.modifier(__instance, attacker, weapon, target, attackPosition, targetPosition, lofLevel, MeleeAttackType.NotSet, isCalledShot);
-        if (Thread.CurrentThread.isFlagSet("TO_HIT_DEBUG_PRINT")) Log.M?.WL(2,$"{mod.Key}:{val}");
-        __result += val;
+      if(Thread.CurrentThread.isFlagSet("TO_HIT_DEBUG_PRINT")) Log.Combat?.TWL(0,$"ToHit modifier. attacker:{attacker.PilotableActorDef.ChassisID} target:{(target.PilotableActorDef == null?target.DisplayName: target.PilotableActorDef.ChassisID)} weapon:{weapon.weaponDef.Description.Id}");
+      List<ToHitModifiersHelper.ModifierUIInfo> info = new List<ToHitModifiersHelper.ModifierUIInfo>();
+      __result = ToHitModifiersHelper.GatherModifiers(__instance, attacker, weapon, target, attackPosition, targetPosition, lofLevel, isCalledShot, MeleeAttackType.NotSet, info);
+      foreach (var mod in info) {
+        if (Thread.CurrentThread.isFlagSet("TO_HIT_DEBUG_PRINT")) Log.Combat?.WL(2, $"{mod.key}:{mod.value}");
       }
-      foreach (var node in ToHitModifiersHelper.mod_nodes) {
-        object state = node.Value.prepare(__instance, attacker, weapon, target, attackPosition, targetPosition, lofLevel, MeleeAttackType.NotSet, isCalledShot);
-        if (Thread.CurrentThread.isFlagSet("TO_HIT_DEBUG_PRINT")) Log.M?.WL(2, $"node:{node.Key}");
-        foreach (var mod in node.Value.modifiers) {
-          if ((mod.Value.ranged == false) && (mod.Value.melee == true)) { continue; }
-          float val = mod.Value.modifier(state, __instance, attacker, weapon, target, attackPosition, targetPosition, lofLevel, MeleeAttackType.NotSet, isCalledShot);
-          if (Thread.CurrentThread.isFlagSet("TO_HIT_DEBUG_PRINT")) Log.M?.WL(3, $"{mod.Key}:{val}");
-          __result += val;
-        }
-      }
-      if ((__result < 0f) && (Traverse.Create(__instance).Field<CombatGameState>("combat").Value.Constants.ResolutionConstants.AllowTotalNegativeModifier == false)) {
-        __result = 0f;
-      }
-      if (Thread.CurrentThread.isFlagSet("TO_HIT_DEBUG_PRINT")) Log.M?.WL(0,$"result:{__result}");
+
+      //foreach(var mod in ToHitModifiersHelper.modifiers) {
+      //  if ((mod.Value.ranged == false)&&(mod.Value.melee == true)) { continue; }
+      //  float val = mod.Value.modifier(__instance, attacker, weapon, target, attackPosition, targetPosition, lofLevel, MeleeAttackType.NotSet, isCalledShot);
+      //  if (Thread.CurrentThread.isFlagSet("TO_HIT_DEBUG_PRINT")) Log.M?.WL(2,$"{mod.Key}:{val}");
+      //  __result += val;
+      //}
+      //foreach (var node in ToHitModifiersHelper.mod_nodes) {
+      //  object state = node.Value.prepare(__instance, attacker, weapon, target, attackPosition, targetPosition, lofLevel, MeleeAttackType.NotSet, isCalledShot);
+      //  if (Thread.CurrentThread.isFlagSet("TO_HIT_DEBUG_PRINT")) Log.M?.WL(2, $"node:{node.Key}");
+      //  foreach (var mod in node.Value.modifiers) {
+      //    if ((mod.Value.ranged == false) && (mod.Value.melee == true)) { continue; }
+      //    float val = mod.Value.modifier(state, __instance, attacker, weapon, target, attackPosition, targetPosition, lofLevel, MeleeAttackType.NotSet, isCalledShot);
+      //    if (Thread.CurrentThread.isFlagSet("TO_HIT_DEBUG_PRINT")) Log.M?.WL(3, $"{mod.Key}:{val}");
+      //    __result += val;
+      //  }
+      //}
+      //if ((__result < 0f) && (__instance.combat.Constants.ResolutionConstants.AllowTotalNegativeModifier == false)) {
+      //  __result = 0f;
+      //}
+      if (Thread.CurrentThread.isFlagSet("TO_HIT_DEBUG_PRINT")) Log.Combat?.WL(0,$"result:{__result}");
     }
+
   }
   [HarmonyPatch(typeof(ToHit))]
   [HarmonyPatch("GetAllMeleeModifiers")]
@@ -957,20 +1059,27 @@ namespace CustAmmoCategories {
     }
     public static void Postfix(ToHit __instance, Mech attacker, ICombatant target, Vector3 targetPosition, MeleeAttackType meleeAttackType, ref float __result) {
       __result = 0f;
-      foreach (var mod in ToHitModifiersHelper.modifiers) {
-        if ((mod.Value.ranged == true) && (mod.Value.melee == false)) { continue; }
-        __result += mod.Value.modifier(__instance, attacker, attacker.MeleeWeapon, target, targetPosition, targetPosition, LineOfFireLevel.LOFClear, meleeAttackType, false);
+      if (Thread.CurrentThread.isFlagSet("TO_HIT_DEBUG_PRINT")) Log.Combat?.TWL(0, $"ToHit melee modifier. attacker:{attacker.PilotableActorDef.ChassisID} target:{(target.PilotableActorDef == null ? target.DisplayName : target.PilotableActorDef.ChassisID)} weapon:{attacker.MeleeWeapon.weaponDef.Description.Id}");
+      List<ToHitModifiersHelper.ModifierUIInfo> info = new List<ToHitModifiersHelper.ModifierUIInfo>();
+      __result = ToHitModifiersHelper.GatherModifiers(__instance, attacker, attacker.MeleeWeapon, target, targetPosition, targetPosition, LineOfFireLevel.LOFClear, false, meleeAttackType, info);
+      foreach (var mod in info) {
+        if (Thread.CurrentThread.isFlagSet("TO_HIT_DEBUG_PRINT")) Log.Combat?.WL(2, $"{mod.key}:{mod.value}");
       }
-      foreach (var node in ToHitModifiersHelper.mod_nodes) {
-        object state = node.Value.prepare(__instance, attacker, attacker.MeleeWeapon, target, targetPosition, targetPosition, LineOfFireLevel.LOFClear, MeleeAttackType.NotSet, false);
-        foreach (var mod in node.Value.modifiers) {
-          if ((mod.Value.ranged == true) && (mod.Value.melee == false)) { continue; }
-          __result += (int)mod.Value.modifier(state, __instance, attacker, attacker.MeleeWeapon, target, targetPosition, targetPosition, LineOfFireLevel.LOFClear, MeleeAttackType.NotSet, false);
-        }
-      }
-      if ((__result < 0f) && (__instance.combat.Constants.ResolutionConstants.AllowTotalNegativeModifier == false)) {
-        __result = 0f;
-      }
+      if (Thread.CurrentThread.isFlagSet("TO_HIT_DEBUG_PRINT")) Log.Combat?.WL(0, $"result:{__result}");
+      //foreach (var mod in ToHitModifiersHelper.modifiers) {
+      //  if ((mod.Value.ranged == true) && (mod.Value.melee == false)) { continue; }
+      //  __result += mod.Value.modifier(__instance, attacker, attacker.MeleeWeapon, target, targetPosition, targetPosition, LineOfFireLevel.LOFClear, meleeAttackType, false);
+      //}
+      //foreach (var node in ToHitModifiersHelper.mod_nodes) {
+      //  object state = node.Value.prepare(__instance, attacker, attacker.MeleeWeapon, target, targetPosition, targetPosition, LineOfFireLevel.LOFClear, MeleeAttackType.NotSet, false);
+      //  foreach (var mod in node.Value.modifiers) {
+      //    if ((mod.Value.ranged == true) && (mod.Value.melee == false)) { continue; }
+      //    __result += (int)mod.Value.modifier(state, __instance, attacker, attacker.MeleeWeapon, target, targetPosition, targetPosition, LineOfFireLevel.LOFClear, MeleeAttackType.NotSet, false);
+      //  }
+      //}
+      //if ((__result < 0f) && (__instance.combat.Constants.ResolutionConstants.AllowTotalNegativeModifier == false)) {
+      //  __result = 0f;
+      //}
     }
   }
 }

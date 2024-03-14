@@ -2383,14 +2383,23 @@ namespace CustomAmmoCategoriesPatches {
       this.modesAmmoRT.gameObject.SetActive(true);
       
     }
+    private bool UIShown = false;
     public void OnWeaponOrderButtonClick() {
-      GenericPopupBuilder builder = GenericPopupBuilder.Create("__/CAC.WO.WEAPONS.ORDER/__", "PLACEHOLDER");
-      builder.AddButton("__/CAC.WO.CLOSE/__", new Action(this.OnBack), false);
-      builder.AddButton("__/CAC.WO.SAVE/__", new Action(this.OnSave), false);
-      popup = builder.CancelOnEscape().Render();
-      backButton = Traverse.Create(popup).Field<List<HBSButton>>("buttons").Value[0];
-      saveButton = Traverse.Create(popup).Field<List<HBSButton>>("buttons").Value[1];
-      this.OnShow();
+      if (UIShown) { return; }
+      try {
+        UIShown = true;
+        GenericPopupBuilder builder = GenericPopupBuilder.Create("__/CAC.WO.WEAPONS.ORDER/__", "PLACEHOLDER");
+        builder.AddButton("__/CAC.WO.CLOSE/__", new Action(this.OnBack), false);
+        builder.AddButton("__/CAC.WO.SAVE/__", new Action(this.OnSave), false);
+        popup = builder.CancelOnEscape().AddFader().Render();
+        backButton = popup.buttons[0];
+        saveButton = popup.buttons[1];
+        this.OnShow();
+      }catch(Exception e) {
+        UIManager.logger.LogException(e);
+        if (popup != null) { popup.Pool(); popup = null; }
+        UIShown = false;
+      }
     }
     public void OnSave() {
       if (this.mechBayPanel == null) { return; }
@@ -2437,6 +2446,7 @@ namespace CustomAmmoCategoriesPatches {
         popup._contentText.gameObject.SetActive(true);
         popup.Pool();
         popup = null;
+        UIShown = false;
       }
     }
     public void OnShow() {
@@ -2640,6 +2650,7 @@ namespace CustomAmmoCategoriesPatches {
       label.gameObject.GetComponent<LocalizableText>().SetText("__/WEAPON ORDER/__");
       //MechBayPanel_ViewBays.mechBayPanel = __instance;
       HBSDOTweenButton button = weaponOrder.gameObject.GetComponent<HBSDOTweenButton>();
+      button.OnClicked.RemoveAllListeners();
       WeaponsOrderPopupSupervisor weaponsOrderPopupSupervisor = __instance.gameObject.GetComponent<WeaponsOrderPopupSupervisor>();
       if (weaponsOrderPopupSupervisor == null) {
         weaponsOrderPopupSupervisor = __instance.gameObject.AddComponent<WeaponsOrderPopupSupervisor>();

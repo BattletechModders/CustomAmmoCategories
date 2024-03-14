@@ -27,5 +27,33 @@ namespace CustomUnits {
       }
     }
   }
+  [HarmonyPatch(typeof(SGContractsWidget))]
+  [HarmonyPatch("OnContractAccepted")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { typeof(bool) })]
+  public static class SGContractsWidget_OnContractAccepted {
+    private static float Timer = 0f;
+    private static readonly float TIMER_MAX = 3f;
+    public class OnContractAcceptedTimer : MonoBehaviour {
+      public void Update() {
+        if (Timer > Core.Epsilon) {
+          Timer -= Time.deltaTime;
+        } else if(Timer != 0f) { 
+          Timer = 0f;
+        }
+      }
+    }
+    static void Prefix(ref bool __runOriginal, SGContractsWidget __instance) {
+      try {
+        if (SGContractsWidget_OnContractAccepted.Timer > 0f) { __runOriginal = false; return; }
+        Timer = TIMER_MAX;
+        if (__instance.gameObject.GetComponent<OnContractAcceptedTimer>() == null) {
+          __instance.gameObject.AddComponent<OnContractAcceptedTimer>();
+        }
+      } catch (Exception e) {
+        UIManager.logger.LogException(e);
+      }
+    }
+  }
 
 }

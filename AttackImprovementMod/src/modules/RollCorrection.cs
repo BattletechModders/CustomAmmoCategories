@@ -138,7 +138,7 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
         if (!correctionCache.TryGetValue(chance, out float corrected))
           correctionCache.Add(chance, corrected = ReverseRollCorrection(chance, RollCorrectionStrength));
         chance = corrected;
-        CustomAmmoCategoriesLog.Log.M.TWL(0, "ShowCorrectedHitChance:" + __instance.weaponSlotType+":"+chance);
+        //CustomAmmoCategoriesLog.Log.Combat?.TWL(0, "ShowCorrectedHitChance:" + __instance.weaponSlotType+":"+chance);
       } catch (Exception ex) { Error(ex); }
     }
 

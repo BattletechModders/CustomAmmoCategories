@@ -195,7 +195,14 @@ namespace CustomUnits {
     protected override void InitStats() {
       custLosData = new CustomLOSData(this);
       custLosData.ApplyScale(MechResizer.SizeMultiplier.Get(this.MechDef));
-      base.InitStats();
+      try {
+        base.InitStats();
+      } catch (Exception e) {
+        Log.ECombat?.TWL(0, $"{this.PilotableActorDef.ChassisID}:{this.pilot.Description.Id} fail to {this.GetType().BaseType.ToString()}.InitStats");
+        Log.ECombat?.WL(0, e.ToString());
+        CombatGameState.gameInfoLogger.LogError($"{this.PilotableActorDef.ChassisID}:{this.pilot.Description.Id} fail to {this.GetType().BaseType.ToString()}.InitStats");
+        CombatGameState.gameInfoLogger.LogException(e);
+      }
       UpdateLOSHeight(this.FlyingHeight());
     }
     public virtual float ArtilleryProtectionRadius { get { return this.Radius; } }
