@@ -150,10 +150,10 @@ namespace CustAmmoCategories {
     public static void prosessJummingMessages() {
       while (jammQueue.Count > 0) {
         JammMessage message = jammQueue.Dequeue();
-        Log.Combat?.WL(0, "Publishing jamm message for " + message.actor.DisplayName + " " + message.message);
+        Log.Combat?.WL(0, $"Publishing jamm message for {message.actor.DisplayName} '{new Text(message.message).ToString()}'");
         message.actor.Combat.MessageCenter.PublishMessage(
             new AddSequenceToStackMessage(
-                new ShowActorInfoSequence(message.actor, message.message, FloatieMessage.MessageNature.Debuff, true)));
+                new ShowActorInfoSequence(message.actor, new Text(message.message).ToString(), FloatieMessage.MessageNature.Debuff, true)));
       }
       prosessExposion();
     }
@@ -438,8 +438,8 @@ namespace CustAmmoCategories {
             weapon.CritComponent(ref fakeHit, weapon, destroy);
           }
           var message = weapon.DamageLevel == ComponentDamageLevel.Destroyed
-              ? $"{weapon.UIName} __/CAC.misfire/__: __/CAC.Destroyed/__!"
-              : $"{weapon.UIName} __/CAC.misfire/__: __/CAC.Damaged/__!";
+              ? $"!{weapon.UIName} __/CAC.misfire/__: __/CAC.misfire_Destroyed/__"
+              : $"!{weapon.UIName} __/CAC.misfire/__: __/CAC.misfire_Damaged/__";
           CustomAmmoCategories.addJamMessage(actor, message);
         }
       }catch(Exception e) {
