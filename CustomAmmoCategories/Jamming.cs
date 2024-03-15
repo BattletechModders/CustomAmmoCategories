@@ -438,8 +438,8 @@ namespace CustAmmoCategories {
             weapon.CritComponent(ref fakeHit, weapon, destroy);
           }
           var message = weapon.DamageLevel == ComponentDamageLevel.Destroyed
-              ? $"!{weapon.UIName} __/CAC.misfire/__: __/CAC.misfire_Destroyed/__"
-              : $"!{weapon.UIName} __/CAC.misfire/__: __/CAC.misfire_Damaged/__";
+              ? $"{weapon.UIName} __/CAC.misfire/__: __/CAC.misfire_Destroyed/__!"
+              : $"{weapon.UIName} __/CAC.misfire/__: __/CAC.misfire_Damaged/__!";
           CustomAmmoCategories.addJamMessage(actor, message);
         }
       }catch(Exception e) {
