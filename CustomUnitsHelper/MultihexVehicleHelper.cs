@@ -102,7 +102,8 @@ namespace CustomUnitsHelper
       this.transform.position = newPos;
 
       // Align with the front target, but set the look direction 'up' through the 
-      this.transform.rotation.SetLookRotation(m_FrontPos.targetTranform.position, mergedCenterPoint);
+      //this.transform.rotation.SetLookRotation(m_FrontPos.targetTranform.position, mergedCenterPoint);
+      this.transform.rotation.SetLookRotation(newPos, mergedCenterPoint);
     }
 
   }
@@ -138,6 +139,91 @@ namespace CustomUnitsHelper
     public void LateUpdate()
     {
       this.transform.localPosition = thisDefaultPos + (j_Body.localPosition - bodyDefaultPos);
+    }
+  }
+
+  // Transform adjuster that moves specific transforms vertically based upon the distance to the ground.
+  //   Used in some models to allow treads to align to the ground as the unit moves
+  [ExecuteInEditMode]
+  public class TerrainHeightTransformAdjuster : MonoBehaviour
+  {
+    [SerializeField]
+    private CustomUnitsGroundLedar m_terrainPos;
+
+    [SerializeField]
+    public Transform parentTransform;
+
+    [SerializeField]
+    public Transform targetTransform;
+
+    [SerializeField]
+    public float maxDeltaY = 0.0f;
+
+    [SerializeField]
+    public float minDistanceY = 0.0f;
+
+    [SerializeField]
+    public float targetShiftX= 0.0f;
+
+    [SerializeField]
+    public float targetShiftZ = 0.0f;
+
+
+    public Transform TerrainPos
+    {
+      get { return m_terrainPos == null ? null : m_terrainPos.targetTranform; }
+      set { m_terrainPos = value.gameObject.GetComponent<CustomUnitsGroundLedar>(); }
+    }
+
+    public void Init()
+    {
+    }
+
+    public void OnEnable()
+    {
+      this.Init();
+    }
+
+    public void Enable()
+    {
+      this.Init();
+      this.enabled = true;
+    }
+
+    public void Disable()
+    {
+      this.enabled = false;
+    }
+
+    public void Awake() { this.Init(); }
+
+    public void LateUpdate()
+    {
+      if (m_terrainPos == null) { return; }
+      if (parentTransform == null) { return; }
+      if (targetTransform == null) { return; }
+
+      if (m_terrainPos.targetTranform == null) { return; }
+
+      DebugLog.Instance.LogWrite($"terrainPos: {m_terrainPos.targetTranform.position}  parent.pos: {parentTransform.position}  target.pos: {targetTransform.position}");
+
+      float heightDelta = Mathf.Abs(this.transform.position.y - m_terrainPos.targetTranform.position.y); 
+      if (heightDelta > maxDeltaY)
+      {
+        heightDelta = maxDeltaY;
+      }
+      if (heightDelta < minDistanceY)
+      {
+        heightDelta = minDistanceY;
+      }
+
+      Vector3 newPos = parentTransform.position;
+      newPos.x += targetShiftX;
+      newPos.z += targetShiftZ;
+      newPos.y -= heightDelta;
+      DebugLog.Instance.LogWrite($"parent.pos: {parentTransform.position} - heightDelta: {heightDelta}  => newPos: {newPos}");
+      targetTransform.position = newPos;
+      targetTransform.localPosition = new Vector3(targetShiftX, -1 * heightDelta, targetShiftZ);
     }
   }
 
