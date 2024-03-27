@@ -195,8 +195,9 @@ namespace CustAmmoCategories {
         hitInfo.hitLocations[hitIndex] = dmg.Key;
         int Location = hitInfo.hitLocations[hitIndex];
         string secTarget = string.Empty;
-        int secLocation = 0;
-        hitInfo.hitPositions[hitIndex] = combatant.GetImpactPosition(attacker, attacker.CurrentPosition, weapon, ref Location, ref hitInfo.attackDirections[hitIndex], ref secTarget, ref secLocation);
+        //int secLocation = 0;
+        hitInfo.hitPositions[hitIndex] = ImpactPositionHelper.GetHitPositionFast_Combatant(combatant, attacker.TargetPosition, Location, false);
+          //combatant.GetImpactPosition(attacker, attacker.CurrentPosition, weapon, ref Location, ref hitInfo.attackDirections[hitIndex], ref secTarget, ref secLocation);
         hitInfo.hitVariance[hitIndex] = 0;
         hitInfo.hitQualities[hitIndex] = AttackImpactQuality.Solid;
         hitInfo.secondaryTargetIds[hitIndex] = string.Empty;
@@ -290,9 +291,20 @@ namespace CustAmmoCategories {
             if (target.isSpawnProtected()) { continue; }
             if (weapon.parent.isSpawnProtected()) { continue; }
           }
-          Vector3 CurrentPosition = target.CurrentPosition;
-          if(advRec.isHit == false) { CurrentPosition += Vector3.up* target.FlyingHeight(); } else {
-            if (advRec.target.GUID != target.GUID) { CurrentPosition += Vector3.up * target.FlyingHeight(); }
+          ICombatant aoeTarget = target;
+          if (target is ICustomMech cmech) {
+            if (cmech.carrier != null) {
+              Log.Combat?.WL(1, $"{target.DisplayName} attached to {cmech.carrier.DisplayName} using its position and LoS instead");
+              aoeTarget = cmech.carrier;
+              if (cmech.isMountedExternal == false) {
+                Log.Combat?.WL(1, $"mounted internally. no AoE damage");
+                continue;
+              }
+            }
+          }
+          Vector3 CurrentPosition = aoeTarget.CurrentPosition;
+          if(advRec.isHit == false) { CurrentPosition += Vector3.up* aoeTarget.FlyingHeight(); } else {
+            if (advRec.target.GUID != target.GUID) { CurrentPosition += Vector3.up * aoeTarget.FlyingHeight(); }
           }
           float distance = Vector3.Distance(CurrentPosition, hitPosition);
           Log.Combat?.WL(1, "testing combatant " + target.DisplayName + " " + target.GUID + " " + distance + "("+CustomAmmoCategories.Settings.DefaultAoEDamageMult[target.UnitType].Range+")/" + AOERange);
@@ -305,14 +317,14 @@ namespace CustAmmoCategories {
           if (distance > AOERange) { continue; }
           if(PhysicsAoE) {
             Vector3 raycastStart = hitPosition + Vector3.up * PhysicsAoEHeight;
-            Vector3 raycastEnd = target.TargetPosition;
+            Vector3 raycastEnd = aoeTarget.TargetPosition;
             AreaOfEffectHelper.pseudoLOSActor.Combat = target.Combat;
             AreaOfEffectHelper.pseudoLOSActor.SpotterDistance = Vector3.Distance(raycastStart, raycastEnd) + 100f;
             AreaOfEffectHelper.pseudoLOSActor.pseudo_losSourcePositions[0] = raycastStart;
             AreaOfEffectHelper.pseudoLOSActor._team = target.Combat.LocalPlayerTeam;
             AreaOfEffectHelper.pseudoLOSActor._teamId = target.Combat.LocalPlayerTeamGuid;
-            var lof = target.Combat.LOS.GetLineOfFire(AreaOfEffectHelper.pseudoLOSActor, raycastStart, target, target.CurrentPosition, target.CurrentRotation, out var collisionWorldPos);
-            Log.Combat?.WL(2,$"{raycastStart}->{target.DisplayName} LoF:{lof}");
+            var lof = aoeTarget.Combat.LOS.GetLineOfFire(AreaOfEffectHelper.pseudoLOSActor, raycastStart, aoeTarget, aoeTarget.CurrentPosition, aoeTarget.CurrentRotation, out var collisionWorldPos);
+            Log.Combat?.WL(2,$"{raycastStart}->{aoeTarget.DisplayName} LoF:{lof}");
             if (lof == LineOfFireLevel.LOFBlocked) { continue; }
             //var raycast = Physics.RaycastAll(new Ray(raycastStart, (raycastEnd - raycastStart).normalized), AOERange, Physics.AllLayers, QueryTriggerInteraction.Ignore);
             //RaycastHit? phy_hit = new RaycastHit?();

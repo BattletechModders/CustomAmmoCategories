@@ -1108,6 +1108,11 @@ namespace CustomUnits {
         link.actor.OnPositionUpdate(position + link.relativePosition, link.actor.CurrentRotation, stackItemUID, updateDesignMask, remainingMasks, skipLogging);
       }
     }
+    public virtual ICombatant carrier { get { return null; } }
+    public virtual void SetCarrier(ICombatant combatant, bool isExternal) { }
+    public virtual bool isMountedExternal { get { return false; } }
+    public virtual HashSet<ICombatant> attachedInternally { get; set; }
+    public virtual HashSet<ICombatant> attachedExternally { get; set; }
     public virtual bool ForcedVisible { get; set; } = false;
     public virtual void BossAppearAnimation() {
       ForcedVisible = true;

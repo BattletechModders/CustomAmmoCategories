@@ -859,15 +859,15 @@ namespace CustomAmmoCategoriesPatches {
   //    return true;
   //  }
   //}
-  [HarmonyPatch(typeof(WeaponRangeIndicators))]
-  [HarmonyPatch("ShowLineToTarget")]
-  [HarmonyPatch(MethodType.Normal)]
-  [HarmonyPatch(new Type[] { typeof(AbstractActor), typeof(Vector3), typeof(Quaternion), typeof(AbstractActor), typeof(bool) })]
-  public static class WeaponRangeIndicators_ShowLineToTarget {
-    private static void Prefix(WeaponRangeIndicators __instance, AbstractActor selectedActor, Vector3 position, Quaternion rotation, AbstractActor targetedActor, bool isMelee) {
-      Log.Combat?.TWL(0, "WeaponRangeIndicators.ShowLineToTarget position:"+position+" actor:" + new Text(selectedActor.DisplayName).ToString() + " trg:" + (targetedActor == null ? "null" : (new Text(targetedActor.DisplayName).ToString())));
-    }
-  }
+  //[HarmonyPatch(typeof(WeaponRangeIndicators))]
+  //[HarmonyPatch("ShowLineToTarget")]
+  //[HarmonyPatch(MethodType.Normal)]
+  //[HarmonyPatch(new Type[] { typeof(AbstractActor), typeof(Vector3), typeof(Quaternion), typeof(AbstractActor), typeof(bool) })]
+  //public static class WeaponRangeIndicators_ShowLineToTarget {
+  //  private static void Prefix(WeaponRangeIndicators __instance, AbstractActor selectedActor, Vector3 position, Quaternion rotation, AbstractActor targetedActor, bool isMelee) {
+  //    Log.Combat?.TWL(0, "WeaponRangeIndicators.ShowLineToTarget position:"+position+" actor:" + new Text(selectedActor.DisplayName).ToString() + " trg:" + (targetedActor == null ? "null" : (new Text(targetedActor.DisplayName).ToString())));
+  //  }
+  //}
   [HarmonyPatch(typeof(FiringPreviewManager))]
   [HarmonyPatch("HasLOS")]
   [HarmonyPatch(MethodType.Normal)]
@@ -943,30 +943,30 @@ namespace CustomAmmoCategoriesPatches {
       }
     }
   }
-  public static class WeaponEffect_FireTerrain {
-    public static bool Prefix(WeaponEffect __instance, WeaponHitInfo hitInfo, int hitIndex, int emitterIndex) {
-      if (hitInfo.attackerId == hitInfo.targetId) {
-        Log.Combat?.WL(0,"On Fire detected terrain attack");
-        typeof(WeaponEffect).GetField("t", BindingFlags.Instance | BindingFlags.NonPublic).SetValue(__instance, (object)0.0f);
-        __instance.hitIndex = (hitIndex);
-        typeof(WeaponEffect).GetField("emitterIndex", BindingFlags.Instance | BindingFlags.NonPublic).SetValue(__instance, (object)emitterIndex);
-        __instance.hitInfo = hitInfo;
-        typeof(WeaponEffect).GetField("startingTransform", BindingFlags.Instance | BindingFlags.NonPublic).SetValue(__instance, (object)__instance.weaponRep.vfxTransforms[emitterIndex]);
-        Transform startingTransform = (Transform)typeof(WeaponEffect).GetField("startingTransform", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(__instance);
-        typeof(WeaponEffect).GetField("startPos", BindingFlags.Instance | BindingFlags.NonPublic).SetValue(__instance, (object)startingTransform.position);
-        typeof(WeaponEffect).GetField("endPos", BindingFlags.Instance | BindingFlags.NonPublic).SetValue(__instance, (object)hitInfo.hitPositions[hitIndex]);
-        Vector3 startPos = (Vector3)typeof(WeaponEffect).GetField("startPos", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(__instance);
-        typeof(WeaponEffect).GetField("currentPos", BindingFlags.Instance | BindingFlags.NonPublic).SetValue(__instance, (object)startPos);
-        PropertyInfo property = typeof(WeaponEffect).GetProperty("FiringComplete");
-        property.DeclaringType.GetProperty("FiringComplete");
-        property.GetSetMethod(true).Invoke(__instance, new object[1] { (object)false });
-        __instance.InitProjectile();
-        __instance.currentState = WeaponEffect.WeaponEffectState.PreFiring;
-        return false;
-      }
-      return true;
-    }
-  }
+  //public static class WeaponEffect_FireTerrain {
+  //  public static bool Prefix(WeaponEffect __instance, WeaponHitInfo hitInfo, int hitIndex, int emitterIndex) {
+  //    if (hitInfo.attackerId == hitInfo.targetId) {
+  //      Log.Combat?.WL(0,"On Fire detected terrain attack");
+  //      typeof(WeaponEffect).GetField("t", BindingFlags.Instance | BindingFlags.NonPublic).SetValue(__instance, (object)0.0f);
+  //      __instance.hitIndex = (hitIndex);
+  //      typeof(WeaponEffect).GetField("emitterIndex", BindingFlags.Instance | BindingFlags.NonPublic).SetValue(__instance, (object)emitterIndex);
+  //      __instance.hitInfo = hitInfo;
+  //      typeof(WeaponEffect).GetField("startingTransform", BindingFlags.Instance | BindingFlags.NonPublic).SetValue(__instance, (object)__instance.weaponRep.vfxTransforms[emitterIndex]);
+  //      Transform startingTransform = (Transform)typeof(WeaponEffect).GetField("startingTransform", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(__instance);
+  //      typeof(WeaponEffect).GetField("startPos", BindingFlags.Instance | BindingFlags.NonPublic).SetValue(__instance, (object)startingTransform.position);
+  //      typeof(WeaponEffect).GetField("endPos", BindingFlags.Instance | BindingFlags.NonPublic).SetValue(__instance, (object)hitInfo.hitPositions[hitIndex]);
+  //      Vector3 startPos = (Vector3)typeof(WeaponEffect).GetField("startPos", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(__instance);
+  //      typeof(WeaponEffect).GetField("currentPos", BindingFlags.Instance | BindingFlags.NonPublic).SetValue(__instance, (object)startPos);
+  //      PropertyInfo property = typeof(WeaponEffect).GetProperty("FiringComplete");
+  //      property.DeclaringType.GetProperty("FiringComplete");
+  //      property.GetSetMethod(true).Invoke(__instance, new object[1] { (object)false });
+  //      __instance.InitProjectile();
+  //      __instance.currentState = WeaponEffect.WeaponEffectState.PreFiring;
+  //      return false;
+  //    }
+  //    return true;
+  //  }
+  //}
   [HarmonyPatch(typeof(SelectionStateCommandTargetSinglePoint))]
   [HarmonyPatch("ProcessMousePos")]
   [HarmonyPatch(MethodType.Normal)]

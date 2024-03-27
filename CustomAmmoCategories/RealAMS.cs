@@ -674,9 +674,10 @@ namespace CustomAmmoCategoriesPatches {
   [HarmonyPatch(new Type[] { typeof(WeaponHitInfo), typeof(int), typeof(int) })]
   [HarmonyPriority(Priority.HigherThanNormal)]
   public static class WeaponEffect_Fire {
-    public static void Prefix(WeaponEffect __instance, ref WeaponHitInfo hitInfo, int hitIndex, int emitterIndex, ref Vector3 __state) {
+    public static void Prefix(ref bool __runOriginal, WeaponEffect __instance, ref WeaponHitInfo hitInfo, int hitIndex, int emitterIndex, ref Vector3 __state) {
       try {
         Log.Combat?.W(0,"WeaponEffect.Fire");
+        ImpactPositionHelper.PrepareVisuals(__instance, ref hitInfo, hitIndex, emitterIndex);
         __state = hitInfo.hitPositions[hitIndex];
         Log.Combat?.W(1, "save HitPosition " + __state);
         Log.Combat?.WL(1, __instance.weapon.defId + " " + hitInfo.attackWeaponIndex + ":" + hitIndex);
@@ -687,6 +688,7 @@ namespace CustomAmmoCategoriesPatches {
     }
     public static void Postfix(WeaponEffect __instance, ref WeaponHitInfo hitInfo, int hitIndex, int emitterIndex, ref Vector3 __state) {
       Log.Combat?.WL(0,"WeaponEffect.Fire " + __instance.weapon.UIName + " " + hitInfo.attackWeaponIndex + ":" + hitIndex + " restore HitPosition " + __state);
+      ImpactPositionHelper.DeprepareVisuals(__instance, ref hitInfo, hitIndex, emitterIndex);
       hitInfo.hitPositions[hitIndex] = __state;
       __instance.hitInfo.hitPositions[hitIndex] = __state;
       __instance.endPos(hitInfo.hitPositions[hitIndex]);
@@ -1053,11 +1055,11 @@ namespace CustomAmmoCategoriesPatches {
         }
         DamageModifiersCache.ClearComulativeDamage();
         AdvWeaponHitInfo.printExpectedMessages(__instance.id);
-        Log.Combat?.TWL(0, "Combatants affected by attack:" + affectedCombatants.Count);
+        //Log.Combat?.TWL(0, "Combatants affected by attack:" + affectedCombatants.Count);
         foreach (ICombatant trg in affectedCombatants) {
-          Log.Combat?.WL(1, trg.DisplayName + ":" + trg.GUID);
+          //Log.Combat?.WL(1, trg.DisplayName + ":" + trg.GUID);
           foreach (var stat in trg.StatCollection) {
-            Log.Combat?.WL(2, stat.Key + "=" + stat.Value.CurrentValue.type + ":" + stat.Value.CurrentValue.ToString());
+            //Log.Combat?.WL(2, stat.Key + "=" + stat.Value.CurrentValue.type + ":" + stat.Value.CurrentValue.ToString());
           }
         }
       } catch (Exception e) {

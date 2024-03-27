@@ -159,7 +159,7 @@ namespace CustomAmmoCategoriesPatches {
       Log.Combat?.WL(1, "radius:" + radius + " realdistance:" + Vector3.Distance(centerPosition, position));
       return position;
     }
-    public static void GetStreakHits(this AttackDirector.AttackSequence instance, ref WeaponHitInfo hitInfo, int groupIdx, int weaponIdx, Weapon weapon, float toHitChance, float clusterMod, float prevDodgedDamage) {
+    public static void GetStreakHits(this AttackDirector.AttackSequence instance, ref WeaponHitInfo hitInfo, int groupIdx, int weaponIdx, Weapon weapon, float toHitChance, float clusterMod, float prevDodgedDamage, bool indirectFire) {
       if (hitInfo.numberOfShots == 0) { return; };
       Log.Combat?.TWL(0, $"GetStreakHits {weapon.defId} mode:{weapon.mode().UIName} ammo:{weapon.ammo().Id} clustering:{weapon.ClusteringModifier+clusterMod} choosenTarget type:{instance.chosenTarget.GetType().Name}");
       if (AttackDirector.hitLogger.IsLogEnabled)
@@ -205,7 +205,10 @@ namespace CustomAmmoCategoriesPatches {
           instance.FlagShotMissed();
         }
         hitInfo.hitQualities[0] = instance.Director.Combat.ToHit.GetBlowQuality(instance.attacker, instance.attackPosition, weapon, instance.chosenTarget, instance.meleeAttackType, instance.IsBreachingShot);
-        hitInfo.hitPositions[0] = instance.chosenTarget.GetImpactPosition(instance.attacker, instance.attackPosition, weapon, ref hitInfo.hitLocations[0], ref hitInfo.attackDirections[0], ref hitInfo.secondaryTargetIds[0], ref hitInfo.secondaryHitLocations[0]);
+        hitInfo.hitPositions[0] = ImpactPositionHelper.GetImpactPosition(instance.attacker, instance.attackPosition, hitInfo.toHitRolls[0],
+              indirectFire, weapon, instance.chosenTarget, instance.chosenTarget.TargetPosition, ref hitInfo.hitLocations[0],
+              ref hitInfo.attackDirections[0], ref hitInfo.secondaryTargetIds[0], ref hitInfo.secondaryHitLocations[0]);
+        //instance.chosenTarget.GetImpactPosition(instance.attacker, instance.attackPosition, weapon, ref hitInfo.hitLocations[0], ref hitInfo.attackDirections[0], ref hitInfo.secondaryTargetIds[0], ref hitInfo.secondaryHitLocations[0]);
       }
       ICombatant chosenTarget = instance.chosenTarget;
       bool primeHitsSecondary = false;
@@ -240,7 +243,10 @@ namespace CustomAmmoCategoriesPatches {
             Log.Combat?.WL(2, "hit to secondary target");
             string secondaryTargetId = (string)null;
             int secondaryHitLocation = 0;
-            hitInfo.hitPositions[hitIndex] = instance.chosenTarget.GetImpactPosition(instance.attacker, instance.attackPosition, weapon, ref HitLocation, ref hitInfo.attackDirections[hitIndex], ref secondaryTargetId, ref secondaryHitLocation);
+            hitInfo.hitPositions[hitIndex] = ImpactPositionHelper.GetImpactPosition(instance.attacker, instance.attackPosition, hitInfo.toHitRolls[hitIndex],
+              indirectFire, weapon, chosenTarget, chosenTarget.TargetPosition, ref HitLocation,
+              ref hitInfo.attackDirections[hitIndex], ref secondaryTargetId, ref secondaryHitLocation);
+            //instance.chosenTarget.GetImpactPosition(instance.attacker, instance.attackPosition, weapon, ref HitLocation, ref hitInfo.attackDirections[hitIndex], ref secondaryTargetId, ref secondaryHitLocation);
             hitInfo.hitLocations[hitIndex] = 0;
             hitInfo.secondaryHitLocations[hitIndex] = HitLocation;
             hitInfo.secondaryTargetIds[hitIndex] = chosenTarget.GUID;
@@ -249,7 +255,10 @@ namespace CustomAmmoCategoriesPatches {
             Log.Combat?.WL(2, "hit to primary target");
             string secondaryTargetId = (string)null;
             int secondaryHitLocation = 0;
-            hitInfo.hitPositions[hitIndex] = instance.chosenTarget.GetImpactPosition(instance.attacker, instance.attackPosition, weapon, ref HitLocation, ref hitInfo.attackDirections[hitIndex], ref secondaryTargetId, ref secondaryHitLocation);
+            hitInfo.hitPositions[hitIndex] = ImpactPositionHelper.GetImpactPosition(instance.attacker, instance.attackPosition, hitInfo.toHitRolls[hitIndex],
+              indirectFire, weapon, instance.chosenTarget, instance.chosenTarget.TargetPosition, ref hitInfo.hitLocations[hitIndex],
+              ref hitInfo.attackDirections[hitIndex],ref secondaryTargetId, ref secondaryHitLocation);
+            //instance.chosenTarget.GetImpactPosition(instance.attacker, instance.attackPosition, weapon, ref HitLocation, ref hitInfo.attackDirections[hitIndex], ref secondaryTargetId, ref secondaryHitLocation);
             hitInfo.hitLocations[hitIndex] = HitLocation;
             hitInfo.secondaryHitLocations[hitIndex] = 0;
             hitInfo.secondaryTargetIds[hitIndex] = null;
@@ -261,7 +270,10 @@ namespace CustomAmmoCategoriesPatches {
           hitInfo.hitLocations[hitIndex] = 0;
           string secondaryTargetId = (string)null;
           int secondaryHitLocation = 0;
-          hitInfo.hitPositions[hitIndex] = instance.chosenTarget.GetImpactPosition(instance.attacker, instance.attackPosition, weapon, ref hitInfo.hitLocations[hitIndex], ref hitInfo.attackDirections[hitIndex], ref secondaryTargetId, ref secondaryHitLocation);
+          hitInfo.hitPositions[hitIndex] = ImpactPositionHelper.GetImpactPosition(instance.attacker, instance.attackPosition, hitInfo.toHitRolls[hitIndex],
+              indirectFire, weapon, instance.chosenTarget, instance.chosenTarget.TargetPosition, ref hitInfo.hitLocations[hitIndex],
+              ref hitInfo.attackDirections[hitIndex], ref secondaryTargetId, ref secondaryHitLocation);
+          //instance.chosenTarget.GetImpactPosition(instance.attacker, instance.attackPosition, weapon, ref hitInfo.hitLocations[hitIndex], ref hitInfo.attackDirections[hitIndex], ref secondaryTargetId, ref secondaryHitLocation);
           Log.Combat?.WL(2, "hitLocation:" + hitInfo.hitLocations[hitIndex]);
           hitInfo.secondaryHitLocations[hitIndex] = 0;
           hitInfo.secondaryTargetIds[hitIndex] = null;
@@ -269,12 +281,12 @@ namespace CustomAmmoCategoriesPatches {
         }
       }
     }
-    public static void RefreshHitQualitiesForSecondaryTargets(this AttackDirector.AttackSequence instance,ref WeaponHitInfo hitInfo,Weapon weapon, int hitIdx) {
+    public static void RefreshHitQualitiesForSecondaryTargets_I(this AttackDirector.AttackSequence instance,ref WeaponHitInfo hitInfo,Weapon weapon, int hitIdx) {
       if (string.IsNullOrEmpty(hitInfo.secondaryTargetIds[hitIdx])) { return; }
       ICombatant combatantByGuid = instance.Director.Combat.FindCombatantByGUID(hitInfo.secondaryTargetIds[hitIdx]);
       hitInfo.hitQualities[hitIdx] = instance.Director.Combat.ToHit.GetBlowQuality(instance.attacker, instance.attackPosition, weapon, combatantByGuid, instance.meleeAttackType, instance.IsBreachingShot);
     }
-    public static void GetClusteredHits_I(this AttackDirector.AttackSequence instance, ref WeaponHitInfo hitInfo, int groupIdx, int weaponIdx, Weapon weapon, float toHitChance, float clusterMod, float prevDodgedDamage) {
+    public static void GetClusteredHits_I(this AttackDirector.AttackSequence instance, ref WeaponHitInfo hitInfo, int groupIdx, int weaponIdx, Weapon weapon, float toHitChance, float clusterMod, float prevDodgedDamage, bool indirectFire) {
       Log.Combat?.TWL(0, "GetClusteredHits " + weapon.defId + " mode:" + weapon.mode().UIName + " ammo:" + weapon.ammo().Id + " clustering:" + (weapon.ClusteringModifier+clusterMod) + " choosenTarget type:" + instance.chosenTarget.GetType().Name);
       if (hitInfo.numberOfShots == 0) { return; };
       if (AttackDirector.hitLogger.IsLogEnabled)
@@ -330,11 +342,14 @@ namespace CustomAmmoCategoriesPatches {
             AttackDirector.hitminLogger.Log((object)string.Format("WEAPON: {0} - SHOT: {1} Misses!", (object)weapon.Name, (object)index));
           instance.FlagShotMissed();
         }
-        hitInfo.hitPositions[index] = instance.chosenTarget.GetImpactPosition(instance.attacker, instance.attackPosition, weapon, ref hitInfo.hitLocations[index], ref hitInfo.attackDirections[index], ref hitInfo.secondaryTargetIds[index], ref hitInfo.secondaryHitLocations[index]);
-        instance.RefreshHitQualitiesForSecondaryTargets(ref hitInfo, weapon, index);
+        hitInfo.hitPositions[index] = ImpactPositionHelper.GetImpactPosition(instance.attacker, instance.attackPosition, hitInfo.toHitRolls[index],
+          indirectFire, weapon, instance.chosenTarget, instance.chosenTarget.TargetPosition, ref hitInfo.hitLocations[index],
+          ref hitInfo.attackDirections[index], ref hitInfo.secondaryTargetIds[index], ref hitInfo.secondaryHitLocations[index]);
+        //instance.chosenTarget.GetImpactPosition(instance.attacker, instance.attackPosition, weapon, ref hitInfo.hitLocations[index], ref hitInfo.attackDirections[index], ref hitInfo.secondaryTargetIds[index], ref hitInfo.secondaryHitLocations[index]);
+        instance.RefreshHitQualitiesForSecondaryTargets_I(ref hitInfo, weapon, index);
       }
     }
-    public static void GetIndividualHits_I(this AttackDirector.AttackSequence instance, ref WeaponHitInfo hitInfo, int groupIdx, int weaponIdx, Weapon weapon, float toHitChance, float clusterMod, float prevDodgedDamage) {
+    public static void GetIndividualHits_I(this AttackDirector.AttackSequence instance, ref WeaponHitInfo hitInfo, int groupIdx, int weaponIdx, Weapon weapon, float toHitChance, float clusterMod, float prevDodgedDamage, bool indirectFire) {
       Log.Combat?.TWL(0, "GetIndividualHits " + weapon.defId + " mode:" + weapon.mode().UIName + " ammo:" + weapon.ammo().Id + " clustering:" + weapon.ClusteringModifier+" choosenTarget type:"+ instance.chosenTarget.GetType().Name);
       if (hitInfo.numberOfShots == 0) { return; };
       if (AttackDirector.hitLogger.IsLogEnabled)
@@ -352,7 +367,7 @@ namespace CustomAmmoCategoriesPatches {
       float num = instance.attacker.CalledShotBonusMultiplier;
       for (int index = 0; index < hitInfo.numberOfShots; ++index) {
         float correctedRoll = instance.GetCorrectedRoll(hitInfo.toHitRolls[index], team);
-        bool succeeded = (double)correctedRoll <= (double)toHitChance;
+        bool succeeded = correctedRoll <= toHitChance;
         if ((CustomAmmoCategories.Settings.PlayerAlwaysHit) && (team == instance.attacker.Combat.LocalPlayerTeam)) { succeeded = true; }
         if (weapon.exDef().alwaysMiss) { succeeded = false; }
         team?.ProcessRandomRoll(toHitChance, succeeded);
@@ -385,8 +400,11 @@ namespace CustomAmmoCategoriesPatches {
             AttackDirector.hitminLogger.Log((object)string.Format("WEAPON: {0} - SHOT: {1} Misses!", (object)weapon.Name, (object)index));
           instance.FlagShotMissed();
         }
-        hitInfo.hitPositions[index] = instance.chosenTarget.GetImpactPosition(instance.attacker, instance.attackPosition, weapon, ref hitInfo.hitLocations[index], ref hitInfo.attackDirections[index], ref hitInfo.secondaryTargetIds[index], ref hitInfo.secondaryHitLocations[index]);
-        instance.RefreshHitQualitiesForSecondaryTargets(ref hitInfo, weapon, index);
+        hitInfo.hitPositions[index] = ImpactPositionHelper.GetImpactPosition(instance.attacker, instance.attackPosition, hitInfo.toHitRolls[index],
+          indirectFire, weapon, instance.chosenTarget, instance.chosenTarget.TargetPosition, ref hitInfo.hitLocations[index],
+          ref hitInfo.attackDirections[index], ref hitInfo.secondaryTargetIds[index], ref hitInfo.secondaryHitLocations[index]);
+        //instance.chosenTarget.GetImpactPosition(instance.attacker, instance.attackPosition, weapon, ref hitInfo.hitLocations[index], ref hitInfo.attackDirections[index], ref hitInfo.secondaryTargetIds[index], ref hitInfo.secondaryHitLocations[index]);
+        instance.RefreshHitQualitiesForSecondaryTargets_I(ref hitInfo, weapon, index);
       }
     }
     public static ArmorLocation HitToLegs(this ArmorLocation aloc) {
@@ -404,7 +422,7 @@ namespace CustomAmmoCategoriesPatches {
       }
       return aloc;
     }
-    private static void GetAOEHits(AttackDirector.AttackSequence instance, ref WeaponHitInfo hitInfo, int groupIdx, int weaponIdx, Weapon weapon, float toHitChance, float clusterMod, float prevDodgedDamage) {
+    private static void GetAOEHits(AttackDirector.AttackSequence instance, ref WeaponHitInfo hitInfo, int groupIdx, int weaponIdx, Weapon weapon, float toHitChance, float clusterMod, float prevDodgedDamage, bool indirectFire) {
       Log.Combat?.WL(0, "GetAOEHits");
       if (hitInfo.numberOfShots == 0) { return; };
       if (AttackDirector.hitLogger.IsLogEnabled)
@@ -474,7 +492,27 @@ namespace CustomAmmoCategoriesPatches {
             AttackDirector.hitminLogger.Log((object)string.Format("WEAPON: {0} - SHOT: {1} Misses!", (object)weapon.Name, (object)hitIndex));
           instance.FlagShotMissed();
         }
-        hitInfo.hitPositions[hitIndex] = instance.chosenTarget.GetImpactPosition(instance.attacker, instance.attackPosition, weapon, ref hitInfo.hitLocations[hitIndex], ref hitInfo.attackDirections[hitIndex], ref hitInfo.secondaryTargetIds[hitIndex], ref hitInfo.secondaryHitLocations[hitIndex]);
+        hitInfo.hitPositions[hitIndex] = ImpactPositionHelper.GetImpactPosition(instance.attacker, instance.attackPosition, hitInfo.toHitRolls[hitIndex], 
+          indirectFire, weapon, instance.chosenTarget, instance.chosenTarget.TargetPosition, ref hitInfo.hitLocations[hitIndex],
+          ref hitInfo.attackDirections[hitIndex], ref hitInfo.secondaryTargetIds[hitIndex], ref hitInfo.secondaryHitLocations[hitIndex]);
+          //instance.chosenTarget.GetImpactPosition(instance.attacker, instance.attackPosition, weapon, ref hitInfo.hitLocations[hitIndex], ref hitInfo.attackDirections[hitIndex], ref hitInfo.secondaryTargetIds[hitIndex], ref hitInfo.secondaryHitLocations[hitIndex]);
+      }
+    }
+    private static void GetTerrainHits(AttackDirector.AttackSequence instance, ref WeaponHitInfo hitInfo, Vector3 terrainPosition, int groupIdx, int weaponIdx, Weapon weapon, bool indirectFire) {
+      Log.Combat?.WL(0, "GetTerrainHits");
+      if (hitInfo.numberOfShots == 0) { return; };
+      hitInfo.toHitRolls = instance.GetRandomNumbers(groupIdx, weaponIdx, hitInfo.numberOfShots);
+      hitInfo.locationRolls = instance.GetRandomNumbers(groupIdx, weaponIdx, hitInfo.numberOfShots);
+      hitInfo.dodgeRolls = instance.GetRandomNumbers(groupIdx, weaponIdx, hitInfo.numberOfShots);
+      hitInfo.hitVariance = instance.GetVarianceSums(groupIdx, weaponIdx, hitInfo.numberOfShots, weapon);
+      AbstractActor target = instance.chosenTarget as AbstractActor;
+      Team team = weapon == null || weapon.parent == null || weapon.parent.team == null ? (Team)null : weapon.parent.team;
+      for (int hitIndex = 0; hitIndex < hitInfo.numberOfShots; ++hitIndex) {
+        hitInfo.hitLocations[hitIndex] = 0;
+        instance.FlagShotHit();
+        hitInfo.hitPositions[hitIndex] = ImpactPositionHelper.GetImpactPosition(instance.attacker, instance.attackPosition, hitInfo.toHitRolls[hitIndex],
+          indirectFire, weapon, null, terrainPosition, ref hitInfo.hitLocations[hitIndex],
+          ref hitInfo.attackDirections[hitIndex], ref hitInfo.secondaryTargetIds[hitIndex], ref hitInfo.secondaryHitLocations[hitIndex]);
       }
     }
     public static float generateWeaponHitInfo(AttackDirector.AttackSequence instance, ICombatant target, Weapon weapon, int groupIdx, int weaponIdx, int numberOfShots, bool indirectFire, float dodgedDamage, ref WeaponHitInfo hitInfo, bool missInCircle, bool fragHits) {
@@ -496,7 +534,7 @@ namespace CustomAmmoCategoriesPatches {
         toHitChance = 1f;
       if (AttackDirector.hitLogger.IsLogEnabled)
         AttackDirector.hitLogger.Log((object)string.Format("======================================== HIT CHANCE: [[ {0:P2} ]]", (object)toHitChance));
-      object[] args = new object[6];
+      //object[] args = new object[6];
       HitGeneratorType hitGenType = (fragHits ? HitGeneratorType.Cluster : weapon.HitGenerator());
       if (fragHits) { Log.Combat?.WL(1, $"shells - tie to cluster"); }
       Log.Combat?.WL(1, $"Hit generator:" + hitGenType);
@@ -504,73 +542,81 @@ namespace CustomAmmoCategoriesPatches {
       Thread.CurrentThread.pushWeapon(weapon);
       Thread.CurrentThread.pushAttackSequenceId(instance.id);
       Thread.CurrentThread.pushToStack<string>(CustomAmmoCategories.SPECIAL_HIT_TABLE_NAME, specialHitTable);
-      switch (hitGenType) {
-        case HitGeneratorType.Individual:
-          instance.GetIndividualHits_I(ref hitInfo, groupIdx, weaponIdx, weapon, toHitChance, clusterMod, dodgedDamage);
-          break;
-        case HitGeneratorType.Cluster:
-          instance.GetClusteredHits_I(ref hitInfo, groupIdx, weaponIdx, weapon, toHitChance, clusterMod, dodgedDamage);
-          break;
-        case HitGeneratorType.Streak:
-          AttackSequence_GenerateHitInfo.GetStreakHits(instance, ref hitInfo, groupIdx, weaponIdx, weapon, toHitChance, clusterMod, dodgedDamage);
-          break;
-        case HitGeneratorType.AOE:
-          AttackSequence_GenerateHitInfo.GetAOEHits(instance, ref hitInfo, groupIdx, weaponIdx, weapon, toHitChance, clusterMod, dodgedDamage);
-          break;
-        default:
-          AttackDirector.attackLogger.LogError((object)string.Format("GenerateHitInfo found invalid weapon type: {0}, using basic hit info", (object)hitGenType));
-          instance.GetIndividualHits_I(ref hitInfo, groupIdx, weaponIdx, weapon, toHitChance, clusterMod, dodgedDamage);
-          break;
+      if (instance.attacker.GUID == target.GUID) {
+        TerrainHitInfo terrainPos = CustomAmmoCategories.getTerrinHitPosition(weapon.parent.GUID);
+        if (terrainPos != null) {
+          Log.Combat?.WL(1, $"terrain attack detected to {terrainPos.pos}");
+          AttackSequence_GenerateHitInfo.GetTerrainHits(instance, ref hitInfo, terrainPos.pos, groupIdx, weaponIdx, weapon, indirectFire);
+        }
+      } else { 
+        switch (hitGenType) {
+          case HitGeneratorType.Individual:
+            instance.GetIndividualHits_I(ref hitInfo, groupIdx, weaponIdx, weapon, toHitChance, clusterMod, dodgedDamage, indirectFire);
+            break;
+          case HitGeneratorType.Cluster:
+            instance.GetClusteredHits_I(ref hitInfo, groupIdx, weaponIdx, weapon, toHitChance, clusterMod, dodgedDamage, indirectFire);
+            break;
+          case HitGeneratorType.Streak:
+            AttackSequence_GenerateHitInfo.GetStreakHits(instance, ref hitInfo, groupIdx, weaponIdx, weapon, toHitChance, clusterMod, dodgedDamage, indirectFire);
+            break;
+          case HitGeneratorType.AOE:
+            AttackSequence_GenerateHitInfo.GetAOEHits(instance, ref hitInfo, groupIdx, weaponIdx, weapon, toHitChance, clusterMod, dodgedDamage, indirectFire);
+            break;
+          default:
+            AttackDirector.attackLogger.LogError((object)string.Format("GenerateHitInfo found invalid weapon type: {0}, using basic hit info", (object)hitGenType));
+            instance.GetIndividualHits_I(ref hitInfo, groupIdx, weaponIdx, weapon, toHitChance, clusterMod, dodgedDamage, indirectFire);
+            break;
+        }
       }
       Thread.CurrentThread.popFromStack<string>(CustomAmmoCategories.SPECIAL_HIT_TABLE_NAME);
       Thread.CurrentThread.popAttackSequenceId();
       Thread.CurrentThread.clearWeapon();
       Thread.CurrentThread.clearActor();
       //disabling buildin spread
-      if (instance.attacker.GUID == target.GUID) {
-        TerrainHitInfo terrainPos = CustomAmmoCategories.getTerrinHitPosition(weapon.parent.GUID);
-        if (terrainPos != null) {
-          Log.Combat?.WL(1, $"terrain attack detected to " + terrainPos.pos + ". removing buildin stray");
-          for (int hitIndex = 0; hitIndex < numberOfShots; ++hitIndex) {
-            hitInfo.secondaryHitLocations[hitIndex] = 0;
-            hitInfo.secondaryTargetIds[hitIndex] = null;
-          }
-        }
-      }
+      //if (instance.attacker.GUID == target.GUID) {
+      //  TerrainHitInfo terrainPos = CustomAmmoCategories.getTerrinHitPosition(weapon.parent.GUID);
+      //  if (terrainPos != null) {
+      //    Log.Combat?.WL(1, $"terrain attack detected to " + terrainPos.pos + ". removing buildin stray");
+      //    for (int hitIndex = 0; hitIndex < numberOfShots; ++hitIndex) {
+      //      hitInfo.secondaryHitLocations[hitIndex] = 0;
+      //      hitInfo.secondaryTargetIds[hitIndex] = null;
+      //    }
+      //  }
+      //}
       if (hitInfo.numberOfShots != hitInfo.hitLocations.Length) {
         Log.Combat?.WL(1, $"strange behavior. NumberOfShots: " + hitInfo.numberOfShots + " but HitLocations length:" + hitInfo.hitLocations.Length + ". Must be equal", true);
         hitInfo.numberOfShots = hitInfo.hitLocations.Length;
       }
-      if ((indirectFire && (missInCircle == false))||(weapon.MissInCircle())) { missInCircle = true;  };
-      if ((missInCircle)&&(instance.attacker.GUID != target.GUID)) {
-        Log.Combat?.WL(1, $"miss in circle");
-        for (int hitIndex = 0; hitIndex < numberOfShots; ++hitIndex) {
-          int hitLocation = hitInfo.hitLocations[hitIndex];
-          if ((hitLocation == 0) || (hitLocation == 65536)) {
-            Log.Combat?.WL(2, $"hi:" + hitIndex + " was " + hitInfo.hitPositions[hitIndex]);
-            hitInfo.secondaryHitLocations[hitIndex] = 0;
-            hitInfo.secondaryTargetIds[hitIndex] = null;
-            hitInfo.hitPositions[hitIndex] = target.GameRep.getMissPositionRadius(instance,weapon,toHitChance,hitInfo.toHitRolls[hitIndex]);
-            Log.Combat?.WL(2, $"become: " + hitInfo.hitPositions[hitIndex]);
-          }
-        }
-      }else
-      if (instance.attacker.GUID == target.GUID) {
-        TerrainHitInfo terrainPos = CustomAmmoCategories.getTerrinHitPosition(instance.attacker.GUID);
-        if (terrainPos != null) {
-          instance.attackCompletelyMissed = (false);
-          Log.Combat?.WL(1, $"terrain attack detected to " + terrainPos.pos + ". target position: "+target.CurrentPosition+" distance:"+Vector3.Distance(terrainPos.pos, target.CurrentPosition));
-          Log.Combat?.WL(1, $"recalculating hit positions and removing buildin stray");
-          for (int hitIndex = 0; hitIndex < numberOfShots; ++hitIndex) {
-            hitInfo.hitLocations[hitIndex] = 65536;
-            hitInfo.secondaryHitLocations[hitIndex] = 0;
-            hitInfo.secondaryTargetIds[hitIndex] = null;
-            Vector3 oldPos = hitInfo.hitPositions[hitIndex];
-            hitInfo.hitPositions[hitIndex] = target.Combat.getMissInCircleToPosition(instance, terrainPos.pos, weapon, hitInfo.toHitRolls[hitIndex]);
-            Log.Combat?.WL(2, $"hi:" + hitIndex + " was " + oldPos + " become: " + hitInfo.hitPositions[hitIndex] + " distance "+Vector3.Distance(oldPos, hitInfo.hitPositions[hitIndex]) +"\n");
-          }
-        }
-      }
+      //if ((indirectFire && (missInCircle == false))||(weapon.MissInCircle())) { missInCircle = true;  };
+      //if ((missInCircle)&&(instance.attacker.GUID != target.GUID)) {
+      //  Log.Combat?.WL(1, $"miss in circle");
+      //  for (int hitIndex = 0; hitIndex < numberOfShots; ++hitIndex) {
+      //    int hitLocation = hitInfo.hitLocations[hitIndex];
+      //    if ((hitLocation == 0) || (hitLocation == 65536)) {
+      //      Log.Combat?.WL(2, $"hi:" + hitIndex + " was " + hitInfo.hitPositions[hitIndex]);
+      //      hitInfo.secondaryHitLocations[hitIndex] = 0;
+      //      hitInfo.secondaryTargetIds[hitIndex] = null;
+      //      hitInfo.hitPositions[hitIndex] = target.GameRep.getMissPositionRadius(instance,weapon,toHitChance,hitInfo.toHitRolls[hitIndex]);
+      //      Log.Combat?.WL(2, $"become: " + hitInfo.hitPositions[hitIndex]);
+      //    }
+      //  }
+      //}else
+      //if (instance.attacker.GUID == target.GUID) {
+      //  TerrainHitInfo terrainPos = CustomAmmoCategories.getTerrinHitPosition(instance.attacker.GUID);
+      //  if (terrainPos != null) {
+      //    instance.attackCompletelyMissed = (false);
+      //    Log.Combat?.WL(1, $"terrain attack detected to " + terrainPos.pos + ". target position: "+target.CurrentPosition+" distance:"+Vector3.Distance(terrainPos.pos, target.CurrentPosition));
+      //    Log.Combat?.WL(1, $"recalculating hit positions and removing buildin stray");
+      //    for (int hitIndex = 0; hitIndex < numberOfShots; ++hitIndex) {
+      //      hitInfo.hitLocations[hitIndex] = 65536;
+      //      hitInfo.secondaryHitLocations[hitIndex] = 0;
+      //      hitInfo.secondaryTargetIds[hitIndex] = null;
+      //      Vector3 oldPos = hitInfo.hitPositions[hitIndex];
+      //      hitInfo.hitPositions[hitIndex] = target.Combat.getMissInCircleToPosition(instance, terrainPos.pos, weapon, hitInfo.toHitRolls[hitIndex]);
+      //      Log.Combat?.WL(2, $"hi:" + hitIndex + " was " + oldPos + " become: " + hitInfo.hitPositions[hitIndex] + " distance "+Vector3.Distance(oldPos, hitInfo.hitPositions[hitIndex]) +"\n");
+      //    }
+      //  }
+      //}
       if (weapon.TargetLegsOnly()) {
         Log.Combat?.WL(2,"to hit legs only");
         for (int hitIndex = 0; hitIndex < hitInfo.numberOfShots; ++hitIndex) {

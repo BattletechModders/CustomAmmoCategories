@@ -110,7 +110,7 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
       try {
         if (losColors.ContainsKey(__instance) == false) {
           losColors.Add(__instance, new LOSColors());
-          CACLog.S.TWL(0, "WeaponRangeIndicators.Init");
+          //CACLog.S.TWL(0, "WeaponRangeIndicators.Init");
         }
       } catch (Exception ex) { Error(ex); }
     }
@@ -118,7 +118,7 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
       try {
         if(losColors.TryGetValue(__instance, out LOSColors colors)) {
           __result = colors.LOSLockedTarget;
-          CACLog.S.TWL(0, "FinalLOSLockedTarget "+__result.color);
+          //CACLog.S.TWL(0, "FinalLOSLockedTarget "+__result.color);
           return false;
         }
         return true;
@@ -128,7 +128,7 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
       try {
         if (losColors.TryGetValue(__instance, out LOSColors colors)) {
           __result = colors.LOSInRange;
-          CACLog.S.TWL(0, "FinalLOSLockedTarget " + __result.color);
+          //CACLog.S.TWL(0, "FinalLOSLockedTarget " + __result.color);
           return false;
         }
         return true;
@@ -138,7 +138,7 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
       try {
         if (losColors.TryGetValue(__instance, out LOSColors colors)) {
           __result = colors.LOSUnlockedTarget;
-          CACLog.S.TWL(0, "FinalLOSUnlockedTarget " + __result.color);
+          //CACLog.S.TWL(0, "FinalLOSUnlockedTarget " + __result.color);
           return false;
         }
         return true;
@@ -148,7 +148,7 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
       try {
         if (losColors.TryGetValue(__instance, out LOSColors colors)) {
           __result = colors.LOSMultiTargetKBSelection;
-          CACLog.S.TWL(0, "FinalLOSMultiTargetKBSelection " + __result.color);
+          //CACLog.S.TWL(0, "FinalLOSMultiTargetKBSelection " + __result.color);
           return false;
         }
         return true;
@@ -159,7 +159,7 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
       try {
         if (losColors.TryGetValue(__instance, out LOSColors colors)) {
           __result = colors.LOSMultiTargetKBSelection;
-          CACLog.S.TWL(0, "FinalLOSOutOfRange " + __result.color);
+          //CACLog.S.TWL(0, "FinalLOSOutOfRange " + __result.color);
           return false;
         }
         return true;
@@ -455,11 +455,11 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
         me.LineTemplate.endWidth = Width;
         me.MaterialInRange = GetMaterial();
         me.Colors().LOSLockedTarget.color = me.Colors().LOSInRange.color = me.MaterialInRange.color;
-        CACLog.S.TWL(0, "WeaponRangeIndicators apply color:"+ me.MaterialInRange.color);
+        //CACLog.S.TWL(0, "WeaponRangeIndicators apply color:"+ me.MaterialInRange.color);
         if (IsMultifire) {
           me.Colors().LOSUnlockedTarget.color = me.Colors().LOSLockedTarget.color = me.Colors().LOSMultiTargetKBSelection.color = me.MaterialInRange.color;
           me.Colors().LOSUnlockedTarget.color.a *= 0.8f;
-          CACLog.S.TWL(0, "WeaponRangeIndicators apply color multifire:" + me.MaterialInRange.color);
+          //CACLog.S.TWL(0, "WeaponRangeIndicators apply color multifire:" + me.MaterialInRange.color);
         }
         return this;
       }
@@ -467,7 +467,7 @@ namespace Sheepy.BattleTechMod.AttackImprovementMod {
       public void ApplyOutOfRange(WeaponRangeIndicators me) {
         me.MaterialOutOfRange = GetMaterial();
         me.Colors().LOSOutOfRange.color = me.MaterialOutOfRange.color;
-        CACLog.S.TWL(0, "WeaponRangeIndicators apply color out of range:" + me.MaterialOutOfRange.color);
+        //CACLog.S.TWL(0, "WeaponRangeIndicators apply color out of range:" + me.MaterialOutOfRange.color);
       }
 
       public virtual Material GetMaterial() {

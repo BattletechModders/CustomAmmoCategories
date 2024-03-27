@@ -1004,7 +1004,7 @@ namespace CustomUnits {
           this.AliginToWater(rayhit.mainRayHit, deltaT);
         }
       }
-      Log.Combat?.WL(0, $"CustomMechRepresentation.UpdateRotation vehicleMovement:{vehicleMovement} aliginToTerrain:{aliginToTerrain} FlyingHeight:{this.parentCombatant.FlyingHeight()}");
+      //Log.Combat?.WL(0, $"CustomMechRepresentation.UpdateRotation vehicleMovement:{vehicleMovement} aliginToTerrain:{aliginToTerrain} FlyingHeight:{this.parentCombatant.FlyingHeight()}");
       if (aliginToTerrain) {
         if (forward.sqrMagnitude > Core.Epsilon) {
           moveTransform.rotation = Quaternion.RotateTowards(moveTransform.rotation, Quaternion.LookRotation(forward), 180f * deltaT);

@@ -72,6 +72,8 @@ namespace CustomAmmoCategoriesPatches {
         CombatHUD_Init.Clear();
         UnitUnaffectionsActorStats.Clear();
         CustomAmmoCategories.ClearTerrainPositions();
+        AdvWeaponHitInfoRec.Clear();
+        ImpactPositionHelper.Clear();
       } catch (Exception e) {
         Log.Combat?.TWL(0, e.ToString());
         AttackDirector.logger.LogException(e);

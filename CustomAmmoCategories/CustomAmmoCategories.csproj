@@ -226,6 +226,7 @@
     <Compile Include="CleverGirlWeaponDamagePrediction.cs" />
     <Compile Include="CombatStatistic.cs" />
     <Compile Include="GenericPopupFix.cs" />
+    <Compile Include="ImpactPostion.cs" />
     <Compile Include="JumpCostDynamic.cs" />
     <Compile Include="LocalSettings.cs" />
     <Compile Include="CombatGameDestroy.cs" />

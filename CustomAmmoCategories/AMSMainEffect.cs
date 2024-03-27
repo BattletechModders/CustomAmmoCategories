@@ -45,6 +45,7 @@ namespace CustAmmoCategories {
       ExtWeaponDef extWeapon = weapon.exDef();
       WeaponMode mode = weapon.mode();
       ExtAmmunitionDef ammo = weapon.ammo();
+      return false;
       if ((mode.IsAMS != TripleBoolean.NotSet) || (mode.IsAAMS != TripleBoolean.NotSet)) {
         if (mode.IsAAMS == TripleBoolean.True) { return true; }
         if (mode.IsAMS == TripleBoolean.True) { return true; }
@@ -66,6 +67,7 @@ namespace CustAmmoCategories {
       ExtWeaponDef extWeapon = weapon.exDef();
       WeaponMode mode = weapon.mode();
       ExtAmmunitionDef ammo = weapon.ammo();
+      //return false;
       if (mode.IsAAMS != TripleBoolean.NotSet) {
         if (mode.IsAAMS == TripleBoolean.True) { return true; }
         return false;

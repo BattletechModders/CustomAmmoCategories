@@ -2049,16 +2049,16 @@ namespace CustomAmmoCategoriesPatches {
       List<ConstructorInfo> baseConstructors = AccessTools.GetDeclaredConstructors(typeof(MapTerrainDataCell));
       List<ConstructorInfo> replaceConstructors = AccessTools.GetDeclaredConstructors(typeof(MapTerrainDataCellEx));
       ConstructorInfo replacConstructor = null;
-      Log.M.TWL(0, "MapMetaData.Load.Transpiler");
-      Log.M.WL(1, "MapTerrainDataCell constructors:"+ baseConstructors.Count);
+      //Log.M.TWL(0, "MapMetaData.Load.Transpiler");
+      //Log.M.WL(1, "MapTerrainDataCell constructors:"+ baseConstructors.Count);
       foreach(ConstructorInfo info in baseConstructors) {
-        Log.M.WL(2,"parameters:"+info.GetParameters().Length);
+        //Log.M.WL(2,"parameters:"+info.GetParameters().Length);
       }
-      Log.M.WL(1, "MapTerrainDataCellEx constructors:" + replaceConstructors.Count);
+      //Log.M.WL(1, "MapTerrainDataCellEx constructors:" + replaceConstructors.Count);
       foreach (ConstructorInfo info in replaceConstructors) {
-        Log.M.WL(2, "parameters:" + info.GetParameters().Length);
-        Log.M.WL(2, "IsPublic:" + info.IsPublic);
-        Log.M.WL(2, "Name:" + info.Name);
+        //Log.M.WL(2, "parameters:" + info.GetParameters().Length);
+        //Log.M.WL(2, "IsPublic:" + info.IsPublic);
+        //Log.M.WL(2, "Name:" + info.Name);
         if (info.IsPublic) { replacConstructor = info; }
       }
       var targetConstructor = AccessTools.Constructor(typeof(MapTerrainDataCell));
@@ -2067,8 +2067,8 @@ namespace CustomAmmoCategoriesPatches {
     static void Postfix(MapMetaData __instance, SerializationStream stream) {
       int xmax = __instance.mapTerrainDataCells.GetLength(0);
       int ymax = __instance.mapTerrainDataCells.GetLength(1);
-      Log.Combat?.TWL(0,"MapMetaData.Load " + xmax + " X " + ymax);
-      Log.Combat?.WL(0,Environment.StackTrace);
+      //Log.Combat?.TWL(0,"MapMetaData.Load " + xmax + " X " + ymax);
+      //Log.Combat?.WL(0,Environment.StackTrace);
       for (int x = 0; x < xmax; ++x) {
         for (int y = 0; y < ymax; ++y) {
           MapTerrainDataCellEx ecell = __instance.mapTerrainDataCells[x, y] as MapTerrainDataCellEx;
@@ -2082,7 +2082,7 @@ namespace CustomAmmoCategoriesPatches {
       }
       CACMain.Core.Call_MapMetadata_Load_Postfixes(__instance);
       if (Terrain.activeTerrain == null) {
-        Log.Combat?.WL(1, "active terrain is null");
+        //Log.Combat?.WL(1, "active terrain is null");
       } else {
         DynamicMapHelper.initHexGrid(__instance, UnityGameInstance.BattleTechGame.Combat.HexGrid);
       }

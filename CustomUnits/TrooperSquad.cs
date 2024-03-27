@@ -1071,6 +1071,34 @@ namespace CustomUnits {
       this.Combat.MessageCenter.PublishMessage((MessageCenterMessage)new AddSequenceToStackMessage((IStackSequence)new ShowActorInfoSequence((ICombatant)this, Strings.T("ALL PILOTS INCAPACITATED!"), FloatieMessage.MessageNature.PilotInjury, true)));
       this.HandleDeath(sourceID);
     }
+    protected CustomMech f_carrier = null;
+    public override ICombatant carrier { get { return f_carrier; } }
+    public override void SetCarrier(ICombatant combatant, bool isExternal) {
+      Log.Combat?.TWL(0,$"TrooperSquad.SetCarrier {(combatant == null?"dismount":combatant.DisplayName)} external:{isExternal}");
+      try {
+        if (combatant is CustomMech mech) {
+          if (f_carrier != null) {
+            f_carrier.attachedExternally.Remove(this);
+            f_carrier.attachedInternally.Remove(this);
+          }
+          this.f_carrier = mech;
+          this.f_isMountedExternal = isExternal;
+          if (this.f_carrier != null) {
+            if (isExternal) {
+              this.f_carrier.attachedExternally.Add(this);
+            } else {
+              this.f_carrier.attachedInternally.Add(this);
+            }
+          }
+        }
+      }catch(Exception e) {
+        CombatGameState.gameInfoLogger.LogException(e);
+        Log.ECombat?.WL(0, e.ToString());
+      }
+    }
+    protected bool f_isMountedExternal = false;
+    public override bool isMountedExternal { get { return f_isMountedExternal; } }
+
     //  public override void InitGameRep(Transform parentTransform) {
     //    UnitCustomInfo info = this.GetCustomInfo();
     //    if (info == null) { base.InitGameRep(parentTransform); return; }

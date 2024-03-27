@@ -600,6 +600,8 @@ namespace CustAmmoCategories {
     public TripleBoolean PhysicsAoE { get; set; } = TripleBoolean.NotSet;
     [Key(177)]
     public float PhysicsAoE_Height { get; set; } = 10f;
+    [Key(178)]
+    public MissBehavior MissBehavior { get; set; } = MissBehavior.NotSet;
     public ExtAmmunitionDef() { }
   }
 }

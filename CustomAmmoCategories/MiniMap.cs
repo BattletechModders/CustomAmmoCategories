@@ -31,7 +31,7 @@ namespace CustAmmoCategories {
       try {
         HBSDOTweenButton closeButton = __instance.gameObject.FindObject<HBSDOTweenButton>("uixPrfBttn_BASE_cancelButton", false);
         if (closeButton != null) {
-          Log.M?.TWL(0, "MainMenu.OnAddedToHierarchy minimap close button found");
+          //Log.M?.TWL(0, "MainMenu.OnAddedToHierarchy minimap close button found");
           GameObject closeButton_go = GameObject.Instantiate(closeButton.gameObject);
           closeButton = closeButton_go.GetComponent<HBSDOTweenButton>();
           HBSTooltip tooltip = closeButton_go.GetComponent<HBSTooltip>();
@@ -96,7 +96,7 @@ namespace CustAmmoCategories {
     public override void OnPointerExit(PointerEventData data) {
     }
     public override void OnPointerClick(PointerEventData data) {
-      Log.Combat?.TWL(0, "CombatHUDMiniMapEnabler.OnPointerClick called." + data.position + " clickCount:" + data.clickCount,true);
+      //Log.Combat?.TWL(0, "CombatHUDMiniMapEnabler.OnPointerClick called." + data.position + " clickCount:" + data.clickCount,true);
       if (data.button == PointerEventData.InputButton.Left) {
         if (minimap != null) {
           this.minimap.gameObject.SetActive(true);
@@ -163,7 +163,7 @@ namespace CustAmmoCategories {
     }
     public static void InitMinimap(CombatGameState combat) {
       try {
-        Log.M?.TWL(0, $"InitMinimap rects:{combat.EncounterLayerData.encounterBoundaryChunk.encounterBoundaryRectList.Count}");
+        //Log.M?.TWL(0, $"InitMinimap rects:{combat.EncounterLayerData.encounterBoundaryChunk.encounterBoundaryRectList.Count}");
         foreach (var r in combat.EncounterLayerData.encounterBoundaryChunk.encounterBoundaryRectList) {
           Log.M?.WL(1, r.rect.ToString());
         }
@@ -207,8 +207,8 @@ namespace CustAmmoCategories {
         CombatHUDMiniMap.minimapXsize = CombatHUDMiniMap.minimapXend - CombatHUDMiniMap.minimapXstart;
         CombatHUDMiniMap.minimapZsize = CombatHUDMiniMap.minimapZend - CombatHUDMiniMap.minimapZstart;
 
-        Log.Combat?.WL(1, $"minimap world start:{CombatHUDMiniMap.minimapXstart},{CombatHUDMiniMap.minimapZstart} end:{CombatHUDMiniMap.minimapXend},{CombatHUDMiniMap.minimapZend} size:{CombatHUDMiniMap.minimapXsize},{CombatHUDMiniMap.minimapZsize}");
-        Log.Combat?.WL(1, $"minimap cells start:{startCell.X},{startCell.Z} end:{endCell.X},{endCell.Z} size:{minimapXsize},{minimapYsize}");
+        //Log.Combat?.WL(1, $"minimap world start:{CombatHUDMiniMap.minimapXstart},{CombatHUDMiniMap.minimapZstart} end:{CombatHUDMiniMap.minimapXend},{CombatHUDMiniMap.minimapZend} size:{CombatHUDMiniMap.minimapXsize},{CombatHUDMiniMap.minimapZsize}");
+        //Log.Combat?.WL(1, $"minimap cells start:{startCell.X},{startCell.Z} end:{endCell.X},{endCell.Z} size:{minimapXsize},{minimapYsize}");
 
         CombatHUDMiniMap.minimapContent = new Texture2D(minimapYsize, minimapXsize, TextureFormat.ARGB32, false);
         CombatHUDMiniMap.minimapJammedContent = new Texture2D(minimapYsize, minimapXsize, TextureFormat.ARGB32, false);
@@ -247,7 +247,7 @@ namespace CustAmmoCategories {
         if (cell_0x0.Z < 0) { cell_0x0.Z = 0; }
         if (cell_0x0.Z >= combat.MapMetaData.mapTerrainDataCells.GetLength(1)) { cell_0x0.Z = combat.MapMetaData.mapTerrainDataCells.GetLength(1) - 1; }
         Vector3 mapPos_0_0_cell = combat.MapMetaData.getWorldPos(cell_0x0);
-        Log.Combat?.WL(1, $"border:{mapPos_0_0_border} cell:{mapPos_0_0_cell} meta:{cell_0x0.X},{cell_0x0.Z}");
+        //Log.Combat?.WL(1, $"border:{mapPos_0_0_border} cell:{mapPos_0_0_cell} meta:{cell_0x0.X},{cell_0x0.Z}");
         mapPos_0_0_cell.y = combat.MapMetaData.GetLerpedHeightAt(mapPos_0_0_cell) + 10f;
         GameObject marker_0x0 = GameObject.CreatePrimitive(PrimitiveType.Sphere);
         marker_0x0.SetActive(false);
@@ -262,7 +262,7 @@ namespace CustAmmoCategories {
         if (cell_1x1.Z < 0) { cell_1x1.Z = 0; }
         if (cell_1x1.Z >= combat.MapMetaData.mapTerrainDataCells.GetLength(1)) { cell_1x1.Z = combat.MapMetaData.mapTerrainDataCells.GetLength(1) - 1; }
         Vector3 mapPos_1_1_cell = combat.MapMetaData.getWorldPos(cell_1x1);
-        Log.Combat?.WL(1, $"border:{mapPos_1_1_border} cell:{mapPos_1_1_cell} meta:{cell_1x1.X},{cell_1x1.Z}");
+        //Log.Combat?.WL(1, $"border:{mapPos_1_1_border} cell:{mapPos_1_1_cell} meta:{cell_1x1.X},{cell_1x1.Z}");
         mapPos_1_1_cell.y = combat.MapMetaData.GetLerpedHeightAt(mapPos_1_1_cell) + 10f;
         GameObject marker_1x1 = GameObject.CreatePrimitive(PrimitiveType.Sphere);
         marker_1x1.name = "marker_1x1";
@@ -294,7 +294,7 @@ namespace CustAmmoCategories {
               CombatHUDMiniMap.regions.Add(region, minimapRegion);
             }
             List<MapEncounterLayerDataCell> mapEncounterLayerDataCellList = region.mapEncounterLayerDataCellList;
-            Log.Combat?.WL(1, $"minimap region:{region.name}:{region.encounterObjectGuid} cells:{mapEncounterLayerDataCellList.Count} regionDefId:{region.regionDefId} drawRegionDefDisplay:{(region.drawRegionDefDisplay == null?"null":region.drawRegionDefDisplay.Description.Id)}");
+            //Log.Combat?.WL(1, $"minimap region:{region.name}:{region.encounterObjectGuid} cells:{mapEncounterLayerDataCellList.Count} regionDefId:{region.regionDefId} drawRegionDefDisplay:{(region.drawRegionDefDisplay == null?"null":region.drawRegionDefDisplay.Description.Id)}");
             HashSet<MapTerrainDataCellEx> regionCells = new HashSet<MapTerrainDataCellEx>();
             foreach (MapEncounterLayerDataCell ecell in mapEncounterLayerDataCellList) {
               MapTerrainDataCellEx cell = ecell.relatedTerrainCell as MapTerrainDataCellEx;
@@ -463,7 +463,7 @@ namespace CustAmmoCategories {
       Vector3 newCameraPos = Camera.main.gameObject.transform.parent.position;
       newCameraPos.x = this.fromLocalX(localX);
       newCameraPos.z = this.fromLocalY(localY);
-      Log.Combat?.WL(1, $"local double click {localX},{localY} camera:{newCameraPos} canControl:{CameraControl.Instance.CanControl}");
+      //Log.Combat?.WL(1, $"local double click {localX},{localY} camera:{newCameraPos} canControl:{CameraControl.Instance.CanControl}");
       if (CameraControl.Instance.CanControl) {
         CameraControl.Instance.SetMovingToGroundPos(newCameraPos);
       }
@@ -475,7 +475,7 @@ namespace CustAmmoCategories {
       CustomAmmoCategories.Settings.EnableMinimap = false;
     }
     public override void OnPointerClick(PointerEventData data) {
-      Log.Combat?.TWL(0, "CombatHUDMiniMap.OnPointerClick called." + data.position + " clickCount:" + data.clickCount);
+      //Log.Combat?.TWL(0, "CombatHUDMiniMap.OnPointerClick called." + data.position + " clickCount:" + data.clickCount);
       if (data.clickCount == 2) { OnDoubleClick(data.position); }
       sizeToggled = !sizeToggled;
     }
@@ -660,9 +660,9 @@ namespace CustAmmoCategories {
         this.minimapTextureUpdate(Time.deltaTime);
         if (objectiveUpdate_t <= 0f) {
           objectiveUpdate_t = 1f;
-          Log.Combat?.TWL(0,$"minimap objectives update");
+          //Log.Combat?.TWL(0,$"minimap objectives update");
           foreach (var objective in objectivePoints) {
-            Log.Combat?.WL(1, $"state:{objective.Key.CurrentObjectiveStatus} markUnitsWith:{objective.Key.markUnitsWith} useBeacon:{objective.Key.useBeacon}");
+            //Log.Combat?.WL(1, $"state:{objective.Key.CurrentObjectiveStatus} markUnitsWith:{objective.Key.markUnitsWith} useBeacon:{objective.Key.useBeacon}");
             if (objective.Key.CurrentObjectiveStatus != ObjectiveStatus.Active) {
               objective.Value.mark.enabled = false; continue;
             }
@@ -687,7 +687,7 @@ namespace CustAmmoCategories {
           foreach(var region in CombatHUDMiniMap.regions) {
             if (region.Value.check() == false) { continue; }
             region.Value.refreshed();
-            Log.Combat?.TWL(0,$"Minimap region {region.Key.name} color:{region.Value.color()}");
+            //Log.Combat?.TWL(0,$"Minimap region {region.Key.name} color:{region.Value.color()}");
             foreach (var point in region.Value.points) {
               CombatHUDMiniMap.minimapContent.SetPixel(point.position.x, point.position.y, region.Value.color() ? point.regionColor : point.mapColor);
             }
@@ -830,7 +830,7 @@ namespace CustAmmoCategories {
     }
     public static void Create(CombatHUD HUD) {
       try {
-        Log.Combat?.TWL(0, "CombatHUDMiniMap.Create", true);
+        //Log.Combat?.TWL(0, "CombatHUDMiniMap.Create", true);
         CombatHUDMiniMap minimap = HUD.MechTray.gameObject.GetComponentInChildren<CombatHUDMiniMap>(true);
         if (minimap != null) {
           minimap.Init(HUD);

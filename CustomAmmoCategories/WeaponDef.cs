@@ -244,6 +244,7 @@ namespace CustAmmoCategories {
     }
   }
   public enum DamageFalloffType { NotSet, Quadratic, Cubic, SquareRoot, Log10, LogE, Exp, Linear }
+  public enum MissBehavior { NotSet, Guided, Unguided }
   public static partial class CustomAmmoCategories {
     public static bool isImprovedBallistic(this Weapon weapon) { return weapon.exDef().ImprovedBallistic; }
     public static bool CantHitUnaffectedByPathing(this Weapon weapon) {
@@ -846,6 +847,8 @@ namespace CustAmmoCategories {
     public TripleBoolean PhysicsAoE { get; set; } = TripleBoolean.True;
     [Key(152)]
     public float PhysicsAoE_Height { get; set; } = 10f;
+    [Key(153)]
+    public MissBehavior MissBehavior { get; set; } = MissBehavior.NotSet;
     [IgnoreMember, JsonIgnore]
     private HashSet<string> f_restrictedAmmo = null;
     [IgnoreMember, JsonIgnore]

@@ -683,7 +683,15 @@ namespace CustAmmoCategories {
       foreach (var node in ToHitModifiersHelper.mod_nodes) {
         object state = node.Value.prepare(toHit, attacker, weapon, target, attackPosition, targetPosition, lofLevel, meleeAttackType, isCalledShot);
         foreach (var mod in node.Value.modifiers) {
-          if ((mod.Value.melee == false) && (mod.Value.ranged == true)) { continue; }
+          if (target != null) {
+            if (meleeAttackType != MeleeAttackType.NotSet) {
+              if ((mod.Value.melee == false) && (mod.Value.ranged == true)) { continue; }
+            } else {
+              if ((mod.Value.melee == true) && (mod.Value.ranged == false)) { continue; }
+            }
+          } else {
+            if ((mod.Value.ranged != false) || (mod.Value.melee != false)) { continue; }
+          }
           float modifier = mod.Value.modifier(state, toHit, attacker, weapon, target, attackPosition, targetPosition, lofLevel, meleeAttackType, isCalledShot);
           string name = mod.Value.name;
           if (mod.Value.dname != null) {
@@ -708,7 +716,7 @@ namespace CustAmmoCategories {
       slot.ToolTipHoverElement.UseModifier = true;
       if (slot.DisplayedWeapon.Type == WeaponType.Melee) {
         slot.UpdateToolTipsMelee_I(target);
-      } else if (slot.DisplayedWeapon.WillFireAtTargetFromPosition(target, Traverse.Create(slot).Field<CombatHUD>("HUD").Value.SelectionHandler.ActiveState.PreviewPos)) {
+      } else if (slot.DisplayedWeapon.WillFireAtTargetFromPosition(target, slot.HUD.SelectionHandler.ActiveState.PreviewPos)) {
         slot.UpdateToolTipsFiring_I(target);
       } else {
         slot.UpdateToolTipsSelf_I();

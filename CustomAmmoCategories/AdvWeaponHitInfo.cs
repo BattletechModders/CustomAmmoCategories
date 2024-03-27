@@ -166,7 +166,6 @@ namespace CustAmmoCategories {
     public float locationRoll { get; set; }
     public float dodgeRoll { get; set; }
     public float correctedRoll { get; set; }
-    public GameObject trajectoryObject;
     public CurvySpline trajectorySpline;
     public Vector3[] trajectory;
     public int hitIndex;
@@ -189,8 +188,34 @@ namespace CustAmmoCategories {
     public bool isMiss { get { return (this.hitLocation == 0) || (this.hitLocation == 65536); } }
     public bool isHit { get { return (this.hitLocation != 0) && (this.hitLocation != 65536); } }
     public void ClearTrajectory() {
-      if (trajectorySpline != null) { GameObject.Destroy(trajectorySpline); trajectorySpline = null; }
-      if (trajectoryObject != null) { GameObject.Destroy(trajectoryObject); trajectoryObject = null; }
+      if (trajectorySpline != null) { trajectorySpline.Clear(); PoolSpline(trajectorySpline); trajectorySpline = null; }
+    }
+    public static HashSet<GameObject> trajectoryObject_pool = new HashSet<GameObject>();
+    public static GameObject trajectoryObject_pool_owner = null;
+    public static void Clear() {
+      trajectoryObject_pool.Clear();
+      if (trajectoryObject_pool_owner != null) {
+        GameObject.Destroy(trajectoryObject_pool_owner);
+        trajectoryObject_pool_owner = null;
+      }
+    }
+    public static void PoolSpline(CurvySpline spline) {
+      trajectoryObject_pool.Add(spline.gameObject);
+    }
+    public static CurvySpline CreateSpline() {
+      if (trajectoryObject_pool_owner == null) { trajectoryObject_pool_owner = new GameObject("TrajectoryPoolOwner"); }
+      CurvySpline result = null;
+      GameObject trajectoryObject = null;
+      if (trajectoryObject_pool.Count == 0) {
+        trajectoryObject = new GameObject("trajectory");
+        trajectoryObject.transform.SetParent(trajectoryObject_pool_owner.transform);
+        result = trajectoryObject.AddComponent<CurvySpline>();
+      } else {
+        trajectoryObject = trajectoryObject_pool.First();
+        trajectoryObject_pool.Remove(trajectoryObject);
+        result = trajectoryObject.GetComponent<CurvySpline>();
+      }
+      return result;
     }
     public bool CanBeImpemented() {
       return true;
@@ -424,8 +449,9 @@ namespace CustAmmoCategories {
       APDamage = 0f;
       Heat = 0f;
       Stability = 0f;
-      trajectoryObject = new GameObject("trajectoryObject");
-      trajectorySpline = trajectoryObject.AddComponent<CurvySpline>();
+      //trajectoryObject = new GameObject("trajectoryObject");
+      trajectorySpline = AdvWeaponHitInfoRec.CreateSpline();
+        //trajectoryObject.AddComponent<CurvySpline>();
       trajectory = new Vector3[0] { };
       hitIndex = -1;
       target = null;

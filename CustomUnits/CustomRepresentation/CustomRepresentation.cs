@@ -239,14 +239,14 @@ namespace CustomUnits {
     public void Twist(float angle) {
       //StartRandomIdle = false;
       angle *= (90f / 180f);
-      Log.Combat?.TWL(0, "CustomTwistAnimation.Twist " + angle);
+      //Log.Combat?.TWL(0, "CustomTwistAnimation.Twist " + angle);
       if (angle >= 0f) { this.TwistL = 0f; this.TwistR = angle; } else
       if (angle <= 0f) { this.TwistL = Mathf.Abs(angle); this.TwistR = 0f; }
     }
     private Stopwatch idleTimeElapsed = new Stopwatch();
     private bool isInIdleRotated = false;
     public void IdleTwist(float value) {
-      Log.Combat?.TWL(0, "CustomRepresentation.IdleTwist value:" + value + " IsRunning:" + idleTimeElapsed.IsRunning + " ElapsedMilliseconds:" + idleTimeElapsed.ElapsedMilliseconds + " isInIdleRotated:" + isInIdleRotated);
+      //Log.Combat?.TWL(0, "CustomRepresentation.IdleTwist value:" + value + " IsRunning:" + idleTimeElapsed.IsRunning + " ElapsedMilliseconds:" + idleTimeElapsed.ElapsedMilliseconds + " isInIdleRotated:" + isInIdleRotated);
       //StartRandomIdle = true;
       if (idleTimeElapsed.IsRunning == false) { return; }
       if (idleTimeElapsed.ElapsedMilliseconds < 5000) { return; }
@@ -266,7 +266,7 @@ namespace CustomUnits {
       if (value == 0.7f) { angle = -0.3f; } else
       if (value == 0.8f) { angle = 0.5f; } else
       if (value == 0.9f) { angle = -0.5f; }
-      Log.Combat?.TWL(0, "CustomTwistAnimation.IdleTwist " + angle);
+      //Log.Combat?.TWL(0, "CustomTwistAnimation.IdleTwist " + angle);
       if (angle >= 0f) { this.IdleTwistL = 0f; this.IdleTwistR = angle; } else
       if (angle <= 0f) { this.IdleTwistL = Mathf.Abs(angle); this.IdleTwistR = 0f; }
     }

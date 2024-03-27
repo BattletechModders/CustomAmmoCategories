@@ -13,6 +13,7 @@ using BattleTech.UI;
 using CustomAmmoCategoriesLog;
 using CustomAmmoCategoriesPatches;
 using HarmonyLib;
+using IRBTModUtils;
 using Localize;
 using System;
 using System.Collections.Generic;
@@ -224,20 +225,31 @@ namespace CustAmmoCategories {
       foreach(ICombatant target in combat.GetAllLivingCombatants()) {
         if (target.IsDead) { continue; };
         if (target.isDropshipNotLanded()) { continue; };
-        Vector3 CurrentPosition = target.CurrentPosition + Vector3.up * target.FlyingHeight();
+        ICombatant aoeTarget = target;
+        if (target is ICustomMech cmech) {
+          if (cmech.carrier != null) {
+            Log.Combat?.WL(1, $"{target.DisplayName} attached to {cmech.carrier.DisplayName} using its position and LoS instead");
+            aoeTarget = cmech.carrier;
+            if (cmech.isMountedExternal == false) {
+              Log.Combat?.WL(1, $"mounted internally. no AoE damage");
+              continue;
+            }
+          }
+        }
+        Vector3 CurrentPosition = aoeTarget.CurrentPosition + Vector3.up * aoeTarget.FlyingHeight();
         float distance = Vector3.Distance(CurrentPosition, pos);
         if (CustomAmmoCategories.Settings.DefaultAoEDamageMult[target.UnitType].Range < CustomAmmoCategories.Epsilon) { CustomAmmoCategories.Settings.DefaultAoEDamageMult[target.UnitType].Range = 1f; }
         distance /= CustomAmmoCategories.Settings.DefaultAoEDamageMult[target.UnitType].Range;
         if (distance > Range) { continue; };
         if(CustomAmmoCategories.Settings.PhysicsAoE_API && PhysicsAoE) {
           Vector3 raycastStart = pos + Vector3.up * PhysicsAoE_Height;
-          Vector3 raycastEnd = target.TargetPosition;
+          Vector3 raycastEnd = aoeTarget.TargetPosition;
           AreaOfEffectHelper.pseudoLOSActor.Combat = target.Combat;
           AreaOfEffectHelper.pseudoLOSActor.SpotterDistance = Vector3.Distance(raycastStart, raycastEnd) + 100f;
           AreaOfEffectHelper.pseudoLOSActor.pseudo_losSourcePositions[0] = raycastStart;
           AreaOfEffectHelper.pseudoLOSActor._team = target.Combat.LocalPlayerTeam;
           AreaOfEffectHelper.pseudoLOSActor._teamId = target.Combat.LocalPlayerTeamGuid;
-          var lof = target.Combat.LOS.GetLineOfFire(AreaOfEffectHelper.pseudoLOSActor, raycastStart, target, target.CurrentPosition, target.CurrentRotation, out var collisionWorldPos);
+          var lof = target.Combat.LOS.GetLineOfFire(AreaOfEffectHelper.pseudoLOSActor, raycastStart, aoeTarget, aoeTarget.CurrentPosition, aoeTarget.CurrentRotation, out var collisionWorldPos);
           Log.Combat?.WL(2, $"{raycastStart}->{target.DisplayName} LoF:{lof}");
           if (lof == LineOfFireLevel.LOFBlocked) { continue; }
           //if(Physics.Raycast(raycastStart, (raycastEnd - raycastStart).normalized, out RaycastHit phy_hit, distance, PhysicsAoELayers, QueryTriggerInteraction.Ignore)) {

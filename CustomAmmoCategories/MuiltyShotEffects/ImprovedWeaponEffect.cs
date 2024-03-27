@@ -174,9 +174,10 @@ namespace CustAmmoCategories {
       if (hitInfo.DidShotHitChosenTarget(hitIndex)) {
         ICombatant combatantByGuid = this.Combat.FindCombatantByGUID(hitInfo.ShotTargetId(hitIndex));
         if (combatantByGuid != null) {
-          string secondaryTargetId = (string)null;
-          int secondaryHitLocation = 0;
-          hitInfo.hitPositions[hitIndex] = combatantByGuid.GetImpactPosition(this.weaponRep.parentCombatant as AbstractActor, this.startPos, this.weapon, ref hitInfo.hitLocations[hitIndex], ref hitInfo.attackDirections[hitIndex], ref secondaryTargetId, ref secondaryHitLocation);
+          //string secondaryTargetId = (string)null;
+          //int secondaryHitLocation = 0;
+          hitInfo.hitPositions[hitIndex] = ImpactPositionHelper.GetHitPositionFast_Combatant(combatantByGuid, this.startPos, hitInfo.hitLocations[hitIndex], false);
+            //combatantByGuid.GetImpactPosition(this.weaponRep.parentCombatant as AbstractActor, this.startPos, this.weapon, ref hitInfo.hitLocations[hitIndex], ref hitInfo.attackDirections[hitIndex], ref secondaryTargetId, ref secondaryHitLocation);
         }
       }
       this.endPos = hitInfo.hitPositions[hitIndex];

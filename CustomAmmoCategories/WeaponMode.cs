@@ -515,6 +515,8 @@ namespace CustAmmoCategories {
     public TripleBoolean PhysicsAoE { get; set; } = TripleBoolean.NotSet;
     [Key(173)]
     public float PhysicsAoE_Height { get; set; } = 10f;
+    [Key(174)]
+    public MissBehavior MissBehavior { get; set; } = MissBehavior.NotSet;
     [IgnoreMember, JsonIgnore]
     private HashSet<string> f_restrictedAmmo = null;
     [IgnoreMember, JsonIgnore]
