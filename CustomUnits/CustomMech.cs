@@ -777,18 +777,17 @@ namespace CustomUnits {
       GetHitTable_cache_sp.Add(from, result);
       return result;
     }
-    public static bool DamageLocation_Override(Mech __instance, int originalHitLoc, WeaponHitInfo hitInfo, ArmorLocation aLoc, Weapon weapon, float totalArmorDamage, float directStructureDamage, int hitIndex, AttackImpactQuality impactQuality, DamageType damageType, ref bool __result) {
+    public static void DamageLocation_Override(ref bool __runOriginal, Mech __instance, int originalHitLoc, WeaponHitInfo hitInfo, ArmorLocation aLoc, Weapon weapon, float totalArmorDamage, float directStructureDamage, int hitIndex, AttackImpactQuality impactQuality, DamageType damageType, ref bool __result) {
       try {
+        if (__runOriginal == false) { return; }
         if (__instance is CustomMech custMech) {
           __result = custMech.DamageLocationCustom(originalHitLoc, hitInfo, aLoc, weapon, totalArmorDamage, directStructureDamage, hitIndex, impactQuality, damageType);
-          return false;
+          __runOriginal = false;
         }
-        return true;
       } catch (Exception e) {
         Log.Combat?.TWL(0, e.ToString(), true);
         AbstractActor.damageLogger.LogException(e);
       }
-      return true;
     }
     public virtual bool DamageLocationCustom(int originalHitLoc,WeaponHitInfo hitInfo,ArmorLocation aLoc,Weapon weapon,float totalArmorDamage,float directStructureDamage,int hitIndex,AttackImpactQuality impactQuality,DamageType damageType) {
       try {
@@ -807,7 +806,7 @@ namespace CustomUnits {
         float num1 = totalArmorDamage;
         float num2 = directStructureDamage;
         float currentArmor = this.GetCurrentArmor(aLoc);
-        if ((double)currentArmor > 0.0) {
+        if (currentArmor > 0.0f) {
           float damage = Mathf.Min(totalArmorDamage, currentArmor);
           if (AbstractActor.attackLogger.IsLogEnabled)
             AbstractActor.attackLogger.Log((object)string.Format("SEQ:{0}: WEAP:{1} HITLOC: {2} ({3}) Armor damage: {4}", (object)hitInfo.attackSequenceId, (object)hitInfo.attackWeaponIndex, (object)originalHitLoc, (object)aLoc.ToString(), (object)damage));
