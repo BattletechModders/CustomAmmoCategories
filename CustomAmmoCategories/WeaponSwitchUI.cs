@@ -2650,7 +2650,7 @@ namespace CustomAmmoCategoriesPatches {
       label.gameObject.GetComponent<LocalizableText>().SetText("__/WEAPON ORDER/__");
       //MechBayPanel_ViewBays.mechBayPanel = __instance;
       HBSDOTweenButton button = weaponOrder.gameObject.GetComponent<HBSDOTweenButton>();
-      button.OnClicked.RemoveAllListeners();
+      button.OnClicked = new UnityEvent();
       WeaponsOrderPopupSupervisor weaponsOrderPopupSupervisor = __instance.gameObject.GetComponent<WeaponsOrderPopupSupervisor>();
       if (weaponsOrderPopupSupervisor == null) {
         weaponsOrderPopupSupervisor = __instance.gameObject.AddComponent<WeaponsOrderPopupSupervisor>();

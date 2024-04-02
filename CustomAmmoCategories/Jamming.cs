@@ -213,6 +213,7 @@ namespace CustAmmoCategories {
       if (weapon.isBlocked()) { return "BLOCKED;"; };
       if (weapon.isWeaponBlockedStat()) { return "BLOCKED;"; };
       if ((weapon.ammo().AmmoCategory.BaseCategory.Is_NotSet == false) && (weapon.CurrentAmmo <= 0)) { return "OUT OF AMMO;"; }
+      //if ((weapon.parent.TeamId != weapon.parent.Combat.LocalPlayerTeamGuid) && (weapon.parent.isSpawnProtected())) { return "SPAWN PROTECTION;"; }
       if (weapon.IsEnabled == false) { return "NOT ENABLED;"; }
       return string.IsNullOrEmpty(result)?"OPERATIONAL":result;
       //return "UNKNOWN";
@@ -230,6 +231,7 @@ namespace CustAmmoCategories {
       if (__instance.mode().Disabeld) { __result = false; };
       if (__instance.isBlocked()) { __result = false; };
       if (__instance.isWeaponBlockedStat()) { __result = false; };
+      //if ((__instance.parent.TeamId != __instance.parent.Combat.LocalPlayerTeamGuid) && (__instance.parent.isSpawnProtected())) { __result = false; }
     }
   }
   [HarmonyPatch(typeof(AttackDirector))]

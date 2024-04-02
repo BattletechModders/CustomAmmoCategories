@@ -340,6 +340,9 @@ namespace CustAmmoCategories {
         if (actor.team == null) { continue; }
         if (actor.IsDead) { continue; }
         if (actor == initalTarget) { continue; }
+        if (actor is ICustomMech customMech) {
+          if (customMech.carrier != null) { if (customMech.isMountedExternal == false) { continue; } }
+        }
         switch (combat.Constants.ToHit.StrayShotValidTargets) {
           case StrayShotValidTargets.ENEMIES_ONLY: if (actor.team.IsEnemy(team) == false) { continue; }; break;
           case StrayShotValidTargets.ENEMIES_AND_NEUTRAL: if ((actor.team.IsEnemy(team) == false) && (actor.team.IsNeutral(team) == false)) { continue; }; break;
@@ -347,6 +350,10 @@ namespace CustAmmoCategories {
         }
         float distance = Vector3.Distance(endPos, actor.TargetPosition);
         if(distance > actor.GetRadius()) { continue; }
+        Log.Combat?.WL(1, $"stray shot {actor.PilotableActorDef.ChassisID}");
+        if (actor is ICustomMech cm) {
+          Log.Combat?.WL(2, $"mounted:{(cm.carrier != null ? cm.carrier.PilotableActorDef.ChassisID : "null")} isMountedExternal:{cm.isMountedExternal}");
+        }
         secondaryCombatant = actor;
         if (actor is Mech mech) {
           secondaryLocation = (int)combat.HitLocation.GetHitLocation(attackPos, mech, combat.NetworkRandom.Float(), 0, 1f);
@@ -420,12 +427,19 @@ namespace CustAmmoCategories {
         if (actor.team == null) { continue; }
         if (actor.IsDead) { continue; }
         if (actor == initalTarget) { continue; }
+        if (actor is ICustomMech customMech) {
+          if(customMech.carrier != null) { if (customMech.isMountedExternal == false) { continue; } }
+        }
         switch (combat.Constants.ToHit.StrayShotValidTargets) {
           case StrayShotValidTargets.ENEMIES_ONLY: if (actor.team.IsEnemy(team) == false) { continue; }; break;
           case StrayShotValidTargets.ENEMIES_AND_NEUTRAL: if ((actor.team.IsEnemy(team) == false)&&(actor.team.IsNeutral(team) == false)) { continue; }; break;
           default: break;
         }
         if(CheckRaySphereCollide(attackPos, endPos, actor.TargetPosition, actor.GetRadius(), out var collidePos) == false) { continue; }
+        Log.Combat?.WL(1, $"stray shot {actor.PilotableActorDef.ChassisID}");
+        if (actor is ICustomMech cm) {
+          Log.Combat?.WL(2, $"mounted:{(cm.carrier != null?cm.carrier.PilotableActorDef.ChassisID:"null")} isMountedExternal:{cm.isMountedExternal}");
+        }
         p0 = new Point(combat.MapMetaData.GetXIndex(attackPos.x), combat.MapMetaData.GetZIndex(attackPos.z));
         p1 = new Point(combat.MapMetaData.GetXIndex(collidePos.x), combat.MapMetaData.GetZIndex(collidePos.z));
         buildingGUID = string.Empty;

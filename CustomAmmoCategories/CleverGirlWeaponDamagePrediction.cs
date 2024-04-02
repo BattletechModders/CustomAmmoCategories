@@ -309,6 +309,7 @@ namespace CleverGirlAIDamagePrediction {
     }
     public static Dictionary<AmmoModePair, WeaponFirePredictedEffect> gatherDamagePrediction(this Weapon weapon, Vector3 attackPos, ICombatant target) {
       Dictionary<AmmoModePair, WeaponFirePredictedEffect> result = new Dictionary<AmmoModePair, WeaponFirePredictedEffect>();
+      if (weapon.parent.isSpawnProtected() || target.isSpawnProtected()) { return result; }
       AmmoModePair curAmmoMode = weapon.getCurrentAmmoMode();
       List<AmmoModePair> avaibleAmmoModes = weapon.getAvaibleFiringMethods();
       foreach (AmmoModePair ammoMode in avaibleAmmoModes) {

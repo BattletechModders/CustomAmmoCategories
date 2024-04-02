@@ -113,7 +113,7 @@ namespace CustomUnits {
       base._SetLoadAnimation();
       foreach (var unit in this.squad) {
         LocationDamageLevel dmgLvl = this.parentMech.GetLocationDamageLevel(unit.Key);
-        if ((dmgLvl == LocationDamageLevel.Destroyed) || (dmgLvl == LocationDamageLevel.NonFunctional)) { continue; }
+        if (dmgLvl == LocationDamageLevel.Destroyed) { continue; }
         unit.Value.rep._SetLoadAnimation();
       }
     }
@@ -121,7 +121,7 @@ namespace CustomUnits {
       base._ClearLoadState();
       foreach (var unit in this.squad) {
         LocationDamageLevel dmgLvl = this.parentMech.GetLocationDamageLevel(unit.Key);
-        if ((dmgLvl == LocationDamageLevel.Destroyed) || (dmgLvl == LocationDamageLevel.NonFunctional)) { continue; }
+        if (dmgLvl == LocationDamageLevel.Destroyed) { continue; }
         unit.Value.rep._ClearLoadState();
       }
     }
@@ -254,7 +254,7 @@ namespace CustomUnits {
       base._SetMeleeIdleState(isMelee);
       foreach (var unit in this.squad) {
         LocationDamageLevel dmgLvl = this.parentMech.GetLocationDamageLevel(unit.Key);
-        if ((dmgLvl == LocationDamageLevel.Destroyed) || (dmgLvl == LocationDamageLevel.NonFunctional)) { continue; }
+        if (dmgLvl == LocationDamageLevel.Destroyed) { continue; }
         unit.Value.rep._SetMeleeIdleState(isMelee);
       }
     }
@@ -262,7 +262,7 @@ namespace CustomUnits {
       base._TriggerMeleeTransition(meleeIn);
       foreach (var unit in this.squad) {
         LocationDamageLevel dmgLvl = this.parentMech.GetLocationDamageLevel(unit.Key);
-        if ((dmgLvl == LocationDamageLevel.Destroyed) || (dmgLvl == LocationDamageLevel.NonFunctional)) { continue; }
+        if (dmgLvl == LocationDamageLevel.Destroyed) { continue; }
         unit.Value.rep._TriggerMeleeTransition(meleeIn);
       }
     }
@@ -270,7 +270,7 @@ namespace CustomUnits {
       base.SetRandomIdleValue(value);
       foreach (var unit in this.squad) {
         LocationDamageLevel dmgLvl = this.parentMech.GetLocationDamageLevel(unit.Key);
-        if ((dmgLvl == LocationDamageLevel.Destroyed) || (dmgLvl == LocationDamageLevel.NonFunctional)) { continue; }
+        if (dmgLvl == LocationDamageLevel.Destroyed) { continue; }
         unit.Value.rep.SetRandomIdleValue(value);
       }
     }
@@ -278,7 +278,7 @@ namespace CustomUnits {
       base.PlayFireAnim(sourceLimb, recoilStrength);
       foreach (var unit in this.squad) {
         LocationDamageLevel dmgLvl = this.parentMech.GetLocationDamageLevel(unit.Key);
-        if ((dmgLvl == LocationDamageLevel.Destroyed) || (dmgLvl == LocationDamageLevel.NonFunctional)) { continue; }
+        if (dmgLvl == LocationDamageLevel.Destroyed) { continue; }
         unit.Value.rep.PlayFireAnim(sourceLimb, recoilStrength);
       }
     }
@@ -286,7 +286,7 @@ namespace CustomUnits {
       base.PlayMeleeAnim(meleeHeight, target);
       foreach (var unit in this.squad) {
         LocationDamageLevel dmgLvl = this.parentMech.GetLocationDamageLevel(unit.Key);
-        if ((dmgLvl == LocationDamageLevel.Destroyed) || (dmgLvl == LocationDamageLevel.NonFunctional)) { continue; }
+        if (dmgLvl == LocationDamageLevel.Destroyed) { continue; }
         unit.Value.rep.PlayMeleeAnim(meleeHeight, target);
       }
     }
@@ -294,7 +294,7 @@ namespace CustomUnits {
       base.PlayImpactAnim(hitInfo, hitIndex, weapon, meleeType, cumulativeDamage);
       foreach (var unit in this.squad) {
         LocationDamageLevel dmgLvl = this.parentMech.GetLocationDamageLevel(unit.Key);
-        if ((dmgLvl == LocationDamageLevel.Destroyed) || (dmgLvl == LocationDamageLevel.NonFunctional)) { continue; }
+        if (dmgLvl == LocationDamageLevel.Destroyed) { continue; }
         unit.Value.rep.PlayImpactAnim(hitInfo, hitIndex, weapon, meleeType, cumulativeDamage);
       }
     }
@@ -302,7 +302,7 @@ namespace CustomUnits {
       base._PlayImpactAnimSimple(attackDirection, totalDamage);
       foreach (var unit in this.squad) {
         LocationDamageLevel dmgLvl = this.parentMech.GetLocationDamageLevel(unit.Key);
-        if ((dmgLvl == LocationDamageLevel.Destroyed) || (dmgLvl == LocationDamageLevel.NonFunctional)) { continue; }
+        if (dmgLvl == LocationDamageLevel.Destroyed) { continue; }
         unit.Value.rep._PlayImpactAnimSimple(attackDirection, totalDamage);
       }
     }
@@ -310,7 +310,7 @@ namespace CustomUnits {
       base._SetUnsteadyAnim(isUnsteady);
       foreach (var unit in this.squad) {
         LocationDamageLevel dmgLvl = this.parentMech.GetLocationDamageLevel(unit.Key);
-        if ((dmgLvl == LocationDamageLevel.Destroyed) || (dmgLvl == LocationDamageLevel.NonFunctional)) { continue; }
+        if (dmgLvl == LocationDamageLevel.Destroyed) { continue; }
         unit.Value.rep._SetUnsteadyAnim(isUnsteady);
       }
     }
@@ -318,7 +318,7 @@ namespace CustomUnits {
       base.PlayKnockdownAnim(attackDirection);
       foreach (var unit in this.squad) {
         LocationDamageLevel dmgLvl = this.parentMech.GetLocationDamageLevel(unit.Key);
-        if ((dmgLvl == LocationDamageLevel.Destroyed) || (dmgLvl == LocationDamageLevel.NonFunctional)) { continue; }
+        if (dmgLvl == LocationDamageLevel.Destroyed) { continue; }
         unit.Value.rep.PlayKnockdownAnim(attackDirection);
       }
     }
@@ -326,7 +326,7 @@ namespace CustomUnits {
       base._ForceKnockdown(attackDirection);
       foreach (var unit in this.squad) {
         LocationDamageLevel dmgLvl = this.parentMech.GetLocationDamageLevel(unit.Key);
-        if ((dmgLvl == LocationDamageLevel.Destroyed) || (dmgLvl == LocationDamageLevel.NonFunctional)) { continue; }
+        if (dmgLvl == LocationDamageLevel.Destroyed) { continue; }
         unit.Value.rep._ForceKnockdown(attackDirection);
       }
     }
@@ -334,7 +334,7 @@ namespace CustomUnits {
       base._ResetHitReactFlags();
       foreach (var unit in this.squad) {
         LocationDamageLevel dmgLvl = this.parentMech.GetLocationDamageLevel(unit.Key);
-        if ((dmgLvl == LocationDamageLevel.Destroyed) || (dmgLvl == LocationDamageLevel.NonFunctional)) { continue; }
+        if (dmgLvl == LocationDamageLevel.Destroyed) { continue; }
         unit.Value.rep._ResetHitReactFlags();
       }
     }
@@ -342,7 +342,7 @@ namespace CustomUnits {
       base.PlayStandAnim();
       foreach (var unit in this.squad) {
         LocationDamageLevel dmgLvl = this.parentMech.GetLocationDamageLevel(unit.Key);
-        if ((dmgLvl == LocationDamageLevel.Destroyed) || (dmgLvl == LocationDamageLevel.NonFunctional)) { continue; }
+        if (dmgLvl == LocationDamageLevel.Destroyed) { continue; }
         unit.Value.rep.PlayStandAnim();
       }
     }
@@ -354,7 +354,7 @@ namespace CustomUnits {
       if (isSlave == false) this.PlayVFXAt((Transform)null, this.parentActor.CurrentPosition, (string)this.Constants.VFXNames.jumpjet_launch, false, Vector3.zero, true, -1f);
       foreach (var unit in this.squad) {
         LocationDamageLevel dmgLvl = this.parentMech.GetLocationDamageLevel(unit.Key);
-        if ((dmgLvl == LocationDamageLevel.Destroyed) || (dmgLvl == LocationDamageLevel.NonFunctional)) { continue; }
+        if (dmgLvl == LocationDamageLevel.Destroyed) { continue; }
         unit.Value.rep.PlayJumpLaunchAnim();
       }
     }
@@ -363,7 +363,7 @@ namespace CustomUnits {
       base._SetMeleeIdleState(false);
       foreach (var unit in this.squad) {
         LocationDamageLevel dmgLvl = this.parentMech.GetLocationDamageLevel(unit.Key);
-        if ((dmgLvl == LocationDamageLevel.Destroyed) || (dmgLvl == LocationDamageLevel.NonFunctional)) { continue; }
+        if (dmgLvl == LocationDamageLevel.Destroyed) { continue; }
         unit.Value.rep.PlayFallingAnim(direction);
       }
     }
@@ -372,7 +372,7 @@ namespace CustomUnits {
       this.thisAnimator.SetFloat("InAir_Side", side);
       foreach (var unit in this.squad) {
         LocationDamageLevel dmgLvl = this.parentMech.GetLocationDamageLevel(unit.Key);
-        if ((dmgLvl == LocationDamageLevel.Destroyed) || (dmgLvl == LocationDamageLevel.NonFunctional)) { continue; }
+        if (dmgLvl == LocationDamageLevel.Destroyed) { continue; }
         unit.Value.rep.UpdateJumpAirAnim(forward, side);
       }
     }
@@ -387,7 +387,7 @@ namespace CustomUnits {
       }
       foreach (var unit in this.squad) {
         LocationDamageLevel dmgLvl = this.parentMech.GetLocationDamageLevel(unit.Key);
-        if ((dmgLvl == LocationDamageLevel.Destroyed) || (dmgLvl == LocationDamageLevel.NonFunctional)) { continue; }
+        if (dmgLvl == LocationDamageLevel.Destroyed) { continue; }
         unit.Value.rep.PlayJumpLandAnim(isDFA);
       }
     }
@@ -395,7 +395,7 @@ namespace CustomUnits {
       if (isSlave == false) this._StartJumpjetAudio();
       foreach (var unit in this.squad) {
         LocationDamageLevel dmgLvl = this.parentMech.GetLocationDamageLevel(unit.Key);
-        if ((dmgLvl == LocationDamageLevel.Destroyed) || (dmgLvl == LocationDamageLevel.NonFunctional)) { continue; }
+        if (dmgLvl == LocationDamageLevel.Destroyed) { continue; }
         unit.Value.rep._StartJumpjetEffect();
       }
     }
@@ -403,7 +403,7 @@ namespace CustomUnits {
       if (isSlave == false) this._StopJumpjetAudio();
       foreach (var unit in this.squad) {
         LocationDamageLevel dmgLvl = this.parentMech.GetLocationDamageLevel(unit.Key);
-        if ((dmgLvl == LocationDamageLevel.Destroyed) || (dmgLvl == LocationDamageLevel.NonFunctional)) { continue; }
+        if (dmgLvl == LocationDamageLevel.Destroyed) { continue; }
         unit.Value.rep._StopJumpjetEffect();
       }
     }
@@ -427,7 +427,7 @@ namespace CustomUnits {
     public override void _ToggleHeadlights(bool headlightsActive) {
       foreach (var unit in this.squad) {
         LocationDamageLevel dmgLvl = this.parentMech.GetLocationDamageLevel(unit.Key);
-        if ((dmgLvl == LocationDamageLevel.Destroyed) || (dmgLvl == LocationDamageLevel.NonFunctional)) { unit.Value.rep._ToggleHeadlights(false); continue; }
+        if (dmgLvl == LocationDamageLevel.Destroyed) { unit.Value.rep._ToggleHeadlights(false); continue; }
         unit.Value.rep._ToggleHeadlights(headlightsActive);
       }
     }
@@ -442,7 +442,7 @@ namespace CustomUnits {
       base._ToggleHeadlights(false);
       foreach (var unit in this.squad) {
         LocationDamageLevel dmgLvl = this.parentMech.GetLocationDamageLevel(unit.Key);
-        if ((dmgLvl == LocationDamageLevel.Destroyed) || (dmgLvl == LocationDamageLevel.NonFunctional)) { continue; }
+        if (dmgLvl == LocationDamageLevel.Destroyed) { continue; }
         unit.Value.rep.PlayShutdownAnim();
       }
     }
@@ -459,7 +459,7 @@ namespace CustomUnits {
       this.thisAnimator.SetTrigger("PowerOn");
       foreach (var unit in this.squad) {
         LocationDamageLevel dmgLvl = this.parentMech.GetLocationDamageLevel(unit.Key);
-        if ((dmgLvl == LocationDamageLevel.Destroyed) || (dmgLvl == LocationDamageLevel.NonFunctional)) { continue; }
+        if (dmgLvl == LocationDamageLevel.Destroyed) { continue; }
         unit.Value.rep.PlayStartupAnim();
       }
     }
@@ -651,7 +651,7 @@ namespace CustomUnits {
       this.UpdateSpline(sequence, Forward, t, meleeTarget);
       foreach (var unit in this.squad) {
         LocationDamageLevel dmgLvl = this.parentMech.GetLocationDamageLevel(unit.Key);
-        if ((dmgLvl == LocationDamageLevel.Destroyed) || (dmgLvl == LocationDamageLevel.NonFunctional)) {
+        if (dmgLvl == LocationDamageLevel.Destroyed) {
           unit.Value.UpdateDead();
         } else {
           unit.Value.rep.UpdateSpline(worldPos+unit.Value.position, sequence, Forward, t, meleeTarget);
@@ -665,7 +665,7 @@ namespace CustomUnits {
     public override void UpdateJumpFlying(MechJumpSequence sequence) {
       foreach (var unit in this.squad) {
         LocationDamageLevel dmgLvl = this.parentMech.GetLocationDamageLevel(unit.Key);
-        if ((dmgLvl == LocationDamageLevel.Destroyed) || (dmgLvl == LocationDamageLevel.NonFunctional)) {
+        if (dmgLvl == LocationDamageLevel.Destroyed) {
           unit.Value.UpdateDead();
         } else {
           unit.Value.rep.UpdateJumpFlying(sequence);
@@ -676,7 +676,7 @@ namespace CustomUnits {
       //Vector3 finalpos = sequence.FinalPos;
       foreach (var unit in this.squad) {
         LocationDamageLevel dmgLvl = this.parentMech.GetLocationDamageLevel(unit.Key);
-        if ((dmgLvl == LocationDamageLevel.Destroyed) || (dmgLvl == LocationDamageLevel.NonFunctional)) {
+        if (dmgLvl == LocationDamageLevel.Destroyed) {
           unit.Value.UpdateDead();
         } else {
           //sequence.FinalPos = finalpos + unit.Value.position;
@@ -691,7 +691,7 @@ namespace CustomUnits {
       this.thisAnimator.SetFloat("Twist", angle);
       foreach (var unit in this.squad) {
         LocationDamageLevel dmgLvl = this.parentMech.GetLocationDamageLevel(unit.Key);
-        if ((dmgLvl == LocationDamageLevel.Destroyed) || (dmgLvl == LocationDamageLevel.NonFunctional)) { continue; }
+        if (dmgLvl == LocationDamageLevel.Destroyed) { continue; }
         unit.Value.rep.Twist(angle);
       }
     }
@@ -709,7 +709,7 @@ namespace CustomUnits {
       }
       foreach (var unit in this.squad) {
         LocationDamageLevel dmgLvl = this.parentMech.GetLocationDamageLevel(unit.Key);
-        if ((dmgLvl == LocationDamageLevel.Destroyed) || (dmgLvl == LocationDamageLevel.NonFunctional)) { continue; }
+        if (dmgLvl == LocationDamageLevel.Destroyed) { continue; }
         unit.Value.rep._ToggleRandomIdles(shouldIdle);
       }
     }
@@ -723,7 +723,7 @@ namespace CustomUnits {
         if (this.HasTurnParam) { this.thisAnimator.SetFloat(this.TurnHash, value); }
         foreach (var unit in this.squad) {
           LocationDamageLevel dmgLvl = this.parentMech.GetLocationDamageLevel(unit.Key);
-          if ((dmgLvl == LocationDamageLevel.Destroyed) || (dmgLvl == LocationDamageLevel.NonFunctional)) { continue; }
+          if (dmgLvl == LocationDamageLevel.Destroyed) { continue; }
           unit.Value.rep.TurnParam = value;
         }
       }
@@ -735,7 +735,7 @@ namespace CustomUnits {
         if (this.HasForwardParam) { this.thisAnimator.SetFloat(this.ForwardHash, value); }
         foreach (var unit in this.squad) {
           LocationDamageLevel dmgLvl = this.parentMech.GetLocationDamageLevel(unit.Key);
-          if ((dmgLvl == LocationDamageLevel.Destroyed) || (dmgLvl == LocationDamageLevel.NonFunctional)) { continue; }
+          if (dmgLvl == LocationDamageLevel.Destroyed) { continue; }
           unit.Value.rep.ForwardParam = value;
         }
       }
@@ -745,7 +745,7 @@ namespace CustomUnits {
         if (this.HasIsMovingParam) { this.thisAnimator.SetBool(this.IsMovingHash, value); }
         foreach (var unit in this.squad) {
           LocationDamageLevel dmgLvl = this.parentMech.GetLocationDamageLevel(unit.Key);
-          if ((dmgLvl == LocationDamageLevel.Destroyed) || (dmgLvl == LocationDamageLevel.NonFunctional)) { continue; }
+          if (dmgLvl == LocationDamageLevel.Destroyed) { continue; }
           unit.Value.rep.IsMovingParam = value;
         }
       }
@@ -755,7 +755,7 @@ namespace CustomUnits {
         if (this.HasBeginMovementParam) { this.thisAnimator.SetTrigger(this.BeginMovementHash); };
         foreach (var unit in this.squad) {
           LocationDamageLevel dmgLvl = this.parentMech.GetLocationDamageLevel(unit.Key);
-          if ((dmgLvl == LocationDamageLevel.Destroyed) || (dmgLvl == LocationDamageLevel.NonFunctional)) { continue; }
+          if (dmgLvl == LocationDamageLevel.Destroyed) { continue; }
           unit.Value.rep.BeginMovementParam = value;
         }
       }
@@ -768,7 +768,7 @@ namespace CustomUnits {
       this.lastStateWasVisible = (this.rootParentRepresentation.VisibleObject.activeInHierarchy);
       foreach (var unit in this.squad) {
         LocationDamageLevel dmgLvl = this.parentMech.GetLocationDamageLevel(unit.Key);
-        if ((dmgLvl == LocationDamageLevel.Destroyed) || (dmgLvl == LocationDamageLevel.NonFunctional)) { continue; }
+        if (dmgLvl == LocationDamageLevel.Destroyed) { continue; }
         unit.Value.rep.lastStateWasVisible = this.lastStateWasVisible;
       }
       if (this.lastStateWasVisible) { this.PlayMovementStartAudio(); }
@@ -782,14 +782,14 @@ namespace CustomUnits {
     public override void SetVisualHeight(float height) {
       foreach (var unit in this.squad) {
         LocationDamageLevel dmgLvl = this.parentMech.GetLocationDamageLevel(unit.Key);
-        if ((dmgLvl == LocationDamageLevel.Destroyed) || (dmgLvl == LocationDamageLevel.NonFunctional)) { continue; }
+        if (dmgLvl == LocationDamageLevel.Destroyed) { continue; }
         unit.Value.rep.HeightController?.ForceHeight(height);
       }
     }
     public override void PendVisualHeight(float height) {
       foreach (var unit in this.squad) {
         LocationDamageLevel dmgLvl = this.parentMech.GetLocationDamageLevel(unit.Key);
-        if ((dmgLvl == LocationDamageLevel.Destroyed) || (dmgLvl == LocationDamageLevel.NonFunctional)) { continue; }
+        if (dmgLvl == LocationDamageLevel.Destroyed) { continue; }
         unit.Value.rep.HeightController.PendingHeight = (height);
       }
     }
@@ -841,7 +841,7 @@ namespace CustomUnits {
       //if (aliginToTerrain) {
       foreach (var unit in this.squad) {
         LocationDamageLevel dmgLvl = this.parentMech.GetLocationDamageLevel(unit.Key);
-        if ((dmgLvl == LocationDamageLevel.Destroyed) || (dmgLvl == LocationDamageLevel.NonFunctional)) { continue; }
+        if (dmgLvl == LocationDamageLevel.Destroyed) { continue; }
         unit.Value.rep.ForcePositionToTerrain(finalPos + unit.Value.position);
       }
       //}
@@ -855,7 +855,7 @@ namespace CustomUnits {
       Log.Combat?.TWL(0,$"SquadRepresentation.UpdateRotation {this.chassisDef.Description.Id}:{moveTransform.name} pos:{moveTransform.position}");
       foreach (var unit in this.squad) {
         LocationDamageLevel dmgLvl = this.parentMech.GetLocationDamageLevel(unit.Key);
-        if ((dmgLvl == LocationDamageLevel.Destroyed) || (dmgLvl == LocationDamageLevel.NonFunctional)) { continue; }
+        if (dmgLvl == LocationDamageLevel.Destroyed) { continue; }
         Vector3 squadpos = moveTransform.position + unit.Value.position;
         MoveContext squadContext = unit.Value.rep.GetMoveContext(ref squadpos, true);
         //squadpos.y = unit.Value.transform.parent.position.y + (squadpos.y - this.transform.position.y);
@@ -884,7 +884,7 @@ namespace CustomUnits {
       }
       foreach (var unit in this.squad) {
         LocationDamageLevel dmgLvl = this.parentMech.GetLocationDamageLevel(unit.Key);
-        if ((dmgLvl == LocationDamageLevel.Destroyed) || (dmgLvl == LocationDamageLevel.NonFunctional)) { continue; }
+        if (dmgLvl == LocationDamageLevel.Destroyed) { continue; }
         unit.Value.rep.PlayVehicleTerrainImpactVFX(false);
       }
     }

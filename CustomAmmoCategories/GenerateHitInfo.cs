@@ -182,13 +182,14 @@ namespace CustomAmmoCategoriesPatches {
       bool primeSuccess = false;
       {
         float corrRolls = instance.GetCorrectedRoll(hitInfo.toHitRolls[0], team);
-        bool succeeded = (double)corrRolls <= toHitChance;
+        bool succeeded = corrRolls <= toHitChance;
         if ((CustomAmmoCategories.Settings.PlayerAlwaysHit) && (team == instance.attacker.Combat.LocalPlayerTeam)) { succeeded = true; }
         if (weapon.exDef().alwaysMiss) { succeeded = false; }
         bool targetDoggle = false;
         if (target != null) {
           targetDoggle = target.CheckDodge(instance.attacker, weapon, hitInfo, 0, instance.IsBreachingShot);
         }
+        Log.Combat?.WL(0, $"prime hit generator succeeded:{succeeded} targetDoggle:{targetDoggle}. corrRolls:{corrRolls} toHitRoll:{hitInfo.toHitRolls[0]} toHit:{toHitChance} alwaysMiss:{weapon.exDef().alwaysMiss}");
         if (succeeded && targetDoggle) {
           hitInfo.dodgeSuccesses[0] = true;
           instance.FlagAttackContainsDodge(target.GUID);

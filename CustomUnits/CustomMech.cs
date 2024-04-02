@@ -39,12 +39,30 @@ namespace CustomUnits {
         //Log.TWL(0, "MoveMultiplier:"+__instance.PilotableActorDef.Description.Id+" not a custom mech");
         return;
       } catch (Exception e) {
+        Mech.logger.LogException(e);
         Log.Combat?.TWL(0, e.ToString());
         return;
       }
     }
     public static void Postfix(Mech __instance, ref float __result) {
       if (__instance is CustomMech custMech) { __result = custMech._MoveMultiplierOverride ? custMech._MoveMultiplier : __result; }
+    }
+  }
+  [HarmonyPatch(typeof(Mech))]
+  [HarmonyPatch("InitStats")]
+  [HarmonyPatch(new Type[] { })]
+  public static class Mech_InitStats_Finalizer {
+    public static Exception Finalizer(Mech __instance, ref Exception __exception) {
+      try {
+        if (__exception != null) {
+          Log.Combat?.TWL(0, __exception.ToString());
+          Mech.logger.LogException(__exception);
+        }
+      } catch (Exception e) {
+        Mech.logger.LogException(e);
+        Log.Combat?.TWL(0, e.ToString());
+      }
+      return __exception;
     }
   }
   [HarmonyPatch(typeof(Pilot))]
@@ -1110,8 +1128,8 @@ namespace CustomUnits {
     public virtual ICombatant carrier { get { return null; } }
     public virtual void SetCarrier(ICombatant combatant, bool isExternal) { }
     public virtual bool isMountedExternal { get { return false; } }
-    public virtual HashSet<ICombatant> attachedInternally { get; set; }
-    public virtual HashSet<ICombatant> attachedExternally { get; set; }
+    public virtual HashSet<ICombatant> attachedInternally { get; set; } = new HashSet<ICombatant>();
+    public virtual HashSet<ICombatant> attachedExternally { get; set; } = new HashSet<ICombatant>();
     public virtual bool ForcedVisible { get; set; } = false;
     public virtual void BossAppearAnimation() {
       ForcedVisible = true;
