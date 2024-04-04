@@ -1,4 +1,5 @@
 ﻿/*  
+De/*  
  *  This file is part of CustomAmmoCategories.
  *  CustomAmmoCategories is free software: you can redistribute it and/or modify it under the terms of the 
  *  GNU Lesser General Public License as published by the Free Software Foundation, either version 3 of the License, 
@@ -28,33 +29,32 @@ namespace CustAmmoCategories {
     public override PathingCapabilitiesDef PathingCaps => throw new NotImplementedException();
     public override float MaxWalkDistance => 0.0f;
     public override float MaxSprintDistance => 0.0f;
-    public override bool CanSprint => throw new NotImplementedException();
-    public override float MaxBackwardDistance => throw new NotImplementedException();
-    public override float MaxMeleeEngageRangeDistance => throw new NotImplementedException();
+    public override bool CanSprint =>false;
+    public override float MaxBackwardDistance => 0f;
+    public override float MaxMeleeEngageRangeDistance => 0f;
     public override MovementCapabilitiesDef MovementCaps => throw new NotImplementedException();
     public override HardpointDataDef HardpointData => throw new NotImplementedException();
     public override float Radius => throw new NotImplementedException();
-    public override DescriptionDef Description => throw new NotImplementedException();
-    public override int SkillGunnery => throw new NotImplementedException();
-    public override int SkillGuts => throw new NotImplementedException();
-    public override int SkillPiloting => throw new NotImplementedException();
-    public override int SkillTactics => throw new NotImplementedException();
-    public override UnitRole StaticUnitRole => throw new NotImplementedException();
-    public override float SensorSignatureFromDef => throw new NotImplementedException();
-    public override float CurrentArmor => throw new NotImplementedException();
-    public override float SummaryArmorMax => throw new NotImplementedException();
-    public override float SummaryArmorCurrent => throw new NotImplementedException();
-    public override float SummaryStructureMax => throw new NotImplementedException();
-    public override float SummaryStructureCurrent => throw new NotImplementedException();
-    public override float HealthAsRatio => throw new NotImplementedException();
-    public override bool IsDead => throw new NotImplementedException();
-    public override UnitType UnitType => throw new NotImplementedException();
-    public override string UnitName => throw new NotImplementedException();
-    public override string VariantName => throw new NotImplementedException();
-    public override string Nickname => throw new NotImplementedException();
-    public override Text GetActorInfoFromVisLevel(VisibilityLevel visLevel) {
-      throw new NotImplementedException();
-    }
+    protected DescriptionDef f_Description = new DescriptionDef("LOSPseudoActor", "LOSPseudoActor", "LOSPseudoActor", string.Empty, 0, 0f, false, "LOSPseudoActor", "LOSPseudoActor", "LOSPseudoActor");
+    public override DescriptionDef Description => f_Description;
+    public override int SkillGunnery => 0;
+    public override int SkillGuts => 0;
+    public override int SkillPiloting => 0;
+    public override int SkillTactics => 0;
+    public override UnitRole StaticUnitRole => UnitRole.Undefined;
+    public override float SensorSignatureFromDef => 0f;
+    public override float CurrentArmor => 0f;
+    public override float SummaryArmorMax => 0f;
+    public override float SummaryArmorCurrent => 0f;
+    public override float SummaryStructureMax => 0f;
+    public override float SummaryStructureCurrent => 0f;
+    public override float HealthAsRatio => 0f;
+    public override bool IsDead => false;
+    public override UnitType UnitType => UnitType.UNDEFINED;
+    public override string UnitName => "LOSPseudoActor";
+    public override string VariantName => "LOSPseudoActor";
+    public override string Nickname => "LOSPseudoActor";
+    public override Text GetActorInfoFromVisLevel(VisibilityLevel visLevel) { return new Text("LOSPseudoActor"); }
     public override int GetAdjacentHitLocation(Vector3 attackPosition, float randomRoll, int previousHitLocation, float originalMultiplier = 1, float adjacentMultiplier = 1) {
       throw new NotImplementedException();
     }

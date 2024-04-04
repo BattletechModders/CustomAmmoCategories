@@ -257,7 +257,7 @@ namespace CustomAmmoCategoriesPatches {
             string secondaryTargetId = (string)null;
             int secondaryHitLocation = 0;
             hitInfo.hitPositions[hitIndex] = ImpactPositionHelper.GetImpactPosition(instance.attacker, instance.attackPosition, hitInfo.toHitRolls[hitIndex],
-              indirectFire, weapon, instance.chosenTarget, instance.chosenTarget.TargetPosition, ref hitInfo.hitLocations[hitIndex],
+              indirectFire, weapon, instance.chosenTarget, instance.chosenTarget.TargetPosition, ref HitLocation,
               ref hitInfo.attackDirections[hitIndex],ref secondaryTargetId, ref secondaryHitLocation);
             //instance.chosenTarget.GetImpactPosition(instance.attacker, instance.attackPosition, weapon, ref HitLocation, ref hitInfo.attackDirections[hitIndex], ref secondaryTargetId, ref secondaryHitLocation);
             hitInfo.hitLocations[hitIndex] = HitLocation;
@@ -306,7 +306,7 @@ namespace CustomAmmoCategoriesPatches {
       AbstractActor chosenTarget = instance.chosenTarget as AbstractActor;
       Team team = weapon == null || weapon.parent == null || weapon.parent.team == null ? (Team)null : weapon.parent.team;
       for (int index = 0; index < hitInfo.numberOfShots; ++index) {
-        bool succeeded = (double)instance.GetCorrectedRoll(hitInfo.toHitRolls[index], team) <= (double)toHitChance;
+        bool succeeded = instance.GetCorrectedRoll(hitInfo.toHitRolls[index], team) <= toHitChance;
         if ((CustomAmmoCategories.Settings.PlayerAlwaysHit)&&(team == instance.attacker.Combat.LocalPlayerTeam)) { succeeded = true; }
         if (weapon.exDef().alwaysMiss) { succeeded = false; }
         team?.ProcessRandomRoll(toHitChance, succeeded);
