@@ -602,6 +602,10 @@ namespace CustAmmoCategories {
     public float PhysicsAoE_Height { get; set; } = 10f;
     [Key(178)]
     public MissBehavior MissBehavior { get; set; } = MissBehavior.NotSet;
+    [Key(179)]
+    public bool DelayedExposion { get; set; } = false;
+    [Key(180)]
+    public float ExposionModifier { get; set; } = 1f;
     public ExtAmmunitionDef() { }
   }
 }

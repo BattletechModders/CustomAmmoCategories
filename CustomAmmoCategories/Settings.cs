@@ -476,6 +476,24 @@ namespace CustAmmoCategories {
     [CustomSettings.LocalSettingValuesNames(Strings.Culture.CULTURE_EN_US, "Yes", "No")]
     [CustomSettings.LocalSettingValuesNames(Strings.Culture.CULTURE_RU_RU, "Да", "Нет")]
     public bool EjectOutOfAmmoWeaponAtEndOfAttack { get; set; } = false;
+    [GameplaySafe]
+    [CustomSettings.LocalSettingName(Strings.Culture.CULTURE_EN_US, "Default gender generator")]
+    [CustomSettings.LocalSettingName(Strings.Culture.CULTURE_RU_RU, "Генератор гендера по умолчанию")]
+    [CustomSettings.IsLocalSetting(false)]
+    [CustomSettings.LocalSettingDescription(Strings.Culture.CULTURE_EN_US, typeof(GenderGeneratorHelper), "description")]
+    [CustomSettings.LocalSettingDescription(Strings.Culture.CULTURE_RU_RU, typeof(GenderGeneratorHelper), "description")]
+    [NextGenderGenerator]
+    public GenderGeneratorCarrier DefaultGenderGenerator { get; set; } = new GenderGeneratorCarrier(GenderGeneratorType.ModernArmy);
+    [GameplaySafe]
+    [CustomSettings.LocalSettingName(Strings.Culture.CULTURE_EN_US, "Allow gender generator override")]
+    [CustomSettings.LocalSettingName(Strings.Culture.CULTURE_RU_RU, "Позволять переопределять гендерный генератор")]
+    [CustomSettings.IsLocalSetting(false)]
+    [CustomSettings.LocalSettingDescription(Strings.Culture.CULTURE_EN_US, "Allow to override gender generator by star system state (faction or tags)")]
+    [CustomSettings.LocalSettingDescription(Strings.Culture.CULTURE_RU_RU, "Позволять ли переопределять генератор гендера по умолчанию в зависимости от параметров звездной системы")]
+    [CustomSettings.LocalSettingValues(true, false)]
+    [CustomSettings.LocalSettingValuesNames(Strings.Culture.CULTURE_EN_US, "Yes", "No")]
+    [CustomSettings.LocalSettingValuesNames(Strings.Culture.CULTURE_RU_RU, "Да", "Нет")]
+    public bool DefaultGenderGeneratorOverride { get; set; } = true;
     public Settings() {
       //directory = string.Empty;
       //debugLog = true;

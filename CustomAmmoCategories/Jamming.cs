@@ -65,10 +65,30 @@ namespace CustAmmoCategories {
     public static Queue<AMSJammInfoMessage> jammAMSQueue { get; set; } = new Queue<AMSJammInfoMessage>();
     public static Queue<AmmunitionBox> ammoExposionQueue { get; set; } = new Queue<AmmunitionBox>();
     public static readonly string AmmoBoxGUID = "CACAmmoBoxGUID";
+    public static readonly string DELAYED_DESTROY_AMMOBOX_STATISTIC = "CAC_AMMOBOX_DELAYED_DESTROY";
     public static void ClearJammingInfo() {
       jammQueue.Clear();
       jammAMSQueue.Clear();
       ammoExposionQueue.Clear();
+    }
+    public static void ProcessDefferedDestroy(this CombatGameState combat) {
+      Log.Combat?.TWL(0,$"ProcessDefferedDestroy");
+      try {
+        foreach (var actor in combat.AllActors) {
+          Log.Combat?.WL(1, $"{actor.PilotableActorDef.ChassisID}:{actor.PilotableActorDef.GUID}");
+          foreach (var component in actor.allComponents) {
+            if (component == null) { continue; }
+            var isDestroyed = component.StatCollection.GetOrCreateStatisic<bool>(DELAYED_DESTROY_AMMOBOX_STATISTIC, false).Value<bool>();
+            Log.Combat?.WL(2, $"{component.defId}:{actor.PilotableActorDef.GUID}");
+            if (isDestroyed == true) {
+              component.StatCollection.Set<ComponentDamageLevel>("DamageLevel", ComponentDamageLevel.Destroyed);
+            }
+          }
+        }
+      }catch(Exception e) {
+        CombatGameState.gameInfoLogger.LogException(e);
+        Log.Combat?.TWL(0, e.ToString());
+      }
     }
     public static void AddToExposionCheck(AmmunitionBox box) {
       if (CustomAmmoCategories.Settings.AmmoCanBeExhausted == false) { return; };
@@ -84,6 +104,7 @@ namespace CustAmmoCategories {
         Log.Combat?.WL(0, "AddToExposionCheck " + box.defId + " has no ammo category");
         return;
       }
+     // ammoExposionQueue.Enqueue(box);
       if (extAmmo.CanBeExhaustedAt < CustomAmmoCategories.Epsilon) {
         Log.Combat?.WL(0, "AddToExposionCheck " + box.ammoDef.Description.Id + " not exposing");
         return;
@@ -117,10 +138,10 @@ namespace CustAmmoCategories {
             Log.Combat?.WL(0, "prosessExposion " + ammoBox.defId + " has no ammo category");
             continue;
           }
-          if (extAmmo.CanBeExhaustedAt < CustomAmmoCategories.Epsilon) {
-            Log.Combat?.WL(0, "prosessExposion " + ammoBox.ammoDef.Description.Id + " not exposing");
-            continue;
-          }
+          //if (extAmmo.CanBeExhaustedAt < CustomAmmoCategories.Epsilon) {
+          //  Log.Combat?.WL(0, "prosessExposion " + ammoBox.ammoDef.Description.Id + " not exposing");
+          //  continue;
+          //}
           string GUID = CustomAmmoCategories.getAmmoBoxGUID(ammoBox);
           if (checkedGUIDs.Contains(GUID)) {
             Log.Combat?.WL(0, "prosessExposion GUID " + GUID + " already checked");
@@ -128,18 +149,26 @@ namespace CustAmmoCategories {
           }
           checkedGUIDs.Add(GUID);
           float curAmmo = (float)ammoBox.CurrentAmmo / (float)ammoBox.AmmoCapacity;
-          if (curAmmo < extAmmo.CanBeExhaustedAt) {
-            float rollBorder = (extAmmo.CanBeExhaustedAt - curAmmo) / extAmmo.CanBeExhaustedAt;
+          if (curAmmo < extAmmo.CanBeExhaustedAt) 
+          {
+            float rollBorder = ((extAmmo.CanBeExhaustedAt - curAmmo) / extAmmo.CanBeExhaustedAt) * extAmmo.ExposionModifier;
             float exposedRoll = Random.Range(0f, 1f);
-            Log.Combat?.WL(0, "roll " + exposedRoll + " " + rollBorder);
-            if (exposedRoll <= rollBorder) {
-              ammoBox.StatCollection.Set<ComponentDamageLevel>("DamageLevel", ComponentDamageLevel.Destroyed);
-              ammoBox.parent.Combat.MessageCenter.PublishMessage(
-                  new AddSequenceToStackMessage(
-                      new ShowActorInfoSequence(ammoBox.parent, new Text("__/CAC.AMMOBOXEXHAUSTED/__", ammoBox.UIName), FloatieMessage.MessageNature.Debuff, true)));
+            Log.Combat?.WL(0, $"roll {exposedRoll} border:{rollBorder}");
+            if (exposedRoll <= rollBorder) 
+            {
+              if (extAmmo.DelayedExposion) {
+                ammoBox.StatCollection.GetOrCreateStatisic<bool>(DELAYED_DESTROY_AMMOBOX_STATISTIC, false).SetValue<bool>(true);
+                Log.Combat?.WL(1, "delayed destruction");
+              } else {
+                ammoBox.StatCollection.Set<ComponentDamageLevel>("DamageLevel", ComponentDamageLevel.Destroyed);
+                ammoBox.parent.Combat.MessageCenter.PublishMessage(
+                    new AddSequenceToStackMessage(
+                        new ShowActorInfoSequence(ammoBox.parent, new Text("__/CAC.AMMOBOXEXHAUSTED/__", ammoBox.UIName), FloatieMessage.MessageNature.Debuff, true)));
+              }
             }
-          } else {
-            Log.Combat?.WL(0, "prosessExposion curAmmo " + curAmmo + " is not less than border " + extAmmo.CanBeExhaustedAt + "\n");
+          }
+          else {
+            Log.Combat?.WL(0, $"prosessExposion curAmmo {curAmmo} is not less than border {extAmmo.CanBeExhaustedAt}");
           }
         } catch (Exception e) {
           Log.Combat?.WL(0, "prosessExposion exception " + e.ToString(), true);

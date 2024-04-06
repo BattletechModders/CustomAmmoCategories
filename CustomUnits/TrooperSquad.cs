@@ -1074,9 +1074,14 @@ namespace CustomUnits {
     protected CustomMech f_carrier = null;
     public override ICombatant carrier { get { return f_carrier; } }
     public override void SetCarrier(ICombatant combatant, bool isExternal) {
-      Log.Combat?.TWL(0,$"TrooperSquad.SetCarrier {(combatant == null?"dismount":combatant.DisplayName)} external:{isExternal}");
+      Log.Combat?.TWL(0,$"TrooperSquad.SetCarrier {this.PilotableActorDef.chassisID} carrier: {(combatant == null?"dismount":combatant.DisplayName)} external:{isExternal}");
+      Log.Combat?.WL(0, Environment.StackTrace.ToString());
       try {
         if (combatant is CustomMech mech) {
+          if (f_carrier == combatant) {
+            Log.Combat?.WL(1, $"already attached this combatant");
+            return;
+          }
           if (f_carrier != null) {
             f_carrier.attachedExternally.Remove(this);
             f_carrier.attachedInternally.Remove(this);

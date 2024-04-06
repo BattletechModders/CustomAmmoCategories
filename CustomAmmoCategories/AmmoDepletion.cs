@@ -137,11 +137,12 @@ namespace CustAmmoCategories {
       DeferredEffectHelper.Clear();
       PersistentFloatieHelper.Clear();
       WeaponArtilleryHelper.Clear();
-      if(UnityGameInstance.BattleTechGame.Simulation == null) { Log.M.WL(1,"Simulation is null"); return; }
+      if (UnityGameInstance.BattleTechGame.Simulation == null) { Log.M.WL(1,"Simulation is null"); return; }
       try {
         if (__instance.State != Contract.ContractState.InProgress) { return; };
         UnityGameInstance.BattleTechGame.Simulation.FlushReserve();
         CombatGameState combat = __instance.BattleTechGame.Combat;
+        combat.ProcessDefferedDestroy();
         List<AbstractActor> allActors = combat.AllActors;
         HashSet<string> playerGUIDS = new HashSet<string>();
         Log.Combat?.WL(1, "player GUIDS:");
