@@ -550,6 +550,10 @@ namespace CustAmmoCategories {
           float missRadius = minMissRadius + (maxMissRadius - minMissRadius) * toHit;
           var missBehavior = weapon.MissBehavior();
           Log.Combat?.TWL(0, $"GetMissPosition {attacker.PilotableActorDef.ChassisID} weapon:{weapon.defId} missBehavior:{missBehavior} pos:{attackPos} indirect:{indirect} missRadius:{missRadius} location:{location}");
+          if ((weapon.weaponDef != null) && (weapon.weaponDef.WeaponCategoryValue.IsMelee == true)) {
+            attackDirection = attacker.Combat.HitLocation.GetAttackDirection(attackPosition, initalTarget);
+            return RandomOnCone(attackPos, initalTarget.TargetPosition, minMissRadius);
+          }
           Vector3 result = GetMissPosition(attacker.Combat, attacker.team, initalTarget, attackPos, weapon.MissBehavior(), 
             targetPosition, weapon.MaxRange, missRadius, indirect,ref attackDirection, out bool hitAnything, out var strayTarget, out var strayLocation);
           if (indirect) { location = (int)ArmorLocation.Invalid; }

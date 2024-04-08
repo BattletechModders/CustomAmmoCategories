@@ -607,13 +607,19 @@ namespace CustomUnits {
   [HarmonyPatch(typeof(MechLabPanel))]
   [HarmonyPatch("InitWidgets")]
   [HarmonyPatch(MethodType.Normal)]
+  [HarmonyAfter("MechEngineer.Features.MechLabSlots")]
   [HarmonyPatch(new Type[] { })]
   public static class MechLabPanel_InitWidgets {
+    public static void Prefix(ref bool __runOriginal, MechLabPanel __instance) {
+      if (__runOriginal == false) { return; }
+      MechLabPanel_InitWidgets_Reduced.Prefix(__instance);
+    }
     public static void Postfix(MechLabPanel __instance) {
       try {
         Log.M?.TWL(0, "MechLabPanel.InitWidgets");
         MechLabPanelFillAs.Instance = __instance.gameObject.GetComponent<MechLabPanelFillAs>();
-        if (MechLabPanelFillAs.Instance == null) { MechLabPanelFillAs.Instance = __instance.gameObject.AddComponent<MechLabPanelFillAs>(); } 
+        if (MechLabPanelFillAs.Instance == null) { MechLabPanelFillAs.Instance = __instance.gameObject.AddComponent<MechLabPanelFillAs>(); }
+        MechLabPanel_InitWidgets_Reduced.Postfix(__instance);
       } catch (Exception e) {
         Log.E?.TWL(0, e.ToString(), true);
         MechLabPanel.logger.LogException(e);

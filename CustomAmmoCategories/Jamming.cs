@@ -227,7 +227,9 @@ namespace CustAmmoCategories {
   public static class JammingRealizer {
     public static string CantFireReason(this Weapon weapon) {
       string result = string.Empty;
-      if(weapon.parent.IsInArtilleryMode() == true) { result += "IN.ARTILLERY;"; }
+      if(weapon.parent.IsInArtilleryMode() == true) {
+        if (weapon.isAMS() == false) { result += "IN.ARTILLERY;"; }
+      }
       if(weapon.IsFunctional == false) { result+="DESTROYED;"; }
       if (weapon.StatCollection.GetValue<bool>("TemporarilyDisabled")) { result+="TEMP.DISABLED;"; }
       if (weapon.IsDisabled) { result += "DISABLED;"; }
@@ -249,7 +251,9 @@ namespace CustAmmoCategories {
     }
     public static void Postfix(Weapon __instance, ref bool __result) {
       if (__result == false) { return; }
-      if(__instance.parent.IsInArtilleryMode()) { __result = false; }
+      if(__instance.parent.IsInArtilleryMode()) {
+        if (__instance.isAMS() == false) { __result = false; }
+      }
       if(__instance.IsJammed()) { __result = false; }
       if (__instance.isWRJammed()) { __result = false; }
       if (__instance.IsCooldown() > 0) { __result = false; }

@@ -219,6 +219,7 @@
     <Compile Include="QuadBodyAnimator.cs" />
     <Compile Include="QuadMech.cs" />
     <Compile Include="QuadRepresentation.cs" />
+    <Compile Include="ReducedMechLab.cs" />
     <Compile Include="ShutdownManual.cs" />
     <Compile Include="SortByTonnage\SortByTonnage.cs" />
     <Compile Include="SpawnActorHelper.cs" />
