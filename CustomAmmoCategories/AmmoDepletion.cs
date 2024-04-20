@@ -749,11 +749,11 @@ namespace CustAmmoCategories {
           }
         }
       }
-      return true;
+      return false;
     }
-    public static bool Prefix(LanceMechEquipmentList __instance, LocalizableText headerLabel, UIColorRefTracker headerColor, Transform layoutParent, ChassisLocations location, ref UIColor __state) {
+    public static void Prefix(ref bool __runOriginal,LanceMechEquipmentList __instance, LocalizableText headerLabel, UIColorRefTracker headerColor, Transform layoutParent, ChassisLocations location, ref UIColor __state) {
       try {
-        if (UnityGameInstance.BattleTechGame.Simulation == null) { return true; }
+        if (UnityGameInstance.BattleTechGame.Simulation == null) { return; }
         Log.M?.TWL(0, "LanceMechEquipmentList.SetLoadout "+ __instance.activeMech.Description.Id+" "+location);
         LocationLoadoutDef locationLoadoutDef = __instance.activeMech.GetLocationLoadoutDef(location);
         float currentArmor = locationLoadoutDef.CurrentArmor;
@@ -817,11 +817,11 @@ namespace CustAmmoCategories {
             __instance.allComponents.Add(gameObject);
           }
         }
-        return false;
+        __runOriginal = false;
       } catch (Exception e) {
         Log.M?.TWL(0, e.ToString());
         UIManager.logger.LogException(e);
-        return true;
+        __runOriginal = true;
       }
     }
   }

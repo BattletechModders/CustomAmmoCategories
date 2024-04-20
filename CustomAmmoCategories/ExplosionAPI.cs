@@ -238,10 +238,11 @@ namespace CustAmmoCategories {
         }
         Vector3 CurrentPosition = aoeTarget.CurrentPosition + Vector3.up * aoeTarget.FlyingHeight();
         float distance = Vector3.Distance(CurrentPosition, pos);
+        float realdistance = distance;
         if (CustomAmmoCategories.Settings.DefaultAoEDamageMult[target.UnitType].Range < CustomAmmoCategories.Epsilon) { CustomAmmoCategories.Settings.DefaultAoEDamageMult[target.UnitType].Range = 1f; }
         distance /= CustomAmmoCategories.Settings.DefaultAoEDamageMult[target.UnitType].Range;
         if (distance > Range) { continue; };
-        if(CustomAmmoCategories.Settings.PhysicsAoE_API && PhysicsAoE) {
+        if(CustomAmmoCategories.Settings.PhysicsAoE_API && PhysicsAoE && (realdistance > CustomAmmoCategories.Settings.PhysicsAoE_MinDist)) {
           Vector3 raycastStart = pos + Vector3.up * PhysicsAoE_Height;
           Vector3 raycastEnd = aoeTarget.TargetPosition;
           AreaOfEffectHelper.pseudoLOSActor.Combat = target.Combat;
@@ -252,17 +253,6 @@ namespace CustAmmoCategories {
           var lof = target.Combat.LOS.GetLineOfFire(AreaOfEffectHelper.pseudoLOSActor, raycastStart, aoeTarget, aoeTarget.CurrentPosition, aoeTarget.CurrentRotation, out var collisionWorldPos);
           Log.Combat?.WL(2, $"{raycastStart}->{target.DisplayName} LoF:{lof}");
           if (lof == LineOfFireLevel.LOFBlocked) { continue; }
-          //if(Physics.Raycast(raycastStart, (raycastEnd - raycastStart).normalized, out RaycastHit phy_hit, distance, PhysicsAoELayers, QueryTriggerInteraction.Ignore)) {
-          //  Log.F?.WL(2, $"raycast result {phy_hit.collider.gameObject.transform.name}");
-          //  if((phy_hit.collider.gameObject.layer != Combatant_layer) && (phy_hit.collider.gameObject.layer != NoCollision_layer)) { continue; }
-          //  PilotableActorRepresentation unitRep = phy_hit.collider.GetComponentInParent<PilotableActorRepresentation>();
-          //  if(unitRep != null) {
-          //    if(unitRep.parentActor != target) {
-          //      Log.F?.WL(3, $"other unit:{(unitRep.parentActor == null ? "null" : unitRep.parentActor.PilotableActorDef.ChassisID)}");
-          //      continue;
-          //    }
-          //  }
-          //};
         }
         float HeatDamage = heat * (Range - distance) / Range;
         float Damage = AoEDmg * CustomAmmoCategories.Settings.DefaultAoEDamageMult[target.UnitType].Damage * (Range - distance) / Range;

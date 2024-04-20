@@ -20,6 +20,7 @@ using System;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Reflection.Emit;
+using System.Threading;
 using UnityEngine;
 
 namespace CustomUnits {
@@ -228,6 +229,9 @@ namespace CustomUnits {
         if(__instance.GetTags().Contains("irbtmu_immobile_unit")) { __result = 0f; return; }
         if(__instance is TrooperSquad squad) {
           int workingJumpjetLocaltions = squad.workingJumpsLocations().Count;
+          if (Thread.CurrentThread.isFlagSet("CU_JUMPDISTANCE_DEBUG")) {
+            Log.Combat?.TWL(0, $"TrooperSquad.JumpDistance {__instance.PilotableActorDef.ChassisID}:{__instance.GUID} original:{__result} locations:{workingJumpjetLocaltions}");
+          }
           __result = workingJumpjetLocaltions > 0 ? (__result / (float)workingJumpjetLocaltions) : 0f;
         }
       } catch (Exception e) {

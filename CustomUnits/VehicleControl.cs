@@ -475,7 +475,19 @@ namespace CustomUnits {
       if (!__runOriginal) { return; }
       if (__instance.selectedMech == null) { return; }
       if (__instance.selectedMech.IsVehicle() == false) { return; }
-      if (Core.Settings.AllowVehiclesEdit == true) { return; }
+      if ((Core.Settings.AllowVehiclesEdit == true)||(Core.Settings.VehcilesPartialEditable)) {
+        if (Core.Settings.VehcilesPartialEditable) {
+          if(__instance.selectedMech.CheckVehicleSimple() == false) {
+            __instance.selectedMech.RevertToStock(__instance.sim);
+            if (__instance.sim != null) {
+              __instance.sim?.interruptQueue.QueuePauseNotification("Vehicle Repairs Needed!", "Boss, i'm very very sorry (really not). Drunken tech broke this vehicle",
+                __instance.sim?.GetCrewPortrait(SimGameCrew.Crew_Yang), null, () => { __instance.mechBay.SelectMech(__instance.mechBay.selectedMech, true); });
+            }
+            __runOriginal = false; return;
+          }
+        }
+        return;
+      }
       GenericPopupBuilder.Create("Can't Refit vehicle", Strings.T("Vehicles can't be refited")).AddFader(new UIColorRef?(LazySingletonBehavior<UIManager>.Instance.UILookAndColorConstants.PopupBackfill), 0.0f, true).Render();
       __runOriginal = false; return;
     }
@@ -489,7 +501,7 @@ namespace CustomUnits {
       if (!__runOriginal) { return; }
       if (__instance.selectedMech == null) { return; }
       if (__instance.selectedMech.IsVehicle() == false) { return; }
-      if (Core.Settings.AllowVehiclesEdit == true) { return; }
+      if ((Core.Settings.AllowVehiclesEdit == true) || (Core.Settings.VehcilesPartialEditable)) { return; }
       GenericPopupBuilder.Create("Cannot store vehicle", Strings.T("Vehicles can't be stored")).AddFader(new UIColorRef?(LazySingletonBehavior<UIManager>.Instance.UILookAndColorConstants.PopupBackfill), 0.0f, true).Render();
       __runOriginal = false; return;
     }
@@ -1356,9 +1368,9 @@ namespace CustomUnits {
   public static class MechValidationRules_ValidateMechStructureSimple {
     public static void Postfix(MechDef mechDef, ref bool __result) {
       if (__result == true) { return; }
-      if (mechDef.IsVehicle()) { return; };
-      __result = ((double)mechDef.LeftArm.CurrentInternalStructure >= 1.0) && ((double)mechDef.RightArm.CurrentInternalStructure >= 1.0) && ((double)mechDef.LeftLeg.CurrentInternalStructure >= 1.0) && ((double)mechDef.RightLeg.CurrentInternalStructure >= 1.0);
-      if (mechDef.Chassis.Head.InternalStructure > 0f) { __result = __result && (mechDef.Head.CurrentInternalStructure >= 1f); };
+      if (mechDef.IsVehicle() == false) { return; };
+      __result = (mechDef.LeftArm.CurrentInternalStructure >= 1f) && (mechDef.RightArm.CurrentInternalStructure >= 1f) && (mechDef.LeftLeg.CurrentInternalStructure >= 1f) && (mechDef.RightLeg.CurrentInternalStructure >= 1f);
+      if (mechDef.Chassis.Head.InternalStructure >= 1f) { __result = __result && (mechDef.Head.CurrentInternalStructure >= 1f); };
       Log.M?.TWL(0, "MechValidationRules.ValidateMechStructureSimple " + mechDef.Chassis.Description.Id + " isVehicle:" + mechDef.IsVehicle() + " result:" + __result);
     }
   }
@@ -1370,34 +1382,6 @@ namespace CustomUnits {
       Log.Combat?.TWL(0, "Contract.GenerateSalvage");
       foreach(UnitResult unit in lostUnits) {
         Log.Combat?.WL(1, "lost:" + unit.mech.ChassisID + " is realy lost:" + unit.mechLost);
-      }
-    }
-  }
-  [HarmonyPatch(typeof(MechValidationRules))]
-  [HarmonyPatch("ValidateMechCanBeFielded")]
-  [HarmonyPatch(MethodType.Normal)]
-  public static class MechValidationRules_ValidateMechCanBeFielded {
-    public static void Postfix(SimGameState sim, MechDef mechDef, ref bool __result) {
-      if (__result == true) { return; }
-      try {
-        Log.M?.TW(0, "MechValidationRules.ValidateMechCanBeFielded");
-        if (mechDef == null) { Log.Combat?.WL(1, "mechDef is null"); return; };
-        Log.M?.W(1, mechDef.Description.Id);
-        bool isFake = mechDef.IsVehicle();
-        Log.M?.W(1, mechDef.ChassisID + " fake:" + isFake + " result:" + __result);
-        //if (isFake == false) { return; };
-
-        bool inMaintaince = MechValidationRules.ValidateSimGameMechNotInMaintenance(sim, mechDef) == false;
-        Log.M?.WL(1, "inMaintaince = " + inMaintaince);
-        bool badStructure = MechValidationRules.ValidateMechStructureSimple(mechDef);
-        Log.M?.WL(1, "badStructure = " + badStructure);
-        bool badWeapon = MechValidationRules.ValidateMechPosessesWeaponsSimple(mechDef);
-        Log.M?.WL(1, "badWeapon = " + badWeapon);
-        __result = (inMaintaince || badStructure || badWeapon) == false;
-        Log.M?.WL(1, "CanBeFielded:" + __result);
-      } catch (Exception e) {
-        Log.E?.TWL(0, e.ToString());
-        UnityGameInstance.logger.LogException(e);
       }
     }
   }
@@ -1461,6 +1445,14 @@ namespace CustomUnits {
     //    return null;
     //  }
     //}
+    private static Dictionary<string, string> ChassisToMechDB = new Dictionary<string, string>();
+    public static string GetStockMechId(this ChassisDef chassisDef) {
+      if (chassisDef == null) { return string.Empty; }
+      if (chassisDef.Description == null) { return string.Empty; }
+      if (string.IsNullOrEmpty(chassisDef.Description.Id)) { return string.Empty; }
+      if (ChassisToMechDB.TryGetValue(chassisDef.Description.Id, out var result)) { return result; }
+      return string.Empty;
+    }
     public static void Prefix(ref bool __runOriginal, MechDef __instance, ref string json) {
       if (!__runOriginal) { return; }
       //Log.TWL(0, "MechDef.FromJSON fake "+(__instance.Description == null?"null": __instance.Description.Id));
@@ -1531,6 +1523,11 @@ namespace CustomUnits {
           }
           mcRef["MountedLocation"] = location.ToString();
           mcRef["IsFixed"] = Core.Settings.VehicleEquipmentIsFixed ? true : (vcRef["IsFixed"] == null ? false: vcRef["IsFixed"]);
+          if (Core.Settings.VehcilesPartialEditable) {
+            if(((string)mcRef["ComponentDefType"] == "AmmunitionBox") || ((string)mcRef["ComponentDefType"] == "Weapon")) {
+              mcRef["IsFixed"] = vcRef["IsFixed"] == null ? false : vcRef["IsFixed"];
+            }
+          }
           //mcRef["prefabName"] = vcRef["prefabName"];
           //mcRef["hasPrefabName"] = vcRef["hasPrefabName"];
           //MechComponentRef mcRef = new MechComponentRef(vcRef.ComponentDefID, vcRef.SimGameUID, vcRef.ComponentDefType, location, vcRef.HardpointSlot, vcRef.DamageLevel, vcRef.IsFixed);
@@ -1603,6 +1600,13 @@ namespace CustomUnits {
         UnityGameInstance.BattleTechGame.DataManager?.logger.LogException(e);
       }
       return;
+    }
+    public static void Postfix(MechDef __instance) {
+      if (__instance.Description == null) { return; }
+      if (string.IsNullOrEmpty(__instance.Description.Id)) { return; }
+      if (ChassisToMechDB.ContainsKey(__instance.ChassisID) == false) {
+        ChassisToMechDB.Add(__instance.ChassisID, __instance.Description.Id);
+      }
     }
   }
   public static class ChassisDef_FromJSON_fake {

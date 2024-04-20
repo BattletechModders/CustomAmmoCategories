@@ -331,6 +331,7 @@ namespace CustAmmoCategories {
         if (target.isDropshipNotLanded()) { continue; };
         Vector3 CurrentPosition = target.CurrentPosition + Vector3.up * target.FlyingHeight();
         float distance = Vector3.Distance(CurrentPosition, pos);
+        float realdistance = distance;
         Log.F?.WL(1,target.DisplayName + ":" + target.GUID + " " + distance + "("+ CustomAmmoCategories.Settings.DefaultAoEDamageMult[target.UnitType].Range + ")");
         if (CustomAmmoCategories.Settings.DefaultAoEDamageMult[target.UnitType].Range < CustomAmmoCategories.Epsilon) { CustomAmmoCategories.Settings.DefaultAoEDamageMult[target.UnitType].Range = 1f; }
         distance /= CustomAmmoCategories.Settings.DefaultAoEDamageMult[target.UnitType].Range;
@@ -339,7 +340,7 @@ namespace CustAmmoCategories {
         if (tagAoEDamage < CustomAmmoCategories.Epsilon) { tagAoEDamage = 1f; }
         distance /= tagAoEModRange;
         if (distance > def.AoERange) { continue; };
-        if(CustomAmmoCategories.Settings.PhysicsAoE_Minefield && def.PhysicsAoE) {
+        if(CustomAmmoCategories.Settings.PhysicsAoE_Minefield && def.PhysicsAoE && (realdistance > CustomAmmoCategories.Settings.PhysicsAoE_MinDist)) {
           Vector3 raycastStart = pos + Vector3.up * def.PhysicsAoE_Height;
           Vector3 raycastEnd = target.TargetPosition;
           AreaOfEffectHelper.pseudoLOSActor.Combat = target.Combat;

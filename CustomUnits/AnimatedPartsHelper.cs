@@ -24,6 +24,7 @@ using System.Threading;
 using System.Collections;
 using Localize;
 using System.Reflection;
+using IRBTModUtils;
 
 namespace CustomUnits {
   //[HarmonyPatch(typeof(LoadRequest))]
@@ -240,6 +241,16 @@ namespace CustomUnits {
       return;
     }
   }
+  [HarmonyPatch(typeof(AttackEvaluator), "MakeAttackOrder")]
+  [HarmonyBefore(new string[] { "us.frostraptor.CleverGirl" })]
+  public static class AttackEvaluator_MakeAttackOrder {
+    public static void Prefix(ref bool __runOriginal, AbstractActor unit, bool isStationary, ref BehaviorTreeResults __result) {
+      Thread.CurrentThread.SetFlag("CU_IsTargetPositionInFiringArc_DEBUG");
+    }
+    public static void Postfix(ref bool __runOriginal, AbstractActor unit, bool isStationary, ref BehaviorTreeResults __result) {
+      Thread.CurrentThread.ClearFlag("CU_IsTargetPositionInFiringArc_DEBUG");
+    }
+  }
   [HarmonyPatch(typeof(Mech))]
   [HarmonyPatch("IsTargetPositionInFiringArc")]
   [HarmonyPatch(MethodType.Normal)]
@@ -247,15 +258,19 @@ namespace CustomUnits {
   public static class Mech_IsTargetPositionInFiringArc {
     public static void Prefix(ref bool __runOriginal, Mech __instance, ICombatant targetUnit, Vector3 attackPosition, Quaternion attackRotation, Vector3 targetPosition, ref bool __result) {
       if (!__runOriginal) { return; }
-      UnitCustomInfo info = __instance.GetCustomInfo();
-      //Log.TWL(0, "Mech.IsTargetPositionInFiringArc " + __instance.MechDef.Description.Id);
-      if (info == null) {
-        //Log.WL(1, "no custom info");
-        return;
+      if (Thread.CurrentThread.isFlagSet("CU_IsTargetPositionInFiringArc_DEBUG")) {
+        Log.Combat?.TWL(0, $"Mech.IsTargetPositionInFiringArc attacker:{__instance.PilotableActorDef.ChassisID} target:{targetUnit.Description.Id} attackPosition:{attackPosition} attackRotation:{attackRotation} targetPosition:{targetPosition}");
       }
-      if (__instance.FiringArc() <= 10f) {
-        //Log.WL(1, "too low arc value");
-        return;
+      float FiringArc = __instance.Combat.Constants.ToHit.FiringArcDegrees;
+      float distance = Vector3.Distance(attackPosition, targetUnit.CurrentPosition);
+      UnitCustomInfo info = __instance.GetCustomInfo();
+      if (info != null) {
+        if (__instance.FiringArc() > 10f) {
+          FiringArc = __instance.FiringArc();
+        }
+      }
+      if (distance < Core.Settings.CloseRangeFiringArcDistance) {
+        FiringArc = Core.Settings.CloseRangeFiringArc;
       }
       Vector3 forward = targetPosition - attackPosition;
       forward.y = 0.0f;
@@ -263,17 +278,22 @@ namespace CustomUnits {
         BattleTech.Building building = targetUnit as BattleTech.Building;
         if (building != null && !string.IsNullOrEmpty(__instance.standingOnBuildingGuid)) {
           string str = __instance.standingOnBuildingGuid + ".Building";
-          if (__instance.standingOnBuildingGuid == building.GUID || str == building.GUID) { __result = true; __runOriginal = false;  return; }
+          if (__instance.standingOnBuildingGuid == building.GUID || str == building.GUID) {
+            if (Thread.CurrentThread.isFlagSet("CU_IsTargetPositionInFiringArc_DEBUG")) {
+              Log.Combat?.WL(1, $"target is building i'm standing on");
+            }
+            __result = true; __runOriginal = false;  return;
+          }
         }
       }
-      if (forward.sqrMagnitude > Core.Epsilon) {
-        Quaternion b = Quaternion.LookRotation(forward);
-        __result = (double)Quaternion.Angle(attackRotation, b) < (double)__instance.FiringArc();
-      } else {
-        __result = true;
+      float attackerForwardAngle = PathingUtil.GetAngle(attackRotation * Vector3.forward);
+      float attackerTargetAngle = PathingUtil.GetAngle(targetPosition - attackPosition);
+      float deltaAngle = Mathf.Abs(Mathf.DeltaAngle(PathingUtil.GetAngle(attackRotation * Vector3.forward), PathingUtil.GetAngle(targetPosition - attackPosition)));
+      __result = deltaAngle < FiringArc;
+      if (Thread.CurrentThread.isFlagSet("CU_IsTargetPositionInFiringArc_DEBUG")) {
+        Log.Combat?.WL(1, $"attackerForwardAngle:{attackerForwardAngle} attackerTargetAngle:{attackerTargetAngle} deltaAngle:{deltaAngle} distance:{distance} FiringArc:{FiringArc} result:{__result}");
       }
       __runOriginal = false;
-      //Log.WL(1, Quaternion.Angle(attackRotation, b) + " and " + __instance.FiringArc() + " : " + __result);
       return;
     }
   }

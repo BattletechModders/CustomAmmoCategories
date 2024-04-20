@@ -219,9 +219,9 @@ namespace CustAmmoCategories {
       if (AOERange < CustomAmmoCategories.Epsilon) { return; };
       bool PhysicsAoE = weapon.PhysicsAoE();
       float PhysicsAoEHeight = weapon.PhysicsAoEHeight();
-      int PhysicsAoELayers = LayerMask.GetMask("Terrain", "Obstruction", "Combatant", "NoCollision");
-      int Combatant_layer = LayerMask.NameToLayer("Combatant");
-      int NoCollision_layer = LayerMask.NameToLayer("NoCollision");
+      //int PhysicsAoELayers = LayerMask.GetMask("Terrain", "Obstruction", "Combatant", "NoCollision");
+      //int Combatant_layer = LayerMask.NameToLayer("Combatant");
+      //int NoCollision_layer = LayerMask.NameToLayer("NoCollision");
       Log.Combat?.TWL(0,$"AOE generation started {advInfo.Sequence.attacker.DisplayName} {weapon.defId} grp:{hitInfo.attackGroupIndex} index:{hitInfo.attackWeaponIndex} shots:{advInfo.hits.Count} PhysicsAoE:{PhysicsAoE}");
       if (advInfo.hits.Count == 0) { return; };
       if (advInfo.hits.Count != hitInfo.hitLocations.Length) {
@@ -307,6 +307,7 @@ namespace CustAmmoCategories {
             if (advRec.target.GUID != target.GUID) { CurrentPosition += Vector3.up * aoeTarget.FlyingHeight(); }
           }
           float distance = Vector3.Distance(CurrentPosition, hitPosition);
+          float realdistance = distance;
           Log.Combat?.WL(1, "testing combatant " + target.DisplayName + " " + target.GUID + " " + distance + "("+CustomAmmoCategories.Settings.DefaultAoEDamageMult[target.UnitType].Range+")/" + AOERange);
           if (CustomAmmoCategories.Settings.DefaultAoEDamageMult[target.UnitType].Range < CustomAmmoCategories.Epsilon) { CustomAmmoCategories.Settings.DefaultAoEDamageMult[target.UnitType].Range = 1f; }
           distance /= CustomAmmoCategories.Settings.DefaultAoEDamageMult[target.UnitType].Range;
@@ -315,7 +316,7 @@ namespace CustAmmoCategories {
           if (tagAoEDamage < CustomAmmoCategories.Epsilon) { tagAoEDamage = 1f; }
           distance /= tagAoEModRange;
           if (distance > AOERange) { continue; }
-          if(PhysicsAoE) {
+          if(PhysicsAoE && (realdistance > CustomAmmoCategories.Settings.PhysicsAoE_MinDist)) {
             Vector3 raycastStart = hitPosition + Vector3.up * PhysicsAoEHeight;
             Vector3 raycastEnd = aoeTarget.TargetPosition;
             AreaOfEffectHelper.pseudoLOSActor.Combat = target.Combat;
@@ -326,44 +327,6 @@ namespace CustAmmoCategories {
             var lof = aoeTarget.Combat.LOS.GetLineOfFire(AreaOfEffectHelper.pseudoLOSActor, raycastStart, aoeTarget, aoeTarget.CurrentPosition, aoeTarget.CurrentRotation, out var collisionWorldPos);
             Log.Combat?.WL(2,$"{raycastStart}->{aoeTarget.DisplayName} LoF:{lof}");
             if (lof == LineOfFireLevel.LOFBlocked) { continue; }
-            //var raycast = Physics.RaycastAll(new Ray(raycastStart, (raycastEnd - raycastStart).normalized), AOERange, Physics.AllLayers, QueryTriggerInteraction.Ignore);
-            //RaycastHit? phy_hit = new RaycastHit?();
-            //float dist = float.PositiveInfinity;
-            //foreach(var rhit in raycast) {
-            //  float temp = Vector3.Distance(raycastStart, rhit.point);
-            //  Log.Combat?.WL(3, $"raycast result {rhit.collider.gameObject.transform.name} layer:{LayerMask.LayerToName(rhit.collider.gameObject.layer)} distance:{temp}");
-            //  if(phy_hit.HasValue == false) { phy_hit = rhit; dist = temp; continue; }
-            //  if(temp < dist) { phy_hit = rhit; dist = temp; }
-            //}
-            //Vector3 direction = raycastEnd - raycastStart;
-            //var ray = new Ray(raycastStart, direction);
-            //GameObject debugLineGO = GameObject.Instantiate(WeaponRangeIndicators.Instance.LineTemplate.gameObject);
-            //debugLineGO.transform.SetParent(WeaponRangeIndicators.Instance.transform);
-            //debugLineGO.name = $"debugRaycast{weapon.parent.GUID}{target.GUID}";
-            //debugLineGO.SetActive(true);
-            //LineRenderer debugLine = debugLineGO.GetComponentInChildren<LineRenderer>(true);
-            //debugLine.startWidth = 2.0f;
-            //debugLine.endWidth = 2.0f;
-            //debugLine.positionCount = 2;
-            //debugLine.material = WeaponRangeIndicators.Instance.MaterialInRange;
-            //debugLine.startColor = Color.red;
-            //debugLine.endColor = Color.red;
-            //debugLine.SetPosition(0, raycastStart);
-            //debugLine.SetPosition(1, (ray.direction * direction.magnitude) + raycastStart);
-            //if (Physics.Raycast(new Ray(raycastStart, raycastEnd - raycastStart),out var phy_hit, direction.magnitude, PhysicsAoELayers, QueryTriggerInteraction.Ignore)) {
-            //  Log.Combat?.WL(2, $"raycast result start:{raycastStart} end:{(ray.direction * direction.magnitude)+raycastStart}/{raycastEnd} hit point:{phy_hit.point} distance:{phy_hit.distance} {phy_hit.collider.gameObject.transform.name} layer:{LayerMask.LayerToName(phy_hit.collider.gameObject.layer)}");
-            //  if((phy_hit.collider.gameObject.layer != Combatant_layer) && (phy_hit.collider.gameObject.layer != NoCollision_layer)) { continue; }
-            //  PilotableActorRepresentation unitRep = phy_hit.collider.GetComponentInParent<PilotableActorRepresentation>();
-            //  Log.Combat?.WL(3, $"unit:{(unitRep == null ? "null" : unitRep.parentActor.PilotableActorDef.ChassisID)}");
-            //  if(unitRep != null) {
-            //    if(unitRep.parentActor != target) {
-            //      Log.Combat?.WL(4, $"other unit blocks raycast");
-            //      continue;
-            //    } else {
-            //      Log.Combat?.WL(4, $"target unit reached - AoE process normal");
-            //    }
-            //  }
-            //};
           }
           if (targetsHitCache.ContainsKey(target) == false) { targetsHitCache.Add(target, new Dictionary<int, float>()); }
           if (targetsHeatCache.ContainsKey(target) == false) { targetsHeatCache.Add(target, 0f); }

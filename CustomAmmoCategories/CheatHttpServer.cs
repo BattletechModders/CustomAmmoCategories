@@ -313,13 +313,18 @@ namespace CustAmmoCategories {
       try {
         Log.M.WL(2, itm.name+":"+ itm.type);
         if (itm.type == BattleTech.ShopItemType.Mech) {
-          MechDef mech = new MechDef(gameState.DataManager.MechDefs.Get(itm.name), gameState.GenerateSimGameUID());
-          Log.M.WL(2, itm.name + ":" + itm.type);
-          gameState.AddMech(-1, mech, true, false, true, "'Unit Add Cheat");
-        //  gameState.MessageCenter.PublishMessage((MessageCenterMessage)new SimGamePurchaseMessage(item, cost, transactionType));
+          if (itm.count == 1) {
+            MechDef mech = new MechDef(gameState.DataManager.MechDefs.Get(itm.name), gameState.GenerateSimGameUID());
+            Log.M.WL(2, itm.name + ":" + itm.type);
+            gameState.AddMech(-1, mech, true, false, true, "'Unit Add Cheat");
+          } else {
+            itm.type = ShopItemType.MechPart;
+            gameState.AddFromShopDefItem(new BattleTech.ShopDefItem(itm.name, itm.type, 0.0f, itm.count, false, false, itm.price));
+          }
+          //  gameState.MessageCenter.PublishMessage((MessageCenterMessage)new SimGamePurchaseMessage(item, cost, transactionType));
 
-        //  //gameState.CurSystem.SystemShop.ActiveInventory.Add(new BattleTech.ShopDefItem(itm.name, BattleTech.ShopItemType.Mech, 0.0f, itm.count, false, false, itm.price));
-        //  //gameState.AddFunds(itm.price * 2);
+          //  //gameState.CurSystem.SystemShop.ActiveInventory.Add(new BattleTech.ShopDefItem(itm.name, BattleTech.ShopItemType.Mech, 0.0f, itm.count, false, false, itm.price));
+          //  //gameState.AddFunds(itm.price * 2);
         } else {
           gameState.AddFromShopDefItem(new BattleTech.ShopDefItem(itm.name, itm.type, 0.0f, itm.count, false, false, itm.price));
         }

@@ -279,6 +279,7 @@ namespace CustomUnits {
     static void Prefix(SimGameState __instance, SerializableReferenceContainer references) {
       Log.M?.TWL(0, "SimGameState.Dehydrate");
       try {
+        ReducedComponentRefInfoHelper.Save(__instance);
         Log.M?.WL(1, "playerLanceLoadout(" + CustomLanceHelper.playerLanceLoadout.loadout.Count + "):");
         foreach (var guid in CustomLanceHelper.playerLanceLoadout.loadout) {
           Log.M?.WL(2, "GUID:" + guid.Key + "->" + guid.Value);
@@ -313,6 +314,7 @@ namespace CustomUnits {
     static void Postfix(SimGameState __instance, GameInstanceSave gameInstanceSave) {
       Log.M?.TWL(0, "SimGameState.Rehydrate");
       try {
+        ReducedComponentRefInfoHelper.Load(__instance);
         Statistic playerMechContent = __instance.CompanyStats.GetStatistic(CustomLanceHelper.SaveReferenceName);
         if (playerMechContent == null) {
           CustomLanceHelper.playerLanceLoadout.loadout.Clear();

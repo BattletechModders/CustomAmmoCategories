@@ -1476,13 +1476,15 @@ namespace CustomUnits {
   [HarmonyPatch(typeof(MechBayPanel))]
   [HarmonyPatch("OnReadyMech")]
   [HarmonyPatch(MethodType.Normal)]
+  [HarmonyBefore("LewdableTanks")]
   [HarmonyPatch(new Type[] { typeof(MechBayChassisUnitElement) })]
   public static class MechBayPanel_OnReadyMech {
-    public static void Prefix(MechBayPanel __instance, MechBayChassisUnitElement chassisElement, ref bool __state) {
+    public static void Prefix(ref bool __runOriginal, MechBayPanel __instance, MechBayChassisUnitElement chassisElement, ref bool __state) {
       int hangarShift = chassisElement.ChassisDef.GetHangarShift();
       Log.M?.TWL(0, "MechBayPanel.OnReadyMech " + chassisElement.ChassisDef.Description.Id + " hangarShift:" + hangarShift);
       //if ((hangarShift > 0) && (chassisElement.ChassisDef.ChassisTags.Contains("fake_vehicle_chassis") == false)) { __state = true; chassisElement.ChassisDef.ChassisTags.Add("fake_vehicle_chassis"); };
       Thread.CurrentThread.pushToStack<ChassisDef>("OnReadyMech_chassis", chassisElement.ChassisDef);
+      MechBayPanel_OnReadyMech_Reduced.Prefix(ref __runOriginal, __instance, chassisElement);
     }
     public static void Postfix(MechBayPanel __instance, MechBayChassisUnitElement chassisElement, ref bool __state) {
       Thread.CurrentThread.popFromStack<ChassisDef>("OnReadyMech_chassis");

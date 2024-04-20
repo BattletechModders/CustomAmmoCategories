@@ -2092,21 +2092,29 @@ namespace CustomUnits {
         parent.leftArmWidget.transform.SetSiblingIndex(this.leftArmWidget_index);
         parent.rightArmWidget.transform.SetParent(this.rightArmWidget_parent);
         parent.rightArmWidget.transform.SetSiblingIndex(this.rightArmWidget_index);
+        parent.leftLegWidget.transform.SetParent(this.leftLegWidget_parent);
+        parent.leftLegWidget.transform.SetSiblingIndex(this.leftLegWidget_index);
+        parent.rightLegWidget.transform.SetParent(this.rightLegWidget_parent);
+        parent.rightLegWidget.transform.SetSiblingIndex(this.rightLegWidget_index);
       }
       public void Swap() {
         parent.leftArmWidget.transform.SetParent(this.leftTorsoWidget_parent);
-        parent.leftArmWidget.transform.SetSiblingIndex(this.leftTorsoWidget_index);
-        parent.rightArmWidget.transform.SetParent(this.rightTorsoWidget_parent);
-        parent.rightArmWidget.transform.SetSiblingIndex(this.rightTorsoWidget_index);
+        //parent.leftArmWidget.transform.SetSiblingIndex(this.leftTorsoWidget_index);
+        //parent.rightArmWidget.transform.SetParent(this.rightTorsoWidget_parent);
+        //parent.rightArmWidget.transform.SetSiblingIndex(this.rightTorsoWidget_index);
+        parent.leftLegWidget.transform.SetParent(this.rightTorsoWidget_parent);
+        //parent.leftLegWidget.transform.SetSiblingIndex(this.leftArmWidget_index);
+        parent.rightLegWidget.transform.SetParent(this.rightTorsoWidget_parent);
+        //parent.rightLegWidget.transform.SetSiblingIndex(this.rightArmWidget_index);
       }
     }
     public static void Postfix(MechLabPanel __instance) {
       try {
         CUMechLabPanelExt ext = __instance.gameObject.GetComponent<CUMechLabPanelExt>();
-        if(ext == null) { ext = __instance.gameObject.AddComponent<CUMechLabPanelExt>(); ext.Init(__instance); }
-        if(__instance.originalMechDef == null) { ext.Restore(); }
-        if(__instance.originalMechDef.Chassis == null) { ext.Restore(); }
-        if(__instance.originalMechDef.Chassis.IsVehicle()) { ext.Swap(); } else { ext.Restore(); }
+        if (ext == null) { ext = __instance.gameObject.AddComponent<CUMechLabPanelExt>(); ext.Init(__instance); }
+        if (__instance.originalMechDef == null) { ext.Restore(); }
+        if (__instance.originalMechDef.Chassis == null) { ext.Restore(); }
+        if (__instance.originalMechDef.Chassis.IsVehicle()) { ext.Swap(); } else { ext.Restore(); }
       } catch(Exception e) {
         Log.M?.TWL(0, e.ToString());
         UIManager.logger.LogException(e);

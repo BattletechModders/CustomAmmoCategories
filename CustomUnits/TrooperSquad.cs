@@ -1077,15 +1077,15 @@ namespace CustomUnits {
       Log.Combat?.TWL(0,$"TrooperSquad.SetCarrier {this.PilotableActorDef.chassisID} carrier: {(combatant == null?"dismount":combatant.DisplayName)} external:{isExternal}");
       Log.Combat?.WL(0, Environment.StackTrace.ToString());
       try {
+        if (f_carrier == combatant) {
+          Log.Combat?.WL(1, $"already attached this combatant");
+          return;
+        }
+        if ((f_carrier != null) && (f_carrier != combatant)) {
+          f_carrier.attachedExternally.Remove(this);
+          f_carrier.attachedInternally.Remove(this);
+        }
         if (combatant is CustomMech mech) {
-          if (f_carrier == combatant) {
-            Log.Combat?.WL(1, $"already attached this combatant");
-            return;
-          }
-          if (f_carrier != null) {
-            f_carrier.attachedExternally.Remove(this);
-            f_carrier.attachedInternally.Remove(this);
-          }
           this.f_carrier = mech;
           this.f_isMountedExternal = isExternal;
           if (this.f_carrier != null) {
@@ -1095,6 +1095,8 @@ namespace CustomUnits {
               this.f_carrier.attachedInternally.Add(this);
             }
           }
+        } else {
+          f_carrier = null;
         }
       }catch(Exception e) {
         CombatGameState.gameInfoLogger.LogException(e);

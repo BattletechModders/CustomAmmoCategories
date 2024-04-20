@@ -23,6 +23,12 @@ namespace SortByTonnage {
     public bool orderByTonnage = false;
     public bool OrderByTonnage => orderByTonnage;
     public bool isAnySortingEnabled { get { return OrderByCbillValue || OrderByNickname || OrderByTonnage; } }
+    public override string ToString() {
+      if (orderByNickname) { return "name"; }
+      if (orderByCbillValue) { return "cost"; }
+      if (orderByTonnage) { return "tonnage"; }
+      return "none";
+    }
   }
   public static class SortByTonnage {
     public const string ModName = "SortByTonnage";

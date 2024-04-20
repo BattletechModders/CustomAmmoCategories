@@ -461,6 +461,7 @@ namespace CustAmmoCategories {
     public bool PhysicsAoE_Minefield { get; set; } = true;
     public bool PhysicsAoE_API { get; set; } = true;
     public float PhysicsAoE_API_Height { get; set; } = 10f;
+    public float PhysicsAoE_MinDist { get; set; } = 40f;
     public bool AIAwareArtillery { get; set; } = true;
     public bool AIAwareMinefields { get; set; } = true;
     public bool AIFastUnitsOptimization { get; set; } = true;

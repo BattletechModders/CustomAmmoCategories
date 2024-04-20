@@ -174,6 +174,7 @@ namespace CustomUnits {
       hotdropManager.Combat = Combat;
       hotdropManager.HUD = __instance;
       hotdropManager.UpdateDropped();
+      DumpListener.Init(__instance);
     }
   }
   public class HotDropManager : MonoBehaviour {

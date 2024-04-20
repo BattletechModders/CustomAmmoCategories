@@ -89,8 +89,16 @@ namespace CustAmmoCategories {
     };
     public static string description(Strings.Culture culture) {
       StringBuilder sb = new StringBuilder();
-      sb.AppendLine("Possible values (Male/Female/Nonbinary):");
-      sb.AppendLine(" Vanilla - do not override");
+      switch (culture) {
+        case Strings.Culture.CULTURE_RU_RU:
+          sb.AppendLine("Возможные значения (Муж./Жен./Не бинар.):");
+          sb.AppendLine(" Vanilla - не переопределять");
+          break;
+        default:
+          sb.AppendLine("Possible values (Male/Female/Nonbinary):");
+          sb.AppendLine(" Vanilla - do not override");
+          break;
+      }
       foreach (var weights in GenderWeights) {
         sb.AppendLine(string.Format("{0} ------ {1}/{2}/{3}", weights.Key, weights.Value[0], weights.Value[1], weights.Value[2]));
       }

@@ -85,7 +85,7 @@ namespace CustomUnits {
 
   }
   public static class Log {
-    public enum LogType { Main, Combat }
+    public enum LogType { Main, Combat, Dump }
     public static string BaseDirectory;
     public static readonly int flushBufferLength = 16 * 1024;
     public static bool flushThreadActive = true;
@@ -101,6 +101,7 @@ namespace CustomUnits {
       Log.flushThread.Start();
       files.Add(LogType.Main, new LogFile("main"));
       files.Add(LogType.Combat, new LogFile("combat"));
+      files.Add(LogType.Dump, new LogFile("dump"));
     }
     public static void flush() {
       foreach(var log in files) { log.Value.flush(); }
@@ -109,5 +110,6 @@ namespace CustomUnits {
     public static LogFile E { get { return files[LogType.Main]; } }
     public static LogFile Combat { get { return Core.Settings.debugLog ? files[LogType.Combat] : null; } }
     public static LogFile ECombat { get { return files[LogType.Combat]; } }
+    public static LogFile Dump { get { return files[LogType.Dump]; } }
   }
 }
