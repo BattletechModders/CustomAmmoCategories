@@ -431,7 +431,7 @@ namespace CustomUnits {
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { typeof(WeaponHitInfo), typeof(int), typeof(ChassisLocations), typeof(Vector3), typeof(DamageType) })]
   public static class Mech_NukeStructureLocation {
-    public static void Prefix(bool __runOriginal, Mech __instance, WeaponHitInfo hitInfo, int hitLoc, ChassisLocations location, Vector3 attackDirection, DamageType damageType) {
+    public static void Prefix(ref bool __runOriginal, Mech __instance, WeaponHitInfo hitInfo, int hitLoc, ChassisLocations location, Vector3 attackDirection, DamageType damageType) {
       try {
         Log.Combat?.TWL(0, "Mech.NukeStructureLocation prefix " + __instance.Description.Id + " threadid:" + Thread.CurrentThread.ManagedThreadId);
         Thread.CurrentThread.pushActor(__instance);
