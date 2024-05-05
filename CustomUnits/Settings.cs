@@ -191,6 +191,13 @@ namespace CustomUnits {
     public Dictionary<string, TimerObjectiveAdvice> timerObjectiveChange { get; set; } = new Dictionary<string, TimerObjectiveAdvice>() { { "DefendBase", new TimerObjectiveAdvice(1, 2) } };
     public float CloseRangeFiringArc { get; set; } = 90f;
     public float CloseRangeFiringArcDistance { get; set; } = 40f;
+    public string VehicleComponentForbiddenTag { get; set; } = "vehicle_forbidden";
+    public string VehicleComponentOneAllowed { get; set; } = "vehicle_one_allowed";
+    public string VehicleComponentOneAllowedLocation { get; set; } = "vehicle_one_allowed_location";
+    public string VehicleComponentCategoryTagPrefix { get; set; } = "vehicle_component_category_";
+    public bool PreserveJsonUnitCost { get; set; } = true;
+    public bool RecalcUnitPartCost { get; set; } = true;
+    public bool DEBUG_CanPilotEverything { get; set; } = false;
     public void ApplyLocal(CUSettings local) {
       PropertyInfo[] props = this.GetType().GetProperties(BindingFlags.Instance | BindingFlags.Public);
       Log.M.TWL(0, "Settings.ApplyLocal");

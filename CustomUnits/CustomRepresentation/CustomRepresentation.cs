@@ -541,7 +541,7 @@ namespace CustomUnits {
             }
           } catch (Exception e) {
             Log.Combat?.TWL(0, e.ToString(), true);
-            AbstractActor.logger.LogException(e);
+            AbstractActorHelper.logger.LogException(e);
           }
         }
         foreach (var ap in this.WeaponAttachPoints) {
@@ -551,7 +551,7 @@ namespace CustomUnits {
         }
       } catch (Exception e) {
         Log.Combat?.TWL(0, e.ToString(), true);
-        AbstractActor.logger.LogException(e);
+        AbstractActorHelper.logger.LogException(e);
       }
     }
     public void AttachWeaponsSimGame() {
@@ -814,7 +814,7 @@ namespace CustomUnits {
         }
       } catch (Exception e) {
         Log.Combat?.TWL(0, e.ToString(), true);
-        AbstractActor.logger.LogException(e);
+        AbstractActorHelper.logger.LogException(e);
       }
     }
     public static void CopyShader(this GameObject meshSource, DataManager dataManager, CustomActorRepresentationDef custRepDef) {

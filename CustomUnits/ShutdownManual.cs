@@ -109,7 +109,7 @@ namespace CustomUnits {
         }
       } catch (Exception e) {
         Log.ECombat?.TWL(0, e.ToString(), true);
-        AbstractActor.logger.LogException(e);
+        AbstractActorHelper.logger.LogException(e);
       }
     }
   }

@@ -16,12 +16,12 @@ namespace MechResizer {
       var identifier = turret.TurretDef.ChassisID;
       var sizeMultiplier = SizeMultiplier.Get(turret.TurretDef);
       Log.Combat?.TWL(0, $"{identifier}: {sizeMultiplier}");
-      var originalLOSSourcePositions = turret.originalLOSSourcePositions;
-      var originalLOSTargetPositions = turret.originalLOSTargetPositions;
+      var originalLOSSourcePositions = turret.originalLOSSourcePositions();
+      var originalLOSTargetPositions = turret.originalLOSTargetPositions();
       var newSourcePositions = ModSettings.LOSSourcePositions(identifier, originalLOSSourcePositions, sizeMultiplier);
       var newTargetPositions = ModSettings.LOSTargetPositions(identifier, originalLOSTargetPositions, sizeMultiplier);
-      turret.originalLOSSourcePositions=(newSourcePositions);
-      turret.originalLOSTargetPositions=(newTargetPositions);
+      turret.originalLOSSourcePositions(newSourcePositions);
+      turret.originalLOSTargetPositions(newTargetPositions);
       __instance.thisTransform.localScale=(sizeMultiplier);
     }
   }

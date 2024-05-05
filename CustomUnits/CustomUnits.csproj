@@ -41,7 +41,7 @@
   <ItemGroup>
     <PackageReference Include="Krafs.Publicizer" Version="2.2.1" />
     <Publicize Include="Assembly-CSharp;UnityEngine.UI;UnityEngine.CoreModule;InControl;CustomComponents" />
-    <DoNotPublicize Include="Assembly-CSharp:BattleTech.MechRepresentation;Assembly-CSharp:BattleTech.Mech;Assembly-CSharp:BattleTech.PilotableActorRepresentation;Assembly-CSharp:BattleTech.UI.SelectionState;Assembly-CSharp:WeaponEffect;Assembly-CSharp:BattleTech.UI.SelectionStateCommand;Assembly-CSharp:BattleTech.UI.SelectionStateConfirm" />
+    <DoNotPublicize Include="Assembly-CSharp:BattleTech.MechRepresentation;Assembly-CSharp:BattleTech.Mech;Assembly-CSharp:BattleTech.AbstractActor;Assembly-CSharp:BattleTech.PilotableActorRepresentation;Assembly-CSharp:BattleTech.UI.SelectionState;Assembly-CSharp:WeaponEffect;Assembly-CSharp:BattleTech.UI.SelectionStateCommand;Assembly-CSharp:BattleTech.UI.SelectionStateConfirm" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="0Harmony, Version=1.2.0.1, Culture=neutral, processorArchitecture=MSIL">
@@ -235,6 +235,7 @@
     <Compile Include="TerrainCost.cs" />
     <Compile Include="TerrainMaskPatch.cs" />
     <Compile Include="TrooperSquad.cs" />
+    <Compile Include="UnitCost.cs" />
     <Compile Include="VanillaBugFixes.cs" />
     <Compile Include="VehicleBays.cs" />
     <Compile Include="VehicleChassisDef.cs" />

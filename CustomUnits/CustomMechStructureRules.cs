@@ -234,7 +234,7 @@ namespace CustomUnits {
         }
       } catch (Exception e) {
         Log.Combat?.TWL(0, e.ToString(), true);
-        AbstractActor.logger.LogException(e);
+        AbstractActorHelper.logger.LogException(e);
       }
     }
   }
@@ -277,7 +277,7 @@ namespace CustomUnits {
         }
       } catch (Exception e) {
         Log.Combat?.TWL(0, e.ToString(), true);
-        AbstractActor.logger.LogException(e);
+        AbstractActorHelper.logger.LogException(e);
       }
     }
   }
@@ -413,7 +413,7 @@ namespace CustomUnits {
         Thread.CurrentThread.SetFlag("CallOriginal_GetMechHitTable");
       } catch (Exception e) {
         Log.Combat?.TWL(0, e.ToString(), true);
-        AbstractActor.logger.LogException(e);
+        AbstractActorHelper.logger.LogException(e);
       }
     }
     public static void Postfix(CombatGameConstants __instance, CombatGameState combat) {
@@ -422,7 +422,7 @@ namespace CustomUnits {
         Thread.CurrentThread.ClearFlag("CallOriginal_GetMechHitTable");
       } catch (Exception e) {
         Log.Combat?.TWL(0, e.ToString(), true);
-        AbstractActor.logger.LogException(e);
+        AbstractActorHelper.logger.LogException(e);
       }
     }
   }

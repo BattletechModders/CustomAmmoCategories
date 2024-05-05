@@ -130,12 +130,42 @@ namespace CustAmmoCategories {
     }
     private static Dictionary<ICombatant, bool> isDropshipCache = new Dictionary<ICombatant, bool>();
     public static void Clear() { isDropshipCache.Clear(); }
+    //public static Dictionary<string, AoEModifiers> TargetAoEModifiers(this Weapon weapon) {
+    //  ExtAmmunitionDef ammo = weapon.ammo();
+    //  WeaponMode mode = weapon.mode();
+    //  ExtWeaponDef wp = weapon.exDef();
+    //  if (mode.TagAoEDamageMult.Count > 0) { return mode.TagAoEDamageMult; }
+    //  if (ammo.TagAoEDamageMult.Count > 0) { return ammo.TagAoEDamageMult; }
+    //  return wp.TagAoEDamageMult;
+    //}
+    public static void TagAoEModifiers(this ICombatant target, Weapon weapon, out float range, out float damage) {
+      range = 1f;
+      damage = 1f;
+      HBS.Collections.TagSet tags = target.Tags();
+      ExtAmmunitionDef ammo = weapon.ammo();
+      WeaponMode mode = weapon.mode();
+      ExtWeaponDef wp = weapon.exDef();
+      foreach (var tag in tags) {
+        if(CustomAmmoCategories.Settings.TagAoEDamageMult.TryGetValue(tag, out AoEModifiers mods)) {
+          range *= mods.Range; damage *= mods.Damage;
+        }
+        if (mode.TagAoEDamageMult.TryGetValue(tag, out mods)) {
+          range *= mods.Range; damage *= mods.Damage;
+        }
+        if (ammo.TagAoEDamageMult.TryGetValue(tag, out mods)) {
+          range *= mods.Range; damage *= mods.Damage;
+        }
+        if (wp.TagAoEDamageMult.TryGetValue(tag, out mods)) {
+          range *= mods.Range; damage *= mods.Damage;
+        }
+      }
+    }
     public static void TagAoEModifiers(this ICombatant target, out float range, out float damage) {
       range = 1f;
       damage = 1f;
       HBS.Collections.TagSet tags = target.Tags();
       foreach (var tag in tags) {
-        if(CustomAmmoCategories.Settings.TagAoEDamageMult.TryGetValue(tag,out AoEModifiers mods)) {
+        if (CustomAmmoCategories.Settings.TagAoEDamageMult.TryGetValue(tag, out AoEModifiers mods)) {
           range *= mods.Range; damage *= mods.Damage;
         }
       }
@@ -219,6 +249,7 @@ namespace CustAmmoCategories {
       if (AOERange < CustomAmmoCategories.Epsilon) { return; };
       bool PhysicsAoE = weapon.PhysicsAoE();
       float PhysicsAoEHeight = weapon.PhysicsAoEHeight();
+      float PhysicsAoEMinDist = weapon.PhysicsAoEMinDist();
       //int PhysicsAoELayers = LayerMask.GetMask("Terrain", "Obstruction", "Combatant", "NoCollision");
       //int Combatant_layer = LayerMask.NameToLayer("Combatant");
       //int NoCollision_layer = LayerMask.NameToLayer("NoCollision");
@@ -311,12 +342,12 @@ namespace CustAmmoCategories {
           Log.Combat?.WL(1, "testing combatant " + target.DisplayName + " " + target.GUID + " " + distance + "("+CustomAmmoCategories.Settings.DefaultAoEDamageMult[target.UnitType].Range+")/" + AOERange);
           if (CustomAmmoCategories.Settings.DefaultAoEDamageMult[target.UnitType].Range < CustomAmmoCategories.Epsilon) { CustomAmmoCategories.Settings.DefaultAoEDamageMult[target.UnitType].Range = 1f; }
           distance /= CustomAmmoCategories.Settings.DefaultAoEDamageMult[target.UnitType].Range;
-          target.TagAoEModifiers(out float tagAoEModRange, out float tagAoEDamage);
+          target.TagAoEModifiers(weapon, out float tagAoEModRange, out float tagAoEDamage);
           if (tagAoEModRange < CustomAmmoCategories.Epsilon) { tagAoEModRange = 1f; }
           if (tagAoEDamage < CustomAmmoCategories.Epsilon) { tagAoEDamage = 1f; }
           distance /= tagAoEModRange;
           if (distance > AOERange) { continue; }
-          if(PhysicsAoE && (realdistance > CustomAmmoCategories.Settings.PhysicsAoE_MinDist)) {
+          if(PhysicsAoE && (realdistance > PhysicsAoEMinDist)) {
             Vector3 raycastStart = hitPosition + Vector3.up * PhysicsAoEHeight;
             Vector3 raycastEnd = aoeTarget.TargetPosition;
             AreaOfEffectHelper.pseudoLOSActor.Combat = target.Combat;

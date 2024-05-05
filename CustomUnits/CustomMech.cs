@@ -26,6 +26,19 @@ using System.Threading;
 using UnityEngine;
 
 namespace CustomUnits {
+  public static class ZombieHelper {
+    public static bool IsZombie(this Mech mech) {
+      if (mech == null) { return false; }
+      if (mech.pilot == null) { return false; }
+      if (mech.pilot.pilotDef.PilotTags.Contains("pilot_zombie") == false) { return false; }
+      return true;
+    }
+    //public static bool IsAboutToRegenerate(this Mech mech, ChassisLocations location) {
+    //  if (mech == null) { return false; }
+    //  if (location == ChassisLocations.Head) { return false; }
+    //  if (location == ChassisLocations.CenterTorso) { return true; }
+    //}
+  }
   [HarmonyPatch(typeof(Mech))]
   [HarmonyPatch("MoveMultiplier")]
   [HarmonyPatch(MethodType.Getter)]
@@ -39,30 +52,13 @@ namespace CustomUnits {
         //Log.TWL(0, "MoveMultiplier:"+__instance.PilotableActorDef.Description.Id+" not a custom mech");
         return;
       } catch (Exception e) {
-        Mech.logger.LogException(e);
+        AbstractActorHelper.logger.LogException(e);
         Log.Combat?.TWL(0, e.ToString());
         return;
       }
     }
     public static void Postfix(Mech __instance, ref float __result) {
       if (__instance is CustomMech custMech) { __result = custMech._MoveMultiplierOverride ? custMech._MoveMultiplier : __result; }
-    }
-  }
-  [HarmonyPatch(typeof(Mech))]
-  [HarmonyPatch("InitStats")]
-  [HarmonyPatch(new Type[] { })]
-  public static class Mech_InitStats_Finalizer {
-    public static Exception Finalizer(Mech __instance, ref Exception __exception) {
-      try {
-        if (__exception != null) {
-          Log.Combat?.TWL(0, __exception.ToString());
-          Mech.logger.LogException(__exception);
-        }
-      } catch (Exception e) {
-        Mech.logger.LogException(e);
-        Log.Combat?.TWL(0, e.ToString());
-      }
-      return __exception;
     }
   }
   [HarmonyPatch(typeof(Pilot))]
@@ -302,7 +298,7 @@ namespace CustomUnits {
         }
       }catch(Exception e) {
         Log.Combat?.TWL(0,e.ToString(),true);
-        AbstractActor.logger.LogException(e);
+        AbstractActorHelper.logger.LogException(e);
       }
     }
     public virtual void UpdateLOSHeight(float height) {
@@ -310,7 +306,7 @@ namespace CustomUnits {
       Log.Combat?.TWL(0, "CustomMech.UpdateLOSHeight "+this.PilotableActorDef.ChassisID+" height:"+height);
       for(int t = 0; t < this.originalLOSSourcePositions.Length; ++t) {
         if (t >= custLosData.sourcePositions.Length) { break; }
-        this.originalLOSSourcePositions[t] = custLosData.sourcePositions[t] + Vector3.up * height;
+        this.originalLOSSourcePositions[t] = this.custLosData.sourcePositions[t] + Vector3.up * height;
         Log.Combat?.WL(1, "originalLOSSourcePositions["+t+"]"+ custLosData.sourcePositions[t]+"=>"+ this.originalLOSSourcePositions[t]);
       }
       for (int t = 0; t < this.originalLOSTargetPositions.Length; ++t) {
@@ -321,6 +317,18 @@ namespace CustomUnits {
       this.HighestLOSPosition = custLosData.highest + Vector3.up * height;
       Log.Combat?.WL(1, "HighestLOSPosition" + custLosData.highest + "=>" + this.HighestLOSPosition);
       this.UpdateLOSPositions();
+    }
+    public virtual Vector3[] GetLOSSourcePositions(Vector3 position, Quaternion rotation, float flyingHeight) {
+      Vector3[] result = new Vector3[this.custLosData.sourcePositions.Length];
+      for (int index = 0; index < this.custLosData.sourcePositions.Length; ++index)
+        result[index] = rotation * this.custLosData.sourcePositions[index] + position + Vector3.up * flyingHeight;
+      return result;
+    }
+    public virtual Vector3[] GetLOSTargetPositions(Vector3 position, Quaternion rotation, float flyingHeight) {
+      Vector3[] result = new Vector3[this.custLosData.targetPositions.Length];
+      for (int index = 0; index < this.custLosData.targetPositions.Length; ++index)
+        result[index] = rotation * this.custLosData.targetPositions[index] + position + Vector3.up * flyingHeight;
+      return result;
     }
     public virtual bool _MoveMultiplierOverride { get { return true; } }
     public virtual float _MoveMultiplier {
@@ -401,7 +409,7 @@ namespace CustomUnits {
         }
       }catch(Exception e) {
         Log.Combat?.TWL(0,e.ToString(),true);
-        AbstractActor.logger.LogException(e);
+        AbstractActorHelper.logger.LogException(e);
       }
       foreach (MechComponent allComponent in this.allComponents) {
         if (allComponent.Location == (int)crewLocation) {
@@ -510,13 +518,70 @@ namespace CustomUnits {
       }
     }
     public virtual void _NukeStructureLocation(WeaponHitInfo hitInfo, int hitLoc, ChassisLocations location, Vector3 attackDirection, DamageType damageType) {
-      Log.Combat?.WL(0, $"CustomMech.NukeStructureLocation {this.PilotableActorDef.ChassisID} location:{location} hitLoc:{(ArmorLocation)hitLoc}");
+      Log.Combat?.TWL(0, $"CustomMech.NukeStructureLocation {this.PilotableActorDef.ChassisID} location:{location} hitLoc:{(ArmorLocation)hitLoc} structure:{this.GetCurrentStructure(location)} isDestroyed:{this.IsLocationDestroyed(location)}");
       try {
-        if (AbstractActor.attackLogger.IsLogEnabled)
+        if(this.pilot != null) {
+          if(this.pilot.pilotDef.PilotTags.Contains("pilot_zombie") == true) {
+            if ((this.isSquad == false) && (this.isVehicle == false)) {
+              if (this.pilot.Injuries < this.pilot.Health) {
+                this.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(new ShowActorInfoSequence(this, new Text("EMERGENCY REPAIRS COMMENCING"), FloatieMessage.MessageNature.LocationDestroyed, true)));
+                ArmorLocation aloc = ArmorLocation.None;
+                float maxVal = 0f;
+                switch (location) {
+                  case ChassisLocations.CenterTorso:
+                    aloc = ArmorLocation.CenterTorso; maxVal = this.GetMaxArmor(aloc); if (maxVal > CustomAmmoCategories.Epsilon) { this.StatCollection.Set<float>(this.GetStringForArmorLocation(aloc), maxVal); }
+                    aloc = ArmorLocation.CenterTorsoRear; maxVal = this.GetMaxArmor(aloc); if (maxVal > CustomAmmoCategories.Epsilon) { this.StatCollection.Set<float>(this.GetStringForArmorLocation(aloc), maxVal); }
+                    break;
+                  case ChassisLocations.RightTorso:
+                    aloc = ArmorLocation.RightTorso; maxVal = this.GetMaxArmor(aloc); if (maxVal > CustomAmmoCategories.Epsilon) { this.StatCollection.Set<float>(this.GetStringForArmorLocation(aloc), maxVal); }
+                    aloc = ArmorLocation.RightTorsoRear; maxVal = this.GetMaxArmor(aloc); if (maxVal > CustomAmmoCategories.Epsilon) { this.StatCollection.Set<float>(this.GetStringForArmorLocation(aloc), maxVal); }
+                    break;
+                  case ChassisLocations.LeftTorso:
+                    aloc = ArmorLocation.LeftTorso; maxVal = this.GetMaxArmor(aloc); if (maxVal > CustomAmmoCategories.Epsilon) { this.StatCollection.Set<float>(this.GetStringForArmorLocation(aloc), maxVal); }
+                    aloc = ArmorLocation.LeftTorsoRear; maxVal = this.GetMaxArmor(aloc); if (maxVal > CustomAmmoCategories.Epsilon) { this.StatCollection.Set<float>(this.GetStringForArmorLocation(aloc), maxVal); }
+                    break;
+                  case ChassisLocations.LeftArm:
+                    aloc = ArmorLocation.LeftArm; maxVal = this.GetMaxArmor(aloc); if (maxVal > CustomAmmoCategories.Epsilon) { this.StatCollection.Set<float>(this.GetStringForArmorLocation(aloc), maxVal); }
+                    break;
+                  case ChassisLocations.RightArm:
+                    aloc = ArmorLocation.RightArm; maxVal = this.GetMaxArmor(aloc); if (maxVal > CustomAmmoCategories.Epsilon) { this.StatCollection.Set<float>(this.GetStringForArmorLocation(aloc), maxVal); }
+                    break;
+                  case ChassisLocations.LeftLeg:
+                    aloc = ArmorLocation.LeftLeg; maxVal = this.GetMaxArmor(aloc); if (maxVal > CustomAmmoCategories.Epsilon) { this.StatCollection.Set<float>(this.GetStringForArmorLocation(aloc), maxVal); }
+                    break;
+                  case ChassisLocations.RightLeg:
+                    aloc = ArmorLocation.RightLeg; maxVal = this.GetMaxArmor(aloc); if (maxVal > CustomAmmoCategories.Epsilon) { this.StatCollection.Set<float>(this.GetStringForArmorLocation(aloc), maxVal); }
+                    break;
+                }
+                maxVal = this.GetMaxStructure(location); if (maxVal > CustomAmmoCategories.Epsilon) { this.StatCollection.Set<float>(this.GetStringForStructureLocation(location), maxVal); }
+                this.FlagForKnockdown();
+                AttackDirector.AttackSequence attackSequence = this.Combat.AttackDirector.GetAttackSequence(hitInfo.attackSequenceId);
+                if (attackSequence != null) {
+                  attackSequence.FlagAttackCausedKnockdown(this.GUID);
+                }
+                foreach (MechComponent component in this.allComponents) {
+                  if (component == null) { continue; }
+                  if (component.Location != (int)location) { continue; }
+                  if (component.IsFunctional) { continue; }
+                  Log.Combat?.WL(1, "regenerating component:" + component.Description.Id);
+                  component.StatCollection.Set<ComponentDamageLevel>("DamageLevel", ComponentDamageLevel.Functional);
+                  component.RestartPassiveEffects();
+                }
+                return;
+              }
+            }
+          }
+        }
+        if (AbstractActor.attackLogger.IsLogEnabled) {
           AbstractActor.attackLogger.Log($"{this.PilotableActorDef.ChassisID} SEQ:{hitInfo.stackItemUID}: WEAP:{hitInfo.attackWeaponIndex} HITLOC: {hitLoc} ({location}) Location destroyed!");
-        if (AbstractActor.damageLogger.IsLogEnabled)
+        }
+        if (AbstractActor.damageLogger.IsLogEnabled) {
           AbstractActor.damageLogger.Log($"==== Location Destroyed: {this.PilotableActorDef.ChassisID} {location}");
-        this.ApplyStructureStatDamage(location, this.GetCurrentStructure(location), hitInfo);
+        }
+        this.statCollection.ModifyStat<float>(hitInfo.attackerId, hitInfo.stackItemUID, this.GetStringForStructureLocation(location), StatCollection.StatOperation.Set, 1f);
+        this.ApplyStructureStatDamage(location, 1f, hitInfo);
+        this.statCollection.ModifyStat<float>(hitInfo.attackerId, hitInfo.stackItemUID, this.GetStringForStructureLocation(location), StatCollection.StatOperation.Set, 0f);
+        Log.Combat?.WL(1, $"check is location really destroyed. Structure:{this.GetCurrentStructure(location)} isDestroyed:{this.IsLocationDestroyed(location)}");
         try {
           this.OnLocationDestroyed_private(location, attackDirection, hitInfo, damageType);
         }catch(Exception e) {

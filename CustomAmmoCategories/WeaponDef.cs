@@ -334,6 +334,7 @@ namespace CustAmmoCategories {
       float result = (float.IsNaN(mode.APCriticalChanceMultiplier)?0f: mode.APCriticalChanceMultiplier) 
         + (float.IsNaN(ammo.APCriticalChanceMultiplier)?0f: ammo.APCriticalChanceMultiplier)
         + (float.IsNaN(wp.APCriticalChanceMultiplier)?0f: wp.APCriticalChanceMultiplier);
+      result *= weapon.GetStatisticFloat("APCriticalChanceModifier");
       if (weapon.parent != null) {
         if (weapon.parent.EvasivePipsCurrent > 0) {
           float evasiveMod = wp.evasivePipsMods.APDamage + ammo.evasivePipsMods.APDamage + mode.evasivePipsMods.APDamage;
@@ -849,6 +850,13 @@ namespace CustAmmoCategories {
     public float PhysicsAoE_Height { get; set; } = 10f;
     [Key(153)]
     public MissBehavior MissBehavior { get; set; } = MissBehavior.NotSet;
+    [SelfDocumentationDefaultValue("empty"), SelfDocumentationTypeName("dictionary of { \"<string>\": { AoEModifiers structure } }")]
+    [Key(154)]
+    public Dictionary<string, AoEModifiers> TagAoEDamageMult { get; set; } = new Dictionary<string, AoEModifiers>();
+    [StatCollectionFloat(), Key(155)]
+    public float APCriticalChanceModifier { get; set; } = 1f;
+    [Key(156)]
+    public float PhysicsAoE_MinDist { get; set; } = 0f;
     [IgnoreMember, JsonIgnore]
     private HashSet<string> f_restrictedAmmo = null;
     [IgnoreMember, JsonIgnore]
@@ -862,7 +870,6 @@ namespace CustAmmoCategories {
         return f_restrictedAmmo;
       }
     }
-    public ExtWeaponDef() { }
   }
 }
 

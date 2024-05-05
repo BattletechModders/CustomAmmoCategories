@@ -331,7 +331,7 @@ namespace CustomUnits {
         if (noRecoil == false) { recoilDelta = 10f; }
       }catch(Exception e) {
         Log.ECombat?.TWL(0, "AttachInfo.Recoil "+this.Name+" exception:"+e.ToString(), true);
-        AbstractActor.logger.LogException(e);
+        AbstractActorHelper.logger.LogException(e);
       }
     }
     public HashSet<MechComponent> weapons { get; private set; }

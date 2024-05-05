@@ -17,12 +17,12 @@ namespace MechResizer {
       var identifier = vehicle.VehicleDef.ChassisID;
       var sizeMultiplier = SizeMultiplier.Get(vehicle.VehicleDef);
       Log.Combat?.TWL(0, $"{identifier}: {sizeMultiplier}");
-      var originalLOSSourcePositions = vehicle.originalLOSSourcePositions;
-      var originalLOSTargetPositions = vehicle.originalLOSTargetPositions;
+      var originalLOSSourcePositions = vehicle.originalLOSSourcePositions();
+      var originalLOSTargetPositions = vehicle.originalLOSTargetPositions();
       var newSourcePositions = ModSettings.LOSSourcePositions(identifier, originalLOSSourcePositions, sizeMultiplier);
       var newTargetPositions = ModSettings.LOSTargetPositions(identifier, originalLOSTargetPositions, sizeMultiplier);
-      vehicle.originalLOSSourcePositions=(newSourcePositions);
-      vehicle.originalLOSTargetPositions=(newTargetPositions);
+      vehicle.originalLOSSourcePositions(newSourcePositions);
+      vehicle.originalLOSTargetPositions(newTargetPositions);
       __instance.thisTransform.localScale=(sizeMultiplier);
     }
   }

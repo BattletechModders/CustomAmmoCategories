@@ -129,7 +129,7 @@ namespace CustomUnits {
         actor.ClearStoredPathing();
       }catch(Exception e) {
         Log.Combat?.TWL(0, e.ToString(), true);
-        AbstractActor.logger.LogException(e);
+        AbstractActorHelper.logger.LogException(e);
       }
     }
   }
@@ -155,7 +155,7 @@ namespace CustomUnits {
         }
       } catch (Exception e) {
         Log.Combat?.TWL(0, e.ToString(), true);
-        AbstractActor.logger.LogException(e);
+        AbstractActorHelper.logger.LogException(e);
       }
     }
   }
@@ -181,7 +181,7 @@ namespace CustomUnits {
         }
       } catch (Exception e) {
         Log.Combat?.TWL(0, e.ToString(), true);
-        AbstractActor.logger.LogException(e);
+        AbstractActorHelper.logger.LogException(e);
       }
     }
   }
@@ -251,7 +251,7 @@ namespace CustomUnits {
         __runOriginal = false; return;
       } catch (Exception e) {
         Log.Combat?.TWL(0, e.ToString(), true);
-        AbstractActor.logger.LogException(e);
+        AbstractActorHelper.logger.LogException(e);
         __runOriginal = false; return;
       }
     }
@@ -302,7 +302,7 @@ namespace CustomUnits {
         if (__instance.IsLockedToDest) { __state = __instance.ResultAngle; }
       } catch (Exception e) {
         Log.Combat?.TWL(0, e.ToString(), true);
-        AbstractActor.logger.LogException(e);
+        AbstractActorHelper.logger.LogException(e);
       }
     }
     public static void Postfix(JumpPathing __instance, ref float __state) {
@@ -311,7 +311,7 @@ namespace CustomUnits {
         if (__instance.IsLockedToDest) { __instance.ResultAngle = __state; }
       } catch (Exception e) {
         Log.Combat?.TWL(0, e.ToString(), true);
-        AbstractActor.logger.LogException(e);
+        AbstractActorHelper.logger.LogException(e);
       }
     }
   }

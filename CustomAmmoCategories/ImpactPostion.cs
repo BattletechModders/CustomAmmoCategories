@@ -270,11 +270,11 @@ namespace CustAmmoCategories {
       if (weapon.weaponDef.WeaponCategoryValue.IsMissile) { return CustAmmoCategories.MissBehavior.Guided; }
       return CustAmmoCategories.MissBehavior.Unguided;
     }
-    public static Vector3 GetMissPosition(this CombatGameState combat, Team team, ICombatant initalTarget, Vector3 attackPos, CustAmmoCategories.MissBehavior missBehavior, Vector3 targetPos, float weaponMaxRange, float missRadius, bool indirect, ref AttackDirection attackDirection, out bool hitAnything, out ICombatant secondaryCombatant, out int secondaryLocation) {
+    public static Vector3 GetMissPosition(this CombatGameState combat, Team team, ICombatant attacker, ICombatant initalTarget, Vector3 attackPos, CustAmmoCategories.MissBehavior missBehavior, Vector3 targetPos, float weaponMaxRange, float missRadius, bool indirect, ref AttackDirection attackDirection, out bool hitAnything, out ICombatant secondaryCombatant, out int secondaryLocation) {
       if (indirect == false) {
-        return GetMissPositionDirect(combat, team, initalTarget, attackPos, missBehavior, targetPos, weaponMaxRange, missRadius, ref attackDirection, out hitAnything, out secondaryCombatant, out secondaryLocation);
+        return GetMissPositionDirect(combat, team, attacker, initalTarget, attackPos, missBehavior, targetPos, weaponMaxRange, missRadius, ref attackDirection, out hitAnything, out secondaryCombatant, out secondaryLocation);
       } else {
-        return GetMissPositionIndirect(combat, team, initalTarget, attackPos, missBehavior, targetPos, weaponMaxRange, missRadius, ref attackDirection, out hitAnything, out secondaryCombatant, out secondaryLocation);
+        return GetMissPositionIndirect(combat, team, attacker, initalTarget, attackPos, missBehavior, targetPos, weaponMaxRange, missRadius, ref attackDirection, out hitAnything, out secondaryCombatant, out secondaryLocation);
       }
     }
     public static Vector3 GetTerrainCollision(this CombatGameState combat, Vector3 attackPos, Vector3 endPos, out bool hitAnything) {
@@ -287,7 +287,7 @@ namespace CustAmmoCategories {
       collizion.y = hc;
       return collizion;
     }
-    public static Vector3 GetMissPositionIndirect(this CombatGameState combat, Team team, ICombatant initalTarget, Vector3 attackPos, CustAmmoCategories.MissBehavior missBehavior, Vector3 targetPos, float weaponMaxRange, float missRadius, ref AttackDirection attackDirection, out bool hitAnything, out ICombatant secondaryCombatant, out int secondaryLocation) {
+    public static Vector3 GetMissPositionIndirect(this CombatGameState combat, Team team, ICombatant attacker, ICombatant initalTarget, Vector3 attackPos, CustAmmoCategories.MissBehavior missBehavior, Vector3 targetPos, float weaponMaxRange, float missRadius, ref AttackDirection attackDirection, out bool hitAnything, out ICombatant secondaryCombatant, out int secondaryLocation) {
       Vector3 endPos;
       if (initalTarget is BattleTech.Building building) {
         endPos = GetSafeMissBuildingPosition(building, attackPos, missRadius);
@@ -374,7 +374,7 @@ namespace CustAmmoCategories {
       }
       return endPos;
     }
-    public static Vector3 GetMissPositionDirect(this CombatGameState combat, Team team, ICombatant initalTarget, Vector3 attackPos, CustAmmoCategories.MissBehavior missBehavior, Vector3 targetPos, float weaponMaxRange, float missRadius, ref AttackDirection attackDirection, out bool hitAnything, out ICombatant secondaryCombatant, out int secondaryLocation) {
+    public static Vector3 GetMissPositionDirect(this CombatGameState combat, Team team, ICombatant attacker, ICombatant initalTarget, Vector3 attackPos, CustAmmoCategories.MissBehavior missBehavior, Vector3 targetPos, float weaponMaxRange, float missRadius, ref AttackDirection attackDirection, out bool hitAnything, out ICombatant secondaryCombatant, out int secondaryLocation) {
       Vector3 endPos;
       if (initalTarget is BattleTech.Building building) {
         endPos = GetSafeMissBuildingPosition(building, attackPos, missRadius);
@@ -423,12 +423,16 @@ namespace CustAmmoCategories {
       }
       secondaryCombatant = null;
       secondaryLocation = 0;
+      ICustomMech Attacker = attacker as ICustomMech;
       foreach (var actor in combat.AllActors) {
         if (actor.team == null) { continue; }
         if (actor.IsDead) { continue; }
         if (actor == initalTarget) { continue; }
         if (actor is ICustomMech customMech) {
           if(customMech.carrier != null) { if (customMech.isMountedExternal == false) { continue; } }
+        }
+        if(Attacker != null) {
+          if ((Attacker.carrier != null) && (Attacker.carrier == actor)) { continue; }
         }
         switch (combat.Constants.ToHit.StrayShotValidTargets) {
           case StrayShotValidTargets.ENEMIES_ONLY: if (actor.team.IsEnemy(team) == false) { continue; }; break;
@@ -554,7 +558,7 @@ namespace CustAmmoCategories {
             attackDirection = attacker.Combat.HitLocation.GetAttackDirection(attackPosition, initalTarget);
             return RandomOnCone(attackPos, initalTarget.TargetPosition, minMissRadius);
           }
-          Vector3 result = GetMissPosition(attacker.Combat, attacker.team, initalTarget, attackPos, weapon.MissBehavior(), 
+          Vector3 result = GetMissPosition(attacker.Combat, attacker.team, attacker, initalTarget, attackPos, weapon.MissBehavior(), 
             targetPosition, weapon.MaxRange, missRadius, indirect,ref attackDirection, out bool hitAnything, out var strayTarget, out var strayLocation);
           if (indirect) { location = (int)ArmorLocation.Invalid; }
           if (hitAnything) { location = (int)ArmorLocation.Invalid; }

@@ -271,7 +271,7 @@ namespace CustomUnits {
         }
       } catch (Exception e) {
         Log.Combat?.TWL(0, e.ToString(), true);
-        AbstractActor.logger.LogException(e);
+        AbstractActorHelper.logger.LogException(e);
       }
     }
   }
@@ -293,7 +293,7 @@ namespace CustomUnits {
         Log.Combat?.WL(1, "result:" + __result);
       } catch (Exception e) {
         Log.Combat?.TWL(0, e.ToString(), true);
-        AbstractActor.logger.LogException(e);
+        AbstractActorHelper.logger.LogException(e);
       }
     }
   }
@@ -312,7 +312,7 @@ namespace CustomUnits {
         }
       } catch (Exception e) {
         Log.Combat?.TWL(0, e.ToString(), true);
-        AbstractActor.logger.LogException(e);
+        AbstractActorHelper.logger.LogException(e);
       }
     }
   }
@@ -331,7 +331,7 @@ namespace CustomUnits {
         }
       } catch (Exception e) {
         Log.Combat?.TWL(0, e.ToString(), true);
-        AbstractActor.logger.LogException(e);
+        AbstractActorHelper.logger.LogException(e);
       }
     }
   }
@@ -352,7 +352,7 @@ namespace CustomUnits {
         }
       } catch (Exception e) {
         Log.Combat?.TWL(0, e.ToString(), true);
-        AbstractActor.logger.LogException(e);
+        AbstractActorHelper.logger.LogException(e);
       }
     }
   }
@@ -444,7 +444,7 @@ namespace CustomUnits {
         }
       } catch (Exception e) {
         Log.Combat?.LogWrite(e.ToString(), true);
-        AbstractActor.logger.LogException(e);
+        AbstractActorHelper.logger.LogException(e);
       }
     }
   }

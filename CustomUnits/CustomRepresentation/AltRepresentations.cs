@@ -201,7 +201,7 @@ namespace CustomUnits {
         }
       } catch (Exception e) {
         Log.E?.TWL(0, e.ToString(), true);
-        AbstractActor.logger.LogException(e);
+        AbstractActorHelper.logger.LogException(e);
       }
     }
     public override void _ToggleHeadlights(bool headlightsActive) {
@@ -243,7 +243,7 @@ namespace CustomUnits {
         foreach (CustomMechRepresentation alt in this.Alternates) { alt?.thisAnimator?.SetTrigger("Death"); }
       } catch (Exception e) {
         Log.E?.TWL(0, e.ToString(), true);
-        AbstractActor.logger.LogException(e);
+        AbstractActorHelper.logger.LogException(e);
       }
       if (!this.parentMech.Combat.IsLoadingFromSave) {
         if (isSlave == false) {
@@ -1188,7 +1188,7 @@ namespace CustomUnits {
           }
         } catch (Exception e) {
           Log.Combat?.TWL(0, e.ToString(), true);
-          AbstractActor.logger.LogException(e);
+          AbstractActorHelper.logger.LogException(e);
         }
       }
     }

@@ -119,6 +119,7 @@ namespace CustomUnits {
     public static bool CanBePilotedBy(this ChassisDef chassis, PilotDef pilot, out string title, out string message) {
       title = string.Empty;
       message = string.Empty;
+      if (Core.Settings.DEBUG_CanPilotEverything) { return true; }
       //return true;
       HashSet<PilotingClassDef> chassis_pclasses = chassis.GetPilotingClass();
       bool result = true;

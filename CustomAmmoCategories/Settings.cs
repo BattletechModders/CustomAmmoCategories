@@ -465,6 +465,7 @@ namespace CustAmmoCategories {
     public bool AIAwareArtillery { get; set; } = true;
     public bool AIAwareMinefields { get; set; } = true;
     public bool AIFastUnitsOptimization { get; set; } = true;
+    public string SkipUnusedAmmoTag { get; set; } = "skip_unused_ammo_check";
     public string WeaponUseAmmoInstalledLocationTag { get; set; } = "ammo_installed_location_only";
     public string WeaponUseAmmoAdjacentLocationTag { get; set; } = "ammo_adjacent_location_only";
     [GameplaySafe]

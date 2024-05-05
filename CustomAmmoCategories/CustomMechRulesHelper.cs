@@ -40,6 +40,14 @@ namespace CustAmmoCategories {
     }
   }
   public static class FakeVehicleLocationConvertHelper {
+    public static readonly VehicleChassisLocations[] VehicleChassisLocationList = new VehicleChassisLocations[5]
+    {
+      VehicleChassisLocations.Front,
+      VehicleChassisLocations.Rear,
+      VehicleChassisLocations.Left,
+      VehicleChassisLocations.Right,
+      VehicleChassisLocations.Turret
+    };
     public static VehicleChassisLocations vehicleLocationFromMechLocation(ChassisLocations location) {
       switch (location) {
         case ChassisLocations.Head: return VehicleChassisLocations.Turret;

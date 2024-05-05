@@ -315,6 +315,7 @@ namespace CustomUnits {
       Log.M?.TWL(0, "SimGameState.Rehydrate");
       try {
         ReducedComponentRefInfoHelper.Load(__instance);
+        SimGameState_RehydrateUnitsCost.Postfix(__instance);
         Statistic playerMechContent = __instance.CompanyStats.GetStatistic(CustomLanceHelper.SaveReferenceName);
         if (playerMechContent == null) {
           CustomLanceHelper.playerLanceLoadout.loadout.Clear();

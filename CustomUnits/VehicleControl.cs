@@ -622,7 +622,7 @@ namespace CustomUnits {
         if (__instance.isHasHeat() == false) { __result = 0; }
       } catch (Exception e) {
         Log.Combat?.TWL(0, e.ToString(), true);
-        AbstractActor.logger.LogException(e);
+        AbstractActorHelper.logger.LogException(e);
       }
     }
   }
@@ -636,7 +636,7 @@ namespace CustomUnits {
         if (__instance.isHasHeat() == false) { value = 0; }
       } catch (Exception e) {
         Log.Combat?.TWL(0, e.ToString(), true);
-        AbstractActor.logger.LogException(e);
+        AbstractActorHelper.logger.LogException(e);
       }
     }
   }
@@ -650,7 +650,7 @@ namespace CustomUnits {
         if (__instance.isHasHeat() == false) { __result = 0; __instance._tempHeat(0); }
       } catch (Exception e) {
         Log.Combat?.TWL(0, e.ToString(), true);
-        AbstractActor.logger.LogException(e);
+        AbstractActorHelper.logger.LogException(e);
       }
     }
   }
@@ -664,7 +664,7 @@ namespace CustomUnits {
         if (__instance.isHasHeat() == false) { __instance._tempHeat(0); }
       } catch (Exception e) {
         Log.Combat?.TWL(0, e.ToString(), true);
-        AbstractActor.logger.LogException(e);
+        AbstractActorHelper.logger.LogException(e);
       }
     }
   }
@@ -678,7 +678,7 @@ namespace CustomUnits {
         if (__instance.isHasHeat() == false) { __instance._tempHeat(0); }
       } catch (Exception e) {
         Log.Combat?.TWL(0, e.ToString(), true);
-        AbstractActor.logger.LogException(e);
+        AbstractActorHelper.logger.LogException(e);
       }
     }
   }
@@ -692,7 +692,7 @@ namespace CustomUnits {
         if (__instance.isHasHeat() == false) { __instance._tempHeat(0); }
       } catch (Exception e) {
         Log.Combat?.TWL(0, e.ToString(), true);
-        AbstractActor.logger.LogException(e);
+        AbstractActorHelper.logger.LogException(e);
       }
     }
   }
@@ -706,7 +706,7 @@ namespace CustomUnits {
         if (__instance.isHasHeat() == false) { __instance._tempHeat(0); }
       } catch (Exception e) {
         Log.ECombat?.TWL(0, e.ToString(), true);
-        AbstractActor.logger.LogException(e);
+        AbstractActorHelper.logger.LogException(e);
       }
     }
   }
@@ -720,7 +720,7 @@ namespace CustomUnits {
         if (__instance.isHasHeat() == false) { __instance._tempHeat(0); __instance._heat(0); }
       } catch (Exception e) {
         Log.ECombat?.TWL(0, e.ToString(), true);
-        AbstractActor.logger.LogException(e);
+        AbstractActorHelper.logger.LogException(e);
       }
     }
   }
@@ -734,7 +734,7 @@ namespace CustomUnits {
         if (__instance.isHasHeat() == false) { __instance._tempHeat(0); }
       } catch (Exception e) {
         Log.ECombat?.TWL(0, e.ToString(), true);
-        AbstractActor.logger.LogException(e);
+        AbstractActorHelper.logger.LogException(e);
       }
     }
   }
@@ -807,14 +807,14 @@ namespace CustomUnits {
       Mech result = new Mech(dest, src.pilot.pilotDef, src.EncounterTags, src.GUID, src.Combat, src.spawnerGUID, src.CustomHeraldryDef);
       result.pilot(src.pilot);
       result.Init(src.CurrentPosition, 0f, false);
-      result._hasHandledDeath=(src.IsDead);
+      result._hasHandledDeath(src.IsDead);
       //if (src.IsDead) {
       //  result.StatCollection.Set<float>(result.GetStringForStructureLocation(ChassisLocations.CenterTorso), 0f);
       //  result.StatCollection.Set<LocationDamageLevel>(result.GetStringForStructureDamageLevel(ChassisLocations.CenterTorso), LocationDamageLevel.Destroyed);
       //  result.pilot.StatCollection.Set("LethalInjury",true);
       //}
-      result._team=(src.team);
-      result._teamId=(src.TeamId);
+      result._team(src.team);
+      result._teamId(src.TeamId);
       if (src.VehicleDef.Chassis.HasTurret) {
         result.StatCollection.Set<float>(result.GetStringForArmorLocation(ArmorLocation.Head), Mathf.Round(src.TurretArmor));
         result.StatCollection.Set<float>(result.GetStringForStructureLocation(ChassisLocations.Head), Mathf.Round(src.TurretStructure));
@@ -883,8 +883,8 @@ namespace CustomUnits {
             if (playerDefGuids.Contains(mech.MechDef.GUID)) {
               Log.Combat?.WL(2,"team:" + mech.TeamId+"->"+ combat.LocalPlayerTeamGuid);
               if (mech.TeamId != combat.LocalPlayerTeamGuid) {
-                mech._teamId=(combat.LocalPlayerTeamGuid);
-                mech._team=(combat.LocalPlayerTeam);
+                mech._teamId(combat.LocalPlayerTeamGuid);
+                mech._team(combat.LocalPlayerTeam);
               }
             }
           }
@@ -894,8 +894,8 @@ namespace CustomUnits {
             if (playerDefGuids.Contains(vehicle.VehicleDef.GUID)) {
               Log.Combat?.WL(2, "team:" + vehicle.TeamId + "->" + combat.LocalPlayerTeamGuid);
               if (vehicle.TeamId != combat.LocalPlayerTeamGuid) {
-                vehicle._teamId=(combat.LocalPlayerTeamGuid);
-                vehicle._team=(combat.LocalPlayerTeam);
+                vehicle._teamId(combat.LocalPlayerTeamGuid);
+                vehicle._team(combat.LocalPlayerTeam);
               }
             }
           }
@@ -1485,7 +1485,7 @@ namespace CustomUnits {
         //Log.WL(1, "StructureMultiplierVehicle:" + StructureMultiplierVehicle);
         newdef["Description"] = olddef["Description"];
         newdef["ChassisID"] = olddef["ChassisID"];
-        newdef["simGameMechPartCost"] = olddef["simGameMechPartCost"] == null? olddef["Description"]["Cost"] : olddef["simGameMechPartCost"];
+        newdef["simGameMechPartCost"] = olddef["simGameMechPartCost"] == null? ((float)olddef["Description"]["Cost"] / 5f) : olddef["simGameMechPartCost"];
         newdef["MechTags"] = olddef["VehicleTags"];
         TagSet MechTags = null;
         if (olddef["VehicleTags"] != null) {
@@ -1607,6 +1607,7 @@ namespace CustomUnits {
       if (ChassisToMechDB.ContainsKey(__instance.ChassisID) == false) {
         ChassisToMechDB.Add(__instance.ChassisID, __instance.Description.Id);
       }
+      __instance.StoreCost();// UnitCostHelper.StoreCost(__instance.Description.Id,  __instance.Description.Cost);
     }
   }
   public static class ChassisDef_FromJSON_fake {
@@ -1647,7 +1648,30 @@ namespace CustomUnits {
         newdef["PrefabIdentifier"] = olddef["PrefabIdentifier"];
         newdef["PrefabBase"] = olddef["PrefabBase"];
         if (olddef["FixedEquipment"] != null) {
-          newdef["FixedEquipment"] = olddef["FixedEquipment"];
+          JArray vInventory = olddef["FixedEquipment"] as JArray;
+          JArray mInventory = new JArray();
+          foreach (JObject vcRef in vInventory) {
+            //Log.WL(2, vcRef["ComponentDefID"] + ":" + vcRef["MountedLocation"]);
+            VehicleChassisLocations vLocation = (VehicleChassisLocations)Enum.Parse(typeof(VehicleChassisLocations), (string)vcRef["MountedLocation"]);
+            ChassisLocations location = ChassisLocations.Head;
+            switch (vLocation) {
+              case VehicleChassisLocations.Front: location = ChassisLocations.LeftArm; break;
+              case VehicleChassisLocations.Rear: location = ChassisLocations.RightArm; break;
+              case VehicleChassisLocations.Left: location = ChassisLocations.LeftLeg; break;
+              case VehicleChassisLocations.Right: location = ChassisLocations.RightLeg; break;
+              case VehicleChassisLocations.Turret: location = ChassisLocations.Head; break;
+            }
+            JObject mcRef = new JObject();
+            foreach (var jfield in vcRef) {
+              if (mcRef[jfield.Key] != null) { continue; }
+              mcRef.Add(jfield.Key, jfield.Value);
+            }
+            mcRef["MountedLocation"] = location.ToString();
+            mcRef["IsFixed"] = true;
+            mInventory.Add(mcRef);
+          }
+          //newdef["FixedEquipment"] = olddef["FixedEquipment"];
+          newdef["FixedEquipment"] = mInventory;
         }
         newdef["VariantName"] = olddef["VariantName"] == null? olddef["Description"]["Name"] : olddef["VariantName"];
         newdef["StockRole"] = olddef["StockRole"]==null?"VEHICLE": olddef["StockRole"];
@@ -1805,6 +1829,12 @@ namespace CustomUnits {
       if (chassis != null) {
         return chassis.GetHangarShift() > 0;
       }
+      UnitCustomInfo info = chassisDef.GetCustomInfo();
+      if (info == null) { return false; }
+      return info.FakeVehicle;
+    }
+    public static bool IsVehicle_ReadyMech(this ChassisDef chassisDef) {
+      if (chassisDef == null) { return false; }
       UnitCustomInfo info = chassisDef.GetCustomInfo();
       if (info == null) { return false; }
       return info.FakeVehicle;

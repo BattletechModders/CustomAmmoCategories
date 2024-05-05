@@ -18,10 +18,10 @@ using System.Collections;
 using CustomAmmoCategoriesLog;
 
 namespace CustomAmmoCategoriesPatches {
-  [HarmonyPatch(typeof(Mech))]
-  [HarmonyPatch("NukeStructureLocation")]
-  [HarmonyPatch(MethodType.Normal)]
-  [HarmonyPatch(new Type[] { typeof(WeaponHitInfo), typeof(int), typeof(ChassisLocations), typeof(Vector3), typeof(DamageType) })]
+  //[HarmonyPatch(typeof(Mech))]
+  //[HarmonyPatch("NukeStructureLocation")]
+  //[HarmonyPatch(MethodType.Normal)]
+  //[HarmonyPatch(new Type[] { typeof(WeaponHitInfo), typeof(int), typeof(ChassisLocations), typeof(Vector3), typeof(DamageType) })]
   public static class Mech_NukeStructureLocationZombie {
     private static void Prefix(ref bool __runOriginal,Mech __instance, WeaponHitInfo hitInfo, int hitLoc, ChassisLocations location, Vector3 attackDirection, DamageType damageType) {
       if (!__runOriginal) { return; }

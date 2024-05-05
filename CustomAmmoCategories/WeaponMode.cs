@@ -517,6 +517,11 @@ namespace CustAmmoCategories {
     public float PhysicsAoE_Height { get; set; } = 10f;
     [Key(174)]
     public MissBehavior MissBehavior { get; set; } = MissBehavior.NotSet;
+    [SelfDocumentationDefaultValue("empty"), SelfDocumentationTypeName("dictionary of { \"<string>\": { AoEModifiers structure } }")]
+    [Key(175)]
+    public Dictionary<string, AoEModifiers> TagAoEDamageMult { get; set; } = new Dictionary<string, AoEModifiers>();
+    [Key(176)]
+    public float PhysicsAoE_MinDist { get; set; } = 0f;
     [IgnoreMember, JsonIgnore]
     private HashSet<string> f_restrictedAmmo = null;
     [IgnoreMember, JsonIgnore]

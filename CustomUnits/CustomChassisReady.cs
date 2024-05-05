@@ -461,6 +461,12 @@ namespace CustomUnits {
     public void OnRestoreAs() {
       try {
         GenericPopup popup = null;
+        if (Core.Settings.VehcilesPartialEditable && (this.mechLabPanel != null)) {
+          if (this.mechLabPanel.originalMechDef.IsVehicle()) {
+            popup = GenericPopupBuilder.Create("CAN'T COMPLY", "Vehicles are not allowed to use this feature").IsNestedPopupWithBuiltInFader().SetAlwaysOnTop().Render();
+            return;
+          }
+        }
         if (CheckWidgetsNonStripped() == false) {
           popup = GenericPopupBuilder.Create("NEED TO BE STRIPPED", "Unit's equipment should be stripped before restore").IsNestedPopupWithBuiltInFader().SetAlwaysOnTop().Render();
           return;
@@ -538,6 +544,12 @@ namespace CustomUnits {
     public void OnSaveAs() {
       try {
         GenericPopup popup = null;
+        if (Core.Settings.VehcilesPartialEditable && (this.mechLabPanel != null)) {
+          if (this.mechLabPanel.originalMechDef.IsVehicle()) {
+            popup = GenericPopupBuilder.Create("CAN'T COMPLY", "Vehicles are not allowed to use this feature").IsNestedPopupWithBuiltInFader().SetAlwaysOnTop().Render();
+            return;
+          }
+        }
         if (CheckWidgetsNonStripped()) {
           popup = GenericPopupBuilder.Create("NO NON-FIXED EQUIPMENT", "Unit's have no non-fixed equipment").IsNestedPopupWithBuiltInFader().SetAlwaysOnTop().Render();
           return;

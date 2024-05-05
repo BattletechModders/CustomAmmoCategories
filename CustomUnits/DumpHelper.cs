@@ -5,22 +5,43 @@ using UnityEngine;
 
 namespace CustomUnits {
   public class DumpListener: MonoBehaviour {
-    public static void DumpDescription(DescriptionDef description) {
-      Log.Dump?.WL(3, $"Id:{description.Id}");
-      Log.Dump?.WL(3, $"Name:{description.Name}");
-      Log.Dump?.WL(3, $"Icon:{description.Icon}");
-      Log.Dump?.WL(3, $"Details:{description.Details}");
-      Log.Dump?.WL(3, $"UIName:{description.UIName}");
-      Log.Dump?.WL(3, $"Cost:{description.Cost}");
-      Log.Dump?.WL(3, $"Manufacturer:{description.Manufacturer}");
-      Log.Dump?.WL(3, $"Rarity:{description.Rarity}");
-      Log.Dump?.WL(3, $"Model:{description.Model}");
-      Log.Dump?.WL(3, $"Purchasable:{description.Purchasable}");
+    public static void DumpDescription(DescriptionDef description, int i = 3) {
+      Log.Dump?.WL(i, $"Id:{description.Id}");
+      Log.Dump?.WL(i, $"Name:{description.Name}");
+      Log.Dump?.WL(i, $"Icon:{description.Icon}");
+      Log.Dump?.WL(i, $"Details:{description.Details}");
+      Log.Dump?.WL(i, $"UIName:{description.UIName}");
+      Log.Dump?.WL(i, $"Cost:{description.Cost}");
+      Log.Dump?.WL(i, $"Manufacturer:{description.Manufacturer}");
+      Log.Dump?.WL(i, $"Rarity:{description.Rarity}");
+      Log.Dump?.WL(i, $"Model:{description.Model}");
+      Log.Dump?.WL(i, $"Purchasable:{description.Purchasable}");
     }
-    public static void DumpStats(StatCollection StatCollection) {
+    public static void DumpStats(StatCollection StatCollection, int i = 3) {
       foreach(var stat in StatCollection) {
-        Log.Dump?.WL(3, $"{stat.Key}={stat.Value.CurrentValue.ToString()}:{stat.Value.ValueType().ToString()}");
+        Log.Dump?.WL(i, $"{stat.Key}={stat.Value.CurrentValue.ToString()}:{stat.Value.ValueType().ToString()}");
       }
+    }
+    public static void DumpComponent(MechComponent component) {
+      Log.Dump?.WL(2, $"{component.defId}:{component.GetType().ToString()}");
+      if(component is Weapon weapon) {
+        Log.Dump?.WL(3, $"WeaponState:{CustAmmoCategories.JammingRealizer.CantFireReason(weapon)}");
+      }
+      Log.Dump?.WL(3, $"DamageLevel:{component.DamageLevel}");
+      Log.Dump?.WL(3, $"Location:{component.Location}");
+      Log.Dump?.WL(3, $"Description:");
+      DumpDescription(component.componentDef.Description,4);
+      Log.Dump?.WL(3, $"StatCollection:");
+      DumpStats(component.StatCollection, 4);
+      Log.Dump?.WL(3, $"Effects:");
+      foreach (var effect in component.parent.Combat.EffectManager.effects) {
+        if (effect is StatisticEffect statEffect) {
+          if (statEffect.statCollection == component.parent.StatCollection) {
+            Log.Dump?.WL(4, $"ID:{statEffect.effectData.Description.Id} creatorGUID:{effect.creatorID} stat:{statEffect.effectData.statisticData.statName} operation:{statEffect.effectData.statisticData.operation} modValue:{statEffect.effectData.statisticData.modValue}");
+          }
+        }
+      }
+
     }
     public static void DumpActor(AbstractActor actor) {
       Log.Dump?.WL(2, $"MaxWalkDistance:{actor.MaxWalkDistance}");
@@ -43,6 +64,10 @@ namespace CustomUnits {
       Log.Dump?.WL(2, $"HasSprintedThisRound:{actor.HasSprintedThisRound}");
       Log.Dump?.WL(2, $"MovedLastRound:{actor.MovedLastRound}");
       Log.Dump?.WL(2, $"BracedLastRound:{actor.BracedLastRound}");
+      Log.Dump?.WL(2, $"allComponents");
+      foreach (var component in actor.allComponents) {
+        DumpComponent(component);
+      }
     }
     public static void DumpCombatant(ICombatant combatant) {
       Log.Dump?.WL(2, $"GUID:{combatant.GUID}");

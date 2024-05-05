@@ -510,7 +510,7 @@ namespace CustomUnits {
           }
         } catch (Exception e) {
           Log.Combat?.TWL(0, e.ToString(), true);
-          AbstractActor.logger.LogException(e);
+          AbstractActorHelper.logger.LogException(e);
         }
         if (JumpJetSrcPrefab != null) { this.parentCombatant.Combat.DataManager.PoolGameObject(Core.Settings.CustomJumpJetsComponentPrefab, JumpJetSrcPrefab); }
       }

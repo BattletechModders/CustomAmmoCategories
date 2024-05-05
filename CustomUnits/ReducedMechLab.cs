@@ -6,6 +6,7 @@ using BattleTech.UI.Tooltips;
 using CustAmmoCategories;
 using CustomComponents.Changes;
 using HarmonyLib;
+using HBS;
 using IRBTModUtils;
 using Localize;
 using Newtonsoft.Json;
@@ -247,6 +248,21 @@ namespace CustomUnits {
     private static string REDUSED_INFO_STAT_NAME = "CU_REDUSED_INFO";
     public static readonly string VEHICLES_EDITABLE_STAT_NAME = "CU_VEHICLES_EDITABLE";
     private static Dictionary<string, float> CarryLeftOver_cache = new Dictionary<string, float>();
+    private static Dictionary<string, HashSet<string>> vehicleComponentCategories = new Dictionary<string, HashSet<string>>();
+    public static HashSet<string> GetVehicleCategories(this MechComponentDef componentDef) {
+      if (componentDef == null) { return new HashSet<string>(); }
+      if (componentDef.Description == null) { return new HashSet<string>(); }
+      if (string.IsNullOrEmpty(componentDef.Description.Id)) { return new HashSet<string>(); }
+      if (vehicleComponentCategories.TryGetValue(componentDef.Description.Id, out var result)) {
+        return result;
+      }
+      result = new HashSet<string>();
+      foreach(var tag in componentDef.ComponentTags) {
+        if (tag.StartsWith(Core.Settings.VehicleComponentCategoryTagPrefix)) { result.Add(tag); }
+      }
+      vehicleComponentCategories.Add(componentDef.Description.Id, result);
+      return result;
+    }
     public static float CarryLeftOver(this BaseComponentRef componentRef) {
       string id = CustomComponents.Database.Identifier(componentRef.Def);
       if (CarryLeftOver_cache.TryGetValue(id, out var result)) { return result; }
@@ -265,6 +281,29 @@ namespace CustomUnits {
         }
       }
       CarryLeftOver_cache.Add(id, result);
+      return result;
+    }
+    private static Dictionary<string, int> RealInventorySize_cache = new Dictionary<string, int>();
+    public static int RealInventorySize(this BaseComponentRef componentRef) {
+      return componentRef.Def.RealInventorySize();
+    }
+    public static int RealInventorySize(this MechComponentDef componentDef) {
+      string id = CustomComponents.Database.Identifier(componentDef);
+      if (RealInventorySize_cache.TryGetValue(id, out var result)) { return result; }
+      result = componentDef.InventorySize;
+      var customs = CustomComponents.Database.Shared.GetOrCreateCustomsList(CustomComponents.Database.Identifier(componentDef));
+      Log.M?.TWL(0, $"ReducedComponentRefInfoHelper.RealInventorySize {componentDef.Description.Id}");
+      foreach (var custom in customs) {
+        Log.M?.WL(1, $"{custom.GetType().ToString()}");
+        if (custom.GetType().ToString() == "MechEngineer.Features.DynamicSlots.DynamicSlots") {
+          result += Traverse.Create(custom).Property<int>("ReservedSlots").Value;
+          Log.M?.WL(1, $"result:{result}");
+          RealInventorySize_cache.Add(id, result);
+          return result;
+        }
+      }
+      Log.M?.WL(1, $"result:{result}");
+      RealInventorySize_cache.Add(id, result);
       return result;
     }
     public static bool isEditable(this BaseComponentRef componentRef) {
@@ -381,7 +420,7 @@ namespace CustomUnits {
           case ComponentType.AmmunitionBox:
           case ComponentType.Weapon:
             //if (component.DamageLevel == ComponentDamageLevel.Destroyed) { component.IsFixed = false; }
-            InventorySize = component.Def.InventorySize;
+            InventorySize = component.Def.RealInventorySize();
             break;
         }
         if (component.Def.InventorySize == 0) { continue; }
@@ -422,7 +461,6 @@ namespace CustomUnits {
         //  widget.gameObject.SetActive(true);
         //}
         if (newMechDef.IsVehicle() == false) { return; }
-        newMechDef.FixVehicleLocationsSlots();
         newMechDef.PushMechLab();
       } catch (Exception e) {
         UIManager.logger.LogException(e);
@@ -488,7 +526,27 @@ namespace CustomUnits {
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { })]
   public static class MechLabItemSlotElement_SetSpacers {
-    public static void Postfix(MechLabItemSlotElement __instance) {
+    public static void Prefix(MechLabItemSlotElement __instance, ref int? __state) {
+      __state = new int?();
+      try {
+        if (Core.Settings.VehcilesPartialEditable == false) { return; }
+        MechDef mechDef = null;
+        if (__instance.dropParent is MechLabLocationWidget locationWidget) {
+          if (locationWidget.parentDropTarget is MechLabPanel mechLabPanel) {
+            mechDef = mechLabPanel.activeMechDef;
+          }
+        }
+        if (mechDef == null) { return; }
+        if (mechDef.IsVehicle() == false) { return; }
+        if (__instance.ComponentRef.isEditable() == false) { return; }
+        __state = __instance.ComponentRef.Def.InventorySize;
+        __instance.ComponentRef.Def.InventorySize = __instance.ComponentRef.Def.RealInventorySize();
+      } catch (Exception e) {
+        Log.M?.TWL(0, e.ToString(), true);
+        UIManager.logger.LogException(e);
+      }
+    }
+    public static void Postfix(MechLabItemSlotElement __instance, ref int? __state) {
       try {
         if (Core.Settings.VehcilesPartialEditable == false) { return; }
         MechDef mechDef = null;
@@ -501,6 +559,7 @@ namespace CustomUnits {
         if (mechDef.IsVehicle() == false) { return; }
         if (__instance.ComponentRef.isEditable()) {
           __instance.SetDraggable(__instance.ComponentRef.DamageLevel != ComponentDamageLevel.Destroyed);
+          if (__state.HasValue) { __instance.ComponentRef.Def.InventorySize = __state.Value; }
         } else {
           __instance.SetDraggable(false);
           for (int index = 0; index < __instance.spacers.Count; ++index) {
@@ -590,8 +649,8 @@ namespace CustomUnits {
           if (isControlPressed && labItemSlotElement.ComponentRef.ComponentDefType != ComponentType.Weapon) { continue; }
           if (labItemSlotElement.ComponentRef.IsFixed) { continue; }
           if (labItemSlotElement.ComponentRef.DamageLevel == ComponentDamageLevel.Destroyed) { continue; }
-          if ((labItemSlotElement.ComponentRef.ComponentDefType != ComponentType.Weapon) && (labItemSlotElement.ComponentRef.ComponentDefType != ComponentType.AmmunitionBox)) { continue; }
-
+          //if ((labItemSlotElement.ComponentRef.ComponentDefType != ComponentType.Weapon) && (labItemSlotElement.ComponentRef.ComponentDefType != ComponentType.AmmunitionBox)) { continue; }
+          if (labItemSlotElement.ComponentRef.isEditable() == false) { continue; }
           start_changes.Enqueue(new Change_Remove(labItemSlotElement.ComponentRef.ComponentDefID, __instance.loadout.Location));
           Log.M?.WL(1, "- remove " + labItemSlotElement.ComponentRef.ComponentDefID);
         }
@@ -942,6 +1001,24 @@ namespace CustomUnits {
       }
     }
   }
+
+  [HarmonyPatch(typeof(SimGameState))]
+  [HarmonyPatch("ScrapActiveMech")]
+  [HarmonyBefore("LewdableTanks")]
+  public class SimGameState_ScrapActiveMech {
+    [HarmonyPrefix]
+    [HarmonyWrapSafe]
+    public static void Prefix(ref bool __runOriginal, int baySlot, MechDef def, SimGameState __instance) {
+      if (!__runOriginal || !def.IsVehicle() || (Core.Settings.VehcilesPartialEditable == false))
+        return;
+      if (def == null || baySlot > 0 && !__instance.ActiveMechs.ContainsKey(baySlot)) {
+        __runOriginal = false;
+      } else {
+        __instance.StripMech(baySlot, def);
+        __instance.AddFunds(Mathf.RoundToInt(def.Chassis.Description.Cost * __instance.Constants.Finances.MechScrapModifier), "Scrapping");
+      }
+    }
+  }
   [HarmonyPatch(typeof(SimGameState), "ReadyMech")]
   [HarmonyBefore("io.github.denadan.CustomComponents")]
   public static class SimGameState_ReadyMech_Patch {
@@ -959,8 +1036,8 @@ namespace CustomUnits {
           return;
         }
         ChassisDef chassis = __instance.DataManager.ChassisDefs.Get(strArray[2]);
-        Log.M?.WL(1, $"chassis def found isVehicle:{chassis.IsVehicle()}");
-        if (chassis.IsVehicle() == false) { return; }
+        Log.M?.WL(1, $"chassis def found isVehicle:{chassis.IsVehicle_ReadyMech()}");
+        if (chassis.IsVehicle_ReadyMech() == false) { return; }
         if (__instance.ScrapInactiveMech(origId, false) == false) { return; }
         string stockMechId = chassis.GetStockMechId();
         if (string.IsNullOrEmpty(stockMechId)) {
@@ -1002,24 +1079,41 @@ namespace CustomUnits {
   [HarmonyBefore("io.github.denadan.CustomComponents")]
   public static class MechLabLocationWidget_OnAddItem {
     public static string CheckReplaceBox(this DataManager dataManager, MechComponentRef box1, MechComponentRef box2) {
+      if (box1.ComponentDefID == box2.ComponentDefID) { return string.Empty; }
       if (dataManager.AmmoBoxDefs.TryGet(box1.reducedInfo().originalDefinition, out var origbox) == false) { return $"DataManager error '{box1.reducedInfo().originalDefinition}'"; }
+      if (origbox.Description.Id == box2.ComponentDefID) { return string.Empty; }
       AmmunitionBoxDef newbox = box2.Def as AmmunitionBoxDef;
       if (newbox == null) { return $"Not an ammunition box '{box2.ComponentDefID}'"; }
-      if (origbox.InventorySize < newbox.InventorySize) {
-        return $"This ammunition box can't fit, should be no more than {origbox.InventorySize} slots";
+      if (origbox.RealInventorySize() < newbox.RealInventorySize()) {
+        return $"This ammunition box can't fit, should be no more than {origbox.RealInventorySize()} slots";
       }
       if (origbox.Tonnage < newbox.Tonnage) {
         return $"This ammunition box is too heavy, should be no more than {origbox.Tonnage} tons";
       }
+      if (newbox.ComponentTags.Contains(Core.Settings.VehicleComponentForbiddenTag)) {
+        return $"This ammunition box can't be installed on vehicle";
+      }
+      if (origbox.GetVehicleCategories().Count > 0) {
+        bool havecategory = false;
+        var newcats = newbox.GetVehicleCategories();
+        foreach (var category in origbox.GetVehicleCategories()) {
+          if (newcats.Contains(category)) { havecategory = true; break; }
+        }
+        if (havecategory == false) {
+          return $"You can't install this ammunition box, it has wrong category";
+        }
+      }
       return string.Empty;
     }
     public static string CheckReplaceWeapon(this DataManager dataManager, MechComponentRef box1, MechComponentRef box2) {
+      if (box1.ComponentDefID == box2.ComponentDefID) { return string.Empty; }
       if (dataManager.WeaponDefs.TryGet(box1.reducedInfo().originalDefinition, out var origweapon) == false) { return $"DataManager error '{box1.reducedInfo().originalDefinition}'"; }
       Log.M?.TWL(0, $"CheckReplaceWeapon {box1.ComponentDefID}:{box1.SimGameUID} orig:{origweapon.Description.Id} replacing by {box2.ComponentDefID}:{box2.SimGameUID}");
+      if (origweapon.Description.Id == box2.ComponentDefID) { return string.Empty; }
       WeaponDef newweapon = box2.Def as WeaponDef;
       if (newweapon == null) { return $"Not a weapon '{box2.ComponentDefID}'"; }
-      if (origweapon.InventorySize < newweapon.InventorySize) {
-        return $"This weapon can't fit, should be no more than {origweapon.InventorySize} slots";
+      if (origweapon.RealInventorySize() < newweapon.RealInventorySize()) {
+        return $"This weapon can't fit, should be no more than {origweapon.RealInventorySize()} slots";
       }
       if (origweapon.WeaponCategoryValue != newweapon.WeaponCategoryValue) {
         return $"Weapon have wrong category, should be {origweapon.WeaponCategoryValue.FriendlyName}";
@@ -1039,6 +1133,19 @@ namespace CustomUnits {
       if (origweapon.WeaponCategoryValue.IsEnergy) {
         if (origweapon.HeatGenerated < newweapon.HeatGenerated) {
           return $"Weapon is too hot, should generate no more than {origweapon.HeatGenerated} heat";
+        }
+      }
+      if (newweapon.ComponentTags.Contains(Core.Settings.VehicleComponentForbiddenTag)) {
+        return $"This weapon can't be installed on vehicle";
+      }      
+      if(origweapon.GetVehicleCategories().Count > 0) {
+        bool havecategory = false;
+        var newweaponcats = newweapon.GetVehicleCategories();
+        foreach(var category in origweapon.GetVehicleCategories()) {
+          if (newweaponcats.Contains(category)) { havecategory = true; break; }
+        }
+        if(havecategory == false) {
+          return $"You can't install this weapon, it has wrong category";
         }
       }
       return string.Empty;
@@ -1087,6 +1194,22 @@ namespace CustomUnits {
           error = "only ammunition boxes and weapons can be replaced";
           goto drop_error;
         }
+        if (dragItem.ComponentRef.Def.ComponentTags.Contains(Core.Settings.VehicleComponentOneAllowed)) {
+          MechLabLocationWidget[] locationswidgets = __instance.mechLab.gameObject.GetComponentsInChildren<MechLabLocationWidget>();
+          bool copyfound = false;
+          foreach(var locationwidget in locationswidgets) {
+            foreach(var cmp in locationwidget.localInventory) {
+              if (cmp == null) { continue; }
+              if (cmp.ComponentRef == null) { continue; }
+              if (cmp.ComponentRef.DamageLevel == ComponentDamageLevel.Destroyed) { continue; }
+              if (cmp.ComponentRef.ComponentDefID == dragItem.ComponentRef.ComponentDefID) { copyfound = true; break; }
+            }
+          }
+          if (copyfound) {
+            error = "only one such component is allowed";
+            goto drop_error;
+          }
+        }
         Log.M?.WL(1, $"hover {hoverItem.ComponentRef.ComponentDefID}:{hoverItem.ComponentRef.DamageLevel}");
         rdragInfo.originalSimUID = rhoverInfo.originalSimUID;
         rdragInfo.originalDefinition = rhoverInfo.originalDefinition;
@@ -1099,7 +1222,7 @@ namespace CustomUnits {
           inventory.Remove(hoverItem.ComponentRef);
           __instance.mechLab.activeMechDef.SetInventory(inventory.ToArray());
           //WorkOrderEntry_InstallComponent_Constructor.IN_REPLACE_STATE = true;
-          __instance.mechLab.OnRemoveItem(hoverItem, true);
+          __instance.mechLab.OnRemoveItem(hoverItem, false);
           //WorkOrderEntry_InstallComponent_Constructor.IN_REPLACE_STATE = false;
           hoverItem.gameObject.transform.SetParent(null, false);
           __instance.mechLab.dataManager.PoolGameObject(MechLabPanel.MECHCOMPONENT_ITEM_PREFAB, hoverItem.gameObject);
@@ -1779,6 +1902,141 @@ namespace CustomUnits {
       this.Sanitize();
     }
   }
+  [HarmonyPatch(typeof(MechLabPanel), "OnMaxArmor")]
+  [HarmonyBefore("MechEngineer.Features.ArmorMaximizer", "us.frostraptor.IRTweaks")]
+  public static class MechLabPanel_OnMaxArmor_Patch {
+    public static void Prefix(ref bool __runOriginal, MechLabPanel __instance) {
+      try {
+        if (__runOriginal == false) { return; }
+        if (Core.Settings.VehcilesPartialEditable == false) { return; }
+        if (__instance.Initialized == false) { return; }
+        if (__instance.dragItem != null) { return; }
+        if (__instance.originalMechDef.IsVehicle() == false) { return; }
+        bool isAnyLocationDestroyed = false;
+        foreach (var vlocation in FakeVehicleLocationConvertHelper.VehicleChassisLocationList) {
+          var widget = __instance.GetLocationWidget(vlocation.toFakeChassis());
+          var location = __instance.originalMechDef.GetChassisLocationDef(vlocation.toFakeChassis());
+          if ((location.MaxArmor <= 0f) && (location.InternalStructure <= 1f)) { continue; }
+          if (widget.IsDestroyed) { isAnyLocationDestroyed = true; break; }
+        }
+        if (isAnyLocationDestroyed) {
+          __instance.modifiedDialogShowing = true;
+          GenericPopupBuilder.Create("'Vehicle Location Destroyed", "You cannot auto-assign armor while a 'Vehicle location is Destroyed.").AddButton("Okay").CancelOnEscape().AddFader(new UIColorRef?(LazySingletonBehavior<UIManager>.Instance.UILookAndColorConstants.PopupBackfill)).SetAlwaysOnTop().SetOnClose((Action)(() => __instance.modifiedDialogShowing = false)).Render();
+          __runOriginal = false;
+          return;
+        }
+        foreach (var vlocation in FakeVehicleLocationConvertHelper.VehicleChassisLocationList) {
+          var widget = __instance.GetLocationWidget(vlocation.toFakeChassis());
+          var location = __instance.originalMechDef.GetChassisLocationDef(vlocation.toFakeChassis());
+          if ((location.MaxArmor <= 0f) && (location.InternalStructure <= 1f)) { continue; }
+          widget.ModifyArmor(false, widget.maxArmor);
+        }
+        __instance.FlagAsModified();
+        __runOriginal = false;
+      } catch (Exception e) {
+        Log.M?.TWL(0, e.ToString());
+        UIManager.logger.LogException(e);
+      }
+    }
+  }
+  [HarmonyPatch(typeof(MechLabPanel))]
+  [HarmonyPatch("ToggleLayout")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPatch(new Type[] { })]
+  public static class MechLabPanel_ToggleLayout {
+    public class CUMechLabPanelExt : MonoBehaviour {
+      public Transform headWidget_parent;
+      public int headWidget_index;
+      public Transform centerTorsoWidget_parent;
+      public int centerTorsoWidget_index;
+      public Transform leftTorsoWidget_parent;
+      public int leftTorsoWidget_index;
+      public Transform rightTorsoWidget_parent;
+      public int rightTorsoWidget_index;
+      public Transform leftArmWidget_parent;
+      public int leftArmWidget_index;
+      public Transform rightArmWidget_parent;
+      public int rightArmWidget_index;
+      public Transform leftLegWidget_parent;
+      public int leftLegWidget_index;
+      public Transform rightLegWidget_parent;
+      public int rightLegWidget_index;
+      public MechLabPanel parent;
+      public void Init(MechLabPanel parent) {
+        this.parent = parent;
+        this.headWidget_parent = parent.headWidget.transform.parent;
+        this.headWidget_index = parent.headWidget.transform.GetSiblingIndex();
+        this.centerTorsoWidget_parent = parent.centerTorsoWidget.transform.parent;
+        this.leftTorsoWidget_parent = parent.leftTorsoWidget.transform.parent;
+        this.rightTorsoWidget_parent = parent.rightTorsoWidget.transform.parent;
+        this.leftArmWidget_parent = parent.leftArmWidget.transform.parent;
+        this.rightArmWidget_parent = parent.rightArmWidget.transform.parent;
+        this.leftLegWidget_parent = parent.leftLegWidget.transform.parent;
+        this.rightLegWidget_parent = parent.rightLegWidget.transform.parent;
+
+        this.centerTorsoWidget_index = parent.centerTorsoWidget.transform.GetSiblingIndex();
+        this.leftTorsoWidget_index = parent.leftTorsoWidget.transform.GetSiblingIndex();
+        this.rightTorsoWidget_index = parent.rightTorsoWidget.transform.GetSiblingIndex();
+        this.leftArmWidget_index = parent.leftArmWidget.transform.GetSiblingIndex();
+        this.rightArmWidget_index = parent.rightArmWidget.transform.GetSiblingIndex();
+        this.leftLegWidget_index = parent.leftLegWidget.transform.GetSiblingIndex();
+        this.rightLegWidget_index = parent.rightLegWidget.transform.GetSiblingIndex();
+      }
+      public void Restore() {
+        parent.leftArmWidget.transform.SetParent(this.leftArmWidget_parent);
+        parent.leftArmWidget.transform.SetSiblingIndex(this.leftArmWidget_index);
+        parent.rightArmWidget.transform.SetParent(this.rightArmWidget_parent);
+        parent.rightArmWidget.transform.SetSiblingIndex(this.rightArmWidget_index);
+        parent.leftLegWidget.transform.SetParent(this.leftLegWidget_parent);
+        parent.leftLegWidget.transform.SetSiblingIndex(this.leftLegWidget_index);
+        parent.rightLegWidget.transform.SetParent(this.rightLegWidget_parent);
+        parent.rightLegWidget.transform.SetSiblingIndex(this.rightLegWidget_index);
+        parent.leftTorsoWidget.transform.SetParent(this.leftTorsoWidget_parent);
+        parent.leftTorsoWidget.transform.SetSiblingIndex(this.leftTorsoWidget_index);
+        parent.rightTorsoWidget.transform.SetParent(this.rightTorsoWidget_parent);
+        parent.rightTorsoWidget.transform.SetSiblingIndex(this.rightTorsoWidget_index);
+        parent.headWidget.transform.SetParent(this.headWidget_parent);
+        parent.headWidget.transform.SetSiblingIndex(this.headWidget_index);
+        parent.centerTorsoWidget.transform.SetParent(this.centerTorsoWidget_parent);
+        parent.centerTorsoWidget.transform.SetSiblingIndex(this.centerTorsoWidget_index);
+      }
+      public void Swap(bool leftAligned) {
+        if (leftAligned) {
+          parent.leftArmWidget.transform.SetParent(this.leftTorsoWidget_parent);
+          //parent.leftArmWidget.transform.SetSiblingIndex(this.leftTorsoWidget_index);
+          //parent.rightArmWidget.transform.SetParent(this.rightTorsoWidget_parent);
+          //parent.rightArmWidget.transform.SetSiblingIndex(this.rightTorsoWidget_index);
+          parent.leftLegWidget.transform.SetParent(this.rightTorsoWidget_parent);
+          //parent.leftLegWidget.transform.SetSiblingIndex(this.leftArmWidget_index);
+          parent.rightLegWidget.transform.SetParent(this.rightTorsoWidget_parent);
+          //parent.rightLegWidget.transform.SetSiblingIndex(this.rightArmWidget_index);
+        } else {
+          parent.rightArmWidget.transform.SetParent(this.rightTorsoWidget_parent);
+          parent.leftLegWidget.transform.SetParent(this.centerTorsoWidget_parent);
+          parent.rightLegWidget.transform.SetParent(this.centerTorsoWidget_parent);
+          parent.headWidget.transform.SetParent(this.leftTorsoWidget_parent);
+        }
+      }
+    }
+    public static void Postfix(MechLabPanel __instance) {
+      try {
+        CUMechLabPanelExt ext = __instance.gameObject.GetComponent<CUMechLabPanelExt>();
+        if (ext == null) { ext = __instance.gameObject.AddComponent<CUMechLabPanelExt>(); ext.Init(__instance); }
+        if (__instance.originalMechDef == null) { ext.Restore(); }
+        if (__instance.originalMechDef.Chassis == null) { ext.Restore(); }
+        if (__instance.originalMechDef.IsVehicle()) { __instance.originalMechDef.FixVehicleLocationsSlots(); }
+        Log.M?.TWL(0, $"MechLabPanel.ToggleLayout {__instance.originalMechDef.ChassisID}");
+        Log.M?.WL(1, $"Front size:{__instance.originalMechDef.Chassis.GetLocationDef(VehicleChassisLocations.Front.toFakeChassis()).InventorySlots}");
+        Log.M?.WL(1, $"Rear size:{__instance.originalMechDef.Chassis.GetLocationDef(VehicleChassisLocations.Rear.toFakeChassis()).InventorySlots}");
+        bool toLeft = __instance.originalMechDef.Chassis.GetLocationDef(VehicleChassisLocations.Rear.toFakeChassis()).InventorySlots < __instance.originalMechDef.Chassis.GetLocationDef(VehicleChassisLocations.Front.toFakeChassis()).InventorySlots;
+        if (__instance.originalMechDef.Chassis.IsVehicle()) { ext.Swap(toLeft); } else { ext.Restore(); }
+      } catch (Exception e) {
+        Log.M?.TWL(0, e.ToString());
+        UIManager.logger.LogException(e);
+      }
+    }
+  }
+
   //[HarmonyPatch(typeof(MechLabMechInfoWidget))]
   //[HarmonyPatch("CalculateTonnage")]
   //[HarmonyPatch(MethodType.Normal)]

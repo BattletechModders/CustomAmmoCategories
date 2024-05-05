@@ -58,6 +58,16 @@ namespace CustAmmoCategories {
       if(extWeapon.PhysicsAoE == TripleBoolean.True) { return extWeapon.PhysicsAoE_Height; }
       return 0f;
     }
+    public static float PhysicsAoEMinDist(this Weapon weapon) {
+      if (CustomAmmoCategories.Settings.PhysicsAoE_Weapons == false) { return 0f; }
+      ExtAmmunitionDef ammo = weapon.ammo();
+      ExtWeaponDef extWeapon = weapon.exDef();
+      WeaponMode mode = weapon.mode();
+      if (mode.PhysicsAoE == TripleBoolean.True) { return mode.PhysicsAoE_MinDist > CustomAmmoCategories.Epsilon ? mode.PhysicsAoE_MinDist : CustomAmmoCategories.Settings.PhysicsAoE_MinDist; }
+      if (ammo.PhysicsAoE == TripleBoolean.True) { return ammo.PhysicsAoE_MinDist > CustomAmmoCategories.Epsilon ? ammo.PhysicsAoE_MinDist : CustomAmmoCategories.Settings.PhysicsAoE_MinDist; }
+      if (extWeapon.PhysicsAoE == TripleBoolean.True) { return extWeapon.PhysicsAoE_MinDist > CustomAmmoCategories.Epsilon ? extWeapon.PhysicsAoE_MinDist : CustomAmmoCategories.Settings.PhysicsAoE_MinDist; }
+      return CustomAmmoCategories.Settings.PhysicsAoE_MinDist;
+    }
     public static string SpesialOfflineIFF = "_IFFOfflne";
     public static string IFFTransponderDef(this Weapon weapon) {
       string result = string.Empty;

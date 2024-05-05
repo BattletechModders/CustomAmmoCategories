@@ -219,12 +219,12 @@ namespace CustomUnits {
         if (transferTeam == null) { return; }
         __instance.Combat.LocalPlayerTeam.RemoveUnit(__instance);
         transferTeam.AddUnit(__instance);
-        __instance._teamId = transferTeamId;
-        __instance._team = transferTeam;
+        __instance._teamId(transferTeamId);
+        __instance._team(transferTeam);
         __instance.HUD().MechWarriorTray.RefreshTeam(__instance.Combat.LocalPlayerTeam);
       } catch (Exception e) {
         Log.Combat?.TWL(0, e.ToString(), true);
-        AbstractActor.logger.LogException(e);
+        AbstractActorHelper.logger.LogException(e);
       }
     }
   }
@@ -263,13 +263,13 @@ namespace CustomUnits {
         if (transferTeam == null) { return; }
         __instance.Combat.LocalPlayerTeam.RemoveUnit(__instance);
         transferTeam.AddUnit(__instance);
-        __instance._teamId = transferTeamId;
-        __instance._team = transferTeam;
+        __instance._teamId(transferTeamId);
+        __instance._team(transferTeam);
         __instance.Combat.TransferLance(__instance.lance, transferTeam);
         __instance.HUD().MechWarriorTray.RefreshTeam(__instance.Combat.LocalPlayerTeam);
       } catch (Exception e) {
         Log.Combat?.TWL(0, e.ToString(), true);
-        AbstractActor.logger.LogException(e);
+        AbstractActorHelper.logger.LogException(e);
       }
     }
   }
@@ -296,13 +296,13 @@ namespace CustomUnits {
         if (transferTeam == null) { return; }
         __instance.Combat.LocalPlayerTeam.RemoveUnit(__instance);
         transferTeam.AddUnit(__instance);
-        __instance._teamId = transferTeamId;
-        __instance._team = transferTeam;
+        __instance._teamId(transferTeamId);
+        __instance._team(transferTeam);
         __instance.Combat.TransferLance(__instance.lance, transferTeam);
         __instance.HUD().MechWarriorTray.RefreshTeam(__instance.Combat.LocalPlayerTeam);
       } catch (Exception e) {
         Log.Combat?.TWL(0, e.ToString(), true);
-        AbstractActor.logger.LogException(e);
+        AbstractActorHelper.logger.LogException(e);
       }
     }
   }

@@ -171,9 +171,12 @@ namespace CustomAmmoCategoriesPatches {
             }
           }
           if(ammoIsUsed == false) {
-            Log.M?.WL(1, $"ammo:{ammoDef.Key} is not used by any weapon");
-            string name = string.IsNullOrEmpty(ammoDef.Value.Description.UIName) ? ammoDef.Value.Description.Name : ammoDef.Value.Description.UIName;
-            MechValidationRules.AddErrorMessage(ref errorMessages, MechValidationType.AmmoUnneeded, new Text("__/CAC.ExtraAmmo/__", new object[1] { (object)name }));
+            ExtAmmunitionDef extAmmo = ammoDef.Value.extDef();
+            if ((extAmmo == null) || (extAmmo.SkipUnusedAmmoCheck == false)) {
+              Log.M?.WL(1, $"ammo:{ammoDef.Key} is not used by any weapon");
+              string name = string.IsNullOrEmpty(ammoDef.Value.Description.UIName) ? ammoDef.Value.Description.Name : ammoDef.Value.Description.UIName;
+              MechValidationRules.AddErrorMessage(ref errorMessages, MechValidationType.AmmoUnneeded, new Text("__/CAC.ExtraAmmo/__", new object[1] { (object)name }));
+            }
           }
         }
       }

@@ -606,6 +606,13 @@ namespace CustAmmoCategories {
     public bool DelayedExposion { get; set; } = false;
     [Key(180)]
     public float ExposionModifier { get; set; } = 1f;
+    [SelfDocumentationDefaultValue("empty"), SelfDocumentationTypeName("dictionary of { \"<string>\": { AoEModifiers structure } }")]
+    [Key(181)]
+    public Dictionary<string, AoEModifiers> TagAoEDamageMult { get; set; } = new Dictionary<string, AoEModifiers>();
+    [Key(182)]
+    public float PhysicsAoE_MinDist { get; set; } = 0f;
+    [Key(183)]
+    public bool SkipUnusedAmmoCheck { get; set; } = false;
     public ExtAmmunitionDef() { }
   }
 }

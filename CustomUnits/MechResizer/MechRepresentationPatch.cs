@@ -27,12 +27,12 @@ namespace MechResizer {
         custMech.ApplyScale(sizeMultiplier);
         return;
       }
-      var originalLOSSourcePositions = mech.originalLOSSourcePositions;
-      var originalLOSTargetPositions = mech.originalLOSTargetPositions;
+      var originalLOSSourcePositions = mech.originalLOSSourcePositions();
+      var originalLOSTargetPositions = mech.originalLOSTargetPositions();
       var newSourcePositions = ModSettings.LOSSourcePositions(identifier, originalLOSSourcePositions, sizeMultiplier);
       var newTargetPositions = ModSettings.LOSTargetPositions(identifier, originalLOSTargetPositions, sizeMultiplier);
-      mech.originalLOSSourcePositions=(newSourcePositions);
-      mech.originalLOSTargetPositions=(newTargetPositions);
+      mech.originalLOSSourcePositions(newSourcePositions);
+      mech.originalLOSTargetPositions(newTargetPositions);
       Transform transformToScale = mech.GameRep.thisTransform;
       if (MechResizer.ModSettings.MechScaleJRoot) {
         Transform j_Root = mech.GameRep.gameObject.transform.FindTopLevelChild("j_Root");

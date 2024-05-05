@@ -18,7 +18,7 @@ namespace CustAmmoCategories {
         }
       } catch(Exception e) {
         Log.Combat?.TWL(0, e.ToString(), true);
-        AbstractActor.logger.LogException(e);
+        CustomUnits.AbstractActorHelper.logger.LogException(e);
       }
     }
   }
@@ -36,7 +36,7 @@ namespace CustAmmoCategories {
         }
       } catch(Exception e) {
         Log.Combat?.TWL(0, e.ToString(), true);
-        AbstractActor.logger.LogException(e);
+        CustomUnits.AbstractActorHelper.logger.LogException(e);
       }
     }
   }
@@ -54,7 +54,7 @@ namespace CustAmmoCategories {
         }
       } catch(Exception e) {
         Log.Combat?.TWL(0, e.ToString(), true);
-        AbstractActor.logger.LogException(e);
+        CustomUnits.AbstractActorHelper.logger.LogException(e);
       }
     }
   }
@@ -72,7 +72,7 @@ namespace CustAmmoCategories {
         }
       } catch(Exception e) {
         Log.Combat?.TWL(0, e.ToString(), true);
-        AbstractActor.logger.LogException(e);
+        CustomUnits.AbstractActorHelper.logger.LogException(e);
       }
     }
   }
@@ -90,7 +90,7 @@ namespace CustAmmoCategories {
         }
       } catch(Exception e) {
         Log.Combat?.TWL(0, e.ToString(), true);
-        AbstractActor.logger.LogException(e);
+        CustomUnits.AbstractActorHelper.logger.LogException(e);
       }
     }
   }
@@ -108,7 +108,7 @@ namespace CustAmmoCategories {
         }
       } catch(Exception e) {
         Log.Combat?.TWL(0, e.ToString(), true);
-        AbstractActor.logger.LogException(e);
+        CustomUnits.AbstractActorHelper.logger.LogException(e);
       }
     }
   }
@@ -126,7 +126,7 @@ namespace CustAmmoCategories {
         }
       } catch(Exception e) {
         Log.Combat?.TWL(0, e.ToString(), true);
-        AbstractActor.logger.LogException(e);
+        CustomUnits.AbstractActorHelper.logger.LogException(e);
       }
     }
   }

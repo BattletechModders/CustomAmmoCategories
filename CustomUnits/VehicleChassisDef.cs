@@ -1005,7 +1005,7 @@ namespace CustomUnits {
         }
       } catch (Exception e) {
         Log.Combat?.TWL(0,e.ToString(), true);
-        AbstractActor.logger.LogException(e);
+        AbstractActorHelper.logger.LogException(e);
       }
       return;
     }
@@ -1023,8 +1023,8 @@ namespace CustomUnits {
     }
     public static void Postfix(AbstractActor __instance, Vector3 position, Quaternion heading, int stackItemUID, bool updateDesignMask, List<DesignMaskDef> approvedMasks, bool skipAbilityLogging) {
       if (__instance.UnaffectedDesignMasks()) {
-        __instance.occupiedDesignMask = null;
-        __instance.opuDesignMask = null;
+        __instance.set_occupiedDesignMask(null);
+        __instance.opuDesignMask(null);
         Thread.CurrentThread.ClearFlag(ActorMovementSequence_UpdateSticky.HIDE_DESIGN_MASK_FLAG);
       }
     }
@@ -1056,7 +1056,7 @@ namespace CustomUnits {
         }
       }catch(Exception e) {
         Log.Combat?.TWL(0, e.ToString(), true);
-        AbstractActor.logger.LogException(e);
+        AbstractActorHelper.logger.LogException(e);
       }
     }
   }
@@ -1091,7 +1091,7 @@ namespace CustomUnits {
       catch(Exception e){
         Log.ECombat?.TWL(0, "Actor:" + (__instance.owningActor == null?"null": __instance.owningActor.PilotableActorDef.Description.Id)+" from:"+from+" to:"+to, true);
         Log.ECombat?.TWL(0, e.ToString(), true);
-        AbstractActor.logger.LogException(e);
+        AbstractActorHelper.logger.LogException(e);
         __result = true;
       }
       __runOriginal = false; return;
@@ -1615,7 +1615,7 @@ namespace CustomUnits {
         }
       }catch(Exception e) {
         Log.ECombat?.TWL(0, e.ToString(), true);
-        AbstractActor.logger.LogException(e);
+        AbstractActorHelper.logger.LogException(e);
       }
       return;
     }
@@ -1658,7 +1658,7 @@ namespace CustomUnits {
         }
       }catch(Exception e) {
         Log.ECombat?.TWL(0, e.ToString(), true);
-        AbstractActor.logger.LogException(e);
+        AbstractActorHelper.logger.LogException(e);
       }
       return;
     }
@@ -2041,83 +2041,6 @@ namespace CustomUnits {
       } catch(Exception e) {
         Log.M?.TWL(0, e.ToString());
         dataManager.logger.LogException(e);
-      }
-    }
-  }
-  [HarmonyPatch(typeof(MechLabPanel))]
-  [HarmonyPatch("ToggleLayout")]
-  [HarmonyPatch(MethodType.Normal)]
-  [HarmonyPatch(new Type[] { })]
-  public static class MechLabPanel_ToggleLayout {
-    public class CUMechLabPanelExt: MonoBehaviour {
-      public Transform headWidget_parent;
-      public int headWidget_index;
-      public Transform centerTorsoWidget_parent;
-      public int centerTorsoWidget_index;
-      public Transform leftTorsoWidget_parent;
-      public int leftTorsoWidget_index;
-      public Transform rightTorsoWidget_parent;
-      public int rightTorsoWidget_index;
-      public Transform leftArmWidget_parent;
-      public int leftArmWidget_index;
-      public Transform rightArmWidget_parent;
-      public int rightArmWidget_index;
-      public Transform leftLegWidget_parent;
-      public int leftLegWidget_index;
-      public Transform rightLegWidget_parent;
-      public int rightLegWidget_index;
-      public MechLabPanel parent;
-      public void Init(MechLabPanel parent) {
-        this.parent = parent;
-        this.headWidget_parent = parent.headWidget.transform.parent;
-        this.headWidget_index = parent.headWidget.transform.GetSiblingIndex();
-        this.centerTorsoWidget_parent = parent.centerTorsoWidget.transform.parent;
-        this.leftTorsoWidget_parent = parent.leftTorsoWidget.transform.parent;
-        this.rightTorsoWidget_parent = parent.rightTorsoWidget.transform.parent;
-        this.leftArmWidget_parent = parent.leftArmWidget.transform.parent;
-        this.rightArmWidget_parent = parent.rightArmWidget.transform.parent;
-        this.leftLegWidget_parent = parent.leftLegWidget.transform.parent;
-        this.rightLegWidget_parent = parent.rightLegWidget.transform.parent;
-
-        this.centerTorsoWidget_index = parent.centerTorsoWidget.transform.GetSiblingIndex();
-        this.leftTorsoWidget_index = parent.leftTorsoWidget.transform.GetSiblingIndex();
-        this.rightTorsoWidget_index = parent.rightTorsoWidget.transform.GetSiblingIndex();
-        this.leftArmWidget_index = parent.leftArmWidget.transform.GetSiblingIndex();
-        this.rightArmWidget_index = parent.rightArmWidget.transform.GetSiblingIndex();
-        this.leftLegWidget_index = parent.leftLegWidget.transform.GetSiblingIndex();
-        this.rightLegWidget_index = parent.rightLegWidget.transform.GetSiblingIndex();
-      }
-      public void Restore() {
-        parent.leftArmWidget.transform.SetParent(this.leftArmWidget_parent);
-        parent.leftArmWidget.transform.SetSiblingIndex(this.leftArmWidget_index);
-        parent.rightArmWidget.transform.SetParent(this.rightArmWidget_parent);
-        parent.rightArmWidget.transform.SetSiblingIndex(this.rightArmWidget_index);
-        parent.leftLegWidget.transform.SetParent(this.leftLegWidget_parent);
-        parent.leftLegWidget.transform.SetSiblingIndex(this.leftLegWidget_index);
-        parent.rightLegWidget.transform.SetParent(this.rightLegWidget_parent);
-        parent.rightLegWidget.transform.SetSiblingIndex(this.rightLegWidget_index);
-      }
-      public void Swap() {
-        parent.leftArmWidget.transform.SetParent(this.leftTorsoWidget_parent);
-        //parent.leftArmWidget.transform.SetSiblingIndex(this.leftTorsoWidget_index);
-        //parent.rightArmWidget.transform.SetParent(this.rightTorsoWidget_parent);
-        //parent.rightArmWidget.transform.SetSiblingIndex(this.rightTorsoWidget_index);
-        parent.leftLegWidget.transform.SetParent(this.rightTorsoWidget_parent);
-        //parent.leftLegWidget.transform.SetSiblingIndex(this.leftArmWidget_index);
-        parent.rightLegWidget.transform.SetParent(this.rightTorsoWidget_parent);
-        //parent.rightLegWidget.transform.SetSiblingIndex(this.rightArmWidget_index);
-      }
-    }
-    public static void Postfix(MechLabPanel __instance) {
-      try {
-        CUMechLabPanelExt ext = __instance.gameObject.GetComponent<CUMechLabPanelExt>();
-        if (ext == null) { ext = __instance.gameObject.AddComponent<CUMechLabPanelExt>(); ext.Init(__instance); }
-        if (__instance.originalMechDef == null) { ext.Restore(); }
-        if (__instance.originalMechDef.Chassis == null) { ext.Restore(); }
-        if (__instance.originalMechDef.Chassis.IsVehicle()) { ext.Swap(); } else { ext.Restore(); }
-      } catch(Exception e) {
-        Log.M?.TWL(0, e.ToString());
-        UIManager.logger.LogException(e);
       }
     }
   }

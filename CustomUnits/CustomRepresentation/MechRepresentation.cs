@@ -143,7 +143,7 @@ namespace CustomUnits {
         return;
       } catch (Exception e) {
         Log.Combat?.TWL(0, e.ToString(), true);
-        AbstractActor.logger.LogException(e);
+        AbstractActorHelper.logger.LogException(e);
         return;
       }
     }
@@ -165,7 +165,7 @@ namespace CustomUnits {
         return;
       } catch (Exception e) {
         Log.Combat?.TWL(0, e.ToString(), true);
-        AbstractActor.logger.LogException(e);
+        AbstractActorHelper.logger.LogException(e);
         return;
       }
     }
@@ -187,7 +187,7 @@ namespace CustomUnits {
         return;
       } catch (Exception e) {
         Log.Combat?.TWL(0, e.ToString(), true);
-        AbstractActor.logger.LogException(e);
+        AbstractActorHelper.logger.LogException(e);
         return;
       }
     }
@@ -209,7 +209,7 @@ namespace CustomUnits {
         return;
       } catch (Exception e) {
         Log.Combat?.TWL(0, e.ToString(), true);
-        AbstractActor.logger.LogException(e);
+        AbstractActorHelper.logger.LogException(e);
         return;
       }
     }
@@ -231,7 +231,7 @@ namespace CustomUnits {
         return;
       } catch (Exception e) {
         Log.Combat?.TWL(0, e.ToString(), true);
-        AbstractActor.logger.LogException(e);
+        AbstractActorHelper.logger.LogException(e);
         return;
       }
     }
@@ -253,7 +253,7 @@ namespace CustomUnits {
         return;
       } catch (Exception e) {
         Log.Combat?.TWL(0, e.ToString(), true);
-        AbstractActor.logger.LogException(e);
+        AbstractActorHelper.logger.LogException(e);
         return;
       }
     }
@@ -275,7 +275,7 @@ namespace CustomUnits {
         return;
       } catch (Exception e) {
         Log.Combat?.TWL(0, e.ToString(), true);
-        AbstractActor.logger.LogException(e);
+        AbstractActorHelper.logger.LogException(e);
         return;
       }
     }
@@ -297,7 +297,7 @@ namespace CustomUnits {
         return;
       } catch (Exception e) {
         Log.Combat?.TWL(0, e.ToString(), true);
-        AbstractActor.logger.LogException(e);
+        AbstractActorHelper.logger.LogException(e);
         return;
       }
     }
@@ -319,7 +319,7 @@ namespace CustomUnits {
         return;
       } catch (Exception e) {
         Log.Combat?.TWL(0, e.ToString(), true);
-        AbstractActor.logger.LogException(e);
+        AbstractActorHelper.logger.LogException(e);
         return;
       }
     }
@@ -341,7 +341,7 @@ namespace CustomUnits {
         return;
       } catch (Exception e) {
         Log.Combat?.TWL(0, e.ToString(), true);
-        AbstractActor.logger.LogException(e);
+        AbstractActorHelper.logger.LogException(e);
         return;
       }
     }
@@ -363,7 +363,7 @@ namespace CustomUnits {
         return;
       } catch (Exception e) {
         Log.Combat?.TWL(0, e.ToString(), true);
-        AbstractActor.logger.LogException(e);
+        AbstractActorHelper.logger.LogException(e);
         return;
       }
     }
@@ -385,7 +385,7 @@ namespace CustomUnits {
         return;
       } catch (Exception e) {
         Log.Combat?.TWL(0, e.ToString(), true);
-        AbstractActor.logger.LogException(e);
+        AbstractActorHelper.logger.LogException(e);
         return;
       }
     }
@@ -407,7 +407,7 @@ namespace CustomUnits {
         return;
       } catch (Exception e) {
         Log.Combat?.TWL(0, e.ToString(), true);
-        AbstractActor.logger.LogException(e);
+        AbstractActorHelper.logger.LogException(e);
         return;
       }
     }
@@ -429,7 +429,7 @@ namespace CustomUnits {
         return;
       } catch (Exception e) {
         Log.Combat?.TWL(0, e.ToString(), true);
-        AbstractActor.logger.LogException(e);
+        AbstractActorHelper.logger.LogException(e);
         return;
       }
     }
@@ -451,7 +451,7 @@ namespace CustomUnits {
         return;
       } catch (Exception e) {
         Log.Combat?.TWL(0, e.ToString(), true);
-        AbstractActor.logger.LogException(e);
+        AbstractActorHelper.logger.LogException(e);
         return;
       }
     }
@@ -473,7 +473,7 @@ namespace CustomUnits {
         return;
       } catch (Exception e) {
         Log.Combat?.TWL(0, e.ToString(), true);
-        AbstractActor.logger.LogException(e);
+        AbstractActorHelper.logger.LogException(e);
         return;
       }
     }
@@ -495,7 +495,7 @@ namespace CustomUnits {
         return;
       } catch (Exception e) {
         Log.Combat?.TWL(0, e.ToString(), true);
-        AbstractActor.logger.LogException(e);
+        AbstractActorHelper.logger.LogException(e);
         return;
       }
     }
@@ -517,7 +517,7 @@ namespace CustomUnits {
         return;
       } catch (Exception e) {
         Log.Combat?.TWL(0, e.ToString(), true);
-        AbstractActor.logger.LogException(e);
+        AbstractActorHelper.logger.LogException(e);
         return;
       }
     }
@@ -539,7 +539,7 @@ namespace CustomUnits {
         return;
       } catch (Exception e) {
         Log.Combat?.TWL(0, e.ToString(), true);
-        AbstractActor.logger.LogException(e);
+        AbstractActorHelper.logger.LogException(e);
         return;
       }
     }
@@ -561,7 +561,7 @@ namespace CustomUnits {
         return;
       } catch (Exception e) {
         Log.Combat?.TWL(0, e.ToString(), true);
-        AbstractActor.logger.LogException(e);
+        AbstractActorHelper.logger.LogException(e);
         return;
       }
     }
@@ -583,7 +583,7 @@ namespace CustomUnits {
         return;
       } catch (Exception e) {
         Log.Combat?.TWL(0, e.ToString(), true);
-        AbstractActor.logger.LogException(e);
+        AbstractActorHelper.logger.LogException(e);
         return;
       }
     }
@@ -615,7 +615,7 @@ namespace CustomUnits {
         }
       } catch (Exception e) {
         Log.Combat?.TWL(0, e.ToString(), true);
-        AbstractActor.logger.LogException(e);
+        AbstractActorHelper.logger.LogException(e);
       }
     }
   }
@@ -1724,7 +1724,7 @@ namespace CustomUnits {
         if (this.HeightController != null) { this.HeightController.OnVisibilityChange(newLevel); }
       }catch(Exception e) {
         Log.Combat?.TWL(0, e.ToString(), true);
-        AbstractActor.logger.LogException(e);
+        AbstractActorHelper.logger.LogException(e);
       }
     }
     public virtual void _ToggleHeadlights(bool headlightsActive) {
@@ -1856,7 +1856,7 @@ namespace CustomUnits {
         }
       }catch(Exception e) {
         Log.Combat?.TWL(0, e.ToString(), true);
-        AbstractActor.logger.LogException(e);
+        AbstractActorHelper.logger.LogException(e);
       }
     }
     public virtual void TriggerCustomFootFall(Transform foot) {
@@ -1919,7 +1919,7 @@ namespace CustomUnits {
         this.triggerFootVFX = false;
       }catch(Exception e) {
         Log.Combat?.TWL(0,e.ToString(),true);
-        AbstractActor.logger.LogException(e);
+        AbstractActorHelper.logger.LogException(e);
       }
     }
     public override void OnAudioEvent(string audioEvent) {

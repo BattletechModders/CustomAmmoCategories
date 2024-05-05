@@ -157,17 +157,17 @@ namespace CustomUnits {
                 ap.OnPlayerVisibilityChanged(__instance.parentCombatant, newLevel);
               }catch(Exception e) {
                 Log.Combat?.TWL(0, e.ToString(), true);
-                AbstractActor.logger.LogException(e);
+                AbstractActorHelper.logger.LogException(e);
               }
             }
           }catch(Exception e) {
             Log.Combat?.TWL(0, e.ToString(), true);
-            AbstractActor.logger.LogException(e);
+            AbstractActorHelper.logger.LogException(e);
           }
         }
       }catch(Exception e) {
         Log.Combat?.TWL(0, e.ToString(), true);
-        AbstractActor.logger.LogException(e);
+        AbstractActorHelper.logger.LogException(e);
       }
     }
   }
@@ -270,7 +270,7 @@ namespace CustomUnits {
         }
       }
       if (distance < Core.Settings.CloseRangeFiringArcDistance) {
-        FiringArc = Core.Settings.CloseRangeFiringArc;
+        if (FiringArc < Core.Settings.CloseRangeFiringArc) { FiringArc = Core.Settings.CloseRangeFiringArc; }
       }
       Vector3 forward = targetPosition - attackPosition;
       forward.y = 0.0f;
@@ -442,7 +442,7 @@ namespace CustomUnits {
         }
       } catch (Exception e) {
         Log.Combat?.TWL(0,e.ToString(),true);
-        AbstractActor.logger.LogException(e);
+        AbstractActorHelper.logger.LogException(e);
       }
     }
     public virtual void Clear() {
@@ -1085,7 +1085,7 @@ namespace CustomUnits {
         }
       } catch (Exception e) {
         Log.Combat?.TWL(0, e.ToString(), true);
-        AbstractActor.logger.LogException(e);
+        AbstractActorHelper.logger.LogException(e);
       }
       gameObject.SetActive(true);
       //if (animatedParts.ContainsKey(unit) == false) {
@@ -1307,7 +1307,7 @@ namespace CustomUnits {
         }
       } catch (Exception e) {
         Log.Combat?.WL(0, e.ToString(), true);
-        AbstractActor.logger.LogException(e);
+        AbstractActorHelper.logger.LogException(e);
       }
       gameObject.SetActive(true);
       if (animatedParts.ContainsKey(unit) == false) {
@@ -1364,7 +1364,7 @@ namespace CustomUnits {
         }
       } catch (Exception e) {
         Log.Combat?.TWL(0, e.ToString());
-        AbstractActor.logger.LogException(e);
+        AbstractActorHelper.logger.LogException(e);
       }
     }
   }
@@ -1379,7 +1379,7 @@ namespace CustomUnits {
         __instance.DestroyAnimation((int)location);
       } catch (Exception e) {
         Log.Combat?.TWL(0, e.ToString());
-        AbstractActor.logger.LogException(e);
+        AbstractActorHelper.logger.LogException(e);
       }
     }
   }

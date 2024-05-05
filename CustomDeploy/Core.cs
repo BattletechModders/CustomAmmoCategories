@@ -57,6 +57,226 @@ namespace CustomUnits {
       }
     }
   }
+
+  [HarmonyPatch(typeof(Mech))]
+  [HarmonyPatch("InitStats")]
+  [HarmonyPatch(new Type[] { })]
+  [HarmonyAfter("ru.kmission.custompilotprogression", "us.frostraptor.IRTweaks", "MechEngineer.Features.ArmorStructureChanges")]
+  public static class Mech_InitStats {
+    public delegate void d_AbstractActor_InitStats(AbstractActor instance);
+    private static d_AbstractActor_InitStats i_AbstractActor_InitStats = null;
+    public static void Init_AbstractActor_InitStats() {
+      return;
+    }
+    public static bool Prepare() {
+      try {
+        {
+          MethodInfo method = typeof(AbstractActor).GetMethod("InitStats", BindingFlags.NonPublic | BindingFlags.Instance);
+          var dm = new DynamicMethod("CDDEBUG_AbstractActor_InitStats", null, new Type[] { typeof(AbstractActor) });
+          var gen = dm.GetILGenerator();
+          gen.Emit(OpCodes.Ldarg_0);
+          gen.Emit(OpCodes.Call, method);
+          gen.Emit(OpCodes.Ret);
+          i_AbstractActor_InitStats = (d_AbstractActor_InitStats)dm.CreateDelegate(typeof(d_AbstractActor_InitStats));
+        }
+        return true;
+      }catch(Exception e) {
+        UnityGameInstance.logger.LogException(e);
+        return false;
+      }
+    }
+    public static void Prefix(ref bool __runOriginal, Mech __instance) {
+      try {
+        __runOriginal = false;
+        if (!__instance.Combat.IsLoadingFromSave) {
+          i_AbstractActor_InitStats(__instance);
+          switch (__instance.MechDef.Chassis.weightClass) {
+            case WeightClass.LIGHT:
+              __instance.Initiative = __instance.Combat.Constants.Phase.PhaseLight;
+              break;
+            case WeightClass.MEDIUM:
+              __instance.Initiative = __instance.Combat.Constants.Phase.PhaseMedium;
+              break;
+            case WeightClass.HEAVY:
+              __instance.Initiative = __instance.Combat.Constants.Phase.PhaseHeavy;
+              break;
+            case WeightClass.ASSAULT:
+              __instance.Initiative = __instance.Combat.Constants.Phase.PhaseAssault;
+              break;
+          }
+          __instance.statCollection.AddStatistic<int>("BaseInitiative", __instance.Initiative);
+          __instance.statCollection.AddStatistic<int>("TurnRadius", __instance.MechDef.Chassis.TurnRadius);
+          __instance.statCollection.AddStatistic<int>("MaxJumpjets", __instance.MechDef.Chassis.MaxJumpjets);
+          __instance.StatCollection.AddStatistic<float>("SpotterDistanceMultiplier", __instance.MechDef.Chassis.SpotterDistanceMultiplier);
+          __instance.StatCollection.AddStatistic<float>("SpotterDistanceAbsolute", 0.0f);
+          __instance.StatCollection.AddStatistic<float>("SpottingVisibilityMultiplier", __instance.MechDef.Chassis.VisibilityMultiplier);
+          __instance.StatCollection.AddStatistic<float>("SpottingVisibilityAbsolute", 0.0f);
+          __instance.StatCollection.AddStatistic<float>("SensorDistanceMultiplier", __instance.MechDef.Chassis.SensorRangeMultiplier);
+          __instance.StatCollection.AddStatistic<float>("SensorDistanceAbsolute", 0.0f);
+          __instance.StatCollection.AddStatistic<float>("SensorSignatureModifier", __instance.MechDef.Chassis.Signature);
+          __instance.statCollection.AddStatistic<float>("MinStability", 0.0f);
+          __instance.statCollection.AddStatistic<float>("MaxStability", __instance.MechDef.Chassis.Stability);
+          __instance.StatCollection.AddStatistic<float>("UnsteadyThreshold", __instance.Combat.Constants.ResolutionConstants.DefaultUnsteadyThreshold);
+          __instance.StatCollection.AddStatistic<int>("MaxHeat", __instance.Combat.Constants.Heat.MaxHeat);
+          __instance.StatCollection.AddStatistic<int>("OverheatLevel", (int)((double)__instance.Combat.Constants.Heat.MaxHeat * (double)__instance.Combat.Constants.Heat.OverheatLevel));
+          __instance.statCollection.AddStatistic<int>("MinHeatNextActivation", -1);
+          __instance.statCollection.AddStatistic<int>("HeatSinkCapacity", 0);
+          __instance.StatCollection.AddStatistic<bool>("IgnoreHeatToHitPenalties", false);
+          __instance.StatCollection.AddStatistic<bool>("IgnoreHeatMovementPenalties", false);
+          __instance.statCollection.AddStatistic<int>("EndMoveHeat", 0);
+          __instance.statCollection.AddStatistic<float>("WalkSpeed", __instance.MovementCaps.MaxWalkDistance);
+          __instance.statCollection.AddStatistic<float>("RunSpeed", __instance.MovementCaps.MaxSprintDistance);
+          __instance.statCollection.AddStatistic<float>("EngageRangeModifier", __instance.MechDef.Chassis.EngageRangeModifier);
+          __instance.statCollection.AddStatistic<float>("DFASelfDamage", __instance.MechDef.Chassis.DFASelfDamage);
+          __instance.statCollection.AddStatistic<bool>("DFACausesSelfUnsteady", true);
+          __instance.statCollection.AddStatistic<int>("EvasivePipsGainedAdditional", 0);
+          __instance.statCollection.AddStatistic<int>("MeleeHitPushBackPhases", 0);
+          __instance.statCollection.AddStatistic<bool>("HeadShotImmunity", false);
+          __instance.statCollection.AddStatistic<int>("CurrentHeat", 0);
+          __instance.statCollection.AddStatistic<float>("Stability", 0.0f);
+          __instance.statCollection.AddStatistic<bool>("IsProne", false);
+          string[] names = Enum.GetNames(typeof(InstabilitySource));
+          int length = names.Length;
+          for (int index = 0; index < length; ++index)
+            __instance.statCollection.AddStatistic<float>(string.Format("StabilityDefense.{0}", (object)names[index]), __instance.MechDef.Chassis.StabilityDefenses[index]);
+          __instance.statCollection.AddStatistic<float>("ReceivedInstabilityMultiplier", 1f);
+          if (AbstractActor.initLogger.IsLogEnabled)
+            AbstractActor.initLogger.Log((object)(__instance.DisplayName + " applying armor/structure multiplier: " + (object)__instance.ArmorMultiplier + "/" + (object)__instance.StructureMultiplier));
+          __instance.statCollection.AddStatistic<float>("Head.Armor", __instance.MechDef.Head.AssignedArmor * __instance.ArmorMultiplier);
+          __instance.statCollection.AddStatistic<float>("Head.Structure", __instance.MechDef.Head.CurrentInternalStructure * __instance.StructureMultiplier);
+          __instance.statCollection.AddStatistic<LocationDamageLevel>("Head.DamageLevel", __instance.MechDef.Head.DamageLevel);
+          __instance.statCollection.AddStatistic<float>("CenterTorso.Armor", __instance.MechDef.CenterTorso.AssignedArmor * __instance.ArmorMultiplier);
+          __instance.statCollection.AddStatistic<float>("CenterTorso.RearArmor", __instance.MechDef.CenterTorso.AssignedRearArmor * __instance.ArmorMultiplier);
+          __instance.statCollection.AddStatistic<float>("CenterTorso.Structure", __instance.MechDef.CenterTorso.CurrentInternalStructure * __instance.StructureMultiplier);
+          __instance.statCollection.AddStatistic<LocationDamageLevel>("CenterTorso.DamageLevel", __instance.MechDef.CenterTorso.DamageLevel);
+          __instance.statCollection.AddStatistic<float>("LeftTorso.Armor", __instance.MechDef.LeftTorso.AssignedArmor * __instance.ArmorMultiplier);
+          __instance.statCollection.AddStatistic<float>("LeftTorso.RearArmor", __instance.MechDef.LeftTorso.AssignedRearArmor * __instance.ArmorMultiplier);
+          __instance.statCollection.AddStatistic<float>("LeftTorso.Structure", __instance.MechDef.LeftTorso.CurrentInternalStructure * __instance.StructureMultiplier);
+          __instance.statCollection.AddStatistic<LocationDamageLevel>("LeftTorso.DamageLevel", __instance.MechDef.LeftTorso.DamageLevel);
+          __instance.statCollection.AddStatistic<float>("RightTorso.Armor", __instance.MechDef.RightTorso.AssignedArmor * __instance.ArmorMultiplier);
+          __instance.statCollection.AddStatistic<float>("RightTorso.RearArmor", __instance.MechDef.RightTorso.AssignedRearArmor * __instance.ArmorMultiplier);
+          __instance.statCollection.AddStatistic<float>("RightTorso.Structure", __instance.MechDef.RightTorso.CurrentInternalStructure * __instance.StructureMultiplier);
+          __instance.statCollection.AddStatistic<LocationDamageLevel>("RightTorso.DamageLevel", __instance.MechDef.RightTorso.DamageLevel);
+          __instance.statCollection.AddStatistic<float>("LeftArm.Armor", __instance.MechDef.LeftArm.AssignedArmor * __instance.ArmorMultiplier);
+          __instance.statCollection.AddStatistic<float>("LeftArm.Structure", __instance.MechDef.LeftArm.CurrentInternalStructure * __instance.StructureMultiplier);
+          __instance.statCollection.AddStatistic<LocationDamageLevel>("LeftArm.DamageLevel", __instance.MechDef.LeftArm.DamageLevel);
+          __instance.statCollection.AddStatistic<float>("RightArm.Armor", __instance.MechDef.RightArm.AssignedArmor * __instance.ArmorMultiplier);
+          __instance.statCollection.AddStatistic<float>("RightArm.Structure", __instance.MechDef.RightArm.CurrentInternalStructure * __instance.StructureMultiplier);
+          __instance.statCollection.AddStatistic<LocationDamageLevel>("RightArm.DamageLevel", __instance.MechDef.RightArm.DamageLevel);
+          __instance.statCollection.AddStatistic<float>("LeftLeg.Armor", __instance.MechDef.LeftLeg.AssignedArmor * __instance.ArmorMultiplier);
+          __instance.statCollection.AddStatistic<float>("LeftLeg.Structure", __instance.MechDef.LeftLeg.CurrentInternalStructure * __instance.StructureMultiplier);
+          __instance.statCollection.AddStatistic<LocationDamageLevel>("LeftLeg.DamageLevel", __instance.MechDef.LeftLeg.DamageLevel);
+          __instance.statCollection.AddStatistic<float>("RightLeg.Armor", __instance.MechDef.RightLeg.AssignedArmor * __instance.ArmorMultiplier);
+          __instance.statCollection.AddStatistic<float>("RightLeg.Structure", __instance.MechDef.RightLeg.CurrentInternalStructure * __instance.StructureMultiplier);
+          __instance.statCollection.AddStatistic<LocationDamageLevel>("RightLeg.DamageLevel", __instance.MechDef.RightLeg.DamageLevel);
+          __instance.InitEffectStats();
+          foreach (MechComponent allComponent in __instance.allComponents) {
+            if (allComponent == null) {
+              AbstractActor.logger.LogError($"Mech.InitStats {__instance.PilotableActorDef.Description.Id} null component detected. It is not my problem!!!! InitStats will fail with NRE");
+              AbstractActor.logger.LogError($"--inventory:");
+              foreach (var cr in __instance.MechDef.Inventory) {
+                AbstractActor.logger.LogError($"----{cr.ComponentDefID} {(cr.Def == null? "Def is null" : "Def is not null")}");
+              }
+              AbstractActor.logger.LogError($"--allComponents:");
+              foreach (var mc in __instance.allComponents) {
+                if (mc == null) {
+                  AbstractActor.logger.LogError($"----null");
+                } else {
+                  AbstractActor.logger.LogError($"----{mc.baseComponentRef.ComponentDefID} {(mc.componentDef == null ? "componentDef is null" : "componentDef is not null")}");
+                }
+              }
+              __runOriginal = true;
+              return;
+            }
+            allComponent.Init();
+            allComponent.InitStats();
+          }
+          if(__instance.MeleeWeapon == null) {
+            AbstractActor.logger.LogError($"Mech.InitStats {__instance.PilotableActorDef.Description.Id} null MeleeWeapon detected. It is not my problem!!!! InitStats will fail with NRE");
+            __runOriginal = true;
+            return;
+          }
+          if (__instance.DFAWeapon == null) {
+            AbstractActor.logger.LogError($"Mech.InitStats {__instance.PilotableActorDef.Description.Id} null DFAWeapon detected. It is not my problem!!!! InitStats will fail with NRE");
+            __runOriginal = true;
+            return;
+          }
+          if (__instance.ImaginaryLaserWeapon == null) {
+            AbstractActor.logger.LogError($"Mech.InitStats {__instance.PilotableActorDef.Description.Id} null ImaginaryLaserWeapon detected. It is not my problem!!!! InitStats will fail with NRE");
+            __runOriginal = true;
+            return;
+          }
+          __instance.MeleeWeapon.Init();
+          __instance.MeleeWeapon.InitStats();
+          __instance.DFAWeapon.Init();
+          __instance.DFAWeapon.InitStats();
+          __instance.ImaginaryLaserWeapon.Init();
+          __instance.AssignAmmoToWeapons();
+          __instance.CalcAndSetAlphaStrikesRemaining();
+          __instance.StartingStructure = __instance.SummaryStructureCurrent;
+          __instance.StartingArmor = __instance.SummaryArmorCurrent;
+          foreach (MechComponent allComponent in __instance.allComponents)
+            allComponent.InitPassiveSelfEffects();
+        } else {
+          foreach (MechComponent allComponent in __instance.allComponents)
+            allComponent.UpdateToAuraIfNeeded();
+        }
+        __instance.HighestLOSPosition = Vector3.zero;
+        float mechScaleMultiplier = __instance.Combat.Constants.CombatValueMultipliers.TEST_MechScaleMultiplier;
+        __instance.originalLOSSourcePositions = new Vector3[__instance.MechDef.Chassis.LOSSourcePositions.Length];
+        __instance.losSourcePositions = new Vector3[__instance.MechDef.Chassis.LOSSourcePositions.Length];
+        for (int index = 0; index < __instance.losSourcePositions.Length; ++index) {
+          FakeVector3 losSourcePosition = __instance.MechDef.Chassis.LOSSourcePositions[index];
+          __instance.originalLOSSourcePositions[index] = new Vector3(losSourcePosition.x * mechScaleMultiplier, losSourcePosition.y * mechScaleMultiplier, losSourcePosition.z * mechScaleMultiplier);
+          __instance.LOSSourcePositions[index] = __instance.originalLOSSourcePositions[index];
+          if ((double)__instance.originalLOSSourcePositions[index].y > (double)__instance.HighestLOSPosition.y)
+            __instance.HighestLOSPosition.y = __instance.originalLOSSourcePositions[index].y;
+        }
+        __instance.originalLOSTargetPositions = new Vector3[__instance.MechDef.Chassis.LOSTargetPositions.Length];
+        __instance.losTargetPositions = new Vector3[__instance.MechDef.Chassis.LOSTargetPositions.Length];
+        for (int index = 0; index < __instance.losTargetPositions.Length; ++index) {
+          FakeVector3 losTargetPosition = __instance.MechDef.Chassis.LOSTargetPositions[index];
+          __instance.originalLOSTargetPositions[index] = new Vector3(losTargetPosition.x * mechScaleMultiplier, losTargetPosition.y * mechScaleMultiplier, losTargetPosition.z * mechScaleMultiplier);
+          __instance.losTargetPositions[index] = __instance.originalLOSTargetPositions[index];
+        }
+        __instance.UpdateLOSPositions();
+        __instance.pilot.Init(__instance.Combat, (AbstractActor)__instance);
+        bool ModifyStats = !__instance.Combat.IsLoadingFromSave;
+        __instance.pilot.InitAbilities(ModifyStats, __instance.Combat.IsLoadingFromSave);
+        __instance.InitAbilities(ModifyStats);
+        __instance.AuraAbilities.AddRange((IEnumerable<Ability>)__instance.pilot.AuraAbilities);
+      } catch(Exception e) {
+        AbstractActor.logger.LogException(e);
+        CustomDeploy.Log.TWL(0, e.ToString());
+      }
+    }
+    public static Exception Finalizer(Mech __instance, ref Exception __exception) {
+      try {
+        if (__exception != null) {
+          CustomDeploy.Log.TWL(0, $"Mech.InitStats fail to invoke {__instance.PilotableActorDef.Description.Id} chassis {__instance.PilotableActorDef.ChassisID}");
+          CustomDeploy.Log.WL(0, __exception.ToString());
+          AbstractActor.logger.LogException(__exception);
+        }
+      } catch (Exception e) {
+        AbstractActor.logger.LogException(e);
+        CustomDeploy.Log.TWL(0, e.ToString());
+      }
+      return __exception;
+    }
+  }
+
+  public static class AbstractActorHelper {
+    public static HBS.Logging.ILog logger { get { return AbstractActor.logger; } }
+    public static void opuDesignMask(this AbstractActor actor, DesignMaskDef opuDesignMask) { actor.opuDesignMask = opuDesignMask; }
+    public static void set_occupiedDesignMask(this AbstractActor actor, DesignMaskDef val) { actor.occupiedDesignMask = val; }
+    public static void _team(this AbstractActor actor, Team team) { actor._team = team; }
+    public static void _teamId(this AbstractActor actor, string teamId) { actor._teamId = teamId; }
+    public static Vector3[] originalLOSSourcePositions(this AbstractActor actor) { return actor.originalLOSSourcePositions; }
+    public static void originalLOSSourcePositions(this AbstractActor actor, Vector3[] val) { actor.originalLOSSourcePositions = val; }
+    public static Vector3[] originalLOSTargetPositions(this AbstractActor actor) { return actor.originalLOSTargetPositions; }
+    public static void originalLOSTargetPositions(this AbstractActor actor, Vector3[] val) { actor.originalLOSTargetPositions = val; }
+    public static void _hasHandledDeath(this AbstractActor actor, bool val) { actor._hasHandledDeath = val; }
+  }
   public static class MechRepresentationHelper {
     public static List<JumpjetRepresentation> jumpjetReps(this MechRepresentation mechRepresentation) { return mechRepresentation.jumpjetReps; }
     public static void jumpjetReps(this MechRepresentation mechRepresentation, List<JumpjetRepresentation> val) { mechRepresentation.jumpjetReps = val; }
@@ -1593,7 +1813,7 @@ namespace CustomDeploy{
 
     public static bool Mech_InitStats_Prefix(Mech __instance) {
       try {
-        Log.TWL(0, " Mech.InitStats "+__instance.PilotableActorDef.ChassisID);
+        Log.TWL(0, "Mech.InitStats "+__instance.PilotableActorDef.ChassisID);
         if (!__instance.Combat.IsLoadingFromSave) {
           if (i_AbstractActor_InitStats == null) { Init_AbstractActor_InitStats(); }
           i_AbstractActor_InitStats((AbstractActor)__instance);

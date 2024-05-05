@@ -300,7 +300,7 @@ namespace CustomUnits {
         }
       } catch(Exception e) {
         Log.Combat?.TWL(0,e.ToString(),true);
-        AbstractActor.logger.LogException(e);
+        AbstractActorHelper.logger.LogException(e);
       }
     }
     public static string SafeToString(this object obj) {
@@ -487,7 +487,7 @@ namespace CustomUnits {
         //}
       }catch(Exception e) {
         Log.Combat?.TWL(0,e.ToString(),true);
-        AbstractActor.logger.LogException(e);
+        AbstractActorHelper.logger.LogException(e);
       }
     }
   }

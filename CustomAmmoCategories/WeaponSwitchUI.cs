@@ -839,9 +839,9 @@ namespace CustomAmmoCategoriesPatches {
         return;
       }
       bool isShift = (Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.LeftShift));
-      if (parent.DisplayedWeapon.IsDisabled || HUD.Combat.StackManager.GetAnyAttackSequence() != null) {
+      if ((parent.DisplayedWeapon.IsDisabled) || (HUD.Combat.StackManager.GetAnyAttackSequence() != null) || (parent.DisplayedWeapon.parent.IsInArtilleryMode())) {
         this.HUD.GenerateButtonEvent("WeaponSlot", AudioEventList_ui.ui_weapon_destroyed);
-      } else if (this.HUD.SelectionHandler.ActiveState != null && this.HUD.SelectionHandler.ActiveState.SelectionType == SelectionType.FireMulti) {
+      } else if ((this.HUD.SelectionHandler.ActiveState) != null && (this.HUD.SelectionHandler.ActiveState.SelectionType == SelectionType.FireMulti)) {
         parent.CycleWeapon();
       } else if (!parent.DisplayedWeapon.IsEnabled) {
         this.HUD.GenerateButtonEvent("WeaponSlot", AudioEventList_ui.ui_weapon_choose_yes);
@@ -992,6 +992,7 @@ namespace CustomAmmoCategoriesPatches {
         ASWatchdog.instance.logTrackedSequences();
         return;
       }
+      if (this.weaponPanel.DisplayedActor.IsInArtilleryMode()) { return; }
       try {
         bool isShift = (Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.LeftShift));
         bool prevIndirectState = parent.DisplayedWeapon.IndirectFireCapable();
@@ -1153,6 +1154,7 @@ namespace CustomAmmoCategoriesPatches {
         ASWatchdog.instance.logTrackedSequences();
         return;
       }
+      if (this.weaponPanel.DisplayedActor.IsInArtilleryMode()) { return; }
       bool prevIndirectState = parent.DisplayedWeapon.IndirectFireCapable();
       bool modifyers = (Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.RightControl));
       if (modifyers) {
