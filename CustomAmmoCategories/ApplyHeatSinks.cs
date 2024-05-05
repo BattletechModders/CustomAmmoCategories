@@ -84,6 +84,7 @@ namespace CustAmmoCategoriesPatches {
             mod *= __instance.Combat.MapMetaData.biomeDesignMask.heatSinkMultiplier;
           }
           mod *= __instance.Combat.Constants.Heat.GlobalHeatSinkMultiplier;
+          mod *= __instance.StatCollection.GetOrCreateStatisic<float>(CustomAmmoCategories.HeatSinkCapacityMultActorStat, 1f).Value<float>();
 
           int heatsinkCapacity = Mathf.RoundToInt(((float)__instance.HeatSinkCapacity - (float)__instance.UsedHeatSinksCap()) * mod);
           if (heatsinkCapacity < 0) { heatsinkCapacity = 0; }
