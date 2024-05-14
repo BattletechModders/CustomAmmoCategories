@@ -920,13 +920,13 @@ namespace CustomAmmoCategoriesPatches {
       try {
         ExtAmmunitionDef extAmmoDef = null;
         if (__state == null) {
-          Log.M?.TWL(0, "!WARNINIG! ExtDefinitionParceInfo is null for " + __instance.Description.Id + ". Very very wrong!", true);
+          Log.M?.TWL(0, "!WARNINIG! ExtDefinitionParseInfo is null for " + __instance.Description.Id + ". Very very wrong!", true);
         } else {
           extAmmoDef = __state.extDef as ExtAmmunitionDef;
         }
         __instance.setOriginal(__state.baseJson);
         if (extAmmoDef == null) {
-          Log.M?.TWL(0, "!WARNINIG! ext. definition parce error for " + __instance.Description.Id + "\n" + __state.errorStr + "\n" + __state.baseJson, true);
+          Log.M?.TWL(0, "!WARNINIG! ext. definition parse error for " + __instance.Description.Id + "\n" + __state.errorStr + "\n" + __state.baseJson, true);
           extAmmoDef = new ExtAmmunitionDef();
           extAmmoDef.Id = __instance.Description.Id;
           extAmmoDef.Name = __instance.Description.Name;

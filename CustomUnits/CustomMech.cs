@@ -205,7 +205,60 @@ namespace CustomUnits {
       Vector3 vector3 = this.GameRep.GetHitPosition((int)location) + UnityEngine.Random.insideUnitSphere * 5f;
       this.Combat.MessageCenter.PublishMessage(new FloatieMessage(sourceGuid, this.GUID, dmgText, fontSize, nature, vector3.x, vector3.y, vector3.z));
     }
-
+    public virtual bool isTemporaryDead { get; set; } = false;
+    public virtual void setTemporaryDead(bool val) {
+      isTemporaryDead = val;
+    }
+    public virtual bool isReallyDead {
+      get {
+        try {
+          if (ICustomMechDebug.IS_DEAD_DEBUG) { Log.Combat?.TWL(0, $"CustomMech.IsReallyDead {this.PilotableActorDef.ChassisID}"); }
+          if (this.HasHandledDeath) { if (ICustomMechDebug.IS_DEAD_DEBUG) { Log.Combat?.WL(1, "HasHandledDeath"); }; return true; }
+          if (this.pilot.IsIncapacitated) { if (ICustomMechDebug.IS_DEAD_DEBUG) { Log.Combat?.WL(1, "Pilot.IsIncapacitated"); }; return true; }
+          if (this.pilot.HasEjected) { if (ICustomMechDebug.IS_DEAD_DEBUG) { Log.Combat?.WL(1, "Pilot.HasEjected"); }; return true; }
+          if (this.CenterTorsoStructure <= Core.Epsilon) { if (ICustomMechDebug.IS_DEAD_DEBUG) { Log.Combat?.WL(1, "CT Destruction"); }; return true; }
+          UnitCustomInfo info = this.GetCustomInfo();
+          if (info != null) {
+            foreach (ChassisLocations location in info.lethalLocations) {
+              if (this.GetCurrentStructure(location) <= Core.Epsilon) {
+                if (ICustomMechDebug.IS_DEAD_DEBUG) { Log.Combat?.WL(1, $"vital location {location} destroyed"); }
+                return true;
+              }
+            }
+          }
+          int DestroyedLegsCount = this.DestroyedLegsCount();
+          if (this.isQuad) {
+            if (DestroyedLegsCount > 2) {
+              if (ICustomMechDebug.IS_DEAD_DEBUG) { Log.Combat?.WL(1, $"legs destroyed: {DestroyedLegsCount}"); }
+              return true;
+            }
+          } else {
+            if (DestroyedLegsCount > 1) {
+              if (ICustomMechDebug.IS_DEAD_DEBUG) { Log.Combat?.WL(1, $"legs destroyed: {DestroyedLegsCount}"); }
+              return true;
+            }
+          }
+          ChassisLocations crewLocation = this.CrewLocationChassis();
+          if (crewLocation != ChassisLocations.None) {
+            if (this.IsLocationDestroyed(crewLocation)) {
+              if (ICustomMechDebug.IS_DEAD_DEBUG) { Log.Combat?.WL(1, $"crew location destroyed: {crewLocation}"); }
+              return true;
+            }
+          }
+        }catch(Exception e) {
+          Log.Combat?.TWL(0, $"CustomMech.IsReallyDead {this.PilotableActorDef.ChassisID}");
+          Log.Combat?.WL(1,e.ToString());
+          AbstractActor.damageLogger.LogException(e);
+        }
+        return false;
+      }
+    }
+    public override bool IsDead {
+      get {
+        if (this.isTemporaryDead) { return true; }
+        return this.isReallyDead;
+      }
+    }
     protected override void InitStats() {
       custLosData = new CustomLOSData(this);
       custLosData.ApplyScale(MechResizer.SizeMultiplier.Get(this.MechDef));
@@ -959,7 +1012,7 @@ namespace CustomUnits {
     }
     public override void FlagForDeath(string reason, DeathMethod deathMethod,DamageType damageType,int location,int stackItemID,string attackerID,bool isSilent) {
       if (this._flaggedForDeath) { return; }
-      Log.Combat?.TWL(0, $"CustomMech.FlagForDeath {this.PilotableActorDef.ChassisID} {reason} method:{deathMethod} dmgType:{damageType} location:{location}");
+      Log.Combat?.TWL(0, $"CustomMech.FlagForDeath {this.PilotableActorDef.ChassisID} reason:{reason} method:{deathMethod} dmgType:{damageType} location:{location}");
       if(deathMethod == DeathMethod.DespawnedEscaped) {
         Log.Combat?.WL(0, Environment.StackTrace);
       }

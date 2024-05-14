@@ -578,7 +578,7 @@ namespace CustomUnits {
     }
     public override float SummaryStructureCurrent {
       get {
-        if (this.IsDead) { return 0.0f; }
+        if (this.isReallyDead) { return 0.0f; }
         float result = 0f;
         foreach (ChassisLocations location in TrooperSquad.locations) {
           LocationDef locDef = this.MechDef.Chassis.GetLocationDef(location);
@@ -609,15 +609,17 @@ namespace CustomUnits {
         return false;
       }
     }
-    public override bool IsDead {
+    public override bool isReallyDead {
       get {
-        if (this.HasHandledDeath) { return true; }
-        if (this.pilot.IsIncapacitated) { return true; }
+        if (ICustomMechDebug.IS_DEAD_DEBUG) { Log.Combat?.TWL(0, $"TrooperSquad.IsReallyDead {this.PilotableActorDef.ChassisID}"); }
+        if (this.HasHandledDeath) { if (ICustomMechDebug.IS_DEAD_DEBUG) { Log.Combat?.WL(1, "HasHandledDeath"); }; return true; }
+        if (this.pilot.IsIncapacitated) { if (ICustomMechDebug.IS_DEAD_DEBUG) { Log.Combat?.WL(1, "Pilot.IsIncapacitated"); }; return true; }
         foreach (ChassisLocations location in TrooperSquad.locations) {
           LocationDef locDef = this.MechDef.Chassis.GetLocationDef(location);
           if ((locDef.InternalStructure <= 1f) && (locDef.MaxArmor <= 0f)) { continue; }
           if (this.GetCurrentStructure(location) > 0f) { return false; }          
         }
+        if (ICustomMechDebug.IS_DEAD_DEBUG) { Log.Combat?.WL(1, "all location destroyed"); };
         return true;
       }
     }
@@ -1074,9 +1076,9 @@ namespace CustomUnits {
     protected CustomMech f_carrier = null;
     public override ICombatant carrier { get { return f_carrier; } }
     public override void SetCarrier(ICombatant combatant, bool isExternal) {
-      Log.Combat?.TWL(0,$"TrooperSquad.SetCarrier {this.PilotableActorDef.chassisID} carrier: {(combatant == null?"dismount":combatant.DisplayName)} external:{isExternal}");
-      Log.Combat?.WL(0, Environment.StackTrace.ToString());
       try {
+        Log.Combat?.TWL(0, $"TrooperSquad.SetCarrier {this.PilotableActorDef.chassisID} carrier: {(combatant == null ? "dismount" : combatant.DisplayName)} external:{isExternal}");
+        Log.Combat?.WL(0, Environment.StackTrace.ToString());
         if (f_carrier == combatant) {
           Log.Combat?.WL(1, $"already attached this combatant");
           return;

@@ -1,5 +1,6 @@
 ﻿using BattleTech;
 using BattleTech.UI;
+using IRBTModUtils;
 using System;
 using UnityEngine;
 
@@ -64,6 +65,7 @@ namespace CustomUnits {
       Log.Dump?.WL(2, $"HasSprintedThisRound:{actor.HasSprintedThisRound}");
       Log.Dump?.WL(2, $"MovedLastRound:{actor.MovedLastRound}");
       Log.Dump?.WL(2, $"BracedLastRound:{actor.BracedLastRound}");
+      Log.Dump?.WL(2, $"CrewLocationChassis:{CustAmmoCategories.UnitUnaffectionsActorStats.CrewLocationChassis(actor)}");
       Log.Dump?.WL(2, $"allComponents");
       foreach (var component in actor.allComponents) {
         DumpComponent(component);
@@ -103,6 +105,9 @@ namespace CustomUnits {
       Log.Dump?.WL(2, $"IsShutDown:{combatant.IsShutDown}");
       Log.Dump?.WL(2, $"IsProne:{combatant.IsProne}");
       Log.Dump?.WL(2, $"CanMove:{combatant.CanMove}");
+      if(combatant is AbstractActor actor) {
+        DumpActor(actor);
+      }
       if (combatant.StatCollection != null) {
         Log.Dump?.WL(2, $"StatCollection:");
         DumpStats(combatant.StatCollection);

@@ -110,7 +110,8 @@ namespace CustAmmoCategories {
         if(stat == null) { return; }
         var skipped = JsonConvert.DeserializeObject<Dictionary<string, UnitArmorInfo>>(stat.Value<string>());
         Log.M?.TWL(0, $"RetriggerRestoreMechPostCombat: {JsonConvert.SerializeObject(skipped)}");
-        ArmorRepair_SimGameState_ResolveCompleteContract_Patch_Prefix.Invoke(null, new object[] { sim });
+        bool runOriginal = true;
+        ArmorRepair_SimGameState_ResolveCompleteContract_Patch_Prefix.Invoke(null, new object[] { runOriginal, sim });
         foreach(var mech in sim.ActiveMechs) {
           if(skipped.TryGetValue(mech.Value.GUID, out var assignedInfo)) {
             Log.M?.WL(1, $"{mech.Value.Description.Id}:{mech.Value.ChassisID}:{mech.Value.GUID}");

@@ -25,13 +25,34 @@ namespace CustomUnits {
     }
     public override bool _MoveMultiplierOverride { get { return true; } }
     public override float _MoveMultiplier { get { return base._MoveMultiplier; } }
-    public override bool IsDead {
+    public override bool isReallyDead {
       get {
-        if (this.HasHandledDeath) { return true; }
-        if (this.pilot.IsIncapacitated) { return true; }
-        if (this.pilot.HasEjected) { return true; }
-        if (this.HeadStructure < Core.Epsilon) { return true; }
-        if (this.DestroyedLegsCount() > 2) { return true; }
+        if (ICustomMechDebug.IS_DEAD_DEBUG) { Log.Combat?.TWL(0, $"QuadMech.IsReallyDead {this.PilotableActorDef.ChassisID}"); }
+        if (this.HasHandledDeath) { if (ICustomMechDebug.IS_DEAD_DEBUG) { Log.Combat?.WL(1, "HasHandledDeath"); }; return true; }
+        if (this.pilot.IsIncapacitated) { if (ICustomMechDebug.IS_DEAD_DEBUG) { Log.Combat?.WL(1, "Pilot.IsIncapacitated"); }; return true; }
+        if (this.pilot.HasEjected) { if (ICustomMechDebug.IS_DEAD_DEBUG) { Log.Combat?.WL(1, "Pilot.HasEjected"); }; return true; }
+        if (this.CenterTorsoStructure <= Core.Epsilon) { if (ICustomMechDebug.IS_DEAD_DEBUG) { Log.Combat?.WL(1, "CT Destruction"); }; return true; }
+        int DestroyedLegsCount = this.DestroyedLegsCount();
+        if (DestroyedLegsCount > 2) {
+          if (ICustomMechDebug.IS_DEAD_DEBUG) { Log.Combat?.WL(1, $"legs destroyed: {DestroyedLegsCount}"); }
+          return true;
+        }
+        UnitCustomInfo info = this.GetCustomInfo();
+        if (info != null) {
+          foreach (ChassisLocations location in info.lethalLocations) {
+            if (this.GetCurrentStructure(location) <= Core.Epsilon) {
+              if (ICustomMechDebug.IS_DEAD_DEBUG) { Log.Combat?.WL(1, $"vital location {location} destroyed"); }
+              return true;
+            }
+          }
+        }
+        ChassisLocations crewLocation = this.CrewLocationChassis();
+        if (crewLocation != ChassisLocations.None) {
+          if (this.IsLocationDestroyed(crewLocation)) {
+            if (ICustomMechDebug.IS_DEAD_DEBUG) { Log.Combat?.WL(1, $"crew location destroyed: {crewLocation}"); }
+            return true;
+          }
+        }
         return false;
       }
     }

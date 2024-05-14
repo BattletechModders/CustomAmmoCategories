@@ -553,7 +553,8 @@ namespace CustAmmoCategories {
           if (maxMissRadius < minMissRadius) { maxMissRadius = minMissRadius * 2f; }
           float missRadius = minMissRadius + (maxMissRadius - minMissRadius) * toHit;
           var missBehavior = weapon.MissBehavior();
-          Log.Combat?.TWL(0, $"GetMissPosition {attacker.PilotableActorDef.ChassisID} weapon:{weapon.defId} missBehavior:{missBehavior} pos:{attackPos} indirect:{indirect} missRadius:{missRadius} location:{location}");
+          AbstractActor targetActor = initalTarget as AbstractActor;
+          Log.Combat?.TWL(0, $"GetMissPosition attacker:{attacker.PilotableActorDef.ChassisID} initalTarget:{(targetActor != null?targetActor.PilotableActorDef.ChassisID:(initalTarget==null?"terrrain":initalTarget.DisplayName))} weapon:{weapon.defId} missBehavior:{missBehavior} pos:{attackPos} indirect:{indirect} missRadius:{missRadius} location:{location}");
           if ((weapon.weaponDef != null) && (weapon.weaponDef.WeaponCategoryValue.IsMelee == true)) {
             attackDirection = attacker.Combat.HitLocation.GetAttackDirection(attackPosition, initalTarget);
             return RandomOnCone(attackPos, initalTarget.TargetPosition, minMissRadius);
@@ -563,7 +564,8 @@ namespace CustAmmoCategories {
           if (indirect) { location = (int)ArmorLocation.Invalid; }
           if (hitAnything) { location = (int)ArmorLocation.Invalid; }
           if (missBehavior == CustAmmoCategories.MissBehavior.Guided) { location = (int)ArmorLocation.Invalid; }
-          Log.Combat?.WL(1, $"resultpos:{result}/{Vector3.Distance(targetPosition, result)} hitAnything:{hitAnything} location:{location}");
+          float angle = Vector3.Angle(result - attackPos, targetPosition - attackPos);
+          Log.Combat?.WL(1, $"resultpos:{result} distance:{Vector3.Distance(targetPosition, result)} targetPosition:{targetPosition} {(initalTarget==null?"":initalTarget.TargetPosition.ToString())} angle:{angle} hitAnything:{hitAnything} location:{location}");
           if(strayTarget != null) {
             secondaryTargetId = strayTarget.GUID;
             secondaryLocation = strayLocation;

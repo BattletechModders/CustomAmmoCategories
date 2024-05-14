@@ -536,13 +536,14 @@ namespace CustomUnits {
   [HarmonyPatch("IsDead")]
   [HarmonyPatch(MethodType.Getter)]
   [HarmonyPatch(new Type[] { })]
+  [HarmonyAfter("us.frostraptor.IRTweaks")]
+  [HarmonyBefore("us.frostraptor.MonsterMashup")]
   public static class Mech_IsDead {
     public static void Postfix(Mech __instance, ref bool __result) {
       try {
         if (__instance.HasHandledDeath) { return; }
         if (__instance.pilot.IsIncapacitated) { return; }
         if (__instance.pilot.HasEjected) { return; }
-        if (__instance.HeadStructure <= 0.0f) { return; }
         if (__instance.CenterTorsoStructure <= 0.0f) { return; }
         UnitCustomInfo info = __instance.GetCustomInfo();
         if (info != null) {
@@ -627,11 +628,13 @@ namespace CustomUnits {
             if (debugprint) Log.Combat?.WL(1, "head or torso destroyed");
             __result = true;
           } else {
-            __result = __instance.IsLocationDestroyed(ChassisLocations.LeftLeg) 
-              && __instance.IsLocationDestroyed(ChassisLocations.RightLeg)
-              && __instance.IsLocationDestroyed(ChassisLocations.LeftArm)
-              && __instance.IsLocationDestroyed(ChassisLocations.RightArm);
-            if (debugprint) Log.Combat?.WL(1, "all four legs destoryed:"+__result);
+            int legsdestroyed = 0;
+            if (__instance.IsLocationDestroyed(ChassisLocations.LeftLeg)) { ++legsdestroyed; }
+            if (__instance.IsLocationDestroyed(ChassisLocations.RightLeg)) { ++legsdestroyed; }
+            if (__instance.IsLocationDestroyed(ChassisLocations.LeftArm)) { ++legsdestroyed; }
+            if (__instance.IsLocationDestroyed(ChassisLocations.RightArm)) { ++legsdestroyed; }
+            __result = (legsdestroyed > 2);
+            if (debugprint) Log.Combat?.WL(1, $"{legsdestroyed} legs destroyed:"+__result);
           }
           if (debugprint) Log.Combat?.WL(1, "result: " + __result);
           return;

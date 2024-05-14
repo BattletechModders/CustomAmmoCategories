@@ -416,12 +416,15 @@ namespace CustomUnits {
         int InventorySize = 1;
         if (component == null) { continue; }
         if (component.Def == null) { continue; }
-        switch (component.Def.ComponentType) {
-          case ComponentType.AmmunitionBox:
-          case ComponentType.Weapon:
-            //if (component.DamageLevel == ComponentDamageLevel.Destroyed) { component.IsFixed = false; }
-            InventorySize = component.Def.RealInventorySize();
-            break;
+        //switch (component.Def.ComponentType) {
+        //  case ComponentType.AmmunitionBox:
+        //  case ComponentType.Weapon:
+        //    //if (component.DamageLevel == ComponentDamageLevel.Destroyed) { component.IsFixed = false; }
+
+        //    break;
+        //}
+        if (component.isEditable()) {
+          InventorySize = component.Def.RealInventorySize();
         }
         if (component.Def.InventorySize == 0) { continue; }
         if (component.Def.ComponentType == ComponentType.Upgrade) {
@@ -454,13 +457,22 @@ namespace CustomUnits {
       try {
         if (Core.Settings.VehcilesPartialEditable == false) { return; }
         if (__runOriginal == false) { return; }
-        Log.M?.TWL(0, "MechLabPanel.LoadMech");
         //MechLabLocationWidget[] locationWidgets = __instance.gameObject.GetComponentsInChildren<MechLabLocationWidget>(true);
         //foreach (var widget in locationWidgets) {
         //  Log.M?.WL(1, $"{widget.gameObject.name}:{widget.GetInstanceID()} parent:{widget.transform.parent.name}");
         //  widget.gameObject.SetActive(true);
         //}
         if (newMechDef.IsVehicle() == false) { return; }
+        Log.M?.TWL(0, $"MechLabPanel.LoadMech {newMechDef.ChassisID}");
+        foreach (var compRef in newMechDef.Inventory) {
+          var location = newMechDef.GetLocationLoadoutDef(compRef.MountedLocation);
+          if (location.CurrentInternalStructure <= 0f) {
+            if (compRef.isEditable()) {
+              compRef.DamageLevel = ComponentDamageLevel.Destroyed;
+            }
+          }
+          Log.M?.WL(1, $"{compRef.ComponentDefID} editable:{compRef.DamageLevel} DamageLevel:{compRef.DamageLevel} location:{location.Location}/{location.Location.toFakeVehicleChassis()} structure:{location.CurrentInternalStructure}");
+        }
         newMechDef.PushMechLab();
       } catch (Exception e) {
         UIManager.logger.LogException(e);
@@ -478,6 +490,112 @@ namespace CustomUnits {
       }
     }
   }
+  [HarmonyPatch(typeof(MechBayPanel), "OnRepairMech")]
+  [HarmonyAfter("io.github.denadan.CustomComponents")]
+  public static class MechBayPanel_OnRepairMech {
+    public static void Prefix(ref bool __runOriginal, MechBayPanel __instance, MechBayMechUnitElement mechElement) {
+      try {
+        if (__runOriginal == false) { return; }
+        if (Core.Settings.VehcilesPartialEditable == false) { return; }
+        if (mechElement == null) { return; }
+        if (mechElement.mechDef == null) { return; }
+        if (mechElement.mechDef.IsVehicle() == false) { return; }
+        __runOriginal = false;
+        foreach (var compRef in mechElement.mechDef.Inventory) {
+          var location = mechElement.mechDef.GetLocationLoadoutDef(compRef.MountedLocation);
+          if (location.CurrentInternalStructure <= 0f) {
+            if (compRef.isEditable()) {
+              compRef.DamageLevel = ComponentDamageLevel.Destroyed;
+            }
+          }
+        }
+        MechDef mechDef = mechElement.MechDef;
+        WorkOrderEntry_MechLab baseWorkOrder = __instance.Sim.GetWorkOrderEntryForMech(mechDef);
+        bool flag = false;
+        for (int index = 0; index < mechDef.Inventory.Length; ++index) {
+          MechComponentRef mechComponentRef = mechDef.Inventory[index];
+          if (mechComponentRef.DamageLevel != ComponentDamageLevel.Functional && mechComponentRef.DamageLevel != ComponentDamageLevel.Installing && !MechValidationRules.MechComponentUnderMaintenance(mechComponentRef, MechValidationLevel.MechLab, baseWorkOrder)) {
+            flag = true;
+            break;
+          }
+        }
+        if (!mechDef.IsDamaged && !flag)
+          return;
+        List<ChassisLocations> chassisLocationsList = new List<ChassisLocations>();
+        __instance.pendingWorkOrderNew = false;
+        __instance.pendingWorkOrderEntriesToAdd.Clear();
+        if (baseWorkOrder == null) {
+          baseWorkOrder = new WorkOrderEntry_MechLab(WorkOrderType.MechLabGeneric, "MechLab-BaseWorkOrder", Strings.T("Modify 'Vehicle - {0}", (object)mechDef.Description.Name), mechDef.GUID, 0, Strings.T(__instance.Sim.Constants.Story.GeneralMechWorkOrderCompletedText, (object)mechDef.Description.Name));
+          baseWorkOrder.SetMechDef(mechDef);
+          __instance.pendingWorkOrderNew = true;
+        }
+        __instance.pendingWorkOrder = baseWorkOrder;
+        if (!MechValidationRules.MechStructureUnderMaintenance(ChassisLocations.Head, MechValidationLevel.MechLab, baseWorkOrder) && (double)mechDef.Head.CurrentInternalStructure < (double)mechDef.Chassis.Head.InternalStructure)
+          chassisLocationsList.Add(ChassisLocations.Head);
+        if (!MechValidationRules.MechStructureUnderMaintenance(ChassisLocations.CenterTorso, MechValidationLevel.MechLab, baseWorkOrder) && (double)mechDef.CenterTorso.CurrentInternalStructure < (double)mechDef.Chassis.CenterTorso.InternalStructure)
+          chassisLocationsList.Add(ChassisLocations.CenterTorso);
+        if (!MechValidationRules.MechStructureUnderMaintenance(ChassisLocations.LeftTorso, MechValidationLevel.MechLab, baseWorkOrder) && (double)mechDef.LeftTorso.CurrentInternalStructure < (double)mechDef.Chassis.LeftTorso.InternalStructure)
+          chassisLocationsList.Add(ChassisLocations.LeftTorso);
+        if (!MechValidationRules.MechStructureUnderMaintenance(ChassisLocations.RightTorso, MechValidationLevel.MechLab, baseWorkOrder) && (double)mechDef.RightTorso.CurrentInternalStructure < (double)mechDef.Chassis.RightTorso.InternalStructure)
+          chassisLocationsList.Add(ChassisLocations.RightTorso);
+        if (!MechValidationRules.MechStructureUnderMaintenance(ChassisLocations.LeftLeg, MechValidationLevel.MechLab, baseWorkOrder) && (double)mechDef.LeftLeg.CurrentInternalStructure < (double)mechDef.Chassis.LeftLeg.InternalStructure)
+          chassisLocationsList.Add(ChassisLocations.LeftLeg);
+        if (!MechValidationRules.MechStructureUnderMaintenance(ChassisLocations.RightLeg, MechValidationLevel.MechLab, baseWorkOrder) && (double)mechDef.RightLeg.CurrentInternalStructure < (double)mechDef.Chassis.RightLeg.InternalStructure)
+          chassisLocationsList.Add(ChassisLocations.RightLeg);
+        if (!MechValidationRules.MechStructureUnderMaintenance(ChassisLocations.LeftArm, MechValidationLevel.MechLab, baseWorkOrder) && (double)mechDef.LeftArm.CurrentInternalStructure < (double)mechDef.Chassis.LeftArm.InternalStructure)
+          chassisLocationsList.Add(ChassisLocations.LeftArm);
+        if (!MechValidationRules.MechStructureUnderMaintenance(ChassisLocations.RightArm, MechValidationLevel.MechLab, baseWorkOrder) && (double)mechDef.RightArm.CurrentInternalStructure < (double)mechDef.Chassis.RightArm.InternalStructure)
+          chassisLocationsList.Add(ChassisLocations.RightArm);
+        if (chassisLocationsList.Count < 1 && !flag) {
+          GenericPopupBuilder.Create("Repair Already Ordered", string.Format("A repair order has already been queued for {0}", (object)mechDef.Name)).AddFader(new UIColorRef?(LazySingletonBehavior<UIManager>.Instance.UILookAndColorConstants.PopupBackfill)).Render();
+          __instance.OnRepairAllCancelled();
+        } else {
+          int repairLength = 0;
+          int repairCost = 0;
+          for (int index = 0; index < chassisLocationsList.Count; ++index) {
+            int structureCount = Mathf.RoundToInt(Mathf.Max(0.0f, mechDef.GetChassisLocationDef(chassisLocationsList[index]).InternalStructure - mechDef.GetLocationLoadoutDef(chassisLocationsList[index]).CurrentInternalStructure));
+            WorkOrderEntry_RepairMechStructure mechRepairWorkOrder = __instance.Sim.CreateMechRepairWorkOrder(mechDef.GUID, chassisLocationsList[index], structureCount);
+            __instance.pendingWorkOrderEntriesToAdd.Add((WorkOrderEntry)mechRepairWorkOrder);
+            repairLength += mechRepairWorkOrder.GetCost();
+            repairCost += mechRepairWorkOrder.GetCBillCost();
+          }
+          StringBuilder stringBuilder = new StringBuilder();
+          int destroyedComponents = 0;
+          for (int index = 0; index < mechDef.Inventory.Length; ++index) {
+            MechComponentRef mechComponent = mechDef.Inventory[index];
+            if (string.IsNullOrEmpty(mechComponent.SimGameUID))
+              mechComponent.SetSimGameUID(__instance.Sim.GenerateSimGameUID());
+            if (mechComponent.DamageLevel == ComponentDamageLevel.Destroyed) {
+              if (destroyedComponents < 1)
+                stringBuilder.Append("\n\nThe following components have been Destroyed. If you continue with the Repair, replacement Components will NOT be installed. If you want to replace them with identical or different Components, you must Refit the 'Vehcile.\n\n");
+              if (destroyedComponents < 5) {
+                stringBuilder.Append(mechComponent.MountedLocation.toVehicleLocation().ToString());
+                stringBuilder.Append(": ");
+                stringBuilder.Append(mechComponent.Def.Description.Name);
+                stringBuilder.Append("\n");
+              }
+              ++destroyedComponents;
+              WorkOrderEntry_InstallComponent installWorkOrder = __instance.sim.CreateComponentInstallWorkOrder(__instance.selectedMech.MechDef.GUID, mechComponent, ChassisLocations.None, mechComponent.MountedLocation);
+              __instance.pendingWorkOrderEntriesToAdd.Insert(0, (WorkOrderEntry)installWorkOrder);
+              repairLength += installWorkOrder.GetCost();
+              repairCost += installWorkOrder.GetCBillCost();
+            } else if (mechComponent.DamageLevel != ComponentDamageLevel.Functional && mechComponent.DamageLevel != ComponentDamageLevel.Installing) {
+              WorkOrderEntry_RepairComponent componentRepairWorkOrder = __instance.Sim.CreateComponentRepairWorkOrder(mechComponent, true);
+              __instance.pendingWorkOrderEntriesToAdd.Add((WorkOrderEntry)componentRepairWorkOrder);
+              repairLength += componentRepairWorkOrder.GetCost();
+              repairCost += componentRepairWorkOrder.GetCBillCost();
+            }
+          }
+          int effectiveRapairLength = Mathf.Max(1, Mathf.CeilToInt((float)repairLength / (float)__instance.Sim.MechTechSkill));
+          if (destroyedComponents > 5)
+            stringBuilder.Append(Strings.T("...\nAnd {0} additional destroyed components.\n", (object)(destroyedComponents - 5)));
+          GenericPopupBuilder.Create("Repair 'Vehicle?", Strings.T("Repairing {0} will cost {1:n0} C-Bills and take {2} Days.{3}\n\nProceed?", (object)mechDef.Name, repairCost, effectiveRapairLength, (object)stringBuilder.ToString())).AddButton("Cancel", new Action(__instance.OnRepairAllCancelled)).AddButton("Repair", new Action(__instance.OnRepairAllAccepted)).AddFader(new UIColorRef?(LazySingletonBehavior<UIManager>.Instance.UILookAndColorConstants.PopupBackfill)).Render();
+        }
+      } catch (Exception e) {
+        UIManager.logger.LogException(e);
+      }
+    }
+  }
   [HarmonyPatch(typeof(MechLabMechInfoWidget), "RefreshInfo")]
   [HarmonyAfter("MechEngineer.Features.CustomCapacities")]
   public static class MechLabMechInfoWidget_RefreshInfo_Patch {
@@ -487,6 +605,33 @@ namespace CustomUnits {
       RedusedMechLabMechInfoWidget redused = __instance.gameObject.GetComponent<RedusedMechLabMechInfoWidget>();
       if (redused == null) { redused = RedusedMechLabMechInfoWidget.Instantine(__instance); }
       redused.Init(__instance.mechLab.originalMechDef);
+    }
+  }
+  [HarmonyPatch(typeof(MechValidationRules), "CheckMechStructureStatus")]
+  public static class MechValidationRules_CheckMechStructureStatus {
+    public static void Prefix(ref bool __runOriginal, MechDef mechDef, ChassisLocations loc, MechValidationLevel validationLevel, WorkOrderEntry_MechLab baseWorkOrder, ref Dictionary<MechValidationType, List<Localize.Text>> errorMessages) {
+      if (__runOriginal == false) { return; }
+      try {
+        if (Core.Settings.VehcilesPartialEditable == false) { return; }
+        if (mechDef.IsVehicle() == false) { return; }
+        if (MechValidationRules.MechStructureUnderMaintenance(loc, validationLevel, baseWorkOrder)) { return; }
+        if (mechDef.IsLocationDestroyed(loc)) {
+          MechValidationRules.AddErrorMessage(ref errorMessages, MechValidationType.StructureDestroyed, new Localize.Text("CHASSIS DAMAGED: This 'Vehicle's {0} cannot be Destroyed", new object[1]
+          {
+          loc.toFakeVehicleChassis().ToString()
+          }));
+        } else {
+          if (!mechDef.IsLocationDamaged(loc))
+            return;
+          MechValidationRules.AddErrorMessage(ref errorMessages, MechValidationType.StructureDamaged, new Localize.Text("'MECH DAMAGED: This 'Vehicle's {0} has Internal Structure damage", new object[1]
+          {
+           loc.toFakeVehicleChassis().ToString()
+          }));
+        }
+        __runOriginal = false;
+      }catch(Exception e) {
+        MechValidationRules.logger.LogException(e);
+      }
     }
   }
   public class CUExitApplication : MonoBehaviour {
@@ -676,16 +821,18 @@ namespace CustomUnits {
       if (__instance.mechLab.activeMechDef.IsVehicle() == false) { return; }
       if (__instance.IsSimGame == false) { return; }
       try {
-        Log.M?.TWL(0, $"RepairAll {__instance.mechLab.activeMechDef.ChassisID} in {__instance.loadout.Location}");
+        Log.M?.TWL(0, $"RepairAll {__instance.mechLab.activeMechDef.ChassisID} in {__instance.loadout.Location} forceRepairStructure:{forceRepairStructure}");
+        Log.M?.WL(1, $"before repair inventory:{__instance.localInventory.Count}");
         if (forceRepairStructure || __instance.loadout.CurrentInternalStructure > 0.0) { __instance.RepairStructure(validate); }
         //CustomComponents.LocationHelper locationHelper = CustomComponents.MechLabHelper.CurrentMechLab.GetLocationHelper(__instance.loadout.Location);
+        Log.M?.WL(1, $"repairing");
         foreach (MechLabItemSlotElement labItemSlotElement in __instance.localInventory) {
-          Log.M?.WL(1, $"{labItemSlotElement.componentRef.ComponentDefID}:{labItemSlotElement.ComponentRef.ComponentDefType}:{labItemSlotElement.ComponentRef.DamageLevel}:{labItemSlotElement.ComponentRef.SimGameUID}");
+          Log.M?.WL(3, $"{labItemSlotElement.componentRef.ComponentDefID}:{labItemSlotElement.ComponentRef.ComponentDefType}:{labItemSlotElement.ComponentRef.DamageLevel}:{labItemSlotElement.ComponentRef.SimGameUID}");
           if (labItemSlotElement.ComponentRef.DamageLevel == ComponentDamageLevel.Functional) { continue; }
           if (labItemSlotElement.ComponentRef.DamageLevel == ComponentDamageLevel.Installing) { continue; }
           if (labItemSlotElement.ComponentRef.DamageLevel != ComponentDamageLevel.Destroyed) {
             labItemSlotElement.RepairComponent(true);
-            Log.M?.WL(2, $"repair");
+            Log.M?.WL(3, $"repair");
             continue;
           }
           //if ((string.IsNullOrEmpty(labItemSlotElement.ComponentRef.SimGameUID) == false) && (labItemSlotElement.ComponentRef.SimGameUID.StartsWith("FixedEquipment-"))) {
@@ -734,7 +881,7 @@ namespace CustomUnits {
           Log.M?.WL(1, "badWeapon = " + badWeapon);
           __result = (inMaintaince || badStructure || badWeapon) == false;
           Log.M?.WL(1, "CanBeFielded:" + __result);
-        } else {
+        } else if (isVehicle) { 
           if (__result == true) { return; }
           bool inMaintaince = MechValidationRules.ValidateSimGameMechNotInMaintenance(sim, mechDef) == false;
           Log.M?.WL(1, "inMaintaince = " + inMaintaince);
@@ -764,14 +911,14 @@ namespace CustomUnits {
             MechValidationRules.ValidateMechStructure(mechDef, validationLevel, baseWorkOrder, ref __result);
             MechValidationRules.ValidateMechPosessesWeapons(dataManager, mechDef, validationLevel, baseWorkOrder, ref __result);
             MechValidationRules.ValidateMechHasAppropriateAmmo(dataManager, mechDef, validationLevel, baseWorkOrder, ref __result);
-            MechValidationRules.ValidateMechJumpjetCount(dataManager, mechDef, ref __result);
+            //MechValidationRules.ValidateMechJumpjetCount(dataManager, mechDef, ref __result);
             break;
           case MechValidationLevel.Full:
             MechValidationRules.ValidateMechChassis(dataManager, mechDef, ref __result);
             MechValidationRules.ValidateMechStructure(mechDef, validationLevel, baseWorkOrder, ref __result);
             MechValidationRules.ValidateMechPosessesWeapons(dataManager, mechDef, validationLevel, baseWorkOrder, ref __result);
             MechValidationRules.ValidateMechHasAppropriateAmmo(dataManager, mechDef, validationLevel, baseWorkOrder, ref __result);
-            MechValidationRules.ValidateMechJumpjetCount(dataManager, mechDef, ref __result);
+            //MechValidationRules.ValidateMechJumpjetCount(dataManager, mechDef, ref __result);
             break;
           case MechValidationLevel.FullStock:
             MechValidationRules.ValidateMechChassis(dataManager, mechDef, ref __result);
@@ -779,13 +926,13 @@ namespace CustomUnits {
             MechValidationRules.ValidateMechStructure(mechDef, validationLevel, baseWorkOrder, ref __result);
             MechValidationRules.ValidateMechPosessesWeapons(dataManager, mechDef, validationLevel, baseWorkOrder, ref __result);
             MechValidationRules.ValidateMechHasAppropriateAmmo(dataManager, mechDef, validationLevel, baseWorkOrder, ref __result);
-            MechValidationRules.ValidateMechJumpjetCount(dataManager, mechDef, ref __result);
+            //MechValidationRules.ValidateMechJumpjetCount(dataManager, mechDef, ref __result);
             break;
           case MechValidationLevel.MechLab:
             MechValidationRules.ValidateMechStructure(mechDef, validationLevel, baseWorkOrder, ref __result);
             MechValidationRules.ValidateMechPosessesWeapons(dataManager, mechDef, validationLevel, baseWorkOrder, ref __result);
             MechValidationRules.ValidateMechHasAppropriateAmmo(dataManager, mechDef, validationLevel, baseWorkOrder, ref __result);
-            MechValidationRules.ValidateMechJumpjetCount(dataManager, mechDef, ref __result);
+            //MechValidationRules.ValidateMechJumpjetCount(dataManager, mechDef, ref __result);
             break;
         }
       } catch (Exception e) {

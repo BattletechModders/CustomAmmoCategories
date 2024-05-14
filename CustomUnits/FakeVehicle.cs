@@ -53,23 +53,34 @@ namespace CustomUnits {
       }
     }
   }
-  public class FakeVehicleMech: CustomMech, ICustomMech{
+  public class FakeVehicleMech: CustomMech, ICustomMech {
     public static List<ArmorLocation> locations = new List<ArmorLocation>() { ArmorLocation.Head, ArmorLocation.LeftLeg, ArmorLocation.RightLeg, ArmorLocation.LeftArm, ArmorLocation.RightArm };
     public FakeVehicleMech(MechDef mDef, PilotDef pilotDef, TagSet additionalTags, string UID, CombatGameState combat, string spawnerId, HeraldryDef customHeraldryDef)
       : base(mDef, pilotDef, additionalTags, UID, combat, spawnerId, customHeraldryDef) {
     }
     public override bool _MoveMultiplierOverride { get { return true; } }
     public override float _MoveMultiplier { get { return 1f; } }
-    public override bool IsDead {
+    public override bool isReallyDead {
       get {
-        if (this.HasHandledDeath) { return true; }
-        if (this.pilot.IsIncapacitated) { return true; }
-        if (this.pilot.HasEjected) { return true; }
-        foreach (ArmorLocation alocation in FakeVehicleMech.locations) {
-          ChassisLocations location = MechStructureRules.GetChassisLocationFromArmorLocation(alocation);
-          LocationDef locDef = this.MechDef.Chassis.GetLocationDef(location);
-          if ((locDef.MaxArmor <= 0f) && (locDef.InternalStructure <= 1f)) { continue; }
-          if (this.GetCurrentStructure(location) <= Core.Epsilon) { return true; }
+        try {
+          if (ICustomMechDebug.IS_DEAD_DEBUG) { Log.Combat?.TWL(0, $"FakeVehicleMech.IsReallyDead {this.PilotableActorDef.ChassisID}"); }
+          if (this.HasHandledDeath) { if (ICustomMechDebug.IS_DEAD_DEBUG) { Log.Combat?.WL(1, "HasHandledDeath"); }; return true; }
+          if (this.pilot.IsIncapacitated) { if (ICustomMechDebug.IS_DEAD_DEBUG) { Log.Combat?.WL(1, "Pilot.IsIncapacitated"); }; return true; }
+          if (this.pilot.HasEjected) { if (ICustomMechDebug.IS_DEAD_DEBUG) { Log.Combat?.WL(1, "Pilot.HasEjected"); }; return true; }
+          foreach (ArmorLocation alocation in FakeVehicleMech.locations) {
+            ChassisLocations location = MechStructureRules.GetChassisLocationFromArmorLocation(alocation);
+            LocationDef locDef = this.MechDef.Chassis.GetLocationDef(location);
+            if ((locDef.MaxArmor <= 0f) && (locDef.InternalStructure <= 1f)) { continue; }
+            if (this.GetCurrentStructure(location) <= Core.Epsilon) {
+              if (ICustomMechDebug.IS_DEAD_DEBUG) { Log.Combat?.WL(1, $"{location.toFakeVehicleChassis()} destroyed"); };
+              return true;
+            }
+          }
+          return false;
+        } catch (Exception e) {
+          Log.Combat?.TWL(0, $"CustomMech.IsReallyDead {this.PilotableActorDef.ChassisID}");
+          Log.Combat?.WL(1, e.ToString());
+          AbstractActor.damageLogger.LogException(e);
         }
         return false;
       }

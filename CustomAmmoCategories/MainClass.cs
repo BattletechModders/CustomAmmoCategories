@@ -171,9 +171,9 @@ namespace CustomAmmoCategoriesPatches {
             }
           }
           if(ammoIsUsed == false) {
-            ExtAmmunitionDef extAmmo = ammoDef.Value.extDef();
+            ExtAmmunitionDef extAmmo = CustomAmmoCategories.findExtAmmo(ammoDef.Value.Description.Id);
             if ((extAmmo == null) || (extAmmo.SkipUnusedAmmoCheck == false)) {
-              Log.M?.WL(1, $"ammo:{ammoDef.Key} is not used by any weapon");
+              Log.M?.WL(1, $"ammo:{ammoDef.Key}:{ammoDef.Value.Description.Id}:{extAmmo.Id} is not used by any weapon. SkipUnusedAmmoCheck:{(extAmmo == null?"null": extAmmo.SkipUnusedAmmoCheck.ToString())}");
               string name = string.IsNullOrEmpty(ammoDef.Value.Description.UIName) ? ammoDef.Value.Description.Name : ammoDef.Value.Description.UIName;
               MechValidationRules.AddErrorMessage(ref errorMessages, MechValidationType.AmmoUnneeded, new Text("__/CAC.ExtraAmmo/__", new object[1] { (object)name }));
             }
@@ -597,6 +597,7 @@ namespace CustAmmoCategories {
       if (CustomAmmoCategories.ExtAmmunitionDef.ContainsKey(def.Description.Id)) {
         ExtAmmunitionDef result = CustomAmmoCategories.ExtAmmunitionDef[def.Description.Id];
         if (result == null) { return CustomAmmoCategories.DefaultAmmo; }
+        return result;
       }
       return CustomAmmoCategories.DefaultAmmo;
     }

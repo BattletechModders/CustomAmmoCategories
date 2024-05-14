@@ -13,6 +13,7 @@ using CustomAmmoCategoriesLog;
 using CustomAmmoCategoriesPatches;
 using System.Collections.Generic;
 using UnityEngine;
+using IRBTModUtils;
 
 namespace CustAmmoCategories {
   public static class HandleSanitiseHelper {
@@ -21,8 +22,8 @@ namespace CustAmmoCategories {
       Log.Combat?.TWL(0, "HandleSanitize:"+allActors.Count);
       foreach(AbstractActor actor in allActors) {
         Log.Combat?.WL(1, actor.DisplayName+":"+actor.GUID+ " IsDead:"+actor.IsDead+ " HasHandledDeath:"+ actor.HasHandledDeath+ " isHasStability:"+actor.isHasStability());
-        if ((actor.HasHandledDeath == false)&&(actor.IsDead == true)) {
-          
+        IRBTModUtils.ICustomMechDebug.IS_DEAD_DEBUG = true;
+        if ((actor.HasHandledDeath == false)&&(actor.IsDead == true)) {          
           if(actor is Mech mech) {
             Log.Combat?.WL(2, "pilot.IsIncapacitated:"+ mech.pilot.IsIncapacitated);
             Log.Combat?.WL(2, "pilot.HasEjected:" + mech.pilot.HasEjected);
@@ -40,6 +41,7 @@ namespace CustAmmoCategories {
           actor.FlagForDeath("DEATH", DeathMethod.VitalComponentDestroyed, DamageType.Enemy, deathLocation, -1, string.Empty, false);
           actor.HandleDeath("DEZOMBIFICATOR");
         }
+        IRBTModUtils.ICustomMechDebug.IS_DEAD_DEBUG = false;
         if (actor.IsDead == false) {
           if (checkForStability) {
             Mech mech = actor as Mech;
