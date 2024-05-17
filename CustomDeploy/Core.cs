@@ -2022,6 +2022,7 @@ namespace CustomDeploy{
         HarmonyInstance.PatchAll(Assembly.GetExecutingAssembly());
       } catch (Exception e) {
         Log.TWL(0,e.ToString(),true);
+        throw;
       }
     }
   }

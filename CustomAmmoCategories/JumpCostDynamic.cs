@@ -13,11 +13,13 @@ namespace CustAmmoCategories {
   [HarmonyPatch("ApplyEventAction")]
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { typeof(SimGameResultAction), typeof(object) })]
+  [HarmonyBefore("de.morphyum.FlashpointEnabler")]
   public static class SimGameState_ApplyEventAction {
-    public static void Prefix(SimGameResultAction action, object additionalObject) {
+    public static void Prefix(ref bool __runOriginal, SimGameResultAction action, object additionalObject) {
       try {
         Log.M?.TWL(0, $"SimGameState.ApplyEventAction {action.Type} {action.value}");
         Thread.CurrentThread.pushToStack<SimGameResultAction>("ApplyEventAction", action);
+        PreForceTakeContractSave.ApplyEventAction_prefix(ref __runOriginal, action, additionalObject);
       } catch (Exception e) {
         Log.M?.TWL(0, e.ToString(), true);
       }

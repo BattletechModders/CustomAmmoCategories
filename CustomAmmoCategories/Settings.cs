@@ -496,6 +496,16 @@ namespace CustAmmoCategories {
     [CustomSettings.LocalSettingValuesNames(Strings.Culture.CULTURE_EN_US, "Yes", "No")]
     [CustomSettings.LocalSettingValuesNames(Strings.Culture.CULTURE_RU_RU, "Да", "Нет")]
     public bool DefaultGenderGeneratorOverride { get; set; } = true;
+    [GameplaySafe]
+    [CustomSettings.LocalSettingName(Strings.Culture.CULTURE_EN_US, "Consequence drop autosave")]
+    [CustomSettings.LocalSettingName(Strings.Culture.CULTURE_RU_RU, "Автосохранение между последовательными дропами")]
+    [CustomSettings.IsLocalSetting(false)]
+    [CustomSettings.LocalSettingDescription(Strings.Culture.CULTURE_EN_US, "If enabled autosave will be performed between consequence drops. On load such autosave drop will be forced")]
+    [CustomSettings.LocalSettingDescription(Strings.Culture.CULTURE_RU_RU, "Если включить, между последовательными дропами будет автосейв. При загрузке такого автосейва будет форсирован дроп")]
+    [CustomSettings.LocalSettingValues(true, false)]
+    [CustomSettings.LocalSettingValuesNames(Strings.Culture.CULTURE_EN_US, "Yes", "No")]
+    [CustomSettings.LocalSettingValuesNames(Strings.Culture.CULTURE_RU_RU, "Да", "Нет")]
+    public bool ConsequenceDropAutosave { get; set; } = true;
     public Settings() {
       //directory = string.Empty;
       //debugLog = true;

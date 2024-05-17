@@ -471,6 +471,35 @@ namespace CustAmmoCategories {
       responce["units"] = AllActors;
       request.ready(responce);
     }
+    public void generateflashpoint(CACHTTPRequestItem request) {
+      System.Collections.Generic.Dictionary<string, string> jresp = new Dictionary<string, string>();
+      Log.M?.TWL(0,$"generateflashpoint");
+      try {
+        JObject data = JObject.Parse(request.input);
+        BattleTech.GameInstance gameInstance = BattleTech.UnityGameInstance.BattleTechGame;
+        CustomAmmoCategoriesLog.Log.LogWrite("Получен gameInstance\n");
+        if (gameInstance == null) {
+          jresp["error"] = "Не могу получить инстанс игры";
+          goto exit;
+        }
+        BattleTech.SimGameState gameState = gameInstance.Simulation;
+        CustomAmmoCategoriesLog.Log.LogWrite("Получен gameState\n");
+        if (gameState == null) {
+          jresp["error"] = "Не могу получить состояние симулятора. Скорее всего не загружено сохранение";
+          goto exit;
+        }
+        if ((gameState.SimGameMode != BattleTech.SimGameState.SimGameType.CAREER) && (gameState.SimGameMode != BattleTech.SimGameState.SimGameType.KAMEA_CAMPAIGN)) {
+          jresp["error"] = "Неправильный режим компании:" + gameState.SimGameMode.ToString();
+          goto exit;
+        }
+        gameState.GenerateFlashpointCommand((string)data["flashpointId"], (string)data["systemId"]);
+        jresp["success"] = "yes";
+      }catch(Exception e) {
+        jresp["error"] = e.ToString();
+      }
+    exit:
+      request.ready(jresp);
+    }
     public void LateUpdate() {
       try {
         //Online.OnlineClientHelper.KeepAlive();
@@ -512,6 +541,10 @@ namespace CustAmmoCategories {
     public class CSetReputation {
       public string faction { get; set; }
       public int reputation { get; set; }
+    }
+    public class CGenerateFlashpoint {
+      public string flashpointId { get; set; }
+      public int systemId { get; set; }
     }
     private static string GetMimeType(string ext) {
       switch (ext) {

@@ -197,6 +197,7 @@ namespace CustomUnits {
     public string VehicleComponentCategoryTagPrefix { get; set; } = "vehicle_component_category_";
     public bool PreserveJsonUnitCost { get; set; } = true;
     public bool RecalcUnitPartCost { get; set; } = true;
+    public float RecalcUnitPartCostBase { get; set; } = 5.0f;
     public bool DEBUG_CanPilotEverything { get; set; } = false;
     public void ApplyLocal(CUSettings local) {
       PropertyInfo[] props = this.GetType().GetProperties(BindingFlags.Instance | BindingFlags.Public);

@@ -1396,6 +1396,7 @@ namespace CACMain {
       } catch (Exception e) {
         Log.M?.TWL(0,e.ToString(),true);
         UnityGameInstance.logger.LogException(e);
+        throw;
       }
     }
   }
