@@ -15,7 +15,6 @@ namespace CustomUnits {
   public class CUSettings {
     public string CanPilotVehicleTag { get; set; }
     public string CannotPilotMechTag { get; set; }
-    [GameplaySafe]
     public bool debugLog { get; set; }
     public float DeathHeight { get; set; }
     public bool fixWaterHeight { get; set; }
@@ -23,7 +22,6 @@ namespace CustomUnits {
     public float deepWaterSteepness { get; set; }
     public float deepWaterDepth { get; set; }
     public float waterFlatDepth { get; set; }
-    [GameplaySafe]
     public List<string> LancesIcons { get; set; }
     public List<CustomLanceDef> Lances { get; set; }
     public int overallDeploySize { get; set; }
@@ -161,7 +159,6 @@ namespace CustomUnits {
     public List<string> mechForcedTags { get; set; }
     public List<string> squadForcedTags { get; set; }
     public List<string> navalForcedTags { get; set; }
-    [GameplaySafe]
     public int baysWidgetsCount { get; set; }
     public List<string> forcedLance { get; set; } = new List<string>();
     public string DefaultMeleeDefinition { get; set; } = "Weapon_MeleeAttack";
