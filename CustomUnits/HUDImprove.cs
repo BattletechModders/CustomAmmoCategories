@@ -1074,6 +1074,13 @@ namespace CustomUnits {
         Log.M?.WL(1, "filling list");
         for (int i = 0; i < count; ++i) {
           try {
+            if (__instance.loadoutSlots[i].curLockState == LanceLoadoutSlot.LockState.Full)
+              continue;
+            if (i >= (__instance.activeContract?.Override?.maxNumberOfPlayerUnits ?? 100))
+            {
+              __instance.loadoutSlots[i].SetLockState(LanceLoadoutSlot.LockState.Full);
+              continue;
+            }
             SpawnableUnit unit = lanceUnits[i];
             IMechLabDraggableItem forcedMech = (IMechLabDraggableItem)null;
             if (unit.Unit != null) { forcedMech = __instance.mechListWidget.GetMechDefByGUID(unit.Unit.GUID); }
