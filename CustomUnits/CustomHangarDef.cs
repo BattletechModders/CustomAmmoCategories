@@ -293,7 +293,7 @@ namespace CustomUnits {
               GameObject.DestroyImmediate(child.gameObject);
             }
             layout_bays.gameObject.SetActive(false);
-            foreach(MechBayRowWidget row in Traverse.Create(this.BayPanel).Field<MechBayRowGroupWidget>("bayGroupWidget").Value.Bays) {
+            foreach(MechBayRowWidget row in this.BayPanel.bayGroupWidget.Bays) {
               row.transform.SetParent(gridGO.transform);
             }
             ScrollRect scroll = layout_baysScroller.GetComponent<ScrollRect>();
