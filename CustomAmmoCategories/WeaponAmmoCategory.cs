@@ -79,18 +79,33 @@ namespace CustAmmoCategories {
       WeaponDef weaponDef = weaponRef.Def as WeaponDef;
       List<WeaponMode> modes = weaponRef.WeaponModes(inventory);
       if (modes.Count <= 0) { Log.M?.WL(1,"no modes"); return false; };
-      if (extWeapon.AmmoCategory.BaseCategory.Is_NotSet == false) {
-        if (extWeapon.AmmoCategory.Index == ammoCategory.Index) { return true; };
-      }else
-      if(weaponDef.AmmoCategoryValue.Is_NotSet == false) {
-        CustomAmmoCategory weaponAmmoCategory = CustomAmmoCategories.find(weaponDef.AmmoCategoryValue.Name);
-        if ((weaponAmmoCategory.BaseCategory.Is_NotSet == false) && (weaponAmmoCategory.Index == ammoCategory.Index)) { return true; }
+      foreach (WeaponMode mode in modes)
+      {
+        CustomAmmoCategory ac = mode.AmmoCategory;
+        if (ac == null || ac.BaseCategory.Is_NotSet)
+        {
+          ac = extWeapon.AmmoCategory;
       }
-      foreach (var mode in modes) {
-        if (mode.AmmoCategory == null) { continue; };
-        if ((mode.AmmoCategory.BaseCategory.Is_NotSet == false) &&(mode.AmmoCategory.Index == ammoCategory.Index)) { return true; };
+        if (ac == null || ac.BaseCategory.Is_NotSet)
+        {
+          ac = CustomAmmoCategories.find(weaponDef.AmmoCategoryValue.Name);
+        }
+        if (ac == null || ac.BaseCategory.Is_NotSet)
+          continue;
+        Log.M?.WL(1, $"checking ammo {ac.Index}=={ammoCategory.Index} {extAmmo.Id} {ammoDef.Description.Id} in {print(mode.restrictedAmmo)},{print(extWeapon.restrictedAmmo)}");
+        if (ac.Index == ammoCategory.Index && !mode.restrictedAmmo.Contains(extAmmo.Id) && !extWeapon.restrictedAmmo.Contains(extAmmo.Id))
+          return true;
       }
       return false;
+
+      string print(HashSet<string> h)
+      {
+        if (h.Count == 0)
+          return "";
+        if (h.Count == 1)
+          return h.First();
+        return h.Aggregate((a, b) => a + "," + b);
+      }
     }
   }
 }

@@ -159,8 +159,8 @@ namespace CustomAmmoCategoriesPatches {
         }
       }
       foreach (var ammoLocation in ammos) {
-        bool ammoIsUsed = false;
         foreach(var ammoDef in ammoLocation.Value) {
+          bool ammoIsUsed = false;
           foreach(var weaponRef in weapons) {
             if(same_location) { if(ammoLocation.Key != weaponRef.MountedLocation) { continue; } }
             if(weaponRef.Def.isSameLocation()) { if(ammoLocation.Key != weaponRef.MountedLocation) { continue; } }
@@ -623,12 +623,16 @@ namespace CustAmmoCategories {
         if (weapon.ammoBoxes[index].CurrentAmmo <= 0) { continue; };
         ExtAmmunitionDef ammo = CustomAmmoCategories.findExtAmmo(weapon.ammoBoxes[index].ammoDef.Description.Id);
         if (ammo.AmmoCategory.Id != category.Id) { continue; };
+        if (weapon.exDef().restrictedAmmo.Contains(ammo.Id)) { continue; }
+        if (weapon.mode().restrictedAmmo.Contains(ammo.Id)) { continue; }
         result.Add(ammo);
       }
       ExtWeaponDef def = weapon.exDef();
       foreach(var intAmmo in def.InternalAmmo) {
         ExtAmmunitionDef ammo = CustomAmmoCategories.findExtAmmo(intAmmo.Key);
         if (ammo.AmmoCategory.Id != category.Id) { continue; };
+        if (weapon.exDef().restrictedAmmo.Contains(ammo.Id)) { continue; }
+        if (weapon.mode().restrictedAmmo.Contains(ammo.Id)) { continue; }
         result.Add(ammo);
       }
       if (result.Count == 0) { result.Add(category.defaultAmmo()); }
@@ -663,6 +667,8 @@ namespace CustAmmoCategories {
       if (srcWeapon.StatCollection.ContainsStatistic(CustomAmmoCategories.AmmoIdStatName) == false) {
         return false;
       }
+      if (trgWeapon.info().isAmmoRestricted(srcWeapon.info().ammo))
+        return false;
       string AmmoId = srcWeapon.StatCollection.GetStatistic(CustomAmmoCategories.AmmoIdStatName).Value<string>();
       trgWeapon.StatCollection.Set<string>(CustomAmmoCategories.AmmoIdStatName, AmmoId);
       trgWeapon.ClearAmmoModeCache();
@@ -705,8 +711,17 @@ namespace CustAmmoCategories {
         return false;
       }
       string ModeId = srcWeapon.StatCollection.GetStatistic(CustomAmmoCategories.WeaponModeStatisticName).Value<string>();
+      CustomAmmoCategory oldWeaponAmmoCategory = trgWeapon.info().effectiveAmmoCategory;
+      bool enabled = trgWeapon.IsEnabled;
       trgWeapon.StatCollection.Set<string>(CustomAmmoCategories.WeaponModeStatisticName, ModeId);
       trgWeapon.ClearAmmoModeCache();
+      CustomAmmoCategory newWeaponAmmoCategory = trgWeapon.info().effectiveAmmoCategory;
+      if (oldWeaponAmmoCategory.Index != newWeaponAmmoCategory.Index || trgWeapon.info().isCurrentAmmoRestricted())
+      {
+        CustomAmmoCategories.CycleAmmoBest(trgWeapon);
+        if (enabled)
+          trgWeapon.EnableWeapon();
+      }
       return true;
     }
     public static bool CycleMode(Weapon weapon, bool direction = true, bool fromUI = true) {
@@ -740,11 +755,17 @@ namespace CustAmmoCategories {
       string oldModeId = modeId;
       modeId = avaibleModes[nextIndex].Id;
       weapon.StatCollection.Set<string>(CustomAmmoCategories.WeaponModeStatisticName, modeId);
+      bool enabled = weapon.IsEnabled;
       weapon.ClearAmmoModeCache();
       info.Revalidate();
       CustomAmmoCategory newWeaponAmmoCategory = info.effectiveAmmoCategory;
-      if (oldWeaponAmmoCategory.Index != newWeaponAmmoCategory.Index) {
+      if (oldWeaponAmmoCategory.Index != newWeaponAmmoCategory.Index || info.isCurrentAmmoRestricted()) {
         CustomAmmoCategories.CycleAmmoBest(weapon);
+        if (enabled)
+        {
+          weapon.EnableWeapon();
+          info.Revalidate();
+        }
       } else {
         weapon.ClearAmmoModeCache();
       }
