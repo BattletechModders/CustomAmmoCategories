@@ -169,29 +169,23 @@ namespace CustAmmoCategories {
       Log.Combat?.WL(2, "weapon GUID is set");
       Log.Combat?.WL(2, "weapon ammoId is set");
       string wGUID = wGUIDstat.Value<string>();
-      WeaponMode weaponMode = weapon.mode();
-      string weaponEffectId = weaponMode.WeaponEffectID;
-      Log.Combat?.WL(1, "weaponMode.WeaponEffectID = " + weaponMode.WeaponEffectID);
-      WeaponEffect currentEffect = (WeaponEffect)null;
-      if (string.IsNullOrEmpty(weaponEffectId)) {
-        Log.Combat?.WL(1, "null or empty");
-        currentEffect = weapon.weaponRep.WeaponEffect;
-        weaponEffectId = weapon.ammo().WeaponEffectID;
-        Log.Combat?.WL(1, "ammo.WeaponEffectID = " + weaponEffectId);
-        if (string.IsNullOrEmpty(weaponEffectId)) {
-          weaponEffectId = weapon.weaponDef.WeaponEffectID;
-        }
-      }
-      if (weaponEffectId == weapon.weaponDef.WeaponEffectID) {
+      string weaponEffectId = weapon.getWeaponEffectID();
+      Log.Combat?.WL(1, "weapon.getWeaponEffectID() = " + weaponEffectId);
+
+      WeaponEffect currentEffect = null;
+      if (weaponEffectId == weapon.weaponDef.WeaponEffectID)
+      {
         Log.Combat?.WL(1, "same as per weapon");
         currentEffect = weapon.weaponRep.WeaponEffect;
-        weaponEffectId = weapon.weaponDef.WeaponEffectID;
-      };
-      if (currentEffect == (WeaponEffect)null) {
+      }
+      if (currentEffect == (WeaponEffect)null)
+      {
         Log.Combat?.WL(1, "getting weapon effect " + wGUID + "." + weaponEffectId);
         currentEffect = CustomAmmoCategories.getWeaponEffect(wGUID, weaponEffectId);
       }
-      if (currentEffect == (WeaponEffect)null) {
+      if (currentEffect == (WeaponEffect)null)
+      {
+        Log.Combat?.WL(1, "still null, fallback");
         currentEffect = weapon.weaponRep.WeaponEffect;
       }
       return currentEffect;
@@ -202,37 +196,24 @@ namespace CustAmmoCategories {
         Log.Combat?.WL(0, "WARNING! Weapon " + weapon.defId + " " + weapon.UIName + " on " + weapon.parent.DisplayName + ":" + weapon.parent.GUID + " has no representation! It no visuals will be played\n", true);
         return string.Empty;
       };
-      Statistic wGUIDstat = weapon.StatCollection.GetStatistic(CustomAmmoCategories.GUIDStatisticName);
-      if (wGUIDstat == null) { return weapon.weaponDef.WeaponEffectID; }
-      Log.Combat?.WL(2, "weapon GUID is set");
-      string wGUID = weapon.StatCollection.GetStatistic(CustomAmmoCategories.GUIDStatisticName).Value<string>();
+
+      string weaponEffectId = weapon.weaponDef.WeaponEffectID;
+      Log.Combat?.WL(1, "weapon.WeaponEffectID = " + weaponEffectId);
+
       WeaponMode weaponMode = weapon.mode();
-      string weaponEffectId = weaponMode.WeaponEffectID;
-      Log.Combat?.WL(1, "weaponMode.WeaponEffectID = " + weaponMode.WeaponEffectID);
-      WeaponEffect currentEffect = (WeaponEffect)null;
-      if (string.IsNullOrEmpty(weaponEffectId)) {
-        Log.Combat?.WL(1, "null or empty");
-        currentEffect = weapon.weaponRep.WeaponEffect;
-        weaponEffectId = weapon.mode().WeaponEffectID;
-        Log.Combat?.WL(1, "ammo.WeaponEffectID = " + weaponEffectId);
-        if (string.IsNullOrEmpty(weaponEffectId)) {
-          weaponEffectId = weapon.weaponDef.WeaponEffectID;
-        }
+      if (!string.IsNullOrEmpty(weaponMode.WeaponEffectID))
+      {
+        weaponEffectId = weaponMode.WeaponEffectID;
+        Log.Combat?.WL(1, "weaponMode.WeaponEffectID = " + weaponEffectId);
       }
-      if (weaponEffectId == weapon.weaponDef.WeaponEffectID) {
-        Log.Combat?.WL(1, "same as per weapon");
-        currentEffect = weapon.weaponRep.WeaponEffect;
-        weaponEffectId = weapon.weaponDef.WeaponEffectID;
-        return weapon.weaponDef.WeaponEffectID;
-      };
-      if (currentEffect == (WeaponEffect)null) {
-        Log.Combat?.WL(1, "getting weapon effect " + wGUID + "." + weaponEffectId);
-        currentEffect = CustomAmmoCategories.getWeaponEffect(wGUID, weaponEffectId);
+
+      ExtAmmunitionDef weaponAmmo = weapon.ammo();
+      if (!string.IsNullOrEmpty(weaponAmmo.WeaponEffectID))
+      {
+        weaponEffectId = weaponAmmo.WeaponEffectID;
+        Log.Combat?.WL(1, "weaponAmmo.WeaponEffectID = " + weaponEffectId);
       }
-      if (currentEffect == (WeaponEffect)null) {
-        currentEffect = weapon.weaponRep.WeaponEffect;
-        return weapon.weaponDef.WeaponEffectID;
-      }
+
       return weaponEffectId;
     }
     public static Vector3[] GenerateMissilePath(float missileCurveStrength, int missileCurveFrequency, bool isSRM, int hitLocation, Vector3 startPos, Vector3 endPos, CombatGameState Combat) {
