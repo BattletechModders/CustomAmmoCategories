@@ -405,6 +405,7 @@ namespace CustAmmoCategoriesPatches {
       if (angle <= 0) return spareMove; // Within free turning
       return spareMove - angle * pathing.MaxCost / (180 - free) / 2; // Reversed from Pathint.GetAngleAvailable
     }
+    public static Func<CombatHUD, AbstractActor, float, float, string, string> MoveTypeDisplayOverride = null;
     private static void GetPreviewNumbers(CombatHUD HUD, AbstractActor actor, ref float heat, ref float stab, ref string movement) {
       Mech mech = actor as Mech;
       if (mech != null) {
@@ -427,6 +428,9 @@ namespace CustAmmoCategoriesPatches {
           spareMove = maxMove - Vector3.Distance(jump.PreviewPos, actor.CurrentPosition);
           moveType = HUD.uiManager.UILookAndColorConstants.Tooltip_Jump;
         }
+
+        if (MoveTypeDisplayOverride != null)
+          moveType = MoveTypeDisplayOverride(HUD, actor, maxMove, spareMove, moveType);
       } catch (Exception ex) { Log.M.TWL(0, ex.ToString(), true); }
 
       if (moveType != null) {
@@ -635,6 +639,8 @@ namespace CustAmmoCategoriesPatches {
         case MoveType.Melee: originalMoveTypeText = HUD.MoveButton.Tooltip.text; break;
         default: originalMoveTypeText = string.Empty; break;
       }
+      if (MoveTypeDisplayOverride != null)
+        originalMoveTypeText = MoveTypeDisplayOverride(HUD, actor, actor.MaxMoveDistance(), actor.MoveCostLeft(), originalMoveTypeText);
       if (string.IsNullOrEmpty(externalMoveTypeText)) {
         __instance.MoveTypeText.SetText(originalMoveTypeText, new object[0]);
       } else {
