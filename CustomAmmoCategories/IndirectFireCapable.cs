@@ -39,6 +39,7 @@ namespace CustAmmoCategories {
       return weapon.exDef().ForbiddenRange + weapon.ammo().ForbiddenRange + weapon.mode().ForbiddenRange;
     }
   }
+  
 }
 
 namespace CustomAmmoCategoriesPatches {
@@ -278,6 +279,18 @@ namespace CustomAmmoCategoriesPatches {
       return weapon.IndirectFireCapable();
     }
   }
+  
+  
+  [HarmonyPatch(typeof(Contract), "CompleteContract")]
+  public static class Contract_CompleteContract_Patch
+  {
+    static void Postfix(Contract __instance)
+    {
+      ToHit_GetAllModifiers.ClearChassisModifierCache();      
+    }
+  }
+  
+  
   [HarmonyPatch(typeof(ToHit))]
   [HarmonyPatch("GetAllModifiers")]
   [HarmonyPatch(MethodType.Normal)]
@@ -289,11 +302,21 @@ namespace CustomAmmoCategoriesPatches {
       var replacementMethod = AccessTools.Method(typeof(ToHit_GetAllModifiers), nameof(IndirectFireCapable));
       return Transpilers.MethodReplacer(instructions, targetPropertyGetter, replacementMethod);
     }
+    
+    private record struct ChassisModifierKey(ExtAmmunitionDef ammo, ExtWeaponDef exDef, WeaponMode mod, ICombatant target);
+    
+    private static Dictionary<ChassisModifierKey, float> ChassisModifierCache = new Dictionary<ChassisModifierKey, float>();
+
+    public static void ClearChassisModifierCache()
+    {
+      ChassisModifierCache.Clear();
+    }
+    
     private static bool IndirectFireCapable(Weapon weapon) {
       Log.Combat?.WL(0,"get ToHit_GetAllModifiers IndirectFireCapable");
       return weapon.IndirectFireCapable();
     }
-    public static HBS.Collections.TagSet Tags(this ICombatant target) {
+    public static HBS.Collections.TagSet Tags(this ICombatant target, bool includeEncounterTags=true) {
       HBS.Collections.TagSet result = new HBS.Collections.TagSet();
       Mech mech = target as Mech;
       if (mech != null) { result.AddRange(mech.MechDef.MechTags); result.AddRange(mech.MechDef.Chassis.ChassisTags); }
@@ -301,32 +324,54 @@ namespace CustomAmmoCategoriesPatches {
       if (vehicle != null) { return vehicle.VehicleDef.VehicleTags;}
       Turret turret = target as Turret;
       if (turret != null) { return turret.TurretDef.TurretTags; }
-      result.AddRange(target.EncounterTags);
+      
+      if (includeEncounterTags) result.AddRange(target.EncounterTags);
       return result;
     }
+    
     public static float GetChassisTagsModifyer(this Weapon weapon, ICombatant target) {
-      float result = 0f;
+      float result;
       ExtAmmunitionDef ammo = weapon.ammo();
       ExtWeaponDef exDef = weapon.exDef();
       WeaponMode mode = weapon.mode();
-      HBS.Collections.TagSet tags = target.Tags();
-      //Log.M.TWL(0, "GetChassisTagsModifyer "+weapon.defId+" "+target.DisplayName);
-      foreach (string tag in tags) {
-        //Log.M.W(1,tag);
+      
+      var key = new ChassisModifierKey(ammo, exDef, mode, target);
+
+      if (!ChassisModifierCache.TryGetValue(key, out result))
+      {
+        HBS.Collections.TagSet tags = target.Tags(false);
+        //Log.M.TWL(0, "GetChassisTagsModifyer "+weapon.defId+" "+target.DisplayName);
+        //Log.M.WL(1, "");
+        if (tags == null)
+        {
+          ChassisModifierCache.Add(key, 0f);
+          return 0f;
+        };
+        foreach(string tag in tags) {
+          if (ammo.TagsAccuracyModifiers.TryGetValue(tag, out float mod)) {
+            //Log.M.W(1, "ammo:" + tag + ":" + mod);
+            result += mod;
+          }
+          if (exDef.TagsAccuracyModifiers.TryGetValue(tag, out mod)) {
+            //Log.M.W(1,"def:" + tag + ":" + mod);
+            result += mod;
+          }
+          if (mode.TagsAccuracyModifiers.TryGetValue(tag, out  mod)) {
+            //Log.M.W(1, "mode:" + tag + ":" + mod);
+            result += mod;
+          }
+        }
+        ChassisModifierCache.Add(key, result);
       }
-      //Log.M.WL(1, "");
-      if (tags == null) { return 0f; };
-      foreach(string tag in tags) {
+      
+      foreach(string tag in target.EncounterTags) {
         if (ammo.TagsAccuracyModifiers.TryGetValue(tag, out float mod)) {
-          //Log.M.W(1, "ammo:" + tag + ":" + mod);
           result += mod;
         }
         if (exDef.TagsAccuracyModifiers.TryGetValue(tag, out mod)) {
-          //Log.M.W(1,"def:" + tag + ":" + mod);
           result += mod;
         }
         if (mode.TagsAccuracyModifiers.TryGetValue(tag, out  mod)) {
-          //Log.M.W(1, "mode:" + tag + ":" + mod);
           result += mod;
         }
       }
