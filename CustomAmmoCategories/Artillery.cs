@@ -10,6 +10,7 @@ using Localize;
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using IRBTModUtils.Feature;
 
 namespace CustAmmoCategories {
   public class SelectionStateArtilleryStrike: SelectionStateNoActionAvailable {
@@ -175,11 +176,11 @@ namespace CustAmmoCategories {
       foreach(var weapon in owner.weapons) {
         weaponsEnabledState[weapon] = weapon.IsEnabled;
       }
-      if(this.unit.GetTags().Contains("irbtmu_immobile_unit")) {
+      if(MovementFeature.IsImmobile(unit)) {
         AlreadyImmobilized = true;
       } else {
         AlreadyImmobilized = false;
-        this.unit.EncounterTags.Add("irbtmu_immobile_unit");
+        MovementFeature.SetImmobile(unit, true);
       }
     }
     public void Clear() {
@@ -187,7 +188,7 @@ namespace CustAmmoCategories {
         if(weapon.Value == true) { weapon.Key.EnableWeapon(); };
       }
       if(this.AlreadyImmobilized == false) {
-        this.unit.EncounterTags.Remove("irbtmu_immobile_unit");
+        MovementFeature.SetImmobile(unit, false);
       }
     }
   }
