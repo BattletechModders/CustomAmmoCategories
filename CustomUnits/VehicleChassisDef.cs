@@ -33,6 +33,7 @@ using HBS.Collections;
 using System.Collections.Concurrent;
 using MessagePack;
 using CustAmmoCategoriesPatches;
+using CustomComponents.Changes;
 using IRBTModUtils;
 using static BattleTech.Data.DataManager;
 
@@ -1992,7 +1993,7 @@ namespace CustomUnits {
       if(weaponDef.Description == null) { return; }
       string repairKitId = $"repairkit_{weaponDef.Description.Id}";
       if(weaponDef.Is<WeaponRepairKit>() == false) {
-        CustomComponents.Database.AddCustom(weaponDef.Description.Id, new WeaponRepairKit(weaponDef.Description.Id, repairKitId));
+        CCAccessHelper.AddCustom(weaponDef.Description.Id, new WeaponRepairKit(weaponDef.Description.Id, repairKitId));
       }
       if(dataManager.upgradeDefs.Exists(repairKitId)) { return; }
       Log.M?.TWL(0, $"AddWeaponRepairKit {weaponDef.Description.Id}");
