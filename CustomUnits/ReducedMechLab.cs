@@ -22,6 +22,64 @@ using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
 namespace CustomComponents.Changes {
+
+  // CU should not be reaching this deep into CC, but for the sake of preserving existing behaviour
+  // and the need to be able to update CC, we will have to keep this for now and simply shove all logic like this
+  // into the CCAccessHelper class.
+  
+  // Vehicle Lab stuff should eventually be ripped out of CU altogether and implemented in CC & ME
+  public static class CCAccessHelper
+  {
+    private static MethodInfo methodGetLocationHelper = AccessTools.Method(typeof(MechLabHelper), "GetLocationHelper");
+    private static MethodInfo methodIdentifier = AccessTools.Method(typeof(Database), "Identifier");
+    private static MethodInfo methodGetOrCreateCustomsList = AccessTools.Method(typeof(Database), "GetOrCreateCustomsList");
+    private static MethodInfo methodAddCustom = AccessTools.Method(typeof(Database), "AddCustom", new []{typeof(string), typeof(ICustom)});
+    
+    private static FieldInfo fieldShared = AccessTools.Field(typeof(Database), "Shared");
+
+    public static bool CanOperate()
+    {
+      var canAccessCC = methodGetLocationHelper != null && methodIdentifier != null && fieldShared != null 
+                        && methodGetOrCreateCustomsList != null && methodAddCustom != null;
+
+      if (!canAccessCC)
+      {
+        CustomUnits.Log.M?.WL($"CCAccessHelper.CanOperate false, vehicle lab will not work!!!");
+        CustomUnits.Log.M?.WL($"methodGetLocationHelper: {methodGetLocationHelper != null}");
+        CustomUnits.Log.M?.WL($"methodIdentifier: {methodIdentifier != null}");
+        CustomUnits.Log.M?.WL($"methodGetOrCreateCustomsList: {methodGetOrCreateCustomsList != null}");
+        CustomUnits.Log.M?.WL($"methodAddCustom: {methodAddCustom != null}");
+        CustomUnits.Log.M?.WL($"fieldShared: {fieldShared != null}");
+      }
+      
+      return canAccessCC;
+    }
+    
+    public static bool IsControlPressed => Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.RightControl);
+
+    public static LocationHelper GetLocationHelper(this MechLabHelper helper, ChassisLocations location)
+    {
+      return (LocationHelper)methodGetLocationHelper.Invoke(helper, new object[] { location });
+    }
+
+    public static string Identifier(object target)
+    {
+      return (string)methodIdentifier.Invoke(null, new [] { target });
+    }
+
+    public static bool AddCustom(string identifier, ICustom cc)
+    {
+      return (bool)methodAddCustom.Invoke(null, new object[] { identifier, cc });
+    }
+
+    public static List<ICustom> GetOrCreateCustomsList(string key)
+    {
+      Database shared = (Database)fieldShared.GetValue(null);
+      return (List<ICustom>)methodGetOrCreateCustomsList.Invoke(shared, new object[] { key });
+    }
+    
+    
+  } 
   public class Change_Add_Reduced : IChange_Apply, IChange_Optimize {
     private MechComponentRef item;
     private MechLabItemSlotElement slot;
@@ -97,7 +155,7 @@ namespace CustomComponents.Changes {
       for (var i = current.Count - 2; i >= 0; i--) {
         var change = current[i];
         if (!change.Initial && change is Change_Remove_Reduced remove && !remove.Applied && remove.Location == Location && remove.ItemID == ItemID && remove.SimGameUID == this.SimGameUID) {
-          Log.InventoryOperations.Trace?.Log($"--- OPT {this}, {current[i]}");
+          CustomUnits.Log.M?.WL($"--- OPT {this}, {current[i]}");
           current.RemoveAt(i);
           current.Remove(this);
           return;
@@ -186,7 +244,7 @@ namespace CustomComponents.Changes {
       for (var i = current.Count - 2; i >= 0; i--) {
         var change = current[i];
         if (!change.Initial && change is Change_Add add && !add.Applied && add.Location == Location && add.ItemID == ItemID) {
-          Log.InventoryOperations.Trace?.Log($"--- OPT {this}, {current[i]}");
+          CustomUnits.Log.M?.WL($"--- OPT {this}, {current[i]}");
           current.RemoveAt(i);
           current.Remove(this);
           return;
@@ -264,10 +322,10 @@ namespace CustomUnits {
       return result;
     }
     public static float CarryLeftOver(this BaseComponentRef componentRef) {
-      string id = CustomComponents.Database.Identifier(componentRef.Def);
+      string id = CCAccessHelper.Identifier(componentRef.Def);
       if (CarryLeftOver_cache.TryGetValue(id, out var result)) { return result; }
       result = float.NaN;
-      var customs = CustomComponents.Database.Shared.GetOrCreateCustomsList(CustomComponents.Database.Identifier(componentRef.Def));
+      var customs = CCAccessHelper.GetOrCreateCustomsList(CCAccessHelper.Identifier(componentRef.Def));
       Log.M?.TWL(0, $"ReducedComponentRefInfoHelper.CarryLeftOver {componentRef.Def.Description.Id}");
       foreach (var custom in customs) {
         Log.M?.WL(1, $"{custom.GetType().ToString()}");
@@ -288,10 +346,10 @@ namespace CustomUnits {
       return componentRef.Def.RealInventorySize();
     }
     public static int RealInventorySize(this MechComponentDef componentDef) {
-      string id = CustomComponents.Database.Identifier(componentDef);
+      string id = CCAccessHelper.Identifier(componentDef);
       if (RealInventorySize_cache.TryGetValue(id, out var result)) { return result; }
       result = componentDef.InventorySize;
-      var customs = CustomComponents.Database.Shared.GetOrCreateCustomsList(CustomComponents.Database.Identifier(componentDef));
+      var customs = CCAccessHelper.GetOrCreateCustomsList(CCAccessHelper.Identifier(componentDef));
       Log.M?.TWL(0, $"ReducedComponentRefInfoHelper.RealInventorySize {componentDef.Description.Id}");
       foreach (var custom in customs) {
         Log.M?.WL(1, $"{custom.GetType().ToString()}");
@@ -456,6 +514,7 @@ namespace CustomUnits {
     public static void Prefix(ref bool __runOriginal, MechLabPanel __instance, MechDef newMechDef) {
       try {
         if (Core.Settings.VehcilesPartialEditable == false) { return; }
+        if (!CCAccessHelper.CanOperate()) { return; }
         if (__runOriginal == false) { return; }
         //MechLabLocationWidget[] locationWidgets = __instance.gameObject.GetComponentsInChildren<MechLabLocationWidget>(true);
         //foreach (var widget in locationWidgets) {
@@ -482,6 +541,7 @@ namespace CustomUnits {
     public static void Postfix(MechLabPanel __instance, MechDef newMechDef) {
       try {
         if (Core.Settings.VehcilesPartialEditable == false) { return; }
+        if (!CCAccessHelper.CanOperate()) { return; }
         if (newMechDef.IsVehicle() == false) { return; }
         newMechDef.PopMechLab();
       } catch (Exception e) {
@@ -497,6 +557,7 @@ namespace CustomUnits {
       try {
         if (__runOriginal == false) { return; }
         if (Core.Settings.VehcilesPartialEditable == false) { return; }
+        if (!CCAccessHelper.CanOperate()) { return; }
         if (mechElement == null) { return; }
         if (mechElement.mechDef == null) { return; }
         if (mechElement.mechDef.IsVehicle() == false) { return; }
@@ -613,6 +674,7 @@ namespace CustomUnits {
       if (__runOriginal == false) { return; }
       try {
         if (Core.Settings.VehcilesPartialEditable == false) { return; }
+        if (!CCAccessHelper.CanOperate()) { return; }
         if (mechDef.IsVehicle() == false) { return; }
         if (MechValidationRules.MechStructureUnderMaintenance(loc, validationLevel, baseWorkOrder)) { return; }
         if (mechDef.IsLocationDestroyed(loc)) {
@@ -675,6 +737,7 @@ namespace CustomUnits {
       __state = new int?();
       try {
         if (Core.Settings.VehcilesPartialEditable == false) { return; }
+        if (!CCAccessHelper.CanOperate()) { return; }
         MechDef mechDef = null;
         if (__instance.dropParent is MechLabLocationWidget locationWidget) {
           if (locationWidget.parentDropTarget is MechLabPanel mechLabPanel) {
@@ -694,6 +757,7 @@ namespace CustomUnits {
     public static void Postfix(MechLabItemSlotElement __instance, ref int? __state) {
       try {
         if (Core.Settings.VehcilesPartialEditable == false) { return; }
+        if (!CCAccessHelper.CanOperate()) { return; }
         MechDef mechDef = null;
         if (__instance.dropParent is MechLabLocationWidget locationWidget) {
           if (locationWidget.parentDropTarget is MechLabPanel mechLabPanel) {
@@ -725,6 +789,7 @@ namespace CustomUnits {
     public static void Postfix(MechLabLocationWidget __instance, IMechLabDraggableItem item, ref bool __result) {
       try {
         if (Core.Settings.VehcilesPartialEditable == false) { return; }
+        if (!CCAccessHelper.CanOperate()) { return; }
         if (__result == false) { return; }
         if (__instance.mechLab.originalMechDef.IsVehicle() == false) { return; }
         MechLabItemSlotElement mechComponent = item as MechLabItemSlotElement;
@@ -782,13 +847,14 @@ namespace CustomUnits {
     [HarmonyWrapSafe]
     public static void Prefix(ref bool __runOriginal, MechLabLocationWidget __instance) {
       if (Core.Settings.VehcilesPartialEditable == false) { return; }
+      if (!CCAccessHelper.CanOperate()) { return; }
       if (__runOriginal == false) { return; }
       if (__instance.mechLab.Initialized == false) { return; }
       if (__instance.mechLab.activeMechDef.IsVehicle() == false) { return; }
       try {
         Log.M?.TWL(0, $"StripEquipment in {__instance.loadout.Location}");
         CustomComponents.LocationHelper locationHelper = CustomComponents.MechLabHelper.CurrentMechLab.GetLocationHelper(__instance.loadout.Location);
-        bool isControlPressed = CustomComponents.InputHelper.IsControlPressed;
+        bool isControlPressed = CCAccessHelper.IsControlPressed;
         Queue<IChange> start_changes = new Queue<IChange>();
         foreach (MechLabItemSlotElement labItemSlotElement in locationHelper.LocalInventory) {
           if (isControlPressed && labItemSlotElement.ComponentRef.ComponentDefType != ComponentType.Weapon) { continue; }
@@ -816,6 +882,7 @@ namespace CustomUnits {
     [HarmonyWrapSafe]
     public static void Prefix(ref bool __runOriginal, MechLabLocationWidget __instance, bool forceRepairStructure, bool validate) {
       if (Core.Settings.VehcilesPartialEditable == false) { return; }
+      if (!CCAccessHelper.CanOperate()) { return; }
       if (__runOriginal == false) { return; }
       if (__instance.mechLab.Initialized == false) { return; }
       if (__instance.mechLab.activeMechDef.IsVehicle() == false) { return; }
@@ -872,6 +939,7 @@ namespace CustomUnits {
         bool isVehicle = mechDef.IsVehicle();
         Log.M?.WL(1, $"{mechDef.ChassisID}:{mechDef.GUID} vehicle:{isVehicle} result:{__result}");
         if (Core.Settings.VehcilesPartialEditable && isVehicle) {
+          if (!CCAccessHelper.CanOperate()) { return; }
           if (__result == false) { return; }
           bool inMaintaince = MechValidationRules.ValidateSimGameMechNotInMaintenance(sim, mechDef) == false;
           Log.M?.WL(1, "inMaintaince = " + inMaintaince);
@@ -905,6 +973,7 @@ namespace CustomUnits {
       try {
         if (mechDef.IsVehicle() == false) { return; }
         if (Core.Settings.VehcilesPartialEditable == false) { return; }
+        if (!CCAccessHelper.CanOperate()) { return; }
         __result = MechValidationRules.InitializeValidationResults();
         switch (validationLevel) {
           case MechValidationLevel.Basic:
@@ -962,6 +1031,7 @@ namespace CustomUnits {
     public static void Prefix(ref bool __runOriginal, MechLabLocationWidget __instance, bool validate, ref Dictionary<string, ComponentDamageLevel> __state) {
       __state = null;
       if (Core.Settings.VehcilesPartialEditable == false) { return; }
+      if (!CCAccessHelper.CanOperate()) { return; }
       if (__runOriginal == false) { return; }
       if (__instance.mechLab.Initialized == false) { return; }
       if (__instance.mechLab.activeMechDef.IsVehicle() == false) { return; }
@@ -995,6 +1065,7 @@ namespace CustomUnits {
     }
     public static void Postfix(MechLabLocationWidget __instance, ref Dictionary<string, ComponentDamageLevel> __state) {
       if (Core.Settings.VehcilesPartialEditable == false) { return; }
+      if (!CCAccessHelper.CanOperate()) { return; }
       if (__instance.mechLab.Initialized == false) { return; }
       if (__instance.mechLab.activeMechDef.IsVehicle() == false) { return; }
       if (__instance.IsSimGame == false) { return; }
@@ -1026,6 +1097,7 @@ namespace CustomUnits {
     [HarmonyWrapSafe]
     public static void Prefix(ref bool __runOriginal, MechLabLocationWidget __instance) {
       if (Core.Settings.VehcilesPartialEditable == false) { return; }
+      if (!CCAccessHelper.CanOperate()) { return; }
       if (__runOriginal == false) { return; }
       if (__instance.mechLab.Initialized == false) { return; }
       if (__instance.mechLab.activeMechDef.IsVehicle() == false) { return; }
@@ -1046,6 +1118,7 @@ namespace CustomUnits {
     [HarmonyWrapSafe]
     public static void Prefix(ref bool __runOriginal, MechLabLocationWidget __instance) {
       if (Core.Settings.VehcilesPartialEditable == false) { return; }
+      if (!CCAccessHelper.CanOperate()) { return; }
       if (__runOriginal == false) { return; }
       if (__instance.mechLab.Initialized == false) { return; }
       if (__instance.mechLab.activeMechDef.IsVehicle() == false) { return; }
@@ -1074,6 +1147,7 @@ namespace CustomUnits {
   public static class SimGameState_StripMech {
     public static void Prefix(ref bool __runOriginal, SimGameState __instance, int baySlot, MechDef def) {
       if (Core.Settings.VehcilesPartialEditable == false) { return; }
+      if (!CCAccessHelper.CanOperate()) { return; }
       if (!__runOriginal) { return; }
       try {
         if (def == null || baySlot > 0 && !__instance.ActiveMechs.ContainsKey(baySlot)) { return; }
@@ -1109,6 +1183,7 @@ namespace CustomUnits {
   public static class SimGameState_UnreadyMech {
     public static void Prefix(ref bool __runOriginal, SimGameState __instance, int baySlot, MechDef def) {
       if (Core.Settings.VehcilesPartialEditable == false) { return; }
+      if (!CCAccessHelper.CanOperate()) { return; }
       if (!__runOriginal) { return; }
       try {
         if (def == null) { return; }
@@ -1126,6 +1201,7 @@ namespace CustomUnits {
     public static void Prefix(ref bool __runOriginal, MechBayPanel __instance, MechBayChassisUnitElement chassisElement) {
       try {
         if (Core.Settings.VehcilesPartialEditable == false) { return; }
+        if (!CCAccessHelper.CanOperate()) { return; }
         if (chassisElement == null) { return; }
         if (chassisElement.ChassisDef == null) { return; }
         if (chassisElement.ChassisDef.IsVehicle() == false) { return; }
@@ -1156,7 +1232,7 @@ namespace CustomUnits {
     [HarmonyPrefix]
     [HarmonyWrapSafe]
     public static void Prefix(ref bool __runOriginal, int baySlot, MechDef def, SimGameState __instance) {
-      if (!__runOriginal || !def.IsVehicle() || (Core.Settings.VehcilesPartialEditable == false))
+      if (!__runOriginal || !def.IsVehicle() || (Core.Settings.VehcilesPartialEditable == false) || !CCAccessHelper.CanOperate())
         return;
       if (def == null || baySlot > 0 && !__instance.ActiveMechs.ContainsKey(baySlot)) {
         __runOriginal = false;
@@ -1173,6 +1249,7 @@ namespace CustomUnits {
     [HarmonyWrapSafe]
     public static void Prefix(ref bool __runOriginal, SimGameState __instance, int baySlot, string id) {
       if (Core.Settings.VehcilesPartialEditable == false) { return; }
+      if (!CCAccessHelper.CanOperate()) { return; }
       if (!__runOriginal) { return; }
       try {
         string origId = id;
@@ -1300,6 +1377,7 @@ namespace CustomUnits {
     public static void Prefix(MechLabLocationWidget __instance, ref bool __runOriginal, PointerEventData eventData) {
       try {
         if (Core.Settings.VehcilesPartialEditable == false) { return; }
+        if (!CCAccessHelper.CanOperate()) { return; }
         if (__runOriginal == false) { return; }
         if (__instance.mechLab.Initialized == false) { return; }
         if (__instance.mechLab.activeMechDef.IsVehicle() == false) { return; }
@@ -1535,6 +1613,7 @@ namespace CustomUnits {
     public static void Prefix() {
       try {
         if (Core.Settings.VehcilesPartialEditable == false) { return; }
+        if (!CCAccessHelper.CanOperate()) { return; }
         Thread.CurrentThread.SetFlag(IN_MAKE_MECH_FLAGNAME);
       } catch (Exception e) {
         Log.M?.TWL(0, e.ToString(), true);
@@ -1544,6 +1623,7 @@ namespace CustomUnits {
     public static void Postfix() {
       try {
         if (Core.Settings.VehcilesPartialEditable == false) { return; }
+        if (!CCAccessHelper.CanOperate()) { return; }
         if (Thread.CurrentThread.isFlagSet(IN_MAKE_MECH_FLAGNAME)) {
           Thread.CurrentThread.ClearFlag(IN_MAKE_MECH_FLAGNAME);
         }
@@ -1560,6 +1640,7 @@ namespace CustomUnits {
     public static void Postfix(MechDef __instance, MechDef def, string newGUID, bool copyInventory) {
       try {
         if (Core.Settings.VehcilesPartialEditable == false) { return; }
+        if (!CCAccessHelper.CanOperate()) { return; }
         if (Thread.CurrentThread.isFlagSet(ChassisHandler_MakeMech.IN_MAKE_MECH_FLAGNAME) == false) { return; };
         if (__instance.IsVehicle() == false) { return; }
         Log.M?.TWL(0, $"MechDef.Constructor from MakeMech {__instance.ChassisID}");
@@ -1597,6 +1678,7 @@ namespace CustomUnits {
     }
     public static void Prefix(ref bool __runOriginal) {
       if (Core.Settings.VehcilesPartialEditable) {
+        if (!CCAccessHelper.CanOperate()) { return; }
         Log.M?.TWL(0, "LewdableTanks.Patches.Contract_CompleteContract.Prefix preventing from launch");
         __runOriginal = false;
       }
@@ -1621,6 +1703,7 @@ namespace CustomUnits {
     }
     public static void Postfix(MechDef mechDef, ref bool show) {
       if (Core.Settings.VehcilesPartialEditable == false) { return; }
+      if (!CCAccessHelper.CanOperate()) { return; }
       if (mechDef.IsVehicle() == false) { return; }
       Log.M?.TWL(0, "MechEngineer.Features.CustomCapacities.CustomCapacitiesFeature.CalculateCustomCapacityResults hide");
       show = false;
@@ -1634,6 +1717,7 @@ namespace CustomUnits {
     [HarmonyWrapSafe]
     public static void Postfix(Contract __instance) {
       if (Core.Settings.VehcilesPartialEditable == false) { return; }
+      if (!CCAccessHelper.CanOperate()) { return; }
       foreach (MechDef mech in __instance.PlayerUnitResults.Where<UnitResult>((Func<UnitResult, bool>)(i => !i.mechLost)).Where<UnitResult>((Func<UnitResult, bool>)(i => i.mech.IsVehicle())).Select<UnitResult, MechDef>((Func<UnitResult, MechDef>)(i => i.mech))) {
         foreach (BaseComponentRef baseComponentRef in mech.Inventory) {
           if (baseComponentRef.DamageLevel != ComponentDamageLevel.Destroyed) { continue; }
@@ -1713,6 +1797,7 @@ namespace CustomUnits {
     //}
     public static bool CheckVehicleSimple(this MechDef mechDef) {
       if (Core.Settings.VehcilesPartialEditable == false) { return true; }
+      if (!CCAccessHelper.CanOperate()) { return true; }
       if (mechDef.IsVehicle() == false) { return true; }
       Log.M?.TWL(0, $"CheckVehicleSimple {mechDef.ChassisID}");
       string stockMechId = mechDef.Chassis.GetStockMechId();
@@ -1775,6 +1860,7 @@ namespace CustomUnits {
     }
     public static void RevertToStock(this MechDef mechDef, SimGameState sim) {
       if (Core.Settings.VehcilesPartialEditable == false) { return; }
+      if (!CCAccessHelper.CanOperate()) { return; }
       if (mechDef.IsVehicle() == false) { return; }
       string stockMechId = mechDef.Chassis.GetStockMechId();
       if (string.IsNullOrEmpty(stockMechId)) { return; }
@@ -1800,6 +1886,7 @@ namespace CustomUnits {
     public static void Postfix(WorkOrderEntry_InstallComponent order, SimGameState __instance) {
       try {
         if (Core.Settings.VehcilesPartialEditable == false) { return; }
+        if (!CCAccessHelper.CanOperate()) { return; }
         Log.M?.TWL(0, $"ML_InstallComponent postfix {order.ID} {order.MechComponentRef.ComponentDefID}:{order.ComponentSimGameUID} PreviousLocation:{order.PreviousLocation}");
         if (!order.IsMechLabComplete) { return; }
         MechDef mechById = __instance.GetMechByID(order.MechID);
@@ -2056,6 +2143,7 @@ namespace CustomUnits {
       try {
         if (__runOriginal == false) { return; }
         if (Core.Settings.VehcilesPartialEditable == false) { return; }
+        if (!CCAccessHelper.CanOperate()) { return; }
         if (__instance.Initialized == false) { return; }
         if (__instance.dragItem != null) { return; }
         if (__instance.originalMechDef.IsVehicle() == false) { return; }
