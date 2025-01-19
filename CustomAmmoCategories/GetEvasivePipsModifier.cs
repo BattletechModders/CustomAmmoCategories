@@ -45,7 +45,7 @@ namespace CustomAmmoCategoriesPatches {
       if (!__runOriginal) { return; }
       try {
         float num = 0.0f;
-        CombatGameState combat = (CombatGameState)typeof(ToHit).GetField("combat", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(__instance);
+        CombatGameState combat = __instance.combat;
         if (evasivePips > 0) {
           int index = Mathf.RoundToInt((float)((double)evasivePips - 1.0 - (weapon == null ? 0.0 : (double)(weapon.EvasivePipsIgnored()))));
           if (index >= combat.Constants.ToHit.ToHitMovingPipUMs.Length) { index = combat.Constants.ToHit.ToHitMovingPipUMs.Length - 1; };
