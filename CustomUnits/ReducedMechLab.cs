@@ -32,24 +32,18 @@ namespace CustomComponents.Changes {
   {
     private static MethodInfo methodGetLocationHelper = AccessTools.Method(typeof(MechLabHelper), "GetLocationHelper");
     private static MethodInfo methodIdentifier = AccessTools.Method(typeof(Database), "Identifier");
-    private static MethodInfo methodGetOrCreateCustomsList = AccessTools.Method(typeof(Database), "GetOrCreateCustomsList");
-    private static MethodInfo methodAddCustom = AccessTools.Method(typeof(Database), "AddCustom", new []{typeof(string), typeof(ICustom)});
-    
-    private static FieldInfo fieldShared = AccessTools.Field(typeof(Database), "Shared");
+    private static MethodInfo methodAddCustom = AccessTools.Method(typeof(Database), "AddCustom", new []{typeof(string), typeof(object), typeof(ICustom)});
 
     public static bool CanOperate()
     {
-      var canAccessCC = methodGetLocationHelper != null && methodIdentifier != null && fieldShared != null 
-                        && methodGetOrCreateCustomsList != null && methodAddCustom != null;
+      var canAccessCC = methodGetLocationHelper != null && methodIdentifier != null && methodAddCustom != null;
 
       if (!canAccessCC)
       {
         CustomUnits.Log.M?.WL($"CCAccessHelper.CanOperate false, vehicle lab will not work!!!");
         CustomUnits.Log.M?.WL($"methodGetLocationHelper: {methodGetLocationHelper != null}");
         CustomUnits.Log.M?.WL($"methodIdentifier: {methodIdentifier != null}");
-        CustomUnits.Log.M?.WL($"methodGetOrCreateCustomsList: {methodGetOrCreateCustomsList != null}");
         CustomUnits.Log.M?.WL($"methodAddCustom: {methodAddCustom != null}");
-        CustomUnits.Log.M?.WL($"fieldShared: {fieldShared != null}");
       }
       
       return canAccessCC;
@@ -67,17 +61,10 @@ namespace CustomComponents.Changes {
       return (string)methodIdentifier.Invoke(null, new [] { target });
     }
 
-    public static bool AddCustom(string identifier, ICustom cc)
+    public static bool AddCustom(string identifier, object target, ICustom cc)
     {
-      return (bool)methodAddCustom.Invoke(null, new object[] { identifier, cc });
+      return (bool)methodAddCustom.Invoke(null, new object[] { identifier, target, cc });
     }
-
-    public static List<ICustom> GetOrCreateCustomsList(string key)
-    {
-      Database shared = (Database)fieldShared.GetValue(null);
-      return (List<ICustom>)methodGetOrCreateCustomsList.Invoke(shared, new object[] { key });
-    }
-    
     
   } 
   public class Change_Add_Reduced : IChange_Apply, IChange_Optimize {
@@ -325,7 +312,8 @@ namespace CustomUnits {
       string id = CCAccessHelper.Identifier(componentRef.Def);
       if (CarryLeftOver_cache.TryGetValue(id, out var result)) { return result; }
       result = float.NaN;
-      var customs = CCAccessHelper.GetOrCreateCustomsList(CCAccessHelper.Identifier(componentRef.Def));
+      var customs = componentRef.Def.ccCustoms;
+      if (customs == null) { return result; }
       Log.M?.TWL(0, $"ReducedComponentRefInfoHelper.CarryLeftOver {componentRef.Def.Description.Id}");
       foreach (var custom in customs) {
         Log.M?.WL(1, $"{custom.GetType().ToString()}");
@@ -349,7 +337,12 @@ namespace CustomUnits {
       string id = CCAccessHelper.Identifier(componentDef);
       if (RealInventorySize_cache.TryGetValue(id, out var result)) { return result; }
       result = componentDef.InventorySize;
-      var customs = CCAccessHelper.GetOrCreateCustomsList(CCAccessHelper.Identifier(componentDef));
+      var customs = componentDef.ccCustoms;
+      if (customs == null)
+      {
+        return result;
+      }
+
       Log.M?.TWL(0, $"ReducedComponentRefInfoHelper.RealInventorySize {componentDef.Description.Id}");
       foreach (var custom in customs) {
         Log.M?.WL(1, $"{custom.GetType().ToString()}");
