@@ -28,27 +28,30 @@ using System.Threading;
 using UnityEngine;
 
 namespace CustomUnits {
-  public static class PatchingDebug {
-    public static MethodInfo GetOriginalMethod_Target() {
-      return AccessTools.Method(typeof(Harmony).Assembly.GetType("HarmonyLib.PatchTools"), "GetOriginalMethod");
-    }
-    public static Exception GetOriginalMethod_Finalizer(Exception __exception, HarmonyMethod attr) {
-      try {
-        if (__exception != null) {
-          Log.M?.TWL(0, $"HarmonyLib.PatchTools.GetOriginalMethod type:{attr.methodType.SafeToString()} {attr.declaringType.Name}{attr.methodName}");
-          Log.M?.WL(0, __exception.ToString(),true);
-        }
-      }catch(Exception e) {
-        Log.M?.TWL(0, e.ToString(), true);
-        UnityGameInstance.logger.LogException(e);
-      }
-      return __exception;
-    }
-    public static HarmonyMethod GetOriginalMethod_Finalizer_H() {
-      var result = new HarmonyMethod(AccessTools.Method(typeof(PatchingDebug), nameof(GetOriginalMethod_Finalizer)));
-      return result;
-    }
-  }
+  
+  //ToDo: remove this it breaks some users
+  
+  // public static class PatchingDebug {
+  //   public static MethodInfo GetOriginalMethod_Target() {
+  //     return AccessTools.Method(typeof(Harmony).Assembly.GetType("HarmonyLib.PatchTools"), "GetOriginalMethod");
+  //   }
+  //   public static Exception GetOriginalMethod_Finalizer(Exception __exception, HarmonyMethod attr) {
+  //     try {
+  //       if (__exception != null) {
+  //         Log.M?.TWL(0, $"HarmonyLib.PatchTools.GetOriginalMethod type:{attr.methodType.SafeToString()} {attr.declaringType.Name}{attr.methodName}");
+  //         Log.M?.WL(0, __exception.ToString(),true);
+  //       }
+  //     }catch(Exception e) {
+  //       Log.M?.TWL(0, e.ToString(), true);
+  //       UnityGameInstance.logger.LogException(e);
+  //     }
+  //     return __exception;
+  //   }
+  //   public static HarmonyMethod GetOriginalMethod_Finalizer_H() {
+  //     var result = new HarmonyMethod(AccessTools.Method(typeof(PatchingDebug), nameof(GetOriginalMethod_Finalizer)));
+  //     return result;
+  //   }
+  // }
   public class ComponentPrefabMap {
     public string PrefabIdentifier { get; set; }
     public Dictionary<string,float> HardpointCandidates { get; set; }
@@ -606,7 +609,7 @@ namespace CustomUnits {
         Assembly CUHelperAssembly = Assembly.LoadFile(CUHelperAssemblyPath);
         Log.M?.TWL(0,"Helper assembly "+CUHelperAssembly.FullName);
         HarmonyFileLog.Enabled = true;
-        HarmonyInstance.Patch(PatchingDebug.GetOriginalMethod_Target(), null, null, null, PatchingDebug.GetOriginalMethod_Finalizer_H(), null);
+        // HarmonyInstance.Patch(PatchingDebug.GetOriginalMethod_Target(), null, null, null, PatchingDebug.GetOriginalMethod_Finalizer_H(), null);
         HarmonyInstance.PatchAll(Assembly.GetExecutingAssembly());
         PathingInfoHelper.RegisterMaxMoveDeligate(PathingHelper.MaxMoveDistance);
         //WeightedFactorHelper.PatchInfluenceMapPositionFactor(HarmonyInstance);

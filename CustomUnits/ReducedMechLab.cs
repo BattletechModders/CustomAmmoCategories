@@ -32,11 +32,12 @@ namespace CustomComponents.Changes {
   {
     private static MethodInfo methodGetLocationHelper = AccessTools.Method(typeof(MechLabHelper), "GetLocationHelper");
     private static MethodInfo methodIdentifier = AccessTools.Method(typeof(Database), "Identifier");
-    private static MethodInfo methodAddCustom = AccessTools.Method(typeof(Database), "AddCustom", new []{typeof(string), typeof(object), typeof(ICustom)});
+    private static MethodInfo methodAddCustom = AccessTools.Method(typeof(Database), "AddCustom", new []{typeof(object), typeof(ICustom)});
+    private static FieldInfo fieldCustoms = AccessTools.Field(typeof(Database), "Customs");
 
     public static bool CanOperate()
     {
-      var canAccessCC = methodGetLocationHelper != null && methodIdentifier != null && methodAddCustom != null;
+      var canAccessCC = methodGetLocationHelper != null && methodIdentifier != null && methodAddCustom != null && fieldCustoms != null;
 
       if (!canAccessCC)
       {
@@ -44,6 +45,7 @@ namespace CustomComponents.Changes {
         CustomUnits.Log.M?.WL($"methodGetLocationHelper: {methodGetLocationHelper != null}");
         CustomUnits.Log.M?.WL($"methodIdentifier: {methodIdentifier != null}");
         CustomUnits.Log.M?.WL($"methodAddCustom: {methodAddCustom != null}");
+        CustomUnits.Log.M?.WL($"fieldCustoms: {fieldCustoms != null}");
       }
       
       return canAccessCC;
@@ -61,9 +63,16 @@ namespace CustomComponents.Changes {
       return (string)methodIdentifier.Invoke(null, new [] { target });
     }
 
-    public static bool AddCustom(string identifier, object target, ICustom cc)
+    public static bool AddCustom(object target, ICustom cc)
     {
-      return (bool)methodAddCustom.Invoke(null, new object[] { identifier, target, cc });
+      return (bool)methodAddCustom.Invoke(null, new object[] { target, cc });
+    }
+    
+    public static List<object> GetCustoms(object target)
+    {
+      Dictionary<string, List<object>> customs = (Dictionary<string, List<object>>)fieldCustoms.GetValue(null);
+      var identifier = Identifier(target);
+      return customs.TryGetValue(identifier, out var r) ? r : null;
     }
     
   } 
@@ -312,7 +321,7 @@ namespace CustomUnits {
       string id = CCAccessHelper.Identifier(componentRef.Def);
       if (CarryLeftOver_cache.TryGetValue(id, out var result)) { return result; }
       result = float.NaN;
-      var customs = componentRef.Def.ccCustoms;
+      var customs = CCAccessHelper.GetCustoms(componentRef.Def);
       if (customs == null) { return result; }
       Log.M?.TWL(0, $"ReducedComponentRefInfoHelper.CarryLeftOver {componentRef.Def.Description.Id}");
       foreach (var custom in customs) {
@@ -337,7 +346,7 @@ namespace CustomUnits {
       string id = CCAccessHelper.Identifier(componentDef);
       if (RealInventorySize_cache.TryGetValue(id, out var result)) { return result; }
       result = componentDef.InventorySize;
-      var customs = componentDef.ccCustoms;
+      var customs = CCAccessHelper.GetCustoms(componentDef);
       if (customs == null)
       {
         return result;

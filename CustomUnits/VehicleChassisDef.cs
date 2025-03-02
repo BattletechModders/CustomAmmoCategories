@@ -2428,7 +2428,7 @@ namespace CustomUnits {
             string repairKitId = $"repairkit_{weaponDef.Description.Id}";
             if (weaponDef.Is<WeaponRepairKit>() == false)
             {
-                CCAccessHelper.AddCustom(weaponDef.Description.Id, weaponDef, new WeaponRepairKit(weaponDef.Description.Id, repairKitId));
+                CCAccessHelper.AddCustom(weaponDef, new WeaponRepairKit(weaponDef.Description.Id, repairKitId));
             }
             if (dataManager.upgradeDefs.Exists(repairKitId)) { return; }
             Log.M?.TWL(0, $"AddWeaponRepairKit {weaponDef.Description.Id}");
