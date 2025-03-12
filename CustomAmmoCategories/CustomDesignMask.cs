@@ -346,10 +346,11 @@ namespace CustAmmoCategoriesPatches
             }
         }
     }
+    // HarmonyX: PRIORITY CHANGE: FIRST -> LAST
     [HarmonyPatch(typeof(StatisticEffect))]
     [HarmonyPatch("OnEffectBegin")]
     [HarmonyPatch(MethodType.Normal)]
-    [HarmonyPriority(Priority.First)]
+    [HarmonyPriority(Priority.Last)]
     public static class StatisticEffect_OnEffectBegin
     {
         public static void Prefix(StatisticEffect __instance, ref bool __state)
@@ -390,10 +391,12 @@ namespace CustAmmoCategoriesPatches
             }
         }
     }
+    
+    // HarmonyX: PRIORITY CHANGE: FIRST -> LAST
     [HarmonyPatch(typeof(StatisticEffect))]
     [HarmonyPatch("OnEffectPhaseBegin")]
     [HarmonyPatch(MethodType.Normal)]
-    [HarmonyPriority(Priority.First)]
+    [HarmonyPriority(Priority.Last)]
     public static class StatisticEffect_OnEffectPhaseBegin
     {
         public static void Prefix(StatisticEffect __instance, ref bool __state)
@@ -434,10 +437,11 @@ namespace CustAmmoCategoriesPatches
             }
         }
     }
+    // HarmonyX: PRIORITY CHANGE: FIRST -> LAST
     [HarmonyPatch(typeof(StatisticEffect))]
     [HarmonyPatch("OnEffectTakeDamage")]
     [HarmonyPatch(MethodType.Normal)]
-    [HarmonyPriority(Priority.First)]
+    [HarmonyPriority(Priority.Last)]
     public static class StatisticEffect_OnEffectTakeDamage
     {
         public static void Prefix(StatisticEffect __instance, ref bool __state)
@@ -478,10 +482,11 @@ namespace CustAmmoCategoriesPatches
             }
         }
     }
+    // HarmonyX: PRIORITY CHANGE: FIRST -> LAST
     [HarmonyPatch(typeof(StatisticEffect))]
     [HarmonyPatch("OnEffectEnd")]
     [HarmonyPatch(MethodType.Normal)]
-    [HarmonyPriority(Priority.First)]
+    [HarmonyPriority(Priority.Last)]
     public static class StatisticEffect_OnEffectEnd
     {
         public static void Prefix(StatisticEffect __instance, ref bool __state)
@@ -522,10 +527,11 @@ namespace CustAmmoCategoriesPatches
             }
         }
     }
+
     [HarmonyPatch(typeof(StatisticEffect))]
     [HarmonyPatch("OnEffectActivationEnd")]
     [HarmonyPatch(MethodType.Normal)]
-    [HarmonyPriority(Priority.First)]
+    [HarmonyPriority(Priority.Last)]
     public static class StatisticEffect_OnEffectActivationEnd
     {
         public static void Prefix(StatisticEffect __instance, ref bool __state)
