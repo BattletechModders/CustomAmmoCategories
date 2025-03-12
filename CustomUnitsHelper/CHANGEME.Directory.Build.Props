@@ -1,0 +1,10 @@
+<!--
+Move this file to the parent directory and rename it to `Directory.Build.props`.
+Change BattleTechGameDir to point to your game installation.
+-->
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <BattleTechGameDir>CHANGEME_TO_FULL_PATH_TO_BTG_DIR</BattleTechGameDir>
+  </PropertyGroup>
+</Project>
+
