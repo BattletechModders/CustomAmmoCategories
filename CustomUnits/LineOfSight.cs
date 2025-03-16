@@ -8,8 +8,9 @@ using System.Collections.Generic;
 using CustAmmoCategories;
 
 namespace CustomUnits {
+  // HarmonyX: Priority: -800 -> +800
   [HarmonyPatch(typeof(LineOfSight), "GetLineOfFireUncached")]
-  [HarmonyPriority(-800)]
+  [HarmonyPriority(+800)]
   public static class LineOfSight_GetLineOfFireUncached {
     public static readonly string IN_LineOfSight_FLAG = "IN_LineOfSight";
     public static void Prefix(ref bool __runOriginal, LineOfSight __instance, AbstractActor source, Vector3 sourcePosition, ICombatant target, Vector3 targetPosition, Quaternion targetRotation, ref Vector3 collisionWorldPos, ref LineOfFireLevel __result) {
