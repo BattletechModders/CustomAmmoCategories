@@ -522,6 +522,8 @@ namespace CustAmmoCategories {
     public Dictionary<string, AoEModifiers> TagAoEDamageMult { get; set; } = new Dictionary<string, AoEModifiers>();
     [Key(176)]
     public float PhysicsAoE_MinDist { get; set; } = 0f;
+    [Key(177)]
+    public TripleBoolean PersistentJamming { get; set; } =  TripleBoolean.NotSet;
     [IgnoreMember, JsonIgnore]
     private HashSet<string> f_restrictedAmmo = null;
     [IgnoreMember, JsonIgnore]
