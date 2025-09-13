@@ -206,15 +206,21 @@ namespace CustAmmoCategories {
       if (trajectoryObject_pool_owner == null) { trajectoryObject_pool_owner = new GameObject("TrajectoryPoolOwner"); }
       CurvySpline result = null;
       GameObject trajectoryObject = null;
-      if (trajectoryObject_pool.Count == 0) {
-        trajectoryObject = new GameObject("trajectory");
-        trajectoryObject.transform.SetParent(trajectoryObject_pool_owner.transform);
-        result = trajectoryObject.AddComponent<CurvySpline>();
-      } else {
-        trajectoryObject = trajectoryObject_pool.First();
-        trajectoryObject_pool.Remove(trajectoryObject);
-        result = trajectoryObject.GetComponent<CurvySpline>();
+      try
+      {
+        if (trajectoryObject_pool.Count > 0) {
+          trajectoryObject = trajectoryObject_pool.First();
+          trajectoryObject_pool.Remove(trajectoryObject);
+          return trajectoryObject.GetComponent<CurvySpline>();
+        }
       }
+      catch (NullReferenceException e)
+      {
+        Log.Combat?.TWL(0, $"CreateSpline found NullRef, GO destroyed? {e}");
+      }
+      trajectoryObject = new GameObject("trajectory");
+      trajectoryObject.transform.SetParent(trajectoryObject_pool_owner.transform);
+      result = trajectoryObject.AddComponent<CurvySpline>();
       return result;
     }
     public bool CanBeImpemented() {
