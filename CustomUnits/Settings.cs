@@ -192,6 +192,7 @@ namespace CustomUnits {
     public string VehicleComponentOneAllowed { get; set; } = "vehicle_one_allowed";
     public string VehicleComponentOneAllowedLocation { get; set; } = "vehicle_one_allowed_location";
     public string VehicleComponentCategoryTagPrefix { get; set; } = "vehicle_component_category_";
+    public string VehicleComponentIgnoreEnergyHeat { get; set; } = "vehicle_ignore_energy_heat";
     public bool PreserveJsonUnitCost { get; set; } = true;
     public bool RecalcUnitPartCost { get; set; } = true;
     public float RecalcUnitPartCostBase { get; set; } = 5.0f;

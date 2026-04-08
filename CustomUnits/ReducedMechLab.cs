@@ -1354,7 +1354,7 @@ namespace CustomUnits {
       if (origweapon.Tonnage < newweapon.Tonnage) {
         return $"This weapon too heavy, should be no more than {origweapon.Tonnage} tons";
       }
-      if (origweapon.WeaponCategoryValue.IsEnergy) {
+      if (origweapon.WeaponCategoryValue.IsEnergy && !newweapon.ComponentTags.Contains(Core.Settings.VehicleComponentIgnoreEnergyHeat)) {
         if (origweapon.HeatGenerated < newweapon.HeatGenerated) {
           return $"Weapon is too hot, should generate no more than {origweapon.HeatGenerated} heat";
         }
