@@ -21,6 +21,7 @@
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+    <LangVersion>11</LangVersion>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -29,19 +30,20 @@
     <DefineConstants>TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+    <LangVersion>11</LangVersion>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="Mono.Cecil">
-      <HintPath>$(BattleTechGameDir)\Mods\ModTek\Mono.Cecil.dll</HintPath>
+      <HintPath>$(BattleTechGameDir)\Mods\ModTek\lib\Mono.Cecil.dll</HintPath>
     </Reference>
     <Reference Include="Mono.Cecil.Mdb">
-      <HintPath>$(BattleTechGameDir)\Mods\ModTek\Mono.Cecil.Mdb.dll</HintPath>
+      <HintPath>$(BattleTechGameDir)\Mods\ModTek\lib\Mono.Cecil.Mdb.dll</HintPath>
     </Reference>
     <Reference Include="Mono.Cecil.Pdb">
-      <HintPath>$(BattleTechGameDir)\Mods\ModTek\Mono.Cecil.Pdb.dll</HintPath>
+      <HintPath>$(BattleTechGameDir)\Mods\ModTek\lib\Mono.Cecil.Pdb.dll</HintPath>
     </Reference>
     <Reference Include="Mono.Cecil.Rocks">
-      <HintPath>$(BattleTechGameDir)\Mods\ModTek\Mono.Cecil.Rocks.dll</HintPath>
+      <HintPath>$(BattleTechGameDir)\Mods\ModTek\lib\Mono.Cecil.Rocks.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
