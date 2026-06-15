@@ -16,6 +16,7 @@ using BattleTech.UI;
 using BattleTech.UI.TMProWrapper;
 using BattleTech.UI.Tooltips;
 using CustAmmoCategories;
+using CustomUnits.CustomHangars;
 using DG.Tweening;
 using HarmonyLib;
 using HBS;
@@ -974,8 +975,8 @@ namespace CustomUnits {
       MechDef purchasedMech = dropParent.purchasedMech;
       ChassisDef purchasedChassis = dropParent.purchasedChassis;
       int baysShift = 0;
-      if (purchasedMech != null) { baysShift = purchasedMech.GetHangarShift(); } else
-        if (purchasedChassis != null) { baysShift = purchasedChassis.GetHangarShift(); };
+      if (purchasedMech != null) { baysShift = purchasedMech.GetHangarShift(); } 
+      else if (purchasedChassis != null) { baysShift = purchasedChassis.GetHangarShift(); };
       //int fullBaysCount = showVehicles == false ? __instance.MechBaysCount() : __instance.VehicleBaysCount();
       int baySlotStart = baysShift;
       int baySlotEnd = baySlotStart + maxMechsPerPod;
