@@ -1426,11 +1426,12 @@ namespace CustomUnits {
       return true;
     }
   }*/
+  // HarmonyX: Priority: FIRST -> LAST
   [HarmonyPatch(typeof(MechDef))]
   [HarmonyPatch("FromJSON")]
   [HarmonyPatch(MethodType.Normal)]
   [HarmonyPatch(new Type[] { typeof(string) })]
-  [HarmonyPriority(Priority.First)]
+  [HarmonyPriority(Priority.Last)]
   public static class MechDef_FromJSON_fake {
     public class CombatGameConstantsFake {
       public CombatValueMultipliersDef CombatValueMultipliers { get; private set; }

@@ -568,7 +568,9 @@ namespace CustAmmoCategories {
     }
     public static bool JammingPersistent(this Weapon weapon)
     {
-       return weapon.exDef().PersistentJamming;
+      WeaponMode mode = weapon.mode();
+      if (mode.PersistentJamming != TripleBoolean.NotSet) { return mode.PersistentJamming ==  TripleBoolean.True; }
+      return weapon.exDef().PersistentJamming;
     }
     public static bool AttemptToRemoveJam(AbstractActor actor, Weapon weapon) {
       var skill = actor.SkillGunnery;

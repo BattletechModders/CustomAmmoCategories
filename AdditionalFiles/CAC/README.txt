@@ -818,7 +818,7 @@ new fields
 						   mode have priority, than ammo, than weapon. Default value Linear
   "DamageOnJamming": true/false, - if true on jamming weapon will be damaged
   "DestroyOnJamming": true/false, - if true on jamming weapon will be destroyed (need DamageOnJamming to be set true also)
-  "PersistentJamming": true/false, - if true weapon will be jammed until end of combat. No attemts of jamming will be done at all
+  "PersistentJamming": true/false, - if true weapon will be jammed until end of combat. No attempts of unjamming will be done at all. Supported on weapon and mode, mode overrides.
   "FlatJammingChance": 1.0, - Chance of jamming weapon after fire. 1.0 is jamm always. Unjamming logic implemented as in WeaponRealizer
                               NOTE! There FlatJammingChance can be altered via CACFlatJammingChance statistic value per actor's and/or per weapon's statistic collections
   "RecoilJammingChance": 0.0, - addition to  FlatJammingChance based on recoil. Adds RecoilJammingChance * <RefireModifier> to FlatJammingChance
@@ -1061,6 +1061,7 @@ new fields
 		"AIHitChanceCap": 0.3, - not used any more
 		"DamageOnJamming": true/false, - if true on jamming weapon will be damaged
     "DestroyOnJamming": true/false, - if true on jamming weapon will be destroyed (need DamageOnJamming to be set true also)
+    "PersistentJamming": true/false, - if true weapon will be jammed until end of combat. No attempts of unjamming will be done at all. Overrides setting on weapon.
 		"DamageMultiplier":2.0, - damage multiplier for this mode. Multiplicative per ammo/mode. If omitted assumed to be 1.0.
 		"HeatMultiplier":2.0, - heat multiplier for this mode. Multiplicative per ammo/mode. If omitted assumed to be 1.0.
 		"InstabilityMultiplier":2.0, - instability multiplier for this mode. Multiplicative per ammo/mode. If omitted assumed to be 1.0.

@@ -936,10 +936,12 @@ namespace CustAmmoCategories {
       //return false;
     }
   }
+
+  // HarmonyX: PRIORITY CHANGE: LAST -> FIRST
   [HarmonyPatch(typeof(ToHit))]
   [HarmonyPatch("GetAllModifiers")]
   [HarmonyPatch(MethodType.Normal)]
-  [HarmonyPriority(Priority.Last)]
+  [HarmonyPriority(Priority.First)]
   [HarmonyPatch(new Type[] { typeof(AbstractActor), typeof(Weapon), typeof(ICombatant), typeof(Vector3), typeof(Vector3), typeof(LineOfFireLevel), typeof(bool) })]
   public static class ToHit_GetAllModifiers {
     public static bool Prefix() {
@@ -977,10 +979,12 @@ namespace CustAmmoCategories {
     }
 
   }
+
+  // HarmonyX: PRIORITY CHANGE: LAST -> FIRST
   [HarmonyPatch(typeof(ToHit))]
   [HarmonyPatch("GetAllMeleeModifiers")]
   [HarmonyPatch(MethodType.Normal)]
-  [HarmonyPriority(Priority.Last)]
+  [HarmonyPriority(Priority.First)]
   [HarmonyPatch(new Type[] { typeof(Mech), typeof(ICombatant), typeof(Vector3), typeof(MeleeAttackType) })]
   public static class ToHit_GetAllMeleeModifiers {
     public static bool Prefix() {
@@ -1012,8 +1016,9 @@ namespace CustAmmoCategories {
     }
   }
 
+  // HarmonyX: PRIORITY CHANGE: FIRST -> LAST
   [HarmonyPatch(typeof(ToHit), nameof(ToHit.GetToHitChance))]
-  [HarmonyPriority(Priority.First)]
+  [HarmonyPriority(Priority.Last)]
   public static class ToHit_GetToHitChance2
   {
     public static void Postfix(ToHit __instance, ref float __result, CombatGameState ___combat, AbstractActor attacker, Weapon weapon, ICombatant target, Vector3 attackPosition, Vector3 targetPosition, int numTargets, MeleeAttackType meleeAttackType, bool isMoraleAttack)

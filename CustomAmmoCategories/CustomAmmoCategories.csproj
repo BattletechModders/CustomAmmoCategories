@@ -21,7 +21,7 @@
     <FileAlignment>512</FileAlignment>
     <NuGetPackageImportStamp/>
 
-    <LangVersion>12</LangVersion>
+    <LangVersion>13</LangVersion>
   </PropertyGroup>
   
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">

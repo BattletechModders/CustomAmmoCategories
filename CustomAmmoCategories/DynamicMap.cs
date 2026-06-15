@@ -1960,7 +1960,8 @@ namespace CustomAmmoCategoriesPatches {
       try {
         MapTerrainDataCellEx excell = cell as MapTerrainDataCellEx;
         if(excell != null)
-        if (Thread.CurrentThread.isFlagSet(ActorMovementSequence_UpdateSticky.HIDE_DESIGN_MASK_FLAG)) {
+        //if (Thread.CurrentThread.isFlagSet(ActorMovementSequence_UpdateSticky.HIDE_DESIGN_MASK_FLAG)) {
+        if (ActorMovementSequence_UpdateSticky.bHIDE_DESIGN_MASK_FLAG) {
           __result = null;
           return;
         }
@@ -2449,3 +2450,4 @@ namespace CustomAmmoCategoriesPatches {
     }
   }
 }
+
