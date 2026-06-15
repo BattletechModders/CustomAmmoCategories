@@ -12,6 +12,7 @@ using BattleTech;
 using BattleTech.Data;
 using CustAmmoCategories;
 using CustomAmmoCategoriesPatches;
+using CustomUnits.CustomHangars;
 using HarmonyLib;
 using HarmonyLib.Tools;
 using Localize;
