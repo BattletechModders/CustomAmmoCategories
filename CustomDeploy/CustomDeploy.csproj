@@ -36,14 +36,17 @@
     <DebugSymbols>true</DebugSymbols>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="BepInEx.AssemblyPublicizer.MSBuild" Version="0.3.0" />
+    <PackageReference Include="Krafs.Publicizer" Version="2.3.0" />
+    <Publicize Include="Assembly-CSharp" />
   </ItemGroup>
+  
   <ItemGroup>
     <Reference Include="0Harmony, Version=1.2.0.1, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>$(BattleTechGameDir)\Mods\ModTek\lib\0Harmony.dll</HintPath>
     </Reference>
-    <Reference Include="Assembly-CSharp" Publicize="true">
+
+    <Reference Include="Assembly-CSharp">
       <HintPath>$(BattleTechGameDir)\Mods\.modtek\AssembliesInjected\Assembly-CSharp.dll</HintPath>
       <Private>False</Private>
     </Reference>
