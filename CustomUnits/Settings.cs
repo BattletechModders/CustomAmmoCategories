@@ -50,6 +50,7 @@ namespace CustomUnits {
     public string MechBaySwitchIconVehicle { get; set; }
     public string MechBaySwitchIconUp { get; set; }
     public string MechBaySwitchIconDown { get; set; }
+    public string MechBayDefaultLabel { get; set; }
     public string ShowActiveAbilitiesIcon { get; set; }
     public string ShowPassiveAbilitiesIcon { get; set; }
     public string HideActiveAbilitiesIcon { get; set; }
@@ -262,6 +263,7 @@ namespace CustomUnits {
       MechBaySwitchIconVehicle = "vehicle";
       MechBaySwitchIconUp = "weapon_up";
       MechBaySwitchIconDown = "weapon_down";
+      MechBayDefaultLabel = "Mech Bay";
       ShowActiveAbilitiesIcon = "";
       ShowPassiveAbilitiesIcon = "";
       HideActiveAbilitiesIcon = "";

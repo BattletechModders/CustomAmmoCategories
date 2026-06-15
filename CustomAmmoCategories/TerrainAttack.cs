@@ -336,7 +336,7 @@ namespace CustAmmoCategories {
     }
     public override void ProcessMousePos(Vector3 worldPos) {
       float range = float.NaN;
-      ICombatant target = null;
+      //ICombatant target = null;
       switch (this.NumPositionsLocked) {
         case 0:
           if(this.UpdateWeapons(worldPos,out range)) {
