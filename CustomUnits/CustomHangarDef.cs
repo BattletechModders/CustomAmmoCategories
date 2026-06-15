@@ -12,6 +12,7 @@ using BattleTech;
 using BattleTech.Save.SaveGameStructure;
 using BattleTech.UI;
 using BattleTech.UI.TMProWrapper;
+using CustomUnits.CustomHangars;
 using HarmonyLib;
 using HBS.Collections;
 using Newtonsoft.Json;
@@ -70,25 +71,30 @@ namespace CustomUnits
         public void OnPointerClick(PointerEventData eventData)
         {
             if (parent == null) { return; }
-            if (this.parent.parent != null)
+
+            CustomBaysUICaster caster = this.parent?.parent;
+            if (caster != null)
             {
                 RectTransform rectTransform = this.gameObject.GetComponent<RectTransform>();
-                if (this.parent.parent.currentBay != rectTransform)
+                if (caster.currentBay != rectTransform)
                 {
-                    if (this.parent.parent.mainBay == rectTransform)
+                    if (caster.mainBay == rectTransform)
                     {
-                        this.parent.parent.currentBay = rectTransform;
-                        this.parent.parent.currentHangarInfo.definition = null;
-                        this.parent.parent.BayPanel.ViewBays();
+                        caster.currentBay = rectTransform;
+                        caster.currentHangarInfo.definition = null;
+
+                        CustomHangarHelper.RefreshHanagarUIForConstraints(caster, null);
+                        caster.BayPanel.ViewBays();
                     }
-                    else
-                        if (this.parent.parent.additionalBays.Contains(rectTransform))
-                        {
-                            this.parent.parent.currentBay = rectTransform;
-                            CustomHangarInfo info = rectTransform.gameObject.GetComponent<CustomHangarInfo>();
-                            this.parent.parent.currentHangarInfo.definition = info == null ? null : info.definition;
-                            this.parent.parent.BayPanel.ViewBays();
-                        }
+                    else if (caster.additionalBays.Contains(rectTransform))
+                    {
+                        caster.currentBay = rectTransform;
+                        CustomHangarInfo info = rectTransform.gameObject.GetComponent<CustomHangarInfo>();
+                        caster.currentHangarInfo.definition = info == null ? null : info.definition;
+
+                        CustomHangarHelper.RefreshHanagarUIForConstraints(caster, info);
+                        caster.BayPanel.ViewBays();
+                    }
                 }
             }
             HBSDOTweenToggle thisToggle = this.gameObject.GetComponent<HBSDOTweenToggle>();
@@ -97,6 +103,7 @@ namespace CustomUnits
                 if (toggle == thisToggle) { continue; }
                 toggle.SetState(ButtonState.Enabled);
             }
+
         }
     }
     public class CustomBaysButtonsController : MonoBehaviour
@@ -109,7 +116,10 @@ namespace CustomUnits
             {
                 buttons = new List<HBSDOTweenToggle>();
                 HBSDOTweenToggle[] src_buttons = this.gameObject.GetComponentsInChildren<HBSDOTweenToggle>(true);
-                foreach (HBSDOTweenToggle btn in src_buttons) { buttons.Add(btn); btn.gameObject.AddComponent<CustomBaysButton>().parent = this; }
+                foreach (HBSDOTweenToggle btn in src_buttons) 
+                { 
+                    buttons.Add(btn); btn.gameObject.AddComponent<CustomBaysButton>().parent = this; 
+                }
             }
         }
     }
@@ -119,7 +129,7 @@ namespace CustomUnits
     }
     public class CustomBaysPopupUICaster : MonoBehaviour
     {
-        private bool UIInited { get; set; } = false;
+        public bool UIInited { get; private set; } = false;
         private RectTransform m_rectTransform = null;
         public SimGameState SimGame { get; set; } = null;
         public MechPlacementPopup parent { get; set; } = null;
@@ -226,6 +236,7 @@ namespace CustomUnits
         public MechBayPanel BayPanel { get; set; } = null;
         public List<RectTransform> additionalBays = new List<RectTransform>();
         private Vector2 pendingPivot = new Vector2(0.5f, 0.5f);
+        public SimGameState SimGameState { get; set; } = null;
         public void Update()
         {
             if (UIInited && (UIAligned == false))
@@ -274,7 +285,7 @@ namespace CustomUnits
                             LocalizableText text = toggle.gameObject.GetComponentInChildren<LocalizableText>(true);
                             text.SetText(Core.Settings.MechBayDefaultLabel);
                         }
-                        catch (Exception ex)
+                        catch (Exception)
                         {
                             Log.M?.TWL(0, "Failed to set the default mech bay label");
                         }
@@ -399,6 +410,7 @@ namespace CustomUnits
             }
         }
     }
+
     [HarmonyPatch(typeof(MechBayPanel))]
     [HarmonyPatch("GetBayRowFromSlot")]
     [HarmonyPatch(MethodType.Normal)]
@@ -473,6 +485,7 @@ namespace CustomUnits
                     CustomBaysUICaster caster = layout_tabs.gameObject.GetComponent<CustomBaysUICaster>();
                     if (caster == null) { caster = layout_tabs.gameObject.AddComponent<CustomBaysUICaster>(); }
                     caster.BayPanel = __instance;
+                    caster.SimGameState = sim;
                 }
 
             }
@@ -485,110 +498,7 @@ namespace CustomUnits
         }
     }
 
-    public static class CustomHangarHelper
-    {
-        // Keyed by def.Description.Id
-        private static Dictionary<string, CustomHangarDef> hangars = new Dictionary<string, CustomHangarDef>();
-        private static List<CustomHangarDef> f_list_hangars = null;
-
-        public static void Register(this CustomHangarDef def)
-        {
-            if (hangars.ContainsKey(def.Description.Id)) { hangars[def.Description.Id] = def; } else { hangars.Add(def.Description.Id, def); }
-        }
-
-        public static CustomHangarDef HangarDef(this ChassisDef chassis)
-        {
-            foreach (var hangar in hangars)
-            {
-                if (chassis.ChassisTags.ContainsAll(hangar.Value.tags)) { return hangar.Value; }
-            }
-            return null;
-        }
-
-        public static List<CustomHangarDef> listHangars
-        {
-            get
-            {
-                if (f_list_hangars == null)
-                {
-                    f_list_hangars = hangars.Values.ToList();
-                    f_list_hangars.Sort((x, y) => { return x.PositionShift - y.PositionShift; });
-                }
-                return f_list_hangars;
-            }
-        }
-
-        // Hangar 'shift' is a positional index that determines where the boundary between hanger types lies. CU ships with vehicle bay at 100, ba bay at 200.
-        public static int GetHangarShift(this MechDef mechDef)
-        {
-            if (mechDef.DataManager == null) { mechDef.DataManager = UnityGameInstance.BattleTechGame.DataManager; }
-            if (mechDef.Chassis == null) { mechDef.Chassis = mechDef.DataManager.ChassisDefs.Get(mechDef.ChassisID); }
-            ;
-            if (mechDef.Chassis == null) { throw new Exception(mechDef.Description.Id + " absent chassis " + mechDef.ChassisID); }
-            CustomHangarDef def = mechDef.Chassis.HangarDef();
-            return def == null ? 0 : def.PositionShift;
-        }
-
-        public static int GetHangarShift(this ChassisDef chassisDef)
-        {
-            CustomHangarDef def = chassisDef.HangarDef();
-            return def == null ? 0 : def.PositionShift;
-        }
-        public static int MaxPositionShift
-        {
-            get
-            {
-                return listHangars.Count == 0 ? 0 : listHangars[listHangars.Count - 1].PositionShift;
-            }
-        }
-
-        public static int FallbackVehicleShift()
-        {
-            if (hangars.TryGetValue(CustomHangarDef.DEFAULT_VEHICLE_HANGAR_ID, out CustomHangarDef def))
-            {
-                return def.PositionShift;
-            }
-            return 0;
-        }
-
-        public record CustomHangarConstraint
-        {
-            public int MaxUnitsPerPod; // Replaces __instance.Constants.Story.MaxMechsPerPod
-        }
-        private static Dictionary<string, CustomHangarConstraint> HangarConstraints = new Dictionary<string, CustomHangarConstraint>();
-
-        public const string HANGAR_ID_BASE = "BASE_HANGER";
-        // Invoke after CU FinishedLoading, supplying constraints for each loaded CustomHangarDef. 
-        public static void SetConstraints(Dictionary<string, CustomHangarConstraint> constraints, string modSource)
-        {
-            Log.M?.TWL(0, $"Registering CustomHangarConstraints from mod: {modSource}");
-            if (constraints == null || constraints.Keys.Count == 0)
-            {
-                Log.M?.WL(0, "Constraints were empty, skipping!");
-            }
-
-            
-            foreach (KeyValuePair<string, CustomHangarConstraint> kvp in constraints)
-            {
-                if (CustomHangarHelper.hangars.ContainsKey(kvp.Key))
-                {
-                    Log.M?.WL(0, $"Constraint CustomHangarDef id: {kvp.Key} matched populated CustomHangarDef, applying.");
-                    CustomHangarHelper.HangarConstraints[kvp.Key] = kvp.Value;
-                }
-                else if (String.Equals(kvp.Key, CustomHangarHelper.HANGAR_ID_BASE))
-                {
-                    Log.M?.WL(0, $"Constraint for default hangar found, applying");
-                    CustomHangarHelper.HangarConstraints[CustomHangarHelper.HANGAR_ID_BASE] = kvp.Value;
-                }
-                else
-                {
-                    Log.M?.WL(0, $"CustomHangarDef id: {kvp.Key} was not found, ignoring supplied constraint.");
-                }
-                
-            }
-        }
-
-    }
+   
 
     public class CustomHangarDef
     {
