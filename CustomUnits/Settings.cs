@@ -51,6 +51,22 @@ namespace CustomUnits {
     public string MechBaySwitchIconUp { get; set; }
     public string MechBaySwitchIconDown { get; set; }
     public string MechBayDefaultLabel { get; set; }
+
+        public class MechBayPodConfig
+        {
+            public string AvailableIcon { get; set; }
+            public float[] AvailableColorRGBA{ get; set; }
+            public Color AvailableColor { get => new Color(AvailableColorRGBA[0], AvailableColorRGBA[1], AvailableColorRGBA[2], AvailableColorRGBA[3]); }
+
+            public string UnavailableIcon{ get; set; }
+            public float[] UnavailableColorRGBA{ get; set; }
+            public Color UnavailableColor { get => new Color(AvailableColorRGBA[0], AvailableColorRGBA[1], AvailableColorRGBA[2], AvailableColorRGBA[3]); }
+
+            public String UpgradeBannerText { get; set; }
+        }
+
+    public MechBayPodConfig MechBayPods;
+
     public string ShowActiveAbilitiesIcon { get; set; }
     public string ShowPassiveAbilitiesIcon { get; set; }
     public string HideActiveAbilitiesIcon { get; set; }
@@ -259,11 +275,22 @@ namespace CustomUnits {
       ConvoyMaxDistFromRoute = 30f;
       ConvoyRouteTag = "escort_convoy";
       AllowVehiclesEdit = false;
+      
       MechBaySwitchIconMech = "mech";
       MechBaySwitchIconVehicle = "vehicle";
       MechBaySwitchIconUp = "weapon_up";
       MechBaySwitchIconDown = "weapon_down";
       MechBayDefaultLabel = "Mech Bay";
+
+            MechBayPods = new MechBayPodConfig
+            {
+                AvailableIcon = "mechbay_plus-square",
+                AvailableColorRGBA = [1.0f, 1.0f, 1.0f, 0.75f],
+                UnavailableIcon = "mechbay_x-square",
+                UnavailableColorRGBA = [0.2f, 0.2f, 0.2f, 0.5f],
+                UpgradeBanner = "UPGRADE DROPSHIP FOR MORE"
+            };
+      
       ShowActiveAbilitiesIcon = "";
       ShowPassiveAbilitiesIcon = "";
       HideActiveAbilitiesIcon = "";

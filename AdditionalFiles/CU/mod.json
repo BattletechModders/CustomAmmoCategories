@@ -41,6 +41,21 @@
     "overallDeploySize": 6,
     "CountContractMaxUnits4AsUnlimited": true,
     "ConvoyMaxDistFromRoute": 90,
+
+    "MechBaySwitchIconMech": "mech",
+    "MechBaySwitchIconVehicle": "vehicle",
+    "MechBaySwitchIconUp": "weapon_up",
+    "MechBaySwitchIconDown": "weapon_down",
+    "MechBayDefaultLabel" : "Mech Bay",
+
+    "MechBayPods" : {
+      "AvailableIcon" : "mechbay_plus-square",
+      "AvailableColorRGBA" : [1.0, 1.0, 1.0, 0.75 ],
+      "UnavailableIcon" : "mechbay_x-square",
+      "UnavailableColorRGBA" : [0.2, 0.2, 0.2, 0.5],
+      "UpgradeBannerText" : "UPGRADE DROPSHIP FOR MORE"
+    },
+
     "DeployManual": true,
     "Lances": [
       {
