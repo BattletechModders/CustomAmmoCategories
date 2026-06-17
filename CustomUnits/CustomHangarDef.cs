@@ -401,6 +401,9 @@ namespace CustomUnits
                         this.BayPanel.bayGroupWidget.bays = rows.ToArray();
                         BayPanel.ViewBays();
                     }
+
+                    // Refresh constraints
+                    CustomHangarHelper.RefreshHanagarUIForConstraints(this, null);
                 }
             }
             catch (Exception e)

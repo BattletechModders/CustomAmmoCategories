@@ -97,7 +97,7 @@ namespace CustomUnits.CustomHangars
         private static Dictionary<string, CustomHangarConstraint> hangarConstraints = new Dictionary<string, CustomHangarConstraint>();
         public record CustomHangarConstraint
         {
-            public int MaxUnitsPerPod; // Replaces __instance.Constants.Story.MaxMechsPerPod
+            public int MaxAvailableUnits; // Replaces companyStats.GetValue<int>(Constants.Story.MechBayPodsID) * Constants.Story.MaxMechsPerPod;
         }
 
         // Extension used from Core::FinishedLoading
@@ -166,8 +166,8 @@ namespace CustomUnits.CustomHangars
             CustomHangarDef def = mechDef?.Chassis?.HangarDef();
             if (def == null) { return MaxPodsConstraintForDefaultHangar(); }
             bool keyExists = hangarConstraints.TryGetValue(def.Description.Id, out CustomHangarConstraint constraint);
-            Log.M?.WL(0, $"Returning constraint of {constraint?.MaxUnitsPerPod} for {def.Description.Id}");
-            return keyExists ? constraint.MaxUnitsPerPod : -1;
+            Log.M?.WL(0, $"Returning constraint of {constraint?.MaxAvailableUnits} for {def.Description.Id}");
+            return keyExists ? constraint.MaxAvailableUnits : -1;
         }
 
         public static int MaxPodsConstraint(ChassisDef chassisDef)
@@ -175,22 +175,27 @@ namespace CustomUnits.CustomHangars
             CustomHangarDef def = chassisDef?.HangarDef();
             if (def == null) { return MaxPodsConstraintForDefaultHangar();  }
             bool keyExists = hangarConstraints.TryGetValue(def.Description.Id, out CustomHangarConstraint constraint);
-            Log.M?.WL(0, $"Returning constraint of {constraint?.MaxUnitsPerPod} for {def.Description.Id}");
-            return keyExists ? constraint.MaxUnitsPerPod : -1;
+            Log.M?.WL(0, $"Returning constraint of {constraint?.MaxAvailableUnits} for {def.Description.Id}");
+            return keyExists ? constraint.MaxAvailableUnits : -1;
         }
 
         public static int MaxPodsConstraint(CustomHangarInfo hangarInfo)
         {
+            if (hangarInfo == null || hangarInfo?.definition == null)
+            {
+                return MaxPodsConstraintForDefaultHangar();
+            }
+
             bool keyExists = hangarConstraints.TryGetValue(hangarInfo.definition.Description.Id, out CustomHangarConstraint constraint);
-            return keyExists ? constraint.MaxUnitsPerPod : -1;
+            return keyExists ? constraint.MaxAvailableUnits : -1;
         }
 
         public static int MaxPodsConstraintForDefaultHangar()
         {
             bool keyExists = hangarConstraints.TryGetValue(HANGAR_ID_BASE, out CustomHangarConstraint constraint);
-            Log.M?.WL(0, $"Returning defaultHangar constraint of {constraint?.MaxUnitsPerPod}");
+            Log.M?.WL(0, $"Returning defaultHangar constraint of {constraint?.MaxAvailableUnits}");
 
-            return keyExists ? constraint.MaxUnitsPerPod : -1;
+            return keyExists ? constraint.MaxAvailableUnits : -1;
         }
 
         // Invoke after CU FinishedLoading, supplying constraints for each loaded CustomHangarDef. 
@@ -255,45 +260,52 @@ namespace CustomUnits.CustomHangars
             {
                 Log.M?.WL(0, $"dropSlot row ====");
 
+                bool rowEnabled = remainingPods > 0;
+
                 // Set the unavailable text
                 GameObject unavailableGO = mbrw.gameObject.FindFirstChildNamed("UNAVAILABLE");
                 LocalizableText unavailableText = unavailableGO.GetComponentInChildren<LocalizableText>();
                 // TODO: Make this a setting / hangar value?
-                unavailableText.text = "UPGRADE DROPSHIP FOR MORE";
+                unavailableText.text = Core.Settings.MechBayPods.UpgradeBannerText;
 
                 // Iterate dropslots
                 GameObject DropSlots = mbrw.gameObject.FindFirstChildNamed("DropSlots");
                 // TODO: We really should pull this from sim.Constants.MaxMechsPerPod but I am struggling to think of how to get that ref from here
+
                 foreach (Transform mbDropSlotT in DropSlots.transform)
                 {
+                    if (!rowEnabled)
+                    {
+                        mbDropSlotT.gameObject.SetActive(false);
+                        Log.M?.WL(0, $"Row disabled, setting dropSlot inactive");
+                        continue;
+                    }
+                    else
+                    {
+                        mbDropSlotT.gameObject.SetActive(true);
+                    }
+
                     GameObject iconStatusGO = mbDropSlotT.gameObject.FindFirstChildNamed("icon_status_unused?");
                     SVGImage iconStatusImg = iconStatusGO.GetComponent<SVGImage>();
                     if (remainingPods <= 0)
                     {
                         // Disable
                         customBaysUICaster.SimGameState.RequestItem<SVGAsset>(
-                            "uixSvgIcon_genericDiamond",
-                            delegate (SVGAsset asset) { 
-                                iconStatusImg.vectorGraphics = asset;
-                                Log.M?.WL(0, $"UPDATEING VECTOR GRAPHIC TO: {asset.name}  {asset.svgFile}");
-                                iconStatusImg.UpdateRenderer();
-                            },
+                            Core.Settings.MechBayPods.UnavailableIcon,
+                            delegate (SVGAsset asset) { iconStatusImg.vectorGraphics = asset; },
                             BattleTechResourceType.SVGAsset);
-                        iconStatusImg.color = new Color(0.2f, 0.2f, 0.2f, 0.5f);
-                        
+
+                        iconStatusImg.color = Core.Settings.MechBayPods.UnavailableColor;
                         Log.M?.WL(0, $"Marked pod unavailable, remainingPods: {remainingPods}");
                     }
                     else
                     {
                         // Enable
                         customBaysUICaster.SimGameState.RequestItem<SVGAsset>(
-                            "uixSvgIcon_skullAtlas",
-                            delegate (SVGAsset asset) { 
-                                iconStatusImg.vectorGraphics = asset;
-                                Log.M?.WL(0, $"UPDATEING VECTOR GRAPHIC TO: {asset.name}  {asset.svgFile}");
-                            },
+                            Core.Settings.MechBayPods.AvailableIcon,
+                            delegate (SVGAsset asset) { iconStatusImg.vectorGraphics = asset; },
                             BattleTechResourceType.SVGAsset);
-                        iconStatusImg.color = new Color(1f, 1f, 1f, 0.5f);
+                        iconStatusImg.color = Core.Settings.MechBayPods.AvailableColor;
                         Log.M?.WL(0, $"Marked pod available, remainingPods: {remainingPods}");
                     }
                     remainingPods--;
