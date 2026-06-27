@@ -1556,6 +1556,8 @@ namespace CustomUnits {
     private static ILog logger = HBS.Logging.Logger.GetLogger("Data.DataManager.ContainedLoadRequest");
     public static void Prefix(LoadRequest __instance, BattleTechResourceType resourceType, ref string resourceId) {
       try {
+        if (string.IsNullOrEmpty(resourceId))
+          return;
         if (resourceType != BattleTechResourceType.Prefab) { return; }
         var versionManifestEntry = __instance.dataManager.ResourceLocator.EntryByID(resourceId, resourceType);
         if (versionManifestEntry != null) { return; }

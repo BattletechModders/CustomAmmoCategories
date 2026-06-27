@@ -971,6 +971,8 @@ namespace CustomDeploy{
     public static void Postfix(LoadRequest __instance, BattleTechResourceType resourceType, string resourceId, bool __result) {
       try {
         if (__result == true) { return; }
+        if (string.IsNullOrEmpty(resourceId))
+          return;
         if (resourceId == "pilotDef_InheritLance") { return; }
         Log.TWL(0, "LoadRequest.TryCreateAndAddLoadRequest failed " + resourceId+" "+resourceType);
         VersionManifestEntry versionManifestEntry = __instance.dataManager.ResourceLocator.EntryByID(resourceId, resourceType);
@@ -2027,4 +2029,3 @@ namespace CustomDeploy{
     }
   }
 }
- 
