@@ -89,7 +89,7 @@ namespace CustomUnits.CustomHangars
 
     public static class CustomHangarHelper
     {
-        public const string HANGAR_ID_BASE = "BASE_HANGER";
+        public const string BASE_HANGAR_ID = "BASE_HANGER";
 
         // Keyed by def.Description.Id
         private static Dictionary<string, CustomHangarDef> hangars = new Dictionary<string, CustomHangarDef>();
@@ -128,6 +128,24 @@ namespace CustomUnits.CustomHangars
             }
         }
 
+        public static CustomHangarDef getHangarById(string hangarDefId)
+        {
+            if (String.IsNullOrEmpty(hangarDefId)) return null;
+
+            bool hasValue = hangars.TryGetValue(hangarDefId, out CustomHangarDef chd);
+            if (hasValue)
+            {
+                // Return a copy so people cannot modify internals
+                return new CustomHangarDef()
+                {
+                    Description = chd.Description,
+                    Tags = chd.tags.ToList(),
+                    PositionShift = chd.PositionShift
+                };
+            }
+            return null;
+        }
+
         // Hangar 'shift' is a positional index that determines where the boundary between hanger types lies. CU ships with vehicle bay at 100, ba bay at 200.
         public static int GetHangarShift(this MechDef mechDef)
         {
@@ -137,6 +155,31 @@ namespace CustomUnits.CustomHangars
             if (mechDef.Chassis == null) { throw new Exception(mechDef.Description.Id + " absent chassis " + mechDef.ChassisID); }
             CustomHangarDef def = mechDef.Chassis.HangarDef();
             return def == null ? 0 : def.PositionShift;
+        }
+
+        public static string GetHangarLabel(string hanagarId)
+        {
+            var hasKey = hangars.TryGetValue(hanagarId, out CustomHangarDef chd);
+            if (!hasKey || chd == null || String.IsNullOrEmpty(chd?.Description.Id))
+            {
+                return Core.Settings.MechBayDefaultLabel;
+            }
+            else
+            {
+                return chd?.Description?.Name;
+            }
+        }
+
+        public static string GetLabel(this CustomHangarDef chd)
+        {
+            if (chd == null || String.IsNullOrEmpty(chd?.Description.Id))
+            {
+                return Core.Settings.MechBayDefaultLabel;
+            }
+            else
+            {
+                return chd?.Description?.Name;
+            }
         }
 
         public static int GetHangarShift(this ChassisDef chassisDef)
@@ -192,7 +235,7 @@ namespace CustomUnits.CustomHangars
 
         public static int MaxPodsConstraintForDefaultHangar()
         {
-            bool keyExists = hangarConstraints.TryGetValue(HANGAR_ID_BASE, out CustomHangarConstraint constraint);
+            bool keyExists = hangarConstraints.TryGetValue(BASE_HANGAR_ID, out CustomHangarConstraint constraint);
             Log.M?.WL(0, $"Returning defaultHangar constraint of {constraint?.MaxAvailableUnits}");
 
             return keyExists ? constraint.MaxAvailableUnits : -1;
@@ -221,10 +264,10 @@ namespace CustomUnits.CustomHangars
                     Log.M?.WL(0, $"Constraint {kvp.Value} applied to CustomHangarDef id: {kvp.Key}.");
                     newConstraints[kvp.Key] = kvp.Value;
                 }
-                else if (String.Equals(kvp.Key, CustomHangarHelper.HANGAR_ID_BASE))
+                else if (String.Equals(kvp.Key, CustomHangarHelper.BASE_HANGAR_ID))
                 {
                     Log.M?.WL(0, $"Constraint {kvp.Value} applied for default hangar");
-                    newConstraints[CustomHangarHelper.HANGAR_ID_BASE] = kvp.Value;
+                    newConstraints[CustomHangarHelper.BASE_HANGAR_ID] = kvp.Value;
                 }
                 else
                 {
@@ -312,17 +355,6 @@ namespace CustomUnits.CustomHangars
                 }
 
             }
-
-
-            // layout_content //// uixPrfPanl_SIM_mechBays-Widget-MANAGED 
-            //   search for MechBayRowWidget component
-            //     UNAVAILABLE as child under MBRW
-            //     Representation / bg_fill / DropSlots contains all slots
-            //       MechBayDragDropSlot component to find
-            //       frame (1) / icon_status_unused? is the icon
-            // In each layout_content 
-
-
         }
     }
      

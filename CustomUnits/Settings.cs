@@ -288,7 +288,7 @@ namespace CustomUnits {
                 AvailableColorRGBA = [1.0f, 1.0f, 1.0f, 0.75f],
                 UnavailableIcon = "mechbay_x-square",
                 UnavailableColorRGBA = [0.2f, 0.2f, 0.2f, 0.5f],
-                UpgradeBanner = "UPGRADE DROPSHIP FOR MORE"
+                UpgradeBannerText = "UPGRADE DROPSHIP FOR MORE"
             };
       
       ShowActiveAbilitiesIcon = "";
