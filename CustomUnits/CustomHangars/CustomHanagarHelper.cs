@@ -335,10 +335,7 @@ namespace CustomUnits.CustomHangars
                         // Disable
                         customBaysUICaster.SimGameState.RequestItem<SVGAsset>(
                             Core.Settings.MechBayPods.UnavailableIcon,
-                            delegate (SVGAsset asset) {
-                                Log.M?.WL(0, $"LOADED SVGICON: {Core.Settings.MechBayPods.UnavailableIcon} - {asset.name}");
-                                iconStatusImg.vectorGraphics = asset; 
-                            },
+                            delegate (SVGAsset asset) { iconStatusImg.vectorGraphics = asset; },
                             BattleTechResourceType.SVGAsset);
 
                         iconStatusImg.color = Core.Settings.MechBayPods.UnavailableColor;
@@ -350,11 +347,7 @@ namespace CustomUnits.CustomHangars
                         // Enable
                         customBaysUICaster.SimGameState.RequestItem<SVGAsset>(
                             Core.Settings.MechBayPods.AvailableIcon,
-                            delegate (SVGAsset asset) 
-                            {
-                                Log.M?.WL(0, $"LOADED SVGICON: {Core.Settings.MechBayPods.AvailableIcon} - {asset.name}");
-                                iconStatusImg.vectorGraphics = asset; 
-                            },
+                            delegate (SVGAsset asset) { iconStatusImg.vectorGraphics = asset; },
                             BattleTechResourceType.SVGAsset);
                         iconStatusImg.color = Core.Settings.MechBayPods.AvailableColor;
                         Log.M?.WL(0, $"Marked pod available: {Core.Settings.MechBayPods.AvailableIcon} " +
