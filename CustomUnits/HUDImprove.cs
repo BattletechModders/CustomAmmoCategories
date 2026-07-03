@@ -1071,12 +1071,13 @@ namespace CustomUnits {
         List<LoadoutContent> spawnMechList = new List<LoadoutContent>();
         List<LoadoutContent> spawnVehicleList = new List<LoadoutContent>();
         int count = Mathf.Min(lanceUnits.Length, __instance.loadoutSlots.Length);
+        int maxNumberOfPlayerUnits = __instance.activeContract?.Override?.maxNumberOfPlayerUnits ?? 100;
         Log.M?.WL(1, "filling list");
         for (int i = 0; i < count; ++i) {
           try {
             if (__instance.loadoutSlots[i].curLockState == LanceLoadoutSlot.LockState.Full)
               continue;
-            if (i >= (__instance.activeContract?.Override?.maxNumberOfPlayerUnits ?? 100))
+            if (i >= maxNumberOfPlayerUnits)
             {
               __instance.loadoutSlots[i].SetLockState(LanceLoadoutSlot.LockState.Full);
               continue;
@@ -1106,6 +1107,10 @@ namespace CustomUnits {
             Log.M?.TWL(0,e.ToString(),true);
             UIManager.logger.LogException(e);
           }
+        }
+        for (int i = count; i < __instance.loadoutSlots.Length; i++)
+        {
+          __instance.loadoutSlots[i].SetLockState(i >= maxNumberOfPlayerUnits ? LanceLoadoutSlot.LockState.Full : LanceLoadoutSlot.LockState.Unlocked);
         }
       } catch (Exception e) {
         Log.M?.TWL(0, e.ToString());
