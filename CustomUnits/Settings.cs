@@ -56,11 +56,41 @@ namespace CustomUnits {
         {
             public string AvailableIcon { get; set; }
             public float[] AvailableColorRGBA{ get; set; }
-            public Color AvailableColor { get => new Color(AvailableColorRGBA[0], AvailableColorRGBA[1], AvailableColorRGBA[2], AvailableColorRGBA[3]); }
+
+            private bool _availableColorInstantiated = false; // Necessary b/c Unity Color objects cannot be null.
+            private Color _availableColor;
+            public Color AvailableColor
+            {
+                get
+                {
+                    if (!_availableColorInstantiated)
+                    {
+                        _availableColor = new Color(AvailableColorRGBA[0], AvailableColorRGBA[1], AvailableColorRGBA[2], AvailableColorRGBA[3]);
+                        Log.M?.WL(0, $"Instantiated MechBayPod.AvailableColor: {_unavailableColor.SafeToString()}");
+                        _availableColorInstantiated = true;
+                    }
+                    return _availableColor;
+                }
+            }
 
             public string UnavailableIcon{ get; set; }
             public float[] UnavailableColorRGBA{ get; set; }
-            public Color UnavailableColor { get => new Color(AvailableColorRGBA[0], AvailableColorRGBA[1], AvailableColorRGBA[2], AvailableColorRGBA[3]); }
+
+            private bool _unavailableColorInstantiated = false;
+            private Color _unavailableColor;
+            public Color UnavailableColor
+            {
+                get
+                {
+                    if (!_unavailableColorInstantiated)
+                    {
+                        _unavailableColor = new Color(AvailableColorRGBA[0], AvailableColorRGBA[1], AvailableColorRGBA[2], AvailableColorRGBA[3]);
+                        Log.M?.WL(0, $"Instantiated MechBayPod.UnavailableColor: {_unavailableColor.SafeToString()}");
+                        _unavailableColorInstantiated = true;
+                    }
+                    return _unavailableColor;
+                }
+            }
 
             public String UpgradeBannerText { get; set; }
         }

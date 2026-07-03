@@ -335,21 +335,30 @@ namespace CustomUnits.CustomHangars
                         // Disable
                         customBaysUICaster.SimGameState.RequestItem<SVGAsset>(
                             Core.Settings.MechBayPods.UnavailableIcon,
-                            delegate (SVGAsset asset) { iconStatusImg.vectorGraphics = asset; },
+                            delegate (SVGAsset asset) {
+                                Log.M?.WL(0, $"LOADED SVGICON: {Core.Settings.MechBayPods.UnavailableIcon} - {asset.name}");
+                                iconStatusImg.vectorGraphics = asset; 
+                            },
                             BattleTechResourceType.SVGAsset);
 
                         iconStatusImg.color = Core.Settings.MechBayPods.UnavailableColor;
-                        Log.M?.WL(0, $"Marked pod unavailable, remainingPods: {remainingPods}");
+                        Log.M?.WL(0, $"Marked pod unavailable: {Core.Settings.MechBayPods.UnavailableIcon} " +
+                            $"color: {Core.Settings.MechBayPods.UnavailableColor}, remainingPods: {remainingPods}");
                     }
                     else
                     {
                         // Enable
                         customBaysUICaster.SimGameState.RequestItem<SVGAsset>(
                             Core.Settings.MechBayPods.AvailableIcon,
-                            delegate (SVGAsset asset) { iconStatusImg.vectorGraphics = asset; },
+                            delegate (SVGAsset asset) 
+                            {
+                                Log.M?.WL(0, $"LOADED SVGICON: {Core.Settings.MechBayPods.AvailableIcon} - {asset.name}");
+                                iconStatusImg.vectorGraphics = asset; 
+                            },
                             BattleTechResourceType.SVGAsset);
                         iconStatusImg.color = Core.Settings.MechBayPods.AvailableColor;
-                        Log.M?.WL(0, $"Marked pod available, remainingPods: {remainingPods}");
+                        Log.M?.WL(0, $"Marked pod available: {Core.Settings.MechBayPods.AvailableIcon} " +
+                            $"color: {Core.Settings.MechBayPods.AvailableColor}, remainingPods: {remainingPods}");
                     }
                     remainingPods--;
                 }
