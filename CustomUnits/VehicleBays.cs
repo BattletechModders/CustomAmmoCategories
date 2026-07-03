@@ -1371,7 +1371,9 @@ namespace CustomUnits
             Log.M?.TWL(0, "SimGameState.GetFirstFreeMechBay mechDef:" + (mechDef == null ? "null" : mechDef.Description.Id) + " chassisDef:" + (chassisDef == null ? "null" : chassisDef.Description.Id));
             if (((mechDef != null) || (chassisDef != null)) && (Thread.CurrentThread.isFlagSet("GetFirstFreeMechBay_original") == false))
             {
-                __result = mechDef != null ? __instance.GetFirstFreeMechBay(mechDef, __result) : __instance.GetFirstFreeMechBay(chassisDef, __result);
+                __result = mechDef != null ?
+                    __instance.GetFirstFreeMechBay(mechDef, __result) : 
+                    __instance.GetFirstFreeMechBay(chassisDef, __result);
             }
             Log.M?.WL(1, "SimGameState.GetFirstFreeMechBay:" + __result);
         }
