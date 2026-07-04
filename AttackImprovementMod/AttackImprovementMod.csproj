@@ -60,9 +60,6 @@
     <Reference Include="Assembly-CSharp-firstpass">
       <HintPath>$(BattleTechGameDir)\BattleTech_Data\Managed\Assembly-CSharp-firstpass.dll</HintPath>
     </Reference>
-    <Reference Include="CustomUnits">
-      <HintPath>$(BattleTechGameDir)\Mods\Core\CustomUnits\CustomUnits.dll</HintPath>
-    </Reference>
     <Reference Include="InControl">
       <HintPath>$(BattleTechGameDir)\BattleTech_Data\Managed\InControl.dll</HintPath>
     </Reference>
@@ -125,6 +122,9 @@
     <ProjectReference Include="..\CustomAmmoCategories\CustomAmmoCategories.csproj">
       <Project>{88bb9ff5-da8f-4e02-9554-58595e34378c}</Project>
       <Name>CustomAmmoCategories</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\CustomUnits\CustomUnits.csproj">
+      <Name>CustomUnits</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

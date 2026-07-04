@@ -71,9 +71,6 @@
     <Reference Include="CustomSalvage">
       <HintPath>$(BattleTechGameDir)\Mods\Core\CustomSalvage\CustomSalvage.dll</HintPath>
     </Reference>
-    <Reference Include="CustomUnitsHelper">
-      <HintPath>$(BattleTechGameDir)\Mods\Core\CustomUnits\CustomUnitsHelper.dll</HintPath>
-    </Reference>
     <Reference Include="CustomVoices">
       <HintPath>$(BattleTechGameDir)\Mods\Core\CustomVoices\CustomVoices.dll</HintPath>
     </Reference>
@@ -266,6 +263,9 @@
     <ProjectReference Include="..\CustomDeploy\CustomDeploy.csproj">
       <Project>{ac7d1809-5127-4dd7-bd56-fb008c2e2ca2}</Project>
       <Name>CustomDeploy</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\CustomUnitsHelper\CustomUnitsHelper.csproj">
+      <Name>CustomUnitsHelper</Name>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup />

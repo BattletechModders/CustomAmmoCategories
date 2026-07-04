@@ -48,10 +48,6 @@
       <HintPath>$(BattleTechGameDir)\Mods\.modtek\AssembliesInjected\Assembly-CSharp.dll</HintPath>
       <Private>False</Private>
     </Reference>
-    <Reference Include="CustomAmmoCategories, Version=0.0.1.280, Culture=neutral, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>$(BattleTechGameDir)\Mods\Core\CustomAmmoCategories\CustomAmmoCategories.dll</HintPath>
-    </Reference>
     <Reference Include="IRBTModUtils, Version=1.30.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>$(BattleTechGameDir)\Mods\Core\IRBTModUtils\IRBTModUtils.dll</HintPath>
@@ -83,6 +79,12 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="StackManagment.cs" />
     <Compile Include="WeaponComponentRef.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\CustomAmmoCategories\CustomAmmoCategories.csproj">
+      <Project>{88bb9ff5-da8f-4e02-9554-58595e34378c}</Project>
+      <Name>CustomAmmoCategories</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
