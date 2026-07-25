@@ -26,7 +26,7 @@ namespace CustomUnits.CustomHangars
             // Check for constraints on the hangar size
             int maxPods = CustomHangarHelper.MaxPodsConstraint(mech);
             if (maxPods == -1) { maxPods = sim.GetMaxActiveMechs(); }
-            Log.M?.TWL(1, $"MaxPods: {maxPods}");
+            Log.M?.TWL(1, $"GFFMB MaxPods: {maxPods}");
 
             // Check for units that fit the base hangar
             if (mech.GetHangarShift() == 0)
@@ -98,6 +98,11 @@ namespace CustomUnits.CustomHangars
         public record CustomHangarConstraint
         {
             public int MaxAvailableUnits; // Replaces companyStats.GetValue<int>(Constants.Story.MechBayPodsID) * Constants.Story.MaxMechsPerPod;
+
+            public override string ToString()
+            {
+                return $"MaxAvailableUnits: {this.MaxAvailableUnits}";
+            }
         }
 
         // Extension used from Core::FinishedLoading
@@ -261,12 +266,12 @@ namespace CustomUnits.CustomHangars
 
                 if (CustomHangarHelper.hangars.ContainsKey(kvp.Key))
                 {
-                    Log.M?.WL(0, $"Constraint {kvp.Value} applied to CustomHangarDef id: {kvp.Key}.");
+                    Log.M?.WL(0, $"Constraint '{kvp.Value}' applied to CustomHangarDef id: '{kvp.Key}'.");
                     newConstraints[kvp.Key] = kvp.Value;
                 }
                 else if (String.Equals(kvp.Key, CustomHangarHelper.BASE_HANGAR_ID))
                 {
-                    Log.M?.WL(0, $"Constraint {kvp.Value} applied for default hangar");
+                    Log.M?.WL(0, $"Constraint '{kvp.Value}' applied for default hangar");
                     newConstraints[CustomHangarHelper.BASE_HANGAR_ID] = kvp.Value;
                 }
                 else
@@ -284,6 +289,9 @@ namespace CustomUnits.CustomHangars
         public static void RefreshHanagarUIForConstraints(CustomBaysUICaster customBaysUICaster, CustomHangarInfo hangarInfo)
         {
             if (customBaysUICaster == null) { Log.M?.WL(0, $"CustomBaysUICaster is null, skipping."); return; }
+
+            //Log.M?.WL(0, $"SKIPPING REFRESH");
+            //return;
 
             // Determine the max counts
             int maxPods = CustomHangarHelper.MaxPodsConstraintForDefaultHangar();

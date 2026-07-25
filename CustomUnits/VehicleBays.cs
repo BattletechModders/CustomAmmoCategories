@@ -1085,7 +1085,7 @@ namespace CustomUnits
 
         public static bool Prefix(MechBayRowGroupWidget __instance, IMechLabDropTarget dropParent, SimGameState sim)
         {
-            Log.M?.TWL(0, "MechBayRowGroupWidget.SetData prefix " + __instance.bays.Length + " parent:" + dropParent.GetType().ToString());
+            Log.M?.TWL(0, "MechBayRowGroupWidget.SetData prefix bayCount:" + __instance.bays.Length + " parent:" + dropParent.GetType().ToString());
             //MechBayPanel mechBayPanel = dropParent as MechBayPanel;
             //MechPlacementPopup mechPlacementPopup = dropParent as MechPlacementPopup;
             //if (mechBayPanel != null) {
@@ -1098,11 +1098,10 @@ namespace CustomUnits
 
         private static void FillBays(MechBayRowGroupWidget __instance, MechBayPanel dropParent, SimGameState sim)
         {
-            //if (___bays.Length < __state.Count) { ___bays = __state.ToArray(); };
             int maxMechsPerPod = sim.Constants.Story.MaxMechsPerPod;
             int maxActiveMechs = sim.GetMaxActiveMechs();
-            //int fullBaysCount = __instance.MechBaysCount() + __instance.VehicleBaysCount();
             CustomHangarInfo info = __instance.GetComponent<CustomHangarInfo>();
+            Log.M?.WL(0, "MechBayRowGroupWidget.SetData::FillBays(MechBayPanel)");
             Log.M?.WL(1, "info:" + (info == null ? "null" : (info.definition == null ? "mech" : info.definition.Description.Id)));
             int baySlotShift = 0;
             if (info != null)
@@ -1111,12 +1110,15 @@ namespace CustomUnits
             }
             int baySlotStart = baySlotShift;
             int baySlotEnd = baySlotStart + maxMechsPerPod;
+            Log.M?.WL(1, $"Bayslots  shift:{baySlotShift}  baySlotStart: {baySlotStart}   baySlotEnd: {baySlotEnd}");
             foreach (var itm in sim.ActiveMechs)
             {
                 Log.M?.WL(2, itm.Key + ":" + itm.Value.ChassisID);
             }
+
             for (int mechBayIndex = 0; mechBayIndex < __instance.Bays.Length; ++mechBayIndex)
             {
+                Log.M?.WL(1, $"Filing mechBayPod: {mechBayIndex}");
                 bool isActive = maxActiveMechs > (baySlotStart - baySlotShift);
                 __instance.Bays[mechBayIndex].SetData(dropParent, sim, string.Format("Bay {0}", (mechBayIndex + 1)), isActive, baySlotStart, baySlotEnd);
                 int slot = 0;
@@ -1124,8 +1126,11 @@ namespace CustomUnits
                 {
                     MechDef mechDef = (MechDef)null;
                     if (!sim.ActiveMechs.TryGetValue(key, out mechDef))
+                    {
                         sim.ReadyingMechs.TryGetValue(key, out mechDef);
-                    Log.M?.WL(3, key + ":" + (mechDef == null ? "null" : mechDef.ChassisID));
+                    }
+                    Log.M?.WL(3, $"bay:{mechBayIndex}_slot:{key} chassisID:{(mechDef == null ? "null" : mechDef.ChassisID)}");
+
                     bool inMaintenance = sim.GetWorkOrderEntryForMech(mechDef) != null;
                     bool isFieldable = MechValidationRules.ValidateMechCanBeFielded(sim, mechDef);
                     bool hasFieldableWarnings = MechValidationRules.GetMechFieldableWarnings(sim.DataManager, mechDef).Count > 0;
@@ -1135,29 +1140,12 @@ namespace CustomUnits
                 baySlotStart += maxMechsPerPod;
                 baySlotEnd += maxMechsPerPod;
             }
-
-            //baySlotStart = sim.VehicleShift();
-            //baySlotEnd = sim.VehicleShift() + maxMechsPerPod;
-            //for (int vehicleBayIndex = __instance.MechBaysCount(); vehicleBayIndex < fullBaysCount; ++vehicleBayIndex) {
-            //  ___bays[vehicleBayIndex].SetData(dropParent, sim, string.Format("V.Bay {0}", (vehicleBayIndex - __instance.MechBaysCount() + 1)), maxActiveMechs > (baySlotStart - sim.VehicleShift()), baySlotStart, baySlotEnd);
-            //  int slot = 0;
-            //  for (int key = baySlotStart; key < baySlotEnd; ++key) {
-            //    MechDef mechDef = (MechDef)null;
-            //    if (!sim.ActiveMechs.TryGetValue(key, out mechDef))
-            //      sim.ReadyingMechs.TryGetValue(key, out mechDef);
-            //    bool inMaintenance = sim.GetWorkOrderEntryForMech(mechDef) != null;
-            //    bool isFieldable = MechValidationRules.ValidateMechCanBeFielded(sim, mechDef);
-            //    bool hasFieldableWarnings = MechValidationRules.GetMechFieldableWarnings(sim.DataManager, mechDef).Count > 0;
-            //    ___bays[vehicleBayIndex].SetMech(slot, mechDef, inMaintenance, isFieldable, hasFieldableWarnings);
-            //    ++slot;
-            //  }
-            //  baySlotStart += maxMechsPerPod;
-            //  baySlotEnd += maxMechsPerPod;
-            //}
+            Log.M?.WL(1, "Done.");
         }
 
         private static void FillBays(MechBayRowGroupWidget __instance, MechPlacementPopup dropParent, SimGameState sim)
         {
+            Log.M?.WL(0, "MechBayRowGroupWidget.SetData::FillBays(MechPlacementPopup)");
             //if (___bays.Length < __state.Count) { ___bays = __state.ToArray(); };
             int maxMechsPerPod = sim.Constants.Story.MaxMechsPerPod;
             int maxActiveMechs = sim.GetMaxActiveMechs();
@@ -1172,13 +1160,18 @@ namespace CustomUnits
             int baySlotEnd = baySlotStart + maxMechsPerPod;
             for (int bayIndex = 0; bayIndex < __instance.Bays.Length; ++bayIndex)
             {
+                Log.M?.WL(1, $"Filing mechBayPod: {bayIndex}");
                 __instance.Bays[bayIndex].SetData(dropParent, sim, string.Format("Bay {0}", (bayIndex + 1)), maxActiveMechs > (baySlotStart - baysShift), baySlotStart, baySlotEnd);
                 int slot = 0;
                 for (int key = baySlotStart; key < baySlotEnd; ++key)
                 {
                     MechDef mechDef = (MechDef)null;
                     if (!sim.ActiveMechs.TryGetValue(key, out mechDef))
+                    {
                         sim.ReadyingMechs.TryGetValue(key, out mechDef);
+                    }
+
+                    Log.M?.WL(3, $"bay:{bayIndex}_slot:{key} chassisID:{(mechDef == null ? "null" : mechDef.ChassisID)}");
                     bool inMaintenance = sim.GetWorkOrderEntryForMech(mechDef) != null;
                     bool isFieldable = MechValidationRules.ValidateMechCanBeFielded(sim, mechDef);
                     bool hasFieldableWarnings = MechValidationRules.GetMechFieldableWarnings(sim.DataManager, mechDef).Count > 0;
@@ -1188,13 +1181,14 @@ namespace CustomUnits
                 baySlotStart += maxMechsPerPod;
                 baySlotEnd += maxMechsPerPod;
             }
+            Log.M?.WL(1, "Done.");
         }
 
         public static void Postfix(MechBayRowGroupWidget __instance, IMechLabDropTarget dropParent, SimGameState sim)
         {
             try
             {
-                Log.M?.TWL(0, "MechBayRowGroupWidget.SetData postfix " + __instance.Bays.Length + " parent:" + dropParent.GetType().ToString());
+                Log.M?.TWL(0, "MechBayRowGroupWidget.SetData postfix bayCount:" + __instance.Bays.Length + " parent:" + dropParent.GetType().ToString());
                 MechBayPanel mechBayPanel = dropParent as MechBayPanel;
                 MechPlacementPopup mechPlacementPopup = dropParent as MechPlacementPopup;
                 if (mechBayPanel != null)
@@ -1208,9 +1202,8 @@ namespace CustomUnits
 
                 // Apply any constraints to the rows. A fully inactive row should have a darkened background overlay.
                 var customHangarInfo = __instance.GetComponent<CustomHangarInfo>();
-                Log.M?.TWL(1, $"CustomHanagarInfo: {customHangarInfo}  id: {customHangarInfo?.definition?.Description?.Id}");
                 int maxPods = CustomHangarHelper.MaxPodsConstraint(customHangarInfo);
-                Log.M?.TWL(1, $"maxPods: {maxPods}");
+                Log.M?.TWL(1, $"CustomHanagarInfo: {customHangarInfo}  id: {customHangarInfo?.definition?.Description?.Id}  maxPods: {maxPods}");
 
                 var mechBayRows = __instance.gameObject.GetComponentsInChildren<MechBayRowWidget>();
                 if (maxPods <= 0)
