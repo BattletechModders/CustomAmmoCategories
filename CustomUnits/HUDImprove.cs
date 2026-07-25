@@ -441,6 +441,7 @@ namespace CustomUnits {
     }
     public static void PushDropLayout(string id, List<List<string>> layout, int maxUnits, List<string> names) {
       Log.M?.TWL(0, "CustomLanceHelper.PushDropLayout id:" + id + " maxUnits:" + maxUnits + " layout:" + layout.Count + " names:" + (names == null ? "null" : "not null"));
+
       for (int t = 0; t < layout.Count; ++t) {
         foreach (string dropdef in layout[t]) {
           Log.M?.WL(1, "[" + t + "]:" + dropdef);

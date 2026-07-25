@@ -438,6 +438,7 @@ namespace CustomUnits
             }
         }
     }
+
     [HarmonyPatch(typeof(MechBayPanel))]
     [HarmonyPatch("ViewMechStorage")]
     [HarmonyPatch(MethodType.Normal)]
@@ -468,6 +469,42 @@ namespace CustomUnits
             }
         }
     }
+
+    //[HarmonyPatch(typeof(MechBayDragDropSlot), "OnMechLabDrop")]
+    //public static class MechBayDragDropSlot_OnMechLabDrop
+    //{
+    //    public static void Prefix(MechBayDragDropSlot __instance, PointerEventData eventData, MechLabDropTargetType addToType)
+    //    {
+
+    //        if (__instance == null) return; // nothing to do
+    //        //if (__instance.parentRow.isUnlocked) return; 
+
+    //        //MechBayMechUnitElement mechBayMechUnitElement = __instance.mechBay.DragItem as MechBayMechUnitElement;
+    //        //if (mechBayMechUnitElement == null) return;
+
+    //        //try
+    //        //{
+    //        //    Log.M?.TWL(0, "MechBayPanel.Init");
+    //        //    f_mechBayPanel = __instance;
+    //        //    Transform layout_tabs = __instance.gameObject.transform.FindRecursive("layout_tabs");
+    //        //    if (layout_tabs != null)
+    //        //    {
+    //        //        CustomBaysUICaster caster = layout_tabs.gameObject.GetComponent<CustomBaysUICaster>();
+    //        //        if (caster == null) { caster = layout_tabs.gameObject.AddComponent<CustomBaysUICaster>(); }
+    //        //        caster.BayPanel = __instance;
+    //        //        caster.SimGameState = sim;
+    //        //    }
+
+    //        //}
+    //        //catch (Exception e)
+    //        //{
+    //        //    Log.E?.TWL(0, e.ToString(), true);
+    //        //    MechBayPanel.logger.LogException(e);
+    //        //}
+    //        //Log.M?.TWL(0, "MechBayPanel.Inited");
+    //    }
+    //}
+
     [HarmonyPatch(typeof(MechBayPanel))]
     [HarmonyPatch("Init")]
     [HarmonyPatch(MethodType.Normal)]
