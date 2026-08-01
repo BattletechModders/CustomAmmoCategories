@@ -21,6 +21,7 @@ using System.Linq;
 using UnityEngine;
 
 namespace CustomUnits {
+
   [HarmonyPatch(typeof(TurnDirector))]
   [HarmonyPatch("_SendTurnActorActivateMessage")]
   [HarmonyPatch(MethodType.Normal)]

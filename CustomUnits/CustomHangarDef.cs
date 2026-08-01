@@ -470,40 +470,55 @@ namespace CustomUnits
         }
     }
 
-    //[HarmonyPatch(typeof(MechBayDragDropSlot), "OnMechLabDrop")]
-    //public static class MechBayDragDropSlot_OnMechLabDrop
-    //{
-    //    public static void Prefix(MechBayDragDropSlot __instance, PointerEventData eventData, MechLabDropTargetType addToType)
-    //    {
+    [HarmonyPatch(typeof(MechBayDragDropSlot), "OnMechLabDrop")]
+    [HarmonyPatch(new Type[] { typeof(PointerEventData), typeof(MechLabDropTargetType)})]
+    public static class MechBayDragDropSlot_OnMechLabDrop
+    {
+        public static void Prefix(ref bool __runOriginal, MechBayDragDropSlot __instance, PointerEventData eventData, MechLabDropTargetType addToType)
+        {
 
-    //        if (__instance == null) return; // nothing to do
-    //        //if (__instance.parentRow.isUnlocked) return; 
+            if (__instance == null || __instance.parentRow == null) return; // nothing to do
 
-    //        //MechBayMechUnitElement mechBayMechUnitElement = __instance.mechBay.DragItem as MechBayMechUnitElement;
-    //        //if (mechBayMechUnitElement == null) return;
+            // uixPrfPanl_SIM_mechBays-Widget-MANAGED / Representation / layout_baysScroller / viewport_storage / content_storage / uixPrfPanl_SIM_mechBay_bay-Element-MANAGED-prime
+            GameObject mechBayRowGroupWidgetGO = __instance.parentRow?.gameObject?.transform?.parent?.parent?.parent?.parent?.parent?.gameObject;
+            MechBayRowGroupWidget mechBayRowGroupWidget = mechBayRowGroupWidgetGO?.GetComponent<MechBayRowGroupWidget>();
+            CustomHangarInfo customHangarInfo = mechBayRowGroupWidgetGO?.GetComponent<CustomHangarInfo>();
+            if (mechBayRowGroupWidget != null && customHangarInfo != null)
+            {
+                CustomHangarDef customHangarDef = customHangarInfo.definition;
+                int maxUnitsConstraint = CustomHangarHelper.MaxPodsConstraint(customHangarInfo);
+                int maxSlotIdx = customHangarDef == null ? maxUnitsConstraint - 1 : customHangarDef.PositionShift + maxUnitsConstraint - 1;
+                Log.M?.TWL(0, $"OnMechLabDrop - slotIdx: {__instance.slotIdx}  maxUnitsConstraint: {maxUnitsConstraint}  maxSlotIdx: {maxSlotIdx}  hangar.positionShift: {customHangarDef?.PositionShift}");
+                if (__instance.slotIdx > maxSlotIdx)
+                {
+                    __runOriginal = false;
+                    return; // Short-circut 
+                }
+                
+            }
 
-    //        //try
-    //        //{
-    //        //    Log.M?.TWL(0, "MechBayPanel.Init");
-    //        //    f_mechBayPanel = __instance;
-    //        //    Transform layout_tabs = __instance.gameObject.transform.FindRecursive("layout_tabs");
-    //        //    if (layout_tabs != null)
-    //        //    {
-    //        //        CustomBaysUICaster caster = layout_tabs.gameObject.GetComponent<CustomBaysUICaster>();
-    //        //        if (caster == null) { caster = layout_tabs.gameObject.AddComponent<CustomBaysUICaster>(); }
-    //        //        caster.BayPanel = __instance;
-    //        //        caster.SimGameState = sim;
-    //        //    }
+            //try
+            //{
+            //    Log.M?.TWL(0, "MechBayPanel.Init");
+            //    f_mechBayPanel = __instance;
+            //    Transform layout_tabs = __instance.gameObject.transform.FindRecursive("layout_tabs");
+            //    if (layout_tabs != null)
+            //    {
+            //        CustomBaysUICaster caster = layout_tabs.gameObject.GetComponent<CustomBaysUICaster>();
+            //        if (caster == null) { caster = layout_tabs.gameObject.AddComponent<CustomBaysUICaster>(); }
+            //        caster.BayPanel = __instance;
+            //        caster.SimGameState = sim;
+            //    }
 
-    //        //}
-    //        //catch (Exception e)
-    //        //{
-    //        //    Log.E?.TWL(0, e.ToString(), true);
-    //        //    MechBayPanel.logger.LogException(e);
-    //        //}
-    //        //Log.M?.TWL(0, "MechBayPanel.Inited");
-    //    }
-    //}
+            //}
+            //catch (Exception e)
+            //{
+            //    Log.E?.TWL(0, e.ToString(), true);
+            //    MechBayPanel.logger.LogException(e);
+            //}
+            //Log.M?.TWL(0, "MechBayPanel.Inited");
+        }
+    }
 
     [HarmonyPatch(typeof(MechBayPanel))]
     [HarmonyPatch("Init")]

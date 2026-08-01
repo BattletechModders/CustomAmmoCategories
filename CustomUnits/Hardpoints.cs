@@ -360,6 +360,7 @@ namespace CustomUnits {
       }
     }
   }
+
   public class ComponentPrefabName {
     public string[] content { get; set; }
     public string prefix { get { return content[0]; } }
@@ -506,6 +507,7 @@ namespace CustomUnits {
       }
     }
   }
+  
   [HarmonyPatch(typeof(HardpointDataDef))]
   [HarmonyPatch("FromJSON")]
   [HarmonyPatch(MethodType.Normal)]
@@ -867,6 +869,7 @@ namespace CustomUnits {
       return hardPointAliases[name];
     }
   }
+
   [HarmonyPatch(typeof(MechHardpointRules))]
   [HarmonyPatch("GetComponentPrefabName")]
   [HarmonyPatch(MethodType.Normal)]
@@ -892,16 +895,16 @@ namespace CustomUnits {
       //Log.WL(1, " custom hardpoint found: prefab replacing:"+__result);
     }
   }
-  [HarmonyPatch(typeof(MechHardpointRules))]
-  [HarmonyPatch("GetWeaponPrefabName")]
-  [HarmonyPatch(MethodType.Normal)]
+
+  [HarmonyPatch(typeof(MechHardpointRules), "GetWeaponPrefabName")]
   [HarmonyWrapSafe]
-  public static class MechHardpointRules_GetWeaponPrefabName {
-    public static Exception Finalizer(Exception __exception, ref string __result) {
+  static class MechHardpointRules_GetWeaponPrefabName {
+
+    static Exception Finalizer(Exception __exception, ref string __result) {
       if (__exception != null) {
         if ((__exception.GetType() == typeof(IndexOutOfRangeException))) {          
           __result = HardpointCalculator.FakeWeaponPrefab;
-          return null;
+         return null;
         }
       }
       return __exception;
