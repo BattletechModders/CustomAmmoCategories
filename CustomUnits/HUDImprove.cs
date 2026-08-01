@@ -449,6 +449,7 @@ namespace CustomUnits {
       }
       if (names == null) { names = new List<string>(); }
       if (layout.Count == 0) { return; }
+
       DropSlotsDef newlayout = new DropSlotsDef();
       newlayout.Description = new DropDescriptionDef();
       newlayout.Description.Id = id;
@@ -476,6 +477,7 @@ namespace CustomUnits {
         newlayout.dropLances.Add(newLance);
         newlayout.DropLances.Add(newLance.Description.Id);
       }
+
       if (Core.Settings.forcedLance.Count != 0) {
         List<string> lance = Core.Settings.forcedLance;
         DropLanceDef newLance = new DropLanceDef();
@@ -496,6 +498,7 @@ namespace CustomUnits {
         newlayout.dropLances.Add(newLance);
         newlayout.DropLances.Add(newLance.Description.Id);
       }
+
       newlayout.Register();
       if (UnityGameInstance.BattleTechGame.Simulation != null) {
         UnityGameInstance.BattleTechGame.Simulation.CompanyStats.GetOrCreateStatisic<string>(DropSystemHelper.CURRENT_DROP_LAYOUT_STAT_NAME, "fallback_layout").SetValue<string>(newlayout.Description.Id);
@@ -1109,8 +1112,11 @@ namespace CustomUnits {
             UIManager.logger.LogException(e);
           }
         }
+
+        Log.M?.WL(1, "Iterating slots to for locked status");
         for (int i = count; i < __instance.loadoutSlots.Length; i++)
         {
+          Log.M?.WL(2, $"-- LoadoutSlot: {i} vs. maxNumberOfPlayerUnits: {maxNumberOfPlayerUnits}");
           __instance.loadoutSlots[i].SetLockState(i >= maxNumberOfPlayerUnits ? LanceLoadoutSlot.LockState.Full : LanceLoadoutSlot.LockState.Unlocked);
         }
       } catch (Exception e) {

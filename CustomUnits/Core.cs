@@ -574,7 +574,6 @@ namespace CustomUnits {
       SortByTonnage.SortByTonnage.Init(directory, Core.Settings.SortBy);
       PilotingClassHelper.CreateDefault();
       try {
-        HarmonyInstance = new Harmony("io.mission.customunits");
         HitLocation_GetMechHitTableCustom.i_GetMechHitTable = HitLocation_GetMechHitTable.Get;
         /*Type AssetBundleTracker = typeof(WeaponEffect).Assembly.GetType("BattleTech.Assetbundles.AssetBundleTracker");
         if (AssetBundleTracker != null) {
@@ -609,16 +608,18 @@ namespace CustomUnits {
         string CUHelperAssemblyPath = Path.Combine(directory, "CustomUnitsHelper.dll");
         Assembly CUHelperAssembly = Assembly.LoadFile(CUHelperAssemblyPath);
         Log.M?.TWL(0,"Helper assembly "+CUHelperAssembly.FullName);
+                // HarmonyInstance.Patch(PatchingDebug.GetOriginalMethod_Target(), null, null, null, PatchingDebug.GetOriginalMethod_Finalizer_H(), null);
+        HarmonyInstance = new Harmony("io.mission.customunits");
         HarmonyFileLog.Enabled = true;
-        // HarmonyInstance.Patch(PatchingDebug.GetOriginalMethod_Target(), null, null, null, PatchingDebug.GetOriginalMethod_Finalizer_H(), null);
         HarmonyInstance.PatchAll(Assembly.GetExecutingAssembly());
+        
         PathingInfoHelper.RegisterMaxMoveDeligate(PathingHelper.MaxMoveDistance);
         //WeightedFactorHelper.PatchInfluenceMapPositionFactor(HarmonyInstance);
         WeaponRepresentation_PlayWeaponEffect.i_extendedFire = extendedFireHelper.extendedFire;
         //Debug.unityLogger.logEnabled = false;
       } catch (Exception e) {
         //HarmonyInstance.DEBUG = false;
-
+        Log.M?.TWL(0, "Failed to execute Harmony Patching!");
         Log.E?.TWL(0,e.ToString(),true);
       }
     }
