@@ -51,6 +51,52 @@ namespace CustomUnits {
     public string MechBaySwitchIconUp { get; set; }
     public string MechBaySwitchIconDown { get; set; }
     public string MechBayDefaultLabel { get; set; }
+
+        public class MechBayPodConfig
+        {
+            public string AvailableIcon { get; set; }
+            public float[] AvailableColorRGBA{ get; set; }
+
+            private bool _availableColorInstantiated = false; // Necessary b/c Unity Color objects cannot be null.
+            private Color _availableColor;
+            public Color AvailableColor
+            {
+                get
+                {
+                    if (!_availableColorInstantiated)
+                    {
+                        _availableColor = new Color(AvailableColorRGBA[0], AvailableColorRGBA[1], AvailableColorRGBA[2], AvailableColorRGBA[3]);
+                        Log.M?.WL(0, $"Instantiated MechBayPod.AvailableColor: {_unavailableColor.SafeToString()}");
+                        _availableColorInstantiated = true;
+                    }
+                    return _availableColor;
+                }
+            }
+
+            public string UnavailableIcon{ get; set; }
+            public float[] UnavailableColorRGBA{ get; set; }
+
+            private bool _unavailableColorInstantiated = false;
+            private Color _unavailableColor;
+            public Color UnavailableColor
+            {
+                get
+                {
+                    if (!_unavailableColorInstantiated)
+                    {
+                        _unavailableColor = new Color(AvailableColorRGBA[0], AvailableColorRGBA[1], AvailableColorRGBA[2], AvailableColorRGBA[3]);
+                        Log.M?.WL(0, $"Instantiated MechBayPod.UnavailableColor: {_unavailableColor.SafeToString()}");
+                        _unavailableColorInstantiated = true;
+                    }
+                    return _unavailableColor;
+                }
+            }
+
+            public String UpgradeBannerText { get; set; }
+        }
+
+    public MechBayPodConfig MechBayPods;
+
     public string ShowActiveAbilitiesIcon { get; set; }
     public string ShowPassiveAbilitiesIcon { get; set; }
     public string HideActiveAbilitiesIcon { get; set; }
@@ -193,6 +239,7 @@ namespace CustomUnits {
     public string VehicleComponentOneAllowed { get; set; } = "vehicle_one_allowed";
     public string VehicleComponentOneAllowedLocation { get; set; } = "vehicle_one_allowed_location";
     public string VehicleComponentCategoryTagPrefix { get; set; } = "vehicle_component_category_";
+    public string VehicleComponentIgnoreEnergyHeat { get; set; } = "vehicle_ignore_energy_heat";
     public bool PreserveJsonUnitCost { get; set; } = true;
     public bool RecalcUnitPartCost { get; set; } = true;
     public float RecalcUnitPartCostBase { get; set; } = 5.0f;
@@ -259,11 +306,22 @@ namespace CustomUnits {
       ConvoyMaxDistFromRoute = 30f;
       ConvoyRouteTag = "escort_convoy";
       AllowVehiclesEdit = false;
+      
       MechBaySwitchIconMech = "mech";
       MechBaySwitchIconVehicle = "vehicle";
       MechBaySwitchIconUp = "weapon_up";
       MechBaySwitchIconDown = "weapon_down";
       MechBayDefaultLabel = "Mech Bay";
+
+            MechBayPods = new MechBayPodConfig
+            {
+                AvailableIcon = "mechbay_plus-square",
+                AvailableColorRGBA = [1.0f, 1.0f, 1.0f, 0.75f],
+                UnavailableIcon = "mechbay_x-square",
+                UnavailableColorRGBA = [0.2f, 0.2f, 0.2f, 0.5f],
+                UpgradeBannerText = "UPGRADE DROPSHIP FOR MORE"
+            };
+      
       ShowActiveAbilitiesIcon = "";
       ShowPassiveAbilitiesIcon = "";
       HideActiveAbilitiesIcon = "";

@@ -441,6 +441,7 @@ namespace CustomUnits {
     }
     public static void PushDropLayout(string id, List<List<string>> layout, int maxUnits, List<string> names) {
       Log.M?.TWL(0, "CustomLanceHelper.PushDropLayout id:" + id + " maxUnits:" + maxUnits + " layout:" + layout.Count + " names:" + (names == null ? "null" : "not null"));
+
       for (int t = 0; t < layout.Count; ++t) {
         foreach (string dropdef in layout[t]) {
           Log.M?.WL(1, "[" + t + "]:" + dropdef);
@@ -448,6 +449,7 @@ namespace CustomUnits {
       }
       if (names == null) { names = new List<string>(); }
       if (layout.Count == 0) { return; }
+
       DropSlotsDef newlayout = new DropSlotsDef();
       newlayout.Description = new DropDescriptionDef();
       newlayout.Description.Id = id;
@@ -475,6 +477,7 @@ namespace CustomUnits {
         newlayout.dropLances.Add(newLance);
         newlayout.DropLances.Add(newLance.Description.Id);
       }
+
       if (Core.Settings.forcedLance.Count != 0) {
         List<string> lance = Core.Settings.forcedLance;
         DropLanceDef newLance = new DropLanceDef();
@@ -495,6 +498,7 @@ namespace CustomUnits {
         newlayout.dropLances.Add(newLance);
         newlayout.DropLances.Add(newLance.Description.Id);
       }
+
       newlayout.Register();
       if (UnityGameInstance.BattleTechGame.Simulation != null) {
         UnityGameInstance.BattleTechGame.Simulation.CompanyStats.GetOrCreateStatisic<string>(DropSystemHelper.CURRENT_DROP_LAYOUT_STAT_NAME, "fallback_layout").SetValue<string>(newlayout.Description.Id);
@@ -1071,12 +1075,13 @@ namespace CustomUnits {
         List<LoadoutContent> spawnMechList = new List<LoadoutContent>();
         List<LoadoutContent> spawnVehicleList = new List<LoadoutContent>();
         int count = Mathf.Min(lanceUnits.Length, __instance.loadoutSlots.Length);
+        int maxNumberOfPlayerUnits = __instance.activeContract?.Override?.maxNumberOfPlayerUnits ?? 100;
         Log.M?.WL(1, "filling list");
         for (int i = 0; i < count; ++i) {
           try {
             if (__instance.loadoutSlots[i].curLockState == LanceLoadoutSlot.LockState.Full)
               continue;
-            if (i >= (__instance.activeContract?.Override?.maxNumberOfPlayerUnits ?? 100))
+            if (i >= maxNumberOfPlayerUnits)
             {
               __instance.loadoutSlots[i].SetLockState(LanceLoadoutSlot.LockState.Full);
               continue;
@@ -1106,6 +1111,13 @@ namespace CustomUnits {
             Log.M?.TWL(0,e.ToString(),true);
             UIManager.logger.LogException(e);
           }
+        }
+
+        Log.M?.WL(1, "Iterating slots to for locked status");
+        for (int i = count; i < __instance.loadoutSlots.Length; i++)
+        {
+          Log.M?.WL(2, $"-- LoadoutSlot: {i} vs. maxNumberOfPlayerUnits: {maxNumberOfPlayerUnits}");
+          __instance.loadoutSlots[i].SetLockState(i >= maxNumberOfPlayerUnits ? LanceLoadoutSlot.LockState.Full : LanceLoadoutSlot.LockState.Unlocked);
         }
       } catch (Exception e) {
         Log.M?.TWL(0, e.ToString());
