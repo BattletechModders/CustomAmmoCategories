@@ -116,7 +116,7 @@ namespace CustAmmoCategories {
     public Vector3 position = Vector3.zero;
     public Weapon weapon = null;
     public AmmoModePair ammoMode = null;
-    public ArtilleryStrikeInfo(Weapon weapon, Vector3 position) {
+    public ArtilleryStrikeInfo(Weapon weapon, Vector3 position, int up) {
       this.weapon = weapon;
       this.position = position;
       this.ammoMode = weapon.getCurrentAmmoMode();
@@ -135,7 +135,7 @@ namespace CustAmmoCategories {
       }
       this.reticle.auraRangeMatBright.color = weapon.ArtilleryReticleColor().Color;
       this.reticle.auraRangeMatDim.color = weapon.ArtilleryReticleColor().Color;
-      this.CountDownFloatie = PersistentFloatieHelper.CreateFloatie(new Text($"{weapon.ArtilleryReticleText()}"), 18f, weapon.ArtilleryReticleColor().Color, null, this.position + Vector3.up * 10f);
+      this.CountDownFloatie = PersistentFloatieHelper.CreateFloatie(new Text($"{weapon.ArtilleryReticleText()}"), 18f, weapon.ArtilleryReticleColor().Color, null, this.position + Vector3.up * (10f * up));
       this.targetingLine = UnityEngine.Object.Instantiate<LineRenderer>(WeaponRangeIndicators.Instance.LineTemplate);
       this.targetingLine.transform.SetParent(WeaponRangeIndicators.Instance.transform);
       this.targetingLine.gameObject.SetActive(true);
@@ -234,10 +234,10 @@ namespace CustAmmoCategories {
         info.Clear();
       }      
     }
-    public static void AddArtilleryStrike(this Weapon weapon, Vector3 position) {
+    public static void AddArtilleryStrike(this Weapon weapon, Vector3 position, int up) {
       if(weapon == null) { return; }
       if(artilleryStrikes.ContainsKey(weapon)) { artilleryStrikes[weapon].Clear(); artilleryStrikes.Remove(weapon); }
-      artilleryStrikes[weapon] = new ArtilleryStrikeInfo(weapon, position);
+      artilleryStrikes[weapon] = new ArtilleryStrikeInfo(weapon, position, up);
     }
     public static List<Weapon> GetArtilleryStrike(this AbstractActor unit, out Vector3 position) {
       position = Vector3.zero;
@@ -353,6 +353,7 @@ namespace CustAmmoCategories {
         if(__result is AttackInvocation attack) {
           Log.Combat?.WL(1, $"order is attack");
           bool is_artillery_strike = false;
+          int up = 1;
           foreach(var subattack in attack.subAttackInvocations) {
             List<Weapon> subweapons = subattack.invocationWeapons.ToWeaponList(unit);
             foreach(var weapon in subweapons) {
@@ -369,11 +370,12 @@ namespace CustAmmoCategories {
                       return;
                     }
                     Log.Combat?.WL(3, $"artillery strike ground {info.pos}");
-                    is_artillery_strike = true; weapon.AddArtilleryStrike(info.pos);
+                    is_artillery_strike = true; weapon.AddArtilleryStrike(info.pos, up);
                   } else {
                     Log.Combat?.WL(3, $"artillery strike:{target.CurrentPosition}");
-                    is_artillery_strike = true; weapon.AddArtilleryStrike(target.CurrentPosition);
+                    is_artillery_strike = true; weapon.AddArtilleryStrike(target.CurrentPosition, up);
                   }
+                  ++up;
                 }
               }
             }
@@ -414,12 +416,14 @@ namespace CustAmmoCategories {
         Log.Combat?.TWL(0, $"SelectionStateFire.CreateFiringOrders {__instance.SelectedActor.PilotableActorDef.ChassisID}");
         var weapons = GenericAttack.Filter(__instance.SelectedActor, __instance.TargetedCombatant, true);
         bool is_artillery_strike = false;
+        int up = 1;
         foreach(var weapon in weapons) {
           bool is_art = weapon.IsArtillery();
           Log.Combat?.WL(1, $"weapon:{weapon.defId} IsArtillery:{is_art}");
           if(is_art) {
             Log.Combat?.WL(2, $"artillery strike:{__instance.TargetedCombatant.CurrentPosition}");
-            is_artillery_strike = true; weapon.AddArtilleryStrike(__instance.TargetedCombatant.CurrentPosition);
+            is_artillery_strike = true; weapon.AddArtilleryStrike(__instance.TargetedCombatant.CurrentPosition, up);
+            ++up;
           }
         }
         if(is_artillery_strike) { __runOriginal = false; } else { return; }
@@ -460,6 +464,7 @@ namespace CustAmmoCategories {
         Log.Combat?.TWL(0, $"SelectionStateFireMulti.CreateFiringOrders {__instance.SelectedActor.PilotableActorDef.ChassisID}");
         bool is_artillery_strike = false;
         List<Weapon> weaponSubset = new List<Weapon>();
+        int up = 1;
         for(int targetIndex = 0; targetIndex < __instance.AllTargetedCombatants.Count; ++targetIndex) {
           ICombatant targetedCombatant = __instance.AllTargetedCombatants[targetIndex];
           weaponSubset.Clear();
@@ -473,7 +478,8 @@ namespace CustAmmoCategories {
             Log.Combat?.WL(1, $"weapon:{weapon.defId} IsArtillery:{is_art}");
             if(is_art) {
               Log.Combat?.WL(2, $"artillery strike:{targetedCombatant.CurrentPosition}");
-              is_artillery_strike = true; weapon.AddArtilleryStrike(targetedCombatant.CurrentPosition);
+              is_artillery_strike = true; weapon.AddArtilleryStrike(targetedCombatant.CurrentPosition, up);
+              ++up;
             }
           }
         }

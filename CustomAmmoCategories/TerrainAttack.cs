@@ -178,12 +178,14 @@ namespace CustAmmoCategories {
       bool is_artillery_strike = false;
       Vector3 position = groundPos;
       if(target != null) { position = target.CurrentPosition; }
+      int up = 1;
       foreach(var weapon in weaponsList) {
         bool is_art = weapon.IsArtillery();
         Log.Combat?.WL(1, $"weapon:{weapon.defId} IsArtillery:{is_art}");
         if(is_art) {
           Log.Combat?.WL(2, $"artillery strike:{position}");
-          is_artillery_strike = true; weapon.AddArtilleryStrike(position);
+          is_artillery_strike = true; weapon.AddArtilleryStrike(position, up);
+          ++up;
         }
       }
       MessageCenterMessage invocation = null;
