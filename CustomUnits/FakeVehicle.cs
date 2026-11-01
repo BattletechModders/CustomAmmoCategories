@@ -334,4 +334,72 @@ namespace CustomUnits {
       base.InitStats();
     }
   }
+
+  [HarmonyPatch(typeof(AttackEvaluator), "MinHitPoints")]
+  public static class AttackEvaluator_MinHitPoints_FakeVehicle
+  {
+    private static readonly VehicleChassisLocations[] validLocations = [VehicleChassisLocations.Front, VehicleChassisLocations.Left, VehicleChassisLocations.Right, VehicleChassisLocations.Rear, VehicleChassisLocations.Turret];
+
+    public static void Prefix(ref bool __runOriginal, ICombatant targetUnit, ref float __result)
+    {
+      if (!__runOriginal)
+      {
+        return;
+      }
+
+      if (targetUnit is not FakeVehicleMech mech)
+      {
+        return;
+      }
+
+      bool isVtol = mech.FlyingHeight() > Core.Settings.MaxHoveringHeightWithWorkingJets;
+      float result = float.MaxValue;
+      foreach (VehicleChassisLocations location in validLocations)
+      {
+        // Don't use a VTOL rotor as source of lowest health, since it is less likely to hit and has built-in damage reduction
+        if (isVtol && location == VehicleChassisLocations.Turret)
+        {
+          continue;
+        }
+
+        ChassisLocations chassisLocation = location.toFakeChassis();
+        LocationDef locationDef = mech.MechDef.Chassis.GetLocationDef(chassisLocation);
+        
+        // Any location with 1 structure means it is a non-used location (i.e. turret on turret-less vehicles or other locations on turret-only parts of monster mashup bosses) 
+        if (locationDef is { MaxArmor: <= 0f, InternalStructure: <= 1f })
+        {
+          continue;
+        }
+
+        float combinedHealth = mech.ArmorForLocation((int)location.toFakeArmor()) + mech.GetCurrentStructure(chassisLocation);
+        result = Mathf.Min(result, combinedHealth);
+      }
+
+      __result = result;
+      __runOriginal = false;
+    }
+  }
+
+  [HarmonyPatch(typeof(PreferLethalDamageToRearArcFromHostileFactor), "getRearArmorPlusCriticalStructure", typeof(Mech))]
+  public static class PreferLethalDamageToRearArcFromHostileFactor_FakeVehicle
+  {
+    public static void Prefix(ref bool __runOriginal, Mech unit, ref float __result)
+    {
+      if (!__runOriginal)
+      {
+        return;
+      }
+
+      if (unit is not FakeVehicleMech)
+      {
+        return;
+      }
+
+      float multiplier = unit.BehaviorTree.GetBehaviorVariableValue(BehaviorVariableName.Float_CenterTorsoRearArmorMultiplierForRearArc).FloatVal;
+      float weighedArmorHealth = unit.ArmorForLocation((int)VehicleChassisLocations.Rear.toFakeArmor()) * multiplier;
+      float structureHealth = unit.GetCurrentStructure(VehicleChassisLocations.Rear.toFakeChassis());
+      __result = weighedArmorHealth + structureHealth;
+      __runOriginal = false;
+    }
+  }
 }
