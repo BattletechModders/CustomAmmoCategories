@@ -668,16 +668,15 @@ namespace CustAmmoCategories {
           if ((mod.Value.ranged != false) || (mod.Value.melee != false)) { continue; }
         }
         float modifier = (int)mod.Value.modifier(toHit, attacker, weapon, target, attackPosition, targetPosition, lofLevel, meleeAttackType, isCalledShot);
-        string name = mod.Value.name;
-        if (mod.Value.dname != null) {
-          name = mod.Value.dname(toHit, attacker, weapon, target, attackPosition, targetPosition, lofLevel, meleeAttackType, isCalledShot);
-        } else if (mod.Value.dname2 != null) {
-          name = mod.Value.dname2(toHit, attacker, weapon, target, attackPosition, targetPosition, lofLevel, meleeAttackType, isCalledShot, (int)modifier);
-        }
-        if (mod.Value.dname2 != null) {
-          if (info != null) { info.Add(new ModifierUIInfo(name, mod.Key, modifier, true)); }
-        } else {
-          if (info != null) { info.Add(new ModifierUIInfo(name, mod.Key, modifier, false)); }
+        if (info != null)
+        {
+          string name = mod.Value.name;
+          if (mod.Value.dname != null) {
+            name = mod.Value.dname(toHit, attacker, weapon, target, attackPosition, targetPosition, lofLevel, meleeAttackType, isCalledShot);
+          } else if (mod.Value.dname2 != null) {
+            name = mod.Value.dname2(toHit, attacker, weapon, target, attackPosition, targetPosition, lofLevel, meleeAttackType, isCalledShot, (int)modifier);
+          }
+          info.Add(new ModifierUIInfo(name, mod.Key, modifier, mod.Value.dname2 != null));
         }
         result += modifier;
       }
@@ -694,11 +693,16 @@ namespace CustAmmoCategories {
             if ((mod.Value.ranged != false) || (mod.Value.melee != false)) { continue; }
           }
           float modifier = mod.Value.modifier(state, toHit, attacker, weapon, target, attackPosition, targetPosition, lofLevel, meleeAttackType, isCalledShot);
-          string name = mod.Value.name;
-          if (mod.Value.dname != null) {
-            name = mod.Value.dname(state, toHit, attacker, weapon, target, attackPosition, targetPosition, lofLevel, meleeAttackType, isCalledShot);
+          if (info != null)
+          {
+            string name = mod.Value.name;
+            if (mod.Value.dname != null)
+            {
+              name = mod.Value.dname(state, toHit, attacker, weapon, target, attackPosition, targetPosition, lofLevel,
+                meleeAttackType, isCalledShot);
+            }
+            info.Add(new ModifierUIInfo(name, mod.Key, modifier, false));
           }
-          if (info != null) { info.Add(new ModifierUIInfo(name, mod.Key, modifier, false)); }
           result += modifier;
         }
       }
@@ -726,22 +730,15 @@ namespace CustAmmoCategories {
           if ((mod.Value.ranged != false) || (mod.Value.melee != false)) { continue; }
         }
         float modifier = mod.Value.modifier(toHit, attacker, weapon, target, attackPosition, targetPosition, lofLevel, meleeAttackType, isCalledShot);
-        string name = mod.Value.name;
-        if (mod.Value.dname != null)
+        if (info != null)
         {
-          name = mod.Value.dname(toHit, attacker, weapon, target, attackPosition, targetPosition, lofLevel, meleeAttackType, isCalledShot);
-        }
-        else if (mod.Value.dname2 != null)
-        {
-          name = mod.Value.dname2(toHit, attacker, weapon, target, attackPosition, targetPosition, lofLevel, meleeAttackType, isCalledShot, (int)modifier);
-        }
-        if (mod.Value.dname2 != null)
-        {
-          if (info != null) { info.Add(new ModifierUIInfo(name, mod.Key, modifier, true)); }
-        }
-        else
-        {
-          if (info != null) { info.Add(new ModifierUIInfo(name, mod.Key, modifier, false)); }
+          string name = mod.Value.name;
+          if (mod.Value.dname != null) {
+            name = mod.Value.dname(toHit, attacker, weapon, target, attackPosition, targetPosition, lofLevel, meleeAttackType, isCalledShot);
+          } else if (mod.Value.dname2 != null) {
+            name = mod.Value.dname2(toHit, attacker, weapon, target, attackPosition, targetPosition, lofLevel, meleeAttackType, isCalledShot, (int)modifier);
+          }
+          info.Add(new ModifierUIInfo(name, mod.Key, modifier, mod.Value.dname2 != null));
         }
         result *= modifier;
       }
@@ -947,35 +944,49 @@ namespace CustAmmoCategories {
     public static bool Prefix() {
       return false;
     }
-    public static void Postfix(ToHit __instance, AbstractActor attacker, Weapon weapon, ICombatant target, Vector3 attackPosition, Vector3 targetPosition, LineOfFireLevel lofLevel, bool isCalledShot, ref float __result) {
+
+    public static void Postfix(ToHit __instance, AbstractActor attacker, Weapon weapon, ICombatant target,
+      Vector3 attackPosition, Vector3 targetPosition, LineOfFireLevel lofLevel, bool isCalledShot, ref float __result)
+    {
       __result = 0f;
-      if(Thread.CurrentThread.isFlagSet("TO_HIT_DEBUG_PRINT")) Log.Combat?.TWL(0,$"ToHit modifier. attacker:{attacker.PilotableActorDef.ChassisID} target:{(target.PilotableActorDef == null?target.DisplayName: target.PilotableActorDef.ChassisID)} weapon:{weapon.weaponDef.Description.Id}");
-      List<ToHitModifiersHelper.ModifierUIInfo> info = new List<ToHitModifiersHelper.ModifierUIInfo>();
-      __result = ToHitModifiersHelper.GatherModifiers(__instance, attacker, weapon, target, attackPosition, targetPosition, lofLevel, isCalledShot, MeleeAttackType.NotSet, info);
-      foreach (var mod in info) {
-        if (Thread.CurrentThread.isFlagSet("TO_HIT_DEBUG_PRINT")) Log.Combat?.WL(2, $"{mod.key}:{mod.value}");
+      List<ToHitModifiersHelper.ModifierUIInfo> info = null;
+      if (Thread.CurrentThread.isFlagSet("TO_HIT_DEBUG_PRINT"))
+      {
+        Log.Combat?.TWL(0,
+          $"ToHit modifier. attacker:{attacker.PilotableActorDef.ChassisID} target:{(target.PilotableActorDef == null ? target.DisplayName : target.PilotableActorDef.ChassisID)} weapon:{weapon.weaponDef.Description.Id}");
+        info = new List<ToHitModifiersHelper.ModifierUIInfo>();
       }
 
-      //foreach(var mod in ToHitModifiersHelper.modifiers) {
-      //  if ((mod.Value.ranged == false)&&(mod.Value.melee == true)) { continue; }
-      //  float val = mod.Value.modifier(__instance, attacker, weapon, target, attackPosition, targetPosition, lofLevel, MeleeAttackType.NotSet, isCalledShot);
-      //  if (Thread.CurrentThread.isFlagSet("TO_HIT_DEBUG_PRINT")) Log.M?.WL(2,$"{mod.Key}:{val}");
-      //  __result += val;
-      //}
-      //foreach (var node in ToHitModifiersHelper.mod_nodes) {
-      //  object state = node.Value.prepare(__instance, attacker, weapon, target, attackPosition, targetPosition, lofLevel, MeleeAttackType.NotSet, isCalledShot);
-      //  if (Thread.CurrentThread.isFlagSet("TO_HIT_DEBUG_PRINT")) Log.M?.WL(2, $"node:{node.Key}");
-      //  foreach (var mod in node.Value.modifiers) {
-      //    if ((mod.Value.ranged == false) && (mod.Value.melee == true)) { continue; }
-      //    float val = mod.Value.modifier(state, __instance, attacker, weapon, target, attackPosition, targetPosition, lofLevel, MeleeAttackType.NotSet, isCalledShot);
-      //    if (Thread.CurrentThread.isFlagSet("TO_HIT_DEBUG_PRINT")) Log.M?.WL(3, $"{mod.Key}:{val}");
-      //    __result += val;
-      //  }
-      //}
-      //if ((__result < 0f) && (__instance.combat.Constants.ResolutionConstants.AllowTotalNegativeModifier == false)) {
-      //  __result = 0f;
-      //}
-      if (Thread.CurrentThread.isFlagSet("TO_HIT_DEBUG_PRINT")) Log.Combat?.WL(0,$"result:{__result}");
+      __result = ToHitModifiersHelper.GatherModifiers(__instance, attacker, weapon, target, attackPosition,
+        targetPosition, lofLevel, isCalledShot, MeleeAttackType.NotSet, info);
+      
+      if (info != null) {
+        foreach (var mod in info)
+        {
+          if (Thread.CurrentThread.isFlagSet("TO_HIT_DEBUG_PRINT")) Log.Combat?.WL(2, $"{mod.key}:{mod.value}");
+        }
+      }
+
+    //foreach(var mod in ToHitModifiersHelper.modifiers) {
+    //  if ((mod.Value.ranged == false)&&(mod.Value.melee == true)) { continue; }
+    //  float val = mod.Value.modifier(__instance, attacker, weapon, target, attackPosition, targetPosition, lofLevel, MeleeAttackType.NotSet, isCalledShot);
+    //  if (Thread.CurrentThread.isFlagSet("TO_HIT_DEBUG_PRINT")) Log.M?.WL(2,$"{mod.Key}:{val}");
+    //  __result += val;
+    //}
+    //foreach (var node in ToHitModifiersHelper.mod_nodes) {
+    //  object state = node.Value.prepare(__instance, attacker, weapon, target, attackPosition, targetPosition, lofLevel, MeleeAttackType.NotSet, isCalledShot);
+    //  if (Thread.CurrentThread.isFlagSet("TO_HIT_DEBUG_PRINT")) Log.M?.WL(2, $"node:{node.Key}");
+    //  foreach (var mod in node.Value.modifiers) {
+    //    if ((mod.Value.ranged == false) && (mod.Value.melee == true)) { continue; }
+    //    float val = mod.Value.modifier(state, __instance, attacker, weapon, target, attackPosition, targetPosition, lofLevel, MeleeAttackType.NotSet, isCalledShot);
+    //    if (Thread.CurrentThread.isFlagSet("TO_HIT_DEBUG_PRINT")) Log.M?.WL(3, $"{mod.Key}:{val}");
+    //    __result += val;
+    //  }
+    //}
+    //if ((__result < 0f) && (__instance.combat.Constants.ResolutionConstants.AllowTotalNegativeModifier == false)) {
+    //  __result = 0f;
+    //}
+    if (Thread.CurrentThread.isFlagSet("TO_HIT_DEBUG_PRINT")) Log.Combat?.WL(0,$"result:{__result}");
     }
 
   }
@@ -990,14 +1001,28 @@ namespace CustAmmoCategories {
     public static bool Prefix() {
       return false;
     }
-    public static void Postfix(ToHit __instance, Mech attacker, ICombatant target, Vector3 targetPosition, MeleeAttackType meleeAttackType, ref float __result) {
+
+    public static void Postfix(ToHit __instance, Mech attacker, ICombatant target, Vector3 targetPosition,
+      MeleeAttackType meleeAttackType, ref float __result)
+    {
       __result = 0f;
-      if (Thread.CurrentThread.isFlagSet("TO_HIT_DEBUG_PRINT")) Log.Combat?.TWL(0, $"ToHit melee modifier. attacker:{attacker.PilotableActorDef.ChassisID} target:{(target.PilotableActorDef == null ? target.DisplayName : target.PilotableActorDef.ChassisID)} weapon:{attacker.MeleeWeapon.weaponDef.Description.Id}");
-      List<ToHitModifiersHelper.ModifierUIInfo> info = new List<ToHitModifiersHelper.ModifierUIInfo>();
-      __result = ToHitModifiersHelper.GatherModifiers(__instance, attacker, attacker.MeleeWeapon, target, targetPosition, targetPosition, LineOfFireLevel.LOFClear, false, meleeAttackType, info);
-      foreach (var mod in info) {
-        if (Thread.CurrentThread.isFlagSet("TO_HIT_DEBUG_PRINT")) Log.Combat?.WL(2, $"{mod.key}:{mod.value}");
+      List<ToHitModifiersHelper.ModifierUIInfo> info = null;
+      if (Thread.CurrentThread.isFlagSet("TO_HIT_DEBUG_PRINT"))
+      {
+        Log.Combat?.TWL(0,
+          $"ToHit melee modifier. attacker:{attacker.PilotableActorDef.ChassisID} target:{(target.PilotableActorDef == null ? target.DisplayName : target.PilotableActorDef.ChassisID)} weapon:{attacker.MeleeWeapon.weaponDef.Description.Id}");
+        info = new List<ToHitModifiersHelper.ModifierUIInfo>();
       }
+
+      __result = ToHitModifiersHelper.GatherModifiers(__instance, attacker, attacker.MeleeWeapon, target, targetPosition, targetPosition, LineOfFireLevel.LOFClear, false, meleeAttackType, info);
+      if (info != null)
+      {
+        foreach (var mod in info)
+        {
+          if (Thread.CurrentThread.isFlagSet("TO_HIT_DEBUG_PRINT")) Log.Combat?.WL(2, $"{mod.key}:{mod.value}");
+        }
+      }
+
       if (Thread.CurrentThread.isFlagSet("TO_HIT_DEBUG_PRINT")) Log.Combat?.WL(0, $"result:{__result}");
       //foreach (var mod in ToHitModifiersHelper.modifiers) {
       //  if ((mod.Value.ranged == true) && (mod.Value.melee == false)) { continue; }
