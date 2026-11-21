@@ -92,6 +92,20 @@ namespace CustomAmmoCategoriesPrivate {
       TWL("combat end");
       Dump();
     }
+    // True when every child still holding the move open is a plain waypoint CameraSequence that has not finished.
+    private static bool WaitingOnWaypointCamera(ActorMovementSequence move) {
+      bool hasCamera = false;
+      foreach (var childseq in move.childSequences) {
+        if (childseq.IsComplete) { continue; }
+        if ((childseq is CameraSequence camera) && (camera.GetType() == typeof(CameraSequence))) {
+          if (camera.IsFinished) { continue; }
+          hasCamera = true;
+          continue;
+        }
+        return false;
+      }
+      return hasCamera;
+    }
     public static Exception Finalizer(StackManager __instance, Exception __exception) {
       try {
         if ((__instance.SequenceStack.Count != 0) || (__instance.ParallelStack.Count != 0)) {
@@ -130,10 +144,23 @@ namespace CustomAmmoCategoriesPrivate {
               }
             }
             if(timer.Key is ActorMovementSequence move) {
-              if(move.OrdersAreComplete && (move.IsComplete == false)) {
+              // A move whose orders are done but which still holds a running waypoint camera is not stuck: vanilla
+              // keeps it on the stack until that camera finishes (OrderSequence/MultiSequence.IsComplete). The melee
+              // cinematic is such a camera, shared with MechMeleeSequence, so finishing it here cut every melee shot
+              // off at the end of the move. Only treat it as stuck once the usual 30 s limit has passed.
+              if(move.OrdersAreComplete && (move.IsComplete == false) && ((WaitingOnWaypointCamera(move) == false) || (timer.Value.time > 30f))) {
                 TWL($"Possible stuck movement sequence: {timer.Key.SeqToString()}");
                 foreach (var childseq in move.childSequences) {
-                  if (childseq is CameraSequence camera) { camera.state = CameraSequence.CamSequenceState.Finished;  }
+                  if (childseq is CameraSequence camera) {
+                    // setState places a waypoint camera on its final pose; a raw state write froze it mid-flight.
+                    // Subclasses (FollowActorCameraSequence etc.) keep the raw write: their only waypoint is the
+                    // start pose, so setState would snap them back.
+                    if (camera.GetType() == typeof(CameraSequence)) {
+                      camera.setState(CameraSequence.CamSequenceState.Finished);
+                    } else {
+                      camera.state = CameraSequence.CamSequenceState.Finished;
+                    }
+                  }
                 }
                 move.OnUpdate();
                 if(move.IsComplete == false) {
