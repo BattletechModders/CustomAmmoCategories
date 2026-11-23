@@ -1,4 +1,4 @@
-﻿/*  
+/*  
  *  This file is part of CustomAmmoCategories.
  *  CustomAmmoCategories is free software: you can redistribute it and/or modify it under the terms of the 
  *  GNU Lesser General Public License as published by the Free Software Foundation, either version 3 of the License, 
@@ -1182,62 +1182,100 @@ namespace CustomDeploy{
       return false;
     }
   }
+
   [HarmonyPatch(typeof(PreferExposedAlonePositionalFactor))]
   [HarmonyPatch("EvaluateInfluenceMapFactorAtPosition")]
   [HarmonyPatch(MethodType.Normal)]
-  [HarmonyPatch(new Type[] { typeof(AbstractActor), typeof(Vector3), typeof(float), typeof(MoveType), typeof(PathNode) })]
-  public static class PreferExposedAlonePositionalFactor_EvaluateInfluenceMapFactorAtPosition {
-    public static PilotDef lastPilotAdded { get; set; } = null;
-    public static void Prefix(PreferExposedAlonePositionalFactor __instance, AbstractActor unit, Vector3 position, float angle, MoveType moveType_unused, PathNode pathNode_unused, ref float __result) {
+  [HarmonyPatch([typeof(AbstractActor), typeof(Vector3), typeof(float), typeof(MoveType), typeof(PathNode)])]
+  public static class PreferExposedAlonePositionalFactor_EvaluateInfluenceMapFactorAtPosition
+  {
+    public static void Prefix(ref bool __runOriginal, PreferExposedAlonePositionalFactor __instance, AbstractActor unit, Vector3 position, float angle, MoveType moveType_unused, PathNode pathNode_unused, ref float __result)
+    {
+      if (!__runOriginal)
+      {
+        return;
+      }
+
+      __runOriginal = false;
       __result = 0.0f;
-      try {
-        if (__instance.exposureOK || __instance.exposedTeammateCount > 0) {
+      try
+      {
+        if (__instance.exposureOK || __instance.exposedTeammateCount > 0)
+        {
           return;
         }
-        if(unit == null) {
+
+        if (unit == null)
+        {
           Log.TWL(0, "EXCEPTION: PreferExposedAlonePositionalFactor.EvaluateInfluenceMapFactorAtPosition unit is null", true);
           return;
         }
-        if (unit.BehaviorTree == null) {
-          Log.TWL(0, "EXCEPTION: PreferExposedAlonePositionalFactor.EvaluateInfluenceMapFactorAtPosition "+unit.PilotableActorDef.chassisID+ " has null BehaviorTree",true);
+
+        if (unit.BehaviorTree == null)
+        {
+          Log.TWL(0, "EXCEPTION: PreferExposedAlonePositionalFactor.EvaluateInfluenceMapFactorAtPosition " + unit.PilotableActorDef.chassisID + " has null BehaviorTree", true);
           return;
         }
+
         Quaternion targetRotation = Quaternion.Euler(0.0f, angle, 0.0f);
-        for (int index = 0; index < unit.BehaviorTree.enemyUnits.Count; ++index) {
-          try {
-            AbstractActor enemyUnit = unit.BehaviorTree.enemyUnits[index] as AbstractActor;
-            if (enemyUnit == null) { continue; }
-            if (enemyUnit.IsDead) { continue; }
-            if (__instance.maxRanges == null) {
-              Log.TWL(0, "EXCEPTION:maxRanges is not filled");
-              continue;
-            }
-            if(__instance.isIndirectFireCapable == null) {
-              Log.TWL(0, "EXCEPTION:isIndirectFireCapable is not filled");
-              continue;
-            }
-            if(__instance.maxRanges.ContainsKey(enemyUnit) == false) {
-              Log.TWL(0, $"EXCEPTION:maxRanges does not contains info on {enemyUnit.PilotableActorDef.ChassisID}");
-              continue;
-            }
-            if (__instance.isIndirectFireCapable.ContainsKey(enemyUnit) == false) {
-              Log.TWL(0, $"EXCEPTION:isIndirectFireCapable does not contains info on {enemyUnit.PilotableActorDef.ChassisID}");
-              continue;
-            }
-            if (false == enemyUnit.HasLOFToTargetUnitAtTargetPosition(unit, __instance.maxRanges[enemyUnit], unit.CurrentPosition, Quaternion.LookRotation(position - unit.CurrentPosition), position, targetRotation, __instance.isIndirectFireCapable[enemyUnit])) {
-              continue;
-            }
+        foreach (ICombatant enemyCombatant in unit.BehaviorTree.enemyUnits)
+        {
+          if (HasLineOfFire(__instance, unit, enemyCombatant, position, targetRotation))
+          {
             ++__result;
-          }catch(Exception e) {
-            Log.TWL(0, "I'm just a victim here",true);
-            Log.TWL(0, e.ToString(), true);
           }
         }
-      } catch (Exception e) {
+      }
+      catch (Exception e)
+      {
         Log.TWL(0, e.ToString());
       }
     }
+
+    private static bool HasLineOfFire(PreferExposedAlonePositionalFactor factor, AbstractActor unit, ICombatant combatant, Vector3 position, Quaternion targetRotation)
+    {
+      try
+      {
+        if (combatant is not AbstractActor enemyUnit || enemyUnit.IsDead)
+        {
+          return false;
+        }
+
+        if (factor.maxRanges == null)
+        {
+          Log.TWL(0, "EXCEPTION:maxRanges is not filled");
+          return false;
+        }
+
+        if (factor.isIndirectFireCapable == null)
+        {
+          Log.TWL(0, "EXCEPTION:isIndirectFireCapable is not filled");
+          return false;
+        }
+
+        if (!factor.maxRanges.ContainsKey(enemyUnit))
+        {
+          Log.TWL(0, $"EXCEPTION:maxRanges does not contains info on {enemyUnit.PilotableActorDef.ChassisID}");
+          return false;
+        }
+
+        if (!factor.isIndirectFireCapable.TryGetValue(enemyUnit, out bool indirectFireCapable))
+        {
+          Log.TWL(0, $"EXCEPTION:isIndirectFireCapable does not contains info on {enemyUnit.PilotableActorDef.ChassisID}");
+          return false;
+        }
+
+        return enemyUnit.HasLOFToTargetUnitAtTargetPosition(unit, factor.maxRanges[enemyUnit], unit.CurrentPosition, Quaternion.LookRotation(position - unit.CurrentPosition), position, targetRotation, indirectFireCapable);
+      }
+      catch (Exception e)
+      {
+        Log.TWL(0, "I'm just a victim here", true);
+        Log.TWL(0, e.ToString(), true);
+        return false;
+      }
+    }
   }
+  
   [HarmonyPatch(typeof(CombatHUDAttackModeSelector))]
   [HarmonyPatch("UpdateOverheatWarnings")]
   [HarmonyPatch(MethodType.Normal)]
