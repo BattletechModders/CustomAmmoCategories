@@ -299,6 +299,7 @@
     <Compile Include="OnlineClient.cs" />
     <Compile Include="PersistentFloatieMessage.cs" />
     <Compile Include="PlayProjectile.cs" />
+    <Compile Include="PlayerTurnSelection.cs" />
     <Compile Include="PreForceContractSave.cs" />
     <Compile Include="SelfDocumentation.cs" />
     <Compile Include="Settings.cs" />
