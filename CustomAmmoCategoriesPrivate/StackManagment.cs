@@ -36,6 +36,8 @@ namespace CustomAmmoCategoriesPrivate {
     }
     private static Dictionary<IStackSequence, SequenceTimer> sequence_timeout = new Dictionary<IStackSequence, SequenceTimer>();
     private static float time_since_output = 0f;
+    private static readonly Type CameraSequenceType = typeof(CameraSequence);
+
     public static string SeqToString(TeamActivationSequence seq) {
       if (seq == null) { return "null"; }
       if (seq.team == null) { return "Team: null ActivationSequence"; }
@@ -92,6 +94,23 @@ namespace CustomAmmoCategoriesPrivate {
       TWL("combat end");
       Dump();
     }
+
+    private static bool HasUnfinishWaypointCameraSequence(ActorMovementSequence move)
+    {
+      foreach (var sequence in move.childSequences)
+      {
+        if (sequence.IsComplete)
+        {
+          continue;
+        }
+        if (sequence is CameraSequence { IsFinished: false } cameraSequence && cameraSequence.GetType() == CameraSequenceType)
+        {
+            return true;
+        }
+      }
+      return false;
+    }
+    
     public static Exception Finalizer(StackManager __instance, Exception __exception) {
       try {
         if ((__instance.SequenceStack.Count != 0) || (__instance.ParallelStack.Count != 0)) {
@@ -130,10 +149,22 @@ namespace CustomAmmoCategoriesPrivate {
               }
             }
             if(timer.Key is ActorMovementSequence move) {
-              if(move.OrdersAreComplete && (move.IsComplete == false)) {
+              if(move.OrdersAreComplete && move.IsComplete == false && (timer.Value.time > 30f || !HasUnfinishWaypointCameraSequence(move))) {
                 TWL($"Possible stuck movement sequence: {timer.Key.SeqToString()}");
                 foreach (var childseq in move.childSequences) {
-                  if (childseq is CameraSequence camera) { camera.state = CameraSequence.CamSequenceState.Finished;  }
+                  if (childseq is CameraSequence camera)
+                  {
+                    // we only need to do this for the CameraSequence not its child types
+                    if (childseq.GetType() == CameraSequenceType)
+                    {
+                      camera.setState(CameraSequence.CamSequenceState.Finished);
+                    }
+                    else
+                    {
+                      camera.state = CameraSequence.CamSequenceState.Finished;
+                    }
+                    
+                  }
                 }
                 move.OnUpdate();
                 if(move.IsComplete == false) {
